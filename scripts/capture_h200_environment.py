@@ -101,6 +101,11 @@ def main() -> int:
         default=REPOSITORY_ROOT / "patches/sglang-0.5.2rc1-beliefkv.patch",
     )
     parser.add_argument("--runtime-profile", type=Path, required=True)
+    parser.add_argument(
+        "--profile-id",
+        required=True,
+        help="Versioned profile identifier written into the environment manifest.",
+    )
     args = parser.parse_args()
 
     server_info = fetch_server_info(args.base_url, timeout_s=30.0)
@@ -189,7 +194,7 @@ def main() -> int:
     runtime_profile = args.runtime_profile.expanduser().resolve()
     manifest: dict[str, Any] = {
         "schema_version": 1,
-        "profile_id": "h200_bf16_v1",
+        "profile_id": args.profile_id,
         "runtime_profile": {
             "path": str(runtime_profile),
             "sha256": sha256_file(runtime_profile),

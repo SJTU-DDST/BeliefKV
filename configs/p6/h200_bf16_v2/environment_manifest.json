@@ -1,0 +1,112 @@
+{
+  "capacity": {
+    "attention_backend": null,
+    "context_length": 262144,
+    "gates": {
+      "context_limit_satisfied": true,
+      "hbm_safety_margin_satisfied": true,
+      "host_transfer_plus_restore_satisfied": true
+    },
+    "hbm_safety_margin_bytes": 2147483648,
+    "host_pool_bytes": 103079215104,
+    "host_pool_gib": 96.0,
+    "kv_bytes_per_token": 98304,
+    "kv_pool_bytes": 83558400000,
+    "max_planned_context_tokens": 196608,
+    "max_planned_transfer_bytes": 19327352832,
+    "max_running_requests": 16,
+    "max_total_num_tokens": 850000,
+    "page_size": 1,
+    "post_workload_free_hbm_mib": null,
+    "prefill_chunk_size": 4096,
+    "reported_memory_usage_gib": {
+      "cuda_graph": 0.14,
+      "kvcache": 77.82,
+      "token_capacity": 850000,
+      "weight": 57.09
+    },
+    "restore_reserve_bytes": 19327352832,
+    "sampling_backend": "flashinfer",
+    "stable_free_hbm_bytes": 3330277376,
+    "stable_free_hbm_mib": 3176,
+    "stable_free_hbm_source": "capacity_v2_projected_pending_live_recapture",
+    "kv_pool_gib": 77.82
+  },
+  "captured_at_utc": "2026-08-11T20:06:36.434041+00:00",
+  "gpu": {
+    "driver_version": "595.71.05",
+    "index": 0,
+    "memory_free_mib": 568,
+    "memory_total_mib": 143771,
+    "memory_used_mib": 142591,
+    "name": "NVIDIA H200 NVL",
+    "pci_bus_id": "00000000:C9:00.0",
+    "uuid": "GPU-a50d9b5b-d146-f031-d960-9a309904714e"
+  },
+  "hostname": "ddst-12",
+  "model": {
+    "configured_kv_dtype": "auto",
+    "model_path": "/srv/ai/models/Qwen/Qwen3-Coder-30B-A3B-Instruct",
+    "native_context_length": 262144,
+    "quantization": null,
+    "resolved_kv_dtype": "bfloat16",
+    "revision_file_sha256": {
+      "config.json": "e2c8d8eea39471785cd93379d8b48241ad7dcda299013155dd02526e34a0de62",
+      "model.safetensors.index.json": "8dde190b862c7c80ec7403c6495de00c60bbaf246ed479cee4506284989c584c",
+      "tokenizer.json": "19564a48c4f71a2a1b937cce34c737a1e662b171c5f5d7edf641a15cd896f07d",
+      "tokenizer_config.json": "60f6e8cb15c98dd07300a3cc465ea662de245d2095e4245616af21b2324db3fc"
+    },
+    "served_model_name": "Qwen3-Coder-30B-A3B-Instruct",
+    "sglang_version": "0.5.2rc1",
+    "weight_dtype": "bfloat16"
+  },
+  "numa": {
+    "gpu_topology": "\u001b[4mGPU0\tCPU Affinity\tNUMA Affinity\tGPU NUMA ID\u001b[0m\nGPU0\t X \t32-63,96-127\t1\t\tN/A\n\nLegend:\n\n  X    = Self\n  SYS  = Connection traversing PCIe as well as the SMP interconnect between NUMA nodes (e.g., QPI/UPI)\n  NODE = Connection traversing PCIe as well as the interconnect between PCIe Host Bridges within a NUMA node\n  PHB  = Connection traversing PCIe as well as a PCIe Host Bridge (typically the CPU)\n  PXB  = Connection traversing multiple PCIe bridges (without traversing the PCIe Host Bridge)\n  PIX  = Connection traversing at most a single PCIe bridge\n  NV#  = Connection traversing a bonded set of # NVLinks",
+    "hardware": "available: 2 nodes (0-1)\nnode 0 cpus: 0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 31 64 65 66 67 68 69 70 71 72 73 74 75 76 77 78 79 80 81 82 83 84 85 86 87 88 89 90 91 92 93 94 95\nnode 0 size: 257727 MB\nnode 0 free: 162552 MB\nnode 1 cpus: 32 33 34 35 36 37 38 39 40 41 42 43 44 45 46 47 48 49 50 51 52 53 54 55 56 57 58 59 60 61 62 63 96 97 98 99 100 101 102 103 104 105 106 107 108 109 110 111 112 113 114 115 116 117 118 119 120 121 122 123 124 125 126 127\nnode 1 size: 258018 MB\nnode 1 free: 536 MB\nnode distances:\nnode   0   1 \n  0:  10  21 \n  1:  21  10",
+    "memlock_limit_bytes": [
+      8388608,
+      8388608
+    ]
+  },
+  "platform": "Linux-6.8.0-41-generic-x86_64-with-glibc2.39",
+  "profile_id": "h200_bf16_v2",
+  "runtime": {
+    "attention_backends": {
+      "decode": "flashinfer",
+      "prefill": "fa3"
+    },
+    "cuda_graph_max_bs": 16,
+    "hicache_io_backend": "kernel",
+    "hicache_mem_layout": "layer_first",
+    "hicache_write_policy": "write_back",
+    "mem_fraction_static": 0.9928,
+    "pinned_host_required": true
+  },
+  "schema_version": 1,
+  "software": {
+    "beliefkv": {
+      "commit": "02c22598430ee9ad56daa8dc99461bb7937346a0",
+      "dirty": true
+    },
+    "python": "3.10.20",
+    "sglang": "0.5.2rc1",
+    "sglang_source": {
+      "commit": "18f91eb639084825717c0e3c3c7273492812ab71",
+      "dirty": true
+    },
+    "torch": "2.8.0+cu128",
+    "torch_cuda": "12.8"
+  },
+  "runtime_profile": {
+    "path": "/home/longhao/experiment/BeliefKV/configs/p6/h200_bf16_v2/frozen_runtime_profile.json",
+    "sha256": "c8b85fe7e3162729e73d57b58a71cae22c14881b8446a6cd2c674c0bdeb24d36"
+  },
+  "capacity_recalibration": {
+    "reason": "H3 v1 terminal MoE workspace OOM",
+    "source_profile": "h200_bf16_v1",
+    "source_pool_tokens": 871700,
+    "target_pool_tokens": 850000,
+    "recovered_hbm_mib": 2034.375,
+    "status": "candidate_pending_live_validation"
+  }
+}

@@ -1,0 +1,188 @@
+{
+  "image_count": 16,
+  "images": [
+    {
+      "architecture": "amd64",
+      "created": "2025-09-10T10:43:48.343124408Z",
+      "image": "swebench/sweb.eval.x86_64.django_1776_django-12663:latest",
+      "image_id": "sha256:c1beb1a0d8fc303f8ae8197bdd81b3d80e2e86cb04a579d5bd10435fb87e3c73",
+      "instance_id": "django__django-12663",
+      "operating_system": "linux",
+      "repo_digest": "swebench/sweb.eval.x86_64.django_1776_django-12663@sha256:c1beb1a0d8fc303f8ae8197bdd81b3d80e2e86cb04a579d5bd10435fb87e3c73",
+      "size_bytes": 1111844270,
+      "status": "pulled_verified"
+    },
+    {
+      "architecture": "amd64",
+      "created": "2025-09-10T11:12:15.45256641Z",
+      "image": "swebench/sweb.eval.x86_64.django_1776_django-13406:latest",
+      "image_id": "sha256:c7be1038582224d73f31e87a05fe6650bac9e565c39b7bc2e3979372dde2e002",
+      "instance_id": "django__django-13406",
+      "operating_system": "linux",
+      "repo_digest": "swebench/sweb.eval.x86_64.django_1776_django-13406@sha256:c7be1038582224d73f31e87a05fe6650bac9e565c39b7bc2e3979372dde2e002",
+      "size_bytes": 1115012029,
+      "status": "pulled_verified"
+    },
+    {
+      "architecture": "amd64",
+      "created": "2025-09-10T12:14:51.541132113Z",
+      "image": "swebench/sweb.eval.x86_64.django_1776_django-14792:latest",
+      "image_id": "sha256:c01c2d356a261253b7ef11c25a096ba97986dffe22a139ed99de4df6e44947a4",
+      "instance_id": "django__django-14792",
+      "operating_system": "linux",
+      "repo_digest": "swebench/sweb.eval.x86_64.django_1776_django-14792@sha256:c01c2d356a261253b7ef11c25a096ba97986dffe22a139ed99de4df6e44947a4",
+      "size_bytes": 1150190143,
+      "status": "pulled_verified"
+    },
+    {
+      "architecture": "amd64",
+      "created": "2025-09-10T12:31:33.160520165Z",
+      "image": "swebench/sweb.eval.x86_64.django_1776_django-15280:latest",
+      "image_id": "sha256:ee640acdea1712118273f9af984591808649c88fe2c2224f63faba506375a232",
+      "instance_id": "django__django-15280",
+      "operating_system": "linux",
+      "repo_digest": "swebench/sweb.eval.x86_64.django_1776_django-15280@sha256:ee640acdea1712118273f9af984591808649c88fe2c2224f63faba506375a232",
+      "size_bytes": 1165123192,
+      "status": "pulled_verified"
+    },
+    {
+      "architecture": "amd64",
+      "created": "2025-09-10T15:02:52.140497748Z",
+      "image": "swebench/sweb.eval.x86_64.pydata_1776_xarray-4075:latest",
+      "image_id": "sha256:641b520efc4712d06af38c8ab447457a89d736a8781cab333be7b583cb291047",
+      "instance_id": "pydata__xarray-4075",
+      "operating_system": "linux",
+      "repo_digest": "swebench/sweb.eval.x86_64.pydata_1776_xarray-4075@sha256:641b520efc4712d06af38c8ab447457a89d736a8781cab333be7b583cb291047",
+      "size_bytes": 1998288119,
+      "status": "pulled_verified"
+    },
+    {
+      "architecture": "amd64",
+      "created": "2025-09-10T15:03:15.072695409Z",
+      "image": "swebench/sweb.eval.x86_64.pydata_1776_xarray-4094:latest",
+      "image_id": "sha256:45e6b9897c749159b749a3737a7e79e5458baa7c8387844bc70ef0cbf46035c1",
+      "instance_id": "pydata__xarray-4094",
+      "operating_system": "linux",
+      "repo_digest": "swebench/sweb.eval.x86_64.pydata_1776_xarray-4094@sha256:45e6b9897c749159b749a3737a7e79e5458baa7c8387844bc70ef0cbf46035c1",
+      "size_bytes": 1998377511,
+      "status": "pulled_verified"
+    },
+    {
+      "architecture": "amd64",
+      "created": "2025-09-10T15:04:31.142514927Z",
+      "image": "swebench/sweb.eval.x86_64.pydata_1776_xarray-4687:latest",
+      "image_id": "sha256:6a108e6ed8ef1eb43094cee8a1c1fc800929e06849ef0de08fa6217b15dea1c2",
+      "instance_id": "pydata__xarray-4687",
+      "operating_system": "linux",
+      "repo_digest": "swebench/sweb.eval.x86_64.pydata_1776_xarray-4687@sha256:6a108e6ed8ef1eb43094cee8a1c1fc800929e06849ef0de08fa6217b15dea1c2",
+      "size_bytes": 2003028168,
+      "status": "pulled_verified"
+    },
+    {
+      "architecture": "amd64",
+      "created": "2025-09-10T15:06:40.996892546Z",
+      "image": "swebench/sweb.eval.x86_64.pydata_1776_xarray-6992:latest",
+      "image_id": "sha256:ab8e4c77f4f3c183a9894269fe9a3c9ded0b62b52c10f5259ac19eaafd67bda3",
+      "instance_id": "pydata__xarray-6992",
+      "operating_system": "linux",
+      "repo_digest": "swebench/sweb.eval.x86_64.pydata_1776_xarray-6992@sha256:ab8e4c77f4f3c183a9894269fe9a3c9ded0b62b52c10f5259ac19eaafd67bda3",
+      "size_bytes": 1875685656,
+      "status": "pulled_verified"
+    },
+    {
+      "architecture": "amd64",
+      "created": "2025-09-10T15:08:41.843907958Z",
+      "image": "swebench/sweb.eval.x86_64.pylint-dev_1776_pylint-4604:latest",
+      "image_id": "sha256:ba19da0f98e0dc7d259bafe71f3638b69fcd8a89c66a3f7a5039f5a40c8a4765",
+      "instance_id": "pylint-dev__pylint-4604",
+      "operating_system": "linux",
+      "repo_digest": "swebench/sweb.eval.x86_64.pylint-dev_1776_pylint-4604@sha256:ba19da0f98e0dc7d259bafe71f3638b69fcd8a89c66a3f7a5039f5a40c8a4765",
+      "size_bytes": 1043054059,
+      "status": "pulled_verified"
+    },
+    {
+      "architecture": "amd64",
+      "created": "2025-09-10T15:09:09.925421411Z",
+      "image": "swebench/sweb.eval.x86_64.pylint-dev_1776_pylint-4970:latest",
+      "image_id": "sha256:d5b68120595f1541cadc12b08a01b7db2d4b0eddedf67e92f7ef065c1e46b82b",
+      "instance_id": "pylint-dev__pylint-4970",
+      "operating_system": "linux",
+      "repo_digest": "swebench/sweb.eval.x86_64.pylint-dev_1776_pylint-4970@sha256:d5b68120595f1541cadc12b08a01b7db2d4b0eddedf67e92f7ef065c1e46b82b",
+      "size_bytes": 1043621348,
+      "status": "pulled_verified"
+    },
+    {
+      "architecture": "amd64",
+      "created": "2025-09-10T15:09:25.890277827Z",
+      "image": "swebench/sweb.eval.x86_64.pylint-dev_1776_pylint-6528:latest",
+      "image_id": "sha256:5c06fb2da69edf15900ebda1217c485fcddf38a4e6744e1d848f0e311aa5971d",
+      "instance_id": "pylint-dev__pylint-6528",
+      "operating_system": "linux",
+      "repo_digest": "swebench/sweb.eval.x86_64.pylint-dev_1776_pylint-6528@sha256:5c06fb2da69edf15900ebda1217c485fcddf38a4e6744e1d848f0e311aa5971d",
+      "size_bytes": 1038510879,
+      "status": "pulled_verified"
+    },
+    {
+      "architecture": "amd64",
+      "created": "2025-09-10T15:09:28.566117227Z",
+      "image": "swebench/sweb.eval.x86_64.pylint-dev_1776_pylint-6903:latest",
+      "image_id": "sha256:e7d9fbb7ef58d03ce827264f5202c2ef09ce44c8a2d57d31d04c4721459a2e60",
+      "instance_id": "pylint-dev__pylint-6903",
+      "operating_system": "linux",
+      "repo_digest": "swebench/sweb.eval.x86_64.pylint-dev_1776_pylint-6903@sha256:e7d9fbb7ef58d03ce827264f5202c2ef09ce44c8a2d57d31d04c4721459a2e60",
+      "size_bytes": 1039182971,
+      "status": "pulled_verified"
+    },
+    {
+      "architecture": "amd64",
+      "created": "2025-09-10T15:10:28.239924752Z",
+      "image": "swebench/sweb.eval.x86_64.pytest-dev_1776_pytest-10081:latest",
+      "image_id": "sha256:cb98e7a43ca4a8499a80ae446d100c6afb9ecac747dfafe1f4eca287a8321ecb",
+      "instance_id": "pytest-dev__pytest-10081",
+      "operating_system": "linux",
+      "repo_digest": "swebench/sweb.eval.x86_64.pytest-dev_1776_pytest-10081@sha256:cb98e7a43ca4a8499a80ae446d100c6afb9ecac747dfafe1f4eca287a8321ecb",
+      "size_bytes": 987644850,
+      "status": "pulled_verified"
+    },
+    {
+      "architecture": "amd64",
+      "created": "2025-09-10T15:10:57.49667426Z",
+      "image": "swebench/sweb.eval.x86_64.pytest-dev_1776_pytest-5809:latest",
+      "image_id": "sha256:96831af3073043bdb3f3729f4613c7f7cfd480e7ce4f6707e76c82e30b394f4d",
+      "instance_id": "pytest-dev__pytest-5809",
+      "operating_system": "linux",
+      "repo_digest": "swebench/sweb.eval.x86_64.pytest-dev_1776_pytest-5809@sha256:96831af3073043bdb3f3729f4613c7f7cfd480e7ce4f6707e76c82e30b394f4d",
+      "size_bytes": 982701630,
+      "status": "pulled_verified"
+    },
+    {
+      "architecture": "amd64",
+      "created": "2025-09-10T15:12:07.751756526Z",
+      "image": "swebench/sweb.eval.x86_64.pytest-dev_1776_pytest-7432:latest",
+      "image_id": "sha256:8c3e3a3b9bc22d51c79424211e1e4e659d753b2f5eb6e434abf1a334dd7ef252",
+      "instance_id": "pytest-dev__pytest-7432",
+      "operating_system": "linux",
+      "repo_digest": "swebench/sweb.eval.x86_64.pytest-dev_1776_pytest-7432@sha256:8c3e3a3b9bc22d51c79424211e1e4e659d753b2f5eb6e434abf1a334dd7ef252",
+      "size_bytes": 985061296,
+      "status": "pulled_verified"
+    },
+    {
+      "architecture": "amd64",
+      "created": "2025-09-10T15:12:35.594783975Z",
+      "image": "swebench/sweb.eval.x86_64.pytest-dev_1776_pytest-7982:latest",
+      "image_id": "sha256:1d20feb739d39ea1451b52fa89cfd22ab902972bfc9fb03b8b738330b42ed8c7",
+      "instance_id": "pytest-dev__pytest-7982",
+      "operating_system": "linux",
+      "repo_digest": "swebench/sweb.eval.x86_64.pytest-dev_1776_pytest-7982@sha256:1d20feb739d39ea1451b52fa89cfd22ab902972bfc9fb03b8b738330b42ed8c7",
+      "size_bytes": 985528271,
+      "status": "pulled_verified"
+    }
+  ],
+  "lock_state": "frozen_local_images",
+  "locked_at": "2026-08-12T07:13:29.202768Z",
+  "plan_id": "h200-bf16-observed-pilot-v2",
+  "runtime_profile_sha256": "c8b85fe7e3162729e73d57b58a71cae22c14881b8446a6cd2c674c0bdeb24d36",
+  "schema_version": 1,
+  "derived_from_lock": "h200-bf16-observed-pilot-v1",
+  "capacity_only_revision": true
+}

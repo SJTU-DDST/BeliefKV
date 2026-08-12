@@ -18,6 +18,10 @@ PROFILE = (
     REPOSITORY_ROOT
     / "configs/p6/h200_bf16_v1/frozen_runtime_profile.json"
 )
+V2_PROFILE = (
+    REPOSITORY_ROOT
+    / "configs/p6/h200_bf16_v2/frozen_runtime_profile.json"
+)
 
 
 def _profile() -> dict[str, object]:
@@ -65,6 +69,23 @@ def test_h200_profile_is_internally_consistent() -> None:
     assert environment["KV_CACHE_DTYPE"] == "auto"
     assert environment["HICACHE_SIZE_GB"] == "96.0"
     assert environment["TENSOR_PARALLEL_SIZE"] == "1"
+
+
+def test_h200_v2_profile_reserves_moe_workspace() -> None:
+    profile, digest = load_runtime_profile(
+        V2_PROFILE,
+        repository_root=REPOSITORY_ROOT,
+    )
+    environment = runtime_launch_environment(profile)
+
+    assert len(digest) == 64
+    assert environment["MAX_TOTAL_TOKENS"] == "850000"
+    assert profile["capacity"]["kv_pool_bytes"] == 850000 * 98304
+    assert profile["capacity"]["hbm_safety_margin_bytes"] == 2 * 1024**3
+    assert profile["artifacts"]["gpu_service"]["online_eligible"] is False
+    assert profile["artifacts"]["transfer_service"][
+        "online_eligible_for_supported_conditions"
+    ] is False
 
 
 def test_runtime_contract_accepts_exact_profile() -> None:
