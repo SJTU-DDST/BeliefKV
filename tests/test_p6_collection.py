@@ -171,6 +171,7 @@ def test_runtime_manifest_applies_instance_scoped_harness_profile(
         source_path=source,
         destination=tmp_path / "runtime.json",
         profile_path=profiles,
+        image_lock_path=None,
         selected_instance_ids=None,
     )
 
@@ -224,5 +225,64 @@ def test_runtime_manifest_rejects_unknown_harness_preflight_policy(
             source_path=source,
             destination=tmp_path / "runtime.json",
             profile_path=profiles,
+            image_lock_path=None,
             selected_instance_ids=None,
         )
+
+
+def test_runtime_manifest_replaces_mutable_tag_with_locked_digest(
+    tmp_path: Path,
+) -> None:
+    source = tmp_path / "source.json"
+    source.write_text(
+        json.dumps(
+            {
+                "workloads": [
+                    {
+                        "instance_id": "repo__task-1",
+                        "repo": "org/repo",
+                        "docker_image": "source:latest",
+                    }
+                ]
+            }
+        ),
+        encoding="utf-8",
+    )
+    profiles = tmp_path / "profiles.json"
+    profiles.write_text(
+        json.dumps({"schema_version": 1, "profile_id": "fixture", "instances": {}}),
+        encoding="utf-8",
+    )
+    image_lock = tmp_path / "images.json"
+    image_lock.write_text(
+        json.dumps(
+            {
+                "lock_state": "frozen_local_images",
+                "images": [
+                    {
+                        "image": "source:latest",
+                        "repo_digest": "source@sha256:" + "a" * 64,
+                        "status": "pulled_verified",
+                    }
+                ],
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    path, applied, count = _materialize_runtime_workload_manifest(
+        source_path=source,
+        destination=tmp_path / "runtime.json",
+        profile_path=profiles,
+        image_lock_path=image_lock,
+        selected_instance_ids=None,
+    )
+
+    runtime = json.loads(path.read_text(encoding="utf-8"))
+    assert count == 1
+    assert applied == []
+    assert runtime["workloads"][0]["docker_image"] == (
+        "source@sha256:" + "a" * 64
+    )
+    assert runtime["image_lock"] == str(image_lock)
+    assert len(runtime["image_lock_sha256"]) == 64

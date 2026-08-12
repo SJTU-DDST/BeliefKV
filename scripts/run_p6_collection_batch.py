@@ -55,6 +55,7 @@ def _materialize_runtime_workload_manifest(
     source_path: Path,
     destination: Path,
     profile_path: Path,
+    image_lock_path: Path | None,
     selected_instance_ids: list[str] | None,
 ) -> tuple[Path, list[dict[str, object]], int]:
     source = json.loads(source_path.read_text(encoding="utf-8"))
@@ -62,6 +63,22 @@ def _materialize_runtime_workload_manifest(
     if profiles.get("schema_version") != 1:
         raise ValueError("unsupported P6 harness profile schema")
     profile_by_instance = profiles.get("instances", {})
+    image_lock_by_tag: dict[str, str] = {}
+    if image_lock_path is not None:
+        image_lock = json.loads(image_lock_path.read_text(encoding="utf-8"))
+        if image_lock.get("lock_state") != "frozen_local_images":
+            raise ValueError("image lock is not frozen_local_images")
+        rows = image_lock.get("images")
+        if not isinstance(rows, list) or not rows:
+            raise ValueError("image lock contains no images")
+        for raw in rows:
+            if raw.get("status") != "pulled_verified":
+                raise ValueError("image lock contains an unverified image")
+            tag = str(raw.get("image") or "")
+            digest = str(raw.get("repo_digest") or "")
+            if not tag or "@sha256:" not in digest:
+                raise ValueError("image lock contains an invalid immutable identity")
+            image_lock_by_tag[tag] = digest
     selected = set(selected_instance_ids or ())
     workloads = [
         dict(item)
@@ -80,6 +97,15 @@ def _materialize_runtime_workload_manifest(
         item.pop("preflight_command", None)
         profile = profile_by_instance.get(instance_id)
         if not isinstance(profile, dict):
+            if image_lock_path is not None:
+                source_image = str(item.get("docker_image"))
+                try:
+                    item["docker_image"] = image_lock_by_tag[source_image]
+                except KeyError as error:
+                    raise ValueError(
+                        f"image lock omitted source image for {instance_id}: "
+                        f"{source_image}"
+                    ) from error
             continue
         if str(profile.get("repo")) != repo:
             raise ValueError(f"harness profile repo mismatch for {instance_id}")
@@ -109,6 +135,12 @@ def _materialize_runtime_workload_manifest(
         "source_workload_manifest": str(source_path),
         "harness_profile_id": profiles.get("profile_id"),
         "harness_profile_sha256": hashlib.sha256(profile_path.read_bytes()).hexdigest(),
+        "image_lock": str(image_lock_path) if image_lock_path is not None else None,
+        "image_lock_sha256": (
+            hashlib.sha256(image_lock_path.read_bytes()).hexdigest()
+            if image_lock_path is not None
+            else None
+        ),
     }
     write_json(destination, runtime)
     return destination, applied, len(workloads)
@@ -271,6 +303,11 @@ def parse_args() -> argparse.Namespace:
         type=Path,
         default=DEFAULT_HARNESS_PROFILES,
     )
+    parser.add_argument(
+        "--image-lock",
+        type=Path,
+        help="Frozen image requirements used to replace mutable tags by RepoDigest.",
+    )
     parser.add_argument("--output", type=Path)
     return parser.parse_args()
 
@@ -340,11 +377,17 @@ def main() -> int:
     selected_instance_ids: list[str] | None = None
     if args.instance_id:
         selected_instance_ids = list(dict.fromkeys(args.instance_id))
+    image_lock_path = (
+        args.image_lock.expanduser().resolve()
+        if args.image_lock is not None
+        else None
+    )
     workload_manifest, harness_profiles, workflow_count = (
         _materialize_runtime_workload_manifest(
             source_path=batch.workload_manifest,
             destination=output.parent / "runtime_workload_manifest.json",
             profile_path=args.harness_profiles.expanduser().resolve(),
+            image_lock_path=image_lock_path,
             selected_instance_ids=selected_instance_ids,
         )
     )
@@ -362,6 +405,12 @@ def main() -> int:
             args.harness_profiles.read_bytes()
         ).hexdigest(),
         "applied_harness_profiles": harness_profiles,
+        "image_lock": str(image_lock_path) if image_lock_path is not None else None,
+        "image_lock_sha256": (
+            hashlib.sha256(image_lock_path.read_bytes()).hexdigest()
+            if image_lock_path is not None
+            else None
+        ),
         "selected_instance_ids": selected_instance_ids,
         "workflow_count": workflow_count,
         "concurrency": concurrency,
