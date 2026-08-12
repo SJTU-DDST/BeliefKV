@@ -19,7 +19,11 @@ from beliefkv.core.events import (
     RuntimeEvent,
     RuntimeEventKind,
 )
-from beliefkv.policy.admission import AdmissionRequest, AdmissionSideState
+from beliefkv.policy.admission import (
+    AdmissionCompileBudget,
+    AdmissionRequest,
+    AdmissionSideState,
+)
 from beliefkv.experiments.policy_replay import load_replay_trace
 from beliefkv.policy.joint_scheduler import JointPlannerConfig, ObservedJointPlanner
 from beliefkv.policy.online_joint import (
@@ -4278,6 +4282,82 @@ class SGLangBackendTest(unittest.TestCase):
             selected.append(request)
         runtime.end_prefill_epoch(selected)
         self.assertEqual(len(controller.visible_admission.entries()), 0)
+
+    def test_admission_bundle_generation_ignores_runtime_lock_and_owner_churn(self):
+        runtime = EmbeddedSGLangRuntime.__new__(EmbeddedSGLangRuntime)
+        runtime.controller = BeliefKVController()
+        page_index = runtime.controller.page_index
+        handle = PageHandle(7, 2)
+        page_index.register_context("ctx-a", "wf-a", 0)
+        page_index.register_page(handle, size_bytes=100)
+        page_index.bind_pages("ctx-a", 0, (handle,))
+        before = runtime._context_bundle_generations("ctx-a")
+
+        page_index.set_engine_lock(handle, 2)
+        page_index.set_active_readers(handle, 1)
+        page_index.register_context("ctx-b", "wf-b", 0)
+        page_index.bind_pages("ctx-b", 0, (handle,))
+
+        self.assertEqual(runtime._context_bundle_generations("ctx-a"), before)
+
+    def test_after_prefix_validation_accepts_a_smaller_uncached_suffix(self):
+        runtime = EmbeddedSGLangRuntime.__new__(EmbeddedSGLangRuntime)
+        runtime.config = BeliefKVConfig(
+            hbm_capacity_bytes=1_000,
+            reserve_hbm_bytes=0,
+        )
+        runtime.controller = BeliefKVController(runtime.config)
+        runtime.audit = _AuditRecorder()
+        runtime._admission_epoch = 4
+        runtime._ticket_skip_audit = set()
+        runtime._ticket_selection_details = {}
+        runtime._current_ticket_hbm_budget_bytes = 1_000
+        runtime._current_ticket_prefill_budget_tokens = 10
+        runtime._current_ticket_rematched_hbm_bytes = {}
+        runtime._current_ticket_rematched_prefill_tokens = {}
+        metadata = BeliefKVRequestMetadata("wf", "inv", "ctx", 0)
+        request = SimpleNamespace(
+            rid="request",
+            beliefkv_metadata=metadata,
+            origin_input_ids=_NoBooleanSequence(6),
+            prefix_indices=_NoBooleanSequence(3),
+        )
+        runtime.controller.visible_admission.register(
+            AdmissionRequest(
+                "request", "wf", "inv", "ctx", 0, 0.0, 6, 1, 10
+            )
+        )
+        epoch = runtime.controller.admission_ticket_compiler.compile(
+            epoch=4,
+            now_ms=1.0,
+            ordered_request_ids=("request",),
+            entries={
+                "request": runtime.controller.visible_admission.get("request")
+            },
+            budget=AdmissionCompileBudget(
+                max_prefill_tokens=10,
+                max_requests=1,
+                max_candidates=1,
+                available_hbm_bytes=1_000,
+            ),
+            source="test",
+            reason="prefix_rematch",
+        )
+        runtime._current_ticket_epoch = epoch
+        runtime._current_tickets_by_request = dict(epoch.by_request_id)
+
+        self.assertTrue(runtime.admission_ticket_allows(request))
+        self.assertTrue(runtime.validate_admission_ticket_after_prefix(request))
+        self.assertEqual(
+            runtime.controller.visible_admission.get(
+                "request"
+            ).request.uncached_prompt_tokens,
+            3,
+        )
+        self.assertEqual(
+            runtime._current_ticket_rematched_prefill_tokens,
+            {"request": 3},
+        )
 
     def test_joint_active_window_defers_but_keeps_inactive_workflow_visible(self):
         config = BeliefKVConfig(

@@ -312,6 +312,59 @@ def test_expired_epoch_and_local_prefix_change_invalidate_ticket() -> None:
     assert "bundle_generation:bundle" in stale.reasons
 
 
+def test_safe_prefix_rematch_updates_index_without_invalidating_its_ticket() -> None:
+    index = VisibleAdmissionIndex()
+    index.register(
+        _request("a", prompt_tokens=8),
+        bundle_generations={"bundle": "g1"},
+    )
+    ticket = _compile(index, ("a",), epoch=3).tickets[0]
+
+    validation = index.validate_and_observe_prefix_rematch(
+        ticket,
+        epoch=3,
+        uncached_prompt_tokens=3,
+        bundle_generations={"bundle": "g1"},
+    )
+
+    assert validation.valid
+    assert index.get("a").request.uncached_prompt_tokens == 3
+    assert not index.validate_ticket(ticket, epoch=3).valid
+
+
+def test_prefix_rematch_rejects_increased_demand_and_physical_change() -> None:
+    index = VisibleAdmissionIndex()
+    index.register(
+        _request("a", prompt_tokens=4),
+        bundle_generations={"bundle": "g1"},
+    )
+    ticket = _compile(index, ("a",), epoch=3).tickets[0]
+
+    increased = index.validate_and_observe_prefix_rematch(
+        ticket,
+        epoch=3,
+        uncached_prompt_tokens=5,
+        bundle_generations={"bundle": "g1"},
+    )
+    changed = index.validate_and_observe_prefix_rematch(
+        ticket,
+        epoch=3,
+        uncached_prompt_tokens=2,
+        bundle_generations={"bundle": "g2"},
+    )
+    added = index.validate_and_observe_prefix_rematch(
+        ticket,
+        epoch=3,
+        uncached_prompt_tokens=2,
+        bundle_generations={"bundle": "g1", "new-bundle": "g1"},
+    )
+
+    assert increased.reasons == ("prefix_demand_increased",)
+    assert changed.reasons == ("bundle_generation:bundle",)
+    assert added.reasons == ("bundle_set_changed",)
+    assert index.get("a").request.uncached_prompt_tokens == 4
+
+
 def test_bundle_change_invalidates_only_the_dependent_ticket() -> None:
     index = VisibleAdmissionIndex()
     index.register(_request("a"), bundle_generations={"bundle-a": "g1"})

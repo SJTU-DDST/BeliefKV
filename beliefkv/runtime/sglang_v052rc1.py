@@ -11121,16 +11121,15 @@ class EmbeddedSGLangRuntime:
             0,
             _sequence_length(origin_input_ids) - _sequence_length(prefix_indices),
         )
-        self.controller.visible_admission.observe_prefix(
-            request_id,
-            uncached_prompt_tokens=uncached_prompt_tokens,
-            bundle_generations=self._context_bundle_generations(
-                metadata.context_id
-            ),
-        )
-        validation = self.controller.visible_admission.validate_ticket(
-            ticket,
-            epoch=self._admission_epoch,
+        validation = (
+            self.controller.visible_admission.validate_and_observe_prefix_rematch(
+                ticket,
+                epoch=self._admission_epoch,
+                uncached_prompt_tokens=uncached_prompt_tokens,
+                bundle_generations=self._context_bundle_generations(
+                    metadata.context_id
+                ),
+            )
         )
         if not validation.valid:
             self._record_ticket_skip(
@@ -12021,6 +12020,14 @@ class EmbeddedSGLangRuntime:
         return page_handle_from_extent_id(extent_id)
 
     def _context_bundle_generations(self, context_id: str) -> dict[str, str]:
+        """Return physical fields that can invalidate admission capacity.
+
+        Engine locks, readers, and semantic owners change when an earlier
+        request in the same prefill batch activates a shared Radix prefix. They
+        remain part of transfer/retraction certificates, but must not make a
+        later admission ticket self-invalidating.
+        """
+
         page_index = self.controller.page_index
         if not page_index.has_context(context_id):
             return {}
@@ -12034,20 +12041,13 @@ class EmbeddedSGLangRuntime:
                 if page.parent is not None
                 else "root"
             )
-            owners = ",".join(
-                f"{owner}:{epoch}"
-                for owner, epoch in sorted(page.owner_contexts.items())
-            )
             result[bundle_id] = "|".join(
                 (
                     page.residency.value,
-                    str(page.engine_lock_ref),
-                    str(page.active_reader_count),
                     page.transfer_direction.value
                     if page.transfer_direction is not None
                     else "idle",
                     parent,
-                    owners,
                 )
             )
         return result

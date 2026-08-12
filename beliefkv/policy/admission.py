@@ -860,6 +860,58 @@ class VisibleAdmissionIndex:
                 reasons.append(f"bundle_generation:{bundle_id}")
         return AdmissionTicketValidation(not reasons, tuple(reasons))
 
+    def validate_and_observe_prefix_rematch(
+        self,
+        ticket: AdmissionTicket,
+        *,
+        epoch: int,
+        uncached_prompt_tokens: int,
+        bundle_generations: Mapping[str, str] | None = None,
+    ) -> AdmissionTicketValidation:
+        """Accept a scheduler-owned prefix rematch only when demand cannot grow.
+
+        The ticket is validated before updating the prefix observation. This is
+        important for batched admission: admitting an earlier request can make
+        a shared prefix visible to a later request in the same scheduler safe
+        point. Updating the side index first would invalidate that later
+        request's own ticket. A larger uncached suffix is still rejected because
+        it could exceed the ticket's HBM or prefill certificate.
+        """
+
+        if uncached_prompt_tokens < 0:
+            raise ValueError("uncached prompt tokens must be non-negative")
+        validation = self.validate_ticket(
+            ticket,
+            epoch=epoch,
+            bundle_generations=bundle_generations,
+        )
+        if not validation.valid:
+            return validation
+        current = self._require(ticket.request_id)
+        observed_bundle_ids = {
+            bundle_id
+            for bundle_id, _ in self._bundle_tuple(bundle_generations)
+        }
+        ticket_bundle_ids = {
+            bundle_id for bundle_id, _ in ticket.version.bundle_generations
+        }
+        if observed_bundle_ids != ticket_bundle_ids:
+            return AdmissionTicketValidation(
+                False,
+                ("bundle_set_changed",),
+            )
+        if uncached_prompt_tokens > current.request.uncached_prompt_tokens:
+            return AdmissionTicketValidation(
+                False,
+                ("prefix_demand_increased",),
+            )
+        self.observe_prefix(
+            ticket.request_id,
+            uncached_prompt_tokens=uncached_prompt_tokens,
+            bundle_generations=bundle_generations,
+        )
+        return AdmissionTicketValidation(True)
+
     def _set_state(
         self,
         request_id: str,
