@@ -20,8 +20,23 @@ def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
         description="Stress a running SGLang server with full Qwen Code requests."
     )
-    parser.add_argument("--request-log", type=Path, required=True)
+    source = parser.add_mutually_exclusive_group(required=True)
+    source.add_argument("--request-log", type=Path)
+    source.add_argument(
+        "--synthetic-prompt-words",
+        type=int,
+        help="Generate a deterministic one-token-per-word pressure prompt.",
+    )
+    parser.add_argument(
+        "--model",
+        help="Served model name; required with --synthetic-prompt-words.",
+    )
     parser.add_argument("--output", type=Path, required=True)
+    parser.add_argument(
+        "--telemetry-output",
+        type=Path,
+        help="Optional raw GPU and SGLang load samples for capacity auditing.",
+    )
     parser.add_argument("--base-url", default="http://127.0.0.1:18000/v1")
     parser.add_argument("--concurrency", type=int, default=7)
     parser.add_argument("--pool-tokens", type=int, required=True)
@@ -40,6 +55,27 @@ def load_request(path: Path) -> dict[str, Any]:
     if not isinstance(request, dict) or not isinstance(request.get("messages"), list):
         raise ValueError(f"{path} does not contain an OpenAI chat request")
     return request
+
+
+def synthetic_request(*, model: str, prompt_words: int) -> dict[str, Any]:
+    if not model:
+        raise ValueError("--model is required with --synthetic-prompt-words")
+    if prompt_words <= 0:
+        raise ValueError("--synthetic-prompt-words must be positive")
+    return {
+        "model": model,
+        "messages": [
+            {
+                "role": "system",
+                "content": "Return a short acknowledgement after reading the input.",
+            },
+            {
+                "role": "user",
+                "content": "pressure " * prompt_words,
+            },
+        ],
+        "temperature": 0.0,
+    }
 
 
 def post_json(url: str, payload: dict[str, Any], timeout: float) -> dict[str, Any]:
@@ -255,7 +291,22 @@ def main() -> int:
     if args.concurrency <= 0 or args.pool_tokens <= 0:
         raise ValueError("concurrency and pool-tokens must be positive")
 
-    template = load_request(args.request_log)
+    if args.request_log is not None:
+        template = load_request(args.request_log)
+        request_source = {
+            "kind": "request_log",
+            "path": str(args.request_log.resolve()),
+        }
+    else:
+        template = synthetic_request(
+            model=str(args.model or ""),
+            prompt_words=int(args.synthetic_prompt_words),
+        )
+        request_source = {
+            "kind": "synthetic_prompt",
+            "model": args.model,
+            "prompt_words": args.synthetic_prompt_words,
+        }
     endpoint = f"{args.base_url.rstrip('/')}/chat/completions"
     started = time.monotonic()
 
@@ -308,7 +359,7 @@ def main() -> int:
     payload = {
         "schema_version": 3,
         "created_at": datetime.now(timezone.utc).isoformat(),
-        "request_log": str(args.request_log.resolve()),
+        "request_source": request_source,
         "base_url": args.base_url,
         "pool_tokens": args.pool_tokens,
         "protocol_max_tokens": args.protocol_max_tokens,
@@ -340,6 +391,19 @@ def main() -> int:
     args.output.write_text(
         json.dumps(payload, indent=2, sort_keys=True) + "\n", encoding="utf-8"
     )
+    if args.telemetry_output is not None:
+        telemetry = {
+            "schema_version": 1,
+            "created_at": payload["created_at"],
+            "gpu_samples": gpu_monitor.samples,
+            "sglang_load_samples": load_monitor.samples,
+            "sglang_load_errors": load_monitor.errors,
+        }
+        args.telemetry_output.parent.mkdir(parents=True, exist_ok=True)
+        args.telemetry_output.write_text(
+            json.dumps(telemetry, indent=2, sort_keys=True) + "\n",
+            encoding="utf-8",
+        )
     print(json.dumps(payload, indent=2, sort_keys=True))
     return 0 if payload["passed"] else 1
 
