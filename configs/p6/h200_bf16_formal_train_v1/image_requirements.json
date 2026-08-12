@@ -1,0 +1,457 @@
+{
+  "image_count": 64,
+  "images": [
+    {
+      "image": "swebench/sweb.eval.x86_64.django_1776_django-10097:latest",
+      "image_id": null,
+      "instance_id": "django__django-10097",
+      "repo_digest": null,
+      "status": "required_not_locked"
+    },
+    {
+      "image": "swebench/sweb.eval.x86_64.django_1776_django-11133:latest",
+      "image_id": null,
+      "instance_id": "django__django-11133",
+      "repo_digest": null,
+      "status": "required_not_locked"
+    },
+    {
+      "image": "swebench/sweb.eval.x86_64.django_1776_django-11141:latest",
+      "image_id": null,
+      "instance_id": "django__django-11141",
+      "repo_digest": null,
+      "status": "required_not_locked"
+    },
+    {
+      "image": "swebench/sweb.eval.x86_64.django_1776_django-11400:latest",
+      "image_id": null,
+      "instance_id": "django__django-11400",
+      "repo_digest": null,
+      "status": "required_not_locked"
+    },
+    {
+      "image": "swebench/sweb.eval.x86_64.django_1776_django-11734:latest",
+      "image_id": null,
+      "instance_id": "django__django-11734",
+      "repo_digest": null,
+      "status": "required_not_locked"
+    },
+    {
+      "image": "swebench/sweb.eval.x86_64.django_1776_django-11820:latest",
+      "image_id": null,
+      "instance_id": "django__django-11820",
+      "repo_digest": null,
+      "status": "required_not_locked"
+    },
+    {
+      "image": "swebench/sweb.eval.x86_64.django_1776_django-12741:latest",
+      "image_id": null,
+      "instance_id": "django__django-12741",
+      "repo_digest": null,
+      "status": "required_not_locked"
+    },
+    {
+      "image": "swebench/sweb.eval.x86_64.django_1776_django-12754:latest",
+      "image_id": null,
+      "instance_id": "django__django-12754",
+      "repo_digest": null,
+      "status": "required_not_locked"
+    },
+    {
+      "image": "swebench/sweb.eval.x86_64.django_1776_django-12774:latest",
+      "image_id": null,
+      "instance_id": "django__django-12774",
+      "repo_digest": null,
+      "status": "required_not_locked"
+    },
+    {
+      "image": "swebench/sweb.eval.x86_64.django_1776_django-13023:latest",
+      "image_id": null,
+      "instance_id": "django__django-13023",
+      "repo_digest": null,
+      "status": "required_not_locked"
+    },
+    {
+      "image": "swebench/sweb.eval.x86_64.django_1776_django-13964:latest",
+      "image_id": null,
+      "instance_id": "django__django-13964",
+      "repo_digest": null,
+      "status": "required_not_locked"
+    },
+    {
+      "image": "swebench/sweb.eval.x86_64.django_1776_django-14349:latest",
+      "image_id": null,
+      "instance_id": "django__django-14349",
+      "repo_digest": null,
+      "status": "required_not_locked"
+    },
+    {
+      "image": "swebench/sweb.eval.x86_64.django_1776_django-14500:latest",
+      "image_id": null,
+      "instance_id": "django__django-14500",
+      "repo_digest": null,
+      "status": "required_not_locked"
+    },
+    {
+      "image": "swebench/sweb.eval.x86_64.django_1776_django-14631:latest",
+      "image_id": null,
+      "instance_id": "django__django-14631",
+      "repo_digest": null,
+      "status": "required_not_locked"
+    },
+    {
+      "image": "swebench/sweb.eval.x86_64.django_1776_django-15103:latest",
+      "image_id": null,
+      "instance_id": "django__django-15103",
+      "repo_digest": null,
+      "status": "required_not_locked"
+    },
+    {
+      "image": "swebench/sweb.eval.x86_64.django_1776_django-15315:latest",
+      "image_id": null,
+      "instance_id": "django__django-15315",
+      "repo_digest": null,
+      "status": "required_not_locked"
+    },
+    {
+      "image": "swebench/sweb.eval.x86_64.django_1776_django-15368:latest",
+      "image_id": null,
+      "instance_id": "django__django-15368",
+      "repo_digest": null,
+      "status": "required_not_locked"
+    },
+    {
+      "image": "swebench/sweb.eval.x86_64.django_1776_django-15467:latest",
+      "image_id": null,
+      "instance_id": "django__django-15467",
+      "repo_digest": null,
+      "status": "required_not_locked"
+    },
+    {
+      "image": "swebench/sweb.eval.x86_64.django_1776_django-15930:latest",
+      "image_id": null,
+      "instance_id": "django__django-15930",
+      "repo_digest": null,
+      "status": "required_not_locked"
+    },
+    {
+      "image": "swebench/sweb.eval.x86_64.django_1776_django-16255:latest",
+      "image_id": null,
+      "instance_id": "django__django-16255",
+      "repo_digest": null,
+      "status": "required_not_locked"
+    },
+    {
+      "image": "swebench/sweb.eval.x86_64.django_1776_django-16502:latest",
+      "image_id": null,
+      "instance_id": "django__django-16502",
+      "repo_digest": null,
+      "status": "required_not_locked"
+    },
+    {
+      "image": "swebench/sweb.eval.x86_64.django_1776_django-16667:latest",
+      "image_id": null,
+      "instance_id": "django__django-16667",
+      "repo_digest": null,
+      "status": "required_not_locked"
+    },
+    {
+      "image": "swebench/sweb.eval.x86_64.django_1776_django-16877:latest",
+      "image_id": null,
+      "instance_id": "django__django-16877",
+      "repo_digest": null,
+      "status": "required_not_locked"
+    },
+    {
+      "image": "swebench/sweb.eval.x86_64.django_1776_django-16938:latest",
+      "image_id": null,
+      "instance_id": "django__django-16938",
+      "repo_digest": null,
+      "status": "required_not_locked"
+    },
+    {
+      "image": "swebench/sweb.eval.x86_64.mwaskom_1776_seaborn-3069:latest",
+      "image_id": null,
+      "instance_id": "mwaskom__seaborn-3069",
+      "repo_digest": null,
+      "status": "required_not_locked"
+    },
+    {
+      "image": "swebench/sweb.eval.x86_64.pallets_1776_flask-5014:latest",
+      "image_id": null,
+      "instance_id": "pallets__flask-5014",
+      "repo_digest": null,
+      "status": "required_not_locked"
+    },
+    {
+      "image": "swebench/sweb.eval.x86_64.psf_1776_requests-1724:latest",
+      "image_id": null,
+      "instance_id": "psf__requests-1724",
+      "repo_digest": null,
+      "status": "required_not_locked"
+    },
+    {
+      "image": "swebench/sweb.eval.x86_64.psf_1776_requests-1766:latest",
+      "image_id": null,
+      "instance_id": "psf__requests-1766",
+      "repo_digest": null,
+      "status": "required_not_locked"
+    },
+    {
+      "image": "swebench/sweb.eval.x86_64.psf_1776_requests-1921:latest",
+      "image_id": null,
+      "instance_id": "psf__requests-1921",
+      "repo_digest": null,
+      "status": "required_not_locked"
+    },
+    {
+      "image": "swebench/sweb.eval.x86_64.psf_1776_requests-2317:latest",
+      "image_id": null,
+      "instance_id": "psf__requests-2317",
+      "repo_digest": null,
+      "status": "required_not_locked"
+    },
+    {
+      "image": "swebench/sweb.eval.x86_64.psf_1776_requests-2931:latest",
+      "image_id": null,
+      "instance_id": "psf__requests-2931",
+      "repo_digest": null,
+      "status": "required_not_locked"
+    },
+    {
+      "image": "swebench/sweb.eval.x86_64.psf_1776_requests-6028:latest",
+      "image_id": null,
+      "instance_id": "psf__requests-6028",
+      "repo_digest": null,
+      "status": "required_not_locked"
+    },
+    {
+      "image": "swebench/sweb.eval.x86_64.pydata_1776_xarray-2905:latest",
+      "image_id": null,
+      "instance_id": "pydata__xarray-2905",
+      "repo_digest": null,
+      "status": "required_not_locked"
+    },
+    {
+      "image": "swebench/sweb.eval.x86_64.pydata_1776_xarray-3151:latest",
+      "image_id": null,
+      "instance_id": "pydata__xarray-3151",
+      "repo_digest": null,
+      "status": "required_not_locked"
+    },
+    {
+      "image": "swebench/sweb.eval.x86_64.pydata_1776_xarray-3305:latest",
+      "image_id": null,
+      "instance_id": "pydata__xarray-3305",
+      "repo_digest": null,
+      "status": "required_not_locked"
+    },
+    {
+      "image": "swebench/sweb.eval.x86_64.pydata_1776_xarray-3993:latest",
+      "image_id": null,
+      "instance_id": "pydata__xarray-3993",
+      "repo_digest": null,
+      "status": "required_not_locked"
+    },
+    {
+      "image": "swebench/sweb.eval.x86_64.pydata_1776_xarray-4356:latest",
+      "image_id": null,
+      "instance_id": "pydata__xarray-4356",
+      "repo_digest": null,
+      "status": "required_not_locked"
+    },
+    {
+      "image": "swebench/sweb.eval.x86_64.pydata_1776_xarray-4695:latest",
+      "image_id": null,
+      "instance_id": "pydata__xarray-4695",
+      "repo_digest": null,
+      "status": "required_not_locked"
+    },
+    {
+      "image": "swebench/sweb.eval.x86_64.pydata_1776_xarray-4966:latest",
+      "image_id": null,
+      "instance_id": "pydata__xarray-4966",
+      "repo_digest": null,
+      "status": "required_not_locked"
+    },
+    {
+      "image": "swebench/sweb.eval.x86_64.pydata_1776_xarray-6461:latest",
+      "image_id": null,
+      "instance_id": "pydata__xarray-6461",
+      "repo_digest": null,
+      "status": "required_not_locked"
+    },
+    {
+      "image": "swebench/sweb.eval.x86_64.pydata_1776_xarray-6599:latest",
+      "image_id": null,
+      "instance_id": "pydata__xarray-6599",
+      "repo_digest": null,
+      "status": "required_not_locked"
+    },
+    {
+      "image": "swebench/sweb.eval.x86_64.pydata_1776_xarray-6721:latest",
+      "image_id": null,
+      "instance_id": "pydata__xarray-6721",
+      "repo_digest": null,
+      "status": "required_not_locked"
+    },
+    {
+      "image": "swebench/sweb.eval.x86_64.pydata_1776_xarray-6744:latest",
+      "image_id": null,
+      "instance_id": "pydata__xarray-6744",
+      "repo_digest": null,
+      "status": "required_not_locked"
+    },
+    {
+      "image": "swebench/sweb.eval.x86_64.pydata_1776_xarray-6938:latest",
+      "image_id": null,
+      "instance_id": "pydata__xarray-6938",
+      "repo_digest": null,
+      "status": "required_not_locked"
+    },
+    {
+      "image": "swebench/sweb.eval.x86_64.pydata_1776_xarray-7229:latest",
+      "image_id": null,
+      "instance_id": "pydata__xarray-7229",
+      "repo_digest": null,
+      "status": "required_not_locked"
+    },
+    {
+      "image": "swebench/sweb.eval.x86_64.pydata_1776_xarray-7233:latest",
+      "image_id": null,
+      "instance_id": "pydata__xarray-7233",
+      "repo_digest": null,
+      "status": "required_not_locked"
+    },
+    {
+      "image": "swebench/sweb.eval.x86_64.pylint-dev_1776_pylint-4551:latest",
+      "image_id": null,
+      "instance_id": "pylint-dev__pylint-4551",
+      "repo_digest": null,
+      "status": "required_not_locked"
+    },
+    {
+      "image": "swebench/sweb.eval.x86_64.pylint-dev_1776_pylint-4661:latest",
+      "image_id": null,
+      "instance_id": "pylint-dev__pylint-4661",
+      "repo_digest": null,
+      "status": "required_not_locked"
+    },
+    {
+      "image": "swebench/sweb.eval.x86_64.pylint-dev_1776_pylint-6386:latest",
+      "image_id": null,
+      "instance_id": "pylint-dev__pylint-6386",
+      "repo_digest": null,
+      "status": "required_not_locked"
+    },
+    {
+      "image": "swebench/sweb.eval.x86_64.pylint-dev_1776_pylint-7080:latest",
+      "image_id": null,
+      "instance_id": "pylint-dev__pylint-7080",
+      "repo_digest": null,
+      "status": "required_not_locked"
+    },
+    {
+      "image": "swebench/sweb.eval.x86_64.pylint-dev_1776_pylint-7277:latest",
+      "image_id": null,
+      "instance_id": "pylint-dev__pylint-7277",
+      "repo_digest": null,
+      "status": "required_not_locked"
+    },
+    {
+      "image": "swebench/sweb.eval.x86_64.pylint-dev_1776_pylint-8898:latest",
+      "image_id": null,
+      "instance_id": "pylint-dev__pylint-8898",
+      "repo_digest": null,
+      "status": "required_not_locked"
+    },
+    {
+      "image": "swebench/sweb.eval.x86_64.pytest-dev_1776_pytest-10051:latest",
+      "image_id": null,
+      "instance_id": "pytest-dev__pytest-10051",
+      "repo_digest": null,
+      "status": "required_not_locked"
+    },
+    {
+      "image": "swebench/sweb.eval.x86_64.pytest-dev_1776_pytest-5262:latest",
+      "image_id": null,
+      "instance_id": "pytest-dev__pytest-5262",
+      "repo_digest": null,
+      "status": "required_not_locked"
+    },
+    {
+      "image": "swebench/sweb.eval.x86_64.pytest-dev_1776_pytest-5631:latest",
+      "image_id": null,
+      "instance_id": "pytest-dev__pytest-5631",
+      "repo_digest": null,
+      "status": "required_not_locked"
+    },
+    {
+      "image": "swebench/sweb.eval.x86_64.pytest-dev_1776_pytest-5787:latest",
+      "image_id": null,
+      "instance_id": "pytest-dev__pytest-5787",
+      "repo_digest": null,
+      "status": "required_not_locked"
+    },
+    {
+      "image": "swebench/sweb.eval.x86_64.pytest-dev_1776_pytest-5840:latest",
+      "image_id": null,
+      "instance_id": "pytest-dev__pytest-5840",
+      "repo_digest": null,
+      "status": "required_not_locked"
+    },
+    {
+      "image": "swebench/sweb.eval.x86_64.pytest-dev_1776_pytest-6202:latest",
+      "image_id": null,
+      "instance_id": "pytest-dev__pytest-6202",
+      "repo_digest": null,
+      "status": "required_not_locked"
+    },
+    {
+      "image": "swebench/sweb.eval.x86_64.pytest-dev_1776_pytest-7205:latest",
+      "image_id": null,
+      "instance_id": "pytest-dev__pytest-7205",
+      "repo_digest": null,
+      "status": "required_not_locked"
+    },
+    {
+      "image": "swebench/sweb.eval.x86_64.pytest-dev_1776_pytest-7236:latest",
+      "image_id": null,
+      "instance_id": "pytest-dev__pytest-7236",
+      "repo_digest": null,
+      "status": "required_not_locked"
+    },
+    {
+      "image": "swebench/sweb.eval.x86_64.pytest-dev_1776_pytest-7324:latest",
+      "image_id": null,
+      "instance_id": "pytest-dev__pytest-7324",
+      "repo_digest": null,
+      "status": "required_not_locked"
+    },
+    {
+      "image": "swebench/sweb.eval.x86_64.pytest-dev_1776_pytest-7521:latest",
+      "image_id": null,
+      "instance_id": "pytest-dev__pytest-7521",
+      "repo_digest": null,
+      "status": "required_not_locked"
+    },
+    {
+      "image": "swebench/sweb.eval.x86_64.pytest-dev_1776_pytest-7571:latest",
+      "image_id": null,
+      "instance_id": "pytest-dev__pytest-7571",
+      "repo_digest": null,
+      "status": "required_not_locked"
+    },
+    {
+      "image": "swebench/sweb.eval.x86_64.pytest-dev_1776_pytest-8399:latest",
+      "image_id": null,
+      "instance_id": "pytest-dev__pytest-8399",
+      "repo_digest": null,
+      "status": "required_not_locked"
+    }
+  ],
+  "lock_state": "requirements_only",
+  "plan_id": "h200-bf16-formal-train-v1",
+  "runtime_profile_sha256": "5ece5b5075193856b1cf7fff081378fe1a4040734bd80133838713a9a90cd6ba",
+  "schema_version": 1
+}

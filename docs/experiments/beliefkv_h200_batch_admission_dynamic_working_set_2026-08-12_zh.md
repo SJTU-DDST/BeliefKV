@@ -1,7 +1,7 @@
 # H200 批量 Admission 与动态 Working Set 实施记录
 
 日期：2026-08-12  
-状态：代码与 CPU correctness 完成；GPU 性能验证暂停。
+状态：GPU correctness/liveness gate 完成；批量 admission 通过，动态 residency 仍需改进。
 
 ## 问题证据
 
@@ -46,12 +46,64 @@
 审计新增 issued/native prefill batch histogram、平均 batch size、working-set mode、target/selected ready
 数量、HBM pressure、active workflows 和 pressure action 状态。
 
+## GPU Gate 结果
+
+固定运行：
+
+- 代码 commit：`2ecebb6`；
+- profile：`h200_bf16_v4`，850,000-token KV pool，96 GiB Host pool；
+- workload：16 个 root workflow，分两批各 8 个启动，均使用
+  `parallel_analysis_2to3`；
+- artifact：`h200-batch-16root-2wave-r1/20260812T131516Z`。
+
+正确性与活性：
+
+- 16/16 workflow 自然结束，1,422 次 LLM submit/result、2,260 次 tool start/end
+  全部成对；
+- 32/32 child spawn，16/16 JOIN 满足；
+- 没有 OOM、execution timeout、admission starvation 或 orphan transaction；
+- shutdown 前所有 command、lease、funding、restore obligation 守恒，GPU 释放至 14 MiB。
+
+批量 admission：
+
+- 1,291 个 ticket epoch，native batch mean/P50/P95/max 为
+  1.123/1/2/5；
+- 148 个 epoch 的 native batch 大于 1，占 11.46%；
+- admission wait P50/P95/max 为 162/404/3,416 ms；
+- `prefix_rematch_after_ticket_invalidated=0`，说明 prefix rematch 修复有效。
+
+资源与迁移：
+
+- physical HBM peak 83,558,400,000 bytes，达到冻结 KV pool 上限但无 OOM；
+- Host KV peak 80,948,527,104 bytes，未达到 96 GiB 上限；
+- engine-locked peak 31.19 GB，migratable peak 83.41 GB；
+- native HiCache 完成 2,991 次 D2H write-back，共 88.40 GB；
+- BeliefKV lifecycle 完成 77 次 terminal private drop/cleanup，没有遗留事务。
+
+性能与局限：
+
+- 16 个 workflow 总墙钟 8,640.6 秒，吞吐 6.67 workflows/hour；
+- workflow JCT P50/P95/max 为 4,656/8,631/8,631 秒；
+- GPU utilization mean/P50/P95 为 6.39%/0%/18%，busy fraction 44.72%；
+- 高压后 observed JointPlan 没有产生策略性 retraction/offload，主要依赖原生
+  HiCache 的细粒度 reactive write-back；
+- `online_joint_physical_commit_budget_exceeded=31,337`、
+  `joint_plan_stale=28,968`，控制面 churn 仍然明显；
+- `pylint-4604` 的一个 83.6K-token child prefix 在下一 epoch 只命中 385 token，
+  触发约 84.6K token 重算。其他长 context 仍能命中 100K 级 prefix，因此这是特定
+  ownership/Radix reentry 失配，不是统一的长上下文行为。
+
+结论：batch admission correctness/fairness gate 通过，可以恢复关闭 predictor 的正式
+train 数据采集；但本轮不能证明 dynamic residency 性能收益。GPU 利用率低主要由长时间工具阶段、
+短 decode burst 和尾部长序列成本共同造成，不能仅通过继续增大 admission batch 解释。
+
 ## 验证状态
 
 - focused admission/JointPlan/profile/runtime 与扩展 SGLang adapter/retraction/controller/contract
   均已通过；最终精确计数以提交时 CI 输出为准；
 - Python compile、shell syntax 与 `git diff --check` 通过；
-- 未启动 SGLang，未运行 GPU 实验。
+- GPU gate 已完成；formal train 采集使用新的 64-workflow 冻结清单，development gate
+  的 16 个任务不进入正式训练集。
 
 ## 下一次唯一 GPU Gate
 
