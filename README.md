@@ -136,18 +136,16 @@ start an experiment while another process owns the GPU.
 cd "$BELIEFKV_ROOT"
 
 nvidia-smi
-test -f /opt/downloaded_models/Qwen/Qwen3-Coder-30B-A3B-Instruct-FP8/config.json
+test -f /srv/ai/models/Qwen/Qwen3-Coder-30B-A3B-Instruct/config.json
 test ! -e /tmp/beliefkv-experiments.paused
-test -f configs/workloads/deepagents_swebench_sympy_24.json
-docker image inspect \
-  swebench/sweb.eval.x86_64.sympy_1776_sympy-20590:latest >/dev/null
+test -f configs/p6/h200_bf16_v1/frozen_runtime_profile.json
 ```
 
-Also verify that TCP port `18000` is free. The model server uses GPU 0 only,
-TP=1, a 262,144-token context limit, a 163,840-token KV pool, and a 96 GB Host
-HiCache. `MEM_FRACTION_STATIC=0.952` is the calibrated capacity boundary for
-the current card; changing the model, SGLang version, or GPU requires a new
-calibration.
+Also verify that TCP port `18000` is free. The formal H200 launcher reads all
+immutable model and capacity settings from
+`configs/p6/h200_bf16_v1/frozen_runtime_profile.json`: TP=1, BF16 weights and
+KV, a 262,144-token server context limit, an 871,700-token KV pool, and a
+96 GiB Host HiCache. Environment variables cannot override those fields.
 
 ### 2. Create a fresh run directory and server config
 
@@ -189,12 +187,9 @@ Continue in the server terminal:
 
 ```bash
 CUDA_VISIBLE_DEVICES=0 \
-MEM_FRACTION_STATIC=0.952 \
-MAX_TOTAL_TOKENS=163840 \
-CONTEXT_LENGTH=262144 \
-MAX_RUNNING_REQUESTS=32 \
-HICACHE_SIZE_GB=96 \
-scripts/launch_deepagents_swebench_server.sh "$RUN_DIR/server"
+scripts/launch_deepagents_swebench_server.sh \
+  --runtime-profile configs/p6/h200_bf16_v1/frozen_runtime_profile.json \
+  "$RUN_DIR/server"
 ```
 
 The launcher runs in the foreground and redirects SGLang output to
@@ -206,21 +201,18 @@ tail -F "$RUN_DIR/server/server.log"
 ```
 
 Host HiCache allocation can make startup take about one minute. Submit no
-workload until both checks succeed:
+workload until the health endpoint and the generated contract both pass:
 
 ```bash
 curl -fsS http://127.0.0.1:18000/health
-curl -fsS http://127.0.0.1:18000/get_server_info | jq '{
-  max_total_num_tokens,
-  context_length,
-  mem_fraction_static
-}'
+jq -e '.contract_state == "validated" and .server.passed == true' \
+  "$RUN_DIR/server/runtime_profile_contract.json"
 ```
 
-The capacity check must report at least `163840` total KV tokens. The server
-hard context limit intentionally remains larger than the runtime's 32K dynamic
-history budget: the static system prompt/tool schema and the summary request
-need independent headroom.
+The launcher terminates the service if the model revision, H200 identity,
+BeliefKV commit, canonical SGLang patch, service artifacts, dtype, KV pool,
+HiCache, or server arguments differ from the frozen profile. A health response
+without a validated contract is not an experiment-ready server.
 
 ### 4. Run the fixed w4 autonomous correctness gate
 

@@ -1,0 +1,146 @@
+from __future__ import annotations
+
+from copy import deepcopy
+from pathlib import Path
+import subprocess
+
+import pytest
+
+from beliefkv.experiments.runtime_profile import (
+    load_runtime_profile,
+    runtime_launch_environment,
+    validate_server_against_runtime_profile,
+)
+
+
+REPOSITORY_ROOT = Path(__file__).resolve().parents[1]
+PROFILE = (
+    REPOSITORY_ROOT
+    / "configs/p6/h200_bf16_v1/frozen_runtime_profile.json"
+)
+
+
+def _profile() -> dict[str, object]:
+    profile, digest = load_runtime_profile(
+        PROFILE,
+        repository_root=REPOSITORY_ROOT,
+    )
+    assert len(digest) == 64
+    return profile
+
+
+def _server_info(profile: dict[str, object]) -> dict[str, object]:
+    model = profile["model"]
+    runtime = profile["runtime"]
+    capacity = profile["capacity"]
+    return {
+        "status": "ready",
+        "served_model_name": model["served_name"],
+        "model_path": profile["_model_path"],
+        "dtype": model["weight_dtype"],
+        "kv_cache_dtype": model["kv_cache_dtype"],
+        "version": runtime["sglang_version"],
+        "tp_size": runtime["tensor_parallel_size"],
+        "max_total_num_tokens": capacity["max_total_tokens"],
+        "context_length": model["context_length"],
+        "max_running_requests": runtime["max_running_requests"],
+        "page_size": runtime["page_size"],
+        "chunked_prefill_size": runtime["chunked_prefill_size"],
+        "cuda_graph_max_bs": runtime["cuda_graph_max_bs"],
+        "mem_fraction_static": runtime["mem_fraction_static"],
+        "hicache_size": runtime["hicache_size_gib"],
+        "hicache_write_policy": runtime["hicache_write_policy"],
+        "hicache_io_backend": runtime["hicache_io_backend"],
+        "hicache_mem_layout": runtime["hicache_mem_layout"],
+        "internal_states": [{"memory_usage": {}}],
+    }
+
+
+def test_h200_profile_is_internally_consistent() -> None:
+    profile = _profile()
+    environment = runtime_launch_environment(profile)
+
+    assert environment["MAX_TOTAL_TOKENS"] == "871700"
+    assert environment["WEIGHT_DTYPE"] == "bfloat16"
+    assert environment["KV_CACHE_DTYPE"] == "bfloat16"
+    assert environment["HICACHE_SIZE_GB"] == "96.0"
+    assert environment["TENSOR_PARALLEL_SIZE"] == "1"
+
+
+def test_runtime_contract_accepts_exact_profile() -> None:
+    profile = _profile()
+
+    result = validate_server_against_runtime_profile(
+        _server_info(profile),
+        profile,
+    )
+
+    assert result["passed"] is True
+    assert all(row["passed"] for row in result["checks"])
+
+
+@pytest.mark.parametrize(
+    ("field", "wrong"),
+    (
+        ("max_total_num_tokens", 871_699),
+        ("max_running_requests", 15),
+        ("hicache_mem_layout", "page_first"),
+        ("kv_cache_dtype", "float16"),
+    ),
+)
+def test_runtime_contract_rejects_profile_drift(field: str, wrong: object) -> None:
+    profile = _profile()
+    server_info = _server_info(profile)
+    server_info[field] = wrong
+
+    with pytest.raises(RuntimeError, match="mismatch"):
+        validate_server_against_runtime_profile(server_info, profile)
+
+
+def test_profile_rejects_capacity_mismatch(tmp_path: Path) -> None:
+    profile = deepcopy(_profile())
+    for key in tuple(profile):
+        if str(key).startswith("_"):
+            profile.pop(key)
+    profile["capacity"]["kv_pool_bytes"] += 1
+    candidate = tmp_path / "profile.json"
+    import json
+
+    candidate.write_text(json.dumps(profile), encoding="utf-8")
+
+    with pytest.raises(RuntimeError, match="kv_pool_bytes"):
+        load_runtime_profile(candidate, repository_root=REPOSITORY_ROOT)
+
+
+def test_formal_launcher_requires_profile() -> None:
+    result = subprocess.run(
+        (str(REPOSITORY_ROOT / "scripts/launch_deepagents_swebench_server.sh"),),
+        cwd=REPOSITORY_ROOT,
+        text=True,
+        capture_output=True,
+    )
+
+    assert result.returncode == 2
+    assert "--runtime-profile" in result.stderr
+
+
+def test_formal_launcher_rejects_immutable_override(tmp_path: Path) -> None:
+    server = tmp_path / "server"
+    server.mkdir()
+    (server / "beliefkv_config.json").write_text("{}\n", encoding="utf-8")
+    result = subprocess.run(
+        (
+            str(REPOSITORY_ROOT / "scripts/launch_deepagents_swebench_server.sh"),
+            "--runtime-profile",
+            str(PROFILE),
+            str(server),
+            "--max-total-tokens",
+            "1",
+        ),
+        cwd=REPOSITORY_ROOT,
+        text=True,
+        capture_output=True,
+    )
+
+    assert result.returncode == 2
+    assert "owns immutable argument" in result.stderr

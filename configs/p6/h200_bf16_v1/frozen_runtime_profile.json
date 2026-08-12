@@ -19,7 +19,8 @@
     "mem_fraction_static": 0.9928,
     "hicache_size_gib": 96,
     "hicache_write_policy": "write_back",
-    "hicache_io_backend": "kernel"
+    "hicache_io_backend": "kernel",
+    "hicache_mem_layout": "layer_first"
   },
   "capacity": {
     "max_total_tokens": 871700,
@@ -32,16 +33,24 @@
     "host_pool_gib": 96,
     "max_validated_context_tokens": 196608
   },
+  "source_contract": {
+    "canonical_sglang_patch": "patches/sglang-0.5.2rc1-beliefkv.patch",
+    "canonical_sglang_patch_sha256": "e5c4d8046c4c42f52610bcf4d338bd96d2ccfae1680b42706ee2375d857803cc",
+    "expected_sglang_tree": "df80e05e91b88e33a5b4221036471bf4b520b23c"
+  },
   "artifacts": {
     "environment": "configs/p6/h200_bf16_v1/environment_manifest.json",
     "gpu_service": {
       "path": "artifacts/p6/h200_bf16_v1/gpu_service_qwen3coder30b_bf16_h200_v1.json",
+      "sha256": "53eb85a721090fb21c782511e1aa1960f0d73075c1819be73bc2758e931d662d",
       "evaluation": "artifacts/p6/h200_bf16_v1/gpu_service_evaluation.json",
+      "evaluation_sha256": "7af33871a5e2ad8ed6f33db4f3788b139eff0b2e0fa1927183fac34bd65baa6d",
       "hardware_key": "h200nvl-a50d9b5b-driver595.71.05-qwen3coder30b-bf16-kvbf16-sglang18f91eb-pool871700-fa3-flashinfer",
       "online_eligible": false
     },
     "transfer_service": {
       "path": "artifacts/p6/h200_bf16_v1/transfer_service_qwen3coder30b_bf16_h200_v1.json",
+      "sha256": "dff82215f1aad2f63ec02621cee385de549a71be4da1bff2bc1e83788a881f91",
       "hardware_key": "h200nvl-a50d9b5b-driver595.71.05-qwen3coder30b-bf16-kvbf16-sglang18f91eb-pool871700-page1-host96-pinned-numa1",
       "online_eligible_for_supported_conditions": true,
       "supported_conditions": [
