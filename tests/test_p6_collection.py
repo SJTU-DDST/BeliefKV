@@ -91,6 +91,18 @@ def test_load_collection_train_batch(tmp_path: Path) -> None:
     assert batch.split == "train"
     assert batch.workflow_count == 1
     assert batch.preflight_command is None
+    assert batch.subagent_fanout_profile == "natural"
+
+
+def test_collection_batch_freezes_parallel_fanout(tmp_path: Path) -> None:
+    plan = _write_fixture(tmp_path)
+    raw = json.loads(plan.read_text(encoding="utf-8"))
+    raw["batches"][0]["subagent_fanout_profile"] = "parallel_analysis_2to3"
+    plan.write_text(json.dumps(raw), encoding="utf-8")
+
+    batch = load_collection_batch(plan, "batch-1")
+
+    assert batch.subagent_fanout_profile == "parallel_analysis_2to3"
 
 
 def test_collection_batch_keeps_calibration_and_test_sealed(tmp_path: Path) -> None:

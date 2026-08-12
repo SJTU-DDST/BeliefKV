@@ -1,0 +1,121 @@
+{
+  "image_count": 16,
+  "images": [
+    {
+      "image": "swebench/sweb.eval.x86_64.django_1776_django-12663:latest",
+      "image_id": null,
+      "instance_id": "django__django-12663",
+      "repo_digest": null,
+      "status": "required_not_pulled"
+    },
+    {
+      "image": "swebench/sweb.eval.x86_64.django_1776_django-13406:latest",
+      "image_id": null,
+      "instance_id": "django__django-13406",
+      "repo_digest": null,
+      "status": "required_not_pulled"
+    },
+    {
+      "image": "swebench/sweb.eval.x86_64.django_1776_django-14792:latest",
+      "image_id": null,
+      "instance_id": "django__django-14792",
+      "repo_digest": null,
+      "status": "required_not_pulled"
+    },
+    {
+      "image": "swebench/sweb.eval.x86_64.django_1776_django-15280:latest",
+      "image_id": null,
+      "instance_id": "django__django-15280",
+      "repo_digest": null,
+      "status": "required_not_pulled"
+    },
+    {
+      "image": "swebench/sweb.eval.x86_64.pydata_1776_xarray-4075:latest",
+      "image_id": null,
+      "instance_id": "pydata__xarray-4075",
+      "repo_digest": null,
+      "status": "required_not_pulled"
+    },
+    {
+      "image": "swebench/sweb.eval.x86_64.pydata_1776_xarray-4094:latest",
+      "image_id": null,
+      "instance_id": "pydata__xarray-4094",
+      "repo_digest": null,
+      "status": "required_not_pulled"
+    },
+    {
+      "image": "swebench/sweb.eval.x86_64.pydata_1776_xarray-4687:latest",
+      "image_id": null,
+      "instance_id": "pydata__xarray-4687",
+      "repo_digest": null,
+      "status": "required_not_pulled"
+    },
+    {
+      "image": "swebench/sweb.eval.x86_64.pydata_1776_xarray-6992:latest",
+      "image_id": null,
+      "instance_id": "pydata__xarray-6992",
+      "repo_digest": null,
+      "status": "required_not_pulled"
+    },
+    {
+      "image": "swebench/sweb.eval.x86_64.pylint-dev_1776_pylint-4604:latest",
+      "image_id": null,
+      "instance_id": "pylint-dev__pylint-4604",
+      "repo_digest": null,
+      "status": "required_not_pulled"
+    },
+    {
+      "image": "swebench/sweb.eval.x86_64.pylint-dev_1776_pylint-4970:latest",
+      "image_id": null,
+      "instance_id": "pylint-dev__pylint-4970",
+      "repo_digest": null,
+      "status": "required_not_pulled"
+    },
+    {
+      "image": "swebench/sweb.eval.x86_64.pylint-dev_1776_pylint-6528:latest",
+      "image_id": null,
+      "instance_id": "pylint-dev__pylint-6528",
+      "repo_digest": null,
+      "status": "required_not_pulled"
+    },
+    {
+      "image": "swebench/sweb.eval.x86_64.pylint-dev_1776_pylint-6903:latest",
+      "image_id": null,
+      "instance_id": "pylint-dev__pylint-6903",
+      "repo_digest": null,
+      "status": "required_not_pulled"
+    },
+    {
+      "image": "swebench/sweb.eval.x86_64.pytest-dev_1776_pytest-10081:latest",
+      "image_id": null,
+      "instance_id": "pytest-dev__pytest-10081",
+      "repo_digest": null,
+      "status": "required_not_pulled"
+    },
+    {
+      "image": "swebench/sweb.eval.x86_64.pytest-dev_1776_pytest-5809:latest",
+      "image_id": null,
+      "instance_id": "pytest-dev__pytest-5809",
+      "repo_digest": null,
+      "status": "required_not_pulled"
+    },
+    {
+      "image": "swebench/sweb.eval.x86_64.pytest-dev_1776_pytest-7432:latest",
+      "image_id": null,
+      "instance_id": "pytest-dev__pytest-7432",
+      "repo_digest": null,
+      "status": "required_not_pulled"
+    },
+    {
+      "image": "swebench/sweb.eval.x86_64.pytest-dev_1776_pytest-7982:latest",
+      "image_id": null,
+      "instance_id": "pytest-dev__pytest-7982",
+      "repo_digest": null,
+      "status": "required_not_pulled"
+    }
+  ],
+  "lock_state": "requirements_only",
+  "plan_id": "h200-bf16-observed-pilot-v1",
+  "runtime_profile_sha256": "e370de881115a5bbe63a11ac2061ecfb6c1e0c7a4e55b0c09c9c8b07dee89b9d",
+  "schema_version": 1
+}

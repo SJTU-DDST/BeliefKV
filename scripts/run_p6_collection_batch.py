@@ -256,7 +256,10 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--subagent-fanout-profile",
         choices=("natural", "parallel_analysis_2to3"),
-        default="natural",
+        help=(
+            "optional assertion of the profile frozen in the collection batch; "
+            "it cannot override the manifest"
+        ),
     )
     parser.add_argument("--workflow-arrival-interval-ms", type=float, default=0.0)
     parser.add_argument("--request-timeout", type=float, default=7200.0)
@@ -295,6 +298,15 @@ def main() -> int:
         allow_calibration=args.allow_calibration,
         allow_test=args.allow_test,
     )
+    if (
+        args.subagent_fanout_profile is not None
+        and args.subagent_fanout_profile != batch.subagent_fanout_profile
+    ):
+        raise ValueError(
+            "CLI fanout profile differs from the frozen collection batch: "
+            f"{args.subagent_fanout_profile} != {batch.subagent_fanout_profile}"
+        )
+    fanout_profile = batch.subagent_fanout_profile
     if args.pool_tokens <= 0:
         raise ValueError("--pool-tokens must be positive")
     server_info = fetch_server_info(args.base_url)
@@ -386,7 +398,7 @@ def main() -> int:
             if args.predictive_joint_overlay_enabled
             else "frozen_p5_observed"
         ),
-        "subagent_fanout_profile": args.subagent_fanout_profile,
+        "subagent_fanout_profile": fanout_profile,
         "request_timeout_s": args.request_timeout,
         "completion_semantics": "model_terminal_no_harness_llm_repair",
         "completion_gate_enabled": False,
@@ -435,7 +447,7 @@ def main() -> int:
         gpu_index=args.gpu,
         pool_tokens=actual_pool_tokens,
         max_completion_tokens=args.max_completion_tokens,
-        subagent_fanout_profile=args.subagent_fanout_profile,
+        subagent_fanout_profile=fanout_profile,
         recursion_limit=args.recursion_limit,
         request_timeout_s=args.request_timeout,
         sandbox_command_timeout_s=args.sandbox_command_timeout,

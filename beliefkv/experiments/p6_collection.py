@@ -9,6 +9,7 @@ from beliefkv.experiments.deepagents_swebench import load_workload_bundle
 
 
 ALLOWED_SPLITS = frozenset({"train", "calibration", "test_id"})
+ALLOWED_FANOUT_PROFILES = frozenset({"natural", "parallel_analysis_2to3"})
 
 
 @dataclass(frozen=True)
@@ -21,6 +22,7 @@ class P6CollectionBatch:
     workflow_count: int
     concurrency: int
     preflight_command: str | None
+    subagent_fanout_profile: str
 
 
 def load_collection_batch(
@@ -81,6 +83,9 @@ def load_collection_batch(
         raise ValueError("workload image is absent from batch image set")
 
     preflight = batch.get("preflight_command")
+    fanout_profile = str(batch.get("subagent_fanout_profile") or "natural")
+    if fanout_profile not in ALLOWED_FANOUT_PROFILES:
+        raise ValueError(f"unsupported subagent fanout profile: {fanout_profile}")
     return P6CollectionBatch(
         plan_path=plan_path,
         plan_id=str(raw["plan_id"]),
@@ -90,6 +95,7 @@ def load_collection_batch(
         workflow_count=workflow_count,
         concurrency=int(batch["concurrency"]),
         preflight_command=str(preflight) if preflight is not None else None,
+        subagent_fanout_profile=fanout_profile,
     )
 
 

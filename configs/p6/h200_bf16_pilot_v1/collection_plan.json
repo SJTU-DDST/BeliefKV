@@ -1,0 +1,186 @@
+{
+  "batch_count": 2,
+  "batches": [
+    {
+      "batch_id": "h200-pilot-01-natural-r0",
+      "concurrency": 8,
+      "docker_images": [
+        "swebench/sweb.eval.x86_64.django_1776_django-13406:latest",
+        "swebench/sweb.eval.x86_64.django_1776_django-14792:latest",
+        "swebench/sweb.eval.x86_64.pydata_1776_xarray-4075:latest",
+        "swebench/sweb.eval.x86_64.pydata_1776_xarray-4687:latest",
+        "swebench/sweb.eval.x86_64.pylint-dev_1776_pylint-4604:latest",
+        "swebench/sweb.eval.x86_64.pylint-dev_1776_pylint-6903:latest",
+        "swebench/sweb.eval.x86_64.pytest-dev_1776_pytest-7432:latest",
+        "swebench/sweb.eval.x86_64.pytest-dev_1776_pytest-7982:latest"
+      ],
+      "instance_ids": [
+        "django__django-13406",
+        "django__django-14792",
+        "pydata__xarray-4075",
+        "pydata__xarray-4687",
+        "pylint-dev__pylint-4604",
+        "pylint-dev__pylint-6903",
+        "pytest-dev__pytest-7432",
+        "pytest-dev__pytest-7982"
+      ],
+      "policy": "frozen_p5_observed",
+      "predictive_actions": false,
+      "preflight_command": null,
+      "projects": [
+        "django/django",
+        "pydata/xarray",
+        "pylint-dev/pylint",
+        "pytest-dev/pytest"
+      ],
+      "rollout_index": 0,
+      "source_repositories": [
+        {
+          "path": "/home/longhao/experiment/BeliefKV/workloads/sources/p6_swebench_verified/django__django",
+          "project": "django/django",
+          "url": "https://github.com/django/django.git"
+        },
+        {
+          "path": "/home/longhao/experiment/BeliefKV/workloads/sources/p6_swebench_verified/pydata__xarray",
+          "project": "pydata/xarray",
+          "url": "https://github.com/pydata/xarray.git"
+        },
+        {
+          "path": "/home/longhao/experiment/BeliefKV/workloads/sources/p6_swebench_verified/pylint-dev__pylint",
+          "project": "pylint-dev/pylint",
+          "url": "https://github.com/pylint-dev/pylint.git"
+        },
+        {
+          "path": "/home/longhao/experiment/BeliefKV/workloads/sources/p6_swebench_verified/pytest-dev__pytest",
+          "project": "pytest-dev/pytest",
+          "url": "https://github.com/pytest-dev/pytest.git"
+        }
+      ],
+      "split": "train",
+      "subagent_fanout_profile": "natural",
+      "versions": [
+        "django/django:3.2",
+        "django/django:4.0",
+        "pydata/xarray:0.12",
+        "pylint-dev/pylint:2.15",
+        "pylint-dev/pylint:2.9",
+        "pytest-dev/pytest:5.4",
+        "pytest-dev/pytest:6.2"
+      ],
+      "workflow_arrival_interval_ms": 1000,
+      "workflow_count": 8,
+      "workload_manifest": "/home/longhao/experiment/BeliefKV/configs/p6/h200_bf16_pilot_v1/workload_manifests/h200-pilot-01-natural-r0.json",
+      "workload_manifest_sha256": "b2175d593bb0126f6a866a6680b94eb6121773a4e61d884592143b0d140a9784"
+    },
+    {
+      "batch_id": "h200-pilot-02-parallel_analysis_2to3-r0",
+      "concurrency": 8,
+      "docker_images": [
+        "swebench/sweb.eval.x86_64.django_1776_django-12663:latest",
+        "swebench/sweb.eval.x86_64.django_1776_django-15280:latest",
+        "swebench/sweb.eval.x86_64.pydata_1776_xarray-4094:latest",
+        "swebench/sweb.eval.x86_64.pydata_1776_xarray-6992:latest",
+        "swebench/sweb.eval.x86_64.pylint-dev_1776_pylint-4970:latest",
+        "swebench/sweb.eval.x86_64.pylint-dev_1776_pylint-6528:latest",
+        "swebench/sweb.eval.x86_64.pytest-dev_1776_pytest-10081:latest",
+        "swebench/sweb.eval.x86_64.pytest-dev_1776_pytest-5809:latest"
+      ],
+      "instance_ids": [
+        "django__django-12663",
+        "django__django-15280",
+        "pydata__xarray-4094",
+        "pydata__xarray-6992",
+        "pylint-dev__pylint-4970",
+        "pylint-dev__pylint-6528",
+        "pytest-dev__pytest-10081",
+        "pytest-dev__pytest-5809"
+      ],
+      "policy": "frozen_p5_observed",
+      "predictive_actions": false,
+      "preflight_command": null,
+      "projects": [
+        "django/django",
+        "pydata/xarray",
+        "pylint-dev/pylint",
+        "pytest-dev/pytest"
+      ],
+      "rollout_index": 0,
+      "source_repositories": [
+        {
+          "path": "/home/longhao/experiment/BeliefKV/workloads/sources/p6_swebench_verified/django__django",
+          "project": "django/django",
+          "url": "https://github.com/django/django.git"
+        },
+        {
+          "path": "/home/longhao/experiment/BeliefKV/workloads/sources/p6_swebench_verified/pydata__xarray",
+          "project": "pydata/xarray",
+          "url": "https://github.com/pydata/xarray.git"
+        },
+        {
+          "path": "/home/longhao/experiment/BeliefKV/workloads/sources/p6_swebench_verified/pylint-dev__pylint",
+          "project": "pylint-dev/pylint",
+          "url": "https://github.com/pylint-dev/pylint.git"
+        },
+        {
+          "path": "/home/longhao/experiment/BeliefKV/workloads/sources/p6_swebench_verified/pytest-dev__pytest",
+          "project": "pytest-dev/pytest",
+          "url": "https://github.com/pytest-dev/pytest.git"
+        }
+      ],
+      "split": "train",
+      "subagent_fanout_profile": "parallel_analysis_2to3",
+      "versions": [
+        "django/django:3.1",
+        "django/django:4.1",
+        "pydata/xarray:0.12",
+        "pydata/xarray:2022.06",
+        "pylint-dev/pylint:2.10",
+        "pylint-dev/pylint:2.14",
+        "pytest-dev/pytest:4.6",
+        "pytest-dev/pytest:7.2"
+      ],
+      "workflow_arrival_interval_ms": 1000,
+      "workflow_count": 8,
+      "workload_manifest": "/home/longhao/experiment/BeliefKV/configs/p6/h200_bf16_pilot_v1/workload_manifests/h200-pilot-02-parallel_analysis_2to3-r0.json",
+      "workload_manifest_sha256": "b23bed3dcf9d2892e398f6530d842e73175f5c28ffd90409cf17f0bd737b1973"
+    }
+  ],
+  "dataset": "princeton-nlp/SWE-bench_Verified",
+  "dataset_path": "/home/longhao/experiment/BeliefKV/workloads/raw/swebench_verified-91aa3ed/test",
+  "dataset_revision": "91aa3ed51b709be6457e12d00300a6a596d4c6a3",
+  "development_only": true,
+  "excluded_collection_plan": "/home/longhao/experiment/BeliefKV/configs/p6/collection_v4/collection_plan.json",
+  "excluded_collection_plan_sha256": "d5f3c6364e3b49960c8680a59a8d95a9220d7e69f96e2a22ec1c90c03aab8a6e",
+  "frozen": true,
+  "plan_id": "h200-bf16-observed-pilot-v1",
+  "predictive_actions_enabled": false,
+  "predictor_enabled": false,
+  "repository_count": 4,
+  "runtime_policy": "frozen_p5_observed",
+  "runtime_profile": "/home/longhao/experiment/BeliefKV/configs/p6/h200_bf16_v1/frozen_runtime_profile.json",
+  "runtime_profile_sha256": "e370de881115a5bbe63a11ac2061ecfb6c1e0c7a4e55b0c09c9c8b07dee89b9d",
+  "schema_version": 1,
+  "selection_contract": {
+    "excluded_prior_unique_tasks": 111,
+    "fanout_profiles": [
+      "natural",
+      "parallel_analysis_2to3"
+    ],
+    "model_output_filtering": false,
+    "project_count": 4,
+    "projects": [
+      "django/django",
+      "pydata/xarray",
+      "pylint-dev/pylint",
+      "pytest-dev/pytest"
+    ],
+    "split": "train",
+    "tasks_per_project_per_arm": 2
+  },
+  "selection_seed": "beliefkv-h200-bf16-pilot-v1",
+  "source_root": "/home/longhao/experiment/BeliefKV/workloads/sources/p6_swebench_verified",
+  "split_manifest": "/home/longhao/experiment/BeliefKV/configs/p6/swebench_verified_split_v1.json",
+  "split_manifest_sha256": "61462e7f18d76e0be2fda8f037948541228c558a455922ef0483f1ac1d62e3e0",
+  "unique_task_count": 16,
+  "workflow_count": 16
+}
