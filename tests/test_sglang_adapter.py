@@ -4146,9 +4146,15 @@ class SGLangBackendTest(unittest.TestCase):
         self.assertTrue(terminal[0]["logical_scope_terminal"])
 
     def test_ticket_epoch_does_not_mutate_native_queue_or_cap_workflow(self):
-        controller = BeliefKVController(
-            BeliefKVConfig(hbm_capacity_bytes=1000, reserve_hbm_bytes=100)
+        config = BeliefKVConfig(
+            hbm_capacity_bytes=1000,
+            reserve_hbm_bytes=100,
+            joint_policy_enabled=True,
+            joint_workflow_active_window=2,
+            dynamic_working_set_enabled=True,
+            dynamic_working_set_min_hold_epochs=0,
         )
+        controller = BeliefKVController(config)
         for workflow_id in ("wf-a", "wf-b"):
             controller.process_runtime_event(
                 RuntimeEvent(
@@ -4187,6 +4193,8 @@ class SGLangBackendTest(unittest.TestCase):
         runtime._pending_h2d_contexts = set()
         runtime._request_metadata_by_id = {}
         runtime._request_submitted_ts_by_id = {}
+        runtime._online_joint_counts = Counter()
+        runtime._online_joint_epoch_sequence = 0
         untagged = SimpleNamespace(rid="untagged", beliefkv_metadata=None)
 
         def req(workflow_id, suffix):
@@ -4220,6 +4228,14 @@ class SGLangBackendTest(unittest.TestCase):
             return request
 
         queue = [untagged, req("wf-a", "1"), req("wf-a", "2"), req("wf-b", "1"), req("wf-b", "2")]
+        request_ids = tuple(item.rid for item in queue if item is not untagged)
+        semantic = compile_bounded_seed_epoch(
+            ordered_request_ids=(request_ids[0],),
+            visible_request_ids=request_ids,
+            epoch_sequence=1,
+        )
+        runtime._current_joint_plan_epoch = semantic.epoch
+        runtime._online_joint_admission_decision = lambda **_kwargs: semantic
         original = list(queue)
         candidate_view = runtime.begin_prefill_epoch(
             queue,
@@ -4233,6 +4249,14 @@ class SGLangBackendTest(unittest.TestCase):
         self.assertEqual(queue, original)
         self.assertIs(candidate_view[0], untagged)
         self.assertEqual(len(runtime._current_ticket_epoch.tickets), 4)
+        self.assertEqual(
+            runtime._current_online_joint_view.plan_id,
+            semantic.view.plan_id,
+        )
+        self.assertEqual(
+            runtime._current_ticket_epoch.source,
+            "joint_epoch+dynamic_batch_fill",
+        )
         self.assertEqual(
             Counter(
                 ticket.workflow_id

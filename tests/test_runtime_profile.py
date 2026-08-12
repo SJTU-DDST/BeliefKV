@@ -22,6 +22,10 @@ V2_PROFILE = (
     REPOSITORY_ROOT
     / "configs/p6/h200_bf16_v2/frozen_runtime_profile.json"
 )
+V4_PROFILE = (
+    REPOSITORY_ROOT
+    / "configs/p6/h200_bf16_v4/frozen_runtime_profile.json"
+)
 
 
 def _profile() -> dict[str, object]:
@@ -50,6 +54,7 @@ def _server_info(profile: dict[str, object]) -> dict[str, object]:
         "max_running_requests": runtime["max_running_requests"],
         "page_size": runtime["page_size"],
         "chunked_prefill_size": runtime["chunked_prefill_size"],
+        "max_prefill_tokens": runtime.get("max_prefill_tokens", 16384),
         "cuda_graph_max_bs": runtime["cuda_graph_max_bs"],
         "mem_fraction_static": runtime["mem_fraction_static"],
         "hicache_size": runtime["hicache_size_gib"],
@@ -88,6 +93,20 @@ def test_h200_v2_profile_reserves_moe_workspace() -> None:
     ] is False
 
 
+def test_h200_v4_profile_enables_batched_prefill_quantum() -> None:
+    profile, digest = load_runtime_profile(
+        V4_PROFILE,
+        repository_root=REPOSITORY_ROOT,
+    )
+    environment = runtime_launch_environment(profile)
+
+    assert len(digest) == 64
+    assert environment["MAX_TOTAL_TOKENS"] == "850000"
+    assert environment["MAX_RUNNING_REQUESTS"] == "32"
+    assert environment["CHUNKED_PREFILL_SIZE"] == "16384"
+    assert environment["MAX_PREFILL_TOKENS"] == "16384"
+
+
 def test_runtime_contract_accepts_exact_profile() -> None:
     profile = _profile()
 
@@ -107,6 +126,7 @@ def test_runtime_contract_accepts_exact_profile() -> None:
         ("max_running_requests", 15),
         ("hicache_mem_layout", "page_first"),
         ("kv_cache_dtype", "float16"),
+        ("max_prefill_tokens", 4096),
     ),
 )
 def test_runtime_contract_rejects_profile_drift(field: str, wrong: object) -> None:
@@ -157,6 +177,27 @@ def test_formal_launcher_rejects_immutable_override(tmp_path: Path) -> None:
             str(server),
             "--max-total-tokens",
             "1",
+        ),
+        cwd=REPOSITORY_ROOT,
+        text=True,
+        capture_output=True,
+    )
+
+    assert result.returncode == 2
+    assert "owns immutable argument" in result.stderr
+
+
+def test_formal_launcher_rejects_prefill_override(tmp_path: Path) -> None:
+    server = tmp_path / "server"
+    server.mkdir()
+    (server / "beliefkv_config.json").write_text("{}\n", encoding="utf-8")
+    result = subprocess.run(
+        (
+            str(REPOSITORY_ROOT / "scripts/launch_deepagents_swebench_server.sh"),
+            "--runtime-profile",
+            str(V4_PROFILE),
+            str(server),
+            "--max-prefill-tokens=4096",
         ),
         cwd=REPOSITORY_ROOT,
         text=True,

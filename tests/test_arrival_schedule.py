@@ -28,6 +28,36 @@ def test_batched_arrivals_form_reproducible_waves() -> None:
     assert [len(batch) for batch in group_arrivals(arrivals)] == [3, 3, 1]
 
 
+def test_batched_arrivals_support_monotonic_intra_wave_stagger() -> None:
+    arrivals = build_workflow_arrivals(
+        6,
+        mode="batched",
+        batch_size=3,
+        batch_interval_seconds=20.0,
+        intra_batch_interval_seconds=0.5,
+    )
+
+    assert [item.scheduled_offset_seconds for item in arrivals] == [
+        0.0,
+        0.5,
+        1.0,
+        20.0,
+        20.5,
+        21.0,
+    ]
+
+
+def test_batched_arrivals_reject_overlapping_wave_starts() -> None:
+    with pytest.raises(ValueError, match="final intra-batch"):
+        build_workflow_arrivals(
+            6,
+            mode="batched",
+            batch_size=3,
+            batch_interval_seconds=0.5,
+            intra_batch_interval_seconds=0.5,
+        )
+
+
 def test_simultaneous_arrivals_ignore_batch_interval() -> None:
     arrivals = build_workflow_arrivals(
         4,

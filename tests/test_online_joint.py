@@ -17,6 +17,7 @@ from beliefkv.policy.online_joint import (
     append_committed_action_slice,
     compile_bounded_seed_epoch,
     compile_online_joint_view,
+    extend_joint_epoch_admission,
     validate_action_group_resource_certificate,
 )
 from beliefkv.policy.reference import (
@@ -77,6 +78,91 @@ def _plan(
 
 
 class OnlineJointPlanCompilerTest(unittest.TestCase):
+    def test_batch_fill_extends_same_epoch_and_preserves_plan_identity(self):
+        decision = compile_bounded_seed_epoch(
+            ordered_request_ids=("request-a",),
+            visible_request_ids=("request-a", "request-b", "request-c"),
+            epoch_sequence=1,
+        )
+
+        epoch = extend_joint_epoch_admission(
+            decision.epoch,
+            ("request-b", "request-c"),
+        )
+
+        self.assertEqual(epoch.source_plan_id, decision.epoch.source_plan_id)
+        self.assertEqual(
+            epoch.view.immediate_request_ids,
+            ("request-a", "request-b", "request-c"),
+        )
+        self.assertEqual(epoch.view.deferred_request_ids, ())
+        self.assertEqual(
+            {item.slice_id for item in epoch.action_slices},
+            {"request:request-a", "request:request-b", "request:request-c"},
+        )
+
+    def test_batch_fill_does_not_make_restore_blocked_request_immediate(self):
+        decision = compile_bounded_seed_epoch(
+            ordered_request_ids=("restore", "ready"),
+            visible_request_ids=("restore", "ready"),
+            restore_requirements=(("restore", ("page:1:0",)),),
+            epoch_sequence=1,
+        )
+
+        epoch = extend_joint_epoch_admission(decision.epoch, ("restore",))
+
+        self.assertEqual(epoch.view.immediate_request_ids, ("ready",))
+
+    def test_empty_batch_fill_leaves_existing_deferral_unchanged(self):
+        decision = compile_bounded_seed_epoch(
+            ordered_request_ids=("request-a",),
+            visible_request_ids=("request-a", "request-b"),
+            epoch_sequence=1,
+        )
+
+        epoch = extend_joint_epoch_admission(decision.epoch, ())
+
+        self.assertIs(epoch, decision.epoch)
+        self.assertEqual(epoch.view.deferred_request_ids, ("request-b",))
+
+    def test_batch_fill_promotes_only_explicit_defer_slice(self):
+        plan = _plan(
+            admissions=(
+                AdmissionIntent(
+                    request_id="request-a",
+                    action=AdmissionAction.ADMIT,
+                    reserved_bytes=10,
+                    required_bundle_ids=(),
+                    reason="selected",
+                ),
+                AdmissionIntent(
+                    request_id="request-b",
+                    action=AdmissionAction.DEFER,
+                    reserved_bytes=0,
+                    required_bundle_ids=(),
+                    reason="low priority",
+                ),
+            )
+        )
+        decision = compile_online_joint_view(
+            plan,
+            _validation(requests=("request-a", "request-b")),
+            visible_request_ids=("request-a", "request-b"),
+        )
+
+        epoch = extend_joint_epoch_admission(decision.epoch, ("request-b",))
+
+        self.assertEqual(
+            epoch.view.immediate_request_ids, ("request-a", "request-b")
+        )
+        promoted = next(
+            item
+            for item in epoch.action_slices
+            if item.slice_id == "request:request-b"
+        )
+        self.assertTrue(promoted.committed)
+        self.assertEqual(promoted.reasons, ())
+
     def test_appended_action_rebuilds_dependency_closed_atomic_group(self):
         decision = compile_bounded_seed_epoch(
             ordered_request_ids=("replacement",),

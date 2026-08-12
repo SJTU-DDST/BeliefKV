@@ -404,6 +404,95 @@ def append_committed_action_slice(
     )
 
 
+def extend_joint_epoch_admission(
+    epoch: JointPlanEpoch,
+    request_ids: Iterable[str],
+) -> JointPlanEpoch:
+    """Add safe-point admission actions without replacing the JointPlan.
+
+    Dynamic GPU-fill may discover more runnable work than an asynchronous
+    semantic plan included. The extra requests remain part of the same epoch
+    and plan ID; physical token/HBM capacity is certified later by the batch
+    admission compiler. Restore-blocked requests are never made immediate.
+    """
+
+    view = epoch.view
+    restore_ids = frozenset(
+        request_id for request_id, _bundle_ids in view.restore_requirements
+    )
+    existing_ordered = frozenset(view.ordered_request_ids)
+    existing_slices = {item.slice_id: item for item in epoch.action_slices}
+    requested = tuple(
+        request_id
+        for request_id in dict.fromkeys(str(item) for item in request_ids)
+        if request_id
+        and request_id in view.deferred_request_ids
+        and request_id not in view.immediate_request_ids
+        and request_id not in restore_ids
+    )
+    promotable: list[str] = []
+    for request_id in requested:
+        existing = existing_slices.get(f"request:{request_id}")
+        if existing is not None and (
+            existing.kind != "request"
+            or existing.action_key != request_id
+            or existing.reasons != ("admission_not_runnable",)
+        ):
+            continue
+        promotable.append(request_id)
+    if not promotable:
+        return epoch
+    promoted = tuple(promotable)
+    promoted_set = frozenset(promoted)
+    additions = tuple(
+        request_id for request_id in promoted if request_id not in existing_ordered
+    )
+    updated_view = OnlineJointPlanView(
+        plan_id=view.plan_id,
+        ordered_request_ids=(*view.ordered_request_ids, *additions),
+        immediate_request_ids=(*view.immediate_request_ids, *promoted),
+        restore_requirements=view.restore_requirements,
+        deferred_request_ids=tuple(
+            request_id
+            for request_id in view.deferred_request_ids
+            if request_id not in promoted_set
+        ),
+        residency_intent_indices=view.residency_intent_indices,
+    )
+    slices = tuple(
+        ActionSlice(
+            slice_id=item.slice_id,
+            kind=item.kind,
+            action_key=item.action_key,
+            dependency_keys=(),
+            committed=True,
+        )
+        if item.slice_id in {f"request:{request_id}" for request_id in promoted_set}
+        else item
+        for item in epoch.action_slices
+    ) + tuple(
+        ActionSlice(
+            slice_id=f"request:{request_id}",
+            kind="request",
+            action_key=request_id,
+            dependency_keys=(),
+            committed=True,
+        )
+        for request_id in additions
+        if f"request:{request_id}" not in existing_slices
+    )
+    return JointPlanEpoch(
+        epoch_id=epoch.epoch_id,
+        source_plan_id=epoch.source_plan_id,
+        planner_mode=epoch.planner_mode,
+        view=updated_view,
+        action_slices=slices,
+        source_action_count=len(slices),
+        committed_action_count=sum(item.committed for item in slices),
+        action_groups=_action_groups_from_slices(slices),
+    )
+
+
 @dataclass(frozen=True)
 class OnlineJointPlanDecision:
     view: OnlineJointPlanView | None

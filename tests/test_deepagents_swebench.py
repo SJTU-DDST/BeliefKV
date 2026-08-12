@@ -807,6 +807,8 @@ def test_experiment_config_uses_hard_fuse_as_langgraph_limit(tmp_path: Path) -> 
     assert config.recursion_limit == 512
     assert config.sampling_seed is None
     assert config.workflow_arrival_interval_ms == 0.0
+    assert config.workflow_arrival_batch_size == 0
+    assert config.workflow_arrival_batch_interval_ms == 0.0
     assert config.loop_guard.enabled
     assert config.completion_gate_enabled is True
     assert config.completion_repair_attempts == 2
@@ -842,6 +844,21 @@ def test_experiment_config_rejects_negative_arrival_interval(tmp_path: Path) -> 
             workload_manifest=tmp_path / "workloads.json",
             docker_image="fixture:latest",
             workflow_arrival_interval_ms=-1,
+        )
+
+
+def test_experiment_config_rejects_overlapping_arrival_waves(tmp_path: Path) -> None:
+    with pytest.raises(ValueError, match="final intra-batch"):
+        DeepAgentsExperimentConfig(
+            mode="planned",
+            base_url="http://localhost:18000/v1",
+            model="model",
+            output_dir=tmp_path,
+            workload_manifest=tmp_path / "workloads.json",
+            docker_image="fixture:latest",
+            workflow_arrival_interval_ms=500,
+            workflow_arrival_batch_size=8,
+            workflow_arrival_batch_interval_ms=3000,
         )
 
 

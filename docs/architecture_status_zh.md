@@ -1,6 +1,49 @@
 # BeliefKV 最新架构与实现状态
 
-更新日期：2026-08-11
+更新日期：2026-08-12
+
+## 2026-08-12：批量 Admission 与动态 Working Set
+
+H200 pressure trace 暴露出两个相互关联的控制问题：prefill 平均 batch size 仅约 1.02，且
+固定 workflow active window 无法同时满足低压填满 GPU 与高压控制 KV footprint。当前实现已改为：
+
+```text
+safe point
+  -> 汇总 workflow 级 GPU-ready 数量、fairness rank、RCCG action-unlock value
+  -> 低压 GPU_FILL：扩展 active set 并在同一 JointPlanEpoch 中批量提升 admission
+  -> AdmissionTicketCompiler：先装入可完整 prefill 的短请求，再放至多一个 chunked tail
+  -> prefix rematch 后累计验证整批 token/HBM certificate
+
+HBM pressure >= enter watermark
+  -> HBM_PRESSURE：收缩 ready target，保留 restore-mandatory workflow
+  -> 停止低压 batch-fill，尊重 JointPlan DEFER
+  -> 才允许 observed PREPARE/COMMIT/DROP 与 running retraction
+HBM pressure <= exit watermark
+  -> hysteresis 退出压力模式，恢复 work-conserving GPU_FILL
+```
+
+重要边界：
+
+- batch-fill 是原 `JointPlanEpoch` 的 admission action 扩展，保留 `plan_id`、residency intent 和
+  retraction transaction，不是第二个 admission planner；
+- active set 只控制当前 ticket eligibility，不从 RCCG 删除 inactive workflow。所有 workflow 继续
+  累积 fairness credit，action-unlock 只提供有界优先级提升；
+- `TICKET_READY` restore obligation 是 mandatory，可临时越过 active-window hard cap，避免 restore
+  debt 被工作集收缩饿死；
+- 低压只抑制新的 destructive observed actions。`PREFETCH_GPU` restore、terminal cleanup 和已提交
+  transaction 的 ACK/commit 不受影响；预测性 `PREPARE_HOST` 仍由其 future-pressure 证书管理；
+- SGLang 0.5.2rc1 只保留一个 `chunked_req`。普通情况下先批量完整短请求再放一个长请求
+  chunk；若 policy order 的队首本身是 oversized prompt，则为其保留至多 1/4 token budget 和一个
+  slot，避免持续短请求流造成长 prompt 饥饿。
+
+新增 H200 `h200_bf16_v4` profile 将 `chunked_prefill_size` 与 `max_prefill_tokens` 同时冻结为
+16,384。历史 trace 中 815 个 uncached prompt 的 P50/P95 分别约 272/3,677 tokens，16K 可容纳约
+4 个 P95 prefill，同时不超过原生已有的 16K `max_prefill_tokens`。v3 与历史结果保持不变。
+
+当前证据仅为 CPU correctness：focused 与扩展 runtime suite 已通过。尚未运行
+修复后的 GPU trace，因此不能声称 batch size、GPU utilization 或 workflows/hour 已提升。下次 GPU
+gate 必须同时报告 issued/native prefill batch histogram、平均 batch size、GPU-ready/running 数、HBM
+pressure mode 占比、迁移/抢占仅在高压发生的比例和 workflow service lag。
 
 状态基线：P5G system correctness gate 已通过并冻结架构；最新版 P6 R0--R5 代码路径和实验
 基础设施已经实现，GPU gate 尚未全部执行。2026-08-10 的 GPU0 受控矩阵表明，相同 2.659 GB KV 从

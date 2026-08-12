@@ -101,9 +101,17 @@ def load_runtime_profile(
         (capacity, "hbm_safety_margin_bytes"),
         (capacity, "host_pool_bytes"),
     )
+    if "max_prefill_tokens" in runtime:
+        integer_fields = (*integer_fields, (runtime, "max_prefill_tokens"))
     for mapping, key in integer_fields:
         if int(mapping[key]) <= 0:
             raise RuntimeError(f"runtime profile requires positive {key}")
+    if int(runtime["chunked_prefill_size"]) > int(
+        runtime.get("max_prefill_tokens", 16384)
+    ):
+        raise RuntimeError(
+            "runtime.chunked_prefill_size cannot exceed max_prefill_tokens"
+        )
 
     expected_pool_bytes = int(capacity["max_total_tokens"]) * int(
         capacity["kv_bytes_per_token"]
@@ -157,6 +165,7 @@ def runtime_launch_environment(profile: dict[str, Any]) -> dict[str, str]:
         "MEM_FRACTION_STATIC": str(float(runtime["mem_fraction_static"])),
         "MAX_RUNNING_REQUESTS": str(int(runtime["max_running_requests"])),
         "CHUNKED_PREFILL_SIZE": str(int(runtime["chunked_prefill_size"])),
+        "MAX_PREFILL_TOKENS": str(int(runtime.get("max_prefill_tokens", 16384))),
         "CUDA_GRAPH_MAX_BS": str(int(runtime["cuda_graph_max_bs"])),
         "HICACHE_SIZE_GB": str(float(runtime["hicache_size_gib"])),
         "HICACHE_WRITE_POLICY": str(runtime["hicache_write_policy"]),
@@ -272,6 +281,13 @@ def validate_server_against_runtime_profile(
         name="chunked_prefill_size",
         actual=physical["prefill_chunk_size"],
         expected=runtime["chunked_prefill_size"],
+        kind="int",
+    )
+    _compare_exact(
+        checks,
+        name="max_prefill_tokens",
+        actual=physical["max_prefill_tokens"],
+        expected=runtime.get("max_prefill_tokens", 16384),
         kind="int",
     )
     _compare_exact(

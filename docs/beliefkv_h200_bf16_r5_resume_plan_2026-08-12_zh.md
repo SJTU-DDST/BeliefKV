@@ -5,6 +5,25 @@
 状态：当前 H200 服务器上的快速执行计划。旧 R5 v9 性能比较暂停，但 R0--R5 代码不回滚。
 完成 H200/BF16 环境、KV pool、硬件服务模型和 FrontierBelief 更新后，从 R5 canary/A-B 入口恢复。
 
+## 0. H3 前新增控制面门禁
+
+2026-08-12 的 parallel-32 pressure trace 中 prefill 平均 batch size 仅约 1.02。根因不是单一参数：
+旧 ticket compiler 会让长请求独占当轮 token budget，异步 JointPlan 后段也经常只发布一个 immediate
+request，同时 v3 profile 的 4K chunk 将每个 safe point 的 BeliefKV 可见 token budget限制为 4K。
+
+H3 collection 前先使用 `configs/p6/h200_bf16_v4/frozen_runtime_profile.json` 和新版控制器：
+
+- `chunked_prefill_size=max_prefill_tokens=16384`，`max_running_requests=32`；
+- 一个 safe point 在同一 JointPlan epoch 内签发多个 ticket，并用累计 token/HBM 证书约束整批；
+- 低 HBM pressure 扩张 dynamic working set 以填充 GPU-ready slots；
+- HBM pressure 进入/退出阈值默认 0.80/0.70，且带 epoch hysteresis；
+- 高压时收缩 active set，并且只在此时开放 observed retraction 与 KV eviction/offload；
+- restore-mandatory workflow 不受 active-window hard cap 限制。
+
+该 profile 尚未完成 GPU 验证。第一次短 gate 只验证 batch admission、运行期 HBM margin、fairness 和
+pressure-action gating；不得据此调整已冻结的 850,000-token KV pool。若 16K prefill 导致 OOM 或明显
+decode regression，应生成新 profile，而不是覆盖 v4。
+
 ## 1. 固定范围
 
 - 主模型固定为 Qwen3-Coder-30B-A3B-Instruct BF16，并冻结 model/tokenizer revision；

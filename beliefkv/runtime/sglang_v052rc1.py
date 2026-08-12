@@ -33,6 +33,9 @@ from beliefkv.policy.admission import (
     AdmissionSideState,
     AdmissionTicket,
     AdmissionTicketEpoch,
+    DynamicWorkingSetCandidate,
+    DynamicWorkingSetDecision,
+    DynamicWorkingSetScheduler,
     ObservedAdmissionCandidate,
     ObservedAdmissionScheduler,
     ObservedAdmissionSnapshot,
@@ -59,6 +62,7 @@ from beliefkv.policy.online_joint import (
     append_committed_action_slice,
     compile_bounded_seed_epoch,
     compile_online_joint_view,
+    extend_joint_epoch_admission,
 )
 from beliefkv.policy.predictive_joint import PredictiveActionKind
 from beliefkv.policy.predictive_attribution import (
@@ -2002,6 +2006,8 @@ class EmbeddedSGLangRuntime:
             "compile_ms": deque(maxlen=65_536),
             "validation_ms": deque(maxlen=65_536),
         }
+        self._admission_issued_batch_sizes: Counter[int] = Counter()
+        self._admission_native_batch_sizes: Counter[int] = Counter()
         self._gpu_service_launches: deque[dict[str, Any] | None] = deque()
         self._gpu_service_sequence = 0
         self._gpu_service_sample_count = 0
@@ -3226,7 +3232,26 @@ class EmbeddedSGLangRuntime:
                 service_evidence="completed_gpu_batch",
                 provenance_scope="running_request_last_node_to_radix_root",
             )
-        if getattr(config, "observed_admission_scheduling_enabled", False):
+        if (
+            getattr(config, "observed_admission_scheduling_enabled", False)
+            or getattr(config, "dynamic_working_set_enabled", False)
+        ):
+            issued_batch_sizes = getattr(
+                self, "_admission_issued_batch_sizes", Counter()
+            )
+            native_batch_sizes = getattr(
+                self, "_admission_native_batch_sizes", Counter()
+            )
+
+            def weighted_mean(histogram: Mapping[int, int]) -> float:
+                samples = sum(histogram.values())
+                return (
+                    sum(size * count for size, count in histogram.items())
+                    / samples
+                    if samples
+                    else 0.0
+                )
+
             self.audit.emit(
                 "observed_admission_summary",
                 self._now_ms(),
@@ -3246,6 +3271,24 @@ class EmbeddedSGLangRuntime:
                 running_batch_retraction=(
                     config.running_batch_retraction_enabled
                 ),
+                dynamic_working_set_enabled=(
+                    config.dynamic_working_set_enabled
+                ),
+                dynamic_working_set_mode_counts=dict(
+                    sorted(
+                        getattr(
+                            self, "_dynamic_working_set_mode_counts", {}
+                        ).items()
+                    )
+                ),
+                issued_prefill_batch_histogram=dict(
+                    sorted(issued_batch_sizes.items())
+                ),
+                native_prefill_batch_histogram=dict(
+                    sorted(native_batch_sizes.items())
+                ),
+                issued_prefill_batch_mean=weighted_mean(issued_batch_sizes),
+                native_prefill_batch_mean=weighted_mean(native_batch_sizes),
                 prediction_used=False,
             )
         if getattr(config, "running_batch_retraction_enabled", False):
@@ -4132,6 +4175,12 @@ class EmbeddedSGLangRuntime:
         """Return whether overlap should drain before physical retraction planning."""
 
         if not self.config.running_batch_retraction_enabled:
+            return False
+        if (
+            not self._pressure_actions_enabled()
+            and not self.config.restore_micro_gate_enabled
+        ):
+            self._running_retraction_counts["barrier_low_pressure_suppressed"] += 1
             return False
         now_ms = float(self._now_ms())
         if getattr(
@@ -5737,6 +5786,12 @@ class EmbeddedSGLangRuntime:
         """Plan one selective retraction at a scheduler safe point."""
 
         if not self.config.running_batch_retraction_enabled:
+            return None
+        if (
+            not self._pressure_actions_enabled()
+            and not self.config.restore_micro_gate_enabled
+        ):
+            self._running_retraction_counts["low_pressure_suppressed"] += 1
             return None
         if getattr(
             self, "_restore_authority_mode", RestoreAuthorityMode.NORMAL_JOINT
@@ -8843,8 +8898,11 @@ class EmbeddedSGLangRuntime:
         fair_rank = {
             workflow_id: index for index, workflow_id in enumerate(fair_order)
         }
+        dynamic = getattr(self, "_current_dynamic_working_set", None)
         active_workflow_ids = frozenset(
-            fair_order[: self.config.joint_workflow_active_window]
+            dynamic.active_workflow_ids
+            if dynamic is not None and dynamic.pressure_actions_enabled
+            else fair_order[: self.config.joint_workflow_active_window]
         )
         frontier_rank = {
             workflow_id: {
@@ -10416,9 +10474,6 @@ class EmbeddedSGLangRuntime:
             memory_charges=self.controller.workflow_memory_charges(),
             hbm_capacity_bytes=self.config.hbm_capacity_bytes,
         )
-        active_workflow_ids = frozenset(
-            fair_order[: self.config.joint_workflow_active_window]
-        )
         fair_rank = {
             workflow_id: index for index, workflow_id in enumerate(fair_order)
         }
@@ -10446,6 +10501,16 @@ class EmbeddedSGLangRuntime:
             self.config.hbm_capacity_bytes,
             native_hbm_tokens * self.config.kv_bytes_per_token,
         )
+        working_set = self._dynamic_working_set_for_tagged(
+            tagged,
+            entries=entries,
+            fair_order=fair_order,
+            frontier_candidates=frontier_candidates,
+            now_ms=now_ms,
+            native_request_slots=max(0, int(max_requests)),
+            native_available_hbm_bytes=native_hbm_bytes,
+        )
+        active_workflow_ids = frozenset(working_set.active_workflow_ids)
         observed_window: ObservedAdmissionWindow | None = None
         observed_admission_error: str | None = None
         cached_online_decision = getattr(
@@ -10539,6 +10604,11 @@ class EmbeddedSGLangRuntime:
                     fair_rank=fair_rank,
                     frontier_candidates=frontier_candidates,
                 )
+                observed_candidates = tuple(
+                    item
+                    for item in observed_candidates
+                    if item.workflow_id in active_workflow_ids
+                )
                 observed_window = self._observed_admission_scheduler().decide(
                     observed_candidates,
                     self._observed_admission_snapshot(
@@ -10580,6 +10650,87 @@ class EmbeddedSGLangRuntime:
             ticket_source = f"joint_{planner_mode}"
             ticket_reason = f"joint_plan:{online_joint_view.plan_id}"
             self._online_joint_counts["ticket_epoch"] += 1
+            active_tagged = sorted(
+                (
+                    item
+                    for item in tagged
+                    if item[2].root_workflow_id in active_workflow_ids
+                    and entries[str(item[1].rid)].state
+                    == AdmissionSideState.VISIBLE_PENDING
+                ),
+                key=lambda item: self._observed_ticket_order_key(
+                    item[0],
+                    item[1],
+                    item[2],
+                    now_ms,
+                    fair_rank=fair_rank,
+                    frontier_rank=frontier_rank,
+                ),
+            )
+            active_request_ids = tuple(str(item[1].rid) for item in active_tagged)
+            retained = tuple(
+                request_id
+                for request_id in ordered_request_ids
+                if request_id in active_request_ids
+            )
+            batch_fill_requests = (
+                tuple(
+                    request_id
+                    for request_id in active_request_ids
+                    if request_id not in retained
+                )
+                if self.config.dynamic_working_set_enabled
+                and not working_set.pressure_actions_enabled
+                else ()
+            )
+            ordered_request_ids = retained
+            if batch_fill_requests:
+                if (
+                    current_epoch is not None
+                    and current_epoch.source_plan_id == online_joint_view.plan_id
+                ):
+                    extended_epoch = extend_joint_epoch_admission(
+                        current_epoch,
+                        batch_fill_requests,
+                    )
+                    if extended_epoch is current_epoch:
+                        self._online_joint_counts[
+                            "dynamic_batch_fill_no_promotable_slice"
+                        ] += 1
+                        self.audit.emit(
+                            "dynamic_batch_fill_skipped",
+                            now_ms,
+                            plan_id=online_joint_view.plan_id,
+                            reason="no_promotable_admission_slice",
+                        )
+                    else:
+                        online_joint_decision = OnlineJointPlanDecision(
+                            extended_epoch.view,
+                            "applicable",
+                            extended_epoch,
+                        )
+                        online_joint_view = online_joint_decision.view
+                        self._current_joint_plan_epoch = extended_epoch
+                        ordered_request_ids = tuple(
+                            request_id
+                            for request_id in online_joint_view.immediate_request_ids
+                            if request_id in active_request_ids
+                        )
+                        ticket_source = "joint_epoch+dynamic_batch_fill"
+                        ticket_reason = f"joint_plan:{online_joint_view.plan_id}"
+                        self._online_joint_counts[
+                            "dynamic_working_set_batch_fill_epoch"
+                        ] += 1
+                else:
+                    self._online_joint_counts[
+                        "dynamic_batch_fill_missing_epoch"
+                    ] += 1
+                    self.audit.emit(
+                        "dynamic_batch_fill_skipped",
+                        now_ms,
+                        plan_id=online_joint_view.plan_id,
+                        reason="joint_epoch_unavailable",
+                    )
         elif observed_window is not None:
             ordered_request_ids = observed_window.ordered_request_ids
             compile_max_requests = observed_window.max_new_requests
@@ -10606,7 +10757,11 @@ class EmbeddedSGLangRuntime:
             )
         else:
             ordered_tagged = sorted(
-                tagged,
+                (
+                    item
+                    for item in tagged
+                    if item[2].root_workflow_id in active_workflow_ids
+                ),
                 key=lambda item: self._observed_ticket_order_key(
                     item[0],
                     item[1],
@@ -10798,6 +10953,10 @@ class EmbeddedSGLangRuntime:
         self._current_online_joint_decision = online_joint_decision
         self._current_ticket_epoch = ticket_epoch
         self._current_tickets_by_request = dict(ticket_epoch.by_request_id)
+        self._current_ticket_hbm_budget_bytes = max(0, compile_hbm_bytes)
+        self._current_ticket_prefill_budget_tokens = max(0, rem_input_tokens)
+        self._current_ticket_rematched_hbm_bytes = {}
+        self._current_ticket_rematched_prefill_tokens = {}
         compile_ms = (
             time.perf_counter_ns() - compile_started_ns
         ) / 1_000_000.0
@@ -10844,6 +11003,15 @@ class EmbeddedSGLangRuntime:
                 else 0
             ),
             workflow_active_window=self.config.joint_workflow_active_window,
+            dynamic_working_set={
+                "mode": working_set.mode,
+                "hbm_pressure": working_set.hbm_pressure,
+                "target_ready_requests": working_set.target_ready_requests,
+                "selected_ready_requests": working_set.selected_ready_requests,
+                "pressure_actions_enabled": (
+                    working_set.pressure_actions_enabled
+                ),
+            },
             active_workflow_ids=sorted(active_workflow_ids),
             inactive_workflow_count=max(
                 0, len(workflow_ids) - len(active_workflow_ids)
@@ -10864,6 +11032,7 @@ class EmbeddedSGLangRuntime:
                     "estimated_incremental_bytes": (
                         ticket.estimated_incremental_bytes
                     ),
+                    "epoch_incremental_bytes": ticket.epoch_incremental_bytes,
                     "reservation_credit_bytes": (
                         ticket.reservation_credit_bytes
                     ),
@@ -10969,6 +11138,58 @@ class EmbeddedSGLangRuntime:
                 "prefix_rematch:" + "+".join(validation.reasons),
             )
             return False
+        refreshed = self.controller.visible_admission.get(request_id)
+        assert refreshed is not None
+        actual_prefill_tokens = min(
+            refreshed.request.uncached_prompt_tokens,
+            ticket.estimated_prefill_tokens,
+        )
+        chunked = (
+            actual_prefill_tokens < refreshed.request.uncached_prompt_tokens
+        )
+        actual_epoch_bytes = max(
+            0,
+            (
+                actual_prefill_tokens
+                + (0 if chunked else refreshed.request.expected_output_tokens)
+            )
+            * refreshed.request.kv_bytes_per_token
+            + refreshed.request.fixed_overhead_bytes,
+        )
+        budgeted_bytes = max(
+            0,
+            actual_epoch_bytes - min(
+                actual_epoch_bytes, ticket.reservation_credit_bytes
+            ),
+        )
+        rematched_bytes = getattr(
+            self, "_current_ticket_rematched_hbm_bytes", {}
+        )
+        rematched_tokens = getattr(
+            self, "_current_ticket_rematched_prefill_tokens", {}
+        )
+        other_bytes = sum(
+            value for key, value in rematched_bytes.items() if key != request_id
+        )
+        other_tokens = sum(
+            value for key, value in rematched_tokens.items() if key != request_id
+        )
+        if (
+            other_bytes + budgeted_bytes
+            > getattr(self, "_current_ticket_hbm_budget_bytes", 0)
+        ):
+            self._record_ticket_skip(request_id, "batch_hbm_certificate")
+            return False
+        if (
+            other_tokens + actual_prefill_tokens
+            > getattr(self, "_current_ticket_prefill_budget_tokens", 0)
+        ):
+            self._record_ticket_skip(request_id, "batch_prefill_certificate")
+            return False
+        rematched_bytes[request_id] = budgeted_bytes
+        rematched_tokens[request_id] = actual_prefill_tokens
+        self._current_ticket_rematched_hbm_bytes = rematched_bytes
+        self._current_ticket_rematched_prefill_tokens = rematched_tokens
         obligation = self._restore_obligation_index().get(request_id)
         if (
             obligation is not None
@@ -11094,13 +11315,24 @@ class EmbeddedSGLangRuntime:
                     now_ms=float(self._now_ms()),
                     native_result="ticket_epoch_expired",
                 )
+        native_batch_size = len(tuple(can_run_list or ()))
+        issued_histogram = getattr(self, "_admission_issued_batch_sizes", None)
+        if issued_histogram is None:
+            issued_histogram = Counter()
+            self._admission_issued_batch_sizes = issued_histogram
+        native_histogram = getattr(self, "_admission_native_batch_sizes", None)
+        if native_histogram is None:
+            native_histogram = Counter()
+            self._admission_native_batch_sizes = native_histogram
+        issued_histogram[len(ticket_epoch.tickets)] += 1
+        native_histogram[native_batch_size] += 1
         self.audit.emit(
             "admission_ticket_epoch_finished",
             self._now_ms(),
             epoch=ticket_epoch.epoch,
             issued_count=len(ticket_epoch.tickets),
             selected_count=len(selected),
-            native_batch_size=len(tuple(can_run_list or ())),
+            native_batch_size=native_batch_size,
             source=ticket_epoch.source,
             observed_admission_window=(
                 self._observed_admission_window_fields(
@@ -11153,6 +11385,10 @@ class EmbeddedSGLangRuntime:
         self._ticket_selection_details.clear()
         self._ticket_native_rejections.clear()
         self._current_observed_admission_window = None
+        self._current_ticket_hbm_budget_bytes = 0
+        self._current_ticket_prefill_budget_tokens = 0
+        self._current_ticket_rematched_hbm_bytes = {}
+        self._current_ticket_rematched_prefill_tokens = {}
 
     def _ticket_for_request(self, request_id: str) -> AdmissionTicket | None:
         ticket_epoch = self._current_ticket_epoch
@@ -11189,6 +11425,183 @@ class EmbeddedSGLangRuntime:
             )
             self.observed_admission_scheduler = scheduler
         return scheduler
+
+    def _dynamic_working_set_scheduler(self) -> DynamicWorkingSetScheduler:
+        scheduler = getattr(self, "dynamic_working_set_scheduler", None)
+        if scheduler is None:
+            scheduler = DynamicWorkingSetScheduler(
+                max_workflows=self.config.joint_workflow_active_window,
+                pressure_enter_ratio=(
+                    self.config.dynamic_working_set_pressure_enter_ratio
+                ),
+                pressure_exit_ratio=(
+                    self.config.dynamic_working_set_pressure_exit_ratio
+                ),
+                minimum_ready_requests=(
+                    self.config.dynamic_working_set_min_ready_requests
+                ),
+                minimum_hold_epochs=(
+                    self.config.dynamic_working_set_min_hold_epochs
+                ),
+            )
+            self.dynamic_working_set_scheduler = scheduler
+        return scheduler
+
+    @staticmethod
+    def _working_set_unlock_value(frontier: Any | None) -> float:
+        if frontier is None:
+            return 0.0
+        class_value = {
+            "join_straggler": 4.0,
+            "blocking_chain": 3.0,
+            "message_ready": 2.0,
+            "ready": 1.0,
+            "background": 0.25,
+        }.get(str(getattr(frontier, "causal_class", "")), 0.5)
+        return class_value + max(0, int(getattr(frontier, "unblock_depth", 0)))
+
+    def _dynamic_working_set_for_tagged(
+        self,
+        tagged: list[tuple[int, Any, BeliefKVRequestMetadata]],
+        *,
+        entries: Mapping[str, Any],
+        fair_order: list[str],
+        frontier_candidates: Mapping[str, tuple[Any, ...]],
+        now_ms: float,
+        native_request_slots: int,
+        native_available_hbm_bytes: int,
+    ) -> DynamicWorkingSetDecision:
+        fair_rank = {
+            workflow_id: index for index, workflow_id in enumerate(fair_order)
+        }
+        by_invocation = {
+            workflow_id: {
+                item.invocation_id: item for item in items
+            }
+            for workflow_id, items in frontier_candidates.items()
+        }
+        ready_count: Counter[str] = Counter()
+        oldest_wait: dict[str, float] = {}
+        unlock_value: dict[str, float] = {}
+        for _native_index, req, metadata in tagged:
+            entry = entries.get(str(req.rid))
+            if entry is None or entry.state != AdmissionSideState.VISIBLE_PENDING:
+                continue
+            workflow_id = metadata.root_workflow_id
+            ready_count[workflow_id] += 1
+            oldest_wait[workflow_id] = max(
+                oldest_wait.get(workflow_id, 0.0),
+                max(0.0, now_ms - entry.request.submitted_ts_ms),
+            )
+            unlock_value[workflow_id] = max(
+                unlock_value.get(workflow_id, 0.0),
+                self._working_set_unlock_value(
+                    by_invocation.get(workflow_id, {}).get(
+                        metadata.invocation_id
+                    )
+                ),
+            )
+        mandatory = {
+            obligation.workflow_id
+            for obligation in self._restore_obligation_index().active()
+            if obligation.state == RestoreObligationState.TICKET_READY
+        }
+        candidates = tuple(
+            DynamicWorkingSetCandidate(
+                workflow_id=workflow_id,
+                gpu_ready_count=ready_count.get(workflow_id, 0),
+                fair_rank=fair_rank.get(workflow_id, 1 << 30),
+                action_unlock_value=unlock_value.get(workflow_id, 0.0),
+                oldest_wait_ms=oldest_wait.get(workflow_id, 0.0),
+                mandatory=workflow_id in mandatory,
+            )
+            for workflow_id in fair_order
+            if ready_count.get(workflow_id, 0) or workflow_id in mandatory
+        )
+        self._dynamic_working_set_epoch = (
+            getattr(self, "_dynamic_working_set_epoch", 0) + 1
+        )
+        effective_hbm_used_bytes = max(
+            self.controller.actual_hbm_used_bytes,
+            self.config.hbm_capacity_bytes - native_available_hbm_bytes,
+        )
+        if self.config.dynamic_working_set_enabled:
+            decision = self._dynamic_working_set_scheduler().decide(
+                candidates,
+                epoch=self._dynamic_working_set_epoch,
+                hbm_used_bytes=effective_hbm_used_bytes,
+                hbm_capacity_bytes=self.config.hbm_capacity_bytes,
+                native_request_slots=native_request_slots,
+            )
+        else:
+            active = tuple(
+                item.workflow_id
+                for item in candidates[: self.config.joint_workflow_active_window]
+            )
+            decision = DynamicWorkingSetDecision(
+                active_workflow_ids=active,
+                mode="legacy_fixed_window",
+                hbm_pressure=min(
+                    1.0,
+                    self.controller.actual_hbm_used_bytes
+                    / self.config.hbm_capacity_bytes,
+                ),
+                target_ready_requests=sum(
+                    item.gpu_ready_count for item in candidates
+                ),
+                selected_ready_requests=sum(
+                    item.gpu_ready_count
+                    for item in candidates
+                    if item.workflow_id in active
+                ),
+                pressure_actions_enabled=True,
+                epoch=self._dynamic_working_set_epoch,
+            )
+        previous = getattr(self, "_current_dynamic_working_set", None)
+        previous_ids = (
+            frozenset(previous.active_workflow_ids)
+            if previous is not None
+            else frozenset()
+        )
+        self._dynamic_working_set_newly_active_ids = frozenset(
+            decision.active_workflow_ids
+        ).difference(previous_ids)
+        self._current_dynamic_working_set = decision
+        counts = getattr(self, "_dynamic_working_set_mode_counts", None)
+        if counts is None:
+            counts = Counter()
+            self._dynamic_working_set_mode_counts = counts
+        counts[decision.mode] += 1
+        if (
+            previous is None
+            or previous.active_workflow_ids != decision.active_workflow_ids
+            or previous.mode != decision.mode
+        ):
+            self.audit.emit(
+                "dynamic_working_set_changed",
+                now_ms,
+                epoch=decision.epoch,
+                mode=decision.mode,
+                hbm_pressure=decision.hbm_pressure,
+                target_ready_requests=decision.target_ready_requests,
+                selected_ready_requests=decision.selected_ready_requests,
+                active_workflow_ids=list(decision.active_workflow_ids),
+                pressure_actions_enabled=decision.pressure_actions_enabled,
+            )
+        return decision
+
+    def _pressure_actions_enabled(self) -> bool:
+        if not self.config.dynamic_working_set_enabled:
+            return True
+        hbm_pressure = min(
+            1.0,
+            self.controller.actual_hbm_used_bytes
+            / self.config.hbm_capacity_bytes,
+        )
+        decision = getattr(self, "_current_dynamic_working_set", None)
+        if decision is not None and decision.pressure_actions_enabled:
+            return True
+        return hbm_pressure >= self.config.dynamic_working_set_pressure_enter_ratio
 
     def _observed_admission_candidates(
         self,
@@ -15549,8 +15962,11 @@ class EmbeddedSGLangRuntime:
             memory_charges=self.controller.workflow_memory_charges(),
             hbm_capacity_bytes=self.config.hbm_capacity_bytes,
         )
+        dynamic = getattr(self, "_current_dynamic_working_set", None)
         active_workflow_ids = frozenset(
-            fair_order[: self.config.joint_workflow_active_window]
+            dynamic.active_workflow_ids
+            if dynamic is not None
+            else fair_order[: self.config.joint_workflow_active_window]
         )
         fair_rank = {workflow_id: rank for rank, workflow_id in enumerate(fair_order)}
         frontier_rank = {
@@ -15812,6 +16228,20 @@ class EmbeddedSGLangRuntime:
         for intent_index in self._online_residency_intent_order(view):
             intent = plan.residency[intent_index]
             if intent.action == ResidencyAction.KEEP:
+                continue
+            if (
+                intent.action
+                in {
+                    ResidencyAction.PREPARE_HOST,
+                    ResidencyAction.COMMIT_CPU,
+                    ResidencyAction.DROP,
+                    ResidencyAction.RECOMPUTE,
+                }
+                and not self._pressure_actions_enabled()
+            ):
+                self._online_joint_counts[
+                    "pressure_residency_low_pressure_suppressed"
+                ] += 1
                 continue
             if self._online_residency_hysteresis_blocks(
                 plan_id=plan.plan_id,
@@ -16174,6 +16604,20 @@ class EmbeddedSGLangRuntime:
             return
         if target.action == ResidencyAction.RECOMPUTE:
             self._online_joint_counts["semantic_recompute_not_enabled"] += 1
+            return
+        if (
+            target.action
+            in {
+                ResidencyAction.PREPARE_HOST,
+                ResidencyAction.COMMIT_CPU,
+                ResidencyAction.DROP,
+                ResidencyAction.RECOMPUTE,
+            }
+            and not self._pressure_actions_enabled()
+        ):
+            self._online_joint_counts[
+                "semantic_pressure_residency_low_pressure_suppressed"
+            ] += 1
             return
         command_kind = self._online_residency_command_kind(target.action)
         if command_kind is None:

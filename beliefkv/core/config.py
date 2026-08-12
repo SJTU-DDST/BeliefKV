@@ -121,6 +121,11 @@ class BeliefKVConfig:
     residency_hysteresis_ms: float = 100.0
     joint_emergency_hbm_ratio: float = 0.98
     joint_workflow_active_window: int = 12
+    dynamic_working_set_enabled: bool = False
+    dynamic_working_set_pressure_enter_ratio: float = 0.8
+    dynamic_working_set_pressure_exit_ratio: float = 0.7
+    dynamic_working_set_min_ready_requests: int = 4
+    dynamic_working_set_min_hold_epochs: int = 8
     max_joint_workflow_candidates: int = 8
     max_frontier_candidates_per_workflow: int = 4
     max_total_frontier_candidates: int = 16
@@ -336,6 +341,17 @@ class BeliefKVConfig:
             raise ValueError("joint_emergency_hbm_ratio must be in (0, 1]")
         if self.joint_workflow_active_window <= 0:
             raise ValueError("joint_workflow_active_window must be positive")
+        if not (
+            0
+            <= self.dynamic_working_set_pressure_exit_ratio
+            < self.dynamic_working_set_pressure_enter_ratio
+            <= 1
+        ):
+            raise ValueError("dynamic working-set pressure thresholds are invalid")
+        if self.dynamic_working_set_min_ready_requests <= 0:
+            raise ValueError("dynamic working-set ready floor must be positive")
+        if self.dynamic_working_set_min_hold_epochs < 0:
+            raise ValueError("dynamic working-set hold epochs must be non-negative")
         if (
             self.running_batch_retraction_enabled
             and not self.observed_admission_scheduling_enabled

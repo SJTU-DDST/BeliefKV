@@ -294,6 +294,10 @@ def parse_args() -> argparse.Namespace:
         ),
     )
     parser.add_argument("--workflow-arrival-interval-ms", type=float, default=0.0)
+    parser.add_argument("--workflow-arrival-batch-size", type=int, default=0)
+    parser.add_argument(
+        "--workflow-arrival-batch-interval-ms", type=float, default=0.0
+    )
     parser.add_argument("--request-timeout", type=float, default=7200.0)
     parser.add_argument("--sandbox-command-timeout", type=int, default=600)
     parser.add_argument("--runtime-event-ack-timeout", type=float, default=10.0)
@@ -415,6 +419,10 @@ def main() -> int:
         "workflow_count": workflow_count,
         "concurrency": concurrency,
         "workflow_arrival_interval_ms": args.workflow_arrival_interval_ms,
+        "workflow_arrival_batch_size": args.workflow_arrival_batch_size,
+        "workflow_arrival_batch_interval_ms": (
+            args.workflow_arrival_batch_interval_ms
+        ),
         "required_minimum_pool_tokens": args.pool_tokens,
         "actual_pool_tokens": actual_pool_tokens,
         "server_identity": server_identity,
@@ -493,6 +501,10 @@ def main() -> int:
         max_workflows=workflow_count,
         concurrency=concurrency,
         workflow_arrival_interval_ms=args.workflow_arrival_interval_ms,
+        workflow_arrival_batch_size=args.workflow_arrival_batch_size,
+        workflow_arrival_batch_interval_ms=(
+            args.workflow_arrival_batch_interval_ms
+        ),
         gpu_index=args.gpu,
         pool_tokens=actual_pool_tokens,
         max_completion_tokens=args.max_completion_tokens,

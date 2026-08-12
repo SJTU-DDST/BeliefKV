@@ -30,7 +30,8 @@ fi
 immutable_args=(
   --model-path --served-model-name --tensor-parallel-size --dtype
   --kv-cache-dtype --page-size --context-length --max-total-tokens
-  --mem-fraction-static --chunked-prefill-size --max-running-requests
+  --mem-fraction-static --chunked-prefill-size --max-prefill-tokens
+  --max-running-requests
   --cuda-graph-max-bs --hicache-size --hicache-write-policy
   --hicache-io-backend --hicache-mem-layout
 )
@@ -57,6 +58,7 @@ export MAX_TOTAL_TOKENS="$(profile_value '.capacity.max_total_tokens')"
 export MEM_FRACTION_STATIC="$(profile_value '.runtime.mem_fraction_static')"
 export MAX_RUNNING_REQUESTS="$(profile_value '.runtime.max_running_requests')"
 export CHUNKED_PREFILL_SIZE="$(profile_value '.runtime.chunked_prefill_size')"
+export MAX_PREFILL_TOKENS="$(profile_value '.runtime.max_prefill_tokens // 16384')"
 export CUDA_GRAPH_MAX_BS="$(profile_value '.runtime.cuda_graph_max_bs')"
 export HICACHE_SIZE_GB="$(profile_value '.runtime.hicache_size_gib')"
 export HICACHE_WRITE_POLICY="$(profile_value '.runtime.hicache_write_policy')"

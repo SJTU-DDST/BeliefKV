@@ -188,8 +188,33 @@ def main() -> int:
     parser.add_argument(
         "--joint-workflow-active-window",
         type=int,
-        default=12,
-        help="Maximum number of fair workflows eligible for tickets per epoch.",
+        default=32,
+        help="Hard maximum for the dynamic workflow working set.",
+    )
+    parser.add_argument(
+        "--disable-dynamic-working-set",
+        action="store_true",
+        help="Use the legacy fixed workflow active window.",
+    )
+    parser.add_argument(
+        "--dynamic-working-set-pressure-enter-ratio",
+        type=float,
+        default=0.8,
+    )
+    parser.add_argument(
+        "--dynamic-working-set-pressure-exit-ratio",
+        type=float,
+        default=0.7,
+    )
+    parser.add_argument(
+        "--dynamic-working-set-min-ready-requests",
+        type=int,
+        default=4,
+    )
+    parser.add_argument(
+        "--dynamic-working-set-min-hold-epochs",
+        type=int,
+        default=8,
     )
     parser.add_argument(
         "--subagent-fanout-profile",
@@ -283,6 +308,19 @@ def main() -> int:
         parser.error("--restore-micro-gate-min-private-mib must be positive")
     if args.joint_workflow_active_window <= 0:
         parser.error("--joint-workflow-active-window must be positive")
+    if not (
+        0
+        <= args.dynamic_working_set_pressure_exit_ratio
+        < args.dynamic_working_set_pressure_enter_ratio
+        <= 1
+    ):
+        parser.error("dynamic working-set pressure thresholds are invalid")
+    if args.dynamic_working_set_min_ready_requests <= 0:
+        parser.error("--dynamic-working-set-min-ready-requests must be positive")
+    if args.dynamic_working_set_min_hold_epochs < 0:
+        parser.error(
+            "--dynamic-working-set-min-hold-epochs must be non-negative"
+        )
     if args.request_queue_timeout_seconds <= 0:
         parser.error("--request-queue-timeout-seconds must be positive")
 
@@ -447,6 +485,21 @@ def main() -> int:
         "residency_hysteresis_ms": 100.0,
         "joint_emergency_hbm_ratio": 0.98,
         "joint_workflow_active_window": args.joint_workflow_active_window,
+        "dynamic_working_set_enabled": (
+            not args.disable_dynamic_working_set
+        ),
+        "dynamic_working_set_pressure_enter_ratio": (
+            args.dynamic_working_set_pressure_enter_ratio
+        ),
+        "dynamic_working_set_pressure_exit_ratio": (
+            args.dynamic_working_set_pressure_exit_ratio
+        ),
+        "dynamic_working_set_min_ready_requests": (
+            args.dynamic_working_set_min_ready_requests
+        ),
+        "dynamic_working_set_min_hold_epochs": (
+            args.dynamic_working_set_min_hold_epochs
+        ),
         "max_joint_workflow_candidates": 8,
         "max_frontier_candidates_per_workflow": 4,
         "max_total_frontier_candidates": 16,

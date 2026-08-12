@@ -32,6 +32,7 @@ from langchain_core.messages import AIMessage, BaseMessage, ToolMessage
 from langchain_core.tools import BaseTool, tool
 from pydantic import BaseModel, Field
 
+from beliefkv.experiments.arrival_schedule import build_workflow_arrivals
 from beliefkv.experiments.agent_protocol import (
     AgentLoopGuardMiddleware,
     ChildCompletion,
@@ -1091,6 +1092,8 @@ class DeepAgentsExperimentConfig:
     max_workflows: int = 4
     concurrency: int = 4
     workflow_arrival_interval_ms: float = 0.0
+    workflow_arrival_batch_size: int = 0
+    workflow_arrival_batch_interval_ms: float = 0.0
     gpu_index: int = 0
     pool_tokens: int = 163_840
     max_completion_tokens: int = 2048
@@ -1137,6 +1140,24 @@ class DeepAgentsExperimentConfig:
             or self.workflow_arrival_interval_ms < 0
         ):
             raise ValueError("workflow arrival interval must be finite and non-negative")
+        if self.workflow_arrival_batch_size < 0:
+            raise ValueError("workflow arrival batch size must be non-negative")
+        if (
+            not math.isfinite(self.workflow_arrival_batch_interval_ms)
+            or self.workflow_arrival_batch_interval_ms < 0
+        ):
+            raise ValueError(
+                "workflow arrival batch interval must be finite and non-negative"
+            )
+        if self.workflow_arrival_batch_size > 0:
+            minimum_batch_interval_ms = (
+                self.workflow_arrival_batch_size - 1
+            ) * self.workflow_arrival_interval_ms
+            if self.workflow_arrival_batch_interval_ms < minimum_batch_interval_ms:
+                raise ValueError(
+                    "workflow arrival batch interval must not precede the final "
+                    "intra-batch arrival"
+                )
         if self.sampling_seed is not None and self.sampling_seed < 0:
             raise ValueError("sampling_seed must be non-negative when configured")
         if self.runtime_event_ack_timeout_s <= 0 or self.runtime_event_ack_retries <= 0:
@@ -2689,6 +2710,10 @@ def run_experiment(config: DeepAgentsExperimentConfig) -> dict[str, Any]:
         "instance_ids": [item.instance_id for item in workloads],
         "dynamic_subagent_policy": config.subagent_fanout_profile,
         "workflow_arrival_interval_ms": config.workflow_arrival_interval_ms,
+        "workflow_arrival_batch_size": config.workflow_arrival_batch_size,
+        "workflow_arrival_batch_interval_ms": (
+            config.workflow_arrival_batch_interval_ms
+        ),
         "evaluation_scope": (
             "load_and_kv_migration_measurement; official correctness requires "
             "SWE-bench harness"
@@ -2706,18 +2731,37 @@ def run_experiment(config: DeepAgentsExperimentConfig) -> dict[str, Any]:
     gpu_monitor.start()
     sglang_monitor.start()
     results: list[dict[str, Any]] = []
+    if config.workflow_arrival_batch_size > 0:
+        arrivals = build_workflow_arrivals(
+            len(workloads),
+            mode="batched",
+            batch_size=config.workflow_arrival_batch_size,
+            batch_interval_seconds=(
+                config.workflow_arrival_batch_interval_ms / 1000.0
+            ),
+            intra_batch_interval_seconds=(
+                config.workflow_arrival_interval_ms / 1000.0
+            ),
+        )
+    else:
+        arrivals = build_workflow_arrivals(
+            len(workloads),
+            mode="batched",
+            batch_size=1,
+            batch_interval_seconds=config.workflow_arrival_interval_ms / 1000.0,
+        )
     try:
         with ThreadPoolExecutor(max_workers=config.concurrency) as executor:
             futures = {}
-            for index, workload in enumerate(workloads):
+            for arrival in arrivals:
+                target = started + arrival.scheduled_offset_seconds
+                delay = target - time.monotonic()
+                if delay > 0:
+                    time.sleep(delay)
+                workload = workloads[arrival.workflow_index]
                 futures[
                     executor.submit(_run_workflow, config, bundle, workload)
                 ] = workload
-                if (
-                    config.workflow_arrival_interval_ms > 0
-                    and index + 1 < len(workloads)
-                ):
-                    time.sleep(config.workflow_arrival_interval_ms / 1000.0)
             for future in as_completed(futures):
                 workload = futures[future]
                 try:

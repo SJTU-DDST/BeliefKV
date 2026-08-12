@@ -7,6 +7,8 @@ from beliefkv.policy.admission import (
     AdmissionRequest,
     AdmissionSideState,
     AdmissionTicketCompiler,
+    DynamicWorkingSetCandidate,
+    DynamicWorkingSetScheduler,
     ObservedAdmissionCandidate,
     ObservedAdmissionScheduler,
     ObservedAdmissionSnapshot,
@@ -360,13 +362,203 @@ def test_compiler_issues_a_chunk_ticket_for_an_oversized_prompt() -> None:
         prefill_tokens=10,
     )
 
-    assert [ticket.request_id for ticket in result.tickets] == ["large"]
-    assert result.tickets[0].estimated_prefill_tokens == 10
-    assert result.tickets[0].estimated_incremental_bytes == 200
-    assert ("small", "prefill_token_budget") in result.skipped
+    assert [ticket.request_id for ticket in result.tickets] == ["small", "large"]
+    assert result.tickets[0].estimated_prefill_tokens == 2
+    assert result.tickets[0].epoch_incremental_bytes == 20
+    assert result.tickets[1].estimated_prefill_tokens == 8
+    assert result.tickets[1].estimated_incremental_bytes == 200
+    assert result.tickets[1].epoch_incremental_bytes == 80
 
 
-def test_compiler_continues_after_a_request_exceeds_hbm_budget() -> None:
+def test_compiler_batches_short_prefills_before_one_chunked_tail() -> None:
+    index = VisibleAdmissionIndex()
+    index.register(_request("large-a", prompt_tokens=20, output_tokens=0))
+    index.register(_request("short-a", prompt_tokens=2, output_tokens=0))
+    index.register(_request("short-b", prompt_tokens=3, output_tokens=0))
+    index.register(_request("large-b", prompt_tokens=30, output_tokens=0))
+
+    result = _compile(
+        index,
+        ("large-a", "short-a", "short-b", "large-b"),
+        hbm_bytes=1_000,
+        prefill_tokens=10,
+    )
+
+    assert [ticket.request_id for ticket in result.tickets] == [
+        "short-a",
+        "short-b",
+        "large-a",
+    ]
+    assert [ticket.estimated_prefill_tokens for ticket in result.tickets] == [2, 3, 5]
+    assert ("large-b", "single_chunked_request_budget") in result.skipped
+
+
+def test_priority_oversized_prompt_keeps_bounded_chunk_progress() -> None:
+    index = VisibleAdmissionIndex()
+    index.register(_request("large", prompt_tokens=100, output_tokens=0))
+    for suffix in range(5):
+        index.register(
+            _request(f"short-{suffix}", prompt_tokens=2, output_tokens=0)
+        )
+
+    result = _compile(
+        index,
+        ("large", *(f"short-{suffix}" for suffix in range(5))),
+        hbm_bytes=2_000,
+        prefill_tokens=10,
+    )
+
+    assert result.tickets[-1].request_id == "large"
+    assert result.tickets[-1].estimated_prefill_tokens >= 3
+    assert sum(ticket.estimated_prefill_tokens for ticket in result.tickets) <= 10
+    assert any(ticket.request_id.startswith("short-") for ticket in result.tickets)
+
+
+def test_priority_chunk_is_trimmed_to_reserved_hbm_budget() -> None:
+    index = VisibleAdmissionIndex()
+    index.register(_request("large", prompt_tokens=100, output_tokens=0))
+    index.register(_request("short", prompt_tokens=2, output_tokens=0))
+
+    result = _compile(
+        index,
+        ("large", "short"),
+        hbm_bytes=50,
+        prefill_tokens=10,
+    )
+
+    assert [ticket.request_id for ticket in result.tickets] == ["short", "large"]
+    assert result.tickets[-1].estimated_prefill_tokens == 3
+    assert sum(ticket.epoch_incremental_bytes for ticket in result.tickets) == 50
+
+
+def test_dynamic_working_set_fills_slots_then_contracts_by_unlock_value() -> None:
+    scheduler = DynamicWorkingSetScheduler(
+        max_workflows=4,
+        pressure_enter_ratio=0.8,
+        pressure_exit_ratio=0.7,
+        minimum_ready_requests=2,
+        minimum_hold_epochs=0,
+    )
+    candidates = (
+        DynamicWorkingSetCandidate("fair", 2, 0, 1.0),
+        DynamicWorkingSetCandidate("unlock", 2, 1, 5.0),
+        DynamicWorkingSetCandidate("tail", 2, 2, 0.5),
+    )
+
+    fill = scheduler.decide(
+        candidates,
+        epoch=1,
+        hbm_used_bytes=500,
+        hbm_capacity_bytes=1_000,
+        native_request_slots=6,
+    )
+    pressure = scheduler.decide(
+        candidates,
+        epoch=2,
+        hbm_used_bytes=950,
+        hbm_capacity_bytes=1_000,
+        native_request_slots=6,
+    )
+
+    assert fill.active_workflow_ids == ("fair", "unlock", "tail")
+    assert fill.target_ready_requests == 6
+    assert not fill.pressure_actions_enabled
+    assert pressure.active_workflow_ids == ("unlock",)
+    assert pressure.target_ready_requests == 2
+    assert pressure.pressure_actions_enabled
+
+
+def test_dynamic_working_set_preserves_mandatory_restore_above_hard_window() -> None:
+    scheduler = DynamicWorkingSetScheduler(
+        max_workflows=1,
+        pressure_enter_ratio=0.8,
+        pressure_exit_ratio=0.7,
+        minimum_ready_requests=1,
+        minimum_hold_epochs=0,
+    )
+    decision = scheduler.decide(
+        (
+            DynamicWorkingSetCandidate("restore-a", 1, 2, 0.0, mandatory=True),
+            DynamicWorkingSetCandidate("restore-b", 1, 3, 0.0, mandatory=True),
+            DynamicWorkingSetCandidate("unlock", 4, 0, 5.0),
+        ),
+        epoch=1,
+        hbm_used_bytes=900,
+        hbm_capacity_bytes=1_000,
+        native_request_slots=4,
+    )
+
+    assert decision.active_workflow_ids == ("restore-a", "restore-b")
+
+
+def test_dynamic_working_set_uses_hysteresis_for_pressure_actions() -> None:
+    scheduler = DynamicWorkingSetScheduler(
+        max_workflows=2,
+        pressure_enter_ratio=0.8,
+        pressure_exit_ratio=0.7,
+        minimum_ready_requests=1,
+        minimum_hold_epochs=2,
+    )
+    candidates = (DynamicWorkingSetCandidate("wf", 1, 0, 1.0),)
+
+    first = scheduler.decide(
+        candidates,
+        epoch=1,
+        hbm_used_bytes=750,
+        hbm_capacity_bytes=1_000,
+        native_request_slots=1,
+    )
+    entered = scheduler.decide(
+        candidates,
+        epoch=3,
+        hbm_used_bytes=900,
+        hbm_capacity_bytes=1_000,
+        native_request_slots=1,
+    )
+    held = scheduler.decide(
+        candidates,
+        epoch=4,
+        hbm_used_bytes=600,
+        hbm_capacity_bytes=1_000,
+        native_request_slots=1,
+    )
+    exited = scheduler.decide(
+        candidates,
+        epoch=5,
+        hbm_used_bytes=600,
+        hbm_capacity_bytes=1_000,
+        native_request_slots=1,
+    )
+
+    assert not first.pressure_actions_enabled
+    assert entered.pressure_actions_enabled
+    assert held.pressure_actions_enabled
+    assert not exited.pressure_actions_enabled
+
+
+def test_dynamic_working_set_bounds_unlock_priority_by_fair_rank() -> None:
+    scheduler = DynamicWorkingSetScheduler(
+        max_workflows=1,
+        pressure_enter_ratio=0.8,
+        pressure_exit_ratio=0.7,
+        minimum_ready_requests=1,
+        minimum_hold_epochs=0,
+    )
+    decision = scheduler.decide(
+        (
+            DynamicWorkingSetCandidate("fair", 1, 0, 0.0),
+            DynamicWorkingSetCandidate("deep-tail", 1, 20, 100.0),
+        ),
+        epoch=1,
+        hbm_used_bytes=900,
+        hbm_capacity_bytes=1_000,
+        native_request_slots=1,
+    )
+
+    assert decision.active_workflow_ids == ("fair",)
+
+
+def test_compiler_trims_priority_chunk_after_short_request_uses_hbm() -> None:
     index = VisibleAdmissionIndex()
     index.register(_request("large", prompt_tokens=20, output_tokens=0))
     index.register(_request("small", prompt_tokens=2, output_tokens=0))
@@ -378,8 +570,9 @@ def test_compiler_continues_after_a_request_exceeds_hbm_budget() -> None:
         prefill_tokens=10,
     )
 
-    assert [ticket.request_id for ticket in result.tickets] == ["small"]
-    assert ("large", "bounded_hbm_budget") in result.skipped
+    assert [ticket.request_id for ticket in result.tickets] == ["small", "large"]
+    assert result.tickets[-1].estimated_prefill_tokens == 3
+    assert sum(ticket.epoch_incremental_bytes for ticket in result.tickets) == 50
 
 
 def test_transition_barrier_fails_closed_until_reopened() -> None:

@@ -122,6 +122,7 @@ def capacity_contract(
         "max_running_requests": int(server_info.get("max_running_requests") or 0),
         "page_size": int(server_info.get("page_size") or 0),
         "prefill_chunk_size": int(server_info.get("chunked_prefill_size") or 0),
+        "max_prefill_tokens": int(server_info.get("max_prefill_tokens") or 0),
         "host_pool_gib": float(server_info.get("hicache_size") or 0.0),
         "attention_backend": server_info.get("attention_backend"),
         "sampling_backend": server_info.get("sampling_backend"),

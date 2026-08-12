@@ -159,6 +159,7 @@ class AdmissionTicket:
     version: AdmissionLocalVersion
     estimated_prefill_tokens: int
     estimated_incremental_bytes: int
+    epoch_incremental_bytes: int
     issued_ts_ms: float
     source: str
     reason: str
@@ -171,6 +172,7 @@ class AdmissionTicket:
             self.context_epoch,
             self.estimated_prefill_tokens,
             self.estimated_incremental_bytes,
+            self.epoch_incremental_bytes,
             self.reservation_credit_bytes,
         ) < 0:
             raise ValueError("ticket counters must be non-negative")
@@ -186,6 +188,8 @@ class AdmissionTicket:
         ):
             if not value:
                 raise ValueError(f"ticket {name} must be non-empty")
+        if self.epoch_incremental_bytes > self.estimated_incremental_bytes:
+            raise ValueError("epoch ticket bytes cannot exceed full request bytes")
 
 
 @dataclass(frozen=True)
@@ -381,6 +385,199 @@ class ObservedAdmissionWindow:
         if self.active_kv_budget_bytes == 0:
             return 1.0 if self.active_kv_footprint_bytes else 0.0
         return self.active_kv_footprint_bytes / self.active_kv_budget_bytes
+
+
+@dataclass(frozen=True)
+class DynamicWorkingSetCandidate:
+    """Workflow-level facts used to size one admission working set."""
+
+    workflow_id: str
+    gpu_ready_count: int
+    fair_rank: int
+    action_unlock_value: float
+    oldest_wait_ms: float = 0.0
+    mandatory: bool = False
+
+    def __post_init__(self) -> None:
+        if not self.workflow_id:
+            raise ValueError("working-set workflow id must be non-empty")
+        if min(self.gpu_ready_count, self.fair_rank) < 0:
+            raise ValueError("working-set counters must be non-negative")
+        if (
+            not math.isfinite(self.action_unlock_value)
+            or self.action_unlock_value < 0
+        ):
+            raise ValueError("action unlock value must be finite and non-negative")
+        if not math.isfinite(self.oldest_wait_ms) or self.oldest_wait_ms < 0:
+            raise ValueError("working-set wait must be finite and non-negative")
+
+
+@dataclass(frozen=True)
+class DynamicWorkingSetDecision:
+    active_workflow_ids: tuple[str, ...]
+    mode: str
+    hbm_pressure: float
+    target_ready_requests: int
+    selected_ready_requests: int
+    pressure_actions_enabled: bool
+    epoch: int
+
+    def __post_init__(self) -> None:
+        if len(self.active_workflow_ids) != len(set(self.active_workflow_ids)):
+            raise ValueError("active working set contains duplicate workflows")
+        if not self.mode:
+            raise ValueError("working-set mode must be non-empty")
+        if not 0 <= self.hbm_pressure <= 1:
+            raise ValueError("working-set HBM pressure must be in [0, 1]")
+        if min(
+            self.target_ready_requests,
+            self.selected_ready_requests,
+            self.epoch,
+        ) < 0:
+            raise ValueError("working-set counters must be non-negative")
+
+
+class DynamicWorkingSetScheduler:
+    """Resize the workflow admission set while preserving an outer fair order.
+
+    Low pressure is work-conserving: workflows are admitted until enough GPU-ready
+    requests exist to fill the native request slots. Under sustained HBM pressure,
+    the target contracts smoothly and causal unlock value breaks fairness ties.
+    Destructive actions use the same hysteretic pressure state.
+    """
+
+    def __init__(
+        self,
+        *,
+        max_workflows: int,
+        pressure_enter_ratio: float,
+        pressure_exit_ratio: float,
+        minimum_ready_requests: int,
+        minimum_hold_epochs: int,
+    ) -> None:
+        if max_workflows <= 0:
+            raise ValueError("maximum working-set workflows must be positive")
+        if not 0 <= pressure_exit_ratio < pressure_enter_ratio <= 1:
+            raise ValueError("working-set pressure thresholds are invalid")
+        if minimum_ready_requests <= 0:
+            raise ValueError("minimum ready requests must be positive")
+        if minimum_hold_epochs < 0:
+            raise ValueError("minimum hold epochs must be non-negative")
+        self.max_workflows = max_workflows
+        self.pressure_enter_ratio = pressure_enter_ratio
+        self.pressure_exit_ratio = pressure_exit_ratio
+        self.minimum_ready_requests = minimum_ready_requests
+        self.minimum_hold_epochs = minimum_hold_epochs
+        self._pressure_mode = False
+        self._last_transition_epoch = 0
+        self._initialized = False
+
+    def decide(
+        self,
+        candidates: Sequence[DynamicWorkingSetCandidate],
+        *,
+        epoch: int,
+        hbm_used_bytes: int,
+        hbm_capacity_bytes: int,
+        native_request_slots: int,
+    ) -> DynamicWorkingSetDecision:
+        if min(epoch, hbm_used_bytes, native_request_slots) < 0:
+            raise ValueError("working-set resources must be non-negative")
+        if hbm_capacity_bytes <= 0:
+            raise ValueError("working-set HBM capacity must be positive")
+        workflow_ids = [item.workflow_id for item in candidates]
+        if len(workflow_ids) != len(set(workflow_ids)):
+            raise ValueError("working-set candidates must be workflow aggregated")
+
+        pressure = min(1.0, hbm_used_bytes / hbm_capacity_bytes)
+        held_epochs = max(0, epoch - self._last_transition_epoch)
+        if not self._initialized:
+            self._initialized = True
+            self._pressure_mode = pressure >= self.pressure_enter_ratio
+            self._last_transition_epoch = epoch
+        elif (
+            not self._pressure_mode
+            and pressure >= self.pressure_enter_ratio
+            and held_epochs >= self.minimum_hold_epochs
+        ):
+            self._pressure_mode = True
+            self._last_transition_epoch = epoch
+        elif (
+            self._pressure_mode
+            and pressure <= self.pressure_exit_ratio
+            and held_epochs >= self.minimum_hold_epochs
+        ):
+            self._pressure_mode = False
+            self._last_transition_epoch = epoch
+
+        slots = min(
+            sum(item.gpu_ready_count for item in candidates),
+            max(0, native_request_slots),
+        )
+        if self._pressure_mode and slots:
+            pressure_span = max(1e-9, 1.0 - self.pressure_enter_ratio)
+            residual_fraction = max(
+                0.0,
+                min(1.0, (1.0 - pressure) / pressure_span),
+            )
+            target = max(
+                self.minimum_ready_requests,
+                math.ceil(slots * residual_fraction),
+            )
+            target = min(slots, target)
+            ordered = sorted(
+                candidates,
+                key=lambda item: (
+                    not item.mandatory,
+                    item.fair_rank - min(4.0, item.action_unlock_value),
+                    item.fair_rank,
+                    -item.action_unlock_value,
+                    -item.oldest_wait_ms,
+                    item.workflow_id,
+                ),
+            )
+            mode = "hbm_pressure"
+        else:
+            target = slots
+            ordered = sorted(
+                candidates,
+                key=lambda item: (
+                    not item.mandatory,
+                    item.fair_rank,
+                    -item.action_unlock_value,
+                    -item.oldest_wait_ms,
+                    item.workflow_id,
+                ),
+            )
+            mode = "gpu_fill"
+
+        selected: list[str] = []
+        selected_ready = 0
+        mandatory_count = sum(item.mandatory for item in ordered)
+        for item in ordered:
+            if (
+                len(selected) >= self.max_workflows
+                and len(selected) >= mandatory_count
+            ):
+                break
+            if (
+                not item.mandatory
+                and selected_ready >= target
+                and len(selected) >= mandatory_count
+            ):
+                break
+            selected.append(item.workflow_id)
+            selected_ready += item.gpu_ready_count
+
+        return DynamicWorkingSetDecision(
+            active_workflow_ids=tuple(selected),
+            mode=mode,
+            hbm_pressure=pressure,
+            target_ready_requests=target,
+            selected_ready_requests=selected_ready,
+            pressure_actions_enabled=self._pressure_mode,
+            epoch=epoch,
+        )
 
 
 class ObservedAdmissionScheduler:
@@ -747,6 +944,7 @@ class AdmissionTicketCompiler:
         remaining_tokens = budget.max_prefill_tokens
         remaining_hbm = budget.bounded_hbm_bytes
         scanned = 0
+        pending: list[tuple[str, VisibleAdmissionEntry]] = []
         for request_id in ordered_request_ids:
             if scanned >= budget.max_candidates:
                 break
@@ -758,23 +956,78 @@ class AdmissionTicketCompiler:
             if entry.state != AdmissionSideState.VISIBLE_PENDING:
                 skipped.append((request_id, entry.state.value))
                 continue
-            if len(tickets) >= budget.max_requests:
+            pending.append((request_id, entry))
+
+        # SGLang 0.5.2rc1 owns one retained ``chunked_req`` and stops scanning
+        # after selecting it. Batch complete prefill work first, then issue at
+        # most one oversized chunk ticket at the tail of this epoch.
+        complete = [
+            item
+            for item in pending
+            if item[1].request.uncached_prompt_tokens <= budget.max_prefill_tokens
+        ]
+        oversized = [
+            item
+            for item in pending
+            if item[1].request.uncached_prompt_tokens > budget.max_prefill_tokens
+        ]
+        priority_chunk = (
+            pending[0]
+            if pending
+            and pending[0][1].request.uncached_prompt_tokens
+            > budget.max_prefill_tokens
+            else None
+        )
+        reserved_chunk_tokens = 0
+        reserved_chunk_hbm = 0
+        if priority_chunk is not None and budget.max_requests > 0:
+            priority_request_id, priority_entry = priority_chunk
+            reserved_chunk_tokens = min(
+                priority_entry.request.uncached_prompt_tokens,
+                max(1, math.ceil(budget.max_prefill_tokens / 4)),
+            )
+            reserved_epoch_bytes = max(
+                0,
+                reserved_chunk_tokens
+                * priority_entry.request.kv_bytes_per_token
+                + priority_entry.request.fixed_overhead_bytes,
+            )
+            reserved_chunk_hbm = max(
+                0,
+                reserved_epoch_bytes
+                - min(reserved_epoch_bytes, credits.get(priority_request_id, 0)),
+            )
+            if reserved_chunk_hbm > remaining_hbm:
+                reserved_chunk_tokens = 0
+                reserved_chunk_hbm = 0
+        complete_token_budget = remaining_tokens - reserved_chunk_tokens
+        complete_hbm_budget = remaining_hbm - reserved_chunk_hbm
+        complete_slot_budget = max(
+            0,
+            budget.max_requests - (1 if reserved_chunk_tokens else 0),
+        )
+        deferred_complete: list[tuple[str, VisibleAdmissionEntry]] = []
+        for request_id, entry in complete:
+            if len(tickets) >= complete_slot_budget:
                 skipped.append((request_id, "request_slot_budget"))
                 continue
             uncached_prompt_tokens = entry.request.uncached_prompt_tokens
-            required_bytes = entry.request.estimated_incremental_bytes
-            reservation_credit_bytes = min(
-                required_bytes, credits.get(request_id, 0)
-            )
-            budgeted_bytes = required_bytes - reservation_credit_bytes
-            if uncached_prompt_tokens > 0 and remaining_tokens <= 0:
-                skipped.append((request_id, "prefill_token_budget"))
+            if uncached_prompt_tokens > complete_token_budget:
+                deferred_complete.append((request_id, entry))
                 continue
-            # The native budget is per scheduler epoch. A request larger than
-            # this budget remains admissible because SGLang can prefill its
-            # first chunk now and retain the remainder as ``chunked_req``.
-            prefill_tokens = min(uncached_prompt_tokens, remaining_tokens)
-            if budgeted_bytes > remaining_hbm:
+            request = entry.request
+            epoch_required_bytes = max(
+                0,
+                (uncached_prompt_tokens + request.expected_output_tokens)
+                * request.kv_bytes_per_token
+                + request.fixed_overhead_bytes,
+            )
+            required_bytes = request.estimated_incremental_bytes
+            reservation_credit_bytes = min(
+                epoch_required_bytes, credits.get(request_id, 0)
+            )
+            budgeted_bytes = epoch_required_bytes - reservation_credit_bytes
+            if budgeted_bytes > complete_hbm_budget:
                 skipped.append((request_id, "bounded_hbm_budget"))
                 continue
             ticket = AdmissionTicket(
@@ -786,16 +1039,94 @@ class AdmissionTicketCompiler:
                 context_id=entry.request.context_id,
                 context_epoch=entry.request.context_epoch,
                 version=entry.version,
-                estimated_prefill_tokens=prefill_tokens,
+                estimated_prefill_tokens=uncached_prompt_tokens,
                 estimated_incremental_bytes=required_bytes,
+                epoch_incremental_bytes=epoch_required_bytes,
                 issued_ts_ms=now_ms,
                 source=source,
                 reason=reason,
                 reservation_credit_bytes=reservation_credit_bytes,
             )
             tickets.append(ticket)
-            remaining_tokens -= prefill_tokens
+            remaining_tokens -= uncached_prompt_tokens
             remaining_hbm -= budgeted_bytes
+            complete_token_budget -= uncached_prompt_tokens
+            complete_hbm_budget -= budgeted_bytes
+
+        if priority_chunk is not None and reserved_chunk_tokens:
+            chunk_candidates = (
+                priority_chunk,
+                *deferred_complete,
+                *(item for item in oversized if item != priority_chunk),
+            )
+        else:
+            chunk_candidates = (*deferred_complete, *oversized)
+        if len(tickets) < budget.max_requests and remaining_tokens > 0:
+            for candidate_index, (request_id, entry) in enumerate(chunk_candidates):
+                request = entry.request
+                reservation_credit = credits.get(request_id, 0)
+                hbm_token_budget = max(
+                    0,
+                    (
+                        remaining_hbm
+                        + reservation_credit
+                        - request.fixed_overhead_bytes
+                    )
+                    // request.kv_bytes_per_token,
+                )
+                prefill_tokens = min(
+                    request.uncached_prompt_tokens,
+                    remaining_tokens,
+                    hbm_token_budget,
+                )
+                if prefill_tokens <= 0:
+                    skipped.append((request_id, "bounded_hbm_budget"))
+                    continue
+                epoch_required_bytes = max(
+                    0,
+                    prefill_tokens * request.kv_bytes_per_token
+                    + request.fixed_overhead_bytes,
+                )
+                reservation_credit_bytes = min(
+                    epoch_required_bytes, reservation_credit
+                )
+                budgeted_bytes = epoch_required_bytes - reservation_credit_bytes
+                if budgeted_bytes > remaining_hbm:
+                    skipped.append((request_id, "bounded_hbm_budget"))
+                    continue
+                tickets.append(
+                    AdmissionTicket(
+                        epoch=epoch,
+                        rank=len(tickets),
+                        request_id=request_id,
+                        workflow_id=request.workflow_id,
+                        invocation_id=request.invocation_id,
+                        context_id=request.context_id,
+                        context_epoch=request.context_epoch,
+                        version=entry.version,
+                        estimated_prefill_tokens=prefill_tokens,
+                        estimated_incremental_bytes=(
+                            request.estimated_incremental_bytes
+                        ),
+                        epoch_incremental_bytes=epoch_required_bytes,
+                        issued_ts_ms=now_ms,
+                        source=source,
+                        reason=reason,
+                        reservation_credit_bytes=reservation_credit_bytes,
+                    )
+                )
+                remaining_tokens -= prefill_tokens
+                remaining_hbm -= budgeted_bytes
+                skipped.extend(
+                    (other_request_id, "single_chunked_request_budget")
+                    for other_request_id, _ in chunk_candidates[candidate_index + 1 :]
+                )
+                break
+        else:
+            skipped.extend(
+                (request_id, "prefill_token_budget")
+                for request_id, _entry in chunk_candidates
+            )
         return AdmissionTicketEpoch(
             epoch=epoch,
             tickets=tuple(tickets),

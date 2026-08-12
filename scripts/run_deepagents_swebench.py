@@ -64,6 +64,10 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--max-workflows", type=int, default=4)
     parser.add_argument("--concurrency", type=int, default=4)
     parser.add_argument("--workflow-arrival-interval-ms", type=float, default=0.0)
+    parser.add_argument("--workflow-arrival-batch-size", type=int, default=0)
+    parser.add_argument(
+        "--workflow-arrival-batch-interval-ms", type=float, default=0.0
+    )
     parser.add_argument(
         "--subagent-fanout-profile",
         choices=("natural", "parallel_analysis_2to3"),
@@ -168,6 +172,10 @@ def main() -> int:
         max_workflows=args.max_workflows,
         concurrency=args.concurrency,
         workflow_arrival_interval_ms=args.workflow_arrival_interval_ms,
+        workflow_arrival_batch_size=args.workflow_arrival_batch_size,
+        workflow_arrival_batch_interval_ms=(
+            args.workflow_arrival_batch_interval_ms
+        ),
         gpu_index=args.gpu,
         pool_tokens=args.pool_tokens,
         max_completion_tokens=args.max_completion_tokens,
