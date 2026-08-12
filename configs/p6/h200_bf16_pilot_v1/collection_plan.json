@@ -158,7 +158,7 @@
   "repository_count": 4,
   "runtime_policy": "frozen_p5_observed",
   "runtime_profile": "/home/longhao/experiment/BeliefKV/configs/p6/h200_bf16_v1/frozen_runtime_profile.json",
-  "runtime_profile_sha256": "e370de881115a5bbe63a11ac2061ecfb6c1e0c7a4e55b0c09c9c8b07dee89b9d",
+  "runtime_profile_sha256": "023c11f24faa4662a4f7c56f140cf0a531192d3ff3c7618a4d78d0ee1b24849f",
   "schema_version": 1,
   "selection_contract": {
     "excluded_prior_unique_tasks": 111,

@@ -38,7 +38,7 @@ def _server_info(profile: dict[str, object]) -> dict[str, object]:
         "served_model_name": model["served_name"],
         "model_path": profile["_model_path"],
         "dtype": model["weight_dtype"],
-        "kv_cache_dtype": model["kv_cache_dtype"],
+        "kv_cache_dtype": runtime["kv_cache_cli_dtype"],
         "version": runtime["sglang_version"],
         "tp_size": runtime["tensor_parallel_size"],
         "max_total_num_tokens": capacity["max_total_tokens"],
@@ -62,7 +62,7 @@ def test_h200_profile_is_internally_consistent() -> None:
 
     assert environment["MAX_TOTAL_TOKENS"] == "871700"
     assert environment["WEIGHT_DTYPE"] == "bfloat16"
-    assert environment["KV_CACHE_DTYPE"] == "bfloat16"
+    assert environment["KV_CACHE_DTYPE"] == "auto"
     assert environment["HICACHE_SIZE_GB"] == "96.0"
     assert environment["TENSOR_PARALLEL_SIZE"] == "1"
 
@@ -144,3 +144,31 @@ def test_formal_launcher_rejects_immutable_override(tmp_path: Path) -> None:
 
     assert result.returncode == 2
     assert "owns immutable argument" in result.stderr
+
+
+def test_formal_launcher_rejects_occupied_port(tmp_path: Path) -> None:
+    import os
+    import socket
+
+    server = tmp_path / "server"
+    server.mkdir()
+    (server / "beliefkv_config.json").write_text("{}\n", encoding="utf-8")
+    with socket.socket() as listener:
+        listener.bind(("127.0.0.1", 0))
+        listener.listen()
+        port = listener.getsockname()[1]
+        result = subprocess.run(
+            (
+                str(REPOSITORY_ROOT / "scripts/launch_deepagents_swebench_server.sh"),
+                "--runtime-profile",
+                str(PROFILE),
+                str(server),
+            ),
+            cwd=REPOSITORY_ROOT,
+            env={**os.environ, "PORT": str(port)},
+            text=True,
+            capture_output=True,
+        )
+
+    assert result.returncode == 2
+    assert "already occupied" in result.stderr

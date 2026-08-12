@@ -50,7 +50,7 @@ profile_value() {
 export MODEL_PATH="$(profile_value '.model.path')"
 export SERVED_MODEL_NAME="$(profile_value '.model.served_name')"
 export WEIGHT_DTYPE="$(profile_value '.model.weight_dtype')"
-export KV_CACHE_DTYPE="$(profile_value '.model.kv_cache_dtype')"
+export KV_CACHE_DTYPE="$(profile_value '.runtime.kv_cache_cli_dtype')"
 export PAGE_SIZE="$(profile_value '.runtime.page_size')"
 export CONTEXT_LENGTH="$(profile_value '.model.context_length')"
 export MAX_TOTAL_TOKENS="$(profile_value '.capacity.max_total_tokens')"
@@ -67,6 +67,11 @@ export CUDA_VISIBLE_DEVICES="${CUDA_VISIBLE_DEVICES:-0}"
 export PORT="${PORT:-18000}"
 export HOST="${HOST:-127.0.0.1}"
 export SLEEP_ON_IDLE="${SLEEP_ON_IDLE:-1}"
+
+if ss -H -ltn "sport = :${PORT}" | grep -q .; then
+  printf 'Server port is already occupied: %s:%s\n' "${HOST}" "${PORT}" >&2
+  exit 2
+fi
 
 mkdir -p "${SERVER_DIR}"
 printf '%s\n' "$$" >"${SERVER_DIR}/server.pid"

@@ -181,6 +181,6 @@
   "lock_state": "frozen_local_images",
   "locked_at": "2026-08-12T07:13:29.202768Z",
   "plan_id": "h200-bf16-observed-pilot-v1",
-  "runtime_profile_sha256": "e370de881115a5bbe63a11ac2061ecfb6c1e0c7a4e55b0c09c9c8b07dee89b9d",
+  "runtime_profile_sha256": "023c11f24faa4662a4f7c56f140cf0a531192d3ff3c7618a4d78d0ee1b24849f",
   "schema_version": 1
 }

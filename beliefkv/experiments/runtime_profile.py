@@ -60,6 +60,7 @@ def load_runtime_profile(
     for key in (
         "sglang_version",
         "sglang_commit",
+        "kv_cache_cli_dtype",
         "tensor_parallel_size",
         "page_size",
         "chunked_prefill_size",
@@ -149,7 +150,7 @@ def runtime_launch_environment(profile: dict[str, Any]) -> dict[str, str]:
         "MODEL_PATH": str(profile["_model_path"]),
         "SERVED_MODEL_NAME": str(model["served_name"]),
         "WEIGHT_DTYPE": str(model["weight_dtype"]),
-        "KV_CACHE_DTYPE": str(model["kv_cache_dtype"]),
+        "KV_CACHE_DTYPE": str(runtime["kv_cache_cli_dtype"]),
         "PAGE_SIZE": str(int(runtime["page_size"])),
         "CONTEXT_LENGTH": str(int(model["context_length"])),
         "MAX_TOTAL_TOKENS": str(int(capacity["max_total_tokens"])),

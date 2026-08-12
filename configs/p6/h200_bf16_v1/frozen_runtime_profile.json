@@ -11,6 +11,7 @@
   "runtime": {
     "sglang_version": "0.5.2rc1",
     "sglang_commit": "18f91eb639084825717c0e3c3c7273492812ab71",
+    "kv_cache_cli_dtype": "auto",
     "tensor_parallel_size": 1,
     "page_size": 1,
     "chunked_prefill_size": 4096,
