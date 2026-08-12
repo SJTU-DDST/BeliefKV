@@ -30,6 +30,9 @@ experiments/micro/*
 experiments/smoke/*
 !experiments/archive/README.md
 
+# Hardware-keyed service artifacts are immutable experiment inputs, not source.
+artifacts/*
+
 third_party/*
 !third_party/README.md
 

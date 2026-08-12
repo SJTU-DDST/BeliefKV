@@ -35,6 +35,7 @@ rsync -a --info=progress2 OLD_HOST:OLD_ROOT/experiments/models/ experiments/mode
 rsync -a --info=progress2 OLD_HOST:OLD_ROOT/workloads/raw/ workloads/raw/
 rsync -a --info=progress2 OLD_HOST:OLD_ROOT/workloads/frozen/ workloads/frozen/
 rsync -a --info=progress2 OLD_HOST:OLD_ROOT/workloads/sources/ workloads/sources/
+rsync -a --info=progress2 OLD_HOST:OLD_ROOT/artifacts/ artifacts/
 rsync -a --info=progress2 \
   OLD_HOST:/opt/downloaded_models/Qwen/Qwen3-Coder-30B-A3B-Instruct-FP8/ \
   MODEL_ROOT/Qwen3-Coder-30B-A3B-Instruct-FP8/

@@ -9,7 +9,7 @@ from pathlib import Path
 from typing import Any, Iterable, Mapping
 
 
-HARDWARE_SERVICE_SCHEMA_VERSION = 3
+HARDWARE_SERVICE_SCHEMA_VERSION = 4
 CONTROLLED_SERVICE_EVIDENCE = "controlled_microbenchmark"
 RUNTIME_VALIDATION_EVIDENCE = "runtime_validation"
 
@@ -132,6 +132,16 @@ class GPUServiceCurveModel:
         ] = defaultdict(list)
         self.calibration_summary: dict[str, Any] = {}
         self.training_summary: dict[str, Any] = {}
+        self.hardware_key: str | None = None
+        self.artifact_metadata: dict[str, Any] = {}
+
+    def bind_hardware(
+        self, hardware_key: str, metadata: Mapping[str, Any] | None = None
+    ) -> None:
+        if not hardware_key:
+            raise ValueError("GPU service hardware key must be non-empty")
+        self.hardware_key = hardware_key
+        self.artifact_metadata = dict(metadata or {})
 
     def fit(self, rows: Iterable[Mapping[str, Any]]) -> dict[str, Any]:
         values = [dict(row) for row in rows]
@@ -719,6 +729,8 @@ class GPUServiceCurveModel:
         return {
             "schema_version": HARDWARE_SERVICE_SCHEMA_VERSION,
             "model_kind": "conditional_batch_gpu_service_distribution",
+            "hardware_key": self.hardware_key,
+            "metadata": self.artifact_metadata,
             "minimum_support": self.minimum_support,
             "neighbor_count": self.neighbor_count,
             "training_summary": self.training_summary,
@@ -753,7 +765,7 @@ class GPUServiceCurveModel:
     @classmethod
     def from_dict(cls, raw: Mapping[str, Any]) -> "GPUServiceCurveModel":
         schema_version = int(raw.get("schema_version", -1))
-        if schema_version not in {2, HARDWARE_SERVICE_SCHEMA_VERSION}:
+        if schema_version not in {2, 3, HARDWARE_SERVICE_SCHEMA_VERSION}:
             raise ValueError("unsupported GPU service curve schema")
         model = cls(
             minimum_support=float(raw.get("minimum_support", 4.0)),
@@ -799,9 +811,19 @@ class GPUServiceCurveModel:
                 for item in raw.get("calibration_observations", ())
             ]
             model._rebuild_calibration_neighbor_index()
+        if schema_version >= HARDWARE_SERVICE_SCHEMA_VERSION:
+            hardware_key = raw.get("hardware_key")
+            if not isinstance(hardware_key, str) or not hardware_key:
+                raise ValueError("GPU service artifact has no hardware key")
+            metadata = raw.get("metadata", {})
+            if not isinstance(metadata, Mapping):
+                raise ValueError("GPU service artifact metadata must be an object")
+            model.bind_hardware(hardware_key, metadata)
         return model
 
     def save(self, path: str | Path) -> None:
+        if self.hardware_key is None:
+            raise ValueError("GPU service artifact must be bound to hardware")
         destination = Path(path)
         destination.parent.mkdir(parents=True, exist_ok=True)
         temporary = destination.with_suffix(destination.suffix + ".tmp")
@@ -812,8 +834,22 @@ class GPUServiceCurveModel:
         temporary.replace(destination)
 
     @classmethod
-    def load(cls, path: str | Path) -> "GPUServiceCurveModel":
-        return cls.from_dict(json.loads(Path(path).read_text(encoding="utf-8")))
+    def load(
+        cls,
+        path: str | Path,
+        *,
+        expected_hardware_key: str | None = None,
+    ) -> "GPUServiceCurveModel":
+        model = cls.from_dict(json.loads(Path(path).read_text(encoding="utf-8")))
+        if (
+            expected_hardware_key is not None
+            and model.hardware_key != expected_hardware_key
+        ):
+            raise ValueError(
+                "GPU service hardware mismatch: "
+                f"expected {expected_hardware_key}, got {model.hardware_key}"
+            )
+        return model
 
 
 def _features_from_batch_row(row: Mapping[str, Any]) -> GPUServiceFeatures:

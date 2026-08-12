@@ -1,0 +1,20 @@
+{
+  "profile_id": "h200_bf16_v1",
+  "evidence_role": "controlled_microbenchmark",
+  "environment_manifest": "configs/p6/h200_bf16_v1/environment_manifest.json",
+  "gpu_uuid": "GPU-a50d9b5b-d146-f031-d960-9a309904714e",
+  "driver_version": "595.71.05",
+  "model_path": "/srv/ai/models/Qwen/Qwen3-Coder-30B-A3B-Instruct",
+  "weight_dtype": "bfloat16",
+  "kv_cache_dtype": "bfloat16",
+  "sglang_commit": "18f91eb639084825717c0e3c3c7273492812ab71",
+  "kv_pool_tokens": 871700,
+  "kv_pool_bytes": 85691596800,
+  "host_pool_bytes": 103079215104,
+  "page_size": 1,
+  "context_length": 262144,
+  "decode_backend": "flashinfer",
+  "prefill_backend": "fa3",
+  "dataset_sha256": "0fb2fa2621b29da786d70fd57c98898025c1c1eea017e2c91970c67723f550eb",
+  "timing_boundary": "controlled scheduler/worker service interval; not pure CUDA kernel time"
+}

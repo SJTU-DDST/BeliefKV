@@ -8,7 +8,6 @@ import json
 import os
 from pathlib import Path
 import sys
-import urllib.request
 
 
 REPOSITORY_ROOT = Path(__file__).resolve().parents[1]
@@ -23,6 +22,11 @@ from beliefkv.experiments.deepagents_swebench import (
 )
 from beliefkv.experiments.harness_preflight import preflight_command_for_policy
 from beliefkv.experiments.p6_collection import load_collection_batch
+from beliefkv.experiments.server_contract import (
+    capacity_contract,
+    fetch_server_info,
+    validate_server_identity,
+)
 from beliefkv.runtime.context_lifecycle import ContextLifecyclePolicy
 from beliefkv.runtime.langchain_tool_safety import ToolObservationBudgetPolicy
 
@@ -32,14 +36,7 @@ DEFAULT_HARNESS_PROFILES = REPOSITORY_ROOT / "configs/p6/harness_profiles_v1.jso
 
 
 def _actual_kv_pool_tokens(base_url: str, *, timeout_s: float = 10.0) -> int:
-    root = base_url.rstrip("/")
-    if root.endswith("/v1"):
-        root = root[:-3]
-    with urllib.request.urlopen(
-        f"{root}/get_server_info",
-        timeout=timeout_s,
-    ) as response:
-        payload = json.load(response)
+    payload = fetch_server_info(base_url, timeout_s=timeout_s)
     if not isinstance(payload, dict):
         raise RuntimeError("SGLang /get_server_info did not return a JSON object")
     try:
@@ -227,7 +224,14 @@ def parse_args() -> argparse.Namespace:
         default=0,
     )
     parser.add_argument("--base-url", default="http://127.0.0.1:18000/v1")
-    parser.add_argument("--model", default="Qwen3-Coder-30B-A3B-Instruct-FP8")
+    parser.add_argument("--model", required=True)
+    parser.add_argument("--expected-model-path", type=Path, required=True)
+    parser.add_argument("--expected-weight-dtype", default="bfloat16")
+    parser.add_argument("--expected-kv-dtype", default="bfloat16")
+    parser.add_argument("--kv-bytes-per-token", type=int, default=98_304)
+    parser.add_argument(
+        "--hbm-safety-margin-bytes", type=int, default=1_073_741_824
+    )
     parser.add_argument("--control-socket", type=Path, required=True)
     parser.add_argument("--server-audit", type=Path, required=True)
     parser.add_argument("--server-events", type=Path, required=True)
@@ -243,7 +247,7 @@ def parse_args() -> argparse.Namespace:
         ),
     )
     parser.add_argument("--max-completion-tokens", type=int, default=4096)
-    parser.add_argument("--context-window-tokens", type=int, default=32_768)
+    parser.add_argument("--context-window-tokens", type=int, default=131_072)
     parser.add_argument("--context-keep-tokens", type=int, default=8_192)
     parser.add_argument("--summary-output-tokens", type=int, default=2_048)
     parser.add_argument("--tool-observation-turn-chars", type=int, default=65_536)
@@ -293,7 +297,20 @@ def main() -> int:
     )
     if args.pool_tokens <= 0:
         raise ValueError("--pool-tokens must be positive")
-    actual_pool_tokens = _actual_kv_pool_tokens(args.base_url)
+    server_info = fetch_server_info(args.base_url)
+    server_identity = validate_server_identity(
+        server_info,
+        expected_model=args.model,
+        expected_model_path=args.expected_model_path,
+        expected_weight_dtype=args.expected_weight_dtype,
+        expected_kv_dtype=args.expected_kv_dtype,
+    )
+    server_capacity = capacity_contract(
+        server_info,
+        kv_bytes_per_token=args.kv_bytes_per_token,
+        hbm_safety_margin_bytes=args.hbm_safety_margin_bytes,
+    )
+    actual_pool_tokens = int(server_capacity["max_total_num_tokens"])
     if actual_pool_tokens < args.pool_tokens:
         raise RuntimeError(
             "SGLang actual KV pool is below the collection requirement: "
@@ -339,6 +356,8 @@ def main() -> int:
         "workflow_arrival_interval_ms": args.workflow_arrival_interval_ms,
         "required_minimum_pool_tokens": args.pool_tokens,
         "actual_pool_tokens": actual_pool_tokens,
+        "server_identity": server_identity,
+        "server_capacity": server_capacity,
         "predictor_enabled": (
             args.predictor_shadow_enabled
             or args.predictive_risk_shadow_enabled

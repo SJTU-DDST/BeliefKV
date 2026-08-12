@@ -68,8 +68,15 @@ def test_gpu_service_curve_uses_unique_complete_batches(tmp_path) -> None:
     assert estimate.p95_ms >= estimate.p90_ms >= estimate.p50_ms > 0
 
     path = tmp_path / "gpu-service.json"
+    model.bind_hardware("test-hardware-v1", {"gpu": "test"})
     model.save(path)
-    assert GPUServiceCurveModel.load(path).predict(_features()) == estimate
+    restored = GPUServiceCurveModel.load(
+        path, expected_hardware_key="test-hardware-v1"
+    )
+    assert restored.artifact_metadata == {"gpu": "test"}
+    assert restored.predict(_features()) == estimate
+    with pytest.raises(ValueError, match="hardware mismatch"):
+        GPUServiceCurveModel.load(path, expected_hardware_key="other-hardware")
 
 
 def test_gpu_service_curve_rejects_holdout_during_fit() -> None:
@@ -181,8 +188,11 @@ def test_profile_grouped_cross_calibration_keeps_holdout_sealed(tmp_path) -> Non
     assert evaluation["holdout_used_for_fit_or_calibration"] is False
 
     path = tmp_path / "calibrated.json"
+    model.bind_hardware("test-calibrated-v1")
     model.save(path)
-    restored = GPUServiceCurveModel.load(path)
+    restored = GPUServiceCurveModel.load(
+        path, expected_hardware_key="test-calibrated-v1"
+    )
     assert restored.predict(
         GPUServiceFeatures(
             phase="decode",

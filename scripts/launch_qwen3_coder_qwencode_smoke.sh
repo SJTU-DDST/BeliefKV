@@ -7,9 +7,13 @@ if [[ -e "${EXPERIMENT_PAUSE_FILE}" ]]; then
   exit 75
 fi
 
-MODEL_PATH="${MODEL_PATH:-/opt/downloaded_models/Qwen/Qwen3-Coder-30B-A3B-Instruct-FP8}"
-SERVED_MODEL_NAME="${SERVED_MODEL_NAME:-Qwen3-Coder-30B-A3B-Instruct-FP8}"
+MODEL_PATH="${MODEL_PATH:-/srv/ai/models/Qwen/Qwen3-Coder-30B-A3B-Instruct}"
+SERVED_MODEL_NAME="${SERVED_MODEL_NAME:-Qwen3-Coder-30B-A3B-Instruct}"
+WEIGHT_DTYPE="${WEIGHT_DTYPE:-bfloat16}"
+KV_CACHE_DTYPE="${KV_CACHE_DTYPE:-auto}"
+PAGE_SIZE="${PAGE_SIZE:-1}"
 CONDA_ENV="${CONDA_ENV:-beliefkv}"
+CONDA_BIN="${CONDA_BIN:-/home/longhao/miniconda3/bin/conda}"
 HOST="${HOST:-127.0.0.1}"
 PORT="${PORT:-18000}"
 CONTEXT_LENGTH="${CONTEXT_LENGTH:-262144}"
@@ -27,6 +31,11 @@ if [[ ! -f "${MODEL_PATH}/config.json" ]]; then
   exit 2
 fi
 
+if [[ ! -x "${CONDA_BIN}" ]]; then
+  printf 'Conda executable not found: %s\n' "${CONDA_BIN}" >&2
+  exit 2
+fi
+
 export CUDA_VISIBLE_DEVICES
 export PYTHONUNBUFFERED=1
 
@@ -36,6 +45,9 @@ server_args=(
   --host "${HOST}"
   --port "${PORT}"
   --tensor-parallel-size 1
+  --dtype "${WEIGHT_DTYPE}"
+  --kv-cache-dtype "${KV_CACHE_DTYPE}"
+  --page-size "${PAGE_SIZE}"
   --context-length "${CONTEXT_LENGTH}"
   --mem-fraction-static "${MEM_FRACTION_STATIC}"
   --chunked-prefill-size "${CHUNKED_PREFILL_SIZE}"
@@ -58,7 +70,7 @@ else
   server_args+=(--cuda-graph-max-bs "${CUDA_GRAPH_MAX_BS}")
 fi
 
-exec conda run --no-capture-output -n "${CONDA_ENV}" \
+exec "${CONDA_BIN}" run --no-capture-output -n "${CONDA_ENV}" \
   python -m sglang.launch_server \
   "${server_args[@]}" \
   "$@"

@@ -1,0 +1,57 @@
+{
+  "schema_version": 1,
+  "profile_id": "h200_bf16_v1",
+  "model": {
+    "path": "/srv/ai/models/Qwen/Qwen3-Coder-30B-A3B-Instruct",
+    "served_name": "Qwen3-Coder-30B-A3B-Instruct",
+    "weight_dtype": "bfloat16",
+    "kv_cache_dtype": "bfloat16",
+    "context_length": 262144
+  },
+  "runtime": {
+    "sglang_version": "0.5.2rc1",
+    "sglang_commit": "18f91eb639084825717c0e3c3c7273492812ab71",
+    "tensor_parallel_size": 1,
+    "page_size": 1,
+    "chunked_prefill_size": 4096,
+    "max_running_requests": 16,
+    "cuda_graph_max_bs": 16,
+    "mem_fraction_static": 0.9928,
+    "hicache_size_gib": 96,
+    "hicache_write_policy": "write_back",
+    "hicache_io_backend": "kernel"
+  },
+  "capacity": {
+    "max_total_tokens": 871700,
+    "kv_bytes_per_token": 98304,
+    "kv_pool_bytes": 85691596800,
+    "kv_pool_gib": 79.81,
+    "stable_free_hbm_mib": 1142,
+    "hbm_safety_margin_bytes": 1073741824,
+    "host_pool_bytes": 103079215104,
+    "host_pool_gib": 96,
+    "max_validated_context_tokens": 196608
+  },
+  "artifacts": {
+    "environment": "configs/p6/h200_bf16_v1/environment_manifest.json",
+    "gpu_service": {
+      "path": "artifacts/p6/h200_bf16_v1/gpu_service_qwen3coder30b_bf16_h200_v1.json",
+      "evaluation": "artifacts/p6/h200_bf16_v1/gpu_service_evaluation.json",
+      "hardware_key": "h200nvl-a50d9b5b-driver595.71.05-qwen3coder30b-bf16-kvbf16-sglang18f91eb-pool871700-fa3-flashinfer",
+      "online_eligible": false
+    },
+    "transfer_service": {
+      "path": "artifacts/p6/h200_bf16_v1/transfer_service_qwen3coder30b_bf16_h200_v1.json",
+      "hardware_key": "h200nvl-a50d9b5b-driver595.71.05-qwen3coder30b-bf16-kvbf16-sglang18f91eb-pool871700-page1-host96-pinned-numa1",
+      "online_eligible_for_supported_conditions": true,
+      "supported_conditions": [
+        "d2h_pcie_idle_link_with_decode_contention",
+        "h2d_pcie_idle_link_with_prefill_contention"
+      ],
+      "unsupported_conditions": [
+        "gpu_compute_idle",
+        "concurrent_pcie_transfer"
+      ]
+    }
+  }
+}

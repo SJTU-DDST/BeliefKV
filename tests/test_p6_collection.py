@@ -23,7 +23,7 @@ def test_actual_kv_pool_tokens_uses_server_report(monkeypatch: pytest.MonkeyPatc
         return io.BytesIO(b'{"max_total_num_tokens": 167816}')
 
     monkeypatch.setattr(
-        "scripts.run_p6_collection_batch.urllib.request.urlopen",
+        "beliefkv.experiments.server_contract.urllib.request.urlopen",
         fake_urlopen,
     )
 

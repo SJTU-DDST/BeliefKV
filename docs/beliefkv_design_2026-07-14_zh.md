@@ -1,8 +1,8 @@
 # BeliefKV 当前系统设计
 
-日期：2026-07-14；最后更新：2026-08-11
+日期：2026-07-14；最后更新：2026-08-12
 
-状态：P5 observed-state JointPlan、迁移事务和 restore liveness 已通过定向正确性验证；P6 最新 R0--R5 的代码路径、fan-out workload、单动作 gate 和配对 A/B 基础设施已经实现，GPU gate 尚未全部执行。当前服务模型首版只以 bytes、extent count 和 contention 为条件，extent-size distribution 与 closure depth 尚未进入模型。2026-08-10 的单 GPU 受控实验发现：相同 2.659 GB KV 在 106 个 extents 下的 D2H 均值为 765.17 ms，在 7 个 extents 下为 185.69 ms，相差 4.12 倍。早期 promotion/veto 结论因 service-contract 错误和固定 trace 上无稳定 action flip 已失效；morphology 不再是独立策略，仅作为统一 transfer cost/OOD guard。预测式 PREPARE、Frontier-Aware Retraction 和端到端收益仍需最新版 GPU gate 证明。
+状态：P5 observed-state JointPlan、迁移事务和 restore liveness 已通过定向正确性验证；P6 R0--R5 的代码路径、fan-out workload、单动作 gate 和配对 A/B 基础设施已经实现。项目现已迁移到 H200，主模型固定为 Qwen3-Coder-30B-A3B-Instruct BF16，上下文上限为 262,144，正式 workload 覆盖 64K--192K。旧 RTX 6000 Ada/FP8 R5 性能比较已暂停；旧 GPU/transfer artifact 不可复用，旧语义数据只能选择性进入 train。morphology 不再是独立策略，仅作为统一 transfer cost/OOD guard。预测式 PREPARE、Frontier-Aware Retraction 和端到端收益将在 H200/BF16 重建硬件服务模型和 FrontierBelief 后继续验证。
 
 本文档取代 `technical_archive_2026-07-10.md` 作为当前设计的权威说明。旧文档保留为历史讨论记录，其中的 flat next-action predictor、静态 belief frontier 和以 `agent_id` 为核心的元数据设计不再代表当前方案。
 
@@ -10,6 +10,11 @@
 [`beliefkv_p6_predictive_joint_execution_plan_2026-08-11_zh.md`](beliefkv_p6_predictive_joint_execution_plan_2026-08-11_zh.md)
 为准：删除 morphology 独立策略，取消独立 oracle 前置 gate，增加受控 2--3 child fan-out，并将
 FrontierBelief 作为现有 admission、KV 和 selective retraction 的统一 JointPlan 注解。
+
+2026-08-12 起的环境重建和 R5 恢复顺序以
+[`beliefkv_h200_bf16_r5_resume_plan_2026-08-12_zh.md`](beliefkv_h200_bf16_r5_resume_plan_2026-08-12_zh.md)
+为准。该计划只替换硬件、模型精度、数据和 artifact 契约，不改变本文档的 RCCG、JointPlan、
+restore transaction 和 predictive overlay 架构。
 
 ## 1. 研究目标
 
@@ -146,6 +151,14 @@ ownership_attribution_semantics = submit_snapshot
 是否真正成为后续 reactive write-back victim，也不能据此计算 useful-shadow oracle 收益。
 旧记录只保留为总带宽/HBM 压力证据；需要新 trace 才能建立 context-level 因果归因。详细记录见
 [`beliefkv_p6_service_contract_and_native_ownership_2026-08-11_zh.md`](experiments/beliefkv_p6_service_contract_and_native_ownership_2026-08-11_zh.md)。
+
+### 2.7 语义需求与硬件服务必须解耦
+
+FrontierBelief 只预测 boundary/action、remaining tokens、prompt growth、tool residual wait 和
+联合 RCCG demand scenario，不使用 batch size、排队时间或旧负载下的 GPU 毫秒数作为语义特征。
+GPU service model 和 transfer service model 再结合当前 PhysicalSnapshot，将 demand 转换为候选计划下的
+完成时间和迁移成本。因此，更换 GPU、weight/KV dtype、kernel、NUMA 或 Host backend 时必须重采
+硬件 artifact；语义数据可以作为 train prior，但新环境的 calibration/test 必须重采。
 
 ## 3. 非目标和已否定方向
 
@@ -915,6 +928,8 @@ SET_WORKFLOW_BUDGET
 14. transfer estimate 必须绑定实际 physical closure shape，不能只按 context bytes 计费。
 15. safe point 的 live shape 超出 intent 收益包络时必须 fail closed，不能沿用旧成本。
 16. 形态模型 unsupported/OOD 时必须回退 P5，不得用跨 bucket 的乐观外推补值。
+17. FrontierBelief 不得使用负载相关 GPU 时间作为语义标签；硬件成本只由当前 hardware-keyed service model 提供。
+18. KV pool 只在环境 bring-up 时定容一次，稳定态至少保留 1 GiB HBM；正式 A/B 不得根据结果修改 pool。
 ```
 
 ## 17. 实际代码结构
@@ -986,7 +1001,9 @@ prepare/commit、Host 生命周期和迁移时间线观测。历史正确性问�
 - 固定 project/task split，采集 event-point decision samples；
 - 区分 demand labels 与旧负载下 observed service time；
 - 训练并校准结构化局部模型和独立硬件 service curve；
-- 当前 v6 仅 development-only，不参与正式 test 结论。
+- 旧 FP8/v6 数据仅 development/train-only，不参与正式 test 结论；
+- H200/BF16 先采 12--16 个、至少 4 个 repository 的 pilot，再按漂移结果选择增量校准或
+  64 train / 16 calibration / 16 test 的完整重训。
 
 ### P6.2：候选风险链路与受限在线 overlay（当前阶段）
 
@@ -1053,12 +1070,43 @@ M1--M4 的服务成本、物理化与 fail-closed 机制继续保留；M5--M6 �
 GPU1 crossover、small-size 完整矩阵、progressive slicing、KV compaction、自定义 DMA 和
 预测性 retraction 均停止投入。P6 后续回到 FrontierBelief 的因果预测价值验证。
 
+### P6.H：H200/BF16 重基线与 R5 恢复（当前阶段）
+
+这是环境迁移阶段，不新增策略模块，按以下最短顺序执行：
+
+1. 冻结 Qwen3-Coder-30B-A3B-Instruct BF16、tokenizer/model revision、SGLang/BeliefKV commit、
+   KV dtype、NUMA/PCIe/Host backend 和 262,144 context 上限。
+2. KV pool 使用“模型与运行时固定占用后，仅保留 1 GiB HBM”的规则一次性定容；
+   完成一次 192K request smoke 后冻结，不搜索最佳 pool。
+3. 在 H200/BF16 上重采 64K/128K/192K GPU prefill/decode service 与 D2H/H2D transfer artifact；
+   tool survival 从新 workflow 中重采。
+4. 运行 BF16 pilot，重训或重校准 FrontierBelief；旧 FP8 数据只可进入 train，正式
+   calibration/test 按 repository 隔离且全部来自 BF16 新环境。
+5. 冻结三个新 artifact，只做 4-workflow shadow、单笔 PREPARE_HOST 和 Frontier-Aware
+   Retraction canary，随后恢复 P5 observed 对完整 predictive JointPlan 的 A-B/B-A/A-B。
+
+pressure 不足时只调整冻结前的 workload concurrency/arrival profile，不改已冻结的 KV pool。不恢复
+morphology 研究矩阵，不接入 Qwen3.6/Mamba cache，不在此阶段扩展 peer-agent workload。
+
 ### P7：可移植性与正式实验
 
 完成固定版本实验后再适配新版 HiCache/SGLang，并在同一模型、同一版本和固定
 trace 上比较 SGLang/HiCache、P5 observed、P6 shadow/action 与 offline oracle。
 
 ## 19. 实验设计
+
+### 19.0 固定环境
+
+```text
+GPU: H200
+model: Qwen3-Coder-30B-A3B-Instruct BF16
+context limit: 262144
+formal context range: 64K--192K
+KV pool: model/runtime reserved HBM 之外仅留 1 GiB，一次性冻结
+```
+
+KV pool 不是自变量。单个 192K request 可完成即通过容量 smoke；并发 pressure 由相同的
+workload arrival/concurrency manifest 产生。旧 RTX/FP8 结果不与 H200/BF16 性能 aggregate 拼接。
 
 ### 19.1 Workload
 
@@ -1207,9 +1255,13 @@ BeliefKV 必须证明 RCCG 上的联合不确定性、action-specific scenario r
   PREPARE_HOST overlay 和 5% PREFETCH_GPU canary；
 - 旧 `joint_predictive_enabled` 在线启发式已降为兼容元数据开关，不再改变排序、victim 或迁移动作；
 - restore funding preview 已改为从 revision-cached migratable roots 做有界局部 bundle 物化，等待下一次高压 GPU 验证；
-- P6 批量采集会查询 `/get_server_info`，实际 KV pool 低于实验要求时在发起 workflow 前失败；
+- P6 批量采集会查询 `/get_server_info`。H200 迁移需将采集脚本的 FP8 默认值改为
+  显式 BF16 model identity，并将旧的单向 `actual >= required` 检查改为 1 GiB HBM safety-margin
+  记录与一次性 pool 冻结契约；
 - 当前完整 CPU serving 回归为 598 passed、8 skipped、3 subtests passed；P6
   Deep Agents/collection 侧回归为 90 passed；
+- 上述测试和 GPU 证据来自旧 RTX/FP8 开发环境。当前 H200 服务器尚未生成正式 BF16
+  FrontierBelief、GPU service 和 transfer service artifact，R5 性能比较在三者冻结前保持暂停；
 - 已完成一次固定 16-workflow development trace，证明 worker 隔离和 observed
   fallback 稳定，但旧 scenario reduction 使 selected action 为 0；修复后对 126 个
   稀疏快照离线 replay，OTHER 拒绝已归零，现有快照中的 102 个正收益候选均被
@@ -1242,10 +1294,10 @@ BeliefKV 必须证明 RCCG 上的联合不确定性、action-specific scenario r
   严格门禁现已要求 counterfactual shape support。尚未证明 P6 在线净收益，也尚未完成论文
   baseline/oracle 实验。
 
-下一阶段按 2026-08-11 P6 执行计划推进：一次性删除 morphology 策略分支并补齐 transfer attribution
-正确性；加入 `parallel_analysis_2to3` workload；直接运行单笔 PREPARE_HOST canary；随后用
-EXPAND/CLOSE/HOLD 注解现有 selective retraction，并进行 P5 对完整 predictive JointPlan 的短期
-端到端 A/B。独立 oracle 不再是前置 gate，PREFETCH_GPU、peer-agent、外部 baseline 和更复杂模型
+下一阶段按 2026-08-12 H200/BF16 计划推进：修改模型标识与 pool 契约，以 1 GiB HBM
+余量一次性冻结 KV pool；重采 GPU/transfer service artifact；先执行 12--16 workflow BF16 pilot，
+再决定增量校准或完整重训；最后运行两笔 canary 并恢复 P5 对完整 predictive JointPlan 的
+A-B/B-A/A-B。独立 oracle、PREFETCH_GPU 扩展、peer-agent、外部 baseline、Qwen3.6/Mamba 和容量搜索
 均不进入当前关键路径。
 
 因此，当前可以主张 P5 物理控制面和 P6 shadow 链路已实现，不能把 2026-08-07

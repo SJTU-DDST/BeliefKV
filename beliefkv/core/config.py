@@ -84,6 +84,7 @@ class BeliefKVConfig:
     predictive_prefetch_desired_lead_ms: float = 100.0
     predictive_intent_max_age_ms: float = 60_000.0
     gpu_service_model_path: str | None = None
+    gpu_service_hardware_key: str | None = None
     predictive_risk_particle_count: int = 128
     predictive_risk_top_k: int = 8
     predictive_risk_max_candidates: int = 8
@@ -196,6 +197,7 @@ class BeliefKVConfig:
         for field_name in (
             "transfer_service_model_path",
             "transfer_service_hardware_key",
+            "gpu_service_hardware_key",
         ):
             value = getattr(self, field_name)
             if value is not None and (not isinstance(value, str) or not value):

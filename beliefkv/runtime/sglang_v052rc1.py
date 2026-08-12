@@ -2253,7 +2253,10 @@ class EmbeddedSGLangRuntime:
             if self.config.predictive_risk_shadow_enabled:
                 assert self.config.gpu_service_model_path is not None
                 predictive_service_model = GPUServiceCurveModel.load(
-                    Path(self.config.gpu_service_model_path)
+                    Path(self.config.gpu_service_model_path),
+                    expected_hardware_key=(
+                        self.config.gpu_service_hardware_key
+                    ),
                 )
                 predictive_shadow_config = PredictiveRiskShadowConfig(
                     particle_count=(

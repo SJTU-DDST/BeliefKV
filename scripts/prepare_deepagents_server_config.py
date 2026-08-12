@@ -116,6 +116,14 @@ def main() -> int:
         help="Optional exact hardware/model key required from the transfer artifact.",
     )
     parser.add_argument(
+        "--gpu-service-hardware-key",
+        default=None,
+        help=(
+            "Optional exact hardware/model key required from the GPU service "
+            "artifact."
+        ),
+    )
+    parser.add_argument(
         "--enable-running-retraction",
         action="store_true",
         help="Enable P5B observed selective running-batch retraction.",
@@ -381,6 +389,7 @@ def main() -> int:
         "predictive_commit_guard_ms": 25.0,
         "predictive_prefetch_desired_lead_ms": 100.0,
         "predictive_intent_max_age_ms": 60_000.0,
+        "gpu_service_hardware_key": args.gpu_service_hardware_key,
         "gpu_service_model_path": (
             str(args.gpu_service_model.expanduser().resolve())
             if args.gpu_service_model is not None

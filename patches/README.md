@@ -15,6 +15,12 @@ git apply /home/longhao/experiment/BeliefKV/patches/sglang-0.5.2rc1-beliefkv.pat
 beliefkv check-sglang "$PWD"
 ```
 
+Hardware and run manifests record both the SHA-256 of this canonical patch and
+the fingerprint of the patched SGLang source tree. Environment capture also
+compares the patched Git tree against this file. A result may be reported only
+when the trees match and there are no additional tracked or untracked SGLang
+source changes.
+
 The patch covers:
 
 - request metadata propagation through OpenAI chat, tokenizer, session, and

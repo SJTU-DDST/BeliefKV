@@ -862,6 +862,8 @@ conda run -n beliefkv-agents python scripts/export_gpu_service_calibration.py \
 
 conda run -n beliefkv-agents python scripts/train_gpu_service_curve.py \
   --dataset-dir "$RUN_DIR/gpu_service_dataset" \
+  --hardware-key "$GPU_SERVICE_HARDWARE_KEY" \
+  --metadata-json "$GPU_SERVICE_METADATA" \
   --output "$RUN_DIR/gpu_service_curve.json"
 ```
 

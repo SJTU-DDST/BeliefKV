@@ -175,6 +175,11 @@ def main() -> int:
     source.add_argument("--matrix-aggregate", type=Path)
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--hardware-key", required=True)
+    parser.add_argument(
+        "--metadata-json",
+        type=Path,
+        help="Optional schema-v2 metadata merged into direct telemetry artifacts.",
+    )
     parser.add_argument("--window", type=int, default=1024)
     parser.add_argument("--min-samples", type=int, default=0)
     parser.add_argument("--fallback-bandwidth-gbps", type=float, default=24.0)
@@ -192,16 +197,24 @@ def main() -> int:
     else:
         assert args.telemetry is not None
         samples = [_telemetry(item) for item in _telemetry_records(args.telemetry)]
+    if args.metadata_json is not None:
+        extra_metadata = json.loads(
+            args.metadata_json.expanduser().read_text(encoding="utf-8")
+        )
+        if not isinstance(extra_metadata, dict):
+            raise ValueError("transfer artifact metadata must be a JSON object")
+        metadata.update(extra_metadata)
     accepted = 0
     for sample in samples:
         curve.observe(sample)
         accepted += 1
     if accepted == 0:
         raise RuntimeError("no transfer telemetry records were found")
+    schema_version = 2 if args.matrix_aggregate is not None or metadata else 1
     curve.save_artifact(
         args.output.expanduser(),
         hardware_key=args.hardware_key,
-        schema_version=2 if args.matrix_aggregate is not None else 1,
+        schema_version=schema_version,
         metadata=metadata,
     )
     print(
@@ -209,7 +222,7 @@ def main() -> int:
             {
                 "accepted_records": accepted,
                 "hardware_key": args.hardware_key,
-                "schema_version": 2 if args.matrix_aggregate is not None else 1,
+                "schema_version": schema_version,
                 "metadata": metadata,
                 "output": str(args.output.expanduser().resolve()),
             },

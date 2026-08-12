@@ -11,6 +11,12 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
+from beliefkv.experiments.server_contract import (
+    capacity_contract,
+    fetch_server_info,
+    validate_server_identity,
+)
+
 
 def _parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
@@ -18,10 +24,15 @@ def _parse_args() -> argparse.Namespace:
     )
     parser.add_argument("--output-dir", type=Path, required=True)
     parser.add_argument("--base-url", default="http://127.0.0.1:18000/v1")
+    parser.add_argument("--model", required=True)
+    parser.add_argument("--expected-model-path", type=Path, required=True)
+    parser.add_argument("--expected-weight-dtype", default="bfloat16")
+    parser.add_argument("--expected-kv-dtype", default="bfloat16")
+    parser.add_argument("--kv-bytes-per-token", type=int, default=98_304)
     parser.add_argument(
-        "--model", default="Qwen3-Coder-30B-A3B-Instruct-FP8"
+        "--hbm-safety-margin-bytes", type=int, default=1_073_741_824
     )
-    parser.add_argument("--timeout", type=float, default=120.0)
+    parser.add_argument("--timeout", type=float, default=1800.0)
     parser.add_argument("--decode-tokens", type=int, default=64)
     parser.add_argument(
         "--phases",
@@ -30,26 +41,26 @@ def _parse_args() -> argparse.Namespace:
     )
     parser.add_argument(
         "--prefill-token-targets",
-        default="1024,4096,16384,30720",
-        help="Comma-separated approximate prompt-token targets; 30720 is the safe 32K-window case.",
+        default="65536,131072,196608",
+        help="Comma-separated approximate H200/BF16 prompt-token targets.",
     )
     parser.add_argument("--cache-hit-ratios", default="0,0.5,0.9")
-    parser.add_argument("--batch-sizes", default="1,2,4,8,16")
+    parser.add_argument("--batch-sizes", default="1,2,4")
     parser.add_argument(
         "--decode-context-token-targets",
-        default="1024,4096,16384,30720",
+        default="65536,131072,196608",
         help="Approximate decode sequence lengths; runtime sequence labels are authoritative.",
     )
     parser.add_argument(
         "--max-batch-token-budget",
         type=int,
-        default=143_360,
+        default=800_000,
         help=(
             "Skip decode compositions whose aggregate context plus requested "
             "decode tokens exceed this budget. Keep it below max-total-tokens."
         ),
     )
-    parser.add_argument("--repeats", type=int, default=1)
+    parser.add_argument("--repeats", type=int, default=3)
     return parser.parse_args()
 
 
@@ -287,6 +298,27 @@ def main() -> int:
         raise ValueError("cache-hit ratios must be in [0, 1)")
     if not phases or not set(phases).issubset({"prefill", "decode"}):
         raise ValueError("phases must be a non-empty subset of prefill,decode")
+    server_info = fetch_server_info(args.base_url, timeout_s=min(30.0, args.timeout))
+    server_identity = validate_server_identity(
+        server_info,
+        expected_model=args.model,
+        expected_model_path=args.expected_model_path,
+        expected_weight_dtype=args.expected_weight_dtype,
+        expected_kv_dtype=args.expected_kv_dtype,
+    )
+    server_capacity = capacity_contract(
+        server_info,
+        kv_bytes_per_token=args.kv_bytes_per_token,
+        hbm_safety_margin_bytes=args.hbm_safety_margin_bytes,
+    )
+    if max((*prompt_targets, *decode_context_targets)) >= int(
+        server_capacity["context_length"]
+    ):
+        raise RuntimeError("calibration target must be below server context length")
+    effective_batch_token_budget = min(
+        args.max_batch_token_budget,
+        int(server_capacity["max_total_num_tokens"]) - args.decode_tokens,
+    )
     output = args.output_dir.expanduser().resolve()
     if output.exists():
         raise FileExistsError(output)
@@ -302,7 +334,7 @@ def main() -> int:
     prefill_cases = {
         "train": (prompt_targets, hit_ratios),
         "holdout": (
-            tuple(sorted({2048, 8192, 24576}.difference(prompt_targets))),
+            tuple(sorted({98_304, 163_840}.difference(prompt_targets))),
             (0.25, 0.75),
         ),
     }
@@ -329,7 +361,7 @@ def main() -> int:
     decode_contexts = {
         "train": decode_context_targets,
         "holdout": tuple(
-            sorted({2048, 8192, 24576}.difference(decode_context_targets))
+            sorted({98_304, 163_840}.difference(decode_context_targets))
         ),
     }
     if "decode" in phases:
@@ -357,7 +389,7 @@ def main() -> int:
                         aggregate_tokens = sum(context_targets) + (
                             len(context_targets) * args.decode_tokens
                         )
-                        if aggregate_tokens > args.max_batch_token_budget:
+                        if aggregate_tokens > effective_batch_token_budget:
                             skipped_decode_profiles.append(
                                 {
                                     "split": split,
@@ -420,6 +452,8 @@ def main() -> int:
         "finished_at_utc": datetime.now(timezone.utc).isoformat(),
         "base_url": args.base_url,
         "model": args.model,
+        "server_identity": server_identity,
+        "server_capacity": server_capacity,
         "decode_tokens": args.decode_tokens,
         "design": {
             "prefill_token_targets": list(prompt_targets),
@@ -431,6 +465,7 @@ def main() -> int:
             ),
             "mixed_decode_sequence_batches": True,
             "max_batch_token_budget": args.max_batch_token_budget,
+            "effective_batch_token_budget": effective_batch_token_budget,
             "skipped_decode_profiles": skipped_decode_profiles,
             "repeats": args.repeats,
             "phases": list(phases),

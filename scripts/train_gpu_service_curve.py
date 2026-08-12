@@ -31,6 +31,13 @@ def main() -> int:
         "--max-relative-error-p95", type=float, default=0.25
     )
     parser.add_argument("--coverage-tolerance", type=float, default=0.03)
+    parser.add_argument("--hardware-key", required=True)
+    parser.add_argument(
+        "--metadata-json",
+        type=Path,
+        required=True,
+        help="Environment/model/pool identity embedded into the artifact.",
+    )
     parser.add_argument("--evaluation-output", type=Path)
     parser.add_argument("--output", type=Path, required=True)
     args = parser.parse_args()
@@ -78,6 +85,12 @@ def main() -> int:
         folds=args.calibration_folds,
         minimum_phase_calibration=args.minimum_phase_calibration,
     )
+    metadata = json.loads(
+        args.metadata_json.expanduser().read_text(encoding="utf-8")
+    )
+    if not isinstance(metadata, dict):
+        raise ValueError("GPU service artifact metadata must be a JSON object")
+    model.bind_hardware(args.hardware_key, metadata)
     model.save(args.output)
     evaluation = model.evaluate_controlled_rows(
         row for row in rows if row.get("split") == "holdout"
@@ -108,6 +121,8 @@ def main() -> int:
     )
     result = {
         "output": str(args.output),
+        "hardware_key": args.hardware_key,
+        "metadata": metadata,
         "source_datasets": sources,
         "summary": summary,
         "holdout_evaluation": evaluation,

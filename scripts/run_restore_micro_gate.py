@@ -12,6 +12,12 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
+from beliefkv.experiments.server_contract import (
+    capacity_contract,
+    fetch_server_info,
+    validate_server_identity,
+)
+
 
 def _parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
@@ -30,8 +36,13 @@ def _parse_args() -> argparse.Namespace:
         ),
     )
     parser.add_argument("--base-url", default="http://127.0.0.1:18000/v1")
+    parser.add_argument("--model", required=True)
+    parser.add_argument("--expected-model-path", type=Path, required=True)
+    parser.add_argument("--expected-weight-dtype", default="bfloat16")
+    parser.add_argument("--expected-kv-dtype", default="bfloat16")
+    parser.add_argument("--kv-bytes-per-token", type=int, default=98_304)
     parser.add_argument(
-        "--model", default="Qwen3-Coder-30B-A3B-Instruct-FP8"
+        "--hbm-safety-margin-bytes", type=int, default=1_073_741_824
     )
     parser.add_argument("--victim-prompt-words", type=int, default=48_000)
     parser.add_argument("--anchor-prompt-words", type=int, default=48_000)
@@ -140,17 +151,6 @@ def _post(endpoint: str, payload: dict[str, object], timeout: float) -> dict[str
     }
 
 
-def _server_info(base_url: str, timeout: float) -> dict[str, Any]:
-    root = base_url.rstrip("/")
-    if root.endswith("/v1"):
-        root = root[:-3]
-    with urllib.request.urlopen(f"{root}/get_server_info", timeout=timeout) as response:
-        value = json.load(response)
-    if not isinstance(value, dict) or value.get("status") != "ready":
-        raise RuntimeError(f"model server is not ready: {value!r}")
-    return value
-
-
 def _served_workflows(path: Path) -> set[str]:
     workflows: set[str] = set()
     if not path.is_file():
@@ -227,7 +227,21 @@ def main() -> int:
         raise ValueError("micro-gate sizes and timeouts must be positive")
     if args.replacement_submit_delay_seconds < 0:
         raise ValueError("replacement submit delay cannot be negative")
-    server_info = _server_info(args.base_url, min(10.0, args.request_timeout_seconds))
+    server_info = fetch_server_info(
+        args.base_url, timeout_s=min(10.0, args.request_timeout_seconds)
+    )
+    server_identity = validate_server_identity(
+        server_info,
+        expected_model=args.model,
+        expected_model_path=args.expected_model_path,
+        expected_weight_dtype=args.expected_weight_dtype,
+        expected_kv_dtype=args.expected_kv_dtype,
+    )
+    server_capacity = capacity_contract(
+        server_info,
+        kv_bytes_per_token=args.kv_bytes_per_token,
+        hbm_safety_margin_bytes=args.hbm_safety_margin_bytes,
+    )
     actual_max_running = int(server_info.get("max_running_requests", 0) or 0)
     if actual_max_running != args.required_max_running_requests:
         raise RuntimeError(
@@ -315,6 +329,8 @@ def main() -> int:
         "finished_at": finished_at.isoformat(),
         "duration_seconds": (finished_at - started_at).total_seconds(),
         "model": args.model,
+        "server_identity": server_identity,
+        "server_capacity": server_capacity,
         "server_preflight": {
             "max_running_requests": actual_max_running,
             "max_total_num_tokens": server_info.get("max_total_num_tokens"),
