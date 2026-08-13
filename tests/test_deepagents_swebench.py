@@ -45,6 +45,7 @@ from beliefkv.experiments.deepagents_swebench import (
     SweBenchWorkload,
     capture_append_offset,
     classify_workflow_measurement,
+    collect_workspace_artifacts,
     copy_append_window,
     load_workload_bundle,
     observed_successful_test_commands,
@@ -274,6 +275,19 @@ def test_load_bundle_and_prepare_exact_commit(tmp_path: Path) -> None:
     metadata = prepare_workspace(source, bundle.workloads[0], destination)
     assert metadata["initial_head"] == commit
     assert (destination / "module.py").read_text(encoding="utf-8") == "VALUE = 1\n"
+    (destination / "module.py").write_text("VALUE = 2\n", encoding="utf-8")
+    (destination / ".git" / "HEAD").write_text(
+        "ref: refs/heads/missing\n", encoding="utf-8"
+    )
+    patch, status, collection = collect_workspace_artifacts(
+        destination,
+        source_repo=source,
+        base_commit=commit,
+    )
+    assert "+VALUE = 2" in patch
+    assert status == "M\tmodule.py"
+    assert collection["mode"] == "temporary_git_metadata"
+    assert len(collection["errors"]) == 1
 
 
 def test_docker_backend_hashes_commands_and_truncates_output(
@@ -477,6 +491,11 @@ def test_docker_backend_preflights_test_environment_before_use(
     audit.close()
 
     assert invocations[0][:2] == ["docker", "run"]
+    git_mount = (
+        f"type=bind,source={backend.workspace / '.git'},"
+        "target=/workspace/.git,readonly"
+    )
+    assert git_mount in invocations[0]
     assert invocations[1][:4] == ["docker", "exec", "--workdir", "/workspace"]
     assert SYMPY_SANDBOX_PREFLIGHT in invocations[1][-1]
     assert invocations[2][:3] == ["docker", "rm", "--force"]

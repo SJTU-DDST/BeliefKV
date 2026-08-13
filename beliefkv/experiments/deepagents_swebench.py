@@ -7,6 +7,7 @@ import os
 import re
 import shlex
 import subprocess
+import tempfile
 import threading
 import time
 import urllib.error
@@ -360,6 +361,98 @@ def prepare_workspace(
     }
 
 
+def collect_workspace_artifacts(
+    workspace: Path,
+    *,
+    source_repo: Path,
+    base_commit: str,
+) -> tuple[str, str, dict[str, Any]]:
+    """Collect patch/status even if an agent damaged the checkout's Git metadata."""
+    workspace = workspace.expanduser().resolve()
+    source_repo = source_repo.expanduser().resolve()
+
+    commands = (
+        ["git", "diff", "--binary", base_commit, "--"],
+        ["git", "status", "--porcelain"],
+    )
+    try:
+        head = command_output(["git", "rev-parse", "HEAD"], cwd=workspace)
+        if head != base_commit:
+            raise RuntimeError(
+                f"workspace HEAD changed: expected {base_commit}, found {head}"
+            )
+        patch, status = (
+            command_output(command, cwd=workspace) for command in commands
+        )
+        return patch, status, {"mode": "workspace_git", "errors": []}
+    except (OSError, RuntimeError, subprocess.SubprocessError) as primary_error:
+        errors = [f"workspace_git: {type(primary_error).__name__}: {primary_error}"]
+
+    try:
+        with tempfile.TemporaryDirectory(prefix="beliefkv-artifact-git-") as temporary:
+            metadata = Path(temporary) / "repo"
+            clone = subprocess.run(
+                [
+                    "git",
+                    "clone",
+                    "--quiet",
+                    "--shared",
+                    "--no-checkout",
+                    str(source_repo),
+                    str(metadata),
+                ],
+                check=False,
+                capture_output=True,
+                text=True,
+                timeout=180.0,
+            )
+            if clone.returncode != 0:
+                raise RuntimeError(
+                    "artifact metadata clone failed: " + clone.stderr.strip()
+                )
+            git_dir = metadata / ".git"
+            baseline_ref = "refs/heads/beliefkv-artifact-baseline"
+            command_output(
+                ["git", f"--git-dir={git_dir}", "update-ref", baseline_ref, base_commit],
+                cwd=workspace,
+            )
+            (git_dir / "HEAD").write_text(
+                f"ref: {baseline_ref}\n", encoding="utf-8"
+            )
+            command_output(
+                ["git", f"--git-dir={git_dir}", "read-tree", base_commit],
+                cwd=workspace,
+            )
+            prefix = [
+                "git",
+                f"--git-dir={git_dir}",
+                f"--work-tree={workspace}",
+            ]
+            patch = command_output(
+                [*prefix, "diff", "--binary", base_commit, "--"], cwd=workspace
+            )
+            tracked = command_output(
+                [*prefix, "diff", "--name-status", base_commit, "--"], cwd=workspace
+            )
+            untracked = command_output(
+                [*prefix, "ls-files", "--others", "--exclude-standard"],
+                cwd=workspace,
+            )
+            status = "\n".join(
+                item for item in (tracked, untracked) if item
+            )
+            return patch, status, {
+                "mode": "temporary_git_metadata",
+                "errors": errors,
+            }
+    except (OSError, RuntimeError, subprocess.SubprocessError) as recovery_error:
+        errors.append(
+            f"temporary_git_metadata: {type(recovery_error).__name__}: "
+            f"{recovery_error}"
+        )
+        return "", "", {"mode": "unavailable", "errors": errors}
+
+
 class JsonlAudit:
     def __init__(self, path: Path) -> None:
         path.parent.mkdir(parents=True, exist_ok=True)
@@ -473,6 +566,7 @@ class DockerWorkspaceBackend(FilesystemBackend, SandboxBackendProtocol):
             "PYTHONNOUSERSITE=1",
             "PIP_DISABLE_PIP_VERSION_CHECK=1",
             "PIP_NO_INDEX=1",
+            "GIT_OPTIONAL_LOCKS=0",
         )
         return [item for value in environment for item in ("--env", value)]
 
@@ -572,6 +666,8 @@ class DockerWorkspaceBackend(FilesystemBackend, SandboxBackendProtocol):
             "/tmp:rw,nosuid,nodev,size=2g",
             "--mount",
             f"type=bind,source={self.workspace},target=/workspace",
+            "--mount",
+            f"type=bind,source={self.workspace / '.git'},target=/workspace/.git,readonly",
             *support_mount,
             "--workdir",
             self.shell_workdir,
@@ -2580,11 +2676,14 @@ def _run_workflow(
     if plan_payload is not None:
         write_json(workflow_dir / "plan.json", plan_payload)
         write_json(workflow_dir / "child_reports.json", child_reports)
-    patch = command_output(["git", "diff", "--binary", "HEAD"], cwd=workspace)
+    patch, final_status, artifact_collection = collect_workspace_artifacts(
+        workspace,
+        source_repo=workload.source_repo,
+        base_commit=workload.base_commit,
+    )
     (workflow_dir / "model.patch").write_text(
         patch + ("\n" if patch else ""), encoding="utf-8"
     )
-    final_status = command_output(["git", "status", "--porcelain"], cwd=workspace)
     runtime_verification = result.get(RUNTIME_VERIFIED_TESTS_KEY, {})
     runtime_tests = (
         [str(item) for item in runtime_verification.get("commands", [])]
@@ -2629,6 +2728,7 @@ def _run_workflow(
         "patch_chars": len(patch),
         "workspace_modified": bool(final_status),
         "final_status": final_status,
+        "artifact_collection": artifact_collection,
         "semantic_completion": semantic_completion,
         "correctness_gate": correctness_gate,
         "task_correctness_valid": task_correctness_valid,
