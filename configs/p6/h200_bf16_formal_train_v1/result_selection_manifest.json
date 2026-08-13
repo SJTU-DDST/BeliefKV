@@ -1,0 +1,134 @@
+{
+  "schema_version": 1,
+  "plan_id": "h200-bf16-formal-train-v1",
+  "selection_status": "complete",
+  "completed_at": "2026-08-13",
+  "source_plan": {
+    "path": "configs/p6/h200_bf16_formal_train_v1/collection_plan.json",
+    "sha256": "013e045b41a1760aa9c7776c74cb783ab8763c6ceae29dac76ad7c0b3b0c694e"
+  },
+  "runtime_profile": {
+    "path": "configs/p6/h200_bf16_v4/frozen_runtime_profile.json",
+    "sha256": "5ece5b5075193856b1cf7fff081378fe1a4040734bd80133838713a9a90cd6ba"
+  },
+  "selection_rule": {
+    "expected_unique_instances": 64,
+    "model_output_filtering": false,
+    "replacement_scope": "same pre-frozen instance only",
+    "original_result_is_replaced_only_for_recorded_harness_or_artifact_failure": true
+  },
+  "source_runs": [
+    {
+      "batch_id": "h200-train-01-parallel-r0",
+      "run_path": "experiments/raw/h200_bf16_formal_train_v1/h200-train-01-parallel-r0/20260812T161648Z",
+      "summary_sha256": "aedef3cd29dd6512365bb288ee6249f4635bc7503409bb304a62806a9038499a",
+      "runtime_contract_sha256": "d53c917a1c67a64da518943a5325800057430fbf63bb95cd80516204d8d9cbce",
+      "beliefkv_commit": "00efd8072a5b04a2aafb02c73639f91e8aeb02d9",
+      "workflow_count": 16,
+      "fanout_profile": "parallel_analysis_2to3"
+    },
+    {
+      "batch_id": "h200-train-02-parallel-r0",
+      "run_path": "experiments/raw/h200_bf16_formal_train_v1/h200-train-02-parallel-r0/20260812T183337Z",
+      "summary_sha256": "366b8fe85a0075850f020a1dbfd60b8c75799fe5910c33b57fa517fb83686747",
+      "runtime_contract_sha256": "9a6cc5d3ee672c5128530746d63e20ca1a5c519e3ee9e2b8bcb137ec519fad97",
+      "beliefkv_commit": "e887208d47632750cb7dbad026c37e7d6f49c4b1",
+      "workflow_count": 16,
+      "fanout_profile": "parallel_analysis_2to3"
+    },
+    {
+      "batch_id": "h200-train-03-natural-r0",
+      "run_path": "experiments/raw/h200_bf16_formal_train_v1/h200-train-03-natural-r0/20260812T213452Z",
+      "summary_sha256": "f09d338b4a955f58872095e5402f1ef362aa42fa23195f35f657eca25f63849e",
+      "runtime_contract_sha256": "5d814ae6a6fcf8464a68f417db082a71f06089b82858cca7a3b899b76c6cb46d",
+      "beliefkv_commit": "c6762c7716e8de200c968603138d1e2b966bf05d",
+      "workflow_count": 16,
+      "fanout_profile": "natural"
+    },
+    {
+      "batch_id": "h200-train-04-natural-r0",
+      "run_path": "experiments/raw/h200_bf16_formal_train_v1/h200-train-04-natural-r0/20260813T014201Z",
+      "summary_sha256": "07a5b0be97f6c0dfeed0fecf5d8426c7361c64f134d8d5caa16608274454b85f",
+      "runtime_contract_sha256": "6b9bdc11ad968cfdead5de5eb23d6c1b3bcc597f4efae5b9464c48af0a216aee",
+      "beliefkv_commit": "d3bd7b15c76bd3a9096a646a20c7bd51fe2592f2",
+      "workflow_count": 16,
+      "fanout_profile": "natural"
+    }
+  ],
+  "replacement_run": {
+    "run_path": "experiments/raw/h200_bf16_formal_train_v1/h200-train-git-recovery-r1/20260813T052039Z",
+    "runtime_contract_sha256": "8572bc34555c61ea7e9dbb6fb6f97de8bf34004cea5052cd70674c73e691ec4b",
+    "beliefkv_commit": "127f7dc9df02355a07a932ab280ef18ee9e493a9"
+  },
+  "replacements": [
+    {
+      "instance_id": "pydata__xarray-3993",
+      "original_batch_id": "h200-train-03-natural-r0",
+      "original_result": null,
+      "exclusion_reason": "artifact_collection_failed_after_runtime_completion_because_workflow_git_head_was_damaged",
+      "selected_result": "experiments/raw/h200_bf16_formal_train_v1/h200-train-git-recovery-r1/20260813T052039Z/recovery-shard3/workloads/workflows/pydata__xarray-3993/result.json",
+      "selected_result_sha256": "2e94ce328f56b81ba0e0d12e922f5b6c6aca76a93ab45ba212d6423253363dcf",
+      "selected_episode_scope": "full_episode",
+      "measurement_valid": true,
+      "native_agent_jct_eligible": true
+    },
+    {
+      "instance_id": "pydata__xarray-7229",
+      "original_batch_id": "h200-train-04-natural-r0",
+      "original_result": "experiments/raw/h200_bf16_formal_train_v1/h200-train-04-natural-r0/20260813T014201Z/workloads/workflows/pydata__xarray-7229/result.json",
+      "original_result_sha256": "b278f3a80d792ba89216a21822b5cc7bfb3e66ec4bb6462a91eaca8bb5e931ab",
+      "exclusion_reason": "workspace_git_alternates_referenced_an_inaccessible_host_path",
+      "selected_result": "experiments/raw/h200_bf16_formal_train_v1/h200-train-git-recovery-r1/20260813T052039Z/recovery-shard4/workloads/workflows/pydata__xarray-7229/result.json",
+      "selected_result_sha256": "3aea73a9f61c508ce43346134433bd3692362f6f9013659ae5ce6dd72e546fba",
+      "selected_episode_scope": "pre_intervention_local_labels_with_event_level_censoring",
+      "measurement_valid": false,
+      "native_agent_jct_eligible": false,
+      "system_jct_eligible": true,
+      "exclusion_from_clean_terminal_labels": "langgraph_superstep_limit_and_guard_finalization"
+    },
+    {
+      "instance_id": "pytest-dev__pytest-5840",
+      "original_batch_id": "h200-train-04-natural-r0",
+      "original_result": "experiments/raw/h200_bf16_formal_train_v1/h200-train-04-natural-r0/20260813T014201Z/workloads/workflows/pytest-dev__pytest-5840/result.json",
+      "original_result_sha256": "ea71b8f9be228fcbfb302a5913c1a3188476bc50debcaa965c9a328598fa6274",
+      "exclusion_reason": "workspace_git_alternates_referenced_an_inaccessible_host_path",
+      "selected_result": "experiments/raw/h200_bf16_formal_train_v1/h200-train-git-recovery-r1/20260813T052039Z/recovery-shard4/workloads/workflows/pytest-dev__pytest-5840/result.json",
+      "selected_result_sha256": "805a6eb7bb9070ddfee5b1e45fa13b02e13322d74738a94cfc0add9895c946a5",
+      "selected_episode_scope": "full_episode",
+      "measurement_valid": true,
+      "native_agent_jct_eligible": true
+    }
+  ],
+  "canonical_aggregate": {
+    "workflow_count": 64,
+    "unique_instance_count": 64,
+    "completed_workflows": 64,
+    "system_jct_eligible_workflows": 64,
+    "measurement_valid_workflows": 28,
+    "native_agent_jct_eligible_workflows": 35,
+    "task_correctness_valid_workflows": 28,
+    "llm_request_count": 5000,
+    "tool_call_count": 11194,
+    "dynamic_subagent_count": 108,
+    "join_all_count": 76,
+    "guard_intervened_workflows": 23,
+    "guard_intervention_count": 30,
+    "artifact_collection_error_count": 0,
+    "repository_counts": {
+      "django/django": 24,
+      "mwaskom/seaborn": 1,
+      "pallets/flask": 1,
+      "psf/requests": 6,
+      "pydata/xarray": 14,
+      "pylint-dev/pylint": 6,
+      "pytest-dev/pytest": 12
+    }
+  },
+  "label_policy": {
+    "system_performance_labels": "require system_jct_eligible",
+    "clean_agent_terminal_labels": "require native_agent_jct_eligible",
+    "task_correctness_labels": "require task_correctness_valid",
+    "frontier_local_labels": "retain eligible pre-censor decision points and carry explicit censor reason",
+    "guard_or_runtime_intervention": "never treat post-intervention terminal state or JCT as a natural agent label"
+  }
+}
