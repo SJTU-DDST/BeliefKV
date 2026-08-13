@@ -1,6 +1,24 @@
 # BeliefKV 最新架构与实现状态
 
-更新日期：2026-08-13
+更新日期：2026-08-14
+
+## 2026-08-14：H200 FrontierBelief Held-out Calibration
+
+Astropy/Sphinx 两个预冻结 calibration shard 已完成，共 16 个 workflow。canonical coverage audit
+覆盖 24,394 个 decision row，natural/parallel 与两个项目均覆盖全部训练 target；15/15 个 eligible
+JOIN closure-complete。`CALL_CENSORED` 与 `JOIN_TIMEOUT` 现作为显式右删失 reentry endpoint，
+重导出后的 1,284 个 eligible reentry 全部获得 observed 或 right-censored 归因。censor 不再被误当作
+成功 terminal/wait 样本。
+
+首个 H200 BF16 模型已在 held-out calibration split 上完成概率和 local-episode conformal 校准，且
+没有重新 fit 训练计数。四个连续目标的 local-episode interval coverage 分别为 90.15%、93.90%、
+90.17% 和 90.13%；boundary accuracy 为 94.96%，tool terminal accuracy 为 86.82%。但工具等待
+区间仍极宽，external-wait workflow-macro coverage 仅 87.40%，因此 artifact 保持
+`online_eligible=false`、`predictive_action_eligible=false`，只允许 shadow/replay。`test_id` 未访问。
+
+exact incremental action boundary 仍为 0%，不阻塞基于完整 `LLM_RESULT` 的最终 action/demand
+预测，但继续阻塞 early dispatch 与 run-to-action 主张。完整证据见
+`docs/experiments/beliefkv_h200_bf16_canonical_train_and_calibration_2026-08-13_zh.md`。
 
 ## 2026-08-13：H200 Canonical Train 与 Calibration 边界
 

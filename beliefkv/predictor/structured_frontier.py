@@ -908,13 +908,36 @@ class FrontierBeliefModel:
                     and features.state == InvocationState.WAIT_TOOL.value
                     and _target_eligible(label, "external_wait")
                 ):
-                    status = str(label.get("next_boundary_status") or "error")
                     if _target_right_censored(label, "external_wait"):
-                        status = "censored"
-                    tool_records.append(
-                        (prediction.tool_terminal_distribution, status, weight)
+                        observation_counts[
+                            "tool_right_censored_excluded_from_terminal"
+                        ] += 1
+                    else:
+                        status = str(
+                            label.get("next_boundary_status") or "error"
+                        )
+                        tool_records.append(
+                            (
+                                prediction.tool_terminal_distribution,
+                                status,
+                                weight,
+                            )
+                        )
+                        observation_counts["tool_terminal"] += 1
+                wait_target = (
+                    "external_wait"
+                    if features.state == InvocationState.WAIT_TOOL.value
+                    else (
+                        "join_wait"
+                        if features.state == InvocationState.WAIT_JOIN.value
+                        else None
                     )
-                    observation_counts["tool_terminal"] += 1
+                )
+                completed_wait = bool(
+                    wait_target
+                    and _target_eligible(label, wait_target)
+                    and not _target_right_censored(label, wait_target)
+                )
                 scalar_targets = (
                     (
                         "remaining_decode_tokens",
@@ -927,8 +950,7 @@ class FrontierBeliefModel:
                     (
                         "remaining_external_wait_ms",
                         label.get("next_boundary_delay_ms")
-                        if features.state == InvocationState.WAIT_TOOL.value
-                        and _target_eligible(label, "external_wait")
+                        if completed_wait
                         else None,
                         prediction.remaining_external_wait,
                     ),
@@ -954,6 +976,13 @@ class FrontierBeliefModel:
                     score = max(lower - float(actual), float(actual) - upper, 0.0)
                     scores[name][local_episode].append(score)
                     observation_counts[name] += 1
+                if (
+                    wait_target
+                    and _target_right_censored(label, wait_target)
+                ):
+                    observation_counts[
+                        f"{wait_target}_right_censored_excluded_from_interval"
+                    ] += 1
 
         self.boundary_temperature = _fit_temperature(boundary_records)
         self.tool_temperature = _fit_temperature(tool_records)
@@ -1693,6 +1722,13 @@ def evaluate_frontier_model(
             "interval_width": 0.0,
         }
     )
+    interval_episode_coverage: defaultdict[
+        str, defaultdict[str, list[bool]]
+    ] = defaultdict(lambda: defaultdict(list))
+    interval_episode_workflow: dict[str, str] = {}
+    target_availability: defaultdict[str, dict[str, float]] = defaultdict(
+        lambda: {"weight": 0.0, "available_weight": 0.0}
+    )
     prediction_weight = 0.0
     ood_weight = 0.0
     support_weight: Counter[str] = Counter()
@@ -1708,6 +1744,7 @@ def evaluate_frontier_model(
             label = labels.get(invocation_id)
             if label is None:
                 continue
+            local_episode = f"{episode}|{invocation_id}"
             weight = 1.0 / max(1, local_counts[(episode, invocation_id)])
             workflow = _workflow_group_id(row)
             weight /= max(1, workflow_episode_counts[workflow])
@@ -1729,16 +1766,18 @@ def evaluate_frontier_model(
                     boundary,
                     weight,
                 )
+                availability = target_availability["action_boundary"]
+                availability["weight"] += weight
+                availability["available_weight"] += weight * bool(
+                    prediction.boundary_distribution
+                )
             if (
                 trigger == RuntimeEventKind.TOOL_START.value
                 and features.state == InvocationState.WAIT_TOOL.value
                 and _target_eligible(label, "external_wait")
+                and not _target_right_censored(label, "external_wait")
             ):
-                status = (
-                    "censored"
-                    if _target_right_censored(label, "external_wait")
-                    else str(label.get("next_boundary_status") or "error")
-                )
+                status = str(label.get("next_boundary_status") or "error")
                 if status not in {"success", "error", "censored"}:
                     status = "error"
                 _observe_classification(
@@ -1747,10 +1786,31 @@ def evaluate_frontier_model(
                     status,
                     weight,
                 )
+                availability = target_availability["tool_terminal"]
+                availability["weight"] += weight
+                availability["available_weight"] += weight * bool(
+                    prediction.tool_terminal_distribution
+                )
+
+            wait_target = (
+                "external_wait"
+                if features.state == InvocationState.WAIT_TOOL.value
+                else (
+                    "join_wait"
+                    if features.state == InvocationState.WAIT_JOIN.value
+                    else None
+                )
+            )
+            completed_wait = bool(
+                wait_target
+                and _target_eligible(label, wait_target)
+                and not _target_right_censored(label, wait_target)
+            )
 
             targets = (
                 (
                     "remaining_decode_tokens",
+                    "remaining_decode_demand",
                     label.get("remaining_output_tokens")
                     if features.state == InvocationState.RUNNING_LLM.value
                     and _target_eligible(label, "remaining_decode_demand")
@@ -1759,14 +1819,15 @@ def evaluate_frontier_model(
                 ),
                 (
                     "remaining_external_wait_ms",
+                    wait_target or "external_wait",
                     label.get("next_boundary_delay_ms")
-                    if features.state == InvocationState.WAIT_TOOL.value
-                    and _target_eligible(label, "external_wait")
+                    if completed_wait
                     else None,
                     prediction.remaining_external_wait,
                 ),
                 (
                     "prompt_growth_tokens",
+                    "prompt_growth",
                     label.get("reentry_prompt_delta_tokens")
                     if _target_eligible(label, "prompt_growth")
                     else None,
@@ -1774,15 +1835,22 @@ def evaluate_frontier_model(
                 ),
                 (
                     "next_output_tokens",
+                    "next_output_demand",
                     label.get("next_output_tokens")
                     if _target_eligible(label, "next_output_demand")
                     else None,
                     prediction.next_output_tokens,
                 ),
             )
-            for name, actual, distribution in targets:
+            for name, target_name, actual, distribution in targets:
                 if actual is None or not distribution.values:
+                    if actual is not None:
+                        availability = target_availability[target_name]
+                        availability["weight"] += weight
                     continue
+                availability = target_availability[target_name]
+                availability["weight"] += weight
+                availability["available_weight"] += weight
                 actual_value = float(actual)
                 metrics = scalar[name]
                 metrics["weight"] += weight
@@ -1797,6 +1865,10 @@ def evaluate_frontier_model(
                         lower <= actual_value <= upper
                     )
                     metrics["interval_width"] += weight * (upper - lower)
+                    interval_episode_coverage[name][local_episode].append(
+                        lower <= actual_value <= upper
+                    )
+                    interval_episode_workflow[local_episode] = workflow
 
     return {
         "model_version": model.model_version,
@@ -1823,12 +1895,52 @@ def evaluate_frontier_model(
                     else None
                 ),
                 "episode_weight": metrics["weight"],
+                **_episode_interval_diagnostics(
+                    interval_episode_coverage.get(name, {}),
+                    interval_episode_workflow,
+                ),
             }
             for name, metrics in sorted(scalar.items())
         },
         "ood_fallback_rate": ood_weight / max(prediction_weight, 1e-12),
+        "ood_fallback_semantics": "composite_any_head_unavailable",
+        "target_availability": {
+            name: {
+                "available_rate": values["available_weight"]
+                / max(values["weight"], 1e-12),
+                "episode_weight": values["weight"],
+            }
+            for name, values in sorted(target_availability.items())
+        },
         "support_weight": dict(sorted(support_weight.items())),
         "calibration_coverage_target": model.calibration_coverage,
+    }
+
+
+def _episode_interval_diagnostics(
+    by_episode: Mapping[str, Sequence[bool]],
+    episode_workflow: Mapping[str, str],
+) -> dict[str, Any]:
+    if not by_episode:
+        return {
+            "local_episode_interval_coverage": None,
+            "workflow_macro_local_episode_interval_coverage": None,
+            "interval_local_episode_count": 0,
+        }
+    covered = {
+        episode: all(values) for episode, values in by_episode.items()
+    }
+    by_workflow: defaultdict[str, list[bool]] = defaultdict(list)
+    for episode, value in covered.items():
+        by_workflow[episode_workflow.get(episode, "unknown")].append(value)
+    return {
+        "local_episode_interval_coverage": sum(covered.values())
+        / len(covered),
+        "workflow_macro_local_episode_interval_coverage": sum(
+            sum(values) / len(values) for values in by_workflow.values()
+        )
+        / len(by_workflow),
+        "interval_local_episode_count": len(covered),
     }
 
 

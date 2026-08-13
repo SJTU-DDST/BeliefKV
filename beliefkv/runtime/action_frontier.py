@@ -157,6 +157,8 @@ class ActionFrontierSnapshot:
     waiting_kv_bytes_after: int | None
     reentry_ts_ms: float | None
     reentry_delay_ms: float | None
+    reentry_status: str | None
+    reentry_censor_reason: str | None
 
 
 @dataclass(frozen=True)
@@ -178,6 +180,7 @@ class ActionFrontierCoverage:
     malformed_call_count: int
     reentry_eligible_call_count: int
     reentry_observed_count: int
+    reentry_censored_count: int
     demand_label_count: int
 
     def __post_init__(self) -> None:
@@ -190,6 +193,7 @@ class ActionFrontierCoverage:
             self.malformed_call_count,
             self.reentry_eligible_call_count,
             self.reentry_observed_count,
+            self.reentry_censored_count,
             self.demand_label_count,
         ) < 0:
             raise ValueError("action-frontier coverage counts must be non-negative")
@@ -211,7 +215,10 @@ class ActionFrontierCoverage:
     @property
     def reentry_cause_coverage(self) -> float:
         return (
-            self.reentry_observed_count / self.reentry_eligible_call_count
+            (
+                self.reentry_observed_count + self.reentry_censored_count
+            )
+            / self.reentry_eligible_call_count
             if self.reentry_eligible_call_count
             else 0.0
         )
@@ -232,6 +239,10 @@ class ActionFrontierCoverage:
             "malformed_call_count": self.malformed_call_count,
             "reentry_eligible_call_count": self.reentry_eligible_call_count,
             "reentry_observed_count": self.reentry_observed_count,
+            "reentry_censored_count": self.reentry_censored_count,
+            "reentry_attributed_count": (
+                self.reentry_observed_count + self.reentry_censored_count
+            ),
             "demand_label_count": self.demand_label_count,
             "exact_boundary_call_coverage": self.exact_boundary_call_coverage,
             "exact_boundary_decode_time_coverage": (
@@ -285,7 +296,14 @@ def characterize_action_frontier_coverage(
         ),
         reentry_eligible_call_count=len(reentry_eligible),
         reentry_observed_count=sum(
-            item.reentry_ts_ms is not None for item in reentry_eligible
+            item.reentry_ts_ms is not None
+            and item.reentry_status != "censored"
+            for item in reentry_eligible
+        ),
+        reentry_censored_count=sum(
+            item.reentry_ts_ms is not None
+            and item.reentry_status == "censored"
+            for item in reentry_eligible
         ),
         demand_label_count=sum(
             item.generated_tokens > 0 and item.started_ts_ms <= item.updated_ts_ms
@@ -297,6 +315,7 @@ def characterize_action_frontier_coverage(
 class ActionFrontierObserver:
     """Correlate parser validity with subsequent causal/runtime transitions."""
 
+    _CENSORED_IDENTITY_FALLBACK_MAX_AGE_MS = 10_000.0
     _ACTION_EVENTS = {
         RuntimeEventKind.TOOL_START,
         RuntimeEventKind.SPAWN,
@@ -308,6 +327,8 @@ class ActionFrontierObserver:
         RuntimeEventKind.REACTIVATE,
         RuntimeEventKind.MESSAGE,
         RuntimeEventKind.JOIN_SATISFIED,
+        RuntimeEventKind.JOIN_TIMEOUT,
+        RuntimeEventKind.CALL_CENSORED,
     }
 
     def __init__(self) -> None:
@@ -361,6 +382,8 @@ class ActionFrontierObserver:
             waiting_kv_bytes_after=None,
             reentry_ts_ms=None,
             reentry_delay_ms=None,
+            reentry_status=None,
+            reentry_censor_reason=None,
         )
         self._states[request_id] = state
         self._latest_request_by_invocation[invocation_id] = request_id
@@ -451,7 +474,8 @@ class ActionFrontierObserver:
             if event.kind == RuntimeEventKind.MESSAGE
             else (
                 self._join_waiter_by_id.get(event.join_id)
-                if event.kind == RuntimeEventKind.JOIN_SATISFIED
+                if event.kind
+                in {RuntimeEventKind.JOIN_SATISFIED, RuntimeEventKind.JOIN_TIMEOUT}
                 and event.join_id
                 else event.invocation_id
             )
@@ -469,7 +493,16 @@ class ActionFrontierObserver:
             )
         if invocation_id is None:
             return None
-        request_id = self._latest_request_by_invocation.get(invocation_id)
+        request_id = (
+            self._censored_identity_fallback_request(event)
+            if (
+                event.kind == RuntimeEventKind.CALL_CENSORED
+                and bool(
+                    event.attributes.get("invocation_identity_fallback", False)
+                )
+            )
+            else self._latest_request_by_invocation.get(invocation_id)
+        )
         if request_id is None:
             return None
         state = self._states[request_id]
@@ -514,16 +547,64 @@ class ActionFrontierObserver:
             return next_state
         if event.kind in self._REENTRY_EVENTS:
             base_ts = state.action_event_ts_ms or state.valid_action_ts_ms
+            censored = event.kind in {
+                RuntimeEventKind.CALL_CENSORED,
+                RuntimeEventKind.JOIN_TIMEOUT,
+            }
             next_state = replace(
                 state,
                 updated_ts_ms=max(state.updated_ts_ms, event.ts_ms),
                 reentry_ts_ms=event.ts_ms,
                 reentry_delay_ms=(event.ts_ms - base_ts if base_ts is not None else None),
+                reentry_status="censored" if censored else "observed",
+                reentry_censor_reason=(
+                    str(
+                        event.attributes.get("censor_reason")
+                        or (
+                            "join_timeout"
+                            if event.kind == RuntimeEventKind.JOIN_TIMEOUT
+                            else "runtime_censored"
+                        )
+                    )
+                    if censored
+                    else None
+                ),
             )
             self._states[request_id] = next_state
             self._revision += 1
             return next_state
         return state
+
+    def _censored_identity_fallback_request(
+        self, event: RuntimeEvent
+    ) -> str | None:
+        """Resolve a harness fallback identity without guessing across actions."""
+
+        tool_name = str(event.attributes.get("tool_name") or "")
+        candidates = [
+            state
+            for state in self._states.values()
+            if state.workflow_id == event.workflow_id
+            and state.action_kind == StructuredActionKind.FUNCTION_CALL
+            and state.action_event_kind is None
+            and state.reentry_ts_ms is None
+            and state.valid_action_ts_ms is not None
+            and 0
+            <= event.ts_ms - state.updated_ts_ms
+            <= self._CENSORED_IDENTITY_FALLBACK_MAX_AGE_MS
+            and (
+                not tool_name
+                or not state.action_name
+                or state.action_name == tool_name
+            )
+        ]
+        if not candidates:
+            return None
+        latest_ts = max(state.updated_ts_ms for state in candidates)
+        latest = [
+            state for state in candidates if state.updated_ts_ms == latest_ts
+        ]
+        return latest[0].request_id if len(latest) == 1 else None
 
     def snapshot(self, request_id: str) -> ActionFrontierSnapshot:
         return self._require(request_id)

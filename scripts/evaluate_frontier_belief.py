@@ -32,7 +32,11 @@ def main() -> int:
 
     raw_model = json.loads(args.model.read_text(encoding="utf-8"))
     model = FrontierBeliefModel.from_dict(raw_model)
-    rows, _ = load_evaluation_rows(args.dataset_dir, split=args.split)
+    rows, _ = load_evaluation_rows(
+        args.dataset_dir,
+        split=args.split,
+        allow_formal_local=args.split == "calibration",
+    )
     if not rows:
         raise SystemExit(f"no {args.split} decision points were found")
     evaluation_projects = {

@@ -591,6 +591,49 @@ def test_calibration_rejects_training_or_test_rows() -> None:
         model.calibrate([_row("train", 30)])
 
 
+def test_calibration_excludes_right_censored_tool_completion_targets() -> None:
+    model = FrontierBeliefModel(model_version="tool-calibration-v1")
+    model.fit(
+        [
+            _tool_row("train-success", 100, "success"),
+            _tool_row("train-error", 200, "error"),
+        ]
+    )
+    completed = _tool_row("calibration-complete", 150, "success")
+    completed["split"] = "calibration"
+    completed["labels"][0]["target_training_eligible"] = {
+        "external_wait": True
+    }
+    completed["labels"][0]["target_right_censored"] = {
+        "external_wait": False
+    }
+    censored = _tool_row("calibration-censored", 500, "censored")
+    censored["split"] = "calibration"
+    censored["labels"][0]["target_training_eligible"] = {
+        "external_wait": True
+    }
+    censored["labels"][0]["target_right_censored"] = {
+        "external_wait": True
+    }
+
+    summary = model.calibrate([completed, censored])
+
+    assert summary["observation_counts"]["tool_terminal"] == 1
+    assert (
+        summary["observation_counts"][
+            "tool_right_censored_excluded_from_terminal"
+        ]
+        == 1
+    )
+    assert summary["observation_counts"]["remaining_external_wait_ms"] == 1
+    assert (
+        summary["observation_counts"][
+            "external_wait_right_censored_excluded_from_interval"
+        ]
+        == 1
+    )
+
+
 def test_tool_prediction_conditions_competing_risk_on_elapsed_wait(tmp_path) -> None:
     model = FrontierBeliefModel(model_version="tool-survival-v1")
     model.fit(
@@ -680,6 +723,22 @@ def test_episode_weighted_evaluation_reports_calibration_and_ood() -> None:
             "calibrated_interval_coverage"
         ]
         <= 1
+    )
+    assert (
+        0
+        <= metrics["scalar"]["remaining_decode_tokens"][
+            "local_episode_interval_coverage"
+        ]
+        <= 1
+    )
+    assert metrics["ood_fallback_semantics"] == (
+        "composite_any_head_unavailable"
+    )
+    assert (
+        metrics["target_availability"]["remaining_decode_demand"][
+            "available_rate"
+        ]
+        == 1
     )
 
 

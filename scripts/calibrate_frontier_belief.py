@@ -27,6 +27,14 @@ def main() -> int:
     parser.add_argument("--model", type=Path, required=True)
     parser.add_argument("--dataset-dir", type=Path, action="append", required=True)
     parser.add_argument("--target-coverage", type=float, default=0.9)
+    parser.add_argument(
+        "--coverage-report",
+        type=Path,
+        help=(
+            "required for formal calibration; must be a passing frozen "
+            "calibration coverage audit"
+        ),
+    )
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument(
         "--development-on-train",
@@ -71,6 +79,30 @@ def main() -> int:
             rows, target_coverage=args.target_coverage, allow_development=True
         )
     else:
+        if args.coverage_report is None:
+            raise SystemExit(
+                "formal calibration requires --coverage-report"
+            )
+        coverage = json.loads(
+            args.coverage_report.read_text(encoding="utf-8")
+        )
+        if (
+            coverage.get("split") != "calibration"
+            or coverage.get("coverage_gate_passed") is not True
+            or coverage.get("calibration_blockers")
+        ):
+            raise SystemExit("calibration coverage report did not pass")
+        reported_dirs = {
+            str(Path(item).resolve())
+            for item in (coverage.get("source") or {}).get(
+                "dataset_dirs", ()
+            )
+        }
+        requested_dirs = {str(item.resolve()) for item in args.dataset_dir}
+        if reported_dirs != requested_dirs:
+            raise SystemExit(
+                "calibration coverage report does not bind the requested datasets"
+            )
         rows, manifests = load_evaluation_rows(
             args.dataset_dir,
             split="calibration",
@@ -104,6 +136,12 @@ def main() -> int:
             raise SystemExit(
                 "calibration runtime environment differs from the fitted model"
             )
+        if (coverage.get("source") or {}).get(
+            "runtime_environment_digest"
+        ) not in fit_environments:
+            raise SystemExit(
+                "calibration coverage environment differs from the fitted model"
+            )
         summary = model.calibrate(
             rows, target_coverage=args.target_coverage
         )
@@ -120,8 +158,32 @@ def main() -> int:
                 str(item.resolve()) for item in args.dataset_dir
             ],
             "calibration_projects": calibration_projects,
+            "calibration_status": "calibrated",
+            "online_eligible": False,
+            "predictive_action_eligible": False,
         }
     )
+    if args.coverage_report is not None:
+        metadata.update(
+            {
+                "calibration_coverage_report": str(
+                    args.coverage_report.resolve()
+                ),
+                "calibration_coverage_report_sha256": hashlib.sha256(
+                    args.coverage_report.read_bytes()
+                ).hexdigest(),
+                "calibration_coverage_warnings": coverage.get(
+                    "coverage_warnings", ()
+                ),
+                "exact_incremental_action_boundary_available": (
+                    (
+                        coverage.get("action_boundaries") or {}
+                    ).get("exact_incremental_count", 0)
+                    > 0
+                ),
+                "test_id_status": "sealed_not_evaluated",
+            }
+        )
     if manifests:
         metadata["calibration_dataset_manifest_digests"] = [
             hashlib.sha256(

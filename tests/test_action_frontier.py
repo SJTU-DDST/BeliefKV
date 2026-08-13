@@ -260,4 +260,145 @@ def test_join_satisfied_is_attributed_to_the_waiting_parent() -> None:
     coverage = observer.coverage()
     assert coverage.reentry_eligible_call_count == 1
     assert coverage.reentry_observed_count == 1
+    assert coverage.reentry_censored_count == 0
     assert coverage.reentry_cause_coverage == 1.0
+
+
+def test_suppressed_tool_call_is_an_explicit_censored_reentry() -> None:
+    observer = ActionFrontierObserver()
+    observer.observe_runtime_event(
+        _event(
+            1,
+            RuntimeEventKind.LLM_SUBMIT,
+            attributes={"request_id": "tool-call"},
+        )
+    )
+    observer.observe_runtime_event(
+        _event(
+            2,
+            RuntimeEventKind.LLM_RESULT,
+            attributes={
+                "parser_status": "valid",
+                "structured_action_kinds": ["function_call"],
+                "structured_action_names": ["execute"],
+                "output_tokens": 8,
+            },
+        )
+    )
+    state = observer.observe_runtime_event(
+        _event(
+            3,
+            RuntimeEventKind.CALL_CENSORED,
+            invocation_id="fallback-root-identity",
+            attributes={
+                "censor_reason": "duplicate_suppressed",
+                "invocation_identity_fallback": True,
+                "tool_name": "execute",
+            },
+        )
+    )
+
+    assert state is not None
+    assert state.reentry_ts_ms == 30.0
+    assert state.reentry_status == "censored"
+    assert state.reentry_censor_reason == "duplicate_suppressed"
+    coverage = observer.coverage()
+    assert coverage.reentry_eligible_call_count == 1
+    assert coverage.reentry_observed_count == 0
+    assert coverage.reentry_censored_count == 1
+    assert coverage.reentry_cause_coverage == 1.0
+
+
+def test_censored_identity_fallback_rejects_ambiguous_latest_action() -> None:
+    observer = ActionFrontierObserver()
+    for invocation_id, request_id in (
+        ("coder-a", "request-a"),
+        ("coder-b", "request-b"),
+    ):
+        observer.observe_runtime_event(
+            _event(
+                1,
+                RuntimeEventKind.LLM_SUBMIT,
+                invocation_id=invocation_id,
+                attributes={"request_id": request_id},
+            )
+        )
+        observer.observe_runtime_event(
+            _event(
+                2,
+                RuntimeEventKind.LLM_RESULT,
+                invocation_id=invocation_id,
+                attributes={
+                    "parser_status": "valid",
+                    "structured_action_kinds": ["function_call"],
+                    "structured_action_names": ["execute"],
+                    "output_tokens": 8,
+                },
+            )
+        )
+
+    state = observer.observe_runtime_event(
+        _event(
+            3,
+            RuntimeEventKind.CALL_CENSORED,
+            invocation_id="fallback-root-identity",
+            attributes={
+                "censor_reason": "duplicate_suppressed",
+                "invocation_identity_fallback": True,
+                "tool_name": "execute",
+            },
+        )
+    )
+
+    assert state is None
+    assert observer.snapshot("request-a").reentry_ts_ms is None
+    assert observer.snapshot("request-b").reentry_ts_ms is None
+
+
+def test_join_timeout_is_attributed_to_the_waiting_parent_as_censored() -> None:
+    observer = ActionFrontierObserver()
+    observer.observe_runtime_event(
+        _event(
+            1,
+            RuntimeEventKind.LLM_SUBMIT,
+            invocation_id="parent",
+            attributes={"request_id": "spawn-call"},
+        )
+    )
+    observer.observe_runtime_event(
+        _event(
+            2,
+            RuntimeEventKind.LLM_RESULT,
+            invocation_id="parent",
+            attributes={
+                "parser_status": "valid",
+                "structured_action_kinds": ["spawn"],
+                "structured_action_names": ["task"],
+                "output_tokens": 8,
+            },
+        )
+    )
+    observer.observe_runtime_event(
+        RuntimeEvent(
+            event_id="join-wait",
+            ts_ms=30.0,
+            kind=RuntimeEventKind.JOIN_WAIT,
+            workflow_id="workflow",
+            invocation_id="parent",
+            join_id="join",
+        )
+    )
+    state = observer.observe_runtime_event(
+        RuntimeEvent(
+            event_id="join-timeout",
+            ts_ms=80.0,
+            kind=RuntimeEventKind.JOIN_TIMEOUT,
+            workflow_id="workflow",
+            join_id="join",
+        )
+    )
+
+    assert state is not None
+    assert state.invocation_id == "parent"
+    assert state.reentry_status == "censored"
+    assert state.reentry_censor_reason == "join_timeout"

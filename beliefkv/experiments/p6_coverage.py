@@ -463,6 +463,7 @@ def _action_coverage(
     observer_coverage = observer.coverage().to_dict()
     reentry_causes = Counter()
     reentry_missing = Counter()
+    reentry_censors = Counter()
     for snapshot in observer.snapshots():
         if snapshot.action_kind not in {
             StructuredActionKind.FUNCTION_CALL,
@@ -471,11 +472,16 @@ def _action_coverage(
         }:
             continue
         if snapshot.reentry_ts_ms is not None:
-            reentry_causes[
-                "join_satisfied"
-                if snapshot.action_kind == StructuredActionKind.SPAWN
-                else "tool_or_runtime_event"
-            ] += 1
+            if snapshot.reentry_status == "censored":
+                reentry_censors[
+                    snapshot.reentry_censor_reason or "runtime_censored"
+                ] += 1
+            else:
+                reentry_causes[
+                    "join_satisfied"
+                    if snapshot.action_kind == StructuredActionKind.SPAWN
+                    else "tool_or_runtime_event"
+                ] += 1
         else:
             reentry_missing[snapshot.action_kind.value] += 1
 
@@ -504,8 +510,15 @@ def _action_coverage(
             "reentry_eligible_call_count"
         ],
         "reentry_observed_count": observer_coverage["reentry_observed_count"],
+        "reentry_censored_count": observer_coverage[
+            "reentry_censored_count"
+        ],
+        "reentry_attributed_count": observer_coverage[
+            "reentry_attributed_count"
+        ],
         "reentry_cause_coverage": observer_coverage["reentry_cause_coverage"],
         "reentry_cause_counts": dict(sorted(reentry_causes.items())),
+        "reentry_censor_reason_counts": dict(sorted(reentry_censors.items())),
         "reentry_missing_by_action_kind": dict(sorted(reentry_missing.items())),
         "demand_label_count": demand,
         "demand_label_completeness": _fraction(demand, len(policy_calls)),

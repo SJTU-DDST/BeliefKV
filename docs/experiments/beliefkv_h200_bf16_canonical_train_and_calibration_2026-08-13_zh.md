@@ -1,6 +1,6 @@
-# H200 BF16 Canonical Train 与 Calibration 准备
+# H200 BF16 Canonical Train 与 Formal Calibration
 
-日期：2026-08-13
+日期：2026-08-13 至 2026-08-14
 
 ## 1. 结论
 
@@ -8,9 +8,10 @@ H200 BF16 的 64-workflow train 采集已转换为可训练的 canonical dataset
 结果按同一 instance 替换原始失败结果，每个预冻结 instance 恰好保留一条 trajectory；没有按
 模型输出筛选任务，也没有混入 calibration/test 项目。
 
-当前首个 FrontierBeliefModel 已完成 train-project LOPO 超参数选择与 fit，但仍是
-`uncalibrated`，`online_eligible=false`、`predictive_action_eligible=false`。下一步只采集并使用
-Astropy/Sphinx calibration split；`test_id` 继续封存。
+当前首个 FrontierBeliefModel 已完成 train-project LOPO、fit 和 Astropy/Sphinx held-out
+calibration。校准没有重新拟合训练计数，`test_id` 仍然封存。由于工具等待分布重尾、workflow-macro
+覆盖仍不均衡，artifact 保持 `online_eligible=false`、`predictive_action_eligible=false`，仅允许
+shadow/replay 使用。
 
 ## 2. Canonical 合并与资格契约
 
@@ -93,14 +94,73 @@ LOPO artifact：
 Astropy/Sphinx 完整 Git object 已迁入，16 个 base commit 均可解析。16 个 SWE-bench image 已拉取并
 锁定为 immutable RepoDigest，总逻辑大小约 17.23 GB。
 
-## 5. 后续门禁
+## 5. Calibration 采集与 Censor 修复
 
-1. 在 clean Git source 上启动 `h200_bf16_v4` server，运行两个 calibration shard；
-2. exporter 对 recovery/guard 使用相同 target-level censor，不以 task correctness 筛选轨迹；
-3. calibration loader 只接收 calibration split，并验证 train/calibration project 不重叠、runtime
-   environment digest 一致；
-4. calibration 后报告概率校准、interval coverage、OOD/backoff 和各 target 支持度；
-5. 在满足门槛前继续保持 online/predictive action disabled；
-6. `test_id` 只在模型、校准参数和在线门槛全部冻结后打开一次。
+两个预冻结 shard 均在 predictor 和 predictive action 关闭时完成：
 
-本阶段不使用 calibration JCT 判断 BeliefKV 性能，也不使用本轮训练证明 KV migration 收益。
+- parallel shard：8/8 workflow 自然结束，784 次 LLM、1,700 次工具调用、16 个 child、8 次 JOIN；
+- natural shard：8/8 workflow 自然结束，544 次 LLM、1,116 次工具调用、10 个 child、10 次 JOIN；
+- 共 16 个 instance、16 个 workflow、2 个 calibration project，未访问 `test_id`；
+- 24,394 个 decision row，其中 10,911 个 clean row、11,720 个 intervention 前局部可训练 row、
+  1,763 个完全 censor row；
+- 15/15 个 eligible JOIN 的因果闭包完整，记录 26 个 RETURN；
+- natural/parallel 与 Astropy/Sphinx 均覆盖全部六类训练 target。
+
+运行时 reentry 覆盖此前不足的根因不是事件缺失，而是 `CALL_CENSORED` 使用 runtime root ID，LLM
+invocation 使用规范化 ID。现在只对 `CALL_CENSORED` 提供严格、唯一且限时的 identity fallback，并把
+`CALL_CENSORED`、`JOIN_TIMEOUT` 记为右删失 reentry endpoint。正常 RETURN/JOIN 仍要求精确 identity。
+重导出后：
+
+- parallel：758/758 reentry 有归因，其中 723 observed、35 right-censored；
+- natural：526/526 reentry 有归因，其中 500 observed、26 right-censored；
+- censor 不作为成功事件参与 terminal 分类或完成等待时间校准；完整结束于 cutoff 前的 tool wait 和
+  RETURN/JOIN 仍保留为局部训练证据。
+
+统一 coverage report：
+
+`experiments/processed/h200_bf16_formal_calibration_v1/coverage_report.json`
+
+- SHA-256：`df681dec4b77763308bf56d2e73d14f28c14c1da78848b8c1bb8f502adbd7042`；
+- coverage gate 通过，无 blocker；
+- 唯一 warning 仍是 `exact_incremental_action_boundary_unavailable`。
+
+## 6. Held-out Calibration 结果
+
+正式 artifact：
+
+`experiments/models/frontier_belief_h200_bf16_v1_calibrated.json`
+
+- SHA-256：`c7dbdfefd1caedbf1ff403fd7891cd0f9595f8bcd7418c2670a1f5c97e2fa5a1`；
+- 22,631 个 eligible decision row、1,209 个 episode、2,236 个 local episode；
+- boundary temperature 0.90，tool terminal temperature 0.85；
+- conformal calibration unit 为 local-episode 最大 nonconformity，目标覆盖率 90%；
+- metadata 绑定 calibration dataset、coverage report、H200 runtime environment，并明确
+  `test_id_status=sealed_not_evaluated`；
+- `training_counts_refit=false`，calibration 没有反向修改 fit 数据或 LOPO 选择。
+
+Held-out 指标：
+
+| 目标 | 结果 |
+|---|---:|
+| Boundary accuracy / ECE | 94.96% / 0.0023% |
+| Tool terminal accuracy / ECE | 86.82% / 10.72% |
+| Next-output local-episode interval coverage | 90.15% |
+| Prompt-growth local-episode interval coverage | 93.90% |
+| Remaining-decode local-episode interval coverage | 90.17% |
+| External-wait local-episode interval coverage | 90.13% |
+
+所有 action-specific target 在 calibration 数据中均有支持。40.86% 的 composite OOD 表示“任意一个
+预测头不可用”，不能作为所有动作的一票否决；在线接入仍必须按动作检查所需预测头。
+
+当前不能解封预测性动作，原因不是分类精度，而是风险区间仍不够稳定：external-wait 的平均区间宽度
+约 3.94e6 ms、MAE 约 4.30e5 ms，workflow-macro coverage 也只有 87.40%；next-output 的
+workflow-macro coverage 为 88.47%。这些结果说明不同 calibration workflow 之间仍有明显重尾和
+异质性。
+
+## 7. 后续门禁
+
+1. 当前 artifact 只用于 shadow/replay，不执行预测驱动的 offload、restore 或 retraction；
+2. 在不访问 `test_id` 的前提下，先改进 tool/external-wait 的分层 survival 与 OOD fallback；
+3. 冻结模型、校准参数、动作相关支持门禁和在线策略后，再打开一次 `test_id`；
+4. exact incremental boundary 未实现前，不做 early dispatch 或 run-to-action 主张；
+5. 本阶段不使用 calibration JCT 判断 BeliefKV 性能，也不使用本轮训练证明 KV migration 收益。
