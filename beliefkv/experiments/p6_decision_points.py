@@ -166,6 +166,7 @@ def build_frontier_decision_points(
                         invocation_id,
                         ts_ms=ts_ms,
                         request_id=request_id,
+                        state=invocation.state.value,
                         boundaries=boundaries,
                         calls_by_invocation=calls_by_invocation,
                         calls_by_request=calls_by_request,
@@ -184,6 +185,12 @@ def build_frontier_decision_points(
                     "row_type": "frontier_decision_point",
                     "decision_id": f"decision-{digest}",
                     "run_id": run_id,
+                    "source_batch_id": metadata.get("source_batch_id"),
+                    "fanout_profile": metadata.get("fanout_profile"),
+                    "harness_revision": metadata.get("harness_revision"),
+                    "runtime_contract_sha256": metadata.get(
+                        "runtime_contract_sha256"
+                    ),
                     "timestamp_ms": ts_ms,
                     "trigger_kind": trigger["kind"],
                     "trigger_id": trigger["trigger_id"],
@@ -461,6 +468,7 @@ def _invocation_label(
     invocation_id: str,
     *,
     ts_ms: float,
+    state: str,
     request_id: str | None,
     boundaries: Mapping[str, list[dict[str, Any]]],
     calls_by_invocation: Mapping[str, list[dict[str, Any]]],
@@ -481,16 +489,67 @@ def _invocation_label(
         for item in service_by_request.get(str(request_id or ""), ())
         if float(item.get("batch_service_complete_ts_ms") or 0.0) > ts_ms
     ]
+    invocation_calls = calls_by_invocation.get(invocation_id, ())
+    previous_call = next(
+        (
+            item
+            for item in reversed(invocation_calls)
+            if item.get("result_ts_ms") is not None
+            and float(item["result_ts_ms"]) <= ts_ms
+        ),
+        None,
+    )
     next_call = next(
         (
             item
-            for item in calls_by_invocation.get(invocation_id, ())
+            for item in invocation_calls
             if float(item.get("submit_ts_ms") or 0.0) > ts_ms
         ),
         None,
     )
-    current_context_tokens = request.get("context_tokens")
+    baseline_call = request or previous_call or {}
+    previous_sequence_tokens = (
+        int(baseline_call.get("context_tokens") or 0)
+        + int(baseline_call.get("output_tokens") or 0)
+        if baseline_call.get("context_tokens") is not None
+        else None
+    )
     next_prompt_tokens = next_call.get("prompt_tokens") if next_call else None
+    request_result_ts = request.get("result_ts_ms")
+    next_submit_ts = next_call.get("submit_ts_ms") if next_call else None
+    next_result_ts = next_call.get("result_ts_ms") if next_call else None
+    request_complete = request_result_ts is not None and not request.get(
+        "censored", False
+    )
+    running_llm = state == InvocationState.RUNNING_LLM.value
+    wait_tool = state == InvocationState.WAIT_TOOL.value
+    wait_join = state == InvocationState.WAIT_JOIN.value
+    target_horizons = {
+        "action_boundary": boundary.get("timestamp_ms") if boundary else None,
+        "remaining_decode_demand": request_result_ts,
+        "prompt_growth": next_submit_ts,
+        "next_output_demand": next_result_ts,
+        "external_wait": boundary.get("timestamp_ms") if boundary else None,
+        "join_wait": boundary.get("timestamp_ms") if boundary else None,
+    }
+    target_eligibility = {
+        "action_boundary": bool(running_llm and boundary is not None),
+        "remaining_decode_demand": bool(
+            running_llm and request_id and request_complete
+        ),
+        "prompt_growth": bool(
+            not running_llm
+            and next_prompt_tokens is not None
+            and previous_sequence_tokens is not None
+        ),
+        "next_output_demand": bool(
+            not running_llm
+            and next_call is not None
+            and next_call.get("output_tokens") is not None
+        ),
+        "external_wait": bool(wait_tool and boundary is not None),
+        "join_wait": bool(wait_join and boundary is not None),
+    }
     return {
         "invocation_id": invocation_id,
         "next_boundary_kind": boundary.get("kind") if boundary else None,
@@ -509,13 +568,15 @@ def _invocation_label(
             else None
         ),
         "reentry_prompt_delta_tokens": (
-            max(0, int(next_prompt_tokens) - int(current_context_tokens))
-            if next_prompt_tokens is not None and current_context_tokens is not None
+            max(0, int(next_prompt_tokens) - int(previous_sequence_tokens))
+            if next_prompt_tokens is not None and previous_sequence_tokens is not None
             else None
         ),
         "next_output_tokens": next_call.get("output_tokens") if next_call else None,
         "censored": bool(request.get("censored", False)),
         "censor_reason": request.get("censor_reason"),
+        "target_horizon_timestamp_ms": target_horizons,
+        "target_training_eligible": target_eligibility,
         "demand_label_semantics": (
             "token demand only; observed shared-batch time is diagnostic"
         ),

@@ -1,0 +1,160 @@
+{
+  "batch_count": 2,
+  "batches": [
+    {
+      "batch_id": "h200-calibration-01-parallel-r0",
+      "concurrency": 8,
+      "docker_images": [
+        "swebench/sweb.eval.x86_64.astropy_1776_astropy-13236:latest",
+        "swebench/sweb.eval.x86_64.astropy_1776_astropy-13453:latest",
+        "swebench/sweb.eval.x86_64.astropy_1776_astropy-14598:latest",
+        "swebench/sweb.eval.x86_64.astropy_1776_astropy-7336:latest",
+        "swebench/sweb.eval.x86_64.sphinx-doc_1776_sphinx-11445:latest",
+        "swebench/sweb.eval.x86_64.sphinx-doc_1776_sphinx-7440:latest",
+        "swebench/sweb.eval.x86_64.sphinx-doc_1776_sphinx-8548:latest",
+        "swebench/sweb.eval.x86_64.sphinx-doc_1776_sphinx-8638:latest"
+      ],
+      "instance_ids": [
+        "sphinx-doc__sphinx-8548",
+        "sphinx-doc__sphinx-7440",
+        "sphinx-doc__sphinx-11445",
+        "astropy__astropy-7336",
+        "astropy__astropy-13453",
+        "astropy__astropy-14598",
+        "sphinx-doc__sphinx-8638",
+        "astropy__astropy-13236"
+      ],
+      "policy": "frozen_p5_observed",
+      "predictive_actions": false,
+      "preflight_command": null,
+      "projects": [
+        "astropy/astropy",
+        "sphinx-doc/sphinx"
+      ],
+      "rollout_index": 0,
+      "source_repositories": [
+        {
+          "path": "/home/longhao/experiment/BeliefKV/workloads/sources/p6_swebench_verified/astropy__astropy",
+          "project": "astropy/astropy",
+          "url": "https://github.com/astropy/astropy.git"
+        },
+        {
+          "path": "/home/longhao/experiment/BeliefKV/workloads/sources/p6_swebench_verified/sphinx-doc__sphinx",
+          "project": "sphinx-doc/sphinx",
+          "url": "https://github.com/sphinx-doc/sphinx.git"
+        }
+      ],
+      "split": "calibration",
+      "subagent_fanout_profile": "parallel_analysis_2to3",
+      "versions": [
+        "astropy/astropy:1.3",
+        "astropy/astropy:5.0",
+        "astropy/astropy:5.2",
+        "sphinx-doc/sphinx:3.0",
+        "sphinx-doc/sphinx:3.4",
+        "sphinx-doc/sphinx:4.0",
+        "sphinx-doc/sphinx:7.1"
+      ],
+      "workflow_arrival_batch_interval_ms": 20000,
+      "workflow_arrival_batch_size": 4,
+      "workflow_arrival_interval_ms": 500,
+      "workflow_count": 8,
+      "workload_manifest": "/home/longhao/experiment/BeliefKV/configs/p6/h200_bf16_formal_calibration_v1/workload_manifests/h200-calibration-01-parallel-r0.json",
+      "workload_manifest_sha256": "bc9e51db421b10b5706126e377146bf2831fd8d8a44bea9f520fcf433c42ed89"
+    },
+    {
+      "batch_id": "h200-calibration-02-natural-r0",
+      "concurrency": 8,
+      "docker_images": [
+        "swebench/sweb.eval.x86_64.astropy_1776_astropy-13033:latest",
+        "swebench/sweb.eval.x86_64.astropy_1776_astropy-13977:latest",
+        "swebench/sweb.eval.x86_64.astropy_1776_astropy-14995:latest",
+        "swebench/sweb.eval.x86_64.astropy_1776_astropy-8872:latest",
+        "swebench/sweb.eval.x86_64.sphinx-doc_1776_sphinx-10323:latest",
+        "swebench/sweb.eval.x86_64.sphinx-doc_1776_sphinx-10449:latest",
+        "swebench/sweb.eval.x86_64.sphinx-doc_1776_sphinx-7590:latest",
+        "swebench/sweb.eval.x86_64.sphinx-doc_1776_sphinx-8035:latest"
+      ],
+      "instance_ids": [
+        "sphinx-doc__sphinx-10323",
+        "astropy__astropy-8872",
+        "astropy__astropy-13977",
+        "astropy__astropy-14995",
+        "sphinx-doc__sphinx-10449",
+        "astropy__astropy-13033",
+        "sphinx-doc__sphinx-8035",
+        "sphinx-doc__sphinx-7590"
+      ],
+      "policy": "frozen_p5_observed",
+      "predictive_actions": false,
+      "preflight_command": null,
+      "projects": [
+        "astropy/astropy",
+        "sphinx-doc/sphinx"
+      ],
+      "rollout_index": 0,
+      "source_repositories": [
+        {
+          "path": "/home/longhao/experiment/BeliefKV/workloads/sources/p6_swebench_verified/astropy__astropy",
+          "project": "astropy/astropy",
+          "url": "https://github.com/astropy/astropy.git"
+        },
+        {
+          "path": "/home/longhao/experiment/BeliefKV/workloads/sources/p6_swebench_verified/sphinx-doc__sphinx",
+          "project": "sphinx-doc/sphinx",
+          "url": "https://github.com/sphinx-doc/sphinx.git"
+        }
+      ],
+      "split": "calibration",
+      "subagent_fanout_profile": "natural",
+      "versions": [
+        "astropy/astropy:3.1",
+        "astropy/astropy:4.3",
+        "astropy/astropy:5.1",
+        "astropy/astropy:5.2",
+        "sphinx-doc/sphinx:3.1",
+        "sphinx-doc/sphinx:3.2",
+        "sphinx-doc/sphinx:5.0",
+        "sphinx-doc/sphinx:5.1"
+      ],
+      "workflow_arrival_batch_interval_ms": 20000,
+      "workflow_arrival_batch_size": 4,
+      "workflow_arrival_interval_ms": 500,
+      "workflow_count": 8,
+      "workload_manifest": "/home/longhao/experiment/BeliefKV/configs/p6/h200_bf16_formal_calibration_v1/workload_manifests/h200-calibration-02-natural-r0.json",
+      "workload_manifest_sha256": "87bffe5a3a68763e4db45ed8b1ff3fc06137b8b3b29208a0a2924e8296ac780c"
+    }
+  ],
+  "dataset": "princeton-nlp/SWE-bench_Verified",
+  "dataset_path": "/home/longhao/experiment/BeliefKV/workloads/raw/swebench_verified-91aa3ed/test",
+  "dataset_revision": "91aa3ed51b709be6457e12d00300a6a596d4c6a3",
+  "development_only": false,
+  "frozen": true,
+  "plan_id": "h200-bf16-formal-calibration-v1",
+  "predictive_actions_enabled": false,
+  "predictor_enabled": false,
+  "repository_count": 2,
+  "runtime_policy": "frozen_p5_observed",
+  "runtime_profile": "/home/longhao/experiment/BeliefKV/configs/p6/h200_bf16_v4/frozen_runtime_profile.json",
+  "runtime_profile_sha256": "5ece5b5075193856b1cf7fff081378fe1a4040734bd80133838713a9a90cd6ba",
+  "schema_version": 1,
+  "selection_contract": {
+    "fit_or_model_selection_use": false,
+    "model_output_filtering": false,
+    "natural_workflows": 8,
+    "parallel_workflows": 8,
+    "project_quotas": {
+      "astropy/astropy": 8,
+      "sphinx-doc/sphinx": 8
+    },
+    "split": "calibration",
+    "test_id_accessed": false,
+    "workflow_count": 16
+  },
+  "selection_seed": "beliefkv-h200-bf16-formal-calibration-v1",
+  "source_root": "/home/longhao/experiment/BeliefKV/workloads/sources/p6_swebench_verified",
+  "split_manifest": "/home/longhao/experiment/BeliefKV/configs/p6/swebench_verified_split_v1.json",
+  "split_manifest_sha256": "61462e7f18d76e0be2fda8f037948541228c558a455922ef0483f1ac1d62e3e0",
+  "unique_task_count": 16,
+  "workflow_count": 16
+}

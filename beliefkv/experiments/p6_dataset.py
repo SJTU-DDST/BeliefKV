@@ -4,7 +4,7 @@ from collections import Counter, defaultdict
 import hashlib
 import json
 from pathlib import Path
-from typing import Any, Iterable, Mapping
+from typing import Any, Iterable, Mapping, Sequence
 
 from beliefkv.core.events import RuntimeEvent, RuntimeEventKind
 from beliefkv.experiments.p6_coverage import (
@@ -21,7 +21,7 @@ from beliefkv.experiments.p6_split import load_split_manifest, resolve_split
 from beliefkv.experiments.p6_decision_points import build_frontier_decision_points
 
 
-P6_DATASET_SCHEMA_VERSION = 3
+P6_DATASET_SCHEMA_VERSION = 4
 P6_INVALID_SOURCE_MARKERS = (
     "PILOT_INVALID.json",
     "COLLECTION_INVALID.json",
@@ -45,8 +45,12 @@ def export_p6_training_dataset(
     allow_censored: bool = False,
     allow_development_only: bool = False,
     split_manifest: str | Path | Mapping[str, Any] | None = None,
+    workload_dirs: Sequence[str | Path] | None = None,
+    selected_instance_ids: Iterable[str] | None = None,
+    allow_formal_local_training: bool = False,
+    formal_local_expected_split: str | None = None,
 ) -> dict[str, Any]:
-    """Export versioned, leakage-aware P6 labels from one fixed run."""
+    """Export versioned P6 labels from one physical server run."""
 
     source = Path(run_dir).resolve()
     invalid_markers = _invalid_source_markers(source)
@@ -55,43 +59,72 @@ def export_p6_training_dataset(
             "run is explicitly marked ineligible for training: "
             + ", ".join(str(path) for path in invalid_markers)
         )
-    workloads = source / "workloads"
-    collection_status = "complete"
-    if not workloads.is_dir():
-        legacy_autonomous = source / "autonomous"
-        incomplete = source / "workloads.incomplete"
-        if legacy_autonomous.is_dir():
-            workloads = legacy_autonomous
-            collection_status = "complete_legacy_autonomous_layout"
-        elif allow_censored and incomplete.is_dir():
-            workloads = incomplete
-            collection_status = "censored"
-        else:
-            raise P6CoverageError(f"run has no completed workloads: {source}")
+    workload_roots, collection_status = _resolve_workload_roots(
+        source, workload_dirs=workload_dirs, allow_censored=allow_censored
+    )
+    workloads = workload_roots[0]
+    # collection_status is resolved together with workload_roots.
     server = source / "server"
-    manifest_path = workloads / "manifest.json"
-    summary_path = workloads / "summary.json"
+    manifest_paths = tuple(root / "manifest.json" for root in workload_roots)
+    summary_paths = tuple(root / "summary.json" for root in workload_roots)
     server_events_path = server / "runtime_events.sglang.jsonl"
     audit_path = server / "runtime_audit.jsonl"
     transfer_path = server / "transfer_telemetry.jsonl"
     runtime_summary_path = server / "latest_runtime_summary.json"
     required = (server_events_path, audit_path, transfer_path)
     if collection_status.startswith("complete"):
-        required = (manifest_path, summary_path, *required)
+        required = (*manifest_paths, *summary_paths, *required)
     missing = [str(path) for path in required if not path.is_file()]
     if missing:
         raise P6CoverageError(f"run is missing dataset evidence: {missing}")
 
-    agent_paths = discover_p6_agent_traces(workloads)
+    selected_instances = (
+        frozenset(str(item) for item in selected_instance_ids)
+        if selected_instance_ids is not None
+        else None
+    )
+    if selected_instances is not None and (
+        not selected_instances or "" in selected_instances
+    ):
+        raise P6CoverageError("selected instance allowlist must be non-empty")
+    agent_paths = tuple(
+        path
+        for root in workload_roots
+        for path in discover_p6_agent_traces(root)
+        if selected_instances is None or _trace_instance_id(path) in selected_instances
+    )
     if not agent_paths:
-        raise P6CoverageError("run has no supported per-workflow event traces")
-    manifest = _read_object(manifest_path) if manifest_path.is_file() else {}
-    summary = _read_object(summary_path) if summary_path.is_file() else {}
-    collection_contract = _read_collection_contract(workloads)
+        raise P6CoverageError("run has no selected per-workflow event traces")
+    selected_trace_instances = Counter(_trace_instance_id(path) for path in agent_paths)
+    if selected_instances is not None:
+        missing_instances = selected_instances.difference(selected_trace_instances)
+        duplicate_instances = sorted(
+            item for item, count in selected_trace_instances.items() if count != 1
+        )
+        if missing_instances or duplicate_instances:
+            raise P6CoverageError(
+                "selected trace identity mismatch: "
+                f"missing={sorted(missing_instances)}, duplicates={duplicate_instances}"
+            )
+    manifests = tuple(
+        _read_object(path) if path.is_file() else {} for path in manifest_paths
+    )
+    summaries = tuple(
+        _read_object(path) if path.is_file() else {} for path in summary_paths
+    )
+    manifest = _merge_workload_manifests(manifests)
+    summary = _merge_workload_summaries(
+        summaries, selected_instance_ids=selected_instances
+    )
+    collection_contracts = tuple(
+        _read_collection_contract(root) for root in workload_roots
+    )
+    collection_contract = _merge_collection_contracts(collection_contracts)
     _validate_collection_contract(
         collection_contract,
         allow_censored=allow_censored,
         allow_development_only=allow_development_only,
+        allow_formal_local_training=allow_formal_local_training,
     )
     runtime_summary = (
         _read_object(runtime_summary_path)
@@ -102,6 +135,13 @@ def export_p6_training_dataset(
     if not run_id:
         raise P6CoverageError("run has no stable run_id")
     workflow_exclusions = _read_workflow_exclusions(source)
+    runtime_provenance = _read_runtime_provenance(server)
+    runtime_environment_contract = _runtime_environment_contract(server)
+    workflow_source_metadata = _workflow_source_metadata(
+        summaries,
+        collection_contracts,
+        runtime_provenance=runtime_provenance,
+    )
 
     agent_records = [_read_jsonl(path) for path in agent_paths]
     calls: list[dict[str, Any]] = []
@@ -125,23 +165,29 @@ def export_p6_training_dataset(
         if isinstance(split_manifest, (str, Path))
         else split_manifest
     )
-    formal_ineligibility_reasons = []
+    formal_local_ineligibility_reasons = []
     if invalid_markers:
-        formal_ineligibility_reasons.append("source_marked_invalid")
+        formal_local_ineligibility_reasons.append("source_marked_invalid")
     if collection_status == "censored":
-        formal_ineligibility_reasons.append("collection_censored")
+        formal_local_ineligibility_reasons.append("collection_censored")
     if collection_contract is None:
-        formal_ineligibility_reasons.append("collection_contract_missing")
-    elif collection_contract.get("training_eligible") is not True:
-        formal_ineligibility_reasons.append("collection_gate_failed")
+        formal_local_ineligibility_reasons.append("collection_contract_missing")
+    elif collection_contract.get("runtime_source_stable") is not True:
+        formal_local_ineligibility_reasons.append("runtime_source_unstable")
+    if not runtime_environment_contract:
+        formal_local_ineligibility_reasons.append(
+            "runtime_environment_contract_missing"
+        )
     if frozen_split is None:
-        formal_ineligibility_reasons.append("frozen_split_missing")
+        formal_local_ineligibility_reasons.append("frozen_split_missing")
     if allow_development_only:
-        formal_ineligibility_reasons.append("predictor_shadow_development_only")
-    formal_training_eligible = not formal_ineligibility_reasons
+        formal_local_ineligibility_reasons.append(
+            "predictor_shadow_development_only"
+        )
+    formal_local_training_eligible = not formal_local_ineligibility_reasons
     effective_split = (
         frozen_split
-        if (formal_training_eligible or allow_development_only)
+        if (formal_local_training_eligible or allow_development_only)
         else None
     )
     workflow_metadata = _workflow_metadata(
@@ -149,7 +195,24 @@ def export_p6_training_dataset(
         dataset_name=dataset_name,
         split_manifest=effective_split,
         workflow_exclusions=workflow_exclusions,
+        workflow_source_metadata=workflow_source_metadata,
     )
+    if allow_formal_local_training:
+        if formal_local_expected_split not in {"train", "calibration"}:
+            raise P6CoverageError(
+                "formal-local export requires an explicit train/calibration split"
+            )
+        actual_splits = {
+            str(row.get("split"))
+            for row in workflow_metadata.values()
+            if row.get("split") is not None
+        }
+        if actual_splits != {formal_local_expected_split}:
+            raise P6CoverageError(
+                "formal-local export split mismatch: "
+                f"expected={formal_local_expected_split!r}, "
+                f"actual={sorted(actual_splits)!r}"
+            )
     service_rows, batch_service_rows, service_summary = _service_rows(
         audit_path,
         calls=calls,
@@ -182,12 +245,23 @@ def export_p6_training_dataset(
         run_id=run_id,
         workflow_metadata=workflow_metadata,
     )
-    intervention_cutoffs = _runtime_intervention_cutoffs(workloads)
+    intervention_cutoffs = _runtime_intervention_cutoffs_many(workload_roots)
     intervention_censor_summary = _apply_runtime_intervention_censors(
         decision_rows,
         intervention_cutoffs,
     )
     clean_episode_eligible = not intervention_cutoffs
+    clean_trajectory_ineligibility_reasons = list(
+        formal_local_ineligibility_reasons
+    )
+    if (
+        collection_contract is not None
+        and collection_contract.get("training_eligible") is not True
+    ):
+        clean_trajectory_ineligibility_reasons.append("collection_gate_failed")
+    if intervention_cutoffs:
+        clean_trajectory_ineligibility_reasons.append("runtime_intervention_observed")
+    clean_trajectory_eligible = not clean_trajectory_ineligibility_reasons
 
     destination = Path(output_dir)
     destination.mkdir(parents=True, exist_ok=True)
@@ -228,23 +302,17 @@ def export_p6_training_dataset(
         "schema_version": P6_DATASET_SCHEMA_VERSION,
         "dataset_kind": "beliefkv_p6_training_evidence",
         "characterization_only": True,
-        "formal_training_eligible": formal_training_eligible,
-        "formal_local_training_eligible": formal_training_eligible,
-        "clean_episode_eligible": (
-            formal_training_eligible and clean_episode_eligible
-        ),
-        "workflow_jct_eligible": (
-            formal_training_eligible and clean_episode_eligible
-        ),
-        "terminal_outcome_eligible": (
-            formal_training_eligible and clean_episode_eligible
-        ),
-        "formal_ineligibility_reasons": formal_ineligibility_reasons,
+        "formal_training_eligible": clean_trajectory_eligible,
+        "formal_local_training_eligible": formal_local_training_eligible,
+        "clean_trajectory_eligible": clean_trajectory_eligible,
+        "clean_episode_eligible": clean_trajectory_eligible,
+        "workflow_jct_eligible": clean_trajectory_eligible,
+        "terminal_outcome_eligible": clean_trajectory_eligible,
+        "formal_ineligibility_reasons": clean_trajectory_ineligibility_reasons,
+        "formal_local_ineligibility_reasons": formal_local_ineligibility_reasons,
         "evaluation_role": (
-            "frozen_split_training_evidence"
-            if formal_training_eligible and clean_episode_eligible
-            else "partial_local_pre_intervention_evidence"
-            if formal_training_eligible
+            "frozen_split_local_training_evidence"
+            if formal_local_training_eligible
             else "development_diagnostic"
         ),
         "source": {
@@ -252,13 +320,21 @@ def export_p6_training_dataset(
             "run_id": run_id,
             "collection_status": collection_status,
             "invalid_source_markers": [path.name for path in invalid_markers],
+            "workload_roots": [str(path) for path in workload_roots],
+            "selected_instance_ids": (
+                sorted(selected_instances) if selected_instances is not None else None
+            ),
+            "runtime_provenance": runtime_provenance,
+            "runtime_environment_contract": runtime_environment_contract,
             "workflow_exclusions": workflow_exclusions,
             "runtime_intervention_censors": intervention_censor_summary,
             "partial_episode_eligibility": partial_episode_summary,
             "collection_contract": collection_contract,
             "dataset": dataset_name,
             "dataset_revision": manifest.get("dataset_revision"),
-            "workload_manifest_sha256": manifest.get("workload_manifest_sha256"),
+            "workload_manifest_sha256": [
+                _sha256(path) for path in manifest_paths if path.is_file()
+            ],
             "system_jct_eligible_workflows": summary.get(
                 "system_jct_eligible_workflows"
             ),
@@ -281,8 +357,8 @@ def export_p6_training_dataset(
             "artifact_sha256": {
                 str(path.relative_to(source)): _sha256(path)
                 for path in (
-                    manifest_path,
-                    summary_path,
+                    *manifest_paths,
+                    *summary_paths,
                     server_events_path,
                     audit_path,
                     transfer_path,
@@ -380,6 +456,230 @@ def export_p6_training_dataset(
     return output_manifest
 
 
+
+
+def _resolve_workload_roots(
+    source: Path,
+    *,
+    workload_dirs: Sequence[str | Path] | None,
+    allow_censored: bool,
+) -> tuple[tuple[Path, ...], str]:
+    if workload_dirs is not None:
+        roots = tuple(Path(item).resolve() for item in workload_dirs)
+        if not roots or any(not path.is_dir() for path in roots):
+            raise P6CoverageError(f"invalid explicit workload roots: {roots}")
+        status = "complete_multi_workload_layout" if len(roots) > 1 else "complete"
+        return roots, status
+    workloads = source / "workloads"
+    if workloads.is_dir():
+        return (workloads,), "complete"
+    legacy = source / "autonomous"
+    if legacy.is_dir():
+        return (legacy,), "complete_legacy_autonomous_layout"
+    incomplete = source / "workloads.incomplete"
+    if allow_censored and incomplete.is_dir():
+        return (incomplete,), "censored"
+    raise P6CoverageError(f"run has no completed workloads: {source}")
+
+
+def _trace_instance_id(path: Path) -> str:
+    return path.parent.name
+
+
+def _merge_workload_manifests(
+    manifests: Sequence[Mapping[str, Any]],
+) -> dict[str, Any]:
+    if not manifests:
+        return {}
+    datasets = {str(item.get("dataset") or "unknown") for item in manifests}
+    revisions = {str(item.get("dataset_revision") or "") for item in manifests}
+    if len(datasets) != 1 or len(revisions) != 1:
+        raise P6CoverageError("workload roots use inconsistent dataset revisions")
+    merged = dict(manifests[0])
+    merged["workload_manifest_sha256"] = [
+        item.get("workload_manifest_sha256") for item in manifests
+    ]
+    return merged
+
+
+def _merge_workload_summaries(
+    summaries: Sequence[Mapping[str, Any]],
+    *,
+    selected_instance_ids: frozenset[str] | None,
+) -> dict[str, Any]:
+    workflows = [
+        dict(item)
+        for summary in summaries
+        for item in summary.get("workflows", ())
+        if isinstance(item, Mapping)
+        and (
+            selected_instance_ids is None
+            or str(item.get("instance_id") or "") in selected_instance_ids
+        )
+    ]
+    instances = [str(item.get("instance_id") or "") for item in workflows]
+    if not workflows or "" in instances or len(instances) != len(set(instances)):
+        raise P6CoverageError(
+            "merged workload summaries have missing or duplicate instances"
+        )
+    if selected_instance_ids is not None and set(instances) != set(selected_instance_ids):
+        raise P6CoverageError(
+            "merged workload summaries do not match instance allowlist"
+        )
+    return {
+        "workflow_count": len(workflows),
+        "completed_workflows": sum(
+            item.get("outcome") == "completed" for item in workflows
+        ),
+        "system_jct_eligible_workflows": sum(
+            bool(item.get("system_jct_eligible")) for item in workflows
+        ),
+        "native_agent_jct_eligible_workflows": sum(
+            bool(item.get("native_agent_jct_eligible")) for item in workflows
+        ),
+        "measurement_valid_workflows": sum(
+            bool(item.get("measurement_valid")) for item in workflows
+        ),
+        "workflows": workflows,
+    }
+
+
+def _merge_collection_contracts(
+    contracts: Sequence[Mapping[str, Any] | None],
+) -> dict[str, Any] | None:
+    if not contracts or any(item is None for item in contracts):
+        return None
+    values = [dict(item or {}) for item in contracts]
+    for key in (
+        "plan_id",
+        "split",
+        "runtime_policy",
+        "predictor_enabled",
+        "predictive_actions_enabled",
+    ):
+        encoded = {json.dumps(item.get(key), sort_keys=True) for item in values}
+        if len(encoded) != 1:
+            raise P6CoverageError(f"collection contracts disagree on {key}")
+    merged = dict(values[0])
+    merged["training_eligible"] = all(
+        item.get("training_eligible") is True for item in values
+    )
+    merged["runtime_source_stable"] = all(
+        item.get("runtime_source_stable") is True for item in values
+    )
+    merged["workflow_count"] = sum(
+        int(item.get("workflow_count") or 0) for item in values
+    )
+    merged["batch_ids"] = [item.get("batch_id") for item in values]
+    merged["source_workload_manifests"] = [
+        item.get("source_workload_manifest") for item in values
+    ]
+    return merged
+
+
+def _read_runtime_provenance(server: Path) -> dict[str, Any]:
+    path = server / "runtime_profile_contract.json"
+    if not path.is_file():
+        return {"available": False}
+    raw = _read_object(path)
+    source = raw.get("source") or {}
+    beliefkv = source.get("beliefkv") or {}
+    sglang = source.get("sglang") or {}
+    patch = sglang.get("canonical_patch") or {}
+    return {
+        "available": True,
+        "contract_sha256": _sha256(path),
+        "harness_revision": beliefkv.get("commit"),
+        "beliefkv_state_sha256": beliefkv.get("state_sha256"),
+        "sglang_commit": sglang.get("commit"),
+        "sglang_state_sha256": sglang.get("state_sha256"),
+        "sglang_patch_sha256": patch.get("sha256"),
+    }
+
+
+def _runtime_environment_contract(server: Path) -> dict[str, Any]:
+    path = server / "runtime_profile_contract.json"
+    if not path.is_file():
+        return {}
+    raw = _read_object(path)
+    source = raw.get("source") or {}
+    sglang = source.get("sglang") or {}
+    revision_checks = raw.get("model", {}).get("revision_checks", ())
+    if (
+        raw.get("contract_state") != "validated"
+        or raw.get("model", {}).get("passed") is not True
+        or raw.get("hardware", {}).get("passed") is not True
+        or raw.get("server", {}).get("passed") is not True
+        or source.get("passed") is not True
+        or any(item.get("passed") is not True for item in revision_checks)
+    ):
+        raise P6CoverageError(f"runtime profile contract was not validated: {path}")
+    contract = {
+        "runtime_profile": raw.get("runtime_profile"),
+        "model_revision_sha256": {
+            str(item.get("path")): str(item.get("actual_sha256"))
+            for item in revision_checks
+        },
+        "hardware": raw.get("hardware", {}).get("actual"),
+        "server_identity": raw.get("server", {}).get("identity"),
+        "sglang_commit": sglang.get("commit"),
+        "sglang_patch_sha256": (
+            sglang.get("canonical_patch") or {}
+        ).get("sha256"),
+        "physical_source_count": 1,
+        "uniform": True,
+    }
+    required = (
+        contract.get("runtime_profile", {}).get("sha256"),
+        contract.get("model_revision_sha256", {}).get("config.json"),
+        contract.get("model_revision_sha256", {}).get("tokenizer.json"),
+        contract.get("server_identity", {}).get("weight_dtype"),
+        contract.get("server_identity", {}).get("resolved_kv_dtype"),
+        contract.get("sglang_commit"),
+        contract.get("sglang_patch_sha256"),
+        contract.get("hardware", {}).get("uuid"),
+    )
+    if any(value in {None, ""} for value in required):
+        raise P6CoverageError("runtime environment contract is incomplete")
+    return contract
+
+
+def _workflow_source_metadata(
+    summaries: Sequence[Mapping[str, Any]],
+    contracts: Sequence[Mapping[str, Any] | None],
+    *,
+    runtime_provenance: Mapping[str, Any],
+) -> dict[str, dict[str, Any]]:
+    result: dict[str, dict[str, Any]] = {}
+    for summary, contract in zip(summaries, contracts):
+        source = contract or {}
+        for workflow in summary.get("workflows", ()):
+            workflow_id = str(workflow.get("workflow_id") or "")
+            if not workflow_id:
+                continue
+            if workflow_id in result:
+                raise P6CoverageError(f"duplicate workflow provenance: {workflow_id}")
+            result[workflow_id] = {
+                "source_batch_id": source.get("batch_id"),
+                "fanout_profile": source.get("subagent_fanout_profile"),
+                "harness_revision": runtime_provenance.get("harness_revision"),
+                "runtime_contract_sha256": runtime_provenance.get(
+                    "contract_sha256"
+                ),
+            }
+    return result
+
+
+def _runtime_intervention_cutoffs_many(
+    workload_roots: Sequence[Path],
+) -> dict[str, dict[str, Any]]:
+    result: dict[str, dict[str, Any]] = {}
+    for root in workload_roots:
+        for workflow_id, cutoff in _runtime_intervention_cutoffs(root).items():
+            current = result.get(workflow_id)
+            if current is None or float(cutoff["ts_ms"]) < float(current["ts_ms"]):
+                result[workflow_id] = cutoff
+    return result
 def _read_collection_contract(workloads: Path) -> dict[str, Any] | None:
     contract_path = workloads / "p6_collection_contract.json"
     summary_path = workloads / "p6_collection_summary.json"
@@ -440,6 +740,7 @@ def _validate_collection_contract(
     *,
     allow_censored: bool,
     allow_development_only: bool = False,
+    allow_formal_local_training: bool = False,
 ) -> None:
     if contract is None:
         return
@@ -454,7 +755,13 @@ def _validate_collection_contract(
         )
     if contract.get("runtime_policy") != "frozen_p5_observed":
         raise P6CoverageError("P6 collection did not use frozen_p5_observed")
-    if contract.get("training_eligible") is False and not allow_censored:
+    if contract.get("runtime_source_stable") is False:
+        raise P6CoverageError("P6 collection runtime source was not stable")
+    if (
+        contract.get("training_eligible") is False
+        and not allow_censored
+        and not allow_formal_local_training
+    ):
         raise P6CoverageError("P6 collection batch did not pass system eligibility")
 
 
@@ -464,7 +771,9 @@ def _workflow_metadata(
     dataset_name: str,
     split_manifest: Mapping[str, Any] | None = None,
     workflow_exclusions: Mapping[str, str] | None = None,
+    workflow_source_metadata: Mapping[str, Mapping[str, Any]] | None = None,
 ) -> dict[str, dict[str, Any]]:
+    source_metadata = workflow_source_metadata or {}
     exclusions = workflow_exclusions or {}
     result: dict[str, dict[str, Any]] = {}
     for raw in summary.get("workflows", ()):
@@ -494,12 +803,17 @@ def _workflow_metadata(
             if split_manifest is not None
             else "development"
         )
+        provenance = source_metadata.get(workflow_id, {})
         result[workflow_id] = {
             "instance_id": instance_id,
             "project": project,
             "base_commit": base_commit,
             "project_group_id": project_group_id,
             "workload_group_id": f"{dataset_name}:{instance_id}",
+            "source_batch_id": provenance.get("source_batch_id"),
+            "fanout_profile": provenance.get("fanout_profile"),
+            "harness_revision": provenance.get("harness_revision"),
+            "runtime_contract_sha256": provenance.get("runtime_contract_sha256"),
             "split": None if instance_id in exclusions else split,
             "training_excluded": instance_id in exclusions,
             "training_exclusion_reason": exclusions.get(instance_id),
@@ -527,6 +841,10 @@ def _metadata_fields(
     value = metadata.get(workflow_id, {})
     return {
         "instance_id": value.get("instance_id"),
+        "source_batch_id": value.get("source_batch_id"),
+        "fanout_profile": value.get("fanout_profile"),
+        "harness_revision": value.get("harness_revision"),
+        "runtime_contract_sha256": value.get("runtime_contract_sha256"),
         "project": value.get("project"),
         "base_commit": value.get("base_commit"),
         "project_group_id": value.get("project_group_id"),
@@ -673,6 +991,8 @@ def _service_rows(
             request_id = str(raw.get("request_id") or "")
             call = call_by_request.get(request_id)
             workflow_id = str(raw.get("workflow_id") or "")
+            if workflow_id not in workflow_metadata or call is None:
+                continue
             phase = str(raw.get("phase") or record.get("phase") or "unknown")
             required = (
                 request_id
@@ -766,7 +1086,10 @@ def _service_rows(
                 "run_id": run_id,
                 "sample_id": sample_id or None,
                 "phase": phases[0] if len(phases) == 1 else "mixed",
-                "batch_size": int(record.get("batch_size") or len(normalized_samples)),
+                "batch_size": len(normalized_samples),
+                "native_batch_size": int(
+                    record.get("batch_size") or len(normalized_samples)
+                ),
                 "request_count": len(normalized_samples),
                 "token_delta_total": sum(
                     int(item["token_delta"]) for item in normalized_samples
@@ -1156,23 +1479,26 @@ def _dataset_integrity(
     pcie = tables["pcie_operations"]
     censors = tables["censor_events"]
     decisions = tables["frontier_decision_points"]
-    request_ids = [row.get("request_id") for row in requests]
-    known_request_ids = {item for item in request_ids if item}
-    service_request_ids = {row.get("request_id") for row in service}
-    batch_sample_ids = [row.get("sample_id") for row in batch_service]
-    external_ids = [row.get("tool_call_id") for row in external]
-    reentry_ids = [row.get("reentry_id") for row in reentries]
-    command_ids = [row.get("command_id") for row in pcie]
-    censor_ids = [row.get("censor_event_id") for row in censors]
-    decision_ids = [row.get("decision_id") for row in decisions]
+    def identities(rows: Iterable[Mapping[str, Any]], field: str) -> list[tuple[Any, Any]]:
+        return [(row.get("run_id"), row.get(field)) for row in rows]
+
+    request_ids = identities(requests, "request_id")
+    known_request_ids = {item for item in request_ids if item[1]}
+    service_request_ids = set(identities(service, "request_id"))
+    batch_sample_ids = identities(batch_service, "sample_id")
+    external_ids = identities(external, "tool_call_id")
+    reentry_ids = identities(reentries, "reentry_id")
+    command_ids = identities(pcie, "command_id")
+    censor_ids = identities(censors, "censor_event_id")
+    decision_ids = identities(decisions, "decision_id")
     violations = {
-        "missing_request_id_count": sum(item is None for item in request_ids),
+        "missing_request_id_count": sum(item[1] is None for item in request_ids),
         "duplicate_request_id_count": len(request_ids) - len(set(request_ids)),
         "dangling_service_request_id_count": len(
             service_request_ids - known_request_ids
         ),
         "missing_batch_sample_id_count": sum(
-            item is None for item in batch_sample_ids
+            item[1] is None for item in batch_sample_ids
         ),
         "duplicate_batch_sample_id_count": len(batch_sample_ids)
         - len(set(batch_sample_ids)),
@@ -1183,7 +1509,9 @@ def _dataset_integrity(
         ),
         "duplicate_tool_call_id_count": len(external_ids) - len(set(external_ids)),
         "duplicate_reentry_id_count": len(reentry_ids) - len(set(reentry_ids)),
-        "missing_pcie_command_id_count": sum(item is None for item in command_ids),
+        "missing_pcie_command_id_count": sum(
+            item[1] is None for item in command_ids
+        ),
         "duplicate_pcie_command_id_count": len(command_ids) - len(set(command_ids)),
         "duplicate_censor_event_id_count": len(censor_ids) - len(set(censor_ids)),
         "duplicate_decision_id_count": len(decision_ids) - len(set(decision_ids)),
@@ -1252,13 +1580,16 @@ def _runtime_intervention_cutoffs(
     return cutoffs
 
 
+
 def _apply_runtime_intervention_censors(
     rows: list[dict[str, Any]],
     cutoffs: Mapping[str, Mapping[str, Any]],
 ) -> dict[str, Any]:
-    """Exclude labels whose horizon crosses a runtime-induced prompt change."""
+    """Censor only target horizons that cross a runtime prompt intervention."""
 
     censored_rows = 0
+    censored_labels = 0
+    right_censored_targets = 0
     reason_counts: Counter[str] = Counter()
     for row in rows:
         cutoff = cutoffs.get(str(row.get("workflow_id") or ""))
@@ -1271,21 +1602,52 @@ def _apply_runtime_intervention_censors(
         row["episode_training_scope"] = "local_pre_intervention_only"
         cutoff_ts = float(cutoff["ts_ms"])
         row_ts = float(row.get("timestamp_ms") or 0.0)
-        crosses_cutoff = row_ts >= cutoff_ts
-        for label in row.get("labels", ()):
-            boundary_ts = label.get("next_boundary_timestamp_ms")
-            affected = crosses_cutoff or (
-                boundary_ts is not None and float(boundary_ts) >= cutoff_ts
-            )
-            if not affected:
-                continue
-            label["censored"] = True
-            label["censor_reason"] = str(cutoff["reason"])
-            crosses_cutoff = True
-        if not crosses_cutoff:
-            continue
         reason = str(cutoff["reason"])
-        row["training_eligible"] = False
+        row_affected = False
+        for label in row.get("labels", ()):
+            eligibility = dict(label.get("target_training_eligible") or {})
+            horizons = dict(label.get("target_horizon_timestamp_ms") or {})
+            if not eligibility:
+                boundary = label.get("next_boundary_timestamp_ms")
+                eligibility = {"action_boundary": boundary is not None}
+                horizons = {"action_boundary": boundary}
+            target_reasons = dict(label.get("target_censor_reasons") or {})
+            target_right_censored = dict(label.get("target_right_censored") or {})
+            label_affected = False
+            for target, eligible in tuple(eligibility.items()):
+                if not eligible:
+                    continue
+                horizon = horizons.get(target)
+                affected = row_ts >= cutoff_ts or (
+                    horizon is not None and float(horizon) >= cutoff_ts
+                )
+                if not affected:
+                    continue
+                label_affected = True
+                row_affected = True
+                target_reasons[target] = reason
+                if target == "external_wait" and row_ts < cutoff_ts:
+                    target_right_censored[target] = True
+                    label["external_wait_observed_duration_ms"] = max(
+                        0.0, cutoff_ts - row_ts
+                    )
+                    right_censored_targets += 1
+                else:
+                    eligibility[target] = False
+            label["target_training_eligible"] = eligibility
+            label["target_censor_reasons"] = target_reasons
+            label["target_right_censored"] = target_right_censored
+            if label_affected:
+                censored_labels += 1
+            label["censored"] = not any(eligibility.values())
+            if label["censored"]:
+                label["censor_reason"] = reason
+        row["training_eligible"] = any(
+            any((label.get("target_training_eligible") or {}).values())
+            for label in row.get("labels", ())
+        )
+        if not row_affected:
+            continue
         row["censor_reasons"] = sorted(
             {*row.get("censor_reasons", ()), reason}
         )
@@ -1295,12 +1657,13 @@ def _apply_runtime_intervention_censors(
     return {
         "workflow_count": len(cutoffs),
         "decision_row_count": censored_rows,
+        "invocation_label_count": censored_labels,
+        "right_censored_target_count": right_censored_targets,
         "reason_counts": dict(sorted(reason_counts.items())),
         "semantics": (
-            "rows at or crossing the first runtime-induced prompt intervention "
-            "are retained for audit but excluded from Frontier fitting; earlier rows "
-            "remain eligible only for local finite-horizon labels, never workflow JCT, "
-            "terminal outcome, guard hazard, or complete-trajectory modeling"
+            "target horizons crossing the first runtime prompt intervention are "
+            "censored independently; completed pre-intervention labels and unrelated "
+            "invocations in the same decision row remain formal local evidence"
         ),
     }
 
@@ -1309,7 +1672,7 @@ def _apply_partial_episode_eligibility(
     tables: Mapping[str, list[dict[str, Any]]],
     cutoffs: Mapping[str, Mapping[str, Any]],
 ) -> dict[str, Any]:
-    """Restrict intervened episodes to local demand and hardware labels."""
+    """Apply label-level censoring while excluding terminal/JCT trajectory labels."""
 
     affected_workflows = set(cutoffs)
     counts: Counter[str] = Counter()
@@ -1319,41 +1682,75 @@ def _apply_partial_episode_eligibility(
             cutoff = cutoffs.get(workflow_id)
             if cutoff is None:
                 continue
+            cutoff_ts = float(cutoff["ts_ms"])
+            reason = str(cutoff["reason"])
             row["clean_episode_eligible"] = False
             row["episode_training_scope"] = "local_pre_intervention_only"
             row["eligible_until_event_id"] = cutoff.get("event_id")
             if table_name == "request_calls":
-                row["training_eligible_unlock_hazard"] = False
                 result_ts = row.get("result_ts_ms")
-                if result_ts is not None and float(result_ts) >= float(cutoff["ts_ms"]):
-                    row["training_eligible_remaining_decode_demand"] = False
+                completed_before = (
+                    result_ts is not None and float(result_ts) < cutoff_ts
+                )
+                row["training_eligible_unlock_hazard"] = bool(
+                    row.get("training_eligible_unlock_hazard") and completed_before
+                )
+                row["training_eligible_remaining_decode_demand"] = bool(
+                    row.get("training_eligible_remaining_decode_demand")
+                    and completed_before
+                )
+                if not completed_before:
                     row["censored"] = True
-                    row["censor_reason"] = str(cutoff["reason"])
-                    counts["request_demand_censored"] += 1
+                    row["censor_reason"] = reason
+                    counts["request_demand_right_censored"] += 1
+                else:
+                    counts["request_demand_retained"] += 1
             elif table_name == "external_waits":
-                if row.get("training_eligible_survival"):
-                    counts["external_survival_disabled"] += 1
-                row["training_eligible_survival"] = False
+                start_ts = row.get("start_ts_ms")
+                terminal_ts = row.get("terminal_ts_ms")
+                if terminal_ts is not None and float(terminal_ts) < cutoff_ts:
+                    counts["external_survival_retained"] += 1
+                elif start_ts is not None and float(start_ts) < cutoff_ts:
+                    row["survival_censored"] = True
+                    row["survival_censor_reason"] = reason
+                    row["survival_duration_ms"] = max(
+                        0.0, cutoff_ts - float(start_ts)
+                    )
+                    row["training_eligible_survival"] = True
+                    counts["external_survival_right_censored"] += 1
+                else:
+                    row["training_eligible_survival"] = False
+                    counts["external_survival_excluded"] += 1
             elif table_name == "reentries":
-                if row.get("training_eligible"):
-                    counts["reentry_disabled"] += 1
-                row["training_eligible"] = False
+                reentry_ts = row.get("reentry_ts_ms")
+                wait_ts = row.get("wait_start_ts_ms")
+                if reentry_ts is not None and float(reentry_ts) < cutoff_ts:
+                    counts["reentry_retained"] += 1
+                elif wait_ts is not None and float(wait_ts) < cutoff_ts:
+                    row["censored"] = True
+                    row["right_censored"] = True
+                    row["censor_reason"] = reason
+                    row["censor_duration_ms"] = max(0.0, cutoff_ts - float(wait_ts))
+                    row["training_eligible"] = False
+                    counts["reentry_right_censored"] += 1
+                else:
+                    row["training_eligible"] = False
+                    counts["reentry_excluded"] += 1
             elif table_name == "frontier_decision_points":
                 counts["decision_rows_scoped"] += 1
     return {
         "workflow_count": len(affected_workflows),
         "counts": dict(sorted(counts.items())),
         "allowed_targets": [
-            "pre_intervention_action_boundary",
-            "pre_intervention_remaining_decode_demand",
+            "completed_pre_intervention_local_labels",
+            "right_censored_tool_survival",
             "local_hardware_service",
         ],
         "disabled_targets": [
             "workflow_jct",
             "terminal_outcome",
             "guard_hazard",
-            "external_survival",
-            "reentry_trajectory",
+            "post_intervention_labels",
             "complete_trajectory",
         ],
     }

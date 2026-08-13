@@ -16,6 +16,7 @@ if str(REPOSITORY_ROOT) not in sys.path:
 from beliefkv.predictor.structured_frontier import (
     FrontierBeliefModel,
     load_evaluation_rows,
+    runtime_environment_digest,
 )
 
 
@@ -71,7 +72,9 @@ def main() -> int:
         )
     else:
         rows, manifests = load_evaluation_rows(
-            args.dataset_dir, split="calibration"
+            args.dataset_dir,
+            split="calibration",
+            allow_formal_local=True,
         )
         if not rows:
             raise SystemExit("no calibration decision points were found")
@@ -83,6 +86,23 @@ def main() -> int:
         if overlap:
             raise SystemExit(
                 f"calibration projects overlap model-fitting projects: {overlap}"
+            )
+        fit_environments = set(
+            raw_model.get("metadata", {}).get(
+                "runtime_environment_contract_digests", ()
+            )
+        )
+        calibration_environments = {
+            runtime_environment_digest(
+                (manifest.get("source") or {}).get(
+                    "runtime_environment_contract"
+                ) or {}
+            )
+            for manifest in manifests
+        }
+        if not fit_environments or calibration_environments != fit_environments:
+            raise SystemExit(
+                "calibration runtime environment differs from the fitted model"
             )
         summary = model.calibrate(
             rows, target_coverage=args.target_coverage

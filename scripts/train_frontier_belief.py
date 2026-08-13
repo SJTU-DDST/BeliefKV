@@ -16,6 +16,7 @@ from beliefkv.predictor.structured_frontier import (
     FrontierBeliefModel,
     FrontierModelHyperparameters,
     load_decision_rows,
+    runtime_environment_digest,
     validate_training_corpus_diversity,
 )
 
@@ -35,6 +36,7 @@ def main() -> int:
         type=Path,
         help="LOPO selection manifest generated from the same formal train projects.",
     )
+    parser.add_argument("--coverage-report", type=Path)
     parser.add_argument("--output", type=Path, required=True)
     args = parser.parse_args()
 
@@ -93,12 +95,49 @@ def main() -> int:
         ).hexdigest()
         for item in manifests
     ]
+    environment_contracts = [
+        (item.get("source") or {}).get("runtime_environment_contract")
+        for item in manifests
+    ]
+    if args.split == "train" and any(not item for item in environment_contracts):
+        raise SystemExit("formal train input is missing runtime environment provenance")
+    environment_digests = [
+        runtime_environment_digest(item)
+        for item in environment_contracts
+        if item
+    ]
+    dataset_manifest_file_sha256s = [
+        hashlib.sha256((path / "dataset_manifest.json").read_bytes()).hexdigest()
+        for path in args.dataset_dir
+    ]
+    coverage_digest = None
+    coverage_warnings = []
+    if args.split == "train":
+        if args.coverage_report is None:
+            raise SystemExit("formal training requires a passed coverage report")
+        coverage = json.loads(args.coverage_report.read_text(encoding="utf-8"))
+        if coverage.get("coverage_gate_passed") is not True:
+            raise SystemExit("formal training coverage gate did not pass")
+        if coverage.get("dataset_manifest_sha256") not in dataset_manifest_file_sha256s:
+            raise SystemExit("coverage report does not bind the fitting dataset")
+        coverage_digest = hashlib.sha256(
+            args.coverage_report.read_bytes()
+        ).hexdigest()
+        coverage_warnings = list(coverage.get("coverage_warnings", ()))
+    if args.hyperparameter_selection is not None:
+        if selection_raw.get("dataset_manifest_sha256s") != dataset_manifest_file_sha256s:
+            raise SystemExit("hyperparameter selection used different dataset manifests")
+        if selection_raw.get("runtime_environment_contract_digests") != environment_digests:
+            raise SystemExit("hyperparameter selection used a different runtime environment")
     model.save(
         args.output,
         metadata={
             "fit_split": args.split,
             "development_only": args.split == "development",
             "dataset_manifest_digests": manifest_digests,
+            "dataset_manifest_file_sha256s": dataset_manifest_file_sha256s,
+            "runtime_environment_contracts": environment_contracts,
+            "runtime_environment_contract_digests": environment_digests,
             "dataset_dirs": [str(item.resolve()) for item in args.dataset_dir],
             "fit_projects": projects,
             "fit_task_count": len(tasks),
@@ -109,6 +148,11 @@ def main() -> int:
                 else None
             ),
             "hyperparameter_selection_sha256": selection_digest,
+            "coverage_report_sha256": coverage_digest,
+            "coverage_warnings": coverage_warnings,
+            "calibration_status": "uncalibrated",
+            "online_eligible": False,
+            "predictive_action_eligible": False,
         },
     )
     print(

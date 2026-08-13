@@ -23,6 +23,7 @@ from beliefkv.predictor.structured_frontier import (
     LocalFrontierPrediction,
     load_decision_rows,
     load_evaluation_rows,
+    runtime_environment_digest,
     select_frontier_hyperparameters,
     summarize_training_corpus,
     validate_training_corpus_diversity,
@@ -185,6 +186,7 @@ def _write_dataset(
     split: str,
     decision_id: str,
     formal_training_eligible: bool = True,
+    formal_local_training_eligible: bool | None = None,
 ) -> Path:
     root.mkdir(parents=True)
     (root / "dataset_manifest.json").write_text(
@@ -192,10 +194,34 @@ def _write_dataset(
             {
                 "dataset_kind": "beliefkv_p6_training_evidence",
                 "formal_training_eligible": formal_training_eligible,
-                "evaluation_role": "frozen_split_training_evidence",
+                "formal_local_training_eligible": (
+                    formal_training_eligible
+                    if formal_local_training_eligible is None
+                    else formal_local_training_eligible
+                ),
+                "evaluation_role": (
+                    "frozen_split_local_training_evidence"
+                    if formal_local_training_eligible is True
+                    else "frozen_split_training_evidence"
+                ),
                 "source": {
                     "run_id": run_id,
                     "workload_manifest_sha256": f"manifest-{run_id}",
+                    "runtime_environment_contract": {
+                        "uniform": True,
+                        "runtime_profile": {"sha256": "runtime-profile"},
+                        "model_revision_sha256": {
+                            "config.json": "model-config",
+                            "tokenizer.json": "tokenizer",
+                        },
+                        "server_identity": {
+                            "weight_dtype": "bfloat16",
+                            "resolved_kv_dtype": "bfloat16",
+                        },
+                        "hardware": {"uuid": "gpu"},
+                        "sglang_commit": "sglang",
+                        "sglang_patch_sha256": "patch",
+                    },
                     "collection_contract": {
                         "plan_id": "p6-agent-semantics-v1",
                         "split": split,
@@ -244,6 +270,81 @@ def test_formal_loaders_fail_closed_on_ineligible_dataset(tmp_path: Path) -> Non
         load_decision_rows((train,), allowed_splits=("train",))
     with pytest.raises(ValueError, match="formal evaluation input is ineligible"):
         load_evaluation_rows((calibration,), split="calibration")
+
+
+def test_calibration_loader_requires_explicit_formal_local_permission(
+    tmp_path: Path,
+) -> None:
+    calibration = _write_dataset(
+        tmp_path / "calibration-local",
+        run_id="run-calibration-local",
+        split="calibration",
+        decision_id="calibration-local-decision",
+        formal_training_eligible=False,
+        formal_local_training_eligible=True,
+    )
+
+    with pytest.raises(ValueError, match="formal evaluation input is ineligible"):
+        load_evaluation_rows((calibration,), split="calibration")
+
+    rows, manifests = load_evaluation_rows(
+        (calibration,), split="calibration", allow_formal_local=True
+    )
+
+    assert [row["decision_id"] for row in rows] == [
+        "calibration-local-decision"
+    ]
+    assert manifests[0]["formal_training_eligible"] is False
+    assert manifests[0]["formal_local_training_eligible"] is True
+
+    with pytest.raises(ValueError, match="allowed only for calibration"):
+        load_evaluation_rows(
+            (calibration,), split="test_id", allow_formal_local=True
+        )
+
+
+def test_runtime_environment_digest_ignores_source_count_and_paths() -> None:
+    base = {
+        "runtime_profile": {
+            "path": "/first/profile.json",
+            "profile_id": "h200_bf16_v4",
+            "sha256": "profile-sha",
+        },
+        "model_revision_sha256": {
+            "config.json": "config-sha",
+            "tokenizer.json": "tokenizer-sha",
+        },
+        "hardware": {
+            "index": 0,
+            "name": "NVIDIA H200 NVL",
+            "uuid": "gpu-uuid",
+            "driver_version": "driver",
+            "memory_total_mib": 143771,
+        },
+        "server_identity": {
+            "model_path": "/models/qwen",
+            "served_model_name": "qwen",
+            "sglang_version": "0.5.2rc1",
+            "weight_dtype": "bfloat16",
+            "configured_kv_dtype": "auto",
+            "resolved_kv_dtype": "bfloat16",
+        },
+        "sglang_commit": "sglang",
+        "sglang_patch_sha256": "patch",
+        "uniform": True,
+        "physical_source_count": 5,
+    }
+    calibration = json.loads(json.dumps(base))
+    calibration["runtime_profile"]["path"] = "/second/profile.json"
+    calibration["physical_source_count"] = 1
+
+    assert runtime_environment_digest(base) == runtime_environment_digest(
+        calibration
+    )
+    calibration["server_identity"]["resolved_kv_dtype"] = "fp8_e4m3"
+    assert runtime_environment_digest(base) != runtime_environment_digest(
+        calibration
+    )
 
 
 def test_formal_loader_rejects_p5_development_evidence(tmp_path: Path) -> None:

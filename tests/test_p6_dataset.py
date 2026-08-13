@@ -70,7 +70,7 @@ def test_workflow_training_exclusions_fail_closed_per_instance(tmp_path: Path) -
     assert retained["training_eligible_remaining_decode_demand"] is True
 
 
-def test_runtime_intervention_censors_crossing_decision_horizons() -> None:
+def test_runtime_intervention_censors_only_crossing_label_targets() -> None:
     rows = [
         {
             "workflow_id": "workflow",
@@ -79,23 +79,23 @@ def test_runtime_intervention_censors_crossing_decision_horizons() -> None:
             "censor_reasons": [],
             "labels": [
                 {
-                    "next_boundary_timestamp_ms": 99.0,
-                    "censored": False,
-                    "censor_reason": None,
-                }
-            ],
-        },
-        {
-            "workflow_id": "workflow",
-            "timestamp_ms": 95.0,
-            "training_eligible": True,
-            "censor_reasons": [],
-            "labels": [
-                {
+                    "invocation_id": "crossing",
                     "next_boundary_timestamp_ms": 105.0,
-                    "censored": False,
-                    "censor_reason": None,
-                }
+                    "target_horizon_timestamp_ms": {
+                        "action_boundary": 105.0,
+                        "remaining_decode_demand": 99.0,
+                    },
+                    "target_training_eligible": {
+                        "action_boundary": True,
+                        "remaining_decode_demand": True,
+                    },
+                },
+                {
+                    "invocation_id": "completed",
+                    "next_boundary_timestamp_ms": 99.0,
+                    "target_horizon_timestamp_ms": {"action_boundary": 99.0},
+                    "target_training_eligible": {"action_boundary": True},
+                },
             ],
         },
         {
@@ -103,7 +103,13 @@ def test_runtime_intervention_censors_crossing_decision_horizons() -> None:
             "timestamp_ms": 110.0,
             "training_eligible": True,
             "censor_reasons": [],
-            "labels": [{"next_boundary_timestamp_ms": 120.0}],
+            "labels": [
+                {
+                    "invocation_id": "post",
+                    "target_horizon_timestamp_ms": {"action_boundary": 120.0},
+                    "target_training_eligible": {"action_boundary": True},
+                }
+            ],
         },
     ]
 
@@ -120,18 +126,20 @@ def test_runtime_intervention_censors_crossing_decision_horizons() -> None:
         },
     )
 
+    crossing, completed = rows[0]["labels"]
     assert rows[0]["training_eligible"] is True
-    assert rows[0]["clean_episode_eligible"] is False
-    assert rows[0]["episode_training_scope"] == "local_pre_intervention_only"
-    assert rows[0]["eligible_until_event_id"] == "sandbox-audit:8"
+    assert crossing["target_training_eligible"] == {
+        "action_boundary": False,
+        "remaining_decode_demand": True,
+    }
+    assert completed["target_training_eligible"]["action_boundary"] is True
     assert rows[1]["training_eligible"] is False
     assert rows[1]["labels"][0]["censored"] is True
-    assert rows[2]["training_eligible"] is False
     assert summary["decision_row_count"] == 2
-    assert summary["reason_counts"] == {"loop_guard_finalization": 2}
+    assert summary["invocation_label_count"] == 2
 
 
-def test_partial_episode_keeps_only_pre_intervention_local_demand() -> None:
+def test_partial_episode_retains_completed_waits_and_right_censors_crossing() -> None:
     tables = {
         "request_calls": [
             {
@@ -148,10 +156,32 @@ def test_partial_episode_keeps_only_pre_intervention_local_demand() -> None:
             },
         ],
         "external_waits": [
-            {"workflow_id": "workflow", "training_eligible_survival": True}
+            {
+                "workflow_id": "workflow",
+                "start_ts_ms": 70.0,
+                "terminal_ts_ms": 90.0,
+                "training_eligible_survival": True,
+            },
+            {
+                "workflow_id": "workflow",
+                "start_ts_ms": 80.0,
+                "terminal_ts_ms": 120.0,
+                "training_eligible_survival": True,
+            },
         ],
         "reentries": [
-            {"workflow_id": "workflow", "training_eligible": True}
+            {
+                "workflow_id": "workflow",
+                "wait_start_ts_ms": 70.0,
+                "reentry_ts_ms": 90.0,
+                "training_eligible": True,
+            },
+            {
+                "workflow_id": "workflow",
+                "wait_start_ts_ms": 80.0,
+                "reentry_ts_ms": 120.0,
+                "training_eligible": True,
+            },
         ],
         "frontier_decision_points": [],
     }
@@ -168,11 +198,18 @@ def test_partial_episode_keeps_only_pre_intervention_local_demand() -> None:
 
     before, after = tables["request_calls"]
     assert before["training_eligible_remaining_decode_demand"] is True
-    assert before["training_eligible_unlock_hazard"] is False
+    assert before["training_eligible_unlock_hazard"] is True
     assert after["training_eligible_remaining_decode_demand"] is False
-    assert tables["external_waits"][0]["training_eligible_survival"] is False
-    assert tables["reentries"][0]["training_eligible"] is False
-    assert summary["workflow_count"] == 1
+    completed_tool, crossing_tool = tables["external_waits"]
+    assert completed_tool["training_eligible_survival"] is True
+    assert crossing_tool["training_eligible_survival"] is True
+    assert crossing_tool["survival_censored"] is True
+    assert crossing_tool["survival_duration_ms"] == 20.0
+    completed_reentry, crossing_reentry = tables["reentries"]
+    assert completed_reentry["training_eligible"] is True
+    assert crossing_reentry["training_eligible"] is False
+    assert crossing_reentry["right_censored"] is True
+    assert summary["counts"]["external_survival_retained"] == 1
 
 
 def _event(
@@ -472,3 +509,14 @@ def test_collection_contract_fails_closed_on_predictive_or_invalid_evidence() ->
     _validate_collection_contract(
         {**base, "training_eligible": False}, allow_censored=True
     )
+    _validate_collection_contract(
+        {**base, "training_eligible": False},
+        allow_censored=False,
+        allow_formal_local_training=True,
+    )
+    with pytest.raises(P6CoverageError, match="runtime source"):
+        _validate_collection_contract(
+            {**base, "runtime_source_stable": False},
+            allow_censored=False,
+            allow_formal_local_training=True,
+        )

@@ -1,6 +1,24 @@
 # BeliefKV 最新架构与实现状态
 
-更新日期：2026-08-12
+更新日期：2026-08-13
+
+## 2026-08-13：H200 Canonical Train 与 Calibration 边界
+
+64 个 H200 BF16 train workflow 已通过 replacement-aware exporter 合并为 canonical dataset。三条
+recovery 只替换同一预冻结 instance，最终保持 64/64 instance 一一对应。训练资格已拆分为
+`formal_local_training_eligible` 与 `clean_trajectory_eligible`：前者允许 target/horizon censor 后的
+局部自然标签进入 Frontier fit，后者仍独占 terminal/JCT/完整 trajectory。正式 test loader 没有
+放宽。
+
+当前 coverage gate 通过：83,712 个 decision point 可训练，其中 35,038 行来自 clean workflow，
+48,674 行是受 intervention workflow 中保留下来的局部标签，13,013 行完全被 censor。exact
+incremental action boundary 仍为 0%，所以不支持 early-dispatch/run-to-action 主张。
+
+首个 H200 FrontierBeliefModel 已完成 7-project LOPO 和 fit，但 artifact 明确保持
+`uncalibrated`、`online_eligible=false`、`predictive_action_eligible=false`。已冻结 16-workflow
+calibration plan：Astropy/Sphinx 各 8，natural/parallel 各 8，固定 seed 且不允许用于 fit 或模型
+选择；16 个 image 已锁定为 RepoDigest。`test_id` 继续封存。完整证据见
+`docs/experiments/beliefkv_h200_bf16_canonical_train_and_calibration_2026-08-13_zh.md`。
 
 ## 2026-08-12：批量 Admission 与动态 Working Set
 

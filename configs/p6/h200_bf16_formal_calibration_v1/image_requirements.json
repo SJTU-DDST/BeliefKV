@@ -1,0 +1,186 @@
+{
+  "image_count": 16,
+  "images": [
+    {
+      "architecture": "amd64",
+      "created": "2025-09-10T09:26:14.464688569Z",
+      "image": "swebench/sweb.eval.x86_64.astropy_1776_astropy-13033:latest",
+      "image_id": "sha256:42797a2c686ed35b43e28dd2f58149381c3bf79abea2346fb7062c009e9fa528",
+      "instance_id": "astropy__astropy-13033",
+      "operating_system": "linux",
+      "repo_digest": "swebench/sweb.eval.x86_64.astropy_1776_astropy-13033@sha256:42797a2c686ed35b43e28dd2f58149381c3bf79abea2346fb7062c009e9fa528",
+      "size_bytes": 1091450748,
+      "status": "pulled_verified"
+    },
+    {
+      "architecture": "amd64",
+      "created": "2025-09-10T09:26:16.854242794Z",
+      "image": "swebench/sweb.eval.x86_64.astropy_1776_astropy-13236:latest",
+      "image_id": "sha256:a43e166eb5ae9e477349b87d800ece7648f8c746f88d94f6f6cff0df1e2caf82",
+      "instance_id": "astropy__astropy-13236",
+      "operating_system": "linux",
+      "repo_digest": "swebench/sweb.eval.x86_64.astropy_1776_astropy-13236@sha256:a43e166eb5ae9e477349b87d800ece7648f8c746f88d94f6f6cff0df1e2caf82",
+      "size_bytes": 1091876348,
+      "status": "pulled_verified"
+    },
+    {
+      "architecture": "amd64",
+      "created": "2025-09-10T09:26:39.521691479Z",
+      "image": "swebench/sweb.eval.x86_64.astropy_1776_astropy-13453:latest",
+      "image_id": "sha256:6b3593a3d1fa032b8b81f9a1e33738aae14c1cdc8fd887e0a089592c7f9abf9b",
+      "instance_id": "astropy__astropy-13453",
+      "operating_system": "linux",
+      "repo_digest": "swebench/sweb.eval.x86_64.astropy_1776_astropy-13453@sha256:6b3593a3d1fa032b8b81f9a1e33738aae14c1cdc8fd887e0a089592c7f9abf9b",
+      "size_bytes": 1092123922,
+      "status": "pulled_verified"
+    },
+    {
+      "architecture": "amd64",
+      "created": "2025-09-10T09:26:26.658862853Z",
+      "image": "swebench/sweb.eval.x86_64.astropy_1776_astropy-13977:latest",
+      "image_id": "sha256:bcc442a117def63c8011091500b4e2dd49980a08b74e3c2fbdad4e42745278bb",
+      "instance_id": "astropy__astropy-13977",
+      "operating_system": "linux",
+      "repo_digest": "swebench/sweb.eval.x86_64.astropy_1776_astropy-13977@sha256:bcc442a117def63c8011091500b4e2dd49980a08b74e3c2fbdad4e42745278bb",
+      "size_bytes": 1095102166,
+      "status": "pulled_verified"
+    },
+    {
+      "architecture": "amd64",
+      "created": "2025-09-10T09:32:22.622914036Z",
+      "image": "swebench/sweb.eval.x86_64.astropy_1776_astropy-14598:latest",
+      "image_id": "sha256:f1ff70694c403ee7018fef2a00638caa1555948d1c9b821175a7f4bdf2933a52",
+      "instance_id": "astropy__astropy-14598",
+      "operating_system": "linux",
+      "repo_digest": "swebench/sweb.eval.x86_64.astropy_1776_astropy-14598@sha256:f1ff70694c403ee7018fef2a00638caa1555948d1c9b821175a7f4bdf2933a52",
+      "size_bytes": 1096338261,
+      "status": "pulled_verified"
+    },
+    {
+      "architecture": "amd64",
+      "created": "2025-09-10T09:32:26.597191014Z",
+      "image": "swebench/sweb.eval.x86_64.astropy_1776_astropy-14995:latest",
+      "image_id": "sha256:b29a3bf3daebe6055a2bba46bc98db070043acd53801bd783c2f620813a87eae",
+      "instance_id": "astropy__astropy-14995",
+      "operating_system": "linux",
+      "repo_digest": "swebench/sweb.eval.x86_64.astropy_1776_astropy-14995@sha256:b29a3bf3daebe6055a2bba46bc98db070043acd53801bd783c2f620813a87eae",
+      "size_bytes": 1096947414,
+      "status": "pulled_verified"
+    },
+    {
+      "architecture": "amd64",
+      "created": "2025-09-10T09:37:12.858178012Z",
+      "image": "swebench/sweb.eval.x86_64.astropy_1776_astropy-7336:latest",
+      "image_id": "sha256:a12e32454ae1813940a3d90e23aecdb9221d7ddd1924b89fee5c444913ac71d5",
+      "instance_id": "astropy__astropy-7336",
+      "operating_system": "linux",
+      "repo_digest": "swebench/sweb.eval.x86_64.astropy_1776_astropy-7336@sha256:a12e32454ae1813940a3d90e23aecdb9221d7ddd1924b89fee5c444913ac71d5",
+      "size_bytes": 1071071802,
+      "status": "pulled_verified"
+    },
+    {
+      "architecture": "amd64",
+      "created": "2025-09-10T09:37:34.651347492Z",
+      "image": "swebench/sweb.eval.x86_64.astropy_1776_astropy-8872:latest",
+      "image_id": "sha256:d6c5c8dc8f0ec1fb651e9088f4aabbaea858613ac56e03cf43eb694d77dc063c",
+      "instance_id": "astropy__astropy-8872",
+      "operating_system": "linux",
+      "repo_digest": "swebench/sweb.eval.x86_64.astropy_1776_astropy-8872@sha256:d6c5c8dc8f0ec1fb651e9088f4aabbaea858613ac56e03cf43eb694d77dc063c",
+      "size_bytes": 1135183627,
+      "status": "pulled_verified"
+    },
+    {
+      "architecture": "amd64",
+      "created": "2025-09-10T15:55:31.545834144Z",
+      "image": "swebench/sweb.eval.x86_64.sphinx-doc_1776_sphinx-10323:latest",
+      "image_id": "sha256:e1267f67c6fdb44364aca794fbcde67d09743be40205fcf7931854356b5d1ede",
+      "instance_id": "sphinx-doc__sphinx-10323",
+      "operating_system": "linux",
+      "repo_digest": "swebench/sweb.eval.x86_64.sphinx-doc_1776_sphinx-10323@sha256:e1267f67c6fdb44364aca794fbcde67d09743be40205fcf7931854356b5d1ede",
+      "size_bytes": 1062494773,
+      "status": "pulled_verified"
+    },
+    {
+      "architecture": "amd64",
+      "created": "2025-09-10T15:58:47.915806373Z",
+      "image": "swebench/sweb.eval.x86_64.sphinx-doc_1776_sphinx-10449:latest",
+      "image_id": "sha256:900475eb956cbab258112fb6a9a2180b8de7d90801f6a591effab96b51ef4681",
+      "instance_id": "sphinx-doc__sphinx-10449",
+      "operating_system": "linux",
+      "repo_digest": "swebench/sweb.eval.x86_64.sphinx-doc_1776_sphinx-10449@sha256:900475eb956cbab258112fb6a9a2180b8de7d90801f6a591effab96b51ef4681",
+      "size_bytes": 1061919397,
+      "status": "pulled_verified"
+    },
+    {
+      "architecture": "amd64",
+      "created": "2025-09-10T16:02:23.722511094Z",
+      "image": "swebench/sweb.eval.x86_64.sphinx-doc_1776_sphinx-11445:latest",
+      "image_id": "sha256:094a1a6fe146fb4726563018795b4c03aebffeca485a95ca6ac1c95c43fb9b25",
+      "instance_id": "sphinx-doc__sphinx-11445",
+      "operating_system": "linux",
+      "repo_digest": "swebench/sweb.eval.x86_64.sphinx-doc_1776_sphinx-11445@sha256:094a1a6fe146fb4726563018795b4c03aebffeca485a95ca6ac1c95c43fb9b25",
+      "size_bytes": 1064780610,
+      "status": "pulled_verified"
+    },
+    {
+      "architecture": "amd64",
+      "created": "2025-09-10T16:01:59.645751454Z",
+      "image": "swebench/sweb.eval.x86_64.sphinx-doc_1776_sphinx-7440:latest",
+      "image_id": "sha256:064aa9b516b6bfb331f859d5054e4a151dd62f49c2e4cafab6d83f239f5d24f9",
+      "instance_id": "sphinx-doc__sphinx-7440",
+      "operating_system": "linux",
+      "repo_digest": "swebench/sweb.eval.x86_64.sphinx-doc_1776_sphinx-7440@sha256:064aa9b516b6bfb331f859d5054e4a151dd62f49c2e4cafab6d83f239f5d24f9",
+      "size_bytes": 1054863434,
+      "status": "pulled_verified"
+    },
+    {
+      "architecture": "amd64",
+      "created": "2025-09-10T16:03:16.53430929Z",
+      "image": "swebench/sweb.eval.x86_64.sphinx-doc_1776_sphinx-7590:latest",
+      "image_id": "sha256:263c6b5a2e691d27ff928b1dcdd8247df81b12e764517a9cac6347f780d553d9",
+      "instance_id": "sphinx-doc__sphinx-7590",
+      "operating_system": "linux",
+      "repo_digest": "swebench/sweb.eval.x86_64.sphinx-doc_1776_sphinx-7590@sha256:263c6b5a2e691d27ff928b1dcdd8247df81b12e764517a9cac6347f780d553d9",
+      "size_bytes": 1055114923,
+      "status": "pulled_verified"
+    },
+    {
+      "architecture": "amd64",
+      "created": "2025-09-10T16:05:10.164211139Z",
+      "image": "swebench/sweb.eval.x86_64.sphinx-doc_1776_sphinx-8035:latest",
+      "image_id": "sha256:2e118d23ab0715633f9cc6dfab91acc51246cf5e3e836fc2294e4f1ce1d39447",
+      "instance_id": "sphinx-doc__sphinx-8035",
+      "operating_system": "linux",
+      "repo_digest": "swebench/sweb.eval.x86_64.sphinx-doc_1776_sphinx-8035@sha256:2e118d23ab0715633f9cc6dfab91acc51246cf5e3e836fc2294e4f1ce1d39447",
+      "size_bytes": 1052564916,
+      "status": "pulled_verified"
+    },
+    {
+      "architecture": "amd64",
+      "created": "2025-09-10T16:07:46.823819234Z",
+      "image": "swebench/sweb.eval.x86_64.sphinx-doc_1776_sphinx-8548:latest",
+      "image_id": "sha256:45821c18ffb029584479c8ce13b8e502f764b45da1711e5238a68da533dfad9b",
+      "instance_id": "sphinx-doc__sphinx-8548",
+      "operating_system": "linux",
+      "repo_digest": "swebench/sweb.eval.x86_64.sphinx-doc_1776_sphinx-8548@sha256:45821c18ffb029584479c8ce13b8e502f764b45da1711e5238a68da533dfad9b",
+      "size_bytes": 1054990726,
+      "status": "pulled_verified"
+    },
+    {
+      "architecture": "amd64",
+      "created": "2025-09-10T16:09:37.365655614Z",
+      "image": "swebench/sweb.eval.x86_64.sphinx-doc_1776_sphinx-8638:latest",
+      "image_id": "sha256:80e133d1541249bf39db3e50a2512772295bc489ac1d62de3b2cd59438445b96",
+      "instance_id": "sphinx-doc__sphinx-8638",
+      "operating_system": "linux",
+      "repo_digest": "swebench/sweb.eval.x86_64.sphinx-doc_1776_sphinx-8638@sha256:80e133d1541249bf39db3e50a2512772295bc489ac1d62de3b2cd59438445b96",
+      "size_bytes": 1055322405,
+      "status": "pulled_verified"
+    }
+  ],
+  "lock_state": "frozen_local_images",
+  "locked_at": "2026-08-13T12:39:17.013801Z",
+  "plan_id": "h200-bf16-formal-calibration-v1",
+  "runtime_profile_sha256": "5ece5b5075193856b1cf7fff081378fe1a4040734bd80133838713a9a90cd6ba",
+  "schema_version": 1
+}

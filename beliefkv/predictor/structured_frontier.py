@@ -30,13 +30,58 @@ from beliefkv.predictor.frontier_belief import (
 STRUCTURED_FRONTIER_SCHEMA_VERSION = 2
 MINIMUM_DEMAND_DECISION_SCHEMA_VERSION = 2
 FORMAL_P6_DATASET_KIND = "beliefkv_p6_training_evidence"
-FORMAL_P6_PLAN_ID = "p6-agent-semantics-v1"
+FORMAL_P6_PLAN_IDS = frozenset(
+    {
+        "p6-agent-semantics-v1",
+        "h200-bf16-formal-train-v1",
+        "h200-bf16-formal-calibration-v1",
+    }
+)
 FORBIDDEN_LOAD_COUPLED_LABELS = frozenset(
     {"remaining_gpu_service_ms", "next_gpu_service_ms"}
 )
 FORBIDDEN_LOAD_COUPLED_FEATURES = frozenset(
     {"batch_size", "elapsed_gpu_service_ms", "observed_gpu_service_ms"}
 )
+
+
+def runtime_environment_identity(contract: Mapping[str, Any]) -> dict[str, Any]:
+    """Return the stable model/runtime/hardware identity shared across splits."""
+
+    profile = contract.get("runtime_profile") or {}
+    hardware = contract.get("hardware") or {}
+    server = contract.get("server_identity") or {}
+    return {
+        "runtime_profile": {
+            "profile_id": profile.get("profile_id"),
+            "sha256": profile.get("sha256"),
+        },
+        "model_revision_sha256": contract.get("model_revision_sha256") or {},
+        "hardware": {
+            key: hardware.get(key)
+            for key in ("name", "uuid", "driver_version", "memory_total_mib")
+        },
+        "server_identity": {
+            key: server.get(key)
+            for key in (
+                "model_path",
+                "served_model_name",
+                "sglang_version",
+                "weight_dtype",
+                "configured_kv_dtype",
+                "resolved_kv_dtype",
+            )
+        },
+        "sglang_commit": contract.get("sglang_commit"),
+        "sglang_patch_sha256": contract.get("sglang_patch_sha256"),
+    }
+
+
+def runtime_environment_digest(contract: Mapping[str, Any]) -> str:
+    identity = runtime_environment_identity(contract)
+    return hashlib.sha256(
+        json.dumps(identity, sort_keys=True, separators=(",", ":")).encode()
+    ).hexdigest()
 
 
 @dataclass(frozen=True)
@@ -617,7 +662,7 @@ class FrontierBeliefModel:
                 )
                 key = _demand_feature_key(role, state, family, features)
                 boundary = _normalize_boundary(label.get("next_boundary_kind"))
-                if state == InvocationState.RUNNING_LLM.value and boundary is not None:
+                if state == InvocationState.RUNNING_LLM.value and boundary is not None and _target_eligible(label, "action_boundary"):
                     self.boundary.observe(
                         role=role,
                         state=state,
@@ -631,7 +676,7 @@ class FrontierBeliefModel:
                     if state == InvocationState.RUNNING_LLM.value
                     else None
                 )
-                if remaining_decode is not None:
+                if remaining_decode is not None and _target_eligible(label, "remaining_decode_demand"):
                     self.decode_demand.observe(
                         key, float(remaining_decode), weight=weight
                     )
@@ -645,25 +690,35 @@ class FrontierBeliefModel:
                     # non-running invocation falls to the global bucket,
                     # producing constant p50 predictions for the scheduler.
                     next_decode = label.get("next_output_tokens")
-                    if next_decode is not None:
+                    if next_decode is not None and _target_eligible(label, "next_output_demand"):
                         self.decode_demand.observe(
                             key, float(next_decode), weight=weight
                         )
                         observed["state_conditional_decode_demand"] += 1
                 next_output = label.get("next_output_tokens")
-                if next_output is not None:
+                if next_output is not None and _target_eligible(label, "next_output_demand"):
                     self.next_output.observe(key, float(next_output), weight=weight)
                     observed["next_output_demand"] += 1
                 prompt_growth = label.get("reentry_prompt_delta_tokens")
-                if prompt_growth is not None:
+                if prompt_growth is not None and _target_eligible(label, "prompt_growth"):
                     self.prompt_growth.observe(key, float(prompt_growth), weight=weight)
                     observed["prompt_growth"] += 1
-                if trigger == RuntimeEventKind.TOOL_START.value and state == InvocationState.WAIT_TOOL.value:
+                if (
+                    trigger == RuntimeEventKind.TOOL_START.value
+                    and state == InvocationState.WAIT_TOOL.value
+                ):
+                    right_censored = _target_right_censored(
+                        label, "external_wait"
+                    )
                     status = str(label.get("next_boundary_status") or "error")
-                    if label.get("censored"):
+                    if right_censored:
                         status = "censored"
-                    delay = label.get("next_boundary_delay_ms")
-                    if delay is not None:
+                    delay = (
+                        label.get("external_wait_observed_duration_ms")
+                        if right_censored
+                        else label.get("next_boundary_delay_ms")
+                    )
+                    if delay is not None and _target_eligible(label, "external_wait"):
                         self.tool.observe(
                             _tool_feature_key(role, family, features),
                             status=status,
@@ -673,7 +728,7 @@ class FrontierBeliefModel:
                         observed["tool"] += 1
                 if state == InvocationState.WAIT_JOIN.value:
                     delay = label.get("next_boundary_delay_ms")
-                    if delay is not None:
+                    if delay is not None and _target_eligible(label, "join_wait"):
                         self.join_wait.observe(
                             _demand_feature_key(role, state, "join", features),
                             float(delay),
@@ -842,6 +897,7 @@ class FrontierBeliefModel:
                 if (
                     features.state == InvocationState.RUNNING_LLM.value
                     and boundary is not None
+                    and _target_eligible(label, "action_boundary")
                 ):
                     boundary_records.append(
                         (prediction.boundary_distribution, boundary, weight)
@@ -850,9 +906,10 @@ class FrontierBeliefModel:
                 if (
                     trigger == RuntimeEventKind.TOOL_START.value
                     and features.state == InvocationState.WAIT_TOOL.value
+                    and _target_eligible(label, "external_wait")
                 ):
                     status = str(label.get("next_boundary_status") or "error")
-                    if label.get("censored"):
+                    if _target_right_censored(label, "external_wait"):
                         status = "censored"
                     tool_records.append(
                         (prediction.tool_terminal_distribution, status, weight)
@@ -863,6 +920,7 @@ class FrontierBeliefModel:
                         "remaining_decode_tokens",
                         label.get("remaining_output_tokens")
                         if features.state == InvocationState.RUNNING_LLM.value
+                        and _target_eligible(label, "remaining_decode_demand")
                         else None,
                         prediction.remaining_decode_tokens,
                     ),
@@ -870,17 +928,22 @@ class FrontierBeliefModel:
                         "remaining_external_wait_ms",
                         label.get("next_boundary_delay_ms")
                         if features.state == InvocationState.WAIT_TOOL.value
+                        and _target_eligible(label, "external_wait")
                         else None,
                         prediction.remaining_external_wait,
                     ),
                     (
                         "prompt_growth_tokens",
-                        label.get("reentry_prompt_delta_tokens"),
+                        label.get("reentry_prompt_delta_tokens")
+                        if _target_eligible(label, "prompt_growth")
+                        else None,
                         prediction.prompt_growth_tokens,
                     ),
                     (
                         "next_output_tokens",
-                        label.get("next_output_tokens"),
+                        label.get("next_output_tokens")
+                        if _target_eligible(label, "next_output_demand")
+                        else None,
                         prediction.next_output_tokens,
                     ),
                 )
@@ -1306,7 +1369,11 @@ def load_decision_rows(
     for directory in dataset_dirs:
         root = Path(directory)
         manifest = json.loads((root / "dataset_manifest.json").read_text(encoding="utf-8"))
-        if "train" in allowed and manifest.get("formal_training_eligible") is not True:
+        local_eligible = manifest.get(
+            "formal_local_training_eligible",
+            manifest.get("formal_training_eligible"),
+        )
+        if "train" in allowed and local_eligible is not True:
             raise ValueError(f"formal training input is ineligible: {root}")
         if "train" in allowed:
             _validate_formal_p6_manifest(root, manifest, expected_split="train")
@@ -1393,10 +1460,17 @@ def validate_training_corpus_diversity(
 
 
 def load_evaluation_rows(
-    dataset_dirs: Iterable[str | Path], *, split: str
+    dataset_dirs: Iterable[str | Path],
+    *,
+    split: str,
+    allow_formal_local: bool = False,
 ) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
     if split not in {"calibration", "test_id", "test_ood"}:
         raise ValueError("evaluation rows require calibration, test_id, or test_ood")
+    if allow_formal_local and split != "calibration":
+        raise ValueError(
+            "formal-local evaluation evidence is allowed only for calibration"
+        )
     rows: list[dict[str, Any]] = []
     manifests: list[dict[str, Any]] = []
     seen_runs: set[str] = set()
@@ -1406,9 +1480,19 @@ def load_evaluation_rows(
         manifest = json.loads(
             (root / "dataset_manifest.json").read_text(encoding="utf-8")
         )
-        if manifest.get("formal_training_eligible") is not True:
+        eligible = manifest.get("formal_training_eligible") is True
+        if allow_formal_local:
+            eligible = eligible or (
+                manifest.get("formal_local_training_eligible") is True
+            )
+        if not eligible:
             raise ValueError(f"formal evaluation input is ineligible: {root}")
-        _validate_formal_p6_manifest(root, manifest, expected_split=split)
+        _validate_formal_p6_manifest(
+            root,
+            manifest,
+            expected_split=split,
+            allow_formal_local=allow_formal_local,
+        )
         run_id = str(manifest.get("source", {}).get("run_id") or "")
         if not run_id:
             raise ValueError(f"dataset has no source run_id: {root}")
@@ -1437,10 +1521,14 @@ def _validate_formal_p6_manifest(
     manifest: Mapping[str, Any],
     *,
     expected_split: str,
+    allow_formal_local: bool = False,
 ) -> None:
     if manifest.get("dataset_kind") != FORMAL_P6_DATASET_KIND:
         raise ValueError(f"formal input has an unsupported dataset kind: {root}")
-    if manifest.get("evaluation_role") != "frozen_split_training_evidence":
+    if manifest.get("evaluation_role") not in {
+        "frozen_split_training_evidence",
+        "frozen_split_local_training_evidence",
+    }:
         raise ValueError(f"formal input is not frozen-split evidence: {root}")
     split_contract = manifest.get("split_contract") or {}
     if (
@@ -1451,15 +1539,46 @@ def _validate_formal_p6_manifest(
         raise ValueError(f"formal input has no frozen project split contract: {root}")
     source = manifest.get("source") or {}
     contract = source.get("collection_contract") or {}
-    if contract.get("plan_id") != FORMAL_P6_PLAN_ID:
+    plan_id = contract.get("plan_id")
+    if plan_id not in FORMAL_P6_PLAN_IDS:
         raise ValueError(f"formal input did not use the P6 collection plan: {root}")
+    plan_split = {
+        "h200-bf16-formal-train-v1": "train",
+        "h200-bf16-formal-calibration-v1": "calibration",
+    }.get(str(plan_id))
+    if plan_split is not None and plan_split != expected_split:
+        raise ValueError(
+            f"formal plan {plan_id!r} cannot provide {expected_split!r} evidence: "
+            f"{root}"
+        )
+    environment = source.get("runtime_environment_contract") or {}
+    profile = environment.get("runtime_profile") or {}
+    revisions = environment.get("model_revision_sha256") or {}
+    identity = environment.get("server_identity") or {}
+    hardware = environment.get("hardware") or {}
+    if (
+        environment.get("uniform") is not True
+        or not profile.get("sha256")
+        or not revisions.get("config.json")
+        or not revisions.get("tokenizer.json")
+        or not identity.get("weight_dtype")
+        or not identity.get("resolved_kv_dtype")
+        or not environment.get("sglang_commit")
+        or not environment.get("sglang_patch_sha256")
+        or not hardware.get("uuid")
+    ):
+        raise ValueError(f"formal input has no frozen runtime environment: {root}")
     if contract.get("split") != expected_split:
         raise ValueError(
             f"collection split {contract.get('split')!r} does not match "
             f"{expected_split!r}: {root}"
         )
+    local_training = (
+        (expected_split == "train" or allow_formal_local)
+        and manifest.get("formal_local_training_eligible") is True
+    )
     if (
-        contract.get("training_eligible") is not True
+        (not local_training and contract.get("training_eligible") is not True)
         or contract.get("runtime_source_stable") is not True
         or contract.get("runtime_policy") != "frozen_p5_observed"
         or bool(contract.get("predictor_enabled"))
@@ -1602,6 +1721,7 @@ def evaluate_frontier_model(
             if (
                 features.state == InvocationState.RUNNING_LLM.value
                 and boundary is not None
+                and _target_eligible(label, "action_boundary")
             ):
                 _observe_classification(
                     classification["boundary"],
@@ -1612,10 +1732,11 @@ def evaluate_frontier_model(
             if (
                 trigger == RuntimeEventKind.TOOL_START.value
                 and features.state == InvocationState.WAIT_TOOL.value
+                and _target_eligible(label, "external_wait")
             ):
                 status = (
                     "censored"
-                    if label.get("censored")
+                    if _target_right_censored(label, "external_wait")
                     else str(label.get("next_boundary_status") or "error")
                 )
                 if status not in {"success", "error", "censored"}:
@@ -1632,6 +1753,7 @@ def evaluate_frontier_model(
                     "remaining_decode_tokens",
                     label.get("remaining_output_tokens")
                     if features.state == InvocationState.RUNNING_LLM.value
+                    and _target_eligible(label, "remaining_decode_demand")
                     else None,
                     prediction.remaining_decode_tokens,
                 ),
@@ -1639,17 +1761,22 @@ def evaluate_frontier_model(
                     "remaining_external_wait_ms",
                     label.get("next_boundary_delay_ms")
                     if features.state == InvocationState.WAIT_TOOL.value
+                    and _target_eligible(label, "external_wait")
                     else None,
                     prediction.remaining_external_wait,
                 ),
                 (
                     "prompt_growth_tokens",
-                    label.get("reentry_prompt_delta_tokens"),
+                    label.get("reentry_prompt_delta_tokens")
+                    if _target_eligible(label, "prompt_growth")
+                    else None,
                     prediction.prompt_growth_tokens,
                 ),
                 (
                     "next_output_tokens",
-                    label.get("next_output_tokens"),
+                    label.get("next_output_tokens")
+                    if _target_eligible(label, "next_output_demand")
+                    else None,
                     prediction.next_output_tokens,
                 ),
             )
@@ -1885,6 +2012,18 @@ def _local_features_from_row(
     )
 
 
+
+
+def _target_eligible(label: Mapping[str, Any], target: str) -> bool:
+    eligibility = label.get("target_training_eligible")
+    if isinstance(eligibility, Mapping):
+        return bool(eligibility.get(target, False))
+    return not bool(label.get("censored", False))
+
+
+def _target_right_censored(label: Mapping[str, Any], target: str) -> bool:
+    values = label.get("target_right_censored")
+    return bool(isinstance(values, Mapping) and values.get(target, False))
 def _validate_demand_rows(rows: Sequence[Mapping[str, Any]]) -> None:
     for row in rows:
         schema_version = int(row.get("schema_version") or 0)

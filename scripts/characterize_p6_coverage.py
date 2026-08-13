@@ -46,6 +46,14 @@ def main() -> int:
         ),
     )
     parser.add_argument(
+        "--allow-formal-local-training",
+        action="store_true",
+        help=(
+            "export target-level censored formal local evidence; accepted only "
+            "when every exported row belongs to the frozen calibration split"
+        ),
+    )
+    parser.add_argument(
         "--censor-reason",
         help="record why a deliberately stopped characterization was censored",
     )
@@ -64,6 +72,10 @@ def main() -> int:
             args.dataset_dir,
             allow_censored=args.allow_censored,
             allow_development_only=args.allow_development_only,
+            allow_formal_local_training=args.allow_formal_local_training,
+            formal_local_expected_split=(
+                "calibration" if args.allow_formal_local_training else None
+            ),
             split_manifest=args.split_manifest,
         )
     summary = {
