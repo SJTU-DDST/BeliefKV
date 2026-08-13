@@ -274,6 +274,8 @@ def test_load_bundle_and_prepare_exact_commit(tmp_path: Path) -> None:
     destination = tmp_path / "workspace"
     metadata = prepare_workspace(source, bundle.workloads[0], destination)
     assert metadata["initial_head"] == commit
+    assert metadata["isolation"] == "per-workflow-independent-local-clone"
+    assert not (destination / ".git" / "objects" / "info" / "alternates").exists()
     assert (destination / "module.py").read_text(encoding="utf-8") == "VALUE = 1\n"
     (destination / "module.py").write_text("VALUE = 2\n", encoding="utf-8")
     (destination / ".git" / "HEAD").write_text(

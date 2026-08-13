@@ -329,7 +329,7 @@ def prepare_workspace(
             "git",
             "clone",
             "--quiet",
-            "--shared",
+            "--no-hardlinks",
             "--no-checkout",
             str(source_repo),
             str(destination),
@@ -357,7 +357,7 @@ def prepare_workspace(
         "workspace": str(destination),
         "initial_head": head,
         "initial_status": status,
-        "isolation": "per-workflow-shared-local-clone",
+        "isolation": "per-workflow-independent-local-clone",
     }
 
 
@@ -396,7 +396,7 @@ def collect_workspace_artifacts(
                     "git",
                     "clone",
                     "--quiet",
-                    "--shared",
+                    "--no-hardlinks",
                     "--no-checkout",
                     str(source_repo),
                     str(metadata),
