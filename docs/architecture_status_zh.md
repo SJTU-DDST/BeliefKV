@@ -16,9 +16,11 @@ P5 v4 长跑表明完整 JointPlan 的 delta capture、snapshot materialization�
 
 物理输入改为紧凑 owner delta；RCCG 和 consumer snapshot 按 revision 复用；低压 apply-only 路径不物化 PolicyInput；完整规划仍构建全量 bundle summary 以选择 victim，但 observed 模式不再生成 transfer estimate，目标 closure 在 safe point 才重新物化；snapshot ID 使用 revision tuple，完整内容不再在关键路径哈希。在线提交只校验选中动作的 invocation/dependency/allocator/lease read-set，无 residency 动作的异步计划不接管 bounded admission seed。fast no-action 路径和稀有 physical action 分别使用 1 ms 与 5 ms 预算。
 
-新增 `configs/p6/h200_bf16_v5/frozen_runtime_profile.json`，仅将 `cuda_graph_max_bs` 从 16 扩展到 32，KV pool 仍为 850,000 tokens。v5 启动后应捕获 `[1, 2, 4, 8, 16, 24, 32]`；在短 GPU gate 验证 graph 32、至少 1 GiB 稳态余量和 31/32-way replay 之前，v5 尚未冻结为正式 A/B 配置。GPU service 与 decode-contention transfer artifact 标记为需要在 graph 32 下重新校准。
+新增 `configs/p6/h200_bf16_v5/frozen_runtime_profile.json`，仅将 `cuda_graph_max_bs` 从 16 扩展到 32，KV pool 仍为 850,000 tokens。短 GPU gate 已成功捕获 `[1, 2, 4, 8, 16, 24, 32]`，capture 后 SGLang 可用显存为 3.28 GB，31/32-way 均命中 CUDA Graph，63/63 请求成功且无 OOM、NaN 或 replay failure。相同 32-way 固定 decode 下，graph 32 与 graph 16 的稳定吞吐中位数分别为 5,112.48 和 661.12 token/s；该结果只作为 CUDA Graph 配置门禁，不代表完整 agent A/B。v5 可以作为后续 baseline/treatment 的共同 profile；GPU service 与 decode-contention transfer artifact 仍需在 graph 32 下重新校准。
 
 CPU 回归为 191 passed、2 deselected、6 subtests passed；两个 deselected 测试依赖本机完整 CUDA toolkit，将由 GPU server 启动覆盖真实导入路径。
+
+短 gate 中 941 个 scheduler step 产生 551 次 progress coalescing、46 次 apply-only delta 和 1 次完整规划。safe-point delta capture P50/P95/P99 为 0.114/0.413/0.806 ms，完整规划没有 failed、dropped 或 superseded。该结果通过低压 no-action 快路径门槛，但没有覆盖高压 physical-action validation；完整 bundle summary 的 target-only 构建仍是后续优化项。报告见 `docs/experiments/beliefkv_jointplan_fastpath_cuda_graph32_gate_2026-08-17_zh.md`。
 
 
 ## 2026-08-16：正式 Treatment 暴露 Ordinary Restore 全局 Barrier
