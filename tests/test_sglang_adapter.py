@@ -4784,12 +4784,18 @@ class SGLangBackendTest(unittest.TestCase):
 
         # Ticket generation/native admission are not service evidence. The
         # beneficiary must remain prioritized across subsequent safe points.
+        runtime._current_tickets_by_request = {
+            beneficiary.request_id: object()
+        }
         visible_entry = SimpleNamespace(state=AdmissionSideState.VISIBLE_PENDING)
         self.assertEqual(
             runtime._refresh_replacement_priorities(
                 {beneficiary.request_id: visible_entry}, now_ms=103.0
             ),
             (beneficiary.request_id,),
+        )
+        self.assertIn(
+            beneficiary.request_id, runtime._current_tickets_by_request
         )
         self.assertIn(beneficiary.request_id, runtime._replacement_priorities)
 

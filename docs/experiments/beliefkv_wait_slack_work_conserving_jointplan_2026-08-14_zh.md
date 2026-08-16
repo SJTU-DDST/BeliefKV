@@ -66,7 +66,7 @@ select throughput-oriented execution set
   -> safe-point live Radix rematerialization
   -> COMMIT_CPU(victim, beneficiary, reclaim certificate)
   -> ACK
-  -> persistent beneficiary admission priority
+  -> persistent beneficiary admission priority until first real GPU service
   -> native capacity validation and service
 ```
 
@@ -79,13 +79,20 @@ beneficiary 或 exclusive reclaim bytes 不足的 bundle。ActionGroup 将 benef
 `resident_service_window_ms` 内没有真实 GPU service，则 residency lease 到期并成为 replacement victim；
 engine-running、restore-mandatory、当前 selected 和 beneficiary context 继续受保护。
 
+admission ticket 不再清除 beneficiary priority；只有首个真实 GPU service quantum、请求终止/取消或
+request/context epoch 失效可以清除。默认 service window 由 1 秒调整为 5 秒，并记录同一 context 在
+该窗口内发生的反向 residency 动作，用于识别 D2H/H2D 抖动。
+
+JOIN/CHILD/MESSAGE slack 由已组合 RCCG scenario 的 dependency-release offset 直接统计，不再复用包含
+HBM/PCIe 约束的 `future_feasibility_probability`。OTHER 或无法解析的 dependency release 贡献零 slack，
+因此不能产生预测性物理动作。
+
 ## 饱和负载
 
-底层 runner 和正式 P6 collection launcher 均支持 `--saturated-root-backlog`。`max_workflows` 表示冻结
-任务池大小，`concurrency` 表示 client in-flight root window，而不是 server GPU active set。完成一个
-root 后立即补入一个新 root。为覆盖“所有当前 root 都在等待工具但尚未结束”的情形，client window
-必须大于 JointPlan active set；H200 v4 建议 48 in-flight 对 32 active。多出的 request 在 server
-waiting/admission 侧提供候选，由 JointPlan 按 HBM 和 execution value 决定是否进入执行集合。
+底层 runner 和正式 P6 collection launcher 均支持 `--saturated-root-backlog`。该模式在等待任何
+workflow 完成前提交全部冻结 root，要求 `concurrency >= max_workflows`。例如 H200 v4 的 64-root
+workload 使用 64 个 client worker，而 server 仍由 32-request 上限与 JointPlan 控制 active set。这样
+不存在尚未提交的 client iterator backlog；多出的 request 已真实进入 server waiting/admission 侧。
 
 下一次性能 gate 应固定 H200 BF16 v4 profile（32 max-running、850K KV tokens），比较 predictor-off
 P5 observed policy 的旧收缩策略与 work-conserving replacement，报告 GPU-ready/running、prefill

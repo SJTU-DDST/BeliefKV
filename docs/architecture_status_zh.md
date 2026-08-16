@@ -1,6 +1,27 @@
 # BeliefKV 最新架构与实现状态
 
-更新日期：2026-08-14
+更新日期：2026-08-16
+
+## 2026-08-16：Replacement Liveness 与 64-Root Predictor-Off Smoke
+
+beneficiary replacement priority 不再在 admission ticket 签发时清除。ticket 只是进入 native admission
+检查的资格，prefix rematch、allocator、prefill token budget 或 generation 变化仍可能使请求未进入
+batch。priority 现在只在 beneficiary 获得首个真实 GPU service quantum、请求终止/取消，或
+request/context identity 失效时清除。
+
+`--saturated-root-backlog` 改为在等待任意 workflow 完成前提交全部冻结 root。64-root workload 使用
+64 个 client worker，server 仍由 `max_running_requests=32` 和 JointPlan 控制 active set。JOIN/CHILD/
+MESSAGE 的 causal slack 也不再复用 resource feasibility；它直接对 RCCG scenario 中 dependency-release
+时刻统计 `P(release > transfer_p95 + guard)`，OTHER/unresolved 质量按零 slack 保守处理。默认
+`resident_service_window_ms` 从 1 秒调整为 5 秒，并记录同一 context 的短时 D2H/H2D 反转。
+
+一次 development-only predictor-off H200 smoke 已实际提交 64/64 root：平均 28.15 running、68.50
+waiting，且没有 `queue > 0 && running = 0` 的 metrics sample；admission native batch 平均 1.62、最大
+15、无 native rejection。该轮最大 native KV pressure 仅 15.43%，因此没有策略性 transfer，也没有
+覆盖 beneficiary service 链。GPU 平均利用率仅 5.04%，说明消除隐藏 client backlog 仍不足以让该
+短时 agent workload 饱和。该结果只能关闭 root-submission/work-conserving 正确性项，不能关闭
+migration 或性能 gate。完整证据见
+`docs/experiments/beliefkv_p5_work_conserving_smoke64_2026-08-16_zh.md`。
 
 ## 2026-08-14：WaitBelief、Causal Slack 与 Work-Conserving JointPlan
 

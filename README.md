@@ -309,8 +309,9 @@ and migration. Run the official harness separately when measuring patch correctn
 ### 4b. Saturated root-backlog throughput workload
 
 吞吐实验应区分总 root pool、client in-flight window 与 server JointPlan active set。H200 v4 的
-JointPlan active window 为 32，下面保持 48 个 client workflow in-flight，使 16 个 root request 可在
-server waiting/admission 侧形成候选；某个 workflow 结束后再从尚未提交的 pool 补入下一个：
+JointPlan active window 为 32。`--saturated-root-backlog` 会在等待任意 workflow 完成之前提交全部
+冻结 root，因此 64-root workload 必须使用 64 个 client worker；server 再通过
+`max_running_requests=32` 和 JointPlan 控制物理 active set：
 
 ```bash
 conda run --no-capture-output -n beliefkv-agents \
@@ -318,7 +319,7 @@ conda run --no-capture-output -n beliefkv-agents \
   --mode autonomous \
   --workload-manifest /path/to/frozen_32_or_64_workflows.json \
   --max-workflows 64 \
-  --concurrency 48 \
+  --concurrency 64 \
   --saturated-root-backlog \
   --control-socket "$CONTROL_SOCKET" \
   --server-audit "$RUN_DIR/server/runtime_audit.jsonl" \
@@ -327,10 +328,10 @@ conda run --no-capture-output -n beliefkv-agents \
   --output "$RUN_DIR/workloads"
 ```
 
-正式 P6 launcher 同样支持 `--saturated-root-backlog`，并把 client in-flight window 和 initial
-unsubmitted backlog 写入 collection contract。`concurrency` 必须大于 server active set；否则所有
-in-flight workflow 同时 WAIT_TOOL/WAIT_CHILD 时，completion-refill 本身无法产生新 GPU work。性能
-A/B 必须固定 manifest、两个 window、到达策略和 runtime profile；不能使用无限 admission queue。
+正式 P6 launcher 同样支持 `--saturated-root-backlog`，并把 client in-flight window、root submission
+mode 和 initial unsubmitted backlog 写入 collection contract。该模式要求 `concurrency >=` 本轮所选
+root 数量，且 `initial_unsubmitted_root_backlog=0`；ticket 签发或 workflow 完成不是补充 root 的前置
+条件。性能 A/B 必须固定 manifest、两个 window、到达策略和 runtime profile。
 
 Important argument semantics:
 
