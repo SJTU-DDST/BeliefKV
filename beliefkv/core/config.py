@@ -104,6 +104,7 @@ class BeliefKVConfig:
     frontier_aware_retraction_shadow_enabled: bool = False
     frontier_aware_retraction_canary_limit: int = 0
     restore_obligation_max_active: int = 8
+    restore_obligation_running_retraction_reserve: int = 2
     restore_obligation_escalation_ms: float = 2000.0
     restore_obligation_max_blocked_ms: float = 30_000.0
     restore_lease_enabled: bool = True
@@ -415,6 +416,11 @@ class BeliefKVConfig:
             raise ValueError("unsupported workload subagent fan-out profile")
         if self.restore_obligation_max_active <= 0:
             raise ValueError("maximum active restore obligations must be positive")
+        if self.restore_obligation_running_retraction_reserve < 0:
+            raise ValueError(
+                "running-retraction restore obligation reserve must be "
+                "non-negative"
+            )
         if self.restore_lease_max_active <= 0:
             raise ValueError("maximum active restore leases must be positive")
         if self.restore_lease_max_bypass_admissions < 0:

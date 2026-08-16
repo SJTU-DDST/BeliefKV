@@ -1967,7 +1967,10 @@ class EmbeddedSGLangRuntime:
             None
         )
         self._restore_obligations = RestoreObligationIndex(
-            max_active=self.config.restore_obligation_max_active
+            max_active=self.config.restore_obligation_max_active,
+            running_retraction_reserve=(
+                self.config.restore_obligation_running_retraction_reserve
+            ),
         )
         self._restore_leases = RestoreLeaseIndex(
             max_active=self.config.restore_lease_max_active
@@ -4426,7 +4429,14 @@ class EmbeddedSGLangRuntime:
                         "restore_obligation_max_active",
                         8,
                     )
-                )
+                ),
+                running_retraction_reserve=int(
+                    getattr(
+                        getattr(self, "config", None),
+                        "restore_obligation_running_retraction_reserve",
+                        2,
+                    )
+                ),
             )
             self._restore_obligations = index
         if not hasattr(self, "_restore_obligation_counts"):
@@ -4944,6 +4954,12 @@ class EmbeddedSGLangRuntime:
     ) -> bool:
         lease = self._restore_lease_index().get(obligation.request_id)
         if lease is None or lease.state.terminal:
+            if (
+                obligation.native_admission_fallback
+                and obligation.cause
+                == RestoreObligationCause.ORDINARY_WAITING_PREFIX
+            ):
+                return True
             return not bool(getattr(self.config, "restore_lease_enabled", True))
         if lease.state == RestoreLeaseState.ADMISSION_COMMITTING:
             return True
@@ -5113,7 +5129,10 @@ class EmbeddedSGLangRuntime:
             if str(getattr(req, "rid", ""))
         }
         index = self._restore_obligation_index()
-        if not index.can_create(tuple(plan.request_ids)):
+        if not index.can_create(
+            tuple(plan.request_ids),
+            cause=RestoreObligationCause.RUNNING_RETRACTION,
+        ):
             return False
         for request_id in plan.request_ids:
             req = request_by_id.get(request_id)
@@ -5241,7 +5260,10 @@ class EmbeddedSGLangRuntime:
             return existing
         if not required_extent_ids:
             return None
-        if not index.can_create((request_id,)):
+        if not index.can_create(
+            (request_id,),
+            cause=RestoreObligationCause.ORDINARY_WAITING_PREFIX,
+        ):
             waiters = getattr(
                 self, "_ordinary_restore_capacity_waiters", None
             )
@@ -5262,6 +5284,9 @@ class EmbeddedSGLangRuntime:
                     context_id=metadata.context_id,
                     active_obligation_count=len(index.active()),
                     max_active=index.max_active,
+                    running_retraction_reserve=(
+                        index.running_retraction_reserve
+                    ),
                 )
             return None
 
@@ -5371,12 +5396,21 @@ class EmbeddedSGLangRuntime:
     def _overdue_restore_obligation(
         self, *, now_ms: float
     ) -> RestoreObligation | None:
+        """Return only overdue debt created by a BeliefKV retraction.
+
+        Ordinary waiting-prefix misses are native HiCache demand-load work. They
+        must remain locally prioritized, but they cannot freeze unrelated
+        admission: doing so turns one Host-capacity miss into a global queue
+        barrier.
+        """
+
         if getattr(self, "_restore_obligations", None) is None:
             return None
         return next(
             (
                 item
                 for item in self._restore_obligation_index().active()
+                if item.cause == RestoreObligationCause.RUNNING_RETRACTION
                 if now_ms - item.created_ts_ms
                 >= self.config.restore_obligation_escalation_ms
             ),
@@ -7068,11 +7102,17 @@ class EmbeddedSGLangRuntime:
         *,
         now_ms: float,
     ) -> bool:
-        """Reserve admission capacity, then use native HiCache load or prefill."""
+        """Hand restore admission to its lease or native PrefillAdder."""
 
         required_extent_count = len(obligation.required_extent_ids)
         restore_bytes = obligation.restore_bytes
-        if bool(getattr(self.config, "restore_lease_enabled", True)):
+        native_capacity_authority = (
+            obligation.cause == RestoreObligationCause.ORDINARY_WAITING_PREFIX
+        )
+        if (
+            bool(getattr(self.config, "restore_lease_enabled", True))
+            and not native_capacity_authority
+        ):
             lease = self._grant_restore_lease(
                 obligation,
                 h2d_bytes=0,
@@ -7102,6 +7142,12 @@ class EmbeddedSGLangRuntime:
             restore_bytes=restore_bytes,
             required_admission_bytes=obligation.required_admission_bytes,
             fallback="sglang_native_load_back_or_prefill",
+            capacity_authority=(
+                "sglang_prefill_adder"
+                if native_capacity_authority
+                else "beliefkv_restore_lease"
+            ),
+            allocator_reservation_created=not native_capacity_authority,
         )
         return True
 
@@ -7599,10 +7645,26 @@ class EmbeddedSGLangRuntime:
                 request_id=obligation.request_id,
                 wait_ms=wait_ms,
                 blocker_codes=list(obligation.blocker_codes),
-                action="freeze_normal_admission_and_wait_for_physical_state_change",
+                action=(
+                    "freeze_normal_admission_and_wait_for_physical_state_change"
+                    if obligation.cause
+                    == RestoreObligationCause.RUNNING_RETRACTION
+                    else "retain_local_debt_without_global_admission_barrier"
+                ),
             )
-            oldest = next(iter(self._restore_obligation_index().active()), None)
-            if oldest is not None and oldest.request_id == obligation.request_id:
+            oldest = next(
+                (
+                    item
+                    for item in self._restore_obligation_index().active()
+                    if item.cause == RestoreObligationCause.RUNNING_RETRACTION
+                ),
+                None,
+            )
+            if (
+                obligation.cause == RestoreObligationCause.RUNNING_RETRACTION
+                and oldest is not None
+                and oldest.request_id == obligation.request_id
+            ):
                 self._request_restore_drain(obligation, now_ms=now_ms)
 
     def _drive_restore_obligations(self, *, now_ms: float) -> None:
@@ -7674,6 +7736,23 @@ class EmbeddedSGLangRuntime:
                         wake_conditions=("safe_point_epoch_advanced",),
                     )
                     return
+                if (
+                    obligation.cause
+                    == RestoreObligationCause.ORDINARY_WAITING_PREFIX
+                ):
+                    if self._activate_native_restore_fallback(
+                        obligation, req, now_ms=now_ms
+                    ):
+                        return
+                    self._restart_physical_capture_epoch()
+                    self._block_restore_obligation(
+                        obligation,
+                        now_ms=now_ms,
+                        stamp=stamp,
+                        blocker_codes=("native_admission_fallback_failed",),
+                        wake_conditions=("safe_point_epoch_advanced",),
+                    )
+                    continue
                 if bool(getattr(self.config, "restore_lease_enabled", True)):
                     lease = self._grant_restore_lease(
                         obligation,
@@ -7958,6 +8037,39 @@ class EmbeddedSGLangRuntime:
                 for preview in previews
                 for blocker in preview.blockers
             }
+            if (
+                obligation.cause
+                == RestoreObligationCause.ORDINARY_WAITING_PREFIX
+            ):
+                if not self._begin_physical_transactional_commit(
+                    obligation.context_id
+                ):
+                    self._block_restore_obligation(
+                        obligation,
+                        now_ms=now_ms,
+                        stamp=stamp,
+                        blocker_codes=("native_ownership_readset_changed",),
+                        wake_conditions=("safe_point_epoch_advanced",),
+                    )
+                    return
+                if self._activate_native_restore_fallback(
+                    obligation, req, now_ms=now_ms
+                ):
+                    return
+                self._restart_physical_capture_epoch()
+                self._block_restore_obligation(
+                    obligation,
+                    now_ms=now_ms,
+                    stamp=stamp,
+                    blocker_codes=tuple(
+                        sorted(
+                            h2d_blockers
+                            or {"native_admission_fallback_failed"}
+                        )
+                    ),
+                    wake_conditions=("safe_point_epoch_advanced",),
+                )
+                continue
             capacity_previews = tuple(
                 preview
                 for preview in previews
@@ -7976,50 +8088,6 @@ class EmbeddedSGLangRuntime:
                 )
             )
             if not capacity_previews:
-                if (
-                    not previews
-                    and obligation.cause
-                    == RestoreObligationCause.ORDINARY_WAITING_PREFIX
-                ):
-                    if not self._begin_physical_transactional_commit(
-                        obligation.context_id
-                    ):
-                        self._block_restore_obligation(
-                            obligation,
-                            now_ms=now_ms,
-                            stamp=stamp,
-                            blocker_codes=(
-                                "native_ownership_readset_changed",
-                            ),
-                            wake_conditions=("safe_point_epoch_advanced",),
-                        )
-                        return
-                    ready = self._activate_native_restore_fallback(
-                        obligation,
-                        req,
-                        now_ms=now_ms,
-                    )
-                    if ready:
-                        return
-                    self._restart_physical_capture_epoch()
-                    queued, blockers, wake_conditions = (
-                        self._recover_failed_restore_lease_grant(
-                            obligation,
-                            now_ms=now_ms,
-                            attempt_stamp=stamp,
-                            h2d_bytes=0,
-                        )
-                    )
-                    if queued:
-                        return
-                    self._block_restore_obligation(
-                        obligation,
-                        now_ms=now_ms,
-                        stamp=stamp,
-                        blocker_codes=blockers,
-                        wake_conditions=wake_conditions,
-                    )
-                    return
                 self._block_restore_obligation(
                     obligation,
                     now_ms=now_ms,
@@ -11721,6 +11789,11 @@ class EmbeddedSGLangRuntime:
             obligation.workflow_id
             for obligation in self._restore_obligation_index().active()
             if obligation.state == RestoreObligationState.TICKET_READY
+            and not (
+                obligation.cause
+                == RestoreObligationCause.ORDINARY_WAITING_PREFIX
+                and obligation.native_admission_fallback
+            )
         }
         ready_resident_bytes: dict[str, int] = {}
         for workflow_id, context_ids in ready_contexts.items():
@@ -11993,6 +12066,11 @@ class EmbeddedSGLangRuntime:
             obligation.request_id
             for obligation in self._restore_obligation_index().active()
             if obligation.state == RestoreObligationState.TICKET_READY
+            and not (
+                obligation.cause
+                == RestoreObligationCause.ORDINARY_WAITING_PREFIX
+                and obligation.native_admission_fallback
+            )
             and obligation.request_id in entries
             and entries[obligation.request_id].state
             == AdmissionSideState.VISIBLE_PENDING

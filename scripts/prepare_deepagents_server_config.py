@@ -475,6 +475,7 @@ def main() -> int:
             args.frontier_retraction_canary_limit
         ),
         "restore_obligation_max_active": 8,
+        "restore_obligation_running_retraction_reserve": 2,
         "restore_obligation_escalation_ms": 2000.0,
         "restore_obligation_max_blocked_ms": 30_000.0,
         "restore_lease_enabled": True,

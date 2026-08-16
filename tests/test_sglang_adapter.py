@@ -6420,7 +6420,7 @@ class SGLangBackendTest(unittest.TestCase):
         self.assertEqual(entry.state, AdmissionSideState.VISIBLE_PENDING)
         self.assertEqual(
             runtime._restore_ready_ticket_priority({"waiting": entry}),
-            ("waiting",),
+            (),
         )
 
     def test_ordinary_restore_rebinds_current_request_path(self):
@@ -6517,7 +6517,9 @@ class SGLangBackendTest(unittest.TestCase):
             )
         )
 
-    def test_ordinary_restore_uses_native_fallback_when_preview_is_missing(self):
+    def test_ordinary_restore_uses_native_fallback_when_explicit_h2d_is_blocked(
+        self,
+    ):
         config = BeliefKVConfig(
             hbm_capacity_bytes=2000,
             host_capacity_bytes=4000,
@@ -6582,6 +6584,14 @@ class SGLangBackendTest(unittest.TestCase):
         runtime._request_submitted_ts_by_id = {"waiting": 10.0}
         runtime._retraction_cooldown_until_by_request = {}
         runtime._pending_h2d_contexts = set()
+        runtime._restore_h2d_previews = lambda *_args, **_kwargs: (
+            SimpleNamespace(
+                eligible=False,
+                blockers=(
+                    SimpleNamespace(code=TransferBlockerCode.DEVICE_CAPACITY),
+                ),
+            ),
+        )
         controller.register_visible_request(
             AdmissionRequest(
                 "waiting", "wf", "inv", "ctx", 0, 10.0, 1, 1, 10
@@ -6595,11 +6605,17 @@ class SGLangBackendTest(unittest.TestCase):
         lease = runtime._restore_lease_index().get("waiting")
         self.assertTrue(obligation.native_admission_fallback)
         self.assertEqual(obligation.state, RestoreObligationState.TICKET_READY)
-        self.assertEqual(lease.state, RestoreLeaseState.RESTORED_RESERVED)
+        self.assertIsNone(lease)
         self.assertIsNone(controller.command_queue.pop())
         self.assertEqual(
             controller.visible_admission.get("waiting").state,
             AdmissionSideState.VISIBLE_PENDING,
+        )
+        self.assertEqual(
+            runtime._restore_ready_ticket_priority(
+                {"waiting": controller.visible_admission.get("waiting")}
+            ),
+            (),
         )
 
         runtime._sync_visible_gate_state("waiting", metadata, req=request)
@@ -6615,7 +6631,7 @@ class SGLangBackendTest(unittest.TestCase):
             now_ms=1002.1,
             native_result="NO_TOKEN",
         )
-        self.assertEqual(lease.state, RestoreLeaseState.RESTORED_RESERVED)
+        self.assertIsNone(runtime._restore_lease_index().get("waiting"))
         self.assertTrue(
             any(
                 event == "restore_obligation_native_fallback_ready"
@@ -6629,6 +6645,53 @@ class SGLangBackendTest(unittest.TestCase):
         )
         self.assertEqual(fallback_event["required_extent_count"], 1)
         self.assertEqual(fallback_event["restore_bytes"], 200)
+        self.assertEqual(
+            fallback_event["capacity_authority"], "sglang_prefill_adder"
+        )
+        self.assertFalse(fallback_event["allocator_reservation_created"])
+
+    def test_ordinary_restore_debt_never_becomes_global_barrier(self):
+        config = BeliefKVConfig(
+            restore_obligation_escalation_ms=1000.0,
+        )
+        runtime = EmbeddedSGLangRuntime.__new__(EmbeddedSGLangRuntime)
+        runtime.config = config
+
+        ordinary = runtime._restore_obligation_index().create(
+            request_id="ordinary",
+            workflow_id="wf-ordinary",
+            invocation_id="inv-ordinary",
+            context_id="ctx-ordinary",
+            context_epoch=0,
+            source_retraction_transaction_id="ordinary-waiting:ordinary",
+            source_joint_plan_id="joint-ordinary",
+            created_ts_ms=0.0,
+            path_extent_ids=(),
+            cause=RestoreObligationCause.ORDINARY_WAITING_PREFIX,
+        )
+
+        self.assertIsNone(
+            runtime._overdue_restore_obligation(now_ms=2000.0)
+        )
+
+        retracted = runtime._restore_obligation_index().create(
+            request_id="retracted",
+            workflow_id="wf-retracted",
+            invocation_id="inv-retracted",
+            context_id="ctx-retracted",
+            context_epoch=0,
+            source_retraction_transaction_id="retraction-1",
+            source_joint_plan_id="joint-retracted",
+            created_ts_ms=100.0,
+            path_extent_ids=(),
+        )
+        self.assertIs(
+            runtime._overdue_restore_obligation(now_ms=2000.0),
+            retracted,
+        )
+        self.assertEqual(
+            ordinary.cause, RestoreObligationCause.ORDINARY_WAITING_PREFIX
+        )
 
     def test_ticket_ready_restore_debt_preempts_stale_joint_order(self):
         config = BeliefKVConfig(
@@ -6765,6 +6828,29 @@ class SGLangBackendTest(unittest.TestCase):
         self.assertEqual(
             runtime._current_online_joint_view.immediate_request_ids,
             ("oldest", "newer"),
+        )
+
+        runtime.end_prefill_epoch(())
+        obligation.use_native_admission_fallback(now_ms=101.0)
+        runtime.begin_prefill_epoch(
+            requests,
+            SimpleNamespace(
+                rem_input_tokens=10,
+                rem_chunk_tokens=None,
+                rem_total_tokens=100,
+            ),
+            max_requests=2,
+        )
+
+        self.assertEqual(
+            [
+                ticket.request_id
+                for ticket in runtime._current_ticket_epoch.tickets
+            ],
+            ["newer"],
+        )
+        self.assertNotIn(
+            "restore_liveness", runtime._current_ticket_epoch.source
         )
 
     def test_batch_time_is_charged_proportionally_to_root_workflows(self):

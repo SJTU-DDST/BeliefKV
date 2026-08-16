@@ -108,6 +108,50 @@ def test_restore_obligation_index_fails_closed_at_capacity_or_duplicate():
     assert not index.can_create(("request",))
 
 
+def test_running_retraction_reserve_survives_ordinary_capacity_exhaustion():
+    index = RestoreObligationIndex(
+        max_active=8,
+        running_retraction_reserve=2,
+    )
+    for sequence in range(8):
+        index.create(
+            request_id=f"ordinary-{sequence}",
+            workflow_id=f"workflow-{sequence}",
+            invocation_id=f"invocation-{sequence}",
+            context_id=f"context-{sequence}",
+            context_epoch=0,
+            source_retraction_transaction_id=f"ordinary:{sequence}",
+            source_joint_plan_id=f"joint-plan:{sequence}",
+            created_ts_ms=float(sequence),
+            path_extent_ids=(),
+            cause=RestoreObligationCause.ORDINARY_WAITING_PREFIX,
+        )
+
+    assert not index.can_create(
+        ("ordinary-overflow",),
+        cause=RestoreObligationCause.ORDINARY_WAITING_PREFIX,
+    )
+    assert index.can_create(
+        ("retracted-0", "retracted-1"),
+        cause=RestoreObligationCause.RUNNING_RETRACTION,
+    )
+    for sequence in range(2):
+        index.create(
+            request_id=f"retracted-{sequence}",
+            workflow_id=f"retracted-workflow-{sequence}",
+            invocation_id=f"retracted-invocation-{sequence}",
+            context_id=f"retracted-context-{sequence}",
+            context_epoch=0,
+            source_retraction_transaction_id=f"retraction:{sequence}",
+            source_joint_plan_id=f"joint-retraction:{sequence}",
+            created_ts_ms=10.0 + sequence,
+            path_extent_ids=(),
+        )
+
+    assert len(index.active()) == 10
+    assert not index.can_create(("retracted-overflow",))
+
+
 def test_blocked_restore_retries_only_after_state_stamp_changes():
     index = RestoreObligationIndex(max_active=1)
     obligation = _create(index)

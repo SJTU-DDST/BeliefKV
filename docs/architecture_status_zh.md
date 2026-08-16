@@ -2,6 +2,28 @@
 
 更新日期：2026-08-16
 
+## 2026-08-16：正式 Treatment 暴露 Ordinary Restore 全局 Barrier
+
+一次冻结配置的 64-root predictor-off P5 treatment 已运行约 200 分钟。物理 PageIndex KV 平均占用
+80.99%，71.47% 时间高于 80%，最终 HBM/Host 分别约为 99.47%/99.99%；因此该 workload 已形成物理
+KV 高压。`sglang:num_used_tokens` 最大仅 55.99% 是因为该指标扣除了 Radix evictable cache，不能继续
+称为全部 resident pressure。
+
+本轮未通过 liveness gate：40 笔 restore obligation 全部来自 native HiCache 的
+`ORDINARY_WAITING_PREFIX`，其中最老债务因 Host 已满无法 funding 后被错误提升为全局
+`restore_debt_barrier`。随后 48 个 waiting request 被阻塞，running 从 14 降到 4，GPU 平均利用率仅
+2.46%。29 笔 debt 恢复并获得 service，11 笔在受控停止时取消；没有形成 semantic
+victim-to-beneficiary replacement，因此不运行 baseline，也不把该轮计入 A/B。
+
+restore 语义现已拆分：BeliefKV 主动 `RUNNING_RETRACTION` 继续保留 durable lease、service grace 和
+全局 overdue barrier；普通 waiting-prefix miss 在显式 H2D 不可立即满足时退回 SGLang PrefillAdder
+和 native demand-load，不再重复申请 allocator lease，也不能冻结无关 admission。
+
+审阅后新增独立容量与优先级隔离：restore_obligation_max_active=8 只限制普通槽位，另有 2 个槽位仅供 RUNNING_RETRACTION；ordinary native fallback 不再进入 restore-ready priority 或 dynamic working-set mandatory，NO_TOKEN 后恢复普通 native waiting 排序。
+
+相关回归为 162 passed、6 subtests passed；两个需要完整 CUDA toolkit 的导入测试未计入。完整证据见
+`docs/experiments/beliefkv_p5_work_conserving_formal_treatment_2026-08-16_zh.md`。
+
 ## 2026-08-16：Replacement Liveness 与 64-Root Predictor-Off Smoke
 
 beneficiary replacement priority 不再在 admission ticket 签发时清除。ticket 只是进入 native admission
@@ -17,10 +39,10 @@ MESSAGE 的 causal slack 也不再复用 resource feasibility；它直接对 RCC
 
 一次 development-only predictor-off H200 smoke 已实际提交 64/64 root：平均 28.15 running、68.50
 waiting，且没有 `queue > 0 && running = 0` 的 metrics sample；admission native batch 平均 1.62、最大
-15、无 native rejection。该轮最大 native KV pressure 仅 15.43%，因此没有策略性 transfer，也没有
-覆盖 beneficiary service 链。GPU 平均利用率仅 5.04%，说明消除隐藏 client backlog 仍不足以让该
-短时 agent workload 饱和。该结果只能关闭 root-submission/work-conserving 正确性项，不能关闭
-migration 或性能 gate。完整证据见
+15、无 native rejection。该轮最大 SGLang non-evictable pressure 为 15.43%，最大 physical HBM
+pressure 为 30.97%，因此没有策略性 transfer，也没有覆盖 beneficiary service 链。GPU 平均利用率仅
+5.04%，说明消除隐藏 client backlog 仍不足以让该短时 agent workload 饱和。该结果只能关闭
+root-submission/work-conserving 正确性项，不能关闭 migration 或性能 gate。完整证据见
 `docs/experiments/beliefkv_p5_work_conserving_smoke64_2026-08-16_zh.md`。
 
 ## 2026-08-14：WaitBelief、Causal Slack 与 Work-Conserving JointPlan

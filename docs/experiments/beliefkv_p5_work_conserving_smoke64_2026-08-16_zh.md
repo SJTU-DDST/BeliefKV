@@ -39,7 +39,8 @@ SGLang metrics 共 1,102 个样本：平均 running 28.15、平均 waiting 68.50
 
 ## KV 压力与迁移
 
-最大 SGLang resident pressure 为 15.43%，最大 observed JointPlan HBM pressure 为 30.97%；239 次
+最大 SGLang non-evictable pressure 为 15.43%，最大 observed JointPlan physical HBM pressure 为
+30.97%；239 次
 dynamic-working-set 变化全部处于 `gpu_fill`，从未开启 pressure action。因此：
 
 - transfer telemetry：0；
@@ -49,7 +50,9 @@ dynamic-working-set 变化全部处于 `gpu_fill`，从未开启 pressure action
 - retraction 只产生 low-pressure suppression，没有事务动作。
 
 所以审阅要求的 `COMMIT_CPU -> ACK -> beneficiary first service` 没有被该 trace 覆盖。原因不是
-beneficiary lifecycle 再次失败，而是 850K pool 对八分钟内形成的 unique KV working set 过大。
+beneficiary lifecycle 再次失败，而是八分钟内 physical KV pressure 仅达到 30.97%，未进入 80%
+replacement watermark。`sglang:num_used_tokens` 扣除了 Radix evictable cache，不能解释为全部
+GPU-resident KV。
 
 ## GPU 利用率
 

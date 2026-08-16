@@ -744,14 +744,37 @@ class RestoreLeaseIndex:
 class RestoreObligationIndex:
     """Durable request-indexed restore debts that survive JointPlan invalidation."""
 
-    def __init__(self, *, max_active: int) -> None:
+    def __init__(
+        self,
+        *,
+        max_active: int,
+        running_retraction_reserve: int = 0,
+    ) -> None:
         if max_active <= 0:
             raise ValueError("max_active restore obligations must be positive")
+        if running_retraction_reserve < 0:
+            raise ValueError(
+                "running-retraction obligation reserve must be non-negative"
+            )
         self.max_active = max_active
+        self.running_retraction_reserve = running_retraction_reserve
         self._by_request: dict[str, RestoreObligation] = {}
         self._sequence = 0
 
-    def can_create(self, request_ids: tuple[str, ...]) -> bool:
+
+    @property
+    def max_running_retraction_active(self) -> int:
+        return self.max_active + self.running_retraction_reserve
+
+    def can_create(
+        self,
+        request_ids: tuple[str, ...],
+        *,
+        cause: RestoreObligationCause = (
+            RestoreObligationCause.RUNNING_RETRACTION
+        ),
+    ) -> bool:
+        cause = RestoreObligationCause(cause)
         unique = set(request_ids)
         if len(unique) != len(request_ids):
             return False
@@ -761,7 +784,10 @@ class RestoreObligationIndex:
             for request_id in unique
         ):
             return False
-        return len(self.active()) + len(unique) <= self.max_active
+        capacity = self.max_active
+        if cause == RestoreObligationCause.RUNNING_RETRACTION:
+            capacity = self.max_running_retraction_active
+        return len(self.active()) + len(unique) <= capacity
 
     def create(
         self,
@@ -779,7 +805,8 @@ class RestoreObligationIndex:
             RestoreObligationCause.RUNNING_RETRACTION
         ),
     ) -> RestoreObligation:
-        if not self.can_create((request_id,)):
+        cause = RestoreObligationCause(cause)
+        if not self.can_create((request_id,), cause=cause):
             raise ValueError(f"restore obligation capacity conflict: {request_id}")
         self._sequence += 1
         item = RestoreObligation(
