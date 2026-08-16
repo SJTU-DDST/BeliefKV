@@ -397,6 +397,8 @@ class DynamicWorkingSetCandidate:
     action_unlock_value: float
     oldest_wait_ms: float = 0.0
     mandatory: bool = False
+    startup_bytes: int = 0
+    resident_ready_bytes: int = 0
 
     def __post_init__(self) -> None:
         if not self.workflow_id:
@@ -410,6 +412,14 @@ class DynamicWorkingSetCandidate:
             raise ValueError("action unlock value must be finite and non-negative")
         if not math.isfinite(self.oldest_wait_ms) or self.oldest_wait_ms < 0:
             raise ValueError("working-set wait must be finite and non-negative")
+        if min(self.startup_bytes, self.resident_ready_bytes) < 0:
+            raise ValueError("working-set byte counters must be non-negative")
+
+    @property
+    def startup_bytes_per_ready(self) -> float:
+        if self.gpu_ready_count <= 0:
+            return math.inf
+        return self.startup_bytes / self.gpu_ready_count
 
 
 @dataclass(frozen=True)
@@ -438,12 +448,11 @@ class DynamicWorkingSetDecision:
 
 
 class DynamicWorkingSetScheduler:
-    """Resize the workflow admission set while preserving an outer fair order.
+    """Choose a throughput-first GPU working set with a starvation floor.
 
-    Low pressure is work-conserving: workflows are admitted until enough GPU-ready
-    requests exist to fill the native request slots. Under sustained HBM pressure,
-    the target contracts smoothly and causal unlock value breaks fairness ties.
-    Destructive actions use the same hysteretic pressure state.
+    HBM pressure enables replacement/reclaim actions; it never reduces the target
+    number of GPU-ready requests. Residency and admission therefore share one
+    work-conserving objective instead of independently contracting the active set.
     """
 
     def __init__(
@@ -454,6 +463,7 @@ class DynamicWorkingSetScheduler:
         pressure_exit_ratio: float,
         minimum_ready_requests: int,
         minimum_hold_epochs: int,
+        starvation_age_ms: float = 30_000.0,
     ) -> None:
         if max_workflows <= 0:
             raise ValueError("maximum working-set workflows must be positive")
@@ -463,11 +473,14 @@ class DynamicWorkingSetScheduler:
             raise ValueError("minimum ready requests must be positive")
         if minimum_hold_epochs < 0:
             raise ValueError("minimum hold epochs must be non-negative")
+        if not math.isfinite(starvation_age_ms) or starvation_age_ms <= 0:
+            raise ValueError("starvation age must be finite and positive")
         self.max_workflows = max_workflows
         self.pressure_enter_ratio = pressure_enter_ratio
         self.pressure_exit_ratio = pressure_exit_ratio
         self.minimum_ready_requests = minimum_ready_requests
         self.minimum_hold_epochs = minimum_hold_epochs
+        self.starvation_age_ms = starvation_age_ms
         self._pressure_mode = False
         self._last_transition_epoch = 0
         self._initialized = False
@@ -514,42 +527,21 @@ class DynamicWorkingSetScheduler:
             sum(item.gpu_ready_count for item in candidates),
             max(0, native_request_slots),
         )
-        if self._pressure_mode and slots:
-            pressure_span = max(1e-9, 1.0 - self.pressure_enter_ratio)
-            residual_fraction = max(
-                0.0,
-                min(1.0, (1.0 - pressure) / pressure_span),
-            )
-            target = max(
-                self.minimum_ready_requests,
-                math.ceil(slots * residual_fraction),
-            )
-            target = min(slots, target)
-            ordered = sorted(
-                candidates,
-                key=lambda item: (
-                    not item.mandatory,
-                    item.fair_rank - min(4.0, item.action_unlock_value),
-                    item.fair_rank,
-                    -item.action_unlock_value,
-                    -item.oldest_wait_ms,
-                    item.workflow_id,
-                ),
-            )
-            mode = "hbm_pressure"
-        else:
-            target = slots
-            ordered = sorted(
-                candidates,
-                key=lambda item: (
-                    not item.mandatory,
-                    item.fair_rank,
-                    -item.action_unlock_value,
-                    -item.oldest_wait_ms,
-                    item.workflow_id,
-                ),
-            )
-            mode = "gpu_fill"
+        target = slots
+        ordered = sorted(
+            candidates,
+            key=lambda item: (
+                not item.mandatory,
+                item.oldest_wait_ms < self.starvation_age_ms,
+                -item.resident_ready_bytes,
+                item.startup_bytes_per_ready,
+                -item.action_unlock_value,
+                -item.gpu_ready_count,
+                item.fair_rank,
+                item.workflow_id,
+            ),
+        )
+        mode = "hbm_pressure_replacement" if self._pressure_mode else "gpu_fill"
 
         selected: list[str] = []
         selected_ready = 0

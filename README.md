@@ -300,12 +300,37 @@ conda run --no-capture-output -n beliefkv-agents \
   --min-kv-pool-tokens 163840
 ```
 
-This optional workload uses real SWE-bench inputs, persistent multi-turn peers, runtime
-subagent selection within a required range, tool waits, join/reactivation, and
+This optional peer workload uses real SWE-bench inputs, persistent multi-turn peers,
+runtime subagent selection within a required range, tool waits, join/reactivation, and
 per-workflow Docker workspaces with networking disabled. It does not require
 the SWE-bench harness because this run measures load, scheduling, KV lifecycle,
-and migration. Run the official harness separately when measuring patch
-correctness.
+and migration. Run the official harness separately when measuring patch correctness.
+
+### 4b. Saturated root-backlog throughput workload
+
+吞吐实验应区分总 root pool、client in-flight window 与 server JointPlan active set。H200 v4 的
+JointPlan active window 为 32，下面保持 48 个 client workflow in-flight，使 16 个 root request 可在
+server waiting/admission 侧形成候选；某个 workflow 结束后再从尚未提交的 pool 补入下一个：
+
+```bash
+conda run --no-capture-output -n beliefkv-agents \
+  python scripts/run_deepagents_swebench.py \
+  --mode autonomous \
+  --workload-manifest /path/to/frozen_32_or_64_workflows.json \
+  --max-workflows 64 \
+  --concurrency 48 \
+  --saturated-root-backlog \
+  --control-socket "$CONTROL_SOCKET" \
+  --server-audit "$RUN_DIR/server/runtime_audit.jsonl" \
+  --server-events "$RUN_DIR/server/runtime_events.sglang.jsonl" \
+  --server-log "$RUN_DIR/server/server.log" \
+  --output "$RUN_DIR/workloads"
+```
+
+正式 P6 launcher 同样支持 `--saturated-root-backlog`，并把 client in-flight window 和 initial
+unsubmitted backlog 写入 collection contract。`concurrency` 必须大于 server active set；否则所有
+in-flight workflow 同时 WAIT_TOOL/WAIT_CHILD 时，completion-refill 本身无法产生新 GPU work。性能
+A/B 必须固定 manifest、两个 window、到达策略和 runtime profile；不能使用无限 admission queue。
 
 Important argument semantics:
 

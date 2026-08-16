@@ -11,7 +11,7 @@ import signal
 import threading
 import time
 from statistics import median
-from collections import Counter, deque
+from collections import Counter, defaultdict, deque
 from collections.abc import Mapping
 from dataclasses import asdict, dataclass, field, replace
 from pathlib import Path
@@ -62,6 +62,7 @@ from beliefkv.policy.online_joint import (
     append_committed_action_slice,
     compile_bounded_seed_epoch,
     compile_online_joint_view,
+    derive_action_groups,
     extend_joint_epoch_admission,
 )
 from beliefkv.policy.predictive_joint import PredictiveActionKind
@@ -438,6 +439,18 @@ class _OnlineJointResidencyTransaction:
     actual_bytes: int = 0
     failure_reason: str | None = None
     predictive_intent_id: str | None = None
+    beneficiary_request_id: str | None = None
+    required_reclaim_bytes: int = 0
+
+
+@dataclass(frozen=True)
+class _ReplacementBeneficiaryPriority:
+    request_id: str
+    context_id: str
+    context_epoch: int
+    created_ts_ms: float
+    baseline_completed_service_count: int
+    source_transaction_id: str
 
 
 @dataclass(frozen=True)
@@ -1914,6 +1927,9 @@ class EmbeddedSGLangRuntime:
         self._pending_selective_retraction_ids: set[str] = set()
         self._retracted_engine_request_ids: set[str] = set()
         self._retraction_priority_request_ids: tuple[str, ...] = ()
+        self._replacement_priorities: dict[
+            str, _ReplacementBeneficiaryPriority
+        ] = {}
         self._running_retraction_transactions: deque[
             _RunningRetractionTransaction
         ] = deque(maxlen=65_536)
@@ -2168,6 +2184,9 @@ class EmbeddedSGLangRuntime:
         self._online_joint_last_residency_action: dict[
             str, tuple[ResidencyAction, float]
         ] = {}
+        self._online_joint_last_context_residency_action: dict[
+            str, tuple[ResidencyAction, float]
+        ] = {}
         self._online_joint_hysteresis_audit: set[tuple[str, str]] = set()
         self._last_joint_detailed_audit_ms: float | None = None
         self._last_joint_detailed_signature: tuple[object, ...] | None = None
@@ -2254,6 +2273,9 @@ class EmbeddedSGLangRuntime:
                     ),
                     max_plan_age_ms=self.config.max_joint_plan_age_ms,
                     residency_hysteresis_ms=self.config.residency_hysteresis_ms,
+                    resident_service_window_ms=(
+                        self.config.resident_service_window_ms
+                    ),
                 )
             )
             if self.config.predictive_risk_shadow_enabled:
@@ -2274,6 +2296,9 @@ class EmbeddedSGLangRuntime:
                     ),
                     minimum_calibration_coverage=(
                         self.config.predictive_risk_min_calibration_coverage
+                    ),
+                    minimum_causal_slack_probability=(
+                        self.config.predictive_risk_min_causal_slack_probability
                     ),
                     kv_bytes_per_token=self.config.kv_bytes_per_token,
                     max_full_prefetch_hbm_ratio=(
@@ -3492,6 +3517,12 @@ class EmbeddedSGLangRuntime:
                 ),
                 unresolved_residency_count=sum(
                     item.stage not in terminal_stages for item in residency_history
+                ),
+                outstanding_replacement_priority_count=len(
+                    getattr(self, "_replacement_priorities", {})
+                ),
+                outstanding_replacement_priority_request_ids=sorted(
+                    getattr(self, "_replacement_priorities", {})
                 ),
                 pending_residency_transaction_id=(
                     pending_residency.transaction_id
@@ -9167,6 +9198,9 @@ class EmbeddedSGLangRuntime:
                 remaining_decode_tokens_p50=(
                     shadow_event.remaining_decode_tokens_p50
                 ),
+                wait_kind=shadow_event.wait_kind,
+                tool_wait_ms_p50=shadow_event.tool_wait_ms_p50,
+                tool_wait_survival=dict(shadow_event.tool_wait_survival),
                 remaining_external_wait_ms_p50=(
                     shadow_event.remaining_external_wait_ms_p50
                 ),
@@ -9870,6 +9904,11 @@ class EmbeddedSGLangRuntime:
                     in getattr(self, "_execution_timeout_request_ids", set())
                     else "request_aborted"
                 )
+                self._release_replacement_priority(
+                    request_id,
+                    now_ms=float(getattr(self, "_now_ms", lambda: 0.0)()),
+                    reason=terminal_reason,
+                )
                 self._finish_restore_obligation(
                     request_id,
                     RestoreObligationState.CANCELLED,
@@ -9941,6 +9980,11 @@ class EmbeddedSGLangRuntime:
             if metadata is None:
                 continue
             if self._metadata_scope_is_terminal(metadata):
+                self._release_replacement_priority(
+                    str(req.rid),
+                    now_ms=now_ms,
+                    reason="request_scope_terminal",
+                )
                 self.controller.visible_admission.cancel(str(req.rid))
                 self.controller.admission.cancel(req.rid)
                 self._terminal_cancelled_request_ids.add(req.rid)
@@ -10349,6 +10393,21 @@ class EmbeddedSGLangRuntime:
                     ts_ms=now_ms,
                     phase=phase,
                 )
+                record = getattr(self, "_replacement_priorities", {}).get(
+                    request_id
+                )
+                progress = ledger.progress_record(request_id)
+                if (
+                    record is not None
+                    and progress is not None
+                    and progress.completed_service_count
+                    > record.baseline_completed_service_count
+                ):
+                    self._release_replacement_priority(
+                        request_id,
+                        now_ms=now_ms,
+                        reason="gpu_service_completed",
+                    )
             except Exception as error:
                 self._record_lock_service_observer_error(
                     error,
@@ -10430,6 +10489,145 @@ class EmbeddedSGLangRuntime:
             self.controller.fairness.charge_service(
                 workflow_id, elapsed_ms * count / total_reqs
             )
+
+    def _release_replacement_priority(
+        self,
+        request_id: str,
+        *,
+        now_ms: float,
+        reason: str,
+    ) -> bool:
+        priorities = getattr(self, "_replacement_priorities", None)
+        if not priorities:
+            return False
+        record = priorities.pop(request_id, None)
+        if record is None:
+            return False
+        self._online_joint_counts[f"replacement_priority_released:{reason}"] += 1
+        self.audit.emit(
+            "replacement_beneficiary_priority_released",
+            now_ms,
+            request_id=request_id,
+            context_id=record.context_id,
+            context_epoch=record.context_epoch,
+            source_transaction_id=record.source_transaction_id,
+            baseline_completed_service_count=(
+                record.baseline_completed_service_count
+            ),
+            reason=reason,
+        )
+        return True
+
+    def _register_replacement_priority(
+        self,
+        transaction: _OnlineJointResidencyTransaction,
+        *,
+        now_ms: float,
+    ) -> bool:
+        request_id = transaction.beneficiary_request_id
+        if request_id is None:
+            return False
+        metadata = getattr(self, "_request_metadata_by_id", {}).get(request_id)
+        if metadata is None or self._metadata_scope_is_terminal(metadata):
+            self._online_joint_counts[
+                "replacement_priority_registration_invalid"
+            ] += 1
+            self.audit.emit(
+                "replacement_beneficiary_priority_rejected",
+                now_ms,
+                request_id=request_id,
+                source_transaction_id=transaction.transaction_id,
+                reason=(
+                    "request_identity_missing"
+                    if metadata is None
+                    else "request_scope_terminal"
+                ),
+            )
+            return False
+        ledger = getattr(self, "_lock_service_ledger", None)
+        progress = (
+            ledger.progress_record(request_id) if ledger is not None else None
+        )
+        record = _ReplacementBeneficiaryPriority(
+            request_id=request_id,
+            context_id=metadata.context_id,
+            context_epoch=metadata.context_epoch,
+            created_ts_ms=now_ms,
+            baseline_completed_service_count=(
+                progress.completed_service_count if progress is not None else 0
+            ),
+            source_transaction_id=transaction.transaction_id,
+        )
+        priorities = getattr(self, "_replacement_priorities", None)
+        if priorities is None:
+            priorities = {}
+            self._replacement_priorities = priorities
+        priorities[request_id] = record
+        self._online_joint_counts["replacement_priority_registered"] += 1
+        self.audit.emit(
+            "replacement_beneficiary_priority_registered",
+            now_ms,
+            request_id=request_id,
+            context_id=record.context_id,
+            context_epoch=record.context_epoch,
+            source_transaction_id=record.source_transaction_id,
+            baseline_completed_service_count=(
+                record.baseline_completed_service_count
+            ),
+        )
+        return True
+
+    def _refresh_replacement_priorities(
+        self,
+        entries: Mapping[str, Any],
+        *,
+        now_ms: float,
+    ) -> tuple[str, ...]:
+        priorities = getattr(self, "_replacement_priorities", {})
+        if not priorities:
+            return ()
+        metadata_by_id = getattr(self, "_request_metadata_by_id", {})
+        ledger = getattr(self, "_lock_service_ledger", None)
+        visible: list[str] = []
+        for request_id, record in tuple(priorities.items()):
+            metadata = metadata_by_id.get(request_id)
+            if metadata is None:
+                self._release_replacement_priority(
+                    request_id, now_ms=now_ms, reason="request_identity_missing"
+                )
+                continue
+            if (
+                metadata.context_id != record.context_id
+                or metadata.context_epoch != record.context_epoch
+            ):
+                self._release_replacement_priority(
+                    request_id, now_ms=now_ms, reason="request_identity_changed"
+                )
+                continue
+            if self._metadata_scope_is_terminal(metadata):
+                self._release_replacement_priority(
+                    request_id, now_ms=now_ms, reason="request_scope_terminal"
+                )
+                continue
+            progress = (
+                ledger.progress_record(request_id) if ledger is not None else None
+            )
+            if (
+                progress is not None
+                and progress.completed_service_count
+                > record.baseline_completed_service_count
+            ):
+                self._release_replacement_priority(
+                    request_id, now_ms=now_ms, reason="gpu_service_completed"
+                )
+                continue
+            entry = entries.get(request_id)
+            if (
+                entry is not None
+                and entry.state == AdmissionSideState.VISIBLE_PENDING
+            ):
+                visible.append(request_id)
+        return tuple(visible)
 
     def begin_prefill_epoch(
         self,
@@ -10680,7 +10878,6 @@ class EmbeddedSGLangRuntime:
                     if request_id not in retained
                 )
                 if self.config.dynamic_working_set_enabled
-                and not working_set.pressure_actions_enabled
                 else ()
             )
             ordered_request_ids = retained
@@ -10858,8 +11055,18 @@ class EmbeddedSGLangRuntime:
             if request_id in entries
             and entries[request_id].state == AdmissionSideState.VISIBLE_PENDING
         )
+        replacement_priority = self._refresh_replacement_priorities(
+            entries,
+            now_ms=now_ms,
+        )
         liveness_priority = tuple(
-            dict.fromkeys((*restore_ready_priority, *retraction_priority))
+            dict.fromkeys(
+                (
+                    *restore_ready_priority,
+                    *replacement_priority,
+                    *retraction_priority,
+                )
+            )
         )
         if liveness_priority:
             priority_set = set(liveness_priority)
@@ -10875,8 +11082,12 @@ class EmbeddedSGLangRuntime:
                 ticket_source = f"{ticket_source}+restore_liveness"
                 ticket_reason = "restore_obligation_ticket_ready"
             elif not restore_ready_priority:
-                ticket_source = f"{ticket_source}+retraction_replacement"
-                ticket_reason = "retraction_reclaim_confirmed"
+                ticket_source = f"{ticket_source}+replacement_liveness"
+                ticket_reason = (
+                    "semantic_reclaim_confirmed"
+                    if replacement_priority
+                    else "retraction_reclaim_confirmed"
+                )
         restore_authority_mode = getattr(
             self, "_restore_authority_mode", RestoreAuthorityMode.NORMAL_JOINT
         )
@@ -11482,12 +11693,18 @@ class EmbeddedSGLangRuntime:
         ready_count: Counter[str] = Counter()
         oldest_wait: dict[str, float] = {}
         unlock_value: dict[str, float] = {}
+        startup_bytes: Counter[str] = Counter()
+        ready_contexts: dict[str, set[str]] = defaultdict(set)
         for _native_index, req, metadata in tagged:
             entry = entries.get(str(req.rid))
             if entry is None or entry.state != AdmissionSideState.VISIBLE_PENDING:
                 continue
             workflow_id = metadata.root_workflow_id
             ready_count[workflow_id] += 1
+            ready_contexts[workflow_id].add(metadata.context_id)
+            startup_bytes[workflow_id] += max(
+                0, int(entry.request.estimated_incremental_bytes)
+            )
             oldest_wait[workflow_id] = max(
                 oldest_wait.get(workflow_id, 0.0),
                 max(0.0, now_ms - entry.request.submitted_ts_ms),
@@ -11505,6 +11722,17 @@ class EmbeddedSGLangRuntime:
             for obligation in self._restore_obligation_index().active()
             if obligation.state == RestoreObligationState.TICKET_READY
         }
+        ready_resident_bytes: dict[str, int] = {}
+        for workflow_id, context_ids in ready_contexts.items():
+            pages = {
+                page.handle: page
+                for context_id in context_ids
+                for page in self.controller.page_index.context_pages(context_id)
+                if page.gpu_resident
+            }
+            ready_resident_bytes[workflow_id] = sum(
+                page.size_bytes for page in pages.values()
+            )
         candidates = tuple(
             DynamicWorkingSetCandidate(
                 workflow_id=workflow_id,
@@ -11513,6 +11741,10 @@ class EmbeddedSGLangRuntime:
                 action_unlock_value=unlock_value.get(workflow_id, 0.0),
                 oldest_wait_ms=oldest_wait.get(workflow_id, 0.0),
                 mandatory=workflow_id in mandatory,
+                startup_bytes=startup_bytes.get(workflow_id, 0),
+                resident_ready_bytes=max(
+                    0, int(ready_resident_bytes.get(workflow_id, 0))
+                ),
             )
             for workflow_id in fair_order
             if ready_count.get(workflow_id, 0) or workflow_id in mandatory
@@ -12514,6 +12746,11 @@ class EmbeddedSGLangRuntime:
         metadata = self._metadata(req)
         if metadata is None:
             return
+        self._release_replacement_priority(
+            str(req.rid),
+            now_ms=float(self._now_ms()),
+            reason="request_finished",
+        )
         self._finish_restore_obligation(
             str(req.rid),
             RestoreObligationState.SATISFIED,
@@ -13079,6 +13316,11 @@ class EmbeddedSGLangRuntime:
                 workflow_id=metadata.root_workflow_id,
                 invocation_id=metadata.invocation_id,
                 phase=phase,
+            )
+            self._release_replacement_priority(
+                request_id,
+                now_ms=float(self._now_ms()),
+                reason="runtime_terminal_event",
             )
             self.scheduler.abort_request(self._new_abort_request(request_id))
 
@@ -15372,13 +15614,27 @@ class EmbeddedSGLangRuntime:
         selected: tuple[
             int, SemanticResidencyTarget, PhysicalBundlePreview
         ] | None = None
+        visible_request_ids = {
+            item.request_id for item in self._policy_runtime_runnable(now_ms)
+        }
         for index, target in enumerate(plan.semantic_residency):
             reasons: list[str] = []
+            beneficiary_slice_id = (
+                f"replacement-beneficiary:{index}:"
+                f"{target.beneficiary_request_id}"
+                if target.beneficiary_request_id is not None
+                else None
+            )
             context = self.controller.graph.contexts.get(target.context_id)
             if context is None:
                 reasons.append("context_missing")
             elif context.epoch != target.context_epoch:
                 reasons.append("context_epoch_changed")
+            if (
+                target.beneficiary_request_id is not None
+                and target.beneficiary_request_id not in visible_request_ids
+            ):
+                reasons.append("replacement_beneficiary_not_visible")
             command_kind = self._online_residency_command_kind(target.action)
             if command_kind is None:
                 reasons.append("no_physical_action")
@@ -15409,6 +15665,18 @@ class EmbeddedSGLangRuntime:
                     }
                     if not actual_actions.intersection(expected_actions):
                         continue
+                    minimum_reclaim = min(
+                        target.target_bytes_hint,
+                        target.required_reclaim_bytes,
+                    )
+                    if (
+                        target.action == ResidencyAction.COMMIT_CPU
+                        and minimum_reclaim > 0
+                        and preview.bundle.exclusive_action_bytes
+                        < minimum_reclaim
+                    ):
+                        blockers.add("replacement_reclaim_shortfall")
+                        continue
                     if preview.eligible:
                         candidates.append(preview)
                     else:
@@ -15422,12 +15690,35 @@ class EmbeddedSGLangRuntime:
                     if not blockers:
                         reasons.append("physical_preview_unavailable")
             if reasons:
+                if beneficiary_slice_id is not None:
+                    checked_slices.append(
+                        ActionSlice(
+                            slice_id=beneficiary_slice_id,
+                            kind="replacement_beneficiary",
+                            action_key=target.beneficiary_request_id,
+                            dependency_keys=(),
+                            committed=(
+                                "replacement_beneficiary_not_visible"
+                                not in reasons
+                            ),
+                            reasons=(
+                                ()
+                                if "replacement_beneficiary_not_visible"
+                                not in reasons
+                                else ("replacement_beneficiary_not_visible",)
+                            ),
+                        )
+                    )
                 checked_slices.append(
                     ActionSlice(
                         slice_id=f"semantic-residency:{index}",
                         kind="semantic_residency",
                         action_key=target.context_id,
-                        dependency_keys=(),
+                        dependency_keys=(
+                            (beneficiary_slice_id,)
+                            if beneficiary_slice_id is not None
+                            else ()
+                        ),
                         committed=False,
                         reasons=tuple(reasons),
                     )
@@ -15442,12 +15733,26 @@ class EmbeddedSGLangRuntime:
                     item.bundle.bundle_id,
                 ),
             )
+            if beneficiary_slice_id is not None:
+                checked_slices.append(
+                    ActionSlice(
+                        slice_id=beneficiary_slice_id,
+                        kind="replacement_beneficiary",
+                        action_key=target.beneficiary_request_id,
+                        dependency_keys=(),
+                        committed=True,
+                    )
+                )
             checked_slices.append(
                 ActionSlice(
                     slice_id=f"semantic-residency:{index}",
                     kind="semantic_residency",
                     action_key=target.context_id,
-                    dependency_keys=(),
+                    dependency_keys=(
+                        (beneficiary_slice_id,)
+                        if beneficiary_slice_id is not None
+                        else ()
+                    ),
                     committed=True,
                 )
             )
@@ -15468,12 +15773,53 @@ class EmbeddedSGLangRuntime:
         elif plan.semantic_residency:
             self._online_joint_counts["semantic_physical_no_action"] += 1
         slices = decision.epoch.action_slices + tuple(checked_slices)
+        action_groups = list(derive_action_groups(slices))
+        if selected is not None:
+            index, target, preview = selected
+            semantic_slice_id = f"semantic-residency:{index}"
+            for group_index, group in enumerate(action_groups):
+                if not any(
+                    action.slice_id == semantic_slice_id
+                    for action in group.actions
+                ):
+                    continue
+                action_groups[group_index] = replace(
+                    group,
+                    resource_certificate=ActionGroupResourceCertificate(
+                        required_hbm_bytes=(
+                            preview.copy_bytes
+                            if target.action == ResidencyAction.PREFETCH_GPU
+                            else 0
+                        ),
+                        planned_reclaim_bytes=(
+                            preview.bundle.exclusive_action_bytes
+                            if target.action
+                            in {
+                                ResidencyAction.COMMIT_CPU,
+                                ResidencyAction.DROP,
+                            }
+                            else 0
+                        ),
+                        required_host_bytes=(
+                            preview.copy_bytes
+                            if target.action
+                            in {
+                                ResidencyAction.PREPARE_HOST,
+                                ResidencyAction.COMMIT_CPU,
+                            }
+                            else 0
+                        ),
+                        planned_pcie_bytes=preview.copy_bytes,
+                    ),
+                )
+                break
         epoch = replace(
             decision.epoch,
             view=view,
             action_slices=slices,
             source_action_count=len(slices),
             committed_action_count=sum(item.committed for item in slices),
+            action_groups=tuple(action_groups),
         )
         has_action = bool(
             view.ordered_request_ids or view.residency_intent_indices
@@ -15987,11 +16333,13 @@ class EmbeddedSGLangRuntime:
                     if item.workflow_id in active_workflow_ids
                 ),
                 key=lambda item: (
-                    fair_rank.get(item.workflow_id, 1 << 30),
+                    max(0.0, now_ms - item.submitted_ts_ms) < 30_000.0,
                     frontier_rank.get(item.workflow_id, {}).get(
                         item.invocation_id, 1 << 30
                     ),
+                    item.startup_bytes,
                     item.submitted_ts_ms,
+                    fair_rank.get(item.workflow_id, 1 << 30),
                     item.request_id,
                 ),
             )
@@ -16087,6 +16435,46 @@ class EmbeddedSGLangRuntime:
             ResidencyAction.DROP: frozenset({PhysicalPageAction.DROP}),
             ResidencyAction.RECOMPUTE: frozenset({PhysicalPageAction.DROP}),
         }[action]
+
+    def _record_context_residency_direction(
+        self,
+        *,
+        context_id: str,
+        action: ResidencyAction,
+        now_ms: float,
+        transaction_id: str,
+    ) -> None:
+        if action not in {
+            ResidencyAction.COMMIT_CPU,
+            ResidencyAction.PREFETCH_GPU,
+        }:
+            return
+        history = getattr(
+            self, "_online_joint_last_context_residency_action", None
+        )
+        if history is None:
+            history = {}
+            self._online_joint_last_context_residency_action = history
+        previous = history.get(context_id)
+        history[context_id] = (action, now_ms)
+        if previous is None or previous[0] == action:
+            return
+        age_ms = max(0.0, now_ms - previous[1])
+        short_reverse = age_ms < self.config.resident_service_window_ms
+        self._online_joint_counts["residency_direction_reversed"] += 1
+        if short_reverse:
+            self._online_joint_counts["residency_short_reverse"] += 1
+        self.audit.emit(
+            "online_joint_residency_direction_reversed",
+            now_ms,
+            transaction_id=transaction_id,
+            context_id=context_id,
+            previous_action=previous[0].value,
+            action=action.value,
+            reversal_age_ms=age_ms,
+            short_reverse=short_reverse,
+            short_reverse_window_ms=self.config.resident_service_window_ms,
+        )
 
     def _online_residency_intent_order(
         self,
@@ -16614,6 +17002,10 @@ class EmbeddedSGLangRuntime:
                 ResidencyAction.RECOMPUTE,
             }
             and not self._pressure_actions_enabled()
+            and not (
+                target.beneficiary_request_id is not None
+                and target.required_reclaim_bytes > 0
+            )
         ):
             self._online_joint_counts[
                 "semantic_pressure_residency_low_pressure_suppressed"
@@ -16649,6 +17041,8 @@ class EmbeddedSGLangRuntime:
                 "joint_semantic_context_epoch": target.context_epoch,
                 "joint_residency_action": target.action.value,
                 "joint_planned_target_bytes": target.target_bytes_hint,
+                "joint_beneficiary_request_id": target.beneficiary_request_id,
+                "joint_required_reclaim_bytes": target.required_reclaim_bytes,
                 "joint_physical_closure_bytes": preview.bundle.closure_bytes,
                 "physical_bundle_scope": preview.bundle.scope.value,
                 "physical_exclusive_action_bytes": (
@@ -16681,6 +17075,8 @@ class EmbeddedSGLangRuntime:
             context_epoch=preview.context_epoch,
             physical_bundle_id=preview.bundle.bundle_id,
             created_ts_ms=now_ms,
+            beneficiary_request_id=target.beneficiary_request_id,
+            required_reclaim_bytes=target.required_reclaim_bytes,
         )
         self._pending_online_joint_residency = transaction
         self._online_joint_residency_history.append(transaction)
@@ -16703,6 +17099,8 @@ class EmbeddedSGLangRuntime:
             physical_closure_bytes=preview.bundle.closure_bytes,
             copy_bytes=preview.copy_bytes,
             source_joint_plan_id=plan.plan_id,
+            beneficiary_request_id=target.beneficiary_request_id,
+            required_reclaim_bytes=target.required_reclaim_bytes,
         )
 
     def _advance_online_joint_residency(
@@ -16728,6 +17126,22 @@ class EmbeddedSGLangRuntime:
             self._online_joint_last_residency_action[
                 transaction.source_bundle_id
             ] = (transaction.action, now_ms)
+            self._record_context_residency_direction(
+                context_id=transaction.context_id,
+                action=transaction.action,
+                now_ms=now_ms,
+                transaction_id=transaction.transaction_id,
+            )
+            if (
+                transaction.action == ResidencyAction.COMMIT_CPU
+                and transaction.beneficiary_request_id is not None
+            ):
+                if self._register_replacement_priority(
+                    transaction, now_ms=now_ms
+                ):
+                    self._online_joint_counts[
+                        "replacement_beneficiary_released"
+                    ] += 1
         else:
             transaction.stage = "failed"
             transaction.failure_reason = (
@@ -16767,6 +17181,8 @@ class EmbeddedSGLangRuntime:
             predictive_intent_id=transaction.predictive_intent_id,
             physical_bundle_id=transaction.physical_bundle_id,
             context_id=transaction.context_id,
+            beneficiary_request_id=transaction.beneficiary_request_id,
+            required_reclaim_bytes=transaction.required_reclaim_bytes,
             status=ack.status.value,
             actual_bytes=ack.actual_bytes,
             reason=ack.reason,
@@ -17370,6 +17786,12 @@ class EmbeddedSGLangRuntime:
                 else metadata.relation_type
             )
             prediction = frontier_predictions.get(metadata.invocation_id)
+            service_ledger = getattr(self, "_lock_service_ledger", None)
+            service_record = (
+                service_ledger.progress_record(str(req.rid))
+                if service_ledger is not None
+                else None
+            )
             result[str(req.rid)] = RunnableInvocation(
                 request_id=str(req.rid),
                 workflow_id=metadata.root_workflow_id,
@@ -17393,8 +17815,10 @@ class EmbeddedSGLangRuntime:
                     else None
                 ),
                 predicted_external_wait_ms=(
-                    prediction.remaining_external_wait.quantile(0.5)
+                    prediction.wait_belief.residual_duration.quantile(0.5)
                     if prediction is not None
+                    and prediction.wait_belief.kind.value == "tool"
+                    and prediction.wait_belief.available
                     else None
                 ),
                 predicted_next_output_tokens=(
@@ -17409,6 +17833,16 @@ class EmbeddedSGLangRuntime:
                     tuple(prediction.ood_reasons)
                     if prediction is not None
                     else ()
+                ),
+                last_gpu_service_ts_ms=(
+                    service_record.last_completed_service_ts_ms
+                    if service_record is not None
+                    else None
+                ),
+                completed_gpu_service_count=(
+                    service_record.completed_service_count
+                    if service_record is not None
+                    else 0
                 ),
             )
 

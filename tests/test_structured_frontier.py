@@ -21,6 +21,8 @@ from beliefkv.predictor.structured_frontier import (
     FrontierScenarioComposer,
     LocalFrontierFeatures,
     LocalFrontierPrediction,
+    WaitBelief,
+    WaitBeliefKind,
     load_decision_rows,
     load_evaluation_rows,
     runtime_environment_digest,
@@ -625,12 +627,12 @@ def test_calibration_excludes_right_censored_tool_completion_targets() -> None:
         ]
         == 1
     )
-    assert summary["observation_counts"]["remaining_external_wait_ms"] == 1
-    assert (
-        summary["observation_counts"][
-            "external_wait_right_censored_excluded_from_interval"
-        ]
-        == 1
+    assert "remaining_external_wait_ms" not in summary["observation_counts"]
+    assert "remaining_external_wait_ms" not in summary["interval_slack"]
+    assert summary["observation_counts"]["tool_wait_slack"] > 0
+    assert model.tool_survival_logit_scale > 0
+    assert model.to_dict()["tool_survival_logit_scale"] == (
+        model.tool_survival_logit_scale
     )
 
 
@@ -671,11 +673,53 @@ def test_tool_prediction_conditions_competing_risk_on_elapsed_wait(tmp_path) -> 
         )
     )
     assert unsupported_tail.remaining_external_wait.values == ()
-    assert "tool_unavailable" in unsupported_tail.ood_reasons
+    assert "tool_wait_unavailable" in unsupported_tail.ood_reasons
 
     path = tmp_path / "tool-survival.json"
     model.save(path)
     assert FrontierBeliefModel.load(path).predict(features) == prediction
+
+
+def test_tool_wait_belief_exposes_action_slack_probability() -> None:
+    belief = WaitBelief(
+        kind=WaitBeliefKind.TOOL,
+        residual_duration=EmpiricalDistribution(
+            (10.0, 100.0),
+            (0.25, 0.75),
+            4.0,
+        ),
+        terminal_distribution={"success": 1.0},
+        support_level="exact",
+    )
+
+    assert belief.slack_probability(50.0) == pytest.approx(0.75)
+    assert belief.slack_probability(100.0) == 0.0
+
+
+def test_join_wait_is_structural_and_has_no_fitted_wall_clock() -> None:
+    model = FrontierBeliefModel(model_version="join-structural-v1")
+    model.fit(
+        [
+            _tool_row("tool-a", 100, "success"),
+            _tool_row("tool-b", 200, "error"),
+        ]
+    )
+
+    prediction = model.predict(
+        LocalFrontierFeatures(
+            invocation_id="parent",
+            state="wait_join",
+            agent_definition_id="supervisor",
+            current_sequence_tokens=4096,
+        )
+    )
+
+    assert prediction.wait_belief.kind == WaitBeliefKind.JOIN
+    assert prediction.wait_belief.dependency_composed
+    assert prediction.wait_belief.residual_duration.values == ()
+    assert prediction.remaining_external_wait.values == ()
+    assert prediction.support_for("join_dependency") == "structural"
+    assert "join_wait" not in model.to_dict()["components"]
 
 
 def test_reentry_state_learns_next_call_output_demand_without_service_time() -> None:
@@ -732,8 +776,9 @@ def test_episode_weighted_evaluation_reports_calibration_and_ood() -> None:
         <= 1
     )
     assert metrics["ood_fallback_semantics"] == (
-        "composite_any_head_unavailable"
+        "action_state_required_head_unavailable"
     )
+    assert "legacy_composite_ood_rate" in metrics
     assert (
         metrics["target_availability"]["remaining_decode_demand"][
             "available_rate"

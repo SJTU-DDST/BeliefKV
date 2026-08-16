@@ -25,7 +25,11 @@ from beliefkv.policy.admission import (
     AdmissionSideState,
 )
 from beliefkv.experiments.policy_replay import load_replay_trace
-from beliefkv.policy.joint_scheduler import JointPlannerConfig, ObservedJointPlanner
+from beliefkv.policy.joint_scheduler import (
+    JointPlannerConfig,
+    ObservedJointPlanner,
+    SemanticResidencyTarget,
+)
 from beliefkv.policy.online_joint import (
     OnlineJointPlanDecision,
     OnlineJointPlanView,
@@ -4635,6 +4639,282 @@ class SGLangBackendTest(unittest.TestCase):
             if event == "online_joint_residency_terminal"
         ]
         self.assertEqual(predictive_terminal[-1]["actual_bytes"], 300)
+
+    def test_semantic_replacement_binds_reclaim_to_visible_beneficiary(self):
+        controller = BeliefKVController(
+            BeliefKVConfig(
+                hbm_capacity_bytes=2_000,
+                host_capacity_bytes=4_000,
+                reserve_hbm_bytes=0,
+                predictor_enabled=False,
+            )
+        )
+        controller.process_runtime_events(
+            (
+                RuntimeEvent("wf-v", 1.0, RuntimeEventKind.WORKFLOW_START, "wf-v"),
+                RuntimeEvent(
+                    "inv-v",
+                    2.0,
+                    RuntimeEventKind.INVOCATION_CREATE,
+                    "wf-v",
+                    invocation_id="inv-v",
+                    context_id="ctx-v",
+                    context_epoch=0,
+                ),
+                RuntimeEvent(
+                    "tool-v",
+                    3.0,
+                    RuntimeEventKind.TOOL_START,
+                    "wf-v",
+                    invocation_id="inv-v",
+                    context_id="ctx-v",
+                    context_epoch=0,
+                ),
+            )
+        )
+        handle = PageHandle(904, 0)
+        controller.page_index.register_page(handle, size_bytes=300)
+        controller.page_index.bind_pages("ctx-v", 0, (handle,))
+        runtime = EmbeddedSGLangRuntime.__new__(EmbeddedSGLangRuntime)
+        runtime.config = BeliefKVConfig(
+            hbm_capacity_bytes=2_000,
+            host_capacity_bytes=4_000,
+            reserve_hbm_bytes=0,
+            joint_policy_enabled=True,
+        )
+        runtime.controller = controller
+        runtime.audit = _AuditRecorder()
+        runtime._online_joint_counts = Counter()
+        runtime._pending_online_joint_residency = None
+        runtime._online_joint_residency_sequence = 0
+        runtime._online_joint_residency_history = deque()
+        runtime._online_joint_last_residency_action = {}
+        runtime._current_semantic_residency_commit = None
+        runtime._current_predictive_residency_commit = None
+        runtime._restore_service_grace_by_request = {}
+        runtime._replacement_priorities = {}
+        runtime._request_metadata_by_id = {}
+        runtime._lock_service_ledger = RequestServiceLedger()
+        runtime._active_request_ids = set()
+        beneficiary = RunnableInvocation(
+            "req-beneficiary",
+            "wf-b",
+            "inv-b",
+            "ctx-b",
+            0,
+            10.0,
+            250,
+            causal_class="engine_waiting:ready",
+        )
+        beneficiary_metadata = BeliefKVRequestMetadata(
+            beneficiary.workflow_id,
+            beneficiary.invocation_id,
+            beneficiary.context_id,
+            beneficiary.context_epoch,
+        )
+        runtime._request_metadata_by_id[beneficiary.request_id] = (
+            beneficiary_metadata
+        )
+        runtime._policy_runtime_runnable = lambda _now_ms: (beneficiary,)
+        decision = compile_bounded_seed_epoch(
+            ordered_request_ids=(beneficiary.request_id,),
+            visible_request_ids=(beneficiary.request_id,),
+            epoch_sequence=1,
+        )
+        target = SemanticResidencyTarget(
+            context_id="ctx-v",
+            context_epoch=0,
+            action=ResidencyAction.COMMIT_CPU,
+            target_bytes_hint=300,
+            deadline_ms=100.0,
+            reason="replacement test",
+            beneficiary_request_id=beneficiary.request_id,
+            required_reclaim_bytes=250,
+        )
+        plan = SimpleNamespace(
+            plan_id=decision.view.plan_id,
+            residency=(),
+            semantic_residency=(target,),
+        )
+
+        committed = runtime._physical_commit_semantic_residency(
+            plan,
+            decision,
+            now_ms=100.0,
+        )
+
+        self.assertIsNotNone(runtime._current_semantic_residency_commit)
+        replacement_group = next(
+            group
+            for group in committed.epoch.action_groups
+            if any(
+                action.kind == "semantic_residency"
+                for action in group.actions
+            )
+        )
+        self.assertTrue(replacement_group.committed)
+        self.assertEqual(len(replacement_group.actions), 2)
+        self.assertEqual(
+            replacement_group.resource_certificate.planned_reclaim_bytes,
+            300,
+        )
+        runtime._queue_semantic_joint_residency(
+            plan,
+            committed.view,
+            now_ms=101.0,
+        )
+        queued = controller.command_queue.pop()
+        self.assertIsNotNone(queued)
+        self.assertEqual(
+            queued.metadata["joint_beneficiary_request_id"],
+            beneficiary.request_id,
+        )
+        runtime._advance_online_joint_residency(
+            (
+                CommandAck(
+                    queued.command_id,
+                    CommandStatus.COMPLETED,
+                    102.0,
+                    actual_bytes=300,
+                ),
+            ),
+            now_ms=102.0,
+        )
+        self.assertIn(beneficiary.request_id, runtime._replacement_priorities)
+
+        # Ticket generation/native admission are not service evidence. The
+        # beneficiary must remain prioritized across subsequent safe points.
+        visible_entry = SimpleNamespace(state=AdmissionSideState.VISIBLE_PENDING)
+        self.assertEqual(
+            runtime._refresh_replacement_priorities(
+                {beneficiary.request_id: visible_entry}, now_ms=103.0
+            ),
+            (beneficiary.request_id,),
+        )
+        self.assertIn(beneficiary.request_id, runtime._replacement_priorities)
+
+        request = SimpleNamespace(
+            rid=beneficiary.request_id,
+            beliefkv_metadata=beneficiary_metadata,
+        )
+        runtime._lock_service_ledger.observe_selected(
+            request_id=beneficiary.request_id,
+            workflow_id=beneficiary.workflow_id,
+            invocation_id=beneficiary.invocation_id,
+            context_id=beneficiary.context_id,
+            ts_ms=104.0,
+        )
+        runtime._active_request_ids.add(beneficiary.request_id)
+        runtime._observe_request_service_completed(
+            SimpleNamespace(reqs=(request,)),
+            now_ms=105.0,
+            phase="prefill",
+        )
+        self.assertNotIn(beneficiary.request_id, runtime._replacement_priorities)
+
+        runtime._online_joint_last_context_residency_action = {}
+        runtime._record_context_residency_direction(
+            context_id="ctx-reverse",
+            action=ResidencyAction.COMMIT_CPU,
+            now_ms=200.0,
+            transaction_id="offload",
+        )
+        runtime._record_context_residency_direction(
+            context_id="ctx-reverse",
+            action=ResidencyAction.PREFETCH_GPU,
+            now_ms=1_000.0,
+            transaction_id="restore",
+        )
+        self.assertEqual(
+            runtime._online_joint_counts["residency_short_reverse"], 1
+        )
+
+    def test_semantic_replacement_rejects_disappeared_beneficiary(self):
+        controller = BeliefKVController(
+            BeliefKVConfig(
+                hbm_capacity_bytes=2_000,
+                host_capacity_bytes=4_000,
+                reserve_hbm_bytes=0,
+                predictor_enabled=False,
+            )
+        )
+        controller.process_runtime_events(
+            (
+                RuntimeEvent("wf-v", 1.0, RuntimeEventKind.WORKFLOW_START, "wf-v"),
+                RuntimeEvent(
+                    "inv-v",
+                    2.0,
+                    RuntimeEventKind.INVOCATION_CREATE,
+                    "wf-v",
+                    invocation_id="inv-v",
+                    context_id="ctx-v",
+                    context_epoch=0,
+                ),
+                RuntimeEvent(
+                    "tool-v",
+                    3.0,
+                    RuntimeEventKind.TOOL_START,
+                    "wf-v",
+                    invocation_id="inv-v",
+                    context_id="ctx-v",
+                    context_epoch=0,
+                ),
+            )
+        )
+        handle = PageHandle(905, 0)
+        controller.page_index.register_page(handle, size_bytes=300)
+        controller.page_index.bind_pages("ctx-v", 0, (handle,))
+        runtime = EmbeddedSGLangRuntime.__new__(EmbeddedSGLangRuntime)
+        runtime.config = BeliefKVConfig(
+            hbm_capacity_bytes=2_000,
+            host_capacity_bytes=4_000,
+            reserve_hbm_bytes=0,
+            joint_policy_enabled=True,
+        )
+        runtime.controller = controller
+        runtime.audit = _AuditRecorder()
+        runtime._online_joint_counts = Counter()
+        runtime._current_semantic_residency_commit = None
+        runtime._current_predictive_residency_commit = None
+        runtime._policy_runtime_runnable = lambda _now_ms: ()
+        decision = compile_bounded_seed_epoch(
+            ordered_request_ids=("req-gone",),
+            visible_request_ids=("req-gone",),
+            epoch_sequence=1,
+        )
+        target = SemanticResidencyTarget(
+            context_id="ctx-v",
+            context_epoch=0,
+            action=ResidencyAction.COMMIT_CPU,
+            target_bytes_hint=300,
+            deadline_ms=100.0,
+            reason="replacement test",
+            beneficiary_request_id="req-gone",
+            required_reclaim_bytes=250,
+        )
+        plan = SimpleNamespace(
+            plan_id=decision.view.plan_id,
+            residency=(),
+            semantic_residency=(target,),
+        )
+
+        rejected = runtime._physical_commit_semantic_residency(
+            plan,
+            decision,
+            now_ms=100.0,
+        )
+
+        self.assertIsNone(runtime._current_semantic_residency_commit)
+        group = next(
+            group
+            for group in rejected.epoch.action_groups
+            if any(
+                action.kind == "semantic_residency"
+                for action in group.actions
+            )
+        )
+        self.assertFalse(group.committed)
+        self.assertIn("replacement_beneficiary_not_visible", group.reasons)
 
     def test_predictive_prefetch_canary_rejection_preserves_observed_epoch(self):
         runtime = EmbeddedSGLangRuntime.__new__(EmbeddedSGLangRuntime)

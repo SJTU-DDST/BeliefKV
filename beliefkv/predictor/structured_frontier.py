@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from collections import Counter, defaultdict
 from dataclasses import dataclass, field, replace
+from enum import Enum
 import hashlib
 import json
 import math
@@ -27,7 +28,7 @@ from beliefkv.predictor.frontier_belief import (
 )
 
 
-STRUCTURED_FRONTIER_SCHEMA_VERSION = 2
+STRUCTURED_FRONTIER_SCHEMA_VERSION = 3
 MINIMUM_DEMAND_DECISION_SCHEMA_VERSION = 2
 FORMAL_P6_DATASET_KIND = "beliefkv_p6_training_evidence"
 FORMAL_P6_PLAN_IDS = frozenset(
@@ -42,6 +43,19 @@ FORBIDDEN_LOAD_COUPLED_LABELS = frozenset(
 )
 FORBIDDEN_LOAD_COUPLED_FEATURES = frozenset(
     {"batch_size", "elapsed_gpu_service_ms", "observed_gpu_service_ms"}
+)
+_TOOL_SLACK_CALIBRATION_HORIZONS_MS = (
+    10.0,
+    30.0,
+    100.0,
+    300.0,
+    1_000.0,
+    3_000.0,
+    10_000.0,
+    30_000.0,
+    100_000.0,
+    300_000.0,
+    1_000_000.0,
 )
 
 
@@ -191,6 +205,17 @@ class EmpiricalDistribution:
     def quantile(self, quantile: float) -> float:
         return self.sample(quantile)
 
+    def probability_greater_than(self, threshold: float) -> float:
+        """Return P(X > threshold) without fitting an absolute-time regressor."""
+
+        if not self.values:
+            return 0.0
+        return sum(
+            probability
+            for value, probability in zip(self.values, self.probability_mass)
+            if value > max(0.0, threshold)
+        )
+
     def to_dict(self) -> dict[str, Any]:
         return {
             "values": list(self.values),
@@ -204,6 +229,129 @@ class EmpiricalDistribution:
             tuple(float(item) for item in raw.get("values", ())),
             tuple(float(item) for item in raw.get("probability_mass", ())),
             float(raw.get("support", 0.0)),
+        )
+
+
+class WaitBeliefKind(str, Enum):
+    NONE = "none"
+    TOOL = "tool"
+    JOIN = "join"
+    CHILD = "child"
+    MESSAGE = "message"
+    UNKNOWN = "unknown"
+
+
+@dataclass(frozen=True)
+class WaitBelief:
+    """Action-specific wait evidence; structural waits are composed by RCCG."""
+
+    kind: WaitBeliefKind
+    residual_duration: EmpiricalDistribution = field(
+        default_factory=EmpiricalDistribution.empty
+    )
+    terminal_distribution: Mapping[str, float] = field(default_factory=dict)
+    support_level: str = "unavailable"
+    dependency_composed: bool = False
+    ood_reasons: tuple[str, ...] = ()
+    survival_logit_scale: float = 1.0
+    survival_logit_offset: float = 0.0
+
+    def __post_init__(self) -> None:
+        object.__setattr__(self, "kind", WaitBeliefKind(self.kind))
+        if self.support_level not in {
+            "exact",
+            "role",
+            "backoff",
+            "global",
+            "structural",
+            "unavailable",
+        }:
+            raise ValueError("invalid wait-belief support level")
+        if self.dependency_composed and self.kind not in {
+            WaitBeliefKind.JOIN,
+            WaitBeliefKind.CHILD,
+            WaitBeliefKind.MESSAGE,
+        }:
+            raise ValueError("only causal waits may be dependency-composed")
+        if self.dependency_composed and self.residual_duration.values:
+            raise ValueError("dependency-composed waits cannot carry wall-clock fits")
+        if (
+            not math.isfinite(self.survival_logit_scale)
+            or self.survival_logit_scale <= 0
+            or not math.isfinite(self.survival_logit_offset)
+        ):
+            raise ValueError("wait survival calibration must be finite")
+        object.__setattr__(
+            self,
+            "terminal_distribution",
+            {
+                str(name): float(probability)
+                for name, probability in self.terminal_distribution.items()
+            },
+        )
+        object.__setattr__(
+            self,
+            "ood_reasons",
+            tuple(sorted(set(str(item) for item in self.ood_reasons if item))),
+        )
+
+    @property
+    def available(self) -> bool:
+        if self.dependency_composed:
+            return self.support_level == "structural"
+        return bool(
+            self.residual_duration.values
+            and self.residual_duration.support > 0
+            and self.support_level != "unavailable"
+        )
+
+    def slack_probability(self, required_wait_ms: float) -> float | None:
+        """Return P(wait remains parked beyond transfer + commit guard)."""
+
+        if self.dependency_composed or not self.available:
+            return None
+        raw = self.residual_duration.probability_greater_than(required_wait_ms)
+        return _calibrate_binary_probability(
+            raw,
+            scale=self.survival_logit_scale,
+            offset=self.survival_logit_offset,
+        )
+
+    def conservative_wait_ms(self, quantile: float = 0.05) -> float | None:
+        if self.dependency_composed or not self.available:
+            return None
+        return self.residual_duration.quantile(quantile)
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "kind": self.kind.value,
+            "residual_duration": self.residual_duration.to_dict(),
+            "terminal_distribution": dict(self.terminal_distribution),
+            "support_level": self.support_level,
+            "dependency_composed": self.dependency_composed,
+            "ood_reasons": list(self.ood_reasons),
+            "survival_logit_scale": self.survival_logit_scale,
+            "survival_logit_offset": self.survival_logit_offset,
+        }
+
+    @classmethod
+    def from_dict(cls, raw: Mapping[str, Any]) -> "WaitBelief":
+        return cls(
+            kind=WaitBeliefKind(str(raw.get("kind") or "unknown")),
+            residual_duration=EmpiricalDistribution.from_dict(
+                raw.get("residual_duration", {})
+            ),
+            terminal_distribution={
+                str(name): float(probability)
+                for name, probability in raw.get(
+                    "terminal_distribution", {}
+                ).items()
+            },
+            support_level=str(raw.get("support_level") or "unavailable"),
+            dependency_composed=bool(raw.get("dependency_composed", False)),
+            ood_reasons=tuple(str(item) for item in raw.get("ood_reasons", ())),
+            survival_logit_scale=float(raw.get("survival_logit_scale", 1.0)),
+            survival_logit_offset=float(raw.get("survival_logit_offset", 0.0)),
         )
 
 
@@ -223,6 +371,79 @@ class LocalFrontierPrediction:
     calibrated_intervals: Mapping[str, tuple[float, float]] = field(
         default_factory=dict
     )
+    wait_belief: WaitBelief | None = None
+    head_support: Mapping[str, str] = field(default_factory=dict)
+
+    def __post_init__(self) -> None:
+        wait = self.wait_belief
+        if wait is None:
+            legacy_available = bool(self.remaining_external_wait.values)
+            wait = WaitBelief(
+                kind=(
+                    WaitBeliefKind.TOOL
+                    if legacy_available
+                    else WaitBeliefKind.UNKNOWN
+                ),
+                residual_duration=self.remaining_external_wait,
+                terminal_distribution=self.tool_terminal_distribution,
+                support_level=(
+                    self.support_level if legacy_available else "unavailable"
+                ),
+                ood_reasons=("legacy_wait_contract",),
+            )
+            object.__setattr__(self, "wait_belief", wait)
+        support = {
+            str(name): str(level)
+            for name, level in self.head_support.items()
+        }
+        if not support:
+            legacy_level = (
+                self.support_level
+                if self.support_level in {"exact", "backoff"}
+                else "unavailable"
+            )
+            support = {
+                "boundary": (
+                    legacy_level
+                    if self.boundary_distribution
+                    else "unavailable"
+                ),
+                "remaining_decode_demand": (
+                    legacy_level
+                    if self.remaining_decode_tokens.values
+                    else "unavailable"
+                ),
+                "next_output_demand": (
+                    legacy_level
+                    if self.next_output_tokens.values
+                    else "unavailable"
+                ),
+                "prompt_growth": (
+                    legacy_level
+                    if self.prompt_growth_tokens.values
+                    else "unavailable"
+                ),
+                "tool_wait": (
+                    self.wait_belief.support_level
+                    if self.wait_belief.kind == WaitBeliefKind.TOOL
+                    else "unavailable"
+                ),
+                "join_dependency": (
+                    "structural"
+                    if self.wait_belief.kind
+                    in {WaitBeliefKind.JOIN, WaitBeliefKind.CHILD}
+                    else "unavailable"
+                ),
+                "message_dependency": (
+                    "structural"
+                    if self.wait_belief.kind == WaitBeliefKind.MESSAGE
+                    else "unavailable"
+                ),
+            }
+        object.__setattr__(self, "head_support", support)
+
+    def support_for(self, head: str) -> str:
+        return str(self.head_support.get(head, "unavailable"))
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -231,6 +452,7 @@ class LocalFrontierPrediction:
             "current_sequence_tokens": self.current_sequence_tokens,
             "remaining_decode_tokens": self.remaining_decode_tokens.to_dict(),
             "remaining_external_wait": self.remaining_external_wait.to_dict(),
+            "wait_belief": self.wait_belief.to_dict(),
             "tool_terminal_distribution": dict(self.tool_terminal_distribution),
             "prompt_growth_tokens": self.prompt_growth_tokens.to_dict(),
             "next_output_tokens": self.next_output_tokens.to_dict(),
@@ -241,6 +463,7 @@ class LocalFrontierPrediction:
                 name: list(interval)
                 for name, interval in sorted(self.calibrated_intervals.items())
             },
+            "head_support": dict(sorted(self.head_support.items())),
         }
 
     @classmethod
@@ -279,6 +502,15 @@ class LocalFrontierPrediction:
             calibrated_intervals={
                 str(name): (float(value[0]), float(value[1]))
                 for name, value in intervals.items()
+            },
+            wait_belief=(
+                WaitBelief.from_dict(raw.get("wait_belief", {}))
+                if raw.get("wait_belief")
+                else None
+            ),
+            head_support={
+                str(name): str(level)
+                for name, level in raw.get("head_support", {}).items()
             },
         )
 
@@ -616,13 +848,12 @@ class FrontierBeliefModel:
             minimum_support=self.hyperparameters.tool_minimum_support,
             smoothing=self.hyperparameters.tool_smoothing,
         )
-        self.join_wait = _HierarchicalEmpiricalModel(
-            minimum_support=self.hyperparameters.empirical_minimum_support
-        )
         self.training_summary: dict[str, Any] = {}
         self.calibration_summary: dict[str, Any] = {}
         self.boundary_temperature = 1.0
         self.tool_temperature = 1.0
+        self.tool_survival_logit_scale = 1.0
+        self.tool_survival_logit_offset = 0.0
         self.interval_slack: dict[str, float] = {}
         self.calibration_coverage = 0.0
 
@@ -723,18 +954,9 @@ class FrontierBeliefModel:
                             _tool_feature_key(role, family, features),
                             status=status,
                             duration_ms=float(delay),
-                            weight=1.0,
+                            weight=weight,
                         )
                         observed["tool"] += 1
-                if state == InvocationState.WAIT_JOIN.value:
-                    delay = label.get("next_boundary_delay_ms")
-                    if delay is not None and _target_eligible(label, "join_wait"):
-                        self.join_wait.observe(
-                            _demand_feature_key(role, state, "join", features),
-                            float(delay),
-                            weight=1.0,
-                        )
-                        observed["join_wait"] += 1
         self.training_summary = {
             "decision_point_count": len(values),
             "episode_count": len(episode_counts),
@@ -769,21 +991,10 @@ class FrontierBeliefModel:
         decode, decode_level = self.decode_demand.predict(key)
         output, output_level = self.next_output.predict(key)
         prompt, prompt_level = self.prompt_growth.predict(key)
-        if features.state == InvocationState.WAIT_JOIN.value:
-            wait, join_level = self.join_wait.predict(
-                _demand_feature_key(
-                    features.agent_definition_id,
-                    features.state,
-                    "join",
-                    {
-                        "current_sequence_tokens": features.current_sequence_tokens,
-                        "backend_class": features.backend_class,
-                    },
-                )
-            )
-            terminal = {"success": 1.0}
-            tool_level = join_level
-        else:
+        wait = EmpiricalDistribution.empty()
+        terminal: Mapping[str, float] = {}
+        wait_belief: WaitBelief
+        if features.state == InvocationState.WAIT_TOOL.value:
             terminal, wait, tool_level = self.tool.predict(
                 _tool_feature_key(
                     features.agent_definition_id,
@@ -796,14 +1007,85 @@ class FrontierBeliefModel:
                 ),
                 elapsed_ms=features.elapsed_wait_ms,
             )
-        terminal = _temperature_scale(terminal, self.tool_temperature)
-        levels = (boundary_level, decode_level, output_level, prompt_level, tool_level)
-        unavailable = [name for name, level in zip(
-            ("boundary", "decode_demand", "next_output", "prompt_growth", "tool"), levels
-        ) if level == "unavailable"]
-        support_level = "exact" if all(level == "exact" for level in levels if level != "unavailable") else "backoff"
-        if unavailable and len(unavailable) == len(levels):
+            terminal = _temperature_scale(terminal, self.tool_temperature)
+            wait_belief = WaitBelief(
+                kind=WaitBeliefKind.TOOL,
+                residual_duration=wait,
+                terminal_distribution=terminal,
+                support_level=tool_level,
+                survival_logit_scale=self.tool_survival_logit_scale,
+                survival_logit_offset=self.tool_survival_logit_offset,
+                ood_reasons=(
+                    ("tool_wait_unavailable",)
+                    if tool_level == "unavailable"
+                    else ()
+                ),
+            )
+        elif features.state == InvocationState.WAIT_JOIN.value:
+            tool_level = "structural"
+            wait_belief = WaitBelief(
+                kind=WaitBeliefKind.JOIN,
+                support_level="structural",
+                dependency_composed=True,
+            )
+        elif features.state == InvocationState.WAIT_CHILD.value:
+            tool_level = "structural"
+            wait_belief = WaitBelief(
+                kind=WaitBeliefKind.CHILD,
+                support_level="structural",
+                dependency_composed=True,
+            )
+        elif features.state == InvocationState.WAIT_MESSAGE.value:
+            tool_level = "structural"
+            wait_belief = WaitBelief(
+                kind=WaitBeliefKind.MESSAGE,
+                support_level="structural",
+                dependency_composed=True,
+            )
+        else:
+            tool_level = "unavailable"
+            wait_belief = WaitBelief(kind=WaitBeliefKind.NONE)
+
+        head_support = {
+            "boundary": boundary_level,
+            "remaining_decode_demand": decode_level,
+            "next_output_demand": output_level,
+            "prompt_growth": prompt_level,
+            "tool_wait": (
+                tool_level
+                if features.state == InvocationState.WAIT_TOOL.value
+                else "unavailable"
+            ),
+            "join_dependency": (
+                "structural"
+                if features.state
+                in {
+                    InvocationState.WAIT_JOIN.value,
+                    InvocationState.WAIT_CHILD.value,
+                }
+                else "unavailable"
+            ),
+            "message_dependency": (
+                "structural"
+                if features.state == InvocationState.WAIT_MESSAGE.value
+                else "unavailable"
+            ),
+        }
+        relevant_heads = _required_prediction_heads_for_state(features.state)
+        relevant_levels = tuple(head_support[name] for name in relevant_heads)
+        unavailable = [
+            name
+            for name in relevant_heads
+            if head_support.get(name) == "unavailable"
+        ]
+        if unavailable:
             support_level = "unavailable"
+        elif relevant_levels and all(
+            level in {"exact", "structural"} for level in relevant_levels
+        ):
+            support_level = "exact"
+        else:
+            support_level = "backoff"
         del boundary_support
         intervals = {
             name: _calibrated_interval(
@@ -813,7 +1095,6 @@ class FrontierBeliefModel:
             )
             for name, distribution in (
                 ("remaining_decode_tokens", decode),
-                ("remaining_external_wait_ms", wait),
                 ("prompt_growth_tokens", prompt),
                 ("next_output_tokens", output),
             )
@@ -832,6 +1113,8 @@ class FrontierBeliefModel:
             calibration_coverage=self.calibration_coverage,
             ood_reasons=tuple(f"{item}_unavailable" for item in unavailable),
             calibrated_intervals=intervals,
+            wait_belief=wait_belief,
+            head_support=head_support,
         )
 
     def calibrate(
@@ -869,6 +1152,7 @@ class FrontierBeliefModel:
         workflow_episode_counts = _workflow_local_episode_counts(values)
         boundary_records: list[tuple[Mapping[str, float], str, float]] = []
         tool_records: list[tuple[Mapping[str, float], str, float]] = []
+        tool_survival_records: list[tuple[float, bool, float]] = []
         scores: dict[str, dict[str, list[float]]] = defaultdict(
             lambda: defaultdict(list)
         )
@@ -924,14 +1208,47 @@ class FrontierBeliefModel:
                             )
                         )
                         observation_counts["tool_terminal"] += 1
+                    observed_duration = label.get(
+                        "external_wait_observed_duration_ms"
+                    )
+                    if observed_duration is None:
+                        observed_duration = label.get("next_boundary_delay_ms")
+                    if observed_duration is not None:
+                        observed_duration = max(0.0, float(observed_duration))
+                        right_censored = _target_right_censored(
+                            label, "external_wait"
+                        )
+                        known_horizons = tuple(
+                            horizon_ms
+                            for horizon_ms in _TOOL_SLACK_CALIBRATION_HORIZONS_MS
+                            if not (
+                                right_censored
+                                and observed_duration <= horizon_ms
+                            )
+                        )
+                        horizon_weight = weight / max(1, len(known_horizons))
+                        for horizon_ms in known_horizons:
+                            # A censor after the horizon proves survival; a censor
+                            # before it leaves the binary outcome unknown.
+                            probability = (
+                                prediction.wait_belief.slack_probability(
+                                    horizon_ms
+                                )
+                            )
+                            if probability is None:
+                                continue
+                            tool_survival_records.append(
+                                (
+                                    probability,
+                                    observed_duration > horizon_ms,
+                                    horizon_weight,
+                                )
+                            )
+                            observation_counts["tool_wait_slack"] += 1
                 wait_target = (
                     "external_wait"
                     if features.state == InvocationState.WAIT_TOOL.value
-                    else (
-                        "join_wait"
-                        if features.state == InvocationState.WAIT_JOIN.value
-                        else None
-                    )
+                    else None
                 )
                 completed_wait = bool(
                     wait_target
@@ -946,13 +1263,6 @@ class FrontierBeliefModel:
                         and _target_eligible(label, "remaining_decode_demand")
                         else None,
                         prediction.remaining_decode_tokens,
-                    ),
-                    (
-                        "remaining_external_wait_ms",
-                        label.get("next_boundary_delay_ms")
-                        if completed_wait
-                        else None,
-                        prediction.remaining_external_wait,
                     ),
                     (
                         "prompt_growth_tokens",
@@ -986,6 +1296,10 @@ class FrontierBeliefModel:
 
         self.boundary_temperature = _fit_temperature(boundary_records)
         self.tool_temperature = _fit_temperature(tool_records)
+        (
+            self.tool_survival_logit_scale,
+            self.tool_survival_logit_offset,
+        ) = _fit_binary_logit_calibration(tool_survival_records)
         self.interval_slack = {
             name: _finite_sample_quantile(
                 [max(items) for items in by_episode.values()],
@@ -994,6 +1308,7 @@ class FrontierBeliefModel:
             for name, by_episode in scores.items()
             if by_episode
         }
+        self.interval_slack.pop("remaining_external_wait_ms", None)
         self.calibration_coverage = target_coverage
         self.calibration_summary = {
             "split": (
@@ -1007,6 +1322,8 @@ class FrontierBeliefModel:
             "target_coverage": target_coverage,
             "boundary_temperature": self.boundary_temperature,
             "tool_temperature": self.tool_temperature,
+            "tool_survival_logit_scale": self.tool_survival_logit_scale,
+            "tool_survival_logit_offset": self.tool_survival_logit_offset,
             "interval_slack": dict(sorted(self.interval_slack.items())),
             "observation_counts": dict(sorted(observation_counts.items())),
             "conformal_unit": "episode_max_nonconformity",
@@ -1027,6 +1344,8 @@ class FrontierBeliefModel:
             "calibration_coverage": self.calibration_coverage,
             "boundary_temperature": self.boundary_temperature,
             "tool_temperature": self.tool_temperature,
+            "tool_survival_logit_scale": self.tool_survival_logit_scale,
+            "tool_survival_logit_offset": self.tool_survival_logit_offset,
             "interval_slack": dict(sorted(self.interval_slack.items())),
             "metadata": dict(metadata or {}),
             "components": {
@@ -1035,7 +1354,6 @@ class FrontierBeliefModel:
                 "next_output": self.next_output.to_dict(),
                 "prompt_growth": self.prompt_growth.to_dict(),
                 "tool": self.tool.to_dict(),
-                "join_wait": self.join_wait.to_dict(),
             },
         }
 
@@ -1059,14 +1377,17 @@ class FrontierBeliefModel:
         )
         model.prompt_growth = _HierarchicalEmpiricalModel.from_dict(components.get("prompt_growth", {}))
         model.tool = _CompetingRiskToolModel.from_dict(components.get("tool", {}))
-        model.join_wait = _HierarchicalEmpiricalModel.from_dict(
-            components.get("join_wait", {})
-        )
         model.training_summary = dict(raw.get("training_summary", {}))
         model.calibration_summary = dict(raw.get("calibration_summary", {}))
         model.calibration_coverage = float(raw.get("calibration_coverage", 0.0))
         model.boundary_temperature = float(raw.get("boundary_temperature", 1.0))
         model.tool_temperature = float(raw.get("tool_temperature", 1.0))
+        model.tool_survival_logit_scale = float(
+            raw.get("tool_survival_logit_scale", 1.0)
+        )
+        model.tool_survival_logit_offset = float(
+            raw.get("tool_survival_logit_offset", 0.0)
+        )
         model.interval_slack = {
             str(key): float(value)
             for key, value in raw.get("interval_slack", {}).items()
@@ -1327,13 +1648,16 @@ class FrontierScenarioComposer:
         if invocation.state == InvocationState.WAIT_TOOL:
             dependency = DependencyMode.EXTERNAL
             boundary = BoundaryEvent.TOOL
+            tool_wait = prediction.wait_belief
+            if tool_wait.kind != WaitBeliefKind.TOOL:
+                tool_wait = WaitBelief(kind=WaitBeliefKind.UNKNOWN)
             external_segments = (
                 ExternalDemandSegment(
                     segment_kind="tool",
                     service_family=invocation.active_tool_family or "unknown",
-                    residual_delay_ms=prediction.remaining_external_wait.sample(quantile),
+                    residual_delay_ms=tool_wait.residual_duration.sample(quantile),
                     terminal_status=_sample_raw_category(
-                        prediction.tool_terminal_distribution,
+                        tool_wait.terminal_distribution,
                         categorical_quantile,
                         default="censored",
                     ),
@@ -1684,7 +2008,8 @@ def select_frontier_hyperparameters(
         "selection_method": "leave_one_train_project_out_project_macro",
         "selection_objective": (
             "mean available boundary/tool NLL, per-project scale-normalized "
-            "scalar MAE, and 0.25*OOD fallback"
+            "token-demand MAE, tool causal-slack Brier, and "
+            "0.25*action-specific required-head OOD"
         ),
         "projects": projects,
         "candidate_count": len(reports),
@@ -1729,8 +2054,16 @@ def evaluate_frontier_model(
     target_availability: defaultdict[str, dict[str, float]] = defaultdict(
         lambda: {"weight": 0.0, "available_weight": 0.0}
     )
-    prediction_weight = 0.0
-    ood_weight = 0.0
+    legacy_prediction_weight = 0.0
+    legacy_composite_ood_weight = 0.0
+    required_head_weight = 0.0
+    required_head_ood_weight = 0.0
+    action_head_availability: defaultdict[str, dict[str, float]] = defaultdict(
+        lambda: {"weight": 0.0, "available_weight": 0.0}
+    )
+    wait_slack: defaultdict[str, dict[str, float]] = defaultdict(
+        lambda: {"weight": 0.0, "brier": 0.0}
+    )
     support_weight: Counter[str] = Counter()
     for row in values:
         episode = str(row.get("episode_group_id") or row.get("decision_id"))
@@ -1750,9 +2083,22 @@ def evaluate_frontier_model(
             weight /= max(1, workflow_episode_counts[workflow])
             features = _local_features_from_row(row, raw_features)
             prediction = model.predict(features)
-            prediction_weight += weight
-            ood_weight += weight * bool(prediction.ood_reasons)
+            legacy_prediction_weight += weight
+            legacy_composite_ood_weight += weight * bool(
+                prediction.ood_reasons
+            )
             support_weight[prediction.support_level] += weight
+            for action, head in _action_head_requirements_for_state(
+                features.state
+            ):
+                key = f"{action}|{features.state}|{head}"
+                available = prediction.support_for(head) != "unavailable"
+                action_head_availability[key]["weight"] += weight
+                action_head_availability[key]["available_weight"] += (
+                    weight * available
+                )
+                required_head_weight += weight
+                required_head_ood_weight += weight * (not available)
 
             boundary = _normalize_boundary(label.get("next_boundary_kind"))
             if (
@@ -1792,20 +2138,33 @@ def evaluate_frontier_model(
                     prediction.tool_terminal_distribution
                 )
 
-            wait_target = (
-                "external_wait"
-                if features.state == InvocationState.WAIT_TOOL.value
-                else (
-                    "join_wait"
-                    if features.state == InvocationState.WAIT_JOIN.value
-                    else None
+            if (
+                features.state == InvocationState.WAIT_TOOL.value
+                and _target_eligible(label, "external_wait")
+            ):
+                right_censored = _target_right_censored(
+                    label, "external_wait"
                 )
-            )
-            completed_wait = bool(
-                wait_target
-                and _target_eligible(label, wait_target)
-                and not _target_right_censored(label, wait_target)
-            )
+                actual_wait = (
+                    label.get("external_wait_observed_duration_ms")
+                    if right_censored
+                    else label.get("next_boundary_delay_ms")
+                )
+                if actual_wait is not None:
+                    for horizon_ms in (10.0, 100.0, 1_000.0, 10_000.0):
+                        if right_censored and float(actual_wait) <= horizon_ms:
+                            continue
+                        probability = prediction.wait_belief.slack_probability(
+                            horizon_ms
+                        )
+                        if probability is None:
+                            continue
+                        outcome = float(actual_wait) > horizon_ms
+                        bucket = wait_slack[f"tool|{int(horizon_ms)}ms"]
+                        bucket["weight"] += weight
+                        bucket["brier"] += weight * (
+                            probability - float(outcome)
+                        ) ** 2
 
             targets = (
                 (
@@ -1816,14 +2175,6 @@ def evaluate_frontier_model(
                     and _target_eligible(label, "remaining_decode_demand")
                     else None,
                     prediction.remaining_decode_tokens,
-                ),
-                (
-                    "remaining_external_wait_ms",
-                    wait_target or "external_wait",
-                    label.get("next_boundary_delay_ms")
-                    if completed_wait
-                    else None,
-                    prediction.remaining_external_wait,
                 ),
                 (
                     "prompt_growth_tokens",
@@ -1902,8 +2253,26 @@ def evaluate_frontier_model(
             }
             for name, metrics in sorted(scalar.items())
         },
-        "ood_fallback_rate": ood_weight / max(prediction_weight, 1e-12),
-        "ood_fallback_semantics": "composite_any_head_unavailable",
+        "ood_fallback_rate": required_head_ood_weight
+        / max(required_head_weight, 1e-12),
+        "ood_fallback_semantics": "action_state_required_head_unavailable",
+        "legacy_composite_ood_rate": legacy_composite_ood_weight
+        / max(legacy_prediction_weight, 1e-12),
+        "action_head_availability": {
+            key: {
+                "available_rate": values["available_weight"]
+                / max(values["weight"], 1e-12),
+                "episode_weight": values["weight"],
+            }
+            for key, values in sorted(action_head_availability.items())
+        },
+        "wait_slack": {
+            key: {
+                "brier": values["brier"] / max(values["weight"], 1e-12),
+                "episode_weight": values["weight"],
+            }
+            for key, values in sorted(wait_slack.items())
+        },
         "target_availability": {
             name: {
                 "available_rate": values["available_weight"]
@@ -1995,6 +2364,13 @@ def _lopo_loss_components(
                 float(item["episode_weighted_mae"])
                 / max(scales.get(name, 1.0), 1.0)
             )
+    slack_rows = tuple(metrics.get("wait_slack", {}).values())
+    slack_weight = sum(float(item["episode_weight"]) for item in slack_rows)
+    if slack_weight > 0:
+        components["tool_wait_slack_brier"] = sum(
+            float(item["brier"]) * float(item["episode_weight"])
+            for item in slack_rows
+        ) / slack_weight
     components["ood_penalty"] = 0.25 * float(metrics["ood_fallback_rate"])
     return components
 
@@ -2014,11 +2390,6 @@ def _target_scales(rows: Sequence[Mapping[str, Any]]) -> dict[str, float]:
                 "remaining_decode_tokens": (
                     label.get("remaining_output_tokens")
                     if state == InvocationState.RUNNING_LLM.value
-                    else None
-                ),
-                "remaining_external_wait_ms": (
-                    label.get("next_boundary_delay_ms")
-                    if state == InvocationState.WAIT_TOOL.value
                     else None
                 ),
                 "prompt_growth_tokens": label.get("reentry_prompt_delta_tokens"),
@@ -2241,6 +2612,85 @@ def _fit_temperature(
     )
 
 
+def _calibrate_binary_probability(
+    probability: float,
+    *,
+    scale: float,
+    offset: float,
+) -> float:
+    if math.isclose(scale, 1.0) and math.isclose(offset, 0.0):
+        return min(1.0, max(0.0, float(probability)))
+    clipped = min(1.0 - 1e-6, max(1e-6, float(probability)))
+    logit = math.log(clipped / (1.0 - clipped))
+    calibrated_logit = scale * logit + offset
+    if calibrated_logit >= 0:
+        decay = math.exp(-calibrated_logit)
+        return 1.0 / (1.0 + decay)
+    growth = math.exp(calibrated_logit)
+    return growth / (1.0 + growth)
+
+
+def _fit_binary_logit_calibration(
+    records: Sequence[tuple[float, bool, float]],
+) -> tuple[float, float]:
+    """Fit a regularized Platt map without adding a second wait predictor."""
+
+    if not records:
+        return 1.0, 0.0
+    prepared = tuple(
+        (
+            math.log(
+                min(1.0 - 1e-4, max(1e-4, probability))
+                / (1.0 - min(1.0 - 1e-4, max(1e-4, probability)))
+            ),
+            float(outcome),
+            max(0.0, float(weight)),
+        )
+        for probability, outcome, weight in records
+        if weight > 0
+    )
+    if not prepared:
+        return 1.0, 0.0
+    scale = 1.0
+    offset = 0.0
+    regularization = max(1e-6, sum(item[2] for item in prepared) * 1e-3)
+    for _ in range(40):
+        gradient_scale = regularization * (scale - 1.0)
+        gradient_offset = regularization * offset
+        hessian_scale = regularization
+        hessian_offset = regularization
+        hessian_cross = 0.0
+        for logit, outcome, weight in prepared:
+            probability = _calibrate_binary_probability(
+                1.0 / (1.0 + math.exp(-max(-40.0, min(40.0, logit)))),
+                scale=scale,
+                offset=offset,
+            )
+            residual = weight * (probability - outcome)
+            curvature = weight * probability * (1.0 - probability)
+            gradient_scale += residual * logit
+            gradient_offset += residual
+            hessian_scale += curvature * logit * logit
+            hessian_cross += curvature * logit
+            hessian_offset += curvature
+        determinant = hessian_scale * hessian_offset - hessian_cross**2
+        if determinant <= 1e-12:
+            break
+        step_scale = (
+            hessian_offset * gradient_scale
+            - hessian_cross * gradient_offset
+        ) / determinant
+        step_offset = (
+            hessian_scale * gradient_offset
+            - hessian_cross * gradient_scale
+        ) / determinant
+        scale = min(5.0, max(0.05, scale - step_scale))
+        offset = min(5.0, max(-5.0, offset - step_offset))
+        if max(abs(step_scale), abs(step_offset)) < 1e-6:
+            break
+    return scale, offset
+
+
 def _raw_interval(
     distribution: EmpiricalDistribution, target_coverage: float
 ) -> tuple[float, float]:
@@ -2317,6 +2767,64 @@ def _log_bucket(value: float) -> float:
         return 0.0
     exponent = round(math.log2(value) * 4.0) / 4.0
     return round(2.0**exponent, 6)
+
+
+def _required_prediction_heads_for_state(state: str) -> tuple[str, ...]:
+    """Return only heads that can affect the next action from this state."""
+
+    if state == InvocationState.RUNNING_LLM.value:
+        return ("boundary", "remaining_decode_demand")
+    if state == InvocationState.READY.value:
+        return ("next_output_demand", "prompt_growth")
+    if state == InvocationState.WAIT_TOOL.value:
+        return ("tool_wait", "prompt_growth")
+    if state in {
+        InvocationState.WAIT_JOIN.value,
+        InvocationState.WAIT_CHILD.value,
+    }:
+        return ("join_dependency", "prompt_growth")
+    if state == InvocationState.WAIT_MESSAGE.value:
+        return ("message_dependency", "prompt_growth")
+    return ()
+
+
+def _action_head_requirements_for_state(
+    state: str,
+) -> tuple[tuple[str, str], ...]:
+    """Expose availability only for heads consumed by each online action."""
+
+    if state == InvocationState.RUNNING_LLM.value:
+        return (
+            ("schedule", "boundary"),
+            ("schedule", "remaining_decode_demand"),
+        )
+    if state == InvocationState.READY.value:
+        return (
+            ("admit", "next_output_demand"),
+            ("admit", "prompt_growth"),
+        )
+    if state == InvocationState.WAIT_TOOL.value:
+        return (
+            ("prepare_host", "tool_wait"),
+            ("prefetch_gpu", "tool_wait"),
+            ("prefetch_gpu", "prompt_growth"),
+        )
+    if state in {
+        InvocationState.WAIT_JOIN.value,
+        InvocationState.WAIT_CHILD.value,
+    }:
+        return (
+            ("prepare_host", "join_dependency"),
+            ("prefetch_gpu", "join_dependency"),
+            ("prefetch_gpu", "prompt_growth"),
+        )
+    if state == InvocationState.WAIT_MESSAGE.value:
+        return (
+            ("prepare_host", "message_dependency"),
+            ("prefetch_gpu", "message_dependency"),
+            ("prefetch_gpu", "prompt_growth"),
+        )
+    return ()
 
 
 def _normalize_boundary(value: Any) -> str | None:

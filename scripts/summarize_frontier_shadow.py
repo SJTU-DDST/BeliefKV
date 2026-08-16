@@ -32,6 +32,7 @@ def main() -> int:
     by_state: Counter[str] = Counter()
     by_support: Counter[str] = Counter()
     by_boundary_top: Counter[str] = Counter()
+    by_wait_kind: Counter[str] = Counter()
     ood_reasons: Counter[str] = Counter()
     workflows: set[str] = set()
     invocations: set[str] = set()
@@ -57,7 +58,16 @@ def main() -> int:
             workflows.add(str(record.get("workflow_id") or ""))
             invocations.add(str(record.get("invocation_id") or ""))
             decode_values.append(float(record.get("remaining_decode_tokens_p50") or 0.0))
-            wait_values.append(float(record.get("remaining_external_wait_ms_p50") or 0.0))
+            wait_kind = str(record.get("wait_kind") or "unknown")
+            by_wait_kind[wait_kind] += 1
+            if wait_kind == "tool":
+                wait_values.append(
+                    float(
+                        record.get("tool_wait_ms_p50")
+                        or record.get("remaining_external_wait_ms_p50")
+                        or 0.0
+                    )
+                )
             growth_values.append(float(record.get("prompt_growth_tokens_p50") or 0.0))
             output_values.append(float(record.get("next_output_tokens_p50") or 0.0))
 
@@ -69,10 +79,11 @@ def main() -> int:
         "by_state": dict(sorted(by_state.items())),
         "by_support_level": dict(sorted(by_support.items())),
         "by_boundary_top": dict(sorted(by_boundary_top.items())),
+        "by_wait_kind": dict(sorted(by_wait_kind.items())),
         "ood_reason_counts": dict(sorted(ood_reasons.items())),
         "p50_of_p50": {
             "remaining_decode_tokens": _p50(decode_values),
-            "remaining_external_wait_ms": _p50(wait_values),
+            "tool_wait_ms": _p50(wait_values),
             "prompt_growth_tokens": _p50(growth_values),
             "next_output_tokens": _p50(output_values),
         },

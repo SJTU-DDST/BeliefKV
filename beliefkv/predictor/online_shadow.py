@@ -39,6 +39,11 @@ class FrontierShadowRecord:
     boundary_top: str
     boundary_distribution: Mapping[str, float]
     remaining_decode_tokens_p50: float
+    wait_kind: str
+    tool_wait_ms_p50: float | None
+    tool_wait_survival: Mapping[str, float]
+    # Compatibility-only alias. It is populated only for WAIT_TOOL and must
+    # not be interpreted as JOIN/child/message wait.
     remaining_external_wait_ms_p50: float
     prompt_growth_tokens_p50: float
     next_output_tokens_p50: float
@@ -58,7 +63,9 @@ def _record_signature(prediction: LocalFrontierPrediction) -> str:
         tuple(sorted(prediction.ood_reasons)),
         _boundary_top(prediction.boundary_distribution),
         round(prediction.remaining_decode_tokens.quantile(0.5), 1),
-        round(prediction.remaining_external_wait.quantile(0.5), 1),
+        prediction.wait_belief.kind.value,
+        round(prediction.wait_belief.residual_duration.quantile(0.5), 1),
+        tuple(sorted(prediction.head_support.items())),
         round(prediction.prompt_growth_tokens.quantile(0.5), 1),
         round(prediction.next_output_tokens.quantile(0.5), 1),
     )
@@ -234,8 +241,28 @@ def build_frontier_shadow_records(
                     remaining_decode_tokens_p50=(
                         prediction.remaining_decode_tokens.quantile(0.5)
                     ),
+                    wait_kind=prediction.wait_belief.kind.value,
+                    tool_wait_ms_p50=(
+                        prediction.wait_belief.residual_duration.quantile(0.5)
+                        if prediction.wait_belief.kind.value == "tool"
+                        and prediction.wait_belief.available
+                        else None
+                    ),
+                    tool_wait_survival={
+                        f"gt_{int(horizon_ms)}ms": probability
+                        for horizon_ms in (100.0, 1_000.0, 10_000.0)
+                        if (
+                            probability
+                            := prediction.wait_belief.slack_probability(
+                                horizon_ms
+                            )
+                        )
+                        is not None
+                    },
                     remaining_external_wait_ms_p50=(
-                        prediction.remaining_external_wait.quantile(0.5)
+                        prediction.wait_belief.residual_duration.quantile(0.5)
+                        if prediction.wait_belief.kind.value == "tool"
+                        else 0.0
                     ),
                     prompt_growth_tokens_p50=(
                         prediction.prompt_growth_tokens.quantile(0.5)

@@ -102,7 +102,18 @@ closure，其成本还取决于 extent/page 数量、extent 大小分布、closu
 copy 状态和并发传输条件。动态 agent workflow 则通过 `TOOL_WAIT`、`WAIT_CHILD`、
 `WAIT_JOIN` 和 message dependency 提供动作可以被隐藏的因果窗口。
 
-因此 P6 不再把“未来会不会再次调用该 agent”直接映射为 offload/prefetch，而是联合计算：
+因此 P6 不再把“未来会不会再次调用该 agent”或一个统一 external-wait 直接映射为
+offload/prefetch。等待预测按因果类型拆分：工具调用使用 tool-family/backend-class 条件 survival；
+JOIN/child 使用 RCCG child completion 分布及 JOIN_ALL/JOIN_ANY 组合；message wait 使用 producer
+dependency；未知类型进入 OOD。KV 动作直接查询：
+
+```text
+tau = Q95(transfer_time | physical_shape, contention) + commit_guard
+P(wait/reentry window > tau | observed RCCG state)
+```
+
+上游不再要求预测“工具最终在几分钟后返回”。绝对时间分布只用于 scenario timeline 和 latest-start，
+动作门禁使用经 held-out calibration 的 causal-slack probability。随后联合计算：
 
 ```text
 agent/RCCG state       -> causal slack
@@ -113,9 +124,13 @@ morphology_slack = min(pressure_deadline, reentry_deadline)
                   - safety_guard
 ```
 
-只有 `morphology_slack > 0`，且动作净收益、未来 HBM 和物理 certificate 均成立时，
+只有 causal-slack chance constraint、`morphology_slack > 0`、动作净收益、未来 HBM 和物理
+certificate 均成立时，
 JointPlan 才能选择预测动作。预测 OOD、形态超出服务模型支持域或 safe point 重新物化
 后余量转负时，系统退化到 P5 observed policy。
+
+OOD 必须按 `action x invocation_state x required_head` 统计。历史 composite OOD 将所有预测头做
+并集，只能作为兼容诊断，不能作为在线全局门禁。
 
 当前 GPU0 证据仅证明“物理成本估计不能只依赖 bytes”：相同 2,659,221,504 bytes
 下，7-extents 与 106-extents 的 D2H 均值分别为 185.69 ms 和 765.17 ms，三次重复

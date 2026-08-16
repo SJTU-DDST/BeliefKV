@@ -89,6 +89,7 @@ class BeliefKVConfig:
     predictive_risk_top_k: int = 8
     predictive_risk_max_candidates: int = 8
     predictive_risk_min_calibration_coverage: float = 0.9
+    predictive_risk_min_causal_slack_probability: float = 0.9
     observed_admission_scheduling_enabled: bool = False
     observed_admission_active_kv_high_watermark_ratio: float = 0.8
     observed_admission_min_active_requests: int = 1
@@ -126,6 +127,7 @@ class BeliefKVConfig:
     dynamic_working_set_pressure_exit_ratio: float = 0.7
     dynamic_working_set_min_ready_requests: int = 4
     dynamic_working_set_min_hold_epochs: int = 8
+    resident_service_window_ms: float = 5_000.0
     max_joint_workflow_candidates: int = 8
     max_frontier_candidates_per_workflow: int = 4
     max_total_frontier_candidates: int = 16
@@ -228,6 +230,10 @@ class BeliefKVConfig:
         if not 0 <= self.predictive_risk_min_calibration_coverage <= 1:
             raise ValueError(
                 "predictive_risk_min_calibration_coverage must be in [0, 1]"
+            )
+        if not 0 <= self.predictive_risk_min_causal_slack_probability <= 1:
+            raise ValueError(
+                "predictive_risk_min_causal_slack_probability must be in [0, 1]"
             )
         if self.predictive_risk_shadow_enabled and not self.predictor_model_path:
             raise ValueError(
@@ -352,6 +358,11 @@ class BeliefKVConfig:
             raise ValueError("dynamic working-set ready floor must be positive")
         if self.dynamic_working_set_min_hold_epochs < 0:
             raise ValueError("dynamic working-set hold epochs must be non-negative")
+        if (
+            not math.isfinite(self.resident_service_window_ms)
+            or self.resident_service_window_ms <= 0
+        ):
+            raise ValueError("resident service window must be finite and positive")
         if (
             self.running_batch_retraction_enabled
             and not self.observed_admission_scheduling_enabled

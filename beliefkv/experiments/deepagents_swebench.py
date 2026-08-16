@@ -1190,6 +1190,7 @@ class DeepAgentsExperimentConfig:
     workflow_arrival_interval_ms: float = 0.0
     workflow_arrival_batch_size: int = 0
     workflow_arrival_batch_interval_ms: float = 0.0
+    saturated_root_backlog: bool = False
     gpu_index: int = 0
     pool_tokens: int = 163_840
     max_completion_tokens: int = 2048
@@ -2753,6 +2754,26 @@ def server_alive(base_url: str, timeout_s: float = 5.0) -> bool:
         return False
 
 
+def _execute_saturated_root_pool(
+    workloads: Sequence[SweBenchWorkload],
+    *,
+    concurrency: int,
+    run_one: Any,
+) -> tuple[tuple[Any, SweBenchWorkload], ...]:
+    """Submit every frozen root before waiting for any workflow completion."""
+
+    if concurrency < len(workloads):
+        raise ValueError(
+            "saturated root backlog requires concurrency >= frozen root count "
+            f"({concurrency} < {len(workloads)})"
+        )
+    with ThreadPoolExecutor(max_workers=concurrency) as executor:
+        futures = {
+            executor.submit(run_one, workload): workload for workload in workloads
+        }
+        return tuple((future, futures[future]) for future in as_completed(futures))
+
+
 def run_experiment(config: DeepAgentsExperimentConfig) -> dict[str, Any]:
     output_dir = config.output_dir.expanduser().resolve()
     if output_dir.exists():
@@ -2783,6 +2804,11 @@ def run_experiment(config: DeepAgentsExperimentConfig) -> dict[str, Any]:
         workloads = tuple(indexed[item] for item in config.instance_ids)
     else:
         workloads = bundle.workloads[: config.max_workflows]
+    if config.saturated_root_backlog and config.concurrency < len(workloads):
+        raise ValueError(
+            "--saturated-root-backlog requires --concurrency to cover every "
+            f"frozen root ({config.concurrency} < {len(workloads)})"
+        )
     output_dir.mkdir(parents=True)
     manifest = {
         "schema_version": 1,
@@ -2813,6 +2839,22 @@ def run_experiment(config: DeepAgentsExperimentConfig) -> dict[str, Any]:
         "workflow_arrival_batch_size": config.workflow_arrival_batch_size,
         "workflow_arrival_batch_interval_ms": (
             config.workflow_arrival_batch_interval_ms
+        ),
+        "saturated_root_backlog": config.saturated_root_backlog,
+        "root_submission_mode": (
+            "all_roots_eager"
+            if config.saturated_root_backlog
+            else "arrival_schedule"
+        ),
+        "client_inflight_root_window": (
+            len(workloads)
+            if config.saturated_root_backlog
+            else config.concurrency
+        ),
+        "initial_unsubmitted_root_backlog": (
+            0
+            if config.saturated_root_backlog
+            else max(0, len(workloads) - config.concurrency)
         ),
         "evaluation_scope": (
             "load_and_kv_migration_measurement; official correctness requires "
@@ -2851,30 +2893,42 @@ def run_experiment(config: DeepAgentsExperimentConfig) -> dict[str, Any]:
             batch_interval_seconds=config.workflow_arrival_interval_ms / 1000.0,
         )
     try:
-        with ThreadPoolExecutor(max_workers=config.concurrency) as executor:
-            futures = {}
-            for arrival in arrivals:
-                target = started + arrival.scheduled_offset_seconds
-                delay = target - time.monotonic()
-                if delay > 0:
-                    time.sleep(delay)
-                workload = workloads[arrival.workflow_index]
-                futures[
-                    executor.submit(_run_workflow, config, bundle, workload)
-                ] = workload
-            for future in as_completed(futures):
-                workload = futures[future]
-                try:
-                    results.append(future.result())
-                except BaseException as error:
-                    results.append(
-                        {
-                            "instance_id": workload.instance_id,
-                            "mode": config.mode,
-                            "outcome": "runner_error",
-                            "error": f"{type(error).__name__}: {error}",
-                        }
-                    )
+        def record_result(future: Any, workload: Any) -> None:
+            try:
+                results.append(future.result())
+            except BaseException as error:
+                results.append(
+                    {
+                        "instance_id": workload.instance_id,
+                        "mode": config.mode,
+                        "outcome": "runner_error",
+                        "error": f"{type(error).__name__}: {error}",
+                    }
+                )
+
+        if config.saturated_root_backlog:
+            for future, workload in _execute_saturated_root_pool(
+                workloads,
+                concurrency=config.concurrency,
+                run_one=lambda workload: _run_workflow(
+                    config, bundle, workload
+                ),
+            ):
+                record_result(future, workload)
+        else:
+            with ThreadPoolExecutor(max_workers=config.concurrency) as executor:
+                futures: dict[Any, Any] = {}
+                for arrival in arrivals:
+                    target = started + arrival.scheduled_offset_seconds
+                    delay = target - time.monotonic()
+                    if delay > 0:
+                        time.sleep(delay)
+                    workload = workloads[arrival.workflow_index]
+                    futures[
+                        executor.submit(_run_workflow, config, bundle, workload)
+                    ] = workload
+                for future in as_completed(futures):
+                    record_result(future, futures[future])
     finally:
         metrics = sglang_monitor.close()
         gpu_monitor.close()

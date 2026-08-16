@@ -208,6 +208,8 @@ class RunnableInvocation:
     predicted_next_output_tokens: float | None = None
     prediction_support_level: str = ""
     prediction_ood_reasons: tuple[str, ...] = ()
+    last_gpu_service_ts_ms: float | None = None
+    completed_gpu_service_count: int = 0
 
     def __post_init__(self) -> None:
         for field_name in (
@@ -223,6 +225,13 @@ class RunnableInvocation:
         _require_nonnegative(self.submitted_ts_ms, "submitted_ts_ms")
         if self.startup_bytes < 0:
             raise ValueError("startup_bytes must be non-negative")
+        if self.completed_gpu_service_count < 0:
+            raise ValueError("completed_gpu_service_count must be non-negative")
+        if self.last_gpu_service_ts_ms is not None:
+            _require_nonnegative(
+                self.last_gpu_service_ts_ms,
+                "last_gpu_service_ts_ms",
+            )
         for field_name in (
             "predicted_remaining_decode_tokens",
             "predicted_external_wait_ms",
@@ -267,6 +276,8 @@ class RunnableInvocation:
             "predicted_next_output_tokens": self.predicted_next_output_tokens,
             "prediction_support_level": self.prediction_support_level,
             "prediction_ood_reasons": list(self.prediction_ood_reasons),
+            "last_gpu_service_ts_ms": self.last_gpu_service_ts_ms,
+            "completed_gpu_service_count": self.completed_gpu_service_count,
         }
 
     @classmethod
@@ -298,6 +309,14 @@ class RunnableInvocation:
                 float(raw["predicted_next_output_tokens"])
                 if raw.get("predicted_next_output_tokens") is not None
                 else None
+            ),
+            last_gpu_service_ts_ms=(
+                float(raw["last_gpu_service_ts_ms"])
+                if raw.get("last_gpu_service_ts_ms") is not None
+                else None
+            ),
+            completed_gpu_service_count=int(
+                raw.get("completed_gpu_service_count", 0)
             ),
             prediction_support_level=str(
                 raw.get("prediction_support_level", "")

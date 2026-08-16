@@ -157,6 +157,144 @@ def test_async_semantic_planner_never_prepares_physical_extents() -> None:
     assert plan.planning_termination_reason == "semantic_plan_complete"
 
 
+def test_semantic_replacement_uses_expired_resident_service_lease() -> None:
+    policy_input = _input(
+        capacity=650,
+        reserved=0,
+        include_cpu_target=False,
+    )
+    target = replace(
+        policy_input.runnable_frontier[0],
+        causal_class="engine_waiting:foreground:root",
+    )
+    old = _request(
+        "request-old",
+        "workflow-old",
+        "invocation-old",
+        "ctx-old",
+        submitted_ms=0.0,
+        startup_bytes=100,
+        causal_class="engine_waiting:background:root",
+    )
+    old = replace(
+        old,
+        last_gpu_service_ts_ms=0.0,
+        completed_gpu_service_count=1,
+    )
+    policy_input = _with_runtime_state(
+        policy_input,
+        (target, old),
+        {
+            target.invocation_id: _invocation(
+                target.workflow_id, target.context_id
+            ),
+            old.invocation_id: _invocation(
+                old.workflow_id,
+                old.context_id,
+                execution_mode="background",
+            ),
+        },
+    )
+    state = dict(policy_input.runtime_graph.state)
+    rccg = dict(state["rccg"])
+    rccg["contexts"] = {
+        "ctx-target": {
+            "epoch": 0,
+            "invocation_ids": [target.invocation_id],
+        },
+        "ctx-old": {
+            "epoch": 0,
+            "invocation_ids": [old.invocation_id],
+        },
+    }
+    state["rccg"] = rccg
+    policy_input = replace(
+        policy_input,
+        runtime_graph=replace(policy_input.runtime_graph, state=state),
+        resources=replace(policy_input.resources, ts_ms=2_000.0),
+    )
+
+    plan = _semantic_planner(resident_service_window_ms=1_000.0).plan(
+        policy_input
+    )
+
+    replacement = next(
+        item
+        for item in plan.semantic_residency
+        if item.action == ResidencyAction.COMMIT_CPU
+    )
+    assert replacement.context_id == "ctx-old"
+    assert replacement.beneficiary_request_id == target.request_id
+    assert replacement.required_reclaim_bytes > 0
+    assert "service-or-evict" in replacement.reason
+
+
+def test_semantic_replacement_preserves_recently_served_resident() -> None:
+    policy_input = _input(
+        capacity=650,
+        reserved=0,
+        include_cpu_target=False,
+    )
+    target = replace(
+        policy_input.runnable_frontier[0],
+        causal_class="engine_waiting:foreground:root",
+    )
+    old = replace(
+        _request(
+            "request-old",
+            "workflow-old",
+            "invocation-old",
+            "ctx-old",
+            submitted_ms=0.0,
+            startup_bytes=100,
+            causal_class="engine_waiting:background:root",
+        ),
+        last_gpu_service_ts_ms=99.0,
+        completed_gpu_service_count=1,
+    )
+    policy_input = _with_runtime_state(
+        policy_input,
+        (target, old),
+        {
+            target.invocation_id: _invocation(
+                target.workflow_id, target.context_id
+            ),
+            old.invocation_id: _invocation(
+                old.workflow_id,
+                old.context_id,
+                execution_mode="background",
+            ),
+        },
+    )
+    state = dict(policy_input.runtime_graph.state)
+    rccg = dict(state["rccg"])
+    rccg["contexts"] = {
+        "ctx-target": {
+            "epoch": 0,
+            "invocation_ids": [target.invocation_id],
+        },
+        "ctx-old": {
+            "epoch": 0,
+            "invocation_ids": [old.invocation_id],
+        },
+    }
+    state["rccg"] = rccg
+    policy_input = replace(
+        policy_input,
+        runtime_graph=replace(policy_input.runtime_graph, state=state),
+    )
+
+    plan = _semantic_planner(resident_service_window_ms=1_000.0).plan(
+        policy_input
+    )
+
+    assert not any(
+        item.context_id == "ctx-old"
+        and item.action == ResidencyAction.COMMIT_CPU
+        for item in plan.semantic_residency
+    )
+
+
 def _current_state(
     source,
     *,
@@ -256,7 +394,7 @@ def test_joint_planner_prioritizes_the_observed_join_straggler() -> None:
     }
 
 
-def test_joint_planner_applies_root_workflow_fairness_before_fanout() -> None:
+def test_joint_planner_is_work_conserving_across_root_workflows() -> None:
     policy_input = _input(capacity=1_500, reserved=0, include_cpu_target=False)
     hot_a = _request("request-hot-a", "hot", "hot-a", "ctx-hot-a")
     hot_b = _request("request-hot-b", "hot", "hot-b", "ctx-hot-b")
@@ -274,11 +412,15 @@ def test_joint_planner_applies_root_workflow_fairness_before_fanout() -> None:
 
     plan = _planner().plan(policy_input)
 
-    assert plan.execution.ordered_request_ids == ("request-cold",)
+    assert plan.execution.ordered_request_ids == (
+        "request-cold",
+        "request-hot-a",
+        "request-hot-b",
+    )
     actions = {item.request_id: item.action for item in plan.admissions}
     assert actions["request-cold"] == AdmissionAction.ADMIT
-    assert actions["request-hot-a"] == AdmissionAction.DEFER
-    assert actions["request-hot-b"] == AdmissionAction.DEFER
+    assert actions["request-hot-a"] == AdmissionAction.ADMIT
+    assert actions["request-hot-b"] == AdmissionAction.ADMIT
 
 
 def test_anytime_planner_keeps_a_feasible_prefix_when_budget_expires() -> None:
@@ -547,7 +689,13 @@ def test_increased_runtime_startup_demand_rechecks_current_capacity() -> None:
 def test_fairness_revision_can_advance_without_invalidating_priority() -> None:
     policy_input = _input(capacity=1_500, reserved=0, include_cpu_target=False)
     request_a = _request("request-a", "workflow-a", "inv-a", "ctx-a")
-    request_b = _request("request-b", "workflow-b", "inv-b", "ctx-b")
+    request_b = _request(
+        "request-b",
+        "workflow-b",
+        "inv-b",
+        "ctx-b",
+        startup_bytes=1_000,
+    )
     invocations = {
         "inv-a": _invocation("workflow-a", "ctx-a"),
         "inv-b": _invocation("workflow-b", "ctx-b"),
@@ -581,7 +729,13 @@ def test_fairness_revision_can_advance_without_invalidating_priority() -> None:
 def test_fairness_priority_change_invalidates_execution_intent() -> None:
     policy_input = _input(capacity=1_500, reserved=0, include_cpu_target=False)
     request_a = _request("request-a", "workflow-a", "inv-a", "ctx-a")
-    request_b = _request("request-b", "workflow-b", "inv-b", "ctx-b")
+    request_b = _request(
+        "request-b",
+        "workflow-b",
+        "inv-b",
+        "ctx-b",
+        startup_bytes=1_000,
+    )
     invocations = {
         "inv-a": _invocation("workflow-a", "ctx-a"),
         "inv-b": _invocation("workflow-b", "ctx-b"),
@@ -635,9 +789,15 @@ def test_reserved_request_startup_is_not_counted_twice() -> None:
 
 
 def test_component_validation_isolates_an_unselected_request_change() -> None:
-    policy_input = _input(capacity=1_500, reserved=0, include_cpu_target=False)
+    policy_input = _input(capacity=750, reserved=0, include_cpu_target=False)
     request_a = _request("request-a", "workflow-a", "inv-a", "ctx-a")
-    request_b = _request("request-b", "workflow-b", "inv-b", "ctx-b")
+    request_b = _request(
+        "request-b",
+        "workflow-b",
+        "inv-b",
+        "ctx-b",
+        startup_bytes=1_000,
+    )
     invocations = {
         "inv-a": _invocation("workflow-a", "ctx-a"),
         "inv-b": _invocation("workflow-b", "ctx-b"),

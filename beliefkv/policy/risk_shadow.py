@@ -37,6 +37,7 @@ from beliefkv.predictor.frontier_belief import (
     BeliefScopeConfig,
     DemandPhase,
     DependencyMode,
+    FrontierBeliefSnapshot,
     PredictiveEvidenceReadSet,
     ScenarioProjection,
 )
@@ -59,6 +60,7 @@ class PredictiveRiskShadowConfig:
     max_full_prefetch_hbm_ratio: float = 1.0
     online_overlay_enabled: bool = False
     transfer_commit_guard_ms: float = 25.0
+    minimum_causal_slack_probability: float = 0.9
 
     def __post_init__(self) -> None:
         if min(self.particle_count, self.top_k, self.max_candidates) <= 0:
@@ -81,6 +83,10 @@ class PredictiveRiskShadowConfig:
             or self.transfer_commit_guard_ms < 0
         ):
             raise ValueError("transfer commit guard must be finite and non-negative")
+        if not 0 <= self.minimum_causal_slack_probability <= 1:
+            raise ValueError(
+                "minimum causal slack probability must be in [0, 1]"
+            )
 
 
 def _transfer_deadline_and_slack(
@@ -128,6 +134,7 @@ class PredictiveIntent:
     maximum_transfer_ms: float
     maximum_stall_ms: float
     morphology_slack_ms: float
+    causal_slack_probability: float = 0.0
 
     def __post_init__(self) -> None:
         required = (
@@ -173,6 +180,7 @@ class PredictiveIntent:
             self.maximum_transfer_ms,
             self.maximum_stall_ms,
             self.morphology_slack_ms,
+            self.causal_slack_probability,
         )
         if any(not math.isfinite(item) for item in finite):
             raise ValueError("predictive intent values must be finite")
@@ -194,6 +202,8 @@ class PredictiveIntent:
             raise ValueError("predictive intent calibration must be in [0, 1]")
         if not 0 <= self.future_hbm_feasibility_probability <= 1:
             raise ValueError("predictive HBM feasibility must be in [0, 1]")
+        if not 0 <= self.causal_slack_probability <= 1:
+            raise ValueError("predictive causal slack probability must be in [0, 1]")
         heads = tuple(sorted(set(self.required_prediction_heads)))
         support = tuple(sorted(set(self.prediction_head_support)))
         if not heads or any(not name for name in heads):
@@ -235,6 +245,7 @@ class PredictiveIntent:
             "maximum_transfer_ms": self.maximum_transfer_ms,
             "maximum_stall_ms": self.maximum_stall_ms,
             "morphology_slack_ms": self.morphology_slack_ms,
+            "causal_slack_probability": self.causal_slack_probability,
         }
 
 
@@ -839,7 +850,15 @@ class PredictiveEligibilityIndex:
             int(float(raw.get("calibration_coverage") or 0.0) * 20),
             int(raw.get("current_sequence_tokens") or 0) // 512,
             cls._distribution_bucket(raw.get("remaining_decode_tokens"), 16),
-            cls._distribution_bucket(raw.get("remaining_external_wait"), 0),
+            cls._distribution_bucket(
+                (
+                    raw.get("wait_belief", {}).get("residual_duration")
+                    if isinstance(raw.get("wait_belief"), Mapping)
+                    else None
+                )
+                or raw.get("remaining_external_wait"),
+                0,
+            ),
             cls._distribution_bucket(raw.get("prompt_growth_tokens"), 16),
             cls._distribution_bucket(raw.get("next_output_tokens"), 16),
             boundary_bucket,
@@ -1356,6 +1375,7 @@ class PredictiveRiskShadowObserver:
         belief_by_package: dict[str, Any] = {}
         selected_package_id = baseline.package_id
         selected_benefit_ms = 0.0
+        evaluation_by_package: dict[str, PackageScenarioEvaluation] = {}
         for package in candidates:
             if cancel_check is not None and cancel_check():
                 return self._skipped(
@@ -1439,6 +1459,7 @@ class PredictiveRiskShadowObserver:
                 (candidate_evaluation,),
             )
             summary = candidate_decision.summaries[0]
+            evaluation_by_package[package.package_id] = candidate_evaluation
             summaries.append(summary)
             if summary.eligible and summary.expected_benefit_ms > selected_benefit_ms:
                 selected_benefit_ms = summary.expected_benefit_ms
@@ -1468,6 +1489,8 @@ class PredictiveRiskShadowObserver:
         predictive_intent = self._predictive_intent(
             package_by_id.get(decision.selected_package_id),
             summary_by_package.get(decision.selected_package_id),
+            belief=belief,
+            evaluation=evaluation_by_package.get(decision.selected_package_id),
             policy_input=policy_input,
             graph=graph,
             eligibility=eligibility,
@@ -1545,7 +1568,6 @@ class PredictiveRiskShadowObserver:
                 ),
                 None,
             )
-            required = ("remaining_window",)
         elif package.action in {
             PredictiveActionKind.PREFETCH_GPU,
             PredictiveActionKind.PARTIAL_PREFETCH_GPU,
@@ -1560,7 +1582,6 @@ class PredictiveRiskShadowObserver:
                 ),
                 None,
             )
-            required = ("future_kv_growth", "reentry_window")
         else:
             return False, (), ("unsupported_predictive_action",)
         if candidate is None:
@@ -1574,15 +1595,13 @@ class PredictiveRiskShadowObserver:
             return False, (), ("calibration_coverage",)
 
         support: list[tuple[str, str]] = []
-        wait_level = self._distribution_head_support(
-            prediction,
-            distribution=prediction.remaining_external_wait,
-            interval_name="remaining_external_wait_ms",
+        wait_head, wait_level = self._wait_head_support(
+            prediction, candidate.state
         )
         if package.action == PredictiveActionKind.PREPARE_HOST:
-            support.append(("remaining_window", wait_level))
+            support.append((wait_head, wait_level))
         else:
-            support.append(("reentry_window", wait_level))
+            support.append((wait_head, wait_level))
             support.append(
                 (
                     "future_kv_growth",
@@ -1599,6 +1618,31 @@ class PredictiveRiskShadowObserver:
             if level == "unavailable"
         )
         return not unavailable, tuple(support), unavailable
+
+    @staticmethod
+    def _wait_head_support(
+        prediction: LocalFrontierPrediction,
+        state: str,
+    ) -> tuple[str, str]:
+        if state == InvocationState.WAIT_TOOL.value:
+            level = prediction.support_for("tool_wait")
+            if not prediction.wait_belief.available:
+                level = "unavailable"
+            return "tool_wait_slack", level
+        if state in {
+            InvocationState.WAIT_JOIN.value,
+            InvocationState.WAIT_CHILD.value,
+        }:
+            return (
+                "join_dependency_slack",
+                prediction.support_for("join_dependency"),
+            )
+        if state == InvocationState.WAIT_MESSAGE.value:
+            return (
+                "message_dependency_slack",
+                prediction.support_for("message_dependency"),
+            )
+        return "wait_slack", "unavailable"
 
     @staticmethod
     def _package_invocation_id(
@@ -1644,6 +1688,8 @@ class PredictiveRiskShadowObserver:
         package: PredictiveActionPackage | None,
         summary: Any,
         *,
+        belief: FrontierBeliefSnapshot,
+        evaluation: PackageScenarioEvaluation | None,
         policy_input: PolicyInput,
         graph: RuntimeCausalContextGraph,
         eligibility: PredictiveEligibility,
@@ -1656,6 +1702,7 @@ class PredictiveRiskShadowObserver:
             package is None
             or summary is None
             or not summary.eligible
+            or evaluation is None
             or certificate is None
         ):
             return None
@@ -1669,7 +1716,6 @@ class PredictiveRiskShadowObserver:
                 ),
                 None,
             )
-            required_heads = ("remaining_window",)
             projection = physicalizer.prepare_projection(package)
             transfer_evidence = physicalizer.prepare_shadow_transfer_evidence(package)
             interference_evidence = physicalizer.prepare_interference_evidence(
@@ -1707,7 +1753,6 @@ class PredictiveRiskShadowObserver:
                 ),
                 None,
             )
-            required_heads = ("future_kv_growth", "reentry_window")
             target_bytes = candidate.missing_gpu_bytes if candidate is not None else 0
             shape_fingerprint = "prefetch-not-shape-certified"
             predicted_extent_count = 0
@@ -1720,18 +1765,39 @@ class PredictiveRiskShadowObserver:
         prediction = predictions.get(candidate.invocation_id)
         if prediction is None:
             return None
-        interval = prediction.calibrated_intervals.get(
-            "remaining_external_wait_ms"
+        wait_head, _wait_level = self._wait_head_support(
+            prediction, candidate.state
         )
-        remaining_low_ms = (
-            max(0.0, float(interval[0]))
-            if interval is not None
-            else max(0.0, prediction.remaining_external_wait.quantile(0.05))
+        required_heads = (
+            (wait_head,)
+            if package.action == PredictiveActionKind.PREPARE_HOST
+            else ("future_kv_growth", wait_head)
         )
         transfer_p95_ms = (
             physicalizer.package_transfer_duration_ms(package)
             * self.config.transfer_p95_safety_factor
         )
+        required_wait_ms = transfer_p95_ms + self.config.transfer_commit_guard_ms
+        if candidate.state == InvocationState.WAIT_TOOL.value:
+            slack_probability = prediction.wait_belief.slack_probability(
+                required_wait_ms
+            )
+            remaining_low = prediction.wait_belief.conservative_wait_ms(0.05)
+            if slack_probability is None or remaining_low is None:
+                return None
+            remaining_low_ms = max(0.0, remaining_low)
+        else:
+            dependency_slack = self._dependency_release_slack(
+                belief,
+                evaluation,
+                invocation_id=candidate.invocation_id,
+                required_wait_ms=required_wait_ms,
+            )
+            if dependency_slack is None:
+                return None
+            slack_probability, remaining_low_ms = dependency_slack
+        if slack_probability < self.config.minimum_causal_slack_probability:
+            return None
         maximum_transfer_ms = max(
             transfer_p95_ms * 1.10,
             transfer_p95_ms + 1.0,
@@ -1788,7 +1854,50 @@ class PredictiveRiskShadowObserver:
             maximum_transfer_ms=maximum_transfer_ms,
             maximum_stall_ms=maximum_stall_ms,
             morphology_slack_ms=morphology_slack_ms,
+            causal_slack_probability=slack_probability,
         )
+
+    @staticmethod
+    def _dependency_release_slack(
+        belief: FrontierBeliefSnapshot,
+        evaluation: PackageScenarioEvaluation,
+        *,
+        invocation_id: str,
+        required_wait_ms: float,
+        conservative_quantile: float = 0.05,
+    ) -> tuple[float, float] | None:
+        """Return a lower-bound P(RCCG release > transfer deadline)."""
+
+        weighted_offsets: list[tuple[float, float]] = []
+        finite_evidence = False
+        if belief.other_probability_mass > 0:
+            # OTHER has no finite release bound. Treat it as immediate release,
+            # which cannot create optimistic transfer slack.
+            weighted_offsets.append((0.0, belief.other_probability_mass))
+        releases = evaluation.dependency_release_offsets_by_scenario
+        for scenario in belief.scenarios:
+            offset = releases.get(scenario.scenario_id, {}).get(invocation_id)
+            if offset is None or not math.isfinite(offset) or offset < 0:
+                weighted_offsets.append((0.0, scenario.probability_mass))
+                continue
+            finite_evidence = True
+            weighted_offsets.append((float(offset), scenario.probability_mass))
+        if not finite_evidence or not weighted_offsets:
+            return None
+        survival = sum(
+            probability
+            for offset, probability in weighted_offsets
+            if offset > required_wait_ms
+        )
+        threshold = max(0.0, min(1.0, conservative_quantile))
+        cumulative = 0.0
+        conservative = 0.0
+        for offset, probability in sorted(weighted_offsets):
+            cumulative += probability
+            conservative = offset
+            if cumulative + 1e-12 >= threshold:
+                break
+        return max(0.0, min(1.0, survival)), max(0.0, conservative)
 
     @staticmethod
     def _semantic_belief_key(

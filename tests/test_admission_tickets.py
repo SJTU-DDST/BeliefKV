@@ -484,7 +484,7 @@ def test_priority_chunk_is_trimmed_to_reserved_hbm_budget() -> None:
     assert sum(ticket.epoch_incremental_bytes for ticket in result.tickets) == 50
 
 
-def test_dynamic_working_set_fills_slots_then_contracts_by_unlock_value() -> None:
+def test_dynamic_working_set_keeps_slots_full_and_enables_replacement() -> None:
     scheduler = DynamicWorkingSetScheduler(
         max_workflows=4,
         pressure_enter_ratio=0.8,
@@ -513,11 +513,12 @@ def test_dynamic_working_set_fills_slots_then_contracts_by_unlock_value() -> Non
         native_request_slots=6,
     )
 
-    assert fill.active_workflow_ids == ("fair", "unlock", "tail")
+    assert fill.active_workflow_ids == ("unlock", "fair", "tail")
     assert fill.target_ready_requests == 6
     assert not fill.pressure_actions_enabled
-    assert pressure.active_workflow_ids == ("unlock",)
-    assert pressure.target_ready_requests == 2
+    assert pressure.active_workflow_ids == ("unlock", "fair", "tail")
+    assert pressure.target_ready_requests == 6
+    assert pressure.selected_ready_requests == 6
     assert pressure.pressure_actions_enabled
 
 
@@ -589,7 +590,7 @@ def test_dynamic_working_set_uses_hysteresis_for_pressure_actions() -> None:
     assert not exited.pressure_actions_enabled
 
 
-def test_dynamic_working_set_bounds_unlock_priority_by_fair_rank() -> None:
+def test_dynamic_working_set_uses_fair_rank_only_after_unlock_value() -> None:
     scheduler = DynamicWorkingSetScheduler(
         max_workflows=1,
         pressure_enter_ratio=0.8,
@@ -608,7 +609,7 @@ def test_dynamic_working_set_bounds_unlock_priority_by_fair_rank() -> None:
         native_request_slots=1,
     )
 
-    assert decision.active_workflow_ids == ("fair",)
+    assert decision.active_workflow_ids == ("deep-tail",)
 
 
 def test_compiler_trims_priority_chunk_after_short_request_uses_hbm() -> None:

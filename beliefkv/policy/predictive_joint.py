@@ -249,6 +249,9 @@ class PackageScenarioEvaluation:
     recourse_diagnostics_by_scenario: Mapping[
         str, PrepareRecourseDiagnostic
     ] = field(default_factory=dict)
+    dependency_release_offsets_by_scenario: Mapping[
+        str, Mapping[str, float]
+    ] = field(default_factory=dict)
 
     def __post_init__(self) -> None:
         if any(not scenario_id for scenario_id in self.costs_by_scenario):
@@ -257,6 +260,10 @@ class PackageScenarioEvaluation:
             self.costs_by_scenario
         ):
             raise ValueError("recourse diagnostics reference unknown scenarios")
+        if not set(self.dependency_release_offsets_by_scenario).issubset(
+            self.costs_by_scenario
+        ):
+            raise ValueError("dependency releases reference unknown scenarios")
 
     @classmethod
     def from_timed_scenarios(
@@ -281,6 +288,10 @@ class PackageScenarioEvaluation:
                 for scenario_id, timeline in timelines.items()
             },
             other_cost=other_cost,
+            dependency_release_offsets_by_scenario={
+                scenario_id: dict(timeline.dependency_release_offsets_ms)
+                for scenario_id, timeline in timelines.items()
+            },
         )
 
 

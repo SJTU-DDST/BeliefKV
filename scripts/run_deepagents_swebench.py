@@ -69,6 +69,15 @@ def parse_args() -> argparse.Namespace:
         "--workflow-arrival-batch-interval-ms", type=float, default=0.0
     )
     parser.add_argument(
+        "--saturated-root-backlog",
+        action="store_true",
+        help=(
+            "Submit every frozen root immediately. --concurrency must be at "
+            "least the selected root count; SGLang/JointPlan controls the GPU "
+            "active set."
+        ),
+    )
+    parser.add_argument(
         "--subagent-fanout-profile",
         choices=("natural", "parallel_analysis_2to3"),
         default="natural",
@@ -176,6 +185,7 @@ def main() -> int:
         workflow_arrival_batch_interval_ms=(
             args.workflow_arrival_batch_interval_ms
         ),
+        saturated_root_backlog=args.saturated_root_backlog,
         gpu_index=args.gpu,
         pool_tokens=args.pool_tokens,
         max_completion_tokens=args.max_completion_tokens,

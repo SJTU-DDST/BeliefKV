@@ -43,6 +43,7 @@ from beliefkv.experiments.deepagents_swebench import (
     SANDBOX_PATH_CONTRACT,
     SYMPY_SANDBOX_PREFLIGHT,
     SweBenchWorkload,
+    _execute_saturated_root_pool,
     capture_append_offset,
     classify_workflow_measurement,
     collect_workspace_artifacts,
@@ -830,6 +831,7 @@ def test_experiment_config_uses_hard_fuse_as_langgraph_limit(tmp_path: Path) -> 
     assert config.workflow_arrival_interval_ms == 0.0
     assert config.workflow_arrival_batch_size == 0
     assert config.workflow_arrival_batch_interval_ms == 0.0
+    assert config.saturated_root_backlog is False
     assert config.loop_guard.enabled
     assert config.completion_gate_enabled is True
     assert config.completion_repair_attempts == 2
@@ -840,6 +842,59 @@ def test_experiment_config_uses_hard_fuse_as_langgraph_limit(tmp_path: Path) -> 
     assert config.sandbox_preflight_command is None
     assert "/workspace" in SANDBOX_PATH_CONTRACT
     assert "sympy/core/basic.py" not in SANDBOX_PATH_CONTRACT
+
+
+def test_saturated_root_pool_submits_all_roots_before_any_completion() -> None:
+    workloads = tuple(
+        SweBenchWorkload(
+            instance_id=f"root-{index}",
+            repo="owner/repo",
+            base_commit="base",
+            problem_statement="inspect",
+            difficulty="medium",
+        )
+        for index in range(4)
+    )
+    all_started = threading.Event()
+    started: set[str] = set()
+    lock = threading.Lock()
+
+    def run_one(workload: SweBenchWorkload) -> str:
+        with lock:
+            started.add(workload.instance_id)
+            if len(started) == len(workloads):
+                all_started.set()
+        assert all_started.wait(timeout=2.0)
+        return workload.instance_id
+
+    completed = _execute_saturated_root_pool(
+        workloads,
+        concurrency=len(workloads),
+        run_one=run_one,
+    )
+
+    assert started == {item.instance_id for item in workloads}
+    assert {future.result() for future, _workload in completed} == started
+
+
+def test_saturated_root_pool_rejects_hidden_client_backlog() -> None:
+    workloads = tuple(
+        SweBenchWorkload(
+            instance_id=f"root-{index}",
+            repo="owner/repo",
+            base_commit="base",
+            problem_statement="inspect",
+            difficulty="medium",
+        )
+        for index in range(4)
+    )
+
+    with pytest.raises(ValueError, match="concurrency >= frozen root count"):
+        _execute_saturated_root_pool(
+            workloads,
+            concurrency=3,
+            run_one=lambda workload: workload.instance_id,
+        )
 
 
 def test_experiment_config_rejects_negative_sampling_seed(tmp_path: Path) -> None:

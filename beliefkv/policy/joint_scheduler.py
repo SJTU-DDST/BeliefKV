@@ -59,17 +59,31 @@ class SemanticResidencyTarget:
     target_bytes_hint: int
     deadline_ms: float
     reason: str
+    beneficiary_request_id: str | None = None
+    required_reclaim_bytes: int = 0
+    service_deadline_ms: float | None = None
 
     def __post_init__(self) -> None:
         if not self.context_id or not self.reason:
             raise ValueError("semantic residency target identity must be non-empty")
-        if self.context_epoch < 0 or self.target_bytes_hint < 0:
+        if (
+            self.context_epoch < 0
+            or self.target_bytes_hint < 0
+            or self.required_reclaim_bytes < 0
+        ):
             raise ValueError("semantic residency target values must be non-negative")
         if not math.isfinite(self.deadline_ms) or self.deadline_ms < 0:
             raise ValueError("semantic residency deadline must be non-negative")
         object.__setattr__(self, "action", ResidencyAction(self.action))
         if self.action == ResidencyAction.KEEP:
             raise ValueError("semantic residency targets must request a state change")
+        if self.beneficiary_request_id is not None and not self.beneficiary_request_id:
+            raise ValueError("replacement beneficiary must be non-empty")
+        if self.service_deadline_ms is not None and (
+            not math.isfinite(self.service_deadline_ms)
+            or self.service_deadline_ms < 0
+        ):
+            raise ValueError("service deadline must be finite and non-negative")
 
     def to_dict(self) -> dict[str, object]:
         return {
@@ -79,6 +93,9 @@ class SemanticResidencyTarget:
             "target_bytes_hint": self.target_bytes_hint,
             "deadline_ms": self.deadline_ms,
             "reason": self.reason,
+            "beneficiary_request_id": self.beneficiary_request_id,
+            "required_reclaim_bytes": self.required_reclaim_bytes,
+            "service_deadline_ms": self.service_deadline_ms,
         }
 
 
@@ -118,6 +135,7 @@ class JointPlannerConfig:
     residency_hysteresis_ms: float = 100.0
     emergency_hbm_ratio: float = 0.98
     memory_penalty_ms: float = 5.0
+    resident_service_window_ms: float = 5_000.0
     allow_recompute: bool = False
 
     def __post_init__(self) -> None:
@@ -136,6 +154,7 @@ class JointPlannerConfig:
             "max_plan_age_ms",
             "residency_hysteresis_ms",
             "memory_penalty_ms",
+            "resident_service_window_ms",
         ):
             value = float(getattr(self, name))
             if not math.isfinite(value) or value < 0:
@@ -956,7 +975,7 @@ class ObservedJointPlanner:
 
     def _ordered_candidates(
         self, policy_input: PolicyInput
-    ) -> tuple[tuple[_Candidate, ...], FairnessWindow]:
+    ) -> tuple[tuple[_Candidate, ...], FairnessWindow, Counter[str]]:
         state = _mapping(policy_input.runtime_graph.state)
         rccg = _mapping(state.get("rccg"))
         invocations = _mapping(rccg.get("invocations"))
@@ -1032,16 +1051,34 @@ class ObservedJointPlanner:
             policy_input,
             tuple(candidates_by_workflow),
         )
+        workflow_rank = {
+            workflow_id: rank
+            for rank, workflow_id in enumerate(workflow_order)
+        }
+        resident_bytes: dict[str, int] = defaultdict(int)
+        for bundle in policy_input.physical_kv.bundles:
+            for context_id in bundle.owner_context_ids:
+                resident_bytes[context_id] += bundle.gpu_bytes
         for items in candidates_by_workflow.values():
             items.sort(key=lambda item: item.observed_order_key)
-        ordered: list[_Candidate] = []
-        for index in range(self.config.max_frontier_candidates_per_workflow):
-            for workflow_id in workflow_order:
-                items = candidates_by_workflow[workflow_id]
-                if index < len(items):
-                    ordered.append(items[index])
-                    if len(ordered) >= self.config.max_total_frontier_candidates:
-                        return tuple(ordered), fairness, influence
+        frontier = [
+            item
+            for workflow_id, items in candidates_by_workflow.items()
+            for item in items[: self.config.max_frontier_candidates_per_workflow]
+        ]
+        ordered = sorted(
+            frontier,
+            key=lambda item: (
+                item.causal_rank,
+                -item.unblock_depth,
+                -item.pending_messages,
+                -resident_bytes[item.request.context_id],
+                _unreserved_startup_bytes(item.request),
+                item.request.submitted_ts_ms,
+                workflow_rank.get(item.request.workflow_id, 1 << 30),
+                item.request.request_id,
+            ),
+        )[: self.config.max_total_frontier_candidates]
         return tuple(ordered), fairness, Counter()
 
     def _bounded_seed(
@@ -1166,12 +1203,6 @@ class ObservedJointPlanner:
             workflow_id: max(0.0, value - minimum)
             for workflow_id, value in vruntime.items()
         }
-        within_lag = {
-            workflow_id
-            for workflow_id, value in lag.items()
-            if value <= self.config.fairness_lag_budget_ms
-        }
-
         def key(workflow_id: str) -> tuple[float, float, str]:
             memory = _nonnegative_float(memory_charges.get(workflow_id, 0.0))
             share = memory / policy_input.resources.hbm_capacity_bytes
@@ -1181,9 +1212,7 @@ class ObservedJointPlanner:
             )
             return effective, share, workflow_id
 
-        ordered = tuple(
-            sorted(within_lag, key=key)[: self.config.max_workflow_candidates]
-        )
+        ordered = tuple(sorted(workflow_ids, key=key))
         eligible = frozenset(ordered)
         return ordered, FairnessWindow(
             eligible_workflow_ids=eligible,
@@ -1607,6 +1636,7 @@ class AsyncSemanticJointPlanner(ObservedJointPlanner):
         state = _mapping(policy_input.runtime_graph.state)
         rccg = _mapping(state.get("rccg"))
         context_snapshots = _mapping(rccg.get("contexts"))
+        invocation_snapshots = _mapping(rccg.get("invocations"))
         context_epochs = {
             str(context_id): _nonnegative_int(_mapping(raw).get("epoch", 0))
             for context_id, raw in context_snapshots.items()
@@ -1633,9 +1663,9 @@ class AsyncSemanticJointPlanner(ObservedJointPlanner):
                 )
 
         admitted_ids = set(seed.execution.ordered_request_ids)
-        runnable_contexts = {
-            item.context_id for item in policy_input.runnable_frontier
-        }
+        runnable_by_context: dict[str, list[RunnableInvocation]] = defaultdict(list)
+        for request in policy_input.runnable_frontier:
+            runnable_by_context[request.context_id].append(request)
         selected_contexts = {
             item.context_id
             for item in policy_input.runnable_frontier
@@ -1648,8 +1678,10 @@ class AsyncSemanticJointPlanner(ObservedJointPlanner):
         ]
         available = policy_input.resources.hbm_available_bytes
         reclaim_goal = 0
+        beneficiary: RunnableInvocation | None = None
         if deferred:
             first = deferred[0]
+            beneficiary = first
             missing = int(
                 context_stats[first.context_id]["missing_gpu_bytes"]
             )
@@ -1673,28 +1705,95 @@ class AsyncSemanticJointPlanner(ObservedJointPlanner):
 
         targets: list[SemanticResidencyTarget] = []
         reclaimed = 0
+        parked_states = {
+            "wait_tool": 0,
+            "wait_child": 1,
+            "wait_join": 1,
+            "wait_message": 2,
+        }
+
+        def context_state_rank(context_id: str) -> int:
+            raw_context = _mapping(context_snapshots.get(context_id))
+            ranks = [
+                parked_states[str(_mapping(invocation_snapshots.get(str(invocation_id))).get("state", ""))]
+                for invocation_id in raw_context.get("invocation_ids", ())
+                if str(
+                    _mapping(invocation_snapshots.get(str(invocation_id))).get(
+                        "state", ""
+                    )
+                )
+                in parked_states
+            ]
+            return min(ranks) if ranks else 3
+
+        def service_deadline(context_id: str) -> float | None:
+            requests = runnable_by_context.get(context_id, ())
+            if not requests:
+                return None
+            evidence = max(
+                (
+                    request.last_gpu_service_ts_ms
+                    if request.last_gpu_service_ts_ms is not None
+                    else request.submitted_ts_ms
+                )
+                for request in requests
+            )
+            return evidence + self.config.resident_service_window_ms
+
+        def victim_eligible(context_id: str) -> bool:
+            if context_id in selected_contexts:
+                return False
+            if beneficiary is not None and context_id == beneficiary.context_id:
+                return False
+            requests = runnable_by_context.get(context_id, ())
+            if not requests:
+                return True
+            if any(
+                request.causal_class.startswith("engine_running:")
+                for request in requests
+            ):
+                return False
+            deadline = service_deadline(context_id)
+            return (
+                deadline is not None
+                and policy_input.resources.ts_ms >= deadline
+            )
+
         victims = sorted(
             (
                 (
                     context_id,
                     int(stats["reclaimable_bytes"]),
                     float(stats["last_access_ms"]),
+                    context_state_rank(context_id),
+                    service_deadline(context_id),
                 )
                 for context_id, stats in context_stats.items()
-                if context_id not in runnable_contexts
-                and context_id not in selected_contexts
+                if victim_eligible(context_id)
                 and int(stats["reclaimable_bytes"]) > 0
                 and context_id in context_epochs
             ),
             key=lambda item: (
+                item[3],
+                item[4] if item[4] is not None else -1.0,
                 item[2],
                 -item[1],
                 item[0],
             ),
         )
-        for context_id, reclaimable, _last_access in victims:
+        for (
+            context_id,
+            reclaimable,
+            _last_access,
+            parked_rank,
+            victim_service_deadline,
+        ) in victims:
             if reclaimed >= reclaim_goal:
                 break
+            reclaim_contribution = min(
+                reclaimable,
+                max(0, reclaim_goal - reclaimed),
+            )
             targets.append(
                 SemanticResidencyTarget(
                     context_id=context_id,
@@ -1702,7 +1801,16 @@ class AsyncSemanticJointPlanner(ObservedJointPlanner):
                     action=ResidencyAction.COMMIT_CPU,
                     target_bytes_hint=reclaimable,
                     deadline_ms=policy_input.resources.ts_ms,
-                    reason="semantic headroom target for a parked context",
+                    reason=(
+                        "replacement reclaim from a parked context"
+                        if parked_rank < 3
+                        else "service-or-evict lease expired for resident-ready context"
+                    ),
+                    beneficiary_request_id=(
+                        beneficiary.request_id if beneficiary is not None else None
+                    ),
+                    required_reclaim_bytes=reclaim_contribution,
+                    service_deadline_ms=victim_service_deadline,
                 )
             )
             reclaimed += reclaimable
@@ -1721,6 +1829,7 @@ class AsyncSemanticJointPlanner(ObservedJointPlanner):
                     target_bytes_hint=missing,
                     deadline_ms=policy_input.resources.ts_ms,
                     reason="semantic restore target for deferred causal work",
+                    beneficiary_request_id=request.request_id,
                 )
             )
             seen_prefetch_contexts.add(context_id)
@@ -2398,7 +2507,7 @@ def _residency_target_bytes(bundle: object, action: ResidencyAction) -> int:
 
 def _unreserved_startup_bytes(request: RunnableInvocation) -> int:
     if request.causal_class.startswith(
-        ("reserved_admission:", "engine_waiting:", "engine_running:")
+        ("reserved_admission:", "engine_running:")
     ):
         return 0
     return request.startup_bytes

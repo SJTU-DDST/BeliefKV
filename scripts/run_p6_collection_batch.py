@@ -298,6 +298,14 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--workflow-arrival-batch-interval-ms", type=float, default=0.0
     )
+    parser.add_argument(
+        "--saturated-root-backlog",
+        action="store_true",
+        help=(
+            "Submit the entire frozen batch immediately and let SGLang/JointPlan "
+            "control the GPU active set."
+        ),
+    )
     parser.add_argument("--request-timeout", type=float, default=7200.0)
     parser.add_argument("--sandbox-command-timeout", type=int, default=600)
     parser.add_argument("--runtime-event-ack-timeout", type=float, default=10.0)
@@ -395,7 +403,10 @@ def main() -> int:
             selected_instance_ids=selected_instance_ids,
         )
     )
-    concurrency = min(batch.concurrency, workflow_count)
+    configured_concurrency = min(batch.concurrency, workflow_count)
+    concurrency = (
+        workflow_count if args.saturated_root_backlog else configured_concurrency
+    )
     source_fingerprint = _runtime_source_fingerprint()
     collection_contract = {
         "schema_version": 1,
@@ -417,11 +428,24 @@ def main() -> int:
         ),
         "selected_instance_ids": selected_instance_ids,
         "workflow_count": workflow_count,
+        "configured_concurrency": configured_concurrency,
         "concurrency": concurrency,
         "workflow_arrival_interval_ms": args.workflow_arrival_interval_ms,
         "workflow_arrival_batch_size": args.workflow_arrival_batch_size,
         "workflow_arrival_batch_interval_ms": (
             args.workflow_arrival_batch_interval_ms
+        ),
+        "saturated_root_backlog": args.saturated_root_backlog,
+        "root_submission_mode": (
+            "all_roots_eager"
+            if args.saturated_root_backlog
+            else "arrival_schedule"
+        ),
+        "client_inflight_root_window": concurrency,
+        "initial_unsubmitted_root_backlog": (
+            0
+            if args.saturated_root_backlog
+            else max(0, workflow_count - concurrency)
         ),
         "required_minimum_pool_tokens": args.pool_tokens,
         "actual_pool_tokens": actual_pool_tokens,
@@ -505,6 +529,7 @@ def main() -> int:
         workflow_arrival_batch_interval_ms=(
             args.workflow_arrival_batch_interval_ms
         ),
+        saturated_root_backlog=args.saturated_root_backlog,
         gpu_index=args.gpu,
         pool_tokens=actual_pool_tokens,
         max_completion_tokens=args.max_completion_tokens,

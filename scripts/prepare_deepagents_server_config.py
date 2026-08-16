@@ -217,6 +217,15 @@ def main() -> int:
         default=8,
     )
     parser.add_argument(
+        "--resident-service-window-ms",
+        type=float,
+        default=5000.0,
+        help=(
+            "A GPU-resident ready context must receive service within this "
+            "window or become a replacement victim candidate."
+        ),
+    )
+    parser.add_argument(
         "--subagent-fanout-profile",
         choices=("natural", "parallel_analysis_2to3"),
         default="natural",
@@ -321,6 +330,8 @@ def main() -> int:
         parser.error(
             "--dynamic-working-set-min-hold-epochs must be non-negative"
         )
+    if args.resident_service_window_ms <= 0:
+        parser.error("--resident-service-window-ms must be positive")
     if args.request_queue_timeout_seconds <= 0:
         parser.error("--request-queue-timeout-seconds must be positive")
 
@@ -437,6 +448,7 @@ def main() -> int:
         "predictive_risk_top_k": 8,
         "predictive_risk_max_candidates": 8,
         "predictive_risk_min_calibration_coverage": 0.9,
+        "predictive_risk_min_causal_slack_probability": 0.9,
         "observed_admission_scheduling_enabled": (
             args.enable_observed_admission
         ),
@@ -500,6 +512,7 @@ def main() -> int:
         "dynamic_working_set_min_hold_epochs": (
             args.dynamic_working_set_min_hold_epochs
         ),
+        "resident_service_window_ms": args.resident_service_window_ms,
         "max_joint_workflow_candidates": 8,
         "max_frontier_candidates_per_workflow": 4,
         "max_total_frontier_candidates": 16,

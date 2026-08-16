@@ -381,6 +381,14 @@ def _action_groups_from_slices(
     return tuple(groups)
 
 
+def derive_action_groups(
+    slices: tuple[ActionSlice, ...],
+) -> tuple[ActionGroup, ...]:
+    """Return dependency-closed groups after safe-point slice extension."""
+
+    return _action_groups_from_slices(slices)
+
+
 def append_committed_action_slice(
     epoch: JointPlanEpoch,
     action: ActionSlice,

@@ -1,4 +1,5 @@
 from dataclasses import replace
+from types import SimpleNamespace
 
 from beliefkv.control.causal_graph import (
     ContextRecord,
@@ -29,6 +30,8 @@ from beliefkv.predictor.hardware_service import GPUServiceCurveModel
 from beliefkv.predictor.structured_frontier import (
     EmpiricalDistribution,
     LocalFrontierPrediction,
+    WaitBelief,
+    WaitBeliefKind,
 )
 from tests.test_whatif_packer import _input
 
@@ -56,18 +59,69 @@ def test_transfer_guard_is_recomputed_at_conservative_deadline() -> None:
     assert positive is not None and positive > 0
 
 
+def test_join_slack_uses_dependency_release_survival_not_resource_feasibility() -> None:
+    belief = SimpleNamespace(
+        other_probability_mass=0.10,
+        scenarios=(
+            SimpleNamespace(scenario_id="early", probability_mass=0.45),
+            SimpleNamespace(scenario_id="late", probability_mass=0.45),
+        ),
+    )
+    evaluation = SimpleNamespace(
+        dependency_release_offsets_by_scenario={
+            "early": {"parent": 50.0},
+            "late": {"parent": 200.0},
+        }
+    )
+
+    probability, conservative = (
+        PredictiveRiskShadowObserver._dependency_release_slack(
+            belief,
+            evaluation,
+            invocation_id="parent",
+            required_wait_ms=100.0,
+        )
+    )
+
+    assert probability == 0.45
+    assert conservative == 0.0  # OTHER has no finite bound and stays conservative.
+
+
 def _prediction() -> LocalFrontierPrediction:
     return LocalFrontierPrediction(
         invocation_id="invocation-target",
         boundary_distribution={"tool": 1.0},
         current_sequence_tokens=4096,
         remaining_decode_tokens=_distribution(0),
-        remaining_external_wait=_distribution(10),
+        remaining_external_wait=_distribution(100),
         tool_terminal_distribution={"success": 1.0},
         prompt_growth_tokens=_distribution(32),
         next_output_tokens=_distribution(16),
         support_level="exact",
         calibration_coverage=0.95,
+    )
+
+
+def _tool_wait_belief(
+    value: float,
+    *,
+    support_level: str = "exact",
+) -> WaitBelief:
+    distribution = (
+        _distribution(value)
+        if support_level != "unavailable"
+        else EmpiricalDistribution.empty()
+    )
+    return WaitBelief(
+        kind=WaitBeliefKind.TOOL,
+        residual_duration=distribution,
+        terminal_distribution={"success": 1.0},
+        support_level=support_level,
+        ood_reasons=(
+            ()
+            if support_level != "unavailable"
+            else ("tool_wait_unavailable",)
+        ),
     )
 
 
@@ -318,6 +372,13 @@ def test_backoff_shadow_cannot_select_prefetch() -> None:
         _prediction(),
         support_level="backoff",
         calibration_coverage=0.99,
+        wait_belief=_tool_wait_belief(
+            0, support_level="unavailable"
+        ),
+        head_support={
+            "tool_wait": "unavailable",
+            "prompt_growth": "unavailable",
+        },
     )
     policy_input = replace(
         policy_input,
@@ -378,7 +439,7 @@ def test_backoff_shadow_cannot_select_prefetch() -> None:
 
     assert result.status == "evaluated"
     assert result.selected_action != "prefetch_gpu"
-    assert "prefetch_gpu:reentry_window_unavailable" in result.blocked_reasons
+    assert "prefetch_gpu:tool_wait_slack_unavailable" in result.blocked_reasons
 
 
 def test_calibrated_backoff_can_supply_prefetch_specific_heads() -> None:
@@ -389,8 +450,12 @@ def test_calibrated_backoff_can_supply_prefetch_specific_heads() -> None:
         calibration_coverage=0.99,
         ood_reasons=("boundary_unavailable",),
         calibrated_intervals={
-            "remaining_external_wait_ms": (8.0, 20.0),
             "prompt_growth_tokens": (16.0, 64.0),
+        },
+        wait_belief=_tool_wait_belief(10, support_level="backoff"),
+        head_support={
+            "tool_wait": "backoff",
+            "prompt_growth": "backoff",
         },
     )
     policy_input = replace(
@@ -428,6 +493,7 @@ def test_calibrated_backoff_can_supply_prefetch_specific_heads() -> None:
             top_k=4,
             max_candidates=4,
             minimum_calibration_coverage=0.9,
+            minimum_causal_slack_probability=0.0,
             kv_bytes_per_token=1,
         ),
     ).evaluate(
@@ -453,7 +519,7 @@ def test_calibrated_backoff_can_supply_prefetch_specific_heads() -> None:
     assert result.predictive_intent is not None
     assert dict(result.predictive_intent.prediction_head_support) == {
         "future_kv_growth": "calibrated_backoff",
-        "reentry_window": "calibrated_backoff",
+        "tool_wait_slack": "backoff",
     }
 
 
@@ -624,6 +690,7 @@ def test_prepare_host_receives_recourse_value_only_before_future_pressure() -> N
         _prediction(),
         invocation_id="invocation-old",
         remaining_external_wait=_distribution(1000),
+        wait_belief=_tool_wait_belief(1000),
     )
     policy_input = _attach_graph(
         replace(

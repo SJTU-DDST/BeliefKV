@@ -2,7 +2,68 @@
 
 更新日期：2026-08-14
 
-## 2026-08-14：H200 FrontierBelief Held-out Calibration
+## 2026-08-14：WaitBelief、Causal Slack 与 Work-Conserving JointPlan
+
+本轮修复了两个真实的架构断层：训练/校准曾把工具、JOIN/child 等异质等待重新合并成
+`remaining_external_wait_ms`；working-set 在 0.8 HBM pressure 时收缩 GPU-ready 集合，但 residency
+通常要等 admission deficit 或 0.98 emergency pressure 才迁移，造成 resident KV 占空间却没有获得
+service。
+
+预测接口现收敛为：
+
+```text
+WaitBelief
+  ToolWaitBelief    -> tool-family/backend-class competing-risk survival
+  Join/ChildBelief  -> RCCG child completion + JOIN_ALL/JOIN_ANY composition
+  MessageWaitBelief -> producer dependency composition
+  UnknownWaitBelief -> OOD，不执行预测性物理动作
+
+KV action query:
+  tau = Q95(transfer | live physical shape) + commit_guard
+  P(causal wait remains open beyond tau | current observed state)
+```
+
+`WAIT_JOIN` 不再训练 wall-clock empirical model，也不再与工具时间共享 conformal slack。工具 survival
+在 held-out calibration 上使用右删失安全的 binary logit calibration；只有 censor 时刻晚于 `tau` 才能
+作为已知 survived 标签。旧 `remaining_external_wait` 字段仅用于 schema-v1/v2 artifact 反序列化，不能
+驱动 schema-v3 策略。
+
+新 H200 schema-v3 artifact 为
+`experiments/models/frontier_belief_h200_bf16_v2_wait_slack_calibrated.json`。LOPO 目标已加入 tool
+causal-slack Brier；正式 calibration 使用 30,096 个 slack 标签，scale/offset 分别为 0.9216/-0.1188。
+在冻结 calibration split 上，10/100/1K/10K ms 的 Brier 分别为 0.0028/0.2070/0.2242/0.0080。
+这些数值说明中间时长仍较难预测，因此 artifact 继续保持 `online_eligible=false`，只用于 shadow/replay。
+`test_id` 未访问。
+
+旧报告中的 40.86% composite OOD 表示“五个预测头中任意一个不可用”，即使该 head 与当前状态或
+动作无关也会计数；它不是 40.86% workload 未见。新指标只统计
+`action x invocation_state x required_head`，并分别发布 availability/OOD，不能再用全局 composite
+指标一票否决 KV 动作。
+
+observed JointPlan 改为 throughput-first、work-conserving：HBM pressure 只开启 replacement/reclaim，
+不再主动降低 GPU-ready target。planner 先选择 execution set，再计算 startup + restore + projected
+growth deficit，随后生成带 beneficiary 的 `COMMIT_CPU(victim) -> ADMIT(beneficiary)` replacement
+事务。每个 victim 只证明自己实际承担的 reclaim 份额；safe point 重新物化 live Radix bundle，ACK
+后 beneficiary 获得持久 admission priority，native allocator 仍是最终容量权威。
+
+新增不变量：
+
+```text
+KEEP_GPU(context)
+  => selected now OR receives real GPU service within resident_service_window_ms
+otherwise
+  => residency lease expires and context becomes a replacement victim candidate
+```
+
+fairness 不再决定主排序，只保留 30 秒 starvation floor 和最终 tie-break。此前
+`engine_waiting` request 的 startup growth 被错误视为 0，本轮也已修复；该错误会直接隐藏 beneficiary
+deficit。workload runner 和正式 P6 collection launcher 新增 `--saturated-root-backlog`；client
+in-flight root window 必须大于 server JointPlan active set，才能在现有 root 全部 parked 时仍提供
+待准入计算。尚未进行 GPU A/B，因此当前只主张控制面正确性，不主张
+GPU utilization 或 workflows/hour 已改善。完整实现记录见
+`docs/experiments/beliefkv_wait_slack_work_conserving_jointplan_2026-08-14_zh.md`。
+
+## 历史基线：H200 FrontierBelief schema-v2 Held-out Calibration
 
 Astropy/Sphinx 两个预冻结 calibration shard 已完成，共 16 个 workflow。canonical coverage audit
 覆盖 24,394 个 decision row，natural/parallel 与两个项目均覆盖全部训练 target；15/15 个 eligible
@@ -10,10 +71,11 @@ JOIN closure-complete。`CALL_CENSORED` 与 `JOIN_TIMEOUT` 现作为显式右删
 重导出后的 1,284 个 eligible reentry 全部获得 observed 或 right-censored 归因。censor 不再被误当作
 成功 terminal/wait 样本。
 
-首个 H200 BF16 模型已在 held-out calibration split 上完成概率和 local-episode conformal 校准，且
+本节记录已被上节 schema-v3 WaitBelief 替代的首个 H200 BF16 模型。该模型曾在 held-out
+calibration split 上完成概率和 local-episode conformal 校准，且
 没有重新 fit 训练计数。四个连续目标的 local-episode interval coverage 分别为 90.15%、93.90%、
 90.17% 和 90.13%；boundary accuracy 为 94.96%，tool terminal accuracy 为 86.82%。但工具等待
-区间仍极宽，external-wait workflow-macro coverage 仅 87.40%，因此 artifact 保持
+区间仍极宽，旧统一 external-wait workflow-macro coverage 仅 87.40%，因此该历史 artifact 保持
 `online_eligible=false`、`predictive_action_eligible=false`，只允许 shadow/replay。`test_id` 未访问。
 
 exact incremental action boundary 仍为 0%，不阻塞基于完整 `LLM_RESULT` 的最终 action/demand
@@ -51,19 +113,19 @@ safe point
   -> prefix rematch 后累计验证整批 token/HBM certificate
 
 HBM pressure >= enter watermark
-  -> HBM_PRESSURE：收缩 ready target，保留 restore-mandatory workflow
-  -> 停止低压 batch-fill，尊重 JointPlan DEFER
-  -> 才允许 observed PREPARE/COMMIT/DROP 与 running retraction
+  -> HBM_PRESSURE_REPLACEMENT：保持 work-conserving ready target
+  -> execution set 的 startup/restore/growth deficit 触发 replacement reclaim
+  -> 允许 observed PREPARE/COMMIT/DROP 与 running retraction
 HBM pressure <= exit watermark
-  -> hysteresis 退出压力模式，恢复 work-conserving GPU_FILL
+  -> hysteresis 退出 replacement 模式，继续 GPU_FILL
 ```
 
 重要边界：
 
 - batch-fill 是原 `JointPlanEpoch` 的 admission action 扩展，保留 `plan_id`、residency intent 和
   retraction transaction，不是第二个 admission planner；
-- active set 只控制当前 ticket eligibility，不从 RCCG 删除 inactive workflow。所有 workflow 继续
-  累积 fairness credit，action-unlock 只提供有界优先级提升；
+- active set 只控制当前 ticket eligibility，不从 RCCG 删除 inactive workflow。排序优先 GPU residency、
+  startup cost、action unlock 和可形成的 batch；fairness 只提供 starvation floor/tie-break；
 - `TICKET_READY` restore obligation 是 mandatory，可临时越过 active-window hard cap，避免 restore
   debt 被工作集收缩饿死；
 - 低压只抑制新的 destructive observed actions。`PREFETCH_GPU` restore、terminal cleanup 和已提交
