@@ -925,3 +925,17 @@ def test_component_validation_rechecks_fairness_without_revision_staleness() -> 
     assert not flipped.execution.valid
     assert "fairness_priority_changed" in flipped.execution.reasons
     assert all(item.valid for item in flipped.admissions.values())
+
+    action_local = validate_joint_plan_components(
+        plan,
+        source,
+        _current_state(
+            source,
+            invocations=invocations,
+            virtual_runtime={"workflow-a": 20, "workflow-b": 10},
+            fairness_revision=2,
+        ),
+        validate_execution_priority=False,
+    )
+    assert action_local.execution.valid
+    assert all(item.valid for item in action_local.admissions.values())

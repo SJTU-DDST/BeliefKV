@@ -63,6 +63,7 @@ def _delta(
     event_sequence: int,
     page_revision: int,
     ts_ms: float,
+    planning_requested: bool = True,
 ) -> JointShadowDelta:
     events = controller.runtime_events_since(event_sequence)
     pages = controller.page_index.replica_delta_since(page_revision)
@@ -110,6 +111,7 @@ def _delta(
         ),
         trigger="test",
         captured_monotonic_ms=0,
+        planning_requested=planning_requested,
     )
 
 
@@ -744,4 +746,105 @@ def test_incremental_worker_merges_pending_deltas_without_losing_events() -> Non
     assert second.sequence == third.sequence - 1
     assert worker.stats().dropped_pending_count == 0
     assert worker.stats().coalesced_pending_count == 1
+    assert worker.close()
+
+
+def test_incremental_worker_applies_progress_without_materializing_plan() -> None:
+    config = BeliefKVConfig(
+        hbm_capacity_bytes=1_000,
+        host_capacity_bytes=1_000,
+        reserve_hbm_bytes=0,
+        predictor_enabled=False,
+        shadow_enabled=False,
+    )
+    controller = BeliefKVController(config)
+    controller.process_runtime_events(
+        (
+            _event(1, RuntimeEventKind.WORKFLOW_START),
+            _event(
+                2,
+                RuntimeEventKind.INVOCATION_CREATE,
+                invocation_id="root",
+                context_id="ctx",
+                context_epoch=0,
+            ),
+        )
+    )
+    first_delta = _delta(
+        controller,
+        event_sequence=0,
+        page_revision=0,
+        ts_ms=2,
+    )
+    planner = _BlockingPlanner()
+    planner.release.set()
+    worker = LatestWinsJointPlanWorker(
+        planner,
+        assembler=IncrementalPolicyInputAssembler(config),
+    )
+    first = worker.submit_delta(first_delta)
+    for _ in range(100):
+        if worker.latest(after_sequence=first.sequence - 1) is not None:
+            break
+        threading.Event().wait(0.01)
+    assert len(planner.sequences) == 1
+
+    controller.process_runtime_event(
+        _event(
+            3,
+            RuntimeEventKind.CONTEXT_ADVANCE,
+            invocation_id="root",
+            context_id="ctx",
+            context_epoch=0,
+        )
+    )
+    progress_delta = _delta(
+        controller,
+        event_sequence=first_delta.event_to_sequence,
+        page_revision=first_delta.page_delta.to_revision,
+        ts_ms=3,
+        planning_requested=False,
+    )
+    progress = worker.submit_delta(progress_delta)
+    for _ in range(100):
+        if worker.stats().completed_count >= 2:
+            break
+        threading.Event().wait(0.01)
+
+    assert len(planner.sequences) == 1
+    assert worker.latest(after_sequence=first.sequence) is None
+    assert worker.stats().apply_only_count == 1
+    assert worker.assembler is not None
+    assert (
+        worker.assembler.graph.graph_version
+        == controller.graph.graph_version
+    )
+
+    controller.process_runtime_event(
+        _event(
+            4,
+            RuntimeEventKind.CONTEXT_ADVANCE,
+            invocation_id="root",
+            context_id="ctx",
+            context_epoch=0,
+        )
+    )
+    critical_delta = _delta(
+        controller,
+        event_sequence=progress_delta.event_to_sequence,
+        page_revision=progress_delta.page_delta.to_revision,
+        ts_ms=4,
+    )
+    critical = worker.submit_delta(critical_delta)
+    result = None
+    for _ in range(100):
+        result = worker.latest(after_sequence=first.sequence)
+        if result is not None and result.sequence == critical.sequence:
+            break
+        threading.Event().wait(0.01)
+
+    assert progress.sequence == critical.sequence - 1
+    assert result is not None
+    assert result.plan is not None
+    assert len(planner.sequences) == 2
     assert worker.close()

@@ -2223,6 +2223,8 @@ def validate_joint_plan_components(
     plan: JointPlan,
     source: PolicyInput,
     current: JointPlanCurrentState,
+    *,
+    validate_execution_priority: bool = True,
 ) -> JointPlanComponentValidation:
     """Validate independent plan actions against bounded current state.
 
@@ -2427,7 +2429,7 @@ def validate_joint_plan_components(
         elif not validation.valid:
             execution_reasons.append(f"admission_invalid:{request_id}")
     selected_workflow = plan.execution.selected_workflow_id
-    if selected_workflow is not None:
+    if validate_execution_priority and selected_workflow is not None:
         current_frontier = sorted(
             (
                 _request_dependency_payload(item)
@@ -2456,7 +2458,10 @@ def validate_joint_plan_components(
         )
         if not fairness_order or fairness_order[0] != selected_workflow:
             execution_reasons.append("fairness_priority_changed")
-    if current.fairness_revision < read_set.fairness_revision:
+    if (
+        validate_execution_priority
+        and current.fairness_revision < read_set.fairness_revision
+    ):
         execution_reasons.append("fairness_revision_regressed")
 
     dependency_validation: list[IntentValidation] = []

@@ -522,7 +522,10 @@ def main() -> int:
         "min_joint_plan_budget_ms": 0.25,
         "joint_trigger_budget_fraction": 0.5,
         "joint_physical_commit_budget_ms": 1.0,
-        "max_joint_plan_age_ms": 100.0,
+        "joint_physical_action_commit_budget_ms": 5.0,
+        "joint_shadow_progress_coalesce_ms": 100.0,
+        "joint_shadow_full_plan_watchdog_ms": 5000.0,
+        "max_joint_plan_age_ms": 2000.0,
         "joint_transition_settling_timeout_ms": 250.0,
         "joint_shadow_detailed_audit_interval_ms": 1000.0,
     }

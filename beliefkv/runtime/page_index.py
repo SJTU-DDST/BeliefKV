@@ -64,6 +64,7 @@ class ContextPageReplica:
     workflow_id: str
     epoch: int
     handles: tuple[PageHandle, ...]
+    replace_handles: bool = True
 
 
 @dataclass(frozen=True)
@@ -324,7 +325,12 @@ class PageOwnershipIndex:
                     context_id=context_id,
                     workflow_id=self._context_workflow[context_id],
                     epoch=self._context_epoch[context_id],
-                    handles=tuple(sorted(self._context_pages.get(context_id, ()))),
+                    handles=(
+                        tuple(sorted(self._context_pages.get(context_id, ())))
+                        if full_rebuild
+                        else ()
+                    ),
+                    replace_handles=full_rebuild,
                 )
                 for context_id in sorted(context_ids)
                 if context_id in self._context_epoch
@@ -366,6 +372,9 @@ class PageOwnershipIndex:
 
         for replica in delta.pages:
             page = self.pages.get(replica.handle)
+            previous_owners = (
+                frozenset(page.owner_contexts) if page is not None else frozenset()
+            )
             if page is None:
                 page = PhysicalPageRecord(
                     handle=replica.handle,
@@ -373,12 +382,21 @@ class PageOwnershipIndex:
                     residency=replica.residency,
                 )
                 self.pages[replica.handle] = page
+            next_owners = dict(replica.owner_contexts)
+            for context_id in previous_owners.difference(next_owners):
+                self._context_pages.get(context_id, set()).discard(
+                    replica.handle
+                )
+            for context_id in set(next_owners).difference(previous_owners):
+                self._context_pages.setdefault(context_id, set()).add(
+                    replica.handle
+                )
             page.size_bytes = replica.size_bytes
             page.residency = replica.residency
             page.radix_depth = replica.radix_depth
             page.parent = replica.parent
             page.children = set(replica.children)
-            page.owner_contexts = dict(replica.owner_contexts)
+            page.owner_contexts = next_owners
             page.engine_lock_ref = replica.engine_lock_ref
             page.semantic_pin_contexts = set(replica.semantic_pin_contexts)
             page.active_reader_count = replica.active_reader_count
@@ -404,7 +422,10 @@ class PageOwnershipIndex:
         for context in delta.contexts:
             self._context_epoch[context.context_id] = context.epoch
             self._context_workflow[context.context_id] = context.workflow_id
-            self._context_pages[context.context_id] = set(context.handles)
+            if context.replace_handles:
+                self._context_pages[context.context_id] = set(context.handles)
+            else:
+                self._context_pages.setdefault(context.context_id, set())
 
         previous_revision = self._revision
         self._revision = delta.to_revision

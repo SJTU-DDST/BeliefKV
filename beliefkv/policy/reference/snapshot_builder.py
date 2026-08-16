@@ -139,6 +139,26 @@ class PolicyInputSnapshotBuilder:
         self._page_physical_state_cache: _PagePhysicalState | None = None
         self._bundle_by_handle: dict[PageHandle, PhysicalBundleSnapshot] = {}
         self._lease_kind_by_context: dict[str, LeaseKind] = {}
+        self._rccg_snapshot_cache: tuple[int, Mapping[str, object]] | None = None
+        self._consumer_snapshot_cache: (
+            tuple[int, Mapping[str, object]] | None
+        ) = None
+
+    def _cached_rccg_snapshot(self) -> Mapping[str, object]:
+        version = self.graph.graph_version
+        cached = self._rccg_snapshot_cache
+        if cached is None or cached[0] != version:
+            cached = (version, self.graph.snapshot())
+            self._rccg_snapshot_cache = cached
+        return cached[1]
+
+    def _cached_consumer_snapshot(self) -> Mapping[str, object]:
+        version = self.data_consumers.version
+        cached = self._consumer_snapshot_cache
+        if cached is None or cached[0] != version:
+            cached = (version, self.data_consumers.snapshot())
+            self._consumer_snapshot_cache = cached
+        return cached[1]
 
     @property
     def last_stats(self) -> SnapshotBuildStats | None:
@@ -155,6 +175,7 @@ class PolicyInputSnapshotBuilder:
         identity_mappings: Sequence[IdentityMapping] = (),
         optional_metadata: Mapping[str, MetadataValue] | None = None,
         transfer_telemetry: Sequence[TransferTelemetry] = (),
+        include_transfer_estimates: bool = True,
         capabilities: CapabilityReport | None = None,
         metadata_mode: MetadataMode = MetadataMode.ONLINE,
     ) -> PolicyInput:
@@ -202,8 +223,8 @@ class PolicyInputSnapshotBuilder:
             supplied_state=workflow_fairness_state,
         )
         graph_state = {
-            "rccg": self.graph.snapshot(),
-            "data_consumers": self.data_consumers.snapshot(),
+            "rccg": self._cached_rccg_snapshot(),
+            "data_consumers": self._cached_consumer_snapshot(),
             "request_queue": queue_state,
             "workflow_fairness": fairness_state,
             "control": dict(control_state or {}),
@@ -217,20 +238,42 @@ class PolicyInputSnapshotBuilder:
             },
         }
         self._sequence += 1
-        snapshot_payload = {
-            "sequence": self._sequence,
-            "ts_ms": observation.ts_ms,
-            "graph_version": self.graph.graph_version,
-            "consumer_version": self.data_consumers.version,
-            "topology_fingerprint": topology_fingerprint,
-            "allocator_fingerprint": allocator_fingerprint,
-            "runnable": [item.to_dict() for item in frontier],
-            "workflow_fairness": fairness_state,
-            "control": dict(control_state or {}),
-        }
+        control = control_state or {}
+        transitions = control.get("transitions", {})
+        transition_revisions = tuple(
+            (
+                str(workflow_id),
+                int(raw.get("generation", 0)),
+            )
+            for workflow_id, raw in sorted(transitions.items())
+            if isinstance(raw, Mapping)
+        ) if isinstance(transitions, Mapping) else ()
+        runnable_revision = tuple(
+            (
+                item.request_id,
+                item.context_epoch,
+                item.startup_bytes,
+                item.causal_class,
+                item.last_gpu_service_ts_ms,
+            )
+            for item in frontier
+        )
+        revision_tuple = (
+            self._sequence,
+            self.graph.graph_version,
+            self.data_consumers.version,
+            self.page_index.revision,
+            self._topology_version,
+            self._allocator_version,
+            queue_state.get("admission_revision", 0),
+            fairness_state.get("revision", 0),
+            control.get("transfer_epoch", 0),
+            transition_revisions,
+            runnable_revision,
+        )
         snapshot_id = (
             f"policy-{self._sequence:08d}-"
-            f"{_fingerprint(snapshot_payload, person=b'bk-policy-in')}"
+            f"{_fingerprint(revision_tuple, person=b'bk-policy-in')}"
         )
         bundles = self._physical_bundles_with_untracked(
             tracked,
@@ -270,14 +313,30 @@ class PolicyInputSnapshotBuilder:
             value=dict(self.resource_builder.last_diagnostics),
             producer="resource_snapshot_builder",
         )
+        if include_transfer_estimates:
+            transfer_estimates = self._transfer_service_estimates(
+                bundles, observation
+            )
+            transfer_curve_snapshot = self.service_curve.snapshot()
+        else:
+            transfer_estimates = {
+                "hardware_key": self.service_curve.warm_start_hardware_key,
+                "contexts": {},
+                "omitted": True,
+                "reason": "observed_plan_has_no_transfer_cost_consumer",
+            }
+            transfer_curve_snapshot = {
+                "hardware_key": self.service_curve.warm_start_hardware_key,
+                "omitted": True,
+            }
         metadata[transfer_metadata_name] = MetadataValue(
             source=MetadataSource.OBSERVED,
-            value=self._transfer_service_estimates(bundles, observation),
+            value=transfer_estimates,
             producer="transfer_service_curve",
         )
         metadata[transfer_curve_metadata_name] = MetadataValue(
             source=MetadataSource.OBSERVED,
-            value=self.service_curve.snapshot(),
+            value=transfer_curve_snapshot,
             producer="transfer_service_curve",
         )
         mappings = self._identity_mappings(frontier, identity_mappings)

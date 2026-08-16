@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import atexit
-import copy
 import gc
 import hashlib
 import inspect
@@ -15,6 +14,7 @@ from collections import Counter, defaultdict, deque
 from collections.abc import Mapping
 from dataclasses import asdict, dataclass, field, replace
 from pathlib import Path
+from types import MappingProxyType
 from typing import Any
 
 from beliefkv.control.controller import BeliefKVController
@@ -2140,6 +2140,14 @@ class EmbeddedSGLangRuntime:
         self._shadow_event_sequence = 0
         self._shadow_page_revision = 0
         self._shadow_telemetry_sequence = 0
+        self._joint_shadow_critical_event_sequence = 0
+        self._joint_shadow_transfer_ack_sequence = 0
+        self._last_joint_planned_critical_event_sequence = 0
+        self._last_joint_planned_transfer_ack_sequence = 0
+        self._last_joint_full_plan_ms: float | None = None
+        self._last_joint_shadow_pressure_state: bool | None = None
+        self._last_joint_liveness_signature: tuple[int, int, int] | None = None
+        self._last_joint_beneficiary_signature: tuple[object, ...] = ()
         self.joint_shadow_worker: LatestWinsJointPlanWorker | None = None
         self.predictive_risk_worker: LatestWinsPredictiveRiskWorker | None = None
         self._last_joint_shadow_result_sequence = 0
@@ -9088,6 +9096,10 @@ class EmbeddedSGLangRuntime:
             acks = self.bridge.drain_acks()
         else:
             acks = ()
+        if acks:
+            self._joint_shadow_transfer_ack_sequence = (
+                getattr(self, "_joint_shadow_transfer_ack_sequence", 0) + 1
+            )
         retired_h2d = self._retire_h2d_commands(acks)
         drain_telemetry = getattr(self.bridge, "drain_transfer_telemetry", None)
         telemetry_started_ns = time.perf_counter_ns()
@@ -13264,6 +13276,23 @@ class EmbeddedSGLangRuntime:
     def _process_events(self, events: tuple[RuntimeEvent, ...]) -> None:
         committed_events, adjustments = self._commit_event_times(events)
         self.controller.process_runtime_events(committed_events)
+        if any(
+            event.kind
+            in {
+                RuntimeEventKind.SPAWN,
+                RuntimeEventKind.TOOL_START,
+                RuntimeEventKind.TOOL_END,
+                RuntimeEventKind.RETURN,
+                RuntimeEventKind.JOIN_SATISFIED,
+                RuntimeEventKind.REACTIVATE,
+                RuntimeEventKind.MESSAGE,
+                RuntimeEventKind.HANDOFF,
+            }
+            for event in committed_events
+        ):
+            self._joint_shadow_critical_event_sequence = (
+                self.controller.runtime_event_sequence
+            )
         ledger = self._predictive_action_ledger()
         for event in committed_events:
             if event.kind in {
@@ -14240,6 +14269,74 @@ class EmbeddedSGLangRuntime:
         result = worker.latest(
             after_sequence=self._last_joint_shadow_result_sequence
         )
+        capture_elapsed_ms = (
+            float("inf")
+            if self._last_policy_snapshot_ms is None
+            else observation.ts_ms - self._last_policy_snapshot_ms
+        )
+        progress_due = capture_elapsed_ms >= (
+            self.config.joint_shadow_progress_coalesce_ms
+        )
+        initial_capture = self._last_policy_snapshot_ms is None
+        pressure_now = (
+            observation.hbm_used_bytes
+            >= int(
+                observation.hbm_capacity_bytes
+                * self.config.observed_admission_active_kv_high_watermark_ratio
+            )
+        )
+        pressure_crossing = (
+            getattr(self, "_last_joint_shadow_pressure_state", None) is None
+            or pressure_now != getattr(
+                self, "_last_joint_shadow_pressure_state", None
+            )
+        )
+        critical_event_pending = (
+            getattr(self, "_joint_shadow_critical_event_sequence", 0)
+            > getattr(self, "_last_joint_planned_critical_event_sequence", 0)
+        )
+        transfer_ack_pending = (
+            getattr(self, "_joint_shadow_transfer_ack_sequence", 0)
+            > getattr(self, "_last_joint_planned_transfer_ack_sequence", 0)
+        )
+        pending_residency = getattr(
+            self, "_pending_online_joint_residency", None
+        )
+        beneficiary_signature = (
+            tuple(sorted(getattr(self, "_replacement_priorities", {}))),
+            (
+                pending_residency.transaction_id
+                if pending_residency is not None
+                else None
+            ),
+        )
+        beneficiary_changed = (
+            beneficiary_signature != getattr(
+                self, "_last_joint_beneficiary_signature", ()
+            )
+        )
+        full_plan_elapsed_ms = (
+            float("inf")
+            if getattr(self, "_last_joint_full_plan_ms", None) is None
+            else observation.ts_ms
+            - float(getattr(self, "_last_joint_full_plan_ms", 0.0))
+        )
+        full_watchdog_due = (
+            pressure_now
+            and full_plan_elapsed_ms
+            >= self.config.joint_shadow_full_plan_watchdog_ms
+        )
+        early_full_plan_trigger = (
+            initial_capture
+            or pressure_crossing
+            or critical_event_pending
+            or transfer_ack_pending
+            or beneficiary_changed
+            or full_watchdog_due
+        )
+        if result is None and not progress_due and not early_full_plan_trigger:
+            self._joint_shadow_counts["progress_coalesced"] += 1
+            return
         additional_runnable = self._policy_runtime_runnable(observation.ts_ms)
         runnable_signature = self._joint_shadow_runnable_signature(
             additional_runnable
@@ -14289,14 +14386,20 @@ class EmbeddedSGLangRuntime:
             parser_frontier_revision=action_frontier.revision,
             admission_revision=self.controller.admission.revision,
         )
-        elapsed = (
-            float("inf")
-            if self._last_policy_snapshot_ms is None
-            else observation.ts_ms - self._last_policy_snapshot_ms
+        liveness_signature = (
+            liveness.obligation_revision,
+            liveness.lease_revision,
+            liveness.grace_revision,
         )
-        watchdog_due = bool(additional_runnable) and elapsed >= (
-            self.config.reference_policy_snapshot_min_interval_ms
+        liveness_changed = (
+            getattr(self, "_last_joint_liveness_signature", None) is None
+            or liveness_signature != getattr(
+                self, "_last_joint_liveness_signature", None
+            )
         )
+        full_plan_requested = early_full_plan_trigger or liveness_changed
+        elapsed = capture_elapsed_ms
+        watchdog_due = bool(additional_runnable) and progress_due
         # Cheap structural pre-check: every field that can feed the full
         # structural/physical signatures is represented here. When none of
         # them changed, no snapshot capture can fire and no new shadow result
@@ -14359,17 +14462,6 @@ class EmbeddedSGLangRuntime:
             stamp.page_revision,
             stamp.topology_revision,
             stamp.fairness_revision,
-            tuple(
-                (
-                    workflow_id,
-                    account.weight,
-                    account.attained_service_ms,
-                    account.dispatch_count,
-                )
-                for workflow_id, account in sorted(
-                    self.controller.fairness.accounts.items()
-                )
-            ),
             self.controller.transfer_backlog_bytes(),
             observation.hbm_used_bytes
             // self.config.reference_policy_hbm_bucket_bytes,
@@ -14386,24 +14478,30 @@ class EmbeddedSGLangRuntime:
             physical_signature != self._last_policy_snapshot_physical_signature
         )
         changed_snapshot_due = (
-            structural_changed
-            or (
-                physical_changed
-                and elapsed
-                >= self.config.reference_policy_snapshot_min_interval_ms
-            )
-            or watchdog_due
+            full_plan_requested
+            or progress_due
+            and (structural_changed or physical_changed)
         )
         trigger_parts: list[str] = []
-        if changed_snapshot_due and structural_changed:
-            trigger_parts.append("graph_or_queue")
-        if changed_snapshot_due and physical_changed:
-            trigger_parts.append("physical_pressure_or_service")
-        if watchdog_due and not structural_changed and not physical_changed:
-            trigger_parts.append("joint_watchdog")
+        if full_plan_requested:
+            trigger_parts.append("full_plan")
+        else:
+            trigger_parts.append("apply_only")
+        if critical_event_pending:
+            trigger_parts.append("causal_event")
+        if pressure_crossing:
+            trigger_parts.append("pressure_crossing")
+        if transfer_ack_pending:
+            trigger_parts.append("transfer_ack")
+        if liveness_changed:
+            trigger_parts.append("restore_retraction_state")
+        if beneficiary_changed:
+            trigger_parts.append("beneficiary_deficit")
+        if full_watchdog_due:
+            trigger_parts.append("pressure_watchdog")
         if result is not None:
             trigger_parts.append("joint_validation")
-        trigger = "+".join(trigger_parts) or "joint_validation"
+        trigger = "+".join(trigger_parts)
 
         if changed_snapshot_due:
             capture_started_ns = time.perf_counter_ns()
@@ -14431,6 +14529,8 @@ class EmbeddedSGLangRuntime:
                     RuntimeEventKind.RETURN,
                     RuntimeEventKind.JOIN_SATISFIED,
                     RuntimeEventKind.REACTIVATE,
+                    RuntimeEventKind.MESSAGE,
+                    RuntimeEventKind.HANDOFF,
                 }
                 predictive_critical = any(
                     event.kind in critical_event_kinds
@@ -14454,10 +14554,11 @@ class EmbeddedSGLangRuntime:
                     urgent_d2h_bytes=urgent_d2h,
                     urgent_h2d_bytes=urgent_h2d,
                 )
-                control_state["action_frontier"] = {
-                    **control_state["action_frontier"],
-                    "coverage": action_frontier.coverage().to_dict(),
-                }
+                if full_plan_requested:
+                    control_state["action_frontier"] = {
+                        **control_state["action_frontier"],
+                        "coverage": action_frontier.coverage().to_dict(),
+                    }
                 fairness_accounts = tuple(
                     WorkflowFairnessReplica(
                         workflow_id=workflow_id,
@@ -14481,7 +14582,7 @@ class EmbeddedSGLangRuntime:
                     external_workflow_charges=(
                         self.controller.external_workflow_memory_charges()
                     ),
-                    control_state=copy.deepcopy(control_state),
+                    control_state=MappingProxyType(control_state),
                     transfer_telemetry=telemetry,
                     capabilities=self._policy_capabilities(),
                     stamp=stamp,
@@ -14491,6 +14592,7 @@ class EmbeddedSGLangRuntime:
                         else trigger
                     ),
                     captured_monotonic_ms=time.monotonic_ns() / 1_000_000.0,
+                    planning_requested=full_plan_requested,
                     frontier_predictions=dict(
                         self._last_frontier_predictions or {}
                     ),
@@ -14513,6 +14615,26 @@ class EmbeddedSGLangRuntime:
                 self._shadow_event_sequence = event_delta.to_sequence
                 self._shadow_page_revision = page_delta.to_revision
                 self._shadow_telemetry_sequence = len(telemetry_history)
+                if full_plan_requested:
+                    self._last_joint_planned_critical_event_sequence = (
+                        getattr(
+                            self, "_joint_shadow_critical_event_sequence", 0
+                        )
+                    )
+                    self._last_joint_planned_transfer_ack_sequence = (
+                        getattr(
+                            self, "_joint_shadow_transfer_ack_sequence", 0
+                        )
+                    )
+                    self._last_joint_full_plan_ms = observation.ts_ms
+                    self._last_joint_shadow_pressure_state = pressure_now
+                    self._last_joint_liveness_signature = liveness_signature
+                    self._last_joint_beneficiary_signature = (
+                        beneficiary_signature
+                    )
+                    self._joint_shadow_counts["full_plan_submitted"] += 1
+                else:
+                    self._joint_shadow_counts["apply_only_submitted"] += 1
                 self._joint_shadow_counts["submitted"] += 1
                 if submission.replaced_sequence is not None:
                     self._joint_shadow_counts["pending_replaced"] += 1
@@ -14528,6 +14650,7 @@ class EmbeddedSGLangRuntime:
                     observation.ts_ms,
                     worker_sequence=submission.sequence,
                     trigger=trigger,
+                    planning_requested=full_plan_requested,
                     event_from_sequence=event_delta.from_sequence,
                     event_to_sequence=event_delta.to_sequence,
                     event_count=len(event_delta.events),
@@ -14731,8 +14854,6 @@ class EmbeddedSGLangRuntime:
             validation_state_changed=bool(extra_strict or extra_readset),
             extra_strict_reasons=extra_strict,
             coarse_stamp_reasons=extra_readset,
-            current_runnable=additional_runnable,
-            current_control_state=control_state,
         )
 
     def _drain_predictive_risk_result(
@@ -15319,14 +15440,16 @@ class EmbeddedSGLangRuntime:
         current_runnable: tuple[RunnableInvocation, ...],
         current_control_state: Mapping[str, object],
         strict_global_reasons: tuple[str, ...],
+        action_local: bool = False,
     ) -> JointPlanCurrentState:
         plan = result.plan
         if plan is None:
             raise ValueError("cannot validate a missing joint plan")
         invocation_ids = set(plan.read_set.invocation_fingerprints)
-        invocation_ids.update(
-            item.invocation_id for item in current_runnable
-        )
+        if not action_local:
+            invocation_ids.update(
+                item.invocation_id for item in current_runnable
+            )
         invocation_snapshots = {
             invocation_id: self.controller.graph.invocation_snapshot(
                 invocation_id
@@ -15341,15 +15464,21 @@ class EmbeddedSGLangRuntime:
         transitions = (
             raw_transitions if isinstance(raw_transitions, Mapping) else {}
         )
-        fairness_accounts = {
-            workflow_id: {
-                "weight": account.weight,
-                "attained_service_ms": account.attained_service_ms,
-                "virtual_runtime_ms": account.virtual_runtime,
-                "dispatch_count": account.dispatch_count,
+        fairness_accounts = (
+            {}
+            if action_local
+            else {
+                workflow_id: {
+                    "weight": account.weight,
+                    "attained_service_ms": account.attained_service_ms,
+                    "virtual_runtime_ms": account.virtual_runtime,
+                    "dispatch_count": account.dispatch_count,
+                }
+                for workflow_id, account in (
+                    self.controller.fairness.accounts.items()
+                )
             }
-            for workflow_id, account in self.controller.fairness.accounts.items()
-        }
+        )
         source_bundles = {
             item.bundle_id: item for item in source.physical_kv.bundles
         }
@@ -15388,11 +15517,18 @@ class EmbeddedSGLangRuntime:
                     dict(state) if isinstance(state, Mapping) else {}
                 )
                 for workflow_id, state in transitions.items()
+                if (
+                    not action_local
+                    or str(workflow_id)
+                    in plan.read_set.transition_generations
+                )
             },
             fairness_revision=self.controller.fairness.revision,
             fairness_accounts=fairness_accounts,
             workflow_memory_charges=(
-                self.controller.workflow_memory_charges()
+                {}
+                if action_local
+                else self.controller.workflow_memory_charges()
             ),
             transfer_epoch=int(current_control_state.get("transfer_epoch", 0)),
             hbm_capacity_bytes=observation.hbm_capacity_bytes,
@@ -15455,11 +15591,13 @@ class EmbeddedSGLangRuntime:
                 current_runnable=current_runnable,
                 current_control_state=current_control_state,
                 strict_global_reasons=(),
+                action_local=True,
             )
             validation = validate_joint_plan_components(
                 result.plan,
                 source,
                 current_state,
+                validate_execution_priority=False,
             )
             decision = compile_online_joint_view(
                 result.plan,
@@ -15513,7 +15651,7 @@ class EmbeddedSGLangRuntime:
                 ) / 1_000_000.0
                 if (
                     predictive_commit_ms
-                    > self.config.joint_physical_commit_budget_ms
+                    > self.config.joint_physical_action_commit_budget_ms
                 ):
                     self._current_predictive_residency_commit = None
                     self._latest_predictive_intent = None
@@ -15526,7 +15664,7 @@ class EmbeddedSGLangRuntime:
                         now_ms,
                         plan_id=result.plan.plan_id,
                         elapsed_ms=predictive_commit_ms,
-                        budget_ms=self.config.joint_physical_commit_budget_ms,
+                        budget_ms=self.config.joint_physical_action_commit_budget_ms,
                         fallback="observed_joint_plan",
                     )
         except Exception as error:
@@ -15544,7 +15682,7 @@ class EmbeddedSGLangRuntime:
         self._joint_shadow_timing_samples.setdefault(
             "predictive_safe_point_commit_ms", deque(maxlen=65_536)
         ).append(predictive_commit_ms)
-        if observed_commit_ms > self.config.joint_physical_commit_budget_ms:
+        if observed_commit_ms > self.config.joint_physical_action_commit_budget_ms:
             self._online_joint_counts["physical_commit_budget_exceeded"] += 1
             self._record_joint_decision_cache(now_ms=now_ms)
             self.audit.emit(
@@ -15552,7 +15690,7 @@ class EmbeddedSGLangRuntime:
                 now_ms,
                 plan_id=result.plan.plan_id,
                 elapsed_ms=observed_commit_ms,
-                budget_ms=self.config.joint_physical_commit_budget_ms,
+                budget_ms=self.config.joint_physical_action_commit_budget_ms,
                 action="publish_safe_point_seed",
             )
             return OnlineJointPlanDecision(
@@ -16468,7 +16606,7 @@ class EmbeddedSGLangRuntime:
             self._joint_shadow_timing_samples.setdefault(
                 "predictive_safe_point_commit_ms", deque(maxlen=65_536)
             ).append(elapsed_ms)
-            if elapsed_ms > self.config.joint_physical_commit_budget_ms:
+            if elapsed_ms > self.config.joint_physical_action_commit_budget_ms:
                 self._current_predictive_residency_commit = None
                 self._latest_predictive_intent = None
                 decision = observed_decision
@@ -17321,34 +17459,57 @@ class EmbeddedSGLangRuntime:
         if getattr(self, "_shutdown_state", "running") != "running":
             self._online_joint_counts["publish_rejected_shutdown"] += 1
             return
-        if result.plan is None or validation is None:
-            self._online_joint_counts["publish_missing_validation"] += 1
+        plan = result.plan
+        if plan is None:
+            self._online_joint_counts["publish_missing_plan"] += 1
             return
-        decision = compile_online_joint_view(
-            result.plan,
-            validation,
-            visible_request_ids=visible_request_ids,
+        has_physical_actions = bool(
+            plan.semantic_residency
+            or plan.retractions
+            or any(
+                item.action != ResidencyAction.KEEP
+                for item in plan.residency
+            )
         )
-        if decision.view is None:
-            self._online_joint_counts[f"publish_rejected_{decision.reason}"] += 1
+        if not has_physical_actions:
+            self._online_joint_counts["publish_skipped_seed_only"] += 1
+            if getattr(self, "_pending_online_joint_residency", None) is None:
+                self._online_joint_result = None
+                self._online_joint_source = None
+                self._online_joint_validation = None
+                self._current_online_joint_view = None
+                self._current_online_joint_decision = None
             return
+        decision = None
+        if validation is not None:
+            decision = compile_online_joint_view(
+                plan,
+                validation,
+                visible_request_ids=visible_request_ids,
+            )
+            if decision.view is None:
+                self._online_joint_counts[
+                    f"publish_rejected_{decision.reason}"
+                ] += 1
+                return
         self._online_joint_result = result
         self._online_joint_source = source
         self._online_joint_validation = validation
         self._current_online_joint_view = None
         self._current_online_joint_decision = None
         self._online_joint_counts["published"] += 1
+        if validation is None:
+            self._online_joint_counts["published_validation_deferred"] += 1
         self.audit.emit(
             "online_joint_plan_published",
             now_ms,
-            plan_id=result.plan.plan_id,
+            plan_id=plan.plan_id,
             worker_sequence=result.sequence,
-            execution_request_count=len(decision.view.ordered_request_ids),
-            immediate_request_count=len(decision.view.immediate_request_ids),
-            restore_blocked_request_count=len(
-                decision.view.restore_requirements
-            ),
-            residency_intent_count=len(decision.view.residency_intent_indices),
+            execution_request_count=len(plan.execution.ordered_request_ids),
+            admission_request_count=len(plan.admissions),
+            semantic_residency_count=len(plan.semantic_residency),
+            retraction_count=len(plan.retractions),
+            validation_deferred=validation is None,
         )
 
     def _record_joint_shadow_result(
@@ -17720,6 +17881,7 @@ class EmbeddedSGLangRuntime:
         superseded_completed = max(
             0,
             worker_stats.completed_count
+            - worker_stats.apply_only_count
             - int(counts.get("result_observed", 0))
             - latest_unobserved,
         )

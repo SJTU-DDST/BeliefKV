@@ -1,6 +1,25 @@
+# 2026-08-17 P5 v4 restore-isolation 结果
+
+- `66b7fb7` 的 ordinary restore 隔离完成 64-root 正式长跑；全局 restore barrier 为 0，backlog 下未复现 running 排空。
+- 峰值 resident pressure 仅 60.09%，没有 running retraction 或 replacement，因此本轮仅作为活性与控制面 characterization，不进入正式 offload A/B。
+- JointPlan 开销已成为首要阻塞：delta capture P95 34.70 ms、snapshot build P95 2.09 s、plan validation P95 171.84 ms、plan age P95 2.49 s。
+- v4 的 31/32-way decode 全部未命中 CUDA Graph。下一版本为 `h200_bf16_v5`，目标捕获到 batch 32；v5 baseline/treatment 必须同配置配对。
+- 完整报告：`docs/experiments/beliefkv_p5_restore_isolation_formal_v4_2026-08-17_zh.md`。
+
 # BeliefKV 最新架构与实现状态
 
-更新日期：2026-08-16
+更新日期：2026-08-17
+
+## 2026-08-17：JointPlan 事件驱动快路径与 H200 BF16 v5
+
+P5 v4 长跑表明完整 JointPlan 的 delta capture、snapshot materialization、planning 和全局 validation 已显著超过 safe-point 预算。当前实现改为事件驱动的两档路径：普通 decode service 和非关键 queue revision 以 100 ms 合并，只向 worker 提交 apply-only delta；HBM pressure crossing、SPAWN、TOOL RETURN、CHILD RETURN、JOIN、transfer ACK、beneficiary deficit 与 restore/retraction revision 才触发完整规划。低压在线路径继续使用 bounded work-conserving seed，不等待异步完整计划。
+
+物理输入改为紧凑 owner delta；RCCG 和 consumer snapshot 按 revision 复用；低压 apply-only 路径不物化 PolicyInput；完整规划仍构建全量 bundle summary 以选择 victim，但 observed 模式不再生成 transfer estimate，目标 closure 在 safe point 才重新物化；snapshot ID 使用 revision tuple，完整内容不再在关键路径哈希。在线提交只校验选中动作的 invocation/dependency/allocator/lease read-set，无 residency 动作的异步计划不接管 bounded admission seed。fast no-action 路径和稀有 physical action 分别使用 1 ms 与 5 ms 预算。
+
+新增 `configs/p6/h200_bf16_v5/frozen_runtime_profile.json`，仅将 `cuda_graph_max_bs` 从 16 扩展到 32，KV pool 仍为 850,000 tokens。v5 启动后应捕获 `[1, 2, 4, 8, 16, 24, 32]`；在短 GPU gate 验证 graph 32、至少 1 GiB 稳态余量和 31/32-way replay 之前，v5 尚未冻结为正式 A/B 配置。GPU service 与 decode-contention transfer artifact 标记为需要在 graph 32 下重新校准。
+
+CPU 回归为 191 passed、2 deselected、6 subtests passed；两个 deselected 测试依赖本机完整 CUDA toolkit，将由 GPU server 启动覆盖真实导入路径。
+
 
 ## 2026-08-16：正式 Treatment 暴露 Ordinary Restore 全局 Barrier
 

@@ -98,6 +98,7 @@ class JointShadowDelta:
     stamp: JointShadowStateStamp
     trigger: str
     captured_monotonic_ms: float
+    planning_requested: bool = True
     frontier_predictions: Mapping[str, Mapping[str, object]] = field(
         default_factory=dict
     )
@@ -218,6 +219,9 @@ def coalesce_joint_shadow_deltas(
         stamp=last.stamp,
         trigger=last.trigger,
         captured_monotonic_ms=last.captured_monotonic_ms,
+        planning_requested=any(
+            item.planning_requested for item in deltas
+        ),
         frontier_predictions=last.frontier_predictions,
         frontier_model_version=last.frontier_model_version,
     )
@@ -267,6 +271,7 @@ class JointShadowWorkerStats:
     submitted_count: int
     started_count: int
     completed_count: int
+    apply_only_count: int
     failed_count: int
     dropped_pending_count: int
     coalesced_pending_count: int
@@ -443,6 +448,10 @@ class IncrementalPolicyInputAssembler:
             workflow_fairness_state=fairness_state,
             control_state=delta.control_state,
             transfer_telemetry=tuple(self._telemetry),
+            include_transfer_estimates=(
+                self.config.predictive_risk_shadow_enabled
+                or self.config.predictive_joint_overlay_enabled
+            ),
             capabilities=delta.capabilities,
         )
         if delta.frontier_predictions:
@@ -493,11 +502,13 @@ class LatestWinsJointPlanWorker:
         self._submitted_count = 0
         self._started_count = 0
         self._completed_count = 0
+        self._apply_only_count = 0
         self._failed_count = 0
         self._dropped_pending_count = 0
         self._coalesced_pending_count = 0
         self._superseded_result_count = 0
         self._last_trigger_capture_ms: float | None = None
+        self._planning_dirty = False
         self._thread = threading.Thread(
             target=self._run,
             name=thread_name,
@@ -581,6 +592,7 @@ class LatestWinsJointPlanWorker:
                 submitted_count=self._submitted_count,
                 started_count=self._started_count,
                 completed_count=self._completed_count,
+                apply_only_count=self._apply_only_count,
                 failed_count=self._failed_count,
                 dropped_pending_count=self._dropped_pending_count,
                 coalesced_pending_count=self._coalesced_pending_count,
@@ -628,46 +640,64 @@ class LatestWinsJointPlanWorker:
             trigger = "legacy_policy_input"
             trigger_interval_ms = None
             planning_budget_ms = None
+            planning_attempted = False
+            publish_result = True
             try:
                 if item.deltas:
                     assert self.assembler is not None
                     apply_started_ns = time.perf_counter_ns()
                     delta = coalesce_joint_shadow_deltas(item.deltas)
                     self.assembler.apply(delta)
+                    self._planning_dirty = (
+                        self._planning_dirty or delta.planning_requested
+                    )
                     snapshot_delta_apply_ms = (
                         time.perf_counter_ns() - apply_started_ns
                     ) / 1_000_000.0
-                    materialize_started_ns = time.perf_counter_ns()
-                    policy_input = self.assembler.build()
-                    snapshot_materialize_ms = (
-                        time.perf_counter_ns() - materialize_started_ns
-                    ) / 1_000_000.0
-                    snapshot_build_ms = (
-                        snapshot_delta_apply_ms + snapshot_materialize_ms
-                    )
                     state_stamp = delta.stamp
                     trigger = delta.trigger
-                    if self._last_trigger_capture_ms is not None:
-                        trigger_interval_ms = max(
-                            0.0,
-                            delta.captured_monotonic_ms
-                            - self._last_trigger_capture_ms,
+                    if self._planning_dirty:
+                        materialize_started_ns = time.perf_counter_ns()
+                        policy_input = self.assembler.build()
+                        snapshot_materialize_ms = (
+                            time.perf_counter_ns() - materialize_started_ns
+                        ) / 1_000_000.0
+                        snapshot_build_ms = (
+                            snapshot_delta_apply_ms + snapshot_materialize_ms
                         )
-                    self._last_trigger_capture_ms = delta.captured_monotonic_ms
-                if policy_input is None:
-                    raise RuntimeError("joint shadow work item has no policy input")
-                budget_for_trigger = getattr(
-                    self.planner, "trigger_budget_ms", None
-                )
-                if callable(budget_for_trigger):
-                    planning_budget_ms = budget_for_trigger(trigger_interval_ms)
-                    plan = self.planner.plan(
-                        policy_input,
-                        planning_budget_ms=planning_budget_ms,
-                        cancel_check=lambda: self._has_newer_pending(item.sequence),
+                        if self._last_trigger_capture_ms is not None:
+                            trigger_interval_ms = max(
+                                0.0,
+                                delta.captured_monotonic_ms
+                                - self._last_trigger_capture_ms,
+                            )
+                        self._last_trigger_capture_ms = (
+                            delta.captured_monotonic_ms
+                        )
+                    else:
+                        publish_result = False
+                if publish_result:
+                    planning_attempted = True
+                    if policy_input is None:
+                        raise RuntimeError(
+                            "joint shadow work item has no policy input"
+                        )
+                    budget_for_trigger = getattr(
+                        self.planner, "trigger_budget_ms", None
                     )
-                else:
-                    plan = self.planner.plan(policy_input)
+                    if callable(budget_for_trigger):
+                        planning_budget_ms = budget_for_trigger(
+                            trigger_interval_ms
+                        )
+                        plan = self.planner.plan(
+                            policy_input,
+                            planning_budget_ms=planning_budget_ms,
+                            cancel_check=lambda: self._has_newer_pending(
+                                item.sequence
+                            ),
+                        )
+                    else:
+                        plan = self.planner.plan(policy_input)
             except Exception as caught:
                 error = f"{type(caught).__name__}: {caught}"
             completed_ms = _monotonic_ms()
@@ -701,9 +731,16 @@ class LatestWinsJointPlanWorker:
                     self._pending is not None
                     and self._pending.sequence > result.sequence
                 )
-                if superseded:
+                if planning_attempted:
+                    self._planning_dirty = superseded
+                if not publish_result:
+                    self._apply_only_count += 1
+                elif superseded:
                     self._superseded_result_count += 1
-                elif self._latest is None or result.sequence > self._latest.sequence:
+                elif (
+                    self._latest is None
+                    or result.sequence > self._latest.sequence
+                ):
                     self._latest = result
                 self._condition.notify_all()
 
@@ -825,6 +862,7 @@ class LatestWinsPredictiveRiskWorker:
                 submitted_count=self._submitted_count,
                 started_count=self._started_count,
                 completed_count=self._completed_count,
+                apply_only_count=0,
                 failed_count=self._failed_count,
                 dropped_pending_count=self._dropped_pending_count,
                 coalesced_pending_count=0,

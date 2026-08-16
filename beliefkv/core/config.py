@@ -137,6 +137,9 @@ class BeliefKVConfig:
     min_joint_plan_budget_ms: float = 0.25
     joint_trigger_budget_fraction: float = 0.5
     joint_physical_commit_budget_ms: float = 1.0
+    joint_physical_action_commit_budget_ms: float = 5.0
+    joint_shadow_progress_coalesce_ms: float = 100.0
+    joint_shadow_full_plan_watchdog_ms: float = 5_000.0
     max_joint_plan_age_ms: float = 100.0
     joint_transition_settling_timeout_ms: float = 250.0
     joint_shadow_detailed_audit_interval_ms: float = 1000.0
@@ -470,6 +473,9 @@ class BeliefKVConfig:
             "max_joint_plan_budget_ms",
             "min_joint_plan_budget_ms",
             "joint_physical_commit_budget_ms",
+            "joint_physical_action_commit_budget_ms",
+            "joint_shadow_progress_coalesce_ms",
+            "joint_shadow_full_plan_watchdog_ms",
             "max_joint_plan_age_ms",
             "joint_transition_settling_timeout_ms",
             "joint_shadow_detailed_audit_interval_ms",

@@ -537,6 +537,35 @@ class RadixArbiterTest(unittest.TestCase):
         self.assertEqual(replica.gpu_bytes, 0)
         self.assertEqual(replica.cpu_bytes, 100)
 
+
+    def test_incremental_owner_replica_omits_full_context_closure(self):
+        source = PageOwnershipIndex()
+        source.register_context("ctx", "wf", 0)
+        root = PageHandle(1, 0)
+        child = PageHandle(2, 0)
+        source.register_page(root, size_bytes=100)
+        source.bind_pages("ctx", 0, (root,))
+
+        initial = source.replica_delta_since(0)
+        self.assertTrue(initial.contexts[0].replace_handles)
+        replica = PageOwnershipIndex()
+        replica.apply_replica_delta(initial)
+
+        before = source.revision
+        source.register_page(child, size_bytes=100, parent=root)
+        source.bind_pages("ctx", 0, (child,))
+        incremental = source.replica_delta_since(before)
+
+        self.assertEqual(len(incremental.contexts), 1)
+        self.assertFalse(incremental.contexts[0].replace_handles)
+        self.assertEqual(incremental.contexts[0].handles, ())
+        replica.apply_replica_delta(incremental)
+
+        self.assertEqual(
+            {page.handle for page in replica.context_pages("ctx")},
+            {root, child},
+        )
+
     def test_replica_mirror_preserves_coalesced_revision_coverage(self):
         source = PageOwnershipIndex()
         root = PageHandle(1, 0)
