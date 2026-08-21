@@ -2,6 +2,40 @@
 
 更新日期：2026-08-22
 
+## 2026-08-22：P5 Gate C 首轮失败并完成针对性修复
+
+首轮 64-root Gate C 在 60 分钟检查点受控停止，不进入训练集、A/B 或 Frozen
+GPU Replay。workload 形成 64 parent、128 FRESH child、64 JOIN_WAIT、1,218 次
+LLM submit 和 3,037 次工具调用，但停止时仍有 97 个 request 从未 physical start，
+physical-start wait P95 为 819.25 秒，GPU 平均利用率仅 4.22%。
+
+根因有两层：
+
+- 9 个 ordinary CPU-only prefix 被错误写入 durable RestoreObligationIndex，9/9
+  fallback 后未再次获得 service；前 8 个占满槽位，随后 ordinary miss 被容量拒绝。
+- physical resident HBM 接近 100%，但 SGLang non-evictable pressure 均值/最大仅
+  13.80%/32%。DynamicWorkingSet 和 full-plan trigger 使用 gross residency，导致
+  native evictable cache 填满时错误收缩 active set，并对低有效压力下的每个因果
+  事件执行完整 JointPlan。
+
+已修复：
+
+- durable restore debt 只由 BeliefKV running retraction 创建；ordinary prefix 直接
+  交给 PrefillAdder/native load-back，不创建 obligation、transaction、lease 或
+  restore priority；当前 Radix path 的 ownership rebind 仍保留。
+- working-set/admission emergency 使用扣除 native evictable capacity 后的 effective
+  pressure；gross residency 只表示物理 cache/victim 空间。
+- predictor-off observed P5 在低 effective pressure 下将 TOOL/SPAWN/RETURN 等
+  因果事件降为 apply-only；有效 pressure、beneficiary、transfer 和 restore/
+  retraction 变化仍触发完整计划，predictive worker 启用时保持因果 full planning。
+
+验证更新为 adapter/restore/admission 175 passed；core 分组 771 passed、2 skipped；
+agent/runtime/collection 分组 160 passed；语法和 whitespace 检查通过。下一步使用
+相同 v5 profile 与冻结 64-root manifest 只复验一次 Gate C，不改变 KV/Host pool。
+
+完整证据见
+`docs/experiments/beliefkv_p5_gate_c_native64_2026-08-22_zh.md`。
+
 ## 2026-08-22：P1-P4 GPU Gate B 已通过
 
 P1-P4 已通过分层 GPU correctness gate：

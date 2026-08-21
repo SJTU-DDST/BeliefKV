@@ -5331,7 +5331,7 @@ class EmbeddedSGLangRuntime:
                 path_extent_count=len(path_extent_ids),
             )
 
-    def _ensure_ordinary_waiting_restore_obligation(
+    def _observe_ordinary_waiting_native_fallback(
         self,
         request_id: str,
         metadata: BeliefKVRequestMetadata,
@@ -5339,100 +5339,51 @@ class EmbeddedSGLangRuntime:
         required_extent_ids: tuple[str, ...],
         *,
         now_ms: float,
-    ) -> RestoreObligation | None:
-        """Turn an observed CPU-only waiting prefix into a durable H2D debt."""
+    ) -> None:
+        """Delegate an ordinary CPU-only prefix to native admission authority."""
 
-        index = self._restore_obligation_index()
-        existing = index.get(request_id)
-        if existing is not None and not existing.state.terminal:
-            return existing
         if not required_extent_ids:
-            return None
-        if not index.can_create(
-            (request_id,),
-            cause=RestoreObligationCause.ORDINARY_WAITING_PREFIX,
-        ):
-            waiters = getattr(
-                self, "_ordinary_restore_capacity_waiters", None
-            )
-            if waiters is None:
-                waiters = set()
-                self._ordinary_restore_capacity_waiters = waiters
-            if request_id not in waiters:
-                waiters.add(request_id)
-                self._restore_obligation_counts[
-                    "ordinary_waiting_capacity_blocked"
-                ] += 1
-                self.audit.emit(
-                    "ordinary_waiting_restore_capacity_blocked",
-                    now_ms,
-                    request_id=request_id,
-                    workflow_id=metadata.root_workflow_id,
-                    invocation_id=metadata.invocation_id,
-                    context_id=metadata.context_id,
-                    active_obligation_count=len(index.active()),
-                    max_active=index.max_active,
-                    running_retraction_reserve=(
-                        index.running_retraction_reserve
-                    ),
-                )
-            return None
-
-        path_extent_ids = self._request_path_extent_ids(
+            return
+        current_path = self._request_path_extent_ids(
             req, metadata.context_id, cpu_only=False
         )
-        if path_extent_ids is None:
-            path_extent_ids = required_extent_ids
-        source_plan_id = (
-            f"joint-restore-liveness:{request_id}:{metadata.context_epoch}"
+        if current_path is not None:
+            self._rebind_waiting_request_path(
+                request_id=request_id,
+                context_id=metadata.context_id,
+                context_epoch=metadata.context_epoch,
+                extent_ids=current_path,
+                now_ms=now_ms,
+                obligation_id=None,
+            )
+        signatures = getattr(
+            self, "_ordinary_native_fallback_signature_by_request", None
         )
-        obligation = index.create(
+        if signatures is None:
+            signatures = {}
+            self._ordinary_native_fallback_signature_by_request = signatures
+        signature = (
+            metadata.context_epoch,
+            tuple(sorted(required_extent_ids)),
+        )
+        if signatures.get(request_id) == signature:
+            return
+        signatures[request_id] = signature
+        self._restore_obligation_counts["ordinary_native_fallback"] += 1
+        self.audit.emit(
+            "ordinary_waiting_prefix_delegated_to_native",
+            now_ms,
             request_id=request_id,
             workflow_id=metadata.root_workflow_id,
             invocation_id=metadata.invocation_id,
             context_id=metadata.context_id,
             context_epoch=metadata.context_epoch,
-            source_retraction_transaction_id=(
-                f"ordinary-waiting:{request_id}"
-            ),
-            source_joint_plan_id=source_plan_id,
-            created_ts_ms=now_ms,
-            path_extent_ids=path_extent_ids,
-            cause=RestoreObligationCause.ORDINARY_WAITING_PREFIX,
-        )
-        self._ensure_restore_transaction(obligation)
-        obligation.source_transaction_terminal = True
-        obligation.requeued = True
-        obligation.state = RestoreObligationState.PARKED_WAIT
-        obligation.set_required_extents(
-            required_extent_ids,
-            restore_bytes=self._extent_ids_bytes(required_extent_ids),
-            now_ms=now_ms,
-        )
-        getattr(
-            self, "_ordinary_restore_capacity_waiters", set()
-        ).discard(request_id)
-        self._restore_obligation_counts["ordinary_waiting_created"] += 1
-        self.audit.emit(
-            "restore_obligation_created",
-            now_ms,
-            obligation_id=obligation.obligation_id,
-            request_id=request_id,
-            workflow_id=obligation.workflow_id,
-            invocation_id=obligation.invocation_id,
-            context_id=obligation.context_id,
-            context_epoch=obligation.context_epoch,
-            source_retraction_transaction_id=(
-                obligation.source_retraction_transaction_id
-            ),
-            source_joint_plan_id=obligation.source_joint_plan_id,
-            cause=obligation.cause.value,
-            native_admission_fallback=obligation.native_admission_fallback,
-            path_extent_count=len(path_extent_ids),
             required_extent_count=len(required_extent_ids),
-            restore_bytes=obligation.restore_bytes,
+            restore_bytes=self._extent_ids_bytes(required_extent_ids),
+            capacity_authority="sglang_prefill_adder",
+            durable_obligation_created=False,
+            restore_priority_created=False,
         )
-        return obligation
 
     def _ensure_restore_transaction(
         self, obligation: RestoreObligation
@@ -7167,14 +7118,33 @@ class EmbeddedSGLangRuntime:
         *,
         now_ms: float,
     ) -> None:
+        obligation.path_extent_ids = tuple(sorted(set(extent_ids)))
+        self._rebind_waiting_request_path(
+            request_id=obligation.request_id,
+            context_id=obligation.context_id,
+            context_epoch=obligation.context_epoch,
+            extent_ids=extent_ids,
+            now_ms=now_ms,
+            obligation_id=obligation.obligation_id,
+        )
+
+    def _rebind_waiting_request_path(
+        self,
+        *,
+        request_id: str,
+        context_id: str,
+        context_epoch: int,
+        extent_ids: tuple[str, ...],
+        now_ms: float,
+        obligation_id: str | None,
+    ) -> None:
         """Make the waiting request's current Radix path physically authoritative."""
 
         page_index = self.controller.page_index
         if (
             not extent_ids
-            or not page_index.has_context(obligation.context_id)
-            or page_index.context_epoch(obligation.context_id)
-            != obligation.context_epoch
+            or not page_index.has_context(context_id)
+            or page_index.context_epoch(context_id) != context_epoch
         ):
             return
         handles: list[PageHandle] = []
@@ -7189,25 +7159,24 @@ class EmbeddedSGLangRuntime:
             handles.append(handle)
         desired = set(handles)
         previous = {
-            page.handle for page in page_index.context_pages(obligation.context_id)
+            page.handle for page in page_index.context_pages(context_id)
         }
-        obligation.path_extent_ids = tuple(sorted(set(extent_ids)))
         if desired == previous:
             return
         page_index.bind_pages(
-            obligation.context_id,
-            obligation.context_epoch,
+            context_id,
+            context_epoch,
             desired,
             replace=True,
         )
         self._restore_obligation_counts["path_rebound"] += 1
         self.audit.emit(
-            "restore_obligation_path_rebound",
+            "waiting_request_path_rebound",
             now_ms,
-            obligation_id=obligation.obligation_id,
-            request_id=obligation.request_id,
-            context_id=obligation.context_id,
-            context_epoch=obligation.context_epoch,
+            obligation_id=obligation_id,
+            request_id=request_id,
+            context_id=context_id,
+            context_epoch=context_epoch,
             previous_extent_count=len(previous),
             current_extent_count=len(desired),
             added_extent_count=len(desired - previous),
@@ -10425,6 +10394,9 @@ class EmbeddedSGLangRuntime:
                     now_ms=float(getattr(self, "_now_ms", lambda: 0.0)()),
                     reason=terminal_reason,
                 )
+                getattr(
+                    self, "_ordinary_native_fallback_signature_by_request", {}
+                ).pop(request_id, None)
                 self._request_metadata_by_id.pop(request_id, None)
                 ledger = getattr(self, "_lock_service_ledger", None)
                 if ledger is not None:
@@ -11612,9 +11584,7 @@ class EmbeddedSGLangRuntime:
                 visible_request_ids=(str(item[1].rid) for item in tagged),
                 epoch_sequence=self._online_joint_epoch_sequence,
                 emergency=(
-                    self.controller.actual_hbm_used_bytes
-                    / self.config.hbm_capacity_bytes
-                    >= self.config.joint_emergency_hbm_ratio
+                    working_set.hbm_pressure >= self.config.joint_emergency_hbm_ratio
                 ),
                 restore_requirements=(
                     (
@@ -11862,9 +11832,7 @@ class EmbeddedSGLangRuntime:
                 visible_request_ids=(str(item[1].rid) for item in tagged),
                 epoch_sequence=self._online_joint_epoch_sequence,
                 emergency=(
-                    self.controller.actual_hbm_used_bytes
-                    / self.config.hbm_capacity_bytes
-                    >= self.config.joint_emergency_hbm_ratio
+                    working_set.hbm_pressure >= self.config.joint_emergency_hbm_ratio
                 ),
                 restore_requirements=(
                     (request_id, entry.restore_bundle_ids)
@@ -12751,9 +12719,11 @@ class EmbeddedSGLangRuntime:
             getattr(self, "_dynamic_working_set_epoch", 0) + 1
         )
         effective_hbm_used_bytes = max(
-            self.controller.actual_hbm_used_bytes,
+            0,
             self.config.hbm_capacity_bytes - native_available_hbm_bytes,
         )
+        self._current_native_available_hbm_bytes = native_available_hbm_bytes
+        self._current_effective_hbm_used_bytes = effective_hbm_used_bytes
         if self.config.dynamic_working_set_enabled:
             decision = self._dynamic_working_set_scheduler().decide(
                 candidates,
@@ -12771,9 +12741,7 @@ class EmbeddedSGLangRuntime:
                 active_workflow_ids=active,
                 mode="legacy_fixed_window",
                 hbm_pressure=min(
-                    1.0,
-                    self.controller.actual_hbm_used_bytes
-                    / self.config.hbm_capacity_bytes,
+                    1.0, effective_hbm_used_bytes / self.config.hbm_capacity_bytes
                 ),
                 target_ready_requests=sum(
                     item.gpu_ready_count for item in candidates
@@ -12812,6 +12780,9 @@ class EmbeddedSGLangRuntime:
                 epoch=decision.epoch,
                 mode=decision.mode,
                 hbm_pressure=decision.hbm_pressure,
+                gross_hbm_used_bytes=self.controller.actual_hbm_used_bytes,
+                native_available_hbm_bytes=native_available_hbm_bytes,
+                effective_hbm_used_bytes=effective_hbm_used_bytes,
                 target_ready_requests=decision.target_ready_requests,
                 selected_ready_requests=decision.selected_ready_requests,
                 active_workflow_ids=list(decision.active_workflow_ids),
@@ -12822,14 +12793,17 @@ class EmbeddedSGLangRuntime:
     def _pressure_actions_enabled(self) -> bool:
         if not self.config.dynamic_working_set_enabled:
             return True
-        hbm_pressure = min(
-            1.0,
-            self.controller.actual_hbm_used_bytes
-            / self.config.hbm_capacity_bytes,
-        )
         decision = getattr(self, "_current_dynamic_working_set", None)
-        if decision is not None and decision.pressure_actions_enabled:
-            return True
+        if decision is not None:
+            return bool(decision.pressure_actions_enabled)
+        native_available_hbm_bytes = self._native_reclaim_capacity_bytes()
+        effective_hbm_used_bytes = max(
+            0,
+            self.config.hbm_capacity_bytes - native_available_hbm_bytes,
+        )
+        hbm_pressure = min(
+            1.0, effective_hbm_used_bytes / self.config.hbm_capacity_bytes
+        )
         return hbm_pressure >= self.config.dynamic_working_set_pressure_enter_ratio
 
     def _observed_admission_candidates(
@@ -13162,31 +13136,21 @@ class EmbeddedSGLangRuntime:
         restore_bundle_ids = self._request_restore_bundle_ids(
             req, metadata.context_id
         )
-        if (
-            metadata.context_id in self._pending_h2d_contexts
-            or restore_bundle_ids
-        ):
-            obligation = None
+        if metadata.context_id in self._pending_h2d_contexts:
+            self.controller.visible_admission.set_wait_restore(
+                request_id,
+                restore_bundle_ids or (f"context:{metadata.context_id}",),
+                reason="h2d_inflight",
+            )
+        else:
             if restore_bundle_ids:
-                obligation = self._ensure_ordinary_waiting_restore_obligation(
+                self._observe_ordinary_waiting_native_fallback(
                     request_id,
                     metadata,
                     req,
                     restore_bundle_ids,
                     now_ms=self._now_ms(),
                 )
-            if metadata.context_id in self._pending_h2d_contexts:
-                restore_reason = "h2d_inflight"
-            elif obligation is not None:
-                restore_reason = "restore_obligation_pending"
-            else:
-                restore_reason = "restore_obligation_capacity"
-            self.controller.visible_admission.set_wait_restore(
-                request_id,
-                restore_bundle_ids or (f"context:{metadata.context_id}",),
-                reason=restore_reason,
-            )
-        else:
             overdue_restore = self._overdue_restore_obligation(
                 now_ms=self._now_ms()
             )
@@ -13826,6 +13790,9 @@ class EmbeddedSGLangRuntime:
         terminal_cancelled = terminal_marker or logical_scope_terminal
         self._terminal_cancelled_request_ids.discard(req.rid)
         getattr(self, "_queue_timeout_request_ids", set()).discard(req.rid)
+        getattr(
+            self, "_ordinary_native_fallback_signature_by_request", {}
+        ).pop(req.rid, None)
         getattr(self, "_execution_timeout_request_ids", set()).discard(req.rid)
         self._request_metadata_by_id.pop(req.rid, None)
         getattr(self, "_request_submitted_ts_by_id", {}).pop(req.rid, None)
@@ -15225,6 +15192,31 @@ class EmbeddedSGLangRuntime:
             return
         self._maybe_record_policy_snapshot_legacy(observation)
 
+    def _joint_shadow_effective_hbm_used_bytes(
+        self, observation: RuntimeResourceObservation
+    ) -> int:
+        native_available_hbm_bytes = getattr(
+            self, "_current_native_available_hbm_bytes", None
+        )
+        if native_available_hbm_bytes is None:
+            return observation.hbm_used_bytes
+        return max(
+            0, observation.hbm_capacity_bytes - native_available_hbm_bytes
+        )
+
+    def _joint_shadow_causal_event_requires_full_plan(
+        self,
+        *,
+        critical_event_pending: bool,
+        pressure_now: bool,
+    ) -> bool:
+        if not critical_event_pending:
+            return False
+        return bool(
+            pressure_now
+            or getattr(self, "predictive_risk_worker", None) is not None
+        )
+
     def _maybe_record_incremental_policy_snapshot(
         self,
         observation: RuntimeResourceObservation,
@@ -15244,8 +15236,12 @@ class EmbeddedSGLangRuntime:
             self.config.joint_shadow_progress_coalesce_ms
         )
         initial_capture = self._last_policy_snapshot_ms is None
+        native_available_hbm_bytes = getattr(
+            self, "_current_native_available_hbm_bytes", None
+        )
+        effective_hbm_used_bytes = self._joint_shadow_effective_hbm_used_bytes(observation)
         pressure_now = (
-            observation.hbm_used_bytes
+            effective_hbm_used_bytes
             >= int(
                 observation.hbm_capacity_bytes
                 * self.config.observed_admission_active_kv_high_watermark_ratio
@@ -15293,10 +15289,16 @@ class EmbeddedSGLangRuntime:
             and full_plan_elapsed_ms
             >= self.config.joint_shadow_full_plan_watchdog_ms
         )
+        causal_event_requires_full_plan = (
+            self._joint_shadow_causal_event_requires_full_plan(
+                critical_event_pending=critical_event_pending,
+                pressure_now=pressure_now,
+            )
+        )
         early_full_plan_trigger = (
             initial_capture
             or pressure_crossing
-            or critical_event_pending
+            or causal_event_requires_full_plan
             or transfer_ack_pending
             or beneficiary_changed
             or full_watchdog_due
@@ -15514,13 +15516,6 @@ class EmbeddedSGLangRuntime:
                     event.kind in critical_event_kinds
                     for event in event_delta.events
                 ) or bool(telemetry)
-                pressure_now = (
-                    observation.hbm_used_bytes
-                    >= int(
-                        observation.hbm_capacity_bytes
-                        * self.config.observed_admission_active_kv_high_watermark_ratio
-                    )
-                )
                 if pressure_now and not getattr(
                     self, "_last_predictive_pressure_state", False
                 ):
@@ -15635,6 +15630,8 @@ class EmbeddedSGLangRuntime:
                     page_from_revision=page_delta.from_revision,
                     page_to_revision=page_delta.to_revision,
                     changed_page_count=len(page_delta.changed_handles),
+                    effective_hbm_used_bytes=effective_hbm_used_bytes,
+                    native_available_hbm_bytes=native_available_hbm_bytes,
                     full_page_record_count=len(page_delta.pages),
                     physical_state_patch_count=len(page_delta.page_states),
                     changed_context_count=len(page_delta.contexts),

@@ -4154,6 +4154,90 @@ class SGLangBackendTest(unittest.TestCase):
         self.assertFalse(terminal[0]["terminal_marker"])
         self.assertTrue(terminal[0]["logical_scope_terminal"])
 
+    def test_dynamic_working_set_uses_native_reclaimable_pressure(self):
+        config = BeliefKVConfig(
+            hbm_capacity_bytes=1000,
+            reserve_hbm_bytes=0,
+            kv_bytes_per_token=10,
+            dynamic_working_set_enabled=True,
+        )
+        controller = BeliefKVController(config)
+        controller.report_hbm_usage(1000)
+        runtime = EmbeddedSGLangRuntime.__new__(EmbeddedSGLangRuntime)
+        runtime.config = config
+        runtime.controller = controller
+        runtime.audit = _AuditRecorder()
+        captured = {}
+
+        def decide(_candidates, **kwargs):
+            captured.update(kwargs)
+            return SimpleNamespace(
+                active_workflow_ids=(),
+                mode="steady",
+                hbm_pressure=(
+                    kwargs["hbm_used_bytes"] / kwargs["hbm_capacity_bytes"]
+                ),
+                target_ready_requests=0,
+                selected_ready_requests=0,
+                pressure_actions_enabled=False,
+                epoch=kwargs["epoch"],
+            )
+
+        runtime._dynamic_working_set_scheduler = lambda: SimpleNamespace(
+            decide=decide
+        )
+
+        decision = runtime._dynamic_working_set_for_tagged(
+            [],
+            entries={},
+            fair_order=[],
+            frontier_candidates={},
+            now_ms=100.0,
+            native_request_slots=32,
+            native_available_hbm_bytes=800,
+        )
+
+        self.assertEqual(controller.actual_hbm_used_bytes, 1000)
+        self.assertEqual(captured["hbm_used_bytes"], 200)
+        self.assertEqual(runtime._current_native_available_hbm_bytes, 800)
+        self.assertEqual(runtime._current_effective_hbm_used_bytes, 200)
+        self.assertAlmostEqual(decision.hbm_pressure, 0.2)
+        self.assertFalse(runtime._pressure_actions_enabled())
+        observation = RuntimeResourceObservation(
+            ts_ms=100.0,
+            hbm_capacity_bytes=1000,
+            hbm_used_bytes=1000,
+            host_capacity_bytes=1000,
+            host_used_bytes=0,
+            host_free_bytes=1000,
+        )
+        self.assertEqual(
+            runtime._joint_shadow_effective_hbm_used_bytes(observation), 200
+        )
+        self.assertFalse(
+            runtime._joint_shadow_causal_event_requires_full_plan(
+                critical_event_pending=True, pressure_now=False
+            )
+        )
+        self.assertTrue(
+            runtime._joint_shadow_causal_event_requires_full_plan(
+                critical_event_pending=True, pressure_now=True
+            )
+        )
+        runtime.predictive_risk_worker = object()
+        self.assertTrue(
+            runtime._joint_shadow_causal_event_requires_full_plan(
+                critical_event_pending=True, pressure_now=False
+            )
+        )
+        changed = next(
+            fields
+            for event, _, fields in runtime.audit.events
+            if event == "dynamic_working_set_changed"
+        )
+        self.assertEqual(changed["gross_hbm_used_bytes"], 1000)
+        self.assertEqual(changed["effective_hbm_used_bytes"], 200)
+
     def test_ticket_epoch_does_not_mutate_native_queue_or_cap_workflow(self):
         config = BeliefKVConfig(
             hbm_capacity_bytes=1000,
@@ -6396,7 +6480,7 @@ class SGLangBackendTest(unittest.TestCase):
 
         self.assertEqual(funding_attempts, ["head"])
 
-    def test_ordinary_waiting_cpu_prefix_creates_and_drives_restore(self):
+    def test_ordinary_waiting_cpu_prefix_uses_native_admission_without_debt(self):
         config = BeliefKVConfig(
             hbm_capacity_bytes=2000,
             host_capacity_bytes=4000,
@@ -6465,56 +6549,32 @@ class SGLangBackendTest(unittest.TestCase):
 
         runtime._sync_visible_gate_state("waiting", metadata, req=request)
 
-        obligation = runtime._restore_obligation_index().get("waiting")
-        self.assertIsNotNone(obligation)
-        self.assertEqual(
-            obligation.cause,
-            RestoreObligationCause.ORDINARY_WAITING_PREFIX,
-        )
-        self.assertTrue(obligation.source_transaction_terminal)
-        self.assertTrue(obligation.requeued)
-        self.assertEqual(
-            controller.visible_admission.get("waiting").state,
-            AdmissionSideState.WAIT_RESTORE,
-        )
-
-        runtime._drive_restore_obligations(now_ms=1001.0)
-        restore = controller.command_queue.pop()
-        self.assertIsNotNone(restore, runtime.audit.events)
-        self.assertEqual(restore.kind, CommandKind.PREFETCH_CONTEXT)
-        self.assertEqual(restore.context_id, "ctx")
-        self.assertEqual(
-            restore.metadata["joint_plan_id"],
-            "joint-restore-liveness:waiting:0",
-        )
-
-        controller._queued_by_context.pop("ctx", None)
-        controller.page_index.begin_transfer(handle, TransferDirection.H2D)
-        controller.page_index.complete_transfer(handle, TransferDirection.H2D)
-        runtime._advance_restore_obligations(
-            (
-                CommandAck(
-                    restore.command_id,
-                    CommandStatus.COMPLETED,
-                    1002.0,
-                    actual_bytes=200,
-                    page_handles=(handle,),
-                ),
-            ),
-            now_ms=1002.0,
-        )
-        runtime._drive_restore_obligations(now_ms=1002.1)
-        runtime._sync_visible_gate_state("waiting", metadata, req=request)
-
-        self.assertEqual(obligation.state, RestoreObligationState.TICKET_READY)
+        self.assertIsNone(runtime._restore_obligation_index().get("waiting"))
+        self.assertEqual(getattr(runtime, "_restore_transactions", {}), {})
         entry = controller.visible_admission.get("waiting")
         self.assertEqual(entry.state, AdmissionSideState.VISIBLE_PENDING)
+        self.assertIsNone(controller.command_queue.pop())
+        delegated = [
+            fields
+            for event, _, fields in runtime.audit.events
+            if event == "ordinary_waiting_prefix_delegated_to_native"
+        ]
+        self.assertEqual(len(delegated), 1)
+        self.assertFalse(delegated[0]["durable_obligation_created"])
+        self.assertFalse(delegated[0]["restore_priority_created"])
         self.assertEqual(
-            runtime._restore_ready_ticket_priority({"waiting": entry}),
-            (),
+            delegated[0]["capacity_authority"], "sglang_prefill_adder"
+        )
+        runtime._sync_visible_gate_state("waiting", metadata, req=request)
+        self.assertEqual(
+            sum(
+                event == "ordinary_waiting_prefix_delegated_to_native"
+                for event, _, _ in runtime.audit.events
+            ),
+            1,
         )
 
-    def test_ordinary_restore_rebinds_current_request_path(self):
+    def test_ordinary_native_fallback_rebinds_current_request_path(self):
         config = BeliefKVConfig(
             hbm_capacity_bytes=2000,
             host_capacity_bytes=4000,
@@ -6586,7 +6646,6 @@ class SGLangBackendTest(unittest.TestCase):
         )
 
         runtime._sync_visible_gate_state("waiting", metadata, req=request)
-        runtime._drive_restore_obligations(now_ms=1001.0)
 
         owned_handles = {
             page.handle for page in controller.page_index.context_pages("ctx")
@@ -6595,22 +6654,16 @@ class SGLangBackendTest(unittest.TestCase):
         self.assertNotIn(
             "ctx", controller.page_index.pages[stale_handle].owner_contexts
         )
-        restore = controller.command_queue.pop()
-        self.assertIsNotNone(restore, runtime.audit.events)
-        self.assertEqual(
-            restore.physical_bundle.page_actions[0].handle,
-            current_handle,
-        )
+        self.assertIsNone(runtime._restore_obligation_index().get("waiting"))
+        self.assertIsNone(controller.command_queue.pop())
         self.assertTrue(
             any(
-                event == "restore_obligation_path_rebound"
+                event == "waiting_request_path_rebound"
                 for event, _, _ in runtime.audit.events
             )
         )
 
-    def test_ordinary_restore_uses_native_fallback_when_explicit_h2d_is_blocked(
-        self,
-    ):
+    def test_ordinary_native_fallback_does_not_consume_restore_capacity(self):
         config = BeliefKVConfig(
             hbm_capacity_bytes=2000,
             host_capacity_bytes=4000,
@@ -6690,56 +6743,39 @@ class SGLangBackendTest(unittest.TestCase):
         )
 
         runtime._sync_visible_gate_state("waiting", metadata, req=request)
-        runtime._drive_restore_obligations(now_ms=1001.0)
-
         obligation = runtime._restore_obligation_index().get("waiting")
         lease = runtime._restore_lease_index().get("waiting")
-        self.assertTrue(obligation.native_admission_fallback)
-        self.assertEqual(obligation.state, RestoreObligationState.TICKET_READY)
+        self.assertIsNone(obligation)
         self.assertIsNone(lease)
         self.assertIsNone(controller.command_queue.pop())
         self.assertEqual(
             controller.visible_admission.get("waiting").state,
             AdmissionSideState.VISIBLE_PENDING,
         )
-        self.assertEqual(
-            runtime._restore_ready_ticket_priority(
-                {"waiting": controller.visible_admission.get("waiting")}
-            ),
-            (),
-        )
-
-        runtime._sync_visible_gate_state("waiting", metadata, req=request)
-        self.assertEqual(
-            controller.visible_admission.get("waiting").state,
-            AdmissionSideState.VISIBLE_PENDING,
-        )
-        self.assertTrue(
-            runtime._begin_restore_lease_admission(obligation, now_ms=1002.0)
-        )
-        runtime._reject_restore_lease_admission(
-            obligation,
-            now_ms=1002.1,
-            native_result="NO_TOKEN",
-        )
-        self.assertIsNone(runtime._restore_lease_index().get("waiting"))
-        self.assertTrue(
-            any(
-                event == "restore_obligation_native_fallback_ready"
-                for event, _, _ in runtime.audit.events
-            )
-        )
         fallback_event = next(
             fields
             for event, _, fields in runtime.audit.events
-            if event == "restore_obligation_native_fallback_ready"
+            if event == "ordinary_waiting_prefix_delegated_to_native"
         )
         self.assertEqual(fallback_event["required_extent_count"], 1)
         self.assertEqual(fallback_event["restore_bytes"], 200)
         self.assertEqual(
             fallback_event["capacity_authority"], "sglang_prefill_adder"
         )
-        self.assertFalse(fallback_event["allocator_reservation_created"])
+        self.assertFalse(fallback_event["durable_obligation_created"])
+        for index in range(8):
+            runtime._restore_obligation_index().create(
+                request_id=f"retracted-{index}",
+                workflow_id=f"wf-{index}",
+                invocation_id=f"inv-{index}",
+                context_id=f"ctx-{index}",
+                context_epoch=0,
+                source_retraction_transaction_id=f"retraction-{index}",
+                source_joint_plan_id=f"joint-{index}",
+                created_ts_ms=float(index),
+                path_extent_ids=(),
+            )
+        self.assertEqual(len(runtime._restore_obligation_index().active()), 8)
 
     def test_ordinary_restore_debt_never_becomes_global_barrier(self):
         config = BeliefKVConfig(
