@@ -376,9 +376,7 @@ def main() -> int:
         "planning_interval_ms": 5.0,
         "admission_liveness_timeout_ms": 1000.0,
         "admission_force_progress_timeout_ms": 5000.0,
-        "admission_prefill_quantum_tokens": min(
-            16_384, args.max_prefill_tokens
-        ),
+        "admission_prefill_quantum_tokens": 16_384,
         "admission_decode_quantum_tokens": 16,
         "admission_allocator_guard_tokens": 16,
         "workflow_starvation_floor_ms": 30_000.0,
