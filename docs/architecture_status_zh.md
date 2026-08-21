@@ -2,6 +2,25 @@
 
 更新日期：2026-08-22
 
+## 2026-08-22：P1-P4 GPU Gate B 已通过
+
+P1-P4 已通过分层 GPU correctness gate：
+
+- 8-root `native_subagent_2to3` 观察到 16 个动态 child、644 次 LLM 和
+  1,119 次工具调用；deadline workflow 的服务端清理延迟最大 561.17 ms，最终
+  无请求或控制事务残留。
+- running-retraction micro 完成 3.00 GiB D2H、beneficiary service、同量 H2D、
+  victim service 和 durable obligation satisfaction。
+- Host lifecycle micro 完成 3.01 GiB 原子 D2H、generation-safe CPU_ONLY Host
+  drop、`recompute_required`、native demand-load 和 uncached prefill service。
+- 所有最终 correctness gate 为真。test hook 与 Host lifecycle 分别标记为
+  `test_hook`/`lifecycle`，不冒充 JointPlan 动作。
+
+CPU 回归更新为 core 782 passed、agent/runtime 117 passed、runtime profile
+15 passed。下一步是 predictor-off 64-root Gate C；不以显式迁移次数为通过标准。
+完整证据见
+`docs/experiments/beliefkv_native_trace_p1_p4_gate_b_2026-08-22_zh.md`。
+
 ## 2026-08-22：Native Trace P1-P4 正确性与活性修复
 
 针对 2026-08-21 64-root trace 暴露的 admission starvation、deadline
