@@ -26,6 +26,14 @@ V4_PROFILE = (
     REPOSITORY_ROOT
     / "configs/p6/h200_bf16_v4/frozen_runtime_profile.json"
 )
+V5_PROFILE = (
+    REPOSITORY_ROOT
+    / "configs/p6/h200_bf16_v5/frozen_runtime_profile.json"
+)
+V5_RESTORE_GATE_PROFILE = (
+    REPOSITORY_ROOT
+    / "configs/p6/h200_bf16_v5_restore_gate/frozen_runtime_profile.json"
+)
 
 
 def _profile() -> dict[str, object]:
@@ -105,6 +113,30 @@ def test_h200_v4_profile_enables_batched_prefill_quantum() -> None:
     assert environment["MAX_RUNNING_REQUESTS"] == "32"
     assert environment["CHUNKED_PREFILL_SIZE"] == "16384"
     assert environment["MAX_PREFILL_TOKENS"] == "16384"
+
+
+def test_h200_v5_restore_gate_only_reduces_running_slots() -> None:
+    formal, _ = load_runtime_profile(
+        V5_PROFILE,
+        repository_root=REPOSITORY_ROOT,
+    )
+    gate, _ = load_runtime_profile(
+        V5_RESTORE_GATE_PROFILE,
+        repository_root=REPOSITORY_ROOT,
+    )
+
+    assert gate["profile_id"] == "h200_bf16_v5_restore_gate"
+    assert gate["runtime"]["max_running_requests"] == 2
+
+    gate["profile_id"] = formal["profile_id"]
+    gate["runtime"]["max_running_requests"] = formal["runtime"][
+        "max_running_requests"
+    ]
+    for key in tuple(formal):
+        if str(key).startswith("_"):
+            formal.pop(key)
+            gate.pop(key)
+    assert gate == formal
 
 
 def test_runtime_contract_accepts_exact_profile() -> None:
