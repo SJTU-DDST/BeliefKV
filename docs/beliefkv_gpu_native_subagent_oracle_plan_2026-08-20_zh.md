@@ -2,7 +2,7 @@
 
 日期：2026-08-20
 
-状态：代码和冻结输入已准备完成；GPU 语义门禁尚未执行，必须等待明确指令。
+状态：2026-08-21 GPU 语义门禁完成。3 个完整 workflow 的 native parent continuation 和物理 prefix reuse 全部通过；第 4 个 child 长尾被取消。64-root native trace 尚未执行，必须等待明确指令。
 
 ## 1. 路线变更
 
@@ -128,4 +128,4 @@ O3 没有可用 KV 动作时自然退化为 O0，不再要求 CPU gate 先证明
 
 ## 8. 当前停止点
 
-当前只完成代码、测试、分析器和冻结 workload。未启动 SGLang、未执行 GPU semantic gate、未采集 native trace、未运行 O0/O3。下一条 GPU 指令必须从 4-root semantic gate 开始，不能直接跳到 64-root 长跑。
+4-root semantic gate 已执行：修复 prompt 冲突后，4/4 首个 JOIN 均包含 2 个 FRESH child；3 个完整 workflow 的 ToolMessage 回流、parent context/epoch 连续和 parent prefix retention 全部通过，第 4 个长尾被取消。未采集 64-root native trace，未运行 O0/O3。下一条 GPU 指令从冻结 64-root characterization 开始，并保留固定 wall-clock 和取消语义。

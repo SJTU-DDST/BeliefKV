@@ -1,6 +1,6 @@
 # BeliefKV 最新架构与实现状态
 
-更新日期：2026-08-20
+更新日期：2026-08-21
 
 ## 2026-08-20：GPU-First Native-Subagent Oracle（当前）
 
@@ -9,6 +9,8 @@ CPU Counterfactual Oracle 已退出正式收益门禁，只保留契约测试和
 正式 workload 使用 native_subagent_2to3：同一个 Deep Agents parent 通过原生 task 发起 2--3 个 FRESH child，parent 进入 JOIN_WAIT，child reports 作为 ToolMessage 回到同一 parent 对话，随后同一 context_id 在下一 context_epoch 继续。旧 parallel_analysis_2to3 的外部 planner、独立 child orchestration、新 supervisor，以及 64K--160K context pack/two-wave workload 全部降级为 diagnostic。
 
 冻结输入为 configs/p6/oracle_v2_native_subagent_v1/collection_plan.json：64 个 formal-train root 同时提交、client in-flight=64、SGLang max running=32、KV pool=850K、Host=96 GiB，无事件驱动放量、无 outcome replacement。GPU 空闲并得到指令后，先执行 4-root 首 JOIN semantic gate；通过后才采 64-root native trace，并以 trace-driven GPU replay 先比较 O0/O3。
+
+2026-08-21 semantic gate 已验证 4/4 首个 JOIN 均为 2-child；其中 3 个完整 workflow 通过全部 parent continuation/ToolMessage/prefix-reuse 检查，parent prefix retention 均为 100%。第 4 个 pytest child 在 642 次工具调用后仍未 RETURN，被人工取消，因此不能声称 4/4 clean completion。报告见 [H200 Native-Subagent 语义门禁](experiments/beliefkv_h200_native_subagent_semantic_gate_2026-08-21_zh.md)。下一步等待指令后采集冻结 64-root trace。
 
 
 ## 历史：CPU Oracle v2 有限候选与压力 Workload（已降级）
