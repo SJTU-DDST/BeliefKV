@@ -35,6 +35,9 @@ from beliefkv.experiments.agent_protocol import (
     require_structured_completion,
 )
 from beliefkv.experiments.deepagents_swebench import (
+    AUTONOMOUS_NATURAL_SUBAGENT_PROMPT,
+    AUTONOMOUS_SYSTEM_PROMPT,
+    NATIVE_SUBAGENT_2TO3_PROMPT,
     DeepAgentsExperimentConfig,
     DockerWorkspaceBackend,
     DelegationPlan,
@@ -991,6 +994,14 @@ def test_parallel_analysis_profile_builds_three_read_only_orthogonal_roles(
         "do not modify files" in item["system_prompt"].lower()
         for item in specs
     )
+
+
+def test_native_subagent_prompt_excludes_natural_fanout_policy() -> None:
+    natural_policy = "no required or preconfigured count"
+    assert natural_policy in AUTONOMOUS_NATURAL_SUBAGENT_PROMPT
+    assert natural_policy not in AUTONOMOUS_SYSTEM_PROMPT
+    assert natural_policy not in NATIVE_SUBAGENT_2TO3_PROMPT
+    assert "A one-task message is invalid" in NATIVE_SUBAGENT_2TO3_PROMPT
 
 
 def test_native_subagent_profile_builds_read_only_children(tmp_path: Path) -> None:

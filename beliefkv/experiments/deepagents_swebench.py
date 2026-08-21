@@ -1386,15 +1386,18 @@ execute tool is already isolated in an offline Docker sandbox. Diagnose, edit, a
 the repository. A workflow is complete only when you return the required
 WorkflowCompletion structured response. Do not finish with ordinary prose. Use
 status=patched_and_tested only after implementing every requirement, leaving unresolved
-empty, and observing a successful focused repository test command.
+empty, and observing a successful focused repository test command. Never access paths
+outside the mounted repository.
+""" + SANDBOX_PATH_CONTRACT
 
+AUTONOMOUS_NATURAL_SUBAGENT_PROMPT = """
 You may delegate repository work through task. Decide the number of subagents at
 runtime: there is no required or preconfigured count. Delegate only when a task has
 independent multi-step work or benefits from a separate context. When several tasks are
 independent, issue their task calls together so they can run concurrently. Do not
 delegate trivial one-step work. Integrate child reports and leave the final patch in the
-shared workspace. Never access paths outside the mounted repository.
-""" + SANDBOX_PATH_CONTRACT
+shared workspace.
+"""
 
 
 PARALLEL_ANALYSIS_2TO3_PROMPT = """
@@ -1411,15 +1414,17 @@ tests the patch. Do not split adjacent parts of one call path into duplicate tas
 
 
 NATIVE_SUBAGENT_2TO3_PROMPT = """
-Use the native task tool before editing. In one assistant turn, issue exactly two
-mandatory, independent calls so they run concurrently:
+After an optional write_todos call, your first repository action must be one assistant
+message containing exactly these two mandatory, independent native task calls:
 1. repository-explorer: trace the code path and identify candidate symbols and invariants.
 2. test-analyst: reproduce the failure and identify focused regression tests.
-Add compatibility-analyst in that same turn only for an independent dependency,
-protocol, version, serialization, or compatibility question. Never issue more than
-three task calls. Wait for all child tool results to return to this conversation, then
-continue in this same parent conversation and implement and test the patch yourself.
-Children are read-only and must not edit the workspace.
+Do not call ls, read_file, glob, grep, execute, or any other repository tool before both
+task calls have been submitted in that same message. A one-task message is invalid: do
+not wait for one child before submitting the other. Add compatibility-analyst as a third
+call in the same message only for an independent dependency, protocol, version,
+serialization, or compatibility question. Wait for all child tool results to return to
+this conversation, then continue in this same parent conversation and implement and test
+the patch yourself. Children are read-only and must not edit the workspace.
 """
 
 
@@ -1982,7 +1987,11 @@ def _build_autonomous_agent(
                     config.subagent_fanout_profile == "native_subagent_2to3"
                     and delegation_enabled
                 )
-                else ""
+                else (
+                    AUTONOMOUS_NATURAL_SUBAGENT_PROMPT
+                    if delegation_enabled
+                    else ""
+                )
             )
             + repository_sandbox_contract(workload)
             + "\n\n"
