@@ -208,6 +208,21 @@ def test_semantic_replacement_uses_expired_resident_service_lease() -> None:
         },
     }
     state["rccg"] = rccg
+    state["control"] = {
+        "reclaim_requirements": {
+            "revision": 1,
+            "requirements": [
+                {
+                    "beneficiary_request_id": target.request_id,
+                    "required_startup_bytes": 100,
+                    "required_growth_bytes": 500,
+                    "current_prefix_bytes": 200,
+                    "waited_ms": 5_000.0,
+                    "skip_reason": "bounded_hbm_budget",
+                }
+            ],
+        }
+    }
     policy_input = replace(
         policy_input,
         runtime_graph=replace(policy_input.runtime_graph, state=state),
@@ -226,7 +241,7 @@ def test_semantic_replacement_uses_expired_resident_service_lease() -> None:
     assert replacement.context_id == "ctx-old"
     assert replacement.beneficiary_request_id == target.request_id
     assert replacement.required_reclaim_bytes > 0
-    assert "service-or-evict" in replacement.reason
+    assert replacement.reason.startswith("beneficiary-bound HBM reclaim")
 
 
 def test_semantic_replacement_preserves_recently_served_resident() -> None:
@@ -726,7 +741,7 @@ def test_fairness_revision_can_advance_without_invalidating_priority() -> None:
     assert validation.readset_fresh
 
 
-def test_fairness_priority_change_invalidates_execution_intent() -> None:
+def test_fairness_priority_change_does_not_invalidate_maxweight_execution() -> None:
     policy_input = _input(capacity=1_500, reserved=0, include_cpu_target=False)
     request_a = _request("request-a", "workflow-a", "inv-a", "ctx-a")
     request_b = _request(
@@ -757,7 +772,7 @@ def test_fairness_priority_change_invalidates_execution_intent() -> None:
     validation = validate_joint_plan(plan, current)
 
     assert plan.execution.selected_workflow_id == "workflow-a"
-    assert "fairness_priority_changed" in validation.readset_conflict_reasons
+    assert validation.readset_fresh
 
 
 def test_reserved_request_startup_is_not_counted_twice() -> None:
@@ -884,7 +899,7 @@ def test_component_validation_isolates_one_blocked_physical_bundle() -> None:
     assert validation.partially_fresh
 
 
-def test_component_validation_rechecks_fairness_without_revision_staleness() -> None:
+def test_component_validation_treats_fairness_as_a_tie_break() -> None:
     policy_input = _input(capacity=1_500, reserved=0, include_cpu_target=False)
     request_a = _request("request-a", "workflow-a", "inv-a", "ctx-a")
     request_b = _request("request-b", "workflow-b", "inv-b", "ctx-b")
@@ -922,8 +937,7 @@ def test_component_validation_rechecks_fairness_without_revision_staleness() -> 
     )
 
     assert same_priority.execution.valid
-    assert not flipped.execution.valid
-    assert "fairness_priority_changed" in flipped.execution.reasons
+    assert flipped.execution.valid
     assert all(item.valid for item in flipped.admissions.values())
 
     action_local = validate_joint_plan_components(

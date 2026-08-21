@@ -52,6 +52,7 @@ from beliefkv.runtime.deepagents_adapter import (
     DeclaredRuntimeTask,
     DeepAgentsRuntimeAdapter,
 )
+from beliefkv.runtime.agent_safety import ActivationDeadline
 from beliefkv.runtime.event_channel import (
     JsonlRuntimeEventSink,
     UnixDatagramRuntimeEventSink,
@@ -1380,6 +1381,168 @@ class DeepAgentsExperimentConfig:
             raise ValueError("sandbox_test_env_path must be absolute")
 
 
+class WorkflowDeadlineController:
+    """Apply one workflow deadline to model, subagent, and sandbox work."""
+
+    server_terminal_timeout_s = 5.0
+
+    def __init__(
+        self,
+        *,
+        deadline: ActivationDeadline,
+        adapter: DeepAgentsRuntimeAdapter,
+        backend: DockerWorkspaceBackend,
+        audit: JsonlAudit,
+    ) -> None:
+        self.deadline = deadline
+        self.adapter = adapter
+        self.audit = audit
+        self._models: dict[int, BeliefKVChatOpenAI] = {}
+        self._backends: dict[int, DockerWorkspaceBackend] = {id(backend): backend}
+        self._lock = threading.Lock()
+        self._stop = threading.Event()
+        self._thread: threading.Thread | None = None
+        self._started = False
+        self._cancellation_started = False
+        self._summary: dict[str, Any] = {
+            "expired": False,
+            "abort_requested_count": 0,
+            "server_terminal": False,
+            "server_terminal_latency_ms": None,
+            "pending_task_cancel_count": 0,
+            "active_command_cancel_count": 0,
+            "cleanup_complete": False,
+        }
+
+    def start(self, budget_s: float) -> None:
+        with self._lock:
+            if self._started:
+                raise RuntimeError("workflow deadline controller is already active")
+            self._started = True
+        self.deadline.start(budget_s)
+        self.audit.emit("workflow_deadline_started", budget_s=budget_s)
+        self._thread = threading.Thread(
+            target=self._watch,
+            name="beliefkv-workflow-deadline",
+            daemon=True,
+        )
+        self._thread.start()
+
+    def register_model(self, model: BeliefKVChatOpenAI) -> BeliefKVChatOpenAI:
+        with self._lock:
+            self._models[id(model)] = model
+            cancellation_started = self._cancellation_started
+        if cancellation_started or self.deadline.expired():
+            model.cancel_active_requests()
+        return model
+
+    def register_backend(self, backend: DockerWorkspaceBackend) -> None:
+        with self._lock:
+            self._backends[id(backend)] = backend
+
+    def unregister_backend(self, backend: DockerWorkspaceBackend) -> None:
+        with self._lock:
+            self._backends.pop(id(backend), None)
+
+    def _watch(self) -> None:
+        remaining_s = self.deadline.remaining_s()
+        if remaining_s is None or self._stop.wait(remaining_s):
+            return
+        try:
+            self.cancel_if_expired()
+        except BaseException as error:
+            with self._lock:
+                self._summary["cleanup_error"] = (
+                    f"{type(error).__name__}: {error}"
+                )
+            self.audit.emit(
+                "workflow_deadline_cleanup_failed",
+                error_type=type(error).__name__,
+                error=str(error),
+            )
+
+    def cancel_if_expired(self) -> bool:
+        if not self.deadline.expired():
+            return False
+        with self._lock:
+            if self._cancellation_started:
+                return True
+            self._cancellation_started = True
+            models = tuple(self._models.values())
+            backends = tuple(self._backends.values())
+            self._summary["expired"] = True
+        expired_at = time.monotonic()
+        self.audit.emit("workflow_deadline_expired")
+
+        abort_count = sum(model.cancel_active_requests() for model in models)
+        self.audit.emit(
+            "workflow_deadline_abort_sent",
+            active_request_count=abort_count,
+        )
+
+        pending_count = self.adapter.cancel_pending_tasks(
+            reason="workflow absolute deadline expired"
+        )
+        executor = ThreadPoolExecutor(max_workers=max(1, len(backends)))
+        try:
+            command_futures = [
+                executor.submit(
+                    backend.cancel_active_commands,
+                    reason="workflow absolute deadline expired",
+                )
+                for backend in backends
+            ]
+            terminal_deadline = time.monotonic() + self.server_terminal_timeout_s
+            while (
+                any(model.active_request_count() for model in models)
+                and time.monotonic() < terminal_deadline
+            ):
+                time.sleep(0.01)
+            active_after = sum(model.active_request_count() for model in models)
+            terminal_latency_ms = (time.monotonic() - expired_at) * 1000.0
+            self.audit.emit(
+                "workflow_deadline_server_terminal",
+                server_terminal=active_after == 0,
+                active_request_count=active_after,
+                latency_ms=terminal_latency_ms,
+            )
+            command_count = sum(future.result() for future in command_futures)
+        finally:
+            executor.shutdown(wait=True, cancel_futures=False)
+
+        cleanup_complete = active_after == 0
+        self.audit.emit(
+            "workflow_deadline_cleanup_complete",
+            cleanup_complete=cleanup_complete,
+            pending_task_cancel_count=pending_count,
+            active_command_cancel_count=command_count,
+        )
+        with self._lock:
+            self._summary.update(
+                {
+                    "abort_requested_count": abort_count,
+                    "server_terminal": active_after == 0,
+                    "server_terminal_latency_ms": terminal_latency_ms,
+                    "pending_task_cancel_count": pending_count,
+                    "active_command_cancel_count": command_count,
+                    "cleanup_complete": cleanup_complete,
+                }
+            )
+        return True
+
+    def close(self) -> dict[str, Any]:
+        self.cancel_if_expired()
+        self._stop.set()
+        thread = self._thread
+        if thread is not None and thread is not threading.current_thread():
+            thread.join(timeout=40.0)
+            if thread.is_alive():
+                raise RuntimeError("workflow deadline cleanup did not terminate")
+        self.deadline.clear()
+        with self._lock:
+            return dict(self._summary)
+
+
 AUTONOMOUS_SYSTEM_PROMPT = """You are the supervisor for a real SWE-bench coding task.
 Work only in the mounted repository. Use the filesystem and execute tools freely; the
 execute tool is already isolated in an offline Docker sandbox. Diagnose, edit, and test
@@ -1423,8 +1586,12 @@ task calls have been submitted in that same message. A one-task message is inval
 not wait for one child before submitting the other. Add compatibility-analyst as a third
 call in the same message only for an independent dependency, protocol, version,
 serialization, or compatibility question. Wait for all child tool results to return to
-this conversation, then continue in this same parent conversation and implement and test
-the patch yourself. Children are read-only and must not edit the workspace.
+this conversation, summarize their evidence, then continue in this same parent
+conversation and implement and test the patch yourself. After a JOIN, if at least two
+new, independent investigation questions remain, you may start another round of two or
+three parallel native task calls under the same rules. Do not force a second round, set a
+fixed total round count, repeat completed work, or split one question merely to satisfy a
+fan-out count. Children are read-only and must not edit the workspace.
 """
 
 
@@ -1513,6 +1680,7 @@ def _loop_guard(
     audit: JsonlAudit,
     scope: str,
     policy: LoopGuardPolicy | None = None,
+    activation_deadline: ActivationDeadline | None = None,
 ) -> AgentLoopGuardMiddleware:
     return AgentLoopGuardMiddleware(
         policy=policy or config.loop_guard,
@@ -1525,6 +1693,7 @@ def _loop_guard(
             if completion_schema is WorkflowCompletion
             else frozenset()
         ),
+        activation_deadline=activation_deadline,
     )
 
 
@@ -1601,9 +1770,15 @@ def _filesystem_middleware(
 def _model(
     config: DeepAgentsExperimentConfig,
     adapter: DeepAgentsRuntimeAdapter,
+    deadline_controller: WorkflowDeadlineController | None = None,
 ) -> BeliefKVChatOpenAI:
-    return BeliefKVChatOpenAI(
+    model = BeliefKVChatOpenAI(
         beliefkv_adapter=adapter,
+        activation_deadline=(
+            deadline_controller.deadline if deadline_controller is not None else None
+        ),
+        request_timeout_s=config.request_timeout_s,
+        abort_url=config.base_url.rstrip("/").removesuffix("/v1") + "/abort_request",
         model=config.model,
         base_url=config.base_url,
         api_key="EMPTY",
@@ -1616,6 +1791,9 @@ def _model(
         disable_streaming="tool_calling",
     )
 
+    if deadline_controller is not None:
+        deadline_controller.register_model(model)
+    return model
 
 ORACLE_PRESSURE_CONTEXT_MARKER = (
     "\n\nFrozen repository context pack for this preregistered KV-pressure "
@@ -1851,6 +2029,7 @@ def _autonomous_subagents(
     adapter: DeepAgentsRuntimeAdapter,
     model: Any,
     summary_model: Any,
+    deadline_controller: WorkflowDeadlineController | None = None,
 ) -> list[dict[str, Any]]:
     subagents: list[dict[str, Any]] = []
     read_only = config.subagent_fanout_profile in {
@@ -1907,6 +2086,9 @@ def _autonomous_subagents(
                         completion_instruction=CHILD_COMPLETION_INSTRUCTION,
                         audit=backend.audit,
                         scope=scope,
+                        activation_deadline=(
+                            deadline_controller.deadline if deadline_controller else None
+                        ),
                     ),
                 ],
             }
@@ -1919,13 +2101,15 @@ def _build_autonomous_agent(
     workload: SweBenchWorkload,
     backend: DockerWorkspaceBackend,
     adapter: DeepAgentsRuntimeAdapter,
+    deadline_controller: WorkflowDeadlineController,
     *,
     delegation_enabled: bool = True,
 ) -> Any:
-    model = _model(config, adapter)
+    model = _model(config, adapter, deadline_controller)
     summary_model = model.model_copy(
         update={"max_tokens": config.context_lifecycle.summary_output_tokens}
     )
+    deadline_controller.register_model(summary_model)
     middleware: list[Any] = [
         TodoListMiddleware(),
         _filesystem_middleware(backend, allow_direct_edits=True),
@@ -1942,6 +2126,7 @@ def _build_autonomous_agent(
                     adapter,
                     model,
                     summary_model,
+                    deadline_controller,
                 ),
             )
         )
@@ -1973,6 +2158,7 @@ def _build_autonomous_agent(
             completion_instruction=WORKFLOW_COMPLETION_INSTRUCTION,
             audit=backend.audit,
             scope="autonomous:supervisor",
+            activation_deadline=deadline_controller.deadline,
         ),
         ]
     )
@@ -2009,13 +2195,14 @@ def _run_autonomous(
     backend: DockerWorkspaceBackend,
     adapter: DeepAgentsRuntimeAdapter,
     artifact_dir: Path,
+    deadline_controller: WorkflowDeadlineController,
 ) -> tuple[dict[str, Any], dict[str, Any] | None, list[dict[str, Any]]]:
     reports: list[dict[str, Any]] = []
     plan_payload: dict[str, Any] | None = None
     prompt = _task_prompt(workload, workspace=backend.workspace)
     delegation_enabled = True
     if config.subagent_fanout_profile == "parallel_analysis_2to3":
-        planner = _model(config, adapter).with_structured_output(
+        planner = _model(config, adapter, deadline_controller).with_structured_output(
             ParallelAnalysisPlan,
             method="function_calling",
             strict=False,
@@ -2041,6 +2228,7 @@ def _run_autonomous(
             tasks,
             artifact_dir,
             group_id=f"parallel-analysis:{workload.instance_id}",
+            deadline_controller=deadline_controller,
         )
         plan_payload = plan.model_dump(mode="json")
         evidence = "\n\n".join(
@@ -2057,6 +2245,7 @@ def _run_autonomous(
         workload,
         backend,
         adapter,
+        deadline_controller,
         delegation_enabled=delegation_enabled,
     )
     result = _invoke_with_partial_state(
@@ -2078,6 +2267,7 @@ def _run_planned_child(
     adapter: DeepAgentsRuntimeAdapter,
     handle: DeclaredRuntimeTask,
     task: DelegatedTask,
+    deadline_controller: WorkflowDeadlineController,
 ) -> ChildCompletion:
     role_name = re.sub(r"[^A-Za-z0-9_.-]+", "-", task.role).strip("-")
     child_key = hashlib.sha256(handle.invocation_id.encode()).hexdigest()[:12]
@@ -2097,10 +2287,11 @@ def _run_planned_child(
         preflight_command=backend.preflight_command,
         support_dir=backend.support_dir,
     )
+    deadline_controller.register_backend(child_backend)
     try:
         child_backend.start()
         child = create_agent(
-            model=_model(config, adapter),
+            model=_model(config, adapter, deadline_controller),
             tools=[],
             middleware=[
                 _tool_circuit(
@@ -2122,6 +2313,7 @@ def _run_planned_child(
                     audit=backend.audit,
                     scope=f"planned:child:{handle.invocation_id}",
                     policy=_planned_child_loop_guard_policy(config),
+                    activation_deadline=deadline_controller.deadline,
                 ),
             ],
             response_format=ToolStrategy(ChildCompletion),
@@ -2164,6 +2356,7 @@ def _run_planned_child(
         assert isinstance(completion, ChildCompletion)
         return completion
     finally:
+        deadline_controller.unregister_backend(child_backend)
         child_backend.close()
 
 
@@ -2196,6 +2389,7 @@ def _run_declared_analysis_children(
     artifact_dir: Path,
     *,
     group_id: str,
+    deadline_controller: WorkflowDeadlineController,
 ) -> list[dict[str, Any]]:
     handles = adapter.declare_runtime_tasks(
         [(item.role, item.description) for item in tasks],
@@ -2212,6 +2406,7 @@ def _run_declared_analysis_children(
                 adapter,
                 handle,
                 task,
+                deadline_controller,
             ): (handle, task)
             for handle, task in zip(handles, tasks)
         }
@@ -2266,8 +2461,9 @@ def _run_planned(
     backend: DockerWorkspaceBackend,
     adapter: DeepAgentsRuntimeAdapter,
     artifact_dir: Path,
+    deadline_controller: WorkflowDeadlineController,
 ) -> tuple[dict[str, Any], DelegationPlan, list[dict[str, Any]]]:
-    planner_model = _model(config, adapter)
+    planner_model = _model(config, adapter, deadline_controller)
     planner = planner_model.with_structured_output(
         DelegationPlan,
         method="function_calling",
@@ -2298,13 +2494,14 @@ def _run_planned(
         planned_tasks,
         artifact_dir,
         group_id=f"planned:{workload.instance_id}",
+        deadline_controller=deadline_controller,
     )
 
     evidence = "\n\n".join(
         f"[{item['role']}]\n{str(item['report'])[:24000]}" for item in reports
     )
     implementer = create_agent(
-        model=_model(config, adapter),
+        model=_model(config, adapter, deadline_controller),
         tools=[_workspace_patch_tool(backend)],
         middleware=[
             _tool_circuit(
@@ -2323,6 +2520,7 @@ def _run_planned(
                 completion_instruction=WORKFLOW_COMPLETION_INSTRUCTION,
                 audit=backend.audit,
                 scope="planned:implementer",
+                activation_deadline=deadline_controller.deadline,
             ),
         ],
         response_format=ToolStrategy(WorkflowCompletion),
@@ -2427,6 +2625,7 @@ def _repair_incomplete_workflow(
     backend: DockerWorkspaceBackend,
     adapter: DeepAgentsRuntimeAdapter,
     initial_result: dict[str, Any],
+    deadline_controller: WorkflowDeadlineController,
 ) -> dict[str, Any]:
     result = initial_result
     for attempt in range(config.completion_repair_attempts + 1):
@@ -2448,7 +2647,7 @@ def _repair_incomplete_workflow(
             ["git", "diff", "--binary", "HEAD"], cwd=backend.workspace
         )
         repair = create_agent(
-            model=_model(config, adapter),
+            model=_model(config, adapter, deadline_controller),
             tools=[_workspace_patch_tool(backend)],
             middleware=[
                 _tool_circuit(
@@ -2469,6 +2668,7 @@ def _repair_incomplete_workflow(
                     completion_instruction=WORKFLOW_COMPLETION_INSTRUCTION,
                     audit=backend.audit,
                     scope=f"completion-repair:{attempt + 1}",
+                    activation_deadline=deadline_controller.deadline,
                 ),
             ],
             response_format=ToolStrategy(WorkflowCompletion),
@@ -2585,6 +2785,50 @@ def _trace_summary(path: Path) -> dict[str, Any]:
                 )
     join_create_count = counts["join_create"]
     join_satisfied_count = counts["join_satisfied"]
+    round_parent: dict[str, str] = {}
+    round_create_ms: dict[str, float] = {}
+    round_members: dict[str, set[str]] = {}
+    for item in records:
+        if item.get("kind") != "invocation_create":
+            continue
+        join_id = item.get("join_id")
+        parent_id = item.get("parent_invocation_id")
+        child_id = item.get("invocation_id")
+        if join_id is None or parent_id is None or child_id is None:
+            continue
+        join_key = str(join_id)
+        round_parent[join_key] = str(parent_id)
+        round_create_ms[join_key] = min(
+            round_create_ms.get(join_key, float("inf")),
+            float(item.get("ts_ms", 0.0)),
+        )
+        round_members.setdefault(join_key, set()).add(str(child_id))
+    join_satisfied_ms = {
+        str(item["join_id"]): float(item.get("ts_ms", 0.0))
+        for item in records
+        if item.get("kind") == "join_satisfied" and item.get("join_id") is not None
+    }
+    rounds_by_parent: dict[str, list[str]] = {}
+    for join_id, parent_id in round_parent.items():
+        rounds_by_parent.setdefault(parent_id, []).append(join_id)
+    ordered_rounds = [
+        join_id
+        for parent_id in sorted(rounds_by_parent)
+        for join_id in sorted(
+            rounds_by_parent[parent_id],
+            key=lambda value: (round_create_ms[value], value),
+        )
+    ]
+    join_to_next_spawn_ms = []
+    post_join_round_ids: set[str] = set()
+    for parent_rounds in rounds_by_parent.values():
+        ordered = sorted(parent_rounds, key=lambda value: round_create_ms[value])
+        for previous, current in zip(ordered, ordered[1:]):
+            if previous in join_satisfied_ms:
+                post_join_round_ids.add(current)
+                join_to_next_spawn_ms.append(
+                    max(0.0, round_create_ms[current] - join_satisfied_ms[previous])
+                )
     return {
         "event_count": len(records),
         "event_counts": dict(sorted(counts.items())),
@@ -2594,6 +2838,19 @@ def _trace_summary(path: Path) -> dict[str, Any]:
             parent: len(child_ids)
             for parent, child_ids in sorted(children_by_parent.items())
         },
+        "children_per_parent": {
+            parent: len(child_ids)
+            for parent, child_ids in sorted(children_by_parent.items())
+        },
+        "delegation_round_count": len(ordered_rounds),
+        "fanout_per_round": [
+            len(round_members.get(join_id, ())) for join_id in ordered_rounds
+        ],
+        "post_join_spawn_count": sum(
+            len(round_members.get(join_id, ()))
+            for join_id in post_join_round_ids
+        ),
+        "join_to_next_spawn_ms": sorted(join_to_next_spawn_ms),
         "peak_concurrent_children": peak_concurrent_children,
         "join_type_counts": dict(sorted(join_type_counts.items())),
         "child_return_span_ms": max(return_spans) if return_spans else 0.0,
@@ -2774,6 +3031,7 @@ def _run_workflow(
             "autonomous-supervisor" if config.mode == "autonomous" else "planned-orchestrator"
         ),
         agent_instance_id=f"{workflow_id}:supervisor",
+        full_prompt_replay_guaranteed=True,
     )
     trace_sink = JsonlRuntimeEventSink(trace_path)
     control_sink = (
@@ -2791,6 +3049,13 @@ def _run_workflow(
         control_sink=control_sink,
         workspace_digest_provider=backend.tool_state_digest,
     )
+    deadline_controller = WorkflowDeadlineController(
+        deadline=ActivationDeadline(),
+        adapter=adapter,
+        backend=backend,
+        audit=sandbox_audit,
+    )
+    deadline_summary: dict[str, Any] = {}
     started = time.monotonic()
     outcome = "error"
     error_text: str | None = None
@@ -2803,6 +3068,7 @@ def _run_workflow(
     try:
         backend.start()
         adapter.start()
+        deadline_controller.start(config.loop_guard.activation_wall_clock_s)
         if config.mode == "autonomous":
             result, plan_payload, child_reports = _run_autonomous(
                 config,
@@ -2810,15 +3076,26 @@ def _run_workflow(
                 backend,
                 adapter,
                 workflow_dir,
+                deadline_controller,
             )
         else:
             result, plan, child_reports = _run_planned(
-                config, workload, backend, adapter, workflow_dir
+                config,
+                workload,
+                backend,
+                adapter,
+                workflow_dir,
+                deadline_controller,
             )
             plan_payload = plan.model_dump(mode="json")
-        if config.completion_gate_enabled:
+        if config.completion_gate_enabled and not deadline_controller.deadline.expired():
             result = _repair_incomplete_workflow(
-                config, workload, backend, adapter, result
+                config,
+                workload,
+                backend,
+                adapter,
+                result,
+                deadline_controller,
             )
         completion = require_structured_completion(result, WorkflowCompletion)
         semantic_completion = completion.model_dump(mode="json")
@@ -2834,6 +3111,12 @@ def _run_workflow(
         else:
             error_text = f"{type(error).__name__}: {error}"
     finally:
+        try:
+            deadline_summary = deadline_controller.close()
+        except BaseException as deadline_error:
+            if error_text is None:
+                error_text = f"{type(deadline_error).__name__}: {deadline_error}"
+                outcome = "error"
         try:
             adapter.finish(outcome=outcome)
         except BaseException as finish_error:
@@ -2919,6 +3202,7 @@ def _run_workflow(
         "agent_control": agent_control,
         "runtime_control_delivery": control_delivery,
         "trace": trace,
+        "workflow_deadline": deadline_summary,
     }
     write_json(workflow_dir / "result.json", summary)
     return summary

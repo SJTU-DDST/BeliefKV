@@ -18,9 +18,17 @@ class BeliefKVConfig:
     shadow_chunk_bytes: int = 64 * 1024 * 1024
     shadow_min_parked_ms: float = 25.0
     shadow_slowdown_budget: float = 0.02
+    host_lifecycle_enabled: bool = True
+    host_high_watermark_ratio: float = 0.95
+    host_low_watermark_ratio: float = 0.85
+    host_cleanup_chunk_bytes: int = 256 * 1024 * 1024
     planning_interval_ms: float = 5.0
     admission_liveness_timeout_ms: float = 1000.0
     admission_force_progress_timeout_ms: float = 5000.0
+    admission_prefill_quantum_tokens: int = 16_384
+    admission_decode_quantum_tokens: int = 16
+    admission_allocator_guard_tokens: int = 16
+    workflow_starvation_floor_ms: float = 30_000.0
     request_queue_timeout_ms: float = 1_800_000.0
     kv_bytes_per_token: int = 57344
     predictor_enabled: bool = True
@@ -169,6 +177,14 @@ class BeliefKVConfig:
             raise ValueError("shadow_min_parked_ms must be non-negative")
         if not 0 <= self.shadow_slowdown_budget <= 1:
             raise ValueError("shadow_slowdown_budget must be in [0, 1]")
+        if not (
+            0 <= self.host_low_watermark_ratio
+            < self.host_high_watermark_ratio
+            <= 1
+        ):
+            raise ValueError("Host lifecycle watermarks are invalid")
+        if self.host_cleanup_chunk_bytes <= 0:
+            raise ValueError("host_cleanup_chunk_bytes must be positive")
         if self.planning_interval_ms <= 0:
             raise ValueError("planning_interval_ms must be positive")
         if (
@@ -187,6 +203,19 @@ class BeliefKVConfig:
                 "admission_force_progress_timeout_ms must be finite and no smaller "
                 "than admission_liveness_timeout_ms"
             )
+        if min(
+            self.admission_prefill_quantum_tokens,
+            self.admission_decode_quantum_tokens,
+            self.admission_allocator_guard_tokens,
+        ) < 0:
+            raise ValueError("admission quantum and allocator guard must be non-negative")
+        if self.admission_prefill_quantum_tokens <= 0:
+            raise ValueError("admission_prefill_quantum_tokens must be positive")
+        if (
+            not math.isfinite(self.workflow_starvation_floor_ms)
+            or self.workflow_starvation_floor_ms <= 0
+        ):
+            raise ValueError("workflow_starvation_floor_ms must be positive")
         if self.kv_bytes_per_token <= 0:
             raise ValueError("kv_bytes_per_token must be positive")
         if (

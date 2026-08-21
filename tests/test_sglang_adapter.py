@@ -23,6 +23,7 @@ from beliefkv.policy.admission import (
     AdmissionCompileBudget,
     AdmissionRequest,
     AdmissionSideState,
+    ReclaimRequirement,
 )
 from beliefkv.experiments.policy_replay import load_replay_trace
 from beliefkv.policy.joint_scheduler import (
@@ -4363,6 +4364,80 @@ class SGLangBackendTest(unittest.TestCase):
             {"request": 3},
         )
 
+    def test_admission_rescue_is_single_bounded_and_allocator_backed(self):
+        runtime = EmbeddedSGLangRuntime.__new__(EmbeddedSGLangRuntime)
+        runtime.config = BeliefKVConfig(
+            hbm_capacity_bytes=2_000,
+            host_capacity_bytes=4_000,
+            reserve_hbm_bytes=0,
+            kv_bytes_per_token=10,
+            admission_force_progress_timeout_ms=1_000.0,
+        )
+        runtime.controller = BeliefKVController(runtime.config)
+        runtime.audit = _AuditRecorder()
+        runtime._online_joint_counts = Counter()
+        runtime._active_admission_rescue = None
+        runtime._request_metadata_by_id = {
+            "blocked": BeliefKVRequestMetadata("wf", "inv", "ctx", 0),
+            "other": BeliefKVRequestMetadata("wf-2", "inv-2", "ctx-2", 0),
+        }
+        runtime.controller.visible_admission.register(
+            AdmissionRequest(
+                "blocked", "wf", "inv", "ctx", 0, 0.0, 20, 8, 10
+            )
+        )
+        runtime.controller.visible_admission.register(
+            AdmissionRequest(
+                "other", "wf-2", "inv-2", "ctx-2", 0, 0.0, 20, 8, 10
+            )
+        )
+        allocator = _Allocator(100)
+        runtime.scheduler = SimpleNamespace(
+            token_to_kv_pool_allocator=allocator
+        )
+        requirement = ReclaimRequirement(
+            beneficiary_request_id="blocked",
+            required_startup_bytes=20,
+            required_growth_bytes=280,
+            current_prefix_bytes=500,
+            waited_ms=1_001.0,
+            skip_reason="bounded_hbm_budget",
+        )
+
+        runtime._maybe_start_admission_rescue(requirement, now_ms=1_001.0)
+        runtime._maybe_start_admission_rescue(
+            replace(requirement, beneficiary_request_id="other"),
+            now_ms=1_002.0,
+        )
+
+        rescue = runtime._active_admission_rescue
+        self.assertIsNotNone(rescue)
+        self.assertEqual(rescue.request_id, "blocked")
+        runtime._reserve_admission_rescue_capacity(
+            request_id="blocked",
+            reclaimed_bytes=300,
+            now_ms=1_003.0,
+        )
+        self.assertEqual(runtime._admission_rescue_credit_bytes(), {"blocked": 300})
+        self.assertEqual(runtime.allocator_backed_reservation_tokens(), 30)
+        released = runtime._release_admission_rescue_capacity(
+            rescue,
+            now_ms=1_004.0,
+            reason="native_admission_attempt",
+        )
+        rescue.released_for_admission_tokens = released
+        self.assertEqual(released, 30)
+        self.assertTrue(
+            runtime._reacquire_admission_rescue_capacity(
+                rescue, tokens=released, now_ms=1_005.0
+            )
+        )
+        runtime._finish_admission_rescue(
+            "blocked", now_ms=1_006.0, reason="gpu_service_completed", success=True
+        )
+        self.assertIsNone(runtime._active_admission_rescue)
+        self.assertEqual(allocator.available_size(), 100)
+
     def test_joint_active_window_defers_but_keeps_inactive_workflow_visible(self):
         config = BeliefKVConfig(
             hbm_capacity_bytes=1_000,
@@ -4693,6 +4768,8 @@ class SGLangBackendTest(unittest.TestCase):
         runtime._current_predictive_residency_commit = None
         runtime._restore_service_grace_by_request = {}
         runtime._replacement_priorities = {}
+        runtime._reclaim_requirements = {}
+        runtime._reclaim_requirement_revision = 0
         runtime._request_metadata_by_id = {}
         runtime._lock_service_ledger = RequestServiceLedger()
         runtime._active_request_ids = set()
@@ -4715,6 +4792,17 @@ class SGLangBackendTest(unittest.TestCase):
         runtime._request_metadata_by_id[beneficiary.request_id] = (
             beneficiary_metadata
         )
+        runtime._reclaim_requirements[beneficiary.request_id] = (
+            ReclaimRequirement(
+                beneficiary_request_id=beneficiary.request_id,
+                required_startup_bytes=50,
+                required_growth_bytes=250,
+                current_prefix_bytes=100,
+                waited_ms=5_000.0,
+                skip_reason="bounded_hbm_budget",
+            )
+        )
+        runtime._reclaim_requirement_revision = 1
         runtime._policy_runtime_runnable = lambda _now_ms: (beneficiary,)
         decision = compile_bounded_seed_epoch(
             ordered_request_ids=(beneficiary.request_id,),
@@ -4817,6 +4905,9 @@ class SGLangBackendTest(unittest.TestCase):
             phase="prefill",
         )
         self.assertNotIn(beneficiary.request_id, runtime._replacement_priorities)
+        self.assertNotIn(
+            beneficiary.request_id, runtime._reclaim_requirements
+        )
 
         runtime._online_joint_last_context_residency_action = {}
         runtime._record_context_residency_direction(
@@ -6957,11 +7048,112 @@ class SGLangBackendTest(unittest.TestCase):
             {"child"},
         )
 
+    def test_host_pressure_cleanup_distinguishes_shadow_and_recompute(self):
+        for residency, expected, needs_recompute in (
+            (
+                PhysicalResidency.DUAL_CLEAN,
+                PhysicalResidency.GPU_ONLY,
+                False,
+            ),
+            (
+                PhysicalResidency.CPU_ONLY,
+                PhysicalResidency.DEAD,
+                True,
+            ),
+        ):
+            with self.subTest(residency=residency.value):
+                config = BeliefKVConfig(
+                    hbm_capacity_bytes=2000,
+                    host_capacity_bytes=1000,
+                    reserve_hbm_bytes=100,
+                    predictor_enabled=False,
+                    host_cleanup_chunk_bytes=100,
+                )
+                controller = BeliefKVController(config)
+                controller.process_runtime_events(
+                    (
+                        RuntimeEvent(
+                            "start",
+                            1.0,
+                            RuntimeEventKind.WORKFLOW_START,
+                            "wf",
+                        ),
+                        RuntimeEvent(
+                            "create",
+                            2.0,
+                            RuntimeEventKind.INVOCATION_CREATE,
+                            "wf",
+                            invocation_id="inv",
+                            context_id="ctx",
+                            context_epoch=0,
+                        ),
+                        RuntimeEvent(
+                            "wait",
+                            3.0,
+                            RuntimeEventKind.TOOL_START,
+                            "wf",
+                            invocation_id="inv",
+                            context_id="ctx",
+                            context_epoch=0,
+                        ),
+                    )
+                )
+                handle = PageHandle(71, 0)
+                controller.page_index.register_page(
+                    handle,
+                    size_bytes=960,
+                    residency=residency,
+                )
+                controller.page_index.bind_pages("ctx", 0, (handle,))
+                runtime = EmbeddedSGLangRuntime.__new__(EmbeddedSGLangRuntime)
+                runtime.config = config
+                runtime.controller = controller
+                runtime.audit = _AuditRecorder()
+                runtime._full_prompt_replay_contexts = {("ctx", 0)}
+
+                runtime._maybe_queue_host_cleanup(now_ms=4.0)
+                tick = controller.tick(4.0, allow_reactive_transfer=False)
+
+                self.assertIsNotNone(tick.transfer)
+                self.assertEqual(
+                    tick.transfer.command.kind,
+                    CommandKind.DROP_HOST_CONTEXT,
+                )
+                self.assertEqual(
+                    tick.transfer.page_actions[0].action,
+                    PhysicalPageAction.DROP_HOST,
+                )
+                ack = CommandAck(
+                    command_id=tick.transfer.command.command_id,
+                    status=CommandStatus.COMPLETED,
+                    completed_ts_ms=5.0,
+                    actual_bytes=960,
+                    page_handles=(handle,),
+                )
+                controller.acknowledge_command(ack)
+                runtime._advance_host_cleanup((ack,), now_ms=5.0)
+
+                self.assertEqual(controller.page_index.pages[handle].residency, expected)
+                self.assertEqual(
+                    ("ctx", 0) in runtime._recompute_required_contexts,
+                    needs_recompute,
+                )
+                controller.update_signals(host_free_bytes=1000)
+                runtime._maybe_queue_host_cleanup(now_ms=6.0)
+                self.assertFalse(runtime._host_cleanup_active)
+
 
 class SGLangContractTest(unittest.TestCase):
     def test_metadata_wire_roundtrip(self):
         metadata = BeliefKVRequestMetadata("wf", "inv", "ctx", 3, "coder", "coder-1")
         self.assertEqual(BeliefKVRequestMetadata.from_wire(metadata.to_wire()), metadata)
+
+    def test_metadata_rejects_non_boolean_replay_guarantee(self):
+        payload = BeliefKVRequestMetadata("wf", "inv", "ctx", 0).to_wire()
+        payload["full_prompt_replay_guaranteed"] = "false"
+
+        with self.assertRaisesRegex(ValueError, "must be a bool"):
+            BeliefKVRequestMetadata.from_wire(payload)
 
     def test_exact_version_guard(self):
         assert_supported_sglang_version(BASE_SGLANG_VERSION)

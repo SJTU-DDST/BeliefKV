@@ -543,6 +543,7 @@ class BeliefKVController:
         additional_runnable: Sequence[RunnableInvocation] = (),
         identity_mappings: Sequence[IdentityMapping] = (),
         optional_metadata: Mapping[str, MetadataValue] | None = None,
+        control_state_overrides: Mapping[str, object] | None = None,
         capabilities: CapabilityReport | None = None,
         metadata_mode: MetadataMode = MetadataMode.ONLINE,
     ) -> PolicyInput:
@@ -554,11 +555,13 @@ class BeliefKVController:
             urgent_d2h_bytes=urgent_d2h,
             urgent_h2d_bytes=urgent_h2d,
         )
+        control_state = self.policy_control_state(observation.ts_ms)
+        control_state.update(dict(control_state_overrides or {}))
         return self.policy_snapshot_builder.build(
             observation,
             additional_runnable=additional_runnable,
             workflow_memory_charges=self.workflow_memory_charges(),
-            control_state=self.policy_control_state(observation.ts_ms),
+            control_state=control_state,
             identity_mappings=identity_mappings,
             optional_metadata=optional_metadata,
             transfer_telemetry=tuple(self.transfer_telemetry_history),
@@ -1153,6 +1156,7 @@ class BeliefKVController:
             CommandKind.SHADOW_CONTEXT: "dual",
             CommandKind.DROP_CONTEXT: "dead",
             CommandKind.DROP_TERMINAL_PRIVATE: "host_released",
+            CommandKind.DROP_HOST_CONTEXT: "host_released_recomputable",
         }.get(command.kind, command.kind.value)
         return (
             command.context_id,

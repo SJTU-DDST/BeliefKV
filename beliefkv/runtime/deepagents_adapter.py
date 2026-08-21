@@ -485,6 +485,9 @@ class DeepAgentsRuntimeAdapter(BaseCallbackHandler):
                 context_mode=ContextMode.FRESH.value,
                 execution_mode=ExecutionMode.FOREGROUND.value,
                 return_target_id=parent_invocation_id,
+                full_prompt_replay_guaranteed=(
+                    parent.full_prompt_replay_guaranteed
+                ),
             )
             self._identities[invocation_id] = _InvocationIdentity(metadata)
             self._run_invocation[model_run_key] = invocation_id
@@ -986,6 +989,9 @@ class DeepAgentsRuntimeAdapter(BaseCallbackHandler):
                 execution_mode=ExecutionMode.BACKGROUND.value,
                 return_target_id=parent_invocation_id,
                 join_id=join_id,
+                full_prompt_replay_guaranteed=(
+                    parent.full_prompt_replay_guaranteed
+                ),
             )
             pending = _PendingTask(
                 tool_call_id=tool_call_id,
@@ -1074,6 +1080,9 @@ class DeepAgentsRuntimeAdapter(BaseCallbackHandler):
                         execution_mode=ExecutionMode.BACKGROUND.value,
                         return_target_id=parent_invocation_id,
                         join_id=join_id,
+                        full_prompt_replay_guaranteed=(
+                            parent.full_prompt_replay_guaranteed
+                        ),
                     )
                 )
                 self._pending_by_parent.setdefault(parent_invocation_id, []).append(
@@ -1473,10 +1482,16 @@ class BeliefKVChatOpenAI(ChatOpenAI):
         if run_manager is None:
             raise RuntimeError("BeliefKV ChatOpenAI requires a callback run manager")
         metadata = self._beliefkv_adapter.metadata_for_model_run(run_manager.run_id)
-        if self._request_timeout_cap_s is not None:
+        effective_timeout_s = self._request_timeout_cap_s
+        if self._activation_deadline is not None:
+            remaining_s = self._activation_deadline.remaining_s()
+            if remaining_s is not None:
+                cap_s = self._request_timeout_cap_s or remaining_s
+                effective_timeout_s = self._activation_deadline.request_timeout_s(cap_s)
+        if effective_timeout_s is not None:
             metadata = replace(
                 metadata,
-                execution_timeout_s=self._request_timeout_cap_s,
+                execution_timeout_s=effective_timeout_s,
             )
         rid = _native_request_id(run_manager.run_id)
         extra_body = dict(kwargs.get("extra_body") or {})
@@ -1489,18 +1504,8 @@ class BeliefKVChatOpenAI(ChatOpenAI):
         extra_body["beliefkv_metadata"] = metadata.to_wire()
         extra_body["rid"] = rid
         request_kwargs = {**kwargs, "extra_body": extra_body}
-        if self._activation_deadline is not None:
-            remaining_s = self._activation_deadline.remaining_s()
-            if remaining_s is None:
-                remaining_s = self._request_timeout_cap_s
-            if remaining_s is not None and remaining_s <= 0:
-                self._activation_deadline.request_timeout_s(
-                    self._request_timeout_cap_s or 1.0
-                )
-            if remaining_s is not None:
-                request_kwargs["timeout"] = remaining_s
-        elif self._request_timeout_cap_s is not None:
-            request_kwargs["timeout"] = self._request_timeout_cap_s
+        if effective_timeout_s is not None:
+            request_kwargs["timeout"] = effective_timeout_s
         return request_kwargs, rid
 
     def cancel_active_requests(self) -> int:
@@ -1509,6 +1514,10 @@ class BeliefKVChatOpenAI(ChatOpenAI):
         for rid in active:
             self._abort_request(rid)
         return len(active)
+
+    def active_request_count(self) -> int:
+        with self._active_rids_lock:
+            return len(self._active_rids)
 
     def _track_request(self, rid: str) -> None:
         with self._active_rids_lock:

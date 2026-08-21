@@ -1,6 +1,40 @@
 # BeliefKV 最新架构与实现状态
 
-更新日期：2026-08-21
+更新日期：2026-08-22
+
+## 2026-08-22：Native Trace P1-P4 正确性与活性修复
+
+针对 2026-08-21 64-root trace 暴露的 admission starvation、deadline
+泄漏、Host 饱和和调度目标冲突，已完成以下修改：
+
+- Workload 支持真实 parent 在 JOIN 后按剩余独立问题动态发起下一轮 2--3 个
+  child，不固定轮数；唯一 ActivationDeadline 传播到 parent、child 和
+  summary，截止时向 SGLang abort 并等待服务端清理闭环。
+- Admission ticket 只为当前 prefill chunk、16-token decode quantum 和
+  allocator guard 计算即时 HBM envelope；HBM 不可行时发布持久
+  ReclaimRequirement，JointPlan 将 victim reclaim 与 beneficiary admission
+  绑定。
+- 新增全局至多一笔 admission rescue。它只暂停新的普通 admission，不停止已有
+  running batch；回收容量后由 allocator-backed reservation 保护 beneficiary，
+  直到首个真实 GPU service quantum。
+- Host pool 保持 96 GiB，使用 95%/85% 水位。DUAL_CLEAN 优先删除冗余 Host
+  shadow；CPU_ONLY 仅在所有 owner 都有 owner+epoch 绑定的 full-prompt replay
+  证据、处于 parked 状态、无锁/reader/pin/transfer 且是 Radix leaf 时执行
+  generation-safe Host drop，并标记 recompute_required。
+- 正常 admission/working-set/JointPlanner 统一为短片段 causal MaxWeight：
+  causal class 优先，同级按 unlock-weighted GPU work / immediate HBM envelope
+  排序；workflow fairness 只保留 30 秒 starvation floor 和最终 tie-break，不再
+  因 fairness 排名变化拒绝已选计划。
+
+CPU Gate A 已通过：核心控制面 777 passed、agent/runtime 117 passed、runtime
+profile 14 passed；另有 8 个 subtest。两个 SGLang 测试依赖本机完整 CUDA
+toolkit，继续由真实 GPU server 启动路径覆盖。当前只关闭 P1-P4 CPU
+correctness gate，尚未主张 GPU utilization、JCT 或 workflows/hour 改善。下一步
+是 4--8 root Gate B，分别覆盖 replacement service、Host drop/recompute 和短
+deadline cleanup；通过后才运行 predictor-off 64-root Gate C。
+
+实现记录见
+docs/experiments/beliefkv_native_trace_p1_p4_gate_a_2026-08-22_zh.md。
 
 ## 2026-08-20：GPU-First Native-Subagent Oracle（当前）
 

@@ -41,6 +41,7 @@ class CommandKind(str, Enum):
     PREFETCH_CONTEXT = "prefetch_context"
     DROP_UNOWNED = "drop_unowned"
     DROP_TERMINAL_PRIVATE = "drop_terminal_private"
+    DROP_HOST_CONTEXT = "drop_host_context"
     PIN_CONTEXT = "pin_context"
     UNPIN_CONTEXT = "unpin_context"
     SET_WORKFLOW_BUDGET = "set_workflow_budget"

@@ -136,6 +136,7 @@ class JointPlannerConfig:
     emergency_hbm_ratio: float = 0.98
     memory_penalty_ms: float = 5.0
     resident_service_window_ms: float = 5_000.0
+    starvation_floor_ms: float = 30_000.0
     allow_recompute: bool = False
 
     def __post_init__(self) -> None:
@@ -155,6 +156,7 @@ class JointPlannerConfig:
             "residency_hysteresis_ms",
             "memory_penalty_ms",
             "resident_service_window_ms",
+            "starvation_floor_ms",
         ):
             value = float(getattr(self, name))
             if not math.isfinite(value) or value < 0:
@@ -671,6 +673,17 @@ class _Candidate:
     prediction_support_level: str = ""
 
     @property
+    def causal_maxweight_utility(self) -> float:
+        unlock_weight = max(
+            0.25,
+            5.0
+            - float(self.causal_rank)
+            + float(self.unblock_depth)
+            + float(self.pending_messages),
+        )
+        return unlock_weight / max(1, self.request.startup_bytes)
+
+    @property
     def prediction_order_key(self) -> tuple[int, float]:
         tokens = self.predicted_remaining_decode_tokens
         if tokens is not None and self.prediction_support_level != "unavailable":
@@ -683,6 +696,7 @@ class _Candidate:
             self.causal_rank,
             -self.unblock_depth,
             -self.pending_messages,
+            -self.causal_maxweight_utility,
             (1, self.request.submitted_ts_ms),
             self.request.invocation_id,
             self.request.request_id,
@@ -1069,9 +1083,26 @@ class ObservedJointPlanner:
         ordered = sorted(
             frontier,
             key=lambda item: (
+                (
+                    policy_input.resources.ts_ms
+                    - item.request.submitted_ts_ms
+                    < self.config.starvation_floor_ms
+                ),
+                (
+                    -max(
+                        0.0,
+                        policy_input.resources.ts_ms
+                        - item.request.submitted_ts_ms,
+                    )
+                    if policy_input.resources.ts_ms
+                    - item.request.submitted_ts_ms
+                    >= self.config.starvation_floor_ms
+                    else 0.0
+                ),
                 item.causal_rank,
                 -item.unblock_depth,
                 -item.pending_messages,
+                -item.causal_maxweight_utility,
                 -resident_bytes[item.request.context_id],
                 _unreserved_startup_bytes(item.request),
                 item.request.submitted_ts_ms,
@@ -1332,8 +1363,8 @@ class ObservedJointPlanner:
             mode="observed_joint",
             graph_version=policy_input.runtime_graph.graph_version,
             reason=(
-                "bounded root-workflow fairness and causal priority jointly packed "
-                "with exact physical extents"
+                "HBM-bounded causal MaxWeight batch with starvation floor and "
+                "exact physical extents"
             ),
         )
         return _make_plan(
@@ -1662,6 +1693,13 @@ class AsyncSemanticJointPlanner(ObservedJointPlanner):
                     stats["last_access_ms"], bundle.last_access_ms
                 )
 
+        control = _mapping(state.get("control"))
+        raw_reclaim_state = _mapping(control.get("reclaim_requirements"))
+        reclaim_requirements = {
+            str(_mapping(item).get("beneficiary_request_id")): _mapping(item)
+            for item in _sequence(raw_reclaim_state.get("requirements"))
+            if _mapping(item).get("beneficiary_request_id")
+        }
         admitted_ids = set(seed.execution.ordered_request_ids)
         runnable_by_context: dict[str, list[RunnableInvocation]] = defaultdict(list)
         for request in policy_input.runnable_frontier:
@@ -1676,19 +1714,32 @@ class AsyncSemanticJointPlanner(ObservedJointPlanner):
             for item in candidates
             if item.request.request_id not in admitted_ids
         ]
+        requirement_bound = [
+            request
+            for request in deferred
+            if request.request_id in reclaim_requirements
+        ]
         available = policy_input.resources.hbm_available_bytes
         reclaim_goal = 0
         beneficiary: RunnableInvocation | None = None
         if deferred:
-            first = deferred[0]
+            first = requirement_bound[0] if requirement_bound else deferred[0]
             beneficiary = first
-            missing = int(
-                context_stats[first.context_id]["missing_gpu_bytes"]
-            )
-            reclaim_goal = max(
-                0,
-                _unreserved_startup_bytes(first) + missing - available,
-            )
+            requirement = reclaim_requirements.get(first.request_id)
+            if requirement is not None:
+                fragment_bytes = (
+                    _nonnegative_int(requirement.get("required_startup_bytes"))
+                    + _nonnegative_int(requirement.get("required_growth_bytes"))
+                )
+                reclaim_goal = max(0, fragment_bytes - available)
+            else:
+                missing = int(
+                    context_stats[first.context_id]["missing_gpu_bytes"]
+                )
+                reclaim_goal = max(
+                    0,
+                    _unreserved_startup_bytes(first) + missing - available,
+                )
         used_ratio = (
             policy_input.resources.hbm_used_bytes
             / policy_input.resources.hbm_capacity_bytes
@@ -1712,7 +1763,22 @@ class AsyncSemanticJointPlanner(ObservedJointPlanner):
             "wait_message": 2,
         }
 
+        def context_has_no_future_use(context_id: str) -> bool:
+            raw_context = _mapping(context_snapshots.get(context_id))
+            invocation_ids = tuple(raw_context.get("invocation_ids", ()))
+            return bool(invocation_ids) and all(
+                str(
+                    _mapping(invocation_snapshots.get(str(invocation_id))).get(
+                        "state", ""
+                    )
+                )
+                in {"done", "cancelled"}
+                for invocation_id in invocation_ids
+            )
+
         def context_state_rank(context_id: str) -> int:
+            if context_has_no_future_use(context_id):
+                return -1
             raw_context = _mapping(context_snapshots.get(context_id))
             ranks = [
                 parked_states[str(_mapping(invocation_snapshots.get(str(invocation_id))).get("state", ""))]
@@ -1802,7 +1868,10 @@ class AsyncSemanticJointPlanner(ObservedJointPlanner):
                     target_bytes_hint=reclaimable,
                     deadline_ms=policy_input.resources.ts_ms,
                     reason=(
-                        "replacement reclaim from a parked context"
+                        "beneficiary-bound HBM reclaim from a parked context"
+                        if beneficiary is not None
+                        and beneficiary.request_id in reclaim_requirements
+                        else "replacement reclaim from a parked context"
                         if parked_rank < 3
                         else "service-or-evict lease expired for resident-ready context"
                     ),
@@ -2133,21 +2202,6 @@ def validate_joint_plan(
     current_fairness_revision = _nonnegative_int(fairness.get("revision", 0))
     if current_fairness_revision < read_set.fairness_revision:
         conflicts.append("fairness_revision_regressed")
-    if plan.execution.selected_workflow_id is not None:
-        current_fairness_order = _current_fairness_order(
-            policy_input,
-            lag_budget_ms=read_set.fairness_lag_budget_ms,
-            memory_penalty_ms=read_set.fairness_memory_penalty_ms,
-            max_workflow_candidates=(
-                read_set.fairness_max_workflow_candidates
-            ),
-        )
-        if (
-            not current_fairness_order
-            or current_fairness_order[0]
-            != plan.execution.selected_workflow_id
-        ):
-            conflicts.append("fairness_priority_changed")
     current_transfer_epoch = _nonnegative_int(control.get("transfer_epoch", 0))
     if current_transfer_epoch < read_set.transfer_epoch:
         conflicts.append("transfer_epoch_regressed")
@@ -2446,18 +2500,6 @@ def validate_joint_plan_components(
             or _fingerprint_json(current_frontier) != expected_frontier
         ):
             execution_reasons.append("selected_workflow_frontier_changed")
-        fairness_order = _current_fairness_order_from_parts(
-            current.runnable_frontier,
-            current.invocation_snapshots,
-            current.fairness_accounts,
-            current.workflow_memory_charges,
-            hbm_capacity_bytes=current.hbm_capacity_bytes,
-            lag_budget_ms=read_set.fairness_lag_budget_ms,
-            memory_penalty_ms=read_set.fairness_memory_penalty_ms,
-            max_workflow_candidates=read_set.fairness_max_workflow_candidates,
-        )
-        if not fairness_order or fairness_order[0] != selected_workflow:
-            execution_reasons.append("fairness_priority_changed")
     if (
         validate_execution_priority
         and current.fairness_revision < read_set.fairness_revision

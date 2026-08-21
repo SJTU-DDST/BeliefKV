@@ -1,6 +1,10 @@
 # BeliefKV 当前系统设计
 
-日期：2026-07-14；最后更新：2026-08-20
+日期：2026-07-14；最后更新：2026-08-22
+
+当前 P5 下界已补齐 beneficiary-bound reclaim、单请求 admission rescue、
+96 GiB Host 的 95%/85% drop/recompute 生命周期，以及短片段 causal MaxWeight
+调度。预测器仍关闭；P6 不能再承担修复基础 admission starvation 的职责。
 
 当前执行路线已切换为 [GPU-First Native-Subagent Oracle](beliefkv_gpu_native_subagent_oracle_plan_2026-08-20_zh.md)。正式 workload 不再使用外部 planner/new supervisor 或 context pack/two-wave arrival，而是让同一个 parent conversation 通过原生 task 发起 FRESH child、等待 JOIN、接收 child ToolMessage 并继续。CPU estimator 保留为调试工具，不再构成 GPU 实验前置门槛。
 
@@ -1026,7 +1030,14 @@ SGLang patch 应保持窄接口，不把完整 BeliefKV policy 写入 scheduler 
 
 已完成 RCCG、SGLang metadata/ownership bridge、Radix closure 仲裁、HiCache
 prepare/commit、Host 生命周期和迁移时间线观测。历史正确性问题及其修复过程保留在
-实验文档中，不再作为当前策略接口。
+实验文档中，不再作为当前策略接口。2026-08-22 新增的不变量为：
+
+- HBM 不可行必须产生绑定 beneficiary 的 ReclaimRequirement；
+- rescue 最多一笔，且必须以真实 GPU service 作为成功终点；
+- Host-only drop 必须具有 generation-safe owner+epoch replay 证据；
+- KEEP_GPU(context) 必须在有限 service window 内得到服务，否则 residency
+  lease 到期后进入 victim 集合；
+- 正常调度使用 causal MaxWeight，fairness 只负责 30 秒防饿和最终同分。
 
 ### P5：Observed JointPlan 冻结
 

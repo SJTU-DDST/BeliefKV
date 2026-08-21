@@ -730,3 +730,133 @@ def test_predictive_shadow_only_materializes_private_suffix() -> None:
         == BundleScope.EXCLUSIVE_SUFFIX.value
     )
     assert tick.transfer.command.metadata["physical_cross_context_action_bytes"] == 0
+
+
+def _host_drop_command(
+    handle: PageHandle,
+    *,
+    context_id: str = "ctx",
+    replay_context_ids: tuple[str, ...] = (),
+) -> ControlCommand:
+    return ControlCommand(
+        command_id=f"host-drop-{handle.page_id}-{handle.allocation_generation}",
+        kind=CommandKind.DROP_HOST_CONTEXT,
+        created_ts_ms=5.0,
+        context_id=context_id,
+        context_epoch=0,
+        target_bytes=512,
+        target_handles=(handle,),
+        metadata={
+            "replay_guaranteed_context_epochs": tuple(
+                (context, 0) for context in replay_context_ids
+            )
+        },
+    )
+
+
+def test_host_shadow_drop_is_generation_safe_and_keeps_gpu_copy() -> None:
+    graph, index = _runtime(("agent", "ctx", "wf"))
+    handle = PageHandle(41, 0)
+    index.register_page(
+        handle,
+        size_bytes=512,
+        residency=PhysicalResidency.DUAL_CLEAN,
+    )
+    index.bind_pages("ctx", 0, (handle,))
+    index.pages[handle].engine_lock_ref = 1
+
+    resolved = RadixArbiter(graph, index).resolve(_host_drop_command(handle))
+    stale = RadixArbiter(graph, index).resolve(
+        _host_drop_command(PageHandle(41, 1))
+    )
+
+    assert [item.action for item in resolved.page_actions] == [
+        PhysicalPageAction.DROP_HOST
+    ]
+    assert resolved.resolved_bytes == 512
+    assert not resolved.blockers
+    assert {item.code for item in stale.blockers} == {
+        TransferBlockerCode.STALE_GENERATION
+    }
+
+
+def test_cpu_only_host_drop_requires_replay_for_every_shared_owner() -> None:
+    graph, index = _runtime(
+        ("agent-a", "ctx-a", "wf"),
+        ("agent-b", "ctx-b", "wf"),
+    )
+    handle = PageHandle(42, 0)
+    index.register_page(
+        handle,
+        size_bytes=512,
+        residency=PhysicalResidency.CPU_ONLY,
+    )
+    index.bind_pages("ctx-a", 0, (handle,))
+    index.bind_pages("ctx-b", 0, (handle,))
+
+    rejected = RadixArbiter(graph, index).resolve(
+        _host_drop_command(
+            handle,
+            context_id="ctx-a",
+            replay_context_ids=("ctx-a",),
+        )
+    )
+    accepted = RadixArbiter(graph, index).resolve(
+        _host_drop_command(
+            handle,
+            context_id="ctx-a",
+            replay_context_ids=("ctx-a", "ctx-b"),
+        )
+    )
+    index.update_context_epoch("ctx-b", 1)
+    stale_owner = RadixArbiter(graph, index).resolve(
+        _host_drop_command(
+            handle,
+            context_id="ctx-a",
+            replay_context_ids=("ctx-a", "ctx-b"),
+        )
+    )
+
+
+    assert {item.code for item in rejected.blockers} == {
+        TransferBlockerCode.SEMANTIC_PIN
+    }
+    assert [item.action for item in accepted.page_actions] == [
+        PhysicalPageAction.DROP_HOST
+    ]
+    assert {item.code for item in stale_owner.blockers} == {
+        TransferBlockerCode.STALE_GENERATION
+    }
+
+
+def test_cpu_only_host_drop_rejects_locked_or_nonleaf_extent() -> None:
+    graph, index = _runtime(("agent", "ctx", "wf"))
+    parent = PageHandle(43, 0)
+    child = PageHandle(44, 0)
+    index.register_page(
+        parent,
+        size_bytes=512,
+        residency=PhysicalResidency.CPU_ONLY,
+    )
+    index.register_page(
+        child,
+        size_bytes=256,
+        residency=PhysicalResidency.CPU_ONLY,
+        parent=parent,
+    )
+    index.bind_pages("ctx", 0, (parent, child))
+
+    nonleaf = RadixArbiter(graph, index).resolve(
+        _host_drop_command(parent, replay_context_ids=("ctx",))
+    )
+    index.pages[child].engine_lock_ref = 1
+    locked = RadixArbiter(graph, index).resolve(
+        _host_drop_command(child, replay_context_ids=("ctx",))
+    )
+
+    assert {item.code for item in nonleaf.blockers} == {
+        TransferBlockerCode.DESCENDANT_CLOSURE
+    }
+    assert {item.code for item in locked.blockers} == {
+        TransferBlockerCode.NODE_LOCKED
+    }

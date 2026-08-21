@@ -7,6 +7,7 @@ from beliefkv.policy.admission import (
     AdmissionRequest,
     AdmissionSideState,
     AdmissionTicketCompiler,
+    ReclaimRequirement,
     DynamicWorkingSetCandidate,
     DynamicWorkingSetScheduler,
     ObservedAdmissionCandidate,
@@ -71,6 +72,9 @@ def _candidate(
     fair_rank: int = 0,
     wait_ms: float = 10.0,
     incremental_bytes: int = 100,
+    action_unlock_value: float = 1.0,
+    service_quantum_tokens: int = 1,
+    hbm_envelope_bytes: int = 1,
     starvation: bool = False,
     policy_eligible: bool = True,
     native_index: int = 0,
@@ -86,6 +90,9 @@ def _candidate(
         workflow_fair_rank=fair_rank,
         wait_ms=wait_ms,
         estimated_incremental_bytes=incremental_bytes,
+        action_unlock_value=action_unlock_value,
+        service_quantum_tokens=service_quantum_tokens,
+        hbm_envelope_bytes=hbm_envelope_bytes,
         starvation=starvation,
         policy_eligible=policy_eligible,
     )
@@ -642,3 +649,169 @@ def test_transition_barrier_fails_closed_until_reopened() -> None:
     index.set_visible("a")
     visible = _compile(index, ("a",), epoch=2)
     assert [ticket.request_id for ticket in visible.tickets] == ["a"]
+
+
+def test_bounded_hbm_skip_emits_short_fragment_reclaim_requirement() -> None:
+    index = VisibleAdmissionIndex()
+    index.register(
+        AdmissionRequest(
+            request_id="blocked",
+            workflow_id="wf",
+            invocation_id="inv",
+            context_id="ctx",
+            context_epoch=2,
+            submitted_ts_ms=1.0,
+            uncached_prompt_tokens=20,
+            expected_output_tokens=100,
+            kv_bytes_per_token=10,
+            fixed_overhead_bytes=20,
+            prompt_tokens=100,
+        )
+    )
+
+    result = AdmissionTicketCompiler().compile(
+        epoch=3,
+        now_ms=11.0,
+        ordered_request_ids=("blocked",),
+        entries={entry.request.request_id: entry for entry in index.entries()},
+        budget=AdmissionCompileBudget(
+            max_prefill_tokens=32,
+            max_requests=1,
+            max_candidates=1,
+            available_hbm_bytes=0,
+            decode_quantum_tokens=8,
+            allocator_guard_bytes=30,
+        ),
+        source="joint_bounded_seed",
+        reason="bounded_hbm",
+    )
+
+    assert result.skipped == (("blocked", "bounded_hbm_budget"),)
+    assert result.reclaim_requirements == (
+        ReclaimRequirement(
+            beneficiary_request_id="blocked",
+            required_startup_bytes=50,
+            required_growth_bytes=280,
+            current_prefix_bytes=800,
+            waited_ms=10.0,
+            skip_reason="bounded_hbm_budget",
+        ),
+    )
+
+
+def test_ticket_reserves_only_a_bounded_decode_quantum() -> None:
+    index = VisibleAdmissionIndex()
+    index.register(_request("long-decode", prompt_tokens=2, output_tokens=100))
+
+    result = AdmissionTicketCompiler().compile(
+        epoch=1,
+        now_ms=10,
+        ordered_request_ids=("long-decode",),
+        entries={entry.request.request_id: entry for entry in index.entries()},
+        budget=AdmissionCompileBudget(
+            max_prefill_tokens=32,
+            max_requests=1,
+            max_candidates=1,
+            available_hbm_bytes=180,
+            decode_quantum_tokens=16,
+        ),
+        source="joint_bounded_seed",
+        reason="bounded_fragment",
+    )
+
+    assert [ticket.request_id for ticket in result.tickets] == ["long-decode"]
+    assert result.tickets[0].epoch_incremental_bytes == 180
+    assert result.tickets[0].estimated_incremental_bytes == 1_020
+    assert not result.reclaim_requirements
+
+
+def test_observed_scheduler_uses_maxweight_before_fairness_within_causal_class() -> None:
+    scheduler = ObservedAdmissionScheduler(
+        active_kv_high_watermark_ratio=1.0,
+        minimum_active_requests=0,
+    )
+    decision = scheduler.decide(
+        (
+            _candidate(
+                "fair-heavy",
+                workflow_id="fair",
+                fair_rank=0,
+                action_unlock_value=1.0,
+                service_quantum_tokens=4,
+                hbm_envelope_bytes=400,
+            ),
+            _candidate(
+                "useful-light",
+                workflow_id="throughput",
+                fair_rank=10,
+                action_unlock_value=2.0,
+                service_quantum_tokens=8,
+                hbm_envelope_bytes=100,
+                native_index=1,
+            ),
+        ),
+        _snapshot(),
+    )
+
+    assert decision.ordered_request_ids[:2] == (
+        "useful-light",
+        "fair-heavy",
+    )
+
+
+def test_observed_scheduler_starvation_floor_overrides_maxweight() -> None:
+    scheduler = ObservedAdmissionScheduler(
+        active_kv_high_watermark_ratio=1.0,
+        minimum_active_requests=0,
+    )
+    decision = scheduler.decide(
+        (
+            _candidate("old", wait_ms=30_001, starvation=True),
+            _candidate(
+                "high-utility",
+                action_unlock_value=100,
+                service_quantum_tokens=100,
+                hbm_envelope_bytes=1,
+                native_index=1,
+            ),
+        ),
+        _snapshot(),
+    )
+
+    assert decision.ordered_request_ids[0] == "old"
+
+
+def test_dynamic_working_set_uses_short_fragment_maxweight() -> None:
+    scheduler = DynamicWorkingSetScheduler(
+        max_workflows=1,
+        pressure_enter_ratio=0.8,
+        pressure_exit_ratio=0.7,
+        minimum_ready_requests=1,
+        minimum_hold_epochs=0,
+    )
+    decision = scheduler.decide(
+        (
+            DynamicWorkingSetCandidate(
+                "fair-heavy",
+                1,
+                0,
+                2.0,
+                startup_bytes=1000,
+                gpu_work_tokens=1,
+            ),
+            DynamicWorkingSetCandidate(
+                "efficient",
+                1,
+                10,
+                1.0,
+                startup_bytes=100,
+                gpu_work_tokens=10,
+            ),
+        ),
+        epoch=1,
+        hbm_used_bytes=900,
+        hbm_capacity_bytes=1_000,
+        native_request_slots=1,
+    )
+
+    assert decision.active_workflow_ids == ("efficient",)

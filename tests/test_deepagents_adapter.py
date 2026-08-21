@@ -408,6 +408,9 @@ def test_chat_client_uses_remaining_deadline_and_aborts_failed_request(
     payload, rid = client._with_beliefkv_runtime(run_manager, {})
     assert payload["timeout"] == 16.0
     assert payload["extra_body"]["rid"] == rid
+    assert (
+        payload["extra_body"]["beliefkv_metadata"]["execution_timeout_s"] == 16.0
+    )
     assert payload["extra_body"]["beliefkv_metadata"]["invocation_id"] == "root"
 
     aborted: list[tuple[str, dict[str, str], float]] = []

@@ -176,6 +176,16 @@ def main() -> int:
         default=64,
     )
     parser.add_argument(
+        "--host-high-watermark-ratio",
+        type=float,
+        default=0.95,
+    )
+    parser.add_argument(
+        "--host-low-watermark-ratio",
+        type=float,
+        default=0.85,
+    )
+    parser.add_argument(
         "--observed-admission-active-kv-high-watermark-ratio",
         type=float,
         default=0.8,
@@ -315,6 +325,13 @@ def main() -> int:
         )
     if args.restore_micro_gate_min_private_mib <= 0:
         parser.error("--restore-micro-gate-min-private-mib must be positive")
+    if not (
+        0
+        <= args.host_low_watermark_ratio
+        < args.host_high_watermark_ratio
+        <= 1
+    ):
+        parser.error("Host lifecycle watermarks are invalid")
     if args.joint_workflow_active_window <= 0:
         parser.error("--joint-workflow-active-window must be positive")
     if not (
@@ -352,9 +369,19 @@ def main() -> int:
         "shadow_chunk_bytes": 67_108_864,
         "shadow_min_parked_ms": 25.0,
         "shadow_slowdown_budget": 0.02,
+        "host_lifecycle_enabled": True,
+        "host_high_watermark_ratio": args.host_high_watermark_ratio,
+        "host_low_watermark_ratio": args.host_low_watermark_ratio,
+        "host_cleanup_chunk_bytes": 268_435_456,
         "planning_interval_ms": 5.0,
         "admission_liveness_timeout_ms": 1000.0,
         "admission_force_progress_timeout_ms": 5000.0,
+        "admission_prefill_quantum_tokens": min(
+            16_384, args.max_prefill_tokens
+        ),
+        "admission_decode_quantum_tokens": 16,
+        "admission_allocator_guard_tokens": 16,
+        "workflow_starvation_floor_ms": 30_000.0,
         "request_queue_timeout_ms": args.request_queue_timeout_seconds * 1000.0,
         "kv_bytes_per_token": args.kv_bytes_per_token,
         "predictor_enabled": args.predictor_model is not None,

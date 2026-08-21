@@ -119,6 +119,12 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--stuck-max-model-calls", type=int, default=32)
     parser.add_argument("--stuck-max-tool-calls", type=int, default=64)
     parser.add_argument("--stuck-recovery-model-calls", type=int, default=3)
+    parser.add_argument(
+        "--activation-wall-clock-seconds",
+        type=float,
+        default=7200.0,
+        help="Single absolute deadline shared by the root and all descendants.",
+    )
     parser.add_argument("--request-timeout", type=float, default=600.0)
     parser.add_argument("--sandbox-command-timeout", type=int, default=600)
     parser.add_argument(
@@ -222,6 +228,7 @@ def main() -> int:
             max_model_calls_without_completion=args.stuck_max_model_calls,
             max_tool_calls_without_completion=args.stuck_max_tool_calls,
             recovery_model_call_limit=args.stuck_recovery_model_calls,
+            activation_wall_clock_s=args.activation_wall_clock_seconds,
         ),
         tool_observation_budget=ToolObservationBudgetPolicy(
             total_chars_per_turn=args.tool_observation_turn_chars,

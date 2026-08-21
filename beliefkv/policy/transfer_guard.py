@@ -20,6 +20,7 @@ _GUARDED_KINDS = {
     CommandKind.SHADOW_CONTEXT,
     CommandKind.PREFETCH_CONTEXT,
     CommandKind.DROP_TERMINAL_PRIVATE,
+    CommandKind.DROP_HOST_CONTEXT,
 }
 
 

@@ -48,6 +48,7 @@ from beliefkv.experiments.deepagents_swebench import (
     SANDBOX_PATH_CONTRACT,
     SYMPY_SANDBOX_PREFLIGHT,
     SweBenchWorkload,
+    WorkflowDeadlineController,
     _execute_saturated_root_pool,
     capture_append_offset,
     classify_workflow_measurement,
@@ -1002,6 +1003,8 @@ def test_native_subagent_prompt_excludes_natural_fanout_policy() -> None:
     assert natural_policy not in AUTONOMOUS_SYSTEM_PROMPT
     assert natural_policy not in NATIVE_SUBAGENT_2TO3_PROMPT
     assert "A one-task message is invalid" in NATIVE_SUBAGENT_2TO3_PROMPT
+    assert "you may start another round" in NATIVE_SUBAGENT_2TO3_PROMPT
+    assert "Do not force a second round" in NATIVE_SUBAGENT_2TO3_PROMPT
 
 
 def test_native_subagent_profile_builds_read_only_children(tmp_path: Path) -> None:
@@ -1126,6 +1129,116 @@ def test_trace_summary_reports_parallel_fanout_shape(tmp_path: Path) -> None:
     assert summary["peak_concurrent_children"] == 2
     assert summary["join_type_counts"] == {"all": 1}
     assert summary["child_return_span_ms"] == 20
+
+
+def test_trace_summary_reports_post_join_delegation_round(tmp_path: Path) -> None:
+    path = tmp_path / "events.jsonl"
+    records = [{"kind": "workflow_start", "ts_ms": 0}]
+    records.extend(
+        {
+            "kind": "invocation_create",
+            "invocation_id": child,
+            "parent_invocation_id": "p",
+            "join_id": join_id,
+            "ts_ms": ts_ms,
+        }
+        for join_id, ts_ms, children in (
+            ("j1", 10, ("a", "b")),
+            ("j2", 75, ("c", "d", "e")),
+        )
+        for child in children
+    )
+    records.extend(
+        [
+            {
+                "kind": "join_create",
+                "join_id": "j1",
+                "ts_ms": 10,
+                "attributes": {"mode": "all"},
+            },
+            {"kind": "return", "invocation_id": "a", "ts_ms": 30},
+            {"kind": "return", "invocation_id": "b", "ts_ms": 40},
+            {"kind": "join_satisfied", "join_id": "j1", "ts_ms": 40},
+            {
+                "kind": "join_create",
+                "join_id": "j2",
+                "ts_ms": 75,
+                "attributes": {"mode": "all"},
+            },
+            {"kind": "return", "invocation_id": "c", "ts_ms": 90},
+            {"kind": "return", "invocation_id": "d", "ts_ms": 100},
+            {"kind": "return", "invocation_id": "e", "ts_ms": 110},
+            {"kind": "join_satisfied", "join_id": "j2", "ts_ms": 110},
+            {"kind": "workflow_end", "ts_ms": 120},
+        ]
+    )
+    path.write_text("".join(json.dumps(item) + "\n" for item in records))
+
+    summary = _trace_summary(path)
+
+    assert summary["delegation_round_count"] == 2
+    assert summary["fanout_per_round"] == [2, 3]
+    assert summary["children_per_parent"] == {"p": 5}
+    assert summary["post_join_spawn_count"] == 3
+    assert summary["join_to_next_spawn_ms"] == [35.0]
+
+
+def test_workflow_deadline_cancels_requests_tasks_and_commands_in_order() -> None:
+    now = [100.0]
+    deadline = ActivationDeadline(clock=lambda: now[0])
+    events: list[tuple[str, dict[str, object]]] = []
+
+    class Audit:
+        def emit(self, event: str, **fields: object) -> None:
+            events.append((event, fields))
+
+    class Adapter:
+        def cancel_pending_tasks(self, *, reason: str) -> int:
+            assert "deadline" in reason
+            return 2
+
+    class Backend:
+        def cancel_active_commands(self, *, reason: str) -> int:
+            assert "deadline" in reason
+            return 1
+
+    class Model:
+        active = 1
+
+        def cancel_active_requests(self) -> int:
+            self.active = 0
+            return 1
+
+        def active_request_count(self) -> int:
+            return self.active
+
+    controller = WorkflowDeadlineController(
+        deadline=deadline,
+        adapter=Adapter(),
+        backend=Backend(),
+        audit=Audit(),
+    )
+    controller.register_model(Model())
+    deadline.start(5.0)
+    now[0] = 105.0
+
+    assert controller.cancel_if_expired()
+    summary = controller.close()
+
+    assert [
+        event for event, _fields in events if event.startswith("workflow_deadline_")
+    ] == [
+        "workflow_deadline_expired",
+        "workflow_deadline_abort_sent",
+        "workflow_deadline_server_terminal",
+        "workflow_deadline_cleanup_complete",
+    ]
+    assert summary["abort_requested_count"] == 1
+    assert summary["server_terminal"] is True
+    assert 0.0 <= summary["server_terminal_latency_ms"] <= 5000.0
+    assert summary["pending_task_cancel_count"] == 2
+    assert summary["active_command_cancel_count"] == 1
+    assert summary["cleanup_complete"] is True
 
 
 def test_repository_contract_does_not_duplicate_django_checkout_root() -> None:

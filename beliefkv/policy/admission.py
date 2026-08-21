@@ -199,12 +199,53 @@ class AdmissionTicketValidation:
 
 
 @dataclass(frozen=True)
+class ReclaimRequirement:
+    """Observed HBM deficit for the next bounded service fragment."""
+
+    beneficiary_request_id: str
+    required_startup_bytes: int
+    required_growth_bytes: int
+    current_prefix_bytes: int
+    waited_ms: float
+    skip_reason: str
+
+    def __post_init__(self) -> None:
+        if not self.beneficiary_request_id or not self.skip_reason:
+            raise ValueError("reclaim requirement identity must be non-empty")
+        if min(
+            self.required_startup_bytes,
+            self.required_growth_bytes,
+            self.current_prefix_bytes,
+        ) < 0:
+            raise ValueError("reclaim requirement bytes must be non-negative")
+        if not math.isfinite(self.waited_ms) or self.waited_ms < 0:
+            raise ValueError(
+                "reclaim requirement wait must be finite and non-negative"
+            )
+
+    @property
+    def required_fragment_bytes(self) -> int:
+        return self.required_startup_bytes + self.required_growth_bytes
+
+    def to_dict(self) -> dict[str, object]:
+        return {
+            "beneficiary_request_id": self.beneficiary_request_id,
+            "required_startup_bytes": self.required_startup_bytes,
+            "required_growth_bytes": self.required_growth_bytes,
+            "current_prefix_bytes": self.current_prefix_bytes,
+            "waited_ms": self.waited_ms,
+            "skip_reason": self.skip_reason,
+        }
+
+
+@dataclass(frozen=True)
 class AdmissionTicketEpoch:
     epoch: int
     tickets: tuple[AdmissionTicket, ...]
     skipped: tuple[tuple[str, str], ...]
     scanned_count: int
     source: str
+    reclaim_requirements: tuple[ReclaimRequirement, ...] = ()
 
     def __post_init__(self) -> None:
         if self.epoch < 0 or self.scanned_count < 0:
@@ -216,6 +257,11 @@ class AdmissionTicketEpoch:
             raise ValueError("ticket belongs to a different epoch")
         if not self.source:
             raise ValueError("ticket epoch source must be non-empty")
+        requirement_ids = [
+            item.beneficiary_request_id for item in self.reclaim_requirements
+        ]
+        if len(requirement_ids) != len(set(requirement_ids)):
+            raise ValueError("ticket epoch contains duplicate reclaim requirements")
 
     @property
     def by_request_id(self) -> Mapping[str, AdmissionTicket]:
@@ -232,6 +278,8 @@ class AdmissionCompileBudget:
     available_hbm_bytes: int
     reclaimable_hbm_bytes: int = 0
     protected_hbm_bytes: int = 0
+    decode_quantum_tokens: int = 16
+    allocator_guard_bytes: int = 0
 
     def __post_init__(self) -> None:
         if min(
@@ -241,6 +289,8 @@ class AdmissionCompileBudget:
             self.available_hbm_bytes,
             self.reclaimable_hbm_bytes,
             self.protected_hbm_bytes,
+            self.decode_quantum_tokens,
+            self.allocator_guard_bytes,
         ) < 0:
             raise ValueError("admission compile budgets must be non-negative")
 
@@ -250,7 +300,8 @@ class AdmissionCompileBudget:
             0,
             self.available_hbm_bytes
             + self.reclaimable_hbm_bytes
-            - self.protected_hbm_bytes,
+            - self.protected_hbm_bytes
+            - self.allocator_guard_bytes,
         )
 
 
@@ -268,6 +319,9 @@ class ObservedAdmissionCandidate:
     workflow_fair_rank: int
     wait_ms: float
     estimated_incremental_bytes: int
+    action_unlock_value: float = 1.0
+    service_quantum_tokens: int = 1
+    hbm_envelope_bytes: int = 1
     starvation: bool = False
     policy_eligible: bool = True
 
@@ -281,10 +335,24 @@ class ObservedAdmissionCandidate:
             self.frontier_rank,
             self.workflow_fair_rank,
             self.estimated_incremental_bytes,
+            self.service_quantum_tokens,
+            self.hbm_envelope_bytes,
         ) < 0:
             raise ValueError("observed admission counters must be non-negative")
+        if (
+            not math.isfinite(self.action_unlock_value)
+            or self.action_unlock_value < 0
+        ):
+            raise ValueError("action unlock value must be finite and non-negative")
         if not math.isfinite(self.wait_ms) or self.wait_ms < 0:
             raise ValueError("observed admission wait must be non-negative")
+
+    @property
+    def causal_maxweight_utility(self) -> float:
+        return (
+            self.action_unlock_value * max(1, self.service_quantum_tokens)
+            / max(1, self.hbm_envelope_bytes)
+        )
 
     @property
     def order_key(self) -> tuple[object, ...]:
@@ -300,21 +368,23 @@ class ObservedAdmissionCandidate:
                 -self.wait_ms,
                 self.causal_rank,
                 -self.unblock_depth,
+                -self.causal_maxweight_utility,
                 self.frontier_rank,
-                self.workflow_fair_rank,
                 self.estimated_incremental_bytes,
                 self.native_index,
+                self.workflow_fair_rank,
                 self.request_id,
             )
         return (
             1,
             self.causal_rank,
             -self.unblock_depth,
+            -self.causal_maxweight_utility,
             self.frontier_rank,
-            self.workflow_fair_rank,
             self.estimated_incremental_bytes,
             -self.wait_ms,
             self.native_index,
+            self.workflow_fair_rank,
             self.request_id,
         )
 
@@ -399,6 +469,7 @@ class DynamicWorkingSetCandidate:
     mandatory: bool = False
     startup_bytes: int = 0
     resident_ready_bytes: int = 0
+    gpu_work_tokens: int = 0
 
     def __post_init__(self) -> None:
         if not self.workflow_id:
@@ -412,8 +483,19 @@ class DynamicWorkingSetCandidate:
             raise ValueError("action unlock value must be finite and non-negative")
         if not math.isfinite(self.oldest_wait_ms) or self.oldest_wait_ms < 0:
             raise ValueError("working-set wait must be finite and non-negative")
-        if min(self.startup_bytes, self.resident_ready_bytes) < 0:
+        if min(
+            self.startup_bytes,
+            self.resident_ready_bytes,
+            self.gpu_work_tokens,
+        ) < 0:
             raise ValueError("working-set byte counters must be non-negative")
+
+    @property
+    def causal_maxweight_utility(self) -> float:
+        return (
+            self.action_unlock_value * max(1, self.gpu_work_tokens)
+            / max(1, self.startup_bytes)
+        )
 
     @property
     def startup_bytes_per_ready(self) -> float:
@@ -533,9 +615,10 @@ class DynamicWorkingSetScheduler:
             key=lambda item: (
                 not item.mandatory,
                 item.oldest_wait_ms < self.starvation_age_ms,
+                -item.oldest_wait_ms if item.oldest_wait_ms >= self.starvation_age_ms else 0,
+                -item.causal_maxweight_utility,
                 -item.resident_ready_bytes,
                 item.startup_bytes_per_ready,
-                -item.action_unlock_value,
                 -item.gpu_ready_count,
                 item.fair_rank,
                 item.workflow_id,
@@ -985,9 +1068,51 @@ class AdmissionTicketCompiler:
 
         tickets: list[AdmissionTicket] = []
         skipped: list[tuple[str, str]] = []
+        reclaim_requirements: list[ReclaimRequirement] = []
+        reclaim_requirement_ids: set[str] = set()
         remaining_tokens = budget.max_prefill_tokens
         remaining_hbm = budget.bounded_hbm_bytes
         scanned = 0
+
+        def record_reclaim_requirement(
+            request: AdmissionRequest,
+            *,
+            prefill_tokens: int,
+        ) -> None:
+            if request.request_id in reclaim_requirement_ids:
+                return
+            current_prefix_tokens = max(
+                0,
+                (request.prompt_tokens or request.uncached_prompt_tokens)
+                - request.uncached_prompt_tokens,
+            )
+            startup_bytes = (
+                request.fixed_overhead_bytes + budget.allocator_guard_bytes
+            )
+            growth_bytes = (
+                max(0, prefill_tokens)
+                + min(request.expected_output_tokens, budget.decode_quantum_tokens)
+            ) * request.kv_bytes_per_token
+            reservation_credit = min(
+                startup_bytes + growth_bytes,
+                credits.get(request.request_id, 0),
+            )
+            startup_credit = min(startup_bytes, reservation_credit)
+            growth_credit = reservation_credit - startup_credit
+            reclaim_requirements.append(
+                ReclaimRequirement(
+                    beneficiary_request_id=request.request_id,
+                    required_startup_bytes=startup_bytes - startup_credit,
+                    required_growth_bytes=max(0, growth_bytes - growth_credit),
+                    current_prefix_bytes=(
+                        current_prefix_tokens * request.kv_bytes_per_token
+                    ),
+                    waited_ms=max(0.0, now_ms - request.submitted_ts_ms),
+                    skip_reason="bounded_hbm_budget",
+                )
+            )
+            reclaim_requirement_ids.add(request.request_id)
+
         pending: list[tuple[str, VisibleAdmissionEntry]] = []
         for request_id in ordered_request_ids:
             if scanned >= budget.max_candidates:
@@ -1030,9 +1155,13 @@ class AdmissionTicketCompiler:
                 priority_entry.request.uncached_prompt_tokens,
                 max(1, math.ceil(budget.max_prefill_tokens / 4)),
             )
+            reserved_decode_tokens = min(
+                priority_entry.request.expected_output_tokens,
+                budget.decode_quantum_tokens,
+            )
             reserved_epoch_bytes = max(
                 0,
-                reserved_chunk_tokens
+                (reserved_chunk_tokens + reserved_decode_tokens)
                 * priority_entry.request.kv_bytes_per_token
                 + priority_entry.request.fixed_overhead_bytes,
             )
@@ -1062,7 +1191,13 @@ class AdmissionTicketCompiler:
             request = entry.request
             epoch_required_bytes = max(
                 0,
-                (uncached_prompt_tokens + request.expected_output_tokens)
+                (
+                    uncached_prompt_tokens
+                    + min(
+                        request.expected_output_tokens,
+                        budget.decode_quantum_tokens,
+                    )
+                )
                 * request.kv_bytes_per_token
                 + request.fixed_overhead_bytes,
             )
@@ -1073,6 +1208,10 @@ class AdmissionTicketCompiler:
             budgeted_bytes = epoch_required_bytes - reservation_credit_bytes
             if budgeted_bytes > complete_hbm_budget:
                 skipped.append((request_id, "bounded_hbm_budget"))
+                record_reclaim_requirement(
+                    request,
+                    prefill_tokens=uncached_prompt_tokens,
+                )
                 continue
             ticket = AdmissionTicket(
                 epoch=epoch,
@@ -1109,12 +1248,17 @@ class AdmissionTicketCompiler:
             for candidate_index, (request_id, entry) in enumerate(chunk_candidates):
                 request = entry.request
                 reservation_credit = credits.get(request_id, 0)
+                decode_quantum_bytes = min(
+                    request.expected_output_tokens,
+                    budget.decode_quantum_tokens,
+                ) * request.kv_bytes_per_token
                 hbm_token_budget = max(
                     0,
                     (
                         remaining_hbm
                         + reservation_credit
                         - request.fixed_overhead_bytes
+                        - decode_quantum_bytes
                     )
                     // request.kv_bytes_per_token,
                 )
@@ -1125,10 +1269,18 @@ class AdmissionTicketCompiler:
                 )
                 if prefill_tokens <= 0:
                     skipped.append((request_id, "bounded_hbm_budget"))
+                    record_reclaim_requirement(
+                        request,
+                        prefill_tokens=min(
+                            request.uncached_prompt_tokens,
+                            remaining_tokens,
+                        ),
+                    )
                     continue
                 epoch_required_bytes = max(
                     0,
                     prefill_tokens * request.kv_bytes_per_token
+                    + decode_quantum_bytes
                     + request.fixed_overhead_bytes,
                 )
                 reservation_credit_bytes = min(
@@ -1137,6 +1289,10 @@ class AdmissionTicketCompiler:
                 budgeted_bytes = epoch_required_bytes - reservation_credit_bytes
                 if budgeted_bytes > remaining_hbm:
                     skipped.append((request_id, "bounded_hbm_budget"))
+                    record_reclaim_requirement(
+                        request,
+                        prefill_tokens=prefill_tokens,
+                    )
                     continue
                 tickets.append(
                     AdmissionTicket(
@@ -1177,6 +1333,7 @@ class AdmissionTicketCompiler:
             skipped=tuple(skipped),
             scanned_count=scanned,
             source=source,
+            reclaim_requirements=tuple(reclaim_requirements),
         )
 
 

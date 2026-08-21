@@ -37,6 +37,7 @@ from beliefkv.policy.admission import (
     DynamicWorkingSetDecision,
     DynamicWorkingSetScheduler,
     ObservedAdmissionCandidate,
+    ReclaimRequirement,
     ObservedAdmissionScheduler,
     ObservedAdmissionSnapshot,
     ObservedAdmissionWindow,
@@ -451,6 +452,24 @@ class _ReplacementBeneficiaryPriority:
     created_ts_ms: float
     baseline_completed_service_count: int
     source_transaction_id: str
+
+
+@dataclass
+class _AdmissionRescueTransaction:
+    request_id: str
+    context_id: str
+    context_epoch: int
+    created_ts_ms: float
+    required_fragment_bytes: int
+    baseline_completed_service_count: int
+    stage: str = "reclaiming"
+    allocations: list[Any] = field(default_factory=list)
+    released_for_admission_tokens: int = 0
+    reclaimed_bytes: int = 0
+
+    @property
+    def reserved_tokens(self) -> int:
+        return sum(len(item) for item in self.allocations)
 
 
 @dataclass(frozen=True)
@@ -2002,6 +2021,12 @@ class EmbeddedSGLangRuntime:
         self._queue_timeout_request_ids: set[str] = set()
         self._execution_timeout_request_ids: set[str] = set()
         self._terminal_node_by_context: dict[str, Any] = {}
+        self._full_prompt_replay_contexts: set[tuple[str, int]] = set()
+        self._recompute_required_contexts: set[tuple[str, int]] = set()
+        self._host_cleanup_active = False
+        self._host_cleanup_sequence = 0
+        self._host_cleanup_by_command: dict[str, dict[str, object]] = {}
+        self._host_cleanup_counts: Counter[str] = Counter()
         self._event_sequence = 0
         self._linked_invocations: set[str] = set()
         self._identity_metadata: dict[str, BeliefKVRequestMetadata] = {}
@@ -2148,6 +2173,9 @@ class EmbeddedSGLangRuntime:
         self._last_joint_shadow_pressure_state: bool | None = None
         self._last_joint_liveness_signature: tuple[int, int, int] | None = None
         self._last_joint_beneficiary_signature: tuple[object, ...] = ()
+        self._reclaim_requirements: dict[str, ReclaimRequirement] = {}
+        self._reclaim_requirement_revision = 0
+        self._active_admission_rescue: _AdmissionRescueTransaction | None = None
         self.joint_shadow_worker: LatestWinsJointPlanWorker | None = None
         self.predictive_risk_worker: LatestWinsPredictiveRiskWorker | None = None
         self._last_joint_shadow_result_sequence = 0
@@ -2286,6 +2314,9 @@ class EmbeddedSGLangRuntime:
                     residency_hysteresis_ms=self.config.residency_hysteresis_ms,
                     resident_service_window_ms=(
                         self.config.resident_service_window_ms
+                    ),
+                    starvation_floor_ms=(
+                        self.config.workflow_starvation_floor_ms
                     ),
                 )
             )
@@ -3719,6 +3750,10 @@ class EmbeddedSGLangRuntime:
             raise SGLangBackendError(f"duplicate visible request id: {req.rid}")
         max_new_tokens = int(getattr(req.sampling_params, "max_new_tokens", 0) or 0)
         req.init_next_round_input(self.tree_cache)
+        if metadata.full_prompt_replay_guaranteed and req.origin_input_ids:
+            self._full_prompt_replay_contexts.add(
+                (metadata.context_id, metadata.context_epoch)
+            )
         estimated_cache_hit_tokens = len(getattr(req, "prefix_indices", ()))
         uncached_prompt_tokens = max(
             0, len(req.origin_input_ids) - estimated_cache_hit_tokens
@@ -4525,7 +4560,9 @@ class EmbeddedSGLangRuntime:
             ).values()
             for item in allocations
         )
-        return funding_tokens + lease_tokens
+        rescue = getattr(self, "_active_admission_rescue", None)
+        rescue_tokens = rescue.reserved_tokens if rescue is not None else 0
+        return funding_tokens + lease_tokens + rescue_tokens
 
     def _set_restore_funding_reservation(
         self,
@@ -6415,8 +6452,14 @@ class EmbeddedSGLangRuntime:
             if first_replacement is not None
             else None
         )
+        rescue = getattr(self, "_active_admission_rescue", None)
         transaction.required_allocator_available_bytes = (
-            replacement_entry.request.estimated_incremental_bytes
+            rescue.required_fragment_bytes
+            if (
+                rescue is not None
+                and first_replacement == rescue.request_id
+            )
+            else replacement_entry.request.estimated_incremental_bytes
             if replacement_entry is not None
             else 0
         )
@@ -6464,7 +6507,23 @@ class EmbeddedSGLangRuntime:
         else:
             transaction.stage = "residency_pending"
             self._running_retraction_counts["residency_pending"] += 1
-            self._activate_retraction_admission_barrier(transaction)
+            rescue = getattr(self, "_active_admission_rescue", None)
+            rescue_bound = (
+                rescue is not None
+                and rescue.request_id in transaction.plan.replacement_request_ids
+            )
+            if rescue_bound:
+                self._running_retraction_counts[
+                    "rescue_global_barrier_suppressed"
+                ] += 1
+                self.audit.emit(
+                    "admission_rescue_global_barrier_suppressed",
+                    now_ms,
+                    request_id=rescue.request_id,
+                    transaction_id=transaction.transaction_id,
+                )
+            else:
+                self._activate_retraction_admission_barrier(transaction)
             self._queue_next_retraction_residency_command(
                 transaction, now_ms=now_ms
             )
@@ -6533,6 +6592,15 @@ class EmbeddedSGLangRuntime:
     ) -> None:
         transaction.stage = "reclaim_confirmed"
         transaction.failure_reason = None
+        first_replacement = next(
+            iter(transaction.plan.replacement_request_ids), None
+        )
+        if first_replacement is not None:
+            self._reserve_admission_rescue_capacity(
+                request_id=first_replacement,
+                reclaimed_bytes=transaction.actual_reclaim_capacity_bytes,
+                now_ms=now_ms,
+            )
         self._retraction_priority_request_ids = (
             transaction.plan.replacement_request_ids
         )
@@ -8975,6 +9043,27 @@ class EmbeddedSGLangRuntime:
             tagged.append((native_index, req, metadata))
         if not tagged:
             return ()
+        rescue = getattr(self, "_active_admission_rescue", None)
+        if rescue is not None:
+            rescue_item = next(
+                (
+                    item
+                    for item in tagged
+                    if str(item[1].rid) == rescue.request_id
+                ),
+                None,
+            )
+            if rescue_item is None:
+                return ()
+            return (
+                RetractionReplacement(
+                    request_id=rescue.request_id,
+                    estimated_incremental_bytes=rescue.required_fragment_bytes,
+                    **self._frontier_retraction_annotation(
+                        rescue_item[2].invocation_id
+                    ),
+                ),
+            )
         view = getattr(self, "_current_online_joint_view", None)
         if self.config.joint_policy_enabled and view is not None:
             tagged_by_request = {
@@ -9065,6 +9154,263 @@ class EmbeddedSGLangRuntime:
             )
         return max(0, tokens * self.config.kv_bytes_per_token)
 
+    def _host_cleanup_context_is_parked(self, context_id: str) -> bool:
+        invocations = tuple(self.controller.graph.context_invocations(context_id))
+        if not invocations:
+            return False
+        return all(
+            invocation.state.value
+            in {
+                "wait_tool",
+                "wait_child",
+                "wait_join",
+                "wait_message",
+                "done",
+                "cancelled",
+            }
+            for invocation in invocations
+        )
+
+    def _build_host_cleanup_command(
+        self, *, now_ms: float
+    ) -> tuple[ControlCommand, dict[str, object]] | None:
+        page_index = self.controller.page_index
+        replay_contexts = getattr(self, "_full_prompt_replay_contexts", set())
+        protected_contexts = {
+            obligation.context_id
+            for obligation in self._restore_obligation_index().all()
+            if not obligation.state.terminal
+        }
+        dual_by_context: dict[str, list[Any]] = defaultdict(list)
+        cpu_by_context: dict[str, list[Any]] = defaultdict(list)
+        for page in page_index.pages.values():
+            if not page.cpu_resident or not page.transfer_idle:
+                continue
+            owners = tuple(sorted(page.owner_contexts))
+            if not owners:
+                continue
+            target_context_id = owners[0]
+            context = self.controller.graph.contexts.get(target_context_id)
+            if context is None:
+                continue
+            if page.residency == PhysicalResidency.DUAL_CLEAN:
+                dual_by_context[target_context_id].append(page)
+                continue
+            if page.residency != PhysicalResidency.CPU_ONLY:
+                continue
+            if any(owner in protected_contexts for owner in owners):
+                continue
+            if any(
+                not page_index.has_context(owner)
+                or (owner, page_index.context_epoch(owner)) not in replay_contexts
+                for owner in owners
+            ):
+                continue
+            if not all(
+                self._host_cleanup_context_is_parked(owner) for owner in owners
+            ):
+                continue
+            if (
+                page.engine_lock_ref > 0
+                or page.active_reader_count > 0
+                or page.semantic_pin_contexts
+                or not page.sealed
+                or any(
+                    child in page_index.pages
+                    and page_index.pages[child].residency
+                    != PhysicalResidency.DEAD
+                    for child in page.children
+                )
+            ):
+                continue
+            cpu_by_context[target_context_id].append(page)
+
+        mode: str
+        context_id: str
+        pages: list[Any]
+        if dual_by_context:
+            context_id, pages = min(
+                dual_by_context.items(),
+                key=lambda item: (
+                    min(page.last_access_ms for page in item[1]),
+                    item[0],
+                ),
+            )
+            mode = "dual_clean_shadow"
+        elif cpu_by_context:
+            context_id, pages = min(
+                cpu_by_context.items(),
+                key=lambda item: (
+                    min(len(page.owner_contexts) for page in item[1]),
+                    min(page.last_access_ms for page in item[1]),
+                    item[0],
+                ),
+            )
+            mode = "cpu_only_recompute"
+        else:
+            return None
+        context = self.controller.graph.contexts.get(context_id)
+        if context is None:
+            return None
+        selected: list[Any] = []
+        selected_bytes = 0
+        for page in sorted(
+            pages,
+            key=lambda item: (
+                len(item.owner_contexts),
+                item.last_access_ms,
+                -item.radix_depth,
+                item.handle,
+            ),
+        ):
+            if selected and selected_bytes >= self.config.host_cleanup_chunk_bytes:
+                break
+            selected.append(page)
+            selected_bytes += page.size_bytes
+        if not selected:
+            return None
+        self._host_cleanup_sequence = (
+            getattr(self, "_host_cleanup_sequence", 0) + 1
+        )
+        command_id = f"host-cleanup-{self._host_cleanup_sequence}"
+        owner_context_ids = tuple(
+            sorted(
+                {
+                    owner
+                    for page in selected
+                    for owner in page.owner_contexts
+                }
+            )
+        )
+        command = ControlCommand(
+            command_id=command_id,
+            kind=CommandKind.DROP_HOST_CONTEXT,
+            created_ts_ms=now_ms,
+            context_id=context_id,
+            context_epoch=context.epoch,
+            target_bytes=selected_bytes,
+            priority=3.0e9,
+            queue_class=CommandQueueClass.URGENT,
+            target_handles=tuple(page.handle for page in selected),
+            metadata={
+                "reason": "host_high_watermark_cleanup",
+                "host_cleanup_mode": mode,
+                "owner_context_ids": owner_context_ids,
+                "replay_guaranteed_context_epochs": (
+                    tuple(
+                        (owner, page_index.context_epoch(owner))
+                        for owner in owner_context_ids
+                    )
+                    if mode == "cpu_only_recompute"
+                    else ()
+                ),
+            },
+        )
+        return command, {
+            "mode": mode,
+            "context_id": context_id,
+            "context_epoch": context.epoch,
+            "owner_context_ids": owner_context_ids,
+            "target_bytes": selected_bytes,
+            "extent_count": len(selected),
+        }
+
+    def _maybe_queue_host_cleanup(self, *, now_ms: float) -> None:
+        config = getattr(self, "config", None)
+        if config is None or not config.host_lifecycle_enabled:
+            return
+        counts = getattr(self, "_host_cleanup_counts", None)
+        if counts is None:
+            counts = Counter()
+            self._host_cleanup_counts = counts
+        pending = getattr(self, "_host_cleanup_by_command", None)
+        if pending is None:
+            pending = {}
+            self._host_cleanup_by_command = pending
+        host_capacity = max(1, config.host_capacity_bytes)
+        host_used = max(
+            self.controller.page_index.cpu_bytes,
+            host_capacity - self.controller.signals.host_free_bytes,
+        )
+        host_ratio = min(1.0, host_used / host_capacity)
+        active = bool(getattr(self, "_host_cleanup_active", False))
+        if not active and host_ratio >= config.host_high_watermark_ratio:
+            active = True
+            counts["high_watermark_enter"] += 1
+        elif active and host_ratio <= config.host_low_watermark_ratio:
+            active = False
+            counts["low_watermark_exit"] += 1
+        self._host_cleanup_active = active
+        if not active or self.controller.has_pending_transfer_work():
+            return
+        if (
+            getattr(self, "_pending_online_joint_residency", None) is not None
+            or getattr(self, "_pending_running_retraction_transaction", None)
+            is not None
+        ):
+            return
+        planned = self._build_host_cleanup_command(now_ms=now_ms)
+        if planned is None:
+            counts["no_safe_candidate"] += 1
+            return
+        command, attribution = planned
+        outcome = self.controller.enqueue_control_command(command)
+        if outcome.status != EnqueueStatus.ENQUEUED:
+            counts[f"enqueue_{outcome.status.value}"] += 1
+            return
+        pending[command.command_id] = attribution
+        counts["queued"] += 1
+        self.audit.emit(
+            "host_cleanup_queued",
+            now_ms,
+            command_id=command.command_id,
+            host_used_bytes=host_used,
+            host_pressure=host_ratio,
+            **attribution,
+        )
+
+    def _advance_host_cleanup(
+        self,
+        acks: tuple[CommandAck, ...] | list[CommandAck],
+        *,
+        now_ms: float,
+    ) -> None:
+        pending = getattr(self, "_host_cleanup_by_command", {})
+        counts = getattr(self, "_host_cleanup_counts", None)
+        if counts is None:
+            counts = Counter()
+            self._host_cleanup_counts = counts
+        recompute_contexts = getattr(self, "_recompute_required_contexts", None)
+        if recompute_contexts is None:
+            recompute_contexts = set()
+            self._recompute_required_contexts = recompute_contexts
+        for ack in acks:
+            attribution = pending.pop(ack.command_id, None)
+            if attribution is None:
+                continue
+            completed = ack.status == CommandStatus.COMPLETED
+            mode = str(attribution["mode"])
+            if completed and mode == "cpu_only_recompute":
+                for context_id in attribution["owner_context_ids"]:
+                    context = self.controller.graph.contexts.get(str(context_id))
+                    if context is not None:
+                        recompute_contexts.add(
+                            (str(context_id), context.epoch)
+                        )
+            outcome = "completed" if completed else ack.status.value
+            counts[f"terminal_{outcome}"] += 1
+            counts[f"bytes_{mode}"] += ack.actual_bytes
+            self.audit.emit(
+                "host_cleanup_terminal",
+                now_ms,
+                command_id=ack.command_id,
+                status=ack.status.value,
+                actual_bytes=ack.actual_bytes,
+                reason=ack.reason,
+                recompute_required=completed and mode == "cpu_only_recompute",
+                **attribution,
+            )
+
     def scheduler_step(self) -> None:
         step_started_ns = time.perf_counter_ns()
         telemetry_overhead_ns = 0
@@ -9139,6 +9485,10 @@ class EmbeddedSGLangRuntime:
         self.sync_tree()
         self._flush_request_physical_finishes()
         self._report_allocator_usage()
+        self._advance_host_cleanup(
+            acks,
+            now_ms=float(self._now_ms()),
+        )
         self._advance_retraction_transaction(
             acks,
             now_ms=float(self._now_ms()),
@@ -9216,6 +9566,7 @@ class EmbeddedSGLangRuntime:
                 online_joint_decision.view,
                 now_ms=float(self._now_ms()),
             )
+        self._maybe_queue_host_cleanup(now_ms=float(self._now_ms()))
         joint_policy_enabled = bool(
             getattr(
                 getattr(self, "config", None),
@@ -10100,6 +10451,28 @@ class EmbeddedSGLangRuntime:
                 str(req.rid)
             )
             self.controller.visible_admission.cancel(str(req.rid))
+            recompute_key = (metadata.context_id, metadata.context_epoch)
+            if recompute_key in getattr(
+                self, "_recompute_required_contexts", set()
+            ):
+                self._recompute_required_contexts.discard(recompute_key)
+                counts = getattr(self, "_host_cleanup_counts", None)
+                if counts is None:
+                    counts = Counter()
+                    self._host_cleanup_counts = counts
+                counts["recompute_service_started"] += 1
+                self.audit.emit(
+                    "context_recompute_service_started",
+                    now_ms,
+                    request_id=str(req.rid),
+                    context_id=metadata.context_id,
+                    context_epoch=metadata.context_epoch,
+                    uncached_prompt_tokens=max(
+                        0,
+                        len(getattr(req, "origin_input_ids", ()))
+                        - len(getattr(req, "prefix_indices", ())),
+                    ),
+                )
             if req.rid not in self._active_request_ids:
                 self._active_request_ids.add(req.rid)
                 self._capture_request_physical_start(req, metadata, now_ms)
@@ -10473,6 +10846,17 @@ class EmbeddedSGLangRuntime:
                     ts_ms=now_ms,
                     phase=phase,
                 )
+                self._finish_admission_rescue(
+                    request_id,
+                    now_ms=now_ms,
+                    reason="gpu_service_completed",
+                    success=True,
+                )
+                self._release_reclaim_requirement(
+                    request_id,
+                    now_ms=now_ms,
+                    reason="gpu_service_completed",
+                )
                 record = getattr(self, "_replacement_priorities", {}).get(
                     request_id
                 )
@@ -10656,6 +11040,319 @@ class EmbeddedSGLangRuntime:
             ),
         )
         return True
+
+    def _maybe_start_admission_rescue(
+        self,
+        requirement: ReclaimRequirement,
+        *,
+        now_ms: float,
+    ) -> None:
+        if requirement.waited_ms < self.config.admission_force_progress_timeout_ms:
+            return
+        if getattr(self, "_active_admission_rescue", None) is not None:
+            return
+        request_id = requirement.beneficiary_request_id
+        entry = self.controller.visible_admission.get(request_id)
+        metadata = getattr(self, "_request_metadata_by_id", {}).get(request_id)
+        if (
+            entry is None
+            or metadata is None
+            or entry.state != AdmissionSideState.VISIBLE_PENDING
+            or self._metadata_scope_is_terminal(metadata)
+        ):
+            return
+        obligation = self._restore_obligation_index().get(request_id)
+        if obligation is not None and not obligation.state.terminal:
+            self._online_joint_counts[
+                "admission_rescue_restore_obligation_suppressed"
+            ] += 1
+            return
+        required_bytes = requirement.required_fragment_bytes
+        maximum_fragment_bytes = max(
+            0, self.config.hbm_capacity_bytes - self.config.reserve_hbm_bytes
+        )
+        if required_bytes <= 0 or required_bytes > maximum_fragment_bytes:
+            self._online_joint_counts["admission_rescue_ineligible_capacity"] += 1
+            return
+        ledger = getattr(self, "_lock_service_ledger", None)
+        progress = (
+            ledger.progress_record(request_id) if ledger is not None else None
+        )
+        self._active_admission_rescue = _AdmissionRescueTransaction(
+            request_id=request_id,
+            context_id=metadata.context_id,
+            context_epoch=metadata.context_epoch,
+            created_ts_ms=now_ms,
+            required_fragment_bytes=required_bytes,
+            baseline_completed_service_count=(
+                progress.completed_service_count if progress is not None else 0
+            ),
+        )
+        self._online_joint_counts["admission_rescue_started"] += 1
+        self.audit.emit(
+            "admission_rescue_started",
+            now_ms,
+            request_id=request_id,
+            context_id=metadata.context_id,
+            context_epoch=metadata.context_epoch,
+            required_fragment_bytes=required_bytes,
+            waited_ms=requirement.waited_ms,
+            policy_effect="isolate_new_admission_without_stopping_running_batch",
+        )
+
+    def _admission_rescue_credit_bytes(self) -> dict[str, int]:
+        rescue = getattr(self, "_active_admission_rescue", None)
+        if rescue is None or not rescue.allocations:
+            return {}
+        return {
+            rescue.request_id: (
+                rescue.reserved_tokens * self.config.kv_bytes_per_token
+            )
+        }
+
+    def _reserve_admission_rescue_capacity(
+        self,
+        *,
+        request_id: str,
+        reclaimed_bytes: int,
+        now_ms: float,
+    ) -> None:
+        rescue = getattr(self, "_active_admission_rescue", None)
+        if rescue is None or rescue.request_id != request_id:
+            return
+        reserved_bytes = rescue.reserved_tokens * self.config.kv_bytes_per_token
+        remaining_bytes = max(
+            0, rescue.required_fragment_bytes - reserved_bytes
+        )
+        claim_bytes = min(max(0, reclaimed_bytes), remaining_bytes)
+        if claim_bytes <= 0:
+            return
+        claim_tokens = min(
+            self._restore_lease_tokens(claim_bytes),
+            self._allocator_available_tokens(),
+        )
+        if claim_tokens <= 0:
+            self._online_joint_counts["admission_rescue_reservation_failed"] += 1
+            return
+        allocation = self.scheduler.token_to_kv_pool_allocator.alloc(claim_tokens)
+        if allocation is None:
+            self._online_joint_counts["admission_rescue_reservation_failed"] += 1
+            return
+        rescue.allocations.append(allocation)
+        rescue.reclaimed_bytes += max(0, reclaimed_bytes)
+        if (
+            rescue.reserved_tokens * self.config.kv_bytes_per_token
+            >= rescue.required_fragment_bytes
+        ):
+            rescue.stage = "capacity_reserved"
+        self._online_joint_counts["admission_rescue_capacity_reserved"] += 1
+        self.audit.emit(
+            "admission_rescue_capacity_reserved",
+            now_ms,
+            request_id=request_id,
+            newly_reserved_tokens=claim_tokens,
+            total_reserved_tokens=rescue.reserved_tokens,
+            total_reserved_bytes=(
+                rescue.reserved_tokens * self.config.kv_bytes_per_token
+            ),
+            required_fragment_bytes=rescue.required_fragment_bytes,
+            stage=rescue.stage,
+        )
+
+    def _release_admission_rescue_capacity(
+        self,
+        rescue: _AdmissionRescueTransaction,
+        *,
+        now_ms: float,
+        reason: str,
+    ) -> int:
+        allocations = list(rescue.allocations)
+        rescue.allocations.clear()
+        released_tokens = 0
+        allocator = self.scheduler.token_to_kv_pool_allocator
+        for allocation in allocations:
+            released_tokens += len(allocation)
+            allocator.free(allocation)
+        if released_tokens:
+            self.audit.emit(
+                "admission_rescue_capacity_released",
+                now_ms,
+                request_id=rescue.request_id,
+                released_tokens=released_tokens,
+                released_bytes=released_tokens * self.config.kv_bytes_per_token,
+                reason=reason,
+            )
+        return released_tokens
+
+    def _reacquire_admission_rescue_capacity(
+        self,
+        rescue: _AdmissionRescueTransaction,
+        *,
+        tokens: int,
+        now_ms: float,
+    ) -> bool:
+        if tokens <= 0:
+            return True
+        allocation = self.scheduler.token_to_kv_pool_allocator.alloc(tokens)
+        rescue.released_for_admission_tokens = 0
+        if allocation is None:
+            rescue.stage = "reclaiming"
+            self._online_joint_counts[
+                "admission_rescue_reservation_reacquire_failed"
+            ] += 1
+            self.audit.emit(
+                "admission_rescue_capacity_reacquire_failed",
+                now_ms,
+                request_id=rescue.request_id,
+                tokens=tokens,
+            )
+            return False
+        rescue.allocations.append(allocation)
+        rescue.stage = "capacity_reserved"
+        self.audit.emit(
+            "admission_rescue_capacity_reacquired",
+            now_ms,
+            request_id=rescue.request_id,
+            tokens=tokens,
+        )
+        return True
+
+    def _finish_admission_rescue(
+        self,
+        request_id: str,
+        *,
+        now_ms: float,
+        reason: str,
+        success: bool,
+    ) -> None:
+        rescue = getattr(self, "_active_admission_rescue", None)
+        if rescue is None or rescue.request_id != request_id:
+            return
+        self._release_admission_rescue_capacity(
+            rescue, now_ms=now_ms, reason=reason
+        )
+        self._active_admission_rescue = None
+        outcome = "succeeded" if success else "cancelled"
+        self._online_joint_counts[f"admission_rescue_{outcome}"] += 1
+        self.audit.emit(
+            "admission_rescue_terminal",
+            now_ms,
+            request_id=request_id,
+            status=outcome,
+            reason=reason,
+            service_latency_ms=max(0.0, now_ms - rescue.created_ts_ms),
+            reclaimed_bytes=rescue.reclaimed_bytes,
+        )
+
+    def _release_reclaim_requirement(
+        self,
+        request_id: str,
+        *,
+        now_ms: float,
+        reason: str,
+    ) -> None:
+        requirements = getattr(self, "_reclaim_requirements", {})
+        requirement = requirements.pop(request_id, None)
+        if requirement is None:
+            return
+        self._reclaim_requirement_revision = (
+            getattr(self, "_reclaim_requirement_revision", 0) + 1
+        )
+        self._online_joint_counts[f"reclaim_requirement_released:{reason}"] += 1
+        self.audit.emit(
+            "admission_reclaim_requirement_released",
+            now_ms,
+            request_id=request_id,
+            reason=reason,
+            requirement_revision=self._reclaim_requirement_revision,
+        )
+
+    def _update_reclaim_requirements(
+        self,
+        ticket_epoch: AdmissionTicketEpoch,
+        entries: Mapping[str, Any],
+        *,
+        scanned_request_ids: tuple[str, ...],
+        now_ms: float,
+    ) -> None:
+        if not hasattr(self, "_reclaim_requirement_revision"):
+            self._reclaim_requirement_revision = 0
+        if not hasattr(self, "_online_joint_counts"):
+            self._online_joint_counts = Counter()
+        requirements = getattr(self, "_reclaim_requirements", None)
+        if requirements is None:
+            requirements = {}
+            self._reclaim_requirements = requirements
+        observed = {
+            item.beneficiary_request_id: item
+            for item in ticket_epoch.reclaim_requirements
+        }
+        force_progress_ms = max(
+            1.0, float(self.config.admission_force_progress_timeout_ms)
+        )
+        for request_id, requirement in observed.items():
+            previous = requirements.get(request_id)
+            changed = (
+                previous is None
+                or (
+                    previous.required_startup_bytes,
+                    previous.required_growth_bytes,
+                    previous.current_prefix_bytes,
+                    previous.skip_reason,
+                )
+                != (
+                    requirement.required_startup_bytes,
+                    requirement.required_growth_bytes,
+                    requirement.current_prefix_bytes,
+                    requirement.skip_reason,
+                )
+                or int(previous.waited_ms // force_progress_ms)
+                != int(requirement.waited_ms // force_progress_ms)
+            )
+            self._maybe_start_admission_rescue(
+                requirement, now_ms=now_ms
+            )
+            if not changed:
+                continue
+            requirements[request_id] = requirement
+            self._reclaim_requirement_revision += 1
+            self._online_joint_counts["reclaim_requirement_observed"] += 1
+            self.audit.emit(
+                "admission_reclaim_requirement_observed",
+                now_ms,
+                **requirement.to_dict(),
+                requirement_revision=self._reclaim_requirement_revision,
+            )
+
+        scanned = set(scanned_request_ids)
+        for request_id in tuple(requirements):
+            entry = entries.get(request_id)
+            metadata = getattr(self, "_request_metadata_by_id", {}).get(request_id)
+            if entry is None or metadata is None:
+                self._release_reclaim_requirement(
+                    request_id,
+                    now_ms=now_ms,
+                    reason="request_identity_missing",
+                )
+            elif self._metadata_scope_is_terminal(metadata):
+                self._release_reclaim_requirement(
+                    request_id,
+                    now_ms=now_ms,
+                    reason="request_scope_terminal",
+                )
+            elif (
+                request_id in scanned
+                and request_id not in observed
+                and (
+                    getattr(self, "_active_admission_rescue", None) is None
+                    or self._active_admission_rescue.request_id != request_id
+                )
+            ):
+                self._release_reclaim_requirement(
+                    request_id,
+                    now_ms=now_ms,
+                    reason="bounded_hbm_feasible",
+                )
 
     def _refresh_replacement_priorities(
         self,
@@ -11211,6 +11908,43 @@ class EmbeddedSGLangRuntime:
                 )
         self._retraction_priority_request_ids = ()
         restore_lease_credits = self._restore_lease_credit_bytes()
+        for request_id, credit_bytes in self._admission_rescue_credit_bytes().items():
+            restore_lease_credits[request_id] = (
+                restore_lease_credits.get(request_id, 0) + credit_bytes
+            )
+        rescue = getattr(self, "_active_admission_rescue", None)
+        if (
+            rescue is not None
+            and restore_authority_mode == RestoreAuthorityMode.NORMAL_JOINT
+        ):
+            rescue_entry = entries.get(rescue.request_id)
+            metadata = getattr(self, "_request_metadata_by_id", {}).get(
+                rescue.request_id
+            )
+            if (
+                rescue_entry is not None
+                and metadata is not None
+                and rescue_entry.state == AdmissionSideState.VISIBLE_PENDING
+                and not self._metadata_scope_is_terminal(metadata)
+            ):
+                ordered_request_ids = (rescue.request_id,)
+                compile_max_requests = 1
+                ticket_source = "joint_admission_rescue"
+                ticket_reason = "bounded_hbm_force_progress"
+                self._online_joint_counts["admission_rescue_isolated_epoch"] += 1
+            elif metadata is not None and not self._metadata_scope_is_terminal(metadata):
+                ordered_request_ids = ()
+                compile_max_requests = 0
+                ticket_source = "joint_admission_rescue"
+                ticket_reason = "beneficiary_admitted_wait_service"
+                self._online_joint_counts["admission_rescue_wait_service_epoch"] += 1
+            elif metadata is None or self._metadata_scope_is_terminal(metadata):
+                self._finish_admission_rescue(
+                    rescue.request_id,
+                    now_ms=now_ms,
+                    reason="rescue_identity_terminal",
+                    success=False,
+                )
         candidate_limit = min(
             len(ordered_request_ids),
             max(64, max(0, int(max_requests)) * 4),
@@ -11225,10 +11959,31 @@ class EmbeddedSGLangRuntime:
                 max_requests=compile_max_requests,
                 max_candidates=candidate_limit,
                 available_hbm_bytes=compile_hbm_bytes,
+                decode_quantum_tokens=(
+                    self.config.admission_decode_quantum_tokens
+                ),
+                allocator_guard_bytes=(
+                    self.config.admission_allocator_guard_tokens
+                    * min(
+                        (
+                            entry.request.kv_bytes_per_token
+                            for entry in entries.values()
+                        ),
+                        default=self.config.kv_bytes_per_token,
+                    )
+                ),
             ),
             source=ticket_source,
             reason=ticket_reason,
             reservation_credits=restore_lease_credits,
+        )
+        self._update_reclaim_requirements(
+            ticket_epoch,
+            entries,
+            scanned_request_ids=tuple(
+                ordered_request_ids[: ticket_epoch.scanned_count]
+            ),
+            now_ms=now_ms,
         )
         visible_pending = any(
             entry.state == AdmissionSideState.VISIBLE_PENDING
@@ -11338,6 +12093,12 @@ class EmbeddedSGLangRuntime:
                 for request_id, reason in ticket_epoch.skipped
                 if reason not in {"wait_restore", "policy_blocked"}
             ],
+            reclaim_requirements=[
+                item.to_dict() for item in ticket_epoch.reclaim_requirements
+            ],
+            reclaim_requirement_revision=getattr(
+                self, "_reclaim_requirement_revision", 0
+            ),
         )
 
         rank_by_request = {
@@ -11441,7 +12202,14 @@ class EmbeddedSGLangRuntime:
             0,
             (
                 actual_prefill_tokens
-                + (0 if chunked else refreshed.request.expected_output_tokens)
+                + (
+                    0
+                    if chunked
+                    else min(
+                        refreshed.request.expected_output_tokens,
+                        self.config.admission_decode_quantum_tokens,
+                    )
+                )
             )
             * refreshed.request.kv_bytes_per_token
             + refreshed.request.fixed_overhead_bytes,
@@ -11498,6 +12266,19 @@ class EmbeddedSGLangRuntime:
                     request_id, "restore_lease_admission_capacity"
                 )
                 return False
+        rescue = getattr(self, "_active_admission_rescue", None)
+        if (
+            rescue is not None
+            and rescue.request_id == request_id
+            and rescue.allocations
+        ):
+            released_tokens = self._release_admission_rescue_capacity(
+                rescue,
+                now_ms=float(self._now_ms()),
+                reason="native_admission_attempt",
+            )
+            rescue.released_for_admission_tokens = released_tokens
+            rescue.stage = "admission_committing"
         return True
 
     def on_prefill_candidate_result(
@@ -11516,7 +12297,14 @@ class EmbeddedSGLangRuntime:
             return
         self._ticket_attempted_request_ids.add(request_id)
         obligation = self._restore_obligation_index().get(request_id)
+        rescue = getattr(self, "_active_admission_rescue", None)
         if admitted:
+            if rescue is not None and rescue.request_id == request_id:
+                rescue.released_for_admission_tokens = 0
+                rescue.stage = "admitted_wait_service"
+                self._online_joint_counts[
+                    "admission_rescue_native_admitted"
+                ] += 1
             if obligation is not None and not obligation.state.terminal:
                 self._commit_restore_lease_admission(
                     obligation, now_ms=float(self._now_ms())
@@ -11556,6 +12344,13 @@ class EmbeddedSGLangRuntime:
                 "reserved_bytes": ticket.reservation_credit_bytes,
             }
         else:
+            if rescue is not None and rescue.request_id == request_id:
+                self._reacquire_admission_rescue_capacity(
+                    rescue,
+                    tokens=rescue.released_for_admission_tokens,
+                    now_ms=float(self._now_ms()),
+                )
+                self._online_joint_counts["admission_rescue_native_rejected"] += 1
             if obligation is not None and not obligation.state.terminal:
                 self._reject_restore_lease_admission(
                     obligation,
@@ -11733,6 +12528,9 @@ class EmbeddedSGLangRuntime:
                 minimum_hold_epochs=(
                     self.config.dynamic_working_set_min_hold_epochs
                 ),
+                starvation_age_ms=(
+                    self.config.workflow_starvation_floor_ms
+                ),
             )
             self.dynamic_working_set_scheduler = scheduler
         return scheduler
@@ -11749,6 +12547,37 @@ class EmbeddedSGLangRuntime:
             "background": 0.25,
         }.get(str(getattr(frontier, "causal_class", "")), 0.5)
         return class_value + max(0, int(getattr(frontier, "unblock_depth", 0)))
+
+    def _bounded_request_service_envelope(
+        self,
+        entry: Any,
+        frontier: Any | None,
+    ) -> tuple[float, int, int]:
+        request = entry.request
+        prefill_tokens = min(
+            request.uncached_prompt_tokens,
+            self.config.admission_prefill_quantum_tokens,
+        )
+        decode_tokens = min(
+            request.expected_output_tokens,
+            self.config.admission_decode_quantum_tokens,
+        )
+        service_tokens = max(1, prefill_tokens + decode_tokens)
+        envelope_bytes = max(
+            1,
+            request.fixed_overhead_bytes
+            + (
+                prefill_tokens
+                + decode_tokens
+                + self.config.admission_allocator_guard_tokens
+            )
+            * request.kv_bytes_per_token,
+        )
+        return (
+            self._working_set_unlock_value(frontier),
+            service_tokens,
+            envelope_bytes,
+        )
 
     def _dynamic_working_set_for_tagged(
         self,
@@ -11772,8 +12601,9 @@ class EmbeddedSGLangRuntime:
         }
         ready_count: Counter[str] = Counter()
         oldest_wait: dict[str, float] = {}
-        unlock_value: dict[str, float] = {}
+        unlock_weighted_work: dict[str, float] = defaultdict(float)
         startup_bytes: Counter[str] = Counter()
+        gpu_work_tokens: Counter[str] = Counter()
         ready_contexts: dict[str, set[str]] = defaultdict(set)
         for _native_index, req, metadata in tagged:
             entry = entries.get(str(req.rid))
@@ -11782,21 +12612,19 @@ class EmbeddedSGLangRuntime:
             workflow_id = metadata.root_workflow_id
             ready_count[workflow_id] += 1
             ready_contexts[workflow_id].add(metadata.context_id)
-            startup_bytes[workflow_id] += max(
-                0, int(entry.request.estimated_incremental_bytes)
+            frontier = by_invocation.get(workflow_id, {}).get(
+                metadata.invocation_id
             )
+            unlock, service_tokens, envelope_bytes = (
+                self._bounded_request_service_envelope(entry, frontier)
+            )
+            startup_bytes[workflow_id] += envelope_bytes
+            gpu_work_tokens[workflow_id] += service_tokens
             oldest_wait[workflow_id] = max(
                 oldest_wait.get(workflow_id, 0.0),
                 max(0.0, now_ms - entry.request.submitted_ts_ms),
             )
-            unlock_value[workflow_id] = max(
-                unlock_value.get(workflow_id, 0.0),
-                self._working_set_unlock_value(
-                    by_invocation.get(workflow_id, {}).get(
-                        metadata.invocation_id
-                    )
-                ),
-            )
+            unlock_weighted_work[workflow_id] += unlock * service_tokens
         mandatory = {
             obligation.workflow_id
             for obligation in self._restore_obligation_index().active()
@@ -11823,13 +12651,17 @@ class EmbeddedSGLangRuntime:
                 workflow_id=workflow_id,
                 gpu_ready_count=ready_count.get(workflow_id, 0),
                 fair_rank=fair_rank.get(workflow_id, 1 << 30),
-                action_unlock_value=unlock_value.get(workflow_id, 0.0),
+                action_unlock_value=(
+                    unlock_weighted_work.get(workflow_id, 0.0)
+                    / max(1, gpu_work_tokens.get(workflow_id, 0))
+                ),
                 oldest_wait_ms=oldest_wait.get(workflow_id, 0.0),
                 mandatory=workflow_id in mandatory,
                 startup_bytes=startup_bytes.get(workflow_id, 0),
                 resident_ready_bytes=max(
                     0, int(ready_resident_bytes.get(workflow_id, 0))
                 ),
+                gpu_work_tokens=gpu_work_tokens.get(workflow_id, 0),
             )
             for workflow_id in fair_order
             if ready_count.get(workflow_id, 0) or workflow_id in mandatory
@@ -11945,6 +12777,9 @@ class EmbeddedSGLangRuntime:
             frontier_rank, frontier = frontier_by_invocation.get(
                 metadata.root_workflow_id, {}
             ).get(metadata.invocation_id, (1 << 30, None))
+            unlock, service_tokens, envelope_bytes = (
+                self._bounded_request_service_envelope(entry, frontier)
+            )
             result.append(
                 ObservedAdmissionCandidate(
                     request_id=request_id,
@@ -11965,8 +12800,11 @@ class EmbeddedSGLangRuntime:
                     estimated_incremental_bytes=(
                         entry.request.estimated_incremental_bytes
                     ),
+                    action_unlock_value=unlock,
+                    service_quantum_tokens=service_tokens,
+                    hbm_envelope_bytes=envelope_bytes,
                     starvation=(
-                        wait_ms >= self.config.admission_liveness_timeout_ms
+                        wait_ms >= self.config.workflow_starvation_floor_ms
                     ),
                     policy_eligible=(
                         entry.state == AdmissionSideState.VISIBLE_PENDING
@@ -12050,19 +12888,44 @@ class EmbeddedSGLangRuntime:
             entry.request.submitted_ts_ms if entry is not None else now_ms
         )
         wait_ms = max(0.0, now_ms - submitted_ts_ms)
-        starvation = wait_ms >= self.config.admission_liveness_timeout_ms
         workflow_frontier = frontier_rank.get(metadata.root_workflow_id, {})
         workflow_fair_rank = fair_rank.get(metadata.root_workflow_id, 1 << 30)
+        try:
+            frontier = self.controller.frontier.describe_invocation(
+                metadata.invocation_id
+            )
+        except (KeyError, ValueError):
+            frontier = None
+        if entry is not None:
+            unlock, service_tokens, envelope_bytes = (
+                self._bounded_request_service_envelope(entry, frontier)
+            )
+        else:
+            unlock, service_tokens, envelope_bytes = 0.5, 1, 1
+        utility = unlock * service_tokens / max(1, envelope_bytes)
+        causal_rank = (
+            int(frontier.score[0]) if frontier is not None else 3
+        )
+        unblock_depth = (
+            int(frontier.unblock_depth) if frontier is not None else 0
+        )
+        starvation = wait_ms >= self.config.workflow_starvation_floor_ms
         if starvation:
             return (
                 0,
                 -wait_ms,
-                workflow_fair_rank,
+                causal_rank,
+                -unblock_depth,
+                -utility,
                 workflow_frontier.get(metadata.invocation_id, 1 << 30),
                 native_index,
+                workflow_fair_rank,
             )
         return (
             1,
+            causal_rank,
+            -unblock_depth,
+            -utility,
             workflow_frontier.get(metadata.invocation_id, 1 << 30),
             native_index,
             workflow_fair_rank,
@@ -12841,6 +13704,17 @@ class EmbeddedSGLangRuntime:
             now_ms=float(self._now_ms()),
             reason="request_finished",
         )
+        self._finish_admission_rescue(
+            str(req.rid),
+            now_ms=float(self._now_ms()),
+            reason="request_finished_without_observed_service",
+            success=False,
+        )
+        self._release_reclaim_requirement(
+            str(req.rid),
+            now_ms=float(self._now_ms()),
+            reason="request_finished",
+        )
         self._finish_restore_obligation(
             str(req.rid),
             RestoreObligationState.SATISFIED,
@@ -13425,6 +14299,17 @@ class EmbeddedSGLangRuntime:
                 phase=phase,
             )
             self._release_replacement_priority(
+                request_id,
+                now_ms=float(self._now_ms()),
+                reason="runtime_terminal_event",
+            )
+            self._finish_admission_rescue(
+                request_id,
+                now_ms=float(self._now_ms()),
+                reason="runtime_terminal_event",
+                success=False,
+            )
+            self._release_reclaim_requirement(
                 request_id,
                 now_ms=float(self._now_ms()),
                 reason="runtime_terminal_event",
@@ -14304,6 +15189,7 @@ class EmbeddedSGLangRuntime:
         )
         beneficiary_signature = (
             tuple(sorted(getattr(self, "_replacement_priorities", {}))),
+            int(getattr(self, "_reclaim_requirement_revision", 0)),
             (
                 pending_residency.transaction_id
                 if pending_residency is not None
@@ -14344,6 +15230,15 @@ class EmbeddedSGLangRuntime:
         control_state = dict(
             self.controller.policy_control_state(observation.ts_ms)
         )
+        control_state["reclaim_requirements"] = {
+            "revision": getattr(self, "_reclaim_requirement_revision", 0),
+            "requirements": [
+                item.to_dict()
+                for _, item in sorted(
+                    getattr(self, "_reclaim_requirements", {}).items()
+                )
+            ],
+        }
         restore_lease_index = getattr(self, "_restore_leases", None)
         liveness_tracker = getattr(
             self, "_persistent_liveness_revisions", None
@@ -14418,6 +15313,7 @@ class EmbeddedSGLangRuntime:
             stamp.obligation_revision,
             stamp.lease_revision,
             stamp.grace_revision,
+            getattr(self, "_reclaim_requirement_revision", 0),
             observation.hbm_used_bytes
             // self.config.reference_policy_hbm_bucket_bytes,
             observation.host_used_bytes,
@@ -14446,6 +15342,7 @@ class EmbeddedSGLangRuntime:
             stamp.lease_revision,
             stamp.grace_revision,
             stamp.parser_frontier_revision,
+            getattr(self, "_reclaim_requirement_revision", 0),
             runnable_signature,
             tuple(
                 (
@@ -15213,6 +16110,15 @@ class EmbeddedSGLangRuntime:
         reserved_ids = tuple(
             item.request_id for item in self.controller.admission.reserved_requests()
         )
+        reclaim_control_state = {
+            "revision": getattr(self, "_reclaim_requirement_revision", 0),
+            "requirements": [
+                item.to_dict()
+                for _, item in sorted(
+                    getattr(self, "_reclaim_requirements", {}).items()
+                )
+            ],
+        }
         structural_signature: tuple[object, ...] = (
             self.controller.graph.graph_version,
             self.controller.data_consumers.version,
@@ -15223,6 +16129,7 @@ class EmbeddedSGLangRuntime:
                     self.controller.admission.fairness.accounts.items()
                 )
             ),
+            getattr(self, "_reclaim_requirement_revision", 0),
             self.controller.policy_control_state(observation.ts_ms),
             pending_ids,
             reserved_ids,
@@ -15297,6 +16204,9 @@ class EmbeddedSGLangRuntime:
             policy_input = self.controller.build_policy_input(
                 observation,
                 additional_runnable=additional_runnable,
+                control_state_overrides={
+                    "reclaim_requirements": reclaim_control_state,
+                },
                 capabilities=self._policy_capabilities(),
             )
         except Exception as error:
@@ -15776,6 +16686,7 @@ class EmbeddedSGLangRuntime:
             liveness.obligation_revision,
             liveness.lease_revision,
             liveness.grace_revision,
+            getattr(self, "_reclaim_requirement_revision", 0),
             tuple(
                 (
                     workflow_id,
@@ -15851,6 +16762,41 @@ class EmbeddedSGLangRuntime:
                 and target.beneficiary_request_id not in visible_request_ids
             ):
                 reasons.append("replacement_beneficiary_not_visible")
+            if target.reason.startswith("beneficiary-bound HBM reclaim"):
+                requirement = getattr(
+                    self, "_reclaim_requirements", {}
+                ).get(target.beneficiary_request_id or "")
+                if requirement is None:
+                    reasons.append("reclaim_requirement_no_longer_active")
+                else:
+                    rescue = getattr(self, "_active_admission_rescue", None)
+                    if (
+                        rescue is not None
+                        and rescue.request_id == target.beneficiary_request_id
+                    ):
+                        required_fragment_bytes = (
+                            rescue.required_fragment_bytes
+                        )
+                        reserved_credit_bytes = (
+                            rescue.reserved_tokens
+                            * self.config.kv_bytes_per_token
+                        )
+                    else:
+                        required_fragment_bytes = requirement.required_fragment_bytes
+                        reserved_credit_bytes = 0
+                    current_deficit = max(
+                        0,
+                        required_fragment_bytes
+                        - reserved_credit_bytes
+                        - device_available,
+                    )
+                    if current_deficit <= 0:
+                        reasons.append("beneficiary_no_longer_hbm_blocked")
+                    else:
+                        target = replace(
+                            target,
+                            required_reclaim_bytes=current_deficit,
+                        )
             command_kind = self._online_residency_command_kind(target.action)
             if command_kind is None:
                 reasons.append("no_physical_action")
@@ -17358,6 +18304,11 @@ class EmbeddedSGLangRuntime:
                     self._online_joint_counts[
                         "replacement_beneficiary_released"
                     ] += 1
+                self._reserve_admission_rescue_capacity(
+                    request_id=transaction.beneficiary_request_id,
+                    reclaimed_bytes=ack.actual_bytes,
+                    now_ms=now_ms,
+                )
         else:
             transaction.stage = "failed"
             transaction.failure_reason = (

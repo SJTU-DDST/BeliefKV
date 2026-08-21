@@ -79,6 +79,7 @@ class BeliefKVRequestMetadata:
     execution_mode: str = "foreground"
     return_target_id: str | None = None
     join_id: str | None = None
+    full_prompt_replay_guaranteed: bool = False
     # Scheduler-side GPU-service inactivity watchdog, not request wall time.
     execution_timeout_s: float | None = None
 
@@ -94,6 +95,8 @@ class BeliefKVRequestMetadata:
             raise ValueError("unsupported context_mode")
         if self.execution_mode not in {"foreground", "background"}:
             raise ValueError("unsupported execution_mode")
+        if not isinstance(self.full_prompt_replay_guaranteed, bool):
+            raise ValueError("full_prompt_replay_guaranteed must be a bool")
         if self.execution_timeout_s is not None and (
             not math.isfinite(self.execution_timeout_s)
             or self.execution_timeout_s <= 0
@@ -115,11 +118,17 @@ class BeliefKVRequestMetadata:
             "execution_mode": self.execution_mode,
             "return_target_id": self.return_target_id,
             "join_id": self.join_id,
+            "full_prompt_replay_guaranteed": (
+                self.full_prompt_replay_guaranteed
+            ),
             "execution_timeout_s": self.execution_timeout_s,
         }
 
     @classmethod
     def from_wire(cls, raw: dict[str, object]) -> "BeliefKVRequestMetadata":
+        replay_guaranteed = raw.get("full_prompt_replay_guaranteed", False)
+        if not isinstance(replay_guaranteed, bool):
+            raise ValueError("full_prompt_replay_guaranteed must be a bool")
         return cls(
             root_workflow_id=str(raw["root_workflow_id"]),
             invocation_id=str(raw["invocation_id"]),
@@ -146,6 +155,7 @@ class BeliefKVRequestMetadata:
                 else None
             ),
             join_id=str(raw["join_id"]) if raw.get("join_id") is not None else None,
+            full_prompt_replay_guaranteed=replay_guaranteed,
             execution_timeout_s=(
                 float(raw["execution_timeout_s"])
                 if raw.get("execution_timeout_s") is not None
