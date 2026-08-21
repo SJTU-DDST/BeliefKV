@@ -249,7 +249,11 @@ def main() -> int:
             if key != "content"
         },
         "drop_state": drop,
-        "continuation": continuation,
+        "continuation": {
+            key: value
+            for key, value in continuation.items()
+            if key != "content"
+        },
         "completed_state": completed,
     }
     (output / "manifest.json").write_text(

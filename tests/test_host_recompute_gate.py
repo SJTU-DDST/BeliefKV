@@ -20,7 +20,10 @@ from beliefkv.runtime.protocol import (
     PageHandle,
     PhysicalResidency,
 )
-from beliefkv.runtime.sglang_v052rc1 import EmbeddedSGLangRuntime
+from beliefkv.runtime.sglang_v052rc1 import (
+    EmbeddedSGLangRuntime,
+    _transfer_action_source,
+)
 
 
 class _Audit:
@@ -94,6 +97,18 @@ def _runtime() -> EmbeddedSGLangRuntime:
     }
     runtime._host_recompute_micro_gate_last_audit_signature = None
     return runtime
+
+
+def test_action_source_separates_joint_lifecycle_and_test_hook() -> None:
+    assert _transfer_action_source("joint-1", "anything") == "joint_plan"
+    assert (
+        _transfer_action_source(None, "host_high_watermark_cleanup")
+        == "lifecycle"
+    )
+    assert (
+        _transfer_action_source(None, "host_recompute_micro_gate") == "test_hook"
+    )
+    assert _transfer_action_source(None, "restore_liveness") == "unified_liveness"
 
 
 def test_host_recompute_gate_requires_runtime_service_observation() -> None:

@@ -279,6 +279,27 @@ def _sequence_length(value: Any) -> int:
     return 0 if value is None else len(value)
 
 
+def _transfer_action_source(
+    source_joint_plan_id: object,
+    policy_reason: object,
+) -> str:
+    if source_joint_plan_id:
+        return "joint_plan"
+    reason = str(policy_reason)
+    if reason.startswith("host_recompute_micro_gate"):
+        return "test_hook"
+    if reason.startswith(
+        (
+            "terminal_",
+            "shutdown_",
+            "host_capacity_",
+            "host_high_watermark_",
+        )
+    ):
+        return "lifecycle"
+    return "unified_liveness"
+
+
 class SGLangBackendError(RuntimeError):
     def __init__(
         self,
@@ -9773,15 +9794,8 @@ class EmbeddedSGLangRuntime:
                 "joint_plan_id"
             )
             policy_reason = tick.transfer.command.metadata.get("reason")
-            lifecycle_action = str(policy_reason).startswith(
-                ("terminal_", "shutdown_", "host_capacity_")
-            )
-            action_source = (
-                "joint_plan"
-                if source_joint_plan_id
-                else "lifecycle"
-                if lifecycle_action
-                else "unified_liveness"
+            action_source = _transfer_action_source(
+                source_joint_plan_id, policy_reason
             )
             if (
                 getattr(
