@@ -68,13 +68,21 @@ def maybe_queue_host_recompute_offload(runtime: Any, *, now_ms: float) -> None:
             continue
         if not runtime._host_cleanup_context_is_parked(context_id):
             continue
-        gpu_bytes = sum(
-            page.size_bytes
+        gpu_pages = tuple(
+            page
             for page in runtime.controller.page_index.context_pages(context_id)
             if page.residency == PhysicalResidency.GPU_ONLY
-            and page.transfer_idle
-            and page.sealed
         )
+        if not gpu_pages or any(
+            not page.transfer_idle
+            or not page.sealed
+            or page.engine_lock_ref > 0
+            or page.active_reader_count > 0
+            or bool(page.semantic_pin_contexts)
+            for page in gpu_pages
+        ):
+            continue
+        gpu_bytes = sum(page.size_bytes for page in gpu_pages)
         if gpu_bytes >= config.host_recompute_micro_gate_min_gpu_bytes:
             candidates.append((context_id, context.epoch, gpu_bytes))
 

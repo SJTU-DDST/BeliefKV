@@ -116,6 +116,21 @@ def test_gate_queues_normal_offload_for_parked_replay_safe_context() -> None:
     assert runtime._host_recompute_micro_gate_state["stage"] == "offload_queued"
 
 
+def test_gate_waits_for_engine_lock_release() -> None:
+    runtime = _runtime()
+    runtime.config = _config(
+        host_recompute_micro_gate_workflow_id="wf",
+    )
+    handle = next(iter(runtime.controller.page_index.pages))
+    runtime.controller.page_index.pages[handle].engine_lock_ref = 1
+
+    maybe_queue_host_recompute_offload(runtime, now_ms=4.0)
+    tick = runtime.controller.tick(4.0, allow_reactive_transfer=False)
+
+    assert tick.transfer is None
+    assert runtime._host_recompute_micro_gate_state["stage"] == "waiting_for_parked_context"
+
+
 def test_gate_tracks_drop_then_real_recompute_service() -> None:
     runtime = _runtime()
     runtime._host_recompute_micro_gate_state.update(
