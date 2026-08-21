@@ -9043,6 +9043,30 @@ class EmbeddedSGLangRuntime:
             tagged.append((native_index, req, metadata))
         if not tagged:
             return ()
+        if self.config.restore_micro_gate_enabled:
+            replacement = next(
+                (
+                    (req, metadata)
+                    for _, req, metadata in tagged
+                    if metadata.root_workflow_id
+                    == self.config.restore_micro_gate_replacement_workflow_id
+                ),
+                None,
+            )
+            if replacement is not None:
+                req, metadata = replacement
+                entry = self.controller.visible_admission.get(str(req.rid))
+                return (
+                    RetractionReplacement(
+                        request_id=str(req.rid),
+                        estimated_incremental_bytes=(
+                            entry.request.estimated_incremental_bytes
+                        ),
+                        **self._frontier_retraction_annotation(
+                            metadata.invocation_id
+                        ),
+                    ),
+                )
         rescue = getattr(self, "_active_admission_rescue", None)
         if rescue is not None:
             rescue_item = next(

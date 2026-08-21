@@ -8,6 +8,7 @@ from types import SimpleNamespace
 from beliefkv.control.controller import BeliefKVController
 from beliefkv.core.config import BeliefKVConfig
 from beliefkv.core.events import RuntimeEvent, RuntimeEventKind
+from beliefkv.policy.admission import AdmissionSideState
 from beliefkv.policy.retraction import (
     ObservedRetractionConfig,
     ObservedRetractionDecision,
@@ -444,6 +445,44 @@ class RestoreMicroGateTest(unittest.TestCase):
             {item.slice_id for item in groups[0].actions},
             {"request:replacement", "retraction:victim"},
         )
+
+    def test_micro_replacement_bypasses_empty_joint_immediate_view(self):
+        runtime = self._runtime()
+        metadata = SimpleNamespace(
+            root_workflow_id=(
+                runtime.config.restore_micro_gate_replacement_workflow_id
+            ),
+            invocation_id="replacement-invocation",
+        )
+        request = SimpleNamespace(rid="replacement", metadata=metadata)
+        entry = SimpleNamespace(
+            state=AdmissionSideState.VISIBLE_PENDING,
+            request=SimpleNamespace(estimated_incremental_bytes=400),
+        )
+        runtime.scheduler = SimpleNamespace(waiting_queue=[request])
+        runtime.controller = SimpleNamespace(
+            visible_admission=SimpleNamespace(
+                get=lambda request_id: (
+                    entry if request_id == "replacement" else None
+                )
+            )
+        )
+        runtime._metadata = lambda req: req.metadata
+        runtime._current_online_joint_view = SimpleNamespace(
+            immediate_request_ids=()
+        )
+        runtime._frontier_retraction_annotation = lambda _invocation_id: {
+            "frontier_class": "unknown",
+            "prediction_support": "unavailable",
+            "service_to_boundary_tokens": None,
+            "join_criticality": 0.0,
+        }
+
+        replacements = runtime._running_retraction_replacements(now_ms=1000.0)
+
+        self.assertEqual(len(replacements), 1)
+        self.assertEqual(replacements[0].request_id, "replacement")
+        self.assertEqual(replacements[0].estimated_incremental_bytes, 400)
 
     def test_explicit_pair_drains_overlap_without_natural_pressure(self):
         runtime = self._runtime()
