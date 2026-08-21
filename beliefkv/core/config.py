@@ -126,6 +126,12 @@ class BeliefKVConfig:
         "restore-micro-gate:replacement"
     )
     restore_micro_gate_min_private_bytes: int = 64 * 1024 * 1024
+    host_recompute_micro_gate_enabled: bool = False
+    host_recompute_micro_gate_id: str = "p5-host-recompute-v1"
+    host_recompute_micro_gate_workflow_id: str = (
+        "host-recompute-micro-gate:workflow"
+    )
+    host_recompute_micro_gate_min_gpu_bytes: int = 64 * 1024 * 1024
     workload_subagent_fanout_profile: str = "natural"
     fairness_lag_budget_ms: float = 50.0
     residency_hysteresis_ms: float = 100.0
@@ -487,6 +493,26 @@ class BeliefKVConfig:
             raise ValueError(
                 "restore micro-gate requires online JointPlan, observed admission, "
                 "running retraction, and runtime GPU service observation"
+            )
+        if self.host_recompute_micro_gate_min_gpu_bytes <= 0:
+            raise ValueError(
+                "host recompute micro-gate GPU bytes must be positive"
+            )
+        for field_name in (
+            "host_recompute_micro_gate_id",
+            "host_recompute_micro_gate_workflow_id",
+        ):
+            value = getattr(self, field_name)
+            if not isinstance(value, str) or not value.strip():
+                raise ValueError(f"{field_name} must be a non-empty string")
+        if self.host_recompute_micro_gate_enabled and not (
+            self.host_lifecycle_enabled
+            and self.queue_service_observer_enabled
+            and self.queue_service_observer_include_runtime_batches
+        ):
+            raise ValueError(
+                "host recompute micro-gate requires Host lifecycle and runtime "
+                "GPU service observation"
             )
         if self.restore_obligation_escalation_ms == 0:
             raise ValueError("restore obligation escalation must be positive")

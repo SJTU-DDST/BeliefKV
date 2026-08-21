@@ -176,6 +176,27 @@ def main() -> int:
         default=64,
     )
     parser.add_argument(
+        "--enable-host-recompute-micro-gate",
+        action="store_true",
+        help=(
+            "Enable the one-shot CPU_ONLY drop/recompute correctness probe. "
+            "This is a test hook, not a performance policy."
+        ),
+    )
+    parser.add_argument(
+        "--host-recompute-micro-gate-id",
+        default="p5-host-recompute-v1",
+    )
+    parser.add_argument(
+        "--host-recompute-micro-gate-workflow-id",
+        default="host-recompute-micro-gate:workflow",
+    )
+    parser.add_argument(
+        "--host-recompute-micro-gate-min-gpu-mib",
+        type=int,
+        default=64,
+    )
+    parser.add_argument(
         "--host-high-watermark-ratio",
         type=float,
         default=0.95,
@@ -325,6 +346,15 @@ def main() -> int:
         )
     if args.restore_micro_gate_min_private_mib <= 0:
         parser.error("--restore-micro-gate-min-private-mib must be positive")
+    if args.host_recompute_micro_gate_min_gpu_mib <= 0:
+        parser.error(
+            "--host-recompute-micro-gate-min-gpu-mib must be positive"
+        )
+    if args.enable_host_recompute_micro_gate and not args.queue_service_observer:
+        parser.error(
+            "--enable-host-recompute-micro-gate requires "
+            "--queue-service-observer"
+        )
     if not (
         0
         <= args.host_low_watermark_ratio
@@ -517,6 +547,16 @@ def main() -> int:
         ),
         "restore_micro_gate_min_private_bytes": (
             args.restore_micro_gate_min_private_mib * 1024 * 1024
+        ),
+        "host_recompute_micro_gate_enabled": (
+            args.enable_host_recompute_micro_gate
+        ),
+        "host_recompute_micro_gate_id": args.host_recompute_micro_gate_id,
+        "host_recompute_micro_gate_workflow_id": (
+            args.host_recompute_micro_gate_workflow_id
+        ),
+        "host_recompute_micro_gate_min_gpu_bytes": (
+            args.host_recompute_micro_gate_min_gpu_mib * 1024 * 1024
         ),
         "workload_subagent_fanout_profile": args.subagent_fanout_profile,
         "fairness_lag_budget_ms": 50.0,

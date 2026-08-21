@@ -112,6 +112,12 @@ from beliefkv.runtime.event_channel import (
     JsonlRuntimeEventSink,
     RuntimeEventDatagramServer,
 )
+from beliefkv.runtime.host_recompute_gate import (
+    advance_host_recompute_offload,
+    maybe_queue_host_recompute_offload,
+    observe_host_cleanup_terminal,
+    observe_recompute_service,
+)
 from beliefkv.runtime.joint_shadow import (
     IncrementalPolicyInputAssembler,
     JointShadowDelta,
@@ -1985,6 +1991,19 @@ class EmbeddedSGLangRuntime:
         self._restore_micro_gate_last_audit_signature: tuple[object, ...] | None = (
             None
         )
+        self._host_recompute_micro_gate_state: dict[str, Any] = {
+            "enabled": self.config.host_recompute_micro_gate_enabled,
+            "gate_id": self.config.host_recompute_micro_gate_id,
+            "stage": (
+                "armed"
+                if self.config.host_recompute_micro_gate_enabled
+                else "disabled"
+            ),
+            "workflow_id": self.config.host_recompute_micro_gate_workflow_id,
+        }
+        self._host_recompute_micro_gate_last_audit_signature: (
+            tuple[object, ...] | None
+        ) = None
         self._restore_obligations = RestoreObligationIndex(
             max_active=self.config.restore_obligation_max_active,
             running_retraction_reserve=(
@@ -2745,6 +2764,9 @@ class EmbeddedSGLangRuntime:
                 ),
                 "restore_micro_gate": dict(
                     getattr(self, "_restore_micro_gate_state", {})
+                ),
+                "host_recompute_micro_gate": dict(
+                    getattr(self, "_host_recompute_micro_gate_state", {})
                 ),
             },
             "physical_ownership_snapshot": {
@@ -9434,6 +9456,12 @@ class EmbeddedSGLangRuntime:
                 recompute_required=completed and mode == "cpu_only_recompute",
                 **attribution,
             )
+            observe_host_cleanup_terminal(
+                self,
+                attribution,
+                ack,
+                now_ms=now_ms,
+            )
 
     def scheduler_step(self) -> None:
         step_started_ns = time.perf_counter_ns()
@@ -9509,6 +9537,11 @@ class EmbeddedSGLangRuntime:
         self.sync_tree()
         self._flush_request_physical_finishes()
         self._report_allocator_usage()
+        advance_host_recompute_offload(
+            self,
+            acks,
+            now_ms=float(self._now_ms()),
+        )
         self._advance_host_cleanup(
             acks,
             now_ms=float(self._now_ms()),
@@ -9590,6 +9623,7 @@ class EmbeddedSGLangRuntime:
                 online_joint_decision.view,
                 now_ms=float(self._now_ms()),
             )
+        maybe_queue_host_recompute_offload(self, now_ms=float(self._now_ms()))
         self._maybe_queue_host_cleanup(now_ms=float(self._now_ms()))
         joint_policy_enabled = bool(
             getattr(
@@ -10485,17 +10519,26 @@ class EmbeddedSGLangRuntime:
                     counts = Counter()
                     self._host_cleanup_counts = counts
                 counts["recompute_service_started"] += 1
+                uncached_prompt_tokens = max(
+                    0,
+                    len(getattr(req, "origin_input_ids", ()))
+                    - len(getattr(req, "prefix_indices", ())),
+                )
                 self.audit.emit(
                     "context_recompute_service_started",
                     now_ms,
                     request_id=str(req.rid),
                     context_id=metadata.context_id,
                     context_epoch=metadata.context_epoch,
-                    uncached_prompt_tokens=max(
-                        0,
-                        len(getattr(req, "origin_input_ids", ()))
-                        - len(getattr(req, "prefix_indices", ())),
-                    ),
+                    uncached_prompt_tokens=uncached_prompt_tokens,
+                )
+                observe_recompute_service(
+                    self,
+                    request_id=str(req.rid),
+                    context_id=metadata.context_id,
+                    context_epoch=metadata.context_epoch,
+                    uncached_prompt_tokens=uncached_prompt_tokens,
+                    now_ms=now_ms,
                 )
             if req.rid not in self._active_request_ids:
                 self._active_request_ids.add(req.rid)
