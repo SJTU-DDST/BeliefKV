@@ -1,14 +1,44 @@
-# 2026-08-17 P5 v4 restore-isolation 结果
+# BeliefKV 最新架构与实现状态
+
+更新日期：2026-08-20
+
+## 2026-08-20：GPU-First Native-Subagent Oracle（当前）
+
+CPU Counterfactual Oracle 已退出正式收益门禁，只保留契约测试和调试用途。当前权威路线见 [GPU-First Native-Subagent Oracle 计划](beliefkv_gpu_native_subagent_oracle_plan_2026-08-20_zh.md)。
+
+正式 workload 使用 native_subagent_2to3：同一个 Deep Agents parent 通过原生 task 发起 2--3 个 FRESH child，parent 进入 JOIN_WAIT，child reports 作为 ToolMessage 回到同一 parent 对话，随后同一 context_id 在下一 context_epoch 继续。旧 parallel_analysis_2to3 的外部 planner、独立 child orchestration、新 supervisor，以及 64K--160K context pack/two-wave workload 全部降级为 diagnostic。
+
+冻结输入为 configs/p6/oracle_v2_native_subagent_v1/collection_plan.json：64 个 formal-train root 同时提交、client in-flight=64、SGLang max running=32、KV pool=850K、Host=96 GiB，无事件驱动放量、无 outcome replacement。GPU 空闲并得到指令后，先执行 4-root 首 JOIN semantic gate；通过后才采 64-root native trace，并以 trace-driven GPU replay 先比较 O0/O3。
+
+
+## 历史：CPU Oracle v2 有限候选与压力 Workload（已降级）
+
+该段记录已停止的 CPU-first 路径。V2-0 schema v2、V2-1 truth/physical sidecar exporter 和 V2-1.5 CPU 离散事件估计器已经完成；普通 P5/P6 路径不导入 Oracle provider。
+
+CPU estimator 已补齐最低限度的 no-op dominance：C1 将 C0 与四种固定 execution policy 分别完整模拟，C3 同时比较 C0、C2、全部 C1 及四种 execution+C2 组合，并按真实 whole-run makespan 取最优。因此有限候选集合内严格满足 `C1 >= C0` 和 `C3 >= max(C1,C2)`；它仍是有限候选 lower bound，不是全局最优 Oracle。
+
+Opportunity 统计现区分 eviction、stall-free round-trip 和 net-positive，并分别记录唯一 victim-beneficiary pair、按 victim 去重的 byte-time 和按 beneficiary 去重的 blocked-work。资格 gate 固定读取同一条 `C0 + NOMINAL + measured-fastpath` row，禁止跨 service/overhead row 拼接最大值。
+
+旧 32-root trace 的完整复跑包含 60 个 whole-run rollout。C0 reconstruction 的 makespan 误差仍为 2.98%/2.70%；C1/C3 相对 C0 的 gain 区间由旧的负数修正为 `[0, 0.523%]`，C2 与 joint synergy 均为 0。资格 row 仍无 eviction/stall-free/net-positive window，因此该 trace 只证明 workload 机会不足，不能否定 KV future，也不能启动 GPU O0--O3。
+
+新的冻结输入位于 `configs/p6/oracle_v2_workloads_v5/`：
+
+- `natural_opportunity_collection_plan.json` 是 train-only 自然机会 prevalence pool，不再称为 Representative。所有任务都进入 prevalence 分母；censor 前完整局部区间可用于 opportunity 统计，只有 clean trajectory 进入 whole-run Oracle/JCT truth。
+- `kv_pressure_execution_plan.json` 是可执行 mechanism stress workload：32 个固定实例、64K/96K/128K/160K parent prompt、真实 2--3 child、两批各 16 root、间隔 30 秒、850K KV pool 和 96 GiB Host，不注入 synthetic wait、不按结果替换任务。
+- 32 个 context pack 已按 frozen base commit、固定 seed 和 Qwen tokenizer 离线构造；运行时仅校验并读取 pack，不新增 tokenizer 依赖。
+- collection launcher 现在直接消费冻结 arrival schedule；CLI 只能断言相同值，不能静默覆盖清单。
+
+历史计划曾要求先采集自然池和压力 C0，并仅在固定 `NOMINAL + measured-fastpath` row 通过 stall-free exact joint gate，才计算 CPU C1--C3；只有 C3 相对 C0 约 10% 且明显优于 C1/C2，才进入真实 GPU O0--O3；该前置门槛现已取消。
+
+完整报告：`docs/experiments/beliefkv_cpu_counterfactual_oracle_estimate_2026-08-20_zh.md`。
+
+## 2026-08-17：P5 v4 Restore-Isolation 结果
 
 - `66b7fb7` 的 ordinary restore 隔离完成 64-root 正式长跑；全局 restore barrier 为 0，backlog 下未复现 running 排空。
 - 峰值 resident pressure 仅 60.09%，没有 running retraction 或 replacement，因此本轮仅作为活性与控制面 characterization，不进入正式 offload A/B。
 - JointPlan 开销已成为首要阻塞：delta capture P95 34.70 ms、snapshot build P95 2.09 s、plan validation P95 171.84 ms、plan age P95 2.49 s。
 - v4 的 31/32-way decode 全部未命中 CUDA Graph。下一版本为 `h200_bf16_v5`，目标捕获到 batch 32；v5 baseline/treatment 必须同配置配对。
 - 完整报告：`docs/experiments/beliefkv_p5_restore_isolation_formal_v4_2026-08-17_zh.md`。
-
-# BeliefKV 最新架构与实现状态
-
-更新日期：2026-08-17
 
 ## 2026-08-17：JointPlan 事件驱动快路径与 H200 BF16 v5
 
@@ -868,7 +898,9 @@ request 不能进入实际 execution frontier；consumer readiness 与 physical 
 required restore 和 victim bundle，并检查 closure、capacity、fairness、liveness 和 handoff
 hysteresis。缺少 extent identity 或 closure 重叠时必须 fail closed。
 
-### 9.3 O0-O3 Joint Oracle
+### 9.3 历史 O0-O3 Joint Oracle（Legacy）
+
+本节记录 2026-07 的离线 counterfactual 实现和负结果，仅用于说明旧方法为何不能作为当前 GPU oracle。其静态拓扑、hindsight eviction 和 rolling resimulator 语义已由 Perfect-Future Action-Space Oracle v2 取代；下述代码与结果不得直接用于新的 O0--O3 性能结论。
 
 [`JointPlanOracle`](../beliefkv/policy/joint_oracle.py) 定义：
 
@@ -1443,11 +1475,13 @@ tree SHA-256 为 `b95b5e4e7b91dce4698af5a964258698f25a19251ba8df411c548b9027a48a
 不再参与性能汇总。
 详见 `docs/experiments/beliefkv_p6_r5_retraction_ownership_repair_2026-08-11_zh.md`。
 
-当前最重要的研究问题已经不是“是否能迁移 KV”，而是：
+当前最重要的研究问题已经不是继续调整 FrontierBelief，而是：
 
-> 动态 agent 的因果 frontier belief 能否识别即将扩张 TOOL/SPAWN 或闭合 RETURN/JOIN 的请求，
-> 并通过统一 admission、KV 和 selective retraction 提高 successful workflows/hour；extent count
-> 只负责 transfer cost 与 OOD 安全。
+> 在冻结真实 agent demand 并完全知道未来的条件下，当前 action space 中的 agent execution、
+> admission 与 KV residency 联合控制，能否在真实 H200 数据面上显著提高 workflows/hour，
+> 且 O3 是否优于 O1/O2 中更好的单侧 oracle。
+
+只有该上界成立，后续才继续使用 FrontierBelief 逼近 oracle；否则应收缩或调整 BeliefKV 的核心动作空间。
 
 长上下文的语义总结、tool-output 压缩和 checkpoint 由 agent 业务层负责。固定 SGLang 仅提供
 sliding-window、长度限制和物理 KV eviction，不提供 agent-aware 自动压缩；BeliefKV serving 层
@@ -1455,7 +1489,9 @@ sliding-window、长度限制和物理 KV eviction，不提供 agent-aware 自�
 
 ## 16. 文档权威顺序
 
-建议按以下顺序理解当前版本：
+当前 Oracle v2 实施的权威文档为
+[Perfect-Future Action-Space Oracle v2 执行方案](beliefkv_perfect_future_oracle_v2_execution_plan_2026-08-17_zh.md)。
+除该紧急主线外，建议按以下顺序理解系统设计与历史状态：
 
 1. [`beliefkv_design_2026-07-14_zh.md`](beliefkv_design_2026-07-14_zh.md)：
    当前规范设计、算法主线和实施顺序；

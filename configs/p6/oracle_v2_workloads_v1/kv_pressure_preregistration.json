@@ -1,0 +1,46 @@
+{
+  "evidence_role": "mechanism_stress_not_representative_prevalence",
+  "frozen": true,
+  "joint_opportunity_definition": [
+    "migratable_parked_bytes > 0",
+    "ready_beneficiary_blocked_by_hbm",
+    "causal_wait_slack > estimated_d2h_time + commit_guard",
+    "victim_has_future_reentry",
+    "host_capacity_feasible"
+  ],
+  "plan_id": "oracle-v2-kv-pressure-preregistration-v1",
+  "qualification_gate": {
+    "minimum_hbm_blocked_ready_work_ms": 1,
+    "minimum_joint_opportunity_windows": 10,
+    "minimum_opportunity_byte_ms": 1,
+    "peak_hbm_alone_is_sufficient": false
+  },
+  "resource_contract": {
+    "all_roots_eager": true,
+    "do_not_shrink_kv_pool": true,
+    "host_pool_gib": 96,
+    "kv_pool_tokens": 850000,
+    "max_running_requests": 32
+  },
+  "runtime_profile": "/home/longhao/experiment/BeliefKV/configs/p6/h200_bf16_v5/frozen_runtime_profile.json",
+  "schema_version": 2,
+  "shape_contract": {
+    "child_count": [
+      2,
+      3
+    ],
+    "continuous_ready_root_backlog": true,
+    "future_parent_reentry_required": true,
+    "parent_private_context_tokens": [
+      65536,
+      196608
+    ],
+    "required_states": [
+      "WAIT_TOOL",
+      "WAIT_JOIN"
+    ],
+    "terminal_or_complete_local_interval_required": true
+  },
+  "source_truth_rule": "use only natural-clean train trajectories admitted in the fixed representative candidate order; calibration/test remain sealed",
+  "stopping_rule": "qualify with observed C0 sidecar before evaluating C1-C3; if the fixed batch fails, report insufficient opportunity and do not select replacement tasks using Oracle outcomes"
+}

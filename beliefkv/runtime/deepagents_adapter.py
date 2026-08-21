@@ -236,6 +236,10 @@ class DeepAgentsRuntimeAdapter(BaseCallbackHandler):
         self._join_members: dict[str, set[str]] = {}
         self._join_completed: dict[str, set[str]] = {}
         self._join_cancelled: dict[str, set[str]] = {}
+        self._join_parent: dict[str, str] = {}
+        self._first_satisfied_join_by_parent: dict[str, tuple[str, float]] = {}
+        self._post_join_model_runs: dict[str, str] = {}
+        self._semantic_gate_result: dict[str, Any] | None = None
         self._ordinary_tools: dict[str, _OrdinaryToolRun] = {}
         self._ignored_tool_runs: set[str] = set()
         self._internal_summary_runs: dict[str, _InternalSummaryRun] = {}
@@ -617,6 +621,9 @@ class DeepAgentsRuntimeAdapter(BaseCallbackHandler):
                 metadata = replace(base, context_epoch=epoch)
                 self._model_metadata[key] = metadata
                 self._run_invocation[key] = invocation_id
+                satisfied = self._first_satisfied_join_by_parent.get(invocation_id)
+                if satisfied is not None:
+                    self._post_join_model_runs[key] = satisfied[0]
             compaction = self._pending_context_compaction.get()
             if compaction is not None:
                 self._publish(
@@ -766,6 +773,16 @@ class DeepAgentsRuntimeAdapter(BaseCallbackHandler):
             },
         )
         self._publish((result,), control=False)
+        with self._lock:
+            post_join_id = self._post_join_model_runs.pop(key, None)
+            if post_join_id is not None and self._semantic_gate_result is None:
+                self._semantic_gate_result = {
+                    "join_id": post_join_id,
+                    "parent_invocation_id": invocation_id,
+                    "parent_context_id": metadata.context_id,
+                    "parent_context_epoch": metadata.context_epoch,
+                    "request_id": _native_request_id(run_id),
+                }
         if self._finish_internal_summary(key, error=None):
             return
         if executable_task_calls:
@@ -1065,6 +1082,7 @@ class DeepAgentsRuntimeAdapter(BaseCallbackHandler):
             self._join_members[join_id] = set(child_ids)
             self._join_completed[join_id] = set()
             self._join_cancelled[join_id] = set()
+            self._join_parent[join_id] = parent_invocation_id
         self._publish(tuple(events), control=True)
         return tuple(pending_items)
 
@@ -1129,6 +1147,12 @@ class DeepAgentsRuntimeAdapter(BaseCallbackHandler):
             join_complete = completed >= self._join_members[pending.join_id]
             join_satisfied = join_complete and not cancelled_members
         ts_ms = self._timestamp()
+        if join_satisfied:
+            with self._lock:
+                parent_id = self._join_parent[pending.join_id]
+                self._first_satisfied_join_by_parent.setdefault(
+                    parent_id, (pending.join_id, ts_ms)
+                )
         kind = (
             RuntimeEventKind.INVOCATION_CANCEL
             if cancelled
@@ -1172,6 +1196,16 @@ class DeepAgentsRuntimeAdapter(BaseCallbackHandler):
                 )
             )
         self._publish(tuple(events), control=True)
+
+    def semantic_gate_result(self) -> dict[str, Any] | None:
+        """Return the first completed parent LLM call after a native JOIN."""
+
+        with self._lock:
+            return (
+                dict(self._semantic_gate_result)
+                if self._semantic_gate_result is not None
+                else None
+            )
 
     def _finish_ordinary_tool(
         self,

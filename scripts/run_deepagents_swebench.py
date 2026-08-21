@@ -79,7 +79,7 @@ def parse_args() -> argparse.Namespace:
     )
     parser.add_argument(
         "--subagent-fanout-profile",
-        choices=("natural", "parallel_analysis_2to3"),
+        choices=("natural", "parallel_analysis_2to3", "native_subagent_2to3"),
         default="natural",
     )
     parser.add_argument("--gpu", type=int, default=0)
@@ -99,6 +99,14 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--tool-observation-turn-chars", type=int, default=65_536)
     parser.add_argument("--tool-observation-result-chars", type=int, default=16_384)
     parser.add_argument("--recursion-limit", type=int, default=512)
+    parser.add_argument(
+        "--stop-after-first-native-join",
+        action="store_true",
+        help=(
+            "Diagnostic only: stop after the first parent LLM call following a "
+            "native JOIN. The run is never JCT or training eligible."
+        ),
+    )
     parser.add_argument(
         "--disable-loop-guard",
         action="store_true",
@@ -191,6 +199,7 @@ def main() -> int:
         max_completion_tokens=args.max_completion_tokens,
         sampling_seed=args.sampling_seed,
         subagent_fanout_profile=args.subagent_fanout_profile,
+        stop_after_first_native_join=args.stop_after_first_native_join,
         recursion_limit=args.recursion_limit,
         request_timeout_s=args.request_timeout,
         sandbox_command_timeout_s=args.sandbox_command_timeout,
@@ -221,11 +230,15 @@ def main() -> int:
     )
     summary = run_experiment(config)
     print(json.dumps(summary, indent=2, sort_keys=True, allow_nan=False))
-    passed = {
-        "system": summary["system_jct_eligible_workflows"],
-        "native": summary["native_agent_jct_eligible_workflows"],
-        "task-correctness": summary["successful_workflows"],
-    }[args.gate]
+    passed = (
+        summary["semantic_gate_completed_workflows"]
+        if args.stop_after_first_native_join
+        else {
+            "system": summary["system_jct_eligible_workflows"],
+            "native": summary["native_agent_jct_eligible_workflows"],
+            "task-correctness": summary["successful_workflows"],
+        }[args.gate]
+    )
     return 0 if passed == summary["workflow_count"] else 1
 
 

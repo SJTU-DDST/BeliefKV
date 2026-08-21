@@ -287,26 +287,46 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--recursion-limit", type=int, default=512)
     parser.add_argument(
         "--subagent-fanout-profile",
-        choices=("natural", "parallel_analysis_2to3"),
+        choices=("natural", "parallel_analysis_2to3", "native_subagent_2to3"),
         help=(
             "optional assertion of the profile frozen in the collection batch; "
             "it cannot override the manifest"
         ),
     )
-    parser.add_argument("--workflow-arrival-interval-ms", type=float, default=0.0)
-    parser.add_argument("--workflow-arrival-batch-size", type=int, default=0)
     parser.add_argument(
-        "--workflow-arrival-batch-interval-ms", type=float, default=0.0
+        "--workflow-arrival-interval-ms",
+        type=float,
+        help="optional assertion of the value frozen in the collection batch",
+    )
+    parser.add_argument(
+        "--workflow-arrival-batch-size",
+        type=int,
+        help="optional assertion of the value frozen in the collection batch",
+    )
+    parser.add_argument(
+        "--workflow-arrival-batch-interval-ms",
+        type=float,
+        help="optional assertion of the value frozen in the collection batch",
     )
     parser.add_argument(
         "--saturated-root-backlog",
-        action="store_true",
+        action=argparse.BooleanOptionalAction,
+        default=None,
         help=(
-            "Submit the entire frozen batch immediately and let SGLang/JointPlan "
-            "control the GPU active set."
+            "optional assertion of the root-submission mode frozen in the "
+            "collection batch"
         ),
     )
     parser.add_argument("--request-timeout", type=float, default=7200.0)
+    parser.add_argument(
+        "--stop-after-first-native-join",
+        action=argparse.BooleanOptionalAction,
+        default=None,
+        help=(
+            "Diagnostic semantic gate only; controlled-stop rows are excluded "
+            "from training and JCT."
+        ),
+    )
     parser.add_argument("--sandbox-command-timeout", type=int, default=600)
     parser.add_argument("--runtime-event-ack-timeout", type=float, default=10.0)
     parser.add_argument("--runtime-event-ack-retries", type=int, default=3)
@@ -355,7 +375,37 @@ def main() -> int:
             "CLI fanout profile differs from the frozen collection batch: "
             f"{args.subagent_fanout_profile} != {batch.subagent_fanout_profile}"
         )
+    frozen_schedule = {
+        "workflow_arrival_interval_ms": batch.workflow_arrival_interval_ms,
+        "workflow_arrival_batch_size": batch.workflow_arrival_batch_size,
+        "workflow_arrival_batch_interval_ms": (
+            batch.workflow_arrival_batch_interval_ms
+        ),
+        "saturated_root_backlog": batch.saturated_root_backlog,
+    }
+    for field, frozen_value in frozen_schedule.items():
+        cli_value = getattr(args, field)
+        if cli_value is not None and cli_value != frozen_value:
+            option = "--" + field.replace("_", "-")
+            raise ValueError(
+                f"{option} differs from the frozen collection batch: "
+                f"{cli_value} != {frozen_value}"
+            )
+    workflow_arrival_interval_ms = batch.workflow_arrival_interval_ms
+    workflow_arrival_batch_size = batch.workflow_arrival_batch_size
+    workflow_arrival_batch_interval_ms = (
+        batch.workflow_arrival_batch_interval_ms
+    )
+    saturated_root_backlog = batch.saturated_root_backlog
     fanout_profile = batch.subagent_fanout_profile
+    frozen_semantic_gate = batch.semantic_gate_stop_after_first_join
+    if (
+        args.stop_after_first_native_join is not None
+        and args.stop_after_first_native_join != frozen_semantic_gate
+    ):
+        raise ValueError(
+            "--stop-after-first-native-join differs from the frozen collection batch"
+        )
     if args.pool_tokens <= 0:
         raise ValueError("--pool-tokens must be positive")
     server_info = fetch_server_info(args.base_url)
@@ -405,7 +455,7 @@ def main() -> int:
     )
     configured_concurrency = min(batch.concurrency, workflow_count)
     concurrency = (
-        workflow_count if args.saturated_root_backlog else configured_concurrency
+        workflow_count if saturated_root_backlog else configured_concurrency
     )
     source_fingerprint = _runtime_source_fingerprint()
     collection_contract = {
@@ -430,21 +480,21 @@ def main() -> int:
         "workflow_count": workflow_count,
         "configured_concurrency": configured_concurrency,
         "concurrency": concurrency,
-        "workflow_arrival_interval_ms": args.workflow_arrival_interval_ms,
-        "workflow_arrival_batch_size": args.workflow_arrival_batch_size,
+        "workflow_arrival_interval_ms": workflow_arrival_interval_ms,
+        "workflow_arrival_batch_size": workflow_arrival_batch_size,
         "workflow_arrival_batch_interval_ms": (
-            args.workflow_arrival_batch_interval_ms
+            workflow_arrival_batch_interval_ms
         ),
-        "saturated_root_backlog": args.saturated_root_backlog,
+        "saturated_root_backlog": saturated_root_backlog,
         "root_submission_mode": (
             "all_roots_eager"
-            if args.saturated_root_backlog
+            if saturated_root_backlog
             else "arrival_schedule"
         ),
         "client_inflight_root_window": concurrency,
         "initial_unsubmitted_root_backlog": (
             0
-            if args.saturated_root_backlog
+            if saturated_root_backlog
             else max(0, workflow_count - concurrency)
         ),
         "required_minimum_pool_tokens": args.pool_tokens,
@@ -480,6 +530,7 @@ def main() -> int:
             else "frozen_p5_observed"
         ),
         "subagent_fanout_profile": fanout_profile,
+        "stop_after_first_native_join": frozen_semantic_gate,
         "request_timeout_s": args.request_timeout,
         "completion_semantics": "model_terminal_no_harness_llm_repair",
         "completion_gate_enabled": False,
@@ -524,16 +575,17 @@ def main() -> int:
         server_log_path=args.server_log,
         max_workflows=workflow_count,
         concurrency=concurrency,
-        workflow_arrival_interval_ms=args.workflow_arrival_interval_ms,
-        workflow_arrival_batch_size=args.workflow_arrival_batch_size,
+        workflow_arrival_interval_ms=workflow_arrival_interval_ms,
+        workflow_arrival_batch_size=workflow_arrival_batch_size,
         workflow_arrival_batch_interval_ms=(
-            args.workflow_arrival_batch_interval_ms
+            workflow_arrival_batch_interval_ms
         ),
-        saturated_root_backlog=args.saturated_root_backlog,
+        saturated_root_backlog=saturated_root_backlog,
         gpu_index=args.gpu,
         pool_tokens=actual_pool_tokens,
         max_completion_tokens=args.max_completion_tokens,
         subagent_fanout_profile=fanout_profile,
+        stop_after_first_native_join=frozen_semantic_gate,
         recursion_limit=args.recursion_limit,
         request_timeout_s=args.request_timeout,
         sandbox_command_timeout_s=args.sandbox_command_timeout,
@@ -560,15 +612,29 @@ def main() -> int:
     system_eligible = (
         summary["system_jct_eligible_workflows"] == workflow_count
     )
+    semantic_gate_passed = (
+        summary["semantic_gate_completed_workflows"] == workflow_count
+    )
     final_contract = {
         **collection_contract,
         "runtime_source_fingerprint_end": final_fingerprint,
         "runtime_source_stable": source_stable,
-        "training_eligible": system_eligible and source_stable,
+        "training_eligible": (
+            system_eligible and source_stable and not frozen_semantic_gate
+        ),
+        "semantic_gate_passed": semantic_gate_passed,
         "ineligibility_reasons": [
             reason
             for condition, reason in (
-                (not system_eligible, "system_jct_gate_failed"),
+
+                (
+                    frozen_semantic_gate,
+                    "diagnostic_semantic_gate_not_training_evidence",
+                ),
+                (
+                    not frozen_semantic_gate and not system_eligible,
+                    "system_jct_gate_failed",
+                ),
                 (not source_stable, "runtime_source_changed_during_collection"),
             )
             if condition
@@ -578,7 +644,12 @@ def main() -> int:
     write_json(output / "p6_collection_contract.json", final_contract)
     write_json(output / "p6_collection_summary.json", summary)
     print(json.dumps(summary, indent=2, sort_keys=True, allow_nan=False))
-    return 0 if final_contract["training_eligible"] else 1
+    passed = (
+        semantic_gate_passed and source_stable
+        if frozen_semantic_gate
+        else final_contract["training_eligible"]
+    )
+    return 0 if passed else 1
 
 
 if __name__ == "__main__":

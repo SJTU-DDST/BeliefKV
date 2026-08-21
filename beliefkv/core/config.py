@@ -415,6 +415,7 @@ class BeliefKVConfig:
         if self.workload_subagent_fanout_profile not in {
             "natural",
             "parallel_analysis_2to3",
+            "native_subagent_2to3",
         }:
             raise ValueError("unsupported workload subagent fan-out profile")
         if self.restore_obligation_max_active <= 0:

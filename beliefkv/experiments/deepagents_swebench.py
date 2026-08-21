@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import hashlib
+import gzip
 import json
 import math
 import os
@@ -27,13 +28,18 @@ from deepagents.middleware.filesystem import FilesystemMiddleware
 from deepagents.middleware.patch_tool_calls import PatchToolCallsMiddleware
 from deepagents.middleware.subagents import GENERAL_PURPOSE_SUBAGENT
 from langchain.agents import create_agent
-from langchain.agents.middleware import TodoListMiddleware
+from langchain.agents.middleware import AgentMiddleware, TodoListMiddleware
+from langchain.agents.middleware.types import ModelRequest, ModelResponse
 from langchain.agents.structured_output import ToolStrategy
 from langchain_core.messages import AIMessage, BaseMessage, ToolMessage
 from langchain_core.tools import BaseTool, tool
 from pydantic import BaseModel, Field
 
 from beliefkv.experiments.arrival_schedule import build_workflow_arrivals
+from beliefkv.experiments.swebench_prompt import (
+    build_swebench_task_prompt,
+    repository_sandbox_contract as repository_sandbox_contract_for_repo,
+)
 from beliefkv.experiments.agent_protocol import (
     AgentLoopGuardMiddleware,
     ChildCompletion,
@@ -212,6 +218,102 @@ def command_output(command: Sequence[str], *, cwd: Path, timeout: float = 60.0) 
 
 
 @dataclass(frozen=True)
+class OracleKVPressureContext:
+    target_parent_prompt_tokens: int
+    actual_parent_prompt_tokens: int
+    context_seed: int
+    context_pack_path: Path
+    context_pack_blake2b: str
+    source_file_count: int
+    model_context_tokens: int
+    output_reserve_tokens: int
+    runtime_overhead_reserve_tokens: int
+
+    def __post_init__(self) -> None:
+        if min(
+            self.target_parent_prompt_tokens,
+            self.actual_parent_prompt_tokens,
+            self.source_file_count,
+            self.model_context_tokens,
+            self.output_reserve_tokens,
+            self.runtime_overhead_reserve_tokens,
+        ) <= 0:
+            raise ValueError("Oracle pressure context limits must be positive")
+        if self.context_seed < 0:
+            raise ValueError("Oracle pressure context seed must be non-negative")
+        if not (
+            self.target_parent_prompt_tokens - 128
+            <= self.actual_parent_prompt_tokens
+            <= self.target_parent_prompt_tokens
+        ):
+            raise ValueError("Oracle pressure prompt misses its frozen token target")
+        if (
+            self.actual_parent_prompt_tokens
+            + self.output_reserve_tokens
+            + self.runtime_overhead_reserve_tokens
+            >= self.model_context_tokens
+        ):
+            raise ValueError("Oracle pressure prompt violates the reentry context budget")
+        if not self.context_pack_path.is_file():
+            raise FileNotFoundError(
+                f"Oracle pressure context pack is absent: {self.context_pack_path}"
+            )
+        if _blake2b_file(self.context_pack_path) != self.context_pack_blake2b:
+            raise ValueError("Oracle pressure context pack content changed")
+
+
+def _blake2b_file(path: Path) -> str:
+    digest = hashlib.blake2b(digest_size=32)
+    with path.open("rb") as stream:
+        for chunk in iter(lambda: stream.read(1024 * 1024), b""):
+            digest.update(chunk)
+    return digest.hexdigest()
+
+
+def _parse_oracle_pressure_context(
+    value: object,
+) -> OracleKVPressureContext | None:
+    if value is None:
+        return None
+    if not isinstance(value, dict):
+        raise TypeError("oracle_kv_pressure must be an object")
+    required = {
+        "target_parent_prompt_tokens",
+        "actual_parent_prompt_tokens",
+        "context_seed",
+        "context_pack_path",
+        "context_pack_blake2b",
+        "source_file_count",
+        "model_context_tokens",
+        "output_reserve_tokens",
+        "runtime_overhead_reserve_tokens",
+    }
+    unknown = set(value) - required
+    missing = required - set(value)
+    if unknown or missing:
+        raise ValueError(
+            "invalid oracle_kv_pressure fields: "
+            f"missing={sorted(missing)}, unknown={sorted(unknown)}"
+        )
+    string_fields = {"context_pack_path", "context_pack_blake2b"}
+    if any(type(value[name]) is not int for name in required - string_fields):
+        raise TypeError("Oracle pressure token limits, counts, and seed must be integers")
+    if any(type(value[name]) is not str for name in string_fields):
+        raise TypeError("Oracle pressure pack path and digest must be strings")
+    return OracleKVPressureContext(
+        target_parent_prompt_tokens=value["target_parent_prompt_tokens"],
+        actual_parent_prompt_tokens=value["actual_parent_prompt_tokens"],
+        context_seed=value["context_seed"],
+        context_pack_path=Path(value["context_pack_path"]).expanduser().resolve(),
+        context_pack_blake2b=value["context_pack_blake2b"],
+        source_file_count=value["source_file_count"],
+        model_context_tokens=value["model_context_tokens"],
+        output_reserve_tokens=value["output_reserve_tokens"],
+        runtime_overhead_reserve_tokens=value["runtime_overhead_reserve_tokens"],
+    )
+
+
+@dataclass(frozen=True)
 class SweBenchWorkload:
     instance_id: str
     repo: str
@@ -221,33 +323,11 @@ class SweBenchWorkload:
     source_repo: Path | None = None
     docker_image: str | None = None
     preflight_command: str | None = None
+    oracle_kv_pressure: OracleKVPressureContext | None = None
 
 
 def repository_sandbox_contract(workload: SweBenchWorkload) -> str:
-    """Describe the mounted checkout without leaking another repository's layout."""
-
-    common = f"""
-Workload-specific repository contract:
-- Repository identity is `{workload.repo}`, but its checkout root is still exactly
-  `/workspace`. Do not append `{workload.repo}` to `/workspace`.
-"""
-    if workload.repo == "django/django":
-        return common + """- Django source paths such as `django/db/backends/base/base.py` map to
-  `/workspace/django/db/backends/base/base.py`, not
-  `/workspace/django/django/db/backends/base/base.py`.
-- Run focused Django tests from `/workspace` with the repository test runner, for
-  example `python tests/runtests.py <test_label>`.
-"""
-    if workload.repo == "sympy/sympy":
-        return common + """- SymPy source paths such as `sympy/core/basic.py` map to
-  `/workspace/sympy/core/basic.py`, not `/workspace/sympy/sympy/core/basic.py`.
-- Run focused SymPy tests with `python bin/test <test-path>`. This runner accepts
-  `-k <test-name>` or a complete test-file path; do not use a pytest-style `::` selector.
-"""
-    return common + """- Inspect the checkout's top-level files before choosing a package path or test
-  command. Prefer paths returned by repository search tools over paths inferred from
-  the repository slug.
-"""
+    return repository_sandbox_contract_for_repo(workload.repo)
 
 
 @dataclass(frozen=True)
@@ -283,6 +363,9 @@ def load_workload_bundle(path: Path) -> WorkloadBundle:
                 Path(str(item["source_repo"])).expanduser().resolve()
                 if item.get("source_repo")
                 else source_repo
+            ),
+            oracle_kv_pressure=_parse_oracle_pressure_context(
+                item.get("oracle_kv_pressure")
             ),
             docker_image=(
                 str(item["docker_image"]) if item.get("docker_image") else None
@@ -1172,6 +1255,27 @@ class PartialAgentRunError(RuntimeError):
         self.partial_result = partial_result
 
 
+class NativeSubagentSemanticGateReached(RuntimeError):
+    def __init__(self, evidence: Mapping[str, Any]) -> None:
+        super().__init__("native subagent semantic gate reached")
+        self.evidence = dict(evidence)
+
+
+class NativeSubagentSemanticGateMiddleware(AgentMiddleware[Any, Any, Any]):
+    """Stop a diagnostic run after the first post-JOIN parent model call."""
+
+    def __init__(self, adapter: DeepAgentsRuntimeAdapter) -> None:
+        super().__init__()
+        self.adapter = adapter
+
+    def wrap_model_call(self, request: ModelRequest, handler: Any) -> ModelResponse:
+        response = handler(request)
+        evidence = self.adapter.semantic_gate_result()
+        if evidence is not None:
+            raise NativeSubagentSemanticGateReached(evidence)
+        return response
+
+
 @dataclass(frozen=True)
 class DeepAgentsExperimentConfig:
     mode: str
@@ -1196,6 +1300,7 @@ class DeepAgentsExperimentConfig:
     max_completion_tokens: int = 2048
     sampling_seed: int | None = None
     subagent_fanout_profile: str = "natural"
+    stop_after_first_native_join: bool = False
     recursion_limit: int = 512
     request_timeout_s: float = 600.0
     sandbox_command_timeout_s: int = 600
@@ -1219,8 +1324,16 @@ class DeepAgentsExperimentConfig:
         if self.subagent_fanout_profile not in {
             "natural",
             "parallel_analysis_2to3",
+            "native_subagent_2to3",
         }:
             raise ValueError("unsupported subagent fan-out profile")
+        if (
+            self.stop_after_first_native_join
+            and self.subagent_fanout_profile != "native_subagent_2to3"
+        ):
+            raise ValueError(
+                "first-JOIN semantic gate requires native_subagent_2to3"
+            )
         if min(
             self.max_workflows,
             self.concurrency,
@@ -1294,6 +1407,19 @@ independent dependency, protocol, version, serialization, or compatibility quest
 Do not create more than three children. Children only inspect and report; they must not
 edit the workspace. Wait for the JOIN_ALL result, then the supervisor alone applies and
 tests the patch. Do not split adjacent parts of one call path into duplicate tasks.
+"""
+
+
+NATIVE_SUBAGENT_2TO3_PROMPT = """
+Use the native task tool before editing. In one assistant turn, issue exactly two
+mandatory, independent calls so they run concurrently:
+1. repository-explorer: trace the code path and identify candidate symbols and invariants.
+2. test-analyst: reproduce the failure and identify focused regression tests.
+Add compatibility-analyst in that same turn only for an independent dependency,
+protocol, version, serialization, or compatibility question. Never issue more than
+three task calls. Wait for all child tool results to return to this conversation, then
+continue in this same parent conversation and implement and test the patch yourself.
+Children are read-only and must not edit the workspace.
 """
 
 
@@ -1486,16 +1612,49 @@ def _model(
     )
 
 
-def _task_prompt(workload: SweBenchWorkload) -> str:
-    return (
-        f"SWE-bench instance: {workload.instance_id}\n"
-        f"Repository: {workload.repo}\n"
-        f"Base commit: {workload.base_commit}\n\n"
-        f"Problem statement:\n{workload.problem_statement}\n\n"
-        f"{repository_sandbox_contract(workload)}\n"
-        "Produce a complete working patch for every stated requirement and run a "
-        "focused repository test command before reporting success."
+ORACLE_PRESSURE_CONTEXT_MARKER = (
+    "\n\nFrozen repository context pack for this preregistered KV-pressure "
+    "workload follows. It is read-only reference material; inspect the live "
+    "workspace before editing.\n"
+)
+
+
+def _build_oracle_pressure_prompt(
+    base_prompt: str,
+    workload: SweBenchWorkload,
+    workspace: Path,
+) -> str:
+    contract = workload.oracle_kv_pressure
+    if contract is None:
+        return base_prompt
+    if not workspace.is_dir():
+        raise FileNotFoundError(
+            f"Oracle pressure workspace is absent: {workspace}"
+        )
+    with gzip.open(contract.context_pack_path, "rt", encoding="utf-8") as stream:
+        context = stream.read()
+    if not context:
+        raise ValueError("Oracle pressure context pack is empty")
+    return base_prompt + ORACLE_PRESSURE_CONTEXT_MARKER + context
+
+
+def _task_prompt(
+    workload: SweBenchWorkload,
+    *,
+    workspace: Path | None = None,
+    include_pressure: bool = True,
+) -> str:
+    base_prompt = build_swebench_task_prompt(
+        instance_id=workload.instance_id,
+        repo=workload.repo,
+        base_commit=workload.base_commit,
+        problem_statement=workload.problem_statement,
     )
+    if not include_pressure or workload.oracle_kv_pressure is None:
+        return base_prompt
+    if workspace is None:
+        raise ValueError("Oracle pressure prompt requires the checked-out workspace")
+    return _build_oracle_pressure_prompt(base_prompt, workload, workspace)
 
 
 def _message_payload(message: BaseMessage) -> dict[str, Any]:
@@ -1689,7 +1848,10 @@ def _autonomous_subagents(
     summary_model: Any,
 ) -> list[dict[str, Any]]:
     subagents: list[dict[str, Any]] = []
-    read_only = config.subagent_fanout_profile == "parallel_analysis_2to3"
+    read_only = config.subagent_fanout_profile in {
+        "parallel_analysis_2to3",
+        "native_subagent_2to3",
+    }
     specs = (
         PARALLEL_ANALYSIS_SUBAGENT_SPECS
         if read_only
@@ -1778,6 +1940,8 @@ def _build_autonomous_agent(
                 ),
             )
         )
+    if config.stop_after_first_native_join:
+        middleware.append(NativeSubagentSemanticGateMiddleware(adapter))
     middleware.extend(
         [
         _context_lifecycle_middleware(
@@ -1813,9 +1977,9 @@ def _build_autonomous_agent(
         system_prompt=(
             AUTONOMOUS_SYSTEM_PROMPT
             + (
-                PARALLEL_ANALYSIS_2TO3_PROMPT
+                NATIVE_SUBAGENT_2TO3_PROMPT
                 if (
-                    config.subagent_fanout_profile == "parallel_analysis_2to3"
+                    config.subagent_fanout_profile == "native_subagent_2to3"
                     and delegation_enabled
                 )
                 else ""
@@ -1839,7 +2003,7 @@ def _run_autonomous(
 ) -> tuple[dict[str, Any], dict[str, Any] | None, list[dict[str, Any]]]:
     reports: list[dict[str, Any]] = []
     plan_payload: dict[str, Any] | None = None
-    prompt = _task_prompt(workload)
+    prompt = _task_prompt(workload, workspace=backend.workspace)
     delegation_enabled = True
     if config.subagent_fanout_profile == "parallel_analysis_2to3":
         planner = _model(config, adapter).with_structured_output(
@@ -2103,7 +2267,7 @@ def _run_planned(
     plan = planner.invoke(
         [
             {"role": "system", "content": PLANNER_SYSTEM_PROMPT},
-            {"role": "user", "content": _task_prompt(workload)},
+            {"role": "user", "content": _task_prompt(workload, workspace=backend.workspace)},
         ],
         config={
             "callbacks": [adapter],
@@ -2165,7 +2329,7 @@ def _run_planned(
                 {
                     "role": "user",
                     "content": (
-                        f"{_task_prompt(workload)}\n\n"
+                        f"{_task_prompt(workload, workspace=backend.workspace)}\n\n"
                         f"Planner rationale:\n{plan.rationale}\n\n"
                         f"Child reports:\n{evidence or '(no delegated tasks)'}"
                     ),
@@ -2309,7 +2473,7 @@ def _repair_incomplete_workflow(
                     {
                         "role": "user",
                         "content": (
-                            f"{_task_prompt(workload)}\n\n"
+                            f"{_task_prompt(workload, include_pressure=False)}\n\n"
                             f"Runtime gate rejection reasons: {gate['errors']}\n\n"
                             f"Runtime-verified passing tests: {runtime_tests or '(none)'}\n\n"
                             f"Previous completion:\n{_final_text(result)[:12000]}\n\n"
@@ -2621,6 +2785,7 @@ def _run_workflow(
     started = time.monotonic()
     outcome = "error"
     error_text: str | None = None
+    semantic_gate_evidence: dict[str, Any] | None = None
     result: dict[str, Any] = {}
     plan_payload: dict[str, Any] | None = None
     child_reports: list[dict[str, Any]] = []
@@ -2652,7 +2817,11 @@ def _run_workflow(
     except BaseException as error:
         if isinstance(error, PartialAgentRunError):
             result = error.partial_result
-            error_text = f"{type(error.cause).__name__}: {error.cause}"
+            if isinstance(error.cause, NativeSubagentSemanticGateReached):
+                outcome = "semantic_gate_completed"
+                semantic_gate_evidence = dict(error.cause.evidence)
+            else:
+                error_text = f"{type(error.cause).__name__}: {error.cause}"
         else:
             error_text = f"{type(error).__name__}: {error}"
     finally:
@@ -2724,6 +2893,8 @@ def _run_workflow(
         "workflow_id": workflow_id,
         "outcome": outcome,
         "error": error_text,
+        "semantic_gate_controlled_stop": semantic_gate_evidence is not None,
+        "semantic_gate_evidence": semantic_gate_evidence,
         "duration_seconds": duration_s,
         "final_text": _final_text(result),
         "patch_chars": len(patch),
@@ -2983,6 +3154,9 @@ def run_experiment(config: DeepAgentsExperimentConfig) -> dict[str, Any]:
         "workflow_count": len(results),
         "completed_workflows": sum(
             item.get("outcome") == "completed" for item in results
+        ),
+        "semantic_gate_completed_workflows": sum(
+            bool(item.get("semantic_gate_controlled_stop")) for item in results
         ),
         "successful_workflows": sum(
             bool(item.get("correctness_gate", {}).get("passed")) for item in results

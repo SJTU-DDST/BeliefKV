@@ -11,6 +11,11 @@ from beliefkv.policy.scenario_physicalizer import ScenarioDemand
 from beliefkv.policy.whatif_packer import FairnessWindow, ScenarioPlan, WhatIfPacker
 
 
+# This module predates the perfect-future GPU replay contract. Keep it available
+# for historical report reproduction, but never select it as an Oracle v2 arm.
+ORACLE_IMPLEMENTATION_STATUS = "legacy_offline_diagnostic_only"
+
+
 class OracleArm(str, Enum):
     O0_SEPARATE = "O0"
     O1_AGENT = "O1"

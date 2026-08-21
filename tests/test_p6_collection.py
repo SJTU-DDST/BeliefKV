@@ -105,6 +105,56 @@ def test_collection_batch_freezes_parallel_fanout(tmp_path: Path) -> None:
     assert batch.subagent_fanout_profile == "parallel_analysis_2to3"
 
 
+def test_collection_batch_freezes_native_subagent_fanout(tmp_path: Path) -> None:
+    plan = _write_fixture(tmp_path)
+    raw = json.loads(plan.read_text(encoding="utf-8"))
+    raw["batches"][0]["subagent_fanout_profile"] = "native_subagent_2to3"
+    raw["batches"][0]["semantic_gate_stop_after_first_join"] = True
+    plan.write_text(json.dumps(raw), encoding="utf-8")
+
+    batch = load_collection_batch(plan, "batch-1")
+
+    assert batch.subagent_fanout_profile == "native_subagent_2to3"
+    assert batch.semantic_gate_stop_after_first_join is True
+
+
+def test_collection_batch_freezes_root_arrival_schedule(tmp_path: Path) -> None:
+    plan = _write_fixture(tmp_path)
+    raw = json.loads(plan.read_text(encoding="utf-8"))
+    raw["batches"][0].update(
+        {
+            "workflow_arrival_interval_ms": 0,
+            "workflow_arrival_batch_size": 1,
+            "workflow_arrival_batch_interval_ms": 30_000,
+            "saturated_root_backlog": False,
+        }
+    )
+    plan.write_text(json.dumps(raw), encoding="utf-8")
+
+    batch = load_collection_batch(plan, "batch-1")
+
+    assert batch.workflow_arrival_interval_ms == 0.0
+    assert batch.workflow_arrival_batch_size == 1
+    assert batch.workflow_arrival_batch_interval_ms == 30_000.0
+    assert batch.saturated_root_backlog is False
+
+
+def test_collection_batch_rejects_conflicting_root_schedule(tmp_path: Path) -> None:
+    plan = _write_fixture(tmp_path)
+    raw = json.loads(plan.read_text(encoding="utf-8"))
+    raw["batches"][0].update(
+        {
+            "workflow_arrival_batch_size": 1,
+            "workflow_arrival_batch_interval_ms": 30_000,
+            "saturated_root_backlog": True,
+        }
+    )
+    plan.write_text(json.dumps(raw), encoding="utf-8")
+
+    with pytest.raises(ValueError, match="cannot be combined"):
+        load_collection_batch(plan, "batch-1")
+
+
 def test_collection_batch_keeps_calibration_and_test_sealed(tmp_path: Path) -> None:
     with pytest.raises(PermissionError, match="calibration"):
         load_collection_batch(

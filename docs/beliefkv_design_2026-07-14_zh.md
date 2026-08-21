@@ -1,15 +1,40 @@
 # BeliefKV 当前系统设计
 
-日期：2026-07-14；最后更新：2026-08-12
+日期：2026-07-14；最后更新：2026-08-20
 
-状态：P5 observed-state JointPlan、迁移事务和 restore liveness 已通过定向正确性验证；P6 R0--R5 的代码路径、fan-out workload、单动作 gate 和配对 A/B 基础设施已经实现。项目现已迁移到 H200，主模型固定为 Qwen3-Coder-30B-A3B-Instruct BF16，上下文上限为 262,144，正式 workload 覆盖 64K--192K。旧 RTX 6000 Ada/FP8 R5 性能比较已暂停；旧 GPU/transfer artifact 不可复用，旧语义数据只能选择性进入 train。morphology 不再是独立策略，仅作为统一 transfer cost/OOD guard。预测式 PREPARE、Frontier-Aware Retraction 和端到端收益将在 H200/BF16 重建硬件服务模型和 FrontierBelief 后继续验证。
+当前执行路线已切换为 [GPU-First Native-Subagent Oracle](beliefkv_gpu_native_subagent_oracle_plan_2026-08-20_zh.md)。正式 workload 不再使用外部 planner/new supervisor 或 context pack/two-wave arrival，而是让同一个 parent conversation 通过原生 task 发起 FRESH child、等待 JOIN、接收 child ToolMessage 并继续。CPU estimator 保留为调试工具，不再构成 GPU 实验前置门槛。
+
+
+GPU replay 的动作契约沿用 [Perfect-Future Action-Space Oracle v2](beliefkv_perfect_future_oracle_v2_execution_plan_2026-08-17_zh.md)。该实验在冻结 RCCG、token demand 和相对工具 service demand 的真实 GPU replay 中，分别测量 agent execution/admission oracle、KV oracle 和单一 JointPlan joint oracle，用于确认当前动作空间是否存在足够大的 execution-KV joint synergy，并决定是否继续投入 FrontierBelief 在线预测。
+
+Oracle future 只能提供未来需求，不能绕过 allocator、RadixCache/HiCache、safe point、DMA/ACK 和 restore transaction。该历史方案中的独立高压 JointPlan 开销 gate 已暂缓；后续 GPU O0--O3 仍旁路记录 planning、validation、plan age、stale 和 fallback telemetry。
+
+V2-0 schema v2、V2-1 truth/physical sidecar exporter 和 CPU-only V2-1.5 已完成。修正版实现了
+semantic-owner 级 causal next use、proactive D2H shadow、latest-feasible H2D 和四类有限 execution
+package，并以 exact joint-opportunity gate 区分 HBM 高占用与真正可利用窗口。
+
+两条 16-root C0 reconstruction 的 makespan 误差保持在 3% 内。C1 现将 C0 与四种固定 execution policy
+分别完整运行，C3 同时比较 C0、C2、全部 C1 和四种 execution+C2 候选，按 whole-run makespan
+取最优；有限候选内严格满足 no-op dominance，但不声称全局最优。旧 32-root 复跑的 C1/C3 gain 为
+`[0, 0.523%]`，C2 和 joint synergy 为 0；固定 NOMINAL+measured C0 row 中没有 stall-free joint
+opportunity。当前仍需同时验证 workload opportunity 和 Oracle completeness。
+
+历史 CPU-first V2-6 使用 configs/p6/oracle_v2_workloads_v5/；该输入现已降级为 diagnostic。
+该 pool 不称为 Representative；所有轨迹进入 prevalence，censor 前完整局部区间可用，只有 clean trajectory
+进入 whole-run truth。KV-pressure 是 32 个固定实例的可执行 stress workload：64K/96K/128K/160K
+parent prompt、2--3 child、两批各 16 root、30 秒间隔、850K KV pool、96 GiB Host 和 32 running，
+不缩小容量、不注入 synthetic wait、不按结果替换任务。CPU 估计报告见
+[Oracle v2 CPU 反事实吞吐估计](experiments/beliefkv_cpu_counterfactual_oracle_estimate_2026-08-20_zh.md)。
+
+状态：P5 observed-state JointPlan、迁移事务和 restore liveness 已通过定向正确性验证；P6 R0--R5 的代码路径、fan-out workload、单动作 gate 和配对 A/B 基础设施已经实现。项目现已迁移到 H200，主模型固定为 Qwen3-Coder-30B-A3B-Instruct BF16，上下文上限为 262,144。当前 native-subagent formal workload 不注入固定长度的 context pack，实际 context 分布必须由 GPU characterization 报告。旧 RTX 6000 Ada/FP8 R5 性能比较已暂停；旧 GPU/transfer artifact 不可复用，旧语义数据只能选择性进入 train。morphology 不再是独立策略，仅作为统一 transfer cost/OOD guard。预测式 PREPARE、Frontier-Aware Retraction 和端到端收益将在 H200/BF16 重建硬件服务模型和 FrontierBelief 后继续验证。
 
 本文档取代 `technical_archive_2026-07-10.md` 作为当前设计的权威说明。旧文档保留为历史讨论记录，其中的 flat next-action predictor、静态 belief frontier 和以 `agent_id` 为核心的元数据设计不再代表当前方案。
 
-2026-08-11 之后的 P6 可执行顺序以
+2026-08-11 的历史 P6 执行计划如下：
 [`beliefkv_p6_predictive_joint_execution_plan_2026-08-11_zh.md`](beliefkv_p6_predictive_joint_execution_plan_2026-08-11_zh.md)
-为准：删除 morphology 独立策略，取消独立 oracle 前置 gate，增加受控 2--3 child fan-out，并将
+其中原计划删除 morphology 独立策略，取消独立 oracle 前置 gate，增加受控 2--3 child fan-out，并将
 FrontierBelief 作为现有 admission、KV 和 selective retraction 的统一 JointPlan 注解。
+该执行优先级现已由 2026-08-17 的 Perfect-Future Action-Space Oracle v2 取代。
 
 2026-08-12 起的环境重建和 R5 恢复顺序以
 [`beliefkv_h200_bf16_r5_resume_plan_2026-08-12_zh.md`](beliefkv_h200_bf16_r5_resume_plan_2026-08-12_zh.md)
@@ -1110,18 +1135,20 @@ trace 上比较 SGLang/HiCache、P5 observed、P6 shadow/action 与 offline orac
 
 ## 19. 实验设计
 
-### 19.0 固定环境
+### 19.0 固定环境与历史容量范围
 
 ```text
 GPU: H200
 model: Qwen3-Coder-30B-A3B-Instruct BF16
 context limit: 262144
-formal context range: 64K--192K
+historical capacity-characterization range: 64K--192K
 KV pool: model/runtime reserved HBM 之外仅留 1 GiB，一次性冻结
 ```
 
-KV pool 不是自变量。单个 192K request 可完成即通过容量 smoke；并发 pressure 由相同的
-workload arrival/concurrency manifest 产生。旧 RTX/FP8 结果不与 H200/BF16 性能 aggregate 拼接。
+64K--192K 是早期 H200 容量 characterization 范围，不再通过 context pack 强制施加到当前
+native-subagent formal workload。当前实验报告真实 parent context 分布。KV pool 不是自变量；
+并发 pressure 由冻结的 64-root eager arrival 产生。旧 RTX/FP8 结果不与 H200/BF16 性能
+aggregate 拼接。
 
 ### 19.1 Workload
 

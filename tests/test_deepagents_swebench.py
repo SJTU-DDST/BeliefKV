@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import gzip
 import subprocess
 import threading
 from concurrent.futures import ThreadPoolExecutor
@@ -40,6 +41,7 @@ from beliefkv.experiments.deepagents_swebench import (
     JsonlAudit,
     ParallelAnalysisPlan,
     PartialAgentRunError,
+    OracleKVPressureContext,
     SANDBOX_PATH_CONTRACT,
     SYMPY_SANDBOX_PREFLIGHT,
     SweBenchWorkload,
@@ -60,6 +62,8 @@ from beliefkv.experiments.deepagents_swebench import (
     _filesystem_middleware,
     _autonomous_subagents,
     _runtime_verify_changed_tests,
+    _task_prompt,
+    _blake2b_file,
     _planned_child_loop_guard_policy,
     _parallel_analysis_tasks,
     _workspace_patch_tool,
@@ -987,6 +991,65 @@ def test_parallel_analysis_profile_builds_three_read_only_orthogonal_roles(
         "do not modify files" in item["system_prompt"].lower()
         for item in specs
     )
+
+
+def test_native_subagent_profile_builds_read_only_children(tmp_path: Path) -> None:
+    config = DeepAgentsExperimentConfig(
+        mode="autonomous",
+        base_url="http://localhost:18000/v1",
+        model="model",
+        output_dir=tmp_path / "output",
+        workload_manifest=tmp_path / "workloads.json",
+        docker_image="fixture:latest",
+        subagent_fanout_profile="native_subagent_2to3",
+        stop_after_first_native_join=True,
+    )
+    workspace = tmp_path / "workspace"
+    workspace.mkdir()
+    audit = JsonlAudit(tmp_path / "audit.jsonl")
+    backend = DockerWorkspaceBackend(
+        workspace,
+        image="fixture:latest",
+        audit=audit,
+        support_dir=None,
+    )
+    model = FakeMessagesListChatModel(responses=[AIMessage(content="done")])
+    try:
+        specs = _autonomous_subagents(
+            config,
+            SweBenchWorkload(
+                instance_id="pydata__xarray-1",
+                repo="pydata/xarray",
+                base_commit="deadbeef",
+                problem_statement="Fix an invariant.",
+                difficulty="unknown",
+            ),
+            backend,
+            SimpleNamespace(record_call_censor=lambda _record: None),
+            model,
+            model,
+        )
+    finally:
+        audit.close()
+    assert [item["name"] for item in specs] == [
+        "repository-explorer",
+        "test-analyst",
+        "compatibility-analyst",
+    ]
+    assert all(item["tools"] == [] for item in specs)
+
+
+def test_semantic_gate_rejects_non_native_profile(tmp_path: Path) -> None:
+    with pytest.raises(ValueError, match="native_subagent_2to3"):
+        DeepAgentsExperimentConfig(
+            mode="autonomous",
+            base_url="http://localhost:18000/v1",
+            model="model",
+            output_dir=tmp_path / "output",
+            workload_manifest=tmp_path / "workloads.json",
+            docker_image="fixture:latest",
+            stop_after_first_native_join=True,
+        )
 
 
 def test_parallel_analysis_plan_always_materializes_two_orthogonal_children() -> None:
@@ -2652,3 +2715,58 @@ def test_semantic_protocol_normalizes_valid_json_without_another_model_call() ->
     assert update["jump_to"] == "end"
     assert update["protocol_normalized"] is True
     assert update["structured_response"] == completion
+
+
+def test_oracle_pressure_prompt_is_deterministic_and_bounded(
+    tmp_path: Path,
+) -> None:
+    workspace = tmp_path / "workspace"
+    workspace.mkdir()
+    pack = tmp_path / "context.txt.gz"
+    with gzip.open(pack, "wt", encoding="utf-8") as stream:
+        stream.write("\n--- repository file: module.py ---\nVALUE = 1\n" * 100)
+    workload = SweBenchWorkload(
+        instance_id="pressure-1",
+        repo="fixture/repo",
+        base_commit="deadbeef",
+        problem_statement="Fix VALUE.",
+        difficulty="fixture",
+        source_repo=workspace,
+        oracle_kv_pressure=OracleKVPressureContext(
+            target_parent_prompt_tokens=4096,
+            actual_parent_prompt_tokens=4096,
+            context_seed=7,
+            context_pack_path=pack,
+            context_pack_blake2b=_blake2b_file(pack),
+            source_file_count=1,
+            model_context_tokens=8192,
+            output_reserve_tokens=512,
+            runtime_overhead_reserve_tokens=1024,
+        ),
+    )
+
+    first = _task_prompt(workload, workspace=workspace)
+    second = _task_prompt(workload, workspace=workspace)
+
+    assert first == second
+    assert "SWE-bench instance: pressure-1" in first
+    assert "repository file: module.py" in first
+    assert _task_prompt(workload, include_pressure=False) != first
+
+
+def test_oracle_pressure_contract_rejects_context_overflow(tmp_path: Path) -> None:
+    pack = tmp_path / "context.txt.gz"
+    with gzip.open(pack, "wt", encoding="utf-8") as stream:
+        stream.write("context")
+    with pytest.raises(ValueError, match="reentry context budget"):
+        OracleKVPressureContext(
+            target_parent_prompt_tokens=7000,
+            actual_parent_prompt_tokens=7000,
+            context_seed=1,
+            context_pack_path=pack,
+            context_pack_blake2b=_blake2b_file(pack),
+            source_file_count=1,
+            model_context_tokens=8192,
+            output_reserve_tokens=512,
+            runtime_overhead_reserve_tokens=1024,
+        )

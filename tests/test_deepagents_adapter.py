@@ -163,6 +163,13 @@ def test_deepagents_task_callbacks_form_replayable_parent_child_join() -> None:
     adapter.finish(outcome="completed")
 
     assert result["messages"][-1].text == "Integrated the subagent report."
+    task_results = [
+        message
+        for message in result["messages"]
+        if isinstance(message, ToolMessage)
+        and str(message.tool_call_id) == "task-call-1"
+    ]
+    assert len(task_results) == 1
     kinds = [event.kind for event in trace_sink.events]
     assert kinds.count(RuntimeEventKind.SPAWN) == 1
     assert kinds.count(RuntimeEventKind.JOIN_CREATE) == 1
@@ -170,6 +177,13 @@ def test_deepagents_task_callbacks_form_replayable_parent_child_join() -> None:
     assert kinds.count(RuntimeEventKind.JOIN_SATISFIED) == 1
     assert kinds.count(RuntimeEventKind.LLM_SUBMIT) == 3
     assert kinds.count(RuntimeEventKind.LLM_RESULT) == 3
+    gate = adapter.semantic_gate_result()
+    assert gate is not None
+    assert gate["join_id"].startswith("deepagents-join:")
+    assert gate["parent_invocation_id"] == "root"
+    assert gate["parent_context_id"] == "ctx-root"
+    assert gate["parent_context_epoch"] == 1
+    assert gate["request_id"].startswith("beliefkv:")
     model_events = [
         event
         for event in trace_sink.events

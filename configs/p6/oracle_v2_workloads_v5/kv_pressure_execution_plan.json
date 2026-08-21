@@ -1,0 +1,168 @@
+{
+  "batch_count": 1,
+  "batches": [
+    {
+      "batch_id": "oracle-v2-kv-pressure-32-parallel-r0",
+      "concurrency": 32,
+      "docker_images": [
+        "swebench/sweb.eval.x86_64.django_1776_django-10554:latest",
+        "swebench/sweb.eval.x86_64.django_1776_django-10880:latest",
+        "swebench/sweb.eval.x86_64.django_1776_django-10914:latest",
+        "swebench/sweb.eval.x86_64.django_1776_django-10973:latest",
+        "swebench/sweb.eval.x86_64.django_1776_django-10999:latest",
+        "swebench/sweb.eval.x86_64.django_1776_django-11066:latest",
+        "swebench/sweb.eval.x86_64.django_1776_django-11087:latest",
+        "swebench/sweb.eval.x86_64.django_1776_django-11095:latest",
+        "swebench/sweb.eval.x86_64.django_1776_django-11099:latest",
+        "swebench/sweb.eval.x86_64.django_1776_django-11119:latest",
+        "swebench/sweb.eval.x86_64.mwaskom_1776_seaborn-3187:latest",
+        "swebench/sweb.eval.x86_64.psf_1776_requests-1142:latest",
+        "swebench/sweb.eval.x86_64.psf_1776_requests-5414:latest",
+        "swebench/sweb.eval.x86_64.pydata_1776_xarray-3095:latest",
+        "swebench/sweb.eval.x86_64.pydata_1776_xarray-3677:latest",
+        "swebench/sweb.eval.x86_64.pydata_1776_xarray-4075:latest",
+        "swebench/sweb.eval.x86_64.pydata_1776_xarray-4094:latest",
+        "swebench/sweb.eval.x86_64.pydata_1776_xarray-4629:latest",
+        "swebench/sweb.eval.x86_64.pydata_1776_xarray-4687:latest",
+        "swebench/sweb.eval.x86_64.pydata_1776_xarray-6992:latest",
+        "swebench/sweb.eval.x86_64.pydata_1776_xarray-7393:latest",
+        "swebench/sweb.eval.x86_64.pylint-dev_1776_pylint-4604:latest",
+        "swebench/sweb.eval.x86_64.pylint-dev_1776_pylint-4970:latest",
+        "swebench/sweb.eval.x86_64.pylint-dev_1776_pylint-6528:latest",
+        "swebench/sweb.eval.x86_64.pylint-dev_1776_pylint-6903:latest",
+        "swebench/sweb.eval.x86_64.pytest-dev_1776_pytest-10081:latest",
+        "swebench/sweb.eval.x86_64.pytest-dev_1776_pytest-10356:latest",
+        "swebench/sweb.eval.x86_64.pytest-dev_1776_pytest-5809:latest",
+        "swebench/sweb.eval.x86_64.pytest-dev_1776_pytest-6197:latest",
+        "swebench/sweb.eval.x86_64.pytest-dev_1776_pytest-7432:latest",
+        "swebench/sweb.eval.x86_64.pytest-dev_1776_pytest-7490:latest",
+        "swebench/sweb.eval.x86_64.pytest-dev_1776_pytest-7982:latest"
+      ],
+      "instance_ids": [
+        "django__django-10554",
+        "mwaskom__seaborn-3187",
+        "psf__requests-1142",
+        "pydata__xarray-3095",
+        "pylint-dev__pylint-4604",
+        "pytest-dev__pytest-10081",
+        "django__django-10880",
+        "psf__requests-5414",
+        "pydata__xarray-3677",
+        "pylint-dev__pylint-4970",
+        "pytest-dev__pytest-10356",
+        "django__django-10914",
+        "pydata__xarray-4075",
+        "pylint-dev__pylint-6528",
+        "pytest-dev__pytest-5809",
+        "django__django-10973",
+        "pydata__xarray-4094",
+        "pylint-dev__pylint-6903",
+        "pytest-dev__pytest-6197",
+        "django__django-10999",
+        "pydata__xarray-4629",
+        "pytest-dev__pytest-7432",
+        "django__django-11066",
+        "pydata__xarray-4687",
+        "pytest-dev__pytest-7490",
+        "django__django-11087",
+        "pydata__xarray-6992",
+        "pytest-dev__pytest-7982",
+        "django__django-11095",
+        "pydata__xarray-7393",
+        "django__django-11099",
+        "django__django-11119"
+      ],
+      "policy": "frozen_p5_observed",
+      "predictive_actions": false,
+      "projects": [
+        "django/django",
+        "mwaskom/seaborn",
+        "psf/requests",
+        "pydata/xarray",
+        "pylint-dev/pylint",
+        "pytest-dev/pytest"
+      ],
+      "saturated_root_backlog": false,
+      "split": "train",
+      "subagent_fanout_profile": "parallel_analysis_2to3",
+      "workflow_arrival_batch_interval_ms": 30000,
+      "workflow_arrival_batch_size": 16,
+      "workflow_arrival_interval_ms": 0,
+      "workflow_count": 32,
+      "workload_manifest": "/home/longhao/experiment/BeliefKV/configs/p6/oracle_v2_workloads_v5/workload_manifests/oracle-v2-kv-pressure-32-parallel-r0.json",
+      "workload_manifest_sha256": "02cb6648c51c29d1f214ee561d6bc79790c87cd8e04d095a27edde431d6da309"
+    }
+  ],
+  "evidence_role": "mechanism_stress_not_representative_prevalence",
+  "executable": true,
+  "execution_contract": {
+    "backlog_root_count": 32,
+    "child_count_range": [
+      2,
+      3
+    ],
+    "fanout_profile": "parallel_analysis_2to3",
+    "future_parent_reentry_required": true,
+    "parent_prompt_targets": [
+      65536,
+      98304,
+      131072,
+      163840
+    ],
+    "required_states": [
+      "WAIT_TOOL",
+      "WAIT_JOIN"
+    ],
+    "root_release_waves": [
+      {
+        "release_offset_ms": 0,
+        "root_count": 16
+      },
+      {
+        "release_offset_ms": 30000,
+        "root_count": 16
+      }
+    ],
+    "wait_source": "real child LLM and Docker tool execution; no synthetic sleep or post-hoc duration replacement"
+  },
+  "failure_contract": {
+    "context_overflow": "mark input invalid and do not replace it; never truncate after observing Oracle outcomes",
+    "fixed_task_replacement": "none",
+    "guard_or_timeout": "retain complete local parked/reentry intervals with explicit censor; exclude the episode from whole-run Oracle/JCT truth"
+  },
+  "frozen": true,
+  "joint_opportunity_definition": {
+    "eviction": "migratable parked victim and HBM-blocked ready beneficiary and causal slack exceeds D2H plus commit guard",
+    "net_positive": "beneficiary unlock gain exceeds predicted restore stall",
+    "stall_free_round_trip": "eviction opportunity and causal slack exceeds D2H plus H2D plus both commit guards"
+  },
+  "plan_id": "oracle-v2-kv-pressure-executable-v3",
+  "predictive_actions_enabled": false,
+  "predictor_enabled": false,
+  "qualification_gate": {
+    "minimum_blocked_beneficiary_work_ms": 1,
+    "minimum_stall_free_round_trip_windows": 10,
+    "minimum_unique_victim_byte_ms": 1,
+    "peak_hbm_alone_is_sufficient": false,
+    "source_row": "C0 NOMINAL measured-fastpath"
+  },
+  "resource_contract": {
+    "do_not_shrink_kv_pool": true,
+    "host_pool_gib": 96,
+    "kv_pool_tokens": 850000,
+    "max_running_requests": 32,
+    "model_context_tokens": 262144,
+    "output_reserve_tokens": 4096,
+    "required_reentry_total_context_lt": 258048
+  },
+  "runtime_policy": "frozen_p5_observed",
+  "runtime_profile": "/home/longhao/experiment/BeliefKV/configs/p6/h200_bf16_v5/frozen_runtime_profile.json",
+  "schema_version": 3,
+  "source_contract": {
+    "calibration_and_test_sealed": true,
+    "context_construction": "fixed-seed git-tracked repository text packed by the frozen Qwen tokenizer to each preregistered parent prompt target",
+    "selection": "first_32_frozen_instances",
+    "source_plan": "/home/longhao/experiment/BeliefKV/configs/p6/oracle_v2_workloads_v5/natural_opportunity_collection_plan.json"
+  },
+  "stopping_rule": "run C0 first; if the fixed batch fails the exact joint gate, report insufficient opportunity and do not evaluate C1-C3 or replace tasks"
+}

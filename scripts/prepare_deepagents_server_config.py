@@ -227,7 +227,7 @@ def main() -> int:
     )
     parser.add_argument(
         "--subagent-fanout-profile",
-        choices=("natural", "parallel_analysis_2to3"),
+        choices=("natural", "parallel_analysis_2to3", "native_subagent_2to3"),
         default="natural",
     )
     parser.add_argument(
