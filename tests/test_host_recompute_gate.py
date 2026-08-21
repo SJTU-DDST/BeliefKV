@@ -112,6 +112,7 @@ def test_gate_queues_normal_offload_for_parked_replay_safe_context() -> None:
 
     assert tick.transfer is not None
     assert tick.transfer.command.kind == CommandKind.OFFLOAD_CONTEXT
+    assert tick.transfer.command.physical_bundle is not None
     assert tick.transfer.command.context_id == "ctx"
     assert runtime._host_recompute_micro_gate_state["stage"] == "offload_queued"
 

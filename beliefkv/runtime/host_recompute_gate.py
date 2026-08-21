@@ -9,7 +9,6 @@ from beliefkv.runtime.protocol import (
     CommandStatus,
     ControlCommand,
     EnqueueStatus,
-    PhysicalResidency,
 )
 
 
@@ -58,7 +57,7 @@ def maybe_queue_host_recompute_offload(runtime: Any, *, now_ms: float) -> None:
     protected_contexts = {
         item.context_id for item in obligations if not item.state.terminal
     }
-    candidates: list[tuple[str, int, int]] = []
+    candidates: list[tuple[str, int, Any]] = []
     for context_id, context in runtime.controller.graph.contexts.items():
         if context.workflow_id != config.host_recompute_micro_gate_workflow_id:
             continue
@@ -68,23 +67,32 @@ def maybe_queue_host_recompute_offload(runtime: Any, *, now_ms: float) -> None:
             continue
         if not runtime._host_cleanup_context_is_parked(context_id):
             continue
-        gpu_pages = tuple(
-            page
-            for page in runtime.controller.page_index.context_pages(context_id)
-            if page.residency == PhysicalResidency.GPU_ONLY
+        previews = runtime.controller.arbiter.bundle_builder.previews_for_context(
+            CommandKind.OFFLOAD_CONTEXT,
+            context_id,
+            context.epoch,
+            now_ms=now_ms,
+            host_available_bytes=max(
+                0,
+                config.host_capacity_bytes
+                - runtime.controller.page_index.cpu_bytes,
+            ),
         )
-        if not gpu_pages or any(
-            not page.transfer_idle
-            or not page.sealed
-            or page.engine_lock_ref > 0
-            or page.active_reader_count > 0
-            or bool(page.semantic_pin_contexts)
-            for page in gpu_pages
-        ):
+        eligible = tuple(
+            preview
+            for preview in previews
+            if preview.eligible
+            and preview.copy_bytes
+            >= config.host_recompute_micro_gate_min_gpu_bytes
+            and preview.bundle.marginal_reclaimable_bytes > 0
+        )
+        if not eligible:
             continue
-        gpu_bytes = sum(page.size_bytes for page in gpu_pages)
-        if gpu_bytes >= config.host_recompute_micro_gate_min_gpu_bytes:
-            candidates.append((context_id, context.epoch, gpu_bytes))
+        preview = max(
+            eligible,
+            key=lambda item: (item.copy_bytes, item.bundle.closure_bytes),
+        )
+        candidates.append((context_id, context.epoch, preview))
 
     if not candidates:
         _update(
@@ -94,7 +102,8 @@ def maybe_queue_host_recompute_offload(runtime: Any, *, now_ms: float) -> None:
             reason="no_replay_safe_parked_gpu_context",
         )
         return
-    context_id, context_epoch, gpu_bytes = min(candidates)
+    context_id, context_epoch, preview = min(candidates, key=lambda item: item[0])
+    gpu_bytes = preview.copy_bytes
     sequence = int(state.get("offload_sequence", 0)) + 1
     command = ControlCommand(
         command_id=f"host-recompute-gate-offload-{sequence}",
@@ -102,13 +111,21 @@ def maybe_queue_host_recompute_offload(runtime: Any, *, now_ms: float) -> None:
         created_ts_ms=now_ms,
         context_id=context_id,
         context_epoch=context_epoch,
-        target_bytes=gpu_bytes,
+        target_bytes=preview.bundle.marginal_reclaimable_bytes,
         priority=4.0e9,
         queue_class=CommandQueueClass.URGENT,
         metadata={
             "reason": "host_recompute_micro_gate",
             "gate_id": config.host_recompute_micro_gate_id,
+            "physical_bundle_scope": preview.bundle.scope.value,
+            "physical_exclusive_action_bytes": (
+                preview.bundle.exclusive_action_bytes
+            ),
+            "physical_cross_context_action_bytes": (
+                preview.bundle.cross_context_action_bytes
+            ),
         },
+        physical_bundle=preview.intent(),
     )
     outcome = runtime.controller.enqueue_control_command(command)
     if outcome.status != EnqueueStatus.ENQUEUED:
