@@ -11320,14 +11320,14 @@ class EmbeddedSGLangRuntime:
             requirement_revision=self._reclaim_requirement_revision,
         )
 
-    def _update_reclaim_requirements(
+    def _observe_reclaim_requirement(
         self,
-        ticket_epoch: AdmissionTicketEpoch,
-        entries: Mapping[str, Any],
+        requirement: ReclaimRequirement,
         *,
-        scanned_request_ids: tuple[str, ...],
         now_ms: float,
     ) -> None:
+        """Upsert one observed HBM deficit without creating a policy side path."""
+
         if not hasattr(self, "_reclaim_requirement_revision"):
             self._reclaim_requirement_revision = 0
         if not hasattr(self, "_online_joint_counts"):
@@ -11336,46 +11336,59 @@ class EmbeddedSGLangRuntime:
         if requirements is None:
             requirements = {}
             self._reclaim_requirements = requirements
+        request_id = requirement.beneficiary_request_id
+        previous = requirements.get(request_id)
+        force_progress_ms = max(
+            1.0, float(self.config.admission_force_progress_timeout_ms)
+        )
+        changed = (
+            previous is None
+            or (
+                previous.required_startup_bytes,
+                previous.required_growth_bytes,
+                previous.current_prefix_bytes,
+                previous.skip_reason,
+            )
+            != (
+                requirement.required_startup_bytes,
+                requirement.required_growth_bytes,
+                requirement.current_prefix_bytes,
+                requirement.skip_reason,
+            )
+            or int(previous.waited_ms // force_progress_ms)
+            != int(requirement.waited_ms // force_progress_ms)
+        )
+        self._maybe_start_admission_rescue(requirement, now_ms=now_ms)
+        if not changed:
+            return
+        requirements[request_id] = requirement
+        self._reclaim_requirement_revision += 1
+        self._online_joint_counts["reclaim_requirement_observed"] += 1
+        self.audit.emit(
+            "admission_reclaim_requirement_observed",
+            now_ms,
+            **requirement.to_dict(),
+            requirement_revision=self._reclaim_requirement_revision,
+        )
+
+    def _update_reclaim_requirements(
+        self,
+        ticket_epoch: AdmissionTicketEpoch,
+        entries: Mapping[str, Any],
+        *,
+        scanned_request_ids: tuple[str, ...],
+        now_ms: float,
+    ) -> None:
+        requirements = getattr(self, "_reclaim_requirements", None)
+        if requirements is None:
+            requirements = {}
+            self._reclaim_requirements = requirements
         observed = {
             item.beneficiary_request_id: item
             for item in ticket_epoch.reclaim_requirements
         }
-        force_progress_ms = max(
-            1.0, float(self.config.admission_force_progress_timeout_ms)
-        )
-        for request_id, requirement in observed.items():
-            previous = requirements.get(request_id)
-            changed = (
-                previous is None
-                or (
-                    previous.required_startup_bytes,
-                    previous.required_growth_bytes,
-                    previous.current_prefix_bytes,
-                    previous.skip_reason,
-                )
-                != (
-                    requirement.required_startup_bytes,
-                    requirement.required_growth_bytes,
-                    requirement.current_prefix_bytes,
-                    requirement.skip_reason,
-                )
-                or int(previous.waited_ms // force_progress_ms)
-                != int(requirement.waited_ms // force_progress_ms)
-            )
-            self._maybe_start_admission_rescue(
-                requirement, now_ms=now_ms
-            )
-            if not changed:
-                continue
-            requirements[request_id] = requirement
-            self._reclaim_requirement_revision += 1
-            self._online_joint_counts["reclaim_requirement_observed"] += 1
-            self.audit.emit(
-                "admission_reclaim_requirement_observed",
-                now_ms,
-                **requirement.to_dict(),
-                requirement_revision=self._reclaim_requirement_revision,
-            )
+        for requirement in observed.values():
+            self._observe_reclaim_requirement(requirement, now_ms=now_ms)
 
         scanned = set(scanned_request_ids)
         for request_id in tuple(requirements):
@@ -12222,16 +12235,30 @@ class EmbeddedSGLangRuntime:
             0,
             _sequence_length(origin_input_ids) - _sequence_length(prefix_indices),
         )
+        bundle_generations = self._context_bundle_generations(
+            metadata.context_id
+        )
         validation = (
             self.controller.visible_admission.validate_and_observe_prefix_rematch(
                 ticket,
                 epoch=self._admission_epoch,
                 uncached_prompt_tokens=uncached_prompt_tokens,
-                bundle_generations=self._context_bundle_generations(
-                    metadata.context_id
-                ),
+                bundle_generations=bundle_generations,
             )
         )
+        demand_increased = validation.reasons == (
+            "prefix_demand_increased",
+        )
+        if demand_increased:
+            validation = (
+                self.controller.visible_admission.validate_and_observe_prefix_rematch(
+                    ticket,
+                    epoch=self._admission_epoch,
+                    uncached_prompt_tokens=uncached_prompt_tokens,
+                    bundle_generations=bundle_generations,
+                    allow_demand_increase=True,
+                )
+            )
         if not validation.valid:
             self._record_ticket_skip(
                 request_id,
@@ -12240,9 +12267,13 @@ class EmbeddedSGLangRuntime:
             return False
         refreshed = self.controller.visible_admission.get(request_id)
         assert refreshed is not None
-        actual_prefill_tokens = min(
-            refreshed.request.uncached_prompt_tokens,
-            ticket.estimated_prefill_tokens,
+        actual_prefill_tokens = (
+            refreshed.request.uncached_prompt_tokens
+            if demand_increased
+            else min(
+                refreshed.request.uncached_prompt_tokens,
+                ticket.estimated_prefill_tokens,
+            )
         )
         chunked = (
             actual_prefill_tokens < refreshed.request.uncached_prompt_tokens
@@ -12282,17 +12313,117 @@ class EmbeddedSGLangRuntime:
             value for key, value in rematched_tokens.items() if key != request_id
         )
         if (
-            other_bytes + budgeted_bytes
-            > getattr(self, "_current_ticket_hbm_budget_bytes", 0)
-        ):
-            self._record_ticket_skip(request_id, "batch_hbm_certificate")
-            return False
-        if (
             other_tokens + actual_prefill_tokens
             > getattr(self, "_current_ticket_prefill_budget_tokens", 0)
         ):
             self._record_ticket_skip(request_id, "batch_prefill_certificate")
+            self.audit.emit(
+                "admission_prefix_rematch_recertification_deferred",
+                self._now_ms(),
+                request_id=request_id,
+                reason="batch_prefill_certificate",
+                demand_increased=demand_increased,
+                uncached_prompt_tokens=refreshed.request.uncached_prompt_tokens,
+                required_prefill_tokens=actual_prefill_tokens,
+                other_prefill_tokens=other_tokens,
+                prefill_budget_tokens=getattr(
+                    self, "_current_ticket_prefill_budget_tokens", 0
+                ),
+            )
             return False
+        if (
+            other_bytes + budgeted_bytes
+            > getattr(self, "_current_ticket_hbm_budget_bytes", 0)
+        ):
+            request = refreshed.request
+            startup_bytes = (
+                request.fixed_overhead_bytes
+                + self.config.admission_allocator_guard_tokens
+                * request.kv_bytes_per_token
+            )
+            growth_bytes = (
+                actual_prefill_tokens
+                + min(
+                    request.expected_output_tokens,
+                    self.config.admission_decode_quantum_tokens,
+                )
+            ) * request.kv_bytes_per_token
+            reservation_credit = min(
+                startup_bytes + growth_bytes,
+                ticket.reservation_credit_bytes,
+            )
+            startup_credit = min(startup_bytes, reservation_credit)
+            requirement = ReclaimRequirement(
+                beneficiary_request_id=request_id,
+                required_startup_bytes=startup_bytes - startup_credit,
+                required_growth_bytes=max(
+                    0,
+                    growth_bytes - (reservation_credit - startup_credit),
+                ),
+                current_prefix_bytes=max(
+                    0,
+                    (request.prompt_tokens or request.uncached_prompt_tokens)
+                    - request.uncached_prompt_tokens,
+                )
+                * request.kv_bytes_per_token,
+                waited_ms=max(0.0, self._now_ms() - request.submitted_ts_ms),
+                skip_reason="prefix_rematch_bounded_hbm_budget",
+            )
+            self._observe_reclaim_requirement(
+                requirement,
+                now_ms=float(self._now_ms()),
+            )
+            self._record_ticket_skip(request_id, "batch_hbm_certificate")
+            self.audit.emit(
+                "admission_prefix_rematch_recertification_deferred",
+                self._now_ms(),
+                request_id=request_id,
+                reason="batch_hbm_certificate",
+                demand_increased=demand_increased,
+                uncached_prompt_tokens=request.uncached_prompt_tokens,
+                required_epoch_bytes=budgeted_bytes,
+                other_epoch_bytes=other_bytes,
+                hbm_budget_bytes=getattr(
+                    self, "_current_ticket_hbm_budget_bytes", 0
+                ),
+            )
+            return False
+        if demand_increased:
+            recertified_ticket = replace(
+                ticket,
+                version=refreshed.version,
+                estimated_prefill_tokens=actual_prefill_tokens,
+                estimated_incremental_bytes=max(
+                    refreshed.request.estimated_incremental_bytes,
+                    actual_epoch_bytes,
+                ),
+                epoch_incremental_bytes=actual_epoch_bytes,
+                reservation_credit_bytes=min(
+                    ticket.reservation_credit_bytes,
+                    actual_epoch_bytes,
+                ),
+            )
+            self._current_tickets_by_request[request_id] = recertified_ticket
+            if not hasattr(self, "_online_joint_counts"):
+                self._online_joint_counts = Counter()
+            self._online_joint_counts["prefix_rematch_ticket_recertified"] += 1
+            self.audit.emit(
+                "admission_ticket_recertified_after_prefix",
+                self._now_ms(),
+                request_id=request_id,
+                epoch=self._admission_epoch,
+                previous_prefill_tokens=ticket.estimated_prefill_tokens,
+                recertified_prefill_tokens=actual_prefill_tokens,
+                recertified_epoch_bytes=actual_epoch_bytes,
+                budgeted_epoch_bytes=budgeted_bytes,
+                hbm_budget_bytes=getattr(
+                    self, "_current_ticket_hbm_budget_bytes", 0
+                ),
+                prefill_budget_tokens=getattr(
+                    self, "_current_ticket_prefill_budget_tokens", 0
+                ),
+            )
+            ticket = recertified_ticket
         rematched_bytes[request_id] = budgeted_bytes
         rematched_tokens[request_id] = actual_prefill_tokens
         self._current_ticket_rematched_hbm_bytes = rematched_bytes

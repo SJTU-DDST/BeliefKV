@@ -942,15 +942,18 @@ class VisibleAdmissionIndex:
         epoch: int,
         uncached_prompt_tokens: int,
         bundle_generations: Mapping[str, str] | None = None,
+        allow_demand_increase: bool = False,
     ) -> AdmissionTicketValidation:
-        """Accept a scheduler-owned prefix rematch only when demand cannot grow.
+        """Validate and record a scheduler-owned prefix rematch.
 
         The ticket is validated before updating the prefix observation. This is
         important for batched admission: admitting an earlier request can make
         a shared prefix visible to a later request in the same scheduler safe
         point. Updating the side index first would invalidate that later
-        request's own ticket. A larger uncached suffix is still rejected because
-        it could exceed the ticket's HBM or prefill certificate.
+        request's own ticket. A larger uncached suffix is rejected by default
+        because it can exceed the ticket's HBM or prefill certificate. The
+        runtime may explicitly allow the observation only when it will issue a
+        replacement certificate against the current safe-point budgets.
         """
 
         if uncached_prompt_tokens < 0:
@@ -975,7 +978,10 @@ class VisibleAdmissionIndex:
                 False,
                 ("bundle_set_changed",),
             )
-        if uncached_prompt_tokens > current.request.uncached_prompt_tokens:
+        if (
+            uncached_prompt_tokens > current.request.uncached_prompt_tokens
+            and not allow_demand_increase
+        ):
             return AdmissionTicketValidation(
                 False,
                 ("prefix_demand_increased",),

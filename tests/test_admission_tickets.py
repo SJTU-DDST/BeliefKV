@@ -365,11 +365,32 @@ def test_prefix_rematch_rejects_increased_demand_and_physical_change() -> None:
         uncached_prompt_tokens=2,
         bundle_generations={"bundle": "g1", "new-bundle": "g1"},
     )
+    changed_while_allowing_growth = index.validate_and_observe_prefix_rematch(
+        ticket,
+        epoch=3,
+        uncached_prompt_tokens=5,
+        bundle_generations={"bundle": "g2"},
+        allow_demand_increase=True,
+    )
+
 
     assert increased.reasons == ("prefix_demand_increased",)
     assert changed.reasons == ("bundle_generation:bundle",)
     assert added.reasons == ("bundle_set_changed",)
+    assert changed_while_allowing_growth.reasons == (
+        "bundle_generation:bundle",
+    )
     assert index.get("a").request.uncached_prompt_tokens == 4
+
+    recertified = index.validate_and_observe_prefix_rematch(
+        ticket,
+        epoch=3,
+        uncached_prompt_tokens=5,
+        bundle_generations={"bundle": "g1"},
+        allow_demand_increase=True,
+    )
+    assert recertified.valid
+    assert index.get("a").request.uncached_prompt_tokens == 5
 
 
 def test_bundle_change_invalidates_only_the_dependent_ticket() -> None:

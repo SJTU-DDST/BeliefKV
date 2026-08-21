@@ -4448,6 +4448,247 @@ class SGLangBackendTest(unittest.TestCase):
             {"request": 3},
         )
 
+    def test_after_prefix_validation_recertifies_larger_suffix_within_budget(self):
+        runtime = EmbeddedSGLangRuntime.__new__(EmbeddedSGLangRuntime)
+        runtime.config = BeliefKVConfig(
+            hbm_capacity_bytes=1_000,
+            reserve_hbm_bytes=0,
+            kv_bytes_per_token=10,
+        )
+        runtime.controller = BeliefKVController(runtime.config)
+        runtime.audit = _AuditRecorder()
+        runtime._now_ms = lambda: 1_000.0
+        runtime._admission_epoch = 4
+        runtime._ticket_skip_audit = set()
+        runtime._ticket_selection_details = {}
+        runtime._current_ticket_hbm_budget_bytes = 1_000
+        runtime._current_ticket_prefill_budget_tokens = 10
+        runtime._current_ticket_rematched_hbm_bytes = {}
+        runtime._current_ticket_rematched_prefill_tokens = {}
+        metadata = BeliefKVRequestMetadata("wf", "inv", "ctx", 0)
+        request = SimpleNamespace(
+            rid="request",
+            beliefkv_metadata=metadata,
+            origin_input_ids=_NoBooleanSequence(6),
+            prefix_indices=_NoBooleanSequence(1),
+        )
+        runtime.controller.visible_admission.register(
+            AdmissionRequest(
+                "request", "wf", "inv", "ctx", 0, 0.0, 1, 1, 10
+            )
+        )
+        epoch = runtime.controller.admission_ticket_compiler.compile(
+            epoch=4,
+            now_ms=1.0,
+            ordered_request_ids=("request",),
+            entries={
+                "request": runtime.controller.visible_admission.get("request")
+            },
+            budget=AdmissionCompileBudget(
+                max_prefill_tokens=10,
+                max_requests=1,
+                max_candidates=1,
+                available_hbm_bytes=1_000,
+            ),
+            source="test",
+            reason="prefix_rematch",
+        )
+        original_ticket = epoch.tickets[0]
+        runtime._current_ticket_epoch = epoch
+        runtime._current_tickets_by_request = dict(epoch.by_request_id)
+
+        self.assertTrue(runtime.admission_ticket_allows(request))
+        self.assertTrue(runtime.validate_admission_ticket_after_prefix(request))
+
+        refreshed = runtime.controller.visible_admission.get("request")
+        recertified = runtime._current_tickets_by_request["request"]
+        self.assertEqual(refreshed.request.uncached_prompt_tokens, 5)
+        self.assertEqual(recertified.estimated_prefill_tokens, 5)
+        self.assertEqual(recertified.version, refreshed.version)
+        self.assertNotEqual(recertified.version, original_ticket.version)
+        self.assertTrue(
+            any(
+                event == "admission_ticket_recertified_after_prefix"
+                for event, _, _ in runtime.audit.events
+            )
+        )
+
+    def test_after_prefix_growth_updates_demand_and_emits_hbm_requirement(self):
+        runtime = EmbeddedSGLangRuntime.__new__(EmbeddedSGLangRuntime)
+        runtime.config = BeliefKVConfig(
+            hbm_capacity_bytes=1_000,
+            reserve_hbm_bytes=0,
+            kv_bytes_per_token=10,
+            admission_force_progress_timeout_ms=10_000.0,
+        )
+        runtime.controller = BeliefKVController(runtime.config)
+        runtime.audit = _AuditRecorder()
+        runtime._now_ms = lambda: 1_000.0
+        runtime._admission_epoch = 4
+        runtime._ticket_skip_audit = set()
+        runtime._ticket_selection_details = {}
+        runtime._current_ticket_hbm_budget_bytes = 50
+        runtime._current_ticket_prefill_budget_tokens = 10
+        runtime._current_ticket_rematched_hbm_bytes = {}
+        runtime._current_ticket_rematched_prefill_tokens = {}
+        metadata = BeliefKVRequestMetadata("wf", "inv", "ctx", 0)
+        request = SimpleNamespace(
+            rid="request",
+            beliefkv_metadata=metadata,
+            origin_input_ids=_NoBooleanSequence(6),
+            prefix_indices=_NoBooleanSequence(1),
+        )
+        runtime.controller.visible_admission.register(
+            AdmissionRequest(
+                "request", "wf", "inv", "ctx", 0, 0.0, 1, 1, 10
+            )
+        )
+        epoch = runtime.controller.admission_ticket_compiler.compile(
+            epoch=4,
+            now_ms=1.0,
+            ordered_request_ids=("request",),
+            entries={
+                "request": runtime.controller.visible_admission.get("request")
+            },
+            budget=AdmissionCompileBudget(
+                max_prefill_tokens=10,
+                max_requests=1,
+                max_candidates=1,
+                available_hbm_bytes=1_000,
+            ),
+            source="test",
+            reason="prefix_rematch",
+        )
+        runtime._current_ticket_epoch = epoch
+        runtime._current_tickets_by_request = dict(epoch.by_request_id)
+
+        self.assertFalse(runtime.validate_admission_ticket_after_prefix(request))
+
+        refreshed = runtime.controller.visible_admission.get("request")
+        requirement = runtime._reclaim_requirements["request"]
+        self.assertEqual(refreshed.request.uncached_prompt_tokens, 5)
+        self.assertEqual(
+            requirement.skip_reason,
+            "prefix_rematch_bounded_hbm_budget",
+        )
+        self.assertEqual(
+            runtime._current_tickets_by_request["request"].estimated_prefill_tokens,
+            1,
+        )
+        self.assertTrue(
+            any(
+                event == "admission_prefix_rematch_recertification_deferred"
+                and fields["reason"] == "batch_hbm_certificate"
+                for event, _, fields in runtime.audit.events
+            )
+        )
+
+    def test_prefix_growth_batch_makes_progress_and_recompiles_deferred_demand(self):
+        runtime = EmbeddedSGLangRuntime.__new__(EmbeddedSGLangRuntime)
+        runtime.config = BeliefKVConfig(
+            hbm_capacity_bytes=2_000,
+            reserve_hbm_bytes=0,
+            kv_bytes_per_token=10,
+        )
+        runtime.controller = BeliefKVController(runtime.config)
+        runtime.audit = _AuditRecorder()
+        runtime._now_ms = lambda: 1_000.0
+        runtime._admission_epoch = 4
+        runtime._ticket_skip_audit = set()
+        runtime._ticket_selection_details = {}
+        runtime._current_ticket_hbm_budget_bytes = 2_000
+        runtime._current_ticket_prefill_budget_tokens = 6
+        runtime._current_ticket_rematched_hbm_bytes = {}
+        runtime._current_ticket_rematched_prefill_tokens = {}
+        entries = {}
+        requests = {}
+        for request_id in ("a", "b"):
+            metadata = BeliefKVRequestMetadata(
+                f"wf-{request_id}",
+                f"inv-{request_id}",
+                f"ctx-{request_id}",
+                0,
+            )
+            requests[request_id] = SimpleNamespace(
+                rid=request_id,
+                beliefkv_metadata=metadata,
+                origin_input_ids=_NoBooleanSequence(6),
+                prefix_indices=_NoBooleanSequence(1),
+            )
+            entries[request_id] = runtime.controller.visible_admission.register(
+                AdmissionRequest(
+                    request_id,
+                    f"wf-{request_id}",
+                    f"inv-{request_id}",
+                    f"ctx-{request_id}",
+                    0,
+                    0.0,
+                    1,
+                    1,
+                    10,
+                )
+            )
+        epoch = runtime.controller.admission_ticket_compiler.compile(
+            epoch=4,
+            now_ms=1.0,
+            ordered_request_ids=("a", "b"),
+            entries=entries,
+            budget=AdmissionCompileBudget(
+                max_prefill_tokens=10,
+                max_requests=2,
+                max_candidates=2,
+                available_hbm_bytes=2_000,
+            ),
+            source="test",
+            reason="prefix_rematch",
+        )
+        runtime._current_ticket_epoch = epoch
+        runtime._current_tickets_by_request = dict(epoch.by_request_id)
+
+        self.assertTrue(
+            runtime.validate_admission_ticket_after_prefix(requests["a"])
+        )
+        self.assertFalse(
+            runtime.validate_admission_ticket_after_prefix(requests["b"])
+        )
+        self.assertEqual(
+            runtime._current_ticket_rematched_prefill_tokens,
+            {"a": 5},
+        )
+        self.assertEqual(
+            runtime.controller.visible_admission.get(
+                "b"
+            ).request.uncached_prompt_tokens,
+            5,
+        )
+        self.assertNotIn("b", getattr(runtime, "_reclaim_requirements", {}))
+        self.assertTrue(
+            any(
+                event == "admission_prefix_rematch_recertification_deferred"
+                and fields["reason"] == "batch_prefill_certificate"
+                for event, _, fields in runtime.audit.events
+            )
+        )
+
+        runtime.controller.visible_admission.cancel("a")
+        next_entry = runtime.controller.visible_admission.get("b")
+        next_epoch = runtime.controller.admission_ticket_compiler.compile(
+            epoch=5,
+            now_ms=1_001.0,
+            ordered_request_ids=("b",),
+            entries={"b": next_entry},
+            budget=AdmissionCompileBudget(
+                max_prefill_tokens=6,
+                max_requests=1,
+                max_candidates=1,
+                available_hbm_bytes=2_000,
+            ),
+            source="test",
+            reason="prefix_rematch_recompile",
+        )
+        self.assertEqual(len(next_epoch.tickets), 1)
+        self.assertEqual(next_epoch.tickets[0].estimated_prefill_tokens, 5)
+
     def test_admission_rescue_is_single_bounded_and_allocator_backed(self):
         runtime = EmbeddedSGLangRuntime.__new__(EmbeddedSGLangRuntime)
         runtime.config = BeliefKVConfig(

@@ -2,6 +2,32 @@
 
 更新日期：2026-08-22
 
+## 2026-08-22：P5 Gate C 复验暴露 prefix-rematch 活性缺陷
+
+使用 `0986398` 与同一 64-root/v5 冻结配置完成约 60 分钟复验。前一轮
+ordinary restore debt 和 gross-pressure 误判已经消失：ordinary obligation、
+capacity block、barrier 均为 0；17 个唯一 CPU-only prefix 直接交给 native
+PrefillAdder；完整 JointPlan 从 2,188 次降为 1 次，4,301 个 epoch 走 apply-only。
+
+复验仍未通过 Gate C。满池后出现 4,582 次
+`prefix_rematch:prefix_demand_increased`，478 个已签发 ticket 的 epoch 最终
+native batch 为 0。17 个 ordinary fallback request 在停止前均未再次 physical
+start，running 从 32 降至约 20--21。根因是 ticket 编译后 SGLang 重新匹配
+Radix/HiCache prefix，需求增长时整张 ticket 被拒绝，但增长后的 demand 未写回
+side index，下一 epoch 继续签发 stale ticket。
+
+已修复为局部重认证：纯 demand growth 在 request/context/bundle generation
+仍有效时先写回 side index；当前 HBM/prefill budget 可行则原子重签局部 ticket，
+prefill budget 不足则下一 epoch 按新 demand 编译，HBM 不足则进入统一
+ReclaimRequirement/replacement/rescue 状态机。bundle 或 identity 变化仍严格拒绝。
+受影响 CPU 回归为 249 passed、8 subtests passed。
+
+本轮 trace 另有 64 parent、128 child、64 JOIN_WAIT，但自然 RETURN/JOIN 均为 0，
+因此只用于 P5 高压活性 characterization，不进入 Frozen GPU Replay 或 O0/O3。
+完整证据见
+`docs/experiments/beliefkv_p5_gate_c_native64_rematch_2026-08-22_zh.md`。
+
+
 ## 2026-08-22：P5 Gate C 首轮失败并完成针对性修复
 
 首轮 64-root Gate C 在 60 分钟检查点受控停止，不进入训练集、A/B 或 Frozen
