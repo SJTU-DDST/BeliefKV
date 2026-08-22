@@ -2,6 +2,31 @@
 
 更新日期：2026-08-22
 
+## 2026-08-22：Gate C 长跑暴露 Ordinary Admission 饥饿与 Deadline Wakeup 缺口
+
+prefix-rematch 修复版完整运行至 7,200 秒 deadline。543 次局部 ticket
+重认证全部随后获得 physical start，说明 rematch correctness 已关闭；但 1,780 个
+可见 request 中仍有 88 个 ordinary native-fallback request 从未 physical start，
+最长等待约 674 秒。它们已在 server queue 中，问题不是 client backlog，而是 stale/
+partial JointPlan 没有给已排除 durable restore priority 的普通 native miss 提供最终
+admission floor。
+
+已新增 bounded ordinary-fallback aging：超过 30 秒后每 epoch 最多提升一条请求进入
+bounded seed；native allocator 保持容量权威；NO_TOKEN 后按 allocator capacity 和
+1 秒冷却退避，容量变化立即重试。该路径不创建 obligation、lease、funding 或全局
+barrier。实现提交为 `946be88`。
+
+本轮 64/64 workflow 最终 cleanup 完成，但只有 17/64 在 5 秒内 server-terminal，
+P50/P95 为 12.51/65.56 秒。根因是 idle scheduler 未监听 BeliefKV event UDS，且
+deadline cancellation 曾串行执行。`96b358a` 已将 event fd 接入 SGLang idle poller，
+合并 child cancellation control batch，并并发启动 request/task/command cancellation；
+`h200_bf16_v6` 在 `2f2a8bc` 冻结该 SGLang patch。
+
+CPU gate 为 254 passed + 8 subtests、Deep Agents 149 passed、event/reserve 8 passed。
+该长跑只有 1 个 JOIN_SATISFIED、0 个自然完成 workflow，不进入训练集、Frozen GPU
+Replay、O0/O3 或性能 A/B。完整报告见
+`docs/experiments/beliefkv_p5_gate_c_native64_rematch_fixed_2026-08-22_zh.md`。
+
 ## 2026-08-22：P5 Gate C 复验暴露 prefix-rematch 活性缺陷
 
 使用 `0986398` 与同一 64-root/v5 冻结配置完成约 60 分钟复验。前一轮
