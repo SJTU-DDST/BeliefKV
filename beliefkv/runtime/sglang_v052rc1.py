@@ -3257,6 +3257,19 @@ class EmbeddedSGLangRuntime:
         event_server = self.event_server
         self.event_server = None
         if event_server is not None:
+            scheduler = getattr(self, "scheduler", None)
+            idle_sleeper = getattr(scheduler, "idle_sleeper", None)
+            poll_fd = getattr(
+                scheduler,
+                "_beliefkv_event_poll_fd",
+                None,
+            )
+            if idle_sleeper is not None and poll_fd is not None:
+                try:
+                    idle_sleeper.poller.unregister(poll_fd)
+                except (KeyError, OSError):
+                    pass
+                scheduler._beliefkv_event_poll_fd = None
             event_server.close()
         event_log = self.event_log
         self.event_log = None

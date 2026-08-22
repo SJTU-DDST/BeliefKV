@@ -112,6 +112,11 @@ class RuntimeEventDatagramServer:
                     pass
         return tuple(deliveries)
 
+    def fileno(self) -> int:
+        """Expose the receive fd so SGLang's idle poller can wake on events."""
+
+        return self._socket.fileno()
+
     def _handle(self, payload: bytes) -> tuple[RuntimeEventDelivery, bytes]:
         message_id = "unknown"
         try:

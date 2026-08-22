@@ -1474,17 +1474,19 @@ class WorkflowDeadlineController:
         expired_at = time.monotonic()
         self.audit.emit("workflow_deadline_expired")
 
-        abort_count = sum(model.cancel_active_requests() for model in models)
-        self.audit.emit(
-            "workflow_deadline_abort_sent",
-            active_request_count=abort_count,
+        abort_count = sum(model.active_request_count() for model in models)
+        executor = ThreadPoolExecutor(
+            max_workers=max(1, len(models) + len(backends) + 1)
         )
-
-        pending_count = self.adapter.cancel_pending_tasks(
-            reason="workflow absolute deadline expired"
-        )
-        executor = ThreadPoolExecutor(max_workers=max(1, len(backends)))
+        cleanup_errors: list[str] = []
         try:
+            abort_futures = [
+                executor.submit(model.cancel_active_requests) for model in models
+            ]
+            pending_future = executor.submit(
+                self.adapter.cancel_pending_tasks,
+                reason="workflow absolute deadline expired",
+            )
             command_futures = [
                 executor.submit(
                     backend.cancel_active_commands,
@@ -1492,7 +1494,12 @@ class WorkflowDeadlineController:
                 )
                 for backend in backends
             ]
-            terminal_deadline = time.monotonic() + self.server_terminal_timeout_s
+            self.audit.emit(
+                "workflow_deadline_abort_sent",
+                active_request_count=abort_count,
+            )
+
+            terminal_deadline = expired_at + self.server_terminal_timeout_s
             while (
                 any(model.active_request_count() for model in models)
                 and time.monotonic() < terminal_deadline
@@ -1506,16 +1513,43 @@ class WorkflowDeadlineController:
                 active_request_count=active_after,
                 latency_ms=terminal_latency_ms,
             )
-            command_count = sum(future.result() for future in command_futures)
+
+            def resolve_count(futures: Sequence[Any], action: str) -> int:
+                total = 0
+                for future in futures:
+                    try:
+                        total += int(future.result())
+                    except BaseException as error:
+                        cleanup_errors.append(
+                            f"{action}:{type(error).__name__}:{error}"
+                        )
+                return total
+
+            completed_abort_count = resolve_count(
+                abort_futures,
+                "abort_request",
+            )
+            abort_count = max(abort_count, completed_abort_count)
+            pending_count = resolve_count(
+                (pending_future,),
+                "cancel_pending_tasks",
+            )
+            command_count = resolve_count(
+                command_futures,
+                "cancel_active_commands",
+            )
         finally:
             executor.shutdown(wait=True, cancel_futures=False)
 
-        cleanup_complete = active_after == 0
+        cleanup_latency_ms = (time.monotonic() - expired_at) * 1000.0
+        cleanup_complete = active_after == 0 and not cleanup_errors
         self.audit.emit(
             "workflow_deadline_cleanup_complete",
             cleanup_complete=cleanup_complete,
+            cleanup_latency_ms=cleanup_latency_ms,
             pending_task_cancel_count=pending_count,
             active_command_cancel_count=command_count,
+            cleanup_errors=cleanup_errors,
         )
         with self._lock:
             self._summary.update(
@@ -1523,9 +1557,11 @@ class WorkflowDeadlineController:
                     "abort_requested_count": abort_count,
                     "server_terminal": active_after == 0,
                     "server_terminal_latency_ms": terminal_latency_ms,
+                    "cleanup_latency_ms": cleanup_latency_ms,
                     "pending_task_cancel_count": pending_count,
                     "active_command_cancel_count": command_count,
                     "cleanup_complete": cleanup_complete,
+                    "cleanup_errors": cleanup_errors,
                 }
             )
         return True

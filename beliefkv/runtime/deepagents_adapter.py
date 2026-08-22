@@ -243,6 +243,7 @@ class DeepAgentsRuntimeAdapter(BaseCallbackHandler):
         self._ordinary_tools: dict[str, _OrdinaryToolRun] = {}
         self._ignored_tool_runs: set[str] = set()
         self._internal_summary_runs: dict[str, _InternalSummaryRun] = {}
+        self._terminal_invocation_ids: set[str] = set()
         self._summary_sequence = 0
         self._pending_context_compaction: ContextVar[
             ContextCompactionRecord | None
@@ -252,6 +253,7 @@ class DeepAgentsRuntimeAdapter(BaseCallbackHandler):
         )
         self._taxonomy = ToolTaxonomy()
         self._control_delivery_failure_count = 0
+        self._late_terminal_control_event_count = 0
         self._first_control_delivery_failure: RuntimeControlDeliveryFailure | None = None
         self._last_control_delivery_failure: RuntimeControlDeliveryFailure | None = None
 
@@ -290,6 +292,7 @@ class DeepAgentsRuntimeAdapter(BaseCallbackHandler):
             if self._finished:
                 return
             self._finished = True
+            self._terminal_invocation_ids.add(self.root_metadata.invocation_id)
         ts_ms = self._timestamp()
         events = (
             self._event(
@@ -388,12 +391,16 @@ class DeepAgentsRuntimeAdapter(BaseCallbackHandler):
                 for tool_call_id, pending in self._pending_tasks.items()
                 if not pending.terminal
             ]
+        events: list[RuntimeEvent] = []
         for tool_call_id in pending_ids:
-            self._complete_task(
-                tool_call_id,
-                cancelled=True,
-                error=TimeoutError(reason),
+            events.extend(
+                self._complete_task_events(
+                    tool_call_id,
+                    cancelled=True,
+                    error=TimeoutError(reason),
+                )
             )
+        self._publish(tuple(events), control=True)
         return len(pending_ids)
 
     def record_call_censor(self, fields: Mapping[str, Any]) -> None:
@@ -543,6 +550,8 @@ class DeepAgentsRuntimeAdapter(BaseCallbackHandler):
     ) -> bool:
         with self._lock:
             active = self._internal_summary_runs.pop(model_run_key, None)
+            if active is not None:
+                self._terminal_invocation_ids.add(active.invocation_id)
         if active is None:
             return False
         self._publish(
@@ -1143,11 +1152,26 @@ class DeepAgentsRuntimeAdapter(BaseCallbackHandler):
         cancelled: bool,
         error: BaseException | None,
     ) -> None:
+        events = self._complete_task_events(
+            tool_call_id,
+            cancelled=cancelled,
+            error=error,
+        )
+        self._publish(events, control=True)
+
+    def _complete_task_events(
+        self,
+        tool_call_id: str,
+        *,
+        cancelled: bool,
+        error: BaseException | None,
+    ) -> tuple[RuntimeEvent, ...]:
         with self._lock:
             pending = self._pending_tasks[tool_call_id]
             if pending.terminal:
-                return
+                return ()
             pending.terminal = True
+            self._terminal_invocation_ids.add(pending.child_invocation_id)
             completed = self._join_completed[pending.join_id]
             completed.add(pending.child_invocation_id)
             cancelled_members = self._join_cancelled[pending.join_id]
@@ -1204,7 +1228,7 @@ class DeepAgentsRuntimeAdapter(BaseCallbackHandler):
                     },
                 )
             )
-        self._publish(tuple(events), control=True)
+        return tuple(events)
 
     def semantic_gate_result(self) -> dict[str, Any] | None:
         """Return the first completed parent LLM call after a native JOIN."""
@@ -1361,8 +1385,27 @@ class DeepAgentsRuntimeAdapter(BaseCallbackHandler):
             and self.control_sink is not None
             and self.control_sink is not self.trace_sink
         ):
+            with self._lock:
+                terminal_ids = frozenset(self._terminal_invocation_ids)
+            control_events = tuple(
+                event
+                for event in events
+                if event.kind
+                in {
+                    RuntimeEventKind.RETURN,
+                    RuntimeEventKind.INVOCATION_CANCEL,
+                }
+                or event.invocation_id is None
+                or event.invocation_id not in terminal_ids
+            )
+            suppressed = len(events) - len(control_events)
+            if suppressed:
+                with self._lock:
+                    self._late_terminal_control_event_count += suppressed
+            if not control_events:
+                return
             try:
-                self.control_sink.emit_batch(events)
+                self.control_sink.emit_batch(control_events)
             except Exception as error:
                 # The local trace is authoritative and was durably written
                 # above.  Losing the optional live control channel invalidates
@@ -1370,8 +1413,8 @@ class DeepAgentsRuntimeAdapter(BaseCallbackHandler):
                 # agent/tool failure or alter the workflow trajectory.
                 failure = RuntimeControlDeliveryFailure(
                     ts_ms=self._timestamp(),
-                    event_count=len(events),
-                    first_event_id=events[0].event_id,
+                    event_count=len(control_events),
+                    first_event_id=control_events[0].event_id,
                     error_type=type(error).__name__,
                     error=str(error),
                 )
@@ -1402,6 +1445,9 @@ class DeepAgentsRuntimeAdapter(BaseCallbackHandler):
             return {
                 "degraded": self._control_delivery_failure_count > 0,
                 "failure_count": self._control_delivery_failure_count,
+                "late_terminal_event_suppressed_count": (
+                    self._late_terminal_control_event_count
+                ),
                 "first_failure": payload(first),
                 "last_failure": payload(last),
             }

@@ -5,6 +5,8 @@ import time
 import unittest
 from pathlib import Path
 
+import zmq
+
 from beliefkv.control.controller import BeliefKVController
 from beliefkv.core.events import RuntimeEvent, RuntimeEventKind
 from beliefkv.runtime.event_channel import (
@@ -82,6 +84,99 @@ class RuntimeEventChannelTest(unittest.TestCase):
                         sink.emit_batch((invalid,))
                 worker.join(timeout=2.0)
                 self.assertFalse(worker.is_alive())
+
+    def test_event_fd_wakes_an_idle_poller_before_scheduler_drain(self):
+        controller = BeliefKVController()
+        runtime_event = event(
+            "start",
+            RuntimeEventKind.WORKFLOW_START,
+            ts_ms=0.0,
+        )
+        with tempfile.TemporaryDirectory() as temporary:
+            with self._server_or_skip(
+                Path(temporary) / "server.sock", controller
+            ) as server:
+                poller = zmq.Poller()
+                poller.register(server.fileno(), zmq.POLLIN)
+                sink = UnixDatagramRuntimeEventSink(
+                    server.path,
+                    ack_timeout_s=1.0,
+                    client_directory=temporary,
+                )
+                worker = threading.Thread(
+                    target=sink.emit_batch,
+                    args=((runtime_event,),),
+                )
+                worker.start()
+                ready = dict(poller.poll(500))
+                self.assertEqual(ready.get(server.fileno()), zmq.POLLIN)
+                deliveries = server.drain()
+                worker.join(timeout=2.0)
+                sink.close()
+                self.assertFalse(worker.is_alive())
+                self.assertEqual(len(deliveries), 1)
+                self.assertTrue(deliveries[0].accepted)
+
+    def test_idle_poller_drains_64_client_ack_burst(self):
+        controller = BeliefKVController()
+        with tempfile.TemporaryDirectory() as temporary:
+            with self._server_or_skip(
+                Path(temporary) / "server.sock", controller
+            ) as server:
+                poller = zmq.Poller()
+                poller.register(server.fileno(), zmq.POLLIN)
+                sinks = [
+                    UnixDatagramRuntimeEventSink(
+                        server.path,
+                        ack_timeout_s=0.5,
+                        retries=3,
+                        client_directory=temporary,
+                    )
+                    for _ in range(64)
+                ]
+                errors = []
+
+                def publish(index):
+                    try:
+                        sinks[index].emit_batch(
+                            (
+                                RuntimeEvent(
+                                    event_id=f"start-{index}",
+                                    ts_ms=float(index),
+                                    kind=RuntimeEventKind.WORKFLOW_START,
+                                    workflow_id=f"wf-{index}",
+                                ),
+                            )
+                        )
+                    except BaseException as error:
+                        errors.append(error)
+
+                workers = [
+                    threading.Thread(target=publish, args=(index,))
+                    for index in range(64)
+                ]
+                for worker in workers:
+                    worker.start()
+                deliveries = []
+                deadline = time.monotonic() + 3.0
+                while (
+                    any(worker.is_alive() for worker in workers)
+                    and time.monotonic() < deadline
+                ):
+                    if poller.poll(100):
+                        deliveries.extend(server.drain())
+                for worker in workers:
+                    worker.join(timeout=1.0)
+                for sink in sinks:
+                    sink.close()
+
+                self.assertFalse(errors)
+                self.assertFalse(any(worker.is_alive() for worker in workers))
+                first_deliveries = [
+                    delivery for delivery in deliveries if not delivery.duplicate
+                ]
+                self.assertEqual(len(first_deliveries), 64)
+                self.assertTrue(all(item.accepted for item in first_deliveries))
 
     def test_jsonl_sink_records_ordered_roundtrippable_events(self):
         events = (

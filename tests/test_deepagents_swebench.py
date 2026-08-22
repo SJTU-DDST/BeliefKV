@@ -4,6 +4,7 @@ import json
 import gzip
 import subprocess
 import threading
+import time
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 from types import SimpleNamespace
@@ -1239,6 +1240,69 @@ def test_workflow_deadline_cancels_requests_tasks_and_commands_in_order() -> Non
     assert summary["pending_task_cancel_count"] == 2
     assert summary["active_command_cancel_count"] == 1
     assert summary["cleanup_complete"] is True
+
+
+def test_workflow_deadline_reports_server_terminal_before_slow_cleanup() -> None:
+    now = [100.0]
+    deadline = ActivationDeadline(clock=lambda: now[0])
+    events: list[tuple[str, dict[str, object]]] = []
+
+    class Audit:
+        def emit(self, event: str, **fields: object) -> None:
+            events.append((event, fields))
+
+    class Adapter:
+        def cancel_pending_tasks(self, *, reason: str) -> int:
+            assert "deadline" in reason
+            time.sleep(0.15)
+            return 2
+
+    class Backend:
+        def cancel_active_commands(self, *, reason: str) -> int:
+            assert "deadline" in reason
+            time.sleep(0.15)
+            return 1
+
+    class Model:
+        active = 1
+
+        def cancel_active_requests(self) -> int:
+            self.active = 0
+            time.sleep(0.15)
+            return 1
+
+        def active_request_count(self) -> int:
+            return self.active
+
+    controller = WorkflowDeadlineController(
+        deadline=deadline,
+        adapter=Adapter(),
+        backend=Backend(),
+        audit=Audit(),
+    )
+    controller.server_terminal_timeout_s = 0.5
+    controller.register_model(Model())
+    deadline.start(5.0)
+    now[0] = 105.0
+
+    assert controller.cancel_if_expired()
+    summary = controller.close()
+
+    terminal = next(
+        fields
+        for event, fields in events
+        if event == "workflow_deadline_server_terminal"
+    )
+    cleanup = next(
+        fields
+        for event, fields in events
+        if event == "workflow_deadline_cleanup_complete"
+    )
+    assert terminal["server_terminal"] is True
+    assert terminal["latency_ms"] < 100.0
+    assert cleanup["cleanup_latency_ms"] >= 100.0
+    assert summary["cleanup_complete"] is True
+    assert summary["cleanup_errors"] == []
 
 
 def test_repository_contract_does_not_duplicate_django_checkout_root() -> None:

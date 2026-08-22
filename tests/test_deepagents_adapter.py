@@ -45,6 +45,16 @@ class CollectingSink:
             self.events.extend(events)
 
 
+class BatchCollectingSink(CollectingSink):
+    def __init__(self) -> None:
+        super().__init__()
+        self.batches = []
+
+    def emit_batch(self, events) -> None:
+        self.batches.append(tuple(events))
+        super().emit_batch(events)
+
+
 class FailingControlSink:
     def emit_batch(self, events) -> None:
         del events
@@ -375,6 +385,80 @@ def test_cancelled_runtime_task_does_not_satisfy_join() -> None:
     assert kinds.count(RuntimeEventKind.INVOCATION_CANCEL) == 1
     assert RuntimeEventKind.JOIN_SATISFIED not in kinds
     assert kinds.count(RuntimeEventKind.JOIN_TIMEOUT) == 1
+
+
+def test_deadline_cancels_pending_children_in_one_control_batch() -> None:
+    trace_sink = CollectingSink()
+    control_sink = BatchCollectingSink()
+    root = BeliefKVRequestMetadata(
+        "wf",
+        "root",
+        "ctx",
+        0,
+        "supervisor",
+        "root",
+    )
+    adapter = DeepAgentsRuntimeAdapter(
+        trace_sink,
+        root,
+        control_sink=control_sink,
+    )
+    adapter.start()
+    tasks = adapter.declare_runtime_tasks(
+        [
+            ("explorer", "Inspect"),
+            ("tester", "Test"),
+            ("reviewer", "Review"),
+        ],
+        group_id="deadline-group",
+    )
+    control_sink.events.clear()
+    control_sink.batches.clear()
+
+    assert adapter.cancel_pending_tasks(reason="deadline") == len(tasks)
+
+    assert len(control_sink.batches) == 1
+    kinds = [event.kind for event in control_sink.batches[0]]
+    assert kinds.count(RuntimeEventKind.INVOCATION_CANCEL) == 3
+    assert kinds.count(RuntimeEventKind.JOIN_TIMEOUT) == 1
+
+
+def test_late_event_for_terminal_child_stays_out_of_control_graph() -> None:
+    trace_sink = CollectingSink()
+    control_sink = CollectingSink()
+    root = BeliefKVRequestMetadata(
+        "wf",
+        "root",
+        "ctx",
+        0,
+        "supervisor",
+        "root",
+    )
+    adapter = DeepAgentsRuntimeAdapter(
+        trace_sink,
+        root,
+        control_sink=control_sink,
+    )
+    adapter.start()
+    task = adapter.declare_runtime_tasks(
+        [("explorer", "Inspect")],
+        group_id="terminal-race",
+    )[0]
+    adapter.complete_runtime_task(task, error=TimeoutError("deadline"))
+    control_sink.events.clear()
+
+    late = adapter._event(
+        RuntimeEventKind.TOOL_END,
+        invocation_id=task.invocation_id,
+        context_id=task.context_id,
+    )
+    adapter._publish((late,), control=True)
+
+    assert late in trace_sink.events
+    assert control_sink.events == []
+    assert adapter.control_delivery_summary()[
+        "late_terminal_event_suppressed_count"
+    ] == 1
 
 
 def test_chat_client_uses_remaining_deadline_and_aborts_failed_request(
