@@ -2045,6 +2045,11 @@ class EmbeddedSGLangRuntime:
         self._restore_authority_request_id: str | None = None
         self._restore_certificate_sequence = 0
         self._restore_command_sequence = 0
+        self._ordinary_native_fallback_signature_by_request: dict[
+            str, tuple[object, ...]
+        ] = {}
+        self._ordinary_fallback_blocked_capacity: dict[str, tuple[int, float]] = {}
+        self._current_ordinary_starvation_priority: tuple[str, ...] = ()
         self._h2d_context_by_command: dict[str, tuple[str, tuple[str, ...]]] = {}
         self._pending_h2d_contexts: set[str] = set()
         self._active_request_ids: set[str] = set()
@@ -11840,14 +11845,25 @@ class EmbeddedSGLangRuntime:
                 else "visible_bounded_fallback"
             )
         restore_ready_priority = self._restore_ready_ticket_priority(entries)
-        if restore_ready_priority and self.config.joint_policy_enabled:
+        ordinary_starvation_priority = (
+            self._ordinary_fallback_starvation_priority(
+                entries,
+                now_ms=now_ms,
+            )
+        )
+        joint_liveness_priority = tuple(
+            dict.fromkeys(
+                (*restore_ready_priority, *ordinary_starvation_priority)
+            )
+        )
+        if joint_liveness_priority and self.config.joint_policy_enabled:
             base_order = (
                 online_joint_view.ordered_request_ids
                 if online_joint_view is not None
                 else ordered_request_ids
             )
-            priority_set = set(restore_ready_priority)
-            restore_liveness_order = restore_ready_priority + tuple(
+            priority_set = set(joint_liveness_priority)
+            restore_liveness_order = joint_liveness_priority + tuple(
                 request_id
                 for request_id in base_order
                 if request_id not in priority_set
@@ -11871,15 +11887,29 @@ class EmbeddedSGLangRuntime:
             online_joint_view = online_joint_decision.view
             self._current_joint_plan_epoch = online_joint_decision.epoch
             ordered_request_ids = online_joint_view.immediate_request_ids
+            liveness_name = (
+                "restore_liveness"
+                if restore_ready_priority
+                else "ordinary_starvation"
+            )
+            liveness_reason = (
+                "restore_obligation_ticket_ready"
+                if restore_ready_priority
+                else "ordinary_native_fallback_starvation"
+            )
             ticket_source = (
                 f"joint_{online_joint_decision.epoch.planner_mode.value}"
-                "+restore_liveness"
+                f"+{liveness_name}"
             )
             ticket_reason = (
-                f"joint_plan:{online_joint_view.plan_id}:"
-                "restore_obligation_ticket_ready"
+                f"joint_plan:{online_joint_view.plan_id}:{liveness_reason}"
             )
-            self._online_joint_counts["restore_liveness_epoch"] += 1
+            liveness_trigger = (
+                "restore_ticket_liveness"
+                if restore_ready_priority
+                else "ordinary_native_fallback_starvation"
+            )
+            self._online_joint_counts[f"{liveness_name}_epoch"] += 1
             self.audit.emit(
                 "online_joint_epoch_committed",
                 now_ms,
@@ -11897,7 +11927,7 @@ class EmbeddedSGLangRuntime:
                     online_joint_decision.epoch.actionable_coverage
                 ),
                 rejected_slices=[],
-                trigger="restore_ticket_liveness",
+                trigger=liveness_trigger,
             )
         retraction_priority = tuple(
             request_id
@@ -11915,6 +11945,7 @@ class EmbeddedSGLangRuntime:
             dict.fromkeys(
                 (
                     *restore_ready_priority,
+                    *ordinary_starvation_priority,
                     *replacement_priority,
                     *retraction_priority,
                 )
@@ -11933,7 +11964,10 @@ class EmbeddedSGLangRuntime:
             if restore_ready_priority and not self.config.joint_policy_enabled:
                 ticket_source = f"{ticket_source}+restore_liveness"
                 ticket_reason = "restore_obligation_ticket_ready"
-            elif not restore_ready_priority:
+            elif ordinary_starvation_priority:
+                ticket_source = f"{ticket_source}+ordinary_starvation"
+                ticket_reason = "ordinary_native_fallback_starvation"
+            elif replacement_priority or retraction_priority:
                 ticket_source = f"{ticket_source}+replacement_liveness"
                 ticket_reason = (
                     "semantic_reclaim_confirmed"
@@ -12492,6 +12526,13 @@ class EmbeddedSGLangRuntime:
         obligation = self._restore_obligation_index().get(request_id)
         rescue = getattr(self, "_active_admission_rescue", None)
         if admitted:
+            blocked = getattr(
+                self,
+                "_ordinary_fallback_blocked_capacity",
+                None,
+            )
+            if blocked is not None:
+                blocked.pop(request_id, None)
             if rescue is not None and rescue.request_id == request_id:
                 rescue.released_for_admission_tokens = 0
                 rescue.stage = "admitted_wait_service"
@@ -12551,6 +12592,21 @@ class EmbeddedSGLangRuntime:
                     native_result=result,
                 )
             self._ticket_native_rejections[request_id] = result
+            if request_id in getattr(
+                self, "_ordinary_native_fallback_signature_by_request", {}
+            ):
+                blocked = getattr(
+                    self,
+                    "_ordinary_fallback_blocked_capacity",
+                    None,
+                )
+                if blocked is None:
+                    blocked = {}
+                    self._ordinary_fallback_blocked_capacity = blocked
+                blocked[request_id] = (
+                    self._allocator_available_tokens(),
+                    float(self._now_ms()),
+                )
 
     def end_prefill_epoch(self, can_run_list: Any) -> None:
         ticket_epoch = self._current_ticket_epoch
@@ -12580,6 +12636,23 @@ class EmbeddedSGLangRuntime:
         for ticket in ticket_epoch.tickets:
             if ticket.request_id in selected:
                 continue
+            if ticket.request_id in getattr(
+                self,
+                "_current_ordinary_starvation_priority",
+                (),
+            ):
+                blocked = getattr(
+                    self,
+                    "_ordinary_fallback_blocked_capacity",
+                    None,
+                )
+                if blocked is None:
+                    blocked = {}
+                    self._ordinary_fallback_blocked_capacity = blocked
+                blocked[ticket.request_id] = (
+                    self._allocator_available_tokens(),
+                    float(self._now_ms()),
+                )
             obligation = self._restore_obligation_index().get(ticket.request_id)
             lease = self._restore_lease_index().get(ticket.request_id)
             if (
@@ -12667,6 +12740,7 @@ class EmbeddedSGLangRuntime:
         self._current_ticket_prefill_budget_tokens = 0
         self._current_ticket_rematched_hbm_bytes = {}
         self._current_ticket_rematched_prefill_tokens = {}
+        self._current_ordinary_starvation_priority = ()
 
     def _ticket_for_request(self, request_id: str) -> AdmissionTicket | None:
         ticket_epoch = self._current_ticket_epoch
@@ -13129,6 +13203,81 @@ class EmbeddedSGLangRuntime:
             native_index,
             workflow_fair_rank,
         )
+
+    def _ordinary_fallback_starvation_priority(
+        self,
+        entries: Mapping[str, Any],
+        *,
+        now_ms: float,
+    ) -> tuple[str, ...]:
+        """Promote one aged native miss without creating restore authority."""
+
+        blocked = getattr(
+            self,
+            "_ordinary_fallback_blocked_capacity",
+            None,
+        )
+        if blocked is None:
+            blocked = {}
+            self._ordinary_fallback_blocked_capacity = blocked
+        native_fallbacks = getattr(
+            self,
+            "_ordinary_native_fallback_signature_by_request",
+            {},
+        )
+        for request_id in tuple(blocked):
+            if request_id not in entries or request_id not in native_fallbacks:
+                blocked.pop(request_id, None)
+        candidates: list[tuple[float, float, str]] = []
+        for request_id in native_fallbacks:
+            entry = entries.get(request_id)
+            if (
+                entry is None
+                or entry.state != AdmissionSideState.VISIBLE_PENDING
+            ):
+                continue
+            waited_ms = max(
+                0.0,
+                now_ms - entry.request.submitted_ts_ms,
+            )
+            if waited_ms < self.config.workflow_starvation_floor_ms:
+                continue
+            candidates.append(
+                (
+                    -waited_ms,
+                    entry.request.submitted_ts_ms,
+                    request_id,
+                )
+            )
+        if not candidates:
+            self._current_ordinary_starvation_priority = ()
+            return ()
+        allocator_capacity = self._allocator_available_tokens()
+        retry_cooldown_ms = max(
+            1.0,
+            float(self.config.admission_liveness_timeout_ms),
+        )
+        for negative_wait, _submitted_ts, request_id in sorted(candidates):
+            blocked_at = blocked.get(request_id)
+            if blocked_at is not None:
+                blocked_capacity, blocked_ts_ms = blocked_at
+                if (
+                    blocked_capacity == allocator_capacity
+                    and now_ms - blocked_ts_ms < retry_cooldown_ms
+                ):
+                    continue
+            priority = (request_id,)
+            self._current_ordinary_starvation_priority = priority
+            self.audit.emit(
+                "ordinary_fallback_starvation_promoted",
+                now_ms,
+                request_id=request_id,
+                allocator_available_tokens=allocator_capacity,
+                waited_ms=-negative_wait,
+            )
+            return priority
+        self._current_ordinary_starvation_priority = ()
+        return ()
 
     def _restore_ready_ticket_priority(
         self,

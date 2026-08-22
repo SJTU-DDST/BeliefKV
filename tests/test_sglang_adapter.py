@@ -7061,7 +7061,7 @@ class SGLangBackendTest(unittest.TestCase):
             ordinary.cause, RestoreObligationCause.ORDINARY_WAITING_PREFIX
         )
 
-    def test_ticket_ready_restore_debt_preempts_stale_joint_order(self):
+    def test_restore_and_native_fallback_liveness_override_stale_joint_order(self):
         config = BeliefKVConfig(
             hbm_capacity_bytes=1000,
             reserve_hbm_bytes=0,
@@ -7220,6 +7220,103 @@ class SGLangBackendTest(unittest.TestCase):
         self.assertNotIn(
             "restore_liveness", runtime._current_ticket_epoch.source
         )
+
+        runtime.end_prefill_epoch(())
+        runtime._ordinary_native_fallback_signature_by_request = {
+            "oldest": (0, ("page:1:0",)),
+            "newer": (0, ("page:2:0",)),
+        }
+        available_tokens = [100]
+        runtime.scheduler = SimpleNamespace(
+            token_to_kv_pool_allocator=SimpleNamespace(
+                available_size=lambda: available_tokens[0],
+            )
+        )
+        now_ms = [40_050.0]
+        runtime._now_ms = lambda: now_ms[0]
+
+        runtime.begin_prefill_epoch(
+            requests,
+            SimpleNamespace(
+                rem_input_tokens=10,
+                rem_chunk_tokens=None,
+                rem_total_tokens=100,
+            ),
+            max_requests=1,
+        )
+        self.assertEqual(
+            [
+                ticket.request_id
+                for ticket in runtime._current_ticket_epoch.tickets
+            ],
+            ["oldest"],
+        )
+        self.assertIn(
+            "ordinary_starvation", runtime._current_ticket_epoch.source
+        )
+        runtime.on_prefill_candidate_result(
+            requests[0], admitted=False, result="NO_TOKEN"
+        )
+        runtime.end_prefill_epoch(())
+
+        runtime.begin_prefill_epoch(
+            requests,
+            SimpleNamespace(
+                rem_input_tokens=10,
+                rem_chunk_tokens=None,
+                rem_total_tokens=100,
+            ),
+            max_requests=1,
+        )
+        self.assertEqual(
+            [
+                ticket.request_id
+                for ticket in runtime._current_ticket_epoch.tickets
+            ],
+            ["newer"],
+        )
+        runtime.on_prefill_candidate_result(
+            requests[1], admitted=False, result="NO_TOKEN"
+        )
+        runtime.end_prefill_epoch(())
+
+        available_tokens[0] = 101
+        runtime.begin_prefill_epoch(
+            requests,
+            SimpleNamespace(
+                rem_input_tokens=10,
+                rem_chunk_tokens=None,
+                rem_total_tokens=100,
+            ),
+            max_requests=1,
+        )
+        self.assertEqual(
+            [
+                ticket.request_id
+                for ticket in runtime._current_ticket_epoch.tickets
+            ],
+            ["oldest"],
+        )
+        runtime.end_prefill_epoch(())
+
+        now_ms[0] += config.admission_liveness_timeout_ms + 1.0
+        runtime.begin_prefill_epoch(
+            requests,
+            SimpleNamespace(
+                rem_input_tokens=10,
+                rem_chunk_tokens=None,
+                rem_total_tokens=100,
+            ),
+            max_requests=1,
+        )
+        self.assertEqual(
+            [
+                ticket.request_id
+                for ticket in runtime._current_ticket_epoch.tickets
+            ],
+            ["oldest"],
+        )
+        runtime.end_prefill_epoch(())
 
     def test_batch_time_is_charged_proportionally_to_root_workflows(self):
         runtime = EmbeddedSGLangRuntime.__new__(EmbeddedSGLangRuntime)
