@@ -316,6 +316,7 @@ class OracleGPUReplay:
         self._completed_workflows = 0
         self._failures: list[dict[str, object]] = []
         self._owners_with_prefetch_debt: set[LogicalInvocationKey] = set()
+        self._last_published_ready_ids: frozenset[str] = frozenset()
         frozen_execution_order = self._load_execution_order(
             execution_order_audit_path
         )
@@ -886,11 +887,18 @@ class OracleGPUReplay:
         async with self._state_lock:
             cursor = self._cursor()
             ready = dict(self.pending)
+            ready_ids = frozenset(ready)
+            if (
+                not residency
+                and ready_ids <= self._last_published_ready_ids
+            ):
+                return
             directive = self.planner.compile(
                 cursor=cursor,
                 ready=ready,
                 residency=residency,
             )
+            self._last_published_ready_ids = ready_ids
             roots = [
                 item
                 for item in self.truth.invocations
