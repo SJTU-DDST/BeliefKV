@@ -1114,14 +1114,44 @@ def test_trace_summary_reports_parallel_fanout_shape(tmp_path: Path) -> None:
     path = tmp_path / "events.jsonl"
     records = [
         {"kind": "workflow_start", "ts_ms": 0},
-        {"kind": "invocation_create", "invocation_id": "a", "parent_invocation_id": "p", "ts_ms": 10},
-        {"kind": "spawn", "target_invocation_id": "a", "ts_ms": 10},
-        {"kind": "invocation_create", "invocation_id": "b", "parent_invocation_id": "p", "ts_ms": 10},
-        {"kind": "spawn", "target_invocation_id": "b", "ts_ms": 10},
+        {
+            "kind": "invocation_create",
+            "invocation_id": "p",
+            "parent_invocation_id": None,
+            "relation_type": "root",
+            "ts_ms": 0,
+        },
+        {
+            "kind": "invocation_create",
+            "invocation_id": "a",
+            "parent_invocation_id": "p",
+            "agent_definition_id": "explorer",
+            "ts_ms": 10,
+        },
+        {
+            "kind": "spawn",
+            "invocation_id": "p",
+            "target_invocation_id": "a",
+            "ts_ms": 10,
+        },
+        {
+            "kind": "invocation_create",
+            "invocation_id": "b",
+            "parent_invocation_id": "p",
+            "agent_definition_id": "tester",
+            "ts_ms": 10,
+        },
+        {
+            "kind": "spawn",
+            "invocation_id": "p",
+            "target_invocation_id": "b",
+            "ts_ms": 10,
+        },
         {"kind": "join_create", "ts_ms": 10, "attributes": {"mode": "all"}},
         {"kind": "return", "invocation_id": "a", "ts_ms": 30},
         {"kind": "return", "invocation_id": "b", "ts_ms": 50},
         {"kind": "join_satisfied", "ts_ms": 50},
+        {"kind": "return", "invocation_id": "p", "ts_ms": 55},
         {"kind": "workflow_end", "ts_ms": 60},
     ]
     path.write_text("".join(json.dumps(item) + "\n" for item in records))
@@ -1129,11 +1159,34 @@ def test_trace_summary_reports_parallel_fanout_shape(tmp_path: Path) -> None:
     assert summary["fanout_by_parent"] == {"p": 2}
     assert summary["peak_concurrent_children"] == 2
     assert summary["join_type_counts"] == {"all": 1}
+    assert summary["natural_child_return_count"] == 2
+    assert summary["root_return_count"] == 1
+    assert summary["child_cancel_count"] == 0
+    assert summary["child_return_rate_by_role"] == {
+        "explorer": {
+            "spawned": 1,
+            "returned": 1,
+            "cancelled": 0,
+            "return_rate": 1.0,
+        },
+        "tester": {
+            "spawned": 1,
+            "returned": 1,
+            "cancelled": 0,
+            "return_rate": 1.0,
+        },
+    }
+    assert summary["join_satisfied_count"] == 1
+    assert summary["join_timeout_count"] == 0
     assert summary["child_return_span_ms"] == 20
 
 
 def test_trace_summary_reports_post_join_delegation_round(tmp_path: Path) -> None:
     path = tmp_path / "events.jsonl"
+    rounds = (
+        ("j1", 10, ("a", "b")),
+        ("j2", 75, ("c", "d", "e")),
+    )
     records = [{"kind": "workflow_start", "ts_ms": 0}]
     records.extend(
         {
@@ -1143,10 +1196,17 @@ def test_trace_summary_reports_post_join_delegation_round(tmp_path: Path) -> Non
             "join_id": join_id,
             "ts_ms": ts_ms,
         }
-        for join_id, ts_ms, children in (
-            ("j1", 10, ("a", "b")),
-            ("j2", 75, ("c", "d", "e")),
-        )
+        for join_id, ts_ms, children in rounds
+        for child in children
+    )
+    records.extend(
+        {
+            "kind": "spawn",
+            "invocation_id": "p",
+            "target_invocation_id": child,
+            "ts_ms": ts_ms,
+        }
+        for _join_id, ts_ms, children in rounds
         for child in children
     )
     records.extend(
@@ -1168,8 +1228,8 @@ def test_trace_summary_reports_post_join_delegation_round(tmp_path: Path) -> Non
             },
             {"kind": "return", "invocation_id": "c", "ts_ms": 90},
             {"kind": "return", "invocation_id": "d", "ts_ms": 100},
-            {"kind": "return", "invocation_id": "e", "ts_ms": 110},
-            {"kind": "join_satisfied", "join_id": "j2", "ts_ms": 110},
+            {"kind": "invocation_cancel", "invocation_id": "e", "ts_ms": 105},
+            {"kind": "join_timeout", "join_id": "j2", "ts_ms": 110},
             {"kind": "workflow_end", "ts_ms": 120},
         ]
     )
@@ -1182,6 +1242,13 @@ def test_trace_summary_reports_post_join_delegation_round(tmp_path: Path) -> Non
     assert summary["children_per_parent"] == {"p": 5}
     assert summary["post_join_spawn_count"] == 3
     assert summary["join_to_next_spawn_ms"] == [35.0]
+    assert summary["natural_child_return_count"] == 4
+    assert summary["root_return_count"] == 0
+    assert summary["child_cancel_count"] == 1
+    assert summary["join_satisfied_count"] == 1
+    assert summary["join_timeout_count"] == 1
+    assert summary["all_subagents_returned"] is False
+    assert summary["all_joins_satisfied"] is False
 
 
 def test_workflow_deadline_cancels_requests_tasks_and_commands_in_order() -> None:

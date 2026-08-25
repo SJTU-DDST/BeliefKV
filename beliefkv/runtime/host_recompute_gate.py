@@ -37,6 +37,8 @@ def _update(runtime: Any, stage: str, *, now_ms: float, **fields: object) -> Non
 def maybe_queue_host_recompute_offload(runtime: Any, *, now_ms: float) -> None:
     """Queue one production OFFLOAD_CONTEXT for a parked diagnostic context."""
 
+    if getattr(runtime, "_shutdown_state", "running") != "running":
+        return
     config = getattr(runtime, "config", None)
     if config is None or not getattr(
         config, "host_recompute_micro_gate_enabled", False

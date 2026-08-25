@@ -1220,6 +1220,13 @@ class SGLangBackendTest(unittest.TestCase):
         runtime._pending_selective_retraction_ids = set()
         runtime._retraction_cooldown_until_by_request = {}
         runtime._ordinary_restore_capacity_waiters = set()
+        runtime._ordinary_native_fallback_signature_by_request = {
+            "request": ("ctx", 0, ("page:1:0",))
+        }
+        runtime._ordinary_fallback_blocked_capacity = {
+            "request": (10, 10.0)
+        }
+        runtime._current_ordinary_starvation_priority = ("request",)
         runtime._finish_restore_obligation = lambda *args, **kwargs: None
         runtime._cancel_restore_service_grace = lambda *args, **kwargs: None
         metadata = BeliefKVRequestMetadata("wf", "inv", "ctx", 0)
@@ -1232,6 +1239,9 @@ class SGLangBackendTest(unittest.TestCase):
 
         runtime._capture_request_physical_start(request, metadata, 10.0)
         runtime.on_abort_request(SimpleNamespace(abort_all=False, rid="request"))
+        self.assertFalse(runtime._ordinary_native_fallback_signature_by_request)
+        self.assertFalse(runtime._ordinary_fallback_blocked_capacity)
+        self.assertEqual(runtime._current_ordinary_starvation_priority, ())
         second = PageHandle(2, 0)
         runtime.controller.page_index.register_page(second, size_bytes=40)
         runtime.controller.page_index.bind_pages("ctx", 0, (second,))
@@ -1273,6 +1283,13 @@ class SGLangBackendTest(unittest.TestCase):
         }
         runtime._execution_timeout_request_ids = set()
         runtime._terminal_cancelled_request_ids = set()
+        runtime._ordinary_native_fallback_signature_by_request = {
+            "request": ("ctx", 0, ("page:1:0",))
+        }
+        runtime._ordinary_fallback_blocked_capacity = {
+            "request": (10, 2_000.0)
+        }
+        runtime._current_ordinary_starvation_priority = ("request",)
 
         runtime._enforce_execution_timeouts(now_ms=2_999.0)
         self.assertEqual(aborted, [])
@@ -1282,6 +1299,9 @@ class SGLangBackendTest(unittest.TestCase):
         self.assertEqual(len(aborted), 1)
         self.assertEqual(aborted[0].rid, "request")
         self.assertIn("request", runtime._terminal_cancelled_request_ids)
+        self.assertFalse(runtime._ordinary_native_fallback_signature_by_request)
+        self.assertFalse(runtime._ordinary_fallback_blocked_capacity)
+        self.assertEqual(runtime._current_ordinary_starvation_priority, ())
         timeout_events = [
             fields
             for event, _, fields in runtime.audit.events
@@ -1369,12 +1389,31 @@ class SGLangBackendTest(unittest.TestCase):
         }
         runtime._queue_timeout_request_ids = set()
         runtime._terminal_cancelled_request_ids = set()
+        runtime._ordinary_native_fallback_signature_by_request = {
+            "queued": ("ctx", 0, ("page:1:0",)),
+            "started": ("ctx", 0, ("page:2:0",)),
+        }
+        runtime._ordinary_fallback_blocked_capacity = {
+            "queued": (10, 2_000.0),
+            "started": (10, 2_000.0),
+        }
+        runtime._current_ordinary_starvation_priority = ("queued",)
 
         runtime._enforce_queue_timeouts(now_ms=3_001.0)
 
         self.assertEqual([item.rid for item in aborted], ["queued"])
         self.assertIn("queued", runtime._terminal_cancelled_request_ids)
         self.assertNotIn("started", runtime._terminal_cancelled_request_ids)
+        self.assertNotIn(
+            "queued", runtime._ordinary_native_fallback_signature_by_request
+        )
+        self.assertNotIn(
+            "queued", runtime._ordinary_fallback_blocked_capacity
+        )
+        self.assertEqual(runtime._current_ordinary_starvation_priority, ())
+        self.assertIn(
+            "started", runtime._ordinary_native_fallback_signature_by_request
+        )
 
     def test_final_runtime_summary_exposes_joint_correctness_gates(self):
         runtime = EmbeddedSGLangRuntime.__new__(EmbeddedSGLangRuntime)
@@ -1415,10 +1454,22 @@ class SGLangBackendTest(unittest.TestCase):
         )
 
         runtime._shutdown_prepare_transaction_snapshot = {
-            "active_obligation_ids": ["restore-1"]
+            "active_obligation_ids": ["restore-1"],
+            "inflight_command_ids": ["command-inflight"],
+            "queued_command_ids": ["command-queued"],
         }
         payload = runtime._runtime_summary_payload(now_ms=11.0, final=True)
         self.assertFalse(
+            payload["correctness_gates"]
+            ["shutdown_cleanup_did_not_mask_unresolved_transactions"]
+        )
+        runtime._shutdown_terminal_transaction_ids = {"restore-1"}
+        runtime._shutdown_terminal_command_outcomes = {
+            "command-inflight": "cancelled",
+            "command-queued": "cancelled",
+        }
+        payload = runtime._runtime_summary_payload(now_ms=12.0, final=True)
+        self.assertTrue(
             payload["correctness_gates"]
             ["shutdown_cleanup_did_not_mask_unresolved_transactions"]
         )
@@ -3088,6 +3139,105 @@ class SGLangBackendTest(unittest.TestCase):
         self.assertTrue(blocked)
         self.assertFalse(emergency)
 
+    def test_shutdown_prepare_suppresses_transaction_state_advancement(self):
+        runtime = EmbeddedSGLangRuntime.__new__(EmbeddedSGLangRuntime)
+        runtime._shutdown_state = "preparing"
+        retraction = SimpleNamespace(stage="residency_pending")
+        residency = SimpleNamespace(stage="queued")
+        runtime._pending_running_retraction_transaction = retraction
+        runtime._pending_online_joint_residency = residency
+        runtime._restore_command_to_request = {"command": {"request"}}
+        ack = CommandAck(
+            "command",
+            CommandStatus.COMPLETED,
+            42.0,
+            actual_bytes=100,
+        )
+
+        runtime._advance_retraction_transaction((ack,), now_ms=42.0)
+        runtime._advance_online_joint_residency((ack,), now_ms=42.0)
+        runtime._advance_restore_obligations((ack,), now_ms=42.0)
+
+        self.assertEqual(retraction.stage, "residency_pending")
+        self.assertEqual(residency.stage, "queued")
+        self.assertEqual(
+            runtime._restore_command_to_request, {"command": {"request"}}
+        )
+
+    def test_shutdown_drain_terminally_acks_queued_and_inflight_commands(self):
+        runtime = EmbeddedSGLangRuntime.__new__(EmbeddedSGLangRuntime)
+        runtime.config = BeliefKVConfig(shutdown_drain_timeout_ms=0.0)
+        runtime._now_ms = lambda: 42.0
+        runtime.audit = _AuditRecorder()
+        runtime._shutdown_expected_command_ids = {"queued", "inflight"}
+        runtime._shutdown_expected_transaction_ids = set()
+        runtime._shutdown_terminal_command_outcomes = {}
+        runtime._shutdown_terminal_transaction_ids = set()
+        runtime._retire_h2d_commands = lambda _acks: ()
+        runtime.sync_tree = lambda **_kwargs: None
+        runtime._advance_host_cleanup = lambda *_args, **_kwargs: None
+        runtime._advance_retraction_transaction = lambda *_args, **_kwargs: None
+        runtime._advance_online_joint_residency = lambda *_args, **_kwargs: None
+        runtime._advance_restore_obligations = lambda *_args, **_kwargs: None
+
+        class Controller:
+            inflight_command_ids = ("inflight",)
+            command_queue = SimpleNamespace(pending_commands=lambda: ())
+
+            def cancel_queued_commands(self, *, now_ms, reason):
+                assert now_ms == 42.0
+                assert reason == "runtime_shutdown_queued_cancelled"
+                return (
+                    CommandAck(
+                        "queued",
+                        CommandStatus.CANCELLED,
+                        now_ms,
+                        0,
+                        reason=reason,
+                    ),
+                )
+
+        controller = Controller()
+        runtime.controller = controller
+
+        class Bridge:
+            @staticmethod
+            def drain_acks():
+                return ()
+
+            @staticmethod
+            def abort_all(*, reason):
+                assert reason == "runtime_shutdown_drain_timeout"
+                controller.inflight_command_ids = ()
+                return (
+                    CommandAck(
+                        "inflight",
+                        CommandStatus.CANCELLED,
+                        42.0,
+                        0,
+                        reason=reason,
+                    ),
+                )
+
+        runtime.bridge = Bridge()
+        runtime._drain_shutdown_acks()
+
+        self.assertEqual(
+            runtime._shutdown_terminal_command_outcomes,
+            {"queued": "cancelled", "inflight": "cancelled"},
+        )
+        self.assertEqual(controller.inflight_command_ids, ())
+        terminal = [
+            fields
+            for event, _, fields in runtime.audit.events
+            if event == "transfer_acknowledged"
+        ]
+        self.assertEqual(
+            {item["command_id"] for item in terminal},
+            {"queued", "inflight"},
+        )
+        self.assertTrue(all(item["shutdown_drain"] for item in terminal))
+
     def test_close_emits_controller_timing_summary(self):
         runtime = EmbeddedSGLangRuntime.__new__(EmbeddedSGLangRuntime)
         runtime._closed = False
@@ -3119,6 +3269,11 @@ class SGLangBackendTest(unittest.TestCase):
         runtime.event_server = _CloseRecorder()
         runtime.event_log = _CloseRecorder()
         runtime.audit = _CloseRecorder()
+        poller = SimpleNamespace(unregister=mock.Mock())
+        runtime.scheduler = SimpleNamespace(
+            idle_sleeper=SimpleNamespace(poller=poller),
+            _beliefkv_event_poll_fd=17,
+        )
 
         runtime.close()
         runtime.close()
@@ -3126,6 +3281,8 @@ class SGLangBackendTest(unittest.TestCase):
         self.assertTrue(runtime._closed)
         self.assertIsNone(runtime.event_server)
         self.assertIsNone(runtime.event_log)
+        poller.unregister.assert_called_once_with(17)
+        self.assertIsNone(runtime.scheduler._beliefkv_event_poll_fd)
         self.assertEqual(
             [item[0] for item in runtime.audit.events],
             ["shutdown_prepare", "shutdown_ack", "runtime_shutdown"],
@@ -7223,9 +7380,12 @@ class SGLangBackendTest(unittest.TestCase):
 
         runtime.end_prefill_epoch(())
         runtime._ordinary_native_fallback_signature_by_request = {
-            "oldest": (0, ("page:1:0",)),
-            "newer": (0, ("page:2:0",)),
+            "oldest": ("ctx-old", 0, ("page:1:0",)),
+            "newer": ("ctx-new", 0, ("page:2:0",)),
         }
+        obligation_count_before_promotion = len(
+            runtime._restore_obligations.all()
+        )
         available_tokens = [100]
         runtime.scheduler = SimpleNamespace(
             token_to_kv_pool_allocator=SimpleNamespace(
@@ -7253,6 +7413,25 @@ class SGLangBackendTest(unittest.TestCase):
         )
         self.assertIn(
             "ordinary_starvation", runtime._current_ticket_epoch.source
+        )
+        self.assertEqual(
+            runtime._current_ordinary_starvation_priority, ("oldest",)
+        )
+        self.assertEqual(
+            len(runtime._restore_obligations.all()),
+            obligation_count_before_promotion,
+        )
+        self.assertEqual(runtime._restore_lease_index().active(), ())
+        self.assertEqual(
+            getattr(runtime, "_restore_funding_allocations", {}), {}
+        )
+        self.assertEqual(
+            getattr(
+                runtime,
+                "_restore_authority_mode",
+                RestoreAuthorityMode.NORMAL_JOINT,
+            ),
+            RestoreAuthorityMode.NORMAL_JOINT,
         )
         runtime.on_prefill_candidate_result(
             requests[0], admitted=False, result="NO_TOKEN"
@@ -7315,6 +7494,36 @@ class SGLangBackendTest(unittest.TestCase):
                 for ticket in runtime._current_ticket_epoch.tickets
             ],
             ["oldest"],
+        )
+        runtime.on_prefill_candidate_result(
+            requests[0], admitted=True, result="ADDED"
+        )
+        self.assertNotIn(
+            "oldest", runtime._ordinary_native_fallback_signature_by_request
+        )
+        self.assertNotIn(
+            "oldest", runtime._ordinary_fallback_blocked_capacity
+        )
+        self.assertEqual(runtime._current_ordinary_starvation_priority, ())
+        runtime.end_prefill_epoch(())
+
+        runtime._request_metadata_by_id["newer"] = BeliefKVRequestMetadata(
+            "wf-new", "inv-new", "ctx-new", 1
+        )
+        runtime.begin_prefill_epoch(
+            requests,
+            SimpleNamespace(
+                rem_input_tokens=10,
+                rem_chunk_tokens=None,
+                rem_total_tokens=100,
+            ),
+            max_requests=1,
+        )
+        self.assertNotIn(
+            "newer", runtime._ordinary_native_fallback_signature_by_request
+        )
+        self.assertNotIn(
+            "newer", runtime._ordinary_fallback_blocked_capacity
         )
         runtime.end_prefill_epoch(())
 

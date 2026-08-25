@@ -105,23 +105,35 @@ Host 接近满载是真实 characterization，但本轮不通过 admission/deadl
 ## 7. Agent 语义覆盖
 
 本轮包含 64 parent、128 FRESH child、64 JOIN_WAIT、1,780 次 LLM 和 4,722 次工具
-调用。共观察到 73 个 child RETURN，但只有 1 个 JOIN_SATISFIED；其余 63 个
-JOIN 最终随 deadline 结束。没有 workflow 自然完成，因此不能冻结完整 agent demand。
+调用。原报告把 73 条 RETURN 全部计为 child RETURN，修正后的 lifecycle 口径为：
+
+- 64 条 root RETURN；
+- 9 条自然 child RETURN，119 条 child cancel；
+- repository-explorer 为 3/64 RETURN，test-analyst 为 6/64 RETURN；
+- 1 个 JOIN_SATISFIED、63 个 JOIN_TIMEOUT；
+- 0 个自然 JOIN 后的再次 SPAWN。
+
+没有 workflow 自然完成，因此不能冻结完整 agent demand。这一结论属于 Agent Coverage
+Gate，不改变 admission/deadline 等 System Gate C 的独立判定。
 
 ## 8. CPU 验证与下一门槛
 
-- Admission/restore/JointPlan/retraction/Host：254 passed，8 subtests passed；
+- Admission/restore/JointPlan/retraction/Host/event channel：283 passed，8 subtests passed；
 - Deep Agents workload/deadline/runtime：149 passed；
-- event channel 与 running-retraction reserve：8 passed；
 - 2 个 vendored SGLang 导入测试因 CPU shell 缺少 `CUDA_HOME` 被排除，真实 GPU
   server 启动路径负责覆盖。
 
-下一步只运行一次相同 64-root/v6 Gate C。必须满足：
+下一次 Gate C 使用两组相互独立的结论。
 
-- 88 类 ordinary fallback 不再系统性超过 30--60 秒；
+System Gate C 必须满足：
+
+- 超过 30 秒的 ordinary fallback 获得 promotion 或明确的物理阻塞原因；
 - ordinary promotion 不创建 durable debt 或全局 barrier；
 - deadline workflow 100% 在 5 秒内 server-terminal；
-- waiting backlog 下不出现持续 0 ticket 或 running 排空；
-- 无 orphan command、lease、transaction 或 container。
+- waiting backlog 下不持续出现 running=0；
+- shutdown masking gate 为 true；
+- 无 orphan command、lease、reservation、transaction 或 container。
 
-只有 Gate C 通过并出现自然 child RETURN/JOIN 后，才能冻结 demand 并进入 P6 O0/O3。
+Agent Coverage Gate 只统计自然 child RETURN/JOIN；deadline cancel 和 guard intervention
+均作为 censor，多轮 SPAWN 只在自然 JOIN 后统计。Coverage 不决定系统活性是否通过，
+但 coverage 不足的 trace 不能进入 Frozen GPU Replay 或 O0/O3。

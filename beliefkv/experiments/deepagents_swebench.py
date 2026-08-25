@@ -2746,40 +2746,96 @@ def _trace_summary(path: Path) -> dict[str, Any]:
         if line.strip()
     ]
     counts = Counter(str(item.get("kind")) for item in records)
-    children = {
+    spawn_records = [
+        item
+        for item in records
+        if item.get("kind") == "spawn"
+        and item.get("target_invocation_id") is not None
+    ]
+    children = {str(item["target_invocation_id"]) for item in spawn_records}
+    root_invocations = {
         str(item["invocation_id"])
         for item in records
         if item.get("kind") == "invocation_create"
         and item.get("invocation_id") is not None
-        and item.get("parent_invocation_id") is not None
+        and item.get("parent_invocation_id") is None
+        and str(item.get("relation_type", "root")) == "root"
         and not bool((item.get("attributes") or {}).get("runtime_internal"))
     }
     returned_children = {
         str(item["invocation_id"])
         for item in records
         if item.get("kind") == "return"
-        and item.get("invocation_id") in children
+        and item.get("invocation_id") is not None
+        and str(item["invocation_id"]) in children
     }
-    children_by_parent: dict[str, list[str]] = {}
-    child_start_ms: dict[str, float] = {}
-    child_return_ms: dict[str, float] = {}
+    returned_roots = {
+        str(item["invocation_id"])
+        for item in records
+        if item.get("kind") == "return"
+        and item.get("invocation_id") is not None
+        and str(item["invocation_id"]) in root_invocations
+    }
+    cancelled_children = {
+        str(item.get("invocation_id") or item.get("target_invocation_id"))
+        for item in records
+        if item.get("kind") == "invocation_cancel"
+        and (item.get("invocation_id") or item.get("target_invocation_id"))
+        is not None
+        and str(item.get("invocation_id") or item.get("target_invocation_id"))
+        in children
+    }
+    role_by_child: dict[str, str] = {}
     for item in records:
-        if item.get("kind") == "invocation_create" and item.get(
-            "parent_invocation_id"
-        ) is not None:
-            child_id = str(item.get("invocation_id"))
-            parent_id = str(item.get("parent_invocation_id"))
-            children_by_parent.setdefault(parent_id, []).append(child_id)
-            child_start_ms[child_id] = float(item.get("ts_ms", 0.0))
-        elif item.get("kind") == "return" and item.get("invocation_id") is not None:
-            child_return_ms[str(item["invocation_id"])] = float(
-                item.get("ts_ms", 0.0)
+        if (
+            item.get("kind") == "invocation_create"
+            and item.get("invocation_id") is not None
+            and str(item["invocation_id"]) in children
+        ):
+            role_by_child[str(item["invocation_id"])] = str(
+                item.get("agent_definition_id") or "unknown"
             )
+    children_by_parent: dict[str, set[str]] = {}
+    child_start_ms: dict[str, float] = {}
+    for item in spawn_records:
+        child_id = str(item["target_invocation_id"])
+        parent_id = str(
+            item.get("invocation_id")
+            or item.get("return_target_id")
+            or "unknown"
+        )
+        children_by_parent.setdefault(parent_id, set()).add(child_id)
+        child_start_ms[child_id] = min(
+            child_start_ms.get(child_id, float("inf")),
+            float(item.get("ts_ms", 0.0)),
+        )
+    child_return_ms = {
+        str(item["invocation_id"]): float(item.get("ts_ms", 0.0))
+        for item in records
+        if item.get("kind") == "return"
+        and item.get("invocation_id") is not None
+        and str(item["invocation_id"]) in children
+    }
+    child_cancel_ms = {
+        str(item.get("invocation_id") or item.get("target_invocation_id")): float(
+            item.get("ts_ms", 0.0)
+        )
+        for item in records
+        if item.get("kind") == "invocation_cancel"
+        and (item.get("invocation_id") or item.get("target_invocation_id"))
+        is not None
+        and str(item.get("invocation_id") or item.get("target_invocation_id"))
+        in children
+    }
     transitions = []
     for child_id, start_ms in child_start_ms.items():
         transitions.append((start_ms, 1))
-        if child_id in child_return_ms:
-            transitions.append((child_return_ms[child_id], -1))
+        terminal_ms = min(
+            child_return_ms.get(child_id, float("inf")),
+            child_cancel_ms.get(child_id, float("inf")),
+        )
+        if terminal_ms < float("inf"):
+            transitions.append((terminal_ms, -1))
     active_children = 0
     peak_concurrent_children = 0
     for _ts_ms, delta in sorted(transitions, key=lambda item: (item[0], -item[1])):
@@ -2819,8 +2875,31 @@ def _trace_summary(path: Path) -> dict[str, Any]:
                     attributes.get("workspace_digest_before") is not None
                     and attributes.get("workspace_digest_after") is not None
                 )
+    child_role_counts = Counter(
+        role_by_child.get(child_id, "unknown") for child_id in children
+    )
+    returned_role_counts = Counter(
+        role_by_child.get(child_id, "unknown")
+        for child_id in returned_children
+    )
+    cancelled_role_counts = Counter(
+        role_by_child.get(child_id, "unknown")
+        for child_id in cancelled_children
+    )
+    child_return_rate_by_role = {
+        role: {
+            "spawned": child_role_counts[role],
+            "returned": returned_role_counts[role],
+            "cancelled": cancelled_role_counts[role],
+            "return_rate": (
+                returned_role_counts[role] / child_role_counts[role]
+            ),
+        }
+        for role in sorted(child_role_counts)
+    }
     join_create_count = counts["join_create"]
     join_satisfied_count = counts["join_satisfied"]
+    join_timeout_count = counts["join_timeout"]
     round_parent: dict[str, str] = {}
     round_create_ms: dict[str, float] = {}
     round_members: dict[str, set[str]] = {}
@@ -2830,7 +2909,12 @@ def _trace_summary(path: Path) -> dict[str, Any]:
         join_id = item.get("join_id")
         parent_id = item.get("parent_invocation_id")
         child_id = item.get("invocation_id")
-        if join_id is None or parent_id is None or child_id is None:
+        if (
+            join_id is None
+            or parent_id is None
+            or child_id is None
+            or str(child_id) not in children
+        ):
             continue
         join_key = str(join_id)
         round_parent[join_key] = str(parent_id)
@@ -2868,7 +2952,11 @@ def _trace_summary(path: Path) -> dict[str, Any]:
     return {
         "event_count": len(records),
         "event_counts": dict(sorted(counts.items())),
-        "dynamic_subagent_count": counts["spawn"],
+        "dynamic_subagent_count": len(children),
+        "natural_child_return_count": len(returned_children),
+        "root_return_count": len(returned_roots),
+        "child_cancel_count": len(cancelled_children),
+        "child_return_rate_by_role": child_return_rate_by_role,
         "fanout_parent_count": len(children_by_parent),
         "fanout_by_parent": {
             parent: len(child_ids)
@@ -2889,6 +2977,8 @@ def _trace_summary(path: Path) -> dict[str, Any]:
         "join_to_next_spawn_ms": sorted(join_to_next_spawn_ms),
         "peak_concurrent_children": peak_concurrent_children,
         "join_type_counts": dict(sorted(join_type_counts.items())),
+        "join_satisfied_count": join_satisfied_count,
+        "join_timeout_count": join_timeout_count,
         "child_return_span_ms": max(return_spans) if return_spans else 0.0,
         "llm_request_count": external_llm_submits,
         "llm_result_count": external_llm_results,
@@ -2912,7 +3002,7 @@ def _trace_summary(path: Path) -> dict[str, Any]:
         and returned_children == children,
         "all_joins_satisfied": (
             join_create_count == join_satisfied_count
-            and counts["join_timeout"] == 0
+            and join_timeout_count == 0
         ),
         "workflow_lifecycle_valid": (
             counts["workflow_start"] == 1 and counts["workflow_end"] == 1

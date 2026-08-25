@@ -200,6 +200,9 @@ class SGLangCommandBackend(Protocol):
     def poll_acks(self) -> list[CommandAck]:
         ...
 
+    def abort_all(self, *, reason: str) -> list[CommandAck]:
+        ...
+
     def poll_transfer_telemetry(self) -> list[TransferTelemetry]:
         ...
 
@@ -265,6 +268,15 @@ class SGLangSchedulerBridge:
 
     def drain_acks(self) -> tuple[CommandAck, ...]:
         acks = tuple(self.backend.poll_acks())
+        for ack in acks:
+            self.controller.acknowledge_command(ack)
+        return acks
+
+    def abort_all(self, *, reason: str) -> tuple[CommandAck, ...]:
+        abort = getattr(self.backend, "abort_all", None)
+        if not callable(abort):
+            raise RuntimeError("SGLang backend cannot terminally abort transfers")
+        acks = tuple(abort(reason=reason))
         for ack in acks:
             self.controller.acknowledge_command(ack)
         return acks

@@ -1270,6 +1270,41 @@ class BeliefKVController:
             return self.preflight_control_command(command)
         return outcome
 
+    def cancel_queued_commands(
+        self,
+        *,
+        now_ms: float,
+        reason: str,
+    ) -> tuple[CommandAck, ...]:
+        """Cancel undispatched commands with explicit terminal ACKs."""
+
+        self.now_ms = max(self.now_ms, now_ms)
+        acknowledgements: list[CommandAck] = []
+        for command in self.command_queue.pending_commands():
+            if not self.command_queue.cancel(command.command_id):
+                continue
+            if (
+                command.context_id is not None
+                and self._queued_by_context.get(command.context_id)
+                == command.command_id
+            ):
+                self._queued_by_context.pop(command.context_id, None)
+            ack = CommandAck(
+                command_id=command.command_id,
+                status=CommandStatus.CANCELLED,
+                completed_ts_ms=now_ms,
+                actual_bytes=0,
+                reason=reason,
+            )
+            acknowledgements.append(ack)
+            self.ack_history.append(ack)
+            self._acked_command_ids.add(command.command_id)
+        if acknowledgements:
+            self._bump_transfer_epoch()
+            self.notify_resource_state_changed()
+            self.update_signals()
+        return tuple(acknowledgements)
+
     def has_pending_transfer_work(self) -> bool:
         return bool(self._inflight or len(self.command_queue))
 

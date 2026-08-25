@@ -156,6 +156,32 @@ class ControllerTest(unittest.TestCase):
         self.assertEqual(conflict_outcome.status, EnqueueStatus.CONTEXT_CONFLICT)
         self.assertEqual(len(h.controller.command_queue), 1)
 
+    def test_shutdown_cancel_queued_command_emits_terminal_ack(self):
+        controller = BeliefKVController()
+        command = ControlCommand(
+            command_id="queued-shutdown",
+            kind=CommandKind.PREFETCH_CONTEXT,
+            created_ts_ms=1.0,
+            context_id="ctx",
+            context_epoch=0,
+            target_bytes=100,
+        )
+        self.assertEqual(
+            controller.enqueue_control_command(command).status,
+            EnqueueStatus.ENQUEUED,
+        )
+
+        acks = controller.cancel_queued_commands(
+            now_ms=2.0, reason="runtime_shutdown_queued_cancelled"
+        )
+
+        self.assertEqual(len(acks), 1)
+        self.assertEqual(acks[0].command_id, command.command_id)
+        self.assertEqual(acks[0].status, CommandStatus.CANCELLED)
+        self.assertEqual(len(controller.command_queue), 0)
+        self.assertIsNone(controller._canonical_context_command("ctx"))
+        self.assertEqual(controller.ack_history[-1], acks[0])
+
     def test_context_epoch_advance_cannot_adopt_stale_command(self):
         h = ControllerHarness()
         old = ControlCommand(

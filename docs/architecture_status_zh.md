@@ -22,9 +22,12 @@ deadline cancellation 曾串行执行。`96b358a` 已将 event fd 接入 SGLang 
 合并 child cancellation control batch，并并发启动 request/task/command cancellation；
 `h200_bf16_v6` 在 `2f2a8bc` 冻结该 SGLang patch。
 
-CPU gate 为 254 passed + 8 subtests、Deep Agents 149 passed、event/reserve 8 passed。
-该长跑只有 1 个 JOIN_SATISFIED、0 个自然完成 workflow，不进入训练集、Frozen GPU
-Replay、O0/O3 或性能 A/B。完整报告见
+修复后 CPU control-plane gate 为 283 passed + 8 subtests，Deep Agents gate 为 149 passed。
+该长跑原先报告的 73 条 child RETURN 已修正为 64 条 root RETURN 与 9 条自然 child
+RETURN；另有 119 条 child cancel、1 个 JOIN_SATISFIED、63 个 JOIN_TIMEOUT，且没有
+自然 JOIN 后的再次 SPAWN。0 个 workflow 自然完成，因此不进入训练集、Frozen GPU
+Replay、O0/O3 或性能 A/B。后续 Gate C 独立输出 System Gate 与 Agent Coverage Gate：
+coverage 不再影响系统活性裁决，但 coverage 不足的 trace 仍不能进入 O0/O3。完整报告见
 `docs/experiments/beliefkv_p5_gate_c_native64_rematch_fixed_2026-08-22_zh.md`。
 
 ## 2026-08-22：P5 Gate C 复验暴露 prefix-rematch 活性缺陷

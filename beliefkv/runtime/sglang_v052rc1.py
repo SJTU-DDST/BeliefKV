@@ -2046,7 +2046,7 @@ class EmbeddedSGLangRuntime:
         self._restore_certificate_sequence = 0
         self._restore_command_sequence = 0
         self._ordinary_native_fallback_signature_by_request: dict[
-            str, tuple[object, ...]
+            str, tuple[str, int, tuple[str, ...]]
         ] = {}
         self._ordinary_fallback_blocked_capacity: dict[str, tuple[int, float]] = {}
         self._current_ordinary_starvation_priority: tuple[str, ...] = ()
@@ -2119,6 +2119,10 @@ class EmbeddedSGLangRuntime:
         self._shutdown_state = "running"
         self._shutdown_prepare_ms: float | None = None
         self._shutdown_prepare_transaction_snapshot: dict[str, Any] | None = None
+        self._shutdown_expected_command_ids: set[str] = set()
+        self._shutdown_expected_transaction_ids: set[str] = set()
+        self._shutdown_terminal_command_outcomes: dict[str, str] = {}
+        self._shutdown_terminal_transaction_ids: set[str] = set()
         self._last_runtime_summary_ms: float | None = None
         self.audit = RuntimeAuditLog(
             self.config.runtime_audit_path,
@@ -2593,25 +2597,48 @@ class EmbeddedSGLangRuntime:
         inflight_command_ids = sorted(
             getattr(controller, "inflight_command_ids", ()) or ()
         )
-        pending_transaction_ids = tuple(
-            item
+        queued_command_ids = sorted(
+            item.command_id
             for item in (
-                (
-                    online_residency.transaction_id
-                    if online_residency is not None
-                    else None
-                ),
-                retraction.transaction_id if retraction is not None else None,
-                *(
-                    item.obligation_id
-                    for item in (
-                        getattr(self, "_restore_obligations", None).active()
-                        if getattr(self, "_restore_obligations", None) is not None
-                        else ()
-                    )
-                ),
+                controller.command_queue.pending_commands()
+                if controller is not None
+                and getattr(controller, "command_queue", None) is not None
+                else ()
             )
-            if item is not None
+        )
+        shutdown_prepare_transactions = getattr(
+            self, "_shutdown_prepare_transaction_snapshot", None
+        )
+        current_conservation = self._transaction_conservation_snapshot()
+        pending_transaction_ids = tuple(
+            sorted(self._shutdown_transaction_ids(current_conservation))
+        )
+        expected_command_ids = set(
+            getattr(
+                self,
+                "_shutdown_expected_command_ids",
+                set((shutdown_prepare_transactions or {}).get("inflight_command_ids", ()))
+                | set((shutdown_prepare_transactions or {}).get("queued_command_ids", ())),
+            )
+        )
+        terminal_command_outcomes = dict(
+            getattr(self, "_shutdown_terminal_command_outcomes", {})
+        )
+        missing_terminal_command_ids = tuple(
+            sorted(expected_command_ids - set(terminal_command_outcomes))
+        )
+        expected_transaction_ids = set(
+            getattr(
+                self,
+                "_shutdown_expected_transaction_ids",
+                self._shutdown_transaction_ids(shutdown_prepare_transactions),
+            )
+        )
+        terminal_transaction_ids = set(
+            getattr(self, "_shutdown_terminal_transaction_ids", set())
+        )
+        missing_terminal_transaction_ids = tuple(
+            sorted(expected_transaction_ids - terminal_transaction_ids)
         )
         missing_source_count = int(
             getattr(self, "_online_joint_counts", {}).get(
@@ -2682,12 +2709,13 @@ class EmbeddedSGLangRuntime:
             and bool(failed_unrecoverable_evidence.get(item.obligation_id))
             for item in failed_unrecoverable
         )
-        shutdown_prepare_transactions = getattr(
-            self, "_shutdown_prepare_transaction_snapshot", None
-        )
         shutdown_cleanup_masked_unresolved = bool(
-            shutdown_prepare_transactions
-            and any(bool(value) for value in shutdown_prepare_transactions.values())
+            final
+            and (
+                missing_terminal_command_ids
+                or missing_terminal_transaction_ids
+                or self._shutdown_snapshot_has_unresolved(current_conservation)
+            )
         )
         return {
             "schema_version": 1,
@@ -2713,6 +2741,19 @@ class EmbeddedSGLangRuntime:
             },
             "transactions": {
                 "inflight_command_ids": inflight_command_ids,
+                "queued_command_ids": queued_command_ids,
+                "shutdown_terminal_command_outcomes": dict(
+                    sorted(terminal_command_outcomes.items())
+                ),
+                "shutdown_missing_terminal_command_ids": list(
+                    missing_terminal_command_ids
+                ),
+                "shutdown_terminal_transaction_ids": sorted(
+                    terminal_transaction_ids
+                ),
+                "shutdown_missing_terminal_transaction_ids": list(
+                    missing_terminal_transaction_ids
+                ),
                 "pending_online_residency_transaction_id": (
                     online_residency.transaction_id
                     if online_residency is not None
@@ -2957,7 +2998,9 @@ class EmbeddedSGLangRuntime:
                 ),
                 "missing_source_joint_plan_id_count": missing_source_count,
                 "no_pending_transactions": (
-                    not inflight_command_ids and not pending_transaction_ids
+                    not self._shutdown_snapshot_has_unresolved(
+                        current_conservation
+                    )
                 ),
                 "pending_transaction_ids": list(pending_transaction_ids),
                 "shutdown_summary_complete": bool(
@@ -3054,6 +3097,15 @@ class EmbeddedSGLangRuntime:
         self._shutdown_prepare_transaction_snapshot = (
             self._transaction_conservation_snapshot()
         )
+        snapshot = self._shutdown_prepare_transaction_snapshot
+        self._shutdown_expected_command_ids = set(
+            snapshot.get("inflight_command_ids", ())
+        ) | set(snapshot.get("queued_command_ids", ()))
+        self._shutdown_expected_transaction_ids = (
+            self._shutdown_transaction_ids(snapshot)
+        )
+        self._shutdown_terminal_command_outcomes = {}
+        self._shutdown_terminal_transaction_ids = set()
         audit = getattr(self, "audit", None)
         if audit is not None:
             audit.emit(
@@ -3076,6 +3128,47 @@ class EmbeddedSGLangRuntime:
                 ),
             )
         self._write_latest_runtime_summary(now_ms=now_ms, force=True)
+
+
+    @staticmethod
+    def _shutdown_transaction_ids(
+        snapshot: Mapping[str, object] | None,
+    ) -> set[str]:
+        if not snapshot:
+            return set()
+        transaction_ids = set(
+            str(item)
+            for key in (
+                "active_obligation_ids",
+                "nonterminal_restore_transaction_ids",
+            )
+            for item in (snapshot.get(key, ()) or ())
+        )
+        for key in (
+            "pending_retraction_transaction_id",
+            "pending_residency_transaction_id",
+            "active_admission_rescue_request_id",
+        ):
+            value = snapshot.get(key)
+            if value is not None:
+                transaction_ids.add(str(value))
+        return transaction_ids
+
+
+    @staticmethod
+    def _shutdown_snapshot_has_unresolved(
+        snapshot: Mapping[str, object] | None,
+    ) -> bool:
+        return bool(snapshot and any(bool(value) for value in snapshot.values()))
+
+    def _record_shutdown_terminal_transactions(self) -> None:
+        expected = getattr(self, "_shutdown_expected_transaction_ids", set())
+        if not expected:
+            return
+        current = self._shutdown_transaction_ids(
+            self._transaction_conservation_snapshot()
+        )
+        self._shutdown_terminal_transaction_ids.update(expected - current)
 
     def _transaction_conservation_snapshot(self) -> dict[str, object]:
         controller = getattr(self, "controller", None)
@@ -3139,7 +3232,54 @@ class EmbeddedSGLangRuntime:
                 is not None
                 else None
             ),
+            "active_admission_rescue_request_id": (
+                getattr(self, "_active_admission_rescue", None).request_id
+                if getattr(self, "_active_admission_rescue", None) is not None
+                else None
+            ),
         }
+
+    def _apply_shutdown_acks(self, acks: tuple[CommandAck, ...]) -> None:
+        if not acks:
+            return
+        now_ms = float(self._now_ms())
+        outcomes = getattr(
+            self, "_shutdown_terminal_command_outcomes", None
+        )
+        if outcomes is None:
+            outcomes = {}
+            self._shutdown_terminal_command_outcomes = outcomes
+        for ack in acks:
+            outcomes[ack.command_id] = ack.status.value
+            self.audit.emit(
+                "transfer_acknowledged",
+                now_ms,
+                command_id=ack.command_id,
+                status=ack.status.value,
+                actual_bytes=ack.actual_bytes,
+                page_count=len(ack.page_handles),
+                reason=ack.reason,
+                blocker_codes=sorted(
+                    {item.code.value for item in ack.blockers}
+                ),
+                blockers=self._audit_blockers(ack.blockers),
+                shutdown_drain=True,
+            )
+        self._retire_h2d_commands(acks)
+        try:
+            self.sync_tree(force=True)
+        except Exception as error:
+            self.audit.emit(
+                "shutdown_tree_sync_failed",
+                now_ms,
+                error=f"{type(error).__name__}: {error}",
+            )
+        advance_host_recompute_offload(self, acks, now_ms=now_ms)
+        self._advance_host_cleanup(acks, now_ms=now_ms)
+        self._advance_retraction_transaction(acks, now_ms=now_ms)
+        self._advance_online_joint_residency(acks, now_ms=now_ms)
+        self._advance_restore_obligations(acks, now_ms=now_ms)
+        self._record_shutdown_terminal_transactions()
 
     def _drain_shutdown_acks(self) -> None:
         bridge = getattr(self, "bridge", None)
@@ -3147,43 +3287,28 @@ class EmbeddedSGLangRuntime:
         config = getattr(self, "config", None)
         if bridge is None or controller is None or config is None:
             return
+        queued_acks = controller.cancel_queued_commands(
+            now_ms=float(self._now_ms()),
+            reason="runtime_shutdown_queued_cancelled",
+        )
+        self._apply_shutdown_acks(tuple(queued_acks))
         deadline = time.monotonic() + config.shutdown_drain_timeout_ms / 1000.0
         while getattr(controller, "inflight_command_ids", ()):
-            acks = tuple(bridge.drain_acks())
-            if acks:
-                now_ms = float(self._now_ms())
-                for ack in acks:
-                    self.audit.emit(
-                        "transfer_acknowledged",
-                        now_ms,
-                        command_id=ack.command_id,
-                        status=ack.status.value,
-                        actual_bytes=ack.actual_bytes,
-                        page_count=len(ack.page_handles),
-                        reason=ack.reason,
-                        blocker_codes=sorted(
-                            {item.code.value for item in ack.blockers}
-                        ),
-                        blockers=self._audit_blockers(ack.blockers),
-                        shutdown_drain=True,
-                    )
-                self._retire_h2d_commands(acks)
-                try:
-                    self.sync_tree(force=True)
-                except Exception as error:
-                    self.audit.emit(
-                        "shutdown_tree_sync_failed",
-                        now_ms,
-                        error=f"{type(error).__name__}: {error}",
-                    )
-                self._advance_retraction_transaction(acks, now_ms=now_ms)
-                self._advance_online_joint_residency(acks, now_ms=now_ms)
-                self._advance_restore_obligations(acks, now_ms=now_ms)
+            self._apply_shutdown_acks(tuple(bridge.drain_acks()))
             if not getattr(controller, "inflight_command_ids", ()):
                 break
             if time.monotonic() >= deadline:
                 break
             time.sleep(0.01)
+        if getattr(controller, "inflight_command_ids", ()):
+            self._apply_shutdown_acks(
+                tuple(
+                    bridge.abort_all(
+                        reason="runtime_shutdown_drain_timeout"
+                    )
+                )
+            )
+        self._record_shutdown_terminal_transactions()
 
     def _abort_shutdown_transactions(self, *, now_ms: float) -> None:
         retraction = getattr(
@@ -3245,8 +3370,29 @@ class EmbeddedSGLangRuntime:
                 now_ms=now_ms,
                 reason="runtime_shutdown",
             )
+        rescue = getattr(self, "_active_admission_rescue", None)
+        if rescue is not None:
+            self._finish_admission_rescue(
+                rescue.request_id,
+                now_ms=now_ms,
+                reason="runtime_shutdown",
+                success=False,
+            )
+        ordinary_request_ids = set(
+            getattr(
+                self, "_ordinary_native_fallback_signature_by_request", {}
+            )
+        ) | set(getattr(self, "_ordinary_fallback_blocked_capacity", {}))
+        ordinary_request_ids.update(
+            getattr(self, "_current_ordinary_starvation_priority", ())
+        )
+        for request_id in ordinary_request_ids:
+            self._clear_ordinary_fallback_state(
+                request_id, reason="runtime_shutdown", now_ms=now_ms
+            )
         getattr(self, "_restore_command_to_request", {}).clear()
         getattr(self, "_restore_funding_target_by_command", {}).clear()
+        self._record_shutdown_terminal_transactions()
 
     def close(self) -> None:
         """Prepare, drain and finalize process-local runtime state once."""
@@ -5349,6 +5495,46 @@ class EmbeddedSGLangRuntime:
                 path_extent_count=len(path_extent_ids),
             )
 
+    def _clear_ordinary_fallback_state(
+        self,
+        request_id: str,
+        *,
+        reason: str,
+        now_ms: float | None = None,
+    ) -> bool:
+        """Synchronously retire all admission-aging state for one request."""
+
+        signatures = getattr(
+            self, "_ordinary_native_fallback_signature_by_request", {}
+        )
+        blocked = getattr(self, "_ordinary_fallback_blocked_capacity", {})
+        removed_signature = signatures.pop(request_id, None) is not None
+        removed_backoff = blocked.pop(request_id, None) is not None
+        priority = tuple(
+            item
+            for item in getattr(
+                self, "_current_ordinary_starvation_priority", ()
+            )
+            if item != request_id
+        )
+        removed_priority = priority != getattr(
+            self, "_current_ordinary_starvation_priority", ()
+        )
+        self._current_ordinary_starvation_priority = priority
+        removed = removed_signature or removed_backoff or removed_priority
+        audit = getattr(self, "audit", None)
+        if removed and audit is not None:
+            audit.emit(
+                "ordinary_fallback_state_cleared",
+                float(self._now_ms() if now_ms is None else now_ms),
+                request_id=request_id,
+                reason=reason,
+                removed_signature=removed_signature,
+                removed_backoff=removed_backoff,
+                removed_priority=removed_priority,
+            )
+        return removed
+
     def _observe_ordinary_waiting_native_fallback(
         self,
         request_id: str,
@@ -5381,11 +5567,20 @@ class EmbeddedSGLangRuntime:
             signatures = {}
             self._ordinary_native_fallback_signature_by_request = signatures
         signature = (
+            metadata.context_id,
             metadata.context_epoch,
             tuple(sorted(required_extent_ids)),
         )
-        if signatures.get(request_id) == signature:
+        previous_signature = signatures.get(request_id)
+        if previous_signature == signature:
             return
+        if previous_signature is not None:
+            self._clear_ordinary_fallback_state(
+                request_id,
+                reason="identity_or_context_epoch_changed",
+                now_ms=now_ms,
+            )
+            signatures = self._ordinary_native_fallback_signature_by_request
         signatures[request_id] = signature
         self._restore_obligation_counts["ordinary_native_fallback"] += 1
         self.audit.emit(
@@ -6875,6 +7070,8 @@ class EmbeddedSGLangRuntime:
         *,
         now_ms: float,
     ) -> None:
+        if getattr(self, "_shutdown_state", "running") != "running":
+            return
         transaction = getattr(
             self, "_pending_running_retraction_transaction", None
         )
@@ -8246,6 +8443,8 @@ class EmbeddedSGLangRuntime:
         *,
         now_ms: float,
     ) -> None:
+        if getattr(self, "_shutdown_state", "running") != "running":
+            return
         mapping = getattr(self, "_restore_command_to_request", {})
         if not mapping:
             return
@@ -9370,6 +9569,8 @@ class EmbeddedSGLangRuntime:
         }
 
     def _maybe_queue_host_cleanup(self, *, now_ms: float) -> None:
+        if getattr(self, "_shutdown_state", "running") != "running":
+            return
         config = getattr(self, "config", None)
         if config is None or not config.host_lifecycle_enabled:
             return
@@ -9578,6 +9779,19 @@ class EmbeddedSGLangRuntime:
                     bundle_ids=bundle_ids,
                     status=status,
                 )
+        if getattr(self, "_shutdown_state", "running") != "running":
+            self._finish_physical_safe_point()
+            self._record_scheduler_timing(
+                total_ms=(
+                    time.perf_counter_ns() - step_started_ns
+                ) / 1_000_000.0,
+                telemetry_ms=telemetry_overhead_ns / 1_000_000.0,
+                telemetry_count=len(telemetry),
+            )
+            self._write_latest_runtime_summary(
+                now_ms=float(self._now_ms()), force=True
+            )
+            return
         self._begin_physical_safe_point_capture_and_plan()
         if hasattr(self, "_last_resource_telemetry_ms"):
             self._emit_resource_snapshot(force=bool(acks or telemetry))
@@ -10412,9 +10626,11 @@ class EmbeddedSGLangRuntime:
                     now_ms=float(getattr(self, "_now_ms", lambda: 0.0)()),
                     reason=terminal_reason,
                 )
-                getattr(
-                    self, "_ordinary_native_fallback_signature_by_request", {}
-                ).pop(request_id, None)
+                self._clear_ordinary_fallback_state(
+                    request_id,
+                    reason=terminal_reason,
+                    now_ms=float(getattr(self, "_now_ms", lambda: 0.0)()),
+                )
                 self._request_metadata_by_id.pop(request_id, None)
                 ledger = getattr(self, "_lock_service_ledger", None)
                 if ledger is not None:
@@ -12526,13 +12742,11 @@ class EmbeddedSGLangRuntime:
         obligation = self._restore_obligation_index().get(request_id)
         rescue = getattr(self, "_active_admission_rescue", None)
         if admitted:
-            blocked = getattr(
-                self,
-                "_ordinary_fallback_blocked_capacity",
-                None,
+            self._clear_ordinary_fallback_state(
+                request_id,
+                reason="native_admitted",
+                now_ms=float(self._now_ms()),
             )
-            if blocked is not None:
-                blocked.pop(request_id, None)
             if rescue is not None and rescue.request_id == request_id:
                 rescue.released_for_admission_tokens = 0
                 rescue.stage = "admitted_wait_service"
@@ -13229,12 +13443,29 @@ class EmbeddedSGLangRuntime:
             if request_id not in entries or request_id not in native_fallbacks:
                 blocked.pop(request_id, None)
         candidates: list[tuple[float, float, str]] = []
-        for request_id in native_fallbacks:
+        for request_id, signature in tuple(native_fallbacks.items()):
             entry = entries.get(request_id)
+            metadata = getattr(self, "_request_metadata_by_id", {}).get(
+                request_id
+            )
+            expected_context_id, expected_epoch, _extent_ids = signature
             if (
                 entry is None
                 or entry.state != AdmissionSideState.VISIBLE_PENDING
             ):
+                continue
+            if (
+                metadata is None
+                or metadata.context_id != expected_context_id
+                or metadata.context_epoch != expected_epoch
+                or entry.request.context_id != expected_context_id
+                or entry.request.context_epoch != expected_epoch
+            ):
+                self._clear_ordinary_fallback_state(
+                    request_id,
+                    reason="identity_or_context_epoch_invalidated",
+                    now_ms=now_ms,
+                )
                 continue
             waited_ms = max(
                 0.0,
@@ -13777,6 +14008,9 @@ class EmbeddedSGLangRuntime:
                 continue
             timed_out.add(request_id)
             self._terminal_cancelled_request_ids.add(request_id)
+            self._clear_ordinary_fallback_state(
+                request_id, reason="queue_timeout", now_ms=now_ms
+            )
             self.audit.emit(
                 "request_queue_timeout",
                 now_ms,
@@ -13817,6 +14051,9 @@ class EmbeddedSGLangRuntime:
                 continue
             timed_out.add(request_id)
             self._terminal_cancelled_request_ids.add(request_id)
+            self._clear_ordinary_fallback_state(
+                request_id, reason="execution_timeout", now_ms=now_ms
+            )
             self.audit.emit(
                 "request_execution_timeout",
                 now_ms,
@@ -14083,9 +14320,11 @@ class EmbeddedSGLangRuntime:
         terminal_cancelled = terminal_marker or logical_scope_terminal
         self._terminal_cancelled_request_ids.discard(req.rid)
         getattr(self, "_queue_timeout_request_ids", set()).discard(req.rid)
-        getattr(
-            self, "_ordinary_native_fallback_signature_by_request", {}
-        ).pop(req.rid, None)
+        self._clear_ordinary_fallback_state(
+            str(req.rid),
+            reason="request_finished",
+            now_ms=float(self._now_ms()),
+        )
         getattr(self, "_execution_timeout_request_ids", set()).discard(req.rid)
         self._request_metadata_by_id.pop(req.rid, None)
         getattr(self, "_request_submitted_ts_by_id", {}).pop(req.rid, None)
@@ -18642,6 +18881,8 @@ class EmbeddedSGLangRuntime:
         *,
         now_ms: float,
     ) -> None:
+        if getattr(self, "_shutdown_state", "running") != "running":
+            return
         transaction = getattr(self, "_pending_online_joint_residency", None)
         if transaction is None:
             return
