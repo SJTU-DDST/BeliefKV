@@ -80,6 +80,8 @@ class OracleGPUReplayResult:
     completed_requests: int
     prompt_tokens: int
     output_tokens: int
+    execution_order_mode: str
+    residency_pressure_start_request_count: int
     oracle_access_summary: Mapping[str, object]
     failures: tuple[Mapping[str, object], ...]
 
@@ -102,6 +104,10 @@ class OracleGPUReplayResult:
             "completed_requests": self.completed_requests,
             "prompt_tokens": self.prompt_tokens,
             "output_tokens": self.output_tokens,
+            "execution_order_mode": self.execution_order_mode,
+            "residency_pressure_start_request_count": (
+                self.residency_pressure_start_request_count
+            ),
             "workflows_per_hour": (
                 self.completed_workflows * 3600.0 / self.makespan_s
                 if self.makespan_s > 0
@@ -235,6 +241,8 @@ class OracleGPUReplay:
         request_timeout_s: float = 3600.0,
         proactive_min_wait_ms: float = 5_000.0,
         prefetch_lead_ms: float = 2_000.0,
+        execution_order_audit_path: Path | None = None,
+        residency_pressure_start_request_count: int = 0,
     ) -> None:
         if sidecar.truth_id != truth.truth_id or (
             sidecar.truth_digest != truth.truth_digest
@@ -260,6 +268,13 @@ class OracleGPUReplay:
         self.request_timeout_s = request_timeout_s
         self.proactive_min_wait_ms = proactive_min_wait_ms
         self.prefetch_lead_ms = prefetch_lead_ms
+        if residency_pressure_start_request_count < 0:
+            raise ValueError(
+                "residency pressure start request count must be non-negative"
+            )
+        self.residency_pressure_start_request_count = (
+            residency_pressure_start_request_count
+        )
         self.emitter = _Emitter(
             event_sink,
             replay_id=replay_id,
@@ -301,6 +316,14 @@ class OracleGPUReplay:
         self._completed_workflows = 0
         self._failures: list[dict[str, object]] = []
         self._owners_with_prefetch_debt: set[LogicalInvocationKey] = set()
+        frozen_execution_order = self._load_execution_order(
+            execution_order_audit_path
+        )
+        self.execution_order_mode = (
+            "o0_noop_candidate"
+            if frozen_execution_order
+            else "perfect_future_causal_unlock"
+        )
         self.provider = (
             OracleTruthProvider(
                 truth,
@@ -313,7 +336,11 @@ class OracleGPUReplay:
             else None
         )
         self.planner = (
-            PerfectFutureJointPlanner(self.provider, replay_id=replay_id)
+            PerfectFutureJointPlanner(
+                self.provider,
+                replay_id=replay_id,
+                frozen_execution_order=frozen_execution_order,
+            )
             if self.provider is not None
             else None
         )
@@ -380,6 +407,10 @@ class OracleGPUReplay:
             completed_requests=self._completed_requests,
             prompt_tokens=self._prompt_tokens,
             output_tokens=self._output_tokens,
+            execution_order_mode=self.execution_order_mode,
+            residency_pressure_start_request_count=(
+                self.residency_pressure_start_request_count
+            ),
             oracle_access_summary=(
                 self.provider.access_summary if self.provider is not None else {
                     "total_queries": 0,
@@ -794,6 +825,12 @@ class OracleGPUReplay:
         if self.planner is None or wait_ms < self.proactive_min_wait_ms:
             await self._publish_directive()
             return
+        if (
+            self._completed_requests
+            < self.residency_pressure_start_request_count
+        ):
+            await self._publish_directive()
+            return
         async with self._state_lock:
             cursor = self._cursor()
         if not self.planner.has_future_reuse(invocation.key, cursor=cursor):
@@ -802,6 +839,9 @@ class OracleGPUReplay:
         action, target_bytes_hint, reason = self._parked_residency_action(
             invocation
         )
+        if action is None:
+            await self._publish_directive()
+            return
         if action == ResidencyAction.COMMIT_CPU:
             self._owners_with_prefetch_debt.add(invocation.semantic_owner)
         await self._publish_directive(
@@ -891,16 +931,16 @@ class OracleGPUReplay:
     def _parked_residency_action(
         self,
         invocation: FrozenInvocationDemand,
-    ) -> tuple[ResidencyAction, int, str]:
+    ) -> tuple[ResidencyAction | None, int, str]:
         state = self.progress[invocation.key]
         current = self.physical_by_call.get(
             (invocation.key, state.call_ordinal)
         )
         if current is None:
             return (
-                ResidencyAction.COMMIT_CPU,
+                None,
                 0,
-                "oracle-perfect-future:parked-slack:no-physical-shape",
+                "oracle-perfect-future:no-physical-shape",
             )
         calls = self.physical_by_owner[invocation.semantic_owner]
         next_use = next(
@@ -913,9 +953,8 @@ class OracleGPUReplay:
         )
         if next_use is None:
             return (
-                ResidencyAction.DROP,
-                len(current.cache_commit_token_symbols)
-                * self.sidecar.kv_bytes_per_token,
+                None,
+                0,
                 "oracle-perfect-future:no-physical-next-use",
             )
         reusable_tokens = 0
@@ -930,10 +969,10 @@ class OracleGPUReplay:
         target_bytes = current_tokens * self.sidecar.kv_bytes_per_token
         if reusable_tokens * 2 < current_tokens:
             return (
-                ResidencyAction.DROP,
-                target_bytes,
+                None,
+                0,
                 (
-                    "oracle-perfect-future:low-next-use-prefix:"
+                    "oracle-perfect-future:keep-low-next-use-prefix:"
                     f"{reusable_tokens}-of-{current_tokens}"
                 ),
             )
@@ -945,6 +984,42 @@ class OracleGPUReplay:
                 f"{reusable_tokens}-of-{current_tokens}"
             ),
         )
+
+    def _load_execution_order(
+        self,
+        source: Path | None,
+    ) -> dict[tuple[LogicalInvocationKey, int], int]:
+        if source is None:
+            return {}
+        suffix_rank: dict[str, int] = {}
+        with source.expanduser().resolve().open(encoding="utf-8") as rows:
+            for raw in rows:
+                item = json.loads(raw)
+                if item.get("event") != "request_started":
+                    continue
+                request_id = item.get("request_id")
+                if not isinstance(request_id, str) or ":invocation:" not in request_id:
+                    continue
+                suffix = request_id.split(":invocation:", 1)[1]
+                suffix_rank.setdefault(suffix, len(suffix_rank))
+        result = {}
+        missing = []
+        for invocation in self.truth.invocations:
+            for call in invocation.calls:
+                if not call.prompt_tokens and not call.output_tokens:
+                    continue
+                suffix = self._request_suffix(invocation.key, call.call_ordinal)
+                rank = suffix_rank.get(suffix)
+                if rank is None:
+                    missing.append(suffix)
+                else:
+                    result[(invocation.key, call.call_ordinal)] = rank
+        if missing:
+            raise ValueError(
+                "execution-order audit does not cover frozen calls: "
+                f"{missing[:8]}"
+            )
+        return result
 
     def _cursor(self) -> OracleReplayCursor:
         return OracleReplayCursor(
@@ -1088,4 +1163,12 @@ class OracleGPUReplay:
         )
 
     def _request_id(self, key: LogicalInvocationKey, call_ordinal: int) -> str:
-        return f"{self._invocation_id(key)}:call:{call_ordinal}"
+        return f"{self.replay_id}:invocation:{self._request_suffix(key, call_ordinal)}"
+
+    @staticmethod
+    def _request_suffix(key: LogicalInvocationKey, call_ordinal: int) -> str:
+        path = ".".join(key.canonical_agent_path)
+        return (
+            f"{key.workload_instance}:{path}:{key.parent_spawn_ordinal}:"
+            f"{key.invocation_ordinal}:call:{call_ordinal}"
+        )

@@ -166,6 +166,42 @@ def test_perfect_future_planner_orders_short_terminal_unlock_first() -> None:
     assert provider.access_summary["total_queries"] == 4
 
 
+def test_o3_noop_candidate_uses_frozen_o0_order_without_agent_queries() -> None:
+    demand = _demand()
+    provider = OracleTruthProvider(
+        demand,
+        arm=PerfectFutureOracleArm.O3_JOINT,
+        expected_truth_id=demand.truth_id,
+        expected_truth_digest=demand.truth_digest,
+    )
+    by_workload = {
+        item.key.workload_instance: item for item in demand.invocations
+    }
+    planner = PerfectFutureJointPlanner(
+        provider,
+        replay_id="replay",
+        frozen_execution_order={
+            (by_workload["long"].key, 0): 0,
+            (by_workload["short"].key, 0): 1,
+        },
+    )
+    ready = {
+        item.key.workload_instance: OracleReadyRequest(
+            request_id=item.key.workload_instance,
+            logical_key=item.key,
+            call_ordinal=0,
+            prompt_tokens=32,
+            output_tokens=item.calls[0].output_tokens,
+        )
+        for item in demand.invocations
+    }
+
+    directive = planner.compile(cursor=_cursor(demand), ready=ready)
+
+    assert directive.ordered_request_ids == ("long", "short")
+    assert provider.access_summary["total_queries"] == 0
+
+
 def test_oracle_directive_parser_is_strict() -> None:
     raw = {
         "schema_version": 1,
@@ -385,4 +421,4 @@ def test_parked_action_uses_exact_next_prompt_prefix_morphology() -> None:
 
     assert action == ResidencyAction.COMMIT_CPU
     assert target_bytes == 64
-    assert low_reuse_action == ResidencyAction.DROP
+    assert low_reuse_action is None

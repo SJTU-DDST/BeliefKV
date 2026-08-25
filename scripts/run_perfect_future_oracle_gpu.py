@@ -32,6 +32,12 @@ def _args() -> argparse.Namespace:
     parser.add_argument("--request-timeout-seconds", type=float, default=3600.0)
     parser.add_argument("--proactive-min-wait-ms", type=float, default=5_000.0)
     parser.add_argument("--prefetch-lead-ms", type=float, default=2_000.0)
+    parser.add_argument("--execution-order-audit", type=Path, default=None)
+    parser.add_argument(
+        "--residency-pressure-start-request-count",
+        type=int,
+        default=0,
+    )
     return parser.parse_args()
 
 
@@ -55,6 +61,10 @@ def main() -> int:
             request_timeout_s=args.request_timeout_seconds,
             proactive_min_wait_ms=args.proactive_min_wait_ms,
             prefetch_lead_ms=args.prefetch_lead_ms,
+            execution_order_audit_path=args.execution_order_audit,
+            residency_pressure_start_request_count=(
+                args.residency_pressure_start_request_count
+            ),
         )
         result = asyncio.run(replay.run())
     finally:

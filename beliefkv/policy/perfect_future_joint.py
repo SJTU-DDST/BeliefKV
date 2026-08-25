@@ -101,9 +101,13 @@ class PerfectFutureJointPlanner:
         provider: OracleTruthProvider,
         *,
         replay_id: str,
+        frozen_execution_order: Mapping[
+            tuple[LogicalInvocationKey, int], int
+        ] | None = None,
     ) -> None:
         self.provider = provider
         self.replay_id = replay_id
+        self.frozen_execution_order = dict(frozen_execution_order or {})
         self._sequence = 0
 
     def compile(
@@ -172,6 +176,16 @@ class PerfectFutureJointPlanner:
         cursor: OracleReplayCursor,
         planner_epoch: int,
     ) -> tuple[int, int, int, str]:
+        if self.frozen_execution_order:
+            return (
+                0,
+                self.frozen_execution_order.get(
+                    (request.logical_key, request.call_ordinal),
+                    len(self.frozen_execution_order),
+                ),
+                request.output_tokens,
+                request.request_id,
+            )
         boundary = self.provider.agent_future.query(
             planner_epoch=planner_epoch,
             logical_key=request.logical_key,
