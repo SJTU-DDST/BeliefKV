@@ -1,8 +1,10 @@
 from __future__ import annotations
 
 import asyncio
+from collections import Counter
 from dataclasses import replace
 import json
+from types import SimpleNamespace
 
 import httpx
 import pytest
@@ -36,7 +38,10 @@ from beliefkv.policy.perfect_future_joint import (
     OracleReadyRequest,
     PerfectFutureJointPlanner,
 )
-from beliefkv.runtime.sglang_v052rc1 import _OracleJointDirective
+from beliefkv.runtime.sglang_v052rc1 import (
+    EmbeddedSGLangRuntime,
+    _OracleJointDirective,
+)
 
 
 class _MemorySink:
@@ -45,6 +50,11 @@ class _MemorySink:
 
     def emit_batch(self, events) -> None:
         self.events.extend(events)
+
+
+class _NullAudit:
+    def emit(self, *_args, **_kwargs) -> None:
+        return None
 
 
 def _root(workload: str, *, output_tokens: int) -> FrozenInvocationDemand:
@@ -194,6 +204,43 @@ def test_oracle_config_requires_frozen_identity_and_joint_o3() -> None:
     with pytest.raises(ValueError, match="online JointPlan data plane"):
         replace(base, **fields)
     assert replace(base, joint_policy_enabled=True, **fields)
+
+
+def test_oracle_seed_recompiles_when_native_visibility_changes() -> None:
+    runtime = EmbeddedSGLangRuntime.__new__(EmbeddedSGLangRuntime)
+    runtime.config = SimpleNamespace(perfect_future_oracle_mode="o3_joint")
+    runtime._oracle_joint_directive = _OracleJointDirective.from_mapping(
+        {
+            "schema_version": 1,
+            "directive_id": "directive-1",
+            "sequence": 1,
+            "replay_id": "replay",
+            "truth_id": "truth",
+            "truth_digest": "a" * 64,
+            "ordered_request_ids": ["request-1"],
+            "semantic_residency": [],
+        }
+    )
+    runtime._oracle_joint_decision = None
+    runtime._oracle_last_compile_ms = None
+    runtime._oracle_last_visible_request_ids = None
+    runtime._oracle_consumed_directive_ids = set()
+    runtime._online_joint_epoch_sequence = 0
+    runtime._online_joint_counts = Counter()
+    runtime.audit = _NullAudit()
+    visible = []
+    runtime._policy_runtime_runnable = lambda _now: tuple(visible)
+    runtime._physical_commit_semantic_residency = (
+        lambda _plan, decision, now_ms: decision
+    )
+
+    empty = runtime._oracle_joint_admission_decision(now_ms=1.0)
+    visible.append(SimpleNamespace(request_id="request-1"))
+    admitted = runtime._oracle_joint_admission_decision(now_ms=2.0)
+
+    assert empty.reason == "no_action"
+    assert admitted.reason == "applicable"
+    assert admitted.view.immediate_request_ids == ("request-1",)
 
 
 def test_output_token_id_parser_accepts_native_logprob_records() -> None:

@@ -2051,6 +2051,7 @@ class EmbeddedSGLangRuntime:
         self._oracle_joint_plan: _OracleOnlineSeedPlan | None = None
         self._oracle_joint_decision: OnlineJointPlanDecision | None = None
         self._oracle_last_compile_ms: float | None = None
+        self._oracle_last_visible_request_ids: tuple[str, ...] | None = None
         self._oracle_consumed_directive_ids: set[str] = set()
         if self.config.perfect_future_oracle_mode != "disabled":
             truth_path = Path(
@@ -14945,6 +14946,7 @@ class EmbeddedSGLangRuntime:
             self._oracle_joint_plan = None
             self._oracle_joint_decision = None
             self._oracle_last_compile_ms = None
+            self._oracle_last_visible_request_ids = None
             self._online_joint_counts["oracle_directive_accepted"] += 1
             self.audit.emit(
                 "oracle_joint_directive_accepted",
@@ -17552,12 +17554,18 @@ class EmbeddedSGLangRuntime:
             return None
         previous_decision = getattr(self, "_oracle_joint_decision", None)
         last_compile_ms = getattr(self, "_oracle_last_compile_ms", None)
+        visible = tuple(
+            item.request_id for item in self._policy_runtime_runnable(now_ms)
+        )
+        visible_unchanged = (
+            visible == getattr(self, "_oracle_last_visible_request_ids", None)
+        )
         residency_pending = bool(
             directive.semantic_residency
             and directive.directive_id
             not in getattr(self, "_oracle_consumed_directive_ids", set())
         )
-        if previous_decision is not None and (
+        if previous_decision is not None and visible_unchanged and (
             not residency_pending
             or (
                 last_compile_ms is not None
@@ -17565,9 +17573,6 @@ class EmbeddedSGLangRuntime:
             )
         ):
             return previous_decision
-        visible = tuple(
-            item.request_id for item in self._policy_runtime_runnable(now_ms)
-        )
         self._online_joint_epoch_sequence += 1
         seed = compile_bounded_seed_epoch(
             ordered_request_ids=directive.ordered_request_ids,
@@ -17609,6 +17614,7 @@ class EmbeddedSGLangRuntime:
         self._oracle_joint_plan = plan
         self._oracle_joint_decision = decision
         self._oracle_last_compile_ms = now_ms
+        self._oracle_last_visible_request_ids = visible
         self._current_joint_plan_epoch = decision.epoch
         self._online_joint_counts["oracle_joint_epoch"] += 1
         self.audit.emit(
