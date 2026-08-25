@@ -271,6 +271,16 @@ class OracleGPUReplay:
         self.physical_by_call = {
             (item.invocation, item.call_ordinal): item for item in sidecar.calls
         }
+        physical_by_owner: dict[
+            LogicalInvocationKey, list[FrozenPhysicalCall]
+        ] = {}
+        for item in sidecar.calls:
+            owner = self.invocation_by_key[item.invocation].semantic_owner
+            physical_by_owner.setdefault(owner, []).append(item)
+        self.physical_by_owner = {
+            owner: tuple(sorted(items, key=lambda item: item.trace_request_ordinal))
+            for owner, items in physical_by_owner.items()
+        }
         self.progress = {
             item.key: _MutableProgress(item.calls[0].call_ordinal)
             for item in truth.invocations
@@ -290,6 +300,7 @@ class OracleGPUReplay:
         self._output_tokens = 0
         self._completed_workflows = 0
         self._failures: list[dict[str, object]] = []
+        self._owners_with_prefetch_debt: set[LogicalInvocationKey] = set()
         self.provider = (
             OracleTruthProvider(
                 truth,
@@ -777,12 +788,18 @@ class OracleGPUReplay:
         if not self.planner.has_future_reuse(invocation.key, cursor=cursor):
             await self._publish_directive()
             return
+        action, target_bytes_hint, reason = self._parked_residency_action(
+            invocation
+        )
+        if action == ResidencyAction.COMMIT_CPU:
+            self._owners_with_prefetch_debt.add(invocation.semantic_owner)
         await self._publish_directive(
             residency=(
                 self._residency_target(
                     invocation,
-                    action=ResidencyAction.COMMIT_CPU,
-                    reason="oracle-perfect-future:parked-slack",
+                    action=action,
+                    reason=reason,
+                    target_bytes_hint=target_bytes_hint,
                 ),
             )
         )
@@ -791,8 +808,13 @@ class OracleGPUReplay:
         self,
         invocation: FrozenInvocationDemand,
     ) -> None:
-        if self.planner is None:
+        if (
+            self.planner is None
+            or invocation.semantic_owner
+            not in self._owners_with_prefetch_debt
+        ):
             return
+        self._owners_with_prefetch_debt.discard(invocation.semantic_owner)
         await self._publish_directive(
             residency=(
                 self._residency_target(
@@ -842,16 +864,75 @@ class OracleGPUReplay:
         *,
         action: ResidencyAction,
         reason: str,
+        target_bytes_hint: int = 0,
     ) -> OracleSemanticResidency:
         now_ms = time.monotonic() * 1000.0
         return OracleSemanticResidency(
             context_id=self._context_id(invocation.semantic_owner),
             context_epoch=self.current_epoch[invocation.key],
             action=action,
-            target_bytes_hint=0,
+            target_bytes_hint=target_bytes_hint,
             deadline_ms=now_ms + max(5_000.0, self.prefetch_lead_ms),
             reason=reason,
             service_deadline_ms=now_ms + max(5_000.0, self.prefetch_lead_ms),
+        )
+
+    def _parked_residency_action(
+        self,
+        invocation: FrozenInvocationDemand,
+    ) -> tuple[ResidencyAction, int, str]:
+        state = self.progress[invocation.key]
+        current = self.physical_by_call.get(
+            (invocation.key, state.call_ordinal)
+        )
+        if current is None:
+            return (
+                ResidencyAction.COMMIT_CPU,
+                0,
+                "oracle-perfect-future:parked-slack:no-physical-shape",
+            )
+        calls = self.physical_by_owner[invocation.semantic_owner]
+        next_use = next(
+            (
+                item
+                for item in calls
+                if item.trace_request_ordinal > current.trace_request_ordinal
+            ),
+            None,
+        )
+        if next_use is None:
+            return (
+                ResidencyAction.DROP,
+                len(current.cache_commit_token_symbols)
+                * self.sidecar.kv_bytes_per_token,
+                "oracle-perfect-future:no-physical-next-use",
+            )
+        reusable_tokens = 0
+        for old, new in zip(
+            current.cache_commit_token_symbols,
+            next_use.prompt_token_symbols,
+        ):
+            if old != new:
+                break
+            reusable_tokens += 1
+        current_tokens = len(current.cache_commit_token_symbols)
+        target_bytes = current_tokens * self.sidecar.kv_bytes_per_token
+        if reusable_tokens * 2 < current_tokens:
+            return (
+                ResidencyAction.DROP,
+                target_bytes,
+                (
+                    "oracle-perfect-future:low-next-use-prefix:"
+                    f"{reusable_tokens}-of-{current_tokens}"
+                ),
+            )
+        return (
+            ResidencyAction.COMMIT_CPU,
+            target_bytes,
+            (
+                "oracle-perfect-future:parked-slack:"
+                f"{reusable_tokens}-of-{current_tokens}"
+            ),
         )
 
     def _cursor(self) -> OracleReplayCursor:

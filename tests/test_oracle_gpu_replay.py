@@ -38,6 +38,7 @@ from beliefkv.policy.perfect_future_joint import (
     OracleReadyRequest,
     PerfectFutureJointPlanner,
 )
+from beliefkv.policy.reference.base import ResidencyAction
 from beliefkv.runtime.sglang_v052rc1 import (
     EmbeddedSGLangRuntime,
     _OracleJointDirective,
@@ -339,3 +340,49 @@ def test_single_workflow_replay_reaches_natural_terminal(tmp_path) -> None:
         "return",
         "workflow_end",
     ]
+
+
+def test_parked_action_uses_exact_next_prompt_prefix_morphology() -> None:
+    invocation = _root("shape", output_tokens=2)
+    current = FrozenPhysicalCall(
+        invocation=invocation.key,
+        call_ordinal=0,
+        trace_request_ordinal=0,
+        runtime_context_epoch=0,
+        observed_cache_hit_tokens=0,
+        observed_unique_growth_bytes=64,
+        prompt_token_symbols=(1, 2, 3),
+        cache_commit_token_symbols=(1, 2, 3, 4),
+    )
+    next_use = FrozenPhysicalCall(
+        invocation=invocation.key,
+        call_ordinal=1,
+        trace_request_ordinal=1,
+        runtime_context_epoch=1,
+        observed_cache_hit_tokens=3,
+        observed_unique_growth_bytes=32,
+        prompt_token_symbols=(1, 2, 3, 9),
+        cache_commit_token_symbols=(1, 2, 3, 9, 10),
+    )
+    replay = OracleGPUReplay.__new__(OracleGPUReplay)
+    replay.progress = {invocation.key: SimpleNamespace(call_ordinal=0)}
+    replay.physical_by_call = {(invocation.key, 0): current}
+    replay.physical_by_owner = {invocation.key: (current, next_use)}
+    replay.sidecar = SimpleNamespace(kv_bytes_per_token=16)
+
+    action, target_bytes, _ = replay._parked_residency_action(invocation)
+    replay.physical_by_owner = {
+        invocation.key: (
+            current,
+            replace(
+                next_use,
+                prompt_token_symbols=(1, 8, 9, 10),
+                cache_commit_token_symbols=(1, 8, 9, 10, 11),
+            ),
+        )
+    }
+    low_reuse_action, _, _ = replay._parked_residency_action(invocation)
+
+    assert action == ResidencyAction.COMMIT_CPU
+    assert target_bytes == 64
+    assert low_reuse_action == ResidencyAction.DROP
