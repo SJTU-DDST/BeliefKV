@@ -281,6 +281,15 @@ def main() -> int:
             "for admission, residency, or transfer decisions."
         ),
     )
+    parser.add_argument(
+        "--perfect-future-oracle-mode",
+        choices=("disabled", "o0_current", "o3_joint"),
+        default="disabled",
+    )
+    parser.add_argument("--perfect-future-truth", type=Path, default=None)
+    parser.add_argument("--perfect-future-truth-id", default=None)
+    parser.add_argument("--perfect-future-truth-digest", default=None)
+    parser.add_argument("--perfect-future-replay-id", default=None)
     args = parser.parse_args()
     if args.enable_running_retraction and not args.enable_observed_admission:
         parser.error(
@@ -381,6 +390,21 @@ def main() -> int:
         parser.error("--resident-service-window-ms must be positive")
     if args.request_queue_timeout_seconds <= 0:
         parser.error("--request-queue-timeout-seconds must be positive")
+    oracle_values = (
+        args.perfect_future_truth,
+        args.perfect_future_truth_id,
+        args.perfect_future_truth_digest,
+        args.perfect_future_replay_id,
+    )
+    if args.perfect_future_oracle_mode == "disabled" and any(oracle_values):
+        parser.error("disabled perfect-future Oracle cannot carry truth fields")
+    if args.perfect_future_oracle_mode != "disabled" and not all(oracle_values):
+        parser.error("enabled perfect-future Oracle requires all truth fields")
+    if (
+        args.perfect_future_oracle_mode == "o3_joint"
+        and not args.enable_online_joint
+    ):
+        parser.error("O3 perfect-future Oracle requires --enable-online-joint")
 
     server_dir = args.server_dir.expanduser().resolve()
     config_path = server_dir / "beliefkv_config.json"
@@ -418,6 +442,15 @@ def main() -> int:
             if args.predictor_model is not None
             else None
         ),
+        "perfect_future_oracle_mode": args.perfect_future_oracle_mode,
+        "perfect_future_truth_path": (
+            str(args.perfect_future_truth.expanduser().resolve())
+            if args.perfect_future_truth is not None
+            else None
+        ),
+        "perfect_future_truth_id": args.perfect_future_truth_id,
+        "perfect_future_truth_digest": args.perfect_future_truth_digest,
+        "perfect_future_replay_id": args.perfect_future_replay_id,
         "shadow_enabled": False,
         "prefetch_enabled": True,
         "reactive_transfer_enabled": not args.disable_reactive_transfer,

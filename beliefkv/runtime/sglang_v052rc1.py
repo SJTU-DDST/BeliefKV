@@ -27,6 +27,9 @@ from beliefkv.core.events import (
     RuntimeEventKind,
 )
 from beliefkv.metrics.summary import percentile
+from beliefkv.oracle.contracts import (
+    FrozenAgentDemand,
+)
 from beliefkv.policy.admission import (
     AdmissionCompileBudget,
     AdmissionRequest,
@@ -514,6 +517,141 @@ class _PredictiveOverlaySeedPlan:
     plan_id: str
     residency: tuple[Any, ...] = ()
     semantic_residency: tuple[Any, ...] = ()
+
+
+@dataclass(frozen=True)
+class _OracleJointDirective:
+    directive_id: str
+    sequence: int
+    replay_id: str
+    truth_id: str
+    truth_digest: str
+    ordered_request_ids: tuple[str, ...]
+    semantic_residency: tuple[SemanticResidencyTarget, ...] = ()
+
+    @classmethod
+    def from_mapping(
+        cls, raw: Mapping[str, object]
+    ) -> "_OracleJointDirective":
+        required = {
+            "schema_version",
+            "directive_id",
+            "sequence",
+            "replay_id",
+            "truth_id",
+            "truth_digest",
+            "ordered_request_ids",
+            "semantic_residency",
+        }
+        if raw.keys() != required or raw["schema_version"] != 1:
+            raise ValueError("invalid perfect-future directive schema")
+        sequence = raw["sequence"]
+        ordered = raw["ordered_request_ids"]
+        residency = raw["semantic_residency"]
+        if type(sequence) is not int or sequence < 0:
+            raise ValueError("Oracle directive sequence must be non-negative")
+        if type(ordered) is not list or type(residency) is not list:
+            raise TypeError("Oracle directive actions must be arrays")
+        if any(type(item) is not str for item in ordered):
+            raise TypeError("Oracle execution order IDs must be strings")
+        request_ids = tuple(ordered)
+        if (
+            any(not item for item in request_ids)
+            or len(request_ids) != len(set(request_ids))
+        ):
+            raise ValueError("Oracle execution order must contain unique IDs")
+        targets = []
+        for item in residency:
+            if not isinstance(item, Mapping):
+                raise TypeError("Oracle residency target must be an object")
+            expected = {
+                "context_id",
+                "context_epoch",
+                "action",
+                "target_bytes_hint",
+                "deadline_ms",
+                "reason",
+                "beneficiary_request_id",
+                "required_reclaim_bytes",
+                "service_deadline_ms",
+            }
+            if item.keys() != expected:
+                raise ValueError("Oracle residency target fields mismatch")
+            integer_fields = (
+                "context_epoch",
+                "target_bytes_hint",
+                "required_reclaim_bytes",
+            )
+            if any(type(item[name]) is not int for name in integer_fields):
+                raise TypeError("Oracle residency integer fields must be integers")
+            if type(item["deadline_ms"]) is not float:
+                raise TypeError("Oracle residency deadline_ms must be a float")
+            if (
+                item["service_deadline_ms"] is not None
+                and type(item["service_deadline_ms"]) is not float
+            ):
+                raise TypeError(
+                    "Oracle residency service_deadline_ms must be a float or null"
+                )
+            if any(
+                type(item[name]) is not str or not item[name]
+                for name in ("context_id", "action", "reason")
+            ):
+                raise TypeError("Oracle residency text fields must be strings")
+            if (
+                item["beneficiary_request_id"] is not None
+                and (
+                    type(item["beneficiary_request_id"]) is not str
+                    or not item["beneficiary_request_id"]
+                )
+            ):
+                raise TypeError(
+                    "Oracle residency beneficiary must be a string or null"
+                )
+            targets.append(
+                SemanticResidencyTarget(
+                    context_id=item["context_id"],
+                    context_epoch=item["context_epoch"],
+                    action=ResidencyAction(item["action"]),
+                    target_bytes_hint=item["target_bytes_hint"],
+                    deadline_ms=item["deadline_ms"],
+                    reason=item["reason"],
+                    beneficiary_request_id=(
+                        item["beneficiary_request_id"]
+                        if item["beneficiary_request_id"] is not None
+                        else None
+                    ),
+                    required_reclaim_bytes=item["required_reclaim_bytes"],
+                    service_deadline_ms=(
+                        item["service_deadline_ms"]
+                        if item["service_deadline_ms"] is not None
+                        else None
+                    ),
+                )
+            )
+        values = {
+            name: raw[name]
+            for name in ("directive_id", "replay_id", "truth_id", "truth_digest")
+        }
+        if any(type(value) is not str or not value for value in values.values()):
+            raise ValueError("Oracle directive identity must be non-empty")
+        return cls(
+            directive_id=raw["directive_id"],
+            sequence=sequence,
+            replay_id=raw["replay_id"],
+            truth_id=raw["truth_id"],
+            truth_digest=raw["truth_digest"],
+            ordered_request_ids=request_ids,
+            semantic_residency=tuple(targets),
+        )
+
+
+@dataclass(frozen=True)
+class _OracleOnlineSeedPlan:
+    plan_id: str
+    directive_id: str
+    semantic_residency: tuple[SemanticResidencyTarget, ...]
+    residency: tuple[Any, ...] = ()
 
 
 @dataclass
@@ -1908,6 +2046,26 @@ class EmbeddedSGLangRuntime:
         self.tree_cache = scheduler.tree_cache
         self._now_ms = now_ms or (lambda: time.monotonic() * 1000.0)
         self.config = config or self._load_config(scheduler, config_path)
+        self._oracle_truth: FrozenAgentDemand | None = None
+        self._oracle_joint_directive: _OracleJointDirective | None = None
+        self._oracle_joint_plan: _OracleOnlineSeedPlan | None = None
+        self._oracle_joint_decision: OnlineJointPlanDecision | None = None
+        self._oracle_last_compile_ms: float | None = None
+        self._oracle_consumed_directive_ids: set[str] = set()
+        if self.config.perfect_future_oracle_mode != "disabled":
+            truth_path = Path(
+                str(self.config.perfect_future_truth_path)
+            ).expanduser().resolve()
+            truth = FrozenAgentDemand.from_json_bytes(truth_path.read_bytes())
+            if (
+                truth.truth_id != self.config.perfect_future_truth_id
+                or truth.truth_digest
+                != self.config.perfect_future_truth_digest
+            ):
+                raise SGLangBackendError(
+                    "perfect-future truth identity does not match runtime config"
+                )
+            self._oracle_truth = truth
         if self.config.joint_policy_enabled and not (
             self.config.joint_policy_shadow_mode
             and self.config.joint_observed_mode_enabled
@@ -9818,6 +9976,12 @@ class EmbeddedSGLangRuntime:
             online_joint_decision = OnlineJointPlanDecision(
                 None, f"restore_authority:{restore_authority_mode.value}"
             )
+        elif (
+            oracle_decision := self._oracle_joint_admission_decision(
+                now_ms=float(self._now_ms())
+            )
+        ) is not None:
+            online_joint_decision = oracle_decision
         elif getattr(
             getattr(self, "config", None), "joint_policy_enabled", False
         ):
@@ -11792,13 +11956,19 @@ class EmbeddedSGLangRuntime:
             self, "_current_online_joint_decision", None
         )
         current_online_result = getattr(self, "_online_joint_result", None)
+        current_oracle_plan = getattr(self, "_oracle_joint_plan", None)
         if (
             cached_online_decision is not None
             and cached_online_decision.view is not None
-            and current_online_result is not None
-            and current_online_result.plan is not None
-            and current_online_result.plan.plan_id
-            == cached_online_decision.view.plan_id
+            and (
+                current_online_result is not None
+                and current_online_result.plan is not None
+                and current_online_result.plan.plan_id
+                == cached_online_decision.view.plan_id
+                or current_oracle_plan is not None
+                and current_oracle_plan.plan_id
+                == cached_online_decision.view.plan_id
+            )
         ):
             online_joint_decision = cached_online_decision
             self._online_joint_counts["safe_point_decision_reused"] += 1
@@ -14727,9 +14897,65 @@ class EmbeddedSGLangRuntime:
 
         self._process_events((event,))
 
+    def _validated_oracle_directives(
+        self, events: tuple[RuntimeEvent, ...]
+    ) -> tuple[_OracleJointDirective, ...]:
+        directives = []
+        for event in events:
+            raw = event.attributes.get("oracle_joint_directive")
+            if raw is None:
+                continue
+            if not isinstance(raw, Mapping):
+                raise TypeError("Oracle directive must be an object")
+            if self.config.perfect_future_oracle_mode != "o3_joint":
+                raise SGLangBackendError(
+                    "this Oracle arm cannot publish joint directives"
+                )
+            directive = _OracleJointDirective.from_mapping(raw)
+            if (
+                directive.replay_id != self.config.perfect_future_replay_id
+                or directive.truth_id != self.config.perfect_future_truth_id
+                or directive.truth_digest
+                != self.config.perfect_future_truth_digest
+            ):
+                raise SGLangBackendError(
+                    "Oracle directive does not match the frozen replay"
+                )
+            previous = getattr(self, "_oracle_joint_directive", None)
+            if previous is not None and directive.sequence <= previous.sequence:
+                raise SGLangBackendError(
+                    "Oracle directive sequence must increase monotonically"
+                )
+            directives.append(directive)
+        if any(
+            left.sequence >= right.sequence
+            for left, right in zip(directives, directives[1:])
+        ):
+            raise SGLangBackendError(
+                "Oracle directives in one event batch are out of order"
+            )
+        return tuple(directives)
+
     def _process_events(self, events: tuple[RuntimeEvent, ...]) -> None:
+        directives = self._validated_oracle_directives(events)
         committed_events, adjustments = self._commit_event_times(events)
         self.controller.process_runtime_events(committed_events)
+        for directive in directives:
+            self._oracle_joint_directive = directive
+            self._oracle_joint_plan = None
+            self._oracle_joint_decision = None
+            self._oracle_last_compile_ms = None
+            self._online_joint_counts["oracle_directive_accepted"] += 1
+            self.audit.emit(
+                "oracle_joint_directive_accepted",
+                self._now_ms(),
+                directive_id=directive.directive_id,
+                directive_sequence=directive.sequence,
+                replay_id=directive.replay_id,
+                truth_id=directive.truth_id,
+                ordered_request_count=len(directive.ordered_request_ids),
+                residency_target_count=len(directive.semantic_residency),
+            )
         if any(
             event.kind
             in {
@@ -17312,6 +17538,94 @@ class EmbeddedSGLangRuntime:
             self.controller.signals.host_free_bytes,
         )
 
+    def _oracle_joint_admission_decision(
+        self, *, now_ms: float
+    ) -> OnlineJointPlanDecision | None:
+        config = getattr(self, "config", None)
+        if (
+            config is None
+            or config.perfect_future_oracle_mode != "o3_joint"
+        ):
+            return None
+        directive = getattr(self, "_oracle_joint_directive", None)
+        if directive is None:
+            return None
+        previous_decision = getattr(self, "_oracle_joint_decision", None)
+        last_compile_ms = getattr(self, "_oracle_last_compile_ms", None)
+        residency_pending = bool(
+            directive.semantic_residency
+            and directive.directive_id
+            not in getattr(self, "_oracle_consumed_directive_ids", set())
+        )
+        if previous_decision is not None and (
+            not residency_pending
+            or (
+                last_compile_ms is not None
+                and now_ms - last_compile_ms < 250.0
+            )
+        ):
+            return previous_decision
+        visible = tuple(
+            item.request_id for item in self._policy_runtime_runnable(now_ms)
+        )
+        self._online_joint_epoch_sequence += 1
+        seed = compile_bounded_seed_epoch(
+            ordered_request_ids=directive.ordered_request_ids,
+            visible_request_ids=visible,
+            epoch_sequence=self._online_joint_epoch_sequence,
+            emergency=False,
+            restore_requirements=(),
+        )
+        assert seed.view is not None
+        assert seed.epoch is not None
+        plan_id = (
+            f"oracle-o3:{directive.replay_id}:{directive.sequence}:"
+            f"{directive.directive_id}"
+        )
+        view = replace(seed.view, plan_id=plan_id)
+        epoch = replace(
+            seed.epoch,
+            epoch_id=f"{plan_id}:epoch",
+            source_plan_id=plan_id,
+            view=view,
+        )
+        decision = OnlineJointPlanDecision(view, seed.reason, epoch)
+        targets = (
+            ()
+            if directive.directive_id
+            in getattr(self, "_oracle_consumed_directive_ids", set())
+            else directive.semantic_residency
+        )
+        plan = _OracleOnlineSeedPlan(
+            plan_id=plan_id,
+            directive_id=directive.directive_id,
+            semantic_residency=targets,
+        )
+        decision = self._physical_commit_semantic_residency(
+            plan,
+            decision,
+            now_ms=now_ms,
+        )
+        self._oracle_joint_plan = plan
+        self._oracle_joint_decision = decision
+        self._oracle_last_compile_ms = now_ms
+        self._current_joint_plan_epoch = decision.epoch
+        self._online_joint_counts["oracle_joint_epoch"] += 1
+        self.audit.emit(
+            "oracle_joint_epoch_committed",
+            now_ms,
+            plan_id=plan_id,
+            directive_id=directive.directive_id,
+            directive_sequence=directive.sequence,
+            ordered_request_ids=list(view.ordered_request_ids),
+            visible_request_count=len(visible),
+            residency_target_count=len(targets),
+            residency_committed=bool(
+                decision.view and decision.view.residency_intent_indices
+            ),
+        )
+        return decision
+
     def _record_joint_decision_cache(self, *, now_ms: float) -> None:
         result = getattr(self, "_online_joint_result", None)
         self._last_joint_decision_plan_id = (
@@ -18364,6 +18678,27 @@ class EmbeddedSGLangRuntime:
             now_ms=now_ms,
         ):
             return
+        oracle_plan = getattr(self, "_oracle_joint_plan", None)
+        if oracle_plan is not None and oracle_plan.plan_id == view.plan_id:
+            if oracle_plan.directive_id in getattr(
+                self, "_oracle_consumed_directive_ids", set()
+            ):
+                return
+            before = getattr(self, "_pending_online_joint_residency", None)
+            self._queue_semantic_joint_residency(
+                oracle_plan,
+                view,
+                now_ms=now_ms,
+            )
+            after = getattr(self, "_pending_online_joint_residency", None)
+            if before is None and after is not None:
+                self._oracle_consumed_directive_ids.add(
+                    oracle_plan.directive_id
+                )
+                self._online_joint_counts[
+                    "oracle_residency_directive_dispatched"
+                ] += 1
+            return
         result = self._online_joint_result
         source = self._online_joint_source
         if (
@@ -18778,6 +19113,7 @@ class EmbeddedSGLangRuntime:
                 target.beneficiary_request_id is not None
                 and target.required_reclaim_bytes > 0
             )
+            and not target.reason.startswith("oracle-perfect-future:")
         ):
             self._online_joint_counts[
                 "semantic_pressure_residency_low_pressure_suppressed"

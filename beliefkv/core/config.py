@@ -76,6 +76,11 @@ class BeliefKVConfig:
     joint_policy_enabled: bool = False
     joint_policy_shadow_mode: bool = True
     joint_observed_mode_enabled: bool = True
+    perfect_future_oracle_mode: str = "disabled"
+    perfect_future_truth_path: str | None = None
+    perfect_future_truth_id: str | None = None
+    perfect_future_truth_digest: str | None = None
+    perfect_future_replay_id: str | None = None
     # Deprecated compatibility flag. Frontier predictions never modify the P5
     # observed planner; predictive actions are evaluated by the read-only P6
     # risk shadow path below.
@@ -367,6 +372,36 @@ class BeliefKVConfig:
             "semantic_race_sensitive",
         }:
             raise ValueError("unsupported reference policy trace sensitivity")
+        if self.perfect_future_oracle_mode not in {
+            "disabled",
+            "o0_current",
+            "o3_joint",
+        }:
+            raise ValueError("unsupported perfect-future Oracle mode")
+        oracle_fields = (
+            self.perfect_future_truth_path,
+            self.perfect_future_truth_id,
+            self.perfect_future_truth_digest,
+            self.perfect_future_replay_id,
+        )
+        if self.perfect_future_oracle_mode == "disabled":
+            if any(item is not None for item in oracle_fields):
+                raise ValueError(
+                    "disabled perfect-future Oracle cannot load truth state"
+                )
+        elif any(
+            not isinstance(item, str) or not item.strip()
+            for item in oracle_fields
+        ):
+            raise ValueError(
+                "enabled perfect-future Oracle requires truth path, identity, "
+                "digest, and replay identity"
+            )
+        if (
+            self.perfect_future_oracle_mode == "o3_joint"
+            and not self.joint_policy_enabled
+        ):
+            raise ValueError("O3 requires the online JointPlan data plane")
         active_kv_high_watermark = float(
             self.observed_admission_active_kv_high_watermark_ratio
         )

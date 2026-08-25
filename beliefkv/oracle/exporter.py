@@ -103,15 +103,42 @@ class OracleTruthExporter:
         provenance: FrozenDemandProvenance,
         source_trace_id: str,
         initial_radix_state: str,
+        workload_instances: frozenset[str] | None = None,
     ) -> OracleTruthExportResult:
         events = CounterfactualTraceBuilder._runtime_events(runtime_event_path)
+        manifest = self._load_manifest(workload_manifest_path)
+        workflow_instance = self._workflow_instance_map(events, manifest)
+        if workload_instances is not None:
+            available = frozenset(workflow_instance.values())
+            missing = workload_instances - available
+            if missing:
+                raise OracleTruthExportError(
+                    f"requested workload instances are absent: {sorted(missing)}"
+                )
+            selected_workflows = {
+                workflow_id
+                for workflow_id, instance_id in workflow_instance.items()
+                if instance_id in workload_instances
+            }
+            events = tuple(
+                event
+                for event in events
+                if event.workflow_id in selected_workflows
+            )
+            workflow_instance = {
+                workflow_id: instance_id
+                for workflow_id, instance_id in workflow_instance.items()
+                if workflow_id in selected_workflows
+            }
         legacy = CounterfactualTraceBuilder().build(
             runtime_event_path,
             runtime_audit_path,
+            workflow_ids=workflow_instance.keys(),
             request_token_trace_path=request_token_trace_path,
+            allow_interleaved_unselected_token_events=(
+                workload_instances is not None
+            ),
         )
-        manifest = self._load_manifest(workload_manifest_path)
-        workflow_instance = self._workflow_instance_map(events, manifest)
         invocation_keys, creation_events = self._logical_keys(
             events, workflow_instance
         )

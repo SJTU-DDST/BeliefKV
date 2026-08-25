@@ -118,6 +118,7 @@ class CounterfactualTraceBuilder:
         trace_sensitivity: str | None = None,
         exact_kv_growth_bytes_by_request: Mapping[str, int] | None = None,
         request_token_trace_path: Path | None = None,
+        allow_interleaved_unselected_token_events: bool = False,
     ) -> CounterfactualTraceBuildResult:
         events = self._runtime_events(runtime_event_path)
         selected_workflows = {
@@ -147,6 +148,9 @@ class CounterfactualTraceBuilder:
             self._request_token_paths(
                 request_token_trace_path,
                 request_ids=set(request_by_id),
+                allow_interleaved_unselected_events=(
+                    allow_interleaved_unselected_token_events
+                ),
             )
             if request_token_trace_path is not None
             else ({}, False)
@@ -439,6 +443,7 @@ class CounterfactualTraceBuilder:
         path: Path,
         *,
         request_ids: set[str],
+        allow_interleaved_unselected_events: bool = False,
     ) -> tuple[dict[str, _RequestTokenPath], bool]:
         records: list[
             tuple[int, str, str | None, tuple[int, ...], int | None]
@@ -526,7 +531,7 @@ class CounterfactualTraceBuilder:
                 and request_id is not None
             }
         )
-        if interference:
+        if interference and not allow_interleaved_unselected_events:
             raise CounterfactualTraceError(
                 "unselected requests alter the Radix state inside the selected "
                 f"token-trace segment: {interference}"

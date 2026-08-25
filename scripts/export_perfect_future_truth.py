@@ -37,6 +37,19 @@ def _args() -> argparse.Namespace:
         choices=("empty_server_boot", "explicit_cache_reset", "unknown"),
         required=True,
     )
+    parser.add_argument(
+        "--workload-instance-file",
+        type=Path,
+        help="Optional newline-delimited allowlist of complete workload instances.",
+    )
+    parser.add_argument(
+        "--artifact-role",
+        choices=(
+            "cpu_counterfactual_oracle_estimate_input",
+            "gpu_trace_replay_input",
+        ),
+        default="cpu_counterfactual_oracle_estimate_input",
+    )
     parser.add_argument("--output-dir", type=Path, required=True)
     return parser.parse_args()
 
@@ -65,6 +78,17 @@ def main() -> int:
         provenance=provenance,
         source_trace_id=args.source_trace_id,
         initial_radix_state=args.initial_radix_state,
+        workload_instances=(
+            frozenset(
+                line.strip()
+                for line in args.workload_instance_file.read_text(
+                    encoding="utf-8"
+                ).splitlines()
+                if line.strip()
+            )
+            if args.workload_instance_file is not None
+            else None
+        ),
     )
     truth_path = output / "frozen_agent_demand_v2.json"
     sidecar_path = output / "frozen_physical_sidecar_v1.json.gz"
@@ -82,10 +106,13 @@ def main() -> int:
     summary = {
         **result.summary(),
         "schema_version": 1,
-        "artifact_role": "cpu_counterfactual_oracle_estimate_input",
+        "artifact_role": args.artifact_role,
         "truth_path": truth_path.name,
         "physical_sidecar_path": sidecar_path.name,
         "historical_release_schedule_only": True,
+        "subset_replay_initial_radix_reset": (
+            args.workload_instance_file is not None
+        ),
         "forbidden_truth_fields": [
             "historical_queue_wait",
             "historical_admission_order",
