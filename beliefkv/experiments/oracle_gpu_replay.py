@@ -340,7 +340,10 @@ class OracleGPUReplay:
 
     async def run(self) -> OracleGPUReplayResult:
         started = time.monotonic() * 1000.0
-        limits = httpx.Limits(max_connections=128, max_keepalive_connections=64)
+        # Tool waits exceed the server's HTTP keep-alive timeout. A fresh local
+        # connection per call prevents stale pooled sockets from aborting an
+        # otherwise healthy long-running replay.
+        limits = httpx.Limits(max_connections=128, max_keepalive_connections=0)
         timeout = httpx.Timeout(self.request_timeout_s)
         roots = [item for item in self.truth.invocations if item.parent is None]
         try:
@@ -672,21 +675,29 @@ class OracleGPUReplay:
     ) -> None:
         pending = dict(self.join_tasks[join.key])
         prefetch_published = False
-        while pending:
-            done, _ = await asyncio.wait(
-                tuple(pending.values()), return_when=asyncio.FIRST_COMPLETED
-            )
-            for task in done:
-                key = next(key for key, value in pending.items() if value is task)
-                await task
-                pending.pop(key)
-            if (
-                self.arm == PerfectFutureOracleArm.O3_JOINT
-                and len(pending) <= 1
-                and not prefetch_published
-            ):
-                await self._publish_prefetch(parent)
-                prefetch_published = True
+        try:
+            while pending:
+                done, _ = await asyncio.wait(
+                    tuple(pending.values()), return_when=asyncio.FIRST_COMPLETED
+                )
+                for task in done:
+                    key = next(
+                        key for key, value in pending.items() if value is task
+                    )
+                    await task
+                    pending.pop(key)
+                if (
+                    self.arm == PerfectFutureOracleArm.O3_JOINT
+                    and len(pending) <= 1
+                    and not prefetch_published
+                ):
+                    await self._publish_prefetch(parent)
+                    prefetch_published = True
+        except BaseException:
+            for task in pending.values():
+                task.cancel()
+            await asyncio.gather(*pending.values(), return_exceptions=True)
+            raise
         self.emitter.emit(
             RuntimeEventKind.JOIN_SATISFIED,
             workflow_id=self._workflow_id(parent.key),
