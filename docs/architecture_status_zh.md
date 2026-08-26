@@ -12,9 +12,11 @@ Oracle v2 暂停，当前不再扩展 Oracle action space 或 CPU simulator。�
 P99 为 0.248 ms，single-lock snapshot P99 为 0.234 ms，worker delta apply P99 为
 1.875 ms，semantic JointPlan wall P99 为 3.646 ms。控制面 CPU 门槛已通过。
 
-下一阶段依次实现 TransferEngineV2 和 Causal Package Planner；GPU 实验只在双 lane
-事务和 beneficiary-bound package 完成后进行。执行边界与门槛见
-`docs/beliefkv_extreme_performance_execution_plan_2026-08-26_zh.md`。
+TransferEngineV2 logical lane、bundle-level D2H 和 observed Causal Package Planner
+已完成首版。单笔 6.437 GB D2H/commit/H2D GPU gate 通过，D2H 为 249.8 ms，且
+修复后没有整笔 H2D retry。双向 PCIe overlap 尚未验证，backend capability 仍为 1，
+正式实验不得开启 transfer_engine_v2。完整结果见
+`docs/experiments/beliefkv_extreme_performance_p3_p4_gpu_gate_2026-08-26_zh.md`。
 
 
 ## 2026-08-26：Frozen-Demand GPU O0/O3 首组配对完成
