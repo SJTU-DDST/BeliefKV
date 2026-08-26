@@ -3674,6 +3674,31 @@ class SGLangBackendTest(unittest.TestCase):
         self.assertFalse(parent.evicted)
         self.assertFalse(child.evicted)
 
+    def test_atomic_h2d_allows_concurrent_child_link_on_same_extent(self):
+        tree = _TreeCache()
+        registry = SGLangNodeRegistry()
+        node = _Node(1)
+        node.parent = tree.root_node
+        node.value = None
+        node.host_value = [10, 11, 12, 13]
+        handle = registry.register(node)
+        backend = HiCacheNodeCommandBackend(tree, registry, now_ms=lambda: 2)
+
+        submission = backend.submit(
+            resolved_bundle(
+                CommandKind.PREFETCH_CONTEXT,
+                ((handle, PhysicalPageAction.START_H2D, 400),),
+            )
+        )
+        branch = _Node(2)
+        branch.parent = node
+        node.children["concurrent-branch"] = branch
+        ack = backend.poll_acks()[0]
+
+        self.assertEqual(submission.started_handles, (handle,))
+        self.assertEqual(ack.status, CommandStatus.COMPLETED)
+        self.assertFalse(node.evicted)
+
     def test_atomic_h2d_forces_tiny_closure_without_native_eviction(self):
         tree = _TreeCache()
         registry = SGLangNodeRegistry()
@@ -3855,7 +3880,7 @@ class SGLangBackendTest(unittest.TestCase):
         self.assertEqual(event, "allocator_radix_resynchronized")
         self.assertEqual(fields["overlap_tokens"], 2)
 
-    def test_atomic_h2d_rejects_topology_change_in_non_action_gpu_anchor(self):
+    def test_atomic_h2d_allows_new_sibling_on_non_action_gpu_anchor(self):
         tree = _TreeCache()
         registry = SGLangNodeRegistry()
         anchor = _Node(1)
@@ -3881,13 +3906,9 @@ class SGLangBackendTest(unittest.TestCase):
         ack = backend.poll_acks()[0]
 
         self.assertEqual(submission.started_handles, (child_handle,))
-        self.assertEqual(ack.status, CommandStatus.REJECTED)
-        self.assertEqual(ack.actual_bytes, 0)
-        self.assertTrue(child.evicted)
-        self.assertEqual(
-            {item.code for item in ack.blockers},
-            {TransferBlockerCode.EXTENT_MUTATED},
-        )
+        self.assertEqual(ack.status, CommandStatus.COMPLETED)
+        self.assertEqual(ack.actual_bytes, 400)
+        self.assertFalse(child.evicted)
 
     def test_backend_tracks_one_h2d_and_one_d2h_concurrently(self):
         tree = _TreeCache()

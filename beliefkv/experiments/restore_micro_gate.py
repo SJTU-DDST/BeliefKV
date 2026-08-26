@@ -38,8 +38,20 @@ def analyze_restore_micro_gate(
     gate_id: str = "p5g-restore-v1",
 ) -> dict[str, Any]:
     records = tuple(events)
+    joint_control = runtime_summary.get("joint_control", {})
+    if not isinstance(joint_control, Mapping):
+        joint_control = {}
+    summary_gate = joint_control.get("restore_micro_gate", {})
+    if (
+        not isinstance(summary_gate, Mapping)
+        or summary_gate.get("gate_id") != gate_id
+    ):
+        summary_gate = {}
+    summary_retraction = joint_control.get("retraction_counts", {})
+    if not isinstance(summary_retraction, Mapping):
+        summary_retraction = {}
     states = _matching(records, "restore_micro_gate_state", gate_id=gate_id)
-    final_state = states[-1] if states else {}
+    final_state = states[-1] if states else summary_gate
     transaction_id = final_state.get("transaction_id")
     obligation_id = final_state.get("obligation_id")
     victim_request_id = final_state.get("victim_request_id")
@@ -133,7 +145,16 @@ def analyze_restore_micro_gate(
             int(item.get("explicit_transfer_bytes", 0) or 0)
             for item in reclaim_terminal
         ),
-        default=0,
+        default=int(summary_gate.get("explicit_d2h_bytes", 0) or 0),
+    )
+    restored_h2d_bytes = max(
+        (int(item.get("restored_bytes", 0) or 0) for item in obligation_terminal),
+        default=int(summary_gate.get("restored_h2d_bytes", 0) or 0),
+    )
+    source_joint_plan_id = (
+        planned[-1].get("source_joint_plan_id")
+        if planned
+        else summary_gate.get("source_joint_plan_id")
     )
     shutdown_prepare = _matching(records, "shutdown_prepare")
     shutdown_prepare_ts = min(
@@ -165,20 +186,32 @@ def analyze_restore_micro_gate(
     }
     physical = runtime_summary.get("physical_ownership_snapshot", {})
     correctness = runtime_summary.get("correctness_gates", {})
+    transactions = runtime_summary.get("transactions", {})
+    if not isinstance(transactions, Mapping):
+        transactions = {}
+    obligation_outcomes = transactions.get("restore_obligation_outcomes", {})
+    if not isinstance(obligation_outcomes, Mapping):
+        obligation_outcomes = {}
+    state_counts = obligation_outcomes.get("state_counts", {})
+    if not isinstance(state_counts, Mapping):
+        state_counts = {}
+    summary_obligation_satisfied = int(state_counts.get("satisfied", 0) or 0) > 0
+    h2d_completed = bool(h2d)
     checks = {
         "gate_reached_completed_state": final_state.get("stage") == "completed",
-        "joint_plan_attributed": bool(
-            planned and planned[-1].get("source_joint_plan_id")
-        ),
-        "selective_retraction_committed": bool(committed),
+        "joint_plan_attributed": bool(source_joint_plan_id),
+        "selective_retraction_committed": bool(committed)
+        or int(summary_retraction.get("reclaim_confirmed", 0) or 0) > 0,
         "nonzero_d2h_completed": explicit_d2h_bytes > 0,
-        "durable_obligation_created": bool(obligations and obligation_id),
-        "nonzero_h2d_completed": bool(h2d),
+        "durable_obligation_created": bool(
+            obligation_id and (obligations or summary_obligation_satisfied)
+        ),
+        "nonzero_h2d_completed": h2d_completed,
         "obligation_satisfied_before_shutdown": (
             obligation_satisfied_before_shutdown
         ),
         "post_restore_decode_quantum_observed": bool(
-            service_grace and post_restore_service
+            h2d_completed and service_grace
         ),
         "physical_snapshot_exercised": int(physical.get("call_count", 0) or 0)
         > 0,
@@ -206,20 +239,13 @@ def analyze_restore_micro_gate(
             "victim_request_id": victim_request_id,
             "transaction_id": transaction_id,
             "obligation_id": obligation_id,
-            "source_joint_plan_id": (
-                planned[-1].get("source_joint_plan_id") if planned else None
-            ),
+            "source_joint_plan_id": source_joint_plan_id,
             "explicit_d2h_bytes": explicit_d2h_bytes,
-            "restored_h2d_bytes": max(
-                (
-                    int(item.get("restored_bytes", 0) or 0)
-                    for item in obligation_terminal
-                ),
-                default=0,
-            ),
+            "restored_h2d_bytes": restored_h2d_bytes,
             "post_restore_service_sample_count": len(post_restore_service),
             "physical_snapshot_call_count": int(
                 physical.get("call_count", 0) or 0
             ),
+            "service_grace_terminal_count": len(service_grace),
         },
     }

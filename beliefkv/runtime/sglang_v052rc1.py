@@ -1904,11 +1904,9 @@ class HiCacheNodeCommandBackend:
 
     def _extent_fingerprint(self, node: Any) -> tuple[Any, ...]:
         parent = getattr(node, "parent", None)
-        children = getattr(node, "children", {})
         return (
             self.registry.fingerprint(node),
             int(parent.id) if parent is not None else None,
-            tuple(sorted(int(child.id) for child in children.values())),
         )
 
     @staticmethod

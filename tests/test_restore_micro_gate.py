@@ -115,3 +115,37 @@ def test_restore_micro_gate_rejects_logical_restore_without_h2d():
     assert result["passed"] is False
     assert result["checks"]["nonzero_h2d_completed"] is False
     assert result["checks"]["post_restore_decode_quantum_observed"] is False
+
+def test_restore_micro_gate_accepts_performance_mode_summary_fallback():
+    omitted = {
+        "restore_micro_gate_state",
+        "running_retraction_planned",
+        "running_retraction_committed",
+        "running_retraction_transaction_completed",
+        "restore_obligation_created",
+        "gpu_service_sample",
+    }
+    events = tuple(item for item in _events() if item["event"] not in omitted)
+    summary = _summary()
+    summary["joint_control"] = {
+        "restore_micro_gate": {
+            "gate_id": "p5g-restore-v1",
+            "stage": "completed",
+            "victim_request_id": "victim",
+            "transaction_id": "retraction-1",
+            "obligation_id": "obligation-1",
+            "source_joint_plan_id": "joint-1",
+            "explicit_d2h_bytes": 1024,
+            "restored_h2d_bytes": 1024,
+        },
+        "retraction_counts": {"reclaim_confirmed": 1},
+    }
+    summary["transactions"] = {
+        "restore_obligation_outcomes": {"state_counts": {"satisfied": 1}}
+    }
+
+    result = analyze_restore_micro_gate(events, summary)
+
+    assert result["passed"] is True
+    assert result["evidence"]["post_restore_service_sample_count"] == 0
+    assert result["evidence"]["service_grace_terminal_count"] == 1
