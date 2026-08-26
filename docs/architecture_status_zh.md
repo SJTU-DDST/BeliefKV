@@ -1,6 +1,24 @@
 # BeliefKV 最新架构与实现状态
 
-更新日期：2026-08-22
+更新日期：2026-08-26
+
+## 2026-08-26：Frozen-Demand GPU O0/O3 首组配对完成
+
+基于 18 个完整 native-subagent workflow 导出 FrozenAgentDemand v2 和 physical
+sidecar，并在同一 H200/Qwen3-Coder-30B BF16/v6 profile 上完成有效 O0/O3 配对。
+两臂均完成 18/18 workflow、1,208/1,208 request，token demand 完全一致，所有
+事务和 shutdown 正确性门禁通过。
+
+O0 makespan 为 2,803.65 秒、23.11 workflow/h；当前有限动作空间 O3 candidate
+makespan 为 3,355.66 秒、19.31 workflow/h，吞吐下降 16.45%。O3 完成 18 次
+COMMIT_CPU、13 次 PREFETCH_GPU 和 36 次 DROP，但出现 16 次方向反转；相同输出
+demand 下累计 decode service interval 增加 24.83%，batch mean 则基本不变。
+
+因此 whole-run no-op-dominant finite-candidate Oracle 选择 O0，当前 gain 为 0%。本轮
+没有达到继续 O1/O2 的门槛，也不能主张 execution-KV joint synergy。后续先做逐动作
+beneficiary/stall 归因及 sequence-length-aware execution package evaluation，不重复相同
+GPU 实验。完整报告见
+`docs/experiments/beliefkv_gpu_oracle_o0_o3_native18_2026-08-26_zh.md`。
 
 ## 2026-08-22：Gate C 长跑暴露 Ordinary Admission 饥饿与 Deadline Wakeup 缺口
 

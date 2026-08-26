@@ -2,7 +2,12 @@
 
 日期：2026-08-17
 
-状态：GPU-first 路线生效。V2-0/V2-1 契约与 CPU 模拟器保留为调试资产；CPU opportunity/gain 不再是 GPU 前置门槛。正式 workload 和执行顺序以 2026-08-20 GPU-First Native-Subagent Oracle 计划为准。GPU semantic gate 尚未执行。
+状态：GPU-first 路线已完成首组 Frozen-Demand O0/O3 配对。V2-0/V2-1 契约与 CPU
+模拟器保留为调试资产；CPU opportunity/gain 不是 GPU 前置门槛。有效 O0/O3 均完成
+18/18 workflow 和 1,208/1,208 request，但当前 O3 candidate 吞吐比 O0 低
+16.45%；no-op-dominant finite-candidate Oracle gain 为 0%。按计划暂不运行 O1/O2，
+先修复动作 beneficiary/stall 归因和 sequence-length-aware execution evaluation。详见
+`docs/experiments/beliefkv_gpu_oracle_o0_o3_native18_2026-08-26_zh.md`。
 
 ## 1. 目标与裁决问题
 
