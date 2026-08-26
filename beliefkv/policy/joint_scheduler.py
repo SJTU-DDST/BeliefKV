@@ -37,6 +37,7 @@ from beliefkv.policy.whatif_packer import (
     WhatIfPacker,
     WhatIfPackerConfig,
 )
+from beliefkv.runtime.protocol import TransferDirection
 
 
 OBSERVED_SCENARIO_ID = "observed-runtime-frontier"
@@ -62,6 +63,12 @@ class SemanticResidencyTarget:
     beneficiary_request_id: str | None = None
     required_reclaim_bytes: int = 0
     service_deadline_ms: float | None = None
+    causal_package_id: str | None = None
+    expected_unlock_boundary: str | None = None
+    estimated_transfer_cost_ms: float = 0.0
+    estimated_saved_stall_ms: float = 0.0
+    estimated_net_benefit_ms: float = 0.0
+    restore_cost_included: bool = False
 
     def __post_init__(self) -> None:
         if not self.context_id or not self.reason:
@@ -84,6 +91,20 @@ class SemanticResidencyTarget:
             or self.service_deadline_ms < 0
         ):
             raise ValueError("service deadline must be finite and non-negative")
+        for value in (
+            self.estimated_transfer_cost_ms,
+            self.estimated_saved_stall_ms,
+            self.estimated_net_benefit_ms,
+        ):
+            if not math.isfinite(value) or value < 0:
+                raise ValueError("causal package estimates must be non-negative")
+        if self.causal_package_id is not None and not self.causal_package_id:
+            raise ValueError("causal package ID must be non-empty")
+        if (
+            self.expected_unlock_boundary is not None
+            and not self.expected_unlock_boundary
+        ):
+            raise ValueError("unlock boundary must be non-empty")
 
     def to_dict(self) -> dict[str, object]:
         return {
@@ -96,6 +117,12 @@ class SemanticResidencyTarget:
             "beneficiary_request_id": self.beneficiary_request_id,
             "required_reclaim_bytes": self.required_reclaim_bytes,
             "service_deadline_ms": self.service_deadline_ms,
+            "causal_package_id": self.causal_package_id,
+            "expected_unlock_boundary": self.expected_unlock_boundary,
+            "estimated_transfer_cost_ms": self.estimated_transfer_cost_ms,
+            "estimated_saved_stall_ms": self.estimated_saved_stall_ms,
+            "estimated_net_benefit_ms": self.estimated_net_benefit_ms,
+            "restore_cost_included": self.restore_cost_included,
         }
 
 
@@ -1555,6 +1582,7 @@ class AsyncSemanticJointPlanner(ObservedJointPlanner):
                     continue
                 physical = float(raw.get("physical_unique_bytes", 0.0))
                 gpu = float(raw.get("gpu_bytes", 0.0))
+                cpu = float(raw.get("cpu_bytes", 0.0))
                 result[str(context_id)] = {
                     "missing_gpu_bytes": max(0.0, physical - gpu),
                     "reclaimable_bytes": float(
@@ -1566,6 +1594,8 @@ class AsyncSemanticJointPlanner(ObservedJointPlanner):
                     "last_access_ms": float(raw.get("last_access_ms", 0.0)),
                     "locked_bytes": float(raw.get("locked_bytes", 0.0)),
                     "gpu_bytes": gpu,
+                    "cpu_bytes": cpu,
+                    "d2h_copy_bytes": max(0.0, gpu - cpu),
                 }
             return result
 
@@ -1576,6 +1606,8 @@ class AsyncSemanticJointPlanner(ObservedJointPlanner):
                 "last_access_ms": 0.0,
                 "locked_bytes": 0.0,
                 "gpu_bytes": 0.0,
+                "cpu_bytes": 0.0,
+                "d2h_copy_bytes": 0.0,
             }
         )
         for bundle in policy_input.physical_kv.bundles:
@@ -1591,6 +1623,11 @@ class AsyncSemanticJointPlanner(ObservedJointPlanner):
                 )
                 stats["locked_bytes"] += bundle.locked_bytes
                 stats["gpu_bytes"] += bundle.gpu_bytes
+                stats["cpu_bytes"] += bundle.cpu_bytes
+                stats["d2h_copy_bytes"] += max(
+                    0,
+                    bundle.gpu_bytes - bundle.cpu_bytes,
+                )
         return dict(result)
 
     def plan(
@@ -1790,40 +1827,19 @@ class AsyncSemanticJointPlanner(ObservedJointPlanner):
         available = policy_input.resources.hbm_available_bytes
         reclaim_goal = 0
         beneficiary: RunnableInvocation | None = None
-        if deferred:
-            first = requirement_bound[0] if requirement_bound else deferred[0]
-            beneficiary = first
-            requirement = reclaim_requirements.get(first.request_id)
-            if requirement is not None:
-                fragment_bytes = (
-                    _nonnegative_int(requirement.get("required_startup_bytes"))
-                    + _nonnegative_int(requirement.get("required_growth_bytes"))
+        beneficiary_requirement: Mapping[str, object] | None = None
+        if requirement_bound:
+            beneficiary = requirement_bound[0]
+            beneficiary_requirement = reclaim_requirements[beneficiary.request_id]
+            fragment_bytes = (
+                _nonnegative_int(
+                    beneficiary_requirement.get("required_startup_bytes")
                 )
-                reclaim_goal = max(0, fragment_bytes - available)
-            else:
-                missing = int(
-                    context_stats.get(
-                        first.context_id,
-                        {"missing_gpu_bytes": 0.0},
-                    )["missing_gpu_bytes"]
+                + _nonnegative_int(
+                    beneficiary_requirement.get("required_growth_bytes")
                 )
-                reclaim_goal = max(
-                    0,
-                    _unreserved_startup_bytes(first) + missing - available,
-                )
-        used_ratio = (
-            policy_input.resources.hbm_used_bytes
-            / policy_input.resources.hbm_capacity_bytes
-        )
-        if used_ratio >= self.config.emergency_hbm_ratio:
-            target_ratio = max(0.0, self.config.emergency_hbm_ratio - 0.05)
-            reclaim_goal = max(
-                reclaim_goal,
-                int(
-                    policy_input.resources.hbm_used_bytes
-                    - policy_input.resources.hbm_capacity_bytes * target_ratio
-                ),
             )
+            reclaim_goal = max(0, fragment_bytes - available)
 
         targets: list[SemanticResidencyTarget] = []
         reclaimed = 0
@@ -1896,6 +1912,31 @@ class AsyncSemanticJointPlanner(ObservedJointPlanner):
                 and policy_input.resources.ts_ms >= deadline
             )
 
+        def transfer_service_ms(
+            direction: TransferDirection,
+            bytes_: int,
+        ) -> float:
+            if bytes_ <= 0:
+                return 0.0
+            rate = (
+                policy_input.resources.d2h_service_bytes_per_ms
+                if direction == TransferDirection.D2H
+                else policy_input.resources.h2d_service_bytes_per_ms
+            )
+            return (
+                policy_input.resources.transfer_setup_p50_ms
+                + bytes_ / max(1.0, rate)
+            )
+
+        beneficiary_saved_stall_ms = 0.0
+        if beneficiary is not None and beneficiary_requirement is not None:
+            beneficiary_saved_stall_ms = max(
+                _nonnegative_float(beneficiary_requirement.get("waited_ms", 0.0)),
+                max(
+                    0.0,
+                    policy_input.resources.ts_ms - beneficiary.submitted_ts_ms,
+                ),
+            )
         victims = sorted(
             (
                 (
@@ -1927,30 +1968,67 @@ class AsyncSemanticJointPlanner(ObservedJointPlanner):
         ) in victims:
             if reclaimed >= reclaim_goal:
                 break
+            if beneficiary is None:
+                break
+            stats = context_stats[context_id]
+            no_future_use = context_has_no_future_use(context_id)
+            action = (
+                ResidencyAction.DROP
+                if no_future_use
+                else ResidencyAction.COMMIT_CPU
+            )
+            d2h_copy_bytes = (
+                0
+                if action == ResidencyAction.DROP
+                else int(stats["d2h_copy_bytes"])
+            )
+            if d2h_copy_bytes > policy_input.resources.host_free_bytes:
+                continue
+            restore_cost_included = not no_future_use
+            estimated_transfer_cost_ms = transfer_service_ms(
+                TransferDirection.D2H,
+                d2h_copy_bytes,
+            )
+            if restore_cost_included:
+                estimated_transfer_cost_ms += transfer_service_ms(
+                    TransferDirection.H2D,
+                    reclaimable,
+                )
+            if (
+                estimated_transfer_cost_ms > 0
+                and beneficiary_saved_stall_ms <= estimated_transfer_cost_ms
+            ):
+                continue
             reclaim_contribution = min(
                 reclaimable,
                 max(0, reclaim_goal - reclaimed),
+            )
+            package_id = (
+                f"causal:{beneficiary.request_id}:"
+                f"{context_id}:{context_epochs[context_id]}"
             )
             targets.append(
                 SemanticResidencyTarget(
                     context_id=context_id,
                     context_epoch=context_epochs[context_id],
-                    action=ResidencyAction.COMMIT_CPU,
+                    action=action,
                     target_bytes_hint=reclaimable,
                     deadline_ms=policy_input.resources.ts_ms,
-                    reason=(
-                        "beneficiary-bound HBM reclaim from a parked context"
-                        if beneficiary is not None
-                        and beneficiary.request_id in reclaim_requirements
-                        else "replacement reclaim from a parked context"
-                        if parked_rank < 3
-                        else "service-or-evict lease expired for resident-ready context"
-                    ),
-                    beneficiary_request_id=(
-                        beneficiary.request_id if beneficiary is not None else None
-                    ),
+                    reason="beneficiary-bound HBM reclaim from a causal package",
+                    beneficiary_request_id=beneficiary.request_id,
                     required_reclaim_bytes=reclaim_contribution,
                     service_deadline_ms=victim_service_deadline,
+                    causal_package_id=package_id,
+                    expected_unlock_boundary=(
+                        f"first_gpu_service:{beneficiary.request_id}"
+                    ),
+                    estimated_transfer_cost_ms=estimated_transfer_cost_ms,
+                    estimated_saved_stall_ms=beneficiary_saved_stall_ms,
+                    estimated_net_benefit_ms=max(
+                        0.0,
+                        beneficiary_saved_stall_ms - estimated_transfer_cost_ms,
+                    ),
+                    restore_cost_included=restore_cost_included,
                 )
             )
             reclaimed += reclaimable

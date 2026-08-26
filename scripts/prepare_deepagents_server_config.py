@@ -36,6 +36,14 @@ def main() -> int:
         ),
     )
     parser.add_argument(
+        "--transfer-engine-v2",
+        action="store_true",
+        help=(
+            "Enable one independent H2D and D2H inflight transaction. "
+            "Requires the dedicated overlap correctness gate."
+        ),
+    )
+    parser.add_argument(
         "--disable-reactive-transfer",
         action="store_true",
         help=(
@@ -472,6 +480,7 @@ def main() -> int:
         "runtime_audit_max_debug_event_bytes": 16_384,
         "runtime_audit_flush_interval_s": 1.0,
         "performance_mode": args.performance_mode,
+        "transfer_engine_v2_enabled": args.transfer_engine_v2,
         "runtime_summary_path": str(server_dir / "latest_runtime_summary.json"),
         "runtime_summary_interval_ms": 5_000.0,
         "shutdown_drain_timeout_ms": 5_000.0,

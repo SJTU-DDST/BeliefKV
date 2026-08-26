@@ -513,6 +513,9 @@ class _OnlineJointResidencyTransaction:
     predictive_intent_id: str | None = None
     beneficiary_request_id: str | None = None
     required_reclaim_bytes: int = 0
+    causal_package_id: str | None = None
+    estimated_transfer_cost_ms: float = 0.0
+    estimated_saved_stall_ms: float = 0.0
 
 
 @dataclass(frozen=True)
@@ -523,6 +526,9 @@ class _ReplacementBeneficiaryPriority:
     created_ts_ms: float
     baseline_completed_service_count: int
     source_transaction_id: str
+    causal_package_id: str | None = None
+    estimated_transfer_cost_ms: float = 0.0
+    estimated_saved_stall_ms: float = 0.0
 
 
 @dataclass
@@ -727,6 +733,7 @@ class HiCacheNodeCommandBackend:
     ) -> None:
         required = (
             "write_backup",
+            "write_backup_batch",
             "check_hicache_events",
             "_evict_backuped",
             "_evict_regular",
@@ -868,10 +875,19 @@ class HiCacheNodeCommandBackend:
                 reverse=drop_bundle,
             )
 
+        native_d2h_closure = atomic_bundle and prepared and all(
+            item.action == PhysicalPageAction.START_D2H for item, _ in prepared
+        )
         native_h2d_closure = atomic_bundle and prepared and all(
             item.action == PhysicalPageAction.START_H2D for item, _ in prepared
         )
-        if native_h2d_closure:
+        if native_d2h_closure:
+            try:
+                pending.start_ts_ms = float(self._now_ms())
+                self._submit_atomic_d2h_closure(pending, prepared)
+            except (SGLangBackendError, AssertionError, RuntimeError) as error:
+                self._reject(pending, prepared[-1][0].handle, error)
+        elif native_h2d_closure:
             try:
                 pending.start_ts_ms = float(self._now_ms())
                 self._submit_atomic_h2d_closure(pending, prepared)
@@ -931,6 +947,38 @@ class HiCacheNodeCommandBackend:
         return BackendSubmission(
             command_id=command_id,
             started_handles=tuple(sorted(pending.accepted_handles)),
+        )
+
+    def _submit_atomic_d2h_closure(
+        self,
+        pending: _PendingNodeCommand,
+        prepared: list[tuple[ResolvedPageAction, Any]],
+    ) -> None:
+        nodes = [node for _, node in prepared]
+        required_bytes = sum(item.size_bytes for item, _ in prepared)
+        if any(getattr(node, "backuped", False) for node in nodes):
+            raise SGLangBackendError(
+                "atomic D2H closure contains an existing Host copy",
+                blocker_code=TransferBlockerCode.EXTENT_MUTATED,
+                required_bytes=required_bytes,
+            )
+        written = self.tree_cache.write_backup_batch(
+            nodes,
+            beliefkv_source="explicit_batch",
+        )
+        if written <= 0:
+            raise SGLangBackendError(
+                "HiCache batched Host allocation failed",
+                blocker_code=TransferBlockerCode.HOST_CAPACITY,
+                required_bytes=required_bytes,
+            )
+        handles = {item.handle for item, _ in prepared}
+        pending.accepted_handles.update(handles)
+        pending.transfer_handles.update(handles)
+        pending.transfer_host_copy_state[TransferDirection.D2H] = "missing"
+        pending.native_concurrent_bytes = max(
+            pending.native_concurrent_bytes,
+            self._native_inflight_bytes(),
         )
 
     def _submit_atomic_h2d_closure(
@@ -10280,6 +10328,75 @@ class EmbeddedSGLangRuntime:
                     else 0
                 ),
             )
+        for additional_transfer in getattr(tick, "transfers", ())[1:]:
+            if any(
+                item.action == PhysicalPageAction.START_H2D
+                for item in additional_transfer.page_actions
+            ):
+                raise RuntimeError(
+                    "H2D must be the primary transfer in a dual-lane tick"
+                )
+            action_counts: dict[str, int] = {}
+            for page_action in additional_transfer.page_actions:
+                action = page_action.action.value
+                action_counts[action] = action_counts.get(action, 0) + 1
+            source_joint_plan_id = additional_transfer.command.metadata.get(
+                "joint_plan_id"
+            )
+            policy_reason = additional_transfer.command.metadata.get("reason")
+            action_source = _transfer_action_source(
+                source_joint_plan_id,
+                policy_reason,
+            )
+            if (
+                getattr(
+                    getattr(self, "config", None),
+                    "joint_policy_enabled",
+                    False,
+                )
+                and action_source == "unified_liveness"
+            ):
+                self._online_joint_counts[
+                    "online_action_missing_source_joint_plan_id"
+                ] += 1
+            bundle = additional_transfer.command.physical_bundle
+            self.audit.emit(
+                "transfer_dispatched",
+                tick.now_ms,
+                command_id=additional_transfer.command.command_id,
+                kind=additional_transfer.command.kind.value,
+                context_id=additional_transfer.command.context_id,
+                context_epoch=additional_transfer.command.context_epoch,
+                selected_bytes=additional_transfer.resolved_bytes,
+                page_count=len(additional_transfer.page_actions),
+                action_counts=action_counts,
+                policy_reason=policy_reason,
+                action_source=action_source,
+                source_joint_plan_id=source_joint_plan_id,
+                bundle_scope=additional_transfer.command.metadata.get(
+                    "physical_bundle_scope"
+                ),
+                exclusive_action_bytes=additional_transfer.command.metadata.get(
+                    "physical_exclusive_action_bytes",
+                    0,
+                ),
+                cross_context_action_bytes=additional_transfer.command.metadata.get(
+                    "physical_cross_context_action_bytes",
+                    0,
+                ),
+                foreign_owner_context_ids=additional_transfer.command.metadata.get(
+                    "physical_foreign_owner_context_ids",
+                    [],
+                ),
+                closure_fingerprint=additional_transfer.closure_fingerprint,
+                bundle_id=bundle.bundle_id if bundle is not None else "",
+                expected_reclaimable_bytes=(
+                    bundle.expected_reclaimable_bytes
+                    if bundle is not None
+                    else 0
+                ),
+                transfer_lane="secondary",
+            )
         for ack in tick.local_acks:
             self.audit.emit(
                 "transfer_rejected_local",
@@ -11529,6 +11646,14 @@ class EmbeddedSGLangRuntime:
             baseline_completed_service_count=(
                 record.baseline_completed_service_count
             ),
+            causal_package_id=record.causal_package_id,
+            estimated_transfer_cost_ms=record.estimated_transfer_cost_ms,
+            estimated_saved_stall_ms=record.estimated_saved_stall_ms,
+            beneficiary_first_service_latency_ms=(
+                max(0.0, now_ms - record.created_ts_ms)
+                if reason == "gpu_service_completed"
+                else None
+            ),
             reason=reason,
         )
         return True
@@ -11572,6 +11697,9 @@ class EmbeddedSGLangRuntime:
                 progress.completed_service_count if progress is not None else 0
             ),
             source_transaction_id=transaction.transaction_id,
+            causal_package_id=transaction.causal_package_id,
+            estimated_transfer_cost_ms=transaction.estimated_transfer_cost_ms,
+            estimated_saved_stall_ms=transaction.estimated_saved_stall_ms,
         )
         priorities = getattr(self, "_replacement_priorities", None)
         if priorities is None:
@@ -17792,6 +17920,32 @@ class EmbeddedSGLangRuntime:
         selected: tuple[
             int, SemanticResidencyTarget, PhysicalBundlePreview
         ] | None = None
+
+        def actual_causal_package_cost_ms(
+            target: SemanticResidencyTarget,
+            preview: PhysicalBundlePreview,
+            command_kind: CommandKind,
+        ) -> float:
+            if target.action == ResidencyAction.DROP:
+                return 0.0
+            total_ms = 0.0
+            if preview.copy_bytes > 0:
+                total_ms += self.controller.service_curve.estimate(
+                    TransferDirection.D2H,
+                    preview.copy_bytes,
+                    page_count=max(1, len(preview.page_actions)),
+                    command_kind=command_kind.value,
+                ).estimated_completion_p90_ms
+            if target.restore_cost_included:
+                restore_bytes = preview.bundle.exclusive_action_bytes
+                if restore_bytes > 0:
+                    total_ms += self.controller.service_curve.estimate(
+                        TransferDirection.H2D,
+                        restore_bytes,
+                        page_count=max(1, len(preview.page_actions)),
+                        command_kind=CommandKind.PREFETCH_CONTEXT.value,
+                    ).estimated_completion_p90_ms
+            return total_ms
         visible_request_ids = {
             item.request_id for item in self._policy_runtime_runnable(now_ms)
         }
@@ -17883,7 +18037,8 @@ class EmbeddedSGLangRuntime:
                         target.required_reclaim_bytes,
                     )
                     if (
-                        target.action == ResidencyAction.COMMIT_CPU
+                        target.action
+                        in {ResidencyAction.COMMIT_CPU, ResidencyAction.DROP}
                         and minimum_reclaim > 0
                         and preview.bundle.exclusive_action_bytes
                         < minimum_reclaim
@@ -17891,6 +18046,21 @@ class EmbeddedSGLangRuntime:
                         blockers.add("replacement_reclaim_shortfall")
                         continue
                     if preview.eligible:
+                        if target.causal_package_id is not None:
+                            actual_cost_ms = actual_causal_package_cost_ms(
+                                target,
+                                preview,
+                                command_kind,
+                            )
+                            if (
+                                actual_cost_ms > 0
+                                and target.estimated_saved_stall_ms
+                                <= actual_cost_ms
+                            ):
+                                blockers.add(
+                                    "causal_package_nonpositive_after_rematerialization"
+                                )
+                                continue
                         candidates.append(preview)
                     else:
                         blockers.update(
@@ -17946,6 +18116,20 @@ class EmbeddedSGLangRuntime:
                     item.bundle.bundle_id,
                 ),
             )
+            if target.causal_package_id is not None and command_kind is not None:
+                actual_cost_ms = actual_causal_package_cost_ms(
+                    target,
+                    preview,
+                    command_kind,
+                )
+                target = replace(
+                    target,
+                    estimated_transfer_cost_ms=actual_cost_ms,
+                    estimated_net_benefit_ms=max(
+                        0.0,
+                        target.estimated_saved_stall_ms - actual_cost_ms,
+                    ),
+                )
             if beneficiary_slice_id is not None:
                 checked_slices.append(
                     ActionSlice(
@@ -19278,6 +19462,12 @@ class EmbeddedSGLangRuntime:
                 "joint_planned_target_bytes": target.target_bytes_hint,
                 "joint_beneficiary_request_id": target.beneficiary_request_id,
                 "joint_required_reclaim_bytes": target.required_reclaim_bytes,
+                "causal_package_id": target.causal_package_id,
+                "expected_unlock_boundary": target.expected_unlock_boundary,
+                "estimated_transfer_cost_ms": target.estimated_transfer_cost_ms,
+                "estimated_saved_stall_ms": target.estimated_saved_stall_ms,
+                "estimated_net_benefit_ms": target.estimated_net_benefit_ms,
+                "restore_cost_included": target.restore_cost_included,
                 "joint_physical_closure_bytes": preview.bundle.closure_bytes,
                 "physical_bundle_scope": preview.bundle.scope.value,
                 "physical_exclusive_action_bytes": (
@@ -19312,6 +19502,9 @@ class EmbeddedSGLangRuntime:
             created_ts_ms=now_ms,
             beneficiary_request_id=target.beneficiary_request_id,
             required_reclaim_bytes=target.required_reclaim_bytes,
+            causal_package_id=target.causal_package_id,
+            estimated_transfer_cost_ms=target.estimated_transfer_cost_ms,
+            estimated_saved_stall_ms=target.estimated_saved_stall_ms,
         )
         self._pending_online_joint_residency = transaction
         self._online_joint_residency_history.append(transaction)
@@ -19336,6 +19529,11 @@ class EmbeddedSGLangRuntime:
             source_joint_plan_id=plan.plan_id,
             beneficiary_request_id=target.beneficiary_request_id,
             required_reclaim_bytes=target.required_reclaim_bytes,
+            causal_package_id=target.causal_package_id,
+            estimated_transfer_cost_ms=target.estimated_transfer_cost_ms,
+            estimated_saved_stall_ms=target.estimated_saved_stall_ms,
+            estimated_net_benefit_ms=target.estimated_net_benefit_ms,
+            expected_unlock_boundary=target.expected_unlock_boundary,
         )
 
     def _advance_online_joint_residency(

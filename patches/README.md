@@ -34,3 +34,10 @@ All policy logic remains in `beliefkv/`. The patch deliberately calls private
 HiCache methods only from the scheduler thread and is guarded by the exact
 source contract. Do not apply with `--reject`, do not hand-resolve it onto a
 newer release, and do not report results if `beliefkv check-sglang` fails.
+
+## Performance Variant
+
+`sglang-0.5.2rc1-beliefkv-perf.patch` extends the historical canonical patch with
+bundle-level D2H submission for the performance branch. It is referenced only by
+`h200_bf16_perf_v1_restore_gate`; older frozen profiles continue to use the original
+patch. Concurrent D2H/H2D remains disabled until the dedicated GPU overlap gate passes.

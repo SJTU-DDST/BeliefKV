@@ -242,6 +242,15 @@ def test_semantic_replacement_uses_expired_resident_service_lease() -> None:
     assert replacement.beneficiary_request_id == target.request_id
     assert replacement.required_reclaim_bytes > 0
     assert replacement.reason.startswith("beneficiary-bound HBM reclaim")
+    assert replacement.causal_package_id is not None
+    assert replacement.expected_unlock_boundary == (
+        f"first_gpu_service:{target.request_id}"
+    )
+    assert replacement.estimated_saved_stall_ms > (
+        replacement.estimated_transfer_cost_ms
+    )
+    assert replacement.estimated_net_benefit_ms > 0
+    assert replacement.restore_cost_included
 
 
 def test_semantic_replacement_preserves_recently_served_resident() -> None:

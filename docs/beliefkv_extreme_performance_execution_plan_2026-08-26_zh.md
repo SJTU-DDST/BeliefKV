@@ -56,29 +56,33 @@ closure rematerialization 和 allocator validation 仍是硬门禁。
 
 ### P3 TransferEngineV2
 
-待实现：
+CPU 和数据面实现已完成，GPU 双向门禁尚未开放：
 
-- D2H/H2D 独立 logical lane，每个方向最多一笔 inflight；
-- bridge 一次 safe point 可提交两个方向的互不相交事务；
-- restore H2D 优先于 reactive D2H，reactive D2H 优先于 speculative D2H；
-- 使用 SGLang 已有 write/load CUDA stream 和 pinned Host pool；
-- D2H 相邻 extent 在 native write queue 合并，按 command 聚合 ACK；
-- closure overlap、allocator reservation 和 callback ID 必须守恒。
+- command queue 和 controller 已拆分 D2H/H2D logical lane，每个方向最多一笔
+  inflight，并拒绝 closure 相交的双向事务；
+- bridge 可在一个 safe point 提交互不相交的两笔事务，优先级固定为 restore H2D、
+  reactive D2H、speculative D2H；
+- SGLang 继续使用独立 write/load CUDA stream 和预分配 pinned Host pool；
+- 同一个 physical bundle 的 D2H extents 改为一次 Host 分配批次、一次 native queue
+  operation 和 grouped node ACK，消除逐 extent synchronize/launch；
+- transfer_engine_v2_enabled 默认关闭。现有硬件 artifact 不支持 concurrent PCIe
+  transfer，因此 backend capability 仍冻结为单 inflight，不能用于正式实验。
 
 ### P4 Causal Package Planner
 
-待实现。最小动作包绑定：
+observed-state 首版已完成。最小动作包绑定：
 
-- ready execution set；
-- startup + projected growth HBM demand；
-- victim context 与定向 physical closure；
-- expected action-unlock boundary；
-- transfer/recompute cost；
-- beneficiary first-service obligation。
+- HBM-blocked beneficiary 和 startup/growth deficit；
+- victim context、定向 physical closure 与实际 exclusive reclaim；
+- expected beneficiary first-service boundary；
+- D2H 与未来 H2D restore 成本；
+- Host capacity 和 beneficiary saved-stall 下界；
+- package ID、transfer cost、net benefit 与 first-service latency 归因。
 
-只有 saved beneficiary stall 的保守下界大于迁移与反向 restore 成本时，才允许
-COMMIT_CPU。预测器仅发布 action-specific causal slack 和 unlock distribution，不直接
-发送物理命令。
+Residency planner 不再因单独的 emergency pressure 选择 victim。只有明确 beneficiary
+存在、safe point 重物化后的实际 closure 能满足 deficit，且 saved stall 大于按实际
+bytes/extent 重新估计的 transfer/restore cost，才允许 COMMIT_CPU 或 DROP。预测器后续
+只能更新 causal slack 和 action-unlock 分布，不能直接发送物理命令。
 
 ## 验证顺序
 

@@ -315,6 +315,40 @@ class PageIndexTest(unittest.TestCase):
         self.assertEqual(queue.pop().command_id, "urgent")
         self.assertEqual(queue.pop().command_id, "shadow")
 
+    def test_restore_lane_preempts_d2h_and_lanes_pop_independently(self):
+        queue = TransferCommandQueue()
+        d2h = ControlCommand(
+            command_id="d2h",
+            kind=CommandKind.OFFLOAD_CONTEXT,
+            created_ts_ms=0,
+            deadline_ms=0,
+        )
+        h2d = ControlCommand(
+            command_id="h2d",
+            kind=CommandKind.PREFETCH_CONTEXT,
+            created_ts_ms=1,
+            deadline_ms=100,
+        )
+        shadow = ControlCommand(
+            command_id="shadow",
+            kind=CommandKind.SHADOW_CONTEXT,
+            created_ts_ms=2,
+            queue_class=CommandQueueClass.SHADOW,
+        )
+        queue.put(d2h)
+        queue.put(h2d)
+        queue.put(shadow)
+
+        self.assertEqual(queue.pop().command_id, "h2d")
+        self.assertEqual(
+            queue.pop_lane(TransferDirection.D2H).command_id,
+            "d2h",
+        )
+        self.assertEqual(
+            queue.pop_lane(TransferDirection.D2H).command_id,
+            "shadow",
+        )
+
 
 class RadixArbiterTest(unittest.TestCase):
     def setUp(self) -> None:

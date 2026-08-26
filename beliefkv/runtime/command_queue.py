@@ -3,7 +3,38 @@ from __future__ import annotations
 import heapq
 from dataclasses import dataclass, field
 
-from beliefkv.runtime.protocol import CommandQueueClass, ControlCommand
+from beliefkv.runtime.protocol import (
+    CommandKind,
+    CommandQueueClass,
+    ControlCommand,
+    PhysicalPageAction,
+    TransferDirection,
+)
+
+
+def command_transfer_direction(
+    command: ControlCommand,
+) -> TransferDirection | None:
+    directions: set[TransferDirection] = set()
+    bundle = command.physical_bundle
+    if bundle is not None:
+        for action in bundle.page_actions:
+            if action.action == PhysicalPageAction.START_D2H:
+                directions.add(TransferDirection.D2H)
+            elif action.action == PhysicalPageAction.START_H2D:
+                directions.add(TransferDirection.H2D)
+    if len(directions) > 1:
+        raise ValueError("one command cannot mix D2H and H2D page actions")
+    if directions:
+        return next(iter(directions))
+    if command.kind == CommandKind.PREFETCH_CONTEXT:
+        return TransferDirection.H2D
+    if command.kind in {
+        CommandKind.OFFLOAD_CONTEXT,
+        CommandKind.SHADOW_CONTEXT,
+    }:
+        return TransferDirection.D2H
+    return None
 
 
 @dataclass(order=True)
@@ -43,12 +74,75 @@ class TransferCommandQueue:
         self._active_ids.add(command.command_id)
 
     def pop(self, *, allow_shadow: bool = True) -> ControlCommand | None:
-        command = self._pop_valid(self._urgent)
+        for direction in (
+            TransferDirection.H2D,
+            TransferDirection.D2H,
+            None,
+        ):
+            command = self.pop_lane(
+                direction,
+                allow_shadow=False,
+            )
+            if command is not None:
+                return command
+        if allow_shadow:
+            for direction in (
+                TransferDirection.H2D,
+                TransferDirection.D2H,
+                None,
+            ):
+                command = self._pop_matching(self._shadow, direction)
+                if command is not None:
+                    return command
+        return None
+
+    def pop_lane(
+        self,
+        direction: TransferDirection | None,
+        *,
+        allow_shadow: bool = True,
+    ) -> ControlCommand | None:
+        command = self._pop_matching(self._urgent, direction)
         if command is not None:
             return command
         if allow_shadow:
-            return self._pop_valid(self._shadow)
+            return self._pop_matching(self._shadow, direction)
         return None
+
+    def _pop_matching(
+        self,
+        queue: list[_QueueEntry],
+        direction: TransferDirection | None,
+    ) -> ControlCommand | None:
+        if self._cancelled_ids:
+            removed = {
+                entry.command.command_id
+                for entry in queue
+                if entry.command.command_id in self._cancelled_ids
+            }
+            if removed:
+                queue[:] = [
+                    entry
+                    for entry in queue
+                    if entry.command.command_id not in removed
+                ]
+                heapq.heapify(queue)
+                self._cancelled_ids.difference_update(removed)
+        matches = (
+            (entry, index)
+            for index, entry in enumerate(queue)
+            if entry.command.command_id not in self._cancelled_ids
+            and command_transfer_direction(entry.command) == direction
+        )
+        selected = min(matches, default=None)
+        if selected is None:
+            return None
+        _entry, index = selected
+        command = queue.pop(index).command
+        if index < len(queue):
+            heapq.heapify(queue)
+        self._active_ids.discard(command.command_id)
+        return command
 
     def _pop_valid(self, queue: list[_QueueEntry]) -> ControlCommand | None:
         while queue:

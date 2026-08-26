@@ -44,7 +44,10 @@ from beliefkv.predictor.online_shadow import (
     build_frontier_shadow_records,
 )
 from beliefkv.predictor.types import RemainingTimePrediction
-from beliefkv.runtime.command_queue import TransferCommandQueue
+from beliefkv.runtime.command_queue import (
+    TransferCommandQueue,
+    command_transfer_direction,
+)
 from beliefkv.runtime.action_frontier import ActionFrontierObserver
 from beliefkv.runtime.bundles import BundlePreviewEvent, PhysicalBundleBuilder
 from beliefkv.runtime.page_index import PageIndexError, PageOwnershipIndex
@@ -75,6 +78,7 @@ class ControllerTickResult:
     now_ms: float
     admission: AdmissionDecision | None = None
     transfer: ResolvedCommand | None = None
+    transfers: tuple[ResolvedCommand, ...] = ()
     cancel_command_ids: tuple[str, ...] = ()
     local_acks: tuple[CommandAck, ...] = ()
     stalled_command_ids: tuple[str, ...] = ()
@@ -82,6 +86,14 @@ class ControllerTickResult:
     transfer_guard_events: tuple[TransferGuardEvent, ...] = ()
     bundle_preview_events: tuple[BundlePreviewEvent, ...] = ()
     frontier_shadow_events: tuple[FrontierShadowRecord, ...] = ()
+
+    def __post_init__(self) -> None:
+        if self.transfers:
+            if self.transfer is not None and self.transfer != self.transfers[0]:
+                raise ValueError("primary transfer must be the first transfer")
+            object.__setattr__(self, "transfer", self.transfers[0])
+        elif self.transfer is not None:
+            object.__setattr__(self, "transfers", (self.transfer,))
 
 
 @dataclass(frozen=True)
@@ -885,7 +897,8 @@ class BeliefKVController:
         preferred_restore_context_ids = tuple(
             dict.fromkeys(entry.request.context_id for entry in ordered_restore_entries)
         )
-        if not self._inflight and not delegated_native_reclaim:
+        max_inflight = 2 if self.config.transfer_engine_v2_enabled else 1
+        if len(self._inflight) < max_inflight and not delegated_native_reclaim:
             planned = self._plan_terminal_cleanup()
             if planned is None and allow_reactive_transfer:
                 planned = self.transfer_planner.plan_next(
@@ -907,15 +920,16 @@ class BeliefKVController:
             ):
                 self._enqueue_if_new(planned)
 
-        transfer, local_ack = self._dispatch_next()
+        transfers, local_acks = self._dispatch_ready()
         cancellations = tuple(sorted(self._pending_cancellations))
         self._pending_cancellations.clear()
         return ControllerTickResult(
             now_ms=self.now_ms,
             admission=admission,
-            transfer=transfer,
+            transfer=transfers[0] if transfers else None,
+            transfers=transfers,
             cancel_command_ids=cancellations,
-            local_acks=(local_ack,) if local_ack is not None else (),
+            local_acks=local_acks,
             stalled_command_ids=stalled_command_ids,
             predictions=predictions,
             transfer_guard_events=self.transfer_guard.drain_events(),
@@ -1118,14 +1132,110 @@ class BeliefKVController:
             (self._transfer_telemetry_sequence, telemetry)
         )
 
+    @staticmethod
+    def _resolved_transfer_direction(
+        resolved: ResolvedCommand,
+    ) -> TransferDirection | None:
+        directions = {
+            (
+                TransferDirection.D2H
+                if action.action == PhysicalPageAction.START_D2H
+                else TransferDirection.H2D
+            )
+            for action in resolved.page_actions
+            if action.action
+            in {
+                PhysicalPageAction.START_D2H,
+                PhysicalPageAction.START_H2D,
+            }
+        }
+        if len(directions) > 1:
+            raise RuntimeError("one resolved command cannot mix transfer directions")
+        if directions:
+            return next(iter(directions))
+        return command_transfer_direction(resolved.command)
+
+    def _lane_has_inflight(
+        self,
+        direction: TransferDirection | None,
+    ) -> bool:
+        return any(
+            self._resolved_transfer_direction(item.resolved) == direction
+            for item in self._inflight.values()
+        )
+
+    @staticmethod
+    def _command_closure_handles(command: ControlCommand) -> frozenset[PageHandle]:
+        bundle = command.physical_bundle
+        if bundle is not None:
+            return frozenset(bundle.closure_handles)
+        return frozenset(command.target_handles)
+
+    def _command_overlaps_inflight(self, command: ControlCommand) -> bool:
+        handles = self._command_closure_handles(command)
+        if not handles:
+            return False
+        return any(
+            bool(
+                handles
+                & self._command_closure_handles(inflight.resolved.command)
+            )
+            for inflight in self._inflight.values()
+        )
+
+    def _dispatch_ready(
+        self,
+    ) -> tuple[tuple[ResolvedCommand, ...], tuple[CommandAck, ...]]:
+        if not self.config.transfer_engine_v2_enabled:
+            transfer, ack = self._dispatch_next()
+            return (
+                (transfer,) if transfer is not None else (),
+                (ack,) if ack is not None else (),
+            )
+        transfers: list[ResolvedCommand] = []
+        local_acks: list[CommandAck] = []
+        for direction in (
+            TransferDirection.H2D,
+            TransferDirection.D2H,
+            None,
+        ):
+            transfer, ack = self._dispatch_lane(direction)
+            if transfer is not None:
+                transfers.append(transfer)
+            if ack is not None:
+                local_acks.append(ack)
+        return tuple(transfers), tuple(local_acks)
+
     def _dispatch_next(
         self,
     ) -> tuple[ResolvedCommand | None, CommandAck | None]:
-        if self._inflight:
+        if not self.config.transfer_engine_v2_enabled and self._inflight:
+            return None, None
+        for direction in (
+            TransferDirection.H2D,
+            TransferDirection.D2H,
+            None,
+        ):
+            transfer, ack = self._dispatch_lane(direction)
+            if transfer is not None or ack is not None:
+                return transfer, ack
+        return None, None
+
+    def _dispatch_lane(
+        self,
+        direction: TransferDirection | None,
+    ) -> tuple[ResolvedCommand | None, CommandAck | None]:
+        if self._lane_has_inflight(direction):
             return None, None
         while True:
-            command = self.command_queue.pop(allow_shadow=self.config.shadow_enabled)
+            command = self.command_queue.pop_lane(
+                direction,
+                allow_shadow=self.config.shadow_enabled,
+            )
             if command is None:
+                return None, None
+            if self._command_overlaps_inflight(command):
+                self.command_queue.put(command)
                 return None, None
             self._bump_transfer_epoch()
             if self.transfer_guard.command_is_eligible(command, now_ms=self.now_ms):

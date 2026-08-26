@@ -1,4 +1,5 @@
 import unittest
+from types import SimpleNamespace
 
 from beliefkv.control.controller import BeliefKVController
 from beliefkv.core.config import BeliefKVConfig
@@ -12,7 +13,10 @@ from beliefkv.runtime.protocol import (
     ControlCommand,
     EnqueueStatus,
     PageHandle,
+    PhysicalPageAction,
     PhysicalResidency,
+    ResolvedCommand,
+    ResolvedPageAction,
 )
 
 
@@ -710,6 +714,93 @@ class ControllerTest(unittest.TestCase):
         )
         h.emit(RuntimeEventKind.TOOL_END, ts_ms=15, invocation_id="parent")
         self.assertEqual(h.controller.predictor.calibrator.observation_count, 1)
+
+    def test_disjoint_h2d_and_d2h_dispatch_in_one_tick(self):
+        controller = BeliefKVController(
+            BeliefKVConfig(
+                predictor_enabled=False,
+                shadow_enabled=True,
+                transfer_engine_v2_enabled=True,
+            )
+        )
+        h2d_handle = PageHandle(1, 0)
+        d2h_handle = PageHandle(2, 0)
+        h2d = ControlCommand(
+            command_id="h2d",
+            kind=CommandKind.PREFETCH_CONTEXT,
+            created_ts_ms=1,
+            context_id="restore",
+            context_epoch=0,
+            target_bytes=100,
+            target_handles=(h2d_handle,),
+        )
+        d2h = ControlCommand(
+            command_id="d2h",
+            kind=CommandKind.OFFLOAD_CONTEXT,
+            created_ts_ms=1,
+            context_id="parked",
+            context_epoch=0,
+            target_bytes=100,
+            target_handles=(d2h_handle,),
+        )
+        resolved = {
+            "h2d": ResolvedCommand(
+                command=h2d,
+                page_actions=(
+                    ResolvedPageAction(
+                        h2d_handle,
+                        PhysicalPageAction.START_H2D,
+                        100,
+                    ),
+                ),
+                resolved_bytes=100,
+                reason="test",
+            ),
+            "d2h": ResolvedCommand(
+                command=d2h,
+                page_actions=(
+                    ResolvedPageAction(
+                        d2h_handle,
+                        PhysicalPageAction.START_D2H,
+                        100,
+                    ),
+                ),
+                resolved_bytes=100,
+                reason="test",
+            ),
+        }
+        controller.arbiter = SimpleNamespace(
+            resolve=lambda command: resolved[command.command_id]
+        )
+        controller.transfer_guard = SimpleNamespace(
+            command_is_eligible=lambda command, now_ms: True,
+            begin_attempt=lambda command, now_ms: "",
+        )
+        controller.command_queue.put(d2h)
+        controller.command_queue.put(h2d)
+
+        transfers, acks = controller._dispatch_ready()
+
+        self.assertEqual(acks, ())
+        self.assertEqual(
+            tuple(item.command.command_id for item in transfers),
+            ("h2d", "d2h"),
+        )
+        self.assertEqual(
+            controller.inflight_command_ids,
+            ("d2h", "h2d"),
+        )
+
+        overlapping = ControlCommand(
+            command_id="overlap-d2h",
+            kind=CommandKind.OFFLOAD_CONTEXT,
+            created_ts_ms=2,
+            context_id="overlap",
+            context_epoch=0,
+            target_bytes=100,
+            target_handles=(h2d_handle,),
+        )
+        self.assertTrue(controller._command_overlaps_inflight(overlapping))
 
 
 if __name__ == "__main__":

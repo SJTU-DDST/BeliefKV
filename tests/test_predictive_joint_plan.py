@@ -138,7 +138,7 @@ def test_planner_falls_back_to_observed_order_without_predictions() -> None:
     assert plan.execution.ordered_request_ids[0] == "request-normal"
 
 
-def test_observed_victim_selection_ignores_predictive_metadata() -> None:
+def test_pressure_without_beneficiary_ignores_predictive_victim_metadata() -> None:
     policy_input = _input(capacity=600, reserved=0, include_cpu_target=False)
     policy_input = _with_runtime_state(
         policy_input,
@@ -195,13 +195,12 @@ def test_observed_victim_selection_ignores_predictive_metadata() -> None:
         JointPlannerConfig(max_planning_budget_ms=100.0)
     ).plan(policy_input)
 
-    assert plan.semantic_residency
-    assert plan.semantic_residency[0].context_id == "ctx-old"
+    assert not plan.semantic_residency
     assert not plan.prediction_used
     assert not plan.prediction_influence
 
 
-def test_victim_selection_uses_lru_without_predictions() -> None:
+def test_pressure_without_beneficiary_does_not_evict_lru() -> None:
     policy_input = _input(capacity=600, reserved=0, include_cpu_target=False)
     policy_input = _with_runtime_state(
         policy_input,
@@ -229,6 +228,5 @@ def test_victim_selection_uses_lru_without_predictions() -> None:
         JointPlannerConfig(max_planning_budget_ms=100.0)
     ).plan(policy_input)
 
-    assert plan.semantic_residency
-    assert plan.semantic_residency[0].context_id == "ctx-old"
+    assert not plan.semantic_residency
     assert not plan.prediction_used

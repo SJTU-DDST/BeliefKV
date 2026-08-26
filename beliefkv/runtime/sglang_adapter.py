@@ -257,12 +257,13 @@ class SGLangSchedulerBridge:
         )
         for command_id in tick.cancel_command_ids:
             self.backend.cancel(command_id)
-        if tick.transfer is not None:
-            submission = self.backend.submit(tick.transfer)
-            if submission.command_id != tick.transfer.command.command_id:
+        for transfer in tick.transfers:
+            submission = self.backend.submit(transfer)
+            if submission.command_id != transfer.command.command_id:
                 raise RuntimeError("backend returned a mismatched command id")
             self.controller.mark_command_started(
-                submission.command_id, submission.started_handles
+                submission.command_id,
+                submission.started_handles,
             )
         return tick
 

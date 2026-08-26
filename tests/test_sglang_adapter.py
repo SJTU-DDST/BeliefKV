@@ -137,6 +137,7 @@ class _TreeCache:
         self.load_back_threshold = 10
         self.load_back_calls = []
         self.callback_errors = []
+        self.batch_write_calls = []
 
     def evictable_size(self):
         return self.evictable_tokens
@@ -160,6 +161,13 @@ class _TreeCache:
         node.host_value = [10, 11, 12, 13]
         self.ongoing_write_through[node.id] = node
         return 4
+
+    def write_backup_batch(self, nodes, *, beliefkv_source=None):
+        self.batch_write_calls.append([node.id for node in nodes])
+        return sum(
+            self.write_backup(node, beliefkv_source=beliefkv_source)
+            for node in nodes
+        )
 
     def check_hicache_events(self):
         for node in self.ongoing_write_through.values():
@@ -3532,6 +3540,7 @@ class SGLangBackendTest(unittest.TestCase):
 
         submission = backend.submit(command)
         self.assertEqual(tree.write_order, [parent.id, child.id])
+        self.assertEqual(tree.batch_write_calls, [[parent.id, child.id]])
         self.assertFalse(parent.evicted)
         self.assertFalse(child.evicted)
 
@@ -3880,6 +3889,52 @@ class SGLangBackendTest(unittest.TestCase):
             {TransferBlockerCode.EXTENT_MUTATED},
         )
 
+    def test_backend_tracks_one_h2d_and_one_d2h_concurrently(self):
+        tree = _TreeCache()
+        registry = SGLangNodeRegistry()
+
+        d2h_node = _Node(1)
+        d2h_node.parent = tree.root_node
+        tree.root_node.children["d2h"] = d2h_node
+        d2h_handle = registry.register(d2h_node)
+
+        h2d_node = _Node(2)
+        h2d_node.parent = tree.root_node
+        h2d_node.value = None
+        h2d_node.host_value = [30, 31, 32, 33]
+        tree.root_node.children["h2d"] = h2d_node
+        h2d_handle = registry.register(h2d_node)
+
+        backend = HiCacheNodeCommandBackend(tree, registry, now_ms=lambda: 2)
+        d2h_submission = backend.submit(
+            resolved(
+                CommandKind.OFFLOAD_CONTEXT,
+                d2h_handle,
+                PhysicalPageAction.START_D2H,
+            )
+        )
+        h2d_submission = backend.submit(
+            resolved(
+                CommandKind.PREFETCH_CONTEXT,
+                h2d_handle,
+                PhysicalPageAction.START_H2D,
+            )
+        )
+
+        self.assertEqual(d2h_submission.started_handles, (d2h_handle,))
+        self.assertEqual(h2d_submission.started_handles, (h2d_handle,))
+        self.assertEqual(len(backend._pending), 2)
+
+        acknowledgements = backend.poll_acks()
+
+        self.assertEqual(
+            {item.command_id for item in acknowledgements},
+            {"cmd-offload_context", "cmd-prefetch_context"},
+        )
+        self.assertTrue(
+            all(item.status == CommandStatus.COMPLETED for item in acknowledgements)
+        )
+        self.assertEqual(backend._pending, {})
     def test_pinned_hicache_capabilities_do_not_claim_unobservable_features(self):
         tree = _TreeCache()
         tree.token_to_kv_pool_host = SimpleNamespace(layout="page_first")
@@ -5339,6 +5394,7 @@ class SGLangBackendTest(unittest.TestCase):
             )
         )
         runtime._reclaim_requirement_revision = 1
+        controller._reported_hbm_used_bytes = 1_900
         runtime._policy_runtime_runnable = lambda _now_ms: (beneficiary,)
         decision = compile_bounded_seed_epoch(
             ordered_request_ids=(beneficiary.request_id,),
@@ -5351,14 +5407,46 @@ class SGLangBackendTest(unittest.TestCase):
             action=ResidencyAction.COMMIT_CPU,
             target_bytes_hint=300,
             deadline_ms=100.0,
-            reason="replacement test",
+            reason="beneficiary-bound HBM reclaim from a causal package",
             beneficiary_request_id=beneficiary.request_id,
             required_reclaim_bytes=250,
+            causal_package_id="causal:req-beneficiary:ctx-v:0",
+            expected_unlock_boundary="first_gpu_service:req-beneficiary",
+            estimated_transfer_cost_ms=1.0,
+            estimated_saved_stall_ms=5_000.0,
+            estimated_net_benefit_ms=4_999.0,
+            restore_cost_included=True,
         )
         plan = SimpleNamespace(
             plan_id=decision.view.plan_id,
             residency=(),
             semantic_residency=(target,),
+        )
+
+        negative_target = replace(
+            target,
+            estimated_saved_stall_ms=0.001,
+            estimated_net_benefit_ms=0.0,
+        )
+        negative_plan = SimpleNamespace(
+            plan_id=decision.view.plan_id,
+            residency=(),
+            semantic_residency=(negative_target,),
+        )
+        rejected = runtime._physical_commit_semantic_residency(
+            negative_plan,
+            decision,
+            now_ms=100.0,
+        )
+        self.assertIsNone(runtime._current_semantic_residency_commit)
+        rejected_group = next(
+            group
+            for group in rejected.epoch.action_groups
+            if any(action.kind == "semantic_residency" for action in group.actions)
+        )
+        self.assertIn(
+            "physical:causal_package_nonpositive_after_rematerialization",
+            rejected_group.reasons,
         )
 
         committed = runtime._physical_commit_semantic_residency(
@@ -5393,6 +5481,11 @@ class SGLangBackendTest(unittest.TestCase):
             queued.metadata["joint_beneficiary_request_id"],
             beneficiary.request_id,
         )
+        self.assertEqual(
+            queued.metadata["causal_package_id"],
+            target.causal_package_id,
+        )
+        self.assertGreater(queued.metadata["estimated_net_benefit_ms"], 0)
         runtime._advance_online_joint_residency(
             (
                 CommandAck(
