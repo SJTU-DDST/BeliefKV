@@ -41,6 +41,7 @@ class BeliefKVConfig:
     runtime_audit_debug_sample_rate: float = 0.05
     runtime_audit_max_debug_event_bytes: int = 16 * 1024
     runtime_audit_flush_interval_s: float = 1.0
+    performance_mode: bool = False
     runtime_summary_path: str | None = None
     runtime_summary_interval_ms: float = 5000.0
     shutdown_drain_timeout_ms: float = 5000.0

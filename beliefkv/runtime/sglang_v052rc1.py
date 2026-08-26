@@ -139,6 +139,47 @@ from beliefkv.runtime.lock_service import (
 )
 
 
+_PERFORMANCE_METRIC_EVENTS = frozenset(
+    {
+        "resource_snapshot",
+        "request_visible_pending",
+        "request_started",
+        "request_finished",
+        "request_queue_timeout",
+        "request_execution_timeout",
+        "dynamic_working_set_changed",
+        "admission_ticket_epoch_finished",
+        "online_joint_epoch_committed",
+        "online_joint_plan_published",
+        "online_joint_residency_queued",
+        "online_joint_residency_direction_reversed",
+        "online_joint_residency_hysteresis_blocked",
+        "online_joint_physical_commit_budget_exceeded",
+        "joint_plan_stale",
+        "joint_plan_would_apply",
+        "replacement_beneficiary_priority_registered",
+        "replacement_beneficiary_priority_released",
+        "replacement_beneficiary_priority_rejected",
+        "admission_rescue_started",
+        "admission_rescue_capacity_reserved",
+        "admission_rescue_capacity_released",
+        "admission_rescue_capacity_reacquired",
+        "admission_rescue_capacity_reacquire_failed",
+        "admission_rescue_native_admitted",
+        "admission_rescue_native_rejected",
+        "running_retraction_residency_queued",
+        "running_retraction_residency_ack",
+        "transfer_attempt_blocked",
+        "transfer_rejected_local",
+        "transfer_retry_suppressed",
+        "ordinary_native_fallback_promoted",
+        "ordinary_native_fallback_blocked_capacity",
+        "shutdown_prepare",
+        "shutdown_ack",
+    }
+)
+
+
 def close_runtime_with_signal_shield(runtime: "EmbeddedSGLangRuntime") -> None:
     """Let the scheduler persist its bounded shutdown transaction before exit."""
 
@@ -2265,6 +2306,15 @@ class EmbeddedSGLangRuntime:
         self._gpu_service_observer_timing_samples: deque[tuple[float, float]] = (
             deque(maxlen=65_536)
         )
+        self._gpu_service_performance_aggregates: dict[str, dict[str, Any]] = {
+            phase: {
+                "sample_count": 0,
+                "tokens": 0,
+                "elapsed_ms": 0.0,
+                "batch_histogram": Counter(),
+            }
+            for phase in ("prefill", "decode")
+        }
         self._lock_service_ledger = RequestServiceLedger()
         self._lock_service_observer_error_count = 0
         self._lock_service_snapshot_count = 0
@@ -2291,6 +2341,11 @@ class EmbeddedSGLangRuntime:
                 self.config.runtime_audit_max_debug_event_bytes
             ),
             flush_interval_s=self.config.runtime_audit_flush_interval_s,
+            metrics_allowlist=(
+                _PERFORMANCE_METRIC_EVENTS
+                if self.config.performance_mode
+                else None
+            ),
         )
         self._predictive_action_attribution = PredictiveActionAttributionLedger(
             self._emit_predictive_action_outcome
@@ -3645,6 +3700,20 @@ class EmbeddedSGLangRuntime:
                         [item[1] for item in observer_samples], 99
                     ),
                 },
+                performance_aggregates=(
+                    {
+                        phase: {
+                            **values,
+                            "batch_histogram": dict(
+                                sorted(values["batch_histogram"].items())
+                            ),
+                            "token_semantics": "scheduled_batch_tokens",
+                        }
+                        for phase, values in self._gpu_service_performance_aggregates.items()
+                    }
+                    if config.performance_mode
+                    else None
+                ),
             )
         if getattr(self, "_lock_service_ledger", None) is not None:
             self.audit.emit(
@@ -10995,6 +11064,24 @@ class EmbeddedSGLangRuntime:
                 for req in reqs
             )
         all_tagged = bool(reqs) and all(item is not None for item in metadata)
+        if self.config.performance_mode:
+            if phase is not None and tokens > 0 and all_tagged:
+                self._gpu_service_sequence += 1
+                sample_id = f"gpu-service-{self._gpu_service_sequence:09d}"
+                descriptor = {
+                    "sample_id": sample_id,
+                    "phase": phase,
+                    "tokens": tokens,
+                    "batch_size": len(reqs),
+                    "launch_ts_ms": now_ms,
+                    "request_samples": (),
+                    "launch_observer_cpu_ms": (
+                        time.perf_counter_ns() - observer_started_ns
+                    )
+                    / 1_000_000.0,
+                }
+            self._gpu_service_launches.append(descriptor)
+            return
         tags = {
             self._service_calibration_tag(item.root_workflow_id)
             for item in metadata
@@ -11220,6 +11307,18 @@ class EmbeddedSGLangRuntime:
         build_ms = (
             time.perf_counter_ns() - observer_started_ns
         ) / 1_000_000.0 + float(descriptor.get("launch_observer_cpu_ms", 0.0))
+        if self.config.performance_mode:
+            aggregate = self._gpu_service_performance_aggregates[
+                str(descriptor["phase"])
+            ]
+            aggregate["sample_count"] += 1
+            aggregate["tokens"] += int(descriptor["tokens"])
+            aggregate["elapsed_ms"] += service_elapsed_ms
+            histogram = aggregate["batch_histogram"]
+            assert isinstance(histogram, Counter)
+            histogram[int(descriptor["batch_size"])] += 1
+            self._gpu_service_observer_timing_samples.append((build_ms, 0.0))
+            return
         enqueue_started_ns = time.perf_counter_ns()
         self.audit.emit(
             "gpu_service_sample",
@@ -14097,6 +14196,17 @@ class EmbeddedSGLangRuntime:
         getattr(self, "_aborted_request_physical_start_by_id", {}).pop(
             str(req.rid), None
         )
+        if self.config.performance_mode:
+            submitted_ts_ms = getattr(
+                self, "_request_submitted_ts_by_id", {}
+            ).get(str(req.rid), now_ms)
+            starts[str(req.rid)] = {
+                "request_id": str(req.rid),
+                "checkpoint_ts_ms": now_ms,
+                "submitted_ts_ms": submitted_ts_ms,
+                "queue_wait_ms": max(0.0, now_ms - float(submitted_ts_ms)),
+            }
+            return
         try:
             checkpoint = self._context_physical_checkpoint(metadata.context_id)
             origin_input_ids = getattr(req, "origin_input_ids", None)
@@ -14265,6 +14375,15 @@ class EmbeddedSGLangRuntime:
         output_tokens: int,
         cache_commit_tokens: int,
     ) -> None:
+        if self.config.performance_mode:
+            request_id = str(req.rid)
+            getattr(self, "_request_physical_start_by_id", {}).pop(
+                request_id, None
+            )
+            getattr(self, "_aborted_request_physical_start_by_id", {}).pop(
+                request_id, None
+            )
+            return
         pending = getattr(self, "_pending_request_physical_finish_by_id", None)
         if pending is None:
             pending = {}
@@ -16256,12 +16375,14 @@ class EmbeddedSGLangRuntime:
                 page_delta = self.controller.page_index.replica_delta_since(
                     self._shadow_page_revision
                 )
-                telemetry_history = self.controller.transfer_telemetry_history
-                if self._shadow_telemetry_sequence > len(telemetry_history):
-                    raise RuntimeError("transfer telemetry history moved backwards")
-                telemetry = tuple(
-                    telemetry_history[self._shadow_telemetry_sequence :]
+                telemetry_delta = self.controller.transfer_telemetry_since(
+                    self._shadow_telemetry_sequence
                 )
+                if telemetry_delta.full_rebuild_required:
+                    raise RuntimeError(
+                        "transfer telemetry journal gap; shadow rebuild is fail-closed"
+                    )
+                telemetry = telemetry_delta.telemetry
                 critical_event_kinds = {
                     RuntimeEventKind.SPAWN,
                     RuntimeEventKind.TOOL_START,
@@ -16347,7 +16468,7 @@ class EmbeddedSGLangRuntime:
                 ) / 1_000_000.0
                 self._shadow_event_sequence = event_delta.to_sequence
                 self._shadow_page_revision = page_delta.to_revision
-                self._shadow_telemetry_sequence = len(telemetry_history)
+                self._shadow_telemetry_sequence = telemetry_delta.to_sequence
                 if full_plan_requested:
                     self._last_joint_planned_critical_event_sequence = (
                         getattr(

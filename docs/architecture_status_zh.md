@@ -2,6 +2,21 @@
 
 更新日期：2026-08-26
 
+## 2026-08-26：主线切换为 Performance-First JointPlan
+
+Oracle v2 暂停，当前不再扩展 Oracle action space 或 CPU simulator。正确性基线冻结为
+`perf-baseline-h200-20260826`，后续只修改性能关键路径。
+
+已完成 bounded transfer telemetry、Performance Mode 和 context-summary JointPlan 输入。
+在 16,384 pages、32 runnable、384 changed pages 的 CPU 基准上，no-action snapshot
+P99 为 0.248 ms，single-lock snapshot P99 为 0.234 ms，worker delta apply P99 为
+1.875 ms，semantic JointPlan wall P99 为 3.646 ms。控制面 CPU 门槛已通过。
+
+下一阶段依次实现 TransferEngineV2 和 Causal Package Planner；GPU 实验只在双 lane
+事务和 beneficiary-bound package 完成后进行。执行边界与门槛见
+`docs/beliefkv_extreme_performance_execution_plan_2026-08-26_zh.md`。
+
+
 ## 2026-08-26：Frozen-Demand GPU O0/O3 首组配对完成
 
 基于 18 个完整 native-subagent workflow 导出 FrozenAgentDemand v2 和 physical

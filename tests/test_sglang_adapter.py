@@ -1001,6 +1001,60 @@ class SGLangBackendTest(unittest.TestCase):
         )
         self.assertEqual(len(runtime._gpu_service_launches), 0)
 
+    def test_gpu_service_performance_mode_aggregates_without_sample_event(self):
+        runtime = EmbeddedSGLangRuntime.__new__(EmbeddedSGLangRuntime)
+        runtime.config = BeliefKVConfig(
+            performance_mode=True,
+            queue_service_observer_enabled=True,
+            queue_service_observer_include_runtime_batches=True,
+        )
+        runtime.audit = _AuditRecorder()
+        runtime.scheduler = SimpleNamespace(
+            server_args=SimpleNamespace(num_continuous_decode_steps=1)
+        )
+        runtime._gpu_service_launches = deque()
+        runtime._gpu_service_sequence = 0
+        runtime._gpu_service_sample_count = 0
+        runtime._gpu_service_previous_completion_ms = None
+        runtime._gpu_service_observer_timing_samples = deque(maxlen=16)
+        runtime._gpu_service_performance_aggregates = {
+            phase: {
+                "sample_count": 0,
+                "tokens": 0,
+                "elapsed_ms": 0.0,
+                "batch_histogram": Counter(),
+            }
+            for phase in ("prefill", "decode")
+        }
+        runtime._now_ms = lambda: 12.5
+        requests = [
+            SimpleNamespace(
+                rid=f"request-{index}",
+                output_ids=[],
+                beliefkv_metadata=BeliefKVRequestMetadata(
+                    "workflow",
+                    f"inv-{index}",
+                    f"ctx-{index}",
+                    0,
+                ),
+            )
+            for index in range(2)
+        ]
+        batch = SimpleNamespace(
+            reqs=requests,
+            forward_mode=_ForwardMode("DECODE"),
+        )
+
+        runtime._observe_gpu_batch_launch(batch, 10.0)
+        runtime.on_batch_completed(batch)
+
+        self.assertEqual(runtime.audit.events, [])
+        aggregate = runtime._gpu_service_performance_aggregates["decode"]
+        self.assertEqual(aggregate["sample_count"], 1)
+        self.assertEqual(aggregate["tokens"], 2)
+        self.assertEqual(aggregate["elapsed_ms"], 2.5)
+        self.assertEqual(aggregate["batch_histogram"], Counter({2: 1}))
+
     def test_gpu_service_observer_removes_overlap_queue_time(self):
         runtime = EmbeddedSGLangRuntime.__new__(EmbeddedSGLangRuntime)
         runtime.config = BeliefKVConfig(queue_service_observer_enabled=True)

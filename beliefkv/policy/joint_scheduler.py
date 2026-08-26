@@ -1112,23 +1112,33 @@ class ObservedJointPlanner:
         )[: self.config.max_total_frontier_candidates]
         return tuple(ordered), fairness, Counter()
 
-    def _bounded_seed(
+    def _bounded_seed_components(
         self,
         policy_input: PolicyInput,
         candidates: Sequence[_Candidate],
-        *,
-        started_ns: int,
-        prediction_used: bool = False,
-        prediction_influence: tuple[tuple[str, int], ...] = (),
-    ) -> JointPlan:
-        """Build an O(frontier + bundles) plan before physical optimization."""
-
-        cpu_resident_contexts = {
-            context_id
-            for bundle in policy_input.physical_kv.bundles
-            if bundle.gpu_bytes < bundle.physical_unique_bytes
-            for context_id in bundle.owner_context_ids
-        }
+    ) -> tuple[
+        ExecutionIntent,
+        tuple[AdmissionIntent, ...],
+        int,
+    ]:
+        metadata = policy_input.optional_metadata.get(
+            "beliefkv_context_physical_summaries"
+        )
+        if metadata is not None and isinstance(metadata.value, Mapping):
+            cpu_resident_contexts = {
+                str(context_id)
+                for context_id, raw in metadata.value.items()
+                if isinstance(raw, Mapping)
+                and int(raw.get("gpu_bytes", 0))
+                < int(raw.get("physical_unique_bytes", 0))
+            }
+        else:
+            cpu_resident_contexts = {
+                context_id
+                for bundle in policy_input.physical_kv.bundles
+                if bundle.gpu_bytes < bundle.physical_unique_bytes
+                for context_id in bundle.owner_context_ids
+            }
         available = policy_input.resources.hbm_available_bytes
         admitted: list[RunnableInvocation] = []
         for candidate in candidates:
@@ -1174,6 +1184,23 @@ class ObservedJointPlanner:
             policy_input.resources.hbm_used_bytes
             + policy_input.resources.hbm_reserved_bytes
             + sum(_unreserved_startup_bytes(item) for item in admitted)
+        )
+        return execution, admissions, projected
+
+    def _bounded_seed(
+        self,
+        policy_input: PolicyInput,
+        candidates: Sequence[_Candidate],
+        *,
+        started_ns: int,
+        prediction_used: bool = False,
+        prediction_influence: tuple[tuple[str, int], ...] = (),
+    ) -> JointPlan:
+        """Build an O(frontier + bundles) plan before physical optimization."""
+
+        execution, admissions, projected = self._bounded_seed_components(
+            policy_input,
+            candidates,
         )
         plan = _make_plan(
             policy_input,
@@ -1514,6 +1541,58 @@ class AsyncSemanticJointPlanner(ObservedJointPlanner):
 
     name = "belief_joint_semantic"
 
+    @staticmethod
+    def _context_physical_stats(
+        policy_input: PolicyInput,
+    ) -> dict[str, dict[str, float]]:
+        metadata = policy_input.optional_metadata.get(
+            "beliefkv_context_physical_summaries"
+        )
+        if metadata is not None and isinstance(metadata.value, Mapping):
+            result: dict[str, dict[str, float]] = {}
+            for context_id, raw in metadata.value.items():
+                if not isinstance(raw, Mapping):
+                    continue
+                physical = float(raw.get("physical_unique_bytes", 0.0))
+                gpu = float(raw.get("gpu_bytes", 0.0))
+                result[str(context_id)] = {
+                    "missing_gpu_bytes": max(0.0, physical - gpu),
+                    "reclaimable_bytes": float(
+                        raw.get(
+                            "exclusive_reclaimable_upper_bound_bytes",
+                            raw.get("exclusive_reclaimable_bytes", 0.0),
+                        )
+                    ),
+                    "last_access_ms": float(raw.get("last_access_ms", 0.0)),
+                    "locked_bytes": float(raw.get("locked_bytes", 0.0)),
+                    "gpu_bytes": gpu,
+                }
+            return result
+
+        result = defaultdict(
+            lambda: {
+                "missing_gpu_bytes": 0.0,
+                "reclaimable_bytes": 0.0,
+                "last_access_ms": 0.0,
+                "locked_bytes": 0.0,
+                "gpu_bytes": 0.0,
+            }
+        )
+        for bundle in policy_input.physical_kv.bundles:
+            for context_id in bundle.owner_context_ids:
+                stats = result[context_id]
+                stats["missing_gpu_bytes"] += max(
+                    0, bundle.physical_unique_bytes - bundle.gpu_bytes
+                )
+                if bundle.actionable:
+                    stats["reclaimable_bytes"] += bundle.marginal_reclaimable_bytes
+                stats["last_access_ms"] = max(
+                    stats["last_access_ms"], bundle.last_access_ms
+                )
+                stats["locked_bytes"] += bundle.locked_bytes
+                stats["gpu_bytes"] += bundle.gpu_bytes
+        return dict(result)
+
     def plan(
         self,
         policy_input: PolicyInput,
@@ -1564,14 +1643,19 @@ class AsyncSemanticJointPlanner(ObservedJointPlanner):
                 prediction_influence=tuple(prediction_influence.items()),
             )
 
-        seed = self._bounded_seed(
-            policy_input,
-            candidates,
-            started_ns=started_ns,
-            prediction_used=prediction_used,
-            prediction_influence=tuple(prediction_influence.items()),
-        )
+        (
+            seed_execution,
+            seed_admissions,
+            seed_hbm_peak_bytes,
+        ) = self._bounded_seed_components(policy_input, candidates)
         if cancelled() or self._elapsed_ms(started_ns) >= budget_ms:
+            seed = self._bounded_seed(
+                policy_input,
+                candidates,
+                started_ns=started_ns,
+                prediction_used=prediction_used,
+                prediction_influence=tuple(prediction_influence.items()),
+            )
             return replace(
                 seed,
                 planning_ms=self._elapsed_ms(started_ns),
@@ -1585,20 +1669,23 @@ class AsyncSemanticJointPlanner(ObservedJointPlanner):
         targets, victim_prediction_count = self._semantic_residency_targets(
             policy_input,
             candidates,
-            seed,
+            seed_execution,
         )
         if victim_prediction_count:
             prediction_influence["victim_prediction_selected"] = (
                 victim_prediction_count
             )
             prediction_used = True
-        execution_ids = frozenset(seed.execution.ordered_request_ids)
-        locked_by_context: dict[str, int] = defaultdict(int)
-        gpu_by_context: dict[str, int] = defaultdict(int)
-        for bundle in policy_input.physical_kv.bundles:
-            for context_id in bundle.owner_context_ids:
-                locked_by_context[context_id] += bundle.locked_bytes
-                gpu_by_context[context_id] += bundle.gpu_bytes
+        execution_ids = frozenset(seed_execution.ordered_request_ids)
+        context_stats = self._context_physical_stats(policy_input)
+        locked_by_context = {
+            context_id: int(stats["locked_bytes"])
+            for context_id, stats in context_stats.items()
+        }
+        gpu_by_context = {
+            context_id: int(stats["gpu_bytes"])
+            for context_id, stats in context_stats.items()
+        }
         retractions = tuple(
             RetractionIntent(
                 request_id=request.request_id,
@@ -1611,8 +1698,8 @@ class AsyncSemanticJointPlanner(ObservedJointPlanner):
             for request in sorted(
                 policy_input.runnable_frontier,
                 key=lambda item: (
-                    -locked_by_context[item.context_id],
-                    -gpu_by_context[item.context_id],
+                    -locked_by_context.get(item.context_id, 0),
+                    -gpu_by_context.get(item.context_id, 0),
                     item.submitted_ts_ms,
                     item.request_id,
                 ),
@@ -1622,12 +1709,12 @@ class AsyncSemanticJointPlanner(ObservedJointPlanner):
         )
         plan = _make_plan(
             policy_input,
-            execution=seed.execution,
-            admissions=seed.admissions,
+            execution=seed_execution,
+            admissions=seed_admissions,
             residency=(),
             dependencies=(),
-            expected_hbm_peak_bytes=seed.expected_hbm_peak_bytes,
-            expected_unhidden_stall_ms=seed.expected_unhidden_stall_ms,
+            expected_hbm_peak_bytes=seed_hbm_peak_bytes,
+            expected_unhidden_stall_ms=0.0,
             fallback_reason=None,
             candidate_count=len(candidates),
             evaluated_package_count=0,
@@ -1662,7 +1749,7 @@ class AsyncSemanticJointPlanner(ObservedJointPlanner):
         self,
         policy_input: PolicyInput,
         candidates: Sequence[_Candidate],
-        seed: JointPlan,
+        execution: ExecutionIntent,
     ) -> tuple[tuple[SemanticResidencyTarget, ...], int]:
         state = _mapping(policy_input.runtime_graph.state)
         rccg = _mapping(state.get("rccg"))
@@ -1672,26 +1759,7 @@ class AsyncSemanticJointPlanner(ObservedJointPlanner):
             str(context_id): _nonnegative_int(_mapping(raw).get("epoch", 0))
             for context_id, raw in context_snapshots.items()
         }
-        context_stats: dict[str, dict[str, float]] = defaultdict(
-            lambda: {
-                "missing_gpu_bytes": 0.0,
-                "reclaimable_bytes": 0.0,
-                "last_access_ms": 0.0,
-            }
-        )
-        for bundle in policy_input.physical_kv.bundles:
-            for context_id in bundle.owner_context_ids:
-                stats = context_stats[context_id]
-                stats["missing_gpu_bytes"] += max(
-                    0, bundle.physical_unique_bytes - bundle.gpu_bytes
-                )
-                if bundle.actionable:
-                    stats["reclaimable_bytes"] += (
-                        bundle.marginal_reclaimable_bytes
-                    )
-                stats["last_access_ms"] = max(
-                    stats["last_access_ms"], bundle.last_access_ms
-                )
+        context_stats = self._context_physical_stats(policy_input)
 
         control = _mapping(state.get("control"))
         raw_reclaim_state = _mapping(control.get("reclaim_requirements"))
@@ -1700,7 +1768,7 @@ class AsyncSemanticJointPlanner(ObservedJointPlanner):
             for item in _sequence(raw_reclaim_state.get("requirements"))
             if _mapping(item).get("beneficiary_request_id")
         }
-        admitted_ids = set(seed.execution.ordered_request_ids)
+        admitted_ids = set(execution.ordered_request_ids)
         runnable_by_context: dict[str, list[RunnableInvocation]] = defaultdict(list)
         for request in policy_input.runnable_frontier:
             runnable_by_context[request.context_id].append(request)
@@ -1734,7 +1802,10 @@ class AsyncSemanticJointPlanner(ObservedJointPlanner):
                 reclaim_goal = max(0, fragment_bytes - available)
             else:
                 missing = int(
-                    context_stats[first.context_id]["missing_gpu_bytes"]
+                    context_stats.get(
+                        first.context_id,
+                        {"missing_gpu_bytes": 0.0},
+                    )["missing_gpu_bytes"]
                 )
                 reclaim_goal = max(
                     0,
@@ -1887,7 +1958,12 @@ class AsyncSemanticJointPlanner(ObservedJointPlanner):
         seen_prefetch_contexts: set[str] = set()
         for request in deferred:
             context_id = request.context_id
-            missing = int(context_stats[context_id]["missing_gpu_bytes"])
+            missing = int(
+                context_stats.get(
+                    context_id,
+                    {"missing_gpu_bytes": 0.0},
+                )["missing_gpu_bytes"]
+            )
             if missing <= 0 or context_id in seen_prefetch_contexts:
                 continue
             targets.append(

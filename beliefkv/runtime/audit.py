@@ -46,6 +46,7 @@ class RuntimeAuditLog:
         debug_sample_rate: float = 1.0,
         max_debug_event_bytes: int = 16 * 1024,
         flush_interval_s: float = 1.0,
+        metrics_allowlist: frozenset[str] | None = None,
     ) -> None:
         if max_pending <= 0:
             raise ValueError("runtime audit queue capacity must be positive")
@@ -62,10 +63,12 @@ class RuntimeAuditLog:
         self._dropped_debug_count = 0
         self._sampled_debug_count = 0
         self._oversize_debug_count = 0
+        self._filtered_metrics_count = 0
         self._debug_seen = 0
         self._debug_sample_stride = max(1, math.ceil(1.0 / debug_sample_rate))
         self._max_debug_event_bytes = max_debug_event_bytes
         self._flush_interval_s = flush_interval_s
+        self._metrics_allowlist = metrics_allowlist
         self._stream: TextIO | None = None
         self._lock = threading.Lock()
         self._queue: queue.Queue[tuple[dict[str, Any], AuditLevel] | None] = (
@@ -99,6 +102,7 @@ class RuntimeAuditLog:
             "sampled_debug_count": self._sampled_debug_count,
             "dropped_debug_count": self._dropped_debug_count,
             "oversize_debug_count": self._oversize_debug_count,
+            "filtered_metrics_count": self._filtered_metrics_count,
         }
 
     @staticmethod
@@ -137,6 +141,13 @@ class RuntimeAuditLog:
             if audit_level is None
             else AuditLevel(audit_level)
         )
+        if (
+            level == AuditLevel.METRICS
+            and self._metrics_allowlist is not None
+            and event not in self._metrics_allowlist
+        ):
+            self._filtered_metrics_count += 1
+            return
         with self._lock:
             if self._writer_error is not None:
                 raise RuntimeError("runtime audit writer failed") from self._writer_error

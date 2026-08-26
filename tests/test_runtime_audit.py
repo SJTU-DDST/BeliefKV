@@ -39,6 +39,25 @@ class RuntimeAuditLogTest(unittest.TestCase):
             self.assertEqual(records[0]["request_id"], "req-1")
             self.assertEqual(records[0]["schema_version"], 2)
 
+    def test_metrics_allowlist_filters_before_queueing_but_keeps_correctness(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            path = Path(temporary) / "performance.jsonl"
+            with RuntimeAuditLog(
+                path,
+                run_id="performance",
+                metrics_allowlist=frozenset({"resource_snapshot"}),
+            ) as audit:
+                audit.emit("gpu_service_sample", 1.0, payload="discarded")
+                audit.emit("resource_snapshot", 2.0, hbm_used_bytes=10)
+                audit.emit("transfer_acknowledged", 3.0, command_id="command")
+
+            records = [json.loads(line) for line in path.read_text().splitlines()]
+            self.assertEqual(
+                [item["event"] for item in records],
+                ["resource_snapshot", "transfer_acknowledged"],
+            )
+            self.assertEqual(audit.summary()["filtered_metrics_count"], 1)
+
     def test_rejects_non_finite_json_values(self):
         with tempfile.TemporaryDirectory() as temporary:
             with RuntimeAuditLog(Path(temporary) / "audit.jsonl") as audit:

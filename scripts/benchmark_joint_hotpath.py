@@ -10,7 +10,11 @@ from pathlib import Path
 from beliefkv.control.controller import BeliefKVController
 from beliefkv.core.config import BeliefKVConfig
 from beliefkv.metrics.summary import percentile
-from beliefkv.policy.joint_scheduler import JointPlannerConfig, ObservedJointPlanner
+from beliefkv.policy.joint_scheduler import (
+    AsyncSemanticJointPlanner,
+    JointPlannerConfig,
+    ObservedJointPlanner,
+)
 from beliefkv.policy.reference import PolicyInput, RunnableInvocation, RuntimeGraphSnapshot
 from beliefkv.policy.resource_snapshot import RuntimeResourceObservation
 from beliefkv.runtime.page_index import PageOwnershipIndex
@@ -127,6 +131,7 @@ def _delta_replication_benchmark(
     changed_page_count: int,
     iterations: int,
     page_bytes: int,
+    validate_delta: bool,
 ) -> dict[str, object]:
     source = PageOwnershipIndex()
     context_count = min(64, page_count)
@@ -160,7 +165,11 @@ def _delta_replication_benchmark(
         capture_samples.append(_elapsed_ms(started_ns))
         copied_context_counts.append(len(delta.contexts))
         started_ns = time.perf_counter_ns()
-        mirror.apply_replica_delta(delta, full_validation=False)
+        mirror.apply_replica_delta(
+            delta,
+            full_validation=False,
+            validate_delta=validate_delta,
+        )
         apply_samples.append(_elapsed_ms(started_ns))
         revision = delta.to_revision
 
@@ -181,6 +190,7 @@ def run(
     page_bytes: int,
     runnable_count: int,
     changed_page_count: int,
+    physical_summary_only: bool,
 ) -> dict[str, object]:
     if (
         page_count <= 0
@@ -217,7 +227,8 @@ def run(
             ts_ms=1.0,
             capacity_bytes=capacity,
             hbm_used_bytes=hbm_used,
-        )
+        ),
+        physical_summary_only=physical_summary_only,
     )
     cold_ms = _elapsed_ms(started_ns)
 
@@ -232,7 +243,8 @@ def run(
                 ts_ms=ts_ms,
                 capacity_bytes=capacity,
                 hbm_used_bytes=hbm_used,
-            )
+            ),
+            physical_summary_only=physical_summary_only,
         )
         unchanged.append(_elapsed_ms(started_ns))
         ts_ms += 1.0
@@ -247,7 +259,8 @@ def run(
                 ts_ms=ts_ms,
                 capacity_bytes=capacity,
                 hbm_used_bytes=hbm_used,
-            )
+            ),
+            physical_summary_only=physical_summary_only,
         )
         lock_delta.append(_elapsed_ms(started_ns))
         ts_ms += 1.0
@@ -257,7 +270,8 @@ def run(
             ts_ms=ts_ms,
             capacity_bytes=capacity,
             hbm_used_bytes=hbm_used,
-        )
+        ),
+        physical_summary_only=physical_summary_only,
     )
     planner_input = _planner_input(
         planner_source,
@@ -267,7 +281,12 @@ def run(
     planner_reported: list[float] = []
     planner_phases: dict[str, list[float]] = {}
     for _ in range(iterations):
-        planner = ObservedJointPlanner(
+        planner_type = (
+            AsyncSemanticJointPlanner
+            if physical_summary_only
+            else ObservedJointPlanner
+        )
+        planner = planner_type(
             JointPlannerConfig(
                 max_workflow_candidates=max(1, runnable_count),
                 max_total_frontier_candidates=max(1, runnable_count),
@@ -296,12 +315,16 @@ def run(
             capacity_bytes=capacity,
             hbm_used_bytes=hbm_used - page_bytes,
             host_used_bytes=page_bytes,
-        )
+        ),
+        physical_summary_only=physical_summary_only,
     )
     residency_delta_ms = _elapsed_ms(started_ns)
 
     return {
         "schema_version": 1,
+        "physical_snapshot_mode": (
+            "context_summary" if physical_summary_only else "full_extent"
+        ),
         "page_count": page_count,
         "page_bytes": page_bytes,
         "iterations": iterations,
@@ -315,6 +338,7 @@ def run(
             changed_page_count=changed_page_count,
             iterations=iterations,
             page_bytes=page_bytes,
+            validate_delta=not physical_summary_only,
         ),
         "observed_joint_plan_wall": _summary(planner_samples),
         "observed_joint_plan_reported": _summary(planner_reported),
@@ -334,6 +358,7 @@ def main() -> int:
     parser.add_argument("--page-bytes", type=int, default=98_304)
     parser.add_argument("--runnable", type=int, default=16)
     parser.add_argument("--changed-pages", type=int, default=384)
+    parser.add_argument("--physical-summary-only", action="store_true")
     parser.add_argument("--output", type=Path)
     args = parser.parse_args()
     result = run(
@@ -342,6 +367,7 @@ def main() -> int:
         page_bytes=args.page_bytes,
         runnable_count=args.runnable,
         changed_page_count=args.changed_pages,
+        physical_summary_only=args.physical_summary_only,
     )
     rendered = json.dumps(result, indent=2, sort_keys=True) + "\n"
     if args.output is not None:

@@ -132,6 +132,55 @@ class PageIndexTest(unittest.TestCase):
         self.assertEqual(reader_locked.engine_locked_bytes, 200)
         self.assertEqual(index.engine_locked_gpu_pages(), ())
 
+    def test_context_physical_summary_is_local_upper_bound_and_owner_scoped(self):
+        index = PageOwnershipIndex()
+        index.register_context("ctx", "wf", 0)
+        parent = PageHandle(1, 0)
+        child = PageHandle(2, 0)
+        index.register_page(
+            parent,
+            size_bytes=100,
+            radix_depth=1,
+            last_access_ms=2,
+        )
+        index.register_page(
+            child,
+            size_bytes=200,
+            radix_depth=2,
+            parent=parent,
+            residency=PhysicalResidency.DUAL_CLEAN,
+            last_access_ms=3,
+        )
+        index.bind_pages("ctx", 0, {parent, child})
+        index.set_engine_lock(child, 1)
+
+        blocked = index.context_physical_summaries()[0]
+        self.assertEqual(blocked.context_id, "ctx")
+        self.assertEqual(blocked.extent_count, 2)
+        self.assertEqual(blocked.physical_unique_bytes, 300)
+        self.assertEqual(blocked.gpu_bytes, 300)
+        self.assertEqual(blocked.cpu_bytes, 200)
+        self.assertEqual(blocked.locked_bytes, 200)
+        self.assertEqual(
+            blocked.exclusive_reclaimable_upper_bound_bytes,
+            100,
+        )
+        self.assertEqual(blocked.last_access_ms, 3)
+
+        index.set_engine_lock(child, 0)
+        unblocked = index.context_physical_summaries()[0]
+        self.assertEqual(
+            unblocked.exclusive_reclaimable_upper_bound_bytes,
+            300,
+        )
+
+        breakdown = index.physical_kv_state_breakdown()
+        index.update_runtime_state(child, last_access_ms=9)
+        self.assertIs(index.physical_kv_state_breakdown(), breakdown)
+        accessed = index.context_physical_summaries()[0]
+        self.assertEqual(accessed.last_access_ms, 9)
+        self.assertEqual(index.tracked_resident_bytes(), (300, 200))
+
     def test_migratable_gpu_pages_reuses_closure_aware_cache(self):
         index = PageOwnershipIndex()
         parent = PageHandle(1, 0)

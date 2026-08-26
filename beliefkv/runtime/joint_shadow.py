@@ -408,6 +408,7 @@ class IncrementalPolicyInputAssembler:
         self.page_index.apply_replica_delta(
             delta.page_delta,
             full_validation=False,
+            validate_delta=not self.config.performance_mode,
         )
         for telemetry in delta.transfer_telemetry:
             self.service_curve.observe(telemetry)
@@ -451,6 +452,11 @@ class IncrementalPolicyInputAssembler:
             include_transfer_estimates=(
                 self.config.predictive_risk_shadow_enabled
                 or self.config.predictive_joint_overlay_enabled
+            ),
+            physical_summary_only=(
+                self.config.performance_mode
+                and not self.config.predictive_risk_shadow_enabled
+                and not self.config.predictive_joint_overlay_enabled
             ),
             capabilities=delta.capabilities,
         )

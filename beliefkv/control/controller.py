@@ -92,6 +92,14 @@ class RuntimeEventChangeSet:
     full_rebuild_required: bool = False
 
 
+@dataclass(frozen=True)
+class TransferTelemetryChangeSet:
+    from_sequence: int
+    to_sequence: int
+    telemetry: tuple[TransferTelemetry, ...]
+    full_rebuild_required: bool = False
+
+
 @dataclass
 class _InFlightCommand:
     resolved: ResolvedCommand
@@ -236,7 +244,10 @@ class BeliefKVController:
         self.command_history: list[ControlCommand] = []
         self.ack_history: list[CommandAck] = []
         self._acked_command_ids: set[str] = set()
-        self.transfer_telemetry_history: list[TransferTelemetry] = []
+        self._transfer_telemetry_sequence = 0
+        self._transfer_telemetry_journal: deque[
+            tuple[int, TransferTelemetry]
+        ] = deque(maxlen=self.config.service_curve_window)
         self._reported_hbm_used_bytes: int | None = None
         self._engine_request_count: int | None = None
         self._running_request_count: int | None = None
@@ -339,6 +350,35 @@ class BeliefKVController:
             events=tuple(item[1] for item in records),
             full_rebuild_required=full_rebuild,
         )
+
+    @property
+    def transfer_telemetry_sequence(self) -> int:
+        return self._transfer_telemetry_sequence
+
+    def transfer_telemetry_since(
+        self, sequence: int
+    ) -> TransferTelemetryChangeSet:
+        if sequence < 0 or sequence > self._transfer_telemetry_sequence:
+            raise ValueError("transfer telemetry sequence is outside the valid range")
+        if sequence == self._transfer_telemetry_sequence:
+            return TransferTelemetryChangeSet(sequence, sequence, ())
+        reverse_records: list[tuple[int, TransferTelemetry]] = []
+        for item in reversed(self._transfer_telemetry_journal):
+            if item[0] <= sequence:
+                break
+            reverse_records.append(item)
+        records = tuple(reversed(reverse_records))
+        return TransferTelemetryChangeSet(
+            from_sequence=sequence,
+            to_sequence=self._transfer_telemetry_sequence,
+            telemetry=tuple(item[1] for item in records),
+            full_rebuild_required=(
+                not records or records[0][0] != sequence + 1
+            ),
+        )
+
+    def recent_transfer_telemetry(self) -> tuple[TransferTelemetry, ...]:
+        return tuple(item[1] for item in self._transfer_telemetry_journal)
 
     def _append_runtime_events(self, events: tuple[RuntimeEvent, ...]) -> None:
         for event in events:
@@ -544,6 +584,7 @@ class BeliefKVController:
         identity_mappings: Sequence[IdentityMapping] = (),
         optional_metadata: Mapping[str, MetadataValue] | None = None,
         control_state_overrides: Mapping[str, object] | None = None,
+        physical_summary_only: bool = False,
         capabilities: CapabilityReport | None = None,
         metadata_mode: MetadataMode = MetadataMode.ONLINE,
     ) -> PolicyInput:
@@ -564,7 +605,8 @@ class BeliefKVController:
             control_state=control_state,
             identity_mappings=identity_mappings,
             optional_metadata=optional_metadata,
-            transfer_telemetry=tuple(self.transfer_telemetry_history),
+            transfer_telemetry=self.recent_transfer_telemetry(),
+            physical_summary_only=physical_summary_only,
             capabilities=capabilities,
             metadata_mode=metadata_mode,
         )
@@ -1071,7 +1113,10 @@ class BeliefKVController:
                 f"transfer telemetry arrived before ACK: {telemetry.command_id}"
             )
         self.service_curve.observe(telemetry)
-        self.transfer_telemetry_history.append(telemetry)
+        self._transfer_telemetry_sequence += 1
+        self._transfer_telemetry_journal.append(
+            (self._transfer_telemetry_sequence, telemetry)
+        )
 
     def _dispatch_next(
         self,

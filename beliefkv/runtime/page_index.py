@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from collections import deque
 from collections.abc import Mapping
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 
 from beliefkv.runtime.protocol import (
     PageHandle,
@@ -150,6 +150,19 @@ class PhysicalKvStateBreakdown:
 
 
 @dataclass(frozen=True)
+class ContextPhysicalSummary:
+    context_id: str
+    context_epoch: int
+    extent_count: int
+    physical_unique_bytes: int
+    gpu_bytes: int
+    cpu_bytes: int
+    locked_bytes: int
+    exclusive_reclaimable_upper_bound_bytes: int
+    last_access_ms: float
+
+
+@dataclass(frozen=True)
 class PhysicalKvUnlockProjection:
     """Read-only physical result of hypothetical engine-lock ref changes."""
 
@@ -186,6 +199,13 @@ class PageOwnershipIndex:
         self._engine_locked_pages: tuple[PhysicalPageRecord, ...] = ()
         self._migratable_gpu_handles: frozenset[PageHandle] = frozenset()
         self._migratable_gpu_pages: tuple[PhysicalPageRecord, ...] = ()
+        self._context_summary_cache: dict[str, ContextPhysicalSummary] = {}
+        self._resident_accounting_by_handle: dict[
+            PageHandle,
+            tuple[int, int, tuple[tuple[str, float], ...]],
+        ] = {}
+        self._tracked_gpu_bytes = 0
+        self._tracked_cpu_bytes = 0
         self._accounting_revision = 0
         self._workflow_charge_cache_revision = -1
         self._workflow_charge_cache: dict[str, float] = {}
@@ -207,6 +227,13 @@ class PageOwnershipIndex:
         context_ids: set[str] | tuple[str, ...] = (),
         components: set[str] | tuple[str, ...] = (),
     ) -> None:
+        changed_handles = set(handles)
+        affected_contexts = set(context_ids)
+        for handle in changed_handles:
+            page = self.pages.get(handle)
+            if page is not None:
+                affected_contexts.update(page.owner_contexts)
+        self._refresh_resident_accounting(changed_handles)
         previous_revision = self._revision
         self._revision += 1
         if topology:
@@ -217,6 +244,12 @@ class PageOwnershipIndex:
             self._physical_state_revision += 1
         if set(components).intersection({"residency", "owner", "context"}):
             self._accounting_revision += 1
+        component_set = set(components)
+        self._invalidate_context_summaries(
+            affected_contexts,
+            access_only=component_set == {"access"},
+            changed_handles=changed_handles,
+        )
         self._mutation_journal.append(
             _PageIndexMutation(
                 from_revision=previous_revision,
@@ -227,6 +260,96 @@ class PageOwnershipIndex:
                 components=frozenset(components),
             )
         )
+
+    def _refresh_resident_accounting(
+        self,
+        handles: set[PageHandle] | frozenset[PageHandle],
+    ) -> None:
+        for handle in handles:
+            (
+                previous_gpu,
+                previous_cpu,
+                previous_charges,
+            ) = self._resident_accounting_by_handle.get(
+                handle,
+                (0, 0, ()),
+            )
+            page = self.pages.get(handle)
+            if page is None or page.residency == PhysicalResidency.DEAD:
+                current_gpu = 0
+                current_cpu = 0
+                current_charges: tuple[tuple[str, float], ...] = ()
+                self._resident_accounting_by_handle.pop(handle, None)
+            else:
+                current_gpu = page.size_bytes if page.gpu_resident else 0
+                current_cpu = page.size_bytes if page.cpu_resident else 0
+                workflows = (
+                    {
+                        self._context_workflow[context_id]
+                        for context_id in page.owner_contexts
+                        if context_id in self._context_workflow
+                    }
+                    if page.gpu_resident
+                    else set()
+                )
+                share = page.size_bytes / len(workflows) if workflows else 0.0
+                current_charges = tuple(
+                    (workflow_id, share)
+                    for workflow_id in sorted(workflows)
+                )
+                self._resident_accounting_by_handle[handle] = (
+                    current_gpu,
+                    current_cpu,
+                    current_charges,
+                )
+            self._tracked_gpu_bytes += current_gpu - previous_gpu
+            self._tracked_cpu_bytes += current_cpu - previous_cpu
+            for workflow_id, amount in previous_charges:
+                remaining = self._workflow_charge_cache.get(workflow_id, 0.0) - amount
+                if abs(remaining) <= 1e-6:
+                    self._workflow_charge_cache.pop(workflow_id, None)
+                else:
+                    self._workflow_charge_cache[workflow_id] = remaining
+            for workflow_id, amount in current_charges:
+                self._workflow_charge_cache[workflow_id] = (
+                    self._workflow_charge_cache.get(workflow_id, 0.0) + amount
+                )
+        if self._tracked_gpu_bytes < 0 or self._tracked_cpu_bytes < 0:
+            raise PageIndexError("incremental resident accounting became negative")
+
+    def tracked_resident_bytes(self) -> tuple[int, int]:
+        return self._tracked_gpu_bytes, self._tracked_cpu_bytes
+
+    def _invalidate_context_summaries(
+        self,
+        context_ids: set[str],
+        *,
+        access_only: bool = False,
+        changed_handles: set[PageHandle] | None = None,
+    ) -> None:
+        if not access_only:
+            for context_id in context_ids:
+                self._context_summary_cache.pop(context_id, None)
+            return
+        handles = changed_handles or set()
+        for context_id in context_ids:
+            cached = self._context_summary_cache.get(context_id)
+            if cached is None:
+                continue
+            latest = max(
+                (
+                    self.pages[handle].last_access_ms
+                    for handle in handles
+                    if handle in self.pages
+                    and context_id in self.pages[handle].owner_contexts
+                ),
+                default=cached.last_access_ms,
+            )
+            if latest > cached.last_access_ms:
+                self._context_summary_cache[context_id] = replace(
+                    cached,
+                    last_access_ms=latest,
+                )
 
     def _mutations_since(
         self, revision: int
@@ -346,6 +469,7 @@ class PageOwnershipIndex:
         delta: PageIndexReplicaDelta,
         *,
         full_validation: bool = True,
+        validate_delta: bool = True,
     ) -> None:
         """Apply a safe-point delta to a worker-owned mirror.
 
@@ -369,12 +493,18 @@ class PageOwnershipIndex:
             self._mutation_journal.clear()
             self._workflow_charge_cache_revision = -1
             self._workflow_charge_cache.clear()
+            self._resident_accounting_by_handle.clear()
+            self._tracked_gpu_bytes = 0
+            self._tracked_cpu_bytes = 0
+            self._context_summary_cache.clear()
 
+        affected_summary_contexts = set(delta.changed_context_ids)
         for replica in delta.pages:
             page = self.pages.get(replica.handle)
             previous_owners = (
                 frozenset(page.owner_contexts) if page is not None else frozenset()
             )
+            affected_summary_contexts.update(previous_owners)
             if page is None:
                 page = PhysicalPageRecord(
                     handle=replica.handle,
@@ -391,6 +521,7 @@ class PageOwnershipIndex:
                 self._context_pages.setdefault(context_id, set()).add(
                     replica.handle
                 )
+            affected_summary_contexts.update(next_owners)
             page.size_bytes = replica.size_bytes
             page.residency = replica.residency
             page.radix_depth = replica.radix_depth
@@ -419,6 +550,7 @@ class PageOwnershipIndex:
             page.active_reader_count = replica.active_reader_count
             page.transfer_direction = replica.transfer_direction
             page.last_access_ms = replica.last_access_ms
+            affected_summary_contexts.update(page.owner_contexts)
         for context in delta.contexts:
             self._context_epoch[context.context_id] = context.epoch
             self._context_workflow[context.context_id] = context.workflow_id
@@ -427,6 +559,12 @@ class PageOwnershipIndex:
             else:
                 self._context_pages.setdefault(context.context_id, set())
 
+        self._refresh_resident_accounting(set(delta.changed_handles))
+        self._invalidate_context_summaries(
+            affected_summary_contexts,
+            access_only=delta.components == frozenset({"access"}),
+            changed_handles=set(delta.changed_handles),
+        )
         previous_revision = self._revision
         self._revision = delta.to_revision
         self._topology_revision = delta.topology_revision
@@ -454,7 +592,7 @@ class PageOwnershipIndex:
             )
         if full_validation or delta.full_rebuild_required:
             self.assert_consistent()
-        else:
+        elif validate_delta:
             self._assert_delta_consistent(delta)
 
     @staticmethod
@@ -987,11 +1125,11 @@ class PageOwnershipIndex:
 
     @property
     def gpu_bytes(self) -> int:
-        return self.physical_kv_state_breakdown().gpu_bytes
+        return self._tracked_gpu_bytes
 
     @property
     def cpu_bytes(self) -> int:
-        return self.physical_kv_state_breakdown().cpu_bytes
+        return self._tracked_cpu_bytes
 
     def physical_kv_state_breakdown(self) -> PhysicalKvStateBreakdown:
         """Return cached closure-aware physical KV diagnostics.
@@ -1023,6 +1161,52 @@ class PageOwnershipIndex:
         )
         self._physical_breakdown_revision = self._physical_state_revision
         return self._physical_breakdown
+
+    def context_physical_summaries(self) -> tuple[ContextPhysicalSummary, ...]:
+        summaries: list[ContextPhysicalSummary] = []
+        for context_id in sorted(self._context_epoch):
+            cached = self._context_summary_cache.get(context_id)
+            if cached is None:
+                pages = self.context_pages(context_id)
+                cached = ContextPhysicalSummary(
+                    context_id=context_id,
+                    context_epoch=self._context_epoch[context_id],
+                    extent_count=len(pages),
+                    physical_unique_bytes=sum(page.size_bytes for page in pages),
+                    gpu_bytes=sum(
+                        page.size_bytes for page in pages if page.gpu_resident
+                    ),
+                    cpu_bytes=sum(
+                        page.size_bytes for page in pages if page.cpu_resident
+                    ),
+                    locked_bytes=sum(
+                        page.size_bytes
+                        for page in pages
+                        if page.gpu_resident
+                        and (
+                            page.engine_lock_ref > 0
+                            or page.active_reader_count > 0
+                        )
+                    ),
+                    exclusive_reclaimable_upper_bound_bytes=sum(
+                        page.size_bytes
+                        for page in pages
+                        if page.gpu_resident
+                        and len(page.owner_contexts) == 1
+                        and page.sealed
+                        and page.engine_lock_ref == 0
+                        and page.active_reader_count == 0
+                        and not page.semantic_pin_contexts
+                        and page.transfer_idle
+                    ),
+                    last_access_ms=max(
+                        (page.last_access_ms for page in pages),
+                        default=0.0,
+                    ),
+                )
+                self._context_summary_cache[context_id] = cached
+            summaries.append(cached)
+        return tuple(summaries)
 
     def preview_engine_lock_release(
         self,
@@ -1156,25 +1340,7 @@ class PageOwnershipIndex:
         return self._migratable_gpu_pages
 
     def workflow_gpu_charges(self) -> dict[str, float]:
-        if self._workflow_charge_cache_revision == self._accounting_revision:
-            return dict(self._workflow_charge_cache)
-        charges: dict[str, float] = {}
-        for page in self.pages.values():
-            if not page.gpu_resident:
-                continue
-            workflows = {
-                self._context_workflow[context_id]
-                for context_id in page.owner_contexts
-                if context_id in self._context_workflow
-            }
-            if not workflows:
-                continue
-            share = page.size_bytes / len(workflows)
-            for workflow_id in workflows:
-                charges[workflow_id] = charges.get(workflow_id, 0.0) + share
-        self._workflow_charge_cache = charges
-        self._workflow_charge_cache_revision = self._accounting_revision
-        return dict(charges)
+        return dict(self._workflow_charge_cache)
 
     def _assert_delta_consistent(self, delta: PageIndexReplicaDelta) -> None:
         """Validate only records whose replacement can change an invariant."""
@@ -1258,3 +1424,37 @@ class PageOwnershipIndex:
                     raise AssertionError("Radix parent retains a missing or dead child")
                 if child.parent != page.handle:
                     raise AssertionError("Radix parent/child edge diverged")
+
+        actual_gpu = sum(
+            page.size_bytes for page in self.pages.values() if page.gpu_resident
+        )
+        actual_cpu = sum(
+            page.size_bytes for page in self.pages.values() if page.cpu_resident
+        )
+        if (actual_gpu, actual_cpu) != self.tracked_resident_bytes():
+            raise AssertionError("incremental resident accounting diverged")
+
+        actual_charges: dict[str, float] = {}
+        for page in self.pages.values():
+            if not page.gpu_resident:
+                continue
+            workflows = {
+                self._context_workflow[context_id]
+                for context_id in page.owner_contexts
+                if context_id in self._context_workflow
+            }
+            share = page.size_bytes / len(workflows) if workflows else 0.0
+            for workflow_id in workflows:
+                actual_charges[workflow_id] = (
+                    actual_charges.get(workflow_id, 0.0) + share
+                )
+        workflow_ids = set(actual_charges) | set(self._workflow_charge_cache)
+        if any(
+            abs(
+                actual_charges.get(workflow_id, 0.0)
+                - self._workflow_charge_cache.get(workflow_id, 0.0)
+            )
+            > 1e-6
+            for workflow_id in workflow_ids
+        ):
+            raise AssertionError("incremental workflow charge accounting diverged")

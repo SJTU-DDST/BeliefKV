@@ -17,9 +17,11 @@ from beliefkv.policy.admission import AdmissionRequest
 from beliefkv.policy.reference import PolicySnapshotError
 from beliefkv.policy.resource_snapshot import RuntimeResourceObservation
 from beliefkv.runtime.protocol import (
+    CommandStatus,
     PageHandle,
     PhysicalResidency,
     TransferDirection,
+    TransferTelemetry,
 )
 
 
@@ -76,6 +78,55 @@ def _observation(
         host_used_bytes=host_used,
         host_free_bytes=1_000 - host_used,
     )
+
+
+def _telemetry(sequence: int) -> TransferTelemetry:
+    return TransferTelemetry(
+        command_id=f"telemetry-{sequence}",
+        submit_ts_ms=float(sequence),
+        start_ts_ms=float(sequence) + 0.1,
+        first_layer_ready_ts_ms=None,
+        complete_ts_ms=float(sequence) + 1.0,
+        compute_wait_ms=None,
+        actual_bytes=100,
+        closure_bytes=100,
+        merged_operation_count=0,
+        direction=TransferDirection.D2H,
+        source_tier="gpu",
+        target_tier="host",
+        status=CommandStatus.COMPLETED,
+        page_count=1,
+    )
+
+
+def test_transfer_telemetry_journal_is_bounded_and_cursor_addressable() -> None:
+    controller = BeliefKVController(
+        BeliefKVConfig(
+            hbm_capacity_bytes=1_000,
+            host_capacity_bytes=1_000,
+            reserve_hbm_bytes=0,
+            service_curve_window=4,
+            service_curve_min_samples=1,
+            predictor_enabled=False,
+            shadow_enabled=False,
+        )
+    )
+    for sequence in range(1, 6):
+        item = _telemetry(sequence)
+        controller._acked_command_ids.add(item.command_id)
+        controller.observe_transfer_telemetry(item)
+
+    assert controller.transfer_telemetry_sequence == 5
+    assert len(controller.recent_transfer_telemetry()) == 4
+    assert controller.transfer_telemetry_since(0).full_rebuild_required
+    delta = controller.transfer_telemetry_since(3)
+    assert not delta.full_rebuild_required
+    assert delta.from_sequence == 3
+    assert delta.to_sequence == 5
+    assert [item.command_id for item in delta.telemetry] == [
+        "telemetry-4",
+        "telemetry-5",
+    ]
 
 
 def _bind_two_level_tree(controller: BeliefKVController) -> None:
@@ -137,6 +188,33 @@ def test_snapshot_closes_authoritative_allocator_with_protected_untracked_bytes(
     accounting = snapshot.runtime_graph.state["physical_accounting"]
     assert accounting["tracked_hbm_bytes"] == 300
     assert accounting["untracked_hbm_bytes"] == 150
+
+
+def test_summary_snapshot_avoids_extent_materialization_and_preserves_totals() -> None:
+    controller = _controller()
+    _bind_two_level_tree(controller)
+
+    snapshot = controller.build_policy_input(
+        _observation(hbm_used=450, host_used=50),
+        physical_summary_only=True,
+    )
+
+    assert snapshot.physical_kv.gpu_bytes == 450
+    assert snapshot.physical_kv.cpu_bytes == 50
+    assert len(snapshot.physical_kv.bundles) == 2
+    assert all(not item.actionable for item in snapshot.physical_kv.bundles)
+    assert all(not item.owner_context_ids for item in snapshot.physical_kv.bundles)
+    summary = snapshot.optional_metadata[
+        "beliefkv_context_physical_summaries"
+    ].value["ctx-root"]
+    assert summary["extent_count"] == 2
+    assert summary["physical_unique_bytes"] == 300
+    assert summary["gpu_bytes"] == 300
+    assert summary["exclusive_reclaimable_upper_bound_bytes"] == 300
+    accounting = snapshot.runtime_graph.state["physical_accounting"]
+    assert accounting["tracked_hbm_bytes"] == 300
+    assert accounting["untracked_hbm_bytes"] == 150
+    assert accounting["closure_policy"] == "safe_point_targeted_rematerialization"
 
 
 def test_disjoint_extent_snapshot_only_counts_current_leaf_as_reclaimable() -> None:

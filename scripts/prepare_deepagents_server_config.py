@@ -28,6 +28,14 @@ def main() -> int:
     parser.add_argument("--queue-service-observer", action="store_true")
     parser.add_argument("--request-token-trace", action="store_true")
     parser.add_argument(
+        "--performance-mode",
+        action="store_true",
+        help=(
+            "Use bounded aggregate instrumentation on throughput-critical "
+            "runs; disables token and PolicyInput trace persistence."
+        ),
+    )
+    parser.add_argument(
         "--disable-reactive-transfer",
         action="store_true",
         help=(
@@ -291,6 +299,10 @@ def main() -> int:
     parser.add_argument("--perfect-future-truth-digest", default=None)
     parser.add_argument("--perfect-future-replay-id", default=None)
     args = parser.parse_args()
+    if args.performance_mode and args.request_token_trace:
+        parser.error(
+            "--performance-mode cannot be combined with --request-token-trace"
+        )
     if args.enable_running_retraction and not args.enable_observed_admission:
         parser.error(
             "--enable-running-retraction requires --enable-observed-admission"
@@ -456,9 +468,10 @@ def main() -> int:
         "reactive_transfer_enabled": not args.disable_reactive_transfer,
         "runtime_audit_path": str(server_dir / "runtime_audit.jsonl"),
         "runtime_audit_queue_capacity": 8192,
-        "runtime_audit_debug_sample_rate": 0.05,
+        "runtime_audit_debug_sample_rate": 0.001 if args.performance_mode else 0.05,
         "runtime_audit_max_debug_event_bytes": 16_384,
         "runtime_audit_flush_interval_s": 1.0,
+        "performance_mode": args.performance_mode,
         "runtime_summary_path": str(server_dir / "latest_runtime_summary.json"),
         "runtime_summary_interval_ms": 5_000.0,
         "shutdown_drain_timeout_ms": 5_000.0,
@@ -468,7 +481,7 @@ def main() -> int:
         "runtime_event_socket_path": str(socket_path),
         "runtime_event_log_path": str(server_dir / "runtime_events.sglang.jsonl"),
         "runtime_event_max_lateness_ms": args.runtime_event_max_lateness_ms,
-        "resource_telemetry_interval_ms": 50.0,
+        "resource_telemetry_interval_ms": 500.0 if args.performance_mode else 50.0,
         "service_curve_window": 256,
         "service_curve_min_samples": 8,
         "transfer_service_model_path": (
@@ -477,15 +490,19 @@ def main() -> int:
             else None
         ),
         "transfer_service_hardware_key": args.transfer_service_hardware_key,
-        "queue_service_observer_enabled": args.queue_service_observer,
+        "queue_service_observer_enabled": (
+            args.queue_service_observer or args.performance_mode
+        ),
         "queue_service_observer_include_runtime_batches": (
-            args.queue_service_observer
+            args.queue_service_observer or args.performance_mode
         ),
         "queue_service_observer_max_samples": 65_536,
-        "request_token_trace_enabled": args.request_token_trace,
+        "request_token_trace_enabled": (
+            args.request_token_trace and not args.performance_mode
+        ),
         "request_token_trace_path": (
             str(server_dir / "request_tokens.jsonl.gz")
-            if args.request_token_trace
+            if args.request_token_trace and not args.performance_mode
             else None
         ),
         "transfer_retry_guard_enabled": True,
@@ -495,11 +512,15 @@ def main() -> int:
         "transfer_retry_unknown_circuit_breaker_failures": 8,
         "bundle_preview_audit_max_detailed_per_cycle": 8,
         "reference_policy_shadow_enabled": not (
-            args.disable_policy_shadow or args.disable_snapshot_persistence
+            args.disable_policy_shadow
+            or args.disable_snapshot_persistence
+            or args.performance_mode
         ),
         "reference_policy_snapshot_path": (
             None
-            if args.disable_policy_shadow or args.disable_snapshot_persistence
+            if args.disable_policy_shadow
+            or args.disable_snapshot_persistence
+            or args.performance_mode
             else str(server_dir / "policy_snapshots.jsonl.gz")
         ),
         "reference_policy_snapshot_min_interval_ms": 1000.0,

@@ -176,12 +176,30 @@ class PolicyInputSnapshotBuilder:
         optional_metadata: Mapping[str, MetadataValue] | None = None,
         transfer_telemetry: Sequence[TransferTelemetry] = (),
         include_transfer_estimates: bool = True,
+        physical_summary_only: bool = False,
         capabilities: CapabilityReport | None = None,
         metadata_mode: MetadataMode = MetadataMode.ONLINE,
     ) -> PolicyInput:
-        tracked = self._tracked_physical(now_ms=observation.ts_ms)
-        tracked_hbm = tracked.hbm_bytes
-        tracked_host = tracked.host_bytes
+        context_physical_summaries: dict[str, object] = {}
+        if physical_summary_only:
+            tracked = None
+            tracked_hbm, tracked_host = self.page_index.tracked_resident_bytes()
+            topology_fingerprint = (
+                f"page-index-topology:{self.page_index.topology_revision}"
+            )
+            tracked_allocator_fingerprint = (
+                f"page-index-state:{self.page_index.revision}"
+            )
+            context_physical_summaries = {
+                item.context_id: item.__dict__
+                for item in self.page_index.context_physical_summaries()
+            }
+        else:
+            tracked = self._tracked_physical(now_ms=observation.ts_ms)
+            tracked_hbm = tracked.hbm_bytes
+            tracked_host = tracked.host_bytes
+            topology_fingerprint = tracked.topology_fingerprint
+            tracked_allocator_fingerprint = tracked.allocator_fingerprint
         if tracked_hbm > observation.hbm_used_bytes:
             raise PolicySnapshotError(
                 "PageOwnershipIndex GPU bytes exceed authoritative allocator usage"
@@ -191,10 +209,9 @@ class PolicyInputSnapshotBuilder:
                 "PageOwnershipIndex CPU bytes exceed authoritative host usage"
             )
 
-        topology_fingerprint = tracked.topology_fingerprint
         allocator_fingerprint = _fingerprint(
             {
-                "tracked_allocator_fingerprint": tracked.allocator_fingerprint,
+                "tracked_allocator_fingerprint": tracked_allocator_fingerprint,
                 "hbm_capacity_bytes": observation.hbm_capacity_bytes,
                 "hbm_used_bytes": observation.hbm_used_bytes,
                 "host_capacity_bytes": observation.host_capacity_bytes,
@@ -233,8 +250,16 @@ class PolicyInputSnapshotBuilder:
                 "untracked_hbm_bytes": observation.hbm_used_bytes - tracked_hbm,
                 "tracked_host_bytes": tracked_host,
                 "untracked_host_bytes": observation.host_used_bytes - tracked_host,
-                "accounting_unit": "disjoint_page_handle_extent",
-                "closure_policy": "single_extent_marginal_only",
+                "accounting_unit": (
+                    "context_summary_plus_protected_aggregate"
+                    if physical_summary_only
+                    else "disjoint_page_handle_extent"
+                ),
+                "closure_policy": (
+                    "safe_point_targeted_rematerialization"
+                    if physical_summary_only
+                    else "single_extent_marginal_only"
+                ),
             },
         }
         self._sequence += 1
@@ -275,11 +300,26 @@ class PolicyInputSnapshotBuilder:
             f"policy-{self._sequence:08d}-"
             f"{_fingerprint(revision_tuple, person=b'bk-policy-in')}"
         )
-        bundles = self._physical_bundles_with_untracked(
-            tracked,
-            observation,
-            now_ms=observation.ts_ms,
-        )
+        if physical_summary_only:
+            bundles = tuple(
+                self._protected_untracked_bundle(
+                    tier=tier,
+                    bytes_=bytes_,
+                    now_ms=observation.ts_ms,
+                )
+                for tier, bytes_ in (
+                    ("hbm", observation.hbm_used_bytes),
+                    ("host", observation.host_used_bytes),
+                )
+                if bytes_ > 0
+            )
+        else:
+            assert tracked is not None
+            bundles = self._physical_bundles_with_untracked(
+                tracked,
+                observation,
+                now_ms=observation.ts_ms,
+            )
         physical = PhysicalKVSnapshot(
             snapshot_id=snapshot_id,
             topology_version=self._topology_version,
@@ -299,10 +339,12 @@ class PolicyInputSnapshotBuilder:
         reserved_metadata_name = "beliefkv_resource_observation"
         transfer_metadata_name = "beliefkv_transfer_service_estimates"
         transfer_curve_metadata_name = "beliefkv_transfer_service_curve_snapshot"
+        context_summary_name = "beliefkv_context_physical_summaries"
         for name in (
             reserved_metadata_name,
             transfer_metadata_name,
             transfer_curve_metadata_name,
+            context_summary_name,
         ):
             if name in metadata:
                 raise PolicySnapshotError(
@@ -313,6 +355,12 @@ class PolicyInputSnapshotBuilder:
             value=dict(self.resource_builder.last_diagnostics),
             producer="resource_snapshot_builder",
         )
+        if physical_summary_only:
+            metadata[context_summary_name] = MetadataValue(
+                source=MetadataSource.OBSERVED,
+                value=context_physical_summaries,
+                producer="page_ownership_context_summary",
+            )
         if include_transfer_estimates:
             transfer_estimates = self._transfer_service_estimates(
                 bundles, observation
