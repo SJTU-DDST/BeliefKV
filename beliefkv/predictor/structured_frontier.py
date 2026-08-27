@@ -28,7 +28,7 @@ from beliefkv.predictor.frontier_belief import (
 )
 
 
-STRUCTURED_FRONTIER_SCHEMA_VERSION = 3
+STRUCTURED_FRONTIER_SCHEMA_VERSION = 4
 MINIMUM_DEMAND_DECISION_SCHEMA_VERSION = 2
 FORMAL_P6_DATASET_KIND = "beliefkv_p6_training_evidence"
 FORMAL_P6_PLAN_IDS = frozenset(
@@ -43,19 +43,6 @@ FORBIDDEN_LOAD_COUPLED_LABELS = frozenset(
 )
 FORBIDDEN_LOAD_COUPLED_FEATURES = frozenset(
     {"batch_size", "elapsed_gpu_service_ms", "observed_gpu_service_ms"}
-)
-_TOOL_SLACK_CALIBRATION_HORIZONS_MS = (
-    10.0,
-    30.0,
-    100.0,
-    300.0,
-    1_000.0,
-    3_000.0,
-    10_000.0,
-    30_000.0,
-    100_000.0,
-    300_000.0,
-    1_000_000.0,
 )
 
 
@@ -156,6 +143,7 @@ class LocalFrontierFeatures:
     boundary_history: tuple[str, ...] = ()
     tool_family: str = "unknown"
     backend_class: str = "unknown"
+    command_class: str = "unknown"
     generated_tokens: int = 0
     elapsed_wait_ms: float = 0.0
     current_sequence_tokens: int = 0
@@ -251,6 +239,7 @@ class WaitBelief:
     )
     terminal_distribution: Mapping[str, float] = field(default_factory=dict)
     support_level: str = "unavailable"
+    support_detail: str = "unspecified"
     dependency_composed: bool = False
     ood_reasons: tuple[str, ...] = ()
     survival_logit_scale: float = 1.0
@@ -267,6 +256,8 @@ class WaitBelief:
             "unavailable",
         }:
             raise ValueError("invalid wait-belief support level")
+        if not self.support_detail:
+            raise ValueError("wait-belief support detail is required")
         if self.dependency_composed and self.kind not in {
             WaitBeliefKind.JOIN,
             WaitBeliefKind.CHILD,
@@ -305,17 +296,28 @@ class WaitBelief:
             and self.support_level != "unavailable"
         )
 
-    def slack_probability(self, required_wait_ms: float) -> float | None:
-        """Return P(wait remains parked beyond transfer + commit guard)."""
+    def release_after_probability(self, operational_tau_ms: float) -> float | None:
+        """Return P(release occurs after a live transfer deadline)."""
 
         if self.dependency_composed or not self.available:
             return None
-        raw = self.residual_duration.probability_greater_than(required_wait_ms)
+        raw = self.residual_duration.probability_greater_than(operational_tau_ms)
         return _calibrate_binary_probability(
             raw,
             scale=self.survival_logit_scale,
             offset=self.survival_logit_offset,
         )
+
+    def release_within_probability(self, operational_tau_ms: float) -> float | None:
+        """Return P(reentry occurs within a live restore deadline)."""
+
+        probability = self.release_after_probability(operational_tau_ms)
+        return None if probability is None else 1.0 - probability
+
+    def slack_probability(self, required_wait_ms: float) -> float | None:
+        """Compatibility alias for PREPARE_HOST release-after probability."""
+
+        return self.release_after_probability(required_wait_ms)
 
     def conservative_wait_ms(self, quantile: float = 0.05) -> float | None:
         if self.dependency_composed or not self.available:
@@ -328,6 +330,7 @@ class WaitBelief:
             "residual_duration": self.residual_duration.to_dict(),
             "terminal_distribution": dict(self.terminal_distribution),
             "support_level": self.support_level,
+            "support_detail": self.support_detail,
             "dependency_composed": self.dependency_composed,
             "ood_reasons": list(self.ood_reasons),
             "survival_logit_scale": self.survival_logit_scale,
@@ -348,6 +351,7 @@ class WaitBelief:
                 ).items()
             },
             support_level=str(raw.get("support_level") or "unavailable"),
+            support_detail=str(raw.get("support_detail") or "unspecified"),
             dependency_composed=bool(raw.get("dependency_composed", False)),
             ood_reasons=tuple(str(item) for item in raw.get("ood_reasons", ())),
             survival_logit_scale=float(raw.get("survival_logit_scale", 1.0)),
@@ -710,7 +714,7 @@ class _CompetingRiskToolModel:
 
     def predict(
         self, key: Sequence[str], *, elapsed_ms: float = 0.0
-    ) -> tuple[dict[str, float], EmpiricalDistribution, str]:
+    ) -> tuple[dict[str, float], EmpiricalDistribution, str, str]:
         candidates = _backoff_keys(tuple(key))
         selected = candidates[-1]
         for candidate in candidates:
@@ -765,7 +769,13 @@ class _CompetingRiskToolModel:
         else:
             wait = EmpiricalDistribution.empty()
             wait_level = "unavailable"
-        return statuses, wait, level if level != "unavailable" else wait_level
+        effective_level = level if level != "unavailable" else wait_level
+        return (
+            statuses,
+            wait,
+            effective_level,
+            _tool_support_detail(tuple(key), selected, effective_level),
+        )
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -865,6 +875,7 @@ class FrontierBeliefModel:
         )
         local_episode_counts = _local_episode_counts(values)
         workflow_episode_counts = _workflow_local_episode_counts(values)
+        tool_fit_weights = _tool_fit_weights(values)
         observed = Counter()
         split_counts = Counter(str(row.get("split") or "unknown") for row in values)
         for row in values:
@@ -889,6 +900,17 @@ class FrontierBeliefModel:
                 family = str(
                     trigger_attrs.get("tool_family")
                     or features.get("active_tool_family")
+                    or "unknown"
+                )
+                backend = str(
+                    trigger_attrs.get("backend_class")
+                    or features.get("backend_class")
+                    or "unknown"
+                )
+                command = str(
+                    trigger_attrs.get("command_class")
+                    or trigger_attrs.get("tool_name")
+                    or backend
                     or "unknown"
                 )
                 key = _demand_feature_key(role, state, family, features)
@@ -951,10 +973,20 @@ class FrontierBeliefModel:
                     )
                     if delay is not None and _target_eligible(label, "external_wait"):
                         self.tool.observe(
-                            _tool_feature_key(role, family, features),
+                            _tool_feature_key(
+                                role,
+                                family,
+                                {
+                                    **features,
+                                    "backend_class": backend,
+                                    "command_class": command,
+                                },
+                            ),
                             status=status,
                             duration_ms=float(delay),
-                            weight=weight,
+                            weight=tool_fit_weights.get(
+                                _tool_row_identity(row, features), weight
+                            ),
                         )
                         observed["tool"] += 1
         self.training_summary = {
@@ -980,6 +1012,7 @@ class FrontierBeliefModel:
                 "current_sequence_tokens": features.current_sequence_tokens,
                 "generated_tokens": features.generated_tokens,
                 "backend_class": features.backend_class,
+                "command_class": features.command_class,
             },
         )
         boundary, boundary_level, boundary_support = self.boundary.predict(
@@ -995,7 +1028,7 @@ class FrontierBeliefModel:
         terminal: Mapping[str, float] = {}
         wait_belief: WaitBelief
         if features.state == InvocationState.WAIT_TOOL.value:
-            terminal, wait, tool_level = self.tool.predict(
+            terminal, wait, tool_level, tool_support_detail = self.tool.predict(
                 _tool_feature_key(
                     features.agent_definition_id,
                     features.tool_family,
@@ -1003,6 +1036,8 @@ class FrontierBeliefModel:
                         "current_sequence_tokens": features.current_sequence_tokens,
                         "active_tool_count": features.active_tool_count,
                         "backend_pressure": features.backend_pressure,
+                        "backend_class": features.backend_class,
+                        "command_class": features.command_class,
                     },
                 ),
                 elapsed_ms=features.elapsed_wait_ms,
@@ -1013,6 +1048,7 @@ class FrontierBeliefModel:
                 residual_duration=wait,
                 terminal_distribution=terminal,
                 support_level=tool_level,
+                support_detail=tool_support_detail,
                 survival_logit_scale=self.tool_survival_logit_scale,
                 survival_logit_offset=self.tool_survival_logit_offset,
                 ood_reasons=(
@@ -1123,6 +1159,7 @@ class FrontierBeliefModel:
         *,
         target_coverage: float = 0.9,
         allow_development: bool = False,
+        action_targets: Iterable[Mapping[str, Any]] = (),
     ) -> dict[str, Any]:
         """Calibrate probabilities and intervals without refitting train counts."""
 
@@ -1131,6 +1168,7 @@ class FrontierBeliefModel:
         if self.calibration_summary:
             raise ValueError("model is already calibrated")
         values = [dict(row) for row in rows]
+        action_values = [dict(item) for item in action_targets]
         if not values:
             raise ValueError("calibration requires decision points")
         _validate_demand_rows(values)
@@ -1143,6 +1181,16 @@ class FrontierBeliefModel:
                 )
         elif splits != {"calibration"}:
             raise ValueError("calibration may consume only the calibration split")
+        action_splits = {
+            str(row.get("split") or "unknown") for row in action_values
+        }
+        allowed_action_splits = (
+            {"calibration", "train", "development"}
+            if allow_development
+            else {"calibration"}
+        )
+        if action_values and not action_splits.issubset(allowed_action_splits):
+            raise ValueError("action targets do not match the calibration split")
 
         episode_counts = Counter(
             str(row.get("episode_group_id") or row.get("decision_id"))
@@ -1150,6 +1198,7 @@ class FrontierBeliefModel:
         )
         local_episode_counts = _local_episode_counts(values)
         workflow_episode_counts = _workflow_local_episode_counts(values)
+        tool_weights = _tool_fit_weights(values)
         boundary_records: list[tuple[Mapping[str, float], str, float]] = []
         tool_records: list[tuple[Mapping[str, float], str, float]] = []
         tool_survival_records: list[tuple[float, bool, float]] = []
@@ -1204,56 +1253,16 @@ class FrontierBeliefModel:
                             (
                                 prediction.tool_terminal_distribution,
                                 status,
-                                weight,
+                                tool_weights.get(
+                                    _tool_row_identity(row, raw_features), weight
+                                ),
                             )
                         )
                         observation_counts["tool_terminal"] += 1
-                    observed_duration = label.get(
-                        "external_wait_observed_duration_ms"
-                    )
-                    if observed_duration is None:
-                        observed_duration = label.get("next_boundary_delay_ms")
-                    if observed_duration is not None:
-                        observed_duration = max(0.0, float(observed_duration))
-                        right_censored = _target_right_censored(
-                            label, "external_wait"
-                        )
-                        known_horizons = tuple(
-                            horizon_ms
-                            for horizon_ms in _TOOL_SLACK_CALIBRATION_HORIZONS_MS
-                            if not (
-                                right_censored
-                                and observed_duration <= horizon_ms
-                            )
-                        )
-                        horizon_weight = weight / max(1, len(known_horizons))
-                        for horizon_ms in known_horizons:
-                            # A censor after the horizon proves survival; a censor
-                            # before it leaves the binary outcome unknown.
-                            probability = (
-                                prediction.wait_belief.slack_probability(
-                                    horizon_ms
-                                )
-                            )
-                            if probability is None:
-                                continue
-                            tool_survival_records.append(
-                                (
-                                    probability,
-                                    observed_duration > horizon_ms,
-                                    horizon_weight,
-                                )
-                            )
-                            observation_counts["tool_wait_slack"] += 1
                 wait_target = (
                     "external_wait"
                     if features.state == InvocationState.WAIT_TOOL.value
                     else None
-                )
-                completed_wait = bool(
-                    wait_target
-                    and _target_eligible(label, wait_target)
-                    and not _target_right_censored(label, wait_target)
                 )
                 scalar_targets = (
                     (
@@ -1294,6 +1303,38 @@ class FrontierBeliefModel:
                         f"{wait_target}_right_censored_excluded_from_interval"
                     ] += 1
 
+        action_weights = _action_target_weights(action_values)
+        for target in action_values:
+            features = _local_features_from_action_target(target)
+            prediction = self.predict(features)
+            identity = _action_target_identity(target)
+            known = [
+                (name, value)
+                for name, value in (target.get("actions") or {}).items()
+                if bool(value.get("outcome_known"))
+            ]
+            weight = action_weights.get(identity, 0.0)
+            for action, value in known:
+                tau_ms = float(value["operational_tau_ms"])
+                if action == "prepare_host":
+                    probability = (
+                        prediction.wait_belief.release_after_probability(tau_ms)
+                    )
+                    outcome = bool(value["outcome"])
+                elif action == "prefetch_gpu":
+                    within = (
+                        prediction.wait_belief.release_within_probability(tau_ms)
+                    )
+                    probability = None if within is None else 1.0 - within
+                    outcome = not bool(value["outcome"])
+                else:
+                    continue
+                if probability is None:
+                    continue
+                tool_survival_records.append((probability, outcome, weight))
+                observation_counts[f"{action}_operational_tau"] += 1
+                observation_counts["tool_wait_action_slack"] += 1
+
         self.boundary_temperature = _fit_temperature(boundary_records)
         self.tool_temperature = _fit_temperature(tool_records)
         (
@@ -1328,6 +1369,8 @@ class FrontierBeliefModel:
             "observation_counts": dict(sorted(observation_counts.items())),
             "conformal_unit": "episode_max_nonconformity",
             "training_counts_refit": False,
+            "action_target_schema_version": 4 if action_values else None,
+            "action_target_count": len(action_values),
         }
         return dict(self.calibration_summary)
 
@@ -1946,6 +1989,7 @@ def select_frontier_hyperparameters(
     rows: Iterable[Mapping[str, Any]],
     *,
     candidates: Iterable[FrontierModelHyperparameters] | None = None,
+    action_targets: Iterable[Mapping[str, Any]] = (),
 ) -> dict[str, Any]:
     """Select structured-model smoothing/backoff by train-project LOPO.
 
@@ -1955,6 +1999,7 @@ def select_frontier_hyperparameters(
     """
 
     values = [dict(row) for row in rows]
+    action_values = [dict(row) for row in action_targets]
     _validate_demand_rows(values)
     if not values or {str(row.get("split")) for row in values} != {"train"}:
         raise ValueError("LOPO selection requires only formal train rows")
@@ -1964,6 +2009,10 @@ def select_frontier_hyperparameters(
     options = tuple(candidates or _default_hyperparameter_candidates())
     if not options:
         raise ValueError("LOPO selection requires candidate hyperparameters")
+    if action_values and {
+        str(row.get("split") or "unknown") for row in action_values
+    } != {"train"}:
+        raise ValueError("LOPO action targets require only train rows")
 
     reports = []
     for index, option in enumerate(options):
@@ -1975,17 +2024,41 @@ def select_frontier_hyperparameters(
                 for row in values
                 if str(row.get("project")) == held_out
             ]
+            validation_action_targets = [
+                {**row, "split": "calibration"}
+                for row in action_values
+                if str(row.get("project")) == held_out
+            ]
             model = FrontierBeliefModel(
                 model_version=f"lopo-candidate-{index}",
                 hyperparameters=option,
             )
             model.fit(fit_rows)
-            metrics = evaluate_frontier_model(model, validation_rows)
+            metrics = evaluate_frontier_model(
+                model,
+                validation_rows,
+                validation_action_targets,
+            )
             components = _lopo_loss_components(metrics, validation_rows)
+            operational_brier = components.get("tool_wait_slack_brier")
+            secondary_components = {
+                name: value
+                for name, value in components.items()
+                if name != "tool_wait_slack_brier"
+            }
+            secondary_loss = sum(secondary_components.values()) / max(
+                len(secondary_components), 1
+            )
             folds.append(
                 {
                     "held_out_project": held_out,
-                    "loss": sum(components.values()) / max(len(components), 1),
+                    "loss": (
+                        float(operational_brier)
+                        if action_values and operational_brier is not None
+                        else sum(components.values()) / max(len(components), 1)
+                    ),
+                    "operational_tau_brier": operational_brier,
+                    "secondary_loss": secondary_loss,
                     "loss_components": components,
                     "local_episode_count": metrics["local_episode_count"],
                 }
@@ -1996,23 +2069,47 @@ def select_frontier_hyperparameters(
                 "hyperparameters": option.to_dict(),
                 "project_macro_loss": sum(fold["loss"] for fold in folds)
                 / len(folds),
+                "project_macro_operational_tau_brier": (
+                    sum(float(fold["operational_tau_brier"]) for fold in folds)
+                    / len(folds)
+                    if action_values
+                    and all(
+                        fold["operational_tau_brier"] is not None for fold in folds
+                    )
+                    else None
+                ),
+                "project_macro_secondary_loss": sum(
+                    fold["secondary_loss"] for fold in folds
+                )
+                / len(folds),
                 "folds": folds,
             }
         )
     selected = min(
         reports,
-        key=lambda item: (item["project_macro_loss"], item["candidate_index"]),
+        key=lambda item: (
+            (
+                item["project_macro_operational_tau_brier"]
+                if action_values
+                else item["project_macro_loss"]
+            ),
+            item["project_macro_secondary_loss"],
+            item["candidate_index"],
+        ),
     )
     return {
         "schema_version": 1,
         "selection_method": "leave_one_train_project_out_project_macro",
         "selection_objective": (
-            "mean available boundary/tool NLL, per-project scale-normalized "
-            "token-demand MAE, tool causal-slack Brier, and "
-            "0.25*action-specific required-head OOD"
+            "primary: project-macro operational-tau action Brier; "
+            "secondary: boundary/tool NLL, scale-normalized token-demand MAE, "
+            "and action-specific required-head OOD"
+            if action_values
+            else "legacy mean available local-head loss"
         ),
         "projects": projects,
         "candidate_count": len(reports),
+        "action_target_count": len(action_values),
         "selected_candidate_index": selected["candidate_index"],
         "selected_hyperparameters": selected["hyperparameters"],
         "candidates": reports,
@@ -2022,16 +2119,23 @@ def select_frontier_hyperparameters(
 def evaluate_frontier_model(
     model: FrontierBeliefModel,
     rows: Iterable[Mapping[str, Any]],
+    action_targets: Iterable[Mapping[str, Any]] = (),
 ) -> dict[str, Any]:
     """Evaluate local beliefs with local-episode weights and no model updates."""
 
     values = [dict(row) for row in rows]
+    action_values = [dict(item) for item in action_targets]
     if not values:
         raise ValueError("evaluation requires decision points")
     _validate_demand_rows(values)
     splits = {str(row.get("split") or "unknown") for row in values}
     if not splits.issubset({"calibration", "test_id", "test_ood"}):
         raise ValueError("evaluation cannot consume train or development rows")
+    action_splits = {
+        str(row.get("split") or "unknown") for row in action_values
+    }
+    if action_values and not action_splits.issubset(splits):
+        raise ValueError("action targets do not match the evaluation split")
     local_counts = _local_episode_counts(values)
     workflow_episode_counts = _workflow_local_episode_counts(values)
     classification: dict[str, dict[str, Any]] = {
@@ -2054,8 +2158,6 @@ def evaluate_frontier_model(
     target_availability: defaultdict[str, dict[str, float]] = defaultdict(
         lambda: {"weight": 0.0, "available_weight": 0.0}
     )
-    legacy_prediction_weight = 0.0
-    legacy_composite_ood_weight = 0.0
     required_head_weight = 0.0
     required_head_ood_weight = 0.0
     action_head_availability: defaultdict[str, dict[str, float]] = defaultdict(
@@ -2064,6 +2166,12 @@ def evaluate_frontier_model(
     wait_slack: defaultdict[str, dict[str, float]] = defaultdict(
         lambda: {"weight": 0.0, "brier": 0.0}
     )
+    operational_support: defaultdict[str, Counter[str]] = defaultdict(Counter)
+    operational_command_support: defaultdict[str, Counter[str]] = defaultdict(
+        Counter
+    )
+    operational_tau: defaultdict[str, list[float]] = defaultdict(list)
+    tool_weights = _tool_fit_weights(values)
     support_weight: Counter[str] = Counter()
     for row in values:
         episode = str(row.get("episode_group_id") or row.get("decision_id"))
@@ -2083,14 +2191,13 @@ def evaluate_frontier_model(
             weight /= max(1, workflow_episode_counts[workflow])
             features = _local_features_from_row(row, raw_features)
             prediction = model.predict(features)
-            legacy_prediction_weight += weight
-            legacy_composite_ood_weight += weight * bool(
-                prediction.ood_reasons
-            )
             support_weight[prediction.support_level] += weight
-            for action, head in _action_head_requirements_for_state(
-                features.state
-            ):
+            generic_action_heads = (
+                ()
+                if features.state == InvocationState.WAIT_TOOL.value
+                else _action_head_requirements_for_state(features.state)
+            )
+            for action, head in generic_action_heads:
                 key = f"{action}|{features.state}|{head}"
                 available = prediction.support_for(head) != "unavailable"
                 action_head_availability[key]["weight"] += weight
@@ -2130,41 +2237,15 @@ def evaluate_frontier_model(
                     classification["tool_terminal"],
                     prediction.tool_terminal_distribution,
                     status,
-                    weight,
+                    tool_weights.get(
+                        _tool_row_identity(row, raw_features), weight
+                    ),
                 )
                 availability = target_availability["tool_terminal"]
                 availability["weight"] += weight
                 availability["available_weight"] += weight * bool(
                     prediction.tool_terminal_distribution
                 )
-
-            if (
-                features.state == InvocationState.WAIT_TOOL.value
-                and _target_eligible(label, "external_wait")
-            ):
-                right_censored = _target_right_censored(
-                    label, "external_wait"
-                )
-                actual_wait = (
-                    label.get("external_wait_observed_duration_ms")
-                    if right_censored
-                    else label.get("next_boundary_delay_ms")
-                )
-                if actual_wait is not None:
-                    for horizon_ms in (10.0, 100.0, 1_000.0, 10_000.0):
-                        if right_censored and float(actual_wait) <= horizon_ms:
-                            continue
-                        probability = prediction.wait_belief.slack_probability(
-                            horizon_ms
-                        )
-                        if probability is None:
-                            continue
-                        outcome = float(actual_wait) > horizon_ms
-                        bucket = wait_slack[f"tool|{int(horizon_ms)}ms"]
-                        bucket["weight"] += weight
-                        bucket["brier"] += weight * (
-                            probability - float(outcome)
-                        ) ** 2
 
             targets = (
                 (
@@ -2221,6 +2302,66 @@ def evaluate_frontier_model(
                     )
                     interval_episode_workflow[local_episode] = workflow
 
+    action_weights = _action_target_weights(action_values)
+    action_target_known_count: Counter[str] = Counter()
+    action_target_total_count: Counter[str] = Counter()
+    action_evidence: defaultdict[str, Counter[str]] = defaultdict(Counter)
+    for target in action_values:
+        features = _local_features_from_action_target(target)
+        prediction = model.predict(features)
+        support = prediction.wait_belief.support_detail
+        identity = _action_target_identity(target)
+        base_weight = action_weights.get(identity, 0.0)
+        known_weight = base_weight
+        for action, value in (target.get("actions") or {}).items():
+            action_target_total_count[action] += 1
+            if not bool(value.get("outcome_known")):
+                continue
+            action_target_known_count[action] += 1
+            tau_ms = float(value["operational_tau_ms"])
+            if action == "prepare_host":
+                probability = prediction.wait_belief.release_after_probability(
+                    tau_ms
+                )
+            elif action == "prefetch_gpu":
+                probability = prediction.wait_belief.release_within_probability(
+                    tau_ms
+                )
+            else:
+                continue
+            if probability is None:
+                support = "unavailable"
+                probability = 0.0
+            required_heads = (
+                ("tool_wait", "prompt_growth")
+                if action == "prefetch_gpu"
+                else ("tool_wait",)
+            )
+            for head in required_heads:
+                availability_key = f"{action}|wait_tool|{head}"
+                available = prediction.support_for(head) != "unavailable"
+                action_head_availability[availability_key]["weight"] += base_weight
+                action_head_availability[availability_key][
+                    "available_weight"
+                ] += base_weight * available
+                required_head_weight += base_weight
+                required_head_ood_weight += base_weight * (not available)
+            outcome = float(bool(value["outcome"]))
+            key = f"{action}|wait_tool|operational_tau"
+            wait_slack[key]["weight"] += known_weight
+            wait_slack[key]["brier"] += known_weight * (
+                probability - outcome
+            ) ** 2
+            operational_support[action][support] += known_weight
+            command = str(target.get("command_class") or "unknown")
+            operational_command_support[f"{action}|{command}"][support] += (
+                known_weight
+            )
+            operational_tau[action].append(tau_ms)
+            action_evidence[action][
+                str(target.get("tau_evidence") or "unknown")
+            ] += 1
+
     return {
         "model_version": model.model_version,
         "splits": sorted(splits),
@@ -2256,8 +2397,6 @@ def evaluate_frontier_model(
         "ood_fallback_rate": required_head_ood_weight
         / max(required_head_weight, 1e-12),
         "ood_fallback_semantics": "action_state_required_head_unavailable",
-        "legacy_composite_ood_rate": legacy_composite_ood_weight
-        / max(legacy_prediction_weight, 1e-12),
         "action_head_availability": {
             key: {
                 "available_rate": values["available_weight"]
@@ -2273,6 +2412,29 @@ def evaluate_frontier_model(
             }
             for key, values in sorted(wait_slack.items())
         },
+        "operational_tau_coverage": {
+            action: {
+                "target_row_count": action_target_total_count[action],
+                "known_outcome_count": action_target_known_count[action],
+                "known_outcome_rate": action_target_known_count[action]
+                / max(action_target_total_count[action], 1),
+                "tau_ms": _numeric_distribution_summary(
+                    operational_tau.get(action, ())
+                ),
+                "evidence_grade_count": dict(
+                    sorted(action_evidence.get(action, {}).items())
+                ),
+            }
+            for action in sorted(action_target_total_count)
+        },
+        "operational_action_support_weight": {
+            action: dict(sorted(values.items()))
+            for action, values in sorted(operational_support.items())
+        },
+        "operational_command_class_support_weight": {
+            key: dict(sorted(values.items()))
+            for key, values in sorted(operational_command_support.items())
+        },
         "target_availability": {
             name: {
                 "available_rate": values["available_weight"]
@@ -2283,6 +2445,27 @@ def evaluate_frontier_model(
         },
         "support_weight": dict(sorted(support_weight.items())),
         "calibration_coverage_target": model.calibration_coverage,
+    }
+
+
+def _numeric_distribution_summary(
+    values: Sequence[float],
+) -> dict[str, float | int | None]:
+    if not values:
+        return {
+            "count": 0,
+            "min": None,
+            "p50": None,
+            "p95": None,
+            "max": None,
+        }
+    ordered = sorted(float(value) for value in values)
+    return {
+        "count": len(ordered),
+        "min": ordered[0],
+        "p50": ordered[(len(ordered) - 1) // 2],
+        "p95": ordered[math.ceil(0.95 * len(ordered)) - 1],
+        "max": ordered[-1],
     }
 
 
@@ -2483,6 +2666,12 @@ def _local_features_from_row(
             or features.get("backend_class")
             or "unknown"
         ),
+        command_class=str(
+            trigger_attributes.get("command_class")
+            or trigger_attributes.get("tool_name")
+            or trigger_attributes.get("backend_class")
+            or "unknown"
+        ),
         generated_tokens=int(features.get("observed_output_tokens") or 0),
         elapsed_wait_ms=float(features.get("active_tool_elapsed_ms") or 0.0),
         current_sequence_tokens=int(
@@ -2555,6 +2744,99 @@ def _workflow_group_id(row: Mapping[str, Any]) -> str:
         or row.get("episode_group_id")
         or row.get("decision_id")
         or "unknown"
+    )
+
+
+
+def _tool_row_identity(
+    row: Mapping[str, Any], features: Mapping[str, Any]
+) -> tuple[str, str, str]:
+    attributes = row.get("trigger_attributes") or {}
+    return (
+        _workflow_group_id(row),
+        str(attributes.get("tool_call_id") or row.get("decision_id") or ""),
+        str(features.get("invocation_id") or ""),
+    )
+
+
+def _tool_fit_weights(
+    rows: Sequence[Mapping[str, Any]],
+) -> dict[tuple[str, str, str], float]:
+    identities_by_workflow: defaultdict[str, set[tuple[str, str, str]]] = (
+        defaultdict(set)
+    )
+    for row in rows:
+        if str(row.get("trigger_kind") or "") != RuntimeEventKind.TOOL_START.value:
+            continue
+        labels = {
+            str(item.get("invocation_id") or ""): item
+            for item in row.get("labels", ())
+        }
+        for features in row.get("invocations", ()):
+            invocation_id = str(features.get("invocation_id") or "")
+            label = labels.get(invocation_id)
+            if (
+                str(features.get("state") or "") == InvocationState.WAIT_TOOL.value
+                and label is not None
+                and _target_eligible(label, "external_wait")
+            ):
+                identity = _tool_row_identity(row, features)
+                identities_by_workflow[identity[0]].add(identity)
+    return {
+        identity: 1.0 / len(identities)
+        for identities in identities_by_workflow.values()
+        for identity in identities
+    }
+
+
+def _action_target_identity(row: Mapping[str, Any]) -> tuple[str, str]:
+    return (
+        str(row.get("decision_id") or ""),
+        str(row.get("invocation_id") or ""),
+    )
+
+
+def _action_target_weights(
+    rows: Sequence[Mapping[str, Any]],
+) -> dict[tuple[str, str], float]:
+    row_counts: Counter[tuple[str, str]] = Counter()
+    episodes_by_workflow: defaultdict[str, set[str]] = defaultdict(set)
+    row_episode: dict[tuple[str, str], tuple[str, str]] = {}
+    for row in rows:
+        identity = _action_target_identity(row)
+        workflow = str(row.get("workflow_id") or "unknown")
+        episode = str(row.get("tool_wait_episode_id") or "|".join(identity))
+        key = (workflow, episode)
+        row_counts[key] += 1
+        episodes_by_workflow[workflow].add(episode)
+        row_episode[identity] = key
+    return {
+        identity: 1.0
+        / max(1, row_counts[key])
+        / max(1, len(episodes_by_workflow[key[0]]))
+        for identity, key in row_episode.items()
+    }
+
+
+def _local_features_from_action_target(
+    row: Mapping[str, Any],
+) -> LocalFrontierFeatures:
+    return LocalFrontierFeatures(
+        invocation_id=str(row.get("invocation_id") or ""),
+        state=InvocationState.WAIT_TOOL.value,
+        agent_definition_id=str(row.get("agent_definition_id") or "unknown"),
+        boundary_history=tuple(
+            str(item) for item in row.get("boundary_history", ())
+        ),
+        tool_family=str(row.get("tool_family") or "unknown"),
+        backend_class=str(row.get("backend_class") or "unknown"),
+        command_class=str(row.get("command_class") or "unknown"),
+        elapsed_wait_ms=float(row.get("elapsed_wait_ms") or 0.0),
+        current_sequence_tokens=int(row.get("current_sequence_tokens") or 0),
+        active_tool_count=int(row.get("active_tool_count") or 0),
+        backend_pressure=(
+            f"active_family:{int(row.get('active_tool_count') or 0)}"
+        ),
     )
 
 
@@ -2736,6 +3018,8 @@ def _tool_feature_key(
         role,
         InvocationState.WAIT_TOOL.value,
         family,
+        f"backend:{str(features.get('backend_class') or 'unknown')}",
+        f"command:{str(features.get('command_class') or 'unknown')}",
         f"active:{_power_two_bucket(int(features.get('active_tool_count') or 0))}",
         f"context:{_power_two_bucket(int(features.get('current_sequence_tokens') or features.get('context_tokens') or 0))}",
         f"pressure:{str(features.get('backend_pressure') or 'unknown')}",
@@ -2743,6 +3027,23 @@ def _tool_feature_key(
 
 
 def _backoff_keys(key: tuple[str, ...]) -> tuple[tuple[str, ...], ...]:
+    if len(key) == 8:
+        role, state, family, backend, command, active, context, pressure = key
+        return (
+            key,
+            (role, state, family, backend, command, active, context),
+            (role, state, family, backend, command),
+            (role, state, family, backend),
+            (role, state, family),
+            (role, state),
+            ("*", state, family, backend, command),
+            ("*", state, family, backend),
+            ("*", state, family),
+            ("*", state),
+            ("*",),
+        )
+    if len(key) != 6:
+        raise ValueError("unsupported hierarchical feature key")
     role, state, family, condition_a, condition_b, condition_c = key
     return (
         (role, state, family, condition_a, condition_b, condition_c),
@@ -2753,6 +3054,30 @@ def _backoff_keys(key: tuple[str, ...]) -> tuple[tuple[str, ...], ...]:
         ("*", state),
         ("*",),
     )
+
+
+def _tool_support_detail(
+    requested: tuple[str, ...],
+    selected: tuple[str, ...],
+    level: str,
+) -> str:
+    if level == "unavailable":
+        return "unavailable"
+    if selected == requested:
+        return "exact"
+    if selected == ("*",):
+        return "global"
+    if len(requested) != 8:
+        return level
+    role_scope = "role" if selected[0] != "*" else "cross_role"
+    specificity = {
+        7: "shape",
+        5: "command",
+        4: "backend",
+        3: "family",
+        2: "state",
+    }.get(len(selected), "hierarchical")
+    return f"{role_scope}_{specificity}_backoff"
 
 
 def _power_two_bucket(value: int) -> int:

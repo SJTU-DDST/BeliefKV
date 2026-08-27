@@ -1,6 +1,35 @@
 # BeliefKV 最新架构与实现状态
 
-更新日期：2026-08-26
+更新日期：2026-08-27
+
+## 2026-08-27：P6 恢复，FrontierBelief 改为 Action-Aligned Schema-v4
+
+Oracle 开发继续暂停。Performance-First P5 已完成控制面压缩和批量 transfer
+正确性门禁，当前主线转为将 FrontierBelief 以单一 predictive overlay 接入现有
+Causal Package Planner。
+
+本轮复用冻结的 64 train + 16 held-out calibration workflow，未访问 test_id。
+WAIT_TOOL 现按 role/tool family/backend/command class 分层；WAIT_JOIN/WAIT_CHILD
+继续由 RCCG 组合 child completion，不拟合统一 external-wait。模型直接回答：
+
+```text
+PREPARE_HOST: P(release after live D2H p95 + guard)
+PREFETCH_GPU: P(reentry within live H2D p95 + guard)
+```
+
+`COMMIT_CPU` 仍由 Causal Package Planner 将 beneficiary readiness、HBM deficit、
+reclaimable bytes 和 expected saved stall 组合成原子 replacement package，不新增
+独立分类头或迁移策略源。
+
+held-out operational-tau Brier 为 PREPARE 0.0641、PREFETCH 0.1222；required tool
+head availability 为 99.72%，但支持以 command/family/state backoff 为主。旧
+40.86% composite OOD 已废弃，在线门禁只检查 action x state 所需预测头。
+
+由于旧冻结语义行没有 live extent morphology，当前 tau 使用 performance patch
+transfer anchor 按 bytes 缩放。schema-v4 artifact 继续保持
+`online_eligible=false`，下一步只运行一次 predictor-only event-driven shadow；
+不会开启预测性物理迁移。完整记录见
+`docs/experiments/beliefkv_p6_action_aligned_frontier_v3_2026-08-27_zh.md`。
 
 ## 2026-08-26：主线切换为 Performance-First JointPlan
 

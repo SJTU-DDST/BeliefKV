@@ -102,6 +102,54 @@ def _tool_row(decision: str, duration_ms: float, status: str) -> dict:
     }
 
 
+def _action_target(
+    decision: str,
+    *,
+    split: str,
+    residual_wait_ms: float,
+    d2h_tau_ms: float = 100.0,
+    h2d_tau_ms: float = 300.0,
+) -> dict:
+    return {
+        "schema_version": 4,
+        "row_type": "operational_action_target",
+        "contract_id": "test-contract",
+        "deployment_profile_id": "test-profile",
+        "decision_id": decision,
+        "workflow_id": f"workflow-{decision}",
+        "project": "project/test",
+        "split": split,
+        "invocation_id": "worker",
+        "tool_wait_episode_id": f"tool-{decision}",
+        "timestamp_ms": 1000.0,
+        "elapsed_wait_ms": 0.0,
+        "residual_wait_ms": residual_wait_ms,
+        "right_censored": False,
+        "active_tool_count": 1,
+        "tool_family": "shell",
+        "backend_class": "unknown",
+        "command_class": "unknown",
+        "agent_definition_id": "worker",
+        "boundary_history": ["tool"],
+        "current_sequence_tokens": 4096,
+        "actual_kv_bytes": 4096 * 98304,
+        "tau_evidence": "test",
+        "physical_shape_available": False,
+        "actions": {
+            "prepare_host": {
+                "operational_tau_ms": d2h_tau_ms,
+                "outcome_known": True,
+                "outcome": residual_wait_ms > d2h_tau_ms,
+            },
+            "prefetch_gpu": {
+                "operational_tau_ms": h2d_tau_ms,
+                "outcome_known": True,
+                "outcome": residual_wait_ms <= h2d_tau_ms,
+            },
+        },
+    }
+
+
 def _ready_row(decision: str, output_tokens: int) -> dict:
     return {
         "schema_version": 2,
@@ -618,7 +666,16 @@ def test_calibration_excludes_right_censored_tool_completion_targets() -> None:
         "external_wait": True
     }
 
-    summary = model.calibrate([completed, censored])
+    summary = model.calibrate(
+        [completed, censored],
+        action_targets=[
+            _action_target(
+                "calibration-complete",
+                split="calibration",
+                residual_wait_ms=150.0,
+            )
+        ],
+    )
 
     assert summary["observation_counts"]["tool_terminal"] == 1
     assert (
@@ -629,7 +686,9 @@ def test_calibration_excludes_right_censored_tool_completion_targets() -> None:
     )
     assert "remaining_external_wait_ms" not in summary["observation_counts"]
     assert "remaining_external_wait_ms" not in summary["interval_slack"]
-    assert summary["observation_counts"]["tool_wait_slack"] > 0
+    assert summary["observation_counts"]["tool_wait_action_slack"] > 0
+    assert summary["observation_counts"]["prepare_host_operational_tau"] == 1
+    assert summary["observation_counts"]["prefetch_gpu_operational_tau"] == 1
     assert model.tool_survival_logit_scale > 0
     assert model.to_dict()["tool_survival_logit_scale"] == (
         model.tool_survival_logit_scale
@@ -778,7 +837,7 @@ def test_episode_weighted_evaluation_reports_calibration_and_ood() -> None:
     assert metrics["ood_fallback_semantics"] == (
         "action_state_required_head_unavailable"
     )
-    assert "legacy_composite_ood_rate" in metrics
+    assert "legacy_composite_ood_rate" not in metrics
     assert (
         metrics["target_availability"]["remaining_decode_demand"][
             "available_rate"

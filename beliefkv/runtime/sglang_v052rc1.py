@@ -18474,8 +18474,10 @@ class EmbeddedSGLangRuntime:
                 )
                 if live_morphology_slack_ms <= 0:
                     reasons.append("morphology_slack_expired")
-        if remaining_ms <= (
-            effective_transfer_ms + self.config.predictive_commit_guard_ms
+        if (
+            intent.action == PredictiveActionKind.PREPARE_HOST
+            and remaining_ms
+            <= effective_transfer_ms + self.config.predictive_commit_guard_ms
         ):
             reasons.append("transfer_cannot_finish_before_low_window")
         if (
@@ -18511,6 +18513,7 @@ class EmbeddedSGLangRuntime:
                 context_id=intent.context_id,
                 age_ms=age_ms,
                 remaining_window_low_ms=remaining_ms,
+                timing_semantics=intent.timing_semantics,
                 intent_transfer_p95_ms=intent.transfer_p95_ms,
                 safe_point_transfer_bound_ms=effective_transfer_ms,
                 predicted_extent_count=intent.predicted_extent_count,

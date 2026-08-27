@@ -1,0 +1,59 @@
+{
+  "artifacts": {
+    "environment": "configs/p6/h200_bf16_v2/environment_manifest.json",
+    "gpu_service": {
+      "evaluation": "artifacts/p6/h200_bf16_v1/gpu_service_evaluation.json",
+      "online_eligible": false,
+      "path": "artifacts/p6/h200_bf16_v1/gpu_service_qwen3coder30b_bf16_h200_v1.json",
+      "provenance": "inherited_diagnostic_only_recalibration_required",
+      "recalibration_required": true
+    },
+    "transfer_service": {
+      "online_eligible_for_supported_conditions": false,
+      "path": "artifacts/p6/h200_bf16_v1/transfer_service_qwen3coder30b_bf16_h200_v1.json",
+      "provenance": "superseded_by_transfer_engine_v2_action_target_anchor",
+      "recalibration_required": true
+    }
+  },
+  "capacity": {
+    "hbm_safety_margin_bytes": 2147483648,
+    "host_pool_bytes": 103079215104,
+    "host_pool_gib": 96,
+    "kv_bytes_per_token": 98304,
+    "kv_pool_bytes": 83558400000,
+    "kv_pool_gib": 77.82,
+    "max_total_tokens": 850000,
+    "max_validated_context_tokens": 196608,
+    "stable_free_hbm_mib": 3176
+  },
+  "model": {
+    "context_length": 262144,
+    "kv_cache_dtype": "bfloat16",
+    "path": "/srv/ai/models/Qwen/Qwen3-Coder-30B-A3B-Instruct",
+    "served_name": "Qwen3-Coder-30B-A3B-Instruct",
+    "weight_dtype": "bfloat16"
+  },
+  "profile_id": "h200_bf16_perf_v1",
+  "runtime": {
+    "chunked_prefill_size": 16384,
+    "max_prefill_tokens": 16384,
+    "cuda_graph_max_bs": 32,
+    "hicache_io_backend": "kernel",
+    "hicache_mem_layout": "layer_first",
+    "hicache_size_gib": 96,
+    "hicache_write_policy": "write_back",
+    "kv_cache_cli_dtype": "auto",
+    "max_running_requests": 32,
+    "mem_fraction_static": 0.9928,
+    "page_size": 1,
+    "sglang_commit": "18f91eb639084825717c0e3c3c7273492812ab71",
+    "sglang_version": "0.5.2rc1",
+    "tensor_parallel_size": 1
+  },
+  "schema_version": 1,
+  "source_contract": {
+    "canonical_sglang_patch": "patches/sglang-0.5.2rc1-beliefkv-perf.patch",
+    "canonical_sglang_patch_sha256": "33344ce5de1b2b626c4b4bad87391cff782efca95859611c9b2a7da5e18b1e09",
+    "expected_sglang_tree": "d3f825d743eddc206166d1222d87ff66a3c8e6cc"
+  }
+}

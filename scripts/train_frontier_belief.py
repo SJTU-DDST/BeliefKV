@@ -5,6 +5,7 @@ import argparse
 import hashlib
 import json
 from pathlib import Path
+import subprocess
 import sys
 
 
@@ -19,11 +20,29 @@ from beliefkv.predictor.structured_frontier import (
     runtime_environment_digest,
     validate_training_corpus_diversity,
 )
+from beliefkv.predictor.action_targets import load_action_target_rows
+
+
+def _repository_state() -> tuple[str, bool]:
+    revision = subprocess.check_output(
+        ("git", "rev-parse", "HEAD"),
+        cwd=REPOSITORY_ROOT,
+        text=True,
+    ).strip()
+    status = subprocess.check_output(
+        ("git", "status", "--porcelain", "--untracked-files=normal"),
+        cwd=REPOSITORY_ROOT,
+        text=True,
+    )
+    return revision, not bool(status.strip())
 
 
 def main() -> int:
     parser = argparse.ArgumentParser(description="Train the local P6 FrontierBeliefModel")
     parser.add_argument("--dataset-dir", type=Path, action="append", required=True)
+    parser.add_argument("--action-target", type=Path, action="append")
+    parser.add_argument("--action-target-report", type=Path)
+    parser.add_argument("--deployment-runtime-profile", type=Path)
     parser.add_argument(
         "--split", choices=("train", "development"), default="train"
     )
@@ -40,9 +59,24 @@ def main() -> int:
     parser.add_argument("--output", type=Path, required=True)
     args = parser.parse_args()
 
+    beliefkv_revision, beliefkv_worktree_clean = _repository_state()
+    if args.split == "train" and not beliefkv_worktree_clean:
+        raise SystemExit(
+            "formal schema-v4 training requires a clean BeliefKV worktree"
+        )
     rows, manifests = load_decision_rows(
         args.dataset_dir, allowed_splits=(args.split,)
     )
+    action_targets = load_action_target_rows(args.action_target or ())
+    if args.split == "train" and (
+        not action_targets
+        or args.action_target_report is None
+        or args.deployment_runtime_profile is None
+    ):
+        raise SystemExit(
+            "formal schema-v4 training requires action targets, their report, "
+            "and a deployment runtime profile"
+        )
     if not rows:
         raise SystemExit(f"no {args.split} decision points were found")
     projects = sorted({str(row.get("project") or "unknown") for row in rows})
@@ -71,6 +105,12 @@ def main() -> int:
         hyperparameters = FrontierModelHyperparameters.from_dict(
             selection_raw.get("selected_hyperparameters")
         )
+        if selection_raw.get("action_target_contract_ids") != sorted(
+            {str(row.get("contract_id") or "") for row in action_targets}
+        ):
+            raise SystemExit(
+                "hyperparameter selection used a different action-target contract"
+            )
         selection_digest = hashlib.sha256(
             args.hyperparameter_selection.read_bytes()
         ).hexdigest()
@@ -137,6 +177,7 @@ def main() -> int:
             "dataset_manifest_digests": manifest_digests,
             "dataset_manifest_file_sha256s": dataset_manifest_file_sha256s,
             "runtime_environment_contracts": environment_contracts,
+            "semantic_source_runtime_environment_contracts": environment_contracts,
             "runtime_environment_contract_digests": environment_digests,
             "dataset_dirs": [str(item.resolve()) for item in args.dataset_dir],
             "fit_projects": projects,
@@ -150,6 +191,33 @@ def main() -> int:
             "hyperparameter_selection_sha256": selection_digest,
             "coverage_report_sha256": coverage_digest,
             "coverage_warnings": coverage_warnings,
+            "action_target_schema_version": 4,
+            "action_target_count": len(action_targets),
+            "action_target_contract_ids": sorted(
+                {str(row.get("contract_id") or "") for row in action_targets}
+            ),
+            "action_target_paths": [
+                str(path.resolve()) for path in (args.action_target or ())
+            ],
+            "action_target_report": (
+                str(args.action_target_report.resolve())
+                if args.action_target_report is not None
+                else None
+            ),
+            "deployment_runtime_profile": (
+                json.loads(
+                    args.deployment_runtime_profile.read_text(encoding="utf-8")
+                )
+                if args.deployment_runtime_profile is not None
+                else None
+            ),
+            "deployment_runtime_profile_path": (
+                str(args.deployment_runtime_profile.resolve())
+                if args.deployment_runtime_profile is not None
+                else None
+            ),
+            "beliefkv_revision": beliefkv_revision,
+            "beliefkv_worktree_clean": beliefkv_worktree_clean,
             "calibration_status": "uncalibrated",
             "online_eligible": False,
             "predictive_action_eligible": False,

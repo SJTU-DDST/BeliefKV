@@ -1,0 +1,24 @@
+{
+  "anchors": [
+    {
+      "actual_bytes": 6436945920,
+      "direction": "d2h",
+      "duration_p95_ms": 249.775002,
+      "extent_count": 4,
+      "source_run": "experiments/micro/transfer_engine_v2_batch_gate_retryfix/20260826T060237Z"
+    },
+    {
+      "actual_bytes": 6436945920,
+      "direction": "h2d",
+      "duration_p95_ms": 692.421763,
+      "extent_count": 4,
+      "source_run": "experiments/micro/transfer_engine_v2_batch_gate_retryfix/20260826T060237Z"
+    }
+  ],
+  "commit_guard_ms": 25.0,
+  "contract_id": "h200-bf16-perf-v1-operational-tau",
+  "deployment_profile_id": "h200_bf16_perf_v1",
+  "kv_bytes_per_token": 98304,
+  "minimum_transfer_ms": 1.0,
+  "schema_version": 4
+}

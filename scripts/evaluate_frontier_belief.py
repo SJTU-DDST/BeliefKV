@@ -16,6 +16,7 @@ from beliefkv.predictor.structured_frontier import (
     evaluate_frontier_model,
     load_evaluation_rows,
 )
+from beliefkv.predictor.action_targets import load_action_target_rows
 
 
 def main() -> int:
@@ -24,6 +25,7 @@ def main() -> int:
     )
     parser.add_argument("--model", type=Path, required=True)
     parser.add_argument("--dataset-dir", type=Path, action="append", required=True)
+    parser.add_argument("--action-target", type=Path, action="append")
     parser.add_argument(
         "--split", choices=("calibration", "test_id", "test_ood"), required=True
     )
@@ -32,6 +34,7 @@ def main() -> int:
 
     raw_model = json.loads(args.model.read_text(encoding="utf-8"))
     model = FrontierBeliefModel.from_dict(raw_model)
+    action_targets = load_action_target_rows(args.action_target or ())
     rows, _ = load_evaluation_rows(
         args.dataset_dir,
         split=args.split,
@@ -51,7 +54,7 @@ def main() -> int:
         raise SystemExit(
             f"{args.split} projects overlap model-selection projects: {overlap}"
         )
-    metrics = evaluate_frontier_model(model, rows)
+    metrics = evaluate_frontier_model(model, rows, action_targets)
     metrics["evaluation_projects"] = sorted(evaluation_projects)
     args.output.parent.mkdir(parents=True, exist_ok=True)
     temporary = args.output.with_suffix(args.output.suffix + ".tmp")

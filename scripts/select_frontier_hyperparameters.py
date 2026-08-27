@@ -18,6 +18,7 @@ from beliefkv.predictor.structured_frontier import (
     select_frontier_hyperparameters,
     validate_training_corpus_diversity,
 )
+from beliefkv.predictor.action_targets import load_action_target_rows
 
 
 def main() -> int:
@@ -25,6 +26,7 @@ def main() -> int:
         description="Select FrontierBeliefModel parameters within train projects."
     )
     parser.add_argument("--dataset-dir", type=Path, action="append", required=True)
+    parser.add_argument("--action-target", type=Path, action="append", required=True)
     parser.add_argument("--minimum-projects", type=int, default=5)
     parser.add_argument("--minimum-tasks", type=int, default=40)
     parser.add_argument("--minimum-workflows", type=int, default=40)
@@ -35,6 +37,7 @@ def main() -> int:
     rows, manifests = load_decision_rows(
         args.dataset_dir, allowed_splits=("train",)
     )
+    action_targets = load_action_target_rows(args.action_target)
     coverage = json.loads(args.coverage_report.read_text(encoding="utf-8"))
     if coverage.get("coverage_gate_passed") is not True:
         raise SystemExit("canonical coverage gate did not pass")
@@ -56,9 +59,18 @@ def main() -> int:
         minimum_tasks=args.minimum_tasks,
         minimum_workflows=args.minimum_workflows,
     )
-    report = select_frontier_hyperparameters(rows)
+    report = select_frontier_hyperparameters(
+        rows,
+        action_targets=action_targets,
+    )
     report["formal_diversity_gate"] = diversity
     report["dataset_dirs"] = [str(path.resolve()) for path in args.dataset_dir]
+    report["action_target_paths"] = [
+        str(path.resolve()) for path in args.action_target
+    ]
+    report["action_target_contract_ids"] = sorted(
+        {str(row.get("contract_id") or "") for row in action_targets}
+    )
     report["dataset_manifest_sha256s"] = dataset_manifest_sha256s
     report["runtime_environment_contract_digests"] = (
         environment_contract_digests

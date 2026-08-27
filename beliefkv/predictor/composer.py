@@ -50,6 +50,7 @@ def observed_boundary_action(event: RuntimeEvent) -> str | None:
 @dataclass
 class InvocationPredictionFeatures:
     tool_backend_class: str = "unknown"
+    tool_command_class: str = "unknown"
     action_history: list[ActionKind] = field(default_factory=list)
     boundary_history: list[str] = field(default_factory=list)
     model: str = "unknown"
@@ -127,6 +128,12 @@ class RemainingTimePredictor:
             family = str(event.attributes.get("tool_family", "other"))
             features.tool_backend_class = str(
                 event.attributes.get("backend_class", "unknown")
+            )
+            features.tool_command_class = str(
+                event.attributes.get("command_class")
+                or event.attributes.get("tool_name")
+                or event.attributes.get("backend_class")
+                or "unknown"
             )
             action = {
                 "shell": ActionKind.TOOL_SHELL,

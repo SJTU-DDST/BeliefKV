@@ -90,11 +90,13 @@ def _features_for_invocation(
     context_tokens = 0
     generated_tokens = 0
     tool_backend_class = "unknown"
+    tool_command_class = "unknown"
     if online is not None:
         history = tuple(online.boundary_history)[-8:]
         context_tokens = max(0, int(online.context_tokens or 0))
         generated_tokens = max(0, int(online.generated_tokens or 0))
         tool_backend_class = str(online.tool_backend_class or "unknown")
+        tool_command_class = str(online.tool_command_class or "unknown")
     elapsed_wait_ms = 0.0
     if (
         invocation.state == InvocationState.WAIT_TOOL
@@ -114,6 +116,7 @@ def _features_for_invocation(
         boundary_history=history,
         tool_family=tool_family,
         backend_class=tool_backend_class,
+        command_class=tool_command_class,
         generated_tokens=generated_tokens,
         elapsed_wait_ms=elapsed_wait_ms,
         current_sequence_tokens=context_tokens,

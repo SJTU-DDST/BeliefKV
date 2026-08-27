@@ -75,16 +75,28 @@ def test_join_slack_uses_dependency_release_survival_not_resource_feasibility() 
     )
 
     probability, conservative = (
-        PredictiveRiskShadowObserver._dependency_release_slack(
+        PredictiveRiskShadowObserver._dependency_release_timing(
             belief,
             evaluation,
             invocation_id="parent",
             required_wait_ms=100.0,
+            release_within=False,
         )
     )
 
     assert probability == 0.45
     assert conservative == 0.0  # OTHER has no finite bound and stays conservative.
+
+    assert (
+        PredictiveRiskShadowObserver._dependency_release_timing(
+            belief,
+            evaluation,
+            invocation_id="parent",
+            required_wait_ms=100.0,
+            release_within=True,
+        )
+        is None
+    )  # OTHER has no finite upper reentry bound for PREFETCH_GPU.
 
 
 def _prediction() -> LocalFrontierPrediction:
@@ -226,7 +238,11 @@ def test_local_frontier_prediction_round_trip_preserves_distributions() -> None:
 
 def test_exact_shadow_prefetch_is_evaluated_without_mutating_joint_plan() -> None:
     policy_input = _input(capacity=1_000, reserved=100, include_cpu_target=True)
-    prediction = _prediction()
+    prediction = replace(
+        _prediction(),
+        remaining_external_wait=_distribution(1),
+        wait_belief=_tool_wait_belief(1),
+    )
     policy_input = replace(
         policy_input,
         optional_metadata={

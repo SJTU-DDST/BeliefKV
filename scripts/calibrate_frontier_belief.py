@@ -18,6 +18,7 @@ from beliefkv.predictor.structured_frontier import (
     load_evaluation_rows,
     runtime_environment_digest,
 )
+from beliefkv.predictor.action_targets import load_action_target_rows
 
 
 def main() -> int:
@@ -26,6 +27,8 @@ def main() -> int:
     )
     parser.add_argument("--model", type=Path, required=True)
     parser.add_argument("--dataset-dir", type=Path, action="append", required=True)
+    parser.add_argument("--action-target", type=Path, action="append")
+    parser.add_argument("--action-target-report", type=Path)
     parser.add_argument("--target-coverage", type=float, default=0.9)
     parser.add_argument(
         "--coverage-report",
@@ -50,6 +53,7 @@ def main() -> int:
 
     raw_model = json.loads(args.model.read_text(encoding="utf-8"))
     model = FrontierBeliefModel.from_dict(raw_model)
+    action_targets = load_action_target_rows(args.action_target or ())
     if args.development_on_train:
         rows: list[dict[str, object]] = []
         seen: set[str] = set()
@@ -76,9 +80,16 @@ def main() -> int:
             raise SystemExit("no train/development decision points were found")
         manifests: list[dict[str, object]] = []
         summary = model.calibrate(
-            rows, target_coverage=args.target_coverage, allow_development=True
+            rows,
+            target_coverage=args.target_coverage,
+            allow_development=True,
+            action_targets=action_targets,
         )
     else:
+        if not action_targets or args.action_target_report is None:
+            raise SystemExit(
+                "formal schema-v4 calibration requires action targets and report"
+            )
         if args.coverage_report is None:
             raise SystemExit(
                 "formal calibration requires --coverage-report"
@@ -143,7 +154,9 @@ def main() -> int:
                 "calibration coverage environment differs from the fitted model"
             )
         summary = model.calibrate(
-            rows, target_coverage=args.target_coverage
+            rows,
+            target_coverage=args.target_coverage,
+            action_targets=action_targets,
         )
     calibration_projects = sorted(
         {str(row.get("project") or "unknown") for row in rows}
@@ -161,6 +174,15 @@ def main() -> int:
             "calibration_status": "calibrated",
             "online_eligible": False,
             "predictive_action_eligible": False,
+            "calibration_action_target_count": len(action_targets),
+            "calibration_action_target_paths": [
+                str(path.resolve()) for path in (args.action_target or ())
+            ],
+            "calibration_action_target_report": (
+                str(args.action_target_report.resolve())
+                if args.action_target_report is not None
+                else None
+            ),
         }
     )
     if args.coverage_report is not None:

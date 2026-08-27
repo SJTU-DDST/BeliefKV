@@ -1,17 +1,24 @@
 # BeliefKV 当前系统设计
 
-日期：2026-07-14；最后更新：2026-08-22
+日期：2026-07-14；最后更新：2026-08-27
 
 当前 P5 下界已补齐 beneficiary-bound reclaim、单请求 admission rescue、
 96 GiB Host 的 95%/85% drop/recompute 生命周期，以及短片段 causal MaxWeight
 调度。预测器仍关闭；P6 不能再承担修复基础 admission starvation 的职责。
 
-当前执行路线已切换为 [GPU-First Native-Subagent Oracle](beliefkv_gpu_native_subagent_oracle_plan_2026-08-20_zh.md)。正式 workload 不再使用外部 planner/new supervisor 或 context pack/two-wave arrival，而是让同一个 parent conversation 通过原生 task 发起 FRESH child、等待 JOIN、接收 child ToolMessage 并继续。CPU estimator 保留为调试工具，不再构成 GPU 实验前置门槛。
+当前执行路线为 Performance-First P5 + Action-Aligned P6。Oracle 开发暂停，仅保留契约测试
+和历史诊断代码。正式 workload 不使用外部 planner/new supervisor 或 context pack/two-wave
+arrival，而是让同一个 parent conversation 通过原生 task 发起 FRESH child、等待 JOIN、接收
+child ToolMessage 并继续。
 
 
-GPU replay 的动作契约沿用 [Perfect-Future Action-Space Oracle v2](beliefkv_perfect_future_oracle_v2_execution_plan_2026-08-17_zh.md)。该实验在冻结 RCCG、token demand 和相对工具 service demand 的真实 GPU replay 中，分别测量 agent execution/admission oracle、KV oracle 和单一 JointPlan joint oracle，用于确认当前动作空间是否存在足够大的 execution-KV joint synergy，并决定是否继续投入 FrontierBelief 在线预测。
+P6 当前复用冻结 H200 BF16 语义数据，按 live transfer cost 构造
+`PREPARE_HOST/PREFETCH_GPU` operational-tau 标签。FrontierBelief 只提供局部 causal slack、
+token demand 和 reentry 分布；Causal Package Planner 仍是 execution、admission 和 residency 的
+唯一决策源。
 
-Oracle future 只能提供未来需求，不能绕过 allocator、RadixCache/HiCache、safe point、DMA/ACK 和 restore transaction。该历史方案中的独立高压 JointPlan 开销 gate 已暂缓；后续 GPU O0--O3 仍旁路记录 planning、validation、plan age、stale 和 fallback telemetry。
+预测 intent 不能绕过 allocator、RadixCache/HiCache、safe point、DMA/ACK 和 restore
+transaction。旧 Oracle 方案与结果保留为历史，不再阻塞 P6 shadow 或 canary。
 
 V2-0 schema v2、V2-1 truth/physical sidecar exporter 和 CPU-only V2-1.5 已完成。修正版实现了
 semantic-owner 级 causal next use、proactive D2H shadow、latest-feasible H2D 和四类有限 execution

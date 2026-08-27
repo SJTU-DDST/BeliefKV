@@ -135,6 +135,7 @@ class PredictiveIntent:
     maximum_stall_ms: float
     morphology_slack_ms: float
     causal_slack_probability: float = 0.0
+    timing_semantics: str = "action_default"
 
     def __post_init__(self) -> None:
         required = (
@@ -156,6 +157,15 @@ class PredictiveIntent:
             PredictiveActionKind.PREFETCH_GPU,
         }:
             raise ValueError("online predictive intent must be non-destructive")
+        expected_timing = (
+            "release_after_transfer"
+            if self.action == PredictiveActionKind.PREPARE_HOST
+            else "release_within_transfer"
+        )
+        if self.timing_semantics == "action_default":
+            object.__setattr__(self, "timing_semantics", expected_timing)
+        elif self.timing_semantics != expected_timing:
+            raise ValueError("predictive intent timing semantics do not match action")
         if self.context_epoch < 0 or self.target_bytes_hint <= 0:
             raise ValueError("predictive intent context/byte values are invalid")
         if min(
@@ -246,6 +256,7 @@ class PredictiveIntent:
             "maximum_stall_ms": self.maximum_stall_ms,
             "morphology_slack_ms": self.morphology_slack_ms,
             "causal_slack_probability": self.causal_slack_probability,
+            "timing_semantics": self.timing_semantics,
         }
 
 
@@ -1778,25 +1789,33 @@ class PredictiveRiskShadowObserver:
             * self.config.transfer_p95_safety_factor
         )
         required_wait_ms = transfer_p95_ms + self.config.transfer_commit_guard_ms
+        release_within = package.action == PredictiveActionKind.PREFETCH_GPU
         if candidate.state == InvocationState.WAIT_TOOL.value:
-            slack_probability = prediction.wait_belief.slack_probability(
-                required_wait_ms
+            timing_probability = (
+                prediction.wait_belief.release_within_probability(required_wait_ms)
+                if release_within
+                else prediction.wait_belief.release_after_probability(
+                    required_wait_ms
+                )
             )
-            remaining_low = prediction.wait_belief.conservative_wait_ms(0.05)
-            if slack_probability is None or remaining_low is None:
+            remaining_bound = prediction.wait_belief.conservative_wait_ms(
+                0.95 if release_within else 0.05
+            )
+            if timing_probability is None or remaining_bound is None:
                 return None
-            remaining_low_ms = max(0.0, remaining_low)
+            remaining_window_ms = max(0.0, remaining_bound)
         else:
-            dependency_slack = self._dependency_release_slack(
+            dependency_timing = self._dependency_release_timing(
                 belief,
                 evaluation,
                 invocation_id=candidate.invocation_id,
                 required_wait_ms=required_wait_ms,
+                release_within=release_within,
             )
-            if dependency_slack is None:
+            if dependency_timing is None:
                 return None
-            slack_probability, remaining_low_ms = dependency_slack
-        if slack_probability < self.config.minimum_causal_slack_probability:
+            timing_probability, remaining_window_ms = dependency_timing
+        if timing_probability < self.config.minimum_causal_slack_probability:
             return None
         maximum_transfer_ms = max(
             transfer_p95_ms * 1.10,
@@ -1835,7 +1854,7 @@ class PredictiveRiskShadowObserver:
             context_id=context_id,
             context_epoch=graph.contexts[context_id].epoch,
             generated_ts_ms=policy_input.resources.ts_ms,
-            remaining_window_low_ms=remaining_low_ms,
+            remaining_window_low_ms=remaining_window_ms,
             transfer_p95_ms=transfer_p95_ms,
             target_bytes_hint=target_bytes,
             min_reclaimable_bytes=min_reclaimable,
@@ -1854,26 +1873,37 @@ class PredictiveRiskShadowObserver:
             maximum_transfer_ms=maximum_transfer_ms,
             maximum_stall_ms=maximum_stall_ms,
             morphology_slack_ms=morphology_slack_ms,
-            causal_slack_probability=slack_probability,
+            causal_slack_probability=timing_probability,
+            timing_semantics=(
+                "release_within_transfer"
+                if release_within
+                else "release_after_transfer"
+            ),
         )
 
     @staticmethod
-    def _dependency_release_slack(
+    def _dependency_release_timing(
         belief: FrontierBeliefSnapshot,
         evaluation: PackageScenarioEvaluation,
         *,
         invocation_id: str,
         required_wait_ms: float,
+        release_within: bool,
         conservative_quantile: float = 0.05,
     ) -> tuple[float, float] | None:
-        """Return a lower-bound P(RCCG release > transfer deadline)."""
+        """Return action-specific RCCG release probability and time bound."""
 
         weighted_offsets: list[tuple[float, float]] = []
         finite_evidence = False
         if belief.other_probability_mass > 0:
-            # OTHER has no finite release bound. Treat it as immediate release,
-            # which cannot create optimistic transfer slack.
-            weighted_offsets.append((0.0, belief.other_probability_mass))
+            # OTHER cannot support either action. Immediate release is
+            # conservative for PREPARE; infinity is conservative for PREFETCH.
+            weighted_offsets.append(
+                (
+                    math.inf if release_within else 0.0,
+                    belief.other_probability_mass,
+                )
+            )
         releases = evaluation.dependency_release_offsets_by_scenario
         for scenario in belief.scenarios:
             offset = releases.get(scenario.scenario_id, {}).get(invocation_id)
@@ -1884,12 +1914,17 @@ class PredictiveRiskShadowObserver:
             weighted_offsets.append((float(offset), scenario.probability_mass))
         if not finite_evidence or not weighted_offsets:
             return None
-        survival = sum(
+        timing_probability = sum(
             probability
             for offset, probability in weighted_offsets
-            if offset > required_wait_ms
+            if (
+                offset <= required_wait_ms
+                if release_within
+                else offset > required_wait_ms
+            )
         )
-        threshold = max(0.0, min(1.0, conservative_quantile))
+        quantile = 1.0 - conservative_quantile if release_within else conservative_quantile
+        threshold = max(0.0, min(1.0, quantile))
         cumulative = 0.0
         conservative = 0.0
         for offset, probability in sorted(weighted_offsets):
@@ -1897,7 +1932,12 @@ class PredictiveRiskShadowObserver:
             conservative = offset
             if cumulative + 1e-12 >= threshold:
                 break
-        return max(0.0, min(1.0, survival)), max(0.0, conservative)
+        if not math.isfinite(conservative):
+            return None
+        return (
+            max(0.0, min(1.0, timing_probability)),
+            max(0.0, conservative),
+        )
 
     @staticmethod
     def _semantic_belief_key(
