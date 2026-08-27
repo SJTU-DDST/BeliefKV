@@ -3,16 +3,29 @@
     "environment": "configs/p6/h200_bf16_v2/environment_manifest.json",
     "gpu_service": {
       "evaluation": "artifacts/p6/h200_bf16_v1/gpu_service_evaluation.json",
+      "evaluation_sha256": "7af33871a5e2ad8ed6f33db4f3788b139eff0b2e0fa1927183fac34bd65baa6d",
+      "hardware_key": "h200nvl-a50d9b5b-driver595.71.05-qwen3coder30b-bf16-kvbf16-sglang18f91eb-pool871700-fa3-flashinfer",
       "online_eligible": false,
       "path": "artifacts/p6/h200_bf16_v1/gpu_service_qwen3coder30b_bf16_h200_v1.json",
       "provenance": "inherited_diagnostic_only_recalibration_required",
-      "recalibration_required": true
+      "recalibration_required": true,
+      "sha256": "53eb85a721090fb21c782511e1aa1960f0d73075c1819be73bc2758e931d662d"
     },
     "transfer_service": {
+      "hardware_key": "h200nvl-a50d9b5b-driver595.71.05-qwen3coder30b-bf16-kvbf16-sglang18f91eb-pool871700-page1-host96-pinned-numa1",
       "online_eligible_for_supported_conditions": false,
       "path": "artifacts/p6/h200_bf16_v1/transfer_service_qwen3coder30b_bf16_h200_v1.json",
       "provenance": "superseded_by_transfer_engine_v2_action_target_anchor",
-      "recalibration_required": true
+      "recalibration_required": true,
+      "sha256": "dff82215f1aad2f63ec02621cee385de549a71be4da1bff2bc1e83788a881f91",
+      "supported_conditions": [
+        "d2h_pcie_idle_link_with_decode_contention",
+        "h2d_pcie_idle_link_with_prefill_contention"
+      ],
+      "unsupported_conditions": [
+        "gpu_compute_idle",
+        "concurrent_pcie_transfer"
+      ]
     }
   },
   "capacity": {

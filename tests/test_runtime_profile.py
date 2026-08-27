@@ -34,6 +34,10 @@ V5_RESTORE_GATE_PROFILE = (
     REPOSITORY_ROOT
     / "configs/p6/h200_bf16_v5_restore_gate/frozen_runtime_profile.json"
 )
+PERF_PROFILE = (
+    REPOSITORY_ROOT
+    / "configs/p6/h200_bf16_perf_v1/frozen_runtime_profile.json"
+)
 
 
 def _profile() -> dict[str, object]:
@@ -137,6 +141,21 @@ def test_h200_v5_restore_gate_only_reduces_running_slots() -> None:
             formal.pop(key)
             gate.pop(key)
     assert gate == formal
+
+
+def test_h200_performance_profile_has_complete_artifact_contract() -> None:
+    profile, _ = load_runtime_profile(
+        PERF_PROFILE,
+        repository_root=REPOSITORY_ROOT,
+    )
+
+    gpu_service = profile["artifacts"]["gpu_service"]
+    transfer_service = profile["artifacts"]["transfer_service"]
+    assert gpu_service["hardware_key"]
+    assert gpu_service["sha256"]
+    assert gpu_service["evaluation_sha256"]
+    assert transfer_service["hardware_key"]
+    assert transfer_service["sha256"]
 
 
 def test_runtime_contract_accepts_exact_profile() -> None:
