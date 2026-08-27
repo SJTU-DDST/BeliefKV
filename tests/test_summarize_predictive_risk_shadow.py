@@ -1,6 +1,7 @@
 from scripts.summarize_predictive_risk_shadow import (
     _morphology_audit,
     _prepare_morphology_record,
+    _sample_summary,
 )
 
 
@@ -118,3 +119,18 @@ def test_morphology_gate_requires_distinct_real_contexts() -> None:
 
     assert audit["gate"]["qualifying_context_count"] == 2
     assert audit["gate"]["passed"] is True
+
+
+def test_sample_summary_uses_performance_mode_aggregate_without_detail() -> None:
+    summary = _sample_summary(
+        [],
+        {"count": 12, "p50": 3.0, "p95": 7.0, "p99": 9.0, "max": 11.0},
+    )
+
+    assert summary == {
+        "count": 12,
+        "p50": 3.0,
+        "p95": 7.0,
+        "p99": 9.0,
+        "max": 11.0,
+    }

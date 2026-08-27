@@ -134,3 +134,75 @@ shadow 出现稳定、fresh、正收益 package 后，才依次开放单笔
 `PREPARE_HOST -> COMMIT_CPU -> PREFETCH_GPU` canary。若特定 command class 或
 JOIN causal state support 不足，只补采 24--32 个预注册 characterization workflow，
 不访问 `test_id`。
+
+## 7. 固定 Trace GPU Shadow
+
+运行目录：
+
+```text
+experiments/shadow/p6_action_aligned_shadow_rerun/20260827T124236Z
+```
+
+固定输入为四个 project-distinct train workflow，运行
+`native_subagent_2to3`，每个 workflow 在首个自然 JOIN 后受控停止。预测器和 risk
+shadow 开启，predictive overlay、PREFETCH canary 和所有预测性物理动作关闭。
+
+### 7.1 Agent 与系统正确性
+
+| 指标 | 结果 |
+|---|---:|
+| Workflow | 4/4 semantic gate completed |
+| FRESH child | 8 |
+| Invocation RETURN | 12/12 |
+| JOIN_SATISFIED | 4/4 |
+| LLM request/result | 296/296 |
+| Tool start/end | 439/439 |
+| 运行时长 | 669.20 s |
+
+最终 `no_pending_transactions=true`、
+`shutdown_cleanup_did_not_mask_unresolved_transactions=true`，queue、command、lease、
+reservation、restore obligation 和 retraction transaction 均为空。停止脚本在收到
+shutdown ACK 后等待外层 launcher 超时，但 GPU worker 和模型进程已经退出；这不影响
+运行时终态或预测聚合。
+
+### 7.2 预测结果
+
+| 指标 | 结果 |
+|---|---:|
+| Eligibility checked/enqueued | 769/661 |
+| Worker completed/failed/dropped/pending | 661/0/0/0 |
+| Risk result | 495 |
+| PREPARE_HOST candidate evaluation | 1,869 |
+| Positive-benefit candidate | 0 |
+| Eligible candidate | 0 |
+| Selected action | 495 observed baseline |
+
+所有候选的 expected benefit 均为负，P50 为 -33.52 ms，最大值为 -18.13 ms。
+这不是因为 trace 没有 WAIT_JOIN：四个 parent 都进入了 JOIN_WAIT；根因是 resident KV
+最高仅约 11%，预测 future HBM overflow 为 0，提前 D2H 没有 future-pressure recourse
+收益，只有传输与 Host residency 成本。
+
+Action timing 在 1,191/1,869 个候选上可计算；其 live
+`D2H p95 + guard` 的 P50/P95/P99 为 79.08/157.91/246.69 ms。714 个候选的
+causal-slack probability 低于 0.9，另有 678 个 timing unavailable。WAIT_JOIN 的
+dependency timing 主要使用 RCCG structural support，WAIT_TOOL 的 218 次支持仍为
+backoff。当前 aggregate 尚不能把 678 个 unavailable 精确拆到缺失 child scenario、
+已变化 invocation state 或 unsupported wait 类型，因此不能据此盲目补采数据。
+
+### 7.3 上线阻塞
+
+1. **没有压力机会**：当前短 trace 只验证 agent 语义和 predictor worker，不能验证
+   PREPARE/COMMIT/PREFETCH 收益。
+2. **Transfer artifact 不匹配**：runtime profile 仍引用旧的 transfer service artifact，
+   其 provenance 已标记为 superseded/recalibration required；1,869/1,869 个候选均
+   `shape_unsupported`。action-target anchor 可用于训练 operational tau，但不能替代
+   online live-shape service model。
+3. **后台计划过慢**：planning P50/P95/P99 为 527/895/1,196 ms；1,869 个 action
+   certificate 中 915 个 stale，stale rate 48.96%。worker 与 observed path 隔离且没有
+   backlog，但该延迟会错过短工具窗口。
+
+因此本轮不开放任何 canary。正确顺序是：先重建当前 performance patch 的
+shape-aware D2H/H2D artifact；按事件、context epoch 和 action package 去重后台评估；
+补充 timing-unavailable 的细分归因；再对预注册的持续 backlog/high-pressure trace
+运行一次 shadow。只有自然出现 fresh、正收益 package 时，才开放单笔
+`PREPARE_HOST`，随后验证 beneficiary/COMMIT 和 latest-start `PREFETCH_GPU`。

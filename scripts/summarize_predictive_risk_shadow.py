@@ -366,6 +366,29 @@ def _quantile(values: list[float], quantile: float) -> float:
     return ordered[max(0, index)]
 
 
+def _sample_summary(
+    values: list[float],
+    aggregate: object | None = None,
+) -> dict[str, float | int]:
+    if values:
+        return {
+            "count": len(values),
+            "p50": _quantile(values, 0.50),
+            "p95": _quantile(values, 0.95),
+            "p99": _quantile(values, 0.99),
+            "max": max(values),
+        }
+    if isinstance(aggregate, dict):
+        return {
+            "count": int(aggregate.get("count") or 0),
+            "p50": float(aggregate.get("p50") or 0.0),
+            "p95": float(aggregate.get("p95") or 0.0),
+            "p99": float(aggregate.get("p99") or 0.0),
+            "max": float(aggregate.get("max") or 0.0),
+        }
+    return {"count": 0, "p50": 0.0, "p95": 0.0, "p99": 0.0, "max": 0.0}
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("audit_path", type=Path)
@@ -634,12 +657,9 @@ def main() -> int:
         "worst_future_hbm_peak_bytes": max_peak,
         "worst_future_hbm_overflow_bytes": max_overflow,
         "agent_morphology_audit": _morphology_audit(morphology_records),
-        "planning_ms": {
-            "p50": _quantile(planning_ms, 0.50),
-            "p95": _quantile(planning_ms, 0.95),
-            "p99": _quantile(planning_ms, 0.99),
-            "max": max(planning_ms, default=0.0),
-        },
+        "planning_ms": _sample_summary(
+            planning_ms, aggregate_samples.get("planning_ms")
+        ),
         "planning_ms_by_status": {
             status: {
                 "count": len(values),

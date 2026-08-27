@@ -2,6 +2,38 @@
 
 更新日期：2026-08-27
 
+## 2026-08-27：Action-Aligned P6 首轮事件驱动 Shadow 完成
+
+使用固定的 4-workflow `native_subagent_2to3` train gate 完成一次 predictor-only
+GPU shadow。四个 parent 共创建 8 个 FRESH child，12/12 invocation RETURN，4/4
+JOIN_SATISFIED；296 次 LLM 和 439 次工具调用均闭合。预测动作权限保持关闭，最终
+无 pending transaction、restore debt、lease 或 command，shutdown correctness gate
+全部通过。
+
+预测 worker 完成 661 个任务、无 failed/dropped/pending；495 个 risk result 共评估
+1,869 个 PREPARE_HOST 候选。结果为 0 个正收益、0 个 eligible、495/495 选择
+observed baseline。该结果不能解释为 causal-slack 模型无效：本轮实际 resident KV
+pressure 最高仅约 11%，future HBM overflow 为 0，所有候选都没有 pressure-time
+recourse credit，最大 expected benefit 仍为 -18.13 ms。
+
+本轮同时确认三个上线阻塞：
+
+- 1,191/1,869 个候选得到 action timing，678 个 timing unavailable；可用样本的
+  `required_wait_ms` P50/P95/P99 为 79.08/157.91/246.69 ms；
+- 当前 runtime profile 仍引用 superseded、`recalibration_required=true` 的 transfer
+  service artifact，1,869/1,869 个候选均为 `shape_unsupported`，不能开放物理动作；
+- 后台 planning P50/P95/P99 为 527/895/1,196 ms，1,869 个候选证书中 915 个在结果
+  返回前已 stale。预测 worker 必须继续只发布 semantic intent，并在 safe point 使用
+  live shape 重物化，不能通过延长 TTL 接受旧物理证书。
+
+因此 schema-v4 artifact 保持 `online_eligible=false` 和
+`predictive_action_eligible=false`。下一步先重建 performance-patch/TransferEngineV2
+对应的 shape-aware transfer artifact，并降低 background risk planning 的重复候选开销；
+随后在预注册、持续 root backlog 且能形成 HBM pressure 的 trace 上再次运行 shadow。
+只有出现 fresh、正收益 package 后，才依次开放单笔
+`PREPARE_HOST -> COMMIT_CPU -> PREFETCH_GPU` canary。完整记录见
+`docs/experiments/beliefkv_p6_action_aligned_frontier_v3_2026-08-27_zh.md`。
+
 ## 2026-08-27：P6 恢复，FrontierBelief 改为 Action-Aligned Schema-v4
 
 Oracle 开发继续暂停。Performance-First P5 已完成控制面压缩和批量 transfer
