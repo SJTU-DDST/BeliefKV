@@ -7,6 +7,7 @@ import pytest
 
 from beliefkv.control.causal_graph import RuntimeCausalContextGraph
 from beliefkv.core.events import RuntimeEvent, RuntimeEventKind
+from beliefkv.predictor.composer import RemainingTimePredictor
 from beliefkv.predictor.frontier_belief import (
     BeliefScopeBuilder,
     PredictiveEvidenceReadSet,
@@ -630,6 +631,15 @@ def test_calibration_does_not_refit_training_counts_and_survives_roundtrip(
     path = tmp_path / "calibrated.json"
     model.save(path)
     assert FrontierBeliefModel.load(path).predict(features) == prediction
+
+
+def test_remaining_time_predictor_loads_schema_v4_frontier() -> None:
+    model = FrontierBeliefModel(model_version="schema-v4-loader")
+
+    predictor = RemainingTimePredictor.from_dict(model.to_dict())
+
+    assert predictor.frontier_model is not None
+    assert predictor.frontier_model.model_version == "schema-v4-loader"
 
 
 def test_calibration_rejects_training_or_test_rows() -> None:

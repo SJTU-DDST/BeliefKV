@@ -170,12 +170,19 @@ class RemainingTimePredictor:
 
     @classmethod
     def from_dict(cls, raw: Mapping[str, Any]) -> "RemainingTimePredictor":
+        if raw.get("model_kind") == "structured_conditional_particle_frontier":
+            from beliefkv.predictor.structured_frontier import (
+                FrontierBeliefModel,
+            )
+
+            return cls.from_frontier_model(FrontierBeliefModel.from_dict(raw))
         version = int(raw.get("schema_version", -1))
         if version == 2:
             if "models" in raw and isinstance(raw["models"], Mapping):
                 # Legacy composite artifact saved after the schema bump.
                 models = raw["models"]
             else:
+                # Compatibility with the original schema-v2 frontier artifact.
                 from beliefkv.predictor.structured_frontier import (
                     FrontierBeliefModel,
                 )
@@ -187,7 +194,7 @@ class RemainingTimePredictor:
         else:
             raise ValueError(
                 f"unsupported predictor artifact schema {version}; "
-                f"expected 1 or 2"
+                "expected legacy schema 1/2 or a structured frontier artifact"
             )
         if not isinstance(models, Mapping):
             raise ValueError("predictor artifact has no models object")
