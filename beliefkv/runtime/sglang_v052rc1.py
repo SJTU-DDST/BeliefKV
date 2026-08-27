@@ -5,6 +5,7 @@ import gc
 import hashlib
 import inspect
 import json
+import math
 import os
 import signal
 import threading
@@ -2494,6 +2495,8 @@ class EmbeddedSGLangRuntime:
         ] = {}
         self._joint_shadow_counts: Counter[str] = Counter()
         self._joint_predictive_counts: Counter[str] = Counter()
+        self._predictive_shadow_aggregate_counts: Counter[str] = Counter()
+        self._predictive_shadow_aggregate_samples: dict[str, deque[float]] = {}
         self._last_frontier_predictions: dict[str, dict[str, object]] = {}
         self._last_frontier_model_version: str | None = None
         self._restore_funding_preview_cursor: dict[str, int] = {}
@@ -4084,6 +4087,24 @@ class EmbeddedSGLangRuntime:
                 worker_closed=predictive_worker_closed,
                 worker=predictive_risk_worker.stats().to_dict(),
                 counts=dict(sorted(self._joint_predictive_counts.items())),
+                aggregate={
+                    "counts": dict(
+                        sorted(
+                            getattr(
+                                self,
+                                "_predictive_shadow_aggregate_counts",
+                                {},
+                            ).items()
+                        )
+                    ),
+                    "samples": self._predictive_shadow_sample_summary(
+                        getattr(
+                            self,
+                            "_predictive_shadow_aggregate_samples",
+                            {},
+                        )
+                    ),
+                },
                 observed_worker_independent=True,
             )
         joint_shadow_worker = getattr(self, "joint_shadow_worker", None)
@@ -16838,6 +16859,101 @@ class EmbeddedSGLangRuntime:
             coarse_stamp_reasons=extra_readset,
         )
 
+    def _record_predictive_shadow_aggregate(
+        self,
+        payload: Mapping[str, object],
+        *,
+        certificate_count: int,
+        fresh_count: int,
+        stale_count: int,
+        stale_reasons: Mapping[str, int],
+    ) -> None:
+        counts = getattr(self, "_predictive_shadow_aggregate_counts", None)
+        if counts is None:
+            counts = Counter()
+            self._predictive_shadow_aggregate_counts = counts
+        samples = getattr(self, "_predictive_shadow_aggregate_samples", None)
+        if samples is None:
+            samples = {}
+            self._predictive_shadow_aggregate_samples = samples
+
+        def count_value(prefix: str, value: object) -> None:
+            counts[f"{prefix}:{str(value or 'unknown')}"] += 1
+
+        def sample(name: str, value: object) -> None:
+            if isinstance(value, bool) or not isinstance(value, (int, float)):
+                return
+            number = float(value)
+            if math.isfinite(number):
+                samples.setdefault(name, deque(maxlen=65_536)).append(number)
+
+        counts["result_count"] += 1
+        count_value("status", payload.get("status"))
+        count_value("selected_action", payload.get("selected_action"))
+        count_value("support_level", payload.get("support_level"))
+        counts["candidate_count"] += int(payload.get("candidate_count") or 0)
+        counts["certificate_count"] += certificate_count
+        counts["certificate_fresh_count"] += fresh_count
+        counts["certificate_stale_count"] += stale_count
+        for reason, value in stale_reasons.items():
+            counts[f"certificate_stale_reason:{reason}"] += int(value)
+        for reason in payload.get("blocked_reasons", ()):
+            count_value("blocked_reason", reason)
+        for reason in payload.get("ood_reasons", ()):
+            count_value("ood_reason", reason)
+        sample("calibration_coverage", payload.get("calibration_coverage"))
+        sample("other_probability_mass", payload.get("other_probability_mass"))
+        sample("planning_ms", payload.get("planning_ms"))
+
+        for summary in payload.get("candidate_summaries", ()):
+            if not isinstance(summary, Mapping):
+                continue
+            action = str(summary.get("action") or "unknown")
+            count_value("candidate_action", action)
+            benefit = summary.get("expected_benefit_ms")
+            sample(f"expected_benefit_ms:{action}", benefit)
+            sample(
+                f"causal_slack_probability:{action}",
+                summary.get("causal_slack_probability"),
+            )
+            sample(
+                f"required_wait_ms:{action}",
+                summary.get("required_wait_ms"),
+            )
+            sample(
+                f"future_hbm_feasibility_probability:{action}",
+                summary.get("future_hbm_feasibility_probability"),
+            )
+            if isinstance(benefit, (int, float)) and not isinstance(benefit, bool):
+                if float(benefit) > 0:
+                    counts[f"positive_benefit:{action}"] += 1
+            if bool(summary.get("eligible")):
+                counts[f"eligible:{action}"] += 1
+            count_value("timing_semantics", summary.get("timing_semantics"))
+            for reason in summary.get("reasons", ()):
+                counts[f"candidate_reason:{action}:{reason}"] += 1
+            for item in summary.get("prediction_head_support", ()):
+                if not isinstance(item, (list, tuple)) or len(item) != 2:
+                    continue
+                head, support = item
+                counts[f"head_support:{action}:{head}:{support}"] += 1
+
+    @staticmethod
+    def _predictive_shadow_sample_summary(
+        samples: Mapping[str, object],
+    ) -> dict[str, dict[str, float | int]]:
+        summary: dict[str, dict[str, float | int]] = {}
+        for name, raw_values in sorted(samples.items()):
+            values = tuple(float(value) for value in raw_values)
+            summary[name] = {
+                "count": len(values),
+                "p50": percentile(values, 50),
+                "p95": percentile(values, 95),
+                "p99": percentile(values, 99),
+                "max": max(values, default=0.0),
+            }
+        return summary
+
     def _drain_predictive_risk_result(
         self,
         observation: RuntimeResourceObservation,
@@ -17001,6 +17117,13 @@ class EmbeddedSGLangRuntime:
             self._joint_predictive_counts[
                 "action_certificate_stale"
             ] += stale_count
+            self._record_predictive_shadow_aggregate(
+                shadow_payload,
+                certificate_count=certificate_count,
+                fresh_count=fresh_count,
+                stale_count=stale_count,
+                stale_reasons=stale_reasons,
+            )
             self._joint_predictive_counts["risk_shadow_evaluated"] += 1
             self._joint_predictive_counts[
                 f"risk_shadow_selected_{selected_action}"

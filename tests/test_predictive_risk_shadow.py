@@ -308,6 +308,14 @@ def test_exact_shadow_prefetch_is_evaluated_without_mutating_joint_plan() -> Non
     assert result.predictive_intent.context_id == "ctx-target"
     assert not result.predictive_intent.to_dict().get("bundle_evidence")
     assert not source_plan.prediction_used
+    selected_summary = next(
+        item
+        for item in result.candidate_summaries
+        if item["package_id"] == result.selected_package_id
+    )
+    assert selected_summary["timing_semantics"] == "release_within_transfer"
+    assert selected_summary["causal_slack_probability"] >= 0.9
+    assert selected_summary["required_wait_ms"] > 0
     assert result.to_dict()["prediction_used"] is False
 
     repeated = observer.evaluate(

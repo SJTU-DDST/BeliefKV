@@ -420,6 +420,8 @@ def main() -> int:
     no_candidate_gate_ms: list[float] = []
     enqueue_ms: list[float] = []
     worker_summary: dict[str, object] | None = None
+    aggregate_counts: dict[str, int] = {}
+    aggregate_samples: dict[str, object] = {}
     morphology_records: list[dict[str, object]] = []
 
     with _open(args.audit_path) as handle:
@@ -457,6 +459,17 @@ def main() -> int:
                 raw_worker = record.get("worker")
                 if isinstance(raw_worker, dict):
                     worker_summary = dict(raw_worker)
+                raw_aggregate = record.get("aggregate")
+                if isinstance(raw_aggregate, dict):
+                    raw_counts = raw_aggregate.get("counts")
+                    raw_samples = raw_aggregate.get("samples")
+                    if isinstance(raw_counts, dict):
+                        aggregate_counts = {
+                            str(key): int(value)
+                            for key, value in raw_counts.items()
+                        }
+                    if isinstance(raw_samples, dict):
+                        aggregate_samples = dict(raw_samples)
                 continue
             if event == "predictive_risk_shadow_failed":
                 failed_count += 1
@@ -560,10 +573,47 @@ def main() -> int:
                 ):
                     stale_plan_ids.add(plan_id)
 
+    if risk_record_count == 0 and aggregate_counts:
+        risk_record_count = aggregate_counts.get("result_count", 0)
+        chance_evaluated = aggregate_counts.get("candidate_count", 0)
+        certificate_count = aggregate_counts.get("certificate_count", 0)
+        certificate_fresh_count = aggregate_counts.get(
+            "certificate_fresh_count", 0
+        )
+        certificate_stale_count = aggregate_counts.get(
+            "certificate_stale_count", 0
+        )
+        for key, value in aggregate_counts.items():
+            if key.startswith("status:"):
+                status_counts[key.split(":", 1)[1]] += value
+            elif key.startswith("selected_action:"):
+                action = key.split(":", 1)[1]
+                action_counts[action] += value
+                if action != "unknown":
+                    evaluated_action_counts[action] += value
+            elif key.startswith("support_level:"):
+                support_counts[key.split(":", 1)[1]] += value
+            elif key.startswith("blocked_reason:"):
+                blocked_reasons[key.split(":", 1)[1]] += value
+            elif key.startswith("candidate_reason:"):
+                candidate_reasons[key.split(":", 1)[1]] += value
+            elif key.startswith("positive_benefit:"):
+                positive_benefit_count += value
+            elif key.startswith("eligible:"):
+                eligible_candidate_count += value
+            elif key.startswith("certificate_stale_reason:"):
+                certificate_stale_reasons[key.split(":", 1)[1]] += value
+            elif key.startswith("candidate_action:"):
+                projection_counts[key.split(":", 1)[1]] += value
+
     matched_validations = predictive_plan_ids.intersection(validated_plan_ids)
     matched_stale = predictive_plan_ids.intersection(stale_plan_ids)
     summary = {
         "development_only": True,
+        "performance_mode_aggregate": {
+            "counts": dict(sorted(aggregate_counts.items())),
+            "samples": aggregate_samples,
+        },
         "decision_authority_counts": dict(sorted(authority_counts.items())),
         "predictive_record_count": risk_record_count,
         "predictive_source_plan_count": len(predictive_plan_ids),

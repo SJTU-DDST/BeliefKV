@@ -89,6 +89,14 @@ class PredictiveRiskShadowConfig:
             )
 
 
+@dataclass(frozen=True)
+class _ActionTimingEvidence:
+    semantics: str
+    required_wait_ms: float
+    causal_slack_probability: float
+    conservative_remaining_window_ms: float
+
+
 def _transfer_deadline_and_slack(
     pressure_ms: float | None,
     reentry_ms: float | None,
@@ -1384,6 +1392,7 @@ class PredictiveRiskShadowObserver:
         summaries: list[PackageRiskSummary] = []
         projection_by_package: dict[str, str] = {}
         belief_by_package: dict[str, Any] = {}
+        timing_by_package: dict[str, _ActionTimingEvidence] = {}
         selected_package_id = baseline.package_id
         selected_benefit_ms = 0.0
         evaluation_by_package: dict[str, PackageScenarioEvaluation] = {}
@@ -1471,6 +1480,37 @@ class PredictiveRiskShadowObserver:
             )
             summary = candidate_decision.summaries[0]
             evaluation_by_package[package.package_id] = candidate_evaluation
+            if package.action in {
+                PredictiveActionKind.PREPARE_HOST,
+                PredictiveActionKind.PREFETCH_GPU,
+            }:
+                timing = self._action_timing_evidence(
+                    package,
+                    belief=candidate_belief,
+                    evaluation=candidate_evaluation,
+                    eligibility=eligibility,
+                    predictions=predictions,
+                    physicalizer=physicalizer,
+                )
+                if timing is None:
+                    summary = replace(
+                        summary,
+                        eligible=False,
+                        reasons=tuple(summary.reasons)
+                        + ("action_timing_unavailable",),
+                    )
+                else:
+                    timing_by_package[package.package_id] = timing
+                    if (
+                        timing.causal_slack_probability
+                        < self.config.minimum_causal_slack_probability
+                    ):
+                        summary = replace(
+                            summary,
+                            eligible=False,
+                            reasons=tuple(summary.reasons)
+                            + ("insufficient_causal_slack_probability",),
+                        )
             summaries.append(summary)
             if summary.eligible and summary.expected_benefit_ms > selected_benefit_ms:
                 selected_benefit_ms = summary.expected_benefit_ms
@@ -1509,6 +1549,9 @@ class PredictiveRiskShadowObserver:
             physicalizer=physicalizer,
             support=support_by_package.get(decision.selected_package_id, ()),
             certificate=certificates.get(decision.selected_package_id),
+            timing_evidence=timing_by_package.get(
+                decision.selected_package_id
+            ),
         )
         return PredictiveRiskShadowResult(
             status="evaluated",
@@ -1529,6 +1572,7 @@ class PredictiveRiskShadowObserver:
                 actions=action_by_package,
                 support_by_package=support_by_package,
                 projection_by_package=projection_by_package,
+                timing_by_package=timing_by_package,
                 certificates={
                     package_id: certificate.to_dict()
                     for package_id, certificate in certificates.items()
@@ -1694,6 +1738,74 @@ class PredictiveRiskShadowObserver:
             return "calibrated_backoff"
         return "unavailable"
 
+    def _action_timing_evidence(
+        self,
+        package: PredictiveActionPackage,
+        *,
+        belief: FrontierBeliefSnapshot,
+        evaluation: PackageScenarioEvaluation,
+        eligibility: PredictiveEligibility,
+        predictions: Mapping[str, LocalFrontierPrediction],
+        physicalizer: _OnlineCandidatePhysicalizer,
+    ) -> _ActionTimingEvidence | None:
+        if package.action == PredictiveActionKind.PREPARE_HOST:
+            candidates = eligibility.prepare_host_victims
+            context_id = package.victim_context_ids[0]
+            release_within = False
+            semantics = "release_after_transfer"
+        elif package.action == PredictiveActionKind.PREFETCH_GPU:
+            candidates = eligibility.prefetch_targets
+            context_id = package.target_context_id or ""
+            release_within = True
+            semantics = "release_within_transfer"
+        else:
+            return None
+        candidate = next(
+            (item for item in candidates if item.context_id == context_id),
+            None,
+        )
+        if candidate is None:
+            return None
+        prediction = predictions.get(candidate.invocation_id)
+        if prediction is None:
+            return None
+        transfer_p95_ms = (
+            physicalizer.package_transfer_duration_ms(package)
+            * self.config.transfer_p95_safety_factor
+        )
+        required_wait_ms = transfer_p95_ms + self.config.transfer_commit_guard_ms
+        if candidate.state == InvocationState.WAIT_TOOL.value:
+            timing_probability = (
+                prediction.wait_belief.release_within_probability(required_wait_ms)
+                if release_within
+                else prediction.wait_belief.release_after_probability(
+                    required_wait_ms
+                )
+            )
+            remaining_bound = prediction.wait_belief.conservative_wait_ms(
+                0.95 if release_within else 0.05
+            )
+            if timing_probability is None or remaining_bound is None:
+                return None
+            remaining_window_ms = max(0.0, remaining_bound)
+        else:
+            dependency_timing = self._dependency_release_timing(
+                belief,
+                evaluation,
+                invocation_id=candidate.invocation_id,
+                required_wait_ms=required_wait_ms,
+                release_within=release_within,
+            )
+            if dependency_timing is None:
+                return None
+            timing_probability, remaining_window_ms = dependency_timing
+        return _ActionTimingEvidence(
+            semantics=semantics,
+            required_wait_ms=required_wait_ms,
+            causal_slack_probability=timing_probability,
+            conservative_remaining_window_ms=remaining_window_ms,
+        )
+
     def _predictive_intent(
         self,
         package: PredictiveActionPackage | None,
@@ -1708,6 +1820,7 @@ class PredictiveRiskShadowObserver:
         physicalizer: "_OnlineCandidatePhysicalizer",
         support: tuple[tuple[str, str], ...],
         certificate: PredictiveActionCertificate | None,
+        timing_evidence: _ActionTimingEvidence | None,
     ) -> PredictiveIntent | None:
         if (
             package is None
@@ -1784,39 +1897,16 @@ class PredictiveRiskShadowObserver:
             if package.action == PredictiveActionKind.PREPARE_HOST
             else ("future_kv_growth", wait_head)
         )
-        transfer_p95_ms = (
-            physicalizer.package_transfer_duration_ms(package)
-            * self.config.transfer_p95_safety_factor
-        )
-        required_wait_ms = transfer_p95_ms + self.config.transfer_commit_guard_ms
-        release_within = package.action == PredictiveActionKind.PREFETCH_GPU
-        if candidate.state == InvocationState.WAIT_TOOL.value:
-            timing_probability = (
-                prediction.wait_belief.release_within_probability(required_wait_ms)
-                if release_within
-                else prediction.wait_belief.release_after_probability(
-                    required_wait_ms
-                )
-            )
-            remaining_bound = prediction.wait_belief.conservative_wait_ms(
-                0.95 if release_within else 0.05
-            )
-            if timing_probability is None or remaining_bound is None:
-                return None
-            remaining_window_ms = max(0.0, remaining_bound)
-        else:
-            dependency_timing = self._dependency_release_timing(
-                belief,
-                evaluation,
-                invocation_id=candidate.invocation_id,
-                required_wait_ms=required_wait_ms,
-                release_within=release_within,
-            )
-            if dependency_timing is None:
-                return None
-            timing_probability, remaining_window_ms = dependency_timing
-        if timing_probability < self.config.minimum_causal_slack_probability:
+        if timing_evidence is None:
             return None
+        transfer_p95_ms = (
+            timing_evidence.required_wait_ms
+            - self.config.transfer_commit_guard_ms
+        )
+        timing_probability = timing_evidence.causal_slack_probability
+        remaining_window_ms = (
+            timing_evidence.conservative_remaining_window_ms
+        )
         maximum_transfer_ms = max(
             transfer_p95_ms * 1.10,
             transfer_p95_ms + 1.0,
@@ -1874,11 +1964,7 @@ class PredictiveRiskShadowObserver:
             maximum_stall_ms=maximum_stall_ms,
             morphology_slack_ms=morphology_slack_ms,
             causal_slack_probability=timing_probability,
-            timing_semantics=(
-                "release_within_transfer"
-                if release_within
-                else "release_after_transfer"
-            ),
+            timing_semantics=timing_evidence.semantics,
         )
 
     @staticmethod
@@ -2435,6 +2521,7 @@ class PredictiveRiskShadowObserver:
         actions: Mapping[str, str],
         support_by_package: Mapping[str, tuple[tuple[str, str], ...]],
         projection_by_package: Mapping[str, str],
+        timing_by_package: Mapping[str, _ActionTimingEvidence],
         certificates: Mapping[str, Mapping[str, object]],
     ) -> tuple[Mapping[str, object], ...]:
         return tuple(
@@ -2448,6 +2535,28 @@ class PredictiveRiskShadowObserver:
                     list(value)
                     for value in support_by_package.get(item.package_id, ())
                 ],
+                "timing_semantics": (
+                    timing_by_package[item.package_id].semantics
+                    if item.package_id in timing_by_package
+                    else None
+                ),
+                "required_wait_ms": (
+                    timing_by_package[item.package_id].required_wait_ms
+                    if item.package_id in timing_by_package
+                    else None
+                ),
+                "causal_slack_probability": (
+                    timing_by_package[item.package_id].causal_slack_probability
+                    if item.package_id in timing_by_package
+                    else None
+                ),
+                "conservative_remaining_window_ms": (
+                    timing_by_package[
+                        item.package_id
+                    ].conservative_remaining_window_ms
+                    if item.package_id in timing_by_package
+                    else None
+                ),
                 "expected_benefit_ms": item.expected_benefit_ms,
                 "expected_recourse_credit_ms": (
                     item.expected_recourse_credit_ms

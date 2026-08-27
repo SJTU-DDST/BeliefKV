@@ -7894,6 +7894,69 @@ class SGLangBackendTest(unittest.TestCase):
                 self.assertFalse(runtime._host_cleanup_active)
 
 
+    def test_predictive_shadow_aggregate_preserves_action_diagnostics(self):
+        runtime = EmbeddedSGLangRuntime.__new__(EmbeddedSGLangRuntime)
+        runtime._predictive_shadow_aggregate_counts = Counter()
+        runtime._predictive_shadow_aggregate_samples = {}
+
+        runtime._record_predictive_shadow_aggregate(
+            {
+                "status": "evaluated",
+                "selected_action": "observed_baseline",
+                "support_level": "backoff",
+                "candidate_count": 1,
+                "calibration_coverage": 0.95,
+                "blocked_reasons": ["prepare_host:tool_wait_unavailable"],
+                "ood_reasons": ["tool_wait_unavailable"],
+                "candidate_summaries": [
+                    {
+                        "action": "prepare_host",
+                        "expected_benefit_ms": 12.0,
+                        "causal_slack_probability": 0.8,
+                        "required_wait_ms": 275.0,
+                        "future_hbm_feasibility_probability": 1.0,
+                        "timing_semantics": "release_after_transfer",
+                        "eligible": False,
+                        "reasons": [
+                            "insufficient_causal_slack_probability"
+                        ],
+                        "prediction_head_support": [
+                            ["tool_wait_slack", "backoff"]
+                        ],
+                    }
+                ],
+            },
+            certificate_count=1,
+            fresh_count=0,
+            stale_count=1,
+            stale_reasons={"page_revision": 1},
+        )
+
+        counts = runtime._predictive_shadow_aggregate_counts
+        self.assertEqual(counts["result_count"], 1)
+        self.assertEqual(counts["positive_benefit:prepare_host"], 1)
+        self.assertEqual(
+            counts[
+                "candidate_reason:prepare_host:"
+                "insufficient_causal_slack_probability"
+            ],
+            1,
+        )
+        self.assertEqual(
+            counts[
+                "head_support:prepare_host:tool_wait_slack:backoff"
+            ],
+            1,
+        )
+        summary = runtime._predictive_shadow_sample_summary(
+            runtime._predictive_shadow_aggregate_samples
+        )
+        self.assertEqual(
+            summary["required_wait_ms:prepare_host"]["p50"],
+            275.0,
+        )
+
+
 class SGLangContractTest(unittest.TestCase):
     def test_metadata_wire_roundtrip(self):
         metadata = BeliefKVRequestMetadata("wf", "inv", "ctx", 3, "coder", "coder-1")
