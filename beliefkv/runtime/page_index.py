@@ -227,24 +227,25 @@ class PageOwnershipIndex:
         context_ids: set[str] | tuple[str, ...] = (),
         components: set[str] | tuple[str, ...] = (),
     ) -> None:
+        component_set = set(components)
         changed_handles = set(handles)
         affected_contexts = set(context_ids)
         for handle in changed_handles:
             page = self.pages.get(handle)
             if page is not None:
                 affected_contexts.update(page.owner_contexts)
-        self._refresh_resident_accounting(changed_handles)
+        if component_set.intersection({"residency", "owner", "context"}):
+            self._refresh_resident_accounting(changed_handles)
         previous_revision = self._revision
         self._revision += 1
         if topology:
             self._topology_revision += 1
-        if set(components).intersection(
+        if component_set.intersection(
             {"topology", "residency", "lock", "reader", "semantic_pin", "transfer"}
         ):
             self._physical_state_revision += 1
-        if set(components).intersection({"residency", "owner", "context"}):
+        if component_set.intersection({"residency", "owner", "context"}):
             self._accounting_revision += 1
-        component_set = set(components)
         self._invalidate_context_summaries(
             affected_contexts,
             access_only=component_set == {"access"},

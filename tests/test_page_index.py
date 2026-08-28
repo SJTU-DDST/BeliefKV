@@ -74,6 +74,30 @@ class PageIndexTest(unittest.TestCase):
         self.assertEqual(index.workflow_gpu_charges(), {"wf-a": 50.0, "wf-b": 50.0})
         index.assert_consistent()
 
+    def test_non_accounting_metadata_does_not_rewrite_resident_charges(self):
+        index = PageOwnershipIndex()
+        index.register_context("ctx", "wf", 0)
+        parent = PageHandle(1, 0)
+        child = PageHandle(2, 0)
+        index.register_page(parent, size_bytes=101)
+        index.register_page(child, size_bytes=103, parent=parent)
+        index.bind_pages("ctx", 0, (parent, child))
+        parent_accounting = index._resident_accounting_by_handle[parent]
+        child_accounting = index._resident_accounting_by_handle[child]
+
+        index.set_engine_lock(child, 1)
+        index.set_active_readers(child, 1)
+        index.update_runtime_state(child, last_access_ms=1.0)
+        index.set_parent(child, None)
+
+        self.assertIs(
+            index._resident_accounting_by_handle[parent], parent_accounting
+        )
+        self.assertIs(
+            index._resident_accounting_by_handle[child], child_accounting
+        )
+        index.assert_consistent()
+
     def test_prepare_commit_updates_residency_only_at_completion(self):
         index = PageOwnershipIndex()
         handle = PageHandle(1, 0)
