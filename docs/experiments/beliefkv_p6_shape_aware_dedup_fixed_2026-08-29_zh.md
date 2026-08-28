@@ -52,13 +52,34 @@ GPU 数据采于修改前，不能把它写成已测得的延迟改善。
 本轮 1,854 个 PREPARE_HOST 候选均无正收益且不可执行。主要原因不是 shape OOD，
 而是 workload 没有产生 pressure-time recourse；最大 resident pressure 仅 17.79%。
 
+## 高压验证阻塞
+
+预注册 64-root batch 使用完全相同输入执行了原始轮和一次 recovery。两轮分别在约
+45.9 秒和 32.7 秒触发：
+
+`AssertionError: incremental workflow charge accounting diverged`
+
+失败时已经达到 32 running 和 32–59 waiting，但 token usage 只有约 9%–11%，尚未形成
+可用于 shape-aware risk 评价的高压区间。两轮均为无效性能样本。
+
+CPU 高 fan-out 复现得到 cache/full recomputation 最大差异 0.000406 byte，证明这是
+共享页浮点分摊的舍入误差。修复包括：
+
+- lock/access/topology-only 事件不再刷新 resident accounting；
+- workflow charge 一致性使用 1 byte 绝对容差；
+- resident GPU/CPU 总字节继续整数精确校验；
+- 注入 2 byte 偏差的负路径仍会触发断言。
+
+定向回归为 94 passed。修复后未启动第三轮 GPU，避免重复实验循环。
+
 ## 下一门槛
 
-只执行一次预注册 64-root 高压 predictor shadow。该轮不开放预测物理动作，仅验证：
+后续只需一次相同 64-root 高压 predictor shadow。预测物理动作继续关闭，并验证：
 
 - deterministic fast reject 是否降低完整 scenario evaluation 与 worker backlog；
 - 高压时是否出现 action-aligned causal slack 和正 recourse 候选；
 - planning freshness 是否足以发布 semantic intent；
+- workflow charge 一致性在 64-root 下不再误报；
 - observed P5 路径和 shutdown 守恒不受影响。
 
 若该轮仍未形成 HBM 压力，不继续重复相同 workload，也不据此调低风险门槛。

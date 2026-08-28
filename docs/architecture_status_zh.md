@@ -35,6 +35,14 @@ scenario timeline，planning P50/P95/P99 反而为 600/1,078/1,469 ms。代码�
 baseline/candidate timeline。该 fast reject 需要在一次预注册 64-root 高压 shadow 中
 验证，不据此宣称已有在线延迟收益。
 
+64-root 高压验证随后两次在启动后约 33–46 秒触发 PageIndex workflow charge
+一致性断言，均未形成有效性能样本。CPU 复现确认增量 cache 与全量重算的最大差异
+仅为 0.000406 byte，根因是共享页按 workflow 浮点分摊后仍使用 0.000001 byte
+绝对容差，不是 ownership 丢失。修复后 non-accounting 元数据不再重写 resident
+charge，workflow charge 校验采用 1 byte 的舍入容差；resident GPU/CPU 总字节仍保持
+整数精确校验，超过 1 byte 的注入错误仍会失败。相关回归为 94 passed。高压 GPU
+结果仍待一次独立复验，本轮不继续实验循环。
+
 ## 2026-08-27：Action-Aligned P6 首轮事件驱动 Shadow 完成
 
 使用固定的 4-workflow `native_subagent_2to3` train gate 完成一次 predictor-only

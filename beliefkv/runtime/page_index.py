@@ -1450,12 +1450,18 @@ class PageOwnershipIndex:
                     actual_charges.get(workflow_id, 0.0) + share
                 )
         workflow_ids = set(actual_charges) | set(self._workflow_charge_cache)
-        if any(
-            abs(
-                actual_charges.get(workflow_id, 0.0)
-                - self._workflow_charge_cache.get(workflow_id, 0.0)
+        max_charge_error = max(
+            (
+                abs(
+                    actual_charges.get(workflow_id, 0.0)
+                    - self._workflow_charge_cache.get(workflow_id, 0.0)
+                )
+                for workflow_id in workflow_ids
+            ),
+            default=0.0,
+        )
+        if max_charge_error > 1.0:
+            raise AssertionError(
+                "incremental workflow charge accounting diverged: "
+                f"{max_charge_error:.3f} bytes"
             )
-            > 1e-6
-            for workflow_id in workflow_ids
-        ):
-            raise AssertionError("incremental workflow charge accounting diverged")

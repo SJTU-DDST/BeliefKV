@@ -98,6 +98,39 @@ class PageIndexTest(unittest.TestCase):
         )
         index.assert_consistent()
 
+    def test_shared_charge_consistency_tolerates_sub_byte_roundoff(self):
+        index = PageOwnershipIndex()
+        handles = []
+        for page_id in range(32):
+            handle = PageHandle(page_id, 0)
+            handles.append(handle)
+            index.register_page(
+                handle,
+                size_bytes=(8001 + page_id) * 98304,
+            )
+        for workflow in range(32):
+            index.register_context(
+                f"ctx-{workflow}",
+                f"wf-{workflow}",
+                0,
+            )
+        for round_id in range(2):
+            for workflow in range(32):
+                start = (round_id * 7 + workflow * 3) % 16
+                index.bind_pages(
+                    f"ctx-{workflow}",
+                    0,
+                    handles[start : start + 16],
+                    replace=True,
+                )
+
+        index.assert_consistent()
+        index._workflow_charge_cache["wf-0"] += 2.0
+        with self.assertRaisesRegex(
+            AssertionError, "workflow charge accounting diverged"
+        ):
+            index.assert_consistent()
+
     def test_prepare_commit_updates_residency_only_at_completion(self):
         index = PageOwnershipIndex()
         handle = PageHandle(1, 0)
