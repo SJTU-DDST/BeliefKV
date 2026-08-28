@@ -23,8 +23,17 @@ v6 profile 已切换到：
 仅 generation、bundle ID 或同一 shape bucket 内的轻微物理变化不会再次启动后台
 risk evaluation；精确 generation 仍由 action certificate 在 safe point 校验。
 H2D 查询也开始携带 live extent count，和 D2H 共用 shape-aware 服务模型。定向
-回归为 46 passed。下一门槛是一次固定 trace：验证 artifact 实际加载、shape support
-不再全为 0，并量化 eligibility suppression、planning latency 和 certificate freshness。
+回归为 62 passed。固定 w4 trace 已完成：新 artifact contract 通过，候选的
+shape-unsupported 比例由旧 trace 的 100% 降至 7.60%；generation-only 变化的重复
+评估抑制率由 13.91% 提升到 27.94%，完整 risk result 相对业务事件数由 67.35%
+降至 50.16%，certificate stale 比例由 48.96% 降至 38.67%。
+
+该 trace 的 resident KV 峰值只有 17.79%，没有形成 HBM recourse；因此 1,854 个
+PREPARE_HOST 候选仍为 0 positive/0 eligible。shape 支持扩大后更多候选进入完整
+scenario timeline，planning P50/P95/P99 反而为 600/1,078/1,469 ms。代码已进一步
+加入 deterministic-infeasible fast reject：物理硬约束已失败的 package 不再重复模拟
+baseline/candidate timeline。该 fast reject 需要在一次预注册 64-root 高压 shadow 中
+验证，不据此宣称已有在线延迟收益。
 
 ## 2026-08-27：Action-Aligned P6 首轮事件驱动 Shadow 完成
 

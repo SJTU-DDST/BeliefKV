@@ -1444,6 +1444,22 @@ class PredictiveRiskShadowObserver:
             )
             belief_by_package[package.package_id] = candidate_belief
             projection_by_package[package.package_id] = projection.value
+            if not feasibility[package.package_id]:
+                summaries.append(
+                    PackageRiskSummary(
+                        package_id=package.package_id,
+                        expected_benefit_ms=0.0,
+                        expected_recourse_credit_ms=0.0,
+                        cvar_regret_ms=0.0,
+                        future_feasibility_probability=0.0,
+                        future_hbm_feasibility_probability=0.0,
+                        worst_future_hbm_peak_bytes=0,
+                        worst_future_hbm_overflow_bytes=0,
+                        eligible=False,
+                        reasons=("deterministic_hard_constraint",),
+                    )
+                )
+                continue
             try:
                 baseline_evaluation = self._evaluate_package(
                     candidate_belief,
@@ -1462,41 +1478,24 @@ class PredictiveRiskShadowObserver:
                     model_version=model_version,
                     reasons=("cancelled_superseded",),
                 )
-            if not feasibility[package.package_id]:
-                rejected_cost = ScenarioCost(
-                    action_unlock_delay_ms=0.0,
-                    workflow_service_lag_ms=0.0,
-                    deterministic_feasible=False,
-                    future_feasible=False,
-                    future_hbm_feasible=False,
+            try:
+                candidate_evaluation = self._evaluate_package(
+                    candidate_belief,
+                    package,
+                    physicalizer,
+                    target_invocation_id,
+                    cancel_check=cancel_check,
                 )
-                candidate_evaluation = PackageScenarioEvaluation(
-                    package=package,
-                    costs_by_scenario={
-                        item.scenario_id: rejected_cost
-                        for item in candidate_belief.scenarios
-                    },
-                    other_cost=rejected_cost,
+            except RuntimeError:
+                if cancel_check is None or not cancel_check():
+                    raise
+                return self._skipped(
+                    policy_input,
+                    source_plan,
+                    started_ns,
+                    model_version=model_version,
+                    reasons=("cancelled_superseded",),
                 )
-            else:
-                try:
-                    candidate_evaluation = self._evaluate_package(
-                        candidate_belief,
-                        package,
-                        physicalizer,
-                        target_invocation_id,
-                        cancel_check=cancel_check,
-                    )
-                except RuntimeError:
-                    if cancel_check is None or not cancel_check():
-                        raise
-                    return self._skipped(
-                        policy_input,
-                        source_plan,
-                        started_ns,
-                        model_version=model_version,
-                        reasons=("cancelled_superseded",),
-                    )
             candidate_decision = self.risk_planner.select(
                 candidate_belief,
                 baseline_evaluation,
