@@ -1,6 +1,30 @@
 # BeliefKV 最新架构与实现状态
 
-更新日期：2026-08-27
+更新日期：2026-08-29
+
+## 2026-08-29：Performance Patch Shape-Aware Transfer Artifact 重建
+
+已从当前 performance patch 的既有 GPU telemetry 重建 v6 transfer artifact。导出器
+现在可合并多个 telemetry 文件，并且只接受具有 HiCache submit 边界的 bundle 级
+`offload_context/prefetch_context`；per-extent callback、native demand-load 和
+write-back 不再重复计权。当前 artifact 包含 36 条 bundle terminal record，其中
+35 条为完成样本，形成 14 个 D2H/H2D shape bucket。已覆盖 1-extent 的 4 MB 至
+402 MB 实际动作，以及两次 4-extent、6.437 GB TransferEngineV2 传输；超出 bounded
+size/extent 邻域的形态继续 fail closed。
+
+v6 profile 已切换到：
+
+`artifacts/p6/h200_bf16_v6/transfer_service_qwen3coder30b_bf16_h200_perf_v1.json`
+
+同时，预测 worker 的触发签名由精确 Radix bundle generation 改为：
+
+`action candidates + context epoch + causal state + 64 MiB resource/byte buckets + log2 extent bucket`
+
+仅 generation、bundle ID 或同一 shape bucket 内的轻微物理变化不会再次启动后台
+risk evaluation；精确 generation 仍由 action certificate 在 safe point 校验。
+H2D 查询也开始携带 live extent count，和 D2H 共用 shape-aware 服务模型。定向
+回归为 46 passed。下一门槛是一次固定 trace：验证 artifact 实际加载、shape support
+不再全为 0，并量化 eligibility suppression、planning latency 和 certificate freshness。
 
 ## 2026-08-27：Action-Aligned P6 首轮事件驱动 Shadow 完成
 

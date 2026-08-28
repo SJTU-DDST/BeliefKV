@@ -12,19 +12,20 @@
       "sha256": "53eb85a721090fb21c782511e1aa1960f0d73075c1819be73bc2758e931d662d"
     },
     "transfer_service": {
-      "hardware_key": "h200nvl-a50d9b5b-driver595.71.05-qwen3coder30b-bf16-kvbf16-sglang18f91eb-pool871700-page1-host96-pinned-numa1",
-      "online_eligible_for_supported_conditions": false,
-      "path": "artifacts/p6/h200_bf16_v1/transfer_service_qwen3coder30b_bf16_h200_v1.json",
-      "provenance": "inherited_v1_diagnostic_only_graph32_recalibration_required",
-      "recalibration_required": true,
-      "sha256": "dff82215f1aad2f63ec02621cee385de549a71be4da1bff2bc1e83788a881f91",
+      "hardware_key": "h200nvl-a50d9b5b-driver595.71.05-qwen3coder30b-bf16-kvbf16-sglang18f91eb-pool850000-page1-host96-pinned-numa1-graph32-te2",
+      "online_eligible_for_supported_conditions": true,
+      "path": "artifacts/p6/h200_bf16_v6/transfer_service_qwen3coder30b_bf16_h200_perf_v1.json",
+      "provenance": "performance_patch_bundle_telemetry_extent_count_aware_v2",
+      "recalibration_required": false,
+      "sha256": "d3cdb250cd86c857479691c7898e8009d3f7fad954637bb46680da6215ad7172",
       "supported_conditions": [
-        "d2h_pcie_idle_link_with_decode_contention",
-        "h2d_pcie_idle_link_with_prefill_contention"
+        "explicit_bundle_d2h_extent_count_1_or_4",
+        "explicit_bundle_h2d_extent_count_1_or_4",
+        "bounded_neighboring_size_and_extent_bucket_extrapolation"
       ],
       "unsupported_conditions": [
-        "gpu_compute_idle",
-        "concurrent_pcie_transfer"
+        "concurrent_explicit_transfer",
+        "extent_shape_outside_bounded_support"
       ]
     }
   },
@@ -65,8 +66,8 @@
   },
   "schema_version": 1,
   "source_contract": {
-    "canonical_sglang_patch": "patches/sglang-0.5.2rc1-beliefkv-deadline-live.patch",
-    "canonical_sglang_patch_sha256": "fbeadd2698db09669f08aa289078b40448b94c72040d4e9771256921979dd4c2",
-    "expected_sglang_tree": "01eb15300234a2cf9eb962a6cbb460712bad050b"
+    "canonical_sglang_patch": "patches/sglang-0.5.2rc1-beliefkv-perf.patch",
+    "canonical_sglang_patch_sha256": "33344ce5de1b2b626c4b4bad87391cff782efca95859611c9b2a7da5e18b1e09",
+    "expected_sglang_tree": "d3f825d743eddc206166d1222d87ff66a3c8e6cc"
   }
 }

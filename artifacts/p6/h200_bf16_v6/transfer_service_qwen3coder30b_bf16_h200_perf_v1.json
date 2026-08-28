@@ -1,0 +1,551 @@
+{
+  "buckets": [
+    {
+      "key": {
+        "command_kind": "offload_context",
+        "compute_phase": "unknown",
+        "direction": "d2h",
+        "host_copy_state": "missing",
+        "native_traffic_bucket": 0,
+        "page_count_bucket": 0,
+        "pinned_host": true,
+        "size_bucket": 21
+      },
+      "outcomes": [
+        false,
+        false,
+        false,
+        false
+      ],
+      "samples": [
+        {
+          "callback_ms": 117.53899073600769,
+          "compute_wait_ms": null,
+          "effective_bytes_per_ms": 30964.342486075733,
+          "fixed_overhead_ms": 0.07329607009887695,
+          "setup_ms": 0.4382469654083252
+        },
+        {
+          "callback_ms": 231.62083077430725,
+          "compute_wait_ms": null,
+          "effective_bytes_per_ms": 17830.37461734246,
+          "fixed_overhead_ms": 0.06271219253540039,
+          "setup_ms": 0.39440107345581055
+        },
+        {
+          "callback_ms": 126.36085200309753,
+          "compute_wait_ms": null,
+          "effective_bytes_per_ms": 31131.942566406393,
+          "fixed_overhead_ms": 0.05456733703613281,
+          "setup_ms": 0.40581274032592773
+        },
+        {
+          "callback_ms": 180.60045909881592,
+          "compute_wait_ms": null,
+          "effective_bytes_per_ms": 21780.93893249264,
+          "fixed_overhead_ms": 0.06829690933227539,
+          "setup_ms": 0.3966231346130371
+        }
+      ]
+    },
+    {
+      "key": {
+        "command_kind": "offload_context",
+        "compute_phase": "unknown",
+        "direction": "d2h",
+        "host_copy_state": "missing",
+        "native_traffic_bucket": 0,
+        "page_count_bucket": 0,
+        "pinned_host": true,
+        "size_bucket": 22
+      },
+      "outcomes": [
+        false
+      ],
+      "samples": [
+        {
+          "callback_ms": 1156.5168557167053,
+          "compute_wait_ms": null,
+          "effective_bytes_per_ms": 3740.1773960905875,
+          "fixed_overhead_ms": 0.0540621280670166,
+          "setup_ms": 0.3935573101043701
+        }
+      ]
+    },
+    {
+      "key": {
+        "command_kind": "offload_context",
+        "compute_phase": "unknown",
+        "direction": "d2h",
+        "host_copy_state": "missing",
+        "native_traffic_bucket": 0,
+        "page_count_bucket": 0,
+        "pinned_host": true,
+        "size_bucket": 23
+      },
+      "outcomes": [
+        false
+      ],
+      "samples": [
+        {
+          "callback_ms": 9.736000061035156,
+          "compute_wait_ms": null,
+          "effective_bytes_per_ms": 1145742.5210062608,
+          "fixed_overhead_ms": 0.040669918060302734,
+          "setup_ms": 0.24547719955444336
+        }
+      ]
+    },
+    {
+      "key": {
+        "command_kind": "offload_context",
+        "compute_phase": "unknown",
+        "direction": "d2h",
+        "host_copy_state": "missing",
+        "native_traffic_bucket": 0,
+        "page_count_bucket": 0,
+        "pinned_host": true,
+        "size_bucket": 24
+      },
+      "outcomes": [
+        false,
+        false,
+        false,
+        false
+      ],
+      "samples": [
+        {
+          "callback_ms": 9.621576309204102,
+          "compute_wait_ms": null,
+          "effective_bytes_per_ms": 1964076.3437719424,
+          "fixed_overhead_ms": 0.061833858489990234,
+          "setup_ms": 0.23666787147521973
+        },
+        {
+          "callback_ms": 271.7079200744629,
+          "compute_wait_ms": null,
+          "effective_bytes_per_ms": 99148.97071179403,
+          "fixed_overhead_ms": 0.043012142181396484,
+          "setup_ms": 0.18259906768798828
+        },
+        {
+          "callback_ms": 8.34839391708374,
+          "compute_wait_ms": null,
+          "effective_bytes_per_ms": 2178137.3177822386,
+          "fixed_overhead_ms": 0.04408001899719238,
+          "setup_ms": 0.16927814483642578
+        },
+        {
+          "callback_ms": 201.97938013076782,
+          "compute_wait_ms": null,
+          "effective_bytes_per_ms": 100297.35583569232,
+          "fixed_overhead_ms": 0.07351899147033691,
+          "setup_ms": 0.29608798027038574
+        }
+      ]
+    },
+    {
+      "key": {
+        "command_kind": "offload_context",
+        "compute_phase": "unknown",
+        "direction": "d2h",
+        "host_copy_state": "missing",
+        "native_traffic_bucket": 0,
+        "page_count_bucket": 0,
+        "pinned_host": true,
+        "size_bucket": 25
+      },
+      "outcomes": [
+        false
+      ],
+      "samples": [
+        {
+          "callback_ms": 193.1548810005188,
+          "compute_wait_ms": null,
+          "effective_bytes_per_ms": 311582.04089991184,
+          "fixed_overhead_ms": 0.06914401054382324,
+          "setup_ms": 0.4815549850463867
+        }
+      ]
+    },
+    {
+      "key": {
+        "command_kind": "offload_context",
+        "compute_phase": "unknown",
+        "direction": "d2h",
+        "host_copy_state": "missing",
+        "native_traffic_bucket": 0,
+        "page_count_bucket": 0,
+        "pinned_host": true,
+        "size_bucket": 28
+      },
+      "outcomes": [
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false
+      ],
+      "samples": [
+        {
+          "callback_ms": 141.0285768508911,
+          "compute_wait_ms": null,
+          "effective_bytes_per_ms": 2855450.335657488,
+          "fixed_overhead_ms": 0.05085611343383789,
+          "setup_ms": 0.2630469799041748
+        },
+        {
+          "callback_ms": 146.2340750694275,
+          "compute_wait_ms": null,
+          "effective_bytes_per_ms": 2753785.875821609,
+          "fixed_overhead_ms": 0.05172896385192871,
+          "setup_ms": 0.2641921043395996
+        },
+        {
+          "callback_ms": 132.07894802093506,
+          "compute_wait_ms": null,
+          "effective_bytes_per_ms": 3048925.980029939,
+          "fixed_overhead_ms": 0.047248125076293945,
+          "setup_ms": 0.1879880428314209
+        },
+        {
+          "callback_ms": 469.71627402305603,
+          "compute_wait_ms": null,
+          "effective_bytes_per_ms": 857172.5666793161,
+          "fixed_overhead_ms": 0.08519196510314941,
+          "setup_ms": 0.23643994331359863
+        },
+        {
+          "callback_ms": 162.81316709518433,
+          "compute_wait_ms": null,
+          "effective_bytes_per_ms": 2473385.313979718,
+          "fixed_overhead_ms": 0.05854988098144531,
+          "setup_ms": 0.3467559814453125
+        },
+        {
+          "callback_ms": 181.99232816696167,
+          "compute_wait_ms": null,
+          "effective_bytes_per_ms": 2212646.338770106,
+          "fixed_overhead_ms": 0.05865311622619629,
+          "setup_ms": 0.4641718864440918
+        },
+        {
+          "callback_ms": 178.20215678215027,
+          "compute_wait_ms": null,
+          "effective_bytes_per_ms": 2259688.1461788933,
+          "fixed_overhead_ms": 0.05594635009765625,
+          "setup_ms": 0.3550748825073242
+        }
+      ]
+    },
+    {
+      "key": {
+        "command_kind": "offload_context",
+        "compute_phase": "unknown",
+        "direction": "d2h",
+        "host_copy_state": "missing",
+        "native_traffic_bucket": 0,
+        "page_count_bucket": 2,
+        "pinned_host": true,
+        "size_bucket": 32
+      },
+      "outcomes": [
+        false,
+        false
+      ],
+      "samples": [
+        {
+          "callback_ms": 250.37213897705078,
+          "compute_wait_ms": null,
+          "effective_bytes_per_ms": 25713866.789155453,
+          "fixed_overhead_ms": 0.04238605499267578,
+          "setup_ms": 0.12420797348022461
+        },
+        {
+          "callback_ms": 249.77500200271606,
+          "compute_wait_ms": null,
+          "effective_bytes_per_ms": 25775494.37179183,
+          "fixed_overhead_ms": 0.04377174377441406,
+          "setup_ms": 0.13621211051940918
+        }
+      ]
+    },
+    {
+      "key": {
+        "command_kind": "prefetch_context",
+        "compute_phase": "unknown",
+        "direction": "h2d",
+        "host_copy_state": "present",
+        "native_traffic_bucket": 0,
+        "page_count_bucket": 0,
+        "pinned_host": true,
+        "size_bucket": 21
+      },
+      "outcomes": [
+        false,
+        false,
+        false,
+        false
+      ],
+      "samples": [
+        {
+          "callback_ms": 296.9637372493744,
+          "compute_wait_ms": null,
+          "effective_bytes_per_ms": 12250.637653492293,
+          "fixed_overhead_ms": 0.06098794937133789,
+          "setup_ms": 0.6793830394744873
+        },
+        {
+          "callback_ms": 277.73104310035706,
+          "compute_wait_ms": null,
+          "effective_bytes_per_ms": 14868.826878592383,
+          "fixed_overhead_ms": 0.051570892333984375,
+          "setup_ms": 0.5374441146850586
+        },
+        {
+          "callback_ms": 234.27782011032104,
+          "compute_wait_ms": null,
+          "effective_bytes_per_ms": 16789.639503178154,
+          "fixed_overhead_ms": 0.07624602317810059,
+          "setup_ms": 0.6885950565338135
+        },
+        {
+          "callback_ms": 1866.0931499004364,
+          "compute_wait_ms": null,
+          "effective_bytes_per_ms": 2107.2482095770465,
+          "fixed_overhead_ms": 0.07661604881286621,
+          "setup_ms": 0.4893789291381836
+        }
+      ]
+    },
+    {
+      "key": {
+        "command_kind": "prefetch_context",
+        "compute_phase": "unknown",
+        "direction": "h2d",
+        "host_copy_state": "present",
+        "native_traffic_bucket": 0,
+        "page_count_bucket": 0,
+        "pinned_host": true,
+        "size_bucket": 22
+      },
+      "outcomes": [
+        false
+      ],
+      "samples": [
+        {
+          "callback_ms": 713.4207441806793,
+          "compute_wait_ms": null,
+          "effective_bytes_per_ms": 6063.576219624792,
+          "fixed_overhead_ms": 0.08329391479492188,
+          "setup_ms": 0.47367072105407715
+        }
+      ]
+    },
+    {
+      "key": {
+        "command_kind": "prefetch_context",
+        "compute_phase": "unknown",
+        "direction": "h2d",
+        "host_copy_state": "present",
+        "native_traffic_bucket": 0,
+        "page_count_bucket": 0,
+        "pinned_host": true,
+        "size_bucket": 23
+      },
+      "outcomes": [
+        false
+      ],
+      "samples": [
+        {
+          "callback_ms": 1286.0177159309387,
+          "compute_wait_ms": null,
+          "effective_bytes_per_ms": 8638.100489032682,
+          "fixed_overhead_ms": 0.046105146408081055,
+          "setup_ms": 0.4912600517272949
+        }
+      ]
+    },
+    {
+      "key": {
+        "command_kind": "prefetch_context",
+        "compute_phase": "unknown",
+        "direction": "h2d",
+        "host_copy_state": "present",
+        "native_traffic_bucket": 0,
+        "page_count_bucket": 0,
+        "pinned_host": true,
+        "size_bucket": 24
+      },
+      "outcomes": [
+        false,
+        false,
+        false
+      ],
+      "samples": [
+        {
+          "callback_ms": 435.42142271995544,
+          "compute_wait_ms": null,
+          "effective_bytes_per_ms": 43129.092501611296,
+          "fixed_overhead_ms": 0.0757451057434082,
+          "setup_ms": 0.44488000869750977
+        },
+        {
+          "callback_ms": 1829.390506029129,
+          "compute_wait_ms": null,
+          "effective_bytes_per_ms": 14724.095734174667,
+          "fixed_overhead_ms": 0.05602693557739258,
+          "setup_ms": 0.4585537910461426
+        },
+        {
+          "callback_ms": 660.3312969207764,
+          "compute_wait_ms": null,
+          "effective_bytes_per_ms": 30671.52893836265,
+          "fixed_overhead_ms": 0.08954501152038574,
+          "setup_ms": 0.4804859161376953
+        }
+      ]
+    },
+    {
+      "key": {
+        "command_kind": "prefetch_context",
+        "compute_phase": "unknown",
+        "direction": "h2d",
+        "host_copy_state": "present",
+        "native_traffic_bucket": 0,
+        "page_count_bucket": 0,
+        "pinned_host": true,
+        "size_bucket": 25
+      },
+      "outcomes": [
+        false
+      ],
+      "samples": [
+        {
+          "callback_ms": 1948.9427440166473,
+          "compute_wait_ms": null,
+          "effective_bytes_per_ms": 30869.873170165803,
+          "fixed_overhead_ms": 0.05077195167541504,
+          "setup_ms": 5.678384065628052
+        }
+      ]
+    },
+    {
+      "key": {
+        "command_kind": "prefetch_context",
+        "compute_phase": "unknown",
+        "direction": "h2d",
+        "host_copy_state": "present",
+        "native_traffic_bucket": 0,
+        "page_count_bucket": 0,
+        "pinned_host": true,
+        "size_bucket": 28
+      },
+      "outcomes": [
+        false,
+        false,
+        false
+      ],
+      "samples": [
+        {
+          "callback_ms": 917.4175200462341,
+          "compute_wait_ms": null,
+          "effective_bytes_per_ms": 438819.51881486544,
+          "fixed_overhead_ms": 0.05887317657470703,
+          "setup_ms": 0.4281759262084961
+        },
+        {
+          "callback_ms": 803.8704628944397,
+          "compute_wait_ms": null,
+          "effective_bytes_per_ms": 500805.81298409944,
+          "fixed_overhead_ms": 0.05615091323852539,
+          "setup_ms": 0.41289710998535156
+        },
+        {
+          "callback_ms": 1626.0320601463318,
+          "compute_wait_ms": null,
+          "effective_bytes_per_ms": 247575.91488198392,
+          "fixed_overhead_ms": 0.04642987251281738,
+          "setup_ms": 5.8599138259887695
+        }
+      ]
+    },
+    {
+      "key": {
+        "command_kind": "prefetch_context",
+        "compute_phase": "unknown",
+        "direction": "h2d",
+        "host_copy_state": "present",
+        "native_traffic_bucket": 0,
+        "page_count_bucket": 2,
+        "pinned_host": true,
+        "size_bucket": 32
+      },
+      "outcomes": [
+        true,
+        false,
+        false
+      ],
+      "samples": [
+        {
+          "callback_ms": 984.4088940620422,
+          "compute_wait_ms": null,
+          "effective_bytes_per_ms": 6540250.524788102,
+          "fixed_overhead_ms": 0.2041001319885254,
+          "setup_ms": 0.786186933517456
+        },
+        {
+          "callback_ms": 692.4217629432678,
+          "compute_wait_ms": null,
+          "effective_bytes_per_ms": 9301447.518383749,
+          "fixed_overhead_ms": 0.384753942489624,
+          "setup_ms": 0.18988609313964844
+        }
+      ]
+    }
+  ],
+  "hardware_key": "h200nvl-a50d9b5b-driver595.71.05-qwen3coder30b-bf16-kvbf16-sglang18f91eb-pool850000-page1-host96-pinned-numa1-graph32-te2",
+  "metadata": {
+    "bundle_selection": "offload_context_or_prefetch_context_with_hicache_submit_boundary",
+    "conditioned_features": [
+      "direction",
+      "bytes",
+      "extent_count",
+      "command_kind",
+      "host_copy_state",
+      "pinned_host"
+    ],
+    "evidence_scope": "performance_patch_bundle_telemetry",
+    "model_scope": "extent_count_aware_v2",
+    "native_concurrent_bytes_normalized_to_zero": true,
+    "per_extent_callback_rows_excluded": true,
+    "sources": [
+      {
+        "completed_bundle_records": 31,
+        "excluded_records": 1942,
+        "path": "experiments/oracle/gpu_o0_o3_native18_v1/o3_r3/server/transfer_telemetry.jsonl",
+        "selected_bundle_records": 31,
+        "terminal_failure_records": 0
+      },
+      {
+        "completed_bundle_records": 2,
+        "excluded_records": 4,
+        "path": "experiments/micro/transfer_engine_v2_batch_gate/20260826T052857Z/server-final/transfer_telemetry.jsonl",
+        "selected_bundle_records": 3,
+        "terminal_failure_records": 1
+      },
+      {
+        "completed_bundle_records": 2,
+        "excluded_records": 4,
+        "path": "experiments/micro/transfer_engine_v2_batch_gate_retryfix/20260826T060237Z/server/transfer_telemetry.jsonl",
+        "selected_bundle_records": 2,
+        "terminal_failure_records": 0
+      }
+    ]
+  },
+  "min_samples": 2,
+  "schema_version": 2,
+  "window": 1024
+}

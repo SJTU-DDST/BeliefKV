@@ -1215,6 +1215,50 @@ def test_eligibility_trigger_tracks_material_belief_bucket_change() -> None:
     assert first.trigger_signature != second.trigger_signature
 
 
+def test_eligibility_trigger_ignores_generation_only_physical_churn() -> None:
+    graph = _graph()
+    prediction = _prediction()
+    policy_input = _attach_graph(
+        _input(capacity=1_000, reserved=100, include_cpu_target=True), graph
+    )
+    policy_input = replace(
+        policy_input,
+        optional_metadata={
+            "frontier_predictions": MetadataValue(
+                MetadataSource.PREDICTED,
+                {prediction.invocation_id: prediction.to_dict()},
+                "test-frontier",
+            ),
+            "frontier_prediction_model_version": MetadataValue(
+                MetadataSource.PREDICTED,
+                "frontier-test-v1",
+                "test-frontier",
+            ),
+        },
+    )
+    index = PredictiveEligibilityIndex()
+    first = index.probe(policy_input)
+    changed_bundles = tuple(
+        replace(bundle, generation_fingerprint=f"next-{bundle.bundle_id}")
+        for bundle in policy_input.physical_kv.bundles
+    )
+    snapshot_id = "generation-only-change"
+    generation_only = replace(
+        policy_input,
+        physical_kv=replace(
+            policy_input.physical_kv,
+            snapshot_id=snapshot_id,
+            bundles=changed_bundles,
+        ),
+        runtime_graph=replace(policy_input.runtime_graph, snapshot_id=snapshot_id),
+        resources=replace(policy_input.resources, snapshot_id=snapshot_id),
+    )
+
+    second = index.probe(generation_only)
+
+    assert first.trigger_signature == second.trigger_signature
+
+
 def test_current_feasible_and_future_safe_prefetch_passes_hbm_constraint() -> None:
     graph = _graph()
     policy_input = _attach_graph(

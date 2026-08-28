@@ -692,24 +692,14 @@ class PredictiveEligibilityIndex:
         candidate_context_ids = {
             item.context_id for item in (*prefetch, *victims)
         }
+        contexts = graph_state_view.get("contexts", {})
+        if not isinstance(contexts, Mapping):
+            contexts = {}
         physical_signature = tuple(
-            (
+            self._action_shape_signature(
                 context_id,
-                tuple(
-                    (
-                        bundle.bundle_id,
-                        bundle.generation_fingerprint,
-                        bundle.gpu_bytes,
-                        bundle.cpu_bytes,
-                        bundle.actionable,
-                        bundle.locked_bytes,
-                        bundle.blocker_codes,
-                    )
-                    for bundle in sorted(
-                        bundles_by_context.get(context_id, ()),
-                        key=lambda item: item.bundle_id,
-                    )
-                ),
+                bundles_by_context.get(context_id, ()),
+                contexts,
             )
             for context_id in sorted(candidate_context_ids)
         )
@@ -747,6 +737,41 @@ class PredictiveEligibilityIndex:
             self._cache_key = cache_key
             self._cached = result
         return result
+
+    @staticmethod
+    def _action_shape_signature(
+        context_id: str,
+        bundles: Iterable[Any],
+        contexts: Mapping[str, object],
+    ) -> tuple[object, ...]:
+        """Stable package shape; exact generations remain commit-time evidence."""
+
+        items = tuple(bundles)
+        raw_context = contexts.get(context_id)
+        context_epoch = (
+            int(raw_context.get("epoch") or 0)
+            if isinstance(raw_context, Mapping)
+            else 0
+        )
+        blocker_codes = tuple(
+            sorted(
+                {
+                    str(code)
+                    for bundle in items
+                    for code in bundle.blocker_codes
+                }
+            )
+        )
+        return (
+            context_id,
+            context_epoch,
+            max(0, len(items).bit_length() - 1),
+            sum(max(0, bundle.gpu_bytes) for bundle in items) // (64 << 20),
+            sum(max(0, bundle.cpu_bytes) for bundle in items) // (64 << 20),
+            sum(max(0, bundle.locked_bytes) for bundle in items) // (64 << 20),
+            bool(items) and all(bundle.actionable for bundle in items),
+            blocker_codes,
+        )
 
     @staticmethod
     def _hysteretic_bucket(
@@ -811,7 +836,6 @@ class PredictiveEligibilityIndex:
                 (
                     invocation_id,
                     str(raw.get("state") or ""),
-                    float(raw.get("updated_ts_ms") or 0.0),
                     join_id,
                     int(raw.get("llm_round") or 0),
                     int(raw.get("pending_messages") or 0),
@@ -2750,6 +2774,7 @@ class _OnlineCandidatePhysicalizer:
             restore_bytes,
             direction="h2d",
             context_id=self.target_context_id,
+            extent_count=self._target_restore_extent_count(self.target_context_id),
         )
 
     def package_transfer_duration_ms(
@@ -2760,9 +2785,21 @@ class _OnlineCandidatePhysicalizer:
             target_bytes,
             direction="h2d",
             context_id=package.target_context_id,
+            extent_count=self._target_restore_extent_count(
+                package.target_context_id
+            ),
         ) + sum(
             self._victim_d2h_duration_ms(package, context_id)
             for context_id in package.victim_context_ids
+        )
+
+    def _target_restore_extent_count(self, context_id: str | None) -> int:
+        if not context_id:
+            return 0
+        return sum(
+            1
+            for bundle in self._context_bundles.get(context_id, ())
+            if bundle.cpu_bytes > bundle.gpu_bytes
         )
 
     def prepare_shadow_bytes(self, package: PredictiveActionPackage) -> int:
@@ -3598,18 +3635,25 @@ class _OnlineCandidatePhysicalizer:
             compact_metadata.value if compact_metadata is not None else None
         )
         if (
-            direction == "d2h"
+            direction in {"d2h", "h2d"}
             and extent_count is not None
             and extent_count > 0
             and isinstance(compact_snapshot, Mapping)
         ):
+            transfer_direction = (
+                TransferDirection.D2H
+                if direction == "d2h"
+                else TransferDirection.H2D
+            )
             estimate = TransferServiceCurve.estimate_snapshot(
                 compact_snapshot,
-                TransferDirection.D2H,
+                transfer_direction,
                 size_bytes,
                 page_count=extent_count,
-                command_kind="offload_context",
-                host_copy_state="missing",
+                command_kind=(
+                    "offload_context" if direction == "d2h" else "prefetch_context"
+                ),
+                host_copy_state="missing" if direction == "d2h" else "present",
                 pinned_host=True,
             )
             return _TransferDurationEvidence(

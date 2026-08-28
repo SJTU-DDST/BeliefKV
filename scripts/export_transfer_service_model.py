@@ -5,7 +5,7 @@ import argparse
 from dataclasses import replace
 import json
 from pathlib import Path
-from typing import Iterable
+from typing import Iterable, Sequence
 
 from beliefkv.policy.service_curve import TransferServiceCurve
 from beliefkv.policy.transfer_cost import PCIeCostModel
@@ -83,6 +83,87 @@ def _telemetry_records(path: Path) -> Iterable[dict[str, object]]:
             record = json.loads(line)
             if record.get("event") == "transfer_telemetry":
                 yield record
+
+
+def _bundle_samples(
+    paths: Sequence[Path],
+) -> tuple[list[TransferTelemetry], dict[str, object]]:
+    """Load one logical transfer once, excluding per-extent callback rows."""
+
+    samples: list[TransferTelemetry] = []
+    source_rows: list[dict[str, object]] = []
+    for raw_path in paths:
+        path = raw_path.expanduser().resolve()
+        seen: set[tuple[str, str, str]] = set()
+        accepted = 0
+        completed = 0
+        terminal_failures = 0
+        excluded = 0
+        for record in _telemetry_records(path):
+            command_kind = str(record.get("command_kind") or "")
+            if command_kind not in {"offload_context", "prefetch_context"}:
+                excluded += 1
+                continue
+            if record.get("telemetry_origin") is not None:
+                excluded += 1
+                continue
+            if str(record.get("start_timestamp_semantics") or "") != (
+                "hicache_api_submit_begin"
+            ):
+                excluded += 1
+                continue
+            if int(record.get("extent_count") or 0) <= 0:
+                excluded += 1
+                continue
+            key = (
+                str(record.get("command_id") or ""),
+                str(record.get("direction") or ""),
+                command_kind,
+            )
+            if key in seen:
+                excluded += 1
+                continue
+            seen.add(key)
+            sample = _telemetry(record)
+            # Current telemetry reports the command's own bytes in this field.
+            # It is not independent native contention for an explicit bundle.
+            samples.append(replace(sample, native_concurrent_bytes=0))
+            accepted += 1
+            if sample.status == CommandStatus.COMPLETED:
+                completed += 1
+            else:
+                terminal_failures += 1
+        try:
+            display_path = str(path.relative_to(Path.cwd().resolve()))
+        except ValueError:
+            display_path = str(path)
+        source_rows.append(
+            {
+                "path": display_path,
+                "selected_bundle_records": accepted,
+                "completed_bundle_records": completed,
+                "terminal_failure_records": terminal_failures,
+                "excluded_records": excluded,
+            }
+        )
+    return samples, {
+        "evidence_scope": "performance_patch_bundle_telemetry",
+        "model_scope": "extent_count_aware_v2",
+        "conditioned_features": [
+            "direction",
+            "bytes",
+            "extent_count",
+            "command_kind",
+            "host_copy_state",
+            "pinned_host",
+        ],
+        "bundle_selection": (
+            "offload_context_or_prefetch_context_with_hicache_submit_boundary"
+        ),
+        "per_extent_callback_rows_excluded": True,
+        "native_concurrent_bytes_normalized_to_zero": True,
+        "sources": source_rows,
+    }
 
 
 def _matrix_samples(
@@ -171,7 +252,7 @@ def main() -> int:
         description="Export a persistent TransferServiceCurve warm-start artifact."
     )
     source = parser.add_mutually_exclusive_group(required=True)
-    source.add_argument("--telemetry", type=Path)
+    source.add_argument("--telemetry", type=Path, action="append")
     source.add_argument("--matrix-aggregate", type=Path)
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--hardware-key", required=True)
@@ -196,7 +277,7 @@ def main() -> int:
         samples, metadata = _matrix_samples(args.matrix_aggregate)
     else:
         assert args.telemetry is not None
-        samples = [_telemetry(item) for item in _telemetry_records(args.telemetry)]
+        samples, metadata = _bundle_samples(args.telemetry)
     if args.metadata_json is not None:
         extra_metadata = json.loads(
             args.metadata_json.expanduser().read_text(encoding="utf-8")
