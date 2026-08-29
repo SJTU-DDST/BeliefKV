@@ -30,6 +30,19 @@ from beliefkv.predictor.frontier_belief import (
 )
 
 
+def _prepare_package() -> PredictiveActionPackage:
+    return PredictiveActionPackage(
+        "prepare",
+        PredictiveActionKind.PREPARE_HOST,
+        ("context",),
+        beneficiary_request_id="beneficiary",
+        beneficiary_startup_bytes=64,
+        beneficiary_growth_bytes=64,
+        victim_reclaim_bytes=128,
+        causal_package_generation="g1:a1:c0",
+    )
+
+
 def _belief(*, finite_other: bool) -> FrontierBeliefSnapshot:
     atom = CausalAtom(
         atom_id="atom",
@@ -122,9 +135,7 @@ def test_unbounded_other_allows_prepare_but_rejects_prefetch() -> None:
         other_delay=20.0,
     )
     prepare = _evaluation(
-        PredictiveActionPackage(
-            "prepare", PredictiveActionKind.PREPARE_HOST, ("context",)
-        ),
+        _prepare_package(),
         likely_delay=5.0,
         other_delay=20.0,
     )
@@ -153,9 +164,7 @@ def test_prepare_host_reports_future_hbm_without_rejecting_shadow() -> None:
         likely_delay=20.0,
         other_delay=20.0,
     )
-    package = PredictiveActionPackage(
-        "prepare", PredictiveActionKind.PREPARE_HOST, ("context",)
-    )
+    package = _prepare_package()
     overflow = ScenarioCost(
         action_unlock_delay_ms=1.0,
         workflow_service_lag_ms=0.0,

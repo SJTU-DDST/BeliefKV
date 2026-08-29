@@ -426,6 +426,28 @@ def _predictive_causal_certificate(controller, model_version):
     }
 
 
+def _predictive_beneficiary_evidence():
+    return {
+        "beneficiary_request_id": "request-beneficiary",
+        "beneficiary_invocation_id": "inv-beneficiary",
+        "beneficiary_context_id": "ctx-beneficiary",
+        "beneficiary_context_epoch": 0,
+        "beneficiary_startup_bytes": 50,
+        "beneficiary_growth_bytes": 50,
+        "predicted_block_time_ms": 500.0,
+        "predicted_deficit_bytes": 50,
+        "causal_package_generation": "source-plan:c0",
+    }
+
+
+def _predictive_beneficiary_runnable():
+    return RunnableInvocation(
+        "request-beneficiary", "wf-beneficiary", "inv-beneficiary",
+        "ctx-beneficiary", 0, 1.0, 50, 50, 50,
+        causal_class="engine_waiting:slot",
+    )
+
+
 class _EventBatchRecorder:
     def __init__(self):
         self.events = []
@@ -592,6 +614,7 @@ class SGLangBackendTest(unittest.TestCase):
             maximum_transfer_ms=12.0,
             maximum_stall_ms=10.0,
             morphology_slack_ms=100.0,
+            **_predictive_beneficiary_evidence(),
         )
         valid_preview = SimpleNamespace(
             copy_bytes=300,
@@ -691,6 +714,7 @@ class SGLangBackendTest(unittest.TestCase):
             maximum_transfer_ms=12.0,
             maximum_stall_ms=10.0,
             morphology_slack_ms=100.0,
+            **_predictive_beneficiary_evidence(),
         )
         for sequence, predictive_intent in enumerate((None, candidate), start=1):
             shadow = SimpleNamespace(
@@ -1688,6 +1712,85 @@ class SGLangBackendTest(unittest.TestCase):
                     "candidate_snapshot_deduplicated"
                 ],
                 1,
+            )
+
+    def test_high_pressure_beneficiary_snapshots_are_bounded(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            runtime = EmbeddedSGLangRuntime.__new__(EmbeddedSGLangRuntime)
+            runtime.controller = BeliefKVController(
+                BeliefKVConfig(
+                    hbm_capacity_bytes=1_000,
+                    host_capacity_bytes=1_000,
+                    reserve_hbm_bytes=0,
+                    predictor_enabled=False,
+                )
+            )
+            runtime.audit = _AuditRecorder()
+            runtime._joint_predictive_counts = Counter()
+            runtime._predictive_candidate_snapshot_signatures = {}
+            path = Path(temporary) / "predictive-high-pressure.jsonl.gz"
+            runtime.policy_snapshot_log = PolicySnapshotLog(
+                path,
+                trace_id="predictive-high-pressure",
+                trace_sensitivity="timing_sensitive",
+                max_pending=32,
+            )
+            policy_input = runtime.controller.build_policy_input(
+                RuntimeResourceObservation(
+                    ts_ms=10,
+                    hbm_capacity_bytes=1_000,
+                    hbm_used_bytes=900,
+                    host_capacity_bytes=1_000,
+                    host_used_bytes=0,
+                    host_free_bytes=1_000,
+                )
+            )
+            result = SimpleNamespace(sequence=7, policy_input=policy_input)
+            observation = RuntimeResourceObservation(
+                ts_ms=11,
+                hbm_capacity_bytes=1_000,
+                hbm_used_bytes=900,
+                host_capacity_bytes=1_000,
+                host_used_bytes=0,
+                host_free_bytes=1_000,
+            )
+
+            for index in range(25):
+                payload = {
+                    "candidate_summaries": [
+                        {
+                            "action": "prepare_host",
+                            "beneficiary_request_id": f"beneficiary-{index}",
+                            "expected_benefit_ms": -1.0,
+                            "eligible": False,
+                            "reasons": ["insufficient_expected_benefit"],
+                            "action_certificate": {
+                                "target_context_id": f"victim-{index}",
+                                "required_hbm_free_bytes": 0,
+                                "required_host_free_bytes": 128,
+                            },
+                        }
+                    ]
+                }
+                runtime._maybe_persist_predictive_candidate_snapshot(
+                    result,
+                    payload,
+                    observation=replace(observation, ts_ms=11 + index),
+                )
+            runtime.policy_snapshot_log.close()
+
+            self.assertEqual(len(load_replay_trace(path)), 20)
+            self.assertEqual(
+                runtime._joint_predictive_counts[
+                    "high_pressure_candidate_snapshot_persisted"
+                ],
+                20,
+            )
+            self.assertEqual(
+                runtime._joint_predictive_counts[
+                    "high_pressure_candidate_snapshot_limit_reached"
+                ],
+                5,
             )
 
     def test_joint_shadow_safe_point_validates_without_applying_plan(self):
@@ -5223,6 +5326,10 @@ class SGLangBackendTest(unittest.TestCase):
         runtime._current_predictive_residency_commit = None
         runtime._restore_service_grace_by_request = {}
         runtime._last_frontier_model_version = "frontier-v1"
+        runtime._policy_runtime_runnable = (
+            lambda _now_ms: (_predictive_beneficiary_runnable(),)
+        )
+        runtime._reclaim_requirements = {}
         runtime._latest_predictive_intent = PredictiveIntent(
             intent_id="intent-prepare",
             source_joint_plan_id="source-plan",
@@ -5254,7 +5361,9 @@ class SGLangBackendTest(unittest.TestCase):
             maximum_transfer_ms=12.0,
             maximum_stall_ms=10.0,
             morphology_slack_ms=100.0,
+            **_predictive_beneficiary_evidence(),
         )
+        original_intent = runtime._latest_predictive_intent
         decision = compile_bounded_seed_epoch(
             ordered_request_ids=("request",),
             visible_request_ids=("request",),
@@ -5336,6 +5445,61 @@ class SGLangBackendTest(unittest.TestCase):
             if event == "online_joint_residency_terminal"
         ]
         self.assertEqual(predictive_terminal[-1]["actual_bytes"], 300)
+
+        runtime.config = replace(
+            runtime.config,
+            predictive_prepare_host_canary_limit=3,
+        )
+        runtime._latest_predictive_intent = replace(
+            original_intent,
+            intent_id="intent-stale-generation",
+            causal_package_generation="source-plan:c1",
+        )
+        runtime._physical_commit_predictive_intent(
+            plan,
+            decision,
+            now_ms=113.0,
+        )
+        rejection = [
+            fields
+            for event, _, fields in runtime.audit.events
+            if event == "predictive_semantic_intent_rejected"
+            and fields.get("intent_id") == "intent-stale-generation"
+        ][-1]
+        self.assertIn(
+            "beneficiary_causal_generation_changed",
+            rejection["reasons"],
+        )
+
+        runtime._latest_predictive_intent = replace(
+            original_intent,
+            intent_id="intent-reactive-beneficiary",
+        )
+        runtime._reclaim_requirements = {
+            "request-beneficiary": ReclaimRequirement(
+                beneficiary_request_id="request-beneficiary",
+                required_startup_bytes=50,
+                required_growth_bytes=50,
+                current_prefix_bytes=0,
+                waited_ms=1.0,
+                skip_reason="test_observed_deficit",
+            )
+        }
+        runtime._physical_commit_predictive_intent(
+            plan,
+            decision,
+            now_ms=114.0,
+        )
+        rejection = [
+            fields
+            for event, _, fields in runtime.audit.events
+            if event == "predictive_semantic_intent_rejected"
+            and fields.get("intent_id") == "intent-reactive-beneficiary"
+        ][-1]
+        self.assertIn(
+            "beneficiary_reactive_requirement_active",
+            rejection["reasons"],
+        )
 
     def test_semantic_replacement_binds_reclaim_to_visible_beneficiary(self):
         controller = BeliefKVController(
@@ -5846,6 +6010,10 @@ class SGLangBackendTest(unittest.TestCase):
         runtime._current_predictive_residency_commit = None
         runtime._restore_service_grace_by_request = {}
         runtime._last_frontier_model_version = "frontier-v1"
+        runtime._policy_runtime_runnable = (
+            lambda _now_ms: (_predictive_beneficiary_runnable(),)
+        )
+        runtime._reclaim_requirements = {}
         runtime._latest_predictive_intent = PredictiveIntent(
             intent_id="intent-causal",
             source_joint_plan_id="source-plan",
@@ -5877,6 +6045,7 @@ class SGLangBackendTest(unittest.TestCase):
             maximum_transfer_ms=12.0,
             maximum_stall_ms=10.0,
             morphology_slack_ms=100.0,
+            **_predictive_beneficiary_evidence(),
         )
         # The prediction was published, then an RCCG event changed its read set
         # before the next scheduler safe point.

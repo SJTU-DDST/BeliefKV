@@ -2,6 +2,25 @@
 
 更新日期：2026-08-29
 
+## 2026-08-29：Projected beneficiary overlay 已实现，等待有界 replay
+
+P6 现只从 observed JointPlan 的候选顺序中选择第一个可见、GPU-ready/deferred 且
+尚未产生真实 P4 ReclaimRequirement 的请求，构造
+ProjectedReclaimRequirement。每次风险评估固定为一个 beneficiary 和最多两个
+parked victim；timeline 在下一 execution slot 上进行 startup/growth HBM what-if。
+slot-only 等待且容量可容纳时不会产生 projected deficit，也不会人为生成收益。
+
+PREPARE_HOST 比较同一组 victim、beneficiary 和 physical closure 的 reactive
+D2H 与提前 shadow 两条路径。预测路径只允许建立 Host shadow；COMMIT_CPU 仍必须
+由真实 P4 ReclaimRequirement 触发。safe point 会重新验证 beneficiary identity、
+context epoch、demand 上界、causal package generation、真实 reclaim 状态和 D2H
+deadline。
+
+旧 closure smoke 没有保存完整 PolicyInput，无法严格离线 replay 新模型。运行时现
+只在 HBM >=80% 且出现 projected beneficiary 时，通过现有有界异步 writer 保存最多
+20 个精确 snapshot；正收益 snapshot 继续独立保留。下一轮短 predictor-only shadow
+将同时完成 replay 数据采集和自然正收益判定。
+
 ## 2026-08-29：64-root Closure Smoke 通过，P6 转向 beneficiary-bound value
 
 同一冻结 64-root predictor-only workload 已完成一次短高压 closure smoke。运行时
@@ -11,11 +30,12 @@ prediction 修复已覆盖真实高基数 RCCG。全程产生 6,012 个 PREPARE_
 4,045 个新鲜证书；高压区间 258 个候选中仍有 54 个证书新鲜，因此当前失败不是
 “全部 stale”。
 
-价值门禁仍未通过：6,012 个候选全部为负收益，最大 expected benefit 为 -4.19 ms，
-expected recourse credit 没有覆盖 proactive stall。当前 PREPARE package 只有 victim，
-没有绑定明确的 HBM-blocked beneficiary；timeline 又只把有限 horizon 内超过 100%
-容量视为 pressure。实际高 HBM 与 waiting backlog 不能单独证明迁移可以解锁 GPU
-work，尤其本轮同时有 32 running 和 95 waiting。
+价值门禁仍未通过：6,012 个候选全部为负收益，最大 expected benefit 为 -4.19 ms。
+本轮只证明旧价值模型没有发现 recourse；scenario failure 聚合是在实验后实现的，
+不能把零收益唯一归因于 beneficiary。独立的代码审计确认旧 PREPARE package 只有
+victim、没有绑定明确 beneficiary，这是后续必须修复的设计缺口。实际高 HBM 与
+waiting backlog 不能单独证明迁移可以解锁 GPU work，尤其本轮同时有 32 running
+和 95 waiting。
 
 下一修改点已收敛为 beneficiary-bound recourse：由 observed
 execution/admission/reclaim seed 提供真实 beneficiary、startup/growth deficit 和

@@ -522,6 +522,7 @@ class JointPlan:
     planning_phase_ms: tuple[tuple[str, float], ...] = ()
     prediction_used: bool = False
     prediction_influence: tuple[tuple[str, int], ...] = ()
+    candidate_order_request_ids: tuple[str, ...] = ()
 
     def __post_init__(self) -> None:
         if not self.plan_id or not self.input_snapshot_id:
@@ -570,6 +571,20 @@ class JointPlan:
             raise ValueError("joint plan semantic residency targets must be unique")
         if len(retraction_ids) != len(set(retraction_ids)):
             raise ValueError("joint plan retraction intents must be unique")
+        candidate_order = tuple(self.candidate_order_request_ids)
+        if len(candidate_order) != len(set(candidate_order)):
+            raise ValueError("joint plan candidate order must be unique")
+        unknown_candidates = set(candidate_order).difference(admission_ids)
+        if unknown_candidates:
+            raise ValueError(
+                "joint plan candidate order refers to unknown admissions: "
+                f"{sorted(unknown_candidates)}"
+            )
+        if any(not request_id for request_id in candidate_order):
+            raise ValueError("joint plan candidate order IDs must be non-empty")
+        object.__setattr__(
+            self, "candidate_order_request_ids", candidate_order
+        )
         object.__setattr__(
             self,
             "prediction_influence",
@@ -681,6 +696,9 @@ class JointPlan:
             "planning_phase_ms": dict(self.planning_phase_ms),
             "prediction_used": self.prediction_used,
             "prediction_influence": dict(self.prediction_influence),
+            "candidate_order_request_ids": list(
+                self.candidate_order_request_ids
+            ),
         }
 
 
@@ -978,6 +996,9 @@ class ObservedJointPlanner:
             prepared=prepared,
             candidate_count=len(candidates),
             evaluated_package_count=evaluated,
+            candidate_order_request_ids=tuple(
+                item.request.request_id for item in candidates
+            ),
             prediction_used=prediction_used,
             prediction_influence=tuple(prediction_influence.items()),
         )
@@ -1247,6 +1268,9 @@ class ObservedJointPlanner:
             fairness_max_workflow_candidates=self.config.max_workflow_candidates,
             prediction_used=prediction_used,
             prediction_influence=prediction_influence,
+            candidate_order_request_ids=tuple(
+                item.request.request_id for item in candidates
+            ),
         )
         used_ratio = (
             policy_input.resources.hbm_used_bytes
@@ -1327,6 +1351,7 @@ class ObservedJointPlanner:
         prepared: PreparedPolicyInput,
         candidate_count: int,
         evaluated_package_count: int,
+        candidate_order_request_ids: tuple[str, ...],
         prediction_used: bool = False,
         prediction_influence: tuple[tuple[str, int], ...] = (),
     ) -> JointPlan:
@@ -1442,6 +1467,7 @@ class ObservedJointPlanner:
             prepared=prepared,
             prediction_used=prediction_used,
             prediction_influence=prediction_influence,
+            candidate_order_request_ids=candidate_order_request_ids,
         )
 
     def _fallback(
@@ -1542,6 +1568,9 @@ class ObservedJointPlanner:
             prepared=prepared,
             prediction_used=prediction_used,
             prediction_influence=prediction_influence,
+            candidate_order_request_ids=tuple(
+                item.request.request_id for item in candidates
+            ),
         )
         return replace(
             plan,
@@ -1763,6 +1792,9 @@ class AsyncSemanticJointPlanner(ObservedJointPlanner):
                 self.config.max_workflow_candidates
             ),
             semantic_residency=targets,
+            candidate_order_request_ids=tuple(
+                item.request.request_id for item in candidates
+            ),
             retractions=retractions,
             prediction_used=prediction_used,
             prediction_influence=tuple(prediction_influence.items()),
@@ -2090,6 +2122,7 @@ def _make_plan(
     retractions: tuple[RetractionIntent, ...] = (),
     prediction_used: bool = False,
     prediction_influence: tuple[tuple[str, int], ...] = (),
+    candidate_order_request_ids: tuple[str, ...] = (),
 ) -> JointPlan:
     read_set = _build_read_set(
         policy_input,
@@ -2124,6 +2157,7 @@ def _make_plan(
         transition_open=transition_open,
         prediction_used=prediction_used,
         prediction_influence=prediction_influence,
+        candidate_order_request_ids=candidate_order_request_ids,
     )
     semantic = provisional.to_dict()
     semantic.pop("plan_id")

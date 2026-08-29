@@ -178,6 +178,98 @@ def test_service_estimates_are_reused_across_candidate_timelines() -> None:
     assert second_misses == 1
 
 
+def _beneficiary_scenario() -> DemandScenario:
+    outcomes = tuple(
+        FrontierDemandOutcome(
+            invocation_id=invocation_id,
+            boundary_event=BoundaryEvent.UNKNOWN,
+            dependency_mode=DependencyMode.NONE,
+            phase=DemandPhase.DECODE,
+            current_sequence_tokens=4096,
+            remaining_decode_tokens=100,
+            prompt_growth_tokens=0,
+            next_output_tokens=0,
+        )
+        for invocation_id in ("running", "beneficiary")
+    )
+    return DemandScenario("beneficiary-scenario", outcomes, 1.0)
+
+
+def _beneficiary_plan(*, demand_bytes: int) -> CandidatePhysicalPlan:
+    return CandidatePhysicalPlan(
+        package_id="beneficiary-plan",
+        physical_snapshot_id="snapshot",
+        physical_snapshot_revision=1,
+        invocation_demands=tuple(
+            PhysicalizedInvocationDemand(invocation_id, 0, 100, 4096)
+            for invocation_id in ("running", "beneficiary")
+        ),
+        batches=tuple(
+            ScheduledBatchQuantum(
+                invocation_id,
+                DemandPhase.DECODE,
+                (ScheduledRequestQuantum(invocation_id, 100, 4096),),
+                chunk_position="first",
+            )
+            for invocation_id in ("running", "beneficiary")
+        ),
+        hbm_capacity_bytes=1_000,
+        initial_hbm_used_bytes=700,
+        kv_bytes_per_token=1,
+        projected_beneficiary_request_id="request-beneficiary",
+        projected_beneficiary_invocation_id="beneficiary",
+        projected_beneficiary_startup_bytes=demand_bytes,
+    )
+
+
+def test_slot_wait_without_hbm_deficit_is_not_a_projected_kv_opportunity() -> None:
+    timeline = CandidateTimelineEvaluator(_service_model()).evaluate(
+        _beneficiary_scenario(),
+        _beneficiary_plan(demand_bytes=200),
+    )
+
+    assert timeline.service_quanta[1].start_offset_ms > 0
+    assert timeline.projected_beneficiary_block_offset_ms is None
+    assert timeline.projected_beneficiary_deficit_bytes == 0
+    assert timeline.future_hbm_overflow_bytes == 0
+
+
+def test_beneficiary_attempt_records_the_exact_projected_hbm_deficit() -> None:
+    timeline = CandidateTimelineEvaluator(_service_model()).evaluate(
+        _beneficiary_scenario(),
+        _beneficiary_plan(demand_bytes=350),
+    )
+
+    assert (
+        timeline.projected_beneficiary_block_offset_ms
+        == timeline.service_quanta[1].start_offset_ms
+    )
+    # The first running quantum grows resident KV by 100 bytes before the
+    # beneficiary attempts admission: 700 + 100 + 350 - 1000 = 150.
+    assert timeline.projected_beneficiary_deficit_bytes == 150
+    assert timeline.future_hbm_overflow_bytes == 0
+
+
+def test_projected_beneficiary_bytes_must_be_non_negative() -> None:
+    try:
+        CandidatePhysicalPlan(
+            package_id="invalid-beneficiary",
+            physical_snapshot_id="snapshot",
+            physical_snapshot_revision=1,
+            invocation_demands=(),
+            batches=(),
+            hbm_capacity_bytes=1_000,
+            kv_bytes_per_token=1,
+            projected_beneficiary_request_id="request",
+            projected_beneficiary_invocation_id="invocation",
+            projected_beneficiary_startup_bytes=-1,
+        )
+    except ValueError as exc:
+        assert "HBM ledger" in str(exc)
+    else:
+        raise AssertionError("negative projected demand must be rejected")
+
+
 def test_timed_scenario_is_the_only_input_to_risk_cost() -> None:
     evaluator = CandidateTimelineEvaluator(_service_model())
     plan = CandidatePhysicalPlan(

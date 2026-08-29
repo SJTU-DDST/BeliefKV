@@ -70,7 +70,7 @@ predictive worker 完成 1,016 个任务，failed/dropped/pending 均为 0。
 正式目标 1 ms，完整 snapshot/scenario 路径也仍过慢。因为本轮不是 stale-only
 分支，暂不先做 compact snapshot 性能重构。
 
-## 零收益根因
+## 零收益边界
 
 全程候选统计为：
 
@@ -82,25 +82,33 @@ predictive worker 完成 1,016 个任务，failed/dropped/pending 均为 0。
 - cvar_risk_budget：5,105；
 - shape unsupported：72。
 
-当前 PREPARE recourse 只有在有限 horizon 内预测到 HBM 超过 100%，且 shadow 在
+上述计数只能证明旧价值模型没有给出正 recourse，不能证明所有候选分别失败于哪一
+个 scenario 条件。prepare_recourse_failure_counts 聚合是在本轮结束后实现的；
+因此不能用它回填本轮，也不能把零收益唯一归因于缺少 beneficiary。
+
+旧 PREPARE recourse 只有在有限 horizon 内预测到 HBM 超过 100%，且 shadow 在
 pressure 前完成、pressure 早于 parent reentry、parent 足以覆盖 deficit、快照近似
 的 reactive victim 正好也是该 parent 时，才计入 reactive D2H credit。实际 HBM
 达到 80%-90% 并不自动满足这些条件。
 
-更关键的是，当前 PREPARE package 只有 victim，没有绑定明确的 beneficiary。运行
+独立于实验归因，当前 PREPARE package 只有 victim、没有绑定明确 beneficiary 是
+已确认的设计缺口。运行
 结束时同时存在 32 running 和 95 waiting；此时 waiting 可能受 running slot 限制，
 不能仅凭 HBM watermark 断言迁出 parked KV 会立即解锁 GPU work。强行给予收益会
 把普通高占用误判为 causal replacement opportunity。
 
 正确的下一版价值语义是：
 
-1. 从 observed execution/admission/reclaim seed 选择真实 blocked beneficiary；
+1. 从 observed seed 选择当前可见、GPU-ready/deferred、预计会被 HBM 阻塞的
+   projected beneficiary；已经产生 ReclaimRequirement 的请求只作为 reactive
+   baseline，不获得 proactive credit；
 2. package 同时携带 beneficiary startup/growth demand 与 victim reclaim envelope；
 3. pressure deadline 由 beneficiary 的确定性容量 deficit 或校准后的 pressure-arrival
    scenario 给出，而不是只等待全局 HBM 超过 100%；
 4. 比较 baseline reactive D2H + beneficiary admission/service delay，与 proactive
    shadow + pressure-time commit 两条路径；
-5. 没有明确 beneficiary 或有限 pressure evidence 时，PREPARE 继续保持负收益。
+5. slot 可用时若 beneficiary demand 仍可容纳，则该 workload 没有 predictive KV
+   opportunity，不能人为赋予 HBM 收益。
 
 ## 随后修复
 
@@ -112,7 +120,8 @@ pressure 前完成、pressure 早于 parent reentry、parent 足以覆盖 defici
   prepare_recourse_failure_counts 和 expected_recourse_credit_ms，不复制
   scenario 明细。
 
-这两项只减少无意义评估并补全下一轮价值归因，不开放任何预测动作。
+这两项只减少无意义评估并补全下一轮价值归因，不开放任何预测动作。随后实现的
+beneficiary-bound overlay 不属于本轮实验结果，必须由新的 replay/shadow 单独验证。
 
 ## 终止限制
 

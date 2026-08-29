@@ -138,6 +138,10 @@ class CandidatePhysicalPlan:
     initial_hbm_reserved_bytes: int = 0
     modeled_growth_reservation_bytes: int = 0
     kv_bytes_per_token: int = 0
+    projected_beneficiary_request_id: str | None = None
+    projected_beneficiary_invocation_id: str | None = None
+    projected_beneficiary_startup_bytes: int = 0
+    projected_beneficiary_growth_bytes: int = 0
     residual_hbm_time_byte_ms: float = 0.0
     deterministic_feasible: bool = True
     liveness_path_proven: bool = True
@@ -167,6 +171,8 @@ class CandidatePhysicalPlan:
             self.initial_hbm_reserved_bytes,
             self.modeled_growth_reservation_bytes,
             self.kv_bytes_per_token,
+            self.projected_beneficiary_startup_bytes,
+            self.projected_beneficiary_growth_bytes,
         )
         if min(hbm_values) < 0:
             raise ValueError("candidate HBM ledger values must be non-negative")
@@ -183,6 +189,15 @@ class CandidatePhysicalPlan:
             raise ValueError(
                 "modeled growth reservation cannot exceed total HBM reservation"
             )
+        projected_demand = (
+            self.projected_beneficiary_startup_bytes
+            + self.projected_beneficiary_growth_bytes
+        )
+        if projected_demand and not (
+            self.projected_beneficiary_request_id
+            and self.projected_beneficiary_invocation_id
+        ):
+            raise ValueError("projected beneficiary demand requires identities")
         transfer_ids = set(transfer_sequence)
         unknown_transfer_dependencies = sorted(
             {
@@ -241,6 +256,8 @@ class TimedScenario:
     future_hbm_overflow_bytes: int
     first_hbm_pressure_offset_ms: float | None
     first_hbm_pressure_deficit_bytes: int
+    projected_beneficiary_block_offset_ms: float | None
+    projected_beneficiary_deficit_bytes: int
     future_hbm_feasible: bool
     deterministic_feasible: bool
     future_feasible: bool
@@ -351,6 +368,7 @@ class CandidateTimelineEvaluator:
         transfer_completion: dict[str, float] = {}
         pcie_cursor_ms = 0.0
         hbm_events: list[tuple[float, int, str]] = []
+        beneficiary_attempt_recorded = False
 
         def schedule_transfer(transfer_id: str) -> bool:
             nonlocal pcie_cursor_ms
@@ -459,6 +477,17 @@ class CandidateTimelineEvaluator:
                 continue
             elapsed_ms = estimate.quantile(self.service_quantile)
             started_ms = max(now_ms, *release_offsets)
+            if (
+                not beneficiary_attempt_recorded
+                and plan.projected_beneficiary_invocation_id is not None
+                and any(
+                    item.invocation_id
+                    == plan.projected_beneficiary_invocation_id
+                    for item in batch.requests
+                )
+            ):
+                hbm_events.append((started_ms, 0, "beneficiary_attempt"))
+                beneficiary_attempt_recorded = True
             now_ms = started_ms + elapsed_ms
             service_quanta.append(
                 TimedServiceQuantum(
@@ -533,6 +562,8 @@ class CandidateTimelineEvaluator:
             hbm_overflow_bytes,
             first_hbm_pressure_offset_ms,
             first_hbm_pressure_deficit_bytes,
+            projected_beneficiary_block_offset_ms,
+            projected_beneficiary_deficit_bytes,
         ) = self._future_hbm_peak(
             plan,
             hbm_events,
@@ -567,6 +598,12 @@ class CandidateTimelineEvaluator:
             first_hbm_pressure_deficit_bytes=(
                 first_hbm_pressure_deficit_bytes
             ),
+            projected_beneficiary_block_offset_ms=(
+                projected_beneficiary_block_offset_ms
+            ),
+            projected_beneficiary_deficit_bytes=(
+                projected_beneficiary_deficit_bytes
+            ),
             future_hbm_feasible=hbm_overflow_bytes == 0,
             deterministic_feasible=plan.deterministic_feasible,
             future_feasible=not failures,
@@ -578,22 +615,30 @@ class CandidateTimelineEvaluator:
     def _future_hbm_peak(
         plan: CandidatePhysicalPlan,
         events: list[tuple[float, int, str]],
-    ) -> tuple[int, int, float | None, int]:
+    ) -> tuple[int, int, float | None, int, float | None, int]:
         """Compute a conservative finite-horizon committed-HBM peak."""
 
         if not plan.hbm_capacity_bytes:
-            return 0, 0, None, 0
+            return 0, 0, None, 0, None, 0
         committed = plan.initial_hbm_used_bytes + plan.initial_hbm_reserved_bytes
         peak = committed
         cumulative_growth = 0
         transfer_growth = 0
         first_pressure_offset_ms: float | None = None
         first_pressure_deficit_bytes = 0
+        beneficiary_block_offset_ms: float | None = None
+        beneficiary_deficit_bytes = 0
         for offset, delta_bytes, source in sorted(
             events,
-            key=lambda item: (item[0], 0 if item[2].startswith("transfer:") else 1),
+            key=lambda item: (
+                item[0],
+                0 if item[2].startswith("transfer:") else
+                2 if item[2] == "beneficiary_attempt" else 1,
+            ),
         ):
-            if source.startswith("batch:"):
+            if source == "beneficiary_attempt":
+                pass
+            elif source.startswith("batch:"):
                 cumulative_growth += delta_bytes
             else:
                 transfer_growth += delta_bytes
@@ -606,6 +651,19 @@ class CandidateTimelineEvaluator:
                 )
             )
             peak = max(peak, current)
+            if (
+                source == "beneficiary_attempt"
+                and beneficiary_block_offset_ms is None
+            ):
+                projected = current + (
+                    plan.projected_beneficiary_startup_bytes
+                    + plan.projected_beneficiary_growth_bytes
+                )
+                if projected > plan.hbm_capacity_bytes:
+                    beneficiary_block_offset_ms = offset
+                    beneficiary_deficit_bytes = (
+                        projected - plan.hbm_capacity_bytes
+                    )
             if current > plan.hbm_capacity_bytes and first_pressure_offset_ms is None:
                 first_pressure_offset_ms = offset
                 first_pressure_deficit_bytes = current - plan.hbm_capacity_bytes
@@ -614,6 +672,8 @@ class CandidateTimelineEvaluator:
             max(0, peak - plan.hbm_capacity_bytes),
             first_pressure_offset_ms,
             first_pressure_deficit_bytes,
+            beneficiary_block_offset_ms,
+            beneficiary_deficit_bytes,
         )
 
     @staticmethod

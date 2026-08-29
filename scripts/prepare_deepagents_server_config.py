@@ -537,6 +537,11 @@ def main() -> int:
         "reference_policy_snapshot_max_pending": 8,
         "reference_policy_hbm_bucket_bytes": 67_108_864,
         "reference_policy_trace_sensitivity": "timing_sensitive",
+        "predictive_replay_snapshot_path": (
+            str(server_dir / "predictive_replay_snapshots.jsonl.gz")
+            if args.enable_predictive_risk_shadow
+            else None
+        ),
         "joint_policy_enabled": args.enable_online_joint,
         "joint_policy_shadow_mode": not args.disable_policy_shadow,
         "joint_observed_mode_enabled": not args.disable_policy_shadow,

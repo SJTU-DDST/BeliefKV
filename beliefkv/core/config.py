@@ -75,6 +75,7 @@ class BeliefKVConfig:
     reference_policy_snapshot_max_pending: int = 8
     reference_policy_hbm_bucket_bytes: int = 64 * 1024 * 1024
     reference_policy_trace_sensitivity: str = "timing_sensitive"
+    predictive_replay_snapshot_path: str | None = None
     joint_policy_enabled: bool = False
     joint_policy_shadow_mode: bool = True
     joint_observed_mode_enabled: bool = True
@@ -651,6 +652,12 @@ class BeliefKVConfig:
         ):
             raise ValueError(
                 "reference_policy_snapshot_path must be a string or null"
+            )
+        if self.predictive_replay_snapshot_path is not None and not isinstance(
+            self.predictive_replay_snapshot_path, str
+        ):
+            raise ValueError(
+                "predictive_replay_snapshot_path must be a string or null"
             )
 
     @classmethod

@@ -201,6 +201,8 @@ class RunnableInvocation:
     context_epoch: int
     submitted_ts_ms: float
     startup_bytes: int
+    admission_startup_bytes: int | None = None
+    admission_growth_bytes: int | None = None
     causal_class: str = "foreground"
     program_id: str | None = None
     predicted_remaining_decode_tokens: float | None = None
@@ -225,6 +227,10 @@ class RunnableInvocation:
         _require_nonnegative(self.submitted_ts_ms, "submitted_ts_ms")
         if self.startup_bytes < 0:
             raise ValueError("startup_bytes must be non-negative")
+        for field_name in ("admission_startup_bytes", "admission_growth_bytes"):
+            value = getattr(self, field_name)
+            if value is not None and value < 0:
+                raise ValueError(f"{field_name} must be non-negative")
         if self.completed_gpu_service_count < 0:
             raise ValueError("completed_gpu_service_count must be non-negative")
         if self.last_gpu_service_ts_ms is not None:
@@ -267,6 +273,8 @@ class RunnableInvocation:
             "context_epoch": self.context_epoch,
             "submitted_ts_ms": self.submitted_ts_ms,
             "startup_bytes": self.startup_bytes,
+            "admission_startup_bytes": self.admission_startup_bytes,
+            "admission_growth_bytes": self.admission_growth_bytes,
             "causal_class": self.causal_class,
             "program_id": self.program_id,
             "predicted_remaining_decode_tokens": (
@@ -291,6 +299,16 @@ class RunnableInvocation:
             context_epoch=int(raw["context_epoch"]),
             submitted_ts_ms=float(raw["submitted_ts_ms"]),
             startup_bytes=int(raw["startup_bytes"]),
+            admission_startup_bytes=(
+                int(raw["admission_startup_bytes"])
+                if raw.get("admission_startup_bytes") is not None
+                else None
+            ),
+            admission_growth_bytes=(
+                int(raw["admission_growth_bytes"])
+                if raw.get("admission_growth_bytes") is not None
+                else None
+            ),
             causal_class=str(raw.get("causal_class", "foreground")),
             program_id=(
                 str(raw["program_id"]) if raw.get("program_id") is not None else None

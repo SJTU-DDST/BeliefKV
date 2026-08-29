@@ -2438,6 +2438,12 @@ class EmbeddedSGLangRuntime:
             trace_sensitivity=self.config.reference_policy_trace_sensitivity,
             max_pending=self.config.reference_policy_snapshot_max_pending,
         )
+        self.predictive_candidate_snapshot_log = PolicySnapshotLog(
+            self.config.predictive_replay_snapshot_path,
+            trace_id=f"{self.audit.run_id}:predictive-replay",
+            trace_sensitivity=self.config.reference_policy_trace_sensitivity,
+            max_pending=self.config.reference_policy_snapshot_max_pending,
+        )
         token_trace_path = self.config.request_token_trace_path
         if self.config.request_token_trace_enabled and token_trace_path is None:
             if self.config.runtime_audit_path is None:
@@ -4149,6 +4155,23 @@ class EmbeddedSGLangRuntime:
                 path=(
                     str(policy_snapshot_log.path)
                     if policy_snapshot_log.path is not None
+                    else None
+                ),
+            )
+        predictive_snapshot_log = getattr(
+            self, "predictive_candidate_snapshot_log", None
+        )
+        if predictive_snapshot_log is not None:
+            predictive_snapshot_log.close()
+            self.audit.emit(
+                "predictive_replay_snapshot_summary",
+                self._now_ms(),
+                snapshot_count=predictive_snapshot_log.count,
+                written_snapshot_count=predictive_snapshot_log.written_count,
+                dropped_snapshot_count=predictive_snapshot_log.dropped_count,
+                path=(
+                    str(predictive_snapshot_log.path)
+                    if predictive_snapshot_log.path is not None
                     else None
                 ),
             )
@@ -16251,7 +16274,11 @@ class EmbeddedSGLangRuntime:
         observation: RuntimeResourceObservation,
         worker: LatestWinsJointPlanWorker,
     ) -> None:
-        snapshot_log = getattr(self, "policy_snapshot_log", None)
+        snapshot_log = getattr(
+            self, "predictive_candidate_snapshot_log", None
+        )
+        if snapshot_log is None:
+            snapshot_log = getattr(self, "policy_snapshot_log", None)
         snapshot_enabled = snapshot_log is not None and snapshot_log.enabled
         result = worker.latest(
             after_sequence=self._last_joint_shadow_result_sequence
@@ -17254,7 +17281,7 @@ class EmbeddedSGLangRuntime:
         *,
         observation: RuntimeResourceObservation,
     ) -> None:
-        """Persist one exact replay point per distinct positive opportunity."""
+        """Persist positive opportunities and a bounded high-pressure replay set."""
 
         snapshot_log = getattr(self, "policy_snapshot_log", None)
         if snapshot_log is None or not snapshot_log.enabled:
@@ -17263,12 +17290,17 @@ class EmbeddedSGLangRuntime:
         if not isinstance(summaries, (list, tuple)):
             return
         signatures: list[tuple[object, ...]] = []
+        has_projected_beneficiary = False
         for raw in summaries:
             if not isinstance(raw, Mapping):
                 continue
             benefit = float(raw.get("expected_benefit_ms") or 0.0)
-            if benefit <= 0:
-                continue
+            beneficiary_request_id = str(
+                raw.get("beneficiary_request_id") or ""
+            )
+            has_projected_beneficiary = (
+                has_projected_beneficiary or bool(beneficiary_request_id)
+            )
             certificate = raw.get("action_certificate")
             if not isinstance(certificate, Mapping):
                 continue
@@ -17284,25 +17316,53 @@ class EmbeddedSGLangRuntime:
                 (
                     action,
                     target_context_id,
+                    beneficiary_request_id,
                     required_bytes // (16 << 20),
                     bool(raw.get("eligible")),
                     tuple(sorted(str(item) for item in raw.get("reasons", ()))),
                 )
             )
-        if not signatures:
+        pressure_ratio = (
+            observation.hbm_used_bytes / observation.hbm_capacity_bytes
+            if observation.hbm_capacity_bytes > 0
+            else 0.0
+        )
+        high_pressure_replay = (
+            has_projected_beneficiary and pressure_ratio >= 0.8
+        )
+        positive_opportunity = any(
+            isinstance(raw, Mapping)
+            and float(raw.get("expected_benefit_ms") or 0.0) > 0
+            for raw in summaries
+        )
+        if not signatures or not (positive_opportunity or high_pressure_replay):
             return
         signature = tuple(sorted(set(signatures)))
         seen = getattr(self, "_predictive_candidate_snapshot_signatures", None)
         if seen is None:
             seen = {}
             self._predictive_candidate_snapshot_signatures = seen
+        replay_count = int(
+            self._joint_predictive_counts.get(
+                "high_pressure_candidate_snapshot_persisted", 0
+            )
+        )
         if signature in seen:
             self._joint_predictive_counts["candidate_snapshot_deduplicated"] += 1
+            return
+        if high_pressure_replay and not positive_opportunity and replay_count >= 20:
+            self._joint_predictive_counts[
+                "high_pressure_candidate_snapshot_limit_reached"
+            ] += 1
             return
         dropped_before = snapshot_log.dropped_count
         sequence = snapshot_log.emit(
             result.policy_input,
-            trigger="predictive_positive_candidate",
+            trigger=(
+                "predictive_positive_candidate"
+                if positive_opportunity
+                else "predictive_high_pressure_candidate"
+            ),
         )
         if not sequence:
             if snapshot_log.dropped_count > dropped_before:
@@ -17314,6 +17374,10 @@ class EmbeddedSGLangRuntime:
             oldest = min(seen, key=seen.__getitem__)
             del seen[oldest]
         self._joint_predictive_counts["candidate_snapshot_persisted"] += 1
+        if high_pressure_replay:
+            self._joint_predictive_counts[
+                "high_pressure_candidate_snapshot_persisted"
+            ] += 1
         self.audit.emit(
             "predictive_candidate_snapshot_recorded",
             observation.ts_ms,
@@ -17321,7 +17385,11 @@ class EmbeddedSGLangRuntime:
             snapshot_id=result.policy_input.snapshot_id,
             worker_sequence=result.sequence,
             opportunity_count=len(signature),
-            trigger="predictive_positive_candidate",
+            trigger=(
+                "predictive_positive_candidate"
+                if positive_opportunity
+                else "predictive_high_pressure_candidate"
+            ),
             prediction_used=False,
         )
 
@@ -18520,6 +18588,55 @@ class EmbeddedSGLangRuntime:
         elif invocation.state.value != intent.expected_invocation_state:
             reasons.append("invocation_state_changed")
 
+        beneficiary_remaining_ms: float | None = None
+        if intent.action == PredictiveActionKind.PREPARE_HOST:
+            current_runnable = {
+                request.request_id: request
+                for request in self._policy_runtime_runnable(now_ms)
+            }
+            beneficiary = current_runnable.get(
+                intent.beneficiary_request_id or ""
+            )
+            if beneficiary is None:
+                reasons.append("beneficiary_missing")
+            else:
+                if (
+                    beneficiary.invocation_id
+                    != intent.beneficiary_invocation_id
+                    or beneficiary.context_id != intent.beneficiary_context_id
+                    or beneficiary.context_epoch
+                    != intent.beneficiary_context_epoch
+                ):
+                    reasons.append("beneficiary_identity_changed")
+                if beneficiary.causal_class.startswith("engine_running:"):
+                    reasons.append("beneficiary_already_admitted")
+                if (
+                    beneficiary.admission_startup_bytes is None
+                    or beneficiary.admission_growth_bytes is None
+                ):
+                    reasons.append("beneficiary_demand_unavailable")
+                elif (
+                    beneficiary.admission_startup_bytes
+                    > intent.beneficiary_startup_bytes
+                    or beneficiary.admission_growth_bytes
+                    > intent.beneficiary_growth_bytes
+                ):
+                    reasons.append("beneficiary_demand_increased")
+                expected_generation = (
+                    f"{intent.source_joint_plan_id}:"
+                    f"c{beneficiary.context_epoch}"
+                )
+                if intent.causal_package_generation != expected_generation:
+                    reasons.append("beneficiary_causal_generation_changed")
+            if (intent.beneficiary_request_id or "") in self._reclaim_requirements:
+                reasons.append("beneficiary_reactive_requirement_active")
+            if intent.predicted_block_time_ms is None:
+                reasons.append("beneficiary_block_time_unavailable")
+            else:
+                beneficiary_remaining_ms = max(
+                    0.0, intent.predicted_block_time_ms - age_ms
+                )
+
         if intent.action == PredictiveActionKind.PREPARE_HOST:
             if not self.config.predictive_prepare_host_enabled:
                 reasons.append("predictive_prepare_host_disabled")
@@ -18689,6 +18806,16 @@ class EmbeddedSGLangRuntime:
             <= effective_transfer_ms + self.config.predictive_commit_guard_ms
         ):
             reasons.append("transfer_cannot_finish_before_low_window")
+        if (
+            intent.action == PredictiveActionKind.PREPARE_HOST
+            and (
+                beneficiary_remaining_ms is None
+                or beneficiary_remaining_ms
+                <= effective_transfer_ms
+                + self.config.predictive_commit_guard_ms
+            )
+        ):
+            reasons.append("transfer_cannot_finish_before_beneficiary_block")
         if (
             intent.action == PredictiveActionKind.PREFETCH_GPU
             and remaining_ms
@@ -20494,6 +20621,20 @@ class EmbeddedSGLangRuntime:
                     uncached_prompt_tokens + remaining_output_tokens
                 )
                 * self.config.kv_bytes_per_token,
+                admission_startup_bytes=(
+                    self.config.admission_allocator_guard_tokens
+                    * self.config.kv_bytes_per_token
+                ),
+                admission_growth_bytes=(
+                    min(
+                        uncached_prompt_tokens,
+                        self.config.admission_prefill_quantum_tokens,
+                    )
+                    + min(
+                        remaining_output_tokens,
+                        self.config.admission_decode_quantum_tokens,
+                    )
+                ) * self.config.kv_bytes_per_token,
                 causal_class=(
                     f"{queue_state}:{execution_mode}:{relation_type}"
                 ),

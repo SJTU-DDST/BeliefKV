@@ -17,6 +17,71 @@ class PredictiveActionKind(str, Enum):
     RECLAIM_AND_PREFETCH = "reclaim_and_prefetch"
     PARTIAL_PREFETCH_GPU = "partial_prefetch_gpu"
 
+@dataclass(frozen=True)
+class ProjectedReclaimRequirement:
+    """Observed-seed request expected to hit an HBM admission deficit."""
+
+    beneficiary_request_id: str
+    beneficiary_invocation_id: str
+    beneficiary_context_id: str
+    beneficiary_context_epoch: int
+    required_startup_bytes: int
+    required_growth_bytes: int
+    source_joint_plan_id: str
+    causal_package_generation: str
+    predicted_block_time_ms: float | None = None
+    predicted_deficit_bytes: int = 0
+
+    def __post_init__(self) -> None:
+        identities = (
+            self.beneficiary_request_id,
+            self.beneficiary_invocation_id,
+            self.beneficiary_context_id,
+            self.source_joint_plan_id,
+            self.causal_package_generation,
+        )
+        if any(not value for value in identities):
+            raise ValueError("projected reclaim identity is required")
+        if min(
+            self.beneficiary_context_epoch,
+            self.required_startup_bytes,
+            self.required_growth_bytes,
+            self.predicted_deficit_bytes,
+        ) < 0:
+            raise ValueError("projected reclaim counters must be non-negative")
+        if (
+            self.predicted_block_time_ms is not None
+            and (
+                not math.isfinite(self.predicted_block_time_ms)
+                or self.predicted_block_time_ms < 0
+            )
+        ):
+            raise ValueError(
+                "projected reclaim block time must be finite and non-negative"
+            )
+
+    @property
+    def required_fragment_bytes(self) -> int:
+        return self.required_startup_bytes + self.required_growth_bytes
+
+    def with_prediction(
+        self,
+        *,
+        block_time_ms: float,
+        deficit_bytes: int,
+    ) -> "ProjectedReclaimRequirement":
+        return replace(
+            self,
+            predicted_block_time_ms=block_time_ms,
+            predicted_deficit_bytes=deficit_bytes,
+        )
+
+    def to_dict(self) -> dict[str, object]:
+        return {
+            field_name: getattr(self, field_name)
+            for field_name in self.__dataclass_fields__
+        }
+
 
 @dataclass(frozen=True)
 class PredictiveActionPackage:
@@ -27,6 +92,13 @@ class PredictiveActionPackage:
     target_context_id: str | None = None
     victim_context_ids: tuple[str, ...] = ()
     byte_budget: int | None = None
+    beneficiary_request_id: str | None = None
+    beneficiary_startup_bytes: int = 0
+    beneficiary_growth_bytes: int = 0
+    predicted_block_time_ms: float | None = None
+    predicted_deficit_bytes: int = 0
+    victim_reclaim_bytes: int = 0
+    causal_package_generation: str | None = None
 
     def __post_init__(self) -> None:
         if not self.package_id:
@@ -38,6 +110,33 @@ class PredictiveActionPackage:
         object.__setattr__(self, "context_ids", contexts)
         if self.action != PredictiveActionKind.OBSERVED_BASELINE and not contexts:
             raise ValueError("predictive transfer package requires a context")
+        if min(
+            self.beneficiary_startup_bytes,
+            self.beneficiary_growth_bytes,
+            self.predicted_deficit_bytes,
+            self.victim_reclaim_bytes,
+        ) < 0:
+            raise ValueError("predictive package byte values must be non-negative")
+        if (
+            self.predicted_block_time_ms is not None
+            and (
+                not math.isfinite(self.predicted_block_time_ms)
+                or self.predicted_block_time_ms < 0
+            )
+        ):
+            raise ValueError(
+                "predictive package block time must be finite and non-negative"
+            )
+        beneficiary_fields = (
+            self.beneficiary_startup_bytes,
+            self.beneficiary_growth_bytes,
+            self.predicted_deficit_bytes,
+            self.victim_reclaim_bytes,
+        )
+        if self.beneficiary_request_id is None and any(beneficiary_fields):
+            raise ValueError("beneficiary bytes require a beneficiary identity")
+        if self.causal_package_generation is not None and not self.causal_package_generation:
+            raise ValueError("causal package generation must be non-empty")
         target = self.target_context_id
         victims = tuple(sorted(set(self.victim_context_ids)))
         if self.action in {
@@ -52,6 +151,13 @@ class PredictiveActionPackage:
             victims = victims or tuple(item for item in contexts if item != target)
             if not victims:
                 raise ValueError("joint reclaim/prefetch requires a victim set")
+        if self.action == PredictiveActionKind.PREPARE_HOST:
+            if self.beneficiary_request_id is None:
+                raise ValueError("prepare package requires a projected beneficiary")
+            if self.causal_package_generation is None:
+                raise ValueError("prepare package requires a causal generation")
+            if self.beneficiary_startup_bytes + self.beneficiary_growth_bytes <= 0:
+                raise ValueError("prepare package requires beneficiary demand")
         if target is not None and not target:
             raise ValueError("predictive target context must be non-empty")
         if any(not item for item in victims):

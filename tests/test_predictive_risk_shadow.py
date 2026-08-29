@@ -11,12 +11,15 @@ from beliefkv.control.causal_graph import (
 )
 from beliefkv.policy.joint_scheduler import AsyncSemanticJointPlanner, JointPlannerConfig
 from beliefkv.policy.reference import (
+    AdmissionAction,
     MetadataSource,
     MetadataValue,
     PhysicalBundleSnapshot,
+    RunnableInvocation,
 )
 from beliefkv.policy.risk_shadow import (
     PrepareHostVictim,
+    PredictiveActionCertificate,
     PredictiveIntent,
     PredictiveEligibilityIndex,
     PredictiveEligibility,
@@ -27,7 +30,10 @@ from beliefkv.policy.risk_shadow import (
     validate_predictive_causal_certificate,
     validate_predictive_certificate,
 )
-from beliefkv.policy.predictive_joint import PredictiveActionKind
+from beliefkv.policy.predictive_joint import (
+    PredictiveActionKind,
+    ProjectedReclaimRequirement,
+)
 from beliefkv.predictor.frontier_belief import PredictiveEvidenceReadSet
 from beliefkv.predictor.hardware_service import GPUServiceCurveModel
 from beliefkv.predictor.structured_frontier import (
@@ -121,6 +127,9 @@ def test_candidate_packages_exclude_invocations_outside_belief_scope() -> None:
             PrepareHostVictim(
                 "invocation-other", "ctx-other", "WAIT_TOOL", 100, 100
             ),
+            PrepareHostVictim(
+                "invocation-third", "ctx-third", "WAIT_TOOL", 100, 100
+            ),
         ),
         probe_ms=0.0,
     )
@@ -129,12 +138,25 @@ def test_candidate_packages_exclude_invocations_outside_belief_scope() -> None:
         _input(capacity=1_000, reserved=0),
         SimpleNamespace(plan_id="plan"),
         eligibility,
-        allowed_invocation_ids=frozenset({"invocation-in"}),
+        allowed_invocation_ids=frozenset(
+            {"invocation-in", "invocation-other", "invocation-third"}
+        ),
+        projected_requirement=ProjectedReclaimRequirement(
+            beneficiary_request_id="beneficiary",
+            beneficiary_invocation_id="beneficiary-invocation",
+            beneficiary_context_id="beneficiary-context",
+            beneficiary_context_epoch=0,
+            required_startup_bytes=64,
+            required_growth_bytes=64,
+            source_joint_plan_id="plan",
+            causal_package_generation="g1:a1:c0",
+        ),
     )
 
     assert [package.package_id for package in packages] == [
         "plan:a0",
         "plan:prepare:ctx-in",
+        "plan:prepare:ctx-other",
     ]
 
 
@@ -275,7 +297,7 @@ def test_local_frontier_prediction_round_trip_preserves_distributions() -> None:
     assert restored == prediction
 
 
-def test_exact_shadow_prefetch_is_evaluated_without_mutating_joint_plan() -> None:
+def test_prefetch_is_deferred_without_projected_hbm_beneficiary() -> None:
     policy_input = _input(capacity=1_000, reserved=100, include_cpu_target=True)
     prediction = replace(
         _prediction(),
@@ -340,31 +362,9 @@ def test_exact_shadow_prefetch_is_evaluated_without_mutating_joint_plan() -> Non
         evidence_read_set=evidence,
     )
 
-    assert result.status == "evaluated"
-    assert result.selected_action == "prefetch_gpu"
-    assert result.predictive_intent is not None
-    assert result.predictive_intent.action.value == "prefetch_gpu"
-    assert result.predictive_intent.context_id == "ctx-target"
-    assert not result.predictive_intent.to_dict().get("bundle_evidence")
+    assert result.status == "skipped"
+    assert result.blocked_reasons == ("no_projected_hbm_beneficiary",)
     assert not source_plan.prediction_used
-    selected_summary = next(
-        item
-        for item in result.candidate_summaries
-        if item["package_id"] == result.selected_package_id
-    )
-    assert selected_summary["timing_semantics"] == "release_within_transfer"
-    assert selected_summary["causal_slack_probability"] >= 0.9
-    assert selected_summary["required_wait_ms"] > 0
-    assert result.to_dict()["prediction_used"] is False
-
-    repeated = observer.evaluate(
-        policy_input,
-        graph=_graph(),
-        source_plan=source_plan,
-        evidence_read_set=evidence,
-    )
-    assert repeated.belief_cache_hit
-    assert repeated.service_cache_hits > 0
 
 
 def test_candidate_local_inference_covers_complete_join_closure() -> None:
@@ -641,9 +641,8 @@ def test_backoff_shadow_cannot_select_prefetch() -> None:
         ),
     )
 
-    assert result.status == "evaluated"
-    assert result.selected_action != "prefetch_gpu"
-    assert "prefetch_gpu:tool_wait_slack_unavailable" in result.blocked_reasons
+    assert result.status == "skipped"
+    assert result.blocked_reasons == ("no_projected_hbm_beneficiary",)
 
 
 def test_calibrated_backoff_can_supply_prefetch_specific_heads() -> None:
@@ -719,12 +718,8 @@ def test_calibrated_backoff_can_supply_prefetch_specific_heads() -> None:
         ),
     )
 
-    assert result.selected_action == "prefetch_gpu"
-    assert result.predictive_intent is not None
-    assert dict(result.predictive_intent.prediction_head_support) == {
-        "future_kv_growth": "calibrated_backoff",
-        "tool_wait_slack": "backoff",
-    }
+    assert result.status == "skipped"
+    assert result.blocked_reasons == ("no_projected_hbm_beneficiary",)
 
 
 def test_physically_blocked_target_cannot_select_prefetch() -> None:
@@ -799,7 +794,7 @@ def test_physically_blocked_target_cannot_select_prefetch() -> None:
     assert result.selected_action == "observed_baseline"
 
 
-def test_future_kv_growth_can_reject_statically_feasible_prefetch() -> None:
+def test_prefetch_is_not_generated_before_prepare_recourse_is_validated() -> None:
     policy_input = _input(capacity=930, reserved=100, include_cpu_target=True)
     prediction = _prediction()
     policy_input = replace(
@@ -857,23 +852,42 @@ def test_future_kv_growth_can_reject_statically_feasible_prefetch() -> None:
         ),
     )
 
-    summary = next(
-        item
-        for item in result.candidate_summaries
-        if ":prefetch:" in str(item["package_id"])
-    )
     assert result.selected_action == "observed_baseline"
-    assert summary["future_hbm_feasibility_probability"] == 0.0
-    assert summary["worst_future_hbm_overflow_bytes"] == 18
-    assert "future_hbm_chance_constraint" in summary["reasons"]
+    assert result.candidate_summaries == ()
+    assert result.blocked_reasons == ("no_projected_hbm_beneficiary",)
 
 
 def test_prepare_host_receives_recourse_value_only_before_future_pressure() -> None:
     graph = _graph()
     _add_waiting_victim(graph)
+    target_record = graph.invocations["invocation-target"]
+    target_record.state = InvocationState.READY
+    target_record.active_tool_family = None
+    target_record.active_tool_start_ms = None
+    graph.workflows["workflow-target"].invocation_ids.add(
+        "invocation-running"
+    )
+    graph.contexts["ctx-recent"] = ContextRecord(
+        "workflow-target",
+        "ctx-recent",
+        0,
+        0.0,
+        100.0,
+        invocation_ids={"invocation-running"},
+    )
+    graph.invocations["invocation-running"] = InvocationRecord(
+        workflow_id="workflow-target",
+        invocation_id="invocation-running",
+        context_id="ctx-recent",
+        agent_definition_id="coder",
+        agent_instance_id="coder-running",
+        state=InvocationState.RUNNING_LLM,
+        created_ts_ms=0.0,
+        updated_ts_ms=100.0,
+    )
     # Keep the first predicted deficit within the victim's exclusive suffix so
     # PREPARE_HOST can actually replace the reactive offload path.
-    policy_input = _input(capacity=1_230, reserved=100, include_cpu_target=True)
+    policy_input = _input(capacity=1_230, reserved=100, include_cpu_target=False)
     policy_input = replace(
         policy_input,
         physical_kv=replace(
@@ -888,7 +902,15 @@ def test_prepare_host_receives_recourse_value_only_before_future_pressure() -> N
     )
     target = replace(
         _prediction(),
-        prompt_growth_tokens=_distribution(512),
+        prompt_growth_tokens=_distribution(300),
+    )
+    running = replace(
+        _prediction(),
+        invocation_id="invocation-running",
+        remaining_decode_tokens=_distribution(200),
+        remaining_external_wait=_distribution(0),
+        prompt_growth_tokens=_distribution(0),
+        next_output_tokens=_distribution(0),
     )
     victim = replace(
         _prediction(),
@@ -904,6 +926,7 @@ def test_prepare_host_receives_recourse_value_only_before_future_pressure() -> N
                     MetadataSource.PREDICTED,
                     {
                         target.invocation_id: target.to_dict(),
+                        running.invocation_id: running.to_dict(),
                         victim.invocation_id: victim.to_dict(),
                     },
                     "test-frontier",
@@ -961,6 +984,28 @@ def test_prepare_host_receives_recourse_value_only_before_future_pressure() -> N
         ),
         graph,
     )
+    beneficiary_request = replace(
+        policy_input.runnable_frontier[0],
+        admission_startup_bytes=100,
+        admission_growth_bytes=300,
+        causal_class="engine_waiting:slot",
+    )
+    running_request = RunnableInvocation(
+        request_id="request-running",
+        workflow_id="workflow-target",
+        invocation_id="invocation-running",
+        context_id="ctx-recent",
+        context_epoch=0,
+        submitted_ts_ms=0.0,
+        startup_bytes=0,
+        admission_startup_bytes=0,
+        admission_growth_bytes=200,
+        causal_class="engine_running:decode",
+    )
+    policy_input = replace(
+        policy_input,
+        runnable_frontier=(running_request, beneficiary_request),
+    )
     source_plan = AsyncSemanticJointPlanner(
         JointPlannerConfig(max_planning_budget_ms=100.0)
     ).plan(policy_input)
@@ -968,15 +1013,31 @@ def test_prepare_host_receives_recourse_value_only_before_future_pressure() -> N
         source_plan,
         execution=replace(
             source_plan.execution,
-            ordered_request_ids=("request-target",),
+            ordered_request_ids=("request-running",),
         ),
+        admissions=tuple(
+            replace(
+                admission,
+                action=(
+                    AdmissionAction.DEFER
+                    if admission.request_id == "request-target"
+                    else AdmissionAction.ADMIT
+                ),
+                reserved_bytes=0,
+            )
+            for admission in source_plan.admissions
+        ),
+        candidate_order_request_ids=("request-target",),
     )
     service_model = GPUServiceCurveModel(minimum_support=1)
+    long_decode = _service_row("decode-long", "decode", 200)
+    long_decode["service_elapsed_ms"] = 10.0
     service_model.fit(
         [
             _service_row("prefill-a", "prefill", 32),
-            _service_row("prefill-large", "prefill", 512),
+            _service_row("prefill-large", "prefill", 300),
             _service_row("decode-a", "decode", 16),
+            long_decode,
         ]
     )
 
@@ -1041,7 +1102,7 @@ def test_prepare_host_receives_recourse_value_only_before_future_pressure() -> N
     assert diagnostic["interference_source"] == "stall_fraction_sensitivity"
     assert diagnostic["interference_service_epoch"] == "test-transfer-v1"
     assert diagnostic["interference_to_transfer_ratio"] == 0.1
-    assert diagnostic["reactive_victim_model"] == "snapshot_consistent_conservative"
+    assert diagnostic["reactive_victim_model"] == "beneficiary_bound_same_closure"
 
 
 def test_join_revision_invalidates_action_specific_causal_certificate() -> None:
@@ -1075,9 +1136,19 @@ def test_join_revision_invalidates_action_specific_causal_certificate() -> None:
 
 
 def test_shared_locked_prefix_does_not_expand_semantic_belief_scope() -> None:
-    policy_input = _input(capacity=1_000, reserved=100, include_cpu_target=True)
+    policy_input = _input(capacity=1_000, reserved=100, include_cpu_target=False)
     graph = _graph()
-    predictions = {"invocation-target": _prediction().to_dict()}
+    _add_waiting_victim(graph)
+    target_record = graph.invocations["invocation-target"]
+    target_record.state = InvocationState.READY
+    target_record.active_tool_family = None
+    target_record.active_tool_start_ms = None
+    predictions = {
+        "invocation-target": _prediction().to_dict(),
+        "invocation-old": replace(
+            _prediction(), invocation_id="invocation-old"
+        ).to_dict(),
+    }
     context_ids = {"ctx-target"}
     for index in range(40):
         workflow_id = f"workflow-peer-{index}"
@@ -1110,12 +1181,18 @@ def test_shared_locked_prefix_does_not_expand_semantic_belief_scope() -> None:
             _prediction(), invocation_id=invocation_id
         ).to_dict()
         context_ids.add(context_id)
+    policy_input = _attach_graph(policy_input, graph)
+    target_bundle = next(
+        bundle
+        for bundle in policy_input.physical_kv.bundles
+        if bundle.bundle_id == "target-gpu"
+    )
     shared_prefix = replace(
-        policy_input.physical_kv.bundles[0],
+        target_bundle,
         bundle_id="shared-system-prefix",
         owner_context_ids=tuple(sorted(context_ids)),
         scope="shared_subtree",
-        locked_bytes=policy_input.physical_kv.bundles[0].gpu_bytes,
+        locked_bytes=target_bundle.gpu_bytes,
         actionable=False,
         blocker_codes=("node_locked",),
     )
@@ -1123,7 +1200,14 @@ def test_shared_locked_prefix_does_not_expand_semantic_belief_scope() -> None:
         policy_input,
         physical_kv=replace(
             policy_input.physical_kv,
-            bundles=(shared_prefix, *policy_input.physical_kv.bundles[1:]),
+            bundles=tuple(
+                shared_prefix
+                if bundle.bundle_id == "target-gpu"
+                else replace(bundle, cpu_bytes=0)
+                if bundle.bundle_id == "old"
+                else bundle
+                for bundle in policy_input.physical_kv.bundles
+            ),
         ),
         optional_metadata={
             "frontier_predictions": MetadataValue(
@@ -1138,9 +1222,32 @@ def test_shared_locked_prefix_does_not_expand_semantic_belief_scope() -> None:
             ),
         },
     )
+    policy_input = replace(
+        policy_input,
+        runnable_frontier=(
+            replace(
+                policy_input.runnable_frontier[0],
+                admission_startup_bytes=100,
+                admission_growth_bytes=200,
+                causal_class="engine_waiting:slot",
+            ),
+        ),
+    )
     source_plan = AsyncSemanticJointPlanner(
         JointPlannerConfig(max_planning_budget_ms=100.0)
     ).plan(policy_input)
+    source_plan = replace(
+        source_plan,
+        admissions=tuple(
+            replace(
+                admission,
+                action=AdmissionAction.DEFER,
+                reserved_bytes=0,
+            )
+            for admission in source_plan.admissions
+        ),
+        candidate_order_request_ids=("request-target",),
+    )
     service_model = GPUServiceCurveModel(minimum_support=1)
     service_model.fit(
         [
@@ -1439,7 +1546,7 @@ def test_eligibility_trigger_ignores_generation_only_physical_churn() -> None:
     assert first.trigger_signature == second.trigger_signature
 
 
-def test_current_feasible_and_future_safe_prefetch_passes_hbm_constraint() -> None:
+def test_future_safe_prefetch_remains_deferred_without_prepare_evidence() -> None:
     graph = _graph()
     policy_input = _attach_graph(
         _input(capacity=1_100, reserved=100, include_cpu_target=True), graph
@@ -1500,17 +1607,12 @@ def test_current_feasible_and_future_safe_prefetch_passes_hbm_constraint() -> No
         ),
     )
 
-    summary = next(
-        item
-        for item in result.candidate_summaries
-        if ":prefetch:" in str(item["package_id"])
-    )
-    assert summary["future_hbm_feasibility_probability"] == 1.0
-    assert "deterministic_hard_constraint" not in summary["reasons"]
-    assert "future_hbm_chance_constraint" not in summary["reasons"]
+    assert result.selected_action == "observed_baseline"
+    assert result.candidate_summaries == ()
+    assert result.blocked_reasons == ("no_projected_hbm_beneficiary",)
 
 
-def test_reclaim_then_prefetch_is_physically_feasible_under_pressure() -> None:
+def test_reclaim_then_prefetch_is_deferred_until_prepare_is_consumed() -> None:
     graph = _graph()
     _add_waiting_victim(graph)
     policy_input = _input(capacity=800, reserved=100, include_cpu_target=True)
@@ -1586,19 +1688,9 @@ def test_reclaim_then_prefetch_is_physically_feasible_under_pressure() -> None:
         ),
     )
 
-    full_prefetch = next(
-        item
-        for item in result.candidate_summaries
-        if ":prefetch:" in str(item["package_id"])
-    )
-    joint = next(
-        item
-        for item in result.candidate_summaries
-        if ":reclaim-prefetch:" in str(item["package_id"])
-    )
-    assert "deterministic_hard_constraint" in full_prefetch["reasons"]
-    assert "deterministic_hard_constraint" not in joint["reasons"]
-    assert "future_hbm_chance_constraint" not in joint["reasons"]
+    assert result.selected_action == "observed_baseline"
+    assert result.candidate_summaries == ()
+    assert result.blocked_reasons == ("no_projected_hbm_beneficiary",)
 
 
 def test_action_certificate_ignores_unrelated_global_revision() -> None:
@@ -1658,12 +1750,33 @@ def test_action_certificate_ignores_unrelated_global_revision() -> None:
             model_version="frontier-test-v1",
         ),
     )
-    summary = next(
-        item
-        for item in result.candidate_summaries
-        if ":prefetch:" in str(item["package_id"])
-    )
-    certificate = summary["action_certificate"]
+    certificate = PredictiveActionCertificate(
+        package_id="prepare:ctx-target",
+        action="prepare_host",
+        source_snapshot_id=policy_input.snapshot_id,
+        target_context_id="ctx-target",
+        context_epochs=(("ctx-target", 0),),
+        invocation_evidence=(
+            ("invocation-target", "wait_tool", 100.0, None),
+        ),
+        join_evidence=(),
+        communication_evidence=(),
+        bundle_evidence=tuple(
+            (
+                bundle.bundle_id,
+                bundle.generation_fingerprint,
+                bundle.gpu_bytes,
+                bundle.cpu_bytes,
+            )
+            for bundle in policy_input.physical_kv.bundles
+            if "ctx-target" in bundle.owner_context_ids
+        ),
+        required_hbm_free_bytes=0,
+        required_host_free_bytes=0,
+        transfer_epoch=7,
+        transfer_service_evidence=(100.0, 100.0, 0.1),
+        model_version="frontier-test-v1",
+    ).to_dict()
     unrelated_revision = replace(
         policy_input,
         runtime_graph=replace(
