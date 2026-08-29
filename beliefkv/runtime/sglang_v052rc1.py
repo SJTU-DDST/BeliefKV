@@ -16274,11 +16274,7 @@ class EmbeddedSGLangRuntime:
         observation: RuntimeResourceObservation,
         worker: LatestWinsJointPlanWorker,
     ) -> None:
-        snapshot_log = getattr(
-            self, "predictive_candidate_snapshot_log", None
-        )
-        if snapshot_log is None:
-            snapshot_log = getattr(self, "policy_snapshot_log", None)
+        snapshot_log = getattr(self, "policy_snapshot_log", None)
         snapshot_enabled = snapshot_log is not None and snapshot_log.enabled
         result = worker.latest(
             after_sequence=self._last_joint_shadow_result_sequence
@@ -17283,7 +17279,11 @@ class EmbeddedSGLangRuntime:
     ) -> None:
         """Persist positive opportunities and a bounded high-pressure replay set."""
 
-        snapshot_log = getattr(self, "policy_snapshot_log", None)
+        snapshot_log = getattr(
+            self, "predictive_candidate_snapshot_log", None
+        )
+        if snapshot_log is None:
+            snapshot_log = getattr(self, "policy_snapshot_log", None)
         if snapshot_log is None or not snapshot_log.enabled:
             return
         summaries = shadow_payload.get("candidate_summaries", ())

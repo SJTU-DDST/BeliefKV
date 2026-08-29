@@ -1730,6 +1730,11 @@ class SGLangBackendTest(unittest.TestCase):
             runtime._predictive_candidate_snapshot_signatures = {}
             path = Path(temporary) / "predictive-high-pressure.jsonl.gz"
             runtime.policy_snapshot_log = PolicySnapshotLog(
+                None,
+                trace_id="periodic-disabled",
+                trace_sensitivity="timing_sensitive",
+            )
+            runtime.predictive_candidate_snapshot_log = PolicySnapshotLog(
                 path,
                 trace_id="predictive-high-pressure",
                 trace_sensitivity="timing_sensitive",
@@ -1777,6 +1782,7 @@ class SGLangBackendTest(unittest.TestCase):
                     payload,
                     observation=replace(observation, ts_ms=11 + index),
                 )
+            runtime.predictive_candidate_snapshot_log.close()
             runtime.policy_snapshot_log.close()
 
             self.assertEqual(len(load_replay_trace(path)), 20)
@@ -1960,6 +1966,11 @@ class SGLangBackendTest(unittest.TestCase):
                 trace_id="trace-incremental-joint-runtime",
                 trace_sensitivity="timing_sensitive",
             )
+            runtime.predictive_candidate_snapshot_log = PolicySnapshotLog(
+                Path(temporary) / "predictive-only.jsonl.gz",
+                trace_id="trace-predictive-only",
+                trace_sensitivity="timing_sensitive",
+            )
             runtime._last_policy_snapshot_structural_signature = None
             runtime._last_policy_snapshot_physical_signature = None
             runtime._last_policy_snapshot_hbm_bucket = None
@@ -2014,6 +2025,10 @@ class SGLangBackendTest(unittest.TestCase):
 
             self.assertEqual(runtime.policy_snapshot_log.count, 1)
             self.assertEqual(
+                runtime.predictive_candidate_snapshot_log.count,
+                0,
+            )
+            self.assertEqual(
                 runtime.joint_shadow_worker.stats().submitted_count, 1
             )
             delta_events = [
@@ -2031,6 +2046,7 @@ class SGLangBackendTest(unittest.TestCase):
             self.assertTrue(runtime.joint_shadow_worker.close())
             runtime.joint_shadow_worker = None
             runtime.policy_snapshot_log.close()
+            runtime.predictive_candidate_snapshot_log.close()
 
     def test_request_restore_dependency_uses_only_matched_radix_path(self):
         runtime = EmbeddedSGLangRuntime.__new__(EmbeddedSGLangRuntime)
