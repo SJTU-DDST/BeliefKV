@@ -7925,6 +7925,11 @@ class SGLangBackendTest(unittest.TestCase):
                         "causal_slack_probability": 0.8,
                         "required_wait_ms": 275.0,
                         "future_hbm_feasibility_probability": 1.0,
+                        "expected_recourse_credit_ms": 7.5,
+                        "prepare_recourse_failure_counts": {
+                            "pressure_unavailable": 3,
+                            "eligible": 1,
+                        },
                         "timing_semantics": "release_after_transfer",
                         "eligible": False,
                         "reasons": [
@@ -7958,12 +7963,26 @@ class SGLangBackendTest(unittest.TestCase):
             ],
             1,
         )
+        self.assertEqual(
+            counts[
+                "recourse_failure:prepare_host:pressure_unavailable"
+            ],
+            3,
+        )
+        self.assertEqual(
+            counts["recourse_failure:prepare_host:eligible"],
+            1,
+        )
         summary = runtime._predictive_shadow_sample_summary(
             runtime._predictive_shadow_aggregate_samples
         )
         self.assertEqual(
             summary["required_wait_ms:prepare_host"]["p50"],
             275.0,
+        )
+        self.assertEqual(
+            summary["expected_recourse_credit_ms:prepare_host"]["p50"],
+            7.5,
         )
 
 

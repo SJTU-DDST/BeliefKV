@@ -16,8 +16,10 @@ from beliefkv.policy.reference import (
     PhysicalBundleSnapshot,
 )
 from beliefkv.policy.risk_shadow import (
+    PrepareHostVictim,
     PredictiveIntent,
     PredictiveEligibilityIndex,
+    PredictiveEligibility,
     PredictiveRiskShadowConfig,
     PredictiveRiskShadowObserver,
     PredictiveRiskShadowResult,
@@ -99,6 +101,41 @@ def test_join_slack_uses_dependency_release_survival_not_resource_feasibility() 
         )
         is None
     )  # OTHER has no finite upper reentry bound for PREFETCH_GPU.
+
+
+def test_candidate_packages_exclude_invocations_outside_belief_scope() -> None:
+    observer = PredictiveRiskShadowObserver.__new__(
+        PredictiveRiskShadowObserver
+    )
+    observer.config = SimpleNamespace(
+        max_full_prefetch_hbm_ratio=0.05,
+        max_candidates=8,
+    )
+    eligibility = PredictiveEligibility(
+        source_snapshot_id="snapshot",
+        prefetch_targets=(),
+        prepare_host_victims=(
+            PrepareHostVictim(
+                "invocation-in", "ctx-in", "WAIT_TOOL", 100, 100
+            ),
+            PrepareHostVictim(
+                "invocation-other", "ctx-other", "WAIT_TOOL", 100, 100
+            ),
+        ),
+        probe_ms=0.0,
+    )
+
+    packages = observer._candidate_packages(
+        _input(capacity=1_000, reserved=0),
+        SimpleNamespace(plan_id="plan"),
+        eligibility,
+        allowed_invocation_ids=frozenset({"invocation-in"}),
+    )
+
+    assert [package.package_id for package in packages] == [
+        "plan:a0",
+        "plan:prepare:ctx-in",
+    ]
 
 
 def _prediction() -> LocalFrontierPrediction:

@@ -2,6 +2,31 @@
 
 更新日期：2026-08-29
 
+## 2026-08-29：64-root Closure Smoke 通过，P6 转向 beneficiary-bound value
+
+同一冻结 64-root predictor-only workload 已完成一次短高压 closure smoke。运行时
+形成 64 workflow、192 invocation/context，HBM 峰值 90.88%；1,003 个 risk result
+中 closure_prediction_incomplete=0，证明提交 6b56736 的 closure-local
+prediction 修复已覆盖真实高基数 RCCG。全程产生 6,012 个 PREPARE_HOST 候选和
+4,045 个新鲜证书；高压区间 258 个候选中仍有 54 个证书新鲜，因此当前失败不是
+“全部 stale”。
+
+价值门禁仍未通过：6,012 个候选全部为负收益，最大 expected benefit 为 -4.19 ms，
+expected recourse credit 没有覆盖 proactive stall。当前 PREPARE package 只有 victim，
+没有绑定明确的 HBM-blocked beneficiary；timeline 又只把有限 horizon 内超过 100%
+容量视为 pressure。实际高 HBM 与 waiting backlog 不能单独证明迁移可以解锁 GPU
+work，尤其本轮同时有 32 running 和 95 waiting。
+
+下一修改点已收敛为 beneficiary-bound recourse：由 observed
+execution/admission/reclaim seed 提供真实 beneficiary、startup/growth deficit 和
+victim reclaim envelope，比较 reactive 与 proactive 两条 admission/service 路径。
+在该价值语义完成前不开放 PREPARE canary，也不先投入完整 planner 性能重构。
+
+本轮后已将 predictive package 限制在 closure-complete BeliefScope，移入 OTHER 的
+invocation 不再产生无效 local_prediction_missing；同时聚合已计算的 recourse
+failure counts/credit，便于下一轮直接定位价值拒绝原因。完整记录见
+docs/experiments/beliefkv_p6_closure_smoke64_2026-08-29_zh.md。
+
 ## 2026-08-29：P6 64-root 高压 Shadow 与闭包局部推理修复
 
 已从既有 H200 v6/performance trace 重建 graph32 GPU service artifact，共包含

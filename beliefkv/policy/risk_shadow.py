@@ -1427,6 +1427,7 @@ class PredictiveRiskShadowObserver:
             policy_input,
             source_plan,
             eligibility,
+            allowed_invocation_ids=frozenset(scope.invocation_ids),
         )
         baseline = packages[0]
         blocked: list[str] = []
@@ -2508,6 +2509,8 @@ class PredictiveRiskShadowObserver:
         policy_input: PolicyInput,
         source_plan: JointPlan,
         eligibility: PredictiveEligibility,
+        *,
+        allowed_invocation_ids: frozenset[str] | None = None,
     ) -> tuple[PredictiveActionPackage, ...]:
         packages = [
             PredictiveActionPackage(
@@ -2516,15 +2519,23 @@ class PredictiveRiskShadowObserver:
                 source_joint_plan_id=source_plan.plan_id,
             )
         ]
-        target = (
-            eligibility.prefetch_targets[0]
-            if eligibility.prefetch_targets
-            else None
+        target = next(
+            (
+                item
+                for item in eligibility.prefetch_targets
+                if allowed_invocation_ids is None
+                or item.invocation_id in allowed_invocation_ids
+            ),
+            None,
         )
         victims = [
             item
             for item in eligibility.prepare_host_victims
-            if target is None or item.context_id != target.context_id
+            if (
+                allowed_invocation_ids is None
+                or item.invocation_id in allowed_invocation_ids
+            )
+            and (target is None or item.context_id != target.context_id)
         ]
         if target is not None:
             full_prefetch_cap = int(

@@ -16928,6 +16928,14 @@ class EmbeddedSGLangRuntime:
                 f"future_hbm_feasibility_probability:{action}",
                 summary.get("future_hbm_feasibility_probability"),
             )
+            sample(
+                f"expected_recourse_credit_ms:{action}",
+                summary.get("expected_recourse_credit_ms"),
+            )
+            for reason, value in (
+                summary.get("prepare_recourse_failure_counts") or {}
+            ).items():
+                counts[f"recourse_failure:{action}:{reason}"] += int(value)
             if isinstance(benefit, (int, float)) and not isinstance(benefit, bool):
                 if float(benefit) > 0:
                     counts[f"positive_benefit:{action}"] += 1
