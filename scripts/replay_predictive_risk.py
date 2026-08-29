@@ -20,6 +20,7 @@ from beliefkv.policy.service_curve import TransferServiceCurve
 from beliefkv.policy.transfer_cost import PCIeCostModel
 from beliefkv.predictor.frontier_belief import PredictiveEvidenceReadSet
 from beliefkv.predictor.hardware_service import GPUServiceCurveModel
+from beliefkv.predictor.structured_frontier import FrontierBeliefModel
 from beliefkv.runtime.protocol import TransferDirection
 
 
@@ -95,6 +96,7 @@ def main() -> int:
     )
     parser.add_argument("--snapshots", type=Path, required=True)
     parser.add_argument("--gpu-service-model", type=Path, required=True)
+    parser.add_argument("--predictor-model", type=Path, default=None)
     parser.add_argument("--transfer-service-model", type=Path, required=True)
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--max-snapshots", type=int, default=0)
@@ -132,6 +134,11 @@ def main() -> int:
         min_samples=max(1, int(transfer_artifact.get("min_samples") or 1)),
     )
     transfer_curve.warm_start(args.transfer_service_model)
+    frontier_model = (
+        FrontierBeliefModel.load(args.predictor_model)
+        if args.predictor_model is not None
+        else None
+    )
     observer = PredictiveRiskShadowObserver(
         GPUServiceCurveModel.load(args.gpu_service_model),
         PredictiveRiskShadowConfig(
@@ -140,6 +147,7 @@ def main() -> int:
             max_candidates=8,
             max_full_prefetch_hbm_ratio=0.05,
         ),
+        frontier_model=frontier_model,
     )
     planner = AsyncSemanticJointPlanner(
         JointPlannerConfig(max_planning_budget_ms=100.0)
@@ -178,7 +186,13 @@ def main() -> int:
                 break
             counts["seen"] += 1
             policy_input = PolicyInput.from_dict(policy_raw)
-            if "frontier_predictions" not in policy_input.optional_metadata:
+            has_predictions = (
+                "frontier_predictions" in policy_input.optional_metadata
+            )
+            has_features = "frontier_features" in policy_input.optional_metadata
+            if not has_predictions and (
+                frontier_model is None or not has_features
+            ):
                 counts["no_predictions"] += 1
                 continue
             metadata = dict(policy_input.optional_metadata)

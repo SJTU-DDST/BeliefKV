@@ -1,6 +1,31 @@
 # BeliefKV 最新架构与实现状态
 
-更新日期：2026-08-29
+更新日期：2026-08-30
+
+## 2026-08-30：Beneficiary-bound 机制闭环，当前高压窗口为 slot-only
+
+Observed JointPlan 过去只发布截断后的 16 个 candidate ID；bounded seed 将这些
+请求全部 ADMIT 后，risk planner 看不到其余 74--110 个 DEFER 请求。提交 f78e33c
+现在使用同一 observed 排序额外发布一个 seed-excluded waiting request，避免建立
+第二套 beneficiary scheduler。真实 64-root 运行中 1,040/1,040 个 risk result
+均完成，产生 2,079 个 `1 beneficiary x 2 victims` PREPARE_HOST package，
+`no_projected_hbm_beneficiary=0`。
+
+本轮仍未通过价值门禁。26 个 HBM >=80% result 中有 52 个 candidate，但 positive、
+fresh-positive 和 eligible 均为 0。16 个冻结高压快照的 HBM 余量为
+12.99--15.42 GiB，beneficiary startup+growth 仅约 8.3--433.2 MiB；slot 可用时请求
+可以直接 admission。离线 replay 的 256/256 scenario 均为
+`projected_beneficiary_hbm_block_unavailable`，说明当前窗口主要受
+`max_running_requests=32` 限制，而非 HBM deficit。系统不会把高 watermark 或
+waiting age 人工转换成 saved stall，因此不开放 PREPARE canary。
+
+replay 脚本已支持从冻结 `frontier_features` 和显式 `--predictor-model` 复用在线模型
+推理。完整 planning 仍过慢：predictive planning P50/P95 为 0.91/1.84 秒，高压
+P50/P95 为 1.47/2.15 秒；safe-point capture P95 为 24.13 ms。后续若继续该方向，
+先将停止条件改为预注册的 action-specific projected deficit，并实现 compact semantic
+snapshot 与 candidate-local physicalization；固定 80% watermark 不再等价于
+predictive KV opportunity。完整记录见
+`docs/experiments/beliefkv_p6_beneficiary_bound_shadow64_2026-08-30_zh.md`。
 
 ## 2026-08-29：Projected beneficiary overlay 已实现，等待有界 replay
 
