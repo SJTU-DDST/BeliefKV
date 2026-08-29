@@ -158,6 +158,41 @@ class LocalFrontierFeatures:
         ) < 0:
             raise ValueError("frontier demand features must be non-negative")
 
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "invocation_id": self.invocation_id,
+            "state": self.state,
+            "agent_definition_id": self.agent_definition_id,
+            "boundary_history": list(self.boundary_history),
+            "tool_family": self.tool_family,
+            "backend_class": self.backend_class,
+            "command_class": self.command_class,
+            "generated_tokens": self.generated_tokens,
+            "elapsed_wait_ms": self.elapsed_wait_ms,
+            "current_sequence_tokens": self.current_sequence_tokens,
+            "active_tool_count": self.active_tool_count,
+            "backend_pressure": self.backend_pressure,
+        }
+
+    @classmethod
+    def from_dict(cls, raw: Mapping[str, Any]) -> "LocalFrontierFeatures":
+        return cls(
+            invocation_id=str(raw["invocation_id"]),
+            state=str(raw["state"]),
+            agent_definition_id=str(raw.get("agent_definition_id") or "unknown"),
+            boundary_history=tuple(
+                str(item) for item in raw.get("boundary_history", ())
+            ),
+            tool_family=str(raw.get("tool_family") or "unknown"),
+            backend_class=str(raw.get("backend_class") or "unknown"),
+            command_class=str(raw.get("command_class") or "unknown"),
+            generated_tokens=int(raw.get("generated_tokens") or 0),
+            elapsed_wait_ms=float(raw.get("elapsed_wait_ms") or 0.0),
+            current_sequence_tokens=int(raw.get("current_sequence_tokens") or 0),
+            active_tool_count=int(raw.get("active_tool_count") or 0),
+            backend_pressure=str(raw.get("backend_pressure") or "unknown"),
+        )
+
 
 @dataclass(frozen=True)
 class EmpiricalDistribution:

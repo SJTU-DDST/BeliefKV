@@ -125,6 +125,40 @@ def _features_for_invocation(
     )
 
 
+def build_invocation_frontier_features(
+    graph: RuntimeCausalContextGraph,
+    predictor: RemainingTimePredictor,
+    *,
+    now_ms: float,
+    invocation_ids: Sequence[str],
+) -> dict[str, LocalFrontierFeatures]:
+    """Freeze lightweight online features without running model inference."""
+
+    active_tool_count = sum(
+        1
+        for invocation in graph.invocations.values()
+        if invocation.state == InvocationState.WAIT_TOOL
+    )
+    family_counts = collections.Counter(
+        invocation.active_tool_family
+        for invocation in graph.invocations.values()
+        if invocation.state == InvocationState.WAIT_TOOL
+        and invocation.active_tool_family is not None
+    )
+    return {
+        invocation_id: _features_for_invocation(
+            graph,
+            invocation_id,
+            predictor,
+            now_ms=now_ms,
+            active_tool_count=active_tool_count,
+            family_counts=family_counts,
+        )
+        for invocation_id in invocation_ids
+        if invocation_id in graph.invocations
+    }
+
+
 def build_invocation_frontier_predictions(
     graph: RuntimeCausalContextGraph,
     predictor: RemainingTimePredictor,
@@ -142,31 +176,16 @@ def build_invocation_frontier_predictions(
     frontier = predictor.frontier_model
     if frontier is None:
         return {}
-    active_tool_count = sum(
-        1
-        for invocation in graph.invocations.values()
-        if invocation.state == InvocationState.WAIT_TOOL
-    )
-    family_counts = collections.Counter(
-        invocation.active_tool_family
-        for invocation in graph.invocations.values()
-        if invocation.state == InvocationState.WAIT_TOOL
-        and invocation.active_tool_family is not None
+    features = build_invocation_frontier_features(
+        graph,
+        predictor,
+        now_ms=now_ms,
+        invocation_ids=invocation_ids,
     )
     result: dict[str, LocalFrontierPrediction] = {}
-    for invocation_id in invocation_ids:
-        if invocation_id not in graph.invocations:
-            continue
-        features = _features_for_invocation(
-            graph,
-            invocation_id,
-            predictor,
-            now_ms=now_ms,
-            active_tool_count=active_tool_count,
-            family_counts=family_counts,
-        )
+    for invocation_id, invocation_features in features.items():
         try:
-            result[invocation_id] = frontier.predict(features)
+            result[invocation_id] = frontier.predict(invocation_features)
         except Exception:
             # A prediction failure must never affect the scheduler critical path.
             continue

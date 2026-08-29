@@ -616,6 +616,13 @@ def test_assembler_attaches_frontier_predictions_to_policy_input() -> None:
                 "ood_reasons": ["ood_unknown_project"],
             }
         },
+        frontier_features={
+            "root": {
+                "invocation_id": "root",
+                "state": "ready",
+                "current_sequence_tokens": 4096,
+            }
+        },
     )
 
     assembler = IncrementalPolicyInputAssembler(config)
@@ -626,6 +633,9 @@ def test_assembler_attaches_frontier_predictions_to_policy_input() -> None:
     assert metadata is not None
     assert metadata.source == MetadataSource.PREDICTED
     assert metadata.value["root"]["remaining_decode_tokens_p50"] == 64.0
+    feature_metadata = policy_input.optional_metadata.get("frontier_features")
+    assert feature_metadata is not None
+    assert feature_metadata.value["root"]["state"] == "ready"
     assert "beliefkv_transfer_model_mode" not in policy_input.optional_metadata
     assert policy_input.runnable_frontier[0].predicted_remaining_decode_tokens == 64.0
 

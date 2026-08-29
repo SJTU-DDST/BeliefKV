@@ -43,7 +43,9 @@ from beliefkv.predictor.frontier_belief import (
 )
 from beliefkv.predictor.hardware_service import GPUServiceCurveModel
 from beliefkv.predictor.structured_frontier import (
+    FrontierBeliefModel,
     FrontierScenarioComposer,
+    LocalFrontierFeatures,
     LocalFrontierPrediction,
 )
 
@@ -1147,8 +1149,11 @@ class PredictiveRiskShadowObserver:
         self,
         service_model: GPUServiceCurveModel,
         config: PredictiveRiskShadowConfig | None = None,
+        *,
+        frontier_model: FrontierBeliefModel | None = None,
     ) -> None:
         self.config = config or PredictiveRiskShadowConfig()
+        self.frontier_model = frontier_model
         self.eligibility_index = PredictiveEligibilityIndex()
         self.scope_builder = BeliefScopeBuilder(
             BeliefScopeConfig(
@@ -1214,22 +1219,44 @@ class PredictiveRiskShadowObserver:
                 model_version=None,
                 reasons=("cancelled_superseded",),
             )
-        metadata = policy_input.optional_metadata.get("frontier_predictions")
+        prediction_metadata = policy_input.optional_metadata.get(
+            "frontier_predictions"
+        )
+        feature_metadata = policy_input.optional_metadata.get("frontier_features")
         model_metadata = policy_input.optional_metadata.get(
             "frontier_prediction_model_version"
         )
         model_version = (
-            str(model_metadata.value) if model_metadata is not None else None
+            str(model_metadata.value)
+            if model_metadata is not None
+            else (
+                str(self.frontier_model.model_version)
+                if self.frontier_model is not None
+                else None
+            )
         )
-        if metadata is None or not isinstance(metadata.value, Mapping):
+        prediction_payload = (
+            prediction_metadata.value
+            if prediction_metadata is not None
+            and isinstance(prediction_metadata.value, Mapping)
+            else {}
+        )
+        feature_payload = (
+            feature_metadata.value
+            if feature_metadata is not None
+            and isinstance(feature_metadata.value, Mapping)
+            else {}
+        )
+        if not prediction_payload and (
+            self.frontier_model is None or not feature_payload
+        ):
             return self._skipped(
                 policy_input,
                 source_plan,
                 started_ns,
                 model_version=model_version,
-                reasons=("frontier_predictions_unavailable",),
+                reasons=("frontier_inputs_unavailable",),
             )
-        prediction_payload = metadata.value
 
         primary = (
             eligibility.prefetch_targets[0]
@@ -1270,6 +1297,37 @@ class PredictiveRiskShadowObserver:
                 model_version=model_version,
                 reasons=(f"invalid_prediction_payload:{type(error).__name__}",),
             )
+        missing = sorted(set(scope.invocation_ids).difference(predictions))
+        if missing and self.frontier_model is not None:
+            try:
+                for invocation_id in missing:
+                    raw_features = feature_payload.get(invocation_id)
+                    if not isinstance(raw_features, Mapping):
+                        continue
+                    features = LocalFrontierFeatures.from_dict(raw_features)
+                    if features.invocation_id != invocation_id:
+                        raise ValueError("frontier feature identity mismatch")
+                    predictions[invocation_id] = self.frontier_model.predict(features)
+            except (KeyError, TypeError, ValueError) as error:
+                return self._skipped(
+                    policy_input,
+                    source_plan,
+                    started_ns,
+                    model_version=model_version,
+                    reasons=(
+                        f"invalid_frontier_feature_payload:{type(error).__name__}",
+                    ),
+                )
+            except Exception as error:
+                return self._skipped(
+                    policy_input,
+                    source_plan,
+                    started_ns,
+                    model_version=model_version,
+                    reasons=(
+                        f"candidate_local_prediction_failed:{type(error).__name__}",
+                    ),
+                )
         missing = sorted(set(scope.invocation_ids).difference(predictions))
         if missing:
             return self._skipped(

@@ -102,6 +102,9 @@ class JointShadowDelta:
     frontier_predictions: Mapping[str, Mapping[str, object]] = field(
         default_factory=dict
     )
+    frontier_features: Mapping[str, Mapping[str, object]] = field(
+        default_factory=dict
+    )
     frontier_model_version: str | None = None
 
     def __post_init__(self) -> None:
@@ -119,6 +122,18 @@ class JointShadowDelta:
                     str(invocation_id): dict(prediction)
                     for invocation_id, prediction in sorted(
                         self.frontier_predictions.items()
+                    )
+                }
+            ),
+        )
+        object.__setattr__(
+            self,
+            "frontier_features",
+            MappingProxyType(
+                {
+                    str(invocation_id): dict(features)
+                    for invocation_id, features in sorted(
+                        self.frontier_features.items()
                     )
                 }
             ),
@@ -223,6 +238,7 @@ def coalesce_joint_shadow_deltas(
             item.planning_requested for item in deltas
         ),
         frontier_predictions=last.frontier_predictions,
+        frontier_features=last.frontier_features,
         frontier_model_version=last.frontier_model_version,
     )
 
@@ -466,6 +482,17 @@ class IncrementalPolicyInputAssembler:
                 source=MetadataSource.PREDICTED,
                 value=dict(delta.frontier_predictions),
                 producer="frontier_belief_mvp",
+            )
+            policy_input = replace(
+                policy_input,
+                optional_metadata=metadata,
+            )
+        if delta.frontier_features:
+            metadata = dict(policy_input.optional_metadata)
+            metadata["frontier_features"] = MetadataValue(
+                source=MetadataSource.OBSERVED,
+                value=dict(delta.frontier_features),
+                producer="frontier_online_feature_snapshot",
             )
             policy_input = replace(
                 policy_input,

@@ -5,6 +5,7 @@ from beliefkv.control.causal_graph import (
     ContextRecord,
     InvocationRecord,
     InvocationState,
+    JoinRecord,
     RuntimeCausalContextGraph,
     WorkflowRecord,
 )
@@ -29,6 +30,7 @@ from beliefkv.predictor.frontier_belief import PredictiveEvidenceReadSet
 from beliefkv.predictor.hardware_service import GPUServiceCurveModel
 from beliefkv.predictor.structured_frontier import (
     EmpiricalDistribution,
+    LocalFrontierFeatures,
     LocalFrontierPrediction,
     WaitBelief,
     WaitBeliefKind,
@@ -326,6 +328,147 @@ def test_exact_shadow_prefetch_is_evaluated_without_mutating_joint_plan() -> Non
     )
     assert repeated.belief_cache_hit
     assert repeated.service_cache_hits > 0
+
+
+def test_candidate_local_inference_covers_complete_join_closure() -> None:
+    policy_input = _input(capacity=1_000, reserved=100, include_cpu_target=True)
+    graph = _graph()
+    parent = graph.invocations["invocation-target"]
+    parent.state = InvocationState.WAIT_JOIN
+    parent.active_tool_family = None
+    parent.active_tool_start_ms = None
+    parent.join_id = "join-target"
+    child_ids = ("child-a", "child-b", "child-c")
+    parent.child_invocation_ids.update(child_ids)
+    parent.blocking_child_ids.update(child_ids)
+    graph.workflows["workflow-target"].invocation_ids.update(child_ids)
+    for child_id in child_ids:
+        context_id = f"ctx-{child_id}"
+        graph.contexts[context_id] = ContextRecord(
+            "workflow-target",
+            context_id,
+            0,
+            10.0,
+            100.0,
+            parent_context_id="ctx-target",
+            invocation_ids={child_id},
+        )
+        graph.invocations[child_id] = InvocationRecord(
+            workflow_id="workflow-target",
+            invocation_id=child_id,
+            context_id=context_id,
+            agent_definition_id="browser",
+            agent_instance_id=child_id,
+            state=InvocationState.WAIT_TOOL,
+            created_ts_ms=10.0,
+            updated_ts_ms=100.0,
+            parent_invocation_id="invocation-target",
+            parent_context_id="ctx-target",
+            active_tool_family="shell",
+            active_tool_start_ms=90.0,
+        )
+    graph.joins["join-target"] = JoinRecord(
+        workflow_id="workflow-target",
+        join_id="join-target",
+        member_invocation_ids=set(child_ids),
+        waiter_invocation_ids={"invocation-target"},
+    )
+    graph._graph_version = 11
+
+    features = {
+        invocation_id: LocalFrontierFeatures(
+            invocation_id=invocation_id,
+            state=invocation.state.value,
+            agent_definition_id=invocation.agent_definition_id,
+            tool_family=invocation.active_tool_family or "unknown",
+            elapsed_wait_ms=10.0,
+            current_sequence_tokens=4096,
+        ).to_dict()
+        for invocation_id, invocation in graph.invocations.items()
+    }
+    policy_input = _attach_graph(policy_input, graph)
+    policy_input = replace(
+        policy_input,
+        optional_metadata={
+            "frontier_features": MetadataValue(
+                MetadataSource.OBSERVED,
+                features,
+                "test-frontier-features",
+            ),
+            "frontier_prediction_model_version": MetadataValue(
+                MetadataSource.PREDICTED,
+                "candidate-local-test-v1",
+                "test-frontier",
+            ),
+        },
+    )
+    source_plan = AsyncSemanticJointPlanner(
+        JointPlannerConfig(max_planning_budget_ms=100.0)
+    ).plan(policy_input)
+    service_model = GPUServiceCurveModel(minimum_support=1)
+    service_model.fit(
+        [
+            _service_row("prefill-a", "prefill", 32),
+            _service_row("prefill-b", "prefill", 32),
+            _service_row("decode-a", "decode", 16),
+            _service_row("decode-b", "decode", 16),
+        ]
+    )
+
+    class FeatureEchoModel:
+        model_version = "candidate-local-test-v1"
+
+        @staticmethod
+        def predict(item: LocalFrontierFeatures) -> LocalFrontierPrediction:
+            if item.state == InvocationState.WAIT_JOIN.value:
+                wait = WaitBelief(
+                    kind=WaitBeliefKind.JOIN,
+                    support_level="structural",
+                    dependency_composed=True,
+                )
+                return replace(
+                    _prediction(),
+                    invocation_id=item.invocation_id,
+                    remaining_external_wait=EmpiricalDistribution.empty(),
+                    wait_belief=wait,
+                )
+            return replace(
+                _prediction(),
+                invocation_id=item.invocation_id,
+                wait_belief=_tool_wait_belief(100.0),
+            )
+
+    observer = PredictiveRiskShadowObserver(
+        service_model,
+        PredictiveRiskShadowConfig(
+            particle_count=16,
+            top_k=4,
+            max_candidates=4,
+            kv_bytes_per_token=1,
+        ),
+        frontier_model=FeatureEchoModel(),
+    )
+    result = observer.evaluate(
+        policy_input,
+        graph=graph,
+        source_plan=source_plan,
+        evidence_read_set=PredictiveEvidenceReadSet(
+            graph_version=11,
+            page_revision=5,
+            topology_revision=4,
+            fairness_revision=0,
+            admission_revision=0,
+            transfer_epoch=0,
+            obligation_revision=0,
+            lease_revision=0,
+            grace_revision=0,
+            parser_frontier_revision=0,
+            model_version="candidate-local-test-v1",
+        ),
+    )
+
+    assert "closure_prediction_incomplete" not in result.blocked_reasons
+    assert "frontier_inputs_unavailable" not in result.blocked_reasons
 
 
 def test_full_prefetch_over_canary_cap_is_filtered_before_risk_evaluation() -> None:

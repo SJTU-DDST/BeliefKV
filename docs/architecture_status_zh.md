@@ -2,6 +2,32 @@
 
 更新日期：2026-08-29
 
+## 2026-08-29：P6 64-root 高压 Shadow 与闭包局部推理修复
+
+已从既有 H200 v6/performance trace 重建 graph32 GPU service artifact，共包含
+10,535 个唯一 batch sample，覆盖 decode/prefill 和 batch 1-32。该 artifact 绑定 v6
+profile 与硬件 key，但仍明确为 `shadow_only`，不替代受控 GPU service calibration。
+launcher 会同时 fail-fast 校验 GPU service 与 transfer service 的路径及 hardware key。
+
+预注册 64-root predictor-only shadow 达到 100% KV pressure，并在高压后完成 208 次
+risk result 后按停止规则结束。PageIndex 未再断言；predictive worker 1,176/1,176
+terminal、无 failed/dropped/pending；shutdown 无遗留 transaction、command、lease 或
+obligation。该轮 1,176 个结果全部因 `closure_prediction_incomplete` 跳过，未运行
+canary。根因是 scheduler 只为任意前 64 个 invocation 生成 prediction，而运行时存在
+64 parent + 128 child；BeliefScope 对 JOIN/child 原子闭包的要求与该截断冲突。
+
+现已删除 risk shadow 的 scheduler-path 全局模型推理：safe point 仅冻结全部 active
+invocation 的轻量 `LocalFrontierFeatures`，异步 worker 从实际 KV 候选扩展完整 RCCG
+闭包，并只对闭包成员推理。旧 `frontier_predictions` metadata 仍可用于冻结 trace
+回放。该改动修复了高基数闭包正确性，也避免将全局模型评估重新放回 scheduler。
+定向与运行时回归共 218 passed、8 subtests passed。
+
+P6 仍未开放 canary。完整 snapshot build、plan compute 和 validation 的高压 P95 分别
+为 1.58 s、1.70 s 和 132.8 ms；下一门槛是 compact semantic snapshot、候选局部
+physicalization 和 bounded scenario evaluation，而不是调整 workload、shape bucket
+或风险阈值。完整记录见
+`docs/experiments/beliefkv_p6_action_aligned_high_pressure_shadow_2026-08-29_zh.md`。
+
 ## 2026-08-29：Performance Patch Shape-Aware Transfer Artifact 重建
 
 已从当前 performance patch 的既有 GPU telemetry 重建 v6 transfer artifact。导出器

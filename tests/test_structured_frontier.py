@@ -33,6 +33,25 @@ from beliefkv.predictor.structured_frontier import (
 )
 
 
+def test_local_frontier_features_round_trip() -> None:
+    features = LocalFrontierFeatures(
+        invocation_id="child-7",
+        state="wait_tool",
+        agent_definition_id="coder",
+        boundary_history=("tool", "tool"),
+        tool_family="shell",
+        backend_class="sandbox",
+        command_class="pytest",
+        generated_tokens=37,
+        elapsed_wait_ms=125.5,
+        current_sequence_tokens=8192,
+        active_tool_count=3,
+        backend_pressure="shell:3",
+    )
+
+    assert LocalFrontierFeatures.from_dict(features.to_dict()) == features
+
+
 def _row(decision: str, remaining: int, target: str = "function_call") -> dict:
     return {
         "schema_version": 2,

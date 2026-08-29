@@ -104,7 +104,7 @@ from beliefkv.policy.risk_shadow import (
 )
 from beliefkv.predictor.hardware_service import GPUServiceCurveModel
 from beliefkv.predictor.online_shadow import (
-    build_invocation_frontier_predictions,
+    build_invocation_frontier_features,
 )
 from beliefkv.runtime.audit import (
     PolicySnapshotLog,
@@ -2499,6 +2499,7 @@ class EmbeddedSGLangRuntime:
         self._predictive_shadow_aggregate_counts: Counter[str] = Counter()
         self._predictive_shadow_aggregate_samples: dict[str, deque[float]] = {}
         self._last_frontier_predictions: dict[str, dict[str, object]] = {}
+        self._last_frontier_features: dict[str, dict[str, object]] = {}
         self._last_frontier_model_version: str | None = None
         self._restore_funding_preview_cursor: dict[str, int] = {}
         self._joint_shadow_strict_stale_reasons: Counter[str] = Counter()
@@ -2669,6 +2670,7 @@ class EmbeddedSGLangRuntime:
                 predictive_risk_observer = PredictiveRiskShadowObserver(
                     predictive_service_model,
                     predictive_shadow_config,
+                    frontier_model=self.controller.predictor.frontier_model,
                 )
                 self.predictive_risk_worker = LatestWinsPredictiveRiskWorker(
                     predictive_risk_observer,
@@ -16598,6 +16600,7 @@ class EmbeddedSGLangRuntime:
                     frontier_predictions=dict(
                         self._last_frontier_predictions or {}
                     ),
+                    frontier_features=dict(self._last_frontier_features or {}),
                     frontier_model_version=self._last_frontier_model_version,
                 )
                 submission = worker.submit_delta(delta)
@@ -20363,6 +20366,7 @@ class EmbeddedSGLangRuntime:
         self, now_ms: float
     ) -> tuple[RunnableInvocation, ...]:
         result: dict[str, RunnableInvocation] = {}
+        frontier_features: dict[str, Any] = {}
         frontier_predictions: dict[str, Any] = {}
         if getattr(self.config, "predictive_risk_shadow_enabled", False):
             predictor = getattr(self.controller, "predictor", None)
@@ -20374,20 +20378,34 @@ class EmbeddedSGLangRuntime:
                     invocation.invocation_id
                     for invocation in self.controller.graph.invocations.values()
                     if not invocation.state.terminal
-                )[:64]
+                )
                 try:
-                    frontier_predictions = (
-                        build_invocation_frontier_predictions(
-                            self.controller.graph,
-                            predictor,
-                            now_ms=now_ms,
-                            invocation_ids=active_ids,
-                        )
+                    frontier_features = build_invocation_frontier_features(
+                        self.controller.graph,
+                        predictor,
+                        now_ms=now_ms,
+                        invocation_ids=active_ids,
                     )
+                    if (
+                        self.config.frontier_aware_retraction_shadow_enabled
+                        or self.config.frontier_aware_retraction_canary_limit > 0
+                    ):
+                        frontier_predictions = {
+                            invocation_id: predictor.frontier_model.predict(
+                                frontier_features[invocation_id]
+                            )
+                            for invocation_id in active_ids[:64]
+                            if invocation_id in frontier_features
+                        }
                 except Exception:
-                    # A prediction failure must never affect the scheduler
-                    # critical path; fall back to observed-only planning.
+                    # Feature or optional canary prediction failures must never
+                    # affect the scheduler critical path.
+                    frontier_features = {}
                     frontier_predictions = {}
+        self._last_frontier_features = {
+            invocation_id: features.to_dict()
+            for invocation_id, features in frontier_features.items()
+        }
         self._last_frontier_predictions = {
             invocation_id: prediction.to_dict()
             for invocation_id, prediction in frontier_predictions.items()
@@ -20399,7 +20417,7 @@ class EmbeddedSGLangRuntime:
         )
         self._last_frontier_model_version = (
             str(frontier_model.model_version)
-            if frontier_model is not None and frontier_predictions
+            if frontier_model is not None and frontier_features
             else None
         )
         raw_waiting_queue = getattr(self.scheduler, "waiting_queue", None)
