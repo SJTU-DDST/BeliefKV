@@ -91,6 +91,19 @@ def test_gpu_service_curve_rejects_runtime_overlap_as_training() -> None:
         )
 
 
+def test_runtime_service_fit_requires_explicit_shadow_only_entry_point() -> None:
+    model = GPUServiceCurveModel(minimum_support=2.0)
+    summary = model.fit_runtime_observations(
+        _rows(evidence_role="runtime_validation")
+    )
+
+    assert summary["evidence_role"] == "runtime_validation"
+    assert "shadow-only" in summary["timing_boundary"]
+    assert model.predict(_features()).source != "unavailable"
+    with pytest.raises(ValueError, match="runtime validation evidence only"):
+        GPUServiceCurveModel().fit_runtime_observations(_rows())
+
+
 def test_gpu_service_curve_rejects_request_expanded_or_duplicate_batches() -> None:
     request_row = dict(_rows()[0], row_type="gpu_service_interval")
     with pytest.raises(ValueError, match="one row per complete batch"):

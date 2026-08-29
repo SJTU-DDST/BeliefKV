@@ -175,6 +175,58 @@ def runtime_launch_environment(profile: dict[str, Any]) -> dict[str, str]:
     }
 
 
+def validate_beliefkv_service_bindings(
+    config: dict[str, Any],
+    profile: dict[str, Any],
+) -> dict[str, Any]:
+    """Require the launched BeliefKV config to use the frozen service artifacts."""
+
+    root = Path(str(profile["_repository_root"]))
+    rows: list[dict[str, Any]] = []
+    specifications = (
+        (
+            "gpu_service",
+            "gpu_service_model_path",
+            "gpu_service_hardware_key",
+        ),
+        (
+            "transfer_service",
+            "transfer_service_model_path",
+            "transfer_service_hardware_key",
+        ),
+    )
+    for artifact_name, path_key, hardware_key in specifications:
+        artifact = profile["artifacts"][artifact_name]
+        expected_path = _resolve_repository_path(artifact["path"], root)
+        raw_actual_path = config.get(path_key)
+        actual_path = (
+            _resolve_repository_path(raw_actual_path, root)
+            if raw_actual_path
+            else None
+        )
+        expected_key = str(artifact["hardware_key"])
+        actual_key = config.get(hardware_key)
+        row = {
+            "artifact": artifact_name,
+            "config_path_key": path_key,
+            "expected_path": str(expected_path),
+            "actual_path": str(actual_path) if actual_path is not None else None,
+            "config_hardware_key": hardware_key,
+            "expected_hardware_key": expected_key,
+            "actual_hardware_key": actual_key,
+        }
+        row["passed"] = (
+            actual_path == expected_path
+            and isinstance(actual_key, str)
+            and bool(actual_key)
+            and actual_key == expected_key
+        )
+        rows.append(row)
+    if not all(bool(row["passed"]) for row in rows):
+        raise RuntimeError("BeliefKV service artifact binding mismatch")
+    return {"bindings": rows, "passed": True}
+
+
 def _actual(server_info: dict[str, Any], *keys: str) -> Any:
     for key in keys:
         value = server_info.get(key)

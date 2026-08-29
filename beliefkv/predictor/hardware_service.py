@@ -101,10 +101,11 @@ class _CalibrationObservation:
 
 
 class GPUServiceCurveModel:
-    """Conditional batch service distribution fitted from controlled evidence.
+    """Conditional batch service distribution fitted from explicit evidence.
 
-    Agent-runtime overlap intervals may be evaluated against this model, but
-    are rejected during fitting because their boundaries are not CUDA events.
+    Controlled evidence remains the only input accepted by fit(). Runtime
+    scheduler intervals require the explicit shadow-only entry point because
+    their boundaries are not CUDA events.
     """
 
     def __init__(
@@ -144,6 +145,47 @@ class GPUServiceCurveModel:
         self.artifact_metadata = dict(metadata or {})
 
     def fit(self, rows: Iterable[Mapping[str, Any]]) -> dict[str, Any]:
+        return self._fit_rows(
+            rows,
+            evidence_role=CONTROLLED_SERVICE_EVIDENCE,
+            invalid_role_message=(
+                "GPU service fitting accepts controlled microbenchmarks only"
+            ),
+            timing_boundary=(
+                "scheduler/worker service interval calibrated against controlled cases; "
+                "not claimed as pure CUDA kernel time"
+            ),
+        )
+
+    def fit_runtime_observations(
+        self, rows: Iterable[Mapping[str, Any]]
+    ) -> dict[str, Any]:
+        """Fit graph/runtime intervals for shadow estimation only.
+
+        This deliberately separate API prevents runtime overlap samples from
+        being mistaken for controlled CUDA-event calibration evidence.
+        """
+
+        return self._fit_rows(
+            rows,
+            evidence_role=RUNTIME_VALIDATION_EVIDENCE,
+            invalid_role_message=(
+                "runtime GPU service fitting accepts runtime validation evidence only"
+            ),
+            timing_boundary=(
+                "runtime scheduler/worker interval under graph32; shadow-only and "
+                "not claimed as pure CUDA kernel time"
+            ),
+        )
+
+    def _fit_rows(
+        self,
+        rows: Iterable[Mapping[str, Any]],
+        *,
+        evidence_role: str,
+        invalid_role_message: str,
+        timing_boundary: str,
+    ) -> dict[str, Any]:
         values = [dict(row) for row in rows]
         if not values or {str(row.get("split")) for row in values} != {"train"}:
             raise ValueError("GPU service fitting requires only train rows")
@@ -154,14 +196,11 @@ class GPUServiceCurveModel:
             {
                 str(row.get("evidence_role") or "unknown")
                 for row in values
-                if row.get("evidence_role") != CONTROLLED_SERVICE_EVIDENCE
+                if row.get("evidence_role") != evidence_role
             }
         )
         if invalid_roles:
-            raise ValueError(
-                "GPU service fitting accepts controlled microbenchmarks only; "
-                f"found {invalid_roles}"
-            )
+            raise ValueError(f"{invalid_role_message}; found {invalid_roles}")
         eligible = [row for row in values if not row.get("warmup")]
         self._groups.clear()
         self._observations.clear()
@@ -184,11 +223,8 @@ class GPUServiceCurveModel:
         self.training_summary = {
             "batch_sample_count": len(eligible),
             "unique_sample_count": len({str(row["sample_id"]) for row in eligible}),
-            "evidence_role": CONTROLLED_SERVICE_EVIDENCE,
-            "timing_boundary": (
-                "scheduler/worker service interval calibrated against controlled cases; "
-                "not claimed as pure CUDA kernel time"
-            ),
+            "evidence_role": evidence_role,
+            "timing_boundary": timing_boundary,
             "batch_sizes": sorted(
                 {int(row.get("batch_size") or 0) for row in eligible}
             ),

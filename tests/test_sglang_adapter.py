@@ -727,6 +727,16 @@ class SGLangBackendTest(unittest.TestCase):
             self.assertIs(runtime._current_online_joint_decision, observed_decision)
             self.assertEqual(runtime._last_joint_decision_plan_id, "observed-plan")
 
+        progress = [
+            fields
+            for event, _, fields in runtime.audit.events
+            if event == "predictive_risk_progress"
+        ]
+        self.assertEqual(len(progress), 2)
+        self.assertEqual(progress[-1]["candidate_count"], 0)
+        self.assertEqual(progress[-1]["fresh_positive_package_count"], 0)
+        self.assertEqual(progress[-1]["hbm_pressure"], 0.0)
+
         runtime._latest_predictive_intent = candidate
         shadow = SimpleNamespace(
             predictive_intent=candidate,

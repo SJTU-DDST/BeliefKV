@@ -143,6 +143,7 @@ from beliefkv.runtime.lock_service import (
 _PERFORMANCE_METRIC_EVENTS = frozenset(
     {
         "resource_snapshot",
+        "predictive_risk_progress",
         "request_visible_pending",
         "request_started",
         "request_finished",
@@ -17075,10 +17076,39 @@ class EmbeddedSGLangRuntime:
             certificate_count = 0
             fresh_count = 0
             stale_count = 0
+            candidate_count = 0
+            positive_count = 0
+            fresh_positive_count = 0
+            fresh_eligible_count = 0
+            timing_available_count = 0
+            max_expected_benefit_ms = 0.0
+            max_expected_recourse_credit_ms = 0.0
             stale_reasons: Counter[str] = Counter()
             for summary in shadow_payload.get("candidate_summaries", ()):
                 if not isinstance(summary, Mapping):
                     continue
+                candidate_count += 1
+                benefit = float(summary.get("expected_benefit_ms") or 0.0)
+                recourse = float(
+                    summary.get("expected_recourse_credit_ms") or 0.0
+                )
+                max_expected_benefit_ms = max(
+                    max_expected_benefit_ms, benefit
+                )
+                max_expected_recourse_credit_ms = max(
+                    max_expected_recourse_credit_ms, recourse
+                )
+                if benefit > 0:
+                    positive_count += 1
+                required_wait = summary.get("required_wait_ms")
+                if (
+                    isinstance(required_wait, (int, float))
+                    and not isinstance(required_wait, bool)
+                    and math.isfinite(float(required_wait))
+                    and summary.get("timing_semantics")
+                    in {"release_after_transfer", "release_within_transfer"}
+                ):
+                    timing_available_count += 1
                 certificate = summary.get("action_certificate")
                 if not isinstance(certificate, Mapping):
                     continue
@@ -17097,6 +17127,10 @@ class EmbeddedSGLangRuntime:
                     stale_reasons.update(reasons)
                 else:
                     fresh_count += 1
+                    if benefit > 0:
+                        fresh_positive_count += 1
+                        if bool(summary.get("eligible")):
+                            fresh_eligible_count += 1
             validation_ms = (
                 time.perf_counter_ns() - validation_started_ns
             ) / 1_000_000.0
@@ -17128,6 +17162,47 @@ class EmbeddedSGLangRuntime:
             self._joint_predictive_counts[
                 f"risk_shadow_selected_{selected_action}"
             ] += 1
+            stats_method = getattr(worker, "stats", None)
+            worker_stats = (
+                stats_method().to_dict()
+                if callable(stats_method)
+                else {}
+            )
+            self.audit.emit(
+                "predictive_risk_progress",
+                observation.ts_ms,
+                worker_sequence=result.sequence,
+                source_joint_sequence=result.source_joint_sequence,
+                hbm_pressure=(
+                    observation.hbm_used_bytes / observation.hbm_capacity_bytes
+                    if observation.hbm_capacity_bytes > 0
+                    else 0.0
+                ),
+                candidate_count=candidate_count,
+                positive_package_count=positive_count,
+                fresh_positive_package_count=fresh_positive_count,
+                fresh_eligible_package_count=fresh_eligible_count,
+                timing_available_count=timing_available_count,
+                action_certificate_count=certificate_count,
+                action_certificate_fresh_count=fresh_count,
+                action_certificate_stale_count=stale_count,
+                expected_benefit_ms_max=max_expected_benefit_ms,
+                expected_recourse_credit_ms_max=(
+                    max_expected_recourse_credit_ms
+                ),
+                queue_wait_ms=result.queue_wait_ms,
+                planning_ms=result.compute_ms,
+                scenario_risk_ms=float(
+                    shadow_payload.get("scenario_risk_ms") or 0.0
+                ),
+                trigger_to_validation_ms=trigger_to_validation_ms,
+                selected_action=selected_action,
+                worker_pending_count=worker_stats.get("pending_count"),
+                worker_busy=worker_stats.get("busy"),
+                worker_dropped_pending_count=worker_stats.get(
+                    "dropped_pending_count"
+                ),
+            )
             self.audit.emit(
                 "predictive_risk_shadow",
                 observation.ts_ms,

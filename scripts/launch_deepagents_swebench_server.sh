@@ -84,6 +84,7 @@ printf '{"linux_start_time_ticks":%s,"pid":%s,"schema_version":1}\n' \
 "${PROFILE_PYTHON}" "${REPOSITORY_ROOT}/scripts/validate_runtime_profile.py" \
   --phase preflight \
   --runtime-profile "${RUNTIME_PROFILE}" \
+  --beliefkv-config "${CONFIG_PATH}" \
   --sglang-root "${SGLANG_ROOT}" \
   --output "${CONTRACT_PATH}"
 
@@ -118,6 +119,7 @@ contract_base_url="http://127.0.0.1:${PORT}"
 if ! "${PROFILE_PYTHON}" "${REPOSITORY_ROOT}/scripts/validate_runtime_profile.py" \
   --phase server \
   --runtime-profile "${RUNTIME_PROFILE}" \
+  --beliefkv-config "${CONFIG_PATH}" \
   --sglang-root "${SGLANG_ROOT}" \
   --base-url "${contract_base_url}" \
   --wait-seconds "${SERVER_STARTUP_TIMEOUT_SECONDS:-1200}" \

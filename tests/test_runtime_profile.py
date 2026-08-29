@@ -9,6 +9,7 @@ import pytest
 from beliefkv.experiments.runtime_profile import (
     load_runtime_profile,
     runtime_launch_environment,
+    validate_beliefkv_service_bindings,
     validate_server_against_runtime_profile,
 )
 
@@ -37,6 +38,10 @@ V5_RESTORE_GATE_PROFILE = (
 PERF_PROFILE = (
     REPOSITORY_ROOT
     / "configs/p6/h200_bf16_perf_v1/frozen_runtime_profile.json"
+)
+V6_PROFILE = (
+    REPOSITORY_ROOT
+    / "configs/p6/h200_bf16_v6/frozen_runtime_profile.json"
 )
 
 
@@ -156,6 +161,52 @@ def test_h200_performance_profile_has_complete_artifact_contract() -> None:
     assert gpu_service["evaluation_sha256"]
     assert transfer_service["hardware_key"]
     assert transfer_service["sha256"]
+
+
+def test_h200_v6_profile_binds_shadow_service_artifacts() -> None:
+    profile, _ = load_runtime_profile(
+        V6_PROFILE,
+        repository_root=REPOSITORY_ROOT,
+    )
+    gpu_service = profile["artifacts"]["gpu_service"]
+    transfer_service = profile["artifacts"]["transfer_service"]
+    config = {
+        "gpu_service_model_path": gpu_service["path"],
+        "gpu_service_hardware_key": gpu_service["hardware_key"],
+        "transfer_service_model_path": transfer_service["path"],
+        "transfer_service_hardware_key": transfer_service["hardware_key"],
+    }
+
+    result = validate_beliefkv_service_bindings(config, profile)
+
+    assert result["passed"] is True
+    assert all(row["passed"] for row in result["bindings"])
+
+
+@pytest.mark.parametrize(
+    ("field", "wrong"),
+    (
+        ("gpu_service_hardware_key", None),
+        ("transfer_service_hardware_key", "wrong-key"),
+    ),
+)
+def test_h200_v6_profile_rejects_service_key_drift(
+    field: str, wrong: object
+) -> None:
+    profile, _ = load_runtime_profile(
+        V6_PROFILE,
+        repository_root=REPOSITORY_ROOT,
+    )
+    config = {
+        "gpu_service_model_path": profile["artifacts"]["gpu_service"]["path"],
+        "gpu_service_hardware_key": profile["artifacts"]["gpu_service"]["hardware_key"],
+        "transfer_service_model_path": profile["artifacts"]["transfer_service"]["path"],
+        "transfer_service_hardware_key": profile["artifacts"]["transfer_service"]["hardware_key"],
+    }
+    config[field] = wrong
+
+    with pytest.raises(RuntimeError, match="service artifact binding mismatch"):
+        validate_beliefkv_service_bindings(config, profile)
 
 
 def test_runtime_contract_accepts_exact_profile() -> None:

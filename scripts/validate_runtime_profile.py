@@ -12,6 +12,7 @@ from typing import Any
 
 from beliefkv.experiments.runtime_profile import (
     load_runtime_profile,
+    validate_beliefkv_service_bindings,
     validate_server_against_runtime_profile,
 )
 from beliefkv.experiments.server_contract import fetch_server_info
@@ -27,6 +28,7 @@ def _parse_args() -> argparse.Namespace:
     )
     parser.add_argument("--runtime-profile", type=Path, required=True)
     parser.add_argument("--sglang-root", type=Path, required=True)
+    parser.add_argument("--beliefkv-config", type=Path, required=True)
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument(
         "--phase", choices=("preflight", "server"), default="server"
@@ -219,6 +221,11 @@ def _preflight(
     profile: dict[str, Any], profile_sha: str, args: argparse.Namespace
 ) -> dict[str, Any]:
     environment = _environment_manifest(profile)
+    config = json.loads(
+        args.beliefkv_config.expanduser().resolve().read_text(encoding="utf-8")
+    )
+    if not isinstance(config, dict):
+        raise RuntimeError("BeliefKV config must contain a JSON object")
     return {
         "schema_version": 1,
         "contract_state": "preflight_passed",
@@ -234,6 +241,7 @@ def _preflight(
         "model": _model_contract(profile, environment),
         "hardware": _gpu_contract(environment),
         "service_artifacts": _artifact_contract(profile),
+        "service_bindings": validate_beliefkv_service_bindings(config, profile),
     }
 
 
