@@ -125,6 +125,49 @@ def _semantic_planner(**overrides) -> AsyncSemanticJointPlanner:
     return AsyncSemanticJointPlanner(JointPlannerConfig(**defaults))
 
 
+def test_seed_publishes_first_waiting_candidate_beyond_frontier_limit() -> None:
+    requests = tuple(
+        _request(
+            f"request-{index:02d}",
+            f"workflow-{index:02d}",
+            f"invocation-{index:02d}",
+            f"context-{index:02d}",
+            submitted_ms=float(index),
+            startup_bytes=1,
+            causal_class="engine_waiting:foreground:root",
+        )
+        for index in range(17)
+    )
+    policy_input = _with_runtime_state(
+        _input(capacity=10_000, reserved=0, include_cpu_target=False),
+        requests,
+        {
+            request.invocation_id: _invocation(
+                request.workflow_id,
+                request.context_id,
+            )
+            for request in requests
+        },
+    )
+
+    plan = _semantic_planner(max_total_frontier_candidates=16).plan(
+        policy_input
+    )
+
+    assert len(plan.candidate_order_request_ids) == 16
+    assert plan.projected_beneficiary_request_id is not None
+    assert (
+        plan.projected_beneficiary_request_id
+        not in plan.candidate_order_request_ids
+    )
+    admission = next(
+        item
+        for item in plan.admissions
+        if item.request_id == plan.projected_beneficiary_request_id
+    )
+    assert admission.action == AdmissionAction.DEFER
+
+
 def test_async_semantic_planner_never_prepares_physical_extents() -> None:
     class FailingPhysicalizer:
         def prepare(self, _policy_input):

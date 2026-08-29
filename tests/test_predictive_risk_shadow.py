@@ -160,6 +160,43 @@ def test_candidate_packages_exclude_invocations_outside_belief_scope() -> None:
     ]
 
 
+def test_projected_reclaim_uses_explicit_seed_exclusion_hint() -> None:
+    policy_input = _input(
+        capacity=1_000,
+        reserved=0,
+        include_cpu_target=False,
+    )
+    beneficiary = replace(
+        policy_input.runnable_frontier[0],
+        admission_startup_bytes=64,
+        admission_growth_bytes=128,
+        causal_class="engine_waiting:foreground:root",
+    )
+    policy_input = replace(policy_input, runnable_frontier=(beneficiary,))
+    source_plan = AsyncSemanticJointPlanner(
+        JointPlannerConfig(max_planning_budget_ms=100.0)
+    ).plan(policy_input)
+    source_plan = replace(
+        source_plan,
+        admissions=tuple(
+            replace(item, action=AdmissionAction.DEFER, reserved_bytes=0)
+            for item in source_plan.admissions
+        ),
+        candidate_order_request_ids=(),
+        projected_beneficiary_request_id=beneficiary.request_id,
+    )
+
+    requirement = PredictiveRiskShadowObserver._projected_reclaim_requirement(
+        policy_input,
+        source_plan,
+    )
+
+    assert requirement is not None
+    assert requirement.beneficiary_request_id == beneficiary.request_id
+    assert requirement.required_startup_bytes == 64
+    assert requirement.required_growth_bytes == 128
+
+
 def _prediction() -> LocalFrontierPrediction:
     return LocalFrontierPrediction(
         invocation_id="invocation-target",

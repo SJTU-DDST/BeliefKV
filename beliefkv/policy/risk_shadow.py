@@ -2713,7 +2713,11 @@ class PredictiveRiskShadowObserver:
         requests = {
             item.request_id: item for item in policy_input.runnable_frontier
         }
-        order = source_plan.candidate_order_request_ids or tuple(admissions)
+        order = (
+            (source_plan.projected_beneficiary_request_id,)
+            if source_plan.projected_beneficiary_request_id is not None
+            else source_plan.candidate_order_request_ids or tuple(admissions)
+        )
         for request_id in order:
             admission = admissions.get(request_id)
             request = requests.get(request_id)

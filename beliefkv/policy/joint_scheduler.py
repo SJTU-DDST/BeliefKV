@@ -523,6 +523,7 @@ class JointPlan:
     prediction_used: bool = False
     prediction_influence: tuple[tuple[str, int], ...] = ()
     candidate_order_request_ids: tuple[str, ...] = ()
+    projected_beneficiary_request_id: str | None = None
 
     def __post_init__(self) -> None:
         if not self.plan_id or not self.input_snapshot_id:
@@ -582,6 +583,15 @@ class JointPlan:
             )
         if any(not request_id for request_id in candidate_order):
             raise ValueError("joint plan candidate order IDs must be non-empty")
+        if self.projected_beneficiary_request_id is not None:
+            if not self.projected_beneficiary_request_id:
+                raise ValueError(
+                    "projected beneficiary request ID must be non-empty"
+                )
+            if self.projected_beneficiary_request_id not in admission_ids:
+                raise ValueError(
+                    "projected beneficiary must refer to a plan admission"
+                )
         object.__setattr__(
             self, "candidate_order_request_ids", candidate_order
         )
@@ -699,6 +709,9 @@ class JointPlan:
             "candidate_order_request_ids": list(
                 self.candidate_order_request_ids
             ),
+            "projected_beneficiary_request_id": (
+                self.projected_beneficiary_request_id
+            ),
         }
 
 
@@ -811,9 +824,12 @@ class ObservedJointPlanner:
         started_ns = time.perf_counter_ns()
         transition_open = _transition_open(policy_input)
         candidate_started_ns = time.perf_counter_ns()
-        candidates, fairness, prediction_influence = self._ordered_candidates(
-            policy_input
-        )
+        (
+            candidates,
+            fairness,
+            prediction_influence,
+            projected_candidate_id,
+        ) = self._ordered_candidates(policy_input)
         prediction_used = bool(prediction_influence)
         phase_ms = {
             "candidate_order": self._elapsed_ms(candidate_started_ns),
@@ -832,6 +848,7 @@ class ObservedJointPlanner:
                 admit_fitting=False,
                 prediction_used=prediction_used,
                 prediction_influence=tuple(prediction_influence.items()),
+                projected_candidate_id=projected_candidate_id,
             )
             return replace(plan, planning_phase_ms=_phase_timings(phase_ms))
         if not candidates:
@@ -849,6 +866,7 @@ class ObservedJointPlanner:
                 admit_fitting=False,
                 prediction_used=prediction_used,
                 prediction_influence=tuple(prediction_influence.items()),
+                projected_candidate_id=projected_candidate_id,
             )
             return replace(plan, planning_phase_ms=_phase_timings(phase_ms))
 
@@ -858,6 +876,7 @@ class ObservedJointPlanner:
             started_ns=started_ns,
             prediction_used=prediction_used,
             prediction_influence=tuple(prediction_influence.items()),
+            projected_candidate_id=projected_candidate_id,
         )
 
         prepare_started_ns = time.perf_counter_ns()
@@ -996,9 +1015,8 @@ class ObservedJointPlanner:
             prepared=prepared,
             candidate_count=len(candidates),
             evaluated_package_count=evaluated,
-            candidate_order_request_ids=tuple(
-                item.request.request_id for item in candidates
-            ),
+            candidates=candidates,
+            projected_candidate_id=projected_candidate_id,
             prediction_used=prediction_used,
             prediction_influence=tuple(prediction_influence.items()),
         )
@@ -1037,7 +1055,12 @@ class ObservedJointPlanner:
 
     def _ordered_candidates(
         self, policy_input: PolicyInput
-    ) -> tuple[tuple[_Candidate, ...], FairnessWindow, Counter[str]]:
+    ) -> tuple[
+        tuple[_Candidate, ...],
+        FairnessWindow,
+        Counter[str],
+        str | None,
+    ]:
         state = _mapping(policy_input.runtime_graph.state)
         rccg = _mapping(state.get("rccg"))
         invocations = _mapping(rccg.get("invocations"))
@@ -1128,7 +1151,7 @@ class ObservedJointPlanner:
             for workflow_id, items in candidates_by_workflow.items()
             for item in items[: self.config.max_frontier_candidates_per_workflow]
         ]
-        ordered = sorted(
+        ordered_frontier = sorted(
             frontier,
             key=lambda item: (
                 (
@@ -1157,8 +1180,19 @@ class ObservedJointPlanner:
                 workflow_rank.get(item.request.workflow_id, 1 << 30),
                 item.request.request_id,
             ),
-        )[: self.config.max_total_frontier_candidates]
-        return tuple(ordered), fairness, Counter()
+        )
+        ordered = ordered_frontier[: self.config.max_total_frontier_candidates]
+        projected_candidate_id = next(
+            (
+                item.request.request_id
+                for item in ordered_frontier[
+                    self.config.max_total_frontier_candidates :
+                ]
+                if item.request.causal_class.startswith("engine_waiting:")
+            ),
+            None,
+        )
+        return tuple(ordered), fairness, Counter(), projected_candidate_id
 
     def _bounded_seed_components(
         self,
@@ -1241,6 +1275,7 @@ class ObservedJointPlanner:
         candidates: Sequence[_Candidate],
         *,
         started_ns: int,
+        projected_candidate_id: str | None = None,
         prediction_used: bool = False,
         prediction_influence: tuple[tuple[str, int], ...] = (),
     ) -> JointPlan:
@@ -1270,6 +1305,13 @@ class ObservedJointPlanner:
             prediction_influence=prediction_influence,
             candidate_order_request_ids=tuple(
                 item.request.request_id for item in candidates
+            ),
+            projected_beneficiary_request_id=(
+                self._projected_beneficiary_hint(
+                    candidates,
+                    admissions,
+                    projected_candidate_id,
+                )
             ),
         )
         used_ratio = (
@@ -1342,6 +1384,29 @@ class ObservedJointPlanner:
             return ScenarioTransition.CYCLIC_REACTIVATION
         return ScenarioTransition.NONBLOCKING
 
+    @staticmethod
+    def _projected_beneficiary_hint(
+        candidates: Sequence[_Candidate],
+        admissions: Sequence[AdmissionIntent],
+        projected_candidate_id: str | None,
+    ) -> str | None:
+        admission_by_request = {item.request_id: item for item in admissions}
+        for candidate in candidates:
+            request_id = candidate.request.request_id
+            admission = admission_by_request.get(request_id)
+            if (
+                candidate.request.causal_class.startswith("engine_waiting:")
+                and admission is not None
+                and admission.action == AdmissionAction.DEFER
+            ):
+                return request_id
+        if projected_candidate_id is None:
+            return None
+        admission = admission_by_request.get(projected_candidate_id)
+        if admission is None or admission.action != AdmissionAction.DEFER:
+            return None
+        return projected_candidate_id
+
     def _from_scenario_plan(
         self,
         policy_input: PolicyInput,
@@ -1351,7 +1416,8 @@ class ObservedJointPlanner:
         prepared: PreparedPolicyInput,
         candidate_count: int,
         evaluated_package_count: int,
-        candidate_order_request_ids: tuple[str, ...],
+        candidates: Sequence[_Candidate],
+        projected_candidate_id: str | None = None,
         prediction_used: bool = False,
         prediction_influence: tuple[tuple[str, int], ...] = (),
     ) -> JointPlan:
@@ -1467,7 +1533,16 @@ class ObservedJointPlanner:
             prepared=prepared,
             prediction_used=prediction_used,
             prediction_influence=prediction_influence,
-            candidate_order_request_ids=candidate_order_request_ids,
+            candidate_order_request_ids=tuple(
+                item.request.request_id for item in candidates
+            ),
+            projected_beneficiary_request_id=(
+                self._projected_beneficiary_hint(
+                    candidates,
+                    admissions,
+                    projected_candidate_id,
+                )
+            ),
         )
 
     def _fallback(
@@ -1479,6 +1554,7 @@ class ObservedJointPlanner:
         started_ns: int,
         transition_open: bool,
         admit_fitting: bool,
+        projected_candidate_id: str | None = None,
         evaluated_package_count: int = 0,
         prediction_used: bool = False,
         prediction_influence: tuple[tuple[str, int], ...] = (),
@@ -1570,6 +1646,13 @@ class ObservedJointPlanner:
             prediction_influence=prediction_influence,
             candidate_order_request_ids=tuple(
                 item.request.request_id for item in candidates
+            ),
+            projected_beneficiary_request_id=(
+                self._projected_beneficiary_hint(
+                    candidates,
+                    admissions,
+                    projected_candidate_id,
+                )
             ),
         )
         return replace(
@@ -1678,9 +1761,12 @@ class AsyncSemanticJointPlanner(ObservedJointPlanner):
             raise ValueError("planning budget must be finite and positive")
         cancelled = cancel_check if callable(cancel_check) else lambda: False
         started_ns = time.perf_counter_ns()
-        candidates, _fairness, prediction_influence = self._ordered_candidates(
-            policy_input
-        )
+        (
+            candidates,
+            _fairness,
+            prediction_influence,
+            projected_candidate_id,
+        ) = self._ordered_candidates(policy_input)
         prediction_used = bool(prediction_influence)
         if _transition_open(policy_input):
             return self._fallback(
@@ -1692,6 +1778,7 @@ class AsyncSemanticJointPlanner(ObservedJointPlanner):
                 admit_fitting=False,
                 prediction_used=prediction_used,
                 prediction_influence=tuple(prediction_influence.items()),
+                projected_candidate_id=projected_candidate_id,
             )
         if not candidates:
             return self._fallback(
@@ -1707,6 +1794,7 @@ class AsyncSemanticJointPlanner(ObservedJointPlanner):
                 admit_fitting=False,
                 prediction_used=prediction_used,
                 prediction_influence=tuple(prediction_influence.items()),
+                projected_candidate_id=projected_candidate_id,
             )
 
         (
@@ -1719,6 +1807,7 @@ class AsyncSemanticJointPlanner(ObservedJointPlanner):
                 policy_input,
                 candidates,
                 started_ns=started_ns,
+                projected_candidate_id=projected_candidate_id,
                 prediction_used=prediction_used,
                 prediction_influence=tuple(prediction_influence.items()),
             )
@@ -1794,6 +1883,13 @@ class AsyncSemanticJointPlanner(ObservedJointPlanner):
             semantic_residency=targets,
             candidate_order_request_ids=tuple(
                 item.request.request_id for item in candidates
+            ),
+            projected_beneficiary_request_id=(
+                self._projected_beneficiary_hint(
+                    candidates,
+                    seed_admissions,
+                    projected_candidate_id,
+                )
             ),
             retractions=retractions,
             prediction_used=prediction_used,
@@ -2123,6 +2219,7 @@ def _make_plan(
     prediction_used: bool = False,
     prediction_influence: tuple[tuple[str, int], ...] = (),
     candidate_order_request_ids: tuple[str, ...] = (),
+    projected_beneficiary_request_id: str | None = None,
 ) -> JointPlan:
     read_set = _build_read_set(
         policy_input,
@@ -2158,6 +2255,7 @@ def _make_plan(
         prediction_used=prediction_used,
         prediction_influence=prediction_influence,
         candidate_order_request_ids=candidate_order_request_ids,
+        projected_beneficiary_request_id=projected_beneficiary_request_id,
     )
     semantic = provisional.to_dict()
     semantic.pop("plan_id")
