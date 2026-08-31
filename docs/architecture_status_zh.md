@@ -1,6 +1,24 @@
 # BeliefKV 最新架构与实现状态
 
-更新日期：2026-08-31
+更新日期：2026-09-01
+
+## 2026-09-01：P6 Semantic-Delta GPU 控制面门槛通过
+
+提交 `deac101` 将普通 RCCG 事件改为真正的 semantic-only publication：
+safe point 不再复制 PageIndex、allocator、fairness、transfer telemetry 和完整
+control state，page/topology/telemetry cursor 留待下一次完整 JointPlan 一次性追赶；
+PageIndex full capture 同时减少为一次 mutation-journal 扫描。
+
+相同 64-root H200 配置形成 64 workflow、192 invocation/context、32 running 和
+96 waiting。575/575 个 worker publication 完成，零失败和积压；capture
+P50/P95/P99 为 0.167/0.336/0.488 ms，enqueue P95 为 0.030 ms，完整规划仅
+1/1,513=0.066%。冻结高压 snapshot 的 16 次 candidate-local replay planning
+P95 为 85.23 ms。六项控制面门槛全部通过。
+
+该 GPU 运行的 KV pool 峰值仅 27.31%，因此只证明真实高基数 RCCG/GIL 下的控制面，
+不证明在线 predictive risk、physical action 或策略收益。predictive physical action
+继续关闭；下一步返回 beneficiary-bound positive-package 验证。完整记录见
+`docs/experiments/beliefkv_p6_control_plane_semantic_delta_gpu_gate_2026-09-01_zh.md`。
 
 ## 2026-08-31：P6 控制面 CPU/replay 门槛通过
 
