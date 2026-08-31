@@ -39,12 +39,17 @@ from beliefkv.policy.online_joint import (
 )
 from beliefkv.policy.predictive_joint import PredictiveActionKind
 from beliefkv.policy.risk_shadow import PredictiveIntent
-from beliefkv.policy.reference import ResidencyAction, RunnableInvocation
+from beliefkv.policy.reference import (
+    CapabilityReport,
+    ResidencyAction,
+    RunnableInvocation,
+)
 from beliefkv.policy.resource_snapshot import RuntimeResourceObservation
 from beliefkv.policy.service_curve import TransferServiceCurve
 from beliefkv.runtime.audit import PolicySnapshotLog
 from beliefkv.runtime.joint_shadow import (
     IncrementalPolicyInputAssembler,
+    JointShadowStateStamp,
     LatestWinsJointPlanWorker,
 )
 from beliefkv.runtime.lock_service import RequestServiceLedger
@@ -350,6 +355,115 @@ def test_frontier_feature_delta_initializes_active_invocations():
     assert removed == frozenset()
     assert runtime._frontier_feature_delta_initialized
     assert runtime._frontier_active_invocation_ids == {"invocation"}
+
+
+def test_semantic_delta_preserves_physical_and_telemetry_cursors():
+    runtime = EmbeddedSGLangRuntime.__new__(EmbeddedSGLangRuntime)
+    event = RuntimeEvent(
+        "tool-start",
+        2.0,
+        RuntimeEventKind.TOOL_START,
+        "workflow",
+        invocation_id="invocation",
+        attributes={"tool_call_id": "tool-call", "tool_name": "shell"},
+    )
+    event_delta = SimpleNamespace(
+        from_sequence=1,
+        to_sequence=2,
+        events=(event,),
+        full_rebuild_required=False,
+    )
+    runtime.controller = SimpleNamespace(
+        runtime_event_sequence=2,
+        runtime_events_since=lambda revision: (
+            event_delta if revision == 1 else None
+        ),
+        transfer_telemetry_sequence=19,
+        graph=SimpleNamespace(graph_version=2),
+        data_consumers=SimpleNamespace(version=2),
+        action_frontier_observer=SimpleNamespace(revision=3),
+        page_index=SimpleNamespace(revision=17, topology_revision=11),
+    )
+    runtime.config = SimpleNamespace(joint_policy_enabled=False)
+    runtime.audit = _AuditRecorder()
+    runtime._joint_shadow_counts = Counter()
+    runtime._joint_shadow_timing_samples = {
+        "safe_point_delta_capture_ms": deque(maxlen=16),
+        "snapshot_enqueue_ms": deque(maxlen=16),
+    }
+    runtime._shadow_event_sequence = 1
+    runtime._shadow_page_revision = 7
+    runtime._shadow_topology_revision = 5
+    runtime._shadow_telemetry_sequence = 13
+    runtime._last_policy_runtime_runnable = ()
+    runtime._last_policy_fairness_accounts = ()
+    runtime._last_policy_external_workflow_charges = ()
+    runtime._last_policy_control_state = {}
+    runtime._last_policy_capabilities = CapabilityReport(
+        runtime_name="test",
+        runtime_version="test",
+        supported_residency_actions=frozenset(),
+        execution_order_control=True,
+        admission_control=True,
+        transfer_dependencies=True,
+        native_identity_mapping=True,
+    )
+    runtime._last_policy_state_stamp = JointShadowStateStamp(
+        graph_version=1,
+        consumer_version=1,
+        event_sequence=1,
+        page_revision=7,
+        topology_revision=5,
+        fairness_revision=4,
+        transfer_epoch=6,
+        runnable_signature=(),
+        hbm_used_bytes=100,
+        host_free_bytes=200,
+    )
+    runtime._frontier_feature_delta = lambda *_args, **_kwargs: (
+        (),
+        {},
+        {},
+        frozenset(),
+    )
+    submitted = []
+    worker = SimpleNamespace(
+        submit_delta=lambda delta: (
+            submitted.append(delta)
+            or SimpleNamespace(
+                sequence=1,
+                enqueue_ms=0.01,
+                replaced_sequence=None,
+            )
+        ),
+        stats=lambda: SimpleNamespace(pending_count=0, busy=False),
+    )
+    observation = RuntimeResourceObservation(
+        ts_ms=2.0,
+        hbm_capacity_bytes=1_000,
+        hbm_used_bytes=100,
+        host_capacity_bytes=1_000,
+        host_used_bytes=0,
+        host_free_bytes=1_000,
+    )
+
+    assert runtime._publish_joint_semantic_delta(
+        observation,
+        worker,
+        capture_started_ns=0,
+    )
+
+    delta = submitted[0]
+    assert delta.event_from_sequence == 1
+    assert delta.event_to_sequence == 2
+    assert delta.page_delta.from_revision == 7
+    assert delta.page_delta.to_revision == 7
+    assert delta.page_delta.topology_revision == 5
+    assert delta.transfer_telemetry == ()
+    assert runtime._shadow_event_sequence == 2
+    assert runtime._shadow_page_revision == 7
+    assert runtime._shadow_topology_revision == 5
+    assert runtime._shadow_telemetry_sequence == 13
 
 
 def test_sglang_abort_result_is_openai_schema_complete_and_idempotent():

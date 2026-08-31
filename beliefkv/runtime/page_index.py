@@ -375,6 +375,13 @@ class PageOwnershipIndex:
                 frozenset(),
             )
         mutations = self._mutations_since(revision)
+        return self._changes_from_mutations(revision, mutations)
+
+    def _changes_from_mutations(
+        self,
+        revision: int,
+        mutations: tuple[_PageIndexMutation, ...],
+    ) -> PageIndexChangeSet:
         covered_revision = revision
         full_rebuild = not mutations
         for item in mutations:
@@ -407,7 +414,23 @@ class PageOwnershipIndex:
     def replica_delta_since(self, revision: int) -> PageIndexReplicaDelta:
         """Copy changed records without exposing mutable live page objects."""
 
-        changes = self.changes_since(revision)
+        if revision < 0 or revision > self._revision:
+            raise ValueError("page-index revision is outside the valid range")
+        mutations = (
+            () if revision == self._revision else self._mutations_since(revision)
+        )
+        changes = (
+            PageIndexChangeSet(
+                revision,
+                revision,
+                self._topology_revision,
+                frozenset(),
+                frozenset(),
+                frozenset(),
+            )
+            if revision == self._revision
+            else self._changes_from_mutations(revision, mutations)
+        )
         full_rebuild = revision == 0 or changes.full_rebuild_required
         handles = (
             frozenset(self.pages)
@@ -416,7 +439,7 @@ class PageOwnershipIndex:
         )
         full_page_handles = set(handles) if full_rebuild else set()
         if not full_rebuild:
-            for mutation in self._mutations_since(revision):
+            for mutation in mutations:
                 if mutation.components.intersection({"topology", "owner"}):
                     full_page_handles.update(mutation.handles)
         state_page_handles = set(handles) - full_page_handles
@@ -425,7 +448,7 @@ class PageOwnershipIndex:
             if full_rebuild
             else frozenset(
                 context_id
-                for item in self._mutations_since(revision)
+                for item in mutations
                 if item.components.intersection({"owner", "context"})
                 for context_id in item.context_ids
             )

@@ -1,4 +1,5 @@
 import unittest
+from unittest import mock
 
 from beliefkv.control.causal_graph import RuntimeCausalContextGraph
 from beliefkv.core.events import RuntimeEvent, RuntimeEventKind
@@ -676,6 +677,23 @@ class RadixArbiterTest(unittest.TestCase):
         )
         self.assertEqual(replica.gpu_bytes, 0)
         self.assertEqual(replica.cpu_bytes, 100)
+
+    def test_replica_delta_scans_mutation_journal_once(self):
+        source = PageOwnershipIndex()
+        root = PageHandle(1, 0)
+        source.register_page(root, size_bytes=100)
+        before = source.revision
+        source.set_engine_lock(root, 1)
+
+        with mock.patch.object(
+            source,
+            "_mutations_since",
+            wraps=source._mutations_since,
+        ) as mutations_since:
+            delta = source.replica_delta_since(before)
+
+        self.assertEqual(mutations_since.call_count, 1)
+        self.assertEqual(delta.changed_handles, {root})
 
 
     def test_incremental_owner_replica_omits_full_context_closure(self):

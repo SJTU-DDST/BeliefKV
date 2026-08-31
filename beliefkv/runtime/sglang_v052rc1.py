@@ -140,6 +140,7 @@ from beliefkv.runtime.lock_service import (
     TentativeUnlockPreview,
     TentativeUnlockPreviewer,
 )
+from beliefkv.runtime.page_index import PageIndexReplicaDelta
 
 
 _PERFORMANCE_METRIC_EVENTS = frozenset(
@@ -2483,6 +2484,7 @@ class EmbeddedSGLangRuntime:
         self._last_persisted_policy_snapshot_ms: float | None = None
         self._shadow_event_sequence = 0
         self._shadow_page_revision = 0
+        self._shadow_topology_revision = 0
         self._shadow_telemetry_sequence = 0
         self._joint_shadow_critical_event_sequence = 0
         self._joint_shadow_transfer_ack_sequence = 0
@@ -16256,6 +16258,177 @@ class EmbeddedSGLangRuntime:
             return False
         return pressure_now
 
+    def _publish_joint_semantic_delta(
+        self,
+        observation: RuntimeResourceObservation,
+        worker: LatestWinsJointPlanWorker,
+        *,
+        capture_started_ns: int,
+    ) -> bool:
+        """Advance the worker's causal mirror without copying physical state."""
+
+        if (
+            self.controller.runtime_event_sequence
+            <= self._shadow_event_sequence
+        ):
+            return False
+        trigger = "semantic_delta+causal_event"
+        try:
+            event_delta = self.controller.runtime_events_since(
+                self._shadow_event_sequence
+            )
+            if event_delta.full_rebuild_required:
+                raise RuntimeError(
+                    "runtime event journal gap; shadow rebuild is fail-closed"
+                )
+            if not event_delta.events:
+                return False
+            base_stamp = self._last_policy_state_stamp
+            page_delta = PageIndexReplicaDelta(
+                from_revision=self._shadow_page_revision,
+                to_revision=self._shadow_page_revision,
+                topology_revision=self._shadow_topology_revision,
+                pages=(),
+                page_states=(),
+                contexts=(),
+                changed_handles=frozenset(),
+                changed_context_ids=frozenset(),
+                components=frozenset(),
+                full_rebuild_required=False,
+            )
+            (
+                frontier_feature_sources,
+                frontier_prediction_updates,
+                frontier_feature_updates,
+                removed_frontier_invocation_ids,
+            ) = self._frontier_feature_delta(
+                event_delta.events,
+                now_ms=observation.ts_ms,
+            )
+            stamp = replace(
+                base_stamp,
+                graph_version=self.controller.graph.graph_version,
+                consumer_version=self.controller.data_consumers.version,
+                event_sequence=event_delta.to_sequence,
+                parser_frontier_revision=(
+                    self.controller.action_frontier_observer.revision
+                ),
+            )
+            delta = JointShadowDelta(
+                event_from_sequence=event_delta.from_sequence,
+                event_to_sequence=event_delta.to_sequence,
+                runtime_events=event_delta.events,
+                page_delta=page_delta,
+                observation=observation,
+                runnable_frontier=self._last_policy_runtime_runnable,
+                fairness_accounts=self._last_policy_fairness_accounts,
+                external_workflow_charges=(
+                    self._last_policy_external_workflow_charges
+                ),
+                control_state=self._last_policy_control_state,
+                transfer_telemetry=(),
+                capabilities=self._last_policy_capabilities,
+                stamp=stamp,
+                trigger=trigger,
+                captured_monotonic_ms=time.monotonic_ns() / 1_000_000.0,
+                planning_requested=False,
+                risk_evaluation_requested=False,
+                frontier_predictions=frontier_prediction_updates,
+                frontier_features=frontier_feature_updates,
+                frontier_feature_sources=frontier_feature_sources,
+                removed_frontier_invocation_ids=(
+                    removed_frontier_invocation_ids
+                ),
+                frontier_model_version=getattr(
+                    self, "_last_frontier_model_version", None
+                ),
+            )
+            submission = worker.submit_delta(delta)
+        except Exception as error:
+            error_text = f"{type(error).__name__}: {error}"
+            self._joint_shadow_counts["submission_failed"] += 1
+            submit_errors = getattr(
+                self, "_joint_shadow_submit_error_reasons", None
+            )
+            if submit_errors is None:
+                submit_errors = Counter()
+                self._joint_shadow_submit_error_reasons = submit_errors
+            submit_errors[error_text] += 1
+            if not hasattr(self, "_joint_shadow_first_submit_error"):
+                self._joint_shadow_first_submit_error = {
+                    "error": error_text,
+                    "trigger": trigger,
+                    "event_sequence": self.controller.runtime_event_sequence,
+                    "page_revision": self.controller.page_index.revision,
+                    "telemetry_sequence": (
+                        self.controller.transfer_telemetry_sequence
+                    ),
+                    "shadow_event_sequence": self._shadow_event_sequence,
+                    "shadow_page_revision": self._shadow_page_revision,
+                    "shadow_telemetry_sequence": (
+                        self._shadow_telemetry_sequence
+                    ),
+                }
+            self.audit.emit(
+                "joint_plan_shadow_submit_failed",
+                observation.ts_ms,
+                audit_level="correctness",
+                error=error_text,
+                trigger=trigger,
+                application_connected=self.config.joint_policy_enabled,
+            )
+            return False
+
+        capture_ms = (
+            time.perf_counter_ns() - capture_started_ns
+        ) / 1_000_000.0
+        self._shadow_event_sequence = event_delta.to_sequence
+        self._joint_shadow_counts["semantic_only_submitted"] += 1
+        self._joint_shadow_counts["apply_only_submitted"] += 1
+        self._joint_shadow_counts["submitted"] += 1
+        if submission.replaced_sequence is not None:
+            self._joint_shadow_counts["pending_replaced"] += 1
+        self._joint_shadow_timing_samples[
+            "safe_point_delta_capture_ms"
+        ].append(capture_ms)
+        self._joint_shadow_timing_samples[
+            "snapshot_enqueue_ms"
+        ].append(submission.enqueue_ms)
+        worker_stats = worker.stats()
+        self.audit.emit(
+            "joint_plan_shadow_delta_enqueued",
+            observation.ts_ms,
+            worker_sequence=submission.sequence,
+            trigger=trigger,
+            planning_requested=False,
+            risk_evaluation_requested=False,
+            work_classes=[
+                item.value
+                for item in sorted(
+                    delta.work_classes,
+                    key=lambda value: value.value,
+                )
+            ],
+            event_from_sequence=event_delta.from_sequence,
+            event_to_sequence=event_delta.to_sequence,
+            event_count=len(event_delta.events),
+            page_from_revision=page_delta.from_revision,
+            page_to_revision=page_delta.to_revision,
+            changed_page_count=0,
+            full_page_record_count=0,
+            physical_state_patch_count=0,
+            changed_context_count=0,
+            telemetry_count=0,
+            runnable_request_count=len(self._last_policy_runtime_runnable),
+            safe_point_delta_capture_ms=capture_ms,
+            snapshot_enqueue_ms=submission.enqueue_ms,
+            replaced_sequence=submission.replaced_sequence,
+            worker_pending_count=worker_stats.pending_count,
+            worker_busy=worker_stats.busy,
+            application_connected=self.config.joint_policy_enabled,
+        )
+        return True
+
     def _maybe_record_incremental_policy_snapshot(
         self,
         observation: RuntimeResourceObservation,
@@ -16275,7 +16448,10 @@ class EmbeddedSGLangRuntime:
         progress_due = capture_elapsed_ms >= (
             self.config.joint_shadow_progress_coalesce_ms
         )
-        initial_capture = self._last_policy_snapshot_ms is None
+        initial_capture = (
+            self._last_policy_snapshot_ms is None
+            or not hasattr(self, "_last_policy_state_stamp")
+        )
         native_available_hbm_bytes = getattr(
             self, "_current_native_available_hbm_bytes", None
         )
@@ -16346,8 +16522,50 @@ class EmbeddedSGLangRuntime:
         if result is None and not progress_due and not early_full_plan_trigger:
             self._joint_shadow_counts["progress_coalesced"] += 1
             return
-        refresh_runnable = early_full_plan_trigger or not hasattr(
-            self, "_last_policy_runtime_runnable"
+        restore_lease_index = getattr(self, "_restore_leases", None)
+        liveness_tracker = getattr(
+            self, "_persistent_liveness_revisions", None
+        )
+        if liveness_tracker is None:
+            liveness_tracker = PersistentLivenessRevisionTracker()
+            self._persistent_liveness_revisions = liveness_tracker
+        liveness = liveness_tracker.observe(
+            obligations=self._restore_obligation_index().all(),
+            leases=(restore_lease_index.all() if restore_lease_index else ()),
+            graces=tuple(
+                getattr(self, "_restore_service_grace_by_request", {}).values()
+            ),
+        )
+        liveness_signature = (
+            liveness.obligation_revision,
+            liveness.lease_revision,
+            liveness.grace_revision,
+        )
+        liveness_changed = (
+            getattr(self, "_last_joint_liveness_signature", None) is None
+            or liveness_signature != getattr(
+                self, "_last_joint_liveness_signature", None
+            )
+        )
+        full_plan_requested = early_full_plan_trigger or liveness_changed
+        if result is None and not full_plan_requested:
+            published = self._publish_joint_semantic_delta(
+                observation,
+                worker,
+                capture_started_ns=capture_started_ns,
+            )
+            self._joint_shadow_counts[
+                "semantic_progress_published"
+                if published
+                else "semantic_progress_coalesced"
+            ] += 1
+            self._last_policy_snapshot_ms = observation.ts_ms
+            return
+
+        refresh_runnable = (
+            full_plan_requested
+            or result is not None
+            or not hasattr(self, "_last_policy_runtime_runnable")
         )
         if refresh_runnable:
             additional_runnable = self._policy_runtime_runnable(
@@ -16373,20 +16591,6 @@ class EmbeddedSGLangRuntime:
                 )
             ],
         }
-        restore_lease_index = getattr(self, "_restore_leases", None)
-        liveness_tracker = getattr(
-            self, "_persistent_liveness_revisions", None
-        )
-        if liveness_tracker is None:
-            liveness_tracker = PersistentLivenessRevisionTracker()
-            self._persistent_liveness_revisions = liveness_tracker
-        liveness = liveness_tracker.observe(
-            obligations=self._restore_obligation_index().all(),
-            leases=(restore_lease_index.all() if restore_lease_index else ()),
-            graces=tuple(
-                getattr(self, "_restore_service_grace_by_request", {}).values()
-            ),
-        )
         control_state["persistent_liveness"] = liveness.to_dict()
         action_frontier = self.controller.action_frontier_observer
         control_state["action_frontier"] = {
@@ -16415,28 +16619,6 @@ class EmbeddedSGLangRuntime:
             parser_frontier_revision=action_frontier.revision,
             admission_revision=self.controller.admission.revision,
         )
-        liveness_signature = (
-            liveness.obligation_revision,
-            liveness.lease_revision,
-            liveness.grace_revision,
-        )
-        liveness_changed = (
-            getattr(self, "_last_joint_liveness_signature", None) is None
-            or liveness_signature != getattr(
-                self, "_last_joint_liveness_signature", None
-            )
-        )
-        full_plan_requested = early_full_plan_trigger or liveness_changed
-        if full_plan_requested and not refresh_runnable:
-            additional_runnable = self._policy_runtime_runnable(
-                observation.ts_ms
-            )
-            runnable_signature = self._joint_shadow_runnable_signature(
-                additional_runnable
-            )
-            self._last_policy_runtime_runnable = additional_runnable
-            self._last_policy_runtime_runnable_signature = runnable_signature
-            stamp = replace(stamp, runnable_signature=runnable_signature)
         elapsed = capture_elapsed_ms
         watchdog_due = bool(additional_runnable) and progress_due
         # Cheap structural pre-check: every field that can feed the full
@@ -16612,6 +16794,11 @@ class EmbeddedSGLangRuntime:
                     self._last_policy_fairness_accounts = fairness_accounts
                 else:
                     fairness_accounts = self._last_policy_fairness_accounts
+                external_workflow_charges = (
+                    self.controller.external_workflow_memory_charges()
+                )
+                frozen_control_state = MappingProxyType(control_state)
+                capabilities = self._policy_capabilities()
                 delta = JointShadowDelta(
                     event_from_sequence=event_delta.from_sequence,
                     event_to_sequence=event_delta.to_sequence,
@@ -16620,12 +16807,10 @@ class EmbeddedSGLangRuntime:
                     observation=published_observation,
                     runnable_frontier=additional_runnable,
                     fairness_accounts=fairness_accounts,
-                    external_workflow_charges=(
-                        self.controller.external_workflow_memory_charges()
-                    ),
-                    control_state=MappingProxyType(control_state),
+                    external_workflow_charges=external_workflow_charges,
+                    control_state=frozen_control_state,
                     transfer_telemetry=telemetry,
-                    capabilities=self._policy_capabilities(),
+                    capabilities=capabilities,
                     stamp=stamp,
                     trigger=trigger,
                     captured_monotonic_ms=time.monotonic_ns() / 1_000_000.0,
@@ -16681,7 +16866,14 @@ class EmbeddedSGLangRuntime:
                 ) / 1_000_000.0
                 self._shadow_event_sequence = event_delta.to_sequence
                 self._shadow_page_revision = page_delta.to_revision
+                self._shadow_topology_revision = page_delta.topology_revision
                 self._shadow_telemetry_sequence = telemetry_delta.to_sequence
+                self._last_policy_state_stamp = stamp
+                self._last_policy_control_state = frozen_control_state
+                self._last_policy_external_workflow_charges = (
+                    external_workflow_charges
+                )
+                self._last_policy_capabilities = capabilities
                 if full_plan_requested:
                     self._last_joint_planned_critical_event_sequence = (
                         getattr(
