@@ -325,7 +325,7 @@ def test_frontier_feature_delta_initializes_active_invocations():
     frontier_model = SimpleNamespace(model_version="test-model")
     runtime.controller = SimpleNamespace(
         graph=SimpleNamespace(invocations={"invocation": invocation}),
-        predictor=SimpleNamespace(frontier_model=frontier_model),
+        predictor=SimpleNamespace(frontier_model=frontier_model, features={}),
     )
     runtime.config = SimpleNamespace(
         predictive_risk_shadow_enabled=True,
@@ -340,10 +340,11 @@ def test_frontier_feature_delta_initializes_active_invocations():
         "beliefkv.runtime.sglang_v052rc1.build_invocation_frontier_features",
         return_value={},
     ):
-        features, predictions, removed = runtime._frontier_feature_delta(
+        sources, predictions, features, removed = runtime._frontier_feature_delta(
             (), now_ms=1.0
         )
 
+    assert tuple(item.invocation_id for item in sources) == ("invocation",)
     assert features == {}
     assert predictions == {}
     assert removed == frozenset()

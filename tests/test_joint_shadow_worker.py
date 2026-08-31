@@ -7,7 +7,7 @@ from types import SimpleNamespace
 import pytest
 
 from beliefkv.control.controller import BeliefKVController
-from beliefkv.control.causal_graph import RuntimeCausalContextGraph
+from beliefkv.control.causal_graph import InvocationState, RuntimeCausalContextGraph
 from beliefkv.core.config import BeliefKVConfig
 from beliefkv.core.events import RuntimeEvent, RuntimeEventKind
 from beliefkv.policy.joint_scheduler import (
@@ -17,6 +17,7 @@ from beliefkv.policy.joint_scheduler import (
 from beliefkv.policy.reference import MetadataSource, MetadataValue, RunnableInvocation
 from beliefkv.policy.resource_snapshot import RuntimeResourceObservation
 from beliefkv.runtime.joint_shadow import (
+    FrontierFeatureSource,
     IncrementalPolicyInputAssembler,
     JointShadowDelta,
     JointShadowStateStamp,
@@ -960,6 +961,7 @@ def test_coalesced_frontier_feature_deltas_preserve_updates_and_removals() -> No
         _delta(controller, event_sequence=0, page_revision=0, ts_ms=1),
         planning_requested=False,
         frontier_features={"a": {"invocation_id": "a", "state": "ready"}},
+        frontier_feature_sources=(FrontierFeatureSource("a"),),
     )
     controller.process_runtime_event(
         _event(
@@ -979,6 +981,9 @@ def test_coalesced_frontier_feature_deltas_preserve_updates_and_removals() -> No
         ),
         planning_requested=False,
         frontier_features={"b": {"invocation_id": "b", "state": "wait_tool"}},
+        frontier_feature_sources=(
+            FrontierFeatureSource("b", context_tokens=4096),
+        ),
         removed_frontier_invocation_ids=frozenset({"a"}),
     )
 
@@ -988,3 +993,30 @@ def test_coalesced_frontier_feature_deltas_preserve_updates_and_removals() -> No
         "b": {"invocation_id": "b", "state": "wait_tool"}
     }
     assert combined.removed_frontier_invocation_ids == frozenset({"a"})
+    assert combined.frontier_feature_sources == (
+        FrontierFeatureSource("b", context_tokens=4096),
+    )
+
+
+def test_frontier_feature_source_materializes_worker_graph_state() -> None:
+    source = FrontierFeatureSource(
+        "invocation",
+        boundary_history=("tool_start",),
+        context_tokens=4096,
+        generated_tokens=32,
+        backend_class="local_shell",
+        command_class="pytest",
+    )
+    invocation = SimpleNamespace(
+        state=InvocationState.WAIT_TOOL,
+        agent_definition_id="coder",
+        active_tool_family="shell",
+        active_tool_start_ms=100.0,
+    )
+
+    features = source.materialize(invocation, now_ms=350.0)
+
+    assert features.state == "wait_tool"
+    assert features.elapsed_wait_ms == 250.0
+    assert features.current_sequence_tokens == 4096
+    assert features.command_class == "pytest"

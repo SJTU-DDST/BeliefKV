@@ -46,6 +46,7 @@ from beliefkv.runtime.page_index import (
 )
 from beliefkv.runtime.protocol import PageHandle, TransferTelemetry
 from beliefkv.predictor.frontier_belief import PredictiveEvidenceReadSet
+from beliefkv.predictor.structured_frontier import LocalFrontierFeatures
 
 
 class JointPlanProducer(Protocol):
@@ -68,6 +69,51 @@ class WorkflowFairnessReplica:
     attained_service_ms: float
     virtual_runtime_ms: float
     dispatch_count: int
+
+
+@dataclass(frozen=True)
+class FrontierFeatureSource:
+    """Small scheduler-to-worker replica for candidate-local prediction."""
+
+    invocation_id: str
+    boundary_history: tuple[str, ...] = ()
+    context_tokens: int = 0
+    generated_tokens: int = 0
+    backend_class: str = "unknown"
+    command_class: str = "unknown"
+
+    def __post_init__(self) -> None:
+        if not self.invocation_id:
+            raise ValueError("frontier feature source requires an invocation id")
+        if self.context_tokens < 0 or self.generated_tokens < 0:
+            raise ValueError("frontier feature source token counts must be non-negative")
+
+    def materialize(
+        self,
+        invocation: object,
+        *,
+        now_ms: float,
+    ) -> LocalFrontierFeatures:
+        state = getattr(invocation, "state")
+        tool_family = getattr(invocation, "active_tool_family", None) or "unknown"
+        tool_start_ms = getattr(invocation, "active_tool_start_ms", None)
+        elapsed_wait_ms = 0.0
+        if state == InvocationState.WAIT_TOOL and tool_start_ms is not None:
+            elapsed_wait_ms = max(0.0, now_ms - float(tool_start_ms))
+        return LocalFrontierFeatures(
+            invocation_id=self.invocation_id,
+            state=state.value,
+            agent_definition_id=str(
+                getattr(invocation, "agent_definition_id", "unknown") or "unknown"
+            ),
+            boundary_history=self.boundary_history,
+            tool_family=str(tool_family),
+            backend_class=self.backend_class,
+            command_class=self.command_class,
+            generated_tokens=self.generated_tokens,
+            elapsed_wait_ms=elapsed_wait_ms,
+            current_sequence_tokens=self.context_tokens,
+        )
 
 
 @dataclass(frozen=True)
@@ -115,6 +161,7 @@ class JointShadowDelta:
     frontier_features: Mapping[str, Mapping[str, object]] = field(
         default_factory=dict
     )
+    frontier_feature_sources: tuple[FrontierFeatureSource, ...] = ()
     removed_frontier_invocation_ids: frozenset[str] = frozenset()
     frontier_model_version: str | None = None
 
@@ -148,6 +195,14 @@ class JointShadowDelta:
                     )
                 }
             ),
+        )
+        source_ids = tuple(item.invocation_id for item in self.frontier_feature_sources)
+        if len(source_ids) != len(set(source_ids)):
+            raise ValueError("frontier feature source ids must be unique")
+        object.__setattr__(
+            self,
+            "frontier_feature_sources",
+            tuple(self.frontier_feature_sources),
         )
         object.__setattr__(
             self,
@@ -196,6 +251,7 @@ def coalesce_joint_shadow_deltas(
     full_rebuild = False
     frontier_predictions: dict[str, Mapping[str, object]] = {}
     frontier_features: dict[str, Mapping[str, object]] = {}
+    frontier_feature_sources: dict[str, FrontierFeatureSource] = {}
     removed_frontier_ids: set[str] = set()
 
     for delta in deltas:
@@ -234,6 +290,7 @@ def coalesce_joint_shadow_deltas(
         for invocation_id in delta.removed_frontier_invocation_ids:
             frontier_predictions.pop(invocation_id, None)
             frontier_features.pop(invocation_id, None)
+            frontier_feature_sources.pop(invocation_id, None)
             removed_frontier_ids.add(invocation_id)
         for invocation_id, prediction in delta.frontier_predictions.items():
             removed_frontier_ids.discard(invocation_id)
@@ -241,6 +298,9 @@ def coalesce_joint_shadow_deltas(
         for invocation_id, features in delta.frontier_features.items():
             removed_frontier_ids.discard(invocation_id)
             frontier_features[invocation_id] = features
+        for source in delta.frontier_feature_sources:
+            removed_frontier_ids.discard(source.invocation_id)
+            frontier_feature_sources[source.invocation_id] = source
 
     last = deltas[-1]
     page_delta = PageIndexReplicaDelta(
@@ -280,6 +340,7 @@ def coalesce_joint_shadow_deltas(
         ),
         frontier_predictions=frontier_predictions,
         frontier_features=frontier_features,
+        frontier_feature_sources=tuple(frontier_feature_sources.values()),
         removed_frontier_invocation_ids=frozenset(removed_frontier_ids),
         frontier_model_version=last.frontier_model_version,
     )
@@ -446,6 +507,7 @@ class IncrementalPolicyInputAssembler:
         self._latest: JointShadowDelta | None = None
         self._frontier_predictions: dict[str, Mapping[str, object]] = {}
         self._frontier_features: dict[str, Mapping[str, object]] = {}
+        self._frontier_feature_sources: dict[str, FrontierFeatureSource] = {}
         self._healthy = True
         self._telemetry: deque[TransferTelemetry] = deque(
             maxlen=max(256, config.service_curve_window)
@@ -484,8 +546,11 @@ class IncrementalPolicyInputAssembler:
             for invocation_id in delta.removed_frontier_invocation_ids:
                 self._frontier_predictions.pop(invocation_id, None)
                 self._frontier_features.pop(invocation_id, None)
+                self._frontier_feature_sources.pop(invocation_id, None)
             self._frontier_predictions.update(delta.frontier_predictions)
             self._frontier_features.update(delta.frontier_features)
+            for source in delta.frontier_feature_sources:
+                self._frontier_feature_sources[source.invocation_id] = source
             if self.graph.graph_version != delta.stamp.graph_version:
                 raise RuntimeError(
                     "shadow graph version diverged from safe-point publication"
@@ -729,9 +794,17 @@ class IncrementalPolicyInputAssembler:
         local_features: dict[str, Mapping[str, object]] = {}
         for invocation_id in sorted(candidate_invocation_ids):
             cached = self._frontier_features.get(invocation_id)
-            if cached is None:
+            source = self._frontier_feature_sources.get(invocation_id)
+            invocation = self.graph.invocations.get(invocation_id)
+            if source is not None and invocation is not None:
+                current = source.materialize(
+                    invocation,
+                    now_ms=delta.observation.ts_ms,
+                ).to_dict()
+            elif cached is not None:
+                current = dict(cached)
+            else:
                 continue
-            current = dict(cached)
             current["active_tool_count"] = active_tool_count
             tool_family = str(current.get("tool_family") or "unknown")
             current["backend_pressure"] = (

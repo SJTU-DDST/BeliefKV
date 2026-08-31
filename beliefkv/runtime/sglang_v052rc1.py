@@ -124,6 +124,7 @@ from beliefkv.runtime.host_recompute_gate import (
     observe_recompute_service,
 )
 from beliefkv.runtime.joint_shadow import (
+    FrontierFeatureSource,
     IncrementalPolicyInputAssembler,
     JointShadowDelta,
     JointShadowResult,
@@ -16574,8 +16575,9 @@ class EmbeddedSGLangRuntime:
                 )
                 self._last_predictive_pressure_state = pressure_now
                 (
-                    frontier_feature_updates,
+                    frontier_feature_sources,
                     frontier_prediction_updates,
+                    frontier_feature_updates,
                     removed_frontier_invocation_ids,
                 ) = self._frontier_feature_delta(
                     event_delta.events,
@@ -16631,6 +16633,7 @@ class EmbeddedSGLangRuntime:
                     risk_evaluation_requested=risk_evaluation_requested,
                     frontier_predictions=frontier_prediction_updates,
                     frontier_features=frontier_feature_updates,
+                    frontier_feature_sources=frontier_feature_sources,
                     removed_frontier_invocation_ids=(
                         removed_frontier_invocation_ids
                     ),
@@ -20617,6 +20620,7 @@ class EmbeddedSGLangRuntime:
         *,
         now_ms: float,
     ) -> tuple[
+        tuple[FrontierFeatureSource, ...],
         dict[str, dict[str, object]],
         dict[str, dict[str, object]],
         frozenset[str],
@@ -20636,22 +20640,6 @@ class EmbeddedSGLangRuntime:
                     changed_ids = set(active_ids)
                     removed: set[str] = set()
                     self._frontier_active_invocation_ids = set(active_ids)
-                    wait_tool_by_invocation: dict[str, str | None] = {}
-                    family_counts: Counter[str] = Counter()
-                    for invocation in self.controller.graph.invocations.values():
-                        if invocation.state != InvocationState.WAIT_TOOL:
-                            continue
-                        family = invocation.active_tool_family
-                        wait_tool_by_invocation[invocation.invocation_id] = family
-                        if family is not None:
-                            family_counts[family] += 1
-                    self._frontier_wait_tool_family_by_invocation = (
-                        wait_tool_by_invocation
-                    )
-                    self._frontier_active_tool_count = len(
-                        wait_tool_by_invocation
-                    )
-                    self._frontier_tool_family_counts = family_counts
                     self._frontier_feature_delta_initialized = True
                 else:
                     changed_ids: set[str] = set()
@@ -20679,57 +20667,48 @@ class EmbeddedSGLangRuntime:
                                     self._frontier_active_invocation_ids.add(
                                         invocation_id
                                     )
-                    wait_tool_by_invocation = getattr(
-                        self,
-                        "_frontier_wait_tool_family_by_invocation",
-                        {},
-                    )
-                    family_counts = getattr(
-                        self, "_frontier_tool_family_counts", Counter()
-                    )
-                    active_tool_count = int(
-                        getattr(self, "_frontier_active_tool_count", 0)
-                    )
-                    for invocation_id in changed_ids | removed:
-                        if invocation_id in wait_tool_by_invocation:
-                            old_family = wait_tool_by_invocation.pop(invocation_id)
-                            active_tool_count = max(0, active_tool_count - 1)
-                            if old_family is not None:
-                                family_counts[old_family] -= 1
-                                if family_counts[old_family] <= 0:
-                                    family_counts.pop(old_family, None)
-                        invocation = self.controller.graph.invocations.get(
-                            invocation_id
+                feature_sources = []
+                for invocation_id in sorted(changed_ids):
+                    online = predictor.features.get(invocation_id)
+                    feature_sources.append(
+                        FrontierFeatureSource(
+                            invocation_id=invocation_id,
+                            boundary_history=(
+                                tuple(online.boundary_history)[-8:]
+                                if online is not None
+                                else ()
+                            ),
+                            context_tokens=max(
+                                0, int(online.context_tokens or 0)
+                            ) if online is not None else 0,
+                            generated_tokens=max(
+                                0, int(online.generated_tokens or 0)
+                            ) if online is not None else 0,
+                            backend_class=(
+                                str(online.tool_backend_class or "unknown")
+                                if online is not None
+                                else "unknown"
+                            ),
+                            command_class=(
+                                str(online.tool_command_class or "unknown")
+                                if online is not None
+                                else "unknown"
+                            ),
                         )
-                        if (
-                            invocation is not None
-                            and not invocation.state.terminal
-                            and invocation.state == InvocationState.WAIT_TOOL
-                        ):
-                            family = invocation.active_tool_family
-                            wait_tool_by_invocation[invocation_id] = family
-                            active_tool_count += 1
-                            if family is not None:
-                                family_counts[family] += 1
-                    self._frontier_active_tool_count = active_tool_count
-                try:
-                    frontier_features = build_invocation_frontier_features(
-                        self.controller.graph,
-                        predictor,
-                        now_ms=now_ms,
-                        invocation_ids=tuple(sorted(changed_ids)),
-                        active_tool_count=int(
-                            getattr(self, "_frontier_active_tool_count", 0)
-                        ),
-                        family_counts=getattr(
-                            self, "_frontier_tool_family_counts", {}
-                        ),
                     )
-                    frontier_predictions: dict[str, Any] = {}
+                frontier_features: dict[str, Any] = {}
+                frontier_predictions: dict[str, Any] = {}
+                try:
                     if (
                         self.config.frontier_aware_retraction_shadow_enabled
                         or self.config.frontier_aware_retraction_canary_limit > 0
                     ):
+                        frontier_features = build_invocation_frontier_features(
+                            self.controller.graph,
+                            predictor,
+                            now_ms=now_ms,
+                            invocation_ids=tuple(sorted(changed_ids)),
+                        )
                         frontier_predictions = {
                             invocation_id: predictor.frontier_model.predict(
                                 frontier_features[invocation_id]
@@ -20738,7 +20717,7 @@ class EmbeddedSGLangRuntime:
                             if invocation_id in frontier_features
                         }
                 except Exception:
-                    return {}, {}, frozenset()
+                    return (), {}, {}, frozenset()
                 feature_updates = {
                     invocation_id: features.to_dict()
                     for invocation_id, features in frontier_features.items()
@@ -20756,11 +20735,12 @@ class EmbeddedSGLangRuntime:
                     predictor.frontier_model.model_version
                 )
                 return (
-                    feature_updates,
+                    tuple(feature_sources),
                     prediction_updates,
+                    feature_updates,
                     frozenset(removed),
                 )
-        return {}, {}, frozenset()
+        return (), {}, {}, frozenset()
 
     def _policy_runtime_runnable(
         self, now_ms: float
