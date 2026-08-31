@@ -2,6 +2,12 @@
 
 日期：2026-08-30
 
+> 2026-08-31 更新：本报告的控制面数字描述修复前实现。non-atomic mirror、compact
+> candidate-local physicalization、worker-side eligibility、changed-invocation feature
+> delta 和 seed-only validation skip 已通过 CPU/replay 门槛。新结果见
+> `beliefkv_p6_control_plane_cpu_replay_gate_2026-08-31_zh.md`；本报告的策略价值结论
+> 不变。
+
 ## 结论
 
 本轮关闭了 projected beneficiary 的接口缺口，但没有发现可执行的预测式 KV

@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from collections import Counter, defaultdict
 from dataclasses import dataclass
+import functools
 import hashlib
 import json
 import math
@@ -1018,28 +1019,39 @@ def _profile_fold_assignments(
     return {profile: index % folds for index, profile in enumerate(ranked)}
 
 
+@functools.lru_cache(maxsize=65_536)
+def _service_feature_summary(
+    features: GPUServiceFeatures,
+) -> tuple[object, ...]:
+    return (
+        features.phase,
+        features.batch_size,
+        int(features.sequence_tokens_mean) + 1,
+        features.sequence_tokens_max + 1,
+        features.token_delta_total,
+        features.cache_hit_ratio_mean,
+        features.chunk_position,
+        features.prefill_decode_mixed,
+        features.pcie_contention_state,
+        features.hicache_inflight_bytes + 1,
+    )
+
+
 def _feature_distance(left: GPUServiceFeatures, right: GPUServiceFeatures) -> float:
-    if left.phase != right.phase:
+    left_values = _service_feature_summary(left)
+    right_values = _service_feature_summary(right)
+    if left_values[0] != right_values[0]:
         return math.inf
     terms = (
-        1.50 * _log_distance(left.batch_size, right.batch_size),
-        0.60
-        * _log_distance(
-            int(left.sequence_tokens_mean) + 1,
-            int(right.sequence_tokens_mean) + 1,
-        ),
-        0.35
-        * _log_distance(left.sequence_tokens_max + 1, right.sequence_tokens_max + 1),
-        0.90 * _log_distance(left.token_delta_total, right.token_delta_total),
-        1.00 * abs(left.cache_hit_ratio_mean - right.cache_hit_ratio_mean),
-        0.50 * float(left.chunk_position != right.chunk_position),
-        1.50 * float(left.prefill_decode_mixed != right.prefill_decode_mixed),
-        0.75 * float(left.pcie_contention_state != right.pcie_contention_state),
-        0.20
-        * _log_distance(
-            left.hicache_inflight_bytes + 1,
-            right.hicache_inflight_bytes + 1,
-        ),
+        1.50 * _log_distance(int(left_values[1]), int(right_values[1])),
+        0.60 * _log_distance(int(left_values[2]), int(right_values[2])),
+        0.35 * _log_distance(int(left_values[3]), int(right_values[3])),
+        0.90 * _log_distance(int(left_values[4]), int(right_values[4])),
+        1.00 * abs(float(left_values[5]) - float(right_values[5])),
+        0.50 * float(left_values[6] != right_values[6]),
+        1.50 * float(left_values[7] != right_values[7]),
+        0.75 * float(left_values[8] != right_values[8]),
+        0.20 * _log_distance(int(left_values[9]), int(right_values[9])),
     )
     return math.sqrt(sum(value * value for value in terms))
 

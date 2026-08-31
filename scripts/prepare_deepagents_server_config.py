@@ -568,8 +568,8 @@ def main() -> int:
             else None
         ),
         "predictive_risk_particle_count": 128,
-        "predictive_risk_top_k": 8,
-        "predictive_risk_max_candidates": 8,
+        "predictive_risk_top_k": 4,
+        "predictive_risk_max_candidates": 2,
         "predictive_risk_min_calibration_coverage": 0.9,
         "predictive_risk_min_causal_slack_probability": 0.9,
         "observed_admission_scheduling_enabled": (
@@ -657,7 +657,7 @@ def main() -> int:
         "joint_physical_commit_budget_ms": 1.0,
         "joint_physical_action_commit_budget_ms": 5.0,
         "joint_shadow_progress_coalesce_ms": 100.0,
-        "joint_shadow_full_plan_watchdog_ms": 5000.0,
+        "joint_shadow_full_plan_watchdog_ms": 30000.0,
         "max_joint_plan_age_ms": 2000.0,
         "joint_transition_settling_timeout_ms": 250.0,
         "joint_shadow_detailed_audit_interval_ms": 1000.0,

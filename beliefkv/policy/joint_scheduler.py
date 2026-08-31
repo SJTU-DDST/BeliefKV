@@ -2221,18 +2221,31 @@ def _make_plan(
     candidate_order_request_ids: tuple[str, ...] = (),
     projected_beneficiary_request_id: str | None = None,
 ) -> JointPlan:
-    read_set = _build_read_set(
-        policy_input,
-        execution=execution,
-        admissions=admissions,
-        residency=residency,
-        max_plan_age_ms=max_plan_age_ms,
-        fairness_lag_budget_ms=fairness_lag_budget_ms,
-        fairness_memory_penalty_ms=fairness_memory_penalty_ms,
-        fairness_max_workflow_candidates=fairness_max_workflow_candidates,
-        prepared=prepared,
-        semantic_residency=semantic_residency,
-    )
+    if residency or semantic_residency or retractions:
+        read_set = _build_read_set(
+            policy_input,
+            execution=execution,
+            admissions=admissions,
+            residency=residency,
+            dependencies=dependencies,
+            retractions=retractions,
+            max_plan_age_ms=max_plan_age_ms,
+            fairness_lag_budget_ms=fairness_lag_budget_ms,
+            fairness_memory_penalty_ms=fairness_memory_penalty_ms,
+            fairness_max_workflow_candidates=fairness_max_workflow_candidates,
+            prepared=prepared,
+            semantic_residency=semantic_residency,
+        )
+    else:
+        read_set = _seed_read_set(
+            policy_input,
+            execution=execution,
+            admissions=admissions,
+            max_plan_age_ms=max_plan_age_ms,
+            fairness_lag_budget_ms=fairness_lag_budget_ms,
+            fairness_memory_penalty_ms=fairness_memory_penalty_ms,
+            fairness_max_workflow_candidates=fairness_max_workflow_candidates,
+        )
     provisional = JointPlan(
         plan_id="pending",
         input_snapshot_id=policy_input.snapshot_id,
@@ -2273,12 +2286,40 @@ def _make_plan(
     return replace(provisional, plan_id=f"joint-{digest}")
 
 
+def _seed_read_set(
+    policy_input: PolicyInput,
+    *,
+    execution: ExecutionIntent,
+    admissions: Sequence[AdmissionIntent],
+    max_plan_age_ms: float,
+    fairness_lag_budget_ms: float,
+    fairness_memory_penalty_ms: float,
+    fairness_max_workflow_candidates: int,
+) -> PlanReadSet:
+    """Minimal certificate for a seed that cannot publish physical actions."""
+
+    return _build_read_set(
+        policy_input,
+        execution=execution,
+        admissions=admissions,
+        residency=(),
+        dependencies=(),
+        retractions=(),
+        max_plan_age_ms=max_plan_age_ms,
+        fairness_lag_budget_ms=fairness_lag_budget_ms,
+        fairness_memory_penalty_ms=fairness_memory_penalty_ms,
+        fairness_max_workflow_candidates=fairness_max_workflow_candidates,
+    )
+
+
 def _build_read_set(
     policy_input: PolicyInput,
     *,
     execution: ExecutionIntent,
     admissions: Sequence[AdmissionIntent],
     residency: Sequence[ResidencyIntent],
+    dependencies: Sequence[TransferDependency],
+    retractions: Sequence[RetractionIntent],
     max_plan_age_ms: float,
     fairness_lag_budget_ms: float,
     fairness_memory_penalty_ms: float,
@@ -2292,8 +2333,21 @@ def _build_read_set(
         else {item.request_id: item for item in policy_input.runnable_frontier}
     )
     read_request_ids = {
-        item.request_id for item in admissions
+        item.request_id
+        for item in admissions
+        if item.action != AdmissionAction.DEFER
     }.union(execution.ordered_request_ids)
+    read_request_ids.update(
+        item.before_request_id
+        for item in dependencies
+        if item.before_request_id is not None
+    )
+    read_request_ids.update(item.request_id for item in retractions)
+    read_request_ids.update(
+        item.beneficiary_request_id
+        for item in semantic_residency
+        if item.beneficiary_request_id is not None
+    )
     requests = {
         request_id: request_by_id[request_id]
         for request_id in sorted(read_request_ids)
@@ -2312,12 +2366,13 @@ def _build_read_set(
             | {str(item) for item in _sequence(_mapping(raw).get("waiters"))}
         )
     }
+    workflow_ids = {item.workflow_id for item in requests.values()}
     by_workflow: dict[str, list[dict[str, object]]] = defaultdict(list)
     for request in policy_input.runnable_frontier:
-        by_workflow[request.workflow_id].append(request.to_dict())
+        if request.workflow_id in workflow_ids:
+            by_workflow[request.workflow_id].append(request.to_dict())
     control = _mapping(state.get("control"))
     transitions = _mapping(control.get("transitions"))
-    workflow_ids = {item.workflow_id for item in requests.values()}
     touched_bundle_ids = {item.bundle_id for item in residency}
     bundle_by_id = (
         prepared.bundle_by_id
@@ -2457,10 +2512,12 @@ def validate_joint_plan(
             conflicts.append(f"request_changed:{request_id}")
 
     current_by_workflow: dict[str, list[dict[str, object]]] = defaultdict(list)
+    tracked_workflows = set(read_set.workflow_frontier_fingerprints)
     for request in policy_input.runnable_frontier:
-        current_by_workflow[request.workflow_id].append(
-            _request_dependency_payload(request)
-        )
+        if request.workflow_id in tracked_workflows:
+            current_by_workflow[request.workflow_id].append(
+                _request_dependency_payload(request)
+            )
     if set(current_by_workflow) != set(read_set.workflow_frontier_fingerprints):
         conflicts.append("workflow_frontier_membership")
     for workflow_id, expected in read_set.workflow_frontier_fingerprints.items():
@@ -2591,10 +2648,13 @@ def validate_joint_plan_components(
     source_rccg = _mapping(source_state.get("rccg"))
     source_joins = _mapping(source_rccg.get("joins"))
 
+    actionable_admissions = tuple(
+        item for item in plan.admissions if item.action != AdmissionAction.DEFER
+    )
     admission_reasons: dict[str, list[str]] = {
-        item.request_id: [] for item in plan.admissions
+        item.request_id: [] for item in actionable_admissions
     }
-    for admission in plan.admissions:
+    for admission in actionable_admissions:
         request_id = admission.request_id
         reasons = admission_reasons[request_id]
         request = current_requests.get(request_id)
@@ -2706,7 +2766,7 @@ def validate_joint_plan_components(
         bundle_id: IntentValidation(tuple(reasons))
         for bundle_id, reasons in residency_reasons.items()
     }
-    for admission in plan.admissions:
+    for admission in actionable_admissions:
         reasons = admission_reasons[admission.request_id]
         for bundle_id in admission.required_bundle_ids:
             bundle_validation = residency_validation.get(bundle_id)

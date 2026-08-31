@@ -54,8 +54,8 @@ from beliefkv.predictor.structured_frontier import (
 @dataclass(frozen=True)
 class PredictiveRiskShadowConfig:
     particle_count: int = 128
-    top_k: int = 8
-    max_candidates: int = 8
+    top_k: int = 4
+    max_candidates: int = 2
     minimum_calibration_coverage: float = 0.9
     service_quantile: float = 0.9
     kv_bytes_per_token: int = 57_344

@@ -164,6 +164,88 @@ class PolicyInputSnapshotBuilder:
     def last_stats(self) -> SnapshotBuildStats | None:
         return self._last_stats
 
+    def targeted_context_bundles(
+        self,
+        context_ids: Sequence[str],
+        *,
+        now_ms: float,
+    ) -> tuple[PhysicalBundleSnapshot, ...]:
+        """Materialize only candidate contexts and their Radix descendants."""
+
+        handles: set[PageHandle] = set()
+        stack: list[PageHandle] = []
+        for context_id in dict.fromkeys(str(item) for item in context_ids):
+            if not self.page_index.has_context(context_id):
+                continue
+            for page in self.page_index.context_pages(context_id):
+                if page.residency == PhysicalResidency.DEAD:
+                    continue
+                handles.add(page.handle)
+                if page.owner_contexts == {context_id}:
+                    stack.extend(page.children)
+        while stack:
+            handle = stack.pop()
+            if handle in handles:
+                continue
+            page = self.page_index.pages.get(handle)
+            if page is None or page.residency == PhysicalResidency.DEAD:
+                continue
+            handles.add(handle)
+            stack.extend(page.children)
+
+        gpu_descendant: dict[PageHandle, bool] = {}
+
+        def has_gpu_descendant(handle: PageHandle, visiting: set[PageHandle]) -> bool:
+            cached = gpu_descendant.get(handle)
+            if cached is not None:
+                return cached
+            if handle in visiting:
+                raise PolicySnapshotError(
+                    "Radix cycle detected during targeted physicalization"
+                )
+            visiting.add(handle)
+            page = self.page_index.require_page(handle)
+            value = False
+            for child_handle in page.children:
+                child = self.page_index.pages.get(child_handle)
+                if child is None or child.residency == PhysicalResidency.DEAD:
+                    continue
+                if child.gpu_resident or has_gpu_descendant(
+                    child_handle, visiting
+                ):
+                    value = True
+                    break
+            visiting.remove(handle)
+            gpu_descendant[handle] = value
+            return value
+
+        bundles: list[PhysicalBundleSnapshot] = []
+        for handle in sorted(handles):
+            page = self.page_index.require_page(handle)
+            lease_kind = max(
+                (
+                    self.leases.context(context_id, now_ms=now_ms).kind
+                    for context_id in page.owner_contexts
+                ),
+                key=_lease_strength,
+                default=LeaseKind.DEAD,
+            )
+            bundles.append(
+                self._page_bundle(
+                    page,
+                    has_gpu_descendant=has_gpu_descendant(handle, set()),
+                    lease_kind=lease_kind,
+                )
+            )
+        return tuple(sorted(bundles, key=lambda item: item.bundle_id))
+
+    def targeted_transfer_service_estimates(
+        self,
+        bundles: Sequence[PhysicalBundleSnapshot],
+        observation: RuntimeResourceObservation,
+    ) -> Mapping[str, object]:
+        return self._transfer_service_estimates(tuple(bundles), observation)
+
     def build(
         self,
         observation: RuntimeResourceObservation,

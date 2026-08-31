@@ -1905,11 +1905,10 @@ class SGLangBackendTest(unittest.TestCase):
                 if item[0] == "joint_plan_would_apply"
             ]
             self.assertEqual(len(would_apply), 1)
-            self.assertTrue(would_apply[0][2]["readset_fresh"])
-            self.assertFalse(would_apply[0][2]["strict_global_fresh"])
-            self.assertIn(
-                "snapshot_id", would_apply[0][2]["strict_global_reasons"]
+            self.assertTrue(
+                would_apply[0][2]["validation_skipped_seed_only"]
             )
+            self.assertEqual(would_apply[0][2]["validation_ms"], 0.0)
             self.assertEqual(
                 runtime.controller.admission.pending_requests(), pending_before
             )
@@ -4641,7 +4640,7 @@ class SGLangBackendTest(unittest.TestCase):
             )
         )
         runtime.predictive_risk_worker = object()
-        self.assertTrue(
+        self.assertFalse(
             runtime._joint_shadow_causal_event_requires_full_plan(
                 critical_event_pending=True, pressure_now=False
             )

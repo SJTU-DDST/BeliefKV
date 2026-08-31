@@ -102,8 +102,8 @@ class BeliefKVConfig:
     gpu_service_model_path: str | None = None
     gpu_service_hardware_key: str | None = None
     predictive_risk_particle_count: int = 128
-    predictive_risk_top_k: int = 8
-    predictive_risk_max_candidates: int = 8
+    predictive_risk_top_k: int = 4
+    predictive_risk_max_candidates: int = 2
     predictive_risk_min_calibration_coverage: float = 0.9
     predictive_risk_min_causal_slack_probability: float = 0.9
     observed_admission_scheduling_enabled: bool = False
@@ -161,7 +161,7 @@ class BeliefKVConfig:
     joint_physical_commit_budget_ms: float = 1.0
     joint_physical_action_commit_budget_ms: float = 5.0
     joint_shadow_progress_coalesce_ms: float = 100.0
-    joint_shadow_full_plan_watchdog_ms: float = 5_000.0
+    joint_shadow_full_plan_watchdog_ms: float = 30_000.0
     max_joint_plan_age_ms: float = 100.0
     joint_transition_settling_timeout_ms: float = 250.0
     joint_shadow_detailed_audit_interval_ms: float = 1000.0

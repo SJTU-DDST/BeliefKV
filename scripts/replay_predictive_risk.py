@@ -13,6 +13,7 @@ from beliefkv.control.causal_graph import RuntimeCausalContextGraph
 from beliefkv.policy.joint_scheduler import AsyncSemanticJointPlanner, JointPlannerConfig
 from beliefkv.policy.reference import MetadataSource, MetadataValue, PolicyInput
 from beliefkv.policy.risk_shadow import (
+    PredictiveEligibilityIndex,
     PredictiveRiskShadowConfig,
     PredictiveRiskShadowObserver,
 )
@@ -90,6 +91,59 @@ def _transfer_estimates(
     }
 
 
+def _candidate_local_policy_input(
+    policy_input: PolicyInput,
+    source_plan: object,
+    eligibility: object,
+) -> PolicyInput:
+    request_by_id = {
+        item.request_id: item for item in policy_input.runnable_frontier
+    }
+    beneficiary = request_by_id.get(
+        getattr(source_plan, "projected_beneficiary_request_id", None)
+    )
+    contexts = {
+        item.context_id
+        for item in getattr(eligibility, "prepare_host_victims", ())[:2]
+    }
+    if beneficiary is not None:
+        contexts.add(beneficiary.context_id)
+    by_extent = {
+        item.extent_ids[0]: item
+        for item in policy_input.physical_kv.bundles
+        if len(item.extent_ids) == 1
+    }
+    selected = {
+        extent_id
+        for extent_id, item in by_extent.items()
+        if contexts.intersection(item.owner_context_ids)
+    }
+    stack = [
+        extent_id
+        for extent_id, item in by_extent.items()
+        if item.scope == "exclusive_suffix"
+        and len(item.owner_context_ids) == 1
+        and item.owner_context_ids[0] in contexts
+    ]
+    while stack:
+        item = by_extent.get(stack.pop())
+        if item is None:
+            continue
+        for child_id in item.child_extent_ids:
+            if child_id not in selected:
+                selected.add(child_id)
+                stack.append(child_id)
+    bundles = tuple(
+        item
+        for item in policy_input.physical_kv.bundles
+        if any(extent_id in selected for extent_id in item.extent_ids)
+    )
+    return replace(
+        policy_input,
+        physical_kv=replace(policy_input.physical_kv, bundles=bundles),
+    )
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(
         description="Replay P6 action-projected risk planning on frozen PolicyInput snapshots."
@@ -143,8 +197,8 @@ def main() -> int:
         GPUServiceCurveModel.load(args.gpu_service_model),
         PredictiveRiskShadowConfig(
             particle_count=128,
-            top_k=8,
-            max_candidates=8,
+            top_k=4,
+            max_candidates=2,
             max_full_prefetch_hbm_ratio=0.05,
         ),
         frontier_model=frontier_model,
@@ -195,6 +249,7 @@ def main() -> int:
             ):
                 counts["no_predictions"] += 1
                 continue
+            local_eligibility = PredictiveEligibilityIndex().probe(policy_input)
             metadata = dict(policy_input.optional_metadata)
             metadata["beliefkv_transfer_service_estimates"] = MetadataValue(
                 MetadataSource.OBSERVED,
@@ -229,10 +284,25 @@ def main() -> int:
                 policy_input.runtime_graph.state
             )
             source_plan = planner.plan(policy_input)
+            eligibility = observer.eligibility_index.probe(policy_input)
+            policy_input = _candidate_local_policy_input(
+                policy_input,
+                source_plan,
+                eligibility,
+            )
+            local_eligibility = PredictiveEligibilityIndex().probe(policy_input)
+            metadata = dict(policy_input.optional_metadata)
+            metadata["beliefkv_transfer_service_estimates"] = MetadataValue(
+                MetadataSource.OBSERVED,
+                _transfer_estimates(policy_input, transfer_curve),
+                "candidate_local_transfer_service_replay",
+            )
+            policy_input = replace(policy_input, optional_metadata=metadata)
             result = observer.evaluate(
                 policy_input,
                 graph=graph,
                 source_plan=source_plan,
+                eligibility=local_eligibility,
                 evidence_read_set=PredictiveEvidenceReadSet(
                     graph_version=graph.graph_version,
                     page_revision=policy_input.physical_kv.allocator_version,
@@ -253,6 +323,10 @@ def main() -> int:
             )
             payload = result.to_dict()
             payload["transfer_model"] = args.transfer_model
+            payload["eligibility_ms"] = local_eligibility.probe_ms
+            payload["candidate_local_bundle_count"] = len(
+                policy_input.physical_kv.bundles
+            )
             output.write(json.dumps(payload, sort_keys=True, allow_nan=False) + "\n")
             counts[f"status:{result.status}"] += 1
             counts[f"selected:{result.selected_action}"] += 1

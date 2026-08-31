@@ -251,6 +251,46 @@ def test_disjoint_extent_snapshot_only_counts_current_leaf_as_reclaimable() -> N
     assert leaf.marginal_reclaimable_bytes == 200
 
 
+def test_targeted_context_bundles_do_not_expand_shared_ancestor_siblings() -> None:
+    controller = _controller()
+    root = PageHandle(1, 0)
+    target_leaf = PageHandle(2, 0)
+    sibling_leaf = PageHandle(3, 0)
+    controller.page_index.register_page(
+        root,
+        size_bytes=100,
+        residency=PhysicalResidency.GPU_ONLY,
+        radix_depth=1,
+    )
+    controller.page_index.register_page(
+        target_leaf,
+        size_bytes=100,
+        residency=PhysicalResidency.GPU_ONLY,
+        radix_depth=2,
+        parent=root,
+    )
+    controller.page_index.register_page(
+        sibling_leaf,
+        size_bytes=100,
+        residency=PhysicalResidency.GPU_ONLY,
+        radix_depth=2,
+        parent=root,
+    )
+    controller.page_index.bind_pages("ctx-root", 0, (root, target_leaf))
+    controller.page_index.register_context("ctx-sibling", "workflow-sibling", 0)
+    controller.page_index.bind_pages("ctx-sibling", 0, (root, sibling_leaf))
+
+    bundles = controller.policy_snapshot_builder.targeted_context_bundles(
+        ("ctx-root",),
+        now_ms=10,
+    )
+    extent_ids = {item.extent_ids[0] for item in bundles}
+
+    assert "page:1:generation:0" in extent_ids
+    assert "page:2:generation:0" in extent_ids
+    assert "page:3:generation:0" not in extent_ids
+
+
 def test_targeted_bundle_validation_matches_full_snapshot_and_live_lock() -> None:
     controller = _controller()
     _bind_two_level_tree(controller)

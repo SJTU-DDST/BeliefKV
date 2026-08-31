@@ -2,13 +2,14 @@ from __future__ import annotations
 
 import threading
 import time
-from collections import deque
+from collections import Counter, deque
 from dataclasses import dataclass, field, replace
+from enum import Enum
 from pathlib import Path
 from types import MappingProxyType
 from typing import Mapping, Protocol
 
-from beliefkv.control.causal_graph import RuntimeCausalContextGraph
+from beliefkv.control.causal_graph import InvocationState, RuntimeCausalContextGraph
 from beliefkv.control.data_consumers import ObservedDataConsumerIndex
 from beliefkv.core.config import BeliefKVConfig
 from beliefkv.core.events import RuntimeEvent
@@ -50,6 +51,14 @@ from beliefkv.predictor.frontier_belief import PredictiveEvidenceReadSet
 class JointPlanProducer(Protocol):
     def plan(self, policy_input: PolicyInput) -> JointPlan:
         ...
+
+
+class JointShadowWorkClass(str, Enum):
+    """Cost classes carried by one safe-point publication."""
+
+    SEMANTIC_DELTA = "semantic_delta"
+    JOINT_REPLAN = "joint_replan"
+    RISK_EVAL = "risk_eval"
 
 
 @dataclass(frozen=True)
@@ -99,12 +108,14 @@ class JointShadowDelta:
     trigger: str
     captured_monotonic_ms: float
     planning_requested: bool = True
+    risk_evaluation_requested: bool = False
     frontier_predictions: Mapping[str, Mapping[str, object]] = field(
         default_factory=dict
     )
     frontier_features: Mapping[str, Mapping[str, object]] = field(
         default_factory=dict
     )
+    removed_frontier_invocation_ids: frozenset[str] = frozenset()
     frontier_model_version: str | None = None
 
     def __post_init__(self) -> None:
@@ -138,8 +149,22 @@ class JointShadowDelta:
                 }
             ),
         )
+        object.__setattr__(
+            self,
+            "removed_frontier_invocation_ids",
+            frozenset(str(item) for item in self.removed_frontier_invocation_ids),
+        )
         if self.frontier_model_version is not None and not self.frontier_model_version:
             raise ValueError("frontier model version must be non-empty")
+
+    @property
+    def work_classes(self) -> frozenset[JointShadowWorkClass]:
+        result = {JointShadowWorkClass.SEMANTIC_DELTA}
+        if self.planning_requested:
+            result.add(JointShadowWorkClass.JOINT_REPLAN)
+        if self.risk_evaluation_requested:
+            result.add(JointShadowWorkClass.RISK_EVAL)
+        return frozenset(result)
 
 
 def coalesce_joint_shadow_deltas(
@@ -169,6 +194,9 @@ def coalesce_joint_shadow_deltas(
     changed_context_ids: set[str] = set()
     components: set[str] = set()
     full_rebuild = False
+    frontier_predictions: dict[str, Mapping[str, object]] = {}
+    frontier_features: dict[str, Mapping[str, object]] = {}
+    removed_frontier_ids: set[str] = set()
 
     for delta in deltas:
         if delta.event_from_sequence != event_cursor:
@@ -203,6 +231,16 @@ def coalesce_joint_shadow_deltas(
             changed_handles.update(page_delta.changed_handles)
             changed_context_ids.update(page_delta.changed_context_ids)
         components.update(page_delta.components)
+        for invocation_id in delta.removed_frontier_invocation_ids:
+            frontier_predictions.pop(invocation_id, None)
+            frontier_features.pop(invocation_id, None)
+            removed_frontier_ids.add(invocation_id)
+        for invocation_id, prediction in delta.frontier_predictions.items():
+            removed_frontier_ids.discard(invocation_id)
+            frontier_predictions[invocation_id] = prediction
+        for invocation_id, features in delta.frontier_features.items():
+            removed_frontier_ids.discard(invocation_id)
+            frontier_features[invocation_id] = features
 
     last = deltas[-1]
     page_delta = PageIndexReplicaDelta(
@@ -237,8 +275,12 @@ def coalesce_joint_shadow_deltas(
         planning_requested=any(
             item.planning_requested for item in deltas
         ),
-        frontier_predictions=last.frontier_predictions,
-        frontier_features=last.frontier_features,
+        risk_evaluation_requested=any(
+            item.risk_evaluation_requested for item in deltas
+        ),
+        frontier_predictions=frontier_predictions,
+        frontier_features=frontier_features,
+        removed_frontier_invocation_ids=frozenset(removed_frontier_ids),
         frontier_model_version=last.frontier_model_version,
     )
 
@@ -272,6 +314,7 @@ class JointShadowResult:
     predictive_shadow: PredictiveRiskShadowResult | None = None
     predictive_shadow_error: str | None = None
     predictive_shadow_compute_ms: float = 0.0
+    risk_evaluation_requested: bool = False
 
     @property
     def queue_wait_ms(self) -> float:
@@ -309,7 +352,6 @@ class PredictiveRiskSubmission:
     source_joint_sequence: int
     source_snapshot_id: str
     submitted_monotonic_ms: float
-    eligibility: PredictiveEligibility
     enqueue_ms: float
     enqueued: bool
     replaced_sequence: int | None
@@ -328,6 +370,8 @@ class PredictiveRiskWorkerResult:
     shadow: PredictiveRiskShadowResult | None
     error: str | None
     eligibility_ms: float
+    eligibility: PredictiveEligibility | None = None
+    suppression_reason: str | None = None
     counterfactual_shadow: PredictiveRiskShadowResult | None = None
     counterfactual_error: str | None = None
 
@@ -356,7 +400,6 @@ class _PredictiveWorkItem:
     policy_input: PolicyInput
     source_plan: JointPlan
     state_stamp: JointShadowStateStamp
-    eligibility: PredictiveEligibility
 
 
 class IncrementalPolicyInputAssembler:
@@ -401,6 +444,9 @@ class IncrementalPolicyInputAssembler:
         )
         self._event_sequence = 0
         self._latest: JointShadowDelta | None = None
+        self._frontier_predictions: dict[str, Mapping[str, object]] = {}
+        self._frontier_features: dict[str, Mapping[str, object]] = {}
+        self._healthy = True
         self._telemetry: deque[TransferTelemetry] = deque(
             maxlen=max(256, config.service_curve_window)
         )
@@ -410,6 +456,8 @@ class IncrementalPolicyInputAssembler:
         return self.builder.last_stats
 
     def apply(self, delta: JointShadowDelta) -> None:
+        if not self._healthy:
+            raise RuntimeError("shadow mirror was discarded after an apply failure")
         if delta.event_from_sequence != self._event_sequence:
             raise RuntimeError(
                 "shadow RCCG event gap: "
@@ -417,27 +465,40 @@ class IncrementalPolicyInputAssembler:
             )
         if delta.page_delta.full_rebuild_required and self.page_index.revision != 0:
             raise RuntimeError("shadow page journal gap requires fail-closed restart")
-        if delta.runtime_events:
-            self.graph.apply_batch(delta.runtime_events, atomic=True)
-            self.data_consumers.apply_batch(delta.runtime_events, atomic=True)
-        self._event_sequence = delta.event_to_sequence
-        self.page_index.apply_replica_delta(
-            delta.page_delta,
-            full_validation=False,
-            validate_delta=not self.config.performance_mode,
-        )
-        for telemetry in delta.transfer_telemetry:
-            self.service_curve.observe(telemetry)
-            self._telemetry.append(telemetry)
-        if self.graph.graph_version != delta.stamp.graph_version:
-            raise RuntimeError(
-                "shadow graph version diverged from safe-point publication"
+        try:
+            if delta.runtime_events:
+                # These events were committed atomically at the scheduler safe
+                # point. The worker mirror is disposable, so rollback must not
+                # deep-copy the complete RCCG for every incremental batch.
+                self.graph.apply_batch(delta.runtime_events, atomic=False)
+                self.data_consumers.apply_batch(delta.runtime_events, atomic=False)
+            self._event_sequence = delta.event_to_sequence
+            self.page_index.apply_replica_delta(
+                delta.page_delta,
+                full_validation=False,
+                validate_delta=not self.config.performance_mode,
             )
-        if self.data_consumers.version != delta.stamp.consumer_version:
-            raise RuntimeError(
-                "shadow consumer version diverged from safe-point publication"
-            )
-        self._latest = delta
+            for telemetry in delta.transfer_telemetry:
+                self.service_curve.observe(telemetry)
+                self._telemetry.append(telemetry)
+            for invocation_id in delta.removed_frontier_invocation_ids:
+                self._frontier_predictions.pop(invocation_id, None)
+                self._frontier_features.pop(invocation_id, None)
+            self._frontier_predictions.update(delta.frontier_predictions)
+            self._frontier_features.update(delta.frontier_features)
+            if self.graph.graph_version != delta.stamp.graph_version:
+                raise RuntimeError(
+                    "shadow graph version diverged from safe-point publication"
+                )
+            if self.data_consumers.version != delta.stamp.consumer_version:
+                raise RuntimeError(
+                    "shadow consumer version diverged from safe-point publication"
+                )
+            self._latest = delta
+        except Exception:
+            self._healthy = False
+            self._latest = None
+            raise
 
     def build(self) -> PolicyInput:
         delta = self._latest
@@ -465,33 +526,34 @@ class IncrementalPolicyInputAssembler:
             workflow_fairness_state=fairness_state,
             control_state=delta.control_state,
             transfer_telemetry=tuple(self._telemetry),
-            include_transfer_estimates=(
-                self.config.predictive_risk_shadow_enabled
-                or self.config.predictive_joint_overlay_enabled
-            ),
+            include_transfer_estimates=False,
             physical_summary_only=(
                 self.config.performance_mode
-                and not self.config.predictive_risk_shadow_enabled
-                and not self.config.predictive_joint_overlay_enabled
+                or self.config.predictive_risk_shadow_enabled
+                or self.config.predictive_joint_overlay_enabled
             ),
             capabilities=delta.capabilities,
         )
-        if delta.frontier_predictions:
+        predictive_compact = (
+            self.config.predictive_risk_shadow_enabled
+            or self.config.predictive_joint_overlay_enabled
+        )
+        if self._frontier_predictions and not predictive_compact:
             metadata = dict(policy_input.optional_metadata)
             metadata["frontier_predictions"] = MetadataValue(
                 source=MetadataSource.PREDICTED,
-                value=dict(delta.frontier_predictions),
+                value=dict(self._frontier_predictions),
                 producer="frontier_belief_mvp",
             )
             policy_input = replace(
                 policy_input,
                 optional_metadata=metadata,
             )
-        if delta.frontier_features:
+        if self._frontier_features and not predictive_compact:
             metadata = dict(policy_input.optional_metadata)
             metadata["frontier_features"] = MetadataValue(
                 source=MetadataSource.OBSERVED,
-                value=dict(delta.frontier_features),
+                value=dict(self._frontier_features),
                 producer="frontier_online_feature_snapshot",
             )
             policy_input = replace(
@@ -507,6 +569,200 @@ class IncrementalPolicyInputAssembler:
             )
             policy_input = replace(policy_input, optional_metadata=metadata)
         return policy_input
+
+    def materialize_predictive_candidates(
+        self,
+        policy_input: PolicyInput,
+        source_plan: JointPlan,
+        *,
+        max_victims: int = 2,
+    ) -> tuple[PolicyInput, bool]:
+        """Attach a bounded physical overlay for one projected beneficiary."""
+
+        beneficiary_request_id = source_plan.projected_beneficiary_request_id
+        if beneficiary_request_id is None or max_victims <= 0:
+            return policy_input, False
+        request_by_id = {
+            request.request_id: request
+            for request in policy_input.runnable_frontier
+        }
+        beneficiary = request_by_id.get(beneficiary_request_id)
+        if beneficiary is None:
+            return policy_input, False
+        summary_metadata = policy_input.optional_metadata.get(
+            "beliefkv_context_physical_summaries"
+        )
+        summaries = (
+            summary_metadata.value
+            if summary_metadata is not None
+            and isinstance(summary_metadata.value, Mapping)
+            else {}
+        )
+        graph_state = policy_input.runtime_graph.state
+        nested = graph_state.get("rccg")
+        if isinstance(nested, Mapping):
+            graph_state = nested
+        invocations = graph_state.get("invocations", {})
+        if not isinstance(invocations, Mapping):
+            invocations = {}
+        wait_states = {
+            InvocationState.WAIT_TOOL.value,
+            InvocationState.WAIT_CHILD.value,
+            InvocationState.WAIT_JOIN.value,
+            InvocationState.WAIT_MESSAGE.value,
+        }
+        parked_contexts = {
+            str(raw.get("context_id"))
+            for raw in invocations.values()
+            if isinstance(raw, Mapping)
+            and str(raw.get("state") or "") in wait_states
+            and raw.get("context_id")
+        }
+        ranked_victims: list[tuple[int, int, float, str]] = []
+        for context_id in parked_contexts:
+            if context_id == beneficiary.context_id:
+                continue
+            raw = summaries.get(context_id)
+            if not isinstance(raw, Mapping):
+                continue
+            reclaimable = int(
+                raw.get("exclusive_reclaimable_upper_bound_bytes", 0)
+            )
+            if reclaimable <= 0:
+                continue
+            ranked_victims.append(
+                (
+                    -reclaimable,
+                    int(raw.get("locked_bytes", 0)),
+                    float(raw.get("last_access_ms", 0.0)),
+                    context_id,
+                )
+            )
+        victim_context_ids = tuple(
+            item[3] for item in sorted(ranked_victims)[:max_victims]
+        )
+        if not victim_context_ids:
+            return policy_input, False
+        context_ids = (beneficiary.context_id, *victim_context_ids)
+        delta = self._latest
+        if delta is None:
+            return policy_input, False
+        bundles = self.builder.targeted_context_bundles(
+            context_ids,
+            now_ms=delta.observation.ts_ms,
+        )
+        if not bundles:
+            return policy_input, False
+        metadata = dict(policy_input.optional_metadata)
+        metadata["beliefkv_transfer_service_estimates"] = MetadataValue(
+            source=MetadataSource.OBSERVED,
+            value=self.builder.targeted_transfer_service_estimates(
+                bundles,
+                delta.observation,
+            ),
+            producer="candidate_local_transfer_service_curve",
+        )
+        metadata["beliefkv_predictive_candidate_scope"] = MetadataValue(
+            source=MetadataSource.OBSERVED,
+            value={
+                "beneficiary_request_id": beneficiary.request_id,
+                "beneficiary_context_id": beneficiary.context_id,
+                "victim_context_ids": victim_context_ids,
+                "page_revision": delta.stamp.page_revision,
+                "topology_revision": delta.stamp.topology_revision,
+            },
+            producer="candidate_local_physicalizer",
+        )
+        candidate_invocation_ids = {
+            str(invocation_id)
+            for invocation_id, raw in invocations.items()
+            if isinstance(raw, Mapping)
+            and str(raw.get("context_id") or "") in context_ids
+        }
+        joins = graph_state.get("joins", {})
+        if not isinstance(joins, Mapping):
+            joins = {}
+        changed = True
+        while changed:
+            changed = False
+            expanded = set(candidate_invocation_ids)
+            for invocation_id in tuple(candidate_invocation_ids):
+                raw = invocations.get(invocation_id)
+                if not isinstance(raw, Mapping):
+                    continue
+                for related in (
+                    raw.get("parent_invocation_id"),
+                    raw.get("return_target_id"),
+                    *tuple(raw.get("children") or ()),
+                    *tuple(raw.get("blocking_children") or ()),
+                ):
+                    if related:
+                        expanded.add(str(related))
+                join_id = raw.get("join_id")
+                join = joins.get(str(join_id)) if join_id else None
+                if isinstance(join, Mapping):
+                    expanded.update(str(item) for item in join.get("members", ()))
+                    expanded.update(str(item) for item in join.get("waiters", ()))
+            if expanded != candidate_invocation_ids:
+                candidate_invocation_ids = expanded
+                changed = True
+        local_predictions = {
+            invocation_id: self._frontier_predictions[invocation_id]
+            for invocation_id in sorted(candidate_invocation_ids)
+            if invocation_id in self._frontier_predictions
+        }
+        active_tool_count = sum(
+            1
+            for raw in invocations.values()
+            if isinstance(raw, Mapping)
+            and str(raw.get("state") or "")
+            == InvocationState.WAIT_TOOL.value
+        )
+        active_family_counts = Counter(
+            str(raw.get("active_tool_family"))
+            for raw in invocations.values()
+            if isinstance(raw, Mapping)
+            and str(raw.get("state") or "")
+            == InvocationState.WAIT_TOOL.value
+            and raw.get("active_tool_family")
+        )
+        local_features: dict[str, Mapping[str, object]] = {}
+        for invocation_id in sorted(candidate_invocation_ids):
+            cached = self._frontier_features.get(invocation_id)
+            if cached is None:
+                continue
+            current = dict(cached)
+            current["active_tool_count"] = active_tool_count
+            tool_family = str(current.get("tool_family") or "unknown")
+            current["backend_pressure"] = (
+                f"active_family:{active_family_counts.get(tool_family, 0)}"
+                if tool_family != "unknown"
+                else "unknown"
+            )
+            local_features[invocation_id] = current
+        if local_predictions:
+            metadata["frontier_predictions"] = MetadataValue(
+                source=MetadataSource.PREDICTED,
+                value=local_predictions,
+                producer="candidate_local_frontier_prediction",
+            )
+        if local_features:
+            metadata["frontier_features"] = MetadataValue(
+                source=MetadataSource.OBSERVED,
+                value=local_features,
+                producer="candidate_local_frontier_features",
+            )
+        return (
+            replace(
+                policy_input,
+                physical_kv=replace(
+                    policy_input.physical_kv,
+                    bundles=bundles,
+                ),
+                optional_metadata=metadata,
+            ),
+            True,
+        )
 
 
 class LatestWinsJointPlanWorker:
@@ -526,6 +782,7 @@ class LatestWinsJointPlanWorker:
     ) -> None:
         self.planner = planner or ObservedJointPlanner()
         self.assembler = assembler
+        self._incremental_mode = assembler is not None
         self._condition = threading.Condition()
         self._pending: _WorkItem | None = None
         self._latest: JointShadowResult | None = None
@@ -542,6 +799,7 @@ class LatestWinsJointPlanWorker:
         self._superseded_result_count = 0
         self._last_trigger_capture_ms: float | None = None
         self._planning_dirty = False
+        self._mirror_failed = False
         self._thread = threading.Thread(
             target=self._run,
             name=thread_name,
@@ -577,7 +835,10 @@ class LatestWinsJointPlanWorker:
 
     @property
     def supports_incremental_delta(self) -> bool:
-        return self.assembler is not None
+        # Keep the runtime on the incremental fail-closed path after a mirror
+        # failure. Returning False here would silently reactivate legacy full
+        # PolicyInput capture on the scheduler thread.
+        return self._incremental_mode
 
     def submit_delta(self, delta: JointShadowDelta) -> JointShadowSubmission:
         if self.assembler is None:
@@ -587,6 +848,8 @@ class LatestWinsJointPlanWorker:
         with self._condition:
             if self._closed:
                 raise RuntimeError("joint shadow worker is closed")
+            if self._mirror_failed:
+                raise RuntimeError("joint shadow worker mirror failed closed")
             self._next_sequence += 1
             sequence = self._next_sequence
             replaced = self._pending.sequence if self._pending is not None else None
@@ -675,6 +938,7 @@ class LatestWinsJointPlanWorker:
             planning_budget_ms = None
             planning_attempted = False
             publish_result = True
+            risk_evaluation_requested = False
             try:
                 if item.deltas:
                     assert self.assembler is not None
@@ -731,8 +995,23 @@ class LatestWinsJointPlanWorker:
                         )
                     else:
                         plan = self.planner.plan(policy_input)
+                    if (
+                        plan is not None
+                        and item.deltas
+                        and delta.risk_evaluation_requested
+                        and self.assembler is not None
+                    ):
+                        policy_input, risk_evaluation_requested = (
+                            self.assembler.materialize_predictive_candidates(
+                                policy_input,
+                                plan,
+                            )
+                        )
             except Exception as caught:
                 error = f"{type(caught).__name__}: {caught}"
+                if item.deltas and self.assembler is not None:
+                    self._mirror_failed = True
+                    self.assembler = None
             completed_ms = _monotonic_ms()
             result = JointShadowResult(
                 sequence=item.sequence,
@@ -754,6 +1033,7 @@ class LatestWinsJointPlanWorker:
                 trigger=trigger,
                 trigger_interval_ms=trigger_interval_ms,
                 planning_budget_ms=planning_budget_ms,
+                risk_evaluation_requested=risk_evaluation_requested,
             )
             with self._condition:
                 self._busy = False
@@ -829,54 +1109,33 @@ class LatestWinsPredictiveRiskWorker:
             or result.state_stamp is None
         ):
             raise ValueError("predictive risk submission requires a complete observed plan")
-        eligibility = self.observer.eligibility_index.probe(result.policy_input)
         submitted_ms = _monotonic_ms()
         with self._condition:
             if self._closed:
                 raise RuntimeError("predictive risk worker is closed")
-            trigger_signature = (
-                eligibility.trigger_signature
-                if eligibility.has_candidate
-                else ("no_candidate",)
+            self._next_sequence += 1
+            replaced = self._pending.sequence if self._pending is not None else None
+            if self._pending is not None:
+                self._pending = None
+                self._dropped_pending_count += 1
+            self._pending = _PredictiveWorkItem(
+                sequence=self._next_sequence,
+                source_joint_sequence=result.sequence,
+                submitted_monotonic_ms=submitted_ms,
+                policy_input=result.policy_input,
+                source_plan=result.plan,
+                state_stamp=result.state_stamp,
             )
-            changed = trigger_signature != self._last_trigger_signature
-            replaced = None
-            enqueued = False
+            enqueued = True
             suppression_reason = None
-            if changed:
-                self._last_trigger_signature = trigger_signature
-                self._next_sequence += 1
-                replaced = (
-                    self._pending.sequence if self._pending is not None else None
-                )
-                if self._pending is not None:
-                    self._pending = None
-                    self._dropped_pending_count += 1
-                if eligibility.has_candidate:
-                    self._pending = _PredictiveWorkItem(
-                        sequence=self._next_sequence,
-                        source_joint_sequence=result.sequence,
-                        submitted_monotonic_ms=submitted_ms,
-                        policy_input=result.policy_input,
-                        source_plan=result.plan,
-                        state_stamp=result.state_stamp,
-                        eligibility=eligibility,
-                    )
-                    enqueued = True
-                else:
-                    suppression_reason = "no_action_specific_candidate"
-            else:
-                suppression_reason = "unchanged_action_bucket"
             sequence = self._next_sequence
             self._submitted_count += 1
-            if changed:
-                self._condition.notify_all()
+            self._condition.notify_all()
         return PredictiveRiskSubmission(
             sequence=sequence,
             source_joint_sequence=result.sequence,
             source_snapshot_id=result.policy_input.snapshot_id,
             submitted_monotonic_ms=submitted_ms,
-            eligibility=eligibility,
             enqueue_ms=(time.perf_counter_ns() - started_ns) / 1_000_000.0,
             enqueued=enqueued,
             replaced_sequence=replaced,
@@ -934,7 +1193,26 @@ class LatestWinsPredictiveRiskWorker:
             started_ms = _monotonic_ms()
             shadow = None
             error = None
+            eligibility = None
+            suppression_reason = None
             try:
+                eligibility = self.observer.eligibility_index.probe(
+                    item.policy_input
+                )
+                trigger_signature = (
+                    eligibility.trigger_signature
+                    if eligibility.has_candidate
+                    else ("no_candidate",)
+                )
+                with self._condition:
+                    if trigger_signature == self._last_trigger_signature:
+                        suppression_reason = "unchanged_action_bucket"
+                    else:
+                        self._last_trigger_signature = trigger_signature
+                if not eligibility.has_candidate:
+                    suppression_reason = "no_action_specific_candidate"
+                if suppression_reason is not None:
+                    raise StopIteration
                 graph = RuntimeCausalContextGraph.from_snapshot(
                     item.policy_input.runtime_graph.state
                 )
@@ -965,10 +1243,12 @@ class LatestWinsPredictiveRiskWorker:
                     item.policy_input,
                     graph=graph,
                     source_plan=item.source_plan,
-                    eligibility=item.eligibility,
+                    eligibility=eligibility,
                     evidence_read_set=evidence_read_set,
                     cancel_check=lambda: self._is_superseded(item.sequence),
                 )
+            except StopIteration:
+                pass
             except Exception as caught:
                 error = f"{type(caught).__name__}: {caught}"
             completed_ms = _monotonic_ms()
@@ -982,7 +1262,11 @@ class LatestWinsPredictiveRiskWorker:
                 policy_input=item.policy_input,
                 shadow=shadow,
                 error=error,
-                eligibility_ms=item.eligibility.probe_ms,
+                eligibility_ms=(
+                    eligibility.probe_ms if eligibility is not None else 0.0
+                ),
+                eligibility=eligibility,
+                suppression_reason=suppression_reason,
                 counterfactual_shadow=None,
                 counterfactual_error=None,
             )
@@ -999,8 +1283,13 @@ class LatestWinsPredictiveRiskWorker:
                 self._condition.notify_all()
 
     def _is_superseded(self, sequence: int) -> bool:
+        del sequence
         with self._condition:
-            return self._closed or self._next_sequence > sequence
+            # Eligibility equivalence is known only inside this worker. Do not
+            # cancel an in-flight evaluation merely because a newer compact
+            # snapshot was enqueued; the completed result is discarded if a
+            # materially newer item remains.
+            return self._closed
 
 
 def _monotonic_ms() -> float:

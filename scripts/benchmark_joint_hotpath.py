@@ -288,8 +288,8 @@ def run(
         )
         planner = planner_type(
             JointPlannerConfig(
-                max_workflow_candidates=max(1, runnable_count),
-                max_total_frontier_candidates=max(1, runnable_count),
+                max_workflow_candidates=max(1, min(8, runnable_count)),
+                max_total_frontier_candidates=max(1, min(16, runnable_count)),
                 max_package_evaluations=8,
                 max_planning_budget_ms=1_000.0,
             )

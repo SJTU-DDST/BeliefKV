@@ -890,9 +890,9 @@ def test_component_validation_isolates_an_unselected_request_change() -> None:
 
     assert plan.execution.selected_workflow_id == "workflow-a"
     assert validation.admissions["request-a"].valid
-    assert not validation.admissions["request-b"].valid
+    assert "request-b" not in validation.admissions
     assert validation.execution.valid
-    assert validation.partially_fresh
+    assert validation.fully_fresh
 
 
 def test_component_validation_isolates_one_blocked_physical_bundle() -> None:

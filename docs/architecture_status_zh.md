@@ -1,6 +1,28 @@
 # BeliefKV 最新架构与实现状态
 
-更新日期：2026-08-30
+更新日期：2026-08-31
+
+## 2026-08-31：P6 控制面 CPU/replay 门槛通过
+
+P6 预测路径已重新接入 Performance-First 架构。worker mirror 对可信 safe-point
+delta 使用 non-atomic apply，失败时丢弃 mirror 并 fail closed；运行时显式区分
+SEMANTIC_DELTA、JOINT_REPLAN 和 RISK_EVAL，普通 agent 事件不再默认触发完整
+JointPlan。predictor 继续使用 compact snapshot，只为一个 beneficiary 和最多两个
+victim 局部物化 closure 与 transfer estimate；eligibility 已全部移入 predictive
+worker；frontier feature 使用 changed-invocation delta；seed-only/no-action plan 跳过
+全量在线 validation。
+
+192-invocation CPU gate 的 safe-point capture P95 为 0.181 ms、predictive submit
+P95 为 0.014 ms、RCCG delta apply P95 为 0.040 ms。4,096-page/192-runnable 的
+compact observed seed P95 为 5.943 ms。冻结高压 trace 上 16 次 candidate-local
+predictive replay 的 planning P95 为 88.201 ms。按 pressure crossing 与 30 秒高压
+watchdog 重放，full plan 预计为 8/5,599 scheduler steps，即 0.143%。既定门槛全部
+通过。
+
+该结论只关闭控制面第一阻塞项，不代表预测策略已有收益。冻结 replay 仍没有 positive
+package，predictive physical action 继续关闭；下一步需一次短 GPU control-plane gate
+确认真实 GIL 干扰、worker backlog 和事件驱动 full-plan 比例。完整记录见
+`docs/experiments/beliefkv_p6_control_plane_cpu_replay_gate_2026-08-31_zh.md`。
 
 ## 2026-08-30：Beneficiary-bound 机制闭环，当前高压窗口为 slot-only
 

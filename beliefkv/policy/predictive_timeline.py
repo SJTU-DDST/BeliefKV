@@ -280,14 +280,18 @@ class CandidateTimelineEvaluator:
         *,
         service_quantile: float = 0.9,
         service_cache_entries: int = 4_096,
+        service_cache_log2_width: float = 1.0,
     ) -> None:
         if not 0.5 <= service_quantile <= 0.99:
             raise ValueError("service quantile must be in [0.5, 0.99]")
         self.service_model = service_model
         self.service_quantile = service_quantile
         self.service_cache_entries = max(0, service_cache_entries)
+        if not math.isfinite(service_cache_log2_width) or service_cache_log2_width <= 0:
+            raise ValueError("service cache log2 width must be finite and positive")
+        self.service_cache_log2_width = service_cache_log2_width
         self._service_cache: OrderedDict[
-            GPUServiceFeatures, GPUServiceEstimate
+            tuple[object, ...], GPUServiceEstimate
         ] = OrderedDict()
         self.service_cache_hits = 0
         self.service_cache_misses = 0
@@ -299,21 +303,43 @@ class CandidateTimelineEvaluator:
             len(self._service_cache),
         )
 
+    def _service_cache_key(
+        self,
+        features: GPUServiceFeatures,
+    ) -> tuple[object, ...]:
+        width = self.service_cache_log2_width
+
+        def log_bucket(value: float) -> int:
+            return int(math.floor(math.log2(max(1.0, value + 1.0)) / width))
+
+        return (
+            features.phase,
+            features.batch_size,
+            log_bucket(features.sequence_tokens_mean),
+            log_bucket(float(features.token_delta_total)),
+            round(features.cache_hit_ratio_mean, 1),
+            features.chunk_position,
+            features.prefill_decode_mixed,
+            features.pcie_contention_state,
+            log_bucket(float(features.hicache_inflight_bytes)),
+        )
+
     def _predict_service(
         self,
         features: GPUServiceFeatures,
     ) -> GPUServiceEstimate:
+        cache_key = self._service_cache_key(features)
         if self.service_cache_entries:
-            cached = self._service_cache.get(features)
+            cached = self._service_cache.get(cache_key)
             if cached is not None:
-                self._service_cache.move_to_end(features)
+                self._service_cache.move_to_end(cache_key)
                 self.service_cache_hits += 1
                 return cached
         self.service_cache_misses += 1
         estimate = self.service_model.predict(features)
         if self.service_cache_entries:
-            self._service_cache[features] = estimate
-            self._service_cache.move_to_end(features)
+            self._service_cache[cache_key] = estimate
+            self._service_cache.move_to_end(cache_key)
             while len(self._service_cache) > self.service_cache_entries:
                 self._service_cache.popitem(last=False)
         return estimate

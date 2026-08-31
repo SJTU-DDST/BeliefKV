@@ -4,6 +4,8 @@ import threading
 from dataclasses import replace
 from types import SimpleNamespace
 
+import pytest
+
 from beliefkv.control.controller import BeliefKVController
 from beliefkv.control.causal_graph import RuntimeCausalContextGraph
 from beliefkv.core.config import BeliefKVConfig
@@ -367,7 +369,7 @@ def test_predictive_worker_cannot_delay_observed_plan_publication() -> None:
     assert observed_worker.close()
 
 
-def test_predictive_worker_does_not_cancel_for_unchanged_action_bucket() -> None:
+def test_predictive_worker_suppresses_unchanged_bucket_off_scheduler() -> None:
     observed_worker = LatestWinsJointPlanWorker()
     policy_input = _policy_input()
     graph_controller = BeliefKVController(
@@ -435,18 +437,20 @@ def test_predictive_worker_does_not_cancel_for_unchanged_action_bucket() -> None
         replace(observed_result, sequence=observed_result.sequence + 1)
     )
 
-    assert not duplicate.enqueued
-    assert duplicate.sequence == first.sequence
-    assert duplicate.suppression_reason == "unchanged_action_bucket"
+    assert duplicate.enqueued
+    assert duplicate.sequence == first.sequence + 1
+    assert duplicate.suppression_reason is None
     risk_observer.release.set()
     completed = None
     for _ in range(100):
-        completed = risk_worker.latest(after_sequence=0)
-        if completed is not None:
+        completed = risk_worker.latest(after_sequence=first.sequence)
+        if completed is not None and completed.sequence == duplicate.sequence:
             break
         threading.Event().wait(0.01)
     assert completed is not None
     assert completed.error is None
+    assert completed.shadow is None
+    assert completed.suppression_reason == "unchanged_action_bucket"
     assert risk_worker.close()
     assert observed_worker.close()
 
@@ -858,3 +862,129 @@ def test_incremental_worker_applies_progress_without_materializing_plan() -> Non
     assert result.plan is not None
     assert len(planner.sequences) == 2
     assert worker.close()
+
+
+def test_incremental_assembler_uses_non_atomic_worker_mirrors(monkeypatch) -> None:
+    config = BeliefKVConfig(
+        hbm_capacity_bytes=1_000,
+        host_capacity_bytes=1_000,
+        reserve_hbm_bytes=0,
+        predictor_enabled=False,
+        shadow_enabled=False,
+    )
+    controller = BeliefKVController(config)
+    controller.process_runtime_events(
+        (
+            _event(1, RuntimeEventKind.WORKFLOW_START),
+            _event(
+                2,
+                RuntimeEventKind.INVOCATION_CREATE,
+                invocation_id="root",
+                context_id="ctx",
+                context_epoch=0,
+            ),
+        )
+    )
+    delta = _delta(controller, event_sequence=0, page_revision=0, ts_ms=2)
+    assembler = IncrementalPolicyInputAssembler(config)
+    calls: list[tuple[str, bool]] = []
+    graph_apply = assembler.graph.apply_batch
+    consumer_apply = assembler.data_consumers.apply_batch
+
+    def record_graph(events, *, atomic=True):
+        calls.append(("graph", atomic))
+        return graph_apply(events, atomic=atomic)
+
+    def record_consumers(events, *, atomic=True):
+        calls.append(("consumers", atomic))
+        return consumer_apply(events, atomic=atomic)
+
+    monkeypatch.setattr(assembler.graph, "apply_batch", record_graph)
+    monkeypatch.setattr(
+        assembler.data_consumers,
+        "apply_batch",
+        record_consumers,
+    )
+    assembler.apply(delta)
+
+    assert calls == [("graph", False), ("consumers", False)]
+
+
+def test_incremental_worker_discards_diverged_mirror() -> None:
+    config = BeliefKVConfig(
+        hbm_capacity_bytes=1_000,
+        host_capacity_bytes=1_000,
+        reserve_hbm_bytes=0,
+        predictor_enabled=False,
+        shadow_enabled=False,
+    )
+    controller = BeliefKVController(config)
+    controller.process_runtime_event(_event(1, RuntimeEventKind.WORKFLOW_START))
+    delta = _delta(controller, event_sequence=0, page_revision=0, ts_ms=1)
+    bad_delta = replace(
+        delta,
+        stamp=replace(delta.stamp, graph_version=delta.stamp.graph_version + 1),
+    )
+    worker = LatestWinsJointPlanWorker(
+        assembler=IncrementalPolicyInputAssembler(config)
+    )
+    submission = worker.submit_delta(bad_delta)
+    result = None
+    for _ in range(100):
+        result = worker.latest(after_sequence=submission.sequence - 1)
+        if result is not None:
+            break
+        threading.Event().wait(0.01)
+
+    assert result is not None
+    assert "graph version diverged" in (result.error or "")
+    assert worker.assembler is None
+    with pytest.raises(RuntimeError, match="no incremental assembler"):
+        worker.submit_delta(delta)
+    assert worker.close()
+
+
+def test_coalesced_frontier_feature_deltas_preserve_updates_and_removals() -> None:
+    config = BeliefKVConfig(
+        hbm_capacity_bytes=1_000,
+        host_capacity_bytes=1_000,
+        reserve_hbm_bytes=0,
+        predictor_enabled=False,
+        shadow_enabled=False,
+    )
+    controller = BeliefKVController(config)
+    controller.process_runtime_event(
+        _event(1, RuntimeEventKind.WORKFLOW_START)
+    )
+    first = replace(
+        _delta(controller, event_sequence=0, page_revision=0, ts_ms=1),
+        planning_requested=False,
+        frontier_features={"a": {"invocation_id": "a", "state": "ready"}},
+    )
+    controller.process_runtime_event(
+        _event(
+            2,
+            RuntimeEventKind.INVOCATION_CREATE,
+            invocation_id="root",
+            context_id="ctx",
+            context_epoch=0,
+        )
+    )
+    second = replace(
+        _delta(
+            controller,
+            event_sequence=first.event_to_sequence,
+            page_revision=first.page_delta.to_revision,
+            ts_ms=2,
+        ),
+        planning_requested=False,
+        frontier_features={"b": {"invocation_id": "b", "state": "wait_tool"}},
+        removed_frontier_invocation_ids=frozenset({"a"}),
+    )
+
+    combined = coalesce_joint_shadow_deltas((first, second))
+
+    assert dict(combined.frontier_features) == {
+        "b": {"invocation_id": "b", "state": "wait_tool"}
+    }
+    assert combined.removed_frontier_invocation_ids == frozenset({"a"})

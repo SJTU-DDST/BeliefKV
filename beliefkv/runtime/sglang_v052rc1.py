@@ -2507,6 +2507,8 @@ class EmbeddedSGLangRuntime:
         self._last_frontier_predictions: dict[str, dict[str, object]] = {}
         self._last_frontier_features: dict[str, dict[str, object]] = {}
         self._last_frontier_model_version: str | None = None
+        self._frontier_feature_delta_initialized = False
+        self._frontier_active_invocation_ids: set[str] = set()
         self._restore_funding_preview_cursor: dict[str, int] = {}
         self._joint_shadow_strict_stale_reasons: Counter[str] = Counter()
         self._joint_shadow_readset_stale_reasons: Counter[str] = Counter()
@@ -15250,23 +15252,9 @@ class EmbeddedSGLangRuntime:
                 ordered_request_count=len(directive.ordered_request_ids),
                 residency_target_count=len(directive.semantic_residency),
             )
-        if any(
-            event.kind
-            in {
-                RuntimeEventKind.SPAWN,
-                RuntimeEventKind.TOOL_START,
-                RuntimeEventKind.TOOL_END,
-                RuntimeEventKind.RETURN,
-                RuntimeEventKind.JOIN_SATISFIED,
-                RuntimeEventKind.REACTIVATE,
-                RuntimeEventKind.MESSAGE,
-                RuntimeEventKind.HANDOFF,
-            }
-            for event in committed_events
-        ):
-            self._joint_shadow_critical_event_sequence = (
-                self.controller.runtime_event_sequence
-            )
+        # Agent events update the RCCG mirror but do not independently request
+        # a global JointPlan. Pressure, beneficiary, transfer, and liveness
+        # revisions below are the only full-replan triggers.
         ledger = self._predictive_action_ledger()
         for event in committed_events:
             if event.kind in {
@@ -16264,16 +16252,14 @@ class EmbeddedSGLangRuntime:
     ) -> bool:
         if not critical_event_pending:
             return False
-        return bool(
-            pressure_now
-            or getattr(self, "predictive_risk_worker", None) is not None
-        )
+        return pressure_now
 
     def _maybe_record_incremental_policy_snapshot(
         self,
         observation: RuntimeResourceObservation,
         worker: LatestWinsJointPlanWorker,
     ) -> None:
+        capture_started_ns = time.perf_counter_ns()
         snapshot_log = getattr(self, "policy_snapshot_log", None)
         snapshot_enabled = snapshot_log is not None and snapshot_log.enabled
         result = worker.latest(
@@ -16358,10 +16344,21 @@ class EmbeddedSGLangRuntime:
         if result is None and not progress_due and not early_full_plan_trigger:
             self._joint_shadow_counts["progress_coalesced"] += 1
             return
-        additional_runnable = self._policy_runtime_runnable(observation.ts_ms)
-        runnable_signature = self._joint_shadow_runnable_signature(
-            additional_runnable
+        refresh_runnable = early_full_plan_trigger or not hasattr(
+            self, "_last_policy_runtime_runnable"
         )
+        if refresh_runnable:
+            additional_runnable = self._policy_runtime_runnable(
+                observation.ts_ms
+            )
+            runnable_signature = self._joint_shadow_runnable_signature(
+                additional_runnable
+            )
+            self._last_policy_runtime_runnable = additional_runnable
+            self._last_policy_runtime_runnable_signature = runnable_signature
+        else:
+            additional_runnable = self._last_policy_runtime_runnable
+            runnable_signature = self._last_policy_runtime_runnable_signature
         control_state = dict(
             self.controller.policy_control_state(observation.ts_ms)
         )
@@ -16428,6 +16425,16 @@ class EmbeddedSGLangRuntime:
             )
         )
         full_plan_requested = early_full_plan_trigger or liveness_changed
+        if full_plan_requested and not refresh_runnable:
+            additional_runnable = self._policy_runtime_runnable(
+                observation.ts_ms
+            )
+            runnable_signature = self._joint_shadow_runnable_signature(
+                additional_runnable
+            )
+            self._last_policy_runtime_runnable = additional_runnable
+            self._last_policy_runtime_runnable_signature = runnable_signature
+            stamp = replace(stamp, runnable_signature=runnable_signature)
         elapsed = capture_elapsed_ms
         watchdog_due = bool(additional_runnable) and progress_due
         # Cheap structural pre-check: every field that can feed the full
@@ -16536,7 +16543,6 @@ class EmbeddedSGLangRuntime:
         trigger = "+".join(trigger_parts)
 
         if changed_snapshot_due:
-            capture_started_ns = time.perf_counter_ns()
             try:
                 event_delta = self.controller.runtime_events_since(
                     self._shadow_event_sequence
@@ -16556,25 +16562,24 @@ class EmbeddedSGLangRuntime:
                         "transfer telemetry journal gap; shadow rebuild is fail-closed"
                     )
                 telemetry = telemetry_delta.telemetry
-                critical_event_kinds = {
-                    RuntimeEventKind.SPAWN,
-                    RuntimeEventKind.TOOL_START,
-                    RuntimeEventKind.TOOL_END,
-                    RuntimeEventKind.RETURN,
-                    RuntimeEventKind.JOIN_SATISFIED,
-                    RuntimeEventKind.REACTIVATE,
-                    RuntimeEventKind.MESSAGE,
-                    RuntimeEventKind.HANDOFF,
-                }
-                predictive_critical = any(
-                    event.kind in critical_event_kinds
-                    for event in event_delta.events
-                ) or bool(telemetry)
-                if pressure_now and not getattr(
-                    self, "_last_predictive_pressure_state", False
-                ):
-                    predictive_critical = True
+                risk_evaluation_requested = bool(
+                    full_plan_requested
+                    and (
+                        pressure_crossing
+                        or beneficiary_changed
+                        or transfer_ack_pending
+                        or full_watchdog_due
+                    )
+                )
                 self._last_predictive_pressure_state = pressure_now
+                (
+                    frontier_feature_updates,
+                    frontier_prediction_updates,
+                    removed_frontier_invocation_ids,
+                ) = self._frontier_feature_delta(
+                    event_delta.events,
+                    now_ms=observation.ts_ms,
+                )
                 urgent_d2h, urgent_h2d = self.controller.transfer_backlog_bytes()
                 published_observation = replace(
                     observation,
@@ -16586,18 +16591,24 @@ class EmbeddedSGLangRuntime:
                         **control_state["action_frontier"],
                         "coverage": action_frontier.coverage().to_dict(),
                     }
-                fairness_accounts = tuple(
-                    WorkflowFairnessReplica(
-                        workflow_id=workflow_id,
-                        weight=account.weight,
-                        attained_service_ms=account.attained_service_ms,
-                        virtual_runtime_ms=account.virtual_runtime,
-                        dispatch_count=account.dispatch_count,
+                if full_plan_requested or not hasattr(
+                    self, "_last_policy_fairness_accounts"
+                ):
+                    fairness_accounts = tuple(
+                        WorkflowFairnessReplica(
+                            workflow_id=workflow_id,
+                            weight=account.weight,
+                            attained_service_ms=account.attained_service_ms,
+                            virtual_runtime_ms=account.virtual_runtime,
+                            dispatch_count=account.dispatch_count,
+                        )
+                        for workflow_id, account in sorted(
+                            self.controller.fairness.accounts.items()
+                        )
                     )
-                    for workflow_id, account in sorted(
-                        self.controller.fairness.accounts.items()
-                    )
-                )
+                    self._last_policy_fairness_accounts = fairness_accounts
+                else:
+                    fairness_accounts = self._last_policy_fairness_accounts
                 delta = JointShadowDelta(
                     event_from_sequence=event_delta.from_sequence,
                     event_to_sequence=event_delta.to_sequence,
@@ -16613,18 +16624,18 @@ class EmbeddedSGLangRuntime:
                     transfer_telemetry=telemetry,
                     capabilities=self._policy_capabilities(),
                     stamp=stamp,
-                    trigger=(
-                        f"{trigger}+predictive_critical"
-                        if predictive_critical
-                        else trigger
-                    ),
+                    trigger=trigger,
                     captured_monotonic_ms=time.monotonic_ns() / 1_000_000.0,
                     planning_requested=full_plan_requested,
-                    frontier_predictions=dict(
-                        self._last_frontier_predictions or {}
+                    risk_evaluation_requested=risk_evaluation_requested,
+                    frontier_predictions=frontier_prediction_updates,
+                    frontier_features=frontier_feature_updates,
+                    removed_frontier_invocation_ids=(
+                        removed_frontier_invocation_ids
                     ),
-                    frontier_features=dict(self._last_frontier_features or {}),
-                    frontier_model_version=self._last_frontier_model_version,
+                    frontier_model_version=getattr(
+                        self, "_last_frontier_model_version", None
+                    ),
                 )
                 submission = worker.submit_delta(delta)
             except Exception as error:
@@ -16679,6 +16690,13 @@ class EmbeddedSGLangRuntime:
                     worker_sequence=submission.sequence,
                     trigger=trigger,
                     planning_requested=full_plan_requested,
+                    risk_evaluation_requested=risk_evaluation_requested,
+                    work_classes=[
+                        item.value for item in sorted(
+                            delta.work_classes,
+                            key=lambda value: value.value,
+                        )
+                    ],
                     event_from_sequence=event_delta.from_sequence,
                     event_to_sequence=event_delta.to_sequence,
                     event_count=len(event_delta.events),
@@ -16740,7 +16758,7 @@ class EmbeddedSGLangRuntime:
         )
 
         predictive_worker = getattr(self, "predictive_risk_worker", None)
-        predictive_trigger = "predictive_critical" in result.trigger.split("+")
+        predictive_trigger = result.risk_evaluation_requested
         if (
             predictive_worker is not None
             and result.plan is not None
@@ -16759,38 +16777,20 @@ class EmbeddedSGLangRuntime:
                     prediction_used=False,
                 )
             else:
-                eligibility = predictive_submission.eligibility
-                self._joint_predictive_counts["eligibility_checked"] += 1
-                if predictive_submission.enqueued:
-                    eligibility_outcome = "eligibility_enqueued"
-                elif predictive_submission.suppression_reason == (
-                    "unchanged_action_bucket"
-                ):
-                    eligibility_outcome = "eligibility_unchanged_bucket"
-                else:
-                    eligibility_outcome = "eligibility_no_candidate"
-                self._joint_predictive_counts[eligibility_outcome] += 1
+                self._joint_predictive_counts["submission_enqueued"] += 1
                 self._joint_shadow_timing_samples.setdefault(
-                    "predictive_eligibility_ms", deque(maxlen=65_536)
-                ).append(eligibility.probe_ms)
+                    "predictive_submit_ms", deque(maxlen=65_536)
+                ).append(predictive_submission.enqueue_ms)
                 self.audit.emit(
-                    "predictive_risk_eligibility",
+                    "predictive_risk_enqueued",
                     observation.ts_ms,
                     worker_sequence=predictive_submission.sequence,
                     source_joint_sequence=result.sequence,
                     source_joint_plan_id=result.plan.plan_id,
                     source_snapshot_id=policy_input.snapshot_id,
-                    eligibility_ms=eligibility.probe_ms,
                     enqueue_ms=predictive_submission.enqueue_ms,
                     enqueued=predictive_submission.enqueued,
-                    prefetch_target_count=len(eligibility.prefetch_targets),
-                    prepare_host_victim_count=len(
-                        eligibility.prepare_host_victims
-                    ),
                     replaced_sequence=predictive_submission.replaced_sequence,
-                    suppression_reason=(
-                        predictive_submission.suppression_reason
-                    ),
                     prediction_used=False,
                 )
         elif predictive_worker is not None and result.plan is not None:
@@ -17011,6 +17011,34 @@ class EmbeddedSGLangRuntime:
         self._joint_shadow_timing_samples.setdefault(
             "predictive_risk_shadow_ms", deque(maxlen=65_536)
         ).append(result.compute_ms)
+        eligibility = getattr(result, "eligibility", None)
+        if eligibility is not None:
+            self._joint_predictive_counts["eligibility_checked"] += 1
+            self._joint_shadow_timing_samples.setdefault(
+                "predictive_eligibility_ms", deque(maxlen=65_536)
+            ).append(result.eligibility_ms)
+            suppression_reason = getattr(result, "suppression_reason", None)
+            if suppression_reason == "unchanged_action_bucket":
+                eligibility_outcome = "eligibility_unchanged_bucket"
+            elif suppression_reason == "no_action_specific_candidate":
+                eligibility_outcome = "eligibility_no_candidate"
+            else:
+                eligibility_outcome = "eligibility_evaluated"
+            self._joint_predictive_counts[eligibility_outcome] += 1
+            self.audit.emit(
+                "predictive_risk_eligibility",
+                observation.ts_ms,
+                worker_sequence=result.sequence,
+                source_joint_sequence=result.source_joint_sequence,
+                source_snapshot_id=result.source_snapshot_id,
+                eligibility_ms=result.eligibility_ms,
+                prefetch_target_count=len(eligibility.prefetch_targets),
+                prepare_host_victim_count=len(
+                    eligibility.prepare_host_victims
+                ),
+                suppression_reason=suppression_reason,
+                prediction_used=False,
+            )
         if result.shadow is not None:
             shadow_payload = result.shadow.to_dict()
             self._maybe_persist_predictive_candidate_snapshot(
@@ -17269,6 +17297,10 @@ class EmbeddedSGLangRuntime:
                 observed_worker_independent=True,
                 prediction_used=False,
             )
+        elif result.suppression_reason is not None:
+            self._joint_predictive_counts[
+                f"risk_shadow_suppressed_{result.suppression_reason}"
+            ] += 1
 
     def _maybe_persist_predictive_candidate_snapshot(
         self,
@@ -20146,6 +20178,51 @@ class EmbeddedSGLangRuntime:
         for name, value in result.plan.prediction_influence:
             self._joint_predictive_counts[name] += value
 
+        plan = result.plan
+        has_physical_actions = bool(
+            plan.semantic_residency
+            or plan.retractions
+            or any(
+                item.action != ResidencyAction.KEEP
+                for item in plan.residency
+            )
+        )
+        if not has_physical_actions:
+            # Seed-only execution/admission is recompiled synchronously from
+            # current native state. Validating the stale asynchronous seed
+            # cannot publish an action and previously dominated the safe point.
+            self._joint_shadow_counts["validation_skipped_seed_only"] += 1
+            self._joint_shadow_timing_samples["validation_ms"].append(0.0)
+            self._publish_online_joint_candidate(
+                result,
+                source=policy_input,
+                validation=None,
+                visible_request_ids=tuple(
+                    item.request_id for item in policy_input.runnable_frontier
+                ),
+                now_ms=observation.ts_ms,
+            )
+            if plan.execution.mode == "observed_joint_idle":
+                self._joint_shadow_counts["idle"] += 1
+                event = "joint_plan_shadow_idle"
+            elif plan.fallback_reason is not None:
+                self._joint_shadow_counts["fallback"] += 1
+                event = "joint_plan_shadow_fallback"
+            else:
+                self._joint_shadow_counts["would_apply"] += 1
+                event = "joint_plan_would_apply"
+            self.audit.emit(
+                event,
+                observation.ts_ms,
+                plan_id=plan.plan_id,
+                planner_mode=plan.planner_mode.value,
+                validation_ms=0.0,
+                validation_skipped_seed_only=True,
+                detail_level="compact",
+                **common,
+            )
+            return
+
         validation_started_ns = time.perf_counter_ns()
         component_validation: JointPlanComponentValidation | None = None
         live_current_state: JointPlanCurrentState | None = None
@@ -20497,30 +20574,121 @@ class EmbeddedSGLangRuntime:
             application_connected=self.config.joint_policy_enabled,
         )
 
-    def _policy_runtime_runnable(
-        self, now_ms: float
-    ) -> tuple[RunnableInvocation, ...]:
-        result: dict[str, RunnableInvocation] = {}
-        frontier_features: dict[str, Any] = {}
-        frontier_predictions: dict[str, Any] = {}
+    def _frontier_feature_delta(
+        self,
+        events: tuple[RuntimeEvent, ...],
+        *,
+        now_ms: float,
+    ) -> tuple[
+        dict[str, dict[str, object]],
+        dict[str, dict[str, object]],
+        frozenset[str],
+    ]:
         if getattr(self.config, "predictive_risk_shadow_enabled", False):
             predictor = getattr(self.controller, "predictor", None)
             if (
                 predictor is not None
                 and getattr(predictor, "frontier_model", None) is not None
             ):
-                active_ids = tuple(
-                    invocation.invocation_id
-                    for invocation in self.controller.graph.invocations.values()
-                    if not invocation.state.terminal
-                )
+                if not self._frontier_feature_delta_initialized:
+                    active_ids = {
+                        invocation.invocation_id
+                        for invocation in self.controller.graph.invocations.values()
+                        if not invocation.state.terminal
+                    }
+                    changed_ids = set(active_ids)
+                    removed: set[str] = set()
+                    self._frontier_active_invocation_ids = set(active_ids)
+                    wait_tool_by_invocation: dict[str, str | None] = {}
+                    family_counts: Counter[str] = Counter()
+                    for invocation in self.controller.graph.invocations.values():
+                        if invocation.state != InvocationState.WAIT_TOOL:
+                            continue
+                        family = invocation.active_tool_family
+                        wait_tool_by_invocation[invocation.invocation_id] = family
+                        if family is not None:
+                            family_counts[family] += 1
+                    self._frontier_wait_tool_family_by_invocation = (
+                        wait_tool_by_invocation
+                    )
+                    self._frontier_active_tool_count = len(
+                        wait_tool_by_invocation
+                    )
+                    self._frontier_tool_family_counts = family_counts
+                    self._frontier_feature_delta_initialized = True
+                else:
+                    changed_ids: set[str] = set()
+                    removed = set()
+                    for event in events:
+                        for invocation_id in (
+                            event.invocation_id,
+                            event.target_invocation_id,
+                            event.parent_invocation_id,
+                            event.return_target_id,
+                            *event.member_invocation_ids,
+                        ):
+                            if invocation_id:
+                                invocation_id = str(invocation_id)
+                                invocation = self.controller.graph.invocations.get(
+                                    invocation_id
+                                )
+                                if invocation is None or invocation.state.terminal:
+                                    removed.add(invocation_id)
+                                    self._frontier_active_invocation_ids.discard(
+                                        invocation_id
+                                    )
+                                else:
+                                    changed_ids.add(invocation_id)
+                                    self._frontier_active_invocation_ids.add(
+                                        invocation_id
+                                    )
+                    wait_tool_by_invocation = getattr(
+                        self,
+                        "_frontier_wait_tool_family_by_invocation",
+                        {},
+                    )
+                    family_counts = getattr(
+                        self, "_frontier_tool_family_counts", Counter()
+                    )
+                    active_tool_count = int(
+                        getattr(self, "_frontier_active_tool_count", 0)
+                    )
+                    for invocation_id in changed_ids | removed:
+                        if invocation_id in wait_tool_by_invocation:
+                            old_family = wait_tool_by_invocation.pop(invocation_id)
+                            active_tool_count = max(0, active_tool_count - 1)
+                            if old_family is not None:
+                                family_counts[old_family] -= 1
+                                if family_counts[old_family] <= 0:
+                                    family_counts.pop(old_family, None)
+                        invocation = self.controller.graph.invocations.get(
+                            invocation_id
+                        )
+                        if (
+                            invocation is not None
+                            and not invocation.state.terminal
+                            and invocation.state == InvocationState.WAIT_TOOL
+                        ):
+                            family = invocation.active_tool_family
+                            wait_tool_by_invocation[invocation_id] = family
+                            active_tool_count += 1
+                            if family is not None:
+                                family_counts[family] += 1
+                    self._frontier_active_tool_count = active_tool_count
                 try:
                     frontier_features = build_invocation_frontier_features(
                         self.controller.graph,
                         predictor,
                         now_ms=now_ms,
-                        invocation_ids=active_ids,
+                        invocation_ids=tuple(sorted(changed_ids)),
+                        active_tool_count=int(
+                            getattr(self, "_frontier_active_tool_count", 0)
+                        ),
+                        family_counts=getattr(
+                            self, "_frontier_tool_family_counts", {}
+                        ),
                     )
+                    frontier_predictions: dict[str, Any] = {}
                     if (
                         self.config.frontier_aware_retraction_shadow_enabled
                         or self.config.frontier_aware_retraction_canary_limit > 0
@@ -20529,32 +20697,38 @@ class EmbeddedSGLangRuntime:
                             invocation_id: predictor.frontier_model.predict(
                                 frontier_features[invocation_id]
                             )
-                            for invocation_id in active_ids[:64]
+                            for invocation_id in sorted(changed_ids)[:64]
                             if invocation_id in frontier_features
                         }
                 except Exception:
-                    # Feature or optional canary prediction failures must never
-                    # affect the scheduler critical path.
-                    frontier_features = {}
-                    frontier_predictions = {}
-        self._last_frontier_features = {
-            invocation_id: features.to_dict()
-            for invocation_id, features in frontier_features.items()
-        }
-        self._last_frontier_predictions = {
-            invocation_id: prediction.to_dict()
-            for invocation_id, prediction in frontier_predictions.items()
-        }
-        frontier_model = getattr(
-            getattr(self.controller, "predictor", None),
-            "frontier_model",
-            None,
-        )
-        self._last_frontier_model_version = (
-            str(frontier_model.model_version)
-            if frontier_model is not None and frontier_features
-            else None
-        )
+                    return {}, {}, frozenset()
+                feature_updates = {
+                    invocation_id: features.to_dict()
+                    for invocation_id, features in frontier_features.items()
+                }
+                prediction_updates = {
+                    invocation_id: prediction.to_dict()
+                    for invocation_id, prediction in frontier_predictions.items()
+                }
+                for invocation_id in removed:
+                    self._last_frontier_features.pop(invocation_id, None)
+                    self._last_frontier_predictions.pop(invocation_id, None)
+                self._last_frontier_features.update(feature_updates)
+                self._last_frontier_predictions.update(prediction_updates)
+                self._last_frontier_model_version = str(
+                    predictor.frontier_model.model_version
+                )
+                return (
+                    feature_updates,
+                    prediction_updates,
+                    frozenset(removed),
+                )
+        return {}, {}, frozenset()
+
+    def _policy_runtime_runnable(
+        self, now_ms: float
+    ) -> tuple[RunnableInvocation, ...]:
+        result: dict[str, RunnableInvocation] = {}
         raw_waiting_queue = getattr(self.scheduler, "waiting_queue", None)
         waiting_queue = (
             tuple(raw_waiting_queue) if raw_waiting_queue is not None else ()
@@ -20601,7 +20775,7 @@ class EmbeddedSGLangRuntime:
                 if invocation is not None
                 else metadata.relation_type
             )
-            prediction = frontier_predictions.get(metadata.invocation_id)
+            prediction = None
             service_ledger = getattr(self, "_lock_service_ledger", None)
             service_record = (
                 service_ledger.progress_record(str(req.rid))

@@ -131,20 +131,23 @@ def build_invocation_frontier_features(
     *,
     now_ms: float,
     invocation_ids: Sequence[str],
+    active_tool_count: int | None = None,
+    family_counts: Mapping[str, int] | None = None,
 ) -> dict[str, LocalFrontierFeatures]:
     """Freeze lightweight online features without running model inference."""
 
-    active_tool_count = sum(
-        1
-        for invocation in graph.invocations.values()
-        if invocation.state == InvocationState.WAIT_TOOL
-    )
-    family_counts = collections.Counter(
-        invocation.active_tool_family
-        for invocation in graph.invocations.values()
-        if invocation.state == InvocationState.WAIT_TOOL
-        and invocation.active_tool_family is not None
-    )
+    if active_tool_count is None or family_counts is None:
+        active_tool_count = sum(
+            1
+            for invocation in graph.invocations.values()
+            if invocation.state == InvocationState.WAIT_TOOL
+        )
+        family_counts = collections.Counter(
+            invocation.active_tool_family
+            for invocation in graph.invocations.values()
+            if invocation.state == InvocationState.WAIT_TOOL
+            and invocation.active_tool_family is not None
+        )
     return {
         invocation_id: _features_for_invocation(
             graph,
