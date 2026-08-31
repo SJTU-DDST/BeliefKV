@@ -18,6 +18,7 @@ from pathlib import Path
 from types import MappingProxyType
 from typing import Any
 
+from beliefkv.control.causal_graph import InvocationState
 from beliefkv.control.controller import BeliefKVController
 from beliefkv.core.config import BeliefKVConfig
 from beliefkv.core.events import (

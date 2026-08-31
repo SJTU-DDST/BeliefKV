@@ -11,6 +11,7 @@ from pathlib import Path
 from types import SimpleNamespace
 from unittest import mock
 
+from beliefkv.control.causal_graph import InvocationState
 from beliefkv.control.controller import BeliefKVController
 from beliefkv.core.config import BeliefKVConfig
 from beliefkv.core.events import (
@@ -312,6 +313,42 @@ class _Sender:
 
     def send_pyobj(self, value):
         self.messages.append(value)
+
+
+def test_frontier_feature_delta_initializes_active_invocations():
+    runtime = EmbeddedSGLangRuntime.__new__(EmbeddedSGLangRuntime)
+    invocation = SimpleNamespace(
+        invocation_id="invocation",
+        state=InvocationState.READY,
+        active_tool_family=None,
+    )
+    frontier_model = SimpleNamespace(model_version="test-model")
+    runtime.controller = SimpleNamespace(
+        graph=SimpleNamespace(invocations={"invocation": invocation}),
+        predictor=SimpleNamespace(frontier_model=frontier_model),
+    )
+    runtime.config = SimpleNamespace(
+        predictive_risk_shadow_enabled=True,
+        frontier_aware_retraction_shadow_enabled=False,
+        frontier_aware_retraction_canary_limit=0,
+    )
+    runtime._last_frontier_features = {}
+    runtime._last_frontier_predictions = {}
+    runtime._frontier_feature_delta_initialized = False
+
+    with mock.patch(
+        "beliefkv.runtime.sglang_v052rc1.build_invocation_frontier_features",
+        return_value={},
+    ):
+        features, predictions, removed = runtime._frontier_feature_delta(
+            (), now_ms=1.0
+        )
+
+    assert features == {}
+    assert predictions == {}
+    assert removed == frozenset()
+    assert runtime._frontier_feature_delta_initialized
+    assert runtime._frontier_active_invocation_ids == {"invocation"}
 
 
 def test_sglang_abort_result_is_openai_schema_complete_and_idempotent():
