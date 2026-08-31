@@ -16639,11 +16639,35 @@ class EmbeddedSGLangRuntime:
                 )
                 submission = worker.submit_delta(delta)
             except Exception as error:
+                error_text = f"{type(error).__name__}: {error}"
                 self._joint_shadow_counts["submission_failed"] += 1
+                submit_errors = getattr(
+                    self, "_joint_shadow_submit_error_reasons", None
+                )
+                if submit_errors is None:
+                    submit_errors = Counter()
+                    self._joint_shadow_submit_error_reasons = submit_errors
+                submit_errors[error_text] += 1
+                if not hasattr(self, "_joint_shadow_first_submit_error"):
+                    self._joint_shadow_first_submit_error = {
+                        "error": error_text,
+                        "trigger": trigger,
+                        "event_sequence": self.controller.runtime_event_sequence,
+                        "page_revision": self.controller.page_index.revision,
+                        "telemetry_sequence": (
+                            self.controller.transfer_telemetry_sequence
+                        ),
+                        "shadow_event_sequence": self._shadow_event_sequence,
+                        "shadow_page_revision": self._shadow_page_revision,
+                        "shadow_telemetry_sequence": (
+                            self._shadow_telemetry_sequence
+                        ),
+                    }
                 self.audit.emit(
                     "joint_plan_shadow_submit_failed",
                     observation.ts_ms,
-                    error=f"{type(error).__name__}: {error}",
+                    audit_level="correctness",
+                    error=error_text,
                     trigger=trigger,
                     application_connected=self.config.joint_policy_enabled,
                 )
@@ -20540,6 +20564,18 @@ class EmbeddedSGLangRuntime:
             worker_closed=worker_closed,
             worker=worker_stats.to_dict(),
             counts=dict(sorted(counts.items())),
+            submit_error_reasons=dict(
+                sorted(
+                    getattr(
+                        self,
+                        "_joint_shadow_submit_error_reasons",
+                        Counter(),
+                    ).items()
+                )
+            ),
+            first_submit_error=getattr(
+                self, "_joint_shadow_first_submit_error", None
+            ),
             strict_global_stale_rate=(
                 counts.get("strict_global_stale", 0) / validated
                 if validated
