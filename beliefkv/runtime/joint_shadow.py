@@ -28,6 +28,7 @@ from beliefkv.policy.reference import (
     MetadataValue,
     PolicyInput,
     RunnableInvocation,
+    RuntimeGraphSnapshot,
 )
 from beliefkv.policy.reference.snapshot_builder import (
     PolicyInputSnapshotBuilder,
@@ -155,6 +156,7 @@ class JointShadowDelta:
     captured_monotonic_ms: float
     planning_requested: bool = True
     risk_evaluation_requested: bool = False
+    risk_trigger_signature: tuple[tuple[str, str, str, int], ...] = ()
     frontier_predictions: Mapping[str, Mapping[str, object]] = field(
         default_factory=dict
     )
@@ -211,6 +213,13 @@ class JointShadowDelta:
         )
         if self.frontier_model_version is not None and not self.frontier_model_version:
             raise ValueError("frontier model version must be non-empty")
+        for risk_class, event_kind, invocation_id, context_epoch in (
+            self.risk_trigger_signature
+        ):
+            if risk_class not in {"prepare", "reentry"}:
+                raise ValueError("unknown predictive risk trigger class")
+            if not event_kind or not invocation_id or context_epoch < 0:
+                raise ValueError("invalid predictive risk trigger identity")
 
     @property
     def work_classes(self) -> frozenset[JointShadowWorkClass]:
@@ -253,6 +262,7 @@ def coalesce_joint_shadow_deltas(
     frontier_features: dict[str, Mapping[str, object]] = {}
     frontier_feature_sources: dict[str, FrontierFeatureSource] = {}
     removed_frontier_ids: set[str] = set()
+    risk_triggers: set[tuple[str, str, str, int]] = set()
 
     for delta in deltas:
         if delta.event_from_sequence != event_cursor:
@@ -301,6 +311,7 @@ def coalesce_joint_shadow_deltas(
         for source in delta.frontier_feature_sources:
             removed_frontier_ids.discard(source.invocation_id)
             frontier_feature_sources[source.invocation_id] = source
+        risk_triggers.update(delta.risk_trigger_signature)
 
     last = deltas[-1]
     page_delta = PageIndexReplicaDelta(
@@ -338,6 +349,7 @@ def coalesce_joint_shadow_deltas(
         risk_evaluation_requested=any(
             item.risk_evaluation_requested for item in deltas
         ),
+        risk_trigger_signature=tuple(sorted(risk_triggers)),
         frontier_predictions=frontier_predictions,
         frontier_features=frontier_features,
         frontier_feature_sources=tuple(frontier_feature_sources.values()),
@@ -376,6 +388,7 @@ class JointShadowResult:
     predictive_shadow_error: str | None = None
     predictive_shadow_compute_ms: float = 0.0
     risk_evaluation_requested: bool = False
+    planning_attempted: bool = True
 
     @property
     def queue_wait_ms(self) -> float:
@@ -635,6 +648,138 @@ class IncrementalPolicyInputAssembler:
             policy_input = replace(policy_input, optional_metadata=metadata)
         return policy_input
 
+    def refresh_predictive_semantics(
+        self,
+        policy_input: PolicyInput,
+        *,
+        risk_trigger_signature: tuple[tuple[str, str, str, int], ...],
+    ) -> PolicyInput:
+        """Refresh only action-relevant semantics around a cached observed seed."""
+
+        delta = self._latest
+        if delta is None:
+            raise RuntimeError("shadow assembler has no safe-point state")
+        snapshot_id = (
+            f"{policy_input.snapshot_id}-risk-{delta.event_to_sequence:08d}"
+        )
+        graph_state = dict(policy_input.runtime_graph.state)
+        base_rccg = graph_state.get("rccg", {})
+        if not isinstance(base_rccg, Mapping):
+            base_rccg = {}
+        rccg = dict(base_rccg)
+        invocations = dict(
+            base_rccg.get("invocations", {})
+            if isinstance(base_rccg.get("invocations", {}), Mapping)
+            else {}
+        )
+        contexts = dict(
+            base_rccg.get("contexts", {})
+            if isinstance(base_rccg.get("contexts", {}), Mapping)
+            else {}
+        )
+        joins = dict(
+            base_rccg.get("joins", {})
+            if isinstance(base_rccg.get("joins", {}), Mapping)
+            else {}
+        )
+        closure_ids = {
+            invocation_id
+            for _risk_class, _event_kind, invocation_id, _context_epoch
+            in risk_trigger_signature
+        }
+        pending = list(closure_ids)
+        while pending:
+            invocation_id = pending.pop()
+            invocation = self.graph.invocations.get(invocation_id)
+            if invocation is None:
+                invocations.pop(invocation_id, None)
+                continue
+            invocations[invocation_id] = self.graph.invocation_snapshot(
+                invocation_id
+            )
+            contexts[invocation.context_id] = self.graph.context_snapshot(
+                invocation.context_id
+            )
+            related = {
+                invocation.parent_invocation_id,
+                invocation.return_target_id,
+                *invocation.child_invocation_ids,
+                *invocation.blocking_child_ids,
+            }
+            if invocation.join_id:
+                join = self.graph.joins.get(invocation.join_id)
+                if join is not None:
+                    joins[invocation.join_id] = self.graph.join_snapshot(
+                        invocation.join_id
+                    )
+                    related.update(join.member_invocation_ids)
+                    related.update(join.waiter_invocation_ids)
+            for related_id in related:
+                if related_id and related_id not in closure_ids:
+                    closure_ids.add(related_id)
+                    pending.append(related_id)
+        rccg["graph_version"] = self.graph.graph_version
+        rccg["invocations"] = invocations
+        rccg["contexts"] = contexts
+        rccg["joins"] = joins
+        graph_state["rccg"] = rccg
+        graph_state["control"] = dict(delta.control_state)
+        resources = policy_input.resources
+        hbm_used_bytes = min(
+            delta.observation.hbm_used_bytes,
+            max(
+                0,
+                delta.observation.hbm_capacity_bytes
+                - resources.hbm_reserved_bytes,
+            ),
+        )
+        metadata = dict(policy_input.optional_metadata)
+        metadata["beliefkv_predictive_risk_trigger"] = MetadataValue(
+            source=MetadataSource.OBSERVED,
+            value={
+                "events": risk_trigger_signature,
+                "event_sequence": delta.event_to_sequence,
+                "closure_invocation_ids": tuple(sorted(closure_ids)),
+            },
+            producer="event_driven_risk_trigger",
+        )
+        return replace(
+            policy_input,
+            runtime_graph=RuntimeGraphSnapshot(
+                snapshot_id=snapshot_id,
+                graph_version=self.graph.graph_version,
+                observed_ts_ms=delta.observation.ts_ms,
+                state=graph_state,
+            ),
+            physical_kv=replace(
+                policy_input.physical_kv,
+                snapshot_id=snapshot_id,
+                gpu_bytes=delta.observation.hbm_used_bytes,
+                cpu_bytes=delta.observation.host_used_bytes,
+            ),
+            resources=replace(
+                resources,
+                snapshot_id=snapshot_id,
+                ts_ms=delta.observation.ts_ms,
+                hbm_capacity_bytes=delta.observation.hbm_capacity_bytes,
+                hbm_used_bytes=hbm_used_bytes,
+                host_free_bytes=delta.observation.host_free_bytes,
+                urgent_d2h_bytes=delta.observation.urgent_d2h_bytes,
+                urgent_h2d_bytes=delta.observation.urgent_h2d_bytes,
+                pcie_utilization=(
+                    delta.observation.pcie_utilization
+                    if delta.observation.pcie_utilization is not None
+                    else resources.pcie_utilization
+                ),
+                gpu_compute_utilization=(
+                    delta.observation.gpu_compute_utilization
+                    if delta.observation.gpu_compute_utilization is not None
+                    else resources.gpu_compute_utilization
+                ),
+            ),
+            optional_metadata=metadata,
+        )
+
     def materialize_predictive_candidates(
         self,
         policy_input: PolicyInput,
@@ -645,15 +790,30 @@ class IncrementalPolicyInputAssembler:
         """Attach a bounded physical overlay for one projected beneficiary."""
 
         beneficiary_request_id = source_plan.projected_beneficiary_request_id
-        if beneficiary_request_id is None or max_victims <= 0:
-            return policy_input, False
         request_by_id = {
             request.request_id: request
             for request in policy_input.runnable_frontier
         }
-        beneficiary = request_by_id.get(beneficiary_request_id)
-        if beneficiary is None:
-            return policy_input, False
+        beneficiary = (
+            request_by_id.get(beneficiary_request_id)
+            if beneficiary_request_id is not None
+            else None
+        )
+        trigger_metadata = policy_input.optional_metadata.get(
+            "beliefkv_predictive_risk_trigger"
+        )
+        trigger_value = (
+            trigger_metadata.value
+            if trigger_metadata is not None
+            and isinstance(trigger_metadata.value, Mapping)
+            else {}
+        )
+        raw_trigger_events = trigger_value.get("events", ())
+        trigger_events = tuple(
+            tuple(item)
+            for item in raw_trigger_events
+            if isinstance(item, (tuple, list)) and len(item) == 4
+        )
         summary_metadata = policy_input.optional_metadata.get(
             "beliefkv_context_physical_summaries"
         )
@@ -683,9 +843,18 @@ class IncrementalPolicyInputAssembler:
             and str(raw.get("state") or "") in wait_states
             and raw.get("context_id")
         }
+        trigger_contexts: dict[str, str] = {}
+        for raw in trigger_events:
+            risk_class, _event_kind, invocation_id, _context_epoch = raw
+            invocation = invocations.get(str(invocation_id))
+            if not isinstance(invocation, Mapping):
+                continue
+            context_id = str(invocation.get("context_id") or "")
+            if context_id:
+                trigger_contexts[context_id] = str(risk_class)
         ranked_victims: list[tuple[int, int, float, str]] = []
         for context_id in parked_contexts:
-            if context_id == beneficiary.context_id:
+            if beneficiary is not None and context_id == beneficiary.context_id:
                 continue
             raw = summaries.get(context_id)
             if not isinstance(raw, Mapping):
@@ -703,12 +872,36 @@ class IncrementalPolicyInputAssembler:
                     context_id,
                 )
             )
-        victim_context_ids = tuple(
-            item[3] for item in sorted(ranked_victims)[:max_victims]
+        triggered_victims = tuple(
+            sorted(
+                context_id
+                for context_id, risk_class in trigger_contexts.items()
+                if risk_class == "prepare" and context_id in parked_contexts
+            )
         )
-        if not victim_context_ids:
+        victim_context_ids = tuple(
+            dict.fromkeys(
+                (*triggered_victims, *(item[3] for item in sorted(ranked_victims)))
+            )
+        )[:max_victims]
+        reentry_context_ids = tuple(
+            sorted(
+                context_id
+                for context_id, risk_class in trigger_contexts.items()
+                if risk_class == "reentry"
+            )
+        )
+        if beneficiary is None and not victim_context_ids and not reentry_context_ids:
             return policy_input, False
-        context_ids = (beneficiary.context_id, *victim_context_ids)
+        context_ids = tuple(
+            dict.fromkeys(
+                (
+                    *((beneficiary.context_id,) if beneficiary is not None else ()),
+                    *reentry_context_ids,
+                    *victim_context_ids,
+                )
+            )
+        )
         delta = self._latest
         if delta is None:
             return policy_input, False
@@ -730,9 +923,29 @@ class IncrementalPolicyInputAssembler:
         metadata["beliefkv_predictive_candidate_scope"] = MetadataValue(
             source=MetadataSource.OBSERVED,
             value={
-                "beneficiary_request_id": beneficiary.request_id,
-                "beneficiary_context_id": beneficiary.context_id,
+                "beneficiary_request_id": (
+                    beneficiary.request_id if beneficiary is not None else None
+                ),
+                "beneficiary_context_id": (
+                    beneficiary.context_id if beneficiary is not None else None
+                ),
                 "victim_context_ids": victim_context_ids,
+                "reentry_context_ids": reentry_context_ids,
+                "victim_generations": tuple(
+                    sorted(
+                        (
+                            context_id,
+                            tuple(
+                                sorted(
+                                    bundle.generation_fingerprint
+                                    for bundle in bundles
+                                    if context_id in bundle.owner_context_ids
+                                )
+                            ),
+                        )
+                        for context_id in victim_context_ids
+                    )
+                ),
                 "page_revision": delta.stamp.page_revision,
                 "topology_revision": delta.stamp.topology_revision,
             },
@@ -873,6 +1086,11 @@ class LatestWinsJointPlanWorker:
         self._last_trigger_capture_ms: float | None = None
         self._planning_dirty = False
         self._mirror_failed = False
+        self._cached_observed_policy_input: PolicyInput | None = None
+        self._cached_observed_plan: JointPlan | None = None
+        self._last_risk_action_signature: tuple[object, ...] | None = None
+        self._risk_dirty = False
+        self._risk_trigger_signatures: set[tuple[str, str, str, int]] = set()
         self._thread = threading.Thread(
             target=self._run,
             name=thread_name,
@@ -1010,6 +1228,9 @@ class LatestWinsJointPlanWorker:
             trigger_interval_ms = None
             planning_budget_ms = None
             planning_attempted = False
+            risk_only = False
+            risk_consumed = False
+            risk_action_signature: tuple[object, ...] | None = None
             publish_result = True
             risk_evaluation_requested = False
             try:
@@ -1020,6 +1241,12 @@ class LatestWinsJointPlanWorker:
                     self.assembler.apply(delta)
                     self._planning_dirty = (
                         self._planning_dirty or delta.planning_requested
+                    )
+                    self._risk_dirty = (
+                        self._risk_dirty or delta.risk_evaluation_requested
+                    )
+                    self._risk_trigger_signatures.update(
+                        delta.risk_trigger_signature
                     )
                     snapshot_delta_apply_ms = (
                         time.perf_counter_ns() - apply_started_ns
@@ -1044,9 +1271,49 @@ class LatestWinsJointPlanWorker:
                         self._last_trigger_capture_ms = (
                             delta.captured_monotonic_ms
                         )
+                    elif (
+                        self._risk_dirty
+                        and self._cached_observed_policy_input is not None
+                        and self._cached_observed_plan is not None
+                    ):
+                        materialize_started_ns = time.perf_counter_ns()
+                        policy_input = self.assembler.refresh_predictive_semantics(
+                            self._cached_observed_policy_input,
+                            risk_trigger_signature=tuple(
+                                sorted(self._risk_trigger_signatures)
+                            ),
+                        )
+                        risk_consumed = True
+                        plan = self._cached_observed_plan
+                        policy_input, risk_evaluation_requested = (
+                            self.assembler.materialize_predictive_candidates(
+                                policy_input,
+                                plan,
+                            )
+                        )
+                        snapshot_materialize_ms = (
+                            time.perf_counter_ns() - materialize_started_ns
+                        ) / 1_000_000.0
+                        snapshot_build_ms = (
+                            snapshot_delta_apply_ms + snapshot_materialize_ms
+                        )
+                        if risk_evaluation_requested:
+                            risk_action_signature = self._risk_action_signature(
+                                policy_input
+                            )
+                            if (
+                                risk_action_signature
+                                == self._last_risk_action_signature
+                            ):
+                                risk_evaluation_requested = False
+                                publish_result = False
+                            else:
+                                risk_only = True
+                        else:
+                            publish_result = False
                     else:
                         publish_result = False
-                if publish_result:
+                if publish_result and not risk_only:
                     planning_attempted = True
                     if policy_input is None:
                         raise RuntimeError(
@@ -1068,18 +1335,32 @@ class LatestWinsJointPlanWorker:
                         )
                     else:
                         plan = self.planner.plan(policy_input)
+                    if plan is not None:
+                        self._cached_observed_policy_input = policy_input
+                        self._cached_observed_plan = plan
                     if (
                         plan is not None
                         and item.deltas
-                        and delta.risk_evaluation_requested
+                        and self._risk_dirty
                         and self.assembler is not None
                     ):
+                        policy_input = self.assembler.refresh_predictive_semantics(
+                            policy_input,
+                            risk_trigger_signature=tuple(
+                                sorted(self._risk_trigger_signatures)
+                            ),
+                        )
                         policy_input, risk_evaluation_requested = (
                             self.assembler.materialize_predictive_candidates(
                                 policy_input,
                                 plan,
                             )
                         )
+                        risk_consumed = True
+                        if risk_evaluation_requested:
+                            risk_action_signature = self._risk_action_signature(
+                                policy_input
+                            )
             except Exception as caught:
                 error = f"{type(caught).__name__}: {caught}"
                 if item.deltas and self.assembler is not None:
@@ -1107,6 +1388,7 @@ class LatestWinsJointPlanWorker:
                 trigger_interval_ms=trigger_interval_ms,
                 planning_budget_ms=planning_budget_ms,
                 risk_evaluation_requested=risk_evaluation_requested,
+                planning_attempted=planning_attempted,
             )
             with self._condition:
                 self._busy = False
@@ -1119,6 +1401,11 @@ class LatestWinsJointPlanWorker:
                 )
                 if planning_attempted:
                     self._planning_dirty = superseded
+                if risk_consumed and not superseded:
+                    self._risk_dirty = False
+                    self._risk_trigger_signatures.clear()
+                    if risk_action_signature is not None:
+                        self._last_risk_action_signature = risk_action_signature
                 if not publish_result:
                     self._apply_only_count += 1
                 elif superseded:
@@ -1129,6 +1416,27 @@ class LatestWinsJointPlanWorker:
                 ):
                     self._latest = result
                 self._condition.notify_all()
+
+    @staticmethod
+    def _risk_action_signature(policy_input: PolicyInput) -> tuple[object, ...]:
+        trigger = policy_input.optional_metadata.get(
+            "beliefkv_predictive_risk_trigger"
+        )
+        scope = policy_input.optional_metadata.get(
+            "beliefkv_predictive_candidate_scope"
+        )
+        trigger_value = trigger.value if trigger is not None else {}
+        scope_value = scope.value if scope is not None else {}
+        if not isinstance(trigger_value, Mapping):
+            trigger_value = {}
+        if not isinstance(scope_value, Mapping):
+            scope_value = {}
+        return (
+            tuple(tuple(item) for item in trigger_value.get("events", ())),
+            scope_value.get("beneficiary_request_id"),
+            tuple(scope_value.get("victim_generations", ())),
+            policy_input.resources.hbm_available_bytes // (64 << 20),
+        )
 
     def _has_newer_pending(self, sequence: int) -> bool:
         with self._condition:
@@ -1272,8 +1580,34 @@ class LatestWinsPredictiveRiskWorker:
                 eligibility = self.observer.eligibility_index.probe(
                     item.policy_input
                 )
+                trigger_metadata = item.policy_input.optional_metadata.get(
+                    "beliefkv_predictive_risk_trigger"
+                )
+                scope_metadata = item.policy_input.optional_metadata.get(
+                    "beliefkv_predictive_candidate_scope"
+                )
+                trigger_value = (
+                    trigger_metadata.value
+                    if trigger_metadata is not None
+                    and isinstance(trigger_metadata.value, Mapping)
+                    else {}
+                )
+                scope_value = (
+                    scope_metadata.value
+                    if scope_metadata is not None
+                    and isinstance(scope_metadata.value, Mapping)
+                    else {}
+                )
                 trigger_signature = (
-                    eligibility.trigger_signature
+                    (
+                        tuple(
+                            tuple(item)
+                            for item in trigger_value.get("events", ())
+                        ),
+                        scope_value.get("beneficiary_request_id"),
+                        tuple(scope_value.get("victim_generations", ())),
+                        eligibility.trigger_signature,
+                    )
                     if eligibility.has_candidate
                     else ("no_candidate",)
                 )

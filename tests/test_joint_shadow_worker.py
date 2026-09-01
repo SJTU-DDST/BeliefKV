@@ -141,6 +141,18 @@ class _FailingPlanner:
         raise ValueError("expected failure")
 
 
+class _CountingPlanner:
+    def __init__(self) -> None:
+        self.call_count = 0
+        self.delegate = ObservedJointPlanner(
+            JointPlannerConfig(max_planning_budget_ms=100.0)
+        )
+
+    def plan(self, policy_input):
+        self.call_count += 1
+        return self.delegate.plan(policy_input)
+
+
 class _FixedEligibilityIndex:
     def probe(self, policy_input):
         return PredictiveEligibility(
@@ -909,6 +921,200 @@ def test_incremental_assembler_uses_non_atomic_worker_mirrors(monkeypatch) -> No
     assembler.apply(delta)
 
     assert calls == [("graph", False), ("consumers", False)]
+
+
+def test_risk_event_reuses_cached_observed_seed_without_replanning() -> None:
+    config = BeliefKVConfig(
+        hbm_capacity_bytes=1_000,
+        host_capacity_bytes=1_000,
+        reserve_hbm_bytes=0,
+        predictor_enabled=False,
+        shadow_enabled=False,
+        performance_mode=True,
+    )
+    controller = BeliefKVController(config)
+    controller.process_runtime_events(
+        (
+            _event(1, RuntimeEventKind.WORKFLOW_START),
+            _event(
+                2,
+                RuntimeEventKind.INVOCATION_CREATE,
+                invocation_id="root",
+                context_id="ctx",
+                context_epoch=0,
+            ),
+        )
+    )
+    handle = PageHandle(1, 0)
+    controller.page_index.register_page(handle, size_bytes=100)
+    controller.page_index.bind_pages("ctx", 0, (handle,))
+    planner = _CountingPlanner()
+    worker = LatestWinsJointPlanWorker(
+        planner,
+        assembler=IncrementalPolicyInputAssembler(config),
+    )
+    initial = _delta(controller, event_sequence=0, page_revision=0, ts_ms=2)
+    initial_submission = worker.submit_delta(initial)
+    initial_result = None
+    for _ in range(100):
+        initial_result = worker.latest(
+            after_sequence=initial_submission.sequence - 1
+        )
+        if initial_result is not None:
+            break
+        threading.Event().wait(0.01)
+    assert initial_result is not None
+    assert initial_result.planning_attempted
+
+    controller.process_runtime_event(
+        _event(
+            3,
+            RuntimeEventKind.TOOL_START,
+            invocation_id="root",
+            context_id="ctx",
+            context_epoch=0,
+            attributes={"tool_family": "shell"},
+        )
+    )
+    risk = replace(
+        _delta(
+            controller,
+            event_sequence=initial.event_to_sequence,
+            page_revision=initial.page_delta.to_revision,
+            ts_ms=3,
+            planning_requested=False,
+        ),
+        risk_evaluation_requested=True,
+        risk_trigger_signature=(("prepare", "tool_start", "root", 0),),
+    )
+    risk_submission = worker.submit_delta(risk)
+    risk_result = None
+    for _ in range(100):
+        risk_result = worker.latest(after_sequence=initial_submission.sequence)
+        if risk_result is not None and risk_result.sequence == risk_submission.sequence:
+            break
+        threading.Event().wait(0.01)
+
+    assert risk_result is not None
+    assert risk_result.risk_evaluation_requested
+    assert not risk_result.planning_attempted
+    assert planner.call_count == 1
+    trigger = risk_result.policy_input.optional_metadata[
+        "beliefkv_predictive_risk_trigger"
+    ].value
+    assert trigger["events"] == (("prepare", "tool_start", "root", 0),)
+    scope = risk_result.policy_input.optional_metadata[
+        "beliefkv_predictive_candidate_scope"
+    ].value
+    assert scope["victim_context_ids"] == ("ctx",)
+    assert worker.close()
+
+
+def test_semantic_progress_does_not_erase_inflight_risk_trigger() -> None:
+    config = BeliefKVConfig(
+        hbm_capacity_bytes=1_000,
+        host_capacity_bytes=1_000,
+        reserve_hbm_bytes=0,
+        predictor_enabled=False,
+        shadow_enabled=False,
+        performance_mode=True,
+    )
+    controller = BeliefKVController(config)
+    controller.process_runtime_events(
+        (
+            _event(1, RuntimeEventKind.WORKFLOW_START),
+            _event(
+                2,
+                RuntimeEventKind.INVOCATION_CREATE,
+                invocation_id="root",
+                context_id="ctx",
+                context_epoch=0,
+            ),
+        )
+    )
+    handle = PageHandle(1, 0)
+    controller.page_index.register_page(handle, size_bytes=100)
+    controller.page_index.bind_pages("ctx", 0, (handle,))
+    assembler = IncrementalPolicyInputAssembler(config)
+    planner = _CountingPlanner()
+    worker = LatestWinsJointPlanWorker(planner, assembler=assembler)
+    initial = _delta(controller, event_sequence=0, page_revision=0, ts_ms=2)
+    initial_submission = worker.submit_delta(initial)
+    for _ in range(100):
+        if worker.latest(after_sequence=initial_submission.sequence - 1) is not None:
+            break
+        threading.Event().wait(0.01)
+
+    started = threading.Event()
+    release = threading.Event()
+    original_materialize = assembler.materialize_predictive_candidates
+    materialize_calls = 0
+
+    def blocking_materialize(*args, **kwargs):
+        nonlocal materialize_calls
+        materialize_calls += 1
+        if materialize_calls == 1:
+            started.set()
+            assert release.wait(timeout=2)
+        return original_materialize(*args, **kwargs)
+
+    assembler.materialize_predictive_candidates = blocking_materialize
+    controller.process_runtime_event(
+        _event(
+            3,
+            RuntimeEventKind.TOOL_START,
+            invocation_id="root",
+            context_id="ctx",
+            context_epoch=0,
+            attributes={"tool_family": "shell"},
+        )
+    )
+    risk = replace(
+        _delta(
+            controller,
+            event_sequence=initial.event_to_sequence,
+            page_revision=initial.page_delta.to_revision,
+            ts_ms=3,
+            planning_requested=False,
+        ),
+        risk_evaluation_requested=True,
+        risk_trigger_signature=(("prepare", "tool_start", "root", 0),),
+    )
+    worker.submit_delta(risk)
+    assert started.wait(timeout=2)
+
+    controller.process_runtime_event(
+        _event(
+            4,
+            RuntimeEventKind.STRUCTURED_ACTION,
+            invocation_id="root",
+            context_id="ctx",
+            context_epoch=0,
+        )
+    )
+    semantic = _delta(
+        controller,
+        event_sequence=risk.event_to_sequence,
+        page_revision=risk.page_delta.to_revision,
+        ts_ms=4,
+        planning_requested=False,
+    )
+    semantic_submission = worker.submit_delta(semantic)
+    release.set()
+    result = None
+    for _ in range(200):
+        result = worker.latest(after_sequence=initial_submission.sequence)
+        if result is not None and result.sequence == semantic_submission.sequence:
+            break
+        threading.Event().wait(0.01)
+
+    assert result is not None
+    assert result.sequence == semantic_submission.sequence
+    assert result.risk_evaluation_requested
+    assert not result.planning_attempted
+    assert materialize_calls == 2
+    assert planner.call_count == 1
+    assert worker.close()
 
 
 def test_incremental_worker_discards_diverged_mirror() -> None:

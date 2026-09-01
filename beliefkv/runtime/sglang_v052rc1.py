@@ -16258,6 +16258,69 @@ class EmbeddedSGLangRuntime:
             return False
         return pressure_now
 
+    def _joint_shadow_predictive_risk_triggers(
+        self,
+        events: tuple[RuntimeEvent, ...],
+    ) -> tuple[tuple[str, str, str, int], ...]:
+        """Classify only causal boundaries that can change a KV action window."""
+
+        graph = self.controller.graph
+        if not all(
+            hasattr(graph, name)
+            for name in ("invocations", "contexts", "joins")
+        ):
+            return ()
+        triggers: set[tuple[str, str, str, int]] = set()
+
+        def add(risk_class: str, event_kind: str, invocation_id: str | None) -> None:
+            if not invocation_id:
+                return
+            invocation = graph.invocations.get(str(invocation_id))
+            if invocation is None or invocation.state.terminal:
+                return
+            context = graph.contexts.get(invocation.context_id)
+            if context is None:
+                return
+            triggers.add(
+                (
+                    risk_class,
+                    event_kind,
+                    invocation.invocation_id,
+                    context.epoch,
+                )
+            )
+
+        for event in events:
+            if event.kind == RuntimeEventKind.TOOL_START:
+                invocation = graph.invocations.get(str(event.invocation_id or ""))
+                if invocation is not None and invocation.state == InvocationState.WAIT_TOOL:
+                    add("prepare", event.kind.value, invocation.invocation_id)
+            elif event.kind == RuntimeEventKind.JOIN_WAIT:
+                invocation = graph.invocations.get(str(event.invocation_id or ""))
+                if invocation is not None and invocation.state == InvocationState.WAIT_JOIN:
+                    add("prepare", event.kind.value, invocation.invocation_id)
+            elif event.kind in {RuntimeEventKind.CALL, RuntimeEventKind.SPAWN}:
+                parent = graph.invocations.get(str(event.invocation_id or ""))
+                if parent is not None and parent.state == InvocationState.WAIT_CHILD:
+                    add("prepare", event.kind.value, parent.invocation_id)
+            elif event.kind == RuntimeEventKind.RETURN:
+                returned = graph.invocations.get(str(event.invocation_id or ""))
+                target_id = event.return_target_id or (
+                    returned.return_target_id if returned is not None else None
+                )
+                add("reentry", event.kind.value, target_id)
+            elif event.kind == RuntimeEventKind.JOIN_SATISFIED:
+                join = graph.joins.get(str(event.join_id or ""))
+                if join is not None:
+                    for waiter_id in join.waiter_invocation_ids:
+                        add("reentry", event.kind.value, waiter_id)
+            elif event.kind in {
+                RuntimeEventKind.TOOL_END,
+                RuntimeEventKind.REACTIVATE,
+            }:
+                add("reentry", event.kind.value, event.invocation_id)
+        return tuple(sorted(triggers))
+
     def _publish_joint_semantic_delta(
         self,
         observation: RuntimeResourceObservation,
@@ -16283,6 +16346,13 @@ class EmbeddedSGLangRuntime:
                 )
             if not event_delta.events:
                 return False
+            risk_trigger_signature = (
+                self._joint_shadow_predictive_risk_triggers(event_delta.events)
+            )
+            risk_evaluation_requested = bool(
+                risk_trigger_signature
+                and getattr(self, "predictive_risk_worker", None) is not None
+            )
             base_stamp = self._last_policy_state_stamp
             page_delta = PageIndexReplicaDelta(
                 from_revision=self._shadow_page_revision,
@@ -16332,7 +16402,8 @@ class EmbeddedSGLangRuntime:
                 trigger=trigger,
                 captured_monotonic_ms=time.monotonic_ns() / 1_000_000.0,
                 planning_requested=False,
-                risk_evaluation_requested=False,
+                risk_evaluation_requested=risk_evaluation_requested,
+                risk_trigger_signature=risk_trigger_signature,
                 frontier_predictions=frontier_prediction_updates,
                 frontier_features=frontier_feature_updates,
                 frontier_feature_sources=frontier_feature_sources,
@@ -16383,7 +16454,11 @@ class EmbeddedSGLangRuntime:
             time.perf_counter_ns() - capture_started_ns
         ) / 1_000_000.0
         self._shadow_event_sequence = event_delta.to_sequence
-        self._joint_shadow_counts["semantic_only_submitted"] += 1
+        self._joint_shadow_counts[
+            "risk_event_submitted"
+            if risk_evaluation_requested
+            else "semantic_only_submitted"
+        ] += 1
         self._joint_shadow_counts["apply_only_submitted"] += 1
         self._joint_shadow_counts["submitted"] += 1
         if submission.replaced_sequence is not None:
@@ -16401,7 +16476,8 @@ class EmbeddedSGLangRuntime:
             worker_sequence=submission.sequence,
             trigger=trigger,
             planning_requested=False,
-            risk_evaluation_requested=False,
+            risk_evaluation_requested=risk_evaluation_requested,
+            risk_trigger_count=len(risk_trigger_signature),
             work_classes=[
                 item.value
                 for item in sorted(
@@ -16746,13 +16822,22 @@ class EmbeddedSGLangRuntime:
                         "transfer telemetry journal gap; shadow rebuild is fail-closed"
                     )
                 telemetry = telemetry_delta.telemetry
+                risk_trigger_signature = (
+                    self._joint_shadow_predictive_risk_triggers(
+                        event_delta.events
+                    )
+                )
                 risk_evaluation_requested = bool(
-                    full_plan_requested
+                    getattr(self, "predictive_risk_worker", None) is not None
                     and (
-                        pressure_crossing
-                        or beneficiary_changed
-                        or transfer_ack_pending
-                        or full_watchdog_due
+                        risk_trigger_signature
+                        or full_plan_requested
+                        and (
+                            pressure_crossing
+                            or beneficiary_changed
+                            or transfer_ack_pending
+                            or full_watchdog_due
+                        )
                     )
                 )
                 self._last_predictive_pressure_state = pressure_now
@@ -16816,6 +16901,7 @@ class EmbeddedSGLangRuntime:
                     captured_monotonic_ms=time.monotonic_ns() / 1_000_000.0,
                     planning_requested=full_plan_requested,
                     risk_evaluation_requested=risk_evaluation_requested,
+                    risk_trigger_signature=risk_trigger_signature,
                     frontier_predictions=frontier_prediction_updates,
                     frontier_features=frontier_feature_updates,
                     frontier_feature_sources=frontier_feature_sources,
@@ -16911,6 +16997,7 @@ class EmbeddedSGLangRuntime:
                     trigger=trigger,
                     planning_requested=full_plan_requested,
                     risk_evaluation_requested=risk_evaluation_requested,
+                    risk_trigger_count=len(risk_trigger_signature),
                     work_classes=[
                         item.value for item in sorted(
                             delta.work_classes,
@@ -16970,10 +17057,18 @@ class EmbeddedSGLangRuntime:
                 application_connected=self.config.joint_policy_enabled,
             )
             return
-        self._latest_observed_policy_input = policy_input
+        risk_only_result = bool(
+            result.risk_evaluation_requested
+            and not result.planning_attempted
+        )
+        if not risk_only_result:
+            self._latest_observed_policy_input = policy_input
+        current_observed_policy_input = getattr(
+            self, "_latest_observed_policy_input", None
+        )
         self._drain_predictive_risk_result(
             observation,
-            current_policy_input=policy_input,
+            current_policy_input=current_observed_policy_input,
             current_transfer_epoch=stamp.transfer_epoch,
         )
 
@@ -17015,6 +17110,26 @@ class EmbeddedSGLangRuntime:
                 )
         elif predictive_worker is not None and result.plan is not None:
             self._joint_predictive_counts["noncritical_trigger_skipped"] += 1
+
+        if risk_only_result:
+            self._joint_shadow_counts["risk_only_result_published"] += 1
+            self._joint_shadow_timing_samples.setdefault(
+                "risk_event_delta_apply_ms", deque(maxlen=65_536)
+            ).append(result.snapshot_delta_apply_ms)
+            self._joint_shadow_timing_samples.setdefault(
+                "risk_event_materialize_ms", deque(maxlen=65_536)
+            ).append(result.snapshot_materialize_ms)
+            self.audit.emit(
+                "predictive_risk_event_materialized",
+                observation.ts_ms,
+                worker_sequence=result.sequence,
+                source_snapshot_id=policy_input.snapshot_id,
+                trigger=result.trigger,
+                delta_apply_ms=result.snapshot_delta_apply_ms,
+                materialize_ms=result.snapshot_materialize_ms,
+                prediction_used=False,
+            )
+            return
 
         sequence = 0
         trace_enqueue_ms = 0.0

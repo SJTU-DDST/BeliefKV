@@ -910,16 +910,7 @@ class RuntimeCausalContextGraph:
                 for key, value in sorted(self.invocations.items())
             },
             "contexts": {
-                key: {
-                    "workflow_id": value.workflow_id,
-                    "epoch": value.epoch,
-                    "created_ts_ms": value.created_ts_ms,
-                    "updated_ts_ms": value.updated_ts_ms,
-                    "parent_context_id": value.parent_context_id,
-                    "context_mode": value.context_mode.value,
-                    "invocation_ids": sorted(value.invocation_ids),
-                    "persistent": value.persistent,
-                }
+                key: self._context_snapshot(value)
                 for key, value in sorted(self.contexts.items())
             },
             "joins": {
@@ -948,6 +939,12 @@ class RuntimeCausalContextGraph:
 
         value = self.joins.get(join_id)
         return self._join_snapshot(value) if value is not None else {}
+
+    def context_snapshot(self, context_id: str) -> dict[str, object]:
+        """Serialize one context without materializing the complete RCCG."""
+
+        value = self.contexts.get(context_id)
+        return self._context_snapshot(value) if value is not None else {}
 
     @staticmethod
     def _invocation_snapshot(value: InvocationRecord) -> dict[str, object]:
@@ -984,4 +981,17 @@ class RuntimeCausalContextGraph:
             "waiters": sorted(value.waiter_invocation_ids),
             "mode": value.mode.value,
             "satisfied": value.satisfied,
+        }
+
+    @staticmethod
+    def _context_snapshot(value: ContextRecord) -> dict[str, object]:
+        return {
+            "workflow_id": value.workflow_id,
+            "epoch": value.epoch,
+            "created_ts_ms": value.created_ts_ms,
+            "updated_ts_ms": value.updated_ts_ms,
+            "parent_context_id": value.parent_context_id,
+            "context_mode": value.context_mode.value,
+            "invocation_ids": sorted(value.invocation_ids),
+            "persistent": value.persistent,
         }

@@ -466,6 +466,117 @@ def test_semantic_delta_preserves_physical_and_telemetry_cursors():
     assert runtime._shadow_telemetry_sequence == 13
 
 
+def test_predictive_risk_triggers_follow_park_and_reentry_boundaries():
+    runtime = EmbeddedSGLangRuntime.__new__(EmbeddedSGLangRuntime)
+    runtime.controller = BeliefKVController()
+    initial = (
+        RuntimeEvent(
+            "workflow-start",
+            1.0,
+            RuntimeEventKind.WORKFLOW_START,
+            "workflow",
+        ),
+        RuntimeEvent(
+            "root-create",
+            2.0,
+            RuntimeEventKind.INVOCATION_CREATE,
+            "workflow",
+            invocation_id="root",
+            context_id="ctx-root",
+            context_epoch=0,
+        ),
+    )
+    runtime.controller.process_runtime_events(initial)
+
+    tool_start = RuntimeEvent(
+        "tool-start",
+        3.0,
+        RuntimeEventKind.TOOL_START,
+        "workflow",
+        invocation_id="root",
+        context_id="ctx-root",
+        context_epoch=0,
+        attributes={"tool_family": "shell"},
+    )
+    runtime.controller.process_runtime_event(tool_start)
+    assert runtime._joint_shadow_predictive_risk_triggers((tool_start,)) == (
+        ("prepare", "tool_start", "root", 0),
+    )
+
+    tool_end = RuntimeEvent(
+        "tool-end",
+        4.0,
+        RuntimeEventKind.TOOL_END,
+        "workflow",
+        invocation_id="root",
+        context_id="ctx-root",
+        context_epoch=0,
+    )
+    runtime.controller.process_runtime_event(tool_end)
+    assert runtime._joint_shadow_predictive_risk_triggers((tool_end,)) == (
+        ("reentry", "tool_end", "root", 0),
+    )
+
+    child_create = RuntimeEvent(
+        "child-create",
+        5.0,
+        RuntimeEventKind.INVOCATION_CREATE,
+        "workflow",
+        invocation_id="child",
+        context_id="ctx-child",
+        context_epoch=0,
+        parent_invocation_id="root",
+        parent_context_id="ctx-root",
+    )
+    spawn = RuntimeEvent(
+        "spawn",
+        6.0,
+        RuntimeEventKind.SPAWN,
+        "workflow",
+        invocation_id="root",
+        target_invocation_id="child",
+        execution_mode=ExecutionMode.BACKGROUND,
+    )
+    join_create = RuntimeEvent(
+        "join-create",
+        7.0,
+        RuntimeEventKind.JOIN_CREATE,
+        "workflow",
+        join_id="join",
+        member_invocation_ids=("child",),
+        attributes={"mode": "all"},
+    )
+    join_wait = RuntimeEvent(
+        "join-wait",
+        8.0,
+        RuntimeEventKind.JOIN_WAIT,
+        "workflow",
+        invocation_id="root",
+        join_id="join",
+    )
+    runtime.controller.process_runtime_events(
+        (child_create, spawn, join_create, join_wait)
+    )
+    assert runtime._joint_shadow_predictive_risk_triggers((join_wait,)) == (
+        ("prepare", "join_wait", "root", 0),
+    )
+
+    child_return = RuntimeEvent(
+        "child-return",
+        9.0,
+        RuntimeEventKind.RETURN,
+        "workflow",
+        invocation_id="child",
+        context_id="ctx-child",
+        context_epoch=0,
+        return_target_id="root",
+    )
+    runtime.controller.process_runtime_event(child_return)
+    assert runtime._joint_shadow_predictive_risk_triggers((child_return,)) == (
+        ("reentry", "return", "root", 0),
+    )
+
+
 def test_sglang_abort_result_is_openai_schema_complete_and_idempotent():
     from sglang.srt.managers.io_struct import AbortReq
     from sglang.srt.managers.tokenizer_manager import TokenizerManager
