@@ -2,6 +2,26 @@
 
 更新日期：2026-09-01
 
+## 2026-09-01：事件驱动 Risk GPU gate 通过机制门槛，价值门槛未通过
+
+提交 `0c86eb6` 补齐独立事件驱动 RISK_EVAL：`TOOL_START`、WAIT_CHILD/JOIN、
+RETURN/JOIN_SATISFIED/TOOL_RETURN 不再依赖 pressure crossing 或 30 秒 watchdog，
+也不重新触发全局 JointPlan。64-root H200 高压运行形成 192 invocation/context、
+HBM 峰值 99.9998% 和最大 68.73 GB migratable KV；1,538 次 risk trigger 进入
+Joint worker，Predictive worker 8/8 完成且无积压。
+
+同步控制面继续合格：safe-point capture P95 为 0.314 ms、predictive submit P95
+为 0.023 ms。完整 plan 仅 9/5,923=0.152%，但其 snapshot/compute P95 仍约
+292/603 ms。异步 risk P50/P95 为 336/636 ms，trigger-to-validation P95 为
+2.61 秒。
+
+预测价值门槛未通过。在线 6 个 PREPARE_HOST 候选全部为负收益；收窄错误的全局
+transfer-epoch freshness 后，4 个冻结高压 snapshot 重放仍为 0 positive/eligible，
+其 latest feasible D2H start 已落后约 0.91--0.98 秒。当前第一阻塞项转为让最新
+bounded observed seed 更早发布 projected beneficiary，而非继续优化 semantic-only
+safe point。predictive physical action 保持关闭。完整记录见
+`docs/experiments/beliefkv_p6_event_driven_risk_shadow64_2026-09-01_zh.md`。
+
 ## 2026-09-01：P6 Semantic-Delta GPU 控制面门槛通过
 
 提交 `deac101` 将普通 RCCG 事件改为真正的 semantic-only publication：

@@ -1162,8 +1162,10 @@ def validate_predictive_certificate(
         raw.get("required_host_free_bytes", 0)
     ):
         reasons.append("host_capacity_floor")
+    action = str(raw.get("action") or "")
     if (
-        current_transfer_epoch is not None
+        action == PredictiveActionKind.RECLAIM_AND_PREFETCH.value
+        and current_transfer_epoch is not None
         and current_transfer_epoch != int(raw.get("transfer_epoch", -1))
     ):
         reasons.append("transfer_epoch")

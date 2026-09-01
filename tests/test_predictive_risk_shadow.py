@@ -1827,6 +1827,19 @@ def test_action_certificate_ignores_unrelated_global_revision() -> None:
         unrelated_revision,
         current_transfer_epoch=7,
     ) == ()
+    assert validate_predictive_certificate(
+        certificate,
+        unrelated_revision,
+        current_transfer_epoch=8,
+    ) == ()
+
+    destructive_certificate = dict(certificate)
+    destructive_certificate["action"] = "reclaim_and_prefetch"
+    assert validate_predictive_certificate(
+        destructive_certificate,
+        unrelated_revision,
+        current_transfer_epoch=8,
+    ) == ("transfer_epoch",)
 
     changed_bundles = tuple(
         replace(bundle, generation_fingerprint="changed-generation")
