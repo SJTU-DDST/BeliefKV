@@ -1,6 +1,29 @@
 # BeliefKV 最新架构与实现状态
 
-更新日期：2026-09-01
+更新日期：2026-09-02
+
+## 2026-09-02：Bounded-Hint 高压 Gate 未达到 Canary 门槛
+
+64-root H200 predictor-only shadow 持续约 41.4 分钟，HBM 峰值 99.9995%，高压窗口
+约 13.79 分钟，停止前保持 32 running / 95 waiting。bounded observed-seed hint 共
+发布 2,039 次，Predictive worker 1,199/1,199 terminal，受控 shutdown 无遗留事务。
+
+本轮没有产生 positive、fresh-positive 或 timely-positive package，因此没有运行
+`PREPARE_HOST` canary。475 次 risk worker failure 可复现为 compact RCCG 缺少可选
+execution slot witness；修复后 snapshot replay 能正常生成一个 PREPARE 候选，但
+4/4 scenario 均为 `projected_beneficiary_hbm_block_unavailable`，候选仍为零收益。
+
+当前实现将 beneficiary 与最多两个 victim 作为必需 BeliefScope 节点并 fail closed，
+可选 slot witness 仅在 mirror 中存在时加入；worker 同时刷新 candidate-local RCCG
+closure。hint 的 seed generation 更新继续同步 mirror，但只有
+request/context/epoch/startup/growth 变化才触发新 RISK_EVAL，避免重复评估同一动作。
+
+高压路径的控制面仍未合格：safe-point capture P95 为 20.00 ms，risk event
+materialization P95 为 60.21 ms；`no_live_victim_bundle=807`，enqueue physical mirror
+age P95 为 1.36 秒。下一步仅实现 `1 beneficiary x 2 victims` action-local physical
+overlay，不恢复全局 PageIndex。只有再次获得 fresh-positive 且 validation 早于
+latest-start，才允许单笔 PREPARE canary。完整记录见
+`docs/experiments/beliefkv_p6_bounded_hint_high_pressure_shadow64_2026-09-02_zh.md`。
 
 ## 2026-09-01：bounded observed seed beneficiary 已接入 Risk worker
 
