@@ -102,3 +102,32 @@ page delta 补齐、PageIndex 和 shutdown 正确性。
 
 修改后先重放本轮 4 个冻结 snapshot。只有 projected block deadline 转为未来且出现
 正收益 package，才再运行一轮短高压 shadow；在此之前不开放任何 predictive action。
+
+## 后续实施结果
+
+已完成上述两项代码修改：
+
+1. 新增 bounded observed seed beneficiary hint。它只携带一个 deferred request 的
+   plan/request/context identity、context epoch 和 startup/growth demand；worker 与当前
+   runnable frontier 逐字段匹配后才接受。candidate package 使用 bounded seed plan ID
+   作为 causal generation，safe point 继续执行 beneficiary 和物理 bundle 重验证。
+2. 冻结 replay 遇到在线 `beliefkv_predictive_candidate_scope` 时不再重新选择 victim，
+   transfer estimate 输出字段与在线 snapshot builder 对齐。
+
+新 replay 产物为：
+
+- `experiments/shadow/p6_event_driven_risk_shadow64/20260901T135927Z/`
+  `predictive_risk_replay_bounded_seed_scope_fix_summary.json`
+- 4 个 snapshot、4 个 PREPARE candidate；positive/eligible 仍为 0/0；
+- 16 个 scenario 中 10 个 `shadow_completes_after_pressure`，6 个
+  `projected_beneficiary_hbm_block_unavailable`；
+- latest-start 仍为 `-984.33` 至 `-913.41 ms`。
+
+旧 snapshot 在新增 hint 之前生成，本身没有 bounded seed evidence，因此该 replay 只能
+证明旧时点仍无 recourse，不能测量新 hint 能提前多少。它没有达到“未来 deadline 且
+正收益”的 GPU 启动门槛，本轮因此不启动新 GPU shadow，也不开放 PREPARE canary。
+
+历史在线 aggregate 的 `shape_unsupported` 与冻结 snapshot replay 的 shape-supported
+证据仍不能由旧产物完整归因：performance snapshot 省略了在线 curve snapshot，无法
+重建当时全部内存态。代码层已统一 candidate scope 和 serializer；其在线一致性留待
+下一次本来就满足 temporal gate 的运行一并验证，不单独增加 GPU 实验。

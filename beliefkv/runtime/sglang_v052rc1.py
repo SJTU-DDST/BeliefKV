@@ -131,6 +131,7 @@ from beliefkv.runtime.joint_shadow import (
     JointShadowStateStamp,
     LatestWinsJointPlanWorker,
     LatestWinsPredictiveRiskWorker,
+    ObservedSeedBeneficiaryHint,
     WorkflowFairnessReplica,
 )
 from beliefkv.runtime.lock_service import (
@@ -2532,6 +2533,15 @@ class EmbeddedSGLangRuntime:
         self._current_joint_plan_epoch = None
         self._current_online_joint_view: OnlineJointPlanView | None = None
         self._current_online_joint_decision: OnlineJointPlanDecision | None = None
+        self._latest_bounded_seed_runnable: tuple[RunnableInvocation, ...] = ()
+        self._latest_bounded_seed_priority_request_ids: tuple[str, ...] = ()
+        self._observed_seed_hint_publication_initialized = False
+        self._last_published_observed_seed_hint_signature: (
+            tuple[object, ...] | None
+        ) = None
+        self._latest_observed_seed_beneficiary: (
+            ObservedSeedBeneficiaryHint | None
+        ) = None
         self._current_semantic_residency_commit: (
             tuple[str, int, SemanticResidencyTarget, PhysicalBundlePreview] | None
         ) = None
@@ -10163,8 +10173,22 @@ class EmbeddedSGLangRuntime:
                 )
         else:
             online_joint_decision = OnlineJointPlanDecision(None, "disabled")
+        if (
+            online_joint_decision.epoch is None
+            or online_joint_decision.epoch.planner_mode
+            not in {JointPlannerMode.BOUNDED_SEED, JointPlannerMode.EMERGENCY}
+        ):
+            self._latest_bounded_seed_runnable = ()
+            self._latest_bounded_seed_priority_request_ids = ()
+            self._latest_observed_seed_beneficiary = None
         self._current_online_joint_view = online_joint_decision.view
         self._current_online_joint_decision = online_joint_decision
+        joint_shadow_worker = getattr(self, "joint_shadow_worker", None)
+        if (
+            joint_shadow_worker is not None
+            and joint_shadow_worker.supports_incremental_delta
+        ):
+            self._maybe_publish_observed_seed_hint_delta(joint_shadow_worker)
         self._drive_restore_obligations(now_ms=float(self._now_ms()))
         self._advance_restore_authority(now_ms=float(self._now_ms()))
         restore_authority_mode = getattr(
@@ -16321,6 +16345,156 @@ class EmbeddedSGLangRuntime:
                 add("reentry", event.kind.value, event.invocation_id)
         return tuple(sorted(triggers))
 
+    def _maybe_publish_observed_seed_hint_delta(
+        self,
+        worker: LatestWinsJointPlanWorker,
+    ) -> bool:
+        hint = self._latest_observed_seed_beneficiary
+        signature = hint.signature if hint is not None else None
+        if (
+            self._observed_seed_hint_publication_initialized
+            and signature
+            == self._last_published_observed_seed_hint_signature
+        ):
+            return False
+        base_stamp = getattr(self, "_last_policy_state_stamp", None)
+        if (
+            base_stamp is None
+            or base_stamp.event_sequence != self._shadow_event_sequence
+        ):
+            self._joint_predictive_counts[
+                "hint_publish_no_current_observed_mirror"
+            ] += 1
+            return False
+
+        observation = self._runtime_resource_observation()
+        published_hint = (
+            replace(hint, published_ts_ms=observation.ts_ms)
+            if hint is not None
+            else None
+        )
+        page_delta = PageIndexReplicaDelta(
+            from_revision=self._shadow_page_revision,
+            to_revision=self._shadow_page_revision,
+            topology_revision=self._shadow_topology_revision,
+            pages=(),
+            page_states=(),
+            contexts=(),
+            changed_handles=frozenset(),
+            changed_context_ids=frozenset(),
+            components=frozenset(),
+            full_rebuild_required=False,
+        )
+        runnable = (
+            self._latest_bounded_seed_runnable
+            or self._last_policy_runtime_runnable
+        )
+        stamp = replace(
+            base_stamp,
+            hbm_used_bytes=observation.hbm_used_bytes,
+            host_free_bytes=observation.host_free_bytes,
+            runnable_signature=self._joint_shadow_runnable_signature(runnable),
+        )
+        delta = JointShadowDelta(
+            event_from_sequence=self._shadow_event_sequence,
+            event_to_sequence=self._shadow_event_sequence,
+            runtime_events=(),
+            page_delta=page_delta,
+            observation=observation,
+            runnable_frontier=runnable,
+            fairness_accounts=self._last_policy_fairness_accounts,
+            external_workflow_charges=self._last_policy_external_workflow_charges,
+            control_state=self._last_policy_control_state,
+            transfer_telemetry=(),
+            capabilities=self._last_policy_capabilities,
+            stamp=stamp,
+            trigger=(
+                "risk_eval+bounded_seed_hint_changed"
+                if published_hint is not None
+                else "semantic_delta+bounded_seed_hint_cleared"
+            ),
+            captured_monotonic_ms=time.monotonic_ns() / 1_000_000.0,
+            planning_requested=False,
+            risk_evaluation_requested=bool(
+                published_hint is not None
+                and getattr(self, "predictive_risk_worker", None) is not None
+            ),
+            observed_seed_beneficiary=published_hint,
+            source_page_revision=self.controller.page_index.revision,
+            source_topology_revision=self.controller.page_index.topology_revision,
+            frontier_model_version=getattr(
+                self, "_last_frontier_model_version", None
+            ),
+        )
+        capture_started_ns = time.perf_counter_ns()
+        try:
+            submission = worker.submit_delta(delta)
+        except Exception as error:
+            self._joint_shadow_counts["submission_failed"] += 1
+            self.audit.emit(
+                "joint_plan_shadow_submit_failed",
+                observation.ts_ms,
+                audit_level="correctness",
+                error=f"{type(error).__name__}: {error}",
+                trigger=delta.trigger,
+                application_connected=self.config.joint_policy_enabled,
+            )
+            return False
+
+        capture_ms = (
+            time.perf_counter_ns() - capture_started_ns
+        ) / 1_000_000.0
+        self._observed_seed_hint_publication_initialized = True
+        self._last_published_observed_seed_hint_signature = signature
+        self._latest_observed_seed_beneficiary = published_hint
+        self._last_policy_state_stamp = stamp
+        self._joint_shadow_counts["submitted"] += 1
+        self._joint_shadow_counts["apply_only_submitted"] += 1
+        self._joint_predictive_counts[
+            "hint_risk_published"
+            if published_hint is not None
+            else "hint_clear_published"
+        ] += 1
+        self._joint_shadow_timing_samples[
+            "safe_point_delta_capture_ms"
+        ].append(capture_ms)
+        self._joint_shadow_timing_samples["snapshot_enqueue_ms"].append(
+            submission.enqueue_ms
+        )
+        worker_stats = worker.stats()
+        self.audit.emit(
+            "predictive_beneficiary_hint_published",
+            observation.ts_ms,
+            worker_sequence=submission.sequence,
+            request_id=(
+                published_hint.request_id if published_hint is not None else None
+            ),
+            hint_signature=list(signature) if signature is not None else None,
+            hint_created_ts_ms=(
+                published_hint.created_ts_ms
+                if published_hint is not None
+                else None
+            ),
+            hint_published_ts_ms=(
+                published_hint.published_ts_ms
+                if published_hint is not None
+                else observation.ts_ms
+            ),
+            risk_evaluation_requested=delta.risk_evaluation_requested,
+            source_page_revision=delta.source_page_revision,
+            mirror_page_revision=self._shadow_page_revision,
+            page_revision_lag=max(
+                0,
+                self.controller.page_index.revision - self._shadow_page_revision,
+            ),
+            safe_point_delta_capture_ms=capture_ms,
+            snapshot_enqueue_ms=submission.enqueue_ms,
+            replaced_sequence=submission.replaced_sequence,
+            worker_pending_count=worker_stats.pending_count,
+            worker_busy=worker_stats.busy,
+        )
+        return True
+
     def _publish_joint_semantic_delta(
         self,
         observation: RuntimeResourceObservation,
@@ -16390,7 +16564,10 @@ class EmbeddedSGLangRuntime:
                 runtime_events=event_delta.events,
                 page_delta=page_delta,
                 observation=observation,
-                runnable_frontier=self._last_policy_runtime_runnable,
+                runnable_frontier=(
+                    getattr(self, "_latest_bounded_seed_runnable", ())
+                    or self._last_policy_runtime_runnable
+                ),
                 fairness_accounts=self._last_policy_fairness_accounts,
                 external_workflow_charges=(
                     self._last_policy_external_workflow_charges
@@ -16404,6 +16581,11 @@ class EmbeddedSGLangRuntime:
                 planning_requested=False,
                 risk_evaluation_requested=risk_evaluation_requested,
                 risk_trigger_signature=risk_trigger_signature,
+                observed_seed_beneficiary=(
+                    getattr(self, "_latest_observed_seed_beneficiary", None)
+                ),
+                source_page_revision=self.controller.page_index.revision,
+                source_topology_revision=self.controller.page_index.topology_revision,
                 frontier_predictions=frontier_prediction_updates,
                 frontier_features=frontier_feature_updates,
                 frontier_feature_sources=frontier_feature_sources,
@@ -16454,6 +16636,7 @@ class EmbeddedSGLangRuntime:
             time.perf_counter_ns() - capture_started_ns
         ) / 1_000_000.0
         self._shadow_event_sequence = event_delta.to_sequence
+        self._last_policy_state_stamp = stamp
         self._joint_shadow_counts[
             "risk_event_submitted"
             if risk_evaluation_requested
@@ -16902,6 +17085,13 @@ class EmbeddedSGLangRuntime:
                     planning_requested=full_plan_requested,
                     risk_evaluation_requested=risk_evaluation_requested,
                     risk_trigger_signature=risk_trigger_signature,
+                    observed_seed_beneficiary=(
+                        getattr(
+                            self, "_latest_observed_seed_beneficiary", None
+                        )
+                    ),
+                    source_page_revision=self.controller.page_index.revision,
+                    source_topology_revision=self.controller.page_index.topology_revision,
                     frontier_predictions=frontier_prediction_updates,
                     frontier_features=frontier_feature_updates,
                     frontier_feature_sources=frontier_feature_sources,
@@ -17046,6 +17236,43 @@ class EmbeddedSGLangRuntime:
             return
         self._last_joint_shadow_result_sequence = result.sequence
         policy_input = result.policy_input
+        if result.risk_funnel_reason is not None:
+            reason = result.risk_funnel_reason
+            self._joint_predictive_counts[f"funnel_{reason}"] += 1
+            scope_value: Mapping[str, object] = {}
+            if policy_input is not None:
+                scope_metadata = policy_input.optional_metadata.get(
+                    "beliefkv_predictive_candidate_scope"
+                )
+                if (
+                    scope_metadata is not None
+                    and isinstance(scope_metadata.value, Mapping)
+                ):
+                    scope_value = scope_metadata.value
+            self.audit.emit(
+                "predictive_risk_funnel",
+                observation.ts_ms,
+                worker_sequence=result.sequence,
+                reason=reason,
+                trigger=result.trigger,
+                physical_mirror_age_ms=scope_value.get(
+                    "physical_mirror_age_ms"
+                ),
+                page_revision_lag=scope_value.get("page_revision_lag"),
+                source_page_revision=scope_value.get("source_page_revision"),
+                physical_mirror_page_revision=scope_value.get(
+                    "physical_mirror_page_revision"
+                ),
+            )
+            if policy_input is None:
+                self._drain_predictive_risk_result(
+                    observation,
+                    current_policy_input=getattr(
+                        self, "_latest_observed_policy_input", None
+                    ),
+                    current_transfer_epoch=stamp.transfer_epoch,
+                )
+                return
         if policy_input is None:
             self._joint_shadow_counts["worker_failed"] += 1
             self.audit.emit(
@@ -17058,8 +17285,8 @@ class EmbeddedSGLangRuntime:
             )
             return
         risk_only_result = bool(
-            result.risk_evaluation_requested
-            and not result.planning_attempted
+            not result.planning_attempted
+            and (result.risk_evaluation_requested or result.risk_funnel_reason)
         )
         if not risk_only_result:
             self._latest_observed_policy_input = policy_input
@@ -17093,6 +17320,27 @@ class EmbeddedSGLangRuntime:
                 )
             else:
                 self._joint_predictive_counts["submission_enqueued"] += 1
+                self._joint_predictive_counts[
+                    "funnel_predictive_worker_submitted"
+                ] += 1
+                scope_metadata = policy_input.optional_metadata.get(
+                    "beliefkv_predictive_candidate_scope"
+                )
+                scope_value = (
+                    scope_metadata.value
+                    if scope_metadata is not None
+                    and isinstance(scope_metadata.value, Mapping)
+                    else {}
+                )
+                hint_metadata = policy_input.optional_metadata.get(
+                    "beliefkv_observed_seed_beneficiary"
+                )
+                hint_value = (
+                    hint_metadata.value
+                    if hint_metadata is not None
+                    and isinstance(hint_metadata.value, Mapping)
+                    else {}
+                )
                 self._joint_shadow_timing_samples.setdefault(
                     "predictive_submit_ms", deque(maxlen=65_536)
                 ).append(predictive_submission.enqueue_ms)
@@ -17106,6 +17354,16 @@ class EmbeddedSGLangRuntime:
                     enqueue_ms=predictive_submission.enqueue_ms,
                     enqueued=predictive_submission.enqueued,
                     replaced_sequence=predictive_submission.replaced_sequence,
+                    hint_created_ts_ms=hint_value.get("created_ts_ms"),
+                    hint_published_ts_ms=hint_value.get("published_ts_ms"),
+                    physical_mirror_age_ms=scope_value.get(
+                        "physical_mirror_age_ms"
+                    ),
+                    page_revision_lag=scope_value.get("page_revision_lag"),
+                    source_page_revision=scope_value.get("source_page_revision"),
+                    physical_mirror_page_revision=scope_value.get(
+                        "physical_mirror_page_revision"
+                    ),
                     prediction_used=False,
                 )
         elif predictive_worker is not None and result.plan is not None:
@@ -17476,11 +17734,21 @@ class EmbeddedSGLangRuntime:
             candidate_count = 0
             positive_count = 0
             fresh_positive_count = 0
+            fresh_positive_before_latest_start_count = 0
             fresh_eligible_count = 0
             timing_available_count = 0
+            predicted_block_ts_ms_values: list[float] = []
+            latest_feasible_start_ts_ms_values: list[float] = []
+            fresh_positive_latest_start_ts_ms_values: list[float] = []
             max_expected_benefit_ms = 0.0
             max_expected_recourse_credit_ms = 0.0
             stale_reasons: Counter[str] = Counter()
+            result_policy_input = getattr(result, "policy_input", None)
+            policy_snapshot_ts_ms = float(
+                result_policy_input.resources.ts_ms
+                if result_policy_input is not None
+                else observation.ts_ms
+            )
             for summary in shadow_payload.get("candidate_summaries", ()):
                 if not isinstance(summary, Mapping):
                     continue
@@ -17497,6 +17765,32 @@ class EmbeddedSGLangRuntime:
                 )
                 if benefit > 0:
                     positive_count += 1
+                predicted_block_time_ms = summary.get(
+                    "predicted_block_time_ms"
+                )
+                if (
+                    isinstance(predicted_block_time_ms, (int, float))
+                    and not isinstance(predicted_block_time_ms, bool)
+                    and math.isfinite(float(predicted_block_time_ms))
+                ):
+                    predicted_block_ts_ms_values.append(
+                        policy_snapshot_ts_ms + float(predicted_block_time_ms)
+                    )
+                morphology_slack_ms = summary.get(
+                    "morphology_min_positive_slack_ms"
+                )
+                candidate_latest_start_ts_ms = None
+                if (
+                    isinstance(morphology_slack_ms, (int, float))
+                    and not isinstance(morphology_slack_ms, bool)
+                    and math.isfinite(float(morphology_slack_ms))
+                ):
+                    candidate_latest_start_ts_ms = (
+                        policy_snapshot_ts_ms + float(morphology_slack_ms)
+                    )
+                    latest_feasible_start_ts_ms_values.append(
+                        candidate_latest_start_ts_ms
+                    )
                 required_wait = summary.get("required_wait_ms")
                 if (
                     isinstance(required_wait, (int, float))
@@ -17526,11 +17820,20 @@ class EmbeddedSGLangRuntime:
                     fresh_count += 1
                     if benefit > 0:
                         fresh_positive_count += 1
+                        if candidate_latest_start_ts_ms is not None:
+                            fresh_positive_latest_start_ts_ms_values.append(
+                                candidate_latest_start_ts_ms
+                            )
                         if bool(summary.get("eligible")):
                             fresh_eligible_count += 1
             validation_ms = (
                 time.perf_counter_ns() - validation_started_ns
             ) / 1_000_000.0
+            validation_ts_ms = time.monotonic_ns() / 1_000_000.0
+            fresh_positive_before_latest_start_count = sum(
+                validation_ts_ms < value
+                for value in fresh_positive_latest_start_ts_ms_values
+            )
             trigger_to_validation_ms = max(
                 0.0,
                 time.monotonic_ns() / 1_000_000.0
@@ -17565,6 +17868,38 @@ class EmbeddedSGLangRuntime:
                 if callable(stats_method)
                 else {}
             )
+            hint_metadata = (
+                result_policy_input.optional_metadata.get(
+                    "beliefkv_observed_seed_beneficiary"
+                )
+                if result_policy_input is not None
+                else None
+            )
+            hint_value = (
+                hint_metadata.value
+                if hint_metadata is not None
+                and isinstance(hint_metadata.value, Mapping)
+                else {}
+            )
+            risk_started_ts_ms = getattr(
+                result, "started_monotonic_ms", None
+            )
+            risk_completed_ts_ms = getattr(
+                result, "completed_monotonic_ms", None
+            )
+            predicted_block_ts_ms_min = (
+                min(predicted_block_ts_ms_values)
+                if predicted_block_ts_ms_values
+                else None
+            )
+            latest_feasible_start_ts_ms_min = (
+                min(latest_feasible_start_ts_ms_values)
+                if latest_feasible_start_ts_ms_values
+                else None
+            )
+            self._joint_predictive_counts[
+                "fresh_positive_before_latest_start"
+            ] += fresh_positive_before_latest_start_count
             self.audit.emit(
                 "predictive_risk_progress",
                 observation.ts_ms,
@@ -17578,6 +17913,9 @@ class EmbeddedSGLangRuntime:
                 candidate_count=candidate_count,
                 positive_package_count=positive_count,
                 fresh_positive_package_count=fresh_positive_count,
+                fresh_positive_before_latest_start_count=(
+                    fresh_positive_before_latest_start_count
+                ),
                 fresh_eligible_package_count=fresh_eligible_count,
                 timing_available_count=timing_available_count,
                 action_certificate_count=certificate_count,
@@ -17593,6 +17931,15 @@ class EmbeddedSGLangRuntime:
                     shadow_payload.get("scenario_risk_ms") or 0.0
                 ),
                 trigger_to_validation_ms=trigger_to_validation_ms,
+                hint_created_ts_ms=hint_value.get("created_ts_ms"),
+                hint_published_ts_ms=hint_value.get("published_ts_ms"),
+                risk_started_ts_ms=risk_started_ts_ms,
+                risk_completed_ts_ms=risk_completed_ts_ms,
+                validation_ts_ms=validation_ts_ms,
+                predicted_block_ts_ms_min=predicted_block_ts_ms_min,
+                latest_feasible_start_ts_ms_min=(
+                    latest_feasible_start_ts_ms_min
+                ),
                 selected_action=selected_action,
                 worker_pending_count=worker_stats.get("pending_count"),
                 worker_busy=worker_stats.get("busy"),
@@ -17614,6 +17961,15 @@ class EmbeddedSGLangRuntime:
                 action_certificate_stale_reasons=dict(stale_reasons),
                 action_certificate_validation_ms=validation_ms,
                 trigger_to_validation_ms=trigger_to_validation_ms,
+                hint_created_ts_ms=hint_value.get("created_ts_ms"),
+                hint_published_ts_ms=hint_value.get("published_ts_ms"),
+                risk_started_ts_ms=risk_started_ts_ms,
+                risk_completed_ts_ms=risk_completed_ts_ms,
+                validation_ts_ms=validation_ts_ms,
+                predicted_block_ts_ms_min=predicted_block_ts_ms_min,
+                latest_feasible_start_ts_ms_min=(
+                    latest_feasible_start_ts_ms_min
+                ),
                 observed_worker_independent=True,
                 **shadow_payload,
             )
@@ -19378,6 +19734,7 @@ class EmbeddedSGLangRuntime:
         self, *, now_ms: float
     ) -> OnlineJointPlanDecision:
         runnable = self._policy_runtime_runnable(now_ms)
+        self._latest_bounded_seed_runnable = runnable
         visible_ids = frozenset(item.request_id for item in runnable)
         current = getattr(self, "_current_online_joint_decision", None)
         current_epoch = getattr(self, "_current_joint_plan_epoch", None)
@@ -19402,6 +19759,28 @@ class EmbeddedSGLangRuntime:
             )
             and current.view.restore_requirements == restore_requirements
         ):
+            candidate = self._observed_seed_beneficiary_hint(
+                current.view,
+                runnable,
+                priority_request_ids=(
+                    getattr(
+                        self,
+                        "_latest_bounded_seed_priority_request_ids",
+                        (),
+                    )
+                ),
+                seed_generation=self._online_joint_epoch_sequence,
+                created_ts_ms=now_ms,
+            )
+            previous = getattr(
+                self, "_latest_observed_seed_beneficiary", None
+            )
+            self._latest_observed_seed_beneficiary = (
+                previous
+                if previous is not None and candidate is not None
+                and previous.signature == candidate.signature
+                else candidate
+            )
             return current
         workflow_ids = {item.workflow_id for item in runnable}
         fair_order = self.controller.fairness.ordered(
@@ -19425,14 +19804,9 @@ class EmbeddedSGLangRuntime:
             }
             for workflow_id in workflow_ids
         }
-        ordered = tuple(
-            item.request_id
-            for item in sorted(
-                (
-                    item
-                    for item in runnable
-                    if item.workflow_id in active_workflow_ids
-                ),
+        ranked_runnable = tuple(
+            sorted(
+                runnable,
                 key=lambda item: (
                     max(0.0, now_ms - item.submitted_ts_ms) < 30_000.0,
                     frontier_rank.get(item.workflow_id, {}).get(
@@ -19445,6 +19819,14 @@ class EmbeddedSGLangRuntime:
                 ),
             )
         )
+        self._latest_bounded_seed_priority_request_ids = tuple(
+            item.request_id for item in ranked_runnable
+        )
+        ordered = tuple(
+            item.request_id
+            for item in ranked_runnable
+            if item.workflow_id in active_workflow_ids
+        )
         self._online_joint_epoch_sequence += 1
         decision = compile_bounded_seed_epoch(
             ordered_request_ids=ordered,
@@ -19456,6 +19838,22 @@ class EmbeddedSGLangRuntime:
                 >= self.config.joint_emergency_hbm_ratio
             ),
             restore_requirements=restore_requirements,
+        )
+        candidate = self._observed_seed_beneficiary_hint(
+            decision.view,
+            runnable,
+            priority_request_ids=self._latest_bounded_seed_priority_request_ids,
+            seed_generation=self._online_joint_epoch_sequence,
+            created_ts_ms=now_ms,
+        )
+        previous = getattr(
+            self, "_latest_observed_seed_beneficiary", None
+        )
+        self._latest_observed_seed_beneficiary = (
+            previous
+            if previous is not None and candidate is not None
+            and previous.signature == candidate.signature
+            else candidate
         )
         if (
             self.config.predictive_joint_overlay_enabled
@@ -19501,6 +19899,52 @@ class EmbeddedSGLangRuntime:
         self._current_joint_plan_epoch = decision.epoch
         self._online_joint_counts["safe_point_seed_epoch"] += 1
         return decision
+
+    @staticmethod
+    def _observed_seed_beneficiary_hint(
+        view: OnlineJointPlanView | None,
+        runnable: tuple[RunnableInvocation, ...],
+        *,
+        priority_request_ids: tuple[str, ...],
+        seed_generation: int,
+        created_ts_ms: float,
+    ) -> ObservedSeedBeneficiaryHint | None:
+        if view is None or not view.deferred_request_ids:
+            return None
+        deferred = frozenset(view.deferred_request_ids)
+        by_request_id = {item.request_id: item for item in runnable}
+        request = next(
+            (
+                by_request_id[request_id]
+                for request_id in priority_request_ids
+                if request_id in deferred
+                and request_id in by_request_id
+                and by_request_id[request_id].causal_class.startswith(
+                    "engine_waiting:"
+                )
+                and by_request_id[request_id].admission_startup_bytes is not None
+                and by_request_id[request_id].admission_growth_bytes is not None
+                and (
+                    int(by_request_id[request_id].admission_startup_bytes or 0)
+                    + int(by_request_id[request_id].admission_growth_bytes or 0)
+                    > 0
+                )
+            ),
+            None,
+        )
+        if request is None:
+            return None
+        return ObservedSeedBeneficiaryHint(
+            plan_id=view.plan_id,
+            request_id=request.request_id,
+            invocation_id=request.invocation_id,
+            context_id=request.context_id,
+            context_epoch=request.context_epoch,
+            startup_bytes=int(request.admission_startup_bytes or 0),
+            growth_bytes=int(request.admission_growth_bytes or 0),
+            seed_generation=seed_generation,
+            created_ts_ms=created_ts_ms,
+        )
 
     @staticmethod
     def _online_residency_command_kind(

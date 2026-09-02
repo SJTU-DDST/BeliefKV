@@ -2,6 +2,22 @@
 
 更新日期：2026-09-01
 
+## 2026-09-01：bounded observed seed beneficiary 已接入 Risk worker
+
+Predictive worker 不再只依赖可能已经过期的异步 full-plan beneficiary。safe point
+现在保留最新 bounded observed seed 的首个 deferred engine-waiting request，并以紧凑
+hint 发布 `plan_id`、request/context identity、context epoch 和 startup/growth demand。
+worker 必须逐字段与最新 runnable frontier 匹配后才能构造
+`ProjectedReclaimRequirement`；任何身份或 demand 变化均 fail closed。PREPARE package
+使用 bounded seed plan ID 作为 causal generation，safe point 仍重新物化物理 bundle，
+预测器没有获得提前 COMMIT 权限。
+
+冻结 replay 也已停止重新选择不同 victim，并使用与在线 builder 相同的 transfer estimate
+字段契约。对 2026-09-01 的 4 个旧高压 snapshot 重放仍为 0 positive/eligible，
+latest-start 仍落后约 0.91--0.98 秒。这些旧 snapshot 不包含新增 bounded hint，不能
+反事实验证提前发布效果；按预注册门槛本轮不启动 GPU、不开放 canary。定向回归为
+JointShadow/Predictive `44 passed`，SGLang adapter `2 passed`。
+
 ## 2026-09-01：事件驱动 Risk GPU gate 通过机制门槛，价值门槛未通过
 
 提交 `0c86eb6` 补齐独立事件驱动 RISK_EVAL：`TOOL_START`、WAIT_CHILD/JOIN、

@@ -80,6 +80,15 @@ def _transfer_estimates(
                 "source": estimate.source,
                 "nearest_bucket_distance": estimate.nearest_bucket_distance,
                 "size_coverage_bytes": estimate.size_coverage_bytes,
+                "extent_count_coverage": estimate.extent_count_coverage,
+                "shape_bucket_distance": estimate.shape_bucket_distance,
+                "shape_supported": estimate.shape_supported,
+                "estimated_completion_p90_ms": (
+                    estimate.estimated_completion_p90_ms
+                ),
+                "estimated_unhidden_stall_p90_ms": (
+                    estimate.estimated_unhidden_stall_p90_ms
+                ),
                 "service_epoch": curve.warm_start_hardware_key,
             }
         if values:
@@ -87,6 +96,8 @@ def _transfer_estimates(
     return {
         "hardware_key": curve.warm_start_hardware_key,
         "warm_start_sample_count": curve.warm_start_sample_count,
+        "warm_start_min_samples": curve.warm_start_min_samples,
+        "online_min_samples": curve.min_samples,
         "contexts": contexts,
     }
 
@@ -96,6 +107,17 @@ def _candidate_local_policy_input(
     source_plan: object,
     eligibility: object,
 ) -> PolicyInput:
+    frozen_scope = policy_input.optional_metadata.get(
+        "beliefkv_predictive_candidate_scope"
+    )
+    if (
+        frozen_scope is not None
+        and isinstance(frozen_scope.value, Mapping)
+    ):
+        # Frozen online snapshots already contain the exact candidate-local
+        # closure. Re-selecting victims during replay changes shape support and
+        # no longer evaluates the action that was available online.
+        return policy_input
     request_by_id = {
         item.request_id: item for item in policy_input.runnable_frontier
     }

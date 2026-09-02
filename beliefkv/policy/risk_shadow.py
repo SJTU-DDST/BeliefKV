@@ -2632,11 +2632,12 @@ class PredictiveRiskShadowObserver:
         projected_requirement: ProjectedReclaimRequirement,
     ) -> tuple[PredictiveActionPackage, ...]:
         del policy_input
+        source_plan_id = projected_requirement.source_joint_plan_id
         packages = [
             PredictiveActionPackage(
-                package_id=f"{source_plan.plan_id}:a0",
+                package_id=f"{source_plan_id}:a0",
                 action=PredictiveActionKind.OBSERVED_BASELINE,
-                source_joint_plan_id=source_plan.plan_id,
+                source_joint_plan_id=source_plan_id,
                 beneficiary_request_id=(
                     projected_requirement.beneficiary_request_id
                 ),
@@ -2667,11 +2668,11 @@ class PredictiveRiskShadowObserver:
         ][:2]
         packages.extend(
             PredictiveActionPackage(
-                package_id=f"{source_plan.plan_id}:prepare:{victim.context_id}",
+                package_id=f"{source_plan_id}:prepare:{victim.context_id}",
                 action=PredictiveActionKind.PREPARE_HOST,
                 context_ids=(victim.context_id,),
                 victim_context_ids=(victim.context_id,),
-                source_joint_plan_id=source_plan.plan_id,
+                source_joint_plan_id=source_plan_id,
                 beneficiary_request_id=(
                     projected_requirement.beneficiary_request_id
                 ),
@@ -2715,6 +2716,55 @@ class PredictiveRiskShadowObserver:
         requests = {
             item.request_id: item for item in policy_input.runnable_frontier
         }
+        hint_metadata = policy_input.optional_metadata.get(
+            "beliefkv_observed_seed_beneficiary"
+        )
+        hint = (
+            hint_metadata.value
+            if hint_metadata is not None
+            and isinstance(hint_metadata.value, Mapping)
+            else None
+        )
+        if hint is not None:
+            request_id = str(hint.get("request_id") or "")
+            request = requests.get(request_id)
+            plan_id = str(hint.get("plan_id") or "")
+            if (
+                request is not None
+                and plan_id
+                and request_id not in observed_ids
+                and request.causal_class.startswith("engine_waiting:")
+                and request.admission_startup_bytes is not None
+                and request.admission_growth_bytes is not None
+                and request.invocation_id == hint.get("invocation_id")
+                and request.context_id == hint.get("context_id")
+                and request.context_epoch == hint.get("context_epoch")
+                and request.admission_startup_bytes == hint.get("startup_bytes")
+                and request.admission_growth_bytes == hint.get("growth_bytes")
+                and request.admission_startup_bytes
+                + request.admission_growth_bytes
+                > 0
+            ):
+                bundles = tuple(
+                    bundle
+                    for bundle in policy_input.physical_kv.bundles
+                    if request.context_id in bundle.owner_context_ids
+                )
+                if not any(
+                    bundle.cpu_bytes > bundle.gpu_bytes for bundle in bundles
+                ):
+                    return ProjectedReclaimRequirement(
+                        beneficiary_request_id=request.request_id,
+                        beneficiary_invocation_id=request.invocation_id,
+                        beneficiary_context_id=request.context_id,
+                        beneficiary_context_epoch=request.context_epoch,
+                        required_startup_bytes=request.admission_startup_bytes,
+                        required_growth_bytes=request.admission_growth_bytes,
+                        source_joint_plan_id=plan_id,
+                        causal_package_generation=(
+                            f"{plan_id}:c{request.context_epoch}"
+                        ),
+                    )
         order = (
             (source_plan.projected_beneficiary_request_id,)
             if source_plan.projected_beneficiary_request_id is not None

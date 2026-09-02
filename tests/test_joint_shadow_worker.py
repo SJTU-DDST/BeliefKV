@@ -23,6 +23,7 @@ from beliefkv.runtime.joint_shadow import (
     JointShadowStateStamp,
     LatestWinsJointPlanWorker,
     LatestWinsPredictiveRiskWorker,
+    ObservedSeedBeneficiaryHint,
     WorkflowFairnessReplica,
     coalesce_joint_shadow_deltas,
 )
@@ -117,6 +118,35 @@ def _delta(
         planning_requested=planning_requested,
     )
 
+
+def _beneficiary_risk_evidence(
+    plan_id: str,
+) -> tuple[RunnableInvocation, ObservedSeedBeneficiaryHint]:
+    runnable = RunnableInvocation(
+        request_id="beneficiary",
+        workflow_id="wf",
+        invocation_id="beneficiary-invocation",
+        context_id="beneficiary-context",
+        context_epoch=0,
+        submitted_ts_ms=1.0,
+        startup_bytes=100,
+        admission_startup_bytes=64,
+        admission_growth_bytes=32,
+        causal_class="engine_waiting:ready",
+    )
+    hint = ObservedSeedBeneficiaryHint(
+        plan_id=plan_id,
+        request_id=runnable.request_id,
+        invocation_id=runnable.invocation_id,
+        context_id=runnable.context_id,
+        context_epoch=runnable.context_epoch,
+        startup_bytes=64,
+        growth_bytes=32,
+        seed_generation=1,
+        created_ts_ms=2.5,
+        published_ts_ms=3.0,
+    )
+    return runnable, hint
 
 class _BlockingPlanner:
     def __init__(self) -> None:
@@ -965,6 +995,10 @@ def test_risk_event_reuses_cached_observed_seed_without_replanning() -> None:
         threading.Event().wait(0.01)
     assert initial_result is not None
     assert initial_result.planning_attempted
+    assert initial_result.plan is not None
+    beneficiary, beneficiary_hint = _beneficiary_risk_evidence(
+        initial_result.plan.plan_id
+    )
 
     controller.process_runtime_event(
         _event(
@@ -984,6 +1018,8 @@ def test_risk_event_reuses_cached_observed_seed_without_replanning() -> None:
             ts_ms=3,
             planning_requested=False,
         ),
+        runnable_frontier=(beneficiary,),
+        observed_seed_beneficiary=beneficiary_hint,
         risk_evaluation_requested=True,
         risk_trigger_signature=(("prepare", "tool_start", "root", 0),),
     )
@@ -1040,10 +1076,16 @@ def test_semantic_progress_does_not_erase_inflight_risk_trigger() -> None:
     worker = LatestWinsJointPlanWorker(planner, assembler=assembler)
     initial = _delta(controller, event_sequence=0, page_revision=0, ts_ms=2)
     initial_submission = worker.submit_delta(initial)
+    initial_result = None
     for _ in range(100):
-        if worker.latest(after_sequence=initial_submission.sequence - 1) is not None:
+        initial_result = worker.latest(after_sequence=initial_submission.sequence - 1)
+        if initial_result is not None:
             break
         threading.Event().wait(0.01)
+    assert initial_result is not None and initial_result.plan is not None
+    beneficiary, beneficiary_hint = _beneficiary_risk_evidence(
+        initial_result.plan.plan_id
+    )
 
     started = threading.Event()
     release = threading.Event()
@@ -1077,6 +1119,8 @@ def test_semantic_progress_does_not_erase_inflight_risk_trigger() -> None:
             ts_ms=3,
             planning_requested=False,
         ),
+        runnable_frontier=(beneficiary,),
+        observed_seed_beneficiary=beneficiary_hint,
         risk_evaluation_requested=True,
         risk_trigger_signature=(("prepare", "tool_start", "root", 0),),
     )
@@ -1092,12 +1136,16 @@ def test_semantic_progress_does_not_erase_inflight_risk_trigger() -> None:
             context_epoch=0,
         )
     )
-    semantic = _delta(
-        controller,
-        event_sequence=risk.event_to_sequence,
-        page_revision=risk.page_delta.to_revision,
-        ts_ms=4,
-        planning_requested=False,
+    semantic = replace(
+        _delta(
+            controller,
+            event_sequence=risk.event_to_sequence,
+            page_revision=risk.page_delta.to_revision,
+            ts_ms=4,
+            planning_requested=False,
+        ),
+        runnable_frontier=(beneficiary,),
+        observed_seed_beneficiary=beneficiary_hint,
     )
     semantic_submission = worker.submit_delta(semantic)
     release.set()
@@ -1202,6 +1250,49 @@ def test_coalesced_frontier_feature_deltas_preserve_updates_and_removals() -> No
     assert combined.frontier_feature_sources == (
         FrontierFeatureSource("b", context_tokens=4096),
     )
+
+
+def test_shadow_delta_coalesces_latest_observed_seed_beneficiary() -> None:
+    controller = BeliefKVController(
+        BeliefKVConfig(
+            hbm_capacity_bytes=1_000,
+            host_capacity_bytes=1_000,
+            reserve_hbm_bytes=0,
+            predictor_enabled=False,
+            shadow_enabled=False,
+        )
+    )
+    controller.process_runtime_event(_event(1, RuntimeEventKind.WORKFLOW_START))
+    first = replace(
+        _delta(controller, event_sequence=0, page_revision=0, ts_ms=1),
+        observed_seed_beneficiary=ObservedSeedBeneficiaryHint(
+            "seed-1", "request-1", "invocation-1", "context-1", 0, 64, 32
+        ),
+    )
+    controller.process_runtime_event(
+        _event(
+            2,
+            RuntimeEventKind.INVOCATION_CREATE,
+            invocation_id="root",
+            context_id="context-2",
+            context_epoch=0,
+        )
+    )
+    second = replace(
+        _delta(
+            controller,
+            event_sequence=first.event_to_sequence,
+            page_revision=first.page_delta.to_revision,
+            ts_ms=2,
+        ),
+        observed_seed_beneficiary=ObservedSeedBeneficiaryHint(
+            "seed-2", "request-2", "invocation-2", "context-2", 0, 128, 64
+        ),
+    )
+
+    combined = coalesce_joint_shadow_deltas((first, second))
+
+    assert combined.observed_seed_beneficiary == second.observed_seed_beneficiary
 
 
 def test_frontier_feature_source_materializes_worker_graph_state() -> None:

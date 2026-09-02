@@ -51,6 +51,7 @@ from beliefkv.runtime.joint_shadow import (
     IncrementalPolicyInputAssembler,
     JointShadowStateStamp,
     LatestWinsJointPlanWorker,
+    ObservedSeedBeneficiaryHint,
 )
 from beliefkv.runtime.lock_service import RequestServiceLedger
 from beliefkv.runtime.page_index import PageOwnershipIndex
@@ -464,6 +465,83 @@ def test_semantic_delta_preserves_physical_and_telemetry_cursors():
     assert runtime._shadow_page_revision == 7
     assert runtime._shadow_topology_revision == 5
     assert runtime._shadow_telemetry_sequence == 13
+    assert runtime._last_policy_state_stamp.event_sequence == 2
+    assert delta.source_page_revision == 17
+    assert delta.source_topology_revision == 11
+
+
+def test_bounded_seed_hint_change_publishes_one_lightweight_risk_delta():
+    runtime = EmbeddedSGLangRuntime.__new__(EmbeddedSGLangRuntime)
+    runnable = _predictive_beneficiary_runnable()
+    runtime.__dict__.update(
+        controller=SimpleNamespace(
+            page_index=SimpleNamespace(revision=17, topology_revision=11)
+        ),
+        config=SimpleNamespace(joint_policy_enabled=False),
+        audit=_AuditRecorder(),
+        _joint_shadow_counts=Counter(),
+        _joint_predictive_counts=Counter(),
+        _joint_shadow_timing_samples={
+            "safe_point_delta_capture_ms": deque(maxlen=16),
+            "snapshot_enqueue_ms": deque(maxlen=16),
+        },
+        _shadow_event_sequence=2,
+        _shadow_page_revision=7,
+        _shadow_topology_revision=5,
+        _last_policy_state_stamp=JointShadowStateStamp(
+            graph_version=2, consumer_version=2, event_sequence=2,
+            page_revision=7, topology_revision=5, fairness_revision=4,
+            transfer_epoch=6, runnable_signature=(), hbm_used_bytes=100,
+            host_free_bytes=200,
+        ),
+        _latest_observed_seed_beneficiary=ObservedSeedBeneficiaryHint(
+            plan_id="seed-plan", request_id=runnable.request_id,
+            invocation_id=runnable.invocation_id, context_id=runnable.context_id,
+            context_epoch=runnable.context_epoch,
+            startup_bytes=runnable.admission_startup_bytes,
+            growth_bytes=runnable.admission_growth_bytes,
+            seed_generation=7, created_ts_ms=4.0,
+        ),
+        _observed_seed_hint_publication_initialized=False,
+        _last_published_observed_seed_hint_signature=None,
+        _latest_bounded_seed_runnable=(runnable,),
+        _last_policy_runtime_runnable=(),
+        _last_policy_fairness_accounts=(),
+        _last_policy_external_workflow_charges=(),
+        _last_policy_control_state={},
+        _last_policy_capabilities=CapabilityReport(
+            runtime_name="test", runtime_version="test",
+            supported_residency_actions=frozenset(), execution_order_control=True,
+            admission_control=True, transfer_dependencies=True,
+            native_identity_mapping=True,
+        ),
+        _last_frontier_model_version="frontier-test",
+        predictive_risk_worker=object(),
+    )
+    runtime._runtime_resource_observation = lambda: RuntimeResourceObservation(
+        ts_ms=5.0, hbm_capacity_bytes=1_000, hbm_used_bytes=100,
+        host_capacity_bytes=1_000, host_used_bytes=0, host_free_bytes=1_000,
+    )
+    submitted = []
+    worker = SimpleNamespace(
+        submit_delta=lambda delta: submitted.append(delta) or SimpleNamespace(
+            sequence=len(submitted), enqueue_ms=0.01, replaced_sequence=None
+        ),
+        stats=lambda: SimpleNamespace(pending_count=0, busy=False),
+    )
+    assert runtime._maybe_publish_observed_seed_hint_delta(worker)
+    assert not runtime._maybe_publish_observed_seed_hint_delta(worker)
+    assert len(submitted) == 1
+    assert submitted[0].risk_evaluation_requested
+    assert submitted[0].runtime_events == ()
+    assert submitted[0].page_delta.pages == ()
+    assert submitted[0].observed_seed_beneficiary.published_ts_ms == 5.0
+    assert submitted[0].source_page_revision == 17
+    runtime._latest_observed_seed_beneficiary = None
+    assert runtime._maybe_publish_observed_seed_hint_delta(worker)
+    assert len(submitted) == 2
+    assert not submitted[1].risk_evaluation_requested
+    assert submitted[1].observed_seed_beneficiary is None
 
 
 def test_predictive_risk_triggers_follow_park_and_reentry_boundaries():
@@ -709,6 +787,44 @@ def _predictive_beneficiary_runnable():
         "ctx-beneficiary", 0, 1.0, 50, 50, 50,
         causal_class="engine_waiting:slot",
     )
+
+
+def test_bounded_seed_hint_uses_first_deferred_engine_waiting_request():
+    runnable = (
+        RunnableInvocation(
+            "running", "wf", "inv-running", "ctx-running", 0, 1.0, 64,
+            64, 32,
+        ),
+        RunnableInvocation(
+            "deferred", "wf", "inv-deferred", "ctx-deferred", 2, 2.0, 128,
+            96, 48, causal_class="engine_waiting:ready",
+        ),
+    )
+    view = OnlineJointPlanView(
+        plan_id="bounded-seed",
+        ordered_request_ids=("running",),
+        immediate_request_ids=("running",),
+        restore_requirements=(),
+        deferred_request_ids=("deferred",),
+        residency_intent_indices=(),
+    )
+
+    hint = EmbeddedSGLangRuntime._observed_seed_beneficiary_hint(
+        view,
+        runnable,
+        priority_request_ids=("deferred", "running"),
+        seed_generation=7,
+        created_ts_ms=123.0,
+    )
+
+    assert hint is not None
+    assert hint.plan_id == "bounded-seed"
+    assert hint.request_id == "deferred"
+    assert hint.context_epoch == 2
+    assert hint.startup_bytes == 96
+    assert hint.growth_bytes == 48
+    assert hint.seed_generation == 7
+    assert hint.created_ts_ms == 123.0
 
 
 class _EventBatchRecorder:

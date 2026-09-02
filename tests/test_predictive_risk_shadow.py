@@ -197,6 +197,106 @@ def test_projected_reclaim_uses_explicit_seed_exclusion_hint() -> None:
     assert requirement.required_growth_bytes == 128
 
 
+def test_projected_reclaim_prefers_current_bounded_seed_hint() -> None:
+    policy_input = _input(
+        capacity=1_000,
+        reserved=0,
+        include_cpu_target=False,
+    )
+    beneficiary = replace(
+        policy_input.runnable_frontier[0],
+        admission_startup_bytes=64,
+        admission_growth_bytes=128,
+        causal_class="engine_waiting:foreground:root",
+    )
+    metadata = dict(policy_input.optional_metadata)
+    metadata["beliefkv_observed_seed_beneficiary"] = MetadataValue(
+        MetadataSource.OBSERVED,
+        {
+            "plan_id": "bounded-seed-current",
+            "request_id": beneficiary.request_id,
+            "invocation_id": beneficiary.invocation_id,
+            "context_id": beneficiary.context_id,
+            "context_epoch": beneficiary.context_epoch,
+            "startup_bytes": 64,
+            "growth_bytes": 128,
+        },
+        "test",
+    )
+    policy_input = replace(
+        policy_input,
+        runnable_frontier=(beneficiary,),
+        optional_metadata=metadata,
+    )
+    source_plan = AsyncSemanticJointPlanner(
+        JointPlannerConfig(max_planning_budget_ms=100.0)
+    ).plan(policy_input)
+    source_plan = replace(
+        source_plan,
+        admissions=(),
+        candidate_order_request_ids=(),
+        projected_beneficiary_request_id=None,
+    )
+
+    requirement = PredictiveRiskShadowObserver._projected_reclaim_requirement(
+        policy_input,
+        source_plan,
+    )
+
+    assert requirement is not None
+    assert requirement.source_joint_plan_id == "bounded-seed-current"
+    assert requirement.beneficiary_request_id == beneficiary.request_id
+
+
+def test_projected_reclaim_rejects_stale_bounded_seed_hint() -> None:
+    policy_input = _input(
+        capacity=1_000,
+        reserved=0,
+        include_cpu_target=False,
+    )
+    beneficiary = replace(
+        policy_input.runnable_frontier[0],
+        admission_startup_bytes=64,
+        admission_growth_bytes=128,
+        causal_class="engine_waiting:foreground:root",
+    )
+    metadata = dict(policy_input.optional_metadata)
+    metadata["beliefkv_observed_seed_beneficiary"] = MetadataValue(
+        MetadataSource.OBSERVED,
+        {
+            "plan_id": "bounded-seed-stale",
+            "request_id": beneficiary.request_id,
+            "invocation_id": beneficiary.invocation_id,
+            "context_id": beneficiary.context_id,
+            "context_epoch": beneficiary.context_epoch + 1,
+            "startup_bytes": 64,
+            "growth_bytes": 128,
+        },
+        "test",
+    )
+    policy_input = replace(
+        policy_input,
+        runnable_frontier=(beneficiary,),
+        optional_metadata=metadata,
+    )
+    source_plan = AsyncSemanticJointPlanner(
+        JointPlannerConfig(max_planning_budget_ms=100.0)
+    ).plan(policy_input)
+    source_plan = replace(
+        source_plan,
+        admissions=(),
+        candidate_order_request_ids=(),
+        projected_beneficiary_request_id=None,
+    )
+
+    requirement = PredictiveRiskShadowObserver._projected_reclaim_requirement(
+        policy_input,
+        source_plan,
+    )
+
+    assert requirement is None
+
+
 def _prediction() -> LocalFrontierPrediction:
     return LocalFrontierPrediction(
         invocation_id="invocation-target",

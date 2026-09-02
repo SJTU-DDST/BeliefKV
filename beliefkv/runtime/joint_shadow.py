@@ -118,6 +118,63 @@ class FrontierFeatureSource:
 
 
 @dataclass(frozen=True)
+class ObservedSeedBeneficiaryHint:
+    """One deferred request selected by the latest bounded observed seed."""
+
+    plan_id: str
+    request_id: str
+    invocation_id: str
+    context_id: str
+    context_epoch: int
+    startup_bytes: int
+    growth_bytes: int
+    seed_generation: int = 0
+    created_ts_ms: float = 0.0
+    published_ts_ms: float | None = None
+
+    def __post_init__(self) -> None:
+        if not all(
+            (self.plan_id, self.request_id, self.invocation_id, self.context_id)
+        ):
+            raise ValueError("observed seed beneficiary identity must be non-empty")
+        if min(
+            self.context_epoch,
+            self.startup_bytes,
+            self.growth_bytes,
+            self.seed_generation,
+            self.created_ts_ms,
+        ) < 0:
+            raise ValueError("observed seed beneficiary values must be non-negative")
+        if self.published_ts_ms is not None and self.published_ts_ms < 0:
+            raise ValueError("observed seed beneficiary publish time must be non-negative")
+
+    @property
+    def signature(self) -> tuple[object, ...]:
+        return (
+            self.request_id,
+            self.context_id,
+            self.context_epoch,
+            self.startup_bytes,
+            self.growth_bytes,
+            self.seed_generation,
+        )
+
+    def to_dict(self) -> dict[str, object]:
+        return {
+            "plan_id": self.plan_id,
+            "request_id": self.request_id,
+            "invocation_id": self.invocation_id,
+            "context_id": self.context_id,
+            "context_epoch": self.context_epoch,
+            "startup_bytes": self.startup_bytes,
+            "seed_generation": self.seed_generation,
+            "created_ts_ms": self.created_ts_ms,
+            "published_ts_ms": self.published_ts_ms,
+            "growth_bytes": self.growth_bytes,
+        }
+
+
+@dataclass(frozen=True)
 class JointShadowStateStamp:
     graph_version: int
     consumer_version: int
@@ -157,6 +214,9 @@ class JointShadowDelta:
     planning_requested: bool = True
     risk_evaluation_requested: bool = False
     risk_trigger_signature: tuple[tuple[str, str, str, int], ...] = ()
+    observed_seed_beneficiary: ObservedSeedBeneficiaryHint | None = None
+    source_page_revision: int | None = None
+    source_topology_revision: int | None = None
     frontier_predictions: Mapping[str, Mapping[str, object]] = field(
         default_factory=dict
     )
@@ -220,6 +280,14 @@ class JointShadowDelta:
                 raise ValueError("unknown predictive risk trigger class")
             if not event_kind or not invocation_id or context_epoch < 0:
                 raise ValueError("invalid predictive risk trigger identity")
+        if self.source_page_revision is not None and self.source_page_revision < 0:
+            raise ValueError("source page revision must be non-negative")
+        if (
+            self.source_topology_revision is not None
+            and self.source_topology_revision < 0
+        ):
+            raise ValueError("source topology revision must be non-negative")
+
 
     @property
     def work_classes(self) -> frozenset[JointShadowWorkClass]:
@@ -350,7 +418,10 @@ def coalesce_joint_shadow_deltas(
             item.risk_evaluation_requested for item in deltas
         ),
         risk_trigger_signature=tuple(sorted(risk_triggers)),
+        observed_seed_beneficiary=last.observed_seed_beneficiary,
         frontier_predictions=frontier_predictions,
+        source_page_revision=last.source_page_revision,
+        source_topology_revision=last.source_topology_revision,
         frontier_features=frontier_features,
         frontier_feature_sources=tuple(frontier_feature_sources.values()),
         removed_frontier_invocation_ids=frozenset(removed_frontier_ids),
@@ -389,6 +460,7 @@ class JointShadowResult:
     predictive_shadow_compute_ms: float = 0.0
     risk_evaluation_requested: bool = False
     planning_attempted: bool = True
+    risk_funnel_reason: str | None = None
 
     @property
     def queue_wait_ms(self) -> float:
@@ -525,6 +597,7 @@ class IncrementalPolicyInputAssembler:
         self._telemetry: deque[TransferTelemetry] = deque(
             maxlen=max(256, config.service_curve_window)
         )
+        self._physical_mirror_observed_ts_ms: float | None = None
 
     @property
     def last_stats(self) -> SnapshotBuildStats | None:
@@ -541,6 +614,13 @@ class IncrementalPolicyInputAssembler:
         if delta.page_delta.full_rebuild_required and self.page_index.revision != 0:
             raise RuntimeError("shadow page journal gap requires fail-closed restart")
         try:
+            physical_mirror_changed = bool(
+                delta.page_delta.full_rebuild_required
+                or delta.page_delta.to_revision != delta.page_delta.from_revision
+                or delta.page_delta.pages
+                or delta.page_delta.page_states
+                or delta.page_delta.contexts
+            )
             if delta.runtime_events:
                 # These events were committed atomically at the scheduler safe
                 # point. The worker mirror is disposable, so rollback must not
@@ -572,6 +652,8 @@ class IncrementalPolicyInputAssembler:
                 raise RuntimeError(
                     "shadow consumer version diverged from safe-point publication"
                 )
+            if physical_mirror_changed or self._physical_mirror_observed_ts_ms is None:
+                self._physical_mirror_observed_ts_ms = delta.observation.ts_ms
             self._latest = delta
         except Exception:
             self._healthy = False
@@ -743,6 +825,14 @@ class IncrementalPolicyInputAssembler:
             },
             producer="event_driven_risk_trigger",
         )
+        if delta.observed_seed_beneficiary is None:
+            metadata.pop("beliefkv_observed_seed_beneficiary", None)
+        else:
+            metadata["beliefkv_observed_seed_beneficiary"] = MetadataValue(
+                source=MetadataSource.OBSERVED,
+                value=delta.observed_seed_beneficiary.to_dict(),
+                producer="bounded_observed_seed",
+            )
         return replace(
             policy_input,
             runtime_graph=RuntimeGraphSnapshot(
@@ -777,6 +867,7 @@ class IncrementalPolicyInputAssembler:
                     else resources.gpu_compute_utilization
                 ),
             ),
+            runnable_frontier=delta.runnable_frontier,
             optional_metadata=metadata,
         )
 
@@ -786,10 +877,21 @@ class IncrementalPolicyInputAssembler:
         source_plan: JointPlan,
         *,
         max_victims: int = 2,
-    ) -> tuple[PolicyInput, bool]:
+    ) -> tuple[PolicyInput, bool, str | None]:
         """Attach a bounded physical overlay for one projected beneficiary."""
 
-        beneficiary_request_id = source_plan.projected_beneficiary_request_id
+        seed_hint_metadata = policy_input.optional_metadata.get(
+            "beliefkv_observed_seed_beneficiary"
+        )
+        seed_hint = (
+            seed_hint_metadata.value
+            if seed_hint_metadata is not None
+            and isinstance(seed_hint_metadata.value, Mapping)
+            else {}
+        )
+        beneficiary_request_id = str(seed_hint.get("request_id") or "") or (
+            source_plan.projected_beneficiary_request_id
+        )
         request_by_id = {
             request.request_id: request
             for request in policy_input.runnable_frontier
@@ -799,6 +901,8 @@ class IncrementalPolicyInputAssembler:
             if beneficiary_request_id is not None
             else None
         )
+        if beneficiary is None:
+            return policy_input, False, "no_beneficiary_hint"
         trigger_metadata = policy_input.optional_metadata.get(
             "beliefkv_predictive_risk_trigger"
         )
@@ -891,8 +995,8 @@ class IncrementalPolicyInputAssembler:
                 if risk_class == "reentry"
             )
         )
-        if beneficiary is None and not victim_context_ids and not reentry_context_ids:
-            return policy_input, False
+        if not victim_context_ids and not reentry_context_ids:
+            return policy_input, False, "no_live_victim_bundle"
         context_ids = tuple(
             dict.fromkeys(
                 (
@@ -904,13 +1008,13 @@ class IncrementalPolicyInputAssembler:
         )
         delta = self._latest
         if delta is None:
-            return policy_input, False
+            return policy_input, False, "candidate_physicalization_failed"
         bundles = self.builder.targeted_context_bundles(
             context_ids,
             now_ms=delta.observation.ts_ms,
         )
         if not bundles:
-            return policy_input, False
+            return policy_input, False, "no_live_victim_bundle"
         metadata = dict(policy_input.optional_metadata)
         metadata["beliefkv_transfer_service_estimates"] = MetadataValue(
             source=MetadataSource.OBSERVED,
@@ -929,6 +1033,7 @@ class IncrementalPolicyInputAssembler:
                 "beneficiary_context_id": (
                     beneficiary.context_id if beneficiary is not None else None
                 ),
+                "bounded_seed_plan_id": seed_hint.get("plan_id"),
                 "victim_context_ids": victim_context_ids,
                 "reentry_context_ids": reentry_context_ids,
                 "victim_generations": tuple(
@@ -948,6 +1053,30 @@ class IncrementalPolicyInputAssembler:
                 ),
                 "page_revision": delta.stamp.page_revision,
                 "topology_revision": delta.stamp.topology_revision,
+                "physical_mirror_page_revision": self.page_index.revision,
+                "source_page_revision": (
+                    delta.source_page_revision
+                    if delta.source_page_revision is not None
+                    else delta.stamp.page_revision
+                ),
+                "page_revision_lag": max(
+                    0,
+                    int(
+                        delta.source_page_revision
+                        if delta.source_page_revision is not None
+                        else delta.stamp.page_revision
+                    )
+                    - self.page_index.revision,
+                ),
+                "physical_mirror_age_ms": max(
+                    0.0,
+                    delta.observation.ts_ms
+                    - float(
+                        self._physical_mirror_observed_ts_ms
+                        if self._physical_mirror_observed_ts_ms is not None
+                        else delta.observation.ts_ms
+                    ),
+                ),
             },
             producer="candidate_local_physicalizer",
         )
@@ -1048,6 +1177,7 @@ class IncrementalPolicyInputAssembler:
                 optional_metadata=metadata,
             ),
             True,
+            None,
         )
 
 
@@ -1233,6 +1363,7 @@ class LatestWinsJointPlanWorker:
             risk_action_signature: tuple[object, ...] | None = None
             publish_result = True
             risk_evaluation_requested = False
+            risk_funnel_reason: str | None = None
             try:
                 if item.deltas:
                     assert self.assembler is not None
@@ -1284,12 +1415,15 @@ class LatestWinsJointPlanWorker:
                             ),
                         )
                         risk_consumed = True
+                        risk_only = True
                         plan = self._cached_observed_plan
-                        policy_input, risk_evaluation_requested = (
-                            self.assembler.materialize_predictive_candidates(
-                                policy_input,
-                                plan,
-                            )
+                        (
+                            policy_input,
+                            risk_evaluation_requested,
+                            risk_funnel_reason,
+                        ) = self._materialize_predictive_candidates_safely(
+                            policy_input,
+                            plan,
                         )
                         snapshot_materialize_ms = (
                             time.perf_counter_ns() - materialize_started_ns
@@ -1306,14 +1440,18 @@ class LatestWinsJointPlanWorker:
                                 == self._last_risk_action_signature
                             ):
                                 risk_evaluation_requested = False
-                                publish_result = False
-                            else:
-                                risk_only = True
+                                risk_funnel_reason = "unchanged_action_signature"
+                        else:
+                            risk_funnel_reason = (
+                                risk_funnel_reason
+                                or "candidate_physicalization_failed"
+                            )
+                    else:
+                        if self._risk_dirty:
+                            risk_funnel_reason = "no_cached_observed_plan"
                         else:
                             publish_result = False
-                    else:
-                        publish_result = False
-                if publish_result and not risk_only:
+                if publish_result and not risk_only and risk_funnel_reason is None:
                     planning_attempted = True
                     if policy_input is None:
                         raise RuntimeError(
@@ -1350,16 +1488,29 @@ class LatestWinsJointPlanWorker:
                                 sorted(self._risk_trigger_signatures)
                             ),
                         )
-                        policy_input, risk_evaluation_requested = (
-                            self.assembler.materialize_predictive_candidates(
-                                policy_input,
-                                plan,
-                            )
+                        (
+                            policy_input,
+                            risk_evaluation_requested,
+                            risk_funnel_reason,
+                        ) = self._materialize_predictive_candidates_safely(
+                            policy_input,
+                            plan,
                         )
                         risk_consumed = True
                         if risk_evaluation_requested:
                             risk_action_signature = self._risk_action_signature(
                                 policy_input
+                            )
+                            if (
+                                risk_action_signature
+                                == self._last_risk_action_signature
+                            ):
+                                risk_evaluation_requested = False
+                                risk_funnel_reason = "unchanged_action_signature"
+                        else:
+                            risk_funnel_reason = (
+                                risk_funnel_reason
+                                or "candidate_physicalization_failed"
                             )
             except Exception as caught:
                 error = f"{type(caught).__name__}: {caught}"
@@ -1389,6 +1540,7 @@ class LatestWinsJointPlanWorker:
                 planning_budget_ms=planning_budget_ms,
                 risk_evaluation_requested=risk_evaluation_requested,
                 planning_attempted=planning_attempted,
+                risk_funnel_reason=risk_funnel_reason,
             )
             with self._condition:
                 self._busy = False
@@ -1416,6 +1568,20 @@ class LatestWinsJointPlanWorker:
                 ):
                     self._latest = result
                 self._condition.notify_all()
+
+    def _materialize_predictive_candidates_safely(
+        self,
+        policy_input: PolicyInput,
+        plan: JointPlan,
+    ) -> tuple[PolicyInput, bool, str | None]:
+        assert self.assembler is not None
+        try:
+            return self.assembler.materialize_predictive_candidates(
+                policy_input,
+                plan,
+            )
+        except Exception:
+            return policy_input, False, "candidate_physicalization_failed"
 
     @staticmethod
     def _risk_action_signature(policy_input: PolicyInput) -> tuple[object, ...]:
