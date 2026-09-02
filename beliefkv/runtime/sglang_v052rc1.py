@@ -147,6 +147,9 @@ from beliefkv.runtime.page_index import PageIndexReplicaDelta
 _PERFORMANCE_METRIC_EVENTS = frozenset(
     {
         "resource_snapshot",
+        "predictive_beneficiary_hint_published",
+        "predictive_risk_enqueued",
+        "predictive_risk_funnel",
         "predictive_risk_progress",
         "request_visible_pending",
         "request_started",
@@ -3111,6 +3114,12 @@ class EmbeddedSGLangRuntime:
                 ),
                 "online_counts": dict(
                     sorted(getattr(self, "_online_joint_counts", {}).items())
+                ),
+                "shadow_counts": dict(
+                    sorted(getattr(self, "_joint_shadow_counts", {}).items())
+                ),
+                "predictive_counts": dict(
+                    sorted(getattr(self, "_joint_predictive_counts", {}).items())
                 ),
                 "retraction_counts": dict(
                     sorted(

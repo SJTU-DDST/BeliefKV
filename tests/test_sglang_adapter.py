@@ -83,6 +83,7 @@ from beliefkv.runtime.sglang_v052rc1 import (
     HiCacheNodeCommandBackend,
     SGLangBackendError,
     SGLangNodeRegistry,
+    _PERFORMANCE_METRIC_EVENTS,
     close_runtime_with_signal_shield,
     install_scheduler_shutdown_handler,
     _predictive_bundle_envelope_reasons,
@@ -1901,6 +1902,8 @@ class SGLangBackendTest(unittest.TestCase):
         runtime.audit = _AuditRecorder()
         runtime._shutdown_state = "acknowledged"
         runtime._online_joint_counts = Counter()
+        runtime._joint_shadow_counts = Counter({"risk_only_result_published": 2})
+        runtime._joint_predictive_counts = Counter({"funnel_no_beneficiary_hint": 3})
         runtime._running_retraction_counts = Counter()
         runtime._pending_online_joint_residency = None
         runtime._pending_running_retraction_transaction = None
@@ -1908,6 +1911,21 @@ class SGLangBackendTest(unittest.TestCase):
 
         payload = runtime._runtime_summary_payload(now_ms=10.0, final=True)
 
+        self.assertEqual(
+            payload["joint_control"]["shadow_counts"],
+            {"risk_only_result_published": 2},
+        )
+        self.assertEqual(
+            payload["joint_control"]["predictive_counts"],
+            {"funnel_no_beneficiary_hint": 3},
+        )
+        self.assertTrue(
+            {
+                "predictive_beneficiary_hint_published",
+                "predictive_risk_enqueued",
+                "predictive_risk_funnel",
+            }.issubset(_PERFORMANCE_METRIC_EVENTS)
+        )
         self.assertTrue(
             payload["correctness_gates"][
                 "all_online_actions_have_source_joint_plan_id"
