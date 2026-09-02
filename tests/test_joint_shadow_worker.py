@@ -1043,6 +1043,9 @@ def test_risk_event_reuses_cached_observed_seed_without_replanning() -> None:
         "beliefkv_predictive_candidate_scope"
     ].value
     assert scope["victim_context_ids"] == ("ctx",)
+    assert "root" in risk_result.policy_input.runtime_graph.state["rccg"][
+        "invocations"
+    ]
     assert worker.close()
 
 

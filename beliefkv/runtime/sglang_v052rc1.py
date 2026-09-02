@@ -150,6 +150,8 @@ _PERFORMANCE_METRIC_EVENTS = frozenset(
         "predictive_beneficiary_hint_published",
         "predictive_risk_enqueued",
         "predictive_risk_funnel",
+        "predictive_risk_eligibility",
+        "predictive_risk_shadow_failed",
         "predictive_risk_progress",
         "request_visible_pending",
         "request_started",
@@ -16360,6 +16362,15 @@ class EmbeddedSGLangRuntime:
     ) -> bool:
         hint = self._latest_observed_seed_beneficiary
         signature = hint.signature if hint is not None else None
+        risk_signature = hint.risk_signature if hint is not None else None
+        risk_signature_changed = bool(
+            hint is not None
+            and (
+                not getattr(self, "_observed_seed_hint_risk_initialized", False)
+                or risk_signature
+                != getattr(self, "_last_observed_seed_hint_risk_signature", None)
+            )
+        )
         if (
             self._observed_seed_hint_publication_initialized
             and signature
@@ -16419,13 +16430,18 @@ class EmbeddedSGLangRuntime:
             stamp=stamp,
             trigger=(
                 "risk_eval+bounded_seed_hint_changed"
-                if published_hint is not None
-                else "semantic_delta+bounded_seed_hint_cleared"
+                if risk_signature_changed
+                else (
+                    "semantic_delta+bounded_seed_hint_refreshed"
+                    if published_hint is not None
+                    else "semantic_delta+bounded_seed_hint_cleared"
+                )
             ),
             captured_monotonic_ms=time.monotonic_ns() / 1_000_000.0,
             planning_requested=False,
             risk_evaluation_requested=bool(
                 published_hint is not None
+                and risk_signature_changed
                 and getattr(self, "predictive_risk_worker", None) is not None
             ),
             observed_seed_beneficiary=published_hint,
@@ -16455,15 +16471,20 @@ class EmbeddedSGLangRuntime:
         ) / 1_000_000.0
         self._observed_seed_hint_publication_initialized = True
         self._last_published_observed_seed_hint_signature = signature
+        self._observed_seed_hint_risk_initialized = True
+        self._last_observed_seed_hint_risk_signature = risk_signature
         self._latest_observed_seed_beneficiary = published_hint
         self._last_policy_state_stamp = stamp
         self._joint_shadow_counts["submitted"] += 1
         self._joint_shadow_counts["apply_only_submitted"] += 1
-        self._joint_predictive_counts[
-            "hint_risk_published"
-            if published_hint is not None
-            else "hint_clear_published"
-        ] += 1
+        hint_outcome = (
+            "hint_clear_published"
+            if published_hint is None
+            else "hint_risk_published"
+            if delta.risk_evaluation_requested
+            else "hint_refresh_published"
+        )
+        self._joint_predictive_counts[hint_outcome] += 1
         self._joint_shadow_timing_samples[
             "safe_point_delta_capture_ms"
         ].append(capture_ms)
@@ -17984,6 +18005,10 @@ class EmbeddedSGLangRuntime:
             )
         elif result.error is not None:
             self._joint_predictive_counts["risk_shadow_failed"] += 1
+            error_class = result.error.partition(":")[0] or "unknown"
+            self._joint_predictive_counts[
+                f"risk_shadow_failure_{error_class}"
+            ] += 1
             self.audit.emit(
                 "predictive_risk_shadow_failed",
                 observation.ts_ms,

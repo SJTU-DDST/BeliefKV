@@ -109,6 +109,28 @@ def test_join_slack_uses_dependency_release_survival_not_resource_feasibility() 
     )  # OTHER has no finite upper reentry bound for PREFETCH_GPU.
 
 
+def test_belief_scope_seed_ignores_only_missing_optional_witness() -> None:
+    graph = _graph()
+
+    seeds, missing = PredictiveRiskShadowObserver._belief_scope_seed_ids(
+        graph,
+        required=("invocation-target",),
+        optional=("invocation-not-in-compact-snapshot",),
+    )
+
+    assert seeds == ("invocation-target",)
+    assert missing == ()
+
+    seeds, missing = PredictiveRiskShadowObserver._belief_scope_seed_ids(
+        graph,
+        required=("invocation-required-missing",),
+        optional=("invocation-target",),
+    )
+
+    assert seeds == ()
+    assert missing == ("invocation-required-missing",)
+
+
 def test_candidate_packages_exclude_invocations_outside_belief_scope() -> None:
     observer = PredictiveRiskShadowObserver.__new__(
         PredictiveRiskShadowObserver

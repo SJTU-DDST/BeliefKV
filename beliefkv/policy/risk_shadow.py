@@ -1220,6 +1220,35 @@ class PredictiveRiskShadowObserver:
         self._belief_cache_key: str | None = None
         self._belief_cache: Any | None = None
 
+    @staticmethod
+    def _belief_scope_seed_ids(
+        graph: RuntimeCausalContextGraph,
+        *,
+        required: tuple[str, ...],
+        optional: tuple[str, ...] = (),
+    ) -> tuple[tuple[str, ...], tuple[str, ...]]:
+        required_ids = tuple(dict.fromkeys(required))
+        missing = tuple(
+            invocation_id
+            for invocation_id in required_ids
+            if invocation_id not in graph.invocations
+        )
+        if missing:
+            return (), missing
+        return (
+            tuple(
+                dict.fromkeys(
+                    (
+                        *required_ids,
+                        *(
+                            item for item in optional if item in graph.invocations
+                        ),
+                    )
+                )
+            ),
+            (),
+        )
+
     def evaluate(
         self,
         policy_input: PolicyInput,
@@ -1321,10 +1350,6 @@ class PredictiveRiskShadowObserver:
             )
 
         primary = eligibility.prepare_host_victims[0]
-        seed_ids = [
-            projected_requirement.beneficiary_invocation_id,
-            primary.invocation_id,
-        ]
         request_by_id = {
             request.request_id: request
             for request in policy_input.runnable_frontier
@@ -1337,17 +1362,30 @@ class PredictiveRiskShadowObserver:
             ),
             None,
         )
-        if slot_witness is not None:
-            seed_ids.append(slot_witness)
-        seed_ids.extend(
-            item.invocation_id
-            for item in eligibility.prepare_host_victims[:2]
+        seed_ids, missing_required = self._belief_scope_seed_ids(
+            graph,
+            required=(
+                projected_requirement.beneficiary_invocation_id,
+                *(
+                    item.invocation_id
+                    for item in eligibility.prepare_host_victims[:2]
+                ),
+            ),
+            optional=((slot_witness,) if slot_witness is not None else ()),
         )
+        if missing_required:
+            return self._skipped(
+                policy_input,
+                source_plan,
+                started_ns,
+                model_version=model_version,
+                reasons=("belief_scope_required_invocation_missing",),
+            )
         # The current predictive actions never change active ownership. Physical
         # blockers therefore remain deterministic commit constraints instead of
         # semantic scope dependencies. Predictive retraction must add its own
         # candidate-specific blocker closure when that action is introduced.
-        scope = self.scope_builder.build(graph, tuple(dict.fromkeys(seed_ids)))
+        scope = self.scope_builder.build(graph, seed_ids)
         if not scope.invocation_ids:
             return self._skipped(
                 policy_input,

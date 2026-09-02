@@ -538,11 +538,41 @@ def test_bounded_seed_hint_change_publishes_one_lightweight_risk_delta():
     assert submitted[0].page_delta.pages == ()
     assert submitted[0].observed_seed_beneficiary.published_ts_ms == 5.0
     assert submitted[0].source_page_revision == 17
-    runtime._latest_observed_seed_beneficiary = None
+
+    runtime._latest_observed_seed_beneficiary = replace(
+        runtime._latest_observed_seed_beneficiary,
+        seed_generation=8,
+        created_ts_ms=6.0,
+        published_ts_ms=None,
+    )
     assert runtime._maybe_publish_observed_seed_hint_delta(worker)
     assert len(submitted) == 2
     assert not submitted[1].risk_evaluation_requested
-    assert submitted[1].observed_seed_beneficiary is None
+    assert submitted[1].trigger == "semantic_delta+bounded_seed_hint_refreshed"
+
+    runtime._latest_observed_seed_beneficiary = replace(
+        runtime._latest_observed_seed_beneficiary,
+        growth_bytes=runtime._latest_observed_seed_beneficiary.growth_bytes + 1,
+        seed_generation=9,
+        created_ts_ms=7.0,
+        published_ts_ms=None,
+    )
+    assert runtime._maybe_publish_observed_seed_hint_delta(worker)
+    assert len(submitted) == 3
+    assert submitted[2].risk_evaluation_requested
+
+    runtime._latest_observed_seed_beneficiary = None
+    assert runtime._maybe_publish_observed_seed_hint_delta(worker)
+    assert len(submitted) == 4
+    assert not submitted[3].risk_evaluation_requested
+    assert submitted[3].observed_seed_beneficiary is None
+    assert runtime._joint_predictive_counts == Counter(
+        {
+            "hint_risk_published": 2,
+            "hint_refresh_published": 1,
+            "hint_clear_published": 1,
+        }
+    )
 
 
 def test_predictive_risk_triggers_follow_park_and_reentry_boundaries():
@@ -1924,6 +1954,8 @@ class SGLangBackendTest(unittest.TestCase):
                 "predictive_beneficiary_hint_published",
                 "predictive_risk_enqueued",
                 "predictive_risk_funnel",
+                "predictive_risk_eligibility",
+                "predictive_risk_shadow_failed",
             }.issubset(_PERFORMANCE_METRIC_EVENTS)
         )
         self.assertTrue(

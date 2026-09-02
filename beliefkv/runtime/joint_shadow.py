@@ -159,6 +159,18 @@ class ObservedSeedBeneficiaryHint:
             self.seed_generation,
         )
 
+    @property
+    def risk_signature(self) -> tuple[object, ...]:
+        """Material action inputs, excluding the bounded-seed revision."""
+
+        return (
+            self.request_id,
+            self.context_id,
+            self.context_epoch,
+            self.startup_bytes,
+            self.growth_bytes,
+        )
+
     def to_dict(self) -> dict[str, object]:
         return {
             "plan_id": self.plan_id,
@@ -871,6 +883,77 @@ class IncrementalPolicyInputAssembler:
             optional_metadata=metadata,
         )
 
+    def _refresh_candidate_graph_closure(
+        self,
+        policy_input: PolicyInput,
+        seed_invocation_ids: tuple[str, ...],
+    ) -> PolicyInput:
+        graph_state = dict(policy_input.runtime_graph.state)
+        base_rccg = graph_state.get("rccg", {})
+        if not isinstance(base_rccg, Mapping):
+            base_rccg = {}
+        rccg = dict(base_rccg)
+        invocations = dict(
+            base_rccg.get("invocations", {})
+            if isinstance(base_rccg.get("invocations", {}), Mapping)
+            else {}
+        )
+        contexts = dict(
+            base_rccg.get("contexts", {})
+            if isinstance(base_rccg.get("contexts", {}), Mapping)
+            else {}
+        )
+        joins = dict(
+            base_rccg.get("joins", {})
+            if isinstance(base_rccg.get("joins", {}), Mapping)
+            else {}
+        )
+        closure_ids = set(seed_invocation_ids)
+        pending = list(closure_ids)
+        while pending:
+            invocation_id = pending.pop()
+            invocation = self.graph.invocations.get(invocation_id)
+            if invocation is None:
+                invocations.pop(invocation_id, None)
+                continue
+            invocations[invocation_id] = self.graph.invocation_snapshot(
+                invocation_id
+            )
+            contexts[invocation.context_id] = self.graph.context_snapshot(
+                invocation.context_id
+            )
+            related = {
+                invocation.parent_invocation_id,
+                invocation.return_target_id,
+                *invocation.child_invocation_ids,
+                *invocation.blocking_child_ids,
+            }
+            if invocation.join_id:
+                join = self.graph.joins.get(invocation.join_id)
+                if join is not None:
+                    joins[invocation.join_id] = self.graph.join_snapshot(
+                        invocation.join_id
+                    )
+                    related.update(join.member_invocation_ids)
+                    related.update(join.waiter_invocation_ids)
+            for related_id in related:
+                if related_id and related_id not in closure_ids:
+                    closure_ids.add(related_id)
+                    pending.append(related_id)
+        rccg["graph_version"] = self.graph.graph_version
+        rccg["invocations"] = invocations
+        rccg["contexts"] = contexts
+        rccg["joins"] = joins
+        graph_state["rccg"] = rccg
+        return replace(
+            policy_input,
+            runtime_graph=replace(
+                policy_input.runtime_graph,
+                graph_version=self.graph.graph_version,
+                state=graph_state,
+            ),
+        )
+
     def materialize_predictive_candidates(
         self,
         policy_input: PolicyInput,
@@ -1006,6 +1089,32 @@ class IncrementalPolicyInputAssembler:
                 )
             )
         )
+        candidate_seed_ids = {beneficiary.invocation_id}
+        for context_id in context_ids:
+            context = self.graph.contexts.get(context_id)
+            if context is not None:
+                candidate_seed_ids.update(context.invocation_ids)
+        slot_witness = next(
+            (
+                request_by_id[request_id].invocation_id
+                for request_id in source_plan.execution.ordered_request_ids
+                if request_id in request_by_id
+            ),
+            None,
+        )
+        if slot_witness is not None:
+            candidate_seed_ids.add(slot_witness)
+        policy_input = self._refresh_candidate_graph_closure(
+            policy_input,
+            tuple(sorted(candidate_seed_ids)),
+        )
+        graph_state = policy_input.runtime_graph.state
+        nested = graph_state.get("rccg")
+        if isinstance(nested, Mapping):
+            graph_state = nested
+        invocations = graph_state.get("invocations", {})
+        if not isinstance(invocations, Mapping):
+            invocations = {}
         delta = self._latest
         if delta is None:
             return policy_input, False, "candidate_physicalization_failed"
