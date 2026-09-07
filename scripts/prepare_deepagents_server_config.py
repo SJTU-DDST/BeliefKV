@@ -112,6 +112,12 @@ def main() -> int:
         ),
     )
     parser.add_argument(
+        "--predictive-beneficiary-projection-horizon-ms",
+        type=float,
+        default=2000.0,
+        help="Bounded HBM-growth horizon used by the beneficiary opportunity probe.",
+    )
+    parser.add_argument(
         "--gpu-service-model",
         type=Path,
         default=None,
@@ -546,6 +552,9 @@ def main() -> int:
         "joint_policy_shadow_mode": not args.disable_policy_shadow,
         "joint_observed_mode_enabled": not args.disable_policy_shadow,
         "joint_predictive_enabled": args.enable_joint_predictive,
+        "predictive_beneficiary_projection_horizon_ms": (
+            args.predictive_beneficiary_projection_horizon_ms
+        ),
         "predictive_risk_shadow_enabled": args.enable_predictive_risk_shadow,
         "predictive_joint_overlay_enabled": args.enable_predictive_joint_overlay,
         "predictive_prepare_host_enabled": True,

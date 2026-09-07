@@ -16734,6 +16734,7 @@ class EmbeddedSGLangRuntime:
             and predictive_worker is not None
             and overlay_batch is not None
         )
+        replace_overlay = bool(published_hint is None or risk_signature_changed)
         delta = JointShadowDelta(
             event_from_sequence=self._shadow_event_sequence,
             event_to_sequence=self._shadow_event_sequence,
@@ -16761,7 +16762,7 @@ class EmbeddedSGLangRuntime:
             risk_evaluation_requested=risk_evaluation_requested,
             observed_seed_beneficiary=published_hint,
             action_local_overlay_batch=overlay_batch,
-            action_local_overlay_replaced=True,
+            action_local_overlay_replaced=replace_overlay,
             source_page_revision=self.controller.page_index.revision,
             source_topology_revision=self.controller.page_index.topology_revision,
             frontier_model_version=getattr(
