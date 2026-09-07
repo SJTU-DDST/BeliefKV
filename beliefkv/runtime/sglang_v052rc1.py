@@ -71,7 +71,11 @@ from beliefkv.policy.online_joint import (
     derive_action_groups,
     extend_joint_epoch_admission,
 )
-from beliefkv.policy.predictive_joint import PredictiveActionKind
+from beliefkv.policy.predictive_joint import (
+    ActionLocalPhysicalOverlay,
+    BeneficiaryOpportunityProbe,
+    PredictiveActionKind,
+)
 from beliefkv.policy.predictive_attribution import (
     PredictiveActionAttributionLedger,
     PredictiveActionOutcome,
@@ -131,6 +135,7 @@ from beliefkv.runtime.joint_shadow import (
     JointShadowStateStamp,
     LatestWinsJointPlanWorker,
     LatestWinsPredictiveRiskWorker,
+    ActionLocalPhysicalOverlayBatch,
     ObservedSeedBeneficiaryHint,
     WorkflowFairnessReplica,
 )
@@ -16356,13 +16361,275 @@ class EmbeddedSGLangRuntime:
                 add("reentry", event.kind.value, event.invocation_id)
         return tuple(sorted(triggers))
 
+    def _predictive_max_running_requests(self) -> int:
+        for owner in (
+            self.scheduler,
+            getattr(self.scheduler, "server_args", None),
+        ):
+            value = getattr(owner, "max_running_requests", None)
+            if value is not None and int(value) > 0:
+                return int(value)
+        return 0
+
+    def _predictive_beneficiary_opportunity_probe(
+        self,
+        hint: ObservedSeedBeneficiaryHint,
+        observation: RuntimeResourceObservation,
+    ) -> BeneficiaryOpportunityProbe:
+        running_batch = getattr(self.scheduler, "running_batch", None)
+        running_ids = {
+            str(getattr(request, "rid", f"object:{id(request)}"))
+            for request in tuple(getattr(running_batch, "reqs", ()) or ())
+        }
+        chunked = getattr(self.scheduler, "chunked_req", None)
+        if chunked is not None:
+            running_ids.add(str(getattr(chunked, "rid", f"object:{id(chunked)}")))
+        max_running = self._predictive_max_running_requests()
+        required_bytes = hint.startup_bytes + hint.growth_bytes
+        hbm_available_bytes = max(
+            0,
+            observation.hbm_capacity_bytes
+            - observation.hbm_used_bytes
+            - self.controller.admission.reserved_bytes,
+        )
+        risk_margin_bytes = max(
+            required_bytes,
+            self.config.reference_policy_hbm_bucket_bytes,
+        )
+        hbm_blocked = required_bytes > hbm_available_bytes
+        slot_blocked = bool(max_running and len(running_ids) >= max_running)
+        hbm_opportunity_possible = bool(
+            hbm_blocked
+            or hbm_available_bytes <= required_bytes + risk_margin_bytes
+        )
+        return BeneficiaryOpportunityProbe(
+            beneficiary_request_id=hint.request_id,
+            beneficiary_context_id=hint.context_id,
+            beneficiary_context_epoch=hint.context_epoch,
+            required_bytes=required_bytes,
+            hbm_available_bytes=hbm_available_bytes,
+            hbm_risk_margin_bytes=risk_margin_bytes,
+            predicted_deficit_bytes=max(0, required_bytes - hbm_available_bytes),
+            running_request_count=len(running_ids),
+            max_running_requests=max_running,
+            beneficiary_slot_blocked=slot_blocked,
+            beneficiary_hbm_blocked=hbm_blocked,
+            beneficiary_slot_then_hbm_blocked=slot_blocked and hbm_blocked,
+            hbm_opportunity_possible=hbm_opportunity_possible,
+            captured_ts_ms=observation.ts_ms,
+        )
+
+    def _capture_action_local_physical_overlay_batch(
+        self,
+        hint: ObservedSeedBeneficiaryHint,
+        observation: RuntimeResourceObservation,
+    ) -> ActionLocalPhysicalOverlayBatch:
+        started_ns = time.perf_counter_ns()
+        opportunity = self._predictive_beneficiary_opportunity_probe(
+            hint, observation
+        )
+        if not opportunity.hbm_opportunity_possible:
+            return ActionLocalPhysicalOverlayBatch(
+                beneficiary_risk_signature=hint.risk_signature,
+                opportunity=opportunity,
+                selection_reason=(
+                    "beneficiary_slot_only"
+                    if opportunity.beneficiary_slot_blocked
+                    else "beneficiary_capacity_available"
+                ),
+                capture_ms=(time.perf_counter_ns() - started_ns) / 1_000_000.0,
+            )
+
+        wait_states = {
+            InvocationState.WAIT_TOOL,
+            InvocationState.WAIT_CHILD,
+            InvocationState.WAIT_JOIN,
+            InvocationState.WAIT_MESSAGE,
+        }
+        states_by_context: dict[str, set[InvocationState]] = defaultdict(set)
+        for invocation in self.controller.graph.invocations.values():
+            if invocation.state.terminal:
+                continue
+            states_by_context[invocation.context_id].add(invocation.state)
+        parked_context_ids = tuple(
+            sorted(
+                context_id
+                for context_id, states in states_by_context.items()
+                if context_id != hint.context_id
+                and states
+                and states.issubset(wait_states)
+            )
+        )
+        if not parked_context_ids:
+            return ActionLocalPhysicalOverlayBatch(
+                beneficiary_risk_signature=hint.risk_signature,
+                opportunity=opportunity,
+                selection_reason="no_victim_context_selected",
+                capture_ms=(time.perf_counter_ns() - started_ns) / 1_000_000.0,
+            )
+
+        page_index = self.controller.page_index
+        summaries = []
+        missing_context = False
+        for context_id in parked_context_ids:
+            if not page_index.has_context(context_id):
+                missing_context = True
+                continue
+            summary = page_index.context_physical_summary(context_id)
+            if summary.exclusive_reclaimable_upper_bound_bytes > 0:
+                summaries.append(summary)
+        if not summaries:
+            return ActionLocalPhysicalOverlayBatch(
+                beneficiary_risk_signature=hint.risk_signature,
+                opportunity=opportunity,
+                selection_reason=(
+                    "victim_missing_from_physical_mirror"
+                    if missing_context
+                    else "victim_zero_reclaimable_bytes"
+                ),
+                capture_ms=(time.perf_counter_ns() - started_ns) / 1_000_000.0,
+            )
+
+        summaries.sort(
+            key=lambda item: (
+                -item.exclusive_reclaimable_upper_bound_bytes,
+                item.locked_bytes,
+                item.last_access_ms,
+                item.context_id,
+            )
+        )
+        overlays: list[ActionLocalPhysicalOverlay] = []
+        observed_failure_reasons: set[str] = set()
+        for summary in summaries[:2]:
+            context = self.controller.graph.contexts.get(summary.context_id)
+            if context is None:
+                observed_failure_reasons.add("no_victim_context_selected")
+                continue
+            if (
+                context.epoch != summary.context_epoch
+                or page_index.context_epoch(summary.context_id) != context.epoch
+            ):
+                observed_failure_reasons.add("victim_bundle_generation_stale")
+                continue
+            previews = self.controller.arbiter.bundle_builder.previews_for_context(
+                CommandKind.SHADOW_CONTEXT,
+                summary.context_id,
+                context.epoch,
+                now_ms=observation.ts_ms,
+                host_available_bytes=observation.host_free_bytes,
+            )
+            candidates = tuple(
+                preview
+                for preview in previews
+                if preview.eligible
+                and preview.copy_bytes > 0
+                and preview.bundle.exclusive_action_bytes > 0
+                and any(
+                    action.action == PhysicalPageAction.START_D2H
+                    for action in preview.page_actions
+                )
+            )
+            if not candidates:
+                blocker_codes = {
+                    blocker.code.value
+                    for preview in previews
+                    for blocker in preview.blockers
+                }
+                if blocker_codes.intersection(
+                    {
+                        TransferBlockerCode.STALE_GENERATION.value,
+                        TransferBlockerCode.EXTENT_MUTATED.value,
+                    }
+                ):
+                    observed_failure_reasons.add(
+                        "victim_bundle_generation_stale"
+                    )
+                elif not previews or all(preview.copy_bytes <= 0 for preview in previews):
+                    observed_failure_reasons.add("victim_zero_reclaimable_bytes")
+                else:
+                    observed_failure_reasons.add("victim_physically_blocked")
+                continue
+            preview = min(
+                candidates,
+                key=lambda item: (
+                    -item.bundle.exclusive_action_bytes,
+                    item.copy_bytes,
+                    item.bundle.cross_context_action_bytes,
+                    item.bundle.bundle_id,
+                ),
+            )
+            extent_count = sum(
+                action.action == PhysicalPageAction.START_D2H
+                for action in preview.page_actions
+            )
+            overlays.append(
+                ActionLocalPhysicalOverlay(
+                    context_id=summary.context_id,
+                    context_epoch=context.epoch,
+                    page_revision=page_index.revision,
+                    topology_revision=page_index.topology_revision,
+                    generation_fingerprint=preview.bundle.generation_fingerprint,
+                    shape_fingerprint=_predictive_live_shape_fingerprint(
+                        self.controller.policy_snapshot_builder,
+                        preview,
+                        now_ms=observation.ts_ms,
+                    ),
+                    exclusive_reclaimable_bytes=(
+                        preview.bundle.exclusive_action_bytes
+                    ),
+                    d2h_copy_bytes=preview.copy_bytes,
+                    extent_count=extent_count,
+                    cross_context_bytes=preview.bundle.cross_context_action_bytes,
+                    locked_bytes=preview.bundle.locked_bytes,
+                    owner_context_ids=preview.bundle.owner_context_ids,
+                    blocker_codes=(),
+                    native_loading=False,
+                    captured_ts_ms=observation.ts_ms,
+                )
+            )
+
+        selection_reason = None
+        if not overlays:
+            priority = (
+                "victim_bundle_generation_stale",
+                "victim_missing_from_physical_mirror",
+                "victim_zero_reclaimable_bytes",
+                "victim_physically_blocked",
+                "no_victim_context_selected",
+            )
+            selection_reason = next(
+                (
+                    reason
+                    for reason in priority
+                    if reason in observed_failure_reasons
+                ),
+                "victim_zero_reclaimable_bytes",
+            )
+        return ActionLocalPhysicalOverlayBatch(
+            beneficiary_risk_signature=hint.risk_signature,
+            opportunity=opportunity,
+            overlays=tuple(overlays),
+            selection_reason=selection_reason,
+            capture_ms=(time.perf_counter_ns() - started_ns) / 1_000_000.0,
+        )
+
     def _maybe_publish_observed_seed_hint_delta(
         self,
         worker: LatestWinsJointPlanWorker,
     ) -> bool:
+        publication_started_ns = time.perf_counter_ns()
         hint = self._latest_observed_seed_beneficiary
-        signature = hint.signature if hint is not None else None
-        risk_signature = hint.risk_signature if hint is not None else None
+        observation = self._runtime_resource_observation()
+        hbm_bucket = (
+            observation.hbm_used_bytes
+            // self.config.reference_policy_hbm_bucket_bytes
+        )
+        signature = (
+            (*hint.signature, hbm_bucket) if hint is not None else None
+        )
+        risk_signature = (
+            (*hint.risk_signature, hbm_bucket) if hint is not None else None
+        )
         risk_signature_changed = bool(
             hint is not None
             and (
@@ -16373,8 +16640,7 @@ class EmbeddedSGLangRuntime:
         )
         if (
             self._observed_seed_hint_publication_initialized
-            and signature
-            == self._last_published_observed_seed_hint_signature
+            and signature == self._last_published_observed_seed_hint_signature
         ):
             return False
         base_stamp = getattr(self, "_last_policy_state_stamp", None)
@@ -16387,12 +16653,41 @@ class EmbeddedSGLangRuntime:
             ] += 1
             return False
 
-        observation = self._runtime_resource_observation()
         published_hint = (
             replace(hint, published_ts_ms=observation.ts_ms)
             if hint is not None
             else None
         )
+        predictive_worker = getattr(self, "predictive_risk_worker", None)
+        predictive_stats = (
+            predictive_worker.stats()
+            if predictive_worker is not None
+            and callable(getattr(predictive_worker, "stats", None))
+            else None
+        )
+        predictive_busy_at_capture = bool(
+            predictive_stats is not None and predictive_stats.busy
+        )
+        overlay_batch = None
+        if (
+            published_hint is not None
+            and risk_signature_changed
+            and predictive_worker is not None
+        ):
+            try:
+                overlay_batch = self._capture_action_local_physical_overlay_batch(
+                    published_hint, observation
+                )
+            except Exception as error:
+                self._joint_predictive_counts["overlay_capture_failed"] += 1
+                self.audit.emit(
+                    "predictive_action_local_overlay_failed",
+                    observation.ts_ms,
+                    audit_level="correctness",
+                    request_id=published_hint.request_id,
+                    error=f"{type(error).__name__}: {error}",
+                )
+
         page_delta = PageIndexReplicaDelta(
             from_revision=self._shadow_page_revision,
             to_revision=self._shadow_page_revision,
@@ -16415,6 +16710,12 @@ class EmbeddedSGLangRuntime:
             host_free_bytes=observation.host_free_bytes,
             runnable_signature=self._joint_shadow_runnable_signature(runnable),
         )
+        risk_evaluation_requested = bool(
+            published_hint is not None
+            and risk_signature_changed
+            and predictive_worker is not None
+            and overlay_batch is not None
+        )
         delta = JointShadowDelta(
             event_from_sequence=self._shadow_event_sequence,
             event_to_sequence=self._shadow_event_sequence,
@@ -16430,7 +16731,7 @@ class EmbeddedSGLangRuntime:
             stamp=stamp,
             trigger=(
                 "risk_eval+bounded_seed_hint_changed"
-                if risk_signature_changed
+                if risk_evaluation_requested
                 else (
                     "semantic_delta+bounded_seed_hint_refreshed"
                     if published_hint is not None
@@ -16439,19 +16740,16 @@ class EmbeddedSGLangRuntime:
             ),
             captured_monotonic_ms=time.monotonic_ns() / 1_000_000.0,
             planning_requested=False,
-            risk_evaluation_requested=bool(
-                published_hint is not None
-                and risk_signature_changed
-                and getattr(self, "predictive_risk_worker", None) is not None
-            ),
+            risk_evaluation_requested=risk_evaluation_requested,
             observed_seed_beneficiary=published_hint,
+            action_local_overlay_batch=overlay_batch,
+            action_local_overlay_replaced=True,
             source_page_revision=self.controller.page_index.revision,
             source_topology_revision=self.controller.page_index.topology_revision,
             frontier_model_version=getattr(
                 self, "_last_frontier_model_version", None
             ),
         )
-        capture_started_ns = time.perf_counter_ns()
         try:
             submission = worker.submit_delta(delta)
         except Exception as error:
@@ -16467,7 +16765,7 @@ class EmbeddedSGLangRuntime:
             return False
 
         capture_ms = (
-            time.perf_counter_ns() - capture_started_ns
+            time.perf_counter_ns() - publication_started_ns
         ) / 1_000_000.0
         self._observed_seed_hint_publication_initialized = True
         self._last_published_observed_seed_hint_signature = signature
@@ -16485,9 +16783,28 @@ class EmbeddedSGLangRuntime:
             else "hint_refresh_published"
         )
         self._joint_predictive_counts[hint_outcome] += 1
+        opportunity = overlay_batch.opportunity if overlay_batch is not None else None
+        if opportunity is not None:
+            self._joint_predictive_counts[
+                f"beneficiary_opportunity:{opportunity.classification}"
+            ] += 1
+            if overlay_batch.selection_reason is not None:
+                self._joint_predictive_counts[
+                    f"overlay_selection:{overlay_batch.selection_reason}"
+                ] += 1
+            self._joint_predictive_counts["overlay_victim_count"] += len(
+                overlay_batch.overlays
+            )
+            self._joint_shadow_timing_samples.setdefault(
+                "action_local_overlay_capture_ms", deque(maxlen=65_536)
+            ).append(overlay_batch.capture_ms)
         self._joint_shadow_timing_samples[
             "safe_point_delta_capture_ms"
         ].append(capture_ms)
+        busy_suffix = "busy" if predictive_busy_at_capture else "idle"
+        self._joint_shadow_timing_samples.setdefault(
+            f"action_local_publish_{busy_suffix}_ms", deque(maxlen=65_536)
+        ).append(capture_ms)
         self._joint_shadow_timing_samples["snapshot_enqueue_ms"].append(
             submission.enqueue_ms
         )
@@ -16511,6 +16828,41 @@ class EmbeddedSGLangRuntime:
                 else observation.ts_ms
             ),
             risk_evaluation_requested=delta.risk_evaluation_requested,
+            beneficiary_slot_blocked=(
+                opportunity.beneficiary_slot_blocked
+                if opportunity is not None
+                else None
+            ),
+            beneficiary_hbm_blocked=(
+                opportunity.beneficiary_hbm_blocked
+                if opportunity is not None
+                else None
+            ),
+            beneficiary_slot_then_hbm_blocked=(
+                opportunity.beneficiary_slot_then_hbm_blocked
+                if opportunity is not None
+                else None
+            ),
+            beneficiary_predicted_deficit_bytes=(
+                opportunity.predicted_deficit_bytes
+                if opportunity is not None
+                else None
+            ),
+            beneficiary_opportunity_classification=(
+                opportunity.classification if opportunity is not None else None
+            ),
+            overlay_victim_count=(
+                len(overlay_batch.overlays) if overlay_batch is not None else 0
+            ),
+            overlay_selection_reason=(
+                overlay_batch.selection_reason
+                if overlay_batch is not None
+                else None
+            ),
+            action_local_overlay_capture_ms=(
+                overlay_batch.capture_ms if overlay_batch is not None else 0.0
+            ),
+            predictive_worker_busy_at_capture=predictive_busy_at_capture,
             source_page_revision=delta.source_page_revision,
             mirror_page_revision=self._shadow_page_revision,
             page_revision_lag=max(
@@ -17270,6 +17622,7 @@ class EmbeddedSGLangRuntime:
             reason = result.risk_funnel_reason
             self._joint_predictive_counts[f"funnel_{reason}"] += 1
             scope_value: Mapping[str, object] = {}
+            overlay_value: Mapping[str, object] = {}
             if policy_input is not None:
                 scope_metadata = policy_input.optional_metadata.get(
                     "beliefkv_predictive_candidate_scope"
@@ -17279,6 +17632,17 @@ class EmbeddedSGLangRuntime:
                     and isinstance(scope_metadata.value, Mapping)
                 ):
                     scope_value = scope_metadata.value
+                overlay_metadata = policy_input.optional_metadata.get(
+                    "beliefkv_action_local_physical_overlay"
+                )
+                if (
+                    overlay_metadata is not None
+                    and isinstance(overlay_metadata.value, Mapping)
+                ):
+                    overlay_value = overlay_metadata.value
+            opportunity_value = overlay_value.get("opportunity", {})
+            if not isinstance(opportunity_value, Mapping):
+                opportunity_value = {}
             self.audit.emit(
                 "predictive_risk_funnel",
                 observation.ts_ms,
@@ -17292,6 +17656,22 @@ class EmbeddedSGLangRuntime:
                 source_page_revision=scope_value.get("source_page_revision"),
                 physical_mirror_page_revision=scope_value.get(
                     "physical_mirror_page_revision"
+                ),
+                overlay_selection_reason=overlay_value.get("selection_reason"),
+                overlay_victim_count=len(
+                    tuple(overlay_value.get("overlays", ()))
+                ),
+                beneficiary_slot_blocked=opportunity_value.get(
+                    "beneficiary_slot_blocked"
+                ),
+                beneficiary_hbm_blocked=opportunity_value.get(
+                    "beneficiary_hbm_blocked"
+                ),
+                beneficiary_slot_then_hbm_blocked=opportunity_value.get(
+                    "beneficiary_slot_then_hbm_blocked"
+                ),
+                beneficiary_predicted_deficit_bytes=opportunity_value.get(
+                    "predicted_deficit_bytes"
                 ),
             )
             if policy_input is None:
@@ -17634,6 +18014,35 @@ class EmbeddedSGLangRuntime:
         self._joint_shadow_timing_samples.setdefault(
             "predictive_risk_shadow_ms", deque(maxlen=65_536)
         ).append(result.compute_ms)
+        result_policy_input = getattr(result, "policy_input", None)
+        overlay_metadata = (
+            result_policy_input.optional_metadata.get(
+                "beliefkv_action_local_physical_overlay"
+            )
+            if result_policy_input is not None
+            else None
+        )
+        overlay_payload = (
+            overlay_metadata.value
+            if overlay_metadata is not None
+            and isinstance(overlay_metadata.value, Mapping)
+            else {}
+        )
+        opportunity_payload = overlay_payload.get("opportunity", {})
+        if not isinstance(opportunity_payload, Mapping):
+            opportunity_payload = {}
+        opportunity_classification = opportunity_payload.get("classification")
+        if opportunity_classification:
+            self._joint_predictive_counts[
+                f"risk_beneficiary:{opportunity_classification}"
+            ] += 1
+        predicted_deficit = opportunity_payload.get("predicted_deficit_bytes")
+        if isinstance(predicted_deficit, (int, float)) and not isinstance(
+            predicted_deficit, bool
+        ):
+            self._joint_shadow_timing_samples.setdefault(
+                "beneficiary_predicted_deficit_bytes", deque(maxlen=65_536)
+            ).append(float(predicted_deficit))
         eligibility = getattr(result, "eligibility", None)
         if eligibility is not None:
             self._joint_predictive_counts["eligibility_checked"] += 1
@@ -17660,6 +18069,25 @@ class EmbeddedSGLangRuntime:
                     eligibility.prepare_host_victims
                 ),
                 suppression_reason=suppression_reason,
+                beneficiary_slot_blocked=opportunity_payload.get(
+                    "beneficiary_slot_blocked"
+                ),
+                beneficiary_hbm_blocked=opportunity_payload.get(
+                    "beneficiary_hbm_blocked"
+                ),
+                beneficiary_slot_then_hbm_blocked=opportunity_payload.get(
+                    "beneficiary_slot_then_hbm_blocked"
+                ),
+                beneficiary_predicted_deficit_bytes=predicted_deficit,
+                beneficiary_opportunity_classification=(
+                    opportunity_classification
+                ),
+                action_local_overlay_count=len(
+                    tuple(overlay_payload.get("overlays", ()))
+                ),
+                action_local_overlay_selection_reason=overlay_payload.get(
+                    "selection_reason"
+                ),
                 prediction_used=False,
             )
         if result.shadow is not None:

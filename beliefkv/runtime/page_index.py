@@ -1186,51 +1186,57 @@ class PageOwnershipIndex:
         self._physical_breakdown_revision = self._physical_state_revision
         return self._physical_breakdown
 
+    def context_physical_summary(
+        self, context_id: str
+    ) -> ContextPhysicalSummary:
+        """Return one cached context summary without scanning unrelated contexts."""
+
+        if context_id not in self._context_epoch:
+            raise PageIndexError(f"unknown context: {context_id}")
+        cached = self._context_summary_cache.get(context_id)
+        if cached is not None:
+            return cached
+        pages = self.context_pages(context_id)
+        cached = ContextPhysicalSummary(
+            context_id=context_id,
+            context_epoch=self._context_epoch[context_id],
+            extent_count=len(pages),
+            physical_unique_bytes=sum(page.size_bytes for page in pages),
+            gpu_bytes=sum(
+                page.size_bytes for page in pages if page.gpu_resident
+            ),
+            cpu_bytes=sum(
+                page.size_bytes for page in pages if page.cpu_resident
+            ),
+            locked_bytes=sum(
+                page.size_bytes
+                for page in pages
+                if page.gpu_resident
+                and (page.engine_lock_ref > 0 or page.active_reader_count > 0)
+            ),
+            exclusive_reclaimable_upper_bound_bytes=sum(
+                page.size_bytes
+                for page in pages
+                if page.gpu_resident
+                and len(page.owner_contexts) == 1
+                and page.sealed
+                and page.engine_lock_ref == 0
+                and page.active_reader_count == 0
+                and not page.semantic_pin_contexts
+                and page.transfer_idle
+            ),
+            last_access_ms=max(
+                (page.last_access_ms for page in pages), default=0.0
+            ),
+        )
+        self._context_summary_cache[context_id] = cached
+        return cached
+
     def context_physical_summaries(self) -> tuple[ContextPhysicalSummary, ...]:
-        summaries: list[ContextPhysicalSummary] = []
-        for context_id in sorted(self._context_epoch):
-            cached = self._context_summary_cache.get(context_id)
-            if cached is None:
-                pages = self.context_pages(context_id)
-                cached = ContextPhysicalSummary(
-                    context_id=context_id,
-                    context_epoch=self._context_epoch[context_id],
-                    extent_count=len(pages),
-                    physical_unique_bytes=sum(page.size_bytes for page in pages),
-                    gpu_bytes=sum(
-                        page.size_bytes for page in pages if page.gpu_resident
-                    ),
-                    cpu_bytes=sum(
-                        page.size_bytes for page in pages if page.cpu_resident
-                    ),
-                    locked_bytes=sum(
-                        page.size_bytes
-                        for page in pages
-                        if page.gpu_resident
-                        and (
-                            page.engine_lock_ref > 0
-                            or page.active_reader_count > 0
-                        )
-                    ),
-                    exclusive_reclaimable_upper_bound_bytes=sum(
-                        page.size_bytes
-                        for page in pages
-                        if page.gpu_resident
-                        and len(page.owner_contexts) == 1
-                        and page.sealed
-                        and page.engine_lock_ref == 0
-                        and page.active_reader_count == 0
-                        and not page.semantic_pin_contexts
-                        and page.transfer_idle
-                    ),
-                    last_access_ms=max(
-                        (page.last_access_ms for page in pages),
-                        default=0.0,
-                    ),
-                )
-                self._context_summary_cache[context_id] = cached
-            summaries.append(cached)
-        return tuple(summaries)
+        return tuple(
+            self.context_physical_summary(context_id)
+            for context_id in sorted(self._context_epoch)
+        )
 
     def preview_engine_lock_release(
         self,

@@ -15,9 +15,11 @@ from beliefkv.policy.joint_scheduler import (
     ObservedJointPlanner,
 )
 from beliefkv.policy.reference import MetadataSource, MetadataValue, RunnableInvocation
+from beliefkv.policy.predictive_joint import BeneficiaryOpportunityProbe
 from beliefkv.policy.resource_snapshot import RuntimeResourceObservation
 from beliefkv.runtime.joint_shadow import (
     FrontierFeatureSource,
+    ActionLocalPhysicalOverlayBatch,
     IncrementalPolicyInputAssembler,
     JointShadowDelta,
     JointShadowStateStamp,
@@ -1297,6 +1299,67 @@ def test_shadow_delta_coalesces_latest_observed_seed_beneficiary() -> None:
 
     assert combined.observed_seed_beneficiary == second.observed_seed_beneficiary
 
+
+def test_shadow_delta_coalesces_explicit_overlay_clear() -> None:
+    controller = BeliefKVController(
+        BeliefKVConfig(
+            hbm_capacity_bytes=1_000,
+            host_capacity_bytes=1_000,
+            reserve_hbm_bytes=0,
+            predictor_enabled=False,
+            shadow_enabled=False,
+        )
+    )
+    controller.process_runtime_event(_event(1, RuntimeEventKind.WORKFLOW_START))
+    probe = BeneficiaryOpportunityProbe(
+        beneficiary_request_id="request-1",
+        beneficiary_context_id="context-1",
+        beneficiary_context_epoch=0,
+        required_bytes=96,
+        hbm_available_bytes=0,
+        hbm_risk_margin_bytes=64,
+        predicted_deficit_bytes=96,
+        running_request_count=0,
+        max_running_requests=32,
+        beneficiary_slot_blocked=False,
+        beneficiary_hbm_blocked=True,
+        beneficiary_slot_then_hbm_blocked=False,
+        hbm_opportunity_possible=True,
+        captured_ts_ms=1.0,
+    )
+    first = replace(
+        _delta(controller, event_sequence=0, page_revision=0, ts_ms=1),
+        action_local_overlay_batch=ActionLocalPhysicalOverlayBatch(
+            beneficiary_risk_signature=("request-1", "context-1", 0, 64, 32),
+            opportunity=probe,
+            selection_reason="no_victim_context_selected",
+        ),
+        action_local_overlay_replaced=True,
+    )
+    controller.process_runtime_event(
+        _event(
+            2,
+            RuntimeEventKind.INVOCATION_CREATE,
+            invocation_id="root",
+            context_id="context-2",
+            context_epoch=0,
+        )
+    )
+    second = replace(
+        _delta(
+            controller,
+            event_sequence=first.event_to_sequence,
+            page_revision=first.page_delta.to_revision,
+            ts_ms=2,
+        ),
+        action_local_overlay_batch=None,
+        action_local_overlay_replaced=True,
+    )
+
+    combined = coalesce_joint_shadow_deltas((first, second))
+
+    assert combined.action_local_overlay_replaced
+    assert combined.action_local_overlay_batch is None
 
 def test_frontier_feature_source_materializes_worker_graph_state() -> None:
     source = FrontierFeatureSource(

@@ -37,7 +37,10 @@ from beliefkv.policy.online_joint import (
     OnlineJointPlanView,
     compile_bounded_seed_epoch,
 )
-from beliefkv.policy.predictive_joint import PredictiveActionKind
+from beliefkv.policy.predictive_joint import (
+    BeneficiaryOpportunityProbe,
+    PredictiveActionKind,
+)
 from beliefkv.policy.risk_shadow import PredictiveIntent
 from beliefkv.policy.reference import (
     CapabilityReport,
@@ -49,6 +52,7 @@ from beliefkv.policy.service_curve import TransferServiceCurve
 from beliefkv.runtime.audit import PolicySnapshotLog
 from beliefkv.runtime.joint_shadow import (
     IncrementalPolicyInputAssembler,
+    ActionLocalPhysicalOverlayBatch,
     JointShadowStateStamp,
     LatestWinsJointPlanWorker,
     ObservedSeedBeneficiaryHint,
@@ -478,7 +482,10 @@ def test_bounded_seed_hint_change_publishes_one_lightweight_risk_delta():
         controller=SimpleNamespace(
             page_index=SimpleNamespace(revision=17, topology_revision=11)
         ),
-        config=SimpleNamespace(joint_policy_enabled=False),
+        config=SimpleNamespace(
+            joint_policy_enabled=False,
+            reference_policy_hbm_bucket_bytes=64 << 20,
+        ),
         audit=_AuditRecorder(),
         _joint_shadow_counts=Counter(),
         _joint_predictive_counts=Counter(),
@@ -518,6 +525,29 @@ def test_bounded_seed_hint_change_publishes_one_lightweight_risk_delta():
         ),
         _last_frontier_model_version="frontier-test",
         predictive_risk_worker=object(),
+    )
+    runtime._capture_action_local_physical_overlay_batch = (
+        lambda hint, observation: ActionLocalPhysicalOverlayBatch(
+            beneficiary_risk_signature=hint.risk_signature,
+            opportunity=BeneficiaryOpportunityProbe(
+                beneficiary_request_id=hint.request_id,
+                beneficiary_context_id=hint.context_id,
+                beneficiary_context_epoch=hint.context_epoch,
+                required_bytes=hint.startup_bytes + hint.growth_bytes,
+                hbm_available_bytes=0,
+                hbm_risk_margin_bytes=1,
+                predicted_deficit_bytes=hint.startup_bytes + hint.growth_bytes,
+                running_request_count=0,
+                max_running_requests=32,
+                beneficiary_slot_blocked=False,
+                beneficiary_hbm_blocked=True,
+                beneficiary_slot_then_hbm_blocked=False,
+                hbm_opportunity_possible=True,
+                captured_ts_ms=observation.ts_ms,
+            ),
+            selection_reason="no_victim_context_selected",
+            capture_ms=0.02,
+        )
     )
     runtime._runtime_resource_observation = lambda: RuntimeResourceObservation(
         ts_ms=5.0, hbm_capacity_bytes=1_000, hbm_used_bytes=100,
@@ -571,9 +601,149 @@ def test_bounded_seed_hint_change_publishes_one_lightweight_risk_delta():
             "hint_risk_published": 2,
             "hint_refresh_published": 1,
             "hint_clear_published": 1,
+            "beneficiary_opportunity:hbm_blocked": 2,
+            "overlay_selection:no_victim_context_selected": 2,
         }
     )
 
+
+def test_action_local_probe_filters_slot_only_beneficiary_before_graph_scan():
+    runtime = EmbeddedSGLangRuntime.__new__(EmbeddedSGLangRuntime)
+    requests = tuple(SimpleNamespace(rid=f"running-{index}") for index in range(32))
+    runtime.scheduler = SimpleNamespace(
+        running_batch=SimpleNamespace(reqs=requests),
+        chunked_req=None,
+        max_running_requests=32,
+    )
+    runtime.controller = SimpleNamespace(
+        admission=SimpleNamespace(reserved_bytes=0)
+    )
+    runtime.config = SimpleNamespace(reference_policy_hbm_bucket_bytes=64)
+    hint = ObservedSeedBeneficiaryHint(
+        "seed",
+        "beneficiary",
+        "beneficiary-invocation",
+        "beneficiary-context",
+        0,
+        64,
+        32,
+    )
+    observation = RuntimeResourceObservation(
+        ts_ms=5.0,
+        hbm_capacity_bytes=1_000,
+        hbm_used_bytes=500,
+        host_capacity_bytes=1_000,
+        host_used_bytes=0,
+        host_free_bytes=1_000,
+    )
+
+    batch = runtime._capture_action_local_physical_overlay_batch(
+        hint, observation
+    )
+
+    assert batch.selection_reason == "beneficiary_slot_only"
+    assert batch.overlays == ()
+    assert batch.opportunity.beneficiary_slot_blocked
+    assert not batch.opportunity.beneficiary_hbm_blocked
+    assert not batch.opportunity.hbm_opportunity_possible
+
+def test_action_local_overlay_captures_at_most_two_ranked_live_victims():
+    runtime = EmbeddedSGLangRuntime.__new__(EmbeddedSGLangRuntime)
+    runtime.scheduler = SimpleNamespace(
+        running_batch=SimpleNamespace(reqs=()),
+        chunked_req=None,
+        max_running_requests=32,
+    )
+    contexts = {
+        context_id: SimpleNamespace(epoch=0)
+        for context_id in ("victim-a", "victim-b", "victim-c")
+    }
+    invocations = {
+        context_id: SimpleNamespace(
+            context_id=context_id, state=InvocationState.WAIT_TOOL
+        )
+        for context_id in contexts
+    }
+    summaries = {
+        "victim-a": SimpleNamespace(
+            context_id="victim-a", context_epoch=0,
+            exclusive_reclaimable_upper_bound_bytes=300,
+            locked_bytes=0, last_access_ms=3.0,
+        ),
+        "victim-b": SimpleNamespace(
+            context_id="victim-b", context_epoch=0,
+            exclusive_reclaimable_upper_bound_bytes=200,
+            locked_bytes=0, last_access_ms=2.0,
+        ),
+        "victim-c": SimpleNamespace(
+            context_id="victim-c", context_epoch=0,
+            exclusive_reclaimable_upper_bound_bytes=100,
+            locked_bytes=0, last_access_ms=1.0,
+        ),
+    }
+    page_index = SimpleNamespace(
+        revision=17,
+        topology_revision=11,
+        has_context=lambda context_id: context_id in summaries,
+        context_epoch=lambda _context_id: 0,
+        context_physical_summary=lambda context_id: summaries[context_id],
+    )
+
+    def preview(context_id):
+        return SimpleNamespace(
+            eligible=True,
+            copy_bytes=summaries[context_id].exclusive_reclaimable_upper_bound_bytes,
+            bundle=SimpleNamespace(
+                exclusive_action_bytes=(
+                    summaries[context_id].exclusive_reclaimable_upper_bound_bytes
+                ),
+                cross_context_action_bytes=0,
+                bundle_id=f"bundle-{context_id}",
+                generation_fingerprint=f"generation-{context_id}",
+                locked_bytes=0,
+                owner_context_ids=(context_id,),
+            ),
+            page_actions=(SimpleNamespace(action=PhysicalPageAction.START_D2H),),
+            blockers=(),
+        )
+
+    runtime.controller = SimpleNamespace(
+        admission=SimpleNamespace(reserved_bytes=0),
+        graph=SimpleNamespace(invocations=invocations, contexts=contexts),
+        page_index=page_index,
+        arbiter=SimpleNamespace(
+            bundle_builder=SimpleNamespace(
+                previews_for_context=lambda _kind, context_id, _epoch, **_kwargs: (
+                    preview(context_id),
+                )
+            )
+        ),
+        policy_snapshot_builder=object(),
+    )
+    runtime.config = SimpleNamespace(reference_policy_hbm_bucket_bytes=64)
+    hint = ObservedSeedBeneficiaryHint(
+        "seed", "beneficiary", "beneficiary-invocation",
+        "beneficiary-context", 0, 64, 32,
+    )
+    observation = RuntimeResourceObservation(
+        ts_ms=5.0, hbm_capacity_bytes=1_000, hbm_used_bytes=950,
+        host_capacity_bytes=1_000, host_used_bytes=0, host_free_bytes=1_000,
+    )
+
+    with mock.patch(
+        "beliefkv.runtime.sglang_v052rc1._predictive_live_shape_fingerprint",
+        side_effect=lambda _builder, item, **_kwargs: item.bundle.bundle_id,
+    ):
+        batch = runtime._capture_action_local_physical_overlay_batch(
+            hint, observation
+        )
+
+    assert batch.selection_reason is None
+    assert tuple(item.context_id for item in batch.overlays) == (
+        "victim-a", "victim-b"
+    )
+    assert batch.opportunity.beneficiary_hbm_blocked
+    assert all(item.page_revision == 17 for item in batch.overlays)
 
 def test_predictive_risk_triggers_follow_park_and_reentry_boundaries():
     runtime = EmbeddedSGLangRuntime.__new__(EmbeddedSGLangRuntime)

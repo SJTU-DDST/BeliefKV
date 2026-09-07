@@ -26,12 +26,14 @@ from beliefkv.policy.risk_shadow import (
     PredictiveRiskShadowConfig,
     PredictiveRiskShadowObserver,
     PredictiveRiskShadowResult,
+    _OnlineCandidatePhysicalizer,
     _transfer_deadline_and_slack,
     validate_predictive_causal_certificate,
     validate_predictive_certificate,
 )
 from beliefkv.policy.predictive_joint import (
     PredictiveActionKind,
+    PredictiveActionPackage,
     ProjectedReclaimRequirement,
 )
 from beliefkv.predictor.frontier_belief import PredictiveEvidenceReadSet
@@ -1547,6 +1549,86 @@ def _radix_extent(
         child_extent_ids=children,
     )
 
+
+def test_compact_overlay_drives_prepare_without_worker_page_bundles() -> None:
+    graph = _graph()
+    base = _attach_graph(_input(capacity=1_000, reserved=0), graph)
+    metadata = dict(base.optional_metadata)
+    metadata["beliefkv_action_local_physical_overlay"] = MetadataValue(
+        MetadataSource.OBSERVED,
+        {
+            "overlays": [
+                {
+                    "context_id": "ctx-target",
+                    "context_epoch": 0,
+                    "page_revision": 17,
+                    "topology_revision": 11,
+                    "generation_fingerprint": "generation-live",
+                    "shape_fingerprint": "shape-live",
+                    "exclusive_reclaimable_bytes": 300,
+                    "d2h_copy_bytes": 400,
+                    "extent_count": 3,
+                    "cross_context_bytes": 100,
+                    "locked_bytes": 0,
+                    "owner_context_ids": ["ctx-target", "ctx-shared"],
+                    "blocker_codes": [],
+                    "native_loading": False,
+                    "captured_ts_ms": 100.0,
+                }
+            ],
+            "opportunity": {"hbm_opportunity_possible": True},
+        },
+        "test",
+    )
+    policy_input = replace(
+        base,
+        physical_kv=replace(
+            base.physical_kv,
+            gpu_bytes=0,
+            cpu_bytes=0,
+            bundles=(),
+        ),
+        optional_metadata=metadata,
+        resources=replace(base.resources, hbm_used_bytes=0),
+    )
+    eligibility = PredictiveEligibilityIndex().probe(policy_input)
+    assert eligibility.prepare_host_victims == (
+        PrepareHostVictim(
+            "invocation-target", "ctx-target", "wait_tool", 400, 300
+        ),
+    )
+
+    source_plan = AsyncSemanticJointPlanner(
+        JointPlannerConfig(max_planning_budget_ms=100.0)
+    ).plan(policy_input)
+    package = PredictiveActionPackage(
+        package_id="prepare-overlay",
+        action=PredictiveActionKind.PREPARE_HOST,
+        context_ids=("ctx-target",),
+        source_joint_plan_id=source_plan.plan_id,
+        beneficiary_request_id="beneficiary",
+        beneficiary_startup_bytes=64,
+        beneficiary_growth_bytes=32,
+        causal_package_generation="generation-beneficiary",
+    )
+    physicalizer = _OnlineCandidatePhysicalizer(
+        policy_input,
+        graph,
+        source_plan,
+        target_invocation_id="invocation-target",
+        target_context_id="ctx-target",
+        belief_scope_invocation_ids=("invocation-target",),
+        packages={package.package_id: package},
+        kv_bytes_per_token=1,
+    )
+
+    projection = physicalizer.prepare_projection(package)
+    assert projection is not None
+    assert projection.copy_bytes == 400
+    assert projection.exclusive_copy_bytes == 300
+    assert projection.cross_context_copy_bytes == 100
+    assert projection.extent_count == 3
+    assert physicalizer.package_feasible(package)
 
 def test_prepare_shadow_absorbs_descendant_closure_without_claiming_child_bytes() -> None:
     graph = _graph()

@@ -17,6 +17,10 @@ from beliefkv.policy.admission import AdmissionController
 from beliefkv.policy.causal_frontier import CausalFrontierScheduler
 from beliefkv.policy.joint_scheduler import JointPlan, ObservedJointPlanner
 from beliefkv.policy.leases import CausalLeaseProjector
+from beliefkv.policy.predictive_joint import (
+    ActionLocalPhysicalOverlay,
+    BeneficiaryOpportunityProbe,
+)
 from beliefkv.policy.risk_shadow import (
     PredictiveEligibility,
     PredictiveRiskShadowObserver,
@@ -187,6 +191,45 @@ class ObservedSeedBeneficiaryHint:
 
 
 @dataclass(frozen=True)
+class ActionLocalPhysicalOverlayBatch:
+    """Latest bounded live physical evidence for one beneficiary risk key."""
+
+    beneficiary_risk_signature: tuple[object, ...]
+    opportunity: BeneficiaryOpportunityProbe
+    overlays: tuple[ActionLocalPhysicalOverlay, ...] = ()
+    selection_reason: str | None = None
+    capture_ms: float = 0.0
+
+    def __post_init__(self) -> None:
+        if not self.beneficiary_risk_signature:
+            raise ValueError("overlay batch requires a beneficiary signature")
+        if self.beneficiary_risk_signature[0] != (
+            self.opportunity.beneficiary_request_id
+        ):
+            raise ValueError("overlay batch beneficiary does not match its probe")
+        if len(self.overlays) > 2:
+            raise ValueError("overlay batch supports at most two victims")
+        context_ids = tuple(item.context_id for item in self.overlays)
+        if len(context_ids) != len(set(context_ids)):
+            raise ValueError("overlay victim contexts must be unique")
+        if self.capture_ms < 0:
+            raise ValueError("overlay capture time must be non-negative")
+        if self.selection_reason is not None and not self.selection_reason:
+            raise ValueError("overlay selection reason must be non-empty")
+
+    def to_dict(self) -> dict[str, object]:
+        return {
+            "beneficiary_risk_signature": list(
+                self.beneficiary_risk_signature
+            ),
+            "opportunity": self.opportunity.to_dict(),
+            "overlays": [item.to_dict() for item in self.overlays],
+            "selection_reason": self.selection_reason,
+            "capture_ms": self.capture_ms,
+        }
+
+
+@dataclass(frozen=True)
 class JointShadowStateStamp:
     graph_version: int
     consumer_version: int
@@ -227,6 +270,10 @@ class JointShadowDelta:
     risk_evaluation_requested: bool = False
     risk_trigger_signature: tuple[tuple[str, str, str, int], ...] = ()
     observed_seed_beneficiary: ObservedSeedBeneficiaryHint | None = None
+    action_local_overlay_batch: (
+        ActionLocalPhysicalOverlayBatch | None
+    ) = None
+    action_local_overlay_replaced: bool = False
     source_page_revision: int | None = None
     source_topology_revision: int | None = None
     frontier_predictions: Mapping[str, Mapping[str, object]] = field(
@@ -408,6 +455,14 @@ def coalesce_joint_shadow_deltas(
         components=frozenset(components),
         full_rebuild_required=full_rebuild,
     )
+    overlay_update = next(
+        (
+            item
+            for item in reversed(deltas)
+            if item.action_local_overlay_replaced
+        ),
+        None,
+    )
     return JointShadowDelta(
         event_from_sequence=first.event_from_sequence,
         event_to_sequence=last.event_to_sequence,
@@ -431,6 +486,12 @@ def coalesce_joint_shadow_deltas(
         ),
         risk_trigger_signature=tuple(sorted(risk_triggers)),
         observed_seed_beneficiary=last.observed_seed_beneficiary,
+        action_local_overlay_batch=(
+            overlay_update.action_local_overlay_batch
+            if overlay_update is not None
+            else None
+        ),
+        action_local_overlay_replaced=overlay_update is not None,
         frontier_predictions=frontier_predictions,
         source_page_revision=last.source_page_revision,
         source_topology_revision=last.source_topology_revision,
@@ -610,6 +671,9 @@ class IncrementalPolicyInputAssembler:
             maxlen=max(256, config.service_curve_window)
         )
         self._physical_mirror_observed_ts_ms: float | None = None
+        self._action_local_overlay_batch: (
+            ActionLocalPhysicalOverlayBatch | None
+        ) = None
 
     @property
     def last_stats(self) -> SnapshotBuildStats | None:
@@ -654,6 +718,10 @@ class IncrementalPolicyInputAssembler:
                 self._frontier_feature_sources.pop(invocation_id, None)
             self._frontier_predictions.update(delta.frontier_predictions)
             self._frontier_features.update(delta.frontier_features)
+            if delta.action_local_overlay_replaced:
+                self._action_local_overlay_batch = (
+                    delta.action_local_overlay_batch
+                )
             for source in delta.frontier_feature_sources:
                 self._frontier_feature_sources[source.invocation_id] = source
             if self.graph.graph_version != delta.stamp.graph_version:
@@ -845,6 +913,20 @@ class IncrementalPolicyInputAssembler:
                 value=delta.observed_seed_beneficiary.to_dict(),
                 producer="bounded_observed_seed",
             )
+        overlay_batch = self._action_local_overlay_batch
+        if (
+            delta.observed_seed_beneficiary is not None
+            and overlay_batch is not None
+            and overlay_batch.beneficiary_risk_signature
+            == delta.observed_seed_beneficiary.risk_signature
+        ):
+            metadata["beliefkv_action_local_physical_overlay"] = MetadataValue(
+                source=MetadataSource.OBSERVED,
+                value=overlay_batch.to_dict(),
+                producer="safe_point_action_local_overlay",
+            )
+        else:
+            metadata.pop("beliefkv_action_local_physical_overlay", None)
         return replace(
             policy_input,
             runtime_graph=RuntimeGraphSnapshot(
@@ -986,6 +1068,35 @@ class IncrementalPolicyInputAssembler:
         )
         if beneficiary is None:
             return policy_input, False, "no_beneficiary_hint"
+        overlay_metadata = policy_input.optional_metadata.get(
+            "beliefkv_action_local_physical_overlay"
+        )
+        overlay_batch = (
+            overlay_metadata.value
+            if overlay_metadata is not None
+            and isinstance(overlay_metadata.value, Mapping)
+            else {}
+        )
+        raw_overlays = overlay_batch.get("overlays", ())
+        overlay_rows = tuple(
+            item for item in raw_overlays if isinstance(item, Mapping)
+        )
+        opportunity = overlay_batch.get("opportunity", {})
+        if isinstance(opportunity, Mapping) and not bool(
+            opportunity.get("hbm_opportunity_possible", True)
+        ):
+            return (
+                policy_input,
+                False,
+                (
+                    "beneficiary_slot_only"
+                    if opportunity.get("beneficiary_slot_blocked")
+                    else "beneficiary_capacity_available"
+                ),
+            )
+        overlay_selection_reason = str(
+            overlay_batch.get("selection_reason") or ""
+        ) or None
         trigger_metadata = policy_input.optional_metadata.get(
             "beliefkv_predictive_risk_trigger"
         )
@@ -1040,37 +1151,48 @@ class IncrementalPolicyInputAssembler:
             if context_id:
                 trigger_contexts[context_id] = str(risk_class)
         ranked_victims: list[tuple[int, int, float, str]] = []
-        for context_id in parked_contexts:
-            if beneficiary is not None and context_id == beneficiary.context_id:
-                continue
-            raw = summaries.get(context_id)
-            if not isinstance(raw, Mapping):
-                continue
-            reclaimable = int(
-                raw.get("exclusive_reclaimable_upper_bound_bytes", 0)
+        if overlay_rows:
+            victim_context_ids = tuple(
+                str(raw.get("context_id"))
+                for raw in overlay_rows[:max_victims]
+                if raw.get("context_id")
             )
-            if reclaimable <= 0:
-                continue
-            ranked_victims.append(
-                (
-                    -reclaimable,
-                    int(raw.get("locked_bytes", 0)),
-                    float(raw.get("last_access_ms", 0.0)),
-                    context_id,
+        else:
+            for context_id in parked_contexts:
+                if context_id == beneficiary.context_id:
+                    continue
+                raw = summaries.get(context_id)
+                if not isinstance(raw, Mapping):
+                    continue
+                reclaimable = int(
+                    raw.get("exclusive_reclaimable_upper_bound_bytes", 0)
+                )
+                if reclaimable <= 0:
+                    continue
+                ranked_victims.append(
+                    (
+                        -reclaimable,
+                        int(raw.get("locked_bytes", 0)),
+                        float(raw.get("last_access_ms", 0.0)),
+                        context_id,
+                    )
+                )
+            triggered_victims = tuple(
+                sorted(
+                    context_id
+                    for context_id, risk_class in trigger_contexts.items()
+                    if risk_class == "prepare"
+                    and context_id in parked_contexts
                 )
             )
-        triggered_victims = tuple(
-            sorted(
-                context_id
-                for context_id, risk_class in trigger_contexts.items()
-                if risk_class == "prepare" and context_id in parked_contexts
-            )
-        )
-        victim_context_ids = tuple(
-            dict.fromkeys(
-                (*triggered_victims, *(item[3] for item in sorted(ranked_victims)))
-            )
-        )[:max_victims]
+            victim_context_ids = tuple(
+                dict.fromkeys(
+                    (
+                        *triggered_victims,
+                        *(item[3] for item in sorted(ranked_victims)),
+                    )
+                )
+            )[:max_victims]
         reentry_context_ids = tuple(
             sorted(
                 context_id
@@ -1079,7 +1201,14 @@ class IncrementalPolicyInputAssembler:
             )
         )
         if not victim_context_ids and not reentry_context_ids:
-            return policy_input, False, "no_live_victim_bundle"
+            reason = overlay_selection_reason
+            if reason is None:
+                reason = (
+                    "no_victim_context_selected"
+                    if not parked_contexts
+                    else "victim_zero_reclaimable_bytes"
+                )
+            return policy_input, False, reason
         context_ids = tuple(
             dict.fromkeys(
                 (
@@ -1118,21 +1247,109 @@ class IncrementalPolicyInputAssembler:
         delta = self._latest
         if delta is None:
             return policy_input, False, "candidate_physicalization_failed"
-        bundles = self.builder.targeted_context_bundles(
-            context_ids,
-            now_ms=delta.observation.ts_ms,
+        physical_context_ids = (
+            reentry_context_ids if overlay_rows else context_ids
         )
-        if not bundles:
-            return policy_input, False, "no_live_victim_bundle"
+        bundles = (
+            self.builder.targeted_context_bundles(
+                physical_context_ids,
+                now_ms=delta.observation.ts_ms,
+            )
+            if physical_context_ids
+            else ()
+        )
+        if physical_context_ids and not bundles:
+            source_revision = (
+                delta.source_page_revision
+                if delta.source_page_revision is not None
+                else delta.stamp.page_revision
+            )
+            reason = (
+                "victim_bundle_generation_stale"
+                if source_revision > self.page_index.revision
+                else "victim_missing_from_physical_mirror"
+            )
+            return policy_input, False, reason
         metadata = dict(policy_input.optional_metadata)
-        metadata["beliefkv_transfer_service_estimates"] = MetadataValue(
-            source=MetadataSource.OBSERVED,
-            value=self.builder.targeted_transfer_service_estimates(
-                bundles,
-                delta.observation,
-            ),
-            producer="candidate_local_transfer_service_curve",
-        )
+        if bundles:
+            metadata["beliefkv_transfer_service_estimates"] = MetadataValue(
+                source=MetadataSource.OBSERVED,
+                value=self.builder.targeted_transfer_service_estimates(
+                    bundles,
+                    delta.observation,
+                ),
+                producer="candidate_local_transfer_service_curve",
+            )
+        overlay_by_context = {
+            str(raw.get("context_id")): raw
+            for raw in overlay_rows
+            if raw.get("context_id")
+        }
+        if overlay_by_context:
+            victim_generations = tuple(
+                sorted(
+                    (
+                        context_id,
+                        (
+                            str(
+                                overlay_by_context[context_id].get(
+                                    "generation_fingerprint"
+                                )
+                            ),
+                        ),
+                    )
+                    for context_id in victim_context_ids
+                )
+            )
+            physical_revision = max(
+                int(raw.get("page_revision", 0))
+                for raw in overlay_by_context.values()
+            )
+            topology_revision = max(
+                int(raw.get("topology_revision", 0))
+                for raw in overlay_by_context.values()
+            )
+            physical_age_ms = max(
+                0.0,
+                delta.observation.ts_ms
+                - min(
+                    float(raw.get("captured_ts_ms", delta.observation.ts_ms))
+                    for raw in overlay_by_context.values()
+                ),
+            )
+            source_revision = physical_revision
+        else:
+            victim_generations = tuple(
+                sorted(
+                    (
+                        context_id,
+                        tuple(
+                            sorted(
+                                bundle.generation_fingerprint
+                                for bundle in bundles
+                                if context_id in bundle.owner_context_ids
+                            )
+                        ),
+                    )
+                    for context_id in victim_context_ids
+                )
+            )
+            physical_revision = self.page_index.revision
+            topology_revision = delta.stamp.topology_revision
+            source_revision = (
+                delta.source_page_revision
+                if delta.source_page_revision is not None
+                else delta.stamp.page_revision
+            )
+            physical_age_ms = max(
+                0.0,
+                delta.observation.ts_ms
+                - float(
+                    self._physical_mirror_observed_ts_ms
+                    if self._physical_mirror_observed_ts_ms is not None
+                    else delta.observation.ts_ms
+                ),
+            )
         metadata["beliefkv_predictive_candidate_scope"] = MetadataValue(
             source=MetadataSource.OBSERVED,
             value={
@@ -1145,46 +1362,21 @@ class IncrementalPolicyInputAssembler:
                 "bounded_seed_plan_id": seed_hint.get("plan_id"),
                 "victim_context_ids": victim_context_ids,
                 "reentry_context_ids": reentry_context_ids,
-                "victim_generations": tuple(
-                    sorted(
-                        (
-                            context_id,
-                            tuple(
-                                sorted(
-                                    bundle.generation_fingerprint
-                                    for bundle in bundles
-                                    if context_id in bundle.owner_context_ids
-                                )
-                            ),
-                        )
-                        for context_id in victim_context_ids
-                    )
+                "victim_generations": victim_generations,
+                "page_revision": physical_revision,
+                "topology_revision": topology_revision,
+                "physical_mirror_page_revision": physical_revision,
+                "source_page_revision": source_revision,
+                "page_revision_lag": max(0, source_revision - physical_revision),
+                "physical_mirror_age_ms": physical_age_ms,
+                "physical_source": (
+                    "action_local_overlay"
+                    if overlay_by_context
+                    else "worker_page_mirror"
                 ),
-                "page_revision": delta.stamp.page_revision,
-                "topology_revision": delta.stamp.topology_revision,
-                "physical_mirror_page_revision": self.page_index.revision,
-                "source_page_revision": (
-                    delta.source_page_revision
-                    if delta.source_page_revision is not None
-                    else delta.stamp.page_revision
-                ),
-                "page_revision_lag": max(
-                    0,
-                    int(
-                        delta.source_page_revision
-                        if delta.source_page_revision is not None
-                        else delta.stamp.page_revision
-                    )
-                    - self.page_index.revision,
-                ),
-                "physical_mirror_age_ms": max(
-                    0.0,
-                    delta.observation.ts_ms
-                    - float(
-                        self._physical_mirror_observed_ts_ms
-                        if self._physical_mirror_observed_ts_ms is not None
-                        else delta.observation.ts_ms
-                    ),
+                "overlay_capture_ms": float(overlay_batch.get("capture_ms", 0.0)),
+                "beneficiary_opportunity": (
+                    dict(opportunity) if isinstance(opportunity, Mapping) else {}
                 ),
             },
             producer="candidate_local_physicalizer",

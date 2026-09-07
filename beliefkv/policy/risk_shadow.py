@@ -541,6 +541,21 @@ def _prepare_shadow_projection(
         ),
     )
 
+def _action_local_physical_overlay(
+    policy_input: PolicyInput,
+) -> dict[str, Mapping[str, object]]:
+    metadata = policy_input.optional_metadata.get(
+        "beliefkv_action_local_physical_overlay"
+    )
+    payload = metadata.value if metadata is not None else None
+    rows = payload.get("overlays", ()) if isinstance(payload, Mapping) else ()
+    return {
+        str(row.get("context_id")): row
+        for row in rows
+        if isinstance(row, Mapping) and row.get("context_id")
+    }
+
+
 
 @dataclass(frozen=True)
 class PredictiveEligibility:
@@ -585,11 +600,15 @@ class PredictiveEligibilityIndex:
         model_metadata = policy_input.optional_metadata.get(
             "frontier_prediction_model_version"
         )
+        overlay_metadata = policy_input.optional_metadata.get(
+            "beliefkv_action_local_physical_overlay"
+        )
         cache_key = (
             policy_input.physical_kv.snapshot_id,
             policy_input.runtime_graph.graph_version,
             id(prediction_metadata.value) if prediction_metadata is not None else 0,
             str(model_metadata.value) if model_metadata is not None else "",
+            id(overlay_metadata.value) if overlay_metadata is not None else 0,
         )
         if (
             graph_state is None
@@ -641,6 +660,7 @@ class PredictiveEligibilityIndex:
             for bundle in policy_input.physical_kv.bundles
             if len(bundle.extent_ids) == 1
         }
+        overlay_by_context = _action_local_physical_overlay(policy_input)
 
         prefetch: list[PrefetchTarget] = []
         victims: list[PrepareHostVictim] = []
@@ -652,6 +672,37 @@ class PredictiveEligibilityIndex:
             InvocationState.READY.value: 4,
             InvocationState.RUNNING_LLM.value: 5,
         }
+        for context_id, overlay in overlay_by_context.items():
+            owners = invocation_by_context.get(context_id, ())
+            if not owners:
+                continue
+            selected_invocation = min(
+                owners,
+                key=lambda item: (
+                    prefetch_priority.get(item[1], 10), item[2], item[0]
+                ),
+            )
+            if (
+                selected_invocation[1] in self._WAIT_STATES
+                and int(overlay.get("d2h_copy_bytes", 0)) > 0
+                and int(overlay.get("exclusive_reclaimable_bytes", 0)) > 0
+                and int(overlay.get("extent_count", 0)) > 0
+                and int(overlay.get("locked_bytes", 0)) == 0
+                and not bool(overlay.get("native_loading", False))
+                and not tuple(overlay.get("blocker_codes", ()))
+            ):
+                victims.append(
+                    PrepareHostVictim(
+                        invocation_id=selected_invocation[0],
+                        context_id=context_id,
+                        state=selected_invocation[1],
+                        shadow_bytes=int(overlay["d2h_copy_bytes"]),
+                        reclaimable_bytes=int(
+                            overlay["exclusive_reclaimable_bytes"]
+                        ),
+                    )
+                )
+
         for context_id, bundles in bundles_by_context.items():
             owners = invocation_by_context.get(context_id, ())
             if not owners:
@@ -674,6 +725,8 @@ class PredictiveEligibilityIndex:
                         missing_gpu_bytes=missing_gpu,
                     )
                 )
+            if context_id in overlay_by_context:
+                continue
             projection = _prepare_shadow_projection(
                 policy_input.physical_kv.bundles,
                 context_id,
@@ -738,10 +791,22 @@ class PredictiveEligibilityIndex:
         if not isinstance(contexts, Mapping):
             contexts = {}
         physical_signature = tuple(
-            self._action_shape_signature(
+            (
                 context_id,
-                bundles_by_context.get(context_id, ()),
-                contexts,
+                str(overlay_by_context[context_id].get("generation_fingerprint")),
+                str(overlay_by_context[context_id].get("shape_fingerprint")),
+                int(overlay_by_context[context_id].get("d2h_copy_bytes", 0))
+                // (64 << 20),
+                int(
+                    overlay_by_context[context_id].get(
+                        "exclusive_reclaimable_bytes", 0
+                    )
+                )
+                // (64 << 20),
+            )
+            if context_id in overlay_by_context
+            else self._action_shape_signature(
+                context_id, bundles_by_context.get(context_id, ()), contexts
             )
             for context_id in sorted(candidate_context_ids)
         )
@@ -3102,6 +3167,7 @@ class _OnlineCandidatePhysicalizer:
             for bundle in policy_input.physical_kv.bundles
             if len(bundle.extent_ids) == 1
         }
+        self._overlay_by_context = _action_local_physical_overlay(policy_input)
 
     @property
     def target_restore_duration_ms(self) -> float:
@@ -3819,11 +3885,39 @@ class _OnlineCandidatePhysicalizer:
         context_id: str,
     ) -> _PrepareShadowProjection | None:
         if context_id not in self._prepare_projections:
-            self._prepare_projections[context_id] = _prepare_shadow_projection(
-                self.policy_input.physical_kv.bundles,
-                context_id,
-                extent_index=self._extent_index,
-            )
+            overlay = self._overlay_by_context.get(context_id)
+            if overlay is not None:
+                generation = str(overlay.get("generation_fingerprint") or "")
+                root_extent_id = f"overlay:{context_id}:{generation}"
+                self._prepare_projections[context_id] = (
+                    _PrepareShadowProjection(
+                        root_extent_id=root_extent_id,
+                        closure_extent_ids=(root_extent_id,),
+                        copy_bytes=int(overlay.get("d2h_copy_bytes", 0)),
+                        extent_count=int(overlay.get("extent_count", 0)),
+                        shape_fingerprint=str(
+                            overlay.get("shape_fingerprint") or ""
+                        ),
+                        exclusive_copy_bytes=int(
+                            overlay.get("exclusive_reclaimable_bytes", 0)
+                        ),
+                        cross_context_copy_bytes=int(
+                            overlay.get("cross_context_bytes", 0)
+                        ),
+                    )
+                    if generation
+                    and int(overlay.get("d2h_copy_bytes", 0)) > 0
+                    and int(overlay.get("exclusive_reclaimable_bytes", 0)) > 0
+                    else None
+                )
+            else:
+                self._prepare_projections[context_id] = (
+                    _prepare_shadow_projection(
+                        self.policy_input.physical_kv.bundles,
+                        context_id,
+                        extent_index=self._extent_index,
+                    )
+                )
         return self._prepare_projections[context_id]
 
     def _victim_d2h_bytes(
@@ -3867,7 +3961,10 @@ class _OnlineCandidatePhysicalizer:
         if pressure_deficit_bytes <= 0:
             return None, None
         options: list[tuple[float, int, str, int]] = []
-        for context_id in self._context_bundles:
+        candidate_contexts = (
+            self._context_bundles.keys() | self._overlay_by_context.keys()
+        )
+        for context_id in candidate_contexts:
             projection = self._prepare_projection(context_id)
             if (
                 projection is None
@@ -3888,7 +3985,11 @@ class _OnlineCandidatePhysicalizer:
                     bundle.last_access_ms
                     for bundle in self._context_bundles.get(context_id, ())
                 ),
-                default=0.0,
+                default=float(
+                    self._overlay_by_context.get(context_id, {}).get(
+                        "captured_ts_ms", 0.0
+                    )
+                ),
             )
             options.append(
                 (

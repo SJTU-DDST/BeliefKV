@@ -84,6 +84,137 @@ class ProjectedReclaimRequirement:
 
 
 @dataclass(frozen=True)
+class BeneficiaryOpportunityProbe:
+    """Cheap safe-point classification before physical victim capture."""
+
+    beneficiary_request_id: str
+    beneficiary_context_id: str
+    beneficiary_context_epoch: int
+    required_bytes: int
+    hbm_available_bytes: int
+    hbm_risk_margin_bytes: int
+    predicted_deficit_bytes: int
+    running_request_count: int
+    max_running_requests: int
+    beneficiary_slot_blocked: bool
+    beneficiary_hbm_blocked: bool
+    beneficiary_slot_then_hbm_blocked: bool
+    hbm_opportunity_possible: bool
+    captured_ts_ms: float
+
+    def __post_init__(self) -> None:
+        if not self.beneficiary_request_id or not self.beneficiary_context_id:
+            raise ValueError("beneficiary opportunity identity is required")
+        if min(
+            self.beneficiary_context_epoch,
+            self.required_bytes,
+            self.hbm_available_bytes,
+            self.hbm_risk_margin_bytes,
+            self.predicted_deficit_bytes,
+            self.running_request_count,
+            self.max_running_requests,
+            self.captured_ts_ms,
+        ) < 0:
+            raise ValueError("beneficiary opportunity values must be non-negative")
+        if (
+            self.beneficiary_slot_then_hbm_blocked
+            != (
+                self.beneficiary_slot_blocked
+                and self.beneficiary_hbm_blocked
+            )
+        ):
+            raise ValueError("slot-then-HBM classification is inconsistent")
+        expected_possible = bool(
+            self.beneficiary_hbm_blocked
+            or self.hbm_available_bytes
+            <= self.required_bytes + self.hbm_risk_margin_bytes
+        )
+        if self.hbm_opportunity_possible != expected_possible:
+            raise ValueError("HBM opportunity classification is inconsistent")
+
+    @property
+    def classification(self) -> str:
+        if self.beneficiary_slot_then_hbm_blocked:
+            return "slot_then_hbm_blocked"
+        if self.beneficiary_hbm_blocked:
+            return "hbm_blocked"
+        if self.beneficiary_slot_blocked:
+            return (
+                "slot_with_near_hbm_risk"
+                if self.hbm_opportunity_possible
+                else "slot_only"
+            )
+        return (
+            "near_hbm_risk"
+            if self.hbm_opportunity_possible
+            else "capacity_available"
+        )
+
+    def to_dict(self) -> dict[str, object]:
+        return {
+            field_name: getattr(self, field_name)
+            for field_name in self.__dataclass_fields__
+        } | {"classification": self.classification}
+
+
+@dataclass(frozen=True)
+class ActionLocalPhysicalOverlay:
+    """Compact live PREPARE evidence; no page list or full bundle escapes."""
+
+    context_id: str
+    context_epoch: int
+    page_revision: int
+    topology_revision: int
+    generation_fingerprint: str
+    shape_fingerprint: str
+    exclusive_reclaimable_bytes: int
+    d2h_copy_bytes: int
+    extent_count: int
+    cross_context_bytes: int
+    locked_bytes: int
+    owner_context_ids: tuple[str, ...]
+    blocker_codes: tuple[str, ...]
+    native_loading: bool
+    captured_ts_ms: float
+
+    def __post_init__(self) -> None:
+        if not self.context_id or not self.generation_fingerprint:
+            raise ValueError("action-local overlay identity is required")
+        if not self.shape_fingerprint:
+            raise ValueError("action-local overlay shape is required")
+        if min(
+            self.context_epoch,
+            self.page_revision,
+            self.topology_revision,
+            self.exclusive_reclaimable_bytes,
+            self.d2h_copy_bytes,
+            self.extent_count,
+            self.cross_context_bytes,
+            self.locked_bytes,
+            self.captured_ts_ms,
+        ) < 0:
+            raise ValueError("action-local overlay values must be non-negative")
+        if self.d2h_copy_bytes > 0 and self.extent_count <= 0:
+            raise ValueError("non-empty overlay requires an extent count")
+        if len(set(self.owner_context_ids)) != len(self.owner_context_ids):
+            raise ValueError("overlay owners must be unique")
+        if len(set(self.blocker_codes)) != len(self.blocker_codes):
+            raise ValueError("overlay blockers must be unique")
+        object.__setattr__(
+            self, "owner_context_ids", tuple(sorted(self.owner_context_ids))
+        )
+        object.__setattr__(
+            self, "blocker_codes", tuple(sorted(self.blocker_codes))
+        )
+
+    def to_dict(self) -> dict[str, object]:
+        return {
+            field_name: getattr(self, field_name)
+            for field_name in self.__dataclass_fields__
+        }
+
+
+@dataclass(frozen=True)
 class PredictiveActionPackage:
     package_id: str
     action: PredictiveActionKind

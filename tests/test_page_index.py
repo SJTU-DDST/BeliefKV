@@ -214,6 +214,9 @@ class PageIndexTest(unittest.TestCase):
 
         blocked = index.context_physical_summaries()[0]
         self.assertEqual(blocked.context_id, "ctx")
+        self.assertIs(index.context_physical_summary("ctx"), blocked)
+        with self.assertRaisesRegex(PageIndexError, "unknown context"):
+            index.context_physical_summary("missing")
         self.assertEqual(blocked.extent_count, 2)
         self.assertEqual(blocked.physical_unique_bytes, 300)
         self.assertEqual(blocked.gpu_bytes, 300)
