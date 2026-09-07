@@ -16377,13 +16377,18 @@ class EmbeddedSGLangRuntime:
         observation: RuntimeResourceObservation,
     ) -> BeneficiaryOpportunityProbe:
         running_batch = getattr(self.scheduler, "running_batch", None)
-        running_ids = {
-            str(getattr(request, "rid", f"object:{id(request)}"))
-            for request in tuple(getattr(running_batch, "reqs", ()) or ())
+        running_requests = tuple(getattr(running_batch, "reqs", ()) or ())
+        running_by_id = {
+            str(getattr(request, "rid", f"object:{id(request)}")): request
+            for request in running_requests
         }
         chunked = getattr(self.scheduler, "chunked_req", None)
         if chunked is not None:
-            running_ids.add(str(getattr(chunked, "rid", f"object:{id(chunked)}")))
+            running_by_id.setdefault(
+                str(getattr(chunked, "rid", f"object:{id(chunked)}")),
+                chunked,
+            )
+        running_ids = set(running_by_id)
         max_running = self._predictive_max_running_requests()
         required_bytes = hint.startup_bytes + hint.growth_bytes
         hbm_available_bytes = max(
@@ -16392,29 +16397,79 @@ class EmbeddedSGLangRuntime:
             - observation.hbm_used_bytes
             - self.controller.admission.reserved_bytes,
         )
-        risk_margin_bytes = max(
-            required_bytes,
-            self.config.reference_policy_hbm_bucket_bytes,
+        projection_horizon_ms = float(
+            self.config.predictive_beneficiary_projection_horizon_ms
+        )
+        decode = getattr(self, "_gpu_service_performance_aggregates", {}).get(
+            "decode", {}
+        )
+        decode_elapsed_ms = float(decode.get("elapsed_ms", 0.0) or 0.0)
+        decode_tokens = int(decode.get("tokens", 0) or 0)
+        observed_tokens_per_ms = (
+            decode_tokens / decode_elapsed_ms if decode_elapsed_ms > 0 else 0.0
+        )
+        projected_running_growth_bytes = int(
+            math.ceil(observed_tokens_per_ms * projection_horizon_ms)
+        ) * self.config.kv_bytes_per_token
+        if running_ids:
+            projected_running_growth_bytes = max(
+                projected_running_growth_bytes,
+                self.config.reference_policy_hbm_bucket_bytes,
+            )
+        if chunked is not None:
+            fill_tokens = max(
+                _sequence_length(getattr(chunked, "fill_ids", None)),
+                _sequence_length(getattr(chunked, "origin_input_ids", None))
+                + _sequence_length(getattr(chunked, "output_ids", None)),
+            )
+            prefix_tokens = _sequence_length(
+                getattr(chunked, "prefix_indices", None)
+            )
+            projected_running_growth_bytes += (
+                min(
+                    max(0, fill_tokens - prefix_tokens),
+                    self.config.admission_prefill_quantum_tokens,
+                )
+                * self.config.kv_bytes_per_token
+            )
+        projected_hbm_available_bytes = max(
+            0, hbm_available_bytes - projected_running_growth_bytes
         )
         hbm_blocked = required_bytes > hbm_available_bytes
-        slot_blocked = bool(max_running and len(running_ids) >= max_running)
-        hbm_opportunity_possible = bool(
-            hbm_blocked
-            or hbm_available_bytes <= required_bytes + risk_margin_bytes
+        predicted_deficit_bytes = max(
+            0, required_bytes - projected_hbm_available_bytes
         )
+        predicted_block_time_ms = None
+        if predicted_deficit_bytes > 0:
+            if hbm_blocked:
+                predicted_block_time_ms = 0.0
+            else:
+                predicted_block_time_ms = min(
+                    projection_horizon_ms,
+                    projection_horizon_ms
+                    * max(0, hbm_available_bytes - required_bytes)
+                    / max(1, projected_running_growth_bytes),
+                )
+        slot_blocked = bool(max_running and len(running_ids) >= max_running)
+        hbm_opportunity_possible = predicted_deficit_bytes > 0
         return BeneficiaryOpportunityProbe(
             beneficiary_request_id=hint.request_id,
             beneficiary_context_id=hint.context_id,
             beneficiary_context_epoch=hint.context_epoch,
             required_bytes=required_bytes,
             hbm_available_bytes=hbm_available_bytes,
-            hbm_risk_margin_bytes=risk_margin_bytes,
-            predicted_deficit_bytes=max(0, required_bytes - hbm_available_bytes),
+            hbm_risk_margin_bytes=projected_running_growth_bytes,
+            projected_running_growth_bytes=projected_running_growth_bytes,
+            projected_hbm_available_bytes=projected_hbm_available_bytes,
+            predicted_block_time_ms=predicted_block_time_ms,
+            predicted_deficit_bytes=predicted_deficit_bytes,
             running_request_count=len(running_ids),
             max_running_requests=max_running,
             beneficiary_slot_blocked=slot_blocked,
             beneficiary_hbm_blocked=hbm_blocked,
-            beneficiary_slot_then_hbm_blocked=slot_blocked and hbm_blocked,
+            beneficiary_slot_then_hbm_blocked=(
+                slot_blocked and hbm_opportunity_possible
+            ),
             hbm_opportunity_possible=hbm_opportunity_possible,
             captured_ts_ms=observation.ts_ms,
         )
@@ -16511,53 +16566,16 @@ class EmbeddedSGLangRuntime:
             ):
                 observed_failure_reasons.add("victim_bundle_generation_stale")
                 continue
-            previews = self.controller.arbiter.bundle_builder.previews_for_context(
-                CommandKind.SHADOW_CONTEXT,
+            bundle_builder = self.controller.arbiter.bundle_builder
+            preview = bundle_builder.best_exclusive_shadow_preview_for_context(
                 summary.context_id,
                 context.epoch,
                 now_ms=observation.ts_ms,
                 host_available_bytes=observation.host_free_bytes,
             )
-            candidates = tuple(
-                preview
-                for preview in previews
-                if preview.eligible
-                and preview.copy_bytes > 0
-                and preview.bundle.exclusive_action_bytes > 0
-                and any(
-                    action.action == PhysicalPageAction.START_D2H
-                    for action in preview.page_actions
-                )
-            )
-            if not candidates:
-                blocker_codes = {
-                    blocker.code.value
-                    for preview in previews
-                    for blocker in preview.blockers
-                }
-                if blocker_codes.intersection(
-                    {
-                        TransferBlockerCode.STALE_GENERATION.value,
-                        TransferBlockerCode.EXTENT_MUTATED.value,
-                    }
-                ):
-                    observed_failure_reasons.add(
-                        "victim_bundle_generation_stale"
-                    )
-                elif not previews or all(preview.copy_bytes <= 0 for preview in previews):
-                    observed_failure_reasons.add("victim_zero_reclaimable_bytes")
-                else:
-                    observed_failure_reasons.add("victim_physically_blocked")
+            if preview is None:
+                observed_failure_reasons.add("victim_physically_blocked")
                 continue
-            preview = min(
-                candidates,
-                key=lambda item: (
-                    -item.bundle.exclusive_action_bytes,
-                    item.copy_bytes,
-                    item.bundle.cross_context_action_bytes,
-                    item.bundle.bundle_id,
-                ),
-            )
             extent_count = sum(
                 action.action == PhysicalPageAction.START_D2H
                 for action in preview.page_actions

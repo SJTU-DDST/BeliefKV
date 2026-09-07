@@ -1071,6 +1071,7 @@ class IncrementalPolicyInputAssembler:
         overlay_metadata = policy_input.optional_metadata.get(
             "beliefkv_action_local_physical_overlay"
         )
+        overlay_is_authoritative = overlay_metadata is not None
         overlay_batch = (
             overlay_metadata.value
             if overlay_metadata is not None
@@ -1097,6 +1098,13 @@ class IncrementalPolicyInputAssembler:
         overlay_selection_reason = str(
             overlay_batch.get("selection_reason") or ""
         ) or None
+        if overlay_is_authoritative and not overlay_rows:
+            return (
+                policy_input,
+                False,
+                overlay_selection_reason
+                or "action_local_physical_overlay_unavailable",
+            )
         trigger_metadata = policy_input.optional_metadata.get(
             "beliefkv_predictive_risk_trigger"
         )

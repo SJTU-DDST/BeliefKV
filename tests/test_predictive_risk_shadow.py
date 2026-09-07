@@ -247,6 +247,19 @@ def test_projected_reclaim_prefers_current_bounded_seed_hint() -> None:
         },
         "test",
     )
+    metadata["beliefkv_action_local_physical_overlay"] = MetadataValue(
+        MetadataSource.OBSERVED,
+        {
+            "overlays": ({"context_id": "ctx-old"},),
+            "opportunity": {
+                "beneficiary_request_id": beneficiary.request_id,
+                "hbm_opportunity_possible": True,
+                "predicted_block_time_ms": 750.0,
+                "predicted_deficit_bytes": 96,
+            },
+        },
+        "test",
+    )
     policy_input = replace(
         policy_input,
         runnable_frontier=(beneficiary,),
@@ -270,6 +283,8 @@ def test_projected_reclaim_prefers_current_bounded_seed_hint() -> None:
     assert requirement is not None
     assert requirement.source_joint_plan_id == "bounded-seed-current"
     assert requirement.beneficiary_request_id == beneficiary.request_id
+    assert requirement.predicted_block_time_ms == 750.0
+    assert requirement.predicted_deficit_bytes == 96
 
 
 def test_projected_reclaim_rejects_stale_bounded_seed_hint() -> None:

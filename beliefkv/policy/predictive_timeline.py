@@ -142,6 +142,8 @@ class CandidatePhysicalPlan:
     projected_beneficiary_invocation_id: str | None = None
     projected_beneficiary_startup_bytes: int = 0
     projected_beneficiary_growth_bytes: int = 0
+    projected_beneficiary_block_offset_ms: float | None = None
+    projected_beneficiary_deficit_bytes: int = 0
     residual_hbm_time_byte_ms: float = 0.0
     deterministic_feasible: bool = True
     liveness_path_proven: bool = True
@@ -171,6 +173,7 @@ class CandidatePhysicalPlan:
             self.initial_hbm_reserved_bytes,
             self.modeled_growth_reservation_bytes,
             self.kv_bytes_per_token,
+            self.projected_beneficiary_deficit_bytes,
             self.projected_beneficiary_startup_bytes,
             self.projected_beneficiary_growth_bytes,
         )
@@ -198,6 +201,20 @@ class CandidatePhysicalPlan:
             and self.projected_beneficiary_invocation_id
         ):
             raise ValueError("projected beneficiary demand requires identities")
+        if (
+            self.projected_beneficiary_block_offset_ms is not None
+            and (
+                not math.isfinite(self.projected_beneficiary_block_offset_ms)
+                or self.projected_beneficiary_block_offset_ms < 0
+                or self.projected_beneficiary_deficit_bytes <= 0
+            )
+        ):
+            raise ValueError("projected beneficiary block evidence is invalid")
+        if (
+            self.projected_beneficiary_deficit_bytes > 0
+            and self.projected_beneficiary_block_offset_ms is None
+        ):
+            raise ValueError("projected beneficiary deficit requires a block time")
         transfer_ids = set(transfer_sequence)
         unknown_transfer_dependencies = sorted(
             {
@@ -693,6 +710,27 @@ class CandidateTimelineEvaluator:
             if current > plan.hbm_capacity_bytes and first_pressure_offset_ms is None:
                 first_pressure_offset_ms = offset
                 first_pressure_deficit_bytes = current - plan.hbm_capacity_bytes
+        explicit_block = plan.projected_beneficiary_block_offset_ms
+        if explicit_block is not None and (
+            beneficiary_block_offset_ms is None
+            or explicit_block < beneficiary_block_offset_ms
+        ):
+            beneficiary_block_offset_ms = explicit_block
+            beneficiary_deficit_bytes = plan.projected_beneficiary_deficit_bytes
+        if explicit_block is not None:
+            peak = max(
+                peak,
+                plan.hbm_capacity_bytes
+                + plan.projected_beneficiary_deficit_bytes,
+            )
+            if (
+                first_pressure_offset_ms is None
+                or explicit_block < first_pressure_offset_ms
+            ):
+                first_pressure_offset_ms = explicit_block
+                first_pressure_deficit_bytes = (
+                    plan.projected_beneficiary_deficit_bytes
+                )
         return (
             peak,
             max(0, peak - plan.hbm_capacity_bytes),

@@ -93,6 +93,9 @@ class BeneficiaryOpportunityProbe:
     required_bytes: int
     hbm_available_bytes: int
     hbm_risk_margin_bytes: int
+    projected_running_growth_bytes: int
+    projected_hbm_available_bytes: int
+    predicted_block_time_ms: float | None
     predicted_deficit_bytes: int
     running_request_count: int
     max_running_requests: int
@@ -110,6 +113,8 @@ class BeneficiaryOpportunityProbe:
             self.required_bytes,
             self.hbm_available_bytes,
             self.hbm_risk_margin_bytes,
+            self.projected_running_growth_bytes,
+            self.projected_hbm_available_bytes,
             self.predicted_deficit_bytes,
             self.running_request_count,
             self.max_running_requests,
@@ -117,20 +122,27 @@ class BeneficiaryOpportunityProbe:
         ) < 0:
             raise ValueError("beneficiary opportunity values must be non-negative")
         if (
+            self.predicted_block_time_ms is not None
+            and (
+                not math.isfinite(self.predicted_block_time_ms)
+                or self.predicted_block_time_ms < 0
+            )
+        ):
+            raise ValueError("beneficiary block time must be finite and non-negative")
+        projected_blocked = self.predicted_deficit_bytes > 0
+        if (
             self.beneficiary_slot_then_hbm_blocked
             != (
                 self.beneficiary_slot_blocked
-                and self.beneficiary_hbm_blocked
+                and projected_blocked
             )
         ):
             raise ValueError("slot-then-HBM classification is inconsistent")
-        expected_possible = bool(
-            self.beneficiary_hbm_blocked
-            or self.hbm_available_bytes
-            <= self.required_bytes + self.hbm_risk_margin_bytes
-        )
+        expected_possible = projected_blocked
         if self.hbm_opportunity_possible != expected_possible:
             raise ValueError("HBM opportunity classification is inconsistent")
+        if projected_blocked != (self.predicted_block_time_ms is not None):
+            raise ValueError("beneficiary block time and deficit must be paired")
 
     @property
     def classification(self) -> str:

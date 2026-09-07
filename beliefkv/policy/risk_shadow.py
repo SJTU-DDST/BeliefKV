@@ -2750,6 +2750,12 @@ class PredictiveRiskShadowObserver:
                 beneficiary_growth_bytes=(
                     projected_requirement.required_growth_bytes
                 ),
+                predicted_block_time_ms=(
+                    projected_requirement.predicted_block_time_ms
+                ),
+                predicted_deficit_bytes=(
+                    projected_requirement.predicted_deficit_bytes
+                ),
                 causal_package_generation=(
                     projected_requirement.causal_package_generation
                 ),
@@ -2784,6 +2790,12 @@ class PredictiveRiskShadowObserver:
                 ),
                 beneficiary_growth_bytes=(
                     projected_requirement.required_growth_bytes
+                ),
+                predicted_block_time_ms=(
+                    projected_requirement.predicted_block_time_ms
+                ),
+                predicted_deficit_bytes=(
+                    projected_requirement.predicted_deficit_bytes
                 ),
                 victim_reclaim_bytes=victim.reclaimable_bytes,
                 causal_package_generation=(
@@ -2828,6 +2840,38 @@ class PredictiveRiskShadowObserver:
             and isinstance(hint_metadata.value, Mapping)
             else None
         )
+        overlay_metadata = policy_input.optional_metadata.get(
+            "beliefkv_action_local_physical_overlay"
+        )
+        overlay_is_authoritative = overlay_metadata is not None
+        overlay_batch = (
+            overlay_metadata.value
+            if overlay_metadata is not None
+            and isinstance(overlay_metadata.value, Mapping)
+            else {}
+        )
+        opportunity = overlay_batch.get("opportunity", {})
+
+        def opportunity_prediction(request_id: str) -> tuple[float | None, int]:
+            if (
+                not isinstance(opportunity, Mapping)
+                or str(opportunity.get("beneficiary_request_id") or "") != request_id
+            ):
+                return None, 0
+            block_time = opportunity.get("predicted_block_time_ms")
+            deficit = opportunity.get("predicted_deficit_bytes")
+            if (
+                not isinstance(block_time, (int, float))
+                or isinstance(block_time, bool)
+                or not math.isfinite(float(block_time))
+                or float(block_time) < 0
+                or not isinstance(deficit, int)
+                or isinstance(deficit, bool)
+                or deficit <= 0
+            ):
+                return None, 0
+            return float(block_time), deficit
+
         if hint is not None:
             request_id = str(hint.get("request_id") or "")
             request = requests.get(request_id)
@@ -2856,6 +2900,11 @@ class PredictiveRiskShadowObserver:
                 if not any(
                     bundle.cpu_bytes > bundle.gpu_bytes for bundle in bundles
                 ):
+                    block_time, deficit_bytes = opportunity_prediction(
+                        request.request_id
+                    )
+                    if overlay_is_authoritative and block_time is None:
+                        return None
                     return ProjectedReclaimRequirement(
                         beneficiary_request_id=request.request_id,
                         beneficiary_invocation_id=request.invocation_id,
@@ -2863,6 +2912,8 @@ class PredictiveRiskShadowObserver:
                         beneficiary_context_epoch=request.context_epoch,
                         required_startup_bytes=request.admission_startup_bytes,
                         required_growth_bytes=request.admission_growth_bytes,
+                        predicted_block_time_ms=block_time,
+                        predicted_deficit_bytes=deficit_bytes,
                         source_joint_plan_id=plan_id,
                         causal_package_generation=(
                             f"{plan_id}:c{request.context_epoch}"
@@ -2899,6 +2950,9 @@ class PredictiveRiskShadowObserver:
             )
             if any(bundle.cpu_bytes > bundle.gpu_bytes for bundle in bundles):
                 continue
+            block_time, deficit_bytes = opportunity_prediction(request.request_id)
+            if overlay_is_authoritative and block_time is None:
+                return None
             return ProjectedReclaimRequirement(
                 beneficiary_request_id=request.request_id,
                 beneficiary_invocation_id=request.invocation_id,
@@ -2906,6 +2960,8 @@ class PredictiveRiskShadowObserver:
                 beneficiary_context_epoch=request.context_epoch,
                 required_startup_bytes=request.admission_startup_bytes,
                 required_growth_bytes=request.admission_growth_bytes,
+                predicted_block_time_ms=block_time,
+                predicted_deficit_bytes=deficit_bytes,
                 source_joint_plan_id=source_plan.plan_id,
                 causal_package_generation=(
                     f"{source_plan.plan_id}:c{request.context_epoch}"
@@ -3829,6 +3885,12 @@ class _OnlineCandidatePhysicalizer:
             ),
             projected_beneficiary_startup_bytes=package.beneficiary_startup_bytes,
             projected_beneficiary_growth_bytes=package.beneficiary_growth_bytes,
+            projected_beneficiary_block_offset_ms=(
+                package.predicted_block_time_ms
+            ),
+            projected_beneficiary_deficit_bytes=(
+                package.predicted_deficit_bytes
+            ),
             deterministic_feasible=deterministic,
             liveness_path_proven=True,
         )

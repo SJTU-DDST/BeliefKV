@@ -99,6 +99,7 @@ class BeliefKVConfig:
     predictive_commit_guard_ms: float = 25.0
     predictive_prefetch_desired_lead_ms: float = 100.0
     predictive_intent_max_age_ms: float = 60_000.0
+    predictive_beneficiary_projection_horizon_ms: float = 2000.0
     gpu_service_model_path: str | None = None
     gpu_service_hardware_key: str | None = None
     predictive_risk_particle_count: int = 128
@@ -572,11 +573,14 @@ class BeliefKVConfig:
             "joint_shadow_full_plan_watchdog_ms",
             "max_joint_plan_age_ms",
             "joint_transition_settling_timeout_ms",
+            "predictive_beneficiary_projection_horizon_ms",
             "joint_shadow_detailed_audit_interval_ms",
         ):
             value = float(getattr(self, field_name))
             if not math.isfinite(value) or value < 0:
                 raise ValueError(f"{field_name} must be finite and non-negative")
+        if self.predictive_beneficiary_projection_horizon_ms <= 0:
+            raise ValueError("beneficiary projection horizon must be positive")
         if self.max_joint_plan_budget_ms == 0 or self.max_joint_plan_age_ms == 0:
             raise ValueError("joint plan budget and age must be positive")
         if self.min_joint_plan_budget_ms > self.max_joint_plan_budget_ms:

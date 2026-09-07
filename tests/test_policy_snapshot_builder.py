@@ -570,3 +570,25 @@ def test_snapshot_freezes_root_workflow_service_and_memory_charges() -> None:
     assert fairness["revision"] == controller.fairness.revision
     assert snapshot.runtime_graph.state["request_queue"]["admission_revision"] == 0
     assert snapshot.runtime_graph.state["control"]["transfer_epoch"] == 0
+
+
+def test_compact_snapshot_omits_bundle_estimates_but_keeps_transfer_curve() -> None:
+    controller = _controller()
+    _bind_two_level_tree(controller)
+
+    snapshot = controller.policy_snapshot_builder.build(
+        _observation(hbm_used=450, host_used=50),
+        physical_summary_only=True,
+        include_transfer_estimates=False,
+    )
+
+    estimates = snapshot.optional_metadata[
+        "beliefkv_transfer_service_estimates"
+    ].value
+    curve = snapshot.optional_metadata[
+        "beliefkv_transfer_service_curve_snapshot"
+    ].value
+    assert estimates["omitted"] is True
+    assert estimates["contexts"] == {}
+    assert curve["schema_version"] == 1
+    assert curve["fallback"]["bandwidth_gbps"] > 0

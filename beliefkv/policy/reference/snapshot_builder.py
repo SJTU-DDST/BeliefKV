@@ -447,7 +447,6 @@ class PolicyInputSnapshotBuilder:
             transfer_estimates = self._transfer_service_estimates(
                 bundles, observation
             )
-            transfer_curve_snapshot = self.service_curve.snapshot()
         else:
             transfer_estimates = {
                 "hardware_key": self.service_curve.warm_start_hardware_key,
@@ -455,10 +454,10 @@ class PolicyInputSnapshotBuilder:
                 "omitted": True,
                 "reason": "observed_plan_has_no_transfer_cost_consumer",
             }
-            transfer_curve_snapshot = {
-                "hardware_key": self.service_curve.warm_start_hardware_key,
-                "omitted": True,
-            }
+        # Candidate-local overlays carry bytes and extent count instead of full
+        # bundles. The worker still needs the compact calibrated curve to price
+        # those shapes when per-context estimates are intentionally omitted.
+        transfer_curve_snapshot = self.service_curve.snapshot()
         metadata[transfer_metadata_name] = MetadataValue(
             source=MetadataSource.OBSERVED,
             value=transfer_estimates,

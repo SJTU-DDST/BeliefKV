@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from dataclasses import replace
 from beliefkv.policy.predictive_joint import (
     PackageScenarioEvaluation,
     PredictiveActionKind,
@@ -396,3 +397,22 @@ def test_reactive_restore_starts_only_after_join_release() -> None:
         join_release + 25.0
     )
     assert timeline.service_quanta[-1].start_offset_ms == join_release + 25.0
+
+
+def test_explicit_projected_block_is_used_without_a_batch_attempt() -> None:
+    plan = replace(
+        _beneficiary_plan(demand_bytes=200),
+        batches=(),
+        projected_beneficiary_block_offset_ms=750.0,
+        projected_beneficiary_deficit_bytes=125,
+    )
+
+    timeline = CandidateTimelineEvaluator(_service_model()).evaluate(
+        _beneficiary_scenario(),
+        plan,
+    )
+
+    assert timeline.projected_beneficiary_block_offset_ms == 750.0
+    assert timeline.projected_beneficiary_deficit_bytes == 125
+    assert timeline.first_hbm_pressure_offset_ms == 750.0
+    assert timeline.first_hbm_pressure_deficit_bytes == 125

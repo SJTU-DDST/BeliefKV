@@ -159,6 +159,110 @@ class PhysicalBundleBuilder:
             )
         )
 
+    def best_exclusive_shadow_preview_for_context(
+        self,
+        context_id: str,
+        context_epoch: int,
+        *,
+        now_ms: float,
+        host_available_bytes: int | None = None,
+    ) -> PhysicalBundlePreview | None:
+        """Build at most one maximal private D2H shadow candidate."""
+
+        context = self.graph.contexts.get(context_id)
+        if (
+            context is None
+            or context.epoch != context_epoch
+            or not self.page_index.has_context(context_id)
+            or self.page_index.context_epoch(context_id) != context_epoch
+        ):
+            return None
+
+        target_owner = {context_id}
+        memo: dict[PageHandle, tuple[bool, bool, int]] = {}
+        visiting: set[PageHandle] = set()
+
+        def private_subtree(handle: PageHandle) -> tuple[bool, bool, int]:
+            cached = memo.get(handle)
+            if cached is not None:
+                return cached
+            if handle in visiting:
+                return False, False, 0
+            page = self.page_index.pages.get(handle)
+            if page is None or page.residency == PhysicalResidency.DEAD:
+                return False, False, 0
+            if not page.gpu_resident:
+                return True, True, 0
+
+            visiting.add(handle)
+            private = set(page.owner_contexts) == target_owner
+            unblocked = not self._page_blockers(page)
+            copy_bytes = (
+                page.size_bytes
+                if page.residency == PhysicalResidency.GPU_ONLY
+                else 0
+            )
+            for child_handle in page.children:
+                child = self.page_index.pages.get(child_handle)
+                if child is None or child.residency == PhysicalResidency.DEAD:
+                    private = False
+                    unblocked = False
+                    continue
+                if not child.gpu_resident:
+                    continue
+                child_private, child_unblocked, child_bytes = private_subtree(
+                    child_handle
+                )
+                private = private and child_private
+                unblocked = unblocked and child_unblocked
+                copy_bytes += child_bytes
+            visiting.remove(handle)
+            result = private, unblocked, copy_bytes
+            memo[handle] = result
+            return result
+
+        candidates: list[tuple[int, PageHandle]] = []
+        for page in self.page_index.context_pages(context_id):
+            if not page.gpu_resident:
+                continue
+            private, unblocked, copy_bytes = private_subtree(page.handle)
+            if not private or not unblocked or copy_bytes <= 0:
+                continue
+            parent_is_candidate = False
+            if page.parent is not None:
+                parent = self.page_index.pages.get(page.parent)
+                if parent is not None and parent.gpu_resident:
+                    parent_private, parent_unblocked, parent_bytes = private_subtree(
+                        parent.handle
+                    )
+                    parent_is_candidate = (
+                        parent_private and parent_unblocked and parent_bytes > 0
+                    )
+            if not parent_is_candidate:
+                candidates.append((copy_bytes, page.handle))
+
+        for _, root_handle in sorted(
+            candidates,
+            key=lambda item: (-item[0], item[1]),
+        ):
+            preview = self.preview_offload_root(
+                CommandKind.SHADOW_CONTEXT,
+                context_id,
+                context_epoch,
+                root_handle,
+                now_ms=now_ms,
+                host_available_bytes=host_available_bytes,
+            )
+            if (
+                preview is not None
+                and preview.eligible
+                and preview.copy_bytes > 0
+                and preview.bundle.exclusive_action_bytes > 0
+                and preview.bundle.cross_context_action_bytes == 0
+            ):
+                return preview
+        return None
+
     def find_intent_preview(
         self,
         command_kind: CommandKind,

@@ -860,3 +860,46 @@ def test_cpu_only_host_drop_rejects_locked_or_nonleaf_extent() -> None:
     assert {item.code for item in locked.blockers} == {
         TransferBlockerCode.NODE_LOCKED
     }
+
+
+def test_best_exclusive_shadow_preview_skips_shared_ancestor() -> None:
+    graph, index = _runtime(
+        ("parent", "ctx-parent", "wf"),
+        ("child", "ctx-child", "wf"),
+    )
+    graph.apply(_event(3, RuntimeEventKind.TOOL_START, invocation_id="parent"))
+    graph.apply(_event(4, RuntimeEventKind.TOOL_START, invocation_id="child"))
+    shared_root = PageHandle(1, 0)
+    parent_suffix = PageHandle(2, 0)
+    parent_leaf = PageHandle(3, 0)
+    child_suffix = PageHandle(4, 0)
+    index.register_page(shared_root, size_bytes=100, radix_depth=1)
+    index.register_page(
+        parent_suffix, size_bytes=300, radix_depth=2, parent=shared_root
+    )
+    index.register_page(
+        parent_leaf, size_bytes=200, radix_depth=3, parent=parent_suffix
+    )
+    index.register_page(
+        child_suffix, size_bytes=400, radix_depth=2, parent=shared_root
+    )
+    index.bind_pages(
+        "ctx-parent", 0, (shared_root, parent_suffix, parent_leaf)
+    )
+    index.bind_pages("ctx-child", 0, (shared_root, child_suffix))
+
+    preview = PhysicalBundleBuilder(
+        graph, index
+    ).best_exclusive_shadow_preview_for_context(
+        "ctx-parent",
+        0,
+        now_ms=5,
+    )
+
+    assert preview is not None
+    assert preview.eligible
+    assert preview.bundle.handles == (parent_suffix, parent_leaf)
+    assert preview.copy_bytes == 500
+    assert preview.bundle.exclusive_action_bytes == 500
+    assert preview.bundle.cross_context_action_bytes == 0
+    assert preview.bundle.owner_context_ids == ("ctx-parent",)

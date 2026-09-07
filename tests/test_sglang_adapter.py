@@ -536,6 +536,9 @@ def test_bounded_seed_hint_change_publishes_one_lightweight_risk_delta():
                 required_bytes=hint.startup_bytes + hint.growth_bytes,
                 hbm_available_bytes=0,
                 hbm_risk_margin_bytes=1,
+                projected_running_growth_bytes=1,
+                projected_hbm_available_bytes=0,
+                predicted_block_time_ms=0.0,
                 predicted_deficit_bytes=hint.startup_bytes + hint.growth_bytes,
                 running_request_count=0,
                 max_running_requests=32,
@@ -618,7 +621,12 @@ def test_action_local_probe_filters_slot_only_beneficiary_before_graph_scan():
     runtime.controller = SimpleNamespace(
         admission=SimpleNamespace(reserved_bytes=0)
     )
-    runtime.config = SimpleNamespace(reference_policy_hbm_bucket_bytes=64)
+    runtime.config = SimpleNamespace(
+        reference_policy_hbm_bucket_bytes=64,
+        predictive_beneficiary_projection_horizon_ms=2000.0,
+        kv_bytes_per_token=1,
+        admission_prefill_quantum_tokens=16,
+    )
     hint = ObservedSeedBeneficiaryHint(
         "seed",
         "beneficiary",
@@ -646,6 +654,7 @@ def test_action_local_probe_filters_slot_only_beneficiary_before_graph_scan():
     assert batch.opportunity.beneficiary_slot_blocked
     assert not batch.opportunity.beneficiary_hbm_blocked
     assert not batch.opportunity.hbm_opportunity_possible
+
 
 def test_action_local_overlay_captures_at_most_two_ranked_live_victims():
     runtime = EmbeddedSGLangRuntime.__new__(EmbeddedSGLangRuntime)
@@ -713,14 +722,19 @@ def test_action_local_overlay_captures_at_most_two_ranked_live_victims():
         page_index=page_index,
         arbiter=SimpleNamespace(
             bundle_builder=SimpleNamespace(
-                previews_for_context=lambda _kind, context_id, _epoch, **_kwargs: (
-                    preview(context_id),
+                best_exclusive_shadow_preview_for_context=(
+                    lambda context_id, _epoch, **_kwargs: preview(context_id)
                 )
             )
         ),
         policy_snapshot_builder=object(),
     )
-    runtime.config = SimpleNamespace(reference_policy_hbm_bucket_bytes=64)
+    runtime.config = SimpleNamespace(
+        reference_policy_hbm_bucket_bytes=64,
+        predictive_beneficiary_projection_horizon_ms=2000.0,
+        kv_bytes_per_token=1,
+        admission_prefill_quantum_tokens=16,
+    )
     hint = ObservedSeedBeneficiaryHint(
         "seed", "beneficiary", "beneficiary-invocation",
         "beneficiary-context", 0, 64, 32,
@@ -744,6 +758,7 @@ def test_action_local_overlay_captures_at_most_two_ranked_live_victims():
     )
     assert batch.opportunity.beneficiary_hbm_blocked
     assert all(item.page_revision == 17 for item in batch.overlays)
+
 
 def test_predictive_risk_triggers_follow_park_and_reentry_boundaries():
     runtime = EmbeddedSGLangRuntime.__new__(EmbeddedSGLangRuntime)
@@ -8852,6 +8867,49 @@ class SGLangContractTest(unittest.TestCase):
         )
         with self.assertRaisesRegex(ValueError, "memory leak detected"):
             Scheduler.check_memory(scheduler)
+
+
+def test_action_local_probe_projects_running_growth_into_hbm_deficit():
+    runtime = EmbeddedSGLangRuntime.__new__(EmbeddedSGLangRuntime)
+    runtime.scheduler = SimpleNamespace(
+        running_batch=SimpleNamespace(reqs=(SimpleNamespace(rid="running"),)),
+        chunked_req=None,
+        max_running_requests=32,
+    )
+    runtime.controller = SimpleNamespace(admission=SimpleNamespace(reserved_bytes=0))
+    runtime.config = SimpleNamespace(
+        reference_policy_hbm_bucket_bytes=64,
+        predictive_beneficiary_projection_horizon_ms=2000.0,
+        kv_bytes_per_token=1,
+        admission_prefill_quantum_tokens=16,
+    )
+    hint = ObservedSeedBeneficiaryHint(
+        "seed",
+        "beneficiary",
+        "beneficiary-invocation",
+        "beneficiary-context",
+        0,
+        64,
+        32,
+    )
+    observation = RuntimeResourceObservation(
+        ts_ms=5.0,
+        hbm_capacity_bytes=1_000,
+        hbm_used_bytes=850,
+        host_capacity_bytes=1_000,
+        host_used_bytes=0,
+        host_free_bytes=1_000,
+    )
+
+    probe = runtime._predictive_beneficiary_opportunity_probe(hint, observation)
+
+    assert not probe.beneficiary_hbm_blocked
+    assert probe.hbm_opportunity_possible
+    assert probe.classification == "near_hbm_risk"
+    assert probe.projected_running_growth_bytes == 64
+    assert probe.projected_hbm_available_bytes == 86
+    assert probe.predicted_deficit_bytes == 10
+    assert probe.predicted_block_time_ms == 1687.5
 
 
 if __name__ == "__main__":
