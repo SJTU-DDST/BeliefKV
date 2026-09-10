@@ -256,6 +256,7 @@ def test_beneficiary_growth_derives_future_block_from_service_timeline() -> None
     plan = replace(
         _beneficiary_plan(demand_bytes=50),
         initial_hbm_used_bytes=850,
+        projected_beneficiary_deficit_bytes=50,
     )
 
     timeline = CandidateTimelineEvaluator(_service_model()).evaluate(
@@ -269,6 +270,20 @@ def test_beneficiary_growth_derives_future_block_from_service_timeline() -> None
     )
     assert timeline.projected_beneficiary_deficit_bytes == 50
     assert timeline.future_hbm_overflow_bytes == 50
+
+
+def test_explicit_beneficiary_block_time_requires_positive_deficit() -> None:
+    try:
+        replace(
+            _beneficiary_plan(demand_bytes=50),
+            projected_beneficiary_block_offset_ms=10.0,
+        )
+    except ValueError as exc:
+        assert "block evidence" in str(exc)
+    else:
+        raise AssertionError("explicit block time without a deficit must be rejected")
+
+
 def test_projected_beneficiary_bytes_must_be_non_negative() -> None:
     try:
         CandidatePhysicalPlan(

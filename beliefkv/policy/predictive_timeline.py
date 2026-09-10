@@ -210,11 +210,6 @@ class CandidatePhysicalPlan:
             )
         ):
             raise ValueError("projected beneficiary block evidence is invalid")
-        if (
-            self.projected_beneficiary_deficit_bytes > 0
-            and self.projected_beneficiary_block_offset_ms is None
-        ):
-            raise ValueError("projected beneficiary deficit requires a block time")
         transfer_ids = set(transfer_sequence)
         unknown_transfer_dependencies = sorted(
             {
