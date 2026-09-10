@@ -1,6 +1,30 @@
 # BeliefKV 最新架构与实现状态
 
-更新日期：2026-09-10
+更新日期：2026-09-11
+
+## 2026-09-11：Future-Growth 首次产生正收益，Canary 仍关闭
+
+64-root H200 predictor-only 高压运行首次产生 48 个正收益 PREPARE 候选、43 个 eligible
+候选，planner 选择 35 次 PREPARE。beneficiary/value 路径已经成立；本轮不再是“高压但
+没有预测机会”。完整记录见
+`docs/experiments/beliefkv_p6_future_growth_top4_shadow64_2026-09-10_zh.md`。
+
+在线门槛仍未通过。旧 validator 将 action-local overlay 对照只更新过一次的全局
+`PolicyInput`，导致 54/54 certificate 被错误报告为 stale。当前改为 package-local causal
+read-set 对 live RCCG 验证，并以 victim context-local revision 验证 compact physical
+evidence；真正提交仍在 safe point 重物化完整 bundle 并执行资源、ownership 和 transfer
+门禁。
+
+时序是独立问题：42 个 finite latest-start result 中，hint 42/42 及时发布，但 worker
+completion 和 validation 各只有 1/42 及时。Joint worker 现在允许有效 risk-only result
+在无关 semantic delta pending 时立即发布，同时继续处理新 delta；action-projected
+k-medoids 复用距离矩阵，overlay 复用 context-revision-valid 的 closure preview。同一 trace
+的 12-snapshot CPU replay planning P50/P95 为 37.20/49.51 ms，但这些实验后改动尚未经过
+GPU 验证。
+
+PREPARE canary 继续关闭。下一门槛是一次短 64-root predictor-only 回归同时满足：worker
+failure 为 0、fresh-positive 大于 0、validation 早于 latest-start。若第三项仍失败，下一
+步是隔离 Predictive worker 的 GIL/调度延迟，而不是降低风险阈值。
 
 ## 2026-09-10：多 Beneficiary Future-Growth Probe 与局部物理失效
 

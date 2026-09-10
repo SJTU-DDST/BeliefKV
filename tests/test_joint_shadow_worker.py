@@ -1092,8 +1092,10 @@ def test_semantic_progress_does_not_erase_inflight_risk_trigger() -> None:
         initial_result.plan.plan_id
     )
 
-    started = threading.Event()
-    release = threading.Event()
+    first_started = threading.Event()
+    second_started = threading.Event()
+    first_release = threading.Event()
+    second_release = threading.Event()
     original_materialize = assembler.materialize_predictive_candidates
     materialize_calls = 0
 
@@ -1101,8 +1103,11 @@ def test_semantic_progress_does_not_erase_inflight_risk_trigger() -> None:
         nonlocal materialize_calls
         materialize_calls += 1
         if materialize_calls == 1:
-            started.set()
-            assert release.wait(timeout=2)
+            first_started.set()
+            assert first_release.wait(timeout=2)
+        elif materialize_calls == 2:
+            second_started.set()
+            assert second_release.wait(timeout=2)
         return original_materialize(*args, **kwargs)
 
     assembler.materialize_predictive_candidates = blocking_materialize
@@ -1129,8 +1134,8 @@ def test_semantic_progress_does_not_erase_inflight_risk_trigger() -> None:
         risk_evaluation_requested=True,
         risk_trigger_signature=(("prepare", "tool_start", "root", 0),),
     )
-    worker.submit_delta(risk)
-    assert started.wait(timeout=2)
+    risk_submission = worker.submit_delta(risk)
+    assert first_started.wait(timeout=2)
 
     controller.process_runtime_event(
         _event(
@@ -1153,7 +1158,14 @@ def test_semantic_progress_does_not_erase_inflight_risk_trigger() -> None:
         observed_seed_beneficiary=beneficiary_hint,
     )
     semantic_submission = worker.submit_delta(semantic)
-    release.set()
+    first_release.set()
+    assert second_started.wait(timeout=2)
+    risk_result = worker.latest(after_sequence=initial_submission.sequence)
+    assert risk_result is not None
+    assert risk_result.sequence == risk_submission.sequence
+    assert risk_result.risk_evaluation_requested
+
+    second_release.set()
     result = None
     for _ in range(200):
         result = worker.latest(after_sequence=initial_submission.sequence)

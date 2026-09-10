@@ -1632,6 +1632,7 @@ def _radix_extent(
 
 def test_compact_overlay_drives_prepare_without_worker_page_bundles() -> None:
     graph = _graph()
+    _add_waiting_victim(graph)
     base = _attach_graph(_input(capacity=1_000, reserved=0), graph)
     metadata = dict(base.optional_metadata)
     metadata["beliefkv_action_local_physical_overlay"] = MetadataValue(
@@ -1697,7 +1698,7 @@ def test_compact_overlay_drives_prepare_without_worker_page_bundles() -> None:
         source_plan,
         target_invocation_id="invocation-target",
         target_context_id="ctx-target",
-        belief_scope_invocation_ids=("invocation-target",),
+        belief_scope_invocation_ids=("invocation-target", "invocation-old"),
         packages={package.package_id: package},
         kv_bytes_per_token=1,
     )
@@ -1709,6 +1710,26 @@ def test_compact_overlay_drives_prepare_without_worker_page_bundles() -> None:
     assert projection.cross_context_copy_bytes == 100
     assert projection.extent_count == 3
     assert physicalizer.package_feasible(package)
+    certificate = physicalizer.certificate(
+        package,
+        evidence_read_set=PredictiveEvidenceReadSet(
+            graph_version=graph.graph_version,
+            page_revision=17,
+            topology_revision=11,
+            fairness_revision=0,
+            admission_revision=0,
+            transfer_epoch=0,
+            obligation_revision=0,
+            lease_revision=0,
+            grace_revision=0,
+            parser_frontier_revision=0,
+            model_version="frontier-test-v1",
+        ),
+        model_version="frontier-test-v1",
+    )
+    assert tuple(item[0] for item in certificate.invocation_evidence) == (
+        "invocation-target",
+    )
 
 def test_prepare_shadow_absorbs_descendant_closure_without_claiming_child_bytes() -> None:
     graph = _graph()
@@ -2098,6 +2119,11 @@ def test_action_certificate_ignores_unrelated_global_revision() -> None:
         transfer_service_evidence=(100.0, 100.0, 0.1),
         model_version="frontier-test-v1",
     ).to_dict()
+    assert validate_predictive_causal_certificate(
+        certificate,
+        graph,
+        current_model_version="frontier-test-v1",
+    ) == ()
     unrelated_revision = replace(
         policy_input,
         runtime_graph=replace(
@@ -2145,6 +2171,14 @@ def test_action_certificate_ignores_unrelated_global_revision() -> None:
     )
 
     graph.invocations["invocation-target"].updated_ts_ms += 1.0
+    assert any(
+        reason.startswith("invocation_revision:invocation-target")
+        for reason in validate_predictive_causal_certificate(
+            certificate,
+            graph,
+            current_model_version="frontier-test-v1",
+        )
+    )
     changed_causal = _attach_graph(policy_input, graph)
     assert any(
         reason.startswith("invocation_revision:invocation-target")

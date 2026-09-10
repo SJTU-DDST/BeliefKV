@@ -16558,6 +16558,7 @@ class EmbeddedSGLangRuntime:
         page_index = self.controller.page_index
         summaries = []
         missing_context = False
+        live_parked_contexts = set(parked_context_ids)
         for context_id in parked_context_ids:
             if not page_index.has_context(context_id):
                 missing_context = True
@@ -16587,6 +16588,7 @@ class EmbeddedSGLangRuntime:
         )
         overlays: list[ActionLocalPhysicalOverlay] = []
         observed_failure_reasons: set[str] = set()
+        overlay_cache = getattr(self, "_predictive_action_local_overlay_cache", {})
         for summary in summaries[:2]:
             context = self.controller.graph.contexts.get(summary.context_id)
             if context is None:
@@ -16597,6 +16599,23 @@ class EmbeddedSGLangRuntime:
                 or page_index.context_epoch(summary.context_id) != context.epoch
             ):
                 observed_failure_reasons.add("victim_bundle_generation_stale")
+                continue
+            context_revision = page_index.context_revision(summary.context_id)
+            cached_overlay = overlay_cache.get(summary.context_id)
+            if (
+                cached_overlay is not None
+                and cached_overlay.context_epoch == context.epoch
+                and cached_overlay.context_revision == context_revision
+                and cached_overlay.d2h_copy_bytes <= observation.host_free_bytes
+            ):
+                overlays.append(
+                    replace(
+                        cached_overlay,
+                        page_revision=page_index.revision,
+                        topology_revision=page_index.topology_revision,
+                        captured_ts_ms=observation.ts_ms,
+                    )
+                )
                 continue
             bundle_builder = self.controller.arbiter.bundle_builder
             preview = bundle_builder.best_exclusive_shadow_preview_for_context(
@@ -16612,32 +16631,40 @@ class EmbeddedSGLangRuntime:
                 action.action == PhysicalPageAction.START_D2H
                 for action in preview.page_actions
             )
-            overlays.append(
-                ActionLocalPhysicalOverlay(
-                    context_id=summary.context_id,
-                    context_epoch=context.epoch,
-                    context_revision=page_index.context_revision(summary.context_id),
-                    page_revision=page_index.revision,
-                    topology_revision=page_index.topology_revision,
-                    generation_fingerprint=preview.bundle.generation_fingerprint,
-                    shape_fingerprint=_predictive_live_shape_fingerprint(
-                        self.controller.policy_snapshot_builder,
-                        preview,
-                        now_ms=observation.ts_ms,
-                    ),
-                    exclusive_reclaimable_bytes=(
-                        preview.bundle.exclusive_action_bytes
-                    ),
-                    d2h_copy_bytes=preview.copy_bytes,
-                    extent_count=extent_count,
-                    cross_context_bytes=preview.bundle.cross_context_action_bytes,
-                    locked_bytes=preview.bundle.locked_bytes,
-                    owner_context_ids=preview.bundle.owner_context_ids,
-                    blocker_codes=(),
-                    native_loading=False,
-                    captured_ts_ms=observation.ts_ms,
-                )
+            overlay = ActionLocalPhysicalOverlay(
+                context_id=summary.context_id,
+                context_epoch=context.epoch,
+                context_revision=context_revision,
+                page_revision=page_index.revision,
+                topology_revision=page_index.topology_revision,
+                generation_fingerprint=preview.bundle.generation_fingerprint,
+                shape_fingerprint=_predictive_live_shape_fingerprint(
+                    self.controller.policy_snapshot_builder,
+                    preview,
+                    now_ms=observation.ts_ms,
+                ),
+                exclusive_reclaimable_bytes=(
+                    preview.bundle.exclusive_action_bytes
+                ),
+                d2h_copy_bytes=preview.copy_bytes,
+                extent_count=extent_count,
+                cross_context_bytes=preview.bundle.cross_context_action_bytes,
+                locked_bytes=preview.bundle.locked_bytes,
+                owner_context_ids=preview.bundle.owner_context_ids,
+                blocker_codes=(),
+                native_loading=False,
+                captured_ts_ms=observation.ts_ms,
             )
+            overlays.append(overlay)
+            overlay_cache[summary.context_id] = overlay
+
+        if len(overlay_cache) > 256:
+            overlay_cache = {
+                context_id: value
+                for context_id, value in overlay_cache.items()
+                if context_id in live_parked_contexts
+            }
+        self._predictive_action_local_overlay_cache = overlay_cache
 
         selection_reason = None
         if not overlays:
@@ -18127,6 +18154,60 @@ class EmbeddedSGLangRuntime:
             }
         return summary
 
+    def _predictive_live_prepare_certificate_reasons(
+        self,
+        certificate: Mapping[str, object],
+        source_policy_input: PolicyInput | None,
+        observation: RuntimeResourceObservation,
+    ) -> tuple[str, ...]:
+        """Validate compact PREPARE evidence against the live context revision."""
+
+        if str(certificate.get("action") or "") != "prepare_host":
+            return ("unsupported_action_local_certificate",)
+        if source_policy_input is None:
+            return ("source_policy_input_unavailable",)
+        metadata = source_policy_input.optional_metadata.get(
+            "beliefkv_action_local_physical_overlay"
+        )
+        payload = (
+            metadata.value
+            if metadata is not None and isinstance(metadata.value, Mapping)
+            else {}
+        )
+        overlays = tuple(
+            item for item in payload.get("overlays", ()) if isinstance(item, Mapping)
+        )
+        target_context_id = str(certificate.get("target_context_id") or "")
+        overlay = next(
+            (
+                item
+                for item in overlays
+                if str(item.get("context_id") or "") == target_context_id
+            ),
+            None,
+        )
+        if overlay is None:
+            return ("action_local_overlay_missing",)
+
+        reasons: list[str] = []
+        page_index = self.controller.page_index
+        if not page_index.has_context(target_context_id):
+            reasons.append(f"context_missing:{target_context_id}")
+        else:
+            if page_index.context_epoch(target_context_id) != int(
+                overlay.get("context_epoch", -1)
+            ):
+                reasons.append(f"context_epoch:{target_context_id}")
+            if page_index.context_revision(target_context_id) != int(
+                overlay.get("context_revision", -1)
+            ):
+                reasons.append(f"context_revision:{target_context_id}")
+        if observation.host_free_bytes < int(
+            certificate.get("required_host_free_bytes", 0)
+        ):
+            reasons.append("host_capacity_floor")
+        return tuple(sorted(set(reasons)))
+
     def _drain_predictive_risk_result(
         self,
         observation: RuntimeResourceObservation,
@@ -18397,15 +18478,41 @@ class EmbeddedSGLangRuntime:
                 if not isinstance(certificate, Mapping):
                     continue
                 certificate_count += 1
-                reasons = (
-                    validate_predictive_certificate(
-                        certificate,
-                        current_policy_input,
-                        current_transfer_epoch=current_transfer_epoch,
+                if str(certificate.get("action") or "") == "prepare_host":
+                    reasons = tuple(
+                        sorted(
+                            set(
+                                validate_predictive_causal_certificate(
+                                    certificate,
+                                    self.controller.graph,
+                                    current_model_version=(
+                                        getattr(
+                                            self,
+                                            "_last_frontier_model_version",
+                                            None,
+                                        )
+                                        or ""
+                                    ),
+                                )
+                            ).union(
+                                self._predictive_live_prepare_certificate_reasons(
+                                    certificate,
+                                    result_policy_input,
+                                    observation,
+                                )
+                            )
+                        )
                     )
-                    if current_policy_input is not None
-                    else ("current_policy_input_unavailable",)
-                )
+                else:
+                    reasons = (
+                        validate_predictive_certificate(
+                            certificate,
+                            current_policy_input,
+                            current_transfer_epoch=current_transfer_epoch,
+                        )
+                        if current_policy_input is not None
+                        else ("current_policy_input_unavailable",)
+                    )
                 if reasons:
                     stale_count += 1
                     stale_reasons.update(reasons)
@@ -19879,7 +19986,7 @@ class EmbeddedSGLangRuntime:
             reasons.append("belief_model_version_changed")
         causal_reasons = validate_predictive_causal_certificate(
             intent.causal_certificate,
-            self.controller.graph.snapshot(),
+            self.controller.graph,
             current_model_version=current_model_version or "",
         )
         reasons.extend(f"causal:{reason}" for reason in causal_reasons)

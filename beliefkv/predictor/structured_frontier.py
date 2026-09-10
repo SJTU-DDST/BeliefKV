@@ -3350,10 +3350,23 @@ def _deterministic_medoid_clusters(
     ]
     medoids = list(dict.fromkeys(medoids))
 
+    distance_matrix = [
+        [0.0 for _ in range(len(normalized))]
+        for _ in range(len(normalized))
+    ]
+    for left in range(len(normalized)):
+        for right in range(left):
+            value = sum(
+                abs(a - b)
+                for a, b in zip(
+                    normalized[left], normalized[right], strict=True
+                )
+            )
+            distance_matrix[left][right] = value
+            distance_matrix[right][left] = value
+
     def distance(left: int, right: int) -> float:
-        return sum(
-            abs(a - b) for a, b in zip(normalized[left], normalized[right], strict=True)
-        )
+        return distance_matrix[left][right]
 
     assignments: dict[int, list[int]] = {}
     for _ in range(4):

@@ -1096,20 +1096,29 @@ class PredictiveActionCertificate:
 
 def validate_predictive_causal_certificate(
     raw: Mapping[str, object],
-    graph_state: Mapping[str, object],
+    graph_state: Mapping[str, object] | RuntimeCausalContextGraph,
     *,
     current_model_version: str,
 ) -> tuple[str, ...]:
     """Validate action-specific causal evidence without binding Radix extents."""
 
     reasons: list[str] = []
-    state = graph_state
-    nested = state.get("rccg")
+
+    def read(value: object, name: str, default: object = None) -> object:
+        if isinstance(value, Mapping):
+            return value.get(name, default)
+        return getattr(value, name, default)
+
+    def enum_value(value: object) -> object:
+        return getattr(value, "value", value)
+
+    state: object = graph_state
+    nested = read(state, "rccg")
     if isinstance(nested, Mapping):
         state = nested
-    contexts = state.get("contexts", {})
-    invocations = state.get("invocations", {})
-    joins = state.get("joins", {})
+    contexts = read(state, "contexts", {})
+    invocations = read(state, "invocations", {})
+    joins = read(state, "joins", {})
     if not all(isinstance(item, Mapping) for item in (contexts, invocations, joins)):
         return ("invalid_current_graph_snapshot",)
     for item in raw.get("context_epochs", ()):
@@ -1118,9 +1127,10 @@ def validate_predictive_causal_certificate(
             continue
         context_id, epoch = str(item[0]), int(item[1])
         current_context = contexts.get(context_id)
-        if not isinstance(current_context, Mapping) or int(
-            current_context.get("epoch", -1)
-        ) != epoch:
+        if (
+            current_context is None
+            or int(read(current_context, "epoch", -1)) != epoch
+        ):
             reasons.append(f"context_epoch:{context_id}")
     for item in raw.get("invocation_evidence", ()):
         if not isinstance(item, (list, tuple)) or len(item) != 4:
@@ -1128,14 +1138,16 @@ def validate_predictive_causal_certificate(
             continue
         invocation_id, expected_state, updated_ts, join_id = item
         current_invocation = invocations.get(str(invocation_id))
-        if not isinstance(current_invocation, Mapping):
+        if current_invocation is None:
             reasons.append(f"invocation_missing:{invocation_id}")
             continue
-        if str(current_invocation.get("state")) != str(expected_state):
+        if str(enum_value(read(current_invocation, "state"))) != str(
+            expected_state
+        ):
             reasons.append(f"invocation_state:{invocation_id}")
-        if float(current_invocation.get("updated_ts_ms", -1.0)) != float(updated_ts):
+        if float(read(current_invocation, "updated_ts_ms", -1.0)) != float(updated_ts):
             reasons.append(f"invocation_revision:{invocation_id}")
-        if current_invocation.get("join_id") != join_id:
+        if read(current_invocation, "join_id") != join_id:
             reasons.append(f"invocation_join:{invocation_id}")
     for item in raw.get("join_evidence", ()):
         if not isinstance(item, (list, tuple)) or len(item) != 4:
@@ -1143,23 +1155,31 @@ def validate_predictive_causal_certificate(
             continue
         join_id, mode, satisfied, completed = item
         current_join = joins.get(str(join_id))
-        if not isinstance(current_join, Mapping):
+        if current_join is None:
             reasons.append(f"join_missing:{join_id}")
             continue
+        current_completed = read(
+            current_join,
+            "completed",
+            read(current_join, "completed_member_ids", ()),
+        )
         if (
-            str(current_join.get("mode")) != str(mode)
-            or bool(current_join.get("satisfied")) != bool(satisfied)
-            or tuple(sorted(str(value) for value in current_join.get("completed", ())))
+            str(enum_value(read(current_join, "mode"))) != str(mode)
+            or bool(read(current_join, "satisfied", False)) != bool(satisfied)
+            or tuple(sorted(str(value) for value in current_completed))
             != tuple(sorted(str(value) for value in completed))
         ):
             reasons.append(f"join_revision:{join_id}")
+    raw_edges = read(state, "communication_edges", ())
+    edge_values = (
+        raw_edges.values() if isinstance(raw_edges, Mapping) else raw_edges
+    )
     current_edges = {
         (
-            str(item.get("source_invocation_id")),
-            str(item.get("target_invocation_id")),
+            str(read(item, "source_invocation_id")),
+            str(read(item, "target_invocation_id")),
         ): item
-        for item in state.get("communication_edges", ())
-        if isinstance(item, Mapping)
+        for item in edge_values
     }
     for item in raw.get("communication_evidence", ()):
         if not isinstance(item, (list, tuple)) or len(item) != 4:
@@ -1170,8 +1190,8 @@ def validate_predictive_causal_certificate(
         if current_edge is None:
             reasons.append(f"communication_missing:{source}:{target}")
         elif (
-            int(current_edge.get("count", -1)) != int(count)
-            or float(current_edge.get("last_ts_ms", -1.0)) != float(last_ts)
+            int(read(current_edge, "count", -1)) != int(count)
+            or float(read(current_edge, "last_ts_ms", -1.0)) != float(last_ts)
         ):
             reasons.append(f"communication_revision:{source}:{target}")
     if current_model_version != str(raw.get("model_version") or ""):
@@ -3568,23 +3588,43 @@ class _OnlineCandidatePhysicalizer:
         """Capture only the semantic and physical evidence read by a package."""
 
         package_context_ids = set(package.context_ids)
-        invocation_ids = set(self.belief_scope_invocation_ids)
-        invocation_ids.update(
-            {
-                invocation.invocation_id
-                for invocation in self.graph.invocations.values()
-                if invocation.context_id in package_context_ids
-            }
+        beneficiary = next(
+            (
+                request
+                for request in self.policy_input.runnable_frontier
+                if request.request_id == package.beneficiary_request_id
+            ),
+            None,
         )
-        join_ids = {
-            self.graph.invocations[invocation_id].join_id
-            for invocation_id in invocation_ids
-            if self.graph.invocations[invocation_id].join_id is not None
+        if beneficiary is not None:
+            package_context_ids.add(beneficiary.context_id)
+
+        invocation_ids = {
+            invocation.invocation_id
+            for invocation in self.graph.invocations.values()
+            if invocation.context_id in package_context_ids
         }
-        for join_id in tuple(join_ids):
-            join = self.graph.joins.get(join_id)
-            if join is not None:
-                invocation_ids.update(join.member_invocation_ids)
+        join_ids: set[str] = set()
+        pending = list(invocation_ids)
+        while pending:
+            invocation_id = pending.pop()
+            invocation = self.graph.invocations.get(invocation_id)
+            if invocation is None:
+                continue
+            dependencies = set(invocation.blocking_child_ids)
+            if invocation.join_id is not None:
+                join_ids.add(invocation.join_id)
+                join = self.graph.joins.get(invocation.join_id)
+                if join is not None:
+                    dependencies.update(join.member_invocation_ids)
+                    dependencies.update(join.waiter_invocation_ids)
+            for dependency_id in dependencies:
+                if (
+                    dependency_id in self.graph.invocations
+                    and dependency_id not in invocation_ids
+                ):
+                    invocation_ids.add(dependency_id)
+                    pending.append(dependency_id)
 
         context_ids = {
             self.graph.invocations[invocation_id].context_id

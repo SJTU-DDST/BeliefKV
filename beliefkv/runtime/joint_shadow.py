@@ -1880,6 +1880,12 @@ class LatestWinsJointPlanWorker:
                     self._pending is not None
                     and self._pending.sequence > result.sequence
                 )
+                publish_superseded_risk = bool(
+                    superseded
+                    and risk_only
+                    and risk_evaluation_requested
+                    and error is None
+                )
                 if planning_attempted:
                     self._planning_dirty = superseded
                 if risk_consumed and not superseded:
@@ -1889,7 +1895,7 @@ class LatestWinsJointPlanWorker:
                         self._last_risk_action_signature = risk_action_signature
                 if not publish_result:
                     self._apply_only_count += 1
-                elif superseded:
+                elif superseded and not publish_superseded_risk:
                     self._superseded_result_count += 1
                 elif (
                     self._latest is None

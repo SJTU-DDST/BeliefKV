@@ -734,16 +734,23 @@ def test_action_local_overlay_captures_at_most_two_ranked_live_victims():
             locked_bytes=0, last_access_ms=1.0,
         ),
     }
+    calls = Counter()
+
+    def context_physical_summary(context_id):
+        calls["summary"] += 1
+        return summaries[context_id]
+
     page_index = SimpleNamespace(
         revision=17,
         topology_revision=11,
         has_context=lambda context_id: context_id in summaries,
         context_epoch=lambda _context_id: 0,
-        context_physical_summary=lambda context_id: summaries[context_id],
+        context_physical_summary=context_physical_summary,
         context_revision=lambda _context_id: 3,
     )
 
     def preview(context_id):
+        calls["preview"] += 1
         return SimpleNamespace(
             eligible=True,
             copy_bytes=summaries[context_id].exclusive_reclaimable_upper_bound_bytes,
@@ -803,6 +810,67 @@ def test_action_local_overlay_captures_at_most_two_ranked_live_victims():
     )
     assert batch.opportunity.beneficiary_hbm_blocked
     assert all(item.page_revision == 17 for item in batch.overlays)
+    with mock.patch(
+        "beliefkv.runtime.sglang_v052rc1._predictive_live_shape_fingerprint",
+        side_effect=lambda _builder, item, **_kwargs: item.bundle.bundle_id,
+    ):
+        repeated = runtime._capture_action_local_physical_overlay_batch(
+            hint, replace(observation, ts_ms=6.0)
+        )
+    assert tuple(item.context_id for item in repeated.overlays) == (
+        "victim-a", "victim-b"
+    )
+    # PageOwnershipIndex caches summaries internally; this layer only caches
+    # the more expensive closure preview.
+    assert calls == Counter(summary=6, preview=2)
+
+
+def test_live_prepare_certificate_uses_context_local_revision():
+    current = {"present": True, "epoch": 2, "revision": 7}
+    runtime = EmbeddedSGLangRuntime.__new__(EmbeddedSGLangRuntime)
+    runtime.controller = SimpleNamespace(
+        page_index=SimpleNamespace(
+            has_context=lambda _context_id: current["present"],
+            context_epoch=lambda _context_id: current["epoch"],
+            context_revision=lambda _context_id: current["revision"],
+        )
+    )
+    source = SimpleNamespace(
+        optional_metadata={
+            "beliefkv_action_local_physical_overlay": SimpleNamespace(
+                value={
+                    "overlays": [
+                        {
+                            "context_id": "victim",
+                            "context_epoch": 2,
+                            "context_revision": 7,
+                        }
+                    ]
+                }
+            )
+        }
+    )
+    certificate = {
+        "action": "prepare_host",
+        "target_context_id": "victim",
+        "required_host_free_bytes": 100,
+    }
+    observation = RuntimeResourceObservation(
+        ts_ms=5.0,
+        hbm_capacity_bytes=1_000,
+        hbm_used_bytes=0,
+        host_capacity_bytes=1_000,
+        host_used_bytes=0,
+        host_free_bytes=1_000,
+    )
+
+    assert runtime._predictive_live_prepare_certificate_reasons(
+        certificate, source, observation
+    ) == ()
+    current["revision"] = 8
+    assert runtime._predictive_live_prepare_certificate_reasons(
+        certificate, source, observation
+    ) == ("context_revision:victim",)
 
 
 
