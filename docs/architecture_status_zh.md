@@ -1,6 +1,33 @@
 # BeliefKV 最新架构与实现状态
 
-更新日期：2026-09-02
+更新日期：2026-09-10
+
+## 2026-09-10：多 Beneficiary Future-Growth Probe 与局部物理失效
+
+对 2026-09-07 高压 trace 的 680 次 beneficiary probe 完成 2 秒后验审计：57 个
+唯一 request 中，44 次 probe 后 request 获得 service，532 次处于 slot 饱和且没有
+service，104 次缺少直接证据；没有观察到 native `NO_TOKEN`/capacity rejection 意义下
+的严格 HBM false negative。该结果只说明旧 trace 没有反驳首候选分类，不能证明没有
+漏报：旧日志未保存 bounded seed 排名第 2--4 的 deferred request，因而无法评估它们
+是否具有更高 action-unlock value。审计产物为同一 run 目录下的
+`beneficiary_lookahead_audit.json`。
+
+在线 probe 已拆分 `immediate_admission_fit` 和 `future_growth_deficit`。bounded seed
+按原 execution 优先级保留前 4 个 deferred request，safe point 仅做常数规模 byte
+需求筛选，并只为最佳一个 beneficiary 捕获最多两个 parked victim。future demand 使用
+精确 remaining prefill、Frontier p90 decode demand 和当前 running demand；具体
+`predicted_block_time` 由异步 graph32 GPU service timeline 推导，不再以固定 2 秒和
+历史平均 decode rate 作为硬门禁。
+
+`ActionLocalPhysicalOverlay` 新增 context-local physical revision。victim 的 generation、
+lock、owner 或 topology 在同一 64 MiB HBM bucket 内变化时会使 retained overlay 失效并
+局部重建，不恢复全局 PageIndex。PREPARE canary 仍关闭；开放条件是出现 fresh positive
+projected package，且 safe-point validation 早于 latest feasible start，而不是等待
+beneficiary 已经真实 HBM-blocked。
+
+CPU 定向门禁为 266 passed、8 个 subtest passed。另有两个原有 SGLang import 测试因
+本机未设置 `CUDA_HOME` 失败，与本轮代码路径无关。下一步只运行一次短 64-root
+predictor-only 高压 shadow，验证多候选覆盖、局部 revision、worker 活性和同步开销。
 
 ## 2026-09-02：Bounded-Hint 高压 Gate 未达到 Canary 门槛
 

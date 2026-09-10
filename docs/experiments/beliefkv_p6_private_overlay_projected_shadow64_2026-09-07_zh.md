@@ -23,7 +23,7 @@ refresh 会在 delta coalescing 时清除先前发布的 authoritative overlay�
 - `max_running_requests=32`，CUDA Graph 最大 batch 32
 - 64 个预注册 root 同时提交，`native_subagent_2to3`
 - observed P5 在线；predictor/risk 只读；predictive physical action 关闭
-- beneficiary projection horizon：2,000 ms
+- 旧版 beneficiary projection horizon：2,000 ms；该值仅描述本轮历史探针，后续实现不再将其作为硬门禁
 - 达到高压并持续观测后受控停止，不评价 workflow JCT 或吞吐
 
 ## 高压与活性
@@ -37,26 +37,21 @@ refresh 会在 delta coalescing 时清除先前发布的 authoritative overlay�
 - 受控关闭后无 pending transaction、command、lease、reservation 或 obligation
 - `shutdown_cleanup_did_not_mask_unresolved_transactions=true`
 
-高 HBM 占用本身不构成 predictive KV opportunity。当前 probe 对 680 次 material hint
-给出的分类为：`capacity_available=435`、`slot_only=245`，没有
-`beneficiary_hbm_blocked` 或 `beneficiary_slot_then_hbm_blocked`。也就是说，在 2 秒动作
-窗口内，可见 beneficiary 要么仍有容量，要么仅受 `max_running_requests` slot 限制；提前
-迁移 victim 不能使它更早执行。
+高 HBM 占用不是 predictive KV opportunity 的充分条件。旧 probe 对 680 次 material
+hint 的分类为：`capacity_available=435`、`slot_only=245`，没有
+`beneficiary_hbm_blocked` 或 `beneficiary_slot_then_hbm_blocked`。这只说明 bounded seed
+首个 deferred request 的一个 admission quantum 在旧版 2 秒近似下没有形成 projected
+deficit，不能排除长 prefill 的后续增长、排名第 2--4 的 beneficiary 或更晚 pressure。
 
-## 预测漏斗
+实验后对这 680 次 probe 做了 2 秒 look-ahead audit：44 次随后获得 service，532 次
+处于 slot 饱和且没有 service，104 次缺少直接证据；没有观察到显式 native HBM rejection
+意义下的严格 false negative。由于旧日志未保存未选中的 deferred candidates，该审计
+不能估计完整机会探针的 false-negative rate。
 
-| 指标 | 数量 |
-| --- | ---: |
-| eligibility checked / evaluated | 806 / 180 |
-| no candidate / unchanged bucket | 620 / 6 |
-| PREPARE candidate evaluation | 172 |
-| positive / eligible / fresh-positive | 0 / 0 / 0 |
-| overlay victim | 0 |
-| high-pressure snapshot persisted | 20 |
-
-离线重放 20 个冻结 snapshot 后：20 个候选均有 shape support，但 pressure、positive 和
-eligible 数量均为 0；80 个 scenario 全部为
-`projected_beneficiary_hbm_block_unavailable`。这与 online cheap probe 的结论一致。
+离线重放 20 个冻结 snapshot 后：20 个旧定义候选均有 shape support，但 pressure、
+positive 和 eligible 数量均为 0；80 个 scenario 全部为
+`projected_beneficiary_hbm_block_unavailable`。该结果只适用于旧版首候选/固定 horizon
+定义，不应外推为 workload 没有预测式 KV 机会。
 
 在线路径中出现的 172 个候选来自错误的 `worker_page_mirror` fallback，而非
 action-local overlay。它们的 expected benefit 全为负，recourse credit 全为 0，且
@@ -97,6 +92,6 @@ horizon，避免实验依赖手工 JSON 修改。
   守恒。
 - 未通过：beneficiary-bound positive package、及时 fresh certificate、canary 门槛。
 - 不应通过延长固定 horizon、降低收益阈值或制造 HBM credit 来产生正例。
-- 下一次 GPU 运行应使用本次竞态修复后的代码，并以真实
-  `beneficiary_hbm_blocked` 为先决条件；没有该条件时直接 cheap reject，不再进入旧 mirror
-  scenario evaluation。
+- 下一次 GPU 运行应使用修复后的代码，并以 future-growth deficit 且 validation 早于
+  latest feasible start 为先决条件；不等待当前 beneficiary 已经真实 HBM-blocked，也不
+  再进入旧 mirror scenario evaluation。

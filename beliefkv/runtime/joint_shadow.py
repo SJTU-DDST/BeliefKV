@@ -123,7 +123,7 @@ class FrontierFeatureSource:
 
 @dataclass(frozen=True)
 class ObservedSeedBeneficiaryHint:
-    """One deferred request selected by the latest bounded observed seed."""
+    """One of the bounded seed's leading deferred requests."""
 
     plan_id: str
     request_id: str
@@ -135,6 +135,9 @@ class ObservedSeedBeneficiaryHint:
     seed_generation: int = 0
     created_ts_ms: float = 0.0
     published_ts_ms: float | None = None
+    remaining_prefill_bytes: int = 0
+    predicted_output_bytes: int = 0
+    prediction_support_level: str = "unavailable"
 
     def __post_init__(self) -> None:
         if not all(
@@ -147,10 +150,18 @@ class ObservedSeedBeneficiaryHint:
             self.growth_bytes,
             self.seed_generation,
             self.created_ts_ms,
+            self.remaining_prefill_bytes,
+            self.predicted_output_bytes,
         ) < 0:
             raise ValueError("observed seed beneficiary values must be non-negative")
         if self.published_ts_ms is not None and self.published_ts_ms < 0:
             raise ValueError("observed seed beneficiary publish time must be non-negative")
+        if self.prediction_support_level not in {
+            "exact",
+            "backoff",
+            "unavailable",
+        }:
+            raise ValueError("invalid beneficiary prediction support level")
 
     @property
     def signature(self) -> tuple[object, ...]:
@@ -160,6 +171,9 @@ class ObservedSeedBeneficiaryHint:
             self.context_epoch,
             self.startup_bytes,
             self.growth_bytes,
+            self.remaining_prefill_bytes,
+            self.predicted_output_bytes,
+            self.prediction_support_level,
             self.seed_generation,
         )
 
@@ -173,6 +187,9 @@ class ObservedSeedBeneficiaryHint:
             self.context_epoch,
             self.startup_bytes,
             self.growth_bytes,
+            self.remaining_prefill_bytes,
+            self.predicted_output_bytes,
+            self.prediction_support_level,
         )
 
     def to_dict(self) -> dict[str, object]:
@@ -187,6 +204,9 @@ class ObservedSeedBeneficiaryHint:
             "created_ts_ms": self.created_ts_ms,
             "published_ts_ms": self.published_ts_ms,
             "growth_bytes": self.growth_bytes,
+            "remaining_prefill_bytes": self.remaining_prefill_bytes,
+            "predicted_output_bytes": self.predicted_output_bytes,
+            "prediction_support_level": self.prediction_support_level,
         }
 
 

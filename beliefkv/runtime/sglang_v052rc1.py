@@ -2552,6 +2552,12 @@ class EmbeddedSGLangRuntime:
         self._latest_observed_seed_beneficiary: (
             ObservedSeedBeneficiaryHint | None
         ) = None
+        self._latest_observed_seed_beneficiary_candidates: tuple[
+            ObservedSeedBeneficiaryHint, ...
+        ] = ()
+        self._latest_action_local_overlay_batch: (
+            ActionLocalPhysicalOverlayBatch | None
+        ) = None
         self._current_semantic_residency_commit: (
             tuple[str, int, SemanticResidencyTarget, PhysicalBundlePreview] | None
         ) = None
@@ -10197,6 +10203,8 @@ class EmbeddedSGLangRuntime:
             self._latest_bounded_seed_runnable = ()
             self._latest_bounded_seed_priority_request_ids = ()
             self._latest_observed_seed_beneficiary = None
+            self._latest_observed_seed_beneficiary_candidates = ()
+            self._latest_action_local_overlay_batch = None
         self._current_online_joint_view = online_joint_decision.view
         self._current_online_joint_decision = online_joint_decision
         joint_shadow_worker = getattr(self, "joint_shadow_worker", None)
@@ -16390,33 +16398,51 @@ class EmbeddedSGLangRuntime:
             )
         running_ids = set(running_by_id)
         max_running = self._predictive_max_running_requests()
-        required_bytes = hint.startup_bytes + hint.growth_bytes
+        immediate_required_bytes = hint.startup_bytes + hint.growth_bytes
         hbm_available_bytes = max(
             0,
             observation.hbm_capacity_bytes
             - observation.hbm_used_bytes
             - self.controller.admission.reserved_bytes,
         )
-        projection_horizon_ms = float(
-            self.config.predictive_beneficiary_projection_horizon_ms
+
+        # The safe point only performs a cheap demand gate. It carries exact
+        # prefill and predicted output growth to the asynchronous timeline,
+        # where the GPU service model derives the actual block time.
+        kv_bytes_per_token = self.config.kv_bytes_per_token
+        decode_quantum_tokens = int(
+            getattr(self.config, "admission_decode_quantum_tokens", 16)
         )
-        decode = getattr(self, "_gpu_service_performance_aggregates", {}).get(
-            "decode", {}
-        )
-        decode_elapsed_ms = float(decode.get("elapsed_ms", 0.0) or 0.0)
-        decode_tokens = int(decode.get("tokens", 0) or 0)
-        observed_tokens_per_ms = (
-            decode_tokens / decode_elapsed_ms if decode_elapsed_ms > 0 else 0.0
-        )
-        projected_running_growth_bytes = int(
-            math.ceil(observed_tokens_per_ms * projection_horizon_ms)
-        ) * self.config.kv_bytes_per_token
-        if running_ids:
-            projected_running_growth_bytes = max(
-                projected_running_growth_bytes,
-                self.config.reference_policy_hbm_bucket_bytes,
+        runnable_by_request = {
+            item.request_id: item
+            for item in (
+                getattr(self, "_latest_bounded_seed_runnable", ())
+                or getattr(self, "_last_policy_runtime_runnable", ())
             )
-        if chunked is not None:
+        }
+        projected_running_growth_tokens = 0
+        for request_id in running_ids:
+            request = runnable_by_request.get(request_id)
+            if request is None:
+                projected_running_growth_tokens += decode_quantum_tokens
+                continue
+            decode_tokens = (
+                int(math.ceil(request.predicted_remaining_decode_tokens))
+                if request.predicted_remaining_decode_tokens is not None
+                and request.prediction_support_level in {"exact", "backoff"}
+                else decode_quantum_tokens
+            )
+            projected_running_growth_tokens += (
+                request.remaining_prefill_tokens + decode_tokens
+            )
+        chunked_id = (
+            str(getattr(chunked, "rid", "")) if chunked is not None else ""
+        )
+        if (
+            chunked is not None
+            and chunked_id != hint.request_id
+            and chunked_id not in runnable_by_request
+        ):
             fill_tokens = max(
                 _sequence_length(getattr(chunked, "fill_ids", None)),
                 _sequence_length(getattr(chunked, "origin_input_ids", None))
@@ -16425,62 +16451,68 @@ class EmbeddedSGLangRuntime:
             prefix_tokens = _sequence_length(
                 getattr(chunked, "prefix_indices", None)
             )
-            projected_running_growth_bytes += (
-                min(
-                    max(0, fill_tokens - prefix_tokens),
-                    self.config.admission_prefill_quantum_tokens,
-                )
-                * self.config.kv_bytes_per_token
-            )
+            projected_running_growth_tokens += max(0, fill_tokens - prefix_tokens)
+        projected_running_growth_bytes = (
+            projected_running_growth_tokens * kv_bytes_per_token
+        )
         projected_hbm_available_bytes = max(
             0, hbm_available_bytes - projected_running_growth_bytes
         )
-        hbm_blocked = required_bytes > hbm_available_bytes
-        predicted_deficit_bytes = max(
-            0, required_bytes - projected_hbm_available_bytes
+        future_growth_bytes = max(
+            hint.growth_bytes,
+            hint.remaining_prefill_bytes + hint.predicted_output_bytes,
         )
-        predicted_block_time_ms = None
-        if predicted_deficit_bytes > 0:
-            if hbm_blocked:
-                predicted_block_time_ms = 0.0
-            else:
-                predicted_block_time_ms = min(
-                    projection_horizon_ms,
-                    projection_horizon_ms
-                    * max(0, hbm_available_bytes - required_bytes)
-                    / max(1, projected_running_growth_bytes),
-                )
+        future_required_bytes = hint.startup_bytes + future_growth_bytes
+        beneficiary_hbm_blocked = immediate_required_bytes > hbm_available_bytes
+        future_growth_deficit_bytes = max(
+            0, future_required_bytes - projected_hbm_available_bytes
+        )
+        predicted_block_time_ms = (
+            0.0 if beneficiary_hbm_blocked else None
+        )
         slot_blocked = bool(max_running and len(running_ids) >= max_running)
-        hbm_opportunity_possible = predicted_deficit_bytes > 0
+        hbm_opportunity_possible = future_growth_deficit_bytes > 0
         return BeneficiaryOpportunityProbe(
             beneficiary_request_id=hint.request_id,
             beneficiary_context_id=hint.context_id,
             beneficiary_context_epoch=hint.context_epoch,
-            required_bytes=required_bytes,
+            required_bytes=immediate_required_bytes,
             hbm_available_bytes=hbm_available_bytes,
             hbm_risk_margin_bytes=projected_running_growth_bytes,
             projected_running_growth_bytes=projected_running_growth_bytes,
             projected_hbm_available_bytes=projected_hbm_available_bytes,
             predicted_block_time_ms=predicted_block_time_ms,
-            predicted_deficit_bytes=predicted_deficit_bytes,
+            predicted_deficit_bytes=future_growth_deficit_bytes,
             running_request_count=len(running_ids),
             max_running_requests=max_running,
             beneficiary_slot_blocked=slot_blocked,
-            beneficiary_hbm_blocked=hbm_blocked,
+            beneficiary_hbm_blocked=beneficiary_hbm_blocked,
             beneficiary_slot_then_hbm_blocked=(
                 slot_blocked and hbm_opportunity_possible
             ),
             hbm_opportunity_possible=hbm_opportunity_possible,
             captured_ts_ms=observation.ts_ms,
+            immediate_admission_fit=not beneficiary_hbm_blocked,
+            future_growth_bytes=future_growth_bytes,
+            future_growth_deficit_bytes=future_growth_deficit_bytes,
+            block_time_source=(
+                "immediate_hbm"
+                if beneficiary_hbm_blocked
+                else "gpu_service_scenario"
+                if hbm_opportunity_possible
+                else "unavailable"
+            ),
         )
 
     def _capture_action_local_physical_overlay_batch(
         self,
         hint: ObservedSeedBeneficiaryHint,
         observation: RuntimeResourceObservation,
+        *,
+        opportunity: BeneficiaryOpportunityProbe | None = None,
     ) -> ActionLocalPhysicalOverlayBatch:
         started_ns = time.perf_counter_ns()
-        opportunity = self._predictive_beneficiary_opportunity_probe(
+        opportunity = opportunity or self._predictive_beneficiary_opportunity_probe(
             hint, observation
         )
         if not opportunity.hbm_opportunity_possible:
@@ -16584,6 +16616,7 @@ class EmbeddedSGLangRuntime:
                 ActionLocalPhysicalOverlay(
                     context_id=summary.context_id,
                     context_epoch=context.epoch,
+                    context_revision=page_index.context_revision(summary.context_id),
                     page_revision=page_index.revision,
                     topology_revision=page_index.topology_revision,
                     generation_fingerprint=preview.bundle.generation_fingerprint,
@@ -16631,13 +16664,49 @@ class EmbeddedSGLangRuntime:
             capture_ms=(time.perf_counter_ns() - started_ns) / 1_000_000.0,
         )
 
+    @staticmethod
+    def _action_local_overlay_revision_changed(
+        overlay_batch: ActionLocalPhysicalOverlayBatch | None,
+        page_index: PageOwnershipIndex,
+    ) -> bool:
+        if overlay_batch is None:
+            return False
+        return any(
+            not page_index.has_context(item.context_id)
+            or page_index.context_epoch(item.context_id) != item.context_epoch
+            or page_index.context_revision(item.context_id) != item.context_revision
+            for item in overlay_batch.overlays
+        )
+
     def _maybe_publish_observed_seed_hint_delta(
         self,
         worker: LatestWinsJointPlanWorker,
     ) -> bool:
         publication_started_ns = time.perf_counter_ns()
-        hint = self._latest_observed_seed_beneficiary
         observation = self._runtime_resource_observation()
+        candidates = tuple(
+            getattr(self, "_latest_observed_seed_beneficiary_candidates", ())
+        )
+        if not candidates:
+            current = getattr(self, "_latest_observed_seed_beneficiary", None)
+            candidates = (current,) if current is not None else ()
+        candidate_probes = tuple(
+            self._predictive_beneficiary_opportunity_probe(item, observation)
+            for item in candidates[:4]
+        )
+        selected_rank = next(
+            (
+                index
+                for index, probe in enumerate(candidate_probes)
+                if probe.hbm_opportunity_possible
+            ),
+            0 if candidates else -1,
+        )
+        hint = candidates[selected_rank] if selected_rank >= 0 else None
+        selected_opportunity = (
+            candidate_probes[selected_rank] if selected_rank >= 0 else None
+        )
+        self._latest_observed_seed_beneficiary = hint
         hbm_bucket = (
             observation.hbm_used_bytes
             // self.config.reference_policy_hbm_bucket_bytes
@@ -16648,17 +16717,31 @@ class EmbeddedSGLangRuntime:
         risk_signature = (
             (*hint.risk_signature, hbm_bucket) if hint is not None else None
         )
+        retained_overlay = getattr(
+            self, "_latest_action_local_overlay_batch", None
+        )
+        page_index = self.controller.page_index
+        overlay_revision_changed = bool(
+            hint is not None
+            and retained_overlay is not None
+            and retained_overlay.beneficiary_risk_signature == hint.risk_signature
+            and self._action_local_overlay_revision_changed(
+                retained_overlay, page_index
+            )
+        )
         risk_signature_changed = bool(
             hint is not None
             and (
                 not getattr(self, "_observed_seed_hint_risk_initialized", False)
                 or risk_signature
                 != getattr(self, "_last_observed_seed_hint_risk_signature", None)
+                or overlay_revision_changed
             )
         )
         if (
             self._observed_seed_hint_publication_initialized
             and signature == self._last_published_observed_seed_hint_signature
+            and not overlay_revision_changed
         ):
             return False
         base_stamp = getattr(self, "_last_policy_state_stamp", None)
@@ -16694,7 +16777,9 @@ class EmbeddedSGLangRuntime:
         ):
             try:
                 overlay_batch = self._capture_action_local_physical_overlay_batch(
-                    published_hint, observation
+                    published_hint,
+                    observation,
+                    opportunity=selected_opportunity,
                 )
             except Exception as error:
                 self._joint_predictive_counts["overlay_capture_failed"] += 1
@@ -16705,7 +16790,6 @@ class EmbeddedSGLangRuntime:
                     request_id=published_hint.request_id,
                     error=f"{type(error).__name__}: {error}",
                 )
-
         page_delta = PageIndexReplicaDelta(
             from_revision=self._shadow_page_revision,
             to_revision=self._shadow_page_revision,
@@ -16733,6 +16817,8 @@ class EmbeddedSGLangRuntime:
             and risk_signature_changed
             and predictive_worker is not None
             and overlay_batch is not None
+            and overlay_batch.opportunity.hbm_opportunity_possible
+            and bool(overlay_batch.overlays)
         )
         replace_overlay = bool(published_hint is None or risk_signature_changed)
         delta = JointShadowDelta(
@@ -16791,6 +16877,8 @@ class EmbeddedSGLangRuntime:
         self._observed_seed_hint_risk_initialized = True
         self._last_observed_seed_hint_risk_signature = risk_signature
         self._latest_observed_seed_beneficiary = published_hint
+        if replace_overlay:
+            self._latest_action_local_overlay_batch = overlay_batch
         self._last_policy_state_stamp = stamp
         self._joint_shadow_counts["submitted"] += 1
         self._joint_shadow_counts["apply_only_submitted"] += 1
@@ -16846,6 +16934,14 @@ class EmbeddedSGLangRuntime:
                 if published_hint is not None
                 else observation.ts_ms
             ),
+            beneficiary_probe_candidate_count=len(candidate_probes),
+            beneficiary_selected_rank=(
+                selected_rank if selected_rank >= 0 else None
+            ),
+            beneficiary_probe_classifications=[
+                item.classification for item in candidate_probes
+            ],
+            overlay_context_revision_changed=overlay_revision_changed,
             risk_evaluation_requested=delta.risk_evaluation_requested,
             beneficiary_slot_blocked=(
                 opportunity.beneficiary_slot_blocked
@@ -16859,6 +16955,26 @@ class EmbeddedSGLangRuntime:
             ),
             beneficiary_slot_then_hbm_blocked=(
                 opportunity.beneficiary_slot_then_hbm_blocked
+                if opportunity is not None
+                else None
+            ),
+            beneficiary_immediate_admission_fit=(
+                opportunity.immediate_admission_fit
+                if opportunity is not None
+                else None
+            ),
+            beneficiary_future_growth_bytes=(
+                opportunity.future_growth_bytes
+                if opportunity is not None
+                else None
+            ),
+            beneficiary_future_growth_deficit_bytes=(
+                opportunity.future_growth_deficit_bytes
+                if opportunity is not None
+                else None
+            ),
+            beneficiary_block_time_source=(
+                opportunity.block_time_source
                 if opportunity is not None
                 else None
             ),
@@ -20240,7 +20356,7 @@ class EmbeddedSGLangRuntime:
             )
             and current.view.restore_requirements == restore_requirements
         ):
-            candidate = self._observed_seed_beneficiary_hint(
+            candidates = self._observed_seed_beneficiary_hints(
                 current.view,
                 runnable,
                 priority_request_ids=(
@@ -20252,15 +20368,11 @@ class EmbeddedSGLangRuntime:
                 ),
                 seed_generation=self._online_joint_epoch_sequence,
                 created_ts_ms=now_ms,
+                kv_bytes_per_token=self.config.kv_bytes_per_token,
             )
-            previous = getattr(
-                self, "_latest_observed_seed_beneficiary", None
-            )
+            self._latest_observed_seed_beneficiary_candidates = candidates
             self._latest_observed_seed_beneficiary = (
-                previous
-                if previous is not None and candidate is not None
-                and previous.signature == candidate.signature
-                else candidate
+                candidates[0] if candidates else None
             )
             return current
         workflow_ids = {item.workflow_id for item in runnable}
@@ -20320,21 +20432,17 @@ class EmbeddedSGLangRuntime:
             ),
             restore_requirements=restore_requirements,
         )
-        candidate = self._observed_seed_beneficiary_hint(
+        candidates = self._observed_seed_beneficiary_hints(
             decision.view,
             runnable,
             priority_request_ids=self._latest_bounded_seed_priority_request_ids,
             seed_generation=self._online_joint_epoch_sequence,
             created_ts_ms=now_ms,
+            kv_bytes_per_token=self.config.kv_bytes_per_token,
         )
-        previous = getattr(
-            self, "_latest_observed_seed_beneficiary", None
-        )
+        self._latest_observed_seed_beneficiary_candidates = candidates
         self._latest_observed_seed_beneficiary = (
-            previous
-            if previous is not None and candidate is not None
-            and previous.signature == candidate.signature
-            else candidate
+            candidates[0] if candidates else None
         )
         if (
             self.config.predictive_joint_overlay_enabled
@@ -20382,50 +20490,77 @@ class EmbeddedSGLangRuntime:
         return decision
 
     @staticmethod
-    def _observed_seed_beneficiary_hint(
+    def _observed_seed_beneficiary_hints(
         view: OnlineJointPlanView | None,
         runnable: tuple[RunnableInvocation, ...],
         *,
         priority_request_ids: tuple[str, ...],
         seed_generation: int,
         created_ts_ms: float,
-    ) -> ObservedSeedBeneficiaryHint | None:
-        if view is None or not view.deferred_request_ids:
-            return None
+        kv_bytes_per_token: int = 1,
+        limit: int = 4,
+    ) -> tuple[ObservedSeedBeneficiaryHint, ...]:
+        if view is None or not view.deferred_request_ids or limit <= 0:
+            return ()
         deferred = frozenset(view.deferred_request_ids)
         by_request_id = {item.request_id: item for item in runnable}
-        request = next(
-            (
-                by_request_id[request_id]
-                for request_id in priority_request_ids
-                if request_id in deferred
-                and request_id in by_request_id
-                and by_request_id[request_id].causal_class.startswith(
-                    "engine_waiting:"
+        result: list[ObservedSeedBeneficiaryHint] = []
+        for request_id in priority_request_ids:
+            request = by_request_id.get(request_id)
+            if (
+                request_id not in deferred
+                or request is None
+                or not request.causal_class.startswith("engine_waiting:")
+                or request.admission_startup_bytes is None
+                or request.admission_growth_bytes is None
+                or int(request.admission_startup_bytes or 0)
+                + int(request.admission_growth_bytes or 0)
+                <= 0
+            ):
+                continue
+            predicted_output_tokens = (
+                request.predicted_remaining_decode_tokens
+                if request.predicted_remaining_decode_tokens is not None
+                else request.remaining_output_tokens
+            )
+            result.append(
+                ObservedSeedBeneficiaryHint(
+                    plan_id=view.plan_id,
+                    request_id=request.request_id,
+                    invocation_id=request.invocation_id,
+                    context_id=request.context_id,
+                    context_epoch=request.context_epoch,
+                    startup_bytes=int(request.admission_startup_bytes or 0),
+                    growth_bytes=int(request.admission_growth_bytes or 0),
+                    seed_generation=seed_generation,
+                    created_ts_ms=created_ts_ms,
+                    remaining_prefill_bytes=(
+                        request.remaining_prefill_tokens * kv_bytes_per_token
+                    ),
+                    predicted_output_bytes=(
+                        int(math.ceil(predicted_output_tokens))
+                        * kv_bytes_per_token
+                    ),
+                    prediction_support_level=(
+                        request.prediction_support_level or "unavailable"
+                    ),
                 )
-                and by_request_id[request_id].admission_startup_bytes is not None
-                and by_request_id[request_id].admission_growth_bytes is not None
-                and (
-                    int(by_request_id[request_id].admission_startup_bytes or 0)
-                    + int(by_request_id[request_id].admission_growth_bytes or 0)
-                    > 0
-                )
-            ),
-            None,
+            )
+            if len(result) >= limit:
+                break
+        return tuple(result)
+
+    @classmethod
+    def _observed_seed_beneficiary_hint(
+        cls,
+        view: OnlineJointPlanView | None,
+        runnable: tuple[RunnableInvocation, ...],
+        **kwargs: Any,
+    ) -> ObservedSeedBeneficiaryHint | None:
+        candidates = cls._observed_seed_beneficiary_hints(
+            view, runnable, **kwargs
         )
-        if request is None:
-            return None
-        return ObservedSeedBeneficiaryHint(
-            plan_id=view.plan_id,
-            request_id=request.request_id,
-            invocation_id=request.invocation_id,
-            context_id=request.context_id,
-            context_epoch=request.context_epoch,
-            startup_bytes=int(request.admission_startup_bytes or 0),
-            growth_bytes=int(request.admission_growth_bytes or 0),
-            seed_generation=seed_generation,
-            created_ts_ms=created_ts_ms,
-        )
+        return candidates[0] if candidates else None
 
     @staticmethod
     def _online_residency_command_kind(
@@ -21974,6 +22109,35 @@ class EmbeddedSGLangRuntime:
                 )
         return (), {}, {}, frozenset()
 
+    @staticmethod
+    def _frontier_prediction_quantile(
+        prediction: Mapping[str, object] | None,
+        head: str,
+        quantile: float,
+    ) -> float | None:
+        if prediction is None:
+            return None
+        distribution = prediction.get(head)
+        if not isinstance(distribution, Mapping):
+            return None
+        values = tuple(distribution.get("values", ()))
+        masses = tuple(distribution.get("probability_mass", ()))
+        if not values or len(values) != len(masses):
+            return None
+        cumulative = 0.0
+        for value, mass in zip(values, masses):
+            if (
+                not isinstance(value, (int, float))
+                or isinstance(value, bool)
+                or not isinstance(mass, (int, float))
+                or isinstance(mass, bool)
+            ):
+                return None
+            cumulative += max(0.0, float(mass))
+            if cumulative >= quantile:
+                return max(0.0, float(value))
+        return max(0.0, float(values[-1]))
+
     def _policy_runtime_runnable(
         self, now_ms: float
     ) -> tuple[RunnableInvocation, ...]:
@@ -22024,7 +22188,18 @@ class EmbeddedSGLangRuntime:
                 if invocation is not None
                 else metadata.relation_type
             )
-            prediction = None
+            prediction = getattr(self, "_last_frontier_predictions", {}).get(
+                metadata.invocation_id
+            )
+            if not isinstance(prediction, Mapping):
+                prediction = None
+            prediction_support = (
+                str(prediction.get("support_level") or "unavailable")
+                if prediction is not None
+                else "unavailable"
+            )
+            if prediction_support not in {"exact", "backoff", "unavailable"}:
+                prediction_support = "unavailable"
             service_ledger = getattr(self, "_lock_service_ledger", None)
             service_record = (
                 service_ledger.progress_record(str(req.rid))
@@ -22062,28 +22237,23 @@ class EmbeddedSGLangRuntime:
                     f"{queue_state}:{execution_mode}:{relation_type}"
                 ),
                 program_id=metadata.agent_instance_id,
+                current_sequence_tokens=prompt_tokens + output_tokens,
+                remaining_prefill_tokens=uncached_prompt_tokens,
+                remaining_output_tokens=remaining_output_tokens,
                 predicted_remaining_decode_tokens=(
-                    prediction.remaining_decode_tokens.quantile(0.5)
-                    if prediction is not None
-                    else None
+                    self._frontier_prediction_quantile(
+                        prediction, "remaining_decode_tokens", 0.9
+                    )
                 ),
-                predicted_external_wait_ms=(
-                    prediction.wait_belief.residual_duration.quantile(0.5)
-                    if prediction is not None
-                    and prediction.wait_belief.kind.value == "tool"
-                    and prediction.wait_belief.available
-                    else None
-                ),
+                predicted_external_wait_ms=None,
                 predicted_next_output_tokens=(
-                    prediction.next_output_tokens.quantile(0.5)
-                    if prediction is not None
-                    else None
+                    self._frontier_prediction_quantile(
+                        prediction, "next_output_tokens", 0.5
+                    )
                 ),
-                prediction_support_level=(
-                    prediction.support_level if prediction is not None else ""
-                ),
+                prediction_support_level=prediction_support,
                 prediction_ood_reasons=(
-                    tuple(prediction.ood_reasons)
+                    tuple(prediction.get("ood_reasons", ()))
                     if prediction is not None
                     else ()
                 ),

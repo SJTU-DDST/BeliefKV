@@ -251,6 +251,24 @@ def test_beneficiary_attempt_records_the_exact_projected_hbm_deficit() -> None:
     assert timeline.future_hbm_overflow_bytes == 0
 
 
+
+def test_beneficiary_growth_derives_future_block_from_service_timeline() -> None:
+    plan = replace(
+        _beneficiary_plan(demand_bytes=50),
+        initial_hbm_used_bytes=850,
+    )
+
+    timeline = CandidateTimelineEvaluator(_service_model()).evaluate(
+        _beneficiary_scenario(),
+        plan,
+    )
+
+    assert (
+        timeline.projected_beneficiary_block_offset_ms
+        == timeline.service_quanta[1].completion_offset_ms
+    )
+    assert timeline.projected_beneficiary_deficit_bytes == 50
+    assert timeline.future_hbm_overflow_bytes == 50
 def test_projected_beneficiary_bytes_must_be_non_negative() -> None:
     try:
         CandidatePhysicalPlan(

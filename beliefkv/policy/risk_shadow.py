@@ -2861,13 +2861,18 @@ class PredictiveRiskShadowObserver:
             block_time = opportunity.get("predicted_block_time_ms")
             deficit = opportunity.get("predicted_deficit_bytes")
             if (
+                not isinstance(deficit, int)
+                or isinstance(deficit, bool)
+                or deficit <= 0
+            ):
+                return None, 0
+            if block_time is None:
+                return None, deficit
+            if (
                 not isinstance(block_time, (int, float))
                 or isinstance(block_time, bool)
                 or not math.isfinite(float(block_time))
                 or float(block_time) < 0
-                or not isinstance(deficit, int)
-                or isinstance(deficit, bool)
-                or deficit <= 0
             ):
                 return None, 0
             return float(block_time), deficit
@@ -2903,7 +2908,7 @@ class PredictiveRiskShadowObserver:
                     block_time, deficit_bytes = opportunity_prediction(
                         request.request_id
                     )
-                    if overlay_is_authoritative and block_time is None:
+                    if overlay_is_authoritative and deficit_bytes <= 0:
                         return None
                     return ProjectedReclaimRequirement(
                         beneficiary_request_id=request.request_id,
@@ -2951,7 +2956,7 @@ class PredictiveRiskShadowObserver:
             if any(bundle.cpu_bytes > bundle.gpu_bytes for bundle in bundles):
                 continue
             block_time, deficit_bytes = opportunity_prediction(request.request_id)
-            if overlay_is_authoritative and block_time is None:
+            if overlay_is_authoritative and deficit_bytes <= 0:
                 return None
             return ProjectedReclaimRequirement(
                 beneficiary_request_id=request.request_id,
@@ -3698,6 +3703,14 @@ class _OnlineCandidatePhysicalizer:
             if invocation_id in self.graph.invocations
         }
         demands: list[PhysicalizedInvocationDemand] = []
+        beneficiary_request = next(
+            (
+                request
+                for request in self.policy_input.runnable_frontier
+                if request.request_id == package.beneficiary_request_id
+            ),
+            None,
+        )
         for outcome in scenario.outcomes:
             uncached_prefill = (
                 outcome.prompt_growth_tokens
@@ -3709,6 +3722,20 @@ class _OnlineCandidatePhysicalizer:
                 if outcome.phase == DemandPhase.DECODE
                 else outcome.next_output_tokens
             )
+            if (
+                beneficiary_request is not None
+                and outcome.invocation_id == beneficiary_request.invocation_id
+            ):
+                uncached_prefill = max(
+                    uncached_prefill,
+                    beneficiary_request.remaining_prefill_tokens,
+                )
+                predicted_decode = (
+                    beneficiary_request.predicted_remaining_decode_tokens
+                    if beneficiary_request.predicted_remaining_decode_tokens is not None
+                    else beneficiary_request.remaining_output_tokens
+                )
+                decode = max(decode, int(math.ceil(predicted_decode)))
             demands.append(
                 PhysicalizedInvocationDemand(
                     invocation_id=outcome.invocation_id,
@@ -3850,14 +3877,6 @@ class _OnlineCandidatePhysicalizer:
                 if request.invocation_id in demand_by_id
                 and request.causal_class.startswith("reserved_admission:")
             ),
-        )
-        beneficiary_request = next(
-            (
-                request
-                for request in self.policy_input.runnable_frontier
-                if request.request_id == package.beneficiary_request_id
-            ),
-            None,
         )
         return CandidatePhysicalPlan(
             package_id=package_id,

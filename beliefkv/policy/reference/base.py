@@ -205,6 +205,9 @@ class RunnableInvocation:
     admission_growth_bytes: int | None = None
     causal_class: str = "foreground"
     program_id: str | None = None
+    current_sequence_tokens: int = 0
+    remaining_prefill_tokens: int = 0
+    remaining_output_tokens: int = 0
     predicted_remaining_decode_tokens: float | None = None
     predicted_external_wait_ms: float | None = None
     predicted_next_output_tokens: float | None = None
@@ -233,6 +236,12 @@ class RunnableInvocation:
                 raise ValueError(f"{field_name} must be non-negative")
         if self.completed_gpu_service_count < 0:
             raise ValueError("completed_gpu_service_count must be non-negative")
+        if min(
+            self.current_sequence_tokens,
+            self.remaining_prefill_tokens,
+            self.remaining_output_tokens,
+        ) < 0:
+            raise ValueError("runnable token demand must be non-negative")
         if self.last_gpu_service_ts_ms is not None:
             _require_nonnegative(
                 self.last_gpu_service_ts_ms,
@@ -277,6 +286,9 @@ class RunnableInvocation:
             "admission_growth_bytes": self.admission_growth_bytes,
             "causal_class": self.causal_class,
             "program_id": self.program_id,
+            "current_sequence_tokens": self.current_sequence_tokens,
+            "remaining_prefill_tokens": self.remaining_prefill_tokens,
+            "remaining_output_tokens": self.remaining_output_tokens,
             "predicted_remaining_decode_tokens": (
                 self.predicted_remaining_decode_tokens
             ),
@@ -313,6 +325,9 @@ class RunnableInvocation:
             program_id=(
                 str(raw["program_id"]) if raw.get("program_id") is not None else None
             ),
+            current_sequence_tokens=int(raw.get("current_sequence_tokens", 0)),
+            remaining_prefill_tokens=int(raw.get("remaining_prefill_tokens", 0)),
+            remaining_output_tokens=int(raw.get("remaining_output_tokens", 0)),
             predicted_remaining_decode_tokens=(
                 float(raw["predicted_remaining_decode_tokens"])
                 if raw.get("predicted_remaining_decode_tokens") is not None

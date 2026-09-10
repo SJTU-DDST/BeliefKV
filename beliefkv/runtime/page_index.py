@@ -190,6 +190,7 @@ class PageOwnershipIndex:
         self._latest_generation: dict[int, int] = {}
         self._context_pages: dict[str, set[PageHandle]] = {}
         self._context_epoch: dict[str, int] = {}
+        self._context_revision: dict[str, int] = {}
         self._context_workflow: dict[str, str] = {}
         self._revision = 0
         self._topology_revision = 0
@@ -219,6 +220,11 @@ class PageOwnershipIndex:
     def topology_revision(self) -> int:
         return self._topology_revision
 
+    def context_revision(self, context_id: str) -> int:
+        """Return a revision that changes only when this context's pages change."""
+
+        return self._context_revision.get(context_id, 0)
+
     def _touch(
         self,
         *,
@@ -236,6 +242,10 @@ class PageOwnershipIndex:
                 affected_contexts.update(page.owner_contexts)
         if component_set.intersection({"residency", "owner", "context"}):
             self._refresh_resident_accounting(changed_handles)
+        for context_id in affected_contexts:
+            self._context_revision[context_id] = (
+                self._context_revision.get(context_id, 0) + 1
+            )
         previous_revision = self._revision
         self._revision += 1
         if topology:

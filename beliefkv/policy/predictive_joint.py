@@ -104,6 +104,10 @@ class BeneficiaryOpportunityProbe:
     beneficiary_slot_then_hbm_blocked: bool
     hbm_opportunity_possible: bool
     captured_ts_ms: float
+    immediate_admission_fit: bool = False
+    future_growth_bytes: int = 0
+    future_growth_deficit_bytes: int = 0
+    block_time_source: str = "safe_point_immediate_only"
 
     def __post_init__(self) -> None:
         if not self.beneficiary_request_id or not self.beneficiary_context_id:
@@ -119,8 +123,12 @@ class BeneficiaryOpportunityProbe:
             self.running_request_count,
             self.max_running_requests,
             self.captured_ts_ms,
+            self.future_growth_bytes,
+            self.future_growth_deficit_bytes,
         ) < 0:
             raise ValueError("beneficiary opportunity values must be non-negative")
+        if not self.block_time_source:
+            raise ValueError("beneficiary block-time source is required")
         if (
             self.predicted_block_time_ms is not None
             and (
@@ -129,7 +137,10 @@ class BeneficiaryOpportunityProbe:
             )
         ):
             raise ValueError("beneficiary block time must be finite and non-negative")
-        projected_blocked = self.predicted_deficit_bytes > 0
+        projected_blocked = (
+            self.predicted_deficit_bytes > 0
+            or self.future_growth_deficit_bytes > 0
+        )
         if (
             self.beneficiary_slot_then_hbm_blocked
             != (
@@ -141,8 +152,11 @@ class BeneficiaryOpportunityProbe:
         expected_possible = projected_blocked
         if self.hbm_opportunity_possible != expected_possible:
             raise ValueError("HBM opportunity classification is inconsistent")
-        if projected_blocked != (self.predicted_block_time_ms is not None):
-            raise ValueError("beneficiary block time and deficit must be paired")
+        if (
+            self.predicted_block_time_ms is not None
+            and self.predicted_deficit_bytes <= 0
+        ):
+            raise ValueError("beneficiary block time requires a positive deficit")
 
     @property
     def classification(self) -> str:
@@ -175,6 +189,7 @@ class ActionLocalPhysicalOverlay:
 
     context_id: str
     context_epoch: int
+    context_revision: int
     page_revision: int
     topology_revision: int
     generation_fingerprint: str
@@ -196,6 +211,7 @@ class ActionLocalPhysicalOverlay:
             raise ValueError("action-local overlay shape is required")
         if min(
             self.context_epoch,
+            self.context_revision,
             self.page_revision,
             self.topology_revision,
             self.exclusive_reclaimable_bytes,

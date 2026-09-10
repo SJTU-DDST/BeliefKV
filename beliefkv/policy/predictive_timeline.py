@@ -547,7 +547,16 @@ class CandidateTimelineEvaluator:
                         now_ms,
                         sum(item.token_delta for item in batch.requests)
                         * plan.kv_bytes_per_token,
-                        f"batch:{batch.batch_id}",
+                        (
+                            f"beneficiary_growth:{batch.batch_id}"
+                            if plan.projected_beneficiary_invocation_id is not None
+                            and any(
+                                item.invocation_id
+                                == plan.projected_beneficiary_invocation_id
+                                for item in batch.requests
+                            )
+                            else f"batch:{batch.batch_id}"
+                        ),
                     )
                 )
             for request in batch.requests:
@@ -681,7 +690,7 @@ class CandidateTimelineEvaluator:
         ):
             if source == "beneficiary_attempt":
                 pass
-            elif source.startswith("batch:"):
+            elif source.startswith(("batch:", "beneficiary_growth:")):
                 cumulative_growth += delta_bytes
             else:
                 transfer_growth += delta_bytes
@@ -707,6 +716,13 @@ class CandidateTimelineEvaluator:
                     beneficiary_deficit_bytes = (
                         projected - plan.hbm_capacity_bytes
                     )
+            if (
+                source.startswith("beneficiary_growth:")
+                and current > plan.hbm_capacity_bytes
+                and beneficiary_block_offset_ms is None
+            ):
+                beneficiary_block_offset_ms = offset
+                beneficiary_deficit_bytes = current - plan.hbm_capacity_bytes
             if current > plan.hbm_capacity_bytes and first_pressure_offset_ms is None:
                 first_pressure_offset_ms = offset
                 first_pressure_deficit_bytes = current - plan.hbm_capacity_bytes

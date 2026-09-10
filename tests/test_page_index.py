@@ -51,6 +51,28 @@ class PageIndexTest(unittest.TestCase):
         index.update_runtime_state(handle, last_access_ms=2)
         self.assertEqual(index.revision, initial + 2)
 
+    def test_context_revision_changes_only_for_affected_owners(self):
+        index = PageOwnershipIndex()
+        index.register_context("ctx-a", "wf-a", 0)
+        index.register_context("ctx-b", "wf-b", 0)
+        page_a = PageHandle(1, 0)
+        page_b = PageHandle(2, 0)
+        shared = PageHandle(3, 0)
+        for handle in (page_a, page_b, shared):
+            index.register_page(handle, size_bytes=100)
+        index.bind_pages("ctx-a", 0, (page_a, shared))
+        index.bind_pages("ctx-b", 0, (page_b, shared))
+        revision_a = index.context_revision("ctx-a")
+        revision_b = index.context_revision("ctx-b")
+
+        index.set_engine_lock(page_a, 1)
+        self.assertEqual(index.context_revision("ctx-a"), revision_a + 1)
+        self.assertEqual(index.context_revision("ctx-b"), revision_b)
+
+        index.set_engine_lock(shared, 1)
+        self.assertEqual(index.context_revision("ctx-a"), revision_a + 2)
+        self.assertEqual(index.context_revision("ctx-b"), revision_b + 1)
+
     def test_page_generation_prevents_stale_reuse(self):
         index = PageOwnershipIndex()
         first = PageHandle(1, 0)

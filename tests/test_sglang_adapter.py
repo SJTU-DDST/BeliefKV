@@ -38,6 +38,7 @@ from beliefkv.policy.online_joint import (
     compile_bounded_seed_epoch,
 )
 from beliefkv.policy.predictive_joint import (
+    ActionLocalPhysicalOverlay,
     BeneficiaryOpportunityProbe,
     PredictiveActionKind,
 )
@@ -481,11 +482,26 @@ def test_bounded_seed_hint_change_publishes_one_lightweight_risk_delta():
     runnable = _predictive_beneficiary_runnable()
     runtime.__dict__.update(
         controller=SimpleNamespace(
-            page_index=SimpleNamespace(revision=17, topology_revision=11)
+            page_index=SimpleNamespace(
+                revision=17,
+                topology_revision=11,
+                has_context=lambda context_id: context_id == "ctx-victim",
+                context_epoch=lambda _context_id: 0,
+                context_revision=lambda _context_id: 0,
+            ),
+            admission=SimpleNamespace(reserved_bytes=0),
         ),
         config=SimpleNamespace(
+            kv_bytes_per_token=1,
+            admission_prefill_quantum_tokens=16,
+            admission_decode_quantum_tokens=16,
             joint_policy_enabled=False,
             reference_policy_hbm_bucket_bytes=64 << 20,
+        ),
+        scheduler=SimpleNamespace(
+            running_batch=SimpleNamespace(reqs=()),
+            chunked_req=None,
+            max_running_requests=32,
         ),
         audit=_AuditRecorder(),
         _joint_shadow_counts=Counter(),
@@ -528,7 +544,7 @@ def test_bounded_seed_hint_change_publishes_one_lightweight_risk_delta():
         predictive_risk_worker=object(),
     )
     runtime._capture_action_local_physical_overlay_batch = (
-        lambda hint, observation: ActionLocalPhysicalOverlayBatch(
+        lambda hint, observation, **_kwargs: ActionLocalPhysicalOverlayBatch(
             beneficiary_risk_signature=hint.risk_signature,
             opportunity=BeneficiaryOpportunityProbe(
                 beneficiary_request_id=hint.request_id,
@@ -549,12 +565,32 @@ def test_bounded_seed_hint_change_publishes_one_lightweight_risk_delta():
                 hbm_opportunity_possible=True,
                 captured_ts_ms=observation.ts_ms,
             ),
-            selection_reason="no_victim_context_selected",
+            overlays=(
+                ActionLocalPhysicalOverlay(
+                    context_id="ctx-victim",
+                    context_epoch=0,
+                    context_revision=0,
+                    page_revision=17,
+                    topology_revision=11,
+                    generation_fingerprint="generation-victim",
+                    shape_fingerprint="shape-victim",
+                    exclusive_reclaimable_bytes=1,
+                    d2h_copy_bytes=1,
+                    extent_count=1,
+                    cross_context_bytes=0,
+                    locked_bytes=0,
+                    owner_context_ids=("ctx-victim",),
+                    blocker_codes=(),
+                    native_loading=False,
+                    captured_ts_ms=observation.ts_ms,
+                ),
+            ),
+            selection_reason=None,
             capture_ms=0.02,
         )
     )
     runtime._runtime_resource_observation = lambda: RuntimeResourceObservation(
-        ts_ms=5.0, hbm_capacity_bytes=1_000, hbm_used_bytes=100,
+        ts_ms=5.0, hbm_capacity_bytes=1_000, hbm_used_bytes=950,
         host_capacity_bytes=1_000, host_used_bytes=0, host_free_bytes=1_000,
     )
     submitted = []
@@ -613,7 +649,7 @@ def test_bounded_seed_hint_change_publishes_one_lightweight_risk_delta():
             "hint_refresh_published": 1,
             "hint_clear_published": 1,
             "beneficiary_opportunity:hbm_blocked": 2,
-            "overlay_selection:no_victim_context_selected": 2,
+            "overlay_victim_count": 2,
         }
     )
 
@@ -647,7 +683,7 @@ def test_action_local_probe_filters_slot_only_beneficiary_before_graph_scan():
     observation = RuntimeResourceObservation(
         ts_ms=5.0,
         hbm_capacity_bytes=1_000,
-        hbm_used_bytes=500,
+        hbm_used_bytes=0,
         host_capacity_bytes=1_000,
         host_used_bytes=0,
         host_free_bytes=1_000,
@@ -704,6 +740,7 @@ def test_action_local_overlay_captures_at_most_two_ranked_live_victims():
         has_context=lambda context_id: context_id in summaries,
         context_epoch=lambda _context_id: 0,
         context_physical_summary=lambda context_id: summaries[context_id],
+        context_revision=lambda _context_id: 3,
     )
 
     def preview(context_id):
@@ -768,6 +805,39 @@ def test_action_local_overlay_captures_at_most_two_ranked_live_victims():
     assert all(item.page_revision == 17 for item in batch.overlays)
 
 
+
+def test_action_local_overlay_revision_is_context_scoped():
+    current = {"present": True, "epoch": 2, "revision": 7}
+    page_index = SimpleNamespace(
+        has_context=lambda _context_id: current["present"],
+        context_epoch=lambda _context_id: current["epoch"],
+        context_revision=lambda _context_id: current["revision"],
+    )
+    batch = SimpleNamespace(
+        overlays=(
+            SimpleNamespace(
+                context_id="victim",
+                context_epoch=2,
+                context_revision=7,
+            ),
+        )
+    )
+
+    assert not EmbeddedSGLangRuntime._action_local_overlay_revision_changed(
+        batch, page_index
+    )
+    current["revision"] = 8
+    assert EmbeddedSGLangRuntime._action_local_overlay_revision_changed(
+        batch, page_index
+    )
+    current.update(revision=7, epoch=3)
+    assert EmbeddedSGLangRuntime._action_local_overlay_revision_changed(
+        batch, page_index
+    )
+    current.update(epoch=2, present=False)
+    assert EmbeddedSGLangRuntime._action_local_overlay_revision_changed(
+        batch, page_index
+    )
 def test_predictive_risk_triggers_follow_park_and_reentry_boundaries():
     runtime = EmbeddedSGLangRuntime.__new__(EmbeddedSGLangRuntime)
     runtime.controller = BeliefKVController()
@@ -1051,6 +1121,53 @@ def test_bounded_seed_hint_uses_first_deferred_engine_waiting_request():
     assert hint.created_ts_ms == 123.0
 
 
+
+def test_bounded_seed_hints_keep_four_priority_ordered_candidates():
+    runnable = tuple(
+        RunnableInvocation(
+            request_id=f"deferred-{index}",
+            workflow_id="wf",
+            invocation_id=f"inv-{index}",
+            context_id=f"ctx-{index}",
+            context_epoch=0,
+            submitted_ts_ms=float(index),
+            startup_bytes=64,
+            admission_startup_bytes=32,
+            admission_growth_bytes=16,
+            causal_class="engine_waiting:ready",
+            remaining_prefill_tokens=100 + index,
+            remaining_output_tokens=200 + index,
+            predicted_remaining_decode_tokens=20 + index,
+            prediction_support_level="exact",
+        )
+        for index in range(5)
+    )
+    view = OnlineJointPlanView(
+        plan_id="bounded-seed",
+        ordered_request_ids=(),
+        immediate_request_ids=(),
+        restore_requirements=(),
+        deferred_request_ids=tuple(item.request_id for item in runnable),
+        residency_intent_indices=(),
+    )
+
+    hints = EmbeddedSGLangRuntime._observed_seed_beneficiary_hints(
+        view,
+        runnable,
+        priority_request_ids=(
+            "deferred-3", "deferred-1", "deferred-4", "deferred-2", "deferred-0"
+        ),
+        seed_generation=7,
+        created_ts_ms=123.0,
+        kv_bytes_per_token=2,
+    )
+
+    assert tuple(item.request_id for item in hints) == (
+        "deferred-3", "deferred-1", "deferred-4", "deferred-2"
+    )
+    assert hints[0].remaining_prefill_bytes == 206
+    assert hints[0].predicted_output_bytes == 46
+    assert hints[0].prediction_support_level == "exact"
 class _EventBatchRecorder:
     def __init__(self):
         self.events = []
@@ -8899,6 +9016,9 @@ def test_action_local_probe_projects_running_growth_into_hbm_deficit():
         0,
         64,
         32,
+        remaining_prefill_bytes=100,
+        predicted_output_bytes=100,
+        prediction_support_level="exact",
     )
     observation = RuntimeResourceObservation(
         ts_ms=5.0,
@@ -8914,10 +9034,11 @@ def test_action_local_probe_projects_running_growth_into_hbm_deficit():
     assert not probe.beneficiary_hbm_blocked
     assert probe.hbm_opportunity_possible
     assert probe.classification == "near_hbm_risk"
-    assert probe.projected_running_growth_bytes == 64
-    assert probe.projected_hbm_available_bytes == 86
-    assert probe.predicted_deficit_bytes == 10
-    assert probe.predicted_block_time_ms == 1687.5
+    assert probe.projected_running_growth_bytes == 16
+    assert probe.projected_hbm_available_bytes == 134
+    assert probe.predicted_deficit_bytes == 130
+    assert probe.predicted_block_time_ms is None
+    assert probe.block_time_source == "gpu_service_scenario"
 
 
 if __name__ == "__main__":
