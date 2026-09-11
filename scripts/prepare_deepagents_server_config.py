@@ -112,6 +112,23 @@ def main() -> int:
         ),
     )
     parser.add_argument(
+        "--enable-predictive-prepare-micro-gate",
+        action="store_true",
+        help=(
+            "Inject one PREPARE_HOST intent from live beneficiary/victim "
+            "evidence to validate the transaction path; not a policy result."
+        ),
+    )
+    parser.add_argument(
+        "--predictive-prepare-micro-gate-id",
+        default="p6-prepare-mechanism-v1",
+    )
+    parser.add_argument(
+        "--predictive-prepare-micro-gate-min-private-mib",
+        type=int,
+        default=64,
+    )
+    parser.add_argument(
         "--predictive-beneficiary-projection-horizon-ms",
         type=float,
         default=2000.0,
@@ -368,6 +385,19 @@ def main() -> int:
             "--enable-predictive-prefetch-canary requires "
             "--enable-predictive-joint-overlay"
         )
+    if args.predictive_prepare_micro_gate_min_private_mib <= 0:
+        parser.error(
+            "--predictive-prepare-micro-gate-min-private-mib must be positive"
+        )
+    if args.enable_predictive_prepare_micro_gate and not (
+        args.enable_predictive_joint_overlay
+        and args.predictive_prepare_canary_limit == 1
+    ):
+        parser.error(
+            "--enable-predictive-prepare-micro-gate requires "
+            "--enable-predictive-joint-overlay and "
+            "--predictive-prepare-canary-limit 1"
+        )
     if args.enable_restore_micro_gate and not (
         args.enable_online_joint
         and args.enable_observed_admission
@@ -561,6 +591,15 @@ def main() -> int:
         "predictive_prepare_host_enabled": True,
         "predictive_prepare_host_canary_limit": (
             args.predictive_prepare_canary_limit
+        ),
+        "predictive_prepare_micro_gate_enabled": (
+            args.enable_predictive_prepare_micro_gate
+        ),
+        "predictive_prepare_micro_gate_id": (
+            args.predictive_prepare_micro_gate_id
+        ),
+        "predictive_prepare_micro_gate_min_private_bytes": (
+            args.predictive_prepare_micro_gate_min_private_mib * 1024 * 1024
         ),
         "predictive_prefetch_canary_enabled": (
             args.enable_predictive_prefetch_canary

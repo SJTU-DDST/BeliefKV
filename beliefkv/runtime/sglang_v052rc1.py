@@ -151,6 +151,8 @@ from beliefkv.runtime.lock_service import (
 from beliefkv.runtime.page_index import PageIndexReplicaDelta
 
 
+_PREDICTIVE_PREPARE_MICRO_GATE_MIN_WINDOW_MS = 120_000.0
+
 _PERFORMANCE_METRIC_EVENTS = frozenset(
     {
         "resource_snapshot",
@@ -2288,6 +2290,16 @@ class EmbeddedSGLangRuntime:
         self._restore_micro_gate_last_audit_signature: tuple[object, ...] | None = (
             None
         )
+        self._predictive_prepare_micro_gate_state: dict[str, Any] = {
+            "enabled": self.config.predictive_prepare_micro_gate_enabled,
+            "gate_id": self.config.predictive_prepare_micro_gate_id,
+            "stage": (
+                "armed"
+                if self.config.predictive_prepare_micro_gate_enabled
+                else "disabled"
+            ),
+            "evidence_kind": "injected_mechanism_gate",
+        }
         self._host_recompute_micro_gate_state: dict[str, Any] = {
             "enabled": self.config.host_recompute_micro_gate_enabled,
             "gate_id": self.config.host_recompute_micro_gate_id,
@@ -3169,6 +3181,9 @@ class EmbeddedSGLangRuntime:
                 ),
                 "restore_micro_gate": dict(
                     getattr(self, "_restore_micro_gate_state", {})
+                ),
+                "predictive_prepare_micro_gate": dict(
+                    getattr(self, "_predictive_prepare_micro_gate_state", {})
                 ),
                 "host_recompute_micro_gate": dict(
                     getattr(self, "_host_recompute_micro_gate_state", {})
@@ -16781,6 +16796,277 @@ class EmbeddedSGLangRuntime:
             for item in overlay_batch.overlays
         )
 
+    @staticmethod
+    def _predictive_action_local_causal_certificate(
+        graph: Any,
+        *,
+        invocation_ids: tuple[str, ...],
+        context_ids: tuple[str, ...],
+        model_version: str,
+    ) -> dict[str, object]:
+        """Capture only causal records needed by one injected action."""
+
+        invocations = []
+        join_ids: set[str] = set()
+        for invocation_id in sorted(set(invocation_ids)):
+            invocation = graph.invocations[invocation_id]
+            invocations.append(
+                [
+                    invocation_id,
+                    invocation.state.value,
+                    invocation.updated_ts_ms,
+                    invocation.join_id,
+                ]
+            )
+            if invocation.join_id is not None:
+                join_ids.add(invocation.join_id)
+        joins = []
+        for join_id in sorted(join_ids):
+            join = graph.joins[join_id]
+            joins.append(
+                [
+                    join_id,
+                    join.mode.value,
+                    join.satisfied,
+                    sorted(join.completed_member_ids),
+                ]
+            )
+        relevant_invocations = set(invocation_ids)
+        communication = []
+        for (source, target), edge in sorted(graph.communication_edges.items()):
+            if source not in relevant_invocations and target not in relevant_invocations:
+                continue
+            communication.append([source, target, edge.count, edge.last_ts_ms])
+        return {
+            "context_epochs": [
+                [context_id, graph.contexts[context_id].epoch]
+                for context_id in sorted(set(context_ids))
+            ],
+            "invocation_evidence": invocations,
+            "join_evidence": joins,
+            "communication_evidence": communication,
+            "model_version": model_version,
+        }
+
+    def _update_predictive_prepare_micro_gate(
+        self,
+        stage: str,
+        *,
+        now_ms: float,
+        intent_id: str | None = None,
+        **fields: object,
+    ) -> None:
+        if not getattr(
+            self.config, "predictive_prepare_micro_gate_enabled", False
+        ):
+            return
+        state = self._predictive_prepare_micro_gate_state
+        expected_intent_id = state.get("intent_id")
+        if (
+            intent_id is not None
+            and expected_intent_id is not None
+            and intent_id != expected_intent_id
+        ):
+            return
+        state.update({"stage": stage, **fields})
+        if intent_id is not None:
+            state["intent_id"] = intent_id
+        self.audit.emit(
+            "predictive_prepare_micro_gate_state",
+            now_ms,
+            audit_level="correctness",
+            **dict(state),
+        )
+
+    def _predictive_prepare_micro_gate_holds_intent(
+        self, intent: PredictiveIntent | None
+    ) -> bool:
+        if intent is None or not getattr(
+            self.config,
+            "predictive_prepare_micro_gate_enabled",
+            False,
+        ):
+            return False
+        state = self._predictive_prepare_micro_gate_state
+        return (
+            state.get("stage") == "intent_published"
+            and state.get("intent_id") == intent.intent_id
+            and intent.evidence_kind == "injected_mechanism_gate"
+        )
+
+    def _maybe_inject_predictive_prepare_micro_gate(
+        self,
+        hint: ObservedSeedBeneficiaryHint | None,
+        overlay_batch: ActionLocalPhysicalOverlayBatch | None,
+        observation: RuntimeResourceObservation,
+    ) -> bool:
+        """Inject one live-evidence PREPARE intent without bypassing validation."""
+
+        if not getattr(
+            self.config, "predictive_prepare_micro_gate_enabled", False
+        ):
+            return False
+        state = self._predictive_prepare_micro_gate_state
+        if state.get("stage") != "armed" or self._latest_predictive_intent is not None:
+            return False
+        if (
+            hint is None
+            or overlay_batch is None
+            or not overlay_batch.opportunity.hbm_opportunity_possible
+            or not overlay_batch.overlays
+        ):
+            return False
+        model_version = str(getattr(self, "_last_frontier_model_version", "") or "")
+        if not model_version:
+            state["waiting_reason"] = "frontier_model_version_unavailable"
+            return False
+        graph = self.controller.graph
+        victim = None
+        overlay = None
+        wait_states = {
+            InvocationState.WAIT_TOOL,
+            InvocationState.WAIT_CHILD,
+            InvocationState.WAIT_JOIN,
+            InvocationState.WAIT_MESSAGE,
+        }
+        for candidate in overlay_batch.overlays:
+            if (
+                candidate.exclusive_reclaimable_bytes
+                < self.config.predictive_prepare_micro_gate_min_private_bytes
+            ):
+                continue
+            candidate_invocations = sorted(
+                (
+                    item
+                    for item in graph.context_invocations(candidate.context_id)
+                    if not item.state.terminal and item.state in wait_states
+                ),
+                key=lambda item: item.invocation_id,
+            )
+            if candidate_invocations:
+                overlay = candidate
+                victim = candidate_invocations[0]
+                break
+        if overlay is None or victim is None:
+            state["waiting_reason"] = "no_eligible_private_victim"
+            return False
+        beneficiary_invocation = graph.invocations.get(hint.invocation_id)
+        beneficiary_context = graph.contexts.get(hint.context_id)
+        if beneficiary_invocation is None or beneficiary_context is None:
+            state["waiting_reason"] = "beneficiary_causal_identity_unavailable"
+            return False
+        native_inflight_bytes = 0
+        backend = getattr(self, "backend", None)
+        if backend is not None and hasattr(backend, "_native_inflight_bytes"):
+            native_inflight_bytes = backend._native_inflight_bytes()
+        transfer = self.controller.service_curve.estimate(
+            TransferDirection.D2H,
+            overlay.d2h_copy_bytes,
+            page_count=overlay.extent_count,
+            command_kind="offload_context",
+            host_copy_state="missing",
+            pinned_host=True,
+            native_concurrent_bytes=native_inflight_bytes,
+        )
+        if not transfer.shape_supported:
+            state["waiting_reason"] = "transfer_shape_unsupported"
+            return False
+        transfer_ms = max(0.001, transfer.estimated_completion_p90_ms)
+        maximum_transfer_ms = max(transfer_ms * 4.0, transfer_ms + 1_000.0)
+        window_ms = max(
+            _PREDICTIVE_PREPARE_MICRO_GATE_MIN_WINDOW_MS,
+            maximum_transfer_ms + self.config.predictive_commit_guard_ms + 1_000.0,
+        )
+        maximum_stall_ms = max(
+            maximum_transfer_ms,
+            float(transfer.estimated_unhidden_stall_p90_ms or 0.0),
+        )
+        causal_generation = (
+            f"{hint.request_id}:{hint.context_id}:c{hint.context_epoch}:"
+            f"{hint.startup_bytes}:{hint.growth_bytes}"
+        )
+        gate_id = self.config.predictive_prepare_micro_gate_id
+        intent_id = (
+            f"{gate_id}:{hint.request_id}:{overlay.context_id}:"
+            f"e{overlay.context_epoch}"
+        )
+        intent = PredictiveIntent(
+            intent_id=intent_id,
+            source_joint_plan_id=hint.plan_id,
+            source_snapshot_id=(
+                f"micro-gate:page-r{overlay.page_revision}:"
+                f"context-r{overlay.context_revision}"
+            ),
+            package_id=f"{gate_id}:prepare-host",
+            model_version=model_version,
+            action=PredictiveActionKind.PREPARE_HOST,
+            invocation_id=victim.invocation_id,
+            expected_invocation_state=victim.state.value,
+            context_id=overlay.context_id,
+            context_epoch=overlay.context_epoch,
+            generated_ts_ms=observation.ts_ms,
+            remaining_window_low_ms=window_ms,
+            transfer_p95_ms=transfer_ms,
+            target_bytes_hint=overlay.d2h_copy_bytes,
+            min_reclaimable_bytes=1,
+            max_cross_context_bytes=overlay.d2h_copy_bytes,
+            max_copy_bytes=overlay.d2h_copy_bytes,
+            causal_certificate=self._predictive_action_local_causal_certificate(
+                graph,
+                invocation_ids=(victim.invocation_id, hint.invocation_id),
+                context_ids=(overlay.context_id, hint.context_id),
+                model_version=model_version,
+            ),
+            required_prediction_heads=("injected_mechanism_gate",),
+            prediction_head_support=(("injected_mechanism_gate", "exact"),),
+            calibration_coverage=1.0,
+            future_hbm_feasibility_probability=1.0,
+            expected_benefit_ms=1.0,
+            shape_fingerprint=overlay.shape_fingerprint,
+            predicted_extent_count=overlay.extent_count,
+            maximum_transfer_ms=maximum_transfer_ms,
+            maximum_stall_ms=maximum_stall_ms,
+            morphology_slack_ms=(
+                window_ms - transfer_ms - self.config.predictive_commit_guard_ms
+            ),
+            causal_slack_probability=1.0,
+            beneficiary_request_id=hint.request_id,
+            beneficiary_invocation_id=hint.invocation_id,
+            beneficiary_context_id=hint.context_id,
+            beneficiary_context_epoch=hint.context_epoch,
+            beneficiary_startup_bytes=hint.startup_bytes,
+            beneficiary_growth_bytes=hint.growth_bytes,
+            predicted_block_time_ms=window_ms,
+            predicted_deficit_bytes=max(
+                1,
+                overlay_batch.opportunity.predicted_deficit_bytes,
+                overlay_batch.opportunity.future_growth_deficit_bytes,
+            ),
+            causal_package_generation=causal_generation,
+            evidence_kind="injected_mechanism_gate",
+        )
+        self._latest_predictive_intent = intent
+        self._current_online_joint_decision = None
+        self._last_joint_decision_plan_id = None
+        self._joint_predictive_counts["prepare_micro_gate_intent_published"] += 1
+        self._update_predictive_prepare_micro_gate(
+            "intent_published",
+            now_ms=observation.ts_ms,
+            intent_id=intent_id,
+            beneficiary_request_id=hint.request_id,
+            victim_context_id=overlay.context_id,
+            target_bytes=overlay.d2h_copy_bytes,
+            transfer_p90_ms=transfer_ms,
+        )
+        self.audit.emit(
+            "predictive_semantic_intent_published",
+            observation.ts_ms,
+            audit_level="correctness",
+            injected_test_evidence=True,
+            **intent.to_dict(),
+        )
+        return True
+
     def _maybe_publish_observed_seed_hint_delta(
         self,
         worker: LatestWinsJointPlanWorker,
@@ -16993,6 +17279,11 @@ class EmbeddedSGLangRuntime:
         self._latest_observed_seed_beneficiary = published_hint
         if replace_overlay:
             self._latest_action_local_overlay_batch = overlay_batch
+        self._maybe_inject_predictive_prepare_micro_gate(
+            published_hint,
+            overlay_batch,
+            observation,
+        )
         self._last_policy_state_stamp = stamp
         self._joint_shadow_counts["submitted"] += 1
         self._joint_shadow_counts["apply_only_submitted"] += 1
@@ -18476,7 +18767,23 @@ class EmbeddedSGLangRuntime:
             selected_action = str(shadow_payload.get("selected_action"))
             if self.config.predictive_joint_overlay_enabled:
                 previous_intent = getattr(self, "_latest_predictive_intent", None)
-                candidate_intent = result.shadow.predictive_intent
+                gate_holds_intent = (
+                    self._predictive_prepare_micro_gate_holds_intent(
+                        previous_intent
+                    )
+                )
+                mechanism_gate_enabled = bool(
+                    getattr(
+                        self.config,
+                        "predictive_prepare_micro_gate_enabled",
+                        False,
+                    )
+                )
+                candidate_intent = previous_intent if gate_holds_intent else (
+                    None
+                    if mechanism_gate_enabled
+                    else result.shadow.predictive_intent
+                )
                 publish_reasons: tuple[str, ...] = ()
                 if candidate_intent is not None:
                     live_graph = getattr(
@@ -20484,6 +20791,12 @@ class EmbeddedSGLangRuntime:
             reasons.append("prefetch_canary_hbm_cap")
 
         if reasons or preview is None or target is None:
+            self._update_predictive_prepare_micro_gate(
+                "rejected",
+                now_ms=now_ms,
+                intent_id=intent.intent_id,
+                rejection_reasons=sorted(set(reasons)),
+            )
             self._latest_predictive_intent = None
             self._joint_predictive_counts["semantic_intent_rejected"] += 1
             for reason in set(reasons):
@@ -20663,6 +20976,13 @@ class EmbeddedSGLangRuntime:
             },
         )
         self._joint_predictive_counts["semantic_intent_materialized"] += 1
+        self._update_predictive_prepare_micro_gate(
+            "materialized",
+            now_ms=now_ms,
+            intent_id=intent.intent_id,
+            live_copy_bytes=preview.copy_bytes,
+            live_extent_count=len(preview.page_actions),
+        )
         return OnlineJointPlanDecision(decision.view, decision.reason, epoch)
 
     def _finalize_predictive_safe_point_commit(
@@ -20686,6 +21006,12 @@ class EmbeddedSGLangRuntime:
         elif completed_ms >= committed.target.deadline_ms:
             reason = "latest_start_expired_during_commit"
         if reason is not None:
+            self._update_predictive_prepare_micro_gate(
+                "rejected",
+                now_ms=completed_ms,
+                intent_id=committed.intent.intent_id,
+                rejection_reasons=[reason],
+            )
             self._current_predictive_residency_commit = None
             self._latest_predictive_intent = None
             self._joint_predictive_counts[
@@ -20718,6 +21044,13 @@ class EmbeddedSGLangRuntime:
             validation_wall_ms=wall_ms,
             validation_cpu_ms=cpu_ms,
             validation_completed_ts_ms=completed_ms,
+        )
+        self._update_predictive_prepare_micro_gate(
+            "committed",
+            now_ms=completed_ms,
+            intent_id=committed.intent.intent_id,
+            validation_wall_ms=wall_ms,
+            validation_cpu_ms=cpu_ms,
         )
         return True
 
@@ -21434,6 +21767,12 @@ class EmbeddedSGLangRuntime:
         preview = committed.preview
         command_kind = self._online_residency_command_kind(target.action)
         if command_kind is None:
+            self._update_predictive_prepare_micro_gate(
+                "rejected",
+                now_ms=now_ms,
+                intent_id=intent.intent_id,
+                rejection_reasons=["no_physical_command"],
+            )
             self._current_predictive_residency_commit = None
             self._latest_predictive_intent = None
             return True
@@ -21463,6 +21802,7 @@ class EmbeddedSGLangRuntime:
                 "predictive_intent_id": intent.intent_id,
                 "predictive_package_id": intent.package_id,
                 "predictive_model_version": intent.model_version,
+                "predictive_evidence_kind": intent.evidence_kind,
                 "predictive_action": intent.action.value,
                 "predictive_required_heads": list(
                     intent.required_prediction_heads
@@ -21492,6 +21832,14 @@ class EmbeddedSGLangRuntime:
         )
         enqueue_outcome = self.controller.enqueue_control_command(command)
         if enqueue_outcome.status != EnqueueStatus.ENQUEUED:
+            self._update_predictive_prepare_micro_gate(
+                "rejected",
+                now_ms=now_ms,
+                intent_id=intent.intent_id,
+                rejection_reasons=[
+                    f"enqueue:{enqueue_outcome.status.value}"
+                ],
+            )
             self._joint_predictive_counts["dispatch_conflict"] += 1
             self.audit.emit(
                 "predictive_joint_residency_dispatch_rejected",
@@ -21532,6 +21880,13 @@ class EmbeddedSGLangRuntime:
             context_epoch=preview.context_epoch,
             command_id=command_id,
             now_ms=now_ms,
+        )
+        self._update_predictive_prepare_micro_gate(
+            "queued",
+            now_ms=now_ms,
+            intent_id=intent.intent_id,
+            command_id=command_id,
+            transaction_id=transaction_id,
         )
         self.audit.emit(
             "online_joint_residency_queued",
@@ -21766,6 +22121,19 @@ class EmbeddedSGLangRuntime:
                 f"residency_{ack.status.value}"
             ] += 1
         if transaction.predictive_intent_id is not None:
+            self._update_predictive_prepare_micro_gate(
+                (
+                    "completed"
+                    if ack.status == CommandStatus.COMPLETED
+                    else ack.status.value
+                ),
+                now_ms=now_ms,
+                intent_id=transaction.predictive_intent_id,
+                command_id=transaction.command_id,
+                transaction_id=transaction.transaction_id,
+                actual_bytes=ack.actual_bytes,
+                terminal_reason=ack.reason,
+            )
             self._predictive_action_ledger().transfer_terminal(
                 transaction.predictive_intent_id,
                 completed=ack.status == CommandStatus.COMPLETED,

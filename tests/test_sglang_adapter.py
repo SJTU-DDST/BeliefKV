@@ -654,6 +654,171 @@ def test_bounded_seed_hint_change_publishes_one_lightweight_risk_delta():
     )
 
 
+def test_predictive_prepare_micro_gate_injects_one_live_evidence_intent():
+    controller_config = BeliefKVConfig(
+        hbm_capacity_bytes=2_000,
+        host_capacity_bytes=4_000,
+        reserve_hbm_bytes=0,
+        predictor_enabled=False,
+    )
+    controller = BeliefKVController(controller_config)
+    controller.process_runtime_events(
+        (
+            RuntimeEvent(
+                "wf-start-micro-prepare",
+                1.0,
+                RuntimeEventKind.WORKFLOW_START,
+                "wf-micro-prepare",
+            ),
+            RuntimeEvent(
+                "victim-create-micro-prepare",
+                2.0,
+                RuntimeEventKind.INVOCATION_CREATE,
+                "wf-micro-prepare",
+                invocation_id="inv-victim",
+                context_id="ctx-victim",
+                context_epoch=0,
+            ),
+            RuntimeEvent(
+                "victim-tool-micro-prepare",
+                3.0,
+                RuntimeEventKind.TOOL_START,
+                "wf-micro-prepare",
+                invocation_id="inv-victim",
+                context_id="ctx-victim",
+                context_epoch=0,
+                attributes={"tool_family": "shell"},
+            ),
+            RuntimeEvent(
+                "beneficiary-create-micro-prepare",
+                4.0,
+                RuntimeEventKind.INVOCATION_CREATE,
+                "wf-micro-prepare",
+                invocation_id="inv-beneficiary",
+                context_id="ctx-beneficiary",
+                context_epoch=0,
+            ),
+        )
+    )
+    controller.service_curve = SimpleNamespace(
+        estimate=lambda *_args, **_kwargs: SimpleNamespace(
+            estimated_completion_p90_ms=10.0,
+            estimated_unhidden_stall_p90_ms=2.0,
+            shape_supported=True,
+            source="micro_gate_test_curve",
+        )
+    )
+    runtime = EmbeddedSGLangRuntime.__new__(EmbeddedSGLangRuntime)
+    runtime.config = BeliefKVConfig(
+        hbm_capacity_bytes=2_000,
+        host_capacity_bytes=4_000,
+        reserve_hbm_bytes=0,
+        predictor_model_path="/tmp/frontier.json",
+        gpu_service_model_path="/tmp/service.json",
+        joint_policy_enabled=True,
+        predictive_risk_shadow_enabled=True,
+        predictive_joint_overlay_enabled=True,
+        predictive_prepare_host_canary_limit=1,
+        predictive_prepare_micro_gate_enabled=True,
+        predictive_prepare_micro_gate_min_private_bytes=100,
+    )
+    runtime.controller = controller
+    runtime.audit = _AuditRecorder()
+    runtime._joint_predictive_counts = Counter()
+    runtime._latest_predictive_intent = None
+    runtime._last_frontier_model_version = "frontier-v1"
+    runtime._current_online_joint_decision = object()
+    runtime._last_joint_decision_plan_id = "old-plan"
+    runtime._predictive_prepare_micro_gate_state = {
+        "enabled": True,
+        "gate_id": "p6-prepare-mechanism-v1",
+        "stage": "armed",
+        "evidence_kind": "injected_mechanism_gate",
+    }
+    hint = ObservedSeedBeneficiaryHint(
+        plan_id="seed-plan",
+        request_id="request-beneficiary",
+        invocation_id="inv-beneficiary",
+        context_id="ctx-beneficiary",
+        context_epoch=0,
+        startup_bytes=50,
+        growth_bytes=50,
+        seed_generation=1,
+        created_ts_ms=5.0,
+        published_ts_ms=6.0,
+    )
+    opportunity = BeneficiaryOpportunityProbe(
+        beneficiary_request_id=hint.request_id,
+        beneficiary_context_id=hint.context_id,
+        beneficiary_context_epoch=hint.context_epoch,
+        required_bytes=100,
+        hbm_available_bytes=0,
+        hbm_risk_margin_bytes=0,
+        projected_running_growth_bytes=100,
+        projected_hbm_available_bytes=0,
+        predicted_block_time_ms=100.0,
+        predicted_deficit_bytes=100,
+        running_request_count=32,
+        max_running_requests=32,
+        beneficiary_slot_blocked=True,
+        beneficiary_hbm_blocked=False,
+        beneficiary_slot_then_hbm_blocked=True,
+        hbm_opportunity_possible=True,
+        captured_ts_ms=6.0,
+    )
+    overlay = ActionLocalPhysicalOverlay(
+        context_id="ctx-victim",
+        context_epoch=0,
+        context_revision=7,
+        page_revision=11,
+        topology_revision=3,
+        generation_fingerprint="generation-victim",
+        shape_fingerprint="summary:300:n1",
+        exclusive_reclaimable_bytes=300,
+        d2h_copy_bytes=300,
+        extent_count=1,
+        cross_context_bytes=0,
+        locked_bytes=0,
+        owner_context_ids=("ctx-victim",),
+        blocker_codes=(),
+        native_loading=False,
+        captured_ts_ms=6.0,
+        evidence_kind="context_summary_upper_bound",
+    )
+    overlay_batch = ActionLocalPhysicalOverlayBatch(
+        beneficiary_risk_signature=hint.risk_signature,
+        opportunity=opportunity,
+        overlays=(overlay,),
+    )
+    observation = RuntimeResourceObservation(
+        ts_ms=6.0,
+        hbm_capacity_bytes=2_000,
+        hbm_used_bytes=1_900,
+        host_capacity_bytes=4_000,
+        host_used_bytes=0,
+        host_free_bytes=4_000,
+    )
+
+    assert runtime._maybe_inject_predictive_prepare_micro_gate(
+        hint, overlay_batch, observation
+    )
+    intent = runtime._latest_predictive_intent
+    assert intent is not None
+    assert intent.evidence_kind == "injected_mechanism_gate"
+    assert intent.beneficiary_request_id == hint.request_id
+    assert intent.context_id == overlay.context_id
+    assert runtime._current_online_joint_decision is None
+    assert runtime._last_joint_decision_plan_id is None
+    assert runtime._predictive_prepare_micro_gate_state["stage"] == "intent_published"
+    assert runtime._predictive_prepare_micro_gate_holds_intent(intent)
+    assert not runtime._maybe_inject_predictive_prepare_micro_gate(
+        hint, overlay_batch, observation
+    )
+    assert runtime._joint_predictive_counts[
+        "prepare_micro_gate_intent_published"
+    ] == 1
+
+
 def test_action_local_probe_filters_slot_only_beneficiary_before_graph_scan():
     runtime = EmbeddedSGLangRuntime.__new__(EmbeddedSGLangRuntime)
     requests = tuple(SimpleNamespace(rid=f"running-{index}") for index in range(32))

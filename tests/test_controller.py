@@ -1,4 +1,5 @@
 import unittest
+from dataclasses import replace
 from types import SimpleNamespace
 
 from beliefkv.control.controller import BeliefKVController
@@ -105,6 +106,29 @@ class ControllerTest(unittest.TestCase):
             predictive_prepare_host_canary_limit=1,
         )
         self.assertEqual(unified.predictive_prepare_host_canary_limit, 1)
+
+        with self.assertRaisesRegex(
+            ValueError, "exact one-action PREPARE_HOST canary limit"
+        ):
+            BeliefKVConfig(
+                joint_policy_enabled=True,
+                predictor_model_path="frontier.json",
+                gpu_service_model_path="service.json",
+                predictive_risk_shadow_enabled=True,
+                predictive_joint_overlay_enabled=True,
+                predictive_prepare_micro_gate_enabled=True,
+            )
+
+        mechanism_gate = replace(
+            unified,
+            predictive_prepare_micro_gate_enabled=True,
+            predictive_prepare_micro_gate_min_private_bytes=128,
+        )
+        self.assertEqual(mechanism_gate.predictive_prepare_host_canary_limit, 1)
+        self.assertEqual(
+            mechanism_gate.predictive_prepare_micro_gate_min_private_bytes,
+            128,
+        )
 
     def test_frontier_retraction_requires_predictor_and_p5_retraction(self):
         with self.assertRaisesRegex(ValueError, "frontier-aware retraction"):

@@ -157,6 +157,7 @@ class PredictiveIntent:
     predicted_block_time_ms: float | None = None
     predicted_deficit_bytes: int = 0
     causal_package_generation: str | None = None
+    evidence_kind: str = "model_prediction"
 
     def __post_init__(self) -> None:
         required = (
@@ -172,6 +173,8 @@ class PredictiveIntent:
         )
         if any(not item for item in required):
             raise ValueError("predictive intent identity is required")
+        if not self.evidence_kind:
+            raise ValueError("predictive intent evidence kind is required")
         object.__setattr__(self, "action", PredictiveActionKind(self.action))
         if self.action not in {
             PredictiveActionKind.PREPARE_HOST,
@@ -308,6 +311,7 @@ class PredictiveIntent:
             "predicted_block_time_ms": self.predicted_block_time_ms,
             "predicted_deficit_bytes": self.predicted_deficit_bytes,
             "causal_package_generation": self.causal_package_generation,
+            "evidence_kind": self.evidence_kind,
         }
 
 

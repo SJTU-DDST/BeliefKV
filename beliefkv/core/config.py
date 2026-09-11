@@ -93,6 +93,9 @@ class BeliefKVConfig:
     predictive_joint_overlay_enabled: bool = False
     predictive_prepare_host_enabled: bool = True
     predictive_prepare_host_canary_limit: int = 0
+    predictive_prepare_micro_gate_enabled: bool = False
+    predictive_prepare_micro_gate_id: str = "p6-prepare-mechanism-v1"
+    predictive_prepare_micro_gate_min_private_bytes: int = 64 * 1024 * 1024
     predictive_prefetch_canary_enabled: bool = False
     predictive_prefetch_canary_max_inflight: int = 1
     predictive_prefetch_canary_max_hbm_ratio: float = 0.05
@@ -308,6 +311,26 @@ class BeliefKVConfig:
             )
         if self.predictive_prepare_host_canary_limit < 0:
             raise ValueError("predictive prepare canary limit must be non-negative")
+        if self.predictive_prepare_micro_gate_min_private_bytes <= 0:
+            raise ValueError(
+                "predictive prepare micro-gate private bytes must be positive"
+            )
+        if (
+            not isinstance(self.predictive_prepare_micro_gate_id, str)
+            or not self.predictive_prepare_micro_gate_id.strip()
+        ):
+            raise ValueError(
+                "predictive prepare micro-gate ID must be a non-empty string"
+            )
+        if self.predictive_prepare_micro_gate_enabled and not (
+            self.predictive_joint_overlay_enabled
+            and self.predictive_prepare_host_enabled
+            and self.predictive_prepare_host_canary_limit == 1
+        ):
+            raise ValueError(
+                "predictive prepare micro-gate requires predictive JointPlan "
+                "overlay and an exact one-action PREPARE_HOST canary limit"
+            )
         if self.predictive_prefetch_canary_max_inflight != 1:
             raise ValueError(
                 "the first predictive prefetch canary supports exactly one inflight action"
