@@ -185,7 +185,7 @@ class BeneficiaryOpportunityProbe:
 
 @dataclass(frozen=True)
 class ActionLocalPhysicalOverlay:
-    """Compact live PREPARE evidence; no page list or full bundle escapes."""
+    """Compact PREPARE estimate; commit always rematerializes the live bundle."""
 
     context_id: str
     context_epoch: int
@@ -203,12 +203,15 @@ class ActionLocalPhysicalOverlay:
     blocker_codes: tuple[str, ...]
     native_loading: bool
     captured_ts_ms: float
+    evidence_kind: str = "exact_preview"
 
     def __post_init__(self) -> None:
         if not self.context_id or not self.generation_fingerprint:
             raise ValueError("action-local overlay identity is required")
         if not self.shape_fingerprint:
             raise ValueError("action-local overlay shape is required")
+        if self.evidence_kind not in {"exact_preview", "context_summary_upper_bound"}:
+            raise ValueError("unsupported action-local overlay evidence kind")
         if min(
             self.context_epoch,
             self.context_revision,

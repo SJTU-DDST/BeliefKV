@@ -73,6 +73,26 @@ class PageIndexTest(unittest.TestCase):
         self.assertEqual(index.context_revision("ctx-a"), revision_a + 2)
         self.assertEqual(index.context_revision("ctx-b"), revision_b + 1)
 
+    def test_context_summary_reports_conservative_d2h_shape(self):
+        index = PageOwnershipIndex()
+        index.register_context("ctx", "wf", 0)
+        missing = PageHandle(1, 0)
+        shadowed = PageHandle(2, 0)
+        locked = PageHandle(3, 0)
+        for handle in (missing, shadowed, locked):
+            index.register_page(handle, size_bytes=100)
+        index.bind_pages("ctx", 0, (missing, shadowed, locked))
+        index.update_runtime_state(
+            shadowed, residency=PhysicalResidency.DUAL_CLEAN
+        )
+        index.set_engine_lock(locked, 1)
+
+        summary = index.context_physical_summary("ctx")
+
+        self.assertEqual(summary.exclusive_reclaimable_upper_bound_bytes, 200)
+        self.assertEqual(summary.d2h_copy_upper_bound_bytes, 100)
+        self.assertEqual(summary.d2h_extent_count_upper_bound, 1)
+
     def test_page_generation_prevents_stale_reuse(self):
         index = PageOwnershipIndex()
         first = PageHandle(1, 0)

@@ -717,16 +717,22 @@ def test_action_local_overlay_captures_at_most_two_ranked_live_victims():
         "victim-a": SimpleNamespace(
             context_id="victim-a", context_epoch=0,
             exclusive_reclaimable_upper_bound_bytes=300,
+            d2h_copy_upper_bound_bytes=300,
+            d2h_extent_count_upper_bound=3,
             locked_bytes=0, last_access_ms=3.0,
         ),
         "victim-b": SimpleNamespace(
             context_id="victim-b", context_epoch=0,
             exclusive_reclaimable_upper_bound_bytes=200,
+            d2h_copy_upper_bound_bytes=200,
+            d2h_extent_count_upper_bound=2,
             locked_bytes=0, last_access_ms=2.0,
         ),
         "victim-c": SimpleNamespace(
             context_id="victim-c", context_epoch=0,
             exclusive_reclaimable_upper_bound_bytes=100,
+            d2h_copy_upper_bound_bytes=100,
+            d2h_extent_count_upper_bound=1,
             locked_bytes=0, last_access_ms=1.0,
         ),
     }
@@ -745,37 +751,10 @@ def test_action_local_overlay_captures_at_most_two_ranked_live_victims():
         context_revision=lambda _context_id: 3,
     )
 
-    def preview(context_id):
-        calls["preview"] += 1
-        return SimpleNamespace(
-            eligible=True,
-            copy_bytes=summaries[context_id].exclusive_reclaimable_upper_bound_bytes,
-            bundle=SimpleNamespace(
-                exclusive_action_bytes=(
-                    summaries[context_id].exclusive_reclaimable_upper_bound_bytes
-                ),
-                cross_context_action_bytes=0,
-                bundle_id=f"bundle-{context_id}",
-                generation_fingerprint=f"generation-{context_id}",
-                locked_bytes=0,
-                owner_context_ids=(context_id,),
-            ),
-            page_actions=(SimpleNamespace(action=PhysicalPageAction.START_D2H),),
-            blockers=(),
-        )
-
     runtime.controller = SimpleNamespace(
         admission=SimpleNamespace(reserved_bytes=0),
         graph=SimpleNamespace(invocations=invocations, contexts=contexts),
         page_index=page_index,
-        arbiter=SimpleNamespace(
-            bundle_builder=SimpleNamespace(
-                best_exclusive_shadow_preview_for_context=(
-                    lambda context_id, _epoch, **_kwargs: preview(context_id)
-                )
-            )
-        ),
-        policy_snapshot_builder=object(),
     )
     runtime.config = SimpleNamespace(
         reference_policy_hbm_bucket_bytes=64,
@@ -792,13 +771,9 @@ def test_action_local_overlay_captures_at_most_two_ranked_live_victims():
         host_capacity_bytes=1_000, host_used_bytes=0, host_free_bytes=1_000,
     )
 
-    with mock.patch(
-        "beliefkv.runtime.sglang_v052rc1._predictive_live_shape_fingerprint",
-        side_effect=lambda _builder, item, **_kwargs: item.bundle.bundle_id,
-    ):
-        batch = runtime._capture_action_local_physical_overlay_batch(
-            hint, observation
-        )
+    batch = runtime._capture_action_local_physical_overlay_batch(
+        hint, observation
+    )
 
     assert batch.selection_reason is None
     assert tuple(item.context_id for item in batch.overlays) == (
@@ -806,24 +781,23 @@ def test_action_local_overlay_captures_at_most_two_ranked_live_victims():
     )
     assert batch.opportunity.beneficiary_hbm_blocked
     assert all(item.page_revision == 17 for item in batch.overlays)
-    with mock.patch(
-        "beliefkv.runtime.sglang_v052rc1._predictive_live_shape_fingerprint",
-        side_effect=lambda _builder, item, **_kwargs: item.bundle.bundle_id,
-    ):
-        repeated = runtime._capture_action_local_physical_overlay_batch(
-            hint, replace(observation, ts_ms=6.0)
-        )
+    assert all(
+        item.evidence_kind == "context_summary_upper_bound"
+        for item in batch.overlays
+    )
+    repeated = runtime._capture_action_local_physical_overlay_batch(
+        hint, replace(observation, ts_ms=6.0)
+    )
     assert tuple(item.context_id for item in repeated.overlays) == (
         "victim-a", "victim-b"
     )
-    # PageOwnershipIndex caches summaries internally; this layer only caches
-    # the more expensive closure preview.
-    assert calls == Counter(summary=6, preview=2)
+    assert calls == Counter(summary=6)
 
 
-def test_live_prepare_certificate_uses_context_local_revision():
+def test_live_prepare_certificate_defers_physical_revision_to_commit():
     current = {"present": True, "epoch": 2, "revision": 7}
     runtime = EmbeddedSGLangRuntime.__new__(EmbeddedSGLangRuntime)
+    runtime._joint_predictive_counts = Counter()
     runtime.controller = SimpleNamespace(
         page_index=SimpleNamespace(
             has_context=lambda _context_id: current["present"],
@@ -866,7 +840,10 @@ def test_live_prepare_certificate_uses_context_local_revision():
     current["revision"] = 8
     assert runtime._predictive_live_prepare_certificate_reasons(
         certificate, source, observation
-    ) == ("context_revision:victim",)
+    ) == ()
+    assert runtime._joint_predictive_counts[
+        "action_overlay_revision_drift"
+    ] == 1
 
 
 

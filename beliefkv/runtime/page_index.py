@@ -159,6 +159,8 @@ class ContextPhysicalSummary:
     cpu_bytes: int
     locked_bytes: int
     exclusive_reclaimable_upper_bound_bytes: int
+    d2h_copy_upper_bound_bytes: int
+    d2h_extent_count_upper_bound: int
     last_access_ms: float
 
 
@@ -1207,37 +1209,52 @@ class PageOwnershipIndex:
         if cached is not None:
             return cached
         pages = self.context_pages(context_id)
-        cached = ContextPhysicalSummary(
-            context_id=context_id,
-            context_epoch=self._context_epoch[context_id],
-            extent_count=len(pages),
-            physical_unique_bytes=sum(page.size_bytes for page in pages),
-            gpu_bytes=sum(
-                page.size_bytes for page in pages if page.gpu_resident
-            ),
-            cpu_bytes=sum(
-                page.size_bytes for page in pages if page.cpu_resident
-            ),
-            locked_bytes=sum(
-                page.size_bytes
-                for page in pages
-                if page.gpu_resident
-                and (page.engine_lock_ref > 0 or page.active_reader_count > 0)
-            ),
-            exclusive_reclaimable_upper_bound_bytes=sum(
-                page.size_bytes
-                for page in pages
-                if page.gpu_resident
+        physical_unique_bytes = 0
+        gpu_bytes = 0
+        cpu_bytes = 0
+        locked_bytes = 0
+        exclusive_reclaimable_bytes = 0
+        d2h_copy_bytes = 0
+        d2h_extent_count = 0
+        last_access_ms = 0.0
+        for page in pages:
+            physical_unique_bytes += page.size_bytes
+            gpu_bytes += page.size_bytes if page.gpu_resident else 0
+            cpu_bytes += page.size_bytes if page.cpu_resident else 0
+            last_access_ms = max(last_access_ms, page.last_access_ms)
+            if page.gpu_resident and (
+                page.engine_lock_ref > 0 or page.active_reader_count > 0
+            ):
+                locked_bytes += page.size_bytes
+            reclaimable = (
+                page.gpu_resident
                 and len(page.owner_contexts) == 1
                 and page.sealed
                 and page.engine_lock_ref == 0
                 and page.active_reader_count == 0
                 and not page.semantic_pin_contexts
                 and page.transfer_idle
+            )
+            if not reclaimable:
+                continue
+            exclusive_reclaimable_bytes += page.size_bytes
+            if not page.cpu_resident:
+                d2h_copy_bytes += page.size_bytes
+                d2h_extent_count += 1
+        cached = ContextPhysicalSummary(
+            context_id=context_id,
+            context_epoch=self._context_epoch[context_id],
+            extent_count=len(pages),
+            physical_unique_bytes=physical_unique_bytes,
+            gpu_bytes=gpu_bytes,
+            cpu_bytes=cpu_bytes,
+            locked_bytes=locked_bytes,
+            exclusive_reclaimable_upper_bound_bytes=(
+                exclusive_reclaimable_bytes
             ),
-            last_access_ms=max(
-                (page.last_access_ms for page in pages), default=0.0
-            ),
+            d2h_copy_upper_bound_bytes=d2h_copy_bytes,
+            d2h_extent_count_upper_bound=d2h_extent_count,
+            last_access_ms=last_access_ms,
         )
         self._context_summary_cache[context_id] = cached
         return cached
