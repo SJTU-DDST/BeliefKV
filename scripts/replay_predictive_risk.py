@@ -188,6 +188,8 @@ def main() -> int:
         default="morphology-aware",
     )
     parser.add_argument("--summary-output", type=Path, default=None)
+    parser.add_argument("--particle-count", type=int, default=128)
+    parser.add_argument("--top-k", type=int, default=4)
     parser.add_argument(
         "--stall-fraction",
         type=float,
@@ -198,6 +200,10 @@ def main() -> int:
         ),
     )
     args = parser.parse_args()
+    if args.particle_count <= 0:
+        parser.error("--particle-count must be positive")
+    if args.top_k <= 0 or args.top_k > args.particle_count:
+        parser.error("--top-k must be in [1, particle-count]")
     if args.stall_fraction is not None and not 0.0 <= args.stall_fraction <= 1.0:
         parser.error("--stall-fraction must be in [0, 1]")
 
@@ -218,8 +224,8 @@ def main() -> int:
     observer = PredictiveRiskShadowObserver(
         GPUServiceCurveModel.load(args.gpu_service_model),
         PredictiveRiskShadowConfig(
-            particle_count=128,
-            top_k=4,
+            particle_count=args.particle_count,
+            top_k=args.top_k,
             max_candidates=2,
             max_full_prefetch_hbm_ratio=0.05,
         ),
@@ -405,6 +411,8 @@ def main() -> int:
                         latest_start_ms.append(float(deadline) - float(duration))
     temporary.replace(args.output)
     summary = {
+        "particle_count": args.particle_count,
+        "top_k": args.top_k,
         "transfer_model": args.transfer_model,
         "requested_snapshot_ids": sorted(requested_snapshot_ids),
         "counts": dict(sorted(counts.items())),

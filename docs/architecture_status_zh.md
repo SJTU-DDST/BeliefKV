@@ -2,6 +2,31 @@
 
 更新日期：2026-09-11
 
+## 2026-09-11：Direct Pipeline 首次通过 Timely-Positive 门槛
+
+64-root H200 predictor-only 高压运行形成 99.991% HBM 峰值，Predictive worker
+58/58 完成且无失败、丢弃或积压。58 个 closure-complete evaluation 中产生 9 个
+正收益候选、4 个 eligible PREPARE，最终有 1 个 package 同时满足 certificate fresh
+和 validation 早于 latest feasible start。预测式物理动作在本轮保持关闭，完整结果见
+`docs/experiments/beliefkv_p6_direct_pipeline_high_pressure_2026-09-11_zh.md`。
+
+GPU 已验证的 safe-point capture P50/P95/P99 为 0.210/0.750/1.620 ms，较先前
+22 ms P95 显著下降，但尚未达到 0.5/1 ms 的严格目标。Predictive compute P50/P95
+为 38.70/51.85 ms；trigger-to-validation P95 仍为 2.88 秒。32/58 certificate stale，
+其中 24 次来自一个 invocation 的真实 TOOL_START/TOOL_END 推进，不能通过忽略因果
+revision 处理。
+
+实验后进一步实现 invocation-local common-random particle cache、128-entry belief LRU、
+同 projection baseline timeline 复用，以及 safe-point resource observation/四候选 probe
+公共环境复用。12 个冻结高压 snapshot 在 128 粒子下保持 12/12 动作一致，belief
+compose P95 为 18.46 ms，total planning P95 为 40.33 ms。64 粒子会改变动作选择，
+因此未采用。该实验后优化尚待下一次短 GPU canary 一并复验。
+
+当前下一步不是继续扩展模型或放宽证书，而是运行单笔 `PREPARE_HOST` canary：保持
+safe-point live rematerialization 和 observed P5 fallback，同时确认新增同步优化达到
+P95/P99 小于 0.5/1 ms。只有 D2H shadow 被真实 beneficiary 消费并产生 saved stall
+后，才开放 COMMIT/PREFETCH。
+
 ## 2026-09-11：Future-Growth 首次产生正收益，Canary 仍关闭
 
 64-root H200 predictor-only 高压运行首次产生 48 个正收益 PREPARE 候选、43 个 eligible

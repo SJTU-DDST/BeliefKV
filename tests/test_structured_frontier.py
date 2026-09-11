@@ -1095,6 +1095,16 @@ def test_composer_reuses_unchanged_invocation_particles() -> None:
     assert repeated == first
     assert composer.local_particle_cache_stats() == (2, 2, 2)
 
+    graph.invocations["parent"].updated_ts_ms += 100.0
+    timestamp_only = composer.sample_particles(
+        graph=graph,
+        scope=scope,
+        local_predictions=predictions,
+        seed=17,
+    )
+    assert timestamp_only == first
+    assert composer.local_particle_cache_stats() == (4, 2, 2)
+
     changed_predictions = {
         **predictions,
         "child": _fixed_prediction("child", 50),
@@ -1105,7 +1115,7 @@ def test_composer_reuses_unchanged_invocation_particles() -> None:
         local_predictions=changed_predictions,
         seed=17,
     )
-    assert composer.local_particle_cache_stats() == (3, 3, 3)
+    assert composer.local_particle_cache_stats() == (5, 3, 3)
     before_by_particle = tuple(
         {item.invocation_id: item for item in outcomes} for outcomes in first
     )

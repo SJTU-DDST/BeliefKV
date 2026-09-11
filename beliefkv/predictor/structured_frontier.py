@@ -1683,29 +1683,51 @@ class FrontierScenarioComposer:
             if invocation.join_id is not None
             else None
         )
-        communication = tuple(
-            (
-                source,
-                target,
-                edge.count,
-                edge.last_ts_ms,
-            )
-            for (source, target), edge in sorted(
-                graph.communication_edges.items()
-            )
-            if source == invocation_id
-        )
         return (
             seed,
             invocation_id,
-            repr(graph.invocation_snapshot(invocation_id)),
-            repr(
-                graph.join_snapshot(invocation.join_id)
+            invocation.state.value,
+            invocation.active_tool_family,
+            tuple(sorted(invocation.blocking_child_ids)),
+            invocation.join_id,
+            (
+                (
+                    join.mode.value,
+                    tuple(sorted(join.member_invocation_ids)),
+                )
                 if join is not None
                 else None
             ),
-            communication,
-            repr(prediction.to_dict()),
+            tuple(
+                sorted(
+                    edge.target_invocation_id
+                    for edge in graph.communication_edges.values()
+                    if edge.source_invocation_id == invocation_id
+                    and edge.target_invocation_id in graph.invocations
+                )
+            ),
+            FrontierScenarioComposer.prediction_particle_key(prediction),
+        )
+
+    @staticmethod
+    def prediction_particle_key(
+        prediction: LocalFrontierPrediction,
+    ) -> tuple[object, ...]:
+        """Return exactly the prediction fields consumed by local sampling."""
+
+        wait = prediction.wait_belief
+        assert wait is not None
+        return (
+            tuple(sorted(prediction.boundary_distribution.items())),
+            prediction.current_sequence_tokens,
+            prediction.remaining_decode_tokens,
+            prediction.prompt_growth_tokens,
+            prediction.next_output_tokens,
+            (
+                wait.kind.value,
+                wait.residual_duration,
+                tuple(sorted(wait.terminal_distribution.items())),
+            ),
         )
 
     def reduce_particles(

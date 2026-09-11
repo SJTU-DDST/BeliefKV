@@ -589,10 +589,11 @@ def test_bounded_seed_hint_change_publishes_one_lightweight_risk_delta():
             capture_ms=0.02,
         )
     )
-    runtime._runtime_resource_observation = lambda: RuntimeResourceObservation(
+    observation = RuntimeResourceObservation(
         ts_ms=5.0, hbm_capacity_bytes=1_000, hbm_used_bytes=950,
         host_capacity_bytes=1_000, host_used_bytes=0, host_free_bytes=1_000,
     )
+    runtime._runtime_resource_observation = lambda: observation
     submitted = []
     worker = SimpleNamespace(
         submit_delta=lambda delta: submitted.append(delta) or SimpleNamespace(
@@ -600,7 +601,10 @@ def test_bounded_seed_hint_change_publishes_one_lightweight_risk_delta():
         ),
         stats=lambda: SimpleNamespace(pending_count=0, busy=False),
     )
-    assert runtime._maybe_publish_observed_seed_hint_delta(worker)
+    assert runtime._maybe_publish_observed_seed_hint_delta(
+        worker,
+        observation=observation,
+    )
     assert not runtime._maybe_publish_observed_seed_hint_delta(worker)
     assert len(submitted) == 1
     assert submitted[0].risk_evaluation_requested
@@ -9080,6 +9084,54 @@ def test_action_local_probe_projects_running_growth_into_hbm_deficit():
     assert probe.predicted_deficit_bytes == 130
     assert probe.predicted_block_time_ms is None
     assert probe.block_time_source == "gpu_service_scenario"
+
+
+def test_beneficiary_probes_share_running_growth_but_preserve_chunked_exclusion():
+    runtime = EmbeddedSGLangRuntime.__new__(EmbeddedSGLangRuntime)
+    chunked = SimpleNamespace(
+        rid="chunked",
+        fill_ids=list(range(100)),
+        origin_input_ids=list(range(60)),
+        output_ids=list(range(40)),
+        prefix_indices=list(range(20)),
+    )
+    runtime.scheduler = SimpleNamespace(
+        running_batch=SimpleNamespace(reqs=()),
+        chunked_req=chunked,
+        max_running_requests=32,
+    )
+    runtime.controller = SimpleNamespace(admission=SimpleNamespace(reserved_bytes=0))
+    runtime.config = SimpleNamespace(
+        kv_bytes_per_token=1,
+        admission_decode_quantum_tokens=16,
+    )
+    observation = RuntimeResourceObservation(
+        ts_ms=5.0,
+        hbm_capacity_bytes=1_000,
+        hbm_used_bytes=500,
+        host_capacity_bytes=1_000,
+        host_used_bytes=0,
+        host_free_bytes=1_000,
+    )
+    environment = runtime._predictive_beneficiary_probe_environment(observation)
+
+    chunked_probe = runtime._predictive_beneficiary_opportunity_probe(
+        ObservedSeedBeneficiaryHint(
+            "seed", "chunked", "invocation-a", "context-a", 0, 64, 32
+        ),
+        observation,
+        environment=environment,
+    )
+    other_probe = runtime._predictive_beneficiary_opportunity_probe(
+        ObservedSeedBeneficiaryHint(
+            "seed", "other", "invocation-b", "context-b", 0, 64, 32
+        ),
+        observation,
+        environment=environment,
+    )
+
+    assert chunked_probe.projected_running_growth_bytes == 16
+    assert other_probe.projected_running_growth_bytes == 96
 
 
 if __name__ == "__main__":

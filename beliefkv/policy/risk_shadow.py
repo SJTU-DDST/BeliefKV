@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from collections import Counter
+from collections import Counter, OrderedDict
 from dataclasses import dataclass, replace
 import hashlib
 import math
@@ -1307,8 +1307,10 @@ class PredictiveRiskShadowObserver:
                 minimum_future_feasibility_probability=0.95,
             )
         )
-        self._belief_cache_key: str | None = None
-        self._belief_cache: Any | None = None
+        self._belief_cache: OrderedDict[
+            str, tuple[tuple[Any, ...], ...]
+        ] = OrderedDict()
+        self._belief_cache_entries = 128
 
     @staticmethod
     def _belief_scope_seed_ids(
@@ -1559,12 +1561,11 @@ class PredictiveRiskShadowObserver:
             ).digest(),
             "big",
         )
-        belief_cache_hit = (
-            semantic_key == self._belief_cache_key
-            and self._belief_cache is not None
-        )
+        cached_particles = self._belief_cache.get(semantic_key)
+        belief_cache_hit = cached_particles is not None
         if belief_cache_hit:
-            particles = self._belief_cache
+            particles = cached_particles
+            self._belief_cache.move_to_end(semantic_key)
         else:
             try:
                 particles = self.composer.sample_particles(
@@ -1581,8 +1582,10 @@ class PredictiveRiskShadowObserver:
                     model_version=model_version,
                     reasons=(f"belief_compose_failed:{type(error).__name__}",),
                 )
-            self._belief_cache_key = semantic_key
-            self._belief_cache = particles
+            self._belief_cache[semantic_key] = particles
+            self._belief_cache.move_to_end(semantic_key)
+            while len(self._belief_cache) > self._belief_cache_entries:
+                self._belief_cache.popitem(last=False)
 
         projected_beliefs: dict[
             tuple[ScenarioProjection, str], Any
@@ -1685,6 +1688,14 @@ class PredictiveRiskShadowObserver:
         resolved_package_by_id: dict[str, PredictiveActionPackage] = {
             baseline.package_id: baseline
         }
+        baseline_by_projection: dict[
+            tuple[ScenarioProjection, str],
+            tuple[
+                PackageScenarioEvaluation,
+                Mapping[str, TimedScenario],
+                Mapping[str, TimedScenario],
+            ],
+        ] = {}
         for package in candidates:
             if cancel_check is not None and cancel_check():
                 return self._skipped(
@@ -1725,28 +1736,33 @@ class PredictiveRiskShadowObserver:
                     )
                 )
                 continue
-            try:
-                (
-                    baseline_evaluation,
-                    baseline_timelines,
-                    conservative_baseline_timelines,
-                ) = self._evaluate_package(
-                    candidate_belief,
-                    baseline,
-                    physicalizer,
-                    target_invocation_id,
-                    cancel_check=cancel_check,
-                )
-            except RuntimeError:
-                if cancel_check is None or not cancel_check():
-                    raise
-                return self._skipped(
-                    policy_input,
-                    source_plan,
-                    started_ns,
-                    model_version=model_version,
-                    reasons=("cancelled_superseded",),
-                )
+            baseline_key = (projection, package_invocation_id)
+            baseline_result = baseline_by_projection.get(baseline_key)
+            if baseline_result is None:
+                try:
+                    baseline_result = self._evaluate_package(
+                        candidate_belief,
+                        baseline,
+                        physicalizer,
+                        target_invocation_id,
+                        cancel_check=cancel_check,
+                    )
+                except RuntimeError:
+                    if cancel_check is None or not cancel_check():
+                        raise
+                    return self._skipped(
+                        policy_input,
+                        source_plan,
+                        started_ns,
+                        model_version=model_version,
+                        reasons=("cancelled_superseded",),
+                    )
+                baseline_by_projection[baseline_key] = baseline_result
+            (
+                baseline_evaluation,
+                baseline_timelines,
+                conservative_baseline_timelines,
+            ) = baseline_result
             try:
                 candidate_evaluation, _, _ = self._evaluate_package(
                     candidate_belief,
@@ -2385,8 +2401,12 @@ class PredictiveRiskShadowObserver:
             tuple(
                 (
                     invocation_id,
-                    repr(graph.invocation_snapshot(invocation_id)),
-                    repr(predictions[invocation_id].to_dict()),
+                    FrontierScenarioComposer._local_particle_key(
+                        graph,
+                        invocation_id,
+                        predictions[invocation_id],
+                        seed=0,
+                    )[2:],
                 )
                 for invocation_id in sorted(invocation_ids)
             ),

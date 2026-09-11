@@ -585,6 +585,16 @@ class _PredictiveOverlaySeedPlan:
 
 
 @dataclass(frozen=True)
+class _PredictiveBeneficiaryProbeEnvironment:
+    hbm_available_bytes: int
+    base_running_growth_bytes: int
+    chunked_extra_growth_bytes: int
+    chunked_request_id: str
+    running_request_count: int
+    max_running_requests: int
+
+
+@dataclass(frozen=True)
 class _OracleJointDirective:
     directive_id: str
     sequence: int
@@ -10174,6 +10184,7 @@ class EmbeddedSGLangRuntime:
         policy_snapshot_log = getattr(self, "policy_snapshot_log", None)
         policy_check_now_ms = float(self._now_ms())
         last_policy_check_ms = getattr(self, "_last_policy_check_ms", None)
+        policy_observation = None
         if (
             last_policy_check_ms is None
             or policy_check_now_ms - last_policy_check_ms
@@ -10184,9 +10195,8 @@ class EmbeddedSGLangRuntime:
                 policy_snapshot_log is not None
                 and policy_snapshot_log.enabled
             ) or getattr(self, "joint_shadow_worker", None) is not None:
-                self._maybe_record_policy_snapshot(
-                    self._runtime_resource_observation()
-                )
+                policy_observation = self._runtime_resource_observation()
+                self._maybe_record_policy_snapshot(policy_observation)
         restore_authority_mode = getattr(
             self, "_restore_authority_mode", RestoreAuthorityMode.NORMAL_JOINT
         )
@@ -10229,7 +10239,10 @@ class EmbeddedSGLangRuntime:
             joint_shadow_worker is not None
             and joint_shadow_worker.supports_incremental_delta
         ):
-            self._maybe_publish_observed_seed_hint_delta(joint_shadow_worker)
+            self._maybe_publish_observed_seed_hint_delta(
+                joint_shadow_worker,
+                observation=policy_observation,
+            )
         self._drive_restore_obligations(now_ms=float(self._now_ms()))
         self._advance_restore_authority(now_ms=float(self._now_ms()))
         restore_authority_mode = getattr(
@@ -16400,7 +16413,76 @@ class EmbeddedSGLangRuntime:
         self,
         hint: ObservedSeedBeneficiaryHint,
         observation: RuntimeResourceObservation,
+        *,
+        environment: _PredictiveBeneficiaryProbeEnvironment | None = None,
     ) -> BeneficiaryOpportunityProbe:
+        environment = environment or self._predictive_beneficiary_probe_environment(
+            observation
+        )
+        immediate_required_bytes = hint.startup_bytes + hint.growth_bytes
+        projected_running_growth_bytes = environment.base_running_growth_bytes
+        if (
+            environment.chunked_request_id
+            and environment.chunked_request_id != hint.request_id
+        ):
+            projected_running_growth_bytes += environment.chunked_extra_growth_bytes
+        projected_hbm_available_bytes = max(
+            0, environment.hbm_available_bytes - projected_running_growth_bytes
+        )
+        future_growth_bytes = max(
+            hint.growth_bytes,
+            hint.remaining_prefill_bytes + hint.predicted_output_bytes,
+        )
+        future_required_bytes = hint.startup_bytes + future_growth_bytes
+        beneficiary_hbm_blocked = (
+            immediate_required_bytes > environment.hbm_available_bytes
+        )
+        future_growth_deficit_bytes = max(
+            0, future_required_bytes - projected_hbm_available_bytes
+        )
+        predicted_block_time_ms = 0.0 if beneficiary_hbm_blocked else None
+        slot_blocked = bool(
+            environment.max_running_requests
+            and environment.running_request_count
+            >= environment.max_running_requests
+        )
+        hbm_opportunity_possible = future_growth_deficit_bytes > 0
+        return BeneficiaryOpportunityProbe(
+            beneficiary_request_id=hint.request_id,
+            beneficiary_context_id=hint.context_id,
+            beneficiary_context_epoch=hint.context_epoch,
+            required_bytes=immediate_required_bytes,
+            hbm_available_bytes=environment.hbm_available_bytes,
+            hbm_risk_margin_bytes=projected_running_growth_bytes,
+            projected_running_growth_bytes=projected_running_growth_bytes,
+            projected_hbm_available_bytes=projected_hbm_available_bytes,
+            predicted_block_time_ms=predicted_block_time_ms,
+            predicted_deficit_bytes=future_growth_deficit_bytes,
+            running_request_count=environment.running_request_count,
+            max_running_requests=environment.max_running_requests,
+            beneficiary_slot_blocked=slot_blocked,
+            beneficiary_hbm_blocked=beneficiary_hbm_blocked,
+            beneficiary_slot_then_hbm_blocked=(
+                slot_blocked and hbm_opportunity_possible
+            ),
+            hbm_opportunity_possible=hbm_opportunity_possible,
+            captured_ts_ms=observation.ts_ms,
+            immediate_admission_fit=not beneficiary_hbm_blocked,
+            future_growth_bytes=future_growth_bytes,
+            future_growth_deficit_bytes=future_growth_deficit_bytes,
+            block_time_source=(
+                "immediate_hbm"
+                if beneficiary_hbm_blocked
+                else "gpu_service_scenario"
+                if hbm_opportunity_possible
+                else "unavailable"
+            ),
+        )
+
+    def _predictive_beneficiary_probe_environment(
+        self,
+        observation: RuntimeResourceObservation,
+    ) -> _PredictiveBeneficiaryProbeEnvironment:
         running_batch = getattr(self.scheduler, "running_batch", None)
         running_requests = tuple(getattr(running_batch, "reqs", ()) or ())
         running_by_id = {
@@ -16415,7 +16497,6 @@ class EmbeddedSGLangRuntime:
             )
         running_ids = set(running_by_id)
         max_running = self._predictive_max_running_requests()
-        immediate_required_bytes = hint.startup_bytes + hint.growth_bytes
         hbm_available_bytes = max(
             0,
             observation.hbm_capacity_bytes
@@ -16455,11 +16536,11 @@ class EmbeddedSGLangRuntime:
         chunked_id = (
             str(getattr(chunked, "rid", "")) if chunked is not None else ""
         )
-        if (
-            chunked is not None
-            and chunked_id != hint.request_id
-            and chunked_id not in runnable_by_request
-        ):
+        projected_running_growth_bytes = (
+            projected_running_growth_tokens * kv_bytes_per_token
+        )
+        chunked_extra_growth_bytes = 0
+        if chunked is not None and chunked_id not in runnable_by_request:
             fill_tokens = max(
                 _sequence_length(getattr(chunked, "fill_ids", None)),
                 _sequence_length(getattr(chunked, "origin_input_ids", None))
@@ -16468,57 +16549,16 @@ class EmbeddedSGLangRuntime:
             prefix_tokens = _sequence_length(
                 getattr(chunked, "prefix_indices", None)
             )
-            projected_running_growth_tokens += max(0, fill_tokens - prefix_tokens)
-        projected_running_growth_bytes = (
-            projected_running_growth_tokens * kv_bytes_per_token
-        )
-        projected_hbm_available_bytes = max(
-            0, hbm_available_bytes - projected_running_growth_bytes
-        )
-        future_growth_bytes = max(
-            hint.growth_bytes,
-            hint.remaining_prefill_bytes + hint.predicted_output_bytes,
-        )
-        future_required_bytes = hint.startup_bytes + future_growth_bytes
-        beneficiary_hbm_blocked = immediate_required_bytes > hbm_available_bytes
-        future_growth_deficit_bytes = max(
-            0, future_required_bytes - projected_hbm_available_bytes
-        )
-        predicted_block_time_ms = (
-            0.0 if beneficiary_hbm_blocked else None
-        )
-        slot_blocked = bool(max_running and len(running_ids) >= max_running)
-        hbm_opportunity_possible = future_growth_deficit_bytes > 0
-        return BeneficiaryOpportunityProbe(
-            beneficiary_request_id=hint.request_id,
-            beneficiary_context_id=hint.context_id,
-            beneficiary_context_epoch=hint.context_epoch,
-            required_bytes=immediate_required_bytes,
+            chunked_extra_growth_bytes = (
+                max(0, fill_tokens - prefix_tokens) * kv_bytes_per_token
+            )
+        return _PredictiveBeneficiaryProbeEnvironment(
             hbm_available_bytes=hbm_available_bytes,
-            hbm_risk_margin_bytes=projected_running_growth_bytes,
-            projected_running_growth_bytes=projected_running_growth_bytes,
-            projected_hbm_available_bytes=projected_hbm_available_bytes,
-            predicted_block_time_ms=predicted_block_time_ms,
-            predicted_deficit_bytes=future_growth_deficit_bytes,
+            base_running_growth_bytes=projected_running_growth_bytes,
+            chunked_extra_growth_bytes=chunked_extra_growth_bytes,
+            chunked_request_id=chunked_id,
             running_request_count=len(running_ids),
             max_running_requests=max_running,
-            beneficiary_slot_blocked=slot_blocked,
-            beneficiary_hbm_blocked=beneficiary_hbm_blocked,
-            beneficiary_slot_then_hbm_blocked=(
-                slot_blocked and hbm_opportunity_possible
-            ),
-            hbm_opportunity_possible=hbm_opportunity_possible,
-            captured_ts_ms=observation.ts_ms,
-            immediate_admission_fit=not beneficiary_hbm_blocked,
-            future_growth_bytes=future_growth_bytes,
-            future_growth_deficit_bytes=future_growth_deficit_bytes,
-            block_time_source=(
-                "immediate_hbm"
-                if beneficiary_hbm_blocked
-                else "gpu_service_scenario"
-                if hbm_opportunity_possible
-                else "unavailable"
-            ),
         )
 
     def _capture_action_local_physical_overlay_batch(
@@ -16712,17 +16752,28 @@ class EmbeddedSGLangRuntime:
     def _maybe_publish_observed_seed_hint_delta(
         self,
         worker: LatestWinsJointPlanWorker,
+        *,
+        observation: RuntimeResourceObservation | None = None,
     ) -> bool:
         publication_started_ns = time.perf_counter_ns()
-        observation = self._runtime_resource_observation()
+        observation = observation or self._runtime_resource_observation()
         candidates = tuple(
             getattr(self, "_latest_observed_seed_beneficiary_candidates", ())
         )
         if not candidates:
             current = getattr(self, "_latest_observed_seed_beneficiary", None)
             candidates = (current,) if current is not None else ()
+        probe_environment = (
+            self._predictive_beneficiary_probe_environment(observation)
+            if candidates
+            else None
+        )
         candidate_probes = tuple(
-            self._predictive_beneficiary_opportunity_probe(item, observation)
+            self._predictive_beneficiary_opportunity_probe(
+                item,
+                observation,
+                environment=probe_environment,
+            )
             for item in candidates[:4]
         )
         selected_rank = next(
