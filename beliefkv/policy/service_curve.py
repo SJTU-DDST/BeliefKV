@@ -110,6 +110,7 @@ class TransferServiceCurve:
         self.warm_start_min_samples: int | None = None
         self.warm_start_hardware_key: str | None = None
         self.warm_start_metadata: dict[str, object] = {}
+        self._estimate_cache: dict[tuple[object, ...], ServiceCurveEstimate] = {}
 
     @staticmethod
     def size_bucket(size_bytes: int) -> int:
@@ -147,6 +148,7 @@ class TransferServiceCurve:
         )
 
     def observe(self, telemetry: TransferTelemetry) -> None:
+        self._estimate_cache.clear()
         start = telemetry.start_ts_ms
         completed = telemetry.status == CommandStatus.COMPLETED
         key = self._key(
@@ -342,6 +344,7 @@ class TransferServiceCurve:
         self.warm_start_metadata = (
             dict(payload.get("metadata") or {}) if schema_version >= 2 else {}
         )
+        self._estimate_cache.clear()
         return loaded
 
     def estimate(
@@ -358,6 +361,19 @@ class TransferServiceCurve:
     ) -> ServiceCurveEstimate:
         if min(size_bytes, page_count, native_concurrent_bytes) < 0:
             raise ValueError("transfer demand must be non-negative")
+        cache_key = (
+            direction,
+            size_bytes,
+            compute_phase,
+            page_count,
+            command_kind,
+            host_copy_state,
+            pinned_host,
+            native_concurrent_bytes,
+        )
+        cached = self._estimate_cache.get(cache_key)
+        if cached is not None:
+            return cached
         key = self._key(
             direction,
             size_bytes,
@@ -403,7 +419,9 @@ class TransferServiceCurve:
                 outcomes = neighboring_outcomes
                 source = "bounded_neighboring_shape_extrapolation"
             else:
-                return self._fallback_estimate(direction, size_bytes)
+                result = self._fallback_estimate(direction, size_bytes)
+                self._estimate_cache[cache_key] = result
+                return result
 
         setup_values = [item.setup_ms for item in samples if item.setup_ms is not None]
         rates = [
@@ -434,7 +452,7 @@ class TransferServiceCurve:
             for item in samples
             if item.compute_wait_ms is not None
         ]
-        return ServiceCurveEstimate(
+        result = ServiceCurveEstimate(
             direction=direction,
             size_bytes=size_bytes,
             estimated_callback_ms=callback_ms,
@@ -460,6 +478,8 @@ class TransferServiceCurve:
                 percentile(compute_wait, 90) if compute_wait else None
             ),
         )
+        self._estimate_cache[cache_key] = result
+        return result
 
     def _neighboring_shape_samples(
         self,

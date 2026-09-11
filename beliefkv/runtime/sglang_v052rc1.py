@@ -575,6 +575,7 @@ class _PredictiveResidencyCommit:
     preview: PhysicalBundlePreview
     live_shape_fingerprint: str
     live_extent_count: int
+    audit_fields: Mapping[str, Any]
 
 
 @dataclass(frozen=True)
@@ -19503,6 +19504,7 @@ class EmbeddedSGLangRuntime:
                 and self._latest_predictive_intent is not None
             ):
                 predictive_started_ns = time.perf_counter_ns()
+                predictive_cpu_started_ns = time.thread_time_ns()
                 try:
                     decision = self._physical_commit_predictive_intent(
                         result.plan,
@@ -19530,27 +19532,29 @@ class EmbeddedSGLangRuntime:
                 predictive_commit_ms = (
                     time.perf_counter_ns() - predictive_started_ns
                 ) / 1_000_000.0
+                predictive_commit_cpu_ms = (
+                    time.thread_time_ns() - predictive_cpu_started_ns
+                ) / 1_000_000.0
+                self._joint_shadow_timing_samples.setdefault(
+                    "predictive_safe_point_commit_cpu_ms",
+                    deque(maxlen=65_536),
+                ).append(predictive_commit_cpu_ms)
+                materialized = (
+                    self._current_predictive_residency_commit is not None
+                )
                 if (
-                    predictive_commit_ms
-                    > self.config.joint_physical_action_commit_budget_ms
-                    and self._current_predictive_residency_commit is not None
-                ):
-                    self._current_predictive_residency_commit = None
-                    self._latest_predictive_intent = None
-                    decision = observed_decision
-                    self._joint_predictive_counts[
-                        "safe_point_budget_fallback"
-                    ] += 1
-                    self.audit.emit(
-                        "predictive_safe_point_fallback",
-                        now_ms,
-                        plan_id=result.plan.plan_id,
-                        elapsed_ms=predictive_commit_ms,
-                        budget_ms=self.config.joint_physical_action_commit_budget_ms,
-                        fallback="observed_joint_plan",
+                    materialized
+                    and not self._finalize_predictive_safe_point_commit(
+                        now_ms=now_ms,
+                        wall_ms=predictive_commit_ms,
+                        cpu_ms=predictive_commit_cpu_ms,
+                        counter_prefix="safe_point",
                     )
+                ):
+                    decision = observed_decision
                 elif (
-                    predictive_commit_ms
+                    not materialized
+                    and predictive_commit_ms
                     > self.config.joint_physical_action_commit_budget_ms
                 ):
                     self._joint_predictive_counts[
@@ -20612,53 +20616,110 @@ class EmbeddedSGLangRuntime:
                 live_shape_fingerprint or "not_applicable"
             ),
             live_extent_count=len(preview.page_actions),
+            audit_fields={
+                "plan_id": plan.plan_id,
+                "intent_id": intent.intent_id,
+                "source_predictive_joint_plan_id": (
+                    source_prediction_joint_plan_id
+                ),
+                "source_joint_plan_id": plan.plan_id,
+                "action": intent.action.value,
+                "context_id": intent.context_id,
+                "context_epoch": intent.context_epoch,
+                "physical_bundle_id": preview.bundle.bundle_id,
+                "physical_closure_bytes": preview.bundle.closure_bytes,
+                "copy_bytes": preview.copy_bytes,
+                "age_ms": age_ms,
+                "remaining_window_low_ms": remaining_ms,
+                "intent_transfer_p95_ms": intent.transfer_p95_ms,
+                "safe_point_transfer_bound_ms": effective_transfer_ms,
+                "predicted_extent_count": intent.predicted_extent_count,
+                "live_extent_count": len(preview.page_actions),
+                "predicted_shape_fingerprint": intent.shape_fingerprint,
+                "live_shape_fingerprint": live_shape_fingerprint,
+                "live_shape_changed": live_shape_changed,
+                "maximum_transfer_ms": intent.maximum_transfer_ms,
+                "maximum_stall_ms": intent.maximum_stall_ms,
+                "live_transfer_p90_ms": (
+                    current_transfer.estimated_completion_p90_ms
+                    if current_transfer is not None
+                    else None
+                ),
+                "live_stall_p90_ms": (
+                    current_stall
+                    if current_transfer is not None
+                    and intent.action == PredictiveActionKind.PREPARE_HOST
+                    else None
+                ),
+                "live_stall_source": live_stall_source,
+                "live_morphology_slack_ms": live_morphology_slack_ms,
+                "native_hicache_inflight_bytes": native_inflight_bytes,
+                "transfer_model": "extent_count_aware",
+                "live_transfer_source": (
+                    current_transfer.source
+                    if current_transfer is not None
+                    else None
+                ),
+            },
         )
+        self._joint_predictive_counts["semantic_intent_materialized"] += 1
+        return OnlineJointPlanDecision(decision.view, decision.reason, epoch)
+
+    def _finalize_predictive_safe_point_commit(
+        self,
+        *,
+        now_ms: float,
+        wall_ms: float,
+        cpu_ms: float,
+        counter_prefix: str,
+    ) -> bool:
+        """Accept a materialized action only within CPU and timing bounds."""
+
+        committed = getattr(self, "_current_predictive_residency_commit", None)
+        if committed is None:
+            return False
+        budget_ms = self.config.joint_physical_action_commit_budget_ms
+        completed_ms = now_ms + wall_ms
+        reason = None
+        if cpu_ms > budget_ms:
+            reason = "cpu_budget_exceeded"
+        elif completed_ms >= committed.target.deadline_ms:
+            reason = "latest_start_expired_during_commit"
+        if reason is not None:
+            self._current_predictive_residency_commit = None
+            self._latest_predictive_intent = None
+            self._joint_predictive_counts[
+                f"{counter_prefix}_budget_fallback"
+            ] += 1
+            self._joint_predictive_counts[f"{counter_prefix}_{reason}"] += 1
+            self.audit.emit(
+                "predictive_safe_point_fallback",
+                completed_ms,
+                audit_level="correctness",
+                plan_id=committed.plan_id,
+                intent_id=committed.intent.intent_id,
+                reason=reason,
+                wall_ms=wall_ms,
+                cpu_ms=cpu_ms,
+                budget_ms=budget_ms,
+                fallback="observed_joint_plan",
+            )
+            return False
+        if wall_ms > budget_ms:
+            self._joint_predictive_counts[
+                f"{counter_prefix}_wall_budget_exceeded_accepted"
+            ] += 1
         self._joint_predictive_counts["semantic_intent_committed"] += 1
         self.audit.emit(
             "predictive_semantic_intent_committed",
-            now_ms,
+            completed_ms,
             audit_level="correctness",
-            plan_id=plan.plan_id,
-            intent_id=intent.intent_id,
-            source_predictive_joint_plan_id=source_prediction_joint_plan_id,
-            source_joint_plan_id=plan.plan_id,
-            action=intent.action.value,
-            context_id=intent.context_id,
-            context_epoch=intent.context_epoch,
-            physical_bundle_id=preview.bundle.bundle_id,
-            physical_closure_bytes=preview.bundle.closure_bytes,
-            copy_bytes=preview.copy_bytes,
-            age_ms=age_ms,
-            remaining_window_low_ms=remaining_ms,
-            intent_transfer_p95_ms=intent.transfer_p95_ms,
-            safe_point_transfer_bound_ms=effective_transfer_ms,
-            predicted_extent_count=intent.predicted_extent_count,
-            live_extent_count=len(preview.page_actions),
-            predicted_shape_fingerprint=intent.shape_fingerprint,
-            live_shape_fingerprint=live_shape_fingerprint,
-            live_shape_changed=live_shape_changed,
-            maximum_transfer_ms=intent.maximum_transfer_ms,
-            maximum_stall_ms=intent.maximum_stall_ms,
-            live_transfer_p90_ms=(
-                current_transfer.estimated_completion_p90_ms
-                if current_transfer is not None
-                else None
-            ),
-            live_stall_p90_ms=(
-                current_stall
-                if current_transfer is not None
-                and intent.action == PredictiveActionKind.PREPARE_HOST
-                else None
-            ),
-            live_stall_source=live_stall_source,
-            live_morphology_slack_ms=live_morphology_slack_ms,
-            native_hicache_inflight_bytes=native_inflight_bytes,
-            transfer_model="extent_count_aware",
-            live_transfer_source=(
-                current_transfer.source if current_transfer is not None else None
-            ),
+            **committed.audit_fields,
+            validation_wall_ms=wall_ms,
+            validation_cpu_ms=cpu_ms,
+            validation_completed_ts_ms=completed_ms,
         )
-        return OnlineJointPlanDecision(decision.view, decision.reason, epoch)
+        return True
 
     def _safe_point_seed_decision(
         self, *, now_ms: float
@@ -20784,6 +20845,7 @@ class EmbeddedSGLangRuntime:
         ):
             observed_decision = decision
             predictive_started_ns = time.perf_counter_ns()
+            predictive_cpu_started_ns = time.thread_time_ns()
             try:
                 decision = self._physical_commit_predictive_intent(
                     _PredictiveOverlaySeedPlan(decision.view.plan_id),
@@ -20809,20 +20871,27 @@ class EmbeddedSGLangRuntime:
             elapsed_ms = (
                 time.perf_counter_ns() - predictive_started_ns
             ) / 1_000_000.0
+            cpu_ms = (
+                time.thread_time_ns() - predictive_cpu_started_ns
+            ) / 1_000_000.0
             self._joint_shadow_timing_samples.setdefault(
                 "predictive_safe_point_commit_ms", deque(maxlen=65_536)
             ).append(elapsed_ms)
-            if (
-                elapsed_ms > self.config.joint_physical_action_commit_budget_ms
-                and self._current_predictive_residency_commit is not None
+            self._joint_shadow_timing_samples.setdefault(
+                "predictive_safe_point_commit_cpu_ms", deque(maxlen=65_536)
+            ).append(cpu_ms)
+            materialized = self._current_predictive_residency_commit is not None
+            if materialized and not self._finalize_predictive_safe_point_commit(
+                now_ms=now_ms,
+                wall_ms=elapsed_ms,
+                cpu_ms=cpu_ms,
+                counter_prefix="seed_safe_point",
             ):
-                self._current_predictive_residency_commit = None
-                self._latest_predictive_intent = None
                 decision = observed_decision
-                self._joint_predictive_counts[
-                    "seed_safe_point_budget_fallback"
-                ] += 1
-            elif elapsed_ms > self.config.joint_physical_action_commit_budget_ms:
+            elif (
+                not materialized
+                and elapsed_ms > self.config.joint_physical_action_commit_budget_ms
+            ):
                 self._joint_predictive_counts[
                     "seed_safe_point_rejection_budget_exceeded"
                 ] += 1

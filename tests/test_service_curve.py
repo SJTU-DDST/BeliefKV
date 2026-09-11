@@ -123,6 +123,23 @@ class TransferServiceCurveTest(unittest.TestCase):
         ) / len(actual)
         self.assertLessEqual(underestimation_rate, 0.1)
 
+    def test_estimate_cache_is_reused_and_invalidated_by_observation(self):
+        curve = TransferServiceCurve(PCIeCostModel(), min_samples=2)
+        curve.observe(telemetry(1, duration_ms=10))
+        curve.observe(telemetry(2, duration_ms=11))
+
+        first = curve.estimate(TransferDirection.D2H, 1000, page_count=1)
+        cached = curve.estimate(TransferDirection.D2H, 1000, page_count=1)
+
+        self.assertIs(cached, first)
+        curve.observe(telemetry(3, duration_ms=100))
+        refreshed = curve.estimate(TransferDirection.D2H, 1000, page_count=1)
+        self.assertIsNot(refreshed, first)
+        self.assertGreater(
+            refreshed.estimated_completion_p90_ms,
+            first.estimated_completion_p90_ms,
+        )
+
     def test_rejections_are_counted_but_not_used_as_bandwidth_samples(self):
         curve = TransferServiceCurve(PCIeCostModel(), min_samples=2)
         curve.observe(telemetry(1, duration_ms=10))

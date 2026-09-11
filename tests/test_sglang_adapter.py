@@ -6231,6 +6231,14 @@ class SGLangBackendTest(unittest.TestCase):
         self.assertEqual(group.resource_certificate.required_host_bytes, 300)
         self.assertTrue(group.resource_certificate.finite_future_risk_bound)
         self.assertTrue(
+            runtime._finalize_predictive_safe_point_commit(
+                now_ms=110.0,
+                wall_ms=0.5,
+                cpu_ms=0.4,
+                counter_prefix="test_safe_point",
+            )
+        )
+        self.assertTrue(
             runtime._queue_predictive_joint_residency(
                 plan.plan_id,
                 now_ms=111.0,
@@ -6351,6 +6359,93 @@ class SGLangBackendTest(unittest.TestCase):
         self.assertIn(
             "beneficiary_reactive_requirement_active",
             rejection["reasons"],
+        )
+
+    def test_predictive_commit_budget_uses_cpu_and_latest_start(self):
+        runtime = EmbeddedSGLangRuntime.__new__(EmbeddedSGLangRuntime)
+        runtime.config = SimpleNamespace(
+            joint_physical_action_commit_budget_ms=5.0
+        )
+        runtime.audit = _AuditRecorder()
+        runtime._joint_predictive_counts = Counter()
+        intent = SimpleNamespace(intent_id="intent")
+        runtime._latest_predictive_intent = intent
+        runtime._current_predictive_residency_commit = SimpleNamespace(
+            plan_id="plan",
+            intent=intent,
+            target=SimpleNamespace(deadline_ms=200.0),
+            audit_fields={
+                "plan_id": "plan",
+                "intent_id": "intent",
+                "action": "prepare_host",
+            },
+        )
+
+        self.assertTrue(
+            runtime._finalize_predictive_safe_point_commit(
+                now_ms=100.0,
+                wall_ms=12.0,
+                cpu_ms=1.0,
+                counter_prefix="seed_safe_point",
+            )
+        )
+        self.assertEqual(
+            runtime._joint_predictive_counts[
+                "seed_safe_point_wall_budget_exceeded_accepted"
+            ],
+            1,
+        )
+        committed = [
+            fields
+            for event, _, fields in runtime.audit.events
+            if event == "predictive_semantic_intent_committed"
+        ]
+        self.assertEqual(committed[-1]["validation_wall_ms"], 12.0)
+        self.assertEqual(committed[-1]["validation_cpu_ms"], 1.0)
+
+        runtime._current_predictive_residency_commit = SimpleNamespace(
+            plan_id="plan-2",
+            intent=intent,
+            target=SimpleNamespace(deadline_ms=200.0),
+            audit_fields={},
+        )
+        self.assertFalse(
+            runtime._finalize_predictive_safe_point_commit(
+                now_ms=120.0,
+                wall_ms=2.0,
+                cpu_ms=6.0,
+                counter_prefix="seed_safe_point",
+            )
+        )
+        self.assertIsNone(runtime._current_predictive_residency_commit)
+        self.assertIsNone(runtime._latest_predictive_intent)
+        self.assertEqual(
+            runtime._joint_predictive_counts[
+                "seed_safe_point_cpu_budget_exceeded"
+            ],
+            1,
+        )
+
+        runtime._latest_predictive_intent = intent
+        runtime._current_predictive_residency_commit = SimpleNamespace(
+            plan_id="plan-3",
+            intent=intent,
+            target=SimpleNamespace(deadline_ms=130.0),
+            audit_fields={},
+        )
+        self.assertFalse(
+            runtime._finalize_predictive_safe_point_commit(
+                now_ms=120.0,
+                wall_ms=10.0,
+                cpu_ms=1.0,
+                counter_prefix="seed_safe_point",
+            )
+        )
+        self.assertEqual(
+            runtime._joint_predictive_counts[
+                "seed_safe_point_latest_start_expired_during_commit"
+            ],
+            1,
         )
 
     def test_semantic_replacement_binds_reclaim_to_visible_beneficiary(self):

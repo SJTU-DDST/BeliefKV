@@ -2,6 +2,23 @@
 
 更新日期：2026-09-11
 
+## 2026-09-11：Bounded Commit 降至 19 ms P95，修正后验预算语义
+
+第二次 64-root H200 单笔 PREPARE gate 使用实验后 bounded rematerialization 代码，完成
+84 次 risk evaluation，产生 35 个 selected PREPARE 和 42 个及时 fresh-positive。物理
+commit P50/P95/P99 从上一轮的 93.02/244.78/671.32 ms 降至
+11.19/19.03/20.59 ms；safe-point capture 为 0.227/0.664/1.004 ms，worker 无
+failure、drop、pending，shutdown 无遗留事务。
+
+旧实现仍以 5 ms wall-clock 作为事后回滚条件，20 个已成功物化的动作全部被回滚，因而
+没有 command 入队。该语义不能收回已经花费的 scheduler 延迟，还把回滚动作提前记录为
+`predictive_semantic_intent_committed`。当前已改为线程 CPU 预算加 latest-start：CPU 超过
+5 ms 或完成时已错过 deadline 才 fail closed；wall 超限但仍及时的动作单独计数。重复的
+shape-aware transfer estimate 已缓存，live RCCG communication read-set 改为直接索引。
+下一次短 gate 将同时报告 validation wall/CPU time，并以一笔完整 D2H 事务链为停止条件。
+完整记录见
+`docs/experiments/beliefkv_p6_prepare_canary_bounded_commit_gpu_gate_2026-09-11_zh.md`。
+
 ## 2026-09-11：PREPARE 价值门槛通过，物理提交门槛未通过
 
 单笔 PREPARE canary 配置下，64-root H200 高压运行完成 157 次在线 risk evaluation，

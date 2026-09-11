@@ -1176,16 +1176,19 @@ def validate_predictive_causal_certificate(
         ):
             reasons.append(f"join_revision:{join_id}")
     raw_edges = read(state, "communication_edges", ())
-    edge_values = (
-        raw_edges.values() if isinstance(raw_edges, Mapping) else raw_edges
-    )
-    current_edges = {
-        (
-            str(read(item, "source_invocation_id")),
-            str(read(item, "target_invocation_id")),
-        ): item
-        for item in edge_values
-    }
+    if isinstance(state, RuntimeCausalContextGraph):
+        current_edges = state.communication_edges
+    else:
+        edge_values = (
+            raw_edges.values() if isinstance(raw_edges, Mapping) else raw_edges
+        )
+        current_edges = {
+            (
+                str(read(item, "source_invocation_id")),
+                str(read(item, "target_invocation_id")),
+            ): item
+            for item in edge_values
+        }
     for item in raw.get("communication_evidence", ()):
         if not isinstance(item, (list, tuple)) or len(item) != 4:
             reasons.append("invalid_communication_readset")
