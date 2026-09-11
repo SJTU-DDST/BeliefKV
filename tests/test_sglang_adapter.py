@@ -615,15 +615,8 @@ def test_bounded_seed_hint_change_publishes_one_lightweight_risk_delta():
         created_ts_ms=6.0,
         published_ts_ms=None,
     )
-    assert runtime._maybe_publish_observed_seed_hint_delta(worker)
-    assert len(submitted) == 2
-    assert not submitted[1].risk_evaluation_requested
-    assert submitted[1].trigger == "semantic_delta+bounded_seed_hint_refreshed"
-    assert not submitted[1].action_local_overlay_replaced
-
-    combined = coalesce_joint_shadow_deltas((submitted[0], submitted[1]))
-    assert combined.action_local_overlay_replaced
-    assert combined.action_local_overlay_batch is submitted[0].action_local_overlay_batch
+    assert not runtime._maybe_publish_observed_seed_hint_delta(worker)
+    assert len(submitted) == 1
 
     runtime._latest_observed_seed_beneficiary = replace(
         runtime._latest_observed_seed_beneficiary,
@@ -633,20 +626,23 @@ def test_bounded_seed_hint_change_publishes_one_lightweight_risk_delta():
         published_ts_ms=None,
     )
     assert runtime._maybe_publish_observed_seed_hint_delta(worker)
-    assert len(submitted) == 3
-    assert submitted[2].risk_evaluation_requested
-    assert submitted[2].action_local_overlay_replaced
+    assert len(submitted) == 2
+    assert submitted[1].risk_evaluation_requested
+    assert submitted[1].action_local_overlay_replaced
+
+    combined = coalesce_joint_shadow_deltas((submitted[0], submitted[1]))
+    assert combined.action_local_overlay_replaced
+    assert combined.action_local_overlay_batch is submitted[1].action_local_overlay_batch
 
     runtime._latest_observed_seed_beneficiary = None
     assert runtime._maybe_publish_observed_seed_hint_delta(worker)
-    assert len(submitted) == 4
-    assert not submitted[3].risk_evaluation_requested
-    assert submitted[3].observed_seed_beneficiary is None
-    assert submitted[3].action_local_overlay_replaced
+    assert len(submitted) == 3
+    assert not submitted[2].risk_evaluation_requested
+    assert submitted[2].observed_seed_beneficiary is None
+    assert submitted[2].action_local_overlay_replaced
     assert runtime._joint_predictive_counts == Counter(
         {
             "hint_risk_published": 2,
-            "hint_refresh_published": 1,
             "hint_clear_published": 1,
             "beneficiary_opportunity:hbm_blocked": 2,
             "overlay_victim_count": 2,
@@ -1139,7 +1135,9 @@ def _predictive_beneficiary_evidence():
         "beneficiary_growth_bytes": 50,
         "predicted_block_time_ms": 500.0,
         "predicted_deficit_bytes": 50,
-        "causal_package_generation": "source-plan:c0",
+        "causal_package_generation": (
+            "request-beneficiary:ctx-beneficiary:c0:50:50"
+        ),
     }
 
 
@@ -6205,6 +6203,10 @@ class SGLangBackendTest(unittest.TestCase):
 
         self.assertIsNotNone(runtime._current_predictive_residency_commit)
         self.assertEqual(
+            runtime._current_predictive_residency_commit.intent.source_joint_plan_id,
+            plan.plan_id,
+        )
+        self.assertEqual(
             committed.epoch.action_slices[-1].kind,
             "predictive_residency",
         )
@@ -6275,7 +6277,9 @@ class SGLangBackendTest(unittest.TestCase):
         runtime._latest_predictive_intent = replace(
             original_intent,
             intent_id="intent-stale-generation",
-            causal_package_generation="source-plan:c1",
+            causal_package_generation=(
+                "request-beneficiary:ctx-beneficiary:c0:50:51"
+            ),
         )
         runtime._physical_commit_predictive_intent(
             plan,

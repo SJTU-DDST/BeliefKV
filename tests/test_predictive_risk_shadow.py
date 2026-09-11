@@ -281,7 +281,11 @@ def test_projected_reclaim_prefers_current_bounded_seed_hint() -> None:
     )
 
     assert requirement is not None
-    assert requirement.source_joint_plan_id == "bounded-seed-current"
+    assert requirement.source_joint_plan_id == source_plan.plan_id
+    assert requirement.causal_package_generation == (
+        f"{beneficiary.request_id}:{beneficiary.context_id}:"
+        f"c{beneficiary.context_epoch}:64:128"
+    )
     assert requirement.beneficiary_request_id == beneficiary.request_id
     assert requirement.predicted_block_time_ms == 750.0
     assert requirement.predicted_deficit_bytes == 96

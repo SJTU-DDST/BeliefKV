@@ -1038,6 +1038,94 @@ def test_action_projected_reduction_preserves_mass_and_conservative_envelope() -
         )
 
 
+def test_composer_reuses_unchanged_invocation_particles() -> None:
+    graph = RuntimeCausalContextGraph()
+    sequence = 0
+
+    def emit(kind: RuntimeEventKind, **kwargs) -> None:
+        nonlocal sequence
+        sequence += 1
+        graph.apply(
+            RuntimeEvent(
+                event_id=f"cache-{sequence}",
+                ts_ms=float(sequence),
+                kind=kind,
+                workflow_id="workflow",
+                **kwargs,
+            )
+        )
+
+    emit(RuntimeEventKind.WORKFLOW_START)
+    emit(
+        RuntimeEventKind.INVOCATION_CREATE,
+        invocation_id="parent",
+        context_id="parent-context",
+    )
+    emit(
+        RuntimeEventKind.INVOCATION_CREATE,
+        invocation_id="child",
+        context_id="child-context",
+    )
+    emit(
+        RuntimeEventKind.CALL,
+        invocation_id="parent",
+        target_invocation_id="child",
+    )
+    scope = BeliefScopeBuilder().build(graph, ("parent", "child"))
+    predictions = {
+        "parent": _fixed_prediction("parent", 0),
+        "child": _fixed_prediction("child", 25),
+    }
+    composer = FrontierScenarioComposer(particle_count=16, top_k=4)
+
+    first = composer.sample_particles(
+        graph=graph,
+        scope=scope,
+        local_predictions=predictions,
+        seed=17,
+    )
+    assert composer.local_particle_cache_stats() == (0, 2, 2)
+
+    repeated = composer.sample_particles(
+        graph=graph,
+        scope=scope,
+        local_predictions=predictions,
+        seed=17,
+    )
+    assert repeated == first
+    assert composer.local_particle_cache_stats() == (2, 2, 2)
+
+    changed_predictions = {
+        **predictions,
+        "child": _fixed_prediction("child", 50),
+    }
+    changed = composer.sample_particles(
+        graph=graph,
+        scope=scope,
+        local_predictions=changed_predictions,
+        seed=17,
+    )
+    assert composer.local_particle_cache_stats() == (3, 3, 3)
+    before_by_particle = tuple(
+        {item.invocation_id: item for item in outcomes} for outcomes in first
+    )
+    after_by_particle = tuple(
+        {item.invocation_id: item for item in outcomes} for outcomes in changed
+    )
+    assert all(
+        before["parent"] == after["parent"]
+        for before, after in zip(
+            before_by_particle, after_by_particle, strict=True
+        )
+    )
+    assert any(
+        before["child"] != after["child"]
+        for before, after in zip(
+            before_by_particle, after_by_particle, strict=True
+        )
+    )
+
+
 def test_composer_applies_blocking_child_and_message_dependencies() -> None:
     graph = RuntimeCausalContextGraph()
     sequence = 0

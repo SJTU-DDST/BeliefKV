@@ -22,8 +22,10 @@ from beliefkv.runtime.joint_shadow import (
     ActionLocalPhysicalOverlayBatch,
     IncrementalPolicyInputAssembler,
     JointShadowDelta,
+    JointShadowResult,
     JointShadowStateStamp,
     LatestWinsJointPlanWorker,
+    LatestWinsPredictiveRiskProcessWorker,
     LatestWinsPredictiveRiskWorker,
     ObservedSeedBeneficiaryHint,
     WorkflowFairnessReplica,
@@ -227,6 +229,86 @@ class _RecordingRiskObserver:
     def evaluate(self, policy_input, *, source_plan, **_kwargs):
         self.calls.append((policy_input.snapshot_id, id(source_plan)))
         return SimpleNamespace(selected_action=self.selected_action)
+
+
+def test_predictive_process_worker_round_trips_candidate_input() -> None:
+    policy_input = _policy_input()
+    graph_controller = BeliefKVController(
+        BeliefKVConfig(
+            hbm_capacity_bytes=1_000,
+            host_capacity_bytes=1_000,
+            reserve_hbm_bytes=0,
+            predictor_enabled=False,
+            shadow_enabled=False,
+        )
+    )
+    graph_controller.process_runtime_events(
+        (
+            _event(1, RuntimeEventKind.WORKFLOW_START),
+            _event(
+                2,
+                RuntimeEventKind.INVOCATION_CREATE,
+                invocation_id="root",
+                context_id="ctx",
+                context_epoch=0,
+            ),
+        )
+    )
+    policy_input = replace(
+        policy_input,
+        runtime_graph=replace(
+            policy_input.runtime_graph,
+            graph_version=graph_controller.graph.graph_version,
+            state=graph_controller.graph.snapshot(),
+        ),
+    )
+    plan = ObservedJointPlanner().plan(policy_input)
+    observed_result = JointShadowResult(
+        sequence=1,
+        snapshot_id=policy_input.snapshot_id,
+        submitted_monotonic_ms=1.0,
+        started_monotonic_ms=1.0,
+        completed_monotonic_ms=1.0,
+        plan=plan,
+        error=None,
+        policy_input=policy_input,
+        state_stamp=JointShadowStateStamp(
+            graph_version=policy_input.runtime_graph.graph_version,
+            consumer_version=0,
+            event_sequence=0,
+            page_revision=policy_input.physical_kv.allocator_version,
+            topology_revision=policy_input.physical_kv.topology_version,
+            fairness_revision=0,
+            transfer_epoch=0,
+            runnable_signature=(),
+            hbm_used_bytes=policy_input.resources.hbm_used_bytes,
+            host_free_bytes=policy_input.resources.host_free_bytes,
+        ),
+    )
+    worker = LatestWinsPredictiveRiskProcessWorker(
+        _RecordingRiskObserver(selected_action="prepare_host")
+    )
+    submission = worker.submit(observed_result)
+    result = None
+    for _ in range(500):
+        result = worker.latest(after_sequence=submission.sequence - 1)
+        if result is not None:
+            break
+        threading.Event().wait(0.01)
+
+    assert result is not None
+    assert result.error is None
+    assert result.shadow is not None
+    assert result.shadow.selected_action == "prepare_host"
+    assert result.policy_input is policy_input
+    assert result.input_serialize_ms > 0
+    assert result.output_deserialize_ms > 0
+    stats = worker.stats()
+    assert stats.started_count == 1
+    assert stats.completed_count == 1
+    assert stats.pending_count == 0
+    assert not stats.busy
+    assert worker.close()
 
 
 def test_coalesced_delta_keeps_events_and_latest_page_state() -> None:

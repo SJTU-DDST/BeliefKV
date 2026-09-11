@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import multiprocessing
+import queue
 import threading
 import time
 from collections import Counter, deque
@@ -165,26 +167,28 @@ class ObservedSeedBeneficiaryHint:
 
     @property
     def signature(self) -> tuple[object, ...]:
+        """Stable action identity plus material demand inputs.
+
+        Bounded seed epochs and plan IDs are publication metadata. Including
+        either here wakes the risk path even when the action is unchanged; the
+        live plan is rebound at the scheduler safe point.
+        """
+
+        return self.risk_signature
+
+    @property
+    def action_key(self) -> tuple[object, ...]:
         return (
             self.request_id,
+            self.invocation_id,
             self.context_id,
             self.context_epoch,
-            self.startup_bytes,
-            self.growth_bytes,
-            self.remaining_prefill_bytes,
-            self.predicted_output_bytes,
-            self.prediction_support_level,
-            self.seed_generation,
         )
 
     @property
     def risk_signature(self) -> tuple[object, ...]:
-        """Material action inputs, excluding the bounded-seed revision."""
-
         return (
-            self.request_id,
-            self.context_id,
-            self.context_epoch,
+            *self.action_key,
             self.startup_bytes,
             self.growth_bytes,
             self.remaining_prefill_bytes,
@@ -207,6 +211,7 @@ class ObservedSeedBeneficiaryHint:
             "remaining_prefill_bytes": self.remaining_prefill_bytes,
             "predicted_output_bytes": self.predicted_output_bytes,
             "prediction_support_level": self.prediction_support_level,
+            "action_key": list(self.action_key),
         }
 
 
@@ -605,7 +610,7 @@ class PredictiveRiskWorkerResult:
     submitted_monotonic_ms: float
     started_monotonic_ms: float
     completed_monotonic_ms: float
-    policy_input: PolicyInput
+    policy_input: PolicyInput | None
     shadow: PredictiveRiskShadowResult | None
     error: str | None
     eligibility_ms: float
@@ -613,6 +618,8 @@ class PredictiveRiskWorkerResult:
     suppression_reason: str | None = None
     counterfactual_shadow: PredictiveRiskShadowResult | None = None
     counterfactual_error: str | None = None
+    input_serialize_ms: float = 0.0
+    output_deserialize_ms: float = 0.0
 
     @property
     def queue_wait_ms(self) -> float:
@@ -1496,9 +1503,97 @@ class IncrementalPolicyInputAssembler:
                 value=local_features,
                 producer="candidate_local_frontier_features",
             )
+        compact_invocations = {
+            invocation_id: dict(invocations[invocation_id])
+            for invocation_id in sorted(candidate_invocation_ids)
+            if isinstance(invocations.get(invocation_id), Mapping)
+        }
+        compact_context_ids = {
+            str(raw.get("context_id"))
+            for raw in compact_invocations.values()
+            if raw.get("context_id")
+        }
+        raw_contexts = graph_state.get("contexts", {})
+        if not isinstance(raw_contexts, Mapping):
+            raw_contexts = {}
+        compact_contexts = {
+            context_id: {
+                **dict(raw_contexts[context_id]),
+                "invocation_ids": [
+                    invocation_id
+                    for invocation_id in raw_contexts[context_id].get(
+                        "invocation_ids", ()
+                    )
+                    if invocation_id in compact_invocations
+                ],
+            }
+            for context_id in sorted(compact_context_ids)
+            if isinstance(raw_contexts.get(context_id), Mapping)
+        }
+        compact_join_ids = {
+            str(raw.get("join_id"))
+            for raw in compact_invocations.values()
+            if raw.get("join_id")
+        }
+        compact_joins = {
+            join_id: dict(joins[join_id])
+            for join_id in sorted(compact_join_ids)
+            if isinstance(joins.get(join_id), Mapping)
+        }
+        compact_workflow_ids = {
+            str(raw.get("workflow_id"))
+            for raw in compact_invocations.values()
+            if raw.get("workflow_id")
+        }
+        raw_workflows = graph_state.get("workflows", {})
+        if not isinstance(raw_workflows, Mapping):
+            raw_workflows = {}
+        compact_workflows = {
+            workflow_id: {
+                **dict(raw_workflows[workflow_id]),
+                "invocation_ids": [
+                    invocation_id
+                    for invocation_id in raw_workflows[workflow_id].get(
+                        "invocation_ids", ()
+                    )
+                    if invocation_id in compact_invocations
+                ],
+            }
+            for workflow_id in sorted(compact_workflow_ids)
+            if isinstance(raw_workflows.get(workflow_id), Mapping)
+        }
+        compact_edges = [
+            dict(raw)
+            for raw in graph_state.get("communication_edges", ())
+            if isinstance(raw, Mapping)
+            and str(raw.get("source_invocation_id") or "")
+            in compact_invocations
+            and str(raw.get("target_invocation_id") or "")
+            in compact_invocations
+        ]
+        compact_rccg = {
+            "graph_version": graph_state.get("graph_version", 0),
+            "workflows": compact_workflows,
+            "invocations": compact_invocations,
+            "contexts": compact_contexts,
+            "joins": compact_joins,
+            "communication_edges": compact_edges,
+        }
+        outer_graph_state = dict(policy_input.runtime_graph.state)
+        if isinstance(outer_graph_state.get("rccg"), Mapping):
+            outer_graph_state["rccg"] = compact_rccg
+        else:
+            control_state = outer_graph_state.get("control")
+            outer_graph_state = compact_rccg
+            if isinstance(control_state, Mapping):
+                outer_graph_state["control"] = control_state
         return (
             replace(
                 policy_input,
+                runtime_graph=replace(
+                    policy_input.runtime_graph,
+                    state=outer_graph_state,
+                ),
                 physical_kv=replace(
                     policy_input.physical_kv,
                     bundles=bundles,
@@ -2198,6 +2293,441 @@ class LatestWinsPredictiveRiskWorker:
             # snapshot was enqueued; the completed result is discarded if a
             # materially newer item remains.
             return self._closed
+
+
+def _predictive_risk_process_main(
+    observer_payload: bytes,
+    input_queue: object,
+    output_queue: object,
+    stop_event: object,
+    latest_sequence: object,
+) -> None:
+    import cloudpickle
+
+    observer = cloudpickle.loads(observer_payload)
+    last_trigger_signature: tuple[object, ...] | None = None
+    while not stop_event.is_set():
+        wire_item = input_queue.get()
+        if wire_item is None:
+            return
+        sequence, payload, input_serialize_ms = wire_item
+        item = cloudpickle.loads(payload)
+        output_queue.put(("started", sequence))
+        started_ms = _monotonic_ms()
+        shadow = None
+        error = None
+        eligibility = None
+        suppression_reason = None
+        def cancel_check() -> bool:
+            return stop_event.is_set() or int(latest_sequence.value) > item.sequence
+
+        try:
+            if cancel_check():
+                suppression_reason = "cancelled_superseded"
+                raise StopIteration
+            eligibility = observer.eligibility_index.probe(item.policy_input)
+            trigger_metadata = item.policy_input.optional_metadata.get(
+                "beliefkv_predictive_risk_trigger"
+            )
+            scope_metadata = item.policy_input.optional_metadata.get(
+                "beliefkv_predictive_candidate_scope"
+            )
+            trigger_value = (
+                trigger_metadata.value
+                if trigger_metadata is not None
+                and isinstance(trigger_metadata.value, Mapping)
+                else {}
+            )
+            scope_value = (
+                scope_metadata.value
+                if scope_metadata is not None
+                and isinstance(scope_metadata.value, Mapping)
+                else {}
+            )
+            trigger_signature = (
+                (
+                    tuple(
+                        tuple(value)
+                        for value in trigger_value.get("events", ())
+                    ),
+                    scope_value.get("beneficiary_request_id"),
+                    tuple(scope_value.get("victim_generations", ())),
+                    eligibility.trigger_signature,
+                )
+                if eligibility.has_candidate
+                else ("no_candidate",)
+            )
+            if trigger_signature == last_trigger_signature:
+                suppression_reason = "unchanged_action_bucket"
+            else:
+                last_trigger_signature = trigger_signature
+            if not eligibility.has_candidate:
+                suppression_reason = "no_action_specific_candidate"
+            if suppression_reason is None:
+                graph = RuntimeCausalContextGraph.from_snapshot(
+                    item.policy_input.runtime_graph.state
+                )
+                model_metadata = item.policy_input.optional_metadata.get(
+                    "frontier_prediction_model_version"
+                )
+                model_version = (
+                    str(model_metadata.value)
+                    if model_metadata is not None
+                    else "unavailable"
+                )
+                evidence_read_set = PredictiveEvidenceReadSet(
+                    graph_version=item.state_stamp.graph_version,
+                    page_revision=item.state_stamp.page_revision,
+                    topology_revision=item.state_stamp.topology_revision,
+                    fairness_revision=item.state_stamp.fairness_revision,
+                    admission_revision=item.state_stamp.admission_revision,
+                    transfer_epoch=item.state_stamp.transfer_epoch,
+                    obligation_revision=item.state_stamp.obligation_revision,
+                    lease_revision=item.state_stamp.lease_revision,
+                    grace_revision=item.state_stamp.grace_revision,
+                    parser_frontier_revision=(
+                        item.state_stamp.parser_frontier_revision
+                    ),
+                    model_version=model_version,
+                )
+                shadow = observer.evaluate(
+                    item.policy_input,
+                    graph=graph,
+                    source_plan=item.source_plan,
+                    eligibility=eligibility,
+                    evidence_read_set=evidence_read_set,
+                    cancel_check=cancel_check,
+                )
+        except StopIteration:
+            pass
+        except Exception as caught:
+            error = f"{type(caught).__name__}: {caught}"
+        completed_ms = _monotonic_ms()
+        result = PredictiveRiskWorkerResult(
+            sequence=item.sequence,
+            source_joint_sequence=item.source_joint_sequence,
+            source_snapshot_id=item.policy_input.snapshot_id,
+            submitted_monotonic_ms=item.submitted_monotonic_ms,
+            started_monotonic_ms=started_ms,
+            completed_monotonic_ms=completed_ms,
+            policy_input=None,
+            shadow=shadow,
+            error=error,
+            eligibility_ms=(
+                eligibility.probe_ms if eligibility is not None else 0.0
+            ),
+            eligibility=eligibility,
+            suppression_reason=suppression_reason,
+            input_serialize_ms=input_serialize_ms,
+        )
+        output_queue.put(("result", cloudpickle.dumps(result)))
+
+
+class LatestWinsPredictiveRiskProcessWorker:
+    """Spawn-isolated predictor with O(1) scheduler-side latest-wins submit."""
+
+    def __init__(
+        self,
+        observer: PredictiveRiskShadowObserver,
+        *,
+        process_name: str = "beliefkv-predictive-risk",
+    ) -> None:
+        import cloudpickle
+
+        context = multiprocessing.get_context("spawn")
+        self._condition = threading.Condition()
+        self._pending: _PredictiveWorkItem | None = None
+        self._latest: PredictiveRiskWorkerResult | None = None
+        self._closed = False
+        self._busy = False
+        self._next_sequence = 0
+        self._submitted_count = 0
+        self._started_count = 0
+        self._completed_count = 0
+        self._failed_count = 0
+        self._dropped_pending_count = 0
+        self._superseded_result_count = 0
+        self._wire_pending_sequences: set[int] = set()
+        self._active_sequence: int | None = None
+        self._items_by_sequence: dict[int, _PredictiveWorkItem] = {}
+        self._input_queue = context.Queue(maxsize=1)
+        self._output_queue = context.Queue(maxsize=2)
+        self._stop_event = context.Event()
+        self._latest_sequence = context.Value("Q", 0, lock=False)
+        self._process = context.Process(
+            target=_predictive_risk_process_main,
+            args=(
+                cloudpickle.dumps(observer),
+                self._input_queue,
+                self._output_queue,
+                self._stop_event,
+                self._latest_sequence,
+            ),
+            name=process_name,
+            daemon=True,
+        )
+        self._process.start()
+        self._feeder = threading.Thread(
+            target=self._feed,
+            name=f"{process_name}-feeder",
+            daemon=True,
+        )
+        self._reader = threading.Thread(
+            target=self._read,
+            name=f"{process_name}-reader",
+            daemon=True,
+        )
+        self._feeder.start()
+        self._reader.start()
+
+    def submit(
+        self,
+        result: JointShadowResult,
+    ) -> PredictiveRiskSubmission:
+        started_ns = time.perf_counter_ns()
+        if (
+            result.plan is None
+            or result.policy_input is None
+            or result.state_stamp is None
+        ):
+            raise ValueError(
+                "predictive risk submission requires a complete observed plan"
+            )
+        submitted_ms = _monotonic_ms()
+        with self._condition:
+            if self._closed:
+                raise RuntimeError("predictive risk worker is closed")
+            if not self._process.is_alive():
+                raise RuntimeError("predictive risk worker process is not running")
+            self._next_sequence += 1
+            sequence = self._next_sequence
+            replaced = (
+                self._pending.sequence if self._pending is not None else None
+            )
+            if self._pending is not None:
+                self._items_by_sequence.pop(self._pending.sequence, None)
+                self._dropped_pending_count += 1
+            item = _PredictiveWorkItem(
+                sequence=sequence,
+                source_joint_sequence=result.sequence,
+                submitted_monotonic_ms=submitted_ms,
+                policy_input=result.policy_input,
+                source_plan=result.plan,
+                state_stamp=result.state_stamp,
+            )
+            self._pending = item
+            self._items_by_sequence[sequence] = item
+            self._latest_sequence.value = sequence
+            self._submitted_count += 1
+            self._condition.notify_all()
+        return PredictiveRiskSubmission(
+            sequence=sequence,
+            source_joint_sequence=result.sequence,
+            source_snapshot_id=result.policy_input.snapshot_id,
+            submitted_monotonic_ms=submitted_ms,
+            enqueue_ms=(
+                time.perf_counter_ns() - started_ns
+            ) / 1_000_000.0,
+            enqueued=True,
+            replaced_sequence=replaced,
+            suppression_reason=None,
+        )
+
+    def latest(
+        self,
+        *,
+        after_sequence: int = 0,
+    ) -> PredictiveRiskWorkerResult | None:
+        with self._condition:
+            if self._latest is None or self._latest.sequence <= after_sequence:
+                return None
+            return self._latest
+
+    def stats(self) -> JointShadowWorkerStats:
+        with self._condition:
+            return JointShadowWorkerStats(
+                submitted_count=self._submitted_count,
+                started_count=self._started_count,
+                completed_count=self._completed_count,
+                apply_only_count=0,
+                failed_count=self._failed_count,
+                dropped_pending_count=self._dropped_pending_count,
+                coalesced_pending_count=0,
+                superseded_result_count=self._superseded_result_count,
+                pending_count=(
+                    int(self._pending is not None)
+                    + len(self._wire_pending_sequences)
+                ),
+                busy=self._busy,
+                latest_published_sequence=(
+                    self._latest.sequence if self._latest is not None else 0
+                ),
+            )
+
+    def close(self, *, timeout_s: float = 5.0) -> bool:
+        if timeout_s < 0:
+            raise ValueError("worker close timeout must be non-negative")
+        deadline = time.monotonic() + timeout_s
+        with self._condition:
+            self._closed = True
+            self._stop_event.set()
+            if self._pending is not None:
+                self._items_by_sequence.pop(self._pending.sequence, None)
+                self._pending = None
+                self._dropped_pending_count += 1
+            self._condition.notify_all()
+        self._feeder.join(max(0.0, deadline - time.monotonic()))
+        self._replace_wire_payload(None, deadline=deadline)
+        self._process.join(max(0.0, deadline - time.monotonic()))
+        if self._process.is_alive():
+            self._process.terminate()
+            self._process.join(max(0.0, deadline - time.monotonic()))
+        self._reader.join(max(0.0, deadline - time.monotonic()))
+        with self._condition:
+            self._wire_pending_sequences.clear()
+            self._items_by_sequence.clear()
+            self._active_sequence = None
+            self._busy = False
+            self._condition.notify_all()
+        return (
+            not self._process.is_alive()
+            and not self._feeder.is_alive()
+            and not self._reader.is_alive()
+        )
+
+    def _feed(self) -> None:
+        import cloudpickle
+
+        while True:
+            with self._condition:
+                while self._pending is None and not self._closed:
+                    self._condition.wait()
+                if self._closed:
+                    return
+                item = self._pending
+                self._pending = None
+            assert item is not None
+            serialize_started_ns = time.perf_counter_ns()
+            try:
+                payload = cloudpickle.dumps(item)
+            except Exception as error:
+                completed_ms = _monotonic_ms()
+                failed = PredictiveRiskWorkerResult(
+                    sequence=item.sequence,
+                    source_joint_sequence=item.source_joint_sequence,
+                    source_snapshot_id=item.policy_input.snapshot_id,
+                    submitted_monotonic_ms=item.submitted_monotonic_ms,
+                    started_monotonic_ms=completed_ms,
+                    completed_monotonic_ms=completed_ms,
+                    policy_input=item.policy_input,
+                    shadow=None,
+                    error=f"{type(error).__name__}: {error}",
+                    eligibility_ms=0.0,
+                )
+                with self._condition:
+                    self._items_by_sequence.pop(item.sequence, None)
+                    self._started_count += 1
+                    self._completed_count += 1
+                    self._failed_count += 1
+                    if item.sequence == self._next_sequence:
+                        self._latest = failed
+                    else:
+                        self._superseded_result_count += 1
+                    self._condition.notify_all()
+                continue
+            serialize_ms = (
+                time.perf_counter_ns() - serialize_started_ns
+            ) / 1_000_000.0
+            with self._condition:
+                if item.sequence < self._next_sequence:
+                    self._items_by_sequence.pop(item.sequence, None)
+                    self._dropped_pending_count += 1
+                    continue
+            self._replace_wire_payload((item.sequence, payload, serialize_ms))
+
+    def _replace_wire_payload(
+        self,
+        payload: tuple[int, bytes, float] | None,
+        *,
+        deadline: float | None = None,
+    ) -> bool:
+        while True:
+            if deadline is not None and time.monotonic() >= deadline:
+                return False
+            try:
+                self._input_queue.put(payload, timeout=0.05)
+                if payload is not None:
+                    with self._condition:
+                        self._wire_pending_sequences.add(payload[0])
+                return True
+            except queue.Full:
+                try:
+                    dropped = self._input_queue.get_nowait()
+                except queue.Empty:
+                    continue
+                if dropped is not None:
+                    with self._condition:
+                        self._wire_pending_sequences.discard(dropped[0])
+                        self._items_by_sequence.pop(dropped[0], None)
+                        self._dropped_pending_count += 1
+
+    def _read(self) -> None:
+        import cloudpickle
+
+        while True:
+            try:
+                payload = self._output_queue.get(timeout=0.05)
+            except queue.Empty:
+                if self._closed and not self._process.is_alive():
+                    return
+                continue
+            kind, value = payload
+            if kind == "result":
+                deserialize_started_ns = time.perf_counter_ns()
+                result = cloudpickle.loads(value)
+                deserialize_ms = (
+                    time.perf_counter_ns() - deserialize_started_ns
+                ) / 1_000_000.0
+            with self._condition:
+                if kind == "started":
+                    sequence = int(value)
+                    self._wire_pending_sequences.discard(sequence)
+                    self._active_sequence = sequence
+                    self._busy = True
+                    self._started_count += 1
+                    self._condition.notify_all()
+                    continue
+                if kind != "result":
+                    self._failed_count += 1
+                    self._condition.notify_all()
+                    continue
+                item = self._items_by_sequence.pop(result.sequence, None)
+                if item is None:
+                    result = replace(
+                        result,
+                        error=result.error or "missing_parent_process_work_item",
+                        output_deserialize_ms=deserialize_ms,
+                    )
+                else:
+                    result = replace(
+                        result,
+                        policy_input=item.policy_input,
+                        output_deserialize_ms=deserialize_ms,
+                    )
+                self._completed_count += 1
+                if result.error is not None:
+                    self._failed_count += 1
+                if result.sequence < self._next_sequence:
+                    self._superseded_result_count += 1
+                elif (
+                    self._latest is None
+                    or result.sequence > self._latest.sequence
+                ):
+                    self._latest = result
+                if self._active_sequence == result.sequence:
+                    self._active_sequence = None
+                self._busy = self._active_sequence is not None
+                self._condition.notify_all()
 
 
 def _monotonic_ms() -> float:

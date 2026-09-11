@@ -556,6 +556,7 @@ def main() -> int:
             args.predictive_beneficiary_projection_horizon_ms
         ),
         "predictive_risk_shadow_enabled": args.enable_predictive_risk_shadow,
+        "predictive_risk_process_isolation_enabled": True,
         "predictive_joint_overlay_enabled": args.enable_predictive_joint_overlay,
         "predictive_prepare_host_enabled": True,
         "predictive_prepare_host_canary_limit": (

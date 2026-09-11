@@ -134,6 +134,7 @@ from beliefkv.runtime.joint_shadow import (
     JointShadowResult,
     JointShadowStateStamp,
     LatestWinsJointPlanWorker,
+    LatestWinsPredictiveRiskProcessWorker,
     LatestWinsPredictiveRiskWorker,
     ActionLocalPhysicalOverlayBatch,
     ObservedSeedBeneficiaryHint,
@@ -2509,7 +2510,11 @@ class EmbeddedSGLangRuntime:
         self._reclaim_requirement_revision = 0
         self._active_admission_rescue: _AdmissionRescueTransaction | None = None
         self.joint_shadow_worker: LatestWinsJointPlanWorker | None = None
-        self.predictive_risk_worker: LatestWinsPredictiveRiskWorker | None = None
+        self.predictive_risk_worker: (
+            LatestWinsPredictiveRiskWorker
+            | LatestWinsPredictiveRiskProcessWorker
+            | None
+        ) = None
         self._last_joint_shadow_result_sequence = 0
         self._last_predictive_risk_result_sequence = 0
         self._predictive_candidate_snapshot_signatures: dict[
@@ -2710,8 +2715,13 @@ class EmbeddedSGLangRuntime:
                     predictive_shadow_config,
                     frontier_model=self.controller.predictor.frontier_model,
                 )
-                self.predictive_risk_worker = LatestWinsPredictiveRiskWorker(
-                    predictive_risk_observer,
+                predictive_worker_type = (
+                    LatestWinsPredictiveRiskProcessWorker
+                    if self.config.predictive_risk_process_isolation_enabled
+                    else LatestWinsPredictiveRiskWorker
+                )
+                self.predictive_risk_worker = predictive_worker_type(
+                    predictive_risk_observer
                 )
             self.joint_shadow_worker = LatestWinsJointPlanWorker(
                 planner,
@@ -17365,10 +17375,8 @@ class EmbeddedSGLangRuntime:
             self._last_policy_snapshot_ms = observation.ts_ms
             return
 
-        refresh_runnable = (
-            full_plan_requested
-            or result is not None
-            or not hasattr(self, "_last_policy_runtime_runnable")
+        refresh_runnable = full_plan_requested or not hasattr(
+            self, "_last_policy_runtime_runnable"
         )
         if refresh_runnable:
             additional_runnable = self._policy_runtime_runnable(
@@ -17382,19 +17390,25 @@ class EmbeddedSGLangRuntime:
         else:
             additional_runnable = self._last_policy_runtime_runnable
             runnable_signature = self._last_policy_runtime_runnable_signature
-        control_state = dict(
-            self.controller.policy_control_state(observation.ts_ms)
+        refresh_control = full_plan_requested or not hasattr(
+            self, "_last_policy_control_state"
         )
-        control_state["reclaim_requirements"] = {
-            "revision": getattr(self, "_reclaim_requirement_revision", 0),
-            "requirements": [
-                item.to_dict()
-                for _, item in sorted(
-                    getattr(self, "_reclaim_requirements", {}).items()
-                )
-            ],
-        }
-        control_state["persistent_liveness"] = liveness.to_dict()
+        if refresh_control:
+            control_state = dict(
+                self.controller.policy_control_state(observation.ts_ms)
+            )
+            control_state["reclaim_requirements"] = {
+                "revision": getattr(self, "_reclaim_requirement_revision", 0),
+                "requirements": [
+                    item.to_dict()
+                    for _, item in sorted(
+                        getattr(self, "_reclaim_requirements", {}).items()
+                    )
+                ],
+            }
+            control_state["persistent_liveness"] = liveness.to_dict()
+        else:
+            control_state = dict(self._last_policy_control_state)
         action_frontier = self.controller.action_frontier_observer
         control_state["action_frontier"] = {
             "revision": action_frontier.revision,
@@ -17433,9 +17447,6 @@ class EmbeddedSGLangRuntime:
             stamp.graph_version,
             stamp.consumer_version,
             stamp.event_sequence,
-            stamp.page_revision,
-            stamp.topology_revision,
-            stamp.fairness_revision,
             stamp.transfer_epoch,
             stamp.runnable_signature,
             stamp.parser_frontier_revision,
@@ -17485,9 +17496,6 @@ class EmbeddedSGLangRuntime:
             ),
         )
         physical_signature: tuple[object, ...] = (
-            stamp.page_revision,
-            stamp.topology_revision,
-            stamp.fairness_revision,
             self.controller.transfer_backlog_bytes(),
             observation.hbm_used_bytes
             // self.config.reference_policy_hbm_bucket_bytes,
@@ -17538,8 +17546,24 @@ class EmbeddedSGLangRuntime:
                     raise RuntimeError(
                         "runtime event journal gap; shadow rebuild is fail-closed"
                     )
-                page_delta = self.controller.page_index.replica_delta_since(
-                    self._shadow_page_revision
+                physical_sync_requested = bool(full_plan_requested)
+                page_delta = (
+                    self.controller.page_index.replica_delta_since(
+                        self._shadow_page_revision
+                    )
+                    if physical_sync_requested
+                    else PageIndexReplicaDelta(
+                        from_revision=self._shadow_page_revision,
+                        to_revision=self._shadow_page_revision,
+                        topology_revision=self._shadow_topology_revision,
+                        pages=(),
+                        page_states=(),
+                        contexts=(),
+                        changed_handles=frozenset(),
+                        changed_context_ids=frozenset(),
+                        components=frozenset(),
+                        full_rebuild_required=False,
+                    )
                 )
                 telemetry_delta = self.controller.transfer_telemetry_since(
                     self._shadow_telemetry_sequence
@@ -17606,11 +17630,27 @@ class EmbeddedSGLangRuntime:
                     self._last_policy_fairness_accounts = fairness_accounts
                 else:
                     fairness_accounts = self._last_policy_fairness_accounts
-                external_workflow_charges = (
-                    self.controller.external_workflow_memory_charges()
-                )
+                if full_plan_requested or not hasattr(
+                    self, "_last_policy_external_workflow_charges"
+                ):
+                    external_workflow_charges = (
+                        self.controller.external_workflow_memory_charges()
+                    )
+                    self._last_policy_external_workflow_charges = (
+                        external_workflow_charges
+                    )
+                else:
+                    external_workflow_charges = (
+                        self._last_policy_external_workflow_charges
+                    )
                 frozen_control_state = MappingProxyType(control_state)
-                capabilities = self._policy_capabilities()
+                if full_plan_requested or not hasattr(
+                    self, "_last_policy_capabilities"
+                ):
+                    capabilities = self._policy_capabilities()
+                    self._last_policy_capabilities = capabilities
+                else:
+                    capabilities = self._last_policy_capabilities
                 delta = JointShadowDelta(
                     event_from_sequence=event_delta.from_sequence,
                     event_to_sequence=event_delta.to_sequence,
@@ -17685,8 +17725,9 @@ class EmbeddedSGLangRuntime:
                     time.perf_counter_ns() - capture_started_ns
                 ) / 1_000_000.0
                 self._shadow_event_sequence = event_delta.to_sequence
-                self._shadow_page_revision = page_delta.to_revision
-                self._shadow_topology_revision = page_delta.topology_revision
+                if physical_sync_requested:
+                    self._shadow_page_revision = page_delta.to_revision
+                    self._shadow_topology_revision = page_delta.topology_revision
                 self._shadow_telemetry_sequence = telemetry_delta.to_sequence
                 self._last_policy_state_stamp = stamp
                 self._last_policy_control_state = frozen_control_state
@@ -18224,12 +18265,24 @@ class EmbeddedSGLangRuntime:
         if result is None:
             return
         self._last_predictive_risk_result_sequence = result.sequence
+        input_serialize_ms = float(
+            getattr(result, "input_serialize_ms", 0.0)
+        )
+        output_deserialize_ms = float(
+            getattr(result, "output_deserialize_ms", 0.0)
+        )
         self._joint_shadow_timing_samples.setdefault(
             "predictive_risk_queue_wait_ms", deque(maxlen=65_536)
         ).append(result.queue_wait_ms)
         self._joint_shadow_timing_samples.setdefault(
             "predictive_risk_shadow_ms", deque(maxlen=65_536)
         ).append(result.compute_ms)
+        self._joint_shadow_timing_samples.setdefault(
+            "predictive_ipc_input_serialize_ms", deque(maxlen=65_536)
+        ).append(input_serialize_ms)
+        self._joint_shadow_timing_samples.setdefault(
+            "predictive_ipc_output_deserialize_ms", deque(maxlen=65_536)
+        ).append(output_deserialize_ms)
         result_policy_input = getattr(result, "policy_input", None)
         overlay_metadata = (
             result_policy_input.optional_metadata.get(
@@ -18655,6 +18708,8 @@ class EmbeddedSGLangRuntime:
                 queue_wait_ms=result.queue_wait_ms,
                 compute_ms=result.compute_ms,
                 eligibility_ms=result.eligibility_ms,
+                input_serialize_ms=input_serialize_ms,
+                output_deserialize_ms=output_deserialize_ms,
                 action_certificate_count=certificate_count,
                 action_certificate_fresh_count=fresh_count,
                 action_certificate_stale_count=stale_count,
@@ -18688,6 +18743,8 @@ class EmbeddedSGLangRuntime:
                 queue_wait_ms=result.queue_wait_ms,
                 compute_ms=result.compute_ms,
                 eligibility_ms=result.eligibility_ms,
+                input_serialize_ms=result.input_serialize_ms,
+                output_deserialize_ms=result.output_deserialize_ms,
                 error=result.error,
                 observed_worker_independent=True,
                 prediction_used=False,
@@ -20050,8 +20107,10 @@ class EmbeddedSGLangRuntime:
                 ):
                     reasons.append("beneficiary_demand_increased")
                 expected_generation = (
-                    f"{intent.source_joint_plan_id}:"
-                    f"c{beneficiary.context_epoch}"
+                    f"{beneficiary.request_id}:{beneficiary.context_id}:"
+                    f"c{beneficiary.context_epoch}:"
+                    f"{beneficiary.admission_startup_bytes}:"
+                    f"{beneficiary.admission_growth_bytes}"
                 )
                 if intent.causal_package_generation != expected_generation:
                     reasons.append("beneficiary_causal_generation_changed")
@@ -20312,6 +20371,8 @@ class EmbeddedSGLangRuntime:
             )
             return decision
 
+        source_prediction_joint_plan_id = intent.source_joint_plan_id
+        intent = replace(intent, source_joint_plan_id=plan.plan_id)
         slice_ = ActionSlice(
             slice_id=f"predictive-residency:{intent.intent_id}",
             kind="predictive_residency",
@@ -20371,7 +20432,7 @@ class EmbeddedSGLangRuntime:
             evidence_read_set=(
                 ("intent_id", intent.intent_id),
                 ("model_version", intent.model_version),
-                ("source_joint_plan_id", intent.source_joint_plan_id),
+                ("source_joint_plan_id", plan.plan_id),
             ),
         )
         epoch = replace(
@@ -20397,7 +20458,8 @@ class EmbeddedSGLangRuntime:
             now_ms,
             plan_id=plan.plan_id,
             intent_id=intent.intent_id,
-            source_predictive_joint_plan_id=intent.source_joint_plan_id,
+            source_predictive_joint_plan_id=source_prediction_joint_plan_id,
+            source_joint_plan_id=plan.plan_id,
             action=intent.action.value,
             context_id=intent.context_id,
             context_epoch=intent.context_epoch,

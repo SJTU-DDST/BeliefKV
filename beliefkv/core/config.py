@@ -89,6 +89,7 @@ class BeliefKVConfig:
     # risk shadow path below.
     joint_predictive_enabled: bool = False
     predictive_risk_shadow_enabled: bool = False
+    predictive_risk_process_isolation_enabled: bool = True
     predictive_joint_overlay_enabled: bool = False
     predictive_prepare_host_enabled: bool = True
     predictive_prepare_host_canary_limit: int = 0

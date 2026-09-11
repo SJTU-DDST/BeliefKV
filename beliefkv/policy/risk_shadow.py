@@ -28,6 +28,7 @@ from beliefkv.policy.predictive_timeline import (
     ScheduledBatchQuantum,
     ScheduledRequestQuantum,
     ScheduledTransfer,
+    TimedScenario,
     evaluate_belief_timelines,
 )
 from beliefkv.policy.reference import PolicyInput
@@ -337,6 +338,8 @@ class PredictiveRiskShadowResult:
     service_cache_hits: int = 0
     service_cache_misses: int = 0
     belief_cache_hit: bool = False
+    local_particle_cache_hits: int = 0
+    local_particle_cache_misses: int = 0
     predictive_intent: PredictiveIntent | None = None
     decision_authority: str = "read_only_shadow"
 
@@ -367,6 +370,8 @@ class PredictiveRiskShadowResult:
             "service_cache_hits": self.service_cache_hits,
             "service_cache_misses": self.service_cache_misses,
             "belief_cache_hit": self.belief_cache_hit,
+            "local_particle_cache_hits": self.local_particle_cache_hits,
+            "local_particle_cache_misses": self.local_particle_cache_misses,
             "predictive_intent": (
                 self.predictive_intent.to_dict()
                 if self.predictive_intent is not None
@@ -1536,13 +1541,16 @@ class PredictiveRiskShadowObserver:
                 reasons=("closure_prediction_incomplete",),
             )
         belief_started_ns = time.perf_counter_ns()
+        particle_hits_before, particle_misses_before, _ = (
+            self.composer.local_particle_cache_stats()
+        )
         semantic_key = self._semantic_belief_key(
             graph,
             scope,
             predictions,
             model_version=model_version or "unavailable",
         )
-        semantic_seed_payload = semantic_key.encode()
+        semantic_seed_payload = (model_version or "unavailable").encode()
         semantic_seed = int.from_bytes(
             hashlib.blake2b(
                 semantic_seed_payload,
@@ -1718,7 +1726,11 @@ class PredictiveRiskShadowObserver:
                 )
                 continue
             try:
-                baseline_evaluation = self._evaluate_package(
+                (
+                    baseline_evaluation,
+                    baseline_timelines,
+                    conservative_baseline_timelines,
+                ) = self._evaluate_package(
                     candidate_belief,
                     baseline,
                     physicalizer,
@@ -1736,12 +1748,16 @@ class PredictiveRiskShadowObserver:
                     reasons=("cancelled_superseded",),
                 )
             try:
-                candidate_evaluation = self._evaluate_package(
+                candidate_evaluation, _, _ = self._evaluate_package(
                     candidate_belief,
                     package,
                     physicalizer,
                     target_invocation_id,
                     cancel_check=cancel_check,
+                    baseline_timelines=baseline_timelines,
+                    conservative_baseline_timelines=(
+                        conservative_baseline_timelines
+                    ),
                 )
             except RuntimeError:
                 if cancel_check is None or not cancel_check():
@@ -1881,6 +1897,14 @@ class PredictiveRiskShadowObserver:
                 self.timeline.service_cache_misses - service_misses_before
             ),
             belief_cache_hit=belief_cache_hit,
+            local_particle_cache_hits=(
+                self.composer.local_particle_cache_hits
+                - particle_hits_before
+            ),
+            local_particle_cache_misses=(
+                self.composer.local_particle_cache_misses
+                - particle_misses_before
+            ),
             predictive_intent=predictive_intent,
             decision_authority=(
                 "semantic_joint_overlay"
@@ -2396,20 +2420,48 @@ class PredictiveRiskShadowObserver:
         physicalizer: "_OnlineCandidatePhysicalizer",
         target_invocation_id: str,
         cancel_check: Callable[[], bool] | None = None,
-    ) -> PackageScenarioEvaluation:
-        timelines = evaluate_belief_timelines(
-            belief,
-            package_id=package.package_id,
-            physical_snapshot=physicalizer.policy_input.physical_kv,
-            physicalizer=physicalizer,
-            evaluator=self.timeline,
-            cancel_check=cancel_check,
-        )
+        baseline_timelines: Mapping[str, TimedScenario] | None = None,
+        conservative_baseline_timelines: (
+            Mapping[str, TimedScenario] | None
+        ) = None,
+    ) -> tuple[
+        PackageScenarioEvaluation,
+        Mapping[str, TimedScenario],
+        Mapping[str, TimedScenario],
+    ]:
+        if (
+            package.action == PredictiveActionKind.PREPARE_HOST
+            and baseline_timelines is not None
+        ):
+            timelines = self._prepare_action_delta_timelines(
+                package,
+                baseline_timelines,
+                physicalizer=physicalizer,
+            )
+        else:
+            timelines = evaluate_belief_timelines(
+                belief,
+                package_id=package.package_id,
+                physical_snapshot=physicalizer.policy_input.physical_kv,
+                physicalizer=physicalizer,
+                evaluator=self.timeline,
+                cancel_check=cancel_check,
+            )
         has_conservative_outcomes = any(
             item.conservative_outcomes for item in belief.scenarios
         )
-        conservative_timelines = (
-            evaluate_belief_timelines(
+        if (
+            has_conservative_outcomes
+            and package.action == PredictiveActionKind.PREPARE_HOST
+            and conservative_baseline_timelines is not None
+        ):
+            conservative_timelines = self._prepare_action_delta_timelines(
+                package,
+                conservative_baseline_timelines,
+                physicalizer=physicalizer,
+            )
+        elif has_conservative_outcomes:
+            conservative_timelines = evaluate_belief_timelines(
                 belief,
                 package_id=package.package_id,
                 physical_snapshot=physicalizer.policy_input.physical_kv,
@@ -2418,9 +2470,8 @@ class PredictiveRiskShadowObserver:
                 cancel_check=cancel_check,
                 conservative=True,
             )
-            if has_conservative_outcomes
-            else timelines
-        )
+        else:
+            conservative_timelines = timelines
         projected_blocks = tuple(
             (
                 timeline.projected_beneficiary_block_offset_ms,
@@ -2527,7 +2578,42 @@ class PredictiveRiskShadowObserver:
                 conservative_timelines=conservative_timelines,
                 physicalizer=physicalizer,
             )
-        return evaluation
+        return evaluation, timelines, conservative_timelines
+
+    @staticmethod
+    def _prepare_action_delta_timelines(
+        package: PredictiveActionPackage,
+        baseline_timelines: Mapping[str, TimedScenario],
+        *,
+        physicalizer: "_OnlineCandidatePhysicalizer",
+    ) -> dict[str, TimedScenario]:
+        """Apply PREPARE's transfer-only delta to an unchanged GPU timeline."""
+
+        if (
+            package.action != PredictiveActionKind.PREPARE_HOST
+            or len(package.victim_context_ids) != 1
+        ):
+            raise ValueError("PREPARE delta requires exactly one victim")
+        context_id = package.victim_context_ids[0]
+        duration_ms = physicalizer.prepare_shadow_transfer_evidence(
+            package
+        ).duration_ms
+        transfer_id = f"{package.package_id}:d2h:{context_id}"
+        deterministic_feasible = physicalizer.package_feasible(package)
+        return {
+            scenario_id: replace(
+                timeline,
+                package_id=package.package_id,
+                transfer_completion_offsets_ms={
+                    **timeline.transfer_completion_offsets_ms,
+                    transfer_id: duration_ms,
+                },
+                pcie_busy_ms=timeline.pcie_busy_ms + duration_ms,
+                deterministic_feasible=deterministic_feasible,
+                liveness_path_proven=True,
+            )
+            for scenario_id, timeline in baseline_timelines.items()
+        }
 
     @staticmethod
     def _without_hbm_from_future_feasibility(
@@ -2900,10 +2986,8 @@ class PredictiveRiskShadowObserver:
         if hint is not None:
             request_id = str(hint.get("request_id") or "")
             request = requests.get(request_id)
-            plan_id = str(hint.get("plan_id") or "")
             if (
                 request is not None
-                and plan_id
                 and request_id not in observed_ids
                 and request.causal_class.startswith("engine_waiting:")
                 and request.admission_startup_bytes is not None
@@ -2939,9 +3023,12 @@ class PredictiveRiskShadowObserver:
                         required_growth_bytes=request.admission_growth_bytes,
                         predicted_block_time_ms=block_time,
                         predicted_deficit_bytes=deficit_bytes,
-                        source_joint_plan_id=plan_id,
+                        source_joint_plan_id=source_plan.plan_id,
                         causal_package_generation=(
-                            f"{plan_id}:c{request.context_epoch}"
+                            f"{request.request_id}:{request.context_id}:"
+                            f"c{request.context_epoch}:"
+                            f"{request.admission_startup_bytes}:"
+                            f"{request.admission_growth_bytes}"
                         ),
                     )
         order = (
@@ -2989,7 +3076,10 @@ class PredictiveRiskShadowObserver:
                 predicted_deficit_bytes=deficit_bytes,
                 source_joint_plan_id=source_plan.plan_id,
                 causal_package_generation=(
-                    f"{source_plan.plan_id}:c{request.context_epoch}"
+                    f"{request.request_id}:{request.context_id}:"
+                    f"c{request.context_epoch}:"
+                    f"{request.admission_startup_bytes}:"
+                    f"{request.admission_growth_bytes}"
                 ),
             )
         return None

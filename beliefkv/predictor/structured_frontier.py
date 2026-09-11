@@ -1,13 +1,12 @@
 from __future__ import annotations
 
-from collections import Counter, defaultdict
+from collections import Counter, OrderedDict, defaultdict
 from dataclasses import dataclass, field, replace
 from enum import Enum
 import hashlib
 import json
 import math
 from pathlib import Path
-import random
 from typing import Any, Iterable, Mapping, Sequence
 
 from beliefkv.control.causal_graph import InvocationState, JoinMode, RuntimeCausalContextGraph
@@ -1494,6 +1493,7 @@ class FrontierScenarioComposer:
         particle_count: int = 128,
         top_k: int = 8,
         shared_episode_probability: float = 0.35,
+        local_particle_cache_entries: int = 4096,
     ) -> None:
         if particle_count <= 0 or top_k <= 0:
             raise ValueError("particle count and top-k must be positive")
@@ -1502,6 +1502,25 @@ class FrontierScenarioComposer:
         self.particle_count = particle_count
         self.top_k = top_k
         self.shared_episode_probability = shared_episode_probability
+        self.local_particle_cache_entries = max(0, local_particle_cache_entries)
+        self._local_particle_cache: OrderedDict[
+            tuple[object, ...], tuple[FrontierDemandOutcome, ...]
+        ] = OrderedDict()
+        self._quantile_cache: OrderedDict[
+            tuple[int, str], tuple[tuple[float, float], ...]
+        ] = OrderedDict()
+        self._stratified_quantiles = tuple(
+            (index + 0.5) / particle_count for index in range(particle_count)
+        )
+        self.local_particle_cache_hits = 0
+        self.local_particle_cache_misses = 0
+
+    def local_particle_cache_stats(self) -> tuple[int, int, int]:
+        return (
+            self.local_particle_cache_hits,
+            self.local_particle_cache_misses,
+            len(self._local_particle_cache),
+        )
 
     def compose(
         self,
@@ -1544,23 +1563,150 @@ class FrontierScenarioComposer:
         missing = set(scope.invocation_ids).difference(local_predictions)
         if missing:
             raise ValueError(f"local predictions missing scoped invocations: {sorted(missing)}")
-        rng = random.Random(seed)
-        particle_outcomes: list[tuple[FrontierDemandOutcome, ...]] = []
-        for _ in range(self.particle_count):
-            shared_quantile = rng.random()
-            outcomes: dict[str, FrontierDemandOutcome] = {}
-            for invocation_id in scope.invocation_ids:
-                prediction = local_predictions[invocation_id]
-                q = (
-                    shared_quantile
-                    if rng.random() < self.shared_episode_probability
-                    else rng.random()
+        ordered_ids = tuple(sorted(scope.invocation_ids))
+        local_particles: dict[str, tuple[FrontierDemandOutcome, ...]] = {}
+        for invocation_id in ordered_ids:
+            prediction = local_predictions[invocation_id]
+            local_key = self._local_particle_key(
+                graph,
+                invocation_id,
+                prediction,
+                seed=seed,
+            )
+            cached = self._local_particle_cache.get(local_key)
+            if cached is not None:
+                self._local_particle_cache.move_to_end(local_key)
+                self.local_particle_cache_hits += 1
+                local_particles[invocation_id] = cached
+                continue
+            self.local_particle_cache_misses += 1
+            quantiles = self._invocation_quantiles(seed, invocation_id)
+            outcomes = tuple(
+                self._sample_local(
+                    graph,
+                    invocation_id,
+                    prediction,
+                    quantile,
+                    category_quantile,
                 )
-                outcomes[invocation_id] = self._sample_local(
-                    graph, invocation_id, prediction, q, rng.random()
-                )
-            particle_outcomes.append(tuple(outcomes[key] for key in sorted(outcomes)))
-        return tuple(particle_outcomes)
+                for quantile, category_quantile in quantiles
+            )
+            local_particles[invocation_id] = outcomes
+            if self.local_particle_cache_entries:
+                self._local_particle_cache[local_key] = outcomes
+                self._local_particle_cache.move_to_end(local_key)
+                while (
+                    len(self._local_particle_cache)
+                    > self.local_particle_cache_entries
+                ):
+                    self._local_particle_cache.popitem(last=False)
+        return tuple(
+            tuple(
+                local_particles[invocation_id][particle_index]
+                for invocation_id in ordered_ids
+            )
+            for particle_index in range(self.particle_count)
+        )
+
+    def _invocation_quantiles(
+        self,
+        seed: int,
+        invocation_id: str,
+    ) -> tuple[tuple[float, float], ...]:
+        key = (seed, invocation_id)
+        cached = self._quantile_cache.get(key)
+        if cached is not None:
+            self._quantile_cache.move_to_end(key)
+            return cached
+        digest = hashlib.blake2b(
+            repr(key).encode(),
+            digest_size=24,
+            person=b"bkv-particle",
+        ).digest()
+        values = tuple(
+            int.from_bytes(digest[offset : offset + 4], "big")
+            for offset in range(0, len(digest), 4)
+        )
+
+        def normalized_stride(stride_seed: int) -> int:
+            stride = stride_seed % self.particle_count
+            if stride == 0:
+                stride = 1
+            while math.gcd(stride, self.particle_count) != 1:
+                stride = (stride + 1) % self.particle_count or 1
+            return stride
+
+        selector_offset = values[0] % self.particle_count
+        selector_stride = normalized_stride(values[1])
+        local_offset = values[2] % self.particle_count
+        local_stride = normalized_stride(values[3])
+        category_offset = values[4] % self.particle_count
+        category_stride = normalized_stride(values[5])
+
+        quantiles = tuple(
+            (
+                self._stratified_quantiles[index]
+                if self._stratified_quantiles[
+                    (selector_offset + index * selector_stride)
+                    % self.particle_count
+                ]
+                < self.shared_episode_probability
+                else self._stratified_quantiles[
+                    (local_offset + index * local_stride)
+                    % self.particle_count
+                ],
+                self._stratified_quantiles[
+                    (category_offset + index * category_stride)
+                    % self.particle_count
+                ],
+            )
+            for index in range(self.particle_count)
+        )
+        if self.local_particle_cache_entries:
+            self._quantile_cache[key] = quantiles
+            self._quantile_cache.move_to_end(key)
+            while len(self._quantile_cache) > self.local_particle_cache_entries:
+                self._quantile_cache.popitem(last=False)
+        return quantiles
+
+    @staticmethod
+    def _local_particle_key(
+        graph: RuntimeCausalContextGraph,
+        invocation_id: str,
+        prediction: LocalFrontierPrediction,
+        *,
+        seed: int,
+    ) -> tuple[object, ...]:
+        invocation = graph.invocations[invocation_id]
+        join = (
+            graph.joins.get(invocation.join_id)
+            if invocation.join_id is not None
+            else None
+        )
+        communication = tuple(
+            (
+                source,
+                target,
+                edge.count,
+                edge.last_ts_ms,
+            )
+            for (source, target), edge in sorted(
+                graph.communication_edges.items()
+            )
+            if source == invocation_id
+        )
+        return (
+            seed,
+            invocation_id,
+            repr(graph.invocation_snapshot(invocation_id)),
+            repr(
+                graph.join_snapshot(invocation.join_id)
+                if join is not None
+                else None
+            ),
+            communication,
+            repr(prediction.to_dict()),
+        )
 
     def reduce_particles(
         self,
@@ -3246,8 +3392,14 @@ def _action_projection_vector(
     target_invocation_id: str,
 ) -> tuple[float, ...]:
     by_id = {item.invocation_id: item for item in outcomes}
+    reentry_cache: dict[str, float] = {}
     target = by_id[target_invocation_id]
-    target_wait = _external_reentry_proxy_ms(target_invocation_id, by_id, set())
+    target_wait = _external_reentry_proxy_ms(
+        target_invocation_id,
+        by_id,
+        set(),
+        reentry_cache,
+    )
     target_gpu_demand = float(
         target.remaining_decode_tokens
         + target.prompt_growth_tokens
@@ -3263,7 +3415,12 @@ def _action_projection_vector(
     )
     pressure_arrival = min(
         (
-            _external_reentry_proxy_ms(item.invocation_id, by_id, set())
+            _external_reentry_proxy_ms(
+                item.invocation_id,
+                by_id,
+                set(),
+                reentry_cache,
+            )
             for item in outcomes
             if item.invocation_id != target_invocation_id
         ),
@@ -3291,39 +3448,57 @@ def _external_reentry_proxy_ms(
     invocation_id: str,
     outcomes: Mapping[str, FrontierDemandOutcome],
     visiting: set[str],
+    cache: dict[str, float] | None = None,
 ) -> float:
+    if cache is not None and invocation_id in cache:
+        return cache[invocation_id]
     if invocation_id in visiting:
         return 0.0
     outcome = outcomes[invocation_id]
     if outcome.dependency_mode == DependencyMode.EXTERNAL:
-        return sum(item.residual_delay_ms for item in outcome.external_segments)
+        value = sum(item.residual_delay_ms for item in outcome.external_segments)
+        if cache is not None:
+            cache[invocation_id] = value
+        return value
     dependencies = tuple(
         item
         for item in outcome.dependency_invocation_ids
         if item in outcomes
     )
     if not dependencies:
+        if cache is not None:
+            cache[invocation_id] = 0.0
         return 0.0
     nested_visiting = {*visiting, invocation_id}
     values = tuple(
-        _external_reentry_proxy_ms(item, outcomes, nested_visiting)
+        _external_reentry_proxy_ms(item, outcomes, nested_visiting, cache)
         for item in dependencies
     )
     if outcome.dependency_mode == DependencyMode.JOIN_ALL:
-        return max(values)
-    if outcome.dependency_mode in {
+        value = max(values)
+    elif outcome.dependency_mode in {
         DependencyMode.JOIN_ANY,
         DependencyMode.PRODUCER,
     }:
-        return min(values)
-    return 0.0
+        value = min(values)
+    else:
+        value = 0.0
+    if cache is not None:
+        cache[invocation_id] = value
+    return value
 
 
 def _deterministic_medoid_clusters(
     vectors: tuple[tuple[float, ...], ...],
     max_clusters: int,
 ) -> tuple[tuple[int, tuple[int, ...]], ...]:
-    """Small deterministic k-medoids for equal-mass action particles."""
+    """Bounded deterministic medoids for equal-mass action particles.
+
+    Exact pairwise k-medoids is quadratic in the particle count. Action
+    projection only needs stable representatives plus a conservative member
+    envelope, so each refinement selects the observed vector nearest the
+    component-wise median of its assigned cluster.
+    """
 
     if not vectors:
         return ()
@@ -3350,23 +3525,11 @@ def _deterministic_medoid_clusters(
     ]
     medoids = list(dict.fromkeys(medoids))
 
-    distance_matrix = [
-        [0.0 for _ in range(len(normalized))]
-        for _ in range(len(normalized))
-    ]
-    for left in range(len(normalized)):
-        for right in range(left):
-            value = sum(
-                abs(a - b)
-                for a, b in zip(
-                    normalized[left], normalized[right], strict=True
-                )
-            )
-            distance_matrix[left][right] = value
-            distance_matrix[right][left] = value
-
-    def distance(left: int, right: int) -> float:
-        return distance_matrix[left][right]
+    def distance_to_vector(left: int, right: tuple[float, ...]) -> float:
+        return sum(
+            abs(a - b)
+            for a, b in zip(normalized[left], right, strict=True)
+        )
 
     assignments: dict[int, list[int]] = {}
     for _ in range(4):
@@ -3374,17 +3537,26 @@ def _deterministic_medoid_clusters(
         for particle_index in range(len(vectors)):
             selected = min(
                 medoids,
-                key=lambda item: (distance(particle_index, item), item),
+                key=lambda item: (
+                    distance_to_vector(particle_index, normalized[item]),
+                    item,
+                ),
             )
             assignments[selected].append(particle_index)
         updated = []
         for medoid in medoids:
             members = assignments[medoid]
+            center = tuple(
+                sorted(normalized[item][dimension] for item in members)[
+                    len(members) // 2
+                ]
+                for dimension in range(dimensions)
+            )
             updated.append(
                 min(
                     members,
                     key=lambda candidate: (
-                        sum(distance(candidate, peer) for peer in members),
+                        distance_to_vector(candidate, center),
                         candidate,
                     ),
                 )
@@ -3398,7 +3570,10 @@ def _deterministic_medoid_clusters(
     for particle_index in range(len(vectors)):
         selected = min(
             medoids,
-            key=lambda item: (distance(particle_index, item), item),
+            key=lambda item: (
+                distance_to_vector(particle_index, normalized[item]),
+                item,
+            ),
         )
         assignments[selected].append(particle_index)
     return tuple(
