@@ -376,6 +376,34 @@ class PhysicalBundleBuilder:
             for item in blockers
             if item.page_handle is not None
         }
+        ancestor_failures: dict[PageHandle, str | None] = {}
+
+        def ancestor_failure(page: PhysicalPageRecord) -> str | None:
+            trail = [page.handle]
+            seen = {page.handle}
+            ancestor = page.parent
+            failure: str | None = None
+            while ancestor is not None:
+                if ancestor in ancestor_failures:
+                    failure = ancestor_failures[ancestor]
+                    break
+                if ancestor in seen:
+                    failure = "D2H target has an ancestor cycle"
+                    break
+                seen.add(ancestor)
+                parent = self.page_index.pages.get(ancestor)
+                if parent is None or parent.residency == PhysicalResidency.DEAD:
+                    failure = "D2H closure has a missing ancestor"
+                    break
+                if not parent.gpu_resident:
+                    failure = "D2H target has a non-resident ancestor"
+                    break
+                trail.append(parent.handle)
+                ancestor = parent.parent
+            for handle in trail:
+                ancestor_failures[handle] = failure
+            return failure
+
         for page in sorted(
             closure.values(),
             key=lambda item: (-item.radix_depth, item.handle),
@@ -409,32 +437,17 @@ class PhysicalBundleBuilder:
             if page_blockers:
                 blocked_handles.add(page.handle)
                 continue
-            ancestor = page.parent
-            while ancestor is not None:
-                parent = self.page_index.pages.get(ancestor)
-                if parent is None or parent.residency == PhysicalResidency.DEAD:
-                    blockers.append(
-                        TransferBlocker(
-                            TransferBlockerCode.ANCESTOR_CLOSURE,
-                            page.handle,
-                            page.size_bytes,
-                            "D2H closure has a missing ancestor",
-                        )
+            failure = ancestor_failure(page)
+            if failure is not None:
+                blockers.append(
+                    TransferBlocker(
+                        TransferBlockerCode.ANCESTOR_CLOSURE,
+                        page.handle,
+                        page.size_bytes,
+                        failure,
                     )
-                    blocked_handles.add(page.handle)
-                    break
-                if not parent.gpu_resident:
-                    blockers.append(
-                        TransferBlocker(
-                            TransferBlockerCode.ANCESTOR_CLOSURE,
-                            page.handle,
-                            page.size_bytes,
-                            "D2H target has a non-resident ancestor",
-                        )
-                    )
-                    blocked_handles.add(page.handle)
-                    break
-                ancestor = parent.parent
+                )
+                blocked_handles.add(page.handle)
         copy_bytes = sum(
             item.size_bytes
             for item in actions

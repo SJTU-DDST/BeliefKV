@@ -44,7 +44,12 @@ def analyze_predictive_prepare_canary(
             if isinstance(intent, Mapping) and intent.get("intent_id"):
                 positive_risk_intents.add(str(intent["intent_id"]))
         elif event == "predictive_semantic_intent_published":
-            published[str(record.get("intent_id") or "")] = record
+            intent_id = str(record.get("intent_id") or "")
+            published[intent_id] = record
+            if intent_id:
+                # Performance mode omits the full risk-shadow payload; publishing
+                # is the sparse durable evidence that this intent won risk selection.
+                positive_risk_intents.add(intent_id)
         elif event in {
             "predictive_semantic_intent_publish_rejected",
             "predictive_semantic_intent_rejected",

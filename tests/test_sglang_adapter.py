@@ -3931,6 +3931,39 @@ class SGLangBackendTest(unittest.TestCase):
         self.assertEqual(timing[2], 1)
         self.assertLessEqual(timing[1], timing[0])
 
+    def test_predictive_transfer_telemetry_is_correctness_evidence(self):
+        runtime = EmbeddedSGLangRuntime.__new__(EmbeddedSGLangRuntime)
+        runtime.audit = _AuditRecorder()
+        runtime.transfer_telemetry_log = None
+        runtime._now_ms = lambda: 42.0
+        runtime._pending_online_joint_residency = SimpleNamespace(
+            command_id="predictive-command",
+            predictive_intent_id="intent-1",
+        )
+        telemetry = TransferTelemetry(
+            command_id="predictive-command",
+            submit_ts_ms=10.0,
+            start_ts_ms=20.0,
+            first_layer_ready_ts_ms=None,
+            complete_ts_ms=40.0,
+            compute_wait_ms=1.0,
+            actual_bytes=400,
+            closure_bytes=400,
+            merged_operation_count=0,
+            direction=TransferDirection.D2H,
+            source_tier="gpu",
+            target_tier="host",
+            status=CommandStatus.COMPLETED,
+            extent_count=2,
+        )
+
+        runtime._emit_transfer_telemetry(telemetry)
+
+        event, _, fields = runtime.audit.events[-1]
+        self.assertEqual(event, "transfer_telemetry")
+        self.assertEqual(fields["audit_level"], "correctness")
+        self.assertEqual(fields["predictive_intent_id"], "intent-1")
+
     def test_h2d_waiter_holds_no_reservation_and_rematches_after_ack(self):
         runtime = EmbeddedSGLangRuntime.__new__(EmbeddedSGLangRuntime)
         runtime.controller = BeliefKVController()
@@ -6102,7 +6135,7 @@ class SGLangBackendTest(unittest.TestCase):
         controller.service_curve = SimpleNamespace(
             estimate=lambda *_args, **_kwargs: SimpleNamespace(
                 estimated_completion_p90_ms=10.0,
-                estimated_unhidden_stall_p90_ms=1.0,
+                estimated_unhidden_stall_p90_ms=None,
                 shape_supported=True,
                 source="unified_test_curve",
             ),
@@ -6119,8 +6152,9 @@ class SGLangBackendTest(unittest.TestCase):
         runtime._current_predictive_residency_commit = None
         runtime._restore_service_grace_by_request = {}
         runtime._last_frontier_model_version = "frontier-v1"
-        runtime._policy_runtime_runnable = (
-            lambda _now_ms: (_predictive_beneficiary_runnable(),)
+        beneficiary = _predictive_beneficiary_runnable()
+        runtime._policy_runtime_runnable = mock.Mock(
+            side_effect=AssertionError("runnable frontier must be reused")
         )
         runtime._reclaim_requirements = {}
         runtime._latest_predictive_intent = PredictiveIntent(
@@ -6149,7 +6183,7 @@ class SGLangBackendTest(unittest.TestCase):
             calibration_coverage=0.95,
             future_hbm_feasibility_probability=0.0,
             expected_benefit_ms=5.0,
-            shape_fingerprint="shape-v1",
+            shape_fingerprint="summary:300:n1",
             predicted_extent_count=1,
             maximum_transfer_ms=12.0,
             maximum_stall_ms=10.0,
@@ -6168,11 +6202,19 @@ class SGLangBackendTest(unittest.TestCase):
             semantic_residency=(),
         )
 
-        committed = runtime._physical_commit_predictive_intent(
-            plan,
-            decision,
-            now_ms=110.0,
-        )
+        with mock.patch.object(
+            controller.arbiter.bundle_builder,
+            "previews_for_context",
+            side_effect=AssertionError("PREPARE must use the bounded preview"),
+        ):
+            committed = runtime._physical_commit_predictive_intent(
+                plan,
+                decision,
+                now_ms=110.0,
+                current_runnable=(beneficiary,),
+            )
+        runtime._policy_runtime_runnable.assert_not_called()
+        runtime._policy_runtime_runnable = lambda _now_ms: (beneficiary,)
 
         self.assertIsNotNone(runtime._current_predictive_residency_commit)
         self.assertEqual(
@@ -6216,6 +6258,17 @@ class SGLangBackendTest(unittest.TestCase):
         self.assertEqual(
             predictive_queued[-1]["transfer_model"], "extent_count_aware"
         )
+        predictive_committed = [
+            fields
+            for event, _, fields in runtime.audit.events
+            if event == "predictive_semantic_intent_committed"
+        ]
+        self.assertEqual(predictive_committed[-1]["live_stall_p90_ms"], 10.0)
+        self.assertEqual(
+            predictive_committed[-1]["live_stall_source"],
+            "intent_certified_interference_envelope",
+        )
+        self.assertEqual(predictive_committed[-1]["audit_level"], "correctness")
         self.assertEqual(
             runtime._pending_online_joint_residency.plan_id,
             decision.view.plan_id,

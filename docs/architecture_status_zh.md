@@ -2,6 +2,25 @@
 
 更新日期：2026-09-11
 
+## 2026-09-11：PREPARE 价值门槛通过，物理提交门槛未通过
+
+单笔 PREPARE canary 配置下，64-root H200 高压运行完成 157 次在线 risk evaluation，
+产生 41 个正收益候选和 37 个 eligible PREPARE；92/140 action certificate fresh，18 个
+positive intent 在 latest-start 前通过 validation。Predictive worker 163/163 terminal，
+没有 failure、drop、pending 或 shutdown 遗留事务。
+
+本轮 37 个语义 intent 全部在 safe-point live rematerialization 被拒绝，predictive
+physical command 为 0，因此物理 canary 尚未通过。`predictive_safe_point_commit` P95
+为 244.78 ms；主因是 PREPARE 枚举全部 context closure，以及 safe point 对 risk 阶段
+已经使用的 conservative stall fallback 要求额外 live telemetry。
+
+实验后 PREPARE 改为 bounded exclusive preview，bundle ancestor 检查改为线性记忆化，
+safe point 复用 runnable frontier，并允许已认证的 conservative interference envelope。
+同时补齐 performance mode 下的预测事务归因事件。下一步只需一次短单笔 PREPARE GPU
+gate，验证物理提交低于 5 ms，并完成 commit/queue/D2H/ACK/terminal/outcome 守恒链路。
+完整记录见
+`docs/experiments/beliefkv_p6_prepare_canary_physical_commit_gate_2026-09-11_zh.md`。
+
 ## 2026-09-11：Direct Pipeline 首次通过 Timely-Positive 门槛
 
 64-root H200 predictor-only 高压运行形成 99.991% HBM 峰值，Predictive worker

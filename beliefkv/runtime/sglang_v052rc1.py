@@ -3400,6 +3400,7 @@ class EmbeddedSGLangRuntime:
         self.audit.emit(
             "predictive_action_outcome",
             now_ms,
+            audit_level="correctness",
             outcome_event=event,
             intent_id=outcome.intent_id,
             action=outcome.action,
@@ -15993,6 +15994,13 @@ class EmbeddedSGLangRuntime:
     def _emit_transfer_telemetry(
         self, telemetry: TransferTelemetry, **extra_fields: Any
     ) -> None:
+        pending_residency = getattr(self, "_pending_online_joint_residency", None)
+        predictive_intent_id = (
+            pending_residency.predictive_intent_id
+            if pending_residency is not None
+            and pending_residency.command_id == telemetry.command_id
+            else None
+        )
         fields = {
             "command_id": telemetry.command_id,
             "submit_ts_ms": telemetry.submit_ts_ms,
@@ -16026,10 +16034,16 @@ class EmbeddedSGLangRuntime:
             "extent_bytes_max": telemetry.extent_bytes_max,
             "small_extent_ratio": telemetry.small_extent_ratio,
             "small_extent_threshold_bytes": telemetry.small_extent_threshold_bytes,
+            "predictive_intent_id": predictive_intent_id,
             **extra_fields,
         }
         observed_ts_ms = max(float(self._now_ms()), telemetry.complete_ts_ms)
-        self.audit.emit("transfer_telemetry", observed_ts_ms, **fields)
+        self.audit.emit(
+            "transfer_telemetry",
+            observed_ts_ms,
+            audit_level="correctness" if predictive_intent_id is not None else None,
+            **fields,
+        )
         transfer_log = getattr(self, "transfer_telemetry_log", None)
         if transfer_log is not None:
             transfer_log.emit("transfer_telemetry", observed_ts_ms, **fields)
@@ -16590,17 +16604,34 @@ class EmbeddedSGLangRuntime:
             InvocationState.WAIT_JOIN,
             InvocationState.WAIT_MESSAGE,
         }
-        states_by_context: dict[str, set[InvocationState]] = defaultdict(set)
-        for invocation in self.controller.graph.invocations.values():
-            if invocation.state.terminal:
-                continue
-            states_by_context[invocation.context_id].add(invocation.state)
+        graph = self.controller.graph
+        graph_version = getattr(graph, "graph_version", None)
+        parked_cache = getattr(self, "_predictive_parked_context_cache", None)
+        if (
+            graph_version is None
+            or parked_cache is None
+            or parked_cache[0] != graph_version
+        ):
+            states_by_context: dict[str, set[InvocationState]] = defaultdict(set)
+            for invocation in graph.invocations.values():
+                if invocation.state.terminal:
+                    continue
+                states_by_context[invocation.context_id].add(invocation.state)
+            cached_parked_context_ids = tuple(
+                context_id
+                for context_id, states in states_by_context.items()
+                if states and states.issubset(wait_states)
+            )
+            self._predictive_parked_context_cache = (
+                graph_version,
+                cached_parked_context_ids,
+            )
+        else:
+            cached_parked_context_ids = parked_cache[1]
         parked_context_ids = tuple(
             context_id
-            for context_id, states in states_by_context.items()
+            for context_id in cached_parked_context_ids
             if context_id != hint.context_id
-            and states
-            and states.issubset(wait_states)
         )
         if not parked_context_ids:
             return ActionLocalPhysicalOverlayBatch(
@@ -18494,6 +18525,7 @@ class EmbeddedSGLangRuntime:
                     self.audit.emit(
                         "predictive_semantic_intent_published",
                         observation.ts_ms,
+                        audit_level="correctness",
                         worker_sequence=result.sequence,
                         source_joint_sequence=result.source_joint_sequence,
                         **candidate_intent.to_dict(),
@@ -18513,6 +18545,7 @@ class EmbeddedSGLangRuntime:
                     self.audit.emit(
                         "predictive_semantic_intent_publish_rejected",
                         observation.ts_ms,
+                        audit_level="correctness",
                         worker_sequence=result.sequence,
                         source_joint_sequence=result.source_joint_sequence,
                         intent_id=candidate_intent.intent_id,
@@ -19475,6 +19508,7 @@ class EmbeddedSGLangRuntime:
                         result.plan,
                         decision,
                         now_ms=now_ms,
+                        current_runnable=current_runnable,
                     )
                 except Exception as predictive_error:
                     self._current_predictive_residency_commit = None
@@ -19499,6 +19533,7 @@ class EmbeddedSGLangRuntime:
                 if (
                     predictive_commit_ms
                     > self.config.joint_physical_action_commit_budget_ms
+                    and self._current_predictive_residency_commit is not None
                 ):
                     self._current_predictive_residency_commit = None
                     self._latest_predictive_intent = None
@@ -19514,6 +19549,13 @@ class EmbeddedSGLangRuntime:
                         budget_ms=self.config.joint_physical_action_commit_budget_ms,
                         fallback="observed_joint_plan",
                     )
+                elif (
+                    predictive_commit_ms
+                    > self.config.joint_physical_action_commit_budget_ms
+                ):
+                    self._joint_predictive_counts[
+                        "safe_point_rejection_budget_exceeded"
+                    ] += 1
         except Exception as error:
             self._online_joint_counts["fallback_validation_error"] += 1
             self.audit.emit(
@@ -20090,6 +20132,7 @@ class EmbeddedSGLangRuntime:
         decision: OnlineJointPlanDecision,
         *,
         now_ms: float,
+        current_runnable: tuple[RunnableInvocation, ...] | None = None,
     ) -> OnlineJointPlanDecision:
         """Rematerialize one non-destructive predictive intent at a safe point."""
 
@@ -20149,6 +20192,7 @@ class EmbeddedSGLangRuntime:
         live_shape_changed: bool | None = None
         live_morphology_slack_ms: float | None = None
         current_transfer = None
+        live_stall_source: str | None = None
 
         context = self.controller.graph.contexts.get(intent.context_id)
         invocation = self.controller.graph.invocations.get(intent.invocation_id)
@@ -20165,11 +20209,13 @@ class EmbeddedSGLangRuntime:
 
         beneficiary_remaining_ms: float | None = None
         if intent.action == PredictiveActionKind.PREPARE_HOST:
-            current_runnable = {
+            if current_runnable is None:
+                current_runnable = self._policy_runtime_runnable(now_ms)
+            runnable_by_request = {
                 request.request_id: request
-                for request in self._policy_runtime_runnable(now_ms)
+                for request in current_runnable
             }
-            beneficiary = current_runnable.get(
+            beneficiary = runnable_by_request.get(
                 intent.beneficiary_request_id or ""
             )
             if beneficiary is None:
@@ -20272,8 +20318,17 @@ class EmbeddedSGLangRuntime:
             expected_actions = self._online_residency_expected_page_actions(action)
             candidates: list[PhysicalBundlePreview] = []
             envelope_blockers: set[str] = set()
-            for candidate in (
-                self.controller.arbiter.bundle_builder.previews_for_context(
+            builder = self.controller.arbiter.bundle_builder
+            if intent.action == PredictiveActionKind.PREPARE_HOST:
+                best = builder.best_exclusive_shadow_preview_for_context(
+                    target.context_id,
+                    target.context_epoch,
+                    now_ms=now_ms,
+                    host_available_bytes=host_available,
+                )
+                live_candidates = (best,) if best is not None else ()
+            else:
+                live_candidates = builder.previews_for_context(
                     command_kind,
                     target.context_id,
                     target.context_epoch,
@@ -20281,7 +20336,7 @@ class EmbeddedSGLangRuntime:
                     host_available_bytes=host_available,
                     device_available_bytes=device_available,
                 )
-            ):
+            for candidate in live_candidates:
                 if not {
                     item.action for item in candidate.page_actions
                 }.intersection(expected_actions):
@@ -20345,11 +20400,16 @@ class EmbeddedSGLangRuntime:
                 current_transfer.estimated_completion_p90_ms,
             )
             if intent.action == PredictiveActionKind.PREPARE_HOST:
-                live_shape_fingerprint = _predictive_live_shape_fingerprint(
-                    self.controller.policy_snapshot_builder,
-                    preview,
-                    now_ms=now_ms,
-                )
+                if intent.shape_fingerprint.startswith("summary:"):
+                    live_shape_fingerprint = (
+                        f"summary:{preview.copy_bytes}:n{len(preview.page_actions)}"
+                    )
+                else:
+                    live_shape_fingerprint = _predictive_live_shape_fingerprint(
+                        self.controller.policy_snapshot_builder,
+                        preview,
+                        now_ms=now_ms,
+                    )
                 live_shape_changed = (
                     live_shape_fingerprint != intent.shape_fingerprint
                     or len(preview.page_actions) != intent.predicted_extent_count
@@ -20363,9 +20423,16 @@ class EmbeddedSGLangRuntime:
                     reasons.append("shape_transfer_envelope_exceeded")
                 current_stall = current_transfer.estimated_unhidden_stall_p90_ms
                 if current_stall is None:
-                    reasons.append("shape_stall_unavailable_at_safe_point")
+                    # The intent already carries the conservative fallback used by
+                    # risk evaluation. Missing newer stall telemetry is not new
+                    # evidence and must not make the same certificate unusable.
+                    current_stall = intent.maximum_stall_ms
+                    live_stall_source = "intent_certified_interference_envelope"
                 elif current_stall > intent.maximum_stall_ms:
                     reasons.append("shape_stall_envelope_exceeded")
+                    live_stall_source = "live_service_curve"
+                else:
+                    live_stall_source = "live_service_curve"
                 live_morphology_slack_ms = (
                     intent.morphology_slack_ms
                     - age_ms
@@ -20420,6 +20487,7 @@ class EmbeddedSGLangRuntime:
             self.audit.emit(
                 "predictive_semantic_intent_rejected",
                 now_ms,
+                audit_level="correctness",
                 plan_id=plan.plan_id,
                 intent_id=intent.intent_id,
                 action=intent.action.value,
@@ -20444,10 +20512,12 @@ class EmbeddedSGLangRuntime:
                     else None
                 ),
                 live_stall_p90_ms=(
-                    current_transfer.estimated_unhidden_stall_p90_ms
+                    current_stall
                     if current_transfer is not None
+                    and intent.action == PredictiveActionKind.PREPARE_HOST
                     else None
                 ),
+                live_stall_source=live_stall_source,
                 live_morphology_slack_ms=live_morphology_slack_ms,
                 native_hicache_inflight_bytes=native_inflight_bytes,
                 reasons=sorted(set(reasons)),
@@ -20547,6 +20617,7 @@ class EmbeddedSGLangRuntime:
         self.audit.emit(
             "predictive_semantic_intent_committed",
             now_ms,
+            audit_level="correctness",
             plan_id=plan.plan_id,
             intent_id=intent.intent_id,
             source_predictive_joint_plan_id=source_prediction_joint_plan_id,
@@ -20574,10 +20645,12 @@ class EmbeddedSGLangRuntime:
                 else None
             ),
             live_stall_p90_ms=(
-                current_transfer.estimated_unhidden_stall_p90_ms
+                current_stall
                 if current_transfer is not None
+                and intent.action == PredictiveActionKind.PREPARE_HOST
                 else None
             ),
+            live_stall_source=live_stall_source,
             live_morphology_slack_ms=live_morphology_slack_ms,
             native_hicache_inflight_bytes=native_inflight_bytes,
             transfer_model="extent_count_aware",
@@ -20716,6 +20789,7 @@ class EmbeddedSGLangRuntime:
                     _PredictiveOverlaySeedPlan(decision.view.plan_id),
                     decision,
                     now_ms=now_ms,
+                    current_runnable=runnable,
                 )
             except Exception as error:
                 self._current_predictive_residency_commit = None
@@ -20738,12 +20812,19 @@ class EmbeddedSGLangRuntime:
             self._joint_shadow_timing_samples.setdefault(
                 "predictive_safe_point_commit_ms", deque(maxlen=65_536)
             ).append(elapsed_ms)
-            if elapsed_ms > self.config.joint_physical_action_commit_budget_ms:
+            if (
+                elapsed_ms > self.config.joint_physical_action_commit_budget_ms
+                and self._current_predictive_residency_commit is not None
+            ):
                 self._current_predictive_residency_commit = None
                 self._latest_predictive_intent = None
                 decision = observed_decision
                 self._joint_predictive_counts[
                     "seed_safe_point_budget_fallback"
+                ] += 1
+            elif elapsed_ms > self.config.joint_physical_action_commit_budget_ms:
+                self._joint_predictive_counts[
+                    "seed_safe_point_rejection_budget_exceeded"
                 ] += 1
         self._current_joint_plan_epoch = decision.epoch
         self._online_joint_counts["safe_point_seed_epoch"] += 1
@@ -21346,6 +21427,7 @@ class EmbeddedSGLangRuntime:
             self.audit.emit(
                 "predictive_joint_residency_dispatch_rejected",
                 now_ms,
+                audit_level="correctness",
                 plan_id=plan_id,
                 intent_id=intent.intent_id,
                 context_id=intent.context_id,

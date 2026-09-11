@@ -70,6 +70,18 @@ def test_predictive_prepare_canary_requires_complete_attribution_chain() -> None
     assert result["outcome_counts"] == {"useful": 1}
 
 
+def test_performance_mode_publish_is_positive_belief_evidence() -> None:
+    records = [
+        item for item in _complete_chain() if item["event"] != "predictive_risk_shadow"
+    ]
+
+    result = analyze_predictive_prepare_canary(records)
+
+    assert result["positive_risk_intent_count"] == 1
+    assert result["published_intent_count"] == 1
+    assert result["attribution_chain_complete"] is True
+
+
 def test_predictive_prepare_canary_accepts_natural_no_action() -> None:
     result = analyze_predictive_prepare_canary(
         [{"event": "predictive_risk_shadow", "selected_action": "observed_baseline"}]
