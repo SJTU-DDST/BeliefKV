@@ -82,6 +82,29 @@ def test_performance_mode_publish_is_positive_belief_evidence() -> None:
     assert result["attribution_chain_complete"] is True
 
 
+def test_mechanism_gate_is_not_reported_as_natural_policy_evidence() -> None:
+    records = [
+        item.copy()
+        for item in _complete_chain()
+        if item["event"] != "predictive_risk_shadow"
+    ]
+    publish = next(
+        item
+        for item in records
+        if item["event"] == "predictive_semantic_intent_published"
+    )
+    publish["evidence_kind"] = "injected_mechanism_gate"
+    publish["injected_test_evidence"] = True
+
+    result = analyze_predictive_prepare_canary(records)
+
+    assert result["status"] == "completed_mechanism_gate"
+    assert result["mechanism_action_available"] is True
+    assert result["natural_action_available"] is False
+    assert result["positive_risk_intent_count"] == 0
+    assert result["attribution_chain_complete"] is True
+
+
 def test_predictive_prepare_canary_accepts_natural_no_action() -> None:
     result = analyze_predictive_prepare_canary(
         [{"event": "predictive_risk_shadow", "selected_action": "observed_baseline"}]

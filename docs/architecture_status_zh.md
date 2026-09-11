@@ -1,6 +1,24 @@
 # BeliefKV 最新架构与实现状态
 
-更新日期：2026-09-11
+更新日期：2026-09-12
+
+## 2026-09-12：PREPARE_HOST 单动作机制门禁通过
+
+H200 v6 的 deterministic PREPARE gate 在提交 `6f9a9f7` 上完成一笔真实
+766,083,072-byte、2-extent D2H。intent、safe-point commit、queue、dispatch、transfer、
+ACK 和 transaction terminal 的 ID/bytes/shape 全部守恒；物理提交 wall/thread-CPU 为
+4.284/2.217 ms，无 pending 或 orphan 状态。safe-point capture P50/P95/P99 为
+0.293/0.526/0.829 ms，predictive worker 6/6 terminal 且无失败或积压。
+
+实验同时修复了一个明确配置缺陷：`PREPARE_HOST` 曾在 `shadow_enabled=false` 时被允许
+进入 SHADOW queue，但 dispatcher 永远不会消费。现在 launcher 必须显式传入
+`--enable-shadow-transfers`，正数 PREPARE canary limit 在配置期 fail-fast，safe point
+和 dispatcher 仍保留双重拒绝。
+
+该动作来自 `injected_mechanism_gate`，不属于自然预测收益。分析器已区分 mechanism 与
+natural evidence；本轮 `natural_action_available=false`，因此只关闭机制门槛，不开放
+COMMIT/PREFETCH。完整记录见
+`docs/experiments/beliefkv_p6_prepare_host_mechanism_gate_2026-09-12_zh.md`。
 
 ## 2026-09-11：CPU-Budget Canary 通过高压门槛，但未产生自然正收益动作
 

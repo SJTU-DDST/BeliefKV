@@ -20,7 +20,9 @@ def _records(path: Path) -> Iterable[Mapping[str, object]]:
 
 def main() -> int:
     parser = argparse.ArgumentParser(
-        description="Validate one natural predictive JointPlan PREPARE_HOST action."
+        description=(
+            "Validate one natural or mechanism-gate JointPlan PREPARE_HOST action."
+        )
     )
     parser.add_argument("--runtime-audit", type=Path, required=True)
     parser.add_argument("--output", type=Path, required=True)

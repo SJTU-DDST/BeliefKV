@@ -14,7 +14,7 @@ def analyze_predictive_prepare_canary(
     *,
     canary_limit: int = 1,
 ) -> dict[str, object]:
-    """Validate one natural PREPARE_HOST action from belief to attribution.
+    """Validate one PREPARE_HOST action from intent evidence to attribution.
 
     The analyzer deliberately has no morphology promotion/veto gate. A run with
     no naturally selected action is a valid negative result; a run with an
@@ -28,6 +28,7 @@ def analyze_predictive_prepare_canary(
     risk_evaluations = 0
     positive_risk_intents: set[str] = set()
     published: dict[str, Mapping[str, object]] = {}
+    evidence_kind_by_intent: dict[str, str] = {}
     committed: dict[str, Mapping[str, object]] = {}
     queued: dict[str, Mapping[str, object]] = {}
     telemetry: dict[str, list[Mapping[str, object]]] = {}
@@ -46,7 +47,9 @@ def analyze_predictive_prepare_canary(
         elif event == "predictive_semantic_intent_published":
             intent_id = str(record.get("intent_id") or "")
             published[intent_id] = record
-            if intent_id:
+            evidence_kind = str(record.get("evidence_kind") or "model_selected")
+            evidence_kind_by_intent[intent_id] = evidence_kind
+            if intent_id and evidence_kind != "injected_mechanism_gate":
                 # Performance mode omits the full risk-shadow payload; publishing
                 # is the sparse durable evidence that this intent won risk selection.
                 positive_risk_intents.add(intent_id)
@@ -102,8 +105,10 @@ def analyze_predictive_prepare_canary(
         outcome = final_outcomes[-1] if final_outcomes else None
 
         transaction_id = str(queue.get("transaction_id") or "") if queue else ""
+        evidence_kind = evidence_kind_by_intent.get(intent_id, "model_selected")
+        mechanism_only = evidence_kind == "injected_mechanism_gate"
         stage_presence = {
-            "belief": intent_id in positive_risk_intents,
+            "belief": intent_id in positive_risk_intents or mechanism_only,
             "publish": publish is not None,
             "joint_commit": True,
             "queue": queue is not None,
@@ -167,6 +172,8 @@ def analyze_predictive_prepare_canary(
         rows.append(
             {
                 "intent_id": intent_id,
+                "evidence_kind": evidence_kind,
+                "mechanism_only": mechanism_only,
                 "context_id": commit.get("context_id"),
                 "command_id": command_id or None,
                 "transaction_id": transaction_id or None,
@@ -185,19 +192,27 @@ def analyze_predictive_prepare_canary(
     committed_ids = set(committed)
     orphan_intents = sorted((set(queued) | set(terminal) | set(outcomes)) - committed_ids)
     canary_limit_respected = len(committed) <= canary_limit
-    natural_action_available = len(committed) == 1
+    action_available = len(committed) == 1
+    mechanism_action_available = bool(
+        action_available and rows[0]["mechanism_only"]
+    )
+    natural_action_available = bool(
+        action_available and not rows[0]["mechanism_only"]
+    )
     chain_complete = bool(
-        natural_action_available
+        action_available
         and rows[0]["attribution_chain_complete"]
         and not orphan_intents
     )
     transaction_completed = bool(
-        natural_action_available and rows[0]["transaction_completed"]
+        action_available and rows[0]["transaction_completed"]
     )
     if not canary_limit_respected:
         status = "canary_limit_exceeded"
     elif not committed:
         status = "no_positive_action"
+    elif chain_complete and transaction_completed and mechanism_action_available:
+        status = "completed_mechanism_gate"
     elif chain_complete and transaction_completed:
         status = "completed"
     else:
@@ -212,6 +227,8 @@ def analyze_predictive_prepare_canary(
         "natural_prepare_count": len(committed),
         "canary_limit": canary_limit,
         "canary_limit_respected": canary_limit_respected,
+        "action_available": action_available,
+        "mechanism_action_available": mechanism_action_available,
         "natural_action_available": natural_action_available,
         "attribution_chain_complete": chain_complete,
         "transaction_completed": transaction_completed,
