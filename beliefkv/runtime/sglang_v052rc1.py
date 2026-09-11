@@ -152,6 +152,7 @@ from beliefkv.runtime.page_index import PageIndexReplicaDelta
 
 
 _PREDICTIVE_PREPARE_MICRO_GATE_MIN_WINDOW_MS = 120_000.0
+_PREDICTIVE_PREPARE_MICRO_GATE_MAX_ATTEMPTS = 16
 
 _PERFORMANCE_METRIC_EVENTS = frozenset(
     {
@@ -16710,9 +16711,30 @@ class EmbeddedSGLangRuntime:
                 item.context_id,
             )
         )
+        selected_summaries = summaries
+        if force_mechanism_capture:
+            minimum_private_bytes = getattr(
+                self.config,
+                "predictive_prepare_micro_gate_min_private_bytes",
+                0,
+            )
+            qualifying = [
+                item
+                for item in summaries
+                if item.exclusive_reclaimable_upper_bound_bytes
+                >= minimum_private_bytes
+            ]
+            selected_summaries = sorted(
+                qualifying or summaries,
+                key=lambda item: (
+                    item.d2h_copy_upper_bound_bytes,
+                    item.d2h_extent_count_upper_bound,
+                    item.context_id,
+                ),
+            )
         overlays: list[ActionLocalPhysicalOverlay] = []
         observed_failure_reasons: set[str] = set()
-        for summary in summaries[:2]:
+        for summary in selected_summaries[:2]:
             context = self.controller.graph.contexts.get(summary.context_id)
             if context is None:
                 observed_failure_reasons.add("no_victim_context_selected")
@@ -16805,7 +16827,6 @@ class EmbeddedSGLangRuntime:
         if (
             hint is None
             or opportunity is None
-            or opportunity.hbm_opportunity_possible
             or not getattr(
                 self.config, "predictive_prepare_micro_gate_enabled", False
             )
@@ -16935,6 +16956,7 @@ class EmbeddedSGLangRuntime:
         ):
             return
         state = self._predictive_prepare_micro_gate_state
+        previous_stage = state.get("stage")
         expected_intent_id = state.get("intent_id")
         if (
             intent_id is not None
@@ -16942,9 +16964,33 @@ class EmbeddedSGLangRuntime:
             and intent_id != expected_intent_id
         ):
             return
-        state.update({"stage": stage, **fields})
+        if stage == "intent_published":
+            state["attempt_count"] = int(state.get("attempt_count", 0)) + 1
+        retryable_rejection = bool(
+            stage == "rejected"
+            and previous_stage in {"intent_published", "materialized", "committed"}
+        )
+        if retryable_rejection:
+            state["rejected_attempt_count"] = int(
+                state.get("rejected_attempt_count", 0)
+            ) + 1
+            state["last_rejected_intent_id"] = intent_id
+            state.update(fields)
+            if (
+                int(state.get("attempt_count", 0))
+                < _PREDICTIVE_PREPARE_MICRO_GATE_MAX_ATTEMPTS
+            ):
+                state["stage"] = "armed"
+                state["intent_id"] = None
+                self._predictive_prepare_micro_gate_last_probe_signature = None
+            else:
+                state["stage"] = "failed"
+                state["failure_reason"] = "pre_dispatch_attempt_limit"
+        else:
+            state.update({"stage": stage, **fields})
         if intent_id is not None:
-            state["intent_id"] = intent_id
+            if not retryable_rejection:
+                state["intent_id"] = intent_id
         self.audit.emit(
             "predictive_prepare_micro_gate_state",
             now_ms,
@@ -17073,9 +17119,10 @@ class EmbeddedSGLangRuntime:
             f"{hint.startup_bytes}:{hint.growth_bytes}"
         )
         gate_id = self.config.predictive_prepare_micro_gate_id
+        attempt = int(state.get("attempt_count", 0)) + 1
         intent_id = (
             f"{gate_id}:{hint.request_id}:{overlay.context_id}:"
-            f"e{overlay.context_epoch}"
+            f"e{overlay.context_epoch}:a{attempt}"
         )
         intent = PredictiveIntent(
             intent_id=intent_id,
@@ -20544,6 +20591,17 @@ class EmbeddedSGLangRuntime:
         if intent is None or decision.view is None or decision.epoch is None:
             return decision
 
+        phase_started_ns = time.thread_time_ns()
+        phase_cpu_ms: dict[str, float] = {}
+
+        def finish_phase(name: str) -> None:
+            nonlocal phase_started_ns
+            completed_ns = time.thread_time_ns()
+            phase_cpu_ms[name] = (
+                completed_ns - phase_started_ns
+            ) / 1_000_000.0
+            phase_started_ns = completed_ns
+
         reasons: list[str] = []
         observed_residency_actions = any(
             item.action != ResidencyAction.KEEP for item in plan.residency
@@ -20609,6 +20667,7 @@ class EmbeddedSGLangRuntime:
             reasons.append("invocation_context_changed")
         elif invocation.state.value != intent.expected_invocation_state:
             reasons.append("invocation_state_changed")
+        finish_phase("guards_and_causal")
 
         beneficiary_remaining_ms: float | None = None
         if intent.action == PredictiveActionKind.PREPARE_HOST:
@@ -20707,6 +20766,7 @@ class EmbeddedSGLangRuntime:
         )
         if command_kind is None:
             reasons.append("no_physical_action")
+        finish_phase("beneficiary_and_action")
 
         preview: PhysicalBundlePreview | None = None
         blockers: set[str] = set()
@@ -20771,6 +20831,7 @@ class EmbeddedSGLangRuntime:
                 reasons.extend(f"physical:{item}" for item in sorted(blockers))
                 if not blockers and not envelope_blockers:
                     reasons.append("physical_preview_unavailable")
+        finish_phase("physical_rematerialization")
 
         if preview is not None:
             direction = (
@@ -20870,6 +20931,7 @@ class EmbeddedSGLangRuntime:
             + self.config.predictive_prefetch_desired_lead_ms
         ):
             reasons.append("prefetch_too_early")
+        finish_phase("transfer_and_timing")
 
         if (
             preview is not None
@@ -20931,6 +20993,7 @@ class EmbeddedSGLangRuntime:
                 native_hicache_inflight_bytes=native_inflight_bytes,
                 reasons=sorted(set(reasons)),
                 physical_blockers=sorted(blockers),
+                validation_phase_cpu_ms=phase_cpu_ms,
                 fallback="observed_joint_plan",
                 transfer_model="extent_count_aware",
                 live_transfer_source=(
@@ -21005,6 +21068,7 @@ class EmbeddedSGLangRuntime:
                 ("source_joint_plan_id", plan.plan_id),
             ),
         )
+        finish_phase("transaction_certificate")
         epoch = replace(
             decision.epoch,
             action_slices=decision.epoch.action_slices + (slice_,),
@@ -21059,6 +21123,7 @@ class EmbeddedSGLangRuntime:
                 "live_stall_source": live_stall_source,
                 "live_morphology_slack_ms": live_morphology_slack_ms,
                 "native_hicache_inflight_bytes": native_inflight_bytes,
+                "validation_phase_cpu_ms": dict(phase_cpu_ms),
                 "transfer_model": "extent_count_aware",
                 "live_transfer_source": (
                     current_transfer.source

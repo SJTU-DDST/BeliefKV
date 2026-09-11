@@ -814,6 +814,8 @@ def test_predictive_prepare_micro_gate_injects_one_live_evidence_intent():
     assert runtime._current_online_joint_decision is None
     assert runtime._last_joint_decision_plan_id is None
     assert runtime._predictive_prepare_micro_gate_state["stage"] == "intent_published"
+    assert runtime._predictive_prepare_micro_gate_state["attempt_count"] == 1
+    assert intent.intent_id.endswith(":a1")
     assert runtime._predictive_prepare_micro_gate_holds_intent(intent)
     assert not runtime._maybe_inject_predictive_prepare_micro_gate(
         hint, overlay_batch, observation
@@ -821,6 +823,58 @@ def test_predictive_prepare_micro_gate_injects_one_live_evidence_intent():
     assert runtime._joint_predictive_counts[
         "prepare_micro_gate_intent_published"
     ] == 1
+
+
+def test_predictive_prepare_micro_gate_retries_only_before_queue():
+    runtime = EmbeddedSGLangRuntime.__new__(EmbeddedSGLangRuntime)
+    runtime.config = SimpleNamespace(
+        predictive_prepare_micro_gate_enabled=True,
+    )
+    runtime.audit = _AuditRecorder()
+    runtime._predictive_prepare_micro_gate_last_probe_signature = ("old",)
+    runtime._predictive_prepare_micro_gate_state = {
+        "stage": "intent_published",
+        "intent_id": "intent-1",
+        "attempt_count": 1,
+    }
+
+    runtime._update_predictive_prepare_micro_gate(
+        "rejected",
+        now_ms=10.0,
+        intent_id="intent-1",
+        rejection_reasons=["beneficiary_missing"],
+    )
+
+    state = runtime._predictive_prepare_micro_gate_state
+    assert state["stage"] == "armed"
+    assert state["intent_id"] is None
+    assert state["rejected_attempt_count"] == 1
+    assert state["last_rejected_intent_id"] == "intent-1"
+    assert runtime._predictive_prepare_micro_gate_last_probe_signature is None
+
+    runtime._update_predictive_prepare_micro_gate(
+        "intent_published",
+        now_ms=11.0,
+        intent_id="intent-2",
+    )
+    runtime._update_predictive_prepare_micro_gate(
+        "queued",
+        now_ms=12.0,
+        intent_id="intent-2",
+        command_id="command-2",
+    )
+    runtime._update_predictive_prepare_micro_gate(
+        "rejected",
+        now_ms=13.0,
+        intent_id="intent-2",
+        rejection_reasons=["backend_rejected"],
+    )
+
+    state = runtime._predictive_prepare_micro_gate_state
+    assert state["stage"] == "rejected"
+    assert state["intent_id"] == "intent-2"
+    assert state["attempt_count"] == 2
+    assert state["rejected_attempt_count"] == 1
 
 
 def test_action_local_overlay_force_is_scoped_to_mechanism_capture():
