@@ -918,6 +918,13 @@ class PageOwnershipIndex:
             if self.pages[handle].residency != PhysicalResidency.DEAD
         ]
 
+    def context_page_count(self, context_id: str) -> int:
+        """Return an O(1) coarse extent count for bounded victim screening."""
+
+        if context_id not in self._context_epoch:
+            raise PageIndexError(f"unknown context: {context_id}")
+        return len(self._context_pages.get(context_id, ()))
+
     def context_epoch(self, context_id: str) -> int:
         try:
             return self._context_epoch[context_id]
@@ -1208,7 +1215,6 @@ class PageOwnershipIndex:
         cached = self._context_summary_cache.get(context_id)
         if cached is not None:
             return cached
-        pages = self.context_pages(context_id)
         physical_unique_bytes = 0
         gpu_bytes = 0
         cpu_bytes = 0
@@ -1216,8 +1222,13 @@ class PageOwnershipIndex:
         exclusive_reclaimable_bytes = 0
         d2h_copy_bytes = 0
         d2h_extent_count = 0
+        extent_count = 0
         last_access_ms = 0.0
-        for page in pages:
+        for handle in self._context_pages.get(context_id, ()):
+            page = self.pages.get(handle)
+            if page is None or page.residency == PhysicalResidency.DEAD:
+                continue
+            extent_count += 1
             physical_unique_bytes += page.size_bytes
             gpu_bytes += page.size_bytes if page.gpu_resident else 0
             cpu_bytes += page.size_bytes if page.cpu_resident else 0
@@ -1244,7 +1255,7 @@ class PageOwnershipIndex:
         cached = ContextPhysicalSummary(
             context_id=context_id,
             context_epoch=self._context_epoch[context_id],
-            extent_count=len(pages),
+            extent_count=extent_count,
             physical_unique_bytes=physical_unique_bytes,
             gpu_bytes=gpu_bytes,
             cpu_bytes=cpu_bytes,

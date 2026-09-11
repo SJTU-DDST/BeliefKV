@@ -3,6 +3,7 @@ from __future__ import annotations
 import atexit
 import gc
 import hashlib
+import heapq
 import inspect
 import json
 import math
@@ -2126,6 +2127,7 @@ _JOINT_DECISION_REUSE_INTERVAL_MS = 100.0
 _JOINT_SIGNATURE_CHECK_INTERVAL_MS = 10.0
 _ACK_POLL_INTERVAL_MS = 5.0
 _POLICY_CHECK_INTERVAL_MS = 5.0
+_PREDICTIVE_VICTIM_SUMMARY_SCAN_LIMIT = 8
 
 
 class EmbeddedSGLangRuntime:
@@ -2726,6 +2728,11 @@ class EmbeddedSGLangRuntime:
             self.joint_shadow_worker = LatestWinsJointPlanWorker(
                 planner,
                 assembler=IncrementalPolicyInputAssembler(self.config),
+                risk_result_sink=(
+                    self.predictive_risk_worker.submit
+                    if self.predictive_risk_worker is not None
+                    else None
+                ),
             )
         self.audit.emit(
             "runtime_initialized",
@@ -4134,6 +4141,14 @@ class EmbeddedSGLangRuntime:
                 ),
                 predictive_decision_counts=predictive_counts,
             )
+        joint_shadow_worker = getattr(self, "joint_shadow_worker", None)
+        if joint_shadow_worker is not None:
+            worker_closed = joint_shadow_worker.close()
+            self.joint_shadow_worker = None
+            self._emit_joint_shadow_summary(
+                joint_shadow_worker,
+                worker_closed=worker_closed,
+            )
         predictive_risk_worker = getattr(self, "predictive_risk_worker", None)
         if predictive_risk_worker is not None:
             predictive_worker_closed = predictive_risk_worker.close()
@@ -4163,14 +4178,6 @@ class EmbeddedSGLangRuntime:
                     ),
                 },
                 observed_worker_independent=True,
-            )
-        joint_shadow_worker = getattr(self, "joint_shadow_worker", None)
-        if joint_shadow_worker is not None:
-            worker_closed = joint_shadow_worker.close()
-            self.joint_shadow_worker = None
-            self._emit_joint_shadow_summary(
-                joint_shadow_worker,
-                worker_closed=worker_closed,
             )
         token_trace_log = getattr(self, "request_token_trace_log", None)
         if token_trace_log is not None:
@@ -16549,13 +16556,11 @@ class EmbeddedSGLangRuntime:
                 continue
             states_by_context[invocation.context_id].add(invocation.state)
         parked_context_ids = tuple(
-            sorted(
-                context_id
-                for context_id, states in states_by_context.items()
-                if context_id != hint.context_id
-                and states
-                and states.issubset(wait_states)
-            )
+            context_id
+            for context_id, states in states_by_context.items()
+            if context_id != hint.context_id
+            and states
+            and states.issubset(wait_states)
         )
         if not parked_context_ids:
             return ActionLocalPhysicalOverlayBatch(
@@ -16568,10 +16573,24 @@ class EmbeddedSGLangRuntime:
         page_index = self.controller.page_index
         summaries = []
         missing_context = False
+        live_parked_context_ids = []
         for context_id in parked_context_ids:
             if not page_index.has_context(context_id):
                 missing_context = True
                 continue
+            live_parked_context_ids.append(context_id)
+        summary_context_ids = heapq.nsmallest(
+            min(
+                _PREDICTIVE_VICTIM_SUMMARY_SCAN_LIMIT,
+                len(live_parked_context_ids),
+            ),
+            live_parked_context_ids,
+            key=lambda context_id: (
+                -page_index.context_page_count(context_id),
+                context_id,
+            ),
+        )
+        for context_id in summary_context_ids:
             summary = page_index.context_physical_summary(context_id)
             if summary.exclusive_reclaimable_upper_bound_bytes > 0:
                 summaries.append(summary)
@@ -16585,6 +16604,8 @@ class EmbeddedSGLangRuntime:
                     else "victim_zero_reclaimable_bytes"
                 ),
                 capture_ms=(time.perf_counter_ns() - started_ns) / 1_000_000.0,
+                parked_context_count=len(parked_context_ids),
+                summarized_context_count=len(summary_context_ids),
             )
 
         summaries.sort(
@@ -16670,6 +16691,8 @@ class EmbeddedSGLangRuntime:
             overlays=tuple(overlays),
             selection_reason=selection_reason,
             capture_ms=(time.perf_counter_ns() - started_ns) / 1_000_000.0,
+            parked_context_count=len(parked_context_ids),
+            summarized_context_count=len(summary_context_ids),
         )
 
     @staticmethod
@@ -16996,6 +17019,16 @@ class EmbeddedSGLangRuntime:
             ),
             overlay_victim_count=(
                 len(overlay_batch.overlays) if overlay_batch is not None else 0
+            ),
+            overlay_parked_context_count=(
+                overlay_batch.parked_context_count
+                if overlay_batch is not None
+                else 0
+            ),
+            overlay_summarized_context_count=(
+                overlay_batch.summarized_context_count
+                if overlay_batch is not None
+                else 0
             ),
             overlay_selection_reason=(
                 overlay_batch.selection_reason
@@ -17899,8 +17932,11 @@ class EmbeddedSGLangRuntime:
             and result.plan is not None
             and predictive_trigger
         ):
+            predictive_submission = result.predictive_submission
+            direct_forwarded = predictive_submission is not None
             try:
-                predictive_submission = predictive_worker.submit(result)
+                if predictive_submission is None:
+                    predictive_submission = predictive_worker.submit(result)
             except Exception as error:
                 self._joint_predictive_counts["submission_failed"] += 1
                 self.audit.emit(
@@ -17909,6 +17945,7 @@ class EmbeddedSGLangRuntime:
                     source_joint_sequence=result.sequence,
                     source_snapshot_id=policy_input.snapshot_id,
                     error=f"{type(error).__name__}: {error}",
+                    direct_forward_error=result.predictive_submission_error,
                     prediction_used=False,
                 )
             else:
@@ -17947,6 +17984,11 @@ class EmbeddedSGLangRuntime:
                     enqueue_ms=predictive_submission.enqueue_ms,
                     enqueued=predictive_submission.enqueued,
                     replaced_sequence=predictive_submission.replaced_sequence,
+                    submitted_monotonic_ms=(
+                        predictive_submission.submitted_monotonic_ms
+                    ),
+                    direct_forwarded=direct_forwarded,
+                    direct_forward_error=result.predictive_submission_error,
                     hint_created_ts_ms=hint_value.get("created_ts_ms"),
                     hint_published_ts_ms=hint_value.get("published_ts_ms"),
                     physical_mirror_age_ms=scope_value.get(

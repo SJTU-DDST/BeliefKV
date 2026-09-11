@@ -9,7 +9,7 @@ from dataclasses import dataclass, field, replace
 from enum import Enum
 from pathlib import Path
 from types import MappingProxyType
-from typing import Mapping, Protocol
+from typing import Callable, Mapping, Protocol
 
 from beliefkv.control.causal_graph import InvocationState, RuntimeCausalContextGraph
 from beliefkv.control.data_consumers import ObservedDataConsumerIndex
@@ -224,6 +224,8 @@ class ActionLocalPhysicalOverlayBatch:
     overlays: tuple[ActionLocalPhysicalOverlay, ...] = ()
     selection_reason: str | None = None
     capture_ms: float = 0.0
+    parked_context_count: int = 0
+    summarized_context_count: int = 0
 
     def __post_init__(self) -> None:
         if not self.beneficiary_risk_signature:
@@ -239,6 +241,10 @@ class ActionLocalPhysicalOverlayBatch:
             raise ValueError("overlay victim contexts must be unique")
         if self.capture_ms < 0:
             raise ValueError("overlay capture time must be non-negative")
+        if self.parked_context_count < 0 or self.summarized_context_count < 0:
+            raise ValueError("overlay context counts must be non-negative")
+        if self.summarized_context_count > self.parked_context_count:
+            raise ValueError("summarized contexts cannot exceed parked contexts")
         if self.selection_reason is not None and not self.selection_reason:
             raise ValueError("overlay selection reason must be non-empty")
 
@@ -251,6 +257,8 @@ class ActionLocalPhysicalOverlayBatch:
             "overlays": [item.to_dict() for item in self.overlays],
             "selection_reason": self.selection_reason,
             "capture_ms": self.capture_ms,
+            "parked_context_count": self.parked_context_count,
+            "summarized_context_count": self.summarized_context_count,
         }
 
 
@@ -559,6 +567,8 @@ class JointShadowResult:
     risk_evaluation_requested: bool = False
     planning_attempted: bool = True
     risk_funnel_reason: str | None = None
+    predictive_submission: PredictiveRiskSubmission | None = None
+    predictive_submission_error: str | None = None
 
     @property
     def queue_wait_ms(self) -> float:
@@ -1618,10 +1628,14 @@ class LatestWinsJointPlanWorker:
         planner: JointPlanProducer | None = None,
         *,
         assembler: IncrementalPolicyInputAssembler | None = None,
+        risk_result_sink: (
+            Callable[[JointShadowResult], PredictiveRiskSubmission] | None
+        ) = None,
         thread_name: str = "beliefkv-joint-shadow",
     ) -> None:
         self.planner = planner or ObservedJointPlanner()
         self.assembler = assembler
+        self._risk_result_sink = risk_result_sink
         self._incremental_mode = assembler is not None
         self._condition = threading.Condition()
         self._pending: _WorkItem | None = None
@@ -1966,6 +1980,25 @@ class LatestWinsJointPlanWorker:
                 planning_attempted=planning_attempted,
                 risk_funnel_reason=risk_funnel_reason,
             )
+            if (
+                risk_evaluation_requested
+                and error is None
+                and self._risk_result_sink is not None
+            ):
+                try:
+                    predictive_submission = self._risk_result_sink(result)
+                except Exception as caught:
+                    result = replace(
+                        result,
+                        predictive_submission_error=(
+                            f"{type(caught).__name__}: {caught}"
+                        ),
+                    )
+                else:
+                    result = replace(
+                        result,
+                        predictive_submission=predictive_submission,
+                    )
             with self._condition:
                 self._busy = False
                 self._completed_count += 1

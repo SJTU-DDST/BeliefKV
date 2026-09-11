@@ -696,16 +696,16 @@ def test_action_local_probe_filters_slot_only_beneficiary_before_graph_scan():
     assert not batch.opportunity.hbm_opportunity_possible
 
 
-def test_action_local_overlay_captures_at_most_two_ranked_live_victims():
+def test_action_local_overlay_bounds_summary_scan_and_captures_two_victims():
     runtime = EmbeddedSGLangRuntime.__new__(EmbeddedSGLangRuntime)
     runtime.scheduler = SimpleNamespace(
         running_batch=SimpleNamespace(reqs=()),
         chunked_req=None,
         max_running_requests=32,
     )
+    context_ids = tuple(f"victim-{index:02d}" for index in range(12))
     contexts = {
-        context_id: SimpleNamespace(epoch=0)
-        for context_id in ("victim-a", "victim-b", "victim-c")
+        context_id: SimpleNamespace(epoch=0) for context_id in context_ids
     }
     invocations = {
         context_id: SimpleNamespace(
@@ -714,27 +714,16 @@ def test_action_local_overlay_captures_at_most_two_ranked_live_victims():
         for context_id in contexts
     }
     summaries = {
-        "victim-a": SimpleNamespace(
-            context_id="victim-a", context_epoch=0,
-            exclusive_reclaimable_upper_bound_bytes=300,
-            d2h_copy_upper_bound_bytes=300,
+        context_id: SimpleNamespace(
+            context_id=context_id,
+            context_epoch=0,
+            exclusive_reclaimable_upper_bound_bytes=300 - index,
+            d2h_copy_upper_bound_bytes=300 - index,
             d2h_extent_count_upper_bound=3,
-            locked_bytes=0, last_access_ms=3.0,
-        ),
-        "victim-b": SimpleNamespace(
-            context_id="victim-b", context_epoch=0,
-            exclusive_reclaimable_upper_bound_bytes=200,
-            d2h_copy_upper_bound_bytes=200,
-            d2h_extent_count_upper_bound=2,
-            locked_bytes=0, last_access_ms=2.0,
-        ),
-        "victim-c": SimpleNamespace(
-            context_id="victim-c", context_epoch=0,
-            exclusive_reclaimable_upper_bound_bytes=100,
-            d2h_copy_upper_bound_bytes=100,
-            d2h_extent_count_upper_bound=1,
-            locked_bytes=0, last_access_ms=1.0,
-        ),
+            locked_bytes=0,
+            last_access_ms=float(index),
+        )
+        for index, context_id in enumerate(context_ids)
     }
     calls = Counter()
 
@@ -746,6 +735,7 @@ def test_action_local_overlay_captures_at_most_two_ranked_live_victims():
         revision=17,
         topology_revision=11,
         has_context=lambda context_id: context_id in summaries,
+        context_page_count=lambda context_id: 100 - int(context_id[-2:]),
         context_epoch=lambda _context_id: 0,
         context_physical_summary=context_physical_summary,
         context_revision=lambda _context_id: 3,
@@ -777,7 +767,7 @@ def test_action_local_overlay_captures_at_most_two_ranked_live_victims():
 
     assert batch.selection_reason is None
     assert tuple(item.context_id for item in batch.overlays) == (
-        "victim-a", "victim-b"
+        "victim-00", "victim-01"
     )
     assert batch.opportunity.beneficiary_hbm_blocked
     assert all(item.page_revision == 17 for item in batch.overlays)
@@ -789,9 +779,11 @@ def test_action_local_overlay_captures_at_most_two_ranked_live_victims():
         hint, replace(observation, ts_ms=6.0)
     )
     assert tuple(item.context_id for item in repeated.overlays) == (
-        "victim-a", "victim-b"
+        "victim-00", "victim-01"
     )
-    assert calls == Counter(summary=6)
+    assert batch.parked_context_count == 12
+    assert batch.summarized_context_count == 8
+    assert calls == Counter(summary=16)
 
 
 def test_live_prepare_certificate_defers_physical_revision_to_commit():

@@ -28,6 +28,7 @@ from beliefkv.runtime.joint_shadow import (
     LatestWinsPredictiveRiskProcessWorker,
     LatestWinsPredictiveRiskWorker,
     ObservedSeedBeneficiaryHint,
+    PredictiveRiskSubmission,
     WorkflowFairnessReplica,
     coalesce_joint_shadow_deltas,
 )
@@ -1063,9 +1064,24 @@ def test_risk_event_reuses_cached_observed_seed_without_replanning() -> None:
     controller.page_index.register_page(handle, size_bytes=100)
     controller.page_index.bind_pages("ctx", 0, (handle,))
     planner = _CountingPlanner()
+    forwarded: list[JointShadowResult] = []
+
+    def forward(result: JointShadowResult) -> PredictiveRiskSubmission:
+        forwarded.append(result)
+        return PredictiveRiskSubmission(
+            sequence=7,
+            source_joint_sequence=result.sequence,
+            source_snapshot_id=result.snapshot_id,
+            submitted_monotonic_ms=result.completed_monotonic_ms,
+            enqueue_ms=0.01,
+            enqueued=True,
+            replaced_sequence=None,
+        )
+
     worker = LatestWinsJointPlanWorker(
         planner,
         assembler=IncrementalPolicyInputAssembler(config),
+        risk_result_sink=forward,
     )
     initial = _delta(controller, event_sequence=0, page_revision=0, ts_ms=2)
     initial_submission = worker.submit_delta(initial)
@@ -1117,6 +1133,9 @@ def test_risk_event_reuses_cached_observed_seed_without_replanning() -> None:
 
     assert risk_result is not None
     assert risk_result.risk_evaluation_requested
+    assert forwarded and forwarded[0].sequence == risk_submission.sequence
+    assert risk_result.predictive_submission is not None
+    assert risk_result.predictive_submission.sequence == 7
     assert not risk_result.planning_attempted
     assert planner.call_count == 1
     trigger = risk_result.policy_input.optional_metadata[
