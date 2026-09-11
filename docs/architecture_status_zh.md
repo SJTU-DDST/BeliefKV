@@ -2,6 +2,24 @@
 
 更新日期：2026-09-11
 
+## 2026-09-11：CPU-Budget Canary 通过高压门槛，但未产生自然正收益动作
+
+第三次 64-root H200 单笔 PREPARE gate 使用 `be605bb`。HBM 峰值达到 99.98%，80%
+以上持续约 14.5 分钟；101 次 predictive submission 完成 98 次 risk evaluation，worker
+无 failure、drop、pending。214 个 victim overlay 和 98 个 action certificate 正常形成，
+但 98/98 均选择 observed baseline，fresh-positive、semantic intent 和 physical command
+均为 0。
+
+7 个冻结高压快照重放仍为 0 positive/eligible。失败集中在 beneficiary 没有形成可归因
+HBM block、pressure 晚于 parent reentry、shadow 晚于 pressure，以及一个不支持的
+transfer shape。因此本轮是策略价值未通过，不是 live rematerialization 或 commit budget
+失败；`be605bb` 新增的 thread-CPU budget 尚无真实动作样本。
+
+控制面 P95 为：safe-point capture 0.755 ms、predictive submit 5.422 ms、belief compose
+27.41 ms、scenario risk 19.32 ms、predictive total 49.45 ms、certificate validation
+0.312 ms。shutdown ACK 完整且无遗留事务。本轮不用于 JCT，不生成 KV 时间线。完整记录见
+`docs/experiments/beliefkv_p6_prepare_canary_cpu_budget_no_action_2026-09-11_zh.md`。
+
 ## 2026-09-11：Bounded Commit 降至 19 ms P95，修正后验预算语义
 
 第二次 64-root H200 单笔 PREPARE gate 使用实验后 bounded rematerialization 代码，完成
