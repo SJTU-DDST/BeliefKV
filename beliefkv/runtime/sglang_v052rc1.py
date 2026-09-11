@@ -2300,6 +2300,9 @@ class EmbeddedSGLangRuntime:
             ),
             "evidence_kind": "injected_mechanism_gate",
         }
+        self._predictive_prepare_micro_gate_last_probe_signature: (
+            tuple[object, ...] | None
+        ) = None
         self._host_recompute_micro_gate_state: dict[str, Any] = {
             "enabled": self.config.host_recompute_micro_gate_enabled,
             "gate_id": self.config.host_recompute_micro_gate_id,
@@ -16597,12 +16600,16 @@ class EmbeddedSGLangRuntime:
         observation: RuntimeResourceObservation,
         *,
         opportunity: BeneficiaryOpportunityProbe | None = None,
+        force_mechanism_capture: bool = False,
     ) -> ActionLocalPhysicalOverlayBatch:
         started_ns = time.perf_counter_ns()
         opportunity = opportunity or self._predictive_beneficiary_opportunity_probe(
             hint, observation
         )
-        if not opportunity.hbm_opportunity_possible:
+        if (
+            not opportunity.hbm_opportunity_possible
+            and not force_mechanism_capture
+        ):
             return ActionLocalPhysicalOverlayBatch(
                 beneficiary_risk_signature=hint.risk_signature,
                 opportunity=opportunity,
@@ -16753,7 +16760,11 @@ class EmbeddedSGLangRuntime:
             )
             overlays.append(overlay)
 
-        selection_reason = None
+        selection_reason = (
+            "mechanism_gate_forced_capture"
+            if force_mechanism_capture and overlays
+            else None
+        )
         if not overlays:
             priority = (
                 "victim_bundle_generation_stale",
@@ -16780,6 +16791,69 @@ class EmbeddedSGLangRuntime:
             capture_ms=(time.perf_counter_ns() - started_ns) / 1_000_000.0,
             parked_context_count=len(parked_context_ids),
             summarized_context_count=len(summary_context_ids),
+            mechanism_capture_forced=force_mechanism_capture,
+        )
+
+    def _maybe_probe_predictive_prepare_micro_gate(
+        self,
+        hint: ObservedSeedBeneficiaryHint | None,
+        opportunity: BeneficiaryOpportunityProbe | None,
+        observation: RuntimeResourceObservation,
+    ) -> bool:
+        """Retry test-only evidence capture when causal or physical state changes."""
+
+        if (
+            hint is None
+            or opportunity is None
+            or opportunity.hbm_opportunity_possible
+            or not getattr(
+                self.config, "predictive_prepare_micro_gate_enabled", False
+            )
+            or self._predictive_prepare_micro_gate_state.get("stage") != "armed"
+        ):
+            return False
+        page_index = self.controller.page_index
+        probe_signature = (
+            hint.risk_signature,
+            getattr(self.controller.graph, "graph_version", None),
+            page_index.topology_revision,
+        )
+        if probe_signature == getattr(
+            self,
+            "_predictive_prepare_micro_gate_last_probe_signature",
+            None,
+        ):
+            return False
+        self._predictive_prepare_micro_gate_last_probe_signature = probe_signature
+        try:
+            overlay_batch = self._capture_action_local_physical_overlay_batch(
+                hint,
+                observation,
+                opportunity=opportunity,
+                force_mechanism_capture=True,
+            )
+        except Exception as error:
+            self._joint_predictive_counts[
+                "prepare_micro_gate_overlay_capture_failed"
+            ] += 1
+            self.audit.emit(
+                "predictive_prepare_micro_gate_overlay_failed",
+                observation.ts_ms,
+                audit_level="correctness",
+                request_id=hint.request_id,
+                error=f"{type(error).__name__}: {error}",
+            )
+            return False
+        self._joint_predictive_counts[
+            "prepare_micro_gate_overlay_probe"
+        ] += 1
+        self._joint_shadow_timing_samples.setdefault(
+            "prepare_micro_gate_overlay_capture_ms", deque(maxlen=65_536)
+        ).append(overlay_batch.capture_ms)
+        return self._maybe_inject_predictive_prepare_micro_gate(
+            hint,
+            overlay_batch,
+            observation,
         )
 
     @staticmethod
@@ -16912,7 +16986,10 @@ class EmbeddedSGLangRuntime:
         if (
             hint is None
             or overlay_batch is None
-            or not overlay_batch.opportunity.hbm_opportunity_possible
+            or not (
+                overlay_batch.opportunity.hbm_opportunity_possible
+                or overlay_batch.mechanism_capture_forced
+            )
             or not overlay_batch.overlays
         ):
             return False
@@ -16923,6 +17000,8 @@ class EmbeddedSGLangRuntime:
         graph = self.controller.graph
         victim = None
         overlay = None
+        transfer = None
+        transfer_shape_unsupported = False
         wait_states = {
             InvocationState.WAIT_TOOL,
             InvocationState.WAIT_CHILD,
@@ -16944,33 +17023,41 @@ class EmbeddedSGLangRuntime:
                 key=lambda item: item.invocation_id,
             )
             if candidate_invocations:
+                native_inflight_bytes = 0
+                backend = getattr(self, "backend", None)
+                if backend is not None and hasattr(
+                    backend, "_native_inflight_bytes"
+                ):
+                    native_inflight_bytes = backend._native_inflight_bytes()
+                candidate_transfer = self.controller.service_curve.estimate(
+                    TransferDirection.D2H,
+                    candidate.d2h_copy_bytes,
+                    page_count=candidate.extent_count,
+                    command_kind="offload_context",
+                    host_copy_state="missing",
+                    pinned_host=True,
+                    native_concurrent_bytes=native_inflight_bytes,
+                )
+                if not candidate_transfer.shape_supported:
+                    transfer_shape_unsupported = True
+                    continue
                 overlay = candidate
                 victim = candidate_invocations[0]
+                transfer = candidate_transfer
                 break
         if overlay is None or victim is None:
-            state["waiting_reason"] = "no_eligible_private_victim"
+            state["waiting_reason"] = (
+                "transfer_shape_unsupported"
+                if transfer_shape_unsupported
+                else "no_eligible_private_victim"
+            )
             return False
         beneficiary_invocation = graph.invocations.get(hint.invocation_id)
         beneficiary_context = graph.contexts.get(hint.context_id)
         if beneficiary_invocation is None or beneficiary_context is None:
             state["waiting_reason"] = "beneficiary_causal_identity_unavailable"
             return False
-        native_inflight_bytes = 0
-        backend = getattr(self, "backend", None)
-        if backend is not None and hasattr(backend, "_native_inflight_bytes"):
-            native_inflight_bytes = backend._native_inflight_bytes()
-        transfer = self.controller.service_curve.estimate(
-            TransferDirection.D2H,
-            overlay.d2h_copy_bytes,
-            page_count=overlay.extent_count,
-            command_kind="offload_context",
-            host_copy_state="missing",
-            pinned_host=True,
-            native_concurrent_bytes=native_inflight_bytes,
-        )
-        if not transfer.shape_supported:
-            state["waiting_reason"] = "transfer_shape_unsupported"
-            return False
+        assert transfer is not None
         transfer_ms = max(0.001, transfer.estimated_completion_p90_ms)
         maximum_transfer_ms = max(transfer_ms * 4.0, transfer_ms + 1_000.0)
         window_ms = max(
@@ -17105,6 +17192,11 @@ class EmbeddedSGLangRuntime:
         hint = candidates[selected_rank] if selected_rank >= 0 else None
         selected_opportunity = (
             candidate_probes[selected_rank] if selected_rank >= 0 else None
+        )
+        self._maybe_probe_predictive_prepare_micro_gate(
+            hint,
+            selected_opportunity,
+            observation,
         )
         self._latest_observed_seed_beneficiary = hint
         hbm_bucket = (

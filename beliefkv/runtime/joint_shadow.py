@@ -226,6 +226,7 @@ class ActionLocalPhysicalOverlayBatch:
     capture_ms: float = 0.0
     parked_context_count: int = 0
     summarized_context_count: int = 0
+    mechanism_capture_forced: bool = False
 
     def __post_init__(self) -> None:
         if not self.beneficiary_risk_signature:
@@ -259,6 +260,7 @@ class ActionLocalPhysicalOverlayBatch:
             "capture_ms": self.capture_ms,
             "parked_context_count": self.parked_context_count,
             "summarized_context_count": self.summarized_context_count,
+            "mechanism_capture_forced": self.mechanism_capture_forced,
         }
 
 

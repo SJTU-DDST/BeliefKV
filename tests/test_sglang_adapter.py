@@ -752,19 +752,21 @@ def test_predictive_prepare_micro_gate_injects_one_live_evidence_intent():
         beneficiary_context_id=hint.context_id,
         beneficiary_context_epoch=hint.context_epoch,
         required_bytes=100,
-        hbm_available_bytes=0,
+        hbm_available_bytes=1_000,
         hbm_risk_margin_bytes=0,
-        projected_running_growth_bytes=100,
-        projected_hbm_available_bytes=0,
-        predicted_block_time_ms=100.0,
-        predicted_deficit_bytes=100,
-        running_request_count=32,
+        projected_running_growth_bytes=0,
+        projected_hbm_available_bytes=1_000,
+        predicted_block_time_ms=None,
+        predicted_deficit_bytes=0,
+        running_request_count=1,
         max_running_requests=32,
-        beneficiary_slot_blocked=True,
+        beneficiary_slot_blocked=False,
         beneficiary_hbm_blocked=False,
-        beneficiary_slot_then_hbm_blocked=True,
-        hbm_opportunity_possible=True,
+        beneficiary_slot_then_hbm_blocked=False,
+        hbm_opportunity_possible=False,
         captured_ts_ms=6.0,
+        immediate_admission_fit=True,
+        block_time_source="unavailable",
     )
     overlay = ActionLocalPhysicalOverlay(
         context_id="ctx-victim",
@@ -789,6 +791,8 @@ def test_predictive_prepare_micro_gate_injects_one_live_evidence_intent():
         beneficiary_risk_signature=hint.risk_signature,
         opportunity=opportunity,
         overlays=(overlay,),
+        selection_reason="mechanism_gate_forced_capture",
+        mechanism_capture_forced=True,
     )
     observation = RuntimeResourceObservation(
         ts_ms=6.0,
@@ -817,6 +821,170 @@ def test_predictive_prepare_micro_gate_injects_one_live_evidence_intent():
     assert runtime._joint_predictive_counts[
         "prepare_micro_gate_intent_published"
     ] == 1
+
+
+def test_action_local_overlay_force_is_scoped_to_mechanism_capture():
+    runtime = EmbeddedSGLangRuntime.__new__(EmbeddedSGLangRuntime)
+    runtime.scheduler = SimpleNamespace(
+        running_batch=SimpleNamespace(reqs=()),
+        chunked_req=None,
+        max_running_requests=32,
+    )
+    context = SimpleNamespace(epoch=0)
+    invocation = SimpleNamespace(
+        context_id="victim-context",
+        state=InvocationState.WAIT_TOOL,
+    )
+    summary = SimpleNamespace(
+        context_id="victim-context",
+        context_epoch=0,
+        exclusive_reclaimable_upper_bound_bytes=300,
+        d2h_copy_upper_bound_bytes=300,
+        d2h_extent_count_upper_bound=3,
+        locked_bytes=0,
+        last_access_ms=1.0,
+    )
+    runtime.controller = SimpleNamespace(
+        admission=SimpleNamespace(reserved_bytes=0),
+        graph=SimpleNamespace(
+            graph_version=3,
+            invocations={"victim": invocation},
+            contexts={"victim-context": context},
+        ),
+        page_index=SimpleNamespace(
+            revision=7,
+            topology_revision=5,
+            has_context=lambda context_id: context_id == "victim-context",
+            context_page_count=lambda _context_id: 3,
+            context_epoch=lambda _context_id: 0,
+            context_revision=lambda _context_id: 2,
+            context_physical_summary=lambda _context_id: summary,
+        ),
+    )
+    runtime.config = SimpleNamespace(
+        reference_policy_hbm_bucket_bytes=64,
+        predictive_beneficiary_projection_horizon_ms=2_000.0,
+        kv_bytes_per_token=1,
+        admission_prefill_quantum_tokens=16,
+        admission_decode_quantum_tokens=16,
+    )
+    hint = ObservedSeedBeneficiaryHint(
+        "seed",
+        "beneficiary",
+        "beneficiary-invocation",
+        "beneficiary-context",
+        0,
+        64,
+        32,
+    )
+    observation = RuntimeResourceObservation(
+        ts_ms=5.0,
+        hbm_capacity_bytes=1_000,
+        hbm_used_bytes=0,
+        host_capacity_bytes=1_000,
+        host_used_bytes=0,
+        host_free_bytes=1_000,
+    )
+
+    normal = runtime._capture_action_local_physical_overlay_batch(
+        hint, observation
+    )
+    forced = runtime._capture_action_local_physical_overlay_batch(
+        hint,
+        observation,
+        opportunity=normal.opportunity,
+        force_mechanism_capture=True,
+    )
+
+    assert normal.overlays == ()
+    assert not normal.mechanism_capture_forced
+    assert tuple(item.context_id for item in forced.overlays) == (
+        "victim-context",
+    )
+    assert forced.mechanism_capture_forced
+    assert forced.selection_reason == "mechanism_gate_forced_capture"
+    assert not forced.opportunity.hbm_opportunity_possible
+
+
+def test_predictive_prepare_micro_gate_probe_retries_on_graph_revision():
+    runtime = EmbeddedSGLangRuntime.__new__(EmbeddedSGLangRuntime)
+    graph = SimpleNamespace(graph_version=1)
+    runtime.controller = SimpleNamespace(
+        graph=graph,
+        page_index=SimpleNamespace(topology_revision=2),
+    )
+    runtime.config = SimpleNamespace(
+        predictive_prepare_micro_gate_enabled=True,
+    )
+    runtime._predictive_prepare_micro_gate_state = {"stage": "armed"}
+    runtime._joint_predictive_counts = Counter()
+    runtime._joint_shadow_timing_samples = {}
+    runtime.audit = _AuditRecorder()
+    hint = ObservedSeedBeneficiaryHint(
+        "seed", "beneficiary", "invocation", "context", 0, 64, 32
+    )
+    opportunity = BeneficiaryOpportunityProbe(
+        beneficiary_request_id=hint.request_id,
+        beneficiary_context_id=hint.context_id,
+        beneficiary_context_epoch=hint.context_epoch,
+        required_bytes=96,
+        hbm_available_bytes=1_000,
+        hbm_risk_margin_bytes=0,
+        projected_running_growth_bytes=0,
+        projected_hbm_available_bytes=1_000,
+        predicted_block_time_ms=None,
+        predicted_deficit_bytes=0,
+        running_request_count=1,
+        max_running_requests=32,
+        beneficiary_slot_blocked=False,
+        beneficiary_hbm_blocked=False,
+        beneficiary_slot_then_hbm_blocked=False,
+        hbm_opportunity_possible=False,
+        captured_ts_ms=5.0,
+        immediate_admission_fit=True,
+        block_time_source="unavailable",
+    )
+    capture_calls = []
+    injection_calls = []
+    runtime._capture_action_local_physical_overlay_batch = (
+        lambda *args, **kwargs: (
+            capture_calls.append(kwargs)
+            or ActionLocalPhysicalOverlayBatch(
+                beneficiary_risk_signature=hint.risk_signature,
+                opportunity=opportunity,
+                mechanism_capture_forced=True,
+            )
+        )
+    )
+    runtime._maybe_inject_predictive_prepare_micro_gate = (
+        lambda *args: injection_calls.append(args) or False
+    )
+    observation = RuntimeResourceObservation(
+        ts_ms=5.0,
+        hbm_capacity_bytes=1_000,
+        hbm_used_bytes=0,
+        host_capacity_bytes=1_000,
+        host_used_bytes=0,
+        host_free_bytes=1_000,
+    )
+
+    assert not runtime._maybe_probe_predictive_prepare_micro_gate(
+        hint, opportunity, observation
+    )
+    assert not runtime._maybe_probe_predictive_prepare_micro_gate(
+        hint, opportunity, observation
+    )
+    graph.graph_version = 2
+    assert not runtime._maybe_probe_predictive_prepare_micro_gate(
+        hint, opportunity, observation
+    )
+
+    assert len(capture_calls) == 2
+    assert all(item["force_mechanism_capture"] for item in capture_calls)
+    assert len(injection_calls) == 2
+    assert runtime._joint_predictive_counts == Counter(
+        prepare_micro_gate_overlay_probe=2
+    )
 
 
 def test_action_local_probe_filters_slot_only_beneficiary_before_graph_scan():
