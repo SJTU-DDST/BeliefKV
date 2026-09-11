@@ -119,6 +119,21 @@ class ControllerTest(unittest.TestCase):
                 predictive_prepare_micro_gate_enabled=True,
             )
 
+        with self.assertRaisesRegex(ValueError, "shadow transfers"):
+            BeliefKVConfig(
+                joint_policy_enabled=True,
+                predictor_model_path="frontier.json",
+                gpu_service_model_path="service.json",
+                predictive_risk_shadow_enabled=True,
+                predictive_joint_overlay_enabled=True,
+                predictive_prepare_host_canary_limit=1,
+                predictive_prepare_micro_gate_enabled=True,
+                shadow_enabled=False,
+            )
+
+        with self.assertRaisesRegex(ValueError, "shadow transfers"):
+            replace(unified, shadow_enabled=False)
+
         mechanism_gate = replace(
             unified,
             predictive_prepare_micro_gate_enabled=True,

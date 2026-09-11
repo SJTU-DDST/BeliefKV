@@ -20725,6 +20725,8 @@ class EmbeddedSGLangRuntime:
         if intent.action == PredictiveActionKind.PREPARE_HOST:
             if not self.config.predictive_prepare_host_enabled:
                 reasons.append("predictive_prepare_host_disabled")
+            if not self.config.shadow_enabled:
+                reasons.append("shadow_disabled")
             prepare_limit = self.config.predictive_prepare_host_canary_limit
             if (
                 prepare_limit > 0
@@ -21930,6 +21932,20 @@ class EmbeddedSGLangRuntime:
                 intent_id=intent.intent_id,
                 rejection_reasons=["no_physical_command"],
             )
+            self._current_predictive_residency_commit = None
+            self._latest_predictive_intent = None
+            return True
+        if (
+            command_kind == CommandKind.SHADOW_CONTEXT
+            and not self.config.shadow_enabled
+        ):
+            self._update_predictive_prepare_micro_gate(
+                "rejected",
+                now_ms=now_ms,
+                intent_id=intent.intent_id,
+                rejection_reasons=["shadow_disabled"],
+            )
+            self._joint_predictive_counts["dispatch_shadow_disabled"] += 1
             self._current_predictive_residency_commit = None
             self._latest_predictive_intent = None
             return True

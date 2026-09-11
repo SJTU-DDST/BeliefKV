@@ -311,6 +311,13 @@ class BeliefKVConfig:
             )
         if self.predictive_prepare_host_canary_limit < 0:
             raise ValueError("predictive prepare canary limit must be non-negative")
+        if (
+            self.predictive_prepare_host_canary_limit > 0
+            and not self.shadow_enabled
+        ):
+            raise ValueError(
+                "a bounded predictive PREPARE_HOST canary requires shadow transfers"
+            )
         if self.predictive_prepare_micro_gate_min_private_bytes <= 0:
             raise ValueError(
                 "predictive prepare micro-gate private bytes must be positive"
@@ -326,10 +333,12 @@ class BeliefKVConfig:
             self.predictive_joint_overlay_enabled
             and self.predictive_prepare_host_enabled
             and self.predictive_prepare_host_canary_limit == 1
+            and self.shadow_enabled
         ):
             raise ValueError(
                 "predictive prepare micro-gate requires predictive JointPlan "
-                "overlay and an exact one-action PREPARE_HOST canary limit"
+                "overlay, shadow transfers, and an exact one-action "
+                "PREPARE_HOST canary limit"
             )
         if self.predictive_prefetch_canary_max_inflight != 1:
             raise ValueError(

@@ -95,6 +95,14 @@ def main() -> int:
         ),
     )
     parser.add_argument(
+        "--enable-shadow-transfers",
+        action="store_true",
+        help=(
+            "Allow PREPARE_HOST commands to enter the native D2H dispatch "
+            "lane. Keep disabled for predictor-only shadow runs."
+        ),
+    )
+    parser.add_argument(
         "--enable-predictive-prefetch-canary",
         action="store_true",
         help=(
@@ -385,6 +393,14 @@ def main() -> int:
             "--enable-predictive-prefetch-canary requires "
             "--enable-predictive-joint-overlay"
         )
+    if (
+        args.predictive_prepare_canary_limit > 0
+        and not args.enable_shadow_transfers
+    ):
+        parser.error(
+            "a bounded PREPARE_HOST canary requires "
+            "--enable-shadow-transfers"
+        )
     if args.predictive_prepare_micro_gate_min_private_mib <= 0:
         parser.error(
             "--predictive-prepare-micro-gate-min-private-mib must be positive"
@@ -392,11 +408,13 @@ def main() -> int:
     if args.enable_predictive_prepare_micro_gate and not (
         args.enable_predictive_joint_overlay
         and args.predictive_prepare_canary_limit == 1
+        and args.enable_shadow_transfers
     ):
         parser.error(
             "--enable-predictive-prepare-micro-gate requires "
             "--enable-predictive-joint-overlay and "
-            "--predictive-prepare-canary-limit 1"
+            "--predictive-prepare-canary-limit 1 and "
+            "--enable-shadow-transfers"
         )
     if args.enable_restore_micro_gate and not (
         args.enable_online_joint
@@ -507,7 +525,7 @@ def main() -> int:
         "perfect_future_truth_id": args.perfect_future_truth_id,
         "perfect_future_truth_digest": args.perfect_future_truth_digest,
         "perfect_future_replay_id": args.perfect_future_replay_id,
-        "shadow_enabled": False,
+        "shadow_enabled": args.enable_shadow_transfers,
         "prefetch_enabled": True,
         "reactive_transfer_enabled": not args.disable_reactive_transfer,
         "runtime_audit_path": str(server_dir / "runtime_audit.jsonl"),
