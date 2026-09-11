@@ -2,6 +2,21 @@
 
 更新日期：2026-09-12
 
+## 2026-09-12：自然 PREPARE Canary 正确返回 No-Action
+
+关闭 deterministic injection 后运行 64-root H200 v6 单动作 canary。HBM 峰值达到
+86.28%，80% 以上持续 413 秒，最大 migratable KV 68.79 GB；但前 2--4 个
+bounded-seed beneficiary 的 future-growth deficit 始终为 0。367 次 probe 为
+`capacity_available`、242 次为 `slot_only`，没有 victim overlay、predictive worker
+submission、positive intent 或物理 command。
+
+这不是模型负收益或证书 stale：cheap opportunity probe 在模型执行前正确拒绝了无明确
+beneficiary 的迁移。safe-point capture P50/P95/P99 为 0.227/0.433/1.083 ms，Joint
+worker 无失败、丢弃或 pending；shutdown 全部正确性门禁通过。80% HBM 本身不能再作为
+自然 canary 的充分开始条件，下一轮应以 `future_growth_deficit>0` 或更接近 admission
+deficit 的冻结压力区间为门槛。完整记录见
+`docs/experiments/beliefkv_p6_natural_prepare_canary_no_opportunity_2026-09-12_zh.md`。
+
 ## 2026-09-12：PREPARE_HOST 单动作机制门禁通过
 
 H200 v6 的 deterministic PREPARE gate 在提交 `6f9a9f7` 上完成一笔真实
