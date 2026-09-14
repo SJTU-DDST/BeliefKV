@@ -726,8 +726,6 @@ class IncrementalPolicyInputAssembler:
                 "shadow RCCG event gap: "
                 f"{delta.event_from_sequence} != {self._event_sequence}"
             )
-        if delta.page_delta.full_rebuild_required and self.page_index.revision != 0:
-            raise RuntimeError("shadow page journal gap requires fail-closed restart")
         try:
             physical_mirror_changed = bool(
                 delta.page_delta.full_rebuild_required
@@ -1637,11 +1635,13 @@ class LatestWinsJointPlanWorker:
     ) -> None:
         self.planner = planner or ObservedJointPlanner()
         self.assembler = assembler
+        self._assembler_config = assembler.config if assembler is not None else None
         self._risk_result_sink = risk_result_sink
         self._incremental_mode = assembler is not None
         self._condition = threading.Condition()
         self._pending: _WorkItem | None = None
         self._latest: JointShadowResult | None = None
+        self._latest_failure: JointShadowResult | None = None
         self._closed = False
         self._busy = False
         self._next_sequence = 0
@@ -1701,9 +1701,37 @@ class LatestWinsJointPlanWorker:
         # PolicyInput capture on the scheduler thread.
         return self._incremental_mode
 
+    @property
+    def mirror_failed(self) -> bool:
+        with self._condition:
+            return self._mirror_failed
+
+    def reset_incremental_mirror(self) -> bool:
+        """Replace a poisoned worker mirror before a full safe-point resync."""
+
+        with self._condition:
+            if not self._incremental_mode or self._assembler_config is None:
+                return False
+            if self._busy:
+                raise RuntimeError("cannot reset a busy joint shadow worker")
+            if not self._mirror_failed:
+                return False
+            if self._pending is not None:
+                self._pending = None
+                self._dropped_pending_count += 1
+            self.assembler = IncrementalPolicyInputAssembler(
+                self._assembler_config
+            )
+            self._mirror_failed = False
+            self._planning_dirty = False
+            self._risk_dirty = False
+            self._risk_trigger_signatures.clear()
+            self._cached_observed_policy_input = None
+            self._cached_observed_plan = None
+            self._last_risk_action_signature = None
+            return True
+
     def submit_delta(self, delta: JointShadowDelta) -> JointShadowSubmission:
-        if self.assembler is None:
-            raise RuntimeError("joint shadow worker has no incremental assembler")
         enqueue_started_ns = time.perf_counter_ns()
         submitted_ms = _monotonic_ms()
         with self._condition:
@@ -1711,6 +1739,8 @@ class LatestWinsJointPlanWorker:
                 raise RuntimeError("joint shadow worker is closed")
             if self._mirror_failed:
                 raise RuntimeError("joint shadow worker mirror failed closed")
+            if self.assembler is None:
+                raise RuntimeError("joint shadow worker has no incremental assembler")
             self._next_sequence += 1
             sequence = self._next_sequence
             replaced = self._pending.sequence if self._pending is not None else None
@@ -1739,9 +1769,12 @@ class LatestWinsJointPlanWorker:
 
     def latest(self, *, after_sequence: int = 0) -> JointShadowResult | None:
         with self._condition:
-            if self._latest is None or self._latest.sequence <= after_sequence:
-                return None
-            return self._latest
+            candidates = tuple(
+                item
+                for item in (self._latest_failure, self._latest)
+                if item is not None and item.sequence > after_sequence
+            )
+            return min(candidates, key=lambda item: item.sequence, default=None)
 
     def stats(self) -> JointShadowWorkerStats:
         with self._condition:
@@ -1756,8 +1789,13 @@ class LatestWinsJointPlanWorker:
                 superseded_result_count=self._superseded_result_count,
                 pending_count=int(self._pending is not None),
                 busy=self._busy,
-                latest_published_sequence=(
-                    self._latest.sequence if self._latest is not None else 0
+                latest_published_sequence=max(
+                    (
+                        item.sequence
+                        for item in (self._latest_failure, self._latest)
+                        if item is not None
+                    ),
+                    default=0,
                 ),
             )
 
@@ -1804,12 +1842,17 @@ class LatestWinsJointPlanWorker:
             publish_result = True
             risk_evaluation_requested = False
             risk_funnel_reason: str | None = None
+            mirror_state_failed = False
             try:
                 if item.deltas:
                     assert self.assembler is not None
                     apply_started_ns = time.perf_counter_ns()
                     delta = coalesce_joint_shadow_deltas(item.deltas)
-                    self.assembler.apply(delta)
+                    try:
+                        self.assembler.apply(delta)
+                    except Exception:
+                        mirror_state_failed = True
+                        raise
                     self._planning_dirty = (
                         self._planning_dirty or delta.planning_requested
                     )
@@ -1826,7 +1869,11 @@ class LatestWinsJointPlanWorker:
                     trigger = delta.trigger
                     if self._planning_dirty:
                         materialize_started_ns = time.perf_counter_ns()
-                        policy_input = self.assembler.build()
+                        try:
+                            policy_input = self.assembler.build()
+                        except Exception:
+                            mirror_state_failed = True
+                            raise
                         snapshot_materialize_ms = (
                             time.perf_counter_ns() - materialize_started_ns
                         ) / 1_000_000.0
@@ -1954,9 +2001,8 @@ class LatestWinsJointPlanWorker:
                             )
             except Exception as caught:
                 error = f"{type(caught).__name__}: {caught}"
-                if item.deltas and self.assembler is not None:
+                if mirror_state_failed:
                     self._mirror_failed = True
-                    self.assembler = None
             completed_ms = _monotonic_ms()
             result = JointShadowResult(
                 sequence=item.sequence,
@@ -2006,6 +2052,10 @@ class LatestWinsJointPlanWorker:
                 self._completed_count += 1
                 if error is not None:
                     self._failed_count += 1
+                    self._latest_failure = result
+                    if mirror_state_failed and self._pending is not None:
+                        self._pending = None
+                        self._dropped_pending_count += 1
                 superseded = (
                     self._pending is not None
                     and self._pending.sequence > result.sequence
@@ -2023,7 +2073,11 @@ class LatestWinsJointPlanWorker:
                     self._risk_trigger_signatures.clear()
                     if risk_action_signature is not None:
                         self._last_risk_action_signature = risk_action_signature
-                if not publish_result:
+                if error is not None:
+                    # Failures are consumed in sequence independently of newer
+                    # successful latest-wins results.
+                    pass
+                elif not publish_result:
                     self._apply_only_count += 1
                 elif superseded and not publish_superseded_risk:
                     self._superseded_result_count += 1

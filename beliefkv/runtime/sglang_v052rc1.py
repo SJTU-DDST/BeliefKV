@@ -2545,6 +2545,7 @@ class EmbeddedSGLangRuntime:
             | None
         ) = None
         self._last_joint_shadow_result_sequence = 0
+        self._joint_shadow_mirror_resync_pending = False
         self._last_predictive_risk_result_sequence = 0
         self._predictive_candidate_snapshot_signatures: dict[
             tuple[object, ...], float
@@ -17759,6 +17760,101 @@ class EmbeddedSGLangRuntime:
         )
         return True
 
+    def _recover_joint_shadow_mirror(
+        self,
+        observation: RuntimeResourceObservation,
+        worker: LatestWinsJointPlanWorker,
+        result: JointShadowResult,
+    ) -> bool:
+        self._joint_shadow_counts["worker_failed"] += 1
+        self._joint_shadow_counts["mirror_resync_requested"] += 1
+        publish_delay_ms = max(
+            0.0,
+            time.monotonic_ns() / 1_000_000.0
+            - result.completed_monotonic_ms,
+        )
+        for name, value in (
+            ("plan_queue_wait_ms", result.queue_wait_ms),
+            ("plan_compute_ms", result.compute_ms),
+            ("plan_publish_to_safe_point_ms", publish_delay_ms),
+        ):
+            self._joint_shadow_timing_samples[name].append(value)
+        self.audit.emit(
+            "joint_plan_shadow_failed",
+            observation.ts_ms,
+            audit_level="correctness",
+            worker_sequence=result.sequence,
+            source_snapshot_id=result.snapshot_id,
+            error=result.error or "worker mirror failed",
+            mirror_resync_requested=True,
+            application_connected=self.config.joint_policy_enabled,
+        )
+        try:
+            reset = worker.reset_incremental_mirror()
+        except Exception as error:
+            self._joint_shadow_counts["mirror_resync_failed"] += 1
+            self.audit.emit(
+                "joint_plan_shadow_mirror_resync_failed",
+                observation.ts_ms,
+                audit_level="correctness",
+                worker_sequence=result.sequence,
+                error=f"{type(error).__name__}: {error}",
+            )
+            return False
+        if not reset:
+            self._joint_shadow_counts["mirror_resync_failed"] += 1
+            return False
+
+        self._last_joint_shadow_result_sequence = result.sequence
+        self._shadow_event_sequence = 0
+        self._shadow_page_revision = 0
+        self._shadow_topology_revision = 0
+        retained_telemetry = self.controller.recent_transfer_telemetry()
+        self._shadow_telemetry_sequence = max(
+            0,
+            self.controller.transfer_telemetry_sequence
+            - len(retained_telemetry),
+        )
+        self._last_policy_snapshot_ms = None
+        self._last_policy_snapshot_cheap_signature = None
+        self._last_policy_snapshot_structural_signature = None
+        self._last_policy_snapshot_physical_signature = None
+        self._last_policy_snapshot_hbm_bucket = None
+        self._last_joint_full_plan_ms = None
+        self._last_joint_shadow_pressure_state = None
+        self._last_joint_liveness_signature = None
+        self._last_joint_beneficiary_signature = ()
+        self._frontier_feature_delta_initialized = False
+        self._frontier_active_invocation_ids.clear()
+        self._last_frontier_features.clear()
+        self._last_frontier_predictions.clear()
+        self._latest_observed_policy_input = None
+        self._latest_action_local_overlay_batch = None
+        self._latest_predictive_intent = None
+        self._observed_seed_hint_publication_initialized = False
+        self._last_published_observed_seed_hint_signature = None
+        self._observed_seed_hint_risk_initialized = False
+        self._last_observed_seed_hint_risk_signature = None
+        self._online_joint_result = None
+        self._online_joint_source = None
+        self._online_joint_validation = None
+        self._current_online_joint_view = None
+        self._current_online_joint_decision = None
+        if hasattr(self, "_last_policy_state_stamp"):
+            del self._last_policy_state_stamp
+        self._joint_shadow_mirror_resync_pending = True
+        self._joint_shadow_counts["mirror_resync_prepared"] += 1
+        self.audit.emit(
+            "joint_plan_shadow_mirror_resync_prepared",
+            observation.ts_ms,
+            audit_level="correctness",
+            failed_worker_sequence=result.sequence,
+            event_to_sequence=self.controller.runtime_event_sequence,
+            page_to_revision=self.controller.page_index.revision,
+            telemetry_from_sequence=self._shadow_telemetry_sequence,
+        )
+        return True
+
     def _maybe_record_incremental_policy_snapshot(
         self,
         observation: RuntimeResourceObservation,
@@ -17779,6 +17875,23 @@ class EmbeddedSGLangRuntime:
         result = worker.latest(
             after_sequence=self._last_joint_shadow_result_sequence
         )
+        if result is not None and result.error is not None and worker.mirror_failed:
+            self._recover_joint_shadow_mirror(observation, worker, result)
+            return
+        if (
+            result is not None
+            and result.error is None
+            and getattr(self, "_joint_shadow_mirror_resync_pending", False)
+        ):
+            self._joint_shadow_mirror_resync_pending = False
+            self._joint_shadow_counts["mirror_resync_completed"] += 1
+            self.audit.emit(
+                "joint_plan_shadow_mirror_resync_completed",
+                observation.ts_ms,
+                audit_level="correctness",
+                worker_sequence=result.sequence,
+                source_snapshot_id=result.snapshot_id,
+            )
         capture_elapsed_ms = (
             float("inf")
             if self._last_policy_snapshot_ms is None

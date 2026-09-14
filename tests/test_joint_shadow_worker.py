@@ -176,6 +176,37 @@ class _FailingPlanner:
         raise ValueError("expected failure")
 
 
+class _BlockingFailOncePlanner:
+    def __init__(self) -> None:
+        self.started = threading.Event()
+        self.release = threading.Event()
+        self.call_count = 0
+        self.delegate = ObservedJointPlanner(
+            JointPlannerConfig(max_planning_budget_ms=100.0)
+        )
+
+    def plan(self, policy_input):
+        self.call_count += 1
+        if self.call_count == 1:
+            self.started.set()
+            assert self.release.wait(timeout=2)
+            raise ValueError("expected planner failure")
+        return self.delegate.plan(policy_input)
+
+
+class _BlockingFailingAssembler(IncrementalPolicyInputAssembler):
+    def __init__(self, config: BeliefKVConfig) -> None:
+        super().__init__(config)
+        self.started = threading.Event()
+        self.release = threading.Event()
+
+    def apply(self, delta: JointShadowDelta) -> None:
+        del delta
+        self.started.set()
+        assert self.release.wait(timeout=2)
+        raise RuntimeError("expected mirror failure")
+
+
 class _CountingPlanner:
     def __init__(self) -> None:
         self.call_count = 0
@@ -416,6 +447,51 @@ def test_graph_snapshot_rebuild_preserves_planning_state() -> None:
     )
 
     assert rebuilt.snapshot() == controller.graph.snapshot()
+
+
+def test_incremental_assembler_accepts_self_contained_page_rebuild() -> None:
+    config = BeliefKVConfig(
+        hbm_capacity_bytes=1_000,
+        host_capacity_bytes=1_000,
+        reserve_hbm_bytes=0,
+        predictor_enabled=False,
+        shadow_enabled=False,
+    )
+    controller = BeliefKVController(config)
+    controller.process_runtime_events(
+        (
+            _event(1, RuntimeEventKind.WORKFLOW_START),
+            _event(
+                2,
+                RuntimeEventKind.INVOCATION_CREATE,
+                invocation_id="root",
+                context_id="ctx",
+                context_epoch=0,
+            ),
+        )
+    )
+    handle = PageHandle(1, 0)
+    controller.page_index.register_page(handle, size_bytes=100)
+    controller.page_index.bind_pages("ctx", 0, (handle,))
+    initial = _delta(controller, event_sequence=0, page_revision=0, ts_ms=2)
+    assembler = IncrementalPolicyInputAssembler(config)
+    assembler.apply(initial)
+
+    complete_pages = controller.page_index.replica_delta_since(0)
+    rebuild = replace(
+        initial,
+        event_from_sequence=initial.event_to_sequence,
+        runtime_events=(),
+        page_delta=replace(
+            complete_pages,
+            from_revision=initial.page_delta.to_revision,
+        ),
+        trigger="page_journal_rebuild",
+    )
+    assembler.apply(rebuild)
+
+    assert assembler.page_index.require_page(handle).size_bytes == 100
+    assert assembler.page_index.revision == controller.page_index.revision
 
 
 def test_predictive_worker_cannot_delay_observed_plan_publication() -> None:
@@ -1283,7 +1359,7 @@ def test_semantic_progress_does_not_erase_inflight_risk_trigger() -> None:
     assert worker.close()
 
 
-def test_incremental_worker_discards_diverged_mirror() -> None:
+def test_incremental_worker_recovers_diverged_mirror_from_full_resync() -> None:
     config = BeliefKVConfig(
         hbm_capacity_bytes=1_000,
         host_capacity_bytes=1_000,
@@ -1311,9 +1387,121 @@ def test_incremental_worker_discards_diverged_mirror() -> None:
 
     assert result is not None
     assert "graph version diverged" in (result.error or "")
-    assert worker.assembler is None
-    with pytest.raises(RuntimeError, match="no incremental assembler"):
+    assert worker.mirror_failed
+    with pytest.raises(RuntimeError, match="mirror failed closed"):
         worker.submit_delta(delta)
+    assert worker.reset_incremental_mirror()
+    assert not worker.mirror_failed
+
+    recovered_submission = worker.submit_delta(delta)
+    recovered = None
+    for _ in range(100):
+        recovered = worker.latest(
+            after_sequence=recovered_submission.sequence - 1
+        )
+        if recovered is not None:
+            break
+        threading.Event().wait(0.01)
+
+    assert recovered is not None
+    assert recovered.error is None
+    assert recovered.plan is not None
+    assert worker.close()
+
+
+def test_incremental_worker_publishes_failure_before_superseding_delta() -> None:
+    config = BeliefKVConfig(
+        hbm_capacity_bytes=1_000,
+        host_capacity_bytes=1_000,
+        reserve_hbm_bytes=0,
+        predictor_enabled=False,
+        shadow_enabled=False,
+    )
+    controller = BeliefKVController(config)
+    controller.process_runtime_event(_event(1, RuntimeEventKind.WORKFLOW_START))
+    delta = _delta(controller, event_sequence=0, page_revision=0, ts_ms=1)
+    assembler = _BlockingFailingAssembler(config)
+    worker = LatestWinsJointPlanWorker(assembler=assembler)
+
+    failed_submission = worker.submit_delta(delta)
+    assert assembler.started.wait(timeout=2)
+    superseding_submission = worker.submit_delta(delta)
+    assembler.release.set()
+
+    result = None
+    for _ in range(100):
+        result = worker.latest(after_sequence=failed_submission.sequence - 1)
+        if result is not None:
+            break
+        threading.Event().wait(0.01)
+
+    assert result is not None
+    assert result.sequence == failed_submission.sequence
+    assert result.error == "RuntimeError: expected mirror failure"
+    assert superseding_submission.sequence > result.sequence
+    assert worker.stats().dropped_pending_count == 1
+    assert worker.mirror_failed
+    assert worker.close()
+
+
+def test_incremental_planner_failure_preserves_pending_delta() -> None:
+    config = BeliefKVConfig(
+        hbm_capacity_bytes=1_000,
+        host_capacity_bytes=1_000,
+        reserve_hbm_bytes=0,
+        predictor_enabled=False,
+        shadow_enabled=False,
+    )
+    controller = BeliefKVController(config)
+    controller.process_runtime_event(_event(1, RuntimeEventKind.WORKFLOW_START))
+    first = _delta(controller, event_sequence=0, page_revision=0, ts_ms=1)
+    planner = _BlockingFailOncePlanner()
+    worker = LatestWinsJointPlanWorker(
+        planner,
+        assembler=IncrementalPolicyInputAssembler(config),
+    )
+
+    failed_submission = worker.submit_delta(first)
+    assert planner.started.wait(timeout=2)
+    controller.process_runtime_event(
+        _event(
+            2,
+            RuntimeEventKind.INVOCATION_CREATE,
+            invocation_id="root",
+            context_id="ctx",
+            context_epoch=0,
+        )
+    )
+    second = _delta(
+        controller,
+        event_sequence=first.event_to_sequence,
+        page_revision=first.page_delta.to_revision,
+        ts_ms=2,
+    )
+    successful_submission = worker.submit_delta(second)
+    planner.release.set()
+
+    failure = None
+    for _ in range(100):
+        failure = worker.latest(after_sequence=failed_submission.sequence - 1)
+        if failure is not None:
+            break
+        threading.Event().wait(0.01)
+    assert failure is not None
+    assert failure.sequence == failed_submission.sequence
+    assert failure.error == "ValueError: expected planner failure"
+
+    success = None
+    for _ in range(100):
+        success = worker.latest(after_sequence=failed_submission.sequence)
+        if success is not None:
+            break
+        threading.Event().wait(0.01)
+    assert success is not None
+    assert success.sequence == successful_submission.sequence
+    assert success.error is None
+    assert success.plan is not None
+    assert not worker.mirror_failed
     assert worker.close()
 
 

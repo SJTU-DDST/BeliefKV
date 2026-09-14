@@ -55,6 +55,7 @@ from beliefkv.runtime.joint_shadow import (
     IncrementalPolicyInputAssembler,
     coalesce_joint_shadow_deltas,
     ActionLocalPhysicalOverlayBatch,
+    JointShadowResult,
     JointShadowStateStamp,
     LatestWinsJointPlanWorker,
     ObservedSeedBeneficiaryHint,
@@ -3211,6 +3212,88 @@ class SGLangBackendTest(unittest.TestCase):
             runtime.joint_shadow_worker = None
             runtime.policy_snapshot_log.close()
             runtime.predictive_candidate_snapshot_log.close()
+
+    def test_joint_shadow_mirror_failure_prepares_full_resync(self):
+        runtime = EmbeddedSGLangRuntime.__new__(EmbeddedSGLangRuntime)
+        runtime.config = BeliefKVConfig(
+            hbm_capacity_bytes=1_000,
+            host_capacity_bytes=1_000,
+            reserve_hbm_bytes=0,
+            predictor_enabled=False,
+            shadow_enabled=False,
+        )
+        runtime.controller = BeliefKVController(runtime.config)
+        runtime.audit = _AuditRecorder()
+        runtime._joint_shadow_counts = Counter()
+        runtime._joint_shadow_timing_samples = {
+            name: deque(maxlen=8)
+            for name in (
+                "plan_queue_wait_ms",
+                "plan_compute_ms",
+                "plan_publish_to_safe_point_ms",
+            )
+        }
+        runtime._shadow_event_sequence = 9
+        runtime._shadow_page_revision = 11
+        runtime._shadow_topology_revision = 7
+        runtime._shadow_telemetry_sequence = 3
+        runtime._frontier_feature_delta_initialized = True
+        runtime._frontier_active_invocation_ids = {"root"}
+        runtime._last_frontier_features = {"root": {"state": "ready"}}
+        runtime._last_frontier_predictions = {"root": {"support": "exact"}}
+        runtime._latest_observed_policy_input = object()
+        runtime._latest_action_local_overlay_batch = object()
+        runtime._latest_predictive_intent = object()
+        runtime._observed_seed_hint_publication_initialized = True
+        runtime._last_published_observed_seed_hint_signature = ("root",)
+        runtime._observed_seed_hint_risk_initialized = True
+        runtime._last_observed_seed_hint_risk_signature = ("root",)
+        runtime._online_joint_result = object()
+        runtime._online_joint_source = object()
+        runtime._online_joint_validation = object()
+        runtime._current_online_joint_view = object()
+        runtime._current_online_joint_decision = object()
+        runtime._last_policy_state_stamp = object()
+        runtime._last_joint_shadow_result_sequence = 0
+        worker = mock.Mock()
+        worker.reset_incremental_mirror.return_value = True
+        result = JointShadowResult(
+            sequence=4,
+            snapshot_id="failed-shadow-work-00000004",
+            submitted_monotonic_ms=1.0,
+            started_monotonic_ms=2.0,
+            completed_monotonic_ms=3.0,
+            plan=None,
+            error="RuntimeError: expected mirror failure",
+        )
+        observation = RuntimeResourceObservation(
+            ts_ms=10.0,
+            hbm_capacity_bytes=1_000,
+            hbm_used_bytes=0,
+            host_capacity_bytes=1_000,
+            host_used_bytes=0,
+            host_free_bytes=1_000,
+        )
+
+        self.assertTrue(
+            runtime._recover_joint_shadow_mirror(observation, worker, result)
+        )
+
+        worker.reset_incremental_mirror.assert_called_once_with()
+        self.assertEqual(runtime._last_joint_shadow_result_sequence, 4)
+        self.assertEqual(runtime._shadow_event_sequence, 0)
+        self.assertEqual(runtime._shadow_page_revision, 0)
+        self.assertFalse(runtime._frontier_feature_delta_initialized)
+        self.assertEqual(runtime._frontier_active_invocation_ids, set())
+        self.assertIsNone(runtime._latest_predictive_intent)
+        self.assertTrue(runtime._joint_shadow_mirror_resync_pending)
+        self.assertEqual(runtime._joint_shadow_counts["mirror_resync_prepared"], 1)
+        self.assertTrue(
+            any(
+                event == "joint_plan_shadow_mirror_resync_prepared"
+                for event, _, _ in runtime.audit.events
+            )
+        )
 
     def test_request_restore_dependency_uses_only_matched_radix_path(self):
         runtime = EmbeddedSGLangRuntime.__new__(EmbeddedSGLangRuntime)
