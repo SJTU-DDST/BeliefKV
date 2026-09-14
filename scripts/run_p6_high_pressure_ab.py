@@ -68,6 +68,7 @@ def _prepare_server(
     artifacts = plan["artifacts"]
     profile = json.loads(_path(str(plan["runtime_profile"])).read_text())
     transfer = artifacts["transfer_service"]
+    gpu_service = artifacts["gpu_service"]
     command = [
         sys.executable,
         str(ROOT / "scripts/prepare_deepagents_server_config.py"),
@@ -84,18 +85,17 @@ def _prepare_server(
         str(_path(str(transfer["path"]))),
         "--transfer-service-hardware-key",
         str(transfer["hardware_key"]),
+        "--gpu-service-model",
+        str(_path(str(gpu_service["path"]))),
+        "--gpu-service-hardware-key",
+        str(gpu_service["hardware_key"]),
     ]
     if arm == "predictive":
         predictor = artifacts["predictor"]
-        gpu_service = artifacts["gpu_service"]
         command.extend(
             [
                 "--predictor-model",
                 str(_path(str(predictor["path"]))),
-                "--gpu-service-model",
-                str(_path(str(gpu_service["path"]))),
-                "--gpu-service-hardware-key",
-                str(gpu_service["hardware_key"]),
                 "--enable-predictive-risk-shadow",
                 "--enable-predictive-joint-overlay",
                 "--enable-shadow-transfers",
@@ -260,7 +260,10 @@ def main() -> int:
     arms = ("baseline", "predictive") if args.arm == "both" else (args.arm,)
     result = 0
     for arm in arms:
-        result |= _run_arm(plan, arm, output / arm, args.gpu, args.port)
+        arm_result = _run_arm(plan, arm, output / arm, args.gpu, args.port)
+        result |= arm_result
+        if arm_result:
+            break
         if arm != arms[-1]:
             time.sleep(10)
     return result
