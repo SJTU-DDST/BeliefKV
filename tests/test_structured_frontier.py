@@ -875,6 +875,47 @@ def test_episode_weighted_evaluation_reports_calibration_and_ood() -> None:
     )
 
 
+def test_action_slack_evaluation_reports_binary_decision_metrics() -> None:
+    model = FrontierBeliefModel(model_version="train-v1")
+    model.fit(
+        [_row("d1", 10), _row("d2", 20), _row("d3", 15), _row("d4", 25)]
+    )
+    calibration = [_calibration_row("c1", 30)]
+    model.calibrate(calibration)
+    target = {
+        "schema_version": 4,
+        "split": "calibration",
+        "decision_id": "action-1",
+        "workflow_id": "workflow-1",
+        "invocation_id": "invocation-1",
+        "tool_wait_episode_id": "tool-1",
+        "agent_definition_id": "coder",
+        "current_sequence_tokens": 32,
+        "elapsed_wait_ms": 0.0,
+        "active_tool_count": 1,
+        "tool_family": "shell",
+        "backend_class": "execute",
+        "command_class": "execute",
+        "boundary_history": ["tool"],
+        "actions": {
+            "prepare_host": {
+                "outcome_known": True,
+                "outcome": True,
+                "operational_tau_ms": 10.0,
+            }
+        },
+    }
+
+    metrics = evaluate_frontier_model(model, calibration, [target])
+    action = metrics["wait_slack"]["prepare_host|wait_tool|operational_tau"]
+
+    assert 0.0 <= action["accuracy_at_0_5"] <= 1.0
+    assert 0.0 <= action["precision_at_0_5"] <= 1.0
+    assert 0.0 <= action["recall_at_0_5"] <= 1.0
+    assert 0.0 <= action["predicted_positive_rate"] <= 1.0
+    assert action["actual_positive_rate"] == 1.0
+
+
 def test_composer_applies_known_join_all_instead_of_learning_it() -> None:
     graph = RuntimeCausalContextGraph()
     sequence = 0

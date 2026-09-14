@@ -2367,7 +2367,17 @@ def evaluate_frontier_model(
         lambda: {"weight": 0.0, "available_weight": 0.0}
     )
     wait_slack: defaultdict[str, dict[str, float]] = defaultdict(
-        lambda: {"weight": 0.0, "brier": 0.0}
+        lambda: {
+            "weight": 0.0,
+            "brier": 0.0,
+            "correct": 0.0,
+            "true_positive": 0.0,
+            "false_positive": 0.0,
+            "true_negative": 0.0,
+            "false_negative": 0.0,
+            "predicted_positive": 0.0,
+            "actual_positive": 0.0,
+        }
     )
     operational_support: defaultdict[str, Counter[str]] = defaultdict(Counter)
     operational_command_support: defaultdict[str, Counter[str]] = defaultdict(
@@ -2555,6 +2565,25 @@ def evaluate_frontier_model(
             wait_slack[key]["brier"] += known_weight * (
                 probability - outcome
             ) ** 2
+            predicted_positive = probability >= 0.5
+            actual_positive = bool(outcome)
+            wait_slack[key]["correct"] += known_weight * (
+                predicted_positive == actual_positive
+            )
+            wait_slack[key]["predicted_positive"] += (
+                known_weight * predicted_positive
+            )
+            wait_slack[key]["actual_positive"] += (
+                known_weight * actual_positive
+            )
+            if predicted_positive and actual_positive:
+                wait_slack[key]["true_positive"] += known_weight
+            elif predicted_positive:
+                wait_slack[key]["false_positive"] += known_weight
+            elif actual_positive:
+                wait_slack[key]["false_negative"] += known_weight
+            else:
+                wait_slack[key]["true_negative"] += known_weight
             operational_support[action][support] += known_weight
             command = str(target.get("command_class") or "unknown")
             operational_command_support[f"{action}|{command}"][support] += (
@@ -2611,6 +2640,31 @@ def evaluate_frontier_model(
         "wait_slack": {
             key: {
                 "brier": values["brier"] / max(values["weight"], 1e-12),
+                "accuracy_at_0_5": (
+                    values["correct"] / max(values["weight"], 1e-12)
+                ),
+                "precision_at_0_5": (
+                    values["true_positive"]
+                    / max(
+                        values["true_positive"] + values["false_positive"],
+                        1e-12,
+                    )
+                ),
+                "recall_at_0_5": (
+                    values["true_positive"]
+                    / max(
+                        values["true_positive"] + values["false_negative"],
+                        1e-12,
+                    )
+                ),
+                "predicted_positive_rate": (
+                    values["predicted_positive"]
+                    / max(values["weight"], 1e-12)
+                ),
+                "actual_positive_rate": (
+                    values["actual_positive"]
+                    / max(values["weight"], 1e-12)
+                ),
                 "episode_weight": values["weight"],
             }
             for key, values in sorted(wait_slack.items())
