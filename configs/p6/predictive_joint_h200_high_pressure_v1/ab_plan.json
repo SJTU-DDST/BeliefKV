@@ -16,7 +16,7 @@
   "frozen": true,
   "high_pressure_ratio": 0.8,
   "predictive_prepare_limit": 0,
-  "run_seconds": 1500,
+  "activation_deadline_seconds": null,
   "runtime_profile": "configs/p6/h200_bf16_v6/frozen_runtime_profile.json",
   "schema_version": 1,
   "workload": {

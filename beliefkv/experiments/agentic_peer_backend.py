@@ -741,7 +741,10 @@ class ToolEnabledPeerBackend(PeerAgentBackend):
         thread: _PersistentPeerThread,
         request: PeerTurnRequest,
     ) -> PeerTurnResult:
-        if thread.owns_activation_deadline:
+        if (
+            thread.owns_activation_deadline
+            and self.config.loop_guard.activation_wall_clock_s is not None
+        ):
             thread.activation_deadline.start(
                 self.config.loop_guard.activation_wall_clock_s
             )

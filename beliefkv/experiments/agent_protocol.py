@@ -109,7 +109,7 @@ class LoopGuardPolicy:
     graph_step_hard_limit: int = 512
     graph_step_reserve: int = 32
     enforce_graph_step_budget: bool = True
-    activation_wall_clock_s: float = 7200.0
+    activation_wall_clock_s: float | None = 7200.0
 
     def __post_init__(self) -> None:
         values = (
@@ -133,7 +133,7 @@ class LoopGuardPolicy:
             raise ValueError("alternating cycle detection needs at least two repetitions")
         if self.graph_step_soft_budget >= self.graph_step_hard_limit:
             raise ValueError("graph step soft budget must be below the hard limit")
-        if (
+        if self.activation_wall_clock_s is not None and (
             not math.isfinite(self.activation_wall_clock_s)
             or self.activation_wall_clock_s <= 0
         ):
@@ -669,7 +669,10 @@ class AgentLoopGuardMiddleware(AgentMiddleware[LoopGuardState, Any, Any]):
             }
             if graph_hard_limit - graph_step <= graph_reserve:
                 hard_stop_reason = "graph_step_hard_limit_low"
-        if elapsed_s >= self.policy.activation_wall_clock_s:
+        if (
+            self.policy.activation_wall_clock_s is not None
+            and elapsed_s >= self.policy.activation_wall_clock_s
+        ):
             hard_stop_reason = "activation_wall_clock_exhausted"
         if hard_stop_reason is not None:
             event = (

@@ -535,6 +535,26 @@ def test_workload_cli_does_not_apply_sympy_preflight_globally(
     assert args.sandbox_preflight_command is None
 
 
+def test_workload_cli_can_disable_activation_deadline(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from scripts.run_deepagents_swebench import parse_args
+
+    monkeypatch.setattr(
+        "sys.argv",
+        [
+            "run_deepagents_swebench.py",
+            "--mode",
+            "autonomous",
+            "--disable-activation-deadline",
+        ],
+    )
+
+    args = parse_args()
+
+    assert args.disable_activation_deadline is True
+
+
 def test_docker_backend_recovers_when_timed_out_run_is_already_running(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
@@ -1306,6 +1326,37 @@ def test_workflow_deadline_cancels_requests_tasks_and_commands_in_order() -> Non
     assert 0.0 <= summary["server_terminal_latency_ms"] <= 5000.0
     assert summary["pending_task_cancel_count"] == 2
     assert summary["active_command_cancel_count"] == 1
+    assert summary["cleanup_complete"] is True
+
+
+def test_workflow_deadline_controller_can_be_disabled() -> None:
+    events: list[str] = []
+
+    class Audit:
+        def emit(self, event: str, **_fields: object) -> None:
+            events.append(event)
+
+    class Adapter:
+        def cancel_pending_tasks(self, *, reason: str) -> int:
+            raise AssertionError(reason)
+
+    class Backend:
+        def cancel_active_commands(self, *, reason: str) -> int:
+            raise AssertionError(reason)
+
+    controller = WorkflowDeadlineController(
+        deadline=ActivationDeadline(),
+        adapter=Adapter(),
+        backend=Backend(),
+        audit=Audit(),
+    )
+
+    controller.start(None)
+    summary = controller.close()
+
+    assert events == ["workflow_deadline_disabled"]
+    assert summary["enabled"] is False
+    assert summary["expired"] is False
     assert summary["cleanup_complete"] is True
 
 
@@ -2477,6 +2528,33 @@ def test_loop_guard_tracks_and_enforces_activation_wall_clock() -> None:
     assert exhausted["guard_phase"] == "FINALIZE"
     assert exhausted["guard_forcing_completion"] is True
     assert exhausted["guard_reason"] == "activation_wall_clock_exhausted"
+
+
+def test_loop_guard_allows_unbounded_activation_wall_clock() -> None:
+    now = [10.0]
+    guard = AgentLoopGuardMiddleware(
+        policy=LoopGuardPolicy(activation_wall_clock_s=None),
+        completion_schema=ChildCompletion,
+        completion_instruction="Return ChildCompletion.",
+        audit=None,
+        scope="unbounded-wall-clock-test",
+        clock=lambda: now[0],
+    )
+
+    initial = guard.before_model({"messages": []}, runtime=None)
+    assert initial is not None
+    now[0] = 1_000_000.0
+
+    assert (
+        guard.before_model(
+            {
+                "messages": [],
+                "guard_activation_started_monotonic": 10.0,
+            },
+            runtime=None,
+        )
+        is None
+    )
 
 
 def test_activation_deadline_caps_late_requests_by_remaining_budget() -> None:

@@ -1405,6 +1405,7 @@ class WorkflowDeadlineController:
         self._started = False
         self._cancellation_started = False
         self._summary: dict[str, Any] = {
+            "enabled": True,
             "expired": False,
             "abort_requested_count": 0,
             "server_terminal": False,
@@ -1414,11 +1415,17 @@ class WorkflowDeadlineController:
             "cleanup_complete": False,
         }
 
-    def start(self, budget_s: float) -> None:
+    def start(self, budget_s: float | None) -> None:
         with self._lock:
             if self._started:
                 raise RuntimeError("workflow deadline controller is already active")
             self._started = True
+            if budget_s is None:
+                self._summary["enabled"] = False
+                self._summary["cleanup_complete"] = True
+        if budget_s is None:
+            self.audit.emit("workflow_deadline_disabled")
+            return
         self.deadline.start(budget_s)
         self.audit.emit("workflow_deadline_started", budget_s=budget_s)
         self._thread = threading.Thread(
