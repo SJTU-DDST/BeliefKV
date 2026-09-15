@@ -11,6 +11,9 @@ from beliefkv.runtime.protocol import (
 )
 
 
+_WORKFLOW_CHARGE_ROUNDOFF_BYTES = 1.0
+
+
 class PageIndexError(RuntimeError):
     pass
 
@@ -319,7 +322,7 @@ class PageOwnershipIndex:
             self._tracked_cpu_bytes += current_cpu - previous_cpu
             for workflow_id, amount in previous_charges:
                 remaining = self._workflow_charge_cache.get(workflow_id, 0.0) - amount
-                if abs(remaining) <= 1e-6:
+                if abs(remaining) <= _WORKFLOW_CHARGE_ROUNDOFF_BYTES:
                     self._workflow_charge_cache.pop(workflow_id, None)
                 else:
                     self._workflow_charge_cache[workflow_id] = remaining
@@ -1527,7 +1530,7 @@ class PageOwnershipIndex:
             ),
             default=0.0,
         )
-        if max_charge_error > 1.0:
+        if max_charge_error > _WORKFLOW_CHARGE_ROUNDOFF_BYTES:
             raise AssertionError(
                 "incremental workflow charge accounting diverged: "
                 f"{max_charge_error:.3f} bytes"

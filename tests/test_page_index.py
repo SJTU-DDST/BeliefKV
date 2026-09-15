@@ -174,6 +174,18 @@ class PageIndexTest(unittest.TestCase):
         ):
             index.assert_consistent()
 
+    def test_sub_byte_negative_charge_residue_is_removed(self):
+        index = PageOwnershipIndex()
+        index.register_context("ctx", "wf", 0)
+        handle = PageHandle(1, 0)
+        index.register_page(handle, size_bytes=100)
+        index.bind_pages("ctx", 0, (handle,))
+        index._workflow_charge_cache["wf"] = 99.9999
+
+        index.free_page(handle)
+
+        self.assertNotIn("wf", index.workflow_gpu_charges())
+
     def test_prepare_commit_updates_residency_only_at_completion(self):
         index = PageOwnershipIndex()
         handle = PageHandle(1, 0)
