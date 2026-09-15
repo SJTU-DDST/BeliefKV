@@ -1,121 +1,70 @@
-# BeliefKV Architecture
+# Architecture
 
-The authoritative algorithm discussion is in
-[`beliefkv_design_2026-07-14_zh.md`](beliefkv_design_2026-07-14_zh.md). This file
-maps that design to the implementation.
+Updated: 2026-09-15.
 
-For rendered diagrams that distinguish implemented, partial, and missing
-components, see
-[`architecture_status_zh.md`](architecture_status_zh.md).
+This page is a concise English entry point. The authoritative system design is
+[beliefkv_design_2026-07-14_zh.md](beliefkv_design_2026-07-14_zh.md), and the
+current implementation status is
+[architecture_status_zh.md](architecture_status_zh.md).
 
-## Current P6 Control Line
+## System Model
 
-The current P6 design joins an agent-side opportunity window with the physical
-cost of the live Radix closure:
-
-```text
-RCCG + FrontierBeliefModel        PhysicalSnapshot + Radix closure
-  -> causal slack                  -> transfer shape
-                                  -> morphology debt
-                 \                    /
-                  ScenarioRiskPlanner
-                  -> A0 / PREPARE_HOST / bounded PREFETCH_GPU
-                  -> semantic intent
-                  -> safe-point live-shape rematerialization
-                  -> existing P5 transaction and ACK path
-```
-
-The decision margin is conceptually
-`min(pressure_deadline, reentry_deadline) - Q90(shape-conditioned transfer
-time) - guard`. A bytes-only estimate may not be substituted across extent-count
-buckets. Unsupported shapes and stale live closures fail closed to the P5
-observed plan.
-
-As of 2026-08-10, the first implementation conditions transfer cost on bytes
-and extent count; extent-size distribution and closure depth are observed but
-not model inputs. M1--M5 connect that cost to predictive intent generation and
-scheduler-safe live-shape rematerialization. Replay changes timing estimates
-and feasibility reasons, but changes neither candidate eligibility nor the
-selected action. M6 implements a run-level one-action canary and strict
-five-stage attribution, but its decision-relevance and natural-action gates are
-closed, so no GPU canary was forced. A controlled GPU0 result at equal 2.659 GB measured
-185.69 ms for 7 extents and 765.17 ms for 106 extents; this remains development
-evidence, not a cross-GPU or end-to-end benefit result.
-
-## Control And Data Planes
+BeliefKV serves concurrent dynamic agent workflows on one HBM-constrained GPU.
+It does not require a predefined workflow DAG. Runtime TOOL, SPAWN, RETURN,
+JOIN, HANDOFF, and MESSAGE events incrementally construct an RCCG.
 
 ```text
-Agent runtime / tool dispatcher / message bus
-                  |
-                  | RuntimeEvent batches
-                  v
-       RuntimeCausalContextGraph
-                  |
-          +-------+--------+
-          |                |
-  Frontier belief     Causal frontier
-  and causal slack     and fairness
-          |                |
-          +-------+--------+
-                  |
-      Physical closure shape
-                  |
-  Morphology-aware admission + transfer planner
-                  |
-          ControlCommand queue
-                  |
-                  v
-        SGLangSchedulerBridge
-                  |
-       RadixArbiter + PageIndex
-                  |
-                  v
-       SGLang RadixCache / HiCache
-                  |
-             GPU KV / CPU KV
+Agent runtime events             SGLang physical state
+        |                               |
+        v                               v
+      RCCG                       PageIndex / Radix
+        \                               /
+         +---------- JointPlan --------+
+                       |
+            execution + admission + KV
+                       |
+           tickets / transfer commands
+                       |
+             SGLang batch and HiCache
 ```
 
-BeliefKV owns logical causality and policy. SGLang remains the only allocator
-and tensor-location authority. A residency transition is committed only after
-the scheduler-owned backend returns a generation-checked ACK.
+## P5 Observed Path
 
-## Runtime Transaction Order
+The online P5 path is work-conserving and beneficiary-bound:
 
-At each patched SGLang scheduler safe point:
+1. select factually runnable requests from the RCCG frontier;
+2. produce a bounded execution and admission seed;
+3. detect an actual startup/growth HBM deficit;
+4. bind a deferred beneficiary to movable PARKED/DEAD physical bundles;
+5. issue reactive `COMMIT_CPU` or `DROP`;
+6. admit the beneficiary only after authoritative reclaim ACK;
+7. complete the transaction after the beneficiary receives GPU service.
 
-1. drain completed HiCache ACKs into the control state machine;
-2. synchronize only if a Radix/HiCache observer marked the tree dirty;
-3. report authoritative allocator usage and per-workflow charges;
-4. run admission, pressure handling, prefetch, or one shadow chunk;
-5. submit at most one transfer command through the scheduler thread;
-6. let SGLang calculate its native queue policy;
-7. reorder only metadata-tagged queue slots by root workflow and causal frontier;
-8. preserve untagged requests and all SGLang allocator/lock invariants.
+Requests remain in SGLang's visible waiting queue. BeliefKV emits short-lived
+admission tickets; SGLang remains the allocator and batch-construction
+authority.
 
-The ACK-before-sync order is required for immediate `COMMIT_CPU` and `DROP`
-actions. H2D selection enforces HiCache's ancestor closure so implicit physical
-loads cannot escape BeliefKV byte accounting.
+## P6 Predictive Overlay
 
-## Safety Invariants
+FrontierBelief predicts action-local demand and causal slack for tool waits,
+child/JOIN release, messages, and future KV growth. Prediction runs
+asynchronously and may propose only a safe-point-validated action.
 
-- `(page_id, allocation_generation)` rejects stale node reuse.
-- Active readers, engine locks, semantic pins, and active shared owners prevent
-  migration.
-- Shared physical pages are counted once and split across root workflows.
-- Admission waits for actual released-byte ACKs, not planned bytes.
-- Prediction can rank PREPARE/prefetch actions but cannot bypass reactive safety.
-- Cache reset cancels all in-flight bookkeeping before invalidating page handles.
-- Requests without `beliefkv_metadata` bypass admission and retain their native
-  queue slots.
+The currently validated predictive mechanism is `PREPARE_HOST`: create a CPU
+shadow while retaining the GPU KV. This is predictive transfer, not predictive
+eviction. Predictive `COMMIT_CPU` is an optional future branch, and predictive
+`PREFETCH_GPU` remains disabled for formal online evaluation.
 
-## Validation Layers
+## Physical Authority
 
-1. Pure Python unit tests cover RCCG, ownership, policies, predictor, simulator,
-   artifacts, and failure paths.
-2. Fake HiCache tests cover submitted DMA, partial/rejected actions, reset,
-   ancestor closure, and abort handling.
-3. `beliefkv check-sglang` checks version, git commit when available, AST
-   symbols, and BeliefKV patch markers.
-4. A Qwen2.5-0.5B CUDA metadata/lifecycle smoke has passed; real HBM-pressure
-   migration, performance, and long-running fault tests remain experimental
-   requirements rather than completed validation layers.
+- RCCG owns causal semantics.
+- PageIndex mirrors page ownership and generations.
+- PhysicalBundle is the closure-complete migration unit.
+- SGLang RadixCache/HiCache owns allocation, tensor location, locks, and DMA.
+- A residency change becomes visible only after a generation-checked ACK.
+
+## Current Diagram
+
+![BeliefKV joint scheduling](figures/beliefkv_joint_algorithm_overview.svg)
+
+Historical architecture text is preserved under `docs/archive/snapshots/`.

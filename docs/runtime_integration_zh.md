@@ -1,5 +1,7 @@
 # BeliefKV 与 SGLang 0.5.2rc1 集成说明
 
+更新日期：2026-09-15。本文描述当前接口契约；具体实验参数以冻结 runtime profile 为准。
+
 ## 1. 固定版本
 
 BeliefKV 当前只支持：
@@ -15,7 +17,8 @@ git 信息时）、上游 AST 接口和 BeliefKV patch marker。检查失败时�
 
 ## 2. Patch 的职责
 
-`patches/sglang-0.5.2rc1-beliefkv.patch` 只增加窄接口：
+当前正式源契约使用
+`patches/sglang-0.5.2rc1-beliefkv-perf-ownership.patch`。它只增加窄接口：
 
 - HTTP/generation input 到 `Req` 的 `beliefkv_metadata` 传播；
 - request 始终进入 SGLang waiting queue，BeliefKV 在每个 prefill epoch 编译短期 admission
@@ -112,18 +115,26 @@ ACK 必须先于 tree sync。否则同步完成的 `COMMIT_CPU` 或 `DROP` 会�
 - native HiCache write/load 期间分别镜像为 `MIRRORING/PREFETCHING`；
 - cache reset 先生成 `CANCELLED` ACK，再失效 allocation generation。
 
-## 7. Predictor
+## 7. Predictor 与 JointPlan
 
-先将真实 trace 归一化，再训练：
+`beliefkv normalize-clawtrace` 和 `beliefkv train-predictor` 仍可用于便携式 predictor
+smoke，但正式 P6 路径使用 canonical P6 dataset、FrontierBelief artifact、独立 GPU
+service artifact 和 transfer artifact。语义模型只预测 action-local demand、等待存活率、
+prompt/output growth 和因果释放；它不得学习 batch size 或旧调度策略下的 GPU wall-clock。
 
-```bash
-beliefkv normalize-clawtrace raw.jsonl runtime_events.jsonl
-beliefkv train-predictor runtime_events.jsonl predictor.json
+在线流程为：
+
+```text
+bounded observed seed
+  -> deferred beneficiary + parked victim scope
+  -> asynchronous FrontierBelief scenarios
+  -> PredictiveIntent
+  -> safe-point live rematerialization and validation
+  -> JointPlan action or P5 fallback
 ```
 
-artifact 保存工具 survival curve、action context tree、LLM service bucket 和训练
-摘要；原始 prompt 不进入模型。训练 trace 应按 project/session、时间和 workload
-family 划分，不能随机拆散同一 workflow。
+当前 predictive authority 只验证到非破坏性 `PREPARE_HOST`。预测式
+`COMMIT_CPU` 未实现，`PREFETCH_GPU` 的正式 canary 仍关闭。
 
 ## 8. 真机验收清单
 
@@ -133,11 +144,14 @@ family 划分，不能随机拆散同一 workflow。
 - abort deferred、abort admitted、cache reset 和 host allocation failure 不泄漏；
 - HBM pressure 下 admission 只在实际释放 ACK 后继续；
 - D2H/H2D 字节与 HiCache allocator 计数一致；
+- safe-point capture、predictive submit 和 physical commit 不超过当前计划中的预算；
+- predictor worker 不得阻塞 scheduler，也不得积压或发布 stale intent；
 - shadow slowdown 不超过配置预算；
 - 长时间混合 workload 不出现 stale handle、location divergence 或死锁。
 
-2026-07-15 已使用 Qwen2.5-0.5B-Instruct 完成单卡 CUDA smoke：未标注请求
-成功旁路，root 与 spawn child 均在同一审计 `run_id` 下完成上述生命周期，且
-child 建立了指向 root 的因果边。该结果验证集成机制，但不验证高 HBM pressure、
-长时间稳定性或性能收益。完成清单中的压力与故障测试之前，不能称为已经完成
-生产级 GPU 验证。
+当前 H200 BF16 系统已经完成 RCCG、visible admission、transactional restore、
+generation-aware ownership、CUDA Graph batch 32 和单笔 predictive
+`PREPARE_HOST` 的定向门禁。最新 running retraction/ownership 修复仍需一次高压
+GPU 回归；自然 predictive throughput 收益尚未建立。当前结论见
+[`architecture_status_zh.md`](architecture_status_zh.md)，不要从旧 smoke 报告推断
+现有能力。

@@ -202,10 +202,10 @@ shared prefix 应采用哪个 owner lease
 请求，其 SGLang `cache_hit_tokens` 只有 5。由于实验使用 `page_size=1`，这说明当前 prompt
 结构下 parent-child exact prefix 至多约 5 tokens。
 
-冷启动证据位于
-[`runtime_events.sglang.jsonl`](../experiments/archive/20260727/superseded_raw/deepagents_swebench/20260719T114541Z/server-p2-bundle-scope/runtime_events.sglang.jsonl#L41)。
-高压运行本身复用了同一服务器之前建立的 Radix cache，不能仅根据高压运行的 hit 值归因
-parent-child prefix。
+冷启动证据原始路径为
+`experiments/archive/20260727/superseded_raw/deepagents_swebench/20260719T114541Z/server-p2-bundle-scope/runtime_events.sglang.jsonl:41`；
+该 raw artifact 未包含在当前 checkout，审计结论保存在上面的 P2 实验报告中。高压运行本身复用了
+同一服务器之前建立的 Radix cache，不能仅根据高压运行的 hit 值归因 parent-child prefix。
 
 本模型 BF16 KV 的单 token 大小为：
 
@@ -247,8 +247,9 @@ parent-child prefix。
 高压运行中 child 首请求出现的 3,397-4,774 token cache hit 来自此前 child/template 或 sibling
 child，不是 parent KV。由此得到：
 
-例如，高压 workload 中一个 fresh child 的第一次请求命中 3,397 tokens，见
-[`runtime_events.sglang.jsonl`](../experiments/archive/20260727/superseded_raw/deepagents_swebench/20260719T114541Z/planned-8-p2-bundle-scope-pressure/server/runtime_events.sglang.jsonl#L95)。
+例如，高压 workload 中一个 fresh child 的第一次请求命中 3,397 tokens。对应 raw 记录原位于
+`experiments/archive/20260727/superseded_raw/deepagents_swebench/20260719T114541Z/planned-8-p2-bundle-scope-pressure/server/runtime_events.sglang.jsonl:95`，
+当前 checkout 只保留实验报告中的审计结果。
 
 ```text
 parent-parent：存在一定 cache affinity

@@ -2,7 +2,7 @@
 
 日期：2026-08-20
 
-状态：历史 diagnostic。CPU Counterfactual Oracle 已退出正式收益门禁；该报告只保留模拟器重建与契约证据，后续 GPU 实验不再等待本报告的 opportunity/gain gate。当前路线见 ../beliefkv_gpu_native_subagent_oracle_plan_2026-08-20_zh.md。
+状态：历史 diagnostic。CPU Counterfactual Oracle 已退出正式收益门禁；该报告只保留模拟器重建与契约证据，后续 GPU 实验不再等待本报告的 opportunity/gain gate。对应历史路线见 ../archive/plans/beliefkv_gpu_native_subagent_oracle_plan_2026-08-20_zh.md。
 
 
 ## 1. 裁决

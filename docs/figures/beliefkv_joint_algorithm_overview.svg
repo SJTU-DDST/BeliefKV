@@ -1,0 +1,217 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="1800" height="1120" viewBox="0 0 1800 1120" role="img" aria-labelledby="title desc">
+  <title id="title">BeliefKV：动态 Agent 工作流的请求与 KV 联合调度</title>
+  <desc id="desc">BeliefKV 的 RCCG、P5 JointPlan、P6 FrontierBelief 预测旁路和 SGLang KV 数据面架构图。</desc>
+  <defs>
+    <marker id="arrow-dark" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#344054"/>
+    </marker>
+    <marker id="arrow-blue" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#2367c9"/>
+    </marker>
+    <marker id="arrow-gray" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#7b8491"/>
+    </marker>
+    <style>
+      text { font-family: "DejaVu Sans", sans-serif; fill: #182230; }
+      .cjk { font-family: "Droid Sans Fallback", sans-serif; font-style: normal; }
+      .title { font-size: 34px; font-weight: 700; }
+      .subtitle { font-size: 16px; fill: #5d6673; }
+      .band-title { font-size: 17px; font-weight: 700; }
+      .node-title { font-size: 18px; font-weight: 700; }
+      .node-body { font-size: 14px; fill: #475467; }
+      .small { font-size: 13px; fill: #5d6673; }
+      .edge-label { font-size: 13px; font-weight: 600; fill: #475467; }
+      .edge-blue-label { font-size: 13px; font-weight: 600; fill: #1757ad; }
+      .p5-line { fill: none; stroke: #344054; stroke-width: 3; marker-end: url(#arrow-dark); }
+      .p6-line { fill: none; stroke: #2367c9; stroke-width: 3; stroke-dasharray: 9 7; marker-end: url(#arrow-blue); }
+      .fallback-line { fill: none; stroke: #7b8491; stroke-width: 2.5; stroke-dasharray: 5 7; marker-end: url(#arrow-gray); }
+    </style>
+  </defs>
+
+  <rect width="1800" height="1120" fill="#f7f8fa"/>
+  <text id="titleText" x="70" y="58" class="title">BeliefKV</text>
+  <text x="250" y="58" class="title cjk">：动态智能体工作流的请求与缓存联合调度</text>
+  <text x="70" y="87" class="subtitle cjk">实线为在线主路径，蓝色虚线为预测路径，灰色虚线为恢复降级路径</text>
+
+  <!-- Layer 1: Runtime semantics -->
+  <rect x="55" y="115" width="1690" height="160" rx="8" fill="#edf8f2" stroke="#65a986" stroke-width="1.5"/>
+  <text x="80" y="145" class="band-title cjk" fill="#206b49">1  在线语义层：动态发现，而非预定义流程图</text>
+
+  <g transform="translate(95 172)">
+    <rect width="430" height="72" rx="7" fill="#ffffff" stroke="#65a986" stroke-width="1.5"/>
+    <text x="215" y="28" text-anchor="middle" class="node-title">Agent Runtime Events</text>
+    <text x="215" y="54" text-anchor="middle" class="node-body">TOOL · SPAWN · RETURN · JOIN · MESSAGE</text>
+  </g>
+  <path d="M 525 208 L 650 208" class="p5-line"/>
+  <g transform="translate(655 162)">
+    <rect width="470" height="92" rx="7" fill="#ffffff" stroke="#378b63" stroke-width="2"/>
+    <text x="235" y="31" text-anchor="middle" class="node-title">RCCG</text>
+    <text x="235" y="57" text-anchor="middle" class="node-body">parent / child / peer / tool / join</text>
+    <text x="235" y="78" text-anchor="middle" class="small cjk">输出可运行前沿、等待依赖和重入条件</text>
+  </g>
+  <g transform="translate(1235 172)">
+    <rect width="450" height="72" rx="7" fill="#ffffff" stroke="#65a986" stroke-width="1.5"/>
+    <text x="225" y="28" text-anchor="middle" class="node-title cjk">增量事件驱动</text>
+    <text x="225" y="54" text-anchor="middle" class="node-body cjk">只在因果、队列或资源状态变化时重规划</text>
+  </g>
+  <path d="M 1125 208 L 1230 208" class="p5-line"/>
+
+  <!-- Layer 2: P5 joint control -->
+  <rect x="55" y="300" width="1690" height="285" rx="8" fill="#fff7e8" stroke="#d89a3d" stroke-width="1.5"/>
+  <text x="80" y="332" class="band-title" fill="#8a4f08">2  P5</text>
+  <text x="135" y="332" class="band-title cjk" fill="#8a4f08">在线主路径：吞吐优先的请求与缓存联合控制</text>
+
+  <g transform="translate(85 370)">
+    <rect width="260" height="104" rx="7" fill="#ffffff" stroke="#c98527" stroke-width="1.5"/>
+    <text x="130" y="31" text-anchor="middle" class="node-title">Visible Queue</text>
+    <text x="130" y="58" text-anchor="middle" class="node-body cjk">请求始终由原生队列持有</text>
+    <text x="130" y="82" text-anchor="middle" class="small">READY / DEFER / WAIT_RESTORE</text>
+  </g>
+  <g transform="translate(395 370)">
+    <rect width="260" height="104" rx="7" fill="#ffffff" stroke="#c98527" stroke-width="1.5"/>
+    <text x="130" y="31" text-anchor="middle" class="node-title">Bounded Seed</text>
+    <text x="130" y="58" text-anchor="middle" class="node-body">O(K) fast order</text>
+    <text x="130" y="82" text-anchor="middle" class="small cjk">因果解锁 · 驻留状态 · 防饿死</text>
+  </g>
+  <g transform="translate(705 352)">
+    <rect width="340" height="140" rx="7" fill="#fff1d6" stroke="#ad650d" stroke-width="2.5"/>
+    <text x="170" y="34" text-anchor="middle" class="node-title">JointPlan</text>
+    <text x="170" y="64" text-anchor="middle" class="node-body">RUN / ADMIT / DEFER</text>
+    <text x="170" y="89" text-anchor="middle" class="node-body">KEEP / COMMIT / RESTORE</text>
+    <rect x="54" y="105" width="232" height="24" rx="4" fill="#ffffff" stroke="#d89a3d"/>
+    <text x="170" y="122" text-anchor="middle" class="small cjk">一个计划、一个资源包络</text>
+  </g>
+  <g transform="translate(1100 370)">
+    <rect width="260" height="104" rx="7" fill="#ffffff" stroke="#c98527" stroke-width="1.5"/>
+    <text x="130" y="31" text-anchor="middle" class="node-title">Admission Ticket</text>
+    <text x="130" y="58" text-anchor="middle" class="node-body cjk">短期、仅当前轮次有效</text>
+    <text x="130" y="82" text-anchor="middle" class="small cjk">分配器最终验收</text>
+  </g>
+  <g transform="translate(1410 370)">
+    <rect width="260" height="104" rx="7" fill="#ffffff" stroke="#c98527" stroke-width="1.5"/>
+    <text x="130" y="31" text-anchor="middle" class="node-title">GPU Batch</text>
+    <text x="130" y="58" text-anchor="middle" class="node-body">Prefill / Decode</text>
+    <text x="130" y="82" text-anchor="middle" class="small cjk">首次实际服务后完成闭环</text>
+  </g>
+  <path d="M 345 422 L 390 422" class="p5-line"/>
+  <path d="M 655 422 L 700 422" class="p5-line"/>
+  <path d="M 1045 422 L 1095 422" class="p5-line"/>
+  <path d="M 1360 422 L 1405 422" class="p5-line"/>
+  <path d="M 890 254 L 890 347" class="p5-line"/>
+
+  <g transform="translate(400 510)">
+    <rect width="290" height="48" rx="6" fill="#ffffff" stroke="#d89a3d"/>
+    <text x="145" y="20" text-anchor="middle" class="node-body cjk">明确受益请求出现显存缺口</text>
+    <text x="145" y="39" text-anchor="middle" class="small cjk">显存占用高本身不触发迁移</text>
+  </g>
+  <path d="M 690 534 L 735 492" class="p5-line"/>
+  <g transform="translate(1060 510)">
+    <rect width="330" height="48" rx="6" fill="#ffffff" stroke="#d89a3d"/>
+    <text x="165" y="20" text-anchor="middle" class="node-body">Beneficiary-bound package</text>
+    <text x="165" y="39" text-anchor="middle" class="small">ADMIT beneficiary + COMMIT_CPU victim</text>
+  </g>
+  <path d="M 1045 468 L 1090 505" class="p5-line"/>
+
+  <!-- Layer 3: P6 predictive overlay -->
+  <rect x="55" y="610" width="1690" height="185" rx="8" fill="#edf4ff" stroke="#6093d6" stroke-width="1.5"/>
+  <text x="80" y="642" class="band-title" fill="#1757ad">3  P6</text>
+  <text x="135" y="642" class="band-title cjk" fill="#1757ad">预测旁路：只建议动作，不绕过联合计划</text>
+
+  <g transform="translate(105 675)">
+    <rect width="285" height="82" rx="7" fill="#ffffff" stroke="#6093d6" stroke-width="1.5"/>
+    <text x="142" y="30" text-anchor="middle" class="node-title">Deferred Target</text>
+    <text x="142" y="58" text-anchor="middle" class="node-body">beneficiary + parked victims</text>
+  </g>
+  <g transform="translate(445 675)">
+    <rect width="285" height="82" rx="7" fill="#ffffff" stroke="#6093d6" stroke-width="1.5"/>
+    <text x="142" y="30" text-anchor="middle" class="node-title">FrontierBelief</text>
+    <text x="142" y="58" text-anchor="middle" class="node-body">wait / JOIN / KV growth</text>
+  </g>
+  <g transform="translate(785 675)">
+    <rect width="285" height="82" rx="7" fill="#ffffff" stroke="#6093d6" stroke-width="1.5"/>
+    <text x="142" y="30" text-anchor="middle" class="node-title">Scenario Risk</text>
+    <text x="142" y="58" text-anchor="middle" class="node-body cjk">收益 · 最晚启动时间 · 置信度</text>
+  </g>
+  <g transform="translate(1125 665)">
+    <rect width="305" height="102" rx="7" fill="#dfeeff" stroke="#2367c9" stroke-width="2"/>
+    <text x="152" y="31" text-anchor="middle" class="node-title">PREPARE_HOST</text>
+    <text x="152" y="58" text-anchor="middle" class="node-body cjk">建立主机侧影子副本</text>
+    <text x="152" y="82" text-anchor="middle" class="small cjk">显存副本仍保留，不立即释放空间</text>
+  </g>
+  <g transform="translate(1480 665)">
+    <rect width="205" height="102" rx="7" fill="#ffffff" stroke="#6093d6" stroke-width="1.5"/>
+    <text x="102" y="29" text-anchor="middle" class="node-title">Safe Point</text>
+    <text x="102" y="55" text-anchor="middle" class="node-body">live rematerialize</text>
+    <text x="102" y="79" text-anchor="middle" class="small cjk">失败则回退在线主路径</text>
+  </g>
+  <path d="M 390 716 L 440 716" class="p6-line"/>
+  <path d="M 730 716 L 780 716" class="p6-line"/>
+  <path d="M 1070 716 L 1120 716" class="p6-line"/>
+  <path d="M 1430 716 L 1475 716" class="p6-line"/>
+  <path d="M 525 474 L 525 655 L 247 655 L 247 670" class="p6-line"/>
+  <path d="M 1582 665 L 1582 575 L 875 575 L 875 497" class="p6-line"/>
+
+  <!-- Layer 4: physical data plane -->
+  <rect x="55" y="820" width="1690" height="225" rx="8" fill="#f0f2f5" stroke="#8a94a2" stroke-width="1.5"/>
+  <text x="80" y="852" class="band-title" fill="#475467">4  SGLang</text>
+  <text x="180" y="852" class="band-title cjk" fill="#475467">物理数据面：前缀树与分配器是唯一事实源</text>
+
+  <g transform="translate(95 895)">
+    <rect width="300" height="105" rx="7" fill="#ffffff" stroke="#7b8491" stroke-width="1.5"/>
+    <text x="150" y="29" text-anchor="middle" class="node-title">PageIndex</text>
+    <text x="150" y="55" text-anchor="middle" class="node-body">owner · lock · residency</text>
+    <text x="150" y="80" text-anchor="middle" class="small cjk">构造闭包完整的物理页包</text>
+  </g>
+  <g transform="translate(455 895)">
+    <rect width="300" height="105" rx="7" fill="#ffffff" stroke="#7b8491" stroke-width="1.5"/>
+    <text x="150" y="29" text-anchor="middle" class="node-title">PhysicalBundle</text>
+    <text x="150" y="55" text-anchor="middle" class="node-body">shared pages + ancestor closure</text>
+    <text x="150" y="80" text-anchor="middle" class="small cjk">实际迁移单位，而非逻辑智能体</text>
+  </g>
+  <g transform="translate(815 880)">
+    <rect width="360" height="135" rx="7" fill="#ffffff" stroke="#616b78" stroke-width="2"/>
+    <text x="180" y="31" text-anchor="middle" class="node-title">HiCache Transfer Transaction</text>
+    <text x="180" y="59" text-anchor="middle" class="node-body">D2H: SHADOW / COMMIT</text>
+    <text x="180" y="84" text-anchor="middle" class="node-body">H2D: RESTORE / NATIVE LOAD</text>
+    <text x="180" y="109" text-anchor="middle" class="small cjk">确认完成后才更新驻留与准入</text>
+  </g>
+  <g transform="translate(1240 895)">
+    <rect width="300" height="105" rx="7" fill="#ffffff" stroke="#7b8491" stroke-width="1.5"/>
+    <text x="150" y="29" text-anchor="middle" class="node-title">GPU HBM ↔ CPU DRAM</text>
+    <text x="150" y="56" text-anchor="middle" class="node-body">KEEP · D2H · H2D · DROP</text>
+    <text x="150" y="81" text-anchor="middle" class="small cjk">最终容量由分配器验收</text>
+  </g>
+  <g transform="translate(1585 895)">
+    <rect width="120" height="105" rx="7" fill="#ffffff" stroke="#7b8491" stroke-width="1.5"/>
+    <text x="60" y="32" text-anchor="middle" class="node-title">Service</text>
+    <text x="60" y="60" text-anchor="middle" class="node-body">Prefill</text>
+    <text x="60" y="82" text-anchor="middle" class="node-body">Decode</text>
+  </g>
+  <path d="M 395 947 L 450 947" class="p5-line"/>
+  <path d="M 755 947 L 810 947" class="p5-line"/>
+  <path d="M 1175 947 L 1235 947" class="p5-line"/>
+  <path d="M 1540 947 L 1580 947" class="p5-line"/>
+  <path d="M 875 492 L 875 565 L 1090 565 L 1090 800 L 995 800 L 995 875" class="p5-line"/>
+  <text x="892" y="530" class="edge-label cjk">响应式受害页动作</text>
+  <path d="M 1278 767 L 1278 860 L 1080 860 L 1080 875" class="p6-line"/>
+  <text x="1292" y="838" class="edge-blue-label cjk">预测式主机影子副本</text>
+  <path d="M 995 1015 L 995 1028 L 1575 1028 L 1575 1005" class="fallback-line"/>
+  <text x="1085" y="1041" class="small cjk">显式恢复不可行：原生按需加载或从原始词元重算</text>
+  <path d="M 1645 895 L 1645 480" class="p5-line"/>
+
+  <!-- Legend and status -->
+  <g transform="translate(70 1065)">
+    <line x1="0" y1="0" x2="46" y2="0" stroke="#344054" stroke-width="3"/>
+    <text x="58" y="5" class="small">P5 ONLINE</text>
+    <line x1="210" y1="0" x2="256" y2="0" stroke="#2367c9" stroke-width="3" stroke-dasharray="9 7"/>
+    <text x="268" y="5" class="small">P6 PREDICTIVE</text>
+    <line x1="430" y1="0" x2="476" y2="0" stroke="#7b8491" stroke-width="2.5" stroke-dasharray="5 7"/>
+    <text x="488" y="5" class="small">FALLBACK</text>
+  </g>
+  <g transform="translate(790 1051)">
+    <rect width="925" height="44" rx="6" fill="#fffbe7" stroke="#c9aa31"/>
+    <text x="462" y="18" text-anchor="middle" class="node-body cjk">当前边界：非破坏性预传输机制已打通；自然吞吐收益仍待验证</text>
+    <text x="462" y="37" text-anchor="middle" class="small">Predictive COMMIT_CPU / PREFETCH_GPU: CLOSED</text>
+  </g>
+</svg>

@@ -6,7 +6,7 @@
 ## 1. 阶段边界
 
 本阶段落实
-[`beliefkv_hicache_joint_control_improvement_plan_2026-07-18_zh.md`](../beliefkv_hicache_joint_control_improvement_plan_2026-07-18_zh.md)
+[`beliefkv_hicache_joint_control_improvement_plan_2026-07-18_zh.md`](../archive/plans/beliefkv_hicache_joint_control_improvement_plan_2026-07-18_zh.md)
 中的 P1，不启用 joint planner、预测迁移或 Reveal-and-Commit。当前正确性边界保持不变：
 
 - SGLang allocator、Radix topology、node lock 和 KV tensor 是物理真相源；
