@@ -186,6 +186,7 @@ def test_retraction_suffix_excludes_live_radix_and_free_pages() -> None:
         "duplicate_candidate_page_count": 1,
         "invalid_candidate_token_count": 2,
         "radix_protected_page_count": 2,
+        "engine_protected_page_count": 0,
         "already_free_page_count": 1,
         "released_page_count": 2,
         "page_size": 1,
@@ -207,6 +208,26 @@ def test_retraction_suffix_protects_an_entire_paged_radix_extent() -> None:
     assert released.tolist() == [16]
     assert diagnostics["radix_protected_page_count"] == 1
     assert diagnostics["already_free_page_count"] == 1
+    assert diagnostics["released_page_count"] == 1
+
+
+def test_retraction_suffix_excludes_other_live_request_private_pages() -> None:
+    batch = _retraction_batch(live_values=())
+    owner = SimpleNamespace(req_pool_idx=0, seqlen=3)
+    other = SimpleNamespace(req_pool_idx=1, seqlen=3)
+    batch.reqs = [owner, other]
+    batch.req_to_token_pool = SimpleNamespace(
+        req_to_token=torch.tensor([[6, 7, 9], [7, 8, 10]], dtype=torch.int64)
+    )
+
+    released, diagnostics = batch._beliefkv_releasable_radix_suffix(
+        torch.tensor([6, 7]),
+        excluded_req_pool_indices={owner.req_pool_idx},
+        seq_lens_cpu=[3, 3],
+    )
+
+    assert released.tolist() == [6]
+    assert diagnostics["engine_protected_page_count"] == 1
     assert diagnostics["released_page_count"] == 1
 
 

@@ -6903,6 +6903,13 @@ class EmbeddedSGLangRuntime:
         """Start the residency half of a selective retraction transaction."""
 
         now_ms = float(self._now_ms())
+        scheduler = getattr(self, "scheduler", None)
+        if getattr(scheduler, "token_to_kv_pool_allocator", None) is not None:
+            self._ensure_allocator_radix_consistency(
+                reason="running_retraction",
+                force=True,
+                include_engine_ownership=True,
+            )
         transaction = getattr(
             self, "_pending_running_retraction_transaction", None
         )
@@ -15925,37 +15932,66 @@ class EmbeddedSGLangRuntime:
             running_request_count=len(running_request_ids),
         )
 
-    def _ensure_allocator_radix_consistency(self, *, reason: str) -> None:
+    def _ensure_allocator_radix_consistency(
+        self,
+        *,
+        reason: str,
+        force: bool = False,
+        include_engine_ownership: bool = False,
+    ) -> None:
         scheduler = self.scheduler
         allocator = scheduler.token_to_kv_pool_allocator
         available_before = int(allocator.available_size())
         evictable = int(self.tree_cache.evictable_size())
         protected = max(0, int(getattr(self.tree_cache, "protected_size_", 0)))
         max_tokens = int(scheduler.max_total_num_tokens)
-        if available_before + evictable + protected <= max_tokens:
+        accounting_diverged = (
+            available_before + evictable + protected > max_tokens
+        )
+        if not force and not accounting_diverged:
             return
 
-        overlap_tokens = self._claim_live_radix_indices(allocator, max_tokens)
+        repair = self._claim_live_radix_indices(
+            allocator,
+            max_tokens,
+            include_engine_ownership=include_engine_ownership,
+        )
         available_after = int(allocator.available_size())
         accounted_after = available_after + evictable + protected
-        self.audit.emit(
-            "allocator_radix_resynchronized",
-            self._now_ms(),
-            reason=reason,
-            overlap_tokens=overlap_tokens,
-            available_tokens_before=available_before,
-            available_tokens_after=available_after,
-            evictable_tokens=evictable,
-            protected_tokens=protected,
-            max_total_tokens=max_tokens,
+        repaired_tokens = int(repair["removed_overlap_tokens"]) + int(
+            repair["duplicate_free_tokens"]
         )
-        if overlap_tokens <= 0 or accounted_after > max_tokens:
+        if repaired_tokens or accounting_diverged:
+            self.audit.emit(
+                "allocator_radix_resynchronized",
+                self._now_ms(),
+                reason=reason,
+                overlap_tokens=repair["removed_overlap_tokens"],
+                duplicate_free_tokens=repair["duplicate_free_tokens"],
+                radix_live_tokens=repair["radix_live_tokens"],
+                engine_live_tokens=repair["engine_live_tokens"],
+                reservation_tokens=repair["reservation_tokens"],
+                available_tokens_before=available_before,
+                available_tokens_after=available_after,
+                evictable_tokens=evictable,
+                protected_tokens=protected,
+                max_total_tokens=max_tokens,
+            )
+        if accounted_after > max_tokens or (
+            accounting_diverged and repaired_tokens <= 0
+        ):
             raise SGLangBackendError(
                 "allocator/Radix accounting diverged and could not be repaired",
                 blocker_code=TransferBlockerCode.UNKNOWN_BACKEND,
             )
 
-    def _claim_live_radix_indices(self, allocator: Any, max_tokens: int) -> int:
+    def _claim_live_radix_indices(
+        self,
+        allocator: Any,
+        max_tokens: int,
+        *,
+        include_engine_ownership: bool = False,
+    ) -> dict[str, int]:
         try:
             import torch
         except ImportError as error:  # pragma: no cover - SGLang requires torch
@@ -15970,6 +16006,7 @@ class EmbeddedSGLangRuntime:
             )
 
         live_values = []
+        live_owners: list[tuple[int, Any]] = []
         stack = list(getattr(self.tree_cache.root_node, "children", {}).values())
         seen: set[int] = set()
         while stack:
@@ -15980,37 +16017,170 @@ class EmbeddedSGLangRuntime:
             seen.add(identity)
             value = getattr(node, "value", None)
             if value is not None and len(value):
-                live_values.append(
-                    torch.as_tensor(value).reshape(-1).to(dtype=torch.int64)
-                )
+                values = torch.as_tensor(value).reshape(-1).to(dtype=torch.int64)
+                live_values.append(values)
+                live_owners.append((identity, values))
             stack.extend(getattr(node, "children", {}).values())
-        if not live_values:
-            return 0
-        live = torch.cat(live_values)
-        unique_live = torch.unique(live)
-        if len(unique_live) != len(live):
-            raise SGLangBackendError(
-                "multiple live Radix extents reference the same device index"
-            )
-        if int(unique_live.min().item()) < 0 or int(unique_live.max().item()) > max_tokens:
-            raise SGLangBackendError("Radix contains an out-of-range device index")
 
-        live_bitmap = torch.zeros(
-            max_tokens + 1,
-            dtype=torch.bool,
-            device=unique_live.device,
+        device = getattr(allocator, "device", None)
+        if live_values:
+            live = torch.cat(live_values)
+            unique_live, live_counts = torch.unique(live, return_counts=True)
+            duplicate_live = unique_live[live_counts > 1]
+            if len(duplicate_live):
+                duplicate_indices = duplicate_live[:16].tolist()
+                duplicate_owners = {
+                    str(index): [
+                        node_id
+                        for node_id, values in live_owners
+                        if bool((values == index).any().item())
+                    ]
+                    for index in duplicate_indices
+                }
+                self.audit.emit(
+                    "allocator_radix_duplicate_ownership",
+                    self._now_ms(),
+                    duplicate_index_count=int(len(duplicate_live)),
+                    duplicate_indices=duplicate_indices,
+                    duplicate_node_ids=duplicate_owners,
+                )
+                raise SGLangBackendError(
+                    "multiple live Radix extents reference the same device index"
+                )
+            if (
+                int(unique_live.min().item()) < 0
+                or int(unique_live.max().item()) > max_tokens
+            ):
+                raise SGLangBackendError(
+                    "Radix contains an out-of-range device index"
+                )
+            device = unique_live.device
+        else:
+            unique_live = torch.empty((0,), dtype=torch.int64, device=device)
+
+        protected_chunks = [unique_live]
+        engine_token_count = 0
+        if include_engine_ownership:
+            req_to_token_pool = getattr(self.scheduler, "req_to_token_pool", None)
+            req_to_token = getattr(req_to_token_pool, "req_to_token", None)
+            seen_requests: set[int] = set()
+            if isinstance(req_to_token, torch.Tensor):
+                batches = (
+                    getattr(self.scheduler, "running_batch", None),
+                    getattr(self.scheduler, "last_batch", None),
+                )
+                for batch in batches:
+                    requests = tuple(getattr(batch, "reqs", ()) or ())
+                    seq_lens = getattr(batch, "seq_lens", None)
+                    if isinstance(seq_lens, torch.Tensor):
+                        seq_lens = seq_lens.detach().cpu().tolist()
+                    for index, request in enumerate(requests):
+                        identity = id(request)
+                        if identity in seen_requests:
+                            continue
+                        seen_requests.add(identity)
+                        pool_index = getattr(request, "req_pool_idx", None)
+                        if pool_index is None:
+                            continue
+                        if seq_lens is not None and index < len(seq_lens):
+                            seq_len = int(seq_lens[index])
+                        else:
+                            seq_len = int(getattr(request, "seqlen", 0))
+                        if seq_len <= 0:
+                            continue
+                        values = req_to_token[int(pool_index), :seq_len]
+                        if values.numel():
+                            protected_chunks.append(
+                                values.reshape(-1).to(device=device, dtype=torch.int64)
+                            )
+                            engine_token_count += int(values.numel())
+                chunked_req = getattr(self.scheduler, "chunked_req", None)
+                if chunked_req is not None and id(chunked_req) not in seen_requests:
+                    pool_index = getattr(chunked_req, "req_pool_idx", None)
+                    seq_len = int(getattr(chunked_req, "seqlen", 0))
+                    if pool_index is not None and seq_len > 0:
+                        values = req_to_token[int(pool_index), :seq_len]
+                        if values.numel():
+                            protected_chunks.append(
+                                values.reshape(-1).to(device=device, dtype=torch.int64)
+                            )
+                            engine_token_count += int(values.numel())
+
+        reservation_chunks = []
+        for allocation_map_name in (
+            "_restore_funding_allocations",
+            "_restore_lease_allocations",
+        ):
+            for allocations in getattr(self, allocation_map_name, {}).values():
+                for allocation in allocations:
+                    values = torch.as_tensor(allocation).reshape(-1)
+                    if values.numel():
+                        reservation_chunks.append(
+                            values.to(device=device, dtype=torch.int64)
+                        )
+        rescue = getattr(self, "_active_admission_rescue", None)
+        if rescue is not None:
+            for allocation in getattr(rescue, "allocations", ()):
+                values = torch.as_tensor(allocation).reshape(-1)
+                if values.numel():
+                    reservation_chunks.append(
+                        values.to(device=device, dtype=torch.int64)
+                    )
+        protected_chunks.extend(reservation_chunks)
+        protected = torch.unique(
+            torch.cat(protected_chunks)
+            if protected_chunks
+            else torch.empty((0,), dtype=torch.int64, device=device)
         )
-        live_bitmap[unique_live] = True
-        overlap_tokens = 0
-        for attribute in ("free_pages", "release_pages"):
-            pages = getattr(allocator, attribute, None)
-            if pages is None or not len(pages):
-                continue
-            mask = live_bitmap[pages.to(dtype=torch.int64)]
-            overlap_tokens += int(mask.sum().item())
-            if bool(mask.any().item()):
-                setattr(allocator, attribute, pages[~mask])
-        return overlap_tokens
+        if len(protected) and (
+            int(protected.min().item()) < 0
+            or int(protected.max().item()) > max_tokens
+        ):
+            raise SGLangBackendError(
+                "live ownership contains an out-of-range device index"
+            )
+
+        free_chunks = [
+            pages.reshape(-1).to(device=device, dtype=torch.int64)
+            for attribute in ("free_pages", "release_pages")
+            if (
+                (pages := getattr(allocator, attribute, None)) is not None
+                and len(pages)
+            )
+        ]
+        if not free_chunks:
+            return {
+                "removed_overlap_tokens": 0,
+                "duplicate_free_tokens": 0,
+                "radix_live_tokens": int(len(unique_live)),
+                "engine_live_tokens": engine_token_count,
+                "reservation_tokens": sum(
+                    int(values.numel()) for values in reservation_chunks
+                ),
+            }
+        free = torch.cat(free_chunks)
+        if int(free.min().item()) < 0 or int(free.max().item()) > max_tokens:
+            raise SGLangBackendError(
+                "allocator free pool contains an out-of-range device index"
+            )
+        unique_free = torch.unique(free)
+        duplicate_free_tokens = int(len(free) - len(unique_free))
+        overlap_mask = torch.isin(unique_free, protected)
+        removed_overlap_tokens = int(overlap_mask.sum().item())
+        retained = unique_free[~overlap_mask]
+        allocator.free_pages = retained
+        allocator.release_pages = torch.empty(
+            (0,), dtype=retained.dtype, device=retained.device
+        )
+        return {
+            "removed_overlap_tokens": removed_overlap_tokens,
+            "duplicate_free_tokens": duplicate_free_tokens,
+            "radix_live_tokens": int(len(unique_live)),
+            "engine_live_tokens": engine_token_count,
+            "reservation_tokens": sum(
+                int(values.numel()) for values in reservation_chunks
+            ),
+        }
 
     def _emit_transfer_telemetry(
         self, telemetry: TransferTelemetry, **extra_fields: Any

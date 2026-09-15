@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from copy import deepcopy
+import json
 from pathlib import Path
 import subprocess
 
@@ -42,6 +43,14 @@ PERF_PROFILE = (
 V6_PROFILE = (
     REPOSITORY_ROOT
     / "configs/p6/h200_bf16_v6/frozen_runtime_profile.json"
+)
+V7_PROFILE = (
+    REPOSITORY_ROOT
+    / "configs/p6/h200_bf16_v7/frozen_runtime_profile.json"
+)
+HIGH_PRESSURE_V2_PLAN = (
+    REPOSITORY_ROOT
+    / "configs/p6/predictive_joint_h200_high_pressure_v2/ab_plan.json"
 )
 
 
@@ -181,6 +190,43 @@ def test_h200_v6_profile_binds_shadow_service_artifacts() -> None:
 
     assert result["passed"] is True
     assert all(row["passed"] for row in result["bindings"])
+
+
+def test_h200_v7_profile_only_advances_the_ownership_patch() -> None:
+    v6, _ = load_runtime_profile(
+        V6_PROFILE,
+        repository_root=REPOSITORY_ROOT,
+    )
+    v7, _ = load_runtime_profile(
+        V7_PROFILE,
+        repository_root=REPOSITORY_ROOT,
+    )
+
+    assert v7["profile_id"] == "h200_bf16_v7"
+    assert v7["runtime"] == v6["runtime"]
+    assert v7["capacity"] == v6["capacity"]
+    assert v7["model"] == v6["model"]
+    assert v7["artifacts"] == v6["artifacts"]
+    assert v7["source_contract"]["canonical_sglang_patch"].endswith(
+        "sglang-0.5.2rc1-beliefkv-perf-ownership.patch"
+    )
+
+
+def test_high_pressure_v2_uses_fixed_40_root_prefix() -> None:
+    plan = json.loads(HIGH_PRESSURE_V2_PLAN.read_text(encoding="utf-8"))
+
+    assert plan["frozen"] is True
+    assert plan["runtime_profile"].endswith(
+        "h200_bf16_v7/frozen_runtime_profile.json"
+    )
+    assert plan["workload"]["roots"] == 40
+    assert plan["workload"]["selection"] == "frozen_manifest_prefix_40"
+    assert plan["workload"]["pressure_acceptance"] == {
+        "all_roots_eager": True,
+        "max_running_requests": 32,
+        "required_hbm_ratio": 0.8,
+    }
+    assert plan["activation_deadline_seconds"] is None
 
 
 @pytest.mark.parametrize(

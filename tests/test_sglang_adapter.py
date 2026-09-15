@@ -5288,6 +5288,95 @@ class SGLangBackendTest(unittest.TestCase):
         event, _, fields = runtime.audit.events[0]
         self.assertEqual(event, "allocator_radix_resynchronized")
         self.assertEqual(fields["overlap_tokens"], 2)
+        self.assertEqual(fields["duplicate_free_tokens"], 0)
+
+    def test_allocator_reconciliation_protects_live_engine_private_indices(self):
+        import torch
+
+        class AllocatorWithPages:
+            page_size = 1
+
+            def __init__(self):
+                self.free_pages = torch.tensor([1, 2, 4, 5])
+                self.release_pages = torch.empty((0,), dtype=torch.int64)
+
+            def available_size(self):
+                return len(self.free_pages) + len(self.release_pages)
+
+        tree = _TreeCache()
+        node = _Node(1)
+        node.parent = tree.root_node
+        node.value = torch.tensor([3])
+        tree.root_node.children["node"] = node
+        tree.evictable_tokens = 1
+        allocator = AllocatorWithPages()
+        request = SimpleNamespace(req_pool_idx=0, seqlen=1)
+        runtime = EmbeddedSGLangRuntime.__new__(EmbeddedSGLangRuntime)
+        runtime.tree_cache = tree
+        runtime.scheduler = SimpleNamespace(
+            token_to_kv_pool_allocator=allocator,
+            max_total_num_tokens=5,
+            req_to_token_pool=SimpleNamespace(
+                req_to_token=torch.tensor([[2]], dtype=torch.int64)
+            ),
+            running_batch=SimpleNamespace(
+                reqs=[request], seq_lens=torch.tensor([1], dtype=torch.int64)
+            ),
+            last_batch=None,
+            chunked_req=None,
+        )
+        runtime.audit = _AuditRecorder()
+        runtime._now_ms = lambda: 10.0
+
+        runtime._ensure_allocator_radix_consistency(
+            reason="test_retraction",
+            force=True,
+            include_engine_ownership=True,
+        )
+
+        self.assertEqual(allocator.free_pages.tolist(), [1, 4, 5])
+        event, _, fields = runtime.audit.events[0]
+        self.assertEqual(event, "allocator_radix_resynchronized")
+        self.assertEqual(fields["overlap_tokens"], 1)
+        self.assertEqual(fields["engine_live_tokens"], 1)
+
+    def test_allocator_reconciliation_deduplicates_free_pools(self):
+        import torch
+
+        class AllocatorWithPages:
+            page_size = 1
+
+            def __init__(self):
+                self.free_pages = torch.tensor([1, 2, 2, 4])
+                self.release_pages = torch.tensor([3, 3])
+
+            def available_size(self):
+                return len(self.free_pages) + len(self.release_pages)
+
+        tree = _TreeCache()
+        node = _Node(1)
+        node.parent = tree.root_node
+        node.value = torch.tensor([5])
+        tree.root_node.children["node"] = node
+        tree.evictable_tokens = 1
+        allocator = AllocatorWithPages()
+        runtime = EmbeddedSGLangRuntime.__new__(EmbeddedSGLangRuntime)
+        runtime.tree_cache = tree
+        runtime.scheduler = SimpleNamespace(
+            token_to_kv_pool_allocator=allocator,
+            max_total_num_tokens=5,
+        )
+        runtime.audit = _AuditRecorder()
+        runtime._now_ms = lambda: 10.0
+
+        runtime._ensure_allocator_radix_consistency(reason="test_duplicate_free")
+
+        self.assertEqual(allocator.free_pages.tolist(), [1, 2, 3, 4])
+        self.assertEqual(allocator.release_pages.tolist(), [])
+        event, _, fields = runtime.audit.events[0]
+        self.assertEqual(event, "allocator_radix_resynchronized")
+        self.assertEqual(fields["overlap_tokens"], 0)
+        self.assertEqual(fields["duplicate_free_tokens"], 2)
 
     def test_atomic_h2d_allows_new_sibling_on_non_action_gpu_anchor(self):
         tree = _TreeCache()
