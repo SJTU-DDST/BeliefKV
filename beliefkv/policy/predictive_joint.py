@@ -12,6 +12,7 @@ from beliefkv.predictor.frontier_belief import FrontierBeliefSnapshot
 
 class PredictiveActionKind(str, Enum):
     OBSERVED_BASELINE = "observed_baseline"
+    SCHEDULE = "schedule"
     PREPARE_HOST = "prepare_host"
     PREFETCH_GPU = "prefetch_gpu"
     RECLAIM_AND_PREFETCH = "reclaim_and_prefetch"
@@ -261,6 +262,11 @@ class PredictiveActionPackage:
     predicted_deficit_bytes: int = 0
     victim_reclaim_bytes: int = 0
     causal_package_generation: str | None = None
+    execution_order_request_ids: tuple[str, ...] = ()
+    admit_request_ids: tuple[str, ...] = ()
+    beneficiary_invocation_id: str | None = None
+    beneficiary_context_id: str | None = None
+    beneficiary_context_epoch: int | None = None
 
     def __post_init__(self) -> None:
         if not self.package_id:
@@ -271,7 +277,23 @@ class PredictiveActionPackage:
             raise ValueError("predictive package context IDs must be non-empty")
         object.__setattr__(self, "context_ids", contexts)
         if self.action != PredictiveActionKind.OBSERVED_BASELINE and not contexts:
-            raise ValueError("predictive transfer package requires a context")
+            raise ValueError("predictive action package requires a context")
+        execution_order = tuple(self.execution_order_request_ids)
+        admit_requests = tuple(self.admit_request_ids)
+        if (
+            any(not item for item in execution_order)
+            or len(execution_order) != len(set(execution_order))
+        ):
+            raise ValueError("predictive execution order must contain unique IDs")
+        if (
+            any(not item for item in admit_requests)
+            or len(admit_requests) != len(set(admit_requests))
+        ):
+            raise ValueError("predictive admission set must contain unique IDs")
+        if not set(admit_requests).issubset(execution_order):
+            raise ValueError("predictive admissions must belong to execution order")
+        object.__setattr__(self, "execution_order_request_ids", execution_order)
+        object.__setattr__(self, "admit_request_ids", admit_requests)
         if min(
             self.beneficiary_startup_bytes,
             self.beneficiary_growth_bytes,
@@ -297,6 +319,25 @@ class PredictiveActionPackage:
         )
         if self.beneficiary_request_id is None and any(beneficiary_fields):
             raise ValueError("beneficiary bytes require a beneficiary identity")
+        beneficiary_identity = (
+            self.beneficiary_invocation_id,
+            self.beneficiary_context_id,
+            self.beneficiary_context_epoch,
+        )
+        if self.beneficiary_request_id is None and any(
+            item is not None for item in beneficiary_identity
+        ):
+            raise ValueError("beneficiary identity requires a request")
+        if any(item is not None for item in beneficiary_identity):
+            if self.beneficiary_request_id is None or any(
+                item is None for item in beneficiary_identity
+            ):
+                raise ValueError("predictive beneficiary identity is incomplete")
+            if (
+                self.beneficiary_context_epoch is not None
+                and self.beneficiary_context_epoch < 0
+            ):
+                raise ValueError("beneficiary context epoch must be non-negative")
         if self.causal_package_generation is not None and not self.causal_package_generation:
             raise ValueError("causal package generation must be non-empty")
         target = self.target_context_id
@@ -320,6 +361,13 @@ class PredictiveActionPackage:
                 raise ValueError("prepare package requires a causal generation")
             if self.beneficiary_startup_bytes + self.beneficiary_growth_bytes <= 0:
                 raise ValueError("prepare package requires beneficiary demand")
+        if self.action == PredictiveActionKind.SCHEDULE:
+            if self.beneficiary_request_id is None or not execution_order:
+                raise ValueError("schedule package requires a beneficiary and order")
+            if execution_order[0] != self.beneficiary_request_id:
+                raise ValueError(
+                    "schedule beneficiary must lead the execution order"
+                )
         if target is not None and not target:
             raise ValueError("predictive target context must be non-empty")
         if any(not item for item in victims):

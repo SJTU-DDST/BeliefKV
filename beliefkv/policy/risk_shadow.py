@@ -158,6 +158,9 @@ class PredictiveIntent:
     predicted_deficit_bytes: int = 0
     causal_package_generation: str | None = None
     evidence_kind: str = "model_prediction"
+    execution_order_request_ids: tuple[str, ...] = ()
+    admit_request_ids: tuple[str, ...] = ()
+    execution_request_evidence: tuple[tuple[str, str, str, int], ...] = ()
 
     def __post_init__(self) -> None:
         required = (
@@ -177,31 +180,54 @@ class PredictiveIntent:
             raise ValueError("predictive intent evidence kind is required")
         object.__setattr__(self, "action", PredictiveActionKind(self.action))
         if self.action not in {
+            PredictiveActionKind.SCHEDULE,
             PredictiveActionKind.PREPARE_HOST,
             PredictiveActionKind.PREFETCH_GPU,
         }:
-            raise ValueError("online predictive intent must be non-destructive")
-        expected_timing = (
-            "release_after_transfer"
-            if self.action == PredictiveActionKind.PREPARE_HOST
-            else "release_within_transfer"
-        )
+            raise ValueError("unsupported online predictive intent")
+        expected_timing = {
+            PredictiveActionKind.SCHEDULE: "execution_window",
+            PredictiveActionKind.PREPARE_HOST: "release_after_transfer",
+            PredictiveActionKind.PREFETCH_GPU: "release_within_transfer",
+        }[self.action]
         if self.timing_semantics == "action_default":
             object.__setattr__(self, "timing_semantics", expected_timing)
         elif self.timing_semantics != expected_timing:
             raise ValueError("predictive intent timing semantics do not match action")
-        if self.context_epoch < 0 or self.target_bytes_hint <= 0:
+        if self.context_epoch < 0 or self.target_bytes_hint < 0:
             raise ValueError("predictive intent context/byte values are invalid")
         if min(
             self.min_reclaimable_bytes,
             self.max_cross_context_bytes,
             self.max_copy_bytes,
-        ) < 0 or self.max_copy_bytes <= 0:
+        ) < 0:
             raise ValueError("predictive intent resource envelope is invalid")
-        if self.target_bytes_hint > self.max_copy_bytes:
-            raise ValueError("predictive byte hint exceeds the certified copy bound")
-        if self.max_cross_context_bytes > self.max_copy_bytes:
-            raise ValueError("predictive cross-context bound exceeds copy bound")
+        if self.action == PredictiveActionKind.SCHEDULE:
+            if any(
+                value != 0
+                for value in (
+                    self.target_bytes_hint,
+                    self.min_reclaimable_bytes,
+                    self.max_cross_context_bytes,
+                    self.max_copy_bytes,
+                    self.predicted_extent_count,
+                    self.maximum_transfer_ms,
+                    self.maximum_stall_ms,
+                    self.morphology_slack_ms,
+                )
+            ):
+                raise ValueError("schedule intent cannot carry physical resources")
+        else:
+            if self.target_bytes_hint <= 0 or self.max_copy_bytes <= 0:
+                raise ValueError("transfer intent requires a positive copy envelope")
+            if self.target_bytes_hint > self.max_copy_bytes:
+                raise ValueError(
+                    "predictive byte hint exceeds the certified copy bound"
+                )
+            if self.max_cross_context_bytes > self.max_copy_bytes:
+                raise ValueError(
+                    "predictive cross-context bound exceeds copy bound"
+                )
         if not self.causal_certificate:
             raise ValueError("predictive intent requires causal evidence")
         finite = (
@@ -253,6 +279,50 @@ class PredictiveIntent:
                 or self.predicted_block_time_ms < 0
             ):
                 raise ValueError("prepare intent beneficiary evidence is invalid")
+        execution_order = tuple(self.execution_order_request_ids)
+        admit_requests = tuple(self.admit_request_ids)
+        request_evidence = tuple(self.execution_request_evidence)
+        if (
+            any(not request_id for request_id in execution_order)
+            or len(execution_order) != len(set(execution_order))
+        ):
+            raise ValueError("predictive execution order must contain unique IDs")
+        if (
+            any(not request_id for request_id in admit_requests)
+            or len(admit_requests) != len(set(admit_requests))
+            or not set(admit_requests).issubset(execution_order)
+        ):
+            raise ValueError("predictive admission set is invalid")
+        evidence_ids = tuple(item[0] for item in request_evidence)
+        if (
+            len(evidence_ids) != len(set(evidence_ids))
+            or set(evidence_ids) != set(execution_order)
+            or any(
+                len(item) != 4
+                or not item[0]
+                or not item[1]
+                or not item[2]
+                or not isinstance(item[3], int)
+                or isinstance(item[3], bool)
+                or item[3] < 0
+                for item in request_evidence
+            )
+        ):
+            raise ValueError("predictive execution evidence is invalid")
+        if self.action == PredictiveActionKind.SCHEDULE:
+            beneficiary = (
+                self.beneficiary_request_id,
+                self.beneficiary_invocation_id,
+                self.beneficiary_context_id,
+                self.beneficiary_context_epoch,
+            )
+            if any(item is None for item in beneficiary) or not execution_order:
+                raise ValueError("schedule intent requires beneficiary evidence")
+            if execution_order[0] != self.beneficiary_request_id:
+                raise ValueError("schedule beneficiary must lead execution order")
+        object.__setattr__(self, "execution_order_request_ids", execution_order)
+        object.__setattr__(self, "admit_request_ids", admit_requests)
+        object.__setattr__(self, "execution_request_evidence", request_evidence)
         if not 0 <= self.calibration_coverage <= 1:
             raise ValueError("predictive intent calibration must be in [0, 1]")
         if not 0 <= self.future_hbm_feasibility_probability <= 1:
@@ -312,6 +382,13 @@ class PredictiveIntent:
             "predicted_deficit_bytes": self.predicted_deficit_bytes,
             "causal_package_generation": self.causal_package_generation,
             "evidence_kind": self.evidence_kind,
+            "execution_order_request_ids": list(
+                self.execution_order_request_ids
+            ),
+            "admit_request_ids": list(self.admit_request_ids),
+            "execution_request_evidence": [
+                list(item) for item in self.execution_request_evidence
+            ],
         }
 
 
@@ -1373,7 +1450,12 @@ class PredictiveRiskShadowObserver:
                     else None
                 ),
             )
-        if not eligibility.has_candidate:
+        scheduling_candidates = self._scheduling_candidates(
+            policy_input,
+            source_plan,
+            limit=max(2, min(4, self.config.max_candidates)),
+        )
+        if not eligibility.has_candidate and len(scheduling_candidates) < 2:
             return self._skipped(
                 policy_input,
                 source_plan,
@@ -1385,21 +1467,17 @@ class PredictiveRiskShadowObserver:
             policy_input,
             source_plan,
         )
-        if projected_requirement is None:
+        if (
+            projected_requirement is None
+            and not eligibility.prefetch_targets
+            and not scheduling_candidates
+        ):
             return self._skipped(
                 policy_input,
                 source_plan,
                 started_ns,
                 model_version=None,
-                reasons=("no_projected_hbm_beneficiary",),
-            )
-        if not eligibility.prepare_host_victims:
-            return self._skipped(
-                policy_input,
-                source_plan,
-                started_ns,
-                model_version=None,
-                reasons=("no_projected_beneficiary_victim",),
+                reasons=("no_predictive_joint_candidate",),
             )
         if cancel_check is not None and cancel_check():
             return self._skipped(
@@ -1448,7 +1526,13 @@ class PredictiveRiskShadowObserver:
                 reasons=("frontier_inputs_unavailable",),
             )
 
-        primary = eligibility.prepare_host_victims[0]
+        primary = (
+            eligibility.prepare_host_victims[0]
+            if eligibility.prepare_host_victims
+            else eligibility.prefetch_targets[0]
+            if eligibility.prefetch_targets
+            else scheduling_candidates[0]
+        )
         request_by_id = {
             request.request_id: request
             for request in policy_input.runnable_frontier
@@ -1463,12 +1547,28 @@ class PredictiveRiskShadowObserver:
         )
         seed_ids, missing_required = self._belief_scope_seed_ids(
             graph,
-            required=(
-                projected_requirement.beneficiary_invocation_id,
-                *(
-                    item.invocation_id
-                    for item in eligibility.prepare_host_victims[:2]
-                ),
+            required=tuple(
+                dict.fromkeys(
+                    (
+                        *(
+                            (projected_requirement.beneficiary_invocation_id,)
+                            if projected_requirement is not None
+                            else ()
+                        ),
+                        *(
+                            item.invocation_id
+                            for item in scheduling_candidates
+                        ),
+                        *(
+                            item.invocation_id
+                            for item in eligibility.prepare_host_victims[:2]
+                        ),
+                        *(
+                            item.invocation_id
+                            for item in eligibility.prefetch_targets[:1]
+                        ),
+                    )
+                )
             ),
             optional=((slot_witness,) if slot_witness is not None else ()),
         )
@@ -1549,6 +1649,18 @@ class PredictiveRiskShadowObserver:
                 model_version=model_version,
                 reasons=("closure_prediction_incomplete",),
             )
+        predictive_execution_order = self._predictive_execution_order(
+            scheduling_candidates, predictions
+        )
+        scheduling_beneficiary = next(
+            (
+                item
+                for request_id in predictive_execution_order
+                for item in scheduling_candidates
+                if item.request_id == request_id
+            ),
+            None,
+        )
         belief_started_ns = time.perf_counter_ns()
         particle_hits_before, particle_misses_before, _ = (
             self.composer.local_particle_cache_stats()
@@ -1618,7 +1730,7 @@ class PredictiveRiskShadowObserver:
             projected_beliefs[key] = value
             return value
 
-        default_projection = ScenarioProjection.PREPARE_HOST
+        default_projection = ScenarioProjection.FULL
         belief = projected_belief(default_projection, primary.invocation_id)
         belief_compose_ms = (
             time.perf_counter_ns() - belief_started_ns
@@ -1641,6 +1753,8 @@ class PredictiveRiskShadowObserver:
             eligibility,
             allowed_invocation_ids=frozenset(scope.invocation_ids),
             projected_requirement=projected_requirement,
+            predictive_execution_order=predictive_execution_order,
+            scheduling_beneficiary=scheduling_beneficiary,
         )
         baseline = packages[0]
         blocked: list[str] = []
@@ -1696,7 +1810,7 @@ class PredictiveRiskShadowObserver:
             baseline.package_id: baseline
         }
         baseline_by_projection: dict[
-            tuple[ScenarioProjection, str],
+            tuple[ScenarioProjection, str, str],
             tuple[
                 PackageScenarioEvaluation,
                 Mapping[str, TimedScenario],
@@ -1720,6 +1834,8 @@ class PredictiveRiskShadowObserver:
                 ScenarioProjection.PREPARE_HOST
                 if package.action == PredictiveActionKind.PREPARE_HOST
                 else ScenarioProjection.PREFETCH
+                if package.action == PredictiveActionKind.PREFETCH_GPU
+                else ScenarioProjection.FULL
             )
             candidate_belief = projected_belief(
                 projection,
@@ -1743,15 +1859,23 @@ class PredictiveRiskShadowObserver:
                     )
                 )
                 continue
-            baseline_key = (projection, package_invocation_id)
+            reactive_baseline = self._reactive_baseline_package(
+                baseline, package, source_plan
+            )
+            physicalizer.register_package(reactive_baseline)
+            baseline_key = (
+                projection,
+                package_invocation_id,
+                reactive_baseline.package_id,
+            )
             baseline_result = baseline_by_projection.get(baseline_key)
             if baseline_result is None:
                 try:
                     baseline_result = self._evaluate_package(
                         candidate_belief,
-                        baseline,
+                        reactive_baseline,
                         physicalizer,
-                        target_invocation_id,
+                        package_invocation_id,
                         cancel_check=cancel_check,
                     )
                 except RuntimeError:
@@ -1775,7 +1899,7 @@ class PredictiveRiskShadowObserver:
                     candidate_belief,
                     package,
                     physicalizer,
-                    target_invocation_id,
+                    package_invocation_id,
                     cancel_check=cancel_check,
                     baseline_timelines=baseline_timelines,
                     conservative_baseline_timelines=(
@@ -1945,6 +2069,30 @@ class PredictiveRiskShadowObserver:
     ) -> tuple[bool, tuple[tuple[str, str], ...], tuple[str, ...]]:
         """Check only prediction heads that can change this package."""
 
+        if package.action == PredictiveActionKind.SCHEDULE:
+            prediction = predictions.get(package.beneficiary_invocation_id or "")
+            if prediction is None:
+                return False, (), ("local_prediction_missing",)
+            if (
+                prediction.calibration_coverage
+                < self.config.minimum_calibration_coverage
+            ):
+                return False, (), ("calibration_coverage",)
+            demand_head = (
+                "remaining_decode_demand"
+                if prediction.remaining_decode_tokens.values
+                else "next_output_demand"
+            )
+            support = (
+                ("boundary", prediction.support_for("boundary")),
+                (demand_head, prediction.support_for(demand_head)),
+            )
+            unavailable = tuple(
+                f"{name}_unavailable"
+                for name, level in support
+                if level == "unavailable"
+            )
+            return not unavailable, support, unavailable
         if package.action == PredictiveActionKind.PREPARE_HOST:
             context_id = package.victim_context_ids[0]
             candidate = next(
@@ -2037,6 +2185,10 @@ class PredictiveRiskShadowObserver:
         *,
         eligibility: PredictiveEligibility,
     ) -> str:
+        if package.action == PredictiveActionKind.SCHEDULE:
+            if package.beneficiary_invocation_id is None:
+                raise ValueError("schedule package has no beneficiary invocation")
+            return package.beneficiary_invocation_id
         context_id = (
             package.victim_context_ids[0]
             if package.action == PredictiveActionKind.PREPARE_HOST
@@ -2162,7 +2314,35 @@ class PredictiveRiskShadowObserver:
             or certificate is None
         ):
             return None
-        if package.action == PredictiveActionKind.PREPARE_HOST:
+
+        runnable_by_id = {
+            request.request_id: request
+            for request in policy_input.runnable_frontier
+        }
+        beneficiary = runnable_by_id.get(package.beneficiary_request_id or "")
+        if beneficiary is None:
+            return None
+        beneficiary_invocation = graph.invocations.get(beneficiary.invocation_id)
+        if beneficiary_invocation is None:
+            return None
+
+        if package.action == PredictiveActionKind.SCHEDULE:
+            candidate_invocation_id = beneficiary.invocation_id
+            candidate_state = beneficiary_invocation.state.value
+            context_id = beneficiary.context_id
+            target_bytes = 0
+            shape_fingerprint = "not_applicable"
+            predicted_extent_count = 0
+            maximum_stall_ms = 0.0
+            morphology_slack_ms = 0.0
+            transfer_p95_ms = 0.0
+            maximum_transfer_ms = 0.0
+            timing_probability = 1.0
+            remaining_window_ms = 1000.0
+            timing_semantics = "execution_window"
+            min_reclaimable = max_cross_context = max_copy = 0
+            required_heads = tuple(name for name, _level in support)
+        elif package.action == PredictiveActionKind.PREPARE_HOST:
             context_id = package.victim_context_ids[0]
             candidate = next(
                 (
@@ -2173,10 +2353,11 @@ class PredictiveRiskShadowObserver:
                 None,
             )
             projection = physicalizer.prepare_projection(package)
-            transfer_evidence = physicalizer.prepare_shadow_transfer_evidence(package)
+            transfer_evidence = physicalizer.prepare_shadow_transfer_evidence(
+                package
+            )
             interference_evidence = physicalizer.prepare_interference_evidence(
-                package,
-                transfer_evidence,
+                package, transfer_evidence
             )
             positive_slacks = tuple(
                 diagnostic.morphology_slack_ms
@@ -2186,11 +2367,16 @@ class PredictiveRiskShadowObserver:
                 and diagnostic.morphology_slack_ms > 0
             )
             if (
-                projection is None
+                candidate is None
+                or projection is None
                 or not transfer_evidence.shape_supported
                 or not positive_slacks
+                or timing_evidence is None
+                or package.predicted_block_time_ms is None
             ):
                 return None
+            candidate_invocation_id = candidate.invocation_id
+            candidate_state = candidate.state
             target_bytes = projection.copy_bytes
             shape_fingerprint = projection.shape_fingerprint
             predicted_extent_count = projection.extent_count
@@ -2199,6 +2385,22 @@ class PredictiveRiskShadowObserver:
                 interference_evidence.interference_ms + 1.0,
             )
             morphology_slack_ms = min(positive_slacks)
+            transfer_p95_ms = (
+                timing_evidence.required_wait_ms
+                - self.config.transfer_commit_guard_ms
+            )
+            maximum_transfer_ms = max(
+                transfer_p95_ms * 1.10, transfer_p95_ms + 1.0
+            )
+            timing_probability = timing_evidence.causal_slack_probability
+            remaining_window_ms = (
+                timing_evidence.conservative_remaining_window_ms
+            )
+            timing_semantics = timing_evidence.semantics
+            min_reclaimable, max_cross_context, max_copy = (
+                physicalizer.intent_resource_envelope(package)
+            )
+            required_heads = tuple(name for name, _level in support)
         elif package.action == PredictiveActionKind.PREFETCH_GPU:
             context_id = package.target_context_id or ""
             candidate = next(
@@ -2209,40 +2411,53 @@ class PredictiveRiskShadowObserver:
                 ),
                 None,
             )
-            target_bytes = candidate.missing_gpu_bytes if candidate is not None else 0
+            if candidate is None or timing_evidence is None:
+                return None
+            candidate_invocation_id = candidate.invocation_id
+            candidate_state = candidate.state
+            target_bytes = candidate.missing_gpu_bytes
             shape_fingerprint = "prefetch-not-shape-certified"
             predicted_extent_count = 0
             maximum_stall_ms = 0.0
             morphology_slack_ms = 0.0
+            transfer_p95_ms = (
+                timing_evidence.required_wait_ms
+                - self.config.transfer_commit_guard_ms
+            )
+            maximum_transfer_ms = max(
+                transfer_p95_ms * 1.10, transfer_p95_ms + 1.0
+            )
+            timing_probability = timing_evidence.causal_slack_probability
+            remaining_window_ms = (
+                timing_evidence.conservative_remaining_window_ms
+            )
+            timing_semantics = timing_evidence.semantics
+            min_reclaimable, max_cross_context, max_copy = (
+                physicalizer.intent_resource_envelope(package)
+            )
+            required_heads = tuple(name for name, _level in support)
         else:
             return None
-        if candidate is None or context_id not in graph.contexts:
+
+        if context_id not in graph.contexts:
             return None
-        prediction = predictions.get(candidate.invocation_id)
-        if prediction is None:
+        prediction = predictions.get(candidate_invocation_id)
+        if prediction is None or (
+            package.action != PredictiveActionKind.SCHEDULE and max_copy <= 0
+        ):
             return None
-        wait_head, _wait_level = self._wait_head_support(
-            prediction, candidate.state
+        execution_evidence = tuple(
+            (
+                request_id,
+                runnable_by_id[request_id].invocation_id,
+                runnable_by_id[request_id].context_id,
+                runnable_by_id[request_id].context_epoch,
+            )
+            for request_id in package.execution_order_request_ids
+            if request_id in runnable_by_id
         )
-        required_heads = (
-            (wait_head,)
-            if package.action == PredictiveActionKind.PREPARE_HOST
-            else ("future_kv_growth", wait_head)
-        )
-        if timing_evidence is None:
+        if len(execution_evidence) != len(package.execution_order_request_ids):
             return None
-        transfer_p95_ms = (
-            timing_evidence.required_wait_ms
-            - self.config.transfer_commit_guard_ms
-        )
-        timing_probability = timing_evidence.causal_slack_probability
-        remaining_window_ms = (
-            timing_evidence.conservative_remaining_window_ms
-        )
-        maximum_transfer_ms = max(
-            transfer_p95_ms * 1.10,
-            transfer_p95_ms + 1.0,
-        )
         identity = (
             f"{package.package_id}|{context_id}|{graph.contexts[context_id].epoch}|"
             f"{policy_input.resources.ts_ms:.3f}"
@@ -2250,24 +2465,6 @@ class PredictiveRiskShadowObserver:
         digest = hashlib.blake2b(
             identity.encode(), digest_size=12, person=b"bkv-intent"
         ).hexdigest()
-        min_reclaimable, max_cross_context, max_copy = (
-            physicalizer.intent_resource_envelope(package)
-        )
-        if max_copy <= 0:
-            return None
-        beneficiary = next(
-            (
-                request
-                for request in policy_input.runnable_frontier
-                if request.request_id == package.beneficiary_request_id
-            ),
-            None,
-        )
-        if (
-            package.action == PredictiveActionKind.PREPARE_HOST
-            and (beneficiary is None or package.predicted_block_time_ms is None)
-        ):
-            return None
         return PredictiveIntent(
             intent_id=f"predictive-intent-{digest}",
             source_joint_plan_id=package.source_joint_plan_id or "unavailable",
@@ -2284,8 +2481,8 @@ class PredictiveRiskShadowObserver:
                 else "unavailable"
             ),
             action=package.action,
-            invocation_id=candidate.invocation_id,
-            expected_invocation_state=candidate.state,
+            invocation_id=candidate_invocation_id,
+            expected_invocation_state=candidate_state,
             context_id=context_id,
             context_epoch=graph.contexts[context_id].epoch,
             generated_ts_ms=policy_input.resources.ts_ms,
@@ -2309,24 +2506,19 @@ class PredictiveRiskShadowObserver:
             maximum_stall_ms=maximum_stall_ms,
             morphology_slack_ms=morphology_slack_ms,
             causal_slack_probability=timing_probability,
-            timing_semantics=timing_evidence.semantics,
-            beneficiary_request_id=package.beneficiary_request_id,
-            beneficiary_invocation_id=(
-                beneficiary.invocation_id if beneficiary is not None else None
-            ),
-            beneficiary_context_id=(
-                beneficiary.context_id if beneficiary is not None else None
-            ),
-            beneficiary_context_epoch=(
-                beneficiary.context_epoch if beneficiary is not None else None
-            ),
+            timing_semantics=timing_semantics,
+            beneficiary_request_id=beneficiary.request_id,
+            beneficiary_invocation_id=beneficiary.invocation_id,
+            beneficiary_context_id=beneficiary.context_id,
+            beneficiary_context_epoch=beneficiary.context_epoch,
             beneficiary_startup_bytes=package.beneficiary_startup_bytes,
             beneficiary_growth_bytes=package.beneficiary_growth_bytes,
             predicted_block_time_ms=package.predicted_block_time_ms,
             predicted_deficit_bytes=package.predicted_deficit_bytes,
-            causal_package_generation=(
-                package.causal_package_generation
-            ),
+            causal_package_generation=package.causal_package_generation,
+            execution_order_request_ids=package.execution_order_request_ids,
+            admit_request_ids=package.admit_request_ids,
+            execution_request_evidence=execution_evidence,
         )
 
     @staticmethod
@@ -2858,6 +3050,148 @@ class PredictiveRiskShadowObserver:
             recourse_diagnostics_by_scenario=diagnostics,
         )
 
+
+    @staticmethod
+    def _scheduling_candidates(
+        policy_input: PolicyInput,
+        source_plan: JointPlan,
+        *,
+        limit: int,
+    ) -> tuple[RunnableInvocation, ...]:
+        requests = {
+            item.request_id: item for item in policy_input.runnable_frontier
+        }
+        admissions = {
+            item.request_id: item
+            for item in getattr(source_plan, "admissions", ())
+        }
+        ordered_ids = tuple(
+            dict.fromkeys(
+                (
+                    *source_plan.candidate_order_request_ids,
+                    *source_plan.execution.ordered_request_ids,
+                    *admissions,
+                )
+            )
+        )
+        candidates = tuple(
+            requests[request_id]
+            for request_id in ordered_ids
+            if request_id in requests
+            and request_id in admissions
+            and requests[request_id].causal_class.startswith(
+                ("engine_waiting:", "engine_running:")
+            )
+            and admissions[request_id].action.value
+            in {"admit", "defer"}
+        )
+        return candidates[: max(1, limit)]
+
+
+    @staticmethod
+    def _predictive_execution_order(
+        candidates: tuple[RunnableInvocation, ...],
+        predictions: Mapping[str, LocalFrontierPrediction],
+    ) -> tuple[str, ...]:
+        def priority(
+            request: RunnableInvocation,
+        ) -> tuple[float, float, float, str]:
+            prediction = predictions.get(request.invocation_id)
+            if prediction is None:
+                return (1.0, float("inf"), float("inf"), request.request_id)
+            decode_tokens = (
+                prediction.remaining_decode_tokens.quantile(0.5)
+                if prediction.remaining_decode_tokens.values
+                else float(request.remaining_output_tokens)
+            )
+            next_output_tokens = (
+                prediction.next_output_tokens.quantile(0.5)
+                if prediction.next_output_tokens.values
+                else 0.0
+            )
+            prompt_growth_tokens = (
+                prediction.prompt_growth_tokens.quantile(0.5)
+                if prediction.prompt_growth_tokens.values
+                else 0.0
+            )
+            demand_tokens = max(
+                1.0,
+                float(request.remaining_prefill_tokens)
+                + prompt_growth_tokens
+                + max(decode_tokens, next_output_tokens),
+            )
+            boundary_unlock_weights = {
+                "return": 3.0,
+                "final": 2.5,
+                "spawn": 2.0,
+                "handoff": 1.75,
+                "tool": 1.5,
+                "message": 1.25,
+            }
+            expected_unlock_value = max(
+                0.05,
+                sum(
+                    float(prediction.boundary_distribution.get(kind, 0.0))
+                    * weight
+                    for kind, weight in boundary_unlock_weights.items()
+                ),
+            )
+            hbm_demand = float(
+                (request.admission_startup_bytes or request.startup_bytes)
+                + (request.admission_growth_bytes or 0)
+            )
+            return (
+                0.0,
+                demand_tokens / expected_unlock_value,
+                hbm_demand,
+                request.request_id,
+            )
+
+        return tuple(
+            item.request_id for item in sorted(candidates, key=priority)
+        )
+
+
+    @staticmethod
+    def _reactive_baseline_package(
+        baseline: PredictiveActionPackage,
+        candidate: PredictiveActionPackage,
+        source_plan: JointPlan,
+    ) -> PredictiveActionPackage:
+        if candidate.action == PredictiveActionKind.SCHEDULE:
+            return baseline
+        source_order = tuple(
+            getattr(
+                getattr(source_plan, "execution", None),
+                "ordered_request_ids",
+                (),
+            )
+        )
+        beneficiary_key = candidate.beneficiary_request_id or "none"
+        return replace(
+            baseline,
+            package_id=(
+                f"{baseline.package_id}:reactive:"
+                f"{candidate.action.value}:{beneficiary_key}"
+            ),
+            beneficiary_request_id=candidate.beneficiary_request_id,
+            beneficiary_startup_bytes=candidate.beneficiary_startup_bytes,
+            beneficiary_growth_bytes=candidate.beneficiary_growth_bytes,
+            predicted_block_time_ms=candidate.predicted_block_time_ms,
+            predicted_deficit_bytes=candidate.predicted_deficit_bytes,
+            causal_package_generation=candidate.causal_package_generation,
+            execution_order_request_ids=source_order,
+            beneficiary_invocation_id=candidate.beneficiary_invocation_id,
+            beneficiary_context_id=candidate.beneficiary_context_id,
+            beneficiary_context_epoch=candidate.beneficiary_context_epoch,
+        )
+
+    @staticmethod
+    def _move_request_first(
+        request_id: str, request_ids: tuple[str, ...]
+    ) -> tuple[str, ...]:
+        return (request_id, *(item for item in request_ids if item != request_id))
+
     def _candidate_packages(
         self,
         policy_input: PolicyInput,
@@ -2865,78 +3199,181 @@ class PredictiveRiskShadowObserver:
         eligibility: PredictiveEligibility,
         *,
         allowed_invocation_ids: frozenset[str] | None = None,
-        projected_requirement: ProjectedReclaimRequirement,
+        projected_requirement: ProjectedReclaimRequirement | None = None,
+        predictive_execution_order: tuple[str, ...] = (),
+        scheduling_beneficiary: RunnableInvocation | None = None,
     ) -> tuple[PredictiveActionPackage, ...]:
-        del policy_input
-        source_plan_id = projected_requirement.source_joint_plan_id
+        source_plan_id = (
+            projected_requirement.source_joint_plan_id
+            if projected_requirement is not None
+            else source_plan.plan_id
+        )
+        admissions = {
+            item.request_id: item
+            for item in getattr(source_plan, "admissions", ())
+        }
+
+        def admission_for(request_id: str) -> tuple[str, ...]:
+            admission = admissions.get(request_id)
+            return (
+                (request_id,)
+                if admission is not None and admission.action.value == "defer"
+                else ()
+            )
+
         packages = [
             PredictiveActionPackage(
                 package_id=f"{source_plan_id}:a0",
                 action=PredictiveActionKind.OBSERVED_BASELINE,
                 source_joint_plan_id=source_plan_id,
-                beneficiary_request_id=(
-                    projected_requirement.beneficiary_request_id
-                ),
-                beneficiary_startup_bytes=(
-                    projected_requirement.required_startup_bytes
-                ),
-                beneficiary_growth_bytes=(
-                    projected_requirement.required_growth_bytes
-                ),
-                predicted_block_time_ms=(
-                    projected_requirement.predicted_block_time_ms
-                ),
-                predicted_deficit_bytes=(
-                    projected_requirement.predicted_deficit_bytes
-                ),
-                causal_package_generation=(
-                    projected_requirement.causal_package_generation
-                ),
             )
         ]
-        victims = [
-            item
-            for item in eligibility.prepare_host_victims
-            if (
-                item.invocation_id
-                != projected_requirement.beneficiary_invocation_id
-                and item.context_id
-                != projected_requirement.beneficiary_context_id
-                and (
-                    allowed_invocation_ids is None
-                    or item.invocation_id in allowed_invocation_ids
+        if scheduling_beneficiary is not None and predictive_execution_order:
+            request = scheduling_beneficiary
+            packages.append(
+                PredictiveActionPackage(
+                    package_id=f"{source_plan_id}:schedule:{request.request_id}",
+                    action=PredictiveActionKind.SCHEDULE,
+                    context_ids=(request.context_id,),
+                    source_joint_plan_id=source_plan_id,
+                    beneficiary_request_id=request.request_id,
+                    beneficiary_startup_bytes=(
+                        request.admission_startup_bytes or request.startup_bytes
+                    ),
+                    beneficiary_growth_bytes=(
+                        request.admission_growth_bytes or 0
+                    ),
+                    causal_package_generation=(
+                        f"{request.request_id}:{request.context_id}:"
+                        f"c{request.context_epoch}:"
+                        f"{request.admission_startup_bytes or request.startup_bytes}:"
+                        f"{request.admission_growth_bytes or 0}"
+                    ),
+                    execution_order_request_ids=predictive_execution_order,
+                    admit_request_ids=admission_for(request.request_id),
+                    beneficiary_invocation_id=request.invocation_id,
+                    beneficiary_context_id=request.context_id,
+                    beneficiary_context_epoch=request.context_epoch,
                 )
             )
-        ][:2]
-        packages.extend(
-            PredictiveActionPackage(
-                package_id=f"{source_plan_id}:prepare:{victim.context_id}",
-                action=PredictiveActionKind.PREPARE_HOST,
-                context_ids=(victim.context_id,),
-                victim_context_ids=(victim.context_id,),
-                source_joint_plan_id=source_plan_id,
-                beneficiary_request_id=(
-                    projected_requirement.beneficiary_request_id
-                ),
-                beneficiary_startup_bytes=(
-                    projected_requirement.required_startup_bytes
-                ),
-                beneficiary_growth_bytes=(
-                    projected_requirement.required_growth_bytes
-                ),
-                predicted_block_time_ms=(
-                    projected_requirement.predicted_block_time_ms
-                ),
-                predicted_deficit_bytes=(
-                    projected_requirement.predicted_deficit_bytes
-                ),
-                victim_reclaim_bytes=victim.reclaimable_bytes,
-                causal_package_generation=(
-                    projected_requirement.causal_package_generation
-                ),
+
+        if projected_requirement is not None:
+            source_execution_order = tuple(
+                getattr(
+                    getattr(source_plan, "execution", None),
+                    "ordered_request_ids",
+                    (),
+                )
             )
-            for victim in victims
-        )
+            active_request_ids = frozenset(source_execution_order)
+            prepare_order = tuple(
+                request_id
+                for request_id in predictive_execution_order
+                if request_id in active_request_ids
+            ) or source_execution_order
+            victims = [
+                item
+                for item in eligibility.prepare_host_victims
+                if (
+                    item.invocation_id
+                    != projected_requirement.beneficiary_invocation_id
+                    and item.context_id
+                    != projected_requirement.beneficiary_context_id
+                    and (
+                        allowed_invocation_ids is None
+                        or item.invocation_id in allowed_invocation_ids
+                    )
+                )
+            ][:2]
+            packages.extend(
+                PredictiveActionPackage(
+                    package_id=f"{source_plan_id}:prepare:{victim.context_id}",
+                    action=PredictiveActionKind.PREPARE_HOST,
+                    context_ids=(victim.context_id,),
+                    victim_context_ids=(victim.context_id,),
+                    source_joint_plan_id=source_plan_id,
+                    beneficiary_request_id=(
+                        projected_requirement.beneficiary_request_id
+                    ),
+                    beneficiary_startup_bytes=(
+                        projected_requirement.required_startup_bytes
+                    ),
+                    beneficiary_growth_bytes=(
+                        projected_requirement.required_growth_bytes
+                    ),
+                    predicted_block_time_ms=(
+                        projected_requirement.predicted_block_time_ms
+                    ),
+                    predicted_deficit_bytes=(
+                        projected_requirement.predicted_deficit_bytes
+                    ),
+                    victim_reclaim_bytes=victim.reclaimable_bytes,
+                    causal_package_generation=(
+                        projected_requirement.causal_package_generation
+                    ),
+                    execution_order_request_ids=prepare_order,
+                    admit_request_ids=(),
+                    beneficiary_invocation_id=(
+                        projected_requirement.beneficiary_invocation_id
+                    ),
+                    beneficiary_context_id=(
+                        projected_requirement.beneficiary_context_id
+                    ),
+                    beneficiary_context_epoch=(
+                        projected_requirement.beneficiary_context_epoch
+                    ),
+                )
+                for victim in victims
+            )
+
+        request_by_invocation = {
+            item.invocation_id: item for item in policy_input.runnable_frontier
+        }
+        for target in eligibility.prefetch_targets[:1]:
+            request = request_by_invocation.get(target.invocation_id)
+            if (
+                request is None
+                or target.missing_gpu_bytes
+                > int(
+                    policy_input.resources.hbm_capacity_bytes
+                    * self.config.max_full_prefetch_hbm_ratio
+                )
+            ):
+                continue
+            source_execution_order = tuple(
+                getattr(
+                    getattr(source_plan, "execution", None),
+                    "ordered_request_ids",
+                    (),
+                )
+            )
+            active_request_ids = frozenset(source_execution_order)
+            prefetch_order = tuple(
+                request_id
+                for request_id in predictive_execution_order
+                if request_id in active_request_ids
+            ) or source_execution_order
+            packages.append(
+                PredictiveActionPackage(
+                    package_id=f"{source_plan_id}:prefetch:{target.context_id}",
+                    action=PredictiveActionKind.PREFETCH_GPU,
+                    context_ids=(target.context_id,),
+                    target_context_id=target.context_id,
+                    source_joint_plan_id=source_plan_id,
+                    beneficiary_request_id=request.request_id,
+                    causal_package_generation=(
+                        f"{request.request_id}:{request.context_id}:"
+                        f"c{request.context_epoch}:"
+                        f"{request.admission_startup_bytes or request.startup_bytes}:"
+                        f"{request.admission_growth_bytes or 0}"
+                    ),
+                    execution_order_request_ids=prefetch_order,
+                    admit_request_ids=(),
+                    beneficiary_invocation_id=request.invocation_id,
+                    beneficiary_context_id=request.context_id,
+                    beneficiary_context_epoch=request.context_epoch,
+                )
+            )
         return tuple(packages)
 
     @staticmethod
@@ -2960,7 +3397,10 @@ class PredictiveRiskShadowObserver:
             )
             if isinstance(item, Mapping) and item.get("beneficiary_request_id")
         }
-        admissions = {item.request_id: item for item in source_plan.admissions}
+        admissions = {
+            item.request_id: item
+            for item in getattr(source_plan, "admissions", ())
+        }
         requests = {
             item.request_id: item for item in policy_input.runnable_frontier
         }
@@ -3130,6 +3570,16 @@ class PredictiveRiskShadowObserver:
                     packages[item.package_id].beneficiary_request_id
                     if item.package_id in packages
                     else None
+                ),
+                "execution_order_request_ids": (
+                    list(packages[item.package_id].execution_order_request_ids)
+                    if item.package_id in packages
+                    else []
+                ),
+                "admit_request_ids": (
+                    list(packages[item.package_id].admit_request_ids)
+                    if item.package_id in packages
+                    else []
                 ),
                 "beneficiary_startup_bytes": (
                     packages[item.package_id].beneficiary_startup_bytes
@@ -3344,7 +3794,7 @@ class _OnlineCandidatePhysicalizer:
         self.target_invocation_id = target_invocation_id
         self.target_context_id = target_context_id
         self.belief_scope_invocation_ids = belief_scope_invocation_ids
-        self.packages = packages
+        self.packages = dict(packages)
         self.kv_bytes_per_token = kv_bytes_per_token
         self._context_bytes = self._context_byte_summary(policy_input)
         self._context_bundles = {
@@ -3366,6 +3816,9 @@ class _OnlineCandidatePhysicalizer:
             if len(bundle.extent_ids) == 1
         }
         self._overlay_by_context = _action_local_physical_overlay(policy_input)
+
+    def register_package(self, package: PredictiveActionPackage) -> None:
+        self.packages[package.package_id] = package
 
     @property
     def target_restore_duration_ms(self) -> float:
@@ -3630,7 +4083,10 @@ class _OnlineCandidatePhysicalizer:
         return candidates[0]
 
     def package_feasible(self, package: PredictiveActionPackage) -> bool:
-        if package.action == PredictiveActionKind.OBSERVED_BASELINE:
+        if package.action in {
+            PredictiveActionKind.OBSERVED_BASELINE,
+            PredictiveActionKind.SCHEDULE,
+        }:
             return True
         available = max(
             0,
@@ -3705,6 +4161,12 @@ class _OnlineCandidatePhysicalizer:
         """Capture only the semantic and physical evidence read by a package."""
 
         package_context_ids = set(package.context_ids)
+        execution_request_ids = set(package.execution_order_request_ids)
+        package_context_ids.update(
+            request.context_id
+            for request in self.policy_input.runnable_frontier
+            if request.request_id in execution_request_ids
+        )
         beneficiary = next(
             (
                 request
@@ -3982,7 +4444,7 @@ class _OnlineCandidatePhysicalizer:
             transfer_by_context[target_context_id] = transfer_id
 
         outcome_by_id = {item.invocation_id: item for item in scenario.outcomes}
-        order = self._topological_order(outcome_by_id)
+        order = self._topological_order(outcome_by_id, package)
         batches: list[ScheduledBatchQuantum] = []
         demand_by_id = {item.invocation_id: item for item in demands}
         for invocation_id in order:
@@ -4247,8 +4709,17 @@ class _OnlineCandidatePhysicalizer:
             extent_count=self._prepare_projection(context_id).extent_count,
         )
 
-    def _topological_order(self, outcomes: Mapping[str, Any]) -> tuple[str, ...]:
-        execution_order = self.source_plan.execution.ordered_request_ids
+    def _topological_order(
+        self,
+        outcomes: Mapping[str, Any],
+        package: PredictiveActionPackage,
+    ) -> tuple[str, ...]:
+        preferred_order = package.execution_order_request_ids
+        execution_order = tuple(
+            dict.fromkeys(
+                (*preferred_order, *self.source_plan.execution.ordered_request_ids)
+            )
+        )
         candidate_order = tuple(
             request_id
             for request_id in self.source_plan.candidate_order_request_ids

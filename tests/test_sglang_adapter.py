@@ -33,6 +33,7 @@ from beliefkv.policy.joint_scheduler import (
     SemanticResidencyTarget,
 )
 from beliefkv.policy.online_joint import (
+    ActionGroupAtomicity,
     OnlineJointPlanDecision,
     OnlineJointPlanView,
     compile_bounded_seed_epoch,
@@ -4163,7 +4164,7 @@ class SGLangBackendTest(unittest.TestCase):
         }
 
         target, reason = runtime._restore_authority_admission_target(
-            entries, ("dependency",)
+            entries, ("owner", "dependency")
         )
 
         self.assertEqual(target, "owner")
@@ -4221,6 +4222,24 @@ class SGLangBackendTest(unittest.TestCase):
         target, reason = runtime._restore_authority_admission_target(
             entries, ("other",)
         )
+
+        self.assertIsNone(target)
+        self.assertEqual(reason, "restore_owner_not_ready")
+
+    def test_restore_authority_requires_a_ready_ticket_for_visible_owner(self):
+        runtime = EmbeddedSGLangRuntime.__new__(EmbeddedSGLangRuntime)
+        runtime._restore_authority_request_id = "owner"
+        runtime._active_restore_lease = lambda: SimpleNamespace(
+            request_id="owner"
+        )
+        entries = {
+            "owner": SimpleNamespace(state=AdmissionSideState.VISIBLE_PENDING),
+            "other": SimpleNamespace(
+                state=AdmissionSideState.VISIBLE_PENDING
+            ),
+        }
+
+        target, reason = runtime._restore_authority_admission_target(entries, ())
 
         self.assertIsNone(target)
         self.assertEqual(reason, "restore_owner_not_ready")
@@ -6632,6 +6651,177 @@ class SGLangBackendTest(unittest.TestCase):
         )
         self.assertFalse(runtime._joint_predictive_counts)
 
+    def test_predictive_schedule_atomically_reorders_and_admits(self):
+        controller = BeliefKVController(
+            BeliefKVConfig(
+                hbm_capacity_bytes=2_000,
+                host_capacity_bytes=4_000,
+                reserve_hbm_bytes=0,
+                predictor_enabled=False,
+            )
+        )
+        controller.process_runtime_events(
+            (
+                RuntimeEvent(
+                    "wf-schedule",
+                    1.0,
+                    RuntimeEventKind.WORKFLOW_START,
+                    "wf-schedule",
+                ),
+                RuntimeEvent(
+                    "inv-a",
+                    2.0,
+                    RuntimeEventKind.INVOCATION_CREATE,
+                    "wf-schedule",
+                    invocation_id="inv-a",
+                    context_id="ctx-a",
+                    context_epoch=0,
+                ),
+                RuntimeEvent(
+                    "inv-b",
+                    3.0,
+                    RuntimeEventKind.INVOCATION_CREATE,
+                    "wf-schedule",
+                    invocation_id="inv-b",
+                    context_id="ctx-b",
+                    context_epoch=0,
+                ),
+            )
+        )
+        runtime = EmbeddedSGLangRuntime.__new__(EmbeddedSGLangRuntime)
+        runtime.config = BeliefKVConfig(
+            hbm_capacity_bytes=2_000,
+            host_capacity_bytes=4_000,
+            reserve_hbm_bytes=0,
+            predictor_model_path="/tmp/frontier.json",
+            gpu_service_model_path="/tmp/service.json",
+            joint_policy_enabled=True,
+            predictive_risk_shadow_enabled=True,
+            predictive_joint_overlay_enabled=True,
+        )
+        runtime.controller = controller
+        runtime.audit = _AuditRecorder()
+        runtime._joint_predictive_counts = Counter()
+        runtime._current_predictive_residency_commit = None
+        runtime._restore_service_grace_by_request = {}
+        runtime._last_frontier_model_version = "frontier-v1"
+        runtime._reclaim_requirements = {}
+        request_a = RunnableInvocation(
+            request_id="request-a",
+            workflow_id="wf-schedule",
+            invocation_id="inv-a",
+            context_id="ctx-a",
+            context_epoch=0,
+            submitted_ts_ms=1.0,
+            startup_bytes=50,
+            admission_startup_bytes=50,
+            admission_growth_bytes=50,
+            causal_class="engine_running:decode",
+        )
+        request_b = RunnableInvocation(
+            request_id="request-b",
+            workflow_id="wf-schedule",
+            invocation_id="inv-b",
+            context_id="ctx-b",
+            context_epoch=0,
+            submitted_ts_ms=2.0,
+            startup_bytes=50,
+            admission_startup_bytes=50,
+            admission_growth_bytes=50,
+            causal_class="engine_waiting:ready",
+        )
+        runtime._latest_predictive_intent = PredictiveIntent(
+            intent_id="intent-schedule",
+            source_joint_plan_id="source-plan",
+            source_snapshot_id="snapshot",
+            package_id="package-schedule",
+            model_version="frontier-v1",
+            action=PredictiveActionKind.SCHEDULE,
+            invocation_id="inv-b",
+            expected_invocation_state=(
+                controller.graph.invocations["inv-b"].state.value
+            ),
+            context_id="ctx-b",
+            context_epoch=0,
+            generated_ts_ms=100.0,
+            remaining_window_low_ms=1_000.0,
+            transfer_p95_ms=0.0,
+            target_bytes_hint=0,
+            min_reclaimable_bytes=0,
+            max_cross_context_bytes=0,
+            max_copy_bytes=0,
+            causal_certificate=_predictive_causal_certificate(
+                controller, "frontier-v1"
+            ),
+            required_prediction_heads=("boundary",),
+            prediction_head_support=(("boundary", "exact"),),
+            calibration_coverage=0.95,
+            future_hbm_feasibility_probability=1.0,
+            expected_benefit_ms=5.0,
+            shape_fingerprint="not_applicable",
+            predicted_extent_count=0,
+            maximum_transfer_ms=0.0,
+            maximum_stall_ms=0.0,
+            morphology_slack_ms=0.0,
+            causal_slack_probability=1.0,
+            beneficiary_request_id="request-b",
+            beneficiary_invocation_id="inv-b",
+            beneficiary_context_id="ctx-b",
+            beneficiary_context_epoch=0,
+            beneficiary_startup_bytes=50,
+            beneficiary_growth_bytes=50,
+            causal_package_generation="request-b:ctx-b:c0:50:50",
+            execution_order_request_ids=("request-b", "request-a"),
+            admit_request_ids=("request-b",),
+            execution_request_evidence=(
+                ("request-b", "inv-b", "ctx-b", 0),
+                ("request-a", "inv-a", "ctx-a", 0),
+            ),
+        )
+        decision = compile_bounded_seed_epoch(
+            ordered_request_ids=("request-a",),
+            visible_request_ids=("request-a", "request-b"),
+            epoch_sequence=1,
+        )
+        plan = SimpleNamespace(
+            plan_id=decision.view.plan_id,
+            residency=(),
+            semantic_residency=(),
+        )
+
+        committed = runtime._physical_commit_predictive_intent(
+            plan,
+            decision,
+            now_ms=110.0,
+            current_runnable=(request_a, request_b),
+        )
+
+        self.assertEqual(
+            committed.view.ordered_request_ids,
+            ("request-b", "request-a"),
+        )
+        self.assertEqual(
+            committed.view.immediate_request_ids,
+            ("request-b", "request-a"),
+        )
+        self.assertEqual(committed.view.deferred_request_ids, ())
+        self.assertIsNone(runtime._current_predictive_residency_commit)
+        self.assertIsNone(runtime._latest_predictive_intent)
+        group = committed.epoch.action_groups[-1]
+        self.assertEqual(group.atomicity, ActionGroupAtomicity.ALL_OR_NOTHING)
+        self.assertEqual(
+            tuple(item.kind for item in group.actions),
+            ("predictive_execution", "predictive_admission"),
+        )
+        self.assertEqual(len(group.dependency_dag), 1)
+        self.assertEqual(runtime._joint_predictive_counts["schedule_committed"], 1)
+        events = [
+            fields
+            for event, _, fields in runtime.audit.events
+            if event == "predictive_joint_package_committed"
+        ]
+        self.assertEqual(events[-1]["beneficiary_request_id"], "request-b")
+
     def test_predictive_prepare_is_rematerialized_into_joint_epoch(self):
         controller_config = BeliefKVConfig(
             hbm_capacity_bytes=2_000,
@@ -6716,6 +6906,16 @@ class SGLangBackendTest(unittest.TestCase):
             side_effect=AssertionError("runnable frontier must be reused")
         )
         runtime._reclaim_requirements = {}
+        runtime._prepared_causal_bindings = {}
+        runtime._prepared_causal_binding_revision = 0
+        runtime._request_metadata_by_id = {
+            beneficiary.request_id: BeliefKVRequestMetadata(
+                beneficiary.workflow_id,
+                beneficiary.invocation_id,
+                beneficiary.context_id,
+                beneficiary.context_epoch,
+            )
+        }
         runtime._latest_predictive_intent = PredictiveIntent(
             intent_id="intent-prepare",
             source_joint_plan_id="source-plan",
@@ -6862,6 +7062,31 @@ class SGLangBackendTest(unittest.TestCase):
             if event == "online_joint_residency_terminal"
         ]
         self.assertEqual(predictive_terminal[-1]["actual_bytes"], 300)
+        binding = runtime._prepared_causal_bindings[beneficiary.request_id]
+        self.assertEqual(binding.victim_context_id, "ctx-predictive")
+        self.assertEqual(binding.reclaimable_bytes, 300)
+        self.assertEqual(binding.required_reclaim_bytes, 50)
+        self.assertEqual(binding.causal_package_id, "package-prepare")
+        self.assertEqual(
+            runtime._joint_predictive_counts[
+                "prepared_causal_binding_registered"
+            ],
+            1,
+        )
+        control_state = runtime._prepared_causal_bindings_control_state()
+        self.assertEqual(control_state["revision"], 1)
+        self.assertEqual(
+            control_state["bindings"][0]["beneficiary_request_id"],
+            beneficiary.request_id,
+        )
+        runtime._release_reclaim_requirement(
+            beneficiary.request_id,
+            now_ms=113.0,
+            reason="gpu_service_completed",
+        )
+        self.assertNotIn(
+            beneficiary.request_id, runtime._prepared_causal_bindings
+        )
 
         runtime.config = replace(
             runtime.config,
@@ -7964,7 +8189,7 @@ class SGLangBackendTest(unittest.TestCase):
             runtime._select_restore_bypass_request(requests, now_ms=1003.0)
         )
 
-    def test_active_restore_lease_does_not_disable_debt_barrier(self):
+    def test_unready_restore_debt_does_not_block_unrelated_admission(self):
         config = BeliefKVConfig(
             kv_bytes_per_token=10,
             restore_obligation_escalation_ms=1000.0,
@@ -8042,11 +8267,89 @@ class SGLangBackendTest(unittest.TestCase):
         )
 
         entry = controller.visible_admission.get("ordinary")
-        self.assertEqual(entry.state, AdmissionSideState.POLICY_BLOCKED)
-        self.assertEqual(
-            entry.blocker_reason,
-            f"restore_debt_barrier:{obligation.obligation_id}",
+        self.assertEqual(entry.state, AdmissionSideState.VISIBLE_PENDING)
+        self.assertIsNone(entry.blocker_reason)
+
+    def test_ticket_ready_restore_reopens_when_cpu_path_reappears(self):
+        config = BeliefKVConfig(kv_bytes_per_token=10)
+        controller = BeliefKVController(config)
+        metadata = BeliefKVRequestMetadata("wf", "inv", "ctx", 0)
+        controller.process_runtime_events(
+            (
+                RuntimeEvent(
+                    "start",
+                    1.0,
+                    RuntimeEventKind.WORKFLOW_START,
+                    metadata.root_workflow_id,
+                ),
+                RuntimeEvent(
+                    "create",
+                    2.0,
+                    RuntimeEventKind.INVOCATION_CREATE,
+                    metadata.root_workflow_id,
+                    invocation_id=metadata.invocation_id,
+                    context_id=metadata.context_id,
+                    context_epoch=0,
+                ),
+            )
         )
+        controller.register_visible_request(
+            AdmissionRequest(
+                "restore",
+                metadata.root_workflow_id,
+                metadata.invocation_id,
+                metadata.context_id,
+                0,
+                10.0,
+                1,
+                1,
+                10,
+            )
+        )
+        runtime = EmbeddedSGLangRuntime.__new__(EmbeddedSGLangRuntime)
+        runtime.config = config
+        runtime.controller = controller
+        runtime.audit = _AuditRecorder()
+        runtime._now_ms = lambda: 1000.0
+        runtime._retraction_cooldown_until_by_request = {}
+        runtime._pending_h2d_contexts = set()
+        runtime._context_bundle_generations = lambda _context_id: ()
+        runtime._workflow_transition_state = lambda _workflow_id: (0, False)
+        runtime._request_path_extent_ids = (
+            lambda _req, _context_id, *, cpu_only: ("page:7:0",)
+        )
+        runtime._extent_ids_bytes = lambda _extent_ids: 4096
+        runtime._restore_lease_pins = {"restore": (object(), None, False)}
+        runtime._unpin_restore_lease_prefix = mock.Mock()
+        runtime._restore_obligation_counts = Counter()
+        obligation = runtime._restore_obligation_index().create(
+            request_id="restore",
+            workflow_id=metadata.root_workflow_id,
+            invocation_id=metadata.invocation_id,
+            context_id=metadata.context_id,
+            context_epoch=0,
+            source_retraction_transaction_id="retraction-1",
+            source_joint_plan_id="joint-1",
+            created_ts_ms=1.0,
+            path_extent_ids=("page:1:0",),
+        )
+        obligation.source_transaction_terminal = True
+        obligation.requeued = True
+        obligation.mark_ticket_ready(now_ms=900.0)
+
+        runtime._sync_visible_gate_state(
+            "restore", metadata, req=SimpleNamespace(rid="restore")
+        )
+
+        entry = controller.visible_admission.get("restore")
+        transaction = runtime._restore_transactions["restore"]
+        self.assertEqual(obligation.state, RestoreObligationState.PARKED_WAIT)
+        self.assertEqual(obligation.required_extent_ids, ("page:7:0",))
+        self.assertEqual(entry.state, AdmissionSideState.WAIT_RESTORE)
+        self.assertEqual(transaction.stage, RestoreTransactionStage.WAIT_FEASIBILITY)
+        self.assertIsNone(transaction.prefix_pin_token)
+        runtime._unpin_restore_lease_prefix.assert_called_once()
+        self.assertEqual(runtime._restore_obligation_counts["ticket_invalidated"], 1)
 
     def test_restore_service_grace_counts_decode_completion_not_wall_time(self):
         config = BeliefKVConfig(restore_service_grace_decode_tokens=4)

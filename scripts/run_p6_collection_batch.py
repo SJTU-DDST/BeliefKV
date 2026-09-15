@@ -234,8 +234,8 @@ def parse_args() -> argparse.Namespace:
         "--predictive-joint-overlay-enabled",
         action="store_true",
         help=(
-            "Record that the serving-side semantic predictive overlay may "
-            "dispatch PREPARE_HOST through JointPlan."
+            "Record that the serving-side predictive JointPlan may reorder "
+            "execution/admission and dispatch PREPARE_HOST/PREFETCH_GPU."
         ),
     )
     parser.add_argument(
@@ -525,7 +525,7 @@ def main() -> int:
         "joint_predictive_enabled": args.predictive_joint_enabled,
         "legacy_predictive_flag_requested": args.predictive_joint_enabled,
         "runtime_policy": (
-            "p5_observed_plus_p6_predictive_overlay"
+            "p6_predictive_joint"
             if args.predictive_joint_overlay_enabled
             else "frozen_p5_observed"
         ),

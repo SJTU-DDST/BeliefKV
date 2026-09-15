@@ -82,7 +82,7 @@ def main() -> int:
         "--enable-predictive-risk-shadow",
         action="store_true",
         help=(
-            "Evaluate A0/PREPARE_HOST/PREFETCH_GPU with the P6 scenario-risk "
+            "Evaluate A0/SCHEDULE/PREPARE_HOST/PREFETCH_GPU with the P6 scenario-risk "
             "planner without dispatching predictive actions."
         ),
     )
@@ -90,8 +90,8 @@ def main() -> int:
         "--enable-predictive-joint-overlay",
         action="store_true",
         help=(
-            "Allow non-destructive semantic prediction intents to join the "
-            "observed JointPlan and be rematerialized at a scheduler safe point."
+            "Allow predictive execution/admission and non-destructive KV intents "
+            "to join one causal JointPlan package at a scheduler safe point."
         ),
     )
     parser.add_argument(

@@ -420,6 +420,42 @@ def _prediction() -> LocalFrontierPrediction:
     )
 
 
+def test_predictive_execution_order_prioritizes_action_unlock_value() -> None:
+    base = _input(capacity=1_000, reserved=0).runnable_frontier[0]
+    tool_request = replace(
+        base,
+        request_id="request-tool",
+        invocation_id="invocation-tool",
+        context_id="context-tool",
+    )
+    return_request = replace(
+        base,
+        request_id="request-return",
+        invocation_id="invocation-return",
+        context_id="context-return",
+    )
+    tool_prediction = replace(
+        _prediction(),
+        invocation_id=tool_request.invocation_id,
+        boundary_distribution={"tool": 1.0},
+    )
+    return_prediction = replace(
+        _prediction(),
+        invocation_id=return_request.invocation_id,
+        boundary_distribution={"return": 1.0},
+    )
+
+    order = PredictiveRiskShadowObserver._predictive_execution_order(
+        (tool_request, return_request),
+        {
+            tool_request.invocation_id: tool_prediction,
+            return_request.invocation_id: return_prediction,
+        },
+    )
+
+    assert order == (return_request.request_id, tool_request.request_id)
+
+
 def _tool_wait_belief(
     value: float,
     *,
@@ -542,7 +578,7 @@ def test_local_frontier_prediction_round_trip_preserves_distributions() -> None:
     assert restored == prediction
 
 
-def test_prefetch_is_deferred_without_projected_hbm_beneficiary() -> None:
+def test_prefetch_is_evaluated_without_projected_hbm_beneficiary() -> None:
     policy_input = _input(capacity=1_000, reserved=100, include_cpu_target=True)
     prediction = replace(
         _prediction(),
@@ -607,8 +643,12 @@ def test_prefetch_is_deferred_without_projected_hbm_beneficiary() -> None:
         evidence_read_set=evidence,
     )
 
-    assert result.status == "skipped"
-    assert result.blocked_reasons == ("no_projected_hbm_beneficiary",)
+    assert result.status == "evaluated"
+    assert result.candidate_count >= 1
+    assert any(
+        item["action"] == PredictiveActionKind.PREFETCH_GPU.value
+        for item in result.candidate_summaries
+    )
     assert not source_plan.prediction_used
 
 
@@ -886,8 +926,12 @@ def test_backoff_shadow_cannot_select_prefetch() -> None:
         ),
     )
 
-    assert result.status == "skipped"
-    assert result.blocked_reasons == ("no_projected_hbm_beneficiary",)
+    assert result.status == "evaluated"
+    assert result.selected_action == PredictiveActionKind.OBSERVED_BASELINE.value
+    assert any(
+        reason.startswith("prefetch_gpu:")
+        for reason in result.blocked_reasons
+    )
 
 
 def test_calibrated_backoff_can_supply_prefetch_specific_heads() -> None:
@@ -963,8 +1007,16 @@ def test_calibrated_backoff_can_supply_prefetch_specific_heads() -> None:
         ),
     )
 
-    assert result.status == "skipped"
-    assert result.blocked_reasons == ("no_projected_hbm_beneficiary",)
+    assert result.status == "evaluated"
+    prefetch = next(
+        item
+        for item in result.candidate_summaries
+        if item["action"] == PredictiveActionKind.PREFETCH_GPU.value
+    )
+    assert dict(prefetch["prediction_head_support"]) == {
+        "future_kv_growth": "calibrated_backoff",
+        "tool_wait_slack": "backoff",
+    }
 
 
 def test_physically_blocked_target_cannot_select_prefetch() -> None:
@@ -1039,7 +1091,7 @@ def test_physically_blocked_target_cannot_select_prefetch() -> None:
     assert result.selected_action == "observed_baseline"
 
 
-def test_prefetch_is_not_generated_before_prepare_recourse_is_validated() -> None:
+def test_prefetch_is_evaluated_independently_of_prepare_recourse() -> None:
     policy_input = _input(capacity=930, reserved=100, include_cpu_target=True)
     prediction = _prediction()
     policy_input = replace(
@@ -1098,8 +1150,10 @@ def test_prefetch_is_not_generated_before_prepare_recourse_is_validated() -> Non
     )
 
     assert result.selected_action == "observed_baseline"
-    assert result.candidate_summaries == ()
-    assert result.blocked_reasons == ("no_projected_hbm_beneficiary",)
+    assert any(
+        item["action"] == PredictiveActionKind.PREFETCH_GPU.value
+        for item in result.candidate_summaries
+    )
 
 
 def test_prepare_host_receives_recourse_value_only_before_future_pressure() -> None:
@@ -1180,6 +1234,32 @@ def test_prepare_host_receives_recourse_value_only_before_future_pressure() -> N
                     MetadataSource.PREDICTED,
                     "frontier-test-v1",
                     "test-frontier",
+                ),
+                "beliefkv_observed_seed_beneficiary": MetadataValue(
+                    MetadataSource.OBSERVED,
+                    {
+                        "plan_id": "test-projected-beneficiary",
+                        "request_id": "request-target",
+                        "invocation_id": "invocation-target",
+                        "context_id": "ctx-target",
+                        "context_epoch": 0,
+                        "startup_bytes": 100,
+                        "growth_bytes": 300,
+                    },
+                    "test",
+                ),
+                "beliefkv_action_local_physical_overlay": MetadataValue(
+                    MetadataSource.OBSERVED,
+                    {
+                        "overlays": (),
+                        "opportunity": {
+                            "beneficiary_request_id": "request-target",
+                            "hbm_opportunity_possible": True,
+                            "predicted_block_time_ms": 50.0,
+                            "predicted_deficit_bytes": 100,
+                        },
+                    },
+                    "test",
                 ),
                 "beliefkv_transfer_interference_policy": MetadataValue(
                     MetadataSource.APPLICATION_PROVIDED,
@@ -1892,7 +1972,7 @@ def test_eligibility_trigger_ignores_generation_only_physical_churn() -> None:
     assert first.trigger_signature == second.trigger_signature
 
 
-def test_future_safe_prefetch_remains_deferred_without_prepare_evidence() -> None:
+def test_future_safe_prefetch_is_evaluated_without_prepare_evidence() -> None:
     graph = _graph()
     policy_input = _attach_graph(
         _input(capacity=1_100, reserved=100, include_cpu_target=True), graph
@@ -1954,8 +2034,10 @@ def test_future_safe_prefetch_remains_deferred_without_prepare_evidence() -> Non
     )
 
     assert result.selected_action == "observed_baseline"
-    assert result.candidate_summaries == ()
-    assert result.blocked_reasons == ("no_projected_hbm_beneficiary",)
+    assert any(
+        item["action"] == PredictiveActionKind.PREFETCH_GPU.value
+        for item in result.candidate_summaries
+    )
 
 
 def test_reclaim_then_prefetch_is_deferred_until_prepare_is_consumed() -> None:
@@ -2035,8 +2117,10 @@ def test_reclaim_then_prefetch_is_deferred_until_prepare_is_consumed() -> None:
     )
 
     assert result.selected_action == "observed_baseline"
-    assert result.candidate_summaries == ()
-    assert result.blocked_reasons == ("no_projected_hbm_beneficiary",)
+    assert all(
+        item["action"] != PredictiveActionKind.RECLAIM_AND_PREFETCH.value
+        for item in result.candidate_summaries
+    )
 
 
 def test_action_certificate_ignores_unrelated_global_revision() -> None:

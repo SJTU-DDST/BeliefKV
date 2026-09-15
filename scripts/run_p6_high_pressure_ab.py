@@ -99,6 +99,7 @@ def _prepare_server(
                 "--enable-predictive-risk-shadow",
                 "--enable-predictive-joint-overlay",
                 "--enable-shadow-transfers",
+                "--enable-predictive-prefetch-canary",
                 "--predictive-prepare-canary-limit",
                 str(plan["predictive_prepare_limit"]),
             ]

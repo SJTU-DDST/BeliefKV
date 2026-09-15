@@ -1933,6 +1933,12 @@ class AsyncSemanticJointPlanner(ObservedJointPlanner):
             for item in _sequence(raw_reclaim_state.get("requirements"))
             if _mapping(item).get("beneficiary_request_id")
         }
+        raw_prepared_state = _mapping(control.get("prepared_causal_bindings"))
+        prepared_bindings = {
+            str(_mapping(item).get("beneficiary_request_id")): _mapping(item)
+            for item in _sequence(raw_prepared_state.get("bindings"))
+            if _mapping(item).get("beneficiary_request_id")
+        }
         admitted_ids = set(execution.ordered_request_ids)
         runnable_by_context: dict[str, list[RunnableInvocation]] = defaultdict(list)
         for request in policy_input.runnable_frontier:
@@ -1956,9 +1962,21 @@ class AsyncSemanticJointPlanner(ObservedJointPlanner):
         reclaim_goal = 0
         beneficiary: RunnableInvocation | None = None
         beneficiary_requirement: Mapping[str, object] | None = None
+        beneficiary_binding: Mapping[str, object] | None = None
         if requirement_bound:
             beneficiary = requirement_bound[0]
             beneficiary_requirement = reclaim_requirements[beneficiary.request_id]
+            candidate_binding = prepared_bindings.get(beneficiary.request_id)
+            if (
+                candidate_binding is not None
+                and str(candidate_binding.get("beneficiary_context_id", ""))
+                == beneficiary.context_id
+                and _nonnegative_int(
+                    candidate_binding.get("beneficiary_context_epoch", 0)
+                )
+                == beneficiary.context_epoch
+            ):
+                beneficiary_binding = candidate_binding
             fragment_bytes = (
                 _nonnegative_int(
                     beneficiary_requirement.get("required_startup_bytes")
@@ -2073,6 +2091,23 @@ class AsyncSemanticJointPlanner(ObservedJointPlanner):
                     float(stats["last_access_ms"]),
                     context_state_rank(context_id),
                     service_deadline(context_id),
+                    (
+                        0
+                        if beneficiary_binding is not None
+                        and str(
+                            beneficiary_binding.get("victim_context_id", "")
+                        )
+                        == context_id
+                        and _nonnegative_int(
+                            beneficiary_binding.get("victim_context_epoch", 0)
+                        )
+                        == context_epochs[context_id]
+                        and _nonnegative_int(
+                            beneficiary_binding.get("reclaimable_bytes", 0)
+                        ) > 0
+                        and not context_has_no_future_use(context_id)
+                        else 1
+                    ),
                 )
                 for context_id, stats in context_stats.items()
                 if victim_eligible(context_id)
@@ -2080,6 +2115,7 @@ class AsyncSemanticJointPlanner(ObservedJointPlanner):
                 and context_id in context_epochs
             ),
             key=lambda item: (
+                item[5],
                 item[3],
                 item[4] if item[4] is not None else -1.0,
                 item[2],
@@ -2093,6 +2129,7 @@ class AsyncSemanticJointPlanner(ObservedJointPlanner):
             _last_access,
             parked_rank,
             victim_service_deadline,
+            prepared_rank,
         ) in victims:
             if reclaimed >= reclaim_goal:
                 break
@@ -2100,6 +2137,7 @@ class AsyncSemanticJointPlanner(ObservedJointPlanner):
                 break
             stats = context_stats[context_id]
             no_future_use = context_has_no_future_use(context_id)
+            prepared_match = prepared_rank == 0
             action = (
                 ResidencyAction.DROP
                 if no_future_use
@@ -2112,19 +2150,33 @@ class AsyncSemanticJointPlanner(ObservedJointPlanner):
             )
             if d2h_copy_bytes > policy_input.resources.host_free_bytes:
                 continue
-            restore_cost_included = not no_future_use
-            estimated_transfer_cost_ms = transfer_service_ms(
-                TransferDirection.D2H,
-                d2h_copy_bytes,
+            restore_cost_included = not no_future_use and not prepared_match
+            estimated_transfer_cost_ms = (
+                0.0
+                if prepared_match
+                else transfer_service_ms(
+                    TransferDirection.D2H,
+                    d2h_copy_bytes,
+                )
             )
             if restore_cost_included:
                 estimated_transfer_cost_ms += transfer_service_ms(
                     TransferDirection.H2D,
                     reclaimable,
                 )
+            effective_saved_stall_ms = beneficiary_saved_stall_ms
+            if prepared_match and beneficiary_binding is not None:
+                effective_saved_stall_ms = max(
+                    effective_saved_stall_ms,
+                    _nonnegative_float(
+                        beneficiary_binding.get(
+                            "estimated_saved_stall_ms", 0.0
+                        )
+                    ),
+                )
             if (
                 estimated_transfer_cost_ms > 0
-                and beneficiary_saved_stall_ms <= estimated_transfer_cost_ms
+                and effective_saved_stall_ms <= estimated_transfer_cost_ms
             ):
                 continue
             reclaim_contribution = min(
@@ -2132,8 +2184,12 @@ class AsyncSemanticJointPlanner(ObservedJointPlanner):
                 max(0, reclaim_goal - reclaimed),
             )
             package_id = (
-                f"causal:{beneficiary.request_id}:"
-                f"{context_id}:{context_epochs[context_id]}"
+                str(beneficiary_binding.get("causal_package_id"))
+                if prepared_match and beneficiary_binding is not None
+                else (
+                    f"causal:{beneficiary.request_id}:"
+                    f"{context_id}:{context_epochs[context_id]}"
+                )
             )
             targets.append(
                 SemanticResidencyTarget(
@@ -2142,7 +2198,12 @@ class AsyncSemanticJointPlanner(ObservedJointPlanner):
                     action=action,
                     target_bytes_hint=reclaimable,
                     deadline_ms=policy_input.resources.ts_ms,
-                    reason="beneficiary-bound HBM reclaim from a causal package",
+                    reason=(
+                        "beneficiary-bound HBM reclaim using prepared "
+                        "predictive shadow"
+                        if prepared_match
+                        else "beneficiary-bound HBM reclaim from a causal package"
+                    ),
                     beneficiary_request_id=beneficiary.request_id,
                     required_reclaim_bytes=reclaim_contribution,
                     service_deadline_ms=victim_service_deadline,
@@ -2151,10 +2212,10 @@ class AsyncSemanticJointPlanner(ObservedJointPlanner):
                         f"first_gpu_service:{beneficiary.request_id}"
                     ),
                     estimated_transfer_cost_ms=estimated_transfer_cost_ms,
-                    estimated_saved_stall_ms=beneficiary_saved_stall_ms,
+                    estimated_saved_stall_ms=effective_saved_stall_ms,
                     estimated_net_benefit_ms=max(
                         0.0,
-                        beneficiary_saved_stall_ms - estimated_transfer_cost_ms,
+                        effective_saved_stall_ms - estimated_transfer_cost_ms,
                     ),
                     restore_cost_included=restore_cost_included,
                 )

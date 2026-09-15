@@ -27,6 +27,9 @@ class _TreeCache:
     def dec_lock_ref(self, _node) -> None:
         return None
 
+    def init_load_back(self, _node, _host_hit_length):
+        return torch.empty((0,), dtype=torch.int64), _node
+
 
 def _adder(*, available_tokens: int, page_size: int = 1) -> PrefillAdder:
     return PrefillAdder(
@@ -47,6 +50,7 @@ def _request(*, input_tokens: int, max_new_tokens: int = 1024):
         fill_ids=list(range(input_tokens)),
         host_hit_length=0,
         last_node=object(),
+        last_host_node=object(),
         origin_input_ids=list(range(input_tokens)),
         output_ids=[],
         sampling_params=SimpleNamespace(
@@ -140,6 +144,34 @@ def test_existing_chunk_prevents_second_ignore_eos_chunk() -> None:
     assert adder.new_chunked_req is None
     assert adder.can_run_list == []
     assert request.extend_input_len == 1000
+
+
+def test_zero_extend_request_never_enters_prefill_batch() -> None:
+    adder = _adder(available_tokens=10_000)
+    request = _request(input_tokens=0, max_new_tokens=10)
+
+    result = adder.add_one_req(request, has_chunked_req=False)
+
+    assert result is AddReqResult.OTHER
+    assert adder.can_run_list == []
+
+
+def test_hicache_load_back_cannot_create_zero_token_prefill() -> None:
+    adder = _adder(available_tokens=10_000)
+    request = _request(input_tokens=4, max_new_tokens=10)
+    request.prefix_indices = torch.tensor([0, 1], dtype=torch.int64)
+    request.fill_ids = list(range(4))
+    request.host_hit_length = 2
+
+    def load_full_node(node, _host_hit_length):
+        return torch.tensor([2, 3], dtype=torch.int64), node
+
+    adder.tree_cache.init_load_back = load_full_node
+    result = adder.add_one_req(request, has_chunked_req=False)
+
+    assert result is AddReqResult.OTHER
+    assert request.extend_input_len == 0
+    assert adder.can_run_list == []
 
 
 class _RadixNode:

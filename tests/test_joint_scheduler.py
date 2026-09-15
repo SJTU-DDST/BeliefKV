@@ -296,6 +296,136 @@ def test_semantic_replacement_uses_expired_resident_service_lease() -> None:
     assert replacement.restore_cost_included
 
 
+def test_semantic_replacement_consumes_prepared_predictive_victim() -> None:
+    policy_input = _input(
+        capacity=650,
+        reserved=0,
+        include_cpu_target=False,
+    )
+    target = replace(
+        policy_input.runnable_frontier[0],
+        causal_class="engine_waiting:foreground:root",
+    )
+    old = _request(
+        "request-old",
+        "workflow-old",
+        "invocation-old",
+        "ctx-old",
+        submitted_ms=0.0,
+        startup_bytes=100,
+        causal_class="engine_waiting:background:root",
+    )
+    state = dict(policy_input.runtime_graph.state)
+    state["rccg"] = {
+        "invocations": {
+            target.invocation_id: _invocation(
+                target.workflow_id, target.context_id
+            ),
+            old.invocation_id: _invocation(
+                old.workflow_id, old.context_id, execution_mode="background"
+            ),
+            "invocation-recent": _invocation(
+                "workflow-recent",
+                "ctx-recent",
+                state="ready",
+                execution_mode="background",
+            ),
+        },
+        "contexts": {
+            "ctx-target": {
+                "epoch": 0,
+                "invocation_ids": [target.invocation_id],
+            },
+            "ctx-old": {
+                "epoch": 0,
+                "invocation_ids": [old.invocation_id],
+            },
+            "ctx-recent": {
+                "epoch": 0,
+                "invocation_ids": ["invocation-recent"],
+            },
+        },
+    }
+    requirement = {
+        "beneficiary_request_id": target.request_id,
+        "required_startup_bytes": 100,
+        "required_growth_bytes": 500,
+        "current_prefix_bytes": 200,
+        "waited_ms": 5_000.0,
+        "skip_reason": "bounded_hbm_budget",
+    }
+    binding = {
+        "beneficiary_request_id": target.request_id,
+        "beneficiary_context_id": target.context_id,
+        "beneficiary_context_epoch": target.context_epoch,
+        "victim_context_id": "ctx-recent",
+        "victim_context_epoch": 0,
+        "required_reclaim_bytes": 150,
+        "reclaimable_bytes": 150,
+        "prepared_bytes": 150,
+        "prepared_ts_ms": 1_500.0,
+        "source_transaction_id": "predictive-residency-1",
+        "causal_package_id": "predictive-package-1",
+        "estimated_transfer_cost_ms": 20.0,
+        "estimated_saved_stall_ms": 100.0,
+    }
+    state["control"] = {
+        "reclaim_requirements": {
+            "revision": 1,
+            "requirements": [requirement],
+        },
+        "prepared_causal_bindings": {
+            "revision": 1,
+            "bindings": [binding],
+        },
+    }
+    policy_input = replace(
+        policy_input,
+        runnable_frontier=(target,),
+        runtime_graph=replace(policy_input.runtime_graph, state=state),
+        resources=replace(policy_input.resources, ts_ms=2_000.0),
+    )
+
+    plan = _semantic_planner(resident_service_window_ms=1_000.0).plan(
+        policy_input
+    )
+
+    replacement = next(
+        item
+        for item in plan.semantic_residency
+        if item.action == ResidencyAction.COMMIT_CPU
+    )
+    assert replacement.context_id == "ctx-recent"
+    assert replacement.causal_package_id == "predictive-package-1"
+    assert "prepared predictive shadow" in replacement.reason
+    assert replacement.estimated_transfer_cost_ms == 0.0
+    assert not replacement.restore_cost_included
+
+    stale_state = dict(state)
+    stale_control = dict(state["control"])
+    stale_binding = dict(binding)
+    stale_binding["victim_context_epoch"] = 1
+    stale_control["prepared_causal_bindings"] = {
+        "revision": 2,
+        "bindings": [stale_binding],
+    }
+    stale_state["control"] = stale_control
+    stale_input = replace(
+        policy_input,
+        runtime_graph=replace(policy_input.runtime_graph, state=stale_state),
+    )
+    stale_plan = _semantic_planner(
+        resident_service_window_ms=1_000.0
+    ).plan(stale_input)
+    stale_replacement = next(
+        item
+        for item in stale_plan.semantic_residency
+        if item.action == ResidencyAction.COMMIT_CPU
+    )
+    assert stale_replacement.context_id == "ctx-old"
+    assert "prepared predictive shadow" not in stale_replacement.reason
+
+
 def test_semantic_replacement_preserves_recently_served_resident() -> None:
     policy_input = _input(
         capacity=650,

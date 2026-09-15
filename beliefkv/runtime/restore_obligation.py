@@ -538,6 +538,20 @@ class RestoreObligation:
         self.state = RestoreObligationState.TICKET_READY
         self.last_progress_ts_ms = now_ms
 
+    def invalidate_ticket(self, *, now_ms: float) -> bool:
+        """Reopen restore work when the request path changes before admission."""
+
+        if self.state != RestoreObligationState.TICKET_READY:
+            return False
+        self.state = RestoreObligationState.PARKED_WAIT
+        self.blocker_codes = ()
+        self.blocker_fingerprint = None
+        self.last_attempt_stamp = None
+        self.last_external_progress_token = None
+        self.wake_conditions = ()
+        self.last_progress_ts_ms = now_ms
+        return True
+
     def use_native_admission_fallback(self, *, now_ms: float) -> None:
         """Let SGLang load or recompute the prefix under this debt's lease."""
 

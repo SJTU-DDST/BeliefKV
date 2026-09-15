@@ -480,7 +480,7 @@ index a35ba02530..a97c0b1572 100644
          # Reset the encoder cached status
          self.encoder_cached = [True] * len(self.reqs)
 diff --git a/python/sglang/srt/managers/schedule_policy.py b/python/sglang/srt/managers/schedule_policy.py
-index 4665207c1a..c14bee9e4d 100644
+index 4665207c1a..9376c24fba 100644
 --- a/python/sglang/srt/managers/schedule_policy.py
 +++ b/python/sglang/srt/managers/schedule_policy.py
 @@ -380,18 +380,46 @@ class PrefillAdder:
@@ -546,7 +546,29 @@ index 4665207c1a..c14bee9e4d 100644
  
              # Chunked prefill
              trunc_len = self.rem_chunk_tokens
-@@ -548,6 +578,8 @@ class PrefillAdder:
+@@ -495,6 +525,12 @@ class PrefillAdder:
+         return self.budget_state()
+ 
+     def add_one_req(self, req: Req, has_chunked_req: bool):
++        # A request may become fully covered after a HiCache rematch, but an
++        # extend forward still needs at least one token to produce logits.
++        # Keep it in the waiting queue until the next authoritative rematch.
++        if req.extend_input_len <= 0:
++            return AddReqResult.OTHER
++
+         if req.sampling_params.ignore_eos and getattr(self.tree_cache, "disable", True):
+             return self.add_one_req_ignore_eos(req, has_chunked_req)
+ 
+@@ -525,6 +561,8 @@ class PrefillAdder:
+                 req.prefix_indices = torch.cat([req.prefix_indices, new_indices])
+                 req.extend_input_len = len(req.fill_ids) - len(req.prefix_indices)
+                 prefix_len = len(req.prefix_indices)
++                if req.extend_input_len <= 0:
++                    return AddReqResult.OTHER
+ 
+             input_tokens = self.ceil_paged_tokens(req.extend_input_len)
+ 
+@@ -548,6 +586,8 @@ class PrefillAdder:
                      ),
                  )
              else:

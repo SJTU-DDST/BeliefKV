@@ -1,3 +1,5 @@
+import pytest
+
 from beliefkv.policy.predictive_joint import (
     PackageScenarioEvaluation,
     PredictiveActionKind,
@@ -41,6 +43,36 @@ def _prepare_package() -> PredictiveActionPackage:
         victim_reclaim_bytes=128,
         causal_package_generation="g1:a1:c0",
     )
+
+
+def test_schedule_package_requires_a_single_leading_beneficiary() -> None:
+    package = PredictiveActionPackage(
+        package_id="schedule",
+        action=PredictiveActionKind.SCHEDULE,
+        context_ids=("context-b",),
+        beneficiary_request_id="request-b",
+        execution_order_request_ids=("request-b", "request-a"),
+        admit_request_ids=("request-b",),
+        beneficiary_invocation_id="invocation-b",
+        beneficiary_context_id="context-b",
+        beneficiary_context_epoch=2,
+    )
+
+    assert package.execution_order_request_ids == ("request-b", "request-a")
+    assert package.admit_request_ids == ("request-b",)
+
+    with pytest.raises(ValueError, match="beneficiary must lead"):
+        PredictiveActionPackage(
+            package_id="bad-schedule",
+            action=PredictiveActionKind.SCHEDULE,
+            context_ids=("context-b",),
+            beneficiary_request_id="request-b",
+            execution_order_request_ids=("request-a", "request-b"),
+            beneficiary_invocation_id="invocation-b",
+            beneficiary_context_id="context-b",
+            beneficiary_context_epoch=2,
+        )
+
 
 
 def _belief(*, finite_other: bool) -> FrontierBeliefSnapshot:

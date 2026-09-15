@@ -66,6 +66,20 @@ def test_restore_obligation_tracks_funding_restore_and_service():
     assert index.active() == ()
 
 
+def test_ticket_ready_obligation_can_reopen_after_path_change():
+    obligation = _create(RestoreObligationIndex(max_active=1))
+    obligation.mark_ticket_ready(now_ms=20.0)
+    obligation.set_required_extents(
+        ("page:3:0",), restore_bytes=256, now_ms=21.0
+    )
+
+    assert obligation.invalidate_ticket(now_ms=22.0)
+    assert obligation.state == RestoreObligationState.PARKED_WAIT
+    assert obligation.required_extent_ids == ("page:3:0",)
+    assert obligation.restore_bytes == 256
+    assert not obligation.invalidate_ticket(now_ms=23.0)
+
+
 def test_restore_obligation_records_ordinary_waiting_cause():
     index = RestoreObligationIndex(max_active=1)
     obligation = index.create(

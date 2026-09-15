@@ -533,7 +533,10 @@ class _OnlineJointResidencyTransaction:
     failure_reason: str | None = None
     predictive_intent_id: str | None = None
     beneficiary_request_id: str | None = None
+    beneficiary_context_id: str | None = None
+    beneficiary_context_epoch: int | None = None
     required_reclaim_bytes: int = 0
+    prepared_reclaimable_bytes: int = 0
     causal_package_id: str | None = None
     estimated_transfer_cost_ms: float = 0.0
     estimated_saved_stall_ms: float = 0.0
@@ -550,6 +553,29 @@ class _ReplacementBeneficiaryPriority:
     causal_package_id: str | None = None
     estimated_transfer_cost_ms: float = 0.0
     estimated_saved_stall_ms: float = 0.0
+
+
+@dataclass(frozen=True)
+class _PreparedCausalBinding:
+    beneficiary_request_id: str
+    beneficiary_context_id: str
+    beneficiary_context_epoch: int
+    victim_context_id: str
+    victim_context_epoch: int
+    required_reclaim_bytes: int
+    reclaimable_bytes: int
+    prepared_bytes: int
+    prepared_ts_ms: float
+    source_transaction_id: str
+    causal_package_id: str
+    estimated_transfer_cost_ms: float = 0.0
+    estimated_saved_stall_ms: float = 0.0
+
+    def to_dict(self) -> dict[str, object]:
+        return {
+            field_name: getattr(self, field_name)
+            for field_name in self.__dataclass_fields__
+        }
 
 
 @dataclass
@@ -2537,6 +2563,8 @@ class EmbeddedSGLangRuntime:
         self._last_joint_beneficiary_signature: tuple[object, ...] = ()
         self._reclaim_requirements: dict[str, ReclaimRequirement] = {}
         self._reclaim_requirement_revision = 0
+        self._prepared_causal_bindings: dict[str, _PreparedCausalBinding] = {}
+        self._prepared_causal_binding_revision = 0
         self._active_admission_rescue: _AdmissionRescueTransaction | None = None
         self.joint_shadow_worker: LatestWinsJointPlanWorker | None = None
         self.predictive_risk_worker: (
@@ -11117,9 +11145,17 @@ class EmbeddedSGLangRuntime:
                     in getattr(self, "_execution_timeout_request_ids", set())
                     else "request_aborted"
                 )
+                terminal_now_ms = float(
+                    getattr(self, "_now_ms", lambda: 0.0)()
+                )
                 self._release_replacement_priority(
                     request_id,
-                    now_ms=float(getattr(self, "_now_ms", lambda: 0.0)()),
+                    now_ms=terminal_now_ms,
+                    reason=terminal_reason,
+                )
+                self._release_prepared_causal_binding(
+                    request_id,
+                    now_ms=terminal_now_ms,
                     reason=terminal_reason,
                 )
                 self._finish_restore_obligation(
@@ -12081,6 +12117,121 @@ class EmbeddedSGLangRuntime:
             reclaimed_bytes=rescue.reclaimed_bytes,
         )
 
+    def _prepared_causal_bindings_control_state(self) -> dict[str, object]:
+        return {
+            "revision": getattr(self, "_prepared_causal_binding_revision", 0),
+            "bindings": [
+                item.to_dict()
+                for _, item in sorted(
+                    getattr(self, "_prepared_causal_bindings", {}).items()
+                )
+            ],
+        }
+
+    def _register_prepared_causal_binding(
+        self,
+        transaction: _OnlineJointResidencyTransaction,
+        *,
+        now_ms: float,
+    ) -> bool:
+        request_id = transaction.beneficiary_request_id
+        beneficiary_context_id = transaction.beneficiary_context_id
+        beneficiary_context_epoch = transaction.beneficiary_context_epoch
+        package_id = transaction.causal_package_id
+        metadata = getattr(self, "_request_metadata_by_id", {}).get(request_id or "")
+        victim = self.controller.graph.contexts.get(transaction.context_id)
+        if (
+            transaction.action != ResidencyAction.PREPARE_HOST
+            or transaction.predictive_intent_id is None
+            or not request_id
+            or not beneficiary_context_id
+            or beneficiary_context_epoch is None
+            or not package_id
+            or transaction.required_reclaim_bytes <= 0
+            or transaction.prepared_reclaimable_bytes <= 0
+            or metadata is None
+            or self._metadata_scope_is_terminal(metadata)
+            or metadata.context_id != beneficiary_context_id
+            or metadata.context_epoch != beneficiary_context_epoch
+            or victim is None
+            or victim.epoch != transaction.context_epoch
+        ):
+            self._joint_predictive_counts[
+                "prepared_causal_binding_rejected"
+            ] += 1
+            return False
+        binding = _PreparedCausalBinding(
+            beneficiary_request_id=request_id,
+            beneficiary_context_id=beneficiary_context_id,
+            beneficiary_context_epoch=beneficiary_context_epoch,
+            victim_context_id=transaction.context_id,
+            victim_context_epoch=transaction.context_epoch,
+            required_reclaim_bytes=transaction.required_reclaim_bytes,
+            reclaimable_bytes=transaction.prepared_reclaimable_bytes,
+            prepared_bytes=transaction.actual_bytes,
+            prepared_ts_ms=now_ms,
+            source_transaction_id=transaction.transaction_id,
+            causal_package_id=package_id,
+            estimated_transfer_cost_ms=transaction.estimated_transfer_cost_ms,
+            estimated_saved_stall_ms=transaction.estimated_saved_stall_ms,
+        )
+        bindings = getattr(self, "_prepared_causal_bindings", None)
+        if bindings is None:
+            bindings = {}
+            self._prepared_causal_bindings = bindings
+        bindings[request_id] = binding
+        self._prepared_causal_binding_revision = (
+            getattr(self, "_prepared_causal_binding_revision", 0) + 1
+        )
+        self._joint_predictive_counts["prepared_causal_binding_registered"] += 1
+        self.audit.emit(
+            "predictive_prepared_causal_binding_registered",
+            now_ms,
+            **binding.to_dict(),
+            binding_revision=self._prepared_causal_binding_revision,
+        )
+        return True
+
+    def _release_prepared_causal_binding(
+        self, request_id: str, *, now_ms: float, reason: str
+    ) -> _PreparedCausalBinding | None:
+        binding = getattr(self, "_prepared_causal_bindings", {}).pop(
+            request_id, None
+        )
+        if binding is None:
+            return None
+        self._prepared_causal_binding_revision = (
+            getattr(self, "_prepared_causal_binding_revision", 0) + 1
+        )
+        self._joint_predictive_counts[
+            f"prepared_causal_binding_released:{reason}"
+        ] += 1
+        self.audit.emit(
+            "predictive_prepared_causal_binding_released",
+            now_ms,
+            **binding.to_dict(),
+            reason=reason,
+            binding_revision=self._prepared_causal_binding_revision,
+        )
+        return binding
+
+    def _release_prepared_bindings_for_context(
+        self, context_id: str, *, context_epoch: int | None, now_ms: float, reason: str
+    ) -> None:
+        for request_id, binding in tuple(
+            getattr(self, "_prepared_causal_bindings", {}).items()
+        ):
+            if binding.victim_context_id != context_id:
+                continue
+            if (
+                context_epoch is not None
+                and binding.victim_context_epoch != context_epoch
+            ):
+                continue
+            self._release_prepared_causal_binding(
+                request_id, now_ms=now_ms, reason=reason
+            )
+
     def _release_reclaim_requirement(
         self,
         request_id: str,
@@ -12088,6 +12239,16 @@ class EmbeddedSGLangRuntime:
         now_ms: float,
         reason: str,
     ) -> None:
+        if reason in {
+            "gpu_service_completed",
+            "request_identity_missing",
+            "request_scope_terminal",
+            "request_finished",
+            "runtime_terminal_event",
+        }:
+            self._release_prepared_causal_binding(
+                request_id, now_ms=now_ms, reason=reason
+            )
         requirements = getattr(self, "_reclaim_requirements", {})
         requirement = requirements.pop(request_id, None)
         if requirement is None:
@@ -12755,16 +12916,26 @@ class EmbeddedSGLangRuntime:
                     entries, restore_ready_priority
                 )
             )
-            ordered_request_ids = (
-                (restore_request_id,)
-                if restore_request_id is not None
-                else ()
-            )
-            compile_max_requests = 1 if ordered_request_ids else 0
-            ticket_source = "emergency_restore_coordinator"
-            ticket_reason = (
-                f"{restore_authority_mode.value}:{authority_target_reason}"
-            )
+            if restore_request_id is not None:
+                ordered_request_ids = (restore_request_id,)
+                compile_max_requests = 1
+                ticket_source = "emergency_restore_coordinator"
+                ticket_reason = (
+                    f"{restore_authority_mode.value}:{authority_target_reason}"
+                )
+            else:
+                self._restore_obligation_counts[
+                    "authority_owner_not_ready_nonblocking_epoch"
+                ] += 1
+                self.audit.emit(
+                    "restore_authority_nonblocking_epoch",
+                    now_ms,
+                    authority_request_id=getattr(
+                        self, "_restore_authority_request_id", None
+                    ),
+                    mode=restore_authority_mode.value,
+                    reason=authority_target_reason,
+                )
             previous_dependency = getattr(
                 self, "_restore_authority_dependency_request_id", None
             )
@@ -14108,6 +14279,7 @@ class EmbeddedSGLangRuntime:
         owner_entry = entries.get(owner_request_id)
         if (
             owner_request_id is not None
+            and owner_request_id in restore_ready_priority
             and owner_entry is not None
             and owner_entry.state == AdmissionSideState.VISIBLE_PENDING
         ):
@@ -14159,6 +14331,26 @@ class EmbeddedSGLangRuntime:
                 restore_bytes=self._extent_ids_bytes(required),
                 now_ms=self._now_ms(),
             )
+            if required and obligation.invalidate_ticket(now_ms=self._now_ms()):
+                self._unpin_restore_lease_prefix(
+                    request_id,
+                    now_ms=self._now_ms(),
+                    reason="restore_ticket_physical_state_changed",
+                )
+                transaction = self._ensure_restore_transaction(obligation)
+                transaction.stage = RestoreTransactionStage.WAIT_FEASIBILITY
+                transaction.prefix_pin_token = None
+                self._restore_obligation_counts["ticket_invalidated"] += 1
+                self.audit.emit(
+                    "restore_obligation_ticket_invalidated",
+                    self._now_ms(),
+                    obligation_id=obligation.obligation_id,
+                    request_id=request_id,
+                    context_id=obligation.context_id,
+                    required_extent_ids=list(required),
+                    restore_bytes=obligation.restore_bytes,
+                    reason="request_path_requires_restore",
+                )
             if not obligation.source_transaction_terminal:
                 self.controller.visible_admission.set_wait_restore(
                     request_id,
@@ -14231,24 +14423,6 @@ class EmbeddedSGLangRuntime:
                     restore_bundle_ids,
                     now_ms=self._now_ms(),
                 )
-            overdue_restore = self._overdue_restore_obligation(
-                now_ms=self._now_ms()
-            )
-            bypass_request_id = getattr(
-                self, "_restore_bypass_request_id", None
-            )
-            if (
-                overdue_restore is not None
-                and request_id != overdue_restore.request_id
-                and request_id != bypass_request_id
-            ):
-                self.controller.visible_admission.set_policy_blocked(
-                    request_id,
-                    reason=(
-                        f"restore_debt_barrier:{overdue_restore.obligation_id}"
-                    ),
-                )
-                return
             if self._now_ms() < cooldown_until:
                 self.controller.visible_admission.set_policy_blocked(
                     request_id, reason="retraction_cooldown"
@@ -15378,10 +15552,22 @@ class EmbeddedSGLangRuntime:
                     now_ms=event.ts_ms,
                     reason=event.kind.value,
                 )
+                self._release_prepared_bindings_for_context(
+                    event.context_id,
+                    context_epoch=event.context_epoch,
+                    now_ms=event.ts_ms,
+                    reason=event.kind.value,
+                )
             elif event.kind == RuntimeEventKind.WORKFLOW_END:
                 for invocation in self.controller.graph.invocations.values():
                     if invocation.workflow_id == event.workflow_id:
                         ledger.terminal_context(
+                            invocation.context_id,
+                            context_epoch=None,
+                            now_ms=event.ts_ms,
+                            reason="workflow_end",
+                        )
+                        self._release_prepared_bindings_for_context(
                             invocation.context_id,
                             context_epoch=None,
                             now_ms=event.ts_ms,
@@ -18215,6 +18401,9 @@ class EmbeddedSGLangRuntime:
                     )
                 ],
             }
+            control_state["prepared_causal_bindings"] = (
+                self._prepared_causal_bindings_control_state()
+            )
             control_state["persistent_liveness"] = liveness.to_dict()
         else:
             control_state = dict(self._last_policy_control_state)
@@ -19830,6 +20019,7 @@ class EmbeddedSGLangRuntime:
                 )
             ),
             getattr(self, "_reclaim_requirement_revision", 0),
+            getattr(self, "_prepared_causal_binding_revision", 0),
             self.controller.policy_control_state(observation.ts_ms),
             pending_ids,
             reserved_ids,
@@ -19906,6 +20096,9 @@ class EmbeddedSGLangRuntime:
                 additional_runnable=additional_runnable,
                 control_state_overrides={
                     "reclaim_requirements": reclaim_control_state,
+                    "prepared_causal_bindings": (
+                        self._prepared_causal_bindings_control_state()
+                    ),
                 },
                 capabilities=self._policy_capabilities(),
             )
@@ -20867,7 +21060,7 @@ class EmbeddedSGLangRuntime:
         now_ms: float,
         current_runnable: tuple[RunnableInvocation, ...] | None = None,
     ) -> OnlineJointPlanDecision:
-        """Rematerialize one non-destructive predictive intent at a safe point."""
+        """Atomically commit one predictive causal package at a safe point."""
 
         self._current_predictive_residency_commit = None
         intent = getattr(self, "_latest_predictive_intent", None)
@@ -20886,15 +21079,20 @@ class EmbeddedSGLangRuntime:
             phase_started_ns = completed_ns
 
         reasons: list[str] = []
+        physical_action = intent.action in {
+            PredictiveActionKind.PREPARE_HOST,
+            PredictiveActionKind.PREFETCH_GPU,
+        }
         observed_residency_actions = any(
             item.action != ResidencyAction.KEEP for item in plan.residency
         ) or bool(plan.semantic_residency)
-        if observed_residency_actions or self._current_semantic_residency_commit:
-            reasons.append("observed_residency_has_priority")
-        if getattr(self, "_pending_online_joint_residency", None) is not None:
-            reasons.append("residency_transaction_inflight")
-        if self.controller.has_pending_transfer_work():
-            reasons.append("pcie_dispatch_busy")
+        if physical_action:
+            if observed_residency_actions or self._current_semantic_residency_commit:
+                reasons.append("observed_residency_has_priority")
+            if getattr(self, "_pending_online_joint_residency", None) is not None:
+                reasons.append("residency_transaction_inflight")
+            if self.controller.has_pending_transfer_work():
+                reasons.append("pcie_dispatch_busy")
         backend = getattr(self, "backend", None)
         native_inflight_bytes = (
             backend._native_inflight_bytes()
@@ -20902,9 +21100,9 @@ class EmbeddedSGLangRuntime:
             and hasattr(backend, "_native_inflight_bytes")
             else 0
         )
-        if native_inflight_bytes > 0:
+        if physical_action and native_inflight_bytes > 0:
             reasons.append("native_hicache_inflight")
-        if self._restore_obligation_index().active():
+        if physical_action and self._restore_obligation_index().active():
             reasons.append("urgent_restore_active")
 
         age_ms = max(0.0, now_ms - intent.generated_ts_ms)
@@ -20950,19 +21148,37 @@ class EmbeddedSGLangRuntime:
             reasons.append("invocation_context_changed")
         elif invocation.state.value != intent.expected_invocation_state:
             reasons.append("invocation_state_changed")
+        if current_runnable is None:
+            current_runnable = (
+                self._policy_runtime_runnable(now_ms)
+                if (
+                    intent.execution_request_evidence
+                    or intent.beneficiary_request_id is not None
+                )
+                else ()
+            )
+        runnable_by_request = {
+            request.request_id: request for request in current_runnable
+        }
+        for request_id, invocation_id, context_id, context_epoch in (
+            intent.execution_request_evidence
+        ):
+            request = runnable_by_request.get(request_id)
+            if request is None:
+                reasons.append(f"execution_request_missing:{request_id}")
+            elif (
+                request.invocation_id != invocation_id
+                or request.context_id != context_id
+                or request.context_epoch != context_epoch
+            ):
+                reasons.append(f"execution_request_identity_changed:{request_id}")
         finish_phase("guards_and_causal")
 
         beneficiary_remaining_ms: float | None = None
-        if intent.action == PredictiveActionKind.PREPARE_HOST:
-            if current_runnable is None:
-                current_runnable = self._policy_runtime_runnable(now_ms)
-            runnable_by_request = {
-                request.request_id: request
-                for request in current_runnable
-            }
-            beneficiary = runnable_by_request.get(
-                intent.beneficiary_request_id or ""
-            )
+        beneficiary = runnable_by_request.get(
+            intent.beneficiary_request_id or ""
+        )
+        if intent.beneficiary_request_id is not None:
             if beneficiary is None:
                 reasons.append("beneficiary_missing")
             else:
@@ -20974,6 +21190,24 @@ class EmbeddedSGLangRuntime:
                     != intent.beneficiary_context_epoch
                 ):
                     reasons.append("beneficiary_identity_changed")
+                startup_bytes = (
+                    beneficiary.admission_startup_bytes
+                    if beneficiary.admission_startup_bytes is not None
+                    else beneficiary.startup_bytes
+                )
+                growth_bytes = beneficiary.admission_growth_bytes or 0
+                expected_generation = (
+                    f"{beneficiary.request_id}:{beneficiary.context_id}:"
+                    f"c{beneficiary.context_epoch}:{startup_bytes}:{growth_bytes}"
+                )
+                if (
+                    intent.causal_package_generation is not None
+                    and intent.causal_package_generation != expected_generation
+                ):
+                    reasons.append("beneficiary_causal_generation_changed")
+
+        if intent.action == PredictiveActionKind.PREPARE_HOST:
+            if beneficiary is not None:
                 if beneficiary.causal_class.startswith("engine_running:"):
                     reasons.append("beneficiary_already_admitted")
                 if (
@@ -20988,14 +21222,6 @@ class EmbeddedSGLangRuntime:
                     > intent.beneficiary_growth_bytes
                 ):
                     reasons.append("beneficiary_demand_increased")
-                expected_generation = (
-                    f"{beneficiary.request_id}:{beneficiary.context_id}:"
-                    f"c{beneficiary.context_epoch}:"
-                    f"{beneficiary.admission_startup_bytes}:"
-                    f"{beneficiary.admission_growth_bytes}"
-                )
-                if intent.causal_package_generation != expected_generation:
-                    reasons.append("beneficiary_causal_generation_changed")
             if (intent.beneficiary_request_id or "") in self._reclaim_requirements:
                 reasons.append("beneficiary_reactive_requirement_active")
             if intent.predicted_block_time_ms is None:
@@ -21005,7 +21231,9 @@ class EmbeddedSGLangRuntime:
                     0.0, intent.predicted_block_time_ms - age_ms
                 )
 
-        if intent.action == PredictiveActionKind.PREPARE_HOST:
+        if intent.action == PredictiveActionKind.SCHEDULE:
+            action = ResidencyAction.KEEP
+        elif intent.action == PredictiveActionKind.PREPARE_HOST:
             if not self.config.predictive_prepare_host_enabled:
                 reasons.append("predictive_prepare_host_disabled")
             if not self.config.shadow_enabled:
@@ -21043,15 +21271,109 @@ class EmbeddedSGLangRuntime:
                 - self.config.predictive_commit_guard_ms,
             ),
             reason=f"predictive_overlay:{intent.intent_id}",
+            beneficiary_request_id=intent.beneficiary_request_id,
+            required_reclaim_bytes=intent.predicted_deficit_bytes,
+            causal_package_id=intent.package_id,
+            expected_unlock_boundary=(
+                f"first_gpu_service:{intent.beneficiary_request_id}"
+                if intent.beneficiary_request_id is not None
+                else None
+            ),
+            estimated_transfer_cost_ms=intent.transfer_p95_ms,
+            estimated_saved_stall_ms=(
+                intent.transfer_p95_ms + intent.expected_benefit_ms
+            ),
+            estimated_net_benefit_ms=intent.expected_benefit_ms,
+            restore_cost_included=(
+                intent.action == PredictiveActionKind.PREPARE_HOST
+            ),
         ) if action != ResidencyAction.KEEP else None
         command_kind = (
             self._online_residency_command_kind(action)
             if target is not None
             else None
         )
-        if command_kind is None:
+        if physical_action and command_kind is None:
             reasons.append("no_physical_action")
         finish_phase("beneficiary_and_action")
+
+        execution_epoch = decision.epoch
+        execution_changed = False
+        admission_changed = False
+        if not reasons and intent.execution_order_request_ids:
+            visible_request_ids = {
+                *execution_epoch.view.ordered_request_ids,
+                *execution_epoch.view.deferred_request_ids,
+            }
+            missing_order = tuple(
+                request_id
+                for request_id in intent.execution_order_request_ids
+                if request_id not in visible_request_ids
+            )
+            if missing_order:
+                reasons.extend(
+                    f"execution_request_not_visible:{request_id}"
+                    for request_id in missing_order
+                )
+            else:
+                before_immediate = frozenset(
+                    execution_epoch.view.immediate_request_ids
+                )
+                execution_epoch = extend_joint_epoch_admission(
+                    execution_epoch, intent.admit_request_ids
+                )
+                after_immediate = frozenset(
+                    execution_epoch.view.immediate_request_ids
+                )
+                if not set(intent.admit_request_ids).issubset(after_immediate):
+                    reasons.append("predictive_admission_not_promotable")
+                else:
+                    admission_changed = after_immediate != before_immediate
+                    current_view = execution_epoch.view
+                    preferred = tuple(
+                        request_id
+                        for request_id in intent.execution_order_request_ids
+                        if request_id in current_view.ordered_request_ids
+                    )
+                    preferred_set = frozenset(preferred)
+                    reordered = (
+                        *preferred,
+                        *(
+                            request_id
+                            for request_id in current_view.ordered_request_ids
+                            if request_id not in preferred_set
+                        ),
+                    )
+                    execution_changed = (
+                        reordered != current_view.ordered_request_ids
+                    )
+                    immediate_set = frozenset(
+                        current_view.immediate_request_ids
+                    )
+                    execution_view = OnlineJointPlanView(
+                        plan_id=current_view.plan_id,
+                        ordered_request_ids=reordered,
+                        immediate_request_ids=tuple(
+                            request_id
+                            for request_id in reordered
+                            if request_id in immediate_set
+                        ),
+                        restore_requirements=current_view.restore_requirements,
+                        deferred_request_ids=current_view.deferred_request_ids,
+                        residency_intent_indices=(
+                            current_view.residency_intent_indices
+                        ),
+                    )
+                    execution_epoch = replace(
+                        execution_epoch, view=execution_view
+                    )
+        if (
+            intent.action == PredictiveActionKind.SCHEDULE
+            and not execution_changed
+            and not admission_changed
+        ):
+            reasons.append("predictive_schedule_no_effect")
+        finish_phase("execution_and_admission")
 
         preview: PhysicalBundlePreview | None = None
         blockers: set[str] = set()
@@ -21229,7 +21551,7 @@ class EmbeddedSGLangRuntime:
         ):
             reasons.append("prefetch_canary_hbm_cap")
 
-        if reasons or preview is None or target is None:
+        if reasons or (physical_action and (preview is None or target is None)):
             self._update_predictive_prepare_micro_gate(
                 "rejected",
                 now_ms=now_ms,
@@ -21291,13 +21613,67 @@ class EmbeddedSGLangRuntime:
 
         source_prediction_joint_plan_id = intent.source_joint_plan_id
         intent = replace(intent, source_joint_plan_id=plan.plan_id)
-        slice_ = ActionSlice(
-            slice_id=f"predictive-residency:{intent.intent_id}",
-            kind="predictive_residency",
-            action_key=intent.context_id,
-            dependency_keys=(),
-            committed=True,
-        )
+        package_slices: list[ActionSlice] = []
+        dependency_dag: list[tuple[str, str]] = []
+        execution_slice_id: str | None = None
+        admission_slice_id: str | None = None
+        if intent.execution_order_request_ids:
+            execution_slice_id = f"predictive-execution:{intent.intent_id}"
+            package_slices.append(
+                ActionSlice(
+                    slice_id=execution_slice_id,
+                    kind="predictive_execution",
+                    action_key=intent.execution_order_request_ids[0],
+                    dependency_keys=(),
+                    committed=True,
+                )
+            )
+        if intent.admit_request_ids:
+            admission_slice_id = f"predictive-admission:{intent.intent_id}"
+            package_slices.append(
+                ActionSlice(
+                    slice_id=admission_slice_id,
+                    kind="predictive_admission",
+                    action_key=intent.admit_request_ids[0],
+                    dependency_keys=(
+                        (execution_slice_id,)
+                        if execution_slice_id is not None
+                        else ()
+                    ),
+                    committed=True,
+                )
+            )
+            if execution_slice_id is not None:
+                dependency_dag.append((execution_slice_id, admission_slice_id))
+        residency_slice_id: str | None = None
+        if physical_action:
+            residency_slice_id = f"predictive-residency:{intent.intent_id}"
+            package_slices.append(
+                ActionSlice(
+                    slice_id=residency_slice_id,
+                    kind="predictive_residency",
+                    action_key=intent.context_id,
+                    dependency_keys=(
+                        (execution_slice_id,)
+                        if execution_slice_id is not None
+                        else ()
+                    ),
+                    committed=True,
+                )
+            )
+            if execution_slice_id is not None:
+                dependency_dag.append((execution_slice_id, residency_slice_id))
+            if admission_slice_id is not None:
+                dependency_dag.append((residency_slice_id, admission_slice_id))
+
+        if not package_slices:
+            self._latest_predictive_intent = None
+            self._joint_predictive_counts["semantic_intent_rejected"] += 1
+            self._joint_predictive_counts[
+                "semantic_reject_predictive_package_empty"
+            ] += 1
+            return decision
+
         liveness_tracker = getattr(
             self, "_persistent_liveness_revisions", None
         )
@@ -21312,55 +21688,112 @@ class EmbeddedSGLangRuntime:
                 getattr(self, "_restore_service_grace_by_request", {}).values()
             ),
         )
+        physical_fingerprints = (
+            (
+                (
+                    preview.bundle.bundle_id,
+                    preview.bundle.generation_fingerprint,
+                ),
+            )
+            if preview is not None
+            else ()
+        )
         group = ActionGroup(
             group_id=f"predictive-group:{intent.intent_id}",
             atomicity=ActionGroupAtomicity.ALL_OR_NOTHING,
-            actions=(slice_,),
-            dependency_dag=(),
+            actions=tuple(package_slices),
+            dependency_dag=tuple(dependency_dag),
             resource_certificate=ActionGroupResourceCertificate(
                 required_hbm_bytes=(
                     preview.copy_bytes
                     if action == ResidencyAction.PREFETCH_GPU
+                    and preview is not None
                     else 0
                 ),
                 required_host_bytes=(
                     preview.copy_bytes
                     if action == ResidencyAction.PREPARE_HOST
+                    and preview is not None
                     else 0
                 ),
-                planned_pcie_bytes=preview.copy_bytes,
-                topology_revision=self.controller.page_index.topology_revision,
-                allocator_revision=self.controller.page_index.revision,
+                planned_pcie_bytes=(
+                    preview.copy_bytes if preview is not None else 0
+                ),
+                topology_revision=(
+                    self.controller.page_index.topology_revision
+                    if preview is not None
+                    else 0
+                ),
+                allocator_revision=(
+                    self.controller.page_index.revision
+                    if preview is not None
+                    else 0
+                ),
                 obligation_revision=liveness.obligation_revision,
                 lease_revision=liveness.lease_revision,
                 grace_revision=liveness.grace_revision,
-                physical_generation_fingerprints=((
-                    preview.bundle.bundle_id,
-                    preview.bundle.generation_fingerprint,
-                ),),
+                physical_generation_fingerprints=physical_fingerprints,
                 restore_path_proven=True,
                 finite_future_risk_bound=(
-                    action == ResidencyAction.PREPARE_HOST
+                    action in {ResidencyAction.KEEP, ResidencyAction.PREPARE_HOST}
                     or intent.future_hbm_feasibility_probability
                     >= self.config.predictive_prefetch_min_hbm_feasibility
                 ),
             ),
-            compensation=("discard_semantic_intent_before_dispatch",),
+            compensation=("fallback_to_observed_joint_plan_before_dispatch",),
             committed=True,
             evidence_read_set=(
                 ("intent_id", intent.intent_id),
                 ("model_version", intent.model_version),
                 ("source_joint_plan_id", plan.plan_id),
+                *(
+                    (f"request:{request_id}", f"{invocation_id}:{context_id}:c{context_epoch}")
+                    for request_id, invocation_id, context_id, context_epoch
+                    in intent.execution_request_evidence
+                ),
             ),
         )
         finish_phase("transaction_certificate")
         epoch = replace(
-            decision.epoch,
-            action_slices=decision.epoch.action_slices + (slice_,),
-            source_action_count=decision.epoch.source_action_count + 1,
-            committed_action_count=decision.epoch.committed_action_count + 1,
-            action_groups=decision.epoch.action_groups + (group,),
+            execution_epoch,
+            action_slices=execution_epoch.action_slices + tuple(package_slices),
+            source_action_count=(
+                execution_epoch.source_action_count + len(package_slices)
+            ),
+            committed_action_count=(
+                execution_epoch.committed_action_count + len(package_slices)
+            ),
+            action_groups=execution_epoch.action_groups + (group,),
         )
+
+        if not physical_action:
+            self._latest_predictive_intent = None
+            self._joint_predictive_counts["semantic_intent_materialized"] += 1
+            self._joint_predictive_counts["semantic_intent_committed"] += 1
+            self._joint_predictive_counts["schedule_committed"] += 1
+            self.audit.emit(
+                "predictive_joint_package_committed",
+                now_ms,
+                audit_level="correctness",
+                plan_id=plan.plan_id,
+                intent_id=intent.intent_id,
+                source_predictive_joint_plan_id=(
+                    source_prediction_joint_plan_id
+                ),
+                action=intent.action.value,
+                beneficiary_request_id=intent.beneficiary_request_id,
+                execution_order_request_ids=list(
+                    intent.execution_order_request_ids
+                ),
+                admit_request_ids=list(intent.admit_request_ids),
+                expected_benefit_ms=intent.expected_benefit_ms,
+                validation_phase_cpu_ms=dict(phase_cpu_ms),
+            )
+            return OnlineJointPlanDecision(
+                epoch.view, "applicable", epoch
+            )
+
+        assert preview is not None and target is not None
         self._current_predictive_residency_commit = _PredictiveResidencyCommit(
             plan_id=plan.plan_id,
             intent=intent,
@@ -21380,6 +21813,11 @@ class EmbeddedSGLangRuntime:
                 "action": intent.action.value,
                 "context_id": intent.context_id,
                 "context_epoch": intent.context_epoch,
+                "beneficiary_request_id": intent.beneficiary_request_id,
+                "execution_order_request_ids": list(
+                    intent.execution_order_request_ids
+                ),
+                "admit_request_ids": list(intent.admit_request_ids),
                 "physical_bundle_id": preview.bundle.bundle_id,
                 "physical_closure_bytes": preview.bundle.closure_bytes,
                 "copy_bytes": preview.copy_bytes,
@@ -21425,7 +21863,9 @@ class EmbeddedSGLangRuntime:
             live_copy_bytes=preview.copy_bytes,
             live_extent_count=len(preview.page_actions),
         )
-        return OnlineJointPlanDecision(decision.view, decision.reason, epoch)
+        return OnlineJointPlanDecision(
+            epoch.view, "applicable", epoch
+        )
 
     def _finalize_predictive_safe_point_commit(
         self,
@@ -22323,6 +22763,16 @@ class EmbeddedSGLangRuntime:
             physical_bundle_id=preview.bundle.bundle_id,
             created_ts_ms=now_ms,
             predictive_intent_id=intent.intent_id,
+            beneficiary_request_id=intent.beneficiary_request_id,
+            beneficiary_context_id=intent.beneficiary_context_id,
+            beneficiary_context_epoch=intent.beneficiary_context_epoch,
+            required_reclaim_bytes=intent.predicted_deficit_bytes,
+            prepared_reclaimable_bytes=intent.min_reclaimable_bytes,
+            causal_package_id=intent.package_id,
+            estimated_transfer_cost_ms=intent.transfer_p95_ms,
+            estimated_saved_stall_ms=(
+                intent.transfer_p95_ms + intent.expected_benefit_ms
+            ),
         )
         self._pending_online_joint_residency = transaction
         self._online_joint_residency_history.append(transaction)
@@ -22554,6 +23004,13 @@ class EmbeddedSGLangRuntime:
                 transaction_id=transaction.transaction_id,
             )
             if (
+                transaction.action == ResidencyAction.PREPARE_HOST
+                and transaction.predictive_intent_id is not None
+            ):
+                self._register_prepared_causal_binding(
+                    transaction, now_ms=now_ms
+                )
+            if (
                 transaction.action == ResidencyAction.COMMIT_CPU
                 and transaction.beneficiary_request_id is not None
             ):
@@ -22567,6 +23024,11 @@ class EmbeddedSGLangRuntime:
                     request_id=transaction.beneficiary_request_id,
                     reclaimed_bytes=ack.actual_bytes,
                     now_ms=now_ms,
+                )
+                self._release_prepared_causal_binding(
+                    transaction.beneficiary_request_id,
+                    now_ms=now_ms,
+                    reason="beneficiary_reclaim_committed",
                 )
         else:
             transaction.stage = "failed"
