@@ -31,6 +31,8 @@ The current patch covers:
   scheduler types;
 - BeliefKV deferred admission and abort handling;
 - scheduler safe-point execution and tagged waiting-queue ordering;
+- capacity-aware retained chunked prefill, including final-page replay that
+  prevents zero-token CUDA batches under HBM pressure;
 - Radix/HiCache topology, lock, residency, and request-cache observer callbacks;
 - runtime CLI flags.
 

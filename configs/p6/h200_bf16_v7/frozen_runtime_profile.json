@@ -69,7 +69,7 @@
   "schema_version": 1,
   "source_contract": {
     "canonical_sglang_patch": "patches/sglang-0.5.2rc1-beliefkv-perf-ownership.patch",
-    "canonical_sglang_patch_sha256": "3b095001ff8c878707715d08703327fe5d612c0a47b05317277564c62ece67dd",
-    "expected_sglang_tree": "21b233b9968316326456b72c562e4a34b9ddd4ac"
+    "canonical_sglang_patch_sha256": "629a6b58510481ac495063d2a93e715eac9ae0aae8e4555c9d70e5550e45418a",
+    "expected_sglang_tree": "e6eb6a9078ca5733161c516a473e63c89f18a6bf"
   }
 }

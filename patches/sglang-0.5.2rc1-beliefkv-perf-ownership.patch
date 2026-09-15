@@ -480,16 +480,32 @@ index a35ba02530..a97c0b1572 100644
          # Reset the encoder cached status
          self.encoder_cached = [True] * len(self.reqs)
 diff --git a/python/sglang/srt/managers/schedule_policy.py b/python/sglang/srt/managers/schedule_policy.py
-index 4665207c1a..9376c24fba 100644
+index 4665207c1a..4f15be8435 100644
 --- a/python/sglang/srt/managers/schedule_policy.py
 +++ b/python/sglang/srt/managers/schedule_policy.py
-@@ -380,18 +380,46 @@ class PrefillAdder:
+@@ -380,18 +380,62 @@ class PrefillAdder:
          self.log_input_tokens += extend_input_len
  
      def add_chunked_req(self, req: Req):
 -        truncated = req.extend_input_len > self.rem_chunk_tokens
 -        req.extend_input_len = min(req.extend_input_len, self.rem_chunk_tokens)
 +        original_extend_input_len = req.extend_input_len
++        if original_extend_input_len <= 0 and req.fill_ids:
++            # A capacity-limited final chunk can leave the retained request with
++            # its whole prompt in Radix while its logits were intentionally
++            # discarded as an intermediate chunk. Replay the final aligned page
++            # so the request can transition to decode without launching an empty
++            # extend batch.
++            replay_prefix_len = (
++                max(0, len(req.fill_ids) - 1) // self.page_size * self.page_size
++            )
++            req.prefix_indices = req.prefix_indices[:replay_prefix_len]
++            req.extend_input_len = len(req.fill_ids) - replay_prefix_len
++            original_extend_input_len = req.extend_input_len
++
++        if original_extend_input_len <= 0:
++            return req
++
 +        max_new_tokens = min(
 +            req.sampling_params.max_new_tokens, CLIP_MAX_NEW_TOKENS
 +        )
@@ -537,7 +553,7 @@ index 4665207c1a..9376c24fba 100644
          )
  
          # Return if chunked prefill not finished
-@@ -482,6 +510,8 @@ class PrefillAdder:
+@@ -482,6 +526,8 @@ class PrefillAdder:
          else:
              if self.rem_chunk_tokens == 0:
                  return AddReqResult.OTHER
@@ -546,7 +562,7 @@ index 4665207c1a..9376c24fba 100644
  
              # Chunked prefill
              trunc_len = self.rem_chunk_tokens
-@@ -495,6 +525,12 @@ class PrefillAdder:
+@@ -495,6 +541,12 @@ class PrefillAdder:
          return self.budget_state()
  
      def add_one_req(self, req: Req, has_chunked_req: bool):
@@ -559,7 +575,7 @@ index 4665207c1a..9376c24fba 100644
          if req.sampling_params.ignore_eos and getattr(self.tree_cache, "disable", True):
              return self.add_one_req_ignore_eos(req, has_chunked_req)
  
-@@ -525,6 +561,8 @@ class PrefillAdder:
+@@ -525,6 +577,8 @@ class PrefillAdder:
                  req.prefix_indices = torch.cat([req.prefix_indices, new_indices])
                  req.extend_input_len = len(req.fill_ids) - len(req.prefix_indices)
                  prefix_len = len(req.prefix_indices)
@@ -568,7 +584,7 @@ index 4665207c1a..9376c24fba 100644
  
              input_tokens = self.ceil_paged_tokens(req.extend_input_len)
  
-@@ -548,6 +586,8 @@ class PrefillAdder:
+@@ -548,6 +602,8 @@ class PrefillAdder:
                      ),
                  )
              else:

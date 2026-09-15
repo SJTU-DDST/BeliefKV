@@ -83,6 +83,36 @@ def test_retained_chunk_waits_when_no_physical_page_fits() -> None:
     assert adder.can_run_list == []
 
 
+def test_retained_fully_cached_chunk_replays_last_page_for_logits() -> None:
+    adder = _adder(available_tokens=2000)
+    request = _request(input_tokens=1000, max_new_tokens=200)
+    request.prefix_indices = torch.arange(1000, dtype=torch.int64)
+    request.extend_input_len = 0
+
+    retained = adder.add_chunked_req(request)
+
+    assert retained is None
+    assert request.extend_input_len == 1
+    assert len(request.prefix_indices) == 999
+    assert len(request.fill_ids) == 1000
+    assert adder.can_run_list == [request]
+
+
+def test_retained_fully_cached_chunk_waits_until_decode_reserve_fits() -> None:
+    adder = _adder(available_tokens=200)
+    request = _request(input_tokens=1000, max_new_tokens=200)
+    request.prefix_indices = torch.arange(1000, dtype=torch.int64)
+    request.extend_input_len = 0
+
+    retained = adder.add_chunked_req(request)
+
+    assert retained is request
+    assert request.extend_input_len == 1
+    assert len(request.prefix_indices) == 999
+    assert adder.can_run_list == []
+
+
+
 def test_final_chunk_reserves_its_decode_budget() -> None:
     adder = _adder(available_tokens=2000)
     request = _request(input_tokens=1000, max_new_tokens=200)
