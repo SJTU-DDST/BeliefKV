@@ -165,6 +165,7 @@ class BeliefKVConfig:
     joint_trigger_budget_fraction: float = 0.5
     joint_physical_commit_budget_ms: float = 1.0
     joint_physical_action_commit_budget_ms: float = 5.0
+    predictive_physical_action_commit_budget_ms: float = 20.0
     joint_shadow_progress_coalesce_ms: float = 100.0
     joint_shadow_full_plan_watchdog_ms: float = 30_000.0
     max_joint_plan_age_ms: float = 100.0
@@ -602,6 +603,7 @@ class BeliefKVConfig:
             "min_joint_plan_budget_ms",
             "joint_physical_commit_budget_ms",
             "joint_physical_action_commit_budget_ms",
+            "predictive_physical_action_commit_budget_ms",
             "joint_shadow_progress_coalesce_ms",
             "joint_shadow_full_plan_watchdog_ms",
             "max_joint_plan_age_ms",

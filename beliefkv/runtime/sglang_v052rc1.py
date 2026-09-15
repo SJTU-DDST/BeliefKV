@@ -21880,7 +21880,7 @@ class EmbeddedSGLangRuntime:
         committed = getattr(self, "_current_predictive_residency_commit", None)
         if committed is None:
             return False
-        budget_ms = self.config.joint_physical_action_commit_budget_ms
+        budget_ms = self.config.predictive_physical_action_commit_budget_ms
         completed_ms = now_ms + wall_ms
         reason = None
         if cpu_ms > budget_ms:
@@ -21910,6 +21910,9 @@ class EmbeddedSGLangRuntime:
                 wall_ms=wall_ms,
                 cpu_ms=cpu_ms,
                 budget_ms=budget_ms,
+                validation_phase_cpu_ms=dict(
+                    committed.audit_fields.get("validation_phase_cpu_ms", {})
+                ),
                 fallback="observed_joint_plan",
             )
             return False

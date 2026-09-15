@@ -7148,7 +7148,8 @@ class SGLangBackendTest(unittest.TestCase):
     def test_predictive_commit_budget_uses_cpu_and_latest_start(self):
         runtime = EmbeddedSGLangRuntime.__new__(EmbeddedSGLangRuntime)
         runtime.config = SimpleNamespace(
-            joint_physical_action_commit_budget_ms=5.0
+            joint_physical_action_commit_budget_ms=5.0,
+            predictive_physical_action_commit_budget_ms=20.0,
         )
         runtime.audit = _AuditRecorder()
         runtime._joint_predictive_counts = Counter()
@@ -7168,7 +7169,7 @@ class SGLangBackendTest(unittest.TestCase):
         self.assertTrue(
             runtime._finalize_predictive_safe_point_commit(
                 now_ms=100.0,
-                wall_ms=12.0,
+                wall_ms=22.0,
                 cpu_ms=1.0,
                 counter_prefix="seed_safe_point",
             )
@@ -7184,20 +7185,22 @@ class SGLangBackendTest(unittest.TestCase):
             for event, _, fields in runtime.audit.events
             if event == "predictive_semantic_intent_committed"
         ]
-        self.assertEqual(committed[-1]["validation_wall_ms"], 12.0)
+        self.assertEqual(committed[-1]["validation_wall_ms"], 22.0)
         self.assertEqual(committed[-1]["validation_cpu_ms"], 1.0)
 
         runtime._current_predictive_residency_commit = SimpleNamespace(
             plan_id="plan-2",
             intent=intent,
             target=SimpleNamespace(deadline_ms=200.0),
-            audit_fields={},
+            audit_fields={
+                "validation_phase_cpu_ms": {"physical_rematerialization": 19.0}
+            },
         )
         self.assertFalse(
             runtime._finalize_predictive_safe_point_commit(
                 now_ms=120.0,
                 wall_ms=2.0,
-                cpu_ms=6.0,
+                cpu_ms=21.0,
                 counter_prefix="seed_safe_point",
             )
         )
@@ -7208,6 +7211,16 @@ class SGLangBackendTest(unittest.TestCase):
                 "seed_safe_point_cpu_budget_exceeded"
             ],
             1,
+        )
+        fallback = [
+            fields
+            for event, _, fields in runtime.audit.events
+            if event == "predictive_safe_point_fallback"
+        ][-1]
+        self.assertEqual(fallback["budget_ms"], 20.0)
+        self.assertEqual(
+            fallback["validation_phase_cpu_ms"]["physical_rematerialization"],
+            19.0,
         )
 
         runtime._latest_predictive_intent = intent

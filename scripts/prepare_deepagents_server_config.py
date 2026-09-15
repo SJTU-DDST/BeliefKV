@@ -723,6 +723,7 @@ def main() -> int:
         "joint_trigger_budget_fraction": 0.5,
         "joint_physical_commit_budget_ms": 1.0,
         "joint_physical_action_commit_budget_ms": 5.0,
+        "predictive_physical_action_commit_budget_ms": 20.0,
         "joint_shadow_progress_coalesce_ms": 100.0,
         "joint_shadow_full_plan_watchdog_ms": 30000.0,
         "max_joint_plan_age_ms": 2000.0,
