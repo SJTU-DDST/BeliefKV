@@ -86,9 +86,12 @@ def summarize_arm(run_dir: Path, arm: str) -> dict[str, object]:
     event_counts = Counter(str(item.get("event") or "") for item in audit)
     runtime_events = _records(run_dir / "server/runtime_events.sglang.jsonl")
     runtime_counts = Counter(str(item.get("kind") or "") for item in runtime_events)
+    transfer_records = _records(run_dir / "server/transfer_telemetry.jsonl")
+    if not transfer_records:
+        transfer_records = audit
     transfers = [
         item
-        for item in audit
+        for item in transfer_records
         if item.get("event") == "transfer_telemetry"
         and item.get("status") == "completed"
     ]
@@ -108,6 +111,7 @@ def summarize_arm(run_dir: Path, arm: str) -> dict[str, object]:
     prefill_tokens = int((service.get("prefill") or {}).get("tokens") or 0)
     decode_tokens = int((service.get("decode") or {}).get("tokens") or 0)
     capacities = [float(item.get("hbm_capacity_bytes") or 0.0) for item in resources]
+    successful_workflows = int(summary.get("successful_workflows") or 0)
     pressures = [
         float(item.get("hbm_used_bytes") or 0.0) / capacity
         for item, capacity in zip(resources, capacities)
@@ -140,6 +144,15 @@ def summarize_arm(run_dir: Path, arm: str) -> dict[str, object]:
         "duration_seconds": duration_s,
         "workflow_count": int(summary.get("workflow_count") or 0),
         "completed_workflows": int(summary.get("completed_workflows") or 0),
+        "successful_workflows": successful_workflows,
+        "completed_workflows_per_hour": (
+            int(summary.get("completed_workflows") or 0) * 3600.0 / duration_s
+            if duration_s
+            else 0.0
+        ),
+        "successful_workflows_per_hour": (
+            successful_workflows * 3600.0 / duration_s if duration_s else 0.0
+        ),
         "system_jct_eligible_workflows": int(
             summary.get("system_jct_eligible_workflows") or 0
         ),
@@ -225,6 +238,8 @@ def compare(
     gains = {
         name: _gain(float(baseline[name]), float(treatment[name]))
         for name in (
+            "completed_workflows_per_hour",
+            "successful_workflows_per_hour",
             "gpu_service_tokens_per_second",
             "llm_requests_per_minute",
             "tool_calls_per_minute",
@@ -334,8 +349,14 @@ def render_html(
     gains = comparison["relative_gain"]
     accuracy = comparison["heldout_prediction_accuracy"].get("action_timing", {})
     prepare = accuracy.get("prepare_host|wait_tool|operational_tau", {})
+    root_count = max(
+        int(baseline.get("workflow_count") or 0),
+        int(treatment.get("workflow_count") or 0),
+    )
     rows = []
     for key, label in (
+        ("completed_workflows_per_hour", "Completed workflows/hour"),
+        ("successful_workflows_per_hour", "Successful workflows/hour"),
         ("gpu_service_tokens_per_second", "GPU service tokens/s"),
         ("llm_requests_per_minute", "LLM requests/min"),
         ("tool_calls_per_minute", "Tool calls/min"),
@@ -367,7 +388,7 @@ svg{{display:block;width:100%;height:130px;background:#fff;border:1px solid #d0d
 polyline{{fill:none;stroke-width:2}}.hbm{{stroke:#7a271a}}.gpu{{stroke:#027a48}}.running{{stroke:#175cd3}}.waiting{{stroke:#9333ea}}
 .threshold{{stroke:#d92d20;stroke-dasharray:5 4}}.note{{color:#555}}
 </style></head><body><header><h1>P6 High-Pressure A/B</h1>
-<p>Same H200 BF16 runtime, 850K KV pool and 64-root workload. Red markers are D2H; blue markers are H2D.</p></header><main>
+<p>Same H200 BF16 runtime, 850K KV pool and {root_count}-root workload. Red markers are D2H; blue markers are H2D.</p></header><main>
 <h2>Scheduling pipeline</h2><div class="pipeline">
 <div class="stage">RCCG event</div><div class="stage predict">Frontier prediction</div>
 <div class="stage predict">Beneficiary + victim package</div><div class="stage predict">Early D2H shadow</div>
