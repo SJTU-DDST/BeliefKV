@@ -235,8 +235,8 @@ class ActionLocalPhysicalOverlayBatch:
             self.opportunity.beneficiary_request_id
         ):
             raise ValueError("overlay batch beneficiary does not match its probe")
-        if len(self.overlays) > 2:
-            raise ValueError("overlay batch supports at most two victims")
+        if len(self.overlays) > 3:
+            raise ValueError("overlay batch supports one target and two victims")
         context_ids = tuple(item.context_id for item in self.overlays)
         if len(context_ids) != len(set(context_ids)):
             raise ValueError("overlay victim contexts must be unique")
@@ -262,6 +262,13 @@ class ActionLocalPhysicalOverlayBatch:
             "summarized_context_count": self.summarized_context_count,
             "mechanism_capture_forced": self.mechanism_capture_forced,
         }
+
+    @property
+    def victim_count(self) -> int:
+        return sum(
+            item.evidence_kind != "prefetch_target_preview"
+            for item in self.overlays
+        )
 
 
 @dataclass(frozen=True)
@@ -1292,8 +1299,19 @@ class IncrementalPolicyInputAssembler:
         delta = self._latest
         if delta is None:
             return policy_input, False, "candidate_physicalization_failed"
+        overlay_context_ids = {
+            str(raw.get("context_id"))
+            for raw in overlay_rows
+            if raw.get("context_id")
+        }
         physical_context_ids = (
-            reentry_context_ids if overlay_rows else context_ids
+            tuple(
+                context_id
+                for context_id in reentry_context_ids
+                if context_id not in overlay_context_ids
+            )
+            if overlay_rows
+            else context_ids
         )
         bundles = (
             self.builder.targeted_context_bundles(

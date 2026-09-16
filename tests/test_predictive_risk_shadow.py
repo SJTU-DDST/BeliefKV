@@ -2006,6 +2006,55 @@ def test_compact_overlay_drives_prepare_without_worker_page_bundles() -> None:
         "invocation-target",
     )
 
+
+def test_compact_target_overlay_drives_prefetch_without_worker_page_bundles() -> None:
+    graph = _graph()
+    base = _attach_graph(_input(capacity=1_000, reserved=0), graph)
+    metadata = dict(base.optional_metadata)
+    metadata["beliefkv_action_local_physical_overlay"] = MetadataValue(
+        MetadataSource.OBSERVED,
+        {
+            "overlays": [
+                {
+                    "context_id": "ctx-target",
+                    "context_epoch": 0,
+                    "page_revision": 17,
+                    "topology_revision": 11,
+                    "generation_fingerprint": "target-generation-live",
+                    "shape_fingerprint": "target-shape-live",
+                    "exclusive_reclaimable_bytes": 0,
+                    "d2h_copy_bytes": 0,
+                    "h2d_copy_bytes": 300,
+                    "extent_count": 3,
+                    "cross_context_bytes": 0,
+                    "locked_bytes": 0,
+                    "owner_context_ids": ["ctx-target"],
+                    "blocker_codes": [],
+                    "native_loading": False,
+                    "captured_ts_ms": 100.0,
+                    "evidence_kind": "prefetch_target_preview",
+                }
+            ],
+            "opportunity": {"hbm_opportunity_possible": True},
+        },
+        "test",
+    )
+    policy_input = replace(
+        base,
+        physical_kv=replace(base.physical_kv, bundles=()),
+        optional_metadata=metadata,
+    )
+
+    eligibility = PredictiveEligibilityIndex().probe(policy_input)
+
+    assert eligibility.prefetch_targets == (
+        PrefetchTarget(
+            "invocation-target", "ctx-target", "wait_tool", 300
+        ),
+    )
+    assert eligibility.prepare_host_victims == ()
+    assert eligibility.reclaim_ready_victims == ()
+
 def test_prepare_shadow_absorbs_descendant_closure_without_claiming_child_bytes() -> None:
     graph = _graph()
     parent = _radix_extent(

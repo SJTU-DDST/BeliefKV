@@ -962,6 +962,16 @@ class PredictiveEligibilityIndex:
                     prefetch_priority.get(item[1], 10), item[2], item[0]
                 ),
             )
+            if int(overlay.get("h2d_copy_bytes", 0)) > 0:
+                prefetch.append(
+                    PrefetchTarget(
+                        invocation_id=selected_invocation[0],
+                        context_id=context_id,
+                        state=selected_invocation[1],
+                        missing_gpu_bytes=int(overlay["h2d_copy_bytes"]),
+                    )
+                )
+                continue
             if (
                 selected_invocation[1] in self._WAIT_STATES
                 and int(overlay.get("d2h_copy_bytes", 0)) > 0

@@ -204,6 +204,7 @@ class ActionLocalPhysicalOverlay:
     blocker_codes: tuple[str, ...]
     native_loading: bool
     captured_ts_ms: float
+    h2d_copy_bytes: int = 0
     evidence_kind: str = "exact_preview"
 
     def __post_init__(self) -> None:
@@ -215,6 +216,7 @@ class ActionLocalPhysicalOverlay:
             "exact_preview",
             "context_summary_upper_bound",
             "commit_ready_summary",
+            "prefetch_target_preview",
         }:
             raise ValueError("unsupported action-local overlay evidence kind")
         if min(
@@ -224,13 +226,16 @@ class ActionLocalPhysicalOverlay:
             self.topology_revision,
             self.exclusive_reclaimable_bytes,
             self.d2h_copy_bytes,
+            self.h2d_copy_bytes,
             self.extent_count,
             self.cross_context_bytes,
             self.locked_bytes,
             self.captured_ts_ms,
         ) < 0:
             raise ValueError("action-local overlay values must be non-negative")
-        if self.d2h_copy_bytes > 0 and self.extent_count <= 0:
+        if (
+            self.d2h_copy_bytes > 0 or self.h2d_copy_bytes > 0
+        ) and self.extent_count <= 0:
             raise ValueError("non-empty overlay requires an extent count")
         if len(set(self.owner_context_ids)) != len(self.owner_context_ids):
             raise ValueError("overlay owners must be unique")

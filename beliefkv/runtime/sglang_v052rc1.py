@@ -17463,15 +17463,82 @@ class EmbeddedSGLangRuntime:
             for context_id in cached_parked_context_ids
             if context_id != hint.context_id
         )
+        page_index = self.controller.page_index
+        target_overlays: list[ActionLocalPhysicalOverlay] = []
+        target_context = graph.contexts.get(hint.context_id)
+        if (
+            target_context is not None
+            and target_context.epoch == hint.context_epoch
+            and page_index.has_context(hint.context_id)
+            and page_index.context_epoch(hint.context_id) == hint.context_epoch
+        ):
+            target_candidates = (
+                self.controller.arbiter.bundle_builder.previews_for_context(
+                    CommandKind.PREFETCH_CONTEXT,
+                    hint.context_id,
+                    hint.context_epoch,
+                    now_ms=observation.ts_ms,
+                    device_available_bytes=observation.hbm_capacity_bytes,
+                )
+            )
+            valid_targets = tuple(
+                candidate
+                for candidate in target_candidates
+                if candidate.eligible and candidate.copy_bytes > 0
+            )
+            if valid_targets:
+                target_preview = min(
+                    valid_targets,
+                    key=lambda item: (
+                        item.bundle.cross_context_action_bytes,
+                        item.copy_bytes,
+                        item.bundle.bundle_id,
+                    ),
+                )
+                target_overlays.append(
+                    ActionLocalPhysicalOverlay(
+                        context_id=hint.context_id,
+                        context_epoch=hint.context_epoch,
+                        context_revision=page_index.context_revision(
+                            hint.context_id
+                        ),
+                        page_revision=page_index.revision,
+                        topology_revision=page_index.topology_revision,
+                        generation_fingerprint=(
+                            target_preview.bundle.generation_fingerprint
+                        ),
+                        shape_fingerprint=(
+                            f"prefetch:{target_preview.copy_bytes}:"
+                            f"n{len(target_preview.page_actions)}"
+                        ),
+                        exclusive_reclaimable_bytes=0,
+                        d2h_copy_bytes=0,
+                        extent_count=len(target_preview.page_actions),
+                        cross_context_bytes=(
+                            target_preview.bundle.cross_context_action_bytes
+                        ),
+                        locked_bytes=target_preview.bundle.locked_bytes,
+                        owner_context_ids=(
+                            target_preview.bundle.owner_context_ids
+                        ),
+                        blocker_codes=tuple(
+                            item.code.value for item in target_preview.blockers
+                        ),
+                        native_loading=False,
+                        captured_ts_ms=observation.ts_ms,
+                        h2d_copy_bytes=target_preview.copy_bytes,
+                        evidence_kind="prefetch_target_preview",
+                    )
+                )
         if not parked_context_ids:
             return ActionLocalPhysicalOverlayBatch(
                 beneficiary_risk_signature=hint.risk_signature,
                 opportunity=opportunity,
+                overlays=tuple(target_overlays),
                 selection_reason="no_victim_context_selected",
                 capture_ms=(time.perf_counter_ns() - started_ns) / 1_000_000.0,
             )
 
-        page_index = self.controller.page_index
         summaries = []
         missing_context = False
         live_parked_context_ids = []
@@ -17499,6 +17566,7 @@ class EmbeddedSGLangRuntime:
             return ActionLocalPhysicalOverlayBatch(
                 beneficiary_risk_signature=hint.risk_signature,
                 opportunity=opportunity,
+                overlays=tuple(target_overlays),
                 selection_reason=(
                     "victim_missing_from_physical_mirror"
                     if missing_context
@@ -17538,7 +17606,7 @@ class EmbeddedSGLangRuntime:
                     item.context_id,
                 ),
             )
-        overlays: list[ActionLocalPhysicalOverlay] = []
+        overlays: list[ActionLocalPhysicalOverlay] = list(target_overlays)
         observed_failure_reasons: set[str] = set()
         for summary in selected_summaries[:2]:
             context = self.controller.graph.contexts.get(summary.context_id)
@@ -17604,7 +17672,7 @@ class EmbeddedSGLangRuntime:
             if force_mechanism_capture and overlays
             else None
         )
-        if not overlays:
+        if len(overlays) == len(target_overlays):
             priority = (
                 "victim_bundle_generation_stale",
                 "victim_missing_from_physical_mirror",
@@ -18300,9 +18368,9 @@ class EmbeddedSGLangRuntime:
                 self._joint_predictive_counts[
                     f"overlay_selection:{overlay_batch.selection_reason}"
                 ] += 1
-            self._joint_predictive_counts["overlay_victim_count"] += len(
-                overlay_batch.overlays
-            )
+            self._joint_predictive_counts[
+                "overlay_victim_count"
+            ] += overlay_batch.victim_count
             self._joint_shadow_timing_samples.setdefault(
                 "action_local_overlay_capture_ms", deque(maxlen=65_536)
             ).append(overlay_batch.capture_ms)
@@ -18403,7 +18471,9 @@ class EmbeddedSGLangRuntime:
                 opportunity.classification if opportunity is not None else None
             ),
             overlay_victim_count=(
-                len(overlay_batch.overlays) if overlay_batch is not None else 0
+                overlay_batch.victim_count
+                if overlay_batch is not None
+                else 0
             ),
             overlay_parked_context_count=(
                 overlay_batch.parked_context_count
@@ -19445,8 +19515,11 @@ class EmbeddedSGLangRuntime:
                     "physical_mirror_page_revision"
                 ),
                 overlay_selection_reason=overlay_value.get("selection_reason"),
-                overlay_victim_count=len(
-                    tuple(overlay_value.get("overlays", ()))
+                overlay_victim_count=sum(
+                    str(item.get("evidence_kind") or "")
+                    != "prefetch_target_preview"
+                    for item in tuple(overlay_value.get("overlays", ()))
+                    if isinstance(item, Mapping)
                 ),
                 beneficiary_slot_blocked=opportunity_value.get(
                     "beneficiary_slot_blocked"
