@@ -102,7 +102,6 @@ class ControllerTest(unittest.TestCase):
         )
         self.assertTrue(config.predictive_prepare_host_enabled)
         self.assertEqual(config.predictive_prefetch_canary_max_inflight, 1)
-        self.assertEqual(config.predictive_prefetch_canary_max_hbm_ratio, 0.05)
         self.assertTrue(config.predictive_development_artifact_canary_enabled)
 
         unified = BeliefKVConfig(

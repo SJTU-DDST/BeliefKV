@@ -99,7 +99,6 @@ class BeliefKVConfig:
     predictive_prefetch_canary_enabled: bool = False
     predictive_development_artifact_canary_enabled: bool = False
     predictive_prefetch_canary_max_inflight: int = 1
-    predictive_prefetch_canary_max_hbm_ratio: float = 0.05
     predictive_prefetch_min_hbm_feasibility: float = 0.95
     predictive_commit_guard_ms: float = 25.0
     predictive_prefetch_desired_lead_ms: float = 100.0
@@ -358,10 +357,6 @@ class BeliefKVConfig:
         if self.predictive_prefetch_canary_max_inflight != 1:
             raise ValueError(
                 "the first predictive prefetch canary supports exactly one inflight action"
-            )
-        if not 0 < self.predictive_prefetch_canary_max_hbm_ratio <= 0.05:
-            raise ValueError(
-                "predictive prefetch canary may consume at most 5% of the KV pool"
             )
         if not 0 <= self.predictive_prefetch_min_hbm_feasibility <= 1:
             raise ValueError("predictive prefetch HBM feasibility must be in [0, 1]")

@@ -227,7 +227,6 @@ def main() -> int:
             particle_count=args.particle_count,
             top_k=args.top_k,
             max_candidates=2,
-            max_full_prefetch_hbm_ratio=0.05,
         ),
         frontier_model=frontier_model,
     )

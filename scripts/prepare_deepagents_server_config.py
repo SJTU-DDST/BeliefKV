@@ -642,7 +642,6 @@ def main() -> int:
             args.allow_development_predictor_canary
         ),
         "predictive_prefetch_canary_max_inflight": 1,
-        "predictive_prefetch_canary_max_hbm_ratio": 0.05,
         "predictive_prefetch_min_hbm_feasibility": 0.95,
         "predictive_commit_guard_ms": 25.0,
         "predictive_prefetch_desired_lead_ms": 100.0,

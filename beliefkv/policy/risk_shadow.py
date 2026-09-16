@@ -61,7 +61,6 @@ class PredictiveRiskShadowConfig:
     service_quantile: float = 0.9
     kv_bytes_per_token: int = 57_344
     transfer_p95_safety_factor: float = 1.25
-    max_full_prefetch_hbm_ratio: float = 1.0
     online_overlay_enabled: bool = False
     transfer_commit_guard_ms: float = 25.0
     minimum_causal_slack_probability: float = 0.9
@@ -81,8 +80,6 @@ class PredictiveRiskShadowConfig:
             or self.transfer_p95_safety_factor < 1.0
         ):
             raise ValueError("transfer p95 safety factor must be at least one")
-        if not 0 < self.max_full_prefetch_hbm_ratio <= 1:
-            raise ValueError("full prefetch HBM ratio must be in (0, 1]")
         if (
             not math.isfinite(self.transfer_commit_guard_ms)
             or self.transfer_commit_guard_ms < 0
@@ -196,12 +193,14 @@ class PredictiveIntent:
             PredictiveActionKind.SCHEDULE,
             PredictiveActionKind.PREPARE_HOST,
             PredictiveActionKind.PREFETCH_GPU,
+            PredictiveActionKind.PARTIAL_PREFETCH_GPU,
         }:
             raise ValueError("unsupported online predictive intent")
         expected_timing = {
             PredictiveActionKind.SCHEDULE: "execution_window",
             PredictiveActionKind.PREPARE_HOST: "release_after_transfer",
             PredictiveActionKind.PREFETCH_GPU: "release_within_transfer",
+            PredictiveActionKind.PARTIAL_PREFETCH_GPU: "release_within_transfer",
         }[self.action]
         if self.timing_semantics == "action_default":
             object.__setattr__(self, "timing_semantics", expected_timing)
@@ -292,7 +291,10 @@ class PredictiveIntent:
                 or self.predicted_block_time_ms < 0
             ):
                 raise ValueError("prepare intent beneficiary evidence is invalid")
-        if self.action == PredictiveActionKind.PREFETCH_GPU:
+        if self.action in {
+            PredictiveActionKind.PREFETCH_GPU,
+            PredictiveActionKind.PARTIAL_PREFETCH_GPU,
+        }:
             if (
                 self.target_reentry_context_epoch is None
                 or self.target_reentry_context_epoch < self.context_epoch
@@ -515,6 +517,18 @@ class _PrepareShadowProjection:
 
 
 @dataclass(frozen=True)
+class _PrefetchPrefixProjection:
+    """Largest ancestor-closed H2D prefix within the current byte budget."""
+
+    target_extent_id: str
+    closure_extent_ids: tuple[str, ...]
+    copy_bytes: int
+    extent_count: int
+    shape_fingerprint: str
+    cross_context_copy_bytes: int
+
+
+@dataclass(frozen=True)
 class _TransferDurationEvidence:
     duration_ms: float
     source: str
@@ -646,6 +660,104 @@ def _prepare_shadow_projection(
             item.root_extent_id,
         ),
     )
+
+
+def _prefetch_prefix_projection(
+    bundles: tuple[Any, ...],
+    context_id: str,
+    byte_budget: int,
+    *,
+    extent_index: Mapping[str, Any] | None = None,
+) -> _PrefetchPrefixProjection | None:
+    """Select the largest live-equivalent ancestor closure under ``byte_budget``."""
+
+    if byte_budget <= 0:
+        return None
+    by_extent = extent_index or {
+        bundle.extent_ids[0]: bundle
+        for bundle in bundles
+        if len(bundle.extent_ids) == 1
+    }
+    candidates: list[_PrefetchPrefixProjection] = []
+    for target_extent_id, target in by_extent.items():
+        if (
+            context_id not in target.owner_context_ids
+            or target.cpu_bytes <= target.gpu_bytes
+        ):
+            continue
+        closure: dict[str, Any] = {}
+        seen: set[str] = set()
+        node = target
+        valid = True
+        while node.cpu_bytes > node.gpu_bytes:
+            extent_id = node.extent_ids[0]
+            if extent_id in seen:
+                valid = False
+                break
+            seen.add(extent_id)
+            if not node.actionable or node.locked_bytes or node.blocker_codes:
+                valid = False
+                break
+            closure[extent_id] = node
+            if node.parent_extent_id is None:
+                break
+            parent = by_extent.get(node.parent_extent_id)
+            if parent is None:
+                valid = False
+                break
+            if parent.cpu_bytes <= parent.gpu_bytes:
+                break
+            node = parent
+        if not valid or not closure:
+            continue
+        copy_bytes = sum(
+            max(0, bundle.cpu_bytes - bundle.gpu_bytes)
+            for bundle in closure.values()
+        )
+        if copy_bytes <= 0 or copy_bytes > byte_budget:
+            continue
+        cross_context_copy_bytes = sum(
+            max(0, bundle.cpu_bytes - bundle.gpu_bytes)
+            for bundle in closure.values()
+            if any(owner != context_id for owner in bundle.owner_context_ids)
+        )
+        candidates.append(
+            _PrefetchPrefixProjection(
+                target_extent_id=target_extent_id,
+                closure_extent_ids=tuple(sorted(closure)),
+                copy_bytes=copy_bytes,
+                extent_count=len(closure),
+                shape_fingerprint=hashlib.blake2b(
+                    repr(
+                        tuple(
+                            sorted(
+                                (
+                                    extent_id,
+                                    bundle.generation_fingerprint,
+                                    bundle.gpu_bytes,
+                                    bundle.cpu_bytes,
+                                )
+                                for extent_id, bundle in closure.items()
+                            )
+                        )
+                    ).encode("utf-8"),
+                    digest_size=12,
+                    person=b"bkv-h2d-shape",
+                ).hexdigest(),
+                cross_context_copy_bytes=cross_context_copy_bytes,
+            )
+        )
+    if not candidates:
+        return None
+    return min(
+        candidates,
+        key=lambda item: (
+            -item.copy_bytes,
+            item.cross_context_copy_bytes,
+            item.target_extent_id,
+        ),
+    )
+
 
 def _action_local_physical_overlay(
     policy_input: PolicyInput,
@@ -1854,7 +1966,11 @@ class PredictiveRiskShadowObserver:
                 ScenarioProjection.PREPARE_HOST
                 if package.action == PredictiveActionKind.PREPARE_HOST
                 else ScenarioProjection.PREFETCH
-                if package.action == PredictiveActionKind.PREFETCH_GPU
+                if package.action
+                in {
+                    PredictiveActionKind.PREFETCH_GPU,
+                    PredictiveActionKind.PARTIAL_PREFETCH_GPU,
+                }
                 else ScenarioProjection.FULL
             )
             candidate_belief = projected_belief(
@@ -1949,6 +2065,7 @@ class PredictiveRiskShadowObserver:
             if package.action in {
                 PredictiveActionKind.PREPARE_HOST,
                 PredictiveActionKind.PREFETCH_GPU,
+                PredictiveActionKind.PARTIAL_PREFETCH_GPU,
             }:
                 timing = self._action_timing_evidence(
                     package,
@@ -1968,7 +2085,10 @@ class PredictiveRiskShadowObserver:
                 else:
                     timing_by_package[package.package_id] = timing
                     minimum_probability = self.config.minimum_causal_slack_probability
-                    if package.action == PredictiveActionKind.PREFETCH_GPU:
+                    if package.action in {
+                        PredictiveActionKind.PREFETCH_GPU,
+                        PredictiveActionKind.PARTIAL_PREFETCH_GPU,
+                    }:
                         minimum_probability = (
                             timing.decision_threshold
                             if timing.decision_threshold is not None
@@ -2268,7 +2388,10 @@ class PredictiveRiskShadowObserver:
             context_id = package.victim_context_ids[0]
             release_within = False
             semantics = "release_after_transfer"
-        elif package.action == PredictiveActionKind.PREFETCH_GPU:
+        elif package.action in {
+            PredictiveActionKind.PREFETCH_GPU,
+            PredictiveActionKind.PARTIAL_PREFETCH_GPU,
+        }:
             candidates = eligibility.prefetch_targets
             context_id = package.target_context_id or ""
             release_within = True
@@ -2384,7 +2507,11 @@ class PredictiveRiskShadowObserver:
         beneficiary = runnable_by_id.get(package.beneficiary_request_id or "")
         if (
             beneficiary is None
-            and package.action != PredictiveActionKind.PREFETCH_GPU
+            and package.action
+            not in {
+                PredictiveActionKind.PREFETCH_GPU,
+                PredictiveActionKind.PARTIAL_PREFETCH_GPU,
+            }
         ):
             return None
         beneficiary_invocation = (
@@ -2472,7 +2599,10 @@ class PredictiveRiskShadowObserver:
                 physicalizer.intent_resource_envelope(package)
             )
             required_heads = tuple(name for name, _level in support)
-        elif package.action == PredictiveActionKind.PREFETCH_GPU:
+        elif package.action in {
+            PredictiveActionKind.PREFETCH_GPU,
+            PredictiveActionKind.PARTIAL_PREFETCH_GPU,
+        }:
             context_id = package.target_context_id or ""
             candidate = next(
                 (
@@ -2486,9 +2616,27 @@ class PredictiveRiskShadowObserver:
                 return None
             candidate_invocation_id = candidate.invocation_id
             candidate_state = candidate.state
-            target_bytes = candidate.missing_gpu_bytes
-            shape_fingerprint = "prefetch-not-shape-certified"
-            predicted_extent_count = 0
+            target_bytes = physicalizer._target_restore_bytes(package)
+            prefix_projection = (
+                physicalizer.prefetch_prefix_projection(package)
+                if package.action == PredictiveActionKind.PARTIAL_PREFETCH_GPU
+                else None
+            )
+            if (
+                package.action == PredictiveActionKind.PARTIAL_PREFETCH_GPU
+                and prefix_projection is None
+            ):
+                return None
+            shape_fingerprint = (
+                prefix_projection.shape_fingerprint
+                if prefix_projection is not None
+                else "prefetch-not-shape-certified"
+            )
+            predicted_extent_count = (
+                prefix_projection.extent_count
+                if prefix_projection is not None
+                else 0
+            )
             maximum_stall_ms = 0.0
             morphology_slack_ms = 0.0
             transfer_p95_ms = (
@@ -2603,10 +2751,18 @@ class PredictiveRiskShadowObserver:
             causal_package_generation=package.causal_package_generation,
             target_reentry_context_epoch=(
                 beneficiary.context_epoch
-                if package.action == PredictiveActionKind.PREFETCH_GPU
+                if package.action
+                in {
+                    PredictiveActionKind.PREFETCH_GPU,
+                    PredictiveActionKind.PARTIAL_PREFETCH_GPU,
+                }
                 and beneficiary is not None
                 else graph.contexts[context_id].epoch + 1
-                if package.action == PredictiveActionKind.PREFETCH_GPU
+                if package.action
+                in {
+                    PredictiveActionKind.PREFETCH_GPU,
+                    PredictiveActionKind.PARTIAL_PREFETCH_GPU,
+                }
                 else None
             ),
             execution_order_request_ids=package.execution_order_request_ids,
@@ -2813,14 +2969,19 @@ class PredictiveRiskShadowObserver:
             if has_conservative_outcomes
             else timelines
         )
-        restore_ms = physicalizer.target_restore_duration_ms
-        if package.action == PredictiveActionKind.PREFETCH_GPU:
+        if package.action in {
+            PredictiveActionKind.PREFETCH_GPU,
+            PredictiveActionKind.PARTIAL_PREFETCH_GPU,
+        }:
+            restore_ms = physicalizer.package_transfer_duration_ms(package)
             other_unlock = 0.0
             other_pcie = restore_ms
         elif package.action == PredictiveActionKind.PREPARE_HOST:
+            restore_ms = physicalizer.target_restore_duration_ms
             other_unlock = restore_ms
             other_pcie = physicalizer.package_transfer_duration_ms(package)
         else:
+            restore_ms = physicalizer.target_restore_duration_ms
             other_unlock = restore_ms
             other_pcie = restore_ms
         evaluation = PackageScenarioEvaluation.from_timed_scenarios(
@@ -3422,16 +3583,22 @@ class PredictiveRiskShadowObserver:
         request_by_invocation = {
             item.invocation_id: item for item in policy_input.runnable_frontier
         }
+        prefetch_byte_budget = max(
+            0,
+            policy_input.resources.hbm_capacity_bytes
+            - policy_input.resources.hbm_used_bytes
+            - policy_input.resources.hbm_reserved_bytes,
+        )
         for target in eligibility.prefetch_targets[:4]:
             request = request_by_invocation.get(target.invocation_id)
-            if (
-                target.missing_gpu_bytes
-                > int(
-                    policy_input.resources.hbm_capacity_bytes
-                    * self.config.max_full_prefetch_hbm_ratio
-                )
-            ):
+            if prefetch_byte_budget <= 0:
                 continue
+            partial = target.missing_gpu_bytes > prefetch_byte_budget
+            action = (
+                PredictiveActionKind.PARTIAL_PREFETCH_GPU
+                if partial
+                else PredictiveActionKind.PREFETCH_GPU
+            )
             if request is None:
                 prefetch_order = ()
             else:
@@ -3450,11 +3617,16 @@ class PredictiveRiskShadowObserver:
                 ) or source_execution_order
             packages.append(
                 PredictiveActionPackage(
-                    package_id=f"{source_plan_id}:prefetch:{target.context_id}",
-                    action=PredictiveActionKind.PREFETCH_GPU,
+                    package_id=(
+                        f"{source_plan_id}:partial-prefetch:{target.context_id}"
+                        if partial
+                        else f"{source_plan_id}:prefetch:{target.context_id}"
+                    ),
+                    action=action,
                     context_ids=(target.context_id,),
                     target_context_id=target.context_id,
                     source_joint_plan_id=source_plan_id,
+                    byte_budget=prefetch_byte_budget if partial else None,
                     beneficiary_request_id=(
                         request.request_id if request is not None else None
                     ),
@@ -3954,6 +4126,9 @@ class _OnlineCandidatePhysicalizer:
             }
         }
         self._prepare_projections: dict[str, _PrepareShadowProjection | None] = {}
+        self._prefetch_projections: dict[
+            tuple[str, int], _PrefetchPrefixProjection | None
+        ] = {}
         self._extent_index = {
             bundle.extent_ids[0]: bundle
             for bundle in policy_input.physical_kv.bundles
@@ -3978,13 +4153,19 @@ class _OnlineCandidatePhysicalizer:
         self, package: PredictiveActionPackage
     ) -> float:
         target_bytes = self._target_restore_bytes(package)
+        target_extent_count = self._target_restore_extent_count(
+            package.target_context_id
+        )
+        if package.action == PredictiveActionKind.PARTIAL_PREFETCH_GPU:
+            projection = self.prefetch_prefix_projection(package)
+            target_extent_count = (
+                projection.extent_count if projection is not None else 0
+            )
         return self._transfer_duration_ms(
             target_bytes,
             direction="h2d",
             context_id=package.target_context_id,
-            extent_count=self._target_restore_extent_count(
-                package.target_context_id
-            ),
+            extent_count=target_extent_count,
         ) + sum(
             self._victim_d2h_duration_ms(package, context_id)
             for context_id in package.victim_context_ids
@@ -4013,6 +4194,23 @@ class _OnlineCandidatePhysicalizer:
         if len(package.victim_context_ids) != 1:
             return None
         return self._prepare_projection(package.victim_context_ids[0])
+
+    def prefetch_prefix_projection(
+        self,
+        package: PredictiveActionPackage,
+    ) -> _PrefetchPrefixProjection | None:
+        if package.target_context_id is None:
+            return None
+        budget = int(package.byte_budget or 0)
+        key = (package.target_context_id, budget)
+        if key not in self._prefetch_projections:
+            self._prefetch_projections[key] = _prefetch_prefix_projection(
+                self.policy_input.physical_kv.bundles,
+                package.target_context_id,
+                budget,
+                extent_index=self._extent_index,
+            )
+        return self._prefetch_projections[key]
 
     def prepare_byte_only_duration_ms(
         self,
@@ -4054,15 +4252,27 @@ class _OnlineCandidatePhysicalizer:
                 self.prepare_cross_context_bytes(package),
                 self.prepare_shadow_bytes(package),
             )
-        if package.action == PredictiveActionKind.PREFETCH_GPU:
+        if package.action in {
+            PredictiveActionKind.PREFETCH_GPU,
+            PredictiveActionKind.PARTIAL_PREFETCH_GPU,
+        }:
             copy_bytes = self._target_restore_bytes(package)
             context_id = package.target_context_id or ""
-            cross_context_bytes = sum(
-                max(0, bundle.cpu_bytes - bundle.gpu_bytes)
-                for bundle in self._context_bundles.get(context_id, ())
-                if any(
-                    owner_context_id != context_id
-                    for owner_context_id in bundle.owner_context_ids
+            projection = (
+                self.prefetch_prefix_projection(package)
+                if package.action == PredictiveActionKind.PARTIAL_PREFETCH_GPU
+                else None
+            )
+            cross_context_bytes = (
+                projection.cross_context_copy_bytes
+                if projection is not None
+                else sum(
+                    max(0, bundle.cpu_bytes - bundle.gpu_bytes)
+                    for bundle in self._context_bundles.get(context_id, ())
+                    if any(
+                        owner_context_id != context_id
+                        for owner_context_id in bundle.owner_context_ids
+                    )
                 )
             )
             return 0, min(copy_bytes, cross_context_bytes), copy_bytes
@@ -4239,9 +4449,11 @@ class _OnlineCandidatePhysicalizer:
             - self.policy_input.resources.hbm_reserved_bytes,
         )
         target_bytes = self._target_restore_bytes(package)
-        if package.action in {
+        if package.action == PredictiveActionKind.PARTIAL_PREFETCH_GPU:
+            if self.prefetch_prefix_projection(package) is None:
+                return False
+        elif package.action in {
             PredictiveActionKind.PREFETCH_GPU,
-            PredictiveActionKind.PARTIAL_PREFETCH_GPU,
             PredictiveActionKind.RECLAIM_AND_PREFETCH,
         }:
             if package.target_context_id is None or not self._target_actionable(
@@ -4284,7 +4496,7 @@ class _OnlineCandidatePhysicalizer:
         if package.action == PredictiveActionKind.PARTIAL_PREFETCH_GPU:
             return (
                 target_bytes > 0
-                and package.byte_budget == target_bytes
+                and target_bytes <= int(package.byte_budget or 0)
                 and target_bytes <= available
             )
         if package.action == PredictiveActionKind.RECLAIM_AND_PREFETCH:
@@ -4554,10 +4766,19 @@ class _OnlineCandidatePhysicalizer:
             target_context_id = self.target_context_id
         if target_restore_bytes > 0:
             transfer_id = f"{package_id}:h2d:{target_context_id}"
+            target_extent_count = self._target_restore_extent_count(
+                target_context_id
+            )
+            if package.action == PredictiveActionKind.PARTIAL_PREFETCH_GPU:
+                projection = self.prefetch_prefix_projection(package)
+                target_extent_count = (
+                    projection.extent_count if projection is not None else 0
+                )
             duration = self._transfer_duration_ms(
                 target_restore_bytes,
                 direction="h2d",
                 context_id=target_context_id,
+                extent_count=target_extent_count,
             )
             target_outcome = next(
                 item
@@ -4682,7 +4903,8 @@ class _OnlineCandidatePhysicalizer:
             return 0
         missing = self._context_bytes.get(package.target_context_id, (0, 0, 0))[1]
         if package.action == PredictiveActionKind.PARTIAL_PREFETCH_GPU:
-            return min(missing, int(package.byte_budget or 0))
+            projection = self.prefetch_prefix_projection(package)
+            return projection.copy_bytes if projection is not None else 0
         return missing
 
     def _target_actionable(self, context_id: str) -> bool:

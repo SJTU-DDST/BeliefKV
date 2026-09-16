@@ -7611,7 +7611,7 @@ class SGLangBackendTest(unittest.TestCase):
         self.assertFalse(group.committed)
         self.assertIn("replacement_beneficiary_not_visible", group.reasons)
 
-    def test_predictive_prefetch_canary_rejection_preserves_observed_epoch(self):
+    def test_predictive_prefetch_confidence_rejection_preserves_observed_epoch(self):
         runtime = EmbeddedSGLangRuntime.__new__(EmbeddedSGLangRuntime)
         runtime.config = BeliefKVConfig(
             hbm_capacity_bytes=2_000,
@@ -7698,7 +7698,7 @@ class SGLangBackendTest(unittest.TestCase):
                 ("reentry_window", "exact"),
             ),
             calibration_coverage=0.95,
-            future_hbm_feasibility_probability=0.99,
+            future_hbm_feasibility_probability=0.90,
             expected_benefit_ms=5.0,
             shape_fingerprint="prefetch-not-shape-certified",
             predicted_extent_count=0,
@@ -7731,7 +7731,7 @@ class SGLangBackendTest(unittest.TestCase):
             for event, _, fields in runtime.audit.events
             if event == "predictive_semantic_intent_rejected"
         ]
-        self.assertIn("prefetch_canary_hbm_cap", rejected[-1]["reasons"])
+        self.assertIn("future_hbm_confidence", rejected[-1]["reasons"])
 
     def test_prefetch_service_lease_prioritizes_until_first_service(self):
         runtime = EmbeddedSGLangRuntime.__new__(EmbeddedSGLangRuntime)

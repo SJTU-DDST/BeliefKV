@@ -2786,9 +2786,6 @@ class EmbeddedSGLangRuntime:
                         self.config.predictive_risk_min_prefetch_slack_probability
                     ),
                     kv_bytes_per_token=self.config.kv_bytes_per_token,
-                    max_full_prefetch_hbm_ratio=(
-                        self.config.predictive_prefetch_canary_max_hbm_ratio
-                    ),
                     online_overlay_enabled=(
                         self.config.predictive_joint_overlay_enabled
                     ),
@@ -2893,9 +2890,6 @@ class EmbeddedSGLangRuntime:
                 ),
                 "predictive_prefetch_canary_max_inflight": (
                     self.config.predictive_prefetch_canary_max_inflight
-                ),
-                "predictive_prefetch_canary_max_hbm_ratio": (
-                    self.config.predictive_prefetch_canary_max_hbm_ratio
                 ),
                 "max_plan_age_ms": self.config.max_joint_plan_age_ms,
             },
@@ -21642,6 +21636,7 @@ class EmbeddedSGLangRuntime:
         physical_action = intent.action in {
             PredictiveActionKind.PREPARE_HOST,
             PredictiveActionKind.PREFETCH_GPU,
+            PredictiveActionKind.PARTIAL_PREFETCH_GPU,
         }
         observed_residency_actions = any(
             item.action != ResidencyAction.KEEP for item in plan.residency
@@ -21806,20 +21801,27 @@ class EmbeddedSGLangRuntime:
             ):
                 reasons.append("predictive_prepare_canary_limit")
             action = ResidencyAction.PREPARE_HOST
-        elif intent.action == PredictiveActionKind.PREFETCH_GPU:
+        elif intent.action in {
+            PredictiveActionKind.PREFETCH_GPU,
+            PredictiveActionKind.PARTIAL_PREFETCH_GPU,
+        }:
             action = ResidencyAction.PREFETCH_GPU
             if not self.config.predictive_prefetch_canary_enabled:
                 reasons.append("predictive_prefetch_canary_disabled")
             active_prefetch_leases = getattr(
                 self, "_prefetch_service_leases", {}
             )
-            if (
-                not self._context_has_prefetch_service_lease(
+            has_prefetch_service_lease = (
+                self._context_has_prefetch_service_lease(
                     intent.context_id,
                     intent.context_epoch,
                     now_ms=now_ms,
                 )
-                and len(active_prefetch_leases)
+            )
+            if has_prefetch_service_lease:
+                reasons.append("prefetch_service_lease_active")
+            elif (
+                len(active_prefetch_leases)
                 >= self.config.predictive_prefetch_canary_max_inflight
             ):
                 reasons.append("predictive_prefetch_inflight_limit")
@@ -21985,6 +21987,15 @@ class EmbeddedSGLangRuntime:
                 }.intersection(expected_actions):
                     continue
                 if candidate.eligible:
+                    if (
+                        intent.action
+                        == PredictiveActionKind.PARTIAL_PREFETCH_GPU
+                        and candidate.copy_bytes != intent.target_bytes_hint
+                    ):
+                        envelope_blockers.add(
+                            "partial_copy_bytes_changed"
+                        )
+                        continue
                     candidate_envelope_reasons = (
                         _predictive_bundle_envelope_reasons(intent, candidate)
                     )
@@ -22016,7 +22027,11 @@ class EmbeddedSGLangRuntime:
         if preview is not None:
             direction = (
                 TransferDirection.H2D
-                if intent.action == PredictiveActionKind.PREFETCH_GPU
+                if intent.action
+                in {
+                    PredictiveActionKind.PREFETCH_GPU,
+                    PredictiveActionKind.PARTIAL_PREFETCH_GPU,
+                }
                 else TransferDirection.D2H
             )
             transfer_kwargs = {
@@ -22105,24 +22120,17 @@ class EmbeddedSGLangRuntime:
         ):
             reasons.append("transfer_cannot_finish_before_beneficiary_block")
         if (
-            intent.action == PredictiveActionKind.PREFETCH_GPU
+            intent.action
+            in {
+                PredictiveActionKind.PREFETCH_GPU,
+                PredictiveActionKind.PARTIAL_PREFETCH_GPU,
+            }
             and remaining_ms
             > effective_transfer_ms
             + self.config.predictive_prefetch_desired_lead_ms
         ):
             reasons.append("prefetch_too_early")
         finish_phase("transfer_and_timing")
-
-        if (
-            preview is not None
-            and intent.action == PredictiveActionKind.PREFETCH_GPU
-            and preview.copy_bytes
-            > int(
-                self.config.hbm_capacity_bytes
-                * self.config.predictive_prefetch_canary_max_hbm_ratio
-            )
-        ):
-            reasons.append("prefetch_canary_hbm_cap")
 
         if reasons or (physical_action and (preview is None or target is None)):
             self._update_predictive_prepare_micro_gate(
@@ -23369,12 +23377,20 @@ class EmbeddedSGLangRuntime:
             ),
             target_invocation_id=(
                 intent.invocation_id
-                if intent.action == PredictiveActionKind.PREFETCH_GPU
+                if intent.action
+                in {
+                    PredictiveActionKind.PREFETCH_GPU,
+                    PredictiveActionKind.PARTIAL_PREFETCH_GPU,
+                }
                 else None
             ),
             target_reentry_context_epoch=(
                 intent.target_reentry_context_epoch
-                if intent.action == PredictiveActionKind.PREFETCH_GPU
+                if intent.action
+                in {
+                    PredictiveActionKind.PREFETCH_GPU,
+                    PredictiveActionKind.PARTIAL_PREFETCH_GPU,
+                }
                 else None
             ),
         )

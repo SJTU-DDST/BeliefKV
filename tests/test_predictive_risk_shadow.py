@@ -28,6 +28,7 @@ from beliefkv.policy.risk_shadow import (
     PredictiveRiskShadowObserver,
     PredictiveRiskShadowResult,
     _OnlineCandidatePhysicalizer,
+    _prefetch_prefix_projection,
     _transfer_deadline_and_slack,
     validate_predictive_causal_certificate,
     validate_predictive_certificate,
@@ -139,7 +140,6 @@ def test_candidate_packages_exclude_invocations_outside_belief_scope() -> None:
         PredictiveRiskShadowObserver
     )
     observer.config = SimpleNamespace(
-        max_full_prefetch_hbm_ratio=0.05,
         max_candidates=8,
     )
     eligibility = PredictiveEligibility(
@@ -185,15 +185,14 @@ def test_candidate_packages_exclude_invocations_outside_belief_scope() -> None:
     ]
 
 
-def test_prefetch_candidate_skips_oversized_head_target() -> None:
+def test_prefetch_candidate_converts_oversized_head_to_bounded_partial() -> None:
     observer = PredictiveRiskShadowObserver.__new__(
         PredictiveRiskShadowObserver
     )
     observer.config = SimpleNamespace(
-        max_full_prefetch_hbm_ratio=0.05,
         max_candidates=8,
     )
-    policy_input = _input(capacity=1_000, reserved=0)
+    policy_input = _input(capacity=650, reserved=0)
     template = policy_input.runnable_frontier[0]
     large = replace(
         template,
@@ -239,8 +238,11 @@ def test_prefetch_candidate_skips_oversized_head_target() -> None:
 
     assert [package.package_id for package in packages] == [
         "plan:a0",
-        "plan:prefetch:ctx-small",
+        "plan:partial-prefetch:ctx-large",
     ]
+    partial = packages[1]
+    assert partial.action == PredictiveActionKind.PARTIAL_PREFETCH_GPU
+    assert partial.byte_budget == 50
 
 
 def test_prefetch_candidate_does_not_require_visible_native_request() -> None:
@@ -248,7 +250,6 @@ def test_prefetch_candidate_does_not_require_visible_native_request() -> None:
         PredictiveRiskShadowObserver
     )
     observer.config = SimpleNamespace(
-        max_full_prefetch_hbm_ratio=0.05,
         max_candidates=8,
     )
     policy_input = replace(
@@ -892,7 +893,7 @@ def test_candidate_local_inference_covers_complete_join_closure() -> None:
     assert "frontier_inputs_unavailable" not in result.blocked_reasons
 
 
-def test_full_prefetch_over_canary_cap_is_filtered_before_risk_evaluation() -> None:
+def test_full_prefetch_above_five_percent_is_kept_when_capacity_is_available() -> None:
     policy_input = _input(capacity=1_000, reserved=100, include_cpu_target=True)
     prediction = _prediction()
     policy_input = replace(
@@ -928,7 +929,6 @@ def test_full_prefetch_over_canary_cap_is_filtered_before_risk_evaluation() -> N
             top_k=4,
             max_candidates=4,
             kv_bytes_per_token=1,
-            max_full_prefetch_hbm_ratio=0.05,
         ),
     ).evaluate(
         policy_input,
@@ -950,9 +950,53 @@ def test_full_prefetch_over_canary_cap_is_filtered_before_risk_evaluation() -> N
     )
 
     assert result.selected_action == "observed_baseline"
-    assert not any(
+    assert any(
         item["action"] == "prefetch_gpu" for item in result.candidate_summaries
     )
+
+
+def test_partial_prefetch_projection_selects_largest_ancestor_closed_prefix() -> None:
+    def cpu_extent(
+        extent_id: str,
+        size: int,
+        *,
+        parent: str | None,
+        children: tuple[str, ...] = (),
+    ) -> PhysicalBundleSnapshot:
+        return PhysicalBundleSnapshot(
+            bundle_id=f"bundle-{extent_id}",
+            owner_context_ids=("ctx-target",),
+            scope="exclusive_suffix",
+            physical_unique_bytes=size,
+            gpu_bytes=0,
+            cpu_bytes=size,
+            marginal_reclaimable_bytes=0,
+            closure_bytes=size,
+            locked_bytes=0,
+            residency="cpu_only",
+            generation_fingerprint=f"generation-{extent_id}",
+            extent_ids=(extent_id,),
+            parent_extent_id=parent,
+            child_extent_ids=children,
+        )
+
+    bundles = (
+        cpu_extent("a", 30, parent=None, children=("b",)),
+        cpu_extent("b", 40, parent="a", children=("c",)),
+        cpu_extent("c", 60, parent="b"),
+    )
+
+    projection = _prefetch_prefix_projection(
+        bundles,
+        "ctx-target",
+        100,
+    )
+
+    assert projection is not None
+    assert projection.target_extent_id == "b"
+    assert projection.closure_extent_ids == ("a", "b")
+    assert projection.copy_bytes == 70
+    assert projection.extent_count == 2
 
 def test_backoff_shadow_cannot_select_prefetch() -> None:
     policy_input = _input(capacity=1_000, reserved=100, include_cpu_target=True)
