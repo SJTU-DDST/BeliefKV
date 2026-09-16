@@ -540,6 +540,8 @@ class _OnlineJointResidencyTransaction:
     causal_package_id: str | None = None
     estimated_transfer_cost_ms: float = 0.0
     estimated_saved_stall_ms: float = 0.0
+    target_invocation_id: str | None = None
+    target_reentry_context_epoch: int | None = None
 
 
 @dataclass(frozen=True)
@@ -553,6 +555,21 @@ class _ReplacementBeneficiaryPriority:
     causal_package_id: str | None = None
     estimated_transfer_cost_ms: float = 0.0
     estimated_saved_stall_ms: float = 0.0
+
+
+@dataclass(frozen=True)
+class _PrefetchServiceLease:
+    request_id: str | None
+    context_id: str
+    context_epoch: int
+    target_invocation_id: str
+    target_reentry_context_epoch: int
+    created_ts_ms: float
+    expires_ts_ms: float
+    baseline_completed_service_count: int
+    source_transaction_id: str
+    predictive_intent_id: str
+    actual_bytes: int
 
 
 @dataclass(frozen=True)
@@ -2281,6 +2298,8 @@ class EmbeddedSGLangRuntime:
         self._replacement_priorities: dict[
             str, _ReplacementBeneficiaryPriority
         ] = {}
+        self._prefetch_service_leases: dict[str, _PrefetchServiceLease] = {}
+        self._context_completed_service_epoch_by_id: dict[str, int] = {}
         self._running_retraction_transactions: deque[
             _RunningRetractionTransaction
         ] = deque(maxlen=65_536)
@@ -2618,6 +2637,12 @@ class EmbeddedSGLangRuntime:
         self._latest_observed_seed_beneficiary_candidates: tuple[
             ObservedSeedBeneficiaryHint, ...
         ] = ()
+        self._pending_predictive_prepare_triggers: tuple[
+            tuple[str, str, str, int], ...
+        ] = ()
+        self._pending_predictive_prepare_event_sequence = 0
+        self._pending_predictive_prepare_created_ts_ms: float | None = None
+        self._last_published_predictive_prepare_event_sequence = 0
         self._latest_action_local_overlay_batch: (
             ActionLocalPhysicalOverlayBatch | None
         ) = None
@@ -2756,6 +2781,9 @@ class EmbeddedSGLangRuntime:
                     ),
                     minimum_causal_slack_probability=(
                         self.config.predictive_risk_min_causal_slack_probability
+                    ),
+                    minimum_prefetch_slack_probability=(
+                        self.config.predictive_risk_min_prefetch_slack_probability
                     ),
                     kv_bytes_per_token=self.config.kv_bytes_per_token,
                     max_full_prefetch_hbm_ratio=(
@@ -2970,6 +2998,9 @@ class EmbeddedSGLangRuntime:
         retraction = getattr(
             self, "_pending_running_retraction_transaction", None
         )
+        prefetch_service_leases = dict(
+            getattr(self, "_prefetch_service_leases", {})
+        )
         current_view = getattr(self, "_current_online_joint_view", None)
         inflight_command_ids = sorted(
             getattr(controller, "inflight_command_ids", ()) or ()
@@ -3138,6 +3169,12 @@ class EmbeddedSGLangRuntime:
                 ),
                 "pending_retraction_transaction_id": (
                     retraction.transaction_id if retraction is not None else None
+                ),
+                "active_prefetch_service_lease_count": len(
+                    prefetch_service_leases
+                ),
+                "active_prefetch_service_lease_context_ids": sorted(
+                    prefetch_service_leases
                 ),
                 "active_restore_obligation_ids": [
                     item.obligation_id
@@ -3387,6 +3424,7 @@ class EmbeddedSGLangRuntime:
                     not self._shutdown_snapshot_has_unresolved(
                         current_conservation
                     )
+                    and not prefetch_service_leases
                 ),
                 "pending_transaction_ids": list(pending_transaction_ids),
                 "shutdown_summary_complete": bool(
@@ -3815,6 +3853,14 @@ class EmbeddedSGLangRuntime:
             event_log.close()
         self._drain_shutdown_acks()
         self._abort_shutdown_transactions(now_ms=float(self._now_ms()))
+        for lease_key in tuple(
+            getattr(self, "_prefetch_service_leases", {})
+        ):
+            self._release_prefetch_service_lease(
+                lease_key,
+                now_ms=float(self._now_ms()),
+                reason="runtime_shutdown",
+            )
         if getattr(self, "_pending_request_physical_finish_by_id", None):
             try:
                 self.sync_tree(force=True)
@@ -4173,6 +4219,12 @@ class EmbeddedSGLangRuntime:
                 ),
                 outstanding_replacement_priority_request_ids=sorted(
                     getattr(self, "_replacement_priorities", {})
+                ),
+                outstanding_prefetch_service_lease_count=len(
+                    getattr(self, "_prefetch_service_leases", {})
+                ),
+                outstanding_prefetch_service_lease_context_ids=sorted(
+                    getattr(self, "_prefetch_service_leases", {})
                 ),
                 pending_residency_transaction_id=(
                     pending_residency.transaction_id
@@ -11153,6 +11205,11 @@ class EmbeddedSGLangRuntime:
                     now_ms=terminal_now_ms,
                     reason=terminal_reason,
                 )
+                self._release_prefetch_service_lease(
+                    request_id,
+                    now_ms=terminal_now_ms,
+                    reason=terminal_reason,
+                )
                 self._release_prepared_causal_binding(
                     request_id,
                     now_ms=terminal_now_ms,
@@ -11700,7 +11757,8 @@ class EmbeddedSGLangRuntime:
         active_request_ids = getattr(self, "_active_request_ids", set())
         for req in tuple(getattr(batch, "reqs", ()) or ()):
             request_id = str(getattr(req, "rid", ""))
-            if self._metadata(req) is None or not ledger.tracks(request_id):
+            metadata = self._metadata(req)
+            if metadata is None or not ledger.tracks(request_id):
                 continue
             try:
                 ledger.observe_completed(
@@ -11708,6 +11766,36 @@ class EmbeddedSGLangRuntime:
                     ts_ms=now_ms,
                     phase=phase,
                 )
+                completed_epochs = getattr(
+                    self, "_context_completed_service_epoch_by_id", None
+                )
+                if completed_epochs is None:
+                    completed_epochs = {}
+                    self._context_completed_service_epoch_by_id = completed_epochs
+                completed_epochs[metadata.context_id] = max(
+                    completed_epochs.get(metadata.context_id, -1),
+                    metadata.context_epoch,
+                )
+                released = self._release_prefetch_service_lease(
+                    request_id,
+                    now_ms=now_ms,
+                    reason="gpu_service_completed",
+                )
+                lease = getattr(self, "_prefetch_service_leases", {}).get(
+                    metadata.context_id
+                )
+                if (
+                    not released
+                    and lease is not None
+                    and lease.target_invocation_id == metadata.invocation_id
+                    and lease.target_reentry_context_epoch
+                    == metadata.context_epoch
+                ):
+                    self._release_prefetch_service_lease(
+                        metadata.context_id,
+                        now_ms=now_ms,
+                        reason="gpu_service_completed",
+                    )
                 self._finish_admission_rescue(
                     request_id,
                     now_ms=now_ms,
@@ -11913,6 +12001,331 @@ class EmbeddedSGLangRuntime:
             ),
         )
         return True
+
+    def _release_prefetch_service_lease(
+        self,
+        request_or_context_id: str,
+        *,
+        now_ms: float,
+        reason: str,
+    ) -> bool:
+        leases = getattr(self, "_prefetch_service_leases", None)
+        if not leases:
+            return False
+        lease_key = request_or_context_id
+        lease = leases.pop(lease_key, None)
+        if lease is None:
+            matched = next(
+                (
+                    (key, candidate)
+                    for key, candidate in leases.items()
+                    if candidate.request_id == request_or_context_id
+                ),
+                None,
+            )
+            if matched is not None:
+                lease_key, lease = matched
+                leases.pop(lease_key, None)
+        if lease is None:
+            return False
+        self._joint_predictive_counts[
+            f"prefetch_service_lease_released:{reason}"
+        ] += 1
+        self.audit.emit(
+            "predictive_prefetch_service_lease_released",
+            now_ms,
+            request_id=lease.request_id,
+            context_id=lease.context_id,
+            context_epoch=lease.context_epoch,
+            source_transaction_id=lease.source_transaction_id,
+            predictive_intent_id=lease.predictive_intent_id,
+            actual_bytes=lease.actual_bytes,
+            lease_age_ms=max(0.0, now_ms - lease.created_ts_ms),
+            reason=reason,
+        )
+        return True
+
+    def _register_prefetch_service_lease(
+        self,
+        transaction: _OnlineJointResidencyTransaction,
+        *,
+        now_ms: float,
+    ) -> bool:
+        request_id = transaction.beneficiary_request_id
+        intent_id = transaction.predictive_intent_id
+        target_invocation_id = transaction.target_invocation_id
+        target_epoch = transaction.target_reentry_context_epoch
+        if (
+            intent_id is None
+            or target_invocation_id is None
+            or target_epoch is None
+        ):
+            return False
+        context = self.controller.graph.contexts.get(transaction.context_id)
+        target_invocation = self.controller.graph.invocations.get(
+            target_invocation_id
+        )
+        metadata = (
+            getattr(self, "_request_metadata_by_id", {}).get(request_id)
+            if request_id is not None
+            else None
+        )
+        invalid_context = (
+            context is None
+            or context.epoch < transaction.context_epoch
+            or context.epoch > target_epoch
+            or target_invocation is None
+            or target_invocation.state.terminal
+            or target_invocation_id not in context.invocation_ids
+        )
+        invalid_request = request_id is not None and (
+            metadata is None
+            or self._metadata_scope_is_terminal(metadata)
+            or metadata.context_id != transaction.context_id
+            or metadata.invocation_id != target_invocation_id
+            or metadata.context_epoch != target_epoch
+        )
+        completed_epoch = getattr(
+            self, "_context_completed_service_epoch_by_id", {}
+        ).get(transaction.context_id, -1)
+        if invalid_context or invalid_request or completed_epoch >= target_epoch:
+            self._joint_predictive_counts[
+                "prefetch_service_lease_registration_invalid"
+            ] += 1
+            if completed_epoch >= target_epoch:
+                self._joint_predictive_counts[
+                    "prefetch_service_lease_registration_late"
+                ] += 1
+            return False
+        ledger = getattr(self, "_lock_service_ledger", None)
+        progress = (
+            ledger.progress_record(request_id)
+            if ledger is not None and request_id is not None
+            else None
+        )
+        self._release_prefetch_service_lease(
+            transaction.context_id,
+            now_ms=now_ms,
+            reason="replaced",
+        )
+        lease = _PrefetchServiceLease(
+            request_id=request_id,
+            context_id=transaction.context_id,
+            context_epoch=transaction.context_epoch,
+            target_invocation_id=target_invocation_id,
+            target_reentry_context_epoch=target_epoch,
+            created_ts_ms=now_ms,
+            expires_ts_ms=now_ms + self.config.resident_service_window_ms,
+            baseline_completed_service_count=(
+                progress.completed_service_count if progress is not None else 0
+            ),
+            source_transaction_id=transaction.transaction_id,
+            predictive_intent_id=intent_id,
+            actual_bytes=transaction.actual_bytes,
+        )
+        leases = getattr(self, "_prefetch_service_leases", None)
+        if leases is None:
+            leases = {}
+            self._prefetch_service_leases = leases
+        leases[lease.context_id] = lease
+        self._joint_predictive_counts["prefetch_service_lease_registered"] += 1
+        self.audit.emit(
+            "predictive_prefetch_service_lease_registered",
+            now_ms,
+            request_id=request_id,
+            context_id=lease.context_id,
+            context_epoch=lease.context_epoch,
+            target_invocation_id=lease.target_invocation_id,
+            target_reentry_context_epoch=lease.target_reentry_context_epoch,
+            expires_ts_ms=lease.expires_ts_ms,
+            source_transaction_id=lease.source_transaction_id,
+            predictive_intent_id=lease.predictive_intent_id,
+            actual_bytes=lease.actual_bytes,
+        )
+        return True
+
+    def _refresh_prefetch_service_leases(
+        self,
+        entries: Mapping[str, Any],
+        *,
+        now_ms: float,
+    ) -> tuple[str, ...]:
+        leases = getattr(self, "_prefetch_service_leases", {})
+        if not leases:
+            return ()
+        metadata_by_id = getattr(self, "_request_metadata_by_id", {})
+        ledger = getattr(self, "_lock_service_ledger", None)
+        graph = self.controller.graph
+        completed_epochs = getattr(
+            self, "_context_completed_service_epoch_by_id", {}
+        )
+        visible: list[str] = []
+        for lease_key, lease in tuple(leases.items()):
+            context = graph.contexts.get(lease.context_id)
+            context_invocations = (
+                tuple(
+                    graph.invocations.get(invocation_id)
+                    for invocation_id in context.invocation_ids
+                )
+                if context is not None
+                else ()
+            )
+            target_invocation = graph.invocations.get(
+                lease.target_invocation_id
+            )
+            if context is None:
+                reason = "context_identity_missing"
+            elif (
+                target_invocation is None
+                or target_invocation.state.terminal
+                or lease.target_invocation_id not in context.invocation_ids
+            ):
+                reason = "target_invocation_terminal"
+            elif context.epoch > lease.target_reentry_context_epoch:
+                reason = "target_reentry_missed"
+            elif (
+                completed_epochs.get(lease.context_id, -1)
+                >= lease.target_reentry_context_epoch
+            ):
+                reason = "target_reentry_already_served"
+            elif context_invocations and all(
+                invocation is None or invocation.state.terminal
+                for invocation in context_invocations
+            ):
+                reason = "context_scope_terminal"
+            elif now_ms >= lease.expires_ts_ms:
+                reason = "service_window_expired"
+            else:
+                metadata = (
+                    metadata_by_id.get(lease.request_id)
+                    if lease.request_id is not None
+                    else None
+                )
+                if metadata is not None and (
+                    metadata.context_id != lease.context_id
+                    or metadata.invocation_id != lease.target_invocation_id
+                    or metadata.context_epoch
+                    != lease.target_reentry_context_epoch
+                    or self._metadata_scope_is_terminal(metadata)
+                ):
+                    metadata = None
+                if metadata is None:
+                    candidates = []
+                    for candidate_request_id, entry in entries.items():
+                        candidate_metadata = metadata_by_id.get(candidate_request_id)
+                        if (
+                            entry.state == AdmissionSideState.VISIBLE_PENDING
+                            and candidate_metadata is not None
+                            and candidate_metadata.context_id == lease.context_id
+                            and candidate_metadata.invocation_id
+                            == lease.target_invocation_id
+                            and candidate_metadata.context_epoch
+                            == lease.target_reentry_context_epoch
+                            and not self._metadata_scope_is_terminal(
+                                candidate_metadata
+                            )
+                        ):
+                            candidates.append(
+                                (candidate_request_id, candidate_metadata)
+                            )
+                    if candidates:
+                        request_id, metadata = min(
+                            candidates,
+                            key=lambda item: (
+                                item[1].context_epoch,
+                                item[0],
+                            ),
+                        )
+                        progress = (
+                            ledger.progress_record(request_id)
+                            if ledger is not None
+                            else None
+                        )
+                        lease = replace(
+                            lease,
+                            request_id=request_id,
+                            baseline_completed_service_count=(
+                                progress.completed_service_count
+                                if progress is not None
+                                else 0
+                            ),
+                        )
+                        leases[lease_key] = lease
+                        self._joint_predictive_counts[
+                            "prefetch_service_lease_bound_to_reentry"
+                        ] += 1
+                        self.audit.emit(
+                            "predictive_prefetch_service_lease_bound",
+                            now_ms,
+                            request_id=request_id,
+                            context_id=lease.context_id,
+                            context_epoch=metadata.context_epoch,
+                            target_invocation_id=lease.target_invocation_id,
+                            predictive_intent_id=lease.predictive_intent_id,
+                        )
+                progress = (
+                    ledger.progress_record(lease.request_id)
+                    if ledger is not None and lease.request_id is not None
+                    else None
+                )
+                reason = (
+                    "gpu_service_completed"
+                    if progress is not None
+                    and progress.completed_service_count
+                    > lease.baseline_completed_service_count
+                    else ""
+                )
+            if reason:
+                self._release_prefetch_service_lease(
+                    lease_key,
+                    now_ms=now_ms,
+                    reason=reason,
+                )
+                continue
+            if lease.request_id is None:
+                continue
+            entry = entries.get(lease.request_id)
+            if (
+                entry is not None
+                and entry.state == AdmissionSideState.VISIBLE_PENDING
+            ):
+                visible.append(lease.request_id)
+        return tuple(visible)
+
+    def _context_has_prefetch_service_lease(
+        self,
+        context_id: str,
+        context_epoch: int,
+        *,
+        now_ms: float,
+    ) -> bool:
+        for lease_key, lease in tuple(
+            getattr(self, "_prefetch_service_leases", {}).items()
+        ):
+            if now_ms >= lease.expires_ts_ms:
+                self._release_prefetch_service_lease(
+                    lease_key,
+                    now_ms=now_ms,
+                    reason="service_window_expired",
+                )
+                continue
+            if (
+                lease.context_id == context_id
+                and lease.context_epoch
+                <= context_epoch
+                <= lease.target_reentry_context_epoch
+            ):
+                return True
+            if (
+                lease.context_id == context_id
+                and context_epoch > lease.target_reentry_context_epoch
+            ):
+                self._release_prefetch_service_lease(
+                    lease_key,
+                    now_ms=now_ms,
+                    reason="target_reentry_missed",
+                )
+        return False
 
     def _maybe_start_admission_rescue(
         self,
@@ -12874,11 +13287,16 @@ class EmbeddedSGLangRuntime:
             entries,
             now_ms=now_ms,
         )
+        prefetch_service_priority = self._refresh_prefetch_service_leases(
+            entries,
+            now_ms=now_ms,
+        )
         liveness_priority = tuple(
             dict.fromkeys(
                 (
                     *restore_ready_priority,
                     *ordinary_starvation_priority,
+                    *prefetch_service_priority,
                     *replacement_priority,
                     *retraction_priority,
                 )
@@ -12900,10 +13318,16 @@ class EmbeddedSGLangRuntime:
             elif ordinary_starvation_priority:
                 ticket_source = f"{ticket_source}+ordinary_starvation"
                 ticket_reason = "ordinary_native_fallback_starvation"
-            elif replacement_priority or retraction_priority:
+            elif (
+                prefetch_service_priority
+                or replacement_priority
+                or retraction_priority
+            ):
                 ticket_source = f"{ticket_source}+replacement_liveness"
                 ticket_reason = (
-                    "semantic_reclaim_confirmed"
+                    "predictive_prefetch_completed"
+                    if prefetch_service_priority
+                    else "semantic_reclaim_confirmed"
                     if replacement_priority
                     else "retraction_reclaim_confirmed"
                 )
@@ -15029,6 +15453,11 @@ class EmbeddedSGLangRuntime:
             now_ms=float(self._now_ms()),
             reason="request_finished",
         )
+        self._release_prefetch_service_lease(
+            str(req.rid),
+            now_ms=float(self._now_ms()),
+            reason="request_finished",
+        )
         self._finish_admission_rescue(
             str(req.rid),
             now_ms=float(self._now_ms()),
@@ -15684,6 +16113,11 @@ class EmbeddedSGLangRuntime:
                 phase=phase,
             )
             self._release_replacement_priority(
+                request_id,
+                now_ms=float(self._now_ms()),
+                reason="runtime_terminal_event",
+            )
+            self._release_prefetch_service_lease(
                 request_id,
                 now_ms=float(self._now_ms()),
                 reason="runtime_terminal_event",
@@ -17625,6 +18059,23 @@ class EmbeddedSGLangRuntime:
                 retained_overlay, page_index
             )
         )
+        pending_prepare_event_sequence = int(
+            getattr(self, "_pending_predictive_prepare_event_sequence", 0)
+        )
+        prepare_event_created_ts_ms = getattr(
+            self, "_pending_predictive_prepare_created_ts_ms", None
+        )
+        prepare_event_alignment_pending = bool(
+            hint is not None
+            and pending_prepare_event_sequence
+            > int(
+                getattr(
+                    self,
+                    "_last_published_predictive_prepare_event_sequence",
+                    0,
+                )
+            )
+        )
         risk_signature_changed = bool(
             hint is not None
             and (
@@ -17632,12 +18083,14 @@ class EmbeddedSGLangRuntime:
                 or risk_signature
                 != getattr(self, "_last_observed_seed_hint_risk_signature", None)
                 or overlay_revision_changed
+                or prepare_event_alignment_pending
             )
         )
         if (
             self._observed_seed_hint_publication_initialized
             and signature == self._last_published_observed_seed_hint_signature
             and not overlay_revision_changed
+            and not prepare_event_alignment_pending
         ):
             return False
         base_stamp = getattr(self, "_last_policy_state_stamp", None)
@@ -17742,6 +18195,13 @@ class EmbeddedSGLangRuntime:
             captured_monotonic_ms=time.monotonic_ns() / 1_000_000.0,
             planning_requested=False,
             risk_evaluation_requested=risk_evaluation_requested,
+            risk_trigger_signature=(
+                tuple(
+                    getattr(self, "_pending_predictive_prepare_triggers", ())
+                )
+                if prepare_event_alignment_pending
+                else ()
+            ),
             observed_seed_beneficiary=published_hint,
             action_local_overlay_batch=overlay_batch,
             action_local_overlay_replaced=replace_overlay,
@@ -17772,6 +18232,12 @@ class EmbeddedSGLangRuntime:
         self._last_published_observed_seed_hint_signature = signature
         self._observed_seed_hint_risk_initialized = True
         self._last_observed_seed_hint_risk_signature = risk_signature
+        if prepare_event_alignment_pending:
+            self._last_published_predictive_prepare_event_sequence = (
+                pending_prepare_event_sequence
+            )
+            self._pending_predictive_prepare_triggers = ()
+            self._pending_predictive_prepare_created_ts_ms = None
         self._latest_observed_seed_beneficiary = published_hint
         if replace_overlay:
             self._latest_action_local_overlay_batch = overlay_batch
@@ -17791,6 +18257,14 @@ class EmbeddedSGLangRuntime:
             else "hint_refresh_published"
         )
         self._joint_predictive_counts[hint_outcome] += 1
+        if prepare_event_alignment_pending:
+            self._joint_predictive_counts[
+                "prepare_event_aligned_hint_published"
+            ] += 1
+            if delta.risk_evaluation_requested:
+                self._joint_predictive_counts[
+                    "prepare_event_aligned_risk_published"
+                ] += 1
         opportunity = overlay_batch.opportunity if overlay_batch is not None else None
         if opportunity is not None:
             self._joint_predictive_counts[
@@ -17843,6 +18317,21 @@ class EmbeddedSGLangRuntime:
                 item.classification for item in candidate_probes
             ],
             overlay_context_revision_changed=overlay_revision_changed,
+            prepare_event_aligned=prepare_event_alignment_pending,
+            prepare_event_sequence=(
+                pending_prepare_event_sequence
+                if prepare_event_alignment_pending
+                else None
+            ),
+            prepare_event_to_hint_publish_ms=(
+                max(
+                    0.0,
+                    observation.ts_ms - float(prepare_event_created_ts_ms),
+                )
+                if prepare_event_alignment_pending
+                and prepare_event_created_ts_ms is not None
+                else None
+            ),
             risk_evaluation_requested=delta.risk_evaluation_requested,
             beneficiary_slot_blocked=(
                 opportunity.beneficiary_slot_blocked
@@ -17951,8 +18440,33 @@ class EmbeddedSGLangRuntime:
             risk_trigger_signature = (
                 self._joint_shadow_predictive_risk_triggers(event_delta.events)
             )
+            prepare_risk_triggers = tuple(
+                item for item in risk_trigger_signature if item[0] == "prepare"
+            )
+            reentry_risk_triggers = tuple(
+                item for item in risk_trigger_signature if item[0] == "reentry"
+            )
+            if (
+                prepare_risk_triggers
+                and getattr(self, "predictive_risk_worker", None) is not None
+            ):
+                self._pending_predictive_prepare_triggers = prepare_risk_triggers
+                self._pending_predictive_prepare_event_sequence = (
+                    event_delta.to_sequence
+                )
+                trigger_event_kinds = {
+                    item[1] for item in prepare_risk_triggers
+                }
+                self._pending_predictive_prepare_created_ts_ms = min(
+                    event.ts_ms
+                    for event in event_delta.events
+                    if event.kind.value in trigger_event_kinds
+                )
+                self._joint_predictive_counts[
+                    "prepare_event_alignment_latched"
+                ] += 1
             risk_evaluation_requested = bool(
-                risk_trigger_signature
+                reentry_risk_triggers
                 and getattr(self, "predictive_risk_worker", None) is not None
             )
             base_stamp = self._last_policy_state_stamp
@@ -18191,6 +18705,10 @@ class EmbeddedSGLangRuntime:
         self._last_published_observed_seed_hint_signature = None
         self._observed_seed_hint_risk_initialized = False
         self._last_observed_seed_hint_risk_signature = None
+        self._pending_predictive_prepare_triggers = ()
+        self._pending_predictive_prepare_event_sequence = 0
+        self._pending_predictive_prepare_created_ts_ms = None
+        self._last_published_predictive_prepare_event_sequence = 0
         self._online_joint_result = None
         self._online_joint_source = None
         self._online_joint_validation = None
@@ -18327,7 +18845,15 @@ class EmbeddedSGLangRuntime:
             or beneficiary_changed
             or full_watchdog_due
         )
-        if result is None and not progress_due and not early_full_plan_trigger:
+        semantic_event_pending = (
+            self.controller.runtime_event_sequence > self._shadow_event_sequence
+        )
+        if (
+            result is None
+            and not progress_due
+            and not early_full_plan_trigger
+            and not semantic_event_pending
+        ):
             self._joint_shadow_counts["progress_coalesced"] += 1
             return
         restore_lease_index = getattr(self, "_restore_leases", None)
@@ -18576,16 +19102,50 @@ class EmbeddedSGLangRuntime:
                         event_delta.events
                     )
                 )
+                prepare_risk_triggers = tuple(
+                    item
+                    for item in risk_trigger_signature
+                    if item[0] == "prepare"
+                )
+                if (
+                    prepare_risk_triggers
+                    and getattr(self, "predictive_risk_worker", None) is not None
+                ):
+                    self._pending_predictive_prepare_triggers = (
+                        prepare_risk_triggers
+                    )
+                    self._pending_predictive_prepare_event_sequence = (
+                        event_delta.to_sequence
+                    )
+                    trigger_event_kinds = {
+                        item[1] for item in prepare_risk_triggers
+                    }
+                    self._pending_predictive_prepare_created_ts_ms = min(
+                        event.ts_ms
+                        for event in event_delta.events
+                        if event.kind.value in trigger_event_kinds
+                    )
+                    self._joint_predictive_counts[
+                        "prepare_event_alignment_latched"
+                    ] += 1
+                immediate_risk_triggers = tuple(
+                    item
+                    for item in risk_trigger_signature
+                    if item[0] == "reentry"
+                )
                 risk_evaluation_requested = bool(
                     getattr(self, "predictive_risk_worker", None) is not None
                     and (
-                        risk_trigger_signature
-                        or full_plan_requested
-                        and (
-                            pressure_crossing
-                            or beneficiary_changed
-                            or transfer_ack_pending
-                            or full_watchdog_due
+                        immediate_risk_triggers
+                        or (
+                            not prepare_risk_triggers
+                            and full_plan_requested
+                            and (
+                                pressure_crossing
+                                or beneficiary_changed
+                                or transfer_ack_pending
+                                or full_watchdog_due
+                            )
                         )
                     )
                 )
@@ -18666,7 +19226,7 @@ class EmbeddedSGLangRuntime:
                     captured_monotonic_ms=time.monotonic_ns() / 1_000_000.0,
                     planning_requested=full_plan_requested,
                     risk_evaluation_requested=risk_evaluation_requested,
-                    risk_trigger_signature=risk_trigger_signature,
+                    risk_trigger_signature=immediate_risk_triggers,
                     observed_seed_beneficiary=(
                         getattr(
                             self, "_latest_observed_seed_beneficiary", None
@@ -21250,6 +21810,19 @@ class EmbeddedSGLangRuntime:
             action = ResidencyAction.PREFETCH_GPU
             if not self.config.predictive_prefetch_canary_enabled:
                 reasons.append("predictive_prefetch_canary_disabled")
+            active_prefetch_leases = getattr(
+                self, "_prefetch_service_leases", {}
+            )
+            if (
+                not self._context_has_prefetch_service_lease(
+                    intent.context_id,
+                    intent.context_epoch,
+                    now_ms=now_ms,
+                )
+                and len(active_prefetch_leases)
+                >= self.config.predictive_prefetch_canary_max_inflight
+            ):
+                reasons.append("predictive_prefetch_inflight_limit")
             if (
                 intent.future_hbm_feasibility_probability
                 < self.config.predictive_prefetch_min_hbm_feasibility
@@ -22464,6 +23037,24 @@ class EmbeddedSGLangRuntime:
                     bundle_id=intent.bundle_id,
                 )
                 return
+            if intent.action in {
+                ResidencyAction.COMMIT_CPU,
+                ResidencyAction.DROP,
+                ResidencyAction.RECOMPUTE,
+            } and any(
+                (context := self.controller.graph.contexts.get(context_id))
+                is not None
+                and self._context_has_prefetch_service_lease(
+                    context_id,
+                    context.epoch,
+                    now_ms=now_ms,
+                )
+                for context_id in source_bundle.owner_context_ids
+            ):
+                self._online_joint_counts[
+                    "prefetch_service_lease_eviction_blocked"
+                ] += 1
+                return
             try:
                 target_handle = page_handle_from_extent_id(
                     source_bundle.extent_ids[0]
@@ -22776,6 +23367,16 @@ class EmbeddedSGLangRuntime:
             estimated_saved_stall_ms=(
                 intent.transfer_p95_ms + intent.expected_benefit_ms
             ),
+            target_invocation_id=(
+                intent.invocation_id
+                if intent.action == PredictiveActionKind.PREFETCH_GPU
+                else None
+            ),
+            target_reentry_context_epoch=(
+                intent.target_reentry_context_epoch
+                if intent.action == PredictiveActionKind.PREFETCH_GPU
+                else None
+            ),
         )
         self._pending_online_joint_residency = transaction
         self._online_joint_residency_history.append(transaction)
@@ -22846,6 +23447,23 @@ class EmbeddedSGLangRuntime:
             action=target.action,
             now_ms=now_ms,
         ):
+            return
+        if (
+            target.action
+            in {
+                ResidencyAction.COMMIT_CPU,
+                ResidencyAction.DROP,
+                ResidencyAction.RECOMPUTE,
+            }
+            and self._context_has_prefetch_service_lease(
+                preview.context_id,
+                preview.context_epoch,
+                now_ms=now_ms,
+            )
+        ):
+            self._online_joint_counts[
+                "prefetch_service_lease_eviction_blocked"
+            ] += 1
             return
         if target.action == ResidencyAction.RECOMPUTE:
             self._online_joint_counts["semantic_recompute_not_enabled"] += 1
@@ -23012,6 +23630,14 @@ class EmbeddedSGLangRuntime:
             ):
                 self._register_prepared_causal_binding(
                     transaction, now_ms=now_ms
+                )
+            if (
+                transaction.action == ResidencyAction.PREFETCH_GPU
+                and transaction.predictive_intent_id is not None
+            ):
+                self._register_prefetch_service_lease(
+                    transaction,
+                    now_ms=now_ms,
                 )
             if (
                 transaction.action == ResidencyAction.COMMIT_CPU

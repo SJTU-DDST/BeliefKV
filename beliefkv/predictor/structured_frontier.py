@@ -335,12 +335,23 @@ class WaitBelief:
 
         if self.dependency_composed or not self.available:
             return None
-        raw = self.residual_duration.probability_greater_than(operational_tau_ms)
+        raw = self.raw_release_after_probability(operational_tau_ms)
+        if raw is None:
+            return None
         return _calibrate_binary_probability(
             raw,
             scale=self.survival_logit_scale,
             offset=self.survival_logit_offset,
         )
+
+    def raw_release_after_probability(
+        self, operational_tau_ms: float
+    ) -> float | None:
+        """Return the uncalibrated survival probability at an action deadline."""
+
+        if self.dependency_composed or not self.available:
+            return None
+        return self.residual_duration.probability_greater_than(operational_tau_ms)
 
     def release_within_probability(self, operational_tau_ms: float) -> float | None:
         """Return P(reentry occurs within a live restore deadline)."""
@@ -394,6 +405,31 @@ class WaitBelief:
 
 
 @dataclass(frozen=True)
+class ActionTimingPrediction:
+    """Action-aligned timing evidence consumed by JointPlan."""
+
+    action: str
+    operational_tau_ms: float
+    favorable_probability: float
+    semantics: str
+    support_level: str
+    calibration_brier_skill: float | None = None
+    calibration_balanced_accuracy: float | None = None
+    calibration_episode_weight: float = 0.0
+    decision_threshold: float = 0.5
+    raw_decision_threshold: float = 0.5
+    precision_at_decision_threshold: float | None = None
+    recall_at_decision_threshold: float | None = None
+
+    @property
+    def informative(self) -> bool:
+        return (
+            self.calibration_brier_skill is None
+            or self.calibration_brier_skill > 0.0
+        )
+
+
+@dataclass(frozen=True)
 class LocalFrontierPrediction:
     invocation_id: str
     boundary_distribution: Mapping[str, float]
@@ -411,6 +447,9 @@ class LocalFrontierPrediction:
     )
     wait_belief: WaitBelief | None = None
     head_support: Mapping[str, str] = field(default_factory=dict)
+    action_timing_calibration: Mapping[str, Mapping[str, float]] = field(
+        default_factory=dict
+    )
 
     def __post_init__(self) -> None:
         wait = self.wait_belief
@@ -479,9 +518,81 @@ class LocalFrontierPrediction:
                 ),
             }
         object.__setattr__(self, "head_support", support)
+        object.__setattr__(
+            self,
+            "action_timing_calibration",
+            {
+                str(action): {
+                    str(name): float(value)
+                    for name, value in quality.items()
+                    if isinstance(value, (int, float)) and not isinstance(value, bool)
+                }
+                for action, quality in self.action_timing_calibration.items()
+            },
+        )
 
     def support_for(self, head: str) -> str:
         return str(self.head_support.get(head, "unavailable"))
+
+    def action_timing(
+        self, action: str, operational_tau_ms: float
+    ) -> ActionTimingPrediction | None:
+        """Project local wait belief onto a live transfer deadline."""
+
+        if action not in {"prepare_host", "prefetch_gpu"}:
+            raise ValueError(f"unsupported timing action: {action}")
+        raw_after = self.wait_belief.raw_release_after_probability(
+            operational_tau_ms
+        )
+        if raw_after is None:
+            return None
+        raw = raw_after if action == "prepare_host" else 1.0 - raw_after
+        quality = self.action_timing_calibration.get(action, {})
+        if "logit_scale" in quality and "logit_offset" in quality:
+            scale = float(quality["logit_scale"])
+            offset = float(quality["logit_offset"])
+            probability = _calibrate_binary_probability(
+                raw,
+                scale=scale,
+                offset=offset,
+            )
+        else:
+            scale = 1.0
+            offset = 0.0
+            probability = (
+                self.wait_belief.release_after_probability(operational_tau_ms)
+                if action == "prepare_host"
+                else self.wait_belief.release_within_probability(operational_tau_ms)
+            )
+        if probability is None:
+            return None
+        decision_threshold = float(quality.get("decision_threshold", 0.5))
+        return ActionTimingPrediction(
+            action=action,
+            operational_tau_ms=operational_tau_ms,
+            favorable_probability=probability,
+            semantics=(
+                "release_after_transfer"
+                if action == "prepare_host"
+                else "release_within_transfer"
+            ),
+            support_level=self.wait_belief.support_level,
+            calibration_brier_skill=quality.get("brier_skill"),
+            calibration_balanced_accuracy=quality.get("balanced_accuracy_at_0_5"),
+            calibration_episode_weight=float(quality.get("episode_weight", 0.0)),
+            decision_threshold=decision_threshold,
+            raw_decision_threshold=_uncalibrate_binary_probability(
+                decision_threshold,
+                scale=scale,
+                offset=offset,
+            ),
+            precision_at_decision_threshold=quality.get(
+                "precision_at_decision_threshold"
+            ),
+            recall_at_decision_threshold=quality.get(
+                "recall_at_decision_threshold"
+            ),
+        )
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -502,6 +613,12 @@ class LocalFrontierPrediction:
                 for name, interval in sorted(self.calibrated_intervals.items())
             },
             "head_support": dict(sorted(self.head_support.items())),
+            "action_timing_calibration": {
+                action: dict(sorted(quality.items()))
+                for action, quality in sorted(
+                    self.action_timing_calibration.items()
+                )
+            },
         }
 
     @classmethod
@@ -549,6 +666,15 @@ class LocalFrontierPrediction:
             head_support={
                 str(name): str(level)
                 for name, level in raw.get("head_support", {}).items()
+            },
+            action_timing_calibration={
+                str(action): {
+                    str(name): float(value)
+                    for name, value in quality.items()
+                }
+                for action, quality in raw.get(
+                    "action_timing_calibration", {}
+                ).items()
             },
         )
 
@@ -898,8 +1024,10 @@ class FrontierBeliefModel:
         self.tool_temperature = 1.0
         self.tool_survival_logit_scale = 1.0
         self.tool_survival_logit_offset = 0.0
+        self.action_timing_calibration: dict[str, dict[str, float]] = {}
         self.interval_slack: dict[str, float] = {}
         self.calibration_coverage = 0.0
+        self.artifact_metadata: dict[str, Any] = {}
 
     def fit(self, rows: Iterable[Mapping[str, Any]]) -> dict[str, Any]:
         values = [dict(row) for row in rows]
@@ -1185,6 +1313,7 @@ class FrontierBeliefModel:
             calibrated_intervals=intervals,
             wait_belief=wait_belief,
             head_support=head_support,
+            action_timing_calibration=self.action_timing_calibration,
         )
 
     def calibrate(
@@ -1236,6 +1365,9 @@ class FrontierBeliefModel:
         boundary_records: list[tuple[Mapping[str, float], str, float]] = []
         tool_records: list[tuple[Mapping[str, float], str, float]] = []
         tool_survival_records: list[tuple[float, bool, float]] = []
+        action_timing_records: defaultdict[
+            str, list[tuple[float, bool, float]]
+        ] = defaultdict(list)
         scores: dict[str, dict[str, list[float]]] = defaultdict(
             lambda: defaultdict(list)
         )
@@ -1350,22 +1482,29 @@ class FrontierBeliefModel:
             weight = action_weights.get(identity, 0.0)
             for action, value in known:
                 tau_ms = float(value["operational_tau_ms"])
+                raw_after = (
+                    prediction.wait_belief.raw_release_after_probability(tau_ms)
+                )
+                if raw_after is None:
+                    continue
                 if action == "prepare_host":
-                    probability = (
-                        prediction.wait_belief.release_after_probability(tau_ms)
-                    )
+                    probability = raw_after
                     outcome = bool(value["outcome"])
+                    survival_probability = raw_after
+                    survival_outcome = outcome
                 elif action == "prefetch_gpu":
-                    within = (
-                        prediction.wait_belief.release_within_probability(tau_ms)
-                    )
-                    probability = None if within is None else 1.0 - within
-                    outcome = not bool(value["outcome"])
+                    probability = 1.0 - raw_after
+                    outcome = bool(value["outcome"])
+                    survival_probability = raw_after
+                    survival_outcome = not outcome
                 else:
                     continue
-                if probability is None:
-                    continue
-                tool_survival_records.append((probability, outcome, weight))
+                action_timing_records[action].append(
+                    (probability, outcome, weight)
+                )
+                tool_survival_records.append(
+                    (survival_probability, survival_outcome, weight)
+                )
                 observation_counts[f"{action}_operational_tau"] += 1
                 observation_counts["tool_wait_action_slack"] += 1
 
@@ -1375,6 +1514,16 @@ class FrontierBeliefModel:
             self.tool_survival_logit_scale,
             self.tool_survival_logit_offset,
         ) = _fit_binary_logit_calibration(tool_survival_records)
+        self.action_timing_calibration = {}
+        for action, records in sorted(action_timing_records.items()):
+            scale, offset = _fit_binary_brier_calibration(records)
+            self.action_timing_calibration[action] = {
+                "logit_scale": scale,
+                "logit_offset": offset,
+                **_binary_probability_metrics(
+                    records, scale=scale, offset=offset
+                ),
+            }
         self.interval_slack = {
             name: _finite_sample_quantile(
                 [max(items) for items in by_episode.values()],
@@ -1399,6 +1548,7 @@ class FrontierBeliefModel:
             "tool_temperature": self.tool_temperature,
             "tool_survival_logit_scale": self.tool_survival_logit_scale,
             "tool_survival_logit_offset": self.tool_survival_logit_offset,
+            "action_timing_calibration": self.action_timing_calibration,
             "interval_slack": dict(sorted(self.interval_slack.items())),
             "observation_counts": dict(sorted(observation_counts.items())),
             "conformal_unit": "episode_max_nonconformity",
@@ -1423,6 +1573,12 @@ class FrontierBeliefModel:
             "tool_temperature": self.tool_temperature,
             "tool_survival_logit_scale": self.tool_survival_logit_scale,
             "tool_survival_logit_offset": self.tool_survival_logit_offset,
+            "action_timing_calibration": {
+                action: dict(sorted(quality.items()))
+                for action, quality in sorted(
+                    self.action_timing_calibration.items()
+                )
+            },
             "interval_slack": dict(sorted(self.interval_slack.items())),
             "metadata": dict(metadata or {}),
             "components": {
@@ -1465,10 +1621,20 @@ class FrontierBeliefModel:
         model.tool_survival_logit_offset = float(
             raw.get("tool_survival_logit_offset", 0.0)
         )
+        model.action_timing_calibration = {
+            str(action): {
+                str(name): float(value)
+                for name, value in quality.items()
+            }
+            for action, quality in raw.get(
+                "action_timing_calibration", {}
+            ).items()
+        }
         model.interval_slack = {
             str(key): float(value)
             for key, value in raw.get("interval_slack", {}).items()
         }
+        model.artifact_metadata = dict(raw.get("metadata", {}))
         return model
 
     def save(self, path: str | Path, *, metadata: Mapping[str, Any] | None = None) -> None:
@@ -2243,11 +2409,17 @@ def select_frontier_hyperparameters(
                 validation_action_targets,
             )
             components = _lopo_loss_components(metrics, validation_rows)
-            operational_brier = components.get("tool_wait_slack_brier")
+            operational_regret = components.get(
+                "tool_wait_slack_brier_regret"
+            )
             secondary_components = {
                 name: value
                 for name, value in components.items()
-                if name != "tool_wait_slack_brier"
+                if name
+                not in {
+                    "tool_wait_slack_brier",
+                    "tool_wait_slack_brier_regret",
+                }
             }
             secondary_loss = sum(secondary_components.values()) / max(
                 len(secondary_components), 1
@@ -2256,11 +2428,14 @@ def select_frontier_hyperparameters(
                 {
                     "held_out_project": held_out,
                     "loss": (
-                        float(operational_brier)
-                        if action_values and operational_brier is not None
+                        float(operational_regret)
+                        if action_values and operational_regret is not None
                         else sum(components.values()) / max(len(components), 1)
                     ),
-                    "operational_tau_brier": operational_brier,
+                    "operational_tau_brier_regret": operational_regret,
+                    "operational_tau_brier": components.get(
+                        "tool_wait_slack_brier"
+                    ),
                     "secondary_loss": secondary_loss,
                     "loss_components": components,
                     "local_episode_count": metrics["local_episode_count"],
@@ -2272,12 +2447,16 @@ def select_frontier_hyperparameters(
                 "hyperparameters": option.to_dict(),
                 "project_macro_loss": sum(fold["loss"] for fold in folds)
                 / len(folds),
-                "project_macro_operational_tau_brier": (
-                    sum(float(fold["operational_tau_brier"]) for fold in folds)
+                "project_macro_operational_tau_brier_regret": (
+                    sum(
+                        float(fold["operational_tau_brier_regret"])
+                        for fold in folds
+                    )
                     / len(folds)
                     if action_values
                     and all(
-                        fold["operational_tau_brier"] is not None for fold in folds
+                        fold["operational_tau_brier_regret"] is not None
+                        for fold in folds
                     )
                     else None
                 ),
@@ -2292,7 +2471,7 @@ def select_frontier_hyperparameters(
         reports,
         key=lambda item: (
             (
-                item["project_macro_operational_tau_brier"]
+                item["project_macro_operational_tau_brier_regret"]
                 if action_values
                 else item["project_macro_loss"]
             ),
@@ -2304,7 +2483,8 @@ def select_frontier_hyperparameters(
         "schema_version": 1,
         "selection_method": "leave_one_train_project_out_project_macro",
         "selection_objective": (
-            "primary: project-macro operational-tau action Brier; "
+                "primary: project-macro operational-tau Brier regret versus "
+                "the held-out-project constant-prevalence baseline; "
             "secondary: boundary/tool NLL, scale-normalized token-demand MAE, "
             "and action-specific required-head OOD"
             if action_values
@@ -2369,12 +2549,17 @@ def evaluate_frontier_model(
     wait_slack: defaultdict[str, dict[str, float]] = defaultdict(
         lambda: {
             "weight": 0.0,
+            "known_outcome_weight": 0.0,
             "brier": 0.0,
             "correct": 0.0,
             "true_positive": 0.0,
             "false_positive": 0.0,
             "true_negative": 0.0,
             "false_negative": 0.0,
+            "true_positive_at_0_9": 0.0,
+            "false_positive_at_0_9": 0.0,
+            "true_negative_at_0_9": 0.0,
+            "false_negative_at_0_9": 0.0,
             "predicted_positive": 0.0,
             "actual_positive": 0.0,
         }
@@ -2522,7 +2707,7 @@ def evaluate_frontier_model(
     for target in action_values:
         features = _local_features_from_action_target(target)
         prediction = model.predict(features)
-        support = prediction.wait_belief.support_detail
+        base_support = prediction.wait_belief.support_detail
         identity = _action_target_identity(target)
         base_weight = action_weights.get(identity, 0.0)
         known_weight = base_weight
@@ -2532,19 +2717,16 @@ def evaluate_frontier_model(
                 continue
             action_target_known_count[action] += 1
             tau_ms = float(value["operational_tau_ms"])
-            if action == "prepare_host":
-                probability = prediction.wait_belief.release_after_probability(
-                    tau_ms
-                )
-            elif action == "prefetch_gpu":
-                probability = prediction.wait_belief.release_within_probability(
-                    tau_ms
-                )
-            else:
+            if action not in {"prepare_host", "prefetch_gpu"}:
                 continue
-            if probability is None:
+            key = f"{action}|wait_tool|operational_tau"
+            wait_slack[key]["known_outcome_weight"] += known_weight
+            timing = prediction.action_timing(action, tau_ms)
+            if timing is None:
                 support = "unavailable"
-                probability = 0.0
+            else:
+                support = base_support
+                probability = timing.favorable_probability
             required_heads = (
                 ("tool_wait", "prompt_growth")
                 if action == "prefetch_gpu"
@@ -2559,8 +2741,18 @@ def evaluate_frontier_model(
                 ] += base_weight * available
                 required_head_weight += base_weight
                 required_head_ood_weight += base_weight * (not available)
+            operational_support[action][support] += known_weight
+            command = str(target.get("command_class") or "unknown")
+            operational_command_support[f"{action}|{command}"][support] += (
+                known_weight
+            )
+            operational_tau[action].append(tau_ms)
+            action_evidence[action][
+                str(target.get("tau_evidence") or "unknown")
+            ] += 1
+            if timing is None:
+                continue
             outcome = float(bool(value["outcome"]))
-            key = f"{action}|wait_tool|operational_tau"
             wait_slack[key]["weight"] += known_weight
             wait_slack[key]["brier"] += known_weight * (
                 probability - outcome
@@ -2584,15 +2776,15 @@ def evaluate_frontier_model(
                 wait_slack[key]["false_negative"] += known_weight
             else:
                 wait_slack[key]["true_negative"] += known_weight
-            operational_support[action][support] += known_weight
-            command = str(target.get("command_class") or "unknown")
-            operational_command_support[f"{action}|{command}"][support] += (
-                known_weight
-            )
-            operational_tau[action].append(tau_ms)
-            action_evidence[action][
-                str(target.get("tau_evidence") or "unknown")
-            ] += 1
+            predicted_high_confidence = probability >= 0.9
+            if predicted_high_confidence and actual_positive:
+                wait_slack[key]["true_positive_at_0_9"] += known_weight
+            elif predicted_high_confidence:
+                wait_slack[key]["false_positive_at_0_9"] += known_weight
+            elif actual_positive:
+                wait_slack[key]["false_negative_at_0_9"] += known_weight
+            else:
+                wait_slack[key]["true_negative_at_0_9"] += known_weight
 
     return {
         "model_version": model.model_version,
@@ -2640,8 +2832,35 @@ def evaluate_frontier_model(
         "wait_slack": {
             key: {
                 "brier": values["brier"] / max(values["weight"], 1e-12),
+                "available_prediction_rate": values["weight"]
+                / max(values["known_outcome_weight"], 1e-12),
+                "climatology_brier": (
+                    (values["actual_positive"] / max(values["weight"], 1e-12))
+                    * (
+                        1.0
+                        - values["actual_positive"]
+                        / max(values["weight"], 1e-12)
+                    )
+                ),
+                "brier_skill": _brier_skill(
+                    values["brier"] / max(values["weight"], 1e-12),
+                    (
+                        values["actual_positive"]
+                        / max(values["weight"], 1e-12)
+                    )
+                    * (
+                        1.0
+                        - values["actual_positive"]
+                        / max(values["weight"], 1e-12)
+                    ),
+                ),
                 "accuracy_at_0_5": (
                     values["correct"] / max(values["weight"], 1e-12)
+                ),
+                "majority_baseline_accuracy": max(
+                    values["actual_positive"] / max(values["weight"], 1e-12),
+                    1.0
+                    - values["actual_positive"] / max(values["weight"], 1e-12),
                 ),
                 "precision_at_0_5": (
                     values["true_positive"]
@@ -2654,6 +2873,50 @@ def evaluate_frontier_model(
                     values["true_positive"]
                     / max(
                         values["true_positive"] + values["false_negative"],
+                        1e-12,
+                    )
+                ),
+                "specificity_at_0_5": (
+                    values["true_negative"]
+                    / max(
+                        values["true_negative"] + values["false_positive"],
+                        1e-12,
+                    )
+                ),
+                "balanced_accuracy_at_0_5": 0.5
+                * (
+                    values["true_positive"]
+                    / max(
+                        values["true_positive"] + values["false_negative"],
+                        1e-12,
+                    )
+                    + values["true_negative"]
+                    / max(
+                        values["true_negative"] + values["false_positive"],
+                        1e-12,
+                    )
+                ),
+                "precision_at_0_9": (
+                    values["true_positive_at_0_9"]
+                    / max(
+                        values["true_positive_at_0_9"]
+                        + values["false_positive_at_0_9"],
+                        1e-12,
+                    )
+                ),
+                "recall_at_0_9": (
+                    values["true_positive_at_0_9"]
+                    / max(
+                        values["true_positive_at_0_9"]
+                        + values["false_negative_at_0_9"],
+                        1e-12,
+                    )
+                ),
+                "specificity_at_0_9": (
+                    values["true_negative_at_0_9"]
+                    / max(
+                        values["true_negative_at_0_9"]
+                        + values["false_positive_at_0_9"],
                         1e-12,
                     )
                 ),
@@ -2760,6 +3023,9 @@ def _classification_accumulator() -> dict[str, Any]:
         "brier": 0.0,
         "correct": 0.0,
         "confidence_records": [],
+        "target_weight": Counter(),
+        "predicted_weight": Counter(),
+        "confusion_weight": Counter(),
     }
 
 
@@ -2809,6 +3075,14 @@ def _lopo_loss_components(
     if slack_weight > 0:
         components["tool_wait_slack_brier"] = sum(
             float(item["brier"]) * float(item["episode_weight"])
+            for item in slack_rows
+        ) / slack_weight
+        components["tool_wait_slack_brier_regret"] = sum(
+            (
+                float(item["brier"])
+                - float(item["climatology_brier"])
+            )
+            * float(item["episode_weight"])
             for item in slack_rows
         ) / slack_weight
     components["ood_penalty"] = 0.25 * float(metrics["ood_fallback_rate"])
@@ -2867,6 +3141,9 @@ def _observe_classification(
     metrics["brier"] += weight * brier
     metrics["correct"] += weight * correct
     metrics["confidence_records"].append((confidence, correct, weight))
+    metrics["target_weight"][target] += weight
+    metrics["predicted_weight"][prediction] += weight
+    metrics["confusion_weight"][(target, prediction)] += weight
 
 
 def _finalize_classification(metrics: Mapping[str, Any]) -> dict[str, Any]:
@@ -2877,6 +3154,9 @@ def _finalize_classification(metrics: Mapping[str, Any]) -> dict[str, Any]:
             "negative_log_likelihood": None,
             "brier": None,
             "accuracy": None,
+            "majority_baseline_accuracy": None,
+            "macro_recall": None,
+            "per_class": {},
             "ece_10": None,
         }
     bins: list[list[tuple[float, bool, float]]] = [[] for _ in range(10)]
@@ -2891,11 +3171,34 @@ def _finalize_classification(metrics: Mapping[str, Any]) -> dict[str, Any]:
         mean_confidence = sum(item[0] * item[2] for item in bucket) / bucket_weight
         accuracy = sum(float(item[1]) * item[2] for item in bucket) / bucket_weight
         ece += bucket_weight / weight * abs(mean_confidence - accuracy)
+    classes = sorted(metrics["target_weight"])
+    per_class = {}
+    recalls = []
+    for name in classes:
+        support = float(metrics["target_weight"][name])
+        predicted = float(metrics["predicted_weight"][name])
+        true_positive = float(metrics["confusion_weight"][(name, name)])
+        recall = true_positive / support if support else None
+        precision = true_positive / predicted if predicted else None
+        if recall is not None:
+            recalls.append(recall)
+        per_class[name] = {
+            "episode_weight": support,
+            "prevalence": support / weight,
+            "recall": recall,
+            "precision": precision,
+        }
     return {
         "episode_weight": weight,
         "negative_log_likelihood": metrics["negative_log_likelihood"] / weight,
         "brier": metrics["brier"] / weight,
         "accuracy": metrics["correct"] / weight,
+        "majority_baseline_accuracy": max(
+            metrics["target_weight"].values(), default=0.0
+        )
+        / weight,
+        "macro_recall": sum(recalls) / len(recalls) if recalls else None,
+        "per_class": per_class,
         "ece_10": ece,
     }
 
@@ -3169,6 +3472,26 @@ def _calibrate_binary_probability(
     return growth / (1.0 + growth)
 
 
+def _uncalibrate_binary_probability(
+    probability: float,
+    *,
+    scale: float,
+    offset: float,
+) -> float:
+    """Invert the monotone Platt map for distribution-quantile lookup."""
+
+    if not math.isfinite(scale) or scale <= 0 or not math.isfinite(offset):
+        raise ValueError("binary calibration must be finite with positive scale")
+    clipped = min(1.0 - 1e-6, max(1e-6, float(probability)))
+    calibrated_logit = math.log(clipped / (1.0 - clipped))
+    raw_logit = (calibrated_logit - offset) / scale
+    if raw_logit >= 0:
+        decay = math.exp(-min(raw_logit, 40.0))
+        return 1.0 / (1.0 + decay)
+    growth = math.exp(max(raw_logit, -40.0))
+    return growth / (1.0 + growth)
+
+
 def _fit_binary_logit_calibration(
     records: Sequence[tuple[float, bool, float]],
 ) -> tuple[float, float]:
@@ -3228,6 +3551,194 @@ def _fit_binary_logit_calibration(
         if max(abs(step_scale), abs(step_offset)) < 1e-6:
             break
     return scale, offset
+
+
+def _fit_binary_brier_calibration(
+    records: Sequence[tuple[float, bool, float]],
+) -> tuple[float, float]:
+    """Fit an action probability map against the decision-facing Brier loss."""
+
+    prepared = tuple(
+        (
+            math.log(
+                min(1.0 - 1e-4, max(1e-4, probability))
+                / (1.0 - min(1.0 - 1e-4, max(1e-4, probability)))
+            ),
+            float(outcome),
+            max(0.0, float(weight)),
+        )
+        for probability, outcome, weight in records
+        if weight > 0
+    )
+    total_weight = sum(item[2] for item in prepared)
+    if total_weight <= 0:
+        return 1.0, 0.0
+    prevalence = sum(item[1] * item[2] for item in prepared) / total_weight
+    mean_logit = sum(item[0] * item[2] for item in prepared) / total_weight
+    prevalence = min(1.0 - 1e-6, max(1e-6, prevalence))
+    prevalence_logit = math.log(prevalence / (1.0 - prevalence))
+
+    def loss(scale: float, offset: float) -> float:
+        return sum(
+            weight
+            * (
+                _calibrate_binary_probability(
+                    1.0 / (1.0 + math.exp(-max(-40.0, min(40.0, logit)))),
+                    scale=scale,
+                    offset=offset,
+                )
+                - outcome
+            )
+            ** 2
+            for logit, outcome, weight in prepared
+        ) / total_weight
+
+    candidates = [(1.0, 0.0), _fit_binary_logit_calibration(records)]
+    for scale in (
+        0.05,
+        0.1,
+        0.2,
+        0.3,
+        0.4,
+        0.5,
+        0.65,
+        0.8,
+        1.0,
+        1.25,
+        1.5,
+        2.0,
+    ):
+        centered_offset = prevalence_logit - scale * mean_logit
+        candidates.extend(
+            (scale, centered_offset + index * 0.05)
+            for index in range(-30, 31)
+        )
+    return min(candidates, key=lambda item: loss(*item))
+
+
+def _brier_skill(brier: float, climatology_brier: float) -> float | None:
+    if climatology_brier <= 1e-12:
+        return None
+    return 1.0 - brier / climatology_brier
+
+
+def _binary_probability_metrics(
+    records: Sequence[tuple[float, bool, float]],
+    *,
+    scale: float,
+    offset: float,
+) -> dict[str, float]:
+    weight = sum(max(0.0, float(item_weight)) for _, _, item_weight in records)
+    if weight <= 0:
+        return {
+            "episode_weight": 0.0,
+            "brier": 0.0,
+            "climatology_brier": 0.0,
+            "brier_skill": 0.0,
+            "accuracy_at_0_5": 0.0,
+            "balanced_accuracy_at_0_5": 0.0,
+            "actual_positive_rate": 0.0,
+        }
+    positive = sum(
+        max(0.0, float(item_weight)) * float(bool(outcome))
+        for _, outcome, item_weight in records
+    )
+    calibrated_records: list[tuple[float, bool, float]] = []
+    true_positive = false_positive = true_negative = false_negative = 0.0
+    brier = 0.0
+    correct = 0.0
+    for raw, outcome, item_weight in records:
+        item_weight = max(0.0, float(item_weight))
+        probability = _calibrate_binary_probability(
+            raw, scale=scale, offset=offset
+        )
+        calibrated_records.append((probability, bool(outcome), item_weight))
+        actual = bool(outcome)
+        predicted = probability >= 0.5
+        brier += item_weight * (probability - float(actual)) ** 2
+        correct += item_weight * (predicted == actual)
+        if predicted and actual:
+            true_positive += item_weight
+        elif predicted:
+            false_positive += item_weight
+        elif actual:
+            false_negative += item_weight
+        else:
+            true_negative += item_weight
+    brier /= weight
+    prevalence = positive / weight
+    climatology_brier = prevalence * (1.0 - prevalence)
+    recall = true_positive / max(true_positive + false_negative, 1e-12)
+    specificity = true_negative / max(
+        true_negative + false_positive, 1e-12
+    )
+    decision_threshold, threshold_metrics = _recall_oriented_threshold(
+        calibrated_records
+    )
+    return {
+        "episode_weight": weight,
+        "brier": brier,
+        "climatology_brier": climatology_brier,
+        "brier_skill": _brier_skill(brier, climatology_brier) or 0.0,
+        "accuracy_at_0_5": correct / weight,
+        "balanced_accuracy_at_0_5": 0.5 * (recall + specificity),
+        "actual_positive_rate": prevalence,
+        "decision_threshold": decision_threshold,
+        **threshold_metrics,
+    }
+
+
+def _recall_oriented_threshold(
+    records: Sequence[tuple[float, bool, float]],
+) -> tuple[float, dict[str, float]]:
+    """Choose a recall-oriented threshold before physical/value validation."""
+
+    total_weight = sum(max(0.0, weight) for _, _, weight in records)
+    positive_weight = sum(
+        max(0.0, weight) for _, outcome, weight in records if outcome
+    )
+    if total_weight <= 0 or positive_weight <= 0:
+        return 0.5, {
+            "precision_at_decision_threshold": 0.0,
+            "recall_at_decision_threshold": 0.0,
+            "f2_at_decision_threshold": 0.0,
+        }
+    prevalence = positive_weight / total_weight
+    precision_floor = min(0.5, max(0.25, prevalence * 1.5))
+    thresholds = sorted(
+        {0.0, 0.5, 1.0, *(float(probability) for probability, _, _ in records)}
+    )
+
+    candidates: list[tuple[float, float, float, float]] = []
+    fallback: list[tuple[float, float, float, float]] = []
+    for threshold in thresholds:
+        true_positive = false_positive = false_negative = 0.0
+        for probability, outcome, weight in records:
+            weight = max(0.0, weight)
+            predicted = probability >= threshold
+            if predicted and outcome:
+                true_positive += weight
+            elif predicted:
+                false_positive += weight
+            elif outcome:
+                false_negative += weight
+        precision = true_positive / max(true_positive + false_positive, 1e-12)
+        recall = true_positive / max(true_positive + false_negative, 1e-12)
+        f2 = 5.0 * precision * recall / max(4.0 * precision + recall, 1e-12)
+        item = (f2, recall, precision, threshold)
+        fallback.append(item)
+        if precision >= precision_floor:
+            candidates.append(item)
+    f2, recall, precision, threshold = max(
+        candidates or fallback,
+        key=lambda item: (item[0], item[1], item[2], item[3]),
+    )
+    return threshold, {
+        "precision_at_decision_threshold": precision,
+        "recall_at_decision_threshold": recall,
+        "f2_at_decision_threshold": f2,
+        "decision_precision_floor": precision_floor,
+    }
 
 
 def _raw_interval(

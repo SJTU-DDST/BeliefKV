@@ -7,6 +7,8 @@ import subprocess
 
 import pytest
 
+from scripts.validate_runtime_profile import _dirty_worktree_allowed
+
 from beliefkv.experiments.runtime_profile import (
     load_runtime_profile,
     runtime_launch_environment,
@@ -52,6 +54,15 @@ HIGH_PRESSURE_V2_PLAN = (
     REPOSITORY_ROOT
     / "configs/p6/predictive_joint_h200_high_pressure_v2/ab_plan.json"
 )
+
+
+def test_dirty_worktree_override_is_explicit(monkeypatch) -> None:
+    monkeypatch.delenv("BELIEFKV_ALLOW_DIRTY_WORKTREE", raising=False)
+    assert not _dirty_worktree_allowed()
+    monkeypatch.setenv("BELIEFKV_ALLOW_DIRTY_WORKTREE", "1")
+    assert _dirty_worktree_allowed()
+    monkeypatch.setenv("BELIEFKV_ALLOW_DIRTY_WORKTREE", "true")
+    assert not _dirty_worktree_allowed()
 
 
 def _profile() -> dict[str, object]:

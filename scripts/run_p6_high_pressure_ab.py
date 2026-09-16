@@ -97,13 +97,18 @@ def _prepare_server(
                 "--predictor-model",
                 str(_path(str(predictor["path"]))),
                 "--enable-predictive-risk-shadow",
-                "--enable-predictive-joint-overlay",
-                "--enable-shadow-transfers",
-                "--enable-predictive-prefetch-canary",
                 "--predictive-prepare-canary-limit",
                 str(plan["predictive_prepare_limit"]),
             ]
         )
+        if bool(plan.get("predictive_joint_overlay_enabled", True)):
+            command.append("--enable-predictive-joint-overlay")
+        if bool(plan.get("predictive_shadow_transfers_enabled", True)):
+            command.append("--enable-shadow-transfers")
+        if bool(plan.get("predictive_prefetch_canary_enabled", True)):
+            command.append("--enable-predictive-prefetch-canary")
+        if bool(plan.get("allow_development_predictor_canary", False)):
+            command.append("--allow-development-predictor-canary")
     subprocess.run(command, cwd=ROOT, check=True)
     config = json.loads((server_dir / "beliefkv_config.json").read_text())
     return {"profile": profile, "config": config, "prepare_command": command}
@@ -118,6 +123,28 @@ def _run_arm(
     if processes:
         raise RuntimeError(f"GPU {gpu} is occupied: {processes}")
     output.mkdir(parents=True)
+    _write_json(output / "experiment_plan.json", plan)
+    allow_dirty_worktree = bool(
+        plan.get("development_only")
+        and plan.get("allow_dirty_worktree")
+    )
+    if allow_dirty_worktree:
+        with (output / "source_status.txt").open("w", encoding="utf-8") as stream:
+            subprocess.run(
+                ("git", "status", "--short"),
+                cwd=ROOT,
+                check=True,
+                stdout=stream,
+                text=True,
+            )
+        with (output / "source.patch").open("w", encoding="utf-8") as stream:
+            subprocess.run(
+                ("git", "diff", "--binary"),
+                cwd=ROOT,
+                check=True,
+                stdout=stream,
+                text=True,
+            )
     server_dir = output / "server"
     workload_dir = output / "workloads"
     prepared = _prepare_server(plan, arm, server_dir)
@@ -129,6 +156,8 @@ def _run_arm(
         "PORT": str(port),
         "SLEEP_ON_IDLE": "1",
     }
+    if allow_dirty_worktree:
+        environment["BELIEFKV_ALLOW_DIRTY_WORKTREE"] = "1"
     base_url = f"http://127.0.0.1:{port}"
     started_at = datetime.now(timezone.utc).isoformat()
     server = subprocess.Popen(

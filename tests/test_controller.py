@@ -84,6 +84,12 @@ class ControllerTest(unittest.TestCase):
             BeliefKVConfig(predictive_joint_overlay_enabled=True)
         with self.assertRaisesRegex(ValueError, "requires predictive JointPlan"):
             BeliefKVConfig(predictive_prefetch_canary_enabled=True)
+        with self.assertRaisesRegex(
+            ValueError, "development predictor canary override"
+        ):
+            BeliefKVConfig(
+                predictive_development_artifact_canary_enabled=True
+            )
 
         config = BeliefKVConfig(
             joint_policy_enabled=True,
@@ -92,10 +98,12 @@ class ControllerTest(unittest.TestCase):
             predictive_risk_shadow_enabled=True,
             predictive_joint_overlay_enabled=True,
             predictive_prefetch_canary_enabled=True,
+            predictive_development_artifact_canary_enabled=True,
         )
         self.assertTrue(config.predictive_prepare_host_enabled)
         self.assertEqual(config.predictive_prefetch_canary_max_inflight, 1)
         self.assertEqual(config.predictive_prefetch_canary_max_hbm_ratio, 0.05)
+        self.assertTrue(config.predictive_development_artifact_canary_enabled)
 
         unified = BeliefKVConfig(
             joint_policy_enabled=True,

@@ -111,6 +111,14 @@ def main() -> int:
         ),
     )
     parser.add_argument(
+        "--allow-development-predictor-canary",
+        action="store_true",
+        help=(
+            "Explicitly permit a development-only predictor artifact to drive "
+            "a bounded physical canary. Never use for formal evaluation."
+        ),
+    )
+    parser.add_argument(
         "--predictive-prepare-canary-limit",
         type=int,
         default=0,
@@ -394,6 +402,14 @@ def main() -> int:
             "--enable-predictive-joint-overlay"
         )
     if (
+        args.allow_development_predictor_canary
+        and not args.enable_predictive_joint_overlay
+    ):
+        parser.error(
+            "--allow-development-predictor-canary requires "
+            "--enable-predictive-joint-overlay"
+        )
+    if (
         args.predictive_prepare_canary_limit > 0
         and not args.enable_shadow_transfers
     ):
@@ -622,6 +638,9 @@ def main() -> int:
         "predictive_prefetch_canary_enabled": (
             args.enable_predictive_prefetch_canary
         ),
+        "predictive_development_artifact_canary_enabled": (
+            args.allow_development_predictor_canary
+        ),
         "predictive_prefetch_canary_max_inflight": 1,
         "predictive_prefetch_canary_max_hbm_ratio": 0.05,
         "predictive_prefetch_min_hbm_feasibility": 0.95,
@@ -639,6 +658,7 @@ def main() -> int:
         "predictive_risk_max_candidates": 2,
         "predictive_risk_min_calibration_coverage": 0.9,
         "predictive_risk_min_causal_slack_probability": 0.9,
+        "predictive_risk_min_prefetch_slack_probability": 0.5,
         "observed_admission_scheduling_enabled": (
             args.enable_observed_admission
         ),

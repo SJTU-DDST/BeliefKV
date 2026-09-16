@@ -65,6 +65,7 @@ class PredictiveRiskShadowConfig:
     online_overlay_enabled: bool = False
     transfer_commit_guard_ms: float = 25.0
     minimum_causal_slack_probability: float = 0.9
+    minimum_prefetch_slack_probability: float = 0.5
 
     def __post_init__(self) -> None:
         if min(self.particle_count, self.top_k, self.max_candidates) <= 0:
@@ -91,6 +92,10 @@ class PredictiveRiskShadowConfig:
             raise ValueError(
                 "minimum causal slack probability must be in [0, 1]"
             )
+        if not 0 <= self.minimum_prefetch_slack_probability <= 1:
+            raise ValueError(
+                "minimum prefetch slack probability must be in [0, 1]"
+            )
 
 
 @dataclass(frozen=True)
@@ -99,6 +104,13 @@ class _ActionTimingEvidence:
     required_wait_ms: float
     causal_slack_probability: float
     conservative_remaining_window_ms: float
+    calibration_brier_skill: float | None = None
+    calibration_balanced_accuracy: float | None = None
+    decision_threshold: float | None = None
+    raw_decision_threshold: float | None = None
+    precision_at_decision_threshold: float | None = None
+    recall_at_decision_threshold: float | None = None
+    informative: bool = True
 
 
 def _transfer_deadline_and_slack(
@@ -157,6 +169,7 @@ class PredictiveIntent:
     predicted_block_time_ms: float | None = None
     predicted_deficit_bytes: int = 0
     causal_package_generation: str | None = None
+    target_reentry_context_epoch: int | None = None
     evidence_kind: str = "model_prediction"
     execution_order_request_ids: tuple[str, ...] = ()
     admit_request_ids: tuple[str, ...] = ()
@@ -279,6 +292,12 @@ class PredictiveIntent:
                 or self.predicted_block_time_ms < 0
             ):
                 raise ValueError("prepare intent beneficiary evidence is invalid")
+        if self.action == PredictiveActionKind.PREFETCH_GPU:
+            if (
+                self.target_reentry_context_epoch is None
+                or self.target_reentry_context_epoch < self.context_epoch
+            ):
+                raise ValueError("prefetch intent requires a target reentry epoch")
         execution_order = tuple(self.execution_order_request_ids)
         admit_requests = tuple(self.admit_request_ids)
         request_evidence = tuple(self.execution_request_evidence)
@@ -381,6 +400,7 @@ class PredictiveIntent:
             "predicted_block_time_ms": self.predicted_block_time_ms,
             "predicted_deficit_bytes": self.predicted_deficit_bytes,
             "causal_package_generation": self.causal_package_generation,
+            "target_reentry_context_epoch": self.target_reentry_context_epoch,
             "evidence_kind": self.evidence_kind,
             "execution_order_request_ids": list(
                 self.execution_order_request_ids
@@ -832,7 +852,7 @@ class PredictiveEligibilityIndex:
         prefetch.sort(
             key=lambda item: (
                 prefetch_priority.get(item.state, 10),
-                -item.missing_gpu_bytes,
+                item.missing_gpu_bytes,
                 item.context_id,
             )
         )
@@ -1565,7 +1585,7 @@ class PredictiveRiskShadowObserver:
                         ),
                         *(
                             item.invocation_id
-                            for item in eligibility.prefetch_targets[:1]
+                            for item in eligibility.prefetch_targets[:4]
                         ),
                     )
                 )
@@ -1947,10 +1967,21 @@ class PredictiveRiskShadowObserver:
                     )
                 else:
                     timing_by_package[package.package_id] = timing
-                    if (
-                        timing.causal_slack_probability
-                        < self.config.minimum_causal_slack_probability
-                    ):
+                    minimum_probability = self.config.minimum_causal_slack_probability
+                    if package.action == PredictiveActionKind.PREFETCH_GPU:
+                        minimum_probability = (
+                            timing.decision_threshold
+                            if timing.decision_threshold is not None
+                            else self.config.minimum_prefetch_slack_probability
+                        )
+                    if not timing.informative:
+                        summary = replace(
+                            summary,
+                            eligible=False,
+                            reasons=tuple(summary.reasons)
+                            + ("action_timing_not_better_than_prior",),
+                        )
+                    elif timing.causal_slack_probability < minimum_probability:
                         summary = replace(
                             summary,
                             eligible=False,
@@ -2259,19 +2290,36 @@ class PredictiveRiskShadowObserver:
         )
         required_wait_ms = transfer_p95_ms + self.config.transfer_commit_guard_ms
         if candidate.state == InvocationState.WAIT_TOOL.value:
-            timing_probability = (
-                prediction.wait_belief.release_within_probability(required_wait_ms)
-                if release_within
-                else prediction.wait_belief.release_after_probability(
-                    required_wait_ms
-                )
+            timing = prediction.action_timing(
+                (
+                    "prefetch_gpu"
+                    if release_within
+                    else "prepare_host"
+                ),
+                required_wait_ms,
             )
-            remaining_bound = prediction.wait_belief.conservative_wait_ms(
-                0.95 if release_within else 0.05
-            )
-            if timing_probability is None or remaining_bound is None:
+            if timing is None:
                 return None
+            remaining_bound = prediction.wait_belief.conservative_wait_ms(
+                max(0.01, min(0.99, timing.raw_decision_threshold))
+                if release_within
+                else 0.05
+            )
+            if remaining_bound is None:
+                return None
+            timing_probability = timing.favorable_probability
             remaining_window_ms = max(0.0, remaining_bound)
+            calibration_brier_skill = timing.calibration_brier_skill
+            calibration_balanced_accuracy = (
+                timing.calibration_balanced_accuracy
+            )
+            decision_threshold = timing.decision_threshold
+            raw_decision_threshold = timing.raw_decision_threshold
+            precision_at_decision_threshold = (
+                timing.precision_at_decision_threshold
+            )
+            recall_at_decision_threshold = timing.recall_at_decision_threshold
+            informative = timing.informative
         else:
             dependency_timing = self._dependency_release_timing(
                 belief,
@@ -2283,11 +2331,25 @@ class PredictiveRiskShadowObserver:
             if dependency_timing is None:
                 return None
             timing_probability, remaining_window_ms = dependency_timing
+            calibration_brier_skill = None
+            calibration_balanced_accuracy = None
+            decision_threshold = None
+            raw_decision_threshold = None
+            precision_at_decision_threshold = None
+            recall_at_decision_threshold = None
+            informative = True
         return _ActionTimingEvidence(
             semantics=semantics,
             required_wait_ms=required_wait_ms,
             causal_slack_probability=timing_probability,
             conservative_remaining_window_ms=remaining_window_ms,
+            calibration_brier_skill=calibration_brier_skill,
+            calibration_balanced_accuracy=calibration_balanced_accuracy,
+            decision_threshold=decision_threshold,
+            raw_decision_threshold=raw_decision_threshold,
+            precision_at_decision_threshold=precision_at_decision_threshold,
+            recall_at_decision_threshold=recall_at_decision_threshold,
+            informative=informative,
         )
 
     def _predictive_intent(
@@ -2320,13 +2382,22 @@ class PredictiveRiskShadowObserver:
             for request in policy_input.runnable_frontier
         }
         beneficiary = runnable_by_id.get(package.beneficiary_request_id or "")
-        if beneficiary is None:
+        if (
+            beneficiary is None
+            and package.action != PredictiveActionKind.PREFETCH_GPU
+        ):
             return None
-        beneficiary_invocation = graph.invocations.get(beneficiary.invocation_id)
-        if beneficiary_invocation is None:
+        beneficiary_invocation = (
+            graph.invocations.get(beneficiary.invocation_id)
+            if beneficiary is not None
+            else None
+        )
+        if beneficiary is not None and beneficiary_invocation is None:
             return None
 
         if package.action == PredictiveActionKind.SCHEDULE:
+            assert beneficiary is not None
+            assert beneficiary_invocation is not None
             candidate_invocation_id = beneficiary.invocation_id
             candidate_state = beneficiary_invocation.state.value
             context_id = beneficiary.context_id
@@ -2507,15 +2578,37 @@ class PredictiveRiskShadowObserver:
             morphology_slack_ms=morphology_slack_ms,
             causal_slack_probability=timing_probability,
             timing_semantics=timing_semantics,
-            beneficiary_request_id=beneficiary.request_id,
-            beneficiary_invocation_id=beneficiary.invocation_id,
-            beneficiary_context_id=beneficiary.context_id,
-            beneficiary_context_epoch=beneficiary.context_epoch,
+            beneficiary_request_id=(
+                beneficiary.request_id if beneficiary is not None else None
+            ),
+            beneficiary_invocation_id=(
+                beneficiary.invocation_id
+                if beneficiary is not None
+                else candidate_invocation_id
+            ),
+            beneficiary_context_id=(
+                beneficiary.context_id
+                if beneficiary is not None
+                else context_id
+            ),
+            beneficiary_context_epoch=(
+                beneficiary.context_epoch
+                if beneficiary is not None
+                else graph.contexts[context_id].epoch
+            ),
             beneficiary_startup_bytes=package.beneficiary_startup_bytes,
             beneficiary_growth_bytes=package.beneficiary_growth_bytes,
             predicted_block_time_ms=package.predicted_block_time_ms,
             predicted_deficit_bytes=package.predicted_deficit_bytes,
             causal_package_generation=package.causal_package_generation,
+            target_reentry_context_epoch=(
+                beneficiary.context_epoch
+                if package.action == PredictiveActionKind.PREFETCH_GPU
+                and beneficiary is not None
+                else graph.contexts[context_id].epoch + 1
+                if package.action == PredictiveActionKind.PREFETCH_GPU
+                else None
+            ),
             execution_order_request_ids=package.execution_order_request_ids,
             admit_request_ids=package.admit_request_ids,
             execution_request_evidence=execution_evidence,
@@ -3329,30 +3422,32 @@ class PredictiveRiskShadowObserver:
         request_by_invocation = {
             item.invocation_id: item for item in policy_input.runnable_frontier
         }
-        for target in eligibility.prefetch_targets[:1]:
+        for target in eligibility.prefetch_targets[:4]:
             request = request_by_invocation.get(target.invocation_id)
             if (
-                request is None
-                or target.missing_gpu_bytes
+                target.missing_gpu_bytes
                 > int(
                     policy_input.resources.hbm_capacity_bytes
                     * self.config.max_full_prefetch_hbm_ratio
                 )
             ):
                 continue
-            source_execution_order = tuple(
-                getattr(
-                    getattr(source_plan, "execution", None),
-                    "ordered_request_ids",
-                    (),
+            if request is None:
+                prefetch_order = ()
+            else:
+                source_execution_order = tuple(
+                    getattr(
+                        getattr(source_plan, "execution", None),
+                        "ordered_request_ids",
+                        (),
+                    )
                 )
-            )
-            active_request_ids = frozenset(source_execution_order)
-            prefetch_order = tuple(
-                request_id
-                for request_id in predictive_execution_order
-                if request_id in active_request_ids
-            ) or source_execution_order
+                active_request_ids = frozenset(source_execution_order)
+                prefetch_order = tuple(
+                    request_id
+                    for request_id in predictive_execution_order
+                    if request_id in active_request_ids
+                ) or source_execution_order
             packages.append(
                 PredictiveActionPackage(
                     package_id=f"{source_plan_id}:prefetch:{target.context_id}",
@@ -3360,20 +3455,31 @@ class PredictiveRiskShadowObserver:
                     context_ids=(target.context_id,),
                     target_context_id=target.context_id,
                     source_joint_plan_id=source_plan_id,
-                    beneficiary_request_id=request.request_id,
+                    beneficiary_request_id=(
+                        request.request_id if request is not None else None
+                    ),
                     causal_package_generation=(
                         f"{request.request_id}:{request.context_id}:"
                         f"c{request.context_epoch}:"
                         f"{request.admission_startup_bytes or request.startup_bytes}:"
                         f"{request.admission_growth_bytes or 0}"
+                        if request is not None
+                        else None
                     ),
                     execution_order_request_ids=prefetch_order,
                     admit_request_ids=(),
-                    beneficiary_invocation_id=request.invocation_id,
-                    beneficiary_context_id=request.context_id,
-                    beneficiary_context_epoch=request.context_epoch,
+                    beneficiary_invocation_id=(
+                        request.invocation_id if request is not None else None
+                    ),
+                    beneficiary_context_id=(
+                        request.context_id if request is not None else None
+                    ),
+                    beneficiary_context_epoch=(
+                        request.context_epoch if request is not None else None
+                    ),
                 )
             )
+            break
         return tuple(packages)
 
     @staticmethod
@@ -3620,6 +3726,44 @@ class PredictiveRiskShadowObserver:
                 ),
                 "causal_slack_probability": (
                     timing_by_package[item.package_id].causal_slack_probability
+                    if item.package_id in timing_by_package
+                    else None
+                ),
+                "action_timing_brier_skill": (
+                    timing_by_package[
+                        item.package_id
+                    ].calibration_brier_skill
+                    if item.package_id in timing_by_package
+                    else None
+                ),
+                "action_timing_balanced_accuracy": (
+                    timing_by_package[
+                        item.package_id
+                    ].calibration_balanced_accuracy
+                    if item.package_id in timing_by_package
+                    else None
+                ),
+                "action_timing_decision_threshold": (
+                    timing_by_package[item.package_id].decision_threshold
+                    if item.package_id in timing_by_package
+                    else None
+                ),
+                "action_timing_raw_decision_threshold": (
+                    timing_by_package[item.package_id].raw_decision_threshold
+                    if item.package_id in timing_by_package
+                    else None
+                ),
+                "action_timing_precision_at_threshold": (
+                    timing_by_package[
+                        item.package_id
+                    ].precision_at_decision_threshold
+                    if item.package_id in timing_by_package
+                    else None
+                ),
+                "action_timing_recall_at_threshold": (
+                    timing_by_package[
+                        item.package_id
+                    ].recall_at_decision_threshold
                     if item.package_id in timing_by_package
                     else None
                 ),

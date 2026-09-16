@@ -22,6 +22,10 @@ from beliefkv.experiments.source_provenance import git_source_state, sha256_file
 REPOSITORY_ROOT = Path(__file__).resolve().parents[1]
 
 
+def _dirty_worktree_allowed() -> bool:
+    return os.environ.get("BELIEFKV_ALLOW_DIRTY_WORKTREE") == "1"
+
+
 def _parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
         description="Validate a frozen BeliefKV runtime profile before and after startup."
@@ -190,7 +194,8 @@ def _source_contract(
     except ValueError:
         pass
     beliefkv = git_source_state(REPOSITORY_ROOT, exclude_paths=excluded)
-    if beliefkv["dirty"]:
+    dirty_allowed = _dirty_worktree_allowed()
+    if beliefkv["dirty"] and not dirty_allowed:
         raise RuntimeError("BeliefKV worktree is dirty; commit the code before launch")
 
     expected_commit = str(profile["runtime"]["sglang_commit"])
@@ -212,6 +217,7 @@ def _source_contract(
         raise RuntimeError("SGLang canonical tree does not match the runtime profile")
     return {
         "beliefkv": beliefkv,
+        "beliefkv_dirty_worktree_allowed": dirty_allowed,
         "sglang": sglang,
         "passed": True,
     }

@@ -397,6 +397,11 @@ def test_semantic_delta_preserves_physical_and_telemetry_cursors():
     runtime.config = SimpleNamespace(joint_policy_enabled=False)
     runtime.audit = _AuditRecorder()
     runtime._joint_shadow_counts = Counter()
+    runtime._joint_predictive_counts = Counter()
+    runtime.predictive_risk_worker = object()
+    runtime._joint_shadow_predictive_risk_triggers = lambda _events: (
+        ("prepare", "tool_start", "invocation", 0),
+    )
     runtime._joint_shadow_timing_samples = {
         "safe_point_delta_capture_ms": deque(maxlen=16),
         "snapshot_enqueue_ms": deque(maxlen=16),
@@ -470,6 +475,15 @@ def test_semantic_delta_preserves_physical_and_telemetry_cursors():
     assert delta.page_delta.to_revision == 7
     assert delta.page_delta.topology_revision == 5
     assert delta.transfer_telemetry == ()
+    assert not delta.risk_evaluation_requested
+    assert delta.risk_trigger_signature == (
+        ("prepare", "tool_start", "invocation", 0),
+    )
+    assert runtime._pending_predictive_prepare_triggers == (
+        ("prepare", "tool_start", "invocation", 0),
+    )
+    assert runtime._pending_predictive_prepare_event_sequence == 2
+    assert runtime._pending_predictive_prepare_created_ts_ms == 2.0
     assert runtime._shadow_event_sequence == 2
     assert runtime._shadow_page_revision == 7
     assert runtime._shadow_topology_revision == 5
@@ -615,6 +629,20 @@ def test_bounded_seed_hint_change_publishes_one_lightweight_risk_delta():
     assert submitted[0].observed_seed_beneficiary.published_ts_ms == 5.0
     assert submitted[0].source_page_revision == 17
 
+    prepare_trigger = (("prepare", "tool_start", "victim", 0),)
+    runtime._pending_predictive_prepare_triggers = prepare_trigger
+    runtime._pending_predictive_prepare_event_sequence = 2
+    runtime._pending_predictive_prepare_created_ts_ms = 4.0
+    runtime._last_published_predictive_prepare_event_sequence = 0
+    assert runtime._maybe_publish_observed_seed_hint_delta(worker)
+    assert len(submitted) == 2
+    assert submitted[1].risk_evaluation_requested
+    assert submitted[1].risk_trigger_signature == prepare_trigger
+    assert submitted[1].action_local_overlay_replaced
+    assert runtime._last_published_predictive_prepare_event_sequence == 2
+    assert runtime._pending_predictive_prepare_triggers == ()
+    assert not runtime._maybe_publish_observed_seed_hint_delta(worker)
+
     runtime._latest_observed_seed_beneficiary = replace(
         runtime._latest_observed_seed_beneficiary,
         seed_generation=8,
@@ -622,7 +650,7 @@ def test_bounded_seed_hint_change_publishes_one_lightweight_risk_delta():
         published_ts_ms=None,
     )
     assert not runtime._maybe_publish_observed_seed_hint_delta(worker)
-    assert len(submitted) == 1
+    assert len(submitted) == 2
 
     runtime._latest_observed_seed_beneficiary = replace(
         runtime._latest_observed_seed_beneficiary,
@@ -632,26 +660,28 @@ def test_bounded_seed_hint_change_publishes_one_lightweight_risk_delta():
         published_ts_ms=None,
     )
     assert runtime._maybe_publish_observed_seed_hint_delta(worker)
-    assert len(submitted) == 2
-    assert submitted[1].risk_evaluation_requested
-    assert submitted[1].action_local_overlay_replaced
+    assert len(submitted) == 3
+    assert submitted[2].risk_evaluation_requested
+    assert submitted[2].action_local_overlay_replaced
 
-    combined = coalesce_joint_shadow_deltas((submitted[0], submitted[1]))
+    combined = coalesce_joint_shadow_deltas((submitted[0], submitted[2]))
     assert combined.action_local_overlay_replaced
-    assert combined.action_local_overlay_batch is submitted[1].action_local_overlay_batch
+    assert combined.action_local_overlay_batch is submitted[2].action_local_overlay_batch
 
     runtime._latest_observed_seed_beneficiary = None
     assert runtime._maybe_publish_observed_seed_hint_delta(worker)
-    assert len(submitted) == 3
-    assert not submitted[2].risk_evaluation_requested
-    assert submitted[2].observed_seed_beneficiary is None
-    assert submitted[2].action_local_overlay_replaced
+    assert len(submitted) == 4
+    assert not submitted[3].risk_evaluation_requested
+    assert submitted[3].observed_seed_beneficiary is None
+    assert submitted[3].action_local_overlay_replaced
     assert runtime._joint_predictive_counts == Counter(
         {
-            "hint_risk_published": 2,
+            "hint_risk_published": 3,
             "hint_clear_published": 1,
-            "beneficiary_opportunity:hbm_blocked": 2,
-            "overlay_victim_count": 2,
+            "beneficiary_opportunity:hbm_blocked": 3,
+            "overlay_victim_count": 3,
+            "prepare_event_aligned_hint_published": 1,
+            "prepare_event_aligned_risk_published": 1,
         }
     )
 
@@ -7675,6 +7705,7 @@ class SGLangBackendTest(unittest.TestCase):
             maximum_transfer_ms=24.0,
             maximum_stall_ms=0.0,
             morphology_slack_ms=0.0,
+            target_reentry_context_epoch=1,
         )
         decision = compile_bounded_seed_epoch(
             ordered_request_ids=("request",),
@@ -7701,6 +7732,355 @@ class SGLangBackendTest(unittest.TestCase):
             if event == "predictive_semantic_intent_rejected"
         ]
         self.assertIn("prefetch_canary_hbm_cap", rejected[-1]["reasons"])
+
+    def test_prefetch_service_lease_prioritizes_until_first_service(self):
+        runtime = EmbeddedSGLangRuntime.__new__(EmbeddedSGLangRuntime)
+        runtime.config = BeliefKVConfig(
+            hbm_capacity_bytes=2_000,
+            host_capacity_bytes=4_000,
+            reserve_hbm_bytes=0,
+            resident_service_window_ms=5_000.0,
+        )
+        runtime.controller = BeliefKVController(runtime.config)
+        runtime.controller.process_runtime_events(
+            (
+                RuntimeEvent(
+                    "workflow-start",
+                    1.0,
+                    RuntimeEventKind.WORKFLOW_START,
+                    "wf",
+                ),
+                RuntimeEvent(
+                    "invocation-create",
+                    2.0,
+                    RuntimeEventKind.INVOCATION_CREATE,
+                    "wf",
+                    invocation_id="inv",
+                    context_id="ctx",
+                    context_epoch=0,
+                ),
+            )
+        )
+        runtime.audit = _AuditRecorder()
+        runtime._joint_predictive_counts = Counter()
+        runtime._prefetch_service_leases = {}
+        runtime._context_completed_service_epoch_by_id = {}
+        runtime._request_metadata_by_id = {
+            "request": BeliefKVRequestMetadata("wf", "inv", "ctx", 0)
+        }
+        runtime._lock_service_ledger = RequestServiceLedger()
+        runtime._lock_service_ledger.observe_selected(
+            request_id="request",
+            workflow_id="wf",
+            invocation_id="inv",
+            context_id="ctx",
+            ts_ms=90.0,
+        )
+        transaction = SimpleNamespace(
+            beneficiary_request_id="request",
+            predictive_intent_id="intent",
+            context_id="ctx",
+            context_epoch=0,
+            transaction_id="transaction",
+            actual_bytes=256,
+            target_invocation_id="inv",
+            target_reentry_context_epoch=0,
+        )
+
+        self.assertTrue(
+            runtime._register_prefetch_service_lease(
+                transaction,
+                now_ms=100.0,
+            )
+        )
+        entries = {
+            "request": SimpleNamespace(
+                state=AdmissionSideState.VISIBLE_PENDING
+            )
+        }
+        self.assertEqual(
+            runtime._refresh_prefetch_service_leases(
+                entries,
+                now_ms=101.0,
+            ),
+            ("request",),
+        )
+        self.assertTrue(
+            runtime._context_has_prefetch_service_lease(
+                "ctx",
+                0,
+                now_ms=101.0,
+            )
+        )
+
+        runtime._lock_service_ledger.observe_completed(
+            "request",
+            ts_ms=102.0,
+            phase="decode",
+        )
+        self.assertEqual(
+            runtime._refresh_prefetch_service_leases(
+                entries,
+                now_ms=103.0,
+            ),
+            (),
+        )
+        self.assertEqual(runtime._prefetch_service_leases, {})
+
+    def test_prefetch_service_lease_expires_without_service(self):
+        runtime = EmbeddedSGLangRuntime.__new__(EmbeddedSGLangRuntime)
+        runtime.config = BeliefKVConfig(
+            hbm_capacity_bytes=2_000,
+            host_capacity_bytes=4_000,
+            reserve_hbm_bytes=0,
+            resident_service_window_ms=5_000.0,
+        )
+        runtime.controller = BeliefKVController(runtime.config)
+        runtime.controller.process_runtime_events(
+            (
+                RuntimeEvent(
+                    "workflow-start",
+                    1.0,
+                    RuntimeEventKind.WORKFLOW_START,
+                    "wf",
+                ),
+                RuntimeEvent(
+                    "invocation-create",
+                    2.0,
+                    RuntimeEventKind.INVOCATION_CREATE,
+                    "wf",
+                    invocation_id="inv",
+                    context_id="ctx",
+                    context_epoch=0,
+                ),
+            )
+        )
+        runtime.audit = _AuditRecorder()
+        runtime._joint_predictive_counts = Counter()
+        runtime._prefetch_service_leases = {}
+        runtime._context_completed_service_epoch_by_id = {}
+        runtime._request_metadata_by_id = {
+            "request": BeliefKVRequestMetadata("wf", "inv", "ctx", 0)
+        }
+        runtime._lock_service_ledger = RequestServiceLedger()
+        transaction = SimpleNamespace(
+            beneficiary_request_id="request",
+            predictive_intent_id="intent",
+            context_id="ctx",
+            context_epoch=0,
+            transaction_id="transaction",
+            actual_bytes=256,
+            target_invocation_id="inv",
+            target_reentry_context_epoch=0,
+        )
+        self.assertTrue(
+            runtime._register_prefetch_service_lease(
+                transaction,
+                now_ms=100.0,
+            )
+        )
+
+        self.assertFalse(
+            runtime._context_has_prefetch_service_lease(
+                "ctx",
+                0,
+                now_ms=5_101.0,
+            )
+        )
+        self.assertEqual(runtime._prefetch_service_leases, {})
+        self.assertEqual(
+            runtime._joint_predictive_counts[
+                "prefetch_service_lease_released:service_window_expired"
+            ],
+            1,
+        )
+
+    def test_context_prefetch_lease_binds_next_reentry_request(self):
+        runtime = EmbeddedSGLangRuntime.__new__(EmbeddedSGLangRuntime)
+        runtime.config = BeliefKVConfig(
+            hbm_capacity_bytes=2_000,
+            host_capacity_bytes=4_000,
+            reserve_hbm_bytes=0,
+            resident_service_window_ms=5_000.0,
+        )
+        runtime.controller = BeliefKVController(runtime.config)
+        runtime.controller.process_runtime_events(
+            (
+                RuntimeEvent(
+                    "workflow-start",
+                    1.0,
+                    RuntimeEventKind.WORKFLOW_START,
+                    "wf",
+                ),
+                RuntimeEvent(
+                    "invocation-create",
+                    2.0,
+                    RuntimeEventKind.INVOCATION_CREATE,
+                    "wf",
+                    invocation_id="inv",
+                    context_id="ctx",
+                    context_epoch=0,
+                ),
+                RuntimeEvent(
+                    "tool-start",
+                    3.0,
+                    RuntimeEventKind.TOOL_START,
+                    "wf",
+                    invocation_id="inv",
+                    context_id="ctx",
+                    context_epoch=0,
+                    attributes={"tool_family": "shell"},
+                ),
+            )
+        )
+        runtime.audit = _AuditRecorder()
+        runtime._joint_predictive_counts = Counter()
+        runtime._prefetch_service_leases = {}
+        runtime._context_completed_service_epoch_by_id = {}
+        runtime._request_metadata_by_id = {}
+        runtime._lock_service_ledger = RequestServiceLedger()
+        transaction = SimpleNamespace(
+            beneficiary_request_id=None,
+            predictive_intent_id="intent",
+            context_id="ctx",
+            context_epoch=0,
+            transaction_id="transaction",
+            actual_bytes=256,
+            target_invocation_id="inv",
+            target_reentry_context_epoch=1,
+        )
+
+        self.assertTrue(
+            runtime._register_prefetch_service_lease(
+                transaction,
+                now_ms=100.0,
+            )
+        )
+        self.assertEqual(
+            runtime._refresh_prefetch_service_leases({}, now_ms=101.0),
+            (),
+        )
+        runtime.controller.process_runtime_events(
+            (
+                RuntimeEvent(
+                    "context-advance",
+                    102.0,
+                    RuntimeEventKind.CONTEXT_ADVANCE,
+                    "wf",
+                    invocation_id="inv",
+                    context_id="ctx",
+                    context_epoch=1,
+                ),
+            )
+        )
+        runtime._request_metadata_by_id["request-next"] = (
+            BeliefKVRequestMetadata("wf", "inv", "ctx", 1)
+        )
+        runtime._lock_service_ledger.observe_selected(
+            request_id="request-next",
+            workflow_id="wf",
+            invocation_id="inv",
+            context_id="ctx",
+            ts_ms=103.0,
+        )
+        entries = {
+            "request-next": SimpleNamespace(
+                state=AdmissionSideState.VISIBLE_PENDING
+            )
+        }
+
+        self.assertEqual(
+            runtime._refresh_prefetch_service_leases(
+                entries,
+                now_ms=104.0,
+            ),
+            ("request-next",),
+        )
+        lease = runtime._prefetch_service_leases["ctx"]
+        self.assertEqual(lease.request_id, "request-next")
+        self.assertEqual(lease.context_epoch, 0)
+        self.assertEqual(lease.target_reentry_context_epoch, 1)
+        runtime._lock_service_ledger.observe_completed(
+            "request-next",
+            ts_ms=105.0,
+            phase="prefill",
+        )
+        self.assertEqual(
+            runtime._refresh_prefetch_service_leases(
+                entries,
+                now_ms=106.0,
+            ),
+            (),
+        )
+        self.assertEqual(runtime._prefetch_service_leases, {})
+
+    def test_context_prefetch_lease_rejects_late_ack_after_target_service(self):
+        runtime = EmbeddedSGLangRuntime.__new__(EmbeddedSGLangRuntime)
+        runtime.config = BeliefKVConfig(
+            hbm_capacity_bytes=2_000,
+            host_capacity_bytes=4_000,
+            reserve_hbm_bytes=0,
+            resident_service_window_ms=5_000.0,
+        )
+        runtime.controller = BeliefKVController(runtime.config)
+        runtime.controller.process_runtime_events(
+            (
+                RuntimeEvent(
+                    "workflow-start",
+                    1.0,
+                    RuntimeEventKind.WORKFLOW_START,
+                    "wf",
+                ),
+                RuntimeEvent(
+                    "invocation-create",
+                    2.0,
+                    RuntimeEventKind.INVOCATION_CREATE,
+                    "wf",
+                    invocation_id="inv",
+                    context_id="ctx",
+                    context_epoch=0,
+                ),
+                RuntimeEvent(
+                    "context-advance",
+                    3.0,
+                    RuntimeEventKind.CONTEXT_ADVANCE,
+                    "wf",
+                    invocation_id="inv",
+                    context_id="ctx",
+                    context_epoch=1,
+                ),
+            )
+        )
+        runtime.audit = _AuditRecorder()
+        runtime._joint_predictive_counts = Counter()
+        runtime._prefetch_service_leases = {}
+        runtime._context_completed_service_epoch_by_id = {"ctx": 1}
+        runtime._request_metadata_by_id = {}
+        runtime._lock_service_ledger = RequestServiceLedger()
+        transaction = SimpleNamespace(
+            beneficiary_request_id=None,
+            predictive_intent_id="intent",
+            context_id="ctx",
+            context_epoch=0,
+            transaction_id="transaction",
+            actual_bytes=256,
+            target_invocation_id="inv",
+            target_reentry_context_epoch=1,
+        )
+
+        self.assertFalse(
+            runtime._register_prefetch_service_lease(
+                transaction,
+                now_ms=100.0,
+            )
+        )
+        self.assertEqual(runtime._prefetch_service_leases, {})
+        self.assertEqual(
+            runtime._joint_predictive_counts[
+                "prefetch_service_lease_registration_late"
+            ],
+            1,
+        )
 
     def test_predictive_causal_change_before_safe_point_preserves_observed_epoch(self):
         config = BeliefKVConfig(

@@ -30,6 +30,7 @@ from beliefkv.predictor.structured_frontier import (
     select_frontier_hyperparameters,
     summarize_training_corpus,
     validate_training_corpus_diversity,
+    _recall_oriented_threshold,
 )
 
 
@@ -577,6 +578,7 @@ def test_local_model_roundtrip_preserves_distribution(tmp_path) -> None:
     after = loaded.predict(features)
     assert before == after
     assert loaded.hyperparameters == hyperparameters
+    assert loaded.artifact_metadata == {"development_only": True}
     assert before.boundary_distribution["tool"] > 0.9
     assert before.calibration_coverage == 0.0
 
@@ -909,11 +911,77 @@ def test_action_slack_evaluation_reports_binary_decision_metrics() -> None:
     metrics = evaluate_frontier_model(model, calibration, [target])
     action = metrics["wait_slack"]["prepare_host|wait_tool|operational_tau"]
 
+    assert action["available_prediction_rate"] == 0.0
     assert 0.0 <= action["accuracy_at_0_5"] <= 1.0
+    assert 0.0 <= action["majority_baseline_accuracy"] <= 1.0
     assert 0.0 <= action["precision_at_0_5"] <= 1.0
     assert 0.0 <= action["recall_at_0_5"] <= 1.0
+    assert 0.0 <= action["specificity_at_0_5"] <= 1.0
+    assert 0.0 <= action["balanced_accuracy_at_0_5"] <= 1.0
+    assert "climatology_brier" in action
+    assert "brier_skill" in action
+    assert 0.0 <= action["precision_at_0_9"] <= 1.0
+    assert 0.0 <= action["recall_at_0_9"] <= 1.0
+    assert 0.0 <= action["specificity_at_0_9"] <= 1.0
     assert 0.0 <= action["predicted_positive_rate"] <= 1.0
-    assert action["actual_positive_rate"] == 1.0
+    assert action["actual_positive_rate"] == 0.0
+
+
+def test_prefetch_threshold_prefers_recall_without_accepting_prior_precision() -> None:
+    threshold, metrics = _recall_oriented_threshold(
+        (
+            (0.10, False, 1.0),
+            (0.20, True, 1.0),
+            (0.30, False, 1.0),
+            (0.40, True, 1.0),
+            (0.70, False, 1.0),
+            (0.80, True, 1.0),
+        )
+    )
+
+    assert threshold == 0.20
+    assert metrics["recall_at_decision_threshold"] == 1.0
+    assert metrics["precision_at_decision_threshold"] == 0.6
+    assert metrics["recall_at_decision_threshold"] > 1.0 / 3.0
+
+
+def test_action_timing_inverts_calibrated_threshold_for_raw_quantile() -> None:
+    prediction = LocalFrontierPrediction(
+        invocation_id="worker",
+        boundary_distribution={"tool": 1.0},
+        current_sequence_tokens=4096,
+        remaining_decode_tokens=EmpiricalDistribution.empty(),
+        remaining_external_wait=EmpiricalDistribution(
+            (100.0, 200.0), (0.5, 0.5), 2.0
+        ),
+        tool_terminal_distribution={"success": 1.0},
+        prompt_growth_tokens=EmpiricalDistribution.empty(),
+        next_output_tokens=EmpiricalDistribution.empty(),
+        support_level="exact",
+        calibration_coverage=0.95,
+        wait_belief=WaitBelief(
+            kind=WaitBeliefKind.TOOL,
+            residual_duration=EmpiricalDistribution(
+                (100.0, 200.0), (0.5, 0.5), 2.0
+            ),
+            support_level="exact",
+            support_detail="test",
+        ),
+        action_timing_calibration={
+            "prefetch_gpu": {
+                "logit_scale": 2.0,
+                "logit_offset": 1.0,
+                "decision_threshold": 0.5,
+            }
+        },
+    )
+
+    timing = prediction.action_timing("prefetch_gpu", 150.0)
+
+    assert timing is not None
+    assert timing.decision_threshold == 0.5
+    assert timing.raw_decision_threshold == pytest.approx(0.3775406688)
+    assert timing.raw_decision_threshold != timing.decision_threshold
 
 
 def test_composer_applies_known_join_all_instead_of_learning_it() -> None:

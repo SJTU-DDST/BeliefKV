@@ -215,6 +215,21 @@ class BeliefKVController:
             if self.config.predictor_model_path
             else RemainingTimePredictor()
         )
+        frontier_model = self.predictor.frontier_model
+        artifact_metadata = (
+            getattr(frontier_model, "artifact_metadata", {})
+            if frontier_model is not None
+            else {}
+        )
+        if (
+            self.config.predictive_joint_overlay_enabled
+            and artifact_metadata.get("predictive_action_eligible") is False
+            and not self.config.predictive_development_artifact_canary_enabled
+        ):
+            raise ValueError(
+                "predictor artifact forbids physical actions; enable the explicit "
+                "development canary override for a development-only gate"
+            )
         self.cost_model = PCIeCostModel(
             bandwidth_gbps=self.config.pcie_bandwidth_gbps,
             overhead_ms=self.config.transfer_overhead_ms,

@@ -97,6 +97,7 @@ class BeliefKVConfig:
     predictive_prepare_micro_gate_id: str = "p6-prepare-mechanism-v1"
     predictive_prepare_micro_gate_min_private_bytes: int = 64 * 1024 * 1024
     predictive_prefetch_canary_enabled: bool = False
+    predictive_development_artifact_canary_enabled: bool = False
     predictive_prefetch_canary_max_inflight: int = 1
     predictive_prefetch_canary_max_hbm_ratio: float = 0.05
     predictive_prefetch_min_hbm_feasibility: float = 0.95
@@ -111,6 +112,7 @@ class BeliefKVConfig:
     predictive_risk_max_candidates: int = 2
     predictive_risk_min_calibration_coverage: float = 0.9
     predictive_risk_min_causal_slack_probability: float = 0.9
+    predictive_risk_min_prefetch_slack_probability: float = 0.5
     observed_admission_scheduling_enabled: bool = False
     observed_admission_active_kv_high_watermark_ratio: float = 0.8
     observed_admission_min_active_requests: int = 1
@@ -288,6 +290,10 @@ class BeliefKVConfig:
             raise ValueError(
                 "predictive_risk_min_causal_slack_probability must be in [0, 1]"
             )
+        if not 0 <= self.predictive_risk_min_prefetch_slack_probability <= 1:
+            raise ValueError(
+                "predictive_risk_min_prefetch_slack_probability must be in [0, 1]"
+            )
         if self.predictive_risk_shadow_enabled and not self.predictor_model_path:
             raise ValueError(
                 "predictive risk shadow requires predictor_model_path"
@@ -309,6 +315,14 @@ class BeliefKVConfig:
         ):
             raise ValueError(
                 "predictive prefetch canary requires predictive JointPlan overlay"
+            )
+        if (
+            self.predictive_development_artifact_canary_enabled
+            and not self.predictive_joint_overlay_enabled
+        ):
+            raise ValueError(
+                "development predictor canary override requires predictive "
+                "JointPlan overlay"
             )
         if self.predictive_prepare_host_canary_limit < 0:
             raise ValueError("predictive prepare canary limit must be non-negative")

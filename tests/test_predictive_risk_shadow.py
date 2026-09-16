@@ -18,6 +18,7 @@ from beliefkv.policy.reference import (
     RunnableInvocation,
 )
 from beliefkv.policy.risk_shadow import (
+    PrefetchTarget,
     PrepareHostVictim,
     PredictiveActionCertificate,
     PredictiveIntent,
@@ -182,6 +183,104 @@ def test_candidate_packages_exclude_invocations_outside_belief_scope() -> None:
         "plan:prepare:ctx-in",
         "plan:prepare:ctx-other",
     ]
+
+
+def test_prefetch_candidate_skips_oversized_head_target() -> None:
+    observer = PredictiveRiskShadowObserver.__new__(
+        PredictiveRiskShadowObserver
+    )
+    observer.config = SimpleNamespace(
+        max_full_prefetch_hbm_ratio=0.05,
+        max_candidates=8,
+    )
+    policy_input = _input(capacity=1_000, reserved=0)
+    template = policy_input.runnable_frontier[0]
+    large = replace(
+        template,
+        request_id="request-large",
+        invocation_id="invocation-large",
+        context_id="ctx-large",
+    )
+    small = replace(
+        template,
+        request_id="request-small",
+        invocation_id="invocation-small",
+        context_id="ctx-small",
+    )
+    policy_input = replace(
+        policy_input,
+        runnable_frontier=(large, small),
+    )
+    eligibility = PredictiveEligibility(
+        source_snapshot_id="snapshot",
+        prefetch_targets=(
+            PrefetchTarget(
+                "invocation-large",
+                "ctx-large",
+                "WAIT_TOOL",
+                75,
+            ),
+            PrefetchTarget(
+                "invocation-small",
+                "ctx-small",
+                "WAIT_TOOL",
+                40,
+            ),
+        ),
+        prepare_host_victims=(),
+        probe_ms=0.0,
+    )
+
+    packages = observer._candidate_packages(
+        policy_input,
+        SimpleNamespace(plan_id="plan"),
+        eligibility,
+    )
+
+    assert [package.package_id for package in packages] == [
+        "plan:a0",
+        "plan:prefetch:ctx-small",
+    ]
+
+
+def test_prefetch_candidate_does_not_require_visible_native_request() -> None:
+    observer = PredictiveRiskShadowObserver.__new__(
+        PredictiveRiskShadowObserver
+    )
+    observer.config = SimpleNamespace(
+        max_full_prefetch_hbm_ratio=0.05,
+        max_candidates=8,
+    )
+    policy_input = replace(
+        _input(capacity=1_000, reserved=0),
+        runnable_frontier=(),
+    )
+    eligibility = PredictiveEligibility(
+        source_snapshot_id="snapshot",
+        prefetch_targets=(
+            PrefetchTarget(
+                "invocation-target",
+                "ctx-target",
+                "WAIT_TOOL",
+                40,
+            ),
+        ),
+        prepare_host_victims=(),
+        probe_ms=0.0,
+    )
+
+    packages = observer._candidate_packages(
+        policy_input,
+        SimpleNamespace(plan_id="plan"),
+        eligibility,
+    )
+
+    assert [package.package_id for package in packages] == [
+        "plan:a0",
+        "plan:prefetch:ctx-target",
+    ]
+    assert packages[-1].beneficiary_request_id is None
+    assert packages[-1].execution_order_request_ids == ()
 
 
 def test_projected_reclaim_uses_explicit_seed_exclusion_hint() -> None:

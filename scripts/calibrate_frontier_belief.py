@@ -31,6 +31,10 @@ def main() -> int:
     parser.add_argument("--action-target-report", type=Path)
     parser.add_argument("--target-coverage", type=float, default=0.9)
     parser.add_argument(
+        "--model-version",
+        help="Version for the calibrated artifact; defaults to the fitted model version.",
+    )
+    parser.add_argument(
         "--coverage-report",
         type=Path,
         help=(
@@ -53,6 +57,9 @@ def main() -> int:
 
     raw_model = json.loads(args.model.read_text(encoding="utf-8"))
     model = FrontierBeliefModel.from_dict(raw_model)
+    parent_model_version = model.model_version
+    if args.model_version:
+        model.model_version = args.model_version
     action_targets = load_action_target_rows(args.action_target or ())
     if args.development_on_train:
         rows: list[dict[str, object]] = []
@@ -172,6 +179,7 @@ def main() -> int:
             ],
             "calibration_projects": calibration_projects,
             "calibration_status": "calibrated",
+            "parent_model_version": parent_model_version,
             "online_eligible": False,
             "predictive_action_eligible": False,
             "calibration_action_target_count": len(action_targets),
