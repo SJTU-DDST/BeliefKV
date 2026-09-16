@@ -146,3 +146,25 @@ reentry epoch、latest-start 和 safe-point rematerialization 约束动作。
 关闭时所有 correctness gate 均通过：无 pending transaction、command、lease 或 reservation，且
 shutdown cleanup 没有掩盖未解决事务。该轮证明在线漏斗和拒绝保护正确，但没有产生实际
 `PREFETCH_GPU`，因此仍不能声明吞吐收益或线上 prefetch recall。
+
+## 修复后 bounded 在线复验
+
+运行目录：
+`experiments/shadow/p6_funded_prefetch_gate/20260916T171036Z/predictive`
+
+复验使用提交 `0ab8c09`，运行约 20 分钟后按 bounded characterization 规则停止。最终统计为：
+
+- 1,300 次 beneficiary hint refresh；
+- 880 次 `capacity_available`；
+- 420 次 `slot_only`；
+- 0 次 victim overlay、0 次 risk evaluation、0 次 semantic intent；
+- 原生 KV token usage 在停止前约为 31%。
+
+这说明新门禁已经消除上一轮“21 ms 后阻塞却尝试 838 ms D2H”的假阳性，但本轮没有形成
+可评价的物理机会。waiting backlog 长期存在并不等于 HBM backlog：`max_running_requests=32`
+时，多出的 root 只停留在 waiting queue，不能增加 resident KV。继续增加 root 数不会验证
+prefetch；后续动作 gate 必须使用能让 32 个 active context 自然形成更大 unique KV working set
+的冻结 workload，或单独评估更高 running 上限，不能缩小 KV pool 来制造收益。
+
+受控关闭后所有 correctness gate 为 true，queued/inflight command、lease、reservation 和
+transaction 均为 0。该轮可以作为 feasibility-fix 的在线回归证据，但不进入预测动作收益对比。
