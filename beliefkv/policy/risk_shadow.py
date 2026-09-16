@@ -167,6 +167,12 @@ class PredictiveIntent:
     predicted_deficit_bytes: int = 0
     causal_package_generation: str | None = None
     target_reentry_context_epoch: int | None = None
+    victim_invocation_id: str | None = None
+    expected_victim_invocation_state: str | None = None
+    victim_context_id: str | None = None
+    victim_context_epoch: int | None = None
+    victim_generation_fingerprint: str | None = None
+    victim_reclaim_bytes: int = 0
     evidence_kind: str = "model_prediction"
     execution_order_request_ids: tuple[str, ...] = ()
     admit_request_ids: tuple[str, ...] = ()
@@ -194,6 +200,7 @@ class PredictiveIntent:
             PredictiveActionKind.PREPARE_HOST,
             PredictiveActionKind.PREFETCH_GPU,
             PredictiveActionKind.PARTIAL_PREFETCH_GPU,
+            PredictiveActionKind.RECLAIM_AND_PREFETCH,
         }:
             raise ValueError("unsupported online predictive intent")
         expected_timing = {
@@ -201,6 +208,7 @@ class PredictiveIntent:
             PredictiveActionKind.PREPARE_HOST: "release_after_transfer",
             PredictiveActionKind.PREFETCH_GPU: "release_within_transfer",
             PredictiveActionKind.PARTIAL_PREFETCH_GPU: "release_within_transfer",
+            PredictiveActionKind.RECLAIM_AND_PREFETCH: "release_within_transfer",
         }[self.action]
         if self.timing_semantics == "action_default":
             object.__setattr__(self, "timing_semantics", expected_timing)
@@ -294,12 +302,41 @@ class PredictiveIntent:
         if self.action in {
             PredictiveActionKind.PREFETCH_GPU,
             PredictiveActionKind.PARTIAL_PREFETCH_GPU,
+            PredictiveActionKind.RECLAIM_AND_PREFETCH,
         }:
             if (
                 self.target_reentry_context_epoch is None
                 or self.target_reentry_context_epoch < self.context_epoch
             ):
                 raise ValueError("prefetch intent requires a target reentry epoch")
+        if self.action == PredictiveActionKind.RECLAIM_AND_PREFETCH:
+            victim_identity = (
+                self.victim_invocation_id,
+                self.expected_victim_invocation_state,
+                self.victim_context_id,
+                self.victim_context_epoch,
+                self.victim_generation_fingerprint,
+            )
+            if any(item is None for item in victim_identity):
+                raise ValueError("funded prefetch requires victim evidence")
+            if (
+                self.victim_context_id == self.context_id
+                or self.victim_context_epoch is None
+                or self.victim_context_epoch < 0
+                or self.victim_reclaim_bytes <= 0
+            ):
+                raise ValueError("funded prefetch victim evidence is invalid")
+        elif any(
+            item is not None
+            for item in (
+                self.victim_invocation_id,
+                self.expected_victim_invocation_state,
+                self.victim_context_id,
+                self.victim_context_epoch,
+                self.victim_generation_fingerprint,
+            )
+        ) or self.victim_reclaim_bytes:
+            raise ValueError("non-swap intent cannot carry victim evidence")
         execution_order = tuple(self.execution_order_request_ids)
         admit_requests = tuple(self.admit_request_ids)
         request_evidence = tuple(self.execution_request_evidence)
@@ -403,6 +440,14 @@ class PredictiveIntent:
             "predicted_deficit_bytes": self.predicted_deficit_bytes,
             "causal_package_generation": self.causal_package_generation,
             "target_reentry_context_epoch": self.target_reentry_context_epoch,
+            "victim_invocation_id": self.victim_invocation_id,
+            "expected_victim_invocation_state": (
+                self.expected_victim_invocation_state
+            ),
+            "victim_context_id": self.victim_context_id,
+            "victim_context_epoch": self.victim_context_epoch,
+            "victim_generation_fingerprint": self.victim_generation_fingerprint,
+            "victim_reclaim_bytes": self.victim_reclaim_bytes,
             "evidence_kind": self.evidence_kind,
             "execution_order_request_ids": list(
                 self.execution_order_request_ids
@@ -501,6 +546,16 @@ class PrepareHostVictim:
     state: str
     shadow_bytes: int
     reclaimable_bytes: int
+
+
+@dataclass(frozen=True)
+class ReclaimReadyVictim:
+    invocation_id: str
+    context_id: str
+    context_epoch: int
+    state: str
+    reclaimable_bytes: int
+    generation_fingerprint: str
 
 
 @dataclass(frozen=True)
@@ -781,12 +836,17 @@ class PredictiveEligibility:
     prefetch_targets: tuple[PrefetchTarget, ...]
     prepare_host_victims: tuple[PrepareHostVictim, ...]
     probe_ms: float
+    reclaim_ready_victims: tuple[ReclaimReadyVictim, ...] = ()
     trigger_signature: tuple[object, ...] = ()
     belief_signature: tuple[object, ...] = ()
 
     @property
     def has_candidate(self) -> bool:
-        return bool(self.prefetch_targets or self.prepare_host_victims)
+        return bool(
+            self.prefetch_targets
+            or self.prepare_host_victims
+            or self.reclaim_ready_victims
+        )
 
 
 class PredictiveEligibilityIndex:
@@ -838,6 +898,7 @@ class PredictiveEligibilityIndex:
                 prefetch_targets=self._cached.prefetch_targets,
                 prepare_host_victims=self._cached.prepare_host_victims,
                 probe_ms=(time.perf_counter_ns() - started_ns) / 1_000_000.0,
+                reclaim_ready_victims=self._cached.reclaim_ready_victims,
                 trigger_signature=self._cached.trigger_signature,
                 belief_signature=self._cached.belief_signature,
             )
@@ -882,6 +943,7 @@ class PredictiveEligibilityIndex:
 
         prefetch: list[PrefetchTarget] = []
         victims: list[PrepareHostVictim] = []
+        reclaim_ready: list[ReclaimReadyVictim] = []
         prefetch_priority = {
             InvocationState.WAIT_JOIN.value: 0,
             InvocationState.WAIT_CHILD.value: 1,
@@ -917,6 +979,28 @@ class PredictiveEligibilityIndex:
                         shadow_bytes=int(overlay["d2h_copy_bytes"]),
                         reclaimable_bytes=int(
                             overlay["exclusive_reclaimable_bytes"]
+                        ),
+                    )
+                )
+            elif (
+                selected_invocation[1] in self._WAIT_STATES
+                and int(overlay.get("d2h_copy_bytes", 0)) == 0
+                and int(overlay.get("exclusive_reclaimable_bytes", 0)) > 0
+                and int(overlay.get("locked_bytes", 0)) == 0
+                and not bool(overlay.get("native_loading", False))
+                and not tuple(overlay.get("blocker_codes", ()))
+            ):
+                reclaim_ready.append(
+                    ReclaimReadyVictim(
+                        invocation_id=selected_invocation[0],
+                        context_id=context_id,
+                        context_epoch=int(overlay.get("context_epoch", 0)),
+                        state=selected_invocation[1],
+                        reclaimable_bytes=int(
+                            overlay["exclusive_reclaimable_bytes"]
+                        ),
+                        generation_fingerprint=str(
+                            overlay.get("generation_fingerprint") or ""
                         ),
                     )
                 )
@@ -969,6 +1053,9 @@ class PredictiveEligibilityIndex:
             )
         )
         victims.sort(key=lambda item: (-item.reclaimable_bytes, item.context_id))
+        reclaim_ready.sort(
+            key=lambda item: (-item.reclaimable_bytes, item.context_id)
+        )
         hbm_free = max(
             0,
             policy_input.resources.hbm_capacity_bytes
@@ -990,7 +1077,7 @@ class PredictiveEligibilityIndex:
             sorted(
                 {
                     item.invocation_id
-                    for item in (*prefetch, *victims)
+                    for item in (*prefetch, *victims, *reclaim_ready)
                 }
             )
         )
@@ -1003,7 +1090,7 @@ class PredictiveEligibilityIndex:
             candidate_invocation_ids,
         )
         candidate_context_ids = {
-            item.context_id for item in (*prefetch, *victims)
+            item.context_id for item in (*prefetch, *victims, *reclaim_ready)
         }
         contexts = graph_state_view.get("contexts", {})
         if not isinstance(contexts, Mapping):
@@ -1033,6 +1120,7 @@ class PredictiveEligibilityIndex:
             prefetch_targets=tuple(prefetch),
             prepare_host_victims=tuple(victims),
             probe_ms=(time.perf_counter_ns() - started_ns) / 1_000_000.0,
+            reclaim_ready_victims=tuple(reclaim_ready),
             trigger_signature=(
                 tuple(
                     (
@@ -1049,6 +1137,15 @@ class PredictiveEligibilityIndex:
                         item.reclaimable_bytes // (64 << 20),
                     )
                     for item in victims
+                ),
+                tuple(
+                    (
+                        item.context_id,
+                        item.state,
+                        item.reclaimable_bytes // (64 << 20),
+                        item.generation_fingerprint,
+                    )
+                    for item in reclaim_ready
                 ),
                 hbm_bucket,
                 host_bucket,
@@ -1970,6 +2067,7 @@ class PredictiveRiskShadowObserver:
                 in {
                     PredictiveActionKind.PREFETCH_GPU,
                     PredictiveActionKind.PARTIAL_PREFETCH_GPU,
+                    PredictiveActionKind.RECLAIM_AND_PREFETCH,
                 }
                 else ScenarioProjection.FULL
             )
@@ -2066,6 +2164,7 @@ class PredictiveRiskShadowObserver:
                 PredictiveActionKind.PREPARE_HOST,
                 PredictiveActionKind.PREFETCH_GPU,
                 PredictiveActionKind.PARTIAL_PREFETCH_GPU,
+                PredictiveActionKind.RECLAIM_AND_PREFETCH,
             }:
                 timing = self._action_timing_evidence(
                     package,
@@ -2088,6 +2187,7 @@ class PredictiveRiskShadowObserver:
                     if package.action in {
                         PredictiveActionKind.PREFETCH_GPU,
                         PredictiveActionKind.PARTIAL_PREFETCH_GPU,
+                        PredictiveActionKind.RECLAIM_AND_PREFETCH,
                     }:
                         minimum_probability = (
                             timing.decision_threshold
@@ -2391,6 +2491,7 @@ class PredictiveRiskShadowObserver:
         elif package.action in {
             PredictiveActionKind.PREFETCH_GPU,
             PredictiveActionKind.PARTIAL_PREFETCH_GPU,
+            PredictiveActionKind.RECLAIM_AND_PREFETCH,
         }:
             candidates = eligibility.prefetch_targets
             context_id = package.target_context_id or ""
@@ -2602,6 +2703,7 @@ class PredictiveRiskShadowObserver:
         elif package.action in {
             PredictiveActionKind.PREFETCH_GPU,
             PredictiveActionKind.PARTIAL_PREFETCH_GPU,
+            PredictiveActionKind.RECLAIM_AND_PREFETCH,
         }:
             context_id = package.target_context_id or ""
             candidate = next(
@@ -2619,11 +2721,19 @@ class PredictiveRiskShadowObserver:
             target_bytes = physicalizer._target_restore_bytes(package)
             prefix_projection = (
                 physicalizer.prefetch_prefix_projection(package)
-                if package.action == PredictiveActionKind.PARTIAL_PREFETCH_GPU
+                if package.action
+                in {
+                    PredictiveActionKind.PARTIAL_PREFETCH_GPU,
+                    PredictiveActionKind.RECLAIM_AND_PREFETCH,
+                }
                 else None
             )
             if (
-                package.action == PredictiveActionKind.PARTIAL_PREFETCH_GPU
+                package.action
+                in {
+                    PredictiveActionKind.PARTIAL_PREFETCH_GPU,
+                    PredictiveActionKind.RECLAIM_AND_PREFETCH,
+                }
                 and prefix_projection is None
             ):
                 return None
@@ -2755,6 +2865,7 @@ class PredictiveRiskShadowObserver:
                 in {
                     PredictiveActionKind.PREFETCH_GPU,
                     PredictiveActionKind.PARTIAL_PREFETCH_GPU,
+                    PredictiveActionKind.RECLAIM_AND_PREFETCH,
                 }
                 and beneficiary is not None
                 else graph.contexts[context_id].epoch + 1
@@ -2762,12 +2873,55 @@ class PredictiveRiskShadowObserver:
                 in {
                     PredictiveActionKind.PREFETCH_GPU,
                     PredictiveActionKind.PARTIAL_PREFETCH_GPU,
+                    PredictiveActionKind.RECLAIM_AND_PREFETCH,
                 }
                 else None
             ),
             execution_order_request_ids=package.execution_order_request_ids,
             admit_request_ids=package.admit_request_ids,
             execution_request_evidence=execution_evidence,
+            victim_context_id=(
+                package.victim_context_ids[0]
+                if package.action == PredictiveActionKind.RECLAIM_AND_PREFETCH
+                else None
+            ),
+            victim_invocation_id=(
+                next(
+                    item.invocation_id
+                    for item in eligibility.reclaim_ready_victims
+                    if item.context_id == package.victim_context_ids[0]
+                )
+                if package.action == PredictiveActionKind.RECLAIM_AND_PREFETCH
+                else None
+            ),
+            expected_victim_invocation_state=(
+                next(
+                    item.state
+                    for item in eligibility.reclaim_ready_victims
+                    if item.context_id == package.victim_context_ids[0]
+                )
+                if package.action == PredictiveActionKind.RECLAIM_AND_PREFETCH
+                else None
+            ),
+            victim_context_epoch=(
+                graph.contexts[package.victim_context_ids[0]].epoch
+                if package.action == PredictiveActionKind.RECLAIM_AND_PREFETCH
+                else None
+            ),
+            victim_generation_fingerprint=(
+                next(
+                    item.generation_fingerprint
+                    for item in eligibility.reclaim_ready_victims
+                    if item.context_id == package.victim_context_ids[0]
+                )
+                if package.action == PredictiveActionKind.RECLAIM_AND_PREFETCH
+                else None
+            ),
+            victim_reclaim_bytes=(
+                package.victim_reclaim_bytes
+                if package.action == PredictiveActionKind.RECLAIM_AND_PREFETCH
+                else 0
+            ),
         )
 
     @staticmethod
@@ -2972,6 +3126,7 @@ class PredictiveRiskShadowObserver:
         if package.action in {
             PredictiveActionKind.PREFETCH_GPU,
             PredictiveActionKind.PARTIAL_PREFETCH_GPU,
+            PredictiveActionKind.RECLAIM_AND_PREFETCH,
         }:
             restore_ms = physicalizer.package_transfer_duration_ms(package)
             other_unlock = 0.0
@@ -3591,14 +3746,39 @@ class PredictiveRiskShadowObserver:
         )
         for target in eligibility.prefetch_targets[:4]:
             request = request_by_invocation.get(target.invocation_id)
-            if prefetch_byte_budget <= 0:
-                continue
-            partial = target.missing_gpu_bytes > prefetch_byte_budget
-            action = (
-                PredictiveActionKind.PARTIAL_PREFETCH_GPU
-                if partial
-                else PredictiveActionKind.PREFETCH_GPU
+            reclaim_victim = next(
+                (
+                    item
+                    for item in eligibility.reclaim_ready_victims
+                    if item.context_id != target.context_id
+                    and item.invocation_id != target.invocation_id
+                    and (
+                        allowed_invocation_ids is None
+                        or item.invocation_id in allowed_invocation_ids
+                    )
+                ),
+                None,
             )
+            funded_budget = prefetch_byte_budget
+            if (
+                target.missing_gpu_bytes > prefetch_byte_budget
+                and reclaim_victim is not None
+                and request is not None
+            ):
+                funded_budget += reclaim_victim.reclaimable_bytes
+                action = PredictiveActionKind.RECLAIM_AND_PREFETCH
+            elif prefetch_byte_budget > 0:
+                action = (
+                    PredictiveActionKind.PARTIAL_PREFETCH_GPU
+                    if target.missing_gpu_bytes > prefetch_byte_budget
+                    else PredictiveActionKind.PREFETCH_GPU
+                )
+            else:
+                continue
+            bounded_prefetch = action in {
+                PredictiveActionKind.PARTIAL_PREFETCH_GPU,
+                PredictiveActionKind.RECLAIM_AND_PREFETCH,
+            }
             if request is None:
                 prefetch_order = ()
             else:
@@ -3618,15 +3798,29 @@ class PredictiveRiskShadowObserver:
             packages.append(
                 PredictiveActionPackage(
                     package_id=(
-                        f"{source_plan_id}:partial-prefetch:{target.context_id}"
-                        if partial
+                        f"{source_plan_id}:reclaim-prefetch:"
+                        f"{reclaim_victim.context_id}:{target.context_id}"
+                        if action == PredictiveActionKind.RECLAIM_AND_PREFETCH
+                        else f"{source_plan_id}:partial-prefetch:{target.context_id}"
+                        if bounded_prefetch
                         else f"{source_plan_id}:prefetch:{target.context_id}"
                     ),
                     action=action,
-                    context_ids=(target.context_id,),
+                    context_ids=(
+                        (target.context_id, reclaim_victim.context_id)
+                        if action == PredictiveActionKind.RECLAIM_AND_PREFETCH
+                        and reclaim_victim is not None
+                        else (target.context_id,)
+                    ),
                     target_context_id=target.context_id,
+                    victim_context_ids=(
+                        (reclaim_victim.context_id,)
+                        if action == PredictiveActionKind.RECLAIM_AND_PREFETCH
+                        and reclaim_victim is not None
+                        else ()
+                    ),
                     source_joint_plan_id=source_plan_id,
-                    byte_budget=prefetch_byte_budget if partial else None,
+                    byte_budget=funded_budget if bounded_prefetch else None,
                     beneficiary_request_id=(
                         request.request_id if request is not None else None
                     ),
@@ -3648,6 +3842,15 @@ class PredictiveRiskShadowObserver:
                     ),
                     beneficiary_context_epoch=(
                         request.context_epoch if request is not None else None
+                    ),
+                    predicted_deficit_bytes=max(
+                        0, target.missing_gpu_bytes - prefetch_byte_budget
+                    ),
+                    victim_reclaim_bytes=(
+                        reclaim_victim.reclaimable_bytes
+                        if reclaim_victim is not None
+                        and action == PredictiveActionKind.RECLAIM_AND_PREFETCH
+                        else 0
                     ),
                 )
             )
@@ -4156,7 +4359,10 @@ class _OnlineCandidatePhysicalizer:
         target_extent_count = self._target_restore_extent_count(
             package.target_context_id
         )
-        if package.action == PredictiveActionKind.PARTIAL_PREFETCH_GPU:
+        if package.action in {
+            PredictiveActionKind.PARTIAL_PREFETCH_GPU,
+            PredictiveActionKind.RECLAIM_AND_PREFETCH,
+        }:
             projection = self.prefetch_prefix_projection(package)
             target_extent_count = (
                 projection.extent_count if projection is not None else 0
@@ -4255,12 +4461,17 @@ class _OnlineCandidatePhysicalizer:
         if package.action in {
             PredictiveActionKind.PREFETCH_GPU,
             PredictiveActionKind.PARTIAL_PREFETCH_GPU,
+            PredictiveActionKind.RECLAIM_AND_PREFETCH,
         }:
             copy_bytes = self._target_restore_bytes(package)
             context_id = package.target_context_id or ""
             projection = (
                 self.prefetch_prefix_projection(package)
-                if package.action == PredictiveActionKind.PARTIAL_PREFETCH_GPU
+                if package.action
+                in {
+                    PredictiveActionKind.PARTIAL_PREFETCH_GPU,
+                    PredictiveActionKind.RECLAIM_AND_PREFETCH,
+                }
                 else None
             )
             cross_context_bytes = (
@@ -4449,13 +4660,13 @@ class _OnlineCandidatePhysicalizer:
             - self.policy_input.resources.hbm_reserved_bytes,
         )
         target_bytes = self._target_restore_bytes(package)
-        if package.action == PredictiveActionKind.PARTIAL_PREFETCH_GPU:
-            if self.prefetch_prefix_projection(package) is None:
-                return False
-        elif package.action in {
-            PredictiveActionKind.PREFETCH_GPU,
+        if package.action in {
+            PredictiveActionKind.PARTIAL_PREFETCH_GPU,
             PredictiveActionKind.RECLAIM_AND_PREFETCH,
         }:
+            if self.prefetch_prefix_projection(package) is None:
+                return False
+        elif package.action == PredictiveActionKind.PREFETCH_GPU:
             if package.target_context_id is None or not self._target_actionable(
                 package.target_context_id
             ):
@@ -4483,12 +4694,16 @@ class _OnlineCandidatePhysicalizer:
             for context_id in package.victim_context_ids
         )
         if package.victim_context_ids and (
-            victim_shadow_bytes <= 0
-            or not all(
+            not all(
                 self._victim_actionable(context_id)
                 for context_id in package.victim_context_ids
             )
             or victim_shadow_bytes > self.policy_input.resources.host_free_bytes
+        ):
+            return False
+        if (
+            package.action == PredictiveActionKind.RECLAIM_AND_PREFETCH
+            and victim_shadow_bytes != 0
         ):
             return False
         if package.action == PredictiveActionKind.PREFETCH_GPU:
@@ -4725,6 +4940,41 @@ class _OnlineCandidatePhysicalizer:
         for context_id in package.victim_context_ids:
             d2h_bytes = self._victim_d2h_bytes(package, context_id)
             if d2h_bytes <= 0:
+                if package.action == PredictiveActionKind.RECLAIM_AND_PREFETCH:
+                    reclaim_bytes = self._private_reclaimable_bytes(context_id)
+                    transfers.append(
+                        ScheduledTransfer(
+                            f"{package_id}:commit:{context_id}",
+                            0.0,
+                            0.0,
+                            0.0,
+                            hbm_delta_bytes_on_completion=-reclaim_bytes,
+                        )
+                    )
+                    victim_invocation_id = self.invocation_for_context(context_id)
+                    overlay = self._overlay_by_context.get(context_id, {})
+                    restore_duration = self._transfer_duration_ms(
+                        reclaim_bytes,
+                        direction="h2d",
+                        context_id=context_id,
+                        extent_count=max(
+                            1, int(overlay.get("extent_count", 0))
+                        ),
+                    )
+                    restore_id = f"{package_id}:restore:{context_id}"
+                    transfers.append(
+                        ScheduledTransfer(
+                            restore_id,
+                            0.0,
+                            restore_duration,
+                            restore_duration,
+                            hbm_delta_bytes_on_completion=reclaim_bytes,
+                            ready_after_dependency_release_ids=(
+                                victim_invocation_id,
+                            ),
+                        )
+                    )
+                    transfer_by_context[context_id] = restore_id
                 continue
             duration = self._transfer_duration_ms(
                 d2h_bytes,
@@ -4769,7 +5019,10 @@ class _OnlineCandidatePhysicalizer:
             target_extent_count = self._target_restore_extent_count(
                 target_context_id
             )
-            if package.action == PredictiveActionKind.PARTIAL_PREFETCH_GPU:
+            if package.action in {
+                PredictiveActionKind.PARTIAL_PREFETCH_GPU,
+                PredictiveActionKind.RECLAIM_AND_PREFETCH,
+            }:
                 projection = self.prefetch_prefix_projection(package)
                 target_extent_count = (
                     projection.extent_count if projection is not None else 0
@@ -4902,7 +5155,10 @@ class _OnlineCandidatePhysicalizer:
         if package.target_context_id is None:
             return 0
         missing = self._context_bytes.get(package.target_context_id, (0, 0, 0))[1]
-        if package.action == PredictiveActionKind.PARTIAL_PREFETCH_GPU:
+        if package.action in {
+            PredictiveActionKind.PARTIAL_PREFETCH_GPU,
+            PredictiveActionKind.RECLAIM_AND_PREFETCH,
+        }:
             projection = self.prefetch_prefix_projection(package)
             return projection.copy_bytes if projection is not None else 0
         return missing
@@ -4928,6 +5184,15 @@ class _OnlineCandidatePhysicalizer:
         )
 
     def _victim_actionable(self, context_id: str) -> bool:
+        overlay = self._overlay_by_context.get(context_id)
+        if overlay is not None:
+            return (
+                int(overlay.get("d2h_copy_bytes", 0)) == 0
+                and int(overlay.get("exclusive_reclaimable_bytes", 0)) > 0
+                and int(overlay.get("locked_bytes", 0)) == 0
+                and not bool(overlay.get("native_loading", False))
+                and not tuple(overlay.get("blocker_codes", ()))
+            )
         required = self._private_victim_bundles(context_id)
         return bool(required) and all(
             bundle.actionable and not bundle.locked_bytes and not bundle.blocker_codes
@@ -4935,12 +5200,18 @@ class _OnlineCandidatePhysicalizer:
         )
 
     def _private_missing_cpu_bytes(self, context_id: str) -> int:
+        overlay = self._overlay_by_context.get(context_id)
+        if overlay is not None:
+            return int(overlay.get("d2h_copy_bytes", 0))
         return sum(
             max(0, bundle.gpu_bytes - bundle.cpu_bytes)
             for bundle in self._private_victim_bundles(context_id)
         )
 
     def _private_reclaimable_bytes(self, context_id: str) -> int:
+        overlay = self._overlay_by_context.get(context_id)
+        if overlay is not None:
+            return int(overlay.get("exclusive_reclaimable_bytes", 0))
         return sum(
             bundle.marginal_reclaimable_bytes
             for bundle in self._private_victim_bundles(context_id)

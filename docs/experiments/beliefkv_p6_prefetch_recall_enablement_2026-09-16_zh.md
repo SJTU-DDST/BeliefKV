@@ -13,8 +13,8 @@
 1. FrontierBelief 为 PREPARE/PREFETCH 分别保存 action-aligned calibration。
 2. PREFETCH 使用 calibration 上的 recall-oriented F2 阈值，不再固定使用 0.5。
 3. 风险规划仍要求正 Brier skill，并保留 HBM、transfer、latest-start 和净收益门禁。
-4. 候选器检查前四个 target，跳过超过 5% HBM canary 上限的完整 context，最多生成一个
-   PREFETCH package。
+4. 候选器检查前四个 target。固定 5% HBM 单笔上限已经删除：优先按实时 free HBM 选择完整
+   prefetch；完整 context 放不下时，选择 ancestor-closed partial prefix，而不是静默跳过大 context。
 5. parked context 尚无 native request 时也可生成 PREFETCH intent；H2D ACK 后建立 5 秒
    `PrefetchServiceLease`，在下一次 reentry request 出现时按 context identity 绑定并提升 admission
    优先级。首次 GPU service 前禁止该 context 被反向迁出，首个 service、终态或超时立即释放。
@@ -54,7 +54,7 @@ PREFETCH Brier skill 为 +15.80%。召回约提升 3.18 倍，代价是 classifi
 - `H2D -> ACK -> service lease -> first GPU service` 完整；
 - worker failure 为 0；
 - H2D 后 5 秒内无无收益反向迁移；
-- safe-point rematerialization 未绕过 5% HBM 上限；
+- safe-point rematerialization 严格满足实时 HBM 容量证书；
 - 单独报告候选 recall funnel，不能把 64.67% calibration recall 当作线上 recall。
 
 ## 第一轮 GPU gate 与时序修复
@@ -82,3 +82,36 @@ PREFETCH Brier skill 为 +15.80%。召回约提升 3.18 倍，代价是 classifi
 
 因此第一轮只能证明线上漏斗已到达 action-local physical eligibility，不能作为 PREFETCH 召回率或
 吞吐收益证据。修复后的真实 GPU gate 才是下一证据节点。
+
+## 容量资助路径
+
+固定 5% 上限删除后的在线开发 gate 表明，首批真实 PREFETCH target 出现在约 99.8% HBM
+占用时。此时 free-HBM-only byte budget 近似为零，即使 partial prefix 已支持，也无法生成可执行
+候选。同期一笔真实 `PREPARE_HOST` 已完成，说明传输机制本身可用，缺口在于 reclaim 与 prefetch
+没有形成同一个 causal package。
+
+当前代码新增受限的 `RECLAIM_AND_PREFETCH`：
+
+1. 只选择已经拥有完整 CPU shadow、可执行零拷贝 `COMMIT_CPU` 的 parked victim；不为 GPU-only
+   victim隐式增加另一套迁移协议。
+2. 候选仍限制为 `1 target x 1 victim`，partial target 必须是 ancestor-closed prefix。
+3. safe point 同时重新物化 victim 与 target，并验证 victim exclusive reclaim、target copy bytes、
+   context epoch、generation 与 HBM 资源证书。
+4. 数据面严格执行 `COMMIT_CPU ACK -> partial H2D enqueue -> H2D ACK -> service lease`。H2D
+   不得在 victim ACK 前入队；实际 reclaim 小于证书、deadline 已过或 H2D enqueue 失败时显式终止。
+5. COMMIT 后失败保留 victim 的 CPU copy，不产生 restore debt；shutdown 通过现有显式 terminal
+   cancellation 清理 staged transaction。
+
+该节点已通过候选、JointPlan、worker 和 staged ACK 控制面测试，但尚未通过真实 GPU 在线闭环，
+因此不能据此声明 PREFETCH 吞吐收益。下一次短高压 gate 只需要验证第一笔自然产生的：
+
+```text
+RECLAIM_AND_PREFETCH
+-> victim COMMIT_CPU ACK
+-> target partial H2D ACK
+-> PrefetchServiceLease
+-> target first GPU service
+```
+
+若没有 commit-ready victim，则继续由现有 `PREPARE_HOST` 建立 CPU shadow，后续事件再形成交换
+候选；不会为了制造正例提前驱逐 GPU KV。

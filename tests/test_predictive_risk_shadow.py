@@ -20,6 +20,7 @@ from beliefkv.policy.reference import (
 from beliefkv.policy.risk_shadow import (
     PrefetchTarget,
     PrepareHostVictim,
+    ReclaimReadyVictim,
     PredictiveActionCertificate,
     PredictiveIntent,
     PredictiveEligibilityIndex,
@@ -243,6 +244,53 @@ def test_prefetch_candidate_converts_oversized_head_to_bounded_partial() -> None
     partial = packages[1]
     assert partial.action == PredictiveActionKind.PARTIAL_PREFETCH_GPU
     assert partial.byte_budget == 50
+
+
+def test_prefetch_candidate_uses_commit_ready_victim_when_free_hbm_is_zero() -> None:
+    observer = PredictiveRiskShadowObserver.__new__(
+        PredictiveRiskShadowObserver
+    )
+    observer.config = SimpleNamespace(max_candidates=8)
+    policy_input = _input(capacity=600, reserved=0)
+    target = policy_input.runnable_frontier[0]
+    eligibility = PredictiveEligibility(
+        source_snapshot_id="snapshot",
+        prefetch_targets=(
+            PrefetchTarget(
+                target.invocation_id,
+                target.context_id,
+                "WAIT_TOOL",
+                300,
+            ),
+        ),
+        prepare_host_victims=(),
+        probe_ms=0.0,
+        reclaim_ready_victims=(
+            ReclaimReadyVictim(
+                "invocation-victim",
+                "ctx-victim",
+                0,
+                "WAIT_TOOL",
+                256,
+                "summary:ctx-victim:e0:r7",
+            ),
+        ),
+    )
+
+    packages = observer._candidate_packages(
+        policy_input,
+        SimpleNamespace(plan_id="plan"),
+        eligibility,
+    )
+
+    assert len(packages) == 2
+    funded = packages[-1]
+    assert funded.action == PredictiveActionKind.RECLAIM_AND_PREFETCH
+    assert funded.target_context_id == target.context_id
+    assert funded.victim_context_ids == ("ctx-victim",)
+    assert funded.byte_budget == 256
+    assert funded.victim_reclaim_bytes == 256
+    assert funded.predicted_deficit_bytes == 300
 
 
 def test_prefetch_candidate_does_not_require_visible_native_request() -> None:

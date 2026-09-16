@@ -542,6 +542,10 @@ class _OnlineJointResidencyTransaction:
     estimated_saved_stall_ms: float = 0.0
     target_invocation_id: str | None = None
     target_reentry_context_epoch: int | None = None
+    swap_target_preview: PhysicalBundlePreview | None = None
+    swap_target_deadline_ms: float | None = None
+    swap_victim_reclaim_bytes: int = 0
+    swap_reclaimed_bytes: int = 0
 
 
 @dataclass(frozen=True)
@@ -622,6 +626,7 @@ class _PredictiveResidencyCommit:
     live_shape_fingerprint: str
     live_extent_count: int
     audit_fields: Mapping[str, Any]
+    victim_preview: PhysicalBundlePreview | None = None
 
 
 @dataclass(frozen=True)
@@ -3768,6 +3773,8 @@ class EmbeddedSGLangRuntime:
                 context_id=residency.context_id,
                 status="aborted",
                 actual_bytes=residency.actual_bytes,
+                swap_reclaimed_bytes=residency.swap_reclaimed_bytes,
+                swap_target_pending=residency.swap_target_preview is not None,
                 reason="runtime_shutdown",
                 blocker_codes=[],
             )
@@ -13415,6 +13422,20 @@ class EmbeddedSGLangRuntime:
                     reason="rescue_identity_terminal",
                     success=False,
                 )
+        pending_residency = getattr(
+            self, "_pending_online_joint_residency", None
+        )
+        if (
+            pending_residency is not None
+            and pending_residency.stage == "target_prefetch_queued"
+        ):
+            ordered_request_ids = ()
+            compile_max_requests = 0
+            ticket_source = "predictive_swap_capacity_owner"
+            ticket_reason = "target_h2d_inflight"
+            self._joint_predictive_counts[
+                "swap_target_h2d_admission_paused"
+            ] += 1
         candidate_limit = min(
             len(ordered_request_ids),
             max(64, max(0, int(max_requests)) * 4),
@@ -17532,9 +17553,14 @@ class EmbeddedSGLangRuntime:
                 continue
             context_revision = page_index.context_revision(summary.context_id)
             copy_bytes = summary.d2h_copy_upper_bound_bytes
-            extent_count = summary.d2h_extent_count_upper_bound
-            if copy_bytes <= 0 or extent_count <= 0:
-                observed_failure_reasons.add("victim_already_shadowed")
+            extent_count = (
+                summary.extent_count
+                if copy_bytes == 0
+                else summary.d2h_extent_count_upper_bound
+            )
+            commit_ready = copy_bytes == 0
+            if copy_bytes > 0 and extent_count <= 0:
+                observed_failure_reasons.add("victim_physically_blocked")
                 continue
             if copy_bytes > observation.host_free_bytes:
                 observed_failure_reasons.add("victim_host_capacity_insufficient")
@@ -17550,7 +17576,9 @@ class EmbeddedSGLangRuntime:
                     f"r{context_revision}"
                 ),
                 shape_fingerprint=(
-                    f"summary:{copy_bytes}:n{extent_count}"
+                    f"commit-ready:{summary.exclusive_reclaimable_upper_bound_bytes}"
+                    if commit_ready
+                    else f"summary:{copy_bytes}:n{extent_count}"
                 ),
                 exclusive_reclaimable_bytes=(
                     summary.exclusive_reclaimable_upper_bound_bytes
@@ -17563,7 +17591,11 @@ class EmbeddedSGLangRuntime:
                 blocker_codes=(),
                 native_loading=False,
                 captured_ts_ms=observation.ts_ms,
-                evidence_kind="context_summary_upper_bound",
+                evidence_kind=(
+                    "commit_ready_summary"
+                    if commit_ready
+                    else "context_summary_upper_bound"
+                ),
             )
             overlays.append(overlay)
 
@@ -21637,6 +21669,7 @@ class EmbeddedSGLangRuntime:
             PredictiveActionKind.PREPARE_HOST,
             PredictiveActionKind.PREFETCH_GPU,
             PredictiveActionKind.PARTIAL_PREFETCH_GPU,
+            PredictiveActionKind.RECLAIM_AND_PREFETCH,
         }
         observed_residency_actions = any(
             item.action != ResidencyAction.KEEP for item in plan.residency
@@ -21703,6 +21736,29 @@ class EmbeddedSGLangRuntime:
             reasons.append("invocation_context_changed")
         elif invocation.state.value != intent.expected_invocation_state:
             reasons.append("invocation_state_changed")
+        victim_context = None
+        if intent.action == PredictiveActionKind.RECLAIM_AND_PREFETCH:
+            victim_invocation = self.controller.graph.invocations.get(
+                intent.victim_invocation_id or ""
+            )
+            victim_context = self.controller.graph.contexts.get(
+                intent.victim_context_id or ""
+            )
+            if victim_invocation is None:
+                reasons.append("victim_invocation_missing")
+            elif victim_invocation.context_id != intent.victim_context_id:
+                reasons.append("victim_invocation_context_changed")
+            elif (
+                victim_invocation.state.value
+                != intent.expected_victim_invocation_state
+            ):
+                reasons.append("victim_invocation_state_changed")
+            if victim_context is None:
+                reasons.append("victim_context_missing")
+            elif victim_context.epoch != intent.victim_context_epoch:
+                reasons.append("victim_context_epoch_changed")
+            if intent.victim_context_id == intent.context_id:
+                reasons.append("victim_matches_target")
         if current_runnable is None:
             current_runnable = (
                 self._policy_runtime_runnable(now_ms)
@@ -21804,6 +21860,7 @@ class EmbeddedSGLangRuntime:
         elif intent.action in {
             PredictiveActionKind.PREFETCH_GPU,
             PredictiveActionKind.PARTIAL_PREFETCH_GPU,
+            PredictiveActionKind.RECLAIM_AND_PREFETCH,
         }:
             action = ResidencyAction.PREFETCH_GPU
             if not self.config.predictive_prefetch_canary_enabled:
@@ -21951,6 +22008,7 @@ class EmbeddedSGLangRuntime:
         finish_phase("execution_and_admission")
 
         preview: PhysicalBundlePreview | None = None
+        victim_preview: PhysicalBundlePreview | None = None
         blockers: set[str] = set()
         if not reasons and command_kind is not None and target is not None:
             host_available = self.controller.signals.host_free_bytes
@@ -21964,6 +22022,78 @@ class EmbeddedSGLangRuntime:
             candidates: list[PhysicalBundlePreview] = []
             envelope_blockers: set[str] = set()
             builder = self.controller.arbiter.bundle_builder
+            if (
+                intent.action == PredictiveActionKind.RECLAIM_AND_PREFETCH
+                and intent.target_bytes_hint > device_available
+            ):
+                victim_context_id = intent.victim_context_id or ""
+                victim_epoch = int(intent.victim_context_epoch or 0)
+                page_index = self.controller.page_index
+                if not page_index.has_context(victim_context_id):
+                    reasons.append("victim_physical_context_missing")
+                else:
+                    victim_revision = page_index.context_revision(victim_context_id)
+                    live_victim_generation = (
+                        f"summary:{victim_context_id}:e{victim_epoch}:"
+                        f"r{victim_revision}"
+                    )
+                    if (
+                        live_victim_generation
+                        != intent.victim_generation_fingerprint
+                    ):
+                        reasons.append("victim_generation_changed")
+                victim_candidates = builder.previews_for_context(
+                    CommandKind.OFFLOAD_CONTEXT,
+                    victim_context_id,
+                    victim_epoch,
+                    now_ms=now_ms,
+                    host_available_bytes=host_available,
+                )
+                valid_victims = []
+                for candidate in victim_candidates:
+                    candidate_actions = {
+                        item.action for item in candidate.page_actions
+                    }
+                    if PhysicalPageAction.COMMIT_CPU not in candidate_actions:
+                        continue
+                    if not candidate.eligible:
+                        blockers.update(
+                            item.code.value for item in candidate.blockers
+                        )
+                        continue
+                    if candidate.copy_bytes != 0:
+                        envelope_blockers.add("victim_cpu_shadow_incomplete")
+                        continue
+                    if candidate.bundle.cross_context_action_bytes != 0:
+                        envelope_blockers.add("victim_not_exclusive")
+                        continue
+                    if (
+                        candidate.bundle.exclusive_action_bytes
+                        < intent.victim_reclaim_bytes
+                    ):
+                        envelope_blockers.add("victim_reclaim_below_envelope")
+                        continue
+                    valid_victims.append(candidate)
+                if valid_victims:
+                    victim_preview = min(
+                        valid_victims,
+                        key=lambda item: (
+                            item.bundle.exclusive_action_bytes,
+                            item.bundle.closure_bytes,
+                            item.bundle.bundle_id,
+                        ),
+                    )
+                    device_available += victim_preview.bundle.exclusive_action_bytes
+                elif not reasons:
+                    reasons.extend(
+                        f"envelope:{item}"
+                        for item in sorted(envelope_blockers)
+                    )
+                    reasons.extend(
+                        f"physical:{item}" for item in sorted(blockers)
+                    )
+                    if not blockers and not envelope_blockers:
+                        reasons.append("victim_physical_preview_unavailable")
             if intent.action == PredictiveActionKind.PREPARE_HOST:
                 best = builder.best_exclusive_shadow_preview_for_context(
                     target.context_id,
@@ -21981,7 +22111,7 @@ class EmbeddedSGLangRuntime:
                     host_available_bytes=host_available,
                     device_available_bytes=device_available,
                 )
-            for candidate in live_candidates:
+            for candidate in live_candidates if not reasons else ():
                 if not {
                     item.action for item in candidate.page_actions
                 }.intersection(expected_actions):
@@ -21989,7 +22119,10 @@ class EmbeddedSGLangRuntime:
                 if candidate.eligible:
                     if (
                         intent.action
-                        == PredictiveActionKind.PARTIAL_PREFETCH_GPU
+                        in {
+                            PredictiveActionKind.PARTIAL_PREFETCH_GPU,
+                            PredictiveActionKind.RECLAIM_AND_PREFETCH,
+                        }
                         and candidate.copy_bytes != intent.target_bytes_hint
                     ):
                         envelope_blockers.add(
@@ -22031,6 +22164,7 @@ class EmbeddedSGLangRuntime:
                 in {
                     PredictiveActionKind.PREFETCH_GPU,
                     PredictiveActionKind.PARTIAL_PREFETCH_GPU,
+                    PredictiveActionKind.RECLAIM_AND_PREFETCH,
                 }
                 else TransferDirection.D2H
             )
@@ -22124,6 +22258,7 @@ class EmbeddedSGLangRuntime:
             in {
                 PredictiveActionKind.PREFETCH_GPU,
                 PredictiveActionKind.PARTIAL_PREFETCH_GPU,
+                PredictiveActionKind.RECLAIM_AND_PREFETCH,
             }
             and remaining_ms
             > effective_transfer_ms
@@ -22227,7 +22362,25 @@ class EmbeddedSGLangRuntime:
             if execution_slice_id is not None:
                 dependency_dag.append((execution_slice_id, admission_slice_id))
         residency_slice_id: str | None = None
+        victim_slice_id: str | None = None
         if physical_action:
+            if intent.action == PredictiveActionKind.RECLAIM_AND_PREFETCH:
+                victim_slice_id = f"predictive-reclaim:{intent.intent_id}"
+                package_slices.append(
+                    ActionSlice(
+                        slice_id=victim_slice_id,
+                        kind="predictive_reclaim",
+                        action_key=intent.victim_context_id or "",
+                        dependency_keys=(
+                            (execution_slice_id,)
+                            if execution_slice_id is not None
+                            else ()
+                        ),
+                        committed=True,
+                    )
+                )
+                if execution_slice_id is not None:
+                    dependency_dag.append((execution_slice_id, victim_slice_id))
             residency_slice_id = f"predictive-residency:{intent.intent_id}"
             package_slices.append(
                 ActionSlice(
@@ -22235,14 +22388,18 @@ class EmbeddedSGLangRuntime:
                     kind="predictive_residency",
                     action_key=intent.context_id,
                     dependency_keys=(
-                        (execution_slice_id,)
+                        (victim_slice_id,)
+                        if victim_slice_id is not None
+                        else (execution_slice_id,)
                         if execution_slice_id is not None
                         else ()
                     ),
                     committed=True,
                 )
             )
-            if execution_slice_id is not None:
+            if victim_slice_id is not None:
+                dependency_dag.append((victim_slice_id, residency_slice_id))
+            elif execution_slice_id is not None:
                 dependency_dag.append((execution_slice_id, residency_slice_id))
             if admission_slice_id is not None:
                 dependency_dag.append((residency_slice_id, admission_slice_id))
@@ -22269,19 +22426,21 @@ class EmbeddedSGLangRuntime:
                 getattr(self, "_restore_service_grace_by_request", {}).values()
             ),
         )
-        physical_fingerprints = (
+        physical_fingerprints = tuple(
             (
-                (
-                    preview.bundle.bundle_id,
-                    preview.bundle.generation_fingerprint,
-                ),
+                item.bundle.bundle_id,
+                item.bundle.generation_fingerprint,
             )
-            if preview is not None
-            else ()
+            for item in (victim_preview, preview)
+            if item is not None
         )
         group = ActionGroup(
             group_id=f"predictive-group:{intent.intent_id}",
-            atomicity=ActionGroupAtomicity.ALL_OR_NOTHING,
+            atomicity=(
+                ActionGroupAtomicity.PREFIX_COMMITTABLE
+                if victim_preview is not None
+                else ActionGroupAtomicity.ALL_OR_NOTHING
+            ),
             actions=tuple(package_slices),
             dependency_dag=tuple(dependency_dag),
             resource_certificate=ActionGroupResourceCertificate(
@@ -22299,6 +22458,11 @@ class EmbeddedSGLangRuntime:
                 ),
                 planned_pcie_bytes=(
                     preview.copy_bytes if preview is not None else 0
+                ),
+                planned_reclaim_bytes=(
+                    victim_preview.bundle.exclusive_action_bytes
+                    if victim_preview is not None
+                    else 0
                 ),
                 topology_revision=(
                     self.controller.page_index.topology_revision
@@ -22321,12 +22485,37 @@ class EmbeddedSGLangRuntime:
                     >= self.config.predictive_prefetch_min_hbm_feasibility
                 ),
             ),
-            compensation=("fallback_to_observed_joint_plan_before_dispatch",),
+            compensation=(
+                "fallback_to_observed_joint_plan_before_dispatch",
+                *(
+                    (
+                        "commit_failure_cancels_prefetch",
+                        "prefetch_failure_preserves_victim_cpu_copy",
+                    )
+                    if victim_preview is not None
+                    else ()
+                ),
+            ),
             committed=True,
             evidence_read_set=(
                 ("intent_id", intent.intent_id),
                 ("model_version", intent.model_version),
                 ("source_joint_plan_id", plan.plan_id),
+                *(
+                    (
+                        (
+                            "victim_invocation_id",
+                            intent.victim_invocation_id or "",
+                        ),
+                        (
+                            "victim_invocation_state",
+                            intent.expected_victim_invocation_state or "",
+                        ),
+                    )
+                    if intent.action
+                    == PredictiveActionKind.RECLAIM_AND_PREFETCH
+                    else ()
+                ),
                 *(
                     (f"request:{request_id}", f"{invocation_id}:{context_id}:c{context_epoch}")
                     for request_id, invocation_id, context_id, context_epoch
@@ -22384,6 +22573,7 @@ class EmbeddedSGLangRuntime:
                 live_shape_fingerprint or "not_applicable"
             ),
             live_extent_count=len(preview.page_actions),
+            victim_preview=victim_preview,
             audit_fields={
                 "plan_id": plan.plan_id,
                 "intent_id": intent.intent_id,
@@ -22402,6 +22592,21 @@ class EmbeddedSGLangRuntime:
                 "physical_bundle_id": preview.bundle.bundle_id,
                 "physical_closure_bytes": preview.bundle.closure_bytes,
                 "copy_bytes": preview.copy_bytes,
+                "victim_context_id": (
+                    victim_preview.context_id
+                    if victim_preview is not None
+                    else None
+                ),
+                "victim_physical_bundle_id": (
+                    victim_preview.bundle.bundle_id
+                    if victim_preview is not None
+                    else None
+                ),
+                "victim_reclaim_bytes": (
+                    victim_preview.bundle.exclusive_action_bytes
+                    if victim_preview is not None
+                    else 0
+                ),
                 "age_ms": age_ms,
                 "remaining_window_low_ms": remaining_ms,
                 "intent_transfer_p95_ms": intent.transfer_p95_ms,
@@ -23248,8 +23453,19 @@ class EmbeddedSGLangRuntime:
             return False
         intent = committed.intent
         target = committed.target
-        preview = committed.preview
-        command_kind = self._online_residency_command_kind(target.action)
+        target_preview = committed.preview
+        victim_preview = committed.victim_preview
+        preview = victim_preview or target_preview
+        command_kind = (
+            CommandKind.OFFLOAD_CONTEXT
+            if victim_preview is not None
+            else self._online_residency_command_kind(target.action)
+        )
+        dispatched_action = (
+            ResidencyAction.COMMIT_CPU
+            if victim_preview is not None
+            else target.action
+        )
         if command_kind is None:
             self._update_predictive_prepare_micro_gate(
                 "rejected",
@@ -23302,6 +23518,11 @@ class EmbeddedSGLangRuntime:
                 "predictive_model_version": intent.model_version,
                 "predictive_evidence_kind": intent.evidence_kind,
                 "predictive_action": intent.action.value,
+                "predictive_swap_stage": (
+                    "victim_commit"
+                    if victim_preview is not None
+                    else "single_action"
+                ),
                 "predictive_required_heads": list(
                     intent.required_prediction_heads
                 ),
@@ -23357,7 +23578,7 @@ class EmbeddedSGLangRuntime:
             plan_id=plan_id,
             intent_index=-1,
             source_bundle_id=f"predictive:{intent.intent_id}",
-            action=target.action,
+            action=dispatched_action,
             command_id=command_id,
             command_kind=command_kind,
             context_id=preview.context_id,
@@ -23381,6 +23602,7 @@ class EmbeddedSGLangRuntime:
                 in {
                     PredictiveActionKind.PREFETCH_GPU,
                     PredictiveActionKind.PARTIAL_PREFETCH_GPU,
+                    PredictiveActionKind.RECLAIM_AND_PREFETCH,
                 }
                 else None
             ),
@@ -23390,8 +23612,20 @@ class EmbeddedSGLangRuntime:
                 in {
                     PredictiveActionKind.PREFETCH_GPU,
                     PredictiveActionKind.PARTIAL_PREFETCH_GPU,
+                    PredictiveActionKind.RECLAIM_AND_PREFETCH,
                 }
                 else None
+            ),
+            swap_target_preview=(
+                target_preview if victim_preview is not None else None
+            ),
+            swap_target_deadline_ms=(
+                target.deadline_ms if victim_preview is not None else None
+            ),
+            swap_victim_reclaim_bytes=(
+                victim_preview.bundle.exclusive_action_bytes
+                if victim_preview is not None
+                else 0
             ),
         )
         self._pending_online_joint_residency = transaction
@@ -23402,8 +23636,8 @@ class EmbeddedSGLangRuntime:
         self._predictive_action_ledger().register(
             intent_id=intent.intent_id,
             action=intent.action.value,
-            context_id=preview.context_id,
-            context_epoch=preview.context_epoch,
+            context_id=intent.context_id,
+            context_epoch=intent.context_epoch,
             command_id=command_id,
             now_ms=now_ms,
         )
@@ -23423,7 +23657,10 @@ class EmbeddedSGLangRuntime:
             intent_kind="predictive_semantic_target",
             predictive_intent_id=intent.intent_id,
             source_predictive_joint_plan_id=intent.source_joint_plan_id,
-            action=target.action.value,
+            action=intent.action.value,
+            transaction_stage=(
+                "victim_commit" if victim_preview is not None else "single_action"
+            ),
             command_id=command_id,
             command_kind=command_kind.value,
             context_id=preview.context_id,
@@ -23436,6 +23673,16 @@ class EmbeddedSGLangRuntime:
             live_shape_fingerprint=committed.live_shape_fingerprint,
             source_joint_plan_id=plan_id,
             transfer_model="extent_count_aware",
+            target_context_id=target_preview.context_id,
+            target_physical_bundle_id=target_preview.bundle.bundle_id,
+            victim_context_id=(
+                victim_preview.context_id if victim_preview is not None else None
+            ),
+            victim_reclaim_bytes=(
+                victim_preview.bundle.exclusive_action_bytes
+                if victim_preview is not None
+                else 0
+            ),
         )
         self._current_predictive_residency_commit = None
         self._latest_predictive_intent = None
@@ -23609,6 +23856,128 @@ class EmbeddedSGLangRuntime:
             expected_unlock_boundary=target.expected_unlock_boundary,
         )
 
+    def _queue_predictive_swap_target(
+        self,
+        transaction: _OnlineJointResidencyTransaction,
+        *,
+        now_ms: float,
+    ) -> bool:
+        certified_preview = transaction.swap_target_preview
+        if certified_preview is None:
+            return False
+        if (
+            transaction.swap_target_deadline_ms is not None
+            and now_ms >= transaction.swap_target_deadline_ms
+        ):
+            transaction.failure_reason = "target_prefetch_deadline_expired"
+            self._joint_predictive_counts["swap_prefetch_deadline_expired"] += 1
+            return False
+        scheduler = getattr(self, "scheduler", None)
+        allocator = getattr(scheduler, "token_to_kv_pool_allocator", None)
+        if allocator is not None:
+            device_available = (
+                self._allocator_available_tokens()
+                * self.config.kv_bytes_per_token
+            )
+        else:
+            observed_used_bytes = int(
+                self.config.hbm_capacity_bytes
+                * max(0.0, self.controller.signals.hbm_pressure)
+            )
+            device_available = max(
+                0,
+                self.config.hbm_capacity_bytes
+                - max(self.controller.page_index.gpu_bytes, observed_used_bytes)
+                - self.controller.admission.reserved_bytes,
+            )
+        live_candidates = (
+            self.controller.arbiter.bundle_builder.previews_for_context(
+                CommandKind.PREFETCH_CONTEXT,
+                certified_preview.context_id,
+                certified_preview.context_epoch,
+                now_ms=now_ms,
+                device_available_bytes=device_available,
+            )
+        )
+        matching = tuple(
+            candidate
+            for candidate in live_candidates
+            if candidate.eligible
+            and candidate.copy_bytes == certified_preview.copy_bytes
+            and candidate.bundle.cross_context_action_bytes
+            <= certified_preview.bundle.cross_context_action_bytes
+        )
+        if not matching:
+            transaction.failure_reason = "target_prefetch_live_capacity_unavailable"
+            self._joint_predictive_counts[
+                "swap_prefetch_live_capacity_unavailable"
+            ] += 1
+            return False
+        preview = min(
+            matching,
+            key=lambda item: (
+                item.bundle.cross_context_action_bytes,
+                item.bundle.closure_bytes,
+                item.bundle.bundle_id,
+            ),
+        )
+        command_id = f"{transaction.transaction_id}-prefetch-command"
+        command = ControlCommand(
+            command_id=command_id,
+            kind=CommandKind.PREFETCH_CONTEXT,
+            created_ts_ms=now_ms,
+            context_id=preview.context_id,
+            context_epoch=preview.context_epoch,
+            target_bytes=preview.bundle.closure_bytes,
+            priority=4.0e9,
+            deadline_ms=transaction.swap_target_deadline_ms,
+            queue_class=CommandQueueClass.URGENT,
+            metadata={
+                "reason": "predictive_joint_funded_prefetch",
+                "joint_plan_id": transaction.plan_id,
+                "predictive_intent_id": transaction.predictive_intent_id,
+                "predictive_package_id": transaction.causal_package_id,
+                "predictive_swap_stage": "target_prefetch",
+                "funding_transaction_id": transaction.transaction_id,
+                "funding_reclaimed_bytes": transaction.swap_reclaimed_bytes,
+                "physical_bundle_scope": preview.bundle.scope.value,
+                "physical_cross_context_action_bytes": (
+                    preview.bundle.cross_context_action_bytes
+                ),
+            },
+            physical_bundle=preview.intent(),
+        )
+        outcome = self.controller.enqueue_control_command(command)
+        if outcome.status != EnqueueStatus.ENQUEUED:
+            transaction.failure_reason = f"prefetch_enqueue:{outcome.status.value}"
+            self._joint_predictive_counts["swap_prefetch_enqueue_failed"] += 1
+            return False
+        transaction.command_id = command_id
+        transaction.command_kind = CommandKind.PREFETCH_CONTEXT
+        transaction.action = ResidencyAction.PREFETCH_GPU
+        transaction.context_id = preview.context_id
+        transaction.context_epoch = preview.context_epoch
+        transaction.physical_bundle_id = preview.bundle.bundle_id
+        transaction.stage = "target_prefetch_queued"
+        transaction.swap_target_preview = None
+        self._joint_predictive_counts["swap_target_prefetch_queued"] += 1
+        self.audit.emit(
+            "predictive_joint_swap_stage_queued",
+            now_ms,
+            audit_level="correctness",
+            transaction_id=transaction.transaction_id,
+            plan_id=transaction.plan_id,
+            predictive_intent_id=transaction.predictive_intent_id,
+            stage="target_prefetch",
+            command_id=command_id,
+            context_id=preview.context_id,
+            context_epoch=preview.context_epoch,
+            physical_bundle_id=preview.bundle.bundle_id,
+            target_bytes=preview.copy_bytes,
+            reclaimed_bytes=transaction.swap_reclaimed_bytes,
+        )
+        return True
+
     def _advance_online_joint_residency(
         self,
         acks: tuple[CommandAck, ...] | list[CommandAck],
@@ -23626,6 +23995,51 @@ class EmbeddedSGLangRuntime:
         )
         if ack is None:
             return
+        if (
+            ack.status == CommandStatus.COMPLETED
+            and transaction.swap_target_preview is not None
+            and transaction.command_kind == CommandKind.OFFLOAD_CONTEXT
+        ):
+            transaction.swap_reclaimed_bytes = ack.actual_bytes
+            self._record_context_residency_direction(
+                context_id=transaction.context_id,
+                action=ResidencyAction.COMMIT_CPU,
+                now_ms=now_ms,
+                transaction_id=transaction.transaction_id,
+            )
+            self.audit.emit(
+                "predictive_joint_swap_stage_terminal",
+                now_ms,
+                audit_level="correctness",
+                transaction_id=transaction.transaction_id,
+                plan_id=transaction.plan_id,
+                predictive_intent_id=transaction.predictive_intent_id,
+                stage="victim_commit",
+                command_id=transaction.command_id,
+                status=ack.status.value,
+                actual_bytes=ack.actual_bytes,
+                required_reclaim_bytes=transaction.swap_victim_reclaim_bytes,
+            )
+            if ack.actual_bytes < transaction.swap_victim_reclaim_bytes:
+                ack = replace(
+                    ack,
+                    status=CommandStatus.REJECTED,
+                    reason="victim_reclaim_below_certificate",
+                )
+            elif self._queue_predictive_swap_target(
+                transaction,
+                now_ms=now_ms,
+            ):
+                return
+            else:
+                ack = replace(
+                    ack,
+                    status=CommandStatus.REJECTED,
+                    reason=(
+                        transaction.failure_reason
+                        or "target_prefetch_enqueue_failed"
+                    ),
+                )
         transaction.completed_ts_ms = now_ms
         transaction.actual_bytes = ack.actual_bytes
         if ack.status == CommandStatus.COMPLETED:

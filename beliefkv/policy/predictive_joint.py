@@ -211,7 +211,11 @@ class ActionLocalPhysicalOverlay:
             raise ValueError("action-local overlay identity is required")
         if not self.shape_fingerprint:
             raise ValueError("action-local overlay shape is required")
-        if self.evidence_kind not in {"exact_preview", "context_summary_upper_bound"}:
+        if self.evidence_kind not in {
+            "exact_preview",
+            "context_summary_upper_bound",
+            "commit_ready_summary",
+        }:
             raise ValueError("unsupported action-local overlay evidence kind")
         if min(
             self.context_epoch,
@@ -374,11 +378,19 @@ class PredictiveActionPackage:
             raise ValueError("predictive victim contexts must be non-empty")
         if target is not None and target in victims:
             raise ValueError("predictive target cannot also be a victim")
-        if self.action == PredictiveActionKind.PARTIAL_PREFETCH_GPU:
+        if self.action in {
+            PredictiveActionKind.PARTIAL_PREFETCH_GPU,
+            PredictiveActionKind.RECLAIM_AND_PREFETCH,
+        }:
             if self.byte_budget is None or self.byte_budget <= 0:
-                raise ValueError("partial prefetch requires a positive byte budget")
+                raise ValueError("funded prefetch requires a positive byte budget")
         elif self.byte_budget is not None:
-            raise ValueError("byte budget is only valid for partial prefetch")
+            raise ValueError("byte budget is only valid for bounded prefetch")
+        if self.action == PredictiveActionKind.RECLAIM_AND_PREFETCH:
+            if len(victims) != 1:
+                raise ValueError("funded prefetch requires exactly one victim")
+            if self.victim_reclaim_bytes <= 0:
+                raise ValueError("funded prefetch requires reclaimable victim bytes")
         object.__setattr__(self, "target_context_id", target)
         object.__setattr__(self, "victim_context_ids", victims)
 

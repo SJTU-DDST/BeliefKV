@@ -91,6 +91,7 @@ from beliefkv.runtime.sglang_v052rc1 import (
     HiCacheNodeCommandBackend,
     SGLangBackendError,
     SGLangNodeRegistry,
+    _OnlineJointResidencyTransaction,
     _PERFORMANCE_METRIC_EVENTS,
     close_runtime_with_signal_shield,
     install_scheduler_shutdown_handler,
@@ -6851,6 +6852,364 @@ class SGLangBackendTest(unittest.TestCase):
             if event == "predictive_joint_package_committed"
         ]
         self.assertEqual(events[-1]["beneficiary_request_id"], "request-b")
+
+    def test_predictive_swap_waits_for_commit_ack_before_prefetch(self):
+        config = BeliefKVConfig(
+            hbm_capacity_bytes=2_000,
+            host_capacity_bytes=4_000,
+            reserve_hbm_bytes=0,
+            predictor_enabled=False,
+        )
+        controller = BeliefKVController(config)
+        controller.process_runtime_events(
+            (
+                RuntimeEvent(
+                    "wf-swap",
+                    1.0,
+                    RuntimeEventKind.WORKFLOW_START,
+                    "wf-swap",
+                ),
+                RuntimeEvent(
+                    "target-create",
+                    2.0,
+                    RuntimeEventKind.INVOCATION_CREATE,
+                    "wf-swap",
+                    invocation_id="inv-target",
+                    context_id="ctx-target",
+                    context_epoch=0,
+                ),
+            )
+        )
+        target_handle = PageHandle(8801, 0)
+        controller.page_index.register_page(
+            target_handle,
+            size_bytes=200,
+            residency=PhysicalResidency.CPU_ONLY,
+            radix_depth=1,
+        )
+        controller.page_index.bind_pages("ctx-target", 0, (target_handle,))
+        preview = next(
+            item
+            for item in controller.arbiter.bundle_builder.previews_for_context(
+                CommandKind.PREFETCH_CONTEXT,
+                "ctx-target",
+                0,
+                now_ms=10.0,
+                device_available_bytes=200,
+            )
+            if item.eligible
+        )
+        runtime = EmbeddedSGLangRuntime.__new__(EmbeddedSGLangRuntime)
+        runtime.config = config
+        runtime.controller = controller
+        runtime.audit = _AuditRecorder()
+        runtime._shutdown_state = "running"
+        runtime._joint_predictive_counts = Counter()
+        runtime._online_joint_counts = Counter()
+        runtime._online_joint_last_residency_action = {}
+        runtime._online_joint_last_context_residency_action = {}
+        runtime._prefetch_service_leases = {}
+        runtime._register_prefetch_service_lease = mock.Mock()
+        expired = _OnlineJointResidencyTransaction(
+            transaction_id="swap-expired",
+            plan_id="plan-expired",
+            intent_index=-1,
+            source_bundle_id="predictive:intent-expired",
+            action=ResidencyAction.COMMIT_CPU,
+            command_id="swap-expired-commit-command",
+            command_kind=CommandKind.OFFLOAD_CONTEXT,
+            context_id="ctx-victim",
+            context_epoch=0,
+            physical_bundle_id="victim-bundle",
+            created_ts_ms=9.0,
+            predictive_intent_id="intent-expired",
+            swap_target_preview=preview,
+            swap_target_deadline_ms=10.0,
+            swap_victim_reclaim_bytes=200,
+        )
+        self.assertFalse(
+            runtime._queue_predictive_swap_target(expired, now_ms=10.0)
+        )
+        self.assertEqual(
+            expired.failure_reason, "target_prefetch_deadline_expired"
+        )
+        self.assertEqual(
+            runtime._joint_predictive_counts["swap_prefetch_deadline_expired"],
+            1,
+        )
+        self.assertEqual(controller.command_queue.pending_commands(), ())
+        capacity_blocked = replace(
+            expired,
+            transaction_id="swap-capacity-blocked",
+            swap_target_deadline_ms=1_000.0,
+            failure_reason=None,
+        )
+        controller.signals = replace(controller.signals, hbm_pressure=1.0)
+        self.assertFalse(
+            runtime._queue_predictive_swap_target(
+                capacity_blocked, now_ms=11.0
+            )
+        )
+        self.assertEqual(
+            capacity_blocked.failure_reason,
+            "target_prefetch_live_capacity_unavailable",
+        )
+        self.assertEqual(controller.command_queue.pending_commands(), ())
+        controller.signals = replace(controller.signals, hbm_pressure=0.0)
+        transaction = _OnlineJointResidencyTransaction(
+            transaction_id="swap-1",
+            plan_id="plan-1",
+            intent_index=-1,
+            source_bundle_id="predictive:intent-1",
+            action=ResidencyAction.COMMIT_CPU,
+            command_id="swap-1-commit-command",
+            command_kind=CommandKind.OFFLOAD_CONTEXT,
+            context_id="ctx-victim",
+            context_epoch=0,
+            physical_bundle_id="victim-bundle",
+            created_ts_ms=10.0,
+            predictive_intent_id="intent-1",
+            beneficiary_request_id="request-target",
+            beneficiary_context_id="ctx-target",
+            beneficiary_context_epoch=0,
+            causal_package_id="package-1",
+            target_invocation_id="inv-target",
+            target_reentry_context_epoch=0,
+            swap_target_preview=preview,
+            swap_target_deadline_ms=1_000.0,
+            swap_victim_reclaim_bytes=200,
+        )
+        runtime._pending_online_joint_residency = transaction
+        runtime._online_joint_residency_history = deque((transaction,))
+
+        runtime._advance_online_joint_residency(
+            (
+                CommandAck(
+                    transaction.command_id,
+                    CommandStatus.COMPLETED,
+                    11.0,
+                    actual_bytes=200,
+                ),
+            ),
+            now_ms=11.0,
+        )
+
+        queued = controller.command_queue.pop()
+        self.assertIsNotNone(queued)
+        self.assertEqual(queued.kind, CommandKind.PREFETCH_CONTEXT)
+        self.assertEqual(queued.context_id, "ctx-target")
+        self.assertIs(runtime._pending_online_joint_residency, transaction)
+        self.assertEqual(transaction.stage, "target_prefetch_queued")
+        self.assertEqual(transaction.swap_reclaimed_bytes, 200)
+
+        runtime._advance_online_joint_residency(
+            (
+                CommandAck(
+                    queued.command_id,
+                    CommandStatus.COMPLETED,
+                    12.0,
+                    actual_bytes=200,
+                ),
+            ),
+            now_ms=12.0,
+        )
+
+        self.assertIsNone(runtime._pending_online_joint_residency)
+        self.assertEqual(transaction.stage, "completed")
+        runtime._register_prefetch_service_lease.assert_called_once_with(
+            transaction,
+            now_ms=12.0,
+        )
+
+    def test_predictive_swap_rematerializes_victim_and_target_together(self):
+        config = BeliefKVConfig(
+            hbm_capacity_bytes=300,
+            host_capacity_bytes=4_000,
+            reserve_hbm_bytes=0,
+            predictor_enabled=False,
+        )
+        runtime_config = replace(
+            config,
+            predictor_model_path="/tmp/frontier.json",
+            gpu_service_model_path="/tmp/service.json",
+            joint_policy_enabled=True,
+            predictive_risk_shadow_enabled=True,
+            predictive_joint_overlay_enabled=True,
+            predictive_prefetch_canary_enabled=True,
+        )
+        controller = BeliefKVController(config)
+        events = [
+            RuntimeEvent(
+                "wf-swap-safe-point",
+                1.0,
+                RuntimeEventKind.WORKFLOW_START,
+                "wf-swap",
+            )
+        ]
+        for offset, suffix in enumerate(("target", "victim")):
+            events.extend(
+                (
+                    RuntimeEvent(
+                        f"create-{suffix}",
+                        2.0 + 2.0 * offset,
+                        RuntimeEventKind.INVOCATION_CREATE,
+                        "wf-swap",
+                        invocation_id=f"inv-{suffix}",
+                        context_id=f"ctx-{suffix}",
+                        context_epoch=0,
+                    ),
+                    RuntimeEvent(
+                        f"tool-{suffix}",
+                        3.0 + 2.0 * offset,
+                        RuntimeEventKind.TOOL_START,
+                        "wf-swap",
+                        invocation_id=f"inv-{suffix}",
+                        context_id=f"ctx-{suffix}",
+                        context_epoch=0,
+                        attributes={"tool_family": "shell"},
+                    ),
+                )
+            )
+        controller.process_runtime_events(tuple(events))
+        target_handle = PageHandle(8811, 0)
+        victim_handle = PageHandle(8812, 0)
+        controller.page_index.register_page(
+            target_handle,
+            size_bytes=200,
+            residency=PhysicalResidency.CPU_ONLY,
+            radix_depth=1,
+        )
+        controller.page_index.register_page(
+            victim_handle,
+            size_bytes=200,
+            residency=PhysicalResidency.DUAL_CLEAN,
+            radix_depth=1,
+        )
+        controller.page_index.bind_pages("ctx-target", 0, (target_handle,))
+        controller.page_index.bind_pages("ctx-victim", 0, (victim_handle,))
+        controller.service_curve = SimpleNamespace(
+            estimate=lambda *_args, **_kwargs: SimpleNamespace(
+                estimated_completion_p90_ms=10.0,
+                estimated_unhidden_stall_p90_ms=0.0,
+                shape_supported=True,
+                source="test_curve",
+            ),
+            snapshot=lambda: {},
+        )
+        runtime = EmbeddedSGLangRuntime.__new__(EmbeddedSGLangRuntime)
+        runtime.config = runtime_config
+        runtime.controller = controller
+        runtime.audit = _AuditRecorder()
+        runtime._joint_predictive_counts = Counter()
+        runtime._online_joint_counts = Counter()
+        runtime._pending_online_joint_residency = None
+        runtime._current_semantic_residency_commit = None
+        runtime._current_predictive_residency_commit = None
+        runtime._restore_service_grace_by_request = {}
+        runtime._prefetch_service_leases = {}
+        runtime._last_frontier_model_version = "frontier-v1"
+        runtime._reclaim_requirements = {}
+        beneficiary = RunnableInvocation(
+            request_id="request-target",
+            workflow_id="wf-swap",
+            invocation_id="inv-target",
+            context_id="ctx-target",
+            context_epoch=0,
+            submitted_ts_ms=1.0,
+            startup_bytes=200,
+            admission_startup_bytes=200,
+            admission_growth_bytes=0,
+            causal_class="engine_waiting:ready",
+        )
+        victim_revision = controller.page_index.context_revision("ctx-victim")
+        runtime._latest_predictive_intent = PredictiveIntent(
+            intent_id="intent-swap",
+            source_joint_plan_id="source-plan",
+            source_snapshot_id="snapshot",
+            package_id="package-swap",
+            model_version="frontier-v1",
+            action=PredictiveActionKind.RECLAIM_AND_PREFETCH,
+            invocation_id="inv-target",
+            expected_invocation_state=(
+                controller.graph.invocations["inv-target"].state.value
+            ),
+            context_id="ctx-target",
+            context_epoch=0,
+            generated_ts_ms=100.0,
+            remaining_window_low_ms=100.0,
+            transfer_p95_ms=10.0,
+            target_bytes_hint=200,
+            min_reclaimable_bytes=0,
+            max_cross_context_bytes=0,
+            max_copy_bytes=200,
+            causal_certificate=_predictive_causal_certificate(
+                controller, "frontier-v1"
+            ),
+            required_prediction_heads=("tool_wait_slack",),
+            prediction_head_support=(("tool_wait_slack", "exact"),),
+            calibration_coverage=0.95,
+            future_hbm_feasibility_probability=1.0,
+            expected_benefit_ms=5.0,
+            shape_fingerprint="target-prefix",
+            predicted_extent_count=1,
+            maximum_transfer_ms=12.0,
+            maximum_stall_ms=0.0,
+            morphology_slack_ms=0.0,
+            causal_slack_probability=0.95,
+            beneficiary_request_id=beneficiary.request_id,
+            beneficiary_invocation_id=beneficiary.invocation_id,
+            beneficiary_context_id=beneficiary.context_id,
+            beneficiary_context_epoch=beneficiary.context_epoch,
+            beneficiary_startup_bytes=200,
+            beneficiary_growth_bytes=0,
+            predicted_deficit_bytes=100,
+            causal_package_generation="request-target:ctx-target:c0:200:0",
+            target_reentry_context_epoch=0,
+            victim_invocation_id="inv-victim",
+            expected_victim_invocation_state=(
+                controller.graph.invocations["inv-victim"].state.value
+            ),
+            victim_context_id="ctx-victim",
+            victim_context_epoch=0,
+            victim_generation_fingerprint=(
+                f"summary:ctx-victim:e0:r{victim_revision}"
+            ),
+            victim_reclaim_bytes=200,
+        )
+        decision = compile_bounded_seed_epoch(
+            ordered_request_ids=(beneficiary.request_id,),
+            visible_request_ids=(beneficiary.request_id,),
+            epoch_sequence=1,
+        )
+        plan = SimpleNamespace(
+            plan_id=decision.view.plan_id,
+            residency=(),
+            semantic_residency=(),
+        )
+
+        committed = runtime._physical_commit_predictive_intent(
+            plan,
+            decision,
+            now_ms=110.0,
+            current_runnable=(beneficiary,),
+        )
+
+        materialized = runtime._current_predictive_residency_commit
+        self.assertIsNotNone(materialized)
+        self.assertEqual(materialized.preview.context_id, "ctx-target")
+        self.assertEqual(materialized.preview.copy_bytes, 200)
+        self.assertEqual(materialized.victim_preview.context_id, "ctx-victim")
+        self.assertEqual(materialized.victim_preview.copy_bytes, 0)
+        group = committed.epoch.action_groups[-1]
+        self.assertEqual(
+            tuple(item.kind for item in group.actions),
+            ("predictive_reclaim", "predictive_residency"),
+        )
+        self.assertEqual(
+            group.atomicity, ActionGroupAtomicity.PREFIX_COMMITTABLE
+        )
+        self.assertEqual(group.resource_certificate.required_hbm_bytes, 200)
+        self.assertEqual(group.resource_certificate.planned_reclaim_bytes, 200)
 
     def test_predictive_prepare_is_rematerialized_into_joint_epoch(self):
         controller_config = BeliefKVConfig(
