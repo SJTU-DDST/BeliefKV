@@ -115,3 +115,34 @@ RECLAIM_AND_PREFETCH
 
 若没有 commit-ready victim，则继续由现有 `PREPARE_HOST` 建立 CPU shadow，后续事件再形成交换
 候选；不会为了制造正例提前驱逐 GPU KV。
+
+## Funded-prefetch 在线 gate
+
+运行目录：
+`experiments/shadow/p6_funded_prefetch_gate/20260916T161833Z/predictive`
+
+本轮在高压后达到预注册的提前停止条件并受控关闭。运行时共完成 83 次 predictive eligibility，
+风险规划选择 12 个 `PREPARE_HOST`，发布 11 个 semantic intent；11 个 intent 全部被 safe point
+拒绝。拒绝原因均包含：
+
+- `morphology_slack_expired`；
+- `transfer_cannot_finish_before_beneficiary_block`；
+- 其中 5 个还包含 `transfer_cannot_finish_before_low_window`。
+
+典型候选的 beneficiary 约 21 ms 后发生预测阻塞，而 D2H P95 约为 838 ms；同时单 victim
+只能回收约 67 MB，预测缺口约为 416 MB。该候选即使不存在 worker delivery 延迟也无法完成，
+因此此前的 `expected_benefit_ms > 0` 属于价值模型假阳性，不是可以通过放宽 freshness 门禁执行的
+机会。代码现在在发布 intent 前同时要求：
+
+1. `predicted_block_time > D2H_p95 + commit_guard`；
+2. `victim_reclaim_bytes >= predicted_deficit_bytes`。
+
+本轮 `prefetch_target_count` 为 0 的另一个原因是 target 发现语义错误：bounded admission hint
+指向的是当前 deferred beneficiary，该 context 通常已经 GPU resident，不能作为 H2D target。现在
+target 从可见 parked invocation 中选择 CPU-resident、GPU-missing 的 context；target 与 victim 必须
+不同。即使 target 尚未生成 native request，也允许形成 context-level funded prefetch，后续仍由
+reentry epoch、latest-start 和 safe-point rematerialization 约束动作。
+
+关闭时所有 correctness gate 均通过：无 pending transaction、command、lease 或 reservation，且
+shutdown cleanup 没有掩盖未解决事务。该轮证明在线漏斗和拒绝保护正确，但没有产生实际
+`PREFETCH_GPU`，因此仍不能声明吞吐收益或线上 prefetch recall。

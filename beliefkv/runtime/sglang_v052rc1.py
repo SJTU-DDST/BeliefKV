@@ -17465,71 +17465,6 @@ class EmbeddedSGLangRuntime:
         )
         page_index = self.controller.page_index
         target_overlays: list[ActionLocalPhysicalOverlay] = []
-        target_context = graph.contexts.get(hint.context_id)
-        if (
-            target_context is not None
-            and target_context.epoch == hint.context_epoch
-            and page_index.has_context(hint.context_id)
-            and page_index.context_epoch(hint.context_id) == hint.context_epoch
-        ):
-            target_candidates = (
-                self.controller.arbiter.bundle_builder.previews_for_context(
-                    CommandKind.PREFETCH_CONTEXT,
-                    hint.context_id,
-                    hint.context_epoch,
-                    now_ms=observation.ts_ms,
-                    device_available_bytes=observation.hbm_capacity_bytes,
-                )
-            )
-            valid_targets = tuple(
-                candidate
-                for candidate in target_candidates
-                if candidate.eligible and candidate.copy_bytes > 0
-            )
-            if valid_targets:
-                target_preview = min(
-                    valid_targets,
-                    key=lambda item: (
-                        item.bundle.cross_context_action_bytes,
-                        item.copy_bytes,
-                        item.bundle.bundle_id,
-                    ),
-                )
-                target_overlays.append(
-                    ActionLocalPhysicalOverlay(
-                        context_id=hint.context_id,
-                        context_epoch=hint.context_epoch,
-                        context_revision=page_index.context_revision(
-                            hint.context_id
-                        ),
-                        page_revision=page_index.revision,
-                        topology_revision=page_index.topology_revision,
-                        generation_fingerprint=(
-                            target_preview.bundle.generation_fingerprint
-                        ),
-                        shape_fingerprint=(
-                            f"prefetch:{target_preview.copy_bytes}:"
-                            f"n{len(target_preview.page_actions)}"
-                        ),
-                        exclusive_reclaimable_bytes=0,
-                        d2h_copy_bytes=0,
-                        extent_count=len(target_preview.page_actions),
-                        cross_context_bytes=(
-                            target_preview.bundle.cross_context_action_bytes
-                        ),
-                        locked_bytes=target_preview.bundle.locked_bytes,
-                        owner_context_ids=(
-                            target_preview.bundle.owner_context_ids
-                        ),
-                        blocker_codes=tuple(
-                            item.code.value for item in target_preview.blockers
-                        ),
-                        native_loading=False,
-                        captured_ts_ms=observation.ts_ms,
-                        h2d_copy_bytes=target_preview.copy_bytes,
-                        evidence_kind="prefetch_target_preview",
-                    )
-                )
         if not parked_context_ids:
             return ActionLocalPhysicalOverlayBatch(
                 beneficiary_risk_signature=hint.risk_signature,
@@ -17540,6 +17475,7 @@ class EmbeddedSGLangRuntime:
             )
 
         summaries = []
+        target_summaries = []
         missing_context = False
         live_parked_context_ids = []
         for context_id in parked_context_ids:
@@ -17560,8 +17496,92 @@ class EmbeddedSGLangRuntime:
         )
         for context_id in summary_context_ids:
             summary = page_index.context_physical_summary(context_id)
+            if (
+                summary.cpu_bytes > summary.gpu_bytes
+                and summary.locked_bytes == 0
+            ):
+                target_summaries.append(summary)
             if summary.exclusive_reclaimable_upper_bound_bytes > 0:
                 summaries.append(summary)
+        for target_summary in sorted(
+            target_summaries,
+            key=lambda item: (
+                max(0, item.cpu_bytes - item.gpu_bytes),
+                -item.last_access_ms,
+                item.context_id,
+            ),
+        ):
+            target_context = graph.contexts.get(target_summary.context_id)
+            if (
+                target_context is None
+                or target_context.epoch != target_summary.context_epoch
+                or page_index.context_epoch(target_summary.context_id)
+                != target_context.epoch
+            ):
+                continue
+            target_candidates = (
+                self.controller.arbiter.bundle_builder.previews_for_context(
+                    CommandKind.PREFETCH_CONTEXT,
+                    target_summary.context_id,
+                    target_context.epoch,
+                    now_ms=observation.ts_ms,
+                    device_available_bytes=observation.hbm_capacity_bytes,
+                )
+            )
+            valid_targets = tuple(
+                candidate
+                for candidate in target_candidates
+                if candidate.eligible and candidate.copy_bytes > 0
+            )
+            if not valid_targets:
+                continue
+            target_preview = min(
+                valid_targets,
+                key=lambda item: (
+                    item.bundle.cross_context_action_bytes,
+                    item.copy_bytes,
+                    item.bundle.bundle_id,
+                ),
+            )
+            target_overlays.append(
+                ActionLocalPhysicalOverlay(
+                    context_id=target_summary.context_id,
+                    context_epoch=target_context.epoch,
+                    context_revision=page_index.context_revision(
+                        target_summary.context_id
+                    ),
+                    page_revision=page_index.revision,
+                    topology_revision=page_index.topology_revision,
+                    generation_fingerprint=(
+                        target_preview.bundle.generation_fingerprint
+                    ),
+                    shape_fingerprint=(
+                        f"prefetch:{target_preview.copy_bytes}:"
+                        f"n{len(target_preview.page_actions)}"
+                    ),
+                    exclusive_reclaimable_bytes=0,
+                    d2h_copy_bytes=0,
+                    extent_count=len(target_preview.page_actions),
+                    cross_context_bytes=(
+                        target_preview.bundle.cross_context_action_bytes
+                    ),
+                    locked_bytes=target_preview.bundle.locked_bytes,
+                    owner_context_ids=target_preview.bundle.owner_context_ids,
+                    blocker_codes=tuple(
+                        item.code.value for item in target_preview.blockers
+                    ),
+                    native_loading=False,
+                    captured_ts_ms=observation.ts_ms,
+                    h2d_copy_bytes=target_preview.copy_bytes,
+                    evidence_kind="prefetch_target_preview",
+                )
+            )
+            summaries = [
+                item
+                for item in summaries
+                if item.context_id != target_summary.context_id
+            ]
+            break
         if not summaries:
             return ActionLocalPhysicalOverlayBatch(
                 beneficiary_risk_signature=hint.risk_signature,

@@ -925,6 +925,8 @@ def test_action_local_overlay_force_is_scoped_to_mechanism_capture():
     summary = SimpleNamespace(
         context_id="victim-context",
         context_epoch=0,
+        gpu_bytes=300,
+        cpu_bytes=0,
         exclusive_reclaimable_upper_bound_bytes=300,
         d2h_copy_upper_bound_bytes=300,
         d2h_extent_count_upper_bound=3,
@@ -1141,6 +1143,8 @@ def test_action_local_overlay_bounds_summary_scan_and_captures_two_victims():
         context_id: SimpleNamespace(
             context_id=context_id,
             context_epoch=0,
+            gpu_bytes=300 - index,
+            cpu_bytes=0,
             exclusive_reclaimable_upper_bound_bytes=300 - index,
             d2h_copy_upper_bound_bytes=300 - index,
             d2h_extent_count_upper_bound=3,
@@ -1208,6 +1212,128 @@ def test_action_local_overlay_bounds_summary_scan_and_captures_two_victims():
     assert batch.parked_context_count == 12
     assert batch.summarized_context_count == 8
     assert calls == Counter(summary=16)
+
+
+def test_action_local_overlay_prefetches_parked_cpu_context_not_beneficiary():
+    runtime = EmbeddedSGLangRuntime.__new__(EmbeddedSGLangRuntime)
+    runtime.scheduler = SimpleNamespace(
+        running_batch=SimpleNamespace(reqs=()),
+        chunked_req=None,
+        max_running_requests=32,
+    )
+    contexts = {
+        "target-context": SimpleNamespace(epoch=2),
+        "victim-context": SimpleNamespace(epoch=1),
+    }
+    invocations = {
+        "target": SimpleNamespace(
+            context_id="target-context", state=InvocationState.WAIT_JOIN
+        ),
+        "victim": SimpleNamespace(
+            context_id="victim-context", state=InvocationState.WAIT_TOOL
+        ),
+    }
+    summaries = {
+        "target-context": SimpleNamespace(
+            context_id="target-context",
+            context_epoch=2,
+            extent_count=2,
+            gpu_bytes=0,
+            cpu_bytes=400,
+            locked_bytes=0,
+            exclusive_reclaimable_upper_bound_bytes=0,
+            d2h_copy_upper_bound_bytes=0,
+            d2h_extent_count_upper_bound=0,
+            last_access_ms=10.0,
+        ),
+        "victim-context": SimpleNamespace(
+            context_id="victim-context",
+            context_epoch=1,
+            extent_count=3,
+            gpu_bytes=500,
+            cpu_bytes=0,
+            locked_bytes=0,
+            exclusive_reclaimable_upper_bound_bytes=500,
+            d2h_copy_upper_bound_bytes=500,
+            d2h_extent_count_upper_bound=3,
+            last_access_ms=5.0,
+        ),
+    }
+    target_preview = SimpleNamespace(
+        eligible=True,
+        copy_bytes=400,
+        page_actions=(object(), object()),
+        blockers=(),
+        bundle=SimpleNamespace(
+            bundle_id="target-prefetch",
+            generation_fingerprint="target-generation",
+            cross_context_action_bytes=0,
+            locked_bytes=0,
+            owner_context_ids=("target-context",),
+        ),
+    )
+    page_index = SimpleNamespace(
+        revision=19,
+        topology_revision=13,
+        has_context=lambda context_id: context_id in summaries,
+        context_page_count=lambda context_id: summaries[context_id].extent_count,
+        context_epoch=lambda context_id: summaries[context_id].context_epoch,
+        context_revision=lambda _context_id: 4,
+        context_physical_summary=lambda context_id: summaries[context_id],
+    )
+    runtime.controller = SimpleNamespace(
+        admission=SimpleNamespace(reserved_bytes=0),
+        graph=SimpleNamespace(
+            graph_version=7,
+            invocations=invocations,
+            contexts=contexts,
+        ),
+        page_index=page_index,
+        arbiter=SimpleNamespace(
+            bundle_builder=SimpleNamespace(
+                previews_for_context=lambda _kind, context_id, *_args, **_kwargs: (
+                    (target_preview,) if context_id == "target-context" else ()
+                )
+            )
+        ),
+    )
+    runtime.config = SimpleNamespace(
+        reference_policy_hbm_bucket_bytes=64,
+        predictive_beneficiary_projection_horizon_ms=2_000.0,
+        kv_bytes_per_token=1,
+        admission_prefill_quantum_tokens=16,
+        admission_decode_quantum_tokens=16,
+    )
+    hint = ObservedSeedBeneficiaryHint(
+        "seed",
+        "beneficiary",
+        "beneficiary-invocation",
+        "beneficiary-context",
+        0,
+        64,
+        32,
+    )
+    observation = RuntimeResourceObservation(
+        ts_ms=20.0,
+        hbm_capacity_bytes=1_000,
+        hbm_used_bytes=950,
+        host_capacity_bytes=2_000,
+        host_used_bytes=400,
+        host_free_bytes=1_600,
+    )
+
+    batch = runtime._capture_action_local_physical_overlay_batch(
+        hint, observation
+    )
+
+    assert tuple(
+        (item.context_id, item.evidence_kind) for item in batch.overlays
+    ) == (
+        ("target-context", "prefetch_target_preview"),
+        ("victim-context", "context_summary_upper_bound"),
+    )
+    assert batch.overlays[0].h2d_copy_bytes == 400
+    assert batch.victim_count == 1
 
 
 def test_live_prepare_certificate_defers_physical_revision_to_commit():

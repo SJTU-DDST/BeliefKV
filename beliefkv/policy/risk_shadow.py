@@ -123,6 +123,24 @@ def _transfer_deadline_and_slack(
     return deadline, deadline - transfer_ms - guard_ms
 
 
+def _prepare_beneficiary_feasibility_reasons(
+    package: PredictiveActionPackage,
+    *,
+    transfer_ready_ms: float,
+) -> tuple[str, ...]:
+    if package.action != PredictiveActionKind.PREPARE_HOST:
+        return ()
+    reasons: list[str] = []
+    if (
+        package.predicted_block_time_ms is None
+        or package.predicted_block_time_ms <= transfer_ready_ms
+    ):
+        reasons.append("beneficiary_blocks_before_prepare_complete")
+    if package.predicted_deficit_bytes > package.victim_reclaim_bytes:
+        reasons.append("victim_reclaim_below_beneficiary_deficit")
+    return tuple(reasons)
+
+
 @dataclass(frozen=True)
 class PredictiveIntent:
     """Semantic prediction output; Radix extents are resolved at a safe point."""
@@ -2167,9 +2185,8 @@ class PredictiveRiskShadowObserver:
             )
             summary = candidate_decision.summaries[0]
             evaluation_by_package[package.package_id] = candidate_evaluation
-            resolved_package_by_id[package.package_id] = (
-                candidate_evaluation.package
-            )
+            resolved_package = candidate_evaluation.package
+            resolved_package_by_id[package.package_id] = resolved_package
             if package.action in {
                 PredictiveActionKind.PREPARE_HOST,
                 PredictiveActionKind.PREFETCH_GPU,
@@ -2177,7 +2194,7 @@ class PredictiveRiskShadowObserver:
                 PredictiveActionKind.RECLAIM_AND_PREFETCH,
             }:
                 timing = self._action_timing_evidence(
-                    package,
+                    resolved_package,
                     belief=candidate_belief,
                     evaluation=candidate_evaluation,
                     eligibility=eligibility,
@@ -2218,6 +2235,27 @@ class PredictiveRiskShadowObserver:
                             reasons=tuple(summary.reasons)
                             + ("insufficient_causal_slack_probability",),
                         )
+                    if package.action == PredictiveActionKind.PREPARE_HOST:
+                        transfer_ready_ms = (
+                            physicalizer.package_transfer_duration_ms(
+                                resolved_package
+                            )
+                            * self.config.transfer_p95_safety_factor
+                            + self.config.transfer_commit_guard_ms
+                        )
+                        feasibility_reasons = (
+                            _prepare_beneficiary_feasibility_reasons(
+                                resolved_package,
+                                transfer_ready_ms=transfer_ready_ms,
+                            )
+                        )
+                        if feasibility_reasons:
+                            summary = replace(
+                                summary,
+                                eligible=False,
+                                reasons=tuple(summary.reasons)
+                                + feasibility_reasons,
+                            )
             summaries.append(summary)
             if summary.eligible and summary.expected_benefit_ms > selected_benefit_ms:
                 selected_benefit_ms = summary.expected_benefit_ms
@@ -3773,7 +3811,6 @@ class PredictiveRiskShadowObserver:
             if (
                 target.missing_gpu_bytes > prefetch_byte_budget
                 and reclaim_victim is not None
-                and request is not None
             ):
                 funded_budget += reclaim_victim.reclaimable_bytes
                 action = PredictiveActionKind.RECLAIM_AND_PREFETCH

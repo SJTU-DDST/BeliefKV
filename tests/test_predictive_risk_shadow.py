@@ -29,6 +29,7 @@ from beliefkv.policy.risk_shadow import (
     PredictiveRiskShadowObserver,
     PredictiveRiskShadowResult,
     _OnlineCandidatePhysicalizer,
+    _prepare_beneficiary_feasibility_reasons,
     _prefetch_prefix_projection,
     _transfer_deadline_and_slack,
     validate_predictive_causal_certificate,
@@ -72,6 +73,36 @@ def test_transfer_guard_is_recomputed_at_conservative_deadline() -> None:
         guard_ms=25.0,
     )
     assert positive is not None and positive > 0
+
+
+def test_prepare_requires_time_and_reclaim_for_its_projected_beneficiary() -> None:
+    package = PredictiveActionPackage(
+        package_id="prepare",
+        action=PredictiveActionKind.PREPARE_HOST,
+        context_ids=("victim",),
+        victim_context_ids=("victim",),
+        beneficiary_request_id="request",
+        beneficiary_startup_bytes=100,
+        predicted_block_time_ms=20.0,
+        predicted_deficit_bytes=400,
+        victim_reclaim_bytes=64,
+        causal_package_generation="generation",
+    )
+
+    assert _prepare_beneficiary_feasibility_reasons(
+        package, transfer_ready_ms=800.0
+    ) == (
+        "beneficiary_blocks_before_prepare_complete",
+        "victim_reclaim_below_beneficiary_deficit",
+    )
+    assert _prepare_beneficiary_feasibility_reasons(
+        replace(
+            package,
+            predicted_block_time_ms=1_000.0,
+            predicted_deficit_bytes=64,
+        ),
+        transfer_ready_ms=800.0,
+    ) == ()
 
 
 def test_join_slack_uses_dependency_release_survival_not_resource_feasibility() -> None:
@@ -330,6 +361,54 @@ def test_prefetch_candidate_does_not_require_visible_native_request() -> None:
     ]
     assert packages[-1].beneficiary_request_id is None
     assert packages[-1].execution_order_request_ids == ()
+
+
+def test_funded_prefetch_does_not_require_visible_native_request() -> None:
+    observer = PredictiveRiskShadowObserver.__new__(
+        PredictiveRiskShadowObserver
+    )
+    observer.config = SimpleNamespace(max_candidates=8)
+    policy_input = replace(
+        _input(capacity=600, reserved=0),
+        runnable_frontier=(),
+    )
+    eligibility = PredictiveEligibility(
+        source_snapshot_id="snapshot",
+        prefetch_targets=(
+            PrefetchTarget(
+                "invocation-target",
+                "ctx-target",
+                "WAIT_JOIN",
+                300,
+            ),
+        ),
+        prepare_host_victims=(),
+        probe_ms=0.0,
+        reclaim_ready_victims=(
+            ReclaimReadyVictim(
+                "invocation-victim",
+                "ctx-victim",
+                0,
+                "WAIT_TOOL",
+                256,
+                "summary:ctx-victim:e0:r7",
+            ),
+        ),
+    )
+
+    packages = observer._candidate_packages(
+        policy_input,
+        SimpleNamespace(plan_id="plan"),
+        eligibility,
+    )
+
+    assert len(packages) == 2
+    funded = packages[-1]
+    assert funded.action == PredictiveActionKind.RECLAIM_AND_PREFETCH
+    assert funded.target_context_id == "ctx-target"
+    assert funded.victim_context_ids == ("ctx-victim",)
+    assert funded.beneficiary_request_id is None
+    assert funded.execution_order_request_ids == ()
 
 
 def test_projected_reclaim_uses_explicit_seed_exclusion_hint() -> None:

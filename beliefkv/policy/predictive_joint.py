@@ -323,8 +323,6 @@ class PredictiveActionPackage:
         beneficiary_fields = (
             self.beneficiary_startup_bytes,
             self.beneficiary_growth_bytes,
-            self.predicted_deficit_bytes,
-            self.victim_reclaim_bytes,
         )
         if self.beneficiary_request_id is None and any(beneficiary_fields):
             raise ValueError("beneficiary bytes require a beneficiary identity")
