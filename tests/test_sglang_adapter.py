@@ -6928,6 +6928,66 @@ class SGLangBackendTest(unittest.TestCase):
         )
         self.assertFalse(runtime._joint_predictive_counts)
 
+    def test_predictive_prefetch_waits_for_latest_start_before_materialization(self):
+        config = BeliefKVConfig(
+            hbm_capacity_bytes=1_000,
+            host_capacity_bytes=2_000,
+            reserve_hbm_bytes=0,
+            joint_policy_enabled=True,
+            predictor_model_path="/tmp/frontier.json",
+            gpu_service_model_path="/tmp/service.json",
+            predictive_risk_shadow_enabled=True,
+            predictive_joint_overlay_enabled=True,
+        )
+        runtime = EmbeddedSGLangRuntime.__new__(EmbeddedSGLangRuntime)
+        runtime.config = config
+        runtime.controller = BeliefKVController(
+            BeliefKVConfig(
+                hbm_capacity_bytes=1_000,
+                host_capacity_bytes=2_000,
+                reserve_hbm_bytes=0,
+                predictor_enabled=False,
+            )
+        )
+        request = RunnableInvocation(
+            request_id="request",
+            workflow_id="workflow",
+            invocation_id="invocation",
+            context_id="context",
+            context_epoch=1,
+            submitted_ts_ms=1.0,
+            startup_bytes=10,
+        )
+        runtime._policy_runtime_runnable = lambda _now_ms: (request,)
+        runtime._refresh_bounded_seed_frontier_predictions = (
+            lambda _view, runnable, **_kwargs: runnable
+        )
+        runtime._observed_seed_beneficiary_hints = lambda *_args, **_kwargs: ()
+        runtime._current_online_joint_decision = None
+        runtime._current_joint_plan_epoch = None
+        runtime._online_joint_epoch_sequence = 0
+        runtime._online_joint_counts = Counter()
+        runtime._joint_predictive_counts = Counter()
+        runtime._joint_shadow_timing_samples = {}
+        runtime._latest_predictive_intent = SimpleNamespace(intent_id="intent")
+        runtime._current_predictive_residency_commit = None
+        runtime._predictive_prefetch_retry_not_before_ms = 1_000.0
+        runtime._physical_commit_predictive_intent = mock.Mock(
+            side_effect=lambda _plan, decision, **_kwargs: decision
+        )
+
+        runtime._safe_point_seed_decision(now_ms=100.0)
+
+        runtime._physical_commit_predictive_intent.assert_not_called()
+        self.assertEqual(
+            runtime._predictive_prefetch_retry_not_before_ms,
+            1_000.0,
+        )
+
+        runtime._safe_point_seed_decision(now_ms=1_000.0)
+
+        runtime._physical_commit_predictive_intent.assert_called_once()
+
     def test_predictive_schedule_atomically_reorders_and_admits(self):
         controller = BeliefKVController(
             BeliefKVConfig(
@@ -8338,6 +8398,73 @@ class SGLangBackendTest(unittest.TestCase):
         ]
         self.assertIn("future_hbm_confidence", rejected[-1]["reasons"])
 
+        runtime._latest_predictive_intent = replace(
+            runtime._latest_predictive_intent
+            or PredictiveIntent(
+                intent_id="intent-prefetch-early",
+                source_joint_plan_id="source-plan",
+                source_snapshot_id="snapshot",
+                package_id="package-prefetch-early",
+                model_version="frontier-v1",
+                action=PredictiveActionKind.PREFETCH_GPU,
+                invocation_id="inv",
+                expected_invocation_state="wait_tool",
+                context_id="ctx",
+                context_epoch=0,
+                generated_ts_ms=100.0,
+                remaining_window_low_ms=10_000.0,
+                transfer_p95_ms=20.0,
+                target_bytes_hint=200,
+                min_reclaimable_bytes=0,
+                max_cross_context_bytes=0,
+                max_copy_bytes=200,
+                causal_certificate=_predictive_causal_certificate(
+                    controller, "frontier-v1"
+                ),
+                required_prediction_heads=("reentry_window",),
+                prediction_head_support=(("reentry_window", "exact"),),
+                calibration_coverage=0.95,
+                future_hbm_feasibility_probability=1.0,
+                expected_benefit_ms=5.0,
+                shape_fingerprint="prefetch-not-shape-certified",
+                predicted_extent_count=0,
+                maximum_transfer_ms=24.0,
+                maximum_stall_ms=0.0,
+                morphology_slack_ms=0.0,
+                target_reentry_context_epoch=1,
+            ),
+            future_hbm_feasibility_probability=1.0,
+        )
+        runtime._predictive_prefetch_retry_not_before_ms = None
+        unchanged = runtime._physical_commit_predictive_intent(
+            plan,
+            decision,
+            now_ms=110.0,
+        )
+
+        self.assertEqual(unchanged, decision)
+        self.assertIsNotNone(runtime._latest_predictive_intent)
+        self.assertGreater(
+            runtime._predictive_prefetch_retry_not_before_ms,
+            110.0,
+        )
+        deferred = [
+            fields
+            for event, _, fields in runtime.audit.events
+            if event == "predictive_semantic_intent_deferred"
+        ]
+        self.assertEqual(deferred[-1]["intent_id"], "intent-prefetch-early")
+        self.assertNotIn(
+            "prefetch_too_early",
+            [
+                reason
+                for item in runtime.audit.events
+                if item[0] == "predictive_semantic_intent_rejected"
+                for reason in item[2].get("reasons", ())
+                if item[2].get("intent_id") == "intent-prefetch-early"
+            ],
+        )
+
     def test_prefetch_service_lease_prioritizes_until_first_service(self):
         runtime = EmbeddedSGLangRuntime.__new__(EmbeddedSGLangRuntime)
         runtime.config = BeliefKVConfig(
@@ -8496,6 +8623,103 @@ class SGLangBackendTest(unittest.TestCase):
         self.assertEqual(
             runtime._joint_predictive_counts[
                 "prefetch_service_lease_released:service_window_expired"
+            ],
+            1,
+        )
+
+    def test_prefetch_service_funding_and_attribution_end_on_first_service(self):
+        runtime = EmbeddedSGLangRuntime.__new__(EmbeddedSGLangRuntime)
+        runtime.config = BeliefKVConfig(
+            hbm_capacity_bytes=1 << 30,
+            host_capacity_bytes=1 << 30,
+            reserve_hbm_bytes=0,
+            kv_bytes_per_token=1,
+            admission_allocator_guard_tokens=1,
+            admission_prefill_quantum_tokens=8,
+            admission_decode_quantum_tokens=4,
+        )
+        allocator = _Allocator(128)
+        allocator.page_size = 1
+        runtime.scheduler = SimpleNamespace(
+            token_to_kv_pool_allocator=allocator
+        )
+        request = SimpleNamespace(
+            estimated_incremental_bytes=64,
+            submitted_ts_ms=90.0,
+        )
+        entry = SimpleNamespace(
+            state=AdmissionSideState.VISIBLE_PENDING,
+            request=request,
+        )
+        runtime.controller = SimpleNamespace(
+            visible_admission=SimpleNamespace(get=lambda request_id: entry)
+        )
+        runtime.audit = _AuditRecorder()
+        runtime._joint_predictive_counts = Counter()
+        runtime._online_joint_counts = Counter()
+        runtime._active_admission_rescue = None
+        runtime._request_metadata_by_id = {
+            "request": BeliefKVRequestMetadata("wf", "inv", "ctx", 1)
+        }
+        runtime._lock_service_ledger = RequestServiceLedger()
+        lease = SimpleNamespace(
+            request_id="request",
+            context_id="ctx",
+            context_epoch=0,
+            target_invocation_id="inv",
+            target_reentry_context_epoch=1,
+            created_ts_ms=100.0,
+            expires_ts_ms=10_000.0,
+            baseline_completed_service_count=0,
+            source_transaction_id="transaction",
+            predictive_intent_id="intent",
+            actual_bytes=256,
+        )
+        runtime._prefetch_service_leases = {"ctx": lease}
+        ledger = runtime._predictive_action_ledger()
+        ledger.register(
+            intent_id="intent",
+            action=PredictiveActionKind.PREFETCH_GPU.value,
+            context_id="ctx",
+            context_epoch=0,
+            command_id="command",
+            now_ms=99.0,
+        )
+        ledger.transfer_terminal(
+            "intent",
+            completed=True,
+            actual_bytes=256,
+            now_ms=100.0,
+        )
+
+        self.assertTrue(
+            runtime._maybe_reserve_prefetch_service_funding(
+                lease,
+                now_ms=101.0,
+            )
+        )
+        self.assertEqual(
+            runtime._active_admission_rescue.source,
+            "predictive_prefetch",
+        )
+        self.assertEqual(runtime._active_admission_rescue.reserved_tokens, 13)
+        self.assertEqual(allocator.available_tokens, 115)
+
+        self.assertTrue(
+            runtime._release_prefetch_service_lease(
+                "request",
+                now_ms=102.0,
+                reason="gpu_service_completed",
+            )
+        )
+        self.assertIsNone(runtime._active_admission_rescue)
+        self.assertEqual(allocator.available_tokens, 128)
+        outcome = ledger.outcomes()[0]
+        self.assertEqual(outcome.state, "useful")
+        self.assertEqual(outcome.reason, "prefetch_first_gpu_service")
+        self.assertEqual(
+            runtime._joint_predictive_counts[
+                "prefetch_attribution_consumed"
             ],
             1,
         )

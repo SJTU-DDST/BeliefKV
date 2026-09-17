@@ -301,6 +301,7 @@ def test_prefetch_candidate_converts_oversized_head_to_bounded_partial() -> None
     assert [package.package_id for package in packages] == [
         "plan:a0",
         "plan:partial-prefetch:ctx-large",
+        "plan:prefetch:ctx-small",
     ]
     partial = packages[1]
     assert partial.action == PredictiveActionKind.PARTIAL_PREFETCH_GPU

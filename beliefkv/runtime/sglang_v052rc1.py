@@ -542,6 +542,7 @@ class _OnlineJointResidencyTransaction:
     estimated_saved_stall_ms: float = 0.0
     target_invocation_id: str | None = None
     target_reentry_context_epoch: int | None = None
+    target_service_deadline_ms: float | None = None
     swap_target_preview: PhysicalBundlePreview | None = None
     swap_target_deadline_ms: float | None = None
     swap_victim_reclaim_bytes: int = 0
@@ -611,6 +612,7 @@ class _AdmissionRescueTransaction:
     allocations: list[Any] = field(default_factory=list)
     released_for_admission_tokens: int = 0
     reclaimed_bytes: int = 0
+    source: str = "reactive_reclaim"
 
     @property
     def reserved_tokens(self) -> int:
@@ -2658,6 +2660,7 @@ class EmbeddedSGLangRuntime:
             tuple[str, int, SemanticResidencyTarget, PhysicalBundlePreview] | None
         ) = None
         self._latest_predictive_intent: PredictiveIntent | None = None
+        self._predictive_prefetch_retry_not_before_ms: float | None = None
         self._current_predictive_residency_commit: (
             _PredictiveResidencyCommit | None
         ) = None
@@ -12032,6 +12035,23 @@ class EmbeddedSGLangRuntime:
                 leases.pop(lease_key, None)
         if lease is None:
             return False
+        if reason == "gpu_service_completed":
+            consumed = self._predictive_action_ledger().consume_context(
+                lease.context_id,
+                context_epoch=lease.context_epoch,
+                now_ms=now_ms,
+                reason="prefetch_first_gpu_service",
+            )
+            self._joint_predictive_counts[
+                "prefetch_attribution_consumed"
+            ] += len(consumed)
+        if lease.request_id is not None:
+            self._finish_admission_rescue(
+                lease.request_id,
+                now_ms=now_ms,
+                reason=f"prefetch_lease_{reason}",
+                success=reason == "gpu_service_completed",
+            )
         self._joint_predictive_counts[
             f"prefetch_service_lease_released:{reason}"
         ] += 1
@@ -12119,7 +12139,13 @@ class EmbeddedSGLangRuntime:
             target_invocation_id=target_invocation_id,
             target_reentry_context_epoch=target_epoch,
             created_ts_ms=now_ms,
-            expires_ts_ms=now_ms + self.config.resident_service_window_ms,
+            expires_ts_ms=max(
+                now_ms + self.config.resident_service_window_ms,
+                float(
+                    getattr(transaction, "target_service_deadline_ms", 0.0)
+                    or 0.0
+                ),
+            ),
             baseline_completed_service_count=(
                 progress.completed_service_count if progress is not None else 0
             ),
@@ -12132,6 +12158,10 @@ class EmbeddedSGLangRuntime:
             leases = {}
             self._prefetch_service_leases = leases
         leases[lease.context_id] = lease
+        self._maybe_reserve_prefetch_service_funding(
+            lease,
+            now_ms=now_ms,
+        )
         self._joint_predictive_counts["prefetch_service_lease_registered"] += 1
         self.audit.emit(
             "predictive_prefetch_service_lease_registered",
@@ -12255,6 +12285,10 @@ class EmbeddedSGLangRuntime:
                             ),
                         )
                         leases[lease_key] = lease
+                        self._maybe_reserve_prefetch_service_funding(
+                            lease,
+                            now_ms=now_ms,
+                        )
                         self._joint_predictive_counts[
                             "prefetch_service_lease_bound_to_reentry"
                         ] += 1
@@ -12295,6 +12329,105 @@ class EmbeddedSGLangRuntime:
             ):
                 visible.append(lease.request_id)
         return tuple(visible)
+
+    def _maybe_reserve_prefetch_service_funding(
+        self,
+        lease: _PrefetchServiceLease,
+        *,
+        now_ms: float,
+    ) -> bool:
+        """Reserve one admission quantum for an H2D-completed context."""
+
+        request_id = lease.request_id
+        if request_id is None or not hasattr(self, "scheduler"):
+            return False
+        active = getattr(self, "_active_admission_rescue", None)
+        if active is not None:
+            if active.request_id == request_id:
+                return active.stage in {
+                    "capacity_reserved",
+                    "admission_committing",
+                    "admitted_wait_service",
+                }
+            self._joint_predictive_counts[
+                "prefetch_funding_other_rescue_active"
+            ] += 1
+            return False
+        entry = self.controller.visible_admission.get(request_id)
+        metadata = getattr(self, "_request_metadata_by_id", {}).get(request_id)
+        if (
+            entry is None
+            or metadata is None
+            or entry.state != AdmissionSideState.VISIBLE_PENDING
+            or self._metadata_scope_is_terminal(metadata)
+            or metadata.context_id != lease.context_id
+            or metadata.invocation_id != lease.target_invocation_id
+            or metadata.context_epoch != lease.target_reentry_context_epoch
+        ):
+            return False
+        quantum_tokens = max(
+            1,
+            self.config.admission_allocator_guard_tokens
+            + self.config.admission_prefill_quantum_tokens
+            + self.config.admission_decode_quantum_tokens,
+        )
+        required_bytes = min(
+            max(0, int(entry.request.estimated_incremental_bytes)),
+            quantum_tokens * self.config.kv_bytes_per_token,
+        )
+        if required_bytes <= 0:
+            return False
+        ledger = getattr(self, "_lock_service_ledger", None)
+        progress = (
+            ledger.progress_record(request_id)
+            if ledger is not None
+            else None
+        )
+        rescue = _AdmissionRescueTransaction(
+            request_id=request_id,
+            context_id=metadata.context_id,
+            context_epoch=metadata.context_epoch,
+            created_ts_ms=now_ms,
+            required_fragment_bytes=required_bytes,
+            baseline_completed_service_count=(
+                progress.completed_service_count if progress is not None else 0
+            ),
+            source="predictive_prefetch",
+        )
+        self._active_admission_rescue = rescue
+        self._online_joint_counts["admission_rescue_started"] += 1
+        self._joint_predictive_counts["prefetch_funding_started"] += 1
+        self.audit.emit(
+            "admission_rescue_started",
+            now_ms,
+            request_id=request_id,
+            context_id=metadata.context_id,
+            context_epoch=metadata.context_epoch,
+            required_fragment_bytes=required_bytes,
+            waited_ms=max(0.0, now_ms - entry.request.submitted_ts_ms),
+            source=rescue.source,
+            policy_effect="fund_prefetched_context_until_first_service",
+        )
+        self._reserve_admission_rescue_capacity(
+            request_id=request_id,
+            reclaimed_bytes=required_bytes,
+            now_ms=now_ms,
+        )
+        if rescue.stage != "capacity_reserved":
+            self._finish_admission_rescue(
+                request_id,
+                now_ms=now_ms,
+                reason="prefetch_funding_capacity_unavailable",
+                success=False,
+            )
+            self._joint_predictive_counts[
+                "prefetch_funding_reservation_failed"
+            ] += 1
+            return False
+        self._joint_predictive_counts[
+            "prefetch_funding_capacity_reserved"
+        ] += 1
+        return True
 
     def _context_has_prefetch_service_lease(
         self,
@@ -12530,6 +12663,7 @@ class EmbeddedSGLangRuntime:
             request_id=request_id,
             status=outcome,
             reason=reason,
+            source=rescue.source,
             service_latency_ms=max(0.0, now_ms - rescue.created_ts_ms),
             reclaimed_bytes=rescue.reclaimed_bytes,
         )
@@ -20156,6 +20290,8 @@ class EmbeddedSGLangRuntime:
                 )
                 intent_changed = previous_intent_id != next_intent_id
                 self._latest_predictive_intent = next_intent
+                if intent_changed:
+                    self._predictive_prefetch_retry_not_before_ms = None
                 if (
                     candidate_intent is not None
                     and not publish_reasons
@@ -22263,18 +22399,6 @@ class EmbeddedSGLangRuntime:
                 }.intersection(expected_actions):
                     continue
                 if candidate.eligible:
-                    if (
-                        intent.action
-                        in {
-                            PredictiveActionKind.PARTIAL_PREFETCH_GPU,
-                            PredictiveActionKind.RECLAIM_AND_PREFETCH,
-                        }
-                        and candidate.copy_bytes != intent.target_bytes_hint
-                    ):
-                        envelope_blockers.add(
-                            "partial_copy_bytes_changed"
-                        )
-                        continue
                     candidate_envelope_reasons = (
                         _predictive_bundle_envelope_reasons(intent, candidate)
                     )
@@ -22413,6 +22537,37 @@ class EmbeddedSGLangRuntime:
             reasons.append("prefetch_too_early")
         finish_phase("transfer_and_timing")
 
+        defer_prefetch_until_ms: float | None = None
+        if set(reasons) == {"prefetch_too_early"} and preview is not None:
+            defer_prefetch_until_ms = now_ms + max(
+                1.0,
+                remaining_ms
+                - effective_transfer_ms
+                - self.config.predictive_prefetch_desired_lead_ms,
+            )
+        if defer_prefetch_until_ms is not None:
+            self._predictive_prefetch_retry_not_before_ms = (
+                defer_prefetch_until_ms
+            )
+            self._joint_predictive_counts[
+                "semantic_intent_deferred_until_latest_start"
+            ] += 1
+            self.audit.emit(
+                "predictive_semantic_intent_deferred",
+                now_ms,
+                audit_level="correctness",
+                plan_id=plan.plan_id,
+                intent_id=intent.intent_id,
+                action=intent.action.value,
+                context_id=intent.context_id,
+                age_ms=age_ms,
+                remaining_window_low_ms=remaining_ms,
+                safe_point_transfer_bound_ms=effective_transfer_ms,
+                retry_not_before_ms=defer_prefetch_until_ms,
+                fallback="observed_joint_plan",
+            )
+            return decision
+
         if reasons or (physical_action and (preview is None or target is None)):
             self._update_predictive_prepare_micro_gate(
                 "rejected",
@@ -22421,6 +22576,7 @@ class EmbeddedSGLangRuntime:
                 rejection_reasons=sorted(set(reasons)),
             )
             self._latest_predictive_intent = None
+            self._predictive_prefetch_retry_not_before_ms = None
             self._joint_predictive_counts["semantic_intent_rejected"] += 1
             for reason in set(reasons):
                 self._joint_predictive_counts[f"semantic_reject_{reason}"] += 1
@@ -22552,6 +22708,7 @@ class EmbeddedSGLangRuntime:
 
         if not package_slices:
             self._latest_predictive_intent = None
+            self._predictive_prefetch_retry_not_before_ms = None
             self._joint_predictive_counts["semantic_intent_rejected"] += 1
             self._joint_predictive_counts[
                 "semantic_reject_predictive_package_empty"
@@ -23012,6 +23169,10 @@ class EmbeddedSGLangRuntime:
             self.config.predictive_joint_overlay_enabled
             and decision.view is not None
             and self._latest_predictive_intent is not None
+            and (
+                self._predictive_prefetch_retry_not_before_ms is None
+                or now_ms >= self._predictive_prefetch_retry_not_before_ms
+            )
         ):
             observed_decision = decision
             predictive_started_ns = time.perf_counter_ns()
@@ -23026,6 +23187,7 @@ class EmbeddedSGLangRuntime:
             except Exception as error:
                 self._current_predictive_residency_commit = None
                 self._latest_predictive_intent = None
+                self._predictive_prefetch_retry_not_before_ms = None
                 decision = observed_decision
                 self._joint_predictive_counts[
                     "seed_safe_point_validation_error"
@@ -23934,6 +24096,18 @@ class EmbeddedSGLangRuntime:
             ),
             target_reentry_context_epoch=(
                 intent.target_reentry_context_epoch
+                if intent.action
+                in {
+                    PredictiveActionKind.PREFETCH_GPU,
+                    PredictiveActionKind.PARTIAL_PREFETCH_GPU,
+                    PredictiveActionKind.RECLAIM_AND_PREFETCH,
+                }
+                else None
+            ),
+            target_service_deadline_ms=(
+                intent.generated_ts_ms
+                + intent.remaining_window_low_ms
+                + self.config.resident_service_window_ms
                 if intent.action
                 in {
                     PredictiveActionKind.PREFETCH_GPU,

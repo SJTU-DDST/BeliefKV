@@ -3908,7 +3908,6 @@ class PredictiveRiskShadowObserver:
                     ),
                 )
             )
-            break
         return tuple(packages)
 
     @staticmethod
