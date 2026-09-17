@@ -1759,6 +1759,114 @@ def test_bounded_seed_hints_keep_four_priority_ordered_candidates():
     assert hints[0].remaining_prefill_bytes == 206
     assert hints[0].predicted_output_bytes == 46
     assert hints[0].prediction_support_level == "exact"
+
+
+def test_bounded_seed_refreshes_schema_v5_prediction_without_retraction_flags():
+    runtime = EmbeddedSGLangRuntime.__new__(EmbeddedSGLangRuntime)
+    invocation = SimpleNamespace(
+        invocation_id="inv-deferred",
+        state=InvocationState.READY,
+        agent_definition_id="coder",
+        active_tool_family=None,
+        active_tool_start_ms=None,
+    )
+    online = SimpleNamespace(
+        boundary_history=[],
+        context_tokens=4096,
+        generated_tokens=0,
+        tool_backend_class="unknown",
+        tool_command_class="unknown",
+    )
+    prediction_payload = {
+        "support_level": "backoff",
+        "ood_reasons": [],
+        "remaining_decode_tokens": {
+            "values": [64.0],
+            "probability_mass": [1.0],
+        },
+        "next_output_tokens": {
+            "values": [32.0],
+            "probability_mass": [1.0],
+        },
+    }
+    frontier_model = SimpleNamespace(
+        model_version="schema-v5",
+        predict=mock.Mock(
+            return_value=SimpleNamespace(
+                to_dict=lambda: dict(prediction_payload)
+            )
+        ),
+    )
+    runtime.controller = SimpleNamespace(
+        graph=SimpleNamespace(invocations={"inv-deferred": invocation}),
+        predictor=SimpleNamespace(
+            frontier_model=frontier_model,
+            features={"inv-deferred": online},
+        ),
+    )
+    runtime.config = SimpleNamespace(predictive_risk_shadow_enabled=True)
+    runtime._last_frontier_features = {}
+    runtime._last_frontier_predictions = {}
+    runtime._last_frontier_model_version = None
+    runtime._bounded_seed_prediction_signature_by_invocation = {}
+    runtime._joint_predictive_counts = Counter()
+    runtime._joint_shadow_timing_samples = {}
+    runnable = (
+        RunnableInvocation(
+            request_id="deferred",
+            workflow_id="wf",
+            invocation_id="inv-deferred",
+            context_id="ctx-deferred",
+            context_epoch=0,
+            submitted_ts_ms=1.0,
+            startup_bytes=4096,
+            admission_startup_bytes=1024,
+            admission_growth_bytes=512,
+            causal_class="engine_waiting:ready",
+            remaining_prefill_tokens=128,
+            remaining_output_tokens=4096,
+            prediction_support_level="unavailable",
+        ),
+    )
+    view = OnlineJointPlanView(
+        plan_id="bounded-seed",
+        ordered_request_ids=(),
+        immediate_request_ids=(),
+        restore_requirements=(),
+        deferred_request_ids=("deferred",),
+        residency_intent_indices=(),
+    )
+    feature = SimpleNamespace(to_dict=lambda: {"invocation_id": "inv-deferred"})
+
+    with mock.patch(
+        "beliefkv.runtime.sglang_v052rc1.build_invocation_frontier_features",
+        return_value={"inv-deferred": feature},
+    ) as build_features:
+        refreshed = runtime._refresh_bounded_seed_frontier_predictions(
+            view,
+            runnable,
+            priority_request_ids=("deferred",),
+            now_ms=100.0,
+        )
+        cached = runtime._refresh_bounded_seed_frontier_predictions(
+            view,
+            runnable,
+            priority_request_ids=("deferred",),
+            now_ms=101.0,
+        )
+
+    assert refreshed[0].predicted_remaining_decode_tokens == 64.0
+    assert refreshed[0].predicted_next_output_tokens == 32.0
+    assert refreshed[0].prediction_support_level == "backoff"
+    assert cached[0].predicted_remaining_decode_tokens == 64.0
+    assert frontier_model.predict.call_count == 1
+    assert build_features.call_count == 1
+    assert runtime._joint_predictive_counts[
+        "bounded_seed_prediction_inferred"
+    ] == 1
+    assert runtime._joint_predictive_counts[
+        "bounded_seed_prediction_cache_hit"
+    ] == 1
 class _EventBatchRecorder:
     def __init__(self):
         self.events = []

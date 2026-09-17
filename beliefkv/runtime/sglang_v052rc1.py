@@ -2611,6 +2611,9 @@ class EmbeddedSGLangRuntime:
         self._last_frontier_model_version: str | None = None
         self._frontier_feature_delta_initialized = False
         self._frontier_active_invocation_ids: set[str] = set()
+        self._bounded_seed_prediction_signature_by_invocation: dict[
+            str, tuple[object, ...]
+        ] = {}
         self._restore_funding_preview_cursor: dict[str, int] = {}
         self._joint_shadow_strict_stale_reasons: Counter[str] = Counter()
         self._joint_shadow_readset_stale_reasons: Counter[str] = Counter()
@@ -22897,6 +22900,19 @@ class EmbeddedSGLangRuntime:
             )
             and current.view.restore_requirements == restore_requirements
         ):
+            runnable = self._refresh_bounded_seed_frontier_predictions(
+                current.view,
+                runnable,
+                priority_request_ids=(
+                    getattr(
+                        self,
+                        "_latest_bounded_seed_priority_request_ids",
+                        (),
+                    )
+                ),
+                now_ms=now_ms,
+            )
+            self._latest_bounded_seed_runnable = runnable
             candidates = self._observed_seed_beneficiary_hints(
                 current.view,
                 runnable,
@@ -22973,6 +22989,13 @@ class EmbeddedSGLangRuntime:
             ),
             restore_requirements=restore_requirements,
         )
+        runnable = self._refresh_bounded_seed_frontier_predictions(
+            decision.view,
+            runnable,
+            priority_request_ids=self._latest_bounded_seed_priority_request_ids,
+            now_ms=now_ms,
+        )
+        self._latest_bounded_seed_runnable = runnable
         candidates = self._observed_seed_beneficiary_hints(
             decision.view,
             runnable,
@@ -23045,6 +23068,166 @@ class EmbeddedSGLangRuntime:
         self._current_joint_plan_epoch = decision.epoch
         self._online_joint_counts["safe_point_seed_epoch"] += 1
         return decision
+
+    def _refresh_bounded_seed_frontier_predictions(
+        self,
+        view: OnlineJointPlanView | None,
+        runnable: tuple[RunnableInvocation, ...],
+        *,
+        priority_request_ids: tuple[str, ...],
+        now_ms: float,
+        limit: int = 4,
+    ) -> tuple[RunnableInvocation, ...]:
+        """Predict only the deferred requests considered by the bounded seed.
+
+        Candidate identities and their online feature inputs are stable across
+        most scheduler steps. Cache by that compact signature so schema-v5
+        inference runs only when one of the bounded candidates actually
+        changes, rather than once per active invocation or scheduler tick.
+        """
+
+        if (
+            view is None
+            or limit <= 0
+            or not self.config.predictive_risk_shadow_enabled
+        ):
+            return runnable
+        predictor = getattr(self.controller, "predictor", None)
+        frontier_model = getattr(predictor, "frontier_model", None)
+        if predictor is None or frontier_model is None:
+            return runnable
+        deferred = frozenset(view.deferred_request_ids)
+        by_request_id = {item.request_id: item for item in runnable}
+        candidate_invocation_ids: list[str] = []
+        for request_id in priority_request_ids:
+            request = by_request_id.get(request_id)
+            if (
+                request_id not in deferred
+                or request is None
+                or not request.causal_class.startswith("engine_waiting:")
+                or request.admission_startup_bytes is None
+                or request.admission_growth_bytes is None
+                or int(request.admission_startup_bytes or 0)
+                + int(request.admission_growth_bytes or 0)
+                <= 0
+                or request.invocation_id in candidate_invocation_ids
+            ):
+                continue
+            candidate_invocation_ids.append(request.invocation_id)
+            if len(candidate_invocation_ids) >= limit:
+                break
+        if not candidate_invocation_ids:
+            return runnable
+
+        changed_ids: list[str] = []
+        signatures = self._bounded_seed_prediction_signature_by_invocation
+        for invocation_id in candidate_invocation_ids:
+            invocation = self.controller.graph.invocations.get(invocation_id)
+            online = predictor.features.get(invocation_id)
+            if invocation is None:
+                continue
+            signature = (
+                invocation.state.value,
+                invocation.agent_definition_id,
+                invocation.active_tool_family,
+                invocation.active_tool_start_ms,
+                tuple(online.boundary_history)[-8:] if online is not None else (),
+                int(online.context_tokens or 0) if online is not None else 0,
+                int(online.generated_tokens or 0) if online is not None else 0,
+                str(online.tool_backend_class or "unknown")
+                if online is not None
+                else "unknown",
+                str(online.tool_command_class or "unknown")
+                if online is not None
+                else "unknown",
+            )
+            if (
+                signatures.get(invocation_id) != signature
+                or invocation_id not in self._last_frontier_predictions
+            ):
+                signatures[invocation_id] = signature
+                changed_ids.append(invocation_id)
+
+        started_ns = time.perf_counter_ns()
+        if changed_ids:
+            try:
+                features = build_invocation_frontier_features(
+                    self.controller.graph,
+                    predictor,
+                    now_ms=now_ms,
+                    invocation_ids=tuple(changed_ids),
+                )
+                for invocation_id in changed_ids:
+                    invocation_features = features.get(invocation_id)
+                    if invocation_features is None:
+                        continue
+                    try:
+                        prediction = frontier_model.predict(invocation_features)
+                    except Exception:
+                        self._joint_predictive_counts[
+                            "bounded_seed_prediction_failed"
+                        ] += 1
+                        continue
+                    self._last_frontier_features[invocation_id] = (
+                        invocation_features.to_dict()
+                    )
+                    self._last_frontier_predictions[invocation_id] = (
+                        prediction.to_dict()
+                    )
+                    self._joint_predictive_counts[
+                        "bounded_seed_prediction_inferred"
+                    ] += 1
+                self._last_frontier_model_version = str(
+                    frontier_model.model_version
+                )
+            except Exception:
+                self._joint_predictive_counts[
+                    "bounded_seed_prediction_batch_failed"
+                ] += 1
+        else:
+            self._joint_predictive_counts[
+                "bounded_seed_prediction_cache_hit"
+            ] += len(candidate_invocation_ids)
+        elapsed_ms = (time.perf_counter_ns() - started_ns) / 1_000_000.0
+        self._joint_shadow_timing_samples.setdefault(
+            "bounded_seed_prediction_ms", deque(maxlen=65_536)
+        ).append(elapsed_ms)
+
+        candidate_ids = frozenset(candidate_invocation_ids)
+        refreshed: list[RunnableInvocation] = []
+        for request in runnable:
+            if request.invocation_id not in candidate_ids:
+                refreshed.append(request)
+                continue
+            prediction = self._last_frontier_predictions.get(
+                request.invocation_id
+            )
+            if not isinstance(prediction, Mapping):
+                refreshed.append(request)
+                continue
+            support = str(prediction.get("support_level") or "unavailable")
+            if support not in {"exact", "backoff", "unavailable"}:
+                support = "unavailable"
+            refreshed.append(
+                replace(
+                    request,
+                    predicted_remaining_decode_tokens=(
+                        self._frontier_prediction_quantile(
+                            prediction, "remaining_decode_tokens", 0.9
+                        )
+                    ),
+                    predicted_next_output_tokens=(
+                        self._frontier_prediction_quantile(
+                            prediction, "next_output_tokens", 0.5
+                        )
+                    ),
+                    prediction_support_level=support,
+                    prediction_ood_reasons=tuple(
+                        prediction.get("ood_reasons", ())
+                    ),
+                )
+            )
+        return tuple(refreshed)
 
     @staticmethod
     def _observed_seed_beneficiary_hints(
