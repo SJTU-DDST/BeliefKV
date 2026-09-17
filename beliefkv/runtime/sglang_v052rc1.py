@@ -17709,6 +17709,7 @@ class EmbeddedSGLangRuntime:
         if not context_ids:
             return None
 
+        device_available_bytes = self._physical_device_available_bytes()
         overlays: list[ActionLocalPhysicalOverlay] = []
         failure_reasons: set[str] = set()
         for context_id in context_ids:
@@ -17775,9 +17776,7 @@ class EmbeddedSGLangRuntime:
             )
         if len(context_ids) == 1 and len(overlays) == 1:
             target_bytes = overlays[0].h2d_copy_bytes
-            physical_free_bytes = max(
-                0, observation.hbm_capacity_bytes - observation.hbm_used_bytes
-            )
+            physical_free_bytes = device_available_bytes
             reclaim_deficit_bytes = max(0, target_bytes - physical_free_bytes)
             if reclaim_deficit_bytes > 0:
                 wait_states = {
@@ -17889,6 +17888,7 @@ class EmbeddedSGLangRuntime:
             reentry_context_ids=tuple(context_ids),
             selection_reason=selection_reason,
             capture_ms=(time.perf_counter_ns() - started_ns) / 1_000_000.0,
+            device_available_bytes=device_available_bytes,
         )
 
     def _capture_action_local_physical_overlay_batch(

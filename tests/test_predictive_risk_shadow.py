@@ -2852,7 +2852,7 @@ def test_action_certificate_ignores_unrelated_global_revision() -> None:
     )
 
 
-def test_prefetch_overlay_forces_reclaim_pair_despite_effective_free_hbm() -> None:
+def test_prefetch_overlay_funds_reclaim_pair_with_native_free_hbm() -> None:
     observer = PredictiveRiskShadowObserver.__new__(
         PredictiveRiskShadowObserver
     )
@@ -2863,6 +2863,7 @@ def test_prefetch_overlay_forces_reclaim_pair_despite_effective_free_hbm() -> No
     metadata["beliefkv_action_local_physical_overlay"] = MetadataValue(
         MetadataSource.OBSERVED,
         {
+            "device_available_bytes": 50,
             "overlays": (
                 {
                     "context_id": target.context_id,
@@ -2911,5 +2912,5 @@ def test_prefetch_overlay_forces_reclaim_pair_despite_effective_free_hbm() -> No
 
     funded = packages[-1]
     assert funded.action == PredictiveActionKind.RECLAIM_AND_PREFETCH
-    assert funded.byte_budget == 256
+    assert funded.byte_budget == 306
     assert funded.victim_context_ids == ("ctx-victim",)

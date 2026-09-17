@@ -1381,6 +1381,7 @@ def test_action_local_overlay_prefetches_parked_cpu_context_not_beneficiary():
         admission_prefill_quantum_tokens=16,
         admission_decode_quantum_tokens=16,
     )
+    runtime._current_native_available_hbm_bytes = 1_000
     hint = ObservedSeedBeneficiaryHint(
         "seed",
         "beneficiary",
@@ -1426,6 +1427,7 @@ def test_action_local_overlay_prefetches_parked_cpu_context_not_beneficiary():
     assert reentry_batch.victim_count == 0
     summaries["victim-context"].cpu_bytes = 500
     summaries["victim-context"].d2h_copy_upper_bound_bytes = 0
+    runtime._current_native_available_hbm_bytes = 50
     funded_reentry = (
         runtime._capture_reentry_action_local_physical_overlay_batch(
             (("reentry", "predicted_latest_start", "target", 2),),
@@ -1439,6 +1441,7 @@ def test_action_local_overlay_prefetches_parked_cpu_context_not_beneficiary():
     )
     assert funded_reentry.overlays[1].evidence_kind == "commit_ready_summary"
     assert funded_reentry.overlays[1].exclusive_reclaimable_bytes == 500
+    assert funded_reentry.device_available_bytes == 50
 
 
 def test_live_prepare_certificate_defers_physical_revision_to_commit():

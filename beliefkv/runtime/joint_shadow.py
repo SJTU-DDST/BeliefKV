@@ -228,6 +228,7 @@ class ActionLocalPhysicalOverlayBatch:
     parked_context_count: int = 0
     summarized_context_count: int = 0
     mechanism_capture_forced: bool = False
+    device_available_bytes: int | None = None
 
     def __post_init__(self) -> None:
         if not self.beneficiary_risk_signature and not self.reentry_context_ids:
@@ -250,6 +251,11 @@ class ActionLocalPhysicalOverlayBatch:
             raise ValueError("overlay capture time must be non-negative")
         if self.parked_context_count < 0 or self.summarized_context_count < 0:
             raise ValueError("overlay context counts must be non-negative")
+        if (
+            self.device_available_bytes is not None
+            and self.device_available_bytes < 0
+        ):
+            raise ValueError("overlay device capacity must be non-negative")
         if self.summarized_context_count > self.parked_context_count:
             raise ValueError("summarized contexts cannot exceed parked contexts")
         if self.selection_reason is not None and not self.selection_reason:
@@ -277,6 +283,7 @@ class ActionLocalPhysicalOverlayBatch:
             "parked_context_count": self.parked_context_count,
             "summarized_context_count": self.summarized_context_count,
             "mechanism_capture_forced": self.mechanism_capture_forced,
+            "device_available_bytes": self.device_available_bytes,
         }
 
     @property

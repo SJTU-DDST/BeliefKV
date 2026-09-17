@@ -976,6 +976,15 @@ class PredictiveEligibilityIndex:
             if len(bundle.extent_ids) == 1
         }
         overlay_by_context = _action_local_physical_overlay(policy_input)
+        overlay_metadata = policy_input.optional_metadata.get(
+            "beliefkv_action_local_physical_overlay"
+        )
+        overlay_payload = (
+            overlay_metadata.value
+            if overlay_metadata is not None
+            and isinstance(overlay_metadata.value, Mapping)
+            else {}
+        )
 
         prefetch: list[PrefetchTarget] = []
         victims: list[PrepareHostVictim] = []
@@ -1102,11 +1111,17 @@ class PredictiveEligibilityIndex:
         reclaim_ready.sort(
             key=lambda item: (-item.reclaimable_bytes, item.context_id)
         )
-        hbm_free = max(
-            0,
-            policy_input.resources.hbm_capacity_bytes
-            - policy_input.resources.policy_hbm_used_bytes
-            - policy_input.resources.hbm_reserved_bytes,
+        overlay_device_available = overlay_payload.get("device_available_bytes")
+        hbm_free = (
+            max(0, int(overlay_device_available))
+            if isinstance(overlay_device_available, int)
+            and not isinstance(overlay_device_available, bool)
+            else max(
+                0,
+                policy_input.resources.hbm_capacity_bytes
+                - policy_input.resources.policy_hbm_used_bytes
+                - policy_input.resources.hbm_reserved_bytes,
+            )
         )
         host_free = policy_input.resources.host_free_bytes
         hbm_bucket = self._hysteretic_bucket(
@@ -3809,11 +3824,26 @@ class PredictiveRiskShadowObserver:
             item.invocation_id: item for item in policy_input.runnable_frontier
         }
         action_local_overlay = _action_local_physical_overlay(policy_input)
-        prefetch_byte_budget = max(
-            0,
-            policy_input.resources.hbm_capacity_bytes
-            - policy_input.resources.policy_hbm_used_bytes
-            - policy_input.resources.hbm_reserved_bytes,
+        overlay_metadata = policy_input.optional_metadata.get(
+            "beliefkv_action_local_physical_overlay"
+        )
+        overlay_payload = (
+            overlay_metadata.value
+            if overlay_metadata is not None
+            and isinstance(overlay_metadata.value, Mapping)
+            else {}
+        )
+        overlay_device_available = overlay_payload.get("device_available_bytes")
+        prefetch_byte_budget = (
+            max(0, int(overlay_device_available))
+            if isinstance(overlay_device_available, int)
+            and not isinstance(overlay_device_available, bool)
+            else max(
+                0,
+                policy_input.resources.hbm_capacity_bytes
+                - policy_input.resources.policy_hbm_used_bytes
+                - policy_input.resources.hbm_reserved_bytes,
+            )
         )
         for target in eligibility.prefetch_targets[:4]:
             request = request_by_invocation.get(target.invocation_id)
@@ -3846,7 +3876,7 @@ class PredictiveRiskShadowObserver:
             )
             funded_budget = prefetch_byte_budget
             if physical_reclaim_pair and reclaim_victim is not None:
-                funded_budget = reclaim_victim.reclaimable_bytes
+                funded_budget += reclaim_victim.reclaimable_bytes
                 action = PredictiveActionKind.RECLAIM_AND_PREFETCH
             elif (
                 target.missing_gpu_bytes > prefetch_byte_budget
