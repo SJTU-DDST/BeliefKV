@@ -2718,7 +2718,10 @@ class PredictiveRiskShadowObserver:
             positive_slacks = tuple(
                 diagnostic.morphology_slack_ms
                 for diagnostic in summary.recourse_diagnostics
-                if diagnostic.recourse_failure_reason == "eligible"
+                if diagnostic.recourse_failure_reason in {
+                    "eligible",
+                    "eligible_partial",
+                }
                 and diagnostic.morphology_slack_ms is not None
                 and diagnostic.morphology_slack_ms > 0
             )
@@ -3392,12 +3395,14 @@ class PredictiveRiskShadowObserver:
                 failure_reason = "pressure_not_before_parent_reentry"
             elif morphology_slack is None or morphology_slack <= 0:
                 failure_reason = "morphology_window_miss"
-            elif reclaimable_bytes < pressure_deficit_bytes:
+            elif reclaimable_bytes <= 0:
                 failure_reason = "insufficient_exclusive_reclaim"
             elif baseline_reactive_d2h_ms is None:
                 failure_reason = "reactive_d2h_unavailable"
             else:
                 recourse_credit_ms = baseline_reactive_d2h_ms
+                if reclaimable_bytes < pressure_deficit_bytes:
+                    failure_reason = "eligible_partial"
 
             conservative_shadow = (
                 conservative.transfer_completion_offsets_ms.get(transfer_id)

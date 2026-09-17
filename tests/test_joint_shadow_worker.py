@@ -36,7 +36,7 @@ from beliefkv.policy.risk_shadow import (
     PredictiveEligibility,
     PrefetchTarget,
 )
-from beliefkv.runtime.protocol import PageHandle
+from beliefkv.runtime.protocol import PageHandle, PhysicalResidency
 from tests.test_joint_scheduler import _invocation, _with_runtime_state
 from tests.test_whatif_packer import _input
 
@@ -1226,6 +1226,70 @@ def test_risk_event_reuses_cached_observed_seed_without_replanning() -> None:
         "invocations"
     ]
     assert worker.close()
+
+
+def test_reentry_risk_materializes_without_prepare_beneficiary() -> None:
+    config = BeliefKVConfig(
+        hbm_capacity_bytes=1_000,
+        host_capacity_bytes=1_000,
+        reserve_hbm_bytes=0,
+        predictor_enabled=False,
+        shadow_enabled=False,
+        performance_mode=True,
+    )
+    controller = BeliefKVController(config)
+    controller.process_runtime_events(
+        (
+            _event(1, RuntimeEventKind.WORKFLOW_START),
+            _event(
+                2,
+                RuntimeEventKind.INVOCATION_CREATE,
+                invocation_id="root",
+                context_id="ctx",
+                context_epoch=0,
+            ),
+        )
+    )
+    handle = PageHandle(1, 0)
+    controller.page_index.register_page(
+        handle,
+        size_bytes=100,
+        residency=PhysicalResidency.CPU_ONLY,
+    )
+    controller.page_index.bind_pages("ctx", 0, (handle,))
+    assembler = IncrementalPolicyInputAssembler(config)
+    assembler.apply(_delta(controller, event_sequence=0, page_revision=0, ts_ms=2))
+    policy_input = assembler.refresh_predictive_semantics(
+        assembler.build(),
+        risk_trigger_signature=(("reentry", "tool_end", "root", 0),),
+    )
+    metadata = dict(policy_input.optional_metadata)
+    metadata["beliefkv_action_local_physical_overlay"] = MetadataValue(
+        source=MetadataSource.OBSERVED,
+        value={
+            "overlays": (),
+            "opportunity": {
+                "hbm_opportunity_possible": False,
+                "beneficiary_slot_blocked": False,
+            },
+            "selection_reason": "beneficiary_capacity_available",
+        },
+        producer="test",
+    )
+    policy_input = replace(policy_input, optional_metadata=metadata)
+    source_plan = ObservedJointPlanner().plan(policy_input)
+
+    materialized, available, reason = assembler.materialize_predictive_candidates(
+        policy_input, source_plan
+    )
+
+    assert available
+    assert reason is None
+    scope = materialized.optional_metadata[
+        "beliefkv_predictive_candidate_scope"
+    ].value
+    assert scope["reentry_context_ids"] == ("ctx",)
+    assert scope["beneficiary_request_id"] is None
 
 
 def test_semantic_progress_does_not_erase_inflight_risk_trigger() -> None:

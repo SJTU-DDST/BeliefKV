@@ -862,6 +862,32 @@ def test_cpu_only_host_drop_rejects_locked_or_nonleaf_extent() -> None:
     }
 
 
+def test_bounded_exclusive_shadow_selects_closure_complete_chunk() -> None:
+    graph, index = _runtime(("parent", "ctx-parent", "wf"))
+    graph.apply(_event(2, RuntimeEventKind.TOOL_START, invocation_id="parent"))
+    large = PageHandle(1, 0)
+    bounded = PageHandle(2, 0)
+    index.register_page(large, size_bytes=70, radix_depth=1)
+    index.register_page(bounded, size_bytes=40, radix_depth=1)
+    index.bind_pages("ctx-parent", 0, (large, bounded))
+
+    preview = PhysicalBundleBuilder(
+        graph, index
+    ).best_exclusive_shadow_preview_for_context(
+        "ctx-parent",
+        0,
+        now_ms=3,
+        max_copy_bytes=64,
+    )
+
+    assert preview is not None
+    assert preview.eligible
+    assert preview.bundle.handles == (bounded,)
+    assert preview.copy_bytes == 40
+    assert preview.bundle.exclusive_action_bytes == 40
+    assert preview.bundle.cross_context_action_bytes == 0
+
+
 def test_best_exclusive_shadow_preview_skips_shared_ancestor() -> None:
     graph, index = _runtime(
         ("parent", "ctx-parent", "wf"),

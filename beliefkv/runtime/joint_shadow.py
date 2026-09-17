@@ -1090,6 +1090,26 @@ class IncrementalPolicyInputAssembler:
     ) -> tuple[PolicyInput, bool, str | None]:
         """Attach a bounded physical overlay for one projected beneficiary."""
 
+        trigger_metadata = policy_input.optional_metadata.get(
+            "beliefkv_predictive_risk_trigger"
+        )
+        trigger_value = (
+            trigger_metadata.value
+            if trigger_metadata is not None
+            and isinstance(trigger_metadata.value, Mapping)
+            else {}
+        )
+        raw_trigger_events = trigger_value.get("events", ())
+        trigger_events = tuple(
+            tuple(item)
+            for item in raw_trigger_events
+            if isinstance(item, (tuple, list)) and len(item) == 4
+        )
+        has_reentry_trigger = any(
+            str(risk_class) == "reentry"
+            for risk_class, _event_kind, _invocation_id, _context_epoch
+            in trigger_events
+        )
         seed_hint_metadata = policy_input.optional_metadata.get(
             "beliefkv_observed_seed_beneficiary"
         )
@@ -1111,7 +1131,7 @@ class IncrementalPolicyInputAssembler:
             if beneficiary_request_id is not None
             else None
         )
-        if beneficiary is None:
+        if beneficiary is None and not has_reentry_trigger:
             return policy_input, False, "no_beneficiary_hint"
         overlay_metadata = policy_input.optional_metadata.get(
             "beliefkv_action_local_physical_overlay"
@@ -1128,8 +1148,10 @@ class IncrementalPolicyInputAssembler:
             item for item in raw_overlays if isinstance(item, Mapping)
         )
         opportunity = overlay_batch.get("opportunity", {})
-        if isinstance(opportunity, Mapping) and not bool(
-            opportunity.get("hbm_opportunity_possible", True)
+        if (
+            not has_reentry_trigger
+            and isinstance(opportunity, Mapping)
+            and not bool(opportunity.get("hbm_opportunity_possible", True))
         ):
             return (
                 policy_input,
@@ -1143,28 +1165,17 @@ class IncrementalPolicyInputAssembler:
         overlay_selection_reason = str(
             overlay_batch.get("selection_reason") or ""
         ) or None
-        if overlay_is_authoritative and not overlay_rows:
+        if (
+            not has_reentry_trigger
+            and overlay_is_authoritative
+            and not overlay_rows
+        ):
             return (
                 policy_input,
                 False,
                 overlay_selection_reason
                 or "action_local_physical_overlay_unavailable",
             )
-        trigger_metadata = policy_input.optional_metadata.get(
-            "beliefkv_predictive_risk_trigger"
-        )
-        trigger_value = (
-            trigger_metadata.value
-            if trigger_metadata is not None
-            and isinstance(trigger_metadata.value, Mapping)
-            else {}
-        )
-        raw_trigger_events = trigger_value.get("events", ())
-        trigger_events = tuple(
-            tuple(item)
-            for item in raw_trigger_events
-            if isinstance(item, (tuple, list)) and len(item) == 4
-        )
         summary_metadata = policy_input.optional_metadata.get(
             "beliefkv_context_physical_summaries"
         )
@@ -1212,7 +1223,10 @@ class IncrementalPolicyInputAssembler:
             )
         else:
             for context_id in parked_contexts:
-                if context_id == beneficiary.context_id:
+                if (
+                    beneficiary is not None
+                    and context_id == beneficiary.context_id
+                ):
                     continue
                 raw = summaries.get(context_id)
                 if not isinstance(raw, Mapping):
@@ -1271,7 +1285,9 @@ class IncrementalPolicyInputAssembler:
                 )
             )
         )
-        candidate_seed_ids = {beneficiary.invocation_id}
+        candidate_seed_ids = (
+            {beneficiary.invocation_id} if beneficiary is not None else set()
+        )
         for context_id in context_ids:
             context = self.graph.contexts.get(context_id)
             if context is not None:

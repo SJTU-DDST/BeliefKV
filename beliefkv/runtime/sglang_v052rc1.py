@@ -17862,13 +17862,25 @@ class EmbeddedSGLangRuntime:
                 observed_failure_reasons.add("victim_bundle_generation_stale")
                 continue
             context_revision = page_index.context_revision(summary.context_id)
-            copy_bytes = summary.d2h_copy_upper_bound_bytes
+            full_copy_bytes = summary.d2h_copy_upper_bound_bytes
+            copy_bytes = min(
+                full_copy_bytes,
+                getattr(self.config, "shadow_chunk_bytes", 64 * 1024 * 1024),
+            )
             extent_count = (
                 summary.extent_count
                 if copy_bytes == 0
                 else summary.d2h_extent_count_upper_bound
             )
-            commit_ready = copy_bytes == 0
+            commit_ready = full_copy_bytes == 0
+            prepared_reclaimable_bytes = (
+                summary.exclusive_reclaimable_upper_bound_bytes
+                if commit_ready
+                else min(
+                    summary.exclusive_reclaimable_upper_bound_bytes,
+                    copy_bytes,
+                )
+            )
             if copy_bytes > 0 and extent_count <= 0:
                 observed_failure_reasons.add("victim_physically_blocked")
                 continue
@@ -17888,10 +17900,10 @@ class EmbeddedSGLangRuntime:
                 shape_fingerprint=(
                     f"commit-ready:{summary.exclusive_reclaimable_upper_bound_bytes}"
                     if commit_ready
-                    else f"summary:{copy_bytes}:n{extent_count}"
+                    else f"bounded-summary:{copy_bytes}:n{extent_count}"
                 ),
                 exclusive_reclaimable_bytes=(
-                    summary.exclusive_reclaimable_upper_bound_bytes
+                    prepared_reclaimable_bytes
                 ),
                 d2h_copy_bytes=copy_bytes,
                 extent_count=extent_count,
@@ -22437,6 +22449,10 @@ class EmbeddedSGLangRuntime:
                     target.context_epoch,
                     now_ms=now_ms,
                     host_available_bytes=host_available,
+                    max_copy_bytes=min(
+                        self.config.shadow_chunk_bytes,
+                        intent.max_copy_bytes,
+                    ),
                 )
                 live_candidates = (best,) if best is not None else ()
             else:

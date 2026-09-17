@@ -166,8 +166,9 @@ class PhysicalBundleBuilder:
         *,
         now_ms: float,
         host_available_bytes: int | None = None,
+        max_copy_bytes: int | None = None,
     ) -> PhysicalBundlePreview | None:
-        """Build at most one maximal private D2H shadow candidate."""
+        """Build one private, closure-complete D2H shadow candidate."""
 
         context = self.graph.contexts.get(context_id)
         if (
@@ -177,6 +178,37 @@ class PhysicalBundleBuilder:
             or self.page_index.context_epoch(context_id) != context_epoch
         ):
             return None
+        if max_copy_bytes is not None:
+            if max_copy_bytes <= 0:
+                return None
+            bounded = tuple(
+                preview
+                for preview in self._offload_previews(
+                    CommandKind.SHADOW_CONTEXT,
+                    context_id,
+                    context_epoch,
+                    now_ms=now_ms,
+                    allow_ready_owners=False,
+                    protected_context_id=None,
+                    bypass_owner_context_ids=frozenset(),
+                    host_available_bytes=host_available_bytes,
+                )
+                if preview.eligible
+                and 0 < preview.copy_bytes <= max_copy_bytes
+                and preview.bundle.exclusive_action_bytes > 0
+                and preview.bundle.cross_context_action_bytes == 0
+                and preview.bundle.owner_context_ids == (context_id,)
+            )
+            return max(
+                bounded,
+                key=lambda preview: (
+                    preview.copy_bytes,
+                    preview.bundle.exclusive_action_bytes,
+                    -len(preview.page_actions),
+                    preview.bundle.bundle_id,
+                ),
+                default=None,
+            )
 
         target_owner = {context_id}
         memo: dict[PageHandle, tuple[bool, bool, int]] = {}
