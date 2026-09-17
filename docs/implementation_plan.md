@@ -36,6 +36,12 @@ funded prefetch. No natural online run has yet completed the full
 `intent -> H2D -> lease -> first service` attribution chain or shown throughput
 gain.
 
+Online scheduling now uses the action-minimal v1 contract. Calibrated decode and
+next-output demand may reorder an observed seed; boundary and tool-terminal
+classifiers are diagnostic only. Missing demand support preserves observed order.
+Transfer actions continue to require live-tau survival, beneficiary, capacity,
+physical-envelope, and net-benefit validation.
+
 ## P0: Freeze The Current Correctness Baseline (Complete)
 
 Use:

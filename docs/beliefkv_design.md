@@ -183,6 +183,12 @@ prediction-to-action 机制，但不能形成正式性能结论。
 审计信号。PREPARE/PREFETCH 还必须经过 action-specific timing、beneficiary、physical closure、
 capacity 和净收益门禁。
 
+当前在线权限实现为 action-minimal v1：运行中请求按校准后的 remaining-decode 中位数排序，
+waiting request 按 remaining-prefill + next-output demand 排序，并以 live HBM demand 和 observed
+seed rank 作后续排序键。boundary/tool-terminal 不再属于 SCHEDULE required heads。该收敛减少了
+多数类分类器对 JointPlan 的错误控制，但不会提高原始预测准确率；PREFETCH 的 precision/recall
+仍必须按 held-out calibration 如实报告。
+
 ## 6. 未来可选方案：Predictive Eviction
 
 ### 6.1 动机和当前缺口

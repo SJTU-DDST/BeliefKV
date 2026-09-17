@@ -1,7 +1,7 @@
 # BeliefKV 当前架构与实现状态
 
 更新日期：2026-09-17
-当前 P6 代码基线：`0ab8c09`
+当前 P6 代码基线：`c2fb3a4`
 
 本文只记录当前事实和下一阻塞项，不再追加逐日开发日志。2026-09-12 以前的完整历史保存在
 `docs/archive/snapshots/architecture_status_zh.md`，单次实验细节保存在
@@ -35,7 +35,7 @@ epoch、物理 closure 或容量失效都回退当前 P5。
 | Running retraction | 可用 | 最新修复正在高压回归 |
 | Transactional restore | 可用 | H2D/native load/recompute，service 后终结 |
 | FrontierBelief | v6 development-only | PREPARE/PREFETCH 独立校准；`online_eligible=false` |
-| Predictive execution/admission | 已接入 | action-unlock/token 与 HBM demand 联合排序，native allocator 最终验收 |
+| Predictive execution/admission | 已接入 | 仅使用校准 token demand 做 SRPT/HBM 排序；RCCG/observed seed 保留因果优先级，native allocator 最终验收 |
 | Predictive `PREPARE_HOST` | 已接入 | D2H 后保留 GPU KV，并建立 beneficiary-victim binding |
 | Beneficiary-bound `COMMIT_CPU` | 已接入 | 只由真实 deficit 授权，优先消费 prepared victim |
 | Predictive `PREFETCH_GPU` | 控制面与数据面已接入，收益未验证 | 支持完整、ancestor-closed partial 和 commit-ready victim 资助的 prefetch；development artifact 需显式 override |
@@ -61,6 +61,12 @@ Agent events
 
 同步 safe-point 只执行有界状态捕获、seed 和动作局部校验；预测与 scenario evaluation 在
 异步 worker 中运行。任何 stale、OOD、资源不可行或收益不足的预测结果都回退 P5。
+
+在线预测权限已收敛为 action-minimal 接口：execution/admission 只消费 remaining decode、
+next output 和实际 startup/growth demand；`PREPARE_HOST/PREFETCH_GPU` 只消费 live transfer
+`tau` 下的 wait/reentry survival、prompt/KV growth 与 RCCG dependency。boundary rare-class 和
+tool-terminal 分类继续记录和评估，但不再参与排序、support gate 或物理动作授权。需求 head
+不可用时保持 observed seed 顺序，不使用请求 ID 构造新的预测顺序。
 
 当前架构图：
 
