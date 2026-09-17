@@ -138,9 +138,13 @@ P6 不建立第二个调度器。它在 P5 bounded seed 上识别 deferred benef
 用 FrontierBelief 生成 action-local scenarios，再把合格的 PredictiveIntent 合并回同一个
 JointPlan。
 
-预测目标是需求和因果窗口，而不是旧负载下的 wall-clock GPU 时间：
+预测目标是需求和动作相关因果窗口，而不是旧负载下的 wall-clock GPU 时间。schema-v5
+使用一个版本化 artifact 发布三类局部分布：
 
-- WAIT_TOOL：按 tool/backend/command class 的 competing-risk survival；
+- `OperationalReleaseModel`：直接拟合
+  `P(tool release <= live transfer tau | elapsed, role, tool, backend, command, context)`；
+- pooled conditional demand：remaining decode、next output、prompt growth；
+- pooled conditional classification：boundary 与 tool terminal，稀有类训练后恢复真实类先验；
 - WAIT_CHILD/JOIN：由 RCCG 组合 child 的多轮 LLM、工具等待和 completion；
 - WAIT_MESSAGE：producer dependency；
 - prompt/output/KV growth；
@@ -162,32 +166,35 @@ JointPlan。
 
 ### 5.1 预测质量与动作权限
 
-FrontierBelief v6 仍是 `development_only`，且 artifact 明确设置
-`online_eligible=false`、`predictive_action_eligible=false`。显式 development canary 可以验证
+FrontierBelief schema-v5 使用 64 个冻结 train workflow 拟合，并在 7 个 train project 内做
+LOPO 选参；16 个 repository 隔离的 calibration workflow 只用于概率和区间校准，`test_id`
+仍封存。artifact 仍明确设置 `online_eligible=false`、`predictive_action_eligible=false`，直到
+真实长任务完成 latest-start、物理闭环和吞吐门禁。显式 development canary 可以验证
 prediction-to-action 机制，但不能形成正式性能结论。
 
 当前各 head 的可用边界是：
 
-- prompt growth 与 remaining decode 的校准区间 coverage 约为 93%，可提供粗粒度需求包络；
-- PREFETCH operational-tau head 的 Brier skill 为 +15.80%，阈值 0.185 时
-  precision/recall 为 36.17%/64.67%；
-- PREPARE operational-tau head 只有 +3.20% Brier skill，balanced accuracy 约 50%，不能
-  单独授权 D2H；
-- boundary 与 tool-terminal 的 accuracy 分别为 94.96% 和 79.63%，但与多数类基线相同，
-  `spawn/final` 与 `error/censored` recall 均为 0；
+- remaining decode calibration MAE 为 384.54 tokens，比 v6 下降约 11.9%；next output 与
+  prompt growth MAE 为 175.84/2,002.41 tokens，继续以校准区间进入资源场景；
+- PREFETCH operational-tau Brier skill 为 +45.67%，动作阈值 precision/recall 为
+  59.66%/90.56%；
+- PREPARE operational-tau Brier skill 为 +19.21%；高置信度 precision/recall 为
+  99.90%/76.51%；
+- boundary top-2 accuracy 为 99.67%，FINAL/SPAWN top-2 recall 为 97.72%/73.76%；
+  top-1 仍受 tool 类 94.96% 先验支配，因此只进入 scenario composition；
+- tool-terminal accuracy 为 81.75%，error recall 为 51.10%，不再退化为恒定 success；
 - JOIN 不学习独立 wall-clock，由 RCCG 组合 child scenarios；WAIT_MESSAGE 尚无独立 head；
 - exact incremental action boundary 仍不可用。
 
-因此系统当前“支持预测动作的安全执行”，但尚不支持“由所有预测头稳定提升吞吐的高效预测
-调度”。execution ordering 必须依赖 RCCG 已知状态和 token/HBM demand；弱分类 head 只能作为
-审计信号。PREPARE/PREFETCH 还必须经过 action-specific timing、beneficiary、physical closure、
-capacity 和净收益门禁。
+因此系统已具备比 v6 明显更强的动作相关预测，不再由无关 head 或层次 backoff 统一门禁。
+但“离线概率变准”仍不等于“在线吞吐提升”：execution ordering 必须保留 RCCG 确定性状态，
+PREPARE/PREFETCH 还必须经过 beneficiary、physical closure、capacity、latest-start 和净收益门禁。
 
-当前在线权限实现为 action-minimal v1：运行中请求按校准后的 remaining-decode 中位数排序，
+当前在线权限实现为 action-minimal v2：运行中请求按校准后的 remaining-decode 分布排序，
 waiting request 按 remaining-prefill + next-output demand 排序，并以 live HBM demand 和 observed
-seed rank 作后续排序键。boundary/tool-terminal 不再属于 SCHEDULE required heads。该收敛减少了
-多数类分类器对 JointPlan 的错误控制，但不会提高原始预测准确率；PREFETCH 的 precision/recall
-仍必须按 held-out calibration 如实报告。
+seed rank 作后续排序键。boundary top-2 scenarios 可以估计 unlock 分支，但不属于物理动作的
+单点 required head；tool-terminal 用于失败风险，不替代 operational-tau。每个动作只消费其
+需要的预测分布，避免恢复 composite OOD 一票否决。
 
 ## 6. 未来可选方案：Predictive Eviction
 
