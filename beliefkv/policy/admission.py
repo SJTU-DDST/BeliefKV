@@ -509,6 +509,10 @@ class DynamicWorkingSetDecision:
     active_workflow_ids: tuple[str, ...]
     mode: str
     hbm_pressure: float
+    gross_kv_pressure: float
+    target_running_requests: int
+    native_running_requests: int
+    admission_slots: int
     target_ready_requests: int
     selected_ready_requests: int
     pressure_actions_enabled: bool
@@ -520,8 +524,15 @@ class DynamicWorkingSetDecision:
         if not self.mode:
             raise ValueError("working-set mode must be non-empty")
         if not 0 <= self.hbm_pressure <= 1:
-            raise ValueError("working-set HBM pressure must be in [0, 1]")
+            raise ValueError(
+                "working-set effective HBM pressure must be in [0, 1]"
+            )
+        if not 0 <= self.gross_kv_pressure <= 1:
+            raise ValueError("working-set gross KV pressure must be in [0, 1]")
         if min(
+            self.target_running_requests,
+            self.native_running_requests,
+            self.admission_slots,
             self.target_ready_requests,
             self.selected_ready_requests,
             self.epoch,
@@ -530,11 +541,11 @@ class DynamicWorkingSetDecision:
 
 
 class DynamicWorkingSetScheduler:
-    """Choose a throughput-first GPU working set with a starvation floor.
+    """Choose a non-preemptive soft running target from effective KV pressure.
 
-    HBM pressure enables replacement/reclaim actions; it never reduces the target
-    number of GPU-ready requests. Residency and admission therefore share one
-    work-conserving objective instead of independently contracting the active set.
+    Gross KV pressure includes native-evictable Radix cache and therefore only
+    describes physical occupancy. Effective pressure drives the active set; the
+    native allocator remains authoritative for each admission quantum.
     """
 
     def __init__(
@@ -545,6 +556,13 @@ class DynamicWorkingSetScheduler:
         pressure_exit_ratio: float,
         minimum_ready_requests: int,
         minimum_hold_epochs: int,
+        throughput_target_requests: int = 64,
+        balanced_target_requests: int = 48,
+        recovery_target_requests: int = 32,
+        balanced_enter_ratio: float = 0.82,
+        balanced_exit_ratio: float = 0.76,
+        recovery_enter_ratio: float = 0.94,
+        recovery_exit_ratio: float = 0.88,
         starvation_age_ms: float = 30_000.0,
     ) -> None:
         if max_workflows <= 0:
@@ -553,8 +571,24 @@ class DynamicWorkingSetScheduler:
             raise ValueError("working-set pressure thresholds are invalid")
         if minimum_ready_requests <= 0:
             raise ValueError("minimum ready requests must be positive")
+        if minimum_ready_requests > recovery_target_requests:
+            raise ValueError(
+                "minimum ready requests cannot exceed recovery target"
+            )
         if minimum_hold_epochs < 0:
             raise ValueError("minimum hold epochs must be non-negative")
+        if not (
+            throughput_target_requests >= balanced_target_requests
+            >= recovery_target_requests > 0
+        ):
+            raise ValueError("working-set running targets must be descending")
+        if not (
+            0 <= balanced_exit_ratio < balanced_enter_ratio
+            < recovery_enter_ratio <= 1
+            and balanced_exit_ratio < recovery_exit_ratio
+            < recovery_enter_ratio
+        ):
+            raise ValueError("working-set target thresholds are invalid")
         if not math.isfinite(starvation_age_ms) or starvation_age_ms <= 0:
             raise ValueError("starvation age must be finite and positive")
         self.max_workflows = max_workflows
@@ -562,9 +596,18 @@ class DynamicWorkingSetScheduler:
         self.pressure_exit_ratio = pressure_exit_ratio
         self.minimum_ready_requests = minimum_ready_requests
         self.minimum_hold_epochs = minimum_hold_epochs
+        self.throughput_target_requests = throughput_target_requests
+        self.balanced_target_requests = balanced_target_requests
+        self.recovery_target_requests = recovery_target_requests
+        self.balanced_enter_ratio = balanced_enter_ratio
+        self.balanced_exit_ratio = balanced_exit_ratio
+        self.recovery_enter_ratio = recovery_enter_ratio
+        self.recovery_exit_ratio = recovery_exit_ratio
         self.starvation_age_ms = starvation_age_ms
         self._pressure_mode = False
-        self._last_transition_epoch = 0
+        self._target_mode = "throughput"
+        self._last_pressure_transition_epoch = 0
+        self._last_target_transition_epoch = 0
         self._initialized = False
 
     def decide(
@@ -575,8 +618,15 @@ class DynamicWorkingSetScheduler:
         hbm_used_bytes: int,
         hbm_capacity_bytes: int,
         native_request_slots: int,
+        native_running_requests: int = 0,
+        gross_hbm_used_bytes: int | None = None,
     ) -> DynamicWorkingSetDecision:
-        if min(epoch, hbm_used_bytes, native_request_slots) < 0:
+        if min(
+            epoch,
+            hbm_used_bytes,
+            native_request_slots,
+            native_running_requests,
+        ) < 0:
             raise ValueError("working-set resources must be non-negative")
         if hbm_capacity_bytes <= 0:
             raise ValueError("working-set HBM capacity must be positive")
@@ -584,30 +634,78 @@ class DynamicWorkingSetScheduler:
         if len(workflow_ids) != len(set(workflow_ids)):
             raise ValueError("working-set candidates must be workflow aggregated")
 
+        if gross_hbm_used_bytes is None:
+            gross_hbm_used_bytes = hbm_used_bytes
+        if gross_hbm_used_bytes < 0:
+            raise ValueError("gross HBM usage must be non-negative")
         pressure = min(1.0, hbm_used_bytes / hbm_capacity_bytes)
-        held_epochs = max(0, epoch - self._last_transition_epoch)
+        gross_pressure = min(1.0, gross_hbm_used_bytes / hbm_capacity_bytes)
+        pressure_held_epochs = max(
+            0, epoch - self._last_pressure_transition_epoch
+        )
         if not self._initialized:
             self._initialized = True
             self._pressure_mode = pressure >= self.pressure_enter_ratio
-            self._last_transition_epoch = epoch
+            if pressure >= self.recovery_enter_ratio:
+                self._target_mode = "recovery"
+            elif pressure >= self.balanced_enter_ratio:
+                self._target_mode = "balanced"
+            self._last_pressure_transition_epoch = epoch
+            self._last_target_transition_epoch = epoch
         elif (
             not self._pressure_mode
             and pressure >= self.pressure_enter_ratio
-            and held_epochs >= self.minimum_hold_epochs
+            and pressure_held_epochs >= self.minimum_hold_epochs
         ):
             self._pressure_mode = True
-            self._last_transition_epoch = epoch
+            self._last_pressure_transition_epoch = epoch
         elif (
             self._pressure_mode
             and pressure <= self.pressure_exit_ratio
-            and held_epochs >= self.minimum_hold_epochs
+            and pressure_held_epochs >= self.minimum_hold_epochs
         ):
             self._pressure_mode = False
-            self._last_transition_epoch = epoch
+            self._last_pressure_transition_epoch = epoch
 
+        target_held_epochs = max(0, epoch - self._last_target_transition_epoch)
+        next_target_mode = self._target_mode
+        if self._target_mode == "throughput":
+            if pressure >= self.recovery_enter_ratio:
+                next_target_mode = "recovery"
+            elif pressure >= self.balanced_enter_ratio:
+                next_target_mode = "balanced"
+        elif self._target_mode == "balanced":
+            if pressure >= self.recovery_enter_ratio:
+                next_target_mode = "recovery"
+            elif pressure <= self.balanced_exit_ratio:
+                next_target_mode = "throughput"
+        elif pressure <= self.recovery_exit_ratio:
+            next_target_mode = (
+                "throughput"
+                if pressure <= self.balanced_exit_ratio
+                else "balanced"
+            )
+        if (
+            next_target_mode != self._target_mode
+            and target_held_epochs >= self.minimum_hold_epochs
+        ):
+            self._target_mode = next_target_mode
+            self._last_target_transition_epoch = epoch
+
+        configured_target = {
+            "throughput": self.throughput_target_requests,
+            "balanced": self.balanced_target_requests,
+            "recovery": self.recovery_target_requests,
+        }[self._target_mode]
+        native_hard_limit = native_running_requests + native_request_slots
+        target_running = min(configured_target, native_hard_limit)
+        admission_slots = min(
+            native_request_slots,
+            max(0, target_running - native_running_requests),
+        )
         slots = min(
             sum(item.gpu_ready_count for item in candidates),
-            max(0, native_request_slots),
+            admission_slots,
         )
         target = slots
         ordered = sorted(
@@ -624,7 +722,10 @@ class DynamicWorkingSetScheduler:
                 item.workflow_id,
             ),
         )
-        mode = "hbm_pressure_replacement" if self._pressure_mode else "gpu_fill"
+        mode = (
+            f"{self._target_mode}_"
+            f"{'replacement' if self._pressure_mode else 'fill'}"
+        )
 
         selected: list[str] = []
         selected_ready = 0
@@ -648,6 +749,10 @@ class DynamicWorkingSetScheduler:
             active_workflow_ids=tuple(selected),
             mode=mode,
             hbm_pressure=pressure,
+            gross_kv_pressure=gross_pressure,
+            target_running_requests=target_running,
+            native_running_requests=native_running_requests,
+            admission_slots=admission_slots,
             target_ready_requests=target,
             selected_ready_requests=selected_ready,
             pressure_actions_enabled=self._pressure_mode,

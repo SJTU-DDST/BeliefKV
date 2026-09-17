@@ -303,6 +303,41 @@ def main() -> int:
         default=8,
     )
     parser.add_argument(
+        "--dynamic-working-set-throughput-target-requests",
+        type=int,
+        default=64,
+    )
+    parser.add_argument(
+        "--dynamic-working-set-balanced-target-requests",
+        type=int,
+        default=48,
+    )
+    parser.add_argument(
+        "--dynamic-working-set-recovery-target-requests",
+        type=int,
+        default=32,
+    )
+    parser.add_argument(
+        "--dynamic-working-set-balanced-enter-ratio",
+        type=float,
+        default=0.82,
+    )
+    parser.add_argument(
+        "--dynamic-working-set-balanced-exit-ratio",
+        type=float,
+        default=0.76,
+    )
+    parser.add_argument(
+        "--dynamic-working-set-recovery-enter-ratio",
+        type=float,
+        default=0.94,
+    )
+    parser.add_argument(
+        "--dynamic-working-set-recovery-exit-ratio",
+        type=float,
+        default=0.88,
+    )
+    parser.add_argument(
         "--resident-service-window-ms",
         type=float,
         default=5000.0,
@@ -472,10 +507,35 @@ def main() -> int:
         parser.error("dynamic working-set pressure thresholds are invalid")
     if args.dynamic_working_set_min_ready_requests <= 0:
         parser.error("--dynamic-working-set-min-ready-requests must be positive")
+    if (
+        args.dynamic_working_set_min_ready_requests
+        > args.dynamic_working_set_recovery_target_requests
+    ):
+        parser.error(
+            "dynamic working-set ready floor cannot exceed recovery target"
+        )
     if args.dynamic_working_set_min_hold_epochs < 0:
         parser.error(
             "--dynamic-working-set-min-hold-epochs must be non-negative"
         )
+    if not (
+        args.dynamic_working_set_throughput_target_requests
+        >= args.dynamic_working_set_balanced_target_requests
+        >= args.dynamic_working_set_recovery_target_requests
+        > 0
+    ):
+        parser.error("dynamic working-set targets must be descending")
+    if not (
+        0
+        <= args.dynamic_working_set_balanced_exit_ratio
+        < args.dynamic_working_set_balanced_enter_ratio
+        < args.dynamic_working_set_recovery_enter_ratio
+        <= 1
+        and args.dynamic_working_set_balanced_exit_ratio
+        < args.dynamic_working_set_recovery_exit_ratio
+        < args.dynamic_working_set_recovery_enter_ratio
+    ):
+        parser.error("dynamic working-set target thresholds are invalid")
     if args.resident_service_window_ms <= 0:
         parser.error("--resident-service-window-ms must be positive")
     if args.request_queue_timeout_seconds <= 0:
@@ -731,6 +791,27 @@ def main() -> int:
         ),
         "dynamic_working_set_min_hold_epochs": (
             args.dynamic_working_set_min_hold_epochs
+        ),
+        "dynamic_working_set_throughput_target_requests": (
+            args.dynamic_working_set_throughput_target_requests
+        ),
+        "dynamic_working_set_balanced_target_requests": (
+            args.dynamic_working_set_balanced_target_requests
+        ),
+        "dynamic_working_set_recovery_target_requests": (
+            args.dynamic_working_set_recovery_target_requests
+        ),
+        "dynamic_working_set_balanced_enter_ratio": (
+            args.dynamic_working_set_balanced_enter_ratio
+        ),
+        "dynamic_working_set_balanced_exit_ratio": (
+            args.dynamic_working_set_balanced_exit_ratio
+        ),
+        "dynamic_working_set_recovery_enter_ratio": (
+            args.dynamic_working_set_recovery_enter_ratio
+        ),
+        "dynamic_working_set_recovery_exit_ratio": (
+            args.dynamic_working_set_recovery_exit_ratio
         ),
         "resident_service_window_ms": args.resident_service_window_ms,
         "max_joint_workflow_candidates": 8,

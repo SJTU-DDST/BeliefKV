@@ -6259,6 +6259,13 @@ class SGLangBackendTest(unittest.TestCase):
                 hbm_pressure=(
                     kwargs["hbm_used_bytes"] / kwargs["hbm_capacity_bytes"]
                 ),
+                gross_kv_pressure=(
+                    kwargs["gross_hbm_used_bytes"]
+                    / kwargs["hbm_capacity_bytes"]
+                ),
+                target_running_requests=32,
+                native_running_requests=kwargs["native_running_requests"],
+                admission_slots=32,
                 target_ready_requests=0,
                 selected_ready_requests=0,
                 pressure_actions_enabled=False,

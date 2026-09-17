@@ -156,6 +156,13 @@ class BeliefKVConfig:
     dynamic_working_set_pressure_exit_ratio: float = 0.7
     dynamic_working_set_min_ready_requests: int = 4
     dynamic_working_set_min_hold_epochs: int = 8
+    dynamic_working_set_throughput_target_requests: int = 64
+    dynamic_working_set_balanced_target_requests: int = 48
+    dynamic_working_set_recovery_target_requests: int = 32
+    dynamic_working_set_balanced_enter_ratio: float = 0.82
+    dynamic_working_set_balanced_exit_ratio: float = 0.76
+    dynamic_working_set_recovery_enter_ratio: float = 0.94
+    dynamic_working_set_recovery_exit_ratio: float = 0.88
     resident_service_window_ms: float = 5_000.0
     max_joint_workflow_candidates: int = 8
     max_frontier_candidates_per_workflow: int = 4
@@ -477,8 +484,37 @@ class BeliefKVConfig:
             raise ValueError("dynamic working-set pressure thresholds are invalid")
         if self.dynamic_working_set_min_ready_requests <= 0:
             raise ValueError("dynamic working-set ready floor must be positive")
+        if (
+            self.dynamic_working_set_min_ready_requests
+            > self.dynamic_working_set_recovery_target_requests
+        ):
+            raise ValueError(
+                "dynamic working-set ready floor cannot exceed recovery target"
+            )
         if self.dynamic_working_set_min_hold_epochs < 0:
             raise ValueError("dynamic working-set hold epochs must be non-negative")
+        if not (
+            self.dynamic_working_set_throughput_target_requests
+            >= self.dynamic_working_set_balanced_target_requests
+            >= self.dynamic_working_set_recovery_target_requests
+            > 0
+        ):
+            raise ValueError(
+                "dynamic working-set running targets must be descending"
+            )
+        if not (
+            0
+            <= self.dynamic_working_set_balanced_exit_ratio
+            < self.dynamic_working_set_balanced_enter_ratio
+            < self.dynamic_working_set_recovery_enter_ratio
+            <= 1
+            and self.dynamic_working_set_balanced_exit_ratio
+            < self.dynamic_working_set_recovery_exit_ratio
+            < self.dynamic_working_set_recovery_enter_ratio
+        ):
+            raise ValueError(
+                "dynamic working-set target thresholds are invalid"
+            )
         if (
             not math.isfinite(self.resident_service_window_ms)
             or self.resident_service_window_ms <= 0

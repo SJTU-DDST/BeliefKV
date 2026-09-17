@@ -550,6 +550,94 @@ def test_dynamic_working_set_keeps_slots_full_and_enables_replacement() -> None:
     assert pressure.pressure_actions_enabled
 
 
+def test_dynamic_working_set_uses_effective_pressure_for_soft_target() -> None:
+    scheduler = DynamicWorkingSetScheduler(
+        max_workflows=64,
+        pressure_enter_ratio=0.8,
+        pressure_exit_ratio=0.7,
+        minimum_ready_requests=4,
+        minimum_hold_epochs=0,
+    )
+    decision = scheduler.decide(
+        (DynamicWorkingSetCandidate("ready", 32, 0, 1.0),),
+        epoch=1,
+        hbm_used_bytes=500,
+        gross_hbm_used_bytes=990,
+        hbm_capacity_bytes=1_000,
+        native_running_requests=32,
+        native_request_slots=32,
+    )
+
+    assert decision.mode == "throughput_fill"
+    assert decision.hbm_pressure == 0.5
+    assert decision.gross_kv_pressure == 0.99
+    assert decision.target_running_requests == 64
+    assert decision.admission_slots == 32
+    assert decision.target_ready_requests == 32
+
+
+def test_dynamic_working_set_soft_target_is_non_preemptive_and_hysteretic() -> None:
+    scheduler = DynamicWorkingSetScheduler(
+        max_workflows=64,
+        pressure_enter_ratio=0.8,
+        pressure_exit_ratio=0.7,
+        minimum_ready_requests=4,
+        minimum_hold_epochs=0,
+    )
+    candidates = (DynamicWorkingSetCandidate("ready", 32, 0, 1.0),)
+
+    throughput = scheduler.decide(
+        candidates,
+        epoch=1,
+        hbm_used_bytes=810,
+        hbm_capacity_bytes=1_000,
+        native_running_requests=32,
+        native_request_slots=32,
+    )
+    balanced = scheduler.decide(
+        candidates,
+        epoch=2,
+        hbm_used_bytes=850,
+        hbm_capacity_bytes=1_000,
+        native_running_requests=32,
+        native_request_slots=32,
+    )
+    recovery = scheduler.decide(
+        candidates,
+        epoch=3,
+        hbm_used_bytes=950,
+        hbm_capacity_bytes=1_000,
+        native_running_requests=48,
+        native_request_slots=16,
+    )
+    held = scheduler.decide(
+        candidates,
+        epoch=4,
+        hbm_used_bytes=900,
+        hbm_capacity_bytes=1_000,
+        native_running_requests=48,
+        native_request_slots=16,
+    )
+    relaxed = scheduler.decide(
+        candidates,
+        epoch=5,
+        hbm_used_bytes=870,
+        hbm_capacity_bytes=1_000,
+        native_running_requests=32,
+        native_request_slots=32,
+    )
+
+    assert throughput.target_running_requests == 64
+    assert balanced.target_running_requests == 48
+    assert balanced.admission_slots == 16
+    assert recovery.target_running_requests == 32
+    assert recovery.admission_slots == 0
+    assert held.target_running_requests == 32
+    assert held.admission_slots == 0
+    assert relaxed.target_running_requests == 48
+    assert relaxed.admission_slots == 16
+
+
 def test_dynamic_working_set_preserves_mandatory_restore_above_hard_window() -> None:
     scheduler = DynamicWorkingSetScheduler(
         max_workflows=1,

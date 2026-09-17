@@ -12977,6 +12977,7 @@ class EmbeddedSGLangRuntime:
         adder: Any,
         *,
         max_requests: int,
+        running_requests: int = 0,
     ) -> tuple[Any, ...]:
         """Compile tickets and return an ordered view of the native queue."""
 
@@ -13048,6 +13049,7 @@ class EmbeddedSGLangRuntime:
             frontier_candidates=frontier_candidates,
             now_ms=now_ms,
             native_request_slots=max(0, int(max_requests)),
+            native_running_requests=max(0, int(running_requests)),
             native_available_hbm_bytes=native_hbm_bytes,
         )
         active_workflow_ids = frozenset(working_set.active_workflow_ids)
@@ -13683,6 +13685,11 @@ class EmbeddedSGLangRuntime:
             dynamic_working_set={
                 "mode": working_set.mode,
                 "hbm_pressure": working_set.hbm_pressure,
+                "effective_hbm_pressure": working_set.hbm_pressure,
+                "gross_kv_pressure": working_set.gross_kv_pressure,
+                "native_running_requests": working_set.native_running_requests,
+                "target_running_requests": working_set.target_running_requests,
+                "admission_slots": working_set.admission_slots,
                 "target_ready_requests": working_set.target_ready_requests,
                 "selected_ready_requests": working_set.selected_ready_requests,
                 "pressure_actions_enabled": (
@@ -14315,6 +14322,27 @@ class EmbeddedSGLangRuntime:
                 minimum_hold_epochs=(
                     self.config.dynamic_working_set_min_hold_epochs
                 ),
+                throughput_target_requests=(
+                    self.config.dynamic_working_set_throughput_target_requests
+                ),
+                balanced_target_requests=(
+                    self.config.dynamic_working_set_balanced_target_requests
+                ),
+                recovery_target_requests=(
+                    self.config.dynamic_working_set_recovery_target_requests
+                ),
+                balanced_enter_ratio=(
+                    self.config.dynamic_working_set_balanced_enter_ratio
+                ),
+                balanced_exit_ratio=(
+                    self.config.dynamic_working_set_balanced_exit_ratio
+                ),
+                recovery_enter_ratio=(
+                    self.config.dynamic_working_set_recovery_enter_ratio
+                ),
+                recovery_exit_ratio=(
+                    self.config.dynamic_working_set_recovery_exit_ratio
+                ),
                 starvation_age_ms=(
                     self.config.workflow_starvation_floor_ms
                 ),
@@ -14376,6 +14404,7 @@ class EmbeddedSGLangRuntime:
         now_ms: float,
         native_request_slots: int,
         native_available_hbm_bytes: int,
+        native_running_requests: int = 0,
     ) -> DynamicWorkingSetDecision:
         fair_rank = {
             workflow_id: index for index, workflow_id in enumerate(fair_order)
@@ -14469,6 +14498,8 @@ class EmbeddedSGLangRuntime:
                 hbm_used_bytes=effective_hbm_used_bytes,
                 hbm_capacity_bytes=self.config.hbm_capacity_bytes,
                 native_request_slots=native_request_slots,
+                native_running_requests=native_running_requests,
+                gross_hbm_used_bytes=self.controller.actual_hbm_used_bytes,
             )
         else:
             active = tuple(
@@ -14481,6 +14512,16 @@ class EmbeddedSGLangRuntime:
                 hbm_pressure=min(
                     1.0, effective_hbm_used_bytes / self.config.hbm_capacity_bytes
                 ),
+                gross_kv_pressure=min(
+                    1.0,
+                    self.controller.actual_hbm_used_bytes
+                    / self.config.hbm_capacity_bytes,
+                ),
+                target_running_requests=(
+                    native_running_requests + native_request_slots
+                ),
+                native_running_requests=native_running_requests,
+                admission_slots=native_request_slots,
                 target_ready_requests=sum(
                     item.gpu_ready_count for item in candidates
                 ),
@@ -14518,9 +14559,14 @@ class EmbeddedSGLangRuntime:
                 epoch=decision.epoch,
                 mode=decision.mode,
                 hbm_pressure=decision.hbm_pressure,
+                effective_hbm_pressure=decision.hbm_pressure,
+                gross_kv_pressure=decision.gross_kv_pressure,
                 gross_hbm_used_bytes=self.controller.actual_hbm_used_bytes,
                 native_available_hbm_bytes=native_available_hbm_bytes,
                 effective_hbm_used_bytes=effective_hbm_used_bytes,
+                native_running_requests=decision.native_running_requests,
+                target_running_requests=decision.target_running_requests,
+                admission_slots=decision.admission_slots,
                 target_ready_requests=decision.target_ready_requests,
                 selected_ready_requests=decision.selected_ready_requests,
                 active_workflow_ids=list(decision.active_workflow_ids),

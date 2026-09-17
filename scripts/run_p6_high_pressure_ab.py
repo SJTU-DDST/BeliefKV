@@ -90,6 +90,28 @@ def _prepare_server(
         "--gpu-service-hardware-key",
         str(gpu_service["hardware_key"]),
     ]
+    working_set = plan.get("dynamic_working_set", {})
+    if working_set:
+        command.extend(
+            [
+                "--joint-workflow-active-window",
+                str(working_set["workflow_window"]),
+                "--dynamic-working-set-throughput-target-requests",
+                str(working_set["throughput_target"]),
+                "--dynamic-working-set-balanced-target-requests",
+                str(working_set["balanced_target"]),
+                "--dynamic-working-set-recovery-target-requests",
+                str(working_set["recovery_target"]),
+                "--dynamic-working-set-balanced-enter-ratio",
+                str(working_set["balanced_enter_ratio"]),
+                "--dynamic-working-set-balanced-exit-ratio",
+                str(working_set["balanced_exit_ratio"]),
+                "--dynamic-working-set-recovery-enter-ratio",
+                str(working_set["recovery_enter_ratio"]),
+                "--dynamic-working-set-recovery-exit-ratio",
+                str(working_set["recovery_exit_ratio"]),
+            ]
+        )
     if arm == "predictive":
         predictor = artifacts["predictor"]
         command.extend(

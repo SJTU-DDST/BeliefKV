@@ -50,6 +50,14 @@ V7_PROFILE = (
     REPOSITORY_ROOT
     / "configs/p6/h200_bf16_v7/frozen_runtime_profile.json"
 )
+V8_PROFILE = (
+    REPOSITORY_ROOT
+    / "configs/p6/h200_bf16_v8/frozen_runtime_profile.json"
+)
+HIGH_PRESSURE_V5_PLAN = (
+    REPOSITORY_ROOT
+    / "configs/p6/predictive_joint_h200_high_pressure_v5/ab_plan.json"
+)
 HIGH_PRESSURE_V2_PLAN = (
     REPOSITORY_ROOT
     / "configs/p6/predictive_joint_h200_high_pressure_v2/ab_plan.json"
@@ -221,6 +229,38 @@ def test_h200_v7_profile_only_advances_the_ownership_patch() -> None:
     assert v7["source_contract"]["canonical_sglang_patch"].endswith(
         "sglang-0.5.2rc1-beliefkv-perf-ownership.patch"
     )
+
+
+def test_h200_v8_profile_and_plan_enable_dynamic_running_64() -> None:
+    profile, _ = load_runtime_profile(
+        V8_PROFILE,
+        repository_root=REPOSITORY_ROOT,
+    )
+    plan = json.loads(HIGH_PRESSURE_V5_PLAN.read_text(encoding="utf-8"))
+
+    assert profile["profile_id"] == "h200_bf16_v8"
+    assert profile["runtime"]["max_running_requests"] == 64
+    assert profile["runtime"]["cuda_graph_max_bs"] == 64
+    assert profile["source_contract"]["canonical_sglang_patch"].endswith(
+        "sglang-0.5.2rc1-beliefkv-dynamic-running.patch"
+    )
+    assert plan["runtime_profile"].endswith(
+        "h200_bf16_v8/frozen_runtime_profile.json"
+    )
+    assert plan["workload"]["roots"] == 64
+    assert plan["workload"]["pressure_acceptance"][
+        "max_running_requests"
+    ] == 64
+    assert plan["dynamic_working_set"] == {
+        "balanced_enter_ratio": 0.82,
+        "balanced_exit_ratio": 0.76,
+        "balanced_target": 48,
+        "recovery_enter_ratio": 0.94,
+        "recovery_exit_ratio": 0.88,
+        "recovery_target": 32,
+        "throughput_target": 64,
+        "workflow_window": 64,
+    }
 
 
 def test_high_pressure_v2_uses_fixed_40_root_prefix() -> None:
