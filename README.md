@@ -117,7 +117,7 @@ Start with the [documentation index](docs/README_zh.md).
 
 | Document | Role |
 | --- | --- |
-| [Current design](docs/beliefkv_design_2026-07-14_zh.md) | authoritative algorithm and system boundary |
+| [Current design](docs/beliefkv_design.md) | authoritative algorithm and system boundary |
 | [Architecture status](docs/architecture_status_zh.md) | implemented, verified, pending, and blocked |
 | [Execution plan](docs/implementation_plan.md) | only active near-term work order |
 | [JointPlan visual guide](docs/beliefkv_jointplan_visual_zh.md) | concise architecture diagram |

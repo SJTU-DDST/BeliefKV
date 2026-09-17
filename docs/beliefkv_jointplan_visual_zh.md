@@ -77,8 +77,10 @@ PREPARE_HOST
 `PREPARE_HOST` 只建立 CPU shadow，GPU KV 继续保留。因此图中将它画成进入 HiCache 的
 蓝色虚线，而不是“释放 HBM -> admission”的黄色实线。
 
-当前预测式 `COMMIT_CPU` 和 `PREFETCH_GPU` 尚未开放。未来可选的 predictive eviction
-方案见 [当前设计](beliefkv_design_2026-07-14_zh.md#6-未来可选方案predictive-eviction)。
+当前 development 路径已支持完整/partial `PREFETCH_GPU`，以及由 commit-ready CPU shadow
+victim 资助的 `RECLAIM_AND_PREFETCH`；这些路径尚未证明自然吞吐收益，正式 artifact 仍无
+在线动作权限。未来可选的 predictive eviction 方案见
+[当前设计](beliefkv_design.md#6-未来可选方案predictive-eviction)。
 
 ## 物理边界
 

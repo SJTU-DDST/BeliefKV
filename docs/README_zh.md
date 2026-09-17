@@ -1,6 +1,6 @@
 # BeliefKV 文档导航
 
-更新日期：2026-09-15
+更新日期：2026-09-17
 
 本页是项目文档的统一入口。文档状态分为：
 
@@ -13,7 +13,7 @@
 
 | 文档 | 用途 |
 | --- | --- |
-| [当前系统设计](beliefkv_design_2026-07-14_zh.md) | 算法、状态机、边界和未来可选方案 |
+| [当前系统设计](beliefkv_design.md) | 算法、状态机、预测质量边界和未来可选方案 |
 | [当前架构状态](architecture_status_zh.md) | 已实现、已验证、未验证和阻塞项 |
 | [当前执行计划](implementation_plan.md) | 唯一有效的近期实施顺序 |
 | [JointPlan 图解](beliefkv_jointplan_visual_zh.md) | 汇报用架构图及简要说明 |
@@ -55,6 +55,7 @@ characterization。它们遵循：
 
 | 报告 | 结论 |
 | --- | --- |
+| [PREFETCH recall 与 funded path](experiments/beliefkv_p6_prefetch_recall_enablement_2026-09-16_zh.md) | v6 校准、在线假阳性修复与最新 bounded gate |
 | [Natural PREPARE no-opportunity](experiments/beliefkv_p6_natural_prepare_canary_no_opportunity_2026-09-12_zh.md) | 高 HBM 不等于存在 beneficiary |
 | [PREPARE_HOST mechanism gate](experiments/beliefkv_p6_prepare_host_mechanism_gate_2026-09-12_zh.md) | 单笔真实 D2H 机制闭环通过 |
 | [Direct predictive pipeline](experiments/beliefkv_p6_direct_pipeline_high_pressure_2026-09-11_zh.md) | 出现 timely-positive，但当时物理动作关闭 |
@@ -86,7 +87,7 @@ characterization。它们遵循：
 
 ## 7. 文档维护规则
 
-1. 当前设计变化只修改 `beliefkv_design_2026-07-14_zh.md`。
+1. 当前设计变化只修改 `beliefkv_design.md`。
 2. 当前代码和实验门禁只修改 `architecture_status_zh.md`。
 3. 执行优先级只修改 `implementation_plan.md`。
 4. 单次实验新建 `docs/experiments/<name>_<date>_zh.md`。

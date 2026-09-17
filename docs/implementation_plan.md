@@ -1,6 +1,6 @@
 # BeliefKV Current Execution Plan
 
-Status date: 2026-09-15.
+Status date: 2026-09-17.
 
 This file contains only the active execution order. Completed and superseded
 plans are indexed under `docs/archive/`.
@@ -19,7 +19,24 @@ Primary metrics:
 - useful/wasted D2H/H2D bytes;
 - synchronous control-plane overhead.
 
-## P0: Freeze The Current Correctness Baseline
+## Current Evidence
+
+The P5 correctness baseline and the bounded predictive transaction machinery
+are frozen at `0ab8c09`. The latest development artifact is FrontierBelief v6:
+
+- token-demand intervals provide useful but broad envelopes;
+- PREFETCH operational timing has positive Brier skill (+15.80%) but only
+  36.17% precision at the recall-oriented threshold;
+- boundary, tool-terminal, and PREPARE timing do not beat their relevant
+  majority or balanced-accuracy baselines;
+- `online_eligible=false` and `predictive_action_eligible=false` remain set.
+
+The runtime supports full, ancestor-closed partial, and commit-ready-victim
+funded prefetch. No natural online run has yet completed the full
+`intent -> H2D -> lease -> first service` attribution chain or shown throughput
+gain.
+
+## P0: Freeze The Current Correctness Baseline (Complete)
 
 Use:
 
@@ -30,8 +47,7 @@ Use:
 - native `2to3` subagent workload;
 - performance-mode instrumentation shared by every arm.
 
-Run one high-pressure predictor-off gate after the latest ownership/retraction
-repairs. Required conditions:
+The ownership/retraction gates have established the required invariants:
 
 - allocator/Radix/engine ownership remains consistent;
 - all transfer commands reach terminal ACK;
@@ -39,57 +55,66 @@ repairs. Required conditions:
 - workflows are not terminated by an artificial activation cutoff;
 - ordinary waiting requests do not create a global restore barrier.
 
-Do not tune prediction or migration thresholds during this gate.
+Do not reopen this stage unless a later action violates an invariant.
 
-## P1: Measure Prediction Overhead And Opportunity
+## P1: Freeze Predictor Permissions (Complete)
 
-Run the same frozen workload with the predictive worker enabled but physical
-predictive actions disabled.
+Only the following heads may influence action value:
 
-Measure:
+- prompt growth and remaining decode as calibrated demand intervals;
+- PREFETCH operational-tau probability;
+- RCCG-observed child/JOIN dependencies.
 
-- safe-point capture and submit P50/P95/P99;
-- worker planning latency, backlog, stale rate, and trigger count;
-- deferred beneficiary classification;
-- projected HBM deficit;
-- fresh/timely/positive package count;
-- predictor OOD and required-head availability.
+Boundary rare classes, tool error/censor classification, and PREPARE timing
+must not independently reorder execution or authorize a physical action. Exact
+incremental boundary remains unavailable, so early dispatch and run-to-action
+are out of scope.
 
-The run is useful even when it produces zero actions: it decides whether the
-limitation is workload opportunity, prediction quality, plan freshness, or
-physical feasibility.
+Keep v6 development-only. Do not open `test_id` until the action path and
+evaluation protocol are frozen.
 
-## P2: Single PREPARE_HOST Canary
+## P2: Freeze An Active-KV Pressure Workload
 
-Enable exactly one natural `PREPARE_HOST` only after P1 observes a package that
-is simultaneously:
+The current 40-root workload sustains a waiting backlog but only reached about
+31% native KV usage in the latest bounded run. Increasing root count alone does
+not help because `max_running_requests=32` leaves additional roots outside the
+resident working set.
 
-- beneficiary-bound;
-- fresh at validation;
-- positive under measured transfer and GPU service artifacts;
-- complete before latest-start;
-- supported by the live PhysicalBundle shape.
+Freeze a long-context workload that makes the 32 active contexts naturally
+accumulate a larger unique KV working set. It must preserve native parent-child
+continuation and fixed root arrival; do not shrink the KV pool or condition
+release on runtime pressure.
 
-Verify:
+Characterization stops after one of:
 
-```text
-PredictiveIntent
- -> safe-point rematerialization
- -> SHADOW_CONTEXT queue
- -> D2H dispatch
- -> ACK
- -> GPU_AND_CPU_SHADOW
- -> later reclaim/admission outcome
- -> beneficiary GPU service or censored terminal
-```
+- three fresh and timely positive packages;
+- 32 closure-complete candidates;
+- five minutes above the frozen HBM pressure threshold without a positive.
 
-Do not lower the benefit threshold or inject a synthetic beneficiary to force
-this performance result. The existing deterministic mechanism gate is already
-sufficient for mechanism correctness.
+Report active-context KV usage separately from waiting queue length.
 
-## P3: Matched Throughput A/B
+## P3: Bounded Predictive Action Canary
 
-After a useful natural canary, run:
+Use the P2 workload and allow at most one in-flight predictive transaction.
+The accepted action may be `PREPARE_HOST`, full/partial `PREFETCH_GPU`, or
+`RECLAIM_AND_PREFETCH`, but must satisfy:
+
+- action-specific prediction support;
+- beneficiary or reentry identity and epoch;
+- live closure/capacity certificate;
+- validation before latest-start;
+- PREPARE transfer completion before block;
+- victim reclaim bytes covering the certified deficit;
+- positive net value after transfer, interference, Host residency, and restore
+  debt.
+
+Verify the full applicable chain, including ACK, service lease, first service,
+and any reverse migration. Do not treat a published or safe-point-rejected
+intent as a useful action.
+
+## P4: Matched Throughput A/B
+
+After a useful natural P3 canary, run:
 
 - A: P5 observed JointPlan, predictor off;
 - B: identical P5 plus P6 predictive PREPARE.
@@ -107,10 +132,11 @@ Report:
 - useful, wasted, late, stale, and censored PREPARE outcomes;
 - beneficiary first-service latency.
 
-A run with high HBM but no beneficiary-bound opportunity is characterization,
-not a negative or positive performance result.
+A run with high HBM but no beneficiary/reentry-bound opportunity is
+characterization, not a negative or positive performance result. Report model
+quality separately from action utilization and throughput.
 
-## P4: Decide The Prediction Branch
+## P5: Decide The Prediction Branch
 
 Continue the current P6 branch only when at least one of the following holds:
 
@@ -157,7 +183,7 @@ workflows/hour.
 
 ## Deferred Work
 
-The following tasks must not block P0-P3:
+The following tasks must not block P2-P4:
 
 - Oracle action-space expansion;
 - morphology as an independent policy;
@@ -168,7 +194,7 @@ The following tasks must not block P0-P3:
 
 ## Documentation Rule
 
-- Current design belongs in `beliefkv_design_2026-07-14_zh.md`.
+- Current design belongs in `beliefkv_design.md`.
 - Current implementation evidence belongs in `architecture_status_zh.md`.
 - One experiment produces one immutable report under `docs/experiments/`.
 - Completed or superseded plans move to `docs/archive/plans/`.

@@ -1,7 +1,7 @@
 # BeliefKV 当前架构与实现状态
 
-更新日期：2026-09-16
-当前高压 A/B 代码基线：`f548210`
+更新日期：2026-09-17
+当前 P6 代码基线：`0ab8c09`
 
 本文只记录当前事实和下一阻塞项，不再追加逐日开发日志。2026-09-12 以前的完整历史保存在
 `docs/archive/snapshots/architecture_status_zh.md`，单次实验细节保存在
@@ -34,11 +34,12 @@ epoch、物理 closure 或容量失效都回退当前 P5。
 | Reactive `COMMIT_CPU/DROP` | 可用 | 只由明确 beneficiary deficit 触发 |
 | Running retraction | 可用 | 最新修复正在高压回归 |
 | Transactional restore | 可用 | H2D/native load/recompute，service 后终结 |
-| FrontierBelief | v4 action-timing shadow | PREPARE/PREFETCH 独立校准，OOD/无 skill fail closed |
+| FrontierBelief | v6 development-only | PREPARE/PREFETCH 独立校准；`online_eligible=false` |
 | Predictive execution/admission | 已接入 | action-unlock/token 与 HBM demand 联合排序，native allocator 最终验收 |
 | Predictive `PREPARE_HOST` | 已接入 | D2H 后保留 GPU KV，并建立 beneficiary-victim binding |
 | Beneficiary-bound `COMMIT_CPU` | 已接入 | 只由真实 deficit 授权，优先消费 prepared victim |
-| Predictive `PREFETCH_GPU` | 已接入、默认关闭 | parked context 可在 native reentry request 出现前预取；safe-point rematerialization 后建立 5 秒 context lease，只绑定指定 invocation 的唯一 reentry epoch；development artifact 需显式 override 且 v3 仅开放单笔 canary |
+| Predictive `PREFETCH_GPU` | 控制面与数据面已接入，收益未验证 | 支持完整、ancestor-closed partial 和 commit-ready victim 资助的 prefetch；development artifact 需显式 override |
+| `RECLAIM_AND_PREFETCH` | development canary | `COMMIT_CPU(victim) ACK -> H2D(target) ACK -> service lease`；尚无自然在线闭环证据 |
 | Oracle | 暂停 | 仅作契约测试和诊断 |
 | Morphology 独立策略 | 不再使用 | transfer shape 仅作成本/OOD 输入 |
 
@@ -150,14 +151,37 @@ FrontierBelief v4 已改为 PREPARE/PREFETCH 动作专属校准。为快速排�
 - calibration 正例率：17.29%。
 
 该阈值只扩大语义候选召回，不能绕过物理 closure、HBM、transfer、latest-start 和净收益
-门禁。候选器会检查前四个 target，并选择一个满足 5% HBM canary 上限的最小可行完整
-context，避免超大队首 target 压住后续候选。
+门禁。候选器会检查前四个 target。固定 5% HBM 单动作上限已经删除；目标超过实时 free HBM
+时，可以选择 ancestor-closed partial prefix，或由一个 commit-ready `DUAL_CLEAN` victim 为
+target 提供容量。所有路径仍受实时容量、closure、latest-start 和净收益约束。
 
 PREFETCH H2D ACK 后建立有界 service lease：目标 request 在首次真实 GPU service 前获得
 admission 优先级，并暂时不能成为反向 eviction victim。lease 在首次 service、request
 终止、identity/epoch 变化或 5 秒到期时释放。该机制避免 H2D 成功后立刻被迁出或长期得不到
 service，但不提供无限 HBM reservation。详细实现与证据见
 `docs/experiments/beliefkv_p6_prefetch_recall_enablement_2026-09-16_zh.md`。
+
+### 4.7 当前预测头质量
+
+以下结果来自 v6 artifact 在冻结的 16-workflow calibration split 上的重放；`test_id` 仍封存。
+分类 accuracy 必须与多数类基线一起读，区间 head 使用 episode-weighted MAE 和 coverage：
+
+| Head | Held-out calibration | 当前用途 |
+| --- | --- | --- |
+| Boundary type | accuracy 94.96%，与多数类基线相同；macro recall 33.33%；`spawn/final` recall 均为 0 | 不能驱动 execution reorder；只使用 RCCG 已观测事件 |
+| Tool terminal | accuracy 79.63%，与多数类基线相同；macro recall 33.33%；`error/censored` recall 均为 0 | 不能预测失败类型，只作保守 survival 输入 |
+| Next output | MAE 178.64 tokens；point coverage 86.55%；workflow-macro episode coverage 88.86% | 仅作有不确定性的短期 demand |
+| Prompt growth | MAE 2,024.10 tokens；point coverage 93.88%；workflow-macro episode coverage 93.33% | 可作保守 HBM growth envelope |
+| Remaining decode | MAE 436.67 tokens；point coverage 93.02%；workflow-macro episode coverage 91.44% | 可作粗粒度 service demand，不能精确 run-to-boundary |
+| PREPARE operational tau | Brier 0.0601，skill +3.20%；balanced accuracy 49.99% | 几乎等同高正例率先验，不能单独授权动作 |
+| PREFETCH operational tau | Brier 0.1204，skill +15.80%；阈值 0.185 时 precision 36.17%、recall 64.67% | 有增量信息，但必须经过物理与价值门禁 |
+| JOIN/WAIT_CHILD | 不直接学习 wall-clock；由 RCCG 对 child scenario 做 ALL/ANY 组合 | 依赖 child head，尚无独立 end-to-end accuracy |
+| WAIT_MESSAGE | 当前 artifact 无独立模型 | unsupported/OOD，不驱动动作 |
+
+Required-head unavailable rate 只有 0.108%，但这只表示模型能返回结果，不代表精度高。WAIT_TOOL
+动作支持几乎全部来自层次 backoff：约 66.3% 为 role-command backoff、19.5% 为
+role-family backoff、14.0% 为 role-state backoff。exact incremental boundary 仍为 0%，因此不支持
+early dispatch 或 run-to-action。
 
 ## 5. 2026-09-15 最新正确性修复
 
@@ -204,10 +228,9 @@ package，最终 8 次选择 PREPARE，其中 7 次在 latest-start 前完成验
 2. 当前 bounded composer 只评估前 2--4 个 request，并将最终物理候选限制为
    `1 beneficiary x 2 victims`。这是在线成本边界，不是全局最优保证。
 3. boundary 和 tool-terminal head 尚未优于多数类基线；predictive execution 不得把
-   94.96%/79.46% 的表面 accuracy 当作有效 action-unlock 信号。
-4. `PREFETCH_GPU` 线上默认关闭；development v3 计划已允许单笔 canary。v6 calibration
-   recall 为 64.67%，但尚未经过当前高压 GPU trace 的在线 precision、latest-start 和
-   first-service 验证。
+   94.96%/79.63% 的表面 accuracy 当作有效 action-unlock 信号。
+4. `PREFETCH_GPU` 的完整、partial 和 funded 路径已实现，但 v6 仍是 development-only。
+   calibration recall 为 64.67%，线上 precision、latest-start、first-service 和吞吐收益均未验证。
 5. prepared binding 目前每个 beneficiary 只保留一个 victim；失效时回退 P5，不执行
    预测性 COMMIT。
 6. v7 GPU service artifact 适合排序和 shadow；正式吞吐结论必须来自与冻结 observed
@@ -218,29 +241,36 @@ package，最终 8 次选择 PREPARE，其中 7 次在 latest-start 前完成验
 8. 高压 safe-point capture P95/P99 为 0.692/1.393 ms，略高于严格的 0.5/1 ms 目标；
    predictive planning P95/P99 已降至 43.81/59.50 ms。同步尾延迟仍需观测，但不再阻塞
    单笔 canary。
+9. 2026-09-16 funded-prefetch gate 暴露 12 个 PREPARE 假阳性：典型 beneficiary 约
+   21 ms 后阻塞，而 D2H P95 约 838 ms；单 victim 约 67 MB 也不足以覆盖约 416 MB deficit。
+   `0ab8c09` 已在发布 intent 前拒绝过晚和回收不足的 package。
+10. 修复后 bounded 在线复验运行约 20 分钟，1,300 个 hint 中 880 个容量充足、420 个仅受
+    running slot 限制，原生 KV usage 约 31%，因此 0 victim、0 risk evaluation、0 prefetch。
+    该轮证明假阳性消失，不证明预测调度收益。
 
 ## 7. 下一步
 
 当前关键路径：
 
-1. 使用 development-only v3 计划执行短高压 gate，同时允许单笔 `PREFETCH_GPU`。动作
-   提交时必须重验 certificate、物理 closure、5% HBM 上限、transfer envelope 和
-   latest-start；晚到或负收益动作回退 P5。
-2. PREFETCH gate 必须覆盖 `intent -> H2D -> ACK -> service lease -> first GPU service`，
+1. 冻结一个能让 32 个 active context 自然形成更大 unique KV working set 的长上下文 workload；
+   继续增加 waiting root 不会提高 resident KV，禁止通过缩小 KV pool 制造机会。
+2. 在该 workload 上重新运行 development canary。动作提交时必须重验 certificate、物理
+   closure、实时容量、transfer envelope 和 latest-start；晚到、回收不足或负收益动作回退 P5。
+3. PREFETCH gate 必须覆盖 `intent -> H2D -> ACK -> service lease -> first GPU service`，
    并统计在线 precision、recall proxy、H2D 后 first-service latency 和 5 秒内反向迁移。
-3. 同时继续记录 event-to-hint 长尾和 safe-point P95/P99，不为降低开销重新关闭必要的
+4. 同时继续记录 event-to-hint 长尾和 safe-point P95/P99，不为降低开销重新关闭必要的
    `TOOL/JOIN` 风险触发。
-4. execution 排序只使用经 calibration 证明有增量信息的 head；当前 boundary rare class
+5. execution 排序只使用经 calibration 证明有增量信息的 head；当前 boundary rare class
    需要补数据或改为 RCCG 已知 unlock + token/HBM demand 排序。
-5. Gate 中任何 stale/OOD/物理化失败均回退 P5；不通过降低收益阈值制造动作。
-6. PREPARE/PREFETCH 各自完成真实 beneficiary 消费后，再按 execution reorder、提前
+6. Gate 中任何 stale/OOD/物理化失败均回退 P5；不通过降低收益阈值制造动作。
+7. PREPARE/PREFETCH 各自完成真实 beneficiary 消费后，再按 execution reorder、提前
    D2H、deficit-time COMMIT 和 latest-start H2D 分解收益，最后启动冻结 baseline/P6 A/B。
 
 执行细节见 `docs/implementation_plan.md`。
 
 ## 8. 权威资料
 
-- 当前设计：`docs/beliefkv_design_2026-07-14_zh.md`
+- 当前设计：`docs/beliefkv_design.md`
 - 当前计划：`docs/implementation_plan.md`
 - 文档导航：`docs/README_zh.md`
 - 当前图解：`docs/beliefkv_jointplan_visual_zh.md`

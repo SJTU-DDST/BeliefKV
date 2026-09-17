@@ -3,7 +3,7 @@
 日期：2026-07-20
 
 状态：设计约束与实验审查文档。本文补充
-[`beliefkv_design_2026-07-14_zh.md`](beliefkv_design_2026-07-14_zh.md)，不取代当前系统设计。
+[`beliefkv_design.md`](beliefkv_design.md)，不取代当前系统设计。
 
 ## 1. 文档目的
 

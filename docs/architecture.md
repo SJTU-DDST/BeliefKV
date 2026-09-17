@@ -1,9 +1,9 @@
 # Architecture
 
-Updated: 2026-09-15.
+Updated: 2026-09-17.
 
 This page is a concise English entry point. The authoritative system design is
-[beliefkv_design_2026-07-14_zh.md](beliefkv_design_2026-07-14_zh.md), and the
+[beliefkv_design.md](beliefkv_design.md), and the
 current implementation status is
 [architecture_status_zh.md](architecture_status_zh.md).
 
@@ -50,10 +50,12 @@ FrontierBelief predicts action-local demand and causal slack for tool waits,
 child/JOIN release, messages, and future KV growth. Prediction runs
 asynchronously and may propose only a safe-point-validated action.
 
-The currently validated predictive mechanism is `PREPARE_HOST`: create a CPU
-shadow while retaining the GPU KV. This is predictive transfer, not predictive
-eviction. Predictive `COMMIT_CPU` is an optional future branch, and predictive
-`PREFETCH_GPU` remains disabled for formal online evaluation.
+The predictive data path now implements `PREPARE_HOST`, full or ancestor-closed
+partial `PREFETCH_GPU`, and a bounded `RECLAIM_AND_PREFETCH` transaction using a
+commit-ready CPU-shadowed victim. These mechanisms are development canaries,
+not a validated throughput result. The current model is not online-eligible:
+rare boundary/tool outcomes are no better than majority baselines, while only
+token-demand intervals and PREFETCH timing show useful held-out signal.
 
 ## Physical Authority
 

@@ -1,6 +1,6 @@
 # BeliefKV 当前系统设计
 
-更新日期：2026-09-15
+更新日期：2026-09-17
 
 状态：本文是当前算法与系统边界的权威说明。历史版本保存在
 `docs/archive/snapshots/beliefkv_design_2026-07-14_zh.md`。
@@ -147,14 +147,41 @@ JointPlan。
 - 等待窗口能否覆盖迁移时间 `tau`；
 - beneficiary 的 projected future HBM deficit。
 
-当前在线预测 intent 只允许非破坏性动作：
+当前 development 在线预测路径支持：
 
 - `PREPARE_HOST`：D2H 建立 CPU shadow，GPU KV 继续保留；
-- `PREFETCH_GPU`：代码路径存在，但正式预测 canary 尚未开放。
+- `PREFETCH_GPU`：按实时 free HBM 恢复完整 context；
+- `PARTIAL_PREFETCH_GPU`：完整 context 放不下时恢复 ancestor-closed prefix；
+- `RECLAIM_AND_PREFETCH`：只消费已经拥有完整 CPU shadow 的 commit-ready victim，严格执行
+  `COMMIT_CPU ACK -> H2D target ACK -> service lease`。
 
 `PREPARE_HOST` 的 intent、safe-point rematerialization、D2H、ACK 和 terminal 机制门禁已经
-通过；自然 workload 中尚未证明稳定吞吐收益。OOD、证书过期、物理形状不支持或收益不足时
-必须回退 P5。
+通过；自然 workload 中尚未证明稳定吞吐收益。固定 5% HBM 单动作上限已经删除，容量安全由
+实时 allocator/closure 证书和 safe-point rematerialization 保证。OOD、证书过期、物理形状
+不支持、动作晚于 latest-start、单 victim 无法覆盖 deficit 或收益不足时必须回退 P5。
+
+### 5.1 预测质量与动作权限
+
+FrontierBelief v6 仍是 `development_only`，且 artifact 明确设置
+`online_eligible=false`、`predictive_action_eligible=false`。显式 development canary 可以验证
+prediction-to-action 机制，但不能形成正式性能结论。
+
+当前各 head 的可用边界是：
+
+- prompt growth 与 remaining decode 的校准区间 coverage 约为 93%，可提供粗粒度需求包络；
+- PREFETCH operational-tau head 的 Brier skill 为 +15.80%，阈值 0.185 时
+  precision/recall 为 36.17%/64.67%；
+- PREPARE operational-tau head 只有 +3.20% Brier skill，balanced accuracy 约 50%，不能
+  单独授权 D2H；
+- boundary 与 tool-terminal 的 accuracy 分别为 94.96% 和 79.63%，但与多数类基线相同，
+  `spawn/final` 与 `error/censored` recall 均为 0；
+- JOIN 不学习独立 wall-clock，由 RCCG 组合 child scenarios；WAIT_MESSAGE 尚无独立 head；
+- exact incremental action boundary 仍不可用。
+
+因此系统当前“支持预测动作的安全执行”，但尚不支持“由所有预测头稳定提升吞吐的高效预测
+调度”。execution ordering 必须依赖 RCCG 已知状态和 token/HBM demand；弱分类 head 只能作为
+审计信号。PREPARE/PREFETCH 还必须经过 action-specific timing、beneficiary、physical closure、
+capacity 和净收益门禁。
 
 ## 6. 未来可选方案：Predictive Eviction
 
@@ -218,7 +245,8 @@ restore/recompute debt、方向反转率以及最终 workflows/hour。
 | Running retraction 与 transactional restore | 已实现，持续做 GPU 回归 |
 | P6 action-local prediction 与风险规划 | 已实现 |
 | Predictive `PREPARE_HOST` | 机制已验证，自然收益未证明 |
-| Predictive `PREFETCH_GPU` | 关闭 |
+| Predictive `PREFETCH_GPU` | 完整/partial/funded 路径已实现；仅 development canary，收益未验证 |
+| Predictive `RECLAIM_AND_PREFETCH` | 已实现 staged transaction；自然闭环未验证 |
 | Predictive `COMMIT_CPU` / eviction | 未实现，未来可选 |
 | Peer multi-agent 专项优化 | 非当前关键路径 |
 | Oracle action-space 优化 | 已暂停，仅保留诊断资产 |
