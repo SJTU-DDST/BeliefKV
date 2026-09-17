@@ -514,7 +514,22 @@ def coalesce_joint_shadow_deltas(
         components=frozenset(components),
         full_rebuild_required=full_rebuild,
     )
-    overlay_update = next(
+    reentry_overlay_update = next(
+        (
+            item
+            for item in reversed(deltas)
+            if item.action_local_overlay_replaced
+            and item.action_local_overlay_batch is not None
+            and item.action_local_overlay_batch.reentry_context_ids
+            and any(
+                risk_class == "reentry"
+                for risk_class, _event_kind, _invocation_id, _context_epoch
+                in item.risk_trigger_signature
+            )
+        ),
+        None,
+    )
+    overlay_update = reentry_overlay_update or next(
         (
             item
             for item in reversed(deltas)

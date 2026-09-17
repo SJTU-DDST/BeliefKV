@@ -1755,6 +1755,37 @@ def test_shadow_delta_coalesces_explicit_overlay_clear() -> None:
     assert combined.action_local_overlay_replaced
     assert combined.action_local_overlay_batch is None
 
+    reentry_batch = ActionLocalPhysicalOverlayBatch(
+        beneficiary_risk_signature=(),
+        opportunity=None,
+        reentry_context_ids=("context-1",),
+        selection_reason="reentry_no_prefetchable_cpu_bytes",
+    )
+    reentry = replace(
+        first,
+        risk_evaluation_requested=True,
+        risk_trigger_signature=(
+            ("reentry", "tool_end", "root", 0),
+        ),
+        action_local_overlay_batch=reentry_batch,
+        action_local_overlay_replaced=True,
+    )
+    beneficiary_refresh = replace(
+        second,
+        action_local_overlay_batch=first.action_local_overlay_batch,
+        action_local_overlay_replaced=True,
+    )
+
+    combined = coalesce_joint_shadow_deltas(
+        (reentry, beneficiary_refresh)
+    )
+
+    assert combined.action_local_overlay_batch is reentry_batch
+    assert combined.risk_trigger_signature == (
+        ("reentry", "tool_end", "root", 0),
+    )
+
+
 def test_frontier_feature_source_materializes_worker_graph_state() -> None:
     source = FrontierFeatureSource(
         "invocation",
