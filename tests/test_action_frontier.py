@@ -1,6 +1,16 @@
 from __future__ import annotations
 
+import json
+import math
+
+import pytest
+
 from beliefkv.core.events import RuntimeEvent, RuntimeEventKind
+from beliefkv.predictor.action_frontier import (
+    ActionTimingCurve,
+    OperationalReleaseModel,
+    PooledConditionalDemandModel,
+)
 from beliefkv.runtime.action_frontier import (
     ActionFrontierObserver,
     JsonActionParser,
@@ -307,6 +317,136 @@ def test_suppressed_tool_call_is_an_explicit_censored_reentry() -> None:
     assert coverage.reentry_observed_count == 0
     assert coverage.reentry_censored_count == 1
     assert coverage.reentry_cause_coverage == 1.0
+
+
+def test_action_timing_curve_uses_log_interpolation_and_rejects_non_monotonic() -> None:
+    curve = ActionTimingCurve(
+        tau_ms=(10.0, 100.0),
+        release_within_probability=(0.2, 0.8),
+        support_level="pooled",
+        training_support=12.0,
+    )
+    log_midpoint_tau = math.sqrt((1.0 + 10.0) * (1.0 + 100.0)) - 1.0
+
+    assert curve.release_within(log_midpoint_tau) == pytest.approx(0.5)
+    assert curve.release_within(0.0) == 0.0
+    assert curve.release_within(1_000.0) == pytest.approx(0.8)
+
+    with pytest.raises(ValueError, match="non-decreasing"):
+        ActionTimingCurve(
+            tau_ms=(10.0, 100.0),
+            release_within_probability=(0.8, 0.2),
+            support_level="pooled",
+            training_support=1.0,
+        )
+
+
+def test_pooled_conditional_demand_model_fit_predict_and_round_trip() -> None:
+    samples = []
+    for context_tokens, target in (
+        (128, 16),
+        (256, 24),
+        (512, 40),
+        (1024, 72),
+        (2048, 136),
+        (4096, 264),
+    ):
+        samples.append(
+            (
+                {
+                    "agent_definition_id": "coder",
+                    "state": "running_llm",
+                    "tool_family": "none",
+                    "backend_class": "local",
+                    "command_class": "none",
+                    "boundary_history": ("tool",),
+                    "current_sequence_tokens": context_tokens,
+                    "generated_tokens": context_tokens // 32,
+                },
+                float(target),
+                1.0,
+            )
+        )
+
+    model = PooledConditionalDemandModel(regularization=1e-2)
+    metrics = model.fit(samples)
+    low = samples[1][0]
+    high = samples[-1][0]
+    low_values, low_mass, support, level = model.predict(low)
+    high_values, high_mass, _, _ = model.predict(high)
+
+    assert metrics["sample_count"] == len(samples)
+    assert metrics["episode_weight"] == pytest.approx(float(len(samples)))
+    assert model.fitted
+    assert len(low_values) == len(low_mass) == 20
+    assert sum(low_mass) == pytest.approx(1.0)
+    assert support == pytest.approx(float(len(samples)))
+    assert level == "pooled"
+    assert high_values[len(high_values) // 2] > low_values[len(low_values) // 2]
+
+    restored = PooledConditionalDemandModel.from_dict(
+        json.loads(json.dumps(model.to_dict(), sort_keys=True))
+    )
+    restored_prediction = restored.predict(high)
+
+    assert restored.to_dict() == model.to_dict()
+    assert restored_prediction[0] == pytest.approx(high_values)
+    assert restored_prediction[1] == pytest.approx(high_mass)
+    assert restored_prediction[2:] == model.predict(high)[2:]
+
+
+def test_operational_release_model_curve_is_monotonic_and_round_trips() -> None:
+    samples = []
+    for elapsed_ms in (0.0, 200.0, 400.0):
+        features = {
+            "agent_definition_id": "coder",
+            "tool_family": "shell",
+            "backend_class": "sandbox",
+            "command_class": "pytest",
+            "elapsed_wait_ms": elapsed_ms,
+            "current_sequence_tokens": 4096,
+            "active_tool_count": 1,
+        }
+        residual_ms = 800.0 - elapsed_ms
+        for tau_ms in (50.0, 100.0, 200.0, 400.0, 800.0, 1600.0):
+            samples.append((features, tau_ms, tau_ms >= residual_ms, 1.0))
+
+    model = OperationalReleaseModel(regularization=1e-3)
+    metrics = model.fit(samples)
+    prediction_features = {
+        "agent_definition_id": "coder",
+        "tool_family": "shell",
+        "backend_class": "sandbox",
+        "command_class": "pytest",
+        "elapsed_wait_ms": 200.0,
+        "current_sequence_tokens": 4096,
+        "active_tool_count": 1,
+    }
+    curve = model.curve(prediction_features)
+
+    assert metrics["sample_count"] == len(samples)
+    assert model.fitted
+    assert curve is not None
+    assert all(
+        left <= right
+        for left, right in zip(
+            curve.release_within_probability,
+            curve.release_within_probability[1:],
+        )
+    )
+    assert curve.release_within(1600.0) > curve.release_within(100.0)
+
+    restored = OperationalReleaseModel.from_dict(
+        json.loads(json.dumps(model.to_dict(), sort_keys=True))
+    )
+    restored_curve = restored.curve(prediction_features)
+
+    assert restored.to_dict() == model.to_dict()
+    assert restored_curve is not None
+    assert restored_curve.tau_ms == curve.tau_ms
+    assert restored_curve.release_within_probability == pytest.approx(
+        curve.release_within_probability
+    )
 
 
 def test_censored_identity_fallback_rejects_ambiguous_latest_action() -> None:

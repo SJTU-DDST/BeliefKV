@@ -170,7 +170,10 @@ class RemainingTimePredictor:
 
     @classmethod
     def from_dict(cls, raw: Mapping[str, Any]) -> "RemainingTimePredictor":
-        if raw.get("model_kind") == "structured_conditional_particle_frontier":
+        if raw.get("model_kind") in {
+            "structured_conditional_particle_frontier",
+            "pooled_action_conditional_particle_frontier",
+        }:
             from beliefkv.predictor.structured_frontier import (
                 FrontierBeliefModel,
             )

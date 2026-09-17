@@ -11,6 +11,11 @@ from typing import Any, Iterable, Mapping, Sequence
 
 from beliefkv.control.causal_graph import InvocationState, JoinMode, RuntimeCausalContextGraph
 from beliefkv.core.events import RuntimeEventKind
+from beliefkv.predictor.action_frontier import (
+    ActionTimingCurve,
+    OperationalReleaseModel,
+    PooledConditionalDemandModel,
+)
 from beliefkv.predictor.frontier_belief import (
     BeliefScope,
     BoundaryEvent,
@@ -27,7 +32,8 @@ from beliefkv.predictor.frontier_belief import (
 )
 
 
-STRUCTURED_FRONTIER_SCHEMA_VERSION = 4
+STRUCTURED_FRONTIER_SCHEMA_VERSION = 5
+SUPPORTED_STRUCTURED_FRONTIER_SCHEMA_VERSIONS = frozenset({4, 5})
 MINIMUM_DEMAND_DECISION_SCHEMA_VERSION = 2
 FORMAL_P6_DATASET_KIND = "beliefkv_p6_training_evidence"
 FORMAL_P6_PLAN_IDS = frozenset(
@@ -92,6 +98,8 @@ class FrontierModelHyperparameters:
     empirical_minimum_support: float = 4.0
     tool_minimum_support: float = 4.0
     tool_smoothing: float = 0.5
+    pooled_demand_regularization: float = 1e-3
+    operational_timing_regularization: float = 1e-5
 
     def __post_init__(self) -> None:
         if self.boundary_max_order < 0:
@@ -104,6 +112,11 @@ class FrontierModelHyperparameters:
             self.tool_smoothing,
         ) <= 0:
             raise ValueError("frontier hyperparameters must be positive")
+        if min(
+            self.pooled_demand_regularization,
+            self.operational_timing_regularization,
+        ) < 0:
+            raise ValueError("pooled model regularization must be non-negative")
 
     def to_dict(self) -> dict[str, float | int]:
         return {
@@ -113,6 +126,10 @@ class FrontierModelHyperparameters:
             "empirical_minimum_support": self.empirical_minimum_support,
             "tool_minimum_support": self.tool_minimum_support,
             "tool_smoothing": self.tool_smoothing,
+            "pooled_demand_regularization": self.pooled_demand_regularization,
+            "operational_timing_regularization": (
+                self.operational_timing_regularization
+            ),
         }
 
     @classmethod
@@ -131,6 +148,12 @@ class FrontierModelHyperparameters:
             ),
             tool_minimum_support=float(values.get("tool_minimum_support", 4.0)),
             tool_smoothing=float(values.get("tool_smoothing", 0.5)),
+            pooled_demand_regularization=float(
+                values.get("pooled_demand_regularization", 1e-3)
+            ),
+            operational_timing_regularization=float(
+                values.get("operational_timing_regularization", 1e-5)
+            ),
         )
 
 
@@ -450,6 +473,7 @@ class LocalFrontierPrediction:
     action_timing_calibration: Mapping[str, Mapping[str, float]] = field(
         default_factory=dict
     )
+    operational_timing_curve: ActionTimingCurve | None = None
 
     def __post_init__(self) -> None:
         wait = self.wait_belief
@@ -541,11 +565,19 @@ class LocalFrontierPrediction:
 
         if action not in {"prepare_host", "prefetch_gpu"}:
             raise ValueError(f"unsupported timing action: {action}")
-        raw_after = self.wait_belief.raw_release_after_probability(
-            operational_tau_ms
-        )
-        if raw_after is None:
-            return None
+        if self.operational_timing_curve is not None:
+            raw_within = self.operational_timing_curve.release_within(
+                operational_tau_ms
+            )
+            raw_after = 1.0 - raw_within
+            timing_support_level = self.operational_timing_curve.support_level
+        else:
+            raw_after = self.wait_belief.raw_release_after_probability(
+                operational_tau_ms
+            )
+            if raw_after is None:
+                return None
+            timing_support_level = self.wait_belief.support_level
         raw = raw_after if action == "prepare_host" else 1.0 - raw_after
         quality = self.action_timing_calibration.get(action, {})
         if "logit_scale" in quality and "logit_offset" in quality:
@@ -559,11 +591,7 @@ class LocalFrontierPrediction:
         else:
             scale = 1.0
             offset = 0.0
-            probability = (
-                self.wait_belief.release_after_probability(operational_tau_ms)
-                if action == "prepare_host"
-                else self.wait_belief.release_within_probability(operational_tau_ms)
-            )
+            probability = raw
         if probability is None:
             return None
         decision_threshold = float(quality.get("decision_threshold", 0.5))
@@ -576,7 +604,7 @@ class LocalFrontierPrediction:
                 if action == "prepare_host"
                 else "release_within_transfer"
             ),
-            support_level=self.wait_belief.support_level,
+            support_level=timing_support_level,
             calibration_brier_skill=quality.get("brier_skill"),
             calibration_balanced_accuracy=quality.get("balanced_accuracy_at_0_5"),
             calibration_episode_weight=float(quality.get("episode_weight", 0.0)),
@@ -619,6 +647,11 @@ class LocalFrontierPrediction:
                     self.action_timing_calibration.items()
                 )
             },
+            "operational_timing_curve": (
+                self.operational_timing_curve.to_dict()
+                if self.operational_timing_curve is not None
+                else None
+            ),
         }
 
     @classmethod
@@ -676,6 +709,11 @@ class LocalFrontierPrediction:
                     "action_timing_calibration", {}
                 ).items()
             },
+            operational_timing_curve=(
+                ActionTimingCurve.from_dict(raw["operational_timing_curve"])
+                if isinstance(raw.get("operational_timing_curve"), Mapping)
+                else None
+            ),
         )
 
 
@@ -1014,9 +1052,23 @@ class FrontierBeliefModel:
         self.prompt_growth = _HierarchicalEmpiricalModel(
             minimum_support=self.hyperparameters.empirical_minimum_support
         )
+        self.pooled_decode_demand = PooledConditionalDemandModel(
+            regularization=self.hyperparameters.pooled_demand_regularization
+        )
+        self.pooled_next_output = PooledConditionalDemandModel(
+            regularization=self.hyperparameters.pooled_demand_regularization
+        )
+        self.pooled_prompt_growth = PooledConditionalDemandModel(
+            regularization=self.hyperparameters.pooled_demand_regularization
+        )
         self.tool = _CompetingRiskToolModel(
             minimum_support=self.hyperparameters.tool_minimum_support,
             smoothing=self.hyperparameters.tool_smoothing,
+        )
+        self.operational_release = OperationalReleaseModel(
+            regularization=(
+                self.hyperparameters.operational_timing_regularization
+            )
         )
         self.training_summary: dict[str, Any] = {}
         self.calibration_summary: dict[str, Any] = {}
@@ -1029,8 +1081,14 @@ class FrontierBeliefModel:
         self.calibration_coverage = 0.0
         self.artifact_metadata: dict[str, Any] = {}
 
-    def fit(self, rows: Iterable[Mapping[str, Any]]) -> dict[str, Any]:
+    def fit(
+        self,
+        rows: Iterable[Mapping[str, Any]],
+        *,
+        action_targets: Iterable[Mapping[str, Any]] = (),
+    ) -> dict[str, Any]:
         values = [dict(row) for row in rows]
+        action_values = [dict(row) for row in action_targets]
         _validate_demand_rows(values)
         episode_counts = Counter(
             str(row.get("episode_group_id") or row.get("decision_id")) for row in values
@@ -1038,6 +1096,9 @@ class FrontierBeliefModel:
         local_episode_counts = _local_episode_counts(values)
         workflow_episode_counts = _workflow_local_episode_counts(values)
         tool_fit_weights = _tool_fit_weights(values)
+        pooled_decode_samples: list[tuple[object, float, float]] = []
+        pooled_output_samples: list[tuple[object, float, float]] = []
+        pooled_prompt_samples: list[tuple[object, float, float]] = []
         observed = Counter()
         split_counts = Counter(str(row.get("split") or "unknown") for row in values)
         for row in values:
@@ -1076,6 +1137,7 @@ class FrontierBeliefModel:
                     or "unknown"
                 )
                 key = _demand_feature_key(role, state, family, features)
+                local_features = _local_features_from_row(row, features)
                 boundary = _normalize_boundary(label.get("next_boundary_kind"))
                 if state == InvocationState.RUNNING_LLM.value and boundary is not None and _target_eligible(label, "action_boundary"):
                     self.boundary.observe(
@@ -1095,6 +1157,9 @@ class FrontierBeliefModel:
                     self.decode_demand.observe(
                         key, float(remaining_decode), weight=weight
                     )
+                    pooled_decode_samples.append(
+                        (local_features, float(remaining_decode), weight)
+                    )
                     observed["remaining_decode_demand"] += 1
                 elif state != InvocationState.RUNNING_LLM.value:
                     # State-semantic decode target (P6 improvement, deepseek):
@@ -1113,10 +1178,16 @@ class FrontierBeliefModel:
                 next_output = label.get("next_output_tokens")
                 if next_output is not None and _target_eligible(label, "next_output_demand"):
                     self.next_output.observe(key, float(next_output), weight=weight)
+                    pooled_output_samples.append(
+                        (local_features, float(next_output), weight)
+                    )
                     observed["next_output_demand"] += 1
                 prompt_growth = label.get("reentry_prompt_delta_tokens")
                 if prompt_growth is not None and _target_eligible(label, "prompt_growth"):
                     self.prompt_growth.observe(key, float(prompt_growth), weight=weight)
+                    pooled_prompt_samples.append(
+                        (local_features, float(prompt_growth), weight)
+                    )
                     observed["prompt_growth"] += 1
                 if (
                     trigger == RuntimeEventKind.TOOL_START.value
@@ -1151,6 +1222,46 @@ class FrontierBeliefModel:
                             ),
                         )
                         observed["tool"] += 1
+        pooled_summary = {
+            "remaining_decode_tokens": self.pooled_decode_demand.fit(
+                pooled_decode_samples
+            ),
+            "next_output_tokens": self.pooled_next_output.fit(
+                pooled_output_samples
+            ),
+            "prompt_growth_tokens": self.pooled_prompt_growth.fit(
+                pooled_prompt_samples
+            ),
+        }
+        action_weights = _action_target_weights(action_values)
+        timing_samples: list[tuple[object, float, bool, float]] = []
+        for target in action_values:
+            features = _local_features_from_action_target(target)
+            identity = _action_target_identity(target)
+            known = [
+                (action, value)
+                for action, value in (target.get("actions") or {}).items()
+                if bool(value.get("outcome_known"))
+                and action in {"prepare_host", "prefetch_gpu"}
+            ]
+            if not known:
+                continue
+            weight = action_weights.get(identity, 0.0) / len(known)
+            for action, value in known:
+                favorable = bool(value.get("outcome"))
+                release_within = (
+                    favorable if action == "prefetch_gpu" else not favorable
+                )
+                timing_samples.append(
+                    (
+                        features,
+                        float(value["operational_tau_ms"]),
+                        release_within,
+                        weight,
+                    )
+                )
+        timing_summary = self.operational_release.fit(timing_samples)
+        observed["operational_timing"] = len(timing_samples)
         self.training_summary = {
             "decision_point_count": len(values),
             "episode_count": len(episode_counts),
@@ -1158,6 +1269,9 @@ class FrontierBeliefModel:
             "workflow_count": len(workflow_episode_counts),
             "split_counts": dict(sorted(split_counts.items())),
             "observation_counts": dict(sorted(observed.items())),
+            "pooled_demand": pooled_summary,
+            "operational_timing": timing_summary,
+            "action_target_count": len(action_values),
             "episode_weighting": (
                 "decision points are normalized within each local episode, then "
                 "local episodes are normalized within each workflow rollout"
@@ -1186,6 +1300,33 @@ class FrontierBeliefModel:
         decode, decode_level = self.decode_demand.predict(key)
         output, output_level = self.next_output.predict(key)
         prompt, prompt_level = self.prompt_growth.predict(key)
+        pooled_values, pooled_mass, pooled_support, pooled_level = (
+            self.pooled_decode_demand.predict(features)
+        )
+        if (
+            pooled_values
+            and features.state == InvocationState.RUNNING_LLM.value
+        ):
+            decode = EmpiricalDistribution(
+                pooled_values, pooled_mass, pooled_support
+            )
+            decode_level = pooled_level
+        pooled_values, pooled_mass, pooled_support, pooled_level = (
+            self.pooled_next_output.predict(features)
+        )
+        if pooled_values:
+            output = EmpiricalDistribution(
+                pooled_values, pooled_mass, pooled_support
+            )
+            output_level = pooled_level
+        pooled_values, pooled_mass, pooled_support, pooled_level = (
+            self.pooled_prompt_growth.predict(features)
+        )
+        if pooled_values:
+            prompt = EmpiricalDistribution(
+                pooled_values, pooled_mass, pooled_support
+            )
+            prompt_level = pooled_level
         wait = EmpiricalDistribution.empty()
         terminal: Mapping[str, float] = {}
         wait_belief: WaitBelief
@@ -1219,7 +1360,11 @@ class FrontierBeliefModel:
                     else ()
                 ),
             )
+            operational_timing_curve = self.operational_release.curve(features)
+            if operational_timing_curve is not None:
+                tool_level = operational_timing_curve.support_level
         elif features.state == InvocationState.WAIT_JOIN.value:
+            operational_timing_curve = None
             tool_level = "structural"
             wait_belief = WaitBelief(
                 kind=WaitBeliefKind.JOIN,
@@ -1227,6 +1372,7 @@ class FrontierBeliefModel:
                 dependency_composed=True,
             )
         elif features.state == InvocationState.WAIT_CHILD.value:
+            operational_timing_curve = None
             tool_level = "structural"
             wait_belief = WaitBelief(
                 kind=WaitBeliefKind.CHILD,
@@ -1234,6 +1380,7 @@ class FrontierBeliefModel:
                 dependency_composed=True,
             )
         elif features.state == InvocationState.WAIT_MESSAGE.value:
+            operational_timing_curve = None
             tool_level = "structural"
             wait_belief = WaitBelief(
                 kind=WaitBeliefKind.MESSAGE,
@@ -1241,6 +1388,7 @@ class FrontierBeliefModel:
                 dependency_composed=True,
             )
         else:
+            operational_timing_curve = None
             tool_level = "unavailable"
             wait_belief = WaitBelief(kind=WaitBeliefKind.NONE)
 
@@ -1314,6 +1462,7 @@ class FrontierBeliefModel:
             wait_belief=wait_belief,
             head_support=head_support,
             action_timing_calibration=self.action_timing_calibration,
+            operational_timing_curve=operational_timing_curve,
         )
 
     def calibrate(
@@ -1469,6 +1618,9 @@ class FrontierBeliefModel:
                         f"{wait_target}_right_censored_excluded_from_interval"
                     ] += 1
 
+        # Always calibrate the current model's raw action probability. This also
+        # makes recalibration idempotent when loading an already calibrated model.
+        self.action_timing_calibration = {}
         action_weights = _action_target_weights(action_values)
         for target in action_values:
             features = _local_features_from_action_target(target)
@@ -1482,20 +1634,18 @@ class FrontierBeliefModel:
             weight = action_weights.get(identity, 0.0)
             for action, value in known:
                 tau_ms = float(value["operational_tau_ms"])
-                raw_after = (
-                    prediction.wait_belief.raw_release_after_probability(tau_ms)
-                )
-                if raw_after is None:
+                timing = prediction.action_timing(action, tau_ms)
+                if timing is None:
                     continue
                 if action == "prepare_host":
-                    probability = raw_after
+                    probability = timing.favorable_probability
                     outcome = bool(value["outcome"])
-                    survival_probability = raw_after
+                    survival_probability = probability
                     survival_outcome = outcome
                 elif action == "prefetch_gpu":
-                    probability = 1.0 - raw_after
+                    probability = timing.favorable_probability
                     outcome = bool(value["outcome"])
-                    survival_probability = raw_after
+                    survival_probability = 1.0 - probability
                     survival_outcome = not outcome
                 else:
                     continue
@@ -1561,7 +1711,7 @@ class FrontierBeliefModel:
     def to_dict(self, *, metadata: Mapping[str, Any] | None = None) -> dict[str, Any]:
         return {
             "schema_version": STRUCTURED_FRONTIER_SCHEMA_VERSION,
-            "model_kind": "structured_conditional_particle_frontier",
+            "model_kind": "pooled_action_conditional_particle_frontier",
             "model_version": self.model_version,
             "decision_authority": "none; ScenarioRiskPlanner owns actions",
             "join_semantics": "not learned; RCCG composer applies ALL/ANY",
@@ -1586,13 +1736,18 @@ class FrontierBeliefModel:
                 "decode_demand": self.decode_demand.to_dict(),
                 "next_output": self.next_output.to_dict(),
                 "prompt_growth": self.prompt_growth.to_dict(),
+                "pooled_decode_demand": self.pooled_decode_demand.to_dict(),
+                "pooled_next_output": self.pooled_next_output.to_dict(),
+                "pooled_prompt_growth": self.pooled_prompt_growth.to_dict(),
                 "tool": self.tool.to_dict(),
+                "operational_release": self.operational_release.to_dict(),
             },
         }
 
     @classmethod
     def from_dict(cls, raw: Mapping[str, Any]) -> "FrontierBeliefModel":
-        if int(raw.get("schema_version", -1)) != STRUCTURED_FRONTIER_SCHEMA_VERSION:
+        schema_version = int(raw.get("schema_version", -1))
+        if schema_version not in SUPPORTED_STRUCTURED_FRONTIER_SCHEMA_VERSIONS:
             raise ValueError("unsupported structured frontier model schema")
         model = cls(
             model_version=str(raw.get("model_version") or "unknown"),
@@ -1609,7 +1764,19 @@ class FrontierBeliefModel:
             components.get("next_output", {})
         )
         model.prompt_growth = _HierarchicalEmpiricalModel.from_dict(components.get("prompt_growth", {}))
+        model.pooled_decode_demand = PooledConditionalDemandModel.from_dict(
+            components.get("pooled_decode_demand", {})
+        )
+        model.pooled_next_output = PooledConditionalDemandModel.from_dict(
+            components.get("pooled_next_output", {})
+        )
+        model.pooled_prompt_growth = PooledConditionalDemandModel.from_dict(
+            components.get("pooled_prompt_growth", {})
+        )
         model.tool = _CompetingRiskToolModel.from_dict(components.get("tool", {}))
+        model.operational_release = OperationalReleaseModel.from_dict(
+            components.get("operational_release", {})
+        )
         model.training_summary = dict(raw.get("training_summary", {}))
         model.calibration_summary = dict(raw.get("calibration_summary", {}))
         model.calibration_coverage = float(raw.get("calibration_coverage", 0.0))
@@ -2402,7 +2569,15 @@ def select_frontier_hyperparameters(
                 model_version=f"lopo-candidate-{index}",
                 hyperparameters=option,
             )
-            model.fit(fit_rows)
+            fit_action_targets = [
+                row
+                for row in action_values
+                if str(row.get("project")) != held_out
+            ]
+            model.fit(
+                fit_rows,
+                action_targets=fit_action_targets,
+            )
             metrics = evaluate_frontier_model(
                 model,
                 validation_rows,
@@ -2707,7 +2882,11 @@ def evaluate_frontier_model(
     for target in action_values:
         features = _local_features_from_action_target(target)
         prediction = model.predict(features)
-        base_support = prediction.wait_belief.support_detail
+        base_support = (
+            prediction.operational_timing_curve.support_level
+            if prediction.operational_timing_curve is not None
+            else prediction.wait_belief.support_detail
+        )
         identity = _action_target_identity(target)
         base_weight = action_weights.get(identity, 0.0)
         known_weight = base_weight
@@ -3037,6 +3216,8 @@ def _default_hyperparameter_candidates() -> tuple[FrontierModelHyperparameters, 
             boundary_minimum_support=2.0,
             empirical_minimum_support=2.0,
             tool_minimum_support=2.0,
+            pooled_demand_regularization=1e-4,
+            operational_timing_regularization=0.0,
         ),
         FrontierModelHyperparameters(
             boundary_max_order=2,
@@ -3045,12 +3226,16 @@ def _default_hyperparameter_candidates() -> tuple[FrontierModelHyperparameters, 
             empirical_minimum_support=4.0,
             tool_minimum_support=4.0,
             tool_smoothing=1.0,
+            pooled_demand_regularization=1e-3,
+            operational_timing_regularization=1e-4,
         ),
         FrontierModelHyperparameters(
             boundary_max_order=4,
             boundary_minimum_support=6.0,
             empirical_minimum_support=8.0,
             tool_minimum_support=8.0,
+            pooled_demand_regularization=1e-2,
+            operational_timing_regularization=1e-3,
         ),
     )
 

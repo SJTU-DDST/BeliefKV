@@ -29,6 +29,7 @@ experiments/characterization/*
 experiments/micro/*
 experiments/smoke/*
 experiments/oracle/*
+experiments/replay/*
 !experiments/archive/README.md
 
 # Hardware-keyed service artifacts are immutable experiment inputs, not source.

@@ -62,7 +62,7 @@ def main() -> int:
     beliefkv_revision, beliefkv_worktree_clean = _repository_state()
     if args.split == "train" and not beliefkv_worktree_clean:
         raise SystemExit(
-            "formal schema-v4 training requires a clean BeliefKV worktree"
+            "formal predictor training requires a clean BeliefKV worktree"
         )
     rows, manifests = load_decision_rows(
         args.dataset_dir, allowed_splits=(args.split,)
@@ -74,7 +74,7 @@ def main() -> int:
         or args.deployment_runtime_profile is None
     ):
         raise SystemExit(
-            "formal schema-v4 training requires action targets, their report, "
+            "formal predictor training requires action targets, their report, "
             "and a deployment runtime profile"
         )
     if not rows:
@@ -118,7 +118,7 @@ def main() -> int:
         model_version=args.model_version,
         hyperparameters=hyperparameters,
     )
-    summary = model.fit(rows)
+    summary = model.fit(rows, action_targets=action_targets)
     tasks = sorted(
         {
             (

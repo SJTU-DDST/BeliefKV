@@ -95,7 +95,7 @@ def main() -> int:
     else:
         if not action_targets or args.action_target_report is None:
             raise SystemExit(
-                "formal schema-v4 calibration requires action targets and report"
+                "formal predictor calibration requires action targets and report"
             )
         if args.coverage_report is None:
             raise SystemExit(

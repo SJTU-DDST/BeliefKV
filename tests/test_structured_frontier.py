@@ -7,6 +7,7 @@ import pytest
 
 from beliefkv.control.causal_graph import RuntimeCausalContextGraph
 from beliefkv.core.events import RuntimeEvent, RuntimeEventKind
+from beliefkv.predictor.action_frontier import ActionTimingCurve
 from beliefkv.predictor.composer import RemainingTimePredictor
 from beliefkv.predictor.frontier_belief import (
     BeliefScopeBuilder,
@@ -982,6 +983,45 @@ def test_action_timing_inverts_calibrated_threshold_for_raw_quantile() -> None:
     assert timing.decision_threshold == 0.5
     assert timing.raw_decision_threshold == pytest.approx(0.3775406688)
     assert timing.raw_decision_threshold != timing.decision_threshold
+
+
+def test_uncalibrated_action_timing_uses_operational_curve() -> None:
+    prediction = LocalFrontierPrediction(
+        invocation_id="worker",
+        boundary_distribution={},
+        current_sequence_tokens=4096,
+        remaining_decode_tokens=EmpiricalDistribution.empty(),
+        remaining_external_wait=EmpiricalDistribution(
+            (10.0, 20.0), (0.5, 0.5), 2.0
+        ),
+        tool_terminal_distribution={"success": 1.0},
+        prompt_growth_tokens=EmpiricalDistribution.empty(),
+        next_output_tokens=EmpiricalDistribution.empty(),
+        support_level="pooled",
+        calibration_coverage=0.0,
+        wait_belief=WaitBelief(
+            kind=WaitBeliefKind.TOOL,
+            residual_duration=EmpiricalDistribution(
+                (10.0, 20.0), (0.5, 0.5), 2.0
+            ),
+            support_level="exact",
+        ),
+        operational_timing_curve=ActionTimingCurve(
+            tau_ms=(100.0, 200.0),
+            release_within_probability=(0.2, 0.8),
+            support_level="pooled",
+            training_support=10.0,
+        ),
+    )
+
+    prepare = prediction.action_timing("prepare_host", 100.0)
+    prefetch = prediction.action_timing("prefetch_gpu", 100.0)
+
+    assert prepare is not None
+    assert prefetch is not None
+    assert prepare.favorable_probability == pytest.approx(0.8)
+    assert prefetch.favorable_probability == pytest.approx(0.2)
+    assert prepare.support_level == "pooled"
 
 
 def test_composer_applies_known_join_all_instead_of_learning_it() -> None:
