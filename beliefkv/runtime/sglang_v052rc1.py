@@ -2195,6 +2195,9 @@ _JOINT_SIGNATURE_CHECK_INTERVAL_MS = 10.0
 _ACK_POLL_INTERVAL_MS = 5.0
 _POLICY_CHECK_INTERVAL_MS = 5.0
 _PREDICTIVE_VICTIM_SUMMARY_SCAN_LIMIT = 8
+_PREDICTIVE_REENTRY_WATCH_LIMIT = 4
+_PREDICTIVE_REENTRY_WATCH_POLL_MS = 100.0
+_PREDICTIVE_REENTRY_RISK_BUCKET_MS = 500.0
 
 
 class EmbeddedSGLangRuntime:
@@ -2656,6 +2659,11 @@ class EmbeddedSGLangRuntime:
         self._pending_predictive_prepare_event_sequence = 0
         self._pending_predictive_prepare_created_ts_ms: float | None = None
         self._last_published_predictive_prepare_event_sequence = 0
+        self._predictive_reentry_watch_invocation_ids: set[str] = set()
+        self._last_predictive_reentry_watch_poll_ms: float | None = None
+        self._last_predictive_reentry_risk_signature: (
+            tuple[object, ...] | None
+        ) = None
         self._latest_action_local_overlay_batch: (
             ActionLocalPhysicalOverlayBatch | None
         ) = None
@@ -10362,6 +10370,10 @@ class EmbeddedSGLangRuntime:
                 joint_shadow_worker,
                 observation=policy_observation,
             )
+            self._maybe_publish_predicted_reentry_risk_delta(
+                joint_shadow_worker,
+                observation=policy_observation,
+            )
         self._drive_restore_obligations(now_ms=float(self._now_ms()))
         self._advance_restore_authority(now_ms=float(self._now_ms()))
         restore_authority_mode = getattr(
@@ -17461,6 +17473,22 @@ class EmbeddedSGLangRuntime:
                 add("reentry", event.kind.value, event.invocation_id)
         return tuple(sorted(triggers))
 
+    def _update_predictive_reentry_watches(
+        self,
+        risk_triggers: tuple[tuple[str, str, str, int], ...],
+    ) -> None:
+        watches = getattr(
+            self, "_predictive_reentry_watch_invocation_ids", None
+        )
+        if watches is None:
+            watches = set()
+            self._predictive_reentry_watch_invocation_ids = watches
+        for risk_class, _event_kind, invocation_id, _context_epoch in risk_triggers:
+            if risk_class == "prepare":
+                watches.add(invocation_id)
+            elif risk_class == "reentry":
+                watches.discard(invocation_id)
+
     def _predictive_max_running_requests(self) -> int:
         for owner in (
             self.scheduler,
@@ -17716,8 +17744,104 @@ class EmbeddedSGLangRuntime:
                     evidence_kind="prefetch_target_preview",
                 )
             )
+        if len(context_ids) == 1 and len(overlays) == 1:
+            target_bytes = overlays[0].h2d_copy_bytes
+            physical_free_bytes = max(
+                0, observation.hbm_capacity_bytes - observation.hbm_used_bytes
+            )
+            reclaim_deficit_bytes = max(0, target_bytes - physical_free_bytes)
+            if reclaim_deficit_bytes > 0:
+                wait_states = {
+                    InvocationState.WAIT_TOOL,
+                    InvocationState.WAIT_CHILD,
+                    InvocationState.WAIT_JOIN,
+                    InvocationState.WAIT_MESSAGE,
+                }
+                states_by_context: dict[str, set[InvocationState]] = defaultdict(set)
+                for invocation in graph.invocations.values():
+                    if not invocation.state.terminal:
+                        states_by_context[invocation.context_id].add(invocation.state)
+                reclaim_summaries = []
+                for candidate_context_id, states in states_by_context.items():
+                    if (
+                        candidate_context_id in context_ids
+                        or not states
+                        or not states.issubset(wait_states)
+                        or not page_index.has_context(candidate_context_id)
+                    ):
+                        continue
+                    summary = page_index.context_physical_summary(
+                        candidate_context_id
+                    )
+                    if (
+                        summary.locked_bytes == 0
+                        and summary.d2h_copy_upper_bound_bytes == 0
+                        and summary.exclusive_reclaimable_upper_bound_bytes > 0
+                    ):
+                        reclaim_summaries.append(summary)
+                reclaim_summaries.sort(
+                    key=lambda item: (
+                        -item.exclusive_reclaimable_upper_bound_bytes,
+                        item.last_access_ms,
+                        item.context_id,
+                    )
+                )
+                funded_bytes = 0
+                for summary in reclaim_summaries[:2]:
+                    context = graph.contexts.get(summary.context_id)
+                    if (
+                        context is None
+                        or context.epoch != summary.context_epoch
+                        or page_index.context_epoch(summary.context_id)
+                        != context.epoch
+                    ):
+                        continue
+                    context_revision = page_index.context_revision(
+                        summary.context_id
+                    )
+                    overlays.append(
+                        ActionLocalPhysicalOverlay(
+                            context_id=summary.context_id,
+                            context_epoch=context.epoch,
+                            context_revision=context_revision,
+                            page_revision=page_index.revision,
+                            topology_revision=page_index.topology_revision,
+                            generation_fingerprint=(
+                                f"summary:{summary.context_id}:e{context.epoch}:"
+                                f"r{context_revision}"
+                            ),
+                            shape_fingerprint=(
+                                "commit-ready:"
+                                f"{summary.exclusive_reclaimable_upper_bound_bytes}"
+                            ),
+                            exclusive_reclaimable_bytes=(
+                                summary.exclusive_reclaimable_upper_bound_bytes
+                            ),
+                            d2h_copy_bytes=0,
+                            extent_count=summary.extent_count,
+                            cross_context_bytes=0,
+                            locked_bytes=0,
+                            owner_context_ids=(summary.context_id,),
+                            blocker_codes=(),
+                            native_loading=False,
+                            captured_ts_ms=observation.ts_ms,
+                            evidence_kind="commit_ready_summary",
+                        )
+                    )
+                    funded_bytes += (
+                        summary.exclusive_reclaimable_upper_bound_bytes
+                    )
+                    if funded_bytes >= reclaim_deficit_bytes:
+                        break
+                if funded_bytes < reclaim_deficit_bytes:
+                    failure_reasons.add(
+                        "reentry_reclaim_capacity_insufficient"
+                    )
         selection_reason = None
-        if len(overlays) != len(context_ids):
+        if any(
+            context_id not in {item.context_id for item in overlays}
+            for context_id in context_ids
+        ):
             selection_reason = next(
                 (
                     reason
@@ -18879,6 +19003,363 @@ class EmbeddedSGLangRuntime:
         )
         return True
 
+    def _maybe_publish_predicted_reentry_risk_delta(
+        self,
+        worker: LatestWinsJointPlanWorker,
+        *,
+        observation: RuntimeResourceObservation | None = None,
+    ) -> bool:
+        """Publish one bounded pre-reentry H2D evaluation before native demand-load."""
+
+        if (
+            not getattr(self.config, "predictive_risk_shadow_enabled", False)
+            or getattr(self, "predictive_risk_worker", None) is None
+        ):
+            return False
+        now_ms = (
+            observation.ts_ms
+            if observation is not None
+            else float(self._now_ms())
+        )
+        previous_poll_ms = getattr(
+            self, "_last_predictive_reentry_watch_poll_ms", None
+        )
+        if (
+            previous_poll_ms is not None
+            and now_ms - previous_poll_ms < _PREDICTIVE_REENTRY_WATCH_POLL_MS
+        ):
+            return False
+        self._last_predictive_reentry_watch_poll_ms = now_ms
+
+        watches = getattr(
+            self, "_predictive_reentry_watch_invocation_ids", set()
+        )
+        if not watches:
+            return False
+        base_stamp = getattr(self, "_last_policy_state_stamp", None)
+        if (
+            base_stamp is None
+            or base_stamp.event_sequence != self._shadow_event_sequence
+        ):
+            self._joint_predictive_counts[
+                "predicted_reentry_no_current_observed_mirror"
+            ] += 1
+            return False
+
+        graph = self.controller.graph
+        page_index = self.controller.page_index
+        wait_states = {
+            InvocationState.WAIT_TOOL,
+            InvocationState.WAIT_CHILD,
+            InvocationState.WAIT_JOIN,
+            InvocationState.WAIT_MESSAGE,
+        }
+        candidates: list[tuple[Any, Any, int]] = []
+        for invocation_id in tuple(watches):
+            invocation = graph.invocations.get(invocation_id)
+            context = (
+                graph.contexts.get(invocation.context_id)
+                if invocation is not None
+                else None
+            )
+            if (
+                invocation is None
+                or invocation.state.terminal
+                or invocation.state not in wait_states
+                or context is None
+            ):
+                watches.discard(invocation_id)
+                continue
+            if (
+                not page_index.has_context(invocation.context_id)
+                or page_index.context_epoch(invocation.context_id)
+                != context.epoch
+            ):
+                continue
+            summary = page_index.context_physical_summary(
+                invocation.context_id
+            )
+            missing_gpu_bytes = max(
+                0, summary.physical_unique_bytes - summary.gpu_bytes
+            )
+            if missing_gpu_bytes <= 0 or summary.cpu_bytes <= 0:
+                continue
+            candidates.append((invocation, summary, missing_gpu_bytes))
+        if not candidates:
+            return False
+        candidates.sort(
+            key=lambda item: (
+                item[0].updated_ts_ms,
+                -item[2],
+                item[0].invocation_id,
+            )
+        )
+        candidates = candidates[:_PREDICTIVE_REENTRY_WATCH_LIMIT]
+
+        predictor = getattr(self.controller, "predictor", None)
+        frontier_model = getattr(predictor, "frontier_model", None)
+        if predictor is None or frontier_model is None:
+            self._joint_predictive_counts[
+                "predicted_reentry_model_unavailable"
+            ] += 1
+            return False
+        invocation_ids = tuple(item[0].invocation_id for item in candidates)
+        try:
+            features = build_invocation_frontier_features(
+                graph,
+                predictor,
+                now_ms=now_ms,
+                invocation_ids=invocation_ids,
+            )
+            predictions = {
+                invocation_id: frontier_model.predict(features[invocation_id])
+                for invocation_id in invocation_ids
+                if invocation_id in features
+            }
+        except Exception:
+            self._joint_predictive_counts[
+                "predicted_reentry_prediction_failed"
+            ] += 1
+            return False
+
+        native_inflight_bytes = 0
+        backend = getattr(self, "backend", None)
+        if backend is not None and hasattr(backend, "_native_inflight_bytes"):
+            native_inflight_bytes = backend._native_inflight_bytes()
+        eligible = []
+        for invocation, summary, missing_gpu_bytes in candidates:
+            prediction = predictions.get(invocation.invocation_id)
+            if prediction is None:
+                continue
+            transfer = self.controller.service_curve.estimate(
+                TransferDirection.H2D,
+                missing_gpu_bytes,
+                page_count=max(1, summary.extent_count),
+                command_kind=CommandKind.PREFETCH_CONTEXT.value,
+                host_copy_state="present",
+                pinned_host=True,
+                native_concurrent_bytes=native_inflight_bytes,
+            )
+            if not transfer.shape_supported:
+                self._joint_predictive_counts[
+                    "predicted_reentry_transfer_shape_unsupported"
+                ] += 1
+                continue
+            transfer_ms = max(
+                0.001, transfer.estimated_completion_p90_ms
+            )
+            operational_tau_ms = (
+                transfer_ms
+                + self.config.predictive_commit_guard_ms
+                + self.config.predictive_prefetch_desired_lead_ms
+            )
+            if invocation.state == InvocationState.WAIT_TOOL:
+                timing = prediction.action_timing(
+                    "prefetch_gpu", operational_tau_ms
+                )
+                if timing is None:
+                    self._joint_predictive_counts[
+                        "predicted_reentry_timing_unavailable"
+                    ] += 1
+                    continue
+                if not timing.informative:
+                    self._joint_predictive_counts[
+                        "predicted_reentry_timing_uninformative"
+                    ] += 1
+                    continue
+                threshold = timing.decision_threshold
+                if timing.favorable_probability + 1e-12 < threshold:
+                    self._joint_predictive_counts[
+                        "predicted_reentry_before_latest_start"
+                    ] += 1
+                    continue
+                urgency = timing.favorable_probability - threshold
+                probability = timing.favorable_probability
+            else:
+                urgency = 0.0
+                probability = 0.5
+            eligible.append(
+                (
+                    urgency,
+                    probability,
+                    now_ms - invocation.updated_ts_ms,
+                    -transfer_ms,
+                    invocation,
+                    features[invocation.invocation_id],
+                    prediction,
+                )
+            )
+        if not eligible:
+            return False
+        (
+            _urgency,
+            timing_probability,
+            _waited_ms,
+            _negative_transfer_ms,
+            invocation,
+            selected_features,
+            selected_prediction,
+        ) = max(eligible, key=lambda item: item[:4])
+
+        trigger = (
+            "reentry",
+            "predicted_latest_start",
+            invocation.invocation_id,
+            graph.contexts[invocation.context_id].epoch,
+        )
+        try:
+            overlay_batch = (
+                self._capture_reentry_action_local_physical_overlay_batch(
+                    (trigger,),
+                    observation or self._runtime_resource_observation(),
+                )
+            )
+        except Exception as error:
+            self._joint_predictive_counts[
+                "predicted_reentry_overlay_capture_failed"
+            ] += 1
+            self.audit.emit(
+                "predictive_reentry_overlay_failed",
+                now_ms,
+                audit_level="correctness",
+                invocation_id=invocation.invocation_id,
+                error=f"{type(error).__name__}: {error}",
+            )
+            return False
+        if overlay_batch is None or not any(
+            item.context_id == invocation.context_id
+            and item.h2d_copy_bytes > 0
+            for item in overlay_batch.overlays
+        ):
+            self._joint_predictive_counts[
+                "predicted_reentry_overlay_unavailable"
+            ] += 1
+            return False
+
+        context_revision = page_index.context_revision(invocation.context_id)
+        risk_bucket = int(now_ms // _PREDICTIVE_REENTRY_RISK_BUCKET_MS)
+        signature = (
+            invocation.invocation_id,
+            invocation.context_id,
+            graph.contexts[invocation.context_id].epoch,
+            context_revision,
+            risk_bucket,
+        )
+        if signature == getattr(
+            self, "_last_predictive_reentry_risk_signature", None
+        ):
+            return False
+
+        observation = self._joint_shadow_effective_observation(
+            observation or self._runtime_resource_observation()
+        )
+        runnable = (
+            self._latest_bounded_seed_runnable
+            or self._last_policy_runtime_runnable
+        )
+        stamp = replace(
+            base_stamp,
+            hbm_used_bytes=observation.policy_hbm_used_bytes,
+            host_free_bytes=observation.host_free_bytes,
+            runnable_signature=self._joint_shadow_runnable_signature(runnable),
+        )
+        page_delta = PageIndexReplicaDelta(
+            from_revision=self._shadow_page_revision,
+            to_revision=self._shadow_page_revision,
+            topology_revision=self._shadow_topology_revision,
+            pages=(),
+            page_states=(),
+            contexts=(),
+            changed_handles=frozenset(),
+            changed_context_ids=frozenset(),
+            components=frozenset(),
+            full_rebuild_required=False,
+        )
+        delta = JointShadowDelta(
+            event_from_sequence=self._shadow_event_sequence,
+            event_to_sequence=self._shadow_event_sequence,
+            runtime_events=(),
+            page_delta=page_delta,
+            observation=observation,
+            runnable_frontier=runnable,
+            fairness_accounts=self._last_policy_fairness_accounts,
+            external_workflow_charges=self._last_policy_external_workflow_charges,
+            control_state=self._last_policy_control_state,
+            transfer_telemetry=(),
+            capabilities=self._last_policy_capabilities,
+            stamp=stamp,
+            trigger="risk_eval+predicted_reentry_latest_start",
+            captured_monotonic_ms=time.monotonic_ns() / 1_000_000.0,
+            planning_requested=False,
+            risk_evaluation_requested=True,
+            risk_trigger_signature=(trigger,),
+            observed_seed_beneficiary=(
+                getattr(self, "_latest_observed_seed_beneficiary", None)
+            ),
+            action_local_overlay_batch=overlay_batch,
+            action_local_overlay_replaced=True,
+            source_page_revision=page_index.revision,
+            source_topology_revision=page_index.topology_revision,
+            frontier_predictions={
+                invocation.invocation_id: selected_prediction.to_dict()
+            },
+            frontier_features={
+                invocation.invocation_id: selected_features.to_dict()
+            },
+            frontier_model_version=str(frontier_model.model_version),
+        )
+        try:
+            submission = worker.submit_delta(delta)
+        except Exception as error:
+            self._joint_shadow_counts["submission_failed"] += 1
+            self.audit.emit(
+                "joint_plan_shadow_submit_failed",
+                now_ms,
+                audit_level="correctness",
+                error=f"{type(error).__name__}: {error}",
+                trigger=delta.trigger,
+                application_connected=self.config.joint_policy_enabled,
+            )
+            return False
+
+        self._last_predictive_reentry_risk_signature = signature
+        self._last_frontier_features[invocation.invocation_id] = (
+            selected_features.to_dict()
+        )
+        self._last_frontier_predictions[invocation.invocation_id] = (
+            selected_prediction.to_dict()
+        )
+        self._last_frontier_model_version = str(frontier_model.model_version)
+        self._last_policy_state_stamp = stamp
+        self._joint_shadow_counts["submitted"] += 1
+        self._joint_shadow_counts["apply_only_submitted"] += 1
+        self._joint_predictive_counts[
+            "predicted_reentry_risk_published"
+        ] += 1
+        self._joint_predictive_counts[
+            "reentry_overlay_target_count"
+        ] += 1
+        self._joint_shadow_timing_samples.setdefault(
+            "predicted_reentry_overlay_capture_ms", deque(maxlen=65_536)
+        ).append(overlay_batch.capture_ms)
+        self._joint_shadow_timing_samples["snapshot_enqueue_ms"].append(
+            submission.enqueue_ms
+        )
+        self.audit.emit(
+            "predictive_reentry_risk_published",
+            now_ms,
+            invocation_id=invocation.invocation_id,
+            context_id=invocation.context_id,
+            context_epoch=graph.contexts[invocation.context_id].epoch,
+            context_revision=context_revision,
+            timing_probability=timing_probability,
+            overlay_context_ids=[
+                item.context_id for item in overlay_batch.overlays
+            ],
+            worker_sequence=submission.sequence,
+        )
+        return True
+
     def _publish_joint_semantic_delta(
         self,
         observation: RuntimeResourceObservation,
@@ -18909,6 +19390,7 @@ class EmbeddedSGLangRuntime:
             risk_trigger_signature = (
                 self._joint_shadow_predictive_risk_triggers(event_delta.events)
             )
+            self._update_predictive_reentry_watches(risk_trigger_signature)
             prepare_risk_triggers = tuple(
                 item for item in risk_trigger_signature if item[0] == "prepare"
             )
@@ -19209,6 +19691,11 @@ class EmbeddedSGLangRuntime:
         self._pending_predictive_prepare_event_sequence = 0
         self._pending_predictive_prepare_created_ts_ms = None
         self._last_published_predictive_prepare_event_sequence = 0
+        getattr(
+            self, "_predictive_reentry_watch_invocation_ids", set()
+        ).clear()
+        self._last_predictive_reentry_watch_poll_ms = None
+        self._last_predictive_reentry_risk_signature = None
         self._online_joint_result = None
         self._online_joint_source = None
         self._online_joint_validation = None
@@ -19605,6 +20092,7 @@ class EmbeddedSGLangRuntime:
                         event_delta.events
                     )
                 )
+                self._update_predictive_reentry_watches(risk_trigger_signature)
                 prepare_risk_triggers = tuple(
                     item
                     for item in risk_trigger_signature

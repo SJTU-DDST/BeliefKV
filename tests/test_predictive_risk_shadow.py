@@ -2738,3 +2738,66 @@ def test_action_certificate_ignores_unrelated_global_revision() -> None:
             current_transfer_epoch=7,
         )
     )
+
+
+def test_prefetch_overlay_forces_reclaim_pair_despite_effective_free_hbm() -> None:
+    observer = PredictiveRiskShadowObserver.__new__(
+        PredictiveRiskShadowObserver
+    )
+    observer.config = SimpleNamespace(max_candidates=8)
+    policy_input = _input(capacity=1_000, reserved=0)
+    target = policy_input.runnable_frontier[0]
+    metadata = dict(policy_input.optional_metadata)
+    metadata["beliefkv_action_local_physical_overlay"] = MetadataValue(
+        MetadataSource.OBSERVED,
+        {
+            "overlays": (
+                {
+                    "context_id": target.context_id,
+                    "h2d_copy_bytes": 300,
+                    "evidence_kind": "prefetch_target_preview",
+                },
+                {
+                    "context_id": "ctx-victim",
+                    "exclusive_reclaimable_bytes": 256,
+                    "evidence_kind": "commit_ready_summary",
+                },
+            )
+        },
+        "test",
+    )
+    policy_input = replace(policy_input, optional_metadata=metadata)
+    eligibility = PredictiveEligibility(
+        source_snapshot_id="snapshot",
+        prefetch_targets=(
+            PrefetchTarget(
+                target.invocation_id,
+                target.context_id,
+                "WAIT_TOOL",
+                300,
+            ),
+        ),
+        prepare_host_victims=(),
+        probe_ms=0.0,
+        reclaim_ready_victims=(
+            ReclaimReadyVictim(
+                "invocation-victim",
+                "ctx-victim",
+                0,
+                "WAIT_TOOL",
+                256,
+                "summary:ctx-victim:e0:r7",
+            ),
+        ),
+    )
+
+    packages = observer._candidate_packages(
+        policy_input,
+        SimpleNamespace(plan_id="plan"),
+        eligibility,
+    )
+
+    funded = packages[-1]
+    assert funded.action == PredictiveActionKind.RECLAIM_AND_PREFETCH
+    assert funded.byte_budget == 256
+    assert funded.victim_context_ids == ("ctx-victim",)

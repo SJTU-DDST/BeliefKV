@@ -1424,6 +1424,21 @@ def test_action_local_overlay_prefetches_parked_cpu_context_not_beneficiary():
     assert reentry_batch.overlays[0].context_id == "target-context"
     assert reentry_batch.overlays[0].h2d_copy_bytes == 400
     assert reentry_batch.victim_count == 0
+    summaries["victim-context"].cpu_bytes = 500
+    summaries["victim-context"].d2h_copy_upper_bound_bytes = 0
+    funded_reentry = (
+        runtime._capture_reentry_action_local_physical_overlay_batch(
+            (("reentry", "predicted_latest_start", "target", 2),),
+            observation,
+        )
+    )
+    assert funded_reentry is not None
+    assert tuple(item.context_id for item in funded_reentry.overlays) == (
+        "target-context",
+        "victim-context",
+    )
+    assert funded_reentry.overlays[1].evidence_kind == "commit_ready_summary"
+    assert funded_reentry.overlays[1].exclusive_reclaimable_bytes == 500
 
 
 def test_live_prepare_certificate_defers_physical_revision_to_commit():
@@ -11460,6 +11475,197 @@ def test_beneficiary_probes_share_running_growth_but_preserve_chunked_exclusion(
 
     assert chunked_probe.projected_running_growth_bytes == 16
     assert other_probe.projected_running_growth_bytes == 96
+
+
+def test_predictive_reentry_watch_lifecycle_is_independent_of_beneficiary():
+    runtime = EmbeddedSGLangRuntime.__new__(EmbeddedSGLangRuntime)
+    runtime._predictive_reentry_watch_invocation_ids = set()
+
+    runtime._update_predictive_reentry_watches(
+        (("prepare", "tool_start", "invocation", 3),)
+    )
+    assert runtime._predictive_reentry_watch_invocation_ids == {"invocation"}
+
+    runtime._update_predictive_reentry_watches(
+        (("reentry", "tool_end", "invocation", 3),)
+    )
+    assert runtime._predictive_reentry_watch_invocation_ids == set()
+
+
+def test_predicted_reentry_publishes_one_bounded_risk_delta_without_beneficiary():
+    runtime = EmbeddedSGLangRuntime.__new__(EmbeddedSGLangRuntime)
+    invocation = SimpleNamespace(
+        invocation_id="invocation",
+        context_id="context",
+        state=InvocationState.WAIT_TOOL,
+        updated_ts_ms=100.0,
+    )
+    context = SimpleNamespace(epoch=3)
+    summary = SimpleNamespace(
+        physical_unique_bytes=400,
+        gpu_bytes=0,
+        cpu_bytes=400,
+        extent_count=2,
+    )
+    page_index = SimpleNamespace(
+        revision=19,
+        topology_revision=7,
+        has_context=lambda context_id: context_id == "context",
+        context_epoch=lambda _context_id: 3,
+        context_revision=lambda _context_id: 11,
+        context_physical_summary=lambda _context_id: summary,
+    )
+    timing = SimpleNamespace(
+        informative=True,
+        decision_threshold=0.5,
+        favorable_probability=0.8,
+    )
+    prediction = SimpleNamespace(
+        action_timing=lambda action, _tau: (
+            timing if action == "prefetch_gpu" else None
+        ),
+        to_dict=lambda: {"support_level": "exact"},
+    )
+    features = SimpleNamespace(to_dict=lambda: {"state": "wait_tool"})
+    frontier_model = SimpleNamespace(
+        model_version="frontier-test",
+        predict=lambda _features: prediction,
+    )
+    overlay = ActionLocalPhysicalOverlay(
+        context_id="context",
+        context_epoch=3,
+        context_revision=11,
+        page_revision=19,
+        topology_revision=7,
+        generation_fingerprint="generation",
+        shape_fingerprint="prefetch:400:n2",
+        exclusive_reclaimable_bytes=0,
+        d2h_copy_bytes=0,
+        extent_count=2,
+        cross_context_bytes=0,
+        locked_bytes=0,
+        owner_context_ids=("context",),
+        blocker_codes=(),
+        native_loading=False,
+        captured_ts_ms=1_000.0,
+        h2d_copy_bytes=400,
+        evidence_kind="prefetch_target_preview",
+    )
+    overlay_batch = ActionLocalPhysicalOverlayBatch(
+        beneficiary_risk_signature=(),
+        opportunity=None,
+        overlays=(overlay,),
+        reentry_context_ids=("context",),
+    )
+    runtime.controller = SimpleNamespace(
+        graph=SimpleNamespace(
+            invocations={"invocation": invocation},
+            contexts={"context": context},
+        ),
+        page_index=page_index,
+        predictor=SimpleNamespace(
+            frontier_model=frontier_model,
+            features={},
+        ),
+        service_curve=SimpleNamespace(
+            estimate=lambda *_args, **_kwargs: SimpleNamespace(
+                shape_supported=True,
+                estimated_completion_p90_ms=200.0,
+            )
+        ),
+    )
+    runtime.config = SimpleNamespace(
+        predictive_risk_shadow_enabled=True,
+        predictive_commit_guard_ms=25.0,
+        predictive_prefetch_desired_lead_ms=100.0,
+        reference_policy_hbm_bucket_bytes=64,
+        joint_policy_enabled=False,
+    )
+    runtime.predictive_risk_worker = object()
+    runtime.audit = _AuditRecorder()
+    runtime._joint_shadow_counts = Counter()
+    runtime._joint_predictive_counts = Counter()
+    runtime._joint_shadow_timing_samples = {
+        "snapshot_enqueue_ms": deque(maxlen=16),
+    }
+    runtime._predictive_reentry_watch_invocation_ids = {"invocation"}
+    runtime._last_predictive_reentry_watch_poll_ms = None
+    runtime._last_predictive_reentry_risk_signature = None
+    runtime._shadow_event_sequence = 5
+    runtime._shadow_page_revision = 9
+    runtime._shadow_topology_revision = 7
+    runtime._last_policy_state_stamp = JointShadowStateStamp(
+        graph_version=4,
+        consumer_version=2,
+        event_sequence=5,
+        page_revision=9,
+        topology_revision=7,
+        fairness_revision=1,
+        transfer_epoch=0,
+        runnable_signature=(),
+        hbm_used_bytes=800,
+        host_free_bytes=1_000,
+    )
+    runtime._latest_bounded_seed_runnable = ()
+    runtime._last_policy_runtime_runnable = ()
+    runtime._last_policy_fairness_accounts = ()
+    runtime._last_policy_external_workflow_charges = ()
+    runtime._last_policy_control_state = {}
+    runtime._last_policy_capabilities = CapabilityReport(
+        runtime_name="test",
+        runtime_version="test",
+        supported_residency_actions=frozenset(),
+        execution_order_control=True,
+        admission_control=True,
+        transfer_dependencies=True,
+        native_identity_mapping=True,
+    )
+    runtime._latest_observed_seed_beneficiary = None
+    runtime._last_frontier_features = {}
+    runtime._last_frontier_predictions = {}
+    runtime._current_native_available_hbm_bytes = 200
+    runtime._capture_reentry_action_local_physical_overlay_batch = (
+        lambda _triggers, _observation: overlay_batch
+    )
+    submitted = []
+    worker = SimpleNamespace(
+        submit_delta=lambda delta: (
+            submitted.append(delta)
+            or SimpleNamespace(
+                sequence=1,
+                enqueue_ms=0.01,
+                replaced_sequence=None,
+            )
+        )
+    )
+    observation = RuntimeResourceObservation(
+        ts_ms=1_000.0,
+        hbm_capacity_bytes=1_000,
+        hbm_used_bytes=800,
+        host_capacity_bytes=2_000,
+        host_used_bytes=400,
+        host_free_bytes=1_600,
+    )
+
+    with mock.patch(
+        "beliefkv.runtime.sglang_v052rc1.build_invocation_frontier_features",
+        return_value={"invocation": features},
+    ):
+        assert runtime._maybe_publish_predicted_reentry_risk_delta(
+            worker, observation=observation
+        )
+        assert not runtime._maybe_publish_predicted_reentry_risk_delta(
+            worker, observation=replace(observation, ts_ms=1_050.0)
+        )
+
+    assert len(submitted) == 1
+    delta = submitted[0]
+    assert delta.risk_evaluation_requested
+    assert delta.observed_seed_beneficiary is None
+    assert delta.risk_trigger_signature == (
+        ("reentry", "predicted_latest_start", "invocation", 3),
+    )
+    assert delta.action_local_overlay_batch is overlay_batch
 
 
 if __name__ == "__main__":

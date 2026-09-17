@@ -3798,6 +3798,7 @@ class PredictiveRiskShadowObserver:
         request_by_invocation = {
             item.invocation_id: item for item in policy_input.runnable_frontier
         }
+        action_local_overlay = _action_local_physical_overlay(policy_input)
         prefetch_byte_budget = max(
             0,
             policy_input.resources.hbm_capacity_bytes
@@ -3819,8 +3820,25 @@ class PredictiveRiskShadowObserver:
                 ),
                 None,
             )
+            target_overlay = action_local_overlay.get(target.context_id, {})
+            victim_overlay = (
+                action_local_overlay.get(reclaim_victim.context_id, {})
+                if reclaim_victim is not None
+                else {}
+            )
+            physical_reclaim_pair = bool(
+                int(target_overlay.get("h2d_copy_bytes", 0)) > 0
+                and victim_overlay.get("evidence_kind")
+                == "commit_ready_summary"
+                and int(
+                    victim_overlay.get("exclusive_reclaimable_bytes", 0)
+                ) > 0
+            )
             funded_budget = prefetch_byte_budget
-            if (
+            if physical_reclaim_pair and reclaim_victim is not None:
+                funded_budget = reclaim_victim.reclaimable_bytes
+                action = PredictiveActionKind.RECLAIM_AND_PREFETCH
+            elif (
                 target.missing_gpu_bytes > prefetch_byte_budget
                 and reclaim_victim is not None
             ):
