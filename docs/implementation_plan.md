@@ -142,6 +142,46 @@ A run with high HBM but no beneficiary/reentry-bound opportunity is
 characterization, not a negative or positive performance result. Report model
 quality separately from action utilization and throughput.
 
+## P4.5: Deferred Dynamic Running Target
+
+Do not change the runtime profile used by the current frozen P3/P4 experiment.
+After the PREFETCH transaction, shutdown, and attribution gates pass, evaluate
+a fixed physical limit with a runtime-selected soft target:
+
+- start SGLang with `max_running_requests=48` and CUDA Graph coverage through
+  batch 48;
+- keep initialized request/token pools fixed for the lifetime of the server;
+- let JointPlan choose a soft running target from `{32, 48}`;
+- expand toward 48 only when GPU-ready backlog exists and the projected HBM
+  envelope (resident KV, startup demand, calibrated growth, restore/funding
+  obligations, and safety margin) remains feasible;
+- on projected HBM pressure, stop new admission and drain naturally toward 32;
+- do not retract a running request merely because a pressure threshold was
+  crossed. Reclaim parked KV only through a beneficiary-bound causal package,
+  and retract running work only when its measured value exceeds transfer and
+  restore debt;
+- use hysteresis and a minimum wall-time hold to prevent 32/48 oscillation.
+
+This is a secondary throughput optimization, not an explanation for the
+current P6 prediction-to-action gap. In the frozen baseline trace,
+`running >= 32 && waiting > 0` occupied about 11.40 minutes (4.89% of active
+time), including about 5.75 minutes below 70% HBM pressure. The measurable
+opportunity is therefore bounded and should be established by matched A/B,
+not assumed from the larger hard limit.
+
+Use four matched arms under the same hard-48/graph-48 runtime contract:
+
+1. fixed soft target 32, predictor off;
+2. fixed soft target 48, predictor off;
+3. dynamic soft target 32/48, predictor off;
+4. dynamic soft target 32/48 with P6 prediction enabled.
+
+The fixed-32 arm must still pay the graph-48 memory cost. Report saturated
+time, batch-size distribution, prefill/decode tokens per second, action/tool
+start throughput, HBM occupancy, transfer/retraction churn, and beneficiary
+first-service latency. Promote the optimization only when throughput improves
+without OOM, restore-liveness regression, or repeated target oscillation.
+
 ## P5: Decide The Prediction Branch
 
 Continue the current P6 branch only when at least one of the following holds:

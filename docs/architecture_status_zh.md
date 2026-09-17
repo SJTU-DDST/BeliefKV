@@ -319,6 +319,15 @@ shell 缺失的 `CUDA_HOME`。predictive risk/JointPlan/worker/attribution 定�
 6. Gate 中任何 stale/OOD/物理化失败均回退 P5；不通过降低收益阈值制造动作。
 7. PREPARE/PREFETCH 各自完成真实 beneficiary 消费后，再按 execution reorder、提前
    D2H、deficit-time COMMIT 和 latest-start H2D 分解收益，最后启动冻结 baseline/P6 A/B。
+8. 当前 PREFETCH、shutdown 和归因 gate 通过后，再评估“固定物理上限 48、动态软目标
+   `{32,48}`”：低 HBM 压力且存在 GPU-ready backlog 时扩展到 48；预测到 HBM 压力时
+   停止新 admission 并自然排空到 32，不因阈值直接撤回 running request；parked KV 仍只
+   通过 beneficiary-bound causal package 回收。该优化不得修改当前冻结实验。
+
+该项属于后续吞吐优化，而不是当前 prediction-to-action gap 的替代解释。冻结 baseline 中，
+`running >= 32 && waiting > 0` 约占 active time 的 4.89%（11.40 分钟），其中约 5.75 分钟
+处于低于 70% HBM pressure 的状态；因此可能存在增益，但预期应通过统一 hard-48/graph-48
+契约下的 fixed-32、fixed-48、dynamic-32/48 和 dynamic-32/48+P6 配对实验裁决。
 
 执行细节见 `docs/implementation_plan.md`。
 
