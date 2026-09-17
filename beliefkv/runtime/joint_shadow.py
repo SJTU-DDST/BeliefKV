@@ -217,11 +217,12 @@ class ObservedSeedBeneficiaryHint:
 
 @dataclass(frozen=True)
 class ActionLocalPhysicalOverlayBatch:
-    """Latest bounded live physical evidence for one beneficiary risk key."""
+    """Latest bounded physical evidence for one action-local risk key."""
 
     beneficiary_risk_signature: tuple[object, ...]
-    opportunity: BeneficiaryOpportunityProbe
+    opportunity: BeneficiaryOpportunityProbe | None
     overlays: tuple[ActionLocalPhysicalOverlay, ...] = ()
+    reentry_context_ids: tuple[str, ...] = ()
     selection_reason: str | None = None
     capture_ms: float = 0.0
     parked_context_count: int = 0
@@ -229,17 +230,22 @@ class ActionLocalPhysicalOverlayBatch:
     mechanism_capture_forced: bool = False
 
     def __post_init__(self) -> None:
-        if not self.beneficiary_risk_signature:
-            raise ValueError("overlay batch requires a beneficiary signature")
-        if self.beneficiary_risk_signature[0] != (
-            self.opportunity.beneficiary_request_id
-        ):
-            raise ValueError("overlay batch beneficiary does not match its probe")
+        if not self.beneficiary_risk_signature and not self.reentry_context_ids:
+            raise ValueError("overlay batch requires a beneficiary or reentry target")
+        if self.beneficiary_risk_signature:
+            if self.opportunity is None:
+                raise ValueError("beneficiary overlay requires an opportunity probe")
+            if self.beneficiary_risk_signature[0] != (
+                self.opportunity.beneficiary_request_id
+            ):
+                raise ValueError("overlay batch beneficiary does not match its probe")
+        elif self.opportunity is not None:
+            raise ValueError("reentry-only overlay cannot carry a beneficiary probe")
         if len(self.overlays) > 3:
             raise ValueError("overlay batch supports one target and two victims")
         context_ids = tuple(item.context_id for item in self.overlays)
         if len(context_ids) != len(set(context_ids)):
-            raise ValueError("overlay victim contexts must be unique")
+            raise ValueError("overlay contexts must be unique")
         if self.capture_ms < 0:
             raise ValueError("overlay capture time must be non-negative")
         if self.parked_context_count < 0 or self.summarized_context_count < 0:
@@ -248,14 +254,24 @@ class ActionLocalPhysicalOverlayBatch:
             raise ValueError("summarized contexts cannot exceed parked contexts")
         if self.selection_reason is not None and not self.selection_reason:
             raise ValueError("overlay selection reason must be non-empty")
+        if len(self.reentry_context_ids) != len(set(self.reentry_context_ids)):
+            raise ValueError("overlay reentry contexts must be unique")
+        object.__setattr__(
+            self, "reentry_context_ids", tuple(sorted(self.reentry_context_ids))
+        )
 
     def to_dict(self) -> dict[str, object]:
         return {
             "beneficiary_risk_signature": list(
                 self.beneficiary_risk_signature
             ),
-            "opportunity": self.opportunity.to_dict(),
+            "opportunity": (
+                self.opportunity.to_dict()
+                if self.opportunity is not None
+                else {}
+            ),
             "overlays": [item.to_dict() for item in self.overlays],
+            "reentry_context_ids": list(self.reentry_context_ids),
             "selection_reason": self.selection_reason,
             "capture_ms": self.capture_ms,
             "parked_context_count": self.parked_context_count,
@@ -269,6 +285,7 @@ class ActionLocalPhysicalOverlayBatch:
             item.evidence_kind != "prefetch_target_preview"
             for item in self.overlays
         )
+
 
 
 @dataclass(frozen=True)
@@ -959,10 +976,15 @@ class IncrementalPolicyInputAssembler:
             )
         overlay_batch = self._action_local_overlay_batch
         if (
-            delta.observed_seed_beneficiary is not None
-            and overlay_batch is not None
-            and overlay_batch.beneficiary_risk_signature
-            == delta.observed_seed_beneficiary.risk_signature
+            overlay_batch is not None
+            and (
+                bool(overlay_batch.reentry_context_ids)
+                or (
+                    delta.observed_seed_beneficiary is not None
+                    and overlay_batch.beneficiary_risk_signature
+                    == delta.observed_seed_beneficiary.risk_signature
+                )
+            )
         ):
             metadata["beliefkv_action_local_physical_overlay"] = MetadataValue(
                 source=MetadataSource.OBSERVED,
@@ -1218,9 +1240,11 @@ class IncrementalPolicyInputAssembler:
         if overlay_rows:
             victim_context_ids = tuple(
                 str(raw.get("context_id"))
-                for raw in overlay_rows[:max_victims]
+                for raw in overlay_rows
                 if raw.get("context_id")
-            )
+                and str(raw.get("evidence_kind") or "")
+                != "prefetch_target_preview"
+            )[:max_victims]
         else:
             for context_id in parked_contexts:
                 if (
@@ -1267,6 +1291,28 @@ class IncrementalPolicyInputAssembler:
                 if risk_class == "reentry"
             )
         )
+        authoritative_reentry_ids = {
+            str(context_id)
+            for context_id in overlay_batch.get("reentry_context_ids", ())
+            if context_id
+        }
+        if authoritative_reentry_ids:
+            missing_reentry_ids = (
+                set(reentry_context_ids)
+                - {
+                    str(raw.get("context_id"))
+                    for raw in overlay_rows
+                    if raw.get("context_id")
+                    and int(raw.get("h2d_copy_bytes", 0)) > 0
+                }
+            )
+            if missing_reentry_ids:
+                return (
+                    policy_input,
+                    False,
+                    overlay_selection_reason
+                    or "reentry_physical_overlay_unavailable",
+                )
         if not victim_context_ids and not reentry_context_ids:
             reason = overlay_selection_reason
             if reason is None:
@@ -1326,8 +1372,9 @@ class IncrementalPolicyInputAssembler:
                 context_id
                 for context_id in reentry_context_ids
                 if context_id not in overlay_context_ids
+                and context_id not in authoritative_reentry_ids
             )
-            if overlay_rows
+            if overlay_is_authoritative
             else context_ids
         )
         bundles = (

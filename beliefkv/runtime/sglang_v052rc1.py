@@ -17623,6 +17623,121 @@ class EmbeddedSGLangRuntime:
             max_running_requests=max_running,
         )
 
+    def _capture_reentry_action_local_physical_overlay_batch(
+        self,
+        risk_triggers: tuple[tuple[str, str, str, int], ...],
+        observation: RuntimeResourceObservation,
+    ) -> ActionLocalPhysicalOverlayBatch | None:
+        """Capture bounded live H2D evidence for the contexts that reentered."""
+
+        started_ns = time.perf_counter_ns()
+        graph = self.controller.graph
+        page_index = self.controller.page_index
+        context_ids: list[str] = []
+        for risk_class, _event_kind, invocation_id, context_epoch in risk_triggers:
+            if risk_class != "reentry":
+                continue
+            invocation = graph.invocations.get(invocation_id)
+            context = (
+                graph.contexts.get(invocation.context_id)
+                if invocation is not None
+                else None
+            )
+            if invocation is None or context is None or context.epoch != context_epoch:
+                continue
+            if invocation.context_id not in context_ids:
+                context_ids.append(invocation.context_id)
+            if len(context_ids) == 3:
+                break
+        if not context_ids:
+            return None
+
+        overlays: list[ActionLocalPhysicalOverlay] = []
+        failure_reasons: set[str] = set()
+        for context_id in context_ids:
+            context = graph.contexts.get(context_id)
+            if (
+                context is None
+                or not page_index.has_context(context_id)
+                or page_index.context_epoch(context_id) != context.epoch
+            ):
+                failure_reasons.add("reentry_context_not_live")
+                continue
+            previews = self.controller.arbiter.bundle_builder.previews_for_context(
+                CommandKind.PREFETCH_CONTEXT,
+                context_id,
+                context.epoch,
+                now_ms=observation.ts_ms,
+                device_available_bytes=observation.hbm_capacity_bytes,
+            )
+            candidates = tuple(
+                preview
+                for preview in previews
+                if preview.eligible and preview.copy_bytes > 0
+            )
+            if not candidates:
+                failure_reasons.add("reentry_no_prefetchable_cpu_bytes")
+                continue
+            preview = min(
+                candidates,
+                key=lambda item: (
+                    item.bundle.cross_context_action_bytes,
+                    item.copy_bytes,
+                    len(item.page_actions),
+                    item.bundle.bundle_id,
+                ),
+            )
+            overlays.append(
+                ActionLocalPhysicalOverlay(
+                    context_id=context_id,
+                    context_epoch=context.epoch,
+                    context_revision=page_index.context_revision(context_id),
+                    page_revision=page_index.revision,
+                    topology_revision=page_index.topology_revision,
+                    generation_fingerprint=preview.bundle.generation_fingerprint,
+                    shape_fingerprint=(
+                        f"reentry-prefetch:{preview.copy_bytes}:"
+                        f"n{len(preview.page_actions)}"
+                    ),
+                    exclusive_reclaimable_bytes=0,
+                    d2h_copy_bytes=0,
+                    extent_count=len(preview.page_actions),
+                    cross_context_bytes=(
+                        preview.bundle.cross_context_action_bytes
+                    ),
+                    locked_bytes=preview.bundle.locked_bytes,
+                    owner_context_ids=preview.bundle.owner_context_ids,
+                    blocker_codes=tuple(
+                        blocker.code.value for blocker in preview.blockers
+                    ),
+                    native_loading=False,
+                    captured_ts_ms=observation.ts_ms,
+                    h2d_copy_bytes=preview.copy_bytes,
+                    evidence_kind="prefetch_target_preview",
+                )
+            )
+        selection_reason = None
+        if len(overlays) != len(context_ids):
+            selection_reason = next(
+                (
+                    reason
+                    for reason in (
+                        "reentry_context_not_live",
+                        "reentry_no_prefetchable_cpu_bytes",
+                    )
+                    if reason in failure_reasons
+                ),
+                "reentry_physical_overlay_unavailable",
+            )
+        return ActionLocalPhysicalOverlayBatch(
+            beneficiary_risk_signature=(),
+            opportunity=None,
+            overlays=tuple(overlays),
+            reentry_context_ids=tuple(context_ids),
+            selection_reason=selection_reason,
+            capture_ms=(time.perf_counter_ns() - started_ns) / 1_000_000.0,
+        )
+
     def _capture_action_local_physical_overlay_batch(
         self,
         hint: ObservedSeedBeneficiaryHint,
@@ -18819,9 +18934,34 @@ class EmbeddedSGLangRuntime:
                 self._joint_predictive_counts[
                     "prepare_event_alignment_latched"
                 ] += 1
+            predictive_worker = getattr(self, "predictive_risk_worker", None)
+            reentry_overlay_batch = None
+            if reentry_risk_triggers and predictive_worker is not None:
+                reentry_overlay_batch = (
+                    self._capture_reentry_action_local_physical_overlay_batch(
+                        reentry_risk_triggers, observation
+                    )
+                )
+                if reentry_overlay_batch is not None:
+                    self._joint_predictive_counts[
+                        "reentry_overlay_capture"
+                    ] += 1
+                    self._joint_shadow_timing_samples.setdefault(
+                        "reentry_overlay_capture_ms", deque(maxlen=65_536)
+                    ).append(reentry_overlay_batch.capture_ms)
+                    if reentry_overlay_batch.overlays:
+                        self._joint_predictive_counts[
+                            "reentry_overlay_target_count"
+                        ] += len(reentry_overlay_batch.overlays)
+                    elif reentry_overlay_batch.selection_reason:
+                        self._joint_predictive_counts[
+                            "reentry_overlay_unavailable:"
+                            + reentry_overlay_batch.selection_reason
+                        ] += 1
             risk_evaluation_requested = bool(
                 reentry_risk_triggers
-                and getattr(self, "predictive_risk_worker", None) is not None
+                and predictive_worker is not None
+                and reentry_overlay_batch is not None
             )
             base_stamp = self._last_policy_state_stamp
             page_delta = PageIndexReplicaDelta(
@@ -18881,6 +19021,10 @@ class EmbeddedSGLangRuntime:
                 risk_trigger_signature=risk_trigger_signature,
                 observed_seed_beneficiary=(
                     getattr(self, "_latest_observed_seed_beneficiary", None)
+                ),
+                action_local_overlay_batch=reentry_overlay_batch,
+                action_local_overlay_replaced=(
+                    reentry_overlay_batch is not None
                 ),
                 source_page_revision=self.controller.page_index.revision,
                 source_topology_revision=self.controller.page_index.topology_revision,

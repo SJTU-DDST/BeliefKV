@@ -498,6 +498,73 @@ def test_semantic_delta_preserves_physical_and_telemetry_cursors():
     assert delta.observation.policy_hbm_used_bytes == 200
     assert delta.stamp.hbm_used_bytes == 200
 
+    reentry_event = RuntimeEvent(
+        "tool-end",
+        3.0,
+        RuntimeEventKind.TOOL_END,
+        "workflow",
+        invocation_id="invocation",
+        context_id="ctx",
+        context_epoch=0,
+        attributes={"tool_call_id": "tool-call", "tool_name": "shell"},
+    )
+    reentry_events = SimpleNamespace(
+        from_sequence=2,
+        to_sequence=3,
+        events=(reentry_event,),
+        full_rebuild_required=False,
+    )
+    reentry_overlay = ActionLocalPhysicalOverlayBatch(
+        beneficiary_risk_signature=(),
+        opportunity=None,
+        overlays=(
+            ActionLocalPhysicalOverlay(
+                context_id="ctx",
+                context_epoch=0,
+                context_revision=4,
+                page_revision=18,
+                topology_revision=11,
+                generation_fingerprint="reentry-generation",
+                shape_fingerprint="reentry-prefetch:100:n1",
+                exclusive_reclaimable_bytes=0,
+                d2h_copy_bytes=0,
+                extent_count=1,
+                cross_context_bytes=0,
+                locked_bytes=0,
+                owner_context_ids=("ctx",),
+                blocker_codes=(),
+                native_loading=False,
+                captured_ts_ms=3.0,
+                h2d_copy_bytes=100,
+                evidence_kind="prefetch_target_preview",
+            ),
+        ),
+        reentry_context_ids=("ctx",),
+    )
+    runtime.controller.runtime_event_sequence = 3
+    runtime.controller.runtime_events_since = lambda revision: (
+        reentry_events if revision == 2 else None
+    )
+    runtime.controller.graph.graph_version = 3
+    runtime._joint_shadow_predictive_risk_triggers = lambda _events: (
+        ("reentry", "tool_end", "invocation", 0),
+    )
+    runtime._capture_reentry_action_local_physical_overlay_batch = (
+        lambda _triggers, _observation: reentry_overlay
+    )
+
+    assert runtime._publish_joint_semantic_delta(
+        replace(observation, ts_ms=3.0),
+        worker,
+        capture_started_ns=0,
+    )
+
+    reentry_delta = submitted[1]
+    assert reentry_delta.risk_evaluation_requested
+    assert reentry_delta.action_local_overlay_replaced
+    assert reentry_delta.action_local_overlay_batch is reentry_overlay
+    assert reentry_delta.page_delta.pages == ()
+
 
 def test_bounded_seed_hint_change_publishes_one_lightweight_risk_delta():
     runtime = EmbeddedSGLangRuntime.__new__(EmbeddedSGLangRuntime)
@@ -1344,6 +1411,19 @@ def test_action_local_overlay_prefetches_parked_cpu_context_not_beneficiary():
     )
     assert batch.overlays[0].h2d_copy_bytes == 400
     assert batch.victim_count == 1
+
+    reentry_batch = runtime._capture_reentry_action_local_physical_overlay_batch(
+        (("reentry", "join_satisfied", "target", 2),),
+        observation,
+    )
+    assert reentry_batch is not None
+    assert reentry_batch.beneficiary_risk_signature == ()
+    assert reentry_batch.opportunity is None
+    assert reentry_batch.reentry_context_ids == ("target-context",)
+    assert len(reentry_batch.overlays) == 1
+    assert reentry_batch.overlays[0].context_id == "target-context"
+    assert reentry_batch.overlays[0].h2d_copy_bytes == 400
+    assert reentry_batch.victim_count == 0
 
 
 def test_live_prepare_certificate_defers_physical_revision_to_commit():

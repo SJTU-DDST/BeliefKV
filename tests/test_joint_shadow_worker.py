@@ -1267,17 +1267,41 @@ def test_reentry_risk_materializes_without_prepare_beneficiary() -> None:
     metadata["beliefkv_action_local_physical_overlay"] = MetadataValue(
         source=MetadataSource.OBSERVED,
         value={
-            "overlays": (),
-            "opportunity": {
-                "hbm_opportunity_possible": False,
-                "beneficiary_slot_blocked": False,
-            },
-            "selection_reason": "beneficiary_capacity_available",
+            "overlays": (
+                {
+                    "context_id": "ctx",
+                    "context_epoch": 0,
+                    "context_revision": 1,
+                    "page_revision": 1,
+                    "topology_revision": 1,
+                    "generation_fingerprint": "live-reentry-generation",
+                    "shape_fingerprint": "reentry-prefetch:100:n1",
+                    "exclusive_reclaimable_bytes": 0,
+                    "d2h_copy_bytes": 0,
+                    "h2d_copy_bytes": 100,
+                    "extent_count": 1,
+                    "cross_context_bytes": 0,
+                    "locked_bytes": 0,
+                    "owner_context_ids": ("ctx",),
+                    "blocker_codes": (),
+                    "native_loading": False,
+                    "captured_ts_ms": 2.0,
+                    "evidence_kind": "prefetch_target_preview",
+                },
+            ),
+            "reentry_context_ids": ("ctx",),
+            "opportunity": {},
+            "selection_reason": None,
         },
         producer="test",
     )
     policy_input = replace(policy_input, optional_metadata=metadata)
     source_plan = ObservedJointPlanner().plan(policy_input)
+    assembler.builder.targeted_context_bundles = (
+        lambda *_args, **_kwargs: pytest.fail(
+            "authoritative reentry overlay must bypass the stale page mirror"
+        )
+    )
 
     materialized, available, reason = assembler.materialize_predictive_candidates(
         policy_input, source_plan
@@ -1289,7 +1313,9 @@ def test_reentry_risk_materializes_without_prepare_beneficiary() -> None:
         "beliefkv_predictive_candidate_scope"
     ].value
     assert scope["reentry_context_ids"] == ("ctx",)
+    assert scope["victim_context_ids"] == ()
     assert scope["beneficiary_request_id"] is None
+    assert scope["physical_source"] == "action_local_overlay"
 
 
 def test_semantic_progress_does_not_erase_inflight_risk_trigger() -> None:
