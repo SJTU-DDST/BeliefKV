@@ -1,7 +1,7 @@
 # BeliefKV 当前架构与实现状态
 
 更新日期：2026-09-17
-当前 P6 代码基线：`54281c7`
+当前 P6 代码基线：`af1a0f9`
 
 本文只记录当前事实和下一阻塞项，不再追加逐日开发日志。2026-09-12 以前的完整历史保存在
 `docs/archive/snapshots/architecture_status_zh.md`，单次实验细节保存在
@@ -227,6 +227,30 @@ validation-to-latest-start 已完成短高压 gate 验证：40-root 运行中 HB
 package，最终 8 次选择 PREPARE，其中 7 次在 latest-start 前完成验证。worker 为
 515 submitted / 515 completed / 0 failed / 0 pending。详细结果见
 `docs/experiments/beliefkv_p6_event_aligned_high_pressure_shadow40_2026-09-16_zh.md`。
+
+### 5.2 2026-09-17 schema-v5 在线 demand 接口修复
+
+代码审计确认：schema-v5 的离线 train/calibration 与 predictive worker 候选局部推理已经
+生效，但 bounded observed seed 过去只在旧 retraction predictor 开关启用时填充
+`_last_frontier_predictions`。正式 P6 配置关闭该开关，因此 beneficiary hint 会退化为
+`max_new_tokens=4096` 的静态 demand 上限，导致 beneficiary future-deficit、victim capture
+和 latest-start 不能代表 schema-v5 输出。此前 GPU 结果可用于验证物理机制和 HBM 观测，
+不能用于声称 schema-v5 demand 已经驱动在线动作。
+
+`af1a0f9` 将 bounded seed 的预测接口改为 action-local、缓存化推理：
+
+- 只检查 seed 排名前四且仍 deferred 的 invocation；
+- 以 invocation state、boundary history、context/generated tokens 和 tool backend/command
+  组成紧凑特征签名；
+- 特征不变时复用预测，只有候选或特征变化时调用 schema-v5；
+- 将 remaining decode P90、next output P50、support/OOD 回填到 runnable 与 beneficiary hint；
+- predictive worker 继续对完整候选 closure 独立推理，safe point 不恢复全局 invocation 推理。
+
+新增 `bounded_seed_prediction_ms/inferred/cache_hit/failed` 观测。定向 adapter 测试为
+`5 passed`，P6 predictive 回归为 `68 passed`；完整 adapter 的 2 项失败仅因为当前 shell
+没有 `CUDA_HOME`，其余 `174 passed, 8 subtests passed`。下一次长高压 gate 必须确认
+在线 hint 的 `prediction_support_level` 不再为 `unavailable`，并覆盖完整
+`PREFETCH_GPU -> H2D ACK -> service lease -> first GPU service` 路径。
 
 ## 6. 当前阻塞项
 
