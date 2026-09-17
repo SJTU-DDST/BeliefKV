@@ -18143,7 +18143,9 @@ class EmbeddedSGLangRuntime:
         observation: RuntimeResourceObservation | None = None,
     ) -> bool:
         publication_started_ns = time.perf_counter_ns()
-        observation = observation or self._runtime_resource_observation()
+        observation = self._joint_shadow_effective_observation(
+            observation or self._runtime_resource_observation()
+        )
         candidates = tuple(
             getattr(self, "_latest_observed_seed_beneficiary_candidates", ())
         )
@@ -18567,6 +18569,8 @@ class EmbeddedSGLangRuntime:
     ) -> bool:
         """Advance the worker's causal mirror without copying physical state."""
 
+        observation = self._joint_shadow_effective_observation(observation)
+
         if (
             self.controller.runtime_event_sequence
             <= self._shadow_event_sequence
@@ -18642,6 +18646,8 @@ class EmbeddedSGLangRuntime:
                 graph_version=self.controller.graph.graph_version,
                 consumer_version=self.controller.data_consumers.version,
                 event_sequence=event_delta.to_sequence,
+                hbm_used_bytes=observation.hbm_used_bytes,
+                host_free_bytes=observation.host_free_bytes,
                 parser_frontier_revision=(
                     self.controller.action_frontier_observer.revision
                 ),

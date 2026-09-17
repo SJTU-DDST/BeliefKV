@@ -436,6 +436,7 @@ def test_semantic_delta_preserves_physical_and_telemetry_cursors():
         hbm_used_bytes=100,
         host_free_bytes=200,
     )
+    runtime._current_native_available_hbm_bytes = 800
     runtime._frontier_feature_delta = lambda *_args, **_kwargs: (
         (),
         {},
@@ -492,6 +493,8 @@ def test_semantic_delta_preserves_physical_and_telemetry_cursors():
     assert runtime._last_policy_state_stamp.event_sequence == 2
     assert delta.source_page_revision == 17
     assert delta.source_topology_revision == 11
+    assert delta.observation.hbm_used_bytes == 200
+    assert delta.stamp.hbm_used_bytes == 200
 
 
 def test_bounded_seed_hint_change_publishes_one_lightweight_risk_delta():
@@ -559,6 +562,7 @@ def test_bounded_seed_hint_change_publishes_one_lightweight_risk_delta():
         ),
         _last_frontier_model_version="frontier-test",
         predictive_risk_worker=object(),
+        _current_native_available_hbm_bytes=800,
     )
     runtime._capture_action_local_physical_overlay_batch = (
         lambda hint, observation, **_kwargs: ActionLocalPhysicalOverlayBatch(
@@ -629,6 +633,8 @@ def test_bounded_seed_hint_change_publishes_one_lightweight_risk_delta():
     assert submitted[0].page_delta.pages == ()
     assert submitted[0].observed_seed_beneficiary.published_ts_ms == 5.0
     assert submitted[0].source_page_revision == 17
+    assert submitted[0].observation.hbm_used_bytes == 200
+    assert submitted[0].stamp.hbm_used_bytes == 200
 
     prepare_trigger = (("prepare", "tool_start", "victim", 0),)
     runtime._pending_predictive_prepare_triggers = prepare_trigger
