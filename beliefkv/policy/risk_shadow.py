@@ -4456,6 +4456,9 @@ class _OnlineCandidatePhysicalizer:
     def _target_restore_extent_count(self, context_id: str | None) -> int:
         if not context_id:
             return 0
+        overlay = self._overlay_by_context.get(context_id)
+        if overlay is not None and int(overlay.get("h2d_copy_bytes", 0)) > 0:
+            return max(1, int(overlay.get("extent_count", 0)))
         return sum(
             1
             for bundle in self._context_bundles.get(context_id, ())
@@ -4486,12 +4489,43 @@ class _OnlineCandidatePhysicalizer:
         budget = int(package.byte_budget or 0)
         key = (package.target_context_id, budget)
         if key not in self._prefetch_projections:
-            self._prefetch_projections[key] = _prefetch_prefix_projection(
-                self.policy_input.physical_kv.bundles,
-                package.target_context_id,
-                budget,
-                extent_index=self._extent_index,
+            overlay = self._overlay_by_context.get(package.target_context_id)
+            overlay_copy_bytes = (
+                int(overlay.get("h2d_copy_bytes", 0))
+                if overlay is not None
+                else 0
             )
+            if (
+                overlay_copy_bytes > 0
+                and overlay_copy_bytes <= budget
+                and self._target_actionable(package.target_context_id)
+            ):
+                generation = str(
+                    overlay.get("generation_fingerprint") or ""
+                )
+                extent_id = (
+                    f"overlay:{package.target_context_id}:{generation}"
+                )
+                self._prefetch_projections[key] = _PrefetchPrefixProjection(
+                    target_extent_id=extent_id,
+                    closure_extent_ids=(extent_id,),
+                    copy_bytes=overlay_copy_bytes,
+                    extent_count=max(1, int(overlay.get("extent_count", 0))),
+                    shape_fingerprint=str(
+                        overlay.get("shape_fingerprint") or ""
+                    ),
+                    cross_context_copy_bytes=min(
+                        overlay_copy_bytes,
+                        int(overlay.get("cross_context_bytes", 0)),
+                    ),
+                )
+            else:
+                self._prefetch_projections[key] = _prefetch_prefix_projection(
+                    self.policy_input.physical_kv.bundles,
+                    package.target_context_id,
+                    budget,
+                    extent_index=self._extent_index,
+                )
         return self._prefetch_projections[key]
 
     def prepare_byte_only_duration_ms(
@@ -5230,7 +5264,12 @@ class _OnlineCandidatePhysicalizer:
     def _target_restore_bytes(self, package: PredictiveActionPackage) -> int:
         if package.target_context_id is None:
             return 0
-        missing = self._context_bytes.get(package.target_context_id, (0, 0, 0))[1]
+        overlay = self._overlay_by_context.get(package.target_context_id)
+        missing = (
+            int(overlay.get("h2d_copy_bytes", 0))
+            if overlay is not None
+            else self._context_bytes.get(package.target_context_id, (0, 0, 0))[1]
+        )
         if package.action in {
             PredictiveActionKind.PARTIAL_PREFETCH_GPU,
             PredictiveActionKind.RECLAIM_AND_PREFETCH,
@@ -5240,6 +5279,14 @@ class _OnlineCandidatePhysicalizer:
         return missing
 
     def _target_actionable(self, context_id: str) -> bool:
+        overlay = self._overlay_by_context.get(context_id)
+        if overlay is not None:
+            return (
+                int(overlay.get("h2d_copy_bytes", 0)) > 0
+                and int(overlay.get("locked_bytes", 0)) == 0
+                and not bool(overlay.get("native_loading", False))
+                and not tuple(overlay.get("blocker_codes", ()))
+            )
         required = tuple(
             bundle
             for bundle in self._context_bundles.get(context_id, ())

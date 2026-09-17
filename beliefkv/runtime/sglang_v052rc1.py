@@ -21288,6 +21288,7 @@ class EmbeddedSGLangRuntime:
                 candidate_rejection_reason_counts=dict(
                     sorted(candidate_rejection_reasons.items())
                 ),
+                action_certificate_stale_reasons=dict(stale_reasons),
                 queue_wait_ms=result.queue_wait_ms,
                 planning_ms=result.compute_ms,
                 scenario_risk_ms=float(

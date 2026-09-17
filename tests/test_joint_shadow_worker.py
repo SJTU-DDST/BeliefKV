@@ -18,8 +18,9 @@ from beliefkv.policy.reference import MetadataSource, MetadataValue, RunnableInv
 from beliefkv.policy.predictive_joint import BeneficiaryOpportunityProbe
 from beliefkv.policy.resource_snapshot import RuntimeResourceObservation
 from beliefkv.runtime.joint_shadow import (
-    FrontierFeatureSource,
+    ActionLocalPhysicalOverlay,
     ActionLocalPhysicalOverlayBatch,
+    FrontierFeatureSource,
     IncrementalPolicyInputAssembler,
     JointShadowDelta,
     JointShadowResult,
@@ -1348,8 +1349,48 @@ def test_reentry_overlay_survives_later_beneficiary_refresh() -> None:
     reentry_batch = ActionLocalPhysicalOverlayBatch(
         beneficiary_risk_signature=(),
         opportunity=None,
+        overlays=(
+            ActionLocalPhysicalOverlay(
+                context_id="ctx",
+                context_epoch=0,
+                context_revision=1,
+                page_revision=1,
+                topology_revision=1,
+                generation_fingerprint="target-generation",
+                shape_fingerprint="target-shape",
+                exclusive_reclaimable_bytes=0,
+                d2h_copy_bytes=0,
+                extent_count=1,
+                cross_context_bytes=0,
+                locked_bytes=0,
+                owner_context_ids=("ctx",),
+                blocker_codes=(),
+                native_loading=False,
+                captured_ts_ms=3.0,
+                h2d_copy_bytes=100,
+                evidence_kind="prefetch_target_preview",
+            ),
+            ActionLocalPhysicalOverlay(
+                context_id="victim",
+                context_epoch=0,
+                context_revision=1,
+                page_revision=1,
+                topology_revision=1,
+                generation_fingerprint="victim-generation",
+                shape_fingerprint="victim-shape",
+                exclusive_reclaimable_bytes=128,
+                d2h_copy_bytes=0,
+                extent_count=1,
+                cross_context_bytes=0,
+                locked_bytes=0,
+                owner_context_ids=("victim",),
+                blocker_codes=(),
+                native_loading=False,
+                captured_ts_ms=3.0,
+                evidence_kind="commit_ready_summary",
+            ),
+        ),
         reentry_context_ids=("ctx",),
-        selection_reason="reentry_no_prefetchable_cpu_bytes",
     )
     assembler.apply(
         replace(
@@ -1413,9 +1454,12 @@ def test_reentry_overlay_survives_later_beneficiary_refresh() -> None:
     ]
     assert overlay.producer == "safe_point_reentry_physical_overlay"
     assert overlay.value["reentry_context_ids"] == ("ctx",)
-    assert (
-        overlay.value["selection_reason"]
-        == "reentry_no_prefetchable_cpu_bytes"
+    assert tuple(
+        (item["context_id"], item["evidence_kind"])
+        for item in overlay.value["overlays"]
+    ) == (
+        ("ctx", "prefetch_target_preview"),
+        ("victim", "commit_ready_summary"),
     )
 
 

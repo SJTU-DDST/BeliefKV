@@ -1024,12 +1024,15 @@ class IncrementalPolicyInputAssembler:
                     is not None
                 )
             )
-            overlay_by_context = {
-                item.context_id: item
-                for batch in batches
-                for item in batch.overlays
-                if item.context_id in reentry_context_ids
-            }
+            overlay_by_context: dict[str, ActionLocalPhysicalOverlay] = {}
+            for batch in batches:
+                for item in batch.overlays:
+                    previous = overlay_by_context.get(item.context_id)
+                    if (
+                        previous is None
+                        or item.captured_ts_ms >= previous.captured_ts_ms
+                    ):
+                        overlay_by_context[item.context_id] = item
             missing_context_ids = tuple(
                 context_id
                 for context_id in reentry_context_ids
@@ -1057,9 +1060,14 @@ class IncrementalPolicyInputAssembler:
                     "beneficiary_risk_signature": (),
                     "opportunity": {},
                     "overlays": [
-                        overlay_by_context[context_id].to_dict()
-                        for context_id in reentry_context_ids
-                        if context_id in overlay_by_context
+                        overlay.to_dict()
+                        for overlay in sorted(
+                            overlay_by_context.values(),
+                            key=lambda item: (
+                                item.context_id not in reentry_context_ids,
+                                item.context_id,
+                            ),
+                        )
                     ],
                     "reentry_context_ids": list(reentry_context_ids),
                     "selection_reason": selection_reason,

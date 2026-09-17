@@ -2277,6 +2277,39 @@ def test_compact_target_overlay_drives_prefetch_without_worker_page_bundles() ->
     assert eligibility.prepare_host_victims == ()
     assert eligibility.reclaim_ready_victims == ()
 
+    source_plan = AsyncSemanticJointPlanner(
+        JointPlannerConfig(max_planning_budget_ms=100.0)
+    ).plan(policy_input)
+    package = PredictiveActionPackage(
+        package_id="prefetch-overlay",
+        action=PredictiveActionKind.PREFETCH_GPU,
+        context_ids=("ctx-target",),
+        target_context_id="ctx-target",
+        source_joint_plan_id=source_plan.plan_id,
+    )
+    physicalizer = _OnlineCandidatePhysicalizer(
+        policy_input,
+        graph,
+        source_plan,
+        target_invocation_id="invocation-target",
+        target_context_id="ctx-target",
+        belief_scope_invocation_ids=("invocation-target",),
+        packages={package.package_id: package},
+        kv_bytes_per_token=1,
+    )
+
+    assert physicalizer.package_feasible(package)
+    assert physicalizer.intent_resource_envelope(package) == (0, 0, 300)
+    assert physicalizer.package_transfer_duration_ms(package) > 0
+
+    funded = replace(
+        package,
+        action=PredictiveActionKind.PARTIAL_PREFETCH_GPU,
+        byte_budget=300,
+    )
+    assert physicalizer.package_feasible(funded)
+    assert not physicalizer.package_feasible(replace(funded, byte_budget=299))
+
 def test_prepare_shadow_absorbs_descendant_closure_without_claiming_child_bytes() -> None:
     graph = _graph()
     parent = _radix_extent(
