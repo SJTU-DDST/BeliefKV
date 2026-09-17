@@ -19133,16 +19133,21 @@ class EmbeddedSGLangRuntime:
             ] += 1
             return False
         invocation_ids = tuple(item[0].invocation_id for item in candidates)
+        prediction_invocation_ids = (
+            self._predictive_reentry_closure_invocation_ids(
+                graph, invocation_ids
+            )
+        )
         try:
             features = build_invocation_frontier_features(
                 graph,
                 predictor,
                 now_ms=now_ms,
-                invocation_ids=invocation_ids,
+                invocation_ids=prediction_invocation_ids,
             )
             predictions = {
                 invocation_id: frontier_model.predict(features[invocation_id])
-                for invocation_id in invocation_ids
+                for invocation_id in prediction_invocation_ids
                 if invocation_id in features
             }
         except Exception:
@@ -19226,8 +19231,8 @@ class EmbeddedSGLangRuntime:
             _waited_ms,
             _negative_transfer_ms,
             invocation,
-            selected_features,
-            selected_prediction,
+            _selected_features,
+            _selected_prediction,
         ) = max(eligible, key=lambda item: item[:4])
 
         trigger = (
@@ -19330,10 +19335,12 @@ class EmbeddedSGLangRuntime:
             source_page_revision=page_index.revision,
             source_topology_revision=page_index.topology_revision,
             frontier_predictions={
-                invocation.invocation_id: selected_prediction.to_dict()
+                invocation_id: prediction.to_dict()
+                for invocation_id, prediction in predictions.items()
             },
             frontier_features={
-                invocation.invocation_id: selected_features.to_dict()
+                invocation_id: invocation_features.to_dict()
+                for invocation_id, invocation_features in features.items()
             },
             frontier_model_version=str(frontier_model.model_version),
         )
@@ -19352,11 +19359,17 @@ class EmbeddedSGLangRuntime:
             return False
 
         self._last_predictive_reentry_risk_signature = signature
-        self._last_frontier_features[invocation.invocation_id] = (
-            selected_features.to_dict()
+        self._last_frontier_features.update(
+            {
+                invocation_id: invocation_features.to_dict()
+                for invocation_id, invocation_features in features.items()
+            }
         )
-        self._last_frontier_predictions[invocation.invocation_id] = (
-            selected_prediction.to_dict()
+        self._last_frontier_predictions.update(
+            {
+                invocation_id: prediction.to_dict()
+                for invocation_id, prediction in predictions.items()
+            }
         )
         self._last_frontier_model_version = str(frontier_model.model_version)
         self._last_policy_state_stamp = stamp
@@ -19388,6 +19401,49 @@ class EmbeddedSGLangRuntime:
             worker_sequence=submission.sequence,
         )
         return True
+
+    @staticmethod
+    def _predictive_reentry_closure_invocation_ids(
+        graph: Any,
+        root_invocation_ids: tuple[str, ...],
+    ) -> tuple[str, ...]:
+        """Return the complete live RCCG group needed to time a reentry."""
+
+        selected = set(root_invocation_ids)
+        pending = list(root_invocation_ids)
+        joins = getattr(graph, "joins", {})
+        while pending:
+            invocation_id = pending.pop()
+            invocation = graph.invocations.get(invocation_id)
+            if invocation is None:
+                continue
+            related = {
+                getattr(invocation, "parent_invocation_id", None),
+                getattr(invocation, "return_target_id", None),
+                *tuple(getattr(invocation, "child_invocation_ids", ())),
+                *tuple(getattr(invocation, "blocking_child_ids", ())),
+            }
+            join_id = getattr(invocation, "join_id", None)
+            join = joins.get(join_id) if join_id is not None else None
+            if join is not None:
+                related.update(
+                    getattr(join, "member_invocation_ids", ())
+                )
+                related.update(
+                    getattr(join, "waiter_invocation_ids", ())
+                )
+            for related_id in related:
+                if not related_id or related_id in selected:
+                    continue
+                related_invocation = graph.invocations.get(related_id)
+                if (
+                    related_invocation is None
+                    or related_invocation.state.terminal
+                ):
+                    continue
+                selected.add(related_id)
+                pending.append(related_id)
+        return tuple(sorted(selected))
 
     def _publish_joint_semantic_delta(
         self,

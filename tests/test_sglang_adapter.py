@@ -11554,6 +11554,22 @@ def test_predicted_reentry_publishes_one_bounded_risk_delta_without_beneficiary(
         context_id="context",
         state=InvocationState.WAIT_TOOL,
         updated_ts_ms=100.0,
+        parent_invocation_id=None,
+        return_target_id=None,
+        child_invocation_ids={"child"},
+        blocking_child_ids={"child"},
+        join_id=None,
+    )
+    child = SimpleNamespace(
+        invocation_id="child",
+        context_id="child-context",
+        state=InvocationState.READY,
+        updated_ts_ms=110.0,
+        parent_invocation_id="invocation",
+        return_target_id="invocation",
+        child_invocation_ids=set(),
+        blocking_child_ids=set(),
+        join_id=None,
     )
     context = SimpleNamespace(epoch=3)
     summary = SimpleNamespace(
@@ -11614,8 +11630,12 @@ def test_predicted_reentry_publishes_one_bounded_risk_delta_without_beneficiary(
     )
     runtime.controller = SimpleNamespace(
         graph=SimpleNamespace(
-            invocations={"invocation": invocation},
-            contexts={"context": context},
+            invocations={"invocation": invocation, "child": child},
+            contexts={
+                "context": context,
+                "child-context": SimpleNamespace(epoch=0),
+            },
+            joins={},
         ),
         page_index=page_index,
         predictor=SimpleNamespace(
@@ -11704,7 +11724,7 @@ def test_predicted_reentry_publishes_one_bounded_risk_delta_without_beneficiary(
 
     with mock.patch(
         "beliefkv.runtime.sglang_v052rc1.build_invocation_frontier_features",
-        return_value={"invocation": features},
+        return_value={"invocation": features, "child": features},
     ):
         assert runtime._maybe_publish_predicted_reentry_risk_delta(
             worker, observation=observation
@@ -11721,6 +11741,8 @@ def test_predicted_reentry_publishes_one_bounded_risk_delta_without_beneficiary(
         ("reentry", "predicted_latest_start", "invocation", 3),
     )
     assert delta.action_local_overlay_batch is overlay_batch
+    assert set(delta.frontier_predictions) == {"invocation", "child"}
+    assert set(delta.frontier_features) == {"invocation", "child"}
 
 
 if __name__ == "__main__":
