@@ -31,6 +31,14 @@ _TIMING_CATEGORY_FIELDS = (
     "backend_class",
     "command_class",
 )
+_CLASSIFIER_CATEGORY_FIELDS = (
+    "agent_definition_id",
+    "state",
+    "tool_family",
+    "backend_class",
+    "command_class",
+    "boundary_last",
+)
 _TIMING_CURVE_KNOTS_MS = tuple(float(2**index) for index in range(18))
 
 
@@ -105,6 +113,54 @@ def _timing_sparse_features(features: object, tau_ms: float) -> dict[str, float]
         value = _category(features, field)
         output[f"tau_slope:{field}:{value}"] = log_tau
         output[f"elapsed_slope:{field}:{value}"] = log_elapsed
+    return output
+
+
+def _classifier_sparse_features(features: object) -> dict[str, float]:
+    context = max(
+        0.0, float(_feature_value(features, "current_sequence_tokens", 0) or 0)
+    )
+    generated = max(
+        0.0, float(_feature_value(features, "generated_tokens", 0) or 0)
+    )
+    elapsed = max(
+        0.0, float(_feature_value(features, "elapsed_wait_ms", 0.0) or 0.0)
+    )
+    active = max(
+        0.0, float(_feature_value(features, "active_tool_count", 0) or 0)
+    )
+    lc = math.log1p(context) / 12.0
+    lg = math.log1p(generated) / 8.0
+    le = math.log1p(elapsed) / 12.0
+    output = {
+        "bias": 1.0,
+        "lc": lc,
+        "lg": lg,
+        "le": le,
+        "la": math.log1p(active) / 3.0,
+        "lc2": lc * lc,
+        "lg2": lg * lg,
+        "le2": le * le,
+        "lcg": lc * lg,
+    }
+    categories = {
+        field: _category(features, field)
+        for field in _CLASSIFIER_CATEGORY_FIELDS
+    }
+    for field, value in categories.items():
+        output[f"cat:{field}:{value}"] = 1.0
+    history = tuple(_feature_value(features, "boundary_history", ()) or ())
+    if len(history) >= 2:
+        output[f"cat:boundary_bigram:{history[-2]}>{history[-1]}"] = 1.0
+    output[
+        f"cross:state_role:{categories['state']}|{categories['agent_definition_id']}"
+    ] = 1.0
+    output[
+        f"cross:state_boundary:{categories['state']}|{categories['boundary_last']}"
+    ] = 1.0
+    output[
+        f"cross:tool_command:{categories['tool_family']}|{categories['command_class']}"
+    ] = 1.0
     return output
 
 
@@ -344,6 +400,199 @@ class PooledConditionalDemandModel:
         model.training_count = int(raw.get("training_count", 0))
         if len(model.feature_names) != len(model.coefficients):
             raise ValueError("pooled demand feature and coefficient counts differ")
+        return model
+
+
+class PooledConditionalClassifier:
+    """Pooled multinomial model that retains rare-class training signal."""
+
+    def __init__(
+        self,
+        *,
+        regularization: float = 1e-3,
+        balance_power: float = 0.5,
+    ) -> None:
+        if not math.isfinite(regularization) or regularization < 0:
+            raise ValueError("classifier regularization must be finite and non-negative")
+        if not math.isfinite(balance_power) or not 0.0 <= balance_power <= 1.0:
+            raise ValueError("classifier balance power must be in [0, 1]")
+        self.regularization = float(regularization)
+        self.balance_power = float(balance_power)
+        self.feature_names: tuple[str, ...] = ()
+        self.class_names: tuple[str, ...] = ()
+        self.coefficients: tuple[tuple[float, ...], ...] = ()
+        self.class_training_multiplier: tuple[float, ...] = ()
+        self.training_support = 0.0
+        self.training_count = 0
+
+    @property
+    def fitted(self) -> bool:
+        return bool(self.feature_names and len(self.class_names) >= 2)
+
+    def fit(
+        self,
+        samples: Iterable[tuple[object, str, float]],
+    ) -> dict[str, float | int]:
+        values = [
+            (features, str(target), float(weight))
+            for features, target, weight in samples
+            if str(target) and weight > 0
+        ]
+        classes = sorted({target for _features, target, _weight in values})
+        if not values or len(classes) < 2:
+            return {"sample_count": len(values), "episode_weight": 0.0}
+        try:
+            import numpy as np
+            from scipy.optimize import minimize
+        except ImportError as error:
+            raise RuntimeError(
+                "training pooled classifiers requires the 'training' extra"
+            ) from error
+        sparse_rows = [_classifier_sparse_features(item[0]) for item in values]
+        names = sorted({name for row in sparse_rows for name in row})
+        names.remove("bias")
+        names.insert(0, "bias")
+        feature_index = {name: position for position, name in enumerate(names)}
+        class_index = {name: position for position, name in enumerate(classes)}
+        matrix = np.zeros((len(values), len(names)), dtype=np.float64)
+        for row_index, sparse in enumerate(sparse_rows):
+            for name, value in sparse.items():
+                matrix[row_index, feature_index[name]] = value
+        target = np.asarray(
+            [class_index[item[1]] for item in values], dtype=np.int64
+        )
+        base_weights = np.asarray([item[2] for item in values], dtype=np.float64)
+        class_mass = np.bincount(
+            target, weights=base_weights, minlength=len(classes)
+        )
+        total_mass = max(float(class_mass.sum()), 1e-12)
+        multipliers = np.asarray(
+            [
+                (total_mass / max(float(mass) * len(classes), 1e-12))
+                ** self.balance_power
+                for mass in class_mass
+            ],
+            dtype=np.float64,
+        )
+        weights = base_weights * multipliers[target]
+        weights *= len(weights) / max(float(weights.sum()), 1e-12)
+        class_count = len(classes)
+        feature_count = len(names)
+
+        def objective(flat: Any) -> tuple[float, Any]:
+            coefficients = flat.reshape(class_count, feature_count)
+            logits = matrix @ coefficients.T
+            logits -= logits.max(axis=1, keepdims=True)
+            exp_logits = np.exp(logits)
+            probabilities = exp_logits / exp_logits.sum(axis=1, keepdims=True)
+            loss = float(
+                np.sum(weights * -np.log(np.maximum(probabilities[np.arange(len(values)), target], 1e-15)))
+                / len(values)
+                + 0.5
+                * self.regularization
+                * np.sum(coefficients[:, 1:] ** 2)
+            )
+            residual = probabilities
+            residual[np.arange(len(values)), target] -= 1.0
+            gradient = (residual * weights[:, None]).T @ matrix / len(values)
+            gradient[:, 1:] += self.regularization * coefficients[:, 1:]
+            return loss, gradient.ravel()
+
+        result = minimize(
+            objective,
+            np.zeros(class_count * feature_count, dtype=np.float64),
+            jac=True,
+            method="L-BFGS-B",
+            options={"maxiter": 400, "ftol": 1e-11},
+        )
+        if not result.success and not math.isfinite(float(result.fun)):
+            raise RuntimeError(f"pooled classifier fit failed: {result.message}")
+        coefficients = result.x.reshape(class_count, feature_count)
+        self.feature_names = tuple(names)
+        self.class_names = tuple(classes)
+        self.coefficients = tuple(
+            tuple(float(value) for value in row) for row in coefficients
+        )
+        self.class_training_multiplier = tuple(
+            float(value) for value in multipliers
+        )
+        self.training_support = float(base_weights.sum())
+        self.training_count = len(values)
+        predictions = []
+        for features, _target, _weight in values:
+            probabilities = self.predict(features)
+            predictions.append(max(probabilities, key=probabilities.get))
+        accuracy = sum(
+            weight * (prediction == target_name)
+            for prediction, (_features, target_name, weight) in zip(
+                predictions, values, strict=True
+            )
+        ) / max(self.training_support, 1e-12)
+        return {
+            "sample_count": self.training_count,
+            "episode_weight": self.training_support,
+            "feature_count": feature_count,
+            "class_count": class_count,
+            "training_accuracy": accuracy,
+            "optimizer_iterations": int(result.nit),
+        }
+
+    def predict(self, features: object) -> dict[str, float]:
+        if not self.fitted:
+            return {}
+        sparse = _classifier_sparse_features(features)
+        logits = [
+            _dot(self.feature_names, coefficients, sparse)
+            - math.log(max(multiplier, 1e-12))
+            for coefficients, multiplier in zip(
+                self.coefficients,
+                self.class_training_multiplier,
+                strict=True,
+            )
+        ]
+        maximum = max(logits)
+        values = [math.exp(max(-40.0, min(40.0, value - maximum))) for value in logits]
+        total = sum(values)
+        return {
+            name: value / total
+            for name, value in zip(self.class_names, values, strict=True)
+        }
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "regularization": self.regularization,
+            "balance_power": self.balance_power,
+            "feature_names": list(self.feature_names),
+            "class_names": list(self.class_names),
+            "coefficients": [list(row) for row in self.coefficients],
+            "class_training_multiplier": list(self.class_training_multiplier),
+            "training_support": self.training_support,
+            "training_count": self.training_count,
+        }
+
+    @classmethod
+    def from_dict(cls, raw: Mapping[str, Any]) -> "PooledConditionalClassifier":
+        model = cls(
+            regularization=float(raw.get("regularization", 1e-3)),
+            balance_power=float(raw.get("balance_power", 0.5)),
+        )
+        model.feature_names = tuple(str(value) for value in raw.get("feature_names", ()))
+        model.class_names = tuple(str(value) for value in raw.get("class_names", ()))
+        model.coefficients = tuple(
+            tuple(float(value) for value in row)
+            for row in raw.get("coefficients", ())
+        )
+        model.class_training_multiplier = tuple(
+            float(value) for value in raw.get("class_training_multiplier", ())
+        )
+        model.training_support = float(raw.get("training_support", 0.0))
+        model.training_count = int(raw.get("training_count", 0))
+        if len(model.coefficients) != len(model.class_names):
+            raise ValueError("classifier class and coefficient counts differ")
+        if len(model.class_training_multiplier) != len(model.class_names):
+            raise ValueError("classifier class multiplier count differs")
+        if any(len(row) != len(model.feature_names) for row in model.coefficients):
+            raise ValueError("classifier feature and coefficient counts differ")
         return model
 
 

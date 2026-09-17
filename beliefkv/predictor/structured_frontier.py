@@ -14,6 +14,7 @@ from beliefkv.core.events import RuntimeEventKind
 from beliefkv.predictor.action_frontier import (
     ActionTimingCurve,
     OperationalReleaseModel,
+    PooledConditionalClassifier,
     PooledConditionalDemandModel,
 )
 from beliefkv.predictor.frontier_belief import (
@@ -100,6 +101,8 @@ class FrontierModelHyperparameters:
     tool_smoothing: float = 0.5
     pooled_demand_regularization: float = 1e-3
     operational_timing_regularization: float = 1e-5
+    pooled_classifier_regularization: float = 1e-3
+    pooled_classifier_balance_power: float = 0.5
 
     def __post_init__(self) -> None:
         if self.boundary_max_order < 0:
@@ -115,8 +118,11 @@ class FrontierModelHyperparameters:
         if min(
             self.pooled_demand_regularization,
             self.operational_timing_regularization,
+            self.pooled_classifier_regularization,
         ) < 0:
             raise ValueError("pooled model regularization must be non-negative")
+        if not 0.0 <= self.pooled_classifier_balance_power <= 1.0:
+            raise ValueError("classifier balance power must be in [0, 1]")
 
     def to_dict(self) -> dict[str, float | int]:
         return {
@@ -129,6 +135,12 @@ class FrontierModelHyperparameters:
             "pooled_demand_regularization": self.pooled_demand_regularization,
             "operational_timing_regularization": (
                 self.operational_timing_regularization
+            ),
+            "pooled_classifier_regularization": (
+                self.pooled_classifier_regularization
+            ),
+            "pooled_classifier_balance_power": (
+                self.pooled_classifier_balance_power
             ),
         }
 
@@ -153,6 +165,12 @@ class FrontierModelHyperparameters:
             ),
             operational_timing_regularization=float(
                 values.get("operational_timing_regularization", 1e-5)
+            ),
+            pooled_classifier_regularization=float(
+                values.get("pooled_classifier_regularization", 1e-3)
+            ),
+            pooled_classifier_balance_power=float(
+                values.get("pooled_classifier_balance_power", 0.5)
             ),
         )
 
@@ -1061,6 +1079,14 @@ class FrontierBeliefModel:
         self.pooled_prompt_growth = PooledConditionalDemandModel(
             regularization=self.hyperparameters.pooled_demand_regularization
         )
+        self.pooled_boundary = PooledConditionalClassifier(
+            regularization=self.hyperparameters.pooled_classifier_regularization,
+            balance_power=self.hyperparameters.pooled_classifier_balance_power,
+        )
+        self.pooled_tool_terminal = PooledConditionalClassifier(
+            regularization=self.hyperparameters.pooled_classifier_regularization,
+            balance_power=self.hyperparameters.pooled_classifier_balance_power,
+        )
         self.tool = _CompetingRiskToolModel(
             minimum_support=self.hyperparameters.tool_minimum_support,
             smoothing=self.hyperparameters.tool_smoothing,
@@ -1099,6 +1125,8 @@ class FrontierBeliefModel:
         pooled_decode_samples: list[tuple[object, float, float]] = []
         pooled_output_samples: list[tuple[object, float, float]] = []
         pooled_prompt_samples: list[tuple[object, float, float]] = []
+        pooled_boundary_samples: list[tuple[object, str, float]] = []
+        pooled_tool_terminal_samples: list[tuple[object, str, float]] = []
         observed = Counter()
         split_counts = Counter(str(row.get("split") or "unknown") for row in values)
         for row in values:
@@ -1146,6 +1174,9 @@ class FrontierBeliefModel:
                         history=features.get("boundary_history", ()),
                         target=boundary,
                         weight=weight,
+                    )
+                    pooled_boundary_samples.append(
+                        (local_features, boundary, weight)
                     )
                     observed["boundary"] += 1
                 remaining_decode = (
@@ -1205,6 +1236,9 @@ class FrontierBeliefModel:
                         else label.get("next_boundary_delay_ms")
                     )
                     if delay is not None and _target_eligible(label, "external_wait"):
+                        tool_weight = tool_fit_weights.get(
+                            _tool_row_identity(row, features), weight
+                        )
                         self.tool.observe(
                             _tool_feature_key(
                                 role,
@@ -1217,10 +1251,12 @@ class FrontierBeliefModel:
                             ),
                             status=status,
                             duration_ms=float(delay),
-                            weight=tool_fit_weights.get(
-                                _tool_row_identity(row, features), weight
-                            ),
+                            weight=tool_weight,
                         )
+                        if not right_censored:
+                            pooled_tool_terminal_samples.append(
+                                (local_features, status, tool_weight)
+                            )
                         observed["tool"] += 1
         pooled_summary = {
             "remaining_decode_tokens": self.pooled_decode_demand.fit(
@@ -1231,6 +1267,12 @@ class FrontierBeliefModel:
             ),
             "prompt_growth_tokens": self.pooled_prompt_growth.fit(
                 pooled_prompt_samples
+            ),
+        }
+        pooled_classification_summary = {
+            "boundary": self.pooled_boundary.fit(pooled_boundary_samples),
+            "tool_terminal": self.pooled_tool_terminal.fit(
+                pooled_tool_terminal_samples
             ),
         }
         action_weights = _action_target_weights(action_values)
@@ -1270,6 +1312,7 @@ class FrontierBeliefModel:
             "split_counts": dict(sorted(split_counts.items())),
             "observation_counts": dict(sorted(observed.items())),
             "pooled_demand": pooled_summary,
+            "pooled_classification": pooled_classification_summary,
             "operational_timing": timing_summary,
             "action_target_count": len(action_values),
             "episode_weighting": (
@@ -1296,6 +1339,10 @@ class FrontierBeliefModel:
             state=features.state,
             history=features.boundary_history,
         )
+        pooled_boundary = self.pooled_boundary.predict(features)
+        if pooled_boundary and self.pooled_boundary.training_count >= 32:
+            boundary = pooled_boundary
+            boundary_level = "pooled"
         boundary = _temperature_scale(boundary, self.boundary_temperature)
         decode, decode_level = self.decode_demand.predict(key)
         output, output_level = self.next_output.predict(key)
@@ -1346,6 +1393,14 @@ class FrontierBeliefModel:
                 elapsed_ms=features.elapsed_wait_ms,
             )
             terminal = _temperature_scale(terminal, self.tool_temperature)
+            pooled_terminal = self.pooled_tool_terminal.predict(features)
+            if (
+                pooled_terminal
+                and self.pooled_tool_terminal.training_count >= 32
+            ):
+                terminal = _temperature_scale(
+                    pooled_terminal, self.tool_temperature
+                )
             wait_belief = WaitBelief(
                 kind=WaitBeliefKind.TOOL,
                 residual_duration=wait,
@@ -1739,6 +1794,8 @@ class FrontierBeliefModel:
                 "pooled_decode_demand": self.pooled_decode_demand.to_dict(),
                 "pooled_next_output": self.pooled_next_output.to_dict(),
                 "pooled_prompt_growth": self.pooled_prompt_growth.to_dict(),
+                "pooled_boundary": self.pooled_boundary.to_dict(),
+                "pooled_tool_terminal": self.pooled_tool_terminal.to_dict(),
                 "tool": self.tool.to_dict(),
                 "operational_release": self.operational_release.to_dict(),
             },
@@ -1772,6 +1829,12 @@ class FrontierBeliefModel:
         )
         model.pooled_prompt_growth = PooledConditionalDemandModel.from_dict(
             components.get("pooled_prompt_growth", {})
+        )
+        model.pooled_boundary = PooledConditionalClassifier.from_dict(
+            components.get("pooled_boundary", {})
+        )
+        model.pooled_tool_terminal = PooledConditionalClassifier.from_dict(
+            components.get("pooled_tool_terminal", {})
         )
         model.tool = _CompetingRiskToolModel.from_dict(components.get("tool", {}))
         model.operational_release = OperationalReleaseModel.from_dict(
@@ -3201,8 +3264,10 @@ def _classification_accumulator() -> dict[str, Any]:
         "negative_log_likelihood": 0.0,
         "brier": 0.0,
         "correct": 0.0,
+        "top2_correct": 0.0,
         "confidence_records": [],
         "target_weight": Counter(),
+        "top2_target_hit_weight": Counter(),
         "predicted_weight": Counter(),
         "confusion_weight": Counter(),
     }
@@ -3314,6 +3379,12 @@ def _observe_classification(
         return
     probability = max(float(distribution.get(target, 0.0)), 1e-12)
     prediction = max(distribution, key=distribution.get)
+    top2 = {
+        name
+        for name, _probability in sorted(
+            distribution.items(), key=lambda item: (-item[1], item[0])
+        )[:2]
+    }
     confidence = float(distribution[prediction])
     correct = prediction == target
     vocabulary = set(distribution) | {target}
@@ -3325,8 +3396,10 @@ def _observe_classification(
     metrics["negative_log_likelihood"] += weight * -math.log(probability)
     metrics["brier"] += weight * brier
     metrics["correct"] += weight * correct
+    metrics["top2_correct"] += weight * (target in top2)
     metrics["confidence_records"].append((confidence, correct, weight))
     metrics["target_weight"][target] += weight
+    metrics["top2_target_hit_weight"][target] += weight * (target in top2)
     metrics["predicted_weight"][prediction] += weight
     metrics["confusion_weight"][(target, prediction)] += weight
 
@@ -3364,6 +3437,11 @@ def _finalize_classification(metrics: Mapping[str, Any]) -> dict[str, Any]:
         predicted = float(metrics["predicted_weight"][name])
         true_positive = float(metrics["confusion_weight"][(name, name)])
         recall = true_positive / support if support else None
+        top2_recall = (
+            float(metrics["top2_target_hit_weight"][name]) / support
+            if support
+            else None
+        )
         precision = true_positive / predicted if predicted else None
         if recall is not None:
             recalls.append(recall)
@@ -3371,6 +3449,7 @@ def _finalize_classification(metrics: Mapping[str, Any]) -> dict[str, Any]:
             "episode_weight": support,
             "prevalence": support / weight,
             "recall": recall,
+            "top2_recall": top2_recall,
             "precision": precision,
         }
     return {
@@ -3378,6 +3457,7 @@ def _finalize_classification(metrics: Mapping[str, Any]) -> dict[str, Any]:
         "negative_log_likelihood": metrics["negative_log_likelihood"] / weight,
         "brier": metrics["brier"] / weight,
         "accuracy": metrics["correct"] / weight,
+        "top2_accuracy": metrics["top2_correct"] / weight,
         "majority_baseline_accuracy": max(
             metrics["target_weight"].values(), default=0.0
         )

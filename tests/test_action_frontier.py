@@ -9,6 +9,7 @@ from beliefkv.core.events import RuntimeEvent, RuntimeEventKind
 from beliefkv.predictor.action_frontier import (
     ActionTimingCurve,
     OperationalReleaseModel,
+    PooledConditionalClassifier,
     PooledConditionalDemandModel,
 )
 from beliefkv.runtime.action_frontier import (
@@ -447,6 +448,52 @@ def test_operational_release_model_curve_is_monotonic_and_round_trips() -> None:
     assert restored_curve.release_within_probability == pytest.approx(
         curve.release_within_probability
     )
+
+
+def test_pooled_conditional_classifier_learns_rare_conditional_class() -> None:
+    samples = []
+    for index in range(40):
+        samples.append(
+            (
+                {
+                    "agent_definition_id": "coder",
+                    "state": "running_llm",
+                    "boundary_history": ("tool",),
+                    "generated_tokens": index,
+                },
+                "tool",
+                1.0,
+            )
+        )
+    for index in range(8):
+        samples.append(
+            (
+                {
+                    "agent_definition_id": "planner",
+                    "state": "running_llm",
+                    "boundary_history": ("spawn",),
+                    "generated_tokens": 100 + index,
+                },
+                "spawn",
+                1.0,
+            )
+        )
+
+    model = PooledConditionalClassifier(
+        regularization=1e-3, balance_power=0.5
+    )
+    metrics = model.fit(samples)
+    probabilities = model.predict(samples[-1][0])
+
+    assert metrics["class_count"] == 2
+    assert probabilities["spawn"] > probabilities["tool"]
+    assert sum(probabilities.values()) == pytest.approx(1.0)
+
+    restored = PooledConditionalClassifier.from_dict(
+        json.loads(json.dumps(model.to_dict(), sort_keys=True))
+    )
+    assert restored.to_dict() == model.to_dict()
+    assert restored.predict(samples[-1][0]) == pytest.approx(probabilities)
 
 
 def test_censored_identity_fallback_rejects_ambiguous_latest_action() -> None:
