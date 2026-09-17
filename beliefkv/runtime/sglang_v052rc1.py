@@ -21439,6 +21439,7 @@ class EmbeddedSGLangRuntime:
             return
         signatures: list[tuple[object, ...]] = []
         has_projected_beneficiary = False
+        has_reentry_prefetch = False
         for raw in summaries:
             if not isinstance(raw, Mapping):
                 continue
@@ -21453,6 +21454,11 @@ class EmbeddedSGLangRuntime:
             if not isinstance(certificate, Mapping):
                 continue
             action = str(raw.get("action") or "unknown")
+            has_reentry_prefetch = has_reentry_prefetch or action in {
+                PredictiveActionKind.PREFETCH_GPU.value,
+                PredictiveActionKind.PARTIAL_PREFETCH_GPU.value,
+                PredictiveActionKind.RECLAIM_AND_PREFETCH.value,
+            }
             target_context_id = str(
                 certificate.get("target_context_id") or "unknown"
             )
@@ -21476,7 +21482,8 @@ class EmbeddedSGLangRuntime:
             else 0.0
         )
         high_pressure_replay = (
-            has_projected_beneficiary and pressure_ratio >= 0.8
+            (has_projected_beneficiary or has_reentry_prefetch)
+            and pressure_ratio >= 0.8
         )
         positive_opportunity = any(
             isinstance(raw, Mapping)

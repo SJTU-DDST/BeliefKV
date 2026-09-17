@@ -2301,6 +2301,7 @@ def test_compact_target_overlay_drives_prefetch_without_worker_page_bundles() ->
     assert physicalizer.package_feasible(package)
     assert physicalizer.intent_resource_envelope(package) == (0, 0, 300)
     assert physicalizer.package_transfer_duration_ms(package) > 0
+    assert physicalizer._context_restore_bytes("ctx-target") == 300
 
     funded = replace(
         package,
@@ -2309,6 +2310,77 @@ def test_compact_target_overlay_drives_prefetch_without_worker_page_bundles() ->
     )
     assert physicalizer.package_feasible(funded)
     assert not physicalizer.package_feasible(replace(funded, byte_budget=299))
+
+    prediction = replace(
+        _prediction(),
+        remaining_external_wait=_distribution(1_000),
+        wait_belief=_tool_wait_belief(1_000),
+    )
+    evaluation_metadata = dict(policy_input.optional_metadata)
+    evaluation_metadata.update(
+        {
+            "frontier_predictions": MetadataValue(
+                MetadataSource.PREDICTED,
+                {prediction.invocation_id: prediction.to_dict()},
+                "test-frontier",
+            ),
+            "frontier_prediction_model_version": MetadataValue(
+                MetadataSource.PREDICTED,
+                "frontier-test-v1",
+                "test-frontier",
+            ),
+        }
+    )
+    evaluation_input = replace(
+        policy_input,
+        optional_metadata=evaluation_metadata,
+    )
+    source_plan = AsyncSemanticJointPlanner(
+        JointPlannerConfig(max_planning_budget_ms=100.0)
+    ).plan(evaluation_input)
+    service_model = GPUServiceCurveModel(minimum_support=1)
+    service_model.fit(
+        [
+            _service_row("prefill-a", "prefill", 32),
+            _service_row("prefill-b", "prefill", 32),
+            _service_row("decode-a", "decode", 16),
+            _service_row("decode-b", "decode", 16),
+        ]
+    )
+    result = PredictiveRiskShadowObserver(
+        service_model,
+        PredictiveRiskShadowConfig(
+            particle_count=16,
+            top_k=4,
+            max_candidates=4,
+            minimum_calibration_coverage=0.9,
+            minimum_causal_slack_probability=0.0,
+            kv_bytes_per_token=1,
+        ),
+    ).evaluate(
+        evaluation_input,
+        graph=graph,
+        source_plan=source_plan,
+        evidence_read_set=PredictiveEvidenceReadSet(
+            graph_version=graph.graph_version,
+            page_revision=17,
+            topology_revision=11,
+            fairness_revision=0,
+            admission_revision=0,
+            transfer_epoch=0,
+            obligation_revision=0,
+            lease_revision=0,
+            grace_revision=0,
+            parser_frontier_revision=0,
+            model_version="frontier-test-v1",
+        ),
+    )
+    prefetch = next(
+        item
+        for item in result.candidate_summaries
+        if item["action"] == PredictiveActionKind.PREFETCH_GPU.value
+    )
+    assert prefetch["expected_benefit_ms"] > 0
 
 def test_prepare_shadow_absorbs_descendant_closure_without_claiming_child_bytes() -> None:
     graph = _graph()

@@ -5120,10 +5120,10 @@ class _OnlineCandidatePhysicalizer:
             }
             and target_restore_bytes == 0
         ):
-            target_restore_bytes = self._context_bytes.get(
-                self.target_context_id, (0, 0, 0)
-            )[1]
             target_context_id = self.target_context_id
+            target_restore_bytes = self._context_restore_bytes(
+                target_context_id
+            )
         if target_restore_bytes > 0:
             transfer_id = f"{package_id}:h2d:{target_context_id}"
             target_extent_count = self._target_restore_extent_count(
@@ -5264,12 +5264,7 @@ class _OnlineCandidatePhysicalizer:
     def _target_restore_bytes(self, package: PredictiveActionPackage) -> int:
         if package.target_context_id is None:
             return 0
-        overlay = self._overlay_by_context.get(package.target_context_id)
-        missing = (
-            int(overlay.get("h2d_copy_bytes", 0))
-            if overlay is not None
-            else self._context_bytes.get(package.target_context_id, (0, 0, 0))[1]
-        )
+        missing = self._context_restore_bytes(package.target_context_id)
         if package.action in {
             PredictiveActionKind.PARTIAL_PREFETCH_GPU,
             PredictiveActionKind.RECLAIM_AND_PREFETCH,
@@ -5277,6 +5272,12 @@ class _OnlineCandidatePhysicalizer:
             projection = self.prefetch_prefix_projection(package)
             return projection.copy_bytes if projection is not None else 0
         return missing
+
+    def _context_restore_bytes(self, context_id: str) -> int:
+        overlay = self._overlay_by_context.get(context_id)
+        if overlay is not None:
+            return max(0, int(overlay.get("h2d_copy_bytes", 0)))
+        return self._context_bytes.get(context_id, (0, 0, 0))[1]
 
     def _target_actionable(self, context_id: str) -> bool:
         overlay = self._overlay_by_context.get(context_id)

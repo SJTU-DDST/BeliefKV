@@ -2332,6 +2332,7 @@ class SGLangBackendTest(unittest.TestCase):
         runtime.predictive_risk_worker = SimpleNamespace(
             latest=lambda **_kwargs: result
         )
+        runtime.controller = SimpleNamespace(graph=object())
         with mock.patch(
             "beliefkv.runtime.sglang_v052rc1.validate_predictive_causal_certificate",
             return_value=(),
