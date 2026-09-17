@@ -1,7 +1,7 @@
 # BeliefKV 当前架构与实现状态
 
 更新日期：2026-09-17
-当前 P6 代码基线：`af1a0f9`
+当前 P6 代码基线：`c7fba92`
 
 本文只记录当前事实和下一阻塞项，不再追加逐日开发日志。2026-09-12 以前的完整历史保存在
 `docs/archive/snapshots/architecture_status_zh.md`，单次实验细节保存在
@@ -38,7 +38,7 @@ epoch、物理 closure 或容量失效都回退当前 P5。
 | Predictive execution/admission | 已接入 | 仅使用校准 token demand 做 SRPT/HBM 排序；RCCG/observed seed 保留因果优先级，native allocator 最终验收 |
 | Predictive `PREPARE_HOST` | 已接入 | D2H 后保留 GPU KV，并建立 beneficiary-victim binding |
 | Beneficiary-bound `COMMIT_CPU` | 已接入 | 只由真实 deficit 授权，优先消费 prepared victim |
-| Predictive `PREFETCH_GPU` | 控制面与数据面已接入，收益未验证 | 支持完整、ancestor-closed partial 和 commit-ready victim 资助的 prefetch；development artifact 需显式 override |
+| Predictive `PREFETCH_GPU` | 完整服务路径已接入，收益未验证 | 支持完整、ancestor-closed partial、latest-start retry、首个 service quantum funding 和 first-service attribution；development artifact 需显式 override |
 | `RECLAIM_AND_PREFETCH` | development canary | `COMMIT_CPU(victim) ACK -> H2D(target) ACK -> service lease`；尚无自然在线闭环证据 |
 | Oracle | 暂停 | 仅作契约测试和诊断 |
 | Morphology 独立策略 | 不再使用 | transfer shape 仅作成本/OOD 输入 |
@@ -162,9 +162,11 @@ FrontierBelief v4 已改为 PREPARE/PREFETCH 动作专属校准。为快速排�
 target 提供容量。所有路径仍受实时容量、closure、latest-start 和净收益约束。
 
 PREFETCH H2D ACK 后建立有界 service lease：目标 request 在首次真实 GPU service 前获得
-admission 优先级，并暂时不能成为反向 eviction victim。lease 在首次 service、request
-终止、identity/epoch 变化或 5 秒到期时释放。该机制避免 H2D 成功后立刻被迁出或长期得不到
-service，但不提供无限 HBM reservation。详细实现与证据见
+admission 优先级，并暂时不能成为反向 eviction victim。若 reentry request 已可见，runtime
+还会通过 allocator-backed funding 保留一个有界的 prefill/decode service quantum；native
+admission 尝试前临时释放，失败后重获，首个 service 或 lease 终止时归还。该机制避免 H2D
+成功后立刻被迁出或因后续 KV 增长长期得不到 service，但不会为完整 context 无限预留 HBM。
+详细实现与证据见
 `docs/experiments/beliefkv_p6_prefetch_recall_enablement_2026-09-16_zh.md`。
 
 ### 4.7 当前预测头质量
@@ -252,6 +254,23 @@ package，最终 8 次选择 PREPARE，其中 7 次在 latest-start 前完成验
 在线 hint 的 `prediction_support_level` 不再为 `unavailable`，并覆盖完整
 `PREFETCH_GPU -> H2D ACK -> service lease -> first GPU service` 路径。
 
+### 5.3 2026-09-17 PREFETCH 完整服务路径修复
+
+`c7fba92` 修复了 H2D 完成前后仍会破坏预测收益的三个状态机缺口：
+
+- `prefetch_too_early` 不再删除 intent，而是保留到 action-dependent latest-start 后重试；
+- H2D ACK 后为目标 reentry request 建立有界 allocator-backed service funding，复用现有
+  admission-rescue 的“尝试前释放、失败后重获、首个 service 后终止”协议；
+- 首个真实 GPU service 会同时释放 lease/funding，并将 predictive attribution 终结为
+  `useful`，不再留到 shutdown 时被错误 censor；
+- risk candidate generation 不再在第一个 target 后无条件退出，最多四个 semantic target
+  可以进入完整价值评估；partial prefetch 不再要求 live bundle 与旧 `copy_bytes` 完全相等，
+  而是使用已有的 reclaim/cross-context/copy envelope 做安全校验。
+
+CPU 回归为 `176 passed, 2 deselected, 8 subtests passed`；两项 deselected 仍仅依赖当前
+shell 缺失的 `CUDA_HOME`。predictive risk/JointPlan/worker/attribution 定向回归另有
+`70 passed`。GPU 端尚未验证，不能据此声称吞吐收益或在线 PREFETCH precision 已通过。
+
 ## 6. 当前阻塞项
 
 1. prediction-to-action utilization gap 尚未闭合。初步 H200 高压运行中 predictive arm
@@ -261,7 +280,8 @@ package，最终 8 次选择 PREPARE，其中 7 次在 latest-start 前完成验
 3. schema-v5 已修复 action timing 低召回和 tool-error 多数类退化；boundary 仍应以 top-2
    scenarios 使用，不能把 top-1 accuracy 当作 exact action-unlock 预测。
 4. `PREFETCH_GPU` 的完整、partial 和 funded 路径已实现；schema-v5 的 held-out recall 已达到
-   90.56%（动作阈值），但线上 precision、latest-start、first-service 和吞吐收益仍未验证。
+   90.56%（动作阈值），但线上 precision、latest-start、funding、first-service 和吞吐收益
+   仍未验证。
 5. prepared binding 目前每个 beneficiary 只保留一个 victim；失效时回退 P5，不执行
    预测性 COMMIT。
 6. v7 GPU service artifact 适合排序和 shadow；正式吞吐结论必须来自与冻结 observed
@@ -287,8 +307,9 @@ package，最终 8 次选择 PREPARE，其中 7 次在 latest-start 前完成验
    KV；此前无迁移结果来自提前终止，不能据此修改 workload 或缩小 KV pool。
 2. 在该 workload 上重新运行 development canary。动作提交时必须重验 certificate、物理
    closure、实时容量、transfer envelope 和 latest-start；晚到、回收不足或负收益动作回退 P5。
-3. PREFETCH gate 必须覆盖 `intent -> H2D -> ACK -> service lease -> first GPU service`，
-   并统计在线 precision、recall proxy、H2D 后 first-service latency 和 5 秒内反向迁移。
+3. PREFETCH gate 必须覆盖 `intent -> H2D -> ACK -> service lease/funding -> admission ->
+   first GPU service -> useful attribution`，并统计在线 precision、recall proxy、H2D 后
+   first-service latency、funding 守恒和 5 秒内反向迁移。
 4. 同时继续记录 event-to-hint 长尾和 safe-point P95/P99，不为降低开销重新关闭必要的
    `TOOL/JOIN` 风险触发。
 5. execution 排序使用 RCCG 已知 unlock、schema-v5 token/HBM demand 和 top-2 boundary
