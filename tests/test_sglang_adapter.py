@@ -2965,6 +2965,9 @@ class SGLangBackendTest(unittest.TestCase):
                 "predictive_risk_funnel",
                 "predictive_risk_eligibility",
                 "predictive_risk_shadow_failed",
+                "predictive_prefetch_service_lease_registered",
+                "predictive_prefetch_service_lease_released",
+                "predictive_action_outcome",
             }.issubset(_PERFORMANCE_METRIC_EVENTS)
         )
         self.assertTrue(
