@@ -6175,6 +6175,12 @@ class SGLangBackendTest(unittest.TestCase):
         self.assertEqual(
             runtime._joint_shadow_effective_hbm_used_bytes(observation), 200
         )
+        effective_observation = runtime._joint_shadow_effective_observation(
+            observation
+        )
+        self.assertEqual(effective_observation.hbm_used_bytes, 200)
+        self.assertEqual(effective_observation.hbm_capacity_bytes, 1000)
+        self.assertEqual(observation.hbm_used_bytes, 1000)
         self.assertFalse(
             runtime._joint_shadow_causal_event_requires_full_plan(
                 critical_event_pending=True, pressure_now=False

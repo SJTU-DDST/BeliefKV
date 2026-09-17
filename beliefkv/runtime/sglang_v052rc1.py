@@ -17017,6 +17017,12 @@ class EmbeddedSGLangRuntime:
         page_index_cpu_bytes = (
             breakdown.cpu_bytes if breakdown is not None else page_index.cpu_bytes
         )
+        native_reclaimable_available_hbm_bytes = getattr(
+            self, "_current_native_available_hbm_bytes", None
+        )
+        effective_hbm_used_bytes = (
+            self._joint_shadow_effective_hbm_used_bytes(observation)
+        )
         lock_service = self._lock_service_diagnostics(now_ms=now_ms)
         lock_service_fields = (
             lock_service.to_audit_fields()
@@ -17043,6 +17049,10 @@ class EmbeddedSGLangRuntime:
             hbm_capacity_bytes=observation.hbm_capacity_bytes,
             configured_hbm_capacity_bytes=self.config.hbm_capacity_bytes,
             hbm_used_bytes=observation.hbm_used_bytes,
+            effective_hbm_used_bytes=effective_hbm_used_bytes,
+            native_reclaimable_available_hbm_bytes=(
+                native_reclaimable_available_hbm_bytes
+            ),
             hbm_free_bytes=(
                 observation.hbm_capacity_bytes - observation.hbm_used_bytes
             ),
@@ -17165,6 +17175,26 @@ class EmbeddedSGLangRuntime:
         return max(
             0, observation.hbm_capacity_bytes - native_available_hbm_bytes
         )
+
+    def _joint_shadow_effective_observation(
+        self, observation: RuntimeResourceObservation
+    ) -> RuntimeResourceObservation:
+        """Expose capacity pressure after native Radix eviction to JointPlan.
+
+        ``allocator.available_size()`` excludes evictable native cache pages. A
+        predictive planner that consumes that raw value sees a nearly full HBM
+        pool even when SGLang can admit work by evicting ordinary Radix cache.
+        Physical telemetry keeps the raw allocator view; policy deltas use the
+        capacity that native admission can actually reclaim.
+        """
+
+        effective_used_bytes = min(
+            observation.hbm_capacity_bytes,
+            self._joint_shadow_effective_hbm_used_bytes(observation),
+        )
+        if effective_used_bytes == observation.hbm_used_bytes:
+            return observation
+        return replace(observation, hbm_used_bytes=effective_used_bytes)
 
     def _joint_shadow_causal_event_requires_full_plan(
         self,
@@ -18897,7 +18927,10 @@ class EmbeddedSGLangRuntime:
         native_available_hbm_bytes = getattr(
             self, "_current_native_available_hbm_bytes", None
         )
-        effective_hbm_used_bytes = self._joint_shadow_effective_hbm_used_bytes(observation)
+        effective_observation = self._joint_shadow_effective_observation(
+            observation
+        )
+        effective_hbm_used_bytes = effective_observation.hbm_used_bytes
         pressure_now = (
             effective_hbm_used_bytes
             >= int(
@@ -19068,7 +19101,7 @@ class EmbeddedSGLangRuntime:
             fairness_revision=self.controller.fairness.revision,
             transfer_epoch=int(control_state.get("transfer_epoch", 0)),
             runnable_signature=runnable_signature,
-            hbm_used_bytes=observation.hbm_used_bytes,
+            hbm_used_bytes=effective_hbm_used_bytes,
             host_free_bytes=observation.host_free_bytes,
             obligation_revision=liveness.obligation_revision,
             lease_revision=liveness.lease_revision,
@@ -19094,7 +19127,7 @@ class EmbeddedSGLangRuntime:
             stamp.lease_revision,
             stamp.grace_revision,
             getattr(self, "_reclaim_requirement_revision", 0),
-            observation.hbm_used_bytes
+            effective_hbm_used_bytes
             // self.config.reference_policy_hbm_bucket_bytes,
             observation.host_used_bytes,
             observation.host_free_bytes,
@@ -19137,7 +19170,7 @@ class EmbeddedSGLangRuntime:
         )
         physical_signature: tuple[object, ...] = (
             self.controller.transfer_backlog_bytes(),
-            observation.hbm_used_bytes
+            effective_hbm_used_bytes
             // self.config.reference_policy_hbm_bucket_bytes,
             observation.host_used_bytes,
             observation.host_free_bytes,
@@ -19277,7 +19310,7 @@ class EmbeddedSGLangRuntime:
                 )
                 urgent_d2h, urgent_h2d = self.controller.transfer_backlog_bytes()
                 published_observation = replace(
-                    observation,
+                    effective_observation,
                     urgent_d2h_bytes=urgent_d2h,
                     urgent_h2d_bytes=urgent_h2d,
                 )
@@ -19479,7 +19512,7 @@ class EmbeddedSGLangRuntime:
                 )
                 self._last_policy_snapshot_physical_signature = physical_signature
                 self._last_policy_snapshot_hbm_bucket = (
-                    observation.hbm_used_bytes
+                    effective_hbm_used_bytes
                     // self.config.reference_policy_hbm_bucket_bytes
                 )
                 self._last_policy_snapshot_ms = observation.ts_ms
@@ -20191,6 +20224,7 @@ class EmbeddedSGLangRuntime:
             fresh_positive_latest_start_ts_ms_values: list[float] = []
             max_expected_benefit_ms = 0.0
             max_expected_recourse_credit_ms = 0.0
+            candidate_rejection_reasons: Counter[str] = Counter()
             stale_reasons: Counter[str] = Counter()
             result_policy_input = getattr(result, "policy_input", None)
             policy_snapshot_ts_ms = float(
@@ -20205,6 +20239,9 @@ class EmbeddedSGLangRuntime:
                 benefit = float(summary.get("expected_benefit_ms") or 0.0)
                 recourse = float(
                     summary.get("expected_recourse_credit_ms") or 0.0
+                )
+                candidate_rejection_reasons.update(
+                    str(reason) for reason in summary.get("reasons", ())
                 )
                 max_expected_benefit_ms = max(
                     max_expected_benefit_ms, benefit
@@ -20334,6 +20371,10 @@ class EmbeddedSGLangRuntime:
                 stale_reasons=stale_reasons,
             )
             self._joint_predictive_counts["risk_shadow_evaluated"] += 1
+            for reason, count in candidate_rejection_reasons.items():
+                self._joint_predictive_counts[
+                    f"risk_candidate_rejected:{reason}"
+                ] += count
             self._joint_predictive_counts[
                 f"risk_shadow_selected_{selected_action}"
             ] += 1
@@ -20399,6 +20440,9 @@ class EmbeddedSGLangRuntime:
                 expected_benefit_ms_max=max_expected_benefit_ms,
                 expected_recourse_credit_ms_max=(
                     max_expected_recourse_credit_ms
+                ),
+                candidate_rejection_reason_counts=dict(
+                    sorted(candidate_rejection_reasons.items())
                 ),
                 queue_wait_ms=result.queue_wait_ms,
                 planning_ms=result.compute_ms,
