@@ -29,6 +29,8 @@ from beliefkv.policy.risk_shadow import (
     PredictiveRiskShadowObserver,
     PredictiveRiskShadowResult,
     _OnlineCandidatePhysicalizer,
+    _ActionTimingEvidence,
+    _minimum_action_timing_probability,
     _prepare_beneficiary_feasibility_reasons,
     _prefetch_prefix_projection,
     _transfer_deadline_and_slack,
@@ -73,6 +75,34 @@ def test_transfer_guard_is_recomputed_at_conservative_deadline() -> None:
         guard_ms=25.0,
     )
     assert positive is not None and positive > 0
+
+
+def test_action_timing_uses_calibrated_prepare_threshold() -> None:
+    config = PredictiveRiskShadowConfig(
+        minimum_causal_slack_probability=0.9,
+        minimum_prefetch_slack_probability=0.5,
+    )
+    calibrated = _ActionTimingEvidence(
+        semantics="release_after_transfer",
+        required_wait_ms=250.0,
+        causal_slack_probability=0.6,
+        conservative_remaining_window_ms=500.0,
+        decision_threshold=0.49,
+    )
+    uncalibrated = replace(calibrated, decision_threshold=None)
+
+    assert _minimum_action_timing_probability(
+        PredictiveActionKind.PREPARE_HOST, calibrated, config
+    ) == 0.49
+    assert _minimum_action_timing_probability(
+        PredictiveActionKind.PREFETCH_GPU, calibrated, config
+    ) == 0.49
+    assert _minimum_action_timing_probability(
+        PredictiveActionKind.PREPARE_HOST, uncalibrated, config
+    ) == 0.9
+    assert _minimum_action_timing_probability(
+        PredictiveActionKind.PREFETCH_GPU, uncalibrated, config
+    ) == 0.5
 
 
 def test_prepare_requires_time_and_reclaim_for_its_projected_beneficiary() -> None:

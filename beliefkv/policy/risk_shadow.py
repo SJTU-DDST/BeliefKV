@@ -110,6 +110,24 @@ class _ActionTimingEvidence:
     informative: bool = True
 
 
+def _minimum_action_timing_probability(
+    action: PredictiveActionKind,
+    timing: _ActionTimingEvidence,
+    config: PredictiveRiskShadowConfig,
+) -> float:
+    """Use the calibrated operating point whenever the action head has one."""
+
+    if timing.decision_threshold is not None:
+        return timing.decision_threshold
+    if action in {
+        PredictiveActionKind.PREFETCH_GPU,
+        PredictiveActionKind.PARTIAL_PREFETCH_GPU,
+        PredictiveActionKind.RECLAIM_AND_PREFETCH,
+    }:
+        return config.minimum_prefetch_slack_probability
+    return config.minimum_causal_slack_probability
+
+
 def _transfer_deadline_and_slack(
     pressure_ms: float | None,
     reentry_ms: float | None,
@@ -2210,17 +2228,11 @@ class PredictiveRiskShadowObserver:
                     )
                 else:
                     timing_by_package[package.package_id] = timing
-                    minimum_probability = self.config.minimum_causal_slack_probability
-                    if package.action in {
-                        PredictiveActionKind.PREFETCH_GPU,
-                        PredictiveActionKind.PARTIAL_PREFETCH_GPU,
-                        PredictiveActionKind.RECLAIM_AND_PREFETCH,
-                    }:
-                        minimum_probability = (
-                            timing.decision_threshold
-                            if timing.decision_threshold is not None
-                            else self.config.minimum_prefetch_slack_probability
-                        )
+                    minimum_probability = _minimum_action_timing_probability(
+                        package.action,
+                        timing,
+                        self.config,
+                    )
                     if not timing.informative:
                         summary = replace(
                             summary,
