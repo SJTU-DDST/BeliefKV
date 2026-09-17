@@ -2382,10 +2382,7 @@ class PredictiveRiskShadowObserver:
                 if prediction.remaining_decode_tokens.values
                 else "next_output_demand"
             )
-            support = (
-                ("boundary", prediction.support_for("boundary")),
-                (demand_head, prediction.support_for(demand_head)),
-            )
+            support = ((demand_head, prediction.support_for(demand_head)),)
             unavailable = tuple(
                 f"{name}_unavailable"
                 for name, level in support
@@ -3550,48 +3547,46 @@ class PredictiveRiskShadowObserver:
         candidates: tuple[RunnableInvocation, ...],
         predictions: Mapping[str, LocalFrontierPrediction],
     ) -> tuple[str, ...]:
+        source_rank = {
+            request.request_id: index
+            for index, request in enumerate(candidates)
+        }
+
         def priority(
             request: RunnableInvocation,
-        ) -> tuple[float, float, float, str]:
+        ) -> tuple[float, float, float, int]:
             prediction = predictions.get(request.invocation_id)
             if prediction is None:
-                return (1.0, float("inf"), float("inf"), request.request_id)
-            decode_tokens = (
-                prediction.remaining_decode_tokens.quantile(0.5)
-                if prediction.remaining_decode_tokens.values
-                else float(request.remaining_output_tokens)
+                return (
+                    1.0,
+                    float("inf"),
+                    float("inf"),
+                    source_rank[request.request_id],
+                )
+            running = request.causal_class.startswith("engine_running:")
+            demand_head = (
+                "remaining_decode_demand" if running else "next_output_demand"
             )
-            next_output_tokens = (
-                prediction.next_output_tokens.quantile(0.5)
-                if prediction.next_output_tokens.values
-                else 0.0
+            demand_distribution = (
+                prediction.remaining_decode_tokens
+                if running
+                else prediction.next_output_tokens
             )
-            prompt_growth_tokens = (
-                prediction.prompt_growth_tokens.quantile(0.5)
-                if prediction.prompt_growth_tokens.values
-                else 0.0
-            )
+            if (
+                prediction.support_for(demand_head) == "unavailable"
+                or not demand_distribution.values
+            ):
+                return (
+                    1.0,
+                    float("inf"),
+                    float("inf"),
+                    source_rank[request.request_id],
+                )
+            output_tokens = demand_distribution.quantile(0.5)
             demand_tokens = max(
                 1.0,
                 float(request.remaining_prefill_tokens)
-                + prompt_growth_tokens
-                + max(decode_tokens, next_output_tokens),
-            )
-            boundary_unlock_weights = {
-                "return": 3.0,
-                "final": 2.5,
-                "spawn": 2.0,
-                "handoff": 1.75,
-                "tool": 1.5,
-                "message": 1.25,
-            }
-            expected_unlock_value = max(
-                0.05,
-                sum(
-                    float(prediction.boundary_distribution.get(kind, 0.0))
-                    * weight
-                    for kind, weight in boundary_unlock_weights.items()
-                ),
+                + output_tokens,
             )
             hbm_demand = float(
                 (request.admission_startup_bytes or request.startup_bytes)
@@ -3599,9 +3594,9 @@ class PredictiveRiskShadowObserver:
             )
             return (
                 0.0,
-                demand_tokens / expected_unlock_value,
+                demand_tokens,
                 hbm_demand,
-                request.request_id,
+                source_rank[request.request_id],
             )
 
         return tuple(

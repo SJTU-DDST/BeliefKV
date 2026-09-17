@@ -647,7 +647,7 @@ def _prediction() -> LocalFrontierPrediction:
     )
 
 
-def test_predictive_execution_order_prioritizes_action_unlock_value() -> None:
+def test_predictive_execution_order_ignores_uninformative_boundary_head() -> None:
     base = _input(capacity=1_000, reserved=0).runnable_frontier[0]
     tool_request = replace(
         base,
@@ -665,11 +665,13 @@ def test_predictive_execution_order_prioritizes_action_unlock_value() -> None:
         _prediction(),
         invocation_id=tool_request.invocation_id,
         boundary_distribution={"tool": 1.0},
+        remaining_decode_tokens=_distribution(16),
     )
     return_prediction = replace(
         _prediction(),
         invocation_id=return_request.invocation_id,
         boundary_distribution={"return": 1.0},
+        remaining_decode_tokens=_distribution(64),
     )
 
     order = PredictiveRiskShadowObserver._predictive_execution_order(
@@ -680,7 +682,117 @@ def test_predictive_execution_order_prioritizes_action_unlock_value() -> None:
         },
     )
 
-    assert order == (return_request.request_id, tool_request.request_id)
+    assert order == (tool_request.request_id, return_request.request_id)
+
+
+def test_predictive_execution_order_preserves_seed_for_unavailable_demand() -> None:
+    base = _input(capacity=1_000, reserved=0).runnable_frontier[0]
+    first = replace(
+        base,
+        request_id="request-first",
+        invocation_id="invocation-first",
+        context_id="context-first",
+    )
+    second = replace(
+        base,
+        request_id="request-second",
+        invocation_id="invocation-second",
+        context_id="context-second",
+    )
+    unavailable = replace(
+        _prediction(),
+        remaining_decode_tokens=EmpiricalDistribution.empty(),
+        head_support={"remaining_decode_demand": "unavailable"},
+    )
+
+    order = PredictiveRiskShadowObserver._predictive_execution_order(
+        (first, second),
+        {
+            first.invocation_id: replace(
+                unavailable, invocation_id=first.invocation_id
+            ),
+            second.invocation_id: replace(
+                unavailable, invocation_id=second.invocation_id
+            ),
+        },
+    )
+
+    assert order == (first.request_id, second.request_id)
+
+
+def test_predictive_execution_order_uses_remaining_decode_demand() -> None:
+    base = replace(
+        _input(capacity=1_000, reserved=0).runnable_frontier[0],
+        causal_class="engine_running:decode",
+    )
+    long_request = replace(
+        base,
+        request_id="request-long",
+        invocation_id="invocation-long",
+        context_id="context-long",
+    )
+    short_request = replace(
+        base,
+        request_id="request-short",
+        invocation_id="invocation-short",
+        context_id="context-short",
+    )
+
+    order = PredictiveRiskShadowObserver._predictive_execution_order(
+        (long_request, short_request),
+        {
+            long_request.invocation_id: replace(
+                _prediction(),
+                invocation_id=long_request.invocation_id,
+                remaining_decode_tokens=_distribution(128),
+            ),
+            short_request.invocation_id: replace(
+                _prediction(),
+                invocation_id=short_request.invocation_id,
+                remaining_decode_tokens=_distribution(16),
+            ),
+        },
+    )
+
+    assert order == (short_request.request_id, long_request.request_id)
+
+
+def test_schedule_support_does_not_require_boundary_prediction() -> None:
+    observer = PredictiveRiskShadowObserver(
+        GPUServiceCurveModel(minimum_support=1)
+    )
+    prediction = replace(
+        _prediction(),
+        head_support={
+            "boundary": "unavailable",
+            "remaining_decode_demand": "exact",
+        },
+    )
+    package = PredictiveActionPackage(
+        package_id="schedule",
+        action=PredictiveActionKind.SCHEDULE,
+        context_ids=("context-target",),
+        beneficiary_request_id="request-target",
+        execution_order_request_ids=("request-target",),
+        beneficiary_invocation_id=prediction.invocation_id,
+        beneficiary_context_id="context-target",
+        beneficiary_context_epoch=0,
+    )
+
+    supported, support, reasons = observer._package_prediction_support(
+        package,
+        eligibility=PredictiveEligibility(
+            source_snapshot_id="snapshot",
+            prefetch_targets=(),
+            prepare_host_victims=(),
+            probe_ms=0.0,
+        ),
+        predictions={prediction.invocation_id: prediction},
+    )
+
+    assert supported is True
+    assert support == (("remaining_decode_demand", "exact"),)
+    assert reasons == ()
 
 
 def _tool_wait_belief(

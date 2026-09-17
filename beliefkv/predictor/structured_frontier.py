@@ -3866,7 +3866,7 @@ def _required_prediction_heads_for_state(state: str) -> tuple[str, ...]:
     """Return only heads that can affect the next action from this state."""
 
     if state == InvocationState.RUNNING_LLM.value:
-        return ("boundary", "remaining_decode_demand")
+        return ("remaining_decode_demand",)
     if state == InvocationState.READY.value:
         return ("next_output_demand", "prompt_growth")
     if state == InvocationState.WAIT_TOOL.value:
@@ -3887,10 +3887,7 @@ def _action_head_requirements_for_state(
     """Expose availability only for heads consumed by each online action."""
 
     if state == InvocationState.RUNNING_LLM.value:
-        return (
-            ("schedule", "boundary"),
-            ("schedule", "remaining_decode_demand"),
-        )
+        return (("schedule", "remaining_decode_demand"),)
     if state == InvocationState.READY.value:
         return (
             ("admit", "next_output_demand"),
