@@ -1,7 +1,7 @@
 # BeliefKV 当前架构与实现状态
 
 更新日期：2026-09-17
-当前 P6 代码基线：`c7fba92`
+当前 P6 代码基线：`41a1239`
 
 本文只记录当前事实和下一阻塞项，不再追加逐日开发日志。2026-09-12 以前的完整历史保存在
 `docs/archive/snapshots/architecture_status_zh.md`，单次实验细节保存在
@@ -270,6 +270,8 @@ package，最终 8 次选择 PREPARE，其中 7 次在 latest-start 前完成验
 CPU 回归为 `176 passed, 2 deselected, 8 subtests passed`；两项 deselected 仍仅依赖当前
 shell 缺失的 `CUDA_HOME`。predictive risk/JointPlan/worker/attribution 定向回归另有
 `70 passed`。GPU 端尚未验证，不能据此声称吞吐收益或在线 PREFETCH precision 已通过。
+`41a1239` 进一步让 performance mode 保留 lease registered/released 和
+`predictive_action_outcome` 三类低频事件，确保长 gate 能观察完整闭环而不恢复逐 step 审计。
 
 ## 6. 当前阻塞项
 
