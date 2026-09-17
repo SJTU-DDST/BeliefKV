@@ -1417,6 +1417,10 @@ class PredictiveActionCertificate:
 
     def causal_dict(self) -> dict[str, object]:
         return {
+            "package_id": self.package_id,
+            "action": self.action,
+            "source_snapshot_id": self.source_snapshot_id,
+            "target_context_id": self.target_context_id,
             "context_epochs": [list(item) for item in self.context_epochs],
             "invocation_evidence": [list(item) for item in self.invocation_evidence],
             "join_evidence": [
@@ -1426,6 +1430,12 @@ class PredictiveActionCertificate:
             "communication_evidence": [
                 list(item) for item in self.communication_evidence
             ],
+            "required_hbm_free_bytes": self.required_hbm_free_bytes,
+            "required_host_free_bytes": self.required_host_free_bytes,
+            "transfer_epoch": self.transfer_epoch,
+            "transfer_service_evidence": list(
+                self.transfer_service_evidence
+            ),
             "model_version": self.model_version,
         }
 

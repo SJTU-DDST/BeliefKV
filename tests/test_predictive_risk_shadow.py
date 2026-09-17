@@ -2747,7 +2747,7 @@ def test_action_certificate_ignores_unrelated_global_revision() -> None:
             model_version="frontier-test-v1",
         ),
     )
-    certificate = PredictiveActionCertificate(
+    action_certificate = PredictiveActionCertificate(
         package_id="prepare:ctx-target",
         action="prepare_host",
         source_snapshot_id=policy_input.snapshot_id,
@@ -2773,7 +2773,14 @@ def test_action_certificate_ignores_unrelated_global_revision() -> None:
         transfer_epoch=7,
         transfer_service_evidence=(100.0, 100.0, 0.1),
         model_version="frontier-test-v1",
-    ).to_dict()
+    )
+    causal_certificate = action_certificate.causal_dict()
+    assert causal_certificate["action"] == "prepare_host"
+    assert causal_certificate["target_context_id"] == "ctx-target"
+    assert causal_certificate["transfer_epoch"] == 7
+    assert causal_certificate["required_host_free_bytes"] == 0
+    assert "bundle_evidence" not in causal_certificate
+    certificate = action_certificate.to_dict()
     assert validate_predictive_causal_certificate(
         certificate,
         graph,
