@@ -1493,6 +1493,34 @@ def test_live_prepare_certificate_defers_physical_revision_to_commit():
     ] == 1
 
 
+def test_live_prefetch_certificate_uses_live_rccg_not_compact_snapshot():
+    runtime = EmbeddedSGLangRuntime.__new__(EmbeddedSGLangRuntime)
+    live_graph = object()
+    runtime.controller = SimpleNamespace(graph=live_graph)
+    runtime._last_frontier_model_version = "frontier-v1"
+    certificate = {
+        "action": PredictiveActionKind.PREFETCH_GPU.value,
+        "model_version": "frontier-v1",
+    }
+
+    with mock.patch(
+        "beliefkv.runtime.sglang_v052rc1.validate_predictive_causal_certificate",
+        return_value=(),
+    ) as validate:
+        assert runtime._predictive_live_prefetch_certificate_reasons(
+            certificate
+        ) == ()
+
+    validate.assert_called_once_with(
+        certificate,
+        live_graph,
+        current_model_version="frontier-v1",
+    )
+    certificate["action"] = PredictiveActionKind.PREPARE_HOST.value
+    assert runtime._predictive_live_prefetch_certificate_reasons(
+        certificate
+    ) == ("unsupported_action_local_certificate",)
+
 
 def test_action_local_overlay_revision_is_context_scoped():
     current = {"present": True, "epoch": 2, "revision": 7}

@@ -20812,6 +20812,34 @@ class EmbeddedSGLangRuntime:
             reasons.append("host_capacity_floor")
         return tuple(sorted(set(reasons)))
 
+    def _predictive_live_prefetch_certificate_reasons(
+        self,
+        certificate: Mapping[str, object],
+    ) -> tuple[str, ...]:
+        """Validate H2D causal evidence against the live RCCG.
+
+        The worker's compact PolicyInput intentionally omits unrelated graph and
+        physical state. Physical safety is revalidated when the intent is
+        rematerialized at the scheduler safe point.
+        """
+
+        if str(certificate.get("action") or "") not in {
+            PredictiveActionKind.PREFETCH_GPU.value,
+            PredictiveActionKind.PARTIAL_PREFETCH_GPU.value,
+            PredictiveActionKind.RECLAIM_AND_PREFETCH.value,
+        }:
+            return ("unsupported_action_local_certificate",)
+        graph = getattr(getattr(self, "controller", None), "graph", None)
+        if graph is None:
+            return ("live_causal_graph_unavailable",)
+        return validate_predictive_causal_certificate(
+            certificate,
+            graph,
+            current_model_version=(
+                getattr(self, "_last_frontier_model_version", None) or ""
+            ),
+        )
+
     def _drain_predictive_risk_result(
         self,
         observation: RuntimeResourceObservation,
@@ -20951,21 +20979,37 @@ class EmbeddedSGLangRuntime:
                 )
                 publish_reasons: tuple[str, ...] = ()
                 if candidate_intent is not None:
-                    live_graph = getattr(
-                        getattr(self, "controller", None), "graph", None
-                    )
                     if (
                         candidate_intent.action
                         == PredictiveActionKind.PREPARE_HOST
-                        and live_graph is not None
                     ):
-                        publish_reasons += validate_predictive_causal_certificate(
-                            candidate_intent.causal_certificate,
-                            live_graph,
-                            current_model_version=(
-                                getattr(self, "_last_frontier_model_version", None)
-                                or ""
-                            ),
+                        live_graph = getattr(
+                            getattr(self, "controller", None), "graph", None
+                        )
+                        if live_graph is None:
+                            publish_reasons += ("live_causal_graph_unavailable",)
+                        else:
+                            publish_reasons += validate_predictive_causal_certificate(
+                                candidate_intent.causal_certificate,
+                                live_graph,
+                                current_model_version=(
+                                    getattr(
+                                        self,
+                                        "_last_frontier_model_version",
+                                        None,
+                                    )
+                                    or ""
+                                ),
+                            )
+                    elif candidate_intent.action in {
+                        PredictiveActionKind.PREFETCH_GPU,
+                        PredictiveActionKind.PARTIAL_PREFETCH_GPU,
+                        PredictiveActionKind.RECLAIM_AND_PREFETCH,
+                    }:
+                        publish_reasons += (
+                            self._predictive_live_prefetch_certificate_reasons(
+                                candidate_intent.causal_certificate
+                            )
                         )
                     elif current_policy_input is None:
                         publish_reasons += ("current_policy_input_unavailable",)
@@ -21134,7 +21178,8 @@ class EmbeddedSGLangRuntime:
                 if not isinstance(certificate, Mapping):
                     continue
                 certificate_count += 1
-                if str(certificate.get("action") or "") == "prepare_host":
+                certificate_action = str(certificate.get("action") or "")
+                if certificate_action == PredictiveActionKind.PREPARE_HOST.value:
                     reasons = tuple(
                         sorted(
                             set(
@@ -21158,6 +21203,14 @@ class EmbeddedSGLangRuntime:
                                 )
                             )
                         )
+                    )
+                elif certificate_action in {
+                    PredictiveActionKind.PREFETCH_GPU.value,
+                    PredictiveActionKind.PARTIAL_PREFETCH_GPU.value,
+                    PredictiveActionKind.RECLAIM_AND_PREFETCH.value,
+                }:
+                    reasons = self._predictive_live_prefetch_certificate_reasons(
+                        certificate
                     )
                 else:
                     reasons = (
