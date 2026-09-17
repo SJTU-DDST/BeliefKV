@@ -8605,6 +8605,29 @@ class SGLangBackendTest(unittest.TestCase):
             ],
         )
 
+    def test_physical_device_capacity_uses_native_allocator_authority(self):
+        runtime = EmbeddedSGLangRuntime.__new__(EmbeddedSGLangRuntime)
+        runtime.config = BeliefKVConfig(
+            hbm_capacity_bytes=2_000,
+            host_capacity_bytes=4_000,
+            reserve_hbm_bytes=0,
+            kv_bytes_per_token=10,
+        )
+        runtime.controller = BeliefKVController(runtime.config)
+        runtime.controller.report_hbm_usage(1_900)
+        runtime.scheduler = SimpleNamespace(
+            token_to_kv_pool_allocator=SimpleNamespace(
+                full_available_size=lambda: 100,
+                swa_available_size=lambda: 80,
+            )
+        )
+
+        self.assertEqual(runtime._physical_device_available_bytes(), 800)
+        self.assertEqual(
+            runtime._last_physical_device_capacity_source,
+            "native_allocator",
+        )
+
     def test_prefetch_service_lease_prioritizes_until_first_service(self):
         runtime = EmbeddedSGLangRuntime.__new__(EmbeddedSGLangRuntime)
         runtime.config = BeliefKVConfig(

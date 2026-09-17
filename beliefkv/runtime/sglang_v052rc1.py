@@ -9088,6 +9088,35 @@ class EmbeddedSGLangRuntime:
             available_tokens = int(allocator.available_size())
         return max(0, available_tokens * self.config.kv_bytes_per_token)
 
+    def _physical_device_available_bytes(self) -> int:
+        """Return capacity that the native allocator can actually grant."""
+
+        scheduler = getattr(self, "scheduler", None)
+        allocator = getattr(scheduler, "token_to_kv_pool_allocator", None)
+        if allocator is not None:
+            available = self._allocator_available_bytes()
+            source = "native_allocator"
+        else:
+            native_available = getattr(
+                self, "_current_native_available_hbm_bytes", None
+            )
+            if native_available is not None:
+                available = max(0, int(native_available))
+                source = "native_admission_snapshot"
+            else:
+                available = max(
+                    0,
+                    self.config.hbm_capacity_bytes
+                    - self.controller.actual_hbm_used_bytes,
+                )
+                source = "tracked_hbm_fallback"
+        reserved = max(0, int(self.controller.admission.reserved_bytes))
+        self._last_physical_device_capacity_source = source
+        self._last_physical_device_available_bytes = max(
+            0, available - reserved
+        )
+        return self._last_physical_device_available_bytes
+
     def _joint_retraction_planner(
         self,
         *,
@@ -22357,12 +22386,7 @@ class EmbeddedSGLangRuntime:
         self._current_predictive_residency_commit = None
         checked_slices: list[ActionSlice] = []
         host_available = self.controller.signals.host_free_bytes
-        device_available = max(
-            0,
-            self.config.hbm_capacity_bytes
-            - self.controller.actual_hbm_used_bytes
-            - self.controller.admission.reserved_bytes,
-        )
+        device_available = self._physical_device_available_bytes()
         selected: tuple[
             int, SemanticResidencyTarget, PhysicalBundlePreview
         ] | None = None
@@ -23051,15 +23075,11 @@ class EmbeddedSGLangRuntime:
 
         preview: PhysicalBundlePreview | None = None
         victim_preview: PhysicalBundlePreview | None = None
+        device_available: int | None = None
         blockers: set[str] = set()
         if not reasons and command_kind is not None and target is not None:
             host_available = self.controller.signals.host_free_bytes
-            device_available = max(
-                0,
-                self.config.hbm_capacity_bytes
-                - self.controller.actual_hbm_used_bytes
-                - self.controller.admission.reserved_bytes,
-            )
+            device_available = self._physical_device_available_bytes()
             expected_actions = self._online_residency_expected_page_actions(action)
             candidates: list[PhysicalBundlePreview] = []
             envelope_blockers: set[str] = set()
@@ -23380,6 +23400,12 @@ class EmbeddedSGLangRuntime:
                 live_stall_source=live_stall_source,
                 live_morphology_slack_ms=live_morphology_slack_ms,
                 native_hicache_inflight_bytes=native_inflight_bytes,
+                device_available_bytes=device_available,
+                device_capacity_source=getattr(
+                    self,
+                    "_last_physical_device_capacity_source",
+                    "unknown",
+                ),
                 reasons=sorted(set(reasons)),
                 physical_blockers=sorted(blockers),
                 validation_phase_cpu_ms=phase_cpu_ms,
@@ -24558,12 +24584,7 @@ class EmbeddedSGLangRuntime:
                 intent.action
             )
             host_available = self.controller.signals.host_free_bytes
-            device_available = max(
-                0,
-                self.config.hbm_capacity_bytes
-                - self.controller.actual_hbm_used_bytes
-                - self.controller.admission.reserved_bytes,
-            )
+            device_available = self._physical_device_available_bytes()
             candidates: list[PhysicalBundlePreview] = []
             observed_blockers: set[str] = set()
             for context_id in source_bundle.owner_context_ids:
