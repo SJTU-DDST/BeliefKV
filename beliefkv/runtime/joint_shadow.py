@@ -752,6 +752,9 @@ class IncrementalPolicyInputAssembler:
         self._action_local_overlay_batch: (
             ActionLocalPhysicalOverlayBatch | None
         ) = None
+        self._reentry_overlay_batch_by_context: dict[
+            str, ActionLocalPhysicalOverlayBatch
+        ] = {}
 
     @property
     def last_stats(self) -> SnapshotBuildStats | None:
@@ -795,9 +798,18 @@ class IncrementalPolicyInputAssembler:
             self._frontier_predictions.update(delta.frontier_predictions)
             self._frontier_features.update(delta.frontier_features)
             if delta.action_local_overlay_replaced:
-                self._action_local_overlay_batch = (
-                    delta.action_local_overlay_batch
-                )
+                overlay_batch = delta.action_local_overlay_batch
+                if overlay_batch is not None and overlay_batch.reentry_context_ids:
+                    for context_id in overlay_batch.reentry_context_ids:
+                        self._reentry_overlay_batch_by_context[
+                            context_id
+                        ] = overlay_batch
+                else:
+                    self._action_local_overlay_batch = overlay_batch
+            live_context_ids = set(self.graph.contexts)
+            for context_id in tuple(self._reentry_overlay_batch_by_context):
+                if context_id not in live_context_ids:
+                    self._reentry_overlay_batch_by_context.pop(context_id, None)
             for source in delta.frontier_feature_sources:
                 self._frontier_feature_sources[source.invocation_id] = source
             if self.graph.graph_version != delta.stamp.graph_version:
@@ -989,25 +1001,92 @@ class IncrementalPolicyInputAssembler:
                 value=delta.observed_seed_beneficiary.to_dict(),
                 producer="bounded_observed_seed",
             )
-        overlay_batch = self._action_local_overlay_batch
-        if (
-            overlay_batch is not None
-            and (
-                bool(overlay_batch.reentry_context_ids)
-                or (
-                    delta.observed_seed_beneficiary is not None
-                    and overlay_batch.beneficiary_risk_signature
-                    == delta.observed_seed_beneficiary.risk_signature
+        reentry_context_ids = tuple(
+            sorted(
+                {
+                    invocation.context_id
+                    for risk_class, _event_kind, invocation_id, _context_epoch
+                    in risk_trigger_signature
+                    if risk_class == "reentry"
+                    and (
+                        invocation := self.graph.invocations.get(invocation_id)
+                    )
+                    is not None
+                }
+            )
+        )
+        if reentry_context_ids:
+            batches = tuple(
+                dict.fromkeys(
+                    self._reentry_overlay_batch_by_context.get(context_id)
+                    for context_id in reentry_context_ids
+                    if self._reentry_overlay_batch_by_context.get(context_id)
+                    is not None
                 )
             )
-        ):
+            overlay_by_context = {
+                item.context_id: item
+                for batch in batches
+                for item in batch.overlays
+                if item.context_id in reentry_context_ids
+            }
+            missing_context_ids = tuple(
+                context_id
+                for context_id in reentry_context_ids
+                if context_id not in overlay_by_context
+            )
+            selection_reason = next(
+                (
+                    batch.selection_reason
+                    for batch in batches
+                    if batch.selection_reason is not None
+                    and any(
+                        context_id in batch.reentry_context_ids
+                        for context_id in missing_context_ids
+                    )
+                ),
+                (
+                    "reentry_physical_overlay_unavailable"
+                    if missing_context_ids
+                    else None
+                ),
+            )
             metadata["beliefkv_action_local_physical_overlay"] = MetadataValue(
                 source=MetadataSource.OBSERVED,
-                value=overlay_batch.to_dict(),
-                producer="safe_point_action_local_overlay",
+                value={
+                    "beneficiary_risk_signature": (),
+                    "opportunity": {},
+                    "overlays": [
+                        overlay_by_context[context_id].to_dict()
+                        for context_id in reentry_context_ids
+                        if context_id in overlay_by_context
+                    ],
+                    "reentry_context_ids": list(reentry_context_ids),
+                    "selection_reason": selection_reason,
+                    "capture_ms": sum(
+                        batch.capture_ms for batch in batches
+                    ),
+                    "parked_context_count": 0,
+                    "summarized_context_count": 0,
+                    "mechanism_capture_forced": False,
+                },
+                producer="safe_point_reentry_physical_overlay",
             )
         else:
-            metadata.pop("beliefkv_action_local_physical_overlay", None)
+            overlay_batch = self._action_local_overlay_batch
+            if (
+                delta.observed_seed_beneficiary is not None
+                and overlay_batch is not None
+                and overlay_batch.beneficiary_risk_signature
+                == delta.observed_seed_beneficiary.risk_signature
+            ):
+                metadata["beliefkv_action_local_physical_overlay"] = MetadataValue(
+                    source=MetadataSource.OBSERVED,
+                    value=overlay_batch.to_dict(),
+                    producer="safe_point_action_local_overlay",
+                )
+            else:
+                metadata.pop("beliefkv_action_local_physical_overlay", None)
         return replace(
             policy_input,
             runtime_graph=RuntimeGraphSnapshot(

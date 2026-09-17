@@ -1318,6 +1318,107 @@ def test_reentry_risk_materializes_without_prepare_beneficiary() -> None:
     assert scope["physical_source"] == "action_local_overlay"
 
 
+def test_reentry_overlay_survives_later_beneficiary_refresh() -> None:
+    config = BeliefKVConfig(
+        hbm_capacity_bytes=1_000,
+        host_capacity_bytes=1_000,
+        reserve_hbm_bytes=0,
+        predictor_enabled=False,
+        shadow_enabled=False,
+        performance_mode=True,
+    )
+    controller = BeliefKVController(config)
+    controller.process_runtime_events(
+        (
+            _event(1, RuntimeEventKind.WORKFLOW_START),
+            _event(
+                2,
+                RuntimeEventKind.INVOCATION_CREATE,
+                invocation_id="root",
+                context_id="ctx",
+                context_epoch=0,
+            ),
+        )
+    )
+    assembler = IncrementalPolicyInputAssembler(config)
+    initial = _delta(controller, event_sequence=0, page_revision=0, ts_ms=2)
+    assembler.apply(initial)
+    cursor_event = initial.event_to_sequence
+    cursor_page = initial.page_delta.to_revision
+    reentry_batch = ActionLocalPhysicalOverlayBatch(
+        beneficiary_risk_signature=(),
+        opportunity=None,
+        reentry_context_ids=("ctx",),
+        selection_reason="reentry_no_prefetchable_cpu_bytes",
+    )
+    assembler.apply(
+        replace(
+            _delta(
+                controller,
+                event_sequence=cursor_event,
+                page_revision=cursor_page,
+                ts_ms=3,
+            ),
+            action_local_overlay_batch=reentry_batch,
+            action_local_overlay_replaced=True,
+        )
+    )
+    hint = ObservedSeedBeneficiaryHint(
+        "seed", "request", "root", "ctx", 0, 64, 32
+    )
+    probe = BeneficiaryOpportunityProbe(
+        beneficiary_request_id="request",
+        beneficiary_context_id="ctx",
+        beneficiary_context_epoch=0,
+        required_bytes=96,
+        hbm_available_bytes=1_000,
+        hbm_risk_margin_bytes=0,
+        projected_running_growth_bytes=0,
+        projected_hbm_available_bytes=1_000,
+        predicted_block_time_ms=None,
+        predicted_deficit_bytes=0,
+        running_request_count=0,
+        max_running_requests=32,
+        beneficiary_slot_blocked=False,
+        beneficiary_hbm_blocked=False,
+        beneficiary_slot_then_hbm_blocked=False,
+        hbm_opportunity_possible=False,
+        captured_ts_ms=4.0,
+    )
+    assembler.apply(
+        replace(
+            _delta(
+                controller,
+                event_sequence=cursor_event,
+                page_revision=cursor_page,
+                ts_ms=4,
+            ),
+            observed_seed_beneficiary=hint,
+            action_local_overlay_batch=ActionLocalPhysicalOverlayBatch(
+                beneficiary_risk_signature=hint.risk_signature,
+                opportunity=probe,
+                selection_reason="beneficiary_capacity_available",
+            ),
+            action_local_overlay_replaced=True,
+        )
+    )
+
+    refreshed = assembler.refresh_predictive_semantics(
+        assembler.build(),
+        risk_trigger_signature=(("reentry", "tool_end", "root", 0),),
+    )
+
+    overlay = refreshed.optional_metadata[
+        "beliefkv_action_local_physical_overlay"
+    ]
+    assert overlay.producer == "safe_point_reentry_physical_overlay"
+    assert overlay.value["reentry_context_ids"] == ("ctx",)
+    assert (
+        overlay.value["selection_reason"]
+        == "reentry_no_prefetchable_cpu_bytes"
+    )
+
+
 def test_semantic_progress_does_not_erase_inflight_risk_trigger() -> None:
     config = BeliefKVConfig(
         hbm_capacity_bytes=1_000,
