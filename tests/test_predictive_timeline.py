@@ -149,6 +149,45 @@ def test_join_is_resolved_after_candidate_batch_schedule() -> None:
     assert serial_timeline.join_reentry_offsets_ms["join"] != max(100, 100)
 
 
+def test_join_release_respects_child_return_completion_floor() -> None:
+    scenario = _scenario()
+    outcomes = tuple(
+        replace(item, completion_floor_ms=300_000.0)
+        if item.invocation_id == "child-a"
+        else item
+        for item in scenario.outcomes
+    )
+    evaluator = CandidateTimelineEvaluator(_service_model(), service_quantile=0.9)
+    plan = CandidatePhysicalPlan(
+        package_id="child-return-floor",
+        physical_snapshot_id="snapshot",
+        physical_snapshot_revision=1,
+        invocation_demands=_physical_demands(),
+        batches=tuple(
+            ScheduledBatchQuantum(
+                child,
+                DemandPhase.DECODE,
+                (ScheduledRequestQuantum(child, 100, 4096),),
+                chunk_position="first",
+            )
+            for child in ("child-a", "child-b")
+        ),
+    )
+
+    timeline = evaluator.evaluate(
+        DemandScenario("child-return-floor", outcomes, 1.0), plan
+    )
+    child = next(
+        item
+        for item in timeline.invocation_outcomes
+        if item.invocation_id == "child-a"
+    )
+
+    assert child.completion_offset_ms == 300_000.0
+    assert child.completion_source == "child_completion_model"
+    assert timeline.join_reentry_offsets_ms["join"] == 300_000.0
+
+
 def test_service_estimates_are_reused_across_candidate_timelines() -> None:
     evaluator = CandidateTimelineEvaluator(_service_model(), service_quantile=0.9)
     plan = CandidatePhysicalPlan(

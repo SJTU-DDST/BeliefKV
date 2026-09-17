@@ -122,6 +122,13 @@ def _features_for_invocation(
         current_sequence_tokens=context_tokens,
         active_tool_count=active_tool_count,
         backend_pressure=backend_pressure,
+        invocation_elapsed_ms=max(
+            0.0, now_ms - invocation.created_ts_ms
+        ),
+        state_elapsed_ms=max(0.0, now_ms - invocation.updated_ts_ms),
+        llm_round=invocation.llm_round,
+        child_count=len(invocation.child_invocation_ids),
+        unfinished_child_count=len(invocation.blocking_child_ids),
     )
 
 

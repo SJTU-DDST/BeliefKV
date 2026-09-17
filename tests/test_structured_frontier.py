@@ -49,6 +49,11 @@ def test_local_frontier_features_round_trip() -> None:
         current_sequence_tokens=8192,
         active_tool_count=3,
         backend_pressure="shell:3",
+        invocation_elapsed_ms=12_345.0,
+        state_elapsed_ms=125.5,
+        llm_round=7,
+        child_count=2,
+        unfinished_child_count=1,
     )
 
     assert LocalFrontierFeatures.from_dict(features.to_dict()) == features
@@ -373,6 +378,100 @@ def test_calibration_loader_requires_explicit_formal_local_permission(
         load_evaluation_rows(
             (calibration,), split="test_id", allow_formal_local=True
         )
+
+
+def test_formal_loader_attaches_only_complete_child_return_targets(
+    tmp_path: Path,
+) -> None:
+    root = _write_dataset(
+        tmp_path / "train-child-return",
+        run_id="run-child-return",
+        split="train",
+        decision_id="child-decision",
+    )
+    row = json.loads(
+        (root / "frontier_decision_points.jsonl").read_text(encoding="utf-8")
+    )
+    row["timestamp_ms"] = 1_000.0
+    (root / "frontier_decision_points.jsonl").write_text(
+        json.dumps(row) + "\n", encoding="utf-8"
+    )
+    (root / "reentries.jsonl").write_text(
+        "\n".join(
+            json.dumps(item)
+            for item in (
+                {
+                    "reentry_kind": "join",
+                    "training_eligible": True,
+                    "terminal_status": "satisfied",
+                    "member_outcomes": [
+                        {
+                            "invocation_id": "child",
+                            "start_ts_ms": 500.0,
+                            "return_ts_ms": 6_000.0,
+                        }
+                    ],
+                },
+                {
+                    "reentry_kind": "join",
+                    "training_eligible": False,
+                    "terminal_status": "censored",
+                    "member_outcomes": [
+                        {"invocation_id": "other", "return_ts_ms": 2_000.0}
+                    ],
+                },
+            )
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+
+    rows, _ = load_decision_rows((root,), allowed_splits=("train",))
+    label = rows[0]["labels"][0]
+
+    assert label["remaining_to_return_ms"] == 5_000.0
+    assert label["target_training_eligible"]["child_completion"]
+    assert label["target_horizon_timestamp_ms"]["child_completion"] == 6_000.0
+    assert rows[0]["invocations"][0]["invocation_elapsed_ms"] == 500.0
+
+
+def test_child_completion_head_predicts_full_return_residual() -> None:
+    rows = []
+    for index, residual_ms in enumerate((300_000.0, 600_000.0, 900_000.0)):
+        row = _row(f"child-return-{index}", 32)
+        row["workflow_id"] = f"workflow-{index}"
+        row["invocations"][0].update(
+            {
+                "llm_round": index + 1,
+                "state_elapsed_ms": 100.0,
+                "invocation_elapsed_ms": 1_000.0 * (index + 1),
+            }
+        )
+        row["labels"][0]["remaining_to_return_ms"] = residual_ms
+        row["labels"][0]["target_training_eligible"] = {
+            "child_completion": True
+        }
+        rows.append(row)
+
+    model = FrontierBeliefModel(model_version="child-completion-test")
+    summary = model.fit(rows)
+    prediction = model.predict(
+        LocalFrontierFeatures(
+            invocation_id="child",
+            state="running_llm",
+            agent_definition_id="worker",
+            current_sequence_tokens=4096,
+            llm_round=2,
+            invocation_elapsed_ms=2_000.0,
+            state_elapsed_ms=100.0,
+        )
+    )
+
+    assert summary["observation_counts"]["child_completion"] == 3
+    assert prediction.remaining_to_return_ms.support == pytest.approx(3.0)
+    assert prediction.remaining_to_return_ms.quantile(0.5) > 100_000.0
+    restored = LocalFrontierPrediction.from_dict(prediction.to_dict())
+    assert restored.remaining_to_return_ms == prediction.remaining_to_return_ms
 
 
 def test_runtime_environment_digest_ignores_source_count_and_paths() -> None:

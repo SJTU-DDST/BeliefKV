@@ -62,15 +62,45 @@ def _demand_sparse_features(features: object) -> dict[str, float]:
     generated = max(
         0.0, float(_feature_value(features, "generated_tokens", 0) or 0)
     )
+    invocation_elapsed = max(
+        0.0,
+        float(_feature_value(features, "invocation_elapsed_ms", 0.0) or 0.0),
+    )
+    state_elapsed = max(
+        0.0, float(_feature_value(features, "state_elapsed_ms", 0.0) or 0.0)
+    )
+    llm_round = max(
+        0.0, float(_feature_value(features, "llm_round", 0) or 0)
+    )
+    child_count = max(
+        0.0, float(_feature_value(features, "child_count", 0) or 0)
+    )
+    unfinished_child_count = max(
+        0.0,
+        float(_feature_value(features, "unfinished_child_count", 0) or 0),
+    )
     lc = math.log1p(context) / 12.0
     lg = math.log1p(generated) / 8.0
+    li = math.log1p(invocation_elapsed) / 12.0
+    ls = math.log1p(state_elapsed) / 12.0
+    lr = math.log1p(llm_round) / 4.0
+    lch = math.log1p(child_count) / 3.0
+    luch = math.log1p(unfinished_child_count) / 3.0
     output = {
         "bias": 1.0,
         "lc": lc,
         "lg": lg,
+        "li": li,
+        "ls": ls,
+        "lr": lr,
+        "lch": lch,
+        "luch": luch,
         "lc2": lc * lc,
         "lg2": lg * lg,
+        "li2": li * li,
+        "ls2": ls * ls,
         "lcg": lc * lg,
+        "lilr": li * lr,
     }
     for field in _DEMAND_CATEGORY_FIELDS:
         value = _category(features, field)

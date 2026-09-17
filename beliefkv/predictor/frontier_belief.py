@@ -383,6 +383,7 @@ class FrontierDemandOutcome:
     remaining_decode_tokens: int
     prompt_growth_tokens: int
     next_output_tokens: int
+    completion_floor_ms: float = 0.0
     external_segments: tuple[ExternalDemandSegment, ...] = ()
     dependency_invocation_ids: tuple[str, ...] = ()
     join_id: str | None = None
@@ -404,6 +405,13 @@ class FrontierDemandOutcome:
         )
         if min(token_demands) < 0:
             raise ValueError("belief outcome token demand must be non-negative")
+        if (
+            not math.isfinite(self.completion_floor_ms)
+            or self.completion_floor_ms < 0
+        ):
+            raise ValueError(
+                "belief completion floor must be finite and non-negative"
+            )
         dependency_ids = tuple(sorted(set(self.dependency_invocation_ids)))
         if any(not item or item == self.invocation_id for item in dependency_ids):
             raise ValueError("dependency invocation IDs must be non-empty peers")

@@ -388,8 +388,18 @@ class CandidateTimelineEvaluator:
                     item.residual_delay_ms for item in outcome.external_segments
                 )
                 if invocation_id not in physical:
-                    completion[invocation_id] = dependency_release[invocation_id]
+                    completion[invocation_id] = max(
+                        float(dependency_release[invocation_id] or 0.0),
+                        outcome.completion_floor_ms,
+                    )
                     completion_source[invocation_id] = "external_segment"
+            elif (
+                invocation_id not in physical
+                and outcome.dependency_mode == DependencyMode.NONE
+                and outcome.completion_floor_ms > 0
+            ):
+                completion[invocation_id] = outcome.completion_floor_ms
+                completion_source[invocation_id] = "child_completion_model"
 
         self._settle_dependency_releases(
             outcomes,
@@ -795,6 +805,9 @@ class CandidateTimelineEvaluator:
     ) -> None:
         while True:
             before = (tuple(completion.items()), tuple(dependency_release.items()))
+            cls._apply_completion_floors(
+                outcomes, completion, completion_source
+            )
             cls._resolve_dependency_releases(
                 outcomes,
                 completion,
@@ -807,9 +820,27 @@ class CandidateTimelineEvaluator:
                 completion,
                 completion_source,
             )
+            cls._apply_completion_floors(
+                outcomes, completion, completion_source
+            )
             after = (tuple(completion.items()), tuple(dependency_release.items()))
             if after == before:
                 return
+
+    @staticmethod
+    def _apply_completion_floors(
+        outcomes: Mapping[str, object],
+        completion: dict[str, float | None],
+        completion_source: dict[str, str],
+    ) -> None:
+        for invocation_id, current in completion.items():
+            if current is None:
+                continue
+            floor_ms = float(outcomes[invocation_id].completion_floor_ms)
+            if floor_ms <= current:
+                continue
+            completion[invocation_id] = floor_ms
+            completion_source[invocation_id] = "child_completion_model"
 
     @staticmethod
     def _complete_zero_demand(
@@ -829,6 +860,10 @@ class CandidateTimelineEvaluator:
             ):
                 continue
             completion[invocation_id] = max(0.0, float(release or 0.0))
+            completion[invocation_id] = max(
+                completion[invocation_id],
+                float(outcomes[invocation_id].completion_floor_ms),
+            )
             completion_source[invocation_id] = "zero_physical_demand"
 
     @staticmethod

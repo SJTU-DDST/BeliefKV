@@ -33,8 +33,8 @@ from beliefkv.predictor.frontier_belief import (
 )
 
 
-STRUCTURED_FRONTIER_SCHEMA_VERSION = 5
-SUPPORTED_STRUCTURED_FRONTIER_SCHEMA_VERSIONS = frozenset({4, 5})
+STRUCTURED_FRONTIER_SCHEMA_VERSION = 6
+SUPPORTED_STRUCTURED_FRONTIER_SCHEMA_VERSIONS = frozenset({4, 5, 6})
 MINIMUM_DEMAND_DECISION_SCHEMA_VERSION = 2
 FORMAL_P6_DATASET_KIND = "beliefkv_p6_training_evidence"
 FORMAL_P6_PLAN_IDS = frozenset(
@@ -189,14 +189,24 @@ class LocalFrontierFeatures:
     current_sequence_tokens: int = 0
     active_tool_count: int = 0
     backend_pressure: str = "unknown"
+    invocation_elapsed_ms: float = 0.0
+    state_elapsed_ms: float = 0.0
+    llm_round: int = 0
+    child_count: int = 0
+    unfinished_child_count: int = 0
 
     def __post_init__(self) -> None:
         if min(
             self.generated_tokens,
             self.current_sequence_tokens,
             self.active_tool_count,
+            self.llm_round,
+            self.child_count,
+            self.unfinished_child_count,
         ) < 0:
             raise ValueError("frontier demand features must be non-negative")
+        if min(self.invocation_elapsed_ms, self.state_elapsed_ms) < 0:
+            raise ValueError("frontier elapsed features must be non-negative")
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -212,6 +222,11 @@ class LocalFrontierFeatures:
             "current_sequence_tokens": self.current_sequence_tokens,
             "active_tool_count": self.active_tool_count,
             "backend_pressure": self.backend_pressure,
+            "invocation_elapsed_ms": self.invocation_elapsed_ms,
+            "state_elapsed_ms": self.state_elapsed_ms,
+            "llm_round": self.llm_round,
+            "child_count": self.child_count,
+            "unfinished_child_count": self.unfinished_child_count,
         }
 
     @classmethod
@@ -231,6 +246,15 @@ class LocalFrontierFeatures:
             current_sequence_tokens=int(raw.get("current_sequence_tokens") or 0),
             active_tool_count=int(raw.get("active_tool_count") or 0),
             backend_pressure=str(raw.get("backend_pressure") or "unknown"),
+            invocation_elapsed_ms=float(
+                raw.get("invocation_elapsed_ms") or 0.0
+            ),
+            state_elapsed_ms=float(raw.get("state_elapsed_ms") or 0.0),
+            llm_round=int(raw.get("llm_round") or 0),
+            child_count=int(raw.get("child_count") or 0),
+            unfinished_child_count=int(
+                raw.get("unfinished_child_count") or 0
+            ),
         )
 
 
@@ -482,6 +506,9 @@ class LocalFrontierPrediction:
     next_output_tokens: EmpiricalDistribution
     support_level: str
     calibration_coverage: float
+    remaining_to_return_ms: EmpiricalDistribution = field(
+        default_factory=EmpiricalDistribution.empty
+    )
     ood_reasons: tuple[str, ...] = ()
     calibrated_intervals: Mapping[str, tuple[float, float]] = field(
         default_factory=dict
@@ -556,6 +583,11 @@ class LocalFrontierPrediction:
                 "message_dependency": (
                     "structural"
                     if self.wait_belief.kind == WaitBeliefKind.MESSAGE
+                    else "unavailable"
+                ),
+                "child_completion": (
+                    legacy_level
+                    if self.remaining_to_return_ms.values
                     else "unavailable"
                 ),
             }
@@ -651,6 +683,7 @@ class LocalFrontierPrediction:
             "tool_terminal_distribution": dict(self.tool_terminal_distribution),
             "prompt_growth_tokens": self.prompt_growth_tokens.to_dict(),
             "next_output_tokens": self.next_output_tokens.to_dict(),
+            "remaining_to_return_ms": self.remaining_to_return_ms.to_dict(),
             "support_level": self.support_level,
             "calibration_coverage": self.calibration_coverage,
             "ood_reasons": list(self.ood_reasons),
@@ -704,6 +737,9 @@ class LocalFrontierPrediction:
             ),
             support_level=str(raw.get("support_level", "unavailable")),
             calibration_coverage=float(raw.get("calibration_coverage", 0.0)),
+            remaining_to_return_ms=EmpiricalDistribution.from_dict(
+                raw.get("remaining_to_return_ms", {})
+            ),
             ood_reasons=tuple(str(item) for item in raw.get("ood_reasons", ())),
             calibrated_intervals={
                 str(name): (float(value[0]), float(value[1]))
@@ -1079,6 +1115,9 @@ class FrontierBeliefModel:
         self.pooled_prompt_growth = PooledConditionalDemandModel(
             regularization=self.hyperparameters.pooled_demand_regularization
         )
+        self.pooled_child_completion = PooledConditionalDemandModel(
+            regularization=self.hyperparameters.pooled_demand_regularization
+        )
         self.pooled_boundary = PooledConditionalClassifier(
             regularization=self.hyperparameters.pooled_classifier_regularization,
             balance_power=self.hyperparameters.pooled_classifier_balance_power,
@@ -1122,9 +1161,13 @@ class FrontierBeliefModel:
         local_episode_counts = _local_episode_counts(values)
         workflow_episode_counts = _workflow_local_episode_counts(values)
         tool_fit_weights = _tool_fit_weights(values)
+        child_completion_weights = _child_completion_fit_weights(values)
         pooled_decode_samples: list[tuple[object, float, float]] = []
         pooled_output_samples: list[tuple[object, float, float]] = []
         pooled_prompt_samples: list[tuple[object, float, float]] = []
+        pooled_child_completion_samples: list[
+            tuple[object, float, float]
+        ] = []
         pooled_boundary_samples: list[tuple[object, str, float]] = []
         pooled_tool_terminal_samples: list[tuple[object, str, float]] = []
         observed = Counter()
@@ -1220,6 +1263,25 @@ class FrontierBeliefModel:
                         (local_features, float(prompt_growth), weight)
                     )
                     observed["prompt_growth"] += 1
+                remaining_to_return = label.get("remaining_to_return_ms")
+                if (
+                    remaining_to_return is not None
+                    and _target_eligible(label, "child_completion")
+                ):
+                    pooled_child_completion_samples.append(
+                        (
+                            local_features,
+                            float(remaining_to_return),
+                            child_completion_weights.get(
+                                (
+                                    str(row.get("decision_id") or ""),
+                                    invocation_id,
+                                ),
+                                weight,
+                            ),
+                        )
+                    )
+                    observed["child_completion"] += 1
                 if (
                     trigger == RuntimeEventKind.TOOL_START.value
                     and state == InvocationState.WAIT_TOOL.value
@@ -1267,6 +1329,9 @@ class FrontierBeliefModel:
             ),
             "prompt_growth_tokens": self.pooled_prompt_growth.fit(
                 pooled_prompt_samples
+            ),
+            "remaining_to_return_ms": self.pooled_child_completion.fit(
+                pooled_child_completion_samples
             ),
         }
         pooled_classification_summary = {
@@ -1374,6 +1439,14 @@ class FrontierBeliefModel:
                 pooled_values, pooled_mass, pooled_support
             )
             prompt_level = pooled_level
+        child_values, child_mass, child_support, child_level = (
+            self.pooled_child_completion.predict(features)
+        )
+        child_completion = (
+            EmpiricalDistribution(child_values, child_mass, child_support)
+            if child_values
+            else EmpiricalDistribution.empty()
+        )
         wait = EmpiricalDistribution.empty()
         terminal: Mapping[str, float] = {}
         wait_belief: WaitBelief
@@ -1471,6 +1544,7 @@ class FrontierBeliefModel:
                 if features.state == InvocationState.WAIT_MESSAGE.value
                 else "unavailable"
             ),
+            "child_completion": child_level,
         }
         relevant_heads = _required_prediction_heads_for_state(features.state)
         relevant_levels = tuple(head_support[name] for name in relevant_heads)
@@ -1498,6 +1572,7 @@ class FrontierBeliefModel:
                 ("remaining_decode_tokens", decode),
                 ("prompt_growth_tokens", prompt),
                 ("next_output_tokens", output),
+                ("remaining_to_return_ms", child_completion),
             )
             if distribution.values and self.calibration_coverage > 0
         }
@@ -1512,6 +1587,7 @@ class FrontierBeliefModel:
             next_output_tokens=output,
             support_level=support_level,
             calibration_coverage=self.calibration_coverage,
+            remaining_to_return_ms=child_completion,
             ood_reasons=tuple(f"{item}_unavailable" for item in unavailable),
             calibrated_intervals=intervals,
             wait_belief=wait_belief,
@@ -1657,13 +1733,25 @@ class FrontierBeliefModel:
                         else None,
                         prediction.next_output_tokens,
                     ),
+                    (
+                        "remaining_to_return_ms",
+                        label.get("remaining_to_return_ms")
+                        if _target_eligible(label, "child_completion")
+                        else None,
+                        prediction.remaining_to_return_ms,
+                    ),
                 )
                 for name, actual, distribution in scalar_targets:
                     if actual is None or not distribution.values:
                         continue
                     lower, upper = _raw_interval(distribution, target_coverage)
                     score = max(lower - float(actual), float(actual) - upper, 0.0)
-                    scores[name][local_episode].append(score)
+                    score_episode = (
+                        f"{workflow}|child:{invocation_id}"
+                        if name == "remaining_to_return_ms"
+                        else local_episode
+                    )
+                    scores[name][score_episode].append(score)
                     observation_counts[name] += 1
                 if (
                     wait_target
@@ -1794,6 +1882,9 @@ class FrontierBeliefModel:
                 "pooled_decode_demand": self.pooled_decode_demand.to_dict(),
                 "pooled_next_output": self.pooled_next_output.to_dict(),
                 "pooled_prompt_growth": self.pooled_prompt_growth.to_dict(),
+                "pooled_child_completion": (
+                    self.pooled_child_completion.to_dict()
+                ),
                 "pooled_boundary": self.pooled_boundary.to_dict(),
                 "pooled_tool_terminal": self.pooled_tool_terminal.to_dict(),
                 "tool": self.tool.to_dict(),
@@ -1829,6 +1920,9 @@ class FrontierBeliefModel:
         )
         model.pooled_prompt_growth = PooledConditionalDemandModel.from_dict(
             components.get("pooled_prompt_growth", {})
+        )
+        model.pooled_child_completion = PooledConditionalDemandModel.from_dict(
+            components.get("pooled_child_completion", {})
         )
         model.pooled_boundary = PooledConditionalClassifier.from_dict(
             components.get("pooled_boundary", {})
@@ -2124,6 +2218,7 @@ class FrontierScenarioComposer:
                 wait.residual_duration,
                 tuple(sorted(wait.terminal_distribution.items())),
             ),
+            prediction.remaining_to_return_ms,
         )
 
     def reduce_particles(
@@ -2345,10 +2440,101 @@ class FrontierScenarioComposer:
             next_output_tokens=int(
                 round(prediction.next_output_tokens.sample(quantile))
             ),
+            completion_floor_ms=(
+                prediction.remaining_to_return_ms.sample(quantile)
+                if invocation.parent_invocation_id is not None
+                else 0.0
+            ),
             external_segments=external_segments,
             dependency_invocation_ids=dependencies,
             join_id=join_id,
         )
+
+
+def _child_return_targets(
+    root: Path,
+) -> dict[str, tuple[float, float | None]]:
+    path = root / "reentries.jsonl"
+    if not path.is_file():
+        return {}
+    targets: dict[str, tuple[float, float | None]] = {}
+    for line in path.read_text(encoding="utf-8").splitlines():
+        row = json.loads(line)
+        if (
+            row.get("reentry_kind") != "join"
+            or row.get("training_eligible") is not True
+            or row.get("terminal_status") != "satisfied"
+        ):
+            continue
+        for member in row.get("member_outcomes") or ():
+            invocation_id = str(member.get("invocation_id") or "")
+            raw_return_ts = member.get("return_ts_ms")
+            if not invocation_id or raw_return_ts is None:
+                continue
+            return_ts = float(raw_return_ts)
+            raw_start_ts = member.get("start_ts_ms")
+            start_ts = (
+                float(raw_start_ts) if raw_start_ts is not None else None
+            )
+            if not math.isfinite(return_ts):
+                raise ValueError(f"non-finite child RETURN timestamp: {root}")
+            if start_ts is not None and (
+                not math.isfinite(start_ts) or start_ts > return_ts
+            ):
+                raise ValueError(f"invalid child start timestamp: {root}")
+            previous = targets.get(invocation_id)
+            if previous is not None and not math.isclose(
+                previous[0], return_ts, abs_tol=1e-6
+            ):
+                raise ValueError(
+                    "conflicting child RETURN timestamps for "
+                    f"{invocation_id}: {root}"
+                )
+            targets[invocation_id] = (return_ts, start_ts)
+    return targets
+
+
+def _attach_child_completion_targets(
+    row: dict[str, Any],
+    return_ts_by_invocation: Mapping[str, tuple[float, float | None]],
+) -> dict[str, Any]:
+    raw_ts = row.get("timestamp_ms", row.get("ts_ms"))
+    if raw_ts is None or not return_ts_by_invocation:
+        return row
+    timestamp_ms = float(raw_ts)
+    labels = []
+    changed = False
+    for raw_label in row.get("labels", ()):
+        label = dict(raw_label)
+        invocation_id = str(label.get("invocation_id") or "")
+        target = return_ts_by_invocation.get(invocation_id)
+        if target is not None and target[0] >= timestamp_ms:
+            return_ts, _ = target
+            label["remaining_to_return_ms"] = return_ts - timestamp_ms
+            eligibility = dict(label.get("target_training_eligible") or {})
+            eligibility["child_completion"] = True
+            label["target_training_eligible"] = eligibility
+            horizons = dict(label.get("target_horizon_timestamp_ms") or {})
+            horizons["child_completion"] = return_ts
+            label["target_horizon_timestamp_ms"] = horizons
+            changed = True
+        labels.append(label)
+    if changed:
+        row = dict(row)
+        row["labels"] = labels
+        invocations = []
+        for raw_features in row.get("invocations", ()):
+            features = dict(raw_features)
+            target = return_ts_by_invocation.get(
+                str(features.get("invocation_id") or "")
+            )
+            if target is not None and target[1] is not None:
+                features["invocation_elapsed_ms"] = max(
+                    0.0, timestamp_ms - target[1]
+                )
+            invocations.append(features)
+        row["invocations"] = invocations
+    return row
 
 
 def load_decision_rows(
@@ -2379,8 +2565,11 @@ def load_decision_rows(
             raise ValueError(f"duplicate source run in fitting inputs: {run_id}")
         seen_runs.add(run_id)
         manifests.append(manifest)
+        child_return_targets = _child_return_targets(root)
         for line in (root / "frontier_decision_points.jsonl").read_text(encoding="utf-8").splitlines():
-            row = json.loads(line)
+            row = _attach_child_completion_targets(
+                json.loads(line), child_return_targets
+            )
             if str(row.get("split")) in allowed and row.get("training_eligible") is not False:
                 decision_id = str(row.get("decision_id") or "")
                 if not decision_id:
@@ -2495,10 +2684,13 @@ def load_evaluation_rows(
             raise ValueError(f"duplicate source run in evaluation inputs: {run_id}")
         seen_runs.add(run_id)
         manifests.append(manifest)
+        child_return_targets = _child_return_targets(root)
         for line in (root / "frontier_decision_points.jsonl").read_text(
             encoding="utf-8"
         ).splitlines():
-            row = json.loads(line)
+            row = _attach_child_completion_targets(
+                json.loads(line), child_return_targets
+            )
             if str(row.get("split")) == split and row.get("training_eligible") is not False:
                 decision_id = str(row.get("decision_id") or "")
                 if not decision_id:
@@ -3506,6 +3698,15 @@ def _local_features_from_row(
         ),
         active_tool_count=int(features.get("active_tool_count") or 0),
         backend_pressure=str(features.get("backend_pressure") or "unknown"),
+        invocation_elapsed_ms=float(
+            features.get("invocation_elapsed_ms") or 0.0
+        ),
+        state_elapsed_ms=float(features.get("state_elapsed_ms") or 0.0),
+        llm_round=int(features.get("llm_round") or 0),
+        child_count=int(features.get("child_count") or 0),
+        unfinished_child_count=int(
+            features.get("unfinished_child_count") or 0
+        ),
     )
 
 
@@ -3611,6 +3812,35 @@ def _tool_fit_weights(
         identity: 1.0 / len(identities)
         for identities in identities_by_workflow.values()
         for identity in identities
+    }
+
+
+def _child_completion_fit_weights(
+    rows: Sequence[Mapping[str, Any]],
+) -> dict[tuple[str, str], float]:
+    row_counts: Counter[tuple[str, str]] = Counter()
+    children_by_workflow: defaultdict[str, set[str]] = defaultdict(set)
+    row_child: dict[tuple[str, str], tuple[str, str]] = {}
+    for row in rows:
+        decision_id = str(row.get("decision_id") or "")
+        workflow = _workflow_group_id(row)
+        for label in row.get("labels", ()):
+            invocation_id = str(label.get("invocation_id") or "")
+            if (
+                not invocation_id
+                or label.get("remaining_to_return_ms") is None
+                or not _target_eligible(label, "child_completion")
+            ):
+                continue
+            child = (workflow, invocation_id)
+            row_counts[child] += 1
+            children_by_workflow[workflow].add(invocation_id)
+            row_child[(decision_id, invocation_id)] = child
+    return {
+        identity: 1.0
+        / max(1, row_counts[child])
+        / max(1, len(children_by_workflow[child[0]]))
+        for identity, child in row_child.items()
     }
 
 
@@ -4305,7 +4535,10 @@ def _external_reentry_proxy_ms(
         return 0.0
     outcome = outcomes[invocation_id]
     if outcome.dependency_mode == DependencyMode.EXTERNAL:
-        value = sum(item.residual_delay_ms for item in outcome.external_segments)
+        value = max(
+            outcome.completion_floor_ms,
+            sum(item.residual_delay_ms for item in outcome.external_segments),
+        )
         if cache is not None:
             cache[invocation_id] = value
         return value
@@ -4315,9 +4548,10 @@ def _external_reentry_proxy_ms(
         if item in outcomes
     )
     if not dependencies:
+        value = outcome.completion_floor_ms
         if cache is not None:
-            cache[invocation_id] = 0.0
-        return 0.0
+            cache[invocation_id] = value
+        return value
     nested_visiting = {*visiting, invocation_id}
     values = tuple(
         _external_reentry_proxy_ms(item, outcomes, nested_visiting, cache)
@@ -4332,6 +4566,7 @@ def _external_reentry_proxy_ms(
         value = min(values)
     else:
         value = 0.0
+    value = max(value, outcome.completion_floor_ms)
     if cache is not None:
         cache[invocation_id] = value
     return value
@@ -4466,6 +4701,9 @@ def _conservative_cluster_outcomes(
                     item.prompt_growth_tokens for item in variants
                 ),
                 next_output_tokens=max(item.next_output_tokens for item in variants),
+                completion_floor_ms=min(
+                    item.completion_floor_ms for item in variants
+                ),
                 external_segments=segments,
             )
         )
@@ -4483,6 +4721,7 @@ def _scenario_key(outcomes: Iterable[FrontierDemandOutcome]) -> tuple[Any, ...]:
             item.remaining_decode_tokens,
             item.prompt_growth_tokens,
             item.next_output_tokens,
+            round(item.completion_floor_ms, 3),
             tuple(
                 (
                     segment.segment_kind,
