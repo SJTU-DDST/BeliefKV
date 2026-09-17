@@ -1391,6 +1391,7 @@ def test_reentry_overlay_survives_later_beneficiary_refresh() -> None:
             ),
         ),
         reentry_context_ids=("ctx",),
+        device_available_bytes=64,
     )
     assembler.apply(
         replace(
@@ -1454,6 +1455,7 @@ def test_reentry_overlay_survives_later_beneficiary_refresh() -> None:
     ]
     assert overlay.producer == "safe_point_reentry_physical_overlay"
     assert overlay.value["reentry_context_ids"] == ("ctx",)
+    assert overlay.value["device_available_bytes"] == 64
     assert tuple(
         (item["context_id"], item["evidence_kind"])
         for item in overlay.value["overlays"]

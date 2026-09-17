@@ -1084,6 +1084,16 @@ class IncrementalPolicyInputAssembler:
                     "parked_context_count": 0,
                     "summarized_context_count": 0,
                     "mechanism_capture_forced": False,
+                    "device_available_bytes": min(
+                        batch.device_available_bytes
+                        for batch in batches
+                        if batch.device_available_bytes is not None
+                    )
+                    if any(
+                        batch.device_available_bytes is not None
+                        for batch in batches
+                    )
+                    else None,
                 },
                 producer="safe_point_reentry_physical_overlay",
             )
