@@ -931,8 +931,8 @@ class IncrementalPolicyInputAssembler:
         graph_state["rccg"] = rccg
         graph_state["control"] = dict(delta.control_state)
         resources = policy_input.resources
-        hbm_used_bytes = min(
-            delta.observation.hbm_used_bytes,
+        effective_hbm_used_bytes = min(
+            delta.observation.policy_hbm_used_bytes,
             max(
                 0,
                 delta.observation.hbm_capacity_bytes
@@ -990,7 +990,8 @@ class IncrementalPolicyInputAssembler:
                 snapshot_id=snapshot_id,
                 ts_ms=delta.observation.ts_ms,
                 hbm_capacity_bytes=delta.observation.hbm_capacity_bytes,
-                hbm_used_bytes=hbm_used_bytes,
+                hbm_used_bytes=delta.observation.hbm_used_bytes,
+                effective_hbm_used_bytes=effective_hbm_used_bytes,
                 host_free_bytes=delta.observation.host_free_bytes,
                 urgent_d2h_bytes=delta.observation.urgent_d2h_bytes,
                 urgent_h2d_bytes=delta.observation.urgent_h2d_bytes,

@@ -458,7 +458,7 @@ def test_semantic_delta_preserves_physical_and_telemetry_cursors():
     observation = RuntimeResourceObservation(
         ts_ms=2.0,
         hbm_capacity_bytes=1_000,
-        hbm_used_bytes=100,
+        hbm_used_bytes=1_000,
         host_capacity_bytes=1_000,
         host_used_bytes=0,
         host_free_bytes=1_000,
@@ -493,7 +493,9 @@ def test_semantic_delta_preserves_physical_and_telemetry_cursors():
     assert runtime._last_policy_state_stamp.event_sequence == 2
     assert delta.source_page_revision == 17
     assert delta.source_topology_revision == 11
-    assert delta.observation.hbm_used_bytes == 200
+    assert delta.observation.hbm_used_bytes == 1_000
+    assert delta.observation.effective_hbm_used_bytes == 200
+    assert delta.observation.policy_hbm_used_bytes == 200
     assert delta.stamp.hbm_used_bytes == 200
 
 
@@ -633,7 +635,9 @@ def test_bounded_seed_hint_change_publishes_one_lightweight_risk_delta():
     assert submitted[0].page_delta.pages == ()
     assert submitted[0].observed_seed_beneficiary.published_ts_ms == 5.0
     assert submitted[0].source_page_revision == 17
-    assert submitted[0].observation.hbm_used_bytes == 200
+    assert submitted[0].observation.hbm_used_bytes == 950
+    assert submitted[0].observation.effective_hbm_used_bytes == 200
+    assert submitted[0].observation.policy_hbm_used_bytes == 200
     assert submitted[0].stamp.hbm_used_bytes == 200
 
     prepare_trigger = (("prepare", "tool_start", "victim", 0),)
@@ -6295,7 +6299,9 @@ class SGLangBackendTest(unittest.TestCase):
         effective_observation = runtime._joint_shadow_effective_observation(
             observation
         )
-        self.assertEqual(effective_observation.hbm_used_bytes, 200)
+        self.assertEqual(effective_observation.hbm_used_bytes, 1000)
+        self.assertEqual(effective_observation.effective_hbm_used_bytes, 200)
+        self.assertEqual(effective_observation.policy_hbm_used_bytes, 200)
         self.assertEqual(effective_observation.hbm_capacity_bytes, 1000)
         self.assertEqual(observation.hbm_used_bytes, 1000)
         self.assertFalse(

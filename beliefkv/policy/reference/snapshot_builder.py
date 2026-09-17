@@ -296,6 +296,7 @@ class PolicyInputSnapshotBuilder:
                 "tracked_allocator_fingerprint": tracked_allocator_fingerprint,
                 "hbm_capacity_bytes": observation.hbm_capacity_bytes,
                 "hbm_used_bytes": observation.hbm_used_bytes,
+                "effective_hbm_used_bytes": observation.policy_hbm_used_bytes,
                 "host_capacity_bytes": observation.host_capacity_bytes,
                 "host_used_bytes": observation.host_used_bytes,
                 "host_free_bytes": observation.host_free_bytes,

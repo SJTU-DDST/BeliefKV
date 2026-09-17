@@ -295,7 +295,7 @@ class ScenarioPhysicalizer:
         candidate_startup = sum(startup_by_request.values())
         projected_new_bytes += candidate_startup
         projected_peak = (
-            policy_input.resources.hbm_used_bytes
+            policy_input.resources.policy_hbm_used_bytes
             + policy_input.resources.hbm_reserved_bytes
             + h2d_bytes
             + projected_new_bytes

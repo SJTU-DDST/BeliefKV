@@ -1105,7 +1105,7 @@ class PredictiveEligibilityIndex:
         hbm_free = max(
             0,
             policy_input.resources.hbm_capacity_bytes
-            - policy_input.resources.hbm_used_bytes
+            - policy_input.resources.policy_hbm_used_bytes
             - policy_input.resources.hbm_reserved_bytes,
         )
         host_free = policy_input.resources.host_free_bytes
@@ -1602,7 +1602,7 @@ def validate_predictive_certificate(
     available = max(
         0,
         current.resources.hbm_capacity_bytes
-        - current.resources.hbm_used_bytes
+        - current.resources.policy_hbm_used_bytes
         - current.resources.hbm_reserved_bytes,
     )
     if available < int(raw.get("required_hbm_free_bytes", 0)):
@@ -3796,7 +3796,7 @@ class PredictiveRiskShadowObserver:
         prefetch_byte_budget = max(
             0,
             policy_input.resources.hbm_capacity_bytes
-            - policy_input.resources.hbm_used_bytes
+            - policy_input.resources.policy_hbm_used_bytes
             - policy_input.resources.hbm_reserved_bytes,
         )
         for target in eligibility.prefetch_targets[:4]:
@@ -4709,7 +4709,7 @@ class _OnlineCandidatePhysicalizer:
         available = max(
             0,
             self.policy_input.resources.hbm_capacity_bytes
-            - self.policy_input.resources.hbm_used_bytes
+            - self.policy_input.resources.policy_hbm_used_bytes
             - self.policy_input.resources.hbm_reserved_bytes,
         )
         target_bytes = self._target_restore_bytes(package)
@@ -5176,7 +5176,7 @@ class _OnlineCandidatePhysicalizer:
             batches=tuple(batches),
             transfers=tuple(transfers),
             hbm_capacity_bytes=self.policy_input.resources.hbm_capacity_bytes,
-            initial_hbm_used_bytes=self.policy_input.resources.hbm_used_bytes,
+            initial_hbm_used_bytes=self.policy_input.resources.policy_hbm_used_bytes,
             initial_hbm_reserved_bytes=(
                 self.policy_input.resources.hbm_reserved_bytes
             ),

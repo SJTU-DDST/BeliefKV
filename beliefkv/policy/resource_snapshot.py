@@ -30,6 +30,7 @@ class RuntimeResourceObservation:
     host_capacity_bytes: int
     host_used_bytes: int
     host_free_bytes: int
+    effective_hbm_used_bytes: int | None = None
     urgent_d2h_bytes: int = 0
     urgent_h2d_bytes: int = 0
     pcie_utilization: float | None = None
@@ -43,6 +44,12 @@ class RuntimeResourceObservation:
             raise ValueError("resource capacities are invalid")
         if not 0 <= self.hbm_used_bytes <= self.hbm_capacity_bytes:
             raise ValueError("observed HBM usage exceeds capacity")
+        if self.effective_hbm_used_bytes is not None and not (
+            0 <= self.effective_hbm_used_bytes <= self.hbm_used_bytes
+        ):
+            raise ValueError(
+                "effective HBM usage must be within physical allocator usage"
+            )
         if min(
             self.host_used_bytes,
             self.host_free_bytes,
@@ -62,6 +69,14 @@ class RuntimeResourceObservation:
                 raise ValueError(f"{name} must be in [0, 1] when observed")
         if not self.source:
             raise ValueError("resource observation source must be non-empty")
+
+    @property
+    def policy_hbm_used_bytes(self) -> int:
+        """Return pressure after native reclaim without weakening physical checks."""
+
+        if self.effective_hbm_used_bytes is None:
+            return self.hbm_used_bytes
+        return self.effective_hbm_used_bytes
 
 
 class ResourceSnapshotBuilder:
@@ -98,15 +113,16 @@ class ResourceSnapshotBuilder:
             raise ValueError("snapshot_id must be non-empty")
         if hbm_reserved_bytes < 0:
             raise ValueError("HBM reservation must be non-negative")
+        policy_hbm_used_bytes = observation.policy_hbm_used_bytes
         if (
-            observation.hbm_used_bytes + hbm_reserved_bytes
+            policy_hbm_used_bytes + hbm_reserved_bytes
             > observation.hbm_capacity_bytes
         ):
             raise ResourceSnapshotError(
                 "authoritative HBM usage plus admission reservations exceed capacity"
             )
 
-        self._observe_hbm(observation.ts_ms, observation.hbm_used_bytes)
+        self._observe_hbm(observation.ts_ms, policy_hbm_used_bytes)
         telemetry = tuple(transfer_telemetry)
         probe_bytes = max(
             self.transfer_probe_bytes,
@@ -146,6 +162,8 @@ class ResourceSnapshotBuilder:
         self._last_diagnostics = MappingProxyType(
             {
                 "observation_source": observation.source,
+                "physical_hbm_used_bytes": observation.hbm_used_bytes,
+                "effective_hbm_used_bytes": policy_hbm_used_bytes,
                 "pcie_utilization_observed": observation.pcie_utilization is not None,
                 "gpu_compute_utilization_observed": (
                     observation.gpu_compute_utilization is not None
@@ -180,6 +198,7 @@ class ResourceSnapshotBuilder:
             d2h_service_bytes_per_ms=d2h.effective_bytes_per_ms_p10,
             transfer_setup_p50_ms=setup_ms,
             unhidden_stall_per_byte=unhidden_stall_per_byte,
+            effective_hbm_used_bytes=policy_hbm_used_bytes,
         )
 
     def _observe_hbm(self, ts_ms: float, used_bytes: int) -> None:

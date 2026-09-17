@@ -256,7 +256,7 @@ class WhatIfPacker:
             if request_id not in execution
         )
         projected_peak = max(
-            policy_input.resources.hbm_used_bytes
+            policy_input.resources.policy_hbm_used_bytes
             + policy_input.resources.hbm_reserved_bytes,
             demand.projected_hbm_peak_bytes - deferred_startup,
         )
@@ -339,7 +339,7 @@ class WhatIfPacker:
         shortage: int,
     ) -> tuple[PhysicalBundleSnapshot, ...]:
         emergency = (
-            policy_input.resources.hbm_used_bytes
+            policy_input.resources.policy_hbm_used_bytes
             + policy_input.resources.hbm_reserved_bytes
         ) / policy_input.resources.hbm_capacity_bytes >= self.config.emergency_hbm_ratio
         result = []

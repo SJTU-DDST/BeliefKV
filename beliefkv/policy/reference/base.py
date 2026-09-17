@@ -557,6 +557,7 @@ class ResourceSnapshot:
     d2h_service_bytes_per_ms: float
     transfer_setup_p50_ms: float
     unhidden_stall_per_byte: float
+    effective_hbm_used_bytes: int | None = None
 
     def __post_init__(self) -> None:
         _require_nonempty(self.snapshot_id, "snapshot_id")
@@ -577,7 +578,18 @@ class ResourceSnapshot:
             _require_nonnegative(getattr(self, field_name), field_name)
         if self.hbm_capacity_bytes <= 0:
             raise ValueError("hbm_capacity_bytes must be positive")
-        if self.hbm_used_bytes + self.hbm_reserved_bytes > self.hbm_capacity_bytes:
+        if self.hbm_used_bytes > self.hbm_capacity_bytes:
+            raise ValueError("physical HBM used bytes exceed capacity")
+        if self.effective_hbm_used_bytes is not None and not (
+            0 <= self.effective_hbm_used_bytes <= self.hbm_used_bytes
+        ):
+            raise ValueError(
+                "effective HBM usage must be within physical HBM usage"
+            )
+        if (
+            self.policy_hbm_used_bytes + self.hbm_reserved_bytes
+            > self.hbm_capacity_bytes
+        ):
             raise ValueError("HBM used plus reserved bytes exceed capacity")
         for field_name in ("pcie_utilization", "gpu_compute_utilization"):
             value = float(getattr(self, field_name))
@@ -585,8 +597,18 @@ class ResourceSnapshot:
                 raise ValueError(f"{field_name} must be finite and in [0, 1]")
 
     @property
+    def policy_hbm_used_bytes(self) -> int:
+        if self.effective_hbm_used_bytes is None:
+            return self.hbm_used_bytes
+        return self.effective_hbm_used_bytes
+
+    @property
     def hbm_available_bytes(self) -> int:
-        return self.hbm_capacity_bytes - self.hbm_used_bytes - self.hbm_reserved_bytes
+        return (
+            self.hbm_capacity_bytes
+            - self.policy_hbm_used_bytes
+            - self.hbm_reserved_bytes
+        )
 
     def to_dict(self) -> dict[str, object]:
         return {
@@ -596,7 +618,13 @@ class ResourceSnapshot:
 
     @classmethod
     def from_dict(cls, raw: Mapping[str, object]) -> "ResourceSnapshot":
-        return cls(**{name: raw[name] for name in cls.__dataclass_fields__})  # type: ignore[arg-type]
+        return cls(
+            **{
+                name: raw[name]
+                for name in cls.__dataclass_fields__
+                if name in raw
+            }
+        )  # type: ignore[arg-type]
 
 
 @dataclass(frozen=True)

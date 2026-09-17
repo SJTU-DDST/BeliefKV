@@ -1263,7 +1263,7 @@ class ObservedJointPlanner:
             reason="bounded semantic seed before physical package search",
         )
         projected = (
-            policy_input.resources.hbm_used_bytes
+            policy_input.resources.policy_hbm_used_bytes
             + policy_input.resources.hbm_reserved_bytes
             + sum(_unreserved_startup_bytes(item) for item in admitted)
         )
@@ -1315,7 +1315,7 @@ class ObservedJointPlanner:
             ),
         )
         used_ratio = (
-            policy_input.resources.hbm_used_bytes
+            policy_input.resources.policy_hbm_used_bytes
             / policy_input.resources.hbm_capacity_bytes
         )
         return replace(
@@ -1619,7 +1619,7 @@ class ObservedJointPlanner:
             reason=reason or "no observed runnable work",
         )
         projected = (
-            policy_input.resources.hbm_used_bytes
+            policy_input.resources.policy_hbm_used_bytes
             + policy_input.resources.hbm_reserved_bytes
             + sum(_unreserved_startup_bytes(item) for item in admitted)
         )

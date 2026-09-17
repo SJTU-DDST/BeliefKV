@@ -477,6 +477,26 @@ def test_snapshot_rejects_page_mirror_larger_than_authoritative_allocator() -> N
         controller.build_policy_input(_observation(hbm_used=299))
 
 
+def test_snapshot_separates_physical_hbm_from_native_reclaim_pressure() -> None:
+    controller = _controller()
+    _bind_two_level_tree(controller)
+    observation = replace(
+        _observation(hbm_used=450),
+        effective_hbm_used_bytes=200,
+    )
+
+    snapshot = controller.build_policy_input(observation)
+
+    assert snapshot.physical_kv.gpu_bytes == 450
+    assert snapshot.resources.hbm_used_bytes == 450
+    assert snapshot.resources.effective_hbm_used_bytes == 200
+    assert snapshot.resources.policy_hbm_used_bytes == 200
+    assert snapshot.resources.hbm_available_bytes == 800
+    accounting = snapshot.runtime_graph.state["physical_accounting"]
+    assert accounting["tracked_hbm_bytes"] == 300
+    assert accounting["untracked_hbm_bytes"] == 150
+
+
 def test_fresh_child_has_no_parent_physical_owner_or_restore_bundle() -> None:
     controller = _controller()
     _bind_two_level_tree(controller)

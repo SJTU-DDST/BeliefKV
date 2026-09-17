@@ -17307,6 +17307,8 @@ class EmbeddedSGLangRuntime:
     def _joint_shadow_effective_hbm_used_bytes(
         self, observation: RuntimeResourceObservation
     ) -> int:
+        if observation.effective_hbm_used_bytes is not None:
+            return observation.effective_hbm_used_bytes
         native_available_hbm_bytes = getattr(
             self, "_current_native_available_hbm_bytes", None
         )
@@ -17330,11 +17332,15 @@ class EmbeddedSGLangRuntime:
 
         effective_used_bytes = min(
             observation.hbm_capacity_bytes,
+            observation.hbm_used_bytes,
             self._joint_shadow_effective_hbm_used_bytes(observation),
         )
-        if effective_used_bytes == observation.hbm_used_bytes:
+        if effective_used_bytes == observation.policy_hbm_used_bytes:
             return observation
-        return replace(observation, hbm_used_bytes=effective_used_bytes)
+        return replace(
+            observation,
+            effective_hbm_used_bytes=effective_used_bytes,
+        )
 
     def _joint_shadow_causal_event_requires_full_plan(
         self,
@@ -17510,7 +17516,7 @@ class EmbeddedSGLangRuntime:
         hbm_available_bytes = max(
             0,
             observation.hbm_capacity_bytes
-            - observation.hbm_used_bytes
+            - observation.policy_hbm_used_bytes
             - self.controller.admission.reserved_bytes,
         )
 
@@ -18324,7 +18330,7 @@ class EmbeddedSGLangRuntime:
         )
         self._latest_observed_seed_beneficiary = hint
         hbm_bucket = (
-            observation.hbm_used_bytes
+            observation.policy_hbm_used_bytes
             // self.config.reference_policy_hbm_bucket_bytes
         )
         signature = (
@@ -18443,7 +18449,7 @@ class EmbeddedSGLangRuntime:
         )
         stamp = replace(
             base_stamp,
-            hbm_used_bytes=observation.hbm_used_bytes,
+            hbm_used_bytes=observation.policy_hbm_used_bytes,
             host_free_bytes=observation.host_free_bytes,
             runnable_signature=self._joint_shadow_runnable_signature(runnable),
         )
@@ -18786,7 +18792,7 @@ class EmbeddedSGLangRuntime:
                 graph_version=self.controller.graph.graph_version,
                 consumer_version=self.controller.data_consumers.version,
                 event_sequence=event_delta.to_sequence,
-                hbm_used_bytes=observation.hbm_used_bytes,
+                hbm_used_bytes=observation.policy_hbm_used_bytes,
                 host_free_bytes=observation.host_free_bytes,
                 parser_frontier_revision=(
                     self.controller.action_frontier_observer.revision
@@ -19076,7 +19082,7 @@ class EmbeddedSGLangRuntime:
         effective_observation = self._joint_shadow_effective_observation(
             observation
         )
-        effective_hbm_used_bytes = effective_observation.hbm_used_bytes
+        effective_hbm_used_bytes = effective_observation.policy_hbm_used_bytes
         pressure_now = (
             effective_hbm_used_bytes
             >= int(
