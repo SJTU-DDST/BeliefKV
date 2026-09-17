@@ -54,6 +54,7 @@ def test_local_frontier_features_round_trip() -> None:
         llm_round=7,
         child_count=2,
         unfinished_child_count=1,
+        is_child=True,
     )
 
     assert LocalFrontierFeatures.from_dict(features.to_dict()) == features
@@ -433,6 +434,7 @@ def test_formal_loader_attaches_only_complete_child_return_targets(
     assert label["target_training_eligible"]["child_completion"]
     assert label["target_horizon_timestamp_ms"]["child_completion"] == 6_000.0
     assert rows[0]["invocations"][0]["invocation_elapsed_ms"] == 500.0
+    assert rows[0]["invocations"][0]["is_child"] is True
 
 
 def test_child_completion_head_predicts_full_return_residual() -> None:
@@ -464,6 +466,7 @@ def test_child_completion_head_predicts_full_return_residual() -> None:
             llm_round=2,
             invocation_elapsed_ms=2_000.0,
             state_elapsed_ms=100.0,
+            is_child=True,
         )
     )
 

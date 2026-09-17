@@ -194,6 +194,7 @@ class LocalFrontierFeatures:
     llm_round: int = 0
     child_count: int = 0
     unfinished_child_count: int = 0
+    is_child: bool = False
 
     def __post_init__(self) -> None:
         if min(
@@ -227,6 +228,7 @@ class LocalFrontierFeatures:
             "llm_round": self.llm_round,
             "child_count": self.child_count,
             "unfinished_child_count": self.unfinished_child_count,
+            "is_child": self.is_child,
         }
 
     @classmethod
@@ -255,6 +257,7 @@ class LocalFrontierFeatures:
             unfinished_child_count=int(
                 raw.get("unfinished_child_count") or 0
             ),
+            is_child=raw.get("is_child") is True,
         )
 
 
@@ -1546,7 +1549,9 @@ class FrontierBeliefModel:
             ),
             "child_completion": child_level,
         }
-        relevant_heads = _required_prediction_heads_for_state(features.state)
+        relevant_heads = _required_prediction_heads_for_state(
+            features.state, is_child=features.is_child
+        )
         relevant_levels = tuple(head_support[name] for name in relevant_heads)
         unavailable = [
             name
@@ -2532,6 +2537,8 @@ def _attach_child_completion_targets(
                 features["invocation_elapsed_ms"] = max(
                     0.0, timestamp_ms - target[1]
                 )
+            if target is not None:
+                features["is_child"] = True
             invocations.append(features)
         row["invocations"] = invocations
     return row
@@ -3000,6 +3007,7 @@ def evaluate_frontier_model(
     )
     operational_tau: defaultdict[str, list[float]] = defaultdict(list)
     tool_weights = _tool_fit_weights(values)
+    child_completion_weights = _child_completion_fit_weights(values)
     support_weight: Counter[str] = Counter()
     for row in values:
         episode = str(row.get("episode_group_id") or row.get("decision_id"))
@@ -3101,6 +3109,14 @@ def evaluate_frontier_model(
                     else None,
                     prediction.next_output_tokens,
                 ),
+                (
+                    "remaining_to_return_ms",
+                    "child_completion",
+                    label.get("remaining_to_return_ms")
+                    if _target_eligible(label, "child_completion")
+                    else None,
+                    prediction.remaining_to_return_ms,
+                ),
             )
             for name, target_name, actual, distribution in targets:
                 if actual is None or not distribution.values:
@@ -3112,23 +3128,39 @@ def evaluate_frontier_model(
                 availability["weight"] += weight
                 availability["available_weight"] += weight
                 actual_value = float(actual)
+                scalar_weight = (
+                    child_completion_weights.get(
+                        (
+                            str(row.get("decision_id") or ""),
+                            invocation_id,
+                        ),
+                        weight,
+                    )
+                    if name == "remaining_to_return_ms"
+                    else weight
+                )
+                scalar_episode = (
+                    f"{workflow}|child:{invocation_id}"
+                    if name == "remaining_to_return_ms"
+                    else local_episode
+                )
                 metrics = scalar[name]
-                metrics["weight"] += weight
-                metrics["absolute_error"] += weight * abs(
+                metrics["weight"] += scalar_weight
+                metrics["absolute_error"] += scalar_weight * abs(
                     actual_value - distribution.quantile(0.5)
                 )
                 interval = prediction.calibrated_intervals.get(name)
                 if interval is not None:
                     lower, upper = interval
-                    metrics["interval_weight"] += weight
-                    metrics["covered_weight"] += weight * (
+                    metrics["interval_weight"] += scalar_weight
+                    metrics["covered_weight"] += scalar_weight * (
                         lower <= actual_value <= upper
                     )
-                    metrics["interval_width"] += weight * (upper - lower)
-                    interval_episode_coverage[name][local_episode].append(
+                    metrics["interval_width"] += scalar_weight * (upper - lower)
+                    interval_episode_coverage[name][scalar_episode].append(
                         lower <= actual_value <= upper
                     )
-                    interval_episode_workflow[local_episode] = workflow
+                    interval_episode_workflow[scalar_episode] = workflow
 
     action_weights = _action_target_weights(action_values)
     action_target_known_count: Counter[str] = Counter()
@@ -3707,6 +3739,7 @@ def _local_features_from_row(
         unfinished_child_count=int(
             features.get("unfinished_child_count") or 0
         ),
+        is_child=features.get("is_child") is True,
     )
 
 
@@ -4357,11 +4390,17 @@ def _log_bucket(value: float) -> float:
     return round(2.0**exponent, 6)
 
 
-def _required_prediction_heads_for_state(state: str) -> tuple[str, ...]:
+def _required_prediction_heads_for_state(
+    state: str, *, is_child: bool = False
+) -> tuple[str, ...]:
     """Return only heads that can affect the next action from this state."""
 
     if state == InvocationState.RUNNING_LLM.value:
-        return ("remaining_decode_demand",)
+        return (
+            ("remaining_decode_demand", "child_completion")
+            if is_child
+            else ("remaining_decode_demand",)
+        )
     if state == InvocationState.READY.value:
         return ("next_output_demand", "prompt_growth")
     if state == InvocationState.WAIT_TOOL.value:

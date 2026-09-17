@@ -129,6 +129,7 @@ def _features_for_invocation(
         llm_round=invocation.llm_round,
         child_count=len(invocation.child_invocation_ids),
         unfinished_child_count=len(invocation.blocking_child_ids),
+        is_child=invocation.parent_invocation_id is not None,
     )
 
 

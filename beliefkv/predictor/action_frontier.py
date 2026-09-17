@@ -79,6 +79,7 @@ def _demand_sparse_features(features: object) -> dict[str, float]:
         0.0,
         float(_feature_value(features, "unfinished_child_count", 0) or 0),
     )
+    is_child = float(bool(_feature_value(features, "is_child", False)))
     lc = math.log1p(context) / 12.0
     lg = math.log1p(generated) / 8.0
     li = math.log1p(invocation_elapsed) / 12.0
@@ -95,6 +96,7 @@ def _demand_sparse_features(features: object) -> dict[str, float]:
         "lr": lr,
         "lch": lch,
         "luch": luch,
+        "is_child": is_child,
         "lc2": lc * lc,
         "lg2": lg * lg,
         "li2": li * li,
