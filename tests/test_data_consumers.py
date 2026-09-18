@@ -178,6 +178,29 @@ def test_graph_and_consumer_versions_are_monotonic_and_idempotent() -> None:
     assert graph.snapshot()["graph_version"] == graph.graph_version
 
 
+def test_consumer_batch_shallow_snapshot_rolls_back_atomically() -> None:
+    _graph, consumers = _runtime()
+    valid = _event(
+        4,
+        RuntimeEventKind.MESSAGE,
+        invocation_id="parent",
+        target_invocation_id="reviewer",
+    )
+    invalid = _event(
+        5,
+        RuntimeEventKind.MESSAGE,
+        invocation_id="parent",
+        target_invocation_id="missing",
+    )
+
+    with pytest.raises(ValueError, match="unknown invocation"):
+        consumers.apply_batch((valid, invalid), atomic=True)
+
+    assert consumers.version == 0
+    assert consumers.consumers_for("parent") == ()
+    assert consumers.delta_for_event(valid.event_id) is None
+
+
 def test_controller_maintains_consumer_index_with_runtime_events() -> None:
     controller = BeliefKVController()
     controller.process_runtime_events(

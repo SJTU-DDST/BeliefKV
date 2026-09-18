@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-from copy import deepcopy
 from dataclasses import dataclass, replace
 from enum import Enum
 from typing import Iterable
@@ -111,10 +110,13 @@ class ObservedDataConsumerIndex:
     ) -> tuple[ConsumerIndexDelta, ...]:
         if not atomic:
             return tuple(self.apply(event) for event in events)
+        # ConsumerEdge and ConsumerIndexDelta are immutable. A shallow
+        # container snapshot preserves rollback without recursively copying
+        # the complete event history on the scheduler thread.
         snapshot = (
-            deepcopy(self._edges),
+            dict(self._edges),
             set(self._processed_event_ids),
-            deepcopy(self._delta_by_event_id),
+            dict(self._delta_by_event_id),
             self._version,
         )
         try:

@@ -647,6 +647,19 @@ class _PredictivePrefetchWatch:
 
 
 @dataclass(frozen=True)
+class _PredictiveToolReturnWatch:
+    """A child tool wait tracked before any CPU-only KV copy exists."""
+
+    invocation_id: str
+    context_id: str
+    context_epoch: int
+    tool_call_id: str
+    tool_family: str
+    tool_started_ts_ms: float
+    source_event_id: str
+
+
+@dataclass(frozen=True)
 class _PredictiveOverlaySeedPlan:
     plan_id: str
     residency: tuple[Any, ...] = ()
@@ -2674,6 +2687,9 @@ class EmbeddedSGLangRuntime:
         self._pending_predictive_prepare_created_ts_ms: float | None = None
         self._last_published_predictive_prepare_event_sequence = 0
         self._predictive_reentry_watch_invocation_ids: set[str] = set()
+        self._predictive_child_tool_return_watches: dict[
+            str, _PredictiveToolReturnWatch
+        ] = {}
         self._last_predictive_reentry_watch_poll_ms: float | None = None
         self._last_predictive_reentry_risk_signature: (
             tuple[object, ...] | None
@@ -17573,6 +17589,7 @@ class EmbeddedSGLangRuntime:
     def _update_predictive_reentry_watches(
         self,
         risk_triggers: tuple[tuple[str, str, str, int], ...],
+        events: tuple[RuntimeEvent, ...] = (),
     ) -> None:
         watches = getattr(
             self, "_predictive_reentry_watch_invocation_ids", None
@@ -17585,6 +17602,63 @@ class EmbeddedSGLangRuntime:
                 watches.add(invocation_id)
             elif risk_class == "reentry":
                 watches.discard(invocation_id)
+
+        tool_watches = getattr(
+            self, "_predictive_child_tool_return_watches", None
+        )
+        if tool_watches is None:
+            tool_watches = {}
+            self._predictive_child_tool_return_watches = tool_watches
+        if not events:
+            return
+        graph = self.controller.graph
+        invocations = getattr(graph, "invocations", {})
+        contexts = getattr(graph, "contexts", {})
+        for event in events:
+            invocation_id = str(event.invocation_id or "")
+            if not invocation_id:
+                continue
+            if event.kind == RuntimeEventKind.TOOL_START:
+                invocation = invocations.get(invocation_id)
+                context = (
+                    contexts.get(invocation.context_id)
+                    if invocation is not None
+                    else None
+                )
+                if (
+                    invocation is None
+                    or invocation.parent_invocation_id is None
+                    or invocation.state != InvocationState.WAIT_TOOL
+                    or context is None
+                ):
+                    continue
+                tool_call_id = str(
+                    event.attributes.get("tool_call_id") or event.event_id
+                )
+                tool_watches[invocation_id] = _PredictiveToolReturnWatch(
+                    invocation_id=invocation_id,
+                    context_id=invocation.context_id,
+                    context_epoch=context.epoch,
+                    tool_call_id=tool_call_id,
+                    tool_family=str(
+                        event.attributes.get("tool_family") or "unknown"
+                    ),
+                    tool_started_ts_ms=event.ts_ms,
+                    source_event_id=event.event_id,
+                )
+                self._joint_predictive_counts[
+                    "child_tool_return_watch_registered"
+                ] += 1
+            elif event.kind in {
+                RuntimeEventKind.TOOL_END,
+                RuntimeEventKind.REACTIVATE,
+                RuntimeEventKind.INVOCATION_CANCEL,
+                RuntimeEventKind.RETURN,
+            }:
+                if tool_watches.pop(invocation_id, None) is not None:
+                    self._joint_predictive_counts[
+                        "child_tool_return_watch_removed"
+                    ] += 1
 
     def _predictive_max_running_requests(self) -> int:
         for owner in (
@@ -19277,6 +19351,9 @@ class EmbeddedSGLangRuntime:
         watches = getattr(
             self, "_predictive_reentry_watch_invocation_ids", set()
         )
+        child_tool_watches = getattr(
+            self, "_predictive_child_tool_return_watches", {}
+        )
         runnable = tuple(
             getattr(self, "_latest_bounded_seed_runnable", ()) or ()
         )
@@ -19315,6 +19392,7 @@ class EmbeddedSGLangRuntime:
                 or context is None
             ):
                 watches.discard(invocation_id)
+                child_tool_watches.pop(invocation_id, None)
                 continue
             if (
                 not page_index.has_context(invocation.context_id)
@@ -19322,6 +19400,12 @@ class EmbeddedSGLangRuntime:
                 != context.epoch
             ):
                 continue
+            child_watch = child_tool_watches.get(invocation_id)
+            if child_watch is not None and (
+                child_watch.context_id != invocation.context_id
+                or child_watch.context_epoch != context.epoch
+            ):
+                child_tool_watches.pop(invocation_id, None)
             summary = page_index.context_physical_summary(
                 invocation.context_id
             )
@@ -19395,6 +19479,16 @@ class EmbeddedSGLangRuntime:
                 item[0].invocation_id,
             ),
         )
+        child_tool_candidates = [
+            item
+            for item in tool_candidates
+            if item[0].invocation_id in child_tool_watches
+        ]
+        non_child_tool_candidates = [
+            item
+            for item in tool_candidates
+            if item[0].invocation_id not in child_tool_watches
+        ]
         dependency_candidates = sorted(
             (
                 item
@@ -19405,9 +19499,11 @@ class EmbeddedSGLangRuntime:
                 graph, item[0], item[2]
             ),
         )
-        candidates = list(service_candidates)
-        for group in (tool_candidates, dependency_candidates):
-            candidates.extend(group[:1])
+        candidates = list(service_candidates[:1])
+        candidates.extend(child_tool_candidates[:2])
+        if not child_tool_candidates:
+            candidates.extend(non_child_tool_candidates[:1])
+        candidates.extend(dependency_candidates[:1])
         if len(candidates) < _PREDICTIVE_REENTRY_WATCH_LIMIT:
             selected_ids = {item[0].invocation_id for item in candidates}
             remainder = sorted(
@@ -19577,9 +19673,12 @@ class EmbeddedSGLangRuntime:
         selected = list(self._select_predictive_reentry_targets(eligible))
 
         def target_event_kind(item: tuple[Any, ...]) -> str:
+            invocation_id = item[4].invocation_id
+            if invocation_id in child_tool_watches:
+                return "child_tool_return_latest_start"
             return (
                 "scheduled_service"
-                if item[4].invocation_id in service_rank_by_invocation
+                if invocation_id in service_rank_by_invocation
                 else "predicted_latest_start"
             )
 
@@ -19633,6 +19732,11 @@ class EmbeddedSGLangRuntime:
                 graph.contexts[item[4].context_id].epoch,
                 page_index.context_revision(item[4].context_id),
                 target_event_kind(item),
+                (
+                    child_tool_watches[item[4].invocation_id].tool_call_id
+                    if item[4].invocation_id in child_tool_watches
+                    else ""
+                ),
             )
             for item in selected
         ) + (("risk_bucket", risk_bucket),)
@@ -19768,6 +19872,18 @@ class EmbeddedSGLangRuntime:
                 context_epoch=graph.contexts[invocation.context_id].epoch,
                 context_revision=page_index.context_revision(invocation.context_id),
                 target_kind=target_kind,
+                tool_call_id=(
+                    child_tool_watches[invocation.invocation_id].tool_call_id
+                    if invocation.invocation_id in child_tool_watches
+                    else None
+                ),
+                tool_started_ts_ms=(
+                    child_tool_watches[
+                        invocation.invocation_id
+                    ].tool_started_ts_ms
+                    if invocation.invocation_id in child_tool_watches
+                    else None
+                ),
                 execution_seed_rank=service_rank_by_invocation.get(
                     invocation.invocation_id
                 ),
@@ -19970,7 +20086,10 @@ class EmbeddedSGLangRuntime:
             risk_trigger_signature = (
                 self._joint_shadow_predictive_risk_triggers(event_delta.events)
             )
-            self._update_predictive_reentry_watches(risk_trigger_signature)
+            self._update_predictive_reentry_watches(
+                risk_trigger_signature,
+                event_delta.events,
+            )
             prepare_risk_triggers = tuple(
                 item for item in risk_trigger_signature if item[0] == "prepare"
             )
@@ -20275,6 +20394,9 @@ class EmbeddedSGLangRuntime:
         self._last_published_predictive_prepare_event_sequence = 0
         getattr(
             self, "_predictive_reentry_watch_invocation_ids", set()
+        ).clear()
+        getattr(
+            self, "_predictive_child_tool_return_watches", {}
         ).clear()
         self._last_predictive_reentry_watch_poll_ms = None
         self._last_predictive_reentry_risk_signature = None
@@ -20674,7 +20796,10 @@ class EmbeddedSGLangRuntime:
                         event_delta.events
                     )
                 )
-                self._update_predictive_reentry_watches(risk_trigger_signature)
+                self._update_predictive_reentry_watches(
+                    risk_trigger_signature,
+                    event_delta.events,
+                )
                 prepare_risk_triggers = tuple(
                     item
                     for item in risk_trigger_signature

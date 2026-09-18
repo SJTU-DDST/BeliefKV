@@ -12064,6 +12064,85 @@ def test_predictive_reentry_watch_lifecycle_is_independent_of_beneficiary():
     assert runtime._predictive_reentry_watch_invocation_ids == set()
 
 
+def test_child_tool_wait_registers_and_clears_rolling_prefetch_watch():
+    runtime = EmbeddedSGLangRuntime.__new__(EmbeddedSGLangRuntime)
+    runtime.controller = BeliefKVController()
+    runtime._predictive_reentry_watch_invocation_ids = set()
+    runtime._predictive_child_tool_return_watches = {}
+    runtime._joint_predictive_counts = Counter()
+    runtime.controller.process_runtime_events(
+        (
+            RuntimeEvent(
+                "workflow-start",
+                1.0,
+                RuntimeEventKind.WORKFLOW_START,
+                "workflow",
+            ),
+            RuntimeEvent(
+                "root-create",
+                2.0,
+                RuntimeEventKind.INVOCATION_CREATE,
+                "workflow",
+                invocation_id="root",
+                context_id="ctx-root",
+                context_epoch=0,
+            ),
+            RuntimeEvent(
+                "child-create",
+                3.0,
+                RuntimeEventKind.INVOCATION_CREATE,
+                "workflow",
+                invocation_id="child",
+                context_id="ctx-child",
+                context_epoch=4,
+                parent_invocation_id="root",
+                parent_context_id="ctx-root",
+            ),
+        )
+    )
+    tool_start = RuntimeEvent(
+        "tool-start",
+        4.0,
+        RuntimeEventKind.TOOL_START,
+        "workflow",
+        invocation_id="child",
+        context_id="ctx-child",
+        context_epoch=4,
+        attributes={"tool_call_id": "call-7", "tool_family": "shell"},
+    )
+    runtime.controller.process_runtime_event(tool_start)
+    triggers = runtime._joint_shadow_predictive_risk_triggers((tool_start,))
+    runtime._update_predictive_reentry_watches(triggers, (tool_start,))
+
+    watch = runtime._predictive_child_tool_return_watches["child"]
+    assert watch.context_id == "ctx-child"
+    assert watch.context_epoch == 4
+    assert watch.tool_call_id == "call-7"
+    assert runtime._predictive_reentry_watch_invocation_ids == {"child"}
+    assert runtime._joint_predictive_counts[
+        "child_tool_return_watch_registered"
+    ] == 1
+
+    tool_end = RuntimeEvent(
+        "tool-end",
+        5.0,
+        RuntimeEventKind.TOOL_END,
+        "workflow",
+        invocation_id="child",
+        context_id="ctx-child",
+        context_epoch=4,
+    )
+    runtime.controller.process_runtime_event(tool_end)
+    triggers = runtime._joint_shadow_predictive_risk_triggers((tool_end,))
+    runtime._update_predictive_reentry_watches(triggers, (tool_end,))
+
+    assert runtime._predictive_reentry_watch_invocation_ids == set()
+    assert runtime._predictive_child_tool_return_watches == {}
+    assert runtime._joint_predictive_counts[
+        "child_tool_return_watch_removed"
+    ] == 1
+
+
 def test_predictive_reentry_dependency_probability_composes_join_mode():
     parent = SimpleNamespace(
         state=InvocationState.WAIT_JOIN,
