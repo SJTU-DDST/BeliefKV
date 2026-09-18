@@ -17603,6 +17603,18 @@ class EmbeddedSGLangRuntime:
                 watches.add(invocation_id)
             elif risk_class == "reentry":
                 watches.discard(invocation_id)
+                self._accelerate_predictive_prefetch_watch_for_reentry(
+                    invocation_id,
+                    now_ms=max(
+                        (
+                            event.ts_ms
+                            for event in events
+                            if str(event.invocation_id or "") == invocation_id
+                        ),
+                        default=time.monotonic_ns() / 1_000_000.0,
+                    ),
+                    event_kind=_event_kind,
+                )
 
         tool_watches = getattr(
             self, "_predictive_child_tool_return_watches", None
@@ -21738,6 +21750,31 @@ class EmbeddedSGLangRuntime:
         latest_start_ts_ms = self._predictive_prefetch_latest_start_ts_ms(
             intent
         )
+        if previous is not None:
+            refresh_satisfied = bool(
+                previous.fresh_after_ts_ms is not None
+                and intent.generated_ts_ms >= previous.fresh_after_ts_ms
+            )
+            deadline_advanced = (
+                latest_start_ts_ms + 1.0 < previous.latest_start_ts_ms
+            )
+            physical_evidence_changed = (
+                intent.target_bytes_hint != previous.intent.target_bytes_hint
+                or intent.max_copy_bytes != previous.intent.max_copy_bytes
+                or intent.predicted_extent_count
+                != previous.intent.predicted_extent_count
+                or intent.shape_fingerprint
+                != previous.intent.shape_fingerprint
+            )
+            if (
+                not refresh_satisfied
+                and not deadline_advanced
+                and not physical_evidence_changed
+            ):
+                self._joint_predictive_counts[
+                    "prefetch_watch_prediction_update_suppressed"
+                ] += 1
+                return False
         watches[key] = _PredictivePrefetchWatch(
             intent=intent,
             latest_start_ts_ms=latest_start_ts_ms,
@@ -21775,6 +21812,56 @@ class EmbeddedSGLangRuntime:
                 previous.intent.intent_id if previous is not None else None
             ),
             watch_count=len(watches),
+        )
+        return True
+
+    def _accelerate_predictive_prefetch_watch_for_reentry(
+        self,
+        invocation_id: str,
+        *,
+        now_ms: float,
+        event_kind: str,
+    ) -> bool:
+        """Make an existing semantic watch due when reentry becomes observed."""
+
+        watches = getattr(self, "_predictive_prefetch_watches", None) or {}
+        matched = [
+            (key, watch)
+            for key, watch in watches.items()
+            if watch.intent.invocation_id == invocation_id
+        ]
+        if not matched:
+            return False
+        key, watch = min(
+            matched,
+            key=lambda item: (item[1].latest_start_ts_ms, item[0]),
+        )
+        if watch.latest_start_ts_ms <= now_ms:
+            return False
+        latest_start_ts_ms = now_ms
+        watches[key] = replace(
+            watch,
+            latest_start_ts_ms=latest_start_ts_ms,
+            next_refresh_ts_ms=None,
+            fresh_after_ts_ms=None,
+        )
+        self._last_joint_decision_plan_id = None
+        self._current_online_joint_decision = None
+        self._joint_predictive_counts[
+            "prefetch_watch_observed_reentry_accelerated"
+        ] += 1
+        self.audit.emit(
+            "predictive_prefetch_watch_accelerated",
+            now_ms,
+            audit_level="correctness",
+            intent_id=watch.intent.intent_id,
+            invocation_id=invocation_id,
+            context_id=watch.intent.context_id,
+            target_reentry_context_epoch=key[1],
+            event_kind=event_kind,
+            previous_latest_start_ts_ms=watch.latest_start_ts_ms,
+            latest_start_ts_ms=latest_start_ts_ms,
+            acceleration_source="observed_reentry",
         )
         return True
 

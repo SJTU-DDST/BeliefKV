@@ -7599,6 +7599,88 @@ class SGLangBackendTest(unittest.TestCase):
             now_ms=refreshed_watch.latest_start_ts_ms
         ) == refreshed
 
+    def test_predictive_prefetch_watch_does_not_slide_later_without_refresh(self):
+        runtime = EmbeddedSGLangRuntime.__new__(EmbeddedSGLangRuntime)
+        runtime.config = BeliefKVConfig(
+            hbm_capacity_bytes=1_000,
+            host_capacity_bytes=2_000,
+            reserve_hbm_bytes=0,
+        )
+        runtime.audit = _AuditRecorder()
+        runtime._joint_predictive_counts = Counter()
+        runtime._predictive_prefetch_watches = {}
+        controller = BeliefKVController(
+            BeliefKVConfig(predictor_enabled=False)
+        )
+        first = _predictive_prefetch_intent(
+            controller,
+            intent_id="first",
+            generated_ts_ms=100.0,
+            remaining_window_low_ms=1_000.0,
+        )
+        later = _predictive_prefetch_intent(
+            controller,
+            intent_id="later",
+            generated_ts_ms=200.0,
+            remaining_window_low_ms=5_000.0,
+        )
+        assert runtime._register_predictive_prefetch_watch(
+            first, now_ms=100.0, source_worker_sequence=1
+        )
+        key = runtime._predictive_prefetch_watch_key(first)
+        first_deadline = runtime._predictive_prefetch_watches[key].latest_start_ts_ms
+
+        assert not runtime._register_predictive_prefetch_watch(
+            later, now_ms=200.0, source_worker_sequence=2
+        )
+        assert runtime._predictive_prefetch_watches[key].intent == first
+        assert runtime._predictive_prefetch_watches[key].latest_start_ts_ms == (
+            first_deadline
+        )
+        assert runtime._joint_predictive_counts[
+            "prefetch_watch_prediction_update_suppressed"
+        ] == 1
+
+    def test_observed_reentry_accelerates_existing_prefetch_watch(self):
+        runtime = EmbeddedSGLangRuntime.__new__(EmbeddedSGLangRuntime)
+        runtime.config = BeliefKVConfig(
+            hbm_capacity_bytes=1_000,
+            host_capacity_bytes=2_000,
+            reserve_hbm_bytes=0,
+        )
+        runtime.audit = _AuditRecorder()
+        runtime._joint_predictive_counts = Counter()
+        runtime._latest_predictive_intent = None
+        runtime._predictive_prefetch_watches = {}
+        runtime._active_predictive_prefetch_watch_key = None
+        runtime._last_joint_decision_plan_id = "plan"
+        runtime._current_online_joint_decision = object()
+        controller = BeliefKVController(
+            BeliefKVConfig(predictor_enabled=False)
+        )
+        intent = _predictive_prefetch_intent(
+            controller,
+            generated_ts_ms=100.0,
+            remaining_window_low_ms=10_000.0,
+        )
+        assert runtime._register_predictive_prefetch_watch(
+            intent, now_ms=100.0, source_worker_sequence=1
+        )
+
+        assert runtime._accelerate_predictive_prefetch_watch_for_reentry(
+            intent.invocation_id,
+            now_ms=250.0,
+            event_kind="tool_end",
+        )
+        assert runtime._last_joint_decision_plan_id is None
+        assert runtime._current_online_joint_decision is None
+        assert runtime._activate_due_predictive_prefetch_watch(
+            now_ms=250.0
+        ) == intent
+        assert runtime._joint_predictive_counts[
+            "prefetch_watch_observed_reentry_accelerated"
+        ] == 1
+
     def test_predictive_schedule_atomically_reorders_and_admits(self):
         controller = BeliefKVController(
             BeliefKVConfig(
