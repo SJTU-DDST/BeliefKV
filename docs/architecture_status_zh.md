@@ -1,7 +1,7 @@
 # BeliefKV 当前架构与实现状态
 
 更新日期：2026-09-18
-当前 P6 代码基线：`5152382`
+当前 P6 代码基线：`2c30c9f`
 
 本文只记录当前事实和下一阻塞项，不再追加逐日开发日志。2026-09-12 以前的完整历史保存在
 `docs/archive/snapshots/architecture_status_zh.md`，单次实验细节保存在
@@ -120,8 +120,8 @@ SGLang scheduler。
 ### 4.4 数据面与 CUDA Graph
 
 - H200 BF16 KV pool：850,000 tokens；
-- Host pool：96 GiB；
-- CUDA Graph 已覆盖 batch 1/2/4/8/16/24/32；
+- Host pool：192 GiB（v10；由 64-root、max-running 96 高压实验使用）；
+- CUDA Graph 已覆盖 batch 1/2/4/8/16/24/32/40/48/56/64/72/80/88/96；
 - 4-extents 6.44 GB gate 中 D2H 249.8 ms、H2D 692.4 ms；
 - 当前 backend 不声明 concurrent PCIe transfer capability。
 
@@ -294,6 +294,25 @@ v19 的 BeliefKV shutdown 已满足 ACK、transaction、lease 和 obligation 守
 stop 脚本在验证进程组身份后清理残留 SGLang 组。当前 v20r 用于同时验证该关闭路径和完整
 `PREFETCH_GPU -> H2D ACK -> funding/lease -> admission -> first service -> useful` 归因链。
 
+### 5.5 2026-09-18 child tool-return 与事件摄取活性修复
+
+`d13663f` 将 child 自身的 `TOOL_START -> TOOL_END` 纳入 rolling reentry watch。
+watch 以 invocation/context epoch 和 tool-call identity 为版本边界，在 child 已存在 CPU-side
+KV 时参与 latest-start `PREFETCH_GPU` 评估；`TOOL_END/REACTIVATE/RETURN/CANCEL`
+或身份失效会清理 watch。该路径不要求等待 parent JOIN，因而可以恢复仍需继续多轮执行的 child。
+
+同一提交修复了高事件量下的 scheduler 空转：ObservedDataConsumerIndex 原先在每批 runtime
+event 上递归深拷贝完整历史，约 13K 事件时使 scheduler 单核长时间卡住、GPU 停止获得 batch。
+ConsumerEdge/ConsumerIndexDelta 为不可变对象，现改为浅层容器快照并保留原子回滚。13,500
+条历史微基准 P95 为 1.17 ms；相关 CPU 回归为 234 passed、8 subtests passed（另有两项仅因
+本机 shell 缺失 CUDA_HOME 而排除）。
+
+`2c30c9f` 新增 h200_bf16_v10，将 Host KV 从 96 GiB 扩展到 192 GiB，保持 HBM 850K、
+max-running 96 和 graph96 不变。v26 启动已确认 graph 捕获到 96、Host slab 为 192 GB，
+workload 启动后 running 92-95、waiting 29-32，GPU 重新持续获得 prefill/decode 工作。
+该启动证据只证明活性修复和容量契约生效；child rolling prefetch 的完整归因仍需等待后续
+CPU-side child KV 与 timely latest-start 自然出现。
+
 ## 6. 当前阻塞项
 
 1. prediction-to-action utilization gap 尚未闭合。初步 H200 高压运行中 predictive arm
@@ -326,7 +345,7 @@ stop 脚本在验证进程组身份后清理残留 SGLang 组。当前 v20r 用�
 
 当前关键路径：
 
-1. 使用当前冻结 64-root、hard max-running 64 workload 运行足够长时间，让 active context
+1. 使用当前冻结 64-root、hard max-running 96 workload 运行足够长时间，让 active context
    自然增长 unique KV；此前短运行的无迁移结果不能用于修改 workload 或缩小 KV pool。
 2. 在该 workload 上重新运行 development canary。动作提交时必须重验 certificate、物理
    closure、实时容量、transfer envelope 和 latest-start；晚到、回收不足或负收益动作回退 P5。
