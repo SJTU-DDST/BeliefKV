@@ -1,7 +1,7 @@
 # BeliefKV 当前架构与实现状态
 
-更新日期：2026-09-17
-当前 P6 代码基线：`41a1239`
+更新日期：2026-09-18
+当前 P6 代码基线：`5152382`
 
 本文只记录当前事实和下一阻塞项，不再追加逐日开发日志。2026-09-12 以前的完整历史保存在
 `docs/archive/snapshots/architecture_status_zh.md`，单次实验细节保存在
@@ -273,6 +273,27 @@ shell 缺失的 `CUDA_HOME`。predictive risk/JointPlan/worker/attribution 定�
 `41a1239` 进一步让 performance mode 保留 lease registered/released 和
 `predictive_action_outcome` 三类低频事件，确保长 gate 能观察完整闭环而不恢复逐 step 审计。
 
+### 5.4 2026-09-18 多目标 reentry 与 JOIN prefetch 修复
+
+长高压 v18/v19 gate 证明冻结 64-root、hard-64 workload 能自然达到接近 100% 的物理
+HBM 压力，并产生原生 D2H、真实 CPU-side KV 和可物化的 predictive reentry 候选。
+`4a82c4e` 将单一 reentry watcher 扩展为最多三个分层目标，覆盖 `WAIT_TOOL` 与
+`WAIT_JOIN/WAIT_CHILD`，并按未完成 dependency 和 child progress 计算 JOIN ALL/ANY 的
+release probability；v19 共发布 643 次 reentry risk、1,929 个目标，说明 watcher 不再只盯住
+同一个 tool wait。
+
+v19 在受控停止前形成 127 个 fresh-positive package，最大期望收益约 3,188.90 ms，但旧的
+固定 0.5 dependency timing gate 又将它们拒绝。该 gate 与已经执行的 scenario expected
+benefit、CVaR 和 future-HBM 检查重复，而且 JOIN/dependency release 没有独立校准阈值。
+`5030207` 因此让未校准的 dependency-composed prefetch 信任完整 scenario risk 结果；
+`WAIT_TOOL` 仍使用 artifact 中的动作校准阈值。此修改只移除错误的重复 veto，没有降低
+expected-benefit、容量、物理证书或 latest-start 门禁。
+
+v19 的 BeliefKV shutdown 已满足 ACK、transaction、lease 和 obligation 守恒，但启动器 shell
+退出后 SGLang frontend 曾作为孤儿进程继续占用端口和 GPU。`5152382` 为 launcher 记录 PGID，
+stop 脚本在验证进程组身份后清理残留 SGLang 组。当前 v20r 用于同时验证该关闭路径和完整
+`PREFETCH_GPU -> H2D ACK -> funding/lease -> admission -> first service -> useful` 归因链。
+
 ## 6. 当前阻塞项
 
 1. prediction-to-action utilization gap 尚未闭合。初步 H200 高压运行中 predictive arm
@@ -282,8 +303,8 @@ shell 缺失的 `CUDA_HOME`。predictive risk/JointPlan/worker/attribution 定�
 3. schema-v5 已修复 action timing 低召回和 tool-error 多数类退化；boundary 仍应以 top-2
    scenarios 使用，不能把 top-1 accuracy 当作 exact action-unlock 预测。
 4. `PREFETCH_GPU` 的完整、partial 和 funded 路径已实现；schema-v5 的 held-out recall 已达到
-   90.56%（动作阈值），但线上 precision、latest-start、funding、first-service 和吞吐收益
-   仍未验证。
+   90.56%（动作阈值），多目标 reentry 已在线产生 fresh-positive package，但 predictive H2D、
+   funding、first-service、在线 precision 和吞吐收益仍未形成完整实测闭环。
 5. prepared binding 目前每个 beneficiary 只保留一个 victim；失效时回退 P5，不执行
    预测性 COMMIT。
 6. v7 GPU service artifact 适合排序和 shadow；正式吞吐结论必须来自与冻结 observed
@@ -305,8 +326,8 @@ shell 缺失的 `CUDA_HOME`。predictive risk/JointPlan/worker/attribution 定�
 
 当前关键路径：
 
-1. 使用当前冻结 40-root workload 运行足够长时间，让 32 个 active context 自然增长 unique
-   KV；此前无迁移结果来自提前终止，不能据此修改 workload 或缩小 KV pool。
+1. 使用当前冻结 64-root、hard max-running 64 workload 运行足够长时间，让 active context
+   自然增长 unique KV；此前短运行的无迁移结果不能用于修改 workload 或缩小 KV pool。
 2. 在该 workload 上重新运行 development canary。动作提交时必须重验 certificate、物理
    closure、实时容量、transfer envelope 和 latest-start；晚到、回收不足或负收益动作回退 P5。
 3. PREFETCH gate 必须覆盖 `intent -> H2D -> ACK -> service lease/funding -> admission ->
