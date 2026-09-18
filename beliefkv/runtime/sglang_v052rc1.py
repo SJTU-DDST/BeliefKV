@@ -19614,8 +19614,6 @@ class EmbeddedSGLangRuntime:
             timing_semantics=timing.semantics,
             evidence_kind="model_wait_shadow",
         )
-        self._last_joint_decision_plan_id = None
-        self._current_online_joint_decision = None
         self._joint_predictive_counts["wait_shadow_intent_published"] += 1
         self.audit.emit(
             "predictive_wait_shadow_intent_published",
