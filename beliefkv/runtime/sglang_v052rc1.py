@@ -19452,7 +19452,7 @@ class EmbeddedSGLangRuntime:
         for invocation, _summary, missing_cpu_bytes in sorted(
             candidates,
             key=lambda item: (
-                -item[0].updated_ts_ms,
+                item[0].updated_ts_ms,
                 -item[2],
                 item[0].invocation_id,
             ),
