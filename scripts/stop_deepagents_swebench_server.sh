@@ -74,24 +74,47 @@ jq -e '
 if [[ -z "${server_pid}" && -f "${server_dir}/server.pid.json" ]]; then
   server_pid="$(jq -er '.pid' "${server_dir}/server.pid.json")"
 fi
-if [[ -n "${server_pid}" && -d "/proc/${server_pid}" ]]; then
+if [[ -n "${server_pid}" ]]; then
   if [[ -f "${server_dir}/server.pid.json" ]]; then
-    expected_server_start="$(
-      jq -er '.linux_start_time_ticks' "${server_dir}/server.pid.json"
+    recorded_server_pgid="$(
+      jq -er '.pgid // .pid' "${server_dir}/server.pid.json"
     )"
-    actual_server_start="$(awk '{print $22}' "/proc/${server_pid}/stat")"
-    if [[ "${actual_server_start}" != "${expected_server_start}" ]]; then
-      printf 'Refusing reused server PID %s: start time mismatch\n' \
+  else
+    recorded_server_pgid="${server_pid}"
+  fi
+  if [[ -d "/proc/${server_pid}" ]]; then
+    if [[ -f "${server_dir}/server.pid.json" ]]; then
+      expected_server_start="$(
+        jq -er '.linux_start_time_ticks' "${server_dir}/server.pid.json"
+      )"
+      actual_server_start="$(awk '{print $22}' "/proc/${server_pid}/stat")"
+      if [[ "${actual_server_start}" != "${expected_server_start}" ]]; then
+        printf 'Refusing reused server PID %s: start time mismatch\n' \
+          "${server_pid}" >&2
+        exit 70
+      fi
+    fi
+    actual_server_pgid="$(ps -o pgid= -p "${server_pid}" | tr -d ' ')"
+    if [[ "${actual_server_pgid}" != "${recorded_server_pgid}" ]]; then
+      printf 'Refusing server PID %s: process group mismatch\n' \
         "${server_pid}" >&2
       exit 70
     fi
   fi
-  server_pgid="$(ps -o pgid= -p "${server_pid}" | tr -d ' ')"
+  server_pgid="${recorded_server_pgid}"
   if [[ -z "${server_pgid}" || "${server_pgid}" == "$(ps -o pgid= -p $$ | tr -d ' ')" ]]; then
     printf 'Refusing unsafe server process group for PID %s\n' "${server_pid}" >&2
     exit 70
   fi
-  kill -TERM -- "-${server_pgid}"
+  if process_group_running "${server_pgid}"; then
+    if [[ ! -d "/proc/${server_pid}" ]] && ! ps -o args= -g "${server_pgid}" \
+      | grep -Eq 'sglang|launch_qwen3|launch_server|conda run.*beliefkv'; then
+      printf 'Refusing unknown orphaned process group %s\n' \
+        "${server_pgid}" >&2
+      exit 70
+    fi
+    kill -TERM -- "-${server_pgid}"
+  fi
 fi
 
 # The BeliefKV SIGTERM handler acknowledges after transactions and audit state

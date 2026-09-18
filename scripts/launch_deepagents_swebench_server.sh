@@ -78,8 +78,10 @@ fi
 mkdir -p "${SERVER_DIR}"
 printf '%s\n' "$$" >"${SERVER_DIR}/server.pid"
 server_start_ticks="$(awk '{print $22}' "/proc/$$/stat")"
-printf '{"linux_start_time_ticks":%s,"pid":%s,"schema_version":1}\n' \
-  "${server_start_ticks}" "$$" >"${SERVER_DIR}/server.pid.json"
+server_pgid="$(ps -o pgid= -p $$ | tr -d ' ')"
+printf '{"linux_start_time_ticks":%s,"pgid":%s,"pid":%s,"schema_version":1}\n' \
+  "${server_start_ticks}" "${server_pgid}" "$$" \
+  >"${SERVER_DIR}/server.pid.json"
 
 "${PROFILE_PYTHON}" "${REPOSITORY_ROOT}/scripts/validate_runtime_profile.py" \
   --phase preflight \
