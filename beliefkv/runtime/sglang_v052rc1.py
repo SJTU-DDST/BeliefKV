@@ -22414,12 +22414,6 @@ class EmbeddedSGLangRuntime:
             watch
             for watch in watches.values()
             if watch.latest_start_ts_ms <= now_ms
-            and (
-                watch.fresh_after_ts_ms is None
-                or watch.intent.generated_ts_ms >= watch.fresh_after_ts_ms
-            )
-            and now_ms - watch.intent.generated_ts_ms
-            <= self.config.predictive_intent_max_age_ms
         )
         if not due:
             if self._is_predictive_prefetch_intent(current):
@@ -24502,7 +24496,10 @@ class EmbeddedSGLangRuntime:
         age_ms = max(0.0, now_ms - intent.generated_ts_ms)
         remaining_ms = max(0.0, intent.remaining_window_low_ms - age_ms)
         active_prefetch_watch = self._intent_is_active_prefetch_watch(intent)
-        if age_ms > self.config.predictive_intent_max_age_ms:
+        if (
+            age_ms > self.config.predictive_intent_max_age_ms
+            and not active_prefetch_watch
+        ):
             reasons.append("intent_expired")
         current_model_version = getattr(
             self, "_last_frontier_model_version", None

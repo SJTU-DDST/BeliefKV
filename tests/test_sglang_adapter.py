@@ -7527,7 +7527,7 @@ class SGLangBackendTest(unittest.TestCase):
         ) == urgent
         assert ("ctx-far", 1) in runtime._predictive_prefetch_watches
 
-    def test_predictive_prefetch_watch_requires_refresh_before_long_deadline(self):
+    def test_predictive_prefetch_watch_uses_last_certified_intent_at_deadline(self):
         runtime = EmbeddedSGLangRuntime.__new__(EmbeddedSGLangRuntime)
         runtime.config = BeliefKVConfig(
             hbm_capacity_bytes=1_000,
@@ -7580,7 +7580,7 @@ class SGLangBackendTest(unittest.TestCase):
         )
         assert runtime._activate_due_predictive_prefetch_watch(
             now_ms=stale_watch.latest_start_ts_ms
-        ) is None
+        ) == old
 
         refreshed = _predictive_prefetch_intent(
             controller,
