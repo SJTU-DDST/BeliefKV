@@ -12434,6 +12434,7 @@ def test_wait_tool_publishes_model_backed_prepare_shadow_without_beneficiary():
     assert intent.beneficiary_request_id is None
     assert intent.context_id == "child-context"
     assert intent.expected_benefit_ms == 71.0
+    assert intent.remaining_window_low_ms == 5_000.0
     assert runtime._last_joint_decision_plan_id == "plan"
     assert runtime._current_online_joint_decision is not None
     assert runtime._joint_predictive_counts["wait_shadow_intent_published"] == 1

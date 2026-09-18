@@ -19435,14 +19435,15 @@ class EmbeddedSGLangRuntime:
             candidates
         )
         selected = None
+        selected_score = None
         for invocation, _summary, missing_cpu_bytes in sorted(
             candidates,
             key=lambda item: (
-                item[0].updated_ts_ms,
+                -item[0].updated_ts_ms,
                 -item[2],
                 item[0].invocation_id,
             ),
-        )[:2]:
+        )[:_PREDICTIVE_REENTRY_WATCH_LIMIT]:
             prediction = predictions.get(invocation.invocation_id)
             context = graph.contexts.get(invocation.context_id)
             if prediction is None or context is None:
@@ -19521,7 +19522,14 @@ class EmbeddedSGLangRuntime:
                     "wait_shadow_nonpositive_expected_benefit"
                 ] += 1
                 continue
-            selected = (
+            score = (
+                timing.favorable_probability,
+                expected_benefit_ms,
+                invocation.updated_ts_ms,
+            )
+            if selected_score is None or score > selected_score:
+                selected_score = score
+                selected = (
                 invocation,
                 context,
                 preview,
@@ -19532,7 +19540,6 @@ class EmbeddedSGLangRuntime:
                 interference_source,
                 expected_benefit_ms,
             )
-            break
         if selected is None:
             return False
 
@@ -19548,7 +19555,7 @@ class EmbeddedSGLangRuntime:
             expected_benefit_ms,
         ) = selected
         wait_window_ms = max(
-            transfer_ms + self.config.predictive_commit_guard_ms + 1_000.0,
+            5_000.0,
             2.0 * timing.operational_tau_ms,
         )
         intent_id = (
