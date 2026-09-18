@@ -3232,6 +3232,16 @@ class PredictiveRiskShadowObserver:
         Mapping[str, TimedScenario],
     ]:
         if (
+            package.deferred_physical_commit
+            and baseline_timelines is not None
+        ):
+            physicalizer.register_deferred_prefetch_start_offsets(
+                package,
+                baseline_timelines,
+                invocation_id=target_invocation_id,
+                guard_ms=self.config.transfer_commit_guard_ms,
+            )
+        if (
             package.action == PredictiveActionKind.PREPARE_HOST
             and baseline_timelines is not None
         ):
@@ -3986,7 +3996,10 @@ class PredictiveRiskShadowObserver:
                     else PredictiveActionKind.PREFETCH_GPU
                 )
             else:
-                continue
+                # This package schedules future work; it does not reserve HBM.
+                # The watch waits for latest-start and the safe point validates
+                # capacity against the live allocator before issuing H2D.
+                action = PredictiveActionKind.PREFETCH_GPU
             bounded_prefetch = action in {
                 PredictiveActionKind.PARTIAL_PREFETCH_GPU,
                 PredictiveActionKind.RECLAIM_AND_PREFETCH,
@@ -4063,6 +4076,10 @@ class PredictiveRiskShadowObserver:
                         if reclaim_victim is not None
                         and action == PredictiveActionKind.RECLAIM_AND_PREFETCH
                         else 0
+                    ),
+                    deferred_physical_commit=(
+                        prefetch_byte_budget == 0
+                        and action == PredictiveActionKind.PREFETCH_GPU
                     ),
                 )
             )
@@ -4557,9 +4574,31 @@ class _OnlineCandidatePhysicalizer:
             if len(bundle.extent_ids) == 1
         }
         self._overlay_by_context = _action_local_physical_overlay(policy_input)
+        self._deferred_prefetch_start_offsets: dict[
+            tuple[str, str], float
+        ] = {}
 
     def register_package(self, package: PredictiveActionPackage) -> None:
         self.packages[package.package_id] = package
+
+    def register_deferred_prefetch_start_offsets(
+        self,
+        package: PredictiveActionPackage,
+        baseline_timelines: Mapping[str, TimedScenario],
+        *,
+        invocation_id: str,
+        guard_ms: float,
+    ) -> None:
+        duration_ms = self.package_transfer_duration_ms(package)
+        for scenario_id, timeline in baseline_timelines.items():
+            release_ms = timeline.dependency_release_offsets_ms.get(
+                invocation_id
+            )
+            if release_ms is None or not math.isfinite(release_ms):
+                continue
+            self._deferred_prefetch_start_offsets[
+                (package.package_id, scenario_id)
+            ] = max(0.0, release_ms - duration_ms - guard_ms)
 
     @property
     def target_restore_duration_ms(self) -> float:
@@ -4960,7 +4999,9 @@ class _OnlineCandidatePhysicalizer:
         ):
             return False
         if package.action == PredictiveActionKind.PREFETCH_GPU:
-            return target_bytes > 0 and target_bytes <= available
+            return target_bytes > 0 and (
+                package.deferred_physical_commit or target_bytes <= available
+            )
         if package.action == PredictiveActionKind.PARTIAL_PREFETCH_GPU:
             return (
                 target_bytes > 0
@@ -5286,6 +5327,10 @@ class _OnlineCandidatePhysicalizer:
                 context_id=target_context_id,
                 extent_count=target_extent_count,
             )
+            start_offset_ms = self._deferred_prefetch_start_offsets.get(
+                (package.package_id, scenario.scenario_id),
+                0.0,
+            )
             target_outcome = next(
                 item
                 for item in scenario.outcomes
@@ -5299,8 +5344,8 @@ class _OnlineCandidatePhysicalizer:
             transfers.append(
                 ScheduledTransfer(
                     transfer_id,
-                    0.0,
-                    duration,
+                    start_offset_ms,
+                    start_offset_ms + duration,
                     duration,
                     hbm_delta_bytes_on_completion=target_restore_bytes,
                     ready_after_dependency_release_ids=(

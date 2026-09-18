@@ -12873,6 +12873,22 @@ def test_busy_native_transfer_defers_prefetch_watch_without_dropping_intent():
     assert deferred[-1]["reason"] == "native_transfer_busy"
     assert deferred[-1]["retry_not_before_ms"] == 1_050.0
 
+    assert runtime._defer_predictive_prefetch_watch_for_transfer(
+        intent,
+        now_ms=1_100.0,
+        reason="physical_temporarily_unavailable",
+    )
+    assert runtime._joint_predictive_counts[
+        "prefetch_watch_deferred_physical_temporarily_unavailable"
+    ] == 1
+    deferred = [
+        fields
+        for event, _, fields in runtime.audit.events
+        if event == "predictive_prefetch_watch_deferred"
+    ]
+    assert deferred[-1]["reason"] == "physical_temporarily_unavailable"
+    assert deferred[-1]["retry_not_before_ms"] == 1_150.0
+
 
 def test_prepare_event_resolves_preferred_victim_contexts():
     runtime = EmbeddedSGLangRuntime.__new__(EmbeddedSGLangRuntime)

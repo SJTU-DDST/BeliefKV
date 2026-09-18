@@ -276,11 +276,19 @@ class PredictiveActionPackage:
     beneficiary_invocation_id: str | None = None
     beneficiary_context_id: str | None = None
     beneficiary_context_epoch: int | None = None
+    deferred_physical_commit: bool = False
 
     def __post_init__(self) -> None:
         if not self.package_id:
             raise ValueError("predictive action package ID is required")
         object.__setattr__(self, "action", PredictiveActionKind(self.action))
+        if not isinstance(self.deferred_physical_commit, bool):
+            raise ValueError("deferred physical commit must be boolean")
+        if self.deferred_physical_commit and self.action not in {
+            PredictiveActionKind.PREFETCH_GPU,
+            PredictiveActionKind.PARTIAL_PREFETCH_GPU,
+        }:
+            raise ValueError("only prefetch packages may defer physical commit")
         contexts = tuple(sorted(set(self.context_ids)))
         if any(not item for item in contexts):
             raise ValueError("predictive package context IDs must be non-empty")

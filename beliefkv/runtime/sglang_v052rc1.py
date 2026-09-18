@@ -22312,8 +22312,9 @@ class EmbeddedSGLangRuntime:
         *,
         now_ms: float,
         retry_delay_ms: float = 50.0,
+        reason: str = "native_transfer_busy",
     ) -> bool:
-        """Keep a due prefetch alive while the native transfer engine is busy."""
+        """Keep a due prefetch alive across a transient physical blocker."""
 
         if not self._is_predictive_prefetch_intent(intent):
             return False
@@ -22345,7 +22346,7 @@ class EmbeddedSGLangRuntime:
         self._last_joint_decision_plan_id = None
         self._current_online_joint_decision = None
         self._joint_predictive_counts[
-            "prefetch_watch_deferred_native_transfer_busy"
+            f"prefetch_watch_deferred_{reason}"
         ] += 1
         self.audit.emit(
             "predictive_prefetch_watch_deferred",
@@ -22354,7 +22355,7 @@ class EmbeddedSGLangRuntime:
             intent_id=intent.intent_id,
             context_id=intent.context_id,
             target_reentry_context_epoch=key[1],
-            reason="native_transfer_busy",
+            reason=reason,
             retry_not_before_ms=retry_ts_ms,
             watch_count=len(watches),
         )
@@ -25211,6 +25212,43 @@ class EmbeddedSGLangRuntime:
                 safe_point_transfer_bound_ms=effective_transfer_ms,
                 retry_not_before_ms=now_ms + 50.0,
                 deferred_physical_reasons=["prefetch_native_transfer_busy"],
+                fallback="observed_joint_plan",
+            )
+            return decision
+
+        transient_prefetch_reasons = {
+            "observed_residency_has_priority",
+            "residency_transaction_inflight",
+            "pcie_dispatch_busy",
+            "native_hicache_inflight",
+            "urgent_restore_active",
+            "predictive_prefetch_inflight_limit",
+            "physical_preview_unavailable",
+            "physical:device_capacity",
+        }
+        if (
+            self._is_predictive_prefetch_intent(intent)
+            and reasons
+            and set(reasons).issubset(transient_prefetch_reasons)
+            and self._defer_predictive_prefetch_watch_for_transfer(
+                intent,
+                now_ms=now_ms,
+                reason="physical_temporarily_unavailable",
+            )
+        ):
+            self.audit.emit(
+                "predictive_semantic_intent_deferred",
+                now_ms,
+                audit_level="correctness",
+                plan_id=plan.plan_id,
+                intent_id=intent.intent_id,
+                action=intent.action.value,
+                context_id=intent.context_id,
+                age_ms=age_ms,
+                remaining_window_low_ms=remaining_ms,
+                safe_point_transfer_bound_ms=effective_transfer_ms,
+                retry_not_before_ms=now_ms + 50.0,
+                deferred_physical_reasons=sorted(set(reasons)),
                 fallback="observed_joint_plan",
             )
             return decision

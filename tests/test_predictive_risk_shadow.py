@@ -362,6 +362,40 @@ def test_prefetch_candidate_uses_commit_ready_victim_when_free_hbm_is_zero() -> 
     assert funded.predicted_deficit_bytes == 300
 
 
+def test_zero_capacity_prefetch_is_kept_as_deferred_semantic_schedule() -> None:
+    observer = PredictiveRiskShadowObserver.__new__(
+        PredictiveRiskShadowObserver
+    )
+    observer.config = SimpleNamespace(max_candidates=8)
+    policy_input = _input(capacity=600, reserved=0)
+    target = policy_input.runnable_frontier[0]
+    eligibility = PredictiveEligibility(
+        source_snapshot_id="snapshot",
+        prefetch_targets=(
+            PrefetchTarget(
+                target.invocation_id,
+                target.context_id,
+                "WAIT_TOOL",
+                200,
+            ),
+        ),
+        prepare_host_victims=(),
+        probe_ms=0.0,
+    )
+
+    packages = observer._candidate_packages(
+        policy_input,
+        SimpleNamespace(plan_id="plan"),
+        eligibility,
+    )
+
+    assert len(packages) == 2
+    scheduled = packages[-1]
+    assert scheduled.action == PredictiveActionKind.PREFETCH_GPU
+    assert scheduled.deferred_physical_commit
+    assert scheduled.byte_budget is None
+
+
 def test_prefetch_candidate_does_not_require_visible_native_request() -> None:
     observer = PredictiveRiskShadowObserver.__new__(
         PredictiveRiskShadowObserver
@@ -2556,6 +2590,35 @@ def test_compact_target_overlay_drives_prefetch_without_worker_page_bundles() ->
     )
     assert physicalizer.package_feasible(funded)
     assert not physicalizer.package_feasible(replace(funded, byte_budget=299))
+
+    physicalizer.policy_input = replace(
+        physicalizer.policy_input,
+        resources=replace(
+            physicalizer.policy_input.resources,
+            hbm_capacity_bytes=600,
+            hbm_used_bytes=600,
+            hbm_reserved_bytes=0,
+        ),
+    )
+    assert not physicalizer.package_feasible(package)
+    deferred = replace(package, deferred_physical_commit=True)
+    assert physicalizer.package_feasible(deferred)
+    duration_ms = physicalizer.package_transfer_duration_ms(deferred)
+    physicalizer.register_deferred_prefetch_start_offsets(
+        deferred,
+        {
+            "scenario": SimpleNamespace(
+                dependency_release_offsets_ms={
+                    "invocation-target": 1_000.0
+                }
+            )
+        },
+        invocation_id="invocation-target",
+        guard_ms=25.0,
+    )
+    assert physicalizer._deferred_prefetch_start_offsets[
+        (deferred.package_id, "scenario")
+    ] == max(0.0, 1_000.0 - duration_ms - 25.0)
 
     prediction = replace(
         _prediction(),
