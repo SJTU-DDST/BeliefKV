@@ -117,6 +117,34 @@ class ObservedRetractionPlannerTest(unittest.TestCase):
         self.assertEqual(plan.expected_reclaim_capacity_bytes, 800)
         self.assertEqual(plan.replacement_request_ids, ("replacement",))
 
+    def test_slot_handoff_retracts_one_safe_victim_without_hbm_deficit(self):
+        source = snapshot(
+            candidates=(candidate("victim"),),
+            active_footprint=500,
+            active_budget=1000,
+            native_capacity=1000,
+            running_count=2,
+        )
+        source = source.__class__(
+            **{
+                **source.__dict__,
+                "admission_stall_ms": 0.0,
+                "slot_handoff_required": True,
+            }
+        )
+
+        plan = self.planner.plan(source)
+
+        self.assertIsNotNone(plan)
+        self.assertEqual(plan.request_ids, ("victim",))
+        self.assertEqual(plan.replacement_request_ids, ("replacement",))
+        self.assertGreater(plan.expected_reclaim_capacity_bytes, 0)
+
+        without_handoff = source.__class__(
+            **{**source.__dict__, "slot_handoff_required": False}
+        )
+        self.assertIsNone(self.planner.plan(without_handoff))
+
     def test_disabled_frontier_annotations_preserve_observed_result(self):
         baseline = self.planner.plan(
             snapshot(

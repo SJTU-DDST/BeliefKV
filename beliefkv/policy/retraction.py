@@ -123,6 +123,7 @@ class ObservedRetractionSnapshot:
     candidates: tuple[RunningRetractionCandidate, ...]
     locked_extents: tuple[RetractionLockedExtent, ...]
     replacements: tuple[RetractionReplacement, ...]
+    slot_handoff_required: bool = False
 
     def __post_init__(self) -> None:
         if not math.isfinite(self.observed_ts_ms) or self.observed_ts_ms < 0:
@@ -250,7 +251,11 @@ class ObservedRetractionPlanner:
         self,
         snapshot: ObservedRetractionSnapshot,
     ) -> ObservedRetractionDecision:
-        if snapshot.admission_stall_ms < self.config.minimum_admission_stall_ms:
+        if (
+            not snapshot.slot_handoff_required
+            and snapshot.admission_stall_ms
+            < self.config.minimum_admission_stall_ms
+        ):
             return ObservedRetractionDecision(
                 plan=None,
                 reason="admission_stall_below_threshold",
@@ -279,7 +284,11 @@ class ObservedRetractionPlanner:
             0,
             snapshot.active_kv_footprint_bytes - snapshot.active_kv_budget_bytes,
         )
-        if replacement_deficit == 0 and active_excess == 0:
+        if (
+            replacement_deficit == 0
+            and active_excess == 0
+            and not snapshot.slot_handoff_required
+        ):
             return ObservedRetractionDecision(
                 plan=None,
                 reason="pressure_absent",

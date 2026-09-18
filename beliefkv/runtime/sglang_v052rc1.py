@@ -6626,7 +6626,11 @@ class EmbeddedSGLangRuntime:
             return None
         now_ms = float(self._now_ms())
         overdue_restore = self._overdue_restore_obligation(now_ms=now_ms)
-        if overdue_restore is not None:
+        restore_slot_handoff = self._restore_slot_handoff_obligation(
+            overdue_restore,
+            running_batch,
+        )
+        if overdue_restore is not None and restore_slot_handoff is None:
             self._running_retraction_counts["restore_debt_barrier"] += 1
             self._attribute_running_retraction_barrier(
                 running_batch,
@@ -6668,7 +6672,13 @@ class EmbeddedSGLangRuntime:
                 planning_reason="active_floor",
             )
             return None
-        replacements = self._running_retraction_replacements(now_ms=now_ms)
+        if restore_slot_handoff is None:
+            replacements = self._running_retraction_replacements(now_ms=now_ms)
+        else:
+            replacements = self._running_retraction_replacements(
+                now_ms=now_ms,
+                priority_request_id=restore_slot_handoff.request_id,
+            )
         if not replacements:
             self._retraction_admission_stall_since_ms = None
             self._running_retraction_counts["no_replacement"] += 1
@@ -6680,7 +6690,7 @@ class EmbeddedSGLangRuntime:
             )
             return None
         stall_since = getattr(self, "_retraction_admission_stall_since_ms", None)
-        if stall_since is None:
+        if stall_since is None and restore_slot_handoff is None:
             self._retraction_admission_stall_since_ms = now_ms
             self._running_retraction_counts["stall_warming"] += 1
             self._attribute_running_retraction_barrier(
@@ -6690,6 +6700,18 @@ class EmbeddedSGLangRuntime:
                 replacements=replacements,
             )
             return None
+        if restore_slot_handoff is not None:
+            self._running_retraction_counts["restore_slot_handoff"] += 1
+            self.audit.emit(
+                "restore_slot_handoff_selected",
+                now_ms,
+                audit_level="correctness",
+                obligation_id=restore_slot_handoff.obligation_id,
+                restore_request_id=restore_slot_handoff.request_id,
+                running_request_count=len(requests),
+                max_running_requests=self._predictive_max_running_requests(),
+                policy_effect="retract_one_unprotected_running_request",
+            )
         provenance = self._lock_provenance_extents()
         if provenance is None:
             self._running_retraction_counts["provenance_unavailable"] += 1
@@ -6850,6 +6872,7 @@ class EmbeddedSGLangRuntime:
                 for item in extents
             ),
             replacements=replacements,
+            slot_handoff_required=restore_slot_handoff is not None,
         )
         snapshot, restore_micro_gate_id = self._restore_micro_gate_snapshot(
             snapshot
@@ -9805,6 +9828,7 @@ class EmbeddedSGLangRuntime:
         self,
         *,
         now_ms: float,
+        priority_request_id: str | None = None,
     ) -> tuple[RetractionReplacement, ...]:
         waiting = tuple(getattr(self.scheduler, "waiting_queue", ()) or ())
         tagged: list[tuple[int, Any, BeliefKVRequestMetadata]] = []
@@ -9818,6 +9842,30 @@ class EmbeddedSGLangRuntime:
             tagged.append((native_index, req, metadata))
         if not tagged:
             return ()
+        if priority_request_id is not None:
+            priority_item = next(
+                (
+                    item
+                    for item in tagged
+                    if str(item[1].rid) == priority_request_id
+                ),
+                None,
+            )
+            if priority_item is None:
+                return ()
+            _native_index, req, metadata = priority_item
+            entry = self.controller.visible_admission.get(priority_request_id)
+            return (
+                RetractionReplacement(
+                    request_id=priority_request_id,
+                    estimated_incremental_bytes=(
+                        entry.request.estimated_incremental_bytes
+                    ),
+                    **self._frontier_retraction_annotation(
+                        metadata.invocation_id
+                    ),
+                ),
+            )
         if self.config.restore_micro_gate_enabled:
             replacement = next(
                 (
@@ -17532,6 +17580,33 @@ class EmbeddedSGLangRuntime:
                 return int(value)
         return 0
 
+    def _restore_slot_handoff_obligation(
+        self,
+        obligation: RestoreObligation | None,
+        running_batch: Any,
+    ) -> RestoreObligation | None:
+        """Return debt that is restored but needs one native running slot."""
+
+        if (
+            obligation is None
+            or obligation.state != RestoreObligationState.TICKET_READY
+            or obligation.cause != RestoreObligationCause.RUNNING_RETRACTION
+        ):
+            return None
+        entry = self.controller.visible_admission.get(obligation.request_id)
+        waiting_request = self._restore_waiting_request(obligation.request_id)
+        if (
+            entry is None
+            or entry.state != AdmissionSideState.VISIBLE_PENDING
+            or waiting_request is None
+        ):
+            return None
+        max_running = self._predictive_max_running_requests()
+        running_count = len(tuple(getattr(running_batch, "reqs", ()) or ()))
+        if max_running <= 0 or running_count < max_running:
+            return None
+        return obligation
+
     def _predictive_beneficiary_opportunity_probe(
         self,
         hint: ObservedSeedBeneficiaryHint,
@@ -19620,12 +19695,22 @@ class EmbeddedSGLangRuntime:
     def _select_predictive_reentry_targets(
         eligible: list[tuple[Any, ...]],
     ) -> tuple[tuple[Any, ...], ...]:
+        ordered = sorted(eligible, key=lambda item: item[:4], reverse=True)
+        child = next(
+            (
+                item
+                for item in ordered
+                if getattr(item[4], "parent_invocation_id", None)
+            ),
+            None,
+        )
+        if child is None:
+            return tuple(ordered[:_PREDICTIVE_REENTRY_TARGET_LIMIT])
         return tuple(
-            sorted(
-                eligible,
-                key=lambda item: item[:4],
-                reverse=True,
-            )[:_PREDICTIVE_REENTRY_TARGET_LIMIT]
+            [child]
+            + [item for item in ordered if item is not child][
+                :_PREDICTIVE_REENTRY_TARGET_LIMIT - 1
+            ]
         )
 
     @classmethod

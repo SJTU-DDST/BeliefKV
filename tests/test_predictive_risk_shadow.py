@@ -2305,6 +2305,45 @@ def test_scheduled_service_trigger_excludes_competing_parked_parent() -> None:
         ),
     )
 
+    predictive_metadata = dict(metadata)
+    predictive_metadata["beliefkv_predictive_risk_trigger"] = MetadataValue(
+        MetadataSource.OBSERVED,
+        {
+            "events": [
+                [
+                    "reentry",
+                    "predicted_latest_start",
+                    "invocation-child",
+                    0,
+                ],
+                [
+                    "reentry",
+                    "predicted_latest_start",
+                    "invocation-target",
+                    0,
+                ],
+            ]
+        },
+        "test",
+    )
+    predictive_input = replace(
+        policy_input,
+        optional_metadata=predictive_metadata,
+    )
+
+    predictive_eligibility = PredictiveEligibilityIndex().probe(
+        predictive_input
+    )
+
+    assert predictive_eligibility.prefetch_targets == (
+        PrefetchTarget(
+            "invocation-child",
+            "ctx-child",
+            InvocationState.READY.value,
+            128,
+        ),
+    )
+
 
 def _radix_extent(
     extent_id: str,

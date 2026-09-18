@@ -974,19 +974,31 @@ class PredictiveEligibilityIndex:
             and isinstance(risk_trigger_metadata.value, Mapping)
             else {}
         )
+        explicit_reentry_rank: dict[str, int] = {}
         scheduled_service_rank: dict[str, int] = {}
         for event in risk_trigger_payload.get("events", ()):
             if (
                 isinstance(event, (list, tuple))
                 and len(event) >= 4
                 and str(event[0]) == "reentry"
-                and str(event[1]) == "scheduled_service"
             ):
                 invocation_id = str(event[2])
-                if invocation_id and invocation_id not in scheduled_service_rank:
+                if invocation_id and invocation_id not in explicit_reentry_rank:
+                    explicit_reentry_rank[invocation_id] = len(
+                        explicit_reentry_rank
+                    )
+                if (
+                    str(event[1]) == "scheduled_service"
+                    and invocation_id
+                    and invocation_id not in scheduled_service_rank
+                ):
                     scheduled_service_rank[invocation_id] = len(
                         scheduled_service_rank
                     )
+        ranked_reentry_targets = scheduled_service_rank or explicit_reentry_rank
+        preferred_reentry_rank = dict(
+            tuple(ranked_reentry_targets.items())[:1]
+        )
         invocation_by_context: dict[str, list[tuple[str, str, float]]] = {}
         for invocation_id, raw in invocations.items():
             if not isinstance(raw, Mapping):
@@ -1045,8 +1057,8 @@ class PredictiveEligibilityIndex:
             selected_invocation = min(
                 owners,
                 key=lambda item: (
-                    0 if item[0] in scheduled_service_rank else 1,
-                    scheduled_service_rank.get(item[0], 1 << 30),
+                    0 if item[0] in preferred_reentry_rank else 1,
+                    preferred_reentry_rank.get(item[0], 1 << 30),
                     prefetch_priority.get(item[1], 10), item[2], item[0]
                 ),
             )
@@ -1110,8 +1122,8 @@ class PredictiveEligibilityIndex:
             selected_invocation = min(
                 owners,
                 key=lambda item: (
-                    0 if item[0] in scheduled_service_rank else 1,
-                    scheduled_service_rank.get(item[0], 1 << 30),
+                    0 if item[0] in preferred_reentry_rank else 1,
+                    preferred_reentry_rank.get(item[0], 1 << 30),
                     prefetch_priority.get(item[1], 10),
                     item[2],
                     item[0],
@@ -1147,21 +1159,19 @@ class PredictiveEligibilityIndex:
 
         prefetch.sort(
             key=lambda item: (
-                0 if item.invocation_id in scheduled_service_rank else 1,
-                scheduled_service_rank.get(item.invocation_id, 1 << 30),
+                0 if item.invocation_id in preferred_reentry_rank else 1,
+                preferred_reentry_rank.get(item.invocation_id, 1 << 30),
                 prefetch_priority.get(item.state, 10),
                 item.missing_gpu_bytes,
                 item.context_id,
             )
         )
-        if scheduled_service_rank:
-            scheduled_prefetch = [
+        if preferred_reentry_rank:
+            prefetch = [
                 item
                 for item in prefetch
-                if item.invocation_id in scheduled_service_rank
+                if item.invocation_id in preferred_reentry_rank
             ]
-            if scheduled_prefetch:
-                prefetch = scheduled_prefetch
         victims.sort(key=lambda item: (-item.reclaimable_bytes, item.context_id))
         reclaim_ready.sort(
             key=lambda item: (-item.reclaimable_bytes, item.context_id)

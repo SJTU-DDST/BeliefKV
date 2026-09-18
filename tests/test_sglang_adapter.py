@@ -4650,6 +4650,79 @@ class SGLangBackendTest(unittest.TestCase):
         self.assertIsNone(target)
         self.assertEqual(reason, "restore_owner_not_ready")
 
+    def test_restore_slot_handoff_requires_ready_debt_and_full_running_set(self):
+        runtime = EmbeddedSGLangRuntime.__new__(EmbeddedSGLangRuntime)
+        owner = SimpleNamespace(rid="owner")
+        runtime.scheduler = SimpleNamespace(
+            max_running_requests=2,
+            waiting_queue=[owner],
+        )
+        runtime.controller = SimpleNamespace(
+            visible_admission={
+                "owner": SimpleNamespace(
+                    state=AdmissionSideState.VISIBLE_PENDING
+                )
+            }
+        )
+        runtime._restore_waiting_request = lambda request_id: (
+            owner if request_id == "owner" else None
+        )
+        obligation = SimpleNamespace(
+            request_id="owner",
+            state=RestoreObligationState.TICKET_READY,
+            cause=RestoreObligationCause.RUNNING_RETRACTION,
+        )
+        full_batch = SimpleNamespace(reqs=[object(), object()])
+
+        self.assertIs(
+            runtime._restore_slot_handoff_obligation(obligation, full_batch),
+            obligation,
+        )
+
+        obligation.state = RestoreObligationState.PARKED_WAIT
+        self.assertIsNone(
+            runtime._restore_slot_handoff_obligation(obligation, full_batch)
+        )
+        obligation.state = RestoreObligationState.TICKET_READY
+        self.assertIsNone(
+            runtime._restore_slot_handoff_obligation(
+                obligation,
+                SimpleNamespace(reqs=[object()]),
+            )
+        )
+
+    def test_predictive_reentry_target_selection_reserves_child_capacity(self):
+        parents = [
+            (
+                10.0 - index,
+                1.0,
+                100.0,
+                -10.0,
+                SimpleNamespace(
+                    invocation_id=f"parent-{index}",
+                    parent_invocation_id=None,
+                ),
+            )
+            for index in range(3)
+        ]
+        child = (
+            0.1,
+            0.6,
+            10.0,
+            -20.0,
+            SimpleNamespace(
+                invocation_id="child",
+                parent_invocation_id="parent-0",
+            ),
+        )
+
+        selected = EmbeddedSGLangRuntime._select_predictive_reentry_targets(
+            [*parents, child]
+        )
+
+        self.assertEqual(selected[0][4].invocation_id, "child")
+        self.assertEqual(len(selected), 3)
+
     def test_late_runtime_event_is_committed_at_workflow_watermark(self):
         runtime = EmbeddedSGLangRuntime.__new__(EmbeddedSGLangRuntime)
         runtime.config = BeliefKVConfig(runtime_event_max_lateness_ms=100.0)
