@@ -2687,6 +2687,7 @@ class EmbeddedSGLangRuntime:
         self._pending_predictive_prepare_created_ts_ms: float | None = None
         self._last_published_predictive_prepare_event_sequence = 0
         self._predictive_reentry_watch_invocation_ids: set[str] = set()
+        self._forced_predictive_reentry_refresh_invocation_ids: set[str] = set()
         self._predictive_child_tool_return_watches: dict[
             str, _PredictiveToolReturnWatch
         ] = {}
@@ -17649,6 +17650,9 @@ class EmbeddedSGLangRuntime:
                 self._joint_predictive_counts[
                     "child_tool_return_watch_registered"
                 ] += 1
+                self._joint_predictive_counts[
+                    "child_tool_start_prepare_triggered"
+                ] += 1
             elif event.kind in {
                 RuntimeEventKind.TOOL_END,
                 RuntimeEventKind.REACTIVATE,
@@ -19354,6 +19358,9 @@ class EmbeddedSGLangRuntime:
         child_tool_watches = getattr(
             self, "_predictive_child_tool_return_watches", {}
         )
+        forced_refreshes = getattr(
+            self, "_forced_predictive_reentry_refresh_invocation_ids", set()
+        )
         runnable = tuple(
             getattr(self, "_latest_bounded_seed_runnable", ()) or ()
         )
@@ -19393,6 +19400,7 @@ class EmbeddedSGLangRuntime:
             ):
                 watches.discard(invocation_id)
                 child_tool_watches.pop(invocation_id, None)
+                forced_refreshes.discard(invocation_id)
                 continue
             if (
                 not page_index.has_context(invocation.context_id)
@@ -19413,7 +19421,15 @@ class EmbeddedSGLangRuntime:
                 0, summary.physical_unique_bytes - summary.gpu_bytes
             )
             if missing_gpu_bytes <= 0 or summary.cpu_bytes <= 0:
+                if invocation_id in child_tool_watches:
+                    self._joint_predictive_counts[
+                        "child_tool_return_no_prefetchable_cpu_bytes"
+                    ] += 1
                 continue
+            if invocation_id in child_tool_watches:
+                self._joint_predictive_counts[
+                    "child_tool_return_physical_candidate"
+                ] += 1
             candidates.append((invocation, summary, missing_gpu_bytes))
         service_rank_by_invocation: dict[str, int] = {}
         runnable_by_request_id = {
@@ -19499,11 +19515,44 @@ class EmbeddedSGLangRuntime:
                 graph, item[0], item[2]
             ),
         )
-        candidates = list(service_candidates[:1])
-        candidates.extend(child_tool_candidates[:2])
+        candidates = [
+            item
+            for item in candidates
+            if item[0].invocation_id in forced_refreshes
+        ]
+        selected_candidate_ids = {
+            item[0].invocation_id for item in candidates
+        }
+        candidates.extend(
+            item
+            for item in service_candidates[:1]
+            if item[0].invocation_id not in selected_candidate_ids
+        )
+        selected_candidate_ids.update(
+            item[0].invocation_id for item in candidates
+        )
+        candidates.extend(
+            item
+            for item in child_tool_candidates[:2]
+            if item[0].invocation_id not in selected_candidate_ids
+        )
+        selected_candidate_ids.update(
+            item[0].invocation_id for item in candidates
+        )
         if not child_tool_candidates:
-            candidates.extend(non_child_tool_candidates[:1])
-        candidates.extend(dependency_candidates[:1])
+            candidates.extend(
+                item
+                for item in non_child_tool_candidates[:1]
+                if item[0].invocation_id not in selected_candidate_ids
+            )
+            selected_candidate_ids.update(
+                item[0].invocation_id for item in candidates
+            )
+        candidates.extend(
+            item
+            for item in dependency_candidates[:1]
+            if item[0].invocation_id not in selected_candidate_ids
+        )
         if len(candidates) < _PREDICTIVE_REENTRY_WATCH_LIMIT:
             selected_ids = {item[0].invocation_id for item in candidates}
             remainder = sorted(
@@ -19537,7 +19586,10 @@ class EmbeddedSGLangRuntime:
             self._joint_predictive_counts[
                 "predicted_reentry_native_transfer_busy"
             ] += 1
-            return False
+            if child_tool_watches:
+                self._joint_predictive_counts[
+                    "child_tool_return_native_transfer_busy"
+                ] += 1
 
         predictor = getattr(self.controller, "predictor", None)
         frontier_model = getattr(predictor, "frontier_model", None)
@@ -19582,7 +19634,7 @@ class EmbeddedSGLangRuntime:
                 command_kind=CommandKind.PREFETCH_CONTEXT.value,
                 host_copy_state="present",
                 pinned_host=True,
-                native_concurrent_bytes=0,
+                native_concurrent_bytes=native_inflight_bytes,
             )
             if not transfer.shape_supported:
                 transfer = self.controller.service_curve.estimate_direction_envelope(
@@ -19591,7 +19643,7 @@ class EmbeddedSGLangRuntime:
                     command_kind=CommandKind.PREFETCH_CONTEXT.value,
                     host_copy_state="present",
                     pinned_host=True,
-                    native_concurrent_bytes=0,
+                    native_concurrent_bytes=native_inflight_bytes,
                 )
                 if transfer.source != "shape_unsupported_direction_envelope":
                     self._joint_predictive_counts[
@@ -19619,6 +19671,7 @@ class EmbeddedSGLangRuntime:
                     )
                 )
             elif invocation.state == InvocationState.WAIT_TOOL:
+                force_refresh = invocation.invocation_id in forced_refreshes
                 timing = prediction.action_timing(
                     "prefetch_gpu", operational_tau_ms
                 )
@@ -19633,11 +19686,22 @@ class EmbeddedSGLangRuntime:
                     ] += 1
                     continue
                 threshold = timing.decision_threshold
-                if timing.favorable_probability + 1e-12 < threshold:
+                if (
+                    timing.favorable_probability + 1e-12 < threshold
+                    and not force_refresh
+                ):
                     self._joint_predictive_counts[
                         "predicted_reentry_before_latest_start"
                     ] += 1
+                    if invocation.invocation_id in child_tool_watches:
+                        self._joint_predictive_counts[
+                            "child_tool_return_before_latest_start"
+                        ] += 1
                     continue
+                if force_refresh:
+                    self._joint_predictive_counts[
+                        "prefetch_watch_refresh_timing_bypass"
+                    ] += 1
                 urgency = timing.favorable_probability - threshold
                 probability = timing.favorable_probability
             else:
@@ -19671,6 +19735,9 @@ class EmbeddedSGLangRuntime:
         if not eligible:
             return False
         selected = list(self._select_predictive_reentry_targets(eligible))
+        force_risk_evaluation = any(
+            item[4].invocation_id in forced_refreshes for item in selected
+        )
 
         def target_event_kind(item: tuple[Any, ...]) -> str:
             invocation_id = item[4].invocation_id
@@ -19796,6 +19863,7 @@ class EmbeddedSGLangRuntime:
             captured_monotonic_ms=time.monotonic_ns() / 1_000_000.0,
             planning_requested=False,
             risk_evaluation_requested=True,
+            force_risk_evaluation=force_risk_evaluation,
             risk_trigger_signature=triggers,
             observed_seed_beneficiary=(
                 getattr(self, "_latest_observed_seed_beneficiary", None)
@@ -19828,6 +19896,13 @@ class EmbeddedSGLangRuntime:
             )
             return False
 
+        if force_risk_evaluation:
+            for item in selected:
+                forced_refreshes.discard(item[4].invocation_id)
+            self._joint_predictive_counts[
+                "prefetch_watch_refresh_risk_published"
+            ] += 1
+
         self._last_predictive_reentry_risk_signature = signature
         self._last_frontier_features.update(
             {
@@ -19851,6 +19926,16 @@ class EmbeddedSGLangRuntime:
         self._joint_predictive_counts[
             "reentry_overlay_target_count"
         ] += len(selected)
+        child_target_count = sum(
+            item[4].invocation_id in child_tool_watches for item in selected
+        )
+        if child_target_count:
+            self._joint_predictive_counts[
+                "child_tool_return_risk_published"
+            ] += 1
+            self._joint_predictive_counts[
+                "child_tool_return_target_count"
+            ] += child_target_count
         self._joint_shadow_timing_samples.setdefault(
             "predicted_reentry_overlay_capture_ms", deque(maxlen=65_536)
         ).append(overlay_batch.capture_ms)
@@ -21544,6 +21629,17 @@ class EmbeddedSGLangRuntime:
             watches = set()
             self._predictive_reentry_watch_invocation_ids = watches
         watches.add(invocation_id)
+        forced_refreshes = getattr(
+            self,
+            "_forced_predictive_reentry_refresh_invocation_ids",
+            None,
+        )
+        if forced_refreshes is None:
+            forced_refreshes = set()
+            self._forced_predictive_reentry_refresh_invocation_ids = (
+                forced_refreshes
+            )
+        forced_refreshes.add(invocation_id)
         self._last_predictive_reentry_watch_poll_ms = None
         self._last_predictive_reentry_risk_signature = None
         refreshed = replace(

@@ -368,6 +368,7 @@ class JointShadowDelta:
     captured_monotonic_ms: float
     planning_requested: bool = True
     risk_evaluation_requested: bool = False
+    force_risk_evaluation: bool = False
     risk_trigger_signature: tuple[tuple[str, str, str, int], ...] = ()
     observed_seed_beneficiary: ObservedSeedBeneficiaryHint | None = None
     action_local_overlay_batch: (
@@ -393,6 +394,8 @@ class JointShadowDelta:
             raise ValueError("shadow delta trigger must be non-empty")
         if self.captured_monotonic_ms < 0:
             raise ValueError("shadow capture time must be non-negative")
+        if not isinstance(self.force_risk_evaluation, bool):
+            raise TypeError("force_risk_evaluation must be a bool")
         object.__setattr__(
             self,
             "frontier_predictions",
@@ -599,6 +602,9 @@ def coalesce_joint_shadow_deltas(
         risk_evaluation_requested=any(
             item.risk_evaluation_requested for item in deltas
         ),
+        force_risk_evaluation=any(
+            item.force_risk_evaluation for item in deltas
+        ),
         risk_trigger_signature=tuple(sorted(risk_triggers)),
         observed_seed_beneficiary=last.observed_seed_beneficiary,
         action_local_overlay_batch=(
@@ -647,6 +653,7 @@ class JointShadowResult:
     predictive_shadow_error: str | None = None
     predictive_shadow_compute_ms: float = 0.0
     risk_evaluation_requested: bool = False
+    force_risk_evaluation: bool = False
     planning_attempted: bool = True
     risk_funnel_reason: str | None = None
     predictive_submission: PredictiveRiskSubmission | None = None
@@ -738,6 +745,7 @@ class _PredictiveWorkItem:
     policy_input: PolicyInput
     source_plan: JointPlan
     state_stamp: JointShadowStateStamp
+    force_risk_evaluation: bool = False
 
 
 class IncrementalPolicyInputAssembler:
@@ -2076,6 +2084,7 @@ class LatestWinsJointPlanWorker:
             risk_action_signature: tuple[object, ...] | None = None
             publish_result = True
             risk_evaluation_requested = False
+            force_risk_evaluation = False
             risk_funnel_reason: str | None = None
             mirror_state_failed = False
             try:
@@ -2094,6 +2103,7 @@ class LatestWinsJointPlanWorker:
                     self._risk_dirty = (
                         self._risk_dirty or delta.risk_evaluation_requested
                     )
+                    force_risk_evaluation = delta.force_risk_evaluation
                     self._risk_trigger_signatures.update(
                         delta.risk_trigger_signature
                     )
@@ -2160,6 +2170,7 @@ class LatestWinsJointPlanWorker:
                             if (
                                 risk_action_signature
                                 == self._last_risk_action_signature
+                                and not force_risk_evaluation
                             ):
                                 risk_evaluation_requested = False
                                 risk_funnel_reason = "unchanged_action_signature"
@@ -2226,6 +2237,7 @@ class LatestWinsJointPlanWorker:
                             if (
                                 risk_action_signature
                                 == self._last_risk_action_signature
+                                and not force_risk_evaluation
                             ):
                                 risk_evaluation_requested = False
                                 risk_funnel_reason = "unchanged_action_signature"
@@ -2260,6 +2272,7 @@ class LatestWinsJointPlanWorker:
                 trigger_interval_ms=trigger_interval_ms,
                 planning_budget_ms=planning_budget_ms,
                 risk_evaluation_requested=risk_evaluation_requested,
+                force_risk_evaluation=force_risk_evaluation,
                 planning_attempted=planning_attempted,
                 risk_funnel_reason=risk_funnel_reason,
             )
@@ -2426,6 +2439,7 @@ class LatestWinsPredictiveRiskWorker:
                 policy_input=result.policy_input,
                 source_plan=result.plan,
                 state_stamp=result.state_stamp,
+                force_risk_evaluation=result.force_risk_evaluation,
             )
             enqueued = True
             suppression_reason = None
@@ -2532,7 +2546,10 @@ class LatestWinsPredictiveRiskWorker:
                     else ("no_candidate",)
                 )
                 with self._condition:
-                    if trigger_signature == self._last_trigger_signature:
+                    if (
+                        trigger_signature == self._last_trigger_signature
+                        and not item.force_risk_evaluation
+                    ):
                         suppression_reason = "unchanged_action_bucket"
                     else:
                         self._last_trigger_signature = trigger_signature
@@ -2681,7 +2698,10 @@ def _predictive_risk_process_main(
                 if eligibility.has_candidate
                 else ("no_candidate",)
             )
-            if trigger_signature == last_trigger_signature:
+            if (
+                trigger_signature == last_trigger_signature
+                and not item.force_risk_evaluation
+            ):
                 suppression_reason = "unchanged_action_bucket"
             else:
                 last_trigger_signature = trigger_signature
@@ -2838,6 +2858,7 @@ class LatestWinsPredictiveRiskProcessWorker:
                 policy_input=result.policy_input,
                 source_plan=result.plan,
                 state_stamp=result.state_stamp,
+                force_risk_evaluation=result.force_risk_evaluation,
             )
             self._pending = item
             self._items_by_sequence[sequence] = item

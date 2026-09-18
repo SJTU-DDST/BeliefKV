@@ -656,6 +656,24 @@ def test_predictive_worker_suppresses_unchanged_bucket_off_scheduler() -> None:
     assert completed.error is None
     assert completed.shadow is None
     assert completed.suppression_reason == "unchanged_action_bucket"
+
+    forced = risk_worker.submit(
+        replace(
+            observed_result,
+            sequence=observed_result.sequence + 2,
+            force_risk_evaluation=True,
+        )
+    )
+    forced_result = None
+    for _ in range(100):
+        forced_result = risk_worker.latest(after_sequence=duplicate.sequence)
+        if forced_result is not None and forced_result.sequence == forced.sequence:
+            break
+        threading.Event().wait(0.01)
+    assert forced_result is not None
+    assert forced_result.error is None
+    assert forced_result.shadow is not None
+    assert forced_result.suppression_reason is None
     assert risk_worker.close()
     assert observed_worker.close()
 
@@ -1226,6 +1244,36 @@ def test_risk_event_reuses_cached_observed_seed_without_replanning() -> None:
     assert "root" in risk_result.policy_input.runtime_graph.state["rccg"][
         "invocations"
     ]
+
+    forced = replace(
+        _delta(
+            controller,
+            event_sequence=risk.event_to_sequence,
+            page_revision=risk.page_delta.to_revision,
+            ts_ms=4,
+            planning_requested=False,
+        ),
+        runnable_frontier=(beneficiary,),
+        observed_seed_beneficiary=beneficiary_hint,
+        risk_evaluation_requested=True,
+        force_risk_evaluation=True,
+        risk_trigger_signature=(("prepare", "tool_start", "root", 0),),
+    )
+    forced_submission = worker.submit_delta(forced)
+    forced_result = None
+    for _ in range(100):
+        forced_result = worker.latest(after_sequence=risk_submission.sequence)
+        if (
+            forced_result is not None
+            and forced_result.sequence == forced_submission.sequence
+        ):
+            break
+        threading.Event().wait(0.01)
+
+    assert forced_result is not None
+    assert forced_result.risk_evaluation_requested
+    assert len(forwarded) == 2
+    assert forwarded[-1].sequence == forced_submission.sequence
     assert worker.close()
 
 

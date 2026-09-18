@@ -7542,6 +7542,7 @@ class SGLangBackendTest(unittest.TestCase):
         runtime._predictive_reentry_watch_invocation_ids = set()
         runtime._last_predictive_reentry_watch_poll_ms = 1.0
         runtime._last_predictive_reentry_risk_signature = ("old",)
+        runtime._forced_predictive_reentry_refresh_invocation_ids = set()
         controller = BeliefKVController(
             BeliefKVConfig(
                 hbm_capacity_bytes=1_000,
@@ -7574,6 +7575,9 @@ class SGLangBackendTest(unittest.TestCase):
         )
         assert runtime._last_predictive_reentry_watch_poll_ms is None
         assert runtime._last_predictive_reentry_risk_signature is None
+        assert old.invocation_id in (
+            runtime._forced_predictive_reentry_refresh_invocation_ids
+        )
         assert runtime._activate_due_predictive_prefetch_watch(
             now_ms=stale_watch.latest_start_ts_ms
         ) is None
@@ -12471,7 +12475,7 @@ def test_predicted_reentry_publishes_one_bounded_risk_delta_without_beneficiary(
     ] == 1
 
 
-def test_predicted_reentry_waits_for_native_transfer_before_curve_query():
+def test_predicted_reentry_records_busy_transfer_but_keeps_evaluating():
     runtime = EmbeddedSGLangRuntime.__new__(EmbeddedSGLangRuntime)
     invocation = SimpleNamespace(
         invocation_id="invocation",
@@ -12496,11 +12500,7 @@ def test_predicted_reentry_waits_for_native_transfer_before_curve_query():
             context_physical_summary=lambda _context_id: summary,
         ),
         predictor=SimpleNamespace(frontier_model=object()),
-        service_curve=SimpleNamespace(
-            estimate=lambda *_args, **_kwargs: (_ for _ in ()).throw(
-                AssertionError("curve query must wait for idle native transfer")
-            )
-        ),
+        service_curve=SimpleNamespace(),
     )
     runtime.backend = SimpleNamespace(_native_inflight_bytes=lambda: 1024)
     runtime.config = SimpleNamespace(predictive_risk_shadow_enabled=True)
@@ -12524,6 +12524,9 @@ def test_predicted_reentry_waits_for_native_transfer_before_curve_query():
     )
     assert runtime._joint_predictive_counts[
         "predicted_reentry_native_transfer_busy"
+    ] == 1
+    assert runtime._joint_predictive_counts[
+        "predicted_reentry_prediction_failed"
     ] == 1
 
 
