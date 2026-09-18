@@ -976,6 +976,7 @@ class PredictiveEligibilityIndex:
             else {}
         )
         explicit_reentry_rank: dict[str, int] = {}
+        child_tool_return_rank: dict[str, int] = {}
         scheduled_service_rank: dict[str, int] = {}
         for event in risk_trigger_payload.get("events", ()):
             if (
@@ -989,6 +990,14 @@ class PredictiveEligibilityIndex:
                         explicit_reentry_rank
                     )
                 if (
+                    str(event[1]) == "child_tool_return_latest_start"
+                    and invocation_id
+                    and invocation_id not in child_tool_return_rank
+                ):
+                    child_tool_return_rank[invocation_id] = len(
+                        child_tool_return_rank
+                    )
+                if (
                     str(event[1]) == "scheduled_service"
                     and invocation_id
                     and invocation_id not in scheduled_service_rank
@@ -996,7 +1005,11 @@ class PredictiveEligibilityIndex:
                     scheduled_service_rank[invocation_id] = len(
                         scheduled_service_rank
                     )
-        ranked_reentry_targets = scheduled_service_rank or explicit_reentry_rank
+        ranked_reentry_targets = (
+            child_tool_return_rank
+            or scheduled_service_rank
+            or explicit_reentry_rank
+        )
         preferred_reentry_rank = dict(
             tuple(ranked_reentry_targets.items())[:1]
         )

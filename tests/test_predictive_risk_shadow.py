@@ -2379,6 +2379,46 @@ def test_scheduled_service_trigger_excludes_competing_parked_parent() -> None:
     )
 
 
+    child_tool_metadata = dict(metadata)
+    child_tool_metadata["beliefkv_predictive_risk_trigger"] = MetadataValue(
+        MetadataSource.OBSERVED,
+        {
+            "events": [
+                [
+                    "reentry",
+                    "scheduled_service",
+                    "invocation-child",
+                    0,
+                ],
+                [
+                    "reentry",
+                    "child_tool_return_latest_start",
+                    "invocation-target",
+                    0,
+                ],
+            ]
+        },
+        "test",
+    )
+    child_tool_input = replace(
+        policy_input,
+        optional_metadata=child_tool_metadata,
+    )
+
+    child_tool_eligibility = PredictiveEligibilityIndex().probe(
+        child_tool_input
+    )
+
+    assert child_tool_eligibility.prefetch_targets == (
+        PrefetchTarget(
+            "invocation-target",
+            "ctx-target",
+            InvocationState.WAIT_TOOL.value,
+            400,
+        ),
+    )
+
+
 def _radix_extent(
     extent_id: str,
     owners: tuple[str, ...],
