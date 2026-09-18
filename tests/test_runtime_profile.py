@@ -58,6 +58,10 @@ V9_PROFILE = (
     REPOSITORY_ROOT
     / "configs/p6/h200_bf16_v9/frozen_runtime_profile.json"
 )
+V10_PROFILE = (
+    REPOSITORY_ROOT
+    / "configs/p6/h200_bf16_v10/frozen_runtime_profile.json"
+)
 HIGH_PRESSURE_V5_PLAN = (
     REPOSITORY_ROOT
     / "configs/p6/predictive_joint_h200_high_pressure_v5/ab_plan.json"
@@ -65,6 +69,10 @@ HIGH_PRESSURE_V5_PLAN = (
 HIGH_PRESSURE_V7_PLAN = (
     REPOSITORY_ROOT
     / "configs/p6/predictive_joint_h200_high_pressure_v7/ab_plan.json"
+)
+HIGH_PRESSURE_V8_PLAN = (
+    REPOSITORY_ROOT
+    / "configs/p6/predictive_joint_h200_high_pressure_v8/ab_plan.json"
 )
 HIGH_PRESSURE_V2_PLAN = (
     REPOSITORY_ROOT
@@ -292,6 +300,23 @@ def test_h200_v9_profile_and_plan_bind_graph96_service_model() -> None:
     }
     assert plan["runtime_profile"].endswith(
         "h200_bf16_v9/frozen_runtime_profile.json"
+    )
+
+
+def test_h200_v10_profile_and_plan_expand_host_kv_pool() -> None:
+    profile, _ = load_runtime_profile(
+        V10_PROFILE,
+        repository_root=REPOSITORY_ROOT,
+    )
+    plan = json.loads(HIGH_PRESSURE_V8_PLAN.read_text(encoding="utf-8"))
+
+    assert profile["capacity"]["host_pool_bytes"] == 192 * 1024**3
+    assert profile["capacity"]["host_pool_gib"] == 192
+    assert profile["runtime"]["hicache_size_gib"] == 192
+    assert profile["runtime"]["max_running_requests"] == 96
+    assert profile["runtime"]["cuda_graph_max_bs"] == 96
+    assert plan["runtime_profile"].endswith(
+        "h200_bf16_v10/frozen_runtime_profile.json"
     )
 
 
