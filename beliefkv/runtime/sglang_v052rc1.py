@@ -19375,6 +19375,240 @@ class EmbeddedSGLangRuntime:
         )
         return True
 
+    def _maybe_publish_predictive_wait_shadow_intent(
+        self,
+        candidates: list[tuple[Any, Any, int]],
+        *,
+        features: Mapping[str, Any],
+        predictions: Mapping[str, Any],
+        observation: RuntimeResourceObservation,
+        native_inflight_bytes: int,
+    ) -> bool:
+        """Publish one model-backed child wait shadow without early eviction."""
+
+        if (
+            not candidates
+            or self._latest_predictive_intent is not None
+            or not self.config.predictive_prepare_host_enabled
+            or not self.config.shadow_enabled
+            or native_inflight_bytes > 0
+            or getattr(self, "_pending_online_joint_residency", None) is not None
+        ):
+            return False
+        prepare_limit = self.config.predictive_prepare_host_canary_limit
+        if (
+            prepare_limit > 0
+            and self._joint_predictive_counts["prepare_host_queued"]
+            >= prepare_limit
+        ):
+            return False
+        gross_pressure = min(
+            1.0,
+            self.controller.actual_hbm_used_bytes
+            / max(1, observation.hbm_capacity_bytes),
+        )
+        if (
+            gross_pressure
+            < self.config.observed_admission_active_kv_high_watermark_ratio
+        ):
+            self._joint_predictive_counts[
+                "wait_shadow_below_gross_pressure_gate"
+            ] += 1
+            return False
+
+        graph = self.controller.graph
+        frontier_model = getattr(
+            getattr(self.controller, "predictor", None),
+            "frontier_model",
+            None,
+        )
+        model_version = str(
+            getattr(self, "_last_frontier_model_version", None)
+            or getattr(frontier_model, "model_version", "")
+        )
+        if not model_version:
+            return False
+        host_available = observation.host_free_bytes
+        builder = self.controller.arbiter.bundle_builder
+        selected = None
+        for invocation, _summary, missing_cpu_bytes in sorted(
+            candidates,
+            key=lambda item: (
+                item[0].updated_ts_ms,
+                -item[2],
+                item[0].invocation_id,
+            ),
+        )[:2]:
+            prediction = predictions.get(invocation.invocation_id)
+            context = graph.contexts.get(invocation.context_id)
+            if prediction is None or context is None:
+                continue
+            preview = builder.best_exclusive_shadow_preview_for_context(
+                invocation.context_id,
+                context.epoch,
+                now_ms=observation.ts_ms,
+                host_available_bytes=host_available,
+                max_copy_bytes=min(
+                    self.config.shadow_chunk_bytes,
+                    missing_cpu_bytes,
+                ),
+            )
+            if preview is None or not preview.eligible or preview.copy_bytes <= 0:
+                continue
+            transfer = self.controller.service_curve.estimate(
+                TransferDirection.D2H,
+                preview.copy_bytes,
+                page_count=max(1, len(preview.page_actions)),
+                command_kind=CommandKind.OFFLOAD_CONTEXT.value,
+                host_copy_state="missing",
+                pinned_host=True,
+                native_concurrent_bytes=0,
+            )
+            if not transfer.shape_supported:
+                continue
+            transfer_ms = max(0.001, transfer.estimated_completion_p90_ms)
+            operational_tau_ms = (
+                transfer_ms + self.config.predictive_commit_guard_ms
+            )
+            timing = prediction.action_timing(
+                "prepare_host", operational_tau_ms
+            )
+            if (
+                timing is None
+                or not timing.informative
+                or timing.support_level == "unavailable"
+                or timing.favorable_probability + 1e-12
+                < timing.decision_threshold
+            ):
+                continue
+            raw_interference_ms = transfer.estimated_unhidden_stall_p90_ms
+            interference_ms = float(
+                transfer_ms
+                if raw_interference_ms is None
+                else raw_interference_ms
+            )
+            expected_benefit_ms = (
+                gross_pressure
+                * timing.favorable_probability
+                * transfer_ms
+                - interference_ms
+            )
+            if expected_benefit_ms <= 0:
+                continue
+            selected = (
+                invocation,
+                context,
+                preview,
+                prediction,
+                timing,
+                transfer_ms,
+                interference_ms,
+                expected_benefit_ms,
+            )
+            break
+        if selected is None:
+            return False
+
+        (
+            invocation,
+            context,
+            preview,
+            prediction,
+            timing,
+            transfer_ms,
+            interference_ms,
+            expected_benefit_ms,
+        ) = selected
+        wait_window_ms = max(
+            transfer_ms + self.config.predictive_commit_guard_ms + 1_000.0,
+            2.0 * timing.operational_tau_ms,
+        )
+        intent_id = (
+            f"predictive-wait-shadow:{invocation.invocation_id}:"
+            f"e{context.epoch}:r"
+            f"{self.controller.page_index.context_revision(invocation.context_id)}"
+        )
+        source_plan_id = (
+            getattr(getattr(self, "_current_online_joint_view", None), "plan_id", None)
+            or getattr(self, "_last_joint_decision_plan_id", None)
+            or "bounded-seed"
+        )
+        self._latest_predictive_intent = PredictiveIntent(
+            intent_id=intent_id,
+            source_joint_plan_id=source_plan_id,
+            source_snapshot_id=(
+                f"wait-shadow:page-r{self.controller.page_index.revision}"
+            ),
+            package_id=f"{source_plan_id}:wait-shadow:{invocation.context_id}",
+            model_version=model_version,
+            action=PredictiveActionKind.PREPARE_HOST,
+            invocation_id=invocation.invocation_id,
+            expected_invocation_state=invocation.state.value,
+            context_id=invocation.context_id,
+            context_epoch=context.epoch,
+            generated_ts_ms=observation.ts_ms,
+            remaining_window_low_ms=wait_window_ms,
+            transfer_p95_ms=transfer_ms,
+            target_bytes_hint=preview.copy_bytes,
+            min_reclaimable_bytes=max(
+                1, min(preview.copy_bytes, preview.bundle.exclusive_action_bytes)
+            ),
+            max_cross_context_bytes=preview.bundle.cross_context_action_bytes,
+            max_copy_bytes=preview.copy_bytes,
+            causal_certificate=self._predictive_action_local_causal_certificate(
+                graph,
+                invocation_ids=(invocation.invocation_id,),
+                context_ids=(invocation.context_id,),
+                model_version=model_version,
+            ),
+            required_prediction_heads=("prepare_host_timing",),
+            prediction_head_support=(
+                ("prepare_host_timing", timing.support_level),
+            ),
+            calibration_coverage=prediction.calibration_coverage,
+            future_hbm_feasibility_probability=1.0,
+            expected_benefit_ms=expected_benefit_ms,
+            shape_fingerprint=(
+                f"summary:{preview.copy_bytes}:n{len(preview.page_actions)}"
+            ),
+            predicted_extent_count=len(preview.page_actions),
+            maximum_transfer_ms=max(transfer_ms * 1.25, transfer_ms + 1.0),
+            maximum_stall_ms=max(
+                interference_ms * 1.25, interference_ms + 1.0
+            ),
+            morphology_slack_ms=max(
+                1.0,
+                wait_window_ms
+                - transfer_ms
+                - self.config.predictive_commit_guard_ms,
+            ),
+            causal_slack_probability=timing.favorable_probability,
+            timing_semantics=timing.semantics,
+            evidence_kind="model_wait_shadow",
+        )
+        self._last_joint_decision_plan_id = None
+        self._current_online_joint_decision = None
+        self._joint_predictive_counts["wait_shadow_intent_published"] += 1
+        self.audit.emit(
+            "predictive_wait_shadow_intent_published",
+            observation.ts_ms,
+            audit_level="correctness",
+            intent_id=intent_id,
+            invocation_id=invocation.invocation_id,
+            context_id=invocation.context_id,
+            context_epoch=context.epoch,
+            copy_bytes=preview.copy_bytes,
+            extent_count=len(preview.page_actions),
+            gross_hbm_pressure=gross_pressure,
+            operational_tau_ms=timing.operational_tau_ms,
+            wait_survival_probability=timing.favorable_probability,
+            decision_threshold=timing.decision_threshold,
+            transfer_p90_ms=transfer_ms,
+            interference_p90_ms=interference_ms,
+            expected_benefit_ms=expected_benefit_ms,
+        )
+        return True
+
     def _maybe_publish_predicted_reentry_risk_delta(
         self,
         worker: LatestWinsJointPlanWorker,
@@ -19435,6 +19669,7 @@ class EmbeddedSGLangRuntime:
             InvocationState.WAIT_JOIN,
             InvocationState.WAIT_MESSAGE,
         }
+        prepare_candidates: list[tuple[Any, Any, int]] = []
         candidates: list[tuple[Any, Any, int]] = []
         for invocation_id in tuple(watches):
             invocation = graph.invocations.get(invocation_id)
@@ -19468,6 +19703,17 @@ class EmbeddedSGLangRuntime:
             summary = page_index.context_physical_summary(
                 invocation.context_id
             )
+            missing_cpu_bytes = max(
+                0, summary.physical_unique_bytes - summary.cpu_bytes
+            )
+            if (
+                invocation_id in child_tool_watches
+                and summary.gpu_bytes > 0
+                and missing_cpu_bytes > 0
+            ):
+                prepare_candidates.append(
+                    (invocation, summary, missing_cpu_bytes)
+                )
             missing_gpu_bytes = max(
                 0, summary.physical_unique_bytes - summary.gpu_bytes
             )
@@ -19626,7 +19872,7 @@ class EmbeddedSGLangRuntime:
                 remainder[: _PREDICTIVE_REENTRY_WATCH_LIMIT - len(candidates)]
             )
         candidates = candidates[:_PREDICTIVE_REENTRY_WATCH_LIMIT]
-        if not candidates:
+        if not candidates and not prepare_candidates:
             return False
 
         native_inflight_bytes = 0
@@ -19649,7 +19895,12 @@ class EmbeddedSGLangRuntime:
                 "predicted_reentry_model_unavailable"
             ] += 1
             return False
-        invocation_ids = tuple(item[0].invocation_id for item in candidates)
+        invocation_ids = tuple(
+            dict.fromkeys(
+                item[0].invocation_id
+                for item in (*prepare_candidates, *candidates)
+            )
+        )
         prediction_invocation_ids = (
             self._predictive_reentry_closure_invocation_ids(
                 graph, invocation_ids
@@ -19672,6 +19923,18 @@ class EmbeddedSGLangRuntime:
                 "predicted_reentry_prediction_failed"
             ] += 1
             return False
+
+        wait_shadow_published = self._maybe_publish_predictive_wait_shadow_intent(
+            prepare_candidates,
+            features=features,
+            predictions=predictions,
+            observation=self._joint_shadow_effective_observation(
+                observation or self._runtime_resource_observation()
+            ),
+            native_inflight_bytes=native_inflight_bytes,
+        )
+        if not candidates:
+            return wait_shadow_published
 
         eligible = []
         for invocation, summary, missing_gpu_bytes in candidates:
@@ -24208,8 +24471,12 @@ class EmbeddedSGLangRuntime:
                 ):
                     reasons.append("beneficiary_causal_generation_changed")
 
+        wait_shadow_prepare = bool(
+            intent.action == PredictiveActionKind.PREPARE_HOST
+            and intent.evidence_kind == "model_wait_shadow"
+        )
         if intent.action == PredictiveActionKind.PREPARE_HOST:
-            if beneficiary is not None:
+            if beneficiary is not None and not wait_shadow_prepare:
                 if beneficiary.causal_class.startswith("engine_running:"):
                     reasons.append("beneficiary_already_admitted")
                 if (
@@ -24224,9 +24491,14 @@ class EmbeddedSGLangRuntime:
                     > intent.beneficiary_growth_bytes
                 ):
                     reasons.append("beneficiary_demand_increased")
-            if (intent.beneficiary_request_id or "") in self._reclaim_requirements:
+            if (
+                not wait_shadow_prepare
+                and (intent.beneficiary_request_id or "") in self._reclaim_requirements
+            ):
                 reasons.append("beneficiary_reactive_requirement_active")
-            if intent.predicted_block_time_ms is None:
+            if wait_shadow_prepare:
+                beneficiary_remaining_ms = remaining_ms
+            elif intent.predicted_block_time_ms is None:
                 reasons.append("beneficiary_block_time_unavailable")
             else:
                 beneficiary_remaining_ms = max(
@@ -24646,6 +24918,7 @@ class EmbeddedSGLangRuntime:
             reasons.append("transfer_cannot_finish_before_low_window")
         if (
             intent.action == PredictiveActionKind.PREPARE_HOST
+            and not wait_shadow_prepare
             and (
                 beneficiary_remaining_ms is None
                 or beneficiary_remaining_ms
@@ -26895,6 +27168,7 @@ class EmbeddedSGLangRuntime:
             if (
                 transaction.action == ResidencyAction.PREPARE_HOST
                 and transaction.predictive_intent_id is not None
+                and transaction.beneficiary_request_id is not None
             ):
                 self._register_prepared_causal_binding(
                     transaction, now_ms=now_ms

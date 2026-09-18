@@ -325,6 +325,7 @@ class PredictiveIntent:
         ) < 0:
             raise ValueError("predictive morphology envelope must be non-negative")
         if self.action == PredictiveActionKind.PREPARE_HOST:
+            wait_shadow = self.evidence_kind == "model_wait_shadow"
             if self.predicted_extent_count <= 0:
                 raise ValueError("prepare intent requires a physical extent shape")
             if self.maximum_transfer_ms < self.transfer_p95_ms:
@@ -335,11 +336,11 @@ class PredictiveIntent:
                 self.beneficiary_context_id,
                 self.causal_package_generation,
             )
-            if any(not value for value in beneficiary_ids):
+            if not wait_shadow and any(not value for value in beneficiary_ids):
                 raise ValueError("prepare intent requires beneficiary evidence")
-            if self.beneficiary_context_epoch is None:
+            if not wait_shadow and self.beneficiary_context_epoch is None:
                 raise ValueError("prepare intent requires beneficiary context epoch")
-            if (
+            if not wait_shadow and (
                 self.beneficiary_context_epoch < 0
                 or self.beneficiary_startup_bytes
                 + self.beneficiary_growth_bytes

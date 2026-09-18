@@ -12328,6 +12328,120 @@ def test_predictive_reentry_target_selection_keeps_top_three():
     )
 
 
+def test_wait_tool_publishes_model_backed_prepare_shadow_without_beneficiary():
+    runtime = EmbeddedSGLangRuntime.__new__(EmbeddedSGLangRuntime)
+    invocation = SimpleNamespace(
+        invocation_id="child",
+        context_id="child-context",
+        state=InvocationState.WAIT_TOOL,
+        updated_ts_ms=100.0,
+    )
+    context = SimpleNamespace(epoch=4)
+    preview = SimpleNamespace(
+        eligible=True,
+        copy_bytes=400,
+        page_actions=(object(), object()),
+        bundle=SimpleNamespace(
+            exclusive_action_bytes=400,
+            cross_context_action_bytes=0,
+        ),
+    )
+    transfer = SimpleNamespace(
+        shape_supported=True,
+        estimated_completion_p90_ms=100.0,
+        estimated_unhidden_stall_p90_ms=0.0,
+    )
+    timing = SimpleNamespace(
+        informative=True,
+        support_level="exact",
+        favorable_probability=0.9,
+        decision_threshold=0.5,
+        operational_tau_ms=125.0,
+        semantics="release_after_transfer",
+    )
+    prediction = SimpleNamespace(
+        action_timing=lambda action, _tau: (
+            timing if action == "prepare_host" else None
+        ),
+        calibration_coverage=0.95,
+    )
+    runtime.controller = SimpleNamespace(
+        actual_hbm_used_bytes=900,
+        graph=SimpleNamespace(
+            invocations={"child": invocation},
+            contexts={"child-context": context},
+        ),
+        page_index=SimpleNamespace(
+            revision=19,
+            context_revision=lambda _context_id: 7,
+        ),
+        arbiter=SimpleNamespace(
+            bundle_builder=SimpleNamespace(
+                best_exclusive_shadow_preview_for_context=(
+                    lambda *_args, **_kwargs: preview
+                )
+            )
+        ),
+        service_curve=SimpleNamespace(
+            estimate=mock.Mock(return_value=transfer)
+        ),
+        predictor=SimpleNamespace(
+            frontier_model=SimpleNamespace(model_version="frontier-v4")
+        ),
+    )
+    runtime.config = SimpleNamespace(
+        predictive_prepare_host_enabled=True,
+        shadow_enabled=True,
+        predictive_prepare_host_canary_limit=1,
+        observed_admission_active_kv_high_watermark_ratio=0.8,
+        shadow_chunk_bytes=1_024,
+        predictive_commit_guard_ms=25.0,
+    )
+    runtime.audit = _AuditRecorder()
+    runtime._joint_predictive_counts = Counter()
+    runtime._latest_predictive_intent = None
+    runtime._pending_online_joint_residency = None
+    runtime._current_online_joint_view = SimpleNamespace(plan_id="plan")
+    runtime._last_joint_decision_plan_id = "plan"
+    runtime._current_online_joint_decision = object()
+    runtime._last_frontier_model_version = "frontier-v4"
+    runtime._predictive_action_local_causal_certificate = (
+        lambda *_args, **_kwargs: {
+            "model_version": "frontier-v4",
+            "invocation_evidence": [["child", "wait_tool"]],
+        }
+    )
+    observation = RuntimeResourceObservation(
+        ts_ms=1_000.0,
+        hbm_capacity_bytes=1_000,
+        hbm_used_bytes=800,
+        host_capacity_bytes=2_000,
+        host_used_bytes=400,
+        host_free_bytes=1_600,
+    )
+
+    assert runtime._maybe_publish_predictive_wait_shadow_intent(
+        [(invocation, SimpleNamespace(), 400)],
+        features={},
+        predictions={"child": prediction},
+        observation=observation,
+        native_inflight_bytes=0,
+    )
+
+    intent = runtime._latest_predictive_intent
+    assert intent.action is PredictiveActionKind.PREPARE_HOST
+    assert intent.evidence_kind == "model_wait_shadow"
+    assert intent.beneficiary_request_id is None
+    assert intent.context_id == "child-context"
+    assert intent.expected_benefit_ms == 81.0
+    assert runtime._joint_predictive_counts["wait_shadow_intent_published"] == 1
+    assert (
+        runtime.controller.service_curve.estimate.call_args.kwargs["command_kind"]
+        == CommandKind.OFFLOAD_CONTEXT.value
+    )
+    assert runtime.audit.events[-1][0] == "predictive_wait_shadow_intent_published"
+
+
 def test_predicted_reentry_publishes_one_bounded_risk_delta_without_beneficiary():
     runtime = EmbeddedSGLangRuntime.__new__(EmbeddedSGLangRuntime)
     invocation = SimpleNamespace(
