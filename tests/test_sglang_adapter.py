@@ -12530,5 +12530,33 @@ def test_predicted_reentry_records_busy_transfer_but_keeps_evaluating():
     ] == 1
 
 
+def test_prepare_event_resolves_preferred_victim_contexts():
+    runtime = EmbeddedSGLangRuntime.__new__(EmbeddedSGLangRuntime)
+    runtime.controller = SimpleNamespace(
+        graph=SimpleNamespace(
+            invocations={
+                "child-a": SimpleNamespace(context_id="ctx-a"),
+                "child-b": SimpleNamespace(context_id="ctx-b"),
+            },
+            contexts={
+                "ctx-a": SimpleNamespace(epoch=3),
+                "ctx-b": SimpleNamespace(epoch=4),
+            },
+        )
+    )
+    runtime._pending_predictive_prepare_triggers = (
+        ("prepare", "tool_start", "child-a", 3),
+        ("prepare", "join_wait", "child-b", 4),
+        ("prepare", "tool_start", "child-a", 3),
+        ("prepare", "tool_start", "child-b", 99),
+        ("reentry", "tool_end", "child-a", 3),
+    )
+
+    assert runtime._predictive_prepare_victim_context_ids() == (
+        "ctx-a",
+        "ctx-b",
+    )
+
+
 if __name__ == "__main__":
     unittest.main()

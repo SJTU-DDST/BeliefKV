@@ -18177,6 +18177,7 @@ class EmbeddedSGLangRuntime:
         *,
         opportunity: BeneficiaryOpportunityProbe | None = None,
         force_mechanism_capture: bool = False,
+        preferred_victim_context_ids: tuple[str, ...] = (),
     ) -> ActionLocalPhysicalOverlayBatch:
         started_ns = time.perf_counter_ns()
         opportunity = opportunity or self._predictive_beneficiary_opportunity_probe(
@@ -18243,6 +18244,7 @@ class EmbeddedSGLangRuntime:
             ),
             live_parked_context_ids,
             key=lambda context_id: (
+                0 if context_id in preferred_victim_context_ids else 1,
                 0
                 if context_states.get(context_id) == "parked_external_wait"
                 else 1,
@@ -18356,6 +18358,7 @@ class EmbeddedSGLangRuntime:
 
         summaries.sort(
             key=lambda item: (
+                0 if item.context_id in preferred_victim_context_ids else 1,
                 0
                 if context_states.get(item.context_id)
                 == "parked_external_wait"
@@ -18880,6 +18883,34 @@ class EmbeddedSGLangRuntime:
         )
         return True
 
+    def _predictive_prepare_victim_context_ids(self) -> tuple[str, ...]:
+        """Resolve event-aligned parked victims without scanning PageIndex."""
+
+        graph = getattr(self.controller, "graph", None)
+        if graph is None:
+            return ()
+        result: list[str] = []
+        for risk_class, _event_kind, invocation_id, context_epoch in getattr(
+            self, "_pending_predictive_prepare_triggers", ()
+        ):
+            if risk_class != "prepare":
+                continue
+            invocation = graph.invocations.get(invocation_id)
+            context = (
+                graph.contexts.get(invocation.context_id)
+                if invocation is not None
+                else None
+            )
+            if (
+                invocation is None
+                or context is None
+                or context.epoch != context_epoch
+                or invocation.context_id in result
+            ):
+                continue
+            result.append(invocation.context_id)
+        return tuple(result)
+
     def _maybe_publish_observed_seed_hint_delta(
         self,
         worker: LatestWinsJointPlanWorker,
@@ -18966,6 +18997,11 @@ class EmbeddedSGLangRuntime:
                 )
             )
         )
+        preferred_victim_context_ids = (
+            self._predictive_prepare_victim_context_ids()
+            if prepare_event_alignment_pending
+            else ()
+        )
         risk_signature_changed = bool(
             hint is not None
             and (
@@ -19019,6 +19055,9 @@ class EmbeddedSGLangRuntime:
                     published_hint,
                     observation,
                     opportunity=selected_opportunity,
+                    preferred_victim_context_ids=(
+                        preferred_victim_context_ids
+                    ),
                 )
             except Exception as error:
                 self._joint_predictive_counts["overlay_capture_failed"] += 1

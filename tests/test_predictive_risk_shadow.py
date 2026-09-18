@@ -3160,3 +3160,90 @@ def test_prefetch_overlay_funds_reclaim_pair_with_native_free_hbm() -> None:
     assert funded.action == PredictiveActionKind.RECLAIM_AND_PREFETCH
     assert funded.byte_budget == 306
     assert funded.victim_context_ids == ("ctx-victim",)
+
+
+def test_projected_reclaim_accepts_running_growth_beneficiary_only_with_deficit():
+    policy_input = _input(
+        capacity=1_000,
+        reserved=0,
+        include_cpu_target=False,
+    )
+    beneficiary = replace(
+        policy_input.runnable_frontier[0],
+        admission_startup_bytes=64,
+        admission_growth_bytes=128,
+        causal_class="engine_running:foreground:root",
+    )
+    metadata = dict(policy_input.optional_metadata)
+    metadata["beliefkv_observed_seed_beneficiary"] = MetadataValue(
+        MetadataSource.OBSERVED,
+        {
+            "plan_id": "bounded-seed-running",
+            "request_id": beneficiary.request_id,
+            "invocation_id": beneficiary.invocation_id,
+            "context_id": beneficiary.context_id,
+            "context_epoch": beneficiary.context_epoch,
+            "startup_bytes": 64,
+            "growth_bytes": 128,
+        },
+        "test",
+    )
+    metadata["beliefkv_action_local_physical_overlay"] = MetadataValue(
+        MetadataSource.OBSERVED,
+        {
+            "overlays": ({"context_id": "ctx-victim"},),
+            "opportunity": {
+                "beneficiary_request_id": beneficiary.request_id,
+                "hbm_opportunity_possible": True,
+                "predicted_block_time_ms": None,
+                "predicted_deficit_bytes": 96,
+            },
+        },
+        "test",
+    )
+    policy_input = replace(
+        policy_input,
+        runnable_frontier=(beneficiary,),
+        optional_metadata=metadata,
+    )
+    source_plan = AsyncSemanticJointPlanner(
+        JointPlannerConfig(max_planning_budget_ms=100.0)
+    ).plan(policy_input)
+    source_plan = replace(
+        source_plan,
+        admissions=(),
+        candidate_order_request_ids=(),
+        projected_beneficiary_request_id=None,
+    )
+
+    requirement = PredictiveRiskShadowObserver._projected_reclaim_requirement(
+        policy_input,
+        source_plan,
+    )
+
+    assert requirement is not None
+    assert requirement.beneficiary_request_id == beneficiary.request_id
+    assert requirement.predicted_deficit_bytes == 96
+
+    metadata["beliefkv_action_local_physical_overlay"] = MetadataValue(
+        MetadataSource.OBSERVED,
+        {
+            "overlays": ({"context_id": "ctx-victim"},),
+            "opportunity": {
+                "beneficiary_request_id": beneficiary.request_id,
+                "hbm_opportunity_possible": False,
+                "predicted_block_time_ms": None,
+                "predicted_deficit_bytes": 0,
+            },
+        },
+        "test",
+    )
+    no_deficit_input = replace(policy_input, optional_metadata=metadata)
+
+    assert (
+        PredictiveRiskShadowObserver._projected_reclaim_requirement(
+            no_deficit_input,
+            source_plan,
+        )
+        is None
+    )

@@ -4144,10 +4144,21 @@ class PredictiveRiskShadowObserver:
         if hint is not None:
             request_id = str(hint.get("request_id") or "")
             request = requests.get(request_id)
+            block_time, deficit_bytes = opportunity_prediction(request_id)
+            queue_state_supported = bool(
+                request is not None
+                and (
+                    request.causal_class.startswith("engine_waiting:")
+                    or (
+                        request.causal_class.startswith("engine_running:")
+                        and deficit_bytes > 0
+                    )
+                )
+            )
             if (
                 request is not None
                 and request_id not in observed_ids
-                and request.causal_class.startswith("engine_waiting:")
+                and queue_state_supported
                 and request.admission_startup_bytes is not None
                 and request.admission_growth_bytes is not None
                 and request.invocation_id == hint.get("invocation_id")
@@ -4167,9 +4178,6 @@ class PredictiveRiskShadowObserver:
                 if not any(
                     bundle.cpu_bytes > bundle.gpu_bytes for bundle in bundles
                 ):
-                    block_time, deficit_bytes = opportunity_prediction(
-                        request.request_id
-                    )
                     if overlay_is_authoritative and deficit_bytes <= 0:
                         return None
                     return ProjectedReclaimRequirement(
