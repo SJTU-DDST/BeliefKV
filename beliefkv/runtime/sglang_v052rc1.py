@@ -2226,6 +2226,7 @@ _PREDICTIVE_REENTRY_TARGET_LIMIT = 3
 _PREDICTIVE_REENTRY_WATCH_POLL_MS = 100.0
 _PREDICTIVE_REENTRY_RISK_BUCKET_MS = 500.0
 _PREDICTIVE_WAIT_SHADOW_CANARY_INTERFERENCE_FRACTION = 0.10
+_PREDICTIVE_WAIT_SHADOW_CONTROL_LEAD_MS = 1_500.0
 
 
 class EmbeddedSGLangRuntime:
@@ -19479,7 +19480,9 @@ class EmbeddedSGLangRuntime:
                 continue
             transfer_ms = max(0.001, transfer.estimated_completion_p90_ms)
             operational_tau_ms = (
-                transfer_ms + self.config.predictive_commit_guard_ms
+                transfer_ms
+                + self.config.predictive_commit_guard_ms
+                + _PREDICTIVE_WAIT_SHADOW_CONTROL_LEAD_MS
             )
             timing = prediction.action_timing(
                 "prepare_host", operational_tau_ms
@@ -19634,6 +19637,7 @@ class EmbeddedSGLangRuntime:
             extent_count=len(preview.page_actions),
             gross_hbm_pressure=gross_pressure,
             operational_tau_ms=timing.operational_tau_ms,
+            control_lead_ms=_PREDICTIVE_WAIT_SHADOW_CONTROL_LEAD_MS,
             wait_survival_probability=timing.favorable_probability,
             decision_threshold=timing.decision_threshold,
             transfer_p90_ms=transfer_ms,

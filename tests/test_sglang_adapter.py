@@ -12330,6 +12330,7 @@ def test_predictive_reentry_target_selection_keeps_top_three():
 
 def test_wait_tool_publishes_model_backed_prepare_shadow_without_beneficiary():
     runtime = EmbeddedSGLangRuntime.__new__(EmbeddedSGLangRuntime)
+    timing_queries = []
     invocation = SimpleNamespace(
         invocation_id="child",
         context_id="child-context",
@@ -12356,13 +12357,16 @@ def test_wait_tool_publishes_model_backed_prepare_shadow_without_beneficiary():
         support_level="exact",
         favorable_probability=0.9,
         decision_threshold=0.5,
-        operational_tau_ms=125.0,
+        operational_tau_ms=1_625.0,
         semantics="release_after_transfer",
     )
+
+    def action_timing(action, tau_ms):
+        timing_queries.append((action, tau_ms))
+        return timing if action == "prepare_host" else None
+
     prediction = SimpleNamespace(
-        action_timing=lambda action, _tau: (
-            timing if action == "prepare_host" else None
-        ),
+        action_timing=action_timing,
         calibration_coverage=0.95,
     )
     runtime.controller = SimpleNamespace(
@@ -12438,6 +12442,7 @@ def test_wait_tool_publishes_model_backed_prepare_shadow_without_beneficiary():
     assert runtime._last_joint_decision_plan_id == "plan"
     assert runtime._current_online_joint_decision is not None
     assert runtime._joint_predictive_counts["wait_shadow_intent_published"] == 1
+    assert timing_queries == [("prepare_host", 1_625.0)]
     assert (
         runtime.controller.service_curve.estimate.call_args.kwargs["command_kind"]
         == CommandKind.OFFLOAD_CONTEXT.value
@@ -12447,6 +12452,7 @@ def test_wait_tool_publishes_model_backed_prepare_shadow_without_beneficiary():
         runtime.audit.events[-1][2]["interference_source"]
         == "bounded_measurement_canary_proxy"
     )
+    assert runtime.audit.events[-1][2]["control_lead_ms"] == 1_500.0
 
 
 def test_predicted_reentry_publishes_one_bounded_risk_delta_without_beneficiary():
