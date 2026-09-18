@@ -2704,6 +2704,9 @@ class EmbeddedSGLangRuntime:
             tuple[str, int, SemanticResidencyTarget, PhysicalBundlePreview] | None
         ) = None
         self._latest_predictive_intent: PredictiveIntent | None = None
+        self._latest_predictive_wait_shadow_preview: (
+            tuple[str, int, PhysicalBundlePreview] | None
+        ) = None
         self._predictive_prefetch_watches: dict[
             tuple[str, int], _PredictivePrefetchWatch
         ] = {}
@@ -19573,10 +19576,12 @@ class EmbeddedSGLangRuntime:
             5_000.0,
             2.0 * timing.operational_tau_ms,
         )
+        context_revision = self.controller.page_index.context_revision(
+            invocation.context_id
+        )
         intent_id = (
             f"predictive-wait-shadow:{invocation.invocation_id}:"
-            f"e{context.epoch}:r"
-            f"{self.controller.page_index.context_revision(invocation.context_id)}"
+            f"e{context.epoch}:r{context_revision}"
         )
         source_plan_id = (
             getattr(getattr(self, "_current_online_joint_view", None), "plan_id", None)
@@ -19636,6 +19641,11 @@ class EmbeddedSGLangRuntime:
             timing_semantics=timing.semantics,
             evidence_kind="model_wait_shadow",
         )
+        self._latest_predictive_wait_shadow_preview = (
+            intent_id,
+            context_revision,
+            preview,
+        )
         self._joint_predictive_counts["wait_shadow_intent_published"] += 1
         self.audit.emit(
             "predictive_wait_shadow_intent_published",
@@ -19658,6 +19668,27 @@ class EmbeddedSGLangRuntime:
             expected_benefit_ms=expected_benefit_ms,
         )
         return True
+
+    def _predictive_wait_shadow_cached_preview(
+        self,
+        intent: PredictiveIntent,
+        *,
+        host_available_bytes: int,
+    ) -> PhysicalBundlePreview | None:
+        cached = getattr(self, "_latest_predictive_wait_shadow_preview", None)
+        if cached is None or cached[0] != intent.intent_id:
+            return None
+        _, context_revision, preview = cached
+        page_index = self.controller.page_index
+        if (
+            not page_index.has_context(intent.context_id)
+            or page_index.context_epoch(intent.context_id) != intent.context_epoch
+            or page_index.context_revision(intent.context_id) != context_revision
+            or not preview.eligible
+            or preview.copy_bytes > host_available_bytes
+        ):
+            return None
+        return preview
 
     def _maybe_publish_predicted_reentry_risk_delta(
         self,
@@ -24814,16 +24845,31 @@ class EmbeddedSGLangRuntime:
                     if not blockers and not envelope_blockers:
                         reasons.append("victim_physical_preview_unavailable")
             if intent.action == PredictiveActionKind.PREPARE_HOST:
-                best = builder.best_exclusive_shadow_preview_for_context(
-                    target.context_id,
-                    target.context_epoch,
-                    now_ms=now_ms,
-                    host_available_bytes=host_available,
-                    max_copy_bytes=min(
-                        self.config.shadow_chunk_bytes,
-                        intent.max_copy_bytes,
-                    ),
+                best = (
+                    self._predictive_wait_shadow_cached_preview(
+                        intent,
+                        host_available_bytes=host_available,
+                    )
+                    if wait_shadow_prepare
+                    else None
                 )
+                if wait_shadow_prepare:
+                    self._joint_predictive_counts[
+                        "wait_shadow_preview_cache_hit"
+                        if best is not None
+                        else "wait_shadow_preview_cache_miss"
+                    ] += 1
+                if best is None:
+                    best = builder.best_exclusive_shadow_preview_for_context(
+                        target.context_id,
+                        target.context_epoch,
+                        now_ms=now_ms,
+                        host_available_bytes=host_available,
+                        max_copy_bytes=min(
+                            self.config.shadow_chunk_bytes,
+                            intent.max_copy_bytes,
+                        ),
+                    )
                 live_candidates = (best,) if best is not None else ()
             else:
                 live_candidates = builder.previews_for_context(

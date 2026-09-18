@@ -12377,7 +12377,9 @@ def test_wait_tool_publishes_model_backed_prepare_shadow_without_beneficiary():
         ),
         page_index=SimpleNamespace(
             revision=19,
-            context_revision=lambda _context_id: 7,
+            has_context=lambda _context_id: True,
+            context_epoch=lambda _context_id: 4,
+            context_revision=mock.Mock(return_value=7),
         ),
         arbiter=SimpleNamespace(
             bundle_builder=SimpleNamespace(
@@ -12436,6 +12438,19 @@ def test_wait_tool_publishes_model_backed_prepare_shadow_without_beneficiary():
     assert intent.action is PredictiveActionKind.PREPARE_HOST
     assert intent.evidence_kind == "model_wait_shadow"
     assert runtime._predictive_runtime_intent_holds_slot(intent)
+    assert (
+        runtime._predictive_wait_shadow_cached_preview(
+            intent, host_available_bytes=1_600
+        )
+        is preview
+    )
+    runtime.controller.page_index.context_revision.return_value = 8
+    assert (
+        runtime._predictive_wait_shadow_cached_preview(
+            intent, host_available_bytes=1_600
+        )
+        is None
+    )
     assert intent.beneficiary_request_id is None
     assert intent.context_id == "child-context"
     assert intent.expected_benefit_ms == 71.0
