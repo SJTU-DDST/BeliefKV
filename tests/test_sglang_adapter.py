@@ -12343,7 +12343,18 @@ def test_wait_tool_publishes_model_backed_prepare_shadow_without_beneficiary():
         copy_bytes=400,
         page_actions=(object(), object()),
         bundle=SimpleNamespace(
+            handles=(PageHandle(1, 1),),
             exclusive_action_bytes=400,
+            cross_context_action_bytes=0,
+        ),
+    )
+    refreshed_preview = SimpleNamespace(
+        eligible=True,
+        copy_bytes=300,
+        page_actions=(object(),),
+        bundle=SimpleNamespace(
+            handles=(PageHandle(1, 1),),
+            exclusive_action_bytes=300,
             cross_context_action_bytes=0,
         ),
     )
@@ -12384,6 +12395,7 @@ def test_wait_tool_publishes_model_backed_prepare_shadow_without_beneficiary():
         ),
         page_index=SimpleNamespace(
             revision=19,
+            pages={PageHandle(1, 1): SimpleNamespace(parent=None)},
             has_context=lambda _context_id: True,
             context_epoch=lambda _context_id: 4,
             context_revision=mock.Mock(return_value=7),
@@ -12392,7 +12404,8 @@ def test_wait_tool_publishes_model_backed_prepare_shadow_without_beneficiary():
             bundle_builder=SimpleNamespace(
                 best_exclusive_shadow_preview_for_context=(
                     lambda *_args, **_kwargs: preview
-                )
+                ),
+                preview_offload_root=mock.Mock(return_value=refreshed_preview),
             )
         ),
         service_curve=SimpleNamespace(
@@ -12448,16 +12461,40 @@ def test_wait_tool_publishes_model_backed_prepare_shadow_without_beneficiary():
     assert runtime._predictive_runtime_intent_holds_slot(intent)
     assert (
         runtime._predictive_wait_shadow_cached_preview(
-            intent, host_available_bytes=1_600
+            intent, now_ms=1_001.0, host_available_bytes=1_600
         )
         is preview
     )
     runtime.controller.page_index.context_revision.return_value = 8
     assert (
         runtime._predictive_wait_shadow_cached_preview(
-            intent, host_available_bytes=1_600
+            intent, now_ms=1_002.0, host_available_bytes=1_600
+        )
+        is refreshed_preview
+    )
+    runtime.controller.arbiter.bundle_builder.preview_offload_root.assert_called_once_with(
+        CommandKind.SHADOW_CONTEXT,
+        "child-context",
+        4,
+        PageHandle(1, 1),
+        now_ms=1_002.0,
+        host_available_bytes=1_600,
+    )
+    runtime.controller.arbiter.bundle_builder.preview_offload_root.return_value = None
+    runtime.controller.page_index.context_revision.return_value = 9
+    assert (
+        runtime._predictive_wait_shadow_cached_preview(
+            intent, now_ms=1_003.0, host_available_bytes=1_600
         )
         is None
+    )
+    assert runtime._joint_predictive_counts["wait_shadow_preview_cache_miss"] == 1
+    assert runtime._joint_predictive_counts["wait_shadow_preview_cache_hit"] == 1
+    assert (
+        runtime._joint_predictive_counts[
+            "wait_shadow_preview_cache_root_refresh"
+        ]
+        == 1
     )
     assert intent.beneficiary_request_id is None
     assert intent.context_id == "child-context"

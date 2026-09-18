@@ -2705,7 +2705,7 @@ class EmbeddedSGLangRuntime:
         ) = None
         self._latest_predictive_intent: PredictiveIntent | None = None
         self._latest_predictive_wait_shadow_preview: (
-            tuple[str, int, PhysicalBundlePreview] | None
+            tuple[str, int, PageHandle, PhysicalBundlePreview] | None
         ) = None
         self._predictive_prefetch_watches: dict[
             tuple[str, int], _PredictivePrefetchWatch
@@ -19659,10 +19659,19 @@ class EmbeddedSGLangRuntime:
             timing_semantics=timing.semantics,
             evidence_kind="model_wait_shadow",
         )
+        preview_handles = set(preview.bundle.handles)
+        preview_roots = tuple(
+            handle
+            for handle in preview.bundle.handles
+            if (
+                (page := self.controller.page_index.pages.get(handle)) is not None
+                and page.parent not in preview_handles
+            )
+        )
         self._latest_predictive_wait_shadow_preview = (
-            intent_id,
-            context_revision,
-            preview,
+            (intent_id, context_revision, preview_roots[0], preview)
+            if len(preview_roots) == 1
+            else None
         )
         self._joint_predictive_counts["wait_shadow_intent_published"] += 1
         self.audit.emit(
@@ -19692,22 +19701,55 @@ class EmbeddedSGLangRuntime:
         self,
         intent: PredictiveIntent,
         *,
+        now_ms: float,
         host_available_bytes: int,
     ) -> PhysicalBundlePreview | None:
         cached = getattr(self, "_latest_predictive_wait_shadow_preview", None)
         if cached is None or cached[0] != intent.intent_id:
+            self._joint_predictive_counts["wait_shadow_preview_cache_miss"] += 1
             return None
-        _, context_revision, preview = cached
+        _, context_revision, root_handle, preview = cached
         page_index = self.controller.page_index
         if (
             not page_index.has_context(intent.context_id)
             or page_index.context_epoch(intent.context_id) != intent.context_epoch
-            or page_index.context_revision(intent.context_id) != context_revision
             or not preview.eligible
             or preview.copy_bytes > host_available_bytes
         ):
+            self._joint_predictive_counts["wait_shadow_preview_cache_miss"] += 1
             return None
-        return preview
+        current_revision = page_index.context_revision(intent.context_id)
+        if current_revision == context_revision:
+            self._joint_predictive_counts["wait_shadow_preview_cache_hit"] += 1
+            return preview
+
+        refreshed = self.controller.arbiter.bundle_builder.preview_offload_root(
+            CommandKind.SHADOW_CONTEXT,
+            intent.context_id,
+            intent.context_epoch,
+            root_handle,
+            now_ms=now_ms,
+            host_available_bytes=host_available_bytes,
+        )
+        if (
+            refreshed is None
+            or not refreshed.eligible
+            or refreshed.copy_bytes <= 0
+            or refreshed.copy_bytes > host_available_bytes
+            or refreshed.copy_bytes > intent.max_copy_bytes
+        ):
+            self._joint_predictive_counts["wait_shadow_preview_cache_miss"] += 1
+            return None
+        self._latest_predictive_wait_shadow_preview = (
+            intent.intent_id,
+            current_revision,
+            root_handle,
+            refreshed,
+        )
+        self._joint_predictive_counts[
+            "wait_shadow_preview_cache_root_refresh"
+        ] += 1
+        return refreshed
 
     def _maybe_publish_predicted_reentry_risk_delta(
         self,
@@ -24867,17 +24909,12 @@ class EmbeddedSGLangRuntime:
                 best = (
                     self._predictive_wait_shadow_cached_preview(
                         intent,
+                        now_ms=now_ms,
                         host_available_bytes=host_available,
                     )
                     if wait_shadow_prepare
                     else None
                 )
-                if wait_shadow_prepare:
-                    self._joint_predictive_counts[
-                        "wait_shadow_preview_cache_hit"
-                        if best is not None
-                        else "wait_shadow_preview_cache_miss"
-                    ] += 1
                 if best is None:
                     best = builder.best_exclusive_shadow_preview_for_context(
                         target.context_id,
