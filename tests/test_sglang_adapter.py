@@ -12627,6 +12627,58 @@ def test_predicted_reentry_records_busy_transfer_but_keeps_evaluating():
     ] == 1
 
 
+def test_busy_native_transfer_defers_prefetch_watch_without_dropping_intent():
+    runtime = EmbeddedSGLangRuntime.__new__(EmbeddedSGLangRuntime)
+    runtime.config = SimpleNamespace(
+        predictive_commit_guard_ms=25.0,
+        predictive_prefetch_desired_lead_ms=100.0,
+        predictive_intent_max_age_ms=60_000.0,
+    )
+    runtime.audit = _AuditRecorder()
+    runtime._joint_predictive_counts = Counter()
+    runtime._predictive_prefetch_watches = {}
+    runtime._active_predictive_prefetch_watch_key = None
+    runtime._last_joint_decision_plan_id = "plan"
+    runtime._current_online_joint_decision = object()
+    intent = SimpleNamespace(
+        intent_id="intent-prefetch-busy",
+        action=PredictiveActionKind.PREFETCH_GPU,
+        invocation_id="invocation",
+        context_id="context",
+        context_epoch=3,
+        target_reentry_context_epoch=4,
+        generated_ts_ms=900.0,
+        remaining_window_low_ms=500.0,
+        transfer_p95_ms=100.0,
+        maximum_transfer_ms=120.0,
+        expected_benefit_ms=10.0,
+        target_bytes_hint=256,
+    )
+
+    assert runtime._defer_predictive_prefetch_watch_for_transfer(
+        intent,
+        now_ms=1_000.0,
+    )
+
+    key = runtime._predictive_prefetch_watch_key(intent)
+    assert runtime._predictive_prefetch_watches[key].intent is intent
+    assert runtime._predictive_prefetch_watches[key].latest_start_ts_ms == 1_050.0
+    assert runtime._latest_predictive_intent is None
+    assert runtime._active_predictive_prefetch_watch_key is None
+    assert runtime._last_joint_decision_plan_id is None
+    assert runtime._current_online_joint_decision is None
+    assert runtime._joint_predictive_counts[
+        "prefetch_watch_deferred_native_transfer_busy"
+    ] == 1
+    deferred = [
+        fields
+        for event, _, fields in runtime.audit.events
+        if event == "predictive_prefetch_watch_deferred"
+    ]
+    assert deferred[-1]["reason"] == "native_transfer_busy"
+    assert deferred[-1]["retry_not_before_ms"] == 1_050.0
+
+
 def test_prepare_event_resolves_preferred_victim_contexts():
     runtime = EmbeddedSGLangRuntime.__new__(EmbeddedSGLangRuntime)
     runtime.controller = SimpleNamespace(

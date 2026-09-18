@@ -21901,6 +21901,60 @@ class EmbeddedSGLangRuntime:
         )
         return True
 
+    def _defer_predictive_prefetch_watch_for_transfer(
+        self,
+        intent: PredictiveIntent,
+        *,
+        now_ms: float,
+        retry_delay_ms: float = 50.0,
+    ) -> bool:
+        """Keep a due prefetch alive while the native transfer engine is busy."""
+
+        if not self._is_predictive_prefetch_intent(intent):
+            return False
+        watches = getattr(self, "_predictive_prefetch_watches", None)
+        if watches is None:
+            watches = {}
+            self._predictive_prefetch_watches = watches
+        key = self._predictive_prefetch_watch_key(intent)
+        previous = watches.get(key)
+        if previous is not None and previous.intent.intent_id != intent.intent_id:
+            return False
+        retry_ts_ms = now_ms + max(1.0, retry_delay_ms)
+        watches[key] = replace(
+            previous
+            or _PredictivePrefetchWatch(
+                intent=intent,
+                latest_start_ts_ms=retry_ts_ms,
+                next_refresh_ts_ms=None,
+                fresh_after_ts_ms=None,
+                registered_ts_ms=now_ms,
+                source_worker_sequence=0,
+            ),
+            latest_start_ts_ms=retry_ts_ms,
+            next_refresh_ts_ms=None,
+            fresh_after_ts_ms=None,
+        )
+        self._latest_predictive_intent = None
+        self._active_predictive_prefetch_watch_key = None
+        self._last_joint_decision_plan_id = None
+        self._current_online_joint_decision = None
+        self._joint_predictive_counts[
+            "prefetch_watch_deferred_native_transfer_busy"
+        ] += 1
+        self.audit.emit(
+            "predictive_prefetch_watch_deferred",
+            now_ms,
+            audit_level="correctness",
+            intent_id=intent.intent_id,
+            context_id=intent.context_id,
+            target_reentry_context_epoch=key[1],
+            reason="native_transfer_busy",
+            retry_not_before_ms=retry_ts_ms,
+            watch_count=len(watches),
+        )
+        return True
+
     def _activate_due_predictive_prefetch_watch(
         self,
         *,
@@ -24667,6 +24721,32 @@ class EmbeddedSGLangRuntime:
                 deferred_physical_reasons=sorted(
                     set(reasons).difference({"prefetch_too_early"})
                 ),
+                fallback="observed_joint_plan",
+            )
+            return decision
+
+        if (
+            "prefetch_native_transfer_busy" in reasons
+            and set(reasons) == {"prefetch_native_transfer_busy"}
+            and preview is not None
+            and self._defer_predictive_prefetch_watch_for_transfer(
+                intent,
+                now_ms=now_ms,
+            )
+        ):
+            self.audit.emit(
+                "predictive_semantic_intent_deferred",
+                now_ms,
+                audit_level="correctness",
+                plan_id=plan.plan_id,
+                intent_id=intent.intent_id,
+                action=intent.action.value,
+                context_id=intent.context_id,
+                age_ms=age_ms,
+                remaining_window_low_ms=remaining_ms,
+                safe_point_transfer_bound_ms=effective_transfer_ms,
+                retry_not_before_ms=now_ms + 50.0,
+                deferred_physical_reasons=["prefetch_native_transfer_busy"],
                 fallback="observed_joint_plan",
             )
             return decision
