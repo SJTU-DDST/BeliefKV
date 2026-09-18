@@ -2225,6 +2225,7 @@ _PREDICTIVE_REENTRY_WATCH_LIMIT = 4
 _PREDICTIVE_REENTRY_TARGET_LIMIT = 3
 _PREDICTIVE_REENTRY_WATCH_POLL_MS = 100.0
 _PREDICTIVE_REENTRY_RISK_BUCKET_MS = 500.0
+_PREDICTIVE_WAIT_SHADOW_CANARY_INTERFERENCE_FRACTION = 0.10
 
 
 class EmbeddedSGLangRuntime:
@@ -19430,6 +19431,9 @@ class EmbeddedSGLangRuntime:
             return False
         host_available = observation.host_free_bytes
         builder = self.controller.arbiter.bundle_builder
+        self._joint_predictive_counts["wait_shadow_candidate_seen"] += len(
+            candidates
+        )
         selected = None
         for invocation, _summary, missing_cpu_bytes in sorted(
             candidates,
@@ -19454,6 +19458,9 @@ class EmbeddedSGLangRuntime:
                 ),
             )
             if preview is None or not preview.eligible or preview.copy_bytes <= 0:
+                self._joint_predictive_counts[
+                    "wait_shadow_physical_preview_unavailable"
+                ] += 1
                 continue
             transfer = self.controller.service_curve.estimate(
                 TransferDirection.D2H,
@@ -19465,6 +19472,9 @@ class EmbeddedSGLangRuntime:
                 native_concurrent_bytes=0,
             )
             if not transfer.shape_supported:
+                self._joint_predictive_counts[
+                    "wait_shadow_transfer_shape_unsupported"
+                ] += 1
                 continue
             transfer_ms = max(0.001, transfer.estimated_completion_p90_ms)
             operational_tau_ms = (
@@ -19480,13 +19490,26 @@ class EmbeddedSGLangRuntime:
                 or timing.favorable_probability + 1e-12
                 < timing.decision_threshold
             ):
+                self._joint_predictive_counts[
+                    "wait_shadow_timing_not_actionable"
+                ] += 1
                 continue
             raw_interference_ms = transfer.estimated_unhidden_stall_p90_ms
-            interference_ms = float(
-                transfer_ms
-                if raw_interference_ms is None
-                else raw_interference_ms
-            )
+            if raw_interference_ms is None:
+                # A single non-destructive PREPARE canary collects the missing
+                # compute-wait evidence; it never authorizes COMMIT_CPU.
+                interference_ms = max(
+                    1.0,
+                    transfer_ms
+                    * _PREDICTIVE_WAIT_SHADOW_CANARY_INTERFERENCE_FRACTION,
+                )
+                interference_source = "bounded_measurement_canary_proxy"
+                self._joint_predictive_counts[
+                    "wait_shadow_interference_proxy_used"
+                ] += 1
+            else:
+                interference_ms = float(raw_interference_ms)
+                interference_source = "transfer_service_curve"
             expected_benefit_ms = (
                 gross_pressure
                 * timing.favorable_probability
@@ -19494,6 +19517,9 @@ class EmbeddedSGLangRuntime:
                 - interference_ms
             )
             if expected_benefit_ms <= 0:
+                self._joint_predictive_counts[
+                    "wait_shadow_nonpositive_expected_benefit"
+                ] += 1
                 continue
             selected = (
                 invocation,
@@ -19503,6 +19529,7 @@ class EmbeddedSGLangRuntime:
                 timing,
                 transfer_ms,
                 interference_ms,
+                interference_source,
                 expected_benefit_ms,
             )
             break
@@ -19517,6 +19544,7 @@ class EmbeddedSGLangRuntime:
             timing,
             transfer_ms,
             interference_ms,
+            interference_source,
             expected_benefit_ms,
         ) = selected
         wait_window_ms = max(
@@ -19605,6 +19633,7 @@ class EmbeddedSGLangRuntime:
             decision_threshold=timing.decision_threshold,
             transfer_p90_ms=transfer_ms,
             interference_p90_ms=interference_ms,
+            interference_source=interference_source,
             expected_benefit_ms=expected_benefit_ms,
         )
         return True

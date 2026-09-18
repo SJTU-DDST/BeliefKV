@@ -12349,7 +12349,7 @@ def test_wait_tool_publishes_model_backed_prepare_shadow_without_beneficiary():
     transfer = SimpleNamespace(
         shape_supported=True,
         estimated_completion_p90_ms=100.0,
-        estimated_unhidden_stall_p90_ms=0.0,
+        estimated_unhidden_stall_p90_ms=None,
     )
     timing = SimpleNamespace(
         informative=True,
@@ -12433,13 +12433,17 @@ def test_wait_tool_publishes_model_backed_prepare_shadow_without_beneficiary():
     assert intent.evidence_kind == "model_wait_shadow"
     assert intent.beneficiary_request_id is None
     assert intent.context_id == "child-context"
-    assert intent.expected_benefit_ms == 81.0
+    assert intent.expected_benefit_ms == 71.0
     assert runtime._joint_predictive_counts["wait_shadow_intent_published"] == 1
     assert (
         runtime.controller.service_curve.estimate.call_args.kwargs["command_kind"]
         == CommandKind.OFFLOAD_CONTEXT.value
     )
     assert runtime.audit.events[-1][0] == "predictive_wait_shadow_intent_published"
+    assert (
+        runtime.audit.events[-1][2]["interference_source"]
+        == "bounded_measurement_canary_proxy"
+    )
 
 
 def test_predicted_reentry_publishes_one_bounded_risk_delta_without_beneficiary():
