@@ -7641,6 +7641,21 @@ class SGLangBackendTest(unittest.TestCase):
             "prefetch_watch_prediction_update_suppressed"
         ] == 1
 
+        changed_shape = replace(
+            later,
+            intent_id="changed-shape",
+            target_bytes_hint=later.target_bytes_hint + 1,
+            max_copy_bytes=later.max_copy_bytes + 1,
+            shape_fingerprint="changed-shape",
+        )
+        assert runtime._register_predictive_prefetch_watch(
+            changed_shape, now_ms=201.0, source_worker_sequence=3
+        )
+        assert runtime._predictive_prefetch_watches[key].intent == changed_shape
+        assert runtime._predictive_prefetch_watches[key].latest_start_ts_ms == (
+            first_deadline
+        )
+
     def test_observed_reentry_accelerates_existing_prefetch_watch(self):
         runtime = EmbeddedSGLangRuntime.__new__(EmbeddedSGLangRuntime)
         runtime.config = BeliefKVConfig(

@@ -21775,6 +21775,10 @@ class EmbeddedSGLangRuntime:
                     "prefetch_watch_prediction_update_suppressed"
                 ] += 1
                 return False
+            if not refresh_satisfied:
+                latest_start_ts_ms = min(
+                    latest_start_ts_ms, previous.latest_start_ts_ms
+                )
         watches[key] = _PredictivePrefetchWatch(
             intent=intent,
             latest_start_ts_ms=latest_start_ts_ms,
