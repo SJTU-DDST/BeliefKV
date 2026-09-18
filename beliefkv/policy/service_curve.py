@@ -481,6 +481,249 @@ class TransferServiceCurve:
         self._estimate_cache[cache_key] = result
         return result
 
+    def estimate_direction_envelope(
+        self,
+        direction: TransferDirection,
+        size_bytes: int,
+        *,
+        compute_phase: str = "unknown",
+        command_kind: str = "",
+        host_copy_state: str = "unknown",
+        pinned_host: bool | None = None,
+        native_concurrent_bytes: int = 0,
+    ) -> ServiceCurveEstimate:
+        """Return a conservative timing envelope without claiming shape support.
+
+        This is an explicit timing-only fallback for speculative H2D. It keeps
+        direction, command, host-copy and native-traffic conditions fixed while
+        pooling extent morphologies. Physical actions must still be rematerialized
+        and validated at a scheduler safe point.
+        """
+
+        if min(size_bytes, native_concurrent_bytes) < 0:
+            raise ValueError("transfer demand must be non-negative")
+        native_bucket = self.size_bucket(native_concurrent_bytes)
+        target_size_bucket = self.size_bucket(size_bytes)
+        candidate_keys = tuple(
+            key
+            for key in self._buckets
+            if key.direction == direction
+            and key.compute_phase == compute_phase
+            and key.command_kind == command_kind
+            and key.host_copy_state == host_copy_state
+            and key.pinned_host == pinned_host
+            and key.native_traffic_bucket == native_bucket
+        )
+        matching_keys: tuple[ServiceCurveKey, ...] = ()
+        samples: tuple[_TransferSample, ...] = ()
+        warm_usable = 0
+        for distance in range(4):
+            additions = tuple(
+                key
+                for key in candidate_keys
+                if abs(key.size_bucket - target_size_bucket) == distance
+            )
+            matching_keys += additions
+            samples += tuple(
+                sample
+                for key in additions
+                for sample in self._buckets.get(key, ())
+            )
+            warm_usable += sum(
+                self._warm_start_usable_count(key) for key in additions
+            )
+            if self._has_qualified_support(
+                self._usable_count(samples), warm_usable
+            ):
+                break
+        if not self._has_qualified_support(
+            self._usable_count(samples), warm_usable
+        ):
+            return self._fallback_estimate(direction, size_bytes)
+        outcomes = tuple(
+            outcome
+            for key in matching_keys
+            for outcome in self._bucket_outcomes.get(key, ())
+        )
+        return self._direction_envelope_estimate(
+            direction,
+            size_bytes,
+            samples=samples,
+            outcomes=outcomes,
+            sample_count=len(samples),
+            size_buckets=tuple(key.size_bucket for key in matching_keys),
+            count_buckets=tuple(key.page_count_bucket for key in matching_keys),
+        )
+
+    @classmethod
+    def estimate_snapshot_direction_envelope(
+        cls,
+        snapshot: Mapping[str, object],
+        direction: TransferDirection,
+        size_bytes: int,
+        *,
+        compute_phase: str = "unknown",
+        command_kind: str = "",
+        host_copy_state: str = "unknown",
+        pinned_host: bool | None = None,
+        native_concurrent_bytes: int = 0,
+    ) -> ServiceCurveEstimate:
+        """Query the immutable timing-only direction envelope in a worker."""
+
+        if min(size_bytes, native_concurrent_bytes) < 0:
+            raise ValueError("transfer demand must be non-negative")
+        native_bucket = cls.size_bucket(native_concurrent_bytes)
+        target_size_bucket = cls.size_bucket(size_bytes)
+        candidate_buckets = tuple(
+            item
+            for item in snapshot.get("buckets", ())
+            if isinstance(item, Mapping)
+            and str(item.get("direction")) == direction.value
+            and str(item.get("compute_phase") or "unknown") == compute_phase
+            and str(item.get("command_kind") or "") == command_kind
+            and str(item.get("host_copy_state") or "unknown") == host_copy_state
+            and item.get("pinned_host") == pinned_host
+            and int(item.get("native_traffic_bucket") or 0) == native_bucket
+        )
+        buckets: tuple[Mapping[str, object], ...] = ()
+        for distance in range(4):
+            buckets += tuple(
+                item
+                for item in candidate_buckets
+                if abs(
+                    int(item.get("size_bucket") or 0) - target_size_bucket
+                )
+                == distance
+            )
+            if cls._snapshot_has_qualified_support(snapshot, buckets):
+                break
+        if not cls._snapshot_has_qualified_support(snapshot, buckets):
+            return cls._snapshot_fallback_estimate(snapshot, direction, size_bytes)
+        rates = tuple(
+            float(item.get("effective_bytes_per_ms_p10") or 0.0)
+            for item in buckets
+            if float(item.get("effective_bytes_per_ms_p10") or 0.0) > 0
+        )
+        rate = min(rates)
+        setup = max(float(item.get("setup_p90_ms") or 0.0) for item in buckets)
+        fixed = max(
+            float(item.get("fixed_overhead_p90_ms") or 0.0)
+            for item in buckets
+        )
+        floor = max(
+            float(item.get("callback_floor_p90_ms") or 0.0)
+            for item in buckets
+        )
+        stall_values = tuple(
+            float(item["estimated_unhidden_stall_p90_ms"])
+            for item in buckets
+            if item.get("estimated_unhidden_stall_p90_ms") is not None
+        )
+        sample_count = sum(int(item.get("sample_count") or 0) for item in buckets)
+        outcome_count = sum(int(item.get("outcome_count") or 0) for item in buckets)
+        rejection = (
+            sum(
+                float(item.get("rejection_probability") or 0.0)
+                * int(item.get("outcome_count") or 0)
+                for item in buckets
+            )
+            / outcome_count
+            if outcome_count
+            else 0.0
+        )
+        size_buckets = tuple(int(item.get("size_bucket") or 0) for item in buckets)
+        count_buckets = tuple(
+            int(item.get("page_count_bucket") or 0) for item in buckets
+        )
+        completion = max(floor, setup + fixed + size_bytes / rate)
+        return ServiceCurveEstimate(
+            direction=direction,
+            size_bytes=size_bytes,
+            estimated_callback_ms=completion,
+            estimated_unhidden_stall_ms=max(stall_values) if stall_values else None,
+            setup_p90_ms=setup,
+            callback_floor_p90_ms=floor,
+            fixed_overhead_p90_ms=fixed,
+            effective_bytes_per_ms_p10=rate,
+            rejection_probability=rejection,
+            sample_count=sample_count,
+            source="shape_unsupported_direction_envelope",
+            nearest_bucket_distance=None,
+            size_coverage_bytes=cls._bucket_coverage_bytes(
+                (min(size_buckets), max(size_buckets))
+            ),
+            extent_count_coverage=cls._bucket_coverage_counts(
+                (min(count_buckets), max(count_buckets))
+            ),
+            shape_bucket_distance=None,
+            shape_supported=False,
+            estimated_completion_p90_ms=completion,
+            estimated_unhidden_stall_p90_ms=(
+                max(stall_values) if stall_values else None
+            ),
+        )
+
+    def _direction_envelope_estimate(
+        self,
+        direction: TransferDirection,
+        size_bytes: int,
+        *,
+        samples: tuple[_TransferSample, ...],
+        outcomes: tuple[bool, ...],
+        sample_count: int,
+        size_buckets: tuple[int, ...],
+        count_buckets: tuple[int, ...],
+    ) -> ServiceCurveEstimate:
+        setup_values = tuple(
+            item.setup_ms for item in samples if item.setup_ms is not None
+        )
+        fixed_values = tuple(
+            item.fixed_overhead_ms
+            for item in samples
+            if item.fixed_overhead_ms is not None
+        )
+        rates = tuple(
+            item.effective_bytes_per_ms
+            for item in samples
+            if item.effective_bytes_per_ms is not None
+            and item.effective_bytes_per_ms > 0
+        )
+        stalls = tuple(
+            item.compute_wait_ms
+            for item in samples
+            if item.compute_wait_ms is not None
+        )
+        setup = percentile(setup_values, 90) if setup_values else 0.0
+        fixed = percentile(fixed_values, 90) if fixed_values else 0.0
+        rate = percentile(rates, 10)
+        floor = self._callback_floor_p90(samples)
+        completion = max(floor, setup + fixed + size_bytes / rate)
+        stall = percentile(stalls, 90) if stalls else None
+        return ServiceCurveEstimate(
+            direction=direction,
+            size_bytes=size_bytes,
+            estimated_callback_ms=completion,
+            estimated_unhidden_stall_ms=stall,
+            setup_p90_ms=setup,
+            callback_floor_p90_ms=floor,
+            fixed_overhead_p90_ms=fixed,
+            effective_bytes_per_ms_p10=rate,
+            rejection_probability=self._rejection_probability(outcomes),
+            sample_count=sample_count,
+            source="shape_unsupported_direction_envelope",
+            nearest_bucket_distance=None,
+            size_coverage_bytes=self._bucket_coverage_bytes(
+                (min(size_buckets), max(size_buckets))
+            ),
+            extent_count_coverage=self._bucket_coverage_counts(
+                (min(count_buckets), max(count_buckets))
+            ),
+            shape_bucket_distance=None,
+            shape_supported=False,
+            estimated_completion_p90_ms=completion,
+            estimated_unhidden_stall_p90_ms=stall,
+        )
+
     def _neighboring_shape_samples(
         self,
         key: ServiceCurveKey,
@@ -625,6 +868,40 @@ class TransferServiceCurve:
             shape_bucket_distance=None,
             shape_supported=False,
             estimated_completion_p90_ms=callback_ms,
+            estimated_unhidden_stall_p90_ms=None,
+        )
+
+    @classmethod
+    def _snapshot_fallback_estimate(
+        cls,
+        snapshot: Mapping[str, object],
+        direction: TransferDirection,
+        size_bytes: int,
+    ) -> ServiceCurveEstimate:
+        fallback = snapshot.get("fallback")
+        fallback = fallback if isinstance(fallback, Mapping) else {}
+        bandwidth = max(1e-9, float(fallback.get("bandwidth_gbps") or 24.0))
+        overhead = max(0.0, float(fallback.get("overhead_ms") or 0.08))
+        safety = max(1.0, float(fallback.get("safety_factor") or 1.25))
+        completion = (overhead + size_bytes / (bandwidth * 1_000_000.0)) * safety
+        return ServiceCurveEstimate(
+            direction=direction,
+            size_bytes=size_bytes,
+            estimated_callback_ms=completion,
+            estimated_unhidden_stall_ms=None,
+            setup_p90_ms=overhead,
+            callback_floor_p90_ms=0.0,
+            fixed_overhead_p90_ms=0.0,
+            effective_bytes_per_ms_p10=bandwidth * 1_000_000.0,
+            rejection_probability=0.0,
+            sample_count=0,
+            source="shape_unsupported_static_fallback",
+            nearest_bucket_distance=None,
+            size_coverage_bytes=None,
+            extent_count_coverage=None,
+            shape_bucket_distance=None,
+            shape_supported=False,
+            estimated_completion_p90_ms=completion,
             estimated_unhidden_stall_p90_ms=None,
         )
 
@@ -860,32 +1137,7 @@ class TransferServiceCurve:
             source = "bounded_neighboring_shape_extrapolation"
         usable_count = sum(int(item.get("usable_count") or 0) for item in selected)
         if not cls._snapshot_has_qualified_support(snapshot, selected):
-            fallback = snapshot.get("fallback")
-            fallback = fallback if isinstance(fallback, Mapping) else {}
-            bandwidth = float(fallback.get("bandwidth_gbps") or 24.0)
-            overhead = float(fallback.get("overhead_ms") or 0.08)
-            safety = float(fallback.get("safety_factor") or 1.25)
-            completion = (overhead + size_bytes / (bandwidth * 1_000_000.0)) * safety
-            return ServiceCurveEstimate(
-                direction=direction,
-                size_bytes=size_bytes,
-                estimated_callback_ms=completion,
-                estimated_unhidden_stall_ms=None,
-                setup_p90_ms=overhead,
-                callback_floor_p90_ms=0.0,
-                fixed_overhead_p90_ms=0.0,
-                effective_bytes_per_ms_p10=bandwidth * 1_000_000.0,
-                rejection_probability=0.0,
-                sample_count=0,
-                source="shape_unsupported_static_fallback",
-                nearest_bucket_distance=None,
-                size_coverage_bytes=None,
-                extent_count_coverage=None,
-                shape_bucket_distance=None,
-                shape_supported=False,
-                estimated_completion_p90_ms=completion,
-                estimated_unhidden_stall_p90_ms=None,
-            )
+            return cls._snapshot_fallback_estimate(snapshot, direction, size_bytes)
         setup = max(float(item.get("setup_p90_ms") or 0.0) for item in selected)
         fixed = max(
             float(item.get("fixed_overhead_p90_ms") or 0.0)

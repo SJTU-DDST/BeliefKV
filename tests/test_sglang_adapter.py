@@ -11745,5 +11745,61 @@ def test_predicted_reentry_publishes_one_bounded_risk_delta_without_beneficiary(
     assert set(delta.frontier_features) == {"invocation", "child"}
 
 
+def test_predicted_reentry_waits_for_native_transfer_before_curve_query():
+    runtime = EmbeddedSGLangRuntime.__new__(EmbeddedSGLangRuntime)
+    invocation = SimpleNamespace(
+        invocation_id="invocation",
+        context_id="context",
+        state=InvocationState.WAIT_TOOL,
+        updated_ts_ms=100.0,
+    )
+    summary = SimpleNamespace(
+        physical_unique_bytes=400,
+        gpu_bytes=0,
+        cpu_bytes=400,
+        extent_count=2,
+    )
+    runtime.controller = SimpleNamespace(
+        graph=SimpleNamespace(
+            invocations={"invocation": invocation},
+            contexts={"context": SimpleNamespace(epoch=3)},
+        ),
+        page_index=SimpleNamespace(
+            has_context=lambda _context_id: True,
+            context_epoch=lambda _context_id: 3,
+            context_physical_summary=lambda _context_id: summary,
+        ),
+        predictor=SimpleNamespace(frontier_model=object()),
+        service_curve=SimpleNamespace(
+            estimate=lambda *_args, **_kwargs: (_ for _ in ()).throw(
+                AssertionError("curve query must wait for idle native transfer")
+            )
+        ),
+    )
+    runtime.backend = SimpleNamespace(_native_inflight_bytes=lambda: 1024)
+    runtime.config = SimpleNamespace(predictive_risk_shadow_enabled=True)
+    runtime.predictive_risk_worker = object()
+    runtime._predictive_reentry_watch_invocation_ids = {"invocation"}
+    runtime._last_predictive_reentry_watch_poll_ms = None
+    runtime._shadow_event_sequence = 5
+    runtime._last_policy_state_stamp = SimpleNamespace(event_sequence=5)
+    runtime._joint_predictive_counts = Counter()
+
+    assert not runtime._maybe_publish_predicted_reentry_risk_delta(
+        SimpleNamespace(),
+        observation=RuntimeResourceObservation(
+            ts_ms=1_000.0,
+            hbm_capacity_bytes=1_000,
+            hbm_used_bytes=800,
+            host_capacity_bytes=2_000,
+            host_used_bytes=400,
+            host_free_bytes=1_600,
+        ),
+    )
+    assert runtime._joint_predictive_counts[
+        "predicted_reentry_native_transfer_busy"
+    ] == 1
+
+
 if __name__ == "__main__":
     unittest.main()

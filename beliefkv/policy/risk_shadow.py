@@ -5629,6 +5629,15 @@ class _OnlineCandidatePhysicalizer:
                 host_copy_state="missing" if direction == "d2h" else "present",
                 pinned_host=True,
             )
+            if direction == "h2d" and not estimate.shape_supported:
+                estimate = TransferServiceCurve.estimate_snapshot_direction_envelope(
+                    compact_snapshot,
+                    transfer_direction,
+                    size_bytes,
+                    command_kind="prefetch_context",
+                    host_copy_state="present",
+                    pinned_host=True,
+                )
             return _TransferDurationEvidence(
                 duration_ms=estimate.estimated_completion_p90_ms,
                 source=estimate.source,

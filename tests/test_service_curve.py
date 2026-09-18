@@ -210,6 +210,43 @@ class TransferServiceCurveTest(unittest.TestCase):
         self.assertFalse(estimate.shape_supported)
         self.assertEqual(estimate.callback_floor_p90_ms, 0.0)
 
+    def test_direction_envelope_is_conservative_without_claiming_shape_support(self):
+        curve = TransferServiceCurve(PCIeCostModel(), min_samples=3)
+        for sequence, duration in enumerate((30, 32, 34, 36), start=1):
+            curve.observe(
+                telemetry(
+                    sequence,
+                    duration_ms=duration,
+                    size_bytes=1 << 20,
+                    page_count=1,
+                )
+            )
+
+        unsupported = curve.estimate(
+            TransferDirection.D2H,
+            1 << 20,
+            page_count=64,
+        )
+        envelope = curve.estimate_direction_envelope(
+            TransferDirection.D2H,
+            1 << 20,
+        )
+        snapshot_envelope = TransferServiceCurve.estimate_snapshot_direction_envelope(
+            curve.snapshot(),
+            TransferDirection.D2H,
+            1 << 20,
+        )
+
+        self.assertFalse(unsupported.shape_supported)
+        self.assertEqual(envelope.source, "shape_unsupported_direction_envelope")
+        self.assertFalse(envelope.shape_supported)
+        self.assertEqual(snapshot_envelope.source, envelope.source)
+        self.assertFalse(snapshot_envelope.shape_supported)
+        self.assertGreaterEqual(
+            envelope.estimated_completion_p90_ms,
+            30.0,
+        )
+
     def test_neighbor_bucket_does_not_extrapolate_tiny_transfers_to_gib(self):
         curve = TransferServiceCurve(PCIeCostModel(), min_samples=4)
         for sequence in range(1, 5):

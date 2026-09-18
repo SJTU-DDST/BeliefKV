@@ -19125,6 +19125,16 @@ class EmbeddedSGLangRuntime:
         )
         candidates = candidates[:_PREDICTIVE_REENTRY_WATCH_LIMIT]
 
+        native_inflight_bytes = 0
+        backend = getattr(self, "backend", None)
+        if backend is not None and hasattr(backend, "_native_inflight_bytes"):
+            native_inflight_bytes = backend._native_inflight_bytes()
+        if native_inflight_bytes > 0:
+            self._joint_predictive_counts[
+                "predicted_reentry_native_transfer_busy"
+            ] += 1
+            return False
+
         predictor = getattr(self.controller, "predictor", None)
         frontier_model = getattr(predictor, "frontier_model", None)
         if predictor is None or frontier_model is None:
@@ -19156,10 +19166,6 @@ class EmbeddedSGLangRuntime:
             ] += 1
             return False
 
-        native_inflight_bytes = 0
-        backend = getattr(self, "backend", None)
-        if backend is not None and hasattr(backend, "_native_inflight_bytes"):
-            native_inflight_bytes = backend._native_inflight_bytes()
         eligible = []
         for invocation, summary, missing_gpu_bytes in candidates:
             prediction = predictions.get(invocation.invocation_id)
@@ -19172,13 +19178,25 @@ class EmbeddedSGLangRuntime:
                 command_kind=CommandKind.PREFETCH_CONTEXT.value,
                 host_copy_state="present",
                 pinned_host=True,
-                native_concurrent_bytes=native_inflight_bytes,
+                native_concurrent_bytes=0,
             )
             if not transfer.shape_supported:
+                transfer = self.controller.service_curve.estimate_direction_envelope(
+                    TransferDirection.H2D,
+                    missing_gpu_bytes,
+                    command_kind=CommandKind.PREFETCH_CONTEXT.value,
+                    host_copy_state="present",
+                    pinned_host=True,
+                    native_concurrent_bytes=0,
+                )
+                if transfer.source != "shape_unsupported_direction_envelope":
+                    self._joint_predictive_counts[
+                        "predicted_reentry_transfer_shape_unsupported"
+                    ] += 1
+                    continue
                 self._joint_predictive_counts[
-                    "predicted_reentry_transfer_shape_unsupported"
+                    "predicted_reentry_direction_envelope_used"
                 ] += 1
-                continue
             transfer_ms = max(
                 0.001, transfer.estimated_completion_p90_ms
             )
@@ -19221,6 +19239,7 @@ class EmbeddedSGLangRuntime:
                     invocation,
                     features[invocation.invocation_id],
                     prediction,
+                    transfer,
                 )
             )
         if not eligible:
@@ -19233,6 +19252,7 @@ class EmbeddedSGLangRuntime:
             invocation,
             _selected_features,
             _selected_prediction,
+            selected_transfer,
         ) = max(eligible, key=lambda item: item[:4])
 
         trigger = (
@@ -19395,6 +19415,11 @@ class EmbeddedSGLangRuntime:
             context_epoch=graph.contexts[invocation.context_id].epoch,
             context_revision=context_revision,
             timing_probability=timing_probability,
+            transfer_source=getattr(selected_transfer, "source", "test_or_legacy"),
+            transfer_sample_count=getattr(selected_transfer, "sample_count", 0),
+            transfer_completion_p90_ms=(
+                selected_transfer.estimated_completion_p90_ms
+            ),
             overlay_context_ids=[
                 item.context_id for item in overlay_batch.overlays
             ],
@@ -23298,10 +23323,32 @@ class EmbeddedSGLangRuntime:
                 page_count=len(preview.page_actions),
                 **transfer_kwargs,
             )
+            if (
+                direction == TransferDirection.H2D
+                and not current_transfer.shape_supported
+                and native_inflight_bytes == 0
+            ):
+                current_transfer = (
+                    self.controller.service_curve.estimate_direction_envelope(
+                        direction,
+                        preview.copy_bytes,
+                        command_kind=(
+                            command_kind.value if command_kind is not None else ""
+                        ),
+                        host_copy_state="present",
+                        pinned_host=True,
+                        native_concurrent_bytes=0,
+                    )
+                )
             effective_transfer_ms = max(
                 effective_transfer_ms,
                 current_transfer.estimated_completion_p90_ms,
             )
+            if (
+                direction == TransferDirection.H2D
+                and native_inflight_bytes > 0
+            ):
+                reasons.append("prefetch_native_transfer_busy")
             if intent.action == PredictiveActionKind.PREPARE_HOST:
                 if intent.shape_fingerprint.startswith("summary:"):
                     live_shape_fingerprint = (
