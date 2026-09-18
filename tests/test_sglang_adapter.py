@@ -1892,6 +1892,198 @@ def test_bounded_seed_hints_keep_four_priority_ordered_candidates():
     assert hints[0].prediction_support_level == "exact"
 
 
+def test_bounded_seed_hints_rank_context_state_before_native_queue_order():
+    runnable = (
+        RunnableInvocation(
+            "waiting",
+            "wf-waiting",
+            "inv-waiting",
+            "ctx-waiting",
+            0,
+            9_000.0,
+            64,
+            32,
+            16,
+            causal_class="engine_waiting:ready",
+        ),
+        RunnableInvocation(
+            "overdue-running",
+            "wf-running",
+            "inv-overdue",
+            "ctx-overdue",
+            0,
+            1_000.0,
+            64,
+            32,
+            16,
+            causal_class="engine_running:ready",
+            last_gpu_service_ts_ms=2_000.0,
+            completed_gpu_service_count=4,
+        ),
+        RunnableInvocation(
+            "active-running",
+            "wf-active",
+            "inv-active",
+            "ctx-active",
+            0,
+            9_500.0,
+            64,
+            32,
+            16,
+            causal_class="engine_running:ready",
+            last_gpu_service_ts_ms=9_800.0,
+            completed_gpu_service_count=8,
+        ),
+    )
+    view = OnlineJointPlanView(
+        plan_id="bounded-seed",
+        ordered_request_ids=("overdue-running", "active-running"),
+        immediate_request_ids=("overdue-running", "active-running"),
+        restore_requirements=(),
+        deferred_request_ids=("waiting",),
+        residency_intent_indices=(),
+    )
+
+    hints = EmbeddedSGLangRuntime._observed_seed_beneficiary_hints(
+        view,
+        runnable,
+        priority_request_ids=(
+            "waiting",
+            "active-running",
+            "overdue-running",
+        ),
+        seed_generation=8,
+        created_ts_ms=10_000.0,
+        resident_service_window_ms=5_000.0,
+    )
+
+    assert tuple(item.request_id for item in hints) == (
+        "overdue-running",
+        "waiting",
+        "active-running",
+    )
+    assert tuple(item.context_state for item in hints) == (
+        "resident_ready_unserved",
+        "deferred_waiting",
+        "active_serving",
+    )
+    assert hints[0].native_queue_state == "running"
+    assert hints[0].service_lag_ms == 8_000.0
+
+
+def test_bounded_seed_hints_exclude_restore_owned_request():
+    runnable = (
+        RunnableInvocation(
+            "restore-owned",
+            "wf-restore",
+            "inv-restore",
+            "ctx-restore",
+            0,
+            1_000.0,
+            64,
+            32,
+            16,
+            causal_class="engine_running:ready",
+            last_gpu_service_ts_ms=2_000.0,
+        ),
+        RunnableInvocation(
+            "ordinary",
+            "wf-ordinary",
+            "inv-ordinary",
+            "ctx-ordinary",
+            0,
+            9_000.0,
+            64,
+            32,
+            16,
+            causal_class="engine_waiting:ready",
+        ),
+    )
+    view = OnlineJointPlanView(
+        plan_id="bounded-seed",
+        ordered_request_ids=("restore-owned",),
+        immediate_request_ids=("restore-owned",),
+        restore_requirements=(),
+        deferred_request_ids=("ordinary",),
+        residency_intent_indices=(),
+    )
+
+    hints = EmbeddedSGLangRuntime._observed_seed_beneficiary_hints(
+        view,
+        runnable,
+        priority_request_ids=("restore-owned", "ordinary"),
+        seed_generation=9,
+        created_ts_ms=10_000.0,
+        resident_service_window_ms=5_000.0,
+        restore_request_ids=frozenset({"restore-owned"}),
+    )
+
+    assert tuple(item.request_id for item in hints) == ("ordinary",)
+
+
+def test_context_state_victim_classification_excludes_active_and_restore():
+    runtime = EmbeddedSGLangRuntime.__new__(EmbeddedSGLangRuntime)
+    runtime.config = SimpleNamespace(resident_service_window_ms=5_000.0)
+    runtime.controller = SimpleNamespace(
+        graph=SimpleNamespace(
+            invocations={
+                "parked": SimpleNamespace(
+                    state=InvocationState.WAIT_TOOL,
+                    context_id="ctx-parked",
+                ),
+                "active": SimpleNamespace(
+                    state=InvocationState.RUNNING_LLM,
+                    context_id="ctx-active",
+                ),
+                "overdue": SimpleNamespace(
+                    state=InvocationState.RUNNING_LLM,
+                    context_id="ctx-overdue",
+                ),
+                "restore": SimpleNamespace(
+                    state=InvocationState.WAIT_JOIN,
+                    context_id="ctx-restore",
+                ),
+            }
+        )
+    )
+    runtime._restore_obligations = SimpleNamespace(
+        active=lambda: (SimpleNamespace(context_id="ctx-restore"),)
+    )
+    runtime._latest_bounded_seed_runnable = (
+        RunnableInvocation(
+            "active",
+            "wf",
+            "active",
+            "ctx-active",
+            0,
+            9_000.0,
+            64,
+            causal_class="engine_running:ready",
+            last_gpu_service_ts_ms=9_500.0,
+        ),
+        RunnableInvocation(
+            "overdue",
+            "wf",
+            "overdue",
+            "ctx-overdue",
+            0,
+            1_000.0,
+            64,
+            causal_class="engine_running:ready",
+            last_gpu_service_ts_ms=2_000.0,
+        ),
+    )
+
+    states = runtime._predictive_victim_context_states(now_ms=10_000.0)
+
+    assert states == {
+        "ctx-active": "active_serving",
+        "ctx-overdue": "resident_ready_unserved",
+        "ctx-parked": "parked_external_wait",
+        "ctx-restore": "restore_pending",
+    }
+
+
 def test_bounded_seed_refreshes_schema_v5_prediction_without_retraction_flags():
     runtime = EmbeddedSGLangRuntime.__new__(EmbeddedSGLangRuntime)
     invocation = SimpleNamespace(
@@ -11604,6 +11796,79 @@ def test_beneficiary_probes_share_running_growth_but_preserve_chunked_exclusion(
 
     assert chunked_probe.projected_running_growth_bytes == 16
     assert other_probe.projected_running_growth_bytes == 96
+
+
+def test_running_beneficiary_reuses_slot_and_excludes_own_projected_growth():
+    runtime = EmbeddedSGLangRuntime.__new__(EmbeddedSGLangRuntime)
+    runtime.scheduler = SimpleNamespace(
+        running_batch=SimpleNamespace(
+            reqs=(SimpleNamespace(rid="beneficiary"), SimpleNamespace(rid="peer"))
+        ),
+        chunked_req=None,
+        max_running_requests=2,
+    )
+    runtime.controller = SimpleNamespace(admission=SimpleNamespace(reserved_bytes=0))
+    runtime.config = SimpleNamespace(
+        kv_bytes_per_token=1,
+        admission_decode_quantum_tokens=16,
+    )
+    runtime._latest_bounded_seed_runnable = (
+        RunnableInvocation(
+            "beneficiary",
+            "wf-a",
+            "inv-a",
+            "ctx-a",
+            0,
+            0.0,
+            64,
+            32,
+            16,
+            causal_class="engine_running:ready",
+            predicted_remaining_decode_tokens=100,
+            prediction_support_level="exact",
+        ),
+        RunnableInvocation(
+            "peer",
+            "wf-b",
+            "inv-b",
+            "ctx-b",
+            0,
+            0.0,
+            64,
+            32,
+            16,
+            causal_class="engine_running:ready",
+            predicted_remaining_decode_tokens=40,
+            prediction_support_level="exact",
+        ),
+    )
+    observation = RuntimeResourceObservation(
+        ts_ms=5.0,
+        hbm_capacity_bytes=1_000,
+        hbm_used_bytes=800,
+        host_capacity_bytes=1_000,
+        host_used_bytes=0,
+        host_free_bytes=1_000,
+    )
+    hint = ObservedSeedBeneficiaryHint(
+        "seed",
+        "beneficiary",
+        "inv-a",
+        "ctx-a",
+        0,
+        32,
+        16,
+        remaining_prefill_bytes=0,
+        predicted_output_bytes=100,
+        prediction_support_level="exact",
+        context_state="active_serving",
+        native_queue_state="running",
+    )
+
+    probe = runtime._predictive_beneficiary_opportunity_probe(hint, observation)
+
+    assert not probe.beneficiary_slot_blocked
+    assert probe.projected_running_growth_bytes == 40
 
 
 def test_predictive_reentry_watch_lifecycle_is_independent_of_beneficiary():

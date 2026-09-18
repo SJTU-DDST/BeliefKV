@@ -125,7 +125,7 @@ class FrontierFeatureSource:
 
 @dataclass(frozen=True)
 class ObservedSeedBeneficiaryHint:
-    """One of the bounded seed's leading deferred requests."""
+    """One of the bounded seed's leading context-state candidates."""
 
     plan_id: str
     request_id: str
@@ -140,6 +140,9 @@ class ObservedSeedBeneficiaryHint:
     remaining_prefill_bytes: int = 0
     predicted_output_bytes: int = 0
     prediction_support_level: str = "unavailable"
+    context_state: str = "deferred_waiting"
+    native_queue_state: str = "waiting"
+    service_lag_ms: float = 0.0
 
     def __post_init__(self) -> None:
         if not all(
@@ -154,6 +157,7 @@ class ObservedSeedBeneficiaryHint:
             self.created_ts_ms,
             self.remaining_prefill_bytes,
             self.predicted_output_bytes,
+            self.service_lag_ms,
         ) < 0:
             raise ValueError("observed seed beneficiary values must be non-negative")
         if self.published_ts_ms is not None and self.published_ts_ms < 0:
@@ -164,6 +168,15 @@ class ObservedSeedBeneficiaryHint:
             "unavailable",
         }:
             raise ValueError("invalid beneficiary prediction support level")
+        if self.context_state not in {
+            "active_serving",
+            "resident_ready_unserved",
+            "deferred_waiting",
+            "restore_pending",
+        }:
+            raise ValueError("invalid beneficiary context state")
+        if self.native_queue_state not in {"running", "waiting"}:
+            raise ValueError("invalid beneficiary native queue state")
 
     @property
     def signature(self) -> tuple[object, ...]:
@@ -194,6 +207,8 @@ class ObservedSeedBeneficiaryHint:
             self.remaining_prefill_bytes,
             self.predicted_output_bytes,
             self.prediction_support_level,
+            self.context_state,
+            self.native_queue_state,
         )
 
     def to_dict(self) -> dict[str, object]:
@@ -211,6 +226,9 @@ class ObservedSeedBeneficiaryHint:
             "remaining_prefill_bytes": self.remaining_prefill_bytes,
             "predicted_output_bytes": self.predicted_output_bytes,
             "prediction_support_level": self.prediction_support_level,
+            "context_state": self.context_state,
+            "native_queue_state": self.native_queue_state,
+            "service_lag_ms": self.service_lag_ms,
             "action_key": list(self.action_key),
         }
 
@@ -229,6 +247,7 @@ class ActionLocalPhysicalOverlayBatch:
     summarized_context_count: int = 0
     mechanism_capture_forced: bool = False
     device_available_bytes: int | None = None
+    candidate_state_counts: tuple[tuple[str, int], ...] = ()
 
     def __post_init__(self) -> None:
         if not self.beneficiary_risk_signature and not self.reentry_context_ids:
@@ -260,6 +279,20 @@ class ActionLocalPhysicalOverlayBatch:
             raise ValueError("summarized contexts cannot exceed parked contexts")
         if self.selection_reason is not None and not self.selection_reason:
             raise ValueError("overlay selection reason must be non-empty")
+        if any(
+            not state or count < 0
+            for state, count in self.candidate_state_counts
+        ):
+            raise ValueError("overlay candidate state counts must be valid")
+        if len({state for state, _count in self.candidate_state_counts}) != len(
+            self.candidate_state_counts
+        ):
+            raise ValueError("overlay candidate states must be unique")
+        object.__setattr__(
+            self,
+            "candidate_state_counts",
+            tuple(sorted(self.candidate_state_counts)),
+        )
         if len(self.reentry_context_ids) != len(set(self.reentry_context_ids)):
             raise ValueError("overlay reentry contexts must be unique")
         object.__setattr__(
@@ -284,6 +317,7 @@ class ActionLocalPhysicalOverlayBatch:
             "summarized_context_count": self.summarized_context_count,
             "mechanism_capture_forced": self.mechanism_capture_forced,
             "device_available_bytes": self.device_available_bytes,
+            "candidate_state_counts": dict(self.candidate_state_counts),
         }
 
     @property

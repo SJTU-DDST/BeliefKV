@@ -649,6 +649,7 @@ class _PredictiveBeneficiaryProbeEnvironment:
     chunked_request_id: str
     running_request_count: int
     max_running_requests: int
+    running_growth_bytes_by_request: tuple[tuple[str, int], ...] = ()
 
 
 @dataclass(frozen=True)
@@ -17619,6 +17620,14 @@ class EmbeddedSGLangRuntime:
         )
         immediate_required_bytes = hint.startup_bytes + hint.growth_bytes
         projected_running_growth_bytes = environment.base_running_growth_bytes
+        if hint.native_queue_state == "running":
+            projected_running_growth_bytes = max(
+                0,
+                projected_running_growth_bytes
+                - dict(environment.running_growth_bytes_by_request).get(
+                    hint.request_id, 0
+                ),
+            )
         if (
             environment.chunked_request_id
             and environment.chunked_request_id != hint.request_id
@@ -17640,7 +17649,8 @@ class EmbeddedSGLangRuntime:
         )
         predicted_block_time_ms = 0.0 if beneficiary_hbm_blocked else None
         slot_blocked = bool(
-            environment.max_running_requests
+            hint.native_queue_state != "running"
+            and environment.max_running_requests
             and environment.running_request_count
             >= environment.max_running_requests
         )
@@ -17717,10 +17727,18 @@ class EmbeddedSGLangRuntime:
             )
         }
         projected_running_growth_tokens = 0
+        running_growth_bytes_by_request: list[tuple[str, int]] = []
         for request_id in running_ids:
             request = runnable_by_request.get(request_id)
             if request is None:
-                projected_running_growth_tokens += decode_quantum_tokens
+                request_growth_tokens = decode_quantum_tokens
+                projected_running_growth_tokens += request_growth_tokens
+                running_growth_bytes_by_request.append(
+                    (
+                        request_id,
+                        request_growth_tokens * kv_bytes_per_token,
+                    )
+                )
                 continue
             decode_tokens = (
                 int(math.ceil(request.predicted_remaining_decode_tokens))
@@ -17728,8 +17746,15 @@ class EmbeddedSGLangRuntime:
                 and request.prediction_support_level in {"exact", "backoff"}
                 else decode_quantum_tokens
             )
-            projected_running_growth_tokens += (
+            request_growth_tokens = (
                 request.remaining_prefill_tokens + decode_tokens
+            )
+            projected_running_growth_tokens += request_growth_tokens
+            running_growth_bytes_by_request.append(
+                (
+                    request_id,
+                    request_growth_tokens * kv_bytes_per_token,
+                )
             )
         chunked_id = (
             str(getattr(chunked, "rid", "")) if chunked is not None else ""
@@ -17757,6 +17782,9 @@ class EmbeddedSGLangRuntime:
             chunked_request_id=chunked_id,
             running_request_count=len(running_ids),
             max_running_requests=max_running,
+            running_growth_bytes_by_request=tuple(
+                sorted(running_growth_bytes_by_request)
+            ),
         )
 
     def _capture_reentry_action_local_physical_overlay_batch(
@@ -17970,6 +17998,85 @@ class EmbeddedSGLangRuntime:
             device_available_bytes=device_available_bytes,
         )
 
+    def _predictive_victim_context_states(
+        self, *, now_ms: float
+    ) -> dict[str, str]:
+        """Classify physical victim contexts without coupling to queue names."""
+
+        wait_states = {
+            InvocationState.WAIT_TOOL,
+            InvocationState.WAIT_CHILD,
+            InvocationState.WAIT_JOIN,
+            InvocationState.WAIT_MESSAGE,
+        }
+        graph = self.controller.graph
+        states_by_context: dict[str, set[InvocationState]] = defaultdict(set)
+        for invocation in graph.invocations.values():
+            if not invocation.state.terminal:
+                states_by_context[invocation.context_id].add(invocation.state)
+
+        requests_by_context: dict[
+            str, list[RunnableInvocation]
+        ] = defaultdict(list)
+        for request in (
+            getattr(self, "_latest_bounded_seed_runnable", ())
+            or getattr(self, "_last_policy_runtime_runnable", ())
+        ):
+            requests_by_context[request.context_id].append(request)
+
+        restore_index = getattr(self, "_restore_obligations", None)
+        restore_context_ids = (
+            {item.context_id for item in restore_index.active()}
+            if restore_index is not None
+            else set()
+        )
+        result: dict[str, str] = {}
+        context_ids = set(states_by_context).union(requests_by_context)
+        for context_id in context_ids:
+            if context_id in restore_context_ids:
+                result[context_id] = "restore_pending"
+                continue
+            causal_states = states_by_context.get(context_id, set())
+            requests = requests_by_context.get(context_id, ())
+            if causal_states and causal_states.issubset(wait_states):
+                result[context_id] = "parked_external_wait"
+                continue
+            running = tuple(
+                request
+                for request in requests
+                if request.causal_class.startswith("engine_running:")
+            )
+            if running:
+                latest_service_ms = max(
+                    request.last_gpu_service_ts_ms
+                    if request.last_gpu_service_ts_ms is not None
+                    else request.submitted_ts_ms
+                    for request in running
+                )
+                result[context_id] = (
+                    "resident_ready_unserved"
+                    if now_ms - latest_service_ms
+                    >= self.config.resident_service_window_ms
+                    else "active_serving"
+                )
+                continue
+            waiting = tuple(
+                request
+                for request in requests
+                if request.causal_class.startswith("engine_waiting:")
+            )
+            if waiting:
+                result[context_id] = (
+                    "resident_ready_unserved"
+                    if any(
+                        request.completed_gpu_service_count > 0
+                        or request.last_gpu_service_ts_ms is not None
+                        for request in waiting
+                    )
+                    else "deferred_waiting"
+                )
+        return result
+
     def _capture_action_local_physical_overlay_batch(
         self,
         hint: ObservedSeedBeneficiaryHint,
@@ -17997,40 +18104,23 @@ class EmbeddedSGLangRuntime:
                 capture_ms=(time.perf_counter_ns() - started_ns) / 1_000_000.0,
             )
 
-        wait_states = {
-            InvocationState.WAIT_TOOL,
-            InvocationState.WAIT_CHILD,
-            InvocationState.WAIT_JOIN,
-            InvocationState.WAIT_MESSAGE,
-        }
         graph = self.controller.graph
-        graph_version = getattr(graph, "graph_version", None)
-        parked_cache = getattr(self, "_predictive_parked_context_cache", None)
-        if (
-            graph_version is None
-            or parked_cache is None
-            or parked_cache[0] != graph_version
-        ):
-            states_by_context: dict[str, set[InvocationState]] = defaultdict(set)
-            for invocation in graph.invocations.values():
-                if invocation.state.terminal:
-                    continue
-                states_by_context[invocation.context_id].add(invocation.state)
-            cached_parked_context_ids = tuple(
-                context_id
-                for context_id, states in states_by_context.items()
-                if states and states.issubset(wait_states)
-            )
-            self._predictive_parked_context_cache = (
-                graph_version,
-                cached_parked_context_ids,
-            )
-        else:
-            cached_parked_context_ids = parked_cache[1]
+        context_states = self._predictive_victim_context_states(
+            now_ms=observation.ts_ms
+        )
         parked_context_ids = tuple(
             context_id
-            for context_id in cached_parked_context_ids
+            for context_id, context_state in context_states.items()
             if context_id != hint.context_id
+            and context_state
+            in {"parked_external_wait", "resident_ready_unserved"}
+        )
+        candidate_state_counts = tuple(
+            sorted(
+                Counter(
+                    context_states[item] for item in parked_context_ids
+                ).items()
+            )
         )
         page_index = self.controller.page_index
         target_overlays: list[ActionLocalPhysicalOverlay] = []
@@ -18041,6 +18131,7 @@ class EmbeddedSGLangRuntime:
                 overlays=tuple(target_overlays),
                 selection_reason="no_victim_context_selected",
                 capture_ms=(time.perf_counter_ns() - started_ns) / 1_000_000.0,
+                candidate_state_counts=candidate_state_counts,
             )
 
         summaries = []
@@ -18059,6 +18150,9 @@ class EmbeddedSGLangRuntime:
             ),
             live_parked_context_ids,
             key=lambda context_id: (
+                0
+                if context_states.get(context_id) == "parked_external_wait"
+                else 1,
                 -page_index.context_page_count(context_id),
                 context_id,
             ),
@@ -18164,10 +18258,15 @@ class EmbeddedSGLangRuntime:
                 capture_ms=(time.perf_counter_ns() - started_ns) / 1_000_000.0,
                 parked_context_count=len(parked_context_ids),
                 summarized_context_count=len(summary_context_ids),
+                candidate_state_counts=candidate_state_counts,
             )
 
         summaries.sort(
             key=lambda item: (
+                0
+                if context_states.get(item.context_id)
+                == "parked_external_wait"
+                else 1,
                 -item.exclusive_reclaimable_upper_bound_bytes,
                 item.locked_bytes,
                 item.last_access_ms,
@@ -18300,6 +18399,7 @@ class EmbeddedSGLangRuntime:
             parked_context_count=len(parked_context_ids),
             summarized_context_count=len(summary_context_ids),
             mechanism_capture_forced=force_mechanism_capture,
+            candidate_state_counts=candidate_state_counts,
         )
 
     def _maybe_probe_predictive_prepare_micro_gate(
@@ -19006,6 +19106,21 @@ class EmbeddedSGLangRuntime:
                 if published_hint is not None
                 else observation.ts_ms
             ),
+            beneficiary_context_state=(
+                published_hint.context_state
+                if published_hint is not None
+                else None
+            ),
+            beneficiary_native_queue_state=(
+                published_hint.native_queue_state
+                if published_hint is not None
+                else None
+            ),
+            beneficiary_service_lag_ms=(
+                published_hint.service_lag_ms
+                if published_hint is not None
+                else None
+            ),
             beneficiary_probe_candidate_count=len(candidate_probes),
             beneficiary_selected_rank=(
                 selected_rank if selected_rank >= 0 else None
@@ -19087,6 +19202,11 @@ class EmbeddedSGLangRuntime:
                 overlay_batch.summarized_context_count
                 if overlay_batch is not None
                 else 0
+            ),
+            overlay_candidate_state_counts=(
+                dict(overlay_batch.candidate_state_counts)
+                if overlay_batch is not None
+                else {}
             ),
             overlay_selection_reason=(
                 overlay_batch.selection_reason
@@ -24311,6 +24431,10 @@ class EmbeddedSGLangRuntime:
                 seed_generation=self._online_joint_epoch_sequence,
                 created_ts_ms=now_ms,
                 kv_bytes_per_token=self.config.kv_bytes_per_token,
+                resident_service_window_ms=(
+                    self.config.resident_service_window_ms
+                ),
+                restore_request_ids=self._predictive_restore_request_ids(),
             )
             self._latest_observed_seed_beneficiary_candidates = candidates
             self._latest_observed_seed_beneficiary = (
@@ -24388,6 +24512,10 @@ class EmbeddedSGLangRuntime:
             seed_generation=self._online_joint_epoch_sequence,
             created_ts_ms=now_ms,
             kv_bytes_per_token=self.config.kv_bytes_per_token,
+            resident_service_window_ms=(
+                self.config.resident_service_window_ms
+            ),
+            restore_request_ids=self._predictive_restore_request_ids(),
         )
         self._latest_observed_seed_beneficiary_candidates = candidates
         self._latest_observed_seed_beneficiary = (
@@ -24459,6 +24587,104 @@ class EmbeddedSGLangRuntime:
         self._online_joint_counts["safe_point_seed_epoch"] += 1
         return decision
 
+    def _predictive_restore_request_ids(self) -> frozenset[str]:
+        index = getattr(self, "_restore_obligations", None)
+        if index is None or not callable(getattr(index, "active", None)):
+            return frozenset()
+        return frozenset(item.request_id for item in index.active())
+
+    @staticmethod
+    def _context_state_beneficiary_requests(
+        view: OnlineJointPlanView | None,
+        runnable: tuple[RunnableInvocation, ...],
+        *,
+        priority_request_ids: tuple[str, ...],
+        now_ms: float,
+        resident_service_window_ms: float,
+        restore_request_ids: frozenset[str] = frozenset(),
+        limit: int = 4,
+    ) -> tuple[tuple[RunnableInvocation, str, str, float], ...]:
+        """Rank bounded candidates by service state, independent of queue name."""
+
+        if view is None or limit <= 0:
+            return ()
+        visible = frozenset(
+            (*view.ordered_request_ids, *view.deferred_request_ids)
+        )
+        by_request_id = {item.request_id: item for item in runnable}
+        state_rank = {
+            "resident_ready_unserved": 0,
+            "deferred_waiting": 1,
+            "active_serving": 2,
+        }
+        ranked: list[
+            tuple[int, int, RunnableInvocation, str, str, float]
+        ] = []
+        seen_invocations: set[str] = set()
+        for priority_rank, request_id in enumerate(priority_request_ids):
+            request = by_request_id.get(request_id)
+            if request is None or request_id not in visible:
+                continue
+            queue_state = request.causal_class.split(":", 1)[0]
+            if queue_state not in {"engine_running", "engine_waiting"}:
+                continue
+            if (
+                request.admission_startup_bytes is None
+                or request.admission_growth_bytes is None
+                or int(request.admission_startup_bytes or 0)
+                + int(request.admission_growth_bytes or 0)
+                <= 0
+                or request.invocation_id in seen_invocations
+            ):
+                continue
+            if request_id in restore_request_ids:
+                # Restore obligations already own deterministic funding and
+                # service priority; predictive reclaim must not compete.
+                continue
+            service_evidence_ms = (
+                request.last_gpu_service_ts_ms
+                if request.last_gpu_service_ts_ms is not None
+                else request.submitted_ts_ms
+            )
+            service_lag_ms = max(0.0, now_ms - service_evidence_ms)
+            if queue_state == "engine_running":
+                context_state = (
+                    "resident_ready_unserved"
+                    if service_lag_ms >= resident_service_window_ms
+                    else "active_serving"
+                )
+                native_queue_state = "running"
+            else:
+                context_state = (
+                    "resident_ready_unserved"
+                    if request.completed_gpu_service_count > 0
+                    else "deferred_waiting"
+                )
+                native_queue_state = "waiting"
+            ranked.append(
+                (
+                    state_rank[context_state],
+                    priority_rank,
+                    request,
+                    context_state,
+                    native_queue_state,
+                    service_lag_ms,
+                )
+            )
+            seen_invocations.add(request.invocation_id)
+        ranked.sort(key=lambda item: (item[0], item[1]))
+        return tuple(
+            (request, context_state, native_queue_state, service_lag_ms)
+            for (
+                _state_rank,
+                _priority_rank,
+                request,
+                context_state,
+                native_queue_state,
+                service_lag_ms,
+            ) in ranked[:limit]
+        )
+
     def _refresh_bounded_seed_frontier_predictions(
         self,
         view: OnlineJointPlanView | None,
@@ -24486,26 +24712,26 @@ class EmbeddedSGLangRuntime:
         frontier_model = getattr(predictor, "frontier_model", None)
         if predictor is None or frontier_model is None:
             return runnable
-        deferred = frozenset(view.deferred_request_ids)
-        by_request_id = {item.request_id: item for item in runnable}
-        candidate_invocation_ids: list[str] = []
-        for request_id in priority_request_ids:
-            request = by_request_id.get(request_id)
-            if (
-                request_id not in deferred
-                or request is None
-                or not request.causal_class.startswith("engine_waiting:")
-                or request.admission_startup_bytes is None
-                or request.admission_growth_bytes is None
-                or int(request.admission_startup_bytes or 0)
-                + int(request.admission_growth_bytes or 0)
-                <= 0
-                or request.invocation_id in candidate_invocation_ids
-            ):
-                continue
-            candidate_invocation_ids.append(request.invocation_id)
-            if len(candidate_invocation_ids) >= limit:
-                break
+        candidate_invocation_ids = [
+            request.invocation_id
+            for request, _context_state, _queue_state, _service_lag_ms in (
+                self._context_state_beneficiary_requests(
+                    view,
+                    runnable,
+                    priority_request_ids=priority_request_ids,
+                    now_ms=now_ms,
+                    resident_service_window_ms=float(
+                        getattr(
+                            self.config,
+                            "resident_service_window_ms",
+                            5_000.0,
+                        )
+                    ),
+                    restore_request_ids=self._predictive_restore_request_ids(),
+                    limit=limit,
+                )
+            )
+        ]
         if not candidate_invocation_ids:
             return runnable
 
@@ -24628,26 +24854,21 @@ class EmbeddedSGLangRuntime:
         seed_generation: int,
         created_ts_ms: float,
         kv_bytes_per_token: int = 1,
+        resident_service_window_ms: float = 5_000.0,
+        restore_request_ids: frozenset[str] = frozenset(),
         limit: int = 4,
     ) -> tuple[ObservedSeedBeneficiaryHint, ...]:
-        if view is None or not view.deferred_request_ids or limit <= 0:
-            return ()
-        deferred = frozenset(view.deferred_request_ids)
-        by_request_id = {item.request_id: item for item in runnable}
         result: list[ObservedSeedBeneficiaryHint] = []
-        for request_id in priority_request_ids:
-            request = by_request_id.get(request_id)
-            if (
-                request_id not in deferred
-                or request is None
-                or not request.causal_class.startswith("engine_waiting:")
-                or request.admission_startup_bytes is None
-                or request.admission_growth_bytes is None
-                or int(request.admission_startup_bytes or 0)
-                + int(request.admission_growth_bytes or 0)
-                <= 0
-            ):
-                continue
+        candidates = EmbeddedSGLangRuntime._context_state_beneficiary_requests(
+            view,
+            runnable,
+            priority_request_ids=priority_request_ids,
+            now_ms=created_ts_ms,
+            resident_service_window_ms=resident_service_window_ms,
+            restore_request_ids=restore_request_ids,
+            limit=limit,
+        )
+        for request, context_state, native_queue_state, service_lag_ms in candidates:
             predicted_output_tokens = (
                 request.predicted_remaining_decode_tokens
                 if request.predicted_remaining_decode_tokens is not None
@@ -24674,10 +24895,11 @@ class EmbeddedSGLangRuntime:
                     prediction_support_level=(
                         request.prediction_support_level or "unavailable"
                     ),
+                    context_state=context_state,
+                    native_queue_state=native_queue_state,
+                    service_lag_ms=service_lag_ms,
                 )
             )
-            if len(result) >= limit:
-                break
         return tuple(result)
 
     @classmethod
