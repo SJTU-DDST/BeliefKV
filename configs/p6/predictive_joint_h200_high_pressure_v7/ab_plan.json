@@ -1,0 +1,54 @@
+{
+  "activation_deadline_seconds": null,
+  "agent_python": "/home/longhao/miniconda3/envs/beliefkv-agents/bin/python",
+  "allow_dirty_worktree": false,
+  "allow_development_predictor_canary": true,
+  "artifacts": {
+    "gpu_service": {
+      "hardware_key": "h200nvl-a50d9b5b-driver595.71.05-qwen3coder30b-bf16-kvbf16-sglang18f91eb-pool850000-fa3-flashinfer-graph32-perf-runtime-v1",
+      "path": "artifacts/p6/h200_bf16_v6/gpu_service_qwen3coder30b_bf16_h200_graph32_runtime_v1.json"
+    },
+    "predictor": {
+      "development_only": false,
+      "path": "experiments/models/frontier_belief_h200_bf16_v8_child_return_calibrated.json"
+    },
+    "transfer_service": {
+      "hardware_key": "h200nvl-a50d9b5b-driver595.71.05-qwen3coder30b-bf16-kvbf16-sglang18f91eb-pool850000-page1-host96-pinned-numa1-graph32-te2",
+      "path": "artifacts/p6/h200_bf16_v6/transfer_service_qwen3coder30b_bf16_h200_perf_v1.json"
+    }
+  },
+  "development_only": true,
+  "frozen": true,
+  "high_pressure_ratio": 0.8,
+  "predictive_joint_overlay_enabled": true,
+  "predictive_prefetch_canary_enabled": true,
+  "predictive_prepare_limit": 1,
+  "predictive_shadow_transfers_enabled": true,
+  "runtime_profile": "configs/p6/h200_bf16_v9/frozen_runtime_profile.json",
+  "schema_version": 1,
+  "dynamic_working_set": {
+    "balanced_enter_ratio": 0.82,
+    "balanced_exit_ratio": 0.76,
+    "balanced_target": 64,
+    "recovery_enter_ratio": 0.94,
+    "recovery_exit_ratio": 0.88,
+    "recovery_target": 48,
+    "throughput_target": 96,
+    "workflow_window": 64
+  },
+  "workload": {
+    "context_keep_tokens": 8192,
+    "fanout_profile": "native_subagent_2to3",
+    "manifest": "configs/p6/oracle_v2_native_subagent_v1/workload_manifests/oracle-v2-native-subagent-64-r0.json",
+    "max_completion_tokens": 4096,
+    "pressure_acceptance": {
+      "all_roots_eager": true,
+      "max_running_requests": 96,
+      "required_hbm_ratio": 0.8
+    },
+    "roots": 64,
+    "sampling_seed": 20260917,
+    "selection": "frozen_manifest_64_dynamic_running_96_v1",
+    "summary_output_tokens": 2048
+  }
+}
