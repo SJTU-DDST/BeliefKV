@@ -77,7 +77,7 @@ def test_transfer_guard_is_recomputed_at_conservative_deadline() -> None:
     assert positive is not None and positive > 0
 
 
-def test_action_timing_uses_calibrated_prepare_threshold() -> None:
+def test_action_timing_uses_calibrated_or_scenario_risk_threshold() -> None:
     config = PredictiveRiskShadowConfig(
         minimum_causal_slack_probability=0.9,
         minimum_prefetch_slack_probability=0.5,
@@ -90,6 +90,10 @@ def test_action_timing_uses_calibrated_prepare_threshold() -> None:
         decision_threshold=0.49,
     )
     uncalibrated = replace(calibrated, decision_threshold=None)
+    dependency_prefetch = replace(
+        uncalibrated,
+        semantics="release_within_transfer",
+    )
 
     assert _minimum_action_timing_probability(
         PredictiveActionKind.PREPARE_HOST, calibrated, config
@@ -103,6 +107,9 @@ def test_action_timing_uses_calibrated_prepare_threshold() -> None:
     assert _minimum_action_timing_probability(
         PredictiveActionKind.PREFETCH_GPU, uncalibrated, config
     ) == 0.5
+    assert _minimum_action_timing_probability(
+        PredictiveActionKind.PREFETCH_GPU, dependency_prefetch, config
+    ) == 0.0
 
 
 def test_prepare_requires_time_and_reclaim_for_its_projected_beneficiary() -> None:

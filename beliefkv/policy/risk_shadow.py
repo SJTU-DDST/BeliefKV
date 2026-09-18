@@ -124,6 +124,15 @@ def _minimum_action_timing_probability(
         PredictiveActionKind.PARTIAL_PREFETCH_GPU,
         PredictiveActionKind.RECLAIM_AND_PREFETCH,
     }:
+        # RCCG-composed JOIN/child timing has no independently calibrated
+        # classifier threshold. Its release probability already weights the
+        # same scenarios used for expected benefit, CVaR, HBM chance, and
+        # deterministic feasibility. Applying the legacy 0.5 threshold again
+        # rejects low-probability/high-value prefetches after they pass the
+        # complete risk objective. Calibrated WAIT_TOOL heads still return
+        # above and retain their artifact-defined operating point.
+        if timing.semantics == "release_within_transfer":
+            return 0.0
         return config.minimum_prefetch_slack_probability
     return config.minimum_causal_slack_probability
 
