@@ -11,7 +11,7 @@ from pathlib import Path
 from types import SimpleNamespace
 from unittest import mock
 
-from beliefkv.control.causal_graph import InvocationState
+from beliefkv.control.causal_graph import InvocationState, JoinMode
 from beliefkv.control.controller import BeliefKVController
 from beliefkv.core.config import BeliefKVConfig
 from beliefkv.core.events import (
@@ -51,6 +51,7 @@ from beliefkv.policy.reference import (
 )
 from beliefkv.policy.resource_snapshot import RuntimeResourceObservation
 from beliefkv.policy.service_curve import TransferServiceCurve
+from beliefkv.predictor.structured_frontier import EmpiricalDistribution
 from beliefkv.runtime.audit import PolicySnapshotLog
 from beliefkv.runtime.joint_shadow import (
     IncrementalPolicyInputAssembler,
@@ -11545,6 +11546,90 @@ def test_predictive_reentry_watch_lifecycle_is_independent_of_beneficiary():
         (("reentry", "tool_end", "invocation", 3),)
     )
     assert runtime._predictive_reentry_watch_invocation_ids == set()
+
+
+def test_predictive_reentry_dependency_probability_composes_join_mode():
+    parent = SimpleNamespace(
+        state=InvocationState.WAIT_JOIN,
+        join_id="join",
+        blocking_child_ids=set(),
+    )
+    children = {
+        "child-a": SimpleNamespace(state=InvocationState.RUNNING_LLM),
+        "child-b": SimpleNamespace(state=InvocationState.RUNNING_LLM),
+    }
+    join = SimpleNamespace(
+        member_invocation_ids=set(children),
+        completed_member_ids=set(),
+        mode=JoinMode.ALL,
+    )
+    graph = SimpleNamespace(invocations=children, joins={"join": join})
+    predictions = {
+        "child-a": SimpleNamespace(
+            remaining_to_return_ms=EmpiricalDistribution(
+                values=(100.0, 1_000.0),
+                probability_mass=(0.8, 0.2),
+                support=2.0,
+            )
+        ),
+        "child-b": SimpleNamespace(
+            remaining_to_return_ms=EmpiricalDistribution(
+                values=(100.0, 1_000.0),
+                probability_mass=(0.5, 0.5),
+                support=2.0,
+            )
+        ),
+    }
+
+    all_probability = (
+        EmbeddedSGLangRuntime._predictive_reentry_dependency_probability(
+            graph, predictions, parent, 500.0
+        )
+    )
+    join.mode = JoinMode.ANY
+    any_probability = (
+        EmbeddedSGLangRuntime._predictive_reentry_dependency_probability(
+            graph, predictions, parent, 500.0
+        )
+    )
+
+    assert all_probability == 0.4
+    assert any_probability == 0.9
+
+
+def test_predictive_reentry_dependency_probability_rejects_unknown_wait():
+    invocation = SimpleNamespace(
+        state=InvocationState.WAIT_MESSAGE,
+        join_id=None,
+        blocking_child_ids=set(),
+    )
+    graph = SimpleNamespace(invocations={}, joins={})
+
+    assert (
+        EmbeddedSGLangRuntime._predictive_reentry_dependency_probability(
+            graph, {}, invocation, 500.0
+        )
+        is None
+    )
+
+
+def test_predictive_reentry_target_selection_keeps_top_three():
+    eligible = [
+        (0.1, 0.6, 100.0, -20.0, SimpleNamespace(invocation_id="a")),
+        (0.4, 0.9, 100.0, -20.0, SimpleNamespace(invocation_id="b")),
+        (0.2, 0.7, 100.0, -20.0, SimpleNamespace(invocation_id="c")),
+        (0.3, 0.8, 100.0, -20.0, SimpleNamespace(invocation_id="d")),
+    ]
+
+    selected = EmbeddedSGLangRuntime._select_predictive_reentry_targets(
+        eligible
+    )
+
+    assert tuple(item[4].invocation_id for item in selected) == (
+        "b",
+        "d",
+        "c",
+    )
 
 
 def test_predicted_reentry_publishes_one_bounded_risk_delta_without_beneficiary():

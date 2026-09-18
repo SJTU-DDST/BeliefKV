@@ -2196,6 +2196,7 @@ _ACK_POLL_INTERVAL_MS = 5.0
 _POLICY_CHECK_INTERVAL_MS = 5.0
 _PREDICTIVE_VICTIM_SUMMARY_SCAN_LIMIT = 8
 _PREDICTIVE_REENTRY_WATCH_LIMIT = 4
+_PREDICTIVE_REENTRY_TARGET_LIMIT = 3
 _PREDICTIVE_REENTRY_WATCH_POLL_MS = 100.0
 _PREDICTIVE_REENTRY_RISK_BUCKET_MS = 500.0
 
@@ -19116,14 +19117,48 @@ class EmbeddedSGLangRuntime:
             candidates.append((invocation, summary, missing_gpu_bytes))
         if not candidates:
             return False
-        candidates.sort(
+        tool_candidates = sorted(
+            (
+                item
+                for item in candidates
+                if item[0].state == InvocationState.WAIT_TOOL
+            ),
             key=lambda item: (
                 item[0].updated_ts_ms,
                 -item[2],
                 item[0].invocation_id,
-            )
+            ),
         )
-        candidates = candidates[:_PREDICTIVE_REENTRY_WATCH_LIMIT]
+        dependency_candidates = sorted(
+            (
+                item
+                for item in candidates
+                if item[0].state != InvocationState.WAIT_TOOL
+            ),
+            key=lambda item: self._predictive_reentry_dependency_rank(
+                graph, item[0], item[2]
+            ),
+        )
+        candidates = []
+        for group in (tool_candidates, dependency_candidates):
+            candidates.extend(group[: _PREDICTIVE_REENTRY_WATCH_LIMIT // 2])
+        if len(candidates) < _PREDICTIVE_REENTRY_WATCH_LIMIT:
+            selected_ids = {item[0].invocation_id for item in candidates}
+            remainder = sorted(
+                (
+                    item
+                    for item in tool_candidates + dependency_candidates
+                    if item[0].invocation_id not in selected_ids
+                ),
+                key=lambda item: (
+                    item[0].updated_ts_ms,
+                    -item[2],
+                    item[0].invocation_id,
+                ),
+            )
+            candidates.extend(
+                remainder[: _PREDICTIVE_REENTRY_WATCH_LIMIT - len(candidates)]
+            )
 
         native_inflight_bytes = 0
         backend = getattr(self, "backend", None)
@@ -19228,8 +19263,21 @@ class EmbeddedSGLangRuntime:
                 urgency = timing.favorable_probability - threshold
                 probability = timing.favorable_probability
             else:
-                urgency = 0.0
-                probability = 0.5
+                dependency_probability = (
+                    self._predictive_reentry_dependency_probability(
+                        graph,
+                        predictions,
+                        invocation,
+                        operational_tau_ms,
+                    )
+                )
+                if dependency_probability is None:
+                    self._joint_predictive_counts[
+                        "predicted_reentry_dependency_timing_unavailable"
+                    ] += 1
+                    continue
+                probability = dependency_probability
+                urgency = probability - 0.5
             eligible.append(
                 (
                     urgency,
@@ -19244,27 +19292,20 @@ class EmbeddedSGLangRuntime:
             )
         if not eligible:
             return False
-        (
-            _urgency,
-            timing_probability,
-            _waited_ms,
-            _negative_transfer_ms,
-            invocation,
-            _selected_features,
-            _selected_prediction,
-            selected_transfer,
-        ) = max(eligible, key=lambda item: item[:4])
-
-        trigger = (
-            "reentry",
-            "predicted_latest_start",
-            invocation.invocation_id,
-            graph.contexts[invocation.context_id].epoch,
+        selected = list(self._select_predictive_reentry_targets(eligible))
+        triggers = tuple(
+            (
+                "reentry",
+                "predicted_latest_start",
+                item[4].invocation_id,
+                graph.contexts[item[4].context_id].epoch,
+            )
+            for item in selected
         )
         try:
             overlay_batch = (
                 self._capture_reentry_action_local_physical_overlay_batch(
-                    (trigger,),
+                    triggers,
                     observation or self._runtime_resource_observation(),
                 )
             )
@@ -19276,28 +19317,42 @@ class EmbeddedSGLangRuntime:
                 "predictive_reentry_overlay_failed",
                 now_ms,
                 audit_level="correctness",
-                invocation_id=invocation.invocation_id,
+                invocation_ids=[item[4].invocation_id for item in selected],
                 error=f"{type(error).__name__}: {error}",
             )
             return False
-        if overlay_batch is None or not any(
-            item.context_id == invocation.context_id
-            and item.h2d_copy_bytes > 0
-            for item in overlay_batch.overlays
-        ):
+        live_overlay_context_ids = {
+            item.context_id
+            for item in (overlay_batch.overlays if overlay_batch is not None else ())
+            if item.h2d_copy_bytes > 0
+        }
+        selected = [
+            item for item in selected if item[4].context_id in live_overlay_context_ids
+        ]
+        if not selected:
             self._joint_predictive_counts[
                 "predicted_reentry_overlay_unavailable"
             ] += 1
             return False
 
-        context_revision = page_index.context_revision(invocation.context_id)
         risk_bucket = int(now_ms // _PREDICTIVE_REENTRY_RISK_BUCKET_MS)
-        signature = (
-            invocation.invocation_id,
-            invocation.context_id,
-            graph.contexts[invocation.context_id].epoch,
-            context_revision,
-            risk_bucket,
+        signature = tuple(
+            (
+                item[4].invocation_id,
+                item[4].context_id,
+                graph.contexts[item[4].context_id].epoch,
+                page_index.context_revision(item[4].context_id),
+            )
+            for item in selected
+        ) + (("risk_bucket", risk_bucket),)
+        triggers = tuple(
+            (
+                "reentry",
+                "predicted_latest_start",
+                item[4].invocation_id,
+                graph.contexts[item[4].context_id].epoch,
+            )
+            for item in selected
         )
         if signature == getattr(
             self, "_last_predictive_reentry_risk_signature", None
@@ -19346,7 +19401,7 @@ class EmbeddedSGLangRuntime:
             captured_monotonic_ms=time.monotonic_ns() / 1_000_000.0,
             planning_requested=False,
             risk_evaluation_requested=True,
-            risk_trigger_signature=(trigger,),
+            risk_trigger_signature=triggers,
             observed_seed_beneficiary=(
                 getattr(self, "_latest_observed_seed_beneficiary", None)
             ),
@@ -19400,32 +19455,138 @@ class EmbeddedSGLangRuntime:
         ] += 1
         self._joint_predictive_counts[
             "reentry_overlay_target_count"
-        ] += 1
+        ] += len(selected)
         self._joint_shadow_timing_samples.setdefault(
             "predicted_reentry_overlay_capture_ms", deque(maxlen=65_536)
         ).append(overlay_batch.capture_ms)
         self._joint_shadow_timing_samples["snapshot_enqueue_ms"].append(
             submission.enqueue_ms
         )
-        self.audit.emit(
-            "predictive_reentry_risk_published",
-            now_ms,
-            invocation_id=invocation.invocation_id,
-            context_id=invocation.context_id,
-            context_epoch=graph.contexts[invocation.context_id].epoch,
-            context_revision=context_revision,
-            timing_probability=timing_probability,
-            transfer_source=getattr(selected_transfer, "source", "test_or_legacy"),
-            transfer_sample_count=getattr(selected_transfer, "sample_count", 0),
-            transfer_completion_p90_ms=(
-                selected_transfer.estimated_completion_p90_ms
-            ),
-            overlay_context_ids=[
-                item.context_id for item in overlay_batch.overlays
-            ],
-            worker_sequence=submission.sequence,
-        )
+        for item in selected:
+            invocation = item[4]
+            selected_transfer = item[7]
+            self.audit.emit(
+                "predictive_reentry_risk_published",
+                now_ms,
+                invocation_id=invocation.invocation_id,
+                context_id=invocation.context_id,
+                context_epoch=graph.contexts[invocation.context_id].epoch,
+                context_revision=page_index.context_revision(invocation.context_id),
+                timing_probability=item[1],
+                transfer_source=getattr(
+                    selected_transfer, "source", "test_or_legacy"
+                ),
+                transfer_sample_count=getattr(selected_transfer, "sample_count", 0),
+                transfer_completion_p90_ms=(
+                    selected_transfer.estimated_completion_p90_ms
+                ),
+                overlay_context_ids=[
+                    overlay.context_id for overlay in overlay_batch.overlays
+                ],
+                worker_sequence=submission.sequence,
+            )
         return True
+
+    @staticmethod
+    def _predictive_reentry_dependency_ids(
+        graph: Any, invocation: Any
+    ) -> tuple[tuple[str, ...], str]:
+        if invocation.state == InvocationState.WAIT_JOIN and invocation.join_id:
+            join = getattr(graph, "joins", {}).get(invocation.join_id)
+            if join is not None:
+                members = set(join.member_invocation_ids)
+                completed = set(join.completed_member_ids)
+                return (
+                    tuple(sorted(members - completed)),
+                    getattr(join.mode, "value", str(join.mode)),
+                )
+        if invocation.state == InvocationState.WAIT_CHILD:
+            return tuple(sorted(invocation.blocking_child_ids)), "all"
+        return (), "all"
+
+    @classmethod
+    def _predictive_reentry_dependency_rank(
+        cls, graph: Any, invocation: Any, missing_gpu_bytes: int
+    ) -> tuple[Any, ...]:
+        dependency_ids, _mode = cls._predictive_reentry_dependency_ids(
+            graph, invocation
+        )
+        latest_dependency_update = max(
+            (
+                graph.invocations[dependency_id].updated_ts_ms
+                for dependency_id in dependency_ids
+                if dependency_id in graph.invocations
+            ),
+            default=invocation.updated_ts_ms,
+        )
+        return (
+            len(dependency_ids) if dependency_ids else math.inf,
+            -latest_dependency_update,
+            invocation.updated_ts_ms,
+            -missing_gpu_bytes,
+            invocation.invocation_id,
+        )
+
+    @staticmethod
+    def _select_predictive_reentry_targets(
+        eligible: list[tuple[Any, ...]],
+    ) -> tuple[tuple[Any, ...], ...]:
+        return tuple(
+            sorted(
+                eligible,
+                key=lambda item: item[:4],
+                reverse=True,
+            )[:_PREDICTIVE_REENTRY_TARGET_LIMIT]
+        )
+
+    @classmethod
+    def _predictive_reentry_dependency_probability(
+        cls,
+        graph: Any,
+        predictions: Mapping[str, Any],
+        invocation: Any,
+        operational_tau_ms: float,
+    ) -> float | None:
+        dependency_ids, mode = cls._predictive_reentry_dependency_ids(
+            graph, invocation
+        )
+        if not dependency_ids:
+            return 1.0 if invocation.state in {
+                InvocationState.WAIT_JOIN,
+                InvocationState.WAIT_CHILD,
+            } else None
+        probabilities: list[float] = []
+        for dependency_id in dependency_ids:
+            dependency = graph.invocations.get(dependency_id)
+            if dependency is not None and dependency.state.terminal:
+                probabilities.append(1.0)
+                continue
+            prediction = predictions.get(dependency_id)
+            distribution = getattr(prediction, "remaining_to_return_ms", None)
+            if distribution is None or not distribution.values:
+                probabilities.append(0.0)
+                continue
+            probabilities.append(
+                max(
+                    0.0,
+                    min(
+                        1.0,
+                        1.0
+                        - distribution.probability_greater_than(
+                            operational_tau_ms
+                        ),
+                    ),
+                )
+            )
+        if mode == "any":
+            survival = 1.0
+            for probability in probabilities:
+                survival *= 1.0 - probability
+            return 1.0 - survival
+        probability = 1.0
+        for member_probability in probabilities:
+            probability *= member_probability
+        return probability
 
     @staticmethod
     def _predictive_reentry_closure_invocation_ids(
