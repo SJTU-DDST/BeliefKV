@@ -5,9 +5,17 @@ import argparse
 from collections import Counter
 import json
 from pathlib import Path
+import re
 from typing import Any, Iterable
 
 from beliefkv.predictor.hardware_service import GPUServiceCurveModel
+
+
+_DECODE_BATCH_PATTERN = re.compile(
+    r"Decode batch\. #running-req: (?P<batch>\d+), "
+    r"#token: (?P<tokens>\d+), .*?cuda graph: (?P<graph>True|False), "
+    r"gen throughput \(token/s\): (?P<throughput>[0-9.]+)"
+)
 
 
 def _records(path: Path) -> Iterable[dict[str, Any]]:
@@ -67,6 +75,122 @@ def _samples(path: Path) -> list[dict[str, Any]]:
             float(item.get("complete_ts_ms") or item.get("ts_ms") or 0),
         ),
     )
+
+
+def _artifact_rows(path: Path) -> list[dict[str, Any]]:
+    raw = json.loads(path.read_text(encoding="utf-8"))
+    rows = []
+    for index, observation in enumerate(raw.get("observations", ())):
+        features = observation.get("features", {})
+        demands = features.get("request_demands", ())
+        if not demands:
+            continue
+        request_samples = [
+            {
+                "request_id": f"base-{index}:{request_index}",
+                "workflow_id": "base-runtime-artifact",
+                "phase": str(features.get("phase") or "unknown"),
+                "sequence_tokens_before": int(demand["sequence_tokens"]),
+                "token_delta": int(demand["token_delta"]),
+                "cache_hit_ratio": float(demand.get("cache_hit_ratio", 0.0)),
+            }
+            for request_index, demand in enumerate(demands)
+        ]
+        rows.append(
+            {
+                "row_type": "gpu_batch_service_interval",
+                "sample_id": f"base-artifact:{index:09d}",
+                "split": "train",
+                "source_path": str(path.resolve()),
+                "phase": str(features.get("phase") or "unknown"),
+                "batch_size": len(request_samples),
+                "request_count": len(request_samples),
+                "request_samples": request_samples,
+                "token_delta_total": sum(
+                    item["token_delta"] for item in request_samples
+                ),
+                "prefill_decode_mixed": bool(
+                    features.get("prefill_decode_mixed", False)
+                ),
+                "chunk_position": str(
+                    features.get("chunk_position") or "unknown"
+                ),
+                "pcie_contention_state": str(
+                    features.get("pcie_contention_state") or "unknown"
+                ),
+                "hicache_inflight_bytes": int(
+                    features.get("hicache_inflight_bytes") or 0
+                ),
+                "service_elapsed_ms": float(observation["elapsed_ms"]),
+                "warmup": False,
+                "timing_semantics_version": "gpu_service_interval_v1",
+                "timing_boundary": "preserved runtime artifact observation",
+                "evidence_role": "runtime_validation",
+            }
+        )
+    if not rows:
+        raise ValueError(f"base artifact has no runtime observations: {path}")
+    return rows
+
+
+def _decode_log_rows(
+    path: Path,
+    *,
+    source_index: int,
+    minimum_batch: int,
+) -> list[dict[str, Any]]:
+    rows = []
+    for line_index, line in enumerate(
+        path.read_text(encoding="utf-8", errors="replace").splitlines()
+    ):
+        match = _DECODE_BATCH_PATTERN.search(line)
+        if match is None or match.group("graph") != "True":
+            continue
+        batch_size = int(match.group("batch"))
+        total_sequence_tokens = int(match.group("tokens"))
+        throughput = float(match.group("throughput"))
+        if batch_size < minimum_batch or throughput <= 0:
+            continue
+        quotient, remainder = divmod(total_sequence_tokens, batch_size)
+        request_samples = [
+            {
+                "request_id": f"graph-log-{source_index}-{line_index}:{index}",
+                "workflow_id": "graph96-runtime-log",
+                "phase": "decode",
+                "sequence_tokens_before": quotient + (index < remainder),
+                "token_delta": 1,
+                "cache_hit_ratio": 0.0,
+            }
+            for index in range(batch_size)
+        ]
+        rows.append(
+            {
+                "row_type": "gpu_batch_service_interval",
+                "sample_id": f"graph-log-{source_index}:{line_index:09d}",
+                "split": "train",
+                "source_path": str(path.resolve()),
+                "phase": "decode",
+                "batch_size": batch_size,
+                "request_count": batch_size,
+                "request_samples": request_samples,
+                "token_delta_total": batch_size,
+                "prefill_decode_mixed": False,
+                "chunk_position": "continuation",
+                "pcie_contention_state": "runtime_interval_unknown",
+                "hicache_inflight_bytes": 0,
+                "service_elapsed_ms": 1000.0 * batch_size / throughput,
+                "warmup": False,
+                "timing_semantics_version": "decode_log_interval_v1",
+                "timing_boundary": (
+                    "SGLang periodic decode throughput interval; service time "
+                    "is batch_size / generation throughput"
+                ),
+                "evidence_role": "runtime_validation",
+            }
+        )
+    if not rows:
+        raise ValueError(f"server log has no graph decode rows: {path}")
+    return rows
 
 
 def _contention(
@@ -217,10 +341,15 @@ def _aggregate_summaries(paths: list[Path]) -> list[dict[str, Any]]:
 
 def main() -> int:
     parser = argparse.ArgumentParser(
-        description="Build a graph32 GPU service artifact from runtime batches."
+        description="Build a GPU service shadow artifact from runtime evidence."
     )
-    parser.add_argument("--runtime-audit", type=Path, action="append", required=True)
+    parser.add_argument("--runtime-audit", type=Path, action="append", default=[])
     parser.add_argument("--aggregate-audit", type=Path, action="append", default=[])
+    parser.add_argument("--base-artifact", type=Path)
+    parser.add_argument("--decode-server-log", type=Path, action="append", default=[])
+    parser.add_argument("--minimum-log-batch", type=int, default=33)
+    parser.add_argument("--profile-id", default="h200_bf16_v6")
+    parser.add_argument("--cuda-graph-max-bs", type=int, default=32)
     parser.add_argument("--hardware-key", required=True)
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--evaluation-output", type=Path, required=True)
@@ -235,6 +364,20 @@ def main() -> int:
             raise ValueError(f"no complete graph32 service rows in {path}")
         source_rows.append(rows)
     rows = [row for source in source_rows for row in source]
+    if args.base_artifact is not None:
+        rows.extend(_artifact_rows(args.base_artifact.resolve()))
+    log_rows = []
+    for source_index, path in enumerate(args.decode_server_log):
+        log_rows.extend(
+            _decode_log_rows(
+                path.resolve(),
+                source_index=source_index,
+                minimum_batch=args.minimum_log_batch,
+            )
+        )
+    rows.extend(log_rows)
+    if not rows:
+        raise ValueError("no runtime service evidence was provided")
     sample_ids = [str(row["sample_id"]) for row in rows]
     if len(sample_ids) != len(set(sample_ids)):
         raise ValueError("runtime service rows must have unique sample IDs")
@@ -265,18 +408,33 @@ def main() -> int:
         neighbor_count=args.neighbor_count,
     )
     training_summary = model.fit_runtime_observations(rows)
+    timing_boundary = (
+        "runtime scheduler/worker intervals plus SGLang periodic decode "
+        f"throughput observations under graph{args.cuda_graph_max_bs}; "
+        "shadow-only and not claimed as pure CUDA kernel time"
+    )
+    model.training_summary["timing_boundary"] = timing_boundary
+    training_summary["timing_boundary"] = timing_boundary
     source_counts = {
         str(path.resolve()): len(source_rows[index])
         for index, path in enumerate(args.runtime_audit)
     }
+    if args.base_artifact is not None:
+        source_counts[str(args.base_artifact.resolve())] = len(
+            _artifact_rows(args.base_artifact.resolve())
+        )
+    for path in args.decode_server_log:
+        source_counts[str(path.resolve())] = sum(
+            row["source_path"] == str(path.resolve()) for row in log_rows
+        )
     metadata = {
-        "profile_id": "h200_bf16_v6",
+        "profile_id": args.profile_id,
         "runtime_mode": "performance",
-        "cuda_graph_max_bs": 32,
+        "cuda_graph_max_bs": args.cuda_graph_max_bs,
         "evidence_role": "runtime_validation",
         "shadow_only": True,
         "online_canary_eligible": False,
-        "timing_boundary": "gpu_service_interval_v1",
+        "timing_boundary": timing_boundary,
         "source_counts": source_counts,
         "aggregate_coverage_sources": [
             str(path.resolve()) for path in args.aggregate_audit
@@ -291,7 +449,7 @@ def main() -> int:
     contention_counts = Counter(str(row["pcie_contention_state"]) for row in rows)
     evaluation = {
         "schema_version": 1,
-        "artifact_kind": "runtime_graph32_gpu_service_shadow",
+        "artifact_kind": "runtime_gpu_service_shadow",
         "hardware_key": args.hardware_key,
         "online_eligible": False,
         "shadow_eligible": True,
@@ -304,8 +462,13 @@ def main() -> int:
         "contention_counts": dict(sorted(contention_counts.items())),
         "cross_source_validation": cross_source,
         "aggregate_coverage": _aggregate_summaries(args.aggregate_audit),
+        "decode_log_observation_count": len(log_rows),
         "limitations": [
             "runtime interval boundary is not a CUDA event",
+            (
+                "graph decode log rows use periodic aggregate throughput and "
+                "approximate per-request sequence lengths from batch totals"
+            ),
             "artifact is restricted to shadow planning until controlled calibration",
             "cross-source validation is workload-local and not a formal test split",
         ],

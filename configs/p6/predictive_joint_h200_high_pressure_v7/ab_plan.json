@@ -5,8 +5,8 @@
   "allow_development_predictor_canary": true,
   "artifacts": {
     "gpu_service": {
-      "hardware_key": "h200nvl-a50d9b5b-driver595.71.05-qwen3coder30b-bf16-kvbf16-sglang18f91eb-pool850000-fa3-flashinfer-graph32-perf-runtime-v1",
-      "path": "artifacts/p6/h200_bf16_v6/gpu_service_qwen3coder30b_bf16_h200_graph32_runtime_v1.json"
+      "hardware_key": "h200nvl-a50d9b5b-driver595.71.05-qwen3coder30b-bf16-kvbf16-sglang18f91eb-pool850000-fa3-flashinfer-graph96-perf-runtime-v1",
+      "path": "artifacts/p6/h200_bf16_v9/gpu_service_qwen3coder30b_bf16_h200_graph96_runtime_v1.json"
     },
     "predictor": {
       "development_only": false,

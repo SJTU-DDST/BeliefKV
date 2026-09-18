@@ -54,9 +54,17 @@ V8_PROFILE = (
     REPOSITORY_ROOT
     / "configs/p6/h200_bf16_v8/frozen_runtime_profile.json"
 )
+V9_PROFILE = (
+    REPOSITORY_ROOT
+    / "configs/p6/h200_bf16_v9/frozen_runtime_profile.json"
+)
 HIGH_PRESSURE_V5_PLAN = (
     REPOSITORY_ROOT
     / "configs/p6/predictive_joint_h200_high_pressure_v5/ab_plan.json"
+)
+HIGH_PRESSURE_V7_PLAN = (
+    REPOSITORY_ROOT
+    / "configs/p6/predictive_joint_h200_high_pressure_v7/ab_plan.json"
 )
 HIGH_PRESSURE_V2_PLAN = (
     REPOSITORY_ROOT
@@ -261,6 +269,30 @@ def test_h200_v8_profile_and_plan_enable_dynamic_running_64() -> None:
         "throughput_target": 64,
         "workflow_window": 64,
     }
+
+
+def test_h200_v9_profile_and_plan_bind_graph96_service_model() -> None:
+    profile, _ = load_runtime_profile(
+        V9_PROFILE,
+        repository_root=REPOSITORY_ROOT,
+    )
+    plan = json.loads(HIGH_PRESSURE_V7_PLAN.read_text(encoding="utf-8"))
+    gpu_service = profile["artifacts"]["gpu_service"]
+
+    assert profile["runtime"]["max_running_requests"] == 96
+    assert profile["runtime"]["cuda_graph_max_bs"] == 96
+    assert "graph96" in gpu_service["hardware_key"]
+    assert "graph96" in gpu_service["path"]
+    assert gpu_service["shadow_eligible"] is True
+    assert gpu_service["online_eligible"] is False
+    assert gpu_service["recalibration_required"] is True
+    assert plan["artifacts"]["gpu_service"] == {
+        "hardware_key": gpu_service["hardware_key"],
+        "path": gpu_service["path"],
+    }
+    assert plan["runtime_profile"].endswith(
+        "h200_bf16_v9/frozen_runtime_profile.json"
+    )
 
 
 def test_high_pressure_v2_uses_fixed_40_root_prefix() -> None:

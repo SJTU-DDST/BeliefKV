@@ -2,6 +2,9 @@ from __future__ import annotations
 
 import pytest
 
+from scripts.export_runtime_gpu_service_model import (
+    _decode_log_rows,
+)
 from beliefkv.predictor.hardware_service import (
     GPURequestServiceDemand,
     GPUServiceCurveModel,
@@ -214,3 +217,28 @@ def test_profile_grouped_cross_calibration_keeps_holdout_sealed(tmp_path) -> Non
             pcie_contention_state="idle",
         )
     ) == estimate
+
+
+def test_decode_log_rows_extract_graph96_service_evidence(tmp_path) -> None:
+    log = tmp_path / "server.log"
+    log.write_text(
+        "Decode batch. #running-req: 96, #token: 960000, "
+        "cuda graph: True, gen throughput (token/s): 192.0\n"
+        "Decode batch. #running-req: 64, #token: 320000, "
+        "cuda graph: False, gen throughput (token/s): 128.0\n"
+        "Decode batch. #running-req: 32, #token: 160000, "
+        "cuda graph: True, gen throughput (token/s): 64.0\n",
+        encoding="utf-8",
+    )
+
+    rows = _decode_log_rows(log, source_index=3, minimum_batch=33)
+
+    assert len(rows) == 1
+    row = rows[0]
+    assert row["batch_size"] == 96
+    assert row["token_delta_total"] == 96
+    assert sum(
+        sample["sequence_tokens_before"] for sample in row["request_samples"]
+    ) == 960000
+    assert row["service_elapsed_ms"] == pytest.approx(500.0)
+    assert row["pcie_contention_state"] == "runtime_interval_unknown"

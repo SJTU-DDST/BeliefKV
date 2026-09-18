@@ -3,14 +3,14 @@
     "environment": "configs/p6/h200_bf16_v2/environment_manifest.json",
     "gpu_service": {
       "controlled_recalibration_required_for_canary": true,
-      "evaluation": "artifacts/p6/h200_bf16_v6/gpu_service_graph32_runtime_v1_evaluation.json",
-      "evaluation_sha256": "28d1224672697a917f6cd84b21fbadae8822be1fd8fb8fbd2534b27296a48c9b",
-      "hardware_key": "h200nvl-a50d9b5b-driver595.71.05-qwen3coder30b-bf16-kvbf16-sglang18f91eb-pool850000-fa3-flashinfer-graph32-perf-runtime-v1",
+      "evaluation": "artifacts/p6/h200_bf16_v9/gpu_service_graph96_runtime_v1_evaluation.json",
+      "evaluation_sha256": "64f25051666ac26e103479c1b11fd26359ccde38c918478472b32c56711bb850",
+      "hardware_key": "h200nvl-a50d9b5b-driver595.71.05-qwen3coder30b-bf16-kvbf16-sglang18f91eb-pool850000-fa3-flashinfer-graph96-perf-runtime-v1",
       "online_eligible": false,
-      "path": "artifacts/p6/h200_bf16_v6/gpu_service_qwen3coder30b_bf16_h200_graph32_runtime_v1.json",
-      "provenance": "valid_o0_r2_graph32_runtime_batches_plus_latest_w4_coverage_shadow_only",
-      "recalibration_required": false,
-      "sha256": "8ee3ed56f675c777cd35987159431f2dd41f436600237397fb168886e728833b",
+      "path": "artifacts/p6/h200_bf16_v9/gpu_service_qwen3coder30b_bf16_h200_graph96_runtime_v1.json",
+      "provenance": "graph32_runtime_batches_plus_v24_graph96_periodic_decode_runtime_shadow",
+      "recalibration_required": true,
+      "sha256": "374eae77ead9cd4592f77821fb77dfb9bf08c60b1fc6c6d42699d1d2973a7009",
       "shadow_eligible": true
     },
     "transfer_service": {
