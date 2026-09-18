@@ -18710,6 +18710,18 @@ class EmbeddedSGLangRuntime:
             and intent.evidence_kind == "injected_mechanism_gate"
         )
 
+
+    @staticmethod
+    def _predictive_runtime_intent_holds_slot(
+        intent: PredictiveIntent | None,
+    ) -> bool:
+        """Keep scheduler-produced intents until safe-point consumption."""
+
+        return bool(
+            intent is not None
+            and intent.evidence_kind == "model_wait_shadow"
+        )
+
     def _maybe_inject_predictive_prepare_micro_gate(
         self,
         hint: ObservedSeedBeneficiaryHint | None,
@@ -22581,6 +22593,12 @@ class EmbeddedSGLangRuntime:
                         previous_intent
                     )
                 )
+                runtime_holds_intent = (
+                    gate_holds_intent
+                    or self._predictive_runtime_intent_holds_slot(
+                        previous_intent
+                    )
+                )
                 mechanism_gate_enabled = bool(
                     getattr(
                         self.config,
@@ -22588,10 +22606,14 @@ class EmbeddedSGLangRuntime:
                         False,
                     )
                 )
-                candidate_intent = previous_intent if gate_holds_intent else (
-                    None
-                    if mechanism_gate_enabled
-                    else result.shadow.predictive_intent
+                candidate_intent = (
+                    previous_intent
+                    if runtime_holds_intent
+                    else (
+                        None
+                        if mechanism_gate_enabled
+                        else result.shadow.predictive_intent
+                    )
                 )
                 publish_reasons: tuple[str, ...] = ()
                 if candidate_intent is not None:

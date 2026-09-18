@@ -12435,6 +12435,7 @@ def test_wait_tool_publishes_model_backed_prepare_shadow_without_beneficiary():
     intent = runtime._latest_predictive_intent
     assert intent.action is PredictiveActionKind.PREPARE_HOST
     assert intent.evidence_kind == "model_wait_shadow"
+    assert runtime._predictive_runtime_intent_holds_slot(intent)
     assert intent.beneficiary_request_id is None
     assert intent.context_id == "child-context"
     assert intent.expected_benefit_ms == 71.0
