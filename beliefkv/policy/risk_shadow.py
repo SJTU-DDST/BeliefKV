@@ -63,6 +63,7 @@ class PredictiveRiskShadowConfig:
     transfer_p95_safety_factor: float = 1.25
     online_overlay_enabled: bool = False
     transfer_commit_guard_ms: float = 25.0
+    scheduled_service_lead_ms: float = 100.0
     minimum_causal_slack_probability: float = 0.9
     minimum_prefetch_slack_probability: float = 0.5
 
@@ -85,6 +86,11 @@ class PredictiveRiskShadowConfig:
             or self.transfer_commit_guard_ms < 0
         ):
             raise ValueError("transfer commit guard must be finite and non-negative")
+        if (
+            not math.isfinite(self.scheduled_service_lead_ms)
+            or self.scheduled_service_lead_ms < 0
+        ):
+            raise ValueError("scheduled service lead must be finite and non-negative")
         if not 0 <= self.minimum_causal_slack_probability <= 1:
             raise ValueError(
                 "minimum causal slack probability must be in [0, 1]"
@@ -902,6 +908,10 @@ class PredictiveEligibilityIndex:
         InvocationState.WAIT_CHILD.value,
         InvocationState.WAIT_JOIN.value,
         InvocationState.WAIT_MESSAGE.value,
+    }
+    _SERVICE_STATES = {
+        InvocationState.READY.value,
+        InvocationState.RUNNING_LLM.value,
     }
 
     def __init__(self) -> None:
@@ -2466,19 +2476,30 @@ class PredictiveRiskShadowObserver:
         prediction = predictions.get(candidate.invocation_id)
         if prediction is None:
             return False, (), ("local_prediction_missing",)
-        if candidate.state not in PredictiveEligibilityIndex._WAIT_STATES:
+        if candidate.state not in (
+            PredictiveEligibilityIndex._WAIT_STATES
+            | PredictiveEligibilityIndex._SERVICE_STATES
+        ):
             return False, (), ("target_not_parked",)
         if prediction.calibration_coverage < self.config.minimum_calibration_coverage:
             return False, (), ("calibration_coverage",)
 
         support: list[tuple[str, str]] = []
-        wait_head, wait_level = self._wait_head_support(
-            prediction, candidate.state
-        )
-        if package.action == PredictiveActionKind.PREPARE_HOST:
-            support.append((wait_head, wait_level))
+        if candidate.state in PredictiveEligibilityIndex._SERVICE_STATES:
+            demand_head = (
+                "remaining_decode_demand"
+                if prediction.remaining_decode_tokens.values
+                else "next_output_demand"
+            )
+            support.append(
+                (demand_head, prediction.support_for(demand_head))
+            )
         else:
+            wait_head, wait_level = self._wait_head_support(
+                prediction, candidate.state
+            )
             support.append((wait_head, wait_level))
+        if package.action != PredictiveActionKind.PREPARE_HOST:
             support.append(
                 (
                     "future_kv_growth",
@@ -2604,7 +2625,19 @@ class PredictiveRiskShadowObserver:
             * self.config.transfer_p95_safety_factor
         )
         required_wait_ms = transfer_p95_ms + self.config.transfer_commit_guard_ms
-        if candidate.state == InvocationState.WAIT_TOOL.value:
+        if candidate.state in PredictiveEligibilityIndex._SERVICE_STATES:
+            timing_probability = 1.0
+            remaining_window_ms = (
+                required_wait_ms + self.config.scheduled_service_lead_ms
+            )
+            calibration_brier_skill = None
+            calibration_balanced_accuracy = None
+            decision_threshold = None
+            raw_decision_threshold = None
+            precision_at_decision_threshold = None
+            recall_at_decision_threshold = None
+            informative = True
+        elif candidate.state == InvocationState.WAIT_TOOL.value:
             timing = prediction.action_timing(
                 (
                     "prefetch_gpu"
@@ -2930,6 +2963,12 @@ class PredictiveRiskShadowObserver:
             morphology_slack_ms=morphology_slack_ms,
             causal_slack_probability=timing_probability,
             timing_semantics=timing_semantics,
+            evidence_kind=(
+                "bounded_seed_scheduled_service"
+                if candidate_state
+                in PredictiveEligibilityIndex._SERVICE_STATES
+                else "model_prediction"
+            ),
             beneficiary_request_id=(
                 beneficiary.request_id if beneficiary is not None else None
             ),

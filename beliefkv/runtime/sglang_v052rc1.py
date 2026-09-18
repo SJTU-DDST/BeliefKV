@@ -2815,6 +2815,9 @@ class EmbeddedSGLangRuntime:
                     transfer_commit_guard_ms=(
                         self.config.predictive_commit_guard_ms
                     ),
+                    scheduled_service_lead_ms=(
+                        self.config.predictive_prefetch_desired_lead_ms
+                    ),
                 )
                 predictive_risk_observer = PredictiveRiskShadowObserver(
                     predictive_service_model,
@@ -19064,7 +19067,10 @@ class EmbeddedSGLangRuntime:
         watches = getattr(
             self, "_predictive_reentry_watch_invocation_ids", set()
         )
-        if not watches:
+        runnable = tuple(
+            getattr(self, "_latest_bounded_seed_runnable", ()) or ()
+        )
+        if not watches and not runnable:
             return False
         base_stamp = getattr(self, "_last_policy_state_stamp", None)
         if (
@@ -19115,8 +19121,58 @@ class EmbeddedSGLangRuntime:
             if missing_gpu_bytes <= 0 or summary.cpu_bytes <= 0:
                 continue
             candidates.append((invocation, summary, missing_gpu_bytes))
-        if not candidates:
-            return False
+        service_rank_by_invocation: dict[str, int] = {}
+        runnable_by_request_id = {
+            request.request_id: request for request in runnable
+        }
+        priority_request_ids = tuple(
+            getattr(self, "_latest_bounded_seed_priority_request_ids", ())
+            or tuple(runnable_by_request_id)
+        )
+        service_candidates: list[tuple[Any, Any, int]] = []
+        for seed_rank, request_id in enumerate(
+            priority_request_ids[:8]
+        ):
+            request = runnable_by_request_id.get(request_id)
+            if (
+                request is None
+                or not request.causal_class.startswith("engine_waiting:")
+            ):
+                continue
+            invocation = graph.invocations.get(request.invocation_id)
+            context = (
+                graph.contexts.get(invocation.context_id)
+                if invocation is not None
+                else None
+            )
+            if (
+                invocation is None
+                or invocation.state
+                not in {InvocationState.READY, InvocationState.RUNNING_LLM}
+                or context is None
+                or request.context_id != invocation.context_id
+                or request.context_epoch != context.epoch
+                or not page_index.has_context(invocation.context_id)
+                or page_index.context_epoch(invocation.context_id)
+                != context.epoch
+            ):
+                continue
+            summary = page_index.context_physical_summary(
+                invocation.context_id
+            )
+            missing_gpu_bytes = max(
+                0, summary.physical_unique_bytes - summary.gpu_bytes
+            )
+            if missing_gpu_bytes <= 0 or summary.cpu_bytes <= 0:
+                continue
+            service_rank_by_invocation[
+                invocation.invocation_id
+            ] = seed_rank
+            service_candidates.append(
+                (invocation, summary, missing_gpu_bytes)
+            )
+            if len(service_candidates) >= 2:
+                break
         tool_candidates = sorted(
             (
                 item
@@ -19139,15 +19195,19 @@ class EmbeddedSGLangRuntime:
                 graph, item[0], item[2]
             ),
         )
-        candidates = []
+        candidates = list(service_candidates)
         for group in (tool_candidates, dependency_candidates):
-            candidates.extend(group[: _PREDICTIVE_REENTRY_WATCH_LIMIT // 2])
+            candidates.extend(group[:1])
         if len(candidates) < _PREDICTIVE_REENTRY_WATCH_LIMIT:
             selected_ids = {item[0].invocation_id for item in candidates}
             remainder = sorted(
                 (
                     item
-                    for item in tool_candidates + dependency_candidates
+                    for item in (
+                        service_candidates
+                        + tool_candidates
+                        + dependency_candidates
+                    )
                     if item[0].invocation_id not in selected_ids
                 ),
                 key=lambda item: (
@@ -19159,6 +19219,9 @@ class EmbeddedSGLangRuntime:
             candidates.extend(
                 remainder[: _PREDICTIVE_REENTRY_WATCH_LIMIT - len(candidates)]
             )
+        candidates = candidates[:_PREDICTIVE_REENTRY_WATCH_LIMIT]
+        if not candidates:
+            return False
 
         native_inflight_bytes = 0
         backend = getattr(self, "backend", None)
@@ -19240,7 +19303,16 @@ class EmbeddedSGLangRuntime:
                 + self.config.predictive_commit_guard_ms
                 + self.config.predictive_prefetch_desired_lead_ms
             )
-            if invocation.state == InvocationState.WAIT_TOOL:
+            if invocation.invocation_id in service_rank_by_invocation:
+                probability = 1.0
+                urgency = 2.0 - (
+                    0.01
+                    * min(
+                        service_rank_by_invocation[invocation.invocation_id],
+                        99,
+                    )
+                )
+            elif invocation.state == InvocationState.WAIT_TOOL:
                 timing = prediction.action_timing(
                     "prefetch_gpu", operational_tau_ms
                 )
@@ -19293,10 +19365,18 @@ class EmbeddedSGLangRuntime:
         if not eligible:
             return False
         selected = list(self._select_predictive_reentry_targets(eligible))
+
+        def target_event_kind(item: tuple[Any, ...]) -> str:
+            return (
+                "scheduled_service"
+                if item[4].invocation_id in service_rank_by_invocation
+                else "predicted_latest_start"
+            )
+
         triggers = tuple(
             (
                 "reentry",
-                "predicted_latest_start",
+                target_event_kind(item),
                 item[4].invocation_id,
                 graph.contexts[item[4].context_id].epoch,
             )
@@ -19342,13 +19422,14 @@ class EmbeddedSGLangRuntime:
                 item[4].context_id,
                 graph.contexts[item[4].context_id].epoch,
                 page_index.context_revision(item[4].context_id),
+                target_event_kind(item),
             )
             for item in selected
         ) + (("risk_bucket", risk_bucket),)
         triggers = tuple(
             (
                 "reentry",
-                "predicted_latest_start",
+                target_event_kind(item),
                 item[4].invocation_id,
                 graph.contexts[item[4].context_id].epoch,
             )
@@ -19465,6 +19546,10 @@ class EmbeddedSGLangRuntime:
         for item in selected:
             invocation = item[4]
             selected_transfer = item[7]
+            target_kind = target_event_kind(item)
+            self._joint_predictive_counts[
+                f"predicted_reentry_target:{target_kind}"
+            ] += 1
             self.audit.emit(
                 "predictive_reentry_risk_published",
                 now_ms,
@@ -19472,6 +19557,10 @@ class EmbeddedSGLangRuntime:
                 context_id=invocation.context_id,
                 context_epoch=graph.contexts[invocation.context_id].epoch,
                 context_revision=page_index.context_revision(invocation.context_id),
+                target_kind=target_kind,
+                execution_seed_rank=service_rank_by_invocation.get(
+                    invocation.invocation_id
+                ),
                 timing_probability=item[1],
                 transfer_source=getattr(
                     selected_transfer, "source", "test_or_legacy"

@@ -11666,9 +11666,14 @@ def test_predicted_reentry_publishes_one_bounded_risk_delta_without_beneficiary(
     page_index = SimpleNamespace(
         revision=19,
         topology_revision=7,
-        has_context=lambda context_id: context_id == "context",
-        context_epoch=lambda _context_id: 3,
-        context_revision=lambda _context_id: 11,
+        has_context=lambda context_id: context_id
+        in {"context", "child-context"},
+        context_epoch=lambda context_id: (
+            3 if context_id == "context" else 0
+        ),
+        context_revision=lambda context_id: (
+            11 if context_id == "context" else 12
+        ),
         context_physical_summary=lambda _context_id: summary,
     )
     timing = SimpleNamespace(
@@ -11707,11 +11712,31 @@ def test_predicted_reentry_publishes_one_bounded_risk_delta_without_beneficiary(
         h2d_copy_bytes=400,
         evidence_kind="prefetch_target_preview",
     )
+    child_overlay = ActionLocalPhysicalOverlay(
+        context_id="child-context",
+        context_epoch=0,
+        context_revision=12,
+        page_revision=19,
+        topology_revision=7,
+        generation_fingerprint="child-generation",
+        shape_fingerprint="prefetch:400:n2",
+        exclusive_reclaimable_bytes=0,
+        d2h_copy_bytes=0,
+        extent_count=2,
+        cross_context_bytes=0,
+        locked_bytes=0,
+        owner_context_ids=("child-context",),
+        blocker_codes=(),
+        native_loading=False,
+        captured_ts_ms=1_000.0,
+        h2d_copy_bytes=400,
+        evidence_kind="prefetch_target_preview",
+    )
     overlay_batch = ActionLocalPhysicalOverlayBatch(
         beneficiary_risk_signature=(),
         opportunity=None,
-        overlays=(overlay,),
-        reentry_context_ids=("context",),
+        overlays=(child_overlay, overlay),
+        reentry_context_ids=("child-context", "context"),
     )
     runtime.controller = SimpleNamespace(
         graph=SimpleNamespace(
@@ -11766,7 +11791,21 @@ def test_predicted_reentry_publishes_one_bounded_risk_delta_without_beneficiary(
         hbm_used_bytes=800,
         host_free_bytes=1_000,
     )
-    runtime._latest_bounded_seed_runnable = ()
+    runtime._latest_bounded_seed_runnable = (
+        RunnableInvocation(
+            request_id="child-request",
+            workflow_id="workflow",
+            invocation_id="child",
+            context_id="child-context",
+            context_epoch=0,
+            submitted_ts_ms=90.0,
+            startup_bytes=400,
+            causal_class="engine_waiting:fresh",
+        ),
+    )
+    runtime._latest_bounded_seed_priority_request_ids = (
+        "child-request",
+    )
     runtime._last_policy_runtime_runnable = ()
     runtime._last_policy_fairness_accounts = ()
     runtime._last_policy_external_workflow_charges = ()
@@ -11823,11 +11862,18 @@ def test_predicted_reentry_publishes_one_bounded_risk_delta_without_beneficiary(
     assert delta.risk_evaluation_requested
     assert delta.observed_seed_beneficiary is None
     assert delta.risk_trigger_signature == (
+        ("reentry", "scheduled_service", "child", 0),
         ("reentry", "predicted_latest_start", "invocation", 3),
     )
     assert delta.action_local_overlay_batch is overlay_batch
     assert set(delta.frontier_predictions) == {"invocation", "child"}
     assert set(delta.frontier_features) == {"invocation", "child"}
+    assert runtime._joint_predictive_counts[
+        "predicted_reentry_target:scheduled_service"
+    ] == 1
+    assert runtime._joint_predictive_counts[
+        "predicted_reentry_target:predicted_latest_start"
+    ] == 1
 
 
 def test_predicted_reentry_waits_for_native_transfer_before_curve_query():

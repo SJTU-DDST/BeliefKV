@@ -833,6 +833,93 @@ def test_schedule_support_does_not_require_boundary_prediction() -> None:
     assert reasons == ()
 
 
+def test_scheduled_service_prefetch_uses_decode_demand_support() -> None:
+    observer = PredictiveRiskShadowObserver(
+        GPUServiceCurveModel(minimum_support=1)
+    )
+    prediction = _prediction()
+    package = PredictiveActionPackage(
+        package_id="scheduled-service-prefetch",
+        action=PredictiveActionKind.PREFETCH_GPU,
+        context_ids=("context-target",),
+        target_context_id="context-target",
+    )
+    eligibility = PredictiveEligibility(
+        source_snapshot_id="snapshot",
+        prefetch_targets=(
+            PrefetchTarget(
+                prediction.invocation_id,
+                "context-target",
+                InvocationState.READY.value,
+                128,
+            ),
+        ),
+        prepare_host_victims=(),
+        probe_ms=0.0,
+    )
+
+    supported, support, reasons = observer._package_prediction_support(
+        package,
+        eligibility=eligibility,
+        predictions={prediction.invocation_id: prediction},
+    )
+
+    assert supported is True
+    assert support == (
+        ("remaining_decode_demand", "exact"),
+        ("future_kv_growth", "exact"),
+    )
+    assert reasons == ()
+
+
+def test_scheduled_service_prefetch_uses_bounded_seed_timing_window() -> None:
+    observer = PredictiveRiskShadowObserver(
+        GPUServiceCurveModel(minimum_support=1),
+        config=PredictiveRiskShadowConfig(
+            transfer_p95_safety_factor=1.25,
+            transfer_commit_guard_ms=25.0,
+            scheduled_service_lead_ms=100.0,
+        ),
+    )
+    prediction = _prediction()
+    package = PredictiveActionPackage(
+        package_id="scheduled-service-prefetch",
+        action=PredictiveActionKind.PREFETCH_GPU,
+        context_ids=("context-target",),
+        target_context_id="context-target",
+    )
+    eligibility = PredictiveEligibility(
+        source_snapshot_id="snapshot",
+        prefetch_targets=(
+            PrefetchTarget(
+                prediction.invocation_id,
+                "context-target",
+                InvocationState.READY.value,
+                128,
+            ),
+        ),
+        prepare_host_victims=(),
+        probe_ms=0.0,
+    )
+
+    timing = observer._action_timing_evidence(
+        package,
+        belief=None,
+        evaluation=None,
+        eligibility=eligibility,
+        predictions={prediction.invocation_id: prediction},
+        physicalizer=SimpleNamespace(
+            package_transfer_duration_ms=lambda _package: 80.0
+        ),
+    )
+
+    assert timing is not None
+    assert timing.causal_slack_probability == 1.0
+    assert timing.required_wait_ms == 125.0
+    assert timing.conservative_remaining_window_ms == 225.0
+    assert timing.semantics == "release_within_transfer"
+
+
 def _tool_wait_belief(
     value: float,
     *,
