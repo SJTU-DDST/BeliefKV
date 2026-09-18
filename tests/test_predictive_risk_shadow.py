@@ -2193,6 +2193,119 @@ def test_eligibility_reads_nested_runtime_rccg_snapshot() -> None:
     assert eligibility.prefetch_targets[0].context_id == "ctx-target"
 
 
+def test_scheduled_service_trigger_excludes_competing_parked_parent() -> None:
+    graph = _graph()
+    graph.workflows["workflow-target"].invocation_ids.add(
+        "invocation-child"
+    )
+    graph.contexts["ctx-child"] = ContextRecord(
+        "workflow-target",
+        "ctx-child",
+        0,
+        0.0,
+        100.0,
+        invocation_ids={"invocation-child"},
+    )
+    graph.invocations["invocation-child"] = InvocationRecord(
+        workflow_id="workflow-target",
+        invocation_id="invocation-child",
+        context_id="ctx-child",
+        agent_definition_id="coder",
+        agent_instance_id="coder-child",
+        state=InvocationState.READY,
+        created_ts_ms=10.0,
+        updated_ts_ms=100.0,
+        parent_invocation_id="invocation-target",
+        return_target_id="invocation-target",
+    )
+    graph._graph_version += 1
+    base = _attach_graph(
+        _input(capacity=1_000, reserved=0),
+        graph,
+    )
+    metadata = dict(base.optional_metadata)
+    metadata["beliefkv_predictive_risk_trigger"] = MetadataValue(
+        MetadataSource.OBSERVED,
+        {
+            "events": [
+                [
+                    "reentry",
+                    "predicted_latest_start",
+                    "invocation-target",
+                    0,
+                ],
+                [
+                    "reentry",
+                    "scheduled_service",
+                    "invocation-child",
+                    0,
+                ],
+            ]
+        },
+        "test",
+    )
+    metadata["beliefkv_action_local_physical_overlay"] = MetadataValue(
+        MetadataSource.OBSERVED,
+        {
+            "overlays": [
+                {
+                    "context_id": "ctx-target",
+                    "context_epoch": 0,
+                    "page_revision": 17,
+                    "topology_revision": 11,
+                    "generation_fingerprint": "parent-generation",
+                    "shape_fingerprint": "parent-shape",
+                    "exclusive_reclaimable_bytes": 0,
+                    "d2h_copy_bytes": 0,
+                    "h2d_copy_bytes": 400,
+                    "extent_count": 2,
+                    "cross_context_bytes": 0,
+                    "locked_bytes": 0,
+                    "owner_context_ids": ["ctx-target"],
+                    "blocker_codes": [],
+                    "native_loading": False,
+                    "captured_ts_ms": 100.0,
+                },
+                {
+                    "context_id": "ctx-child",
+                    "context_epoch": 0,
+                    "page_revision": 17,
+                    "topology_revision": 11,
+                    "generation_fingerprint": "child-generation",
+                    "shape_fingerprint": "child-shape",
+                    "exclusive_reclaimable_bytes": 0,
+                    "d2h_copy_bytes": 0,
+                    "h2d_copy_bytes": 128,
+                    "extent_count": 1,
+                    "cross_context_bytes": 0,
+                    "locked_bytes": 0,
+                    "owner_context_ids": ["ctx-child"],
+                    "blocker_codes": [],
+                    "native_loading": False,
+                    "captured_ts_ms": 100.0,
+                },
+            ]
+        },
+        "test",
+    )
+    policy_input = replace(
+        base,
+        physical_kv=replace(base.physical_kv, bundles=()),
+        optional_metadata=metadata,
+    )
+
+    eligibility = PredictiveEligibilityIndex().probe(policy_input)
+
+    assert eligibility.prefetch_targets == (
+        PrefetchTarget(
+            "invocation-child",
+            "ctx-child",
+            InvocationState.READY.value,
+            128,
+        ),
+    )
+
+
 def _radix_extent(
     extent_id: str,
     owners: tuple[str, ...],
