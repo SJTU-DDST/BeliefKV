@@ -1781,6 +1781,52 @@ def _predictive_causal_certificate(controller, model_version):
     }
 
 
+def _predictive_prefetch_intent(
+    controller,
+    *,
+    intent_id="intent-prefetch",
+    context_id="ctx",
+    invocation_id="inv",
+    generated_ts_ms=100.0,
+    remaining_window_low_ms=1_000.0,
+    transfer_p95_ms=100.0,
+    expected_benefit_ms=5.0,
+):
+    return PredictiveIntent(
+        intent_id=intent_id,
+        source_joint_plan_id="source-plan",
+        source_snapshot_id="snapshot",
+        package_id=f"package-{intent_id}",
+        model_version="frontier-v1",
+        action=PredictiveActionKind.PREFETCH_GPU,
+        invocation_id=invocation_id,
+        expected_invocation_state="wait_tool",
+        context_id=context_id,
+        context_epoch=0,
+        generated_ts_ms=generated_ts_ms,
+        remaining_window_low_ms=remaining_window_low_ms,
+        transfer_p95_ms=transfer_p95_ms,
+        target_bytes_hint=200,
+        min_reclaimable_bytes=0,
+        max_cross_context_bytes=0,
+        max_copy_bytes=200,
+        causal_certificate=_predictive_causal_certificate(
+            controller, "frontier-v1"
+        ),
+        required_prediction_heads=("reentry_window",),
+        prediction_head_support=(("reentry_window", "exact"),),
+        calibration_coverage=0.95,
+        future_hbm_feasibility_probability=1.0,
+        expected_benefit_ms=expected_benefit_ms,
+        shape_fingerprint="prefetch-not-shape-certified",
+        predicted_extent_count=0,
+        maximum_transfer_ms=transfer_p95_ms,
+        maximum_stall_ms=0.0,
+        morphology_slack_ms=0.0,
+        target_reentry_context_epoch=1,
+    )
+
+
 def _predictive_beneficiary_evidence():
     return {
         "beneficiary_request_id": "request-beneficiary",
@@ -7358,6 +7404,25 @@ class SGLangBackendTest(unittest.TestCase):
                 predictor_enabled=False,
             )
         )
+        runtime.controller.process_runtime_events(
+            (
+                RuntimeEvent(
+                    "prefetch-workflow",
+                    1.0,
+                    RuntimeEventKind.WORKFLOW_START,
+                    "workflow",
+                ),
+                RuntimeEvent(
+                    "prefetch-invocation",
+                    2.0,
+                    RuntimeEventKind.INVOCATION_CREATE,
+                    "workflow",
+                    invocation_id="inv",
+                    context_id="ctx",
+                    context_epoch=0,
+                ),
+            )
+        )
         request = RunnableInvocation(
             request_id="request",
             workflow_id="workflow",
@@ -7378,24 +7443,157 @@ class SGLangBackendTest(unittest.TestCase):
         runtime._online_joint_counts = Counter()
         runtime._joint_predictive_counts = Counter()
         runtime._joint_shadow_timing_samples = {}
-        runtime._latest_predictive_intent = SimpleNamespace(intent_id="intent")
+        runtime.audit = _AuditRecorder()
+        runtime._latest_predictive_intent = None
+        runtime._predictive_prefetch_watches = {}
+        runtime._active_predictive_prefetch_watch_key = None
         runtime._current_predictive_residency_commit = None
-        runtime._predictive_prefetch_retry_not_before_ms = 1_000.0
         runtime._physical_commit_predictive_intent = mock.Mock(
             side_effect=lambda _plan, decision, **_kwargs: decision
         )
+        intent = _predictive_prefetch_intent(
+            runtime.controller,
+            remaining_window_low_ms=1_000.0,
+            transfer_p95_ms=100.0,
+        )
+        runtime._register_predictive_prefetch_watch(
+            intent,
+            now_ms=100.0,
+            source_worker_sequence=1,
+        )
+        deadline_ms = runtime._predictive_prefetch_watches[
+            ("ctx", 1)
+        ].latest_start_ts_ms
 
-        runtime._safe_point_seed_decision(now_ms=100.0)
+        runtime._safe_point_seed_decision(now_ms=deadline_ms - 1.0)
 
         runtime._physical_commit_predictive_intent.assert_not_called()
-        self.assertEqual(
-            runtime._predictive_prefetch_retry_not_before_ms,
-            1_000.0,
-        )
+        self.assertIsNone(runtime._latest_predictive_intent)
 
-        runtime._safe_point_seed_decision(now_ms=1_000.0)
+        runtime._safe_point_seed_decision(now_ms=deadline_ms)
 
         runtime._physical_commit_predictive_intent.assert_called_once()
+        self.assertEqual(runtime._latest_predictive_intent, intent)
+
+    def test_predictive_prefetch_watches_activate_earliest_deadline_first(self):
+        runtime = EmbeddedSGLangRuntime.__new__(EmbeddedSGLangRuntime)
+        runtime.config = BeliefKVConfig(
+            hbm_capacity_bytes=1_000,
+            host_capacity_bytes=2_000,
+            reserve_hbm_bytes=0,
+        )
+        runtime.audit = _AuditRecorder()
+        runtime._joint_predictive_counts = Counter()
+        runtime._latest_predictive_intent = None
+        runtime._predictive_prefetch_watches = {}
+        runtime._active_predictive_prefetch_watch_key = None
+        controller = BeliefKVController(
+            BeliefKVConfig(
+                hbm_capacity_bytes=1_000,
+                host_capacity_bytes=2_000,
+                reserve_hbm_bytes=0,
+                predictor_enabled=False,
+            )
+        )
+        far = _predictive_prefetch_intent(
+            controller,
+            intent_id="far",
+            context_id="ctx-far",
+            invocation_id="inv-far",
+            remaining_window_low_ms=10_000.0,
+        )
+        urgent = _predictive_prefetch_intent(
+            controller,
+            intent_id="urgent",
+            context_id="ctx-urgent",
+            invocation_id="inv-urgent",
+            remaining_window_low_ms=500.0,
+        )
+        runtime._register_predictive_prefetch_watch(
+            far, now_ms=100.0, source_worker_sequence=1
+        )
+        runtime._register_predictive_prefetch_watch(
+            urgent, now_ms=110.0, source_worker_sequence=2
+        )
+        urgent_deadline = runtime._predictive_prefetch_watches[
+            ("ctx-urgent", 1)
+        ].latest_start_ts_ms
+
+        assert runtime._activate_due_predictive_prefetch_watch(
+            now_ms=urgent_deadline - 1.0
+        ) is None
+        assert runtime._activate_due_predictive_prefetch_watch(
+            now_ms=urgent_deadline
+        ) == urgent
+        assert ("ctx-far", 1) in runtime._predictive_prefetch_watches
+
+    def test_predictive_prefetch_watch_requires_refresh_before_long_deadline(self):
+        runtime = EmbeddedSGLangRuntime.__new__(EmbeddedSGLangRuntime)
+        runtime.config = BeliefKVConfig(
+            hbm_capacity_bytes=1_000,
+            host_capacity_bytes=2_000,
+            reserve_hbm_bytes=0,
+        )
+        runtime.audit = _AuditRecorder()
+        runtime._joint_predictive_counts = Counter()
+        runtime._latest_predictive_intent = None
+        runtime._predictive_prefetch_watches = {}
+        runtime._active_predictive_prefetch_watch_key = None
+        runtime._predictive_reentry_watch_invocation_ids = set()
+        runtime._last_predictive_reentry_watch_poll_ms = 1.0
+        runtime._last_predictive_reentry_risk_signature = ("old",)
+        controller = BeliefKVController(
+            BeliefKVConfig(
+                hbm_capacity_bytes=1_000,
+                host_capacity_bytes=2_000,
+                reserve_hbm_bytes=0,
+                predictor_enabled=False,
+            )
+        )
+        old = _predictive_prefetch_intent(
+            controller,
+            intent_id="old",
+            remaining_window_low_ms=1_200_000.0,
+        )
+        runtime._register_predictive_prefetch_watch(
+            old, now_ms=100.0, source_worker_sequence=1
+        )
+        key = runtime._predictive_prefetch_watch_key(old)
+        refresh_ts_ms = runtime._predictive_prefetch_watches[
+            key
+        ].next_refresh_ts_ms
+        assert refresh_ts_ms is not None
+
+        assert runtime._activate_due_predictive_prefetch_watch(
+            now_ms=refresh_ts_ms
+        ) is None
+        stale_watch = runtime._predictive_prefetch_watches[key]
+        assert stale_watch.fresh_after_ts_ms == refresh_ts_ms
+        assert old.invocation_id in (
+            runtime._predictive_reentry_watch_invocation_ids
+        )
+        assert runtime._last_predictive_reentry_watch_poll_ms is None
+        assert runtime._last_predictive_reentry_risk_signature is None
+        assert runtime._activate_due_predictive_prefetch_watch(
+            now_ms=stale_watch.latest_start_ts_ms
+        ) is None
+
+        refreshed = _predictive_prefetch_intent(
+            controller,
+            intent_id="refreshed",
+            generated_ts_ms=refresh_ts_ms + 1.0,
+            remaining_window_low_ms=20_000.0,
+        )
+        runtime._register_predictive_prefetch_watch(
+            refreshed,
+            now_ms=refresh_ts_ms + 1.0,
+            source_worker_sequence=2,
+        )
+        refreshed_watch = runtime._predictive_prefetch_watches[key]
+        assert refreshed_watch.fresh_after_ts_ms is None
+        assert runtime._activate_due_predictive_prefetch_watch(
+            now_ms=refreshed_watch.latest_start_ts_ms
+        ) == refreshed
 
     def test_predictive_schedule_atomically_reorders_and_admits(self):
         controller = BeliefKVController(
@@ -8807,44 +9005,22 @@ class SGLangBackendTest(unittest.TestCase):
         ]
         self.assertIn("future_hbm_confidence", rejected[-1]["reasons"])
 
-        runtime._latest_predictive_intent = replace(
-            runtime._latest_predictive_intent
-            or PredictiveIntent(
-                intent_id="intent-prefetch-early",
-                source_joint_plan_id="source-plan",
-                source_snapshot_id="snapshot",
-                package_id="package-prefetch-early",
-                model_version="frontier-v1",
-                action=PredictiveActionKind.PREFETCH_GPU,
-                invocation_id="inv",
-                expected_invocation_state="wait_tool",
-                context_id="ctx",
-                context_epoch=0,
-                generated_ts_ms=100.0,
-                remaining_window_low_ms=10_000.0,
-                transfer_p95_ms=20.0,
-                target_bytes_hint=200,
-                min_reclaimable_bytes=0,
-                max_cross_context_bytes=0,
-                max_copy_bytes=200,
-                causal_certificate=_predictive_causal_certificate(
-                    controller, "frontier-v1"
-                ),
-                required_prediction_heads=("reentry_window",),
-                prediction_head_support=(("reentry_window", "exact"),),
-                calibration_coverage=0.95,
-                future_hbm_feasibility_probability=1.0,
-                expected_benefit_ms=5.0,
-                shape_fingerprint="prefetch-not-shape-certified",
-                predicted_extent_count=0,
-                maximum_transfer_ms=24.0,
-                maximum_stall_ms=0.0,
-                morphology_slack_ms=0.0,
-                target_reentry_context_epoch=1,
-            ),
-            future_hbm_feasibility_probability=1.0,
+        early_intent = _predictive_prefetch_intent(
+            controller,
+            intent_id="intent-prefetch-early",
+            remaining_window_low_ms=10_000.0,
+            transfer_p95_ms=20.0,
         )
-        runtime._predictive_prefetch_retry_not_before_ms = None
+        runtime._predictive_prefetch_watches = {}
+        runtime._active_predictive_prefetch_watch_key = None
+        runtime._register_predictive_prefetch_watch(
+            early_intent,
+            now_ms=110.0,
+            source_worker_sequence=1,
+        )
+        watch_key = runtime._predictive_prefetch_watch_key(early_intent)
+        runtime._latest_predictive_intent = early_intent
+        runtime._active_predictive_prefetch_watch_key = watch_key
         unchanged = runtime._physical_commit_predictive_intent(
             plan,
             decision,
@@ -8852,9 +9028,11 @@ class SGLangBackendTest(unittest.TestCase):
         )
 
         self.assertEqual(unchanged, decision)
-        self.assertIsNotNone(runtime._latest_predictive_intent)
+        self.assertIsNone(runtime._latest_predictive_intent)
         self.assertGreater(
-            runtime._predictive_prefetch_retry_not_before_ms,
+            runtime._predictive_prefetch_watches[
+                watch_key
+            ].latest_start_ts_ms,
             110.0,
         )
         deferred = [

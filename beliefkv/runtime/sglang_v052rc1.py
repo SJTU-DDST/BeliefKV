@@ -635,6 +635,18 @@ class _PredictiveResidencyCommit:
 
 
 @dataclass(frozen=True)
+class _PredictivePrefetchWatch:
+    """A semantic reentry deadline that owns no physical resources."""
+
+    intent: PredictiveIntent
+    latest_start_ts_ms: float
+    next_refresh_ts_ms: float | None
+    fresh_after_ts_ms: float | None
+    registered_ts_ms: float
+    source_worker_sequence: int
+
+
+@dataclass(frozen=True)
 class _PredictiveOverlaySeedPlan:
     plan_id: str
     residency: tuple[Any, ...] = ()
@@ -2673,7 +2685,10 @@ class EmbeddedSGLangRuntime:
             tuple[str, int, SemanticResidencyTarget, PhysicalBundlePreview] | None
         ) = None
         self._latest_predictive_intent: PredictiveIntent | None = None
-        self._predictive_prefetch_retry_not_before_ms: float | None = None
+        self._predictive_prefetch_watches: dict[
+            tuple[str, int], _PredictivePrefetchWatch
+        ] = {}
+        self._active_predictive_prefetch_watch_key: tuple[str, int] | None = None
         self._current_predictive_residency_commit: (
             _PredictiveResidencyCommit | None
         ) = None
@@ -20248,6 +20263,8 @@ class EmbeddedSGLangRuntime:
         self._latest_observed_policy_input = None
         self._latest_action_local_overlay_batch = None
         self._latest_predictive_intent = None
+        getattr(self, "_predictive_prefetch_watches", {}).clear()
+        self._active_predictive_prefetch_watch_key = None
         self._observed_seed_hint_publication_initialized = False
         self._last_published_observed_seed_hint_signature = None
         self._observed_seed_hint_risk_initialized = False
@@ -21321,6 +21338,334 @@ class EmbeddedSGLangRuntime:
             }
         return summary
 
+    @staticmethod
+    def _is_predictive_prefetch_intent(intent: PredictiveIntent | None) -> bool:
+        return bool(
+            intent is not None
+            and getattr(intent, "action", None)
+            in {
+                PredictiveActionKind.PREFETCH_GPU,
+                PredictiveActionKind.PARTIAL_PREFETCH_GPU,
+                PredictiveActionKind.RECLAIM_AND_PREFETCH,
+            }
+        )
+
+    @staticmethod
+    def _predictive_prefetch_watch_key(
+        intent: PredictiveIntent,
+    ) -> tuple[str, int]:
+        return (
+            intent.context_id,
+            int(
+                intent.target_reentry_context_epoch
+                if intent.target_reentry_context_epoch is not None
+                else intent.context_epoch
+            ),
+        )
+
+    def _predictive_prefetch_latest_start_ts_ms(
+        self,
+        intent: PredictiveIntent,
+    ) -> float:
+        transfer_bound_ms = max(
+            intent.transfer_p95_ms,
+            intent.maximum_transfer_ms,
+        )
+        return max(
+            intent.generated_ts_ms,
+            intent.generated_ts_ms
+            + intent.remaining_window_low_ms
+            - transfer_bound_ms
+            - self.config.predictive_commit_guard_ms
+            - self.config.predictive_prefetch_desired_lead_ms,
+        )
+
+    def _predictive_prefetch_next_refresh_ts_ms(
+        self,
+        *,
+        now_ms: float,
+        latest_start_ts_ms: float,
+    ) -> float | None:
+        remaining_ms = latest_start_ts_ms - now_ms
+        freshness_lead_ms = max(
+            1_000.0,
+            min(
+                30_000.0,
+                0.5 * self.config.predictive_intent_max_age_ms,
+            ),
+        )
+        if remaining_ms <= freshness_lead_ms:
+            return None
+        refresh_interval_ms = min(
+            300_000.0,
+            max(2_000.0, 0.5 * remaining_ms),
+        )
+        return min(
+            now_ms + refresh_interval_ms,
+            latest_start_ts_ms - freshness_lead_ms,
+        )
+
+    def _request_predictive_prefetch_watch_refresh(
+        self,
+        watch: _PredictivePrefetchWatch,
+        *,
+        now_ms: float,
+    ) -> _PredictivePrefetchWatch:
+        invocation_id = watch.intent.invocation_id
+        watches = getattr(
+            self, "_predictive_reentry_watch_invocation_ids", None
+        )
+        if watches is None:
+            watches = set()
+            self._predictive_reentry_watch_invocation_ids = watches
+        watches.add(invocation_id)
+        self._last_predictive_reentry_watch_poll_ms = None
+        self._last_predictive_reentry_risk_signature = None
+        refreshed = replace(
+            watch,
+            next_refresh_ts_ms=self._predictive_prefetch_next_refresh_ts_ms(
+                now_ms=now_ms,
+                latest_start_ts_ms=watch.latest_start_ts_ms,
+            ),
+            fresh_after_ts_ms=now_ms,
+        )
+        self._joint_predictive_counts["prefetch_watch_refresh_requested"] += 1
+        self.audit.emit(
+            "predictive_prefetch_watch_refresh_requested",
+            now_ms,
+            audit_level="correctness",
+            intent_id=watch.intent.intent_id,
+            invocation_id=invocation_id,
+            context_id=watch.intent.context_id,
+            target_reentry_context_epoch=(
+                self._predictive_prefetch_watch_key(watch.intent)[1]
+            ),
+            latest_start_ts_ms=watch.latest_start_ts_ms,
+            prediction_age_ms=max(
+                0.0, now_ms - watch.intent.generated_ts_ms
+            ),
+        )
+        return refreshed
+
+    def _register_predictive_prefetch_watch(
+        self,
+        intent: PredictiveIntent,
+        *,
+        now_ms: float,
+        source_worker_sequence: int,
+    ) -> bool:
+        if not self._is_predictive_prefetch_intent(intent):
+            raise ValueError("prefetch watch requires a prefetch intent")
+        watches = getattr(self, "_predictive_prefetch_watches", None)
+        if watches is None:
+            watches = {}
+            self._predictive_prefetch_watches = watches
+        key = self._predictive_prefetch_watch_key(intent)
+        previous = watches.get(key)
+        if (
+            previous is not None
+            and previous.intent.intent_id == intent.intent_id
+        ):
+            return False
+        if (
+            previous is not None
+            and intent.generated_ts_ms < previous.intent.generated_ts_ms
+        ):
+            self._joint_predictive_counts[
+                "prefetch_watch_older_update_ignored"
+            ] += 1
+            return False
+        latest_start_ts_ms = self._predictive_prefetch_latest_start_ts_ms(
+            intent
+        )
+        watches[key] = _PredictivePrefetchWatch(
+            intent=intent,
+            latest_start_ts_ms=latest_start_ts_ms,
+            next_refresh_ts_ms=self._predictive_prefetch_next_refresh_ts_ms(
+                now_ms=now_ms,
+                latest_start_ts_ms=latest_start_ts_ms,
+            ),
+            fresh_after_ts_ms=None,
+            registered_ts_ms=now_ms,
+            source_worker_sequence=source_worker_sequence,
+        )
+        self._joint_predictive_counts[
+            (
+                "prefetch_watch_updated"
+                if previous is not None
+                else "prefetch_watch_registered"
+            )
+        ] += 1
+        self.audit.emit(
+            "predictive_prefetch_watch_registered",
+            now_ms,
+            audit_level="correctness",
+            intent_id=intent.intent_id,
+            action=intent.action.value,
+            context_id=intent.context_id,
+            context_epoch=intent.context_epoch,
+            target_reentry_context_epoch=key[1],
+            latest_start_ts_ms=latest_start_ts_ms,
+            predicted_reentry_ts_ms=(
+                intent.generated_ts_ms + intent.remaining_window_low_ms
+            ),
+            next_refresh_ts_ms=watches[key].next_refresh_ts_ms,
+            source_worker_sequence=source_worker_sequence,
+            replaced_intent_id=(
+                previous.intent.intent_id if previous is not None else None
+            ),
+            watch_count=len(watches),
+        )
+        return True
+
+    def _remove_predictive_prefetch_watch(
+        self,
+        intent: PredictiveIntent,
+        *,
+        now_ms: float,
+        reason: str,
+    ) -> bool:
+        watches = getattr(self, "_predictive_prefetch_watches", None)
+        if not watches:
+            return False
+        key = self._predictive_prefetch_watch_key(intent)
+        watch = watches.get(key)
+        if watch is None or watch.intent.intent_id != intent.intent_id:
+            return False
+        del watches[key]
+        if getattr(
+            self, "_active_predictive_prefetch_watch_key", None
+        ) == key:
+            self._active_predictive_prefetch_watch_key = None
+        self._joint_predictive_counts[f"prefetch_watch_removed_{reason}"] += 1
+        self.audit.emit(
+            "predictive_prefetch_watch_removed",
+            now_ms,
+            audit_level="correctness",
+            intent_id=intent.intent_id,
+            context_id=intent.context_id,
+            target_reentry_context_epoch=key[1],
+            reason=reason,
+            watch_count=len(watches),
+        )
+        return True
+
+    def _activate_due_predictive_prefetch_watch(
+        self,
+        *,
+        now_ms: float,
+    ) -> PredictiveIntent | None:
+        current = getattr(self, "_latest_predictive_intent", None)
+        if current is not None and not self._is_predictive_prefetch_intent(current):
+            return current
+        watches = getattr(self, "_predictive_prefetch_watches", None) or {}
+        graph = getattr(getattr(self, "controller", None), "graph", None)
+        for key, watch in tuple(watches.items()):
+            invocation = (
+                graph.invocations.get(watch.intent.invocation_id)
+                if graph is not None
+                else None
+            )
+            context = (
+                graph.contexts.get(watch.intent.context_id)
+                if graph is not None
+                else None
+            )
+            if graph is not None and (
+                invocation is None
+                or invocation.state.terminal
+                or context is None
+                or context.epoch != watch.intent.context_epoch
+            ):
+                del watches[key]
+                self._joint_predictive_counts[
+                    "prefetch_watch_removed_context_invalid"
+                ] += 1
+                continue
+            if (
+                now_ms - watch.latest_start_ts_ms
+                > self.config.predictive_intent_max_age_ms
+            ):
+                del watches[key]
+                self._joint_predictive_counts[
+                    "prefetch_watch_removed_deadline_expired"
+                ] += 1
+                continue
+            if (
+                watch.next_refresh_ts_ms is not None
+                and watch.next_refresh_ts_ms <= now_ms
+            ):
+                watches[key] = self._request_predictive_prefetch_watch_refresh(
+                    watch,
+                    now_ms=now_ms,
+                )
+        due = tuple(
+            watch
+            for watch in watches.values()
+            if watch.latest_start_ts_ms <= now_ms
+            and (
+                watch.fresh_after_ts_ms is None
+                or watch.intent.generated_ts_ms >= watch.fresh_after_ts_ms
+            )
+            and now_ms - watch.intent.generated_ts_ms
+            <= self.config.predictive_intent_max_age_ms
+        )
+        if not due:
+            if self._is_predictive_prefetch_intent(current):
+                self._latest_predictive_intent = None
+                self._active_predictive_prefetch_watch_key = None
+            return None
+        selected = min(
+            due,
+            key=lambda watch: (
+                watch.latest_start_ts_ms,
+                -(
+                    watch.intent.expected_benefit_ms
+                    / max(1, watch.intent.target_bytes_hint)
+                ),
+                watch.intent.context_id,
+            ),
+        )
+        key = self._predictive_prefetch_watch_key(selected.intent)
+        if (
+            current is None
+            or current.intent_id != selected.intent.intent_id
+        ):
+            self._joint_predictive_counts["prefetch_watch_activated"] += 1
+            self.audit.emit(
+                "predictive_prefetch_watch_activated",
+                now_ms,
+                audit_level="correctness",
+                intent_id=selected.intent.intent_id,
+                context_id=selected.intent.context_id,
+                target_reentry_context_epoch=key[1],
+                latest_start_ts_ms=selected.latest_start_ts_ms,
+                activation_lag_ms=max(
+                    0.0, now_ms - selected.latest_start_ts_ms
+                ),
+                ready_watch_count=len(due),
+                watch_count=len(watches),
+            )
+        self._latest_predictive_intent = selected.intent
+        self._active_predictive_prefetch_watch_key = key
+        return selected.intent
+
+    def _intent_is_active_prefetch_watch(
+        self,
+        intent: PredictiveIntent,
+    ) -> bool:
+        key = self._predictive_prefetch_watch_key(intent)
+        watches = getattr(self, "_predictive_prefetch_watches", None) or {}
+        watch = watches.get(key)
+        return bool(
+            watch is not None
+            and watch.intent.intent_id == intent.intent_id
+            and getattr(
+                self, "_active_predictive_prefetch_watch_key", None
+            )
+            == key
+        )
+
     def _predictive_live_prepare_certificate_reasons(
         self,
         certificate: Mapping[str, object],
@@ -21587,7 +21932,33 @@ class EmbeddedSGLangRuntime:
                                 or ""
                             ),
                         )
-                next_intent = candidate_intent if not publish_reasons else None
+                prefetch_candidate = self._is_predictive_prefetch_intent(
+                    candidate_intent
+                )
+                watch_registered = False
+                if candidate_intent is not None and not publish_reasons:
+                    if prefetch_candidate:
+                        watch_registered = (
+                            self._register_predictive_prefetch_watch(
+                                candidate_intent,
+                                now_ms=observation.ts_ms,
+                                source_worker_sequence=result.sequence,
+                            )
+                        )
+                        next_intent = (
+                            previous_intent
+                            if previous_intent is not None
+                            and not self._is_predictive_prefetch_intent(
+                                previous_intent
+                            )
+                            else None
+                        )
+                    else:
+                        next_intent = candidate_intent
+                elif publish_reasons:
+                    next_intent = previous_intent
+                else:
+                    next_intent = None
                 previous_intent_id = (
                     previous_intent.intent_id
                     if previous_intent is not None
@@ -21598,12 +21969,10 @@ class EmbeddedSGLangRuntime:
                 )
                 intent_changed = previous_intent_id != next_intent_id
                 self._latest_predictive_intent = next_intent
-                if intent_changed:
-                    self._predictive_prefetch_retry_not_before_ms = None
                 if (
                     candidate_intent is not None
                     and not publish_reasons
-                    and intent_changed
+                    and (watch_registered or intent_changed)
                 ):
                     self._joint_predictive_counts["semantic_intent_published"] += 1
                     self.audit.emit(
@@ -21618,10 +21987,6 @@ class EmbeddedSGLangRuntime:
                     self._joint_predictive_counts[
                         "semantic_intent_publish_rejected"
                     ] += 1
-                    if previous_intent is not None:
-                        self._joint_predictive_counts[
-                            "semantic_intent_withdrawn"
-                        ] += 1
                     for reason in publish_reasons:
                         self._joint_predictive_counts[
                             f"semantic_publish_reject_{reason}"
@@ -21640,6 +22005,7 @@ class EmbeddedSGLangRuntime:
                     )
                 elif (
                     candidate_intent is not None
+                    and not watch_registered
                     and not intent_changed
                 ):
                     self._joint_predictive_counts[
@@ -22546,6 +22912,15 @@ class EmbeddedSGLangRuntime:
         if result is None or source is None or result.plan is None:
             self._online_joint_counts["fallback_no_plan"] += 1
             return OnlineJointPlanDecision(None, "no_validated_plan")
+        active_predictive_intent = (
+            self._activate_due_predictive_prefetch_watch(now_ms=now_ms)
+        )
+        due_prefetch_watch = bool(
+            self._is_predictive_prefetch_intent(active_predictive_intent)
+            and self._intent_is_active_prefetch_watch(
+                active_predictive_intent
+            )
+        )
         cached = getattr(self, "_current_online_joint_decision", None)
         reuse = False
         try:
@@ -22567,6 +22942,7 @@ class EmbeddedSGLangRuntime:
                 and now_ms - self._last_joint_decision_ms
                 < _JOINT_DECISION_REUSE_INTERVAL_MS
                 and signature_matches
+                and not due_prefetch_watch
             )
         except Exception:
             reuse = False
@@ -22629,6 +23005,13 @@ class EmbeddedSGLangRuntime:
                     )
                 except Exception as predictive_error:
                     self._current_predictive_residency_commit = None
+                    failed_intent = self._latest_predictive_intent
+                    if self._is_predictive_prefetch_intent(failed_intent):
+                        self._remove_predictive_prefetch_watch(
+                            failed_intent,
+                            now_ms=now_ms,
+                            reason="validation_error",
+                        )
                     self._latest_predictive_intent = None
                     decision = observed_decision
                     self._joint_predictive_counts[
@@ -23297,6 +23680,7 @@ class EmbeddedSGLangRuntime:
 
         age_ms = max(0.0, now_ms - intent.generated_ts_ms)
         remaining_ms = max(0.0, intent.remaining_window_low_ms - age_ms)
+        active_prefetch_watch = self._intent_is_active_prefetch_watch(intent)
         if age_ms > self.config.predictive_intent_max_age_ms:
             reasons.append("intent_expired")
         current_model_version = getattr(
@@ -23880,17 +24264,40 @@ class EmbeddedSGLangRuntime:
         finish_phase("transfer_and_timing")
 
         defer_prefetch_until_ms: float | None = None
-        if set(reasons) == {"prefetch_too_early"} and preview is not None:
+        if "prefetch_too_early" in reasons and active_prefetch_watch:
             defer_prefetch_until_ms = now_ms + max(
                 1.0,
                 remaining_ms
                 - effective_transfer_ms
+                - self.config.predictive_commit_guard_ms
+                - self.config.predictive_prefetch_desired_lead_ms,
+            )
+        elif set(reasons) == {"prefetch_too_early"} and preview is not None:
+            defer_prefetch_until_ms = now_ms + max(
+                1.0,
+                remaining_ms
+                - effective_transfer_ms
+                - self.config.predictive_commit_guard_ms
                 - self.config.predictive_prefetch_desired_lead_ms,
             )
         if defer_prefetch_until_ms is not None:
-            self._predictive_prefetch_retry_not_before_ms = (
-                defer_prefetch_until_ms
-            )
+            watch_key = self._predictive_prefetch_watch_key(intent)
+            watches = getattr(self, "_predictive_prefetch_watches", None) or {}
+            watch = watches.get(watch_key)
+            if watch is not None and watch.intent.intent_id == intent.intent_id:
+                watches[watch_key] = replace(
+                    watch,
+                    latest_start_ts_ms=defer_prefetch_until_ms,
+                    next_refresh_ts_ms=(
+                        self._predictive_prefetch_next_refresh_ts_ms(
+                            now_ms=now_ms,
+                            latest_start_ts_ms=defer_prefetch_until_ms,
+                        )
+                    ),
+                    fresh_after_ts_ms=None,
+                )
+            self._latest_predictive_intent = None
+            self._active_predictive_prefetch_watch_key = None
             self._joint_predictive_counts[
                 "semantic_intent_deferred_until_latest_start"
             ] += 1
@@ -23906,6 +24313,9 @@ class EmbeddedSGLangRuntime:
                 remaining_window_low_ms=remaining_ms,
                 safe_point_transfer_bound_ms=effective_transfer_ms,
                 retry_not_before_ms=defer_prefetch_until_ms,
+                deferred_physical_reasons=sorted(
+                    set(reasons).difference({"prefetch_too_early"})
+                ),
                 fallback="observed_joint_plan",
             )
             return decision
@@ -23917,8 +24327,13 @@ class EmbeddedSGLangRuntime:
                 intent_id=intent.intent_id,
                 rejection_reasons=sorted(set(reasons)),
             )
+            if self._is_predictive_prefetch_intent(intent):
+                self._remove_predictive_prefetch_watch(
+                    intent,
+                    now_ms=now_ms,
+                    reason="validation_rejected",
+                )
             self._latest_predictive_intent = None
-            self._predictive_prefetch_retry_not_before_ms = None
             self._joint_predictive_counts["semantic_intent_rejected"] += 1
             for reason in set(reasons):
                 self._joint_predictive_counts[f"semantic_reject_{reason}"] += 1
@@ -24055,8 +24470,13 @@ class EmbeddedSGLangRuntime:
                 dependency_dag.append((residency_slice_id, admission_slice_id))
 
         if not package_slices:
+            if self._is_predictive_prefetch_intent(intent):
+                self._remove_predictive_prefetch_watch(
+                    intent,
+                    now_ms=now_ms,
+                    reason="empty_package",
+                )
             self._latest_predictive_intent = None
-            self._predictive_prefetch_retry_not_before_ms = None
             self._joint_predictive_counts["semantic_intent_rejected"] += 1
             self._joint_predictive_counts[
                 "semantic_reject_predictive_package_empty"
@@ -24332,6 +24752,12 @@ class EmbeddedSGLangRuntime:
                 rejection_reasons=[reason],
             )
             self._current_predictive_residency_commit = None
+            if self._is_predictive_prefetch_intent(committed.intent):
+                self._remove_predictive_prefetch_watch(
+                    committed.intent,
+                    now_ms=completed_ms,
+                    reason=reason,
+                )
             self._latest_predictive_intent = None
             self._joint_predictive_counts[
                 f"{counter_prefix}_budget_fallback"
@@ -24381,6 +24807,15 @@ class EmbeddedSGLangRuntime:
     ) -> OnlineJointPlanDecision:
         runnable = self._policy_runtime_runnable(now_ms)
         self._latest_bounded_seed_runnable = runnable
+        active_predictive_intent = (
+            self._activate_due_predictive_prefetch_watch(now_ms=now_ms)
+        )
+        due_prefetch_watch = bool(
+            self._is_predictive_prefetch_intent(active_predictive_intent)
+            and self._intent_is_active_prefetch_watch(
+                active_predictive_intent
+            )
+        )
         visible_ids = frozenset(item.request_id for item in runnable)
         current = getattr(self, "_current_online_joint_decision", None)
         current_epoch = getattr(self, "_current_joint_plan_epoch", None)
@@ -24399,6 +24834,7 @@ class EmbeddedSGLangRuntime:
             and current_epoch is not None
             and current_epoch.planner_mode
             in {JointPlannerMode.BOUNDED_SEED, JointPlannerMode.EMERGENCY}
+            and not due_prefetch_watch
             and visible_ids
             == frozenset(
                 (*current.view.ordered_request_ids, *current.view.deferred_request_ids)
@@ -24525,10 +24961,6 @@ class EmbeddedSGLangRuntime:
             self.config.predictive_joint_overlay_enabled
             and decision.view is not None
             and self._latest_predictive_intent is not None
-            and (
-                self._predictive_prefetch_retry_not_before_ms is None
-                or now_ms >= self._predictive_prefetch_retry_not_before_ms
-            )
         ):
             observed_decision = decision
             predictive_started_ns = time.perf_counter_ns()
@@ -24542,8 +24974,14 @@ class EmbeddedSGLangRuntime:
                 )
             except Exception as error:
                 self._current_predictive_residency_commit = None
+                failed_intent = self._latest_predictive_intent
+                if self._is_predictive_prefetch_intent(failed_intent):
+                    self._remove_predictive_prefetch_watch(
+                        failed_intent,
+                        now_ms=now_ms,
+                        reason="validation_error",
+                    )
                 self._latest_predictive_intent = None
-                self._predictive_prefetch_retry_not_before_ms = None
                 decision = observed_decision
                 self._joint_predictive_counts[
                     "seed_safe_point_validation_error"
@@ -25407,6 +25845,12 @@ class EmbeddedSGLangRuntime:
                 rejection_reasons=["no_physical_command"],
             )
             self._current_predictive_residency_commit = None
+            if self._is_predictive_prefetch_intent(intent):
+                self._remove_predictive_prefetch_watch(
+                    intent,
+                    now_ms=now_ms,
+                    reason="no_physical_command",
+                )
             self._latest_predictive_intent = None
             return True
         if (
@@ -25421,6 +25865,12 @@ class EmbeddedSGLangRuntime:
             )
             self._joint_predictive_counts["dispatch_shadow_disabled"] += 1
             self._current_predictive_residency_commit = None
+            if self._is_predictive_prefetch_intent(intent):
+                self._remove_predictive_prefetch_watch(
+                    intent,
+                    now_ms=now_ms,
+                    reason="shadow_disabled",
+                )
             self._latest_predictive_intent = None
             return True
         self._online_joint_residency_sequence += 1
@@ -25504,6 +25954,12 @@ class EmbeddedSGLangRuntime:
                 fallback="observed_joint_plan_next_epoch",
             )
             self._current_predictive_residency_commit = None
+            if self._is_predictive_prefetch_intent(intent):
+                self._remove_predictive_prefetch_watch(
+                    intent,
+                    now_ms=now_ms,
+                    reason="dispatch_conflict",
+                )
             self._latest_predictive_intent = None
             return True
         transaction = _OnlineJointResidencyTransaction(
@@ -25630,6 +26086,12 @@ class EmbeddedSGLangRuntime:
             ),
         )
         self._current_predictive_residency_commit = None
+        if self._is_predictive_prefetch_intent(intent):
+            self._remove_predictive_prefetch_watch(
+                intent,
+                now_ms=now_ms,
+                reason="dispatched",
+            )
         self._latest_predictive_intent = None
         return True
 
