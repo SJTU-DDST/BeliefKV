@@ -1367,6 +1367,156 @@ def test_reentry_risk_materializes_without_prepare_beneficiary() -> None:
     assert scope["physical_source"] == "action_local_overlay"
 
 
+def test_candidate_materialization_includes_bounded_scheduling_scope() -> None:
+    config = BeliefKVConfig(
+        hbm_capacity_bytes=1_000,
+        host_capacity_bytes=1_000,
+        reserve_hbm_bytes=0,
+        predictor_enabled=False,
+        shadow_enabled=False,
+        performance_mode=True,
+    )
+    controller = BeliefKVController(config)
+    events = [
+        _event(1, RuntimeEventKind.WORKFLOW_START),
+        _event(
+            2,
+            RuntimeEventKind.INVOCATION_CREATE,
+            invocation_id="root",
+            context_id="ctx-root",
+            context_epoch=0,
+        ),
+    ]
+    requests = []
+    for index in range(5):
+        invocation_id = f"scheduler-{index}"
+        context_id = f"ctx-scheduler-{index}"
+        events.extend(
+            (
+                RuntimeEvent(
+                    event_id=f"scheduler-workflow-{index}",
+                    ts_ms=float(3 + index * 2),
+                    kind=RuntimeEventKind.WORKFLOW_START,
+                    workflow_id=f"scheduler-wf-{index}",
+                ),
+                RuntimeEvent(
+                    event_id=f"scheduler-create-{index}",
+                    ts_ms=float(4 + index * 2),
+                    kind=RuntimeEventKind.INVOCATION_CREATE,
+                    workflow_id=f"scheduler-wf-{index}",
+                    invocation_id=invocation_id,
+                    context_id=context_id,
+                    context_epoch=0,
+                ),
+            )
+        )
+        requests.append(
+            RunnableInvocation(
+                request_id=f"request-{index}",
+                workflow_id="wf",
+                invocation_id=invocation_id,
+                context_id=context_id,
+                context_epoch=0,
+                submitted_ts_ms=float(index + 1),
+                startup_bytes=10,
+                causal_class="engine_waiting:ready",
+            )
+        )
+    controller.process_runtime_events(tuple(events))
+    handle = PageHandle(1, 0)
+    controller.page_index.register_page(
+        handle,
+        size_bytes=100,
+        residency=PhysicalResidency.CPU_ONLY,
+    )
+    controller.page_index.bind_pages("ctx-root", 0, (handle,))
+    assembler = IncrementalPolicyInputAssembler(config)
+    delta = replace(
+        _delta(controller, event_sequence=0, page_revision=0, ts_ms=20),
+        runnable_frontier=tuple(requests),
+    )
+    assembler.apply(delta)
+    assert {f"scheduler-{index}" for index in range(5)} <= set(
+        assembler.graph.invocations
+    )
+    policy_input = assembler.refresh_predictive_semantics(
+        assembler.build(),
+        risk_trigger_signature=(("reentry", "tool_end", "root", 0),),
+    )
+    metadata = dict(policy_input.optional_metadata)
+    metadata["beliefkv_action_local_physical_overlay"] = MetadataValue(
+        source=MetadataSource.OBSERVED,
+        value={
+            "overlays": (
+                {
+                    "context_id": "ctx-root",
+                    "context_epoch": 0,
+                    "context_revision": 1,
+                    "page_revision": 1,
+                    "topology_revision": 1,
+                    "generation_fingerprint": "live-reentry-generation",
+                    "shape_fingerprint": "reentry-prefetch:100:n1",
+                    "exclusive_reclaimable_bytes": 0,
+                    "d2h_copy_bytes": 0,
+                    "h2d_copy_bytes": 100,
+                    "extent_count": 1,
+                    "cross_context_bytes": 0,
+                    "locked_bytes": 0,
+                    "owner_context_ids": ("ctx-root",),
+                    "blocker_codes": (),
+                    "native_loading": False,
+                    "captured_ts_ms": 8.0,
+                    "evidence_kind": "prefetch_target_preview",
+                },
+            ),
+            "reentry_context_ids": ("ctx-root",),
+            "opportunity": {},
+            "selection_reason": None,
+        },
+        producer="test",
+    )
+    policy_input = replace(policy_input, optional_metadata=metadata)
+    source_plan = ObservedJointPlanner().plan(policy_input)
+    captured_seed_ids = ()
+    original_refresh = assembler._refresh_candidate_graph_closure
+
+    def capture_seed_ids(policy, seed_ids):
+        nonlocal captured_seed_ids
+        captured_seed_ids = seed_ids
+        return original_refresh(policy, seed_ids)
+
+    assembler._refresh_candidate_graph_closure = capture_seed_ids
+    materialized, available, reason = assembler.materialize_predictive_candidates(
+        policy_input, source_plan
+    )
+
+    assert available
+    assert reason is None
+    graph_state = materialized.runtime_graph.state
+    rccg = graph_state.get("rccg", graph_state)
+    invocation_ids = set(rccg["invocations"])
+    admissions = {item.request_id: item for item in source_plan.admissions}
+    ordered_ids = tuple(
+        dict.fromkeys(
+            (
+                *source_plan.candidate_order_request_ids,
+                *source_plan.execution.ordered_request_ids,
+                *admissions,
+            )
+        )
+    )
+    expected = [
+        next(item.invocation_id for item in requests if item.request_id == request_id)
+        for request_id in ordered_ids
+        if request_id in admissions
+    ]
+    assert set(expected[:4]) <= set(captured_seed_ids), [
+        (item.request_id, item.action.value) for item in source_plan.admissions
+    ]
+    assert set(expected[:4]) <= invocation_ids
+    assert expected[4] not in invocation_ids
+
+
 def test_reentry_overlay_survives_later_beneficiary_refresh() -> None:
     config = BeliefKVConfig(
         hbm_capacity_bytes=1_000,

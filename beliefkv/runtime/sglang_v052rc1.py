@@ -23087,6 +23087,10 @@ class EmbeddedSGLangRuntime:
                 candidate_rejection_reason_counts=dict(
                     sorted(candidate_rejection_reasons.items())
                 ),
+                blocked_reasons=tuple(
+                    str(reason)
+                    for reason in shadow_payload.get("blocked_reasons", ())
+                ),
                 action_certificate_stale_reasons=dict(stale_reasons),
                 queue_wait_ms=result.queue_wait_ms,
                 planning_ms=result.compute_ms,

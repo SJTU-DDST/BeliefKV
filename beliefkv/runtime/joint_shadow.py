@@ -1499,16 +1499,32 @@ class IncrementalPolicyInputAssembler:
             context = self.graph.contexts.get(context_id)
             if context is not None:
                 candidate_seed_ids.update(context.invocation_ids)
-        slot_witness = next(
+        admission_by_request = {
+            item.request_id: item for item in source_plan.admissions
+        }
+        scheduling_seed_count = 0
+        for request_id in dict.fromkeys(
             (
-                request_by_id[request_id].invocation_id
-                for request_id in source_plan.execution.ordered_request_ids
-                if request_id in request_by_id
-            ),
-            None,
-        )
-        if slot_witness is not None:
-            candidate_seed_ids.add(slot_witness)
+                *source_plan.candidate_order_request_ids,
+                *source_plan.execution.ordered_request_ids,
+                *admission_by_request,
+            )
+        ):
+            request = request_by_id.get(request_id)
+            admission = admission_by_request.get(request_id)
+            if (
+                request is None
+                or admission is None
+                or not request.causal_class.startswith(
+                    ("engine_waiting:", "engine_running:")
+                )
+                or admission.action.value not in {"admit", "defer"}
+            ):
+                continue
+            candidate_seed_ids.add(request.invocation_id)
+            scheduling_seed_count += 1
+            if scheduling_seed_count >= 4:
+                break
         policy_input = self._refresh_candidate_graph_closure(
             policy_input,
             tuple(sorted(candidate_seed_ids)),
@@ -1671,9 +1687,8 @@ class IncrementalPolicyInputAssembler:
         )
         candidate_invocation_ids = {
             str(invocation_id)
-            for invocation_id, raw in invocations.items()
-            if isinstance(raw, Mapping)
-            and str(raw.get("context_id") or "") in context_ids
+            for invocation_id in candidate_seed_ids
+            if isinstance(invocations.get(invocation_id), Mapping)
         }
         joins = graph_state.get("joins", {})
         if not isinstance(joins, Mapping):
