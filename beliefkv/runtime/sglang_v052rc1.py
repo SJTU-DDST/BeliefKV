@@ -19488,11 +19488,29 @@ class EmbeddedSGLangRuntime:
                 pinned_host=True,
                 native_concurrent_bytes=0,
             )
+            transfer_source = str(
+                getattr(transfer, "source", "shape_supported")
+            )
             if not transfer.shape_supported:
+                transfer = (
+                    self.controller.service_curve.estimate_direction_envelope(
+                        TransferDirection.D2H,
+                        preview.copy_bytes,
+                        command_kind=CommandKind.OFFLOAD_CONTEXT.value,
+                        host_copy_state="missing",
+                        pinned_host=True,
+                        native_concurrent_bytes=0,
+                    )
+                )
+                transfer_source = str(getattr(transfer, "source", ""))
+                if transfer_source != "shape_unsupported_direction_envelope":
+                    self._joint_predictive_counts[
+                        "wait_shadow_transfer_shape_unsupported"
+                    ] += 1
+                    continue
                 self._joint_predictive_counts[
-                    "wait_shadow_transfer_shape_unsupported"
+                    "wait_shadow_direction_envelope_used"
                 ] += 1
-                continue
             transfer_ms = max(0.001, transfer.estimated_completion_p90_ms)
             operational_tau_ms = (
                 transfer_ms
@@ -19663,6 +19681,7 @@ class EmbeddedSGLangRuntime:
             wait_survival_probability=timing.favorable_probability,
             decision_threshold=timing.decision_threshold,
             transfer_p90_ms=transfer_ms,
+            transfer_source=transfer_source,
             interference_p90_ms=interference_ms,
             interference_source=interference_source,
             expected_benefit_ms=expected_benefit_ms,
@@ -24945,6 +24964,32 @@ class EmbeddedSGLangRuntime:
                 page_count=len(preview.page_actions),
                 **transfer_kwargs,
             )
+            current_transfer_direction_envelope = False
+            if (
+                direction == TransferDirection.D2H
+                and wait_shadow_prepare
+                and not current_transfer.shape_supported
+                and native_inflight_bytes == 0
+            ):
+                direction_envelope = (
+                    self.controller.service_curve.estimate_direction_envelope(
+                        direction,
+                        preview.copy_bytes,
+                        command_kind=CommandKind.OFFLOAD_CONTEXT.value,
+                        host_copy_state="missing",
+                        pinned_host=True,
+                        native_concurrent_bytes=0,
+                    )
+                )
+                if (
+                    str(getattr(direction_envelope, "source", ""))
+                    == "shape_unsupported_direction_envelope"
+                ):
+                    current_transfer = direction_envelope
+                    current_transfer_direction_envelope = True
+                    self._joint_predictive_counts[
+                        "wait_shadow_safe_point_direction_envelope_used"
+                    ] += 1
             if (
                 direction == TransferDirection.H2D
                 and not current_transfer.shape_supported
@@ -24986,7 +25031,10 @@ class EmbeddedSGLangRuntime:
                     live_shape_fingerprint != intent.shape_fingerprint
                     or len(preview.page_actions) != intent.predicted_extent_count
                 )
-                if not current_transfer.shape_supported:
+                if (
+                    not current_transfer.shape_supported
+                    and not current_transfer_direction_envelope
+                ):
                     reasons.append("shape_unsupported_at_safe_point")
                 if (
                     current_transfer.estimated_completion_p90_ms

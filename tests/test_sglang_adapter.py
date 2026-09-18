@@ -12348,9 +12348,16 @@ def test_wait_tool_publishes_model_backed_prepare_shadow_without_beneficiary():
         ),
     )
     transfer = SimpleNamespace(
-        shape_supported=True,
+        shape_supported=False,
+        estimated_completion_p90_ms=10.0,
+        estimated_unhidden_stall_p90_ms=None,
+        source="shape_unsupported",
+    )
+    envelope = SimpleNamespace(
+        shape_supported=False,
         estimated_completion_p90_ms=100.0,
         estimated_unhidden_stall_p90_ms=None,
+        source="shape_unsupported_direction_envelope",
     )
     timing = SimpleNamespace(
         informative=True,
@@ -12389,7 +12396,8 @@ def test_wait_tool_publishes_model_backed_prepare_shadow_without_beneficiary():
             )
         ),
         service_curve=SimpleNamespace(
-            estimate=mock.Mock(return_value=transfer)
+            estimate=mock.Mock(return_value=transfer),
+            estimate_direction_envelope=mock.Mock(return_value=envelope),
         ),
         predictor=SimpleNamespace(
             frontier_model=SimpleNamespace(model_version="frontier-v4")
@@ -12469,6 +12477,13 @@ def test_wait_tool_publishes_model_backed_prepare_shadow_without_beneficiary():
         == "bounded_measurement_canary_proxy"
     )
     assert runtime.audit.events[-1][2]["control_lead_ms"] == 1_500.0
+    assert (
+        runtime.audit.events[-1][2]["transfer_source"]
+        == "shape_unsupported_direction_envelope"
+    )
+    assert runtime._joint_predictive_counts[
+        "wait_shadow_direction_envelope_used"
+    ] == 1
 
 
 def test_predicted_reentry_publishes_one_bounded_risk_delta_without_beneficiary():
