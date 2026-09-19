@@ -94,6 +94,7 @@ from beliefkv.runtime.sglang_v052rc1 import (
     SGLangNodeRegistry,
     _OnlineJointResidencyTransaction,
     _PERFORMANCE_METRIC_EVENTS,
+    _PendingNodeCommand,
     close_runtime_with_signal_shield,
     install_scheduler_shutdown_handler,
     _predictive_bundle_envelope_reasons,
@@ -107,6 +108,54 @@ from beliefkv.runtime.restore_obligation import (
     RestoreTransactionStage,
     SafePointPhysicalPhase,
 )
+
+
+def test_atomic_d2h_waits_for_transient_engine_lock_before_commit():
+    backend = HiCacheNodeCommandBackend.__new__(HiCacheNodeCommandBackend)
+    registry = SGLangNodeRegistry()
+    node = _Node(1)
+    node.host_value = [1, 2, 3, 4]
+    node.lock_ref = 1
+    handle = registry.register(node)
+    backend.registry = registry
+    backend.tree_cache = _TreeCache()
+    action = ResolvedPageAction(
+        handle,
+        PhysicalPageAction.START_D2H,
+        size_bytes=4,
+    )
+    bundle = PhysicalBundleIntent(
+        bundle_id="bundle",
+        closure_handles=(handle,),
+        page_actions=(action,),
+        generation_fingerprint="generation",
+        closure_bytes=4,
+    )
+    command = ControlCommand(
+        command_id="command",
+        kind=CommandKind.SHADOW_CONTEXT,
+        created_ts_ms=1.0,
+        physical_bundle=bundle,
+    )
+    pending = _PendingNodeCommand(
+        ResolvedCommand(command, (action,), 4, ""),
+        submit_ts_ms=1.0,
+    )
+    pending.accepted_handles.add(handle)
+    pending.transfer_handles.add(handle)
+    pending.extent_fingerprints[handle] = backend._extent_fingerprint(node)
+
+    backend._refresh_atomic_bundle(pending)
+
+    assert not pending.completed_handles
+    assert not pending.rejected_handles
+    assert pending.dma_completed_handles == {handle}
+
+    node.lock_ref = 0
+    backend._refresh_atomic_bundle(pending)
+
+    assert pending.completed_handles == {handle}
+    assert not pending.rejected_handles
 
 
 class _Node:
@@ -7578,9 +7627,15 @@ class SGLangBackendTest(unittest.TestCase):
         assert old.invocation_id in (
             runtime._forced_predictive_reentry_refresh_invocation_ids
         )
-        assert runtime._activate_due_predictive_prefetch_watch(
-            now_ms=stale_watch.latest_start_ts_ms
-        ) == old
+        assert (
+            runtime._activate_due_predictive_prefetch_watch(
+                now_ms=stale_watch.latest_start_ts_ms
+            )
+            is None
+        )
+        assert runtime._joint_predictive_counts[
+            "prefetch_watch_certificate_refresh_wait"
+        ] == 1
 
         refreshed = _predictive_prefetch_intent(
             controller,
@@ -12413,7 +12468,7 @@ def test_predictive_reentry_target_selection_keeps_top_three():
     )
 
 
-def test_wait_tool_publishes_model_backed_prepare_shadow_without_beneficiary():
+def test_wait_tool_publishes_beneficiary_bound_prepare_shadow():
     runtime = EmbeddedSGLangRuntime.__new__(EmbeddedSGLangRuntime)
     timing_queries = []
     invocation = SimpleNamespace(
@@ -12519,6 +12574,36 @@ def test_wait_tool_publishes_model_backed_prepare_shadow_without_beneficiary():
     runtime._last_joint_decision_plan_id = "plan"
     runtime._current_online_joint_decision = object()
     runtime._last_frontier_model_version = "frontier-v4"
+    runtime._predictive_beneficiary_probe_environment = mock.Mock(
+        return_value=SimpleNamespace()
+    )
+    runtime._latest_bounded_seed_runnable = (
+        SimpleNamespace(
+            request_id="beneficiary-request",
+            invocation_id="beneficiary",
+            context_id="beneficiary-context",
+            context_epoch=9,
+        ),
+    )
+    runtime._latest_observed_seed_beneficiary_candidates = (
+        SimpleNamespace(
+            request_id="beneficiary-request",
+            invocation_id="beneficiary",
+            context_id="beneficiary-context",
+            context_epoch=9,
+            startup_bytes=300,
+            growth_bytes=200,
+        ),
+    )
+    runtime._predictive_beneficiary_opportunity_probe = mock.Mock(
+        return_value=SimpleNamespace(
+            predicted_deficit_bytes=250,
+            predicted_block_time_ms=2_000.0,
+            beneficiary_slot_blocked=False,
+            beneficiary_slot_then_hbm_blocked=False,
+            service_lag_ms=100.0,
+        )
+    )
     runtime._predictive_action_local_causal_certificate = (
         lambda *_args, **_kwargs: {
             "model_version": "frontier-v4",
@@ -12587,7 +12672,10 @@ def test_wait_tool_publishes_model_backed_prepare_shadow_without_beneficiary():
         ]
         == 1
     )
-    assert intent.beneficiary_request_id is None
+    assert intent.beneficiary_request_id == "beneficiary-request"
+    assert intent.beneficiary_context_id == "beneficiary-context"
+    assert intent.beneficiary_context_epoch == 9
+    assert intent.predicted_deficit_bytes == 250
     assert intent.context_id == "child-context"
     assert intent.expected_benefit_ms == 71.0
     assert intent.remaining_window_low_ms == 5_000.0
@@ -12621,7 +12709,7 @@ def test_wait_tool_publishes_model_backed_prepare_shadow_without_beneficiary():
     runtime._joint_predictive_counts["prepare_host_queued"] = 1
     runtime.controller.actual_hbm_used_bytes = 700
     low_pressure_observation = replace(observation, ts_ms=2_000.0)
-    assert runtime._maybe_publish_predictive_wait_shadow_intent(
+    assert not runtime._maybe_publish_predictive_wait_shadow_intent(
         [(invocation, SimpleNamespace(), 400)],
         features={},
         predictions={"child": prediction},
@@ -12629,7 +12717,7 @@ def test_wait_tool_publishes_model_backed_prepare_shadow_without_beneficiary():
         native_inflight_bytes=0,
     )
     assert runtime._joint_predictive_counts[
-        "wait_shadow_below_gross_pressure_considered"
+        "wait_shadow_below_gross_pressure_suppressed"
     ] == 1
 
     runtime._latest_predictive_intent = None
@@ -12652,6 +12740,7 @@ def test_wait_tool_publishes_model_backed_prepare_shadow_without_beneficiary():
         observation=replace(observation, ts_ms=3_050.0),
         native_inflight_bytes=0,
     )
+    runtime.controller.actual_hbm_used_bytes = 900
     assert runtime._maybe_publish_predictive_wait_shadow_intent(
         [(invocation, SimpleNamespace(), 400)],
         features={},

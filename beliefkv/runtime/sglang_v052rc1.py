@@ -1839,6 +1839,7 @@ class HiCacheNodeCommandBackend:
             except (SGLangBackendError, AssertionError, RuntimeError) as error:
                 self._reject(pending, handle, error)
         waiting_for_dma = False
+        waiting_for_commit_lock = False
         for handle in sorted(pending.transfer_handles):
             try:
                 node = self.registry.resolve(handle)
@@ -1883,10 +1884,10 @@ class HiCacheNodeCommandBackend:
                 nodes[handle] = node
                 self._require_unchanged_extent(pending, handle, node)
                 if getattr(node, "lock_ref", 0) > 0:
-                    raise SGLangBackendError(
-                        "node became engine-locked before bundle commit",
-                        blocker_code=TransferBlockerCode.NODE_LOCKED,
-                    )
+                    # Scheduler-owned Radix locks are transient. The DMA copy
+                    # is complete, so poll instead of discarding the transfer.
+                    waiting_for_commit_lock = True
+                    continue
                 action = actions[handle]
                 if action in {
                     PhysicalPageAction.START_D2H,
@@ -1909,6 +1910,8 @@ class HiCacheNodeCommandBackend:
                         blocker_code=TransferBlockerCode.EXTENT_MUTATED,
                     )
 
+            if waiting_for_commit_lock:
+                return
             if pending.resolved.command.kind == CommandKind.OFFLOAD_CONTEXT:
                 selected_node_ids = {
                     int(nodes[handle].id): actions[handle]
@@ -19503,8 +19506,64 @@ class EmbeddedSGLangRuntime:
             < self.config.observed_admission_active_kv_high_watermark_ratio
         ):
             self._joint_predictive_counts[
-                "wait_shadow_below_gross_pressure_considered"
+                "wait_shadow_below_gross_pressure_suppressed"
             ] += 1
+            return False
+
+        beneficiary_hint = None
+        beneficiary_probe = None
+        probe_environment = self._predictive_beneficiary_probe_environment(
+            observation
+        )
+        wait_context_ids = {item[0].context_id for item in candidates}
+        runnable_by_request = {
+            item.request_id: item
+            for item in (
+                getattr(self, "_latest_bounded_seed_runnable", ())
+                or getattr(self, "_last_policy_runtime_runnable", ())
+            )
+        }
+        for candidate in getattr(
+            self,
+            "_latest_observed_seed_beneficiary_candidates",
+            (),
+        ):
+            request = runnable_by_request.get(candidate.request_id)
+            if (
+                request is None
+                or request.invocation_id != candidate.invocation_id
+                or request.context_id != candidate.context_id
+                or request.context_epoch != candidate.context_epoch
+            ):
+                continue
+            if candidate.context_id in wait_context_ids:
+                continue
+            probe = self._predictive_beneficiary_opportunity_probe(
+                candidate,
+                observation,
+                environment=probe_environment,
+            )
+            if probe.predicted_deficit_bytes <= 0:
+                continue
+            if (
+                probe.beneficiary_slot_blocked
+                and not probe.beneficiary_slot_then_hbm_blocked
+            ):
+                continue
+            if beneficiary_probe is None or (
+                probe.predicted_deficit_bytes,
+                probe.service_lag_ms,
+            ) > (
+                beneficiary_probe.predicted_deficit_bytes,
+                beneficiary_probe.service_lag_ms,
+            ):
+                beneficiary_hint = candidate
+                beneficiary_probe = probe
+        if beneficiary_hint is None or beneficiary_probe is None:
+            self._joint_predictive_counts[
+                "wait_shadow_no_beneficiary_deficit"
+            ] += 1
+            return False
 
         graph = self.controller.graph
         frontier_model = getattr(
@@ -19741,6 +19800,21 @@ class EmbeddedSGLangRuntime:
             ),
             causal_slack_probability=timing.favorable_probability,
             timing_semantics=timing.semantics,
+            beneficiary_request_id=beneficiary_hint.request_id,
+            beneficiary_invocation_id=beneficiary_hint.invocation_id,
+            beneficiary_context_id=beneficiary_hint.context_id,
+            beneficiary_context_epoch=beneficiary_hint.context_epoch,
+            beneficiary_startup_bytes=beneficiary_hint.startup_bytes,
+            beneficiary_growth_bytes=beneficiary_hint.growth_bytes,
+            predicted_block_time_ms=beneficiary_probe.predicted_block_time_ms,
+            predicted_deficit_bytes=beneficiary_probe.predicted_deficit_bytes,
+            causal_package_generation=(
+                f"{beneficiary_hint.request_id}:"
+                f"{beneficiary_hint.context_id}:"
+                f"c{beneficiary_hint.context_epoch}:"
+                f"{beneficiary_hint.startup_bytes}:"
+                f"{beneficiary_hint.growth_bytes}"
+            ),
             evidence_kind="model_wait_shadow",
         )
         preview_handles = set(preview.bundle.handles)
@@ -19782,6 +19856,10 @@ class EmbeddedSGLangRuntime:
             interference_p90_ms=interference_ms,
             interference_source=interference_source,
             expected_benefit_ms=expected_benefit_ms,
+            beneficiary_request_id=beneficiary_hint.request_id,
+            beneficiary_predicted_deficit_bytes=(
+                beneficiary_probe.predicted_deficit_bytes
+            ),
             source_observation_ts_ms=observation.ts_ms,
             source_observation_age_ms=max(
                 0.0, published_ts_ms - observation.ts_ms
@@ -22542,11 +22620,37 @@ class EmbeddedSGLangRuntime:
                     watch,
                     now_ms=now_ms,
                 )
+                if (
+                    watch.latest_start_ts_ms <= now_ms
+                    and watches[key].next_refresh_ts_ms is None
+                ):
+                    watches[key] = replace(
+                        watches[key],
+                        next_refresh_ts_ms=now_ms + 50.0,
+                    )
+        certificate_max_age_ms = max(
+            1_000.0,
+            min(60_000.0, self.config.predictive_intent_max_age_ms),
+        )
         due = tuple(
             watch
             for watch in watches.values()
             if watch.latest_start_ts_ms <= now_ms
+            and (
+                watch.fresh_after_ts_ms is None
+                or watch.intent.generated_ts_ms + 1e-6
+                >= watch.fresh_after_ts_ms
+            )
+            and now_ms - watch.intent.generated_ts_ms
+            <= certificate_max_age_ms
         )
+        if any(
+            watch.latest_start_ts_ms <= now_ms
+            for watch in watches.values()
+        ) and not due:
+            self._joint_predictive_counts[
+                "prefetch_watch_certificate_refresh_wait"
+            ] += 1
         if not due:
             if self._is_predictive_prefetch_intent(current):
                 self._latest_predictive_intent = None
