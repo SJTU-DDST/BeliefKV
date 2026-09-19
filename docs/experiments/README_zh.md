@@ -1,6 +1,6 @@
 # BeliefKV 实验报告索引
 
-更新日期：2026-09-15
+更新日期：2026-09-19
 
 本目录保存单次实验、修复和 characterization 的不可变证据。报告描述的是当时的代码、
 硬件和配置，不自动代表当前系统能力；当前结论以
@@ -10,6 +10,7 @@
 
 | 报告 | 用途 |
 | --- | --- |
+| [Wait-shadow validation latency v46](beliefkv_p6_wait_shadow_validation_latency_v46_2026-09-19_zh.md) | PREPARE 迟到发布/验证根因与 same-safe-point 修复 |
 | [Natural PREPARE no-opportunity](beliefkv_p6_natural_prepare_canary_no_opportunity_2026-09-12_zh.md) | 区分高 HBM 与真实 beneficiary opportunity |
 | [PREPARE_HOST mechanism gate](beliefkv_p6_prepare_host_mechanism_gate_2026-09-12_zh.md) | 单笔 predictive D2H 全链路正确性 |
 | [Direct predictive pipeline](beliefkv_p6_direct_pipeline_high_pressure_2026-09-11_zh.md) | timely-positive package 与物理门禁状态 |

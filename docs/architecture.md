@@ -1,6 +1,6 @@
 # Architecture
 
-Updated: 2026-09-17.
+Updated: 2026-09-19.
 
 This page is a concise English entry point. The authoritative system design is
 [beliefkv_design.md](beliefkv_design.md), and the
@@ -55,6 +55,13 @@ partial `PREFETCH_GPU`, and a bounded `RECLAIM_AND_PREFETCH` transaction using a
 commit-ready CPU-shadowed victim. These mechanisms are development canaries,
 not a validated throughput result. The current model is not online-eligible:
 rare boundary/tool outcomes are no better than majority baselines, while only
+
+Model-backed tool-wait `PREPARE_HOST` now uses an event-aligned fast path:
+`TOOL_START` bypasses the periodic prediction poll, and a newly published
+intent is causally and physically validated in the same scheduler safe point
+against the current observed decision. The path still rematerializes live
+physical evidence and enforces transfer, capacity, transaction, and commit
+budgets. Reentry cancels any wait-shadow intent that has not been committed.
 token-demand intervals and PREFETCH timing show useful held-out signal.
 
 ## Physical Authority

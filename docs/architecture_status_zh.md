@@ -1,7 +1,7 @@
 # BeliefKV 当前架构与实现状态
 
 更新日期：2026-09-19
-当前 P6 代码基线：`d43d8c1`
+当前 P6 代码基线：`994de39`
 
 本文只记录当前事实和下一阻塞项，不再追加逐日开发日志。2026-09-12 以前的完整历史保存在
 `docs/archive/snapshots/architecture_status_zh.md`，单次实验细节保存在
@@ -313,7 +313,7 @@ workload 启动后 running 92-95、waiting 29-32，GPU 重新持续获得 prefil
 该启动证据只证明活性修复和容量契约生效；child rolling prefetch 的完整归因仍需等待后续
 CPU-side child KV 与 timely latest-start 自然出现。
 
-### 5.4 2026-09-19 wait-window gate 与状态机修复
+### 5.6 2026-09-19 wait-window gate 与状态机修复
 
 v45 高压运行验证了 `778caa6` 的 stale-trigger starvation 修复：21 个持久化 risk
 snapshot 的 trigger 数量始终为 3，最新集合只包含当前 reentry 目标，不再累积历史 trigger。
@@ -333,6 +333,26 @@ probability、live D2H cost 和净收益决定是否发布。control lead 已成
 transfer 分布、预测刷新频率、误触发率和 saved stall 单独标定。该提交尚未经过新的 GPU
 prefetch 闭环验证，不能据此声明吞吐收益。
 
+
+### 5.7 2026-09-19 wait-shadow same-safe-point 提交修复
+
+v46 最终有 444 个 `PREPARE_HOST` intent 因 invocation/tool 状态变化被拒绝。逐事件对齐后，
+intent publish 到 safe-point validation 的 P50/P95 为 991.98/2,283.03 ms；TOOL_START 到
+validation 的 P50/P95 为 1,478.83/3,094.94 ms。259 个 intent 在对应 TOOL_END 之后才发布。
+199 个对应工具总时长超过 500 ms，但其中只有 16 个在 intent 发布时仍剩超过 500 ms。
+因此该问题是控制链迟到，不是“没有长工具窗口”。
+
+`994de39` 将 child TOOL_START 设为立即预测触发，并让新 wait-shadow intent 在发布所在的
+physical safe point 直接复用当前 observed decision、缓存 physical preview 和 action-local
+certificate 完成验证；不再等待下一轮 JointPlan reuse/refresh。TOOL_END、REACTIVATE、
+RETURN 或 CANCEL 到达时会撤销尚未提交的同 invocation intent。live bundle、transfer
+envelope、Host capacity、事务互斥和 commit budget 均继续重验，没有放宽安全门禁。
+
+新增 `wait_shadow_publish_to_validation_ms` 及 same-safe-point wall/CPU 指标。CPU 门禁为
+270 passed、8 subtests passed；另 2 项仅因当前 shell 缺少 `CUDA_HOME/deep_gemm` 无法
+import SGLang。GPU P95 尚未复验，下一轮目标是 publish-to-validation P95 <50 ms，并至少
+观察一笔在真实工具窗口结束前进入 D2H queue 的 PREPARE。详细审计见
+`docs/experiments/beliefkv_p6_wait_shadow_validation_latency_v46_2026-09-19_zh.md`。
 ## 6. 当前阻塞项
 
 1. prediction-to-action utilization gap 尚未闭合。初步 H200 高压运行中 predictive arm
@@ -360,15 +380,20 @@ prefetch 闭环验证，不能据此声明吞吐收益。
 10. 修复后 bounded 在线复验运行约 20 分钟，1,300 个 hint 中 880 个容量充足、420 个仅受
     running slot 限制，原生 KV usage 约 31%，因此 0 victim、0 risk evaluation、0 prefetch。
     该轮证明假阳性消失，不证明预测调度收益。
+11. v46 的 wait-shadow publish-to-validation P95 为 2,283.03 ms；`994de39` 已从结构上
+    删除跨 JointPlan 等待，但尚未经过 GPU 复验。当前门槛是同配置 P95 <50 ms，而不是继续
+    调整 control lead 掩盖迟到提交。
 
 ## 7. 下一步
 
 当前关键路径：
 
-1. 使用当前冻结 64-root、hard max-running 96 workload 运行足够长时间，让 active context
-   自然增长 unique KV；此前短运行的无迁移结果不能用于修改 workload 或缩小 KV pool。
-2. 在该 workload 上重新运行 development canary。动作提交时必须重验 certificate、物理
-   closure、实时容量、transfer envelope 和 latest-start；晚到、回收不足或负收益动作回退 P5。
+1. 先用当前冻结 64-root、hard max-running 96 配置运行短高压 gate，验证 wait-shadow
+   publish-to-validation P95 <50 ms、worker/shutdown 守恒，并观察至少一笔在工具窗口内
+   进入 D2H queue 的 PREPARE。
+2. 该门槛通过后继续长 workload，让 active context 自然增长 unique KV；动作提交仍必须重验
+   certificate、physical closure、实时容量、transfer envelope 和 latest-start，晚到、
+   回收不足或负收益动作回退 P5。
 3. PREFETCH gate 必须覆盖 `intent -> H2D -> ACK -> service lease/funding -> admission ->
    first GPU service -> useful attribution`，并统计在线 precision、recall proxy、H2D 后
    first-service latency、funding 守恒和 5 秒内反向迁移。
