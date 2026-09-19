@@ -12593,6 +12593,7 @@ def test_wait_tool_publishes_beneficiary_bound_prepare_shadow():
             context_epoch=9,
             startup_bytes=300,
             growth_bytes=200,
+            service_lag_ms=100.0,
         ),
     )
     runtime._predictive_beneficiary_opportunity_probe = mock.Mock(
@@ -12601,7 +12602,6 @@ def test_wait_tool_publishes_beneficiary_bound_prepare_shadow():
             predicted_block_time_ms=2_000.0,
             beneficiary_slot_blocked=False,
             beneficiary_slot_then_hbm_blocked=False,
-            service_lag_ms=100.0,
         )
     )
     runtime._predictive_action_local_causal_certificate = (

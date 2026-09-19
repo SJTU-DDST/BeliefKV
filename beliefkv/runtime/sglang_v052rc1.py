@@ -19552,10 +19552,10 @@ class EmbeddedSGLangRuntime:
                 continue
             if beneficiary_probe is None or (
                 probe.predicted_deficit_bytes,
-                probe.service_lag_ms,
+                candidate.service_lag_ms,
             ) > (
                 beneficiary_probe.predicted_deficit_bytes,
-                beneficiary_probe.service_lag_ms,
+                beneficiary_hint.service_lag_ms,
             ):
                 beneficiary_hint = candidate
                 beneficiary_probe = probe
