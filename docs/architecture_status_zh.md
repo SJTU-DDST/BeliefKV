@@ -126,7 +126,8 @@ SGLang scheduler。
 ### 4.4 数据面与 CUDA Graph
 
 - H200 BF16 KV pool：850,000 tokens；
-- Host pool：192 GiB（v10；由 64-root、max-running 96 高压实验使用）；
+- Host pool：192 GB decimal（SGLang `hicache_size` 乘以 `1e9`；v10 由 64-root、
+  max-running 96 高压实验使用）；
 - CUDA Graph 已覆盖 batch 1/2/4/8/16/24/32/40/48/56/64/72/80/88/96；
 - 4-extents 6.44 GB gate 中 D2H 249.8 ms、H2D 692.4 ms；
 - 当前 backend 不声明 concurrent PCIe transfer capability。
@@ -313,7 +314,7 @@ ConsumerEdge/ConsumerIndexDelta 为不可变对象，现改为浅层容器快照
 条历史微基准 P95 为 1.17 ms；相关 CPU 回归为 234 passed、8 subtests passed（另有两项仅因
 本机 shell 缺失 CUDA_HOME 而排除）。
 
-`2c30c9f` 新增 h200_bf16_v10，将 Host KV 从 96 GiB 扩展到 192 GiB，保持 HBM 850K、
+`2c30c9f` 新增 h200_bf16_v10，将 Host KV 从 96 GB 扩展到 192 GB decimal，保持 HBM 850K、
 max-running 96 和 graph96 不变。v26 启动已确认 graph 捕获到 96、Host slab 为 192 GB，
 workload 启动后 running 92-95、waiting 29-32，GPU 重新持续获得 prefill/decode 工作。
 该启动证据只证明活性修复和容量契约生效；child rolling prefetch 的完整归因仍需等待后续
@@ -439,8 +440,8 @@ BF16 KV 为 98,304 bytes/token：
 | Tier | Tokens | 60K-token agents |
 | --- | ---: | ---: |
 | HBM 850K | 850,000 | 14.17 |
-| Host 192 GiB | 2,097,152 | 34.95 |
-| Total | 2,947,152 | 49.12 |
+| Host 192 GB decimal | 1,953,125 | 32.55 |
+| Total | 2,803,125 | 46.72 |
 
 因此 64 个 root 加 children 会自然溢出，Host 不再是无限冷缓存；native writeback 会与
 predictive shadow、future reentry 和 dead KV 竞争同一 Host 容量。
