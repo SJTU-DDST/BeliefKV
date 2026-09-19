@@ -1,7 +1,7 @@
 # BeliefKV 当前架构与实现状态
 
-更新日期：2026-09-18
-当前 P6 代码基线：`2c30c9f`
+更新日期：2026-09-19
+当前 P6 代码基线：`d43d8c1`
 
 本文只记录当前事实和下一阻塞项，不再追加逐日开发日志。2026-09-12 以前的完整历史保存在
 `docs/archive/snapshots/architecture_status_zh.md`，单次实验细节保存在
@@ -312,6 +312,26 @@ max-running 96 和 graph96 不变。v26 启动已确认 graph 捕获到 96、Hos
 workload 启动后 running 92-95、waiting 29-32，GPU 重新持续获得 prefill/decode 工作。
 该启动证据只证明活性修复和容量契约生效；child rolling prefetch 的完整归因仍需等待后续
 CPU-side child KV 与 timely latest-start 自然出现。
+
+### 5.4 2026-09-19 wait-window gate 与状态机修复
+
+v45 高压运行验证了 `778caa6` 的 stale-trigger starvation 修复：21 个持久化 risk
+snapshot 的 trigger 数量始终为 3，最新集合只包含当前 reentry 目标，不再累积历史 trigger。
+实验随后受控停止；shutdown summary 满足 `no_pending_transactions=true` 和
+`shutdown_cleanup_did_not_mask_unresolved_transactions=true`。
+
+同一运行也确认一直缺少 predictive prefetch 的关键原因不是工具调用都太短。child tool
+调用中存在大量 0.25--2 秒窗口，且一笔约 2.52 秒的 `execute` 已成功容纳 PREPARE D2H。
+旧 gate 的问题是首笔 PREPARE 后用累计 `prepare_host_queued` 永久封锁后续动作、固定
+1500 ms control lead 排除了大量可用窗口、native transfer busy 只产生瞬时拒绝，以及低于
+80% HBM 时不进入收益判断。
+
+`d43d8c1` 将 PREPARE limit 改为并发物理动作边界；完成动作不再消费后续窗口。native
+transfer 或 residency transaction 忙时进入 100 ms 有界重试；低压只记录诊断，仍由 timing
+probability、live D2H cost 和净收益决定是否发布。control lead 已成为显式配置，当前临时值为
+250 ms，仅用于关闭 prefetch 机制闭环；其最终取值必须在完整 predictive H2D 验证后，基于
+transfer 分布、预测刷新频率、误触发率和 saved stall 单独标定。该提交尚未经过新的 GPU
+prefetch 闭环验证，不能据此声明吞吐收益。
 
 ## 6. 当前阻塞项
 
