@@ -1,7 +1,7 @@
 # BeliefKV 当前架构与实现状态
 
 更新日期：2026-09-19
-当前 P6 代码基线：`87411cc`
+当前 P6 代码基线：`a772a61`
 
 本文只记录当前事实和下一阻塞项，不再追加逐日开发日志。2026-09-12 以前的完整历史保存在
 `docs/archive/snapshots/architecture_status_zh.md`，单次实验细节保存在
@@ -388,6 +388,49 @@ predictive prefetch。
 两项仅因当前 shell 缺失 CUDA_HOME/deep_gemm 导入被排除。该修复尚未进入任何 GPU 运行；
 v50 仍在旧进程上自然运行，不能用来评价新修复。
 
+### 5.9 2026-09-19 predictive H2D 物理闭环
+
+v51 暴露 `87411cc` 的一个崩溃缺陷：beneficiary 排序访问了不存在的
+`BeneficiaryOpportunityProbe.service_lag_ms`。`5b0045e` 改用 hint 自带的
+`service_lag_ms`，该类崩溃关闭。
+
+`1d559d7` 将 PREPARE 拆为两种模式：高压且有明确 deficit 时仍 beneficiary-bound；
+低压或高压暂无 beneficiary deficit 时，只要 Host 低于低水位且 PCIe 空闲，允许 unbound
+opportunistic partial PREPARE。该动作仍受 64 MiB chunk、长等待概率、native transfer
+互斥、干扰成本和 Host 水位约束。v54/v55 证明该路径能产生连续 predictive D2H。
+
+长期 parent-JOIN watcher 的预测 reentry 可达数十分钟，不能用于快速验证物理 H2D。v54 的
+native demand-load 统计显示，可见 request 到 native H2D 平均有约 49 秒窗口；因此
+`312ab69` 增加 observed-service prefetch 快路径：当可见 waiting request 的 context 已有
+CPU-only KV 且缺少 GPU KV 时，立即生成 `PREFETCH_GPU` intent，并在同一 safe point
+物化。
+
+v57 首次完成自然 predictive H2D 归因链：
+
+```text
+visible request
+  -> observed-service PREFETCH_GPU intent
+  -> same-safe-point commit
+  -> PREFETCH_CONTEXT command queue
+  -> H2D dispatch/ACK
+  -> service lease
+  -> request_started
+  -> first GPU service
+  -> useful attribution
+  -> lease release
+```
+
+该笔 H2D 传输 325,189,632 bytes、11 extents、耗时 89.72 ms，telemetry 保留非空
+`predictive_intent_id`。H2D ACK 后 667 ms 注册 service lease，request 获得首个 GPU
+service 后标记 `useful` 并释放 lease。检查时无 scheduler 异常、无 orphan transaction、
+无 active lease/obligation。
+
+v57 同时暴露两个后续问题：17 笔 atomic H2D 因旧的 authoritative-free-tokens 检查被拒绝；
+74 个 service intent 曾因 immediate window 重复扣除 25 ms guard 被误判为 too early。后者在
+`312ab69` 已修复；前者在 `a772a61` 中让携带 `allow_native_eviction` 的 service H2D 与
+native demand-load 一样使用安全 native eviction，并通过 201 项 adapter 回归。v57 运行时
+不包含 `a772a61`，因此它的 1/18 H2D 成功率是下界，不是最终策略成功率。
+
 ## 6. 当前阻塞项
 
 1. prediction-to-action utilization gap 尚未闭合。初步 H200 高压运行中 predictive arm
@@ -396,9 +439,8 @@ v50 仍在旧进程上自然运行，不能用来评价新修复。
    `1 beneficiary x 2 victims`。这是在线成本边界，不是全局最优保证。
 3. schema-v5 已修复 action timing 低召回和 tool-error 多数类退化；boundary 仍应以 top-2
    scenarios 使用，不能把 top-1 accuracy 当作 exact action-unlock 预测。
-4. `PREFETCH_GPU` 的完整、partial 和 funded 路径已实现；schema-v5 的 held-out recall 已达到
-   90.56%（动作阈值），多目标 reentry 已在线产生 fresh-positive package，但 predictive H2D、
-   funding、first-service、在线 precision 和吞吐收益仍未形成完整实测闭环。
+4. `PREFETCH_GPU -> H2D ACK -> service lease -> first GPU service -> useful` 已在 v57 形成
+   完整实测闭环；在线 precision、saved-stall 和吞吐收益仍未测量。
 5. prepared binding 目前每个 beneficiary 只保留一个 victim；失效时回退 P5，不执行
    预测性 COMMIT。
 6. v7 GPU service artifact 适合排序和 shadow；正式吞吐结论必须来自与冻结 observed
@@ -420,19 +462,19 @@ v50 仍在旧进程上自然运行，不能用来评价新修复。
     44.83 ms。该阻塞项关闭，剩余问题是动作效用而不是控制链延迟。
 12. v50 已证明 publish 链路延迟达标，但暴露 prepared binding 缺失、瞬时 engine-lock 失败
     和 stale prefetch certificate。`87411cc` 已修复，仍需在 v50 自然结束后运行新代码 gate。
+13. v57 的 17 笔 predictive H2D 被 atomic allocator 检查拒绝；`a772a61` 已允许 service
+    H2D 使用 native eviction，但该修复尚未进入 GPU 运行。
 
 ## 7. 下一步
 
 当前关键路径：
 
-1. 等待 v50 自然完成并保存完整 artifact，不在旧进程上评价新修复。
-2. 使用 `87411cc` 和同一冻结 64-root、hard max-running 96 配置运行短高压 gate，验证
-   beneficiary-bound PREPARE、prepared binding 消费、prefetch 证书刷新和 predictive H2D
-   闭环；动作提交仍必须重验 certificate、physical closure、实时容量、transfer envelope
-   和 latest-start，晚到、回收不足或负收益动作回退 P5。
-3. PREFETCH gate 必须覆盖 `intent -> H2D -> ACK -> service lease/funding -> admission ->
-   first GPU service -> useful attribution`，并统计在线 precision、recall proxy、H2D 后
-   first-service latency、funding 守恒和 5 秒内反向迁移。
+1. 保存 v57 自然运行结果，统计 predictive D2H/H2D precision、saved stall、反向迁移和
+   shutdown correctness。
+2. 使用 `a772a61` 运行下一轮短高压 gate，验证 atomic H2D native-eviction 修复能否将
+   1/18 的 service H2D 物理成功率提高到自然策略水平；不降低安全或收益门禁。
+3. 在 H2D 成功率稳定后测量相对于 reactive native demand-load 的 first-service latency
+   差值和端到端吞吐收益。
 4. 同时继续记录 event-to-hint 长尾和 safe-point P95/P99，不为降低开销重新关闭必要的
    `TOOL/JOIN` 风险触发。
 5. execution 排序使用 RCCG 已知 unlock、schema-v5 token/HBM demand 和 top-2 boundary
