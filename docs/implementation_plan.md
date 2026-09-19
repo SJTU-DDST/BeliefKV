@@ -200,6 +200,34 @@ beneficiary 到达时无需等待 victim selection 和 commit。
 
 This branch is not on the immediate critical path.
 
+## Near-Term Host Semantic Eviction
+
+Host high-watermark cleanup must release semantic garbage before reusable replicas:
+
+1. dead `CPU_ONLY` KV first, without requiring raw-prompt replay;
+2. dead `DUAL_CLEAN` second;
+3. native-writeback shadow before explicit/predictive shadow;
+4. live `CPU_ONLY` only when replay is guaranteed and all owners are safely parked;
+5. active restore obligations, prefetch service leases, semantic pins, and non-parked owners stay
+   protected.
+
+The implementation tracks `host_copy_source` so native writeback pollution is visible and can be
+reclaimed before predicted future-use copies. Report cleanup bytes by mode, forced recompute,
+Host miss, predictive H2D success, and reverse migration.
+
+## Optional Future Branches: Global Value Model And SSD Tier
+
+Do not put a global KV value model into the online JointPlan yet. It couples execution ordering,
+HBM victim selection, Host cleanup, and reentry prediction, and can reintroduce a high-overhead
+global optimizer. Evaluate it only after semantic Host eviction is stable, using shadow decisions
+and paired replay against the bounded policy.
+
+Do not add an SSD tier yet. SSD is a possible cold/parked-KV layer when Host forced eviction is
+proven to discard reusable KV, but it introduces asynchronous I/O, durable metadata, staging
+buffers, and another eviction policy. A future design must stage through Host (`SSD -> Host ->
+GPU`), keep KV extents append-only, and preserve active leases. It must not block the current P6
+correctness and throughput gates.
+
 Current P6 predicts `PREPARE_HOST`, which copies KV to Host without releasing
 HBM. A future branch may add `PREDICTIVE_COMMIT_CPU` after the shadow is
 complete:

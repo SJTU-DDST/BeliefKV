@@ -111,6 +111,9 @@ class PhysicalPageRecord:
     sealed: bool = True
     transfer_direction: TransferDirection | None = None
     last_access_ms: float = 0.0
+    # Native write-back is the default because runtime tree sync observes the
+    # post-copy state without a BeliefKV control command.
+    host_copy_source: str = "native_writeback"
 
     @property
     def gpu_resident(self) -> bool:
@@ -693,6 +696,7 @@ class PageOwnershipIndex:
         parent: PageHandle | None = None,
         sealed: bool = True,
         last_access_ms: float = 0.0,
+        host_copy_source: str = "native_writeback",
     ) -> PhysicalPageRecord:
         if size_bytes <= 0:
             raise ValueError("size_bytes must be positive")
@@ -718,6 +722,7 @@ class PageOwnershipIndex:
             parent=parent,
             sealed=sealed,
             last_access_ms=last_access_ms,
+            host_copy_source=host_copy_source,
         )
         self.pages[handle] = page
         self._latest_generation[handle.page_id] = handle.allocation_generation
@@ -1081,6 +1086,7 @@ class PageOwnershipIndex:
         direction: TransferDirection,
         *,
         keep_gpu: bool = True,
+        host_copy_source: str | None = None,
     ) -> None:
         page = self.require_page(handle)
         if page.transfer_direction != direction:
@@ -1091,6 +1097,8 @@ class PageOwnershipIndex:
                 if keep_gpu
                 else PhysicalResidency.CPU_ONLY
             )
+            if host_copy_source is not None:
+                page.host_copy_source = host_copy_source
         else:
             page.residency = PhysicalResidency.DUAL_CLEAN
         page.transfer_direction = None

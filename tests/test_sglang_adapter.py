@@ -11869,6 +11869,109 @@ class SGLangBackendTest(unittest.TestCase):
                 runtime._maybe_queue_host_cleanup(now_ms=6.0)
                 self.assertFalse(runtime._host_cleanup_active)
 
+    def test_host_cleanup_prioritizes_dead_and_native_writeback(self):
+        config = BeliefKVConfig(
+            hbm_capacity_bytes=2000,
+            host_capacity_bytes=1000,
+            reserve_hbm_bytes=100,
+            predictor_enabled=False,
+            host_cleanup_chunk_bytes=100,
+        )
+        controller = BeliefKVController(config)
+        events = [
+            RuntimeEvent(
+                "start-dead", 1.0, RuntimeEventKind.WORKFLOW_START, "wf-dead"
+            ),
+            RuntimeEvent(
+                "create-dead", 2.0, RuntimeEventKind.INVOCATION_CREATE,
+                "wf-dead", invocation_id="inv-dead", context_id="ctx-dead"
+            ),
+            RuntimeEvent(
+                "return-dead", 3.0, RuntimeEventKind.RETURN,
+                "wf-dead", invocation_id="inv-dead", context_id="ctx-dead"
+            ),
+        ]
+        for suffix in ("native", "explicit"):
+            events.extend(
+                (
+                    RuntimeEvent(
+                        f"start-{suffix}",
+                        1.0,
+                        RuntimeEventKind.WORKFLOW_START,
+                        f"wf-{suffix}",
+                    ),
+                    RuntimeEvent(
+                        f"create-{suffix}",
+                        2.0,
+                        RuntimeEventKind.INVOCATION_CREATE,
+                        f"wf-{suffix}",
+                        invocation_id=f"inv-{suffix}",
+                        context_id=f"ctx-{suffix}",
+                    ),
+                    RuntimeEvent(
+                        f"tool-{suffix}",
+                        3.0,
+                        RuntimeEventKind.TOOL_START,
+                        f"wf-{suffix}",
+                        invocation_id=f"inv-{suffix}",
+                        context_id=f"ctx-{suffix}",
+                    ),
+                )
+            )
+        controller.process_runtime_events(tuple(events))
+
+        def add_page(page_id, context_id, residency, source):
+            handle = PageHandle(page_id, 0)
+            controller.page_index.register_page(
+                handle,
+                size_bytes=100,
+                residency=residency,
+                last_access_ms=float(page_id),
+                host_copy_source=source,
+            )
+            controller.page_index.bind_pages(
+                context_id,
+                controller.graph.contexts[context_id].epoch,
+                (handle,),
+            )
+            return handle
+
+        dead_handle = add_page(
+            1, "ctx-dead", PhysicalResidency.CPU_ONLY, "native_writeback"
+        )
+        add_page(
+            2,
+            "ctx-native",
+            PhysicalResidency.DUAL_CLEAN,
+            "native_writeback",
+        )
+        add_page(
+            3,
+            "ctx-explicit",
+            PhysicalResidency.DUAL_CLEAN,
+            "predictive",
+        )
+        runtime = EmbeddedSGLangRuntime.__new__(EmbeddedSGLangRuntime)
+        runtime.config = config
+        runtime.controller = controller
+        runtime.audit = _AuditRecorder()
+        runtime._full_prompt_replay_contexts = set()
+
+        planned = runtime._build_host_cleanup_command(now_ms=10.0)
+
+        self.assertIsNotNone(planned)
+        command, attribution = planned
+        self.assertEqual(attribution["mode"], "dead_cpu_only")
+        self.assertEqual(command.target_handles, (dead_handle,))
+
+        controller.page_index.free_page(dead_handle)
+        planned = runtime._build_host_cleanup_command(now_ms=10.0)
+
+        self.assertIsNotNone(planned)
+        _command, attribution = planned
+        self.assertEqual(attribution["mode"], "native_writeback_shadow")
+        self.assertTrue(attribution["native_writeback"])
+
 
     def test_predictive_shadow_aggregate_preserves_action_diagnostics(self):
         runtime = EmbeddedSGLangRuntime.__new__(EmbeddedSGLangRuntime)

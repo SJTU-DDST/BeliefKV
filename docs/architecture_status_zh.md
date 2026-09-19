@@ -1,7 +1,7 @@
 # BeliefKV 当前架构与实现状态
 
 更新日期：2026-09-19
-当前 P6 代码基线：`a772a61`
+当前 P6 代码基线：`e364d05`
 
 本文只记录当前事实和下一阻塞项，不再追加逐日开发日志。2026-09-12 以前的完整历史保存在
 `docs/archive/snapshots/architecture_status_zh.md`，单次实验细节保存在
@@ -431,6 +431,39 @@ v57 同时暴露两个后续问题：17 笔 atomic H2D 因旧的 authoritative-f
 native demand-load 一样使用安全 native eviction，并通过 201 项 adapter 回归。v57 运行时
 不包含 `a772a61`，因此它的 1/18 H2D 成功率是下界，不是最终策略成功率。
 
+### 5.10 2026-09-19 Host 语义化清理与容量边界
+
+64-root 长上下文 workload 的 unique live KV 已接近或超过 HBM+Host 总容量。当前 Qwen3 Coder
+BF16 KV 为 98,304 bytes/token：
+
+| Tier | Tokens | 60K-token agents |
+| --- | ---: | ---: |
+| HBM 850K | 850,000 | 14.17 |
+| Host 192 GiB | 2,097,152 | 34.95 |
+| Total | 2,947,152 | 49.12 |
+
+因此 64 个 root 加 children 会自然溢出，Host 不再是无限冷缓存；native writeback 会与
+predictive shadow、future reentry 和 dead KV 竞争同一 Host 容量。
+
+旧 Host high-watermark cleanup 有两个缺陷：所有 `DUAL_CLEAN` shadow 一律按 last-access 排序，
+没有区分 native writeback 与 explicit/predictive copy；`CPU_ONLY` 只有 raw-prompt replay
+guarantee 时才可清理，导致部分 dead/terminal context 在高压下无法释放。现已修复为：
+
+1. `PhysicalPageRecord.host_copy_source` 区分 `native_writeback`、`explicit` 和 `predictive`；
+2. Host cleanup 优先释放 dead `CPU_ONLY`；
+3. 其次释放 dead `DUAL_CLEAN`，再优先 native-writeback shadow，最后考虑 explicit shadow；
+4. active restore obligation、prefetch service lease、语义 pin 和非 parked owner 继续受保护；
+5. dead CPU-only 不再要求 raw-prompt replay guarantee；live CPU-only 仍保留该要求，避免无法
+   重算的 active context 被破坏。
+
+全局 KV value model 暂不进入当前决策层。它可能提高长期命中率，但会把 execution、victim、
+Host cleanup 和 reentry 预测耦合到一个大优化问题，增加控制面开销和决策不可解释性。后续只
+作为独立分支评估，并用 shadow A/B 证明收益超过调度开销与决策耦合风险。
+
+SSD 第三层同样暂不实现。它可扩展 cold/parked KV 容量，但会引入异步 I/O、 durable metadata、
+tier staging、恢复路径和新的驱逐问题。在 Host 语义化清理和容量/命中率证据稳定前，加入 SSD
+会使系统复杂度过高。后续只在 Host miss 或 forced eviction 证明存在大量可复用 cold KV 时评估。
+
 ## 6. 当前阻塞项
 
 1. prediction-to-action utilization gap 尚未闭合。初步 H200 高压运行中 predictive arm
@@ -464,25 +497,32 @@ native demand-load 一样使用安全 native eviction，并通过 201 项 adapte
     和 stale prefetch certificate。`87411cc` 已修复，仍需在 v50 自然结束后运行新代码 gate。
 13. v57 的 17 笔 predictive H2D 被 atomic allocator 检查拒绝；`a772a61` 已允许 service
     H2D 使用 native eviction，但该修复尚未进入 GPU 运行。
+14. 64-root 长上下文 workload 超过 HBM+Host 的 2.95M-token 总容量；native writeback、
+    predictive shadow 和 future reentry 在 Host 侧竞争。语义化 Host cleanup 已实现，但尚未
+    进入正在运行的 v58 进程。
+15. 全局 KV value model 与 SSD tiering 均为可选未来分支，不进入当前关键路径；必须先用
+    shadow 证据量化收益、开销和决策耦合风险。
 
 ## 7. 下一步
 
 当前关键路径：
 
-1. 保存 v57 自然运行结果，统计 predictive D2H/H2D precision、saved stall、反向迁移和
-   shutdown correctness。
-2. 使用 `a772a61` 运行下一轮短高压 gate，验证 atomic H2D native-eviction 修复能否将
-   1/18 的 service H2D 物理成功率提高到自然策略水平；不降低安全或收益门禁。
-3. 在 H2D 成功率稳定后测量相对于 reactive native demand-load 的 first-service latency
-   差值和端到端吞吐收益。
-4. 同时继续记录 event-to-hint 长尾和 safe-point P95/P99，不为降低开销重新关闭必要的
+1. 等待 v58 自然完成，统计 predictive D2H/H2D precision、saved stall、反向迁移和
+   shutdown correctness；其中 atomic H2D native-eviction 已将中期成功率提升到 24/25。
+2. v58 结束后，将 Host 语义化清理合入下一轮 GPU gate，统计 dead/native-writeback/explicit
+   cleanup bytes、forced recompute、Host miss 和 predictive H2D success rate。
+3. 在 predictive H2D 成功率稳定后，测量相对于 reactive native demand-load 的 first-service
+   latency 差值和端到端吞吐收益。
+4. 若 Host forced eviction 仍然挤掉高价值 reentry KV，再离线评估全局 KV value model 和
+   SSD cold tier；二者不得与当前调度修复同时上线。
+5. 同时继续记录 event-to-hint 长尾和 safe-point P95/P99，不为降低开销重新关闭必要的
    `TOOL/JOIN` 风险触发。
-5. execution 排序使用 RCCG 已知 unlock、schema-v5 token/HBM demand 和 top-2 boundary
+6. execution 排序使用 RCCG 已知 unlock、schema-v5 token/HBM demand 和 top-2 boundary
    scenarios；任何单一分类 argmax 都不能覆盖 RCCG 确定性事实。
-6. Gate 中任何 stale/OOD/物理化失败均回退 P5；不通过降低收益阈值制造动作。
-7. PREPARE/PREFETCH 各自完成真实 beneficiary 消费后，再按 execution reorder、提前
+7. Gate 中任何 stale/OOD/物理化失败均回退 P5；不通过降低收益阈值制造动作。
+8. PREPARE/PREFETCH 各自完成真实 beneficiary 消费后，再按 execution reorder、提前
    D2H、deficit-time COMMIT 和 latest-start H2D 分解收益，最后启动冻结 baseline/P6 A/B。
-8. 当前 PREFETCH、shutdown 和归因 gate 通过后，再评估“固定物理上限 48、动态软目标
+9. 当前 PREFETCH、shutdown 和归因 gate 通过后，再评估“固定物理上限 48、动态软目标
    `{32,48}`”：低 HBM 压力且存在 GPU-ready backlog 时扩展到 48；预测到 HBM 压力时
    停止新 admission 并自然排空到 32，不因阈值直接撤回 running request；parked KV 仍只
    通过 beneficiary-bound causal package 回收。该优化不得修改当前冻结实验。

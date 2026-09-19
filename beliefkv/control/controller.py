@@ -1019,8 +1019,18 @@ class BeliefKVController:
                 if handle not in inflight.started_handles:
                     raise ValueError(f"D2H page {handle} completed before TRANSFER_START")
                 keep_gpu = inflight.resolved.command.kind == CommandKind.SHADOW_CONTEXT
+                host_copy_source = (
+                    "predictive"
+                    if inflight.resolved.command.metadata.get(
+                        "predictive_intent_id"
+                    )
+                    else "explicit"
+                )
                 self.page_index.complete_transfer(
-                    handle, TransferDirection.D2H, keep_gpu=keep_gpu
+                    handle,
+                    TransferDirection.D2H,
+                    keep_gpu=keep_gpu,
+                    host_copy_source=host_copy_source,
                 )
             elif action.action == PhysicalPageAction.START_H2D:
                 if handle not in inflight.started_handles:

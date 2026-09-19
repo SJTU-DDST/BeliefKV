@@ -10076,6 +10076,20 @@ class EmbeddedSGLangRuntime:
             for invocation in invocations
         )
 
+    def _host_cleanup_context_is_dead(self, context_id: str) -> bool:
+        context = self.controller.graph.contexts.get(context_id)
+        if context is None:
+            return True
+        if context.persistent:
+            return False
+        workflow = self.controller.graph.workflows.get(context.workflow_id)
+        if workflow is not None and workflow.end_ts_ms is not None:
+            return True
+        invocations = tuple(self.controller.graph.context_invocations(context_id))
+        return not invocations or all(
+            invocation.state.terminal for invocation in invocations
+        )
+
     def _build_host_cleanup_command(
         self, *, now_ms: float
     ) -> tuple[ControlCommand, dict[str, object]] | None:
@@ -10088,6 +10102,8 @@ class EmbeddedSGLangRuntime:
         }
         dual_by_context: dict[str, list[Any]] = defaultdict(list)
         cpu_by_context: dict[str, list[Any]] = defaultdict(list)
+        candidate_dead: dict[str, bool] = defaultdict(bool)
+        candidate_native_writeback: dict[str, bool] = defaultdict(bool)
         for page in page_index.pages.values():
             if not page.cpu_resident or not page.transfer_idle:
                 continue
@@ -10098,21 +10114,41 @@ class EmbeddedSGLangRuntime:
             context = self.controller.graph.contexts.get(target_context_id)
             if context is None:
                 continue
+            protected = any(owner in protected_contexts for owner in owners)
+            protected = protected or any(
+                self._context_has_prefetch_service_lease(
+                    owner,
+                    page_index.context_epoch(owner),
+                    now_ms=now_ms,
+                )
+                for owner in owners
+                if page_index.has_context(owner)
+            )
+            if protected:
+                continue
+            all_dead = all(
+                self._host_cleanup_context_is_dead(owner) for owner in owners
+            )
+            all_parked = all(
+                self._host_cleanup_context_is_parked(owner) for owner in owners
+            )
+            if not all_dead and not all_parked:
+                continue
+            candidate_dead[target_context_id] = all_dead
+            candidate_native_writeback[target_context_id] |= any(
+                getattr(page, "host_copy_source", "native_writeback")
+                == "native_writeback"
+                for page in [page]
+            )
             if page.residency == PhysicalResidency.DUAL_CLEAN:
                 dual_by_context[target_context_id].append(page)
                 continue
             if page.residency != PhysicalResidency.CPU_ONLY:
                 continue
-            if any(owner in protected_contexts for owner in owners):
-                continue
-            if any(
+            if not all_dead and any(
                 not page_index.has_context(owner)
                 or (owner, page_index.context_epoch(owner)) not in replay_contexts
                 for owner in owners
-            ):
-                continue
-            if not all(
-                self._host_cleanup_context_is_parked(owner) for owner in owners
             ):
                 continue
             if (
@@ -10133,25 +10169,64 @@ class EmbeddedSGLangRuntime:
         mode: str
         context_id: str
         pages: list[Any]
-        if dual_by_context:
-            context_id, pages = min(
-                dual_by_context.items(),
+        priority: int
+        candidates: dict[str, list[Any]]
+        if cpu_by_context and any(
+            candidate_dead[context_id] for context_id in cpu_by_context
+        ):
+            candidates = cpu_by_context
+            context_id = min(
+                candidates,
                 key=lambda item: (
-                    min(page.last_access_ms for page in item[1]),
-                    item[0],
+                    min(len(page.owner_contexts) for page in candidates[item]),
+                    min(page.last_access_ms for page in candidates[item]),
+                    item,
                 ),
             )
-            mode = "dual_clean_shadow"
+            pages = candidates[context_id]
+            priority = 0
+            mode = "dead_cpu_only"
+        elif dual_by_context:
+            candidates = dual_by_context
+            context_id = min(
+                candidates,
+                key=lambda item: (
+                    0 if candidate_dead[item] else 1,
+                    0 if candidate_native_writeback[item] else 1,
+                    min(page.last_access_ms for page in candidates[item]),
+                    item,
+                ),
+            )
+            pages = candidates[context_id]
+            priority = 1 if candidate_dead[context_id] else 3
+            mode = (
+                "dead_dual_clean"
+                if candidate_dead[context_id]
+                else (
+                    "native_writeback_shadow"
+                    if candidate_native_writeback[context_id]
+                    else "explicit_shadow"
+                )
+            )
         elif cpu_by_context:
-            context_id, pages = min(
-                cpu_by_context.items(),
+            candidates = cpu_by_context
+            context_id = min(
+                candidates,
                 key=lambda item: (
-                    min(len(page.owner_contexts) for page in item[1]),
-                    min(page.last_access_ms for page in item[1]),
-                    item[0],
+                    0 if candidate_dead[item] else 1,
+                    0 if candidate_native_writeback[item] else 1,
+                    min(len(page.owner_contexts) for page in candidates[item]),
+                    min(page.last_access_ms for page in candidates[item]),
+                    item,
                 ),
             )
-            mode = "cpu_only_recompute"
+            pages = candidates[context_id]
+            priority = 0 if candidate_dead[context_id] else 4
+            mode = (
+                "dead_cpu_only"
+                if candidate_dead[context_id]
+                else "cpu_only_recompute"
+            )
         else:
             return None
         context = self.controller.graph.contexts.get(context_id)
@@ -10200,6 +10275,8 @@ class EmbeddedSGLangRuntime:
             metadata={
                 "reason": "host_high_watermark_cleanup",
                 "host_cleanup_mode": mode,
+                "host_cleanup_priority": priority,
+                "native_writeback": candidate_native_writeback[context_id],
                 "owner_context_ids": owner_context_ids,
                 "replay_guaranteed_context_epochs": (
                     tuple(
@@ -10213,6 +10290,8 @@ class EmbeddedSGLangRuntime:
         )
         return command, {
             "mode": mode,
+            "host_cleanup_priority": priority,
+            "native_writeback": candidate_native_writeback[context_id],
             "context_id": context_id,
             "context_epoch": context.epoch,
             "owner_context_ids": owner_context_ids,
