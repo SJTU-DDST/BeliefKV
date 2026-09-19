@@ -12171,6 +12171,11 @@ def test_child_tool_wait_registers_and_clears_rolling_prefetch_watch():
     runtime._predictive_reentry_watch_invocation_ids = set()
     runtime._predictive_child_tool_return_watches = {}
     runtime._joint_predictive_counts = Counter()
+    runtime.audit = _AuditRecorder()
+    runtime._latest_predictive_intent = None
+    runtime._latest_predictive_wait_shadow_preview = None
+    runtime._last_predictive_reentry_watch_poll_ms = 123.0
+    runtime._last_predictive_reentry_risk_signature = ("old",)
     runtime.controller.process_runtime_events(
         (
             RuntimeEvent(
@@ -12223,6 +12228,8 @@ def test_child_tool_wait_registers_and_clears_rolling_prefetch_watch():
     assert runtime._joint_predictive_counts[
         "child_tool_return_watch_registered"
     ] == 1
+    assert runtime._last_predictive_reentry_watch_poll_ms is None
+    assert runtime._last_predictive_reentry_risk_signature is None
 
     tool_end = RuntimeEvent(
         "tool-end",
@@ -12233,6 +12240,12 @@ def test_child_tool_wait_registers_and_clears_rolling_prefetch_watch():
         context_id="ctx-child",
         context_epoch=4,
     )
+    runtime._latest_predictive_intent = SimpleNamespace(
+        intent_id="wait-shadow",
+        invocation_id="child",
+        evidence_kind="model_wait_shadow",
+    )
+    runtime._latest_predictive_wait_shadow_preview = object()
     runtime.controller.process_runtime_event(tool_end)
     triggers = runtime._joint_shadow_predictive_risk_triggers((tool_end,))
     runtime._update_predictive_reentry_watches(triggers, (tool_end,))
@@ -12242,7 +12255,71 @@ def test_child_tool_wait_registers_and_clears_rolling_prefetch_watch():
     assert runtime._joint_predictive_counts[
         "child_tool_return_watch_removed"
     ] == 1
+    assert runtime._latest_predictive_intent is None
+    assert runtime._latest_predictive_wait_shadow_preview is None
+    assert runtime._joint_predictive_counts[
+        "wait_shadow_cancelled_on_reentry"
+    ] == 1
+    assert runtime.audit.events[-1][0] == "predictive_wait_shadow_cancelled"
 
+
+
+def test_new_wait_shadow_validates_in_same_safe_point():
+    runtime = EmbeddedSGLangRuntime.__new__(EmbeddedSGLangRuntime)
+    intent = SimpleNamespace(
+        intent_id="wait-shadow",
+        invocation_id="child",
+        context_id="child-context",
+        action=PredictiveActionKind.PREPARE_HOST,
+        evidence_kind="model_wait_shadow",
+        generated_ts_ms=995.0,
+    )
+    decision = OnlineJointPlanDecision(
+        SimpleNamespace(plan_id="observed-plan"),
+        "applicable",
+    )
+    runtime._latest_predictive_intent = intent
+    runtime._online_joint_result = None
+    runtime._current_predictive_residency_commit = None
+    runtime._joint_predictive_counts = Counter()
+    runtime._joint_shadow_timing_samples = {}
+    runtime.audit = _AuditRecorder()
+
+    def materialize(plan, current, *, now_ms, current_runnable=None):
+        assert plan.plan_id == "observed-plan"
+        assert current is decision
+        assert now_ms == 1_000.0
+        assert current_runnable is None
+        runtime._current_predictive_residency_commit = object()
+        return current
+
+    runtime._physical_commit_predictive_intent = mock.Mock(
+        side_effect=materialize
+    )
+    runtime._finalize_predictive_safe_point_commit = mock.Mock(
+        return_value=True
+    )
+
+    committed = runtime._commit_new_wait_shadow_intent_at_safe_point(
+        decision,
+        now_ms=1_000.0,
+    )
+
+    assert committed is decision
+    runtime._physical_commit_predictive_intent.assert_called_once()
+    runtime._finalize_predictive_safe_point_commit.assert_called_once()
+    assert runtime._joint_predictive_counts[
+        "wait_shadow_same_safe_point_committed"
+    ] == 1
+    assert list(
+        runtime._joint_shadow_timing_samples[
+            "wait_shadow_publish_to_validation_ms"
+        ]
+    ) == [5.0]
+    event = runtime.audit.events[-1]
+    assert event[0] == "predictive_wait_shadow_same_safe_point_validation"
+    assert event[2]["publish_to_validation_start_ms"] == 5.0
+    assert event[2]["outcome"] == "committed"
 
 def test_predictive_reentry_dependency_probability_composes_join_mode():
     parent = SimpleNamespace(

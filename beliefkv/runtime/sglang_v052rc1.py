@@ -10482,6 +10482,9 @@ class EmbeddedSGLangRuntime:
             self._latest_action_local_overlay_batch = None
         self._current_online_joint_view = online_joint_decision.view
         self._current_online_joint_decision = online_joint_decision
+        predictive_intent_before_risk = getattr(
+            self, "_latest_predictive_intent", None
+        )
         joint_shadow_worker = getattr(self, "joint_shadow_worker", None)
         if (
             joint_shadow_worker is not None
@@ -10495,6 +10498,23 @@ class EmbeddedSGLangRuntime:
                 joint_shadow_worker,
                 observation=policy_observation,
             )
+        predictive_intent_after_risk = getattr(
+            self, "_latest_predictive_intent", None
+        )
+        if (
+            predictive_intent_after_risk is not None
+            and predictive_intent_after_risk is not predictive_intent_before_risk
+            and predictive_intent_after_risk.evidence_kind == "model_wait_shadow"
+            and online_joint_decision.view is not None
+        ):
+            online_joint_decision = (
+                self._commit_new_wait_shadow_intent_at_safe_point(
+                    online_joint_decision,
+                    now_ms=float(self._now_ms()),
+                )
+            )
+            self._current_online_joint_view = online_joint_decision.view
+            self._current_online_joint_decision = online_joint_decision
         self._drive_restore_obligations(now_ms=float(self._now_ms()))
         self._advance_restore_authority(now_ms=float(self._now_ms()))
         restore_authority_mode = getattr(
@@ -17672,6 +17692,11 @@ class EmbeddedSGLangRuntime:
                 self._joint_predictive_counts[
                     "child_tool_start_prepare_triggered"
                 ] += 1
+                # A TOOL_START creates the PREPARE window. Do not wait for the
+                # periodic reentry poll before evaluating this event-aligned
+                # opportunity.
+                self._last_predictive_reentry_watch_poll_ms = None
+                self._last_predictive_reentry_risk_signature = None
             elif event.kind in {
                 RuntimeEventKind.TOOL_END,
                 RuntimeEventKind.REACTIVATE,
@@ -17682,6 +17707,26 @@ class EmbeddedSGLangRuntime:
                     self._joint_predictive_counts[
                         "child_tool_return_watch_removed"
                     ] += 1
+                intent = getattr(self, "_latest_predictive_intent", None)
+                if (
+                    intent is not None
+                    and intent.evidence_kind == "model_wait_shadow"
+                    and intent.invocation_id == invocation_id
+                ):
+                    self._latest_predictive_intent = None
+                    self._latest_predictive_wait_shadow_preview = None
+                    self._joint_predictive_counts[
+                        "wait_shadow_cancelled_on_reentry"
+                    ] += 1
+                    self.audit.emit(
+                        "predictive_wait_shadow_cancelled",
+                        event.ts_ms,
+                        audit_level="correctness",
+                        intent_id=intent.intent_id,
+                        invocation_id=invocation_id,
+                        event_kind=event.kind.value,
+                        reason="wait_ended_before_commit",
+                    )
 
     def _predictive_max_running_requests(self) -> int:
         for owner in (
@@ -25763,6 +25808,101 @@ class EmbeddedSGLangRuntime:
             validation_cpu_ms=cpu_ms,
         )
         return True
+
+    def _commit_new_wait_shadow_intent_at_safe_point(
+        self,
+        decision: OnlineJointPlanDecision,
+        *,
+        now_ms: float,
+    ) -> OnlineJointPlanDecision:
+        """Validate a newly published wait shadow in the current safe point."""
+
+        intent = getattr(self, "_latest_predictive_intent", None)
+        if (
+            intent is None
+            or intent.action != PredictiveActionKind.PREPARE_HOST
+            or intent.evidence_kind != "model_wait_shadow"
+            or decision.view is None
+        ):
+            return decision
+
+        result = getattr(self, "_online_joint_result", None)
+        plan = getattr(result, "plan", None)
+        if plan is None or plan.plan_id != decision.view.plan_id:
+            plan = _PredictiveOverlaySeedPlan(decision.view.plan_id)
+
+        observed_decision = decision
+        started_ns = time.perf_counter_ns()
+        cpu_started_ns = time.thread_time_ns()
+        publish_to_validation_ms = max(0.0, now_ms - intent.generated_ts_ms)
+        outcome = "rejected"
+        try:
+            decision = self._physical_commit_predictive_intent(
+                plan,
+                decision,
+                now_ms=now_ms,
+            )
+        except Exception as error:
+            self._current_predictive_residency_commit = None
+            self._latest_predictive_intent = None
+            self._latest_predictive_wait_shadow_preview = None
+            self._joint_predictive_counts[
+                "wait_shadow_same_safe_point_validation_error"
+            ] += 1
+            self.audit.emit(
+                "predictive_safe_point_fallback",
+                now_ms,
+                audit_level="correctness",
+                plan_id=decision.view.plan_id,
+                intent_id=intent.intent_id,
+                error=f"{type(error).__name__}: {error}",
+                source="wait_shadow_same_safe_point",
+                fallback="observed_joint_plan",
+            )
+            decision = observed_decision
+
+        elapsed_ms = (time.perf_counter_ns() - started_ns) / 1_000_000.0
+        cpu_ms = (time.thread_time_ns() - cpu_started_ns) / 1_000_000.0
+        materialized = self._current_predictive_residency_commit is not None
+        if materialized:
+            if self._finalize_predictive_safe_point_commit(
+                now_ms=now_ms,
+                wall_ms=elapsed_ms,
+                cpu_ms=cpu_ms,
+                counter_prefix="wait_shadow_same_safe_point",
+            ):
+                outcome = "committed"
+            else:
+                outcome = "budget_fallback"
+                decision = observed_decision
+
+        self._joint_shadow_timing_samples.setdefault(
+            "wait_shadow_publish_to_validation_ms", deque(maxlen=65_536)
+        ).append(publish_to_validation_ms)
+        self._joint_shadow_timing_samples.setdefault(
+            "wait_shadow_same_safe_point_validation_ms", deque(maxlen=65_536)
+        ).append(elapsed_ms)
+        self._joint_shadow_timing_samples.setdefault(
+            "wait_shadow_same_safe_point_validation_cpu_ms",
+            deque(maxlen=65_536),
+        ).append(cpu_ms)
+        self._joint_predictive_counts[
+            f"wait_shadow_same_safe_point_{outcome}"
+        ] += 1
+        self.audit.emit(
+            "predictive_wait_shadow_same_safe_point_validation",
+            now_ms + elapsed_ms,
+            audit_level="correctness",
+            intent_id=intent.intent_id,
+            invocation_id=intent.invocation_id,
+            context_id=intent.context_id,
+            plan_id=observed_decision.view.plan_id,
+            publish_to_validation_start_ms=publish_to_validation_ms,
+            validation_wall_ms=elapsed_ms,
+            validation_cpu_ms=cpu_ms,
+            outcome=outcome,
+        )
+        return decision
 
     def _safe_point_seed_decision(
         self, *, now_ms: float
