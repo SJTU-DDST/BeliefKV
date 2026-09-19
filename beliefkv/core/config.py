@@ -94,6 +94,8 @@ class BeliefKVConfig:
     predictive_prepare_host_enabled: bool = True
     # Concurrent physical PREPARE bound; completed actions do not consume it.
     predictive_prepare_host_canary_limit: int = 0
+    predictive_prepare_opportunistic_enabled: bool = True
+    predictive_prepare_opportunistic_pressure_prior: float = 0.25
     predictive_prepare_micro_gate_enabled: bool = False
     predictive_prepare_micro_gate_id: str = "p6-prepare-mechanism-v1"
     predictive_prepare_micro_gate_min_private_bytes: int = 64 * 1024 * 1024
@@ -334,6 +336,10 @@ class BeliefKVConfig:
             )
         if self.predictive_prepare_host_canary_limit < 0:
             raise ValueError("predictive prepare canary limit must be non-negative")
+        if not 0 <= self.predictive_prepare_opportunistic_pressure_prior <= 1:
+            raise ValueError(
+                "predictive opportunistic PREPARE pressure prior must be in [0, 1]"
+            )
         if (
             self.predictive_prepare_host_canary_limit > 0
             and not self.shadow_enabled

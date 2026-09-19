@@ -12709,16 +12709,74 @@ def test_wait_tool_publishes_beneficiary_bound_prepare_shadow():
     runtime._joint_predictive_counts["prepare_host_queued"] = 1
     runtime.controller.actual_hbm_used_bytes = 700
     low_pressure_observation = replace(observation, ts_ms=2_000.0)
-    assert not runtime._maybe_publish_predictive_wait_shadow_intent(
+    runtime._latest_predictive_intent = None
+    assert runtime._maybe_publish_predictive_wait_shadow_intent(
         [(invocation, SimpleNamespace(), 400)],
         features={},
         predictions={"child": prediction},
         observation=low_pressure_observation,
         native_inflight_bytes=0,
     )
+    low_pressure_intent = runtime._latest_predictive_intent
+    assert low_pressure_intent.beneficiary_request_id is None
+    assert low_pressure_intent.predicted_deficit_bytes == 0
+    assert low_pressure_intent.max_copy_bytes <= 1_024
+    assert low_pressure_intent.expected_benefit_ms == 53.0
+    assert runtime._joint_predictive_counts[
+        "wait_shadow_opportunistic_partial_published"
+    ] == 1
+    assert runtime._joint_predictive_counts[
+        "wait_shadow_intent_published"
+    ] == 2
+
+    runtime._latest_predictive_intent = None
+    host_pressure_observation = replace(
+        observation,
+        ts_ms=2_500.0,
+        host_used_bytes=1_800,
+        host_free_bytes=200,
+    )
+    assert not runtime._maybe_publish_predictive_wait_shadow_intent(
+        [(invocation, SimpleNamespace(), 400)],
+        features={},
+        predictions={"child": prediction},
+        observation=host_pressure_observation,
+        native_inflight_bytes=0,
+    )
     assert runtime._joint_predictive_counts[
         "wait_shadow_below_gross_pressure_suppressed"
     ] == 1
+
+    runtime._latest_predictive_intent = None
+    runtime.controller.actual_hbm_used_bytes = 900
+    runtime._latest_observed_seed_beneficiary_candidates = ()
+    assert runtime._maybe_publish_predictive_wait_shadow_intent(
+        [(invocation, SimpleNamespace(), 400)],
+        features={},
+        predictions={"child": prediction},
+        observation=replace(observation, ts_ms=2_750.0),
+        native_inflight_bytes=0,
+    )
+    high_pressure_fallback = runtime._latest_predictive_intent
+    assert high_pressure_fallback.beneficiary_request_id is None
+    assert high_pressure_fallback.expected_benefit_ms == 71.0
+    assert runtime._joint_predictive_counts[
+        "wait_shadow_no_beneficiary_deficit"
+    ] == 1
+    assert runtime._joint_predictive_counts[
+        "wait_shadow_opportunistic_partial_published"
+    ] == 2
+    runtime._latest_observed_seed_beneficiary_candidates = (
+        SimpleNamespace(
+            request_id="beneficiary-request",
+            invocation_id="beneficiary",
+            context_id="beneficiary-context",
+            context_epoch=9,
+            startup_bytes=300,
+            growth_bytes=200,
+            service_lag_ms=100.0,
+        ),
+    )
 
     runtime._latest_predictive_intent = None
     busy_observation = replace(observation, ts_ms=3_000.0)

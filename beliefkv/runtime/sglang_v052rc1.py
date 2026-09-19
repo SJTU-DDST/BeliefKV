@@ -19501,67 +19501,83 @@ class EmbeddedSGLangRuntime:
             self.controller.actual_hbm_used_bytes
             / max(1, observation.hbm_capacity_bytes),
         )
-        if (
+        high_pressure_mode = (
             gross_pressure
-            < self.config.observed_admission_active_kv_high_watermark_ratio
-        ):
-            self._joint_predictive_counts[
-                "wait_shadow_below_gross_pressure_suppressed"
-            ] += 1
-            return False
+            >= self.config.observed_admission_active_kv_high_watermark_ratio
+        )
+        host_used_ratio = (
+            observation.host_capacity_bytes - observation.host_free_bytes
+        ) / max(1, observation.host_capacity_bytes)
+        host_low_watermark_ratio = float(
+            getattr(self.config, "host_low_watermark_ratio", 0.85)
+        )
 
         beneficiary_hint = None
         beneficiary_probe = None
-        probe_environment = self._predictive_beneficiary_probe_environment(
-            observation
-        )
-        wait_context_ids = {item[0].context_id for item in candidates}
-        runnable_by_request = {
-            item.request_id: item
-            for item in (
-                getattr(self, "_latest_bounded_seed_runnable", ())
-                or getattr(self, "_last_policy_runtime_runnable", ())
+        if high_pressure_mode:
+            probe_environment = self._predictive_beneficiary_probe_environment(
+                observation
             )
-        }
-        for candidate in getattr(
-            self,
-            "_latest_observed_seed_beneficiary_candidates",
-            (),
+            wait_context_ids = {item[0].context_id for item in candidates}
+            runnable_by_request = {
+                item.request_id: item
+                for item in (
+                    getattr(self, "_latest_bounded_seed_runnable", ())
+                    or getattr(self, "_last_policy_runtime_runnable", ())
+                )
+            }
+            for candidate in getattr(
+                self,
+                "_latest_observed_seed_beneficiary_candidates",
+                (),
+            ):
+                request = runnable_by_request.get(candidate.request_id)
+                if (
+                    request is None
+                    or request.invocation_id != candidate.invocation_id
+                    or request.context_id != candidate.context_id
+                    or request.context_epoch != candidate.context_epoch
+                ):
+                    continue
+                if candidate.context_id in wait_context_ids:
+                    continue
+                probe = self._predictive_beneficiary_opportunity_probe(
+                    candidate,
+                    observation,
+                    environment=probe_environment,
+                )
+                if probe.predicted_deficit_bytes <= 0:
+                    continue
+                if (
+                    probe.beneficiary_slot_blocked
+                    and not probe.beneficiary_slot_then_hbm_blocked
+                ):
+                    continue
+                if beneficiary_probe is None or (
+                    probe.predicted_deficit_bytes,
+                    candidate.service_lag_ms,
+                ) > (
+                    beneficiary_probe.predicted_deficit_bytes,
+                    beneficiary_hint.service_lag_ms,
+                ):
+                    beneficiary_hint = candidate
+                    beneficiary_probe = probe
+            if beneficiary_hint is None or beneficiary_probe is None:
+                self._joint_predictive_counts[
+                    "wait_shadow_no_beneficiary_deficit"
+                ] += 1
+        if beneficiary_hint is None and (
+            not bool(
+                getattr(
+                    self.config,
+                    "predictive_prepare_opportunistic_enabled",
+                    True,
+                )
+            )
+            or host_used_ratio >= host_low_watermark_ratio
         ):
-            request = runnable_by_request.get(candidate.request_id)
-            if (
-                request is None
-                or request.invocation_id != candidate.invocation_id
-                or request.context_id != candidate.context_id
-                or request.context_epoch != candidate.context_epoch
-            ):
-                continue
-            if candidate.context_id in wait_context_ids:
-                continue
-            probe = self._predictive_beneficiary_opportunity_probe(
-                candidate,
-                observation,
-                environment=probe_environment,
-            )
-            if probe.predicted_deficit_bytes <= 0:
-                continue
-            if (
-                probe.beneficiary_slot_blocked
-                and not probe.beneficiary_slot_then_hbm_blocked
-            ):
-                continue
-            if beneficiary_probe is None or (
-                probe.predicted_deficit_bytes,
-                candidate.service_lag_ms,
-            ) > (
-                beneficiary_probe.predicted_deficit_bytes,
-                beneficiary_hint.service_lag_ms,
-            ):
-                beneficiary_hint = candidate
-                beneficiary_probe = probe
-        if beneficiary_hint is None or beneficiary_probe is None:
             self._joint_predictive_counts[
-                "wait_shadow_no_beneficiary_deficit"
+                "wait_shadow_below_gross_pressure_suppressed"
             ] += 1
             return False
 
@@ -19689,8 +19705,22 @@ class EmbeddedSGLangRuntime:
             else:
                 interference_ms = float(raw_interference_ms)
                 interference_source = "transfer_service_curve"
-            expected_benefit_ms = (
+            pressure_probability = (
                 gross_pressure
+                if beneficiary_hint is not None
+                else max(
+                    gross_pressure,
+                    float(
+                        getattr(
+                            self.config,
+                            "predictive_prepare_opportunistic_pressure_prior",
+                            0.25,
+                        )
+                    ),
+                )
+            )
+            expected_benefit_ms = (
+                pressure_probability
                 * timing.favorable_probability
                 * transfer_ms
                 - interference_ms
@@ -19800,20 +19830,54 @@ class EmbeddedSGLangRuntime:
             ),
             causal_slack_probability=timing.favorable_probability,
             timing_semantics=timing.semantics,
-            beneficiary_request_id=beneficiary_hint.request_id,
-            beneficiary_invocation_id=beneficiary_hint.invocation_id,
-            beneficiary_context_id=beneficiary_hint.context_id,
-            beneficiary_context_epoch=beneficiary_hint.context_epoch,
-            beneficiary_startup_bytes=beneficiary_hint.startup_bytes,
-            beneficiary_growth_bytes=beneficiary_hint.growth_bytes,
-            predicted_block_time_ms=beneficiary_probe.predicted_block_time_ms,
-            predicted_deficit_bytes=beneficiary_probe.predicted_deficit_bytes,
+            beneficiary_request_id=(
+                beneficiary_hint.request_id
+                if beneficiary_hint is not None
+                else None
+            ),
+            beneficiary_invocation_id=(
+                beneficiary_hint.invocation_id
+                if beneficiary_hint is not None
+                else None
+            ),
+            beneficiary_context_id=(
+                beneficiary_hint.context_id
+                if beneficiary_hint is not None
+                else None
+            ),
+            beneficiary_context_epoch=(
+                beneficiary_hint.context_epoch
+                if beneficiary_hint is not None
+                else None
+            ),
+            beneficiary_startup_bytes=(
+                beneficiary_hint.startup_bytes
+                if beneficiary_hint is not None
+                else 0
+            ),
+            beneficiary_growth_bytes=(
+                beneficiary_hint.growth_bytes
+                if beneficiary_hint is not None
+                else 0
+            ),
+            predicted_block_time_ms=(
+                beneficiary_probe.predicted_block_time_ms
+                if beneficiary_probe is not None
+                else None
+            ),
+            predicted_deficit_bytes=(
+                beneficiary_probe.predicted_deficit_bytes
+                if beneficiary_probe is not None
+                else 0
+            ),
             causal_package_generation=(
                 f"{beneficiary_hint.request_id}:"
                 f"{beneficiary_hint.context_id}:"
                 f"c{beneficiary_hint.context_epoch}:"
                 f"{beneficiary_hint.startup_bytes}:"
                 f"{beneficiary_hint.growth_bytes}"
+                if beneficiary_hint is not None
+                else None
             ),
             evidence_kind="model_wait_shadow",
         )
@@ -19836,6 +19900,13 @@ class EmbeddedSGLangRuntime:
             observation.ts_ms,
         )
         self._joint_predictive_counts["wait_shadow_intent_published"] += 1
+        self._joint_predictive_counts[
+            (
+                "wait_shadow_high_pressure_deficit_published"
+                if beneficiary_hint is not None
+                else "wait_shadow_opportunistic_partial_published"
+            )
+        ] += 1
         self.audit.emit(
             "predictive_wait_shadow_intent_published",
             published_ts_ms,
@@ -19856,9 +19927,21 @@ class EmbeddedSGLangRuntime:
             interference_p90_ms=interference_ms,
             interference_source=interference_source,
             expected_benefit_ms=expected_benefit_ms,
-            beneficiary_request_id=beneficiary_hint.request_id,
+            prepare_mode=(
+                "high_pressure_deficit_bound"
+                if beneficiary_hint is not None
+                else "opportunistic_partial"
+            ),
+            host_used_ratio=host_used_ratio,
+            beneficiary_request_id=(
+                beneficiary_hint.request_id
+                if beneficiary_hint is not None
+                else None
+            ),
             beneficiary_predicted_deficit_bytes=(
                 beneficiary_probe.predicted_deficit_bytes
+                if beneficiary_probe is not None
+                else None
             ),
             source_observation_ts_ms=observation.ts_ms,
             source_observation_age_ms=max(

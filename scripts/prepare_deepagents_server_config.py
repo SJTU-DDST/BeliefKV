@@ -128,6 +128,23 @@ def main() -> int:
         ),
     )
     parser.add_argument(
+        "--disable-predictive-prepare-opportunistic",
+        action="store_true",
+        help=(
+            "Disable unbound opportunistic partial PREPARE_HOST copies during "
+            "idle transfer windows."
+        ),
+    )
+    parser.add_argument(
+        "--predictive-prepare-opportunistic-pressure-prior",
+        type=float,
+        default=0.25,
+        help=(
+            "Minimum future-pressure prior used by opportunistic partial "
+            "PREPARE_HOST valuation."
+        ),
+    )
+    parser.add_argument(
         "--predictive-prepare-control-lead-ms",
         type=float,
         default=250.0,
@@ -461,6 +478,10 @@ def main() -> int:
             "a bounded concurrent PREPARE_HOST policy requires "
             "--enable-shadow-transfers"
         )
+    if not 0 <= args.predictive_prepare_opportunistic_pressure_prior <= 1:
+        parser.error(
+            "--predictive-prepare-opportunistic-pressure-prior must be in [0, 1]"
+        )
     if args.predictive_prepare_micro_gate_min_private_mib <= 0:
         parser.error(
             "--predictive-prepare-micro-gate-min-private-mib must be positive"
@@ -694,6 +715,12 @@ def main() -> int:
         "predictive_prepare_host_enabled": True,
         "predictive_prepare_host_canary_limit": (
             args.predictive_prepare_canary_limit
+        ),
+        "predictive_prepare_opportunistic_enabled": (
+            not args.disable_predictive_prepare_opportunistic
+        ),
+        "predictive_prepare_opportunistic_pressure_prior": (
+            args.predictive_prepare_opportunistic_pressure_prior
         ),
         "predictive_prepare_micro_gate_enabled": (
             args.enable_predictive_prepare_micro_gate
