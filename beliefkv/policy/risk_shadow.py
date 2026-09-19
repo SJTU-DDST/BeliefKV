@@ -1930,6 +1930,10 @@ class PredictiveRiskShadowObserver:
                 dict.fromkeys(
                     (
                         *(
+                            item.invocation_id
+                            for item in eligibility.prefetch_targets[:4]
+                        ),
+                        *(
                             (projected_requirement.beneficiary_invocation_id,)
                             if projected_requirement is not None
                             else ()
@@ -1941,10 +1945,6 @@ class PredictiveRiskShadowObserver:
                         *(
                             item.invocation_id
                             for item in eligibility.prepare_host_victims[:2]
-                        ),
-                        *(
-                            item.invocation_id
-                            for item in eligibility.prefetch_targets[:4]
                         ),
                     )
                 )
@@ -3964,6 +3964,11 @@ class PredictiveRiskShadowObserver:
             )
         )
         for target in eligibility.prefetch_targets[:4]:
+            if (
+                allowed_invocation_ids is not None
+                and target.invocation_id not in allowed_invocation_ids
+            ):
+                continue
             request = request_by_invocation.get(target.invocation_id)
             reclaim_victim = next(
                 (

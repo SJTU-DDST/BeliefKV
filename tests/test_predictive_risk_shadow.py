@@ -213,7 +213,17 @@ def test_candidate_packages_exclude_invocations_outside_belief_scope() -> None:
     )
     eligibility = PredictiveEligibility(
         source_snapshot_id="snapshot",
-        prefetch_targets=(),
+        prefetch_targets=(
+            PrefetchTarget(
+                "invocation-prefetch-in", "ctx-prefetch-in", "wait_tool", 64
+            ),
+            PrefetchTarget(
+                "invocation-prefetch-other",
+                "ctx-prefetch-other",
+                "wait_tool",
+                64,
+            ),
+        ),
         prepare_host_victims=(
             PrepareHostVictim(
                 "invocation-in", "ctx-in", "WAIT_TOOL", 100, 100
@@ -233,7 +243,12 @@ def test_candidate_packages_exclude_invocations_outside_belief_scope() -> None:
         SimpleNamespace(plan_id="plan"),
         eligibility,
         allowed_invocation_ids=frozenset(
-            {"invocation-in", "invocation-other", "invocation-third"}
+            {
+                "invocation-in",
+                "invocation-other",
+                "invocation-third",
+                "invocation-prefetch-in",
+            }
         ),
         projected_requirement=ProjectedReclaimRequirement(
             beneficiary_request_id="beneficiary",
@@ -251,6 +266,7 @@ def test_candidate_packages_exclude_invocations_outside_belief_scope() -> None:
         "plan:a0",
         "plan:prepare:ctx-in",
         "plan:prepare:ctx-other",
+        "plan:prefetch:ctx-prefetch-in",
     ]
 
 
