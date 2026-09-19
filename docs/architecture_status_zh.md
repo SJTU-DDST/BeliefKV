@@ -465,6 +465,18 @@ SSD 第三层同样暂不实现。它可扩展 cold/parked KV 容量，但会引
 tier staging、恢复路径和新的驱逐问题。在 Host 语义化清理和容量/命中率证据稳定前，加入 SSD
 会使系统复杂度过高。后续只在 Host miss 或 forced eviction 证明存在大量可复用 cold KV 时评估。
 
+### 5.11 2026-09-20 v58 predictive H2D gate
+
+v58 自然完成 64/64 workflow。`a772a61` 的 service H2D native-eviction 修复将物理成功率
+从 v57 的 1/18 提升到 24/25：22.15 GB predictive H2D 完成，20.97 GB 在首个 GPU service 后
+进入 useful attribution。H2D duration P50/P95 为 510/1,245 ms。
+
+运行 HBM pressure mean/max 为 97.4%/100%，Host used mean/max 为 169.5/192.0 GB。v58 未包含
+`7ae2be6` Host 语义化清理，因此它证明了 predictive H2D 机制和高压容量边界，但没有解决 Host
+侧竞争。唯一 API timeout workflow 的 restore obligation 因 request abort 取消；shutdown drain
+将残留 command 显式置为 cancelled，最终事务、lease、obligation 全部清空。运行时仍有 1 笔
+H2D completion ownership race 需要修复。
+
 ## 6. 当前阻塞项
 
 1. prediction-to-action utilization gap 尚未闭合。初步 H200 高压运行中 predictive arm
@@ -503,6 +515,8 @@ tier staging、恢复路径和新的驱逐问题。在 Host 语义化清理和�
     进入正在运行的 v58 进程。
 15. 全局 KV value model 与 SSD tiering 均为可选未来分支，不进入当前关键路径；必须先用
     shadow 证据量化收益、开销和决策耦合风险。
+16. v58 暴露 request-abort 后 inflight restore command 需要等待 shutdown drain 才显式
+    cancelled，以及 1 笔 H2D ended-without-authoritative-GPU-copy race。
 
 ## 7. 下一步
 
@@ -510,20 +524,21 @@ tier staging、恢复路径和新的驱逐问题。在 Host 语义化清理和�
 
 1. 等待 v58 自然完成，统计 predictive D2H/H2D precision、saved stall、反向迁移和
    shutdown correctness；其中 atomic H2D native-eviction 已将中期成功率提升到 24/25。
-2. v58 结束后，将 Host 语义化清理合入下一轮 GPU gate，统计 dead/native-writeback/explicit
+2. 修复 request-abort command 即时清理和 H2D completion ownership race。
+3. 将 Host 语义化清理合入下一轮 GPU gate，统计 dead/native-writeback/explicit
    cleanup bytes、forced recompute、Host miss 和 predictive H2D success rate。
-3. 在 predictive H2D 成功率稳定后，测量相对于 reactive native demand-load 的 first-service
+4. 在 predictive H2D 成功率稳定后，测量相对于 reactive native demand-load 的 first-service
    latency 差值和端到端吞吐收益。
-4. 若 Host forced eviction 仍然挤掉高价值 reentry KV，再离线评估全局 KV value model 和
+5. 若 Host forced eviction 仍然挤掉高价值 reentry KV，再离线评估全局 KV value model 和
    SSD cold tier；二者不得与当前调度修复同时上线。
-5. 同时继续记录 event-to-hint 长尾和 safe-point P95/P99，不为降低开销重新关闭必要的
+6. 同时继续记录 event-to-hint 长尾和 safe-point P95/P99，不为降低开销重新关闭必要的
    `TOOL/JOIN` 风险触发。
-6. execution 排序使用 RCCG 已知 unlock、schema-v5 token/HBM demand 和 top-2 boundary
+7. execution 排序使用 RCCG 已知 unlock、schema-v5 token/HBM demand 和 top-2 boundary
    scenarios；任何单一分类 argmax 都不能覆盖 RCCG 确定性事实。
-7. Gate 中任何 stale/OOD/物理化失败均回退 P5；不通过降低收益阈值制造动作。
-8. PREPARE/PREFETCH 各自完成真实 beneficiary 消费后，再按 execution reorder、提前
+8. Gate 中任何 stale/OOD/物理化失败均回退 P5；不通过降低收益阈值制造动作。
+9. PREPARE/PREFETCH 各自完成真实 beneficiary 消费后，再按 execution reorder、提前
    D2H、deficit-time COMMIT 和 latest-start H2D 分解收益，最后启动冻结 baseline/P6 A/B。
-9. 当前 PREFETCH、shutdown 和归因 gate 通过后，再评估“固定物理上限 48、动态软目标
+10. 当前 PREFETCH、shutdown 和归因 gate 通过后，再评估“固定物理上限 48、动态软目标
    `{32,48}`”：低 HBM 压力且存在 GPU-ready backlog 时扩展到 48；预测到 HBM 压力时
    停止新 admission 并自然排空到 32，不因阈值直接撤回 running request；parked KV 仍只
    通过 beneficiary-bound causal package 回收。该优化不得修改当前冻结实验。

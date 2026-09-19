@@ -10,6 +10,7 @@
 
 | 报告 | 用途 |
 | --- | --- |
+| [Predictive H2D v58](beliefkv_p6_predictive_h2d_v58_2026-09-20_zh.md) | atomic native-eviction 修复后的自然 64-root H2D 成功率与 useful attribution |
 | [Predictive H2D closure](beliefkv_p6_predictive_h2d_closure_v57_2026-09-19_zh.md) | 首笔自然 predictive H2D 到 useful attribution 的完整链路 |
 | [Prepare/Prefetch utility fix](beliefkv_p6_prepare_prefetch_utility_fix_2026-09-19_zh.md) | v50 中期根因与 beneficiary-bound/refresh 修复 |
 | [Wait-shadow latency v47/v48](beliefkv_p6_wait_shadow_latency_v47_v48_2026-09-19_zh.md) | 校正 publish 指标并定位 bounded physical preview 瓶颈 |
