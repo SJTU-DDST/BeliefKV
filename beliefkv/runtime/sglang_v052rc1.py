@@ -2708,6 +2708,9 @@ class EmbeddedSGLangRuntime:
         self._latest_predictive_wait_shadow_preview: (
             tuple[str, int, PageHandle, PhysicalBundlePreview] | None
         ) = None
+        self._latest_predictive_wait_shadow_source_ts: (
+            tuple[str, float] | None
+        ) = None
         self._predictive_wait_shadow_retry_not_before_ms: float | None = None
         self._predictive_prefetch_watches: dict[
             tuple[str, int], _PredictivePrefetchWatch
@@ -19670,6 +19673,7 @@ class EmbeddedSGLangRuntime:
             interference_source,
             expected_benefit_ms,
         ) = selected
+        published_ts_ms = float(self._now_ms())
         wait_window_ms = max(
             5_000.0,
             2.0 * timing.operational_tau_ms,
@@ -19699,7 +19703,7 @@ class EmbeddedSGLangRuntime:
             expected_invocation_state=invocation.state.value,
             context_id=invocation.context_id,
             context_epoch=context.epoch,
-            generated_ts_ms=observation.ts_ms,
+            generated_ts_ms=published_ts_ms,
             remaining_window_low_ms=wait_window_ms,
             transfer_p95_ms=transfer_ms,
             target_bytes_hint=preview.copy_bytes,
@@ -19753,10 +19757,14 @@ class EmbeddedSGLangRuntime:
             if len(preview_roots) == 1
             else None
         )
+        self._latest_predictive_wait_shadow_source_ts = (
+            intent_id,
+            observation.ts_ms,
+        )
         self._joint_predictive_counts["wait_shadow_intent_published"] += 1
         self.audit.emit(
             "predictive_wait_shadow_intent_published",
-            observation.ts_ms,
+            published_ts_ms,
             audit_level="correctness",
             intent_id=intent_id,
             invocation_id=invocation.invocation_id,
@@ -19774,6 +19782,10 @@ class EmbeddedSGLangRuntime:
             interference_p90_ms=interference_ms,
             interference_source=interference_source,
             expected_benefit_ms=expected_benefit_ms,
+            source_observation_ts_ms=observation.ts_ms,
+            source_observation_age_ms=max(
+                0.0, published_ts_ms - observation.ts_ms
+            ),
         )
         return True
 
@@ -20117,10 +20129,62 @@ class EmbeddedSGLangRuntime:
                 "predicted_reentry_model_unavailable"
             ] += 1
             return False
+        if prepare_candidates:
+            effective_observation = self._joint_shadow_effective_observation(
+                self._runtime_resource_observation()
+            )
+            bounded_prepare_candidates = sorted(
+                prepare_candidates,
+                key=lambda item: (
+                    item[0].updated_ts_ms,
+                    -item[2],
+                    item[0].invocation_id,
+                ),
+            )[:_PREDICTIVE_REENTRY_WATCH_LIMIT]
+            local_prediction_started_ns = time.perf_counter_ns()
+            try:
+                prepare_features = build_invocation_frontier_features(
+                    graph,
+                    predictor,
+                    now_ms=float(self._now_ms()),
+                    invocation_ids=tuple(
+                        item[0].invocation_id
+                        for item in bounded_prepare_candidates
+                    ),
+                )
+                prepare_predictions = {
+                    invocation_id: frontier_model.predict(invocation_features)
+                    for invocation_id, invocation_features
+                    in prepare_features.items()
+                }
+            except Exception:
+                self._joint_predictive_counts[
+                    "wait_shadow_local_prediction_failed"
+                ] += 1
+            else:
+                local_prediction_ms = (
+                    time.perf_counter_ns() - local_prediction_started_ns
+                ) / 1_000_000.0
+                self._joint_shadow_timing_samples.setdefault(
+                    "wait_shadow_local_prediction_ms",
+                    deque(maxlen=65_536),
+                ).append(local_prediction_ms)
+                if self._maybe_publish_predictive_wait_shadow_intent(
+                    bounded_prepare_candidates,
+                    features=prepare_features,
+                    predictions=prepare_predictions,
+                    observation=effective_observation,
+                    native_inflight_bytes=native_inflight_bytes,
+                ):
+                    self._joint_predictive_counts[
+                        "wait_shadow_local_fast_path_published"
+                    ] += 1
+                    return True
+        if not candidates:
+            return False
         invocation_ids = tuple(
             dict.fromkeys(
-                item[0].invocation_id
-                for item in (*prepare_candidates, *candidates)
+                item[0].invocation_id for item in candidates
             )
         )
         prediction_invocation_ids = (
@@ -20145,18 +20209,6 @@ class EmbeddedSGLangRuntime:
                 "predicted_reentry_prediction_failed"
             ] += 1
             return False
-
-        wait_shadow_published = self._maybe_publish_predictive_wait_shadow_intent(
-            prepare_candidates,
-            features=features,
-            predictions=predictions,
-            observation=self._joint_shadow_effective_observation(
-                observation or self._runtime_resource_observation()
-            ),
-            native_inflight_bytes=native_inflight_bytes,
-        )
-        if not candidates:
-            return wait_shadow_published
 
         eligible = []
         for invocation, summary, missing_gpu_bytes in candidates:
@@ -25835,6 +25887,17 @@ class EmbeddedSGLangRuntime:
         started_ns = time.perf_counter_ns()
         cpu_started_ns = time.thread_time_ns()
         publish_to_validation_ms = max(0.0, now_ms - intent.generated_ts_ms)
+        source_observation_to_validation_ms = publish_to_validation_ms
+        source_timestamp = getattr(
+            self, "_latest_predictive_wait_shadow_source_ts", None
+        )
+        if (
+            source_timestamp is not None
+            and source_timestamp[0] == intent.intent_id
+        ):
+            source_observation_to_validation_ms = max(
+                0.0, now_ms - source_timestamp[1]
+            )
         outcome = "rejected"
         try:
             decision = self._physical_commit_predictive_intent(
@@ -25880,6 +25943,10 @@ class EmbeddedSGLangRuntime:
             "wait_shadow_publish_to_validation_ms", deque(maxlen=65_536)
         ).append(publish_to_validation_ms)
         self._joint_shadow_timing_samples.setdefault(
+            "wait_shadow_source_observation_to_validation_ms",
+            deque(maxlen=65_536),
+        ).append(source_observation_to_validation_ms)
+        self._joint_shadow_timing_samples.setdefault(
             "wait_shadow_same_safe_point_validation_ms", deque(maxlen=65_536)
         ).append(elapsed_ms)
         self._joint_shadow_timing_samples.setdefault(
@@ -25898,6 +25965,9 @@ class EmbeddedSGLangRuntime:
             context_id=intent.context_id,
             plan_id=observed_decision.view.plan_id,
             publish_to_validation_start_ms=publish_to_validation_ms,
+            source_observation_to_validation_start_ms=(
+                source_observation_to_validation_ms
+            ),
             validation_wall_ms=elapsed_ms,
             validation_cpu_ms=cpu_ms,
             outcome=outcome,

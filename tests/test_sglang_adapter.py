@@ -12279,6 +12279,7 @@ def test_new_wait_shadow_validates_in_same_safe_point():
         "applicable",
     )
     runtime._latest_predictive_intent = intent
+    runtime._latest_predictive_wait_shadow_source_ts = ("wait-shadow", 990.0)
     runtime._online_joint_result = None
     runtime._current_predictive_residency_commit = None
     runtime._joint_predictive_counts = Counter()
@@ -12316,10 +12317,17 @@ def test_new_wait_shadow_validates_in_same_safe_point():
             "wait_shadow_publish_to_validation_ms"
         ]
     ) == [5.0]
+    assert list(
+        runtime._joint_shadow_timing_samples[
+            "wait_shadow_source_observation_to_validation_ms"
+        ]
+    ) == [10.0]
     event = runtime.audit.events[-1]
     assert event[0] == "predictive_wait_shadow_same_safe_point_validation"
     assert event[2]["publish_to_validation_start_ms"] == 5.0
     assert event[2]["outcome"] == "committed"
+    assert event[2]["source_observation_to_validation_start_ms"] == 10.0
+
 
 def test_predictive_reentry_dependency_probability_composes_join_mode():
     parent = SimpleNamespace(
@@ -12501,6 +12509,7 @@ def test_wait_tool_publishes_model_backed_prepare_shadow_without_beneficiary():
         shadow_chunk_bytes=1_024,
         predictive_commit_guard_ms=25.0,
     )
+    runtime._now_ms = lambda: 1_025.0
     runtime.audit = _AuditRecorder()
     runtime._joint_predictive_counts = Counter()
     runtime._latest_predictive_intent = None
@@ -12534,6 +12543,10 @@ def test_wait_tool_publishes_model_backed_prepare_shadow_without_beneficiary():
     )
 
     intent = runtime._latest_predictive_intent
+    assert intent.generated_ts_ms == 1_025.0
+    assert runtime._latest_predictive_wait_shadow_source_ts == (
+        intent.intent_id, 1_000.0
+    )
     assert intent.action is PredictiveActionKind.PREPARE_HOST
     assert intent.evidence_kind == "model_wait_shadow"
     assert runtime._predictive_runtime_intent_holds_slot(intent)
@@ -12587,6 +12600,8 @@ def test_wait_tool_publishes_model_backed_prepare_shadow_without_beneficiary():
         == CommandKind.OFFLOAD_CONTEXT.value
     )
     assert runtime.audit.events[-1][0] == "predictive_wait_shadow_intent_published"
+    assert runtime.audit.events[-1][1] == 1_025.0
+    assert runtime.audit.events[-1][2]["source_observation_age_ms"] == 25.0
     assert (
         runtime.audit.events[-1][2]["interference_source"]
         == "bounded_measurement_canary_proxy"
