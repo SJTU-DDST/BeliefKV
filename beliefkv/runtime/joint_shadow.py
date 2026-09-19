@@ -492,7 +492,7 @@ def coalesce_joint_shadow_deltas(
     frontier_features: dict[str, Mapping[str, object]] = {}
     frontier_feature_sources: dict[str, FrontierFeatureSource] = {}
     removed_frontier_ids: set[str] = set()
-    risk_triggers: set[tuple[str, str, str, int]] = set()
+    latest_risk_triggers: tuple[tuple[str, str, str, int], ...] = ()
 
     for delta in deltas:
         if delta.event_from_sequence != event_cursor:
@@ -541,7 +541,8 @@ def coalesce_joint_shadow_deltas(
         for source in delta.frontier_feature_sources:
             removed_frontier_ids.discard(source.invocation_id)
             frontier_feature_sources[source.invocation_id] = source
-        risk_triggers.update(delta.risk_trigger_signature)
+        if delta.risk_evaluation_requested:
+            latest_risk_triggers = delta.risk_trigger_signature
 
     last = deltas[-1]
     page_delta = PageIndexReplicaDelta(
@@ -605,7 +606,7 @@ def coalesce_joint_shadow_deltas(
         force_risk_evaluation=any(
             item.force_risk_evaluation for item in deltas
         ),
-        risk_trigger_signature=tuple(sorted(risk_triggers)),
+        risk_trigger_signature=latest_risk_triggers,
         observed_seed_beneficiary=last.observed_seed_beneficiary,
         action_local_overlay_batch=(
             overlay_update.action_local_overlay_batch
@@ -2119,9 +2120,10 @@ class LatestWinsJointPlanWorker:
                         self._risk_dirty or delta.risk_evaluation_requested
                     )
                     force_risk_evaluation = delta.force_risk_evaluation
-                    self._risk_trigger_signatures.update(
-                        delta.risk_trigger_signature
-                    )
+                    if delta.risk_evaluation_requested:
+                        self._risk_trigger_signatures = set(
+                            delta.risk_trigger_signature
+                        )
                     snapshot_delta_apply_ms = (
                         time.perf_counter_ns() - apply_started_ns
                     ) / 1_000_000.0

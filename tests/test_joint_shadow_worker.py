@@ -2131,6 +2131,49 @@ def test_shadow_delta_coalesces_explicit_overlay_clear() -> None:
     )
 
 
+def test_shadow_delta_coalesces_latest_risk_trigger_only() -> None:
+    controller = BeliefKVController(
+        BeliefKVConfig(
+            hbm_capacity_bytes=1_000,
+            host_capacity_bytes=1_000,
+            reserve_hbm_bytes=0,
+            predictor_enabled=False,
+            shadow_enabled=False,
+        )
+    )
+    controller.process_runtime_event(_event(1, RuntimeEventKind.WORKFLOW_START))
+    first = replace(
+        _delta(controller, event_sequence=0, page_revision=0, ts_ms=1),
+        risk_evaluation_requested=True,
+        risk_trigger_signature=(("reentry", "tool_end", "old", 0),),
+    )
+    controller.process_runtime_event(
+        _event(
+            2,
+            RuntimeEventKind.INVOCATION_CREATE,
+            invocation_id="child",
+            context_id="context-child",
+            context_epoch=0,
+        )
+    )
+    second = replace(
+        _delta(
+            controller,
+            event_sequence=first.event_to_sequence,
+            page_revision=first.page_delta.to_revision,
+            ts_ms=2,
+        ),
+        risk_evaluation_requested=True,
+        risk_trigger_signature=(
+            ("reentry", "child_tool_return_latest_start", "child", 0),
+        ),
+    )
+
+    combined = coalesce_joint_shadow_deltas((first, second))
+
+    assert combined.risk_trigger_signature == second.risk_trigger_signature
+
+
 def test_frontier_feature_source_materializes_worker_graph_state() -> None:
     source = FrontierFeatureSource(
         "invocation",
