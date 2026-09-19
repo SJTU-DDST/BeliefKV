@@ -1,7 +1,7 @@
 # BeliefKV 当前架构与实现状态
 
 更新日期：2026-09-19
-当前 P6 代码基线：`994de39`
+当前 P6 代码基线：`38c389b`
 
 本文只记录当前事实和下一阻塞项，不再追加逐日开发日志。2026-09-12 以前的完整历史保存在
 `docs/archive/snapshots/architecture_status_zh.md`，单次实验细节保存在
@@ -61,6 +61,12 @@ Agent events
 
 同步 safe-point 只执行有界状态捕获、seed 和动作局部校验；预测与 scenario evaluation 在
 异步 worker 中运行。任何 stale、OOD、资源不可行或收益不足的预测结果都回退 P5。
+
+wait-shadow 路径已将“预测输入观测时间”和“intent 实际发布时间”拆分。v48 中真实
+publish-to-validation P95 为 0.395 ms，same-safe-point validation P95 为 0.761 ms；但
+source-observation-to-validation P95 仍为 750.16 ms。后者主要来自 bounded physical preview
+枚举所有子树的近似 O(N^2) 扫描，`38c389b` 已改为基于一次 `private_subtree()` 结果的线性
+候选选择。该优化仍需短 GPU gate 验证，不能仅凭 CPU 回归宣称端到端时延合格。
 
 在线预测权限已收敛为 action-minimal 接口：execution/admission 只消费 remaining decode、
 next output 和实际 startup/growth demand；`PREPARE_HOST/PREFETCH_GPU` 只消费 live transfer

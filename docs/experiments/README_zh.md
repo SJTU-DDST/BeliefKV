@@ -10,6 +10,7 @@
 
 | 报告 | 用途 |
 | --- | --- |
+| [Wait-shadow latency v47/v48](beliefkv_p6_wait_shadow_latency_v47_v48_2026-09-19_zh.md) | 校正 publish 指标并定位 bounded physical preview 瓶颈 |
 | [Wait-shadow validation latency v46](beliefkv_p6_wait_shadow_validation_latency_v46_2026-09-19_zh.md) | PREPARE 迟到发布/验证根因与 same-safe-point 修复 |
 | [Natural PREPARE no-opportunity](beliefkv_p6_natural_prepare_canary_no_opportunity_2026-09-12_zh.md) | 区分高 HBM 与真实 beneficiary opportunity |
 | [PREPARE_HOST mechanism gate](beliefkv_p6_prepare_host_mechanism_gate_2026-09-12_zh.md) | 单笔 predictive D2H 全链路正确性 |

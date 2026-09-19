@@ -6,6 +6,12 @@
 
 ## 结论
 
+> 2026-09-19 更正：v46 的 `intent publish` 时间戳实际复用了预测输入的
+> `observation.ts_ms`，因此下文的 `intent publish 到 safe-point validation` 应解释为
+> `source observation 到 safe-point validation`。它仍准确暴露了端到端动作形成过慢，
+> 但不能作为真正 publish-to-validation 延迟。修正后的两类指标见
+> `beliefkv_p6_wait_shadow_latency_v47_v48_2026-09-19_zh.md`。
+
 v46 证明缺少及时 PREPARE 的首要原因不是工具窗口普遍过短，而是
 `TOOL_START -> intent publish -> safe-point validation` 控制链晚于真实工具生命周期。
 本轮受控停止时，同类拒绝从观察中的 427 次增长到 444 次。实验已正常 shutdown：
@@ -20,7 +26,7 @@ v46 证明缺少及时 PREPARE 的首要原因不是工具窗口普遍过短，�
 | --- | ---: | ---: |
 | 对应工具总时长 | 449.33 ms | 1,571.71 ms |
 | TOOL_START 到 intent publish | 375.50 ms | 1,295.89 ms |
-| intent publish 到 safe-point validation | 991.98 ms | 2,283.03 ms |
+| source observation 到 safe-point validation（旧字段误名） | 991.98 ms | 2,283.03 ms |
 | TOOL_START 到 validation | 1,478.83 ms | 3,094.94 ms |
 
 其中：
