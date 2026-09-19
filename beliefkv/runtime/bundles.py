@@ -178,37 +178,8 @@ class PhysicalBundleBuilder:
             or self.page_index.context_epoch(context_id) != context_epoch
         ):
             return None
-        if max_copy_bytes is not None:
-            if max_copy_bytes <= 0:
-                return None
-            bounded = tuple(
-                preview
-                for preview in self._offload_previews(
-                    CommandKind.SHADOW_CONTEXT,
-                    context_id,
-                    context_epoch,
-                    now_ms=now_ms,
-                    allow_ready_owners=False,
-                    protected_context_id=None,
-                    bypass_owner_context_ids=frozenset(),
-                    host_available_bytes=host_available_bytes,
-                )
-                if preview.eligible
-                and 0 < preview.copy_bytes <= max_copy_bytes
-                and preview.bundle.exclusive_action_bytes > 0
-                and preview.bundle.cross_context_action_bytes == 0
-                and preview.bundle.owner_context_ids == (context_id,)
-            )
-            return max(
-                bounded,
-                key=lambda preview: (
-                    preview.copy_bytes,
-                    preview.bundle.exclusive_action_bytes,
-                    -len(preview.page_actions),
-                    preview.bundle.bundle_id,
-                ),
-                default=None,
-            )
+        if max_copy_bytes is not None and max_copy_bytes <= 0:
+            return None
 
         target_owner = {context_id}
         memo: dict[PageHandle, tuple[bool, bool, int]] = {}
@@ -260,8 +231,10 @@ class PhysicalBundleBuilder:
             private, unblocked, copy_bytes = private_subtree(page.handle)
             if not private or not unblocked or copy_bytes <= 0:
                 continue
+            if max_copy_bytes is not None and copy_bytes > max_copy_bytes:
+                continue
             parent_is_candidate = False
-            if page.parent is not None:
+            if max_copy_bytes is None and page.parent is not None:
                 parent = self.page_index.pages.get(page.parent)
                 if parent is not None and parent.gpu_resident:
                     parent_private, parent_unblocked, parent_bytes = private_subtree(
@@ -289,8 +262,13 @@ class PhysicalBundleBuilder:
                 preview is not None
                 and preview.eligible
                 and preview.copy_bytes > 0
+                and (
+                    max_copy_bytes is None
+                    or preview.copy_bytes <= max_copy_bytes
+                )
                 and preview.bundle.exclusive_action_bytes > 0
                 and preview.bundle.cross_context_action_bytes == 0
+                and preview.bundle.owner_context_ids == (context_id,)
             ):
                 return preview
         return None
