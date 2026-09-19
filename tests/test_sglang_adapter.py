@@ -12808,6 +12808,107 @@ def test_wait_tool_publishes_beneficiary_bound_prepare_shadow():
     )
 
 
+def test_visible_service_request_publishes_predictive_prefetch_intent():
+    runtime = EmbeddedSGLangRuntime.__new__(EmbeddedSGLangRuntime)
+    runtime.config = SimpleNamespace(
+        predictive_prefetch_canary_enabled=True,
+        predictive_joint_overlay_enabled=True,
+        predictive_commit_guard_ms=25.0,
+        predictive_prefetch_desired_lead_ms=100.0,
+    )
+    runtime.audit = _AuditRecorder()
+    runtime._joint_predictive_counts = Counter()
+    runtime._latest_predictive_intent = None
+    runtime._pending_online_joint_residency = None
+    runtime._last_frontier_model_version = "frontier-v8"
+    runtime._latest_bounded_seed_priority_request_ids = ("request",)
+    request = SimpleNamespace(
+        request_id="request",
+        invocation_id="invocation",
+        context_id="context",
+        context_epoch=7,
+        causal_class="engine_waiting:deferred",
+        admission_startup_bytes=128,
+        admission_growth_bytes=64,
+        startup_bytes=128,
+    )
+    runtime._latest_bounded_seed_runnable = (request,)
+    runtime._now_ms = lambda: 1_000.0
+    runtime._context_has_prefetch_service_lease = (
+        lambda *_args, **_kwargs: False
+    )
+    runtime._restore_obligation_index = lambda: SimpleNamespace(
+        active=lambda: False
+    )
+    runtime._predictive_action_local_causal_certificate = (
+        lambda *_args, **_kwargs: {
+            "model_version": "frontier-v8",
+            "invocation_evidence": [["invocation", "ready"]],
+        }
+    )
+    invocation = SimpleNamespace(
+        state=InvocationState.READY,
+        terminal=False,
+    )
+    context = SimpleNamespace(epoch=7)
+    summary = SimpleNamespace(
+        extent_count=3,
+        physical_unique_bytes=128,
+        gpu_bytes=32,
+        cpu_bytes=96,
+    )
+    transfer = SimpleNamespace(
+        shape_supported=True,
+        source="shape_supported",
+        estimated_completion_p90_ms=80.0,
+    )
+    runtime.controller = SimpleNamespace(
+        has_pending_transfer_work=lambda: False,
+        predictor=SimpleNamespace(
+            frontier_model=SimpleNamespace(model_version="frontier-v8")
+        ),
+        graph=SimpleNamespace(
+            invocations={"invocation": invocation},
+            contexts={"context": context},
+        ),
+        page_index=SimpleNamespace(
+            revision=19,
+            has_context=lambda _context_id: True,
+            context_epoch=lambda _context_id: 7,
+            context_revision=lambda _context_id: 21,
+            context_physical_summary=lambda _context_id: summary,
+        ),
+        service_curve=SimpleNamespace(
+            estimate=mock.Mock(return_value=transfer),
+            estimate_direction_envelope=mock.Mock(return_value=transfer),
+        ),
+    )
+    observation = RuntimeResourceObservation(
+        ts_ms=999.0,
+        hbm_capacity_bytes=1_000,
+        hbm_used_bytes=900,
+        host_capacity_bytes=2_000,
+        host_used_bytes=100,
+        host_free_bytes=1_900,
+    )
+
+    assert runtime._maybe_publish_observed_service_prefetch_intent(
+        now_ms=1_000.0,
+        observation=observation,
+    )
+
+    intent = runtime._latest_predictive_intent
+    assert intent.action is PredictiveActionKind.PREFETCH_GPU
+    assert intent.evidence_kind == "observed_service_prefetch"
+    assert intent.beneficiary_request_id == "request"
+    assert intent.target_bytes_hint == 96
+    assert intent.max_copy_bytes == 96
+    assert intent.remaining_window_low_ms == 180.0
+    assert runtime._joint_predictive_counts[
+        "service_prefetch_intent_published"
+    ] == 1
+
+
 def test_predicted_reentry_publishes_one_bounded_risk_delta_without_beneficiary():
     runtime = EmbeddedSGLangRuntime.__new__(EmbeddedSGLangRuntime)
     invocation = SimpleNamespace(

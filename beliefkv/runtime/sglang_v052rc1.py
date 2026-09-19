@@ -960,7 +960,10 @@ class HiCacheNodeCommandBackend:
                     )
                 except (SGLangBackendError, AssertionError, RuntimeError) as error:
                     self._reject(pending, item.handle, error)
-            if not pending.rejected_handles:
+            allow_native_eviction = bool(
+                command.command.metadata.get("allow_native_eviction", False)
+            )
+            if not pending.rejected_handles and not allow_native_eviction:
                 try:
                     self._preflight_bundle_capacity(prepared)
                 except (SGLangBackendError, AssertionError, RuntimeError) as error:
@@ -1108,13 +1111,18 @@ class HiCacheNodeCommandBackend:
         required_bytes = sum(item.size_bytes for item, _ in prepared)
         allocator = self._authoritative_device_allocator()
         available_before = self._allocator_available(allocator)
+        allow_native_eviction = bool(
+            pending.resolved.command.metadata.get(
+                "allow_native_eviction", False
+            )
+        )
         if available_before is None:
             raise SGLangBackendError(
                 "HiCache device allocator does not expose available_size",
                 blocker_code=TransferBlockerCode.UNKNOWN_BACKEND,
                 required_bytes=required_bytes,
             )
-        if expected_tokens > available_before:
+        if expected_tokens > available_before and not allow_native_eviction:
             raise SGLangBackendError(
                 "atomic H2D closure exceeds authoritative free device tokens",
                 blocker_code=TransferBlockerCode.DEVICE_CAPACITY,
@@ -1128,7 +1136,7 @@ class HiCacheNodeCommandBackend:
             loaded = self.tree_cache.load_back(
                 leaf_node,
                 force=True,
-                allow_eviction=False,
+                allow_eviction=allow_native_eviction,
                 beliefkv_source="explicit",
             )
         finally:
@@ -1155,7 +1163,7 @@ class HiCacheNodeCommandBackend:
             )
         available_after = self._allocator_available(allocator)
         pending.h2d_allocator_available_after_submit = available_after
-        if (
+        if not allow_native_eviction and (
             available_after is None
             or available_before - available_after != expected_tokens
         ):
@@ -1574,7 +1582,11 @@ class HiCacheNodeCommandBackend:
                 loaded = self.tree_cache.load_back(
                     node,
                     force=True,
-                    allow_eviction=False,
+                    allow_eviction=bool(
+                        pending.resolved.command.metadata.get(
+                            "allow_native_eviction", False
+                        )
+                    ),
                     beliefkv_source="explicit",
                 )
             finally:
@@ -10510,7 +10522,8 @@ class EmbeddedSGLangRuntime:
         if (
             predictive_intent_after_risk is not None
             and predictive_intent_after_risk is not predictive_intent_before_risk
-            and predictive_intent_after_risk.evidence_kind == "model_wait_shadow"
+            and predictive_intent_after_risk.evidence_kind
+            in {"model_wait_shadow", "observed_service_prefetch"}
             and online_joint_decision.view is not None
         ):
             online_joint_decision = (
@@ -20055,6 +20068,18 @@ class EmbeddedSGLangRuntime:
                 "predicted_reentry_no_current_observed_mirror"
             ] += 1
             return False
+        effective_observation = (
+            observation
+            if observation is not None
+            else self._joint_shadow_effective_observation(
+                self._runtime_resource_observation()
+            )
+        )
+        if self._maybe_publish_observed_service_prefetch_intent(
+            now_ms=now_ms,
+            observation=effective_observation,
+        ):
+            return True
 
         graph = self.controller.graph
         page_index = self.controller.page_index
@@ -22416,6 +22441,242 @@ class EmbeddedSGLangRuntime:
             ),
         )
         return refreshed
+
+    def _maybe_publish_observed_service_prefetch_intent(
+        self,
+        *,
+        now_ms: float,
+        observation: RuntimeResourceObservation,
+    ) -> bool:
+        """Prefetch a visible request's CPU-only closure before native demand load."""
+
+        if (
+            not bool(
+                getattr(
+                    self.config,
+                    "predictive_prefetch_canary_enabled",
+                    False,
+                )
+            )
+            or not bool(
+                getattr(
+                    self.config,
+                    "predictive_joint_overlay_enabled",
+                    False,
+                )
+            )
+            or getattr(self, "_latest_predictive_intent", None) is not None
+            or getattr(self, "_pending_online_joint_residency", None) is not None
+            or self.controller.has_pending_transfer_work()
+            or self._restore_obligation_index().active()
+        ):
+            return False
+        backend = getattr(self, "backend", None)
+        native_inflight_bytes = (
+            backend._native_inflight_bytes()
+            if backend is not None
+            and hasattr(backend, "_native_inflight_bytes")
+            else 0
+        )
+        if native_inflight_bytes > 0:
+            self._joint_predictive_counts[
+                "service_prefetch_native_transfer_busy"
+            ] += 1
+            return False
+        graph = self.controller.graph
+        page_index = self.controller.page_index
+        predictor = getattr(self.controller, "predictor", None)
+        frontier_model = getattr(predictor, "frontier_model", None)
+        model_version = str(
+            getattr(self, "_last_frontier_model_version", None)
+            or getattr(frontier_model, "model_version", "")
+        )
+        if frontier_model is None or not model_version:
+            return False
+
+        runnable = (
+            getattr(self, "_latest_bounded_seed_runnable", ())
+            or getattr(self, "_last_policy_runtime_runnable", ())
+        )
+        priority_ids = (
+            getattr(self, "_latest_bounded_seed_priority_request_ids", ())
+            or tuple(item.request_id for item in runnable)
+        )
+        runnable_by_id = {item.request_id: item for item in runnable}
+        selected = None
+        selected_score = None
+        for rank, request_id in enumerate(priority_ids[:16]):
+            request = runnable_by_id.get(request_id)
+            if (
+                request is None
+                or not request.causal_class.startswith("engine_waiting:")
+            ):
+                continue
+            invocation = graph.invocations.get(request.invocation_id)
+            context = graph.contexts.get(request.context_id)
+            if (
+                invocation is None
+                or context is None
+                or invocation.state.terminal
+                or context.epoch != request.context_epoch
+                or not page_index.has_context(request.context_id)
+                or page_index.context_epoch(request.context_id)
+                != request.context_epoch
+            ):
+                continue
+            if self._context_has_prefetch_service_lease(
+                request.context_id,
+                request.context_epoch,
+                now_ms=now_ms,
+            ):
+                continue
+            summary = page_index.context_physical_summary(request.context_id)
+            missing_gpu_bytes = max(
+                0, summary.physical_unique_bytes - summary.gpu_bytes
+            )
+            if missing_gpu_bytes <= 0 or summary.cpu_bytes <= 0:
+                continue
+            transfer = self.controller.service_curve.estimate(
+                TransferDirection.H2D,
+                missing_gpu_bytes,
+                page_count=max(1, summary.extent_count),
+                command_kind=CommandKind.PREFETCH_CONTEXT.value,
+                host_copy_state="present",
+                pinned_host=True,
+                native_concurrent_bytes=0,
+            )
+            if not transfer.shape_supported:
+                transfer = self.controller.service_curve.estimate_direction_envelope(
+                    TransferDirection.H2D,
+                    missing_gpu_bytes,
+                    command_kind=CommandKind.PREFETCH_CONTEXT.value,
+                    host_copy_state="present",
+                    pinned_host=True,
+                    native_concurrent_bytes=0,
+                )
+            transfer_ms = max(
+                0.001, transfer.estimated_completion_p90_ms
+            )
+            score = (
+                -missing_gpu_bytes,
+                rank,
+            )
+            if selected_score is None or score < selected_score:
+                selected_score = score
+                selected = (request, invocation, context, summary, transfer, transfer_ms)
+        if selected is None:
+            self._joint_predictive_counts[
+                "service_prefetch_no_visible_cpu_context"
+            ] += 1
+            return False
+
+        request, invocation, context, summary, transfer, transfer_ms = selected
+        published_ts_ms = float(self._now_ms())
+        context_revision = page_index.context_revision(request.context_id)
+        remaining_window_ms = (
+            transfer_ms
+            + self.config.predictive_prefetch_desired_lead_ms
+        )
+        startup_bytes = (
+            request.admission_startup_bytes
+            if request.admission_startup_bytes is not None
+            else request.startup_bytes
+        )
+        growth_bytes = request.admission_growth_bytes or 0
+        intent_id = (
+            f"predictive-service-prefetch:{request.request_id}:"
+            f"c{request.context_epoch}:r{context_revision}"
+        )
+        self._latest_predictive_intent = PredictiveIntent(
+            intent_id=intent_id,
+            source_joint_plan_id=(
+                getattr(
+                    getattr(self, "_current_online_joint_view", None),
+                    "plan_id",
+                    None,
+                )
+                or "bounded-service-seed"
+            ),
+            source_snapshot_id=(
+                f"service-prefetch:page-r{page_index.revision}"
+            ),
+            package_id=(
+                f"bounded-service-seed:prefetch:{request.request_id}:"
+                f"{request.context_id}:c{request.context_epoch}"
+            ),
+            model_version=model_version,
+            action=PredictiveActionKind.PREFETCH_GPU,
+            invocation_id=request.invocation_id,
+            expected_invocation_state=invocation.state.value,
+            context_id=request.context_id,
+            context_epoch=request.context_epoch,
+            generated_ts_ms=published_ts_ms,
+            remaining_window_low_ms=remaining_window_ms,
+            transfer_p95_ms=transfer_ms,
+            target_bytes_hint=summary.physical_unique_bytes
+            - summary.gpu_bytes,
+            min_reclaimable_bytes=0,
+            max_cross_context_bytes=summary.physical_unique_bytes
+            - summary.gpu_bytes,
+            max_copy_bytes=summary.physical_unique_bytes
+            - summary.gpu_bytes,
+            causal_certificate=self._predictive_action_local_causal_certificate(
+                graph,
+                invocation_ids=(request.invocation_id,),
+                context_ids=(request.context_id,),
+                model_version=model_version,
+            ),
+            required_prediction_heads=("observed_service_reentry",),
+            prediction_head_support=(
+                ("observed_service_reentry", "observed"),
+            ),
+            calibration_coverage=1.0,
+            future_hbm_feasibility_probability=1.0,
+            expected_benefit_ms=transfer_ms,
+            shape_fingerprint="observed-service-prefetch",
+            predicted_extent_count=max(1, summary.extent_count),
+            maximum_transfer_ms=max(transfer_ms * 1.25, transfer_ms + 1.0),
+            maximum_stall_ms=0.0,
+            morphology_slack_ms=remaining_window_ms,
+            causal_slack_probability=1.0,
+            timing_semantics="release_within_transfer",
+            beneficiary_request_id=request.request_id,
+            beneficiary_invocation_id=request.invocation_id,
+            beneficiary_context_id=request.context_id,
+            beneficiary_context_epoch=request.context_epoch,
+            beneficiary_startup_bytes=int(startup_bytes or 0),
+            beneficiary_growth_bytes=int(growth_bytes),
+            predicted_block_time_ms=0.0,
+            predicted_deficit_bytes=0,
+            causal_package_generation=(
+                f"{request.request_id}:{request.context_id}:"
+                f"c{request.context_epoch}:{startup_bytes or 0}:"
+                f"{growth_bytes}"
+            ),
+            target_reentry_context_epoch=request.context_epoch,
+            evidence_kind="observed_service_prefetch",
+        )
+        self._joint_predictive_counts[
+            "service_prefetch_intent_published"
+        ] += 1
+        self._joint_predictive_counts["semantic_intent_published"] += 1
+        self.audit.emit(
+            "predictive_semantic_intent_published",
+            published_ts_ms,
+            audit_level="correctness",
+            **self._latest_predictive_intent.to_dict(),
+            service_prefetch=True,
+            observed_request_id=request.request_id,
+            missing_gpu_bytes=summary.physical_unique_bytes
+            - summary.gpu_bytes,
+            cpu_bytes=summary.cpu_bytes,
+            transfer_source=getattr(transfer, "source", "service_curve"),
+            observation_ts_ms=observation.ts_ms,
+            source_observation_age_ms=max(
+                0.0, published_ts_ms - observation.ts_ms
+            ),
+        )
+        return True
 
     def _register_predictive_prefetch_watch(
         self,
@@ -25248,7 +25509,11 @@ class EmbeddedSGLangRuntime:
                     target.context_epoch,
                     now_ms=now_ms,
                     host_available_bytes=host_available,
-                    device_available_bytes=device_available,
+                    device_available_bytes=(
+                        None
+                        if intent.evidence_kind == "observed_service_prefetch"
+                        else device_available
+                    ),
                 )
             for candidate in live_candidates if not reasons else ():
                 if not {
@@ -26059,9 +26324,17 @@ class EmbeddedSGLangRuntime:
         intent = getattr(self, "_latest_predictive_intent", None)
         if (
             intent is None
-            or intent.action != PredictiveActionKind.PREPARE_HOST
-            or intent.evidence_kind != "model_wait_shadow"
             or decision.view is None
+            or not (
+                (
+                    intent.action == PredictiveActionKind.PREPARE_HOST
+                    and intent.evidence_kind == "model_wait_shadow"
+                )
+                or (
+                    intent.action == PredictiveActionKind.PREFETCH_GPU
+                    and intent.evidence_kind == "observed_service_prefetch"
+                )
+            )
         ):
             return decision
 
@@ -27260,6 +27533,9 @@ class EmbeddedSGLangRuntime:
                 "predictive_model_version": intent.model_version,
                 "predictive_evidence_kind": intent.evidence_kind,
                 "predictive_action": intent.action.value,
+                "allow_native_eviction": (
+                    intent.evidence_kind == "observed_service_prefetch"
+                ),
                 "predictive_swap_stage": (
                     "victim_commit"
                     if victim_preview is not None
