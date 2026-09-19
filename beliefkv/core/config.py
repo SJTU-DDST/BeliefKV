@@ -92,6 +92,7 @@ class BeliefKVConfig:
     predictive_risk_process_isolation_enabled: bool = True
     predictive_joint_overlay_enabled: bool = False
     predictive_prepare_host_enabled: bool = True
+    # Concurrent physical PREPARE bound; completed actions do not consume it.
     predictive_prepare_host_canary_limit: int = 0
     predictive_prepare_micro_gate_enabled: bool = False
     predictive_prepare_micro_gate_id: str = "p6-prepare-mechanism-v1"
@@ -101,6 +102,7 @@ class BeliefKVConfig:
     predictive_prefetch_canary_max_inflight: int = 1
     predictive_prefetch_min_hbm_feasibility: float = 0.95
     predictive_commit_guard_ms: float = 25.0
+    predictive_prepare_control_lead_ms: float = 250.0
     predictive_prefetch_desired_lead_ms: float = 100.0
     predictive_intent_max_age_ms: float = 60_000.0
     predictive_beneficiary_projection_horizon_ms: float = 2000.0
@@ -337,7 +339,7 @@ class BeliefKVConfig:
             and not self.shadow_enabled
         ):
             raise ValueError(
-                "a bounded predictive PREPARE_HOST canary requires shadow transfers"
+                "a bounded concurrent predictive PREPARE_HOST policy requires shadow transfers"
             )
         if self.predictive_prepare_micro_gate_min_private_bytes <= 0:
             raise ValueError(
@@ -369,6 +371,7 @@ class BeliefKVConfig:
             raise ValueError("predictive prefetch HBM feasibility must be in [0, 1]")
         for field_name in (
             "predictive_commit_guard_ms",
+            "predictive_prepare_control_lead_ms",
             "predictive_prefetch_desired_lead_ms",
             "predictive_intent_max_age_ms",
         ):

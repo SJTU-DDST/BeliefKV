@@ -2226,7 +2226,8 @@ _PREDICTIVE_REENTRY_TARGET_LIMIT = 3
 _PREDICTIVE_REENTRY_WATCH_POLL_MS = 100.0
 _PREDICTIVE_REENTRY_RISK_BUCKET_MS = 500.0
 _PREDICTIVE_WAIT_SHADOW_CANARY_INTERFERENCE_FRACTION = 0.10
-_PREDICTIVE_WAIT_SHADOW_CONTROL_LEAD_MS = 1_500.0
+_PREDICTIVE_WAIT_SHADOW_DEFAULT_CONTROL_LEAD_MS = 250.0
+_PREDICTIVE_WAIT_SHADOW_RETRY_DELAY_MS = 100.0
 
 
 class EmbeddedSGLangRuntime:
@@ -2707,6 +2708,7 @@ class EmbeddedSGLangRuntime:
         self._latest_predictive_wait_shadow_preview: (
             tuple[str, int, PageHandle, PhysicalBundlePreview] | None
         ) = None
+        self._predictive_wait_shadow_retry_not_before_ms: float | None = None
         self._predictive_prefetch_watches: dict[
             tuple[str, int], _PredictivePrefetchWatch
         ] = {}
@@ -19408,17 +19410,41 @@ class EmbeddedSGLangRuntime:
             or self._latest_predictive_intent is not None
             or not self.config.predictive_prepare_host_enabled
             or not self.config.shadow_enabled
-            or native_inflight_bytes > 0
-            or getattr(self, "_pending_online_joint_residency", None) is not None
         ):
             return False
-        prepare_limit = self.config.predictive_prepare_host_canary_limit
+        retry_not_before_ms = getattr(
+            self, "_predictive_wait_shadow_retry_not_before_ms", None
+        )
         if (
-            prepare_limit > 0
-            and self._joint_predictive_counts["prepare_host_queued"]
-            >= prepare_limit
+            retry_not_before_ms is not None
+            and observation.ts_ms < retry_not_before_ms
         ):
+            self._joint_predictive_counts["wait_shadow_retry_cooldown"] += 1
             return False
+        transient_blocker = None
+        if native_inflight_bytes > 0:
+            transient_blocker = "native_transfer_busy"
+        elif getattr(self, "_pending_online_joint_residency", None) is not None:
+            transient_blocker = "residency_transaction_busy"
+        if transient_blocker is not None:
+            retry_not_before_ms = (
+                observation.ts_ms + _PREDICTIVE_WAIT_SHADOW_RETRY_DELAY_MS
+            )
+            self._predictive_wait_shadow_retry_not_before_ms = retry_not_before_ms
+            self._joint_predictive_counts[
+                f"wait_shadow_deferred_{transient_blocker}"
+            ] += 1
+            self.audit.emit(
+                "predictive_wait_shadow_deferred",
+                observation.ts_ms,
+                audit_level="metrics",
+                reason=transient_blocker,
+                retry_not_before_ms=retry_not_before_ms,
+                candidate_count=len(candidates),
+                native_inflight_bytes=native_inflight_bytes,
+            )
+            return False
+        self._predictive_wait_shadow_retry_not_before_ms = None
         gross_pressure = min(
             1.0,
             self.controller.actual_hbm_used_bytes
@@ -19429,9 +19455,8 @@ class EmbeddedSGLangRuntime:
             < self.config.observed_admission_active_kv_high_watermark_ratio
         ):
             self._joint_predictive_counts[
-                "wait_shadow_below_gross_pressure_gate"
+                "wait_shadow_below_gross_pressure_considered"
             ] += 1
-            return False
 
         graph = self.controller.graph
         frontier_model = getattr(
@@ -19512,10 +19537,20 @@ class EmbeddedSGLangRuntime:
                     "wait_shadow_direction_envelope_used"
                 ] += 1
             transfer_ms = max(0.001, transfer.estimated_completion_p90_ms)
+            control_lead_ms = max(
+                0.0,
+                float(
+                    getattr(
+                        self.config,
+                        "predictive_prepare_control_lead_ms",
+                        _PREDICTIVE_WAIT_SHADOW_DEFAULT_CONTROL_LEAD_MS,
+                    )
+                ),
+            )
             operational_tau_ms = (
                 transfer_ms
                 + self.config.predictive_commit_guard_ms
-                + _PREDICTIVE_WAIT_SHADOW_CONTROL_LEAD_MS
+                + control_lead_ms
             )
             timing = prediction.action_timing(
                 "prepare_host", operational_tau_ms
@@ -19686,7 +19721,7 @@ class EmbeddedSGLangRuntime:
             extent_count=len(preview.page_actions),
             gross_hbm_pressure=gross_pressure,
             operational_tau_ms=timing.operational_tau_ms,
-            control_lead_ms=_PREDICTIVE_WAIT_SHADOW_CONTROL_LEAD_MS,
+            control_lead_ms=control_lead_ms,
             wait_survival_probability=timing.favorable_probability,
             decision_threshold=timing.decision_threshold,
             transfer_p90_ms=transfer_ms,
@@ -24666,13 +24701,6 @@ class EmbeddedSGLangRuntime:
                 reasons.append("predictive_prepare_host_disabled")
             if not self.config.shadow_enabled:
                 reasons.append("shadow_disabled")
-            prepare_limit = self.config.predictive_prepare_host_canary_limit
-            if (
-                prepare_limit > 0
-                and self._joint_predictive_counts["prepare_host_queued"]
-                >= prepare_limit
-            ):
-                reasons.append("predictive_prepare_canary_limit")
             action = ResidencyAction.PREPARE_HOST
         elif intent.action in {
             PredictiveActionKind.PREFETCH_GPU,

@@ -12375,7 +12375,7 @@ def test_wait_tool_publishes_model_backed_prepare_shadow_without_beneficiary():
         support_level="exact",
         favorable_probability=0.9,
         decision_threshold=0.5,
-        operational_tau_ms=1_625.0,
+        operational_tau_ms=375.0,
         semantics="release_after_transfer",
     )
 
@@ -12428,6 +12428,7 @@ def test_wait_tool_publishes_model_backed_prepare_shadow_without_beneficiary():
     runtime._joint_predictive_counts = Counter()
     runtime._latest_predictive_intent = None
     runtime._pending_online_joint_residency = None
+    runtime._predictive_wait_shadow_retry_not_before_ms = None
     runtime._current_online_joint_view = SimpleNamespace(plan_id="plan")
     runtime._last_joint_decision_plan_id = "plan"
     runtime._current_online_joint_decision = object()
@@ -12503,7 +12504,7 @@ def test_wait_tool_publishes_model_backed_prepare_shadow_without_beneficiary():
     assert runtime._last_joint_decision_plan_id == "plan"
     assert runtime._current_online_joint_decision is not None
     assert runtime._joint_predictive_counts["wait_shadow_intent_published"] == 1
-    assert timing_queries == [("prepare_host", 1_625.0)]
+    assert timing_queries == [("prepare_host", 375.0)]
     assert (
         runtime.controller.service_curve.estimate.call_args.kwargs["command_kind"]
         == CommandKind.OFFLOAD_CONTEXT.value
@@ -12513,7 +12514,7 @@ def test_wait_tool_publishes_model_backed_prepare_shadow_without_beneficiary():
         runtime.audit.events[-1][2]["interference_source"]
         == "bounded_measurement_canary_proxy"
     )
-    assert runtime.audit.events[-1][2]["control_lead_ms"] == 1_500.0
+    assert runtime.audit.events[-1][2]["control_lead_ms"] == 250.0
     assert (
         runtime.audit.events[-1][2]["transfer_source"]
         == "shape_unsupported_direction_envelope"
@@ -12521,6 +12522,51 @@ def test_wait_tool_publishes_model_backed_prepare_shadow_without_beneficiary():
     assert runtime._joint_predictive_counts[
         "wait_shadow_direction_envelope_used"
     ] == 1
+
+    # The limit bounds concurrent work; a completed prior PREPARE must not
+    # permanently disable every later tool-wait opportunity.
+    runtime._latest_predictive_intent = None
+    runtime._joint_predictive_counts["prepare_host_queued"] = 1
+    runtime.controller.actual_hbm_used_bytes = 700
+    low_pressure_observation = replace(observation, ts_ms=2_000.0)
+    assert runtime._maybe_publish_predictive_wait_shadow_intent(
+        [(invocation, SimpleNamespace(), 400)],
+        features={},
+        predictions={"child": prediction},
+        observation=low_pressure_observation,
+        native_inflight_bytes=0,
+    )
+    assert runtime._joint_predictive_counts[
+        "wait_shadow_below_gross_pressure_considered"
+    ] == 1
+
+    runtime._latest_predictive_intent = None
+    busy_observation = replace(observation, ts_ms=3_000.0)
+    assert not runtime._maybe_publish_predictive_wait_shadow_intent(
+        [(invocation, SimpleNamespace(), 400)],
+        features={},
+        predictions={"child": prediction},
+        observation=busy_observation,
+        native_inflight_bytes=1,
+    )
+    assert runtime._predictive_wait_shadow_retry_not_before_ms == 3_100.0
+    assert runtime._joint_predictive_counts[
+        "wait_shadow_deferred_native_transfer_busy"
+    ] == 1
+    assert not runtime._maybe_publish_predictive_wait_shadow_intent(
+        [(invocation, SimpleNamespace(), 400)],
+        features={},
+        predictions={"child": prediction},
+        observation=replace(observation, ts_ms=3_050.0),
+        native_inflight_bytes=0,
+    )
+    assert runtime._maybe_publish_predictive_wait_shadow_intent(
+        [(invocation, SimpleNamespace(), 400)],
+        features={},
+        predictions={"child": prediction},
+        observation=replace(observation, ts_ms=3_100.0),
+        native_inflight_bytes=0,
+    )
 
 
 def test_predicted_reentry_publishes_one_bounded_risk_delta_without_beneficiary():

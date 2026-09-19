@@ -123,8 +123,17 @@ def main() -> int:
         type=int,
         default=0,
         help=(
-            "Maximum PREPARE_HOST commands admitted during this server run; "
-            "zero leaves the normal policy unlimited."
+            "Maximum concurrent PREPARE_HOST commands; completed commands do not "
+            "consume the bound; zero leaves the normal policy unlimited."
+        ),
+    )
+    parser.add_argument(
+        "--predictive-prepare-control-lead-ms",
+        type=float,
+        default=250.0,
+        help=(
+            "Provisional control-path allowance added to live D2H cost when "
+            "querying PREPARE timing; tune only after the prefetch loop closes."
         ),
     )
     parser.add_argument(
@@ -449,7 +458,7 @@ def main() -> int:
         and not args.enable_shadow_transfers
     ):
         parser.error(
-            "a bounded PREPARE_HOST canary requires "
+            "a bounded concurrent PREPARE_HOST policy requires "
             "--enable-shadow-transfers"
         )
     if args.predictive_prepare_micro_gate_min_private_mib <= 0:
@@ -704,6 +713,9 @@ def main() -> int:
         "predictive_prefetch_canary_max_inflight": 1,
         "predictive_prefetch_min_hbm_feasibility": 0.95,
         "predictive_commit_guard_ms": 25.0,
+        "predictive_prepare_control_lead_ms": (
+            args.predictive_prepare_control_lead_ms
+        ),
         "predictive_prefetch_desired_lead_ms": 100.0,
         "predictive_intent_max_age_ms": 60_000.0,
         "gpu_service_hardware_key": args.gpu_service_hardware_key,
