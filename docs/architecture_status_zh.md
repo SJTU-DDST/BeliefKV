@@ -1,7 +1,7 @@
 # BeliefKV 当前架构与实现状态
 
 更新日期：2026-09-19
-当前 P6 代码基线：`38c389b`
+当前 P6 代码基线：`87411cc`
 
 本文只记录当前事实和下一阻塞项，不再追加逐日开发日志。2026-09-12 以前的完整历史保存在
 `docs/archive/snapshots/architecture_status_zh.md`，单次实验细节保存在
@@ -359,6 +359,35 @@ envelope、Host capacity、事务互斥和 commit budget 均继续重验，没�
 import SGLang。GPU P95 尚未复验，下一轮目标是 publish-to-validation P95 <50 ms，并至少
 观察一笔在真实工具窗口结束前进入 D2H queue 的 PREPARE。详细审计见
 `docs/experiments/beliefkv_p6_wait_shadow_validation_latency_v46_2026-09-19_zh.md`。
+
+### 5.8 2026-09-19 PREPARE 收益绑定与 PREFETCH 证书刷新
+
+v50 自然运行中的中期审计证明 wait-shadow 控制链已经足够快，但动作效用仍不足：
+510 个 `PREPARE_HOST` command 中 453 个 D2H ACK，336 个后来因工具返回浪费，57 个失败；
+其中 56 个失败是 D2H 完成后 Radix node 变为 engine-locked。更重要的是，这些 wait-shadow
+PREPARE 没有携带 beneficiary identity，因此 ACK 后没有形成任何
+`prepared_causal_binding`，自然无法在真实 deficit 出现时被 observed planner 消费。
+
+PREFETCH 侧已有 19 个 semantic intent、4 个 root context 和 7 次 watch activation；
+activation lag P50 约 108 ms、max 489 ms。未闭环的原因不是发布耗时，而是到达 latest-start
+时 intent 证书年龄已达 3,376--6,180 秒，context epoch / invocation revision 已变化。telemetry
+中 49 笔 `prefetch_context` H2D 均为 `restore-*` 且 `predictive_intent_id=null`，不能计为
+predictive prefetch。
+
+`87411cc` 做了三类窄修复：
+
+1. 低于 observed admission watermark 的 wait-shadow 直接抑制，不再为了低价值 canary 复制；
+2. wait-shadow PREPARE 必须绑定一个当前可见且存在 immediate/future HBM deficit 的
+   beneficiary，并把 deficit、startup/growth 和 causal generation 写入 intent；ACK 后可形成
+   prepared binding，供真实 `ReclaimRequirement` 消费；
+3. 到达 latest-start 的 prefetch watch 只能激活新鲜证书；旧证书强制 worker refresh，
+   每 50 ms 有界重试，而不是激活小时级旧读集。已完成 D2H 的瞬时 engine lock 改为等待锁释放
+   后再提交，不再丢弃已完成的 DMA copy。
+
+定向回归 7 项通过；SGLang adapter 全套为 200 passed、2 deselected、8 subtests passed，
+两项仅因当前 shell 缺失 CUDA_HOME/deep_gemm 导入被排除。该修复尚未进入任何 GPU 运行；
+v50 仍在旧进程上自然运行，不能用来评价新修复。
+
 ## 6. 当前阻塞项
 
 1. prediction-to-action utilization gap 尚未闭合。初步 H200 高压运行中 predictive arm
@@ -386,20 +415,21 @@ import SGLang。GPU P95 尚未复验，下一轮目标是 publish-to-validation 
 10. 修复后 bounded 在线复验运行约 20 分钟，1,300 个 hint 中 880 个容量充足、420 个仅受
     running slot 限制，原生 KV usage 约 31%，因此 0 victim、0 risk evaluation、0 prefetch。
     该轮证明假阳性消失，不证明预测调度收益。
-11. v46 的 wait-shadow publish-to-validation P95 为 2,283.03 ms；`994de39` 已从结构上
-    删除跨 JointPlan 等待，但尚未经过 GPU 复验。当前门槛是同配置 P95 <50 ms，而不是继续
-    调整 control lead 掩盖迟到提交。
+11. v46 的 wait-shadow publish-to-validation P95 为 2,283.03 ms；v49 已验证 same-safe-point
+    修复将 true publish-to-validation P95 降至 0.304 ms、source-to-validation P95 降至
+    44.83 ms。该阻塞项关闭，剩余问题是动作效用而不是控制链延迟。
+12. v50 已证明 publish 链路延迟达标，但暴露 prepared binding 缺失、瞬时 engine-lock 失败
+    和 stale prefetch certificate。`87411cc` 已修复，仍需在 v50 自然结束后运行新代码 gate。
 
 ## 7. 下一步
 
 当前关键路径：
 
-1. 先用当前冻结 64-root、hard max-running 96 配置运行短高压 gate，验证 wait-shadow
-   publish-to-validation P95 <50 ms、worker/shutdown 守恒，并观察至少一笔在工具窗口内
-   进入 D2H queue 的 PREPARE。
-2. 该门槛通过后继续长 workload，让 active context 自然增长 unique KV；动作提交仍必须重验
-   certificate、physical closure、实时容量、transfer envelope 和 latest-start，晚到、
-   回收不足或负收益动作回退 P5。
+1. 等待 v50 自然完成并保存完整 artifact，不在旧进程上评价新修复。
+2. 使用 `87411cc` 和同一冻结 64-root、hard max-running 96 配置运行短高压 gate，验证
+   beneficiary-bound PREPARE、prepared binding 消费、prefetch 证书刷新和 predictive H2D
+   闭环；动作提交仍必须重验 certificate、physical closure、实时容量、transfer envelope
+   和 latest-start，晚到、回收不足或负收益动作回退 P5。
 3. PREFETCH gate 必须覆盖 `intent -> H2D -> ACK -> service lease/funding -> admission ->
    first GPU service -> useful attribution`，并统计在线 precision、recall proxy、H2D 后
    first-service latency、funding 守恒和 5 秒内反向迁移。
