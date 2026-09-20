@@ -163,3 +163,15 @@ def test_execution_timeline_aligns_service_and_transfer_overlap(tmp_path: Path) 
     assert "1 completed" in content
     assert "1 rejected" in content
     assert "Hidden-overlap fractions count completed transfers only" in content
+
+    truncated = load_execution_timeline(
+        run,
+        arm="predictive",
+        end_offset_ms=1500.0,
+    )
+    assert truncated.duration_ms == 1500.0
+    assert all(float(item["t_ms"]) <= 1500.0 for item in truncated.resources)
+    assert all(float(item["t_ms"]) <= 1500.0 for item in truncated.gpu_samples)
+    assert all(float(item["end_ms"]) <= 1500.0 for item in truncated.transfers)
+    assert truncated.summary["transfer_count"] == 2
+    assert truncated.summary["predictive_transfer_count"] == 1

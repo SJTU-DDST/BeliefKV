@@ -20,11 +20,17 @@ def main() -> int:
     parser.add_argument("--output-html", type=Path, required=True)
     parser.add_argument("--title")
     parser.add_argument("--gpu-busy-threshold", type=float, default=10.0)
+    parser.add_argument(
+        "--end-offset-ms",
+        type=float,
+        help="Truncate the timeline relative to runtime initialization.",
+    )
     args = parser.parse_args()
     timeline = load_execution_timeline(
         args.run_dir,
         arm=args.arm,
         gpu_busy_threshold=args.gpu_busy_threshold,
+        end_offset_ms=args.end_offset_ms,
     )
     html_path, data_path = render_execution_timeline(
         timeline,

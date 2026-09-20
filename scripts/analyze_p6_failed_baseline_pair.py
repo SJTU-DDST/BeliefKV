@@ -82,8 +82,12 @@ def integrated_pressure(
     }
 
 
-def last_service_summary(run_dir: Path) -> dict[str, Any]:
+def last_service_summary(
+    run_dir: Path, cutoff_ms: float | None = None
+) -> dict[str, Any]:
     for item in reversed(list(records(run_dir / "server/runtime_audit.jsonl"))):
+        if cutoff_ms is not None and float(item.get("ts_ms") or 0.0) > cutoff_ms:
+            continue
         if item.get("event") == "gpu_service_observer_summary":
             summary = item.get("performance_aggregates")
             return summary if isinstance(summary, dict) else {}
@@ -199,26 +203,33 @@ def transfer_summary(
     }
 
 
-def timeline_gpu_active(timeline_path: Path) -> tuple[float, float, datetime]:
+def timeline_gpu_active(
+    timeline_path: Path, end_offset_seconds: float | None = None
+) -> tuple[float, float, datetime]:
     payload = json.loads(timeline_path.read_text(encoding="utf-8"))
-    resources = payload.get("resources") or []
-    last_running = max(
-        (
-            float(item.get("t_ms") or 0.0)
-            for item in resources
-            if int(item.get("running") or 0) > 0
-        ),
-        default=0.0,
-    )
+    if end_offset_seconds is None:
+        resources = payload.get("resources") or []
+        end_offset_seconds = max(
+            (
+                float(item.get("t_ms") or 0.0)
+                for item in resources
+                if int(item.get("running") or 0) > 0
+            ),
+            default=0.0,
+        ) / 1000.0
     start = datetime.strptime(str(payload["start_anchor"]), "%Y-%m-%dT%H:%M:%S")
     samples = payload.get("gpu_samples") or []
     accepted = [
         float(item.get("util") or 0.0)
         for item in samples
-        if float(item.get("t_ms") or 0.0) <= last_running
+        if float(item.get("t_ms") or 0.0) <= end_offset_seconds * 1000.0
     ]
     busy = sum(value >= 10.0 for value in accepted) / len(accepted) if accepted else 0.0
-    return (mean(accepted) if accepted else 0.0, busy, start + timedelta(milliseconds=last_running))
+    return (
+        mean(accepted) if accepted else 0.0,
+        busy,
+        start + timedelta(seconds=end_offset_seconds),
+    )
 
 
 def queue_summary(
@@ -246,8 +257,12 @@ def queue_summary(
     }
 
 
-def service_metrics(run_dir: Path, duration_s: float) -> dict[str, float]:
-    service = last_service_summary(run_dir)
+def service_metrics(
+    run_dir: Path,
+    duration_s: float,
+    cutoff_ms: float | None = None,
+) -> dict[str, float]:
+    service = last_service_summary(run_dir, cutoff_ms=cutoff_ms)
     prefill = service.get("prefill") or {}
     decode = service.get("decode") or {}
     prefill_tokens = int(prefill.get("tokens") or 0)
@@ -266,6 +281,35 @@ def service_metrics(run_dir: Path, duration_s: float) -> dict[str, float]:
 
 def rate(count: int, duration_s: float, period: float) -> float:
     return count * period / duration_s if duration_s else 0.0
+
+
+def timeline_service_metrics(
+    timeline_path: Path, duration_s: float
+) -> dict[str, float]:
+    payload = json.loads(timeline_path.read_text(encoding="utf-8"))
+    prefill_tokens = sum(
+        int(item.get("new_tokens") or 0)
+        for item in payload.get("service_observations") or []
+        if item.get("phase") == "prefill"
+    )
+    decode_tokens = sum(
+        (float(item.get("end_ms") or 0.0) - float(item.get("start_ms") or 0.0))
+        / 1000.0
+        * float(item.get("throughput") or 0.0)
+        for item in payload.get("decode_windows") or []
+    )
+    decode_tokens = int(round(decode_tokens))
+    return {
+        "prefill_tokens": prefill_tokens,
+        "decode_tokens": decode_tokens,
+        "service_tokens": prefill_tokens + decode_tokens,
+        "prefill_tokens_per_second": prefill_tokens / duration_s if duration_s else 0.0,
+        "decode_tokens_per_second": decode_tokens / duration_s if duration_s else 0.0,
+        "gpu_service_tokens_per_second": (
+            (prefill_tokens + decode_tokens) / duration_s if duration_s else 0.0
+        ),
+        "token_count_source": "sglang_log_prefill_plus_inferred_decode",
+    }
 
 
 def gain(baseline: float, predictive: float) -> float | None:
@@ -315,6 +359,13 @@ def render_html(payload: Mapping[str, Any]) -> str:
     baseline = payload["arms"]["baseline_pre_starvation"]
     predictive = payload["arms"]["predictive"]
     full = payload["arms"]["baseline_full_failed_window"]
+    cutoff_seconds = float(
+        payload["pairing_gate"].get("baseline_cutoff_offset_seconds")
+        or baseline["duration_seconds"]
+    )
+    cutoff_hours = int(cutoff_seconds // 3600)
+    cutoff_minutes = int((cutoff_seconds % 3600) // 60)
+    cutoff_label = f"{cutoff_hours}h{cutoff_minutes:02d}m"
     rows = [
         metric_row("Resource window seconds", baseline["duration_seconds"], predictive["duration_seconds"]),
         metric_row("GPU service tokens/s", baseline["gpu_service_tokens_per_second"], predictive["gpu_service_tokens_per_second"], "Primary throughput proxy"),
@@ -343,10 +394,10 @@ h1{{font-size:28px;margin:0 0 10px}}h2{{margin-top:28px}}table{{width:100%;borde
 th:first-child,td:first-child{{text-align:left}}tr:nth-child(even){{background:#fafafa}}.note{{color:#555}}.warning{{border-left:4px solid #b42318;padding:12px;background:#fff}}
 a{{color:#175cd3}}code{{background:#ececec;padding:2px 4px}}.links a{{margin-right:18px}}
 </style></head><body><main><h1>v58 baseline attempt2 vs predictive</h1>
-<p>Baseline attempt is incomplete and failed with waiting-only admission starvation. This report compares predictive against the baseline <b>pre-starvation window</b>: from the first resource snapshot through the last snapshot with running&gt;0.</p>
-<div class="warning"><b>Not a formal A/B result.</b> Baseline has only {baseline['active_result_workflows']} result files before starvation and {full['result_workflows']} result files overall. The current rerun must complete before making a throughput claim.</div>
-<h2>Paired metrics</h2><table><thead><tr><th>Metric</th><th>Baseline pre-starvation</th><th>Predictive</th><th>Relative change</th><th>Note</th></tr></thead><tbody>{''.join(rows)}</tbody></table>
-<h2>Baseline failure boundary</h2><p class="note">Last running request timestamp: <code>{payload['pairing_gate']['baseline_cutoff_ts_ms']}</code>. Full failed window was {full['duration_seconds']:.2f}s; pre-starvation window was {baseline['duration_seconds']:.2f}s. Full-window GPU service throughput was {full['gpu_service_tokens_per_second']:.2f} tokens/s.</p>
+<p>Baseline attempt is incomplete and failed with waiting-only admission starvation. This report compares predictive against the baseline <b>{cutoff_label} cutoff window</b>, measured from runtime initialization.</p>
+<div class="warning"><b>Not a formal A/B result.</b> Baseline has only {baseline['active_result_workflows']} result files before cutoff and {full['result_workflows']} result files overall. The current rerun must complete before making a throughput claim.</div>
+<h2>Paired metrics</h2><table><thead><tr><th>Metric</th><th>Baseline {cutoff_label} cutoff</th><th>Predictive</th><th>Relative change</th><th>Note</th></tr></thead><tbody>{''.join(rows)}</tbody></table>
+<h2>Baseline failure boundary</h2><p class="note">Explicit cutoff timestamp: <code>{payload['pairing_gate']['baseline_cutoff_ts_ms']}</code>. Full failed window was {full['duration_seconds']:.2f}s; cutoff window was {baseline['duration_seconds']:.2f}s. Full-window GPU service throughput was {full['gpu_service_tokens_per_second']:.2f} tokens/s.</p>
 <h2>Timelines</h2><p class="links"><a href="baseline_attempt2_execution_timeline.html">Baseline timeline</a><a href="predictive_execution_timeline.html">Predictive timeline</a></p>
 </main></body></html>"""
 
@@ -359,34 +410,73 @@ def main() -> int:
     parser.add_argument("--predictive", type=Path, required=True)
     parser.add_argument("--baseline-timeline", type=Path, required=True)
     parser.add_argument("--predictive-timeline", type=Path, required=True)
+    parser.add_argument(
+        "--baseline-cutoff-seconds",
+        type=float,
+        help="Explicit baseline cutoff relative to runtime initialization.",
+    )
     parser.add_argument("--output-json", type=Path, required=True)
     parser.add_argument("--output-html", type=Path, required=True)
     args = parser.parse_args()
 
     baseline_resources = resource_records(args.baseline)
     predictive_resources = resource_records(args.predictive)
-    baseline_cutoff = max(
-        (
-            float(item.get("ts_ms") or 0.0)
-            for item in baseline_resources
-            if int(item.get("running_request_count") or 0) > 0
-        ),
-        default=float(baseline_resources[-1]["ts_ms"]) if baseline_resources else 0.0,
-    )
+    if args.baseline_cutoff_seconds is None:
+        baseline_cutoff = max(
+            (
+                float(item.get("ts_ms") or 0.0)
+                for item in baseline_resources
+                if int(item.get("running_request_count") or 0) > 0
+            ),
+            default=(
+                float(baseline_resources[-1]["ts_ms"]) if baseline_resources else 0.0
+            ),
+        )
+    else:
+        runtime_initialized = next(
+            (
+                float(item.get("ts_ms") or 0.0)
+                for item in records(args.baseline / "server/runtime_audit.jsonl")
+                if item.get("event") == "runtime_initialized"
+            ),
+            None,
+        )
+        if runtime_initialized is None:
+            raise ValueError("baseline audit omits runtime_initialized")
+        baseline_cutoff = runtime_initialized + args.baseline_cutoff_seconds * 1000.0
     baseline_first, baseline_last = resource_window(baseline_resources)
     predictive_first, predictive_last = resource_window(predictive_resources)
-    baseline_duration = max(0.0, (baseline_cutoff - baseline_first) / 1000.0)
+    baseline_duration = (
+        args.baseline_cutoff_seconds
+        if args.baseline_cutoff_seconds is not None
+        else max(0.0, (baseline_cutoff - baseline_first) / 1000.0)
+    )
     full_duration = max(0.0, (baseline_last - baseline_first) / 1000.0)
     predictive_duration = max(0.0, (predictive_last - predictive_first) / 1000.0)
-    baseline_gpu, baseline_busy, cutoff_wall = timeline_gpu_active(args.baseline_timeline)
+    baseline_gpu, baseline_busy, cutoff_wall = timeline_gpu_active(
+        args.baseline_timeline,
+        end_offset_seconds=args.baseline_cutoff_seconds,
+    )
     predictive_timeline = json.loads(args.predictive_timeline.read_text(encoding="utf-8"))
     predictive_summary = predictive_timeline.get("summary") or {}
     predictive_results_payload = predictive_results(args.predictive)
     baseline_result_payload = baseline_results(args.baseline, cutoff_wall)
     baseline_events = runtime_event_counts(args.baseline, baseline_cutoff)
     predictive_events = runtime_event_counts(args.predictive)
-    baseline_service = service_metrics(args.baseline, baseline_duration)
+    baseline_service = (
+        timeline_service_metrics(args.baseline_timeline, baseline_duration)
+        if args.baseline_cutoff_seconds is not None
+        else service_metrics(
+            args.baseline,
+            baseline_duration,
+            cutoff_ms=baseline_cutoff,
+        )
+    )
     predictive_service = service_metrics(args.predictive, predictive_duration)
+    predictive_service = timeline_service_metrics(
+        args.predictive_timeline,
+        float(predictive_timeline.get("duration_ms") or 0.0) / 1000.0,
+    )
     full_service = service_metrics(args.baseline, full_duration)
     baseline_transfer = transfer_summary(args.baseline, baseline_cutoff)
     predictive_transfer = transfer_summary(args.predictive)
@@ -455,7 +545,12 @@ def main() -> int:
         "pairing_gate": {
             "formal_ab_valid": False,
             "reason": "baseline_attempt2 failed with waiting-only admission starvation",
-            "baseline_window": "first_resource_snapshot_to_last_running_gt_zero",
+            "baseline_window": (
+                "runtime_initialization_to_explicit_cutoff"
+                if args.baseline_cutoff_seconds is not None
+                else "first_resource_snapshot_to_last_running_gt_zero"
+            ),
+            "baseline_cutoff_offset_seconds": args.baseline_cutoff_seconds,
             "baseline_cutoff_ts_ms": baseline_cutoff,
             "baseline_cutoff_wall": cutoff_wall.isoformat(),
         },

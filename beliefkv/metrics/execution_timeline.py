@@ -50,6 +50,7 @@ def load_execution_timeline(
     *,
     arm: str,
     gpu_busy_threshold: float = 10.0,
+    end_offset_ms: float | None = None,
 ) -> ExecutionTimeline:
     run_dir = run_dir.resolve()
     audit_path = run_dir / "server/runtime_audit.jsonl"
@@ -83,6 +84,43 @@ def load_execution_timeline(
     )
     event_bins = _merge_event_bins(audit_bins, runtime_bins)
 
+    if end_offset_ms is not None:
+        if not math.isfinite(end_offset_ms) or end_offset_ms <= 0:
+            raise ValueError("end_offset_ms must be finite and positive")
+        resources = [
+            item for item in resources if float(item["t_ms"]) <= end_offset_ms
+        ]
+        services = [
+            item for item in services if float(item["t_ms"]) <= end_offset_ms
+        ]
+        decode_windows = [
+            {**item, "end_ms": min(float(item["end_ms"]), end_offset_ms)}
+            for item in decode_windows
+            if float(item["start_ms"]) <= end_offset_ms
+        ]
+        gpu_samples = [
+            item for item in gpu_samples if float(item["t_ms"]) <= end_offset_ms
+        ]
+        transfers = [
+            {**item, "end_ms": min(float(item["end_ms"]), end_offset_ms)}
+            for item in transfers
+            if float(item["start_ms"]) <= end_offset_ms
+        ]
+        external_waits = [
+            item for item in external_waits if float(item["t_ms"]) <= end_offset_ms
+        ]
+        event_bins = [
+            item for item in event_bins if float(item["t_ms"]) <= end_offset_ms
+        ]
+        queue_samples = [
+            {
+                "t_ms": item["t_ms"],
+                "running": item["running"],
+                "waiting": item["waiting"],
+            }
+            for item in services
+        ]
+
     duration_ms = max(
         [0.0]
         + [float(item["t_ms"]) for item in gpu_samples]
@@ -93,6 +131,8 @@ def load_execution_timeline(
         + [float(item["t_ms"]) for item in external_waits]
         + [float(item["t_ms"]) for item in event_bins]
     )
+    if end_offset_ms is not None:
+        duration_ms = end_offset_ms
     busy_intervals = _gpu_busy_intervals(
         gpu_samples,
         threshold=gpu_busy_threshold,
