@@ -44,6 +44,15 @@ def main() -> int:
         ),
     )
     parser.add_argument(
+        "--predictive-shadow-dma-batch-bytes",
+        type=int,
+        default=268_435_456,
+        help=(
+            "Maximum D2H bytes merged into one predictive exclusive-suffix "
+            "native batch."
+        ),
+    )
+    parser.add_argument(
         "--disable-reactive-transfer",
         action="store_true",
         help=(
@@ -570,6 +579,8 @@ def main() -> int:
         parser.error("--resident-service-window-ms must be positive")
     if args.request_queue_timeout_seconds <= 0:
         parser.error("--request-queue-timeout-seconds must be positive")
+    if args.predictive_shadow_dma_batch_bytes <= 0:
+        parser.error("--predictive-shadow-dma-batch-bytes must be positive")
     oracle_values = (
         args.perfect_future_truth,
         args.perfect_future_truth_id,
@@ -601,6 +612,9 @@ def main() -> int:
         "transfer_watchdog_floor_ms": 1000.0,
         "urgent_chunk_bytes": 268_435_456,
         "shadow_chunk_bytes": 67_108_864,
+        "predictive_shadow_dma_batch_bytes": (
+            args.predictive_shadow_dma_batch_bytes
+        ),
         "shadow_min_parked_ms": 25.0,
         "shadow_slowdown_budget": 0.02,
         "host_lifecycle_enabled": True,

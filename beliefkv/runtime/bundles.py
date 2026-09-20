@@ -168,7 +168,12 @@ class PhysicalBundleBuilder:
         host_available_bytes: int | None = None,
         max_copy_bytes: int | None = None,
     ) -> PhysicalBundlePreview | None:
-        """Build one private, closure-complete D2H shadow candidate."""
+        """Build one batched private D2H shadow candidate.
+
+        A bounded batch may merge multiple disjoint exclusive suffixes. The
+        backend commits each bundle with one native batch operation, so this
+        preserves closure ownership while avoiding one tiny DMA per suffix.
+        """
 
         context = self.graph.contexts.get(context_id)
         if (
@@ -246,6 +251,9 @@ class PhysicalBundleBuilder:
             if not parent_is_candidate:
                 candidates.append((copy_bytes, page.handle))
 
+        selected: list[PhysicalBundlePreview] = []
+        selected_handles: set[PageHandle] = set()
+        selected_copy_bytes = 0
         for _, root_handle in sorted(
             candidates,
             key=lambda item: (-item[0], item[1]),
@@ -264,14 +272,163 @@ class PhysicalBundleBuilder:
                 and preview.copy_bytes > 0
                 and (
                     max_copy_bytes is None
-                    or preview.copy_bytes <= max_copy_bytes
+                    or (
+                        preview.copy_bytes + selected_copy_bytes
+                        <= max_copy_bytes
+                    )
                 )
+                and not selected_handles.intersection(preview.bundle.handles)
                 and preview.bundle.exclusive_action_bytes > 0
                 and preview.bundle.cross_context_action_bytes == 0
                 and preview.bundle.owner_context_ids == (context_id,)
             ):
-                return preview
-        return None
+                if (
+                    host_available_bytes is not None
+                    and preview.copy_bytes + selected_copy_bytes
+                    > host_available_bytes
+                ):
+                    continue
+                selected.append(preview)
+                selected_handles.update(preview.bundle.handles)
+                selected_copy_bytes += preview.copy_bytes
+                if max_copy_bytes is None or selected_copy_bytes >= max_copy_bytes:
+                    break
+        if not selected:
+            return None
+        if len(selected) == 1:
+            return selected[0]
+        merged_handles = tuple(
+            sorted(
+                {handle for item in selected for handle in item.bundle.handles}
+            )
+        )
+        return self.preview_offload_handles(
+            CommandKind.SHADOW_CONTEXT,
+            context_id,
+            context_epoch,
+            merged_handles,
+            now_ms=now_ms,
+            host_available_bytes=host_available_bytes,
+        )
+
+    def preview_offload_handles(
+        self,
+        command_kind: CommandKind,
+        context_id: str,
+        context_epoch: int,
+        handles: tuple[PageHandle, ...],
+        *,
+        now_ms: float,
+        allow_ready_owners: bool = False,
+        protected_context_id: str | None = None,
+        bypass_owner_context_ids: frozenset[str] = frozenset(),
+        host_available_bytes: int | None = None,
+    ) -> PhysicalBundlePreview | None:
+        """Rebuild an authoritative preview for a union of D2H closures."""
+
+        if command_kind not in {
+            CommandKind.OFFLOAD_CONTEXT,
+            CommandKind.SHADOW_CONTEXT,
+        } or not handles:
+            return None
+        context = self.graph.contexts.get(context_id)
+        if context is None or context.epoch != context_epoch:
+            return None
+        pages: dict[PageHandle, PhysicalPageRecord] = {}
+        for handle in handles:
+            page = self.page_index.pages.get(handle)
+            if page is None:
+                return None
+            pages[handle] = page
+
+        actions: list[ResolvedPageAction] = []
+        blockers: list[TransferBlocker] = []
+        blocked_handles: set[PageHandle] = set()
+        selected = set(handles)
+        for page in sorted(
+            pages.values(),
+            key=lambda item: (-item.radix_depth, item.handle),
+        ):
+            if page.residency == PhysicalResidency.DUAL_CLEAN:
+                if command_kind == CommandKind.OFFLOAD_CONTEXT:
+                    actions.append(
+                        ResolvedPageAction(
+                            page.handle,
+                            PhysicalPageAction.COMMIT_CPU,
+                            page.size_bytes,
+                        )
+                    )
+            elif page.residency == PhysicalResidency.GPU_ONLY:
+                actions.append(
+                    ResolvedPageAction(
+                        page.handle,
+                        PhysicalPageAction.START_D2H,
+                        page.size_bytes,
+                    )
+                )
+            page_blockers = self._page_blockers(page)
+            page_blockers += self._owner_blockers(
+                page,
+                now_ms=now_ms,
+                allow_ready_owners=allow_ready_owners,
+                protected_context_id=protected_context_id,
+                bypass_owner_context_ids=bypass_owner_context_ids,
+            )
+            blockers.extend(page_blockers)
+            if page_blockers:
+                blocked_handles.add(page.handle)
+                continue
+            ancestor = page.parent
+            while ancestor is not None:
+                if ancestor not in selected:
+                    blockers.append(
+                        TransferBlocker(
+                            TransferBlockerCode.ANCESTOR_CLOSURE,
+                            page.handle,
+                            page.size_bytes,
+                            "D2H merged closure omits an ancestor",
+                        )
+                    )
+                    blocked_handles.add(page.handle)
+                    break
+                parent = self.page_index.pages.get(ancestor)
+                if parent is None or not parent.gpu_resident:
+                    blockers.append(
+                        TransferBlocker(
+                            TransferBlockerCode.ANCESTOR_CLOSURE,
+                            page.handle,
+                            page.size_bytes,
+                            "D2H merged closure has a non-resident ancestor",
+                        )
+                    )
+                    blocked_handles.add(page.handle)
+                    break
+                ancestor = parent.parent
+
+        copy_bytes = sum(
+            item.size_bytes
+            for item in actions
+            if item.action == PhysicalPageAction.START_D2H
+        )
+        if host_available_bytes is not None and copy_bytes > host_available_bytes:
+            blockers.append(
+                TransferBlocker(
+                    TransferBlockerCode.HOST_CAPACITY,
+                    handles[0],
+                    copy_bytes,
+                    "D2H merged bundle exceeds current host availability",
+                )
+            )
+        return self._preview(
+            command_kind,
+            context_id,
+            context_epoch,
+            pages,
+            tuple(actions),
+            self._deduplicate_blockers(blockers),
+            blocked_handles,
+            now_ms=now_ms,
+        )
 
     def find_intent_preview(
         self,

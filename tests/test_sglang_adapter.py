@@ -5807,6 +5807,35 @@ class SGLangBackendTest(unittest.TestCase):
         self.assertEqual(telemetry.extent_bytes_max, 400)
         self.assertEqual(telemetry.small_extent_ratio, 1.0)
 
+    def test_atomic_shadow_batches_disjoint_suffixes_into_one_native_operation(self):
+        tree = _TreeCache()
+        registry = SGLangNodeRegistry()
+        first = _Node(1)
+        second = _Node(2)
+        first.parent = tree.root_node
+        second.parent = tree.root_node
+        first_handle = registry.register(first)
+        second_handle = registry.register(second)
+        command = resolved_bundle(
+            CommandKind.SHADOW_CONTEXT,
+            (
+                (first_handle, PhysicalPageAction.START_D2H, 400),
+                (second_handle, PhysicalPageAction.START_D2H, 400),
+            ),
+        )
+        backend = HiCacheNodeCommandBackend(tree, registry, now_ms=lambda: 2)
+
+        submission = backend.submit(command)
+        ack = backend.poll_acks()[0]
+
+        self.assertEqual(
+            submission.started_handles,
+            tuple(sorted((first_handle, second_handle))),
+        )
+        self.assertEqual(ack.status, CommandStatus.COMPLETED)
+        self.assertEqual(ack.actual_bytes, 800)
+        self.assertEqual(tree.batch_write_calls, [[first.id, second.id]])
+
     def test_atomic_drop_bundle_commits_deep_first_and_keeps_host_copies(self):
         tree = _TreeCache()
         registry = SGLangNodeRegistry()
@@ -12759,6 +12788,7 @@ def test_wait_tool_publishes_beneficiary_bound_prepare_shadow():
         predictive_prepare_host_canary_limit=1,
         observed_admission_active_kv_high_watermark_ratio=0.8,
         shadow_chunk_bytes=1_024,
+        predictive_shadow_dma_batch_bytes=1_024,
         predictive_commit_guard_ms=25.0,
     )
     runtime._now_ms = lambda: 1_025.0
@@ -12977,18 +13007,20 @@ def test_wait_tool_publishes_beneficiary_bound_prepare_shadow():
 
     runtime._latest_predictive_intent = None
     busy_observation = replace(observation, ts_ms=3_000.0)
-    assert not runtime._maybe_publish_predictive_wait_shadow_intent(
+    assert runtime._maybe_publish_predictive_wait_shadow_intent(
         [(invocation, SimpleNamespace(), 400)],
         features={},
         predictions={"child": prediction},
         observation=busy_observation,
         native_inflight_bytes=1,
     )
-    assert runtime._predictive_wait_shadow_retry_not_before_ms == 3_100.0
-    assert runtime._joint_predictive_counts[
+    assert runtime._predictive_wait_shadow_retry_not_before_ms is None
+    assert (
         "wait_shadow_deferred_native_transfer_busy"
-    ] == 1
-    assert not runtime._maybe_publish_predictive_wait_shadow_intent(
+        not in runtime._joint_predictive_counts
+    )
+    runtime._latest_predictive_intent = None
+    assert runtime._maybe_publish_predictive_wait_shadow_intent(
         [(invocation, SimpleNamespace(), 400)],
         features={},
         predictions={"child": prediction},
@@ -12996,6 +13028,7 @@ def test_wait_tool_publishes_beneficiary_bound_prepare_shadow():
         native_inflight_bytes=0,
     )
     runtime.controller.actual_hbm_used_bytes = 900
+    runtime._latest_predictive_intent = None
     assert runtime._maybe_publish_predictive_wait_shadow_intent(
         [(invocation, SimpleNamespace(), 400)],
         features={},
@@ -13499,6 +13532,79 @@ def test_prepare_event_resolves_preferred_victim_contexts():
         "ctx-a",
         "ctx-b",
     )
+
+
+def test_predictive_dispatch_does_not_treat_queue_as_pcie_saturation():
+    runtime = EmbeddedSGLangRuntime.__new__(EmbeddedSGLangRuntime)
+    runtime.backend = SimpleNamespace(_native_inflight_bytes=lambda: 123)
+    runtime._pending_online_joint_residency = SimpleNamespace(
+        context_id="other-context"
+    )
+    runtime._current_semantic_residency_commit = (
+        "plan",
+        0,
+        SimpleNamespace(context_id="other-semantic-context"),
+        object(),
+    )
+    runtime._restore_obligation_index = lambda: SimpleNamespace(
+        active=lambda: (SimpleNamespace(context_id="other-restore"),)
+    )
+    runtime.controller = SimpleNamespace(
+        has_pending_transfer_work=lambda: True,
+    )
+    intent = SimpleNamespace(
+        context_id="target-context",
+        victim_context_id="victim-context",
+    )
+
+    reasons, native_inflight_bytes = (
+        runtime._predictive_dispatch_conflict_reasons(intent)
+    )
+
+    assert reasons == ()
+    assert native_inflight_bytes == 123
+
+    runtime._pending_online_joint_residency = SimpleNamespace(
+        context_id="target-context"
+    )
+    runtime._current_semantic_residency_commit = (
+        "plan",
+        0,
+        SimpleNamespace(context_id="victim-context"),
+        object(),
+    )
+    runtime._restore_obligation_index = lambda: SimpleNamespace(
+        active=lambda: (SimpleNamespace(context_id="target-context"),)
+    )
+
+    conflicting, _ = runtime._predictive_dispatch_conflict_reasons(intent)
+
+    assert set(conflicting) == {
+        "observed_residency_has_priority",
+        "residency_transaction_inflight",
+        "urgent_restore_active",
+    }
+
+
+def test_online_residency_queues_predictive_action_behind_existing_transfer():
+    runtime = EmbeddedSGLangRuntime.__new__(EmbeddedSGLangRuntime)
+    runtime.controller = SimpleNamespace(
+        has_pending_transfer_work=lambda: True,
+    )
+    runtime._pending_online_joint_residency = None
+    runtime._online_joint_counts = Counter()
+    runtime._queue_predictive_joint_residency = mock.Mock(return_value=True)
+
+    assert runtime._queue_online_joint_residency(
+        SimpleNamespace(plan_id="plan"),
+        now_ms=42.0,
+    ) is None
+
+    runtime._queue_predictive_joint_residency.assert_called_once_with(
+        "plan",
+        now_ms=42.0,
+    )
+    assert "residency_wait_existing_transfer" not in runtime._online_joint_counts
 
 
 if __name__ == "__main__":

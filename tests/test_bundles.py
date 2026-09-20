@@ -888,6 +888,62 @@ def test_bounded_exclusive_shadow_selects_closure_complete_chunk() -> None:
     assert preview.bundle.cross_context_action_bytes == 0
 
 
+def test_bounded_exclusive_shadow_merges_disjoint_suffixes_and_revalidates() -> None:
+    graph, index = _runtime(("parent", "ctx-parent", "wf"))
+    graph.apply(_event(2, RuntimeEventKind.TOOL_START, invocation_id="parent"))
+    first = PageHandle(1, 0)
+    second = PageHandle(2, 0)
+    index.register_page(first, size_bytes=30, radix_depth=1)
+    index.register_page(second, size_bytes=40, radix_depth=1)
+    index.bind_pages("ctx-parent", 0, (first, second))
+    builder = PhysicalBundleBuilder(graph, index)
+
+    preview = builder.best_exclusive_shadow_preview_for_context(
+        "ctx-parent",
+        0,
+        now_ms=3,
+        max_copy_bytes=100,
+    )
+
+    assert preview is not None
+    assert preview.eligible
+    assert preview.bundle.handles == (first, second)
+    assert preview.copy_bytes == 70
+    assert preview.bundle.exclusive_action_bytes == 70
+    assert preview.bundle.cross_context_action_bytes == 0
+
+    command = ControlCommand(
+        command_id="merged-shadow",
+        kind=CommandKind.SHADOW_CONTEXT,
+        created_ts_ms=3.0,
+        context_id="ctx-parent",
+        context_epoch=0,
+        target_bytes=preview.bundle.closure_bytes,
+        physical_bundle=preview.intent(),
+    )
+    resolved = RadixArbiter(
+        graph,
+        index,
+        bundle_builder=builder,
+    ).resolve(command)
+
+    assert resolved.page_actions == preview.page_actions
+    assert resolved.resolved_bytes == preview.bundle.closure_bytes
+    assert not resolved.blockers
+
+    index.pages[second].engine_lock_ref = 1
+    stale = RadixArbiter(
+        graph,
+        index,
+        bundle_builder=builder,
+    ).resolve(command)
+
+    assert not stale.page_actions
+    assert {item.code for item in stale.blockers} == {
+        TransferBlockerCode.NODE_LOCKED
+    }
+
+
 def test_best_exclusive_shadow_preview_skips_shared_ancestor() -> None:
     graph, index = _runtime(
         ("parent", "ctx-parent", "wf"),

@@ -126,6 +126,28 @@ class RadixArbiter:
                 for item in command.metadata.get("bypass_owner_context_ids", ())
             ),
         )
+        if preview is None and hasattr(
+            self.bundle_builder, "preview_offload_handles"
+        ):
+            preview = self.bundle_builder.preview_offload_handles(
+                command.kind,
+                command.context_id,
+                command.context_epoch,
+                intent.closure_handles,
+                now_ms=command.created_ts_ms,
+                allow_ready_owners=bool(
+                    command.metadata.get("allow_ready_owners", False)
+                ),
+                protected_context_id=command.metadata.get(
+                    "protected_context_id"
+                ),
+                bypass_owner_context_ids=frozenset(
+                    str(item)
+                    for item in command.metadata.get(
+                        "bypass_owner_context_ids", ()
+                    )
+                ),
+            )
         if preview is None:
             return ResolvedCommand(
                 command,

@@ -19710,9 +19710,7 @@ class EmbeddedSGLangRuntime:
             self._joint_predictive_counts["wait_shadow_retry_cooldown"] += 1
             return False
         transient_blocker = None
-        if native_inflight_bytes > 0:
-            transient_blocker = "native_transfer_busy"
-        elif getattr(self, "_pending_online_joint_residency", None) is not None:
+        if getattr(self, "_pending_online_joint_residency", None) is not None:
             transient_blocker = "residency_transaction_busy"
         if transient_blocker is not None:
             retry_not_before_ms = (
@@ -19855,7 +19853,7 @@ class EmbeddedSGLangRuntime:
                 now_ms=observation.ts_ms,
                 host_available_bytes=host_available,
                 max_copy_bytes=min(
-                    self.config.shadow_chunk_bytes,
+                    self.config.predictive_shadow_dma_batch_bytes,
                     missing_cpu_bytes,
                 ),
             )
@@ -22691,21 +22689,7 @@ class EmbeddedSGLangRuntime:
             )
             or getattr(self, "_latest_predictive_intent", None) is not None
             or getattr(self, "_pending_online_joint_residency", None) is not None
-            or self.controller.has_pending_transfer_work()
-            or self._restore_obligation_index().active()
         ):
-            return False
-        backend = getattr(self, "backend", None)
-        native_inflight_bytes = (
-            backend._native_inflight_bytes()
-            if backend is not None
-            and hasattr(backend, "_native_inflight_bytes")
-            else 0
-        )
-        if native_inflight_bytes > 0:
-            self._joint_predictive_counts[
-                "service_prefetch_native_transfer_busy"
-            ] += 1
             return False
         graph = self.controller.graph
         page_index = self.controller.page_index
@@ -25246,6 +25230,50 @@ class EmbeddedSGLangRuntime:
             epoch,
         )
 
+    def _predictive_dispatch_conflict_reasons(
+        self,
+        intent: PredictiveIntent,
+    ) -> tuple[tuple[str, ...], int]:
+        """Return action-local dispatch conflicts and native outstanding bytes."""
+
+        target_context_ids = {
+            intent.context_id,
+            *(
+                (intent.victim_context_id,)
+                if intent.victim_context_id
+                else ()
+            ),
+        }
+        reasons: list[str] = []
+        pending_residency = getattr(self, "_pending_online_joint_residency", None)
+        semantic_residency = getattr(
+            self, "_current_semantic_residency_commit", None
+        )
+        if pending_residency is not None and (
+            pending_residency.context_id in target_context_ids
+        ):
+            reasons.append("observed_residency_has_priority")
+        if semantic_residency is not None and (
+            semantic_residency[2].context_id in target_context_ids
+        ):
+            reasons.append("residency_transaction_inflight")
+        if any(
+            item.context_id in target_context_ids
+            for item in self._restore_obligation_index().active()
+        ):
+            reasons.append("urgent_restore_active")
+        backend = getattr(self, "backend", None)
+        native_inflight_bytes = (
+            backend._native_inflight_bytes()
+            if backend is not None
+            and hasattr(backend, "_native_inflight_bytes")
+            else 0
+        )
+        # Controller queue depth is deliberately absent here. A queued command
+        # is not evidence that PCIe bandwidth is saturated; dispatch will retry
+        # and revalidate the physical bundle when its lane reaches the command.
+        return tuple(reasons), native_inflight_bytes
+
     def _physical_commit_predictive_intent(
         self,
         plan: Any,
@@ -25279,27 +25307,11 @@ class EmbeddedSGLangRuntime:
             PredictiveActionKind.PARTIAL_PREFETCH_GPU,
             PredictiveActionKind.RECLAIM_AND_PREFETCH,
         }
-        observed_residency_actions = any(
-            item.action != ResidencyAction.KEEP for item in plan.residency
-        ) or bool(plan.semantic_residency)
-        if physical_action:
-            if observed_residency_actions or self._current_semantic_residency_commit:
-                reasons.append("observed_residency_has_priority")
-            if getattr(self, "_pending_online_joint_residency", None) is not None:
-                reasons.append("residency_transaction_inflight")
-            if self.controller.has_pending_transfer_work():
-                reasons.append("pcie_dispatch_busy")
-        backend = getattr(self, "backend", None)
-        native_inflight_bytes = (
-            backend._native_inflight_bytes()
-            if backend is not None
-            and hasattr(backend, "_native_inflight_bytes")
-            else 0
+        dispatch_reasons, native_inflight_bytes = (
+            self._predictive_dispatch_conflict_reasons(intent)
         )
-        if physical_action and native_inflight_bytes > 0:
-            reasons.append("native_hicache_inflight")
-        if physical_action and self._restore_obligation_index().active():
-            reasons.append("urgent_restore_active")
+        if physical_action:
+            reasons.extend(dispatch_reasons)
 
         age_ms = max(0.0, now_ms - intent.generated_ts_ms)
         remaining_ms = max(0.0, intent.remaining_window_low_ms - age_ms)
@@ -25721,7 +25733,7 @@ class EmbeddedSGLangRuntime:
                         now_ms=now_ms,
                         host_available_bytes=host_available,
                         max_copy_bytes=min(
-                            self.config.shadow_chunk_bytes,
+                            self.config.predictive_shadow_dma_batch_bytes,
                             intent.max_copy_bytes,
                         ),
                     )
@@ -25796,7 +25808,10 @@ class EmbeddedSGLangRuntime:
                     else "missing"
                 ),
                 "pinned_host": True,
-                "native_concurrent_bytes": native_inflight_bytes,
+                # Explicit commands are independently queued and revalidated.
+                # Estimate their own DMA cost rather than treating outstanding
+                # native bytes as a shape-unsupported concurrent transfer.
+                "native_concurrent_bytes": 0,
             }
             current_transfer = self.controller.service_curve.estimate(
                 direction,
@@ -25809,7 +25824,6 @@ class EmbeddedSGLangRuntime:
                 direction == TransferDirection.D2H
                 and wait_shadow_prepare
                 and not current_transfer.shape_supported
-                and native_inflight_bytes == 0
             ):
                 direction_envelope = (
                     self.controller.service_curve.estimate_direction_envelope(
@@ -25851,11 +25865,6 @@ class EmbeddedSGLangRuntime:
                 effective_transfer_ms,
                 current_transfer.estimated_completion_p90_ms,
             )
-            if (
-                direction == TransferDirection.H2D
-                and native_inflight_bytes > 0
-            ):
-                reasons.append("prefetch_native_transfer_busy")
             if intent.action == PredictiveActionKind.PREPARE_HOST:
                 if intent.shape_fingerprint.startswith("summary:"):
                     live_shape_fingerprint = (
@@ -27391,9 +27400,6 @@ class EmbeddedSGLangRuntime:
     ) -> None:
         if getattr(self, "_pending_online_joint_residency", None) is not None:
             return
-        if self.controller.has_pending_transfer_work():
-            self._online_joint_counts["residency_wait_existing_transfer"] += 1
-            return
         if self._queue_predictive_joint_residency(
             view.plan_id,
             now_ms=now_ms,
@@ -27743,11 +27749,10 @@ class EmbeddedSGLangRuntime:
             target_bytes=preview.bundle.closure_bytes,
             priority=4.0e9,
             deadline_ms=target.deadline_ms,
-            queue_class=(
-                CommandQueueClass.SHADOW
-                if command_kind == CommandKind.SHADOW_CONTEXT
-                else CommandQueueClass.URGENT
-            ),
+            # A predictive shadow is non-destructive, but it is still
+            # deadline-bearing. Keep it out of the best-effort shadow lane so
+            # a persistent urgent stream cannot starve latest-start work.
+            queue_class=CommandQueueClass.URGENT,
             metadata={
                 "reason": "predictive_joint_overlay",
                 "joint_plan_id": plan_id,

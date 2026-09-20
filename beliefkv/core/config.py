@@ -16,6 +16,7 @@ class BeliefKVConfig:
     transfer_watchdog_floor_ms: float = 1000.0
     urgent_chunk_bytes: int = 256 * 1024 * 1024
     shadow_chunk_bytes: int = 64 * 1024 * 1024
+    predictive_shadow_dma_batch_bytes: int = 256 * 1024 * 1024
     shadow_min_parked_ms: float = 25.0
     shadow_slowdown_budget: float = 0.02
     host_lifecycle_enabled: bool = True
@@ -203,7 +204,14 @@ class BeliefKVConfig:
             or self.transfer_watchdog_floor_ms <= 0
         ):
             raise ValueError("transfer_watchdog_floor_ms must be positive")
-        if min(self.urgent_chunk_bytes, self.shadow_chunk_bytes) <= 0:
+        if (
+            min(
+                self.urgent_chunk_bytes,
+                self.shadow_chunk_bytes,
+                self.predictive_shadow_dma_batch_bytes,
+            )
+            <= 0
+        ):
             raise ValueError("transfer chunks must be positive")
         if self.shadow_min_parked_ms < 0:
             raise ValueError("shadow_min_parked_ms must be non-negative")
