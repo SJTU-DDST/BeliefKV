@@ -21564,6 +21564,31 @@ class EmbeddedSGLangRuntime:
         )
         return True
 
+    def _shadow_telemetry_delta(self):
+        """Read telemetry without treating bounded observation loss as fatal."""
+
+        delta = self.controller.transfer_telemetry_since(
+            self._shadow_telemetry_sequence
+        )
+        if not delta.full_rebuild_required:
+            return delta
+        counts = getattr(self, "_joint_shadow_counts", None)
+        if counts is None:
+            counts = Counter()
+            self._joint_shadow_counts = counts
+        counts["telemetry_journal_compacted"] += 1
+        audit = getattr(self, "audit", None)
+        if audit is not None:
+            audit.emit(
+                "joint_shadow_telemetry_journal_compacted",
+                float(self._now_ms()),
+                audit_level="correctness",
+                from_sequence=self._shadow_telemetry_sequence,
+                to_sequence=delta.to_sequence,
+                retained_count=len(delta.telemetry),
+            )
+        return delta
+
     def _maybe_record_incremental_policy_snapshot(
         self,
         observation: RuntimeResourceObservation,
@@ -21927,13 +21952,7 @@ class EmbeddedSGLangRuntime:
                         full_rebuild_required=False,
                     )
                 )
-                telemetry_delta = self.controller.transfer_telemetry_since(
-                    self._shadow_telemetry_sequence
-                )
-                if telemetry_delta.full_rebuild_required:
-                    raise RuntimeError(
-                        "transfer telemetry journal gap; shadow rebuild is fail-closed"
-                    )
+                telemetry_delta = self._shadow_telemetry_delta()
                 telemetry = telemetry_delta.telemetry
                 risk_trigger_signature = (
                     self._joint_shadow_predictive_risk_triggers(

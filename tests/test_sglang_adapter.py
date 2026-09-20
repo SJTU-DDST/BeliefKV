@@ -13617,6 +13617,67 @@ def test_predictive_dispatch_does_not_treat_queue_as_pcie_saturation():
     }
 
 
+def test_shadow_telemetry_journal_compaction_is_not_fatal():
+    runtime = EmbeddedSGLangRuntime.__new__(EmbeddedSGLangRuntime)
+    runtime.controller = BeliefKVController(
+        BeliefKVConfig(
+            hbm_capacity_bytes=1_000,
+            host_capacity_bytes=1_000,
+            reserve_hbm_bytes=0,
+            service_curve_window=4,
+            service_curve_min_samples=1,
+            predictor_enabled=False,
+            shadow_enabled=False,
+        )
+    )
+    runtime._shadow_telemetry_sequence = 0
+    runtime._joint_shadow_counts = Counter()
+    runtime.audit = _AuditRecorder()
+    runtime._now_ms = lambda: 42.0
+    for sequence in range(1, 6):
+        telemetry = TransferTelemetry(
+            command_id=f"telemetry-{sequence}",
+            submit_ts_ms=float(sequence),
+            start_ts_ms=float(sequence) + 0.1,
+            first_layer_ready_ts_ms=None,
+            complete_ts_ms=float(sequence) + 1.0,
+            compute_wait_ms=None,
+            actual_bytes=100,
+            closure_bytes=100,
+            merged_operation_count=0,
+            direction=TransferDirection.D2H,
+            source_tier="gpu",
+            target_tier="host",
+            status=CommandStatus.COMPLETED,
+            page_count=1,
+        )
+        runtime.controller._acked_command_ids.add(telemetry.command_id)
+        runtime.controller.observe_transfer_telemetry(telemetry)
+
+    delta = runtime._shadow_telemetry_delta()
+
+    assert delta.full_rebuild_required
+    assert delta.from_sequence == 0
+    assert delta.to_sequence == 5
+    assert [item.command_id for item in delta.telemetry] == [
+        "telemetry-2",
+        "telemetry-3",
+        "telemetry-4",
+        "telemetry-5",
+    ]
+    assert runtime._joint_shadow_counts["telemetry_journal_compacted"] == 1
+    assert runtime.audit.events[-1][0] == (
+        "joint_shadow_telemetry_journal_compacted"
+    )
+
+    runtime._shadow_telemetry_sequence = delta.to_sequence
+    unchanged = runtime._shadow_telemetry_delta()
+
+    assert not unchanged.full_rebuild_required
+    assert unchanged.telemetry == ()
+    assert runtime._joint_shadow_counts["telemetry_journal_compacted"] == 1
+
+
 def test_online_residency_queues_predictive_action_behind_existing_transfer():
     runtime = EmbeddedSGLangRuntime.__new__(EmbeddedSGLangRuntime)
     runtime.controller = SimpleNamespace(
