@@ -364,6 +364,7 @@ def _transfer_action_source(
             "shutdown_",
             "host_capacity_",
             "host_high_watermark_",
+            "dead_unowned_",
         )
     ):
         return "lifecycle"
@@ -1733,16 +1734,13 @@ class HiCacheNodeCommandBackend:
                         command_id=command_id,
                         completed_handles=progress[0],
                         completed_bytes=progress[1],
-                        grace_ms=_WATCHDOG_PROGRESS_GRACE_MS,
+                        grace_ms=None,
                     )
                 return None
-            last_progress_ms = pending.watchdog_progress_ts_ms
-            if (
-                last_progress_ms is not None
-                and now_ms - last_progress_ms
-                < _WATCHDOG_PROGRESS_GRACE_MS
-            ):
-                return None
+            # Partial DMA progress is an authoritative side effect. Wait for
+            # locks/extents to converge; shutdown or explicit cancel remains
+            # the only safe way to discard such work.
+            return None
         pending.cancel_requested = True
         error = SGLangBackendError(
             reason,
@@ -2396,7 +2394,6 @@ _JOINT_SIGNATURE_CHECK_INTERVAL_MS = 10.0
 _ACK_POLL_INTERVAL_MS = 5.0
 _POLICY_CHECK_INTERVAL_MS = 5.0
 _WATCHDOG_NO_PROGRESS_GRACE_MS = 5_000.0
-_WATCHDOG_PROGRESS_GRACE_MS = 30_000.0
 _PREDICTIVE_VICTIM_SUMMARY_SCAN_LIMIT = 8
 _PREDICTIVE_REENTRY_WATCH_LIMIT = 4
 _PREDICTIVE_REENTRY_TARGET_LIMIT = 3

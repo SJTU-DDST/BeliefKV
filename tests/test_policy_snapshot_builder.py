@@ -469,12 +469,32 @@ def test_lease_delta_reuses_unrelated_physical_bundles() -> None:
     )
 
 
-def test_snapshot_rejects_page_mirror_larger_than_authoritative_allocator() -> None:
+def test_snapshot_conservatively_closes_mirror_larger_than_allocator() -> None:
     controller = _controller()
     _bind_two_level_tree(controller)
 
-    with pytest.raises(PolicySnapshotError, match="exceed authoritative"):
-        controller.build_policy_input(_observation(hbm_used=299))
+    snapshot = controller.build_policy_input(_observation(hbm_used=299))
+
+    assert snapshot.physical_kv.gpu_bytes == 300
+    assert snapshot.resources.hbm_used_bytes == 300
+    assert snapshot.runtime_graph.state["physical_accounting"][
+        "ownership_overage_hbm_bytes"
+    ] == 1
+    assert controller.policy_snapshot_builder._last_stats.ownership_overage_hbm_bytes == 1
+
+
+def test_snapshot_rejects_page_mirror_larger_than_physical_capacity() -> None:
+    controller = _controller()
+    handle = PageHandle(1, 0)
+    controller.page_index.register_page(
+        handle,
+        size_bytes=1_100,
+        residency=PhysicalResidency.GPU_ONLY,
+    )
+    controller.page_index.bind_pages("ctx-root", 0, {handle})
+
+    with pytest.raises(PolicySnapshotError, match="exceed HBM capacity"):
+        controller.build_policy_input(_observation(hbm_used=1_000))
 
 
 def test_snapshot_separates_physical_hbm_from_native_reclaim_pressure() -> None:

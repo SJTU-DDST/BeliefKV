@@ -709,6 +709,46 @@ terminal subagent 清理语义：
    explicit shadow、CPU-only recompute 的顺序选择。v58 运行时该语义化 host
    cleanup 尚未进入 trace，`host_cleanup_queued=0`。
 
+### 5.18 2026-09-21 baseline v3 完整审计与恢复修复
+
+contract-matched baseline v3 在 main `27d25de` 上自然完成：
+
+1. 64/64 workflow 均有 result，运行 30,969s；
+2. workload return code 为 1：52 completed、12 error，measurement-valid 17；
+3. shutdown acknowledged，queue 清空，144 个 restore obligation 全部
+   `gpu_service_resumed`，无遗留 command/lease/transaction；
+4. waiting-only liveness fallback 触发 108 次、释放 58 次，运行期间没有复现
+   running=0 且 waiting 长期空转；
+5. telemetry journal compaction 7 次均通过 retained suffix 恢复。
+
+该 attempt 不能作为 clean formal A/B，原因如下：
+
+1. 12 个 error 均为
+   `TerminalProtocolError: agent stopped twice without required WorkflowCompletion schema`；
+2. Joint worker 171 次 fail-closed 并请求 mirror resync。最后样本为
+   PageOwnershipIndex CPU/GPU bytes 超过 native authoritative usage；
+3. 34 个 restore funding command 停在 `parked_wait` 后被 watchdog 取消；
+   telemetry 显示其中大量命令已有实际 DMA bytes。取消后 obligation 重试，
+   造成重复 D2H 和额外延迟；
+4. 84 个 `DROP_UNOWNED` 生命周期动作缺少 reason，被误分类为
+   `unified_liveness` 并污染
+   `all_online_actions_have_source_joint_plan_id` correctness gate。
+
+main 分支已做三项修复：
+
+1. `DROP_UNOWNED` pressure cleanup 显式标记
+   `dead_unowned_pressure_cleanup`，归类为 lifecycle，不再要求 JointPlan ID；
+2. PageOwnership mirror 与 native allocator 的短暂 overage 采用保守上界：
+   snapshot 记录 `ownership_overage_hbm/host_bytes`，并以 tracked bytes 作为
+   HBM/Host used 上界；tracked bytes 超过物理 capacity 仍 fail-closed；
+3. explicit transfer watchdog 对已有 partial DMA progress 的命令不再按时间
+   强制取消。时间 watchdog 只终止完全无 progress 的命令；有 progress 的命令
+   等待 lock/extent 收敛，request cancel/shutdown 仍可显式丢弃。
+
+上述修复已通过 adapter、policy snapshot、controller 和 transfer 回归。下一轮
+predictive gate 使用这些修复；若需要最终论文级 A/B，baseline 也必须使用同一
+commit 重跑。
+
 ## 6. 当前阻塞项
 
 1. prediction-to-action utilization gap 尚未闭合。初步 H200 高压运行中 predictive arm
@@ -769,6 +809,8 @@ terminal subagent 清理语义：
 25. native Host LRU replacement 缺少逐笔 telemetry；当前只能报告 Host displacement
     下界。若后续需要精确 value-model 评估，应先为 native host eviction 增加低频
     counters。
+26. baseline v3 暴露的 ownership overage、partial-progress watchdog 和
+    `DROP_UNOWNED` gate 分类已修复，尚未经过 predictive GPU 回归。
 
 ## 7. 下一步
 

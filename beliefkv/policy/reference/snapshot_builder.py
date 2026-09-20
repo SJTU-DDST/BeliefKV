@@ -3,6 +3,7 @@ from __future__ import annotations
 import json
 import math
 from dataclasses import dataclass
+from dataclasses import replace
 from hashlib import blake2b
 from typing import Mapping, Sequence
 
@@ -52,6 +53,8 @@ class SnapshotBuildStats:
     runnable_request_count: int
     topology_version: int
     allocator_version: int
+    ownership_overage_hbm_bytes: int = 0
+    ownership_overage_host_bytes: int = 0
 
 
 @dataclass(frozen=True)
@@ -282,13 +285,43 @@ class PolicyInputSnapshotBuilder:
             tracked_host = tracked.host_bytes
             topology_fingerprint = tracked.topology_fingerprint
             tracked_allocator_fingerprint = tracked.allocator_fingerprint
-        if tracked_hbm > observation.hbm_used_bytes:
+        if tracked_hbm > observation.hbm_capacity_bytes:
             raise PolicySnapshotError(
-                "PageOwnershipIndex GPU bytes exceed authoritative allocator usage"
+                "PageOwnershipIndex GPU bytes exceed HBM capacity"
             )
-        if tracked_host > observation.host_used_bytes:
+        if tracked_host > observation.host_capacity_bytes:
             raise PolicySnapshotError(
-                "PageOwnershipIndex CPU bytes exceed authoritative host usage"
+                "PageOwnershipIndex CPU bytes exceed Host capacity"
+            )
+        ownership_overage_hbm = max(
+            0, tracked_hbm - observation.hbm_used_bytes
+        )
+        ownership_overage_host = max(
+            0, tracked_host - observation.host_used_bytes
+        )
+        if ownership_overage_hbm or ownership_overage_host:
+            # A native allocator can free or reclaim bytes before the Radix
+            # observer has synchronized the corresponding ownership transition.
+            # Keep the ownership ledger as the conservative upper bound instead
+            # of poisoning the asynchronous worker during that transition.
+            observation = replace(
+                observation,
+                hbm_used_bytes=tracked_hbm,
+                host_used_bytes=tracked_host,
+                host_free_bytes=max(
+                    0, observation.host_capacity_bytes - tracked_host
+                ),
+                effective_hbm_used_bytes=(
+                    None
+                    if observation.effective_hbm_used_bytes is None
+                    else min(
+                        tracked_hbm,
+                        max(
+                            observation.effective_hbm_used_bytes,
+                            observation.hbm_used_bytes,
+                        ),
+                    )
+                ),
             )
 
         allocator_fingerprint = _fingerprint(
@@ -333,6 +366,8 @@ class PolicyInputSnapshotBuilder:
                 "untracked_hbm_bytes": observation.hbm_used_bytes - tracked_hbm,
                 "tracked_host_bytes": tracked_host,
                 "untracked_host_bytes": observation.host_used_bytes - tracked_host,
+                "ownership_overage_hbm_bytes": ownership_overage_hbm,
+                "ownership_overage_host_bytes": ownership_overage_host,
                 "accounting_unit": (
                     "context_summary_plus_protected_aggregate"
                     if physical_summary_only
@@ -491,6 +526,8 @@ class PolicyInputSnapshotBuilder:
             untracked_hbm_bytes=observation.hbm_used_bytes - tracked_hbm,
             tracked_host_bytes=tracked_host,
             untracked_host_bytes=observation.host_used_bytes - tracked_host,
+            ownership_overage_hbm_bytes=ownership_overage_hbm,
+            ownership_overage_host_bytes=ownership_overage_host,
             physical_extent_count=len(bundles),
             runnable_request_count=len(frontier),
             topology_version=self._topology_version,

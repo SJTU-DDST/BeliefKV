@@ -174,6 +174,7 @@ class ReactiveTransferPlanner:
                 now_ms,
                 target_bytes=min(shortage, self.config.urgent_chunk_bytes),
                 priority=1.0e9,
+                metadata={"reason": "dead_unowned_pressure_cleanup"},
             )
 
         exclusive_victims: dict[str, tuple[tuple, ControlCommand]] = {}

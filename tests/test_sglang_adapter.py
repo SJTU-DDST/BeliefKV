@@ -95,6 +95,7 @@ from beliefkv.runtime.sglang_v052rc1 import (
     _OnlineJointResidencyTransaction,
     _PERFORMANCE_METRIC_EVENTS,
     _PendingNodeCommand,
+    _transfer_action_source,
     close_runtime_with_signal_shield,
     install_scheduler_shutdown_handler,
     _predictive_bundle_envelope_reasons,
@@ -3419,6 +3420,7 @@ class SGLangBackendTest(unittest.TestCase):
             payload["correctness_gates"]
             ["shutdown_cleanup_did_not_mask_unresolved_transactions"]
         )
+
         runtime._shutdown_terminal_transaction_ids = {"restore-1"}
         runtime._shutdown_terminal_command_outcomes = {
             "command-inflight": "cancelled",
@@ -3428,6 +3430,14 @@ class SGLangBackendTest(unittest.TestCase):
         self.assertTrue(
             payload["correctness_gates"]
             ["shutdown_cleanup_did_not_mask_unresolved_transactions"]
+        )
+
+    def test_dead_unowned_cleanup_is_lifecycle_sourced(self):
+        self.assertEqual(
+            _transfer_action_source(
+                None, "dead_unowned_pressure_cleanup"
+            ),
+            "lifecycle",
         )
 
     def test_sparse_policy_snapshot_capture_is_replay_compatible(self):
@@ -5760,14 +5770,14 @@ class SGLangBackendTest(unittest.TestCase):
                 reason="transfer_watchdog_forced_cancel",
             )
         )
-        now_ms = 30_002.0
-        ack = backend.expire_command(
-            command.command.command_id,
-            reason="transfer_watchdog_forced_cancel",
+        now_ms = 3_600_002.0
+        self.assertIsNone(
+            backend.expire_command(
+                command.command.command_id,
+                reason="transfer_watchdog_forced_cancel",
+            )
         )
-
-        self.assertIsNotNone(ack)
-        self.assertEqual(backend.poll_acks()[0].status, CommandStatus.CANCELLED)
+        self.assertEqual(backend.poll_acks(), [])
 
     def test_extent_split_after_d2h_records_dma_but_rejects_residency_commit(self):
         tree = _TreeCache()
