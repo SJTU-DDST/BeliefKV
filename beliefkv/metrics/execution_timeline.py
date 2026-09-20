@@ -108,17 +108,26 @@ def load_execution_timeline(
         start_ms = float(transfer["start_ms"])
         end_ms = float(transfer["end_ms"])
         duration = max(0.0, end_ms - start_ms)
-        busy_overlap = _interval_overlap_ms(
-            start_ms,
-            end_ms,
-            busy_intervals,
-            busy_starts,
+        hidden_eligible = bool(transfer["status"] == "completed")
+        busy_overlap = (
+            _interval_overlap_ms(
+                start_ms,
+                end_ms,
+                busy_intervals,
+                busy_starts,
+            )
+            if hidden_eligible
+            else 0.0
         )
-        decode_overlap = _interval_overlap_ms(
-            start_ms,
-            end_ms,
-            decode_intervals,
-            decode_starts,
+        decode_overlap = (
+            _interval_overlap_ms(
+                start_ms,
+                end_ms,
+                decode_intervals,
+                decode_starts,
+            )
+            if hidden_eligible
+            else 0.0
         )
         enriched_transfers.append(
             {
@@ -196,6 +205,9 @@ def _load_audit(
         "predictive_semantic_intent_published": "intent",
         "predictive_semantic_intent_committed": "commit",
         "predictive_semantic_intent_rejected": "reject",
+        "predictive_wait_shadow_intent_published": "intent",
+        "predictive_wait_shadow_intent_committed": "commit",
+        "predictive_wait_shadow_intent_rejected": "reject",
         "running_retraction_residency_queued": "retraction",
         "running_retraction_residency_ack": "retraction",
         "restore_obligation_source_terminal": "restore",
@@ -367,6 +379,7 @@ def _load_transfers(path: Path, *, runtime_start_ms: float) -> list[dict[str, ob
         actual_bytes = int(record.get("actual_bytes") or 0)
         if submit is None or complete is None or complete < submit or actual_bytes <= 0:
             continue
+        predictive = bool(record.get("predictive_intent_id"))
         transfers.append(
             {
                 "start_ms": max(0.0, submit - runtime_start_ms),
@@ -376,8 +389,15 @@ def _load_transfers(path: Path, *, runtime_start_ms: float) -> list[dict[str, ob
                 "extent_count": int(record.get("extent_count") or 0),
                 "kind": str(record.get("command_kind") or ""),
                 "command_id": str(record.get("command_id") or ""),
-                "predictive": bool(record.get("predictive_intent_id")),
+                "predictive": predictive,
+                "source": "predictive" if predictive else "native",
                 "status": str(record.get("status") or "unknown"),
+                "predictive_intent_id": (
+                    str(record.get("predictive_intent_id")) if predictive else None
+                ),
+                "context_id": str(record.get("context_id") or ""),
+                "context_epoch": int(record.get("context_epoch") or 0),
+                "telemetry_origin": str(record.get("telemetry_origin") or ""),
             }
         )
     transfers.sort(key=lambda item: (float(item["start_ms"]), str(item["command_id"])))
@@ -506,14 +526,30 @@ def _summarize(
     gpu_busy_threshold: float,
 ) -> dict[str, object]:
     transfer_duration = sum(float(item["duration_ms"]) for item in transfers)
+    completed_transfer_duration = sum(
+        float(item["duration_ms"])
+        for item in transfers
+        if item["status"] == "completed"
+    )
     hidden_duration = sum(float(item["gpu_busy_overlap_ms"]) for item in transfers)
     decode_overlap = sum(float(item["decode_overlap_ms"]) for item in transfers)
     by_direction: dict[str, dict[str, float | int]] = {}
+    predictive_by_direction: dict[
+        str,
+        dict[str, float | int | dict[str, int]],
+    ] = {}
     for item in transfers:
         direction = str(item["direction"])
-        entry = by_direction.setdefault(
+        shape = {
+            "count": 0,
+            "bytes": 0,
+            "duration_ms": 0.0,
+            "gpu_busy_overlap_ms": 0.0,
+        }
+        entry = by_direction.setdefault(direction, dict(shape))
+        predictive_entry = predictive_by_direction.setdefault(
             direction,
-            {"count": 0, "bytes": 0, "duration_ms": 0.0, "gpu_busy_overlap_ms": 0.0},
+            {**shape, "status_counts": {}},
         )
         entry["count"] = int(entry["count"]) + 1
         entry["bytes"] = int(entry["bytes"]) + int(item["bytes"])
@@ -521,6 +557,20 @@ def _summarize(
         entry["gpu_busy_overlap_ms"] = float(entry["gpu_busy_overlap_ms"]) + float(
             item["gpu_busy_overlap_ms"]
         )
+        if not bool(item["predictive"]):
+            continue
+        status = str(item["status"])
+        status_counts = predictive_entry["status_counts"]
+        assert isinstance(status_counts, dict)
+        status_counts[status] = status_counts.get(status, 0) + 1
+        predictive_entry["count"] = int(predictive_entry["count"]) + 1
+        predictive_entry["bytes"] = int(predictive_entry["bytes"]) + int(item["bytes"])
+        predictive_entry["duration_ms"] = float(
+            predictive_entry["duration_ms"]
+        ) + float(item["duration_ms"])
+        predictive_entry["gpu_busy_overlap_ms"] = float(
+            predictive_entry["gpu_busy_overlap_ms"]
+        ) + float(item["gpu_busy_overlap_ms"])
     return {
         "duration_ms": duration_ms,
         "gpu_busy_threshold_percent": gpu_busy_threshold,
@@ -535,15 +585,34 @@ def _summarize(
         "decode_inferred_window_count": len(decode_windows),
         "transfer_count": len(transfers),
         "transfer_duration_ms": transfer_duration,
+        "completed_transfer_duration_ms": completed_transfer_duration,
         "transfer_gpu_busy_overlap_ms": hidden_duration,
         "transfer_decode_overlap_ms": decode_overlap,
         "potentially_hidden_transfer_fraction": (
-            hidden_duration / transfer_duration if transfer_duration > 0 else 0.0
+            hidden_duration / completed_transfer_duration
+            if completed_transfer_duration > 0
+            else 0.0
         ),
         "decode_overlap_transfer_fraction": (
-            decode_overlap / transfer_duration if transfer_duration > 0 else 0.0
+            decode_overlap / completed_transfer_duration
+            if completed_transfer_duration > 0
+            else 0.0
         ),
         "transfers_by_direction": by_direction,
+        "predictive_transfer_count": sum(
+            int(entry["count"]) for entry in predictive_by_direction.values()
+        ),
+        "predictive_transfer_bytes": sum(
+            int(entry["bytes"]) for entry in predictive_by_direction.values()
+        ),
+        "predictive_transfer_duration_ms": sum(
+            float(entry["duration_ms"]) for entry in predictive_by_direction.values()
+        ),
+        "predictive_transfer_gpu_busy_overlap_ms": sum(
+            float(entry["gpu_busy_overlap_ms"])
+            for entry in predictive_by_direction.values()
+        ),
+        "predictive_transfers_by_direction": predictive_by_direction,
         "peak_hbm_ratio": max((float(item["hbm_ratio"]) for item in resources), default=0.0),
         "mean_running": _mean(float(item["running"]) for item in queue_samples),
         "mean_waiting": _mean(float(item["waiting"]) for item in queue_samples),
@@ -559,6 +628,17 @@ def _render_html(payload: Mapping[str, object], *, title: str) -> str:
     data = json.dumps(payload, separators=(",", ":"), allow_nan=False).replace("</", "<\\/")
     hidden = float(summary["potentially_hidden_transfer_fraction"]) * 100.0
     decode_overlap = float(summary["decode_overlap_transfer_fraction"]) * 100.0
+    predictive_directions = summary["predictive_transfers_by_direction"]
+    predictive_d2h = predictive_directions.get("d2h", {})
+    predictive_h2d = predictive_directions.get("h2d", {})
+    predictive_d2h_text = (
+        f"{int(predictive_d2h.get('count', 0)):,} / "
+        f"{_bytes(int(predictive_d2h.get('bytes', 0)))}"
+    )
+    predictive_h2d_text = (
+        f"{int(predictive_h2d.get('count', 0)):,} / "
+        f"{_bytes(int(predictive_h2d.get('bytes', 0)))}"
+    )
     return f"""<!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>{escape(title)}</title><style>
@@ -566,12 +646,12 @@ def _render_html(payload: Mapping[str, object], *, title: str) -> str:
 *{{box-sizing:border-box}}body{{margin:0;background:#fff;color:var(--ink);font:13px/1.45 system-ui,sans-serif;letter-spacing:0}}
 header,main{{max-width:1500px;margin:auto;padding:20px 24px}}header{{border-bottom:1px solid var(--line)}}h1{{margin:0;font-size:23px}}h2{{font-size:16px;margin:24px 0 8px}}
 .meta,.note{{color:var(--muted)}}.stats{{display:grid;grid-template-columns:repeat(auto-fit,minmax(155px,1fr));border:1px solid var(--line);margin-top:18px}}
-.stat{{padding:10px 12px;border-right:1px solid var(--line)}}.stat:last-child{{border-right:0}}.stat b{{display:block;font-size:17px;margin-top:3px}}
+.stat{{padding:10px 12px;border-right:1px solid var(--line)}}.stat:last-child{{border-right:0}}.stat b{{display:block;font-size:17px;margin-top:3px}}.stat .detail{{display:block;margin-top:2px;color:var(--muted);font-size:11px}}
 .tools{{display:grid;grid-template-columns:auto minmax(160px,1fr) auto minmax(160px,1fr) auto;gap:10px;align-items:center;margin:14px 0}}
-input[type=range]{{width:100%}}canvas{{display:block;width:100%;height:720px;border:1px solid var(--line);background:#fff}}
-.legend{{display:flex;gap:18px;flex-wrap:wrap;margin:10px 0;color:var(--muted)}}.key{{display:inline-flex;align-items:center;gap:6px}}.swatch{{width:18px;height:4px;background:var(--c)}}
+input[type=range]{{width:100%}}canvas{{display:block;width:100%;height:830px;border:1px solid var(--line);background:#fff}}
+.legend{{display:flex;gap:18px;flex-wrap:wrap;margin:10px 0;color:var(--muted)}}.key{{display:inline-flex;align-items:center;gap:6px}}.swatch{{width:18px;height:4px;background:var(--c)}}.predictive-swatch{{width:18px;height:9px;border:2px solid var(--predict);background:color-mix(in srgb,var(--c) 45%,white);box-sizing:border-box}}.reject-swatch{{width:2px;height:10px;background:#c3314b}}
 .tooltip{{position:fixed;display:none;pointer-events:none;max-width:390px;padding:8px 10px;background:#171717;color:#fff;border-radius:4px;font-size:12px;z-index:5}}
-@media(max-width:760px){{header,main{{padding:14px}}.tools{{grid-template-columns:auto 1fr}}canvas{{height:620px}}}}
+@media(max-width:760px){{header,main{{padding:14px}}.tools{{grid-template-columns:auto 1fr}}canvas{{height:730px}}}}
 </style></head><body><header><h1>{escape(title)}</h1><div class="meta">{escape(str(payload['run_dir']))}</div></header><main>
 <section class="stats">
 <div class="stat">Elapsed<b>{_duration(float(summary['duration_ms']))}</b></div>
@@ -581,10 +661,12 @@ input[type=range]{{width:100%}}canvas{{display:block;width:100%;height:720px;bor
 <div class="stat">DMA in inferred decode<b>{decode_overlap:.2f}%</b></div>
 <div class="stat">Peak HBM<b>{float(summary['peak_hbm_ratio'])*100:.2f}%</b></div>
 <div class="stat">Predictive commits<b>{int(summary['predictive_commit_count'])}</b></div>
+<div class="stat">Predictive D2H<b>{predictive_d2h_text}</b><span class="detail">{escape(_status_summary(predictive_d2h))}</span></div>
+<div class="stat">Predictive H2D<b>{predictive_h2d_text}</b><span class="detail">{escape(_status_summary(predictive_h2d))}</span></div>
 </section>
-<p class="note">DMA bars use measured submit-to-complete telemetry. Decode windows are inferred from SGLang's decode log interval, batch size and reported throughput. Prefill is shown as timestamped observations because this trace has no CUDA-event duration.</p>
+<p class="note">DMA bars use measured submit-to-complete telemetry. Native and predictive transfers have separate lanes; predictive bars carry a purple border and non-completed transfers have a red start marker. Hidden-overlap fractions count completed transfers only. Decode windows are inferred from SGLang's decode log interval, batch size and reported throughput. Prefill is shown as timestamped observations because this trace has no CUDA-event duration.</p>
 <div class="tools"><label for="zoom">Zoom</label><input id="zoom" type="range" min="1" max="80" step="1" value="1"><output id="zoomOut">1x</output><input id="pan" type="range" min="0" max="1000" value="0"><output id="windowOut"></output></div>
-<div class="legend"><span class="key"><i class="swatch" style="--c:var(--decode)"></i>Decode inferred</span><span class="key"><i class="swatch" style="--c:var(--prefill)"></i>Prefill observed</span><span class="key"><i class="swatch" style="--c:var(--d2h)"></i>D2H</span><span class="key"><i class="swatch" style="--c:var(--h2d)"></i>H2D</span><span class="key"><i class="swatch" style="--c:var(--predict)"></i>Predictive planning</span><span class="key"><i class="swatch" style="--c:var(--restore)"></i>Restore/retraction</span></div>
+<div class="legend"><span class="key"><i class="swatch" style="--c:var(--decode)"></i>Decode inferred</span><span class="key"><i class="swatch" style="--c:var(--prefill)"></i>Prefill observed</span><span class="key"><i class="swatch" style="--c:var(--d2h)"></i>Native D2H</span><span class="key"><i class="swatch" style="--c:var(--h2d)"></i>Native H2D</span><span class="key"><i class="predictive-swatch" style="--c:var(--d2h)"></i>Predictive D2H</span><span class="key"><i class="predictive-swatch" style="--c:var(--h2d)"></i>Predictive H2D</span><span class="key"><i class="reject-swatch"></i>Non-completed transfer</span><span class="key"><i class="swatch" style="--c:var(--predict)"></i>Predictive planning</span><span class="key"><i class="swatch" style="--c:var(--restore)"></i>Restore/retraction</span></div>
 <canvas id="timeline"></canvas><div id="tooltip" class="tooltip"></div>
 <h2>Interpretation</h2><p class="note">Transfer overlap with non-zero GPU utilization is potentially hideable, not proof of zero interference. The exposed remainder and transfers occurring before HBM-blocked work are the primary pipeline targets.</p>
 </main><script id="timelineData" type="application/json">{data}</script><script>{_timeline_javascript()}</script></body></html>"""
@@ -594,19 +676,19 @@ def _timeline_javascript() -> str:
     return r"""
 const data=JSON.parse(document.getElementById('timelineData').textContent);const canvas=document.getElementById('timeline');const ctx=canvas.getContext('2d');
 const zoom=document.getElementById('zoom'),pan=document.getElementById('pan'),zoomOut=document.getElementById('zoomOut'),windowOut=document.getElementById('windowOut'),tip=document.getElementById('tooltip');
-const lanes=[['GPU utilization',42,96],['GPU service',112,164],['D2H transfer',180,226],['H2D transfer',242,288],['Planner / lifecycle',304,354],['Tool / JOIN waits',370,440],['HBM pressure',456,526],['Running / waiting',542,628]];let hit=[];
+const lanes=[['GPU utilization',42,96],['GPU service',112,164],['Native D2H',180,226],['Native H2D',242,288],['Predictive D2H',304,350],['Predictive H2D',366,412],['Planner / lifecycle',428,478],['Tool / JOIN waits',494,564],['HBM pressure',580,650],['Running / waiting',666,752]];let hit=[];
 function size(){const r=canvas.getBoundingClientRect();const ratio=devicePixelRatio||1;canvas.width=Math.max(800,Math.floor(r.width*ratio));canvas.height=Math.floor(r.height*ratio);ctx.setTransform(ratio,0,0,ratio,0,0)}
 function view(){const z=Number(zoom.value),total=data.duration_ms,start=(Number(pan.value)/1000)*Math.max(0,total-total/z);return [start,start+total/z]}
 function x(t,start,end,w){return 116+(t-start)/(end-start)*(w-132)}function line(points,field,start,end,w,y0,y1,max,color){ctx.beginPath();let first=true;for(const p of points){if(p.t_ms<start||p.t_ms>end)continue;const px=x(p.t_ms,start,end,w),py=y1-Math.max(0,Math.min(max,Number(p[field]||0)))/max*(y1-y0);if(first){ctx.moveTo(px,py);first=false}else ctx.lineTo(px,py)}ctx.strokeStyle=color;ctx.lineWidth=1.4;ctx.stroke()}
-function draw(){size();const w=canvas.getBoundingClientRect().width,[start,end]=view();hit=[];ctx.clearRect(0,0,w,720);ctx.font='12px system-ui';ctx.fillStyle='#62686f';for(const [name,y0,y1] of lanes){ctx.fillText(name,8,(y0+y1)/2+4);ctx.fillStyle='#f7f8f8';ctx.fillRect(116,y0,w-132,y1-y0);ctx.strokeStyle='#e2e5e8';ctx.strokeRect(116,y0,w-132,y1-y0);ctx.fillStyle='#62686f'}
-for(let i=0;i<=8;i++){const px=116+i*(w-132)/8;ctx.strokeStyle='#eceeef';ctx.beginPath();ctx.moveTo(px,42);ctx.lineTo(px,628);ctx.stroke();ctx.fillStyle='#62686f';ctx.fillText(fmt(start+(end-start)*i/8),px-18,650)}
+function draw(){size();const w=canvas.getBoundingClientRect().width,[start,end]=view();hit=[];ctx.clearRect(0,0,w,830);ctx.font='12px system-ui';ctx.fillStyle='#62686f';for(const [name,y0,y1] of lanes){ctx.fillText(name,8,(y0+y1)/2+4);ctx.fillStyle='#f7f8f8';ctx.fillRect(116,y0,w-132,y1-y0);ctx.strokeStyle='#e2e5e8';ctx.strokeRect(116,y0,w-132,y1-y0);ctx.fillStyle='#62686f'}
+for(let i=0;i<=8;i++){const px=116+i*(w-132)/8;ctx.strokeStyle='#eceeef';ctx.beginPath();ctx.moveTo(px,42);ctx.lineTo(px,752);ctx.stroke();ctx.fillStyle='#62686f';ctx.fillText(fmt(start+(end-start)*i/8),px-18,774)}
 line(data.gpu_samples,'util',start,end,w,42,96,100,'#26734d');
 ctx.fillStyle='#2867b2';for(const q of data.decode_windows){if(q.end_ms<start||q.start_ms>end)continue;const a=x(Math.max(start,q.start_ms),start,end,w),b=x(Math.min(end,q.end_ms),start,end,w);ctx.globalAlpha=.72;ctx.fillRect(a,119,Math.max(1,b-a),38);ctx.globalAlpha=1;hit.push([a,119,Math.max(3,b-a),38,`Decode ${q.running} req | ${q.throughput.toFixed(1)} tok/s | ${q.cuda_graph?'CUDA graph':'eager'}`])}
 ctx.fillStyle='#9b5f16';for(const p of data.service_observations){if(p.phase!=='prefill'||p.t_ms<start||p.t_ms>end)continue;const px=x(p.t_ms,start,end,w),h=Math.min(38,5+Math.log2(1+p.new_tokens)*2);ctx.fillRect(px-1,157-h,2,h);hit.push([px-3,119,6,38,`Prefill ${p.new_tokens} new + ${p.cached_tokens} cached tokens | ${p.new_sequences} seq`])}
-for(const t of data.transfers){if(t.end_ms<start||t.start_ms>end)continue;const y=t.direction==='d2h'?190:252,a=x(Math.max(start,t.start_ms),start,end,w),b=x(Math.min(end,t.end_ms),start,end,w);ctx.fillStyle=t.direction==='d2h'?'#16877d':'#c65f2b';ctx.globalAlpha=t.predictive?1:.68;ctx.fillRect(a,y,Math.max(1,b-a),26);ctx.globalAlpha=1;hit.push([a,y,Math.max(3,b-a),26,`${t.direction.toUpperCase()} ${bytes(t.bytes)} | ${t.duration_ms.toFixed(2)} ms | GPU-busy overlap ${(t.potentially_hidden_fraction*100).toFixed(1)}% | ${t.kind}`])}
-for(const b of data.event_bins){if(b.t_ms<start||b.t_ms>end)continue;const px=x(b.t_ms,start,end,w);if(b.risk||b.intent||b.commit||b.reject){ctx.fillStyle='#744fc6';ctx.fillRect(px,309,Math.max(1,Math.log2(2+(b.risk||0))*2),17)}if(b.restore||b.retraction){ctx.fillStyle='#a1374b';ctx.fillRect(px,333,Math.max(1,Math.log2(2+(b.restore||0)+(b.retraction||0))*2),15)}}
-line(data.external_waits,'active_tools',start,end,w,370,440,Math.max(1,data.summary.peak_active_tools),'#9b5f16');line(data.external_waits,'active_joins',start,end,w,370,440,Math.max(1,data.summary.peak_active_joins),'#744fc6');
-line(data.resources,'hbm_ratio',start,end,w,456,526,1,'#a1374b');line(data.queue_samples,'running',start,end,w,542,628,32,'#2867b2');line(data.queue_samples,'waiting',start,end,w,542,628,Math.max(32,data.summary.mean_waiting*2),'#744fc6');
+for(const t of data.transfers){if(t.end_ms<start||t.start_ms>end)continue;const predictive=Boolean(t.predictive);if(t.direction!=='d2h'&&t.direction!=='h2d')continue;if(!predictive){const y=t.direction==='d2h'?190:252,a=x(Math.max(start,t.start_ms),start,end,w),b=x(Math.min(end,t.end_ms),start,end,w),width=Math.max(1,b-a);ctx.fillStyle=t.direction==='d2h'?'#16877d':'#c65f2b';ctx.globalAlpha=.68;ctx.fillRect(a,y,width,26);ctx.globalAlpha=1;hit.push([a,y,Math.max(3,width),26,`Native ${t.direction.toUpperCase()} ${bytes(t.bytes)} | ${t.status} | ${t.duration_ms.toFixed(2)} ms | GPU-busy overlap ${(t.potentially_hidden_fraction*100).toFixed(1)}% | ${t.kind}`])}else{const y=t.direction==='d2h'?314:376,a=x(Math.max(start,t.start_ms),start,end,w),b=x(Math.min(end,t.end_ms),start,end,w),width=Math.max(2,b-a);ctx.fillStyle=t.direction==='d2h'?'#16877d':'#c65f2b';ctx.globalAlpha=.80;ctx.fillRect(a,y,width,26);ctx.globalAlpha=1;ctx.strokeStyle='#744fc6';ctx.lineWidth=1.5;ctx.strokeRect(a+.5,y+.5,width-1,25);if(t.status!=='completed'){ctx.fillStyle='#c3314b';ctx.fillRect(a-1,y-2,3,30)}hit.push([a-2,y-2,Math.max(5,width+4),30,`Predictive ${t.direction.toUpperCase()} ${bytes(t.bytes)} | ${t.status} | ${t.duration_ms.toFixed(2)} ms | GPU-busy overlap ${(t.potentially_hidden_fraction*100).toFixed(1)}% | ${t.kind} | intent ${t.predictive_intent_id||'unknown'} | context ${t.context_id||'unknown'}@${t.context_epoch}`])}}
+for(const b of data.event_bins){if(b.t_ms<start||b.t_ms>end)continue;const px=x(b.t_ms,start,end,w);if(b.risk||b.intent||b.commit||b.reject){ctx.fillStyle='#744fc6';ctx.fillRect(px,433,Math.max(1,Math.log2(2+(b.risk||0))*2),17)}if(b.restore||b.retraction){ctx.fillStyle='#a1374b';ctx.fillRect(px,457,Math.max(1,Math.log2(2+(b.restore||0)+(b.retraction||0))*2),15)}}
+line(data.external_waits,'active_tools',start,end,w,494,564,Math.max(1,data.summary.peak_active_tools),'#9b5f16');line(data.external_waits,'active_joins',start,end,w,494,564,Math.max(1,data.summary.peak_active_joins),'#744fc6');
+line(data.resources,'hbm_ratio',start,end,w,580,650,1,'#a1374b');line(data.queue_samples,'running',start,end,w,666,752,32,'#2867b2');line(data.queue_samples,'waiting',start,end,w,666,752,Math.max(32,data.summary.mean_waiting*2),'#744fc6');
 zoomOut.value=`${zoom.value}x`;windowOut.value=`${fmt(start)} - ${fmt(end)}`}
 function fmt(ms){const s=Math.max(0,ms/1000),h=Math.floor(s/3600),m=Math.floor((s%3600)/60);return `${h}h${String(m).padStart(2,'0')}m`}function bytes(v){const u=['B','KiB','MiB','GiB'];let n=v,i=0;while(n>=1024&&i<u.length-1){n/=1024;i++}return `${n.toFixed(i?1:0)} ${u[i]}`}
 zoom.addEventListener('input',draw);pan.addEventListener('input',draw);window.addEventListener('resize',draw);canvas.addEventListener('mousemove',e=>{const r=canvas.getBoundingClientRect(),mx=e.clientX-r.left,my=e.clientY-r.top,found=hit.find(h=>mx>=h[0]&&mx<=h[0]+h[2]&&my>=h[1]&&my<=h[1]+h[3]);if(!found){tip.style.display='none';return}tip.textContent=found[4];tip.style.display='block';tip.style.left=`${e.clientX+12}px`;tip.style.top=`${e.clientY+12}px`});canvas.addEventListener('mouseleave',()=>tip.style.display='none');draw();
@@ -661,3 +743,32 @@ def _duration(ms: float) -> str:
     hours, seconds = divmod(seconds, 3600)
     minutes, seconds = divmod(seconds, 60)
     return f"{hours:d}h {minutes:02d}m {seconds:02d}s"
+
+
+def _bytes(value: int) -> str:
+    units = ("B", "KiB", "MiB", "GiB", "TiB")
+    amount = float(value)
+    for unit in units:
+        if abs(amount) < 1024.0 or unit == units[-1]:
+            precision = 1 if unit != "B" else 0
+            return f"{amount:.{precision}f} {unit}"
+        amount /= 1024.0
+    raise AssertionError("unreachable")
+
+
+def _status_summary(entry: Mapping[str, object]) -> str:
+    statuses = entry.get("status_counts", {})
+    if not isinstance(statuses, Mapping):
+        return "no transfers"
+    ordered = ("completed", "rejected")
+    parts = [
+        f"{int(statuses.get(status, 0))} {status}"
+        for status in ordered
+        if statuses.get(status, 0)
+    ]
+    parts.extend(
+        f"{int(count)} {status}"
+        for status, count in statuses.items()
+        if status not in ordered and int(count) > 0
+    )
+    return " / ".join(parts) if parts else "no transfers"
