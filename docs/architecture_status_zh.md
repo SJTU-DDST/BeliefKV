@@ -1,7 +1,7 @@
 # BeliefKV 当前架构与实现状态
 
 更新日期：2026-09-20
-当前 P6 代码基线：`efb5ded`
+当前 P6 代码基线：`fd8d7d7`
 
 本文只记录当前事实和下一阻塞项，不再追加逐日开发日志。2026-09-12 以前的完整历史保存在
 `docs/archive/snapshots/architecture_status_zh.md`，单次实验细节保存在
@@ -507,6 +507,26 @@ predictive H2D 最后一笔出现在 12.92 分钟，但 `prepare_host` intent �
 是否仍有 predictive D2H/H2D、merged batch extent/bytes、queue-to-dispatch 延迟、
 stale 率和 scheduler P95/P99。
 
+### 5.13 2026-09-20 baseline restore D2H watchdog
+
+同契约 observed baseline attempt0 在旧 `38e37d5` 上运行约两小时后卡死：
+`restore-5-command-11` 是 48.27 MB、3 extents 的 restore funding D2H，dispatch 后
+超过 80 分钟没有 backend telemetry 或 ACK；期间 running=0、admission epoch 持续
+空转，HBM/Host 维持在容量边界。shutdown drain 最终只能将该 command 显式置为
+`cancelled(reason=runtime_shutdown_drain_timeout)`。该 attempt 已保留为
+`baseline_attempt0`，不能作为 A/B 结果。
+
+`fd8d7d7` 将 controller 既有 transfer watchdog 从仅审计升级为强制终态：
+
+1. backend 对 stalled explicit command 生成 `CANCELLED` ACK 和 telemetry；
+2. controller 回滚 PageIndex transfer 状态并释放 restore/residency transaction；
+3. runtime 标记 full Radix mirror rebuild，避免信任可能仍在 native 层存活的 partial
+   callback；
+4. 下一个 scheduler step 立即 drain ACK，防止 admission 空转。
+
+该恢复是 fail-closed，不宣称丢失的 D2H 已完成；相关 restore obligation 会走失败/
+回退路径。下一次 baseline 或 predictive gate 需统计 forced-cancel 次数，理想值为 0。
+
 ## 6. 当前阻塞项
 
 1. prediction-to-action utilization gap 尚未闭合。初步 H200 高压运行中 predictive arm
@@ -549,13 +569,15 @@ stale 率和 scheduler P95/P99。
     代码修复，尚未经过 GPU 回归。
 17. `efb5ded` 的 predictive DMA queue/batch 修复已通过 CPU correctness 回归，但尚未经
     GPU 高压验证；不能根据静态代码或离线测试宣称恢复全程 predictive 传输。
+18. baseline attempt0 暴露 restore funding D2H callback 丢失；`fd8d7d7` 已增加强制
+    watchdog 终态，但尚未经 GPU 回归。
 
 ## 7. 下一步
 
 当前关键路径：
 
-1. 等待同契约 observed baseline 自然完成，生成 baseline timeline 并与已完成的 v58
-   predictive arm 对齐比较。
+1. 使用包含 `fd8d7d7` 的代码重启 observed baseline；attempt0 仅作卡死证据，不进入
+   timeline A/B。
 2. 使用 `efb5ded` 运行短高压 predictive gate，验证 predictive DMA 队列、合并 batch、
    30 分钟后的持续 transfer 和 `pcie_dispatch_busy=0`。
 3. 将 Host 语义化清理与 request-abort/H2D authority correctness 修复一并纳入下一轮
