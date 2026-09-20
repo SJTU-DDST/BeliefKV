@@ -50,6 +50,7 @@ def main() -> int:
     events = load_events(args.audit)
     prepare_dispatch: list[float] = []
     prefetch_dispatch: list[float] = []
+    prefetch_commit_ready: list[float] = []
     service_readiness: list[float] = []
     with args.telemetry.open(encoding="utf-8") as stream:
         for line in stream:
@@ -79,6 +80,20 @@ def main() -> int:
                     prepare_dispatch.append(submit_ts - float(source_ts))
             elif item.get("direction") == "h2d":
                 prefetch_dispatch.append(submit_ts - published_ts)
+                lease_registered = next(
+                    (
+                        event
+                        for event in events[intent_id]
+                        if event.get("event")
+                        == "predictive_prefetch_service_lease_registered"
+                    ),
+                    None,
+                )
+                if lease_registered is not None:
+                    prefetch_commit_ready.append(
+                        float(lease_registered["ts_ms"])
+                        - float(item["complete_ts_ms"])
+                    )
                 useful = next(
                     (
                         event
@@ -103,11 +118,11 @@ def main() -> int:
         return {
             "fallback_ms": fallback_ms,
             "offline_ms": clamp(
-                quantile(values, 0.95), minimum_ms, maximum_ms
+                quantile(values, 0.90), minimum_ms, maximum_ms
             ),
             "minimum_ms": minimum_ms,
             "maximum_ms": maximum_ms,
-            "quantile": 0.95,
+            "quantile": 0.90,
             "minimum_samples": 8,
             "offline_sample_count": len(values),
             "offline_quantiles_ms": {
@@ -125,7 +140,7 @@ def main() -> int:
             "source_run_id": args.source_run_id,
             "source_audit": str(args.audit),
             "source_telemetry": str(args.telemetry),
-            "selection_policy": "p95_clamped_pre_queue_fix",
+            "selection_policy": "p90_clamped_pre_queue_fix",
             "note": (
                 "Offline priors come from v58 before predictive DMA queue "
                 "repair; online samples override after minimum support."
@@ -136,19 +151,25 @@ def main() -> int:
                 prepare_dispatch,
                 fallback_ms=250.0,
                 minimum_ms=25.0,
-                maximum_ms=1000.0,
+                maximum_ms=500.0,
             ),
             "prefetch_dispatch": action(
                 prefetch_dispatch,
                 fallback_ms=100.0,
                 minimum_ms=50.0,
-                maximum_ms=1000.0,
+                maximum_ms=500.0,
+            ),
+            "prefetch_commit_ready": action(
+                prefetch_commit_ready,
+                fallback_ms=100.0,
+                minimum_ms=25.0,
+                maximum_ms=500.0,
             ),
             "prefetch_service_readiness": action(
                 service_readiness,
                 fallback_ms=100.0,
                 minimum_ms=50.0,
-                maximum_ms=1000.0,
+                maximum_ms=10_000.0,
             ),
         },
     }

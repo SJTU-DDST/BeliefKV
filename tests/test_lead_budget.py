@@ -72,6 +72,12 @@ def test_lead_budget_uses_offline_then_bounded_online_quantile(tmp_path) -> None
                 "minimum_ms": 50.0,
                 "maximum_ms": 1000.0,
             },
+            "prefetch_commit_ready": {
+                "fallback_ms": 100.0,
+                "offline_ms": 1000.0,
+                "minimum_ms": 50.0,
+                "maximum_ms": 1000.0,
+            },
             "prefetch_service_readiness": {
                 "fallback_ms": 100.0,
                 "offline_ms": 1000.0,
@@ -86,14 +92,17 @@ def test_lead_budget_uses_offline_then_bounded_online_quantile(tmp_path) -> None
 
     assert model.prepare_control_lead_ms(fallback_ms=250.0) == 1000.0
     assert model.prefetch_desired_lead_ms(fallback_ms=100.0) == 2000.0
+    assert model.prefetch_soft_service_wait_ms() == 1000.0
 
     for _ in range(8):
         model.observe_dispatch("prepare", 100.0)
         model.observe_dispatch("prefetch", 100.0)
+        model.observe_prefetch_commit_ready(75.0)
         model.observe_service_readiness(75.0)
 
     assert model.prepare_control_lead_ms(fallback_ms=250.0) == 100.0
     assert model.prefetch_desired_lead_ms(fallback_ms=100.0) == 175.0
+    assert model.prefetch_soft_service_wait_ms() == 75.0
 
     for _ in range(8):
         model.observe_dispatch("prepare", 10_000.0)

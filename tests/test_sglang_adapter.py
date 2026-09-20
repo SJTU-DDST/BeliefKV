@@ -5671,17 +5671,34 @@ class SGLangBackendTest(unittest.TestCase):
         self.assertTrue(node.backuped)
 
     def test_watchdog_expiry_terminates_stalled_explicit_command(self):
+        now_ms = 2.0
         tree = _TreeCache()
         tree.check_hicache_events = lambda: None
         registry = SGLangNodeRegistry()
         node = _Node()
         handle = registry.register(node)
-        backend = HiCacheNodeCommandBackend(tree, registry, now_ms=lambda: 2)
+        backend = HiCacheNodeCommandBackend(
+            tree,
+            registry,
+            now_ms=lambda: now_ms,
+        )
         command = resolved(CommandKind.OFFLOAD_CONTEXT, handle, PhysicalPageAction.START_D2H)
 
         backend.submit(command)
         self.assertEqual(backend.poll_acks(), [])
 
+        backend.audit = _AuditRecorder()
+        self.assertIsNone(
+            backend.expire_command(
+                command.command.command_id,
+                reason="transfer_watchdog_forced_cancel",
+            )
+        )
+        self.assertEqual(
+            backend.audit.events[-1][0],
+            "transfer_watchdog_no_progress_wait",
+        )
+        now_ms = 5_002.0
         expired = backend.expire_command(
             command.command.command_id,
             reason="transfer_watchdog_forced_cancel",
@@ -5700,6 +5717,57 @@ class SGLangBackendTest(unittest.TestCase):
             backend.expire_command(command.command.command_id, reason="again"),
             None,
         )
+
+    def test_watchdog_graces_transfer_with_partial_progress(self):
+        now_ms = 2.0
+        tree = _TreeCache()
+        tree.check_hicache_events = lambda: None
+        registry = SGLangNodeRegistry()
+        node = _Node()
+        handle = registry.register(node)
+        backend = HiCacheNodeCommandBackend(
+            tree,
+            registry,
+            now_ms=lambda: now_ms,
+        )
+        command = resolved(
+            CommandKind.OFFLOAD_CONTEXT,
+            handle,
+            PhysicalPageAction.START_D2H,
+        )
+        backend.submit(command)
+        self.assertEqual(backend.poll_acks(), [])
+        pending = backend._pending[command.command.command_id]
+        pending.dma_completed_handles.add(handle)
+        backend.audit = _AuditRecorder()
+
+        self.assertIsNone(
+            backend.expire_command(
+                command.command.command_id,
+                reason="transfer_watchdog_forced_cancel",
+            )
+        )
+        self.assertEqual(backend.poll_acks(), [])
+        self.assertEqual(
+            backend.audit.events[-1][0],
+            "transfer_watchdog_progress_wait",
+        )
+
+        now_ms = 29_999.0
+        self.assertIsNone(
+            backend.expire_command(
+                command.command.command_id,
+                reason="transfer_watchdog_forced_cancel",
+            )
+        )
+        now_ms = 30_002.0
+        ack = backend.expire_command(
+            command.command.command_id,
+            reason="transfer_watchdog_forced_cancel",
+        )
+
+        self.assertIsNotNone(ack)
+        self.assertEqual(backend.poll_acks()[0].status, CommandStatus.CANCELLED)
 
     def test_extent_split_after_d2h_records_dma_but_rejects_residency_commit(self):
         tree = _TreeCache()

@@ -83,7 +83,7 @@ class PredictiveLeadBudgetModel:
                 offline_ms=float(value["offline_ms"]),
                 minimum_ms=float(value["minimum_ms"]),
                 maximum_ms=float(value["maximum_ms"]),
-                quantile=float(value.get("quantile", 0.95)),
+                quantile=float(value.get("quantile", 0.90)),
                 minimum_samples=int(value.get("minimum_samples", 8)),
             )
             if not 0.0 < budget.quantile < 1.0:
@@ -119,23 +119,31 @@ class PredictiveLeadBudgetModel:
         if estimator is not None:
             estimator.observe(delay_ms)
 
+    def observe_prefetch_commit_ready(self, delay_ms: float) -> None:
+        estimator = self._estimators.get("prefetch_commit_ready")
+        if estimator is not None:
+            estimator.observe(delay_ms)
+
     def prepare_control_lead_ms(self, *, fallback_ms: float) -> float:
         return self._lead("prepare_dispatch", fallback_ms)
 
     def prefetch_desired_lead_ms(self, *, fallback_ms: float) -> float:
         dispatch = self._lead("prefetch_dispatch", fallback_ms * 0.5)
-        service = self._lead(
-            "prefetch_service_readiness",
+        commit_ready = self._lead(
+            "prefetch_commit_ready",
             fallback_ms * 0.5,
         )
         dispatch_budget = self._budgets.get("prefetch_dispatch")
-        service_budget = self._budgets.get("prefetch_service_readiness")
+        service_budget = self._budgets.get("prefetch_commit_ready")
         maximum = (
             dispatch_budget.maximum_ms + service_budget.maximum_ms
             if dispatch_budget is not None and service_budget is not None
             else fallback_ms
         )
-        return min(maximum, dispatch + service)
+        return min(maximum, dispatch + commit_ready)
+
+    def prefetch_soft_service_wait_ms(self) -> float:
+        return self._lead("prefetch_service_readiness", 0.0)
 
     def sample_count(self, action: str) -> int:
         estimator = self._estimators.get(action)

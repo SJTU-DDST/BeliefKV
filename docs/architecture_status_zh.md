@@ -1,7 +1,7 @@
 # BeliefKV 当前架构与实现状态
 
 更新日期：2026-09-20
-当前 P6 代码基线：`6c03357`
+当前 P6 代码基线：main（包含本节 follow-up 修复）
 
 本文只记录当前事实和下一阻塞项，不再追加逐日开发日志。2026-09-12 以前的完整历史保存在
 `docs/archive/snapshots/architecture_status_zh.md`，单次实验细节保存在
@@ -573,19 +573,40 @@ sequence；shadow worker cursor 落后超过 256 条时，`transfer_telemetry_si
 同一提交将 predictive timing lead 改为 action-specific budget：
 
 1. 新增 `PredictiveLeadBudgetModel`，按 action 维护 offline prior 与 bounded
-   online P95；
+   online P90；
 2. v58 trace 导出 `predictive_lead_budget_v1.json`：
-   - PREPARE dispatch P95：约 976ms；
-   - PREFETCH dispatch P95：旧 trace 超过 1s，按上限初始化为 1s；
-   - H2D ACK 到 first service P95：约 4.42s，作为 bounded readiness prior；
+   - PREPARE dispatch P90：约 676ms，按 500ms hard cap 初始化；
+   - PREFETCH dispatch P90：约 2.42s，按 500ms hard cap 初始化；
+   - H2D complete 到 service lease / commit-ready P90：约 479ms；
+   - H2D ACK 到 first service P90：约 3.64s，只作为 soft service-wait prior；
 3. PREPARE 的 `control lead`、PREFETCH 的 `desired lead`、latest-start 和
    too-early 判断读取同一个模型；
 4. predictive telemetry 记录 decision-to-submit delay，useful H2D 记录
    ACK-to-first-service delay，并进入 256-sample rolling quantile；
-5. online 样本达到 8 个后替代 offline prior，所有 action lead 均有硬上限；
+5. online 样本达到 8 个后替代 offline prior，所有 hard action lead 均有硬上限；
+   H2D complete 到 service lease 注册会在线更新 `prefetch_commit_ready`；
 6. native busy 只更新 prefetch `retry_not_before`，不再向后滑动 hard
    latest-start，避免重复 busy 造成 starvation；
 7. too-early 判断补上 commit guard，使 activation/defer/latest-start 公式一致。
+
+PREFETCH 的 hard desired lead 只包含 dispatch 与 commit-ready，不包含 H2D ACK
+后的 first GPU service 等待；后者通过 `prefetch_soft_service_wait_ms()` 记录到
+watch audit，后续再接入服务优先级和收益归因。v58 的离线 dispatch 分布来自
+predictive DMA queue
+修复前，不能代表修复后的在线 safe-point 开销。
+
+同轮 follow-up 将 explicit transfer watchdog 改为 progress-aware：
+
+1. 首次 watchdog request 后，若 DMA 无任何 progress，给予 5 秒 grace；
+2. 任一 handle/byte progress 变化会重置 30 秒 progress grace，避免“native DMA
+   已完成但 logical ACK 等待锁/提交”的命令被过早强制取消；
+3. 30 秒无新 progress 才生成 terminal `CANCELLED`，并继续保留 ACK conservation
+   与 full resync 语义。
+
+当前正在运行的 baseline `9c4e6c4` 不包含 progress-aware watchdog、P90 lead
+artifact 与在线 commit-ready 观测；其大量 forced cancel 属于旧 watchdog 对
+已完成 DMA 但未 terminal 的 logical command 的保守终止。该 baseline 保留作
+v58 contract-matched 对照，下一轮 predictive gate 使用 main 分支修复。
 
 限制：predictive process worker 在构造时取得 offline desired lead，尚未接收
 runtime 在线分位数增量。下一轮 predictive gate 需要检查 runtime 与 worker 的
@@ -640,6 +661,9 @@ lead version 是否发散；若在线样本显著下降，应再把 compact timi
     `c23b380` 已修复，尚需进入下一轮 baseline。
 20. restore 全局等待和固定 timing lead 已由 `6c03357` 修复；两者尚未经过
     predictive GPU gate。
+21. P90 bounded lead、soft service-wait 分离、在线 `prefetch_commit_ready`
+    观测和 progress-aware watchdog 已通过 CPU 回归；均尚未经过 predictive
+    GPU gate。当前运行中的 baseline `9c4e6c4` 不包含这些变更。
 
 ## 7. 下一步
 
@@ -647,7 +671,7 @@ lead version 是否发散；若在线样本显著下降，应再把 compact timi
 
 1. 等待当前 `9c4e6c4` observed baseline 自然完成；attempt0/1 仅作失败证据，
    不进入 timeline A/B。
-2. 使用 `6c03357` 运行短高压 predictive gate，验证 predictive DMA 队列、合并
+2. 使用 main 运行短高压 predictive gate，验证 predictive DMA 队列、合并
    batch、局部 restore wait、adaptive lead、30 分钟后的持续 transfer 和
    `pcie_dispatch_busy=0`。
 3. 将 Host 语义化清理与 request-abort/H2D authority correctness 修复一并纳入下一轮

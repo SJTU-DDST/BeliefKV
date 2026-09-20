@@ -482,6 +482,9 @@ class _PendingNodeCommand:
         default_factory=dict
     )
     h2d_authority_retry_handles: set[PageHandle] = field(default_factory=set)
+    watchdog_first_request_ts_ms: float | None = None
+    watchdog_progress_signature: tuple[int, int] | None = None
+    watchdog_progress_ts_ms: float | None = None
     pinned_host: bool | None = None
     native_concurrent_bytes: int = 0
     allocator_submit_ms: float = 0.0
@@ -1688,6 +1691,57 @@ class HiCacheNodeCommandBackend:
         pending = self._pending.get(command_id)
         if pending is None:
             return None
+        sizes = {
+            item.handle: item.size_bytes
+            for item in pending.resolved.page_actions
+        }
+        progress = (
+            len(pending.dma_completed_handles),
+            sum(sizes[handle] for handle in pending.dma_completed_handles),
+        )
+        now_ms = float(self._now_ms())
+        if progress == (0, 0):
+            if pending.watchdog_first_request_ts_ms is None:
+                pending.watchdog_first_request_ts_ms = now_ms
+                audit = getattr(self, "audit", None)
+                if audit is not None:
+                    audit.emit(
+                        "transfer_watchdog_no_progress_wait",
+                        now_ms,
+                        audit_level="correctness",
+                        command_id=command_id,
+                        grace_ms=_WATCHDOG_NO_PROGRESS_GRACE_MS,
+                    )
+                return None
+            if (
+                now_ms - pending.watchdog_first_request_ts_ms
+                < _WATCHDOG_NO_PROGRESS_GRACE_MS
+            ):
+                return None
+        else:
+            pending.watchdog_first_request_ts_ms = None
+            if pending.watchdog_progress_signature != progress:
+                pending.watchdog_progress_signature = progress
+                pending.watchdog_progress_ts_ms = now_ms
+                audit = getattr(self, "audit", None)
+                if audit is not None:
+                    audit.emit(
+                        "transfer_watchdog_progress_wait",
+                        now_ms,
+                        audit_level="correctness",
+                        command_id=command_id,
+                        completed_handles=progress[0],
+                        completed_bytes=progress[1],
+                        grace_ms=_WATCHDOG_PROGRESS_GRACE_MS,
+                    )
+                return None
+            last_progress_ms = pending.watchdog_progress_ts_ms
+            if (
+                last_progress_ms is not None
+                and now_ms - last_progress_ms
+                < _WATCHDOG_PROGRESS_GRACE_MS
+            ):
+                return None
         pending.cancel_requested = True
         error = SGLangBackendError(
             reason,
@@ -2340,6 +2394,8 @@ _JOINT_DECISION_REUSE_INTERVAL_MS = 100.0
 _JOINT_SIGNATURE_CHECK_INTERVAL_MS = 10.0
 _ACK_POLL_INTERVAL_MS = 5.0
 _POLICY_CHECK_INTERVAL_MS = 5.0
+_WATCHDOG_NO_PROGRESS_GRACE_MS = 5_000.0
+_WATCHDOG_PROGRESS_GRACE_MS = 30_000.0
 _PREDICTIVE_VICTIM_SUMMARY_SCAN_LIMIT = 8
 _PREDICTIVE_REENTRY_WATCH_LIMIT = 4
 _PREDICTIVE_REENTRY_TARGET_LIMIT = 3
@@ -12692,6 +12748,16 @@ class EmbeddedSGLangRuntime:
             lease,
             now_ms=now_ms,
         )
+        outcome = self._predictive_action_ledger().get(intent_id)
+        commit_ready_delay_ms = None
+        if outcome is not None and outcome.transfer_completed_ts_ms is not None:
+            commit_ready_delay_ms = max(
+                0.0,
+                now_ms - outcome.transfer_completed_ts_ms,
+            )
+            lead_model = getattr(self, "predictive_lead_budget_model", None)
+            if lead_model is not None:
+                lead_model.observe_prefetch_commit_ready(commit_ready_delay_ms)
         self._joint_predictive_counts["prefetch_service_lease_registered"] += 1
         self.audit.emit(
             "predictive_prefetch_service_lease_registered",
@@ -12705,6 +12771,7 @@ class EmbeddedSGLangRuntime:
             source_transaction_id=lease.source_transaction_id,
             predictive_intent_id=lease.predictive_intent_id,
             actual_bytes=lease.actual_bytes,
+            commit_ready_delay_ms=commit_ready_delay_ms,
         )
         return True
 
@@ -23162,6 +23229,20 @@ class EmbeddedSGLangRuntime:
                 else "prefetch_watch_registered"
             )
         ] += 1
+        lead_model = getattr(self, "predictive_lead_budget_model", None)
+        soft_service_wait = (
+            lead_model.prefetch_soft_service_wait_ms()
+            if lead_model is not None
+            else 0.0
+        )
+        soft_service_wait_source = (
+            lead_model.lead_source(
+                "prefetch_service_readiness",
+                fallback_ms=0.0,
+            )
+            if lead_model is not None
+            else (0.0, "config_fallback", 0)
+        )
         self.audit.emit(
             "predictive_prefetch_watch_registered",
             now_ms,
@@ -23173,6 +23254,9 @@ class EmbeddedSGLangRuntime:
             target_reentry_context_epoch=key[1],
             latest_start_ts_ms=latest_start_ts_ms,
             desired_lead_ms=self._predictive_prefetch_desired_lead_ms(),
+            soft_service_wait_ms=soft_service_wait,
+            soft_service_wait_source=soft_service_wait_source[1],
+            soft_service_wait_sample_count=soft_service_wait_source[2],
             desired_lead_source=(
                 self.predictive_lead_budget_model.lead_source(
                     "prefetch_dispatch",

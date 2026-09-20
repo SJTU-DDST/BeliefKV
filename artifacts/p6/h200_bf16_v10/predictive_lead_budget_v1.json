@@ -1,11 +1,27 @@
 {
   "actions": {
+    "prefetch_commit_ready": {
+      "fallback_ms": 100.0,
+      "maximum_ms": 500.0,
+      "minimum_ms": 25.0,
+      "minimum_samples": 8,
+      "offline_ms": 478.70578241348267,
+      "offline_quantiles_ms": {
+        "max": 506.33808183670044,
+        "p50": 212.85530805587769,
+        "p90": 478.70578241348267,
+        "p95": 491.34145641326904,
+        "p99": 506.33808183670044
+      },
+      "offline_sample_count": 24,
+      "quantile": 0.9
+    },
     "prefetch_dispatch": {
       "fallback_ms": 100.0,
-      "maximum_ms": 1000.0,
+      "maximum_ms": 500.0,
       "minimum_ms": 50.0,
       "minimum_samples": 8,
-      "offline_ms": 1000.0,
+      "offline_ms": 500.0,
       "offline_quantiles_ms": {
         "max": 6778.921738624573,
         "p50": 1595.358111858368,
@@ -14,14 +30,14 @@
         "p99": 6778.921738624573
       },
       "offline_sample_count": 24,
-      "quantile": 0.95
+      "quantile": 0.9
     },
     "prefetch_service_readiness": {
       "fallback_ms": 100.0,
-      "maximum_ms": 1000.0,
+      "maximum_ms": 10000.0,
       "minimum_ms": 50.0,
       "minimum_samples": 8,
-      "offline_ms": 1000.0,
+      "offline_ms": 3640.5894112586975,
       "offline_quantiles_ms": {
         "max": 5023.860236167908,
         "p50": 2117.706775188446,
@@ -30,14 +46,14 @@
         "p99": 5023.860236167908
       },
       "offline_sample_count": 23,
-      "quantile": 0.95
+      "quantile": 0.9
     },
     "prepare_dispatch": {
       "fallback_ms": 250.0,
-      "maximum_ms": 1000.0,
+      "maximum_ms": 500.0,
       "minimum_ms": 25.0,
       "minimum_samples": 8,
-      "offline_ms": 975.8194804191589,
+      "offline_ms": 500.0,
       "offline_quantiles_ms": {
         "max": 2004.425814151764,
         "p50": 305.9103031158447,
@@ -46,12 +62,12 @@
         "p99": 1322.1971716880798
       },
       "offline_sample_count": 137,
-      "quantile": 0.95
+      "quantile": 0.9
     }
   },
   "provenance": {
     "note": "Offline priors come from v58 before predictive DMA queue repair; online samples override after minimum support.",
-    "selection_policy": "p95_clamped_pre_queue_fix",
+    "selection_policy": "p90_clamped_pre_queue_fix",
     "source_audit": "experiments/shadow/p6_predictive_wait_shadow_v58/predictive/server/runtime_audit.jsonl",
     "source_run_id": "4521d6e208cb4e709888c496f3459192",
     "source_telemetry": "experiments/shadow/p6_predictive_wait_shadow_v58/predictive/server/transfer_telemetry.jsonl"
