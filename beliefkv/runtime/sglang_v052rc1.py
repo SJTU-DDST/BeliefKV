@@ -182,6 +182,7 @@ _PERFORMANCE_METRIC_EVENTS = frozenset(
         "online_joint_physical_commit_budget_exceeded",
         "joint_plan_stale",
         "joint_plan_would_apply",
+        "joint_reactive_admission_liveness_fallback",
         "replacement_beneficiary_priority_registered",
         "replacement_beneficiary_priority_released",
         "replacement_beneficiary_priority_rejected",
@@ -10394,6 +10395,77 @@ class EmbeddedSGLangRuntime:
             invocation.state.terminal for invocation in invocations
         )
 
+    def _joint_policy_admission_liveness_fallback(self) -> bool:
+        """Recover when a seed-only JointPlan leaves an idle queue blocked."""
+        if not self.config.joint_policy_enabled:
+            return False
+        now_ms = float(self._now_ms())
+        cached = getattr(self, "_joint_admission_liveness_fallback", None)
+        next_check_ms = getattr(
+            self,
+            "_joint_admission_liveness_fallback_next_check_ms",
+            None,
+        )
+        if cached is not None and next_check_ms is not None and now_ms < next_check_ms:
+            return cached
+
+        enabled = False
+        if (
+            getattr(self.controller, "_running_request_count", None) == 0
+            and not self.controller.has_pending_transfer_work()
+        ):
+            visible_pending = sorted(
+                (
+                    entry.request
+                    for entry in self.controller.visible_admission.entries()
+                    if entry.state == AdmissionSideState.VISIBLE_PENDING
+                ),
+                key=lambda request: (
+                    request.submitted_ts_ms,
+                    request.request_id,
+                ),
+            )
+            if visible_pending:
+                oldest = visible_pending[0]
+                age_ms = now_ms - oldest.submitted_ts_ms
+                available_bytes = max(
+                    0,
+                    self.config.hbm_capacity_bytes
+                    - self.config.reserve_hbm_bytes
+                    - self.controller.actual_hbm_used_bytes
+                    - self.controller.admission.reserved_bytes,
+                )
+                enabled = (
+                    age_ms
+                    >= self.config.admission_force_progress_timeout_ms
+                    and oldest.estimated_incremental_bytes > available_bytes
+                )
+
+        self._joint_admission_liveness_fallback = enabled
+        self._joint_admission_liveness_fallback_next_check_ms = (
+            now_ms + 50.0
+        )
+        if enabled or cached:
+            self._online_joint_counts[
+                "reactive_admission_liveness_fallback"
+                + ("" if enabled else "_released")
+            ] += 1
+            self.audit.emit(
+                "joint_reactive_admission_liveness_fallback",
+                now_ms,
+                audit_level="correctness",
+                enabled=enabled,
+                running_request_count=getattr(
+                    self.controller,
+                    "_running_request_count",
+                    None,
+                ),
+                force_progress_timeout_ms=(
+                    self.config.admission_force_progress_timeout_ms
+                ),
+            )
+        return enabled
+
     def _build_host_cleanup_command(
         self, *, now_ms: float
     ) -> tuple[ControlCommand, dict[str, object]] | None:
@@ -10951,11 +11023,16 @@ class EmbeddedSGLangRuntime:
         if joint_policy_enabled and not online_joint_has_authority:
             self._online_joint_counts["safe_point_missing_joint_authority"] += 1
         self._begin_physical_transactional_commit()
+        joint_reactive_fallback = (
+            self._joint_policy_admission_liveness_fallback()
+            if joint_policy_enabled
+            else False
+        )
         tick = self.bridge.scheduler_step(
             self._now_ms(),
             drain_acks=False,
             allow_reactive_transfer=(
-                not joint_policy_enabled
+                (not joint_policy_enabled or joint_reactive_fallback)
                 and restore_authority_mode == RestoreAuthorityMode.NORMAL_JOINT
                 and bool(
                     getattr(

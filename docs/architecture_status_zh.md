@@ -603,7 +603,7 @@ predictive DMA queue
 3. 30 秒无新 progress 才生成 terminal `CANCELLED`，并继续保留 ACK conservation
    与 full resync 语义。
 
-当前正在运行的 baseline `9c4e6c4` 不包含 progress-aware watchdog、P90 lead
+已终止的 baseline `9c4e6c4` 不包含 progress-aware watchdog、P90 lead
 artifact 与在线 commit-ready 观测；其大量 forced cancel 属于旧 watchdog 对
 已完成 DMA 但未 terminal 的 logical command 的保守终止。该 baseline 保留作
 v58 contract-matched 对照，下一轮 predictive gate 使用 main 分支修复。
@@ -612,6 +612,41 @@ v58 contract-matched 对照，下一轮 predictive gate 使用 main 分支修复
 runtime 在线分位数增量。下一轮 predictive gate 需要检查 runtime 与 worker 的
 lead version 是否发散；若在线样本显著下降，应再把 compact timing snapshot
 传入 worker。
+
+### 5.16 2026-09-20 baseline waiting-only admission 空转
+
+contract-matched baseline `9c4e6c4` 运行约 3 小时 40 分后进入长尾空转：
+
+1. `running=0`、native waiting=28、GPU utilization=0；
+2. allocator 只剩约 1.3MB HBM，PageIndex 仍有约 83.6GB GPU KV；
+3. 约 18.2GB 标记为 migratable，约 2.0GB 为 native reclaimable；
+4. 28 个 native waiting request 关联约 65.3GB engine lock，且 2041/2041 个
+   lock extent 的 request ref 与可归因路径数量不匹配；
+5. 无 inflight/queued command、无未满足 restore obligation，说明不是 restore
+   或 DMA 卡死；
+6. waiting request 按各自 30 分钟 queue timeout 串行退出，无法形成有效 A/B
+   长尾吞吐数据。
+
+根因是两个门禁叠加：
+
+1. controller 的 admission liveness 把 `_engine_request_count == 0` 当作 idle，
+   但该计数包含 native waiting request；本场景实际 `_running_request_count=0`，
+   liveness/native reclaim 永远不启用；
+2. observed JointPlan 处于 seed-only/no-action 时仍独占 authority，
+   `allow_reactive_transfer=False`，controller 不能通过 frontier spill 释放
+   migratable KV。
+
+main 分支修复为：
+
+1. admission liveness 的 idle 判定改为 `_running_request_count == 0`；
+2. JointPlan 在 running=0、oldest visible pending 超过 force-progress timeout
+   且 HBM 不足以 admission 时，临时恢复 reactive transfer fallback；
+3. fallback 触发/释放记录 `joint_reactive_admission_liveness_fallback`；
+4. 不降低压力阈值，不绕过 PageIndex/transfer validation，只恢复原有安全
+   liveness 路径。
+
+该修复已通过 controller 与 adapter CPU 回归，尚未经过 GPU 回归。当前运行中的
+baseline attempt 属于失败证据，不能渲染为 v58 A/B baseline。
 
 ## 6. 当前阻塞项
 
@@ -663,32 +698,37 @@ lead version 是否发散；若在线样本显著下降，应再把 compact timi
     predictive GPU gate。
 21. P90 bounded lead、soft service-wait 分离、在线 `prefetch_commit_ready`
     观测和 progress-aware watchdog 已通过 CPU 回归；均尚未经过 predictive
-    GPU gate。当前运行中的 baseline `9c4e6c4` 不包含这些变更。
+    GPU gate。已终止的 baseline `9c4e6c4` 不包含这些变更。
+22. waiting-only admission 空转已由 main 修复；需要重新运行 contract-matched
+    baseline，不得使用已空转的当前 attempt 计算 A/B 吞吐。
 
 ## 7. 下一步
 
 当前关键路径：
 
-1. 等待当前 `9c4e6c4` observed baseline 自然完成；attempt0/1 仅作失败证据，
-   不进入 timeline A/B。
-2. 使用 main 运行短高压 predictive gate，验证 predictive DMA 队列、合并
+1. 终止已空转的 `9c4e6c4` baseline attempt；attempt0/1 与该 attempt 均仅作
+   失败证据，不进入 timeline A/B。
+2. 使用 main 重新运行 contract-matched observed baseline，重点验证
+   `joint_reactive_admission_liveness_fallback` 能释放 migratable KV、running
+   请求恢复、waiting-only 空转归零。
+3. 使用 main 运行短高压 predictive gate，验证 predictive DMA 队列、合并
    batch、局部 restore wait、adaptive lead、30 分钟后的持续 transfer 和
    `pcie_dispatch_busy=0`。
-3. 将 Host 语义化清理与 request-abort/H2D authority correctness 修复一并纳入下一轮
+4. 将 Host 语义化清理与 request-abort/H2D authority correctness 修复一并纳入下一轮
    GPU gate，统计 dead/native-writeback/explicit
    cleanup bytes、forced recompute、Host miss 和 predictive H2D success rate。
-4. 在 predictive H2D 成功率稳定后，测量相对于 reactive native demand-load 的 first-service
+5. 在 predictive H2D 成功率稳定后，测量相对于 reactive native demand-load 的 first-service
    latency 差值和端到端吞吐收益。
-5. 若 Host forced eviction 仍然挤掉高价值 reentry KV，再离线评估全局 KV value model 和
+6. 若 Host forced eviction 仍然挤掉高价值 reentry KV，再离线评估全局 KV value model 和
    SSD cold tier；二者不得与当前调度修复同时上线。
-6. 同时继续记录 event-to-hint 长尾和 safe-point P95/P99，不为降低开销重新关闭必要的
+7. 同时继续记录 event-to-hint 长尾和 safe-point P95/P99，不为降低开销重新关闭必要的
    `TOOL/JOIN` 风险触发。
-7. execution 排序使用 RCCG 已知 unlock、schema-v5 token/HBM demand 和 top-2 boundary
+8. execution 排序使用 RCCG 已知 unlock、schema-v5 token/HBM demand 和 top-2 boundary
    scenarios；任何单一分类 argmax 都不能覆盖 RCCG 确定性事实。
-8. Gate 中任何 stale/OOD/物理化失败均回退 P5；不通过降低收益阈值制造动作。
-9. PREPARE/PREFETCH 各自完成真实 beneficiary 消费后，再按 execution reorder、提前
+9. Gate 中任何 stale/OOD/物理化失败均回退 P5；不通过降低收益阈值制造动作。
+10. PREPARE/PREFETCH 各自完成真实 beneficiary 消费后，再按 execution reorder、提前
    D2H、deficit-time COMMIT 和 latest-start H2D 分解收益，最后启动冻结 baseline/P6 A/B。
-10. 当前 PREFETCH、shutdown 和归因 gate 通过后，再评估“固定物理上限 48、动态软目标
+11. 当前 PREFETCH、shutdown 和归因 gate 通过后，再评估“固定物理上限 48、动态软目标
    `{32,48}`”：低 HBM 压力且存在 GPU-ready backlog 时扩展到 48；预测到 HBM 压力时
    停止新 admission 并自然排空到 32，不因阈值直接撤回 running request；parked KV 仍只
    通过 beneficiary-bound causal package 回收。该优化不得修改当前冻结实验。

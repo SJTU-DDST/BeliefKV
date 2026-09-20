@@ -730,6 +730,64 @@ class ControllerTest(unittest.TestCase):
             "admission_liveness_frontier_spill",
         )
 
+    def test_waiting_only_engine_still_uses_admission_liveness(self):
+        h = ControllerHarness(
+            reserve_hbm_bytes=100,
+            admission_liveness_timeout_ms=1,
+            admission_force_progress_timeout_ms=5,
+        )
+        for workflow_id in ("target-wf", "victim-wf"):
+            h.controller.process_runtime_event(
+                RuntimeEvent(
+                    event_id=f"start-{workflow_id}",
+                    ts_ms=1,
+                    kind=RuntimeEventKind.WORKFLOW_START,
+                    workflow_id=workflow_id,
+                )
+            )
+            h.controller.process_runtime_event(
+                RuntimeEvent(
+                    event_id=f"inv-{workflow_id}",
+                    ts_ms=2,
+                    kind=RuntimeEventKind.INVOCATION_CREATE,
+                    workflow_id=workflow_id,
+                    invocation_id=f"inv-{workflow_id}",
+                    context_id=f"ctx-{workflow_id}",
+                    context_epoch=0,
+                )
+            )
+        for page_id, context_id in (
+            (1, "ctx-target-wf"),
+            (2, "ctx-victim-wf"),
+        ):
+            handle = PageHandle(page_id, 0)
+            h.controller.page_index.register_page(handle, size_bytes=400)
+            h.controller.page_index.bind_pages(context_id, 0, [handle])
+        h.controller.report_hbm_usage(950)
+        h.controller.submit_request(
+            AdmissionRequest(
+                request_id="target-request",
+                workflow_id="target-wf",
+                invocation_id="inv-target-wf",
+                context_id="ctx-target-wf",
+                context_epoch=0,
+                submitted_ts_ms=3,
+                uncached_prompt_tokens=2,
+                expected_output_tokens=1,
+                kv_bytes_per_token=100,
+            )
+        )
+        h.controller.report_native_admission_capacity("target-request", 301)
+        h.controller.report_engine_activity(1, running_request_count=0)
+
+        admitted = h.controller.tick(10)
+
+        self.assertTrue(admitted.admission.admitted)
+        self.assertEqual(
+            admitted.admission.reason,
+            "admission_liveness_native_reclaim",
+        )
+
     def test_unexecutable_drop_unowned_is_not_retried_until_state_changes(self):
         h = ControllerHarness(reserve_hbm_bytes=300)
         h.create_parked()

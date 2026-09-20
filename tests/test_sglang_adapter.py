@@ -13822,5 +13822,75 @@ def test_online_residency_queues_predictive_action_behind_existing_transfer():
     assert "residency_wait_existing_transfer" not in runtime._online_joint_counts
 
 
+def test_joint_seed_only_idle_admission_enables_reactive_fallback():
+    controller = BeliefKVController(
+        BeliefKVConfig(
+            hbm_capacity_bytes=1_000,
+            host_capacity_bytes=10_000,
+            reserve_hbm_bytes=100,
+            joint_policy_enabled=True,
+            admission_liveness_timeout_ms=1,
+            admission_force_progress_timeout_ms=5,
+        )
+    )
+    for kind in (
+        RuntimeEventKind.WORKFLOW_START,
+        RuntimeEventKind.INVOCATION_CREATE,
+    ):
+        controller.process_runtime_event(
+            RuntimeEvent(
+                f"liveness-{kind.value}",
+                1.0,
+                kind,
+                "workflow",
+                invocation_id="invocation",
+                context_id="context",
+                context_epoch=0,
+            )
+        )
+    controller.register_visible_request(
+        AdmissionRequest(
+            request_id="request",
+            workflow_id="workflow",
+            invocation_id="invocation",
+            context_id="context",
+            context_epoch=0,
+            submitted_ts_ms=1.0,
+            uncached_prompt_tokens=2,
+            expected_output_tokens=1,
+            kv_bytes_per_token=100,
+        )
+    )
+    controller.report_hbm_usage(950)
+    controller.report_engine_activity(1, running_request_count=0)
+
+    runtime = EmbeddedSGLangRuntime.__new__(EmbeddedSGLangRuntime)
+    runtime.controller = controller
+    runtime.config = BeliefKVConfig(
+        hbm_capacity_bytes=1_000,
+        host_capacity_bytes=10_000,
+        reserve_hbm_bytes=100,
+        joint_policy_enabled=True,
+        admission_liveness_timeout_ms=1,
+        admission_force_progress_timeout_ms=5,
+    )
+    runtime.audit = _AuditRecorder()
+    runtime._online_joint_counts = Counter()
+    runtime._now_ms = lambda: 100.0
+
+    assert runtime._joint_policy_admission_liveness_fallback() is True
+    assert runtime._online_joint_counts[
+        "reactive_admission_liveness_fallback"
+    ] == 1
+
+    controller.report_engine_activity(1, running_request_count=1)
+    runtime._now_ms = lambda: 200.0
+
+    assert runtime._joint_policy_admission_liveness_fallback() is False
+    assert runtime._online_joint_counts[
+        "reactive_admission_liveness_fallback_released"
+    ] == 1
+
+
 if __name__ == "__main__":
     unittest.main()

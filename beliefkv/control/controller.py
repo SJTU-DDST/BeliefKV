@@ -780,7 +780,11 @@ class BeliefKVController:
 
         pending_requests = self.admission.pending_requests()
         liveness_target = None
-        if self._engine_request_count == 0 and pending_requests:
+        # Engine activity includes native waiting requests.  Admission
+        # liveness must instead mean that no request currently owns a running
+        # execution slot; otherwise a full waiting queue can starve forever.
+        idle_engine = self._running_request_count == 0
+        if idle_engine and pending_requests:
             oldest = pending_requests[0]
             if (
                 self.now_ms - oldest.submitted_ts_ms
@@ -799,7 +803,7 @@ class BeliefKVController:
                 reserved_liveness_target = oldest_reserved
 
         allow_reserve_borrow = (
-            self._engine_request_count == 0
+            idle_engine
             and self.admission.reserved_bytes == 0
             and not self._inflight
             and len(self.command_queue) == 0
@@ -807,7 +811,7 @@ class BeliefKVController:
         stalled_command_ids = self._stalled_command_ids()
         native_reclaim_ready = bool(
             liveness_target is not None
-            and self._engine_request_count == 0
+            and idle_engine
             and self.admission.reserved_bytes == 0
             and not self._inflight
             and len(self.command_queue) == 0
