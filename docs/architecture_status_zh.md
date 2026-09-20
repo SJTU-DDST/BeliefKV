@@ -1,7 +1,7 @@
 # BeliefKV 当前架构与实现状态
 
 更新日期：2026-09-20
-当前 P6 代码基线：`c23b380`
+当前 P6 代码基线：`6c03357`
 
 本文只记录当前事实和下一阻塞项，不再追加逐日开发日志。2026-09-12 以前的完整历史保存在
 `docs/archive/snapshots/architecture_status_zh.md`，单次实验细节保存在
@@ -555,6 +555,43 @@ sequence；shadow worker cursor 落后超过 256 条时，`transfer_telemetry_si
 4. 物理 KV 一致性仍由 PageIndex/Radix authoritative full sync 保证；
 5. RCCG event journal gap 仍保持 fail-closed，因为事件是语义状态本身。
 
+### 5.15 2026-09-20 restore 局部等待与统一 lead budget
+
+`6c03357` 修复 restore 的两个全局 head-of-line blocking：
+
+1. controller 新增 pending command 的 context / physical-closure conflict 查询；
+2. `_drive_restore_obligations()` 不再被任意 queued/inflight command 全局阻塞，
+   只跳过与该 obligation 的 owner context 或 required extents 重叠的 command；
+3. `_advance_restore_authority()` 获取 exclusive authority 前同样只等待 owner
+   重叠 command，并记录 `restore_authority_wait`；
+4. ACK conservation、same-context canonical command、dispatch closure overlap、
+   stalled-transfer watchdog 和 full resync 语义保持不变。
+
+当前 baseline `9c4e6c4` 不包含该修复；它属于下一轮 predictive gate 的 runtime
+变更，不能混入正在运行的公平 baseline attempt。
+
+同一提交将 predictive timing lead 改为 action-specific budget：
+
+1. 新增 `PredictiveLeadBudgetModel`，按 action 维护 offline prior 与 bounded
+   online P95；
+2. v58 trace 导出 `predictive_lead_budget_v1.json`：
+   - PREPARE dispatch P95：约 976ms；
+   - PREFETCH dispatch P95：旧 trace 超过 1s，按上限初始化为 1s；
+   - H2D ACK 到 first service P95：约 4.42s，作为 bounded readiness prior；
+3. PREPARE 的 `control lead`、PREFETCH 的 `desired lead`、latest-start 和
+   too-early 判断读取同一个模型；
+4. predictive telemetry 记录 decision-to-submit delay，useful H2D 记录
+   ACK-to-first-service delay，并进入 256-sample rolling quantile；
+5. online 样本达到 8 个后替代 offline prior，所有 action lead 均有硬上限；
+6. native busy 只更新 prefetch `retry_not_before`，不再向后滑动 hard
+   latest-start，避免重复 busy 造成 starvation；
+7. too-early 判断补上 commit guard，使 activation/defer/latest-start 公式一致。
+
+限制：predictive process worker 在构造时取得 offline desired lead，尚未接收
+runtime 在线分位数增量。下一轮 predictive gate 需要检查 runtime 与 worker 的
+lead version 是否发散；若在线样本显著下降，应再把 compact timing snapshot
+传入 worker。
+
 ## 6. 当前阻塞项
 
 1. prediction-to-action utilization gap 尚未闭合。初步 H200 高压运行中 predictive arm
@@ -601,15 +638,18 @@ sequence；shadow worker cursor 落后超过 256 条时，`transfer_telemetry_si
     watchdog 终态，但尚未经 GPU 回归。
 19. baseline attempt1 暴露 telemetry journal compaction 被误判为 fatal；
     `c23b380` 已修复，尚需进入下一轮 baseline。
+20. restore 全局等待和固定 timing lead 已由 `6c03357` 修复；两者尚未经过
+    predictive GPU gate。
 
 ## 7. 下一步
 
 当前关键路径：
 
-1. 使用包含 `fd8d7d7` 与 `c23b380` 的代码重启 observed baseline；attempt0/1 仅作
-   失败证据，不进入 timeline A/B。
-2. 使用 `efb5ded` 运行短高压 predictive gate，验证 predictive DMA 队列、合并 batch、
-   30 分钟后的持续 transfer 和 `pcie_dispatch_busy=0`。
+1. 等待当前 `9c4e6c4` observed baseline 自然完成；attempt0/1 仅作失败证据，
+   不进入 timeline A/B。
+2. 使用 `6c03357` 运行短高压 predictive gate，验证 predictive DMA 队列、合并
+   batch、局部 restore wait、adaptive lead、30 分钟后的持续 transfer 和
+   `pcie_dispatch_busy=0`。
 3. 将 Host 语义化清理与 request-abort/H2D authority correctness 修复一并纳入下一轮
    GPU gate，统计 dead/native-writeback/explicit
    cleanup bytes、forced recompute、Host miss 和 predictive H2D success rate。
