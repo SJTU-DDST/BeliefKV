@@ -1,6 +1,6 @@
 # BeliefKV 与 SGLang 0.5.2rc1 集成说明
 
-更新日期：2026-09-15。本文描述当前接口契约；具体实验参数以冻结 runtime profile 为准。
+更新日期：2026-09-20。本文描述当前接口契约；具体实验参数以冻结 runtime profile 为准。
 
 ## 1. 固定版本
 
@@ -86,16 +86,35 @@ CALL/SPAWN/MESSAGE/HANDOFF 还会记录 `causal_relation_linked`，迁移会记�
 状态去重，避免调度循环造成日志风暴。该日志用于正确性与实验审计，不应在正式
 性能测量中开启，除非各 baseline 采用等价的观测开销。
 
-## 5. Scheduler 事务顺序
+## 5. Scheduler safe point 与三层调度边界
 
-每个 safe point 的固定顺序是：
+`EmbeddedSGLangRuntime.scheduler_step()` 由 SGLang scheduler 主线程同步调用，
+入口位于 `get_next_batch_to_run()` 开头；它不是独立周期线程。normal/overlap
+event loop 每轮都会到达该入口，空闲时 runtime event socket fd 会加入 idle poller。
+入口内部的高开销动作按 5ms policy check、ACK poll、resource telemetry interval、
+plan reuse interval 和 watchdog interval 节流。
+
+safe point 的目标不是“异步规划”，而是提供 scheduler-owned consistency boundary：
+在同一主线程边界上排定 runtime event、native ACK、Radix mirror、allocator 观测、
+admission/retraction/restore 事务和物理 command 的提交顺序。CUDA/native callback
+不得直接修改 live scheduler 状态，只能投递 ACK/telemetry，由下一 safe point drain。
+
+固定顺序是：
 
 ```text
-drain HiCache ACK
+begin APPLY_EVENTS
+  -> drain runtime event datagram（同步提交 RCCG/ledger）
+  -> drain HiCache ACK / telemetry
   -> 同步 dirty Radix tree
   -> 上报 allocator/HBM
-  -> admission/transfer planning
-  -> 提交至多一个迁移 command
+  -> advance retraction / residency / restore / host cleanup
+  -> enforce queue and execution timeouts
+  -> begin CAPTURE_AND_PLAN
+  -> compact policy snapshot / latest JointPlan result
+  -> publish action-local semantic delta to worker
+  -> enter TRANSACTIONAL_COMMIT
+  -> controller tick / physical command preflight and dispatch
+  -> finish safe point
   -> SGLang 原生 queue policy
   -> begin_prefill_epoch 编译 causal/active-set ticket
   -> ticket gate + prefix rematch + PrefillAdder
@@ -104,6 +123,59 @@ drain HiCache ACK
 
 ACK 必须先于 tree sync。否则同步完成的 `COMMIT_CPU` 或 `DROP` 会让控制面先看到
 物理新状态，随后又根据 ACK 重复执行状态转换。
+
+### 5.1 Dynamic working set
+
+输入是 tagged native waiting requests、每个 workflow 的 Action frontier 候选、
+effective native HBM capacity（allocator available + native evictable）和 native
+running/slot 上限。输出只有 workflow 级决策：
+
+- active workflow IDs；
+- throughput/balanced/recovery soft target；
+- 本 epoch admission slots；
+- effective/gross KV pressure；
+- pressure actions 是否开启。
+
+它按 root workflow 聚合 `unlock value * service quantum / HBM envelope`，并保留
+starvation/mandatory restore 优先。它不生成 ticket，不改变 request queue，不提交
+KV command，也不越过 SGLang native capacity。
+
+### 5.2 AdmissionTicket compiler
+
+输入是本 epoch 的 policy order、visible admission entries、native
+`PrefillAdder` 余量、bounded HBM budget、slot/candidate 上限和 restore/admission
+reservation credits。输出是一个 immutable ticket epoch：
+
+- tickets：本轮允许尝试 native admission 的 request 与短期 commitment；
+- skipped：slot/HBM/token/state 拒绝原因；
+- reclaim requirements：bounded HBM 不足时的 beneficiary startup/growth demand。
+
+compiler 是纯计算模块，不 mutate queue/allocator。ticket 在 request prefix rematch
+后仍需验证 request/context/invocation/version；SGLang `PrefillAdder` 和 allocator
+是最终 authority。大 request 遵守 SGLang 单 retained chunked request 契约：完整
+prefill 优先，至多一个 chunked tail。
+
+### 5.3 JointPlan worker
+
+`LatestWinsJointPlanWorker` 是 capacity-one 异步 mirror/规划 worker。safe point
+只提交 compact delta：RCCG events、frontier feature/prediction delta、有效 HBM
+观测、runnable seed、fairness/control revision、transfer ACK cursor 和 action-local
+physical overlay。worker 不访问 live scheduler 对象。
+
+pending delta 会被更新 delta 替换；正在执行的计算不抢占。mirror apply 失败时
+fail closed 并要求 full resync。worker 可将 observed JointPlan result 送入独立
+predictive risk worker；safe point 只消费 latest result，并在提交前重新验证当前
+RCCG、read-set、物理 ownership、容量和 deadline。因此 JointPlan worker 负责“探索
+和形成候选计划”，不拥有最终 admission 或 mutation 权。
+
+### 5.4 Action frontier
+
+Action frontier 首先使用 observed RCCG 事实分类：最后一个 JOIN member、唯一剩余
+blocking child、message-ready、foreground ready 和 background。当前实现要求
+blocking chain 的父节点确实只剩当前 child，否则不给 blocking credit；同类别内
+额外统计 active descendant 数和 JOIN waiter 数，并把有界 fanout credit 混入
+max-weight utility。预测头只补充 remaining decode/output/prompt growth 和动作
+timing；RCCG 确定性 unlock 事实仍优先。
 
 ## 6. HiCache 限制
 
@@ -133,8 +205,10 @@ bounded observed seed
   -> JointPlan action or P5 fallback
 ```
 
-当前 predictive authority 只验证到非破坏性 `PREPARE_HOST`。预测式
-`COMMIT_CPU` 未实现，`PREFETCH_GPU` 的正式 canary 仍关闭。
+当前 predictive authority 已覆盖非破坏性 `PREPARE_HOST`、真实 deficit 授权的
+prepared-victim 消费，以及 latest-start `PREFETCH_GPU` 的 H2D/service lease 归因。
+自然 workload 的端到端吞吐收益仍未证明；任何 stale/OOD/物理不可行预测都回退
+observed P5。
 
 ## 8. 真机验收清单
 

@@ -28,6 +28,7 @@ epoch、物理 closure 或容量失效都回退当前 P5。
 | 模块 | 状态 | 当前边界 |
 | --- | --- | --- |
 | Runtime event + RCCG | 可用 | 动态 SPAWN/RETURN/JOIN/TOOL/MESSAGE |
+| Action frontier | 可用，已修正 sole-blocker credit | observed RCCG unlock 事实；预测只补充 demand/timing，不改变事实因果优先级 |
 | Visible waiting queue + AdmissionTicket | 可用 | SGLang allocator 最终验收 |
 | Work-conserving JointPlan | 可用 | 吞吐优先，fairness 仅防饿死/tie-break |
 | PageIndex + PhysicalBundle | 可用 | 多 owner、generation、lock、closure |
@@ -654,6 +655,60 @@ baseline attempt 属于失败证据，不能渲染为 v58 A/B baseline。
 真实 constructor 回归；对应启动目录保留为 `baseline_startup_attempt0`，不进入
 A/B。
 
+### 5.17 2026-09-20 Action frontier 与 v58 KV 生命周期审计
+
+Action frontier 已做一处保守 correctness 修复：`blocking_chain` 只有在父节点
+的 blocking child 集合恰好只剩当前 child 时才给 unlock credit。旧实现只要当前
+child 属于 `blocking_child_ids` 就累计深度，父节点仍有其他 children 时会高估其
+即时解锁能力。`FrontierCandidate` 新增：
+
+1. `known_downstream_count`：当前 nonterminal descendant 数；
+2. `join_waiter_count`：该 member 成为 JOIN 最后未完成项时将被唤醒的 waiter 数。
+
+同类别 max-weight utility 现在加入有界 fanout credit：
+`0.25 * downstream`（最多 8）与 `0.5 * join_waiters`（最多 4）。类别排序、
+starvation floor、native allocator authority 和预测安全门禁不变。因此该修改只修正
+观测 unlock credit，不把预测概率伪装成 RCCG 事实。
+
+三层调度边界如下：
+
+1. Dynamic working set：workflow 级 active-set/soft-target 选择，输入 effective
+   native HBM 和 ready frontier 聚合，不生成 ticket 或物理 command；
+2. AdmissionTicket compiler：一个 prefill epoch 内的 bounded eligibility/certificate，
+   输出 ticket、skip 原因和 ReclaimRequirement，不 mutate queue/allocator；
+3. JointPlan worker：capacity-one 异步 mirror 和候选计划形成，只消费 compact delta，
+   不访问 live scheduler；safe point 消费 latest result 并重新验证后才允许物理变更。
+
+v58 predictive 运行的 KV 生命周期审计结果如下（decimal bytes；完整机器可读结果见
+`experiments/ab/p6_h200_high_pressure_v3/20260920_v58_pair/v58_predictive_kv_lifecycle_summary.json`）：
+
+- 7,229 个 LLM request 对应 199 个 invocation/context：64 root、135 subagent；
+- 按 `uncached prompt tokens + output tokens` 聚合，新生成 KV 约 842.56GB；
+- 平均每个 invocation 约 43,070 tokens / 4.23GB；root 平均约 4.82GB，subagent
+  平均约 3.96GB；每个 root workflow 平均约 13.16GB；
+- 完成 D2H 约 803.66GB，其中 native write-back 797.81GB；
+- 完成 H2D 约 6.13TB；该值包含同一 Host KV 被多次 demand-load，不是唯一 KV 量；
+- 结束时 PageIndex 仍有 GPU 78.22GB、CPU 112.14GB，其中 dual-resident GPU
+  55.98GB；
+- 显式 BeliefKV GPU DROP command 为 0；native write-back 表示“GPU copy 释放并写
+  入 Host”，不是逻辑丢弃；
+- Host native LRU/替换没有被逐笔 telemetry 记录。以
+  `completed D2H - final CPU bytes` 计算，至少约 691.52GB Host KV 被替换/挤出；
+  这是下界，不是精确丢弃量。
+
+terminal subagent 清理语义：
+
+1. `RETURN/CANCEL` 先把 RCCG invocation 置为 terminal，并释放 nonpersistent
+   context 的 semantic ownership；
+2. 已经 CPU-only 且无 owner 的 terminal private page 会进入 terminal cleanup，
+   由 `DROP_TERMINAL_PRIVATE` 直接释放 Host copy；
+3. 系统不会仅为 dead context 执行一次新的 D2H 保存；GPU dead/unowned KV 在压力
+   下可由 `DROP_UNOWNED` 释放；
+4. shared page 必须所有 owner 都 terminal/dead 才能按 dead candidate 处理；
+5. Host 高水位 cleanup 在 v58 之后的实现中按 dead、native-writeback shadow、
+   explicit shadow、CPU-only recompute 的顺序选择。v58 运行时该语义化 host
+   cleanup 尚未进入 trace，`host_cleanup_queued=0`。
+
 ## 6. 当前阻塞项
 
 1. prediction-to-action utilization gap 尚未闭合。初步 H200 高压运行中 predictive arm
@@ -709,6 +764,11 @@ A/B。
     baseline，不得使用已空转的当前 attempt 计算 A/B 吞吐。
 23. backend audit 绑定顺序已由 main 修复；此前 `baseline_startup_attempt0`
     只证明启动失败，不包含 workload 结果。
+24. Action frontier 的 sole-blocker/fanout 修复已通过 policy/admission/retraction
+    CPU 回归，尚未进入 GPU A/B。
+25. native Host LRU replacement 缺少逐笔 telemetry；当前只能报告 Host displacement
+    下界。若后续需要精确 value-model 评估，应先为 native host eviction 增加低频
+    counters。
 
 ## 7. 下一步
 

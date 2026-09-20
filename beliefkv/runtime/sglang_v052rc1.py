@@ -15032,7 +15032,20 @@ class EmbeddedSGLangRuntime:
             "ready": 1.0,
             "background": 0.25,
         }.get(str(getattr(frontier, "causal_class", "")), 0.5)
-        return class_value + max(0, int(getattr(frontier, "unblock_depth", 0)))
+        downstream = max(
+            0, int(getattr(frontier, "known_downstream_count", 0))
+        )
+        join_waiters = max(
+            0, int(getattr(frontier, "join_waiter_count", 0))
+        )
+        # Bound structural fanout credit so a huge subtree cannot dominate
+        # service/HBM cost inside the same causal class.
+        return (
+            class_value
+            + max(0, int(getattr(frontier, "unblock_depth", 0)))
+            + min(8.0, downstream * 0.25)
+            + min(4.0, join_waiters * 0.5)
+        )
 
     def _bounded_request_service_envelope(
         self,

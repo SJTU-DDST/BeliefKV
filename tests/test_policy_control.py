@@ -87,6 +87,37 @@ class CausalPolicyTest(unittest.TestCase):
         selected = self.frontier.select("wf")
         self.assertEqual(selected.invocation_id, "b")
         self.assertEqual(selected.causal_class, "join_straggler")
+        self.assertEqual(selected.join_waiter_count, 1)
+
+    def test_blocking_chain_requires_sole_remaining_blocker(self):
+        self.h.invocation("wf", "parent", "ctx-parent")
+        self.h.invocation("wf", "child", "ctx-child")
+        self.h.invocation("wf", "peer", "ctx-peer")
+        self.h.emit(
+            RuntimeEventKind.CALL,
+            "wf",
+            invocation_id="parent",
+            target_invocation_id="child",
+        )
+        self.h.emit(
+            RuntimeEventKind.CALL,
+            "wf",
+            invocation_id="parent",
+            target_invocation_id="peer",
+        )
+
+        by_id = {
+            item.invocation_id: item for item in self.frontier.candidates("wf")
+        }
+        self.assertEqual(by_id["child"].causal_class, "ready")
+        self.assertEqual(by_id["child"].unblock_depth, 0)
+
+        self.h.emit(RuntimeEventKind.RETURN, "wf", invocation_id="peer")
+        by_id = {
+            item.invocation_id: item for item in self.frontier.candidates("wf")
+        }
+        self.assertEqual(by_id["child"].causal_class, "blocking_chain")
+        self.assertEqual(by_id["child"].unblock_depth, 1)
 
     def test_shared_page_uses_strongest_owner_residency(self):
         self.h.invocation("wf", "parked", "ctx-parked")
