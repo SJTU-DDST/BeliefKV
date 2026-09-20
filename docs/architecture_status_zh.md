@@ -1,7 +1,7 @@
 # BeliefKV 当前架构与实现状态
 
 更新日期：2026-09-20
-当前 P6 代码基线：`fd8d7d7`
+当前 P6 代码基线：`c23b380`
 
 本文只记录当前事实和下一阻塞项，不再追加逐日开发日志。2026-09-12 以前的完整历史保存在
 `docs/archive/snapshots/architecture_status_zh.md`，单次实验细节保存在
@@ -527,6 +527,34 @@ stale 率和 scheduler P95/P99。
 该恢复是 fail-closed，不宣称丢失的 D2H 已完成；相关 restore obligation 会走失败/
 回退路径。下一次 baseline 或 predictive gate 需统计 forced-cancel 次数，理想值为 0。
 
+### 5.14 2026-09-20 baseline telemetry journal compaction 修复
+
+baseline attempt1（`baseline_attempt1`）在约两小时后进入低 GPU 病态：
+
+- 最近 10 分钟 GPU mean util 约 0.79%，busy fraction 约 5.4%；
+ - SGLang decode log interval 从正常几十毫秒级退化到约 64--68 秒；
+- running 只有 6--10，waiting 约 70；
+- `sglang::scheduler` 主线程持续约 100% CPU；
+- 最近 5 分钟没有 H2D/D2H telemetry，因此不是持续 DMA 占用；
+- 同时出现 2,536 次
+  `RuntimeError: transfer telemetry journal gap; shadow rebuild is fail-closed`。
+
+根因是 controller telemetry journal 使用
+`deque(maxlen=service_curve_window=256)`。高压 native transfer burst 会淘汰旧
+sequence；shadow worker cursor 落后超过 256 条时，`transfer_telemetry_since()`
+返回 `full_rebuild_required=True`。旧 safe-point 路径将其视作 fatal exception，且
+失败路径不推进 `_shadow_telemetry_sequence`，导致每个 safe point 重复尝试重建、
+重复失败并消耗 scheduler CPU。该 attempt1 不能作为 baseline A/B 结果。
+
+`c23b380` 的修复语义：
+
+1. transfer telemetry 是观测流，不是 authoritative physical state；
+2. journal compaction 后接受 retained suffix，并记录
+   `joint_shadow_telemetry_journal_compacted`；
+3. 成功发布 delta 后推进 shadow telemetry cursor；
+4. 物理 KV 一致性仍由 PageIndex/Radix authoritative full sync 保证；
+5. RCCG event journal gap 仍保持 fail-closed，因为事件是语义状态本身。
+
 ## 6. 当前阻塞项
 
 1. prediction-to-action utilization gap 尚未闭合。初步 H200 高压运行中 predictive arm
@@ -571,13 +599,15 @@ stale 率和 scheduler P95/P99。
     GPU 高压验证；不能根据静态代码或离线测试宣称恢复全程 predictive 传输。
 18. baseline attempt0 暴露 restore funding D2H callback 丢失；`fd8d7d7` 已增加强制
     watchdog 终态，但尚未经 GPU 回归。
+19. baseline attempt1 暴露 telemetry journal compaction 被误判为 fatal；
+    `c23b380` 已修复，尚需进入下一轮 baseline。
 
 ## 7. 下一步
 
 当前关键路径：
 
-1. 使用包含 `fd8d7d7` 的代码重启 observed baseline；attempt0 仅作卡死证据，不进入
-   timeline A/B。
+1. 使用包含 `fd8d7d7` 与 `c23b380` 的代码重启 observed baseline；attempt0/1 仅作
+   失败证据，不进入 timeline A/B。
 2. 使用 `efb5ded` 运行短高压 predictive gate，验证 predictive DMA 队列、合并 batch、
    30 分钟后的持续 transfer 和 `pcie_dispatch_busy=0`。
 3. 将 Host 语义化清理与 request-abort/H2D authority correctness 修复一并纳入下一轮
