@@ -1675,6 +1675,41 @@ class HiCacheNodeCommandBackend:
         if pending is not None:
             pending.cancel_requested = True
 
+    def expire_command(
+        self,
+        command_id: str,
+        *,
+        reason: str,
+    ) -> CommandAck | None:
+        """Force a stalled explicit command to a terminal cancelled ACK."""
+
+        pending = self._pending.get(command_id)
+        if pending is None:
+            return None
+        pending.cancel_requested = True
+        error = SGLangBackendError(
+            reason,
+            blocker_code=TransferBlockerCode.UNKNOWN_BACKEND,
+            required_bytes=pending.resolved.resolved_bytes,
+        )
+        for handle in sorted(
+            pending.accepted_handles - pending.completed_handles
+        ):
+            self._reject(pending, handle, error)
+        self._finish(
+            pending,
+            status=CommandStatus.CANCELLED,
+            reason=reason,
+        )
+        return next(
+            (
+                ack
+                for ack in self._acks
+                if ack.command_id == command_id
+            ),
+            None,
+        )
+
     def abort_all(self, *, reason: str) -> list[CommandAck]:
         """Terminate controller bookkeeping after an authoritative cache reset."""
 
@@ -10807,6 +10842,34 @@ class EmbeddedSGLangRuntime:
                 )
             ),
         )
+        backend = getattr(self, "backend", None)
+        expire_method = getattr(backend, "expire_command", None)
+        expired_command_ids: list[str] = []
+        for command_id in getattr(tick, "stalled_command_ids", ()):
+            ack = (
+                expire_method(
+                    command_id,
+                    reason="transfer_watchdog_forced_cancel",
+                )
+                if callable(expire_method)
+                else None
+            )
+            if ack is None:
+                continue
+            expired_command_ids.append(command_id)
+            self.audit.emit(
+                "transfer_watchdog_forced_cancel",
+                float(self._now_ms()),
+                command_id=command_id,
+                status=ack.status.value,
+                reason=ack.reason,
+                recovery="backend_ack_next_scheduler_step",
+            )
+        if expired_command_ids:
+            # The callback may still be alive below SGLang, so do not trust the
+            # partial mirror. Force a full authoritative resync after the ACK.
+            self._mark_full_tree_rebuild()
+            self._last_ack_poll_ms = None
         for guard_event in getattr(tick, "transfer_guard_events", ()):
             self.audit.emit(
                 guard_event.kind,

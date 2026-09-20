@@ -5670,6 +5670,37 @@ class SGLangBackendTest(unittest.TestCase):
         self.assertFalse(node.evicted)
         self.assertTrue(node.backuped)
 
+    def test_watchdog_expiry_terminates_stalled_explicit_command(self):
+        tree = _TreeCache()
+        tree.check_hicache_events = lambda: None
+        registry = SGLangNodeRegistry()
+        node = _Node()
+        handle = registry.register(node)
+        backend = HiCacheNodeCommandBackend(tree, registry, now_ms=lambda: 2)
+        command = resolved(CommandKind.OFFLOAD_CONTEXT, handle, PhysicalPageAction.START_D2H)
+
+        backend.submit(command)
+        self.assertEqual(backend.poll_acks(), [])
+
+        expired = backend.expire_command(
+            command.command.command_id,
+            reason="transfer_watchdog_forced_cancel",
+        )
+        ack = backend.poll_acks()[0]
+        telemetry = backend.poll_transfer_telemetry()[0]
+
+        self.assertIsNotNone(expired)
+        self.assertEqual(ack.status, CommandStatus.CANCELLED)
+        self.assertEqual(ack.actual_bytes, 0)
+        self.assertEqual(ack.reason, "transfer_watchdog_forced_cancel")
+        self.assertEqual(telemetry.status, CommandStatus.CANCELLED)
+        self.assertEqual(telemetry.actual_bytes, 0)
+        self.assertEqual(telemetry.reason, "transfer_watchdog_forced_cancel")
+        self.assertEqual(
+            backend.expire_command(command.command.command_id, reason="again"),
+            None,
+        )
+
     def test_extent_split_after_d2h_records_dma_but_rejects_residency_commit(self):
         tree = _TreeCache()
         registry = SGLangNodeRegistry()
