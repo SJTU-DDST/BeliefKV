@@ -1,7 +1,7 @@
 # BeliefKV 当前架构与实现状态
 
-更新日期：2026-09-19
-当前 P6 代码基线：`e364d05`
+更新日期：2026-09-20
+当前 P6 代码基线：`efb5ded`
 
 本文只记录当前事实和下一阻塞项，不再追加逐日开发日志。2026-09-12 以前的完整历史保存在
 `docs/archive/snapshots/architecture_status_zh.md`，单次实验细节保存在
@@ -477,6 +477,36 @@ v58 自然完成 64/64 workflow。`a772a61` 的 service H2D native-eviction 修�
 将残留 command 显式置为 cancelled，最终事务、lease、obligation 全部清空。运行时仍有 1 笔
 H2D completion ownership race 需要修复。
 
+### 5.12 2026-09-20 predictive DMA queue 与 batch 修复
+
+v58 execution timeline 复核显示：predictive D2H 最后一笔出现在 27.15 分钟，
+predictive H2D 最后一笔出现在 12.92 分钟，但 `prepare_host` intent 一直发布到约
+161.5 分钟。后续 1,648 次 semantic rejection 中，1,598 次包含 `pcie_dispatch_busy`，
+且这些样本的 `native_hicache_inflight_bytes` 均为 0。late 阶段
+`migratable_gpu_bytes` mean 为 36.62 GB、Host used mean 为 185.24/192 GB。因此
+停止传输的原因不是 HBM 无可迁移 KV，而是全局队列布尔值和 Host 侧 CPU shadow
+竞争造成 predictive 动作饥饿。
+
+`efb5ded` 已修复在线调度路径：
+
+1. `controller.has_pending_transfer_work()` 继续表示 drain/liveness 意义，但不再被
+   predictive gate 解释为 PCIe 饱和；
+2. observed residency、semantic residency 和 urgent restore 只阻塞相同
+   target/victim context 的 predictive action，不再全局否决不重叠动作；
+3. deadline-bearing predictive command 进入 urgent transfer queue，可排在同方向
+   工作之后，并在 dispatch 前重新解析物理 bundle；
+4. predictive D2H 默认最多可将 256 MiB 的多个 disjoint exclusive suffix 合成一个
+   closure-complete native batch，经 `write_backup_batch()` 一次提交；
+5. 合并 bundle dispatch 时重新检查 owner、ancestor、lock、residency、action 和
+   generation fingerprint，不信任 safe-point 旧快照；
+6. H2D 继续复用 SGLang native load worker 的既有 operation merge，不借此启用未验证的
+   反方向并发 PCIe gate。
+
+该修复不声称拥有实时 PCIe 带宽信号；它把决策改为 action-local conflict、deadline
+和权威物理重验证。下一轮 GPU gate 必须统计 `pcie_dispatch_busy` 是否归零、30 分钟后
+是否仍有 predictive D2H/H2D、merged batch extent/bytes、queue-to-dispatch 延迟、
+stale 率和 scheduler P95/P99。
+
 ## 6. 当前阻塞项
 
 1. prediction-to-action utilization gap 尚未闭合。初步 H200 高压运行中 predictive arm
@@ -508,24 +538,28 @@ H2D completion ownership race 需要修复。
     44.83 ms。该阻塞项关闭，剩余问题是动作效用而不是控制链延迟。
 12. v50 已证明 publish 链路延迟达标，但暴露 prepared binding 缺失、瞬时 engine-lock 失败
     和 stale prefetch certificate。`87411cc` 已修复，仍需在 v50 自然结束后运行新代码 gate。
-13. v57 的 17 笔 predictive H2D 被 atomic allocator 检查拒绝；`a772a61` 已允许 service
-    H2D 使用 native eviction，但该修复尚未进入 GPU 运行。
+13. v57 的 17 笔 predictive H2D 曾被 atomic allocator 检查拒绝；v58 已验证
+    `a772a61` 将 service H2D 物理成功率提升到 24/25。
 14. 64-root 长上下文 workload 超过 HBM+Host 的 2.95M-token 总容量；native writeback、
-    predictive shadow 和 future reentry 在 Host 侧竞争。语义化 Host cleanup 已实现，但尚未
-    进入正在运行的 v58 进程。
+    predictive shadow 和 future reentry 在 Host 侧竞争。语义化 Host cleanup 已实现，但
+    尚未进入已完成的 v58 运行。
 15. 全局 KV value model 与 SSD tiering 均为可选未来分支，不进入当前关键路径；必须先用
     shadow 证据量化收益、开销和决策耦合风险。
-16. v58 暴露 request-abort 后 inflight restore command 需要等待 shutdown drain 才显式
-    cancelled，以及 1 笔 H2D ended-without-authoritative-GPU-copy race。
+16. v58 暴露的 request-abort restore command 清理和 H2D authority race 已由 `167edc3`
+    代码修复，尚未经过 GPU 回归。
+17. `efb5ded` 的 predictive DMA queue/batch 修复已通过 CPU correctness 回归，但尚未经
+    GPU 高压验证；不能根据静态代码或离线测试宣称恢复全程 predictive 传输。
 
 ## 7. 下一步
 
 当前关键路径：
 
-1. 等待 v58 自然完成，统计 predictive D2H/H2D precision、saved stall、反向迁移和
-   shutdown correctness；其中 atomic H2D native-eviction 已将中期成功率提升到 24/25。
-2. 修复 request-abort command 即时清理和 H2D completion ownership race。
-3. 将 Host 语义化清理合入下一轮 GPU gate，统计 dead/native-writeback/explicit
+1. 等待同契约 observed baseline 自然完成，生成 baseline timeline 并与已完成的 v58
+   predictive arm 对齐比较。
+2. 使用 `efb5ded` 运行短高压 predictive gate，验证 predictive DMA 队列、合并 batch、
+   30 分钟后的持续 transfer 和 `pcie_dispatch_busy=0`。
+3. 将 Host 语义化清理与 request-abort/H2D authority correctness 修复一并纳入下一轮
+   GPU gate，统计 dead/native-writeback/explicit
    cleanup bytes、forced recompute、Host miss 和 predictive H2D success rate。
 4. 在 predictive H2D 成功率稳定后，测量相对于 reactive native demand-load 的 first-service
    latency 差值和端到端吞吐收益。
