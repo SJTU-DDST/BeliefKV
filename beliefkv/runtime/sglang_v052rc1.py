@@ -480,6 +480,7 @@ class _PendingNodeCommand:
     transfer_host_copy_state: dict[TransferDirection, str] = field(
         default_factory=dict
     )
+    h2d_authority_retry_handles: set[PageHandle] = field(default_factory=set)
     pinned_host: bool | None = None
     native_concurrent_bytes: int = 0
     allocator_submit_ms: float = 0.0
@@ -1801,11 +1802,13 @@ class HiCacheNodeCommandBackend:
             return
         command_kind = pending.resolved.command.kind
         actions = {item.handle: item.action for item in pending.resolved.page_actions}
+        nodes: dict[PageHandle, Any] = {}
         for handle in pending.transfer_handles - pending.completed_handles:
             if handle in pending.rejected_handles:
                 continue
             try:
                 node = self.registry.resolve(handle)
+                nodes[handle] = node
                 action = actions[handle]
                 if action == PhysicalPageAction.START_D2H:
                     still_writing = node.id in self.tree_cache.ongoing_write_through
@@ -1828,6 +1831,13 @@ class HiCacheNodeCommandBackend:
                     if still_loading or getattr(node, "loading", False):
                         continue
                     if getattr(node, "value", None) is None:
+                        retry_handle = self._retry_missing_h2d_authority(
+                            pending,
+                            actions,
+                            nodes,
+                        )
+                        if retry_handle is not None:
+                            continue
                         raise SGLangBackendError(
                             "H2D ended without an authoritative GPU copy",
                             blocker_code=TransferBlockerCode.DEVICE_CAPACITY,
@@ -1874,6 +1884,14 @@ class HiCacheNodeCommandBackend:
                         waiting_for_dma = True
                         continue
                     if getattr(node, "value", None) is None:
+                        retry_handle = self._retry_missing_h2d_authority(
+                            pending,
+                            actions,
+                            nodes,
+                        )
+                        if retry_handle is not None:
+                            waiting_for_dma = True
+                            continue
                         raise SGLangBackendError(
                             "H2D ended without an authoritative GPU copy",
                             blocker_code=TransferBlockerCode.DEVICE_CAPACITY,
@@ -1956,6 +1974,56 @@ class HiCacheNodeCommandBackend:
             self._reject(pending, failed_handle, error)
             self._rollback_atomic_h2d(pending, actions, nodes)
             pending.rejected_handles.update(pending.accepted_handles)
+
+    def _retry_missing_h2d_authority(
+        self,
+        pending: _PendingNodeCommand,
+        actions: dict[PageHandle, PhysicalPageAction],
+        nodes: dict[PageHandle, Any],
+    ) -> PageHandle | None:
+        """Retry once if a loaded value is dropped by concurrent eviction."""
+
+        command = pending.resolved.command
+        if not bool(command.metadata.get("allow_native_eviction", False)):
+            return None
+        missing = [
+            handle
+            for handle in sorted(pending.transfer_handles)
+            if handle in nodes
+            and actions.get(handle) == PhysicalPageAction.START_H2D
+            and getattr(nodes[handle], "value", None) is None
+            and getattr(nodes[handle], "host_value", None) is not None
+            and handle not in pending.h2d_authority_retry_handles
+        ]
+        if not missing:
+            return None
+        leaf_handle = max(
+            missing,
+            key=lambda handle: (self._node_depth(nodes[handle]), handle),
+        )
+        pending.h2d_authority_retry_handles.add(leaf_handle)
+        loaded = self.tree_cache.load_back(
+            nodes[leaf_handle],
+            force=True,
+            allow_eviction=True,
+            beliefkv_source="explicit",
+        )
+        if loaded is not None:
+            # A proactive retry can run while admission is blocked, so advance
+            # SGLang's load queue explicitly just as submit() does.
+            self.tree_cache.ready_to_load_host_cache()
+        audit = getattr(self, "audit", None)
+        if audit is not None:
+            audit.emit(
+                "h2d_authority_retry",
+                float(self._now_ms()),
+                audit_level="correctness",
+                command_id=command.command_id,
+                context_id=command.context_id,
+                page_handle=str(leaf_handle),
+                succeeded=loaded is not None,
+            )
+        return leaf_handle if loaded is not None else None
 
     def _rollback_atomic_h2d(
         self,
@@ -2304,6 +2372,7 @@ class EmbeddedSGLangRuntime:
             h2d_context_is_busy=self._context_has_engine_request,
             kv_bytes_per_token=self.config.kv_bytes_per_token,
         )
+        self.backend.audit = self.audit
         self.bridge = SGLangSchedulerBridge(self.controller, self.backend)
         self._admission_epoch = 0
         self._current_ticket_epoch: AdmissionTicketEpoch | None = None
@@ -6581,6 +6650,11 @@ class EmbeddedSGLangRuntime:
         obligation = index.get(request_id)
         if obligation is None or obligation.state.terminal:
             return
+        self._cancel_pending_restore_command(
+            obligation,
+            now_ms=now_ms,
+            reason=reason,
+        )
         funding_reserved_tokens = obligation.funding_reserved_tokens
         funding_reserved_bytes = obligation.funding_reserved_bytes
         released_funding_tokens = self._release_restore_funding_capacity(
@@ -6662,6 +6736,77 @@ class EmbeddedSGLangRuntime:
             command_ids=list(obligation.command_ids),
             cause=obligation.cause.value,
             native_admission_fallback=obligation.native_admission_fallback,
+        )
+
+    def _cancel_pending_restore_command(
+        self,
+        obligation: RestoreObligation,
+        *,
+        now_ms: float,
+        reason: str,
+    ) -> None:
+        command_id = obligation.pending_command_id
+        if command_id is None:
+            return
+        subscribers = getattr(self, "_restore_command_to_request", None) or {}
+        requests = subscribers.get(command_id)
+        has_other_subscribers = bool(
+            requests and requests - {obligation.request_id}
+        )
+        if requests is not None:
+            requests.discard(obligation.request_id)
+            if not requests:
+                subscribers.pop(command_id, None)
+        funding = getattr(self, "_restore_funding_target_by_command", None) or {}
+        targets = funding.get(command_id)
+        if targets is not None:
+            targets.pop(obligation.request_id, None)
+            if not targets:
+                funding.pop(command_id, None)
+
+        if not has_other_subscribers:
+            controller = getattr(self, "controller", None)
+            inflight = tuple(
+                getattr(controller, "inflight_command_ids", ()) or ()
+            )
+            if controller is not None and command_id not in inflight:
+                cancel_method = getattr(controller, "cancel_queued_command", None)
+                if callable(cancel_method):
+                    ack = cancel_method(
+                        command_id,
+                        now_ms=now_ms,
+                        reason=f"restore_obligation_{reason}",
+                    )
+                    if ack is not None:
+                        controller.acknowledge_command(ack)
+                        self.audit.emit(
+                            "transfer_acknowledged",
+                            now_ms,
+                            command_id=ack.command_id,
+                            status=ack.status.value,
+                            actual_bytes=ack.actual_bytes,
+                            reason=ack.reason,
+                            restore_request_cancelled=True,
+                        )
+                    else:
+                        bridge = getattr(self, "bridge", None)
+                        cancel_method = getattr(bridge, "cancel", None)
+                        if callable(cancel_method):
+                            cancel_method(command_id)
+            else:
+                bridge = getattr(self, "bridge", None)
+                cancel_method = getattr(bridge, "cancel", None)
+                if callable(cancel_method):
+                    cancel_method(command_id)
+        self.audit.emit(
+            "restore_command_cancel_requested",
+            now_ms,
+            audit_level="correctness",
+            obligation_id=obligation.obligation_id,
+            request_id=obligation.request_id,
+            command_id=command_id,
+            reason=reason,
+            command_cancelled=not has_other_subscribers,
         )
 
     def plan_running_batch_retraction(

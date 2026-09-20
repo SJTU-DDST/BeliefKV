@@ -5420,6 +5420,56 @@ class SGLangBackendTest(unittest.TestCase):
             runtime._restore_command_to_request, {"command": {"request"}}
         )
 
+    def test_terminal_restore_obligation_cancels_queued_command(self):
+        runtime = EmbeddedSGLangRuntime.__new__(EmbeddedSGLangRuntime)
+        runtime._restore_command_to_request = {"command": {"request"}}
+        runtime._restore_funding_target_by_command = {
+            "command": {"request": "funding"}
+        }
+        ack = CommandAck(
+            "command",
+            CommandStatus.CANCELLED,
+            42.0,
+            actual_bytes=0,
+            reason="restore_obligation_request_aborted",
+        )
+        acknowledged = []
+
+        class Controller:
+            inflight_command_ids = ()
+
+            def cancel_queued_command(self, command_id, *, now_ms, reason):
+                assert command_id == "command"
+                assert now_ms == 42.0
+                assert reason == "restore_obligation_request_aborted"
+                return ack
+
+            def acknowledge_command(self, item):
+                acknowledged.append(item)
+
+        runtime.controller = Controller()
+        runtime.bridge = SimpleNamespace(cancel=lambda _command_id: None)
+        runtime.audit = _AuditRecorder()
+        obligation = SimpleNamespace(
+            obligation_id="obligation",
+            request_id="request",
+            pending_command_id="command",
+        )
+
+        runtime._cancel_pending_restore_command(
+            obligation,
+            now_ms=42.0,
+            reason="request_aborted",
+        )
+
+        self.assertEqual(acknowledged, [ack])
+        self.assertEqual(runtime._restore_command_to_request, {})
+        self.assertEqual(runtime._restore_funding_target_by_command, {})
+        self.assertEqual(
+            [item[0] for item in runtime.audit.events],
+            ["transfer_acknowledged", "restore_command_cancel_requested"],
+        )
+
     def test_shutdown_drain_terminally_acks_queued_and_inflight_commands(self):
         runtime = EmbeddedSGLangRuntime.__new__(EmbeddedSGLangRuntime)
         runtime.config = BeliefKVConfig(shutdown_drain_timeout_ms=0.0)
@@ -5867,6 +5917,50 @@ class SGLangBackendTest(unittest.TestCase):
         self.assertEqual(ack.actual_bytes, 800)
         self.assertFalse(parent.evicted)
         self.assertFalse(child.evicted)
+
+    def test_atomic_h2d_retries_once_after_authority_race(self):
+        tree = _TreeCache()
+        registry = SGLangNodeRegistry()
+        parent = _Node(1)
+        child = _Node(2)
+        parent.parent = tree.root_node
+        child.parent = parent
+        parent.children["child"] = child
+        for node in (parent, child):
+            node.value = None
+            node.host_value = [10, 11, 12, 13]
+        parent_handle = registry.register(parent)
+        child_handle = registry.register(child)
+        original = resolved_bundle(
+            CommandKind.PREFETCH_CONTEXT,
+            (
+                (parent_handle, PhysicalPageAction.START_H2D, 400),
+                (child_handle, PhysicalPageAction.START_H2D, 400),
+            ),
+        )
+        command = replace(
+            original.command,
+            metadata={"allow_native_eviction": True},
+        )
+        resolved = replace(original, command=command)
+        backend = HiCacheNodeCommandBackend(tree, registry, now_ms=lambda: 2)
+        backend.audit = _AuditRecorder()
+
+        submission = backend.submit(resolved)
+        child.value = None
+
+        self.assertEqual(submission.started_handles, tuple(sorted((parent_handle, child_handle))))
+        self.assertEqual(backend.poll_acks(), [])
+        self.assertEqual(len(tree.load_back_calls), 2)
+        self.assertEqual(backend.audit.events[-1][0], "h2d_authority_retry")
+        self.assertTrue(backend.audit.events[-1][2]["succeeded"])
+
+        ack = backend.poll_acks()[0]
+
+        self.assertEqual(ack.status, CommandStatus.COMPLETED)
+        self.assertEqual(ack.actual_bytes, 800)
+        self.assertIsNotNone(parent.value)
+        self.assertIsNotNone(child.value)
 
     def test_atomic_h2d_allows_concurrent_child_link_on_same_extent(self):
         tree = _TreeCache()
