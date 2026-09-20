@@ -53,6 +53,14 @@ def main() -> int:
         ),
     )
     parser.add_argument(
+        "--predictive-lead-budget-model",
+        type=Path,
+        default=None,
+        help=(
+            "Action-aligned offline lead prior with bounded online adaptation."
+        ),
+    )
+    parser.add_argument(
         "--disable-reactive-transfer",
         action="store_true",
         help=(
@@ -614,6 +622,11 @@ def main() -> int:
         "shadow_chunk_bytes": 67_108_864,
         "predictive_shadow_dma_batch_bytes": (
             args.predictive_shadow_dma_batch_bytes
+        ),
+        "predictive_lead_budget_model_path": (
+            str(args.predictive_lead_budget_model.expanduser().resolve())
+            if args.predictive_lead_budget_model is not None
+            else None
         ),
         "shadow_min_parked_ms": 25.0,
         "shadow_slowdown_budget": 0.02,

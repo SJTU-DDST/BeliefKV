@@ -1521,6 +1521,26 @@ class BeliefKVController:
     def has_pending_transfer_work(self) -> bool:
         return bool(self._inflight or len(self.command_queue))
 
+    def pending_transfer_conflicts(
+        self,
+        *,
+        context_id: str | None,
+        handles: frozenset[PageHandle] | set[PageHandle] = frozenset(),
+    ) -> bool:
+        """Check whether pending work owns a context or physical closure."""
+
+        handle_set = frozenset(handles)
+        commands = [item.resolved.command for item in self._inflight.values()]
+        commands.extend(self.command_queue.pending_commands())
+        for command in commands:
+            if context_id is not None and command.context_id == context_id:
+                return True
+            if handle_set and not handle_set.isdisjoint(
+                self._command_closure_handles(command)
+            ):
+                return True
+        return False
+
     def _enqueue_if_new(self, command: ControlCommand) -> bool:
         if command.context_id is not None:
             if command.context_id in self._queued_by_context:

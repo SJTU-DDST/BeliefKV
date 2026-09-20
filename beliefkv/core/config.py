@@ -107,6 +107,7 @@ class BeliefKVConfig:
     predictive_commit_guard_ms: float = 25.0
     predictive_prepare_control_lead_ms: float = 250.0
     predictive_prefetch_desired_lead_ms: float = 100.0
+    predictive_lead_budget_model_path: str | None = None
     predictive_intent_max_age_ms: float = 60_000.0
     predictive_beneficiary_projection_horizon_ms: float = 2000.0
     gpu_service_model_path: str | None = None

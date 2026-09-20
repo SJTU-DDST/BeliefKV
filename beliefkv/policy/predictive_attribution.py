@@ -15,6 +15,7 @@ class PredictiveActionOutcome:
     context_epoch: int
     command_id: str
     created_ts_ms: float
+    decision_ts_ms: float | None = None
     state: str = "pending_transfer"
     transfer_completed_ts_ms: float | None = None
     terminal_ts_ms: float | None = None
@@ -45,6 +46,7 @@ class PredictiveActionAttributionLedger:
         context_epoch: int,
         command_id: str,
         now_ms: float,
+        decision_ts_ms: float | None = None,
     ) -> None:
         if intent_id in self._by_intent:
             raise ValueError(f"predictive intent already attributed: {intent_id}")
@@ -55,6 +57,7 @@ class PredictiveActionAttributionLedger:
             context_epoch=context_epoch,
             command_id=command_id,
             created_ts_ms=now_ms,
+            decision_ts_ms=decision_ts_ms,
         )
         self._by_intent[intent_id] = outcome
         self._notify("registered", now_ms, outcome)
@@ -133,6 +136,9 @@ class PredictiveActionAttributionLedger:
 
     def outcomes(self) -> tuple[PredictiveActionOutcome, ...]:
         return tuple(self._by_intent.values())
+
+    def get(self, intent_id: str) -> PredictiveActionOutcome | None:
+        return self._by_intent.get(intent_id)
 
     def _finish(
         self,

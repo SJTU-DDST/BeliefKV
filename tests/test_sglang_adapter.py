@@ -13504,7 +13504,14 @@ def test_busy_native_transfer_defers_prefetch_watch_without_dropping_intent():
 
     key = runtime._predictive_prefetch_watch_key(intent)
     assert runtime._predictive_prefetch_watches[key].intent is intent
-    assert runtime._predictive_prefetch_watches[key].latest_start_ts_ms == 1_050.0
+    assert runtime._predictive_prefetch_watches[key].latest_start_ts_ms == 1_000.0
+    assert (
+        runtime._predictive_prefetch_watches[key].retry_not_before_ts_ms
+        == 1_050.0
+    )
+    assert (
+        runtime._activate_due_predictive_prefetch_watch(now_ms=1_025.0) is None
+    )
     assert runtime._latest_predictive_intent is None
     assert runtime._active_predictive_prefetch_watch_key is None
     assert runtime._last_joint_decision_plan_id is None
@@ -13676,6 +13683,54 @@ def test_shadow_telemetry_journal_compaction_is_not_fatal():
     assert not unchanged.full_rebuild_required
     assert unchanged.telemetry == ()
     assert runtime._joint_shadow_counts["telemetry_journal_compacted"] == 1
+
+
+def test_restore_authority_waits_only_for_owner_conflicts():
+    runtime = EmbeddedSGLangRuntime.__new__(EmbeddedSGLangRuntime)
+    runtime.audit = _AuditRecorder()
+    runtime._restore_obligation_counts = Counter()
+    runtime._restore_authority_wait_audited = set()
+    runtime._restore_authority_mode = RestoreAuthorityMode.RESTORE_DRAIN_REQUESTED
+    runtime._restore_authority_request_id = "request"
+    runtime._restore_authority_dependency_request_id = None
+    runtime._current_online_joint_view = None
+    obligation = SimpleNamespace(
+        obligation_id="obligation",
+        request_id="request",
+        context_id="owner",
+        context_epoch=3,
+        created_ts_ms=900.0,
+        state=RestoreObligationState.PARKED_WAIT,
+        pending_command_id=None,
+        required_extent_ids=(),
+    )
+    runtime._restore_obligation_index = lambda: SimpleNamespace(
+        get=lambda _request_id: obligation
+    )
+    runtime._restore_service_grace_by_request = {}
+    runtime.controller = SimpleNamespace(
+        pending_transfer_conflicts=lambda **_kwargs: False
+    )
+
+    runtime._advance_restore_authority(now_ms=1_000.0)
+
+    assert (
+        runtime._restore_authority_mode
+        is RestoreAuthorityMode.RESTORE_DRAIN_ACTIVE
+    )
+
+    runtime._restore_authority_mode = RestoreAuthorityMode.RESTORE_DRAIN_REQUESTED
+    runtime.controller.pending_transfer_conflicts = lambda **_kwargs: True
+
+    runtime._advance_restore_authority(now_ms=1_100.0)
+
+    assert (
+        runtime._restore_authority_mode
+        is RestoreAuthorityMode.RESTORE_DRAIN_REQUESTED
+    )
+    assert runtime._restore_obligation_counts[
+        "authority_wait_overlapping_transfer"
+    ] == 1
 
 
 def test_online_residency_queues_predictive_action_behind_existing_transfer():

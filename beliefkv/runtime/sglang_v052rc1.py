@@ -81,6 +81,7 @@ from beliefkv.policy.predictive_attribution import (
     PredictiveActionAttributionLedger,
     PredictiveActionOutcome,
 )
+from beliefkv.policy.lead_budget import PredictiveLeadBudgetModel
 from beliefkv.policy.reference import (
     AdmissionAction,
     CapabilityReport,
@@ -641,6 +642,7 @@ class _PredictivePrefetchWatch:
 
     intent: PredictiveIntent
     latest_start_ts_ms: float
+    retry_not_before_ts_ms: float | None
     next_refresh_ts_ms: float | None
     fresh_after_ts_ms: float | None
     registered_ts_ms: float
@@ -2524,6 +2526,16 @@ class EmbeddedSGLangRuntime:
         self._host_recompute_micro_gate_last_audit_signature: (
             tuple[object, ...] | None
         ) = None
+        predictive_lead_budget_path = (
+            Path(self.config.predictive_lead_budget_model_path)
+            if self.config.predictive_lead_budget_model_path is not None
+            else None
+        )
+        self.predictive_lead_budget_model = (
+            PredictiveLeadBudgetModel.load(predictive_lead_budget_path)
+            if predictive_lead_budget_path is not None
+            else None
+        )
         self._restore_obligations = RestoreObligationIndex(
             max_active=self.config.restore_obligation_max_active,
             running_retraction_reserve=(
@@ -2978,7 +2990,7 @@ class EmbeddedSGLangRuntime:
                         self.config.predictive_commit_guard_ms
                     ),
                     scheduled_service_lead_ms=(
-                        self.config.predictive_prefetch_desired_lead_ms
+                        self._predictive_prefetch_desired_lead_ms()
                     ),
                 )
                 predictive_risk_observer = PredictiveRiskShadowObserver(
@@ -3665,6 +3677,21 @@ class EmbeddedSGLangRuntime:
         now_ms: float,
         outcome: PredictiveActionOutcome,
     ) -> None:
+        if (
+            outcome.terminal
+            and outcome.state == "useful"
+            and outcome.action in {
+                PredictiveActionKind.PREFETCH_GPU.value,
+                PredictiveActionKind.PARTIAL_PREFETCH_GPU.value,
+                PredictiveActionKind.RECLAIM_AND_PREFETCH.value,
+            }
+            and outcome.transfer_completed_ts_ms is not None
+        ):
+            model = getattr(self, "predictive_lead_budget_model", None)
+            if model is not None:
+                model.observe_service_readiness(
+                    now_ms - outcome.transfer_completed_ts_ms
+                )
         self._joint_predictive_counts[f"action_outcome_{event}"] += 1
         self.audit.emit(
             "predictive_action_outcome",
@@ -6406,7 +6433,28 @@ class EmbeddedSGLangRuntime:
             return
         if mode != RestoreAuthorityMode.RESTORE_DRAIN_REQUESTED:
             return
-        if self.controller.has_pending_transfer_work():
+        if obligation is not None and self._restore_transfer_conflicts(obligation):
+            self._restore_obligation_counts[
+                "authority_wait_overlapping_transfer"
+            ] += 1
+            waited = getattr(self, "_restore_authority_wait_audited", None)
+            if waited is None:
+                waited = set()
+                self._restore_authority_wait_audited = waited
+            key = (obligation.obligation_id, "overlapping_transfer")
+            if key not in waited:
+                waited.add(key)
+                self.audit.emit(
+                    "restore_authority_wait",
+                    now_ms,
+                    obligation_id=obligation.obligation_id,
+                    request_id=obligation.request_id,
+                    context_id=obligation.context_id,
+                    context_epoch=obligation.context_epoch,
+                    pending_command_id=obligation.pending_command_id,
+                    wait_reason="overlapping_transfer",
+                    wait_ms=max(0.0, now_ms - obligation.created_ts_ms),
+                )
             return
         current_view = getattr(self, "_current_online_joint_view", None)
         if current_view is not None:
@@ -8748,6 +8796,23 @@ class EmbeddedSGLangRuntime:
             ):
                 self._request_restore_drain(obligation, now_ms=now_ms)
 
+    def _restore_transfer_conflicts(
+        self,
+        obligation: RestoreObligation,
+    ) -> bool:
+        handles = set()
+        for extent_id in obligation.required_extent_ids:
+            try:
+                handles.add(
+                    self._runtime_page_handle_from_extent_id(extent_id)
+                )
+            except ValueError:
+                continue
+        return self.controller.pending_transfer_conflicts(
+            context_id=obligation.context_id,
+            handles=frozenset(handles),
+        )
+
     def _drive_restore_obligations(self, *, now_ms: float) -> None:
         phase = getattr(
             self, "_safe_point_physical_phase", SafePointPhysicalPhase.IDLE
@@ -8763,10 +8828,13 @@ class EmbeddedSGLangRuntime:
             or not self._restore_obligations.active()
         ):
             return
-        if self.controller.has_pending_transfer_work():
-            return
         for obligation in self._restore_obligation_index().active():
             if obligation.state == RestoreObligationState.TICKET_READY:
+                continue
+            if self._restore_transfer_conflicts(obligation):
+                self._restore_obligation_counts[
+                    "wait_overlapping_transfer"
+                ] += 1
                 continue
             if (
                 not obligation.source_transaction_terminal
@@ -17472,6 +17540,22 @@ class EmbeddedSGLangRuntime:
             and pending_residency.command_id == telemetry.command_id
             else None
         )
+        lead_dispatch_delay_ms = None
+        if predictive_intent_id is not None:
+            outcome = self._predictive_action_ledger().get(predictive_intent_id)
+            if outcome is not None and outcome.decision_ts_ms is not None:
+                lead_dispatch_delay_ms = max(
+                    0.0,
+                    float(telemetry.submit_ts_ms) - outcome.decision_ts_ms,
+                )
+                model = getattr(self, "predictive_lead_budget_model", None)
+                if model is not None:
+                    model.observe_dispatch(
+                        "prefetch"
+                        if telemetry.direction == TransferDirection.H2D
+                        else "prepare",
+                        lead_dispatch_delay_ms,
+                    )
         fields = {
             "command_id": telemetry.command_id,
             "submit_ts_ms": telemetry.submit_ts_ms,
@@ -17506,6 +17590,7 @@ class EmbeddedSGLangRuntime:
             "small_extent_ratio": telemetry.small_extent_ratio,
             "small_extent_threshold_bytes": telemetry.small_extent_threshold_bytes,
             "predictive_intent_id": predictive_intent_id,
+            "lead_dispatch_delay_ms": lead_dispatch_delay_ms,
             **extra_fields,
         }
         observed_ts_ms = max(float(self._now_ms()), telemetry.complete_ts_ms)
@@ -19958,16 +20043,7 @@ class EmbeddedSGLangRuntime:
                     "wait_shadow_direction_envelope_used"
                 ] += 1
             transfer_ms = max(0.001, transfer.estimated_completion_p90_ms)
-            control_lead_ms = max(
-                0.0,
-                float(
-                    getattr(
-                        self.config,
-                        "predictive_prepare_control_lead_ms",
-                        _PREDICTIVE_WAIT_SHADOW_DEFAULT_CONTROL_LEAD_MS,
-                    )
-                ),
-            )
+            control_lead_ms = self._predictive_prepare_control_lead_ms()
             operational_tau_ms = (
                 transfer_ms
                 + self.config.predictive_commit_guard_ms
@@ -20218,6 +20294,18 @@ class EmbeddedSGLangRuntime:
             gross_hbm_pressure=gross_pressure,
             operational_tau_ms=timing.operational_tau_ms,
             control_lead_ms=control_lead_ms,
+            control_lead_source=(
+                self.predictive_lead_budget_model.lead_source(
+                    "prepare_dispatch", fallback_ms=control_lead_ms
+                )[1]
+                if getattr(self, "predictive_lead_budget_model", None) is not None
+                else "config_fallback"
+            ),
+            control_lead_sample_count=(
+                self.predictive_lead_budget_model.sample_count("prepare_dispatch")
+                if getattr(self, "predictive_lead_budget_model", None) is not None
+                else 0
+            ),
             wait_survival_probability=timing.favorable_probability,
             decision_threshold=timing.decision_threshold,
             transfer_p90_ms=transfer_ms,
@@ -20718,7 +20806,7 @@ class EmbeddedSGLangRuntime:
             operational_tau_ms = (
                 transfer_ms
                 + self.config.predictive_commit_guard_ms
-                + self.config.predictive_prefetch_desired_lead_ms
+                + self._predictive_prefetch_desired_lead_ms()
             )
             if invocation.invocation_id in service_rank_by_invocation:
                 probability = 1.0
@@ -21588,6 +21676,32 @@ class EmbeddedSGLangRuntime:
                 retained_count=len(delta.telemetry),
             )
         return delta
+
+    def _predictive_prepare_control_lead_ms(self) -> float:
+        model = getattr(self, "predictive_lead_budget_model", None)
+        fallback = max(
+            0.0,
+            float(
+                getattr(
+                    self.config,
+                    "predictive_prepare_control_lead_ms",
+                    _PREDICTIVE_WAIT_SHADOW_DEFAULT_CONTROL_LEAD_MS,
+                )
+            ),
+        )
+        if model is None:
+            return fallback
+        return model.prepare_control_lead_ms(fallback_ms=fallback)
+
+    def _predictive_prefetch_desired_lead_ms(self) -> float:
+        model = getattr(self, "predictive_lead_budget_model", None)
+        fallback = max(
+            0.0,
+            float(getattr(self.config, "predictive_prefetch_desired_lead_ms", 100.0)),
+        )
+        if model is None:
+            return fallback
+        return model.prefetch_desired_lead_ms(fallback_ms=fallback)
 
     def _maybe_record_incremental_policy_snapshot(
         self,
@@ -22665,7 +22779,7 @@ class EmbeddedSGLangRuntime:
             + intent.remaining_window_low_ms
             - transfer_bound_ms
             - self.config.predictive_commit_guard_ms
-            - self.config.predictive_prefetch_desired_lead_ms,
+            - self._predictive_prefetch_desired_lead_ms(),
         )
 
     def _predictive_prefetch_next_refresh_ts_ms(
@@ -22865,7 +22979,7 @@ class EmbeddedSGLangRuntime:
         context_revision = page_index.context_revision(request.context_id)
         remaining_window_ms = (
             transfer_ms
-            + self.config.predictive_prefetch_desired_lead_ms
+            + self._predictive_prefetch_desired_lead_ms()
         )
         startup_bytes = (
             request.admission_startup_bytes
@@ -22957,6 +23071,7 @@ class EmbeddedSGLangRuntime:
             **self._latest_predictive_intent.to_dict(),
             service_prefetch=True,
             observed_request_id=request.request_id,
+            desired_lead_ms=self._predictive_prefetch_desired_lead_ms(),
             missing_gpu_bytes=summary.physical_unique_bytes
             - summary.gpu_bytes,
             cpu_bytes=summary.cpu_bytes,
@@ -23031,6 +23146,7 @@ class EmbeddedSGLangRuntime:
         watches[key] = _PredictivePrefetchWatch(
             intent=intent,
             latest_start_ts_ms=latest_start_ts_ms,
+            retry_not_before_ts_ms=None,
             next_refresh_ts_ms=self._predictive_prefetch_next_refresh_ts_ms(
                 now_ms=now_ms,
                 latest_start_ts_ms=latest_start_ts_ms,
@@ -23056,6 +23172,15 @@ class EmbeddedSGLangRuntime:
             context_epoch=intent.context_epoch,
             target_reentry_context_epoch=key[1],
             latest_start_ts_ms=latest_start_ts_ms,
+            desired_lead_ms=self._predictive_prefetch_desired_lead_ms(),
+            desired_lead_source=(
+                self.predictive_lead_budget_model.lead_source(
+                    "prefetch_dispatch",
+                    fallback_ms=self._predictive_prefetch_desired_lead_ms(),
+                )[1]
+                if getattr(self, "predictive_lead_budget_model", None) is not None
+                else "config_fallback"
+            ),
             predicted_reentry_ts_ms=(
                 intent.generated_ts_ms + intent.remaining_window_low_ms
             ),
@@ -23095,6 +23220,7 @@ class EmbeddedSGLangRuntime:
         watches[key] = replace(
             watch,
             latest_start_ts_ms=latest_start_ts_ms,
+            retry_not_before_ts_ms=None,
             next_refresh_ts_ms=None,
             fresh_after_ts_ms=None,
         )
@@ -23171,17 +23297,18 @@ class EmbeddedSGLangRuntime:
         if previous is not None and previous.intent.intent_id != intent.intent_id:
             return False
         retry_ts_ms = now_ms + max(1.0, retry_delay_ms)
+        base = previous or _PredictivePrefetchWatch(
+            intent=intent,
+            latest_start_ts_ms=now_ms,
+            retry_not_before_ts_ms=None,
+            next_refresh_ts_ms=None,
+            fresh_after_ts_ms=None,
+            registered_ts_ms=now_ms,
+            source_worker_sequence=0,
+        )
         watches[key] = replace(
-            previous
-            or _PredictivePrefetchWatch(
-                intent=intent,
-                latest_start_ts_ms=retry_ts_ms,
-                next_refresh_ts_ms=None,
-                fresh_after_ts_ms=None,
-                registered_ts_ms=now_ms,
-                source_worker_sequence=0,
-            ),
-            latest_start_ts_ms=retry_ts_ms,
+            base,
+            retry_not_before_ts_ms=retry_ts_ms,
             next_refresh_ts_ms=None,
             fresh_after_ts_ms=None,
         )
@@ -23270,6 +23397,10 @@ class EmbeddedSGLangRuntime:
             watch
             for watch in watches.values()
             if watch.latest_start_ts_ms <= now_ms
+            and (
+                watch.retry_not_before_ts_ms is None
+                or watch.retry_not_before_ts_ms <= now_ms
+            )
             and (
                 watch.fresh_after_ts_ms is None
                 or watch.intent.generated_ts_ms + 1e-6
@@ -26021,7 +26152,8 @@ class EmbeddedSGLangRuntime:
             }
             and remaining_ms
             > effective_transfer_ms
-            + self.config.predictive_prefetch_desired_lead_ms
+            + self.config.predictive_commit_guard_ms
+            + self._predictive_prefetch_desired_lead_ms()
         ):
             reasons.append("prefetch_too_early")
         finish_phase("transfer_and_timing")
@@ -26033,7 +26165,7 @@ class EmbeddedSGLangRuntime:
                 remaining_ms
                 - effective_transfer_ms
                 - self.config.predictive_commit_guard_ms
-                - self.config.predictive_prefetch_desired_lead_ms,
+                - self._predictive_prefetch_desired_lead_ms(),
             )
         elif set(reasons) == {"prefetch_too_early"} and preview is not None:
             defer_prefetch_until_ms = now_ms + max(
@@ -26041,7 +26173,7 @@ class EmbeddedSGLangRuntime:
                 remaining_ms
                 - effective_transfer_ms
                 - self.config.predictive_commit_guard_ms
-                - self.config.predictive_prefetch_desired_lead_ms,
+                - self._predictive_prefetch_desired_lead_ms(),
             )
         if defer_prefetch_until_ms is not None:
             watch_key = self._predictive_prefetch_watch_key(intent)
@@ -27987,6 +28119,7 @@ class EmbeddedSGLangRuntime:
             context_epoch=intent.context_epoch,
             command_id=command_id,
             now_ms=now_ms,
+            decision_ts_ms=intent.generated_ts_ms,
         )
         self._update_predictive_prepare_micro_gate(
             "queued",
