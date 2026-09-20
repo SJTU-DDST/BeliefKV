@@ -13892,5 +13892,39 @@ def test_joint_seed_only_idle_admission_enables_reactive_fallback():
     ] == 1
 
 
+def test_runtime_constructor_binds_backend_audit_after_audit_exists():
+    with tempfile.TemporaryDirectory() as directory:
+        config = BeliefKVConfig(
+            hbm_capacity_bytes=1_000,
+            host_capacity_bytes=10_000,
+            reserve_hbm_bytes=100,
+            urgent_chunk_bytes=1_000,
+            shadow_chunk_bytes=500,
+            runtime_audit_path=str(Path(directory) / "runtime_audit.jsonl"),
+        )
+        scheduler = SimpleNamespace(
+            enable_hierarchical_cache=True,
+            tree_cache=SimpleNamespace(
+                root_node=None,
+                **{
+                    name: lambda *_args, **_kwargs: None
+                    for name in (
+                        "write_backup",
+                        "write_backup_batch",
+                        "check_hicache_events",
+                        "_evict_backuped",
+                        "_evict_regular",
+                        "load_back",
+                        "ready_to_load_host_cache",
+                    )
+                }
+            ),
+        )
+        runtime = EmbeddedSGLangRuntime(scheduler, config=config)
+
+        assert runtime.backend.audit is runtime.audit
+        runtime.audit.close()
+
+
 if __name__ == "__main__":
     unittest.main()

@@ -2466,7 +2466,6 @@ class EmbeddedSGLangRuntime:
             h2d_context_is_busy=self._context_has_engine_request,
             kv_bytes_per_token=self.config.kv_bytes_per_token,
         )
-        self.backend.audit = self.audit
         self.bridge = SGLangSchedulerBridge(self.controller, self.backend)
         self._admission_epoch = 0
         self._current_ticket_epoch: AdmissionTicketEpoch | None = None
@@ -2715,6 +2714,7 @@ class EmbeddedSGLangRuntime:
                 else None
             ),
         )
+        self.backend.audit = self.audit
         self._predictive_action_attribution = PredictiveActionAttributionLedger(
             self._emit_predictive_action_outcome
         )

@@ -648,6 +648,12 @@ main 分支修复为：
 该修复已通过 controller 与 adapter CPU 回归，尚未经过 GPU 回归。当前运行中的
 baseline attempt 属于失败证据，不能渲染为 v58 A/B baseline。
 
+第一次重试还暴露 `167edc3` 的真实构造顺序错误：runtime 在创建
+`RuntimeAuditLog` 前执行 `self.backend.audit = self.audit`，导致 scheduler 在
+192GB Host KV 分配完成后立即崩溃。该错误已改为 audit 初始化完成后绑定，并补
+真实 constructor 回归；对应启动目录保留为 `baseline_startup_attempt0`，不进入
+A/B。
+
 ## 6. 当前阻塞项
 
 1. prediction-to-action utilization gap 尚未闭合。初步 H200 高压运行中 predictive arm
@@ -701,6 +707,8 @@ baseline attempt 属于失败证据，不能渲染为 v58 A/B baseline。
     GPU gate。已终止的 baseline `9c4e6c4` 不包含这些变更。
 22. waiting-only admission 空转已由 main 修复；需要重新运行 contract-matched
     baseline，不得使用已空转的当前 attempt 计算 A/B 吞吐。
+23. backend audit 绑定顺序已由 main 修复；此前 `baseline_startup_attempt0`
+    只证明启动失败，不包含 workload 结果。
 
 ## 7. 下一步
 
