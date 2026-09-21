@@ -1,3 +1,6 @@
+from collections import Counter
+from types import SimpleNamespace
+
 import pytest
 
 from beliefkv.control.controller import BeliefKVController
@@ -16,6 +19,7 @@ from beliefkv.runtime.protocol import (
     TransferBlockerCode,
 )
 from beliefkv.runtime.radix_arbiter import RadixArbiter
+from beliefkv.runtime.sglang_v052rc1 import EmbeddedSGLangRuntime
 
 
 def _event(
@@ -886,6 +890,230 @@ def test_bounded_exclusive_shadow_selects_closure_complete_chunk() -> None:
     assert preview.copy_bytes == 40
     assert preview.bundle.exclusive_action_bytes == 40
     assert preview.bundle.cross_context_action_bytes == 0
+
+
+def test_bounded_shadow_partially_copies_one_oversized_private_tree() -> None:
+    graph, index = _runtime(("parent", "ctx-parent", "wf"))
+    graph.apply(_event(2, RuntimeEventKind.TOOL_START, invocation_id="parent"))
+    root = PageHandle(1, 0)
+    first = PageHandle(2, 0)
+    second = PageHandle(3, 0)
+    index.register_page(root, size_bytes=20, radix_depth=1)
+    index.register_page(first, size_bytes=35, radix_depth=2, parent=root)
+    index.register_page(second, size_bytes=40, radix_depth=2, parent=root)
+    index.bind_pages("ctx-parent", 0, (root, first, second))
+    builder = PhysicalBundleBuilder(graph, index)
+
+    preview = builder.best_exclusive_shadow_preview_for_context(
+        "ctx-parent", 0, now_ms=3, max_copy_bytes=60
+    )
+
+    assert preview is not None
+    assert preview.eligible
+    assert preview.bundle.handles == (root, first)
+    assert preview.copy_bytes == preview.bundle.closure_bytes == 55
+    assert preview.bundle.owner_context_ids == ("ctx-parent",)
+    assert preview.bundle.cross_context_action_bytes == 0
+    assert {item.action for item in preview.page_actions} == {
+        PhysicalPageAction.START_D2H
+    }
+
+    command = ControlCommand(
+        command_id="partial-shadow",
+        kind=CommandKind.SHADOW_CONTEXT,
+        created_ts_ms=3.0,
+        context_id="ctx-parent",
+        context_epoch=0,
+        target_bytes=preview.copy_bytes,
+        physical_bundle=preview.intent(),
+    )
+    arbiter = RadixArbiter(graph, index, bundle_builder=builder)
+    assert arbiter.resolve(command).page_actions == preview.page_actions
+
+    index.pages[second].engine_lock_ref = 1
+    assert arbiter.resolve(command).page_actions == preview.page_actions
+    index.pages[first].engine_lock_ref = 1
+    locked = arbiter.resolve(command)
+    assert not locked.page_actions
+    assert {item.code for item in locked.blockers} == {
+        TransferBlockerCode.NODE_LOCKED
+    }
+
+
+def test_partial_shadow_cached_root_refresh_falls_back_to_bounded_preview() -> None:
+    graph, index = _runtime(("parent", "ctx-parent", "wf"))
+    graph.apply(_event(2, RuntimeEventKind.TOOL_START, invocation_id="parent"))
+    root = PageHandle(1, 0)
+    first = PageHandle(2, 0)
+    second = PageHandle(3, 0)
+    index.register_page(root, size_bytes=20, radix_depth=1)
+    index.register_page(first, size_bytes=35, radix_depth=2, parent=root)
+    index.register_page(second, size_bytes=40, radix_depth=2, parent=root)
+    index.bind_pages("ctx-parent", 0, (root, first, second))
+    builder = PhysicalBundleBuilder(graph, index)
+    preview = builder.best_exclusive_shadow_preview_for_context(
+        "ctx-parent", 0, now_ms=3, max_copy_bytes=55
+    )
+    assert preview is not None
+    assert preview.bundle.handles == (root, first)
+
+    runtime = object.__new__(EmbeddedSGLangRuntime)
+    runtime.controller = SimpleNamespace(
+        page_index=index, arbiter=SimpleNamespace(bundle_builder=builder)
+    )
+    runtime._joint_predictive_counts = Counter()
+    runtime._latest_predictive_wait_shadow_preview = (
+        "intent", index.context_revision("ctx-parent"), root, preview
+    )
+    intent = SimpleNamespace(
+        intent_id="intent", context_id="ctx-parent",
+        context_epoch=0, max_copy_bytes=55,
+    )
+    assert runtime._predictive_wait_shadow_cached_preview(
+        intent, now_ms=3, host_available_bytes=200
+    ) == preview
+
+    added = PageHandle(4, 0)
+    index.register_page(added, size_bytes=10, radix_depth=2, parent=root)
+    index.bind_pages("ctx-parent", 0, (added,))
+    assert index.context_revision("ctx-parent") != (
+        runtime._latest_predictive_wait_shadow_preview[1]
+    )
+    full_root = builder.preview_offload_root(
+        CommandKind.SHADOW_CONTEXT, "ctx-parent", 0, root, now_ms=4
+    )
+    assert full_root is not None
+    assert full_root.copy_bytes > intent.max_copy_bytes
+    assert runtime._predictive_wait_shadow_cached_preview(
+        intent, now_ms=4, host_available_bytes=200
+    ) is None
+
+    fallback = builder.best_exclusive_shadow_preview_for_context(
+        "ctx-parent", 0, now_ms=4, host_available_bytes=200,
+        max_copy_bytes=intent.max_copy_bytes,
+    )
+    assert fallback is not None
+    assert fallback.eligible
+    assert fallback.copy_bytes <= intent.max_copy_bytes
+    assert fallback.bundle.handles == (root, first)
+
+
+def test_partial_shadow_respects_host_budget_and_owner_revalidation() -> None:
+    graph, index = _runtime(
+        ("parent", "ctx-parent", "wf"),
+        ("other", "ctx-other", "wf"),
+    )
+    graph.apply(_event(3, RuntimeEventKind.TOOL_START, invocation_id="parent"))
+    graph.apply(_event(4, RuntimeEventKind.TOOL_START, invocation_id="other"))
+    root = PageHandle(1, 0)
+    first = PageHandle(2, 0)
+    second = PageHandle(3, 0)
+    index.register_page(root, size_bytes=20, radix_depth=1)
+    index.register_page(first, size_bytes=35, radix_depth=2, parent=root)
+    index.register_page(second, size_bytes=40, radix_depth=2, parent=root)
+    index.bind_pages("ctx-parent", 0, (root, first, second))
+    builder = PhysicalBundleBuilder(graph, index)
+
+    preview = builder.best_exclusive_shadow_preview_for_context(
+        "ctx-parent", 0, now_ms=5, max_copy_bytes=100,
+        host_available_bytes=60,
+    )
+
+    assert preview is not None
+    assert preview.eligible
+    assert preview.bundle.handles == (root, first)
+    assert preview.copy_bytes == 55
+
+    command = ControlCommand(
+        command_id="partial-shadow-owner",
+        kind=CommandKind.SHADOW_CONTEXT,
+        created_ts_ms=5.0,
+        context_id="ctx-parent",
+        context_epoch=0,
+        target_bytes=preview.copy_bytes,
+        physical_bundle=preview.intent(),
+    )
+    index.bind_pages("ctx-other", 0, (first,))
+    stale = RadixArbiter(graph, index, bundle_builder=builder).resolve(command)
+    assert not stale.page_actions
+    assert stale.blockers
+    remaining = builder.best_exclusive_shadow_preview_for_context(
+        "ctx-parent", 0, now_ms=5, max_copy_bytes=60
+    )
+    assert remaining is not None
+    assert remaining.bundle.handles == (second,)
+
+
+def test_partial_shadow_cannot_split_one_oversized_extent() -> None:
+    graph, index = _runtime(("parent", "ctx-parent", "wf"))
+    graph.apply(_event(2, RuntimeEventKind.TOOL_START, invocation_id="parent"))
+    root = PageHandle(1, 0)
+    child = PageHandle(2, 0)
+    index.register_page(root, size_bytes=80, radix_depth=1)
+    index.register_page(child, size_bytes=90, radix_depth=2, parent=root)
+    index.bind_pages("ctx-parent", 0, (root, child))
+
+    assert PhysicalBundleBuilder(
+        graph, index
+    ).best_exclusive_shadow_preview_for_context(
+        "ctx-parent", 0, now_ms=3, max_copy_bytes=64
+    ) is None
+
+
+def test_partial_shadow_with_shared_ancestor_keeps_actions_private() -> None:
+    graph, index = _runtime(
+        ("parent", "ctx-parent", "wf"),
+        ("other", "ctx-other", "wf"),
+    )
+    graph.apply(_event(3, RuntimeEventKind.TOOL_START, invocation_id="parent"))
+    graph.apply(_event(4, RuntimeEventKind.TOOL_START, invocation_id="other"))
+    shared = PageHandle(1, 0)
+    root = PageHandle(2, 0)
+    first = PageHandle(3, 0)
+    second = PageHandle(4, 0)
+    index.register_page(shared, size_bytes=10, radix_depth=1)
+    index.register_page(root, size_bytes=20, radix_depth=2, parent=shared)
+    index.register_page(first, size_bytes=35, radix_depth=3, parent=root)
+    index.register_page(second, size_bytes=40, radix_depth=3, parent=root)
+    index.bind_pages("ctx-parent", 0, (shared, root, first, second))
+    index.bind_pages("ctx-other", 0, (shared,))
+    builder = PhysicalBundleBuilder(graph, index)
+
+    preview = builder.best_exclusive_shadow_preview_for_context(
+        "ctx-parent", 0, now_ms=5, max_copy_bytes=60
+    )
+
+    assert preview is not None
+    assert preview.eligible
+    assert preview.bundle.handles == (root, first)
+    assert preview.bundle.owner_context_ids == ("ctx-parent",)
+    assert preview.bundle.cross_context_action_bytes == 0
+    offload = builder.preview_offload_handles(
+        CommandKind.OFFLOAD_CONTEXT,
+        "ctx-parent",
+        0,
+        preview.bundle.handles,
+        now_ms=5,
+    )
+    assert offload is not None
+    assert not offload.eligible
+    assert TransferBlockerCode.ANCESTOR_CLOSURE in {
+        item.code for item in offload.blockers
+    }
+
+    index.pages[shared].residency = PhysicalResidency.CPU_ONLY
+    broken = builder.preview_offload_handles(
+        CommandKind.SHADOW_CONTEXT,
+        "ctx-parent",
+        0,
+        preview.bundle.handles,
+        now_ms=5,
+    )
+    assert broken is not None
+    assert not broken.eligible
+    assert TransferBlockerCode.ANCESTOR_CLOSURE in {
+        item.code for item in broken.blockers
+    }
 
 
 def test_bounded_exclusive_shadow_merges_disjoint_suffixes_and_revalidates() -> None:

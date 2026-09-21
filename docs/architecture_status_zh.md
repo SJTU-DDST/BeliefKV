@@ -1,6 +1,6 @@
 # BeliefKV 当前架构与实现状态
 
-更新日期：2026-09-20
+更新日期：2026-09-21
 当前 P6 代码基线：main（包含本节 follow-up 修复）
 
 本文只记录当前事实和下一阻塞项，不再追加逐日开发日志。2026-09-12 以前的完整历史保存在
@@ -914,8 +914,17 @@ main 分支修复：service lease 只保护已经完成 H2D 的 beneficiary，�
 26. baseline v3 暴露的 ownership overage、partial-progress watchdog 和
     `DROP_UNOWNED` gate 分类已修复，尚未经过 predictive GPU 回归。
 27. v59 已证明 predictive H2D useful attribution 和正向初步吞吐信号；但
-    `PREPARE_HOST` 仍 0 useful，Action frontier `f88bd05` 与 runtime 修复
-    `8312f66` 尚未与同 commit baseline 构成 formal A/B。
+    255 笔 PREPARE 全部是无 beneficiary 的 child tool-wait opportunistic partial，
+    其中 211 笔完成拷贝、212 笔在 RETURN 后被标记 wasted，未注册 prepared causal
+    binding。这不是“短工具一定没有迁移窗口”：旧策略只检查等待概率、HBM 和 Host
+    水位，没有验证副本是否很可能用于后续卸载。当前修改将没有 projected deficit
+    的 child tool-wait 剔除，优先选择确有未完成依赖的 WAIT_CHILD/WAIT_JOIN parent，
+    从直接依赖的预测完成时间估计 PREPARE 窗口；缺少依赖时序则不猜测长窗口。
+    parent 的局部影子备份无需在发布时找到 admission beneficiary，但仍不提前释放 GPU KV；
+    无绑定模式下同一等待代际成功备份后不重复拷贝。单次只复制可安全物化的部分
+    private KV，动作提交时重验物理闭包、Host 容量与锁；大于字节预算的单个 extent
+    仍不能分割。
+    CPU 回归与真实 GPU 有效消费尚待确认，不能把此修改称为已实现吞吐收益。
 
 ## 7. 下一步
 
@@ -925,9 +934,11 @@ main 分支修复：service lease 只保护已经完成 H2D 的 beneficiary，�
    重试策略，确保 formal A/B 没有 workload 层错误。
 2. 使用与 v59 完全相同的 `8312f66` 运行 contract-matched observed baseline，
    将 v59 的正向信号固化为同代码 formal A/B。
-3. 对 v59 trace 做 PREPARE/PREFETCH action-level audit：比较 tool window、
-   predicted/latest-start、真实 reentry service 和 wasted attribution，优先修复
-   PREPARE 0 useful。
+3. 下一次 predictive GPU gate 验证有目标的 parent PREPARE 是否形成真实 Host
+   副本消费；逐笔统计 child/tool 与 parent/child-wait 候选、D2H 部分字节、
+   actual COMMIT 的 page overlap、Host 驻留时长及 false-positive。v59 的
+   unbound child tool-wait 拷贝不能视作收益；没有物理消费证据时归因维持
+   censored/wasted，不能仅凭 parent reentry 标记 useful。
 4. 将 Host 语义化清理与 request-abort/H2D authority correctness 修复一并纳入下一轮
    GPU gate，统计 dead/native-writeback/explicit
    cleanup bytes、forced recompute、Host miss 和 predictive H2D success rate。

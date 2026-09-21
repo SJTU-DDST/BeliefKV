@@ -13273,24 +13273,77 @@ def test_wait_tool_publishes_beneficiary_bound_prepare_shadow():
     runtime.controller.actual_hbm_used_bytes = 700
     low_pressure_observation = replace(observation, ts_ms=2_000.0)
     runtime._latest_predictive_intent = None
-    assert runtime._maybe_publish_predictive_wait_shadow_intent(
+    assert not runtime._maybe_publish_predictive_wait_shadow_intent(
         [(invocation, SimpleNamespace(), 400)],
         features={},
         predictions={"child": prediction},
         observation=low_pressure_observation,
         native_inflight_bytes=0,
     )
-    low_pressure_intent = runtime._latest_predictive_intent
-    assert low_pressure_intent.beneficiary_request_id is None
-    assert low_pressure_intent.predicted_deficit_bytes == 0
-    assert low_pressure_intent.max_copy_bytes <= 1_024
-    assert low_pressure_intent.expected_benefit_ms == 53.0
-    assert runtime._joint_predictive_counts[
-        "wait_shadow_opportunistic_partial_published"
-    ] == 1
     assert runtime._joint_predictive_counts[
         "wait_shadow_intent_published"
-    ] == 2
+    ] == 1
+
+    # A parked parent has an explicit reentry dependency and is a useful
+    # backup target even before an admission deficit is visible.
+    parent = SimpleNamespace(
+        invocation_id="parent",
+        context_id="parent-context",
+        state=InvocationState.WAIT_CHILD,
+        blocking_child_ids={"child"},
+        updated_ts_ms=100.0,
+    )
+    runtime.controller.graph.invocations["parent"] = parent
+    runtime.controller.graph.contexts["parent-context"] = context
+    prediction.remaining_to_return_ms = SimpleNamespace(
+        values=(1_000.0,),
+        probability_greater_than=lambda _tau: 0.9,
+    )
+    parent_prediction = SimpleNamespace(
+        action_timing=lambda _action, _tau: None,
+        calibration_coverage=0.95,
+    )
+    assert runtime._maybe_publish_predictive_wait_shadow_intent(
+        [
+            (invocation, SimpleNamespace(), 400),
+            (parent, SimpleNamespace(), 400),
+        ],
+        features={},
+        predictions={"child": prediction, "parent": parent_prediction},
+        observation=low_pressure_observation,
+        native_inflight_bytes=0,
+    )
+    low_pressure_intent = runtime._latest_predictive_intent
+    assert low_pressure_intent.invocation_id == "parent"
+    assert low_pressure_intent.beneficiary_request_id is None
+    assert low_pressure_intent.max_copy_bytes <= 1_024
+    assert runtime.audit.events[-1][2]["prepare_mode"] == "parked_parent_backup"
+    assert runtime._joint_predictive_counts["wait_shadow_intent_published"] == 2
+    runtime._latest_predictive_intent = None
+    runtime._predictive_wait_shadow_successful_waits = {
+        ("parent", 4): parent.updated_ts_ms
+    }
+    assert not runtime._maybe_publish_predictive_wait_shadow_intent(
+        [(parent, SimpleNamespace(), 400)],
+        features={},
+        predictions={"parent": parent_prediction, "child": prediction},
+        observation=low_pressure_observation,
+        native_inflight_bytes=0,
+    )
+    assert runtime._joint_predictive_counts[
+        "wait_shadow_wait_already_backed_up"
+    ] == 1
+    runtime._predictive_wait_shadow_successful_waits.clear()
+    assert not runtime._maybe_publish_predictive_wait_shadow_intent(
+        [(parent, SimpleNamespace(), 400)],
+        features={},
+        predictions={"parent": parent_prediction},
+        observation=low_pressure_observation,
+        native_inflight_bytes=0,
+    )
+    assert runtime._joint_predictive_counts[
+        "wait_shadow_dependency_timing_unavailable"
+    ] == 1
 
     runtime._latest_predictive_intent = None
     host_pressure_observation = replace(
@@ -13308,27 +13361,21 @@ def test_wait_tool_publishes_beneficiary_bound_prepare_shadow():
     )
     assert runtime._joint_predictive_counts[
         "wait_shadow_below_gross_pressure_suppressed"
-    ] == 1
+    ] >= 1
 
     runtime._latest_predictive_intent = None
     runtime.controller.actual_hbm_used_bytes = 900
     runtime._latest_observed_seed_beneficiary_candidates = ()
-    assert runtime._maybe_publish_predictive_wait_shadow_intent(
+    assert not runtime._maybe_publish_predictive_wait_shadow_intent(
         [(invocation, SimpleNamespace(), 400)],
         features={},
         predictions={"child": prediction},
         observation=replace(observation, ts_ms=2_750.0),
         native_inflight_bytes=0,
     )
-    high_pressure_fallback = runtime._latest_predictive_intent
-    assert high_pressure_fallback.beneficiary_request_id is None
-    assert high_pressure_fallback.expected_benefit_ms == 71.0
     assert runtime._joint_predictive_counts[
         "wait_shadow_no_beneficiary_deficit"
     ] == 1
-    assert runtime._joint_predictive_counts[
-        "wait_shadow_opportunistic_partial_published"
-    ] == 2
     runtime._latest_observed_seed_beneficiary_candidates = (
         SimpleNamespace(
             request_id="beneficiary-request",

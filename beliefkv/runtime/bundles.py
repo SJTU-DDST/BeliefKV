@@ -170,9 +170,10 @@ class PhysicalBundleBuilder:
     ) -> PhysicalBundlePreview | None:
         """Build one batched private D2H shadow candidate.
 
-        A bounded batch may merge multiple disjoint exclusive suffixes. The
-        backend commits each bundle with one native batch operation, so this
-        preserves closure ownership while avoiding one tiny DMA per suffix.
+        A bounded batch may merge multiple disjoint exclusive suffixes or
+        select only part of an oversized private tree. Shadow actions retain
+        GPU copies, so selected pages need resident GPU ancestors but need not
+        include every GPU descendant.
         """
 
         context = self.graph.contexts.get(context_id)
@@ -229,14 +230,43 @@ class PhysicalBundleBuilder:
             memo[handle] = result
             return result
 
-        candidates: list[tuple[int, PageHandle]] = []
+        budget = max_copy_bytes
+        if budget is not None and host_available_bytes is not None:
+            budget = min(budget, host_available_bytes)
+        candidates: list[tuple[int, PageHandle, tuple[PageHandle, ...] | None]] = []
         for page in self.page_index.context_pages(context_id):
             if not page.gpu_resident:
                 continue
             private, unblocked, copy_bytes = private_subtree(page.handle)
             if not private or not unblocked or copy_bytes <= 0:
                 continue
-            if max_copy_bytes is not None and copy_bytes > max_copy_bytes:
+            if budget is not None and copy_bytes > budget:
+                # A shadow keeps the GPU copy, so a private tree can be copied
+                # in part without evicting an ancestor above live descendants.
+                remaining = budget
+                partial: list[PageHandle] = []
+                stack = [page.handle]
+                while stack:
+                    handle = stack.pop()
+                    node = self.page_index.pages[handle]
+                    if node.residency == PhysicalResidency.GPU_ONLY:
+                        if node.size_bytes > remaining:
+                            continue
+                        remaining -= node.size_bytes
+                    partial.append(handle)
+                    stack.extend(
+                        sorted(
+                            (
+                                child
+                                for child in node.children
+                                if self.page_index.pages[child].gpu_resident
+                            ),
+                            reverse=True,
+                        )
+                    )
+                if remaining == budget:
+                    continue
+                candidates.append((budget - remaining, page.handle, tuple(partial)))
                 continue
             parent_is_candidate = False
             if max_copy_bytes is None and page.parent is not None:
@@ -249,23 +279,33 @@ class PhysicalBundleBuilder:
                         parent_private and parent_unblocked and parent_bytes > 0
                     )
             if not parent_is_candidate:
-                candidates.append((copy_bytes, page.handle))
+                candidates.append((copy_bytes, page.handle, None))
 
         selected: list[PhysicalBundlePreview] = []
         selected_handles: set[PageHandle] = set()
         selected_copy_bytes = 0
-        for _, root_handle in sorted(
+        for _, root_handle, partial_handles in sorted(
             candidates,
             key=lambda item: (-item[0], item[1]),
         ):
-            preview = self.preview_offload_root(
-                CommandKind.SHADOW_CONTEXT,
-                context_id,
-                context_epoch,
-                root_handle,
-                now_ms=now_ms,
-                host_available_bytes=host_available_bytes,
-            )
+            if partial_handles is None:
+                preview = self.preview_offload_root(
+                    CommandKind.SHADOW_CONTEXT,
+                    context_id,
+                    context_epoch,
+                    root_handle,
+                    now_ms=now_ms,
+                    host_available_bytes=host_available_bytes,
+                )
+            else:
+                preview = self.preview_offload_handles(
+                    CommandKind.SHADOW_CONTEXT,
+                    context_id,
+                    context_epoch,
+                    partial_handles,
+                    now_ms=now_ms,
+                    host_available_bytes=host_available_bytes,
+                )
             if (
                 preview is not None
                 and preview.eligible
@@ -324,7 +364,7 @@ class PhysicalBundleBuilder:
         bypass_owner_context_ids: frozenset[str] = frozenset(),
         host_available_bytes: int | None = None,
     ) -> PhysicalBundlePreview | None:
-        """Rebuild an authoritative preview for a union of D2H closures."""
+        """Rebuild a D2H preview; shadow permits partial descendant selection."""
 
         if command_kind not in {
             CommandKind.OFFLOAD_CONTEXT,
@@ -379,8 +419,24 @@ class PhysicalBundleBuilder:
                 blocked_handles.add(page.handle)
                 continue
             ancestor = page.parent
+            seen = {page.handle}
             while ancestor is not None:
-                if ancestor not in selected:
+                if ancestor in seen:
+                    blockers.append(
+                        TransferBlocker(
+                            TransferBlockerCode.ANCESTOR_CLOSURE,
+                            page.handle,
+                            page.size_bytes,
+                            "D2H merged closure has an ancestor cycle",
+                        )
+                    )
+                    blocked_handles.add(page.handle)
+                    break
+                seen.add(ancestor)
+                if (
+                    command_kind == CommandKind.OFFLOAD_CONTEXT
+                    and ancestor not in selected
+                ):
                     blockers.append(
                         TransferBlocker(
                             TransferBlockerCode.ANCESTOR_CLOSURE,

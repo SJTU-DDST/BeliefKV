@@ -5,6 +5,9 @@ from typing import Callable
 
 
 TERMINAL_OUTCOMES = frozenset({"useful", "wasted", "too_late", "censored", "failed"})
+PREFETCH_ACTIONS = frozenset(
+    {"prefetch_gpu", "partial_prefetch_gpu", "reclaim_and_prefetch"}
+)
 
 
 @dataclass
@@ -72,7 +75,7 @@ class PredictiveActionAttributionLedger:
         reason: str | None = None,
     ) -> None:
         outcome = self._by_intent.get(intent_id)
-        if outcome is None or outcome.terminal:
+        if outcome is None or outcome.state != "pending_transfer":
             return
         outcome.actual_bytes = max(0, actual_bytes)
         outcome.transfer_completed_ts_ms = now_ms
@@ -90,22 +93,69 @@ class PredictiveActionAttributionLedger:
         context_epoch: int | None,
         now_ms: float,
         reason: str,
+        consumed_intent_id: str | None = None,
     ) -> tuple[PredictiveActionOutcome, ...]:
-        consumed = []
-        for outcome in self._by_intent.values():
-            if (
-                outcome.context_id != context_id
-                or outcome.terminal
-                or (
-                    context_epoch is not None
-                    and outcome.context_epoch != context_epoch
-                )
-            ):
-                continue
-            final = "useful" if outcome.state == "prepared" else "too_late"
-            self._finish(outcome, final, now_ms, reason)
-            consumed.append(outcome)
-        return tuple(consumed)
+        """Attribute observed consumption; an intent ID asserts actual reuse.
+
+        Runtime COMMIT notifications have context/epoch but no page-level
+        identity, so unverified PREPAREs are censored rather than credited.
+        """
+        if context_epoch is None:
+            return ()
+        if reason == "prefetch_first_gpu_service":
+            actions = PREFETCH_ACTIONS
+        elif reason == "observed_pressure_commit":
+            actions = frozenset({"prepare_host"})
+        else:
+            return ()
+        candidates = tuple(
+            outcome
+            for outcome in self._by_intent.values()
+            if outcome.action in actions
+            and outcome.context_id == context_id
+            and not outcome.terminal
+            and outcome.created_ts_ms <= now_ms
+            and outcome.context_epoch == context_epoch
+        )
+        ready = tuple(
+            outcome
+            for outcome in candidates
+            if outcome.state == "prepared"
+            and outcome.actual_bytes > 0
+            and outcome.transfer_completed_ts_ms is not None
+            and outcome.transfer_completed_ts_ms <= now_ms
+        )
+        # A context-level COMMIT does not identify the pages it committed.
+        # Only explicit intent-level consumption establishes PREPARE reuse.
+        if reason == "observed_pressure_commit":
+            for outcome in candidates:
+                if outcome in ready and outcome.intent_id == consumed_intent_id:
+                    self._finish(outcome, "useful", now_ms, reason)
+                else:
+                    self._finish(outcome, "censored", now_ms, "commit_reuse_unverified")
+            return candidates
+
+        # A service lease identifies use only with a unique ready candidate,
+        # or when the consuming intent is supplied explicitly.
+        selected = next(
+            (item for item in ready if item.intent_id == consumed_intent_id),
+            None,
+        )
+        if (
+            selected is None
+            and consumed_intent_id is None
+            and len(candidates) == 1
+            and len(ready) == 1
+        ):
+            selected = ready[0]
+        if selected is not None:
+            self._finish(selected, "useful", now_ms, reason)
+            return (selected,)
+        if len(ready) > 1 and consumed_intent_id is None:
+            for outcome in ready:
+                self._finish(outcome, "censored", now_ms, "prefetch_use_ambiguous")
+            return ready
+        return ()
 
     def terminal_context(
         self,

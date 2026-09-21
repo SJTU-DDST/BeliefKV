@@ -82,6 +82,7 @@ from beliefkv.policy.predictive_attribution import (
     PredictiveActionOutcome,
 )
 from beliefkv.policy.lead_budget import PredictiveLeadBudgetModel
+from beliefkv.predictor.structured_frontier import ActionTimingPrediction
 from beliefkv.policy.reference import (
     AdmissionAction,
     CapabilityReport,
@@ -20047,7 +20048,7 @@ class EmbeddedSGLangRuntime:
         observation: RuntimeResourceObservation,
         native_inflight_bytes: int,
     ) -> bool:
-        """Publish one model-backed child wait shadow without early eviction."""
+        """Back up one useful parked context without evicting its GPU copy."""
 
         if (
             not candidates
@@ -20159,13 +20160,19 @@ class EmbeddedSGLangRuntime:
                 ] += 1
         if beneficiary_hint is None and (
             not bool(
-                getattr(
-                    self.config,
-                    "predictive_prepare_opportunistic_enabled",
-                    True,
-                )
+                getattr(self.config, "predictive_prepare_opportunistic_enabled", True)
             )
             or host_used_ratio >= host_low_watermark_ratio
+            or not any(
+                invocation.state in {
+                    InvocationState.WAIT_CHILD,
+                    InvocationState.WAIT_JOIN,
+                }
+                and self._predictive_reentry_dependency_ids(
+                    self.controller.graph, invocation
+                )[0]
+                for invocation, _summary, _missing in candidates
+            )
         ):
             self._joint_predictive_counts[
                 "wait_shadow_below_gross_pressure_suppressed"
@@ -20194,7 +20201,12 @@ class EmbeddedSGLangRuntime:
         for invocation, _summary, missing_cpu_bytes in sorted(
             candidates,
             key=lambda item: (
-                item[0].updated_ts_ms,
+                0
+                if item[0].state in {
+                    InvocationState.WAIT_CHILD,
+                    InvocationState.WAIT_JOIN,
+                }
+                else 1,
                 -item[2],
                 item[0].invocation_id,
             ),
@@ -20202,6 +20214,35 @@ class EmbeddedSGLangRuntime:
             prediction = predictions.get(invocation.invocation_id)
             context = graph.contexts.get(invocation.context_id)
             if prediction is None or context is None:
+                continue
+            dependency_ids, _ = self._predictive_reentry_dependency_ids(
+                graph, invocation
+            )
+            structural_wait = (
+                invocation.state
+                in {InvocationState.WAIT_CHILD, InvocationState.WAIT_JOIN}
+                and bool(dependency_ids)
+            )
+            successful_waits = getattr(
+                self, "_predictive_wait_shadow_successful_waits", {}
+            )
+            if (
+                beneficiary_hint is None
+                and successful_waits.get(
+                    (invocation.invocation_id, context.epoch)
+                ) == invocation.updated_ts_ms
+            ):
+                self._joint_predictive_counts[
+                    "wait_shadow_wait_already_backed_up"
+                ] += 1
+                continue
+            # Without a concrete deficit, a short tool wait does not establish
+            # that its shadow will ever be used. Parent waits have an explicit
+            # downstream reentry and a parked GPU context to reclaim.
+            if beneficiary_hint is None and not structural_wait:
+                self._joint_predictive_counts[
+                    "wait_shadow_unbound_tool_without_offload_target"
+                ] += 1
                 continue
             preview = builder.best_exclusive_shadow_preview_for_context(
                 invocation.context_id,
@@ -20260,6 +20301,47 @@ class EmbeddedSGLangRuntime:
             timing = prediction.action_timing(
                 "prepare_host", operational_tau_ms
             )
+            if timing is None and structural_wait:
+                if (
+                    len(dependency_ids) > _PREDICTIVE_REENTRY_WATCH_LIMIT
+                    or any(
+                        (
+                            dependency := graph.invocations.get(dependency_id)
+                        ) is None
+                        or (
+                            not dependency.state.terminal
+                            and not getattr(
+                                getattr(
+                                    predictions.get(dependency_id),
+                                    "remaining_to_return_ms",
+                                    None,
+                                ),
+                                "values",
+                                (),
+                            )
+                        )
+                        for dependency_id in dependency_ids
+                    )
+                ):
+                    self._joint_predictive_counts[
+                        "wait_shadow_dependency_timing_unavailable"
+                    ] += 1
+                    continue
+                release_probability = (
+                    self._predictive_reentry_dependency_probability(
+                        graph, predictions, invocation, operational_tau_ms
+                    )
+                )
+                if release_probability is not None:
+                    timing = ActionTimingPrediction(
+                        action="prepare_host",
+                        operational_tau_ms=operational_tau_ms,
+                        favorable_probability=max(
+                            0.0, min(1.0, 1.0 - release_probability)
+                        ),
+                        semantics="release_after_transfer",
+                        support_level="structural",
+                    )
             if (
                 timing is None
                 or not timing.informative
@@ -20313,9 +20395,9 @@ class EmbeddedSGLangRuntime:
                 ] += 1
                 continue
             score = (
-                timing.favorable_probability,
+                1 if structural_wait else 0,
                 expected_benefit_ms,
-                invocation.updated_ts_ms,
+                preview.copy_bytes,
             )
             if selected_score is None or score > selected_score:
                 selected_score = score
@@ -20486,7 +20568,7 @@ class EmbeddedSGLangRuntime:
             (
                 "wait_shadow_high_pressure_deficit_published"
                 if beneficiary_hint is not None
-                else "wait_shadow_opportunistic_partial_published"
+                else "wait_shadow_parked_parent_backup_published"
             )
         ] += 1
         self.audit.emit(
@@ -20524,7 +20606,13 @@ class EmbeddedSGLangRuntime:
             prepare_mode=(
                 "high_pressure_deficit_bound"
                 if beneficiary_hint is not None
-                else "opportunistic_partial"
+                else "parked_parent_backup"
+            ),
+            target_kind=(
+                "parked_parent"
+                if invocation.state
+                in {InvocationState.WAIT_CHILD, InvocationState.WAIT_JOIN}
+                else "tool_wait"
             ),
             host_used_ratio=host_used_ratio,
             beneficiary_request_id=(
@@ -20707,8 +20795,18 @@ class EmbeddedSGLangRuntime:
             missing_cpu_bytes = max(
                 0, summary.physical_unique_bytes - summary.cpu_bytes
             )
+            dependency_ids, _ = self._predictive_reentry_dependency_ids(
+                graph, invocation
+            )
             if (
-                invocation_id in child_tool_watches
+                (
+                    invocation_id in child_tool_watches
+                    or (
+                        invocation.state
+                        in {InvocationState.WAIT_CHILD, InvocationState.WAIT_JOIN}
+                        and bool(dependency_ids)
+                    )
+                )
                 and summary.gpu_bytes > 0
                 and missing_cpu_bytes > 0
             ):
@@ -20903,20 +21001,38 @@ class EmbeddedSGLangRuntime:
             bounded_prepare_candidates = sorted(
                 prepare_candidates,
                 key=lambda item: (
-                    item[0].updated_ts_ms,
+                    0
+                    if item[0].state
+                    in {InvocationState.WAIT_CHILD, InvocationState.WAIT_JOIN}
+                    else 1,
                     -item[2],
                     item[0].invocation_id,
                 ),
             )[:_PREDICTIVE_REENTRY_WATCH_LIMIT]
             local_prediction_started_ns = time.perf_counter_ns()
             try:
+                dependency_ids = tuple(
+                    dict.fromkeys(
+                        dependency_id
+                        for invocation, _summary, _missing
+                        in bounded_prepare_candidates
+                        for dependency_id in self._predictive_reentry_dependency_ids(
+                            graph, invocation
+                        )[0][:_PREDICTIVE_REENTRY_WATCH_LIMIT]
+                        if dependency_id in graph.invocations
+                    )
+                )[:_PREDICTIVE_REENTRY_WATCH_LIMIT]
                 prepare_features = build_invocation_frontier_features(
                     graph,
                     predictor,
                     now_ms=float(self._now_ms()),
                     invocation_ids=tuple(
-                        item[0].invocation_id
-                        for item in bounded_prepare_candidates
+                        dict.fromkeys(
+                            (
+                                *(item[0].invocation_id for item in bounded_prepare_candidates),
+                                *dependency_ids,
+                            )
+                        )
                     ),
                 )
                 prepare_predictions = {
@@ -28303,6 +28419,7 @@ class EmbeddedSGLangRuntime:
                 intent.invocation_id
                 if intent.action
                 in {
+                    PredictiveActionKind.PREPARE_HOST,
                     PredictiveActionKind.PREFETCH_GPU,
                     PredictiveActionKind.PARTIAL_PREFETCH_GPU,
                     PredictiveActionKind.RECLAIM_AND_PREFETCH,
@@ -28784,6 +28901,33 @@ class EmbeddedSGLangRuntime:
                 self._register_prepared_causal_binding(
                     transaction, now_ms=now_ms
                 )
+            if (
+                transaction.action == ResidencyAction.PREPARE_HOST
+                and transaction.predictive_intent_id is not None
+                and transaction.predictive_intent_id.startswith(
+                    "predictive-wait-shadow:"
+                )
+                and transaction.target_invocation_id is not None
+                and ack.actual_bytes > 0
+            ):
+                invocation = self.controller.graph.invocations.get(
+                    transaction.target_invocation_id
+                )
+                if (
+                    invocation is not None
+                    and invocation.context_id == transaction.context_id
+                ):
+                    successful = getattr(
+                        self, "_predictive_wait_shadow_successful_waits", None
+                    )
+                    if successful is None:
+                        successful = {}
+                        self._predictive_wait_shadow_successful_waits = successful
+                    successful[
+                        (invocation.invocation_id, transaction.context_epoch)
+                    ] = invocation.updated_ts_ms
+                    while len(successful) > 512:
+                        successful.pop(next(iter(successful)))
             if (
                 transaction.action == ResidencyAction.PREFETCH_GPU
                 and transaction.predictive_intent_id is not None
