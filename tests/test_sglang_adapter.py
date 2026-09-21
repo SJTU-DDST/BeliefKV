@@ -9440,6 +9440,109 @@ class SGLangBackendTest(unittest.TestCase):
             ],
         )
 
+    def test_prefetch_service_lease_does_not_serialize_unrelated_prefetch(self):
+        runtime = EmbeddedSGLangRuntime.__new__(EmbeddedSGLangRuntime)
+        runtime.config = BeliefKVConfig(
+            hbm_capacity_bytes=2_000,
+            host_capacity_bytes=4_000,
+            reserve_hbm_bytes=0,
+            predictor_model_path="/tmp/frontier.json",
+            gpu_service_model_path="/tmp/service.json",
+            joint_policy_enabled=True,
+            predictive_risk_shadow_enabled=True,
+            predictive_joint_overlay_enabled=True,
+            predictive_prefetch_canary_enabled=True,
+        )
+        controller = BeliefKVController(
+            BeliefKVConfig(
+                hbm_capacity_bytes=2_000,
+                host_capacity_bytes=4_000,
+                reserve_hbm_bytes=0,
+                predictor_enabled=False,
+            )
+        )
+        controller.process_runtime_events(
+            (
+                RuntimeEvent("wf-lease", 1.0, RuntimeEventKind.WORKFLOW_START, "wf"),
+                RuntimeEvent(
+                    "inv-lease",
+                    2.0,
+                    RuntimeEventKind.INVOCATION_CREATE,
+                    "wf",
+                    invocation_id="inv",
+                    context_id="ctx",
+                    context_epoch=0,
+                ),
+                RuntimeEvent(
+                    "tool-lease",
+                    3.0,
+                    RuntimeEventKind.TOOL_START,
+                    "wf",
+                    invocation_id="inv",
+                    context_id="ctx",
+                    context_epoch=0,
+                ),
+            )
+        )
+        handle = PageHandle(903, 0)
+        controller.page_index.register_page(
+            handle,
+            size_bytes=200,
+            residency=PhysicalResidency.CPU_ONLY,
+        )
+        controller.page_index.bind_pages("ctx", 0, (handle,))
+        runtime.controller = controller
+        runtime.audit = _AuditRecorder()
+        runtime._joint_predictive_counts = Counter()
+        runtime._online_joint_counts = Counter()
+        runtime._pending_online_joint_residency = None
+        runtime._current_semantic_residency_commit = None
+        runtime._current_predictive_residency_commit = None
+        runtime._restore_service_grace_by_request = {}
+        runtime._restore_obligation_index = lambda: SimpleNamespace(
+            active=lambda: (),
+            all=lambda: (),
+        )
+        runtime._prefetch_service_leases = {
+            "other": SimpleNamespace(
+                context_id="other-context",
+                context_epoch=0,
+                expires_ts_ms=1_000.0,
+                target_reentry_context_epoch=0,
+            )
+        }
+        runtime._last_frontier_model_version = "frontier-v1"
+        runtime._latest_predictive_intent = _predictive_prefetch_intent(
+            controller,
+            intent_id="intent-unrelated",
+            remaining_window_low_ms=100.0,
+            transfer_p95_ms=20.0,
+        )
+        decision = compile_bounded_seed_epoch(
+            ordered_request_ids=("request",),
+            visible_request_ids=("request",),
+            epoch_sequence=1,
+        )
+        plan = SimpleNamespace(
+            plan_id=decision.view.plan_id,
+            residency=(),
+            semantic_residency=(),
+        )
+
+        runtime._physical_commit_predictive_intent(
+            plan,
+            decision,
+            now_ms=110.0,
+        )
+
+        self.assertIsNotNone(runtime._current_predictive_residency_commit)
+        deferred = [
+            fields
+            for event, _, fields in runtime.audit.events
+            if event == "predictive_semantic_intent_deferred"
+        ]
+        self.assertFalse(deferred)
+
     def test_physical_device_capacity_uses_native_allocator_authority(self):
         runtime = EmbeddedSGLangRuntime.__new__(EmbeddedSGLangRuntime)
         runtime.config = BeliefKVConfig(

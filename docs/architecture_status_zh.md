@@ -823,6 +823,34 @@ v59 暴露的下一步问题：
 - baseline timeline:
   `experiments/ab/p6_h200_high_pressure_v3/20260920_v58_pair/baseline_v3_execution_timeline.html`
 
+### 5.20 2026-09-21 v59 后半程 predictive H2D 停止审计
+
+v59 的 25 次 predictive H2D 全部集中在第 1 小时内。后续 trace 审计确定了一个
+状态机 P0，而不是模型或 PCIe 停止：
+
+1. H2D ACK 后创建的 `prefetch_service_lease` 被错误计入
+   `predictive_prefetch_canary_max_inflight`；
+2. 141 个后续 `PREFETCH_GPU` intent 因此以
+   `predictive_prefetch_inflight_limit` 被拒绝；
+3. 10 个 lease 在 5--8 秒服务窗口过期后释放，但在此之前持续阻塞后续
+   unrelated H2D；
+4. Host pool 从约第 1 小时起长期高于 99%，后半程 reentry 目标多为
+   `reentry_no_prefetchable_cpu_bytes`。这是因果断层重演，与 lease 串行化
+   叠加，造成 predictive H2D 完全停止。
+
+main 分支修复：service lease 只保护已经完成 H2D 的 beneficiary，不再占用
+唯一 predictive transfer inflight 名额；并发限制只对真正未完成的 transfer
+生效。该修复通过 adapter 回归，尚未进入 GPU gate。
+
+仍需后续处理的 v59 问题：
+
+1. `PREPARE_HOST` 0 useful；
+2. PREPARE/PREFETCH 的 expected-benefit 校准；
+3. Host 侧 reentry-aware retention/cleanup；
+4. reentry intent 在 CPU bytes 不足时应主动触发 PREPARE；
+5. workload driver context-limit preflight；
+6. `resident_service_window_ms` 与 target service deadline 的一致性。
+
 ## 6. 当前阻塞项
 
 1. prediction-to-action utilization gap 尚未闭合。初步 H200 高压运行中 predictive arm

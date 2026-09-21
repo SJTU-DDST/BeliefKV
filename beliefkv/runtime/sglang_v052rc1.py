@@ -25887,9 +25887,20 @@ class EmbeddedSGLangRuntime:
             )
             if has_prefetch_service_lease:
                 reasons.append("prefetch_service_lease_active")
+            # A service lease protects one already-prefetched beneficiary.
+            # It is not an inflight transfer and must not serialize unrelated
+            # ready contexts waiting for their own H2D.
             elif (
                 len(active_prefetch_leases)
                 >= self.config.predictive_prefetch_canary_max_inflight
+                and any(
+                    not self._context_has_prefetch_service_lease(
+                        lease.context_id,
+                        lease.context_epoch,
+                        now_ms=now_ms,
+                    )
+                    for lease in active_prefetch_leases.values()
+                )
             ):
                 reasons.append("predictive_prefetch_inflight_limit")
             if (
