@@ -749,6 +749,80 @@ main 分支已做三项修复：
 predictive gate 使用这些修复；若需要最终论文级 A/B，baseline 也必须使用同一
 commit 重跑。
 
+### 5.19 2026-09-21 v59 predictive gate
+
+v59 predictive arm 使用 main `8312f66`、v8 冻结 64-root high-pressure plan、
+v10 profile、graph96 和 Host 192GB 自然完成：
+
+- 64/64 workflow 均有 result：62 completed、2 error、22 measurement-valid；
+- 运行 30,488.57s；
+- queue 清空，shutdown acknowledged；
+- 所有 correctness gate 通过，包括 online action source、transaction
+  conservation、restore obligation 和 shutdown summary；
+- 无 scheduler exception、OOM、Joint worker mirror failure 或
+  partial-progress watchdog cancel。
+
+两个 error 不是 runtime 崩溃：一个为 TerminalProtocolError，另一个为
+`input 258,618 + output 4,096 > context 262,144` 的显式 BadRequest。后者说明
+agent workload driver 仍需要在提交前按模型 context 上限裁剪 prompt 或降低
+max completion，而不是由调度器 silently truncate。
+
+v59 机制漏斗：
+
+1. 11,341 次 risk evaluation；
+2. 214 次选择 `PREFETCH_GPU`，73 次选择 schedule；
+3. 281 个 semantic residency action；
+4. 236 个完成，44 个拒绝，1 个 shutdown 前中止但在 shutdown 中正确终结；
+5. 25 次 predictive H2D 全部 completed，32.19GB；
+6. 15 次 H2D useful attribution，16.99GB；10 次 wasted，15.20GB；
+7. 211 次 predictive shadow D2H completed，43 次拒绝；
+8. 15/25 H2D useful rate 为 60%，按 bytes 为 52.8%。
+
+v59 与 baseline v3 的初步同 workload 对比：
+
+| Metric | baseline v3 | predictive v59 | relative |
+| --- | ---: | ---: | ---: |
+| GPU service tokens/s | 222.58 | 245.90 | +10.48% |
+| Tool calls/min | 26.11 | 30.60 | +17.19% |
+| LLM requests/min | 11.66 | 11.70 | +0.38% |
+| Completed workflows | 52 | 62 | +19.23% |
+| Measurement-valid workflows | 17 | 22 | +29.41% |
+| Mean GPU util | 8.74% | 9.93% | +13.66% |
+| Mean running | 15.41 | 21.55 | +39.91% |
+| Duration | 30,969s | 30,489s | -1.55% |
+
+这不是最终论文级 formal A/B：baseline v3 使用 `27d25de`，predictive v59 使用
+`8312f66`；二者相差 ownership transition、watchdog、Action frontier 和 source
+gate 修复。该对比只能说明 predictive arm 在长高压自然 workload 中首次形成
+正向吞吐信号。
+
+v59 暴露的下一步问题：
+
+1. `PREPARE_HOST` 仍无 useful attribution：211 个 completed shadow D2H 全部
+   wasted，43 个 failed。PREFETCH 已闭环，但 PREPARE 的 beneficiary/victim
+   绑定没有转化为真实 deficit 消费；
+2. `PREFETCH_GPU` 10/25 wasted，仍需提高 beneficiary 甄别和 latest-start
+   精度；
+3. 6,492 次 wait-shadow 因已有 residency transaction 暂停，说明单事务/单
+   inflight 限制在高机会窗口造成串行化；
+4. 18,891 次候选因 insufficient expected benefit 被拒绝，其中可能存在收益
+   模型低估，需要与真实 reentry service 差值做离线校准；
+5. 47,609 次因 unchanged action signature 被去重，需抽样确认是合理去重还是
+   证书/刷新粒度过粗；
+6. shutdown tail 中的最后一个 predictive residency 需要等 shutdown drain 才
+   终结，应考虑 workload 自然收尾时更早释放或降级无必要 action；
+7. agent workload 层仍有 2 个 protocol/context 错误，正式 A/B 前应修复
+   driver 的 context limit preflight。
+
+产物：
+
+- timeline:
+  `experiments/ab/p6_h200_high_pressure_v3/20260921_v59_predictive/predictive_execution_timeline.html`
+- 对比 JSON:
+  `experiments/ab/p6_h200_high_pressure_v3/20260921_v59_predictive/v59_vs_baseline_v3_summary.json`
+- baseline timeline:
+  `experiments/ab/p6_h200_high_pressure_v3/20260920_v58_pair/baseline_v3_execution_timeline.html`
+
 ## 6. 当前阻塞项
 
 1. prediction-to-action utilization gap 尚未闭合。初步 H200 高压运行中 predictive arm
@@ -811,19 +885,21 @@ commit 重跑。
     counters。
 26. baseline v3 暴露的 ownership overage、partial-progress watchdog 和
     `DROP_UNOWNED` gate 分类已修复，尚未经过 predictive GPU 回归。
+27. v59 已证明 predictive H2D useful attribution 和正向初步吞吐信号；但
+    `PREPARE_HOST` 仍 0 useful，Action frontier `f88bd05` 与 runtime 修复
+    `8312f66` 尚未与同 commit baseline 构成 formal A/B。
 
 ## 7. 下一步
 
 当前关键路径：
 
-1. 终止已空转的 `9c4e6c4` baseline attempt；attempt0/1 与该 attempt 均仅作
-   失败证据，不进入 timeline A/B。
-2. 使用 main 重新运行 contract-matched observed baseline，重点验证
-   `joint_reactive_admission_liveness_fallback` 能释放 migratable KV、running
-   请求恢复、waiting-only 空转归零。
-3. 使用 main 运行短高压 predictive gate，验证 predictive DMA 队列、合并
-   batch、局部 restore wait、adaptive lead、30 分钟后的持续 transfer 和
-   `pcie_dispatch_busy=0`。
+1. 修复 workload driver 的 context-limit preflight 和 TerminalProtocolError
+   重试策略，确保 formal A/B 没有 workload 层错误。
+2. 使用与 v59 完全相同的 `8312f66` 运行 contract-matched observed baseline，
+   将 v59 的正向信号固化为同代码 formal A/B。
+3. 对 v59 trace 做 PREPARE/PREFETCH action-level audit：比较 tool window、
+   predicted/latest-start、真实 reentry service 和 wasted attribution，优先修复
+   PREPARE 0 useful。
 4. 将 Host 语义化清理与 request-abort/H2D authority correctness 修复一并纳入下一轮
    GPU gate，统计 dead/native-writeback/explicit
    cleanup bytes、forced recompute、Host miss 和 predictive H2D success rate。
