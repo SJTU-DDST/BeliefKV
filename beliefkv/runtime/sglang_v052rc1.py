@@ -585,6 +585,7 @@ class _PrefetchServiceLease:
     source_transaction_id: str
     predictive_intent_id: str
     actual_bytes: int
+    target_service_deadline_ms: float = 0.0
 
 
 @dataclass(frozen=True)
@@ -10392,6 +10393,25 @@ class EmbeddedSGLangRuntime:
             invocation.state.terminal for invocation in invocations
         )
 
+    def _host_cleanup_context_is_reentry_protected(
+        self, context_id: str, *, now_ms: float
+    ) -> bool:
+        """Protect CPU-only KV that a live prefetch decision still needs."""
+
+        page_index = self.controller.page_index
+        context = self.controller.graph.contexts.get(context_id)
+        if context is None or not page_index.has_context(context_id):
+            return False
+        for (_, target_epoch), watch in (
+            getattr(self, "_predictive_prefetch_watches", None) or {}
+        ).items():
+            if watch.intent.context_id != context_id:
+                continue
+            # Once latest-start has passed, the target must advance through
+            # dispatch/ACK rather than retain Host residency indefinitely.
+            return watch.latest_start_ts_ms > now_ms
+        return False
+
     def _joint_policy_admission_liveness_fallback(self) -> bool:
         """Recover when a seed-only JointPlan leaves an idle queue blocked."""
         if not self.config.joint_policy_enabled:
@@ -10496,6 +10516,12 @@ class EmbeddedSGLangRuntime:
                 )
                 for owner in owners
                 if page_index.has_context(owner)
+            )
+            protected = protected or (
+                self._host_cleanup_context_is_reentry_protected(
+                    target_context_id,
+                    now_ms=now_ms,
+                )
             )
             if protected:
                 continue
@@ -12723,6 +12749,9 @@ class EmbeddedSGLangRuntime:
             context_epoch=lease.context_epoch,
             source_transaction_id=lease.source_transaction_id,
             predictive_intent_id=lease.predictive_intent_id,
+            target_service_deadline_ms=float(
+                getattr(lease, "target_service_deadline_ms", 0.0)
+            ),
             actual_bytes=lease.actual_bytes,
             lease_age_ms=max(0.0, now_ms - lease.created_ts_ms),
             reason=reason,
@@ -12799,12 +12828,9 @@ class EmbeddedSGLangRuntime:
             target_invocation_id=target_invocation_id,
             target_reentry_context_epoch=target_epoch,
             created_ts_ms=now_ms,
-            expires_ts_ms=max(
-                now_ms + self.config.resident_service_window_ms,
-                float(
-                    getattr(transaction, "target_service_deadline_ms", 0.0)
-                    or 0.0
-                ),
+            expires_ts_ms=self._prefetch_service_lease_deadline_ms(
+                transaction,
+                now_ms=now_ms,
             ),
             baseline_completed_service_count=(
                 progress.completed_service_count if progress is not None else 0
@@ -12848,6 +12874,34 @@ class EmbeddedSGLangRuntime:
             commit_ready_delay_ms=commit_ready_delay_ms,
         )
         return True
+
+    def _prefetch_service_lease_deadline_ms(
+        self,
+        transaction: _OnlineJointResidencyTransaction,
+        *,
+        now_ms: float,
+    ) -> float:
+        """Derive lease expiry from the intent's target service deadline."""
+
+        target_deadline_ms = float(
+            getattr(transaction, "target_service_deadline_ms", 0.0) or 0.0
+        )
+        soft_service_window_ms = max(
+            0.0,
+            self.config.resident_service_window_ms,
+        )
+        # The lease is a protection interval, not a second scheduler. Keep it
+        # aligned to the target deadline, while retaining a bounded grace for
+        # dispatch and ACK delays already excluded from that deadline.
+        if target_deadline_ms > 0.0:
+            return max(
+                target_deadline_ms,
+                now_ms + min(
+                    soft_service_window_ms,
+                    self.config.predictive_intent_max_age_ms,
+                ),
+            )
+        return now_ms + soft_service_window_ms
 
     def _refresh_prefetch_service_leases(
         self,

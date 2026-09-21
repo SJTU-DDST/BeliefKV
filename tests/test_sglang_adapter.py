@@ -9728,6 +9728,70 @@ class SGLangBackendTest(unittest.TestCase):
             1,
         )
 
+    def test_prefetch_service_lease_deadline_prefers_target_deadline(self):
+        runtime = EmbeddedSGLangRuntime.__new__(EmbeddedSGLangRuntime)
+        runtime.config = BeliefKVConfig(
+            hbm_capacity_bytes=2_000,
+            host_capacity_bytes=4_000,
+            reserve_hbm_bytes=0,
+            resident_service_window_ms=5_000.0,
+            predictive_intent_max_age_ms=30_000.0,
+        )
+        runtime.controller = BeliefKVController(runtime.config)
+        runtime.controller.process_runtime_events(
+            (
+                RuntimeEvent(
+                    "workflow-start", 1.0, RuntimeEventKind.WORKFLOW_START, "wf"
+                ),
+                RuntimeEvent(
+                    "invocation-create",
+                    2.0,
+                    RuntimeEventKind.INVOCATION_CREATE,
+                    "wf",
+                    invocation_id="inv",
+                    context_id="ctx",
+                    context_epoch=0,
+                ),
+            )
+        )
+        runtime.audit = _AuditRecorder()
+        runtime._joint_predictive_counts = Counter()
+        runtime._prefetch_service_leases = {}
+        runtime._context_completed_service_epoch_by_id = {}
+        runtime._request_metadata_by_id = {
+            "request": BeliefKVRequestMetadata("wf", "inv", "ctx", 0)
+        }
+        runtime._lock_service_ledger = RequestServiceLedger()
+        transaction = SimpleNamespace(
+            beneficiary_request_id="request",
+            predictive_intent_id="intent",
+            context_id="ctx",
+            context_epoch=0,
+            transaction_id="transaction",
+            actual_bytes=256,
+            target_invocation_id="inv",
+            target_reentry_context_epoch=0,
+            target_service_deadline_ms=10_000.0,
+        )
+
+        self.assertTrue(
+            runtime._register_prefetch_service_lease(
+                transaction,
+                now_ms=100.0,
+            )
+        )
+
+        self.assertTrue(
+            runtime._context_has_prefetch_service_lease(
+                "ctx", 0, now_ms=5_100.0
+            )
+        )
+        self.assertFalse(
+            runtime._context_has_prefetch_service_lease(
+                "ctx", 0, now_ms=10_000.0
+            )
+        )
+
     def test_prefetch_service_funding_and_attribution_end_on_first_service(self):
         runtime = EmbeddedSGLangRuntime.__new__(EmbeddedSGLangRuntime)
         runtime.config = BeliefKVConfig(
@@ -12291,6 +12355,8 @@ class SGLangBackendTest(unittest.TestCase):
         runtime.controller = controller
         runtime.audit = _AuditRecorder()
         runtime._full_prompt_replay_contexts = set()
+        runtime._restore_obligations = SimpleNamespace(all=lambda: ())
+        runtime._predictive_prefetch_watches = {}
 
         planned = runtime._build_host_cleanup_command(now_ms=10.0)
 
@@ -12306,6 +12372,64 @@ class SGLangBackendTest(unittest.TestCase):
         _command, attribution = planned
         self.assertEqual(attribution["mode"], "native_writeback_shadow")
         self.assertTrue(attribution["native_writeback"])
+
+    def test_host_cleanup_protects_future_prefetch_target(self):
+        config = BeliefKVConfig(
+            hbm_capacity_bytes=2_000,
+            host_capacity_bytes=1_000,
+            reserve_hbm_bytes=100,
+            predictor_enabled=False,
+            host_cleanup_chunk_bytes=100,
+        )
+        controller = BeliefKVController(config)
+        controller.process_runtime_events(
+            (
+                RuntimeEvent(
+                    "start", 1.0, RuntimeEventKind.WORKFLOW_START, "wf"
+                ),
+                RuntimeEvent(
+                    "create",
+                    2.0,
+                    RuntimeEventKind.INVOCATION_CREATE,
+                    "wf",
+                    invocation_id="inv",
+                    context_id="ctx",
+                    context_epoch=0,
+                ),
+                RuntimeEvent(
+                    "tool",
+                    3.0,
+                    RuntimeEventKind.TOOL_START,
+                    "wf",
+                    invocation_id="inv",
+                    context_id="ctx",
+                    context_epoch=0,
+                ),
+            )
+        )
+        handle = PageHandle(801, 0)
+        controller.page_index.register_page(
+            handle,
+            size_bytes=100,
+            residency=PhysicalResidency.CPU_ONLY,
+        )
+        controller.page_index.bind_pages("ctx", 0, (handle,))
+        runtime = EmbeddedSGLangRuntime.__new__(EmbeddedSGLangRuntime)
+        runtime.config = config
+        runtime.controller = controller
+        runtime.audit = _AuditRecorder()
+        runtime._full_prompt_replay_contexts = {("ctx", 0)}
+        runtime._restore_obligations = SimpleNamespace(all=lambda: ())
+        runtime._predictive_prefetch_watches = {
+            ("ctx", 1): SimpleNamespace(
+                intent=SimpleNamespace(context_id="ctx", context_epoch=0),
+                latest_start_ts_ms=100.0,
+            )
+        }
+
+        self.assertIsNone(
+            runtime._build_host_cleanup_command(now_ms=10.0)
+        )
 
 
     def test_predictive_shadow_aggregate_preserves_action_diagnostics(self):
