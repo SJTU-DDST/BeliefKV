@@ -117,7 +117,7 @@ def test_completion_budget_separates_tool_turns_from_finalization() -> None:
     assert observed == [1_024, 4_096, 4_096]
 
 
-def test_completion_budget_publishes_prompt_limit_reserve() -> None:
+def test_completion_budget_does_not_forward_internal_prompt_limit_to_openai() -> None:
     middleware = CompletionBudgetMiddleware(
         intermediate_tokens=1_024,
         final_tokens=4_096,
@@ -129,11 +129,7 @@ def test_completion_budget_publishes_prompt_limit_reserve() -> None:
     )
 
     def handler(current: ModelRequest) -> ModelResponse:
-        assert current.model_settings["max_tokens"] == 1_024
-        assert (
-            current.model_settings["beliefkv_max_prompt_tokens"]
-            == 32_768 - 1_024
-        )
+        assert current.model_settings == {"max_tokens": 1_024}
         return ModelResponse(result=[HumanMessage(content="ok")])
 
     middleware.wrap_model_call(request, handler)

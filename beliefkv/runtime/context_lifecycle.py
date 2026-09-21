@@ -337,8 +337,6 @@ class ContextLifecycleMiddleware(SummarizationMiddleware):
 class CompletionBudgetMiddleware(AgentMiddleware[Any, Any, Any]):
     """Use short outputs for tool turns while preserving a larger final budget."""
 
-    _MAX_PROMPT_TOKENS_SETTING = "beliefkv_max_prompt_tokens"
-
     def __init__(
         self,
         *,
@@ -373,24 +371,7 @@ class CompletionBudgetMiddleware(AgentMiddleware[Any, Any, Any]):
             if self.final_mode() or runtime_finalization
             else self.intermediate_tokens
         )
-        max_tokens = int(settings.get("max_tokens", self.final_tokens) or 0)
-        prompt_reserve = self.model_context_tokens - max_tokens
-        if prompt_reserve < self.prompt_floor_tokens:
-            prompt_reserve = self.prompt_floor_tokens
-        settings[self._MAX_PROMPT_TOKENS_SETTING] = prompt_reserve
         return request.override(model_settings=settings)
-
-    @staticmethod
-    def effective_prompt_limit(request: ModelRequest) -> int | None:
-        """Return the hard prompt limit attached by this middleware."""
-
-        raw = request.model_settings.get(
-            CompletionBudgetMiddleware._MAX_PROMPT_TOKENS_SETTING
-        )
-        if raw is None:
-            return None
-        value = int(raw)
-        return value if value > 0 else None
 
     def wrap_model_call(
         self,
