@@ -55,6 +55,7 @@ from beliefkv.runtime.deepagents_adapter import (
 from beliefkv.runtime.agent_safety import ActivationDeadline
 from beliefkv.runtime.event_channel import (
     JsonlRuntimeEventSink,
+    QueuedRuntimeEventSink,
     UnixDatagramRuntimeEventSink,
 )
 from beliefkv.runtime.langchain_tool_safety import (
@@ -3182,10 +3183,12 @@ def _run_workflow(
     )
     trace_sink = JsonlRuntimeEventSink(trace_path)
     control_sink = (
-        UnixDatagramRuntimeEventSink(
-            config.control_socket,
-            ack_timeout_s=config.runtime_event_ack_timeout_s,
-            retries=config.runtime_event_ack_retries,
+        QueuedRuntimeEventSink(
+            UnixDatagramRuntimeEventSink(
+                config.control_socket,
+                ack_timeout_s=config.runtime_event_ack_timeout_s,
+                retries=config.runtime_event_ack_retries,
+            )
         )
         if config.control_socket is not None
         else None
@@ -3348,6 +3351,9 @@ def _run_workflow(
         **eligibility,
         "agent_control": agent_control,
         "runtime_control_delivery": control_delivery,
+        "runtime_control_delivery_timing": (
+            control_sink.timing_summary() if control_sink is not None else None
+        ),
         "trace": trace,
         "workflow_deadline": deadline_summary,
     }

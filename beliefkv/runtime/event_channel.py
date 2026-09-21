@@ -5,10 +5,12 @@ import os
 import socket
 import tempfile
 import threading
+import time
 import uuid
 from collections import OrderedDict
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
+from queue import Full, Queue
 from typing import Callable
 
 from beliefkv.core.events import RuntimeEvent
@@ -273,3 +275,112 @@ class UnixDatagramRuntimeEventSink:
 
     def __exit__(self, *_args: object) -> None:
         self.close()
+
+
+@dataclass
+class _QueuedDelivery:
+    events: tuple[RuntimeEvent, ...]
+    submitted_ns: int
+    tool_start: bool = False
+    finished: threading.Event = field(default_factory=threading.Event)
+    error: Exception | None = None
+
+    def wait(self) -> None:
+        self.finished.wait()
+        if self.error is not None:
+            raise self.error
+
+
+class QueuedRuntimeEventSink:
+    """Keep tool-start ACK waits off the agent thread without reordering events."""
+
+    def __init__(
+        self, sink: UnixDatagramRuntimeEventSink, *, max_pending: int = 64
+    ) -> None:
+        if max_pending <= 0:
+            raise ValueError("max_pending must be positive")
+        self._sink = sink
+        self._queue: Queue[_QueuedDelivery | None] = Queue(maxsize=max_pending)
+        self._lock = threading.Lock()
+        self._stats_lock = threading.Lock()
+        self._closed = False
+        self._failure: Exception | None = None
+        self._tool_queue_ms: list[float] = []
+        self._tool_ack_ms: list[float] = []
+        self._worker = threading.Thread(
+            target=self._deliver, name="beliefkv-runtime-events", daemon=True
+        )
+        self._worker.start()
+
+    def submit_batch(
+        self, events: tuple[RuntimeEvent, ...], *, tool_start: bool = False
+    ) -> _QueuedDelivery:
+        if not events:
+            raise ValueError("event batch must not be empty")
+        delivery = _QueuedDelivery(events, time.perf_counter_ns(), tool_start)
+        with self._lock:
+            if self._closed:
+                raise RuntimeError("runtime event sink is closed")
+            if self._failure is not None:
+                raise self._failure
+            try:
+                self._queue.put_nowait(delivery)
+            except Full as error:
+                raise RuntimeError("runtime event delivery queue is full") from error
+        return delivery
+
+    def emit_batch(self, events: tuple[RuntimeEvent, ...]) -> None:
+        self.submit_batch(events).wait()
+
+    def emit_tool_start(self, events: tuple[RuntimeEvent, ...]) -> None:
+        self.submit_batch(events, tool_start=True)
+
+    def _deliver(self) -> None:
+        while (delivery := self._queue.get()) is not None:
+            started_ns = time.perf_counter_ns()
+            try:
+                with self._lock:
+                    failure = self._failure
+                if failure is not None:
+                    raise failure
+                self._sink.emit_batch(delivery.events)
+            except Exception as error:
+                delivery.error = error
+                with self._lock:
+                    self._failure = error
+            finally:
+                finished_ns = time.perf_counter_ns()
+                if delivery.tool_start:
+                    with self._stats_lock:
+                        self._tool_queue_ms.append(
+                            (started_ns - delivery.submitted_ns) / 1_000_000.0
+                        )
+                        self._tool_ack_ms.append(
+                            (finished_ns - started_ns) / 1_000_000.0
+                        )
+                delivery.finished.set()
+
+    def timing_summary(self) -> dict[str, float | int | None]:
+        def percentile(samples: list[float], fraction: float) -> float | None:
+            if not samples:
+                return None
+            ordered = sorted(samples)
+            return ordered[min(len(ordered) - 1, int(fraction * len(ordered)))]
+
+        with self._stats_lock:
+            return {
+                "tool_start_count": len(self._tool_ack_ms),
+                "queue_p50_ms": percentile(self._tool_queue_ms, 0.50),
+                "queue_p95_ms": percentile(self._tool_queue_ms, 0.95),
+                "ack_p50_ms": percentile(self._tool_ack_ms, 0.50),
+                "ack_p95_ms": percentile(self._tool_ack_ms, 0.95),
+            }
+
+    def close(self) -> None:
+        with self._lock:
+            if self._closed:
+                return
+            self._closed = True
+        self._queue.put(None)
+        self._worker.join()
+        self._sink.close()

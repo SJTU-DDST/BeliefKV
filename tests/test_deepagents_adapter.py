@@ -3,6 +3,7 @@ from __future__ import annotations
 import itertools
 import json
 import threading
+import time
 from types import SimpleNamespace
 from typing import Any, Sequence
 from uuid import uuid4
@@ -32,6 +33,7 @@ from beliefkv.runtime.context_lifecycle import (
     ContextLifecycleMiddleware,
     ContextLifecyclePolicy,
 )
+from beliefkv.runtime.event_channel import QueuedRuntimeEventSink
 from beliefkv.runtime.sglang_adapter import BeliefKVRequestMetadata
 
 
@@ -59,6 +61,62 @@ class FailingControlSink:
     def emit_batch(self, events) -> None:
         del events
         raise ConnectionError("runtime control socket disappeared")
+
+
+def test_ordinary_tool_start_does_not_wait_for_control_ack() -> None:
+    ack_started = threading.Event()
+    release_ack = threading.Event()
+
+    class SlowControlSink(CollectingSink):
+        def emit_batch(self, events) -> None:
+            if events[0].kind == RuntimeEventKind.TOOL_START:
+                ack_started.set()
+                if not release_ack.wait(timeout=2.0):
+                    raise TimeoutError("tool-start delivery was not released")
+            super().emit_batch(events)
+
+        def close(self) -> None:
+            pass
+
+    trace = CollectingSink()
+    control = SlowControlSink()
+    queued = QueuedRuntimeEventSink(control)
+    metadata = BeliefKVRequestMetadata(
+        root_workflow_id="wf",
+        invocation_id="root",
+        context_id="ctx",
+        context_epoch=0,
+    )
+    adapter = DeepAgentsRuntimeAdapter(trace, metadata, control_sink=queued)
+    start = adapter._event(
+        RuntimeEventKind.TOOL_START, invocation_id="root"
+    )
+    end = adapter._event(
+        RuntimeEventKind.TOOL_END, invocation_id="root"
+    )
+    try:
+        began = time.monotonic()
+        adapter._publish((start,), control=True)
+        assert time.monotonic() - began < 0.5
+        assert ack_started.wait(timeout=1.0)
+        assert trace.events == [start]
+        completed = threading.Event()
+
+        def publish_end() -> None:
+            adapter._publish((end,), control=True)
+            completed.set()
+
+        sender = threading.Thread(target=publish_end)
+        sender.start()
+        assert not completed.wait(timeout=0.05)
+        release_ack.set()
+        sender.join(timeout=2.0)
+        assert not sender.is_alive()
+        assert control.events == [start, end]
+        assert not adapter.control_delivery_summary()["degraded"]
+    finally:
+        release_ack.set()
+        queued.close()
 
 
 class QueueToolCallingModel(BaseChatModel):

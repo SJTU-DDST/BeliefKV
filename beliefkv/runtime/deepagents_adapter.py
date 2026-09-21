@@ -220,6 +220,7 @@ class DeepAgentsRuntimeAdapter(BaseCallbackHandler):
         self.allowed_subagent_types = allowed_subagent_types
         self.workspace_digest_provider = workspace_digest_provider
         self._lock = threading.RLock()
+        self._publication_lock = threading.RLock()
         self._sequence = 0
         self._last_ts_ms = 0.0
         self._started = False
@@ -1380,12 +1381,18 @@ class DeepAgentsRuntimeAdapter(BaseCallbackHandler):
     ) -> None:
         if not events:
             return
-        self.trace_sink.emit_batch(events)
         if (
-            control
-            and self.control_sink is not None
-            and self.control_sink is not self.trace_sink
+            not control
+            or self.control_sink is None
+            or self.control_sink is self.trace_sink
         ):
+            with self._publication_lock:
+                self.trace_sink.emit_batch(events)
+            return
+        delivery = None
+        async_tool_start = False
+        with self._publication_lock:
+            self.trace_sink.emit_batch(events)
             with self._lock:
                 terminal_ids = frozenset(self._terminal_invocation_ids)
             control_events = tuple(
@@ -1406,24 +1413,44 @@ class DeepAgentsRuntimeAdapter(BaseCallbackHandler):
             if not control_events:
                 return
             try:
-                self.control_sink.emit_batch(control_events)
+                submit = getattr(self.control_sink, "submit_batch", None)
+                if callable(submit):
+                    async_tool_start = (
+                        len(control_events) == 1
+                        and control_events[0].kind == RuntimeEventKind.TOOL_START
+                    )
+                    delivery = submit(
+                        control_events,
+                        tool_start=async_tool_start,
+                    )
+                else:
+                    self.control_sink.emit_batch(control_events)
             except Exception as error:
-                # The local trace is authoritative and was durably written
-                # above.  Losing the optional live control channel invalidates
-                # control-plane measurements, but must not be reported as an
-                # agent/tool failure or alter the workflow trajectory.
-                failure = RuntimeControlDeliveryFailure(
-                    ts_ms=self._timestamp(),
-                    event_count=len(control_events),
-                    first_event_id=control_events[0].event_id,
-                    error_type=type(error).__name__,
-                    error=str(error),
-                )
-                with self._lock:
-                    self._control_delivery_failure_count += 1
-                    if self._first_control_delivery_failure is None:
-                        self._first_control_delivery_failure = failure
-                    self._last_control_delivery_failure = failure
+                self._record_control_delivery_failure(control_events, error)
+                return
+        if delivery is not None and not async_tool_start:
+            try:
+                delivery.wait()
+            except Exception as error:
+                self._record_control_delivery_failure(control_events, error)
+
+    def _record_control_delivery_failure(
+        self, events: tuple[RuntimeEvent, ...], error: Exception
+    ) -> None:
+        # The local trace is authoritative; failed live delivery invalidates
+        # the measurement, not the agent's tool execution.
+        failure = RuntimeControlDeliveryFailure(
+            ts_ms=self._timestamp(),
+            event_count=len(events),
+            first_event_id=events[0].event_id,
+            error_type=type(error).__name__,
+            error=str(error),
+        )
+        with self._lock:
+            self._control_delivery_failure_count += 1
+            if self._first_control_delivery_failure is None:
+                self._first_control_delivery_failure = failure
+            self._last_control_delivery_failure = failure
 
     def control_delivery_summary(self) -> dict[str, object]:
         with self._lock:

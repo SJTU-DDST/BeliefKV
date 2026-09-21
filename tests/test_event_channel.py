@@ -11,6 +11,7 @@ from beliefkv.control.controller import BeliefKVController
 from beliefkv.core.events import RuntimeEvent, RuntimeEventKind
 from beliefkv.runtime.event_channel import (
     JsonlRuntimeEventSink,
+    QueuedRuntimeEventSink,
     RuntimeEventDatagramServer,
     UnixDatagramRuntimeEventSink,
 )
@@ -27,6 +28,82 @@ def event(event_id, kind, *, ts_ms, **kwargs):
 
 
 class RuntimeEventChannelTest(unittest.TestCase):
+    def test_tool_start_delivery_does_not_block_tool_but_tool_end_waits_for_ack(self):
+        started = threading.Event()
+        release = threading.Event()
+
+        class BlockingSink:
+            def __init__(self):
+                self.events = []
+                self.closed = False
+
+            def emit_batch(self, events):
+                if events[0].kind == RuntimeEventKind.TOOL_START:
+                    started.set()
+                    self.assert_released()
+                self.events.extend(events)
+
+            def assert_released(self):
+                if not release.wait(timeout=2.0):
+                    raise TimeoutError("test did not release the tool-start ACK")
+
+            def close(self):
+                self.closed = True
+
+        transport = BlockingSink()
+        queued = QueuedRuntimeEventSink(transport)
+        tool_start = event("tool-start", RuntimeEventKind.TOOL_START, ts_ms=1.0)
+        tool_end = event("tool-end", RuntimeEventKind.TOOL_END, ts_ms=2.0)
+        try:
+            before = time.monotonic()
+            queued.emit_tool_start((tool_start,))
+            self.assertLess(time.monotonic() - before, 0.5)
+            self.assertTrue(started.wait(timeout=1.0))
+            finished = threading.Event()
+
+            def send_tool_end():
+                queued.emit_batch((tool_end,))
+                finished.set()
+
+            sender = threading.Thread(target=send_tool_end)
+            sender.start()
+            self.assertFalse(finished.wait(timeout=0.05))
+            release.set()
+            sender.join(timeout=2.0)
+            self.assertFalse(sender.is_alive())
+            self.assertEqual(transport.events, [tool_start, tool_end])
+            self.assertEqual(queued.timing_summary()["tool_start_count"], 1)
+        finally:
+            release.set()
+            queued.close()
+        self.assertTrue(transport.closed)
+
+    def test_tool_start_delivery_failure_invalidates_following_control(self):
+        class FailingSink:
+            def __init__(self):
+                self.events = []
+
+            def emit_batch(self, events):
+                self.events.extend(events)
+                raise ConnectionError("ACK unavailable")
+
+            def close(self):
+                pass
+
+        transport = FailingSink()
+        queued = QueuedRuntimeEventSink(transport)
+        try:
+            queued.emit_tool_start(
+                (event("start", RuntimeEventKind.TOOL_START, ts_ms=1.0),)
+            )
+            with self.assertRaisesRegex(ConnectionError, "ACK unavailable"):
+                queued.emit_batch(
+                    (event("end", RuntimeEventKind.TOOL_END, ts_ms=2.0),)
+                )
+            self.assertEqual(len(transport.events), 1)
+        finally:
+            queued.close()
+
     def test_event_wire_roundtrip(self):
         original = event(
             "create",

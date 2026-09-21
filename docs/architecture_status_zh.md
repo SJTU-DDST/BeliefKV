@@ -873,6 +873,24 @@ v59 工具调用也出现独立长尾：`tool_start` 至 sandbox `execute` 开�
 `TOOL_START` 事件需等待 scheduler 轮询端 ACK；现有 trace 未记录 ACK 等待时长，
 因此不能将全部工具变慢归因于事件通道或预测策略，后续需分段计时。
 
+### 5.22 2026-09-21 TOOL_START 控制通道关键路径
+
+v58/v59 的工具实现未发生相应变化，但 agent 回调在 `TOOL_START` trace 持久化
+之后、真正执行工具之前同步发送 Unix datagram，并等待 SGLang scheduler safe point
+应用事件及 ACK（单次超时配置 10 秒）。v59 的 scheduler/agent 并发差异可以放大
+该等待；旧 trace 没有客户端送达与 ACK 时间戳，故不能将历史 1.375 秒的全部
+中位启动等待唯一归因于此机制。
+
+当前仅对普通 `TOOL_START` 使用 per-workflow 单发送线程：权威 trace 先写入，
+回调将控制事件放入有界 FIFO 后立即执行工具；后续 `TOOL_END`、RETURN 和其他
+控制事件仍在 FIFO 上按顺序等待前序 ACK。队列满、发送失败或 ACK 超时会使
+控制通道 measurement 降级，不会静默丢失事件；workflow 退出前同步排空队列。
+这消除了工具启动依赖 scheduler ACK 的同步障碍，但工具开始与 RCCG 应用之间
+可能存在短暂延迟，短工具窗口能否用于迁移仍须在线实测。每个 workflow 的
+`runtime_control_delivery_timing` 新增 tool-start queue/ACK P50/P95，可区分
+事件发送积压和 scheduler 应用延迟；下一次 A/B 应同时报告原始
+`tool_start -> sandbox invocation` 与 `tool_end -> next model request` 时延。
+
 ## 6. 当前阻塞项
 
 1. prediction-to-action utilization gap 尚未闭合。初步 H200 高压运行中 predictive arm
