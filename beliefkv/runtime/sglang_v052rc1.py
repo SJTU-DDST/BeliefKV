@@ -625,6 +625,7 @@ class _AdmissionRescueTransaction:
     released_for_admission_tokens: int = 0
     reclaimed_bytes: int = 0
     source: str = "reactive_reclaim"
+    last_progress_ts_ms: float | None = None
 
     @property
     def reserved_tokens(self) -> int:
@@ -10899,6 +10900,7 @@ class EmbeddedSGLangRuntime:
             now_ms=float(self._now_ms()),
         )
         self._advance_restore_authority(now_ms=float(self._now_ms()))
+        self._expire_stalled_admission_rescue(now_ms=float(self._now_ms()))
         self._enforce_queue_timeouts(now_ms=float(self._now_ms()))
         self._enforce_execution_timeouts(now_ms=float(self._now_ms()))
         for context_id, bundle_ids, status in retired_h2d:
@@ -13067,6 +13069,10 @@ class EmbeddedSGLangRuntime:
         request_id = lease.request_id
         if request_id is None or not hasattr(self, "scheduler"):
             return False
+        if now_ms < getattr(self, "_admission_rescue_retry_after_ms", {}).get(
+            request_id, 0.0
+        ):
+            return False
         active = getattr(self, "_active_admission_rescue", None)
         if active is not None:
             if active.request_id == request_id:
@@ -13201,6 +13207,10 @@ class EmbeddedSGLangRuntime:
         if getattr(self, "_active_admission_rescue", None) is not None:
             return
         request_id = requirement.beneficiary_request_id
+        if now_ms < getattr(self, "_admission_rescue_retry_after_ms", {}).get(
+            request_id, 0.0
+        ):
+            return
         entry = self.controller.visible_admission.get(request_id)
         metadata = getattr(self, "_request_metadata_by_id", {}).get(request_id)
         if (
@@ -13289,6 +13299,7 @@ class EmbeddedSGLangRuntime:
             return
         rescue.allocations.append(allocation)
         rescue.reclaimed_bytes += max(0, reclaimed_bytes)
+        rescue.last_progress_ts_ms = now_ms
         if (
             rescue.reserved_tokens * self.config.kv_bytes_per_token
             >= rescue.required_fragment_bytes
@@ -13393,6 +13404,61 @@ class EmbeddedSGLangRuntime:
             service_latency_ms=max(0.0, now_ms - rescue.created_ts_ms),
             reclaimed_bytes=rescue.reclaimed_bytes,
         )
+
+    def _expire_stalled_admission_rescue(self, *, now_ms: float) -> None:
+        rescue = getattr(self, "_active_admission_rescue", None)
+        if rescue is None:
+            return
+        ledger = getattr(self, "_lock_service_ledger", None)
+        progress = (
+            ledger.progress_record(rescue.request_id) if ledger is not None else None
+        )
+        if (
+            progress is not None
+            and progress.completed_service_count
+            > rescue.baseline_completed_service_count
+        ):
+            self._finish_admission_rescue(
+                rescue.request_id,
+                now_ms=now_ms,
+                reason="gpu_service_completed",
+                success=True,
+            )
+            return
+        deadline_ms = max(
+            10_000.0, 4.0 * self.config.admission_force_progress_timeout_ms
+        )
+        maximum_ownership_ms = max(60_000.0, 3.0 * deadline_ms)
+        last_progress_ms = (
+            rescue.created_ts_ms
+            if rescue.last_progress_ts_ms is None
+            else rescue.last_progress_ts_ms
+        )
+        stalled = now_ms - last_progress_ms >= deadline_ms
+        ownership_expired = (
+            now_ms - rescue.created_ts_ms >= maximum_ownership_ms
+        )
+        if not stalled and not ownership_expired:
+            return
+        retry_after = getattr(self, "_admission_rescue_retry_after_ms", None)
+        if retry_after is None:
+            retry_after = {}
+            self._admission_rescue_retry_after_ms = retry_after
+        for request_id, expiry_ms in tuple(retry_after.items()):
+            if now_ms >= expiry_ms:
+                retry_after.pop(request_id, None)
+        retry_after[rescue.request_id] = now_ms + deadline_ms
+        reason = "no_progress_timeout" if stalled else "ownership_timeout"
+        self._online_joint_counts[f"admission_rescue_{reason}"] += 1
+        self._finish_admission_rescue(
+            rescue.request_id,
+            now_ms=now_ms,
+            reason=reason,
+            success=False,
+        )
+        running_batch = getattr(getattr(self, "scheduler", None), "running_batch", None)
+        if running_batch is not None:
+            running_batch.batch_is_full = False
 
     def _prepared_causal_bindings_control_state(self) -> dict[str, object]:
         return {
@@ -14786,6 +14852,7 @@ class EmbeddedSGLangRuntime:
             if rescue is not None and rescue.request_id == request_id:
                 rescue.released_for_admission_tokens = 0
                 rescue.stage = "admitted_wait_service"
+                rescue.last_progress_ts_ms = float(self._now_ms())
                 self._online_joint_counts[
                     "admission_rescue_native_admitted"
                 ] += 1

@@ -7580,6 +7580,70 @@ class SGLangBackendTest(unittest.TestCase):
         self.assertIsNone(runtime._active_admission_rescue)
         self.assertEqual(allocator.available_size(), 100)
 
+    def test_admission_rescue_expires_without_prefill_progress(self):
+        runtime = EmbeddedSGLangRuntime.__new__(EmbeddedSGLangRuntime)
+        runtime.config = BeliefKVConfig(
+            hbm_capacity_bytes=2_000,
+            host_capacity_bytes=4_000,
+            reserve_hbm_bytes=0,
+            kv_bytes_per_token=10,
+            admission_force_progress_timeout_ms=5_000.0,
+        )
+        runtime.controller = BeliefKVController(runtime.config)
+        runtime.audit = _AuditRecorder()
+        runtime._online_joint_counts = Counter()
+        runtime._active_admission_rescue = None
+        runtime._request_metadata_by_id = {
+            "blocked": BeliefKVRequestMetadata("wf", "inv", "ctx", 0),
+            "other": BeliefKVRequestMetadata("wf-2", "inv-2", "ctx-2", 0),
+        }
+        for request_id, workflow_id, invocation_id, context_id in (
+            ("blocked", "wf", "inv", "ctx"),
+            ("other", "wf-2", "inv-2", "ctx-2"),
+        ):
+            runtime.controller.visible_admission.register(
+                AdmissionRequest(
+                    request_id, workflow_id, invocation_id, context_id,
+                    0, 0.0, 20, 8, 10,
+                )
+            )
+        allocator = _Allocator(100)
+        running_batch = SimpleNamespace(batch_is_full=True)
+        runtime.scheduler = SimpleNamespace(
+            token_to_kv_pool_allocator=allocator, running_batch=running_batch
+        )
+        blocked = ReclaimRequirement(
+            beneficiary_request_id="blocked",
+            required_startup_bytes=20,
+            required_growth_bytes=280,
+            current_prefix_bytes=500,
+            waited_ms=5_001.0,
+            skip_reason="bounded_hbm_budget",
+        )
+        runtime._maybe_start_admission_rescue(blocked, now_ms=5_001.0)
+        runtime._reserve_admission_rescue_capacity(
+            request_id="blocked", reclaimed_bytes=300, now_ms=5_002.0
+        )
+        self.assertEqual(allocator.available_size(), 70)
+        runtime._expire_stalled_admission_rescue(now_ms=25_001.0)
+        self.assertIsNotNone(runtime._active_admission_rescue)
+        runtime._expire_stalled_admission_rescue(now_ms=25_002.0)
+        self.assertIsNone(runtime._active_admission_rescue)
+        self.assertEqual(allocator.available_size(), 100)
+        self.assertFalse(running_batch.batch_is_full)
+        self.assertEqual(runtime._online_joint_counts["admission_rescue_no_progress_timeout"], 1)
+
+        runtime._maybe_start_admission_rescue(blocked, now_ms=25_003.0)
+        self.assertIsNone(runtime._active_admission_rescue)
+        runtime._maybe_start_admission_rescue(
+            replace(blocked, beneficiary_request_id="other"), now_ms=25_003.0
+        )
+        self.assertEqual(runtime._active_admission_rescue.request_id, "other")
+        runtime._active_admission_rescue.last_progress_ts_ms = 85_002.0
+        runtime._expire_stalled_admission_rescue(now_ms=85_003.0)
+        self.assertIsNone(runtime._active_admission_rescue)
+        self.assertEqual(runtime._online_joint_counts["admission_rescue_ownership_timeout"], 1)
+
     def test_joint_active_window_defers_but_keeps_inactive_workflow_visible(self):
         config = BeliefKVConfig(
             hbm_capacity_bytes=1_000,

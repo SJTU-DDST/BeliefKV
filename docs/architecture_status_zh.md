@@ -851,6 +851,28 @@ main 分支修复：service lease 只保护已经完成 H2D 的 beneficiary，�
 5. workload driver context-limit preflight；
 6. `resident_service_window_ms` 与 target service deadline 的一致性。
 
+### 5.21 2026-09-21 v58/v59 调度活性差异
+
+相同 64-root manifest 下，v58/v59 分别运行约 10,316/30,489 秒，平均 GPU 利用率
+28.72%/9.93%。两轮代码不同，不能单凭差异认定预测策略退化；v59 前 10,316 秒利用率
+也仅约 7.5%，长尾并非唯一原因。v59 有 59 笔请求在首次物理 GPU service 前达到
+30 分钟 queue timeout，v58 没有。v59 的一次 `admission_rescue` 遇到 native
+`NO_TOKEN` 后约 23 分钟未出现新的 prefill ticket epoch，期间 rescue 持续占有
+单请求准入优先权。代码确认原先没有 rescue 无进展/总占有期限，这是可导致 waiting
+请求饥饿的活性缺陷，但尚不能证明它单独导致所有低利用率或恢复 prefill 所需的
+native KV 可回收条件已经满足。
+
+当前修复在 scheduler safe point 检查 rescue：默认 20 秒无进展或 60 秒总占有期限
+到期，释放 allocator 预留、解除单请求优先权、短期禁止同一请求重新独占，并让
+native `batch_is_full` 重新尝试一次。原生 `NO_TOKEN` 与物理锁的安全判定不变。
+需要在后续 GPU 运行中分别观测 rescue 终结后是否恢复 prefill、retraction
+候选不合格的具体原因和真正可回收的 native token 容量。
+
+v59 工具调用也出现独立长尾：`tool_start` 至 sandbox `execute` 开始的中位等待
+约 1.375 秒（v58 约 0.451 秒），但 sandbox 执行 P95 反而缩短。工具前的
+`TOOL_START` 事件需等待 scheduler 轮询端 ACK；现有 trace 未记录 ACK 等待时长，
+因此不能将全部工具变慢归因于事件通道或预测策略，后续需分段计时。
+
 ## 6. 当前阻塞项
 
 1. prediction-to-action utilization gap 尚未闭合。初步 H200 高压运行中 predictive arm
