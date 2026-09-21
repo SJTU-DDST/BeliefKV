@@ -94,6 +94,12 @@ def parse_args() -> argparse.Namespace:
         ),
     )
     parser.add_argument("--context-window-tokens", type=int, default=32_768)
+    parser.add_argument(
+        "--model-context-tokens",
+        type=int,
+        default=262_144,
+        help="Hard model context limit used to reserve completion budget.",
+    )
     parser.add_argument("--context-keep-tokens", type=int, default=8_192)
     parser.add_argument("--summary-output-tokens", type=int, default=2_048)
     parser.add_argument("--tool-observation-turn-chars", type=int, default=65_536)
@@ -224,6 +230,7 @@ def main() -> int:
             keep_tokens=args.context_keep_tokens,
             intermediate_output_tokens=args.max_completion_tokens,
             summary_output_tokens=args.summary_output_tokens,
+            model_context_tokens=args.model_context_tokens,
         ),
         loop_guard=LoopGuardPolicy(
             enabled=not args.disable_loop_guard,

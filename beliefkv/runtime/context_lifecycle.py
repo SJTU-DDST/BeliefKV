@@ -54,6 +54,7 @@ class ContextLifecyclePolicy:
     keep_tokens: int = 8_192
     intermediate_output_tokens: int = 1_024
     summary_output_tokens: int = 2_048
+    model_context_tokens: int = 262_144
 
     def __post_init__(self) -> None:
         if min(
@@ -67,6 +68,10 @@ class ContextLifecyclePolicy:
             raise ValueError("context keep_tokens must be smaller than window_tokens")
         if self.summary_output_tokens > self.window_tokens - self.keep_tokens:
             raise ValueError("summary output must fit outside the retained context")
+        if self.window_tokens > self.model_context_tokens:
+            raise ValueError("context window cannot exceed the model context")
+        if self.intermediate_output_tokens >= self.model_context_tokens:
+            raise ValueError("completion budget must fit inside model context")
 
 
 @dataclass(frozen=True)
@@ -332,11 +337,15 @@ class ContextLifecycleMiddleware(SummarizationMiddleware):
 class CompletionBudgetMiddleware(AgentMiddleware[Any, Any, Any]):
     """Use short outputs for tool turns while preserving a larger final budget."""
 
+    _MAX_PROMPT_TOKENS_SETTING = "beliefkv_max_prompt_tokens"
+
     def __init__(
         self,
         *,
         intermediate_tokens: int,
         final_tokens: int,
+        model_context_tokens: int,
+        prompt_floor_tokens: int = 4_096,
         final_mode: Callable[[], bool] | None = None,
     ) -> None:
         super().__init__()
@@ -344,8 +353,14 @@ class CompletionBudgetMiddleware(AgentMiddleware[Any, Any, Any]):
             raise ValueError("completion token budgets must be positive")
         if intermediate_tokens > final_tokens:
             raise ValueError("intermediate output budget cannot exceed final budget")
+        if final_tokens >= model_context_tokens:
+            raise ValueError("completion budget must fit inside model context")
+        if prompt_floor_tokens <= 0 or prompt_floor_tokens >= model_context_tokens:
+            raise ValueError("prompt floor must fit inside model context")
         self.intermediate_tokens = intermediate_tokens
         self.final_tokens = final_tokens
+        self.model_context_tokens = model_context_tokens
+        self.prompt_floor_tokens = prompt_floor_tokens
         self.final_mode = final_mode or (lambda: False)
 
     def _request(self, request: ModelRequest) -> ModelRequest:
@@ -358,7 +373,24 @@ class CompletionBudgetMiddleware(AgentMiddleware[Any, Any, Any]):
             if self.final_mode() or runtime_finalization
             else self.intermediate_tokens
         )
+        max_tokens = int(settings.get("max_tokens", self.final_tokens) or 0)
+        prompt_reserve = self.model_context_tokens - max_tokens
+        if prompt_reserve < self.prompt_floor_tokens:
+            prompt_reserve = self.prompt_floor_tokens
+        settings[self._MAX_PROMPT_TOKENS_SETTING] = prompt_reserve
         return request.override(model_settings=settings)
+
+    @staticmethod
+    def effective_prompt_limit(request: ModelRequest) -> int | None:
+        """Return the hard prompt limit attached by this middleware."""
+
+        raw = request.model_settings.get(
+            CompletionBudgetMiddleware._MAX_PROMPT_TOKENS_SETTING
+        )
+        if raw is None:
+            return None
+        value = int(raw)
+        return value if value > 0 else None
 
     def wrap_model_call(
         self,

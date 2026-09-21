@@ -13,6 +13,7 @@ from uuid import UUID
 
 from langchain_core.callbacks import BaseCallbackHandler
 from langchain_core.messages import AIMessage, BaseMessage
+from langchain_core.messages.utils import count_tokens_approximately
 from langchain_openai import ChatOpenAI
 from pydantic import PrivateAttr
 
@@ -1462,6 +1463,10 @@ class BeliefKVChatOpenAI(ChatOpenAI):
     _abort_url: str | None = PrivateAttr(default=None)
     _active_rids: set[str] = PrivateAttr(default_factory=set)
     _active_rids_lock: threading.Lock = PrivateAttr(default_factory=threading.Lock)
+    _beliefkv_max_prompt_tokens: int | None = PrivateAttr(default=None)
+    _beliefkv_prompt_token_counter: (
+        Callable[[list[BaseMessage]], int] | None
+    ) = PrivateAttr(default=None)
 
     def __init__(
         self,
@@ -1479,6 +1484,42 @@ class BeliefKVChatOpenAI(ChatOpenAI):
         self._activation_deadline = activation_deadline
         self._request_timeout_cap_s = request_timeout_s
         self._abort_url = abort_url
+        self._beliefkv_prompt_token_counter = (
+            lambda messages: count_tokens_approximately(
+                messages, chars_per_token=3.0
+            )
+        )
+
+    def set_beliefkv_prompt_limit(
+        self,
+        *,
+        model_context_tokens: int,
+        completion_tokens: int,
+    ) -> None:
+        if completion_tokens >= model_context_tokens:
+            raise ValueError("completion budget must fit inside model context")
+        self._beliefkv_max_prompt_tokens = (
+            model_context_tokens - completion_tokens
+        )
+
+    def _preflight_model_context(self, messages: list[BaseMessage]) -> None:
+        """Reject oversized prompts before they consume scheduler capacity."""
+
+        raw_limit = self._beliefkv_max_prompt_tokens
+        if raw_limit is None:
+            return
+        limit = int(raw_limit)
+        # Model-specific tokenizers can replace this counter without changing
+        # the request boundary. The default is deterministic and conservative
+        # for code-heavy agent histories where 4 chars/token undercounts.
+        counter = self._beliefkv_prompt_token_counter
+        prompt_tokens = counter(messages) if counter is not None else 0
+        if prompt_tokens > limit:
+            raise ValueError(
+                "BeliefKV prompt context preflight failed: "
+                f"prompt_tokens={prompt_tokens} limit={limit} "
+                f"model={self.model_name!r}"
+            )
 
     def _generate(
         self,
@@ -1489,6 +1530,7 @@ class BeliefKVChatOpenAI(ChatOpenAI):
     ) -> Any:
         rid: str | None = None
         try:
+            self._preflight_model_context(messages)
             kwargs, rid = self._with_beliefkv_runtime(run_manager, kwargs)
             self._track_request(rid)
             return super()._generate(messages, stop, run_manager, **kwargs)
@@ -1509,6 +1551,7 @@ class BeliefKVChatOpenAI(ChatOpenAI):
     ) -> Any:
         rid: str | None = None
         try:
+            self._preflight_model_context(messages)
             kwargs, rid = self._with_beliefkv_runtime(run_manager, kwargs)
             self._track_request(rid)
             return await super()._agenerate(messages, stop, run_manager, **kwargs)

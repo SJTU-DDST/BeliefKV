@@ -1377,6 +1377,12 @@ class DeepAgentsExperimentConfig:
             raise ValueError(
                 "context lifecycle intermediate output budget exceeds the model budget"
             )
+        if self.max_completion_tokens >= (
+            self.context_lifecycle.model_context_tokens
+        ):
+            raise ValueError(
+                "completion budget exceeds the model context limit"
+            )
         if not self.sandbox_test_env_path.startswith("/"):
             raise ValueError("sandbox_test_env_path must be absolute")
 
@@ -1833,6 +1839,10 @@ def _model(
         streaming=False,
         disable_streaming="tool_calling",
     )
+    model.set_beliefkv_prompt_limit(
+        model_context_tokens=config.context_lifecycle.model_context_tokens,
+        completion_tokens=config.max_completion_tokens,
+    )
 
     if deadline_controller is not None:
         deadline_controller.register_model(model)
@@ -2114,6 +2124,9 @@ def _autonomous_subagents(
                             config.context_lifecycle.intermediate_output_tokens
                         ),
                         final_tokens=config.max_completion_tokens,
+                        model_context_tokens=(
+                            config.context_lifecycle.model_context_tokens
+                        ),
                     ),
                     PatchToolCallsMiddleware(),
                     _tool_circuit(backend, scope=scope, adapter=adapter),
@@ -2186,6 +2199,7 @@ def _build_autonomous_agent(
         CompletionBudgetMiddleware(
             intermediate_tokens=config.context_lifecycle.intermediate_output_tokens,
             final_tokens=config.max_completion_tokens,
+            model_context_tokens=config.context_lifecycle.model_context_tokens,
         ),
         PatchToolCallsMiddleware(),
         _tool_circuit(backend, scope="autonomous:supervisor", adapter=adapter),

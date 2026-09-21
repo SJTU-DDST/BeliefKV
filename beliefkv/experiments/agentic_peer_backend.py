@@ -600,6 +600,10 @@ class ToolEnabledPeerBackend(PeerAgentBackend):
             streaming=False,
             disable_streaming="tool_calling",
         )
+        model.set_beliefkv_prompt_limit(
+            model_context_tokens=self.config.context_lifecycle.model_context_tokens,
+            completion_tokens=self.config.max_completion_tokens,
+        )
         summary_model = model.model_copy(
             update={"max_tokens": self.config.context_lifecycle.summary_output_tokens}
         )
@@ -661,6 +665,9 @@ class ToolEnabledPeerBackend(PeerAgentBackend):
                                         self.config.context_lifecycle.intermediate_output_tokens
                                     ),
                                     final_tokens=self.config.max_completion_tokens,
+                                    model_context_tokens=(
+                                        self.config.context_lifecycle.model_context_tokens
+                                    ),
                                 ),
                                 AgentLoopGuardMiddleware(
                                     policy=self.config.loop_guard,
@@ -693,6 +700,9 @@ class ToolEnabledPeerBackend(PeerAgentBackend):
                     self.config.context_lifecycle.intermediate_output_tokens
                 ),
                 final_tokens=self.config.max_completion_tokens,
+                model_context_tokens=(
+                    self.config.context_lifecycle.model_context_tokens
+                ),
                 final_mode=lambda: activation_policy.must_complete,
             )
         )
