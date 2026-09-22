@@ -200,7 +200,7 @@ index 743c8af..7399197 100644
 +        self.init_beliefkv_runtime()
 +
          self.is_initializing = False
-@@ -730,2 +732,89 @@ class Scheduler(
+@@ -730,2 +732,90 @@ class Scheduler(
  
 +    def init_beliefkv_runtime(self) -> None:
 +        self.beliefkv_runtime = None
@@ -235,6 +235,7 @@ index 743c8af..7399197 100644
 +            self._native_reactive_telemetry = NativeReactiveTelemetry(
 +                native_audit_dir, scheduler_path=__file__
 +            )
++            self._native_reactive_telemetry.record_capacity(self.tree_cache)
 +            self.tree_cache.on_hicache_transfer_commit = (
 +                self._native_reactive_telemetry.on_native_transfer_commit
 +            )

@@ -5,6 +5,8 @@ import time
 from pathlib import Path
 from types import SimpleNamespace
 
+import pytest
+
 from beliefkv.runtime.v0520_native_telemetry import NativeReactiveTelemetry
 
 
@@ -21,6 +23,35 @@ class _Mode:
 
 def _read(path: Path) -> list[dict]:
     return [json.loads(line) for line in path.read_text().splitlines()]
+
+
+def test_capacity_census_is_scheduler_local_and_fail_closed(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from beliefkv.runtime import sglang_v0520_observer
+
+    monkeypatch.setattr(
+        sglang_v0520_observer, "observe_static_full_mamba",
+        lambda cache: {"pool_layout": "static_separate_full_mamba", "device_total_bytes": 800},
+    )
+    audit = NativeReactiveTelemetry(tmp_path / "server")
+    audit.record_capacity(object())
+    path = tmp_path / "server/native_capacity_census.json"
+    census = json.loads(path.read_text())
+    assert census["capacity"]["device_total_bytes"] == 800
+    with pytest.raises(FileExistsError):
+        audit.record_capacity(object())
+    audit.close()
+
+    monkeypatch.setattr(
+        sglang_v0520_observer, "observe_static_full_mamba",
+        lambda cache: (_ for _ in ()).throw(ValueError("unknown pool")),
+    )
+    second = NativeReactiveTelemetry(tmp_path / "unavailable")
+    with pytest.raises(RuntimeError, match="unknown pool"):
+        second.record_capacity(object())
+    second.close()
+    assert not (tmp_path / "unavailable/native_capacity_census.json").exists()
 
 
 def test_native_request_service_and_ack_are_evidence_not_invented_dma(

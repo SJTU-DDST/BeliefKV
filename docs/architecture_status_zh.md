@@ -34,6 +34,24 @@ HiCache 配置、模型关键文件哈希、模型 context 上限和数据源稳
 FULL/MAMBA 设备池字节占比分割 **总计 200 decimal GB**
 （186.26 GiB）的 Host 预算，**不是每池 200 GB**；各池真实容量
 须从 FULL/MAMBA pool census 获取，`get_server_info` 只上报总参数。
+当前默认 `--enable-unified-memory=false`，FULL token KV 与 MAMBA state
+占用**独立**设备分池，实际 HBM 字节可相加但容量不可互借；
+UnifiedRadixCache 指的是树结构，不等于 unified device memory。
+v0.5.20 的 unified device memory 与 HiCache 不兼容，不能在本次
+native reactive 数据采集中强行启用。下面旧的 unified observer
+只适用于将来兼容 unified memory 的服务配置。
+2026-09-22 的 Qwen3.5 冻结训练配置已在 H200 上完成**静态容量标定**：
+`configs/migration/qwen35_native_hbm_capacity_2026-09-22.json`。
+`mem_fraction_static=0.94`、`max_running_requests=32`、
+`max_total_num_tokens=1,798,995`；设备 FULL 36.84 GB + MAMBA 33.10 GB，
+合计 69.94 GB。Host FULL 94.82 GB + MAMBA 85.19 GB，
+合计 180.01 GB，scheduler 的 `numastat` 显示约 174.8 GiB 位于 node1，
+node0 约 18 MB。CUDA graph 后服务报告可用约 6.88 GB，
+`nvidia-smi` 启动后空闲 6000 MiB、三次请求工具往返烟测后 5368 MiB；
+继续加大静态占比前需先做高压 OOM/headroom 验证。
+已加入 scheduler 原生静态 FULL/MAMBA census、独立标定入口和
+训练批次 fail-closed 核验。标定仅覆盖该模型/版本/硬件/NUMA/池配置
+的静态容量，不代表高压动态峰值、传输或 GPU 服务曲线已标定。
 `HOST_NUMA_NODE=1` 默认将服务 CPU/内存绑定到
 node1；预检要求总预算加 8 GiB 余量，并估算 node1 的 MemFree、
 干净可回收 file cache 与部分 reclaimable slab。仅看 MemFree 会漏掉

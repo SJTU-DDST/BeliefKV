@@ -140,6 +140,52 @@ def capacity_contract(
     }
 
 
+def validate_native_pool_census(
+    census: dict[str, Any],
+    *,
+    scheduler_pid: int,
+    pool_tokens: int,
+    host_budget_gb: int,
+    full_bytes_per_token: int,
+    gpu_total_bytes: int,
+) -> dict[str, int]:
+    """Validate default separately allocated FULL/MAMBA device/Host pools."""
+    if (
+        census.get("schema_version") != 1
+        or census.get("source") != "native_sglang_v0520"
+        or census.get("scheduler_pid") != scheduler_pid
+    ):
+        raise RuntimeError("native pool census does not belong to this scheduler")
+    raw = census.get("capacity")
+    if not isinstance(raw, dict) or raw.get("pool_layout") != "static_separate_full_mamba":
+        raise RuntimeError("native FULL/MAMBA pool census is unavailable")
+    names = (
+        "device_full_tokens", "device_mamba_slots", "device_full_bytes",
+        "device_mamba_bytes", "device_total_bytes",
+        "host_full_tokens", "host_mamba_slots", "host_full_bytes",
+        "host_mamba_bytes", "host_total_bytes",
+    )
+    if any(type(raw.get(name)) is not int or raw[name] <= 0 for name in names):
+        raise RuntimeError("native pool census has missing or invalid geometry")
+    values = {name: raw[name] for name in names}
+    if (
+        pool_tokens <= 0 or host_budget_gb <= 0 or full_bytes_per_token <= 0
+        or gpu_total_bytes <= 0
+        or values["device_full_tokens"] < pool_tokens
+        or values["device_full_bytes"] < pool_tokens * full_bytes_per_token
+        or values["device_full_bytes"] > (values["device_full_tokens"] + 4096) * full_bytes_per_token
+        or values["device_full_bytes"] + values["device_mamba_bytes"]
+        != values["device_total_bytes"]
+        or values["device_total_bytes"] >= gpu_total_bytes
+        or values["host_full_bytes"] + values["host_mamba_bytes"]
+        != values["host_total_bytes"]
+        or abs(values["host_total_bytes"] - host_budget_gb * 1_000_000_000)
+        > host_budget_gb * 10_000_000
+    ):
+        raise RuntimeError("native pool census disagrees with runtime capacity")
+    return values
+
+
 def validate_native_reactive_v0520(
     server_info: dict[str, Any],
     *,

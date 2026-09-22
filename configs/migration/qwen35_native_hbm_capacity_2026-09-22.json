@@ -1,0 +1,34 @@
+{
+  "calibration_kind": "native_qwen35_full_mamba_static_capacity",
+  "device_ceiling_semantics": "static separate FULL and MAMBA allocations; bytes additive",
+  "dynamic_pressure_and_service_calibrated": false,
+  "full_bytes_per_token": 20480,
+  "gpu_total_mib": 143771,
+  "gpu_uuid": "GPU-a50d9b5b-d146-f031-d960-9a309904714e",
+  "host_budget_gb": 180,
+  "max_running_requests": 32,
+  "max_total_num_tokens": 1798995,
+  "mem_fraction_static": 0.94,
+  "minimum_post_start_free_mib": 4096,
+  "pools": {
+    "device_full_bytes": 36843438080,
+    "device_full_tokens": 1798995,
+    "device_mamba_bytes": 33096007680,
+    "device_mamba_slots": 513,
+    "device_total_bytes": 69939445760,
+    "host_full_bytes": 94822297600,
+    "host_full_tokens": 4629995,
+    "host_mamba_bytes": 85186805760,
+    "host_mamba_slots": 1323,
+    "host_total_bytes": 180009103360
+  },
+  "schema_version": 1,
+  "server_identity": {
+    "configured_kv_dtype": "bfloat16",
+    "model_path": "/srv/ai/models/Qwen/Qwen3.5-35B-A3B",
+    "resolved_kv_dtype": "bfloat16",
+    "served_model_name": "Qwen3.5-35B-A3B",
+    "sglang_version": "0.5.20",
+    "weight_dtype": "bfloat16"
+  }
+}

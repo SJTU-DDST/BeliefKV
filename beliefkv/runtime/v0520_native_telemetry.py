@@ -45,6 +45,24 @@ class NativeReactiveTelemetry:
         self._writer.start()
         atexit.register(self.close)
 
+    def record_capacity(self, cache: object) -> None:
+        """Freeze the native shared FULL/MAMBA geometry before any workload."""
+        from beliefkv.runtime.sglang_v0520_observer import observe_static_full_mamba
+
+        try:
+            observation = observe_static_full_mamba(cache)
+        except (AttributeError, KeyError, TypeError, ValueError) as exc:
+            raise RuntimeError(f"native FULL/MAMBA capacity census failed: {exc}") from exc
+        path = self.directory / "native_capacity_census.json"
+        with path.open("x", encoding="utf-8") as output:
+            json.dump({
+                "schema_version": 1,
+                "source": "native_sglang_v0520",
+                "scheduler_pid": os.getpid(),
+                "capacity": observation,
+            }, output, indent=2, sort_keys=True)
+            output.write("\n")
+
     @staticmethod
     def _identity(req: Any) -> dict[str, Any] | None:
         raw = getattr(req, "beliefkv_metadata", None)

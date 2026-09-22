@@ -11,6 +11,7 @@ point for a coherent snapshot; concurrent pool updates are not synchronized.
 from __future__ import annotations
 
 from dataclasses import dataclass
+import operator
 import time
 
 
@@ -98,9 +99,13 @@ class UnifiedNodeClosureObservation:
 
 
 def _positive(value: object, label: str) -> int:
-    if type(value) is not int or value <= 0:
+    try:
+        integer = operator.index(value) if type(value) is not bool else 0
+    except TypeError as exc:
+        raise ValueError(f"invalid {label}") from exc
+    if integer <= 0:
         raise ValueError(f"invalid {label}")
-    return value
+    return integer
 
 
 def _bounded(value: object, ceiling: int, label: str) -> int:
@@ -111,7 +116,9 @@ def _bounded(value: object, ceiling: int, label: str) -> int:
 
 def _named(value: object, name: str) -> object:
     if type(value).__name__ != name:
-        raise ValueError(f"expected {name}")
+        raise ValueError(
+            f"expected {name}, got {type(value).__module__}.{type(value).__name__}"
+        )
     return value
 
 
@@ -136,6 +143,89 @@ def _device_ceiling(pool: object, buffer: object, name: str) -> tuple[int, int]:
         allocatable_pages * logical_page,
         allocatable_pages * physical_page * entry_bytes,
     )
+
+
+def observe_static_full_mamba(cache: object) -> dict[str, int | str]:
+    """Read the default, separately allocated FULL and MAMBA device pools.
+
+    Unlike unified-memory, these allocations cannot lend bytes to each other.
+    Only persistent KV/state tensor storage is counted; CUDA scratch and graph
+    buffers consume additional GPU memory outside these pools.
+    """
+    _named(cache, "UnifiedRadixCache")
+    if cache.disable is not False or tuple(
+        (component.name, component.value) for component in cache.tree_components
+    ) != (("FULL", 0), ("MAMBA", 2)):
+        raise ValueError("expected active FULL+MAMBA radix cache")
+    allocator = cache.token_to_kv_pool_allocator
+    if type(allocator).__name__ not in (
+        "TokenToKVPoolAllocator", "PagedTokenToKVPoolAllocator"
+    ):
+        raise ValueError(f"unexpected static allocator: {type(allocator).__name__}")
+    req = _named(cache.req_to_token_pool, "HybridReqToTokenPool")
+    hybrid = _named(allocator._kvcache, "HybridLinearKVPool")
+    full = _named(hybrid.full_kv_pool, "MHATokenToKVPool")
+    mamba = _named(req.mamba_pool, "MambaPool")
+    if hybrid.mamba_pool is not mamba or full.device != mamba.device:
+        raise ValueError("static FULL/MAMBA pools are not the linked pair")
+    full_tokens = _positive(allocator.size, "static FULL tokens")
+    mamba_slots = _positive(mamba.size, "static MAMBA slots")
+    if full.size != full_tokens:
+        raise ValueError("static FULL allocator and physical pool disagree")
+    full_k_bytes, full_v_bytes = full.get_kv_size_bytes()
+    device_full_bytes = (
+        _positive(full_k_bytes, "device FULL K bytes")
+        + _positive(full_v_bytes, "device FULL V bytes")
+    )
+    state = mamba.mamba_cache
+    if type(state).__name__ != "State":
+        raise ValueError("unknown static MAMBA state layout")
+
+    def tensor_bytes(tensor: object) -> int:
+        return int(tensor.numel()) * int(tensor.element_size())
+
+    device_mamba_bytes = _positive(
+        sum(tensor_bytes(item) for item in state.conv)
+        + tensor_bytes(state.temporal),
+        "device MAMBA bytes",
+    )
+    group = _named(cache.host_pool_group, "HostPoolGroup")
+    if cache.cache_controller.mem_pool_host is not group or set(group.entry_map) != {
+        "kv", "mamba",
+    }:
+        raise ValueError("missing static FULL/MAMBA Host pools")
+    full_entry, mamba_entry = group.entry_map["kv"], group.entry_map["mamba"]
+    host_full = _named(full_entry.host_pool, "MHATokenToKVPoolHost")
+    host_mamba = _named(mamba_entry.host_pool, "MambaPoolHost")
+    if (
+        full_entry.device_pool is not full
+        or mamba_entry.device_pool is not mamba
+        or host_full.device_pool is not full
+        or host_mamba.device_pool is not mamba
+        or group.anchor_entry is not full_entry
+    ):
+        raise ValueError("static Host/Device pool ownership differs")
+    host_full_tokens = _positive(host_full.size, "Host FULL tokens")
+    host_mamba_slots = _positive(host_mamba.size, "Host MAMBA slots")
+    host_full_bytes = _positive(
+        host_full_tokens * host_full.size_per_token, "Host FULL bytes"
+    )
+    host_mamba_bytes = _positive(
+        host_mamba_slots * host_mamba.size_per_token, "Host MAMBA bytes"
+    )
+    return {
+        "pool_layout": "static_separate_full_mamba",
+        "device_full_tokens": full_tokens,
+        "device_mamba_slots": mamba_slots,
+        "device_full_bytes": device_full_bytes,
+        "device_mamba_bytes": device_mamba_bytes,
+        "device_total_bytes": device_full_bytes + device_mamba_bytes,
+        "host_full_tokens": host_full_tokens,
+        "host_mamba_slots": host_mamba_slots,
+        "host_full_bytes": host_full_bytes,
+        "host_mamba_bytes": host_mamba_bytes,
+        "host_total_bytes": host_full_bytes + host_mamba_bytes,
+    }
 
 
 def observe_unified_full_mamba(cache: object) -> UnifiedCapacityObservation:

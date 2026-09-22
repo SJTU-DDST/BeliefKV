@@ -5,13 +5,81 @@ from __future__ import annotations
 from enum import IntEnum
 from types import SimpleNamespace as NS
 
+import numpy as np
 import pytest
 
 from beliefkv.runtime.sglang_v0520_observer import (
+    observe_static_full_mamba,
     observe_unified_full_mamba,
     observe_unified_full_mamba_usage,
     observe_unified_node_closure,
 )
+
+
+def test_static_full_mamba_census_counts_separate_device_allocations() -> None:
+    class TokenToKVPoolAllocator(NS):
+        pass
+
+    class HybridReqToTokenPool(NS):
+        pass
+
+    class HybridLinearKVPool(NS):
+        pass
+
+    class MHATokenToKVPool(NS):
+        pass
+
+    class MambaPool(NS):
+        pass
+
+    class MHATokenToKVPoolHost(NS):
+        pass
+
+    class State(NS):
+        pass
+
+    class Tensor:
+        def __init__(self, count: int) -> None:
+            self.count = count
+
+        def numel(self) -> int:
+            return self.count
+
+        def element_size(self) -> int:
+            return 2
+
+    full = MHATokenToKVPool(
+        device="cuda", size=12,
+        get_kv_size_bytes=lambda: (np.int64(130), np.int64(130)),
+    )
+    mamba = MambaPool(
+        device="cuda", size=3,
+        mamba_cache=State(conv=[Tensor(30)], temporal=Tensor(90)),
+    )
+    hybrid = HybridLinearKVPool(full_kv_pool=full, mamba_pool=mamba)
+    allocator = TokenToKVPoolAllocator(size=12, _kvcache=hybrid)
+    req = HybridReqToTokenPool(mamba_pool=mamba)
+    host_full = MHATokenToKVPoolHost(
+        size=25, size_per_token=20, device_pool=full
+    )
+    host_mamba = MambaPoolHost(size=6, size_per_token=80, device_pool=mamba)
+    full_entry = NS(device_pool=full, host_pool=host_full)
+    mamba_entry = NS(device_pool=mamba, host_pool=host_mamba)
+    group = HostPoolGroup(
+        entry_map={"kv": full_entry, "mamba": mamba_entry},
+        anchor_entry=full_entry,
+    )
+    cache = UnifiedRadixCache(
+        disable=False, tree_components=(ComponentType.FULL, ComponentType.MAMBA),
+        token_to_kv_pool_allocator=allocator, req_to_token_pool=req,
+        host_pool_group=group,
+        cache_controller=NS(mem_pool_host=group),
+    )
+    result = observe_static_full_mamba(cache)
+    assert result["device_total_bytes"] == 500
+    assert result["device_full_tokens"] == 12
+    assert result["device_mamba_slots"] == 3
+    assert result["host_total_bytes"] == 980
 
 
 class ComponentType(IntEnum):
