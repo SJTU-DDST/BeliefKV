@@ -1,6 +1,31 @@
 # BeliefKV 跨服务器迁移指南
 
-更新日期：2026-09-15。本文只说明迁移流程；模型、容量和 artifact 的当前值以冻结
+## 2026-09-22 模型与 SGLang 升级分支
+
+现有本文第 1-5 节只适用于冻结的 Qwen3-Coder-30B-A3B-Instruct /
+SGLang `0.5.2rc1` 合同，不能直接套用于新模型。迁移前检查点为 Git tag
+`checkpoint/pre-sglang-model-upgrade-2026-09-22`；包版本、GPU、模型
+config/tokenizer 哈希和原有 SGLang patch 指纹见
+`configs/migration/2026-09-22_pre_upgrade_environment.json`。
+
+新分支以 Qwen3.5-35B-A3B（BF16）和上游 SGLang `v0.5.20`
+（commit `94602c9c2b7cbdb8efd5c52802dac6a1c180089e`）为目标。
+`environment-next.yml` 将 SGLang、BeliefKV 和 agent/实验工具放进一个
+Python 3.11 conda 环境 `beliefkv-next`；独立上游 checkout 在
+`third_party/sglang-v0.5.20`，原有 `third_party/sglang` 不动。
+`scripts/launch_qwen35_native_v0520.sh` **只用于不启用 BeliefKV 的
+SGLang 原生启动 smoke**；不得用它生成“BeliefKV 已迁移”实验数据。
+
+目标模型 BF16 full-attention KV 为 20,480 B/token，另有 30 层 linear
+attention 状态。此数字不是完整的 GPU/Host 物理工作集大小。详细 hook
+差异见 `docs/migration_sglang_v0520_audit_zh.md`；在 FULL/MAMBA pool
+容量、物理 ownership、事务 ACK、retraction、预测动作都经真实 GPU
+验证前，新环境只能运行原生对照，不允许打开 BeliefKV 物理动作。
+更换模型后训练集 tokenization 和硬件服务率都会变化，必须重训或重新
+校准 predictor，并重新测 GPU/PCIe artifact；不得对旧 64-root
+baseline 直接做跨模型吞吐差。
+
+旧环境迁移流程更新日期：2026-09-15。本文只说明迁移流程；模型、容量和 artifact 的当前值以冻结
 runtime profile 为准。
 
 本仓库只提交代码、测试、配置、冻结 manifest 和实验报告。模型权重、数据集、容器镜像、训练

@@ -1,0 +1,47 @@
+{
+  "geometry": {
+    "bf16_full_attention_kv_bytes_per_token": 20480,
+    "config_section": "text_config",
+    "full_attention_interval": 4,
+    "full_attention_kv_formula": "full_attention_layers * 2(K,V) * num_key_value_heads * head_dim * 2(BF16 bytes)",
+    "full_attention_layer_indices": [
+      3,
+      7,
+      11,
+      15,
+      19,
+      23,
+      27,
+      31,
+      35,
+      39
+    ],
+    "full_attention_layers": 10,
+    "head_dim": 256,
+    "hybrid_linear_or_mamba": true,
+    "num_hidden_layers": 40,
+    "num_key_value_heads": 2,
+    "physical_state_capacity_bytes": null,
+    "physical_state_capacity_verified": false,
+    "state_layer_counts": {
+      "linear_attention": 30,
+      "mamba": 0
+    },
+    "state_layers": 30,
+    "unsupported_for_legacy_page_index": true
+  },
+  "model_config_path": "/srv/ai/models/Qwen/Qwen3.5-35B-A3B/config.json",
+  "schema_version": 1,
+  "target_profile": {
+    "physical_pool_capacity_verified": false,
+    "profile_compatible": false,
+    "reasons": [
+      "hybrid linear/Mamba state cannot use the legacy page index",
+      "SGLang v0.5.20 target profile was not provided"
+    ],
+    "runtime_hook_verified": false,
+    "sglang_version": "0.5.20"
+  },
+  "target_profile_path": null,
+  "unsupported_for_legacy_page_index": true
+}
