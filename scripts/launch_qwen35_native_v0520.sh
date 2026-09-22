@@ -5,6 +5,7 @@ set -euo pipefail
 MODEL_PATH="${MODEL_PATH:-/srv/ai/models/Qwen/Qwen3.5-35B-A3B}"
 SERVED_MODEL_NAME="${SERVED_MODEL_NAME:-Qwen3.5-35B-A3B}"
 PYTHON="${PYTHON:-/home/longhao/miniconda3/envs/beliefkv-next/bin/python}"
+SGLANG_SOURCE_CHECKOUT="${SGLANG_SOURCE_CHECKOUT:-}"
 HOST="${HOST:-127.0.0.1}"
 PORT="${PORT:-18000}"
 MEM_FRACTION_STATIC="${MEM_FRACTION_STATIC:-0.90}"
@@ -35,6 +36,21 @@ if [[ ! -e "${CUDA_HOME}/lib/libcudart.so" ]]; then
   ln -s libcudart.so.13 "${CUDA_HOME}/lib/libcudart.so"
 fi
 "${PYTHON}" -c 'import importlib.metadata as m; assert m.version("sglang") == "0.5.20"'
+if [[ -n "${SGLANG_SOURCE_CHECKOUT}" ]]; then
+  SGLANG_SOURCE_CHECKOUT="$(realpath "${SGLANG_SOURCE_CHECKOUT}")"
+  if [[ ! -f "${SGLANG_SOURCE_CHECKOUT}/python/sglang/srt/managers/scheduler.py" ]] \
+      || [[ "$(git -C "${SGLANG_SOURCE_CHECKOUT}" rev-parse HEAD)" != "94602c9c2b7cbdb8efd5c52802dac6a1c180089e" ]]; then
+    printf 'Expected patched v0.5.20 checkout: %s\n' "${SGLANG_SOURCE_CHECKOUT}" >&2
+    exit 2
+  fi
+  BELIEFKV_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+  git -C "${SGLANG_SOURCE_CHECKOUT}" apply --reverse --check \
+    "${BELIEFKV_ROOT}/patches/sglang-v0.5.20-beliefkv-staging.patch"
+  export PYTHONPATH="${SGLANG_SOURCE_CHECKOUT}/python:${BELIEFKV_ROOT}${PYTHONPATH:+:${PYTHONPATH}}"
+  "${PYTHON}" -c \
+    'import pathlib,sglang; assert pathlib.Path(sglang.__file__).resolve().is_relative_to(pathlib.Path(__import__("sys").argv[1]).resolve())' \
+    "${SGLANG_SOURCE_CHECKOUT}/python"
+fi
 export LIBRARY_PATH="${CUDA_HOME}/lib${LIBRARY_PATH:+:${LIBRARY_PATH}}"
 export LD_LIBRARY_PATH="${CUDA_HOME}/lib${LD_LIBRARY_PATH:+:${LD_LIBRARY_PATH}}"
 export CUDA_VISIBLE_DEVICES CUDA_HOME LIBRARY_PATH LD_LIBRARY_PATH

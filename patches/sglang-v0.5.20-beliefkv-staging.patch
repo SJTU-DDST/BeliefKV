@@ -23,6 +23,141 @@ index 89cac80..caa54c4 100644
              extra_key=request.extra_key,
              cache_salt=request.cache_salt,
              require_reasoning=processed_messages.require_reasoning,
+diff --git a/python/sglang/srt/managers/cache_controller.py b/python/sglang/srt/managers/cache_controller.py
+index b9a134e..8a22236 100644
+--- a/python/sglang/srt/managers/cache_controller.py
++++ b/python/sglang/srt/managers/cache_controller.py
+@@ -108,12 +108,14 @@ class CacheOperation:
+         node_id: int,
+         priority: Optional[int] = None,
+         pool_transfers: Optional[List[PoolTransfer]] = None,
++        beliefkv_command_id: Optional[str] = None,
+     ):
+         self.host_indices = host_indices
+         self.device_indices = device_indices
+         self.node_ids = [node_id]
+         self.data = None
+         self.pool_transfers = pool_transfers
++        self.beliefkv_command_id = beliefkv_command_id
+ 
+         self.id = CacheOperation.counter
+         CacheOperation.counter += 1
+@@ -168,12 +170,22 @@ class CacheOperation:
+             pool_transfers=CacheOperation._merge_pool_transfers(ops),
+         )
+         merged_op.node_ids = node_ids
++        merged_op._receipt_ops = tuple(
++            child for op in ops for child in getattr(op, "_receipt_ops", (op,))
++        )
+         return merged_op
+ 
+     def __lt__(self, other: CacheOperation):
+         return self.priority < other.priority
+ 
+ 
++class CacheChildReceipt(NamedTuple):
++    command_id: Optional[str]
++    node_id: int
++    num_tokens_by_pool: tuple[tuple[str, int], ...]
++    num_bytes: int
++
++
+ class HiCacheAck(NamedTuple):
+     start_event: device_module.Event
+     finish_event: device_module.Event
+@@ -185,6 +197,7 @@ class HiCacheAck(NamedTuple):
+     # Total bytes moved by the op across all pools, including draft piggyback
+     # and sidecar transfers that the per-pool token counts exclude.
+     num_bytes: int = 0
++    child_receipts: tuple[CacheChildReceipt, ...] = ()
+ 
+ 
+ @dataclass
+@@ -795,6 +808,7 @@ class HiCacheController:
+         device_indices: torch.Tensor,
+         priority: Optional[int] = None,
+         node_id: int = -1,
++        beliefkv_command_id: Optional[str] = None,
+     ) -> Optional[torch.Tensor]:
+         """
+         Back up KV caches from device memory to host memory.
+@@ -802,12 +816,33 @@ class HiCacheController:
+         host_indices = self.mem_pool_host.alloc(len(device_indices))
+         if host_indices is None:
+             return None
+-        self.write_queue.append(
+-            CacheOperation(host_indices, device_indices, node_id, priority)
++        op = CacheOperation(
++            host_indices,
++            device_indices,
++            node_id,
++            priority,
++            beliefkv_command_id=beliefkv_command_id,
+         )
++        self.write_queue.append(op)
+         self.start_writing()
+         return host_indices
+ 
++    def _child_receipts(self, op: CacheOperation) -> tuple[CacheChildReceipt, ...]:
++        children = getattr(op, "_receipt_ops", (op,))
++        if not any(child.beliefkv_command_id is not None for child in children):
++            return ()
++        return tuple(
++            CacheChildReceipt(
++                command_id=child.beliefkv_command_id,
++                node_id=child.node_ids[0],
++                num_tokens_by_pool=tuple(
++                    sorted(self._num_tokens_by_pool(child).items())
++                ),
++                num_bytes=self._transfer_num_bytes(child),
++            )
++            for child in children
++        )
++
+     def start_writing(self) -> None:
+         if len(self.write_queue) == 0:
+             return
+@@ -829,6 +864,7 @@ class HiCacheController:
+                 timing_enabled=completion.timing_enabled,
+                 num_tokens_by_pool=self._num_tokens_by_pool(op),
+                 num_bytes=self._transfer_num_bytes(op),
++                child_receipts=self._child_receipts(op),
+             )
+         )
+ 
+@@ -843,6 +879,7 @@ class HiCacheController:
+         host_indices: torch.Tensor,
+         priority: Optional[int] = None,
+         node_id: int = -1,
++        beliefkv_command_id: Optional[str] = None,
+     ) -> Optional[torch.Tensor]:
+         """
+         Load KV caches from host memory to device memory.
+@@ -850,9 +887,14 @@ class HiCacheController:
+         device_indices = self.mem_pool_device_allocator.alloc(len(host_indices))
+         if device_indices is None:
+             return None
+-        self.load_queue.append(
+-            CacheOperation(host_indices, device_indices, node_id, priority)
++        op = CacheOperation(
++            host_indices,
++            device_indices,
++            node_id,
++            priority,
++            beliefkv_command_id=beliefkv_command_id,
+         )
++        self.load_queue.append(op)
+         return device_indices
+ 
+     def move_indices(
+@@ -973,6 +1015,7 @@ class HiCacheController:
+                 timing_enabled=completion.timing_enabled,
+                 num_tokens_by_pool=self._num_tokens_by_pool(op),
+                 num_bytes=self._transfer_num_bytes(op),
++                child_receipts=self._child_receipts(op),
+             )
+         )
+         return producer_id
 diff --git a/python/sglang/srt/managers/io_struct.py b/python/sglang/srt/managers/io_struct.py
 index d3f13eb..ce0e6e6 100644
 --- a/python/sglang/srt/managers/io_struct.py
@@ -399,8 +534,76 @@ index 1b63fb6..07ab19d 100644
                  custom_logit_processor=obj.custom_logit_processor,
                  require_reasoning=obj.require_reasoning,
                  return_hidden_states=obj.return_hidden_states,
+diff --git a/python/sglang/srt/mem_cache/hybrid_cache/hybrid_cache_controller.py b/python/sglang/srt/mem_cache/hybrid_cache/hybrid_cache_controller.py
+index 17b3774..a338d89 100644
+--- a/python/sglang/srt/mem_cache/hybrid_cache/hybrid_cache_controller.py
++++ b/python/sglang/srt/mem_cache/hybrid_cache/hybrid_cache_controller.py
+@@ -327,6 +327,7 @@ class HybridCacheController(BaseHiCacheController):
+         priority: Optional[int] = None,
+         node_id: int = -1,
+         extra_pools: Optional[list[PoolTransfer]] = None,
++        beliefkv_command_id: Optional[str] = None,
+     ) -> Optional[torch.Tensor]:
+         host_indices = self.mem_pool_host.alloc(len(device_indices))
+         if host_indices is None:
+@@ -340,15 +341,15 @@ class HybridCacheController(BaseHiCacheController):
+             self.mem_pool_host.free(host_indices)
+             return None
+ 
+-        self.write_queue.append(
+-            CacheOperation(
+-                host_indices,
+-                device_indices,
+-                node_id,
+-                priority,
+-                pool_transfers=pool_transfers or None,
+-            )
++        op = CacheOperation(
++            host_indices,
++            device_indices,
++            node_id,
++            priority,
++            pool_transfers=pool_transfers or None,
++            beliefkv_command_id=beliefkv_command_id,
+         )
++        self.write_queue.append(op)
+         self.start_writing()
+         return host_indices
+ 
+@@ -518,6 +519,7 @@ class HybridCacheController(BaseHiCacheController):
+         priority: Optional[int] = None,
+         node_id: int = -1,
+         extra_pools: Optional[list[PoolTransfer]] = None,
++        beliefkv_command_id: Optional[str] = None,
+     ) -> Optional[torch.Tensor]:
+         need_load_kv = host_indices.numel() > 0
+ 
+@@ -543,15 +545,15 @@ class HybridCacheController(BaseHiCacheController):
+                 full_allocator.free(device_indices)
+             return None
+ 
+-        self.load_queue.append(
+-            CacheOperation(
+-                host_indices,
+-                device_indices,
+-                node_id,
+-                priority,
+-                pool_transfers=pool_transfers or None,
+-            )
++        op = CacheOperation(
++            host_indices,
++            device_indices,
++            node_id,
++            priority,
++            pool_transfers=pool_transfers or None,
++            beliefkv_command_id=beliefkv_command_id,
+         )
++        self.load_queue.append(op)
+         return device_indices
+ 
+     def prefetch(
 diff --git a/python/sglang/srt/mem_cache/unified_radix_cache.py b/python/sglang/srt/mem_cache/unified_radix_cache.py
-index d417d7d..aeb1730 100644
+index d417d7d..e331298 100644
 --- a/python/sglang/srt/mem_cache/unified_radix_cache.py
 +++ b/python/sglang/srt/mem_cache/unified_radix_cache.py
 @@ -6,7 +6,7 @@ import threading
@@ -412,10 +615,18 @@ index d417d7d..aeb1730 100644
  
  import torch
  
-@@ -158,6 +158,17 @@ class _OngoingPrefetch(NamedTuple):
+@@ -158,6 +158,26 @@ class _OngoingPrefetch(NamedTuple):
      comp_xfers: dict[ComponentType, list[PoolTransfer]]
  
  
++class HiCacheChildCommit(NamedTuple):
++    command_id: str
++    anchor_node_id: NodeId
++    published_node_ids: tuple[NodeId, ...]
++    num_tokens_by_pool: tuple[tuple[str, int], ...]
++    num_bytes: int
++
++
 +class HiCacheTransferCommit(NamedTuple):
 +    """Completed cache-mode ACK. Pool totals cover the whole merged ACK, not
 +    individual nodes; a split may add node IDs after the transfer was issued.
@@ -425,12 +636,13 @@ index d417d7d..aeb1730 100644
 +    node_ids: tuple[NodeId, ...]
 +    num_tokens_by_pool: tuple[tuple[str, int], ...]
 +    status: str  # "completed" means synchronized and committed; ACK has no failure field.
++    child_commits: tuple[HiCacheChildCommit, ...] = ()
 +
 +
  class UnifiedRadixCache(BasePrefixCache):
      def __init__(
          self,
-@@ -260,6 +271,11 @@ class UnifiedRadixCache(BasePrefixCache):
+@@ -260,6 +280,11 @@ class UnifiedRadixCache(BasePrefixCache):
  
          # HiCache D↔H defaults (overridden by init_hicache)
          self.cache_controller: Optional[HybridCacheController] = None
@@ -442,7 +654,57 @@ index d417d7d..aeb1730 100644
          self.host_pool_group = None  # set by attach_hybrid_pool_to_unified_cache
          # Owns the storage backend lifecycle; built by init_hicache.
          self._storage_attachment: Optional[StorageAttachment] = None
-@@ -1627,10 +1643,10 @@ class UnifiedRadixCache(BasePrefixCache):
+@@ -1519,7 +1544,11 @@ class UnifiedRadixCache(BasePrefixCache):
+     # ---- HiCache: Backup / LoadBack ----
+ 
+     def _execute_and_commit_kv_backup(
+-        self, action: BackupKV, write_back: bool = False
++        self,
++        action: BackupKV,
++        write_back: bool = False,
++        *,
++        beliefkv_command_id: str | None = None,
+     ) -> int:
+         """Run a backup action top-down, stopping at the first failed backup."""
+         if self.buffer_pipeline is not None:
+@@ -1539,7 +1568,11 @@ class UnifiedRadixCache(BasePrefixCache):
+                 continue
+             sidecar_xfers = self._build_backup_sidecar(device_value, comp_xfers)
+             host_indices = self._execute_kv_backup(
+-                node_id, device_value, comp_xfers, sidecar_xfers
++                node_id,
++                device_value,
++                comp_xfers,
++                sidecar_xfers,
++                beliefkv_command_id=beliefkv_command_id,
+             )
+             if host_indices is None:
+                 return 0
+@@ -1574,7 +1607,10 @@ class UnifiedRadixCache(BasePrefixCache):
+             CacheTransferPhase.BACKUP_HOST, kv_xfer, comp_xfers
+         )
+ 
+-    def _execute_kv_backup(self, node_id, device_value, comp_xfers, sidecar_xfers):
++    def _execute_kv_backup(
++        self, node_id, device_value, comp_xfers, sidecar_xfers, *,
++        beliefkv_command_id: str | None = None,
++    ):
+         """Execute Backup action."""
+         kv_tokens = len(device_value)
+         host_avail = self.cache_controller.mem_pool_host.available_size()
+@@ -1585,7 +1621,10 @@ class UnifiedRadixCache(BasePrefixCache):
+         aux_xfers = [x for xfers in comp_xfers.values() for x in xfers]
+         aux_xfers.extend(sidecar_xfers)
+         return self.cache_controller.write(
+-            device_value, node_id=node_id, extra_pools=aux_xfers or None
++            device_value,
++            node_id=node_id,
++            extra_pools=aux_xfers or None,
++            beliefkv_command_id=beliefkv_command_id,
+         )
+ 
+     def _track_write_through_node(
+@@ -1627,10 +1666,10 @@ class UnifiedRadixCache(BasePrefixCache):
              updated_node_ids,
          )
  
@@ -455,7 +717,7 @@ index d417d7d..aeb1730 100644
  
          lock_node_id, lock_params, publish_node_ids = self.ongoing_write_through.pop(
              ack_id
-@@ -1643,6 +1659,7 @@ class UnifiedRadixCache(BasePrefixCache):
+@@ -1643,12 +1682,15 @@ class UnifiedRadixCache(BasePrefixCache):
              # suffix; the prefix fragment must be persisted as well.
              for node_id in publish_node_ids:
                  self.write_backup_storage(node_id)
@@ -463,34 +725,83 @@ index d417d7d..aeb1730 100644
  
      def load_back(
          self,
-@@ -3130,10 +3147,16 @@ class UnifiedRadixCache(BasePrefixCache):
+         node_id: NodeId,
+         mem_quota: Optional[int] = None,
+         req=None,
++        *,
++        beliefkv_command_id: str | None = None,
+     ) -> bool:
+         """Load evicted KV data from host back to device (H→D)."""
+         if self.cache_controller is None:
+@@ -1675,6 +1717,7 @@ class UnifiedRadixCache(BasePrefixCache):
+                 result=result,
+                 ancestor_lock_params=ancestor_lock_params,
+                 host_anchor_params=host_anchor_params,
++                beliefkv_command_id=beliefkv_command_id,
+             )
+             return success
+         finally:
+@@ -1690,6 +1733,7 @@ class UnifiedRadixCache(BasePrefixCache):
+         result: IncLockRefResult,
+         ancestor_lock_params: DecLockRefParams,
+         host_anchor_params: DecLockRefParams,
++        beliefkv_command_id: str | None = None,
+     ) -> bool:
+         # Build the KV + per-component aux transfers.
+         kv_xfer, comp_xfers = self.tree_core.build_load_back_spec(node_id, req=req)
+@@ -1741,6 +1785,7 @@ class UnifiedRadixCache(BasePrefixCache):
+             host_indices=kv_xfer.host_indices,
+             node_id=node_id,
+             extra_pools=aux_xfers or None,
++            beliefkv_command_id=beliefkv_command_id,
+         )
+ 
+         self.dec_lock_ref(node_id, ancestor_lock_params)
+@@ -3130,10 +3175,24 @@ class UnifiedRadixCache(BasePrefixCache):
              while self.ongoing_write_through:
                  for ack in cc.ack_write_queue:
                      ack.finish_event.synchronize()
 +                    committed_ids = []
++                    committed_by_anchor = {}
 +                    committed_acks = 0
                      for ack_id in ack.node_ids:
                          if ack_id in self.ongoing_write_through:
 -                            self._finish_write_through_ack(ack_id)
-+                            committed_ids.extend(self._finish_write_through_ack(ack_id))
++                            published = self._finish_write_through_ack(ack_id)
++                            committed_ids.extend(published)
++                            if published:
++                                committed_by_anchor[ack_id] = tuple(published)
 +                            committed_acks += 1
                      self._log_write_ack_metrics(ack)
 +                    self._emit_hicache_transfer_commit(
-+                        "d2h", ack, committed_ids, committed_acks == len(ack.node_ids)
++                        "d2h",
++                        ack,
++                        committed_ids,
++                        committed_acks == len(ack.node_ids),
++                        committed_by_anchor=committed_by_anchor,
 +                    )
                  cc.ack_write_queue.clear()
                  assert len(self.ongoing_write_through) == 0
              return
-@@ -3154,11 +3177,36 @@ class UnifiedRadixCache(BasePrefixCache):
+@@ -3154,11 +3213,102 @@ class UnifiedRadixCache(BasePrefixCache):
          while finish_count > 0:
              ack = cc.ack_write_queue.pop(0)
              ack.finish_event.synchronize()
 +            committed_ids = []
++            committed_by_anchor = {}
              for ack_id in ack.node_ids:
 -                self._finish_write_through_ack(ack_id)
-+                committed_ids.extend(self._finish_write_through_ack(ack_id))
++                published = self._finish_write_through_ack(ack_id)
++                committed_ids.extend(published)
++                if published:
++                    committed_by_anchor[ack_id] = tuple(published)
              self._log_write_ack_metrics(ack)
-+            self._emit_hicache_transfer_commit("d2h", ack, committed_ids)
++            self._emit_hicache_transfer_commit(
++                "d2h",
++                ack,
++                committed_ids,
++                committed_by_anchor=committed_by_anchor,
++            )
              finish_count -= 1
  
 +    def _emit_hicache_transfer_commit(
@@ -499,17 +810,74 @@ index d417d7d..aeb1730 100644
 +        ack: HiCacheAck,
 +        committed_ids: list[NodeId],
 +        full_ack: bool = True,
++        *,
++        committed_by_anchor: dict[NodeId, tuple[NodeId, ...]] | None = None,
 +    ) -> None:
 +        callback = self.on_hicache_transfer_commit
 +        if callback is None or not committed_ids:
 +            return
 +        # Merged ACK pool counts cannot be attributed to a subset of its nodes.
 +        pool_counts = ack.num_tokens_by_pool if full_ack else {}
++        child_commits = ()
++        receipts = getattr(ack, "child_receipts", ())
++        if receipts and full_ack and committed_by_anchor is not None:
++            try:
++                receipt_ids = [receipt.node_id for receipt in receipts]
++                expected_ids = list(ack.node_ids)
++                receipt_counts: dict[str, int] = {}
++                for receipt in receipts:
++                    if (
++                        type(receipt.node_id) is not int
++                        or receipt.node_id < 0
++                        or (
++                            receipt.command_id is not None
++                            and (
++                                type(receipt.command_id) is not str
++                                or not receipt.command_id
++                            )
++                        )
++                        or type(receipt.num_bytes) is not int
++                        or receipt.num_bytes < 0
++                    ):
++                        raise ValueError("invalid child transfer receipt")
++                    seen_pools: set[str] = set()
++                    for pool, count in receipt.num_tokens_by_pool:
++                        if (
++                            type(pool) is not str
++                            or not pool
++                            or pool in seen_pools
++                            or type(count) is not int
++                            or count < 0
++                        ):
++                            raise ValueError("invalid child pool count")
++                        seen_pools.add(pool)
++                        receipt_counts[pool] = receipt_counts.get(pool, 0) + count
++                if (
++                    len(set(expected_ids)) == len(expected_ids)
++                    and receipt_ids == expected_ids
++                    and set(expected_ids) == set(committed_by_anchor)
++                    and receipt_counts == (ack.num_tokens_by_pool or {})
++                    and sum(receipt.num_bytes for receipt in receipts) == ack.num_bytes
++                ):
++                    child_commits = tuple(
++                        HiCacheChildCommit(
++                            command_id=receipt.command_id,
++                            anchor_node_id=receipt.node_id,
++                            published_node_ids=committed_by_anchor[receipt.node_id],
++                            num_tokens_by_pool=receipt.num_tokens_by_pool,
++                            num_bytes=receipt.num_bytes,
++                        )
++                        for receipt in receipts
++                        if receipt.command_id is not None
++                    )
++            except (AttributeError, TypeError, ValueError):
++                logger.warning("invalid HiCache child receipts; omitting command credit")
 +        event = HiCacheTransferCommit(
 +            direction=direction,
 +            node_ids=tuple(committed_ids),
 +            num_tokens_by_pool=tuple(sorted((pool_counts or {}).items())),
 +            status="completed",
++            child_commits=child_commits,
 +        )
 +        try:
 +            callback(event)
@@ -519,28 +887,34 @@ index d417d7d..aeb1730 100644
      def _log_write_ack_metrics(self, ack: HiCacheAck) -> None:
          """Record D->H backup volume and duration for a completed write ack."""
          if self.metrics_collector is None:
-@@ -3200,6 +3248,7 @@ class UnifiedRadixCache(BasePrefixCache):
+@@ -3200,6 +3350,8 @@ class UnifiedRadixCache(BasePrefixCache):
          while finish_count > 0:
              ack = cc.ack_load_queue.pop(0)
              ack.finish_event.synchronize()
 +            committed_ids = []
++            committed_by_anchor = {}
              for ack_id in ack.node_ids:
                  if (
                      self.buffer_pipeline is not None
-@@ -3211,6 +3260,7 @@ class UnifiedRadixCache(BasePrefixCache):
+@@ -3211,6 +3363,8 @@ class UnifiedRadixCache(BasePrefixCache):
                  self.dec_host_lock_ref(node, host_lock_params)
                  # Unpin the loaded nodes; host copies stay as reclaimable duplicates.
                  self.tree_core.finish_load_back(node)
 +                committed_ids.append(ack_id)
++                committed_by_anchor[ack_id] = (ack_id,)
  
              if self.metrics_collector is not None:
                  for pool, num_tokens in (ack.num_tokens_by_pool or {}).items():
-@@ -3225,6 +3275,9 @@ class UnifiedRadixCache(BasePrefixCache):
+@@ -3225,6 +3379,13 @@ class UnifiedRadixCache(BasePrefixCache):
                      self.metrics_collector.observe_load_back_duration(
                          duration_ms / 1000.0
                      )
 +            self._emit_hicache_transfer_commit(
-+                "h2d", ack, committed_ids, len(committed_ids) == len(ack.node_ids)
++                "h2d",
++                ack,
++                committed_ids,
++                len(committed_ids) == len(ack.node_ids),
++                committed_by_anchor=committed_by_anchor,
 +            )
              finish_count -= 1
  
@@ -1388,12 +1762,400 @@ index 0000000..de9cb19
 +
 +if __name__ == "__main__":
 +    unittest.main()
+diff --git a/test/srt/test_beliefkv_transfer_receipts.py b/test/srt/test_beliefkv_transfer_receipts.py
+new file mode 100644
+index 0000000..5e054d0
+--- /dev/null
++++ b/test/srt/test_beliefkv_transfer_receipts.py
+@@ -0,0 +1,382 @@
++"""CPU-only coverage for per-operation HiCache transfer receipts."""
++
++import ast
++import unittest
++from pathlib import Path
++from types import SimpleNamespace
++from typing import NamedTuple
++from unittest.mock import Mock, patch
++
++import torch
++
++from sglang.srt.mem_cache.hicache_storage import PoolName, PoolTransfer
++
++
++ROOT = Path(__file__).resolve().parents[2] / "python/sglang/srt"
++
++
++def controller_classes():
++    base_source = ROOT / "managers/cache_controller.py"
++    hybrid_source = ROOT / "mem_cache/hybrid_cache/hybrid_cache_controller.py"
++
++    def selected(source, class_name, methods):
++        tree = ast.parse(source.read_text(encoding="utf-8"))
++        cls = next(
++            node
++            for node in tree.body
++            if isinstance(node, ast.ClassDef) and node.name == class_name
++        )
++        cls.body = [
++            node
++            for node in cls.body
++            if isinstance(node, ast.FunctionDef) and node.name in methods
++        ]
++        return cls
++
++    base_tree = ast.parse(base_source.read_text(encoding="utf-8"))
++    definitions = [
++        next(
++            node
++            for node in base_tree.body
++            if isinstance(node, ast.ClassDef) and node.name == name
++        )
++        for name in ("CacheChildReceipt", "HiCacheAck")
++    ]
++    definitions.insert(
++        0,
++        selected(
++            base_source,
++            "CacheOperation",
++            {"__init__", "_merge_pool_transfers", "merge_ops"},
++        ),
++    )
++    definitions.append(
++        selected(
++            base_source,
++            "HiCacheController",
++            {
++                "write",
++                "start_writing",
++                "_child_receipts",
++                "_transfer_num_bytes",
++                "_num_tokens_by_pool",
++                "load",
++                "start_loading",
++            },
++        )
++    )
++    hybrid = selected(
++        hybrid_source,
++        "HybridCacheController",
++        {"write", "load", "_num_tokens_by_pool", "_transfer_num_bytes"},
++    )
++    hybrid.bases = [ast.Name(id="HiCacheController", ctx=ast.Load())]
++    definitions.append(hybrid)
++    module = ast.Module(
++        body=[
++            ast.ImportFrom(
++                module="__future__",
++                names=[ast.alias(name="annotations")],
++                level=0,
++            ),
++            *definitions,
++        ],
++        type_ignores=[],
++    )
++    ast.fix_missing_locations(module)
++    namespace = {
++        "torch": torch,
++        "PoolName": PoolName,
++        "PoolTransfer": PoolTransfer,
++        "NamedTuple": NamedTuple,
++    }
++    exec(compile(module, str(base_source), "exec"), namespace)
++    namespace["CacheOperation"].counter = 0
++    return (
++        namespace["CacheOperation"],
++        namespace["CacheChildReceipt"],
++        namespace["HiCacheAck"],
++        namespace["HiCacheController"],
++        namespace["HybridCacheController"],
++    )
++
++
++(
++    CacheOperation,
++    CacheChildReceipt,
++    HiCacheAck,
++    HiCacheController,
++    HybridCacheController,
++) = controller_classes()
++
++
++def indices(count):
++    return torch.arange(count, dtype=torch.int64)
++
++
++def controller(cls=HiCacheController):
++    instance = cls.__new__(cls)
++    instance.write_queue = []
++    instance.load_queue = []
++    instance.ack_write_queue = []
++    instance.ack_load_queue = []
++    instance.mem_pool_host = SimpleNamespace(
++        size_per_token=10,
++        alloc=Mock(side_effect=lambda n: indices(n)),
++        free=Mock(),
++    )
++    instance.mem_pool_device_allocator = SimpleNamespace(
++        alloc=Mock(side_effect=lambda n: indices(n)),
++        free=Mock(),
++    )
++    instance._move_write_operation = lambda op: (
++        op.host_indices,
++        op.device_indices,
++        op.pool_transfers,
++    )
++    instance._move_op_indices = instance._move_write_operation
++    instance._l2_transfers = lambda *args: list(args)
++    instance._l2_load_transfers = instance._l2_transfers
++    completion = SimpleNamespace(
++        start_event=object(), finish_event=object(), timing_enabled=False
++    )
++    instance.l2_transfer_engine = SimpleNamespace(
++        submit_device_to_host=Mock(return_value=completion),
++        submit_host_to_device=Mock(return_value=completion),
++    )
++    producer = SimpleNamespace(
++        start_event=SimpleNamespace(record=Mock()), complete=Mock()
++    )
++    instance.layer_done_counter = SimpleNamespace(
++        update_producer=Mock(return_value=0), events=[producer]
++    )
++    instance.load_fence_stream = None
++    instance.layer_num = 1
++    return instance
++
++
++def hybrid_controller():
++    instance = controller(HybridCacheController)
++    anchor = SimpleNamespace(
++        name=PoolName.KV, host_pool=SimpleNamespace(size_per_token=10)
++    )
++    entries = {
++        PoolName.MAMBA: SimpleNamespace(host_pool=SimpleNamespace(size_per_token=5)),
++        PoolName.SWA: SimpleNamespace(host_pool=SimpleNamespace(size_per_token=7)),
++    }
++
++    def resolve_host(transfers, *, primary_device_indices, primary_host_indices):
++        for transfer in transfers or []:
++            if transfer.indices_from_pool is None:
++                transfer.host_indices = indices(len(transfer.device_indices))
++            else:
++                source = next(
++                    (t for t in transfers if t.name == transfer.indices_from_pool),
++                    None,
++                )
++                transfer.host_indices = (
++                    primary_host_indices if source is None else source.host_indices
++                )
++                transfer.device_indices = (
++                    primary_device_indices if source is None else source.device_indices
++                )
++        return transfers
++
++    instance.mem_pool_host.anchor_entry = anchor
++    instance.mem_pool_host.entry_map = entries
++    instance.mem_pool_host.resolve_host_transfers = Mock(side_effect=resolve_host)
++    instance.mem_pool_device_allocator.full_attn_allocator = (
++        instance.mem_pool_device_allocator
++    )
++    instance.device = "cpu"
++    instance._resolve_device_transfers = Mock(
++        side_effect=lambda transfers, **_: transfers
++    )
++    return instance
++
++
++def assert_reconciled(test, ack):
++    totals = {}
++    for receipt in ack.child_receipts:
++        for pool, count in receipt.num_tokens_by_pool:
++            totals[pool] = totals.get(pool, 0) + count
++    test.assertEqual(totals, ack.num_tokens_by_pool)
++    test.assertEqual(sum(r.num_bytes for r in ack.child_receipts), ack.num_bytes)
++
++
++class TransferReceiptTest(unittest.TestCase):
++    def test_two_commands_merge_and_immutable_receipts(self):
++        ctrl = controller()
++        with patch.object(ctrl, "start_writing"):
++            ctrl.write(indices(2), node_id=11, beliefkv_command_id="first")
++            ctrl.write(indices(3), node_id=12, beliefkv_command_id="second")
++        merged = CacheOperation.merge_ops(ctrl.write_queue)
++        self.assertEqual(merged.node_ids, [11, 12])
++        self.assertEqual(merged._receipt_ops, tuple(ctrl.write_queue))
++        self.assertEqual(
++            CacheOperation.merge_ops([merged, ctrl.write_queue[0]])._receipt_ops,
++            tuple(ctrl.write_queue) + (ctrl.write_queue[0],),
++        )
++        HiCacheController.start_writing(ctrl)
++        ack = ctrl.ack_write_queue.pop()
++        self.assertEqual(
++            ack.child_receipts,
++            (
++                CacheChildReceipt("first", 11, (("kv", 2),), 20),
++                CacheChildReceipt("second", 12, (("kv", 3),), 30),
++            ),
++        )
++        with self.assertRaises(AttributeError):
++            ack.child_receipts[0].num_bytes = 0
++        self.assertEqual(ack.node_ids, [11, 12])
++        self.assertEqual(ack.num_tokens, 5)
++        assert_reconciled(self, ack)
++        ctrl.l2_transfer_engine.submit_device_to_host.assert_called_once()
++
++    def test_mixed_tagged_and_native_hybrid_write_with_sidecar_bytes(self):
++        ctrl = hybrid_controller()
++        with patch.object(ctrl, "start_writing"):
++            ctrl.write(
++                indices(2),
++                node_id=3,
++                extra_pools=[
++                    PoolTransfer(name=PoolName.MAMBA, device_indices=indices(1)),
++                    PoolTransfer(name=PoolName.SWA, indices_from_pool=PoolName.MAMBA),
++                ],
++                beliefkv_command_id="tagged",
++            )
++            ctrl.write(indices(1), node_id=4)
++
++        HiCacheController.start_writing(ctrl)
++        ack = ctrl.ack_write_queue.pop()
++        self.assertEqual(
++            ack.child_receipts,
++            (
++                CacheChildReceipt(
++                    "tagged", 3, (("kv", 2), ("mamba", 1)), 32
++                ),
++                CacheChildReceipt(None, 4, (("kv", 1),), 10),
++            ),
++        )
++        assert_reconciled(self, ack)
++
++    def test_mamba_only_load_delays_receipt_until_submit(self):
++        ctrl = hybrid_controller()
++        ctrl.load(
++            indices(0),
++            node_id=21,
++            extra_pools=[
++                PoolTransfer(
++                    name=PoolName.MAMBA,
++                    host_indices=indices(2),
++                    device_indices=indices(2),
++                )
++            ],
++            beliefkv_command_id="mamba-only",
++        )
++        ctrl.load(indices(3), node_id=22)
++        self.assertEqual(ctrl.ack_load_queue, [])
++        ctrl.l2_transfer_engine.submit_host_to_device.assert_not_called()
++        ctrl.mem_pool_device_allocator.alloc.assert_called_once_with(3)
++
++        self.assertEqual(HiCacheController.start_loading(ctrl), 0)
++        ack = ctrl.ack_load_queue.pop()
++        self.assertEqual(
++            ack.child_receipts,
++            (
++                CacheChildReceipt(
++                    "mamba-only", 21, (("kv", 0), ("mamba", 2)), 10
++                ),
++                CacheChildReceipt(None, 22, (("kv", 3),), 30),
++            ),
++        )
++        assert_reconciled(self, ack)
++        self.assertEqual(HiCacheController.start_loading(ctrl), -1)
++
++    def test_failed_allocations_or_resolution_do_not_emit_receipts(self):
++        ctrl = controller()
++        ctrl.mem_pool_host.alloc.return_value = None
++        ctrl.mem_pool_host.alloc.side_effect = None
++        self.assertIsNone(ctrl.write(indices(1), beliefkv_command_id="no-host"))
++        ctrl.mem_pool_device_allocator.alloc.return_value = None
++        ctrl.mem_pool_device_allocator.alloc.side_effect = None
++        self.assertIsNone(ctrl.load(indices(1), beliefkv_command_id="no-device"))
++        self.assertEqual((ctrl.write_queue, ctrl.load_queue), ([], []))
++
++        hybrid = hybrid_controller()
++        hybrid.mem_pool_host.resolve_host_transfers.return_value = None
++        hybrid.mem_pool_host.resolve_host_transfers.side_effect = None
++        self.assertIsNone(
++            hybrid.write(
++                indices(1),
++                extra_pools=[PoolTransfer(name=PoolName.MAMBA)],
++                beliefkv_command_id="unresolved-write",
++            )
++        )
++        hybrid.mem_pool_host.free.assert_called_once()
++        hybrid._resolve_device_transfers.return_value = None
++        hybrid._resolve_device_transfers.side_effect = None
++        self.assertIsNone(
++            hybrid.load(
++                indices(1),
++                extra_pools=[PoolTransfer(name=PoolName.MAMBA)],
++                beliefkv_command_id="unresolved-load",
++            )
++        )
++        hybrid.mem_pool_device_allocator.free.assert_called_once()
++        self.assertEqual((hybrid.write_queue, hybrid.load_queue), ([], []))
++        self.assertEqual((hybrid.ack_write_queue, hybrid.ack_load_queue), ([], []))
++
++    def test_native_batches_emit_no_child_receipts(self):
++        ctrl = controller()
++        with patch.object(ctrl, "start_writing"):
++            ctrl.write(indices(1), node_id=1)
++            ctrl.write(indices(2), node_id=2)
++        HiCacheController.start_writing(ctrl)
++        self.assertEqual(ctrl.ack_write_queue[0].child_receipts, ())
++        ctrl.load(indices(1), node_id=3)
++        ctrl.load(indices(2), node_id=4)
++        self.assertEqual(ctrl.ack_load_queue, [])
++        HiCacheController.start_loading(ctrl)
++        self.assertEqual(ctrl.ack_load_queue[0].child_receipts, ())
++
++    def test_nested_native_merge_then_tagged_operation_keeps_all_children(self):
++        ctrl = controller()
++        first = CacheOperation(indices(1), indices(1), node_id=1)
++        second = CacheOperation(indices(2), indices(2), node_id=2)
++        native_merged = CacheOperation.merge_ops([first, second])
++        tagged = CacheOperation(
++            indices(3), indices(3), node_id=3, beliefkv_command_id="tagged"
++        )
++        ctrl.write_queue = [native_merged, tagged]
++
++        HiCacheController.start_writing(ctrl)
++        ack = ctrl.ack_write_queue.pop()
++        self.assertEqual(
++            ack.child_receipts,
++            (
++                CacheChildReceipt(None, 1, (("kv", 1),), 10),
++                CacheChildReceipt(None, 2, (("kv", 2),), 20),
++                CacheChildReceipt("tagged", 3, (("kv", 3),), 30),
++            ),
++        )
++        assert_reconciled(self, ack)
++
++    def test_failed_h2d_submission_cannot_publish_receipts(self):
++        ctrl = controller()
++        ctrl.load(indices(1), beliefkv_command_id="pending")
++        ctrl.l2_transfer_engine.submit_host_to_device.side_effect = RuntimeError(
++            "transfer failed"
++        )
++        with self.assertRaisesRegex(RuntimeError, "transfer failed"):
++            ctrl.start_loading()
++        self.assertEqual(ctrl.ack_load_queue, [])
++
++    def test_legacy_ack_positional_defaults(self):
++        ack = HiCacheAck(None, None, [1], 2, False, {"kv": 2}, 20)
++        self.assertEqual(ack.child_receipts, ())
++        self.assertEqual(ack.num_bytes, 20)
++
++
++if __name__ == "__main__":
++    unittest.main()
 diff --git a/test/srt/test_beliefkv_unified_ack.py b/test/srt/test_beliefkv_unified_ack.py
 new file mode 100644
-index 0000000..58f18f3
+index 0000000..71d33b8
 --- /dev/null
 +++ b/test/srt/test_beliefkv_unified_ack.py
-@@ -0,0 +1,270 @@
+@@ -0,0 +1,365 @@
 +"""CPU-only tests for UnifiedRadixCache's optional post-commit observer."""
 +
 +import ast
@@ -1431,11 +2193,12 @@ index 0000000..58f18f3
 +            "_log_write_ack_metrics",
 +        }
 +    ]
-+    event = next(
++    events = [
 +        node
 +        for node in TREE.body
-+        if isinstance(node, ast.ClassDef) and node.name == "HiCacheTransferCommit"
-+    )
++        if isinstance(node, ast.ClassDef)
++        and node.name in {"HiCacheChildCommit", "HiCacheTransferCommit"}
++    ]
 +    module = ast.Module(
 +        body=[
 +            ast.ImportFrom(
@@ -1443,7 +2206,7 @@ index 0000000..58f18f3
 +                names=[ast.alias(name="annotations")],
 +                level=0,
 +            ),
-+            event,
++            *events,
 +            ast.ClassDef(
 +                name="AckCache", bases=[], keywords=[], body=methods, decorator_list=[]
 +            ),
@@ -1459,14 +2222,15 @@ index 0000000..58f18f3
 +AckCache, HiCacheTransferCommit, CACHE_AST = load_ack_methods()
 +
 +
-+def ack(node_ids, counts=None, log=None):
++def ack(node_ids, counts=None, log=None, child_receipts=(), num_bytes=0):
 +    event = Mock()
 +    event.synchronize.side_effect = lambda: log.append("sync") if log is not None else None
 +    return SimpleNamespace(
 +        node_ids=node_ids,
 +        finish_event=event,
 +        num_tokens_by_pool=counts,
-+        num_bytes=0,
++        num_bytes=num_bytes,
++        child_receipts=child_receipts,
 +        timing_enabled=False,
 +    )
 +
@@ -1490,6 +2254,99 @@ index 0000000..58f18f3
 +
 +
 +class TestUnifiedAck(unittest.TestCase):
++    def test_native_action_paths_forward_optional_command_identity(self):
++        for name in (
++            "_execute_and_commit_kv_backup",
++            "_execute_kv_backup",
++            "load_back",
++            "_load_back_transfers",
++        ):
++            method = next(
++                node
++                for node in CACHE_AST.body
++                if isinstance(node, ast.FunctionDef) and node.name == name
++            )
++            self.assertIn(
++                "beliefkv_command_id",
++                {arg.arg for arg in method.args.kwonlyargs},
++            )
++            self.assertTrue(
++                any(
++                    isinstance(node, ast.keyword)
++                    and node.arg == "beliefkv_command_id"
++                    for node in ast.walk(method)
++                )
++            )
++
++    def test_merged_ack_attributes_only_valid_tagged_child_after_split_commit(self):
++        cache = cache_fixture()
++        events = []
++        cache.on_hicache_transfer_commit = events.append
++        cache.ongoing_write_through = {
++            1: (1, "lock1", [1, 11]),
++            2: (2, "lock2", [2]),
++        }
++        receipts = (
++            SimpleNamespace(
++                command_id="prepare-1",
++                node_id=1,
++                num_tokens_by_pool=(("kv", 8), ("mamba", 2)),
++                num_bytes=100,
++            ),
++            SimpleNamespace(
++                command_id=None,
++                node_id=2,
++                num_tokens_by_pool=(("kv", 4),),
++                num_bytes=40,
++            ),
++        )
++        cache.cache_controller.ack_write_queue = [
++            ack(
++                [1, 2],
++                {"kv": 12, "mamba": 2},
++                child_receipts=receipts,
++                num_bytes=140,
++            )
++        ]
++
++        cache.writing_check(finish_count=1)
++
++        self.assertEqual(len(events), 1)
++        self.assertEqual(events[0].node_ids, (1, 11, 2))
++        self.assertEqual(len(events[0].child_commits), 1)
++        child = events[0].child_commits[0]
++        self.assertEqual(child.command_id, "prepare-1")
++        self.assertEqual(child.anchor_node_id, 1)
++        self.assertEqual(child.published_node_ids, (1, 11))
++        self.assertEqual(child.num_tokens_by_pool, (("kv", 8), ("mamba", 2)))
++        self.assertEqual(child.num_bytes, 100)
++
++    def test_mismatched_merged_receipt_never_certifies_command(self):
++        cache = cache_fixture()
++        events = []
++        cache.on_hicache_transfer_commit = events.append
++        cache.ongoing_load_back = {7: (7, "lock", "host-lock")}
++        cache.cache_controller.ack_load_queue = [
++            ack(
++                [7],
++                {"kv": 0, "mamba": 2},
++                child_receipts=(
++                    SimpleNamespace(
++                        command_id="prefetch-7",
++                        node_id=7,
++                        num_tokens_by_pool=(("kv", 0), ("mamba", 2)),
++                        num_bytes=1,
++                    ),
++                ),
++                num_bytes=8,
++            )
++        ]
++
++        cache.loading_check(finish_count=1)
++
++        self.assertEqual(events[0].child_commits, ())
++        self.assertEqual(events[0].status, "completed")
++
 +    def test_constructor_defaults_observer_to_none(self):
 +        init = next(
 +            node

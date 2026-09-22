@@ -90,6 +90,19 @@ admission load-back 是请求到达后的 Host -> GPU，均不是提前预测
 有界准入编译器现将 native session ID/generation 一并纳入候选授权
 身份；只读 FULL/MAMBA node 快照记录 session 引用计数/叶标记数，
 **不得**由此推断独占 ownership 或 physical action 已实现。
+后续 staging 增加了 opt-in 原生 session 生命周期桥（同 context/epoch
+复用、终态关闭、失败可重试），但默认 agent runner 尚未启用。
+cache/controller 现为可选 tagged D2H/H2D 子传输保留原始 command ID、
+FULL/MAMBA pool 计数与 bytes，merged ACK 仍包含 untagged 子操作
+以检查总账。cache 只有在 ACK 同步及 tree finish 后才输出匹配的
+`child_commits`；H2D 入队不构成提交或完成。完整动作的跨子操作
+原子性、context/epoch 和物理 ownership 仍未迁移，启用 flag 必须
+继续 fail closed。
+另外固定新环境默认运行 wheel (`source_is_active=false`)；
+`scripts/launch_qwen35_native_v0520.sh` 仅在显式设置
+`SGLANG_SOURCE_CHECKOUT` 后才校验固定源码和 staging patch 并使用
+该 checkout。必须记录实际加载的 `sglang.__file__`，不能仅凭
+包版本 0.5.20 声称运行了 BeliefKV 补丁。
 组 1-5 + 改写本仓库 runtime/contract 才能定义为“基础 BeliefKV 可运行补丁集”；
 要复现题设 `dynamic-running.patch` 的行为还需组 6。**没有现成可运行的
 v0.5.20 可运行补丁文件**；只搬运上游 diff 或只加入口字段不构成完整补丁集。

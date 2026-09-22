@@ -81,6 +81,19 @@ cache mode。其他 cache backend、TP/PP、disaggregation 和 speculative
    MAMBA bytes 与提交状态，并在 tree finish 后逐笔对账。split 产生
    的新 node ID 是受影响范围，不是新的 command。
 
+当前 staging 正在把可选 command ID 贯穿 native D2H/H2D 入口与 controller。
+只有 ACK 已同步、tree 已 finish，且全部子 receipt 的 node ID、各 pool
+计数和总 bytes 与 merged ACK 一致时，才提供带原始 command ID 的
+`child_commits`；未标记 native 子操作只参与账目校验。H2D receipt
+必须等 `start_loading` 真正提交才出现。此机制仍**不是**
+`PREPARE_HOST/PREFETCH_GPU` 已可执行：动作的 context/epoch、请求、
+owner、closure 和所有子操作提交结果尚未与 runtime 的预测事务绑定；
+部分成功、allocation failure 与未知 ACK 都不能领取整笔动作的证书。
+新环境默认仍加载预安装 wheel；使用 staging 源码启动时必须显式传
+`SGLANG_SOURCE_CHECKOUT` 给 `scripts/launch_qwen35_native_v0520.sh`，
+脚本校验实际加载路径和固定 checkout。带源码启动但不启用 BeliefKV
+也只验证原生禁用路径，不能代替物理动作 gate。
+
 安全点顺序固定为 native chunk abort -> HiCache ACK 排空 ->
 BeliefKV 状态同步/决策 -> native prefill admission -> GPU batch。
 现阶段不开启 `enable_beliefkv`，不能用新版原生 smoke 代替 A/B 实验。

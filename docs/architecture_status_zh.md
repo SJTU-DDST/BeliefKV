@@ -51,6 +51,18 @@ context/epoch 生成隔离的 session ID，在 RETURN/CANCEL、WORKFLOW_END
 工具等待期间绝对保活，不能代替预测式 H2D。原生合并 ACK 缺少
 per-command ID/bytes；即使 `load()` 返回成功，H2D 也可能尚未提交
 到 DMA，因此预测动作保持 fail closed。
+新版 staging 正补充 native 每个子传输的 command ID、pool count/bytes
+与 merged ACK 内身份保留。cache 侧只在 ACK 同步及 tree finish 后，
+对账全部子 receipt 才输出动作级 child commit；这只能认证单个已完成
+子操作，尚不能认证整笔预测动作或打开 `enable_beliefkv`。迁移后的
+runtime 仍需封装提交期间的部分成功/失败、context generation 与
+真实 beneficiary 校验。
+冻结环境中的 `sglang 0.5.20` 目前以 wheel 形式安装，
+`source_is_active=false`；直接运行 `python -m sglang.launch_server`
+默认不会加载 staging checkout。原生启动脚本保留 wheel smoke 默认，
+显式设置 `SGLANG_SOURCE_CHECKOUT=third_party/sglang-v0.5.20` 时会检查
+固定 commit、补丁反向撤销可行性和实际 `sglang.__file__` 指向该 checkout，
+再用它启动服务。未设置该变量的 GPU 测试不能用来验证本次新增 hook。
 2026-09-22 在 H200 上以安装的 v0.5.20 wheel、Qwen3.5-35B-A3B BF16
 完成不带 HiCache 及启用 4 GiB HiCache 两组原生
 chat -> tool call -> tool result 续写 smoke；后者确认挂载了 KV + MAMBA
