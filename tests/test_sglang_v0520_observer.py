@@ -10,6 +10,7 @@ import pytest
 from beliefkv.runtime.sglang_v0520_observer import (
     observe_unified_full_mamba,
     observe_unified_full_mamba_usage,
+    observe_unified_node_closure,
 )
 
 
@@ -52,6 +53,18 @@ class MHATokenToKVPoolHost(NS):
 
 
 class MambaPoolHost(NS):
+    pass
+
+
+class UnifiedTreeNode(NS):
+    pass
+
+
+class UnifiedTreeCore(NS):
+    pass
+
+
+class ComponentData(NS):
     pass
 
 
@@ -302,3 +315,99 @@ def test_usage_does_not_run_counter_methods_on_unknown_cache() -> None:
     cache.host_pool_group.entry_map["mamba"].device_pool = object()
     result = observe_unified_full_mamba_usage(cache)
     assert not result.observable
+
+
+def _node(node_id: int, parent=None, *, device=(), host=(), mamba_host=False):
+    full = ComponentData(
+        value=list(device) if device else None,
+        host_value=list(host) if host else None,
+        lock_ref=0,
+        host_lock_ref=0,
+    )
+    mamba = ComponentData(
+        value=[1] if device else None,
+        host_value=[1] if mamba_host else None,
+        lock_ref=0,
+        host_lock_ref=0,
+    )
+    return UnifiedTreeNode(
+        id=node_id,
+        parent=parent,
+        creation_time=10 + node_id,
+        component_data=[full, ComponentData(), mamba],
+        write_through_pending_id=None,
+        load_back_pending_id=None,
+    )
+
+
+def test_node_closure_captures_only_requested_ancestry() -> None:
+    cache = _cache()
+    root = _node(0)
+    ancestor = _node(4, root, device=[1, 2], host=[10, 11], mamba_host=True)
+    leaf = _node(5, ancestor, device=[3])
+    leaf.component_data[0].lock_ref = 2
+    leaf.write_through_pending_id = 5
+    cache.tree_core = UnifiedTreeCore(node_by_id=lambda node_id: {5: leaf}[node_id])
+    result = observe_unified_node_closure(cache, 5)
+    assert result.observable
+    assert [item.node_id for item in result.nodes] == [5, 4, 0]
+    assert result.nodes[0].parent_id == 4
+    assert result.nodes[0].full_device_tokens == 1
+    assert result.nodes[0].full_device_locks == 2
+    assert result.nodes[0].pending_write_id == 5
+    assert result.nodes[1].full_host_tokens == 2
+    assert result.nodes[1].mamba_host_present
+    assert result.captured_monotonic_s is not None
+    assert not result.physical_actions_supported
+
+
+def test_node_closure_rejects_cycle_excess_depth_and_absent_id() -> None:
+    cache = _cache()
+    root = _node(1)
+    leaf = _node(2, root, device=[1])
+    cache.tree_core = UnifiedTreeCore(node_by_id=lambda node_id: {2: leaf}[node_id])
+    assert not observe_unified_node_closure(cache, 2, max_nodes=1).observable
+    assert not observe_unified_node_closure(cache, 99).observable
+    assert not observe_unified_node_closure(cache, 2, max_nodes=0).observable
+    root.parent = leaf
+    assert not observe_unified_node_closure(cache, 2).observable
+
+
+def test_node_closure_fails_closed_on_unphysical_lengths() -> None:
+    cache = _cache()
+    oversized = _node(9, device=range(193))
+    cache.tree_core = UnifiedTreeCore(node_by_id=lambda node_id: oversized)
+    result = observe_unified_node_closure(cache, 9)
+    assert not result.observable
+    assert result.nodes == ()
+
+
+def test_node_closure_rejects_unknown_tree_or_mismatched_node() -> None:
+    cache = _cache()
+    cache.tree_core = NS(node_by_id=lambda node_id: _node(node_id))
+    assert not observe_unified_node_closure(cache, 5).observable
+    cache.tree_core = UnifiedTreeCore(node_by_id=lambda node_id: _node(6))
+    assert not observe_unified_node_closure(cache, 5).observable
+
+
+@pytest.mark.parametrize("field,value", [
+    ("id", -1),
+    ("write_through_pending_id", True),
+    ("load_back_pending_id", -1),
+])
+def test_node_closure_rejects_invalid_identity_or_pending(field, value) -> None:
+    cache = _cache()
+    node = _node(5)
+    setattr(node, field, value)
+    cache.tree_core = UnifiedTreeCore(node_by_id=lambda node_id: node)
+    assert not observe_unified_node_closure(cache, 5).observable
+
+
+def test_node_closure_fails_closed_on_unimplemented_tree_lookup() -> None:
+    cache = _cache()
+
+    def unavailable(_node_id):
+        raise NotImplementedError("node_by_id: not yet ported")
+
+    cache.tree_core = UnifiedTreeCore(node_by_id=unavailable)
+    assert not observe_unified_node_closure(cache, 5).observable

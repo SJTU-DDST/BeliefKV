@@ -66,8 +66,11 @@ pool 数量，不能把字节拆分归因给单个 node。启用 BeliefKV 时仍
 本仓库的 `beliefkv/runtime/sglang_v0520_observer.py` 另提供 FULL-token、
 MAMBA-slot 和 Host pool 的**只读静态容量上限和占用计数**；两个 device 子池
 共享同一字节 buffer，所报上限不能相加。它不估计可立即调度的空闲字节
-或可回收量，不进行动作或授权；mock 测试通过，尚未在真实 GPU cache
-上验收。
+或可回收量。新增针对 Python `UnifiedTreeCore` 的指定 node 及祖先链
+有界只读快照，记录 FULL/MAMBA 驻留、锁与 pending 状态，不复制物理
+index；Rust tree 的 `node_by_id` 尚未实现，该路径明确 fail closed。
+这些值不提供原子 revision、可迁移性判定或动作授权；mock 测试通过，
+尚未在真实 GPU cache 上验收。
 组 1-5 + 改写本仓库 runtime/contract 才能定义为“基础 BeliefKV 可运行补丁集”；
 要复现题设 `dynamic-running.patch` 的行为还需组 6。**没有现成可运行的
 v0.5.20 可运行补丁文件**；只搬运上游 diff 或只加入口字段不构成完整补丁集。
@@ -116,5 +119,12 @@ scripts/check_sglang_contract.py third_party/sglang-v0.5.20`
 （`compatible=false`，预期）。随后已导出 staging 补丁，并确认
 `git apply --cached --check` 可应用于固定的 v0.5.20 index，
 `git apply --reverse --check` 可从本地 checkout 撤销；
-GPU/server 测试尚未运行。原 rc1 的正式 patch/profile 是
+2026-09-22 追加原生 GPU smoke：H200 + 已安装的 v0.5.20 wheel +
+Qwen3.5-35B-A3B BF16，在不带 HiCache 和启用 4 GiB HiCache 时，
+chat、解析后的工具调用和工具结果续写均通过。启用 HiCache 的启动日志
+显示 FULL/MAMBA Host pool 已挂载；小 Host pool 不代表迁移验收，
+本次请求未证明真实 D2H/H2D 或 BeliefKV physical action。日志还提示
+`sglang-kernel` 缺少 `kvcacheio.get_device_accessible_ptr` 而使用原始
+Host 地址作为 kernel pointer；需在真实传输 gate 单独验证。
+原 rc1 的正式 patch/profile 是
 `perf-ownership` 而非本次作为对照的 `dynamic-running`；不可混用旧实验结论。

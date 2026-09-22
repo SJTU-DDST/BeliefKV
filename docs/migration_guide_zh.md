@@ -33,11 +33,15 @@ safe-point hook，并为 cache-mode 原生传输完成加入可选只读通知�
 （命令工作目录为 checkout，补丁路径应为主仓库的绝对路径）。原生 smoke
 使用安装在 `beliefkv-next` 中的官方 wheel；验证补丁时需将 checkout 的
 `python/` 显式放在 `PYTHONPATH` 前面。不能把两条执行路径混为一谈。
-GPU 空闲后可先运行 `scripts/launch_qwen35_native_v0520.sh`（必要时设置
+GPU 空闲后可先运行 `bash scripts/launch_qwen35_native_v0520.sh`（必要时设置
 `HICACHE_SIZE_GB`），等服务就绪后在另一终端运行
 `conda run -n beliefkv-next python scripts/smoke_qwen35_native_v0520.py`。
 该 smoke 检查原生对话、工具调用解析和工具结果后续写；不检查
 BeliefKV 的 D2H/H2D、allocator ownership 或 predictive 调度。
+新环境 CUDA 13 wheel 的 `libcudart.so.13` 位于 `nvidia/cu13/lib` 而不是
+`lib64`，且没有 JIT 链接所需的未版本化 `libcudart.so`。启动脚本在该 conda
+环境内创建指向 `libcudart.so.13` 的符号链接，并为 JIT 编译和运行时设置
+`LIBRARY_PATH` / `LD_LIBRARY_PATH`；若环境目录不可写则需要预先配置好链接。
 
 目标模型 BF16 full-attention KV 为 20,480 B/token，另有 30 层 linear
 attention 状态。此数字不是完整的 GPU/Host 物理工作集大小。详细 hook

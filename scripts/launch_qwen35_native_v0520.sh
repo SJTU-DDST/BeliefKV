@@ -23,8 +23,21 @@ if [[ ! -x "${CUDA_HOME}/bin/nvcc" ]]; then
   printf 'CUDA 13 nvcc missing from migration environment: %s\n' "${CUDA_HOME}" >&2
   exit 2
 fi
+if [[ ! -f "${CUDA_HOME}/lib/libcudart.so.13" ]]; then
+  printf 'CUDA 13 runtime library missing from migration environment: %s\n' "${CUDA_HOME}/lib" >&2
+  exit 2
+fi
+if [[ ! -e "${CUDA_HOME}/lib/libcudart.so" ]]; then
+  if [[ -L "${CUDA_HOME}/lib/libcudart.so" ]]; then
+    printf 'Broken CUDA runtime linker alias: %s\n' "${CUDA_HOME}/lib/libcudart.so" >&2
+    exit 2
+  fi
+  ln -s libcudart.so.13 "${CUDA_HOME}/lib/libcudart.so"
+fi
 "${PYTHON}" -c 'import importlib.metadata as m; assert m.version("sglang") == "0.5.20"'
-export CUDA_VISIBLE_DEVICES CUDA_HOME
+export LIBRARY_PATH="${CUDA_HOME}/lib${LIBRARY_PATH:+:${LIBRARY_PATH}}"
+export LD_LIBRARY_PATH="${CUDA_HOME}/lib${LD_LIBRARY_PATH:+:${LD_LIBRARY_PATH}}"
+export CUDA_VISIBLE_DEVICES CUDA_HOME LIBRARY_PATH LD_LIBRARY_PATH
 export PYTHONUNBUFFERED=1
 
 server_args=(

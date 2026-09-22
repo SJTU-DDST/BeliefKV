@@ -1,15 +1,17 @@
 """Bounded, read-only capacity census for the v0.5.20 FULL+MAMBA stack.
 
 These are addressable ceilings, NOT simultaneously usable capacity or an
-authorization to issue physical commands. Reads are scalar field reads only:
-the unified allocator's availability methods memoize state, and reclaim and
-tree queries are outside this observer's contract. Call at a scheduler safe
+authorization to issue physical commands. Capacity reads are scalar; usage
+reads allocation counters, and node closure reads one tree ancestry without
+materializing transfer indices. The allocator's availability methods memoize
+state and are outside this observer's contract. Call at a scheduler safe
 point for a coherent snapshot; concurrent pool updates are not synchronized.
 """
 
 from __future__ import annotations
 
 from dataclasses import dataclass
+import time
 
 
 _UNSUPPORTED = (
@@ -51,6 +53,32 @@ class UnifiedUsageObservation:
     device_mamba_live_slots: int | None = None
     host_full_used_tokens: int | None = None
     host_mamba_used_slots: int | None = None
+    physical_actions_supported: bool = False
+    reason: str | None = None
+
+
+@dataclass(frozen=True)
+class UnifiedNodeSummary:
+    node_id: int
+    parent_id: int | None
+    creation_time: int | float
+    full_device_tokens: int
+    full_host_tokens: int
+    mamba_device_present: bool
+    mamba_host_present: bool
+    full_device_locks: int
+    full_host_locks: int
+    mamba_device_locks: int
+    mamba_host_locks: int
+    pending_write_id: int | None
+    pending_load_id: int | None
+
+
+@dataclass(frozen=True)
+class UnifiedNodeClosureObservation:
+    observable: bool
+    nodes: tuple[UnifiedNodeSummary, ...] = ()
+    captured_monotonic_s: float | None = None
     physical_actions_supported: bool = False
     reason: str | None = None
 
@@ -242,3 +270,84 @@ def observe_unified_full_mamba_usage(cache: object) -> UnifiedUsageObservation:
         )
     except (AttributeError, KeyError, TypeError, ValueError, RuntimeError) as exc:
         return UnifiedUsageObservation(observable=False, reason=str(exc))
+
+
+def observe_unified_node_closure(
+    cache: object, node_id: int, *, max_nodes: int = 64
+) -> UnifiedNodeClosureObservation:
+    """Capture only a requested node and its ancestors, never transfer indices.
+
+    `creation_time` and pending/lock fields form a *local fingerprint*, not
+    an atomic revision. Recheck the live tree before any physical command.
+    """
+    capacity = observe_unified_full_mamba(cache)
+    if not capacity.observable:
+        return UnifiedNodeClosureObservation(observable=False, reason=capacity.reason)
+    try:
+        if type(node_id) is not int or node_id < 0:
+            raise ValueError("invalid node ID")
+        if type(max_nodes) is not int or max_nodes <= 0:
+            raise ValueError("invalid closure bound")
+        tree = _named(cache.tree_core, "UnifiedTreeCore")
+        node = tree.node_by_id(node_id)
+        visited: set[int] = set()
+        summaries: list[UnifiedNodeSummary] = []
+        while node is not None:
+            _named(node, "UnifiedTreeNode")
+            if type(node.id) is not int or node.id < 0 or node.id in visited:
+                raise ValueError("invalid or cyclic node ancestry")
+            if not summaries and node.id != node_id:
+                raise ValueError("resolved node ID mismatch")
+            if len(summaries) >= max_nodes:
+                raise ValueError("node ancestry exceeds bound")
+            visited.add(node.id)
+            parent = node.parent
+            if parent is not None:
+                _named(parent, "UnifiedTreeNode")
+                if type(parent.id) is not int or parent.id < 0:
+                    raise ValueError("invalid parent ID")
+            full = node.component_data[0]
+            mamba = node.component_data[2]
+            for item in (full, mamba):
+                _named(item, "ComponentData")
+            full_device_tokens = (
+                0 if full.value is None else _bounded(len(full.value), capacity.device_full_tokens, "FULL device length")
+            )
+            full_host_tokens = (
+                0 if full.host_value is None else _bounded(len(full.host_value), capacity.host_full_tokens, "FULL host length")
+            )
+            locks = tuple(
+                _bounded(getattr(item, field), 2**31 - 1, "node lock count")
+                for item in (full, mamba)
+                for field in ("lock_ref", "host_lock_ref")
+            )
+            pending_write = node.write_through_pending_id
+            pending_load = node.load_back_pending_id
+            for pending in (pending_write, pending_load):
+                if pending is not None and (type(pending) is not int or pending < 0):
+                    raise ValueError("invalid pending transfer ID")
+            summaries.append(
+                UnifiedNodeSummary(
+                    node_id=node.id,
+                    parent_id=None if parent is None else parent.id,
+                    creation_time=node.creation_time,
+                    full_device_tokens=full_device_tokens,
+                    full_host_tokens=full_host_tokens,
+                    mamba_device_present=mamba.value is not None,
+                    mamba_host_present=mamba.host_value is not None,
+                    full_device_locks=locks[0],
+                    full_host_locks=locks[1],
+                    mamba_device_locks=locks[2],
+                    mamba_host_locks=locks[3],
+                    pending_write_id=pending_write,
+                    pending_load_id=pending_load,
+                )
+            )
+            node = parent
+        return UnifiedNodeClosureObservation(
+            observable=True,
+            nodes=tuple(summaries),
+            captured_monotonic_s=time.monotonic(),
+        )
+    except (AttributeError, IndexError, KeyError, NotImplementedError, TypeError, ValueError) as exc:
+        return UnifiedNodeClosureObservation(observable=False, reason=str(exc))

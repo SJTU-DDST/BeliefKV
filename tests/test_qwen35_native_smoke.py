@@ -10,6 +10,18 @@ import pytest
 from scripts import smoke_qwen35_native_v0520 as smoke
 
 
+def test_native_chat_disables_thinking_for_bounded_smoke(monkeypatch) -> None:
+    seen = []
+
+    def request(_url, payload, _timeout):
+        seen.append(payload)
+        return {"choices": [{"message": {"role": "assistant", "content": "ready"}}]}
+
+    monkeypatch.setattr(smoke, "_request", request)
+    smoke._chat("http://localhost:18000", "Qwen3.5-35B-A3B", [], 5)
+    assert seen[0]["chat_template_kwargs"] == {"enable_thinking": False}
+
+
 def test_tool_round_trip_keeps_assistant_call_identity(monkeypatch, capsys) -> None:
     messages_seen: list[list[dict]] = []
     responses = iter(

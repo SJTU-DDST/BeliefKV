@@ -24,7 +24,15 @@ request metadata、scheduler 生命周期及 cache-mode 原生 ACK 观察 hook
 当前新增的 unified cache 只读 observer 报告 FULL、MAMBA、Host
 各自的容量上限及 live/used 计数；FULL/MAMBA device 容量共享一块
 字节 buffer。这些计数不是可调度空闲/可回收容量，不能用于
-PREPARE/COMMIT/PREFETCH 授权。
+PREPARE/COMMIT/PREFETCH 授权。现可对 Python `UnifiedTreeCore` 的一个
+指定 node 及其祖先读取有界 FULL/MAMBA 驻留、锁和 pending 状态；Rust
+tree 不支持该观察路径。节点快照没有原子 generation 或可转移性证明。
+2026-09-22 在 H200 上以安装的 v0.5.20 wheel、Qwen3.5-35B-A3B BF16
+完成不带 HiCache 及启用 4 GiB HiCache 两组原生
+chat -> tool call -> tool result 续写 smoke；后者确认挂载了 KV + MAMBA
+Host pool，但未施加足够负载触发实际 D2H/H2D。
+smoke 显式关闭 thinking 避免短 `max_tokens` 全部用于 reasoning。
+该轮没有启用 BeliefKV，不能证明 Host KV 转移或预测调度迁移完成。
 
 ## 1. 当前结论
 

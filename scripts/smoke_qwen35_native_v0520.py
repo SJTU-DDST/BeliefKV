@@ -34,6 +34,7 @@ def _chat(url: str, model: str, messages: list[dict], timeout: float, **extra: o
             "messages": messages,
             "temperature": 0,
             "max_tokens": 512,
+            "chat_template_kwargs": {"enable_thinking": False},
             **extra,
         },
         timeout,
