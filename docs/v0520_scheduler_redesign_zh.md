@@ -155,16 +155,15 @@ cache mode。其他 cache backend、TP/PP、disaggregation 和 speculative
    token 数量及含 sidecar 的 DMA 字节数现可从 native 子操作在入队
    前取得并登记；账本输入仍不能自行证明共享 owner、独占 reclaim、
    锁与原子 generation。scheduler 尚未启用预测动作策略。
-4. 等动作级 D2H/H2D 和 native ACK 双向对账通过后，再开放预测性
-   PREPARE/PREFETCH。只有真实 beneficiary deficit 才能授权 COMMIT；
+4. PREPARE 与 PREFETCH 的单 node native 入队前预留和 ACK 对账已接线，
+   但尚未取得动作策略资格，因此不开放在线预测性派发。
+   只有真实 beneficiary deficit 才能授权 COMMIT；
    SELECTIVE RETRACTION 需另行验证 overlap drain/TP 一致性。
-   PREPARE 的单 node 入队前预留和 ACK 核算已实现；下一步需为
-   COMMIT 的全部共享 owner/独占 reclaim 和 PREFETCH 的 FULL/MAMBA
-   H2D 各自提供 action-local 证明及安全点入口。异常发生在 native
+   下一步仍需为 COMMIT 的全部共享 owner/独占 reclaim 与 predictive
+   action 建立独立资格，覆盖 child/parent reentry 及收益与 latest-start
+   判断。异常发生在 native
    已接收操作之后时不能释放可能被 DMA 持有的 Host slot，只能等待
-   ACK/到期并报告失败。即便已接线的账本能对账 PREPARE 子操作，
-   也不等于
-   `PREPARE_HOST/PREFETCH_GPU` 已可执行。
+   ACK/到期并报告失败。已接线的账本不等于在线 P6 物理调度。
 
 staging 的 `UnifiedRadixCache.prepare_host_shadow` 已有单 node 原语：
 仅在 cache mode、`write_through`、session radix cache 启用，且
@@ -183,6 +182,20 @@ session、node，并调用该 callback；native 明确拒绝入队时才撤销�
 admission-only 资格，不能据此授权 PREPARE；还需要收益/时序和
 物理资格，再在 safe point 接入动作选择。
 更没有 beneficiary-bound COMMIT_CPU 或提前 H2D 执行闭环。
+
+staging 的 `UnifiedRadixCache.prefetch_gpu_session_node` 新增单 node H2D
+入口：重验 FULL session leaf、context 对应的 node creation、祖先在
+GPU、无 pending transfer，并要求 native FULL load-back 只涉及该
+node；MAMBA-only（零 FULL token）仍允许。与响应式
+`load_back` 不同，此入口遇到 FULL 或辅助设备池不足时直接退出，
+不能通过 `evict_for_alloc` 或 side-pool reclaim 抢占其他请求。
+controller 仅在实际设备索引及 sidecar 解析完毕、操作入队前调用
+BeliefKV callback，拒绝时只释放本次分配的设备槽；runtime 以原生
+pool 几何和真实操作内容登记 `PREFETCH_GPU` 预期，native 明确未
+入队才撤销预留。**回调成功不等于 H2D ACK，也不等于首次服务**。
+该入口当前只支持工具未结束时一个 FULL session leaf 路径；
+尚不覆盖 child JOIN、请求排序/恢复优先级、完整 execution-KV
+JointPlan 或预测收益，scheduler 不会主动调用。
 
 新环境默认仍加载预安装 wheel；使用 staging 源码启动时必须显式传
 `SGLANG_SOURCE_CHECKOUT` 给 `scripts/launch_qwen35_native_v0520.sh`，

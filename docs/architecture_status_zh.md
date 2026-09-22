@@ -3,7 +3,7 @@
 更新日期：2026-09-22
 当前 P6 物理执行基线：原 Qwen3-Coder/SGLang 0.5.2rc1；
 Qwen3.5/v0.5.20 已有可选 native admission、工具等待预测和
-未启用的单 node PREPARE 原生事务入口，尚无完整预测物理调度。
+未启用的单 node PREPARE/H2D 原生事务入口，尚无完整预测物理调度。
 
 本文只记录当前事实和下一阻塞项，不再追加逐日开发日志。2026-09-12 以前的完整历史保存在
 `docs/archive/snapshots/architecture_status_zh.md`，单次实验细节保存在
@@ -42,7 +42,7 @@ request/context/epoch/attempt、session 和 invocation revision，
 admission 代码路径**，不是已验收的 Qwen3.5 预测运行：
 当前迁移目录未提供新模型校准且 online-eligible 的 predictor artifact；
 旧 rc1/development artifact 不可沿用。COMMIT 的独占 reclaim 证明、
-预测性 H2D 和动作级策略授权仍缺失。
+child/parent reentry 策略、预测动作授权与服务归因仍缺失。
 工具期 `TOOL_START` 现在可异步提交 P10/P50/P90 剩余时间预测；
 worker 在 idle scheduler 上有结果 fd 唤醒。live `WAIT_TOOL`、session
 generation、invocation revision、模型哈希和有效期须在结果消费时
@@ -65,6 +65,15 @@ node；回调登记物理账本后才允许入队。明确未入队则撤销预�
 **scheduler 尚未调用该入口**：当前 artifact 明确只有 admission
 资格，尚无动作时序/收益证明和在线 physical gate；因此不能宣称
 predictive PREPARE 真实执行，更没有提前 PREFETCH 或 COMMIT。
+对称的 `prefetch_gpu_session_node` 原生入口与 runtime
+`issue_prefetch_gpu_step` 已具备单 node H2D 的入队前登记和同步 ACK
+核算：只有当前工具等待的 session 叶闭包才可 root-first 选择
+CPU-only FULL/MAMBA node；原生动作重验祖先驻留和 node 创建身份，
+FULL/MAMBA 设备槽不足时不抢占别的 GPU KV。MAMBA-only 和 derived
+sidecar 字节也会计入预期。**scheduler 尚未调用 H2D 入口**，此代码
+没有证明 online predictive H2D、首次服务收益或旧 checkpoint 等价；
+`WAIT_JOIN`、child reentry、动态 latest-start 与真实 deficit 触发的
+COMMIT 仍需迁移。
 启动脚本增加显式 `HICACHE_WRITE_POLICY` 与
 `ENABLE_SESSION_RADIX_CACHE`，默认仍保持 write_back/关闭 session；
 即使 opt-in 也不会自动开启 agent session 桥或物理调度。

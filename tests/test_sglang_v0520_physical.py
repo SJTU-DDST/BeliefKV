@@ -1,5 +1,6 @@
 """CPU-only checks of native merged ACK transaction credit."""
 
+from dataclasses import replace
 from types import SimpleNamespace as NS
 from enum import Enum
 from unittest.mock import patch
@@ -8,13 +9,17 @@ import pytest
 
 from beliefkv.runtime.sglang_v0520_admission import PrefillCandidateKey
 from beliefkv.runtime.sglang_v0520_physical import (
+    ActionLocalPrefetchCandidate,
     ContextSessionAnchors,
     PhysicalActionExpectation,
     PhysicalChildExpectation,
     PhysicalReceiptError,
     PhysicalTransactionLedger,
+    PrefetchLoadStep,
     capture_action_local_shadow,
+    next_prefetch_gpu_step,
     next_shadow_backup_step,
+    prefetch_expectation_from_native_op,
     shadow_expectation_from_native_op,
     ShadowBackupStep,
 )
@@ -96,6 +101,245 @@ def test_native_shadow_expectation_rejects_invalid_operation(change):
     change(op, controller)
     with pytest.raises(PhysicalReceiptError):
         shadow_expectation_from_native_op("prepare-1", step, op, controller)
+
+
+class Pool(str, Enum):
+    KV = "kv"
+    MAMBA = "mamba"
+    DRAFT = "draft"
+
+
+def native_prefetch(*, full=2, mamba=1, sidecar=Pool.KV):
+    step = PrefetchLoadStep(
+        PrefillCandidateKey("r", "w", "i", "c", 3, 0, "s", 4),
+        12, 5, 11, 4,
+    )
+    kv_host, kv_device = tuple(range(full)), tuple(range(10, 10 + full))
+    mamba_host, mamba_device = tuple(range(mamba)), tuple(range(20, 20 + mamba))
+    transfers = []
+    if mamba:
+        transfers.append(NS(
+            name=Pool.MAMBA, host_indices=mamba_host,
+            device_indices=mamba_device, indices_from_pool=None,
+        ))
+    if sidecar is not None:
+        source_indices = (kv_host, kv_device) if sidecar == Pool.KV else (
+            mamba_host, mamba_device
+        )
+        transfers.append(NS(
+            name=Pool.DRAFT, host_indices=source_indices[0],
+            device_indices=source_indices[1], indices_from_pool=sidecar,
+        ))
+    op = NS(
+        beliefkv_command_id="prefetch-1", node_ids=[11],
+        host_indices=kv_host, device_indices=kv_device, pool_transfers=transfers,
+    )
+    sizes = {Pool.KV: 10, Pool.MAMBA: 5, Pool.DRAFT: 3}
+    group = NS(entry_map={
+        name: NS(host_pool=NS(size_per_token=size))
+        for name, size in sizes.items()
+    })
+
+    def counts(operation):
+        result = {"kv": len(operation.device_indices)}
+        for transfer in operation.pool_transfers or []:
+            if transfer.indices_from_pool is None:
+                result[transfer.name.value] = len(transfer.host_indices)
+        return result
+
+    def total(operation):
+        sources = {Pool.KV: len(operation.host_indices)}
+        sources.update({
+            transfer.name: len(transfer.host_indices)
+            for transfer in operation.pool_transfers or []
+            if transfer.indices_from_pool is None
+        })
+        return sources[Pool.KV] * sizes[Pool.KV] + sum(
+            sources[transfer.indices_from_pool] * sizes[transfer.name]
+            if transfer.indices_from_pool is not None
+            else len(transfer.host_indices) * sizes[transfer.name]
+            for transfer in operation.pool_transfers or []
+        )
+
+    controller = NS(
+        mem_pool_host=group,
+        _num_tokens_by_pool=counts,
+        _transfer_num_bytes=total,
+    )
+    return step, op, controller
+
+
+def test_native_prefetch_expectation_credits_only_completed_h2d_ack():
+    step, op, controller = native_prefetch()
+    expectation = prefetch_expectation_from_native_op(
+        "prefetch-1", step, op, controller
+    )
+    assert expectation == PhysicalActionExpectation(
+        command_id="prefetch-1", action="PREFETCH_GPU",
+        context_id="c", context_epoch=3,
+        children=(PhysicalChildExpectation(
+            11, (11,), (("kv", 20), ("mamba", 5)), 31,
+        ),),
+        pool_bytes_per_token=(("kv", 10), ("mamba", 5)),
+        session_id="s", session_generation=4,
+    )
+    ledger = PhysicalTransactionLedger()
+    ledger.register(expectation)
+    assert ledger.pending_count == 1
+    assert ledger.observe(
+        ack(nodes=(99,), direction="h2d", kv=0, mamba=0),
+        live_context_epochs={"c": 3},
+        live_context_sessions={"c": ("s", 4)},
+    ) == ()
+    assert ledger.pending_count == 1
+    (completed,) = ledger.observe(
+        ack(
+            receipt(
+                command="prefetch-1", anchor=11, published=(11,),
+                kv=2, mamba=1, total=31,
+            ),
+            nodes=(11,), direction="h2d",
+        ),
+        live_context_epochs={"c": 3},
+        live_context_sessions={"c": ("s", 4)},
+    )
+    assert completed.action == "PREFETCH_GPU"
+    assert completed.num_bytes == 31
+    assert completed.pool_bytes == (("kv", 20), ("mamba", 5))
+    assert ledger.pending_count == 0
+
+
+def test_native_prefetch_mamba_only_has_zero_full_and_derived_bytes():
+    step, op, controller = native_prefetch(full=0, mamba=2, sidecar=Pool.MAMBA)
+    expectation = prefetch_expectation_from_native_op(
+        "prefetch-1", step, op, controller
+    )
+    assert expectation.children == (
+        PhysicalChildExpectation(11, (11,), (("kv", 0), ("mamba", 10)), 16),
+    )
+    ledger = PhysicalTransactionLedger()
+    ledger.register(expectation)
+    (completed,) = ledger.observe(
+        ack(
+            receipt(
+                command="prefetch-1", anchor=11, published=(11,),
+                kv=0, mamba=2, total=16,
+            ),
+            nodes=(11,), direction="h2d", kv=0, mamba=2,
+        ),
+        live_context_epochs={"c": 3},
+        live_context_sessions={"c": ("s", 4)},
+    )
+    assert completed.num_bytes == 16
+
+
+def test_native_prefetch_full_only_without_aux_transfers():
+    step, op, controller = native_prefetch(mamba=0, sidecar=None)
+    op.pool_transfers = None
+    expectation = prefetch_expectation_from_native_op(
+        "prefetch-1", step, op, controller
+    )
+    assert expectation.children == (
+        PhysicalChildExpectation(11, (11,), (("kv", 20),), 20),
+    )
+
+
+def test_native_prefetch_rejects_empty_transfer_and_orphan_sidecar():
+    step, op, controller = native_prefetch(full=0, mamba=0, sidecar=None)
+    with pytest.raises(PhysicalReceiptError):
+        prefetch_expectation_from_native_op("prefetch-1", step, op, controller)
+    step, op, controller = native_prefetch(full=0, mamba=1, sidecar=Pool.KV)
+    with pytest.raises(PhysicalReceiptError, match="sidecar"):
+        prefetch_expectation_from_native_op("prefetch-1", step, op, controller)
+
+
+@pytest.mark.parametrize("change", (
+    lambda op, ctrl: setattr(op, "beliefkv_command_id", "other"),
+    lambda op, ctrl: setattr(op, "node_ids", [12]),
+    lambda op, ctrl: setattr(op, "host_indices", ()),
+    lambda op, ctrl: setattr(op.pool_transfers[0], "device_indices", ()),
+    lambda op, ctrl: setattr(op.pool_transfers[0], "name", Pool.KV),
+    lambda op, ctrl: setattr(op.pool_transfers[1], "indices_from_pool", Pool.DRAFT),
+    lambda op, ctrl: setattr(op.pool_transfers[1], "host_indices", tuple(range(2))),
+    lambda op, ctrl: setattr(op.pool_transfers[1], "name", Pool.MAMBA),
+    lambda op, ctrl: setattr(op.pool_transfers[1], "device_indices", ()),
+    lambda op, ctrl: setattr(
+        ctrl.mem_pool_host.entry_map[Pool.DRAFT].host_pool, "size_per_token", 0
+    ),
+    lambda op, ctrl: setattr(
+        ctrl, "_num_tokens_by_pool", lambda _: {"kv": 2, "mamba": 1, "draft": 2}
+    ),
+    lambda op, ctrl: setattr(ctrl, "_num_tokens_by_pool", lambda _: {"kv": 1}),
+    lambda op, ctrl: setattr(ctrl, "_transfer_num_bytes", lambda _: 25),
+    lambda op, ctrl: setattr(ctrl, "_transfer_num_bytes", lambda _: 30),
+))
+def test_native_prefetch_rejects_invalid_operation_or_sidecar(change):
+    step, op, controller = native_prefetch()
+    change(op, controller)
+    with pytest.raises(PhysicalReceiptError):
+        prefetch_expectation_from_native_op("prefetch-1", step, op, controller)
+
+
+@pytest.mark.parametrize("leaf_id,created,session", [
+    (-1, 4, 4),
+    (12, float("nan"), 4),
+    (12, 4, None),
+])
+def test_native_prefetch_rejects_invalid_provenance(leaf_id, created, session):
+    step, op, controller = native_prefetch()
+    step = replace(
+        step, leaf_node_id=leaf_id, leaf_creation_time=created,
+        key=replace(step.key, session_generation=session),
+    )
+    with pytest.raises(PhysicalReceiptError):
+        prefetch_expectation_from_native_op("prefetch-1", step, op, controller)
+
+
+@pytest.mark.parametrize("direction,status,total", [
+    ("d2h", "completed", 31),
+    ("h2d", "completed", 25),
+    ("h2d", "pending", 31),
+])
+def test_native_prefetch_requires_complete_matching_ack(direction, status, total):
+    step, op, controller = native_prefetch()
+    ledger = PhysicalTransactionLedger()
+    ledger.register(prefetch_expectation_from_native_op(
+        "prefetch-1", step, op, controller
+    ))
+    with pytest.raises(PhysicalReceiptError):
+        ledger.observe(
+            ack(
+                receipt(
+                    command="prefetch-1", anchor=11, published=(11,),
+                    kv=2, mamba=1, total=total,
+                ),
+                nodes=(11,), direction=direction, status=status,
+            ),
+            live_context_epochs={"c": 3},
+            live_context_sessions={"c": ("s", 4)},
+        )
+    assert ledger.pending_count == 0
+
+
+def test_native_prefetch_stale_session_cannot_credit_ack():
+    step, op, controller = native_prefetch()
+    ledger = PhysicalTransactionLedger()
+    ledger.register(prefetch_expectation_from_native_op(
+        "prefetch-1", step, op, controller
+    ))
+    with pytest.raises(PhysicalReceiptError, match="session"):
+        ledger.observe(
+            ack(
+                receipt(
+                    command="prefetch-1", anchor=11, published=(11,),
+                    kv=2, mamba=1, total=31,
+                ),
+                nodes=(11,), direction="h2d",
+            ),
+            live_context_epochs={"c": 3},
+            live_context_sessions={"c": ("s", 5)},
+        )
+    assert ledger.pending_count == 0
 
 
 def test_shadow_candidate_is_context_local_and_read_only():
@@ -241,6 +485,160 @@ def test_shadow_step_never_selects_mamba_only_leaf_without_full_provenance():
     assert next_shadow_backup_step(NS(
         anchors=anchors, nodes=(full, mamba_only)
     )) is None
+
+
+def prefetch_node(
+    node_id, parent_id, created, *,
+    full_gpu=0, full_host=0, mamba_gpu=False, mamba_host=False,
+):
+    return NS(
+        node_id=node_id, parent_id=parent_id, creation_time=created,
+        full_device_tokens=full_gpu, full_host_tokens=full_host,
+        mamba_device_present=mamba_gpu, mamba_host_present=mamba_host,
+        pending_write_id=None, pending_load_id=None,
+    )
+
+
+def prefetch_anchors(full_leaf=12, mamba_leaf=12):
+    return ContextSessionAnchors(
+        PrefillCandidateKey("r", "w", "i", "c", 3, 0, "s", 4),
+        ((0, ((full_leaf, 5),)), (2, ((mamba_leaf, 5),))),
+        10.0,
+    )
+
+
+def test_prefetch_capture_and_select_root_first_full_host_only():
+    anchors = prefetch_anchors()
+    root = prefetch_node(0, None, 1)
+    parent = prefetch_node(11, 0, 4, full_host=4)
+    leaf = prefetch_node(12, 11, 5, full_host=8)
+    with patch(
+        "beliefkv.runtime.sglang_v0520_physical.observe_unified_node_closure",
+        return_value=NS(observable=True, nodes=(leaf, parent, root)),
+    ):
+        candidate = capture_action_local_shadow(
+            object(), anchors, for_prefetch=True,
+        )
+        assert isinstance(candidate, ActionLocalPrefetchCandidate)
+        assert candidate.missing_full_device_tokens == 12
+        assert candidate.missing_mamba_device_nodes == 0
+        step = next_prefetch_gpu_step(candidate)
+        assert step == PrefetchLoadStep(anchors.key, 12, 5, 11, 4)
+        assert capture_action_local_shadow(object(), anchors, max_nodes=2,
+                                           for_prefetch=True) is None
+        parent.full_device_tokens = 4
+        candidate = capture_action_local_shadow(
+            object(), anchors, for_prefetch=True,
+        )
+        assert next_prefetch_gpu_step(candidate) == PrefetchLoadStep(
+            anchors.key, 12, 5, 12, 5
+        )
+        parent.pending_load_id = 1
+        assert capture_action_local_shadow(
+            object(), anchors, for_prefetch=True,
+        ) is None
+
+
+def test_prefetch_mamba_only_needs_full_gpu_and_host_state():
+    anchors = prefetch_anchors()
+    root = prefetch_node(0, None, 1)
+    leaf = prefetch_node(12, 0, 5, full_gpu=8, mamba_host=True)
+    with patch(
+        "beliefkv.runtime.sglang_v0520_physical.observe_unified_node_closure",
+        return_value=NS(observable=True, nodes=(leaf, root)),
+    ):
+        candidate = capture_action_local_shadow(
+            object(), anchors, for_prefetch=True,
+        )
+        assert candidate.missing_full_device_tokens == 0
+        assert candidate.missing_mamba_device_nodes == 1
+        assert next_prefetch_gpu_step(candidate) == PrefetchLoadStep(
+            anchors.key, 12, 5, 12, 5
+        )
+        leaf.full_device_tokens = 0
+        assert capture_action_local_shadow(
+            object(), anchors, for_prefetch=True,
+        ) is None
+        leaf.full_device_tokens = 8
+        leaf.mamba_host_present = False
+        assert capture_action_local_shadow(
+            object(), anchors, for_prefetch=True,
+        ) is None
+
+
+def test_prefetch_without_cpu_kv_or_with_pending_never_selects():
+    anchors = prefetch_anchors()
+    root = prefetch_node(0, None, 1)
+    leaf = prefetch_node(12, 0, 5, full_gpu=8, mamba_gpu=True)
+    with patch(
+        "beliefkv.runtime.sglang_v0520_physical.observe_unified_node_closure",
+        return_value=NS(observable=True, nodes=(leaf, root)),
+    ):
+        assert capture_action_local_shadow(
+            object(), anchors, for_prefetch=True,
+        ) is None
+        leaf.full_device_tokens = 0
+        assert capture_action_local_shadow(
+            object(), anchors, for_prefetch=True,
+        ) is None
+    leaf.full_host_tokens = 8
+    root.pending_write_id = 7
+    assert next_prefetch_gpu_step(NS(anchors=anchors, nodes=(leaf, root))) is None
+
+
+def test_prefetch_rejects_missing_cyclic_cross_node_and_stale_leaf():
+    anchors = prefetch_anchors()
+    root = prefetch_node(0, None, 1)
+    leaf = prefetch_node(12, 0, 5, full_host=8)
+    candidate = NS(anchors=anchors, nodes=(leaf, root))
+    assert next_prefetch_gpu_step(candidate) == PrefetchLoadStep(
+        anchors.key, 12, 5, 12, 5
+    )
+    leaf.parent_id = 99
+    assert next_prefetch_gpu_step(candidate) is None
+    leaf.parent_id = 12
+    assert next_prefetch_gpu_step(candidate) is None
+    leaf.parent_id = 0
+    leaf.creation_time = 6
+    assert next_prefetch_gpu_step(candidate) is None
+    leaf.creation_time = 5
+    unrelated = prefetch_node(13, 0, 6, mamba_host=True, full_gpu=8)
+    cross = ContextSessionAnchors(
+        anchors.key, ((0, ((12, 5),)), (2, ((13, 6),))), 10.0,
+    )
+    assert next_prefetch_gpu_step(
+        NS(anchors=cross, nodes=(leaf, root, unrelated))
+    ) is None
+    with patch(
+        "beliefkv.runtime.sglang_v0520_physical.observe_unified_node_closure",
+        side_effect=(
+            NS(observable=True, nodes=(leaf, root)),
+            NS(observable=True, nodes=(unrelated, root)),
+        ),
+    ):
+        assert capture_action_local_shadow(
+            object(), cross, for_prefetch=True,
+        ) is None
+
+
+def test_prefetch_selection_rejects_malformed_closure():
+    anchors = prefetch_anchors()
+    root = prefetch_node(0, None, 1)
+    leaf = prefetch_node(12, 0, 5, full_host=8)
+    candidate = NS(anchors=anchors, nodes=(leaf, root))
+    leaf.full_host_tokens = True
+    assert next_prefetch_gpu_step(candidate) is None
+    leaf.full_host_tokens = 8
+    root.creation_time = float("nan")
+    assert next_prefetch_gpu_step(candidate) is None
+    root.creation_time = 1
+    leaf.parent_id = -1
+    assert next_prefetch_gpu_step(candidate) is None
+    leaf.parent_id = 0
+    malformed = ContextSessionAnchors(
+        anchors.key, ((0, (("bad", 5),)), (2, ((12, 5),))), 10.0,
+    )
+    assert next_prefetch_gpu_step(NS(anchors=malformed, nodes=(leaf, root))) is None
 
 
 def child(anchor, published, kv, mamba, total):

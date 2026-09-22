@@ -29,15 +29,19 @@ from beliefkv.runtime.sglang_v0520_prediction import (
     validate_admission_artifact,
 )
 from beliefkv.runtime.sglang_v0520_physical import (
+    ActionLocalPrefetchCandidate,
     ActionLocalShadowCandidate,
     ContextSessionAnchors,
     PhysicalActionCompleted,
     PhysicalActionExpectation,
     PhysicalReceiptError,
     PhysicalTransactionLedger,
+    PrefetchLoadStep,
     ShadowBackupStep,
     capture_action_local_shadow,
+    next_prefetch_gpu_step,
     next_shadow_backup_step,
+    prefetch_expectation_from_native_op,
     shadow_expectation_from_native_op,
 )
 from beliefkv.predictor.structured_frontier import LocalFrontierFeatures
@@ -399,14 +403,17 @@ class NativeAdmissionRuntime:
         )
 
     def capture_shadow_candidate(
-        self, cache: object, *, context_id: str, context_epoch: int
-    ) -> ActionLocalShadowCandidate | None:
+        self, cache: object, *, context_id: str, context_epoch: int,
+        for_prefetch: bool = False,
+    ) -> ActionLocalShadowCandidate | ActionLocalPrefetchCandidate | None:
         anchors = self.snapshot_session_anchors(
             cache, context_id=context_id, context_epoch=context_epoch
         )
         if anchors is None:
             return None
-        return capture_action_local_shadow(cache, anchors)
+        return capture_action_local_shadow(
+            cache, anchors, for_prefetch=for_prefetch
+        )
 
     def refreshed_shadow_backup_step(self) -> ShadowBackupStep | None:
         """Recheck a tool wait and its native closure at the action safe point."""
@@ -485,6 +492,78 @@ class NativeAdmissionRuntime:
             self.physical_disabled = True
             raise PhysicalReceiptError("native shadow issued without a matching reservation")
         self.counts["shadow_native_issued"] += 1
+        return command_id
+
+    def refreshed_prefetch_gpu_step(self) -> PrefetchLoadStep | None:
+        """Revalidate an unfinished tool wait and one CPU-only session node."""
+        hint = self.tool_wait_hint
+        cache = self._native_cache
+        if hint is None or cache is None:
+            return None
+        key = hint.key
+        invocation = self.graph.invocations.get(key.invocation_id)
+        if (
+            hint.predictor_sha256 != self.predictor_sha256
+            or not hint.live(key, now_ms=time.monotonic() * 1000)
+            or self.context_sessions.get(key.context_id) != key
+            or invocation is None
+            or invocation.state.value != "wait_tool"
+            or invocation.updated_ts_ms != hint.invocation_revision_ts_ms
+            or self._terminal(key)
+        ):
+            return None
+        candidate = self.capture_shadow_candidate(
+            cache, context_id=key.context_id, context_epoch=key.context_epoch,
+            for_prefetch=True,
+        )
+        return next_prefetch_gpu_step(candidate) if candidate is not None else None
+
+    def issue_prefetch_gpu_step(self, step: PrefetchLoadStep) -> str | None:
+        """Submit one bounded native H2D; completion requires matching ACK."""
+        cache = self._native_cache
+        if (
+            self.physical_disabled
+            or cache is None
+            or not isinstance(step, PrefetchLoadStep)
+            or self.refreshed_prefetch_gpu_step() != step
+        ):
+            self.counts["prefetch_step_stale"] += 1
+            return None
+        command_id = f"beliefkv-prefetch-{uuid4().hex}"
+        registered = False
+
+        def before_enqueue(operation: object) -> bool:
+            nonlocal registered
+            try:
+                expected = prefetch_expectation_from_native_op(
+                    command_id, step, operation, cache.cache_controller
+                )
+                self.register_physical_action(expected)
+            except (PhysicalReceiptError, AttributeError, TypeError, ValueError):
+                self.counts["prefetch_reservation_rejected"] += 1
+                return False
+            registered = True
+            return True
+
+        outcome = cache.prefetch_gpu_session_node(
+            session_id=step.key.session_id,
+            session_generation=step.key.session_generation,
+            leaf_node_id=step.leaf_node_id,
+            leaf_creation_time=step.leaf_creation_time,
+            node_id=step.node_id,
+            node_creation_time=step.creation_time,
+            beliefkv_command_id=command_id,
+            beliefkv_before_enqueue=before_enqueue,
+        )
+        if not outcome.issued:
+            if registered:
+                self.physical_ledger.cancel_unsubmitted(command_id)
+            self.counts["prefetch_native_declined"] += 1
+            return None
+        if not registered or outcome.node_id != step.node_id:
+            self.physical_disabled = True
+            raise PhysicalReceiptError("native prefetch issued without a matching reservation")
+        self.counts["prefetch_native_issued"] += 1
         return command_id
 
     def on_native_transfer_commit(self, commit: object) -> None:

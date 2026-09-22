@@ -22,6 +22,7 @@ from beliefkv.runtime.sglang_v0520_physical import (
     PhysicalActionExpectation,
     PhysicalChildExpectation,
     PhysicalReceiptError,
+    PrefetchLoadStep,
     ShadowBackupStep,
 )
 
@@ -220,6 +221,14 @@ def test_tool_start_triggers_bounded_wait_prediction_then_local_probe():
         ):
             assert runtime.refreshed_shadow_backup_step() is step
     assert recapture.call_count == 1
+    prefetch_step = PrefetchLoadStep(key, 11, 25, 11, 25)
+    with patch.object(runtime, "capture_shadow_candidate", return_value=sentinel) as recapture:
+        with patch(
+            "beliefkv.runtime.sglang_v0520_runtime.next_prefetch_gpu_step",
+            return_value=prefetch_step,
+        ):
+            assert runtime.refreshed_prefetch_gpu_step() is prefetch_step
+    assert recapture.call_args.kwargs["for_prefetch"] is True
     runtime._forget_session("tool")
     assert runtime.tool_wait_hint is None
     assert runtime.shadow_candidate is None
@@ -231,6 +240,9 @@ def test_tool_start_triggers_bounded_wait_prediction_then_local_probe():
     ))
     assert runtime.tool_wait_hint is None
     assert runtime.shadow_candidate is None
+    with patch.object(runtime, "capture_shadow_candidate") as capture:
+        assert runtime.refreshed_prefetch_gpu_step() is None
+        capture.assert_not_called()
     runtime.scheduler_step()
     assert runtime.counts["tool_wait_result_stale"] == 1
     runtime.close()
@@ -391,6 +403,74 @@ def test_native_shadow_explicit_decline_cancels_unsubmitted_reservation():
         assert runtime.issue_shadow_backup_step(step) is None
     assert runtime.physical_ledger.pending_count == 0
     assert runtime.counts["shadow_native_declined"] == 1
+
+
+def test_native_prefetch_issues_one_node_but_credits_only_h2d_ack():
+    runtime = NativeAdmissionRuntime()
+    runtime.predictor_sha256 = "a" * 64
+    request = req("tool")
+    request.session_id = "session-tool"
+    request.session_generation = 2
+    assert runtime.register_visible_request(request)
+    runtime.on_events((
+        event(0, RuntimeEventKind.WORKFLOW_START),
+        event(1, RuntimeEventKind.INVOCATION_CREATE,
+              invocation_id="tool", context_id="ctx-tool",
+              agent_definition_id="role", agent_instance_id="tool"),
+        event(2, RuntimeEventKind.TOOL_START, invocation_id="tool",
+              attributes={"tool_family": "shell"}),
+    ))
+    key = runtime.context_sessions["ctx-tool"]
+    now = time.monotonic() * 1000
+    runtime.tool_wait_hint = NativeToolWaitHint(
+        key, 100.0, 300.0, 600.0, now, now + 5_000, "a" * 64, 2.0
+    )
+    step = PrefetchLoadStep(key, 11, 4, 11, 4)
+    controller = NS(
+        mem_pool_host=NS(entry_map={
+            "kv": NS(host_pool=NS(size_per_token=10)),
+            "mamba": NS(host_pool=NS(size_per_token=5)),
+        }),
+        _num_tokens_by_pool=lambda _: {"kv": 2, "mamba": 1},
+        _transfer_num_bytes=lambda _: 25,
+    )
+
+    def native_load(**kwargs):
+        accepted = kwargs["beliefkv_before_enqueue"](NS(
+            beliefkv_command_id=kwargs["beliefkv_command_id"],
+            node_ids=[kwargs["node_id"]],
+            device_indices=(0, 1), host_indices=(2, 3),
+            pool_transfers=[NS(
+                name="mamba", indices_from_pool=None,
+                device_indices=(4,), host_indices=(5,),
+            )],
+        ))
+        return NS(issued=accepted, node_id=11 if accepted else None)
+
+    runtime.attach_native_cache(NS(
+        cache_controller=controller, prefetch_gpu_session_node=native_load
+    ))
+    with patch.object(runtime, "refreshed_prefetch_gpu_step", return_value=step):
+        command_id = runtime.issue_prefetch_gpu_step(step)
+        assert command_id is not None
+        assert runtime.physical_ledger.pending_count == 1
+        assert not runtime.completed_physical_actions
+        runtime.on_native_transfer_commit(NS(
+            direction="h2d", status="completed", node_ids=(11,),
+            num_tokens_by_pool=(("kv", 2), ("mamba", 1)),
+            child_commits=(NS(
+                command_id=command_id, anchor_node_id=11,
+                published_node_ids=(11,),
+                num_tokens_by_pool=(("kv", 2), ("mamba", 1)),
+                num_bytes=25,
+            ),),
+        ))
+        assert runtime.completed_physical_actions[0].action == "PREFETCH_GPU"
+        assert runtime.physical_ledger.pending_count == 0
+        controller._transfer_num_bytes = lambda _: 1
+        assert runtime.issue_prefetch_gpu_step(step) is None
+        assert runtime.physical_ledger.pending_count == 0
+        assert runtime.counts["prefetch_reservation_rejected"] == 1
 
 
 def test_tool_wait_hint_expiry_clears_read_only_candidate():
