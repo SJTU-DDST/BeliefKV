@@ -101,8 +101,8 @@ def test_stale_revision_and_bound_fail_closed_only_for_tagged() -> None:
     bounded = select_native_prefill_candidates(
         (tagged, untagged), plan=plan, current_semantic_revision=4, max_candidates=1
     )
-    assert bounded.candidates == (untagged,)
-    assert bounded.rejected == (("tagged", "candidate_bound"),)
+    assert bounded.candidates == (tagged, untagged)
+    assert bounded.rejected == ()
 
 
 def test_rejects_duplicate_authorizations_and_native_request_ids() -> None:

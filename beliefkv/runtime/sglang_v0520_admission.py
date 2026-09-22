@@ -137,7 +137,6 @@ def select_native_prefill_candidates(
     rejected: list[tuple[str, str]] = []
     seen: set[str] = set()
     stale = plan.semantic_revision != current_semantic_revision
-    over_limit = len(native_order) > max_candidates
     for req in native_order:
         metadata = getattr(req, "beliefkv_metadata", None)
         if metadata is None:
@@ -150,9 +149,7 @@ def select_native_prefill_candidates(
         seen.add(request_id)
         key = _request_key(req)
         reason = (
-            "candidate_bound"
-            if over_limit
-            else "stale_revision"
+            "stale_revision"
             if stale
             else "invalid_identity"
             if key is None

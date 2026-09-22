@@ -1,6 +1,6 @@
 # v0.5.20 调度适配边界
 
-状态：2026-09-22，设计与未激活的 admission 切片；不是 BeliefKV 已在新版本运行。
+状态：2026-09-22，admission-only 切片可显式启用；不是完整 P6 预测调度。
 目标配置为 Qwen3.5-35B-A3B BF16、单机、统一 FULL/MAMBA tree、HiCache
 cache mode。其他 cache backend、TP/PP、disaggregation 和 speculative
 仍需独立验收。
@@ -38,9 +38,16 @@ cache mode。其他 cache backend、TP/PP、disaggregation 和 speculative
 - 准入计划只对 *tagged* 请求下发语义顺序/许可。同一安全点中，native
   `policy.calc_priority` 先形成队列；BeliefKV 在 tagged 位置重排有身份
   校验的候选，未授权或过期的 tagged 请求跳过并继续扫描下一候选，
-  untagged 请求保持其原生相对位置。此切片已写入 staging，但 runtime
-  plan producer 尚未接线，服务仍 fail closed。
-  `compile_native_prefill_plan` 可以将已有语义排序在安全点绑定到
+  untagged 请求保持其原生相对位置。当前 staging 已接入
+  `--enable-beliefkv-admission` 的在线 plan producer。可选
+  `--beliefkv-event-socket-path` 在安全点接收 agent 因果事件，复用
+  `CausalFrontierScheduler` 排列与 live context/epoch 匹配的 ready
+  invocation；没有事件或没有匹配时沿用 native order。事件应用失败
+  废弃 RCCG mirror，退回 native order；普通事件不深拷贝整个 RCCG。
+  waiting queue 中由事件确认已终止的 tagged 请求在安全点被精确移除，
+  通知 tokenizer 并释放原生 handle。首 512 个 tagged 候选受有界
+  排序，其余请求保留在队列，等待下轮原生调度机会。
+  `compile_native_prefill_plan` 将语义排序在安全点绑定到
   request/context/epoch/attempt 和 native session ID/generation；
   session 在授权与应用之间变化时拒绝 tagged 候选，原生请求不受影响。
 
@@ -96,4 +103,9 @@ owner、closure 和所有子操作提交结果尚未与 runtime 的预测事务�
 
 安全点顺序固定为 native chunk abort -> HiCache ACK 排空 ->
 BeliefKV 状态同步/决策 -> native prefill admission -> GPU batch。
-现阶段不开启 `enable_beliefkv`，不能用新版原生 smoke 代替 A/B 实验。
+现阶段只有单机单 rank、非 disaggregation、无 speculative、unified cache
+的 admission-only 模式可显式开启。**其排序来自 observed causal
+frontier，不来自新的在线预测模型；没有预测 D2H/H2D。**旧 BF16
+GPU/transfer 服务率不能作为 Qwen3.5 FULL/MAMBA 的物理容量或
+latest-start 证书。物理事务、prediction-to-action、校准及新模型
+高压 A/B 尚未迁移/验收，不能用新版原生 smoke 替代。

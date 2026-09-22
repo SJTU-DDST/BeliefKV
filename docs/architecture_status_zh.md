@@ -16,12 +16,22 @@ BeliefKV 与实验工具安装在同一个 `beliefkv-next` conda 环境。
 request metadata、scheduler 生命周期及 cache-mode 原生 ACK 观察 hook
 已导出为
 `patches/sglang-v0.5.20-beliefkv-staging.patch`，但 unified FULL/MAMBA
-完整物理 ownership、动作 ACK 对账和调度准入尚未迁移，启用 BeliefKV
-会 fail closed。
+完整物理 ownership 和动作 ACK 对账仍未迁移；完整 P6 物理
+BeliefKV 仍 fail closed。新增 `--enable-beliefkv-admission` 独立开关
+只打开有界的 observed-causal admission 顺序。
 新版 staging 在原生 prefill 前增加仅针对 tagged 请求的同步排序/许可
 接口；未标记请求继续按 native order，最终 FULL/MAMBA 资源验收仍在
-SGLang `PrefillAdder`。目前没有可运行的 v0.5.20 plan producer，
-不能把此接口视为新模型预测调度已接入。
+SGLang `PrefillAdder`。v0.5.20 plan producer 已在安全点接入：
+接收可选的 agent 事件 socket、增量更新 RCCG，并以现有 causal frontier
+重排首 512 个 tagged 请求；终止的 waiting 请求被清理，未能认证
+的请求不会获得排序许可。没有匹配的因果事件则保持 native order。
+**该 producer 目前不是预测模型**；FrontierBelief 在 Qwen3.5
+上的推断/标定、action-local FULL/MAMBA owner、预测性 PREPARE/
+PREFETCH 和事务级证书仍缺失，不能用于声称新模型预测调度已接入。
+2026-09-22 使用固定 staging checkout、4 GiB HiCache、显式 admission
+开关在 H200 完成单请求 smoke：tagged chat 返回 HTTP 200，非法
+context epoch 返回 HTTP 400 且未挂起。该测试既未输入在线预测结果，
+也未验证真实 Host 迁移或高压吞吐。
 有界 plan 编译器可以在安全点把*已有*语义排序绑定到 request/context/
 epoch/attempt 和原生 session ID/generation，失效授权会被拒绝；
 它不生成预测排序，也尚未接入新版本 runtime。

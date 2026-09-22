@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# Native SGLang migration smoke only. No BeliefKV scheduler/physical hooks.
+# Native smoke by default. Source checkout + explicit CLI flag can enable
+# BeliefKV admission-only; predictive physical actions remain disabled.
 MODEL_PATH="${MODEL_PATH:-/srv/ai/models/Qwen/Qwen3.5-35B-A3B}"
 SERVED_MODEL_NAME="${SERVED_MODEL_NAME:-Qwen3.5-35B-A3B}"
 PYTHON="${PYTHON:-/home/longhao/miniconda3/envs/beliefkv-next/bin/python}"
