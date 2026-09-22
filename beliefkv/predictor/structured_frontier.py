@@ -43,6 +43,7 @@ FORMAL_P6_PLAN_IDS = frozenset(
         "h200-bf16-formal-train-v1",
         "h200-bf16-formal-calibration-v1",
         "qwen35-native-reactive-v0520-v1",
+        "qwen35-native-reactive-v0520-v2",
     }
 )
 FORBIDDEN_LOAD_COUPLED_LABELS = frozenset(
@@ -2751,7 +2752,10 @@ def _validate_formal_p6_manifest(
             f"{root}"
         )
     environment = source.get("runtime_environment_contract") or {}
-    native_reactive = plan_id == "qwen35-native-reactive-v0520-v1"
+    native_reactive = plan_id in {
+        "qwen35-native-reactive-v0520-v1",
+        "qwen35-native-reactive-v0520-v2",
+    }
     if native_reactive and (
         expected_split != "train"
         or not allow_formal_local

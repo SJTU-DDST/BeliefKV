@@ -21,6 +21,7 @@ from scripts.run_p6_collection_batch import (
     main as run_collection,
 )
 from scripts.freeze_qwen35_native_reactive_plan import (
+    freeze_high_pressure_join_train_plan,
     freeze_native_reactive_train_plan,
 )
 
@@ -178,6 +179,53 @@ def test_native_plan_freezes_only_train_without_relabeling_other_splits(
     assert json.loads(old_plan.read_text(encoding="utf-8")) == old
     with pytest.raises(FileExistsError):
         freeze_native_reactive_train_plan(old_plan, native_path)
+
+
+def test_join_enriched_native_plan_preserves_source_and_other_batches(
+    tmp_path: Path,
+) -> None:
+    old_plan = _write_fixture(tmp_path, split="train")
+    original = json.loads(old_plan.read_text(encoding="utf-8"))
+    output = tmp_path / "join.json"
+    frozen = freeze_native_reactive_train_plan(
+        old_plan, output, join_batch_id="batch-1"
+    )
+    assert frozen["plan_id"] == "qwen35-native-reactive-v0520-v2"
+    assert load_collection_batch(output, "batch-1").subagent_fanout_profile == (
+        "native_subagent_2to3"
+    )
+    assert json.loads(old_plan.read_text(encoding="utf-8")) == original
+    with pytest.raises(ValueError, match="JOIN batch"):
+        freeze_native_reactive_train_plan(
+            old_plan, tmp_path / "invalid.json", join_batch_id="unknown"
+        )
+
+
+def test_join64_plan_contains_distinct_train_tasks_and_anchor(
+    tmp_path: Path,
+) -> None:
+    root = Path(__file__).resolve().parents[1]
+    plan = freeze_high_pressure_join_train_plan(
+        root / "configs/p6/collection_v4/collection_plan.json",
+        [root / "configs/p6/h200_bf16_formal_train_v1/collection_plan.json"],
+        root / "configs/p6/swebench_verified_split_v1.json",
+        tmp_path / "plan.json",
+        tmp_path / "manifest.json",
+    )
+    batch = load_collection_batch(tmp_path / "plan.json", "qwen35-native-join64-train-r0")
+    assert (batch.workflow_count, batch.concurrency, batch.saturated_root_backlog) == (
+        64, 64, True
+    )
+    assert batch.subagent_fanout_profile == "native_subagent_2to3"
+    assert plan["unique_task_count"] == 64
+    manifest = json.loads((tmp_path / "manifest.json").read_text())
+    anchor = json.loads(
+        (root / "configs/p6/collection_v4/workload_manifests/p6-017-train-mixed-r0.json").read_text()
+    )
+    assert [item["instance_id"] for item in manifest["workloads"][:8]] == [
+        item["instance_id"] for item in anchor["workloads"]
+    ]
+    assert len({item["instance_id"] for item in manifest["workloads"]}) == 64
 
 
 def test_native_reactive_collection_preflight_and_raw_trace_provenance(

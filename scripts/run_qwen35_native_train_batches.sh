@@ -13,6 +13,7 @@ HOST_NUMA_NODE="${HOST_NUMA_NODE:-1}"
 BASE_URL="${BASE_URL:-http://127.0.0.1:18000}"
 CAPACITY_CALIBRATION="${CAPACITY_CALIBRATION:-$ROOT/configs/migration/qwen35_native_hbm_capacity_2026-09-22.json}"
 server_pid=""
+batch_id="${BATCH_ID:-}"
 
 stop_server() {
   if [[ -n "$server_pid" ]]; then
@@ -30,12 +31,15 @@ stop_server() {
   fi
 }
 trap stop_server EXIT
+trap 'printf "Interrupted during batch %s\n" "${batch:-startup}" >&2; exit 130' INT
+trap 'printf "Terminated during batch %s\n" "${batch:-startup}" >&2; exit 143' TERM
 
 if [[ $# -ne 0 ]]; then
   printf 'Usage: RUN_ROOT=... bash %s (no positional arguments)\n' "$0" >&2
   exit 2
 fi
-if [[ "$(jq -r '.plan_id' "$PLAN")" != "qwen35-native-reactive-v0520-v1" ]]; then
+if [[ "$(jq -r '.plan_id' "$PLAN")" != "qwen35-native-reactive-v0520-v1" \
+    && "$(jq -r '.plan_id' "$PLAN")" != "qwen35-native-reactive-v0520-v2" ]]; then
   printf 'Expected the frozen Qwen3.5 native train plan\n' >&2
   exit 2
 fi
@@ -54,12 +58,24 @@ mapfile -t batches < <(jq -r '
   | sort_by(if .batch_id == "p6-017-train-mixed-r0" then 0 else 1 end)
   | .[].batch_id
 ' "$PLAN")
-if [[ ${#batches[@]} -ne 9 ]]; then
-  printf 'Frozen train plan must have nine batches\n' >&2
+expected_batches=9
+if [[ "$(jq -r '.plan_id' "$PLAN")" == "qwen35-native-reactive-v0520-v2" ]]; then
+  expected_batches=1
+fi
+if [[ ${#batches[@]} -ne "$expected_batches" ]]; then
+  printf 'Frozen train plan must have %s batches\n' "$expected_batches" >&2
   exit 2
+fi
+if [[ -n "$batch_id" ]]; then
+  if ! printf '%s\n' "${batches[@]}" | grep -Fxq -- "$batch_id"; then
+    printf 'Unknown train batch: %s\n' "$batch_id" >&2
+    exit 2
+  fi
+  batches=("$batch_id")
 fi
 
 for batch in "${batches[@]}"; do
+  printf 'Starting train batch %s\n' "$batch"
   run_dir="$RUN_ROOT/$batch"
   dataset_dir="$run_dir/dataset"
   if [[ -f "$dataset_dir/dataset_manifest.json" ]]; then
@@ -116,7 +132,7 @@ PY
       --requirements "$requirements"
   fi
 
-  env HICACHE_SIZE_GB="$HICACHE_SIZE_GB" HOST_NUMA_NODE="$HOST_NUMA_NODE" \
+  setsid env HICACHE_SIZE_GB="$HICACHE_SIZE_GB" HOST_NUMA_NODE="$HOST_NUMA_NODE" \
     MEM_FRACTION_STATIC="$MEM_FRACTION_STATIC" \
     BELIEFKV_NATIVE_TELEMETRY_DIR="$run_dir/server" \
     SGLANG_SOURCE_CHECKOUT="$ROOT/third_party/sglang-v0.5.20" \
@@ -153,12 +169,35 @@ PY
     --base-url "$BASE_URL/v1" --model Qwen3.5-35B-A3B \
     --expected-model-path "$MODEL_PATH" \
     --output "$run_dir/workloads" > "$run_dir/collection.log" 2>&1
+  printf 'Collected train batch %s; stopping native server\n' "$batch"
   stop_server
+  printf 'Native server stopped for %s; exporting\n' "$batch"
   "$PYTHON" "$ROOT/scripts/export_native_reactive_p6_dataset.py" "$run_dir" \
     --output-dir "$dataset_dir" --split-manifest "$SPLIT" \
     > "$run_dir/export.log" 2>&1
+  if [[ "$(jq -r '.subagent_fanout_profile // "natural"' "$run_dir/workloads/summary.json")" \
+      == native_subagent_2to3 ]]; then
+    "$PYTHON" - "$run_dir" <<'PY'
+import json
+import sys
+from pathlib import Path
+
+root = Path(sys.argv[1])
+summary = json.loads((root / "workloads/summary.json").read_text())
+manifest = json.loads((root / "dataset/dataset_manifest.json").read_text())
+if summary["dynamic_subagent_count"] < 1 or not summary["join_type_counts"]:
+    raise SystemExit("native child/JOIN workload emitted no SPAWN/JOIN")
+if manifest["training_readiness"]["join_reentry_eligible_count"] < 1:
+    raise SystemExit("native child/JOIN workload emitted no eligible JOIN label")
+PY
+  fi
   printf 'Exported train batch %s\n' "$batch"
 done
+
+if [[ -n "$batch_id" ]]; then
+  printf 'Finished requested batch %s; model fitting requires all nine batches\n' "$batch_id"
+  exit 0
+fi
 
 model="$RUN_ROOT/frontier_qwen35_native_train_uncalibrated.json"
 if [[ -e "$model" ]]; then

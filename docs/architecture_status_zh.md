@@ -13,6 +13,22 @@ JOIN child-completion 三阶段 H2D ticket（概率窗口、结构化完成提�
 
 ### Qwen3.5 native reactive 数据采集
 
+2026-09-22 首批 `p6-017-train-mixed-r0` 的 v1 原始采集历时约 231 秒，
+8 个 root 中 7 个完成、4 个 measurement-valid，但 `natural` fanout 没有
+发起 child/JOIN；不能将其当作 JOIN 时间头训练证据。v0.5.20 `/get_load`
+返回 DP 列表，旧监控误按字典解析，导致该轮负载监控 1,050 次错误；
+首批采集后批处理在导出前退出，原始数据保留供诊断。修复后的
+`qwen35_native_reactive_join64_train_plan_2026-09-22.json` 派生自相同冻结
+train split：以前一批 `p6-017` 的 8 个 root 为开头，合并其他已冻结
+train 任务至 64 个**不同** instance（不足部分取自旧 BF16 formal train
+的同一 train split），客户端 64 路 eager 提交，使用
+`native_subagent_2to3` 得到原生 child/JOIN；设备端沿用已标定的
+32-running 硬上限，不把 64 个客户端 root 误称为 64 个 GPU running。
+计划身份为 v2，记录每份来源 manifest 的哈希。该批须同时有原生
+SPAWN/JOIN 和至少一个合格 JOIN 标签才能通过；重跑结果单独保存，
+不覆盖 v1 证据。强制子代理变体不代表自然委派概率，后续需要独立
+的自然委派样本和 held-out 校准。
+
 收集训练集原始 workflow trace **不依赖**预测动作的跨 epoch ACK 接力、
 FULL/MAMBA 独占 reclaim 证书、COMMIT_CPU 或完整 JointPlan。这些只在
 BeliefKV 预测式物理调度中需要；Qwen3.5 native reactive 使用 v0.5.20
@@ -23,7 +39,8 @@ predictor 和 predictive actions，且 Host cache 实际启用。
 从原冻结 split 派生，仅包含 train 的 9 批/67 次 rollout（51 个唯一任务）；
 原 calibration/test 清单未修改，也尚无新模型 calibration/test 采集结果。
 root 可在 JOIN 后按后续模型输出再次动态 SPAWN，多轮 child 使用独立
-invocation/epoch 和 JOIN 身份；这已覆盖局部回归，不代表 train batch 已运行。
+invocation/epoch 和 JOIN 身份；这已覆盖局部回归，不代表 v2 的 64-root
+train batch 已运行。
 新采集入口核验模型和 v0.5.20 服务身份、
 HiCache 配置、模型关键文件哈希、模型 context 上限和数据源稳定性，
 取消 2 小时 workflow 人为截止，保留安全 guard。混合 FULL/MAMBA

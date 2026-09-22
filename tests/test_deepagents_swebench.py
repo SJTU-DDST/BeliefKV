@@ -59,6 +59,7 @@ from beliefkv.experiments.deepagents_swebench import (
     observed_successful_test_commands,
     prepare_workspace,
     prometheus_gauge_sum,
+    _demand_load,
     repository_sandbox_contract,
     summarize_agent_control,
     validate_workflow_completion,
@@ -95,6 +96,14 @@ sglang:num_running_reqs{tp_rank="0"} 2
 """
     assert prometheus_gauge_sum(payload, "sglang:num_used_tokens") == 168
     assert prometheus_gauge_sum(payload, "missing") is None
+
+
+def test_sglang_load_monitor_accepts_native_dp_loads() -> None:
+    assert _demand_load([{"dp_rank": 0, "num_reqs": 2},
+                         {"dp_rank": 1, "num_reqs": 3}]) == 5
+    assert _demand_load({"load": 4}) == 4
+    with pytest.raises(ValueError, match="unsupported"):
+        _demand_load([{"num_reqs": "3"}])
 
 
 def test_agent_control_summary_separates_protocol_and_guard_outcomes(

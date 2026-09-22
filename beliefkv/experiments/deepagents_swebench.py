@@ -1136,6 +1136,17 @@ def prometheus_gauge_sum(payload: str, metric_name: str) -> float | None:
     return sum(values) if values else None
 
 
+def _demand_load(load: object) -> int:
+    if isinstance(load, dict):
+        return int(load.get("load", 0))
+    if isinstance(load, list) and load and all(
+        isinstance(item, dict) and isinstance(item.get("num_reqs"), int)
+        for item in load
+    ):
+        return sum(item["num_reqs"] for item in load)
+    raise ValueError("unsupported SGLang load response")
+
+
 class SGLangMetricsMonitor:
     def __init__(
         self,
@@ -1187,7 +1198,7 @@ class SGLangMetricsMonitor:
                     resident = sample.get("num_used_tokens")
                     if resident is not None:
                         sample["resident_pressure"] = resident / self.pool_tokens
-                    sample["demand_load"] = int(load.get("load", 0))
+                    sample["demand_load"] = _demand_load(load)
                     self.samples.append(sample)
                 except Exception as error:
                     self.error_count += 1

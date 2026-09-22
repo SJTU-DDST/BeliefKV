@@ -44,7 +44,10 @@ def _manifest_preflight(root: Path) -> tuple[dict[str, Any], str]:
         manifest.get("dataset_kind") != "beliefkv_p6_training_evidence"
         or manifest.get("evaluation_role") != "frozen_split_local_training_evidence"
         or manifest.get("formal_local_training_eligible") is not True
-        or contract.get("plan_id") != "qwen35-native-reactive-v0520-v1"
+        or contract.get("plan_id") not in {
+            "qwen35-native-reactive-v0520-v1",
+            "qwen35-native-reactive-v0520-v2",
+        }
         or contract.get("split") != "train"
         or contract.get("runtime_policy") != "frozen_native_reactive_v0520"
         or contract.get("raw_trace_eligible") is not True
