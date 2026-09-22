@@ -106,6 +106,7 @@ class PhysicalBundleBuilder:
         bypass_owner_context_ids: frozenset[str] = frozenset(),
         host_available_bytes: int | None = None,
         device_available_bytes: int | None = None,
+        first_eligible_prefetch: bool = False,
     ) -> tuple[PhysicalBundlePreview, ...]:
         context = self.graph.contexts.get(context_id)
         if (
@@ -144,6 +145,7 @@ class PhysicalBundleBuilder:
                 context_epoch,
                 now_ms=now_ms,
                 device_available_bytes=device_available_bytes,
+                first_eligible=first_eligible_prefetch,
             )
         else:
             return ()
@@ -765,6 +767,7 @@ class PhysicalBundleBuilder:
         *,
         now_ms: float,
         device_available_bytes: int | None,
+        first_eligible: bool = False,
     ) -> list[PhysicalBundlePreview]:
         targets = [
             page
@@ -855,18 +858,19 @@ class PhysicalBundleBuilder:
                     )
                 )
             blockers_tuple = self._deduplicate_blockers(blockers)
-            previews.append(
-                self._preview(
-                    CommandKind.PREFETCH_CONTEXT,
-                    context_id,
-                    context_epoch,
-                    closure,
-                    tuple(actions),
-                    blockers_tuple,
-                    blocked_handles,
-                    now_ms=now_ms,
-                )
+            preview = self._preview(
+                CommandKind.PREFETCH_CONTEXT,
+                context_id,
+                context_epoch,
+                closure,
+                tuple(actions),
+                blockers_tuple,
+                blocked_handles,
+                now_ms=now_ms,
             )
+            previews.append(preview)
+            if first_eligible and preview.eligible:
+                break
         return previews
 
     def _preview(

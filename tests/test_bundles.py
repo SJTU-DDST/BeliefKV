@@ -449,6 +449,42 @@ def test_h2d_gpu_anchor_lock_is_not_a_transfer_blocker() -> None:
     assert preview.bundle.cross_context_action_bytes == 0
 
 
+def test_bounded_prefetch_skips_locked_cpu_page_and_stops_at_first_eligible() -> None:
+    graph, index = _runtime(("agent", "ctx", "wf"))
+    handles = tuple(PageHandle(page_id, 0) for page_id in range(1, 33))
+    for page_id, handle in enumerate(handles, start=1):
+        index.register_page(
+            handle,
+            size_bytes=512,
+            residency=PhysicalResidency.CPU_ONLY,
+            radix_depth=1,
+        )
+    index.bind_pages("ctx", 0, handles)
+    index.pages[handles[0]].engine_lock_ref = 1
+    builder = PhysicalBundleBuilder(graph, index)
+
+    bounded = builder.previews_for_context(
+        CommandKind.PREFETCH_CONTEXT,
+        "ctx",
+        0,
+        now_ms=3,
+        first_eligible_prefetch=True,
+    )
+    exhaustive = builder.previews_for_context(
+        CommandKind.PREFETCH_CONTEXT,
+        "ctx",
+        0,
+        now_ms=3,
+    )
+
+    assert len(bounded) == 2
+    assert sum(item.eligible for item in bounded) == 1
+    assert next(
+        item for item in bounded if item.eligible
+    ).page_actions[0].handle == handles[1]
+    assert len(exhaustive) == len(handles)
+
+
 def test_arbiter_rejects_bundle_when_authoritative_lock_changes() -> None:
     graph, index = _runtime(("agent", "ctx", "wf"))
     handle = PageHandle(1, 0)

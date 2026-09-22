@@ -966,6 +966,32 @@ v58/v59 的工具实现未发生相应变化，但 agent 回调在 `TOOL_START` 
     仍不能分割。
     CPU 回归与真实 GPU 有效消费尚待确认，不能把此修改称为已实现吞吐收益。
 
+### 5.22 2026-09-22 v60 predictive H2D 回退定位
+
+v59 有 25 笔完成的 predictive H2D（15 笔 useful）；v60_retry1 的
+1,902 笔 `observed_service_prefetch` intent 中仅 1 笔 PREFETCH 入队，
+最终随 shutdown aborted，完成的 predictive H2D 为 0。native 路径的
+Host KV 可以直接成为预测性 H2D 来源，不要求此前发生 predictive PREPARE。
+v60 仍有约 51.93 GB `prefetch_context` ACK，但不能归入 predictive H2D。
+
+两个独立的在线阻塞已由 v60 audit 与代码定位：
+
+- 同一个 context 的 PREFETCH 有 470 次拒绝、694 次 watch defer，
+  拒绝原因仅为 `residency_transaction_inflight`。此前把尚未入队的
+  `_current_semantic_residency_commit` 当作真实事务，而 predictive
+  动作实际上在 observed 动作之前入队。该 context 无对应 observed
+  residency enqueue。现在只将真实 pending transaction/restore 作为阻塞，
+  暂存 observed 候选可在 predictive 入队失败时继续作为回退。
+- 同 safe-point 的 2,848 次验证因 CPU 预算回退（包括重复尝试）；
+  一个 native service-prefetch 样本的 `physical_rematerialization`
+  达 120-150 ms，预算为 20 ms。原实现在可见 CPU KV 上穷举全部
+  H2D closure 再选目标；现在该服务路径只构造到首个可用 closure，
+  保留完整的物理证书、锁与容量校验，允许分批预取 native Host KV。
+  其他需要全候选排序的路径仍保留穷举语义。
+
+本轮代码修改已经通过定向 CPU 回归；该机制的真实 GPU 成功率和
+首轮 H2D useful attribution **尚未经修复后 GPU 验证**，不能据此宣称吞吐回升。
+
 ## 7. 下一步
 
 当前关键路径：

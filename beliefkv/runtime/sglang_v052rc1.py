@@ -25867,17 +25867,13 @@ class EmbeddedSGLangRuntime:
         }
         reasons: list[str] = []
         pending_residency = getattr(self, "_pending_online_joint_residency", None)
-        semantic_residency = getattr(
-            self, "_current_semantic_residency_commit", None
-        )
         if pending_residency is not None and (
             pending_residency.context_id in target_context_ids
         ):
             reasons.append("observed_residency_has_priority")
-        if semantic_residency is not None and (
-            semantic_residency[2].context_id in target_context_ids
-        ):
-            reasons.append("residency_transaction_inflight")
+        # A staged observed candidate is not an inflight transaction. The
+        # single-writer queue dispatches a validated predictive action first;
+        # only a successfully enqueued action can block the observed fallback.
         if any(
             item.context_id in target_context_ids
             for item in self._restore_obligation_index().active()
@@ -26381,6 +26377,9 @@ class EmbeddedSGLangRuntime:
                         None
                         if intent.evidence_kind == "observed_service_prefetch"
                         else device_available
+                    ),
+                    first_eligible_prefetch=(
+                        intent.evidence_kind == "observed_service_prefetch"
                     ),
                 )
             for candidate in live_candidates if not reasons else ():
@@ -28448,7 +28447,7 @@ class EmbeddedSGLangRuntime:
                 intent_id=intent.intent_id,
                 context_id=intent.context_id,
                 enqueue_status=enqueue_outcome.status.value,
-                fallback="observed_joint_plan_next_epoch",
+                fallback="observed_joint_plan_current_epoch",
             )
             self._current_predictive_residency_commit = None
             if self._is_predictive_prefetch_intent(intent):
@@ -28458,7 +28457,7 @@ class EmbeddedSGLangRuntime:
                     reason="dispatch_conflict",
                 )
             self._latest_predictive_intent = None
-            return True
+            return False
         transaction = _OnlineJointResidencyTransaction(
             transaction_id=transaction_id,
             plan_id=plan_id,

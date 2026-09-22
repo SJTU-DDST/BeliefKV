@@ -14035,9 +14035,14 @@ def test_predictive_dispatch_does_not_treat_queue_as_pcie_saturation():
 
     assert set(conflicting) == {
         "observed_residency_has_priority",
-        "residency_transaction_inflight",
         "urgent_restore_active",
     }
+    runtime._pending_online_joint_residency = None
+    runtime._restore_obligation_index = lambda: SimpleNamespace(
+        active=lambda: ()
+    )
+    staged_only, _ = runtime._predictive_dispatch_conflict_reasons(intent)
+    assert staged_only == ()
 
 
 def test_shadow_telemetry_journal_compaction_is_not_fatal():
@@ -14168,6 +14173,26 @@ def test_online_residency_queues_predictive_action_behind_existing_transfer():
         now_ms=42.0,
     )
     assert "residency_wait_existing_transfer" not in runtime._online_joint_counts
+
+
+def test_predictive_dispatch_failure_preserves_staged_observed_fallback():
+    runtime = EmbeddedSGLangRuntime.__new__(EmbeddedSGLangRuntime)
+    runtime._pending_online_joint_residency = None
+    runtime._queue_predictive_joint_residency = mock.Mock(return_value=False)
+    runtime._queue_semantic_joint_residency = mock.Mock()
+    runtime._online_joint_result = SimpleNamespace(
+        plan=SimpleNamespace(plan_id="plan", semantic_residency=(object(),))
+    )
+    runtime._online_joint_source = SimpleNamespace(
+        physical_kv=SimpleNamespace(bundles=())
+    )
+    view = SimpleNamespace(plan_id="plan")
+
+    runtime._queue_online_joint_residency(view, now_ms=42.0)
+
+    runtime._queue_semantic_joint_residency.assert_called_once_with(
+        runtime._online_joint_result.plan, view, now_ms=42.0
+    )
 
 
 def test_joint_seed_only_idle_admission_enables_reactive_fallback():
