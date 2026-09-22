@@ -3,8 +3,9 @@
 更新日期：2026-09-22
 当前 P6 物理执行基线：原 Qwen3-Coder/SGLang 0.5.2rc1；
 Qwen3.5/v0.5.20 已有可选 native admission、工具等待预测和
-JOIN child-completion 时间提示；单 node PREPARE/H2D 原生事务仍默认关闭，
-尚无完整预测物理调度。
+JOIN child-completion 三阶段 H2D ticket（概率窗口、结构化完成提示、
+确认后 reentry）；单 node PREPARE/H2D 原生事务仍默认关闭，
+尚无完整预测物理调度，也未完成新模型 GPU 验证。
 
 本文只记录当前事实和下一阻塞项，不再追加逐日开发日志。2026-09-12 以前的完整历史保存在
 `docs/archive/snapshots/architecture_status_zh.md`，单次实验细节保存在
@@ -1187,6 +1188,12 @@ v60 仍有约 51.93 GB `prefetch_context` ACK，但不能归入 predictive H2D�
 以下旧基线的关键路径仅适用于 Qwen3-Coder/0.5.2rc1，不能作为
 Qwen3.5/v0.5.20 的已完成 gate。新模型应先按上文的 artifact、
 admission、物理 ownership/事务及高压 A/B 顺序单独验收。
+JOIN ticket 已连接 native 安全点，但 `ChildCompletion` 只是意图，
+不等于确认 RETURN；动作默认要求尚不存在的 Qwen3.5 action-eligible
+artifact。旧 epoch H2D 与新 epoch 请求交叉时，ACK 仍可能因身份
+失配而 fail closed，不能只靠采集测试集和重训宣布迁移完成。
+完整 P6 尚缺动作收益/时序与 FULL/MAMBA 容量证明、COMMIT、
+跨 epoch 事务接力和 GPU 高压 A/B。
 
 旧基线关键路径：
 

@@ -131,6 +131,9 @@ class CollectingSink:
         with self._lock:
             self.events.extend(events)
 
+    def close(self) -> None:
+        pass
+
 
 class BatchCollectingSink(CollectingSink):
     def __init__(self) -> None:
@@ -146,6 +149,336 @@ class FailingControlSink:
     def emit_batch(self, events) -> None:
         del events
         raise ConnectionError("runtime control socket disappeared")
+
+
+def _child_completion_result(*tool_names: str) -> LLMResult:
+    return LLMResult(
+        generations=[
+            [
+                ChatGeneration(
+                    message=AIMessage(
+                        content="private model output",
+                        tool_calls=[
+                            {
+                                "name": name,
+                                "args": {"private": "tool arguments"},
+                                "id": f"completion-{index}",
+                            }
+                            for index, name in enumerate(tool_names)
+                        ],
+                    )
+                )
+            ]
+        ]
+    )
+
+
+def test_child_completion_intent_has_bound_identity_and_no_model_payload() -> None:
+    trace = CollectingSink()
+    control = CollectingSink()
+    queued = QueuedRuntimeEventSink(control)
+    adapter = DeepAgentsRuntimeAdapter(
+        trace,
+        BeliefKVRequestMetadata("wf", "root", "ctx", 0),
+        control_sink=queued,
+    )
+    try:
+        adapter.start()
+        task = adapter.declare_runtime_tasks(
+            [("explorer", "private task description")], group_id="intent"
+        )[0]
+        tool_run = uuid4()
+        adapter.on_tool_start(
+            {"name": "task"},
+            "",
+            run_id=tool_run,
+            inputs={"subagent_type": "explorer", "description": "private task description"},
+            tool_call_id=task.tool_call_id,
+        )
+        first_run = uuid4()
+        adapter.on_chat_model_start(
+            {}, [[HumanMessage(content="private prompt")]],
+            run_id=first_run, parent_run_id=tool_run,
+        )
+        adapter.on_llm_end(
+            _child_completion_result("read_file"),
+            run_id=first_run, parent_run_id=tool_run,
+        )
+        model_run = uuid4()
+        adapter.on_chat_model_start(
+            {}, [[HumanMessage(content="private prompt")]],
+            run_id=model_run, parent_run_id=tool_run,
+        )
+        adapter.on_llm_end(
+            _child_completion_result("ChildCompletion"),
+            run_id=model_run, parent_run_id=tool_run,
+        )
+        graph = RuntimeCausalContextGraph()
+        graph.apply_batch(trace.events[:-1])
+        before = graph.invocations[task.invocation_id].state
+        delta = graph.apply(trace.events[-1])
+        assert graph.invocations[task.invocation_id].state == before
+        assert delta.changed_contexts == frozenset()
+        assert delta.completed_invocations == frozenset()
+        adapter.complete_runtime_task(task)
+        intent = [
+            event for event in control.events
+            if event.kind == RuntimeEventKind.STRUCTURED_ACTION
+        ]
+        assert len(intent) == 1
+        event = intent[0]
+        assert event.join_id == task.join_id
+        assert event.invocation_id == task.invocation_id
+        assert event.context_id == task.context_id
+        assert event.context_epoch == 1
+        assert event.attributes["request_id"] == f"beliefkv:{model_run}"
+        assert event.attributes["beliefkv_child_completion_intent"] is True
+        assert event.attributes["provisional"] is True
+        assert event.attributes["structured_action_kinds"] == ["final_answer"]
+        assert event.attributes["structured_action_names"] == ["ChildCompletion"]
+        assert "private" not in json.dumps(event.to_dict())
+        assert event in trace.events
+        assert [
+            item.kind for item in control.events
+            if item.invocation_id == task.invocation_id
+        ][-2:] == [RuntimeEventKind.STRUCTURED_ACTION, RuntimeEventKind.RETURN]
+    finally:
+        queued.close()
+
+
+def test_child_completion_intent_rejects_unbound_ambiguous_repeated_and_terminal() -> None:
+    control = CollectingSink()
+    queued = QueuedRuntimeEventSink(control)
+    adapter = DeepAgentsRuntimeAdapter(
+        CollectingSink(),
+        BeliefKVRequestMetadata("wf", "root", "ctx", 0),
+        control_sink=queued,
+    )
+    try:
+        adapter.start()
+        task = adapter.declare_runtime_tasks([("explorer", "Inspect")])[0]
+        unbound = uuid4()
+        adapter.on_chat_model_start({}, [[HumanMessage(content="root")]], run_id=unbound)
+        adapter.on_llm_end(_child_completion_result("ChildCompletion"), run_id=unbound)
+        unrelated_tool = uuid4()
+        adapter.on_tool_start(
+            {"name": "read_file"}, "", run_id=unrelated_tool,
+            inputs={"file_path": "/file"},
+        )
+        unrelated_model = uuid4()
+        adapter.on_chat_model_start(
+            {}, [[HumanMessage(content="root tool")]],
+            run_id=unrelated_model, parent_run_id=unrelated_tool,
+        )
+        adapter.on_llm_end(
+            _child_completion_result("ChildCompletion"),
+            run_id=unrelated_model, parent_run_id=unrelated_tool,
+        )
+        chain = uuid4()
+        adapter.on_chain_start(
+            {}, {}, run_id=chain, metadata=adapter.invocation_scope(task),
+        )
+        multi = uuid4()
+        adapter.on_chat_model_start(
+            {}, [[HumanMessage(content="child")]],
+            run_id=multi, parent_run_id=chain,
+        )
+        adapter.on_llm_end(
+            _child_completion_result("ChildCompletion", "read_file"),
+            run_id=multi, parent_run_id=chain,
+        )
+        duplicate_tools = uuid4()
+        adapter.on_chat_model_start(
+            {}, [[HumanMessage(content="child")]],
+            run_id=duplicate_tools, parent_run_id=chain,
+        )
+        adapter.on_llm_end(
+            _child_completion_result("ChildCompletion", "ChildCompletion"),
+            run_id=duplicate_tools, parent_run_id=chain,
+        )
+        valid = uuid4()
+        adapter.on_chat_model_start(
+            {}, [[HumanMessage(content="child")]],
+            run_id=valid, parent_run_id=chain,
+        )
+        adapter.on_llm_end(
+            _child_completion_result("ChildCompletion"),
+            run_id=valid, parent_run_id=chain,
+        )
+        adapter.on_llm_end(
+            _child_completion_result("ChildCompletion"),
+            run_id=valid, parent_run_id=chain,
+        )
+        terminal_run = uuid4()
+        adapter.on_chat_model_start(
+            {}, [[HumanMessage(content="child")]],
+            run_id=terminal_run, parent_run_id=chain,
+        )
+        adapter.complete_runtime_task(task)
+        adapter.on_llm_end(
+            _child_completion_result("ChildCompletion"),
+            run_id=terminal_run, parent_run_id=chain,
+        )
+        assert [
+            event.attributes["request_id"] for event in control.events
+            if event.kind == RuntimeEventKind.STRUCTURED_ACTION
+        ] == [f"beliefkv:{valid}"]
+        assert queued.timing_summary()["tool_start_count"] == 1
+    finally:
+        queued.close()
+
+
+def test_child_completion_intent_is_nonblocking_and_precedes_confirmed_return() -> None:
+    intent_started = threading.Event()
+    release_intent = threading.Event()
+
+    class SlowIntentSink(CollectingSink):
+        def emit_batch(self, events) -> None:
+            if events[0].kind == RuntimeEventKind.STRUCTURED_ACTION:
+                intent_started.set()
+                if not release_intent.wait(timeout=2.0):
+                    raise TimeoutError("intent ACK was not released")
+            super().emit_batch(events)
+
+        def close(self) -> None:
+            pass
+
+    control = SlowIntentSink()
+    queued = QueuedRuntimeEventSink(control)
+    adapter = DeepAgentsRuntimeAdapter(
+        CollectingSink(),
+        BeliefKVRequestMetadata("wf", "root", "ctx", 0),
+        control_sink=queued,
+    )
+    sender = None
+    try:
+        adapter.start()
+        task = adapter.declare_runtime_tasks([("explorer", "Inspect")])[0]
+        chain = uuid4()
+        adapter.on_chain_start(
+            {}, {}, run_id=chain, metadata=adapter.invocation_scope(task),
+        )
+        model_run = uuid4()
+        adapter.on_chat_model_start(
+            {}, [[HumanMessage(content="child")]],
+            run_id=model_run, parent_run_id=chain,
+        )
+        began = time.monotonic()
+        adapter.on_llm_end(
+            _child_completion_result("ChildCompletion"),
+            run_id=model_run, parent_run_id=chain,
+        )
+        assert time.monotonic() - began < 0.5
+        assert intent_started.wait(timeout=1.0)
+        completed = threading.Event()
+
+        def return_child() -> None:
+            adapter.complete_runtime_task(task)
+            completed.set()
+
+        sender = threading.Thread(target=return_child)
+        sender.start()
+        assert not completed.wait(timeout=0.05)
+        release_intent.set()
+        sender.join(timeout=2.0)
+        assert not sender.is_alive()
+        assert completed.is_set()
+        assert [
+            event.kind for event in control.events
+            if event.invocation_id == task.invocation_id
+        ][-2:] == [
+            RuntimeEventKind.STRUCTURED_ACTION, RuntimeEventKind.RETURN
+        ]
+        assert queued.timing_summary()["tool_start_count"] == 0
+    finally:
+        release_intent.set()
+        if sender is not None:
+            sender.join(timeout=2.0)
+        queued.close()
+
+
+def test_child_completion_intent_fails_closed_without_queued_control_sink() -> None:
+    trace = CollectingSink()
+    control = CollectingSink()
+    adapter = DeepAgentsRuntimeAdapter(
+        trace,
+        BeliefKVRequestMetadata("wf", "root", "ctx", 0),
+        control_sink=control,
+    )
+    adapter.start()
+    task = adapter.declare_runtime_tasks([("explorer", "Inspect")])[0]
+    chain = uuid4()
+    adapter.on_chain_start({}, {}, run_id=chain, metadata=adapter.invocation_scope(task))
+    model_run = uuid4()
+    adapter.on_chat_model_start(
+        {}, [[HumanMessage(content="child")]],
+        run_id=model_run, parent_run_id=chain,
+    )
+    adapter.on_llm_end(
+        _child_completion_result("ChildCompletion"),
+        run_id=model_run, parent_run_id=chain,
+    )
+    assert not any(
+        event.kind == RuntimeEventKind.STRUCTURED_ACTION
+        for event in trace.events + control.events
+    )
+
+
+def test_child_completion_intent_full_queue_fails_closed_without_waiting() -> None:
+    stalled = threading.Event()
+    release = threading.Event()
+
+    class StalledSink(CollectingSink):
+        def emit_batch(self, events) -> None:
+            if events[0].kind == RuntimeEventKind.TOOL_START:
+                stalled.set()
+                if not release.wait(timeout=2.0):
+                    raise TimeoutError("tool ACK was not released")
+            super().emit_batch(events)
+
+    control = StalledSink()
+    queued = QueuedRuntimeEventSink(control, max_pending=1)
+    adapter = DeepAgentsRuntimeAdapter(
+        CollectingSink(),
+        BeliefKVRequestMetadata("wf", "root", "ctx", 0),
+        control_sink=queued,
+    )
+    try:
+        adapter.start()
+        task = adapter.declare_runtime_tasks([("explorer", "Inspect")])[0]
+        chain = uuid4()
+        adapter.on_chain_start(
+            {}, {}, run_id=chain, metadata=adapter.invocation_scope(task),
+        )
+        model_run = uuid4()
+        adapter.on_chat_model_start(
+            {}, [[HumanMessage(content="child")]],
+            run_id=model_run, parent_run_id=chain,
+        )
+        tool_start = adapter._event(RuntimeEventKind.TOOL_START, invocation_id="root")
+        adapter._publish((tool_start,), control=True)
+        assert stalled.wait(timeout=1.0)
+        adapter._publish(
+            (adapter._event(RuntimeEventKind.TOOL_START, invocation_id="root"),),
+            control=True,
+        )
+        began = time.monotonic()
+        adapter.on_llm_end(
+            _child_completion_result("ChildCompletion"),
+            run_id=model_run, parent_run_id=chain,
+        )
+        assert time.monotonic() - began < 0.5
+        assert adapter.control_delivery_summary()["degraded"] is True
+        assert adapter.control_delivery_summary()["last_failure"]["error_type"] == "RuntimeError"
+        release.set()
+    finally:
+        release.set()
+        queued.close()
+    assert not any(
+        event.kind == RuntimeEventKind.STRUCTURED_ACTION
+        for event in control.events
+    )
+    assert queued.timing_summary()["tool_start_count"] == 2
 
 
 def test_ordinary_tool_start_does_not_wait_for_control_ack() -> None:

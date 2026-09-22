@@ -618,6 +618,227 @@ def test_join_wait_prediction_tracks_child_revisions_and_expires_on_return():
     assert runtime.refreshed_prefetch_gpu_step(source="join_wait") is None
 
 
+def test_join_prefetch_three_stages_and_confirmed_parent_ticket():
+    runtime = NativeAdmissionRuntime()
+    runtime.predictor_sha256 = "a" * 64
+    runtime.enable_admission_prefetch = True
+    parent, child = req("parent"), req("child")
+    parent.session_id, parent.session_generation = "session-parent", 2
+    runtime.register_visible_request(parent)
+    runtime.register_visible_request(child)
+    runtime.on_events((
+        event(0, RuntimeEventKind.WORKFLOW_START),
+        event(1, RuntimeEventKind.INVOCATION_CREATE,
+              invocation_id="parent", context_id="ctx-parent",
+              agent_definition_id="parent", agent_instance_id="parent"),
+        event(2, RuntimeEventKind.INVOCATION_CREATE,
+              invocation_id="child", context_id="ctx-child",
+              agent_definition_id="child", agent_instance_id="child"),
+        event(3, RuntimeEventKind.JOIN_CREATE,
+              join_id="join", member_invocation_ids=("child",)),
+        event(4, RuntimeEventKind.JOIN_WAIT,
+              invocation_id="parent", join_id="join"),
+    ))
+    key = runtime.context_sessions["ctx-parent"]
+    now = time.monotonic() * 1000
+    hint = NativeJoinWaitHint(
+        key, "join", "all", ("child",), (("child", 2.0, "ready", 0),),
+        3_000.0, 4_000.0, 5_000.0, now, now + 5_000, "a" * 64, 4.0,
+    )
+    runtime._model_worker = NS(
+        disabled=False, poll=lambda: (hint,), fileno=lambda: 72,
+    )
+    runtime.scheduler_step()
+    runtime._model_worker = None
+    runtime.attach_native_cache(object())
+    step = PrefetchLoadStep(key, 11, 4, 11, 4)
+    with patch.object(runtime, "capture_shadow_candidate", return_value=object()):
+        with patch("beliefkv.runtime.sglang_v0520_runtime.next_prefetch_gpu_step",
+                   return_value=step):
+            issued = []
+            with patch.object(runtime, "issue_prefetch_gpu_step",
+                              side_effect=lambda *args, **kwargs:
+                              issued.append(kwargs["source"]) or "h2d-1"):
+                runtime.dispatch_join_prefetch()
+                assert issued == []  # Long-horizon prediction is not a dispatch.
+                runtime.on_events((event(
+                    5, RuntimeEventKind.STRUCTURED_ACTION,
+                    invocation_id="child", context_id="ctx-child",
+                    context_epoch=0, join_id="join",
+                    attributes={
+                        "beliefkv_child_completion_intent": True,
+                        "structured_action_names": ["ChildCompletion"],
+                        "request_id": "child-llm",
+                    },
+                ),))
+                assert runtime.graph.invocations["parent"].state.value == "wait_join"
+                runtime.dispatch_join_prefetch()
+                assert issued == ["join_ticket"]
+                runtime.physical_ledger.is_pending = lambda command: True
+                runtime.dispatch_join_prefetch()
+                assert len(issued) == 1
+                runtime.on_events((event(
+                    6, RuntimeEventKind.RETURN, invocation_id="child",
+                ),))
+                assert runtime.graph.invocations["parent"].state.value == "ready"
+                assert runtime._join_ticket.phase == "confirmed"
+                assert runtime.refreshed_prefetch_gpu_step(source="join_ticket") == step
+                runtime.dispatch_join_prefetch()
+                assert len(issued) == 1  # ACK must arrive before another node.
+                runtime.physical_ledger.is_pending = lambda command: False
+                runtime.completed_physical_actions.append(
+                    NS(command_id="h2d-1", action="PREFETCH_GPU")
+                )
+                runtime.dispatch_join_prefetch()
+                assert issued == ["join_ticket", "join_ticket"]
+    assert runtime.counts["join_prefetch_provisional_issued"] == 1
+    assert runtime.counts["join_prefetch_confirmed_issued"] == 1
+    runtime.on_events((event(
+        7, RuntimeEventKind.CONTEXT_ADVANCE,
+        invocation_id="parent", context_id="ctx-parent", context_epoch=1,
+    ),))
+    assert runtime._join_ticket is None
+
+
+def test_join_prefetch_all_requires_last_child_and_rejects_false_intent():
+    runtime = NativeAdmissionRuntime()
+    runtime.enable_admission_prefetch = True
+    parent = req("parent")
+    parent.session_id, parent.session_generation = "s", 1
+    runtime.register_visible_request(parent)
+    runtime.on_events((
+        event(0, RuntimeEventKind.WORKFLOW_START),
+        event(1, RuntimeEventKind.INVOCATION_CREATE,
+              invocation_id="parent", context_id="ctx-parent",
+              agent_definition_id="parent", agent_instance_id="parent"),
+        event(2, RuntimeEventKind.INVOCATION_CREATE,
+              invocation_id="a", context_id="ctx-a",
+              agent_definition_id="a", agent_instance_id="a"),
+        event(3, RuntimeEventKind.INVOCATION_CREATE,
+              invocation_id="b", context_id="ctx-b",
+              agent_definition_id="b", agent_instance_id="b"),
+        event(4, RuntimeEventKind.JOIN_CREATE,
+              join_id="join", member_invocation_ids=("a", "b")),
+        event(5, RuntimeEventKind.JOIN_WAIT,
+              invocation_id="parent", join_id="join"),
+    ))
+    def intent(seq, child):
+        return event(
+            seq, RuntimeEventKind.STRUCTURED_ACTION,
+            invocation_id=child, context_id=f"ctx-{child}",
+            context_epoch=0, join_id="join",
+            attributes={
+                "beliefkv_child_completion_intent": True,
+                "structured_action_names": ["ChildCompletion"],
+                "request_id": f"req-{child}",
+            },
+        )
+    runtime.on_events((intent(6, "a"),))
+    assert runtime._join_ticket is None
+    assert runtime.counts["join_intent_stale"] == 1
+    runtime.on_events((event(7, RuntimeEventKind.RETURN, invocation_id="a"),))
+    runtime.on_events((intent(8, "b"),))
+    assert runtime._join_ticket.phase == "provisional"
+    runtime.on_events((event(
+        9, RuntimeEventKind.INVOCATION_CANCEL, invocation_id="b",
+    ),))
+    assert runtime._join_ticket is None
+
+
+def test_fast_join_return_builds_confirmed_ticket_without_model_hint():
+    runtime = NativeAdmissionRuntime()
+    runtime.enable_admission_prefetch = True
+    parent = req("parent")
+    parent.session_id, parent.session_generation = "s", 1
+    runtime.register_visible_request(parent)
+    runtime.on_events((
+        event(0, RuntimeEventKind.WORKFLOW_START),
+        event(1, RuntimeEventKind.INVOCATION_CREATE,
+              invocation_id="parent", context_id="ctx-parent",
+              agent_definition_id="parent", agent_instance_id="parent"),
+        event(2, RuntimeEventKind.INVOCATION_CREATE,
+              invocation_id="child", context_id="ctx-child",
+              agent_definition_id="child", agent_instance_id="child"),
+        event(3, RuntimeEventKind.JOIN_CREATE,
+              join_id="join", member_invocation_ids=("child",)),
+        event(4, RuntimeEventKind.JOIN_WAIT,
+              invocation_id="parent", join_id="join"),
+    ))
+    assert runtime._join_ticket is None
+    runtime.on_events((event(5, RuntimeEventKind.RETURN, invocation_id="child"),))
+    assert runtime._join_ticket.phase == "confirmed"
+    assert runtime.counts["join_reentry_confirmed"] == 1
+    runtime.on_events((event(
+        6, RuntimeEventKind.JOIN_SATISFIED, join_id="join",
+    ),))
+    assert runtime.counts["join_reentry_confirmed"] == 1
+    key = runtime.context_sessions["ctx-parent"]
+    runtime.visible.pop("parent")
+    runtime.register_physical_action(PhysicalActionExpectation(
+        "join-h2d", "PREFETCH_GPU", "ctx-parent", 0,
+        (PhysicalChildExpectation(11, (11,), (("kv", 10),), 10),),
+        (("kv", 10),), session_id="s", session_generation=1,
+    ))
+    assert runtime.physical_ledger.pending_count == 1
+    revision = runtime.semantic_revision
+    runtime.on_events((event(
+        7, RuntimeEventKind.STRUCTURED_ACTION,
+        invocation_id="child", context_id="ctx-child",
+        context_epoch=0, join_id="join",
+        attributes={
+            "beliefkv_child_completion_intent": True,
+            "structured_action_names": ["ChildCompletion"],
+            "request_id": "late",
+        },
+    ),))
+    assert runtime.semantic_revision == revision
+    assert runtime.counts["join_intent_stale"] == 1
+
+
+def test_join_probabilistic_prefetch_requires_live_near_term_hint():
+    runtime = NativeAdmissionRuntime()
+    runtime.predictor_sha256 = "a" * 64
+    runtime.enable_admission_prefetch = True
+    parent = req("parent")
+    parent.session_id, parent.session_generation = "s", 1
+    runtime.register_visible_request(parent)
+    runtime.on_events((
+        event(0, RuntimeEventKind.WORKFLOW_START),
+        event(1, RuntimeEventKind.INVOCATION_CREATE,
+              invocation_id="parent", context_id="ctx-parent",
+              agent_definition_id="parent", agent_instance_id="parent"),
+        event(2, RuntimeEventKind.INVOCATION_CREATE,
+              invocation_id="child", context_id="ctx-child",
+              agent_definition_id="child", agent_instance_id="child"),
+        event(3, RuntimeEventKind.JOIN_CREATE,
+              join_id="join", member_invocation_ids=("child",)),
+        event(4, RuntimeEventKind.JOIN_WAIT,
+              invocation_id="parent", join_id="join"),
+    ))
+    key = runtime.context_sessions["ctx-parent"]
+    now = time.monotonic() * 1000
+    hint = NativeJoinWaitHint(
+        key, "join", "all", ("child",), (("child", 2.0, "ready", 0),),
+        500.0, 900.0, 1_500.0, now, now + 5_000, "a" * 64, 4.0,
+    )
+    runtime._model_worker = NS(disabled=False, poll=lambda: (hint,))
+    runtime.scheduler_step()
+    runtime._model_worker = None
+    runtime.attach_native_cache(object())
+    step = PrefetchLoadStep(key, 11, 4, 11, 4)
+    with patch.object(runtime, "capture_shadow_candidate", return_value=object()):
+        with patch("beliefkv.runtime.sglang_v0520_runtime.next_prefetch_gpu_step",
+                   return_value=step):
+            with patch.object(runtime, "issue_prefetch_gpu_step",
+                              return_value="probabilistic-h2d") as issue:
+                runtime.dispatch_join_prefetch()
+                issue.assert_called_once_with(step, source="join_ticket")
+    assert runtime.counts["join_prefetch_probabilistic_issued"] == 1
+    runtime.on_events((event(5, RuntimeEventKind.RETURN, invocation_id="child"),))
+    assert runtime.join_wait_hint is None
+    assert runtime._join_ticket.phase == "confirmed"
+
+
 def test_tool_wait_candidate_is_discarded_on_context_replacement_and_requeue():
     runtime = NativeAdmissionRuntime()
     original = req("old")

@@ -60,6 +60,21 @@ class _AdmissionPrefetchLease:
     issued_nodes: int = 0
 
 
+CHILD_COMPLETION_INTENT = "beliefkv_child_completion_intent"
+
+
+@dataclass
+class _JoinPrefetchTicket:
+    key: PrefillCandidateKey
+    join_id: str
+    join_mode: str
+    member_ids: tuple[str, ...]
+    phase: str
+    expires_at: float
+    command_id: str | None = None
+    issued_nodes: int = 0
+
+
 class NativeAdmissionRuntime:
     """Rebind causal order to live request identities at each prefill safe point."""
 
@@ -100,6 +115,7 @@ class NativeAdmissionRuntime:
         self.demand_hints: dict[str, NativeDemandHint] = {}
         self.tool_wait_hint: NativeToolWaitHint | None = None
         self.join_wait_hint: NativeJoinWaitHint | None = None
+        self._join_ticket: _JoinPrefetchTicket | None = None
         self.enable_admission_prefetch = enable_admission_prefetch
         self._admission_lease: _AdmissionPrefetchLease | None = None
         self.shadow_candidate: ActionLocalShadowCandidate | None = None
@@ -151,6 +167,27 @@ class NativeAdmissionRuntime:
         return self._model_worker.fileno()
 
     def on_events(self, events: tuple[RuntimeEvent, ...]) -> None:
+        # A provisional callback can arrive behind a confirmed RETURN/epoch
+        # advance. It is advisory, so a stale one must not discard the RCCG.
+        filtered = []
+        for event in events:
+            if event.kind is RuntimeEventKind.STRUCTURED_ACTION and (
+                event.attributes.get(CHILD_COMPLETION_INTENT) is True
+            ):
+                invocation = self.graph.invocations.get(event.invocation_id)
+                context = self.graph.contexts.get(event.context_id)
+                if (
+                    invocation is None or invocation.state.terminal
+                    or invocation.context_id != event.context_id
+                    or context is None or context.epoch != event.context_epoch
+                    or invocation.workflow_id != event.workflow_id
+                ):
+                    self.counts["join_intent_stale"] += 1
+                    continue
+            filtered.append(event)
+        events = tuple(filtered)
+        if not events:
+            return
         hints = []
         for event in events:
             raw = event.attributes.get(PREDICTION_ATTRIBUTE)
@@ -177,6 +214,7 @@ class NativeAdmissionRuntime:
             self.context_sessions.clear()
             self.tool_wait_hint = None
             self.join_wait_hint = None
+            self._join_ticket = None
             self._admission_lease = None
             self.shadow_candidate = None
             self._context_tokens.clear()
@@ -238,10 +276,20 @@ class NativeAdmissionRuntime:
                         self.shadow_candidate = None
                 if event.kind is RuntimeEventKind.TOOL_START and context_id is not None:
                     self._submit_tool_wait(context_id)
+            for event in events:
+                if event.kind is RuntimeEventKind.STRUCTURED_ACTION:
+                    self._observe_child_completion_intent(event)
+                elif event.kind in (
+                    RuntimeEventKind.RETURN, RuntimeEventKind.JOIN_SATISFIED,
+                    RuntimeEventKind.JOIN_TIMEOUT, RuntimeEventKind.INVOCATION_CANCEL,
+                ):
+                    self._advance_join_ticket(event)
             if self.join_wait_hint is not None and not self._live_join_hint(
                 self.join_wait_hint
             ):
                 self.join_wait_hint = None
+            if self._join_ticket is not None and not self._live_join_ticket():
+                self._join_ticket = None
             if any(event.kind in (
                 RuntimeEventKind.JOIN_CREATE, RuntimeEventKind.JOIN_WAIT,
                 RuntimeEventKind.JOIN_SATISFIED, RuntimeEventKind.JOIN_TIMEOUT,
@@ -281,6 +329,15 @@ class NativeAdmissionRuntime:
                 if isinstance(hint, NativeJoinWaitHint):
                     if self._live_join_hint(hint):
                         self.join_wait_hint = hint
+                        ticket = self._join_ticket
+                        if ticket is None or (
+                            ticket.key, ticket.join_id
+                        ) != (hint.key, hint.join_id):
+                            self._join_ticket = _JoinPrefetchTicket(
+                                hint.key, hint.join_id, hint.join_mode,
+                                hint.member_ids, "probabilistic",
+                                hint.expires_monotonic_ms / 1000,
+                            )
                         self.counts["join_wait_accepted"] += 1
                     else:
                         self.counts["join_wait_result_stale"] += 1
@@ -312,6 +369,196 @@ class NativeAdmissionRuntime:
         ):
             self._admission_lease = None
             self.counts["admission_prefetch_expired"] += 1
+        ticket = self._join_ticket
+        if ticket is not None and ticket.command_id in expired:
+            ticket.command_id = None
+            self.counts["join_prefetch_expired"] += 1
+        if ticket is not None and not self._live_join_ticket():
+            self._join_ticket = None
+
+    def _join_parent_key(self, join_id: str) -> PrefillCandidateKey | None:
+        join = self.graph.joins.get(join_id)
+        if join is None or not 0 < len(join.member_invocation_ids) <= 8:
+            return None
+        for parent_id in sorted(join.waiter_invocation_ids):
+            parent = self.graph.invocations.get(parent_id)
+            key = self.context_sessions.get(parent.context_id) if parent else None
+            if (
+                key is not None and key.invocation_id == parent_id
+                and key.session_id is not None
+                and key.session_generation is not None
+                and not self._terminal(key)
+            ):
+                return key
+        return None
+
+    def _observe_child_completion_intent(self, event: RuntimeEvent) -> None:
+        if event.attributes.get(CHILD_COMPLETION_INTENT) is not True:
+            return
+        join_id = event.join_id
+        child_id = event.invocation_id
+        join = self.graph.joins.get(join_id) if isinstance(join_id, str) else None
+        child = self.graph.invocations.get(child_id) if child_id else None
+        context = self.graph.contexts.get(event.context_id) if event.context_id else None
+        if (
+            join is None or join.satisfied or child is None or context is None
+            or join.workflow_id != event.workflow_id
+            or child.workflow_id != event.workflow_id
+            or child.context_id != event.context_id
+            or child.state.terminal
+            or context.epoch != event.context_epoch
+            or child_id not in join.member_invocation_ids - join.completed_member_ids
+            or (
+                join.mode.value == "all"
+                and len(join.member_invocation_ids - join.completed_member_ids) != 1
+            )
+            or event.attributes.get("structured_action_names") != ["ChildCompletion"]
+            or not isinstance(event.attributes.get("request_id"), str)
+            or not event.attributes["request_id"]
+        ):
+            self.counts["join_intent_stale"] += 1
+            return
+        key = self._join_parent_key(join_id)
+        parent = self.graph.invocations.get(key.invocation_id) if key else None
+        if key is None or parent.state is not InvocationState.WAIT_JOIN:
+            self.counts["join_intent_stale"] += 1
+            return
+        ticket = self._join_ticket
+        if ticket is None or (ticket.key, ticket.join_id) != (key, join_id):
+            ticket = _JoinPrefetchTicket(
+                key, join_id, join.mode.value,
+                tuple(sorted(join.member_invocation_ids)),
+                "provisional", time.monotonic() + 2.0,
+            )
+            self._join_ticket = ticket
+        else:
+            ticket.phase = "provisional"
+            ticket.expires_at = time.monotonic() + 2.0
+        self.counts["join_intent_accepted"] += 1
+
+    def _advance_join_ticket(self, event: RuntimeEvent) -> None:
+        ticket = self._join_ticket
+        if ticket is None:
+            if not self.enable_admission_prefetch or event.kind not in (
+                RuntimeEventKind.RETURN, RuntimeEventKind.JOIN_SATISFIED,
+            ):
+                return
+            candidate_joins = (
+                (event.join_id,) if event.join_id is not None else
+                tuple(sorted(self._join_by_invocation.get(event.invocation_id, ())))
+            )
+            for join_id in candidate_joins:
+                join = self.graph.joins.get(join_id)
+                if (
+                    join is None or not join.satisfied
+                    or join.workflow_id != event.workflow_id
+                    or event.kind is RuntimeEventKind.RETURN
+                    and event.invocation_id not in join.member_invocation_ids
+                ):
+                    continue
+                key = self._join_parent_key(join_id)
+                parent = self.graph.invocations.get(key.invocation_id) if key else None
+                if (
+                    key is None or parent.state is not InvocationState.READY
+                    or parent.join_id != join_id
+                ):
+                    continue
+                self._join_ticket = _JoinPrefetchTicket(
+                    key, join_id, join.mode.value,
+                    tuple(sorted(join.member_invocation_ids)),
+                    "confirmed", time.monotonic() + 2.0,
+                )
+                self.counts["join_reentry_confirmed"] += 1
+                return
+            return
+        join = self.graph.joins.get(ticket.join_id)
+        if join is None or join.workflow_id != ticket.key.root_workflow_id:
+            self._join_ticket = None
+            return
+        if event.kind is RuntimeEventKind.JOIN_TIMEOUT and event.join_id == ticket.join_id:
+            self._join_ticket = None
+        elif event.kind is RuntimeEventKind.INVOCATION_CANCEL and (
+            event.invocation_id == ticket.key.invocation_id
+            or event.invocation_id in ticket.member_ids
+        ):
+            self._join_ticket = None
+        elif join.satisfied and (
+            event.join_id == ticket.join_id
+            or event.invocation_id in ticket.member_ids
+        ):
+            if ticket.phase != "confirmed":
+                ticket.phase = "confirmed"
+                ticket.expires_at = time.monotonic() + 2.0
+                self.counts["join_reentry_confirmed"] += 1
+        elif event.kind is RuntimeEventKind.RETURN and event.invocation_id in ticket.member_ids:
+            ticket.phase = "probabilistic"
+
+    def _live_join_ticket(self) -> bool:
+        ticket = self._join_ticket
+        if ticket is None or time.monotonic() >= ticket.expires_at:
+            return False
+        key = ticket.key
+        join = self.graph.joins.get(ticket.join_id)
+        parent = self.graph.invocations.get(key.invocation_id)
+        context = self.graph.contexts.get(key.context_id)
+        return bool(
+            self.enable_admission_prefetch and not self.physical_disabled
+            and join is not None and join.workflow_id == key.root_workflow_id
+            and join.mode.value == ticket.join_mode
+            and tuple(sorted(join.member_invocation_ids)) == ticket.member_ids
+            and key.invocation_id in join.waiter_invocation_ids
+            and self.context_sessions.get(key.context_id) == key
+            and context is not None and context.epoch == key.context_epoch
+            and parent is not None and parent.context_id == key.context_id
+            and parent.workflow_id == key.root_workflow_id
+            and parent.join_id == ticket.join_id
+            and parent.state is (
+                InvocationState.READY if ticket.phase == "confirmed"
+                else InvocationState.WAIT_JOIN
+            )
+            and join.satisfied == (ticket.phase == "confirmed")
+            and not self._terminal(key)
+        )
+
+    def dispatch_join_prefetch(self) -> None:
+        """One action-local native H2D per safe point, never grant admission."""
+        ticket = self._join_ticket
+        if ticket is None or not self._live_join_ticket():
+            self._join_ticket = None
+            return
+        if ticket.command_id is not None:
+            if self.physical_ledger.is_pending(ticket.command_id):
+                return
+            if not any(
+                action.command_id == ticket.command_id
+                and action.action == "PREFETCH_GPU"
+                for action in self.completed_physical_actions
+            ):
+                self._join_ticket = None
+                self.counts["join_prefetch_lost_ack"] += 1
+                return
+            ticket.command_id = None
+            self.counts["join_prefetch_acked"] += 1
+        if ticket.issued_nodes >= 2 or self.physical_ledger.pending_count:
+            return
+        if ticket.phase == "probabilistic":
+            hint = self.join_wait_hint
+            if hint is None or not self._live_join_hint(hint):
+                return
+            remaining_p10_ms = hint.wait_p10_ms - (
+                time.monotonic() * 1000 - hint.issued_monotonic_ms
+            )
+            if remaining_p10_ms > 1_000:
+                return
+        step = self.refreshed_prefetch_gpu_step(source="join_ticket")
+        if step is None:
+            self.counts["join_prefetch_no_cpu_node"] += 1
+            return
+        command = self.issue_prefetch_gpu_step(step, source="join_ticket")
+        if command is not None:
+            ticket.command_id = command
+            ticket.issued_nodes += 1
+            self.counts[f"join_prefetch_{ticket.phase}_issued"] += 1
 
     def _submit_tool_wait(self, context_id: str) -> None:
         worker = self._model_worker
@@ -526,11 +773,21 @@ class NativeAdmissionRuntime:
             and not self._terminal(key)
             for key in self.visible.values()
         )
+        confirmed_join = (
+            expected.action == "PREFETCH_GPU"
+            and self._live_join_ticket()
+            and self._join_ticket is not None
+            and self._join_ticket.phase == "confirmed"
+            and self._join_ticket.key.context_id == expected.context_id
+            and self._join_ticket.key.context_epoch == expected.context_epoch
+            and self._join_ticket.key.session_id == expected.session_id
+            and self._join_ticket.key.session_generation == expected.session_generation
+        )
         if (
             self.physical_disabled
             or context is None
             or context.epoch != expected.context_epoch
-            or not (visible or session_waiting)
+            or not (visible or session_waiting or confirmed_join)
         ):
             raise PhysicalReceiptError("physical action has no live causal context")
         self.physical_ledger.register(expected)
@@ -691,6 +948,16 @@ class NativeAdmissionRuntime:
                 return None
             key = hint.key
             valid_source = self._live_join_hint(hint)
+        elif source == "join_ticket":
+            ticket = self._join_ticket
+            if ticket is None or not self._live_join_ticket():
+                return None
+            key = ticket.key
+            hint = self.join_wait_hint
+            valid_source = (
+                ticket.phase != "probabilistic"
+                or hint is not None and self._live_join_hint(hint)
+            )
         else:
             return None
         invocation = self.graph.invocations.get(key.invocation_id)
@@ -706,10 +973,14 @@ class NativeAdmissionRuntime:
             or invocation.context_id != key.context_id
             or invocation.state.value != (
                 "ready" if source == "admission"
-                else "wait_join" if source == "join_wait"
+                or source == "join_ticket" and ticket.phase == "confirmed"
+                else "wait_join" if source in ("join_wait", "join_ticket")
                 else "wait_tool"
             )
-            or invocation.updated_ts_ms != hint.invocation_revision_ts_ms
+            or (
+                source != "join_ticket"
+                and invocation.updated_ts_ms != hint.invocation_revision_ts_ms
+            )
             or self._terminal(key)
         ):
             return None

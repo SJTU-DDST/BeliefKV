@@ -30,6 +30,7 @@ from beliefkv.predictor.taxonomy import ToolTaxonomy
 from beliefkv.runtime.agent_runtime_adapter import RuntimeEventSink
 from beliefkv.runtime.action_frontier import StructuredActionKind
 from beliefkv.runtime.context_lifecycle import ContextCompactionRecord
+from beliefkv.runtime.event_channel import QueuedRuntimeEventSink
 from beliefkv.runtime.sglang_adapter import BeliefKVRequestMetadata
 from beliefkv.runtime.sglang_v0520_sessions import NativeRadixSessionLeases
 
@@ -238,6 +239,7 @@ class DeepAgentsRuntimeAdapter(BaseCallbackHandler):
         self._pending_tasks: dict[str, _PendingTask] = {}
         self._pending_by_parent: dict[str, list[str]] = {}
         self._task_run_to_call: dict[str, str] = {}
+        self._child_completion_intent_runs: set[str] = set()
         self._join_members: dict[str, set[str]] = {}
         self._join_completed: dict[str, set[str]] = {}
         self._join_cancelled: dict[str, set[str]] = {}
@@ -790,6 +792,53 @@ class DeepAgentsRuntimeAdapter(BaseCallbackHandler):
             },
         )
         self._publish((result,), control=False)
+        if (
+            not runtime_internal
+            and len(messages) == 1
+            and len(tool_calls) == 1
+            and len(getattr(messages[0], "tool_calls", ())) == 1
+            and not getattr(messages[0], "invalid_tool_calls", ())
+            and tool_calls[0].get("name") == "ChildCompletion"
+            and isinstance(self.control_sink, QueuedRuntimeEventSink)
+            and self.control_sink is not self.trace_sink
+        ):
+            with self._lock:
+                pending = self._bound_pending_child(key, invocation_id)
+                if (
+                    pending is not None
+                    and not pending.terminal
+                    and key not in self._child_completion_intent_runs
+                    and key in self._model_metadata
+                ):
+                    self._child_completion_intent_runs.add(key)
+                    join_id = pending.join_id
+                else:
+                    join_id = None
+            if join_id is not None:
+                self._publish(
+                    (
+                        self._event(
+                            RuntimeEventKind.STRUCTURED_ACTION,
+                            invocation_id=invocation_id,
+                            context_id=metadata.context_id,
+                            context_epoch=metadata.context_epoch,
+                            join_id=join_id,
+                            confidence=EventConfidence.OBSERVED_EXACT,
+                            attributes={
+                                "source": "deepagents_callback",
+                                "beliefkv_child_completion_intent": True,
+                                "provisional": True,
+                                "request_id": _native_request_id(run_id),
+                                "structured_action_kinds": [
+                                    StructuredActionKind.FINAL_ANSWER.value
+                                ],
+                                "structured_action_names": ["ChildCompletion"],
+                            },
+                        ),
+                    ),
+                    control=True,
+                    async_control=True,
+                )
         with self._lock:
             post_join_id = self._post_join_model_runs.pop(key, None)
             if post_join_id is not None and self._semantic_gate_result is None:
@@ -1337,6 +1386,34 @@ class DeepAgentsRuntimeAdapter(BaseCallbackHandler):
                 current = self._run_parent.get(current)
             return self.root_metadata.invocation_id
 
+    def _bound_pending_child(
+        self, model_run_id: str, invocation_id: str
+    ) -> _PendingTask | None:
+        """Require an actual task callback or scoped child chain in the run ancestry."""
+
+        current = self._run_parent.get(model_run_id)
+        while current is not None:
+            task_call_id = self._task_run_to_call.get(current)
+            if task_call_id is not None:
+                pending = self._pending_tasks.get(task_call_id)
+                if (
+                    pending is not None
+                    and pending.tool_run_id == current
+                    and pending.child_invocation_id == invocation_id
+                ):
+                    return pending
+            scoped_id = self._run_invocation.get(current)
+            if scoped_id == invocation_id:
+                matches = [
+                    item
+                    for item in self._pending_tasks.values()
+                    if item.child_invocation_id == invocation_id
+                ]
+                if len(matches) == 1:
+                    return matches[0]
+            current = self._run_parent.get(current)
+        return None
+
     @staticmethod
     def _response_messages(response: Any) -> list[AIMessage]:
         messages: list[AIMessage] = []
@@ -1381,8 +1458,15 @@ class DeepAgentsRuntimeAdapter(BaseCallbackHandler):
         events: tuple[RuntimeEvent, ...],
         *,
         control: bool,
+        async_control: bool = False,
     ) -> None:
         if not events:
+            return
+        if async_control and (
+            not control
+            or not isinstance(self.control_sink, QueuedRuntimeEventSink)
+            or self.control_sink is self.trace_sink
+        ):
             return
         if (
             not control
@@ -1431,7 +1515,7 @@ class DeepAgentsRuntimeAdapter(BaseCallbackHandler):
                     self.control_sink.emit_batch(control_events)
             except Exception as error:
                 self._record_control_delivery_failure(control_events, error)
-        if delivery is not None and not async_tool_start:
+        if delivery is not None and not (async_tool_start or async_control):
             try:
                 delivery.wait()
             except Exception as error:

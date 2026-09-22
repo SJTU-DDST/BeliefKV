@@ -274,7 +274,7 @@ index 7811e44..9630078 100755
          self.session_generation: Optional[int] = None
          self.input_embeds = input_embeds
 diff --git a/python/sglang/srt/managers/scheduler.py b/python/sglang/srt/managers/scheduler.py
-index 743c8af..e83abf6 100644
+index 743c8af..02f0e43 100644
 --- a/python/sglang/srt/managers/scheduler.py
 +++ b/python/sglang/srt/managers/scheduler.py
 @@ -725,9 +725,78 @@ class Scheduler(
@@ -493,17 +493,21 @@ index 743c8af..e83abf6 100644
  
          if self.enable_fpm:
              self._fpm_batch_t0 = time.monotonic()
-@@ -3647,6 +3812,9 @@ class Scheduler(
+@@ -3647,6 +3812,13 @@ class Scheduler(
              if running_batch.is_empty():
                  running_batch.batch_is_full = False
  
 +        if self._beliefkv_before_batch_selection(running_batch, last_batch):
 +            return NextBatchPlan(batch_to_run=None, running_batch=running_batch)
++        if beliefkv_runtime is not None and (
++            not self.enable_overlap or last_batch is None and not self.result_queue
++        ):
++            beliefkv_runtime.dispatch_join_prefetch()
 +
          if self.dllm_config is not None:
              new_batch = self.get_new_batch_dllm(running_batch)
          elif self._should_defer_prefill():
-@@ -3705,6 +3873,8 @@ class Scheduler(
+@@ -3705,6 +3877,8 @@ class Scheduler(
              if self.enable_fpm:
                  ret.fpm_start_time = self._fpm_batch_t0
  
@@ -512,7 +516,7 @@ index 743c8af..e83abf6 100644
          return NextBatchPlan(batch_to_run=ret, running_batch=running_batch)
  
      def get_num_allocatable_reqs(
-@@ -3754,6 +3924,50 @@ class Scheduler(
+@@ -3754,6 +3928,50 @@ class Scheduler(
  
          return NextBatchPlan(batch_to_run=ret, running_batch=running_batch)
  
@@ -563,7 +567,7 @@ index 743c8af..e83abf6 100644
      def _get_new_batch_prefill_raw(
          self,
          prefill_delayer_single_pass: Optional[PrefillDelayerSinglePassExecutor],
-@@ -3871,7 +4085,7 @@ class Scheduler(
+@@ -3871,7 +4089,7 @@ class Scheduler(
              mamba_allocator.alloc_group_begin(len(self.waiting_queue))
          buffer_pipeline = self.tree_cache.buffer_pipeline
          # Get requests from the waiting queue to a new prefill batch
@@ -572,7 +576,7 @@ index 743c8af..e83abf6 100644
              if self.enable_lora and not self.can_schedule_lora_req(req, running_loras):
                  continue
  
-@@ -3897,6 +4111,12 @@ class Scheduler(
+@@ -3897,6 +4115,12 @@ class Scheduler(
                  ):
                      break
  
@@ -585,7 +589,7 @@ index 743c8af..e83abf6 100644
              if self.enable_hicache_storage:
                  prefetch_done = self.tree_cache.check_prefetch_progress(
                      req.cache_request_handle
-@@ -3932,6 +4152,10 @@ class Scheduler(
+@@ -3932,6 +4156,10 @@ class Scheduler(
                  has_chunked_req=(self.chunked_req is not None),
                  truncation_align_size=self.truncation_align_size,
              )
@@ -596,7 +600,7 @@ index 743c8af..e83abf6 100644
  
              if self.enable_lora:
                  running_loras.add(req.lora_id)
-@@ -4622,6 +4846,7 @@ class Scheduler(
+@@ -4622,6 +4850,7 @@ class Scheduler(
          elif batch.forward_mode.is_idle():
              self.batch_result_processor.process_batch_result_idle(batch, result)
  
@@ -604,7 +608,7 @@ index 743c8af..e83abf6 100644
          self._record_step_counters(batch, result)
  
          self.metrics_reporter.log_batch_result_stats(batch, result)
-@@ -4634,6 +4859,19 @@ class Scheduler(
+@@ -4634,6 +4863,19 @@ class Scheduler(
          self.maybe_send_health_check_signal()
          self.metrics_reporter.update_device_timer()
  
@@ -624,7 +628,7 @@ index 743c8af..e83abf6 100644
      def _record_step_counters(
          self, batch: ScheduleBatch, result: GenerationBatchResult
      ) -> None:
-@@ -5215,6 +5453,7 @@ class Scheduler(
+@@ -5215,6 +5457,7 @@ class Scheduler(
          }
  
      def abort_request(self, recv_req: AbortReq):
@@ -632,7 +636,7 @@ index 743c8af..e83abf6 100644
          if (chunked_req := self.chunked_req) is not None:
              if recv_req.abort_all or chunked_req.rid.startswith(recv_req.rid):
                  self._pending_chunked_abort_req = chunked_req
-@@ -5369,6 +5608,25 @@ class Scheduler(
+@@ -5369,6 +5612,25 @@ class Scheduler(
                  else:
                      req.to_finish = FINISH_ABORT()
  
@@ -658,7 +662,7 @@ index 743c8af..e83abf6 100644
      def _pause_engine(self) -> Tuple[List[Req], int]:
          raise NotImplementedError()
  
-@@ -5652,6 +5910,13 @@ class Scheduler(
+@@ -5652,6 +5914,13 @@ class Scheduler(
  
      def handle_shutdown(self, recv_req: ShutdownReq):
          # Break the event loop; the finally in run_scheduler_process releases resources.
@@ -2090,10 +2094,10 @@ index 0000000..a8a2ead
 +    unittest.main()
 diff --git a/test/srt/test_beliefkv_scheduler_hook.py b/test/srt/test_beliefkv_scheduler_hook.py
 new file mode 100644
-index 0000000..b100feb
+index 0000000..018a9d0
 --- /dev/null
 +++ b/test/srt/test_beliefkv_scheduler_hook.py
-@@ -0,0 +1,476 @@
+@@ -0,0 +1,479 @@
 +"""BeliefKV scheduler safe-point contract, without model/GPU dependencies."""
 +
 +import ast
@@ -2405,6 +2409,7 @@ index 0000000..b100feb
 +            attach_native_cache=lambda cache: None,
 +            on_native_transfer_commit=lambda commit: None,
 +            scheduler_step=lambda: None,
++            dispatch_join_prefetch=lambda: None,
 +            plan_running_batch_retraction=lambda running: None,
 +            on_batch_selected=lambda batch: None,
 +            close=lambda: None,
@@ -2468,6 +2473,7 @@ index 0000000..b100feb
 +        scheduler, batch, calls = idle_scheduler()
 +        scheduler.beliefkv_runtime = SimpleNamespace(
 +            scheduler_step=lambda: calls.append("ack"),
++            dispatch_join_prefetch=lambda: None,
 +            plan_running_batch_retraction=lambda _: None,
 +            on_batch_selected=lambda selected: calls.append(("selected", selected)),
 +        )
@@ -2479,6 +2485,7 @@ index 0000000..b100feb
 +        scheduler, batch, calls = idle_scheduler(overlap=True)
 +        runtime = SimpleNamespace(
 +            scheduler_step=lambda: calls.append("ack"),
++            dispatch_join_prefetch=lambda: None,
 +            running_batch_retraction_barrier_required=lambda _: True,
 +            on_running_batch_retraction_barrier_drained=lambda _: calls.append("drained"),
 +            plan_running_batch_retraction=lambda _: None,

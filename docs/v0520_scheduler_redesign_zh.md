@@ -10,8 +10,19 @@ staging，但现有 artifact 均非 action-eligible，线上物理动作仍关�
 - 工具等待的 H2D source 仍需要同一 `WAIT_TOOL`、context/session 与
   revision；JOIN source 独立使用 JOIN ID/mode/成员及 child
   `remaining_to_return_ms`。ALL=max、ANY=min 的边际分位数只是提示，
-  不是联合覆盖保证；child RETURN/JOIN 满足即失效。当前缺 JOIN
-  latest-start 派发器，不能从 JOIN 时间提示推断已经传输了 KV。
+  不是联合覆盖保证。JOIN H2D 现在采用有界三阶段 ticket：
+  (1) calibrated JOIN P10 进入 1s 观察窗口时，尝试一个 action-local
+  CPU-backed node；(2) child 模型输出唯一 `ChildCompletion` 后发送
+  provisional 意图，只有 ALL 的最后待返回 child 或 ANY 的有效成员
+  可提前触发；该信号不证明工具成功或 JOIN 满足；(3) 确认
+  RETURN/JOIN_SATISFIED 后，parent READY 且 context/epoch/session、
+  JOIN ID/mode/成员不变时，短期 reentry ticket 可继续预取。最多
+  两个 node，一笔 H2D ACK 之前不发下一笔；native ACK 排空和
+  overlap 安全检查后派发，不占 running slot，也不修改 native 准入。
+  取消、超时或身份变化清除 ticket；晚到的 provisional 信号只丢弃。
+  1s 是有界试验窗口，尚非目标模型标定的 latest-start/收益判据；
+  若旧 epoch 动作的 ACK 晚于 context advance，账本仍 fail closed，
+  不能给新 epoch 记账，跨 epoch 接力仍需完善。
 - `--beliefkv-admission-prefetch` 必须与 admission predictor 和
   action-eligible 的 pinned artifact 同时存在。仅对被选中的 READY
   session request 启动有界 lease：先核验 native running slot，
@@ -21,7 +32,8 @@ staging，但现有 artifact 均非 action-eligible，线上物理动作仍关�
   仍负责最终 prefix match、FULL/MAMBA 物理门禁和 running 成员资格。
 - 此设计不是把等待 H2D 的 request 直接标为 running；也不是对全部
   waiting 请求无差别预取。当前没有经 Qwen3.5 校准的动作 artifact，
-  因此线上只执行原本 admission-only，物理收益未验证。
+  因此线上只执行原本 admission-only，JOIN 物理派发默认关闭，
+  物理收益未验证。
 这不是完整 P6 预测调度。
 目标配置为 Qwen3.5-35B-A3B BF16、单机、统一 FULL/MAMBA tree、HiCache
 cache mode。其他 cache backend、TP/PP、disaggregation 和 speculative
@@ -213,9 +225,10 @@ controller 仅在实际设备索引及 sidecar 解析完毕、操作入队前调
 BeliefKV callback，拒绝时只释放本次分配的设备槽；runtime 以原生
 pool 几何和真实操作内容登记 `PREFETCH_GPU` 预期，native 明确未
 入队才撤销预留。**回调成功不等于 H2D ACK，也不等于首次服务**。
-该入口当前只支持工具未结束时一个 FULL session leaf 路径；
-尚不覆盖 child JOIN、请求排序/恢复优先级、完整 execution-KV
-JointPlan 或预测收益，scheduler 不会主动调用。
+该入口可为有动作资格的 JOIN ticket 和 admission lease 读取一个
+FULL session leaf 路径；尚不提供动作收益、shared owner/reclaim
+证明、完整 execution-KV JointPlan 或跨 epoch ACK 接力。scheduler
+只在安全点尝试 JOIN ticket 派发，默认动作门禁仍保持关闭。
 
 新环境默认仍加载预安装 wheel；使用 staging 源码启动时必须显式传
 `SGLANG_SOURCE_CHECKOUT` 给 `scripts/launch_qwen35_native_v0520.sh`，
@@ -238,8 +251,9 @@ BeliefKV 状态同步/决策 -> native prefill admission -> GPU batch。
 causal frontier；代码中的异步 demand worker 需要新 artifact 门禁，
 尚不能作为已验证的 Qwen3.5 在线预测结果；没有预测 D2H/H2D。**旧 BF16
 GPU/transfer 服务率不能作为 Qwen3.5 FULL/MAMBA 的物理容量或
-latest-start 证书。下一步先生成/校准新模型 eligible artifact，
-验证预测 hint 的 stale/OOD 回退和 admission GPU gate；再完成物理
-owner/closure、动作事务和 D2H/H2D 归因，重做容量/服务率标定与
+latest-start 证书。下一步采集隔离的新模型数据，生成/校准
+action-eligible artifact 并验证 stale/OOD 回退和 admission GPU gate；
+仍须完成动作价值/时序、物理 owner/closure、COMMIT 与完整 JointPlan、
+跨 epoch ACK 接力及 D2H/H2D 归因，重做容量/服务率标定与
 冻结 baseline/P6 高压 A/B。不能用新版原生 smoke 替代这些 gate，
 也不能宣称 P6 完成。
