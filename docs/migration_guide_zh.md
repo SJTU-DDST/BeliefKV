@@ -15,6 +15,22 @@ Python 3.11 conda 环境 `beliefkv-next`；独立上游 checkout 在
 `third_party/sglang-v0.5.20`，原有 `third_party/sglang` 不动。
 `scripts/launch_qwen35_native_v0520.sh` **只用于不启用 BeliefKV 的
 SGLang 原生启动 smoke**；不得用它生成“BeliefKV 已迁移”实验数据。
+`configs/migration/2026-09-22_qwen35_model_artifact.json` 冻结已下载模型的
+config、tokenizer 和 14 个权重分片的 SHA-256；新环境完整包版本和 CUDA 13
+工具链见 `configs/migration/2026-09-22_next_environment.json`。新环境的
+LangChain 主包保持 1.3.14，`langchain-openai` 固定为 1.1.9，以匹配
+SGLang 0.5.20 固定的 `openai==2.6.1`；不要用旧 `agents` extra 覆盖
+`agents-next`。
+
+`patches/sglang-v0.5.20-beliefkv-staging.patch` 是针对固定上游 commit 的
+**部分**补丁。它能传递 request metadata 并建立 safe-point hook 骨架；
+启用 BeliefKV 会明确失败，因为 unified FULL/MAMBA 的 ownership、
+物理 D2H/H2D、ACK、admission 和 selective retraction 尚未适配。
+`third_party/sglang-v0.5.20` 是被忽略的 checkout，迁移到新机器时在
+同一上游 commit 上执行 `git apply patches/sglang-v0.5.20-beliefkv-staging.patch`
+（命令工作目录为 checkout，补丁路径应为主仓库的绝对路径）。原生 smoke
+使用安装在 `beliefkv-next` 中的官方 wheel；验证补丁时需将 checkout 的
+`python/` 显式放在 `PYTHONPATH` 前面。不能把两条执行路径混为一谈。
 
 目标模型 BF16 full-attention KV 为 20,480 B/token，另有 30 层 linear
 attention 状态。此数字不是完整的 GPU/Host 物理工作集大小。详细 hook

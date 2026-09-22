@@ -8,4 +8,4 @@ dependencies:
   - wheel
   - pip:
       - sglang==0.5.20
-      - -e .[agents,dev,training]
+      - -e .[agents-next,dev,training]

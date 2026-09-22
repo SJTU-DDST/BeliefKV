@@ -1,0 +1,736 @@
+diff --git a/python/sglang/srt/entrypoints/openai/protocol.py b/python/sglang/srt/entrypoints/openai/protocol.py
+index d1509a7..1ddca96 100644
+--- a/python/sglang/srt/entrypoints/openai/protocol.py
++++ b/python/sglang/srt/entrypoints/openai/protocol.py
+@@ -878,6 +878,8 @@ class ChatCompletionRequest(BaseModel):
+     temperature: Optional[float] = None
+     top_p: Optional[float] = None
+     user: Optional[str] = None
++    # Non-standard request extension used by the optional BeliefKV runtime.
++    beliefkv_metadata: Optional[Dict[str, Any]] = None
+     tools: Optional[List[Tool]] = Field(default=None, examples=[None])
+     tool_choice: Union[ToolChoice, Literal["auto", "required", "none"]] = Field(
+         default="auto", examples=["none"]
+diff --git a/python/sglang/srt/entrypoints/openai/serving_chat.py b/python/sglang/srt/entrypoints/openai/serving_chat.py
+index 89cac80..caa54c4 100644
+--- a/python/sglang/srt/entrypoints/openai/serving_chat.py
++++ b/python/sglang/srt/entrypoints/openai/serving_chat.py
+@@ -1176,6 +1176,7 @@ class OpenAIServingChat(OpenAIServingBase):
+             routed_experts_start_len=request.routed_experts_start_len,
+             rid=request.rid,
+             session_id=request.session_id,
++            beliefkv_metadata=request.beliefkv_metadata,
+             extra_key=request.extra_key,
+             cache_salt=request.cache_salt,
+             require_reasoning=processed_messages.require_reasoning,
+diff --git a/python/sglang/srt/managers/io_struct.py b/python/sglang/srt/managers/io_struct.py
+index d3f13eb..ce0e6e6 100644
+--- a/python/sglang/srt/managers/io_struct.py
++++ b/python/sglang/srt/managers/io_struct.py
+@@ -301,6 +301,8 @@ class GenerateReqInput:
+ 
+     # For background responses (OpenAI responses API)
+     background: bool = False
++    # Optional BeliefKV causal identity, carried without interpretation.
++    beliefkv_metadata: Optional[Union[List[Dict[str, Any]], Dict[str, Any]]] = None
+     # Require reasoning for the request (hybrid reasoning model only)
+     require_reasoning: bool = False
+     # Per-request thinking budget. Requires strict thinking so the runtime can
+@@ -568,6 +570,7 @@ class GenerateReqInput:
+         self._normalize_logprob_params(num)
+         self._normalize_return_hidden_states(num)
+         self._normalize_custom_logit_processor(num)
++        self._normalize_beliefkv_metadata(num)
+         self._normalize_extra_key(num)
+         self._normalize_cache_salt(num)
+         self._normalize_bootstrap_params(num)
+@@ -793,6 +796,22 @@ class GenerateReqInput:
+                 "Cannot use list custom_logit_processor with parallel_sample_num > 1"
+             )
+ 
++    def _normalize_beliefkv_metadata(self, num):
++        if self.beliefkv_metadata is None:
++            self.beliefkv_metadata = [None] * num
++        elif isinstance(self.beliefkv_metadata, dict):
++            self.beliefkv_metadata = [self.beliefkv_metadata] * num
++        elif isinstance(self.beliefkv_metadata, list):
++            if len(self.beliefkv_metadata) != self.batch_size:
++                raise ValueError(
++                    "beliefkv_metadata length must match the request batch size"
++                )
++            self.beliefkv_metadata = (
++                self.beliefkv_metadata * self.parallel_sample_num
++            )
++        else:
++            raise ValueError("beliefkv_metadata must be a dict or list of dicts")
++
+     def _normalize_extra_key(self, num):
+         """Normalize extra_key for batch processing."""
+         if self.extra_key is None:
+@@ -892,6 +911,11 @@ class GenerateReqInput:
+         sub = GenerateReqInput(
+             rid=self.rid[i],
+             session_id=self.session_id,
++            beliefkv_metadata=(
++                self.beliefkv_metadata[i]
++                if isinstance(self.beliefkv_metadata, list)
++                else self.beliefkv_metadata
++            ),
+             text=self.text[i] if self.text is not None else None,
+             input_ids=self.input_ids[i] if self.input_ids is not None else None,
+             input_embeds=(
+@@ -1019,6 +1043,7 @@ class TokenizedGenerateReqInput(BaseReq, kw_only=True):
+     # Session info for continual prompting
+     session_id: Optional[str] = None
+     session_params: Optional[SessionParams] = None
++    beliefkv_metadata: Optional[Dict[str, Any]] = None
+ 
+     # LoRA related
+     lora_id: Optional[str] = None  # None means just use the base model
+diff --git a/python/sglang/srt/managers/schedule_batch.py b/python/sglang/srt/managers/schedule_batch.py
+index 7811e44..9630078 100755
+--- a/python/sglang/srt/managers/schedule_batch.py
++++ b/python/sglang/srt/managers/schedule_batch.py
+@@ -978,6 +978,7 @@ class Req(ReqDllmMixin):
+         multi_item_delimiter_indices: Optional[List[int]] = None,
+         session_id: Optional[str] = None,
+         cache_salt: Optional[str] = None,
++        beliefkv_metadata: Optional[dict] = None,
+     ):
+         # Input and output info
+         self.rid = rid
+@@ -1002,6 +1003,7 @@ class Req(ReqDllmMixin):
+ 
+         self.session = session
+         self.session_id = session_id
++        self.beliefkv_metadata = beliefkv_metadata
+         # Used by the session radix cache to reject registration after a close/reopen.
+         self.session_generation: Optional[int] = None
+         self.input_embeds = input_embeds
+diff --git a/python/sglang/srt/managers/scheduler.py b/python/sglang/srt/managers/scheduler.py
+index 743c8af..0f3a143 100644
+--- a/python/sglang/srt/managers/scheduler.py
++++ b/python/sglang/srt/managers/scheduler.py
+@@ -725,9 +725,28 @@ class Scheduler(
+ 
+         self.init_rank_consensus_checker()
+ 
++        self.init_beliefkv_runtime()
++
+         self.is_initializing = False
+         self.init_startup_timing_summary()
+ 
++    def init_beliefkv_runtime(self) -> None:
++        self.beliefkv_runtime = None
++        self._beliefkv_retraction_drain_pending = False
++        if not getattr(self.server_args, "enable_beliefkv", False):
++            return
++
++        # The old adapter requires HiRadixCache APIs which do not exist on
++        # v0.5.20's unified FULL/MAMBA cache. Never silently run without
++        # ownership, ACK and selective-retraction support.
++        raise RuntimeError(
++            "BeliefKV v0.5.20 activation unsupported: unified FULL/MAMBA "
++            "cache mutation/lock and transfer completion ACK adapter, "
++            "request admission/requeue callbacks, allocator reservation "
++            "accounting, event-server idle poller, and selective running "
++            "retraction are not yet implemented"
++        )
++
+     def init_startup_timing_begin(self) -> None:
+         self.scheduler_startup_begin = time.perf_counter()
+ 
+@@ -2789,6 +2808,7 @@ class Scheduler(
+                 dllm_config=self.dllm_config,
+                 time_stats=recv_req.time_stats,
+                 multi_item_delimiter_indices=recv_req.multi_item_delimiter_indices,
++                beliefkv_metadata=recv_req.beliefkv_metadata,
+             )
+             req.tokenizer = self.tokenizer
+ 
+@@ -3558,10 +3578,66 @@ class Scheduler(
+             if self.enable_hicache_storage:
+                 self._process_storage_prefetch_retries()
+ 
++    def _beliefkv_tp_agree(self, decision: bool, action: str) -> bool:
++        if self.ps.tp_size == 1:
++            return decision
++        flags = torch.tensor(
++            [int(decision), int(decision)],
++            dtype=torch.int32,
++            device=self.tp_group.device,
++        )
++        torch.distributed.all_reduce(
++            flags[:1], op=torch.distributed.ReduceOp.MIN, group=self.tp_group.device_group
++        )
++        torch.distributed.all_reduce(
++            flags[1:], op=torch.distributed.ReduceOp.MAX, group=self.tp_group.device_group
++        )
++        if flags[0].item() != flags[1].item():
++            raise RuntimeError(f"BeliefKV TP ranks disagree on {action}")
++        return bool(flags[0].item())
++
++    def _beliefkv_before_batch_selection(
++        self, running_batch: ScheduleBatch, last_batch: Optional[ScheduleBatch]
++    ) -> bool:
++        runtime = getattr(self, "beliefkv_runtime", None)
++        if runtime is None:
++            return False
++        if self.enable_overlap and bool(last_batch) != bool(self.result_queue):
++            raise RuntimeError("BeliefKV overlap result queue is not drained consistently")
++        # All ranks enter the same collective even when their local queue is idle.
++        safe = not self.enable_overlap or (
++            last_batch is None and not self.result_queue
++        )
++        wants_drain = (
++            not safe
++            and self.ps.pp_size == 1
++            and self.chunked_req is None
++            and runtime.running_batch_retraction_barrier_required(running_batch)
++        )
++        if self._beliefkv_tp_agree(wants_drain, "overlap drain"):
++            self._beliefkv_retraction_drain_pending = True
++            return True
++        if safe:
++            if self._beliefkv_retraction_drain_pending:
++                runtime.on_running_batch_retraction_barrier_drained(running_batch)
++                self._beliefkv_retraction_drain_pending = False
++            # Never interpret a physical retraction plan without an adapter for
++            # this version's pool, cache ownership, and selective release API.
++            plan = runtime.plan_running_batch_retraction(running_batch)
++            if self._beliefkv_tp_agree(plan is not None, "retraction plan"):
++                raise RuntimeError(
++                    "BeliefKV running-batch retraction requires a v0.5.20 "
++                    "selective release and ACK adapter"
++                )
++        return False
++
+     @scheduler_stage_method(SCHEDULER_STAGE_GET_NEXT_BATCH)
+     def get_next_batch_to_run(
+         self, running_batch: ScheduleBatch, last_batch: Optional[ScheduleBatch]
+     ) -> NextBatchPlan:
++        if (beliefkv_runtime := getattr(self, "beliefkv_runtime", None)) is not None:
++            # Runtime drains transfer ACKs before mirroring cache mutations.
++            beliefkv_runtime.scheduler_step()
+         self.process_pending_chunked_abort()
+         self._process_hicache_events()
+ 
+@@ -3647,6 +3723,9 @@ class Scheduler(
+             if running_batch.is_empty():
+                 running_batch.batch_is_full = False
+ 
++        if self._beliefkv_before_batch_selection(running_batch, last_batch):
++            return NextBatchPlan(batch_to_run=None, running_batch=running_batch)
++
+         if self.dllm_config is not None:
+             new_batch = self.get_new_batch_dllm(running_batch)
+         elif self._should_defer_prefill():
+@@ -3705,6 +3784,8 @@ class Scheduler(
+             if self.enable_fpm:
+                 ret.fpm_start_time = self._fpm_batch_t0
+ 
++        if beliefkv_runtime is not None:
++            beliefkv_runtime.on_batch_selected(ret)
+         return NextBatchPlan(batch_to_run=ret, running_batch=running_batch)
+ 
+     def get_num_allocatable_reqs(
+diff --git a/python/sglang/srt/managers/tokenizer_manager.py b/python/sglang/srt/managers/tokenizer_manager.py
+index 1b63fb6..07ab19d 100644
+--- a/python/sglang/srt/managers/tokenizer_manager.py
++++ b/python/sglang/srt/managers/tokenizer_manager.py
+@@ -1502,6 +1502,7 @@ class TokenizerManager(TokenizerControlMixin, TokenizerManagerScoreMixin):
+                 positional_embed_overrides=obj.positional_embed_overrides,
+                 session_id=obj.session_id,
+                 session_params=session_params,
++                beliefkv_metadata=obj.beliefkv_metadata,
+                 custom_logit_processor=obj.custom_logit_processor,
+                 require_reasoning=obj.require_reasoning,
+                 return_hidden_states=obj.return_hidden_states,
+diff --git a/python/sglang/srt/session/session_controller.py b/python/sglang/srt/session/session_controller.py
+index c23c965..73ad611 100644
+--- a/python/sglang/srt/session/session_controller.py
++++ b/python/sglang/srt/session/session_controller.py
+@@ -309,6 +309,7 @@ class Session:
+             return_logprob=req.return_logprob,
+             top_logprobs_num=req.top_logprobs_num,
+             token_ids_logprob=req.token_ids_logprob,
++            beliefkv_metadata=req.beliefkv_metadata,
+             return_sampling_mask=req.return_sampling_mask,
+             vocab_size=vocab_size,
+             eos_token_ids=eos_token_ids,
+diff --git a/test/srt/test_beliefkv_metadata.py b/test/srt/test_beliefkv_metadata.py
+new file mode 100644
+index 0000000..a8a2ead
+--- /dev/null
++++ b/test/srt/test_beliefkv_metadata.py
+@@ -0,0 +1,192 @@
++"""BeliefKV request identity transport in the v0.5.20 ingress path."""
++
++import unittest
++from array import array
++from types import SimpleNamespace
++from unittest.mock import patch
++
++from sglang.test.test_utils import maybe_stub_sgl_kernel
++
++maybe_stub_sgl_kernel()
++
++import msgspec
++
++from sglang.srt.entrypoints.openai.protocol import (
++    ChatCompletionRequest,
++    MessageProcessingResult,
++)
++from sglang.srt.entrypoints.openai.serving_chat import OpenAIServingChat
++from sglang.srt.managers.io_struct import (
++    GenerateReqInput,
++    SessionParams,
++    TokenizedGenerateReqInput,
++)
++from sglang.srt.managers.schedule_batch import Req
++from sglang.srt.managers.tokenizer_manager import TokenizerManager
++from sglang.srt.sampling.sampling_params import SamplingParams
++from sglang.srt.session.session_controller import Session
++from sglang.srt.utils.msgpack_utils import enc_hook, ext_hook
++
++
++class BeliefKVMetadataTest(unittest.TestCase):
++    def test_openai_request_preserves_metadata_and_session_id(self):
++        metadata = {"conversation_id": "conversation", "turn_id": "turn-1"}
++        request = ChatCompletionRequest.model_validate(
++            {
++                "model": "test",
++                "messages": [{"role": "user", "content": "hello"}],
++                "n": 2,
++                "session_id": "session-1",
++                "beliefkv_metadata": metadata,
++            }
++        )
++        self.assertEqual(request.model_dump()["beliefkv_metadata"], metadata)
++
++        serving = object.__new__(OpenAIServingChat)
++        serving.is_gpt_oss = False
++        serving.reasoning_parser = None
++        serving.template_manager = SimpleNamespace(reasoning_config=None)
++        serving.tokenizer_manager = SimpleNamespace(
++            model_config=SimpleNamespace(is_multimodal=False)
++        )
++        serving.default_sampling_params = {}
++        serving.chat_encoding_spec = None
++        serving.allowed_custom_labels = None
++        processed = MessageProcessingResult(
++            prompt="hello",
++            prompt_ids=[1, 2],
++            image_data=None,
++            audio_data=None,
++            video_data=None,
++            modalities=[],
++            stop=[],
++        )
++        with (
++            patch.object(serving, "_process_messages", return_value=processed),
++            patch.object(serving, "_resolve_lora_path", return_value=None),
++            patch.object(serving, "_should_return_input_ids", return_value=False),
++        ):
++            adapted, _ = serving._convert_to_internal_request(request)
++        self.assertIs(adapted.beliefkv_metadata, request.beliefkv_metadata)
++        self.assertEqual(adapted.session_id, "session-1")
++        adapted.normalize_batch_and_arguments()
++        self.assertEqual(
++            [adapted[i].beliefkv_metadata for i in range(2)], [metadata, metadata]
++        )
++        self.assertEqual([adapted[i].session_id for i in range(2)], ["session-1"] * 2)
++
++    def test_batch_metadata_follows_each_prompt_across_parallel_samples(self):
++        metadata = [{"turn_id": "first"}, {"turn_id": "second"}]
++        req = GenerateReqInput(
++            text=["first", "second"],
++            sampling_params={"n": 2},
++            session_id="same-session",
++            beliefkv_metadata=metadata,
++        )
++        req.normalize_batch_and_arguments()
++        self.assertEqual(
++            [req[i].beliefkv_metadata for i in range(4)], metadata + metadata
++        )
++        self.assertEqual(
++            [req[i].session_id for i in range(4)], ["same-session"] * 4
++        )
++
++    def test_defaults_and_invalid_batch_length(self):
++        single = GenerateReqInput(text="hello")
++        single.normalize_batch_and_arguments()
++        self.assertIsNone(single.beliefkv_metadata)
++        batch = GenerateReqInput(text=["a", "b"], sampling_params={"n": 2})
++        batch.normalize_batch_and_arguments()
++        self.assertEqual(batch.beliefkv_metadata, [None] * 4)
++        with self.assertRaisesRegex(ValueError, "beliefkv_metadata length"):
++            GenerateReqInput(
++                text=["a", "b"], beliefkv_metadata=[{"turn_id": "only-one"}]
++            ).normalize_batch_and_arguments()
++
++    def test_tokenizer_ipc_preserves_metadata(self):
++        metadata = {"conversation_id": "c", "turn_id": "t"}
++        obj = GenerateReqInput(
++            input_ids=[1, 2],
++            rid="rid-1",
++            beliefkv_metadata=metadata,
++            session_params={"id": "session-1"},
++        )
++        obj.normalize_batch_and_arguments()
++        manager = object.__new__(TokenizerManager)
++        manager.preferred_sampling_params = None
++        manager.sampling_params_class = SamplingParams
++        manager.tokenizer = None
++        manager.model_config = SimpleNamespace(vocab_size=128)
++        manager.rid_to_state = {
++            obj.rid: SimpleNamespace(
++                time_stats=SimpleNamespace(set_tokenize_finish_time=lambda: None)
++            )
++        }
++        with patch(
++            "sglang.srt.managers.tokenizer_manager.get_disagg",
++            return_value=SimpleNamespace(disaggregation_transfer_backend=None),
++        ):
++            tokenized = manager._create_tokenized_object(obj, None, obj.input_ids)
++        self.assertEqual(tokenized.beliefkv_metadata, metadata)
++        self.assertEqual(tokenized.session_params.id, "session-1")
++        # The minimal tokenizer stub has no serializable API time-statistics object.
++        tokenized.time_stats = None
++        self.assertEqual(
++            msgspec.msgpack.decode(
++                msgspec.msgpack.encode(tokenized, enc_hook=enc_hook),
++                type=TokenizedGenerateReqInput,
++                ext_hook=ext_hook,
++            ).beliefkv_metadata,
++            metadata,
++        )
++
++    def test_session_uses_current_turn_metadata(self):
++        session = Session(capacity_of_str_len=0, session_id="session-1", streaming=True)
++
++        def turn(rid, metadata):
++            recv = SimpleNamespace(
++                rid=rid,
++                input_ids=array("q", [1, 2]),
++                mm_inputs=None,
++                session_params=SessionParams(id="session-1"),
++                sampling_params=SamplingParams(max_new_tokens=1),
++                beliefkv_metadata=metadata,
++                lora_id=None,
++                custom_logit_processor=None,
++                stream=False,
++                return_logprob=False,
++                top_logprobs_num=0,
++                token_ids_logprob=None,
++                return_sampling_mask=False,
++                require_reasoning=False,
++                return_hidden_states=False,
++                return_routed_experts=False,
++                routed_experts_start_len=0,
++                bootstrap_host=None,
++                bootstrap_port=None,
++                bootstrap_room=None,
++                routed_dp_rank=None,
++                disagg_prefill_dp_rank=None,
++                priority=None,
++                routing_key=None,
++                extra_key=None,
++                cache_salt=None,
++                http_worker_ipc=None,
++                time_stats=None,
++            )
++            return session.create_req(recv, tokenizer=None, vocab_size=128)
++
++        first = turn("r1", {"turn_id": "first"})
++        self.assertIs(first.session, session)
++        session.finish_req(first)
++        second = turn("r2", {"turn_id": "second"})
++        self.assertIs(second.session, session)
++        self.assertEqual(first.beliefkv_metadata, {"turn_id": "first"})
++        self.assertEqual(second.beliefkv_metadata, {"turn_id": "second"})
++        self.assertIsNone(
++            Req("plain", None, array("q", [1]), SamplingParams()).beliefkv_metadata
++        )
++
++
++if __name__ == "__main__":
++    unittest.main()
+diff --git a/test/srt/test_beliefkv_scheduler_hook.py b/test/srt/test_beliefkv_scheduler_hook.py
+new file mode 100644
+index 0000000..7d1605d
+--- /dev/null
++++ b/test/srt/test_beliefkv_scheduler_hook.py
+@@ -0,0 +1,272 @@
++"""BeliefKV scheduler safe-point contract, without model/GPU dependencies."""
++
++import ast
++import sys
++import types
++import unittest
++from collections import namedtuple
++from pathlib import Path
++from types import SimpleNamespace
++from unittest.mock import patch
++
++
++SCHEDULER = (
++    Path(__file__).resolve().parents[2]
++    / "python/sglang/srt/managers/scheduler.py"
++)
++PLAN = namedtuple("NextBatchPlan", "batch_to_run running_batch")
++
++
++def load_hook():
++    tree = ast.parse(SCHEDULER.read_text(encoding="utf-8"))
++    scheduler = next(
++        node
++        for node in tree.body
++        if isinstance(node, ast.ClassDef) and node.name == "Scheduler"
++    )
++    methods = {
++        "init_beliefkv_runtime",
++        "_beliefkv_tp_agree",
++        "_beliefkv_before_batch_selection",
++        "get_next_batch_to_run",
++    }
++    extracted = [
++        node
++        for node in scheduler.body
++        if isinstance(node, ast.FunctionDef) and node.name in methods
++    ]
++    for node in extracted:
++        node.decorator_list = []
++    module = ast.Module(
++        body=[
++            ast.ImportFrom(
++                module="__future__",
++                names=[ast.alias(name="annotations")],
++                level=0,
++            ),
++            ast.ClassDef(
++                name="SchedulerHook",
++                bases=[],
++                keywords=[],
++                body=extracted,
++                decorator_list=[],
++            ),
++        ],
++        type_ignores=[],
++    )
++    ast.fix_missing_locations(module)
++    namespace = {
++        "NextBatchPlan": PLAN,
++        "TokenizedGenerateReqInput": SimpleNamespace(
++            __struct_fields__=("beliefkv_metadata",)
++        ),
++    }
++    exec(compile(module, str(SCHEDULER), "exec"), namespace)
++    return namespace["SchedulerHook"]
++
++
++Hook = load_hook()
++
++
++def idle_scheduler(runtime=None, *, overlap=False):
++    scheduler = Hook()
++    calls = []
++    scheduler.beliefkv_runtime = runtime
++    scheduler._beliefkv_retraction_drain_pending = False
++    scheduler.ps = SimpleNamespace(tp_size=1, pp_size=1)
++    scheduler.enable_overlap = overlap
++    scheduler.result_queue = []
++    scheduler.chunked_req = None
++    scheduler.process_pending_chunked_abort = lambda: calls.append("abort")
++    scheduler._process_hicache_events = lambda: calls.append("cache")
++    scheduler.enable_fpm = False
++    scheduler.dllm_config = None
++    scheduler.enable_hisparse = False
++    scheduler.require_mlp_sync = False
++    scheduler._should_defer_prefill = lambda: True
++    scheduler.dp_attn_adapter = SimpleNamespace(
++        maybe_prepare_mlp_sync_batch=lambda batch, **kw: batch,
++        maybe_convert_decode_to_extend=lambda batch: batch,
++    )
++    scheduler._arm_prefill_decode_interval = lambda batch: None
++    scheduler.ngram_embedding_manager = SimpleNamespace(
++        prepare_for_forward=lambda batch, **kw: batch
++    )
++    batch = SimpleNamespace(
++        is_empty=lambda: True, is_prefill_only=False, batch_is_full=False
++    )
++    return scheduler, batch, calls
++
++
++class TestBeliefKVHook(unittest.TestCase):
++    def test_normal_and_radix_native_request_metadata_is_forwarded(self):
++        tree = ast.parse(SCHEDULER.read_text(encoding="utf-8"))
++        scheduler = next(
++            node
++            for node in tree.body
++            if isinstance(node, ast.ClassDef) and node.name == "Scheduler"
++        )
++        handler = next(
++            node
++            for node in scheduler.body
++            if isinstance(node, ast.FunctionDef)
++            and node.name == "handle_generate_request"
++        )
++        normal_or_radix_branch = next(
++            node
++            for node in ast.walk(handler)
++            if isinstance(node, ast.If)
++            and isinstance(node.test, ast.BoolOp)
++            and any(
++                isinstance(value, ast.Name) and value.id == "radix_native_session"
++                for value in node.test.values
++            )
++        )
++        constructor = next(
++            node
++            for statement in normal_or_radix_branch.body
++            for node in ast.walk(statement)
++            if isinstance(node, ast.Call)
++            and isinstance(node.func, ast.Name)
++            and node.func.id == "Req"
++        )
++        metadata = next(
++            keyword.value
++            for keyword in constructor.keywords
++            if keyword.arg == "beliefkv_metadata"
++        )
++        self.assertIsInstance(metadata, ast.Attribute)
++        self.assertIsInstance(metadata.value, ast.Name)
++        self.assertEqual(
++            (metadata.value.id, metadata.attr), ("recv_req", "beliefkv_metadata")
++        )
++
++    def test_disabled_does_not_touch_runtime_or_change_idle_plan(self):
++        scheduler, batch, calls = idle_scheduler()
++        scheduler.server_args = SimpleNamespace(enable_beliefkv=False)
++        scheduler.init_beliefkv_runtime()
++        plan = scheduler.get_next_batch_to_run(batch, None)
++        self.assertIsNone(plan.batch_to_run)
++        self.assertIs(plan.running_batch, batch)
++        self.assertEqual(calls, ["abort", "cache"])
++
++    def test_enabled_fails_closed_before_importing_old_runtime(self):
++        scheduler, batch, _ = idle_scheduler()
++        scheduler.server_args = SimpleNamespace(enable_beliefkv=True)
++        scheduler.tree_cache = object()
++        scheduler.running_batch = batch
++        cache_module = types.ModuleType("sglang.srt.mem_cache.hiradix_cache")
++        cache_module.HiRadixCache = type("HiRadixCache", (), {})
++        with patch.dict(sys.modules, {cache_module.__name__: cache_module}):
++            with self.assertRaisesRegex(RuntimeError, "activation unsupported") as error:
++                scheduler.init_beliefkv_runtime()
++        self.assertIn("transfer completion ACK adapter", str(error.exception))
++        self.assertIn("selective running retraction", str(error.exception))
++        self.assertIsNone(scheduler.beliefkv_runtime)
++
++    def test_ack_step_precedes_native_cache_events_on_idle(self):
++        scheduler, batch, calls = idle_scheduler()
++        scheduler.beliefkv_runtime = SimpleNamespace(
++            scheduler_step=lambda: calls.append("ack"),
++            plan_running_batch_retraction=lambda _: None,
++            on_batch_selected=lambda selected: calls.append(("selected", selected)),
++        )
++        plan = scheduler.get_next_batch_to_run(batch, None)
++        self.assertIsNone(plan.batch_to_run)
++        self.assertEqual(calls, ["ack", "abort", "cache", ("selected", None)])
++
++    def test_overlap_drain_returns_plan_then_notifies_after_result_is_drained(self):
++        scheduler, batch, calls = idle_scheduler(overlap=True)
++        runtime = SimpleNamespace(
++            scheduler_step=lambda: calls.append("ack"),
++            running_batch_retraction_barrier_required=lambda _: True,
++            on_running_batch_retraction_barrier_drained=lambda _: calls.append("drained"),
++            plan_running_batch_retraction=lambda _: None,
++            on_batch_selected=lambda _: calls.append("selected"),
++        )
++        scheduler.beliefkv_runtime = runtime
++        scheduler.result_queue.append("inflight")
++        last_batch = SimpleNamespace(
++            forward_mode=SimpleNamespace(is_extend=lambda: False)
++        )
++        plan = scheduler.get_next_batch_to_run(batch, last_batch)
++        self.assertIsNone(plan.batch_to_run)
++        self.assertIs(plan.running_batch, batch)
++        self.assertNotIn("drained", calls)
++        self.assertNotIn("selected", calls)
++        scheduler.result_queue.clear()
++        scheduler.get_next_batch_to_run(batch, None)
++        self.assertLess(calls.index("drained"), calls.index("selected"))
++
++    def test_retraction_plan_is_rejected_before_native_scheduling(self):
++        scheduler, batch, calls = idle_scheduler()
++        scheduler.beliefkv_runtime = SimpleNamespace(
++            scheduler_step=lambda: calls.append("ack"),
++            plan_running_batch_retraction=lambda _: object(),
++        )
++        with self.assertRaisesRegex(RuntimeError, "selective release and ACK"):
++            scheduler.get_next_batch_to_run(batch, None)
++        self.assertEqual(calls, ["ack", "abort", "cache"])
++
++    def test_inconsistent_overlap_queue_rejected_before_drain(self):
++        scheduler, batch, calls = idle_scheduler(overlap=True)
++        scheduler.beliefkv_runtime = SimpleNamespace(
++            scheduler_step=lambda: calls.append("ack")
++        )
++        with self.assertRaisesRegex(RuntimeError, "result queue"):
++            scheduler.get_next_batch_to_run(
++                batch,
++                SimpleNamespace(
++                    forward_mode=SimpleNamespace(is_extend=lambda: False)
++                ),
++            )
++        self.assertFalse(scheduler._beliefkv_retraction_drain_pending)
++
++    def test_tp_disagreement_fails_before_drain(self):
++        scheduler, batch, calls = idle_scheduler(overlap=True)
++        scheduler.ps.tp_size = 2
++        scheduler.tp_group = SimpleNamespace(device="cpu", device_group=object())
++        scheduler.result_queue.append("inflight")
++        scheduler.beliefkv_runtime = SimpleNamespace(
++            scheduler_step=lambda: calls.append("ack"),
++            running_batch_retraction_barrier_required=lambda _: True,
++        )
++
++        class Flag:
++            def __init__(self, value):
++                self.value = value
++
++            def item(self):
++                return self.value
++
++        class Flags:
++            def __init__(self, values):
++                self.values = [Flag(value) for value in values]
++
++            def __getitem__(self, key):
++                return self.values[key]
++
++        reduce_op = SimpleNamespace(MIN="min", MAX="max")
++        torch = SimpleNamespace(
++            int32=object(),
++            tensor=lambda values, **_: Flags(values),
++            distributed=SimpleNamespace(
++                ReduceOp=reduce_op,
++                all_reduce=lambda flags, op, group: setattr(
++                    flags[0], "value", 0 if op == reduce_op.MIN else 1
++                ),
++            ),
++        )
++        with patch.dict(Hook._beliefkv_tp_agree.__globals__, {"torch": torch}):
++            with self.assertRaisesRegex(RuntimeError, "TP ranks disagree"):
++                scheduler.get_next_batch_to_run(
++                    batch,
++                    SimpleNamespace(
++                        forward_mode=SimpleNamespace(is_extend=lambda: False)
++                    ),
++                )
++        self.assertEqual(calls, ["ack", "abort", "cache"])
++
++
++if __name__ == "__main__":
++    unittest.main()

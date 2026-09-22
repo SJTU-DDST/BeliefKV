@@ -1,11 +1,24 @@
 # BeliefKV 当前架构与实现状态
 
-更新日期：2026-09-21
-当前 P6 代码基线：main（包含本节 follow-up 修复）
+更新日期：2026-09-22
+当前 P6 代码基线：原 Qwen3-Coder/SGLang 0.5.2rc1；新模型迁移尚未接管在线调度。
 
 本文只记录当前事实和下一阻塞项，不再追加逐日开发日志。2026-09-12 以前的完整历史保存在
 `docs/archive/snapshots/architecture_status_zh.md`，单次实验细节保存在
 `docs/experiments/`。
+
+## 模型与运行时升级（进行中）
+
+迁移前已冻结 tag `checkpoint/pre-sglang-model-upgrade-2026-09-22` 和旧环境
+清单。目标是 Qwen3.5-35B-A3B BF16 + SGLang v0.5.20，agent、SGLang、
+BeliefKV 与实验工具安装在同一个 `beliefkv-next` conda 环境。
+模型文件哈希和新环境包版本见 `configs/migration/`。新版 checkout 的
+request metadata/scheduler 早期 hook 已导出为
+`patches/sglang-v0.5.20-beliefkv-staging.patch`，但 unified FULL/MAMBA
+物理状态、传输 ACK 和调度准入尚未迁移，启用 BeliefKV 会 fail closed。
+**下文所有 P5/P6 在线能力与旧实验结果仍仅指旧模型/旧 SGLang 合同**。
+新模型原生服务或通过的 metadata 单元测试均不能视为预测式 KV 调度已迁移；
+更换模型后还需新 baseline、容量和服务率标定，不能与旧模型吞吐直接比较。
 
 ## 1. 当前结论
 

@@ -5,7 +5,8 @@
 `patches/sglang-0.5.2rc1-beliefkv-dynamic-running.patch` 与独立浅克隆
 `third_party/sglang-v0.5.20` (`94602c9c2b7cbdb8efd5c52802dac6a1c180089e`)。
 这是源码审计和迁移设计，不是已适配/已跑通声明。旧工作树不作为干净基线：
-`third_party/sglang` 有未提交改动。本次没有修改两个 SGLang 工作树。
+`third_party/sglang` 有未提交改动；独立的新 checkout 已加入早期迁移 hook，
+以 `patches/sglang-v0.5.20-beliefkv-staging.patch` 记录，不替代旧补丁。
 
 ## 结论
 
@@ -40,7 +41,7 @@
 注意其他 factory 分支（pure SWA、ChunkCache、外部 cache backend、实验性
 C++ tree）不能套用上述 FULL+HiCache 结论，应在新 flag 入口显式拒绝。
 
-## 最小可运行补丁集（目标拆分，尚未生成）
+## 最小可运行补丁集（目标拆分，尚未完成）
 
 “最小”指只支持**单机、默认 unified FULL、page_size=1、无 speculative /
 disaggregation / streaming session / PP / priority preemption** 的
@@ -55,9 +56,12 @@ BeliefKV 闭环；不是只把 HTTP 请求送到调度器，也不等于生产�
 | 5. 原子物理动作和 ACK | 在 unified FULL 的有界 node closure 上实现可校验的 D2H、H2D、drop/cancel，复用 controller 的 pool transfer/ack，记录每 pool 的 bytes、node generation、来源；host/device 分配失败回滚；只在 native ACK 后提交 page 状态。不要绕开原生分配器/lock receipt。 | `mem_cache/unified_radix_cache.py`, `mem_cache/hybrid_cache/hybrid_cache_controller.py`, `mem_cache/hybrid_cache/hybrid_pool_assembler.py`; 本仓库 `beliefkv/runtime/sglang_v052rc1.py` backend |
 | 6. selective running retraction | 仅在 overlap pipeline 排空并对结果达成各 rank 一致后，提供可选的“选定 req 集合”释放/重排；释放必须走新版 `release_req`/`release_kv_cache` 和 `Req.reset_for_retract`，保护 shared/full pages 和 request slot；若不能保证屏障，**关闭此能力且禁止声称 dynamic-running 等价**。 | `managers/scheduler.py::get_next_batch_to_run`/`event_loop_overlap`/`update_running_batch`; `managers/schedule_batch.py::ScheduleBatch` |
 
+当前 staging 补丁仅完成组 1 的 request metadata 传递和组 2 的部分
+scheduler hook；启用 BeliefKV 时明确抛错。13 项新 checkout 定向测试通过，
+**不能**据此声称任何 BeliefKV physical KV 操作、admission 或预测调度已迁移。
 组 1-5 + 改写本仓库 runtime/contract 才能定义为“基础 BeliefKV 可运行补丁集”；
 要复现题设 `dynamic-running.patch` 的行为还需组 6。**没有现成可运行的
-v0.5.20 补丁文件**；只搬运上游 diff 或只加入口字段不构成完整补丁集。
+v0.5.20 可运行补丁文件**；只搬运上游 diff 或只加入口字段不构成完整补丁集。
 
 ## 需要替代的 hook / 主要风险
 
@@ -98,8 +102,10 @@ no-active-page-transfer、shutdown/abort 约束；不是仅修改上游 hook。
    NEXTN sidecar 和 storage ACK；默认关闭 BeliefKV，不能复用纯 FULL
    成功结果作为准入证明。
 
-本次已执行：`git apply --check`（失败，预期）、`python3
+初次审计已执行：旧补丁 `git apply --check`（失败，预期）、`python3
 scripts/check_sglang_contract.py third_party/sglang-v0.5.20`
-（`compatible=false`，预期）。未生成/应用任何 v0.5.20 补丁；未运行
-上游或 BeliefKV 的 GPU/server 测试。原 rc1 的正式 patch/profile 是
+（`compatible=false`，预期）。随后已导出 staging 补丁，并确认
+`git apply --cached --check` 可应用于固定的 v0.5.20 index，
+`git apply --reverse --check` 可从本地 checkout 撤销；
+GPU/server 测试尚未运行。原 rc1 的正式 patch/profile 是
 `perf-ownership` 而非本次作为对照的 `dynamic-running`；不可混用旧实验结论。

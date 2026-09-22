@@ -18,8 +18,13 @@ if [[ ! -x "${PYTHON}" || ! -f "${MODEL_PATH}/config.json" ]]; then
   printf 'Missing Python or model config: %s %s\n' "${PYTHON}" "${MODEL_PATH}" >&2
   exit 2
 fi
+CUDA_HOME="${CUDA_HOME:-$(dirname "$(dirname "${PYTHON}")")/lib/python3.11/site-packages/nvidia/cu13}"
+if [[ ! -x "${CUDA_HOME}/bin/nvcc" ]]; then
+  printf 'CUDA 13 nvcc missing from migration environment: %s\n' "${CUDA_HOME}" >&2
+  exit 2
+fi
 "${PYTHON}" -c 'import importlib.metadata as m; assert m.version("sglang") == "0.5.20"'
-export CUDA_VISIBLE_DEVICES
+export CUDA_VISIBLE_DEVICES CUDA_HOME
 export PYTHONUNBUFFERED=1
 
 server_args=(

@@ -27,6 +27,16 @@ agents = [
     "psutil==7.2.2",
     "requests==2.34.2",
 ]
+agents-next = [
+    "deepagents==0.6.12",
+    "langchain==1.3.14",
+    "langchain-openai==1.1.9",
+    "langgraph==1.2.9",
+    "nvidia-ml-py==13.610.43",
+    "openai==2.6.1",
+    "psutil==7.2.2",
+    "requests==2.34.2",
+]
 
 [project.scripts]
 beliefkv = "beliefkv.cli:main"
