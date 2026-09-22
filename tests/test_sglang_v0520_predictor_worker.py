@@ -20,12 +20,14 @@ from beliefkv.runtime.sglang_v0520_admission import PrefillCandidateKey
 from beliefkv.runtime.sglang_v0520_prediction import (
     MAX_TOOL_WAIT_MS,
     NativeToolWaitHint,
+    NativeJoinWaitHint,
 )
 from beliefkv.runtime import sglang_v0520_predictor_worker as worker_module
 from beliefkv.runtime.sglang_v0520_predictor_worker import (
     NativePredictorWorker,
     predict_batch,
     predict_tool_wait_batch,
+    predict_join_wait_batch,
 )
 
 
@@ -168,6 +170,63 @@ def test_predict_tool_wait_batch_uses_trained_calibrated_residual_head():
         ((key("worker"), LocalFrontierFeatures("worker", "wait_join"), 7.0),),
         model=model,
     ) == ()
+
+
+def test_join_prediction_uses_child_completion_not_parent_structural_wait():
+    class Model:
+        def predict(self, features):
+            duration = 20.0 if features.invocation_id == "a" else 40.0
+            return NS(
+                remaining_to_return_ms=EmpiricalDistribution(
+                    (duration, duration + 10), (0.5, 0.5), 3
+                ),
+                head_support={"child_completion": "exact"},
+                calibration_coverage=0.9,
+                ood_reasons=(),
+            )
+
+    children = tuple(
+        (name, LocalFrontierFeatures(name, "running_llm"), float(index), 0)
+        for index, name in enumerate(("a", "b"), 1)
+    )
+    item = (key("parent"), 7.0, "join", "all", ("a", "b"), (), children)
+    result = predict_join_wait_batch((item,), model=Model())
+    assert result == ((
+        key("parent"), 7.0, "join", "all", ("a", "b"),
+        (("a", 1.0, "running_llm", 0), ("b", 2.0, "running_llm", 0)),
+        40.0, 40.0, 50.0,
+    ),)
+    assert predict_join_wait_batch((
+        (key("parent"), 7.0, "join", "any", ("a", "b"), (), children),
+    ), model=Model())[0][-3:] == (20.0, 20.0, 30.0)
+    assert predict_join_wait_batch((
+        (key("parent"), 7.0, "join", "all", ("a", "b"), (), children[:1]),
+    ), model=Model()) == ()
+
+
+def test_join_wait_worker_preserves_causal_priority_and_provenance(fake_context):
+    worker = NativePredictorWorker("unused", "a" * 64)
+    try:
+        worker.submit(batch("old"))
+        item = (key("parent"), 7.0, "join", "all", ("a",), (),
+                (("a", LocalFrontierFeatures("a", "running_llm"), 3.0, 0),))
+        worker.submit_join_wait((item,))
+        worker.submit(batch("later"))
+        worker._input_queue.get_nowait()
+        worker._output_queue.put_nowait((1, ()))
+        assert worker.poll() == ()
+        sequence, kind, submitted = worker._input_queue.get_nowait()
+        assert kind == "join_wait" and submitted == (item,)
+        worker._output_queue.put_nowait((sequence, kind, (
+            (key("parent"), 7.0, "join", "all", ("a",),
+             (("a", 3.0, "running_llm", 0),),
+             10.0, 20.0, 30.0),
+        )))
+        (hint,) = worker.poll()
+        assert isinstance(hint, NativeJoinWaitHint)
+        assert hint.child_revisions == (("a", 3.0, "running_llm", 0),)
+    finally:
+        worker.close()
 
 
 @pytest.mark.parametrize("variant", [

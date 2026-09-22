@@ -17,7 +17,9 @@ from beliefkv.runtime.sglang_v0520_admission import (
     select_native_prefill_candidates,
 )
 from beliefkv.runtime.sglang_v0520_runtime import NativeAdmissionRuntime
-from beliefkv.runtime.sglang_v0520_prediction import NativeToolWaitHint
+from beliefkv.runtime.sglang_v0520_prediction import (
+    NativeDemandHint, NativeJoinWaitHint, NativeToolWaitHint,
+)
 from beliefkv.runtime.sglang_v0520_physical import (
     PhysicalActionExpectation,
     PhysicalChildExpectation,
@@ -485,6 +487,135 @@ def test_tool_wait_hint_expiry_clears_read_only_candidate():
     assert runtime.tool_wait_hint is None
     assert runtime.shadow_candidate is None
     assert runtime.counts["tool_wait_expired"] == 1
+
+
+def test_ready_admission_prefetch_waits_for_ack_before_native_prefill():
+    runtime = NativeAdmissionRuntime()
+    runtime.predictor_sha256 = "a" * 64
+    runtime.enable_admission_prefetch = True
+    request = req("ready")
+    request.session_id = "session-ready"
+    request.session_generation = 3
+    assert runtime.register_visible_request(request)
+    runtime.on_events((
+        event(0, RuntimeEventKind.WORKFLOW_START),
+        event(1, RuntimeEventKind.INVOCATION_CREATE,
+              invocation_id="ready", context_id="ctx-ready",
+              agent_definition_id="role", agent_instance_id="ready"),
+    ))
+    key = runtime.context_sessions["ctx-ready"]
+    now = time.monotonic() * 1000
+    runtime.demand_hints["ready"] = NativeDemandHint(
+        key, 12, now, now + 5000, "a" * 64, 1.0
+    )
+    runtime.attach_native_cache(object())
+    runtime.physical_ledger.is_pending = lambda command_id: command_id == "h2d-1"
+    step = PrefetchLoadStep(key, 11, 4, 11, 4)
+    issued = []
+    with patch.object(runtime, "capture_shadow_candidate", return_value=object()):
+        with patch("beliefkv.runtime.sglang_v0520_runtime.next_prefetch_gpu_step",
+                   side_effect=(step, None)) as select_step:
+            with patch.object(runtime, "issue_prefetch_gpu_step",
+                              side_effect=lambda *a, **kw: issued.append(kw) or "h2d-1"):
+                assert runtime.defer_prefill_for_prefetch(request)
+                assert issued == [{"source": "admission"}]
+                assert runtime.defer_prefill_for_prefetch(request)
+                assert select_step.call_count == 1
+                runtime.completed_physical_actions.append(
+                    NS(command_id="h2d-1", action="PREFETCH_GPU")
+                )
+                assert not runtime.defer_prefill_for_prefetch(request)
+    assert runtime._admission_lease is None
+    assert runtime.counts["admission_prefetch_acked"] == 1
+
+
+def test_admission_prefetch_cannot_block_native_without_fresh_identity_or_hint():
+    runtime = NativeAdmissionRuntime()
+    runtime.enable_admission_prefetch = True
+    tagged, plain = req("tagged"), req("plain", tagged=False)
+    assert not runtime.defer_prefill_for_prefetch(plain)
+    assert not runtime.defer_prefill_for_prefetch(tagged)
+    tagged.session_id, tagged.session_generation = "s", 1
+    runtime.register_visible_request(tagged)
+    runtime.on_events((
+        event(0, RuntimeEventKind.WORKFLOW_START),
+        event(1, RuntimeEventKind.INVOCATION_CREATE,
+              invocation_id="tagged", context_id="ctx-tagged",
+              agent_definition_id="role", agent_instance_id="tagged"),
+    ))
+    assert not runtime.defer_prefill_for_prefetch(tagged)
+    runtime.predictor_sha256 = "a" * 64
+    key = runtime.context_sessions["ctx-tagged"]
+    now = time.monotonic() * 1000
+    runtime.demand_hints["tagged"] = NativeDemandHint(
+        key, 12, now, now + 5000, "a" * 64, 1.0
+    )
+    runtime.attach_native_cache(object())
+    with patch.object(runtime, "capture_shadow_candidate", return_value=None):
+        assert not runtime.defer_prefill_for_prefetch(tagged)
+    assert runtime._admission_lease is None
+    tagged.session_generation = 2
+    assert not runtime.defer_prefill_for_prefetch(tagged)
+
+
+def test_admission_prefetch_requires_action_eligible_predictor():
+    with pytest.raises(ValueError, match="pinned, live action predictor"):
+        NativeAdmissionRuntime(enable_admission_prefetch=True)
+
+
+def test_join_wait_prediction_tracks_child_revisions_and_expires_on_return():
+    runtime = NativeAdmissionRuntime()
+    runtime.predictor_sha256 = "a" * 64
+    parent, child = req("parent"), req("child")
+    parent.session_id, parent.session_generation = "session-parent", 2
+    runtime.register_visible_request(parent)
+    runtime.register_visible_request(child)
+    submitted = []
+    pending = []
+    runtime._model_worker = NS(
+        disabled=False, poll=lambda: tuple(pending),
+        submit_join_wait=lambda tasks: submitted.extend(tasks),
+        fileno=lambda: 72,
+    )
+    runtime.on_events((
+        event(0, RuntimeEventKind.WORKFLOW_START),
+        event(1, RuntimeEventKind.INVOCATION_CREATE,
+              invocation_id="parent", context_id="ctx-parent",
+              agent_definition_id="parent", agent_instance_id="parent"),
+        event(2, RuntimeEventKind.INVOCATION_CREATE,
+              invocation_id="child", context_id="ctx-child",
+              agent_definition_id="child", agent_instance_id="child"),
+        event(3, RuntimeEventKind.JOIN_CREATE,
+              join_id="join", member_invocation_ids=("child",)),
+        event(4, RuntimeEventKind.JOIN_WAIT,
+              invocation_id="parent", join_id="join"),
+    ))
+    assert len(submitted) == 1
+    key, revision, join_id, mode, members, completed, children = submitted[0]
+    assert (key.request_id, revision, join_id, mode, members) == (
+        "parent", 4.0, "join", "all", ("child",),
+    )
+    assert children[0][0] == "child"
+    assert completed == ()
+    now = time.monotonic() * 1000
+    pending.append(NativeJoinWaitHint(
+        key, "join", "all", ("child",), (("child", 2.0, "ready", 0),),
+        100.0, 250.0, 400.0, now, now + 5000, "a" * 64, revision,
+    ))
+    runtime.scheduler_step()
+    assert runtime.join_wait_hint is pending[0]
+    runtime.enable_admission_prefetch = True
+    runtime.attach_native_cache(object())
+    step = PrefetchLoadStep(key, 11, 4, 11, 4)
+    with patch.object(runtime, "capture_shadow_candidate", return_value=object()):
+        with patch("beliefkv.runtime.sglang_v0520_runtime.next_prefetch_gpu_step",
+                   return_value=step):
+            assert runtime.refreshed_prefetch_gpu_step(source="join_wait") == step
+    runtime.on_events((event(
+        5, RuntimeEventKind.RETURN, invocation_id="child",
+    ),))
+    assert runtime.join_wait_hint is None
+    assert runtime.refreshed_prefetch_gpu_step(source="join_wait") is None
 
 
 def test_tool_wait_candidate_is_discarded_on_context_replacement_and_requeue():

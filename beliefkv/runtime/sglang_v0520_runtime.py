@@ -7,11 +7,12 @@ from __future__ import annotations
 
 from collections import Counter, deque
 from collections.abc import Sequence
+from dataclasses import dataclass
 import time
 from typing import TYPE_CHECKING
 from uuid import uuid4
 
-from beliefkv.control.causal_graph import RuntimeCausalContextGraph
+from beliefkv.control.causal_graph import InvocationState, RuntimeCausalContextGraph
 from beliefkv.core.events import RuntimeEventKind
 from beliefkv.policy.causal_frontier import CausalFrontierScheduler
 from beliefkv.runtime.event_channel import RuntimeEventDatagramServer
@@ -23,6 +24,7 @@ from beliefkv.runtime.sglang_v0520_admission import (
 )
 from beliefkv.runtime.sglang_v0520_prediction import (
     NativeDemandHint,
+    NativeJoinWaitHint,
     NativeToolWaitHint,
     PREDICTION_ATTRIBUTE,
     parse_native_demand_hint,
@@ -50,6 +52,14 @@ if TYPE_CHECKING:
     from beliefkv.core.events import RuntimeEvent
 
 
+@dataclass
+class _AdmissionPrefetchLease:
+    key: PrefillCandidateKey
+    expires_at: float
+    command_id: str | None = None
+    issued_nodes: int = 0
+
+
 class NativeAdmissionRuntime:
     """Rebind causal order to live request identities at each prefill safe point."""
 
@@ -61,7 +71,12 @@ class NativeAdmissionRuntime:
         predictor_artifact_path: str | None = None,
         model_path: str | None = None,
         enable_local_predictor: bool = False,
+        enable_admission_prefetch: bool = False,
     ) -> None:
+        if enable_admission_prefetch and (
+            not enable_local_predictor or not predictor_artifact_path
+        ):
+            raise ValueError("admission H2D requires a pinned, live action predictor")
         if bool(predictor_sha256) != bool(predictor_artifact_path):
             raise ValueError("predictive admission requires both artifact and SHA-256")
         if predictor_sha256 is not None and (
@@ -78,11 +93,15 @@ class NativeAdmissionRuntime:
                 predictor_artifact_path,
                 expected_sha256=predictor_sha256,
                 model_path=model_path,
+                require_physical_actions=enable_admission_prefetch,
             )
         self.semantic_revision = 0
         self.predictor_sha256 = predictor_sha256
         self.demand_hints: dict[str, NativeDemandHint] = {}
         self.tool_wait_hint: NativeToolWaitHint | None = None
+        self.join_wait_hint: NativeJoinWaitHint | None = None
+        self.enable_admission_prefetch = enable_admission_prefetch
+        self._admission_lease: _AdmissionPrefetchLease | None = None
         self.shadow_candidate: ActionLocalShadowCandidate | None = None
         self._native_cache: object | None = None
         self._context_tokens: dict[str, tuple[int, int, int, bool]] = {}
@@ -99,6 +118,7 @@ class NativeAdmissionRuntime:
                 predictor_artifact_path, predictor_sha256
             )
         self.graph = RuntimeCausalContextGraph(strict_timestamps=False)
+        self._join_by_invocation: dict[str, set[str]] = {}
         self.frontier = CausalFrontierScheduler(self.graph)
         self.visible: dict[str, PrefillCandidateKey] = {}
         self.context_sessions: dict[str, PrefillCandidateKey] = {}
@@ -150,17 +170,28 @@ class NativeAdmissionRuntime:
         except Exception:
             # A partially applied batch cannot remain a scheduling authority.
             self.graph = RuntimeCausalContextGraph(strict_timestamps=False)
+            self._join_by_invocation.clear()
             self.frontier = CausalFrontierScheduler(self.graph)
             self.demand_hints.clear()
             self._last_model_signature = None
             self.context_sessions.clear()
             self.tool_wait_hint = None
+            self.join_wait_hint = None
+            self._admission_lease = None
             self.shadow_candidate = None
             self._context_tokens.clear()
             self.semantic_revision += 1
             self.counts["causal_mirror_discarded"] += 1
             raise
         else:
+            for event in events:
+                if event.kind is RuntimeEventKind.JOIN_CREATE and event.join_id:
+                    join = self.graph.joins.get(event.join_id)
+                    if join is not None:
+                        for member in join.member_invocation_ids:
+                            self._join_by_invocation.setdefault(member, set()).add(join.join_id)
+                elif event.kind is RuntimeEventKind.JOIN_WAIT and event.join_id and event.invocation_id:
+                    self._join_by_invocation.setdefault(event.invocation_id, set()).add(event.join_id)
             for hint in hints:
                 if self._terminal(hint.key):
                     self.counts["terminal_prediction_ignored"] += 1
@@ -207,6 +238,17 @@ class NativeAdmissionRuntime:
                         self.shadow_candidate = None
                 if event.kind is RuntimeEventKind.TOOL_START and context_id is not None:
                     self._submit_tool_wait(context_id)
+            if self.join_wait_hint is not None and not self._live_join_hint(
+                self.join_wait_hint
+            ):
+                self.join_wait_hint = None
+            if any(event.kind in (
+                RuntimeEventKind.JOIN_CREATE, RuntimeEventKind.JOIN_WAIT,
+                RuntimeEventKind.JOIN_SATISFIED, RuntimeEventKind.JOIN_TIMEOUT,
+                RuntimeEventKind.RETURN, RuntimeEventKind.INVOCATION_CANCEL,
+                RuntimeEventKind.TOOL_END, RuntimeEventKind.TOOL_START,
+            ) for event in events):
+                self._submit_join_wait(events)
             if len(self.demand_hints) > 1024:
                 now_ms = time.monotonic() * 1000
                 self.demand_hints = {
@@ -225,11 +267,23 @@ class NativeAdmissionRuntime:
             self.tool_wait_hint = None
             self.shadow_candidate = None
             self.counts["tool_wait_expired"] += 1
+        if self.join_wait_hint is not None and not self._live_join_hint(
+            self.join_wait_hint
+        ):
+            self.join_wait_hint = None
+            self.counts["join_wait_expired"] += 1
         if self._model_worker is not None:
             hints = self._model_worker.poll()
             for hint in hints:
                 if isinstance(hint, NativeToolWaitHint):
                     self._accept_tool_wait(hint)
+                    continue
+                if isinstance(hint, NativeJoinWaitHint):
+                    if self._live_join_hint(hint):
+                        self.join_wait_hint = hint
+                        self.counts["join_wait_accepted"] += 1
+                    else:
+                        self.counts["join_wait_result_stale"] += 1
                     continue
                 if (
                     hint.predictor_sha256 == self.predictor_sha256
@@ -250,7 +304,14 @@ class NativeAdmissionRuntime:
                     self.semantic_revision += 1
             if self._model_worker.disabled:
                 self.counts["model_worker_disabled"] = 1
-        self.counts["physical_expired"] += len(self.physical_ledger.expire())
+        expired = self.physical_ledger.expire()
+        self.counts["physical_expired"] += len(expired)
+        lease = self._admission_lease
+        if lease is not None and lease.command_id is not None and (
+            lease.command_id in expired
+        ):
+            self._admission_lease = None
+            self.counts["admission_prefetch_expired"] += 1
 
     def _submit_tool_wait(self, context_id: str) -> None:
         worker = self._model_worker
@@ -331,6 +392,107 @@ class NativeAdmissionRuntime:
             if self.shadow_candidate is not None
             else "tool_wait_shadow_unavailable"
         ] += 1
+
+    def _live_join_hint(self, hint: NativeJoinWaitHint) -> bool:
+        key = hint.key
+        parent = self.graph.invocations.get(key.invocation_id)
+        context = self.graph.contexts.get(key.context_id)
+        join = self.graph.joins.get(hint.join_id)
+        return bool(
+            hint.predictor_sha256 == self.predictor_sha256
+            and hint.live(key, now_ms=time.monotonic() * 1000)
+            and self.context_sessions.get(key.context_id) == key
+            and context is not None
+            and context.epoch == key.context_epoch
+            and context.workflow_id == key.root_workflow_id
+            and parent is not None
+            and parent.context_id == key.context_id
+            and parent.workflow_id == key.root_workflow_id
+            and parent.state is InvocationState.WAIT_JOIN
+            and parent.join_id == hint.join_id
+            and parent.updated_ts_ms == hint.invocation_revision_ts_ms
+            and join is not None
+            and join.workflow_id == key.root_workflow_id
+            and not join.satisfied
+            and join.mode.value == hint.join_mode
+            and tuple(sorted(join.member_invocation_ids)) == hint.member_ids
+            and tuple(
+                (
+                    child_id, self.graph.invocations[child_id].updated_ts_ms,
+                    self.graph.invocations[child_id].state.value,
+                    self.graph.contexts[self.graph.invocations[child_id].context_id].epoch,
+                )
+                for child_id in sorted(join.member_invocation_ids - join.completed_member_ids)
+            ) == hint.child_revisions
+            and not self._terminal(key)
+        )
+
+    def _submit_join_wait(self, events: tuple[RuntimeEvent, ...]) -> None:
+        worker = self._model_worker
+        if worker is None or worker.disabled:
+            return
+        affected = {event.invocation_id for event in events if event.invocation_id}
+        affected_joins = {event.join_id for event in events if event.join_id}
+        for invocation_id in affected:
+            affected_joins.update(self._join_by_invocation.get(invocation_id, ()))
+        for join_id in sorted(affected_joins):
+            join = self.graph.joins.get(join_id)
+            if join is None:
+                continue
+            if join.satisfied or not 0 < len(join.member_invocation_ids) <= 8:
+                continue
+            for parent_id in sorted(join.waiter_invocation_ids):
+                parent = self.graph.invocations[parent_id]
+                key = self.context_sessions.get(parent.context_id)
+                if (
+                    key is None or key.invocation_id != parent_id
+                    or parent.state is not InvocationState.WAIT_JOIN
+                    or key.session_id is None or self._terminal(key)
+                ):
+                    continue
+                children = []
+                for child_id in sorted(
+                    join.member_invocation_ids - join.completed_member_ids
+                ):
+                    child = self.graph.invocations.get(child_id)
+                    child_context = (
+                        self.graph.contexts.get(child.context_id)
+                        if child is not None else None
+                    )
+                    if child is None or child_context is None or child.state.terminal:
+                        break
+                    stored = self._context_tokens.get(child.context_id)
+                    prompt, output, is_child = (
+                        (stored[1], stored[2], stored[3])
+                        if stored is not None
+                        and stored[0] == child_context.epoch
+                        else (0, 0, True)
+                    )
+                    children.append((
+                        child_id,
+                        LocalFrontierFeatures(
+                            invocation_id=child_id, state=child.state.value,
+                            agent_definition_id=child.agent_definition_id,
+                            tool_family=child.active_tool_family or "unknown",
+                            generated_tokens=output,
+                            current_sequence_tokens=prompt + output,
+                            llm_round=child.llm_round,
+                            child_count=len(child.child_invocation_ids),
+                            unfinished_child_count=len(child.blocking_child_ids),
+                            is_child=is_child,
+                        ),
+                        child.updated_ts_ms,
+                        child_context.epoch,
+                    ))
+                if len(children) != len(join.member_invocation_ids - join.completed_member_ids):
+                    continue
+                worker.submit_join_wait(((
+                    key, parent.updated_ts_ms, join.join_id, join.mode.value,
+                    tuple(sorted(join.member_invocation_ids)),
+                    tuple(sorted(join.completed_member_ids)), tuple(children),
+                ),))
+                self.counts["join_wait_submitted"] += 1
+                return
 
     def register_physical_action(self, expected: PhysicalActionExpectation) -> None:
         """Accept only a live causal identity; this does not issue the transfer."""
@@ -494,20 +656,59 @@ class NativeAdmissionRuntime:
         self.counts["shadow_native_issued"] += 1
         return command_id
 
-    def refreshed_prefetch_gpu_step(self) -> PrefetchLoadStep | None:
-        """Revalidate an unfinished tool wait and one CPU-only session node."""
-        hint = self.tool_wait_hint
+    def refreshed_prefetch_gpu_step(
+        self, *, source: str = "tool_wait"
+    ) -> PrefetchLoadStep | None:
+        """Revalidate the explicit causal or admission source before native H2D."""
         cache = self._native_cache
-        if hint is None or cache is None:
+        if cache is None:
             return None
-        key = hint.key
+        if source == "tool_wait":
+            hint = self.tool_wait_hint
+            if hint is None:
+                return None
+            key = hint.key
+            valid_source = (
+                hint.predictor_sha256 == self.predictor_sha256
+                and hint.live(key, now_ms=time.monotonic() * 1000)
+            )
+        elif source == "admission":
+            lease = self._admission_lease
+            if lease is None or not self.enable_admission_prefetch:
+                return None
+            key = lease.key
+            hint = self.demand_hints.get(key.request_id)
+            valid_source = (
+                hint is not None
+                and hint.predictor_sha256 == self.predictor_sha256
+                and hint.live(key, now_ms=time.monotonic() * 1000)
+                and time.monotonic() < lease.expires_at
+                and self.visible.get(key.request_id) == key
+            )
+        elif source == "join_wait":
+            hint = self.join_wait_hint
+            if hint is None or not self.enable_admission_prefetch:
+                return None
+            key = hint.key
+            valid_source = self._live_join_hint(hint)
+        else:
+            return None
         invocation = self.graph.invocations.get(key.invocation_id)
+        context = self.graph.contexts.get(key.context_id)
         if (
-            hint.predictor_sha256 != self.predictor_sha256
-            or not hint.live(key, now_ms=time.monotonic() * 1000)
+            not valid_source
             or self.context_sessions.get(key.context_id) != key
+            or context is None
+            or context.epoch != key.context_epoch
+            or context.workflow_id != key.root_workflow_id
             or invocation is None
-            or invocation.state.value != "wait_tool"
+            or invocation.workflow_id != key.root_workflow_id
+            or invocation.context_id != key.context_id
+            or invocation.state.value != (
+                "ready" if source == "admission"
+                else "wait_join" if source == "join_wait"
+                else "wait_tool"
+            )
             or invocation.updated_ts_ms != hint.invocation_revision_ts_ms
             or self._terminal(key)
         ):
@@ -518,14 +719,16 @@ class NativeAdmissionRuntime:
         )
         return next_prefetch_gpu_step(candidate) if candidate is not None else None
 
-    def issue_prefetch_gpu_step(self, step: PrefetchLoadStep) -> str | None:
+    def issue_prefetch_gpu_step(
+        self, step: PrefetchLoadStep, *, source: str = "tool_wait"
+    ) -> str | None:
         """Submit one bounded native H2D; completion requires matching ACK."""
         cache = self._native_cache
         if (
             self.physical_disabled
             or cache is None
             or not isinstance(step, PrefetchLoadStep)
-            or self.refreshed_prefetch_gpu_step() != step
+            or self.refreshed_prefetch_gpu_step(source=source) != step
         ):
             self.counts["prefetch_step_stale"] += 1
             return None
@@ -565,6 +768,90 @@ class NativeAdmissionRuntime:
             raise PhysicalReceiptError("native prefetch issued without a matching reservation")
         self.counts["prefetch_native_issued"] += 1
         return command_id
+
+    def defer_prefill_for_prefetch(self, req: object) -> bool:
+        """Hold at most one READY request in waiting until bounded native H2D ACK.
+
+        This runs after the native slot test but before prefix match or running
+        admission. A failed/expired step falls back to ordinary PrefillAdder.
+        """
+        if not self.enable_admission_prefetch or self.physical_disabled:
+            return False
+        key = _request_key(req)
+        if key is None:
+            return False
+        lease = self._admission_lease
+        if lease is not None and lease.key != key:
+            if (
+                lease.key.request_id != key.request_id
+                and (time.monotonic() < lease.expires_at
+                     or lease.command_id is not None
+                     and self.physical_ledger.is_pending(lease.command_id))
+            ):
+                return False
+            self._admission_lease = None
+            lease = None
+        if (
+            lease is not None
+            and lease.command_id is not None
+            and self.physical_ledger.is_pending(lease.command_id)
+            and not any(
+                action.command_id == lease.command_id and action.action == "PREFETCH_GPU"
+                for action in self.completed_physical_actions
+            )
+        ):
+            self.counts["admission_prefetch_waiting_ack"] += 1
+            return True
+        hint = self.demand_hints.get(key.request_id)
+        invocation = self.graph.invocations.get(key.invocation_id)
+        if (
+            self.visible.get(key.request_id) != key
+            or self.context_sessions.get(key.context_id) != key
+            or key.session_id is None
+            or key.session_generation is None
+            or invocation is None
+            or invocation.state.value != "ready"
+            or hint is None
+            or hint.predictor_sha256 != self.predictor_sha256
+            or not hint.live(key, now_ms=time.monotonic() * 1000)
+            or hint.invocation_revision_ts_ms != invocation.updated_ts_ms
+            or self._terminal(key)
+        ):
+            if lease is not None:
+                self._admission_lease = None
+            return False
+        if lease is None:
+            lease = _AdmissionPrefetchLease(key, time.monotonic() + 2.0)
+            self._admission_lease = lease
+        if lease.command_id is not None:
+            if any(
+                action.command_id == lease.command_id and action.action == "PREFETCH_GPU"
+                for action in self.completed_physical_actions
+            ):
+                lease.command_id = None
+                self.counts["admission_prefetch_acked"] += 1
+            elif not self.physical_ledger.is_pending(lease.command_id):
+                self._admission_lease = None
+                self.counts["admission_prefetch_lost_ack"] += 1
+                return False
+            else:
+                self._admission_lease = None
+                return False
+        if time.monotonic() >= lease.expires_at or lease.issued_nodes >= 2:
+            self._admission_lease = None
+            return False
+        step = self.refreshed_prefetch_gpu_step(source="admission")
+        if step is None:
+            self._admission_lease = None
+            return False
+        command = self.issue_prefetch_gpu_step(step, source="admission")
+        if command is None:
+            self._admission_lease = None
+            return False
+        lease.command_id = command
+        lease.issued_nodes += 1
+        self.counts["admission_prefetch_issued"] += 1
+        return True
 
     def on_native_transfer_commit(self, commit: object) -> None:
         """Observe synchronized native ACKs, never infer completion from enqueue."""

@@ -35,6 +35,7 @@ def validate_admission_artifact(
     *,
     expected_sha256: str,
     model_path: str,
+    require_physical_actions: bool = False,
 ) -> None:
     """Admission demand may only come from a calibrated model for this stack."""
     source = Path(artifact_path).resolve()
@@ -47,6 +48,8 @@ def validate_admission_artifact(
     metadata = raw["metadata"]
     if metadata.get("calibration_status") != "calibrated" or metadata.get("online_eligible") is not True:
         raise ValueError("admission predictor is not calibrated and online eligible")
+    if require_physical_actions and metadata.get("predictive_action_eligible") is not True:
+        raise ValueError("admission-only predictor cannot authorize physical actions")
     model_root = Path(model_path).resolve()
     sources = metadata.get("semantic_source_runtime_environment_contracts")
     if not isinstance(sources, list) or not sources:
@@ -98,6 +101,25 @@ class NativeToolWaitHint:
     expires_monotonic_ms: float
     predictor_sha256: str
     invocation_revision_ts_ms: float | None = None
+
+    def live(self, key: PrefillCandidateKey, *, now_ms: float) -> bool:
+        return self.key == key and self.issued_monotonic_ms <= now_ms < self.expires_monotonic_ms
+
+
+@dataclass(frozen=True)
+class NativeJoinWaitHint:
+    key: PrefillCandidateKey
+    join_id: str
+    join_mode: str
+    member_ids: tuple[str, ...]
+    child_revisions: tuple[tuple[str, float, str, int], ...]
+    wait_p10_ms: float
+    wait_p50_ms: float
+    wait_p90_ms: float
+    issued_monotonic_ms: float
+    expires_monotonic_ms: float
+    predictor_sha256: str
+    invocation_revision_ts_ms: float
 
     def live(self, key: PrefillCandidateKey, *, now_ms: float) -> bool:
         return self.key == key and self.issued_monotonic_ms <= now_ms < self.expires_monotonic_ms

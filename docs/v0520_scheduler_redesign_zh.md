@@ -1,7 +1,27 @@
 # v0.5.20 调度适配边界
 
 状态：2026-09-22，native admission 可显式启用；预测 demand 仅在
-目标模型/运行时匹配的合格 artifact 下参与 admission，物理动作仍关闭。
+目标模型/运行时匹配的合格 artifact 下参与 admission。
+action-eligible artifact 门禁下的 pre-admission H2D lease 已接入
+staging，但现有 artifact 均非 action-eligible，线上物理动作仍关闭。
+
+## JOIN 与 pre-admission 协同
+
+- 工具等待的 H2D source 仍需要同一 `WAIT_TOOL`、context/session 与
+  revision；JOIN source 独立使用 JOIN ID/mode/成员及 child
+  `remaining_to_return_ms`。ALL=max、ANY=min 的边际分位数只是提示，
+  不是联合覆盖保证；child RETURN/JOIN 满足即失效。当前缺 JOIN
+  latest-start 派发器，不能从 JOIN 时间提示推断已经传输了 KV。
+- `--beliefkv-admission-prefetch` 必须与 admission predictor 和
+  action-eligible 的 pinned artifact 同时存在。仅对被选中的 READY
+  session request 启动有界 lease：先核验 native running slot，
+  再抓 action-local CPU-backed node，单 node 原生 H2D 入队；
+  ACK 之前 request 留在 waiting。每笔最多两个 node，失败回归
+  native 准入。`init_next_round_input` 和 `PrefillAdder.add_one_req`
+  仍负责最终 prefix match、FULL/MAMBA 物理门禁和 running 成员资格。
+- 此设计不是把等待 H2D 的 request 直接标为 running；也不是对全部
+  waiting 请求无差别预取。当前没有经 Qwen3.5 校准的动作 artifact，
+  因此线上只执行原本 admission-only，物理收益未验证。
 这不是完整 P6 预测调度。
 目标配置为 Qwen3.5-35B-A3B BF16、单机、统一 FULL/MAMBA tree、HiCache
 cache mode。其他 cache backend、TP/PP、disaggregation 和 speculative

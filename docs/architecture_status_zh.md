@@ -3,7 +3,8 @@
 更新日期：2026-09-22
 当前 P6 物理执行基线：原 Qwen3-Coder/SGLang 0.5.2rc1；
 Qwen3.5/v0.5.20 已有可选 native admission、工具等待预测和
-未启用的单 node PREPARE/H2D 原生事务入口，尚无完整预测物理调度。
+JOIN child-completion 时间提示；单 node PREPARE/H2D 原生事务仍默认关闭，
+尚无完整预测物理调度。
 
 本文只记录当前事实和下一阻塞项，不再追加逐日开发日志。2026-09-12 以前的完整历史保存在
 `docs/archive/snapshots/architecture_status_zh.md`，单次实验细节保存在
@@ -67,13 +68,15 @@ node；回调登记物理账本后才允许入队。明确未入队则撤销预�
 predictive PREPARE 真实执行，更没有提前 PREFETCH 或 COMMIT。
 对称的 `prefetch_gpu_session_node` 原生入口与 runtime
 `issue_prefetch_gpu_step` 已具备单 node H2D 的入队前登记和同步 ACK
-核算：只有当前工具等待的 session 叶闭包才可 root-first 选择
+核算：工具等待、经验证的 JOIN 等待或显式 action-eligible 的
+READY admission session 可各自按身份重验 root-first 选择
 CPU-only FULL/MAMBA node；原生动作重验祖先驻留和 node 创建身份，
 FULL/MAMBA 设备槽不足时不抢占别的 GPU KV。MAMBA-only 和 derived
 sidecar 字节也会计入预期。**scheduler 尚未调用 H2D 入口**，此代码
 没有证明 online predictive H2D、首次服务收益或旧 checkpoint 等价；
-`WAIT_JOIN`、child reentry、动态 latest-start 与真实 deficit 触发的
-COMMIT 仍需迁移。
+JOIN 的子请求完成时间提示已有边际组合，但 child reentry 的
+动态 latest-start、JOIN 自动派发与真实 deficit 触发的 COMMIT
+仍需迁移。
 启动脚本增加显式 `HICACHE_WRITE_POLICY` 与
 `ENABLE_SESSION_RADIX_CACHE`，默认仍保持 write_back/关闭 session；
 即使 opt-in 也不会自动开启 agent session 桥或物理调度。
@@ -141,6 +144,32 @@ ownership certificate，也没有动作 dispatch。提交时部分成功/
 失败、取消、真实 beneficiary deficit 和 ACK/资源释放仍须封装
 并重验；不能打开
 `enable_beliefkv` 或宣称预测性 PREPARE/PREFETCH 可执行。
+
+### JOIN 与准入前 H2D（2026-09-22 增量）
+
+旧的工具等待 H2D 只覆盖 `WAIT_TOOL`；现在预测 worker 可根据
+`JOIN_WAIT` 的未完成 child 的 `remaining_to_return_ms`，按 ALL=max、
+ANY=min 组成 parent 的滚动 JOIN reentry 提示。成员缺失、OOD、训练
+支持缺失时无可执行时间；结果必须匹配 join ID、mode、完整成员集合、
+parent invocation revision、每个 child 的 state/revision/context epoch
+及 parent session generation。child RETURN 或 JOIN 满足立即失效。
+**边际分位数组合不等同于经校准的联合 JOIN 分位数**；目标模型需单独
+校准和验证 JOIN 覆盖率，不能借用工具调用时长。
+`refreshed_prefetch_gpu_step(source="join_wait")` 支持 JOIN parent 的单
+node 本地闭包重验及原生 H2D 事务入口；当前没有 JOIN latest-start
+与搬运服务率校准，也没有 scheduler 自动派发，故不声称在线 JOIN
+预测传输已发生。
+
+对于被 semantic admission 选中的 READY request，原生
+`PrefillAdder` 之前可执行 bounded pre-admission H2D：仅在显式
+`--beliefkv-admission-prefetch`、已校准且
+`predictive_action_eligible=true` 的精确模型 artifact 下启用；
+最多一笔等待 lease、每笔至多两个 node，在 waiting 保留请求，
+native H2D ACK 后再做原生 FULL/MAMBA 准入。无 CPU-backed node、
+提示过期、物理失败或身份变化时回退 native，不占用 running slot；
+该选项默认关闭，现有晋升脚本的 artifact 一律不具备动作资格。
+此处尚未证明能够压低 H2D stall，也未迁移旧 checkpoint 的完整
+JOIN latest-start、COMMIT 和可归因收益链，需后续在线 gate。
 冻结环境中的 `sglang 0.5.20` 目前以 wheel 形式安装，
 `source_is_active=false`；直接运行 `python -m sglang.launch_server`
 默认不会加载 staging checkout。原生启动脚本保留 wheel smoke 默认，

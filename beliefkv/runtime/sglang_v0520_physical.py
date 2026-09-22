@@ -672,6 +672,9 @@ class PhysicalTransactionLedger:
     def pending_count(self) -> int:
         return len(self._pending)
 
+    def is_pending(self, command_id: str) -> bool:
+        return command_id in self._pending
+
     @property
     def pending_context_ids(self) -> tuple[str, ...]:
         return tuple(

@@ -12,11 +12,18 @@ from beliefkv.predictor.structured_frontier import (
     LocalFrontierFeatures,
     WaitBeliefKind,
 )
+from beliefkv.control.causal_graph import InvocationState, JoinMode
+from beliefkv.runtime.sglang_v0520_join_projection import (
+    ChildReturnPrediction,
+    JoinProjectionState,
+    project_join_reentry,
+)
 from beliefkv.runtime.sglang_v0520_admission import PrefillCandidateKey
 from beliefkv.runtime.sglang_v0520_prediction import (
     MAX_OUTPUT_TOKENS,
     MAX_TOOL_WAIT_MS,
     NativeDemandHint,
+    NativeJoinWaitHint,
     NativeToolWaitHint,
 )
 
@@ -95,6 +102,56 @@ def predict_tool_wait_batch(
     return tuple(results)
 
 
+def predict_join_wait_batch(
+    items: tuple[tuple[PrefillCandidateKey, float, str, str, tuple[str, ...],
+                       tuple[str, ...],
+                       tuple[tuple[str, LocalFrontierFeatures, float, int], ...]], ...],
+    *,
+    model: FrontierBeliefModel | None = None,
+) -> tuple[tuple[object, ...], ...]:
+    model = model or _MODEL
+    if model is None:
+        raise RuntimeError("join predictor is not loaded")
+    results = []
+    for key, revision, join_id, mode, members, completed, children in items:
+        try:
+            if (
+                len({item[0] for item in children}) != len(children)
+                or set(members) != set(completed) | {item[0] for item in children}
+                or set(completed) & {item[0] for item in children}
+            ):
+                continue
+            child_predictions = {}
+            for child_id, features, _, _ in children:
+                prediction = model.predict(features)
+                child_predictions[child_id] = ChildReturnPrediction(
+                    child_id,
+                    prediction.remaining_to_return_ms,
+                    prediction.head_support.get("child_completion", "unavailable"),
+                    prediction.calibration_coverage,
+                    InvocationState(features.state),
+                    prediction.ood_reasons,
+                )
+            state = JoinProjectionState(
+                key.root_workflow_id, key.invocation_id, join_id, JoinMode(mode),
+                members, tuple(item[0] for item in children),
+                InvocationState.WAIT_JOIN, False,
+            )
+            hint = project_join_reentry(state, child_predictions)
+        except (ValueError, TypeError):
+            continue
+        if hint.available:
+            results.append((
+                key, revision, join_id, mode, members,
+                tuple(
+                    (child_id, child_revision, features.state, epoch)
+                    for child_id, features, child_revision, epoch in children
+                ),
+                hint.p10_ms, hint.p50_ms, hint.p90_ms,
+            ))
+    return tuple(results)
+
+
 def _worker_main(
     artifact_path: str, input_queue: object, output_queue: object
 ) -> None:
@@ -106,6 +163,9 @@ def _worker_main(
             output_queue.put((sequence, predict_batch(items)))
         else:
             sequence, kind, items = request
+            if kind == "join_wait":
+                output_queue.put((sequence, kind, predict_join_wait_batch(items)))
+                continue
             if kind != "tool_wait":
                 raise ValueError("unknown predictor batch kind")
             output_queue.put((sequence, kind, predict_tool_wait_batch(items)))
@@ -150,6 +210,9 @@ class NativePredictorWorker:
     ) -> None:
         self._submit(items, kind="tool_wait")
 
+    def submit_join_wait(self, items: tuple[tuple[object, ...], ...]) -> None:
+        self._submit(items, kind="join_wait")
+
     def _submit(
         self,
         items: tuple[tuple[PrefillCandidateKey, LocalFrontierFeatures, float], ...],
@@ -163,7 +226,10 @@ class NativePredictorWorker:
         if self._closed:
             raise RuntimeError(f"{kind} predictor worker is closed")
         if items:
-            if kind == "admission" and self._next_kind == "tool_wait":
+            if (
+                kind == "admission" and self._next_kind in ("tool_wait", "join_wait")
+                or kind == "join_wait" and self._next_kind == "tool_wait"
+            ):
                 return
             self._latest_sequence += 1
             self._next = items
@@ -177,8 +243,8 @@ class NativePredictorWorker:
             self._fail()
             return
         try:
-            if self._next_kind == "tool_wait":
-                request = (self._latest_sequence, "tool_wait", self._next)
+            if self._next_kind in ("tool_wait", "join_wait"):
+                request = (self._latest_sequence, self._next_kind, self._next)
             else:
                 request = (self._latest_sequence, self._next)
             self._input_queue.put_nowait(request)
@@ -238,7 +304,9 @@ class NativePredictorWorker:
         # Admission may queue behind an in-flight tool wait without making the
         # still-live tool prediction obsolete. A newer tool wait does supersede it.
         superseded = self._next is not None and (
-            kind == "admission" or self._next_kind == "tool_wait"
+            kind == "admission"
+            or self._next_kind == "tool_wait"
+            or kind == "join_wait" and self._next_kind == "join_wait"
         )
         self._active_sequence = None
         self._active_kind = None
@@ -247,6 +315,15 @@ class NativePredictorWorker:
         if self.disabled or superseded:
             return ()
         issued = time.monotonic() * 1000
+        if kind == "join_wait":
+            return tuple(
+                NativeJoinWaitHint(
+                    key, join_id, mode, members, child_revisions, p10, p50, p90,
+                    issued, issued + 5_000, self.predictor_sha256, revision,
+                )
+                for key, revision, join_id, mode, members, child_revisions,
+                p10, p50, p90 in values
+            )
         if kind == "tool_wait":
             return tuple(
                 NativeToolWaitHint(

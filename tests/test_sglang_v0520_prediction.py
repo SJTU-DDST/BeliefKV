@@ -230,6 +230,11 @@ def test_old_model_or_unapproved_predictor_cannot_enable_admission(tmp_path):
     validate_admission_artifact(
         str(artifact), expected_sha256=SHA, model_path=str(model)
     )
+    with pytest.raises(ValueError, match="admission-only predictor"):
+        validate_admission_artifact(
+            str(artifact), expected_sha256=SHA, model_path=str(model),
+            require_physical_actions=True,
+        )
     with pytest.raises(ValueError, match="SHA-256"):
         validate_admission_artifact(
             str(artifact), expected_sha256="a" * 64, model_path=str(model)
