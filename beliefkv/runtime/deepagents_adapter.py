@@ -31,6 +31,7 @@ from beliefkv.runtime.agent_runtime_adapter import RuntimeEventSink
 from beliefkv.runtime.action_frontier import StructuredActionKind
 from beliefkv.runtime.context_lifecycle import ContextCompactionRecord
 from beliefkv.runtime.sglang_adapter import BeliefKVRequestMetadata
+from beliefkv.runtime.sglang_v0520_sessions import NativeRadixSessionLeases
 
 
 def _digest(value: str, *, length: int = 16) -> str:
@@ -205,6 +206,7 @@ class DeepAgentsRuntimeAdapter(BaseCallbackHandler):
         workspace_digest_provider: (
             Callable[[str, Mapping[str, Any]], str | None] | None
         ) = None,
+        native_radix_sessions: NativeRadixSessionLeases | None = None,
     ) -> None:
         super().__init__()
         if root_metadata.relation_type != RelationType.ROOT.value:
@@ -219,6 +221,7 @@ class DeepAgentsRuntimeAdapter(BaseCallbackHandler):
         self.completion_tool_names = completion_tool_names
         self.allowed_subagent_types = allowed_subagent_types
         self.workspace_digest_provider = workspace_digest_provider
+        self.native_radix_sessions = native_radix_sessions
         self._lock = threading.RLock()
         self._publication_lock = threading.RLock()
         self._sequence = 0
@@ -1388,6 +1391,7 @@ class DeepAgentsRuntimeAdapter(BaseCallbackHandler):
         ):
             with self._publication_lock:
                 self.trace_sink.emit_batch(events)
+            self._retire_native_radix_sessions(events)
             return
         delivery = None
         async_tool_start = False
@@ -1427,12 +1431,25 @@ class DeepAgentsRuntimeAdapter(BaseCallbackHandler):
                     self.control_sink.emit_batch(control_events)
             except Exception as error:
                 self._record_control_delivery_failure(control_events, error)
-                return
         if delivery is not None and not async_tool_start:
             try:
                 delivery.wait()
             except Exception as error:
                 self._record_control_delivery_failure(control_events, error)
+        self._retire_native_radix_sessions(events)
+
+    def _retire_native_radix_sessions(self, events: tuple[RuntimeEvent, ...]) -> None:
+        sessions = self.native_radix_sessions
+        if sessions is None:
+            return
+        for event in events:
+            if (
+                event.kind in {RuntimeEventKind.RETURN, RuntimeEventKind.INVOCATION_CANCEL}
+                and event.context_id is not None
+            ):
+                sessions.retire(event.workflow_id, event.context_id)
+            elif event.kind == RuntimeEventKind.WORKFLOW_END:
+                sessions.retire_workflow(event.workflow_id)
 
     def _record_control_delivery_failure(
         self, events: tuple[RuntimeEvent, ...], error: Exception
@@ -1619,6 +1636,15 @@ class BeliefKVChatOpenAI(ChatOpenAI):
             raise RuntimeError("conflicting rid in ChatOpenAI request")
         extra_body["beliefkv_metadata"] = metadata.to_wire()
         extra_body["rid"] = rid
+        if self._beliefkv_adapter.native_radix_sessions is not None:
+            session_id = self._beliefkv_adapter.native_radix_sessions.for_request(metadata)
+            if session_id is not None:
+                existing_session = extra_body.get("session_id")
+                if existing_session is not None and existing_session != session_id:
+                    raise RuntimeError("conflicting native session_id in ChatOpenAI request")
+                extra_body["session_id"] = session_id
+            elif extra_body.get("session_id") is not None:
+                raise RuntimeError("unmanaged native session_id in ChatOpenAI request")
         request_kwargs = {**kwargs, "extra_body": extra_body}
         if effective_timeout_s is not None:
             request_kwargs["timeout"] = effective_timeout_s

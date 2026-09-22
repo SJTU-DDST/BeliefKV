@@ -17,7 +17,11 @@ cache mode。其他 cache backend、TP/PP、disaggregation 和 speculative
   原生驱逐会优先保留这些节点，但这是软优先级而不是 pin。
   必须明确传递 session ID、处理 session generation，并在 context
   结束时关闭 session，否则既不能保证工具等待期保活，又可能造成 Host 污染。
-  当前 agent 客户端还没有完成这条生命周期接线。
+  agent 客户端现有显式 opt-in 的 context/epoch session 桥：工具等待期
+  复用同一 session，RETURN/CANCEL 关闭，WORKFLOW_END 清理遗漏 child，
+  epoch 变化先关闭旧引用；默认没有接入实验 runner，不能用它宣称
+  工具 KV 已在新环境保活。关闭接口同步调用原生 `/close_session`，
+  失败保留可重试引用，不隐式继续使用过期 session。
 - v0.5.20 **没有**根据 agent 的 `TOOL_START/RETURN` 自动保活或恢复 KV。
   已有 `_prefetch_kvcache` 只针对 storage -> Host；`init_load_back`
   在请求准入时从 Host -> GPU。二者都不等于 BeliefKV 预测的、请求
@@ -71,6 +75,11 @@ cache mode。其他 cache backend、TP/PP、disaggregation 和 speculative
 3. 等动作级 D2H/H2D 和 native ACK 双向对账通过后，再开放预测性
    PREPARE/PREFETCH。只有真实 beneficiary deficit 才能授权 COMMIT；
    SELECTIVE RETRACTION 需另行验证 overlap drain/TP 一致性。
+   原生 `CacheOperation.merge_ops` 会把多笔请求合成一个 ACK，只有
+   node ID 和聚合 pool bytes；H2D `load()` 成功只是排队，不代表已提交
+   或 DMA 完成。下一步为每个原始子操作保留 command ID、方向、FULL/
+   MAMBA bytes 与提交状态，并在 tree finish 后逐笔对账。split 产生
+   的新 node ID 是受影响范围，不是新的 command。
 
 安全点顺序固定为 native chunk abort -> HiCache ACK 排空 ->
 BeliefKV 状态同步/决策 -> native prefill admission -> GPU batch。

@@ -42,8 +42,15 @@ tree 不支持该观察路径。节点快照没有原子 generation 或可转移
 **没有**与 agent TOOL 生命周期集成的自动 KV 保活，亦没有提前
 Host -> GPU 的预测式恢复。原生 storage prefetch 为 storage -> Host，
 原生 H2D load-back 在请求准入时发生。BeliefKV 仍须实现工具事件
-到 session 关闭的生命周期、action-local 物理动作及 ACK 对账；
+到物理动作及 ACK 的完整对账；
 具体边界见 `docs/v0520_scheduler_redesign_zh.md`。
+现已加入显式 opt-in 的 agent-native-session 生命周期桥：根据 workflow/
+context/epoch 生成隔离的 session ID，在 RETURN/CANCEL、WORKFLOW_END
+和 epoch 更新时调用原生 `/close_session`；关闭失败不会忘记引用，
+后续可以重试。默认 runner 未启用该桥，且原生 session 引用不保证
+工具等待期间绝对保活，不能代替预测式 H2D。原生合并 ACK 缺少
+per-command ID/bytes；即使 `load()` 返回成功，H2D 也可能尚未提交
+到 DMA，因此预测动作保持 fail closed。
 2026-09-22 在 H200 上以安装的 v0.5.20 wheel、Qwen3.5-35B-A3B BF16
 完成不带 HiCache 及启用 4 GiB HiCache 两组原生
 chat -> tool call -> tool result 续写 smoke；后者确认挂载了 KV + MAMBA

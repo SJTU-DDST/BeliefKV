@@ -35,6 +35,91 @@ from beliefkv.runtime.context_lifecycle import (
 )
 from beliefkv.runtime.event_channel import QueuedRuntimeEventSink
 from beliefkv.runtime.sglang_adapter import BeliefKVRequestMetadata
+from beliefkv.runtime.sglang_v0520_sessions import NativeRadixSessionLeases
+
+
+def test_native_session_follows_context_not_tool_and_retires_on_return() -> None:
+    closed = []
+    sessions = NativeRadixSessionLeases(closed.append)
+    sink = CollectingSink()
+    root = BeliefKVRequestMetadata(
+        "wf", "root", "ctx", 0, full_prompt_replay_guaranteed=True
+    )
+    adapter = DeepAgentsRuntimeAdapter(
+        sink, root, native_radix_sessions=sessions
+    )
+    adapter.start()
+    model_run_id = uuid4()
+    adapter.on_chat_model_start(
+        {}, [[HumanMessage(content="inspect")]], run_id=model_run_id
+    )
+    client = BeliefKVChatOpenAI(
+        beliefkv_adapter=adapter,
+        model="test-model",
+        base_url="http://127.0.0.1:30000/v1",
+        api_key="EMPTY",
+        max_retries=0,
+    )
+    first, _ = client._with_beliefkv_runtime(
+        SimpleNamespace(run_id=model_run_id), {}
+    )
+    session_id = first["extra_body"]["session_id"]
+    assert client._with_beliefkv_runtime(
+        SimpleNamespace(run_id=model_run_id), {}
+    )[0]["extra_body"]["session_id"] == session_id
+    assert closed == []
+    with pytest.raises(RuntimeError, match="conflicting native session_id"):
+        client._with_beliefkv_runtime(
+            SimpleNamespace(run_id=model_run_id),
+            {"extra_body": {"session_id": "foreign"}},
+        )
+    child_metadata = BeliefKVRequestMetadata(
+        "wf", "child", "child-ctx", 0, full_prompt_replay_guaranteed=True
+    )
+    child_session = sessions.for_request(child_metadata)
+    assert child_session != session_id
+    adapter.finish(outcome="completed")
+    adapter.finish(outcome="completed")
+    assert set(closed) == {session_id, child_session}
+
+
+def test_native_session_closes_child_at_return_but_keeps_parent_during_tool() -> None:
+    closed = []
+    sessions = NativeRadixSessionLeases(closed.append)
+    root = BeliefKVRequestMetadata(
+        "wf", "root", "ctx", 0, full_prompt_replay_guaranteed=True
+    )
+    adapter = DeepAgentsRuntimeAdapter(
+        CollectingSink(), root, native_radix_sessions=sessions
+    )
+    adapter.start()
+    parent_session = sessions.for_request(root)
+    child_task = adapter.declare_runtime_tasks([("explorer", "Inspect")])[0]
+    child_session = sessions.for_request(
+        BeliefKVRequestMetadata(
+            "wf",
+            child_task.invocation_id,
+            child_task.context_id,
+            0,
+            full_prompt_replay_guaranteed=True,
+        )
+    )
+    adapter._publish(
+        (
+            adapter._event(
+                RuntimeEventKind.TOOL_START,
+                invocation_id="root",
+                context_id="ctx",
+            ),
+        ),
+        control=True,
+    )
+    assert closed == []
+    adapter.complete_runtime_task(child_task)
+    assert closed == [child_session]
+    assert sessions.for_request(root) == parent_session
+    adapter.finish(outcome="completed")
+    assert closed == [child_session, parent_session]
 
 
 class CollectingSink:
