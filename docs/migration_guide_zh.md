@@ -23,14 +23,21 @@ SGLang 0.5.20 固定的 `openai==2.6.1`；不要用旧 `agents` extra 覆盖
 `agents-next`。
 
 `patches/sglang-v0.5.20-beliefkv-staging.patch` 是针对固定上游 commit 的
-**部分**补丁。它能传递 request metadata 并建立 safe-point hook 骨架；
-启用 BeliefKV 会明确失败，因为 unified FULL/MAMBA 的 ownership、
-物理 D2H/H2D、ACK、admission 和 selective retraction 尚未适配。
+**部分**补丁。它传递 request metadata，建立 scheduler 生命周期和
+safe-point hook，并为 cache-mode 原生传输完成加入可选只读通知；
+启用 BeliefKV 会明确失败，因为 unified FULL/MAMBA 的完整 ownership、
+物理 D2H/H2D 动作、ACK 对账、admission 和 selective retraction
+尚未适配。
 `third_party/sglang-v0.5.20` 是被忽略的 checkout，迁移到新机器时在
 同一上游 commit 上执行 `git apply patches/sglang-v0.5.20-beliefkv-staging.patch`
 （命令工作目录为 checkout，补丁路径应为主仓库的绝对路径）。原生 smoke
 使用安装在 `beliefkv-next` 中的官方 wheel；验证补丁时需将 checkout 的
 `python/` 显式放在 `PYTHONPATH` 前面。不能把两条执行路径混为一谈。
+GPU 空闲后可先运行 `scripts/launch_qwen35_native_v0520.sh`（必要时设置
+`HICACHE_SIZE_GB`），等服务就绪后在另一终端运行
+`conda run -n beliefkv-next python scripts/smoke_qwen35_native_v0520.py`。
+该 smoke 检查原生对话、工具调用解析和工具结果后续写；不检查
+BeliefKV 的 D2H/H2D、allocator ownership 或 predictive 调度。
 
 目标模型 BF16 full-attention KV 为 20,480 B/token，另有 30 层 linear
 attention 状态。此数字不是完整的 GPU/Host 物理工作集大小。详细 hook

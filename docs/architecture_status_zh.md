@@ -13,9 +13,11 @@
 清单。目标是 Qwen3.5-35B-A3B BF16 + SGLang v0.5.20，agent、SGLang、
 BeliefKV 与实验工具安装在同一个 `beliefkv-next` conda 环境。
 模型文件哈希和新环境包版本见 `configs/migration/`。新版 checkout 的
-request metadata/scheduler 早期 hook 已导出为
+request metadata、scheduler 生命周期及 cache-mode 原生 ACK 观察 hook
+已导出为
 `patches/sglang-v0.5.20-beliefkv-staging.patch`，但 unified FULL/MAMBA
-物理状态、传输 ACK 和调度准入尚未迁移，启用 BeliefKV 会 fail closed。
+完整物理 ownership、动作 ACK 对账和调度准入尚未迁移，启用 BeliefKV
+会 fail closed。
 **下文所有 P5/P6 在线能力与旧实验结果仍仅指旧模型/旧 SGLang 合同**。
 新模型原生服务或通过的 metadata 单元测试均不能视为预测式 KV 调度已迁移；
 更换模型后还需新 baseline、容量和服务率标定，不能与旧模型吞吐直接比较。

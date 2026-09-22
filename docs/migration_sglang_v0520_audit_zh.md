@@ -56,9 +56,13 @@ BeliefKV 闭环；不是只把 HTTP 请求送到调度器，也不等于生产�
 | 5. 原子物理动作和 ACK | 在 unified FULL 的有界 node closure 上实现可校验的 D2H、H2D、drop/cancel，复用 controller 的 pool transfer/ack，记录每 pool 的 bytes、node generation、来源；host/device 分配失败回滚；只在 native ACK 后提交 page 状态。不要绕开原生分配器/lock receipt。 | `mem_cache/unified_radix_cache.py`, `mem_cache/hybrid_cache/hybrid_cache_controller.py`, `mem_cache/hybrid_cache/hybrid_pool_assembler.py`; 本仓库 `beliefkv/runtime/sglang_v052rc1.py` backend |
 | 6. selective running retraction | 仅在 overlap pipeline 排空并对结果达成各 rank 一致后，提供可选的“选定 req 集合”释放/重排；释放必须走新版 `release_req`/`release_kv_cache` 和 `Req.reset_for_retract`，保护 shared/full pages 和 request slot；若不能保证屏障，**关闭此能力且禁止声称 dynamic-running 等价**。 | `managers/scheduler.py::get_next_batch_to_run`/`event_loop_overlap`/`update_running_batch`; `managers/schedule_batch.py::ScheduleBatch` |
 
-当前 staging 补丁仅完成组 1 的 request metadata 传递和组 2 的部分
-scheduler hook；启用 BeliefKV 时明确抛错。13 项新 checkout 定向测试通过，
-**不能**据此声称任何 BeliefKV physical KV 操作、admission 或预测调度已迁移。
+当前 staging 补丁完成组 1 的 request metadata 传递、组 2 的部分
+scheduler hook 和 tagged request 生命周期回调，以及 unified cache
+在 cache-mode 原生 D2H/H2D ACK 提交后的可选只读通知。buffer-only
+路径没有可用的相同 post-commit 边界；该通知对合并 ACK 只能报告整体
+pool 数量，不能把字节拆分归因给单个 node。启用 BeliefKV 时仍明确抛错。
+30 项新 checkout 定向测试通过，**不能**据此声称 BeliefKV physical KV
+操作、admission、动作 ACK 对账或预测调度已迁移。
 本仓库的 `beliefkv/runtime/sglang_v0520_observer.py` 另提供 FULL-token、
 MAMBA-slot 和 Host pool 的**只读静态容量上限和占用计数**；两个 device 子池
 共享同一字节 buffer，所报上限不能相加。它不估计可立即调度的空闲字节

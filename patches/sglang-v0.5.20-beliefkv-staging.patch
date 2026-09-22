@@ -108,10 +108,10 @@ index 7811e44..9630078 100755
          self.session_generation: Optional[int] = None
          self.input_embeds = input_embeds
 diff --git a/python/sglang/srt/managers/scheduler.py b/python/sglang/srt/managers/scheduler.py
-index 743c8af..0f3a143 100644
+index 743c8af..027ee02 100644
 --- a/python/sglang/srt/managers/scheduler.py
 +++ b/python/sglang/srt/managers/scheduler.py
-@@ -725,9 +725,28 @@ class Scheduler(
+@@ -725,9 +725,29 @@ class Scheduler(
  
          self.init_rank_consensus_checker()
  
@@ -122,6 +122,7 @@ index 743c8af..0f3a143 100644
  
 +    def init_beliefkv_runtime(self) -> None:
 +        self.beliefkv_runtime = None
++        self._beliefkv_registered_request_ids = set()
 +        self._beliefkv_retraction_drain_pending = False
 +        if not getattr(self.server_args, "enable_beliefkv", False):
 +            return
@@ -140,7 +141,7 @@ index 743c8af..0f3a143 100644
      def init_startup_timing_begin(self) -> None:
          self.scheduler_startup_begin = time.perf_counter()
  
-@@ -2789,6 +2808,7 @@ class Scheduler(
+@@ -2789,6 +2809,7 @@ class Scheduler(
                  dllm_config=self.dllm_config,
                  time_stats=recv_req.time_stats,
                  multi_item_delimiter_indices=recv_req.multi_item_delimiter_indices,
@@ -148,7 +149,47 @@ index 743c8af..0f3a143 100644
              )
              req.tokenizer = self.tokenizer
  
-@@ -3558,10 +3578,66 @@ class Scheduler(
+@@ -3190,6 +3211,21 @@ class Scheduler(
+         self._retry_storage_prefetch(req)
+         return True
+ 
++    def _beliefkv_on_enqueue(self, req: Req, *, is_retracted: bool) -> bool:
++        runtime = getattr(self, "beliefkv_runtime", None)
++        if runtime is None or getattr(req, "beliefkv_metadata", None) is None:
++            return True
++        if req.rid in self._beliefkv_registered_request_ids:
++            if is_retracted:
++                runtime.on_requests_requeued([req], is_retracted=True)
++            return True
++        if req.finished():
++            return True
++        if runtime.register_visible_request(req) is False:
++            return False
++        self._beliefkv_registered_request_ids.add(req.rid)
++        return True
++
+     def _add_request_to_queue(self, req: Req, is_retracted: bool = False):
+         if not self._set_or_validate_priority(req):
+             return
+@@ -3200,6 +3236,9 @@ class Scheduler(
+         if self.disaggregation_mode == DisaggregationMode.NULL:
+             if self._abort_on_queued_limit(req):
+                 return
++        if not self._beliefkv_on_enqueue(req, is_retracted=is_retracted):
++            return
++        if self.disaggregation_mode == DisaggregationMode.NULL:
+             self._prefetch_kvcache(req)
+             self.waiting_queue.append(req)
+             req.time_stats.set_wait_queue_entry_time()
+@@ -3281,6 +3320,7 @@ class Scheduler(
+                 direction * recv_req.priority < direction * candidate_req.priority
+             )
+             if abort_existing_req:
++                self._beliefkv_on_abort(AbortReq(rid=candidate_req.rid), exact=True)
+                 self._release_aborted_request(candidate_req)
+                 self.waiting_queue.pop(idx)
+                 self.beam_coordinator.retire_group(candidate_req)
+@@ -3558,10 +3598,66 @@ class Scheduler(
              if self.enable_hicache_storage:
                  self._process_storage_prefetch_retries()
  
@@ -215,7 +256,7 @@ index 743c8af..0f3a143 100644
          self.process_pending_chunked_abort()
          self._process_hicache_events()
  
-@@ -3647,6 +3723,9 @@ class Scheduler(
+@@ -3647,6 +3743,9 @@ class Scheduler(
              if running_batch.is_empty():
                  running_batch.batch_is_full = False
  
@@ -225,7 +266,7 @@ index 743c8af..0f3a143 100644
          if self.dllm_config is not None:
              new_batch = self.get_new_batch_dllm(running_batch)
          elif self._should_defer_prefill():
-@@ -3705,6 +3784,8 @@ class Scheduler(
+@@ -3705,6 +3804,8 @@ class Scheduler(
              if self.enable_fpm:
                  ret.fpm_start_time = self._fpm_batch_t0
  
@@ -234,6 +275,68 @@ index 743c8af..0f3a143 100644
          return NextBatchPlan(batch_to_run=ret, running_batch=running_batch)
  
      def get_num_allocatable_reqs(
+@@ -4622,6 +4723,7 @@ class Scheduler(
+         elif batch.forward_mode.is_idle():
+             self.batch_result_processor.process_batch_result_idle(batch, result)
+ 
++        self._beliefkv_on_batch_completed(batch)
+         self._record_step_counters(batch, result)
+ 
+         self.metrics_reporter.log_batch_result_stats(batch, result)
+@@ -4634,6 +4736,19 @@ class Scheduler(
+         self.maybe_send_health_check_signal()
+         self.metrics_reporter.update_device_timer()
+ 
++    def _beliefkv_on_batch_completed(self, batch: ScheduleBatch) -> None:
++        runtime = getattr(self, "beliefkv_runtime", None)
++        if runtime is None:
++            return
++        # The service observer records a descriptor for every selected batch,
++        # including untagged batches. Always pair it with a completion callback.
++        runtime.on_batch_completed(batch)
++        self._beliefkv_registered_request_ids.difference_update(
++            req.rid
++            for req in batch.reqs
++            if req.rid in self._beliefkv_registered_request_ids and req.finished()
++        )
++
+     def _record_step_counters(
+         self, batch: ScheduleBatch, result: GenerationBatchResult
+     ) -> None:
+@@ -5215,6 +5330,7 @@ class Scheduler(
+         }
+ 
+     def abort_request(self, recv_req: AbortReq):
++        self._beliefkv_on_abort(recv_req)
+         if (chunked_req := self.chunked_req) is not None:
+             if recv_req.abort_all or chunked_req.rid.startswith(recv_req.rid):
+                 self._pending_chunked_abort_req = chunked_req
+@@ -5369,6 +5485,25 @@ class Scheduler(
+                 else:
+                     req.to_finish = FINISH_ABORT()
+ 
++    def _beliefkv_on_abort(self, recv_req: AbortReq, *, exact: bool = False) -> None:
++        runtime = getattr(self, "beliefkv_runtime", None)
++        if runtime is None or not self._beliefkv_registered_request_ids:
++            return
++        if exact and recv_req.rid not in self._beliefkv_registered_request_ids:
++            return
++        matched = {
++            rid
++            for rid in self._beliefkv_registered_request_ids
++            if recv_req.abort_all or rid.startswith(recv_req.rid)
++        }
++        if matched:
++            if exact and matched != {recv_req.rid}:
++                raise RuntimeError(
++                    "BeliefKV queue eviction cannot abort an ambiguous request prefix"
++                )
++            runtime.on_abort_request(recv_req)
++            self._beliefkv_registered_request_ids.difference_update(matched)
++
+     def _pause_engine(self) -> Tuple[List[Req], int]:
+         raise NotImplementedError()
+ 
 diff --git a/python/sglang/srt/managers/tokenizer_manager.py b/python/sglang/srt/managers/tokenizer_manager.py
 index 1b63fb6..07ab19d 100644
 --- a/python/sglang/srt/managers/tokenizer_manager.py
@@ -246,6 +349,152 @@ index 1b63fb6..07ab19d 100644
                  custom_logit_processor=obj.custom_logit_processor,
                  require_reasoning=obj.require_reasoning,
                  return_hidden_states=obj.return_hidden_states,
+diff --git a/python/sglang/srt/mem_cache/unified_radix_cache.py b/python/sglang/srt/mem_cache/unified_radix_cache.py
+index d417d7d..aeb1730 100644
+--- a/python/sglang/srt/mem_cache/unified_radix_cache.py
++++ b/python/sglang/srt/mem_cache/unified_radix_cache.py
+@@ -6,7 +6,7 @@ import threading
+ import time
+ from dataclasses import replace
+ from queue import Queue
+-from typing import TYPE_CHECKING, Iterator, NamedTuple, Optional, Sequence, TypeVar
++from typing import TYPE_CHECKING, Callable, Iterator, NamedTuple, Optional, Sequence, TypeVar
+ 
+ import torch
+ 
+@@ -158,6 +158,17 @@ class _OngoingPrefetch(NamedTuple):
+     comp_xfers: dict[ComponentType, list[PoolTransfer]]
+ 
+ 
++class HiCacheTransferCommit(NamedTuple):
++    """Completed cache-mode ACK. Pool totals cover the whole merged ACK, not
++    individual nodes; a split may add node IDs after the transfer was issued.
++    """
++
++    direction: str  # "d2h" or "h2d"
++    node_ids: tuple[NodeId, ...]
++    num_tokens_by_pool: tuple[tuple[str, int], ...]
++    status: str  # "completed" means synchronized and committed; ACK has no failure field.
++
++
+ class UnifiedRadixCache(BasePrefixCache):
+     def __init__(
+         self,
+@@ -260,6 +271,11 @@ class UnifiedRadixCache(BasePrefixCache):
+ 
+         # HiCache D↔H defaults (overridden by init_hicache)
+         self.cache_controller: Optional[HybridCacheController] = None
++        # Optional observer of native cache-mode D2H/H2D ACK commits.
++        # Observers must not mutate the cache or initiate transfers.
++        self.on_hicache_transfer_commit: Optional[
++            Callable[[HiCacheTransferCommit], None]
++        ] = None
+         self.host_pool_group = None  # set by attach_hybrid_pool_to_unified_cache
+         # Owns the storage backend lifecycle; built by init_hicache.
+         self._storage_attachment: Optional[StorageAttachment] = None
+@@ -1627,10 +1643,10 @@ class UnifiedRadixCache(BasePrefixCache):
+             updated_node_ids,
+         )
+ 
+-    def _finish_write_through_ack(self, ack_id: int) -> None:
++    def _finish_write_through_ack(self, ack_id: int) -> list[NodeId]:
+         if self.buffer_pipeline is not None:
+             self.buffer_pipeline.finish_backup_ack(ack_id)
+-            return
++            return []
+ 
+         lock_node_id, lock_params, publish_node_ids = self.ongoing_write_through.pop(
+             ack_id
+@@ -1643,6 +1659,7 @@ class UnifiedRadixCache(BasePrefixCache):
+             # suffix; the prefix fragment must be persisted as well.
+             for node_id in publish_node_ids:
+                 self.write_backup_storage(node_id)
++        return publish_node_ids
+ 
+     def load_back(
+         self,
+@@ -3130,10 +3147,16 @@ class UnifiedRadixCache(BasePrefixCache):
+             while self.ongoing_write_through:
+                 for ack in cc.ack_write_queue:
+                     ack.finish_event.synchronize()
++                    committed_ids = []
++                    committed_acks = 0
+                     for ack_id in ack.node_ids:
+                         if ack_id in self.ongoing_write_through:
+-                            self._finish_write_through_ack(ack_id)
++                            committed_ids.extend(self._finish_write_through_ack(ack_id))
++                            committed_acks += 1
+                     self._log_write_ack_metrics(ack)
++                    self._emit_hicache_transfer_commit(
++                        "d2h", ack, committed_ids, committed_acks == len(ack.node_ids)
++                    )
+                 cc.ack_write_queue.clear()
+                 assert len(self.ongoing_write_through) == 0
+             return
+@@ -3154,11 +3177,36 @@ class UnifiedRadixCache(BasePrefixCache):
+         while finish_count > 0:
+             ack = cc.ack_write_queue.pop(0)
+             ack.finish_event.synchronize()
++            committed_ids = []
+             for ack_id in ack.node_ids:
+-                self._finish_write_through_ack(ack_id)
++                committed_ids.extend(self._finish_write_through_ack(ack_id))
+             self._log_write_ack_metrics(ack)
++            self._emit_hicache_transfer_commit("d2h", ack, committed_ids)
+             finish_count -= 1
+ 
++    def _emit_hicache_transfer_commit(
++        self,
++        direction: str,
++        ack: HiCacheAck,
++        committed_ids: list[NodeId],
++        full_ack: bool = True,
++    ) -> None:
++        callback = self.on_hicache_transfer_commit
++        if callback is None or not committed_ids:
++            return
++        # Merged ACK pool counts cannot be attributed to a subset of its nodes.
++        pool_counts = ack.num_tokens_by_pool if full_ack else {}
++        event = HiCacheTransferCommit(
++            direction=direction,
++            node_ids=tuple(committed_ids),
++            num_tokens_by_pool=tuple(sorted((pool_counts or {}).items())),
++            status="completed",
++        )
++        try:
++            callback(event)
++        except Exception:
++            logger.exception("HiCache transfer commit observer failed")
++
+     def _log_write_ack_metrics(self, ack: HiCacheAck) -> None:
+         """Record D->H backup volume and duration for a completed write ack."""
+         if self.metrics_collector is None:
+@@ -3200,6 +3248,7 @@ class UnifiedRadixCache(BasePrefixCache):
+         while finish_count > 0:
+             ack = cc.ack_load_queue.pop(0)
+             ack.finish_event.synchronize()
++            committed_ids = []
+             for ack_id in ack.node_ids:
+                 if (
+                     self.buffer_pipeline is not None
+@@ -3211,6 +3260,7 @@ class UnifiedRadixCache(BasePrefixCache):
+                 self.dec_host_lock_ref(node, host_lock_params)
+                 # Unpin the loaded nodes; host copies stay as reclaimable duplicates.
+                 self.tree_core.finish_load_back(node)
++                committed_ids.append(ack_id)
+ 
+             if self.metrics_collector is not None:
+                 for pool, num_tokens in (ack.num_tokens_by_pool or {}).items():
+@@ -3225,6 +3275,9 @@ class UnifiedRadixCache(BasePrefixCache):
+                     self.metrics_collector.observe_load_back_duration(
+                         duration_ms / 1000.0
+                     )
++            self._emit_hicache_transfer_commit(
++                "h2d", ack, committed_ids, len(committed_ids) == len(ack.node_ids)
++            )
+             finish_count -= 1
+ 
+     # ---- HiCache: Scheduler Entry Points ----
 diff --git a/python/sglang/srt/session/session_controller.py b/python/sglang/srt/session/session_controller.py
 index c23c965..73ad611 100644
 --- a/python/sglang/srt/session/session_controller.py
@@ -258,6 +507,281 @@ index c23c965..73ad611 100644
              return_sampling_mask=req.return_sampling_mask,
              vocab_size=vocab_size,
              eos_token_ids=eos_token_ids,
+diff --git a/test/srt/test_beliefkv_lifecycle.py b/test/srt/test_beliefkv_lifecycle.py
+new file mode 100644
+index 0000000..88dff8c
+--- /dev/null
++++ b/test/srt/test_beliefkv_lifecycle.py
+@@ -0,0 +1,269 @@
++"""CPU-only contract tests for optional scheduler request lifecycle hooks."""
++
++import ast
++import unittest
++from pathlib import Path
++from types import SimpleNamespace
++from unittest.mock import Mock
++
++
++SCHEDULER = (
++    Path(__file__).resolve().parents[2] / "python/sglang/srt/managers/scheduler.py"
++)
++
++
++def load_lifecycle():
++    tree = ast.parse(SCHEDULER.read_text(encoding="utf-8"))
++    scheduler = next(
++        node
++        for node in tree.body
++        if isinstance(node, ast.ClassDef) and node.name == "Scheduler"
++    )
++    names = {
++        "init_beliefkv_runtime",
++        "_beliefkv_on_enqueue",
++        "_add_request_to_queue",
++        "_abort_on_queued_limit",
++        "_beliefkv_on_abort",
++        "_beliefkv_on_batch_completed",
++    }
++    methods = [
++        node
++        for node in scheduler.body
++        if isinstance(node, ast.FunctionDef) and node.name in names
++    ]
++    module = ast.Module(
++        body=[
++            ast.ImportFrom(
++                module="__future__",
++                names=[ast.alias(name="annotations")],
++                level=0,
++            ),
++            ast.ClassDef(
++                name="Lifecycle",
++                bases=[],
++                keywords=[],
++                body=methods,
++                decorator_list=[],
++            ),
++        ],
++        type_ignores=[],
++    )
++    ast.fix_missing_locations(module)
++    namespace = {
++        "DisaggregationMode": SimpleNamespace(NULL="null", PREFILL="prefill", DECODE="decode"),
++        "AbortReq": lambda *, rid: SimpleNamespace(rid=rid, abort_all=False),
++        "HTTPStatus": SimpleNamespace(SERVICE_UNAVAILABLE=503),
++        "_make_abort_req": lambda req, **kwargs: (req, kwargs),
++    }
++    exec(compile(module, str(SCHEDULER), "exec"), namespace)
++    return namespace["Lifecycle"], scheduler
++
++
++Lifecycle, SCHEDULER_AST = load_lifecycle()
++
++
++def scheduler_fixture(runtime):
++    scheduler = Lifecycle()
++    scheduler.server_args = SimpleNamespace(enable_beliefkv=False)
++    scheduler.init_beliefkv_runtime()
++    scheduler.beliefkv_runtime = runtime
++    scheduler.disaggregation_mode = "null"
++    scheduler.waiting_queue = []
++    scheduler._set_or_validate_priority = Mock(return_value=True)
++    scheduler._abort_on_queued_limit = Mock(return_value=False)
++    scheduler._prefetch_kvcache = Mock()
++    scheduler.processed_tokens_counter = 0
++    return scheduler
++
++
++def request(rid, metadata=None, *, finished=False):
++    req = SimpleNamespace(
++        rid=rid,
++        beliefkv_metadata=metadata,
++        time_stats=SimpleNamespace(set_wait_queue_entry_time=Mock()),
++        storage_prefetch_retry_attempts=0,
++        storage_prefetch_last_match_len=None,
++        staged_prefetch_plan=None,
++    )
++    req.finished = lambda: finished
++    return req
++
++
++class TestBeliefKVLifecycle(unittest.TestCase):
++    def test_enqueue_preserves_metadata_identity_and_registers_once(self):
++        runtime = Mock()
++        runtime.register_visible_request.return_value = True
++        scheduler = scheduler_fixture(runtime)
++        metadata = {"turn_id": "first"}
++        req = request("tagged", metadata)
++
++        scheduler._add_request_to_queue(req)
++        self.assertIs(scheduler.waiting_queue[0], req)
++        self.assertIs(req.beliefkv_metadata, metadata)
++        self.assertIs(runtime.register_visible_request.call_args.args[0], req)
++
++        scheduler._add_request_to_queue(req, is_retracted=True)
++        runtime.register_visible_request.assert_called_once_with(req)
++        runtime.on_requests_requeued.assert_called_once_with(
++            [req], is_retracted=True
++        )
++        self.assertIs(runtime.on_requests_requeued.call_args.args[0][0], req)
++
++    def test_rejection_and_queue_limit_do_not_enqueue(self):
++        runtime = Mock()
++        runtime.register_visible_request.return_value = False
++        scheduler = scheduler_fixture(runtime)
++        req = request("rejected", {"turn_id": "rejected"})
++        scheduler._add_request_to_queue(req)
++        self.assertEqual(scheduler.waiting_queue, [])
++        scheduler._prefetch_kvcache.assert_not_called()
++        self.assertEqual(scheduler._beliefkv_registered_request_ids, set())
++
++        scheduler._abort_on_queued_limit.return_value = True
++        scheduler._add_request_to_queue(request("full", {"turn_id": "full"}))
++        runtime.register_visible_request.assert_called_once_with(req)
++
++    def test_untagged_and_disabled_do_not_call_runtime(self):
++        runtime = Mock()
++        scheduler = scheduler_fixture(runtime)
++        plain = request("plain")
++        scheduler._add_request_to_queue(plain)
++        scheduler._beliefkv_on_abort(SimpleNamespace(rid="plain", abort_all=False))
++        plain_batch = SimpleNamespace(reqs=[plain])
++        scheduler._beliefkv_on_batch_completed(plain_batch)
++        runtime.on_batch_completed.assert_called_once_with(plain_batch)
++        runtime.register_visible_request.assert_not_called()
++        runtime.on_abort_request.assert_not_called()
++
++        scheduler.beliefkv_runtime = None
++        tagged = request("tagged", {"turn_id": "tagged"})
++        scheduler._add_request_to_queue(tagged)
++        scheduler._beliefkv_on_abort(SimpleNamespace(rid="", abort_all=True))
++        scheduler._beliefkv_on_batch_completed(SimpleNamespace(reqs=[tagged]))
++        self.assertEqual(scheduler.waiting_queue, [plain, tagged])
++        runtime.on_batch_completed.assert_called_once_with(plain_batch)
++
++    def test_abort_matches_prefix_once_and_abort_all_clears_rest(self):
++        runtime = Mock()
++        runtime.register_visible_request.return_value = True
++        scheduler = scheduler_fixture(runtime)
++        for rid in ("child-1", "child-2", "other"):
++            scheduler._add_request_to_queue(request(rid, {"turn_id": rid}))
++        abort = SimpleNamespace(rid="child-", abort_all=False)
++        scheduler._beliefkv_on_abort(abort)
++        scheduler._beliefkv_on_abort(abort)
++        runtime.on_abort_request.assert_called_once_with(abort)
++        self.assertEqual(scheduler._beliefkv_registered_request_ids, {"other"})
++
++        all_abort = SimpleNamespace(rid="", abort_all=True)
++        scheduler._beliefkv_on_abort(all_abort)
++        scheduler._beliefkv_on_abort(all_abort)
++        self.assertEqual(runtime.on_abort_request.call_count, 2)
++        self.assertIs(runtime.on_abort_request.call_args.args[0], all_abort)
++        self.assertEqual(scheduler._beliefkv_registered_request_ids, set())
++
++    def test_priority_eviction_clears_tracked_request(self):
++        runtime = Mock()
++        runtime.register_visible_request.return_value = True
++        scheduler = scheduler_fixture(runtime)
++        candidate = request("evicted", {"turn_id": "old"})
++        candidate.priority = 5
++        candidate.time_stats.wait_queue_entry_time = 1
++        candidate.time_stats.trace_ctx = SimpleNamespace(abort=Mock())
++        scheduler._add_request_to_queue(candidate)
++
++        scheduler._abort_on_queued_limit = Lifecycle._abort_on_queued_limit.__get__(
++            scheduler
++        )
++        scheduler.max_queued_requests = 1
++        scheduler.enable_priority_scheduling = True
++        scheduler.schedule_low_priority_values_first = True
++        scheduler._release_aborted_request = Mock()
++        scheduler.beam_coordinator = SimpleNamespace(retire_group=Mock())
++        sender = SimpleNamespace(send_output=Mock())
++        scheduler.ipc_channels = SimpleNamespace(send_to_tokenizer=sender)
++        incoming = request("incoming", {"turn_id": "new"})
++        incoming.priority = 1
++        incoming.time_stats.wait_queue_entry_time = 2
++
++        scheduler._add_request_to_queue(incoming)
++        self.assertEqual(scheduler.waiting_queue, [incoming])
++        self.assertEqual(scheduler._beliefkv_registered_request_ids, {"incoming"})
++        runtime.on_abort_request.assert_called_once()
++        self.assertEqual(runtime.on_abort_request.call_args.args[0].rid, "evicted")
++
++    def test_exact_eviction_rejects_overlapping_abort_prefix(self):
++        runtime = Mock()
++        scheduler = scheduler_fixture(runtime)
++        scheduler._beliefkv_registered_request_ids.update(("id", "id-child"))
++        abort = SimpleNamespace(rid="id", abort_all=False)
++        with self.assertRaisesRegex(RuntimeError, "ambiguous request prefix"):
++            scheduler._beliefkv_on_abort(abort, exact=True)
++        runtime.on_abort_request.assert_not_called()
++        self.assertEqual(
++            scheduler._beliefkv_registered_request_ids, {"id", "id-child"}
++        )
++
++    def test_exact_eviction_of_untagged_prefix_does_not_cancel_tagged(self):
++        runtime = Mock()
++        scheduler = scheduler_fixture(runtime)
++        scheduler._beliefkv_registered_request_ids.add("id-child")
++        scheduler._beliefkv_on_abort(
++            SimpleNamespace(rid="id", abort_all=False), exact=True
++        )
++        runtime.on_abort_request.assert_not_called()
++        self.assertEqual(scheduler._beliefkv_registered_request_ids, {"id-child"})
++
++    def test_batch_completion_keeps_batch_identity_and_forgets_finished(self):
++        runtime = Mock()
++        runtime.register_visible_request.return_value = True
++        scheduler = scheduler_fixture(runtime)
++        active = request("active", {"turn_id": "active"})
++        done = request("done", {"turn_id": "done"})
++        plain = request("plain")
++        scheduler._add_request_to_queue(active)
++        scheduler._add_request_to_queue(done)
++        # A request that finishes after enqueue remains tracked until completion.
++        done.finished = lambda: True
++        batch = SimpleNamespace(reqs=[active, done, plain])
++        scheduler._beliefkv_on_batch_completed(batch)
++        runtime.on_batch_completed.assert_called_once_with(batch)
++        self.assertIs(runtime.on_batch_completed.call_args.args[0], batch)
++        self.assertEqual(scheduler._beliefkv_registered_request_ids, {"active"})
++        scheduler._beliefkv_on_batch_completed(SimpleNamespace(reqs=[done, plain]))
++        self.assertEqual(runtime.on_batch_completed.call_count, 2)
++        active.finished = lambda: True
++        scheduler._beliefkv_on_batch_completed(SimpleNamespace(reqs=[active]))
++        self.assertEqual(scheduler._beliefkv_registered_request_ids, set())
++
++    def test_scheduler_entry_points_are_wired(self):
++        methods = {
++            node.name: node
++            for node in SCHEDULER_AST.body
++            if isinstance(node, ast.FunctionDef)
++        }
++        abort = methods["abort_request"]
++        self.assertEqual(
++            ast.unparse(abort.body[0]), "self._beliefkv_on_abort(recv_req)"
++        )
++        result = methods["process_batch_result"]
++        statements = [ast.unparse(node) for node in result.body]
++        self.assertLess(
++            statements.index("self._beliefkv_on_batch_completed(batch)"),
++            statements.index("self._record_step_counters(batch, result)"),
++        )
++        enqueue = methods["_add_request_to_queue"]
++        calls = [
++            node.func.attr
++            for node in ast.walk(enqueue)
++            if isinstance(node, ast.Call)
++            and isinstance(node.func, ast.Attribute)
++            and isinstance(node.func.value, ast.Name)
++            and node.func.value.id == "self"
++        ]
++        self.assertIn("_beliefkv_on_enqueue", calls)
++
++
++if __name__ == "__main__":
++    unittest.main()
 diff --git a/test/srt/test_beliefkv_metadata.py b/test/srt/test_beliefkv_metadata.py
 new file mode 100644
 index 0000000..a8a2ead
@@ -730,6 +1254,282 @@ index 0000000..7d1605d
 +                    ),
 +                )
 +        self.assertEqual(calls, ["ack", "abort", "cache"])
++
++
++if __name__ == "__main__":
++    unittest.main()
+diff --git a/test/srt/test_beliefkv_unified_ack.py b/test/srt/test_beliefkv_unified_ack.py
+new file mode 100644
+index 0000000..58f18f3
+--- /dev/null
++++ b/test/srt/test_beliefkv_unified_ack.py
+@@ -0,0 +1,270 @@
++"""CPU-only tests for UnifiedRadixCache's optional post-commit observer."""
++
++import ast
++import logging
++import unittest
++from pathlib import Path
++from types import SimpleNamespace
++from typing import NamedTuple
++from unittest.mock import Mock
++
++
++SOURCE = (
++    Path(__file__).resolve().parents[2]
++    / "python/sglang/srt/mem_cache/unified_radix_cache.py"
++)
++TREE = ast.parse(SOURCE.read_text(encoding="utf-8"))
++
++
++def load_ack_methods():
++    cache = next(
++        node
++        for node in TREE.body
++        if isinstance(node, ast.ClassDef) and node.name == "UnifiedRadixCache"
++    )
++    methods = [
++        node
++        for node in cache.body
++        if isinstance(node, ast.FunctionDef)
++        and node.name
++        in {
++            "writing_check",
++            "loading_check",
++            "_finish_write_through_ack",
++            "_emit_hicache_transfer_commit",
++            "_log_write_ack_metrics",
++        }
++    ]
++    event = next(
++        node
++        for node in TREE.body
++        if isinstance(node, ast.ClassDef) and node.name == "HiCacheTransferCommit"
++    )
++    module = ast.Module(
++        body=[
++            ast.ImportFrom(
++                module="__future__",
++                names=[ast.alias(name="annotations")],
++                level=0,
++            ),
++            event,
++            ast.ClassDef(
++                name="AckCache", bases=[], keywords=[], body=methods, decorator_list=[]
++            ),
++        ],
++        type_ignores=[],
++    )
++    ast.fix_missing_locations(module)
++    namespace = {"NamedTuple": NamedTuple, "logger": logging.getLogger(__name__)}
++    exec(compile(module, str(SOURCE), "exec"), namespace)
++    return namespace["AckCache"], namespace["HiCacheTransferCommit"], cache
++
++
++AckCache, HiCacheTransferCommit, CACHE_AST = load_ack_methods()
++
++
++def ack(node_ids, counts=None, log=None):
++    event = Mock()
++    event.synchronize.side_effect = lambda: log.append("sync") if log is not None else None
++    return SimpleNamespace(
++        node_ids=node_ids,
++        finish_event=event,
++        num_tokens_by_pool=counts,
++        num_bytes=0,
++        timing_enabled=False,
++    )
++
++
++def cache_fixture():
++    cache = AckCache()
++    cache.on_hicache_transfer_commit = None
++    cache.metrics_collector = None
++    cache.buffer_pipeline = None
++    cache.enable_storage = False
++    cache.ongoing_write_through = {}
++    cache.ongoing_load_back = {}
++    cache.cache_controller = SimpleNamespace(ack_write_queue=[], ack_load_queue=[])
++    cache.tree_core = SimpleNamespace(
++        finish_write_through=Mock(), finish_load_back=Mock()
++    )
++    cache.dec_lock_ref = Mock()
++    cache.dec_host_lock_ref = Mock()
++    cache.write_backup_storage = Mock()
++    return cache
++
++
++class TestUnifiedAck(unittest.TestCase):
++    def test_constructor_defaults_observer_to_none(self):
++        init = next(
++            node
++            for node in CACHE_AST.body
++            if isinstance(node, ast.FunctionDef) and node.name == "__init__"
++        )
++        assignments = [
++            node
++            for node in ast.walk(init)
++            if isinstance(node, ast.AnnAssign)
++            and isinstance(node.target, ast.Attribute)
++            and node.target.attr == "on_hicache_transfer_commit"
++        ]
++        self.assertEqual(len(assignments), 1)
++        self.assertIsInstance(assignments[0].value, ast.Constant)
++        self.assertIsNone(assignments[0].value.value)
++
++    def test_merged_write_ack_follows_split_tree_and_lock_commit(self):
++        cache = cache_fixture()
++        log = []
++        cache.on_hicache_transfer_commit = lambda event: log.append(("callback", event))
++        cache.tree_core.finish_write_through.side_effect = (
++            lambda ids, ack_id: log.append(("tree", tuple(ids), ack_id))
++        )
++        cache.dec_lock_ref.side_effect = lambda *args: log.append(("unlock", args[0]))
++        cache.ongoing_write_through = {
++            1: (1, "lock1", [1, 11]),
++            2: (2, "lock2", [2]),
++        }
++        cache.cache_controller.ack_write_queue = [
++            ack([1, 2], {"mamba": 4, "kv": 12}, log)
++        ]
++
++        cache.writing_check(finish_count=1)
++
++        self.assertEqual(
++            log,
++            [
++                "sync",
++                ("tree", (1, 11), 1),
++                ("unlock", 1),
++                ("tree", (2,), 2),
++                ("unlock", 2),
++                (
++                    "callback",
++                    HiCacheTransferCommit(
++                        "d2h", (1, 11, 2), (("kv", 12), ("mamba", 4)), "completed"
++                    ),
++                ),
++            ],
++        )
++        self.assertEqual(cache.cache_controller.ack_write_queue, [])
++        self.assertEqual(cache.ongoing_write_through, {})
++
++    def test_write_back_waits_and_skips_untracked_ack_ids(self):
++        cache = cache_fixture()
++        events = []
++        cache.on_hicache_transfer_commit = events.append
++        cache.ongoing_write_through = {3: (3, None, [3])}
++        cache.cache_controller.ack_write_queue = [
++            ack([99, 3], {"kv": 5, "mamba": 1})
++        ]
++
++        cache.writing_check(write_back=True)
++
++        self.assertEqual(
++            events,
++            [HiCacheTransferCommit("d2h", (3,), (), "completed")],
++        )
++        cache.dec_lock_ref.assert_not_called()
++        cache.tree_core.finish_write_through.assert_called_once_with([3], 3)
++
++    def test_load_ack_follows_both_unlocks_and_tree_finish(self):
++        cache = cache_fixture()
++        log = []
++        cache.dec_lock_ref.side_effect = lambda *args: log.append("device_unlock")
++        cache.dec_host_lock_ref.side_effect = lambda *args: log.append("host_unlock")
++        cache.tree_core.finish_load_back.side_effect = lambda *args: log.append("tree")
++        cache.on_hicache_transfer_commit = lambda event: log.append(event)
++        cache.ongoing_load_back = {7: (7, "device_lock", "host_lock")}
++        cache.cache_controller.ack_load_queue = [
++            ack([7], {"kv": 0, "mamba": 2}, log)
++        ]
++
++        cache.loading_check(finish_count=1)
++
++        self.assertEqual(
++            log,
++            [
++                "sync",
++                "device_unlock",
++                "host_unlock",
++                "tree",
++                HiCacheTransferCommit(
++                    "h2d", (7,), (("kv", 0), ("mamba", 2)), "completed"
++                ),
++            ],
++        )
++
++    def test_buffer_only_acks_emit_nothing(self):
++        cache = cache_fixture()
++        events = []
++        cache.on_hicache_transfer_commit = events.append
++        cache.buffer_pipeline = SimpleNamespace(
++            finish_backup_ack=Mock(), try_finish_load_back=Mock(return_value=True)
++        )
++        cache.cache_controller.ack_write_queue = [ack([5], {"kv": 4})]
++        cache.cache_controller.ack_load_queue = [ack([6], {"kv": 4})]
++
++        cache.writing_check(finish_count=1)
++        cache.loading_check(finish_count=1)
++
++        self.assertEqual(events, [])
++        cache.buffer_pipeline.finish_backup_ack.assert_called_once_with(5)
++        cache.buffer_pipeline.try_finish_load_back.assert_called_once_with(6)
++        cache.tree_core.finish_write_through.assert_not_called()
++        cache.tree_core.finish_load_back.assert_not_called()
++
++    def test_mixed_load_ack_does_not_attribute_pool_totals_to_subset(self):
++        cache = cache_fixture()
++        events = []
++        cache.on_hicache_transfer_commit = events.append
++        cache.buffer_pipeline = SimpleNamespace(
++            try_finish_load_back=Mock(side_effect=[True, False])
++        )
++        cache.ongoing_load_back = {8: (8, "device_lock", "host_lock")}
++        cache.cache_controller.ack_load_queue = [ack([7, 8], {"kv": 9})]
++
++        cache.loading_check(finish_count=1)
++
++        self.assertEqual(
++            events, [HiCacheTransferCommit("h2d", (8,), (), "completed")]
++        )
++
++    def test_no_callback_before_native_finish_and_observer_error_is_isolated(self):
++        cache = cache_fixture()
++        events = []
++        cache.on_hicache_transfer_commit = events.append
++        cache.ongoing_write_through = {1: (1, "lock", [1])}
++        cache.tree_core.finish_write_through.side_effect = RuntimeError("commit failed")
++        cache.cache_controller.ack_write_queue = [ack([1], {"kv": 2})]
++        with self.assertRaisesRegex(RuntimeError, "commit failed"):
++            cache.writing_check(finish_count=1)
++        self.assertEqual(events, [])
++
++        cache = cache_fixture()
++        cache.on_hicache_transfer_commit = events.append
++        cache.ongoing_load_back = {2: (2, "lock", "host_lock")}
++        cache.tree_core.finish_load_back.side_effect = RuntimeError("load finish failed")
++        cache.cache_controller.ack_load_queue = [ack([2], {"kv": 2})]
++        with self.assertRaisesRegex(RuntimeError, "load finish failed"):
++            cache.loading_check(finish_count=1)
++        self.assertEqual(events, [])
++
++        cache = cache_fixture()
++        cache.ongoing_load_back = {2: (2, "lock", "host_lock")}
++        cache.on_hicache_transfer_commit = Mock(side_effect=RuntimeError("observer"))
++        cache.cache_controller.ack_load_queue = [ack([2], {"kv": 2})]
++        with self.assertLogs(__name__, level="ERROR"):
++            cache.loading_check(finish_count=1)
++        cache.tree_core.finish_load_back.assert_called_once_with(2)
++        self.assertEqual(cache.cache_controller.ack_load_queue, [])
++
++    def test_disabled_callback_does_not_change_native_commit(self):
++        cache = cache_fixture()
++        cache.ongoing_write_through = {4: (4, None, [4])}
++        cache.cache_controller.ack_write_queue = [ack([4], {"kv": 4})]
++        cache.writing_check(finish_count=1)
++        self.assertEqual(cache.ongoing_write_through, {})
++        self.assertIsNone(cache.on_hicache_transfer_commit)
 +
 +
 +if __name__ == "__main__":
