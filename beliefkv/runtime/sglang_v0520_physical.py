@@ -13,9 +13,20 @@ from dataclasses import dataclass
 from time import monotonic
 from typing import Mapping
 
+from beliefkv.runtime.sglang_v0520_admission import PrefillCandidateKey
+
 
 class PhysicalReceiptError(ValueError):
     """A command cannot be credited from the observed native ACK."""
+
+
+@dataclass(frozen=True)
+class ContextSessionAnchors:
+    """Session leaf provenance only; shared ownership is not established."""
+
+    key: PrefillCandidateKey
+    component_leaves: tuple[tuple[int, tuple[tuple[int, int | float], ...]], ...]
+    captured_monotonic_s: float
 
 
 def _counts(items: tuple[tuple[str, int], ...], *, positive: bool) -> dict[str, int]:
@@ -54,6 +65,8 @@ class PhysicalActionExpectation:
     context_epoch: int
     children: tuple[PhysicalChildExpectation, ...]
     pool_bytes_per_token: tuple[tuple[str, int], ...]
+    session_id: str | None = None
+    session_generation: int | None = None
 
 
 @dataclass(frozen=True)
@@ -149,6 +162,16 @@ class PhysicalTransactionLedger:
             or not expected.context_id
             or type(expected.context_epoch) is not int
             or expected.context_epoch < 0
+            or (
+                expected.session_id is not None
+                and (
+                    type(expected.session_id) is not str
+                    or not expected.session_id
+                    or type(expected.session_generation) is not int
+                    or expected.session_generation < 0
+                )
+            )
+            or (expected.session_id is None and expected.session_generation is not None)
             or type(expected.children) is not tuple
             or not expected.children
             or len(expected.children) > self.max_children
@@ -204,7 +227,11 @@ class PhysicalTransactionLedger:
         raise PhysicalReceiptError(message)
 
     def observe(
-        self, commit: object, *, live_context_epochs: Mapping[str, int]
+        self,
+        commit: object,
+        *,
+        live_context_epochs: Mapping[str, int],
+        live_context_sessions: Mapping[str, tuple[str, int]] | None = None,
     ) -> tuple[PhysicalActionCompleted, ...]:
         """Credit only entire commands after native completion and live revalidation.
 
@@ -213,7 +240,11 @@ class PhysicalTransactionLedger:
         """
         self.expire()
         try:
-            return self._observe(commit, live_context_epochs=live_context_epochs)
+            return self._observe(
+                commit,
+                live_context_epochs=live_context_epochs,
+                live_context_sessions=live_context_sessions or {},
+            )
         except PhysicalReceiptError:
             for command_id in tuple(self._pending):
                 del self._pending[command_id]
@@ -223,7 +254,11 @@ class PhysicalTransactionLedger:
             self._reject("invalid or inconsistent native child commit")
 
     def _observe(
-        self, commit: object, *, live_context_epochs: Mapping[str, int]
+        self,
+        commit: object,
+        *,
+        live_context_epochs: Mapping[str, int],
+        live_context_sessions: Mapping[str, tuple[str, int]],
     ) -> tuple[PhysicalActionCompleted, ...]:
         receipts = getattr(commit, "child_commits", ())
         nodes = getattr(commit, "node_ids", ())
@@ -262,8 +297,13 @@ class PhysicalTransactionLedger:
                 direction != ("d2h" if expected.action == "PREPARE_HOST" else "h2d")
                 or type(live_epoch) is not int
                 or live_epoch != expected.context_epoch
+                or (
+                    expected.session_id is not None
+                    and live_context_sessions.get(expected.context_id)
+                    != (expected.session_id, expected.session_generation)
+                )
             ):
-                self._reject("direction or live context epoch changed")
+                self._reject("direction or live context epoch/session changed")
             anchor = getattr(receipt, "anchor_node_id", None)
             child = next(
                 (part for part in expected.children if part.anchor_node_id == anchor),

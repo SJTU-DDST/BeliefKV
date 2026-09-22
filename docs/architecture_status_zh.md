@@ -64,6 +64,12 @@ PREPARE/COMMIT/PREFETCH 授权。现可对 Python `UnifiedTreeCore` 的一个
 tree 不支持该观察路径。节点快照没有原子 generation 或可转移性证明。
 只读闭包额外区分 FULL/MAMBA 的 session 引用与叶标记数；
 这些引用是可被驱逐的软保护，不是独占所有权，也不是物理命令授权。
+新增按 session ID/generation 有界读取 FULL/MAMBA leaf anchor 的
+原生接口；runtime 可在 tagged 请求完成后继续持有 context/session
+绑定，并在工具等待期间按 context 查询；换 session、终止、取消或
+epoch 失效时拒绝旧 anchor。只有启用 session radix cache 且成功
+注册 leaf 的请求才有此路径；默认 runner 尚未启用该桥，
+anchor 本身不证明共享 owner，也不触发预测迁移。
 固定 v0.5.20 原生实现 radix 前缀共享与可选 session 引用保留，
 **没有**与 agent TOOL 生命周期集成的自动 KV 保活，亦没有提前
 Host -> GPU 的预测式恢复。原生 storage prefetch 为 storage -> Host，
@@ -83,7 +89,7 @@ anchor、pool count 和总 bytes；只有 ACK 同步、tree finish，且全部
 才提供 `child_commits`。未标记 native 子操作仍计入合并校验，不能
 归给 tagged command。本地 `PhysicalTransactionLedger` 可按预期的
 child closure、方向、冻结的 FULL/MAMBA token bytes 和 live
-context epoch 对账，整笔 children 齐备才返回 completion；过期、
+context epoch/session generation 对账，整笔 children 齐备才返回 completion；过期、
 重复、未知、缺失或不匹配的 receipt 均不授予部分 credit。
 staging scheduler 在 admission 启用时已把
 `UnifiedRadixCache.on_hicache_transfer_commit` 接到 runtime 的

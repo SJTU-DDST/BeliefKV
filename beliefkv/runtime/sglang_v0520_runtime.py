@@ -26,6 +26,7 @@ from beliefkv.runtime.sglang_v0520_prediction import (
     validate_admission_artifact,
 )
 from beliefkv.runtime.sglang_v0520_physical import (
+    ContextSessionAnchors,
     PhysicalActionCompleted,
     PhysicalActionExpectation,
     PhysicalReceiptError,
@@ -84,6 +85,7 @@ class NativeAdmissionRuntime:
         self.graph = RuntimeCausalContextGraph(strict_timestamps=False)
         self.frontier = CausalFrontierScheduler(self.graph)
         self.visible: dict[str, PrefillCandidateKey] = {}
+        self.context_sessions: dict[str, PrefillCandidateKey] = {}
         self.physical_ledger = PhysicalTransactionLedger()
         self.completed_physical_actions: deque[PhysicalActionCompleted] = deque(
             maxlen=128
@@ -127,6 +129,7 @@ class NativeAdmissionRuntime:
             self.frontier = CausalFrontierScheduler(self.graph)
             self.demand_hints.clear()
             self._last_model_signature = None
+            self.context_sessions.clear()
             self.semantic_revision += 1
             self.counts["causal_mirror_discarded"] += 1
             raise
@@ -137,6 +140,18 @@ class NativeAdmissionRuntime:
                 else:
                     self.demand_hints[hint.key.request_id] = hint
                     self.counts["prediction_accepted"] += 1
+            for event in events:
+                context_id = event.context_id
+                if context_id is not None:
+                    key = self.context_sessions.get(context_id)
+                    if key is not None and self._terminal(key):
+                        del self.context_sessions[context_id]
+                if event.kind.value == "workflow_end":
+                    self.context_sessions = {
+                        context: key
+                        for context, key in self.context_sessions.items()
+                        if key.root_workflow_id != event.workflow_id
+                    }
             if len(self.demand_hints) > 1024:
                 now_ms = time.monotonic() * 1000
                 self.demand_hints = {
@@ -174,19 +189,72 @@ class NativeAdmissionRuntime:
     def register_physical_action(self, expected: PhysicalActionExpectation) -> None:
         """Accept only a live causal identity; this does not issue the transfer."""
         context = self.graph.contexts.get(expected.context_id)
+        session_key = self.context_sessions.get(expected.context_id)
+        invocation = (
+            self.graph.invocations.get(session_key.invocation_id)
+            if session_key is not None
+            else None
+        )
+        session_waiting = (
+            session_key is not None
+            and session_key.context_epoch == expected.context_epoch
+            and session_key.session_id is not None
+            and session_key.session_id == expected.session_id
+            and session_key.session_generation == expected.session_generation
+            and not self._terminal(session_key)
+            and invocation is not None
+            and invocation.state.value in ("wait_tool", "wait_child", "wait_join")
+        )
+        visible = any(
+            key.context_id == expected.context_id
+            and key.context_epoch == expected.context_epoch
+            and (
+                expected.session_id is None
+                or (
+                    key.session_id == expected.session_id
+                    and key.session_generation == expected.session_generation
+                )
+            )
+            and not self._terminal(key)
+            for key in self.visible.values()
+        )
         if (
             self.physical_disabled
             or context is None
             or context.epoch != expected.context_epoch
-            or not any(
-                key.context_id == expected.context_id
-                and key.context_epoch == expected.context_epoch
-                and not self._terminal(key)
-                for key in self.visible.values()
-            )
+            or not (visible or session_waiting)
         ):
             raise PhysicalReceiptError("physical action has no live causal context")
         self.physical_ledger.register(expected)
+
+    def snapshot_session_anchors(
+        self, cache: object, *, context_id: str, context_epoch: int
+    ) -> ContextSessionAnchors | None:
+        """Request-local lookup for a finished tool-waiting context."""
+        key = self.context_sessions.get(context_id)
+        context = self.graph.contexts.get(context_id)
+        if (
+            key is None
+            or key.context_epoch != context_epoch
+            or context is None
+            or context.epoch != context_epoch
+            or key.session_id is None
+            or key.session_generation is None
+            or self._terminal(key)
+        ):
+            return None
+        try:
+            leaves = cache.session_refs.snapshot_session_leaf_anchors(
+                key.session_id, key.session_generation, max_leaves=8
+            )
+        except (AttributeError, KeyError, TypeError, ValueError):
+            return None
+        if leaves is None or not any(anchors for _, anchors in leaves):
+            return None
+        return ContextSessionAnchors(
+            key=key, component_leaves=leaves,
+            captured_monotonic_s=time.monotonic(),
+        )
 
     def on_native_transfer_commit(self, commit: object) -> None:
         """Observe synchronized native ACKs, never infer completion from enqueue."""
@@ -197,9 +265,18 @@ class NativeAdmissionRuntime:
             for context_id in self.physical_ledger.pending_context_ids
             if (context := self.graph.contexts.get(context_id)) is not None
         }
+        live_sessions = {
+            context_id: (key.session_id, key.session_generation)
+            for context_id in self.physical_ledger.pending_context_ids
+            if (key := self.context_sessions.get(context_id)) is not None
+            and key.session_id is not None
+            and key.session_generation is not None
+        }
         try:
             completed = self.physical_ledger.observe(
-                commit, live_context_epochs=live_epochs
+                commit,
+                live_context_epochs=live_epochs,
+                live_context_sessions=live_sessions,
             )
         except PhysicalReceiptError:
             self.physical_disabled = True
@@ -216,6 +293,10 @@ class NativeAdmissionRuntime:
         if key.request_id in self.visible:
             raise ValueError(f"duplicate visible request: {key.request_id}")
         self.visible[key.request_id] = key
+        if key.session_id is not None and key.session_generation is not None:
+            self.context_sessions[key.context_id] = key
+        else:
+            self.context_sessions.pop(key.context_id, None)
         self.semantic_revision += 1
         return True
 
@@ -250,6 +331,7 @@ class NativeAdmissionRuntime:
         if request_id in self.visible:
             del self.visible[request_id]
             self.demand_hints.pop(request_id, None)
+            self._forget_session(request_id)
             self.semantic_revision += 1
             self.counts["terminal_waiting_aborted"] += 1
 
@@ -261,8 +343,17 @@ class NativeAdmissionRuntime:
             if key is None or key.request_id not in self.visible:
                 raise ValueError("requeued request has no live tagged identity")
             self.visible[key.request_id] = key
+            if key.session_id is not None and key.session_generation is not None:
+                self.context_sessions[key.context_id] = key
+            else:
+                self.context_sessions.pop(key.context_id, None)
             self.demand_hints.pop(key.request_id, None)
             self.semantic_revision += 1
+
+    def _forget_session(self, request_id: str) -> None:
+        for context_id, key in tuple(self.context_sessions.items()):
+            if key.request_id == request_id:
+                del self.context_sessions[context_id]
 
     def _causal_rank(
         self,
@@ -422,8 +513,12 @@ class NativeAdmissionRuntime:
     def on_batch_completed(self, batch: object) -> None:
         for req in batch.reqs:
             if req.rid in self.visible and req.finished():
+                context_id = self.visible[req.rid].context_id
                 del self.visible[req.rid]
                 self.demand_hints.pop(req.rid, None)
+                key = self.context_sessions.get(context_id)
+                if key is not None and key.request_id == req.rid and self._terminal(key):
+                    self._forget_session(req.rid)
                 self.semantic_revision += 1
 
     def on_abort_request(self, abort: object) -> None:
@@ -435,7 +530,11 @@ class NativeAdmissionRuntime:
         for rid in removed:
             del self.visible[rid]
             self.demand_hints.pop(rid, None)
+            self._forget_session(rid)
             self.semantic_revision += 1
+        for context_id, key in tuple(self.context_sessions.items()):
+            if getattr(abort, "abort_all", False) or key.request_id.startswith(abort.rid):
+                del self.context_sessions[context_id]
 
     def running_batch_retraction_barrier_required(self, batch: object) -> bool:
         return False

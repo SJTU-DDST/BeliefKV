@@ -103,6 +103,12 @@ cache mode。其他 cache backend、TP/PP、disaggregation 和 speculative
    当前只读 observer 已暴露 FULL/MAMBA 的 session 引用计数及叶
    标记数，但没有原子 revision、全部共享 owner 或独占 reclaim 证明，
    不能据此授权迁移；session 引用也不等同于锁。
+   原生 session tracker 新增按 session ID/generation 有界查询 FULL/
+   MAMBA leaf anchor 的接口，runtime 可在请求已完成但仍处于
+   `WAIT_TOOL` 时保留 context/session 绑定并查询 anchor；换 session、
+   终止、取消或 epoch 变化使查询失效。此查询依赖实际启用
+   session radix cache；默认 runner 尚未开启该能力。leaf anchor
+   是候选来源，不是节点独占所有权或 DMA 授权。
 2. staging native D2H/H2D 入口现可传递可选 command ID，controller
    在真正提交子操作时记录 anchor、pool token counts 和总 bytes；
    合并 ACK 同步且 tree finish 后，只有全部子 receipt 与 ACK
@@ -117,7 +123,7 @@ cache mode。其他 cache backend、TP/PP、disaggregation 和 speculative
    有界 `PhysicalTransactionLedger`。`register_physical_action`
    只接受与 live causal context/epoch 和可见非终止请求匹配的预期
    动作，**仅注册对账期望，不派发迁移**。ledger 按预期 node
-   closure、方向、context epoch 和冻结的 FULL/MAMBA 每 token
+   closure、方向、context epoch/session generation 和冻结的 FULL/MAMBA 每 token
    字节数核对 native child receipt，只有整笔 children 对账才记录
    completion；过期、未知/重复、缺失或不匹配的 receipt 不给部分
    credit，对账错误会禁用后续物理 credit。此接线只用于 ACK

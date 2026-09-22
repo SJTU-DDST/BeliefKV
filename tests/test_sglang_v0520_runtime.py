@@ -76,6 +76,76 @@ def test_native_ack_is_credited_only_after_live_context_reconciliation():
         runtime.register_physical_action(expectation)
 
 
+def test_finished_tool_context_keeps_session_anchor_but_rechecks_wait_state():
+    runtime = NativeAdmissionRuntime()
+    tagged = req("a")
+    tagged.session_id = "session-a"
+    tagged.session_generation = 4
+    assert runtime.register_visible_request(tagged)
+    runtime.on_events((
+        event(0, RuntimeEventKind.WORKFLOW_START),
+        event(
+            1, RuntimeEventKind.INVOCATION_CREATE,
+            invocation_id="a", context_id="ctx-a",
+            agent_definition_id="a", agent_instance_id="a",
+        ),
+        event(
+            2, RuntimeEventKind.TOOL_START,
+            invocation_id="a", context_id="ctx-a",
+            attributes={"tool_family": "shell"},
+        ),
+    ))
+    tagged.finished = lambda: True
+    runtime.on_batch_completed(NS(reqs=(tagged,)))
+    assert "a" not in runtime.visible
+    cache = NS(session_refs=NS(
+        snapshot_session_leaf_anchors=lambda session, generation, max_leaves: (
+            ((0, ((11, 25),)), (2, ((11, 25),)))
+            if (session, generation, max_leaves) == ("session-a", 4, 8)
+            else None
+        ),
+    ))
+    anchors = runtime.snapshot_session_anchors(
+        cache, context_id="ctx-a", context_epoch=0
+    )
+    assert anchors is not None and anchors.key.session_generation == 4
+    assert anchors.component_leaves[0][1] == ((11, 25),)
+    assert runtime.snapshot_session_anchors(
+        cache, context_id="ctx-a", context_epoch=1
+    ) is None
+    expected = PhysicalActionExpectation(
+        "prepare-tool", "PREPARE_HOST", "ctx-a", 0,
+        (PhysicalChildExpectation(11, (11,), (("kv", 10),), 10),),
+        (("kv", 10),),
+        session_id="session-a", session_generation=4,
+    )
+    runtime.register_physical_action(expected)
+    with pytest.raises(PhysicalReceiptError, match="live causal context"):
+        runtime.register_physical_action(
+            PhysicalActionExpectation(
+                "wrong-session", "PREPARE_HOST", "ctx-a", 0,
+                expected.children, expected.pool_bytes_per_token,
+                session_id="session-b", session_generation=4,
+            )
+        )
+    runtime.on_events((
+        event(3, RuntimeEventKind.TOOL_END, invocation_id="a", context_id="ctx-a"),
+    ))
+    with pytest.raises(PhysicalReceiptError, match="live causal context"):
+        runtime.register_physical_action(
+            PhysicalActionExpectation(
+                "late", "PREPARE_HOST", "ctx-a", 0,
+                (PhysicalChildExpectation(12, (12,), (("kv", 10),), 10),),
+                expected.pool_bytes_per_token,
+                session_id="session-a", session_generation=4,
+            )
+        )
+    runtime.on_abort_request(NS(rid="a", abort_all=False))
+    assert runtime.snapshot_session_anchors(
+        cache, context_id="ctx-a", context_epoch=0
+    ) is None
+
+
 def req(name: str, *, tagged: bool = True):
     return NS(
         rid=name,

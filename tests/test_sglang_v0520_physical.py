@@ -182,6 +182,31 @@ def test_stale_context_epoch_and_replay_do_not_credit():
         )
 
 
+def test_session_generation_must_still_match_at_ack():
+    from dataclasses import replace
+
+    ledger = PhysicalTransactionLedger()
+    ledger.register(replace(
+        expected(), session_id="session", session_generation=4
+    ))
+    with pytest.raises(PhysicalReceiptError, match="session"):
+        ledger.observe(
+            ack(receipt()),
+            live_context_epochs={"ctx": 3},
+            live_context_sessions={"ctx": ("session", 5)},
+        )
+    assert ledger.pending_count == 0
+    ledger.register(replace(
+        expected("current"), session_id="session", session_generation=5
+    ))
+    (completed,) = ledger.observe(
+        ack(receipt("current")),
+        live_context_epochs={"ctx": 3},
+        live_context_sessions={"ctx": ("session", 5)},
+    )
+    assert completed.command_id == "current"
+
+
 def test_h2d_child_and_mamba_only_pool_counts():
     ledger = PhysicalTransactionLedger()
     ledger.register(expected(
