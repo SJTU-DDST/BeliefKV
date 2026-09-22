@@ -19,6 +19,9 @@ request metadata/scheduler 早期 hook 已导出为
 **下文所有 P5/P6 在线能力与旧实验结果仍仅指旧模型/旧 SGLang 合同**。
 新模型原生服务或通过的 metadata 单元测试均不能视为预测式 KV 调度已迁移；
 更换模型后还需新 baseline、容量和服务率标定，不能与旧模型吞吐直接比较。
+当前新增的 unified cache 只读 observer 只报告 FULL、MAMBA、Host
+各自的容量上限，且 FULL/MAMBA device 容量共享一块字节 buffer；
+它既不是空闲/可回收容量，也不能用于 PREPARE/COMMIT/PREFETCH 授权。
 
 ## 1. 当前结论
 

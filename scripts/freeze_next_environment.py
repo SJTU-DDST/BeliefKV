@@ -36,6 +36,13 @@ def main() -> None:
     cuda = ENV / "lib/python3.11/site-packages/nvidia/cu13/bin/nvcc"
     if not python.is_file() or not cuda.is_file() or not MODEL_MANIFEST.is_file():
         parser.error("migration environment, CUDA 13 nvcc or model manifest missing")
+    source_url = json.loads(
+        output(
+            str(python), "-c",
+            "import importlib.metadata as m,json; "
+            "print(m.distribution('sglang').read_text('direct_url.json') or 'null')",
+        )
+    )
 
     record = {
         "schema_version": 1,
@@ -48,6 +55,17 @@ def main() -> None:
             output(str(python), "-m", "pip", "list", "--format=json")
         ),
         "nvcc": output(str(cuda), "--version"),
+        "hardware": {
+            "gpu": output(
+                "nvidia-smi",
+                "--query-gpu=name,memory.total,driver_version,pci.bus_id",
+                "--format=csv,noheader",
+            ),
+            "torch_cuda": output(
+                str(python), "-c",
+                "import torch; print(torch.__version__, torch.version.cuda)",
+            ),
+        },
         "sglang": {
             "installed_version": output(
                 str(python), "-c",
@@ -55,7 +73,11 @@ def main() -> None:
             ),
             "source_commit": output("git", "rev-parse", "HEAD", cwd=CHECKOUT),
             "source_status": output("git", "status", "--short", cwd=CHECKOUT),
-            "source_is_active": False,
+            "installed_direct_url": source_url,
+            "source_is_active": bool(
+                source_url and source_url.get("dir_info", {}).get("editable")
+                and source_url.get("url") == (CHECKOUT / "python").as_uri()
+            ),
         },
         "model_manifest_path": str(MODEL_MANIFEST.relative_to(ROOT)),
         "model_manifest_sha256": sha256(MODEL_MANIFEST),

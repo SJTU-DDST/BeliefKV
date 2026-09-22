@@ -3606,10 +3606,15 @@
     }
   ],
   "nvcc": "nvcc: NVIDIA (R) Cuda compiler driver\nCopyright (c) 2005-2026 NVIDIA Corporation\nBuilt on Tue_Sep_01_08:45:21_PDT_2026\nCuda compilation tools, release 13.4, V13.4.92\nBuild cuda_13.4.r13.4/compiler.38855100_0",
+  "hardware": {
+    "gpu": "NVIDIA H200 NVL, 143771 MiB, 595.71.05, 00000000:C9:00.0",
+    "torch_cuda": "2.13.0+cu130 13.0"
+  },
   "sglang": {
     "installed_version": "0.5.20",
     "source_commit": "94602c9c2b7cbdb8efd5c52802dac6a1c180089e",
     "source_status": "M python/sglang/srt/entrypoints/openai/protocol.py\n M python/sglang/srt/entrypoints/openai/serving_chat.py\n M python/sglang/srt/managers/io_struct.py\n M python/sglang/srt/managers/schedule_batch.py\n M python/sglang/srt/managers/scheduler.py\n M python/sglang/srt/managers/tokenizer_manager.py\n M python/sglang/srt/session/session_controller.py\n A test/srt/test_beliefkv_metadata.py\n A test/srt/test_beliefkv_scheduler_hook.py",
+    "installed_direct_url": null,
     "source_is_active": false
   },
   "model_manifest_path": "configs/migration/2026-09-22_qwen35_model_artifact.json",
