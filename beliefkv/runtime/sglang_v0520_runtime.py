@@ -5,8 +5,9 @@ No physical action or capacity certificate is issued by this runtime.
 
 from __future__ import annotations
 
-from collections import Counter
+from collections import Counter, deque
 from collections.abc import Sequence
+import time
 from typing import TYPE_CHECKING
 
 from beliefkv.control.causal_graph import RuntimeCausalContextGraph
@@ -18,6 +19,19 @@ from beliefkv.runtime.sglang_v0520_admission import (
     PrefillCandidateKey,
     compile_native_prefill_plan,
 )
+from beliefkv.runtime.sglang_v0520_prediction import (
+    NativeDemandHint,
+    PREDICTION_ATTRIBUTE,
+    parse_native_demand_hint,
+    validate_admission_artifact,
+)
+from beliefkv.runtime.sglang_v0520_physical import (
+    PhysicalActionCompleted,
+    PhysicalActionExpectation,
+    PhysicalReceiptError,
+    PhysicalTransactionLedger,
+)
+from beliefkv.predictor.structured_frontier import LocalFrontierFeatures
 
 if TYPE_CHECKING:
     from beliefkv.core.events import RuntimeEvent
@@ -26,11 +40,55 @@ if TYPE_CHECKING:
 class NativeAdmissionRuntime:
     """Rebind causal order to live request identities at each prefill safe point."""
 
-    def __init__(self, *, event_socket_path: str | None = None) -> None:
+    def __init__(
+        self,
+        *,
+        event_socket_path: str | None = None,
+        predictor_sha256: str | None = None,
+        predictor_artifact_path: str | None = None,
+        model_path: str | None = None,
+        enable_local_predictor: bool = False,
+    ) -> None:
+        if bool(predictor_sha256) != bool(predictor_artifact_path):
+            raise ValueError("predictive admission requires both artifact and SHA-256")
+        if predictor_sha256 is not None and (
+            type(predictor_sha256) is not str
+            or len(predictor_sha256) != 64
+            or any(c not in "0123456789abcdef" for c in predictor_sha256)
+            or not event_socket_path
+        ):
+            raise ValueError("predictive admission requires a pinned SHA-256 and event socket")
+        if predictor_sha256 is not None:
+            if not model_path:
+                raise ValueError("predictive admission requires a model path")
+            validate_admission_artifact(
+                predictor_artifact_path,
+                expected_sha256=predictor_sha256,
+                model_path=model_path,
+            )
         self.semantic_revision = 0
+        self.predictor_sha256 = predictor_sha256
+        self.demand_hints: dict[str, NativeDemandHint] = {}
+        self._last_model_signature: tuple[object, ...] | None = None
+        self._model_worker = None
+        if enable_local_predictor:
+            if predictor_sha256 is None or predictor_artifact_path is None:
+                raise ValueError("local admission predictor requires a calibrated artifact")
+            from beliefkv.runtime.sglang_v0520_predictor_worker import (
+                NativePredictorWorker,
+            )
+
+            self._model_worker = NativePredictorWorker(
+                predictor_artifact_path, predictor_sha256
+            )
         self.graph = RuntimeCausalContextGraph(strict_timestamps=False)
         self.frontier = CausalFrontierScheduler(self.graph)
         self.visible: dict[str, PrefillCandidateKey] = {}
+        self.physical_ledger = PhysicalTransactionLedger()
+        self.completed_physical_actions: deque[PhysicalActionCompleted] = deque(
+            maxlen=128
+        )
+        self.physical_disabled = False
         self.counts: Counter[str] = Counter()
         self.event_server = (
             RuntimeEventDatagramServer(event_socket_path, self.on_events)
@@ -39,26 +97,116 @@ class NativeAdmissionRuntime:
         )
 
     def close(self) -> None:
+        if self._model_worker is not None:
+            self._model_worker.close()
+            self._model_worker = None
         if self.event_server is not None:
             self.event_server.close()
             self.event_server = None
 
     def on_events(self, events: tuple[RuntimeEvent, ...]) -> None:
+        hints = []
+        for event in events:
+            raw = event.attributes.get(PREDICTION_ATTRIBUTE)
+            if raw is None:
+                continue
+            if self.predictor_sha256 is None:
+                self.counts["unconfigured_prediction_ignored"] += 1
+                continue
+            hint = parse_native_demand_hint(
+                event, raw, expected_sha256=self.predictor_sha256
+            )
+            if self.visible.get(hint.key.request_id) != hint.key:
+                raise ValueError("admission prediction has no matching live request")
+            hints.append(hint)
         try:
             self.graph.apply_batch(events, atomic=False)
         except Exception:
             # A partially applied batch cannot remain a scheduling authority.
             self.graph = RuntimeCausalContextGraph(strict_timestamps=False)
             self.frontier = CausalFrontierScheduler(self.graph)
+            self.demand_hints.clear()
+            self._last_model_signature = None
             self.semantic_revision += 1
             self.counts["causal_mirror_discarded"] += 1
             raise
         else:
+            for hint in hints:
+                if self._terminal(hint.key):
+                    self.counts["terminal_prediction_ignored"] += 1
+                else:
+                    self.demand_hints[hint.key.request_id] = hint
+                    self.counts["prediction_accepted"] += 1
+            if len(self.demand_hints) > 1024:
+                now_ms = time.monotonic() * 1000
+                self.demand_hints = {
+                    rid: hint for rid, hint in self.demand_hints.items()
+                    if hint.expires_monotonic_ms > now_ms
+                    and self.visible.get(rid) == hint.key
+                }
             self.semantic_revision += 1
 
     def scheduler_step(self) -> None:
         if self.event_server is not None:
             self.event_server.drain(max_messages=16)
+        if self._model_worker is not None:
+            hints = self._model_worker.poll()
+            for hint in hints:
+                if (
+                    self.visible.get(hint.key.request_id) == hint.key
+                    and not self._terminal(hint.key)
+                    and (
+                        hint.invocation_revision_ts_ms is None
+                        or getattr(
+                            self.graph.invocations.get(hint.key.invocation_id),
+                            "updated_ts_ms",
+                            None,
+                        ) == hint.invocation_revision_ts_ms
+                    )
+                ):
+                    self.demand_hints[hint.key.request_id] = hint
+                    self.counts["model_prediction_accepted"] += 1
+                    self.semantic_revision += 1
+            if self._model_worker.disabled:
+                self.counts["model_worker_disabled"] = 1
+        self.counts["physical_expired"] += len(self.physical_ledger.expire())
+
+    def register_physical_action(self, expected: PhysicalActionExpectation) -> None:
+        """Accept only a live causal identity; this does not issue the transfer."""
+        context = self.graph.contexts.get(expected.context_id)
+        if (
+            self.physical_disabled
+            or context is None
+            or context.epoch != expected.context_epoch
+            or not any(
+                key.context_id == expected.context_id
+                and key.context_epoch == expected.context_epoch
+                and not self._terminal(key)
+                for key in self.visible.values()
+            )
+        ):
+            raise PhysicalReceiptError("physical action has no live causal context")
+        self.physical_ledger.register(expected)
+
+    def on_native_transfer_commit(self, commit: object) -> None:
+        """Observe synchronized native ACKs, never infer completion from enqueue."""
+        if self.physical_disabled:
+            return
+        live_epochs = {
+            context_id: context.epoch
+            for context_id in self.physical_ledger.pending_context_ids
+            if (context := self.graph.contexts.get(context_id)) is not None
+        }
+        try:
+            completed = self.physical_ledger.observe(
+                commit, live_context_epochs=live_epochs
+            )
+        except PhysicalReceiptError:
+            self.physical_disabled = True
+            self.counts["physical_receipt_failed"] += 1
+            return
+        self.completed_physical_actions.extend(completed)
+        self.counts["native_physical_completed"] += len(completed)
 
     def register_visible_request(self, req: object) -> bool:
         key = _request_key(req)
@@ -101,6 +249,7 @@ class NativeAdmissionRuntime:
     def retire_terminal_request(self, request_id: str) -> None:
         if request_id in self.visible:
             del self.visible[request_id]
+            self.demand_hints.pop(request_id, None)
             self.semantic_revision += 1
             self.counts["terminal_waiting_aborted"] += 1
 
@@ -112,6 +261,7 @@ class NativeAdmissionRuntime:
             if key is None or key.request_id not in self.visible:
                 raise ValueError("requeued request has no live tagged identity")
             self.visible[key.request_id] = key
+            self.demand_hints.pop(key.request_id, None)
             self.semantic_revision += 1
 
     def _causal_rank(
@@ -163,9 +313,44 @@ class NativeAdmissionRuntime:
             for workflow_id in workflows
             for item in self.frontier.candidates(workflow_id)
         }
+        self._submit_local_predictions(tagged, ready_ranks)
+        now_ms = time.monotonic() * 1000
+        ranks = {
+            index: self._causal_rank(req, index, ready_ranks)
+            for index, req in tagged
+        }
+        valid_hints: dict[int, NativeDemandHint] = {}
+        members = Counter((rank[0], rank[1]) for rank in ranks.values())
+        hinted = Counter()
+        for index, req in tagged:
+            key = _request_key(req)
+            if key is None:
+                continue
+            hint = self.demand_hints.get(key.request_id)
+            if (
+                hint is not None
+                and hint.live(key, now_ms=now_ms)
+                and (
+                    hint.invocation_revision_ts_ms is None
+                    or getattr(
+                        self.graph.invocations.get(key.invocation_id),
+                        "updated_ts_ms",
+                        None,
+                    ) == hint.invocation_revision_ts_ms
+                )
+            ):
+                valid_hints[index] = hint
+                hinted[ranks[index][:2]] += 1
         ordered = sorted(
             tagged,
-            key=lambda pair: self._causal_rank(pair[1], pair[0], ready_ranks),
+            key=lambda pair: (
+                *ranks[pair[0]][:2],
+                valid_hints[pair[0]].next_output_tokens
+                if ranks[pair[0]][0] < 5
+                and hinted[ranks[pair[0]][:2]] == members[ranks[pair[0]][:2]]
+                else pair[0],
+                pair[0],
+            ),
         )
         return compile_native_prefill_plan(
             [
@@ -177,6 +362,49 @@ class NativeAdmissionRuntime:
             semantic_revision=self.semantic_revision,
         )
 
+    def _submit_local_predictions(
+        self,
+        tagged: list[tuple[int, object]],
+        ready_ranks: dict[str, tuple[int, int]],
+    ) -> None:
+        if self._model_worker is None or self._model_worker.disabled:
+            return
+        tasks = []
+        signatures = []
+        for _, req in tagged:
+            key = _request_key(req)
+            if (
+                key is None
+                or self.visible.get(key.request_id) != key
+                or key.invocation_id not in ready_ranks
+                or self._terminal(key)
+            ):
+                continue
+            invocation = self.graph.invocations[key.invocation_id]
+            metadata = req.beliefkv_metadata
+            prompt_tokens = len(getattr(req, "origin_input_ids", ()))
+            output_tokens = len(getattr(req, "output_ids", ()))
+            features = LocalFrontierFeatures(
+                invocation_id=key.invocation_id,
+                state=invocation.state.value,
+                agent_definition_id=invocation.agent_definition_id,
+                tool_family=invocation.active_tool_family or "unknown",
+                generated_tokens=output_tokens,
+                current_sequence_tokens=prompt_tokens + output_tokens,
+                llm_round=invocation.llm_round,
+                child_count=len(invocation.child_invocation_ids),
+                unfinished_child_count=len(invocation.blocking_child_ids),
+                is_child=metadata.get("parent_invocation_id") is not None,
+            )
+            signatures.append((key, invocation.updated_ts_ms, prompt_tokens, output_tokens))
+            tasks.append((key, features, invocation.updated_ts_ms))
+            if len(tasks) == 8:
+                break
+        signature = tuple(signatures)
+        if tasks and signature != self._last_model_signature:
+            self._last_model_signature = signature
+            self._model_worker.submit(tuple(tasks))
+
     def on_prefill_selection(self, rejected: tuple[tuple[str, str], ...]) -> None:
         self.counts.update(reason for _, reason in rejected)
 
@@ -185,6 +413,8 @@ class NativeAdmissionRuntime:
     ) -> None:
         if getattr(req, "beliefkv_metadata", None) is not None:
             self.counts["native_admitted" if admitted else f"native_{result}"] += 1
+            if admitted:
+                self.demand_hints.pop(req.rid, None)
 
     def on_batch_selected(self, batch: object) -> None:
         pass
@@ -193,6 +423,7 @@ class NativeAdmissionRuntime:
         for req in batch.reqs:
             if req.rid in self.visible and req.finished():
                 del self.visible[req.rid]
+                self.demand_hints.pop(req.rid, None)
                 self.semantic_revision += 1
 
     def on_abort_request(self, abort: object) -> None:
@@ -203,6 +434,7 @@ class NativeAdmissionRuntime:
         ]
         for rid in removed:
             del self.visible[rid]
+            self.demand_hints.pop(rid, None)
             self.semantic_revision += 1
 
     def running_batch_retraction_barrier_required(self, batch: object) -> bool:

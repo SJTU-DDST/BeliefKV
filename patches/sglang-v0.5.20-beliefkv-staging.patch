@@ -1,8 +1,8 @@
 diff --git a/python/sglang/srt/arg_groups/fields/schedule.py b/python/sglang/srt/arg_groups/fields/schedule.py
-index de4267d..28e428c 100644
+index de4267d..bb44043 100644
 --- a/python/sglang/srt/arg_groups/fields/schedule.py
 +++ b/python/sglang/srt/arg_groups/fields/schedule.py
-@@ -39,6 +39,14 @@ class Schedule(msgspec.Struct):
+@@ -39,6 +39,22 @@ class Schedule(msgspec.Struct):
          Optional[int],
          "The maximum number of running requests.",
      ] = None
@@ -13,6 +13,14 @@ index de4267d..28e428c 100644
 +    beliefkv_event_socket_path: A[
 +        Optional[str],
 +        "Local causal event socket for BeliefKV admission ordering.",
++    ] = None
++    beliefkv_admission_predictor_sha256: A[
++        Optional[str],
++        "Explicit fingerprint of the predictor allowed to publish short-lived BeliefKV admission demand hints. Does not enable physical actions.",
++    ] = None
++    beliefkv_admission_predictor_path: A[
++        Optional[str],
++        "Calibrated admission predictor artifact; validated against the model config and exact SHA-256 before accepting hints.",
 +    ] = None
      max_queued_requests: A[
          Optional[int],
@@ -262,10 +270,10 @@ index 7811e44..9630078 100755
          self.session_generation: Optional[int] = None
          self.input_embeds = input_embeds
 diff --git a/python/sglang/srt/managers/scheduler.py b/python/sglang/srt/managers/scheduler.py
-index 743c8af..f17e4f6 100644
+index 743c8af..6910b19 100644
 --- a/python/sglang/srt/managers/scheduler.py
 +++ b/python/sglang/srt/managers/scheduler.py
-@@ -725,9 +725,49 @@ class Scheduler(
+@@ -725,9 +725,64 @@ class Scheduler(
  
          self.init_rank_consensus_checker()
  
@@ -280,9 +288,9 @@ index 743c8af..f17e4f6 100644
 +        self._beliefkv_retraction_drain_pending = False
 +        if getattr(self.server_args, "enable_beliefkv", False):
 +            raise RuntimeError(
-+                "BeliefKV v0.5.20 activation unsupported: transfer completion ACK "
-+                "adapter, selective running retraction and physical action "
-+                "certificates are not yet implemented"
++                "BeliefKV v0.5.20 physical activation unsupported: action-local "
++                "ownership certificates, physical dispatch and selective running "
++                "retraction are not yet implemented"
 +            )
 +        if not getattr(self.server_args, "enable_beliefkv_admission", False):
 +            return
@@ -307,15 +315,30 @@ index 743c8af..f17e4f6 100644
 +            raise RuntimeError("BeliefKV event socket requires a pollable idle sleeper")
 +        from beliefkv.runtime.sglang_v0520_runtime import NativeAdmissionRuntime
 +
-+        runtime = NativeAdmissionRuntime(event_socket_path=socket_path)
++        runtime = NativeAdmissionRuntime(
++            event_socket_path=socket_path,
++            predictor_sha256=getattr(
++                self.server_args, "beliefkv_admission_predictor_sha256", None
++            ),
++            predictor_artifact_path=getattr(
++                self.server_args, "beliefkv_admission_predictor_path", None
++            ),
++            model_path=getattr(self.server_args, "model_path", None),
++            enable_local_predictor=bool(
++                getattr(self.server_args, "beliefkv_admission_predictor_path", None)
++            ),
++        )
 +        self.beliefkv_runtime = runtime
++        self.tree_cache.on_hicache_transfer_commit = (
++            runtime.on_native_transfer_commit
++        )
 +        if runtime.event_server is not None and self.idle_sleeper is not None:
 +            self.idle_sleeper.poller.register(runtime.event_server.fileno())
 +
      def init_startup_timing_begin(self) -> None:
          self.scheduler_startup_begin = time.perf_counter()
  
-@@ -2789,6 +2829,7 @@ class Scheduler(
+@@ -2789,6 +2844,7 @@ class Scheduler(
                  dllm_config=self.dllm_config,
                  time_stats=recv_req.time_stats,
                  multi_item_delimiter_indices=recv_req.multi_item_delimiter_indices,
@@ -323,7 +346,7 @@ index 743c8af..f17e4f6 100644
              )
              req.tokenizer = self.tokenizer
  
-@@ -3190,6 +3231,33 @@ class Scheduler(
+@@ -3190,6 +3246,33 @@ class Scheduler(
          self._retry_storage_prefetch(req)
          return True
  
@@ -357,7 +380,7 @@ index 743c8af..f17e4f6 100644
      def _add_request_to_queue(self, req: Req, is_retracted: bool = False):
          if not self._set_or_validate_priority(req):
              return
-@@ -3200,6 +3268,9 @@ class Scheduler(
+@@ -3200,6 +3283,9 @@ class Scheduler(
          if self.disaggregation_mode == DisaggregationMode.NULL:
              if self._abort_on_queued_limit(req):
                  return
@@ -367,7 +390,7 @@ index 743c8af..f17e4f6 100644
              self._prefetch_kvcache(req)
              self.waiting_queue.append(req)
              req.time_stats.set_wait_queue_entry_time()
-@@ -3281,6 +3352,7 @@ class Scheduler(
+@@ -3281,6 +3367,7 @@ class Scheduler(
                  direction * recv_req.priority < direction * candidate_req.priority
              )
              if abort_existing_req:
@@ -375,7 +398,7 @@ index 743c8af..f17e4f6 100644
                  self._release_aborted_request(candidate_req)
                  self.waiting_queue.pop(idx)
                  self.beam_coordinator.retire_group(candidate_req)
-@@ -3558,12 +3630,68 @@ class Scheduler(
+@@ -3558,12 +3645,68 @@ class Scheduler(
              if self.enable_hicache_storage:
                  self._process_storage_prefetch_retries()
  
@@ -444,7 +467,7 @@ index 743c8af..f17e4f6 100644
  
          if self.enable_fpm:
              self._fpm_batch_t0 = time.monotonic()
-@@ -3647,6 +3775,9 @@ class Scheduler(
+@@ -3647,6 +3790,9 @@ class Scheduler(
              if running_batch.is_empty():
                  running_batch.batch_is_full = False
  
@@ -454,7 +477,7 @@ index 743c8af..f17e4f6 100644
          if self.dllm_config is not None:
              new_batch = self.get_new_batch_dllm(running_batch)
          elif self._should_defer_prefill():
-@@ -3705,6 +3836,8 @@ class Scheduler(
+@@ -3705,6 +3851,8 @@ class Scheduler(
              if self.enable_fpm:
                  ret.fpm_start_time = self._fpm_batch_t0
  
@@ -463,7 +486,7 @@ index 743c8af..f17e4f6 100644
          return NextBatchPlan(batch_to_run=ret, running_batch=running_batch)
  
      def get_num_allocatable_reqs(
-@@ -3754,6 +3887,50 @@ class Scheduler(
+@@ -3754,6 +3902,50 @@ class Scheduler(
  
          return NextBatchPlan(batch_to_run=ret, running_batch=running_batch)
  
@@ -514,7 +537,7 @@ index 743c8af..f17e4f6 100644
      def _get_new_batch_prefill_raw(
          self,
          prefill_delayer_single_pass: Optional[PrefillDelayerSinglePassExecutor],
-@@ -3871,7 +4048,7 @@ class Scheduler(
+@@ -3871,7 +4063,7 @@ class Scheduler(
              mamba_allocator.alloc_group_begin(len(self.waiting_queue))
          buffer_pipeline = self.tree_cache.buffer_pipeline
          # Get requests from the waiting queue to a new prefill batch
@@ -523,7 +546,7 @@ index 743c8af..f17e4f6 100644
              if self.enable_lora and not self.can_schedule_lora_req(req, running_loras):
                  continue
  
-@@ -3932,6 +4109,10 @@ class Scheduler(
+@@ -3932,6 +4124,10 @@ class Scheduler(
                  has_chunked_req=(self.chunked_req is not None),
                  truncation_align_size=self.truncation_align_size,
              )
@@ -534,7 +557,7 @@ index 743c8af..f17e4f6 100644
  
              if self.enable_lora:
                  running_loras.add(req.lora_id)
-@@ -4622,6 +4803,7 @@ class Scheduler(
+@@ -4622,6 +4818,7 @@ class Scheduler(
          elif batch.forward_mode.is_idle():
              self.batch_result_processor.process_batch_result_idle(batch, result)
  
@@ -542,7 +565,7 @@ index 743c8af..f17e4f6 100644
          self._record_step_counters(batch, result)
  
          self.metrics_reporter.log_batch_result_stats(batch, result)
-@@ -4634,6 +4816,19 @@ class Scheduler(
+@@ -4634,6 +4831,19 @@ class Scheduler(
          self.maybe_send_health_check_signal()
          self.metrics_reporter.update_device_timer()
  
@@ -562,7 +585,7 @@ index 743c8af..f17e4f6 100644
      def _record_step_counters(
          self, batch: ScheduleBatch, result: GenerationBatchResult
      ) -> None:
-@@ -5215,6 +5410,7 @@ class Scheduler(
+@@ -5215,6 +5425,7 @@ class Scheduler(
          }
  
      def abort_request(self, recv_req: AbortReq):
@@ -570,7 +593,7 @@ index 743c8af..f17e4f6 100644
          if (chunked_req := self.chunked_req) is not None:
              if recv_req.abort_all or chunked_req.rid.startswith(recv_req.rid):
                  self._pending_chunked_abort_req = chunked_req
-@@ -5369,6 +5565,25 @@ class Scheduler(
+@@ -5369,6 +5580,25 @@ class Scheduler(
                  else:
                      req.to_finish = FINISH_ABORT()
  
@@ -596,11 +619,12 @@ index 743c8af..f17e4f6 100644
      def _pause_engine(self) -> Tuple[List[Req], int]:
          raise NotImplementedError()
  
-@@ -5652,6 +5867,8 @@ class Scheduler(
+@@ -5652,6 +5882,9 @@ class Scheduler(
  
      def handle_shutdown(self, recv_req: ShutdownReq):
          # Break the event loop; the finally in run_scheduler_process releases resources.
 +        if self.beliefkv_runtime is not None:
++            self.tree_cache.on_hicache_transfer_commit = None
 +            self.beliefkv_runtime.close()
          self.gracefully_exit = True
          return None
@@ -1496,10 +1520,10 @@ index 0000000..a8a2ead
 +    unittest.main()
 diff --git a/test/srt/test_beliefkv_scheduler_hook.py b/test/srt/test_beliefkv_scheduler_hook.py
 new file mode 100644
-index 0000000..ec36e45
+index 0000000..52cf028
 --- /dev/null
 +++ b/test/srt/test_beliefkv_scheduler_hook.py
-@@ -0,0 +1,422 @@
+@@ -0,0 +1,426 @@
 +"""BeliefKV scheduler safe-point contract, without model/GPU dependencies."""
 +
 +import ast
@@ -1746,7 +1770,7 @@ index 0000000..ec36e45
 +        with patch.dict(sys.modules, {cache_module.__name__: cache_module}):
 +            with self.assertRaisesRegex(RuntimeError, "activation unsupported") as error:
 +                scheduler.init_beliefkv_runtime()
-+        self.assertIn("transfer completion ACK adapter", str(error.exception))
++        self.assertIn("action-local ownership certificates", str(error.exception))
 +        self.assertIn("selective running retraction", str(error.exception))
 +        self.assertIsNone(scheduler.beliefkv_runtime)
 +
@@ -1764,6 +1788,10 @@ index 0000000..ec36e45
 +        scheduler.idle_sleeper = None
 +        scheduler.init_beliefkv_runtime()
 +        self.assertIsNotNone(scheduler.beliefkv_runtime)
++        self.assertEqual(
++            scheduler.tree_cache.on_hicache_transfer_commit,
++            scheduler.beliefkv_runtime.on_native_transfer_commit,
++        )
 +        self.assertEqual(
 +            scheduler.beliefkv_runtime.plan_native_prefill(
 +                [], running_batch=batch, adder=object()

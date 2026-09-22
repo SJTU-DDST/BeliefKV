@@ -1,7 +1,9 @@
 # BeliefKV 当前架构与实现状态
 
 更新日期：2026-09-22
-当前 P6 代码基线：原 Qwen3-Coder/SGLang 0.5.2rc1；新模型迁移尚未接管在线调度。
+当前 P6 物理执行基线：原 Qwen3-Coder/SGLang 0.5.2rc1；
+Qwen3.5/v0.5.20 已有可选 native admission 和受 artifact 约束的
+预测 demand 代码路径，但尚无完整预测物理调度。
 
 本文只记录当前事实和下一阻塞项，不再追加逐日开发日志。2026-09-12 以前的完整历史保存在
 `docs/archive/snapshots/architecture_status_zh.md`，单次实验细节保存在
@@ -16,27 +18,41 @@ BeliefKV 与实验工具安装在同一个 `beliefkv-next` conda 环境。
 request metadata、scheduler 生命周期及 cache-mode 原生 ACK 观察 hook
 已导出为
 `patches/sglang-v0.5.20-beliefkv-staging.patch`，但 unified FULL/MAMBA
-完整物理 ownership 和动作 ACK 对账仍未迁移；完整 P6 物理
+完整物理 ownership 和动作事务仍未迁移；完整 P6 物理
 BeliefKV 仍 fail closed。新增 `--enable-beliefkv-admission` 独立开关
-只打开有界的 observed-causal admission 顺序。
+只打开有界的 admission；默认使用 observed-causal 顺序，合格 artifact
+可额外提供同类预测 demand 排序，不打开物理动作。
 新版 staging 在原生 prefill 前增加仅针对 tagged 请求的同步排序/许可
 接口；未标记请求继续按 native order，最终 FULL/MAMBA 资源验收仍在
 SGLang `PrefillAdder`。v0.5.20 plan producer 已在安全点接入：
 接收可选的 agent 事件 socket、增量更新 RCCG，并以现有 causal frontier
 重排首 512 个 tagged 请求；终止的 waiting 请求被清理，未能认证
 的请求不会获得排序许可。没有匹配的因果事件则保持 native order。
-**该 producer 目前不是预测模型**；FrontierBelief 在 Qwen3.5
-上的推断/标定、action-local FULL/MAMBA owner、预测性 PREPARE/
-PREFETCH 和事务级证书仍缺失，不能用于声称新模型预测调度已接入。
+可选 `--beliefkv-admission-predictor-path` 和
+`--beliefkv-admission-predictor-sha256` 已接入该 staging scheduler：
+仅在指定 event socket、artifact 精确 SHA-256、`calibrated` 且
+`online_eligible=true`，并与目标模型 `config.json` 及声明的权重索引、
+tokenizer 哈希和 SGLang
+`0.5.20` semantic source contract 匹配时，才启动独立进程加载
+FrontierBelief。安全点最多提交 8 个 ready tagged 候选，只非阻塞
+收取有 support、非 OOD 的 next-output P50；结果须仍匹配 live
+request/context/epoch/attempt、session 和 invocation revision，
+且同一因果类全部候选均有有效 hint 才按短输出排序。失败禁用 worker，
+无 hint 时保持 observed-causal/native 顺序。这是**有条件的预测
+admission 代码路径**，不是已验收的 Qwen3.5 预测运行：
+当前迁移目录未提供新模型校准且 online-eligible 的 predictor artifact；
+旧 rc1/development artifact 不可沿用。action-local FULL/MAMBA owner、
+预测性 PREPARE/PREFETCH 和事务级证书仍缺失。
 2026-09-22 使用固定 staging checkout、4 GiB HiCache、显式 admission
 开关在 H200 完成单请求 smoke：tagged chat 返回 HTTP 200，非法
 context epoch 返回 HTTP 400 且未挂起。该测试既未输入在线预测结果，
 也未验证真实 Host 迁移或高压吞吐。
-有界 plan 编译器可以在安全点把*已有*语义排序绑定到 request/context/
+有界 plan 编译器在安全点把语义排序绑定到 request/context/
 epoch/attempt 和原生 session ID/generation，失效授权会被拒绝；
-它不生成预测排序，也尚未接入新版本 runtime。
+它本身不做预测或容量准入；新版 runtime 的可选 worker 只提供
+前述同类 demand 排序。
 safe point 已改为原生 HiCache ACK 排空后再刷新 BeliefKV mirror/plan；
-这只保证 ACK 的观察顺序，不构成 transfer command 与合并 ACK 的归因。
+这只保证 ACK 的观察顺序，不构成预测动作的物理提交证书。
 **下文所有 P5/P6 在线能力与旧实验结果仍仅指旧模型/旧 SGLang 合同**。
 新模型原生服务或通过的 metadata 单元测试均不能视为预测式 KV 调度已迁移；
 更换模型后还需新 baseline、容量和服务率标定，不能与旧模型吞吐直接比较。
@@ -52,21 +68,35 @@ tree 不支持该观察路径。节点快照没有原子 generation 或可转移
 **没有**与 agent TOOL 生命周期集成的自动 KV 保活，亦没有提前
 Host -> GPU 的预测式恢复。原生 storage prefetch 为 storage -> Host，
 原生 H2D load-back 在请求准入时发生。BeliefKV 仍须实现工具事件
-到物理动作及 ACK 的完整对账；
+到物理动作及 ACK 的完整事务；
 具体边界见 `docs/v0520_scheduler_redesign_zh.md`。
 现已加入显式 opt-in 的 agent-native-session 生命周期桥：根据 workflow/
 context/epoch 生成隔离的 session ID，在 RETURN/CANCEL、WORKFLOW_END
 和 epoch 更新时调用原生 `/close_session`；关闭失败不会忘记引用，
 后续可以重试。默认 runner 未启用该桥，且原生 session 引用不保证
-工具等待期间绝对保活，不能代替预测式 H2D。原生合并 ACK 缺少
-per-command ID/bytes；即使 `load()` 返回成功，H2D 也可能尚未提交
-到 DMA，因此预测动作保持 fail closed。
-新版 staging 正补充 native 每个子传输的 command ID、pool count/bytes
-与 merged ACK 内身份保留。cache 侧只在 ACK 同步及 tree finish 后，
-对账全部子 receipt 才输出动作级 child commit；这只能认证单个已完成
-子操作，尚不能认证整笔预测动作或打开 `enable_beliefkv`。迁移后的
-runtime 仍需封装提交期间的部分成功/失败、context generation 与
-真实 beneficiary 校验。
+工具等待期间绝对保活，不能代替预测式 H2D。原生未标记的合并 ACK
+仅有 node IDs 和 pool 总量；即使 `load()` 返回成功，H2D 也可能尚未
+提交到 DMA，因此预测动作保持 fail closed。
+staging native 路径现能对带 command ID 的 D2H/H2D 子操作记录
+anchor、pool count 和总 bytes；只有 ACK 同步、tree finish，且全部
+子 receipt 与 merged ACK 的 node IDs、pool 总量和 bytes 一致时，
+才提供 `child_commits`。未标记 native 子操作仍计入合并校验，不能
+归给 tagged command。本地 `PhysicalTransactionLedger` 可按预期的
+child closure、方向、冻结的 FULL/MAMBA token bytes 和 live
+context epoch 对账，整笔 children 齐备才返回 completion；过期、
+重复、未知、缺失或不匹配的 receipt 均不授予部分 credit。
+staging scheduler 在 admission 启用时已把
+`UnifiedRadixCache.on_hicache_transfer_commit` 接到 runtime 的
+`on_native_transfer_commit`；runtime 持有有界 ledger，定期过期
+未完成期望、记录完成的对账结果，对账错误禁用后续物理 credit。
+`register_physical_action` 只核验 live causal context/epoch 和
+可见非终止请求并注册预期，**不派发物理动作**。这是 ACK
+accounting 接线，而非可信预测物理事务：尚无动作局部共享
+owner/独占 reclaim、原子 revision、锁及 split closure 的
+ownership certificate，也没有动作 dispatch。提交时部分成功/
+失败、取消、真实 beneficiary deficit 和 ACK/资源释放仍须封装
+并重验；不能打开
+`enable_beliefkv` 或宣称预测性 PREPARE/PREFETCH 可执行。
 冻结环境中的 `sglang 0.5.20` 目前以 wheel 形式安装，
 `source_is_active=false`；直接运行 `python -m sglang.launch_server`
 默认不会加载 staging checkout。原生启动脚本保留 wheel smoke 默认，
@@ -83,6 +113,15 @@ smoke 显式关闭 thinking 避免短 `max_tokens` 全部用于 reasoning。
 并发原生请求和 tagged metadata 请求 smoke。默认 FlashInfer sampling 首次
 JIT 遇到 CUDA 13.4 `nvcc` 与 13.0 headers 不兼容；这次仅以 PyTorch
 sampling 验证补丁禁用态，不能用作正式性能比较。
+
+本轮变更的 CPU 测试据报告为 28 passed，staging 测试为 46 passed；
+这仅覆盖对应代码路径，尚无新模型物理动作或高压 GPU 验收。
+新模型下一步先冻结并验证 Qwen3.5/v0.5.20 的 predictor
+artifact、prediction support/OOD/stale 回退和实际 admission GPU
+gate；再补齐 action-local owner/closure/capacity 证明、安全动作
+dispatch、部分提交和取消时的 fail-closed 事务，
+重测 FULL/MAMBA 服务率与高压 baseline/P6 A/B。现有原生和 tagged
+单请求 smoke 均不能替代这些 gate，**P6 尚未完成迁移**。
 
 ## 1. 当前结论
 
@@ -1071,7 +1110,11 @@ v60 仍有约 51.93 GB `prefetch_context` ACK，但不能归入 predictive H2D�
 
 ## 7. 下一步
 
-当前关键路径：
+以下旧基线的关键路径仅适用于 Qwen3-Coder/0.5.2rc1，不能作为
+Qwen3.5/v0.5.20 的已完成 gate。新模型应先按上文的 artifact、
+admission、物理 ownership/事务及高压 A/B 顺序单独验收。
+
+旧基线关键路径：
 
 1. 修复 workload driver 的 context-limit preflight 和 TerminalProtocolError
    重试策略，确保 formal A/B 没有 workload 层错误。

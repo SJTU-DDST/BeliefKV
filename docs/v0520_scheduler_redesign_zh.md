@@ -1,6 +1,8 @@
 # v0.5.20 调度适配边界
 
-状态：2026-09-22，admission-only 切片可显式启用；不是完整 P6 预测调度。
+状态：2026-09-22，native admission 可显式启用；预测 demand 仅在
+目标模型/运行时匹配的合格 artifact 下参与 admission，物理动作仍关闭。
+这不是完整 P6 预测调度。
 目标配置为 Qwen3.5-35B-A3B BF16、单机、统一 FULL/MAMBA tree、HiCache
 cache mode。其他 cache backend、TP/PP、disaggregation 和 speculative
 仍需独立验收。
@@ -42,7 +44,9 @@ cache mode。其他 cache backend、TP/PP、disaggregation 和 speculative
   `--enable-beliefkv-admission` 的在线 plan producer。可选
   `--beliefkv-event-socket-path` 在安全点接收 agent 因果事件，复用
   `CausalFrontierScheduler` 排列与 live context/epoch 匹配的 ready
-  invocation；没有事件或没有匹配时沿用 native order。事件应用失败
+  invocation；没有事件或没有匹配时沿用 native order。另有可选、
+  经 artifact 门禁的 next-output demand 排序（见下节），不授权物理动作。
+  事件应用失败
   废弃 RCCG mirror，退回 native order；普通事件不深拷贝整个 RCCG。
   waiting queue 中由事件确认已终止的 tagged 请求在安全点被精确移除，
   通知 tokenizer 并释放原生 handle。首 512 个 tagged 候选受有界
@@ -50,6 +54,30 @@ cache mode。其他 cache backend、TP/PP、disaggregation 和 speculative
   `compile_native_prefill_plan` 将语义排序在安全点绑定到
   request/context/epoch/attempt 和 native session ID/generation；
   session 在授权与应用之间变化时拒绝 tagged 候选，原生请求不受影响。
+
+## 预测 demand 的 admission 边界
+
+- staging scheduler 将 `--beliefkv-admission-predictor-path` 与
+  `--beliefkv-admission-predictor-sha256` 交给 `NativeAdmissionRuntime`；
+  预测模式还要求 event socket。启动时必须核对 artifact 文件的精确
+  SHA-256、`calibration_status=calibrated`、`online_eligible=true`，
+  并核对其中 semantic source contract 的模型 `config.json` 及
+  声明的权重索引、tokenizer 文件哈希和
+  `sglang_version=0.5.20`。旧 Qwen3-Coder/rc1 的 schema-v5 或
+  development-only artifact 不满足新模型准入资格；当前迁移目录
+  尚无经 Qwen3.5 标定且可在线使用的 predictor artifact。
+- 启用合格 artifact 后，单独的 spawn 进程加载 FrontierBelief，
+  每批最多 8 个当前可见且 ready 的 tagged 候选；最多一批在途，
+  等待批只保留最新值，安全点仅非阻塞 poll。只使用有 support、
+  非 OOD 的 `next_output_tokens` P50；失败禁用本地 worker。
+  返回值必须在短有效期内与 live request/context/epoch/attempt、
+  session ID/generation 及 invocation revision 一致；未齐备 hint
+  时不根据局部预测或 request ID 排序。
+- 预测值只在**同一已知因果排序类且该类所有候选均有有效 hint**时
+  用于短输出优先的 tagged admission 排序。未配置合格 artifact 时，
+  仍只有 observed-causal/native 顺序；即使启用预测，SGLang
+  `PrefillAdder` 仍独占实际 FULL/MAMBA 资源验收，不能把 hint
+  当容量证明或 `PREPARE_HOST/PREFETCH_GPU` 授权。
 
 ## 交还给上游的机制
 
@@ -75,27 +103,38 @@ cache mode。其他 cache backend、TP/PP、disaggregation 和 speculative
    当前只读 observer 已暴露 FULL/MAMBA 的 session 引用计数及叶
    标记数，但没有原子 revision、全部共享 owner 或独占 reclaim 证明，
    不能据此授权迁移；session 引用也不等同于锁。
-2. 为每个提交的动作建立独立 command identity，区分 *提交* 与 *DMA
-   完成*。原生 merged ACK 只有 node IDs 与 pool 总数，缺少 per-node
-   bytes/command ID；不能按 ACK 数量猜测 BeliefKV 的完成证书。
-   分配失败、拆分、部分成功和未知 ACK 一律 fail closed。
-3. 等动作级 D2H/H2D 和 native ACK 双向对账通过后，再开放预测性
+2. staging native D2H/H2D 入口现可传递可选 command ID，controller
+   在真正提交子操作时记录 anchor、pool token counts 和总 bytes；
+   合并 ACK 同步且 tree finish 后，只有全部子 receipt 与 ACK
+   的 node IDs、pool totals 和总 bytes 对账，才输出 tagged
+   `child_commits`。未标记 native 子操作只参加合并账目；
+   split 后 node ID 属于原子操作的 published closure，不是新 command。
+   `load()` 成功或 ACK 数量都不是 DMA 完成/动作证书。分配失败、
+   未提交的 H2D 或对账不符均不得获得子 receipt。
+3. staging scheduler 在 admission 启用时已将
+   `UnifiedRadixCache.on_hicache_transfer_commit` 接到
+   `NativeAdmissionRuntime.on_native_transfer_commit`；runtime 持有
+   有界 `PhysicalTransactionLedger`。`register_physical_action`
+   只接受与 live causal context/epoch 和可见非终止请求匹配的预期
+   动作，**仅注册对账期望，不派发迁移**。ledger 按预期 node
+   closure、方向、context epoch 和冻结的 FULL/MAMBA 每 token
+   字节数核对 native child receipt，只有整笔 children 对账才记录
+   completion；过期、未知/重复、缺失或不匹配的 receipt 不给部分
+   credit，对账错误会禁用后续物理 credit。此接线只用于 ACK
+   accounting；当前没有能产生可信预期的 ownership certificate，
+   也没有预测动作 dispatch，账本输入不能自行证明共享 owner、
+   独占 reclaim、锁与原子 generation。
+4. 等动作级 D2H/H2D 和 native ACK 双向对账通过后，再开放预测性
    PREPARE/PREFETCH。只有真实 beneficiary deficit 才能授权 COMMIT；
    SELECTIVE RETRACTION 需另行验证 overlap drain/TP 一致性。
-   原生 `CacheOperation.merge_ops` 会把多笔请求合成一个 ACK，只有
-   node ID 和聚合 pool bytes；H2D `load()` 成功只是排队，不代表已提交
-   或 DMA 完成。下一步为每个原始子操作保留 command ID、方向、FULL/
-   MAMBA bytes 与提交状态，并在 tree finish 后逐笔对账。split 产生
-   的新 node ID 是受影响范围，不是新的 command。
+   下一步需在动作提交前后重验 request/context/epoch、全部共享
+   owner、split closure、锁与 pool 容量，形成 action-local 原子
+   revision/可迁移证明；在此基础上实现安全的动作 dispatch，
+   将逐子操作提交/失败（包括部分成功）、取消和资源回收绑定到
+   runtime 事务，再验证 ACK 与动作期望的守恒。即便已接线的
+   ledger 能对账已完成子操作，也不等于
+   `PREPARE_HOST/PREFETCH_GPU` 已可执行。
 
-当前 staging 正在把可选 command ID 贯穿 native D2H/H2D 入口与 controller。
-只有 ACK 已同步、tree 已 finish，且全部子 receipt 的 node ID、各 pool
-计数和总 bytes 与 merged ACK 一致时，才提供带原始 command ID 的
-`child_commits`；未标记 native 子操作只参与账目校验。H2D receipt
-必须等 `start_loading` 真正提交才出现。此机制仍**不是**
-`PREPARE_HOST/PREFETCH_GPU` 已可执行：动作的 context/epoch、请求、
-owner、closure 和所有子操作提交结果尚未与 runtime 的预测事务绑定；
-部分成功、allocation failure 与未知 ACK 都不能领取整笔动作的证书。
 新环境默认仍加载预安装 wheel；使用 staging 源码启动时必须显式传
 `SGLANG_SOURCE_CHECKOUT` 给 `scripts/launch_qwen35_native_v0520.sh`，
 脚本校验实际加载路径和固定 checkout。带源码启动但不启用 BeliefKV
@@ -104,8 +143,12 @@ owner、closure 和所有子操作提交结果尚未与 runtime 的预测事务�
 安全点顺序固定为 native chunk abort -> HiCache ACK 排空 ->
 BeliefKV 状态同步/决策 -> native prefill admission -> GPU batch。
 现阶段只有单机单 rank、非 disaggregation、无 speculative、unified cache
-的 admission-only 模式可显式开启。**其排序来自 observed causal
-frontier，不来自新的在线预测模型；没有预测 D2H/H2D。**旧 BF16
+的 admission-only 模式可显式开启。**目前已验证的排序来自 observed
+causal frontier；代码中的异步 demand worker 需要新 artifact 门禁，
+尚不能作为已验证的 Qwen3.5 在线预测结果；没有预测 D2H/H2D。**旧 BF16
 GPU/transfer 服务率不能作为 Qwen3.5 FULL/MAMBA 的物理容量或
-latest-start 证书。物理事务、prediction-to-action、校准及新模型
-高压 A/B 尚未迁移/验收，不能用新版原生 smoke 替代。
+latest-start 证书。下一步先生成/校准新模型 eligible artifact，
+验证预测 hint 的 stale/OOD 回退和 admission GPU gate；再完成物理
+owner/closure、动作事务和 D2H/H2D 归因，重做容量/服务率标定与
+冻结 baseline/P6 高压 A/B。不能用新版原生 smoke 替代这些 gate，
+也不能宣称 P6 完成。

@@ -12,6 +12,68 @@ from beliefkv.core.events import RuntimeEvent, RuntimeEventKind
 from beliefkv.runtime.event_channel import SCHEMA_VERSION
 from beliefkv.runtime.sglang_v0520_admission import select_native_prefill_candidates
 from beliefkv.runtime.sglang_v0520_runtime import NativeAdmissionRuntime
+from beliefkv.runtime.sglang_v0520_physical import (
+    PhysicalActionExpectation,
+    PhysicalChildExpectation,
+    PhysicalReceiptError,
+)
+
+
+def test_native_ack_is_credited_only_after_live_context_reconciliation():
+    runtime = NativeAdmissionRuntime()
+    tagged = req("a")
+    assert runtime.register_visible_request(tagged)
+    runtime.on_events((
+        event(0, RuntimeEventKind.WORKFLOW_START),
+        event(
+            1, RuntimeEventKind.INVOCATION_CREATE,
+            invocation_id="a", context_id="ctx-a",
+            agent_definition_id="a", agent_instance_id="a",
+        ),
+    ))
+    expectation = PhysicalActionExpectation(
+        command_id="prepare-a",
+        action="PREPARE_HOST",
+        context_id="ctx-a",
+        context_epoch=0,
+        children=(PhysicalChildExpectation(
+            anchor_node_id=11,
+            published_node_ids=(11,),
+            pool_bytes=(("kv", 20), ("mamba", 5)),
+            num_bytes=25,
+        ),),
+        pool_bytes_per_token=(("kv", 10), ("mamba", 5)),
+    )
+    runtime.register_physical_action(expectation)
+    runtime.on_native_transfer_commit(NS(
+        direction="d2h", status="completed", node_ids=(11,),
+        num_tokens_by_pool=(("kv", 2), ("mamba", 1)),
+        child_commits=(NS(
+            command_id="prepare-a", anchor_node_id=11,
+            published_node_ids=(11,),
+            num_tokens_by_pool=(("kv", 2), ("mamba", 1)),
+            num_bytes=25,
+        ),),
+    ))
+    assert [action.command_id for action in runtime.completed_physical_actions] == [
+        "prepare-a"
+    ]
+    assert runtime.counts["native_physical_completed"] == 1
+    assert runtime.physical_ledger.pending_count == 0
+    runtime.on_native_transfer_commit(NS(
+        direction="d2h", status="completed", node_ids=(11,),
+        num_tokens_by_pool=(("kv", 2), ("mamba", 1)),
+        child_commits=(NS(
+            command_id="prepare-a", anchor_node_id=11,
+            published_node_ids=(11,),
+            num_tokens_by_pool=(("kv", 2), ("mamba", 1)),
+            num_bytes=25,
+        ),),
+    ))
+    assert runtime.physical_disabled
+    assert runtime.counts["physical_receipt_failed"] == 1
+    with pytest.raises(PhysicalReceiptError, match="no live causal context"):
+        runtime.register_physical_action(expectation)
 
 
 def req(name: str, *, tagged: bool = True):
