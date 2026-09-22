@@ -777,7 +777,7 @@ index 406069a..7431436 100644
          if not self.enable_session_radix_cache or session_id is None:
              return 0
 diff --git a/python/sglang/srt/mem_cache/unified_radix_cache.py b/python/sglang/srt/mem_cache/unified_radix_cache.py
-index d417d7d..e331298 100644
+index d417d7d..cb8333f 100644
 --- a/python/sglang/srt/mem_cache/unified_radix_cache.py
 +++ b/python/sglang/srt/mem_cache/unified_radix_cache.py
 @@ -6,7 +6,7 @@ import threading
@@ -789,7 +789,7 @@ index d417d7d..e331298 100644
  
  import torch
  
-@@ -158,6 +158,26 @@ class _OngoingPrefetch(NamedTuple):
+@@ -158,6 +158,33 @@ class _OngoingPrefetch(NamedTuple):
      comp_xfers: dict[ComponentType, list[PoolTransfer]]
  
  
@@ -813,10 +813,17 @@ index d417d7d..e331298 100644
 +    child_commits: tuple[HiCacheChildCommit, ...] = ()
 +
 +
++class PrepareHostShadowResult(NamedTuple):
++    """Issuance only; physical completion is reported by the tagged native ACK."""
++
++    issued: bool
++    node_id: Optional[NodeId]
++
++
  class UnifiedRadixCache(BasePrefixCache):
      def __init__(
          self,
-@@ -260,6 +280,11 @@ class UnifiedRadixCache(BasePrefixCache):
+@@ -260,6 +287,11 @@ class UnifiedRadixCache(BasePrefixCache):
  
          # HiCache D↔H defaults (overridden by init_hicache)
          self.cache_controller: Optional[HybridCacheController] = None
@@ -828,9 +835,142 @@ index d417d7d..e331298 100644
          self.host_pool_group = None  # set by attach_hybrid_pool_to_unified_cache
          # Owns the storage backend lifecycle; built by init_hicache.
          self._storage_attachment: Optional[StorageAttachment] = None
-@@ -1519,7 +1544,11 @@ class UnifiedRadixCache(BasePrefixCache):
+@@ -1518,8 +1550,145 @@ class UnifiedRadixCache(BasePrefixCache):
+ 
      # ---- HiCache: Backup / LoadBack ----
  
++    def prepare_host_shadow(
++        self,
++        *,
++        session_id: str,
++        session_generation: int,
++        leaf_node_id: NodeId,
++        leaf_creation_time: int | float,
++        node_id: NodeId,
++        node_creation_time: int | float,
++        beliefkv_command_id: str,
++    ) -> PrepareHostShadowResult:
++        """Issue one tagged, non-evicting D2H shadow; only the native ACK certifies it.
++
++        Native-only scheduler-thread entry. A tracked FULL session leaf supplies
++        provenance, not exclusive ownership of the KV. MAMBA-exclusive leaf
++        paths are unsupported; selectors must use FULL leaf ancestry only.
++        No device KV is removed, and failed admission leaves other Host KV intact.
++        Scheduler dispatch must remain disabled until the caller can reserve
++        exact native per-child pool counts/bytes *before* controller.write
++        enqueues; this outcome cannot be credited as physical completion.
++        """
++        declined = PrepareHostShadowResult(False, None)
++        controller = self.cache_controller
++        host_group = getattr(controller, "mem_pool_host", None)
++        if (
++            self.host_memory_mode != "cache"
++            or self.buffer_pipeline is not None
++            or getattr(controller, "write_policy", None) != "write_through"
++            or not callable(getattr(controller, "write", None))
++            or host_group is None
++            or not hasattr(host_group, "entry_map")
++            or not hasattr(host_group, "anchor_entry")
++            or getattr(host_group.anchor_entry, "name", None) != PoolName.KV
++            or not callable(getattr(host_group, "available_size", None))
++            or not callable(getattr(host_group, "alloc", None))
++            or not callable(getattr(host_group, "free", None))
++            or not self.enable_session_radix_cache
++            or type(session_id) is not str
++            or not session_id
++            or type(session_generation) is not int
++            or type(leaf_node_id) is not int
++            or type(node_id) is not int
++            or type(leaf_creation_time) not in (int, float)
++            or type(node_creation_time) not in (int, float)
++            or type(beliefkv_command_id) is not str
++            or not beliefkv_command_id
++            or self.session_refs._session_generations.get(session_id)
++            != session_generation
++            or session_id in self.session_refs._closed_session_ids
++        ):
++            return declined
++
++        try:
++            leaf = self.tree_core.node_by_id(leaf_node_id)
++            node = self.tree_core.node_by_id(node_id)
++        except (KeyError, RuntimeError, ValueError):
++            return declined
++        full = self.components[BASE_COMPONENT_TYPE]
++        if (
++            leaf is self.tree_core.root_node
++            or leaf.id != leaf_node_id
++            or leaf.creation_time != leaf_creation_time
++            or node is self.tree_core.root_node
++            or node.id != node_id
++            or node.creation_time != node_creation_time
++            or leaf not in full._session_leaves.get(session_id, ())
++            or session_id
++            not in (leaf.component_data[BASE_COMPONENT_TYPE].session_ids or ())
++        ):
++            return declined
++
++        # Follow only the supplied leaf's ancestry; cap even pathological paths.
++        cur = leaf
++        found = False
++        for _ in range(64):
++            if cur is self.tree_core.root_node:
++                break
++            try:
++                if self.tree_core.node_by_id(cur.id) is not cur:
++                    return declined
++            except (KeyError, RuntimeError, ValueError):
++                return declined
++            if (
++                cur.write_through_pending_id is not None
++                or cur.load_back_pending_id is not None
++            ):
++                return declined
++            if cur is node:
++                found = True
++            if (
++                found
++                and cur is not node
++                and cur.component_data[BASE_COMPONENT_TYPE].host_value is None
++            ):
++                return declined
++            cur = cur.parent
++            if cur is None:
++                return declined
++        else:
++            return declined
++        if cur is not self.tree_core.root_node or not found:
++            return declined
++
++        full_data = node.component_data[BASE_COMPONENT_TYPE]
++        if (
++            full_data.value is None
++            or not len(full_data.value)
++            or node_id in self.ongoing_write_through
++        ):
++            return declined
++        device_value, comp_xfers = self.tree_core.build_backup_spec(node_id)
++        if any(
++            transfer.nodes_to_load and transfer.nodes_to_load != [node_id]
++            for transfers in comp_xfers.values()
++            for transfer in transfers
++        ):
++            # In particular, SWA may back up multiple window ancestors.
++            return declined
++        if not len(device_value) and not comp_xfers:
++            return declined
++
++        self._execute_and_commit_kv_backup(
++            BackupKV([node_id]),
++            beliefkv_command_id=beliefkv_command_id,
++            no_host_reclaim=True,
++        )
++        # Mamba-only backups have zero Full tokens, so the helper's integer
++        # token count cannot distinguish their successful enqueue from failure.
++        if node_id not in self.ongoing_write_through:
++            return declined
++        return PrepareHostShadowResult(True, node_id)
++
      def _execute_and_commit_kv_backup(
 -        self, action: BackupKV, write_back: bool = False
 +        self,
@@ -838,10 +978,11 @@ index d417d7d..e331298 100644
 +        write_back: bool = False,
 +        *,
 +        beliefkv_command_id: str | None = None,
++        no_host_reclaim: bool = False,
      ) -> int:
          """Run a backup action top-down, stopping at the first failed backup."""
          if self.buffer_pipeline is not None:
-@@ -1539,7 +1568,11 @@ class UnifiedRadixCache(BasePrefixCache):
+@@ -1539,7 +1708,12 @@ class UnifiedRadixCache(BasePrefixCache):
                  continue
              sidecar_xfers = self._build_backup_sidecar(device_value, comp_xfers)
              host_indices = self._execute_kv_backup(
@@ -851,10 +992,11 @@ index d417d7d..e331298 100644
 +                comp_xfers,
 +                sidecar_xfers,
 +                beliefkv_command_id=beliefkv_command_id,
++                no_host_reclaim=no_host_reclaim,
              )
              if host_indices is None:
                  return 0
-@@ -1574,7 +1607,10 @@ class UnifiedRadixCache(BasePrefixCache):
+@@ -1574,18 +1748,72 @@ class UnifiedRadixCache(BasePrefixCache):
              CacheTransferPhase.BACKUP_HOST, kv_xfer, comp_xfers
          )
  
@@ -862,13 +1004,64 @@ index d417d7d..e331298 100644
 +    def _execute_kv_backup(
 +        self, node_id, device_value, comp_xfers, sidecar_xfers, *,
 +        beliefkv_command_id: str | None = None,
++        no_host_reclaim: bool = False,
 +    ):
          """Execute Backup action."""
          kv_tokens = len(device_value)
          host_avail = self.cache_controller.mem_pool_host.available_size()
-@@ -1585,7 +1621,10 @@ class UnifiedRadixCache(BasePrefixCache):
+         if host_avail < kv_tokens:
++            if no_host_reclaim:
++                return None
+             needed = kv_tokens - host_avail
+             if self.evict_host(needed) < needed:
+                 return None
          aux_xfers = [x for xfers in comp_xfers.values() for x in xfers]
          aux_xfers.extend(sidecar_xfers)
++        reserved = []
++        host_group = self.cache_controller.mem_pool_host
++        if no_host_reclaim:
++            # resolve_host_transfers normally retries side allocations after
++            # eviction. Pre-reserve them with no reclaim callback so this
++            # single-node action never displaces somebody else's Host KV.
++            for transfer in aux_xfers:
++                if transfer.name not in host_group.entry_map:
++                    break
++                if transfer.indices_from_pool is not None:
++                    if (
++                        transfer.indices_from_pool != host_group.anchor_entry.name
++                        and not any(
++                            source.name == transfer.indices_from_pool
++                            and source.indices_from_pool is None
++                            for source in aux_xfers
++                        )
++                    ):
++                        break
++                    continue
++                if transfer.host_indices is not None or transfer.device_indices is None:
++                    break
++                size = len(transfer.device_indices)
++                if host_group.available_size(transfer.name) < size:
++                    break
++                indices = host_group.alloc(size, pool=transfer.name)
++                if indices is None:
++                    break
++                transfer.host_indices = indices
++                reserved.append((transfer, indices))
++            else:
++                # A write exception might occur after DMA submission. Do not
++                # free its slots while a native ACK could still reference them.
++                result = self.cache_controller.write(
++                    device_value,
++                    node_id=node_id,
++                    extra_pools=aux_xfers or None,
++                    beliefkv_command_id=beliefkv_command_id,
++                )
++                if result is not None:
++                    return result
++            for transfer, indices in reserved:
++                host_group.free(indices, pool=transfer.name)
++                transfer.host_indices = None
++            return None
          return self.cache_controller.write(
 -            device_value, node_id=node_id, extra_pools=aux_xfers or None
 +            device_value,
@@ -878,7 +1071,7 @@ index d417d7d..e331298 100644
          )
  
      def _track_write_through_node(
-@@ -1627,10 +1666,10 @@ class UnifiedRadixCache(BasePrefixCache):
+@@ -1627,10 +1855,10 @@ class UnifiedRadixCache(BasePrefixCache):
              updated_node_ids,
          )
  
@@ -891,7 +1084,7 @@ index d417d7d..e331298 100644
  
          lock_node_id, lock_params, publish_node_ids = self.ongoing_write_through.pop(
              ack_id
-@@ -1643,12 +1682,15 @@ class UnifiedRadixCache(BasePrefixCache):
+@@ -1643,12 +1871,15 @@ class UnifiedRadixCache(BasePrefixCache):
              # suffix; the prefix fragment must be persisted as well.
              for node_id in publish_node_ids:
                  self.write_backup_storage(node_id)
@@ -907,7 +1100,7 @@ index d417d7d..e331298 100644
      ) -> bool:
          """Load evicted KV data from host back to device (H→D)."""
          if self.cache_controller is None:
-@@ -1675,6 +1717,7 @@ class UnifiedRadixCache(BasePrefixCache):
+@@ -1675,6 +1906,7 @@ class UnifiedRadixCache(BasePrefixCache):
                  result=result,
                  ancestor_lock_params=ancestor_lock_params,
                  host_anchor_params=host_anchor_params,
@@ -915,7 +1108,7 @@ index d417d7d..e331298 100644
              )
              return success
          finally:
-@@ -1690,6 +1733,7 @@ class UnifiedRadixCache(BasePrefixCache):
+@@ -1690,6 +1922,7 @@ class UnifiedRadixCache(BasePrefixCache):
          result: IncLockRefResult,
          ancestor_lock_params: DecLockRefParams,
          host_anchor_params: DecLockRefParams,
@@ -923,7 +1116,7 @@ index d417d7d..e331298 100644
      ) -> bool:
          # Build the KV + per-component aux transfers.
          kv_xfer, comp_xfers = self.tree_core.build_load_back_spec(node_id, req=req)
-@@ -1741,6 +1785,7 @@ class UnifiedRadixCache(BasePrefixCache):
+@@ -1741,6 +1974,7 @@ class UnifiedRadixCache(BasePrefixCache):
              host_indices=kv_xfer.host_indices,
              node_id=node_id,
              extra_pools=aux_xfers or None,
@@ -931,7 +1124,7 @@ index d417d7d..e331298 100644
          )
  
          self.dec_lock_ref(node_id, ancestor_lock_params)
-@@ -3130,10 +3175,24 @@ class UnifiedRadixCache(BasePrefixCache):
+@@ -3130,10 +3364,24 @@ class UnifiedRadixCache(BasePrefixCache):
              while self.ongoing_write_through:
                  for ack in cc.ack_write_queue:
                      ack.finish_event.synchronize()
@@ -957,7 +1150,7 @@ index d417d7d..e331298 100644
                  cc.ack_write_queue.clear()
                  assert len(self.ongoing_write_through) == 0
              return
-@@ -3154,11 +3213,102 @@ class UnifiedRadixCache(BasePrefixCache):
+@@ -3154,11 +3402,102 @@ class UnifiedRadixCache(BasePrefixCache):
          while finish_count > 0:
              ack = cc.ack_write_queue.pop(0)
              ack.finish_event.synchronize()
@@ -1061,7 +1254,7 @@ index d417d7d..e331298 100644
      def _log_write_ack_metrics(self, ack: HiCacheAck) -> None:
          """Record D->H backup volume and duration for a completed write ack."""
          if self.metrics_collector is None:
-@@ -3200,6 +3350,8 @@ class UnifiedRadixCache(BasePrefixCache):
+@@ -3200,6 +3539,8 @@ class UnifiedRadixCache(BasePrefixCache):
          while finish_count > 0:
              ack = cc.ack_load_queue.pop(0)
              ack.finish_event.synchronize()
@@ -1070,7 +1263,7 @@ index d417d7d..e331298 100644
              for ack_id in ack.node_ids:
                  if (
                      self.buffer_pipeline is not None
-@@ -3211,6 +3363,8 @@ class UnifiedRadixCache(BasePrefixCache):
+@@ -3211,6 +3552,8 @@ class UnifiedRadixCache(BasePrefixCache):
                  self.dec_host_lock_ref(node, host_lock_params)
                  # Unpin the loaded nodes; host copies stay as reclaimable duplicates.
                  self.tree_core.finish_load_back(node)
@@ -1079,7 +1272,7 @@ index d417d7d..e331298 100644
  
              if self.metrics_collector is not None:
                  for pool, num_tokens in (ack.num_tokens_by_pool or {}).items():
-@@ -3225,6 +3379,13 @@ class UnifiedRadixCache(BasePrefixCache):
+@@ -3225,6 +3568,13 @@ class UnifiedRadixCache(BasePrefixCache):
                      self.metrics_collector.observe_load_back_duration(
                          duration_ms / 1000.0
                      )
@@ -2130,6 +2323,527 @@ index 0000000..388cb28
 +    node.component_data[ComponentType.FULL].session_ids.add("session")
 +    tracker.release_radix_session("session")
 +    assert tracker.snapshot_session_leaf_anchors("session", generation) is None
+diff --git a/test/srt/test_beliefkv_shadow_dispatch.py b/test/srt/test_beliefkv_shadow_dispatch.py
+new file mode 100644
+index 0000000..cc39174
+--- /dev/null
++++ b/test/srt/test_beliefkv_shadow_dispatch.py
+@@ -0,0 +1,515 @@
++"""CPU-only action-local shadow dispatch tests, without importing the GPU runtime."""
++
++import ast
++import logging
++import unittest
++from enum import Enum, IntEnum
++from pathlib import Path
++from types import SimpleNamespace
++from typing import NamedTuple, Optional
++from unittest.mock import Mock
++
++import torch
++
++
++SOURCE = (
++    Path(__file__).resolve().parents[2]
++    / "python/sglang/srt/mem_cache/unified_radix_cache.py"
++)
++TREE = ast.parse(SOURCE.read_text(encoding="utf-8"))
++
++
++class PoolName(str, Enum):
++    KV = "kv"
++    MAMBA = "mamba"
++    SWA = "swa"
++    SIDECAR = "sidecar"
++
++
++class ComponentType(IntEnum):
++    FULL = 0
++    MAMBA = 1
++    SWA = 2
++
++
++class BackupKV(NamedTuple):
++    node_ids: list[int]
++
++
++class _OngoingWriteThrough(NamedTuple):
++    node_id: int
++    lock_params: object
++    publish_node_ids: list[int]
++
++
++def load_cache_methods():
++    cache = next(
++        node
++        for node in TREE.body
++        if isinstance(node, ast.ClassDef) and node.name == "UnifiedRadixCache"
++    )
++    names = {
++        "prepare_host_shadow",
++        "_execute_and_commit_kv_backup",
++        "_execute_kv_backup",
++        "_backup_publish_node_ids",
++        "_track_write_through_node",
++        "_finish_write_through_ack",
++        "writing_check",
++        "_emit_hicache_transfer_commit",
++        "_log_write_ack_metrics",
++    }
++    methods = [
++        node
++        for node in cache.body
++        if isinstance(node, ast.FunctionDef) and node.name in names
++    ]
++    results = [
++        node
++        for node in TREE.body
++        if isinstance(node, ast.ClassDef)
++        and node.name in {
++            "PrepareHostShadowResult",
++            "HiCacheChildCommit",
++            "HiCacheTransferCommit",
++        }
++    ]
++    module = ast.Module(
++        body=[
++            ast.ImportFrom(
++                module="__future__", names=[ast.alias(name="annotations")], level=0
++            ),
++            *results,
++            ast.ClassDef(
++                name="ShadowCache", bases=[], keywords=[], body=methods, decorator_list=[]
++            ),
++        ],
++        type_ignores=[],
++    )
++    ast.fix_missing_locations(module)
++    namespace = {
++        "NamedTuple": NamedTuple,
++        "Optional": Optional,
++        "BASE_COMPONENT_TYPE": ComponentType.FULL,
++        "PoolName": PoolName,
++        "BackupKV": BackupKV,
++        "_OngoingWriteThrough": _OngoingWriteThrough,
++        "logger": logging.getLogger(__name__),
++    }
++    exec(compile(module, str(SOURCE), "exec"), namespace)
++    return namespace["ShadowCache"], namespace["PrepareHostShadowResult"]
++
++
++ShadowCache, PrepareHostShadowResult = load_cache_methods()
++
++
++def load_native_accounting_methods():
++    source = (
++        Path(__file__).resolve().parents[2]
++        / "python/sglang/srt/mem_cache/hybrid_cache/hybrid_cache_controller.py"
++    )
++    tree = ast.parse(source.read_text(encoding="utf-8"))
++    controller = next(
++        node
++        for node in tree.body
++        if isinstance(node, ast.ClassDef) and node.name == "HybridCacheController"
++    )
++    methods = [
++        node
++        for node in controller.body
++        if isinstance(node, ast.FunctionDef)
++        and node.name in {"_num_tokens_by_pool", "_transfer_num_bytes"}
++    ]
++    module = ast.Module(
++        body=[
++            ast.ImportFrom(
++                module="__future__", names=[ast.alias(name="annotations")], level=0
++            ),
++            ast.ClassDef(
++                name="NativeAccounting",
++                bases=[],
++                keywords=[],
++                body=methods,
++                decorator_list=[],
++            ),
++        ],
++        type_ignores=[],
++    )
++    ast.fix_missing_locations(module)
++    namespace = {}
++    exec(compile(module, str(source), "exec"), namespace)
++    return namespace["NativeAccounting"]
++
++
++NativeAccounting = load_native_accounting_methods()
++
++
++def component(*, value=None, host_value=None, session_ids=None):
++    return SimpleNamespace(
++        value=value, host_value=host_value, session_ids=session_ids or set()
++    )
++
++
++class Node(SimpleNamespace):
++    __hash__ = object.__hash__
++    __eq__ = object.__eq__
++
++
++def node(node_id, parent, *, host=None, device=None):
++    return Node(
++        id=node_id,
++        parent=parent,
++        creation_time=node_id + 100,
++        write_through_pending_id=None,
++        load_back_pending_id=None,
++        component_data={
++            ComponentType.FULL: component(value=device, host_value=host),
++            ComponentType.MAMBA: component(),
++            ComponentType.SWA: component(),
++        },
++    )
++
++
++class HostGroup:
++    def __init__(self, *, kv=8, mamba=8, swa=8):
++        self.free_sizes = {PoolName.KV: kv, PoolName.MAMBA: mamba, PoolName.SWA: swa}
++        self.entry_map = {
++            pool: SimpleNamespace(host_pool=SimpleNamespace(size_per_token=bytes_per_slot))
++            for pool, bytes_per_slot in (
++                (PoolName.KV, 8),
++                (PoolName.MAMBA, 16),
++                (PoolName.SWA, 4),
++                (PoolName.SIDECAR, 3),
++            )
++        }
++        self.anchor_entry = SimpleNamespace(
++            name=PoolName.KV, host_pool=self.entry_map[PoolName.KV].host_pool
++        )
++        self.allocations = []
++        self.releases = []
++
++    def available_size(self, pool=None):
++        return self.free_sizes[pool or PoolName.KV]
++
++    def alloc(self, size, *, pool=None):
++        pool = pool or PoolName.KV
++        if self.free_sizes[pool] < size:
++            return None
++        self.free_sizes[pool] -= size
++        indices = torch.arange(size)
++        self.allocations.append((pool, size))
++        return indices
++
++    def free(self, indices, *, pool=None):
++        pool = pool or PoolName.KV
++        self.free_sizes[pool] += len(indices)
++        self.releases.append((pool, len(indices)))
++
++
++def fixture():
++    cache = ShadowCache()
++    root = node(0, None)
++    parent = node(1, root, host=torch.arange(2), device=torch.arange(2))
++    leaf = node(2, parent, device=torch.arange(2))
++    leaf.component_data[ComponentType.FULL].session_ids.add("s")
++    nodes = {n.id: n for n in (root, parent, leaf)}
++    group = HostGroup()
++    ops = []
++
++    def write(device_indices, *, node_id, extra_pools, beliefkv_command_id):
++        indices = group.alloc(len(device_indices))
++        if indices is not None:
++            for transfer in extra_pools or ():
++                if transfer.indices_from_pool is not None:
++                    source = next(
++                        (
++                            candidate
++                            for candidate in extra_pools
++                            if candidate.name == transfer.indices_from_pool
++                            and candidate.indices_from_pool is None
++                        ),
++                        None,
++                    )
++                    transfer.host_indices = (
++                        indices
++                        if transfer.indices_from_pool == PoolName.KV
++                        else source.host_indices
++                    )
++            ops.append((node_id, beliefkv_command_id, extra_pools))
++        return indices
++
++    def backup_spec(node_id):
++        target = nodes[node_id]
++        full = target.component_data[ComponentType.FULL]
++        device = full.value if full.host_value is None else full.value[:0]
++        extra = {}
++        for ct, name in (
++            (ComponentType.MAMBA, PoolName.MAMBA),
++            (ComponentType.SWA, PoolName.SWA),
++        ):
++            cd = target.component_data[ct]
++            if cd.value is not None and cd.host_value is None:
++                extra[ct] = [
++                    SimpleNamespace(
++                        name=name,
++                        device_indices=cd.value,
++                        host_indices=None,
++                        indices_from_pool=None,
++                        nodes_to_load=[node_id],
++                    )
++                ]
++        return device, extra
++
++    def commit_backup(node_id, indices, xfers):
++        if len(indices):
++            nodes[node_id].component_data[ComponentType.FULL].host_value = indices
++        for ct, transfers in xfers.items():
++            nodes[node_id].component_data[ct].host_value = transfers[0].host_indices
++
++    def mark_pending(ids, ack_id):
++        for nid in ids:
++            nodes[nid].write_through_pending_id = ack_id
++        return ids
++
++    cache.tree_core = SimpleNamespace(
++        root_node=root,
++        node_by_id=Mock(side_effect=nodes.__getitem__),
++        build_backup_spec=Mock(side_effect=backup_spec),
++        commit_backup=Mock(side_effect=commit_backup),
++        mark_write_through_pending=Mock(side_effect=mark_pending),
++        finish_write_through=Mock(),
++    )
++    cache.components = {
++        ComponentType.FULL: SimpleNamespace(_session_leaves={"s": {leaf}})
++    }
++    cache.session_refs = SimpleNamespace(
++        _session_generations={"s": 7}, _closed_session_ids={}
++    )
++    cache.enable_session_radix_cache = True
++    cache.host_memory_mode = "cache"
++    cache.buffer_pipeline = None
++    cache.cache_controller = SimpleNamespace(
++        write_policy="write_through",
++        mem_pool_host=group,
++        write=Mock(side_effect=write),
++        ack_write_queue=[],
++    )
++    cache.ongoing_write_through = {}
++    cache.inc_lock_ref = Mock(return_value=SimpleNamespace(to_dec_params=lambda: "lock"))
++    cache.dec_lock_ref = Mock()
++    cache._build_backup_sidecar = Mock(return_value=[])
++    cache.evict_host = Mock(side_effect=AssertionError("Host eviction is forbidden"))
++    cache.enable_storage = False
++    cache.metrics_collector = None
++    cache.on_hicache_transfer_commit = None
++    args = dict(
++        session_id="s",
++        session_generation=7,
++        leaf_node_id=leaf.id,
++        leaf_creation_time=leaf.creation_time,
++        node_id=leaf.id,
++        node_creation_time=leaf.creation_time,
++        beliefkv_command_id="cmd-2",
++    )
++    return cache, root, parent, leaf, group, ops, args
++
++
++class TestPrepareHostShadow(unittest.TestCase):
++    def test_tagged_enqueue_retains_gpu_until_native_ack(self):
++        cache, _, _, leaf, group, ops, args = fixture()
++        result = cache.prepare_host_shadow(**args)
++        self.assertEqual(result, PrepareHostShadowResult(True, leaf.id))
++        self.assertEqual([(nid, tag) for nid, tag, _ in ops], [(leaf.id, "cmd-2")])
++        self.assertIsNotNone(leaf.component_data[ComponentType.FULL].value)
++        self.assertEqual(group.allocations, [(PoolName.KV, 2)])
++        self.assertEqual(cache.ongoing_write_through[leaf.id].publish_node_ids, [leaf.id])
++        events = []
++        cache.on_hicache_transfer_commit = events.append
++        cache.cache_controller.ack_write_queue = [
++            SimpleNamespace(
++                node_ids=[leaf.id],
++                finish_event=SimpleNamespace(synchronize=Mock()),
++                num_tokens_by_pool={"kv": 2},
++                num_bytes=16,
++                timing_enabled=False,
++                child_receipts=(
++                    SimpleNamespace(
++                        command_id="cmd-2",
++                        node_id=leaf.id,
++                        num_tokens_by_pool=(("kv", 2),),
++                        num_bytes=16,
++                    ),
++                ),
++            )
++        ]
++        self.assertEqual(events, [])
++        cache.writing_check(finish_count=1)
++        self.assertEqual(events[0].status, "completed")
++        self.assertEqual(events[0].child_commits[0].command_id, "cmd-2")
++        self.assertEqual(events[0].child_commits[0].published_node_ids, (leaf.id,))
++        self.assertEqual(cache.ongoing_write_through, {})
++
++    def test_mamba_only_enqueues_even_with_zero_full_tokens(self):
++        cache, _, _, leaf, group, ops, args = fixture()
++        leaf.component_data[ComponentType.FULL].host_value = torch.arange(2)
++        leaf.component_data[ComponentType.MAMBA].value = torch.arange(1)
++        self.assertEqual(
++            cache.prepare_host_shadow(**args), PrepareHostShadowResult(True, leaf.id)
++        )
++        self.assertEqual(group.allocations, [(PoolName.MAMBA, 1), (PoolName.KV, 0)])
++        self.assertEqual(ops[0][1], "cmd-2")
++        self.assertEqual(ops[0][2][0].name, PoolName.MAMBA)
++        self.assertEqual(cache.prepare_host_shadow(**args).issued, False)
++
++    def test_full_leaf_provenance_allows_ancestor_but_not_mamba_only_leaf(self):
++        cache, _, parent, leaf, _, ops, args = fixture()
++        parent.component_data[ComponentType.FULL].host_value = None
++        args.update(node_id=parent.id, node_creation_time=parent.creation_time)
++        self.assertEqual(
++            cache.prepare_host_shadow(**args), PrepareHostShadowResult(True, parent.id)
++        )
++        self.assertEqual(ops[0][0], parent.id)
++
++        cache, _, _, leaf, _, ops, args = fixture()
++        cache.components[ComponentType.FULL]._session_leaves["s"].clear()
++        leaf.component_data[ComponentType.MAMBA].session_ids.add("s")
++        cache.components[ComponentType.MAMBA] = SimpleNamespace(
++            _session_leaves={"s": {leaf}}
++        )
++        self.assertFalse(cache.prepare_host_shadow(**args).issued)
++        self.assertEqual(ops, [])
++
++    def test_sidecar_bytes_are_native_ack_accounting_not_enqueue_credit(self):
++        cache, _, _, leaf, _, ops, args = fixture()
++        leaf.component_data[ComponentType.FULL].host_value = torch.arange(2)
++        leaf.component_data[ComponentType.MAMBA].value = torch.arange(1)
++        cache._build_backup_sidecar.return_value = [
++            SimpleNamespace(
++                name=PoolName.SIDECAR,
++                indices_from_pool=PoolName.MAMBA,
++                device_indices=None,
++                host_indices=None,
++            )
++        ]
++        outcome = cache.prepare_host_shadow(**args)
++        self.assertEqual(outcome, PrepareHostShadowResult(True, leaf.id))
++        self.assertFalse(hasattr(outcome, "num_bytes"))
++        self.assertFalse(hasattr(outcome, "num_tokens_by_pool"))
++        op = SimpleNamespace(
++            device_indices=torch.empty(0, dtype=torch.int64),
++            pool_transfers=ops[0][2],
++        )
++        accounting = NativeAccounting()
++        accounting.mem_pool_host = cache.cache_controller.mem_pool_host
++        counts = accounting._num_tokens_by_pool(op)
++        num_bytes = accounting._transfer_num_bytes(op)
++        self.assertEqual(counts, {"kv": 0, "mamba": 1})
++        self.assertEqual(num_bytes, 19)
++        self.assertEqual(cache.cache_controller.ack_write_queue, [])
++        cache.evict_host.assert_not_called()
++
++    def test_invalid_provenance_identity_mode_pending_and_continuity(self):
++        variants = (
++            lambda c, r, p, l, a: a.update(session_generation=8),
++            lambda c, r, p, l, a: a.update(leaf_creation_time=0),
++            lambda c, r, p, l, a: a.update(node_creation_time=0),
++            lambda c, r, p, l, a: a.update(node_id=999),
++            lambda c, r, p, l, a: a.update(node_id=r.id, node_creation_time=r.creation_time),
++            lambda c, r, p, l, a: setattr(p.component_data[ComponentType.FULL], "host_value", None),
++            lambda c, r, p, l, a: setattr(p, "write_through_pending_id", 4),
++            lambda c, r, p, l, a: setattr(l, "load_back_pending_id", 4),
++            lambda c, r, p, l, a: setattr(l.component_data[ComponentType.FULL], "value", None),
++            lambda c, r, p, l, a: setattr(c, "buffer_pipeline", object()),
++            lambda c, r, p, l, a: setattr(c.cache_controller, "write_policy", "write_back"),
++            lambda c, r, p, l, a: setattr(c, "cache_controller", None),
++            lambda c, r, p, l, a: setattr(c.cache_controller, "mem_pool_host", object()),
++            lambda c, r, p, l, a: setattr(c.cache_controller.mem_pool_host, "anchor_entry", None),
++            lambda c, r, p, l, a: c.session_refs._closed_session_ids.update(s=None),
++            lambda c, r, p, l, a: l.component_data[ComponentType.FULL].session_ids.clear(),
++        )
++        for mutate in variants:
++            cache, root, parent, leaf, _, ops, args = fixture()
++            mutate(cache, root, parent, leaf, args)
++            with self.subTest(mutate=mutate):
++                self.assertEqual(cache.prepare_host_shadow(**args).issued, False)
++                self.assertEqual(ops, [])
++
++    def test_replaced_node_or_untracked_leaf_declines_without_scanning_leaves(self):
++        cache, _, _, leaf, _, ops, args = fixture()
++        cache.tree_core.node_by_id.side_effect = lambda nid: (
++            node(leaf.id, leaf.parent) if nid == leaf.id else leaf.parent
++        )
++        self.assertFalse(cache.prepare_host_shadow(**args).issued)
++        cache, _, _, leaf, _, ops, args = fixture()
++        cache.components[ComponentType.FULL]._session_leaves["s"].clear()
++        self.assertFalse(cache.prepare_host_shadow(**args).issued)
++        self.assertEqual(ops, [])
++
++    def test_rejects_host_pressure_and_rolls_back_partial_side_reservation(self):
++        cache, _, _, leaf, group, ops, args = fixture()
++        group.free_sizes[PoolName.KV] = 1
++        self.assertFalse(cache.prepare_host_shadow(**args).issued)
++        self.assertEqual(ops, [])
++        group.free_sizes[PoolName.KV] = 8
++        leaf.component_data[ComponentType.MAMBA].value = torch.arange(1)
++        leaf.component_data[ComponentType.SWA].value = torch.arange(1)
++        group.free_sizes[PoolName.SWA] = 0
++        self.assertFalse(cache.prepare_host_shadow(**args).issued)
++        self.assertEqual(group.releases, [(PoolName.MAMBA, 1)])
++        self.assertEqual(group.free_sizes[PoolName.MAMBA], 8)
++        self.assertEqual(ops, [])
++        self.assertEqual(cache.ongoing_write_through, {})
++        cache.evict_host.assert_not_called()
++
++    def test_primary_allocation_failure_releases_side_slots(self):
++        cache, _, _, leaf, group, ops, args = fixture()
++        leaf.component_data[ComponentType.MAMBA].value = torch.arange(1)
++        cache.cache_controller.write.side_effect = lambda *a, **kw: None
++        self.assertFalse(cache.prepare_host_shadow(**args).issued)
++        self.assertEqual(group.releases, [(PoolName.MAMBA, 1)])
++        self.assertEqual(leaf.component_data[ComponentType.FULL].host_value, None)
++        self.assertEqual(ops, [])
++        cache.evict_host.assert_not_called()
++
++    def test_swa_multi_node_transfer_is_not_action_local(self):
++        cache, _, parent, leaf, _, ops, args = fixture()
++        cache.tree_core.build_backup_spec.side_effect = lambda _: (
++            torch.arange(2),
++            {
++                ComponentType.SWA: [
++                    SimpleNamespace(nodes_to_load=[parent.id, leaf.id])
++                ]
++            },
++        )
++        self.assertFalse(cache.prepare_host_shadow(**args).issued)
++        self.assertEqual(ops, [])
++
++    def test_unknown_derived_sidecar_pool_declines_before_write(self):
++        cache, _, _, leaf, group, ops, args = fixture()
++        leaf.component_data[ComponentType.MAMBA].value = torch.arange(1)
++        group.entry_map.pop(PoolName.SIDECAR)
++        cache._build_backup_sidecar.return_value = [
++            SimpleNamespace(name=PoolName.SIDECAR, indices_from_pool=PoolName.MAMBA)
++        ]
++        self.assertFalse(cache.prepare_host_shadow(**args).issued)
++        self.assertEqual(group.releases, [(PoolName.MAMBA, 1)])
++        self.assertEqual(ops, [])
++        cache.evict_host.assert_not_called()
++
++    def test_fixed_ancestry_budget(self):
++        cache, root, parent, leaf, _, ops, args = fixture()
++        prev = leaf
++        nodes = {n.id: n for n in (root, parent, leaf)}
++        for i in range(3, 260):
++            ancestor = node(i, root, host=torch.arange(1))
++            prev.parent = ancestor
++            prev = ancestor
++            nodes[i] = ancestor
++        cache.tree_core.node_by_id.side_effect = nodes.__getitem__
++        self.assertFalse(cache.prepare_host_shadow(**args).issued)
++        self.assertEqual(cache.tree_core.node_by_id.call_count, 66)
++        self.assertEqual(ops, [])
++
++
++if __name__ == "__main__":
++    unittest.main()
 diff --git a/test/srt/test_beliefkv_transfer_receipts.py b/test/srt/test_beliefkv_transfer_receipts.py
 new file mode 100644
 index 0000000..5e054d0

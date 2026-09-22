@@ -130,6 +130,10 @@ cache mode。其他 cache backend、TP/PP、disaggregation 和 speculative
    不一致时放弃检查。候选仅保留只读快照，随后过期或 session 失效
    即清理；没有原子 ownership/可迁移字节证明，不能视为 PREPARE
    证书。调用动作前必须重新读取 live closure。
+   本地根优先步骤选择器从 FULL session leaf 的祖先路径选一个
+   尚未备份的 node；每次只建议部分 KV，不把 MAMBA-exclusive leaf
+   当作 FULL 路径的来源。工具 hint、上下文和 closure 在动作安全点
+   重新读取。步骤只是给 native 的候选 ID，不是可执行动作。
 2. staging native D2H/H2D 入口现可传递可选 command ID，controller
    在真正提交子操作时记录 anchor、pool token counts 和总 bytes；
    合并 ACK 同步且 tree finish 后，只有全部子 receipt 与 ACK
@@ -162,6 +166,19 @@ cache mode。其他 cache backend、TP/PP、disaggregation 和 speculative
    ledger 能对账已完成子操作，也不等于
    `PREPARE_HOST/PREFETCH_GPU` 已可执行。
 
+staging 的 `UnifiedRadixCache.prepare_host_shadow` 已有单 node 原语：
+仅在 cache mode、`write_through`、session radix cache 启用，且
+FULL leaf 的 generation/创建代数和祖先 Host 连续性仍成立时，
+向原生 controller 提交带 command ID 的 D2H。Host 空间不足则拒绝，
+不得为影子备份驱逐其他 Host KV；MAMBA-only 子操作若同处 FULL leaf
+祖先路径可提交。该方法**保留 GPU KV**，返回 `issued` 而非完成凭证。
+目前 scheduler 不调用它：controller 在入队时才确定 sidecar 等子
+操作的精确 pool 计数和字节数，入口还不能在入队前给
+`PhysicalTransactionLedger` 提供可核对预期。下一步需实现两阶段
+native 预留/入队协议或原生原子提交描述符；失败需取消未提交预留，
+已提交的命令必须等待 ACK/到期，不能当场撤销或声称正收益。
+更没有 beneficiary-bound COMMIT_CPU 或提前 H2D 执行闭环。
+
 新环境默认仍加载预安装 wheel；使用 staging 源码启动时必须显式传
 `SGLANG_SOURCE_CHECKOUT` 给 `scripts/launch_qwen35_native_v0520.sh`，
 脚本校验实际加载路径和固定 checkout。带源码启动但不启用 BeliefKV
@@ -169,6 +186,12 @@ cache mode。其他 cache backend、TP/PP、disaggregation 和 speculative
 staging 单测同样需将 checkout 的 `python/` 和 BeliefKV 根目录显式
 加入 `PYTHONPATH`；直接运行环境中的 `pytest` 可能导入 wheel，
 报缺少新增 session anchor 方法，并不代表 staging 源码失败。
+`scripts/launch_qwen35_native_v0520.sh` 默认仍为 `write_back` 且
+不开 session radix cache；显式设置 `HICACHE_WRITE_POLICY=write_through`
+与 `ENABLE_SESSION_RADIX_CACHE=1`（还需 `HICACHE_SIZE_GB>0`）才满足
+单 node 原语的运行前提。该配置本身不会启用 BeliefKV 物理动作，
+也不自动启用 agent-native-session 桥；从 write_back 切换后的服务率
+与 Host 驱逐行为须独立测量，不能复用旧 A/B 基线。
 
 安全点顺序固定为 native chunk abort -> HiCache ACK 排空 ->
 BeliefKV 状态同步/决策 -> native prefill admission -> GPU batch。

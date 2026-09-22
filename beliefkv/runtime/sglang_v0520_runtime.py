@@ -34,7 +34,9 @@ from beliefkv.runtime.sglang_v0520_physical import (
     PhysicalActionExpectation,
     PhysicalReceiptError,
     PhysicalTransactionLedger,
+    ShadowBackupStep,
     capture_action_local_shadow,
+    next_shadow_backup_step,
 )
 from beliefkv.predictor.structured_frontier import LocalFrontierFeatures
 
@@ -403,6 +405,32 @@ class NativeAdmissionRuntime:
         if anchors is None:
             return None
         return capture_action_local_shadow(cache, anchors)
+
+    def refreshed_shadow_backup_step(self) -> ShadowBackupStep | None:
+        """Recheck a tool wait and its native closure at the action safe point."""
+        hint = self.tool_wait_hint
+        cache = self._native_cache
+        if hint is None or cache is None:
+            return None
+        key = hint.key
+        invocation = self.graph.invocations.get(key.invocation_id)
+        if (
+            hint.predictor_sha256 != self.predictor_sha256
+            or not hint.live(key, now_ms=time.monotonic() * 1000)
+            or self.context_sessions.get(key.context_id) != key
+            or invocation is None
+            or invocation.state.value != "wait_tool"
+            or invocation.updated_ts_ms != hint.invocation_revision_ts_ms
+            or self._terminal(key)
+        ):
+            self.tool_wait_hint = None
+            self.shadow_candidate = None
+            return None
+        candidate = self.capture_shadow_candidate(
+            cache, context_id=key.context_id, context_epoch=key.context_epoch
+        )
+        self.shadow_candidate = candidate
+        return next_shadow_backup_step(candidate) if candidate is not None else None
 
     def on_native_transfer_commit(self, commit: object) -> None:
         """Observe synchronized native ACKs, never infer completion from enqueue."""

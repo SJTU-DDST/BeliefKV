@@ -13,6 +13,7 @@ from beliefkv.runtime.sglang_v0520_physical import (
     PhysicalReceiptError,
     PhysicalTransactionLedger,
     capture_action_local_shadow,
+    next_shadow_backup_step,
 )
 
 
@@ -83,6 +84,82 @@ def test_shadow_candidate_rejects_changed_leaf_and_inconsistent_views():
         ),
     ):
         assert capture_action_local_shadow(object(), anchors) is None
+
+
+def test_partial_host_shadow_selects_parent_before_session_leaf():
+    anchors = ContextSessionAnchors(
+        PrefillCandidateKey("r", "w", "i", "c", 0, 0, "s", 1),
+        ((0, ((12, 5),)), (2, ((12, 5),))),
+        10.0,
+    )
+    parent = NS(
+        node_id=11, parent_id=None, creation_time=4,
+        full_device_tokens=4, full_host_tokens=0,
+        mamba_device_present=True, mamba_host_present=False,
+        pending_write_id=None, pending_load_id=None,
+    )
+    leaf = NS(
+        node_id=12, parent_id=11, creation_time=5,
+        full_device_tokens=8, full_host_tokens=0,
+        mamba_device_present=True, mamba_host_present=False,
+        pending_write_id=None, pending_load_id=None,
+    )
+    candidate = NS(anchors=anchors, nodes=(leaf, parent))
+    step = next_shadow_backup_step(candidate)
+    assert (
+        step.leaf_node_id, step.leaf_creation_time, step.node_id,
+        step.creation_time, step.key,
+    ) == (12, 5, 11, 4, anchors.key)
+    parent.full_host_tokens = 4
+    parent.mamba_host_present = True
+    step = next_shadow_backup_step(candidate)
+    assert step.node_id == 12
+    leaf.pending_write_id = 12
+    assert next_shadow_backup_step(candidate) is None
+    leaf.pending_write_id = None
+    leaf.full_host_tokens = 8
+    leaf.mamba_host_present = True
+    assert next_shadow_backup_step(candidate) is None
+
+
+def test_partial_shadow_rejects_orphan_and_cyclic_ancestry():
+    anchors = ContextSessionAnchors(
+        PrefillCandidateKey("r", "w", "i", "c", 0, 0, "s", 1),
+        ((0, ((12, 5),)), (2, ((12, 5),))),
+        10.0,
+    )
+    node = NS(
+        node_id=12, parent_id=99, creation_time=5,
+        full_device_tokens=8, full_host_tokens=0,
+        mamba_device_present=True, mamba_host_present=False,
+        pending_write_id=None, pending_load_id=None,
+    )
+    assert next_shadow_backup_step(NS(anchors=anchors, nodes=(node,))) is None
+    node.parent_id = 12
+    assert next_shadow_backup_step(NS(anchors=anchors, nodes=(node,))) is None
+
+
+def test_shadow_step_never_selects_mamba_only_leaf_without_full_provenance():
+    anchors = ContextSessionAnchors(
+        PrefillCandidateKey("r", "w", "i", "c", 0, 0, "s", 1),
+        ((0, ((11, 4),)), (2, ((12, 5),))),
+        10.0,
+    )
+    full = NS(
+        node_id=11, parent_id=None, creation_time=4,
+        full_device_tokens=8, full_host_tokens=8,
+        mamba_device_present=True, mamba_host_present=True,
+        pending_write_id=None, pending_load_id=None,
+    )
+    mamba_only = NS(
+        node_id=12, parent_id=11, creation_time=5,
+        full_device_tokens=8, full_host_tokens=0,
+        mamba_device_present=True, mamba_host_present=False,
+        pending_write_id=None, pending_load_id=None,
+    )
+    assert next_shadow_backup_step(NS(
+        anchors=anchors, nodes=(full, mamba_only)
+    )) is None
 
 
 def child(anchor, published, kv, mamba, total):
@@ -191,6 +268,33 @@ def test_overlapping_pending_node_or_unbounded_publication_rejected():
         ledger.register(expected(
             "oversized", children=(child(21, (21, 22, 23), 20, 5, 32),),
         ))
+
+
+def test_rejected_native_enqueue_releases_reservation_without_reusing_identity():
+    ledger = PhysicalTransactionLedger(max_pending=1)
+    ledger.register(expected())
+    ledger.cancel_unsubmitted("cmd")
+    assert ledger.pending_count == 0
+    with pytest.raises(PhysicalReceiptError, match="reused"):
+        ledger.register(expected())
+    with pytest.raises(PhysicalReceiptError, match="unknown"):
+        ledger.cancel_unsubmitted("cmd")
+    ledger.register(expected("other"))
+    with pytest.raises(PhysicalReceiptError, match="unknown"):
+        ledger.observe(ack(receipt()), live_context_epochs={"ctx": 3})
+    assert ledger.pending_count == 0
+
+
+def test_partially_acknowledged_command_cannot_cancel_reservation():
+    ledger = PhysicalTransactionLedger()
+    ledger.register(expected(children=(
+        child(11, (11, 12), 20, 5, 32),
+        child(13, (13,), 10, 0, 10),
+    )))
+    assert ledger.observe(ack(receipt()), live_context_epochs={"ctx": 3}) == ()
+    with pytest.raises(PhysicalReceiptError, match="partially acknowledged"):
+        ledger.cancel_unsubmitted("cmd")
+    assert ledger.pending_count == 1
 
 
 def test_two_child_command_waits_for_full_reconciliation_across_acks():

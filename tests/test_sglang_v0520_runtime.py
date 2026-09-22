@@ -211,6 +211,14 @@ def test_tool_start_triggers_bounded_wait_prediction_then_local_probe():
     assert runtime.shadow_candidate is sentinel
     assert capture.call_count == 1
     assert runtime.counts["tool_wait_accepted"] == 1
+    step = object()
+    with patch.object(runtime, "capture_shadow_candidate", return_value=sentinel) as recapture:
+        with patch(
+            "beliefkv.runtime.sglang_v0520_runtime.next_shadow_backup_step",
+            return_value=step,
+        ):
+            assert runtime.refreshed_shadow_backup_step() is step
+    assert recapture.call_count == 1
     runtime._forget_session("tool")
     assert runtime.tool_wait_hint is None
     assert runtime.shadow_candidate is None
@@ -225,6 +233,40 @@ def test_tool_start_triggers_bounded_wait_prediction_then_local_probe():
     runtime.scheduler_step()
     assert runtime.counts["tool_wait_result_stale"] == 1
     runtime.close()
+
+
+def test_shadow_step_recheck_rejects_changed_tool_invocation():
+    runtime = NativeAdmissionRuntime()
+    runtime.predictor_sha256 = "a" * 64
+    tagged = req("tool")
+    tagged.session_id = "session-tool"
+    tagged.session_generation = 2
+    runtime.register_visible_request(tagged)
+    runtime.on_events((
+        event(0, RuntimeEventKind.WORKFLOW_START),
+        event(
+            1, RuntimeEventKind.INVOCATION_CREATE,
+            invocation_id="tool", context_id="ctx-tool",
+            agent_definition_id="role", agent_instance_id="tool",
+        ),
+        event(
+            2, RuntimeEventKind.TOOL_START, invocation_id="tool",
+            attributes={"tool_family": "shell"},
+        ),
+    ))
+    key = runtime.context_sessions["ctx-tool"]
+    now = time.monotonic() * 1000
+    runtime.tool_wait_hint = NativeToolWaitHint(
+        key, 100.0, 300.0, 600.0, now, now + 5_000, "a" * 64,
+        invocation_revision_ts_ms=0.0,
+    )
+    runtime.shadow_candidate = object()
+    runtime.attach_native_cache(object())
+    with patch.object(runtime, "capture_shadow_candidate") as capture:
+        assert runtime.refreshed_shadow_backup_step() is None
+        capture.assert_not_called()
+    assert runtime.tool_wait_hint is None
+    assert runtime.shadow_candidate is None
 
 
 def test_tool_wait_hint_expiry_clears_read_only_candidate():

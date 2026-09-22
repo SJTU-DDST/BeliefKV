@@ -51,6 +51,17 @@ context 的有界、只读 FULL/MAMBA 祖先闭包检查（最多 64 node），
 统计未备份的 token/node，并不签发 D2H 迁移命令。候选过期和 session
 失效时清理；snapshot 没有原子 ownership 证明，不能在下一安全点
 未经重验就作为动作证书。默认 runner 仍未启用 session 桥。
+新增根优先的单 node Host-shadow 步骤选择、动作安全点再次读取物理
+闭包，以及未提交物理命令的账本预留撤销。staging native cache 提供
+受限单 node `prepare_host_shadow`：在 write_through、有效 FULL
+session leaf、父节点 Host 连续且无 pending transfer 时才入队，
+Host 不足不驱逐别的 Host KV，GPU KV 保留至 native ACK。
+**该入口尚未接入 scheduler**：当前只返回是否入队，无法在入队前
+预留含 sidecar 精确计数/字节数的账本预期，因此仍不能宣称
+predictive PREPARE 真实执行，更没有提前 PREFETCH 或 COMMIT。
+启动脚本增加显式 `HICACHE_WRITE_POLICY` 与
+`ENABLE_SESSION_RADIX_CACHE`，默认仍保持 write_back/关闭 session；
+即使 opt-in 也不会自动开启 agent session 桥或物理调度。
 新增 `scripts/promote_qwen35_admission_predictor.py` 只允许经
 Qwen3.5/v0.5.20 冻结 train/calibration/test_id 证据和重放指标
 晋升为 admission-only；旧 Qwen3-Coder artifact 及缺少目标数据的

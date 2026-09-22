@@ -14,10 +14,18 @@ MAX_RUNNING_REQUESTS="${MAX_RUNNING_REQUESTS:-32}"
 CONTEXT_LENGTH="${CONTEXT_LENGTH:-131072}"
 CHUNKED_PREFILL_SIZE="${CHUNKED_PREFILL_SIZE:-4096}"
 HICACHE_SIZE_GB="${HICACHE_SIZE_GB:-0}"
+HICACHE_WRITE_POLICY="${HICACHE_WRITE_POLICY:-write_back}"
+ENABLE_SESSION_RADIX_CACHE="${ENABLE_SESSION_RADIX_CACHE:-0}"
 CUDA_VISIBLE_DEVICES="${CUDA_VISIBLE_DEVICES:-0}"
 
 if [[ ! -x "${PYTHON}" || ! -f "${MODEL_PATH}/config.json" ]]; then
   printf 'Missing Python or model config: %s %s\n' "${PYTHON}" "${MODEL_PATH}" >&2
+  exit 2
+fi
+if [[ "${HICACHE_WRITE_POLICY}" != "write_back" && "${HICACHE_WRITE_POLICY}" != "write_through" ]] \
+    || [[ "${ENABLE_SESSION_RADIX_CACHE}" != "0" && "${ENABLE_SESSION_RADIX_CACHE}" != "1" ]] \
+    || [[ "${ENABLE_SESSION_RADIX_CACHE}" == "1" && "${HICACHE_SIZE_GB}" -le 0 ]]; then
+  printf 'Invalid HiCache write/session configuration\n' >&2
   exit 2
 fi
 CUDA_HOME="${CUDA_HOME:-$(dirname "$(dirname "${PYTHON}")")/lib/python3.11/site-packages/nvidia/cu13}"
@@ -77,8 +85,11 @@ if [[ "${HICACHE_SIZE_GB}" -gt 0 ]]; then
   server_args+=(
     --enable-hierarchical-cache
     --hicache-size "${HICACHE_SIZE_GB}"
-    --hicache-write-policy write_back
+    --hicache-write-policy "${HICACHE_WRITE_POLICY}"
     --hicache-io-backend kernel
   )
+fi
+if [[ "${ENABLE_SESSION_RADIX_CACHE}" == "1" ]]; then
+  server_args+=(--enable-session-radix-cache)
 fi
 exec "${PYTHON}" -m sglang.launch_server "${server_args[@]}" "$@"

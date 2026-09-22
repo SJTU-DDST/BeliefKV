@@ -43,6 +43,87 @@ class ActionLocalShadowCandidate:
     missing_mamba_host_nodes: int
 
 
+@dataclass(frozen=True)
+class ShadowBackupStep:
+    """One ancestor-first candidate; native must recheck before D2H."""
+
+    key: PrefillCandidateKey
+    leaf_node_id: int
+    leaf_creation_time: int | float
+    node_id: int
+    creation_time: int | float
+
+
+def next_shadow_backup_step(
+    candidate: ActionLocalShadowCandidate,
+) -> ShadowBackupStep | None:
+    """Prefer the first unbacked FULL node on the session closure path.
+
+    A single step permits partial agent-KV shadowing. Native must revalidate
+    the session, ancestry, settled Host parent and capacity at the safe point.
+    """
+    nodes = {node.node_id: node for node in candidate.nodes}
+    if len(nodes) != len(candidate.nodes):
+        return None
+    leaves = dict(dict(candidate.anchors.component_leaves).get(0, ()))
+    if not leaves or not leaves.keys() <= nodes.keys():
+        return None
+    paths: set[int] = set()
+    provenance: dict[int, int] = {}
+    for leaf in sorted(leaves):
+        current = leaf
+        seen: set[int] = set()
+        while current is not None:
+            if current not in nodes or current in seen:
+                return None
+            seen.add(current)
+            parent_id = nodes[current].parent_id
+            if parent_id is not None and parent_id not in nodes:
+                return None
+            paths.add(current)
+            provenance.setdefault(current, leaf)
+            current = parent_id
+    depth: dict[int, int] = {}
+    for node_id in paths:
+        current = node_id
+        length = 0
+        while nodes[current].parent_id is not None:
+            length += 1
+            current = nodes[current].parent_id
+        depth[node_id] = length
+    # Depth from root, so a host copy of a parent settles before its child.
+    for node_id in sorted(paths, key=lambda value: (depth[value], value)):
+        node = nodes[node_id]
+        parent = nodes.get(node.parent_id)
+        if (
+            node.pending_write_id is not None
+            or node.pending_load_id is not None
+            or node.full_device_tokens <= 0
+            or (
+                parent is not None
+                and (
+                    parent.pending_write_id is not None
+                    or parent.pending_load_id is not None
+                    or parent.full_device_tokens > parent.full_host_tokens
+                    or parent.mamba_device_present and not parent.mamba_host_present
+                )
+            )
+        ):
+            continue
+        if (
+            node.full_device_tokens > node.full_host_tokens
+            or node.mamba_device_present and not node.mamba_host_present
+        ):
+            return ShadowBackupStep(
+                key=candidate.anchors.key,
+                leaf_node_id=provenance[node_id],
+                leaf_creation_time=leaves[provenance[node_id]],
+                node_id=node_id,
+                creation_time=node.creation_time,
+            )
+    return None
+
+
 def capture_action_local_shadow(
     cache: object,
     anchors: ContextSessionAnchors,
@@ -296,6 +377,23 @@ class PhysicalTransactionLedger:
         ):
             raise PhysicalReceiptError("node already owned by a pending command")
         self._pending[expected.command_id] = (expected, monotonic(), set())
+
+    def cancel_unsubmitted(self, command_id: str) -> None:
+        """Release a reservation only when native confirms nothing was queued.
+
+        A native command already submitted must stay pending until ACK or
+        expiry; cancelling it here would turn its eventual receipt into an
+        unknown command and poison all physical credit.
+        """
+        if type(command_id) is not str or command_id not in self._pending:
+            raise PhysicalReceiptError("cannot cancel unknown physical command")
+        expected, _, received = self._pending[command_id]
+        if received:
+            raise PhysicalReceiptError(
+                f"cannot cancel partially acknowledged {expected.action}"
+            )
+        del self._pending[command_id]
+        self._remember(command_id)
 
     def _reject(self, message: str) -> None:
         # An invalid merged event cannot safely be attributed to any subset.

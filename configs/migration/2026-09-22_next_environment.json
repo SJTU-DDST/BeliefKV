@@ -3613,13 +3613,13 @@
   "sglang": {
     "installed_version": "0.5.20",
     "source_commit": "94602c9c2b7cbdb8efd5c52802dac6a1c180089e",
-    "source_status": "M python/sglang/srt/arg_groups/fields/schedule.py\n M python/sglang/srt/entrypoints/openai/protocol.py\n M python/sglang/srt/entrypoints/openai/serving_chat.py\n M python/sglang/srt/managers/cache_controller.py\n M python/sglang/srt/managers/io_struct.py\n M python/sglang/srt/managers/schedule_batch.py\n M python/sglang/srt/managers/scheduler.py\n M python/sglang/srt/managers/tokenizer_manager.py\n M python/sglang/srt/mem_cache/hybrid_cache/hybrid_cache_controller.py\n M python/sglang/srt/mem_cache/unified_cache/session_ref_tracker.py\n M python/sglang/srt/mem_cache/unified_radix_cache.py\n M python/sglang/srt/session/session_controller.py\n A test/srt/test_beliefkv_lifecycle.py\n A test/srt/test_beliefkv_metadata.py\n A test/srt/test_beliefkv_scheduler_hook.py\n A test/srt/test_beliefkv_session_anchors.py\n A test/srt/test_beliefkv_transfer_receipts.py\n A test/srt/test_beliefkv_unified_ack.py",
+    "source_status": "M python/sglang/srt/arg_groups/fields/schedule.py\n M python/sglang/srt/entrypoints/openai/protocol.py\n M python/sglang/srt/entrypoints/openai/serving_chat.py\n M python/sglang/srt/managers/cache_controller.py\n M python/sglang/srt/managers/io_struct.py\n M python/sglang/srt/managers/schedule_batch.py\n M python/sglang/srt/managers/scheduler.py\n M python/sglang/srt/managers/tokenizer_manager.py\n M python/sglang/srt/mem_cache/hybrid_cache/hybrid_cache_controller.py\n M python/sglang/srt/mem_cache/unified_cache/session_ref_tracker.py\n M python/sglang/srt/mem_cache/unified_radix_cache.py\n M python/sglang/srt/session/session_controller.py\n A test/srt/test_beliefkv_lifecycle.py\n A test/srt/test_beliefkv_metadata.py\n A test/srt/test_beliefkv_scheduler_hook.py\n A test/srt/test_beliefkv_session_anchors.py\nA  test/srt/test_beliefkv_shadow_dispatch.py\n A test/srt/test_beliefkv_transfer_receipts.py\n A test/srt/test_beliefkv_unified_ack.py",
     "installed_direct_url": null,
     "source_is_active": false
   },
   "model_manifest_path": "configs/migration/2026-09-22_qwen35_model_artifact.json",
   "model_manifest_sha256": "64427df25b9b37a20953a70c7bcad2c24d792f70831e7f8ce3ceffd6327006c0",
-  "staging_patch_sha256": "84432e816fd4214168e2f4d2f10fd26f562865bbc99316e9b8bf32c43621e601",
+  "staging_patch_sha256": "07d96633e62a173ab3172dc4116f1a77ccbabeec365276dfb4c7f70808bc5a0d",
   "environment_declaration_sha256": "13e2805f9d9025b954c123ee8ecc7bae7173f4ffcb4a7b5735b2d7b63bdcaa2a",
   "project_dependencies_sha256": "768c8abce1ea02f298bd504912d9db0a96bf6e1a5def891103398a2b8f688eb4"
 }
