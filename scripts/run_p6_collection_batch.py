@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import argparse
+from dataclasses import replace
 from datetime import datetime, timezone
 import hashlib
 import json
@@ -26,13 +27,45 @@ from beliefkv.experiments.server_contract import (
     capacity_contract,
     fetch_server_info,
     validate_server_identity,
+    validate_native_reactive_v0520,
 )
+from beliefkv.experiments.model_migration import inspect_model_config
 from beliefkv.runtime.context_lifecycle import ContextLifecyclePolicy
 from beliefkv.runtime.langchain_tool_safety import ToolObservationBudgetPolicy
 
 
 DEFAULT_PAUSE_FILE = Path("/tmp/beliefkv-experiments.paused")
 DEFAULT_HARNESS_PROFILES = REPOSITORY_ROOT / "configs/p6/harness_profiles_v1.json"
+DEFAULT_QWEN35_INVENTORY = (
+    REPOSITORY_ROOT / "configs/migration/2026-09-22_qwen35_model_artifact.json"
+)
+NATIVE_MODEL_MANIFEST_FILES = (
+    "config.json", "model.safetensors.index.json", "tokenizer.json",
+    "tokenizer_config.json",
+)
+
+
+def _native_model_manifest(
+    model_path: Path, inventory_path: Path
+) -> dict[str, str]:
+    inventory = json.loads(inventory_path.read_text(encoding="utf-8"))
+    if (
+        not isinstance(inventory, dict)
+        or Path(str(inventory.get("model_path"))).resolve() != model_path.resolve()
+        or not isinstance(inventory.get("files"), dict)
+    ):
+        raise ValueError("Qwen3.5 inventory does not match the requested model")
+    hashes = {}
+    for filename in NATIVE_MODEL_MANIFEST_FILES:
+        source = model_path / filename
+        if not source.is_file():
+            raise ValueError(f"Qwen3.5 model manifest is missing {filename}")
+        digest = hashlib.sha256(source.read_bytes()).hexdigest()
+        expected = inventory["files"].get(filename)
+        if not isinstance(expected, dict) or expected.get("sha256") != digest:
+            raise ValueError(f"Qwen3.5 model inventory changed: {filename}")
+        hashes[filename] = digest
+    return hashes
 
 
 def _actual_kv_pool_tokens(base_url: str, *, timeout_s: float = 10.0) -> int:
@@ -165,6 +198,9 @@ def _runtime_source_fingerprint() -> dict[str, object]:
         for path in (
             REPOSITORY_ROOT / "beliefkv/experiments/agent_protocol.py",
             REPOSITORY_ROOT / "beliefkv/experiments/deepagents_swebench.py",
+            REPOSITORY_ROOT / "beliefkv/experiments/model_migration.py",
+            REPOSITORY_ROOT / "beliefkv/experiments/p6_collection.py",
+            REPOSITORY_ROOT / "beliefkv/experiments/server_contract.py",
             REPOSITORY_ROOT / "beliefkv/experiments/harness_preflight.py",
             REPOSITORY_ROOT / "beliefkv/experiments/langgraph_peer_workflow.py",
             REPOSITORY_ROOT / "scripts/launch_deepagents_swebench_server.sh",
@@ -172,6 +208,8 @@ def _runtime_source_fingerprint() -> dict[str, object]:
             REPOSITORY_ROOT / "scripts/run_deepagents_swebench.py",
             REPOSITORY_ROOT / "scripts/run_p6_collection_batch.py",
             REPOSITORY_ROOT / "patches/sglang-0.5.2rc1-beliefkv.patch",
+            REPOSITORY_ROOT / "patches/sglang-v0.5.20-beliefkv-staging.patch",
+            REPOSITORY_ROOT / "scripts/launch_qwen35_native_v0520.sh",
         )
         if path.is_file()
     )
@@ -258,28 +296,35 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--base-url", default="http://127.0.0.1:18000/v1")
     parser.add_argument("--model", required=True)
     parser.add_argument("--expected-model-path", type=Path, required=True)
+    parser.add_argument(
+        "--native-model-inventory", type=Path,
+        default=DEFAULT_QWEN35_INVENTORY,
+    )
     parser.add_argument("--expected-weight-dtype", default="bfloat16")
     parser.add_argument("--expected-kv-dtype", default="bfloat16")
-    parser.add_argument("--kv-bytes-per-token", type=int, default=98_304)
+    parser.add_argument(
+        "--kv-bytes-per-token", type=int,
+        help="Legacy full-KV scalar; forbidden for hybrid native reactive collection.",
+    )
     parser.add_argument(
         "--hbm-safety-margin-bytes", type=int, default=1_073_741_824
     )
-    parser.add_argument("--control-socket", type=Path, required=True)
-    parser.add_argument("--server-audit", type=Path, required=True)
-    parser.add_argument("--server-events", type=Path, required=True)
-    parser.add_argument("--server-log", type=Path, required=True)
+    parser.add_argument("--control-socket", type=Path)
+    parser.add_argument("--server-audit", type=Path)
+    parser.add_argument("--server-events", type=Path)
+    parser.add_argument("--server-log", type=Path)
     parser.add_argument("--gpu", type=int, default=0)
     parser.add_argument(
         "--pool-tokens",
         type=int,
-        default=163_840,
+        default=None,
         help=(
             "minimum actual SGLang max_total_num_tokens required by this run; "
             "the server-reported value is used for pressure accounting"
         ),
     )
     parser.add_argument("--max-completion-tokens", type=int, default=4096)
-    parser.add_argument("--context-window-tokens", type=int, default=131_072)
+    parser.add_argument("--context-window-tokens", type=int)
     parser.add_argument("--context-keep-tokens", type=int, default=8_192)
     parser.add_argument("--summary-output-tokens", type=int, default=2_048)
     parser.add_argument("--tool-observation-turn-chars", type=int, default=65_536)
@@ -367,6 +412,33 @@ def main() -> int:
         allow_calibration=args.allow_calibration,
         allow_test=args.allow_test,
     )
+    native_reactive = batch.runtime_policy == "frozen_native_reactive_v0520"
+    if native_reactive:
+        if (
+            args.model != "Qwen3.5-35B-A3B"
+            or args.control_socket is not None
+            or args.kv_bytes_per_token is not None
+            or any((
+                args.predictor_shadow_enabled,
+                args.predictive_risk_shadow_enabled,
+                args.predictive_joint_enabled,
+                args.predictive_joint_overlay_enabled,
+                args.predictive_prefetch_canary_enabled,
+                args.frontier_retraction_shadow_enabled,
+                args.frontier_retraction_canary_limit,
+            ))
+        ):
+            raise ValueError(
+                "Qwen3.5 native reactive collection requires the target model, "
+                "no BeliefKV control or predictive actions, and no legacy KV scalar"
+            )
+        if args.expected_kv_dtype != "bfloat16":
+            raise ValueError("native Qwen3.5 reactive collection requires BF16 KV")
+    elif (
+        args.control_socket is None or args.server_audit is None
+        or args.server_events is None or args.server_log is None
+    ):
+        raise ValueError("legacy P6 collection requires control and server traces")
     if (
         args.subagent_fanout_profile is not None
         and args.subagent_fanout_profile != batch.subagent_fanout_profile
@@ -406,31 +478,77 @@ def main() -> int:
         raise ValueError(
             "--stop-after-first-native-join differs from the frozen collection batch"
         )
-    if args.pool_tokens <= 0:
+    minimum_pool_tokens = (
+        args.pool_tokens if args.pool_tokens is not None
+        else 1 if native_reactive else 163_840
+    )
+    if minimum_pool_tokens <= 0:
         raise ValueError("--pool-tokens must be positive")
     server_info = fetch_server_info(args.base_url)
-    server_identity = validate_server_identity(
+    identity_check = (
+        validate_native_reactive_v0520 if native_reactive
+        else validate_server_identity
+    )
+    server_identity = identity_check(
         server_info,
         expected_model=args.model,
         expected_model_path=args.expected_model_path,
         expected_weight_dtype=args.expected_weight_dtype,
         expected_kv_dtype=args.expected_kv_dtype,
     )
+    context_window_tokens = (
+        args.context_window_tokens if args.context_window_tokens is not None
+        else 65_536 if native_reactive else 131_072
+    )
+    server_context_length = int(server_info.get("context_length") or 0)
+    if native_reactive and (
+        server_context_length <= 0
+        or context_window_tokens + args.max_completion_tokens + 1_024
+        > server_context_length
+    ):
+        raise ValueError(
+            "native reactive context window plus completion/reserve exceeds "
+            "the server's live context length"
+        )
+    model_config = (
+        json.loads((args.expected_model_path / "config.json").read_text(
+            encoding="utf-8"
+        )) if native_reactive else None
+    )
+    geometry = inspect_model_config(model_config) if native_reactive else None
+    if native_reactive and (
+        model_config.get("model_type") != "qwen3_5_moe"
+        or (model_config.get("text_config") or {}).get("model_type")
+        != "qwen3_5_moe_text"
+    ):
+        raise ValueError("native reactive model config is not Qwen3.5-35B-A3B")
+    if native_reactive and not geometry["hybrid_linear_or_mamba"]:
+        raise ValueError("native Qwen3.5 collection requires hybrid model geometry")
+    native_model_manifest = (
+        _native_model_manifest(
+            args.expected_model_path, args.native_model_inventory
+        ) if native_reactive else None
+    )
     server_capacity = capacity_contract(
         server_info,
-        kv_bytes_per_token=args.kv_bytes_per_token,
+        kv_bytes_per_token=(
+            None if native_reactive else args.kv_bytes_per_token or 98_304
+        ),
         hbm_safety_margin_bytes=args.hbm_safety_margin_bytes,
     )
     actual_pool_tokens = int(server_capacity["max_total_num_tokens"])
-    if actual_pool_tokens < args.pool_tokens:
+    if actual_pool_tokens < minimum_pool_tokens:
         raise RuntimeError(
             "SGLang actual KV pool is below the collection requirement: "
-            f"actual={actual_pool_tokens}, required={args.pool_tokens}"
+            f"actual={actual_pool_tokens}, required={minimum_pool_tokens}"
         )
     timestamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
     output = args.output or (
         REPOSITORY_ROOT
-        / "experiments/raw/p6_agent_semantics_v1"
+        / (
+            "experiments/raw/qwen35_native_reactive_v0520"
+            if native_reactive else "experiments/raw/p6_agent_semantics_v1"
+        )
         / batch.batch_id
         / timestamp
         / "workloads"
@@ -497,10 +615,18 @@ def main() -> int:
             if saturated_root_backlog
             else max(0, workflow_count - concurrency)
         ),
-        "required_minimum_pool_tokens": args.pool_tokens,
+        "required_minimum_pool_tokens": minimum_pool_tokens,
         "actual_pool_tokens": actual_pool_tokens,
         "server_identity": server_identity,
         "server_capacity": server_capacity,
+        "hybrid_model_geometry": geometry,
+        "model_revision_sha256": native_model_manifest,
+        "native_model_inventory_sha256": (
+            hashlib.sha256(args.native_model_inventory.read_bytes()).hexdigest()
+            if native_reactive else None
+        ),
+        "native_reactive": native_reactive,
+        "formal_dataset_export_ready": not native_reactive,
         "predictor_enabled": (
             args.predictor_shadow_enabled
             or args.predictive_risk_shadow_enabled
@@ -521,13 +647,15 @@ def main() -> int:
         "frontier_retraction_canary_limit": (
             args.frontier_retraction_canary_limit
         ),
-        "predictive_transfer_model": "extent_count_aware",
+        "predictive_transfer_model": (
+            None if native_reactive else "extent_count_aware"
+        ),
         "joint_predictive_enabled": args.predictive_joint_enabled,
         "legacy_predictive_flag_requested": args.predictive_joint_enabled,
         "runtime_policy": (
             "p6_predictive_joint"
             if args.predictive_joint_overlay_enabled
-            else "frozen_p5_observed"
+            else batch.runtime_policy
         ),
         "subagent_fanout_profile": fanout_profile,
         "stop_after_first_native_join": frozen_semantic_gate,
@@ -538,7 +666,7 @@ def main() -> int:
         "runtime_event_ack_timeout_s": args.runtime_event_ack_timeout,
         "runtime_event_ack_retries": args.runtime_event_ack_retries,
         "context_lifecycle": {
-            "window_tokens": args.context_window_tokens,
+            "window_tokens": context_window_tokens,
             "keep_tokens": args.context_keep_tokens,
             "intermediate_output_tokens": args.max_completion_tokens,
             "summary_output_tokens": args.summary_output_tokens,
@@ -595,12 +723,18 @@ def main() -> int:
         runtime_event_ack_timeout_s=args.runtime_event_ack_timeout,
         runtime_event_ack_retries=args.runtime_event_ack_retries,
         context_lifecycle=ContextLifecyclePolicy(
-            window_tokens=args.context_window_tokens,
+            window_tokens=context_window_tokens,
             keep_tokens=args.context_keep_tokens,
             intermediate_output_tokens=args.max_completion_tokens,
             summary_output_tokens=args.summary_output_tokens,
+            model_context_tokens=(
+                server_context_length if native_reactive else 262_144
+            ),
         ),
-        loop_guard=LoopGuardPolicy(),
+        loop_guard=(
+            replace(LoopGuardPolicy(), activation_wall_clock_s=None)
+            if native_reactive else LoopGuardPolicy()
+        ),
         tool_observation_budget=ToolObservationBudgetPolicy(
             total_chars_per_turn=args.tool_observation_turn_chars,
             max_chars_per_result=args.tool_observation_result_chars,
@@ -609,6 +743,12 @@ def main() -> int:
     summary = run_experiment(config)
     final_fingerprint = _runtime_source_fingerprint()
     source_stable = final_fingerprint == source_fingerprint
+    model_stable = (
+        not native_reactive
+        or _native_model_manifest(
+            args.expected_model_path, args.native_model_inventory
+        ) == native_model_manifest
+    )
     system_eligible = (
         summary["system_jct_eligible_workflows"] == workflow_count
     )
@@ -620,8 +760,15 @@ def main() -> int:
         "runtime_source_fingerprint_end": final_fingerprint,
         "runtime_source_stable": source_stable,
         "training_eligible": (
-            system_eligible and source_stable and not frozen_semantic_gate
+            system_eligible and source_stable and model_stable
+            and not frozen_semantic_gate
+            and not native_reactive
         ),
+        "raw_trace_eligible": (
+            system_eligible and source_stable and model_stable
+            and not frozen_semantic_gate
+        ) if native_reactive else None,
+        "model_revision_stable": model_stable if native_reactive else None,
         "semantic_gate_passed": semantic_gate_passed,
         "ineligibility_reasons": [
             reason
@@ -636,6 +783,11 @@ def main() -> int:
                     "system_jct_gate_failed",
                 ),
                 (not source_stable, "runtime_source_changed_during_collection"),
+                (not model_stable, "model_manifest_changed_during_collection"),
+                (
+                    native_reactive,
+                    "native_reactive_formal_dataset_export_not_yet_validated",
+                ),
             )
             if condition
         ],
@@ -647,7 +799,10 @@ def main() -> int:
     passed = (
         semantic_gate_passed and source_stable
         if frozen_semantic_gate
-        else final_contract["training_eligible"]
+        else (
+            final_contract["raw_trace_eligible"] if native_reactive
+            else final_contract["training_eligible"]
+        )
     )
     return 0 if passed else 1
 

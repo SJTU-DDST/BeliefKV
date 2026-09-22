@@ -11,6 +11,34 @@ JOIN child-completion 三阶段 H2D ticket（概率窗口、结构化完成提�
 `docs/archive/snapshots/architecture_status_zh.md`，单次实验细节保存在
 `docs/experiments/`。
 
+### Qwen3.5 native reactive 数据采集
+
+收集训练集原始 workflow trace **不依赖**预测动作的跨 epoch ACK 接力、
+FULL/MAMBA 独占 reclaim 证书、COMMIT_CPU 或完整 JointPlan。这些只在
+BeliefKV 预测式物理调度中需要；Qwen3.5 native reactive 使用 v0.5.20
+原生 HiCache 写回/按需 load-back。启动必须明确关闭 BeliefKV admission、
+predictor 和 predictive actions，且 Host cache 实际启用。
+
+`configs/migration/qwen35_native_reactive_train_plan_2026-09-22.json`
+从原冻结 split 派生，仅包含 train 的 9 批/67 次 rollout（51 个唯一任务）；
+原 calibration/test 清单未修改。新采集入口核验模型和 v0.5.20 服务身份、
+HiCache 配置、模型关键文件哈希、模型 context 上限和数据源稳定性，
+取消 2 小时 workflow 人为截止，保留安全 guard。混合 FULL/MAMBA
+只记录原生 pool token 与 FULL 的静态几何，**不**借用旧模型的
+98,304 B/token 当总 HBM/Host 容量。
+
+2026-09-22 目标 H200 上完成短 native 服务验收：Qwen3.5/v0.5.20、
+BF16、TP=1、4 GiB HiCache、`max_total_num_tokens=1,645,444`，
+单次 chat 返回 HTTP 200；验收后已关闭临时服务。真实
+`/get_server_info` 的 TP 字段是 `tp_size`，采集器已据此修正校验。
+这不是 train batch 运行或高压/Host restore 验收。
+
+当前仅可标记 `raw_trace_eligible`；旧 P6 正式导出器仍要求 rc1 的
+逐请求 server audit、transfer telemetry 与环境 profile，不能把
+native reactive 原始 trace 假装成可直接训练的正式数据集。
+采集后仍需为 v0.5.20 补齐观测数据导出/模型训练所需的目标标签契约；
+本轮代码未做 GPU 高压验收，也没有解锁预测物理动作。
+
 ## 模型与运行时升级（进行中）
 
 迁移前已冻结 tag `checkpoint/pre-sglang-model-upgrade-2026-09-22` 和旧环境

@@ -94,10 +94,13 @@ def validate_server_identity(
 def capacity_contract(
     server_info: dict[str, Any],
     *,
-    kv_bytes_per_token: int,
+    kv_bytes_per_token: int | None,
     hbm_safety_margin_bytes: int,
 ) -> dict[str, object]:
-    if kv_bytes_per_token <= 0 or hbm_safety_margin_bytes < 0:
+    if (
+        kv_bytes_per_token is not None and kv_bytes_per_token <= 0
+        or hbm_safety_margin_bytes < 0
+    ):
         raise ValueError("capacity constants must be non-negative")
     try:
         pool_tokens = int(server_info["max_total_num_tokens"])
@@ -116,7 +119,14 @@ def capacity_contract(
     return {
         "max_total_num_tokens": pool_tokens,
         "kv_bytes_per_token": kv_bytes_per_token,
-        "kv_pool_bytes": pool_tokens * kv_bytes_per_token,
+        "kv_pool_bytes": (
+            pool_tokens * kv_bytes_per_token
+            if kv_bytes_per_token is not None else None
+        ),
+        "capacity_accounting": (
+            "native_pool_tokens_only" if kv_bytes_per_token is None
+            else "legacy_scalar_kv_bytes"
+        ),
         "hbm_safety_margin_bytes": hbm_safety_margin_bytes,
         "context_length": int(server_info.get("context_length") or 0),
         "max_running_requests": int(server_info.get("max_running_requests") or 0),
@@ -128,3 +138,42 @@ def capacity_contract(
         "sampling_backend": server_info.get("sampling_backend"),
         "reported_memory_usage_gib": memory_usage,
     }
+
+
+def validate_native_reactive_v0520(
+    server_info: dict[str, Any],
+    *,
+    expected_model: str,
+    expected_model_path: str | Path,
+    expected_weight_dtype: str,
+    expected_kv_dtype: str,
+) -> dict[str, object]:
+    """Freeze native Host restore, not an unverified BeliefKV action path."""
+    identity = validate_server_identity(
+        server_info,
+        expected_model=expected_model,
+        expected_model_path=expected_model_path,
+        expected_weight_dtype=expected_weight_dtype,
+        expected_kv_dtype=expected_kv_dtype,
+    )
+    size = server_info.get("hicache_size")
+    tp = server_info.get("tp_size", server_info.get("tensor_parallel_size"))
+    alternate_tp = server_info.get("tensor_parallel_size")
+    if (
+        identity["sglang_version"] != "0.5.20"
+        or server_info.get("enable_hierarchical_cache") is not True
+        or type(size) not in (int, float) or size <= 0
+        or server_info.get("hicache_write_policy") not in (
+            "write_back", "write_through",
+        )
+        or server_info.get("enable_beliefkv") is True
+        or server_info.get("enable_beliefkv_admission") is True
+        or server_info.get("beliefkv_admission_prefetch") is True
+        or type(tp) is not int or tp != 1
+        or alternate_tp is not None and alternate_tp != tp
+    ):
+        raise RuntimeError(
+            "native reactive collection requires v0.5.20 single-rank HiCache "
+            "with BeliefKV scheduling and predictive physical actions disabled"
+        )
+    return identity

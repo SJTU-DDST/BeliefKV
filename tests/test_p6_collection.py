@@ -3,7 +3,9 @@ from __future__ import annotations
 import hashlib
 import io
 import json
+import sys
 from pathlib import Path
+from unittest.mock import patch
 
 import pytest
 
@@ -11,6 +13,11 @@ from beliefkv.experiments.p6_collection import load_collection_batch
 from scripts.run_p6_collection_batch import (
     _actual_kv_pool_tokens,
     _materialize_runtime_workload_manifest,
+    _native_model_manifest,
+    main as run_collection,
+)
+from scripts.freeze_qwen35_native_reactive_plan import (
+    freeze_native_reactive_train_plan,
 )
 
 
@@ -92,6 +99,171 @@ def test_load_collection_train_batch(tmp_path: Path) -> None:
     assert batch.workflow_count == 1
     assert batch.preflight_command is None
     assert batch.subagent_fanout_profile == "natural"
+    assert batch.runtime_policy == "frozen_p5_observed"
+
+
+def test_native_reactive_collection_requires_separate_frozen_policy(tmp_path: Path) -> None:
+    plan = _write_fixture(tmp_path)
+    raw = json.loads(plan.read_text(encoding="utf-8"))
+    raw["runtime_policy"] = "frozen_native_reactive_v0520"
+    raw["batches"][0]["policy"] = "frozen_native_reactive_v0520"
+    plan.write_text(json.dumps(raw), encoding="utf-8")
+    with pytest.raises(ValueError, match="frozen source plan"):
+        load_collection_batch(plan, "batch-1")
+    raw["source_plan"] = str(plan)
+    raw["source_plan_sha256"] = "invalid"
+    plan.write_text(json.dumps(raw), encoding="utf-8")
+    with pytest.raises(ValueError, match="changed after freeze"):
+        load_collection_batch(plan, "batch-1")
+    original = _write_fixture(tmp_path / "donor")
+    native = tmp_path / "native.json"
+    freeze_native_reactive_train_plan(original, native)
+    assert load_collection_batch(native, "batch-1").runtime_policy == (
+        "frozen_native_reactive_v0520"
+    )
+    frozen = json.loads(native.read_text(encoding="utf-8"))
+    frozen["batches"][0]["policy"] = "frozen_p5_observed"
+    native.write_text(json.dumps(frozen), encoding="utf-8")
+    with pytest.raises(ValueError, match="batch policy"):
+        load_collection_batch(native, "batch-1")
+
+
+def test_native_plan_freezes_only_train_without_relabeling_other_splits(
+    tmp_path: Path,
+) -> None:
+    old_plan = _write_fixture(tmp_path, split="train")
+    old = json.loads(old_plan.read_text(encoding="utf-8"))
+    old["batches"].append({
+        **old["batches"][0], "batch_id": "sealed-test", "split": "test_id",
+    })
+    old_plan.write_text(json.dumps(old), encoding="utf-8")
+    native_path = tmp_path / "native.json"
+    frozen = freeze_native_reactive_train_plan(old_plan, native_path)
+    assert frozen["batch_count"] == 1
+    assert frozen["batches"][0]["policy"] == "frozen_native_reactive_v0520"
+    assert frozen["batches"][0]["batch_id"] == "batch-1"
+    assert frozen["source_plan_sha256"] == hashlib.sha256(
+        old_plan.read_bytes()
+    ).hexdigest()
+    assert load_collection_batch(native_path, "batch-1").runtime_policy == (
+        "frozen_native_reactive_v0520"
+    )
+    assert json.loads(old_plan.read_text(encoding="utf-8")) == old
+    with pytest.raises(FileExistsError):
+        freeze_native_reactive_train_plan(old_plan, native_path)
+
+
+def test_native_reactive_collection_preflight_and_raw_trace_provenance(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    plan = _write_fixture(tmp_path)
+    native_plan = tmp_path / "native.json"
+    freeze_native_reactive_train_plan(plan, native_plan)
+    model = tmp_path / "model"
+    model.mkdir()
+    config = {
+        "model_type": "qwen3_5_moe",
+        "text_config": {
+            "model_type": "qwen3_5_moe_text",
+            "num_hidden_layers": 4, "num_key_value_heads": 2,
+            "head_dim": 8, "full_attention_interval": 2,
+        }
+    }
+    (model / "config.json").write_text(json.dumps(config), encoding="utf-8")
+    for name in (
+        "model.safetensors.index.json", "tokenizer.json", "tokenizer_config.json",
+    ):
+        (model / name).write_text("{}", encoding="utf-8")
+    inventory = tmp_path / "inventory.json"
+    inventory.write_text(json.dumps({
+        "model_path": str(model),
+        "files": {
+            name: {"sha256": hashlib.sha256((model / name).read_bytes()).hexdigest()}
+            for name in (
+                "config.json", "model.safetensors.index.json",
+                "tokenizer.json", "tokenizer_config.json",
+            )
+        },
+    }), encoding="utf-8")
+    assert _native_model_manifest(model, inventory)["config.json"] == (
+        json.loads(inventory.read_text(encoding="utf-8"))["files"]["config.json"]["sha256"]
+    )
+    profiles = tmp_path / "profiles.json"
+    profiles.write_text(json.dumps({
+        "schema_version": 1, "profile_id": "native", "instances": {},
+    }), encoding="utf-8")
+    output = tmp_path / "results" / "workloads"
+    info = {
+        "served_model_name": "Qwen3.5-35B-A3B",
+        "model_path": str(model),
+        "dtype": "bfloat16",
+        "kv_cache_dtype": "bfloat16",
+        "version": "0.5.20",
+        "enable_hierarchical_cache": True,
+        "hicache_size": 4,
+        "hicache_write_policy": "write_back",
+        "enable_beliefkv": False,
+        "enable_beliefkv_admission": False,
+        "beliefkv_admission_prefetch": False,
+        "tensor_parallel_size": 1,
+        "max_total_num_tokens": 100_000,
+        "context_length": 131_072,
+    }
+    captured = []
+
+    def run(config):
+        captured.append(config)
+        return {
+            "system_jct_eligible_workflows": 1,
+            "semantic_gate_completed_workflows": 1,
+        }
+
+    args = [
+        "run_p6_collection_batch.py",
+        "--collection-plan", str(native_plan),
+        "--batch-id", "batch-1",
+        "--model", "Qwen3.5-35B-A3B",
+        "--expected-model-path", str(model),
+        "--native-model-inventory", str(inventory),
+        "--harness-profiles", str(profiles),
+        "--output", str(output),
+    ]
+    monkeypatch.setattr(sys, "argv", args)
+    monkeypatch.setattr(
+        "scripts.run_p6_collection_batch.fetch_server_info", lambda _: info,
+    )
+    monkeypatch.setattr(
+        "scripts.run_p6_collection_batch._runtime_source_fingerprint",
+        lambda: {"digest": "stable"},
+    )
+    monkeypatch.setattr(
+        "scripts.run_p6_collection_batch.run_experiment", run,
+    )
+    assert run_collection() == 0
+    assert captured[0].control_socket is None
+    assert captured[0].loop_guard.activation_wall_clock_s is None
+    assert captured[0].context_lifecycle.window_tokens == 65_536
+    assert captured[0].context_lifecycle.model_context_tokens == 131_072
+    contract = json.loads((output / "p6_collection_contract.json").read_text())
+    assert contract["runtime_policy"] == "frozen_native_reactive_v0520"
+    assert contract["raw_trace_eligible"] is True
+    assert contract["training_eligible"] is False
+    assert contract["server_capacity"]["kv_bytes_per_token"] is None
+    assert contract["server_capacity"]["kv_pool_bytes"] is None
+    assert contract["model_revision_stable"] is True
+    assert contract["formal_dataset_export_ready"] is False
+
+    with patch.dict(info, {"enable_beliefkv_admission": True}):
+        with pytest.raises(RuntimeError, match="native reactive"):
+            run_collection()
+    monkeypatch.setattr(sys, "argv", [*args, "--control-socket", "/tmp/invalid.sock"])
+    with pytest.raises(ValueError, match="no BeliefKV control"):
+        run_collection()
+    config["text_config"]["head_dim"] = 16
+    (model / "config.json").write_text(json.dumps(config), encoding="utf-8")
+    monkeypatch.setattr(sys, "argv", args)
+    with pytest.raises(ValueError, match="inventory changed"):
+        run_collection()
 
 
 def test_collection_batch_freezes_parallel_fanout(tmp_path: Path) -> None:

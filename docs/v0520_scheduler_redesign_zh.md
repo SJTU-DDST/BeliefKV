@@ -5,6 +5,48 @@
 action-eligible artifact 门禁下的 pre-admission H2D lease 已接入
 staging，但现有 artifact 均非 action-eligible，线上物理动作仍关闭。
 
+## Native reactive 数据采集通道
+
+Qwen3.5/v0.5.20 训练 trace 可以先在 predictor 和 BeliefKV admission
+均关闭的 native HiCache (`write_back` 或 `write_through`) 通道采集。
+该通道不调用 BeliefKV 的物理 ledger、COMMIT 或 Join H2D ticket，
+因此预测路径尚缺的跨 epoch ACK/共享 owner 证书不是采集阻塞项。
+使用独立的 `frozen_native_reactive_v0520` 计划，禁止把旧
+`frozen_p5_observed` 批次直接改名冒充同一策略数据。
+采集脚本必须核验 `0.5.20`、精确模型路径/BF16、Host cache、
+物理动作关闭、关键模型文件哈希及 server context，并记录
+FULL/MAMBA 混合容量未标定；workflow 没有任意 2 小时截断。
+原始 trace 成功不等于旧 rc1 exporter 的 `formal_training_eligible`，
+不能直接作为完整 P6 训练集使用。
+
+已冻结 train-only 计划为
+`configs/migration/qwen35_native_reactive_train_plan_2026-09-22.json`。
+采集前启动相同新环境的 v0.5.20 服务并启用 Host cache。例如：
+
+```bash
+HICACHE_SIZE_GB=96 HICACHE_WRITE_POLICY=write_back \
+  SGLANG_SOURCE_CHECKOUT=/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20 \
+  bash scripts/launch_qwen35_native_v0520.sh
+
+/home/longhao/miniconda3/envs/beliefkv-next/bin/python \
+  scripts/run_p6_collection_batch.py \
+  --collection-plan configs/migration/qwen35_native_reactive_train_plan_2026-09-22.json \
+  --batch-id p6-013-train-mixed-r0 \
+  --model Qwen3.5-35B-A3B \
+  --expected-model-path /srv/ai/models/Qwen/Qwen3.5-35B-A3B
+```
+
+2026-09-22 在目标 GPU 上完成短 native smoke：上述 4 GiB
+HiCache 服务就绪，采集器的真实 server identity/capacity 校验通过，
+单次 chat 返回 HTTP 200；随后已停止临时服务。通用计划生成器
+仍只生成旧 P5 策略，native train 计划由专用冻结脚本从原 split
+派生并强制核对源计划 SHA-256。真实 train batch 尚未执行；
+运行前仍需核对 Docker image lock、日志、宿主 GPU 和工具环境。
+取消的是全 workflow 的 2 小时 activation 截止，不是单次模型
+调用的默认 `--request-timeout 7200` 安全超时。只有原始 trace
+可获得 `raw_trace_eligible`；完整 P6 服务率/传输监督仍需新版
+逐请求观测契约与 exporter，不可使用旧 rc1 遥测伪造。
+
 ## JOIN 与 pre-admission 协同
 
 - 工具等待的 H2D source 仍需要同一 `WAIT_TOOL`、context/session 与

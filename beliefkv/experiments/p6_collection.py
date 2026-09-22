@@ -11,6 +11,9 @@ from beliefkv.experiments.deepagents_swebench import load_workload_bundle
 
 ALLOWED_SPLITS = frozenset({"train", "calibration", "test_id"})
 ALLOWED_FANOUT_PROFILES = frozenset({"natural", "parallel_analysis_2to3", "native_subagent_2to3"})
+ALLOWED_COLLECTION_POLICIES = frozenset(
+    {"frozen_p5_observed", "frozen_native_reactive_v0520"}
+)
 
 
 @dataclass(frozen=True)
@@ -29,6 +32,7 @@ class P6CollectionBatch:
     preflight_command: str | None
     subagent_fanout_profile: str
     semantic_gate_stop_after_first_join: bool
+    runtime_policy: str = "frozen_p5_observed"
 
 
 def load_collection_batch(
@@ -48,8 +52,24 @@ def load_collection_batch(
         raw.get("predictive_actions_enabled")
     ):
         raise ValueError("training evidence must disable predictive policy")
-    if raw.get("runtime_policy") != "frozen_p5_observed":
-        raise ValueError("training evidence must use frozen_p5_observed")
+    policy = raw.get("runtime_policy")
+    if policy not in ALLOWED_COLLECTION_POLICIES:
+        raise ValueError("unsupported frozen collection policy")
+    if policy == "frozen_native_reactive_v0520":
+        source_plan = raw.get("source_plan")
+        if not source_plan or not raw.get("source_plan_sha256"):
+            raise ValueError("native reactive plan requires a frozen source plan")
+        source_path = Path(str(source_plan)).resolve()
+        if hashlib.sha256(source_path.read_bytes()).hexdigest() != raw[
+            "source_plan_sha256"
+        ]:
+            raise ValueError("native reactive source plan changed after freeze")
+        if any(
+            item.get("split") != "train"
+            for item in raw.get("batches", ())
+            if isinstance(item, dict)
+        ):
+            raise ValueError("native reactive plan must contain train batches only")
 
     matches = [
         item
@@ -68,8 +88,8 @@ def load_collection_batch(
         raise PermissionError("sealed test collection requires --allow-test")
     if bool(batch.get("predictive_actions")):
         raise ValueError("batch enables predictive actions")
-    if batch.get("policy") != "frozen_p5_observed":
-        raise ValueError("batch policy differs from frozen_p5_observed")
+    if batch.get("policy") != policy:
+        raise ValueError("batch policy differs from frozen collection policy")
 
     arrival_interval_ms = _nonnegative_float(
         batch.get("workflow_arrival_interval_ms", 0.0),
@@ -134,6 +154,7 @@ def load_collection_batch(
         preflight_command=str(preflight) if preflight is not None else None,
         subagent_fanout_profile=fanout_profile,
         semantic_gate_stop_after_first_join=semantic_gate_raw,
+        runtime_policy=policy,
     )
 
 

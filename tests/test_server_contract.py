@@ -11,6 +11,7 @@ from beliefkv.experiments.server_contract import (
     fetch_server_info,
     resolved_kv_dtype,
     validate_server_identity,
+    validate_native_reactive_v0520,
 )
 
 
@@ -90,6 +91,51 @@ def test_capacity_contract_records_physical_budget(tmp_path: Path) -> None:
     assert contract["kv_pool_bytes"] == 800_000 * 98_304
     assert contract["host_pool_gib"] == 96.0
     assert contract["page_size"] == 1
+
+
+def test_hybrid_reactive_capacity_does_not_invent_scalar_kv_bytes(tmp_path: Path) -> None:
+    info = _server_info(tmp_path / "model")
+    info.update({
+        "version": "0.5.20",
+        "enable_hierarchical_cache": True,
+        "hicache_write_policy": "write_back",
+        "enable_beliefkv": False,
+        "enable_beliefkv_admission": False,
+        "beliefkv_admission_prefetch": False,
+        "tp_size": 1,
+    })
+    identity = validate_native_reactive_v0520(
+        info,
+        expected_model="Qwen3-Coder-30B-A3B-Instruct",
+        expected_model_path=tmp_path / "model",
+        expected_weight_dtype="bfloat16",
+        expected_kv_dtype="bfloat16",
+    )
+    assert identity["sglang_version"] == "0.5.20"
+    capacity = capacity_contract(
+        info, kv_bytes_per_token=None, hbm_safety_margin_bytes=1_024,
+    )
+    assert capacity["kv_pool_bytes"] is None
+    assert capacity["kv_bytes_per_token"] is None
+    assert capacity["max_total_num_tokens"] == 800_000
+    for key, value in (
+        ("enable_hierarchical_cache", False),
+        ("enable_beliefkv_admission", True),
+        ("beliefkv_admission_prefetch", True),
+        ("tp_size", 2),
+        ("tensor_parallel_size", 2),
+        ("version", "0.5.2rc1"),
+        ("hicache_size", 0),
+    ):
+        invalid = {**info, key: value}
+        with pytest.raises(RuntimeError, match="native reactive"):
+            validate_native_reactive_v0520(
+                invalid,
+                expected_model="Qwen3-Coder-30B-A3B-Instruct",
+                expected_model_path=tmp_path / "model",
+                expected_weight_dtype="bfloat16",
+                expected_kv_dtype="bfloat16",
+            )
 
 
 def test_fetch_server_info_rejects_non_ready_server(
