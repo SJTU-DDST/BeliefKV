@@ -10,11 +10,14 @@ import time
 from beliefkv.predictor.structured_frontier import (
     FrontierBeliefModel,
     LocalFrontierFeatures,
+    WaitBeliefKind,
 )
 from beliefkv.runtime.sglang_v0520_admission import PrefillCandidateKey
 from beliefkv.runtime.sglang_v0520_prediction import (
     MAX_OUTPUT_TOKENS,
+    MAX_TOOL_WAIT_MS,
     NativeDemandHint,
+    NativeToolWaitHint,
 )
 
 
@@ -49,13 +52,63 @@ def predict_batch(
     return tuple(results)
 
 
+def predict_tool_wait_batch(
+    items: tuple[tuple[PrefillCandidateKey, LocalFrontierFeatures, float], ...],
+    *,
+    model: FrontierBeliefModel | None = None,
+) -> tuple[tuple[PrefillCandidateKey, float, float, float, float], ...]:
+    model = model or _MODEL
+    if model is None:
+        raise RuntimeError("tool-wait predictor is not loaded")
+    results = []
+    for key, features, revision in items:
+        if features.state != "wait_tool":
+            continue
+        prediction = model.predict(features)
+        wait = prediction.wait_belief
+        if (
+            not math.isfinite(prediction.calibration_coverage)
+            or not 0 < prediction.calibration_coverage <= 1
+            or prediction.head_support.get("tool_wait")
+            not in {"exact", "role", "backoff", "global", "pooled"}
+            or prediction.ood_reasons
+            or wait is None
+            or wait.kind is not WaitBeliefKind.TOOL
+            or wait.dependency_composed
+            or not wait.available
+            or wait.ood_reasons
+        ):
+            continue
+        quantiles = tuple(
+            wait.residual_duration.quantile(q) for q in (0.1, 0.5, 0.9)
+        )
+        if (
+            all(
+                type(value) in (int, float)
+                and math.isfinite(value)
+                and 0 <= value <= MAX_TOOL_WAIT_MS
+                for value in quantiles
+            )
+            and quantiles[0] <= quantiles[1] <= quantiles[2]
+        ):
+            results.append((key, *quantiles, revision))
+    return tuple(results)
+
+
 def _worker_main(
     artifact_path: str, input_queue: object, output_queue: object
 ) -> None:
     _init_model(artifact_path)
     while True:
-        sequence, items = input_queue.get()
-        output_queue.put((sequence, predict_batch(items)))
+        request = input_queue.get()
+        if len(request) == 2:
+            sequence, items = request
+            output_queue.put((sequence, predict_batch(items)))
+        else:
+            sequence, kind, items = request
+            if kind != "tool_wait":
+                raise ValueError("unknown predictor batch kind")
+            output_queue.put((sequence, kind, predict_tool_wait_batch(items)))
 
 
 class NativePredictorWorker:
@@ -78,9 +131,11 @@ class NativePredictorWorker:
         )
         self._process.start()
         self._active_sequence: int | None = None
+        self._active_kind: str | None = None
         self._started_at: float | None = None
         self._latest_sequence = 0
         self._next: tuple[tuple[PrefillCandidateKey, LocalFrontierFeatures, float], ...] | None = None
+        self._next_kind: str | None = None
         self.failure_count = 0
         self.disabled = False
         self._closed = False
@@ -88,15 +143,31 @@ class NativePredictorWorker:
     def submit(
         self, items: tuple[tuple[PrefillCandidateKey, LocalFrontierFeatures, float], ...]
     ) -> None:
+        self._submit(items, kind="admission")
+
+    def submit_tool_wait(
+        self, items: tuple[tuple[PrefillCandidateKey, LocalFrontierFeatures, float], ...]
+    ) -> None:
+        self._submit(items, kind="tool_wait")
+
+    def _submit(
+        self,
+        items: tuple[tuple[PrefillCandidateKey, LocalFrontierFeatures, float], ...],
+        *,
+        kind: str,
+    ) -> None:
         if len(items) > 8:
-            raise ValueError("admission prediction batch exceeds bound")
+            raise ValueError(f"{kind} prediction batch exceeds bound")
         if self.disabled:
             return
         if self._closed:
-            raise RuntimeError("admission predictor worker is closed")
+            raise RuntimeError(f"{kind} predictor worker is closed")
         if items:
+            if kind == "admission" and self._next_kind == "tool_wait":
+                return
             self._latest_sequence += 1
             self._next = items
+            self._next_kind = kind
             self._dispatch()
 
     def _dispatch(self) -> None:
@@ -106,7 +177,11 @@ class NativePredictorWorker:
             self._fail()
             return
         try:
-            self._input_queue.put_nowait((self._latest_sequence, self._next))
+            if self._next_kind == "tool_wait":
+                request = (self._latest_sequence, "tool_wait", self._next)
+            else:
+                request = (self._latest_sequence, self._next)
+            self._input_queue.put_nowait(request)
         except Full:
             self._fail()
             return
@@ -114,10 +189,22 @@ class NativePredictorWorker:
             self._fail()
             return
         self._active_sequence = self._latest_sequence
+        self._active_kind = self._next_kind
         self._started_at = time.monotonic()
         self._next = None
+        self._next_kind = None
 
-    def poll(self) -> tuple[NativeDemandHint, ...]:
+    def fileno(self) -> int | None:
+        """Return the result pipe fd for idle scheduler wakeups."""
+        if self.disabled or self._closed or not self._process.is_alive():
+            return None
+        try:
+            fd = self._output_queue._reader.fileno()
+        except (AttributeError, OSError, ValueError):
+            return None
+        return fd if type(fd) is int and fd >= 0 else None
+
+    def poll(self) -> tuple[NativeDemandHint | NativeToolWaitHint, ...]:
         if self.disabled or self._closed:
             return ()
         if not self._process.is_alive():
@@ -131,21 +218,49 @@ class NativePredictorWorker:
             self._fail()
             return ()
         try:
-            sequence, values = self._output_queue.get_nowait()
+            response = self._output_queue.get_nowait()
         except Empty:
             return ()
         except (OSError, ValueError, EOFError):
             self._fail()
             return ()
-        if sequence != self._active_sequence:
+        if len(response) == 2:
+            sequence, values = response
+            kind = "admission"
+        elif len(response) == 3:
+            sequence, kind, values = response
+        else:
             self._fail()
             return ()
+        if sequence != self._active_sequence or kind != self._active_kind:
+            self._fail()
+            return ()
+        # Admission may queue behind an in-flight tool wait without making the
+        # still-live tool prediction obsolete. A newer tool wait does supersede it.
+        superseded = self._next is not None and (
+            kind == "admission" or self._next_kind == "tool_wait"
+        )
         self._active_sequence = None
+        self._active_kind = None
         self._started_at = None
         self._dispatch()
-        if self.disabled or sequence != self._latest_sequence:
+        if self.disabled or superseded:
             return ()
         issued = time.monotonic() * 1000
+        if kind == "tool_wait":
+            return tuple(
+                NativeToolWaitHint(
+                    key=key,
+                    wait_p10_ms=p10,
+                    wait_p50_ms=p50,
+                    wait_p90_ms=p90,
+                    issued_monotonic_ms=issued,
+                    expires_monotonic_ms=issued + 5_000,
+                    predictor_sha256=self.predictor_sha256,
+                    invocation_revision_ts_ms=revision,
+                )
+                for key, p10, p50, p90, revision in values
+            )
         return tuple(
             NativeDemandHint(
                 key=key,
@@ -163,6 +278,7 @@ class NativePredictorWorker:
             self.failure_count += 1
             self.disabled = True
             self._next = None
+            self._next_kind = None
             self.close()
 
     def close(self) -> None:
@@ -170,7 +286,9 @@ class NativePredictorWorker:
             return
         self._closed = True
         self._next = None
+        self._next_kind = None
         self._active_sequence = None
+        self._active_kind = None
         self._started_at = None
         if self._process.is_alive():
             try:

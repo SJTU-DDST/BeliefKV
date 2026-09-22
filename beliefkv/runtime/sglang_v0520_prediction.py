@@ -21,6 +21,7 @@ from beliefkv.runtime.sglang_v0520_admission import PrefillCandidateKey
 PREDICTION_ATTRIBUTE = "beliefkv_native_admission_prediction"
 MAX_HINT_AGE_MS = 10_000.0
 MAX_OUTPUT_TOKENS = 131_072
+MAX_TOOL_WAIT_MS = 3_600_000.0
 _MODEL_MANIFEST_FILES = frozenset((
     "config.json",
     "model.safetensors.index.json",
@@ -78,6 +79,21 @@ def validate_admission_artifact(
 class NativeDemandHint:
     key: PrefillCandidateKey
     next_output_tokens: int
+    issued_monotonic_ms: float
+    expires_monotonic_ms: float
+    predictor_sha256: str
+    invocation_revision_ts_ms: float | None = None
+
+    def live(self, key: PrefillCandidateKey, *, now_ms: float) -> bool:
+        return self.key == key and self.issued_monotonic_ms <= now_ms < self.expires_monotonic_ms
+
+
+@dataclass(frozen=True)
+class NativeToolWaitHint:
+    key: PrefillCandidateKey
+    wait_p10_ms: float
+    wait_p50_ms: float
+    wait_p90_ms: float
     issued_monotonic_ms: float
     expires_monotonic_ms: float
     predictor_sha256: str

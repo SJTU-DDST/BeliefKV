@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from dataclasses import replace
+from dataclasses import FrozenInstanceError, replace
 import hashlib
 import json
 import time
@@ -17,6 +17,7 @@ from beliefkv.runtime.sglang_v0520_admission import (
 )
 from beliefkv.runtime.sglang_v0520_prediction import (
     NativeDemandHint,
+    NativeToolWaitHint,
     PREDICTION_ATTRIBUTE,
     parse_native_demand_hint,
     validate_admission_artifact,
@@ -43,6 +44,22 @@ ARTIFACT = json.dumps(
     sort_keys=True,
 ).encode()
 SHA = hashlib.sha256(ARTIFACT).hexdigest()
+
+
+def test_tool_wait_hint_is_immutable_and_bound_to_identity_and_lifetime():
+    from beliefkv.runtime.sglang_v0520_admission import PrefillCandidateKey
+
+    identity = PrefillCandidateKey("a", "wf", "a", "ctx-a", 0, 0)
+    other = PrefillCandidateKey("b", "wf", "a", "ctx-a", 0, 0)
+    hint = NativeToolWaitHint(identity, 10.0, 20.0, 30.0, 100.0, 200.0, SHA, 7.0)
+    assert hint.live(identity, now_ms=100.0)
+    assert hint.live(identity, now_ms=199.0)
+    assert not hint.live(identity, now_ms=200.0)
+    assert not hint.live(identity, now_ms=99.0)
+    assert not hint.live(other, now_ms=150.0)
+    assert hint.invocation_revision_ts_ms == 7.0
+    with pytest.raises(FrozenInstanceError):
+        hint.wait_p50_ms = 99.0
 
 
 def req(name: str):

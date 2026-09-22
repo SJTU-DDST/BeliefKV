@@ -1,15 +1,88 @@
 """CPU-only checks of native merged ACK transaction credit."""
 
 from types import SimpleNamespace as NS
+from unittest.mock import patch
 
 import pytest
 
+from beliefkv.runtime.sglang_v0520_admission import PrefillCandidateKey
 from beliefkv.runtime.sglang_v0520_physical import (
+    ContextSessionAnchors,
     PhysicalActionExpectation,
     PhysicalChildExpectation,
     PhysicalReceiptError,
     PhysicalTransactionLedger,
+    capture_action_local_shadow,
 )
+
+
+def test_shadow_candidate_is_context_local_and_read_only():
+    anchors = ContextSessionAnchors(
+        key=PrefillCandidateKey(
+            "request", "workflow", "invocation", "context", 1, 0, "session", 2
+        ),
+        component_leaves=((0, ((11, 4),)), (2, ((11, 4),))),
+        captured_monotonic_s=12.0,
+    )
+    root = NS(
+        node_id=0, parent_id=None, creation_time=1,
+        full_device_tokens=0, full_host_tokens=0,
+        mamba_device_present=False, mamba_host_present=False,
+        pending_write_id=None, pending_load_id=None,
+    )
+    leaf = NS(
+        node_id=11, parent_id=0, creation_time=4,
+        full_device_tokens=10, full_host_tokens=0,
+        mamba_device_present=True, mamba_host_present=False,
+        pending_write_id=None, pending_load_id=None,
+    )
+    with patch(
+        "beliefkv.runtime.sglang_v0520_physical.observe_unified_node_closure",
+        return_value=NS(observable=True, nodes=(leaf, root)),
+    ) as observe:
+        candidate = capture_action_local_shadow(object(), anchors)
+        assert candidate is not None
+        assert [node.node_id for node in candidate.nodes] == [0, 11]
+        assert candidate.missing_full_host_tokens == 10
+        assert candidate.missing_mamba_host_nodes == 1
+        assert observe.call_count == 2
+        assert capture_action_local_shadow(object(), anchors, max_nodes=1) is None
+        leaf.pending_write_id = 11
+        assert capture_action_local_shadow(object(), anchors) is None
+        leaf.pending_write_id = None
+        leaf.full_host_tokens = 10
+        leaf.mamba_host_present = True
+        assert capture_action_local_shadow(object(), anchors) is None
+
+
+def test_shadow_candidate_rejects_changed_leaf_and_inconsistent_views():
+    anchors = ContextSessionAnchors(
+        PrefillCandidateKey("r", "w", "i", "c", 0, 0, "s", 1),
+        ((0, ((11, 4),)), (2, ((11, 4),))),
+        10.0,
+    )
+    leaf = NS(
+        node_id=11, parent_id=None, creation_time=5,
+        full_device_tokens=1, full_host_tokens=0,
+        mamba_device_present=True, mamba_host_present=False,
+        pending_write_id=None, pending_load_id=None,
+    )
+    with patch(
+        "beliefkv.runtime.sglang_v0520_physical.observe_unified_node_closure",
+        return_value=NS(observable=True, nodes=(leaf,)),
+    ):
+        assert capture_action_local_shadow(object(), anchors) is None
+    leaf.creation_time = 4
+    changed = NS(**vars(leaf))
+    changed.full_device_tokens = 2
+    with patch(
+        "beliefkv.runtime.sglang_v0520_physical.observe_unified_node_closure",
+        side_effect=(
+            NS(observable=True, nodes=(leaf,)),
+            NS(observable=True, nodes=(changed,)),
+        ),
+    ):
+        assert capture_action_local_shadow(object(), anchors) is None
 
 
 def child(anchor, published, kv, mamba, total):

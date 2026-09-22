@@ -4,14 +4,20 @@ from __future__ import annotations
 
 import json
 import socket
+import time
 from types import SimpleNamespace as NS
+from unittest.mock import patch
 
 import pytest
 
 from beliefkv.core.events import RuntimeEvent, RuntimeEventKind
 from beliefkv.runtime.event_channel import SCHEMA_VERSION
-from beliefkv.runtime.sglang_v0520_admission import select_native_prefill_candidates
+from beliefkv.runtime.sglang_v0520_admission import (
+    PrefillCandidateKey,
+    select_native_prefill_candidates,
+)
 from beliefkv.runtime.sglang_v0520_runtime import NativeAdmissionRuntime
+from beliefkv.runtime.sglang_v0520_prediction import NativeToolWaitHint
 from beliefkv.runtime.sglang_v0520_physical import (
     PhysicalActionExpectation,
     PhysicalChildExpectation,
@@ -110,6 +116,14 @@ def test_finished_tool_context_keeps_session_anchor_but_rechecks_wait_state():
     )
     assert anchors is not None and anchors.key.session_generation == 4
     assert anchors.component_leaves[0][1] == ((11, 25),)
+    with patch(
+        "beliefkv.runtime.sglang_v0520_runtime.capture_action_local_shadow",
+        return_value="local-candidate",
+    ) as capture:
+        assert runtime.capture_shadow_candidate(
+            cache, context_id="ctx-a", context_epoch=0
+        ) == "local-candidate"
+        assert capture.call_args.args[1].key == anchors.key
     assert runtime.snapshot_session_anchors(
         cache, context_id="ctx-a", context_epoch=1
     ) is None
@@ -144,6 +158,121 @@ def test_finished_tool_context_keeps_session_anchor_but_rechecks_wait_state():
     assert runtime.snapshot_session_anchors(
         cache, context_id="ctx-a", context_epoch=0
     ) is None
+
+
+def test_tool_start_triggers_bounded_wait_prediction_then_local_probe():
+    runtime = NativeAdmissionRuntime()
+    runtime.predictor_sha256 = "a" * 64
+    sent = []
+    worker = NS(
+        disabled=False, fileno=lambda: 71, poll=lambda: (),
+        submit_tool_wait=lambda batch: sent.append(batch),
+        close=lambda: None,
+    )
+    runtime._model_worker = worker
+    runtime.attach_native_cache(object())
+    request = req("tool")
+    request.session_id = "session-tool"
+    request.session_generation = 2
+    request.origin_input_ids = [1, 2, 3]
+    request.output_ids = [4, 5]
+    runtime.register_visible_request(request)
+    runtime.on_events((
+        event(0, RuntimeEventKind.WORKFLOW_START),
+        event(
+            1, RuntimeEventKind.INVOCATION_CREATE,
+            invocation_id="tool", context_id="ctx-tool",
+            agent_definition_id="role", agent_instance_id="tool",
+        ),
+    ))
+    request.finished = lambda: True
+    runtime.on_batch_completed(NS(reqs=(request,)))
+    runtime.on_events((
+        event(
+            2, RuntimeEventKind.TOOL_START,
+            invocation_id="tool", attributes={"tool_family": "shell"},
+        ),
+    ))
+    assert len(sent) == 1
+    key, features, revision = sent[0][0]
+    assert key.session_id == "session-tool"
+    assert features.state == "wait_tool"
+    assert features.generated_tokens == 2
+    assert features.current_sequence_tokens == 5
+    assert features.tool_family == "shell"
+    assert revision == 2.0
+    now = time.monotonic() * 1000
+    hint = NativeToolWaitHint(key, 100.0, 300.0, 600.0, now, now + 5_000, "a" * 64, revision)
+    worker.poll = lambda: (hint,)
+    sentinel = object()
+    with patch.object(runtime, "capture_shadow_candidate", return_value=sentinel) as capture:
+        runtime.scheduler_step()
+    assert runtime.tool_wait_hint == hint
+    assert runtime.shadow_candidate is sentinel
+    assert capture.call_count == 1
+    assert runtime.counts["tool_wait_accepted"] == 1
+    runtime._forget_session("tool")
+    assert runtime.tool_wait_hint is None
+    assert runtime.shadow_candidate is None
+    assert "ctx-tool" not in runtime._context_tokens
+    runtime.tool_wait_hint = hint
+    runtime.shadow_candidate = sentinel
+    runtime.on_events((
+        event(3, RuntimeEventKind.TOOL_END, invocation_id="tool"),
+    ))
+    assert runtime.tool_wait_hint is None
+    assert runtime.shadow_candidate is None
+    runtime.scheduler_step()
+    assert runtime.counts["tool_wait_result_stale"] == 1
+    runtime.close()
+
+
+def test_tool_wait_hint_expiry_clears_read_only_candidate():
+    runtime = NativeAdmissionRuntime()
+    runtime.tool_wait_hint = NativeToolWaitHint(
+        PrefillCandidateKey("tool", "wf", "tool", "ctx-tool", 0, 0),
+        100.0, 300.0, 600.0,
+        0.0, 1.0, "a" * 64,
+    )
+    runtime.shadow_candidate = object()
+    runtime.scheduler_step()
+    assert runtime.tool_wait_hint is None
+    assert runtime.shadow_candidate is None
+    assert runtime.counts["tool_wait_expired"] == 1
+
+
+def test_tool_wait_candidate_is_discarded_on_context_replacement_and_requeue():
+    runtime = NativeAdmissionRuntime()
+    original = req("old")
+    original.beliefkv_metadata["context_id"] = "ctx-shared"
+    original.session_id = "session"
+    original.session_generation = 1
+    assert runtime.register_visible_request(original)
+    old_key = runtime.context_sessions["ctx-shared"]
+    runtime.tool_wait_hint = NativeToolWaitHint(
+        old_key, 100.0, 300.0, 600.0, 0.0, 1.0, "a" * 64,
+    )
+    runtime.shadow_candidate = object()
+    runtime._context_tokens["ctx-shared"] = (0, 3, 2, False)
+
+    successor = req("new")
+    successor.beliefkv_metadata["context_id"] = "ctx-shared"
+    successor.session_id = "session"
+    successor.session_generation = 2
+    assert runtime.register_visible_request(successor)
+    assert runtime.tool_wait_hint is None
+    assert runtime.shadow_candidate is None
+    assert "ctx-shared" not in runtime._context_tokens
+
+    runtime.tool_wait_hint = NativeToolWaitHint(
+        runtime.context_sessions["ctx-shared"],
+        100.0, 300.0, 600.0, 0.0, 1.0, "a" * 64,
+    )
+    runtime.shadow_candidate = object()
+    successor.session_generation = 3
+    runtime.on_requests_requeued((successor,), is_retracted=True)
+    assert runtime.tool_wait_hint is None
+    assert runtime.shadow_candidate is None
 
 
 def req(name: str, *, tagged: bool = True):

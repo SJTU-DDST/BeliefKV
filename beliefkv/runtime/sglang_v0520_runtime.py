@@ -11,6 +11,7 @@ import time
 from typing import TYPE_CHECKING
 
 from beliefkv.control.causal_graph import RuntimeCausalContextGraph
+from beliefkv.core.events import RuntimeEventKind
 from beliefkv.policy.causal_frontier import CausalFrontierScheduler
 from beliefkv.runtime.event_channel import RuntimeEventDatagramServer
 from beliefkv.runtime.sglang_v0520_admission import (
@@ -21,16 +22,19 @@ from beliefkv.runtime.sglang_v0520_admission import (
 )
 from beliefkv.runtime.sglang_v0520_prediction import (
     NativeDemandHint,
+    NativeToolWaitHint,
     PREDICTION_ATTRIBUTE,
     parse_native_demand_hint,
     validate_admission_artifact,
 )
 from beliefkv.runtime.sglang_v0520_physical import (
+    ActionLocalShadowCandidate,
     ContextSessionAnchors,
     PhysicalActionCompleted,
     PhysicalActionExpectation,
     PhysicalReceiptError,
     PhysicalTransactionLedger,
+    capture_action_local_shadow,
 )
 from beliefkv.predictor.structured_frontier import LocalFrontierFeatures
 
@@ -70,6 +74,10 @@ class NativeAdmissionRuntime:
         self.semantic_revision = 0
         self.predictor_sha256 = predictor_sha256
         self.demand_hints: dict[str, NativeDemandHint] = {}
+        self.tool_wait_hint: NativeToolWaitHint | None = None
+        self.shadow_candidate: ActionLocalShadowCandidate | None = None
+        self._native_cache: object | None = None
+        self._context_tokens: dict[str, tuple[int, int, int, bool]] = {}
         self._last_model_signature: tuple[object, ...] | None = None
         self._model_worker = None
         if enable_local_predictor:
@@ -106,6 +114,14 @@ class NativeAdmissionRuntime:
             self.event_server.close()
             self.event_server = None
 
+    def attach_native_cache(self, cache: object) -> None:
+        self._native_cache = cache
+
+    def predictor_fileno(self) -> int | None:
+        if self._model_worker is None or self._model_worker.disabled:
+            return None
+        return self._model_worker.fileno()
+
     def on_events(self, events: tuple[RuntimeEvent, ...]) -> None:
         hints = []
         for event in events:
@@ -130,6 +146,9 @@ class NativeAdmissionRuntime:
             self.demand_hints.clear()
             self._last_model_signature = None
             self.context_sessions.clear()
+            self.tool_wait_hint = None
+            self.shadow_candidate = None
+            self._context_tokens.clear()
             self.semantic_revision += 1
             self.counts["causal_mirror_discarded"] += 1
             raise
@@ -142,16 +161,44 @@ class NativeAdmissionRuntime:
                     self.counts["prediction_accepted"] += 1
             for event in events:
                 context_id = event.context_id
+                if context_id is None and event.invocation_id is not None:
+                    invocation = self.graph.invocations.get(event.invocation_id)
+                    context_id = (
+                        invocation.context_id if invocation is not None else None
+                    )
                 if context_id is not None:
                     key = self.context_sessions.get(context_id)
                     if key is not None and self._terminal(key):
                         del self.context_sessions[context_id]
-                if event.kind.value == "workflow_end":
+                        self._context_tokens.pop(context_id, None)
+                    if event.kind in (
+                        RuntimeEventKind.TOOL_END,
+                        RuntimeEventKind.RETURN,
+                        RuntimeEventKind.INVOCATION_CANCEL,
+                        RuntimeEventKind.CONTEXT_ADVANCE,
+                    ) and self.tool_wait_hint is not None and (
+                        self.tool_wait_hint.key.context_id == context_id
+                    ):
+                        self.tool_wait_hint = None
+                        self.shadow_candidate = None
+                if event.kind is RuntimeEventKind.WORKFLOW_END:
                     self.context_sessions = {
                         context: key
                         for context, key in self.context_sessions.items()
                         if key.root_workflow_id != event.workflow_id
                     }
+                    self._context_tokens = {
+                        context: tokens
+                        for context, tokens in self._context_tokens.items()
+                        if context in self.context_sessions
+                    }
+                    if self.tool_wait_hint is not None and (
+                        self.tool_wait_hint.key.root_workflow_id == event.workflow_id
+                    ):
+                        self.tool_wait_hint = None
+                        self.shadow_candidate = None
+                if event.kind is RuntimeEventKind.TOOL_START and context_id is not None:
+                    self._submit_tool_wait(context_id)
             if len(self.demand_hints) > 1024:
                 now_ms = time.monotonic() * 1000
                 self.demand_hints = {
@@ -164,11 +211,22 @@ class NativeAdmissionRuntime:
     def scheduler_step(self) -> None:
         if self.event_server is not None:
             self.event_server.drain(max_messages=16)
+        if self.tool_wait_hint is not None and not self.tool_wait_hint.live(
+            self.tool_wait_hint.key, now_ms=time.monotonic() * 1000
+        ):
+            self.tool_wait_hint = None
+            self.shadow_candidate = None
+            self.counts["tool_wait_expired"] += 1
         if self._model_worker is not None:
             hints = self._model_worker.poll()
             for hint in hints:
+                if isinstance(hint, NativeToolWaitHint):
+                    self._accept_tool_wait(hint)
+                    continue
                 if (
-                    self.visible.get(hint.key.request_id) == hint.key
+                    hint.predictor_sha256 == self.predictor_sha256
+                    and hint.live(hint.key, now_ms=time.monotonic() * 1000)
+                    and self.visible.get(hint.key.request_id) == hint.key
                     and not self._terminal(hint.key)
                     and (
                         hint.invocation_revision_ts_ms is None
@@ -185,6 +243,86 @@ class NativeAdmissionRuntime:
             if self._model_worker.disabled:
                 self.counts["model_worker_disabled"] = 1
         self.counts["physical_expired"] += len(self.physical_ledger.expire())
+
+    def _submit_tool_wait(self, context_id: str) -> None:
+        worker = self._model_worker
+        key = self.context_sessions.get(context_id)
+        if worker is None or worker.disabled or key is None:
+            self.counts["tool_wait_predictor_unavailable"] += 1
+            return
+        invocation = self.graph.invocations.get(key.invocation_id)
+        context = self.graph.contexts.get(context_id)
+        if (
+            invocation is None
+            or context is None
+            or context.epoch != key.context_epoch
+            or context.workflow_id != key.root_workflow_id
+            or invocation.workflow_id != key.root_workflow_id
+            or invocation.context_id != context_id
+            or invocation.state.value != "wait_tool"
+            or self._terminal(key)
+        ):
+            self.counts["tool_wait_context_stale"] += 1
+            return
+        stored = self._context_tokens.get(context_id)
+        prompt, output, is_child = (
+            (stored[1], stored[2], stored[3])
+            if stored is not None and stored[0] == key.context_epoch
+            else (0, 0, False)
+        )
+        features = LocalFrontierFeatures(
+            invocation_id=key.invocation_id,
+            state=invocation.state.value,
+            agent_definition_id=invocation.agent_definition_id,
+            tool_family=invocation.active_tool_family or "unknown",
+            generated_tokens=output,
+            current_sequence_tokens=prompt + output,
+            active_tool_count=1,
+            llm_round=invocation.llm_round,
+            child_count=len(invocation.child_invocation_ids),
+            unfinished_child_count=len(invocation.blocking_child_ids),
+            is_child=is_child,
+        )
+        worker.submit_tool_wait(((key, features, invocation.updated_ts_ms),))
+        self.counts["tool_wait_submitted"] += 1
+
+    def _accept_tool_wait(self, hint: NativeToolWaitHint) -> None:
+        key = hint.key
+        invocation = self.graph.invocations.get(key.invocation_id)
+        context = self.graph.contexts.get(key.context_id)
+        if (
+            hint.predictor_sha256 != self.predictor_sha256
+            or self._model_worker is None
+            or self.context_sessions.get(key.context_id) != key
+            or context is None
+            or context.epoch != key.context_epoch
+            or context.workflow_id != key.root_workflow_id
+            or invocation is None
+            or invocation.workflow_id != key.root_workflow_id
+            or invocation.context_id != key.context_id
+            or invocation.state.value != "wait_tool"
+            or invocation.updated_ts_ms != hint.invocation_revision_ts_ms
+            or self._terminal(key)
+            or not hint.live(key, now_ms=time.monotonic() * 1000)
+        ):
+            self.counts["tool_wait_result_stale"] += 1
+            return
+        self.tool_wait_hint = hint
+        self.counts["tool_wait_accepted"] += 1
+        self.shadow_candidate = (
+            self.capture_shadow_candidate(
+                self._native_cache,
+                context_id=key.context_id,
+                context_epoch=key.context_epoch,
+            )
+            if self._native_cache is not None
+            else None
+        )
+        self.counts[
+            "tool_wait_shadow_available"
+            if self.shadow_candidate is not None
+            else "tool_wait_shadow_unavailable"
+        ] += 1
 
     def register_physical_action(self, expected: PhysicalActionExpectation) -> None:
         """Accept only a live causal identity; this does not issue the transfer."""
@@ -256,6 +394,16 @@ class NativeAdmissionRuntime:
             captured_monotonic_s=time.monotonic(),
         )
 
+    def capture_shadow_candidate(
+        self, cache: object, *, context_id: str, context_epoch: int
+    ) -> ActionLocalShadowCandidate | None:
+        anchors = self.snapshot_session_anchors(
+            cache, context_id=context_id, context_epoch=context_epoch
+        )
+        if anchors is None:
+            return None
+        return capture_action_local_shadow(cache, anchors)
+
     def on_native_transfer_commit(self, commit: object) -> None:
         """Observe synchronized native ACKs, never infer completion from enqueue."""
         if self.physical_disabled:
@@ -292,6 +440,14 @@ class NativeAdmissionRuntime:
             return False
         if key.request_id in self.visible:
             raise ValueError(f"duplicate visible request: {key.request_id}")
+        if (
+            self.tool_wait_hint is not None
+            and self.tool_wait_hint.key.context_id == key.context_id
+            and self.tool_wait_hint.key != key
+        ):
+            self.tool_wait_hint = None
+            self.shadow_candidate = None
+            self._context_tokens.pop(key.context_id, None)
         self.visible[key.request_id] = key
         if key.session_id is not None and key.session_generation is not None:
             self.context_sessions[key.context_id] = key
@@ -342,6 +498,14 @@ class NativeAdmissionRuntime:
             key = _request_key(req)
             if key is None or key.request_id not in self.visible:
                 raise ValueError("requeued request has no live tagged identity")
+            if (
+                self.tool_wait_hint is not None
+                and self.tool_wait_hint.key.context_id == key.context_id
+                and self.tool_wait_hint.key != key
+            ):
+                self.tool_wait_hint = None
+                self.shadow_candidate = None
+                self._context_tokens.pop(key.context_id, None)
             self.visible[key.request_id] = key
             if key.session_id is not None and key.session_generation is not None:
                 self.context_sessions[key.context_id] = key
@@ -354,6 +518,13 @@ class NativeAdmissionRuntime:
         for context_id, key in tuple(self.context_sessions.items()):
             if key.request_id == request_id:
                 del self.context_sessions[context_id]
+                self._context_tokens.pop(context_id, None)
+                if (
+                    self.tool_wait_hint is not None
+                    and self.tool_wait_hint.key.context_id == context_id
+                ):
+                    self.tool_wait_hint = None
+                    self.shadow_candidate = None
 
     def _causal_rank(
         self,
@@ -514,11 +685,28 @@ class NativeAdmissionRuntime:
         for req in batch.reqs:
             if req.rid in self.visible and req.finished():
                 context_id = self.visible[req.rid].context_id
+                key = self.visible[req.rid]
+                if (
+                    self._model_worker is not None
+                    and key.session_id is not None
+                    and key.session_generation is not None
+                ):
+                    self._context_tokens[context_id] = (
+                        key.context_epoch,
+                        len(getattr(req, "origin_input_ids", ())),
+                        len(getattr(req, "output_ids", ())),
+                        req.beliefkv_metadata.get("parent_invocation_id") is not None,
+                    )
                 del self.visible[req.rid]
                 self.demand_hints.pop(req.rid, None)
-                key = self.context_sessions.get(context_id)
-                if key is not None and key.request_id == req.rid and self._terminal(key):
+                session_key = self.context_sessions.get(context_id)
+                if (
+                    session_key is not None
+                    and session_key.request_id == req.rid
+                    and self._terminal(session_key)
+                ):
                     self._forget_session(req.rid)
+                    self._context_tokens.pop(context_id, None)
                 self.semantic_revision += 1
 
     def on_abort_request(self, abort: object) -> None:
@@ -535,6 +723,12 @@ class NativeAdmissionRuntime:
         for context_id, key in tuple(self.context_sessions.items()):
             if getattr(abort, "abort_all", False) or key.request_id.startswith(abort.rid):
                 del self.context_sessions[context_id]
+                self._context_tokens.pop(context_id, None)
+                if self.tool_wait_hint is not None and (
+                    self.tool_wait_hint.key.context_id == context_id
+                ):
+                    self.tool_wait_hint = None
+                    self.shadow_candidate = None
 
     def running_batch_retraction_barrier_required(self, batch: object) -> bool:
         return False

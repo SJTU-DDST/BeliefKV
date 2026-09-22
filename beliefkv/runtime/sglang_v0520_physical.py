@@ -14,6 +14,10 @@ from time import monotonic
 from typing import Mapping
 
 from beliefkv.runtime.sglang_v0520_admission import PrefillCandidateKey
+from beliefkv.runtime.sglang_v0520_observer import (
+    UnifiedNodeSummary,
+    observe_unified_node_closure,
+)
 
 
 class PhysicalReceiptError(ValueError):
@@ -27,6 +31,80 @@ class ContextSessionAnchors:
     key: PrefillCandidateKey
     component_leaves: tuple[tuple[int, tuple[tuple[int, int | float], ...]], ...]
     captured_monotonic_s: float
+
+
+@dataclass(frozen=True)
+class ActionLocalShadowCandidate:
+    """Bounded, read-only FULL/MAMBA closure; not an action certificate."""
+
+    anchors: ContextSessionAnchors
+    nodes: tuple[UnifiedNodeSummary, ...]
+    missing_full_host_tokens: int
+    missing_mamba_host_nodes: int
+
+
+def capture_action_local_shadow(
+    cache: object,
+    anchors: ContextSessionAnchors,
+    *,
+    max_nodes: int = 64,
+) -> ActionLocalShadowCandidate | None:
+    """Inspect only one context's session leaves, without issuing native work."""
+    if type(max_nodes) is not int or not 0 < max_nodes <= 256:
+        raise ValueError("invalid shadow closure bound")
+    by_component = dict(anchors.component_leaves)
+    if (
+        len(by_component) != len(anchors.component_leaves)
+        or set(by_component) != {0, 2}
+        or not by_component[0]
+        or not by_component[2]
+        or sum(map(len, by_component.values())) > 8
+    ):
+        return None
+    nodes: dict[int, UnifiedNodeSummary] = {}
+    for component_leaves in by_component.values():
+        for node_id, created in component_leaves:
+            if type(node_id) is not int or node_id < 0:
+                return None
+            observation = observe_unified_node_closure(
+                cache, node_id, max_nodes=max_nodes
+            )
+            if (
+                not observation.observable
+                or not observation.nodes
+                or observation.nodes[0].node_id != node_id
+                or observation.nodes[0].creation_time != created
+            ):
+                return None
+            for node in observation.nodes:
+                if node.node_id in nodes and nodes[node.node_id] != node:
+                    return None
+                nodes[node.node_id] = node
+                if len(nodes) > max_nodes:
+                    return None
+    if any(
+        node.parent_id is not None and node.parent_id not in nodes
+        or node.pending_write_id is not None
+        or node.pending_load_id is not None
+        for node in nodes.values()
+    ):
+        return None
+    missing_full = sum(
+        max(node.full_device_tokens - node.full_host_tokens, 0)
+        for node in nodes.values()
+    )
+    missing_mamba = sum(
+        node.mamba_device_present and not node.mamba_host_present
+        for node in nodes.values()
+    )
+    if not missing_full and not missing_mamba:
+        return None
+    return ActionLocalShadowCandidate(
+        anchors=anchors,
+        nodes=tuple(sorted(nodes.values(), key=lambda node: node.node_id)),
+        missing_full_host_tokens=missing_full,
+        missing_mamba_host_nodes=missing_mamba,
+    )
 
 
 def _counts(items: tuple[tuple[str, int], ...], *, positive: bool) -> dict[str, int]:

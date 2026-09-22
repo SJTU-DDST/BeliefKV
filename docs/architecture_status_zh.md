@@ -3,7 +3,7 @@
 更新日期：2026-09-22
 当前 P6 物理执行基线：原 Qwen3-Coder/SGLang 0.5.2rc1；
 Qwen3.5/v0.5.20 已有可选 native admission 和受 artifact 约束的
-预测 demand 代码路径，但尚无完整预测物理调度。
+预测 demand/工具等待时间代码路径，但尚无完整预测物理调度。
 
 本文只记录当前事实和下一阻塞项，不再追加逐日开发日志。2026-09-12 以前的完整历史保存在
 `docs/archive/snapshots/architecture_status_zh.md`，单次实验细节保存在
@@ -43,6 +43,18 @@ admission 代码路径**，不是已验收的 Qwen3.5 预测运行：
 当前迁移目录未提供新模型校准且 online-eligible 的 predictor artifact；
 旧 rc1/development artifact 不可沿用。action-local FULL/MAMBA owner、
 预测性 PREPARE/PREFETCH 和事务级证书仍缺失。
+工具期 `TOOL_START` 现在可异步提交 P10/P50/P90 剩余时间预测；
+worker 在 idle scheduler 上有结果 fd 唤醒。live `WAIT_TOOL`、session
+generation、invocation revision、模型哈希和有效期须在结果消费时
+重验。工具结果可在 admission 请求排队时优先保留，但当前仅触发一个
+context 的有界、只读 FULL/MAMBA 祖先闭包检查（最多 64 node），
+统计未备份的 token/node，并不签发 D2H 迁移命令。候选过期和 session
+失效时清理；snapshot 没有原子 ownership 证明，不能在下一安全点
+未经重验就作为动作证书。默认 runner 仍未启用 session 桥。
+新增 `scripts/promote_qwen35_admission_predictor.py` 只允许经
+Qwen3.5/v0.5.20 冻结 train/calibration/test_id 证据和重放指标
+晋升为 admission-only；旧 Qwen3-Coder artifact 及缺少目标数据的
+环境不能凭此晋升，更不能把 admission 资格当 tool-wait/物理动作资格。
 2026-09-22 使用固定 staging checkout、4 GiB HiCache、显式 admission
 开关在 H200 完成单请求 smoke：tagged chat 返回 HTTP 200，非法
 context epoch 返回 HTTP 400 且未挂起。该测试既未输入在线预测结果，
@@ -120,8 +132,9 @@ smoke 显式关闭 thinking 避免短 `max_tokens` 全部用于 reasoning。
 JIT 遇到 CUDA 13.4 `nvcc` 与 13.0 headers 不兼容；这次仅以 PyTorch
 sampling 验证补丁禁用态，不能用作正式性能比较。
 
-本轮变更的 CPU 测试据报告为 28 passed，staging 测试为 46 passed；
-这仅覆盖对应代码路径，尚无新模型物理动作或高压 GPU 验收。
+工具预测、物理候选和晋升门禁的定向 CPU 回归已覆盖代码路径；
+staging 单测必须明确以 `PYTHONPATH` 加载修改后的源码，而非当前安装
+的 SGLang wheel。尚无新模型物理动作或高压 GPU 验收。
 新模型下一步先冻结并验证 Qwen3.5/v0.5.20 的 predictor
 artifact、prediction support/OOD/stale 回退和实际 admission GPU
 gate；再补齐 action-local owner/closure/capacity 证明、安全动作

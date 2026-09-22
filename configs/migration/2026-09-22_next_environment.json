@@ -3619,7 +3619,7 @@
   },
   "model_manifest_path": "configs/migration/2026-09-22_qwen35_model_artifact.json",
   "model_manifest_sha256": "64427df25b9b37a20953a70c7bcad2c24d792f70831e7f8ce3ceffd6327006c0",
-  "staging_patch_sha256": "1cf46817e3e73fe5df5254d024cccce7893c67071c01a6182cc5030a755d5b12",
+  "staging_patch_sha256": "84432e816fd4214168e2f4d2f10fd26f562865bbc99316e9b8bf32c43621e601",
   "environment_declaration_sha256": "13e2805f9d9025b954c123ee8ecc7bae7173f4ffcb4a7b5735b2d7b63bdcaa2a",
   "project_dependencies_sha256": "768c8abce1ea02f298bd504912d9db0a96bf6e1a5def891103398a2b8f688eb4"
 }

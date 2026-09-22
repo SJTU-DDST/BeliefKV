@@ -270,10 +270,10 @@ index 7811e44..9630078 100755
          self.session_generation: Optional[int] = None
          self.input_embeds = input_embeds
 diff --git a/python/sglang/srt/managers/scheduler.py b/python/sglang/srt/managers/scheduler.py
-index 743c8af..6910b19 100644
+index 743c8af..4225227 100644
 --- a/python/sglang/srt/managers/scheduler.py
 +++ b/python/sglang/srt/managers/scheduler.py
-@@ -725,9 +725,64 @@ class Scheduler(
+@@ -725,9 +725,70 @@ class Scheduler(
  
          self.init_rank_consensus_checker()
  
@@ -284,6 +284,7 @@ index 743c8af..6910b19 100644
  
 +    def init_beliefkv_runtime(self) -> None:
 +        self.beliefkv_runtime = None
++        self._beliefkv_predictor_fd = None
 +        self._beliefkv_registered_request_ids = set()
 +        self._beliefkv_retraction_drain_pending = False
 +        if getattr(self.server_args, "enable_beliefkv", False):
@@ -329,16 +330,21 @@ index 743c8af..6910b19 100644
 +            ),
 +        )
 +        self.beliefkv_runtime = runtime
++        runtime.attach_native_cache(self.tree_cache)
 +        self.tree_cache.on_hicache_transfer_commit = (
 +            runtime.on_native_transfer_commit
 +        )
 +        if runtime.event_server is not None and self.idle_sleeper is not None:
 +            self.idle_sleeper.poller.register(runtime.event_server.fileno())
++        predictor_fd = runtime.predictor_fileno()
++        if predictor_fd is not None and self.idle_sleeper is not None:
++            self.idle_sleeper.poller.register(predictor_fd)
++            self._beliefkv_predictor_fd = predictor_fd
 +
      def init_startup_timing_begin(self) -> None:
          self.scheduler_startup_begin = time.perf_counter()
  
-@@ -2789,6 +2844,7 @@ class Scheduler(
+@@ -2789,6 +2850,7 @@ class Scheduler(
                  dllm_config=self.dllm_config,
                  time_stats=recv_req.time_stats,
                  multi_item_delimiter_indices=recv_req.multi_item_delimiter_indices,
@@ -346,7 +352,7 @@ index 743c8af..6910b19 100644
              )
              req.tokenizer = self.tokenizer
  
-@@ -3190,6 +3246,33 @@ class Scheduler(
+@@ -3190,6 +3252,33 @@ class Scheduler(
          self._retry_storage_prefetch(req)
          return True
  
@@ -380,7 +386,7 @@ index 743c8af..6910b19 100644
      def _add_request_to_queue(self, req: Req, is_retracted: bool = False):
          if not self._set_or_validate_priority(req):
              return
-@@ -3200,6 +3283,9 @@ class Scheduler(
+@@ -3200,6 +3289,9 @@ class Scheduler(
          if self.disaggregation_mode == DisaggregationMode.NULL:
              if self._abort_on_queued_limit(req):
                  return
@@ -390,7 +396,7 @@ index 743c8af..6910b19 100644
              self._prefetch_kvcache(req)
              self.waiting_queue.append(req)
              req.time_stats.set_wait_queue_entry_time()
-@@ -3281,6 +3367,7 @@ class Scheduler(
+@@ -3281,6 +3373,7 @@ class Scheduler(
                  direction * recv_req.priority < direction * candidate_req.priority
              )
              if abort_existing_req:
@@ -398,7 +404,7 @@ index 743c8af..6910b19 100644
                  self._release_aborted_request(candidate_req)
                  self.waiting_queue.pop(idx)
                  self.beam_coordinator.retire_group(candidate_req)
-@@ -3558,12 +3645,68 @@ class Scheduler(
+@@ -3558,12 +3651,76 @@ class Scheduler(
              if self.enable_hicache_storage:
                  self._process_storage_prefetch_retries()
  
@@ -464,10 +470,18 @@ index 743c8af..6910b19 100644
 +        if (beliefkv_runtime := getattr(self, "beliefkv_runtime", None)) is not None:
 +            # Native ACKs/locks settle before BeliefKV mirrors and plans.
 +            beliefkv_runtime.scheduler_step()
++            predictor_fd = getattr(self, "_beliefkv_predictor_fd", None)
++            if (
++                predictor_fd is not None
++                and beliefkv_runtime.predictor_fileno() is None
++                and self.idle_sleeper is not None
++            ):
++                self.idle_sleeper.poller.unregister(predictor_fd)
++                self._beliefkv_predictor_fd = None
  
          if self.enable_fpm:
              self._fpm_batch_t0 = time.monotonic()
-@@ -3647,6 +3790,9 @@ class Scheduler(
+@@ -3647,6 +3804,9 @@ class Scheduler(
              if running_batch.is_empty():
                  running_batch.batch_is_full = False
  
@@ -477,7 +491,7 @@ index 743c8af..6910b19 100644
          if self.dllm_config is not None:
              new_batch = self.get_new_batch_dllm(running_batch)
          elif self._should_defer_prefill():
-@@ -3705,6 +3851,8 @@ class Scheduler(
+@@ -3705,6 +3865,8 @@ class Scheduler(
              if self.enable_fpm:
                  ret.fpm_start_time = self._fpm_batch_t0
  
@@ -486,7 +500,7 @@ index 743c8af..6910b19 100644
          return NextBatchPlan(batch_to_run=ret, running_batch=running_batch)
  
      def get_num_allocatable_reqs(
-@@ -3754,6 +3902,50 @@ class Scheduler(
+@@ -3754,6 +3916,50 @@ class Scheduler(
  
          return NextBatchPlan(batch_to_run=ret, running_batch=running_batch)
  
@@ -537,7 +551,7 @@ index 743c8af..6910b19 100644
      def _get_new_batch_prefill_raw(
          self,
          prefill_delayer_single_pass: Optional[PrefillDelayerSinglePassExecutor],
-@@ -3871,7 +4063,7 @@ class Scheduler(
+@@ -3871,7 +4077,7 @@ class Scheduler(
              mamba_allocator.alloc_group_begin(len(self.waiting_queue))
          buffer_pipeline = self.tree_cache.buffer_pipeline
          # Get requests from the waiting queue to a new prefill batch
@@ -546,7 +560,7 @@ index 743c8af..6910b19 100644
              if self.enable_lora and not self.can_schedule_lora_req(req, running_loras):
                  continue
  
-@@ -3932,6 +4124,10 @@ class Scheduler(
+@@ -3932,6 +4138,10 @@ class Scheduler(
                  has_chunked_req=(self.chunked_req is not None),
                  truncation_align_size=self.truncation_align_size,
              )
@@ -557,7 +571,7 @@ index 743c8af..6910b19 100644
  
              if self.enable_lora:
                  running_loras.add(req.lora_id)
-@@ -4622,6 +4818,7 @@ class Scheduler(
+@@ -4622,6 +4832,7 @@ class Scheduler(
          elif batch.forward_mode.is_idle():
              self.batch_result_processor.process_batch_result_idle(batch, result)
  
@@ -565,7 +579,7 @@ index 743c8af..6910b19 100644
          self._record_step_counters(batch, result)
  
          self.metrics_reporter.log_batch_result_stats(batch, result)
-@@ -4634,6 +4831,19 @@ class Scheduler(
+@@ -4634,6 +4845,19 @@ class Scheduler(
          self.maybe_send_health_check_signal()
          self.metrics_reporter.update_device_timer()
  
@@ -585,7 +599,7 @@ index 743c8af..6910b19 100644
      def _record_step_counters(
          self, batch: ScheduleBatch, result: GenerationBatchResult
      ) -> None:
-@@ -5215,6 +5425,7 @@ class Scheduler(
+@@ -5215,6 +5439,7 @@ class Scheduler(
          }
  
      def abort_request(self, recv_req: AbortReq):
@@ -593,7 +607,7 @@ index 743c8af..6910b19 100644
          if (chunked_req := self.chunked_req) is not None:
              if recv_req.abort_all or chunked_req.rid.startswith(recv_req.rid):
                  self._pending_chunked_abort_req = chunked_req
-@@ -5369,6 +5580,25 @@ class Scheduler(
+@@ -5369,6 +5594,25 @@ class Scheduler(
                  else:
                      req.to_finish = FINISH_ABORT()
  
@@ -619,11 +633,15 @@ index 743c8af..6910b19 100644
      def _pause_engine(self) -> Tuple[List[Req], int]:
          raise NotImplementedError()
  
-@@ -5652,6 +5882,9 @@ class Scheduler(
+@@ -5652,6 +5896,13 @@ class Scheduler(
  
      def handle_shutdown(self, recv_req: ShutdownReq):
          # Break the event loop; the finally in run_scheduler_process releases resources.
 +        if self.beliefkv_runtime is not None:
++            predictor_fd = getattr(self, "_beliefkv_predictor_fd", None)
++            if predictor_fd is not None and self.idle_sleeper is not None:
++                self.idle_sleeper.poller.unregister(predictor_fd)
++                self._beliefkv_predictor_fd = None
 +            self.tree_cache.on_hicache_transfer_commit = None
 +            self.beliefkv_runtime.close()
          self.gracefully_exit = True
@@ -1569,10 +1587,10 @@ index 0000000..a8a2ead
 +    unittest.main()
 diff --git a/test/srt/test_beliefkv_scheduler_hook.py b/test/srt/test_beliefkv_scheduler_hook.py
 new file mode 100644
-index 0000000..52cf028
+index 0000000..9c2b7c9
 --- /dev/null
 +++ b/test/srt/test_beliefkv_scheduler_hook.py
-@@ -0,0 +1,426 @@
+@@ -0,0 +1,469 @@
 +"""BeliefKV scheduler safe-point contract, without model/GPU dependencies."""
 +
 +import ast
@@ -1605,6 +1623,7 @@ index 0000000..52cf028
 +        "_beliefkv_before_batch_selection",
 +        "_beliefkv_prefill_candidates",
 +        "get_next_batch_to_run",
++        "handle_shutdown",
 +    }
 +    extracted = [
 +        node
@@ -1851,6 +1870,48 @@ index 0000000..52cf028
 +        with self.assertRaisesRegex(RuntimeError, "single-rank"):
 +            scheduler.init_beliefkv_runtime()
 +        self.assertIsNone(scheduler.beliefkv_runtime)
++
++    def test_predictor_completion_wakes_idle_safe_point_and_closes_fd(self):
++        scheduler, batch, _ = idle_scheduler()
++        registered, unregistered = [], []
++        scheduler.server_args = SimpleNamespace(
++            enable_beliefkv=False,
++            enable_beliefkv_admission=True,
++            beliefkv_event_socket_path=None,
++            hicache_host_memory_mode="cache",
++        )
++        scheduler.disaggregation_mode = "null"
++        scheduler.spec_algorithm = SimpleNamespace(is_none=lambda: True)
++        scheduler.tree_cache = type("UnifiedRadixCache", (), {})()
++        scheduler.idle_sleeper = SimpleNamespace(
++            poller=SimpleNamespace(
++                register=registered.append,
++                unregister=unregistered.append,
++            )
++        )
++        runtime = SimpleNamespace(
++            event_server=None,
++            predictor_fileno=lambda: 73,
++            attach_native_cache=lambda cache: None,
++            on_native_transfer_commit=lambda commit: None,
++            scheduler_step=lambda: None,
++            plan_running_batch_retraction=lambda running: None,
++            on_batch_selected=lambda batch: None,
++            close=lambda: None,
++        )
++        with patch(
++            "beliefkv.runtime.sglang_v0520_runtime.NativeAdmissionRuntime",
++            return_value=runtime,
++        ):
++            scheduler.init_beliefkv_runtime()
++        self.assertEqual(registered, [73])
++        self.assertEqual(scheduler._beliefkv_predictor_fd, 73)
++        runtime.predictor_fileno = lambda: None
++        scheduler.get_next_batch_to_run(batch, None)
++        self.assertEqual(unregistered, [73])
++        self.assertIsNone(scheduler._beliefkv_predictor_fd)
++        scheduler.handle_shutdown(SimpleNamespace())
++        self.assertEqual(unregistered, [73])
 +
 +    def test_terminal_tagged_request_is_released_without_affecting_native(self):
 +        scheduler = Hook()

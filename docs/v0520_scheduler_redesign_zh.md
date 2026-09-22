@@ -78,6 +78,21 @@ cache mode。其他 cache backend、TP/PP、disaggregation 和 speculative
   仍只有 observed-causal/native 顺序；即使启用预测，SGLang
   `PrefillAdder` 仍独占实际 FULL/MAMBA 资源验收，不能把 hint
   当容量证明或 `PREPARE_HOST/PREFETCH_GPU` 授权。
+- 该 worker 现在也接受 `TOOL_START` 后的工具剩余时间请求，产出
+  P10/P50/P90；须有已完成请求留下的 context/session 绑定、live
+  `WAIT_TOOL` 和模型中非 OOD 且有 support 的 tool-wait head。
+  返回时重验 workflow/context/epoch、invocation revision、模型
+  SHA 和有效期；无效或过期结果不用于调度。工具推断可覆盖等待中的
+  admission 任务，而新的 admission 请求不能抹掉已经在途的工具
+  结果。scheduler idle poller 监听 worker 结果 fd，以便结果到达时
+  被唤醒。当前工具预测只为只读候选检查提供信号，不派发物理命令；
+  admission-only 晋升并不证明 tool-wait head 的动作时机准确率。
+- `scripts/promote_qwen35_admission_predictor.py` 提供有证据才晋升的
+  admission-only 路径：检查同一 Qwen3.5/v0.5.20 模型/运行时哈希、
+  相互隔离的 train/calibration/test_id 数据、冻结拆分以及重放
+  的 demand 可用率、误差和区间覆盖。输出仍明确标记
+  `predictive_action_eligible=false`；目前缺少目标数据与正式 artifact，
+  脚本不能将旧模型数据转换成新模型的预测动作资格。
 
 ## 交还给上游的机制
 
@@ -109,6 +124,12 @@ cache mode。其他 cache backend、TP/PP、disaggregation 和 speculative
    终止、取消或 epoch 变化使查询失效。此查询依赖实际启用
    session radix cache；默认 runner 尚未开启该能力。leaf anchor
    是候选来源，不是节点独占所有权或 DMA 授权。
+   工具预测结果通过后，安全点最多读取一个 session 的 FULL/MAMBA
+   祖先闭包（默认上限 64 个 node），计算尚未在 Host 备份的 FULL
+   token/MAMBA node；有 pending transfer、祖先缺失、anchor generation
+   不一致时放弃检查。候选仅保留只读快照，随后过期或 session 失效
+   即清理；没有原子 ownership/可迁移字节证明，不能视为 PREPARE
+   证书。调用动作前必须重新读取 live closure。
 2. staging native D2H/H2D 入口现可传递可选 command ID，controller
    在真正提交子操作时记录 anchor、pool token counts 和总 bytes；
    合并 ACK 同步且 tree finish 后，只有全部子 receipt 与 ACK
@@ -145,6 +166,9 @@ cache mode。其他 cache backend、TP/PP、disaggregation 和 speculative
 `SGLANG_SOURCE_CHECKOUT` 给 `scripts/launch_qwen35_native_v0520.sh`，
 脚本校验实际加载路径和固定 checkout。带源码启动但不启用 BeliefKV
 也只验证原生禁用路径，不能代替物理动作 gate。
+staging 单测同样需将 checkout 的 `python/` 和 BeliefKV 根目录显式
+加入 `PYTHONPATH`；直接运行环境中的 `pytest` 可能导入 wheel，
+报缺少新增 session anchor 方法，并不代表 staging 源码失败。
 
 安全点顺序固定为 native chunk abort -> HiCache ACK 排空 ->
 BeliefKV 状态同步/决策 -> native prefill admission -> GPU batch。
