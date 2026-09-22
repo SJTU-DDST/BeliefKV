@@ -44,8 +44,25 @@ class UnifiedCapacityObservation:
     reason: str | None = None
 
 
+@dataclass(frozen=True)
+class UnifiedUsageObservation:
+    observable: bool
+    device_full_live_tokens: int | None = None
+    device_mamba_live_slots: int | None = None
+    host_full_used_tokens: int | None = None
+    host_mamba_used_slots: int | None = None
+    physical_actions_supported: bool = False
+    reason: str | None = None
+
+
 def _positive(value: object, label: str) -> int:
     if type(value) is not int or value <= 0:
+        raise ValueError(f"invalid {label}")
+    return value
+
+
+def _bounded(value: object, ceiling: int, label: str) -> int:
+    if type(value) is not int or not 0 <= value <= ceiling:
         raise ValueError(f"invalid {label}")
     return value
 
@@ -181,3 +198,47 @@ def observe_unified_full_mamba(cache: object) -> UnifiedCapacityObservation:
         )
     except (AttributeError, KeyError, TypeError, ValueError) as exc:
         return UnifiedCapacityObservation(observable=False, reason=str(exc))
+
+
+def observe_unified_full_mamba_usage(cache: object) -> UnifiedUsageObservation:
+    """Read CPU allocation counters at a safe point; never infer free shared bytes.
+
+    Allocated FULL tokens and MAMBA slots use distinct virtual-id spaces.
+    Host free-list lengths include pending releases; native eviction/lock
+    eligibility is not represented by these counts.
+    """
+    capacity = observe_unified_full_mamba(cache)
+    if not capacity.observable:
+        return UnifiedUsageObservation(observable=False, reason=capacity.reason)
+    try:
+        allocator = cache.token_to_kv_pool_allocator
+        full = allocator.full_attn_allocator
+        mamba = allocator.mamba_allocator
+        group = cache.host_pool_group
+        host_full = group.entry_map["kv"].host_pool
+        host_mamba = group.entry_map["mamba"].host_pool
+        live_full = _bounded(
+            full.allocated_count(), capacity.device_full_tokens, "device FULL live tokens"
+        )
+        live_mamba = _bounded(
+            mamba.allocated_count(), capacity.device_mamba_slots, "device MAMBA live slots"
+        )
+        used_full = _bounded(
+            capacity.host_full_tokens - host_full.available_size(),
+            capacity.host_full_tokens,
+            "host FULL used tokens",
+        )
+        used_mamba = _bounded(
+            capacity.host_mamba_slots - host_mamba.available_size(),
+            capacity.host_mamba_slots,
+            "host MAMBA used slots",
+        )
+        return UnifiedUsageObservation(
+            observable=True,
+            device_full_live_tokens=live_full,
+            device_mamba_live_slots=live_mamba,
+            host_full_used_tokens=used_full,
+            host_mamba_used_slots=used_mamba,
+        )
+    except (AttributeError, KeyError, TypeError, ValueError, RuntimeError) as exc:
+        return UnifiedUsageObservation(observable=False, reason=str(exc))

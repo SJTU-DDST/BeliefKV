@@ -60,9 +60,10 @@ BeliefKV 闭环；不是只把 HTTP 请求送到调度器，也不等于生产�
 scheduler hook；启用 BeliefKV 时明确抛错。13 项新 checkout 定向测试通过，
 **不能**据此声称任何 BeliefKV physical KV 操作、admission 或预测调度已迁移。
 本仓库的 `beliefkv/runtime/sglang_v0520_observer.py` 另提供 FULL-token、
-MAMBA-slot 和 Host pool 的**只读静态容量上限**；两个 device 子池共享同一
-字节 buffer，所报上限不能相加。它不读取在线占用/可回收量，不进行动作
-或授权；19 项 mock 测试通过，尚未在真实 GPU cache 上验收。
+MAMBA-slot 和 Host pool 的**只读静态容量上限和占用计数**；两个 device 子池
+共享同一字节 buffer，所报上限不能相加。它不估计可立即调度的空闲字节
+或可回收量，不进行动作或授权；mock 测试通过，尚未在真实 GPU cache
+上验收。
 组 1-5 + 改写本仓库 runtime/contract 才能定义为“基础 BeliefKV 可运行补丁集”；
 要复现题设 `dynamic-running.patch` 的行为还需组 6。**没有现成可运行的
 v0.5.20 可运行补丁文件**；只搬运上游 diff 或只加入口字段不构成完整补丁集。

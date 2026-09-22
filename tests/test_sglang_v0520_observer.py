@@ -7,7 +7,10 @@ from types import SimpleNamespace as NS
 
 import pytest
 
-from beliefkv.runtime.sglang_v0520_observer import observe_unified_full_mamba
+from beliefkv.runtime.sglang_v0520_observer import (
+    observe_unified_full_mamba,
+    observe_unified_full_mamba_usage,
+)
 
 
 class ComponentType(IntEnum):
@@ -234,3 +237,68 @@ def test_observation_does_not_change_runtime_state() -> None:
         cache.host_pool_group.entry_map.copy(),
     )
     assert after == before
+
+
+def test_usage_counts_do_not_confuse_independent_device_ceilings() -> None:
+    cache = _cache()
+    allocator = cache.token_to_kv_pool_allocator
+    allocator.full_attn_allocator.allocated_count = lambda: 80
+    allocator.mamba_allocator.allocated_count = lambda: 9
+    cache.host_pool_group.entry_map["kv"].host_pool.available_size = lambda: 104
+    cache.host_pool_group.entry_map["mamba"].host_pool.available_size = lambda: 17
+    result = observe_unified_full_mamba_usage(cache)
+    assert result.observable
+    assert (
+        result.device_full_live_tokens,
+        result.device_mamba_live_slots,
+        result.host_full_used_tokens,
+        result.host_mamba_used_slots,
+    ) == (80, 9, 24, 4)
+    assert not result.physical_actions_supported
+    assert not hasattr(result, "device_available_bytes")
+
+
+@pytest.mark.parametrize(
+    "invalid_counter",
+    [
+        lambda c: setattr(
+            c.token_to_kv_pool_allocator.full_attn_allocator,
+            "allocated_count",
+            lambda: 193,
+        ),
+        lambda c: setattr(
+            c.token_to_kv_pool_allocator.mamba_allocator,
+            "allocated_count",
+            lambda: -1,
+        ),
+        lambda c: setattr(
+            c.host_pool_group.entry_map["kv"].host_pool,
+            "available_size",
+            lambda: 129,
+        ),
+        lambda c: setattr(
+            c.host_pool_group.entry_map["mamba"].host_pool,
+            "available_size",
+            lambda: 22,
+        ),
+    ],
+)
+def test_usage_inconsistent_counters_fail_closed(invalid_counter) -> None:
+    cache = _cache()
+    allocator = cache.token_to_kv_pool_allocator
+    allocator.full_attn_allocator.allocated_count = lambda: 1
+    allocator.mamba_allocator.allocated_count = lambda: 1
+    cache.host_pool_group.entry_map["kv"].host_pool.available_size = lambda: 100
+    cache.host_pool_group.entry_map["mamba"].host_pool.available_size = lambda: 20
+    invalid_counter(cache)
+    result = observe_unified_full_mamba_usage(cache)
+    assert not result.observable
+    assert result.device_full_live_tokens is None
+    assert result.host_full_used_tokens is None
+
+
+def test_usage_does_not_run_counter_methods_on_unknown_cache() -> None:
+    cache = _cache()
+    cache.host_pool_group.entry_map["mamba"].device_pool = object()
+    result = observe_unified_full_mamba_usage(cache)
+    assert not result.observable
