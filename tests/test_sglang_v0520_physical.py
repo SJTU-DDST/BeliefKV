@@ -1,6 +1,7 @@
 """CPU-only checks of native merged ACK transaction credit."""
 
 from types import SimpleNamespace as NS
+from enum import Enum
 from unittest.mock import patch
 
 import pytest
@@ -14,7 +15,87 @@ from beliefkv.runtime.sglang_v0520_physical import (
     PhysicalTransactionLedger,
     capture_action_local_shadow,
     next_shadow_backup_step,
+    shadow_expectation_from_native_op,
+    ShadowBackupStep,
 )
+
+
+def test_native_shadow_expectation_uses_exact_operation_before_ack():
+    class Pool(str, Enum):
+        KV = "kv"
+        MAMBA = "mamba"
+
+    step = ShadowBackupStep(
+        PrefillCandidateKey("r", "w", "i", "c", 3, 0, "s", 4),
+        12, 5, 11, 4,
+    )
+    group = NS(entry_map={
+        Pool.KV: NS(host_pool=NS(size_per_token=10)),
+        Pool.MAMBA: NS(host_pool=NS(size_per_token=5)),
+    })
+    op = NS(beliefkv_command_id="prepare-1", node_ids=[11],
+            device_indices=(0, 1), host_indices=(2, 3))
+    controller = NS(
+        mem_pool_host=group,
+        _num_tokens_by_pool=lambda operation: {"kv": 2, "mamba": 1},
+        _transfer_num_bytes=lambda operation: 32,
+    )
+    expected = shadow_expectation_from_native_op("prepare-1", step, op, controller)
+    assert expected.children == (
+        PhysicalChildExpectation(11, (11,), (("kv", 20), ("mamba", 5)), 32),
+    )
+    assert expected.session_id == "s"
+    assert expected.session_generation == 4
+    ledger = PhysicalTransactionLedger()
+    ledger.register(expected)
+    assert ledger.pending_count == 1
+    assert ledger.observe(
+        ack(receipt(command="prepare-1", anchor=11, published=(11,),
+                    kv=2, mamba=1, total=32), nodes=(11,)),
+        live_context_epochs={"c": 3},
+        live_context_sessions={"c": ("s", 4)},
+    )[0].num_bytes == 32
+    assert ledger.pending_count == 0
+
+    # A MAMBA-only backup can have zero FULL tokens and still transfer bytes.
+    op.device_indices = ()
+    op.host_indices = ()
+    controller._num_tokens_by_pool = lambda operation: {"kv": 0, "mamba": 1}
+    controller._transfer_num_bytes = lambda operation: 8
+    assert shadow_expectation_from_native_op(
+        "prepare-1", step, op, controller
+    ).children[0] == PhysicalChildExpectation(
+        11, (11,), (("kv", 0), ("mamba", 5)), 8
+    )
+
+
+@pytest.mark.parametrize("change", (
+    lambda op, ctrl: setattr(op, "beliefkv_command_id", "other"),
+    lambda op, ctrl: setattr(op, "node_ids", [12]),
+    lambda op, ctrl: setattr(op, "host_indices", ()),
+    lambda op, ctrl: setattr(ctrl, "_num_tokens_by_pool", lambda _: {"swa": 1}),
+    lambda op, ctrl: setattr(ctrl, "_transfer_num_bytes", lambda _: 1),
+    lambda op, ctrl: setattr(
+        ctrl.mem_pool_host.entry_map["kv"].host_pool, "size_per_token", 0
+    ),
+))
+def test_native_shadow_expectation_rejects_invalid_operation(change):
+    step = ShadowBackupStep(
+        PrefillCandidateKey("r", "w", "i", "c", 3, 0, "s", 4),
+        12, 5, 11, 4,
+    )
+    op = NS(beliefkv_command_id="prepare-1", node_ids=[11],
+            device_indices=(0, 1), host_indices=(2, 3))
+    controller = NS(
+        mem_pool_host=NS(entry_map={
+            "kv": NS(host_pool=NS(size_per_token=10)),
+        }),
+        _num_tokens_by_pool=lambda _: {"kv": 2},
+        _transfer_num_bytes=lambda _: 20,
+    )
+    change(op, controller)
+    with pytest.raises(PhysicalReceiptError):
+        shadow_expectation_from_native_op("prepare-1", step, op, controller)
 
 
 def test_shadow_candidate_is_context_local_and_read_only():

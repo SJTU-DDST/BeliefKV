@@ -9,6 +9,7 @@ from collections import Counter, deque
 from collections.abc import Sequence
 import time
 from typing import TYPE_CHECKING
+from uuid import uuid4
 
 from beliefkv.control.causal_graph import RuntimeCausalContextGraph
 from beliefkv.core.events import RuntimeEventKind
@@ -37,6 +38,7 @@ from beliefkv.runtime.sglang_v0520_physical import (
     ShadowBackupStep,
     capture_action_local_shadow,
     next_shadow_backup_step,
+    shadow_expectation_from_native_op,
 )
 from beliefkv.predictor.structured_frontier import LocalFrontierFeatures
 
@@ -431,6 +433,59 @@ class NativeAdmissionRuntime:
         )
         self.shadow_candidate = candidate
         return next_shadow_backup_step(candidate) if candidate is not None else None
+
+    def issue_shadow_backup_step(self, step: ShadowBackupStep) -> str | None:
+        """Submit a revalidated native shadow; return its ID, not ACK credit.
+
+        The scheduler's action policy must first authorize the step. This
+        method supplies transaction safety only and is not an action planner.
+        """
+        cache = self._native_cache
+        if (
+            self.physical_disabled
+            or cache is None
+            or not isinstance(step, ShadowBackupStep)
+            or self.refreshed_shadow_backup_step() != step
+        ):
+            self.counts["shadow_step_stale"] += 1
+            return None
+        command_id = f"beliefkv-shadow-{uuid4().hex}"
+        registered = False
+
+        def before_enqueue(operation: object) -> bool:
+            nonlocal registered
+            try:
+                expected = shadow_expectation_from_native_op(
+                    command_id, step, operation, cache.cache_controller
+                )
+                self.register_physical_action(expected)
+            except (PhysicalReceiptError, AttributeError, TypeError, ValueError):
+                self.counts["shadow_reservation_rejected"] += 1
+                return False
+            registered = True
+            return True
+
+        outcome = cache.prepare_host_shadow(
+            session_id=step.key.session_id,
+            session_generation=step.key.session_generation,
+            leaf_node_id=step.leaf_node_id,
+            leaf_creation_time=step.leaf_creation_time,
+            node_id=step.node_id,
+            node_creation_time=step.creation_time,
+            beliefkv_command_id=command_id,
+            beliefkv_before_enqueue=before_enqueue,
+        )
+        if not outcome.issued:
+            if registered:
+                # Native confirmed that the operation was not enqueued.
+                self.physical_ledger.cancel_unsubmitted(command_id)
+            self.counts["shadow_native_declined"] += 1
+            return None
+        if not registered or outcome.node_id != step.node_id:
+            self.physical_disabled = True
+            raise PhysicalReceiptError("native shadow issued without a matching reservation")
+        self.counts["shadow_native_issued"] += 1
+        return command_id
 
     def on_native_transfer_commit(self, commit: object) -> None:
         """Observe synchronized native ACKs, never infer completion from enqueue."""

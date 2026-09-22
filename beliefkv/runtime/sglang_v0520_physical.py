@@ -228,6 +228,76 @@ class PhysicalActionExpectation:
     session_generation: int | None = None
 
 
+def shadow_expectation_from_native_op(
+    command_id: str,
+    step: ShadowBackupStep,
+    operation: object,
+    controller: object,
+) -> PhysicalActionExpectation:
+    """Freeze exact native D2H accounting before the operation is enqueued."""
+    if (
+        type(command_id) is not str
+        or not command_id
+        or getattr(operation, "beliefkv_command_id", None) != command_id
+        or getattr(operation, "node_ids", None) != [step.node_id]
+        or type(step.node_id) is not int
+        or step.node_id < 0
+        or step.key.session_id is None
+        or step.key.session_generation is None
+    ):
+        raise PhysicalReceiptError("native shadow operation identity mismatch")
+    try:
+        group = controller.mem_pool_host
+        entries = {
+            getattr(name, "value", name): entry
+            for name, entry in group.entry_map.items()
+        }
+        counts = controller._num_tokens_by_pool(operation)
+        num_bytes = controller._transfer_num_bytes(operation)
+        full_count = len(operation.device_indices)
+        host_count = len(operation.host_indices)
+    except (AttributeError, KeyError, TypeError, ValueError) as exc:
+        raise PhysicalReceiptError("native shadow accounting unavailable") from exc
+    if (
+        type(counts) is not dict
+        or not counts
+        or set(counts) - {"kv", "mamba"}
+        or type(full_count) is not int
+        or full_count != host_count
+        or counts.get("kv") != full_count
+        or any(type(count) is not int or count < 0 for count in counts.values())
+        or type(num_bytes) is not int
+        or num_bytes <= 0
+    ):
+        raise PhysicalReceiptError("invalid native shadow pool counts")
+    sizes = []
+    pool_bytes = []
+    for pool, count in sorted(counts.items()):
+        entry = entries.get(pool)
+        size = getattr(getattr(entry, "host_pool", None), "size_per_token", None)
+        if type(size) is not int or size <= 0:
+            raise PhysicalReceiptError("native shadow pool geometry changed")
+        sizes.append((pool, size))
+        pool_bytes.append((pool, count * size))
+    if sum(amount for _, amount in pool_bytes) > num_bytes:
+        raise PhysicalReceiptError("native shadow bytes smaller than pool bytes")
+    return PhysicalActionExpectation(
+        command_id=command_id,
+        action="PREPARE_HOST",
+        context_id=step.key.context_id,
+        context_epoch=step.key.context_epoch,
+        children=(PhysicalChildExpectation(
+            anchor_node_id=step.node_id,
+            published_node_ids=(step.node_id,),
+            pool_bytes=tuple(pool_bytes),
+            num_bytes=num_bytes,
+        ),),
+        pool_bytes_per_token=tuple(sizes),
+        session_id=step.key.session_id,
+        session_generation=step.key.session_generation,
+    )
+
+
 @dataclass(frozen=True)
 class PhysicalActionCompleted:
     command_id: str

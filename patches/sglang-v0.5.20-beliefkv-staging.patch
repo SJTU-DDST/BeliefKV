@@ -660,18 +660,33 @@ index 1b63fb6..07ab19d 100644
                  require_reasoning=obj.require_reasoning,
                  return_hidden_states=obj.return_hidden_states,
 diff --git a/python/sglang/srt/mem_cache/hybrid_cache/hybrid_cache_controller.py b/python/sglang/srt/mem_cache/hybrid_cache/hybrid_cache_controller.py
-index 17b3774..a338d89 100644
+index 17b3774..ff68591 100644
 --- a/python/sglang/srt/mem_cache/hybrid_cache/hybrid_cache_controller.py
 +++ b/python/sglang/srt/mem_cache/hybrid_cache/hybrid_cache_controller.py
-@@ -327,6 +327,7 @@ class HybridCacheController(BaseHiCacheController):
+@@ -327,10 +327,22 @@ class HybridCacheController(BaseHiCacheController):
          priority: Optional[int] = None,
          node_id: int = -1,
          extra_pools: Optional[list[PoolTransfer]] = None,
 +        beliefkv_command_id: Optional[str] = None,
++        *,
++        beliefkv_before_enqueue: Optional[Callable[[CacheOperation], bool]] = None,
      ) -> Optional[torch.Tensor]:
          host_indices = self.mem_pool_host.alloc(len(device_indices))
          if host_indices is None:
-@@ -340,15 +341,15 @@ class HybridCacheController(BaseHiCacheController):
+             return None
++        unresolved_transfers = (
++            [
++                transfer
++                for transfer in extra_pools or []
++                if transfer.indices_from_pool is None and transfer.host_indices is None
++            ]
++            if beliefkv_before_enqueue is not None
++            else []
++        )
+         pool_transfers = self.mem_pool_host.resolve_host_transfers(
+             extra_pools,
+             primary_device_indices=device_indices,
+@@ -340,15 +352,31 @@ class HybridCacheController(BaseHiCacheController):
              self.mem_pool_host.free(host_indices)
              return None
  
@@ -691,11 +706,27 @@ index 17b3774..a338d89 100644
 +            pool_transfers=pool_transfers or None,
 +            beliefkv_command_id=beliefkv_command_id,
          )
++        if beliefkv_before_enqueue is not None:
++            allocated_sidecars = [
++                (transfer.name, transfer.host_indices)
++                for transfer in unresolved_transfers
++                if transfer.host_indices is not None
++            ]
++            try:
++                accepted = beliefkv_before_enqueue(op) is True
++            except Exception:
++                logger.exception("BeliefKV before-enqueue hook failed")
++                accepted = False
++            if not accepted:
++                for pool, indices in allocated_sidecars:
++                    self.mem_pool_host.free(indices, pool=pool)
++                self.mem_pool_host.free(host_indices)
++                return None
 +        self.write_queue.append(op)
          self.start_writing()
          return host_indices
  
-@@ -518,6 +519,7 @@ class HybridCacheController(BaseHiCacheController):
+@@ -518,6 +546,7 @@ class HybridCacheController(BaseHiCacheController):
          priority: Optional[int] = None,
          node_id: int = -1,
          extra_pools: Optional[list[PoolTransfer]] = None,
@@ -703,7 +734,7 @@ index 17b3774..a338d89 100644
      ) -> Optional[torch.Tensor]:
          need_load_kv = host_indices.numel() > 0
  
-@@ -543,15 +545,15 @@ class HybridCacheController(BaseHiCacheController):
+@@ -543,15 +572,15 @@ class HybridCacheController(BaseHiCacheController):
                  full_allocator.free(device_indices)
              return None
  
@@ -777,7 +808,7 @@ index 406069a..7431436 100644
          if not self.enable_session_radix_cache or session_id is None:
              return 0
 diff --git a/python/sglang/srt/mem_cache/unified_radix_cache.py b/python/sglang/srt/mem_cache/unified_radix_cache.py
-index d417d7d..cb8333f 100644
+index d417d7d..3dafe71 100644
 --- a/python/sglang/srt/mem_cache/unified_radix_cache.py
 +++ b/python/sglang/srt/mem_cache/unified_radix_cache.py
 @@ -6,7 +6,7 @@ import threading
@@ -835,7 +866,7 @@ index d417d7d..cb8333f 100644
          self.host_pool_group = None  # set by attach_hybrid_pool_to_unified_cache
          # Owns the storage backend lifecycle; built by init_hicache.
          self._storage_attachment: Optional[StorageAttachment] = None
-@@ -1518,8 +1550,145 @@ class UnifiedRadixCache(BasePrefixCache):
+@@ -1518,8 +1550,148 @@ class UnifiedRadixCache(BasePrefixCache):
  
      # ---- HiCache: Backup / LoadBack ----
  
@@ -849,6 +880,7 @@ index d417d7d..cb8333f 100644
 +        node_id: NodeId,
 +        node_creation_time: int | float,
 +        beliefkv_command_id: str,
++        beliefkv_before_enqueue: Optional[Callable[[CacheOperation], bool]] = None,
 +    ) -> PrepareHostShadowResult:
 +        """Issue one tagged, non-evicting D2H shadow; only the native ACK certifies it.
 +
@@ -964,6 +996,7 @@ index d417d7d..cb8333f 100644
 +            BackupKV([node_id]),
 +            beliefkv_command_id=beliefkv_command_id,
 +            no_host_reclaim=True,
++            beliefkv_before_enqueue=beliefkv_before_enqueue,
 +        )
 +        # Mamba-only backups have zero Full tokens, so the helper's integer
 +        # token count cannot distinguish their successful enqueue from failure.
@@ -979,10 +1012,11 @@ index d417d7d..cb8333f 100644
 +        *,
 +        beliefkv_command_id: str | None = None,
 +        no_host_reclaim: bool = False,
++        beliefkv_before_enqueue: Optional[Callable[[CacheOperation], bool]] = None,
      ) -> int:
          """Run a backup action top-down, stopping at the first failed backup."""
          if self.buffer_pipeline is not None:
-@@ -1539,7 +1708,12 @@ class UnifiedRadixCache(BasePrefixCache):
+@@ -1539,7 +1711,13 @@ class UnifiedRadixCache(BasePrefixCache):
                  continue
              sidecar_xfers = self._build_backup_sidecar(device_value, comp_xfers)
              host_indices = self._execute_kv_backup(
@@ -993,10 +1027,11 @@ index d417d7d..cb8333f 100644
 +                sidecar_xfers,
 +                beliefkv_command_id=beliefkv_command_id,
 +                no_host_reclaim=no_host_reclaim,
++                beliefkv_before_enqueue=beliefkv_before_enqueue,
              )
              if host_indices is None:
                  return 0
-@@ -1574,18 +1748,72 @@ class UnifiedRadixCache(BasePrefixCache):
+@@ -1574,18 +1752,74 @@ class UnifiedRadixCache(BasePrefixCache):
              CacheTransferPhase.BACKUP_HOST, kv_xfer, comp_xfers
          )
  
@@ -1005,6 +1040,7 @@ index d417d7d..cb8333f 100644
 +        self, node_id, device_value, comp_xfers, sidecar_xfers, *,
 +        beliefkv_command_id: str | None = None,
 +        no_host_reclaim: bool = False,
++        beliefkv_before_enqueue: Optional[Callable[[CacheOperation], bool]] = None,
 +    ):
          """Execute Backup action."""
          kv_tokens = len(device_value)
@@ -1055,6 +1091,7 @@ index d417d7d..cb8333f 100644
 +                    node_id=node_id,
 +                    extra_pools=aux_xfers or None,
 +                    beliefkv_command_id=beliefkv_command_id,
++                    beliefkv_before_enqueue=beliefkv_before_enqueue,
 +                )
 +                if result is not None:
 +                    return result
@@ -1071,7 +1108,7 @@ index d417d7d..cb8333f 100644
          )
  
      def _track_write_through_node(
-@@ -1627,10 +1855,10 @@ class UnifiedRadixCache(BasePrefixCache):
+@@ -1627,10 +1861,10 @@ class UnifiedRadixCache(BasePrefixCache):
              updated_node_ids,
          )
  
@@ -1084,7 +1121,7 @@ index d417d7d..cb8333f 100644
  
          lock_node_id, lock_params, publish_node_ids = self.ongoing_write_through.pop(
              ack_id
-@@ -1643,12 +1871,15 @@ class UnifiedRadixCache(BasePrefixCache):
+@@ -1643,12 +1877,15 @@ class UnifiedRadixCache(BasePrefixCache):
              # suffix; the prefix fragment must be persisted as well.
              for node_id in publish_node_ids:
                  self.write_backup_storage(node_id)
@@ -1100,7 +1137,7 @@ index d417d7d..cb8333f 100644
      ) -> bool:
          """Load evicted KV data from host back to device (H→D)."""
          if self.cache_controller is None:
-@@ -1675,6 +1906,7 @@ class UnifiedRadixCache(BasePrefixCache):
+@@ -1675,6 +1912,7 @@ class UnifiedRadixCache(BasePrefixCache):
                  result=result,
                  ancestor_lock_params=ancestor_lock_params,
                  host_anchor_params=host_anchor_params,
@@ -1108,7 +1145,7 @@ index d417d7d..cb8333f 100644
              )
              return success
          finally:
-@@ -1690,6 +1922,7 @@ class UnifiedRadixCache(BasePrefixCache):
+@@ -1690,6 +1928,7 @@ class UnifiedRadixCache(BasePrefixCache):
          result: IncLockRefResult,
          ancestor_lock_params: DecLockRefParams,
          host_anchor_params: DecLockRefParams,
@@ -1116,7 +1153,7 @@ index d417d7d..cb8333f 100644
      ) -> bool:
          # Build the KV + per-component aux transfers.
          kv_xfer, comp_xfers = self.tree_core.build_load_back_spec(node_id, req=req)
-@@ -1741,6 +1974,7 @@ class UnifiedRadixCache(BasePrefixCache):
+@@ -1741,6 +1980,7 @@ class UnifiedRadixCache(BasePrefixCache):
              host_indices=kv_xfer.host_indices,
              node_id=node_id,
              extra_pools=aux_xfers or None,
@@ -1124,7 +1161,7 @@ index d417d7d..cb8333f 100644
          )
  
          self.dec_lock_ref(node_id, ancestor_lock_params)
-@@ -3130,10 +3364,24 @@ class UnifiedRadixCache(BasePrefixCache):
+@@ -3130,10 +3370,24 @@ class UnifiedRadixCache(BasePrefixCache):
              while self.ongoing_write_through:
                  for ack in cc.ack_write_queue:
                      ack.finish_event.synchronize()
@@ -1150,7 +1187,7 @@ index d417d7d..cb8333f 100644
                  cc.ack_write_queue.clear()
                  assert len(self.ongoing_write_through) == 0
              return
-@@ -3154,11 +3402,102 @@ class UnifiedRadixCache(BasePrefixCache):
+@@ -3154,11 +3408,102 @@ class UnifiedRadixCache(BasePrefixCache):
          while finish_count > 0:
              ack = cc.ack_write_queue.pop(0)
              ack.finish_event.synchronize()
@@ -1254,7 +1291,7 @@ index d417d7d..cb8333f 100644
      def _log_write_ack_metrics(self, ack: HiCacheAck) -> None:
          """Record D->H backup volume and duration for a completed write ack."""
          if self.metrics_collector is None:
-@@ -3200,6 +3539,8 @@ class UnifiedRadixCache(BasePrefixCache):
+@@ -3200,6 +3545,8 @@ class UnifiedRadixCache(BasePrefixCache):
          while finish_count > 0:
              ack = cc.ack_load_queue.pop(0)
              ack.finish_event.synchronize()
@@ -1263,7 +1300,7 @@ index d417d7d..cb8333f 100644
              for ack_id in ack.node_ids:
                  if (
                      self.buffer_pipeline is not None
-@@ -3211,6 +3552,8 @@ class UnifiedRadixCache(BasePrefixCache):
+@@ -3211,6 +3558,8 @@ class UnifiedRadixCache(BasePrefixCache):
                  self.dec_host_lock_ref(node, host_lock_params)
                  # Unpin the loaded nodes; host copies stay as reclaimable duplicates.
                  self.tree_core.finish_load_back(node)
@@ -1272,7 +1309,7 @@ index d417d7d..cb8333f 100644
  
              if self.metrics_collector is not None:
                  for pool, num_tokens in (ack.num_tokens_by_pool or {}).items():
-@@ -3225,6 +3568,13 @@ class UnifiedRadixCache(BasePrefixCache):
+@@ -3225,6 +3574,13 @@ class UnifiedRadixCache(BasePrefixCache):
                      self.metrics_collector.observe_load_back_duration(
                          duration_ms / 1000.0
                      )
@@ -2325,10 +2362,10 @@ index 0000000..388cb28
 +    assert tracker.snapshot_session_leaf_anchors("session", generation) is None
 diff --git a/test/srt/test_beliefkv_shadow_dispatch.py b/test/srt/test_beliefkv_shadow_dispatch.py
 new file mode 100644
-index 0000000..cc39174
+index 0000000..c8b95a5
 --- /dev/null
 +++ b/test/srt/test_beliefkv_shadow_dispatch.py
-@@ -0,0 +1,515 @@
+@@ -0,0 +1,569 @@
 +"""CPU-only action-local shadow dispatch tests, without importing the GPU runtime."""
 +
 +import ast
@@ -2547,7 +2584,10 @@ index 0000000..cc39174
 +    group = HostGroup()
 +    ops = []
 +
-+    def write(device_indices, *, node_id, extra_pools, beliefkv_command_id):
++    def write(
++        device_indices, *, node_id, extra_pools, beliefkv_command_id,
++        beliefkv_before_enqueue=None,
++    ):
 +        indices = group.alloc(len(device_indices))
 +        if indices is not None:
 +            for transfer in extra_pools or ():
@@ -2566,6 +2606,17 @@ index 0000000..cc39174
 +                        if transfer.indices_from_pool == PoolName.KV
 +                        else source.host_indices
 +                    )
++            if beliefkv_before_enqueue is not None:
++                op = SimpleNamespace(
++                    beliefkv_command_id=beliefkv_command_id,
++                    node_ids=[node_id],
++                    device_indices=device_indices,
++                    host_indices=indices,
++                    pool_transfers=extra_pools,
++                )
++                if beliefkv_before_enqueue(op) is not True:
++                    group.free(indices)
++                    return None
 +            ops.append((node_id, beliefkv_command_id, extra_pools))
 +        return indices
 +
@@ -2646,6 +2697,46 @@ index 0000000..cc39174
 +
 +
 +class TestPrepareHostShadow(unittest.TestCase):
++    def test_before_enqueue_sees_native_counts_and_veto_keeps_tree_unchanged(self):
++        cache, _, _, leaf, group, ops, args = fixture()
++        observed = []
++
++        def veto(operation):
++            observed.append((
++                operation.beliefkv_command_id,
++                operation.node_ids,
++                len(operation.device_indices),
++                len(operation.host_indices),
++            ))
++            return False
++
++        result = cache.prepare_host_shadow(
++            **args, beliefkv_before_enqueue=veto
++        )
++        self.assertFalse(result.issued)
++        self.assertEqual(observed, [("cmd-2", [leaf.id], 2, 2)])
++        self.assertEqual(ops, [])
++        self.assertEqual(group.free_sizes[PoolName.KV], 8)
++        self.assertIsNone(leaf.component_data[ComponentType.FULL].host_value)
++        self.assertEqual(cache.ongoing_write_through, {})
++
++    def test_mamba_only_before_enqueue_sees_zero_full_count(self):
++        cache, _, _, leaf, group, ops, args = fixture()
++        leaf.component_data[ComponentType.FULL].host_value = torch.arange(2)
++        leaf.component_data[ComponentType.MAMBA].value = torch.arange(1)
++        seen = []
++        self.assertTrue(cache.prepare_host_shadow(
++            **args,
++            beliefkv_before_enqueue=lambda operation: (
++                seen.append((len(operation.device_indices),
++                             len(operation.pool_transfers or [])))
++                or True
++            ),
++        ).issued)
++        self.assertEqual(seen, [(0, 1)])
++        self.assertEqual(len(ops), 1)
++        self.assertEqual(group.allocations, [(PoolName.MAMBA, 1), (PoolName.KV, 0)])
++
 +    def test_tagged_enqueue_retains_gpu_until_native_ack(self):
 +        cache, _, _, leaf, group, ops, args = fixture()
 +        result = cache.prepare_host_shadow(**args)
@@ -2846,10 +2937,10 @@ index 0000000..cc39174
 +    unittest.main()
 diff --git a/test/srt/test_beliefkv_transfer_receipts.py b/test/srt/test_beliefkv_transfer_receipts.py
 new file mode 100644
-index 0000000..5e054d0
+index 0000000..1e0c976
 --- /dev/null
 +++ b/test/srt/test_beliefkv_transfer_receipts.py
-@@ -0,0 +1,382 @@
+@@ -0,0 +1,549 @@
 +"""CPU-only coverage for per-operation HiCache transfer receipts."""
 +
 +import ast
@@ -2941,6 +3032,7 @@ index 0000000..5e054d0
 +        "PoolName": PoolName,
 +        "PoolTransfer": PoolTransfer,
 +        "NamedTuple": NamedTuple,
++        "logger": Mock(),
 +    }
 +    exec(compile(module, str(base_source), "exec"), namespace)
 +    namespace["CacheOperation"].counter = 0
@@ -3047,6 +3139,48 @@ index 0000000..5e054d0
 +    return instance
 +
 +
++def reservation_controller():
++    instance = hybrid_controller()
++
++    def alloc(count, *, pool=None):
++        offset = 100 if pool is PoolName.MAMBA else 0
++        return indices(count) + offset
++
++    def resolve(transfers, *, primary_device_indices, primary_host_indices):
++        for transfer in transfers or []:
++            if (
++                transfer.indices_from_pool is None
++                and transfer.host_indices is None
++                and transfer.device_indices is not None
++            ):
++                transfer.host_indices = instance.mem_pool_host.alloc(
++                    len(transfer.device_indices), pool=transfer.name
++                )
++        for transfer in transfers or []:
++            if transfer.indices_from_pool is None:
++                continue
++            source = next(
++                (
++                    candidate
++                    for candidate in transfers
++                    if candidate.name == transfer.indices_from_pool
++                    and candidate.indices_from_pool is None
++                ),
++                None,
++            )
++            transfer.host_indices = (
++                primary_host_indices if source is None else source.host_indices
++            )
++            transfer.device_indices = (
++                primary_device_indices if source is None else source.device_indices
++            )
++        return transfers
++
++    instance.mem_pool_host.alloc.side_effect = alloc
++    instance.mem_pool_host.resolve_host_transfers.side_effect = resolve
++    return instance
++
++
 +def assert_reconciled(test, ack):
 +    totals = {}
 +    for receipt in ack.child_receipts:
@@ -3057,6 +3191,130 @@ index 0000000..5e054d0
 +
 +
 +class TransferReceiptTest(unittest.TestCase):
++    def test_before_enqueue_accepts_resolved_operation_before_dma(self):
++        ctrl = reservation_controller()
++        transfers = [
++            PoolTransfer(name=PoolName.MAMBA, device_indices=indices(1)),
++            PoolTransfer(name=PoolName.SWA, indices_from_pool=PoolName.MAMBA),
++        ]
++        seen = []
++
++        def accept(op):
++            self.assertEqual(ctrl.write_queue, [])
++            start.assert_not_called()
++            self.assertEqual(op.node_ids, [17])
++            self.assertEqual(op.beliefkv_command_id, "command-17")
++            self.assertIs(op.pool_transfers, transfers)
++            self.assertIs(op.pool_transfers[1].host_indices, transfers[0].host_indices)
++            self.assertEqual(op.host_indices.tolist(), [0, 1])
++            seen.append(op)
++            return True
++
++        with patch.object(ctrl, "start_writing") as start:
++            result = ctrl.write(
++                indices(2),
++                node_id=17,
++                extra_pools=transfers,
++                beliefkv_command_id="command-17",
++                beliefkv_before_enqueue=accept,
++            )
++        self.assertIs(result, seen[0].host_indices)
++        self.assertEqual(ctrl.write_queue, seen)
++        start.assert_called_once_with()
++        ctrl.mem_pool_host.free.assert_not_called()
++
++    def test_before_enqueue_rejection_frees_only_new_allocations(self):
++        ctrl = reservation_controller()
++        reserved = torch.tensor([999])
++        transfers = [
++            PoolTransfer(name=PoolName.MAMBA, device_indices=indices(1)),
++            PoolTransfer(
++                name=PoolName.SWA, host_indices=reserved, device_indices=indices(1)
++            ),
++            PoolTransfer(name=PoolName.INDEXER, indices_from_pool=PoolName.MAMBA),
++            PoolTransfer(name=PoolName.DRAFT, indices_from_pool=PoolName.KV),
++        ]
++        seen = []
++
++        def reject(op):
++            self.assertIs(transfers[2].host_indices, transfers[0].host_indices)
++            self.assertIs(transfers[3].host_indices, op.host_indices)
++            self.assertIs(transfers[1].host_indices, reserved)
++            seen.append(op)
++            return False
++
++        with patch.object(ctrl, "start_writing") as start:
++            result = ctrl.write(
++                indices(2), extra_pools=transfers, beliefkv_before_enqueue=reject
++            )
++        self.assertIsNone(result)
++        self.assertEqual(ctrl.write_queue, [])
++        start.assert_not_called()
++        ctrl.l2_transfer_engine.submit_device_to_host.assert_not_called()
++        self.assertEqual(ctrl.mem_pool_host.free.call_count, 2)
++        side_free, primary_free = ctrl.mem_pool_host.free.call_args_list
++        self.assertIs(side_free.args[0], transfers[0].host_indices)
++        self.assertEqual(side_free.kwargs, {"pool": PoolName.MAMBA})
++        self.assertIs(primary_free.args[0], seen[0].host_indices)
++        self.assertEqual(primary_free.kwargs, {})
++        self.assertIs(transfers[1].host_indices, reserved)
++
++    def test_before_enqueue_exception_declines_without_releasing_reserved_sidecar(self):
++        ctrl = reservation_controller()
++        reserved = torch.tensor([999])
++        transfers = [
++            PoolTransfer(name=PoolName.MAMBA, device_indices=indices(1)),
++            PoolTransfer(
++                name=PoolName.SWA, host_indices=reserved, device_indices=indices(1)
++            ),
++            PoolTransfer(name=PoolName.INDEXER, indices_from_pool=PoolName.MAMBA),
++        ]
++
++        def fail(op):
++            self.assertIs(op.pool_transfers, transfers)
++            raise ValueError("reservation failed")
++
++        with patch.object(ctrl, "start_writing") as start:
++            result = ctrl.write(
++                indices(2), extra_pools=transfers, beliefkv_before_enqueue=fail
++            )
++        self.assertIsNone(result)
++        self.assertEqual(ctrl.write_queue, [])
++        start.assert_not_called()
++        ctrl.l2_transfer_engine.submit_device_to_host.assert_not_called()
++        self.assertEqual(ctrl.mem_pool_host.free.call_count, 2)
++        self.assertEqual(
++            [call.kwargs for call in ctrl.mem_pool_host.free.call_args_list],
++            [{"pool": PoolName.MAMBA}, {}],
++        )
++        self.assertIs(transfers[2].host_indices, transfers[0].host_indices)
++        self.assertIs(transfers[1].host_indices, reserved)
++
++    def test_before_enqueue_requires_explicit_true(self):
++        ctrl = reservation_controller()
++        with patch.object(ctrl, "start_writing") as start:
++            result = ctrl.write(indices(1), beliefkv_before_enqueue=lambda op: 1)
++        self.assertIsNone(result)
++        self.assertEqual(ctrl.write_queue, [])
++        start.assert_not_called()
++        ctrl.mem_pool_host.free.assert_called_once()
++
++    def test_write_without_hook_retains_native_enqueue_behavior(self):
++        ctrl = reservation_controller()
++        transfers = [PoolTransfer(name=PoolName.MAMBA, device_indices=indices(1))]
++        with patch.object(ctrl, "start_writing") as start:
++            result = ctrl.write(indices(2), extra_pools=transfers)
++        self.assertIs(result, ctrl.write_queue[0].host_indices)
++        self.assertIs(ctrl.write_queue[0].pool_transfers, transfers)
++        self.assertIs(
++            transfers[0].host_indices,
++            ctrl.write_queue[0].pool_transfers[0].host_indices,
++        )
++        start.assert_called_once_with()
++        ctrl.mem_pool_host.free.assert_not_called()
++        with self.assertRaises(TypeError):
++            ctrl.write(indices(1), None, 0, None, None, lambda op: True)
++
 +    def test_two_commands_merge_and_immutable_receipts(self):
 +        ctrl = controller()
 +        with patch.object(ctrl, "start_writing"):

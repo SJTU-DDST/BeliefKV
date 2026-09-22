@@ -151,19 +151,19 @@ cache mode。其他 cache backend、TP/PP、disaggregation 和 speculative
    closure、方向、context epoch/session generation 和冻结的 FULL/MAMBA 每 token
    字节数核对 native child receipt，只有整笔 children 对账才记录
    completion；过期、未知/重复、缺失或不匹配的 receipt 不给部分
-   credit，对账错误会禁用后续物理 credit。此接线只用于 ACK
-   accounting；当前没有能产生可信预期的 ownership certificate，
-   也没有预测动作 dispatch，账本输入不能自行证明共享 owner、
-   独占 reclaim、锁与原子 generation。
+   credit，对账错误会禁用后续物理 credit。PREPARE 的精确 pool
+   token 数量及含 sidecar 的 DMA 字节数现可从 native 子操作在入队
+   前取得并登记；账本输入仍不能自行证明共享 owner、独占 reclaim、
+   锁与原子 generation。scheduler 尚未启用预测动作策略。
 4. 等动作级 D2H/H2D 和 native ACK 双向对账通过后，再开放预测性
    PREPARE/PREFETCH。只有真实 beneficiary deficit 才能授权 COMMIT；
    SELECTIVE RETRACTION 需另行验证 overlap drain/TP 一致性。
-   下一步需在动作提交前后重验 request/context/epoch、全部共享
-   owner、split closure、锁与 pool 容量，形成 action-local 原子
-   revision/可迁移证明；在此基础上实现安全的动作 dispatch，
-   将逐子操作提交/失败（包括部分成功）、取消和资源回收绑定到
-   runtime 事务，再验证 ACK 与动作期望的守恒。即便已接线的
-   ledger 能对账已完成子操作，也不等于
+   PREPARE 的单 node 入队前预留和 ACK 核算已实现；下一步需为
+   COMMIT 的全部共享 owner/独占 reclaim 和 PREFETCH 的 FULL/MAMBA
+   H2D 各自提供 action-local 证明及安全点入口。异常发生在 native
+   已接收操作之后时不能释放可能被 DMA 持有的 Host slot，只能等待
+   ACK/到期并报告失败。即便已接线的账本能对账 PREPARE 子操作，
+   也不等于
    `PREPARE_HOST/PREFETCH_GPU` 已可执行。
 
 staging 的 `UnifiedRadixCache.prepare_host_shadow` 已有单 node 原语：
@@ -172,11 +172,16 @@ FULL leaf 的 generation/创建代数和祖先 Host 连续性仍成立时，
 向原生 controller 提交带 command ID 的 D2H。Host 空间不足则拒绝，
 不得为影子备份驱逐其他 Host KV；MAMBA-only 子操作若同处 FULL leaf
 祖先路径可提交。该方法**保留 GPU KV**，返回 `issued` 而非完成凭证。
-目前 scheduler 不调用它：controller 在入队时才确定 sidecar 等子
-操作的精确 pool 计数和字节数，入口还不能在入队前给
-`PhysicalTransactionLedger` 提供可核对预期。下一步需实现两阶段
-native 预留/入队协议或原生原子提交描述符；失败需取消未提交预留，
-已提交的命令必须等待 ACK/到期，不能当场撤销或声称正收益。
+controller 现在有可选的入队前 callback：在主/辅助 Host slot 确定后、
+DMA 入队前将真实 `CacheOperation` 交给 runtime，冻结单 child 的
+FULL/MAMBA token 数量与含 derived sidecar 的 DMA 字节数并注册账本；
+拒绝时释放本次分配的 slot，不排队。runtime 的
+`issue_shadow_backup_step` 在同一安全点重新检查 live `WAIT_TOOL`、
+session、node，并调用该 callback；native 明确拒绝入队时才撤销账本
+预留，返回的 command ID 是 issued 标识，不是 ACK 或正收益凭证。
+**scheduler 尚未调用该事务入口**：当前 Qwen3.5 预测 artifact 只有
+admission-only 资格，不能据此授权 PREPARE；还需要收益/时序和
+物理资格，再在 safe point 接入动作选择。
 更没有 beneficiary-bound COMMIT_CPU 或提前 H2D 执行闭环。
 
 新环境默认仍加载预安装 wheel；使用 staging 源码启动时必须显式传

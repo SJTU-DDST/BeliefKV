@@ -2,8 +2,8 @@
 
 更新日期：2026-09-22
 当前 P6 物理执行基线：原 Qwen3-Coder/SGLang 0.5.2rc1；
-Qwen3.5/v0.5.20 已有可选 native admission 和受 artifact 约束的
-预测 demand/工具等待时间代码路径，但尚无完整预测物理调度。
+Qwen3.5/v0.5.20 已有可选 native admission、工具等待预测和
+未启用的单 node PREPARE 原生事务入口，尚无完整预测物理调度。
 
 本文只记录当前事实和下一阻塞项，不再追加逐日开发日志。2026-09-12 以前的完整历史保存在
 `docs/archive/snapshots/architecture_status_zh.md`，单次实验细节保存在
@@ -41,8 +41,8 @@ request/context/epoch/attempt、session 和 invocation revision，
 无 hint 时保持 observed-causal/native 顺序。这是**有条件的预测
 admission 代码路径**，不是已验收的 Qwen3.5 预测运行：
 当前迁移目录未提供新模型校准且 online-eligible 的 predictor artifact；
-旧 rc1/development artifact 不可沿用。action-local FULL/MAMBA owner、
-预测性 PREPARE/PREFETCH 和事务级证书仍缺失。
+旧 rc1/development artifact 不可沿用。COMMIT 的独占 reclaim 证明、
+预测性 H2D 和动作级策略授权仍缺失。
 工具期 `TOOL_START` 现在可异步提交 P10/P50/P90 剩余时间预测；
 worker 在 idle scheduler 上有结果 fd 唤醒。live `WAIT_TOOL`、session
 generation、invocation revision、模型哈希和有效期须在结果消费时
@@ -56,8 +56,14 @@ context 的有界、只读 FULL/MAMBA 祖先闭包检查（最多 64 node），
 受限单 node `prepare_host_shadow`：在 write_through、有效 FULL
 session leaf、父节点 Host 连续且无 pending transfer 时才入队，
 Host 不足不驱逐别的 Host KV，GPU KV 保留至 native ACK。
-**该入口尚未接入 scheduler**：当前只返回是否入队，无法在入队前
-预留含 sidecar 精确计数/字节数的账本预期，因此仍不能宣称
+staging controller 现增加可选入队前 callback：在 native 确定主/辅助
+Host slot 后冻结实际 FULL/MAMBA pool 数量和 sidecar DMA 总字节，
+runtime 的 `issue_shadow_backup_step` 同安全点重验工具、session 与
+node；回调登记物理账本后才允许入队。明确未入队则撤销预留，
+被 native 接受后必须等同步 ACK 才确认 completion；拒绝时不能
+释放非本次分配的 sidecar，也不能重复释放 native 预留。
+**scheduler 尚未调用该入口**：当前 artifact 明确只有 admission
+资格，尚无动作时序/收益证明和在线 physical gate；因此不能宣称
 predictive PREPARE 真实执行，更没有提前 PREFETCH 或 COMMIT。
 启动脚本增加显式 `HICACHE_WRITE_POLICY` 与
 `ENABLE_SESSION_RADIX_CACHE`，默认仍保持 write_back/关闭 session；
