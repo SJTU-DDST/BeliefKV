@@ -49,6 +49,7 @@ def export_p6_training_dataset(
     selected_instance_ids: Iterable[str] | None = None,
     allow_formal_local_training: bool = False,
     formal_local_expected_split: str | None = None,
+    _native_reactive: bool = False,
 ) -> dict[str, Any]:
     """Export versioned P6 labels from one physical server run."""
 
@@ -125,6 +126,7 @@ def export_p6_training_dataset(
         allow_censored=allow_censored,
         allow_development_only=allow_development_only,
         allow_formal_local_training=allow_formal_local_training,
+        native_reactive=_native_reactive,
     )
     runtime_summary = (
         _read_object(runtime_summary_path)
@@ -136,7 +138,10 @@ def export_p6_training_dataset(
         raise P6CoverageError("run has no stable run_id")
     workflow_exclusions = _read_workflow_exclusions(source)
     runtime_provenance = _read_runtime_provenance(server)
-    runtime_environment_contract = _runtime_environment_contract(server)
+    runtime_environment_contract = (
+        _native_runtime_environment_contract(server, collection_contract)
+        if _native_reactive else _runtime_environment_contract(server)
+    )
     workflow_source_metadata = _workflow_source_metadata(
         summaries,
         collection_contracts,
@@ -157,7 +162,8 @@ def export_p6_training_dataset(
             workflow_stats=workflow_stats,
             source_path=path,
         )
-    _match_server_calls(calls, _read_jsonl(server_events_path))
+    server_events = _read_jsonl(server_events_path)
+    _match_server_calls(calls, server_events)
 
     dataset_name = str(manifest.get("dataset") or "unknown")
     frozen_split = (
@@ -187,7 +193,7 @@ def export_p6_training_dataset(
     formal_local_training_eligible = not formal_local_ineligibility_reasons
     effective_split = (
         frozen_split
-        if (formal_local_training_eligible or allow_development_only)
+        if (formal_local_training_eligible or allow_development_only or _native_reactive)
         else None
     )
     workflow_metadata = _workflow_metadata(
@@ -225,6 +231,8 @@ def export_p6_training_dataset(
         workflow_metadata=workflow_metadata,
         service_summary=service_summary,
     )
+    if _native_reactive:
+        _attach_native_request_features(request_rows, server_events)
     external_rows, reentry_rows = _external_and_reentry_rows(
         agent_records,
         run_id=run_id,
@@ -256,7 +264,9 @@ def export_p6_training_dataset(
     )
     if (
         collection_contract is not None
-        and collection_contract.get("training_eligible") is not True
+        and collection_contract.get(
+            "raw_trace_eligible" if _native_reactive else "training_eligible"
+        ) is not True
     ):
         clean_trajectory_ineligibility_reasons.append("collection_gate_failed")
     if intervention_cutoffs:
@@ -279,6 +289,31 @@ def export_p6_training_dataset(
         tables,
         intervention_cutoffs,
     )
+    native_evidence = None
+    if _native_reactive:
+        native_path = server / "native_telemetry_status.json"
+        audit_records = _read_jsonl(audit_path)
+        native_evidence = _apply_native_reactive_evidence(
+            tables,
+            _read_object(native_path) if native_path.is_file() else {},
+            audit_records=audit_records,
+            record_counts={
+                "events": len(server_events),
+                "audit": len(audit_records),
+                "transfer": len(_read_jsonl(transfer_path)),
+            },
+            server_events=server_events,
+        )
+        if not native_evidence["telemetry_complete"]:
+            formal_local_ineligibility_reasons.append("native_telemetry_incomplete")
+            clean_trajectory_ineligibility_reasons.append("native_telemetry_incomplete")
+        formal_local_training_eligible = not formal_local_ineligibility_reasons
+        # Train-only native evidence is locally fit-eligible; calibration/test
+        # and end-to-end performance claims still require separate frozen runs.
+        clean_trajectory_eligible = False
+        clean_trajectory_ineligibility_reasons.append(
+            "native_reactive_train_only_no_heldout_validation"
+        )
     _apply_workflow_exclusions(tables, workflow_exclusions)
     integrity = _dataset_integrity(tables)
     if not integrity["passes"]:
@@ -330,6 +365,7 @@ def export_p6_training_dataset(
             "runtime_intervention_censors": intervention_censor_summary,
             "partial_episode_eligibility": partial_episode_summary,
             "collection_contract": collection_contract,
+            "native_request_evidence": native_evidence,
             "dataset": dataset_name,
             "dataset_revision": manifest.get("dataset_revision"),
             "workload_manifest_sha256": [
@@ -365,6 +401,7 @@ def export_p6_training_dataset(
                     runtime_summary_path,
                     *agent_paths,
                     source / P6_WORKFLOW_EXCLUSIONS_FILENAME,
+                    *((server / "native_telemetry_status.json",) if _native_reactive else ()),
                 )
                 if path.is_file()
             },
@@ -455,6 +492,281 @@ def export_p6_training_dataset(
     _write_json_atomic(manifest_output, output_manifest)
     return output_manifest
 
+
+def export_native_reactive_p6_dataset(
+    run_dir: str | Path,
+    output_dir: str | Path,
+    *,
+    split_manifest: str | Path | Mapping[str, Any] | None = None,
+    workload_dirs: Sequence[str | Path] | None = None,
+    selected_instance_ids: Iterable[str] | None = None,
+) -> dict[str, Any]:
+    """Export v0.5.20 native reactive evidence without asserting P5 provenance."""
+
+    return export_p6_training_dataset(
+        run_dir,
+        output_dir,
+        split_manifest=split_manifest,
+        workload_dirs=workload_dirs,
+        selected_instance_ids=selected_instance_ids,
+        allow_formal_local_training=split_manifest is not None,
+        formal_local_expected_split="train" if split_manifest is not None else None,
+        _native_reactive=True,
+    )
+
+
+def _attach_native_request_features(
+    requests: list[dict[str, Any]], server_events: Sequence[Mapping[str, Any]]
+) -> None:
+    by_request = {
+        str(row["request_id"]): row
+        for row in requests
+        if row.get("request_id")
+        and row.get("matching_method") == "exact_native_request_id"
+    }
+    for raw in server_events:
+        if raw.get("kind") not in {"llm_submit", "llm_result"}:
+            continue
+        attrs = raw.get("attributes") or {}
+        row = by_request.get(str(attrs.get("request_id") or ""))
+        if row is None or any(
+            raw.get(key) != row.get(key)
+            for key in ("workflow_id", "invocation_id", "context_id", "context_epoch")
+        ):
+            continue
+        for key in ("cached_tokens_device", "cached_tokens_host", "enqueue_ts_ms"):
+            if attrs.get(key) is not None:
+                row[key] = attrs[key]
+
+
+def _apply_native_reactive_evidence(
+    tables: Mapping[str, list[dict[str, Any]]],
+    status: Mapping[str, Any],
+    *,
+    audit_records: Iterable[Mapping[str, Any]] = (),
+    record_counts: Mapping[str, int] | None = None,
+    server_events: Iterable[Mapping[str, Any]] = (),
+) -> dict[str, Any]:
+    """Gate independent heads on observed identity, token conservation and audit health."""
+
+    requests = {str(row["request_id"]): row for row in tables["request_calls"]}
+    counts = status.get("record_counts")
+    healthy = bool(
+        status.get("schema_version") == 1
+        and status.get("source") == "native_sglang_v0520"
+        and status.get("writer_error") is None
+        and status.get("pending_request_count") == 0
+        and status.get("pending_batch_count") == 0
+        and type(status.get("failed_records")) is int
+        and status["failed_records"] == 0
+        and type(status.get("dropped_records")) is int
+        and status["dropped_records"] == 0
+        and isinstance(counts, Mapping)
+        and record_counts is not None
+        and all(
+            type(counts.get(stream, 0)) is int
+            and counts.get(stream, 0) == count
+            for stream, count in record_counts.items()
+        )
+        and not any(
+            row.get("event") == "gpu_service_sample_failed"
+            for row in audit_records
+        )
+    )
+    native_events: dict[str, dict[str, list[Mapping[str, Any]]]] = defaultdict(
+        lambda: defaultdict(list)
+    )
+    for raw in server_events:
+        if raw.get("kind") in {"llm_submit", "llm_result"}:
+            rid = str((raw.get("attributes") or {}).get("request_id") or "")
+            if rid:
+                native_events[rid][str(raw["kind"])].append(raw)
+
+    service_by_request: dict[str, list[dict[str, Any]]] = defaultdict(list)
+    for row in tables["gpu_service_intervals"]:
+        request_id = str(row.get("request_id") or "")
+        request = requests.get(request_id)
+        scope_matches = bool(
+            request
+            and all(
+                row.get(key) == request.get(key)
+                for key in ("workflow_id", "invocation_id", "context_id", "context_epoch")
+            )
+            and row.get("token_delta_semantics") == (
+                "observed_output_ids_delta"
+                if row.get("phase") == "decode"
+                else "prefill_extend_input_len"
+            )
+            and type(row.get("token_delta")) is int
+            and row["token_delta"] >= 0
+            and row.get("phase") in {"prefill", "decode"}
+            and type(row.get("sequence_tokens_before")) is int
+            and row["sequence_tokens_before"] >= 0
+            and row.get("batch_service_start_ts_ms") is not None
+            and row.get("batch_service_complete_ts_ms") is not None
+            and float(row["batch_service_start_ts_ms"])
+            <= float(row["batch_service_complete_ts_ms"])
+        )
+        row["training_eligible"] = bool(
+            healthy and row.get("training_eligible") and scope_matches
+        )
+        service_by_request[request_id].append(row)
+
+    demand_proven: set[str] = set()
+    action_proven: set[str] = set()
+    calls_by_invocation: dict[tuple[str, str], list[dict[str, Any]]] = defaultdict(list)
+    for request_id, request in requests.items():
+        calls_by_invocation[
+            (str(request.get("workflow_id")), str(request.get("invocation_id")))
+        ].append(request)
+        rows = service_by_request.get(request_id, ())
+        output = request.get("output_tokens")
+        events = native_events.get(request_id, {})
+        native_identity = bool(
+            len(events.get("llm_submit", ())) == 1
+            and len(events.get("llm_result", ())) == 1
+            and all(
+                event.get(key) == request.get(key)
+                for kind in ("llm_submit", "llm_result")
+                for event in events[kind]
+                for key in ("workflow_id", "invocation_id", "context_id", "context_epoch")
+            )
+        )
+        identity = bool(
+            healthy
+            and native_identity
+            and request.get("matching_method") == "exact_native_request_id"
+            and not request.get("runtime_internal")
+            and not request.get("censored")
+            and request.get("submit_ts_ms") is not None
+            and request.get("result_ts_ms") is not None
+            and float(request["submit_ts_ms"]) <= float(request["result_ts_ms"])
+        )
+        demand_valid = bool(
+            identity
+            and rows
+            and any(row["phase"] == "prefill" for row in rows)
+            and any(row["phase"] == "decode" for row in rows)
+            and all(row["training_eligible"] for row in rows)
+            and type(output) is int
+            and sum(row["token_delta"] for row in rows if row["phase"] == "decode")
+            == output
+            and request.get("prompt_tokens") is not None
+            and request.get("cache_hit_tokens") is not None
+            and request.get("context_tokens") is not None
+        )
+        request["native_request_telemetry_complete"] = demand_valid
+        request["training_eligible_remaining_decode_demand"] = bool(
+            request["training_eligible_remaining_decode_demand"] and demand_valid
+        )
+        request["training_eligible_unlock_hazard"] = bool(
+            request["training_eligible_unlock_hazard"] and demand_valid
+        )
+        if demand_valid:
+            demand_proven.add(request_id)
+        if identity and request.get("parser_status") == "valid" and request.get("action_kinds"):
+            action_proven.add(request_id)
+
+    for calls in calls_by_invocation.values():
+        calls.sort(key=lambda item: float(item.get("submit_ts_ms") or 0))
+    eligible_joins = {
+        (row.get("workflow_id"), row.get("invocation_id"))
+        for row in tables["reentries"]
+        if row.get("reentry_kind") == "join"
+        and row.get("training_eligible")
+        and row.get("member_invocation_ids")
+    }
+    for row in tables["frontier_decision_points"]:
+        features = {
+            str(item.get("invocation_id")): item
+            for item in row.get("invocations", ())
+        }
+        for label in row.get("labels", ()):
+            invocation = features.get(str(label.get("invocation_id")), {})
+            request_id = str(invocation.get("request_id") or "")
+            request = requests.get(request_id, {})
+            eligible = label["target_training_eligible"]
+            boundary_proven = bool(
+                request_id in action_proven
+                and label.get("next_boundary_kind") in request["action_kinds"]
+                and label.get("next_boundary_status") == "observed"
+            )
+            eligible["action_boundary"] = bool(eligible["action_boundary"] and boundary_proven)
+            eligible["remaining_decode_demand"] = bool(
+                eligible["remaining_decode_demand"] and request_id in demand_proven
+            )
+            invocation_calls = calls_by_invocation.get(
+                (str(row.get("workflow_id")), str(label.get("invocation_id"))), ()
+            )
+            next_request = next(
+                (
+                    item for item in invocation_calls
+                    if item.get("submit_ts_ms") is not None
+                    and float(item["submit_ts_ms"]) > float(row["timestamp_ms"])
+                ),
+                {},
+            )
+            next_proven = str(next_request.get("request_id") or "") in demand_proven
+            eligible["next_output_demand"] = bool(
+                eligible["next_output_demand"] and next_proven
+            )
+            eligible["prompt_growth"] = bool(
+                eligible["prompt_growth"] and next_proven
+                and any(
+                    item.get("invocation_id") == label.get("invocation_id")
+                    and item.get("result_ts_ms") is not None
+                    and float(item["result_ts_ms"]) <= float(row["timestamp_ms"])
+                    and str(item.get("request_id") or "") in demand_proven
+                    for item in invocation_calls
+                )
+            )
+            eligible["external_wait"] = bool(
+                healthy and eligible["external_wait"]
+                and label.get("next_boundary_kind") == "tool_end"
+                and label.get("next_boundary_status") in {"success", "error"}
+            )
+            eligible["join_wait"] = bool(
+                healthy and eligible["join_wait"]
+                and label.get("next_boundary_kind") == "join_satisfied"
+                and (row.get("workflow_id"), label.get("invocation_id"))
+                in eligible_joins
+            )
+        row["training_eligible"] = any(
+            any(label["target_training_eligible"].values())
+            for label in row["labels"]
+        )
+
+    for row in tables["external_waits"]:
+        row["training_eligible_survival"] = bool(
+            healthy and row["training_eligible_survival"]
+            and row.get("status") in {"success", "error"}
+        )
+    for row in tables["reentries"]:
+        if row.get("reentry_kind") == "tool_return":
+            row["training_eligible"] = bool(
+                healthy and row["training_eligible"]
+                and row.get("terminal_status") in {"success", "error"}
+            )
+        if row.get("reentry_kind") == "join":
+            row["training_eligible"] = bool(
+                healthy and row["training_eligible"]
+                and row.get("member_invocation_ids")
+                and row.get("member_outcomes")
+            )
+        if row.get("reentry_kind") not in {"join", "tool_return"}:
+            row["training_eligible"] = bool(healthy and row["training_eligible"])
+    for row in tables["pcie_operations"]:
+        row["training_eligible_service_curve"] = False
+    for row in tables["censor_events"]:
+        row["training_eligible"] = bool(healthy and row["training_eligible"])
+    return {
+        "schema_version": 1,
+        "telemetry_complete": healthy,
+        "status": dict(status),
+        "complete_request_count": len(demand_proven),
+        "missing_or_incomplete_request_count": len(requests) - len(demand_proven),
+        "format": "server/native_telemetry_status.json",
+    }
 
 
 
@@ -564,6 +876,14 @@ def _merge_collection_contracts(
     merged["training_eligible"] = all(
         item.get("training_eligible") is True for item in values
     )
+    if any("raw_trace_eligible" in item for item in values):
+        merged["raw_trace_eligible"] = all(
+            item.get("raw_trace_eligible") is True for item in values
+        )
+    if any("model_revision_stable" in item for item in values):
+        merged["model_revision_stable"] = all(
+            item.get("model_revision_stable") is True for item in values
+        )
     merged["runtime_source_stable"] = all(
         item.get("runtime_source_stable") is True for item in values
     )
@@ -642,6 +962,45 @@ def _runtime_environment_contract(server: Path) -> dict[str, Any]:
     if any(value in {None, ""} for value in required):
         raise P6CoverageError("runtime environment contract is incomplete")
     return contract
+
+
+def _native_runtime_environment_contract(
+    server: Path, collection: Mapping[str, Any] | None
+) -> dict[str, Any]:
+    path = server / "native_runtime_contract.json"
+    if not path.is_file() or collection is None:
+        return {}
+    raw = _read_object(path)
+    identity = raw.get("server_identity") or {}
+    revisions = raw.get("model_revision_sha256") or {}
+    hardware = raw.get("hardware") or {}
+    if (
+        raw.get("contract_state") != "validated"
+        or raw.get("runtime_kind") != "native_reactive_v0520"
+        or raw != collection.get("native_runtime_contract")
+        or revisions != collection.get("model_revision_sha256")
+        or identity != collection.get("server_identity")
+        or raw.get("beliefkv_source_sha256")
+        != (collection.get("runtime_source_fingerprint_start") or {}).get("digest")
+        or not revisions.get("config.json")
+        or not revisions.get("tokenizer.json")
+        or not hardware.get("uuid")
+        or identity.get("sglang_version") != "0.5.20"
+        or not raw.get("sglang_patch_sha256")
+        or not raw.get("sglang_commit")
+    ):
+        raise P6CoverageError(f"native runtime provenance is incomplete: {path}")
+    return {
+        "runtime_kind": "native_reactive_v0520",
+        "runtime_profile": None,
+        "model_revision_sha256": revisions,
+        "hardware": hardware,
+        "server_identity": identity,
+        "sglang_commit": raw["sglang_commit"],
+        "sglang_patch_sha256": raw["sglang_patch_sha256"],
+        "physical_source_count": 1,
+        "uniform": True,
+    }
 
 
 def _workflow_source_metadata(
@@ -733,6 +1092,9 @@ def _apply_workflow_exclusions(
             for key in tuple(row):
                 if key == "training_eligible" or key.startswith("training_eligible_"):
                     row[key] = False
+            for label in row.get("labels", ()):
+                for target in label.get("target_training_eligible", {}):
+                    label["target_training_eligible"][target] = False
 
 
 def _validate_collection_contract(
@@ -741,7 +1103,20 @@ def _validate_collection_contract(
     allow_censored: bool,
     allow_development_only: bool = False,
     allow_formal_local_training: bool = False,
+    native_reactive: bool = False,
 ) -> None:
+    if native_reactive:
+        if (
+            contract is None
+            or contract.get("runtime_policy") != "frozen_native_reactive_v0520"
+            or contract.get("raw_trace_eligible") is not True
+            or contract.get("runtime_source_stable") is not True
+            or contract.get("model_revision_stable") is not True
+            or bool(contract.get("predictor_enabled"))
+            or bool(contract.get("predictive_actions_enabled"))
+        ):
+            raise P6CoverageError("native reactive raw trace provenance is ineligible")
+        return
     if contract is None:
         return
     if bool(contract.get("predictor_enabled")) and not allow_development_only:
@@ -1431,6 +1806,8 @@ def _pcie_rows(path: Path, *, run_id: str) -> list[dict[str, Any]]:
                 "command_id": record.get("command_id"),
                 "command_kind": record.get("command_kind"),
                 "telemetry_origin": record.get("telemetry_origin"),
+                "node_ids": record.get("node_ids"),
+                "num_tokens_by_pool": record.get("num_tokens_by_pool"),
                 "status": record.get("status"),
                 "reason": record.get("reason"),
                 "direction": record.get("direction"),

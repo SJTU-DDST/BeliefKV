@@ -42,6 +42,7 @@ FORMAL_P6_PLAN_IDS = frozenset(
         "p6-agent-semantics-v1",
         "h200-bf16-formal-train-v1",
         "h200-bf16-formal-calibration-v1",
+        "qwen35-native-reactive-v0520-v1",
     }
 )
 FORBIDDEN_LOAD_COUPLED_LABELS = frozenset(
@@ -2545,7 +2546,8 @@ def _attach_child_completion_targets(
 
 
 def load_decision_rows(
-    dataset_dirs: Iterable[str | Path], *, allowed_splits: Iterable[str]
+    dataset_dirs: Iterable[str | Path], *, allowed_splits: Iterable[str],
+    allow_formal_local: bool = False,
 ) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
     allowed = frozenset(allowed_splits)
     if allowed.intersection({"calibration", "test_id", "test_ood"}):
@@ -2564,7 +2566,10 @@ def load_decision_rows(
         if "train" in allowed and local_eligible is not True:
             raise ValueError(f"formal training input is ineligible: {root}")
         if "train" in allowed:
-            _validate_formal_p6_manifest(root, manifest, expected_split="train")
+            _validate_formal_p6_manifest(
+                root, manifest, expected_split="train",
+                allow_formal_local=allow_formal_local,
+            )
         run_id = str(manifest.get("source", {}).get("run_id") or "")
         if not run_id:
             raise ValueError(f"dataset has no source run_id: {root}")
@@ -2746,13 +2751,27 @@ def _validate_formal_p6_manifest(
             f"{root}"
         )
     environment = source.get("runtime_environment_contract") or {}
+    native_reactive = plan_id == "qwen35-native-reactive-v0520-v1"
+    if native_reactive and (
+        expected_split != "train"
+        or not allow_formal_local
+        or manifest.get("formal_local_training_eligible") is not True
+        or contract.get("runtime_policy") != "frozen_native_reactive_v0520"
+        or contract.get("raw_trace_eligible") is not True
+        or contract.get("model_revision_stable") is not True
+        or environment.get("runtime_kind") != "native_reactive_v0520"
+        or (source.get("native_request_evidence") or {}).get(
+            "telemetry_complete"
+        ) is not True
+    ):
+        raise ValueError(f"native reactive input is not verified local train: {root}")
     profile = environment.get("runtime_profile") or {}
     revisions = environment.get("model_revision_sha256") or {}
     identity = environment.get("server_identity") or {}
     hardware = environment.get("hardware") or {}
     if (
         environment.get("uniform") is not True
-        or not profile.get("sha256")
+        or (not native_reactive and not profile.get("sha256"))
         or not revisions.get("config.json")
         or not revisions.get("tokenizer.json")
         or not identity.get("weight_dtype")
@@ -2774,7 +2793,10 @@ def _validate_formal_p6_manifest(
     if (
         (not local_training and contract.get("training_eligible") is not True)
         or contract.get("runtime_source_stable") is not True
-        or contract.get("runtime_policy") != "frozen_p5_observed"
+        or contract.get("runtime_policy") != (
+            "frozen_native_reactive_v0520" if native_reactive
+            else "frozen_p5_observed"
+        )
         or bool(contract.get("predictor_enabled"))
         or bool(contract.get("predictive_actions_enabled"))
     ):

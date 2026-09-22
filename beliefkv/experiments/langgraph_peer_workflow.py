@@ -368,15 +368,13 @@ class LangGraphPeerWorkflow:
                 raise ActivationDeadlineExceeded("workflow wall-clock deadline expired")
             self._last_turn_count = max(self._last_turn_count, turn + 1)
             if result.final_context_epoch is not None:
-                self._epoch_by_invocation[metadata.invocation_id] = max(
+                final_epoch = max(
                     self._epoch_by_invocation[metadata.invocation_id],
                     result.final_context_epoch,
                 )
+                self._epoch_by_invocation[metadata.invocation_id] = final_epoch
                 metadata = BeliefKVRequestMetadata.from_wire(
-                    {
-                        **metadata.to_wire(),
-                        "context_epoch": result.final_context_epoch,
-                    }
+                    {**metadata.to_wire(), "context_epoch": final_epoch}
                 )
             self_continuation = (
                 not result.complete
@@ -663,12 +661,14 @@ class LangGraphPeerWorkflow:
             request_id = f"{child.invocation_id}:turn:0"
             if not result.complete or result.subagent_tasks:
                 raise RuntimeError("nested workload children must return one terminal result")
+            child_epoch = result.final_context_epoch or 0
+            self._epoch_by_invocation[child.invocation_id] = child_epoch
             if self.llm_event_source == LLMEventSource.WORKFLOW:
                 self.emitter.emit(
                     RuntimeEventKind.LLM_RESULT,
                     invocation_id=child.invocation_id,
                     context_id=child.context_id,
-                    context_epoch=0,
+                    context_epoch=child_epoch,
                     confidence=EventConfidence.OBSERVED_EXACT,
                     attributes={
                         "request_id": request_id,
@@ -685,7 +685,7 @@ class LangGraphPeerWorkflow:
                     RuntimeEventKind.STRUCTURED_ACTION,
                     invocation_id=child.invocation_id,
                     context_id=child.context_id,
-                    context_epoch=0,
+                    context_epoch=child_epoch,
                     confidence=EventConfidence.OBSERVED_EXACT,
                     attributes={
                         "output_tokens": result.output_tokens,
@@ -952,8 +952,12 @@ class OpenAICompatiblePeerBackend:
                     "initial coder turn returned a subagent fan-out outside the "
                     "configured bounds"
                 )
-        if not request.is_subagent and request.turn > 0 and result.subagent_tasks:
-            raise ValueError("subagent tasks are only allowed on the initial coder turn")
+        if (
+            not request.is_subagent
+            and self.max_initial_subagents == 0
+            and result.subagent_tasks
+        ):
+            raise ValueError("subagents are disabled for this peer workflow")
         return result
 
     def _system_prompt(self, request: PeerTurnRequest) -> str:
@@ -995,7 +999,13 @@ class OpenAICompatiblePeerBackend:
         return base + (
             "Coder hands off to reviewer, reviewer either hands off to tester or "
             "finishes after test evidence, and tester hands back to coder when a "
-            "revision is needed. Do not create additional subagents after turn zero."
+            "revision is needed. "
+            + (
+                "When new independent work warrants it, you may delegate up to four "
+                "subagents in this turn; otherwise return an empty subagent_tasks list."
+                if self.max_initial_subagents
+                else "Return an empty subagent_tasks list."
+            )
         )
 
     def _response_format(self, request: PeerTurnRequest) -> dict[str, object]:
@@ -1026,7 +1036,7 @@ class OpenAICompatiblePeerBackend:
         return _peer_response_format(
             name="beliefkv_peer_continuation",
             min_subagents=0,
-            max_subagents=0,
+            max_subagents=4 if self.max_initial_subagents else 0,
             allowed_next_roles=tuple(
                 role for role in PeerRole if role.value != request.role
             ),

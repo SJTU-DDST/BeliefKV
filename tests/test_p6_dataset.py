@@ -13,6 +13,7 @@ from beliefkv.experiments.p6_dataset import (
     _invalid_source_markers,
     _join_reentry_row,
     _validate_collection_contract,
+    export_native_reactive_p6_dataset,
     export_p6_training_dataset,
 )
 from beliefkv.experiments.p6_coverage import P6CoverageError
@@ -520,3 +521,294 @@ def test_collection_contract_fails_closed_on_predictive_or_invalid_evidence() ->
             allow_censored=False,
             allow_formal_local_training=True,
         )
+
+
+def _native_run(tmp_path: Path) -> Path:
+    test_export_training_tables_preserves_identity_censoring_and_join_closure(
+        tmp_path, "workloads"
+    )
+    run = tmp_path / "run"
+    (run / "workloads" / "p6_collection_contract.json").write_text(
+        json.dumps(
+            {
+                "runtime_policy": "frozen_native_reactive_v0520",
+                "raw_trace_eligible": True,
+                "runtime_source_stable": True,
+                "model_revision_stable": True,
+                "predictor_enabled": False,
+                "predictive_actions_enabled": False,
+            }
+        ),
+        encoding="utf-8",
+    )
+    server = run / "server"
+    _write_jsonl(
+        server / "runtime_audit.jsonl",
+        [
+            {
+                "event": "gpu_service_sample",
+                "sample_id": f"sample-{phase}",
+                "phase": phase,
+                "batch_size": 1,
+                "service_start_ts_ms": timestamp,
+                "complete_ts_ms": timestamp + 1,
+                "service_elapsed_ms": 1.0,
+                "timing_semantics_version": "gpu_service_interval_v1",
+                "request_samples": [
+                    {
+                        "request_id": "request",
+                        "workflow_id": "workflow",
+                        "invocation_id": "root",
+                        "context_id": "context",
+                        "context_epoch": 0,
+                        "phase": phase,
+                        "token_delta": delta,
+                        "token_delta_semantics": semantics,
+                        "sequence_tokens_before": 100,
+                        "output_tokens_before": 0,
+                    }
+                ],
+            }
+            for phase, timestamp, delta, semantics in (
+                ("prefill", 1.0, 20, "prefill_extend_input_len"),
+                ("decode", 2.0, 4, "observed_output_ids_delta"),
+            )
+        ],
+    )
+    _write_jsonl(
+        server / "transfer_telemetry.jsonl",
+        [
+            {
+                "status": "completed",
+                "command_id": "native-ack",
+                "command_kind": "restore_context",
+                "direction": "h2d",
+                "actual_bytes": None,
+                "start_ts_ms": None,
+                "start_timestamp_semantics": "unavailable",
+                "pool_token_count": 20,
+                "node_ids": [1],
+            }
+        ],
+    )
+    (server / "native_telemetry_status.json").write_text(
+        json.dumps(
+            {
+                "schema_version": 1,
+                "source": "native_sglang_v0520",
+                "record_counts": {"events": 2, "audit": 2, "transfer": 1},
+                "pending_request_count": 0,
+                "pending_batch_count": 0,
+                "writer_error": None,
+                "failed_records": 0,
+                "dropped_records": 0,
+            }
+        ),
+        encoding="utf-8",
+    )
+    return run
+
+
+def test_native_reactive_exports_independent_heads_without_dma_claim(
+    tmp_path: Path,
+) -> None:
+    run = _native_run(tmp_path)
+    output = tmp_path / "native"
+    manifest = export_native_reactive_p6_dataset(run, output)
+
+    request = _read_jsonl(output / "request_calls.jsonl")[0]
+    labels = [
+        label
+        for row in _read_jsonl(output / "frontier_decision_points.jsonl")
+        for label in row["labels"]
+    ]
+    assert request["native_request_telemetry_complete"] is True
+    assert request["training_eligible_remaining_decode_demand"] is True
+    assert any(label["target_training_eligible"]["action_boundary"] for label in labels)
+    assert any(label["target_training_eligible"]["remaining_decode_demand"] for label in labels)
+    assert _read_jsonl(output / "external_waits.jsonl")[0]["training_eligible_survival"]
+    assert next(
+        row for row in _read_jsonl(output / "reentries.jsonl")
+        if row["reentry_kind"] == "join"
+    )["training_eligible"]
+    transfer = _read_jsonl(output / "pcie_operations.jsonl")[0]
+    assert transfer["actual_bytes"] is None
+    assert transfer["direct_dma_duration_ms"] is None
+    assert transfer["training_eligible_service_curve"] is False
+    assert all(
+        row["timing_boundary"] == "scheduler/worker interval; not CUDA-event kernel time"
+        for row in _read_jsonl(output / "gpu_batch_service_intervals.jsonl")
+    )
+    assert manifest["formal_local_training_eligible"] is False
+    assert manifest["source"]["collection_contract"]["runtime_policy"] == (
+        "frozen_native_reactive_v0520"
+    )
+
+
+def test_native_train_export_loads_only_frozen_local_heads(tmp_path: Path) -> None:
+    from beliefkv.predictor.structured_frontier import load_decision_rows
+
+    run = _native_run(tmp_path)
+    server = run / "server"
+    collection_path = run / "workloads" / "p6_collection_contract.json"
+    collection = json.loads(collection_path.read_text(encoding="utf-8"))
+    collection.update({
+        "plan_id": "qwen35-native-reactive-v0520-v1",
+        "split": "train",
+        "model_revision_sha256": {
+            "config.json": "config-hash", "tokenizer.json": "tokenizer-hash"
+        },
+        "server_identity": {
+            "sglang_version": "0.5.20",
+            "weight_dtype": "bfloat16",
+            "resolved_kv_dtype": "bfloat16",
+        },
+        "runtime_source_fingerprint_start": {"digest": "source-hash"},
+    })
+    runtime = {
+        "schema_version": 1,
+        "contract_state": "validated",
+        "runtime_kind": "native_reactive_v0520",
+        "model_revision_sha256": collection["model_revision_sha256"],
+        "server_identity": collection["server_identity"],
+        "hardware": {"uuid": "GPU-test"},
+        "sglang_commit": "checkout-hash",
+        "sglang_patch_sha256": "patch-hash",
+        "beliefkv_source_sha256": "source-hash",
+    }
+    collection["native_runtime_contract"] = runtime
+    collection_path.write_text(json.dumps(collection))
+    (server / "native_runtime_contract.json").write_text(json.dumps(runtime))
+    split_path = tmp_path / "frozen-split.json"
+    split_path.write_text(json.dumps({
+        "schema_version": 1,
+        "frozen": True,
+        "dataset": "swebench",
+        "projects": [{
+            "dataset": "swebench", "project": "project", "split": "train",
+            "task_count": 1,
+            "tasks": [{"instance_id": "project__task", "base_commit": "abc"}],
+        }],
+    }))
+    output = tmp_path / "native"
+    manifest = export_native_reactive_p6_dataset(
+        run, output, split_manifest=split_path
+    )
+    assert manifest["formal_local_training_eligible"] is True
+    assert manifest["formal_training_eligible"] is False
+    assert manifest["training_readiness"]["pcie_service_eligible_count"] == 0
+    rows, _ = load_decision_rows(
+        (output,), allowed_splits=("train",), allow_formal_local=True
+    )
+    assert rows
+    with pytest.raises(ValueError, match="native reactive input"):
+        load_decision_rows((output,), allowed_splits=("train",))
+
+
+def test_native_reactive_bad_decode_only_censors_demand(tmp_path: Path) -> None:
+    run = _native_run(tmp_path)
+    audit = run / "server" / "runtime_audit.jsonl"
+    records = _read_jsonl(audit)
+    records[1]["request_samples"][0]["token_delta"] = 3
+    _write_jsonl(audit, records)
+
+    output = tmp_path / "native"
+    export_native_reactive_p6_dataset(run, output)
+    request = _read_jsonl(output / "request_calls.jsonl")[0]
+    assert request["training_eligible_remaining_decode_demand"] is False
+    assert any(
+        label["target_training_eligible"]["action_boundary"]
+        for row in _read_jsonl(output / "frontier_decision_points.jsonl")
+        for label in row["labels"]
+    )
+    assert all(
+        not label["target_training_eligible"]["remaining_decode_demand"]
+        for row in _read_jsonl(output / "frontier_decision_points.jsonl")
+        for label in row["labels"]
+    )
+
+
+def test_native_reactive_service_scope_conflict_censors_demand_not_action(
+    tmp_path: Path,
+) -> None:
+    run = _native_run(tmp_path)
+    audit = run / "server" / "runtime_audit.jsonl"
+    records = _read_jsonl(audit)
+    records[1]["request_samples"][0]["context_epoch"] = 1
+    _write_jsonl(audit, records)
+
+    output = tmp_path / "native"
+    export_native_reactive_p6_dataset(run, output)
+    request = _read_jsonl(output / "request_calls.jsonl")[0]
+    assert request["training_eligible_remaining_decode_demand"] is False
+    service = _read_jsonl(output / "gpu_service_intervals.jsonl")
+    assert service[1]["training_eligible"] is False
+    assert any(
+        label["target_training_eligible"]["action_boundary"]
+        for row in _read_jsonl(output / "frontier_decision_points.jsonl")
+        for label in row["labels"]
+    )
+
+
+def test_native_reactive_request_cache_features_are_observed(tmp_path: Path) -> None:
+    run = _native_run(tmp_path)
+    events = run / "server" / "runtime_events.sglang.jsonl"
+    rows = _read_jsonl(events)
+    rows[0]["attributes"].update(
+        {
+            "cached_tokens_device": 40,
+            "cached_tokens_host": 40,
+            "enqueue_ts_ms": 15.0,
+        }
+    )
+    _write_jsonl(events, rows)
+    output = tmp_path / "native"
+    export_native_reactive_p6_dataset(run, output)
+    request = _read_jsonl(output / "request_calls.jsonl")[0]
+    assert (request["cached_tokens_device"], request["cached_tokens_host"]) == (40, 40)
+    assert request["enqueue_ts_ms"] == 15.0
+
+
+@pytest.mark.parametrize(
+    "fault", ["missing", "failed", "dropped", "pending", "truncated"]
+)
+def test_native_reactive_missing_or_dropped_telemetry_fails_closed(
+    tmp_path: Path, fault: str,
+) -> None:
+    run = _native_run(tmp_path)
+    path = run / "server" / "native_telemetry_status.json"
+    if fault == "missing":
+        path.unlink()
+    else:
+        status = json.loads(path.read_text(encoding="utf-8"))
+        if fault == "failed":
+            status["failed_records"] = 1
+        elif fault == "dropped":
+            status["dropped_records"] = 1
+        elif fault == "pending":
+            status["pending_batch_count"] = 1
+        else:
+            status["record_counts"]["audit"] += 1
+        path.write_text(json.dumps(status), encoding="utf-8")
+
+    output = tmp_path / "native"
+    manifest = export_native_reactive_p6_dataset(run, output)
+    assert manifest["source"]["native_request_evidence"]["telemetry_complete"] is False
+    assert "native_telemetry_incomplete" in manifest["formal_ineligibility_reasons"]
+    assert manifest["training_readiness"]["remaining_decode_demand_eligible_request_count"] == 0
+    assert manifest["training_readiness"]["external_survival_eligible_count"] == 0
+    assert manifest["training_readiness"]["join_reentry_eligible_count"] == 0
+    assert all(
+        not row["training_eligible"]
+        for row in _read_jsonl(output / "frontier_decision_points.jsonl")
+    )
+
+
+def test_native_reactive_rejects_unstable_raw_trace(tmp_path: Path) -> None:
+    run = _native_run(tmp_path)
+    path = run / "workloads" / "p6_collection_contract.json"
+    contract = json.loads(path.read_text(encoding="utf-8"))
+    contract["raw_trace_eligible"] = False
+    path.write_text(json.dumps(contract), encoding="utf-8")
+    with pytest.raises(P6CoverageError, match="raw trace provenance"):
+        export_native_reactive_p6_dataset(run, tmp_path / "native")

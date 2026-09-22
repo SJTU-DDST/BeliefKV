@@ -3,6 +3,7 @@ from __future__ import annotations
 import hashlib
 import io
 import json
+import os
 import sys
 from pathlib import Path
 from unittest.mock import patch
@@ -11,14 +12,40 @@ import pytest
 
 from beliefkv.experiments.p6_collection import load_collection_batch
 from scripts.run_p6_collection_batch import (
+    NATIVE_TELEMETRY_STREAMS,
+    NATIVE_SCHEDULER_PATH,
     _actual_kv_pool_tokens,
     _materialize_runtime_workload_manifest,
     _native_model_manifest,
+    _native_telemetry_fresh,
     main as run_collection,
 )
 from scripts.freeze_qwen35_native_reactive_plan import (
     freeze_native_reactive_train_plan,
 )
+
+
+def test_periodic_idle_native_status_does_not_block_collection(tmp_path: Path) -> None:
+    for name in NATIVE_TELEMETRY_STREAMS:
+        (tmp_path / name).touch()
+    status = {
+        "schema_version": 1,
+        "source": "native_sglang_v0520",
+        "record_counts": {},
+        "pending_request_count": 0,
+        "pending_batch_count": 0,
+        "writer_error": None,
+    }
+    path = tmp_path / "native_telemetry_status.json"
+    path.write_text(json.dumps(status))
+    assert _native_telemetry_fresh(tmp_path)
+    status["record_counts"] = {"audit": 1}
+    path.write_text(json.dumps(status))
+    assert not _native_telemetry_fresh(tmp_path)
+    status["record_counts"] = {}
+    path.write_text(json.dumps(status))
+    (tmp_path / NATIVE_TELEMETRY_STREAMS[0]).write_text("{}\n")
+    assert not _native_telemetry_fresh(tmp_path)
 
 
 def test_actual_kv_pool_tokens_uses_server_report(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -193,6 +220,22 @@ def test_native_reactive_collection_preflight_and_raw_trace_provenance(
         "schema_version": 1, "profile_id": "native", "instances": {},
     }), encoding="utf-8")
     output = tmp_path / "results" / "workloads"
+    telemetry = output.parent / "server"
+    telemetry.mkdir(parents=True)
+    (telemetry / "native_telemetry_ready.json").write_text(json.dumps({
+        "schema_version": 1,
+        "source": "native_sglang_v0520",
+        "scheduler_pid": os.getpid(),
+        "scheduler_path": str(NATIVE_SCHEDULER_PATH),
+        "scheduler_sha256": hashlib.sha256(
+            NATIVE_SCHEDULER_PATH.read_bytes()
+        ).hexdigest(),
+    }), encoding="utf-8")
+    for name in (
+        "runtime_events.sglang.jsonl", "runtime_audit.jsonl",
+        "transfer_telemetry.jsonl",
+    ):
+        (telemetry / name).touch()
     info = {
         "served_model_name": "Qwen3.5-35B-A3B",
         "model_path": str(model),
@@ -225,6 +268,7 @@ def test_native_reactive_collection_preflight_and_raw_trace_provenance(
         "--model", "Qwen3.5-35B-A3B",
         "--expected-model-path", str(model),
         "--native-model-inventory", str(inventory),
+        "--native-telemetry-dir", str(telemetry),
         "--harness-profiles", str(profiles),
         "--output", str(output),
     ]
@@ -239,8 +283,17 @@ def test_native_reactive_collection_preflight_and_raw_trace_provenance(
     monkeypatch.setattr(
         "scripts.run_p6_collection_batch.run_experiment", run,
     )
+    monkeypatch.setattr(
+        "scripts.run_p6_collection_batch._native_runtime_contract",
+        lambda **_: {"contract_state": "validated", "runtime_kind": "native_reactive_v0520"},
+    )
     assert run_collection() == 0
     assert captured[0].control_socket is None
+    assert captured[0].server_audit_path == telemetry / "runtime_audit.jsonl"
+    assert captured[0].server_event_path == telemetry / "runtime_events.sglang.jsonl"
+    assert json.loads(
+        (telemetry / "native_runtime_contract.json").read_text()
+    )["contract_state"] == "validated"
     assert captured[0].loop_guard.activation_wall_clock_s is None
     assert captured[0].context_lifecycle.window_tokens == 65_536
     assert captured[0].context_lifecycle.model_context_tokens == 131_072

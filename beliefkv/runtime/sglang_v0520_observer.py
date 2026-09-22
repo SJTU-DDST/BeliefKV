@@ -20,15 +20,20 @@ _UNSUPPORTED = (
     "device_occupancy",
     "host_occupancy",
     "evictable_or_protected",
-    "per_component_device_bytes",
+    "per_component_device_occupancy_bytes",
     "physical_commands",
 )
 _CAPACITY_FIELDS = (
     "device_full_tokens",
     "device_mamba_slots",
     "shared_device_bytes",
+    "device_full_ceiling_bytes",
+    "device_mamba_ceiling_bytes",
     "host_full_tokens",
     "host_mamba_slots",
+    "host_full_bytes",
+    "host_mamba_bytes",
+    "host_total_bytes",
 )
 
 
@@ -39,8 +44,13 @@ class UnifiedCapacityObservation:
     device_full_tokens: int | None = None
     device_mamba_slots: int | None = None
     shared_device_bytes: int | None = None
+    device_full_ceiling_bytes: int | None = None
+    device_mamba_ceiling_bytes: int | None = None
     host_full_tokens: int | None = None
     host_mamba_slots: int | None = None
+    host_full_bytes: int | None = None
+    host_mamba_bytes: int | None = None
+    host_total_bytes: int | None = None
     missing_metrics: tuple[str, ...] = _CAPACITY_FIELDS
     unsupported_metrics: tuple[str, ...] = _UNSUPPORTED
     reason: str | None = None
@@ -105,7 +115,7 @@ def _named(value: object, name: str) -> object:
     return value
 
 
-def _device_ceiling(pool: object, buffer: object, name: str) -> int:
+def _device_ceiling(pool: object, buffer: object, name: str) -> tuple[int, int]:
     _named(pool, "MultiEndedAllocator")
     if pool.unified_buffer is not buffer or pool.sub_pool_name != name:
         raise ValueError(f"unrecognized {name} device pool")
@@ -121,7 +131,11 @@ def _device_ceiling(pool: object, buffer: object, name: str) -> int:
     min_page = (min_slot + physical_page - 1) // physical_page
     if pool.min_page_index != min_page or min_page >= pool.num_pages:
         raise ValueError(f"inconsistent {name} reserved floor")
-    return (pool.num_pages - min_page) * logical_page
+    allocatable_pages = pool.num_pages - min_page
+    return (
+        allocatable_pages * logical_page,
+        allocatable_pages * physical_page * entry_bytes,
+    )
 
 
 def observe_unified_full_mamba(cache: object) -> UnifiedCapacityObservation:
@@ -130,6 +144,9 @@ def observe_unified_full_mamba(cache: object) -> UnifiedCapacityObservation:
     A missing HiCache attachment, extra component, inconsistent geometry, or
     unknown layout yields no partial capacity data. Host numbers are logical
     tokens/slots (FULL is widened by host DCP); device ceilings share bytes.
+    Byte ceilings are individually addressable, not additive on the device.
+    Host bytes represent both distinct physical pool allocations, including
+    page alignment, not the CLI size or DCP-widened logical token count.
     """
     try:
         _named(cache, "UnifiedRadixCache")
@@ -171,8 +188,8 @@ def observe_unified_full_mamba(cache: object) -> UnifiedCapacityObservation:
             or request_pool.mamba_pool is not mamba._kvcache
         ):
             raise ValueError("device pools are not the bound FULL+MAMBA pair")
-        full_tokens = _device_ceiling(full, buffer, "full")
-        mamba_slots = _device_ceiling(mamba, buffer, "mamba")
+        full_tokens, full_device_bytes = _device_ceiling(full, buffer, "full")
+        mamba_slots, mamba_device_bytes = _device_ceiling(mamba, buffer, "mamba")
         if (
             mamba.pool_page_size != 1
             or mamba.page_size != 1
@@ -219,13 +236,25 @@ def observe_unified_full_mamba(cache: object) -> UnifiedCapacityObservation:
             * _positive(host_full.dcp_size, "host FULL DCP")
         )
         mamba_host_slots = _positive(host_mamba.size, "host MAMBA slots")
+        full_host_bytes = (
+            _positive(host_full.size_per_token, "host FULL row bytes") * host_full.size
+        )
+        mamba_host_bytes = (
+            _positive(host_mamba.size_per_token, "host MAMBA slot bytes")
+            * host_mamba.size
+        )
         return UnifiedCapacityObservation(
             observable=True,
             device_full_tokens=full_tokens,
             device_mamba_slots=mamba_slots,
             shared_device_bytes=total_bytes,
+            device_full_ceiling_bytes=full_device_bytes,
+            device_mamba_ceiling_bytes=mamba_device_bytes,
             host_full_tokens=full_host_tokens,
             host_mamba_slots=mamba_host_slots,
+            host_full_bytes=full_host_bytes,
+            host_mamba_bytes=mamba_host_bytes,
+            host_total_bytes=full_host_bytes + mamba_host_bytes,
             missing_metrics=(),
         )
     except (AttributeError, KeyError, TypeError, ValueError) as exc:

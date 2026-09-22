@@ -126,10 +126,11 @@ def _cache() -> UnifiedRadixCache:
     )
     host_full = MHATokenToKVPoolHost(
         size=64, dcp_size=2, page_size=4, device_pool=full_device,
-        available_size=_never,
+        size_per_token=8, available_size=_never,
     )
     host_mamba = MambaPoolHost(
-        size=21, page_size=1, device_pool=mamba_device, available_size=_never
+        size=21, page_size=1, device_pool=mamba_device,
+        size_per_token=20, available_size=_never,
     )
     kv_entry = NS(
         device_pool=full_device, host_pool=host_full, is_primary_index_anchor=True
@@ -164,7 +165,7 @@ def _closed(cache: object) -> None:
     assert result.reason
     assert result.physical_actions_supported is False
     assert all(getattr(result, name) is None for name in result.missing_metrics)
-    assert len(result.missing_metrics) == 5
+    assert len(result.missing_metrics) == 10
 
 
 def test_distinct_shared_device_ceiling_and_host_dcp_capacity() -> None:
@@ -177,6 +178,12 @@ def test_distinct_shared_device_ceiling_and_host_dcp_capacity() -> None:
     assert (result.device_full_tokens, result.device_mamba_slots) == (192, 38)
     assert (result.host_full_tokens, result.host_mamba_slots) == (128, 21)
     assert result.shared_device_bytes == 800
+    assert (result.device_full_ceiling_bytes, result.device_mamba_ceiling_bytes) == (
+        768, 760,
+    )
+    assert (result.host_full_bytes, result.host_mamba_bytes, result.host_total_bytes) == (
+        512, 420, 932,
+    )
     assert "device_available" in result.unsupported_metrics
     assert "physical_commands" in result.unsupported_metrics
 
@@ -215,6 +222,8 @@ def test_distinct_shared_device_ceiling_and_host_dcp_capacity() -> None:
         ),
         lambda c: setattr(c.host_pool_group.entry_map["kv"].host_pool, "dcp_size", 0),
         lambda c: setattr(c.host_pool_group.entry_map["kv"].host_pool, "dcp_size", 1),
+        lambda c: setattr(c.host_pool_group.entry_map["kv"].host_pool, "size_per_token", 0),
+        lambda c: setattr(c.host_pool_group.entry_map["mamba"].host_pool, "size_per_token", -1),
     ],
 )
 def test_unknown_or_inconsistent_structures_fail_closed(break_wiring) -> None:

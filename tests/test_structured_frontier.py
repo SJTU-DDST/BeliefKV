@@ -328,6 +328,46 @@ def _write_dataset(
     return root
 
 
+def test_native_formal_loader_only_accepts_verified_local_train(tmp_path: Path) -> None:
+    root = _write_dataset(
+        tmp_path / "native", run_id="native-run", split="train",
+        decision_id="native-decision", formal_training_eligible=False,
+        formal_local_training_eligible=True,
+    )
+    path = root / "dataset_manifest.json"
+    manifest = json.loads(path.read_text())
+    contract = manifest["source"]["collection_contract"]
+    contract.update({
+        "plan_id": "qwen35-native-reactive-v0520-v1",
+        "runtime_policy": "frozen_native_reactive_v0520",
+        "raw_trace_eligible": True,
+        "model_revision_stable": True,
+        "training_eligible": False,
+    })
+    manifest["source"]["runtime_environment_contract"].update({
+        "runtime_kind": "native_reactive_v0520",
+        "runtime_profile": None,
+    })
+    manifest["source"]["native_request_evidence"] = {"telemetry_complete": True}
+    path.write_text(json.dumps(manifest))
+    with pytest.raises(ValueError, match="native reactive input"):
+        load_decision_rows((root,), allowed_splits=("train",))
+    rows, _ = load_decision_rows(
+        (root,), allowed_splits=("train",), allow_formal_local=True
+    )
+    assert len(rows) == 1
+    with pytest.raises(ValueError, match="cannot consume calibration"):
+        load_decision_rows(
+            (root,), allowed_splits=("calibration",), allow_formal_local=True
+        )
+    manifest["source"]["native_request_evidence"]["telemetry_complete"] = False
+    path.write_text(json.dumps(manifest))
+    with pytest.raises(ValueError, match="native reactive input"):
+        load_decision_rows(
+            (root,), allowed_splits=("train",), allow_formal_local=True
+        )
+
+
 def test_formal_loaders_fail_closed_on_ineligible_dataset(tmp_path: Path) -> None:
     train = _write_dataset(
         tmp_path / "train",

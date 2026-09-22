@@ -8,6 +8,7 @@ import hashlib
 import json
 import os
 from pathlib import Path
+import subprocess
 import sys
 
 
@@ -43,6 +44,33 @@ NATIVE_MODEL_MANIFEST_FILES = (
     "config.json", "model.safetensors.index.json", "tokenizer.json",
     "tokenizer_config.json",
 )
+NATIVE_SCHEDULER_PATH = (
+    REPOSITORY_ROOT
+    / "third_party/sglang-v0.5.20/python/sglang/srt/managers/scheduler.py"
+)
+NATIVE_PATCH_PATH = REPOSITORY_ROOT / "patches/sglang-v0.5.20-beliefkv-staging.patch"
+NATIVE_TELEMETRY_STREAMS = (
+    "runtime_events.sglang.jsonl",
+    "runtime_audit.jsonl",
+    "transfer_telemetry.jsonl",
+)
+
+
+def _native_telemetry_fresh(directory: Path) -> bool:
+    if any((directory / name).stat().st_size for name in NATIVE_TELEMETRY_STREAMS):
+        return False
+    status_path = directory / "native_telemetry_status.json"
+    if not status_path.is_file():
+        return True
+    status = json.loads(status_path.read_text(encoding="utf-8"))
+    return bool(
+        status.get("schema_version") == 1
+        and status.get("source") == "native_sglang_v0520"
+        and status.get("writer_error") is None
+        and status.get("pending_request_count") == 0
+        and status.get("pending_batch_count") == 0
+        and not any((status.get("record_counts") or {}).values())
+    )
 
 
 def _native_model_manifest(
@@ -66,6 +94,46 @@ def _native_model_manifest(
             raise ValueError(f"Qwen3.5 model inventory changed: {filename}")
         hashes[filename] = digest
     return hashes
+
+
+def _native_runtime_contract(
+    *,
+    gpu: int,
+    identity: dict[str, object],
+    capacity: dict[str, object],
+    model_manifest: dict[str, str],
+    source_fingerprint: dict[str, object],
+) -> dict[str, object]:
+    checkout = REPOSITORY_ROOT / "third_party/sglang-v0.5.20"
+    commit = subprocess.check_output(
+        ("git", "-C", str(checkout), "rev-parse", "HEAD"), text=True
+    ).strip()
+    if commit != "94602c9c2b7cbdb8efd5c52802dac6a1c180089e":
+        raise RuntimeError("native reactive scheduler checkout revision changed")
+    uuid = subprocess.check_output(
+        (
+            "nvidia-smi", "-i", str(gpu), "--query-gpu=uuid",
+            "--format=csv,noheader",
+        ),
+        text=True,
+    ).strip()
+    if not uuid.startswith("GPU-") or "\n" in uuid:
+        raise RuntimeError("native reactive GPU UUID is unavailable")
+    return {
+        "schema_version": 1,
+        "contract_state": "validated",
+        "runtime_kind": "native_reactive_v0520",
+        "runtime_profile": None,
+        "model_revision_sha256": model_manifest,
+        "server_identity": identity,
+        "server_capacity": capacity,
+        "hardware": {"uuid": uuid, "gpu_index": gpu},
+        "sglang_commit": commit,
+        "sglang_patch_sha256": hashlib.sha256(
+            NATIVE_PATCH_PATH.read_bytes()
+        ).hexdigest(),
+        "beliefkv_source_sha256": source_fingerprint["digest"],
+    }
 
 
 def _actual_kv_pool_tokens(base_url: str, *, timeout_s: float = 10.0) -> int:
@@ -300,6 +368,10 @@ def parse_args() -> argparse.Namespace:
         "--native-model-inventory", type=Path,
         default=DEFAULT_QWEN35_INVENTORY,
     )
+    parser.add_argument(
+        "--native-telemetry-dir", type=Path,
+        help="Dedicated server/ directory from a patched native-reactive scheduler.",
+    )
     parser.add_argument("--expected-weight-dtype", default="bfloat16")
     parser.add_argument("--expected-kv-dtype", default="bfloat16")
     parser.add_argument(
@@ -416,7 +488,10 @@ def main() -> int:
     if native_reactive:
         if (
             args.model != "Qwen3.5-35B-A3B"
+            or args.native_telemetry_dir is None
             or args.control_socket is not None
+            or args.server_audit is not None
+            or args.server_events is not None
             or args.kv_bytes_per_token is not None
             or any((
                 args.predictor_shadow_enabled,
@@ -430,10 +505,13 @@ def main() -> int:
         ):
             raise ValueError(
                 "Qwen3.5 native reactive collection requires the target model, "
-                "no BeliefKV control or predictive actions, and no legacy KV scalar"
+                "dedicated native telemetry, no BeliefKV control or predictive "
+                "actions, and no legacy KV scalar"
             )
         if args.expected_kv_dtype != "bfloat16":
             raise ValueError("native Qwen3.5 reactive collection requires BF16 KV")
+    elif args.native_telemetry_dir is not None:
+        raise ValueError("native telemetry is only valid for frozen native reactive")
     elif (
         args.control_socket is None or args.server_audit is None
         or args.server_events is None or args.server_log is None
@@ -542,17 +620,44 @@ def main() -> int:
             "SGLang actual KV pool is below the collection requirement: "
             f"actual={actual_pool_tokens}, required={minimum_pool_tokens}"
         )
-    timestamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
-    output = args.output or (
-        REPOSITORY_ROOT
-        / (
-            "experiments/raw/qwen35_native_reactive_v0520"
-            if native_reactive else "experiments/raw/p6_agent_semantics_v1"
+    telemetry_dir = args.native_telemetry_dir.resolve() if native_reactive else None
+    if telemetry_dir is not None:
+        ready_path = telemetry_dir / "native_telemetry_ready.json"
+        ready = json.loads(ready_path.read_text(encoding="utf-8"))
+        scheduler_pid = ready.get("scheduler_pid")
+        if (
+            ready.get("schema_version") != 1
+            or ready.get("source") != "native_sglang_v0520"
+            or type(scheduler_pid) is not int
+            or scheduler_pid <= 0
+            or ready.get("scheduler_path") != str(NATIVE_SCHEDULER_PATH)
+            or ready.get("scheduler_sha256") != hashlib.sha256(
+                NATIVE_SCHEDULER_PATH.read_bytes()
+            ).hexdigest()
+            or not all(
+                (telemetry_dir / filename).is_file()
+                for filename in NATIVE_TELEMETRY_STREAMS
+            )
+        ):
+            raise RuntimeError("native scheduler telemetry is not ready")
+        try:
+            os.kill(scheduler_pid, 0)
+        except OSError as error:
+            raise RuntimeError("native scheduler telemetry process is gone") from error
+        output = args.output or telemetry_dir.parent / "workloads"
+        if output.resolve().parent != telemetry_dir.parent:
+            raise ValueError("native telemetry and workloads must share a run directory")
+        if output.exists() or not _native_telemetry_fresh(telemetry_dir):
+            raise ValueError("native reactive batch requires fresh telemetry and output")
+    else:
+        timestamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
+        output = args.output or (
+            REPOSITORY_ROOT
+            / "experiments/raw/p6_agent_semantics_v1"
+            / batch.batch_id
+            / timestamp
+            / "workloads"
         )
-        / batch.batch_id
-        / timestamp
-        / "workloads"
-    )
     output.parent.mkdir(parents=True, exist_ok=True)
     selected_instance_ids: list[str] | None = None
     if args.instance_id:
@@ -576,6 +681,21 @@ def main() -> int:
         workflow_count if saturated_root_backlog else configured_concurrency
     )
     source_fingerprint = _runtime_source_fingerprint()
+    native_runtime_contract = (
+        _native_runtime_contract(
+            gpu=args.gpu,
+            identity=server_identity,
+            capacity=server_capacity,
+            model_manifest=native_model_manifest,
+            source_fingerprint=source_fingerprint,
+        )
+        if native_reactive else None
+    )
+    if native_runtime_contract is not None:
+        write_json(
+            telemetry_dir / "native_runtime_contract.json",
+            native_runtime_contract,
+        )
     collection_contract = {
         "schema_version": 1,
         "plan_id": batch.plan_id,
@@ -627,6 +747,8 @@ def main() -> int:
         ),
         "native_reactive": native_reactive,
         "formal_dataset_export_ready": not native_reactive,
+        "native_telemetry_dir": str(telemetry_dir) if telemetry_dir else None,
+        "native_runtime_contract": native_runtime_contract,
         "predictor_enabled": (
             args.predictor_shadow_enabled
             or args.predictive_risk_shadow_enabled
@@ -698,8 +820,14 @@ def main() -> int:
         workload_manifest=workload_manifest,
         docker_image="unused:per-workload-image-required",
         control_socket=args.control_socket,
-        server_audit_path=args.server_audit,
-        server_event_path=args.server_events,
+        server_audit_path=(
+            telemetry_dir / "runtime_audit.jsonl"
+            if telemetry_dir else args.server_audit
+        ),
+        server_event_path=(
+            telemetry_dir / "runtime_events.sglang.jsonl"
+            if telemetry_dir else args.server_events
+        ),
         server_log_path=args.server_log,
         max_workflows=workflow_count,
         concurrency=concurrency,

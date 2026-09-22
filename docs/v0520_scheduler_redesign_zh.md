@@ -16,36 +16,80 @@ Qwen3.5/v0.5.20 训练 trace 可以先在 predictor 和 BeliefKV admission
 采集脚本必须核验 `0.5.20`、精确模型路径/BF16、Host cache、
 物理动作关闭、关键模型文件哈希及 server context，并记录
 FULL/MAMBA 混合容量未标定；workflow 没有任意 2 小时截断。
+root 在 JOIN 后可再次动态 SPAWN，后续 child/JOIN 有各自身份与
+context epoch；已有局部回归，尚非目标 GPU train 数据。
 原始 trace 成功不等于旧 rc1 exporter 的 `formal_training_eligible`，
 不能直接作为完整 P6 训练集使用。
 
 已冻结 train-only 计划为
 `configs/migration/qwen35_native_reactive_train_plan_2026-09-22.json`。
-采集前启动相同新环境的 v0.5.20 服务并启用 Host cache。例如：
+`HICACHE_SIZE_GB` 是原生统一 cache 的**总预算**，按 FULL/MAMBA
+设备池字节占比分割，默认总计 **200 decimal GB**（186.26 GiB），
+不是各池 200 GB，也不是 200 GiB。启动脚本默认在 node1 上进行
+NUMA CPU/内存绑定；预检用该节点 MemFree、干净的 inactive file
+cache、保守折算的 active file cache 与 SReclaimable 估算可用量，
+检查总池预算及额外 8 GiB 余量。MemFree 单独不足以判定失败，
+估算通过也不能证明 pinned Host 内存已实际分配或 NUMA 落点正确。
+本轮 200 GB 总池短 GPU 启动/单请求通过：`numastat -p` 测得 scheduler
+进程 node1 约 193.9 GB、node0 约 18 MB；服务报告
+`hicache_size=200`、device `max_total_num_tokens=1,645,444`。
+持续负载、Host restore 和 FULL/MAMBA 分池动作仍待验收。
+采集前在相同新环境启动 patched v0.5.20 服务和独立 native 遥测目录
+（每批使用全新目录），例如：
 
 ```bash
-HICACHE_SIZE_GB=96 HICACHE_WRITE_POLICY=write_back \
+# 服务端终端
+RUN_DIR=/path/to/new-native-reactive-run
+mkdir -p "$RUN_DIR/server"
+HICACHE_SIZE_GB=200 HOST_NUMA_NODE=1 HICACHE_WRITE_POLICY=write_back \
+  BELIEFKV_NATIVE_TELEMETRY_DIR="$RUN_DIR/server" \
   SGLANG_SOURCE_CHECKOUT=/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20 \
   bash scripts/launch_qwen35_native_v0520.sh
+```
 
+```bash
+# 采集端终端（与服务端相同的 RUN_DIR）
+RUN_DIR=/path/to/new-native-reactive-run
 /home/longhao/miniconda3/envs/beliefkv-next/bin/python \
   scripts/run_p6_collection_batch.py \
   --collection-plan configs/migration/qwen35_native_reactive_train_plan_2026-09-22.json \
   --batch-id p6-013-train-mixed-r0 \
+  --native-telemetry-dir "$RUN_DIR/server" \
   --model Qwen3.5-35B-A3B \
   --expected-model-path /srv/ai/models/Qwen/Qwen3.5-35B-A3B
 ```
 
-2026-09-22 在目标 GPU 上完成短 native smoke：上述 4 GiB
+`server/` 与默认 `workloads/` 必须同属 `RUN_DIR`；目录须预先存在、
+可写且无旧遥测。writer 在空闲时周期生成的零记录
+`native_telemetry_status.json` 可通过采集器预检；任一遥测流已有
+记录、status 已有记录或 `workloads/` 已存在则拒绝，不能通过删除
+运行中服务的文件规避门禁。
+未设置 `BELIEFKV_NATIVE_TELEMETRY_DIR` 的 wheel/native 服务没有此
+专用遥测，不能满足 `--native-telemetry-dir` 的采集门禁。
+2026-09-22 在目标 GPU 上完成的是此前 4 GiB
 HiCache 服务就绪，采集器的真实 server identity/capacity 校验通过，
 单次 chat 返回 HTTP 200；随后已停止临时服务。通用计划生成器
 仍只生成旧 P5 策略，native train 计划由专用冻结脚本从原 split
 派生并强制核对源计划 SHA-256。真实 train batch 尚未执行；
+200 GB 总 Host pool 尚未完成高压/restore 验收；
 运行前仍需核对 Docker image lock、日志、宿主 GPU 和工具环境。
 取消的是全 workflow 的 2 小时 activation 截止，不是单次模型
-调用的默认 `--request-timeout 7200` 安全超时。只有原始 trace
-可获得 `raw_trace_eligible`；完整 P6 服务率/传输监督仍需新版
-逐请求观测契约与 exporter，不可使用旧 rc1 遥测伪造。
+调用的默认 `--request-timeout 7200` 安全超时。采集契约先提供
+`raw_trace_eligible`；opt-in native scheduler 记录逐请求 submit/result、
+GPU batch 中逐请求 token 变化及 scheduler/worker 服务区间，不把
+共享 batch 区间冒充独立 request 的 CUDA kernel 耗时。原生 HiCache
+ACK 只有方向、node IDs 与 pool token 数量，**缺少 DMA bytes 和
+duration**，不可训练 PCIe 服务曲线或冒充旧 rc1 传输遥测。
+native reactive P6 导出路径现有 train-only、按 head 的局部
+`formal_local_training_eligible` 门禁：精确 request 对齐、token 守恒、
+遥测完整性决定各 demand/action/wait 标签资格；PCIe service 标签
+明确不合格，完整 `formal_training_eligible` 仍为 false。专用导出
+CLI `scripts/export_native_reactive_p6_dataset.py` 要求 `run_dir`、
+`--output-dir` 和 `--split-manifest`；只有局部训练资格通过才返回成功。
+4 GiB GPU 单请求烟测写出唯一 submit/result 与 11 条服务样本，
+未运行正式 train batch，不能将该代码路径或原始 trace 视作已有
+正式数据集。目标模型 calibration/test 数据、模型训练/校准和 GPU
+大 pool 高压 A/B 仍缺失。
 
 ## JOIN 与 pre-admission 协同
 
@@ -86,6 +130,14 @@ cache mode。其他 cache backend、TP/PP、disaggregation 和 speculative
 以固定 checkout `94602c9c` 的源码和测试为准，不把后续版本或 RFC
 当成已有功能：
 
+- FULL KV 与 MAMBA state 属于同一 request/context 的恢复依赖，但并非
+  相同的资源单位：FULL 用 token/page，MAMBA 用 slot/sidecar，device
+  共享底层字节预算，Host 为独立 pool。对 context 的物理动作须同时
+  验收所有必需 pool 的容量、锁、generation 与 ACK，只有整个闭包可用
+  才允许发放 reentry credit；成本、容量、传输字节和失败原因仍按 pool
+  分开记账。原生 `HostPoolGroup` 对分池 Host 分配支持失败回滚；
+  BeliefKV 的跨池 ownership/动作证书尚未完成，不能把单个 FULL
+  命中视为整个 context 可恢复。
 - `UnifiedTreeCore` 原生按 token/page 匹配、分裂 radix node 和共享前缀；
   BeliefKV 不重建第二棵共享前缀树，也不能把共享祖先算作一个 agent
   的独占 reclaim 字节。

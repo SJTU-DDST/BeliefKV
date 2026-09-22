@@ -241,6 +241,224 @@ def test_same_peer_continuation_does_not_create_a_self_handoff() -> None:
     assert structured[0].attributes["structured_action_kinds"] == ["continue"]
 
 
+def test_root_can_spawn_again_after_join_with_stable_identity_and_epochs() -> None:
+    class MultiRoundBackend:
+        def invoke(self, request: PeerTurnRequest) -> PeerTurnResult:
+            if request.is_subagent:
+                return PeerTurnResult(
+                    summary="investigation finished",
+                    next_role=None,
+                    complete=True,
+                    final_context_epoch=4,
+                )
+            if request.role == PeerRole.CODER.value:
+                return PeerTurnResult(
+                    summary=f"delegated on turn {request.turn}",
+                    next_role=PeerRole.REVIEWER,
+                    complete=False,
+                    subagent_tasks=(
+                        (
+                            SubagentTask("reader-a", "Inspect implementation"),
+                            SubagentTask("reader-b", "Inspect tests"),
+                        )
+                        if request.turn == 0
+                        else (SubagentTask("reader-c", "Inspect new failure"),)
+                    ),
+                    final_context_epoch=3 if request.turn == 0 else 2,
+                )
+            if request.turn == 1:
+                return PeerTurnResult(
+                    summary="new question found",
+                    next_role=PeerRole.CODER,
+                    complete=False,
+                )
+            return PeerTurnResult(
+                summary="review complete", next_role=None, complete=True
+            )
+
+    sink = CollectingSink()
+    ticks = itertools.count(1)
+    result = LangGraphPeerWorkflow(
+        MultiRoundBackend(),
+        sink,
+        workflow_id="workflow-multiple-spawn-rounds",
+        max_turns=4,
+        clock_ms=lambda: float(next(ticks)),
+    ).run("Investigate, revise, and review.")
+
+    assert result.completed
+    assert result.turn_count == 4
+    events = result.events
+    coder_submits = [
+        event
+        for event in events
+        if event.kind == RuntimeEventKind.LLM_SUBMIT
+        and event.attributes.get("role") == PeerRole.CODER.value
+    ]
+    assert len(coder_submits) == 2
+    assert coder_submits[0].invocation_id == coder_submits[1].invocation_id
+    assert coder_submits[0].context_id == coder_submits[1].context_id
+    assert [event.context_epoch for event in coder_submits] == [0, 4]
+    coder_id = coder_submits[0].invocation_id
+    children = [
+        event for event in events
+        if event.kind == RuntimeEventKind.INVOCATION_CREATE
+        and event.parent_invocation_id == coder_id
+    ]
+    joins = [event for event in events if event.kind == RuntimeEventKind.JOIN_CREATE]
+    assert len(children) == 3
+    assert len(joins) == 2
+    assert [len(event.member_invocation_ids) for event in joins] == [2, 1]
+    assert sum(
+        event.kind == RuntimeEventKind.JOIN_WAIT for event in events
+    ) == 2
+    assert {child.join_id for child in children} == {join.join_id for join in joins}
+    assert all(child.context_epoch == 0 for child in children)
+    assert len({child.invocation_id for child in children}) == 3
+    for join in joins:
+        assert {
+            child.invocation_id for child in children if child.join_id == join.join_id
+        } == set(join.member_invocation_ids)
+        satisfied = next(
+            index for index, event in enumerate(events)
+            if event.kind == RuntimeEventKind.JOIN_SATISFIED
+            and event.join_id == join.join_id
+        )
+        assert all(
+            next(
+                index for index, event in enumerate(events)
+                if event.kind == RuntimeEventKind.RETURN
+                and event.invocation_id == member
+                and event.context_epoch == 4
+            ) < satisfied
+            for member in join.member_invocation_ids
+        )
+    assert next(
+        index for index, event in enumerate(events)
+        if event.kind == RuntimeEventKind.JOIN_SATISFIED
+        and event.join_id == joins[0].join_id
+    ) < next(
+        index for index, event in enumerate(events)
+        if event.kind == RuntimeEventKind.SPAWN
+        and event.target_invocation_id == joins[1].member_invocation_ids[0]
+    )
+    assert len([
+        event for event in events
+        if event.kind == RuntimeEventKind.INVOCATION_CREATE
+        and event.invocation_id == coder_id
+    ]) == 1
+    assert [
+        event.context_epoch
+        for event in events
+        if event.kind == RuntimeEventKind.LLM_RESULT
+        and event.invocation_id == coder_id
+    ] == [3, 4]
+    controller = BeliefKVController()
+    controller.process_runtime_events(events)
+    assert all(
+        invocation.state.terminal
+        for invocation in controller.graph.invocations.values()
+    )
+
+
+def test_openai_backend_accepts_later_root_spawn_and_keeps_initial_range() -> None:
+    backend = _backend_with_fake_model(
+        [
+            '{"summary":"new question","next_role":"tester","complete":false,'
+            '"subagent_tasks":[{"agent_definition_id":"reader",'
+            '"instruction":"inspect regression"}]}',
+            '{"summary":"finish","next_role":null,"complete":true,'
+            '"subagent_tasks":[]}',
+        ],
+        minimum=2,
+        maximum=2,
+    )
+
+    result = backend.invoke(
+        _peer_request(role=PeerRole.REVIEWER.value, turn=2)
+    )
+    assert len(result.subagent_tasks) == 1
+    schema = backend.model.response_formats[0]["json_schema"]["schema"]
+    assert schema["properties"]["subagent_tasks"]["minItems"] == 0
+    assert schema["properties"]["subagent_tasks"]["maxItems"] == 4
+    assert "may delegate up to four" in backend.model.requests[0][0][0].content
+    assert backend.invoke(
+        _peer_request(role=PeerRole.TESTER.value, turn=3, must_complete=True)
+    ).complete
+    final_schema = backend.model.response_formats[1]["json_schema"]["schema"]
+    assert final_schema["properties"]["subagent_tasks"]["maxItems"] == 0
+
+
+def test_openai_backend_executes_two_root_spawn_rounds() -> None:
+    leaf = (
+        '{"summary":"investigated","next_role":null,"complete":true,'
+        '"subagent_tasks":[]}'
+    )
+    backend = _backend_with_fake_model(
+        [
+            '{"summary":"first delegation","next_role":"reviewer",'
+            '"complete":false,"subagent_tasks":['
+            '{"agent_definition_id":"reader-a","instruction":"inspect code"},'
+            '{"agent_definition_id":"reader-b","instruction":"inspect tests"}]}',
+            leaf,
+            leaf,
+            '{"summary":"revise","next_role":"coder","complete":false,'
+            '"subagent_tasks":[]}',
+            '{"summary":"follow-up delegation","next_role":"reviewer",'
+            '"complete":false,"subagent_tasks":['
+            '{"agent_definition_id":"reader-c","instruction":"inspect change"}]}',
+            leaf,
+            '{"summary":"accepted","next_role":null,"complete":true,'
+            '"subagent_tasks":[]}',
+        ],
+        minimum=2,
+        maximum=2,
+    )
+    sink = CollectingSink()
+    result = LangGraphPeerWorkflow(
+        backend,
+        sink,
+        workflow_id="workflow-structured-multiple-spawn-rounds",
+        max_turns=4,
+    ).run("Investigate and fix a regression.")
+
+    assert result.completed
+    assert result.turn_count == 4
+    assert backend.summary() == {
+        "model_request_count": 7,
+        "structured_retry_count": 0,
+        "model_error_count": 0,
+    }
+    assert [
+        event.kind for event in result.events
+    ].count(RuntimeEventKind.JOIN_SATISFIED) == 2
+    assert [
+        event.kind for event in result.events
+    ].count(RuntimeEventKind.SPAWN) == 3
+    limits = [
+        schema["json_schema"]["schema"]["properties"]["subagent_tasks"]["maxItems"]
+        for schema in backend.model.response_formats
+    ]
+    assert limits == [2, 0, 0, 4, 4, 0, 0]
+
+
+def test_openai_backend_disables_later_spawn_when_subagents_are_disabled() -> None:
+    response = (
+        '{"summary":"unexpected delegation","next_role":"tester",'
+        '"complete":false,"subagent_tasks":'
+        '[{"agent_definition_id":"reader","instruction":"inspect"}]}'
+    )
+    backend = _backend_with_fake_model(
+        [response, response], minimum=0, maximum=0
+    )
+
+    with pytest.raises(RuntimeError, match="subagents are disabled"):
+        backend.invoke(_peer_request(role=PeerRole.REVIEWER.value, turn=2))
+    schema = backend.model.response_formats[0]["json_schema"]["schema"]
+    assert schema["properties"]["subagent_tasks"]["maxItems"] == 0
+    assert backend.summary()["structured_retry_count"] == 1
+
+
 def test_blocked_terminal_result_ends_outer_graph_without_handoff() -> None:
     class BlockedBackend:
         def invoke(self, request: PeerTurnRequest) -> PeerTurnResult:

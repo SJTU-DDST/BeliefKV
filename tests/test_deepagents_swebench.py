@@ -16,7 +16,7 @@ from pydantic import PrivateAttr
 pytest.importorskip("deepagents")
 
 from deepagents.backends.protocol import ExecuteResponse
-from langchain_core.messages import AIMessage, HumanMessage, SystemMessage, ToolMessage
+from langchain_core.messages import AIMessage, BaseMessage, HumanMessage, SystemMessage, ToolMessage
 from langchain_core.language_models.fake_chat_models import FakeMessagesListChatModel
 from langchain_core.tools import tool
 from langchain.agents import create_agent
@@ -1047,6 +1047,48 @@ def test_native_subagent_prompt_excludes_natural_fanout_policy() -> None:
     assert "A one-task message is invalid" in NATIVE_SUBAGENT_2TO3_PROMPT
     assert "you may start another round" in NATIVE_SUBAGENT_2TO3_PROMPT
     assert "Do not force a second round" in NATIVE_SUBAGENT_2TO3_PROMPT
+
+
+def test_second_native_delegation_round_keeps_root_call_budget() -> None:
+    policy = LoopGuardPolicy(
+        enforce_call_budgets=True,
+        max_tool_calls_without_completion=4,
+        max_model_calls_without_completion=20,
+    )
+    messages: list[BaseMessage] = []
+    for round_index in range(2):
+        call_ids = [
+            f"round-{round_index}-child-{child_index}"
+            for child_index in range(2)
+        ]
+        messages.append(
+            AIMessage(
+                content="",
+                tool_calls=[
+                    {
+                        "name": "task",
+                        "args": {"description": call_id},
+                        "id": call_id,
+                    }
+                    for call_id in call_ids
+                ],
+            )
+        )
+        messages.extend(
+            ToolMessage(
+                content=f"JOIN_ALL result for {call_id}",
+                name="task",
+                tool_call_id=call_id,
+            )
+            for call_id in call_ids
+        )
+        snapshot = analyze_agent_history(messages, policy)
+        assert snapshot.model_calls == round_index + 1
+        assert snapshot.tool_calls == (round_index + 1) * 2
+        assert snapshot.completed_tool_calls == snapshot.tool_calls
+        assert snapshot.reason == (
+            "tool_call_budget_exhausted" if round_index else None
+        )
 
 
 def test_native_subagent_profile_builds_read_only_children(tmp_path: Path) -> None:
