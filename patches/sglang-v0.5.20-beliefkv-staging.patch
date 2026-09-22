@@ -108,7 +108,7 @@ index 7811e44..9630078 100755
          self.session_generation: Optional[int] = None
          self.input_embeds = input_embeds
 diff --git a/python/sglang/srt/managers/scheduler.py b/python/sglang/srt/managers/scheduler.py
-index 743c8af..027ee02 100644
+index 743c8af..15943f0 100644
 --- a/python/sglang/srt/managers/scheduler.py
 +++ b/python/sglang/srt/managers/scheduler.py
 @@ -725,9 +725,29 @@ class Scheduler(
@@ -189,7 +189,7 @@ index 743c8af..027ee02 100644
                  self._release_aborted_request(candidate_req)
                  self.waiting_queue.pop(idx)
                  self.beam_coordinator.retire_group(candidate_req)
-@@ -3558,10 +3598,66 @@ class Scheduler(
+@@ -3558,12 +3598,68 @@ class Scheduler(
              if self.enable_hicache_storage:
                  self._process_storage_prefetch_retries()
  
@@ -250,12 +250,14 @@ index 743c8af..027ee02 100644
      def get_next_batch_to_run(
          self, running_batch: ScheduleBatch, last_batch: Optional[ScheduleBatch]
      ) -> NextBatchPlan:
-+        if (beliefkv_runtime := getattr(self, "beliefkv_runtime", None)) is not None:
-+            # Runtime drains transfer ACKs before mirroring cache mutations.
-+            beliefkv_runtime.scheduler_step()
          self.process_pending_chunked_abort()
          self._process_hicache_events()
++        if (beliefkv_runtime := getattr(self, "beliefkv_runtime", None)) is not None:
++            # Native ACKs/locks settle before BeliefKV mirrors and plans.
++            beliefkv_runtime.scheduler_step()
  
+         if self.enable_fpm:
+             self._fpm_batch_t0 = time.monotonic()
 @@ -3647,6 +3743,9 @@ class Scheduler(
              if running_batch.is_empty():
                  running_batch.batch_is_full = False
@@ -275,7 +277,55 @@ index 743c8af..027ee02 100644
          return NextBatchPlan(batch_to_run=ret, running_batch=running_batch)
  
      def get_num_allocatable_reqs(
-@@ -4622,6 +4723,7 @@ class Scheduler(
+@@ -3754,6 +3855,27 @@ class Scheduler(
+ 
+         return NextBatchPlan(batch_to_run=ret, running_batch=running_batch)
+ 
++    def _beliefkv_prefill_candidates(
++        self, running_batch: ScheduleBatch, adder: PrefillAdder
++    ):
++        runtime = getattr(self, "beliefkv_runtime", None)
++        if runtime is None:
++            return self.waiting_queue
++        from beliefkv.runtime.sglang_v0520_admission import (
++            select_native_prefill_candidates,
++        )
++
++        plan = runtime.plan_native_prefill(
++            self.waiting_queue, running_batch=running_batch, adder=adder
++        )
++        selection = select_native_prefill_candidates(
++            self.waiting_queue,
++            plan=plan,
++            current_semantic_revision=runtime.semantic_revision,
++        )
++        runtime.on_prefill_selection(selection.rejected)
++        return selection.candidates
++
+     def _get_new_batch_prefill_raw(
+         self,
+         prefill_delayer_single_pass: Optional[PrefillDelayerSinglePassExecutor],
+@@ -3871,7 +3993,7 @@ class Scheduler(
+             mamba_allocator.alloc_group_begin(len(self.waiting_queue))
+         buffer_pipeline = self.tree_cache.buffer_pipeline
+         # Get requests from the waiting queue to a new prefill batch
+-        for req in self.waiting_queue:
++        for req in self._beliefkv_prefill_candidates(running_batch, adder):
+             if self.enable_lora and not self.can_schedule_lora_req(req, running_loras):
+                 continue
+ 
+@@ -3932,6 +4054,10 @@ class Scheduler(
+                 has_chunked_req=(self.chunked_req is not None),
+                 truncation_align_size=self.truncation_align_size,
+             )
++            if self.beliefkv_runtime is not None:
++                self.beliefkv_runtime.on_prefill_candidate_result(
++                    req, admitted=req in adder.can_run_list, result=res.name
++                )
+ 
+             if self.enable_lora:
+                 running_loras.add(req.lora_id)
+@@ -4622,6 +4748,7 @@ class Scheduler(
          elif batch.forward_mode.is_idle():
              self.batch_result_processor.process_batch_result_idle(batch, result)
  
@@ -283,7 +333,7 @@ index 743c8af..027ee02 100644
          self._record_step_counters(batch, result)
  
          self.metrics_reporter.log_batch_result_stats(batch, result)
-@@ -4634,6 +4736,19 @@ class Scheduler(
+@@ -4634,6 +4761,19 @@ class Scheduler(
          self.maybe_send_health_check_signal()
          self.metrics_reporter.update_device_timer()
  
@@ -303,7 +353,7 @@ index 743c8af..027ee02 100644
      def _record_step_counters(
          self, batch: ScheduleBatch, result: GenerationBatchResult
      ) -> None:
-@@ -5215,6 +5330,7 @@ class Scheduler(
+@@ -5215,6 +5355,7 @@ class Scheduler(
          }
  
      def abort_request(self, recv_req: AbortReq):
@@ -311,7 +361,7 @@ index 743c8af..027ee02 100644
          if (chunked_req := self.chunked_req) is not None:
              if recv_req.abort_all or chunked_req.rid.startswith(recv_req.rid):
                  self._pending_chunked_abort_req = chunked_req
-@@ -5369,6 +5485,25 @@ class Scheduler(
+@@ -5369,6 +5510,25 @@ class Scheduler(
                  else:
                      req.to_finish = FINISH_ABORT()
  
@@ -982,10 +1032,10 @@ index 0000000..a8a2ead
 +    unittest.main()
 diff --git a/test/srt/test_beliefkv_scheduler_hook.py b/test/srt/test_beliefkv_scheduler_hook.py
 new file mode 100644
-index 0000000..7d1605d
+index 0000000..de9cb19
 --- /dev/null
 +++ b/test/srt/test_beliefkv_scheduler_hook.py
-@@ -0,0 +1,272 @@
+@@ -0,0 +1,352 @@
 +"""BeliefKV scheduler safe-point contract, without model/GPU dependencies."""
 +
 +import ast
@@ -1016,6 +1066,7 @@ index 0000000..7d1605d
 +        "init_beliefkv_runtime",
 +        "_beliefkv_tp_agree",
 +        "_beliefkv_before_batch_selection",
++        "_beliefkv_prefill_candidates",
 +        "get_next_batch_to_run",
 +    }
 +    extracted = [
@@ -1087,6 +1138,85 @@ index 0000000..7d1605d
 +
 +
 +class TestBeliefKVHook(unittest.TestCase):
++    def test_disabled_prefill_keeps_native_queue_and_does_not_import_adapter(self):
++        scheduler = Hook()
++        req = object()
++        scheduler.waiting_queue = [req]
++        scheduler.beliefkv_runtime = None
++        with patch.dict(
++            sys.modules, {"beliefkv.runtime.sglang_v0520_admission": None}
++        ):
++            self.assertIs(
++                scheduler._beliefkv_prefill_candidates(object(), object()),
++                scheduler.waiting_queue,
++            )
++
++    def test_prefill_hook_passes_safe_point_plan_to_bounded_selector(self):
++        scheduler = Hook()
++        req = object()
++        scheduler.waiting_queue = [req]
++        running_batch, adder = object(), object()
++        calls = []
++        runtime = SimpleNamespace(
++            semantic_revision=7,
++            plan_native_prefill=lambda queue, **kwargs: calls.append(
++                ("plan", queue, kwargs)
++            ) or "plan",
++            on_prefill_selection=lambda rejected: calls.append(("rejected", rejected)),
++        )
++        scheduler.beliefkv_runtime = runtime
++        selection = SimpleNamespace(candidates=(req,), rejected=(("blocked", "stale"),))
++        adapter = types.ModuleType("beliefkv.runtime.sglang_v0520_admission")
++        adapter.select_native_prefill_candidates = lambda queue, **kwargs: (
++            calls.append(("select", queue, kwargs)) or selection
++        )
++        with patch.dict(sys.modules, {adapter.__name__: adapter}):
++            self.assertEqual(
++                scheduler._beliefkv_prefill_candidates(running_batch, adder), (req,)
++            )
++        self.assertEqual(calls[0], (
++            "plan",
++            scheduler.waiting_queue,
++            {"running_batch": running_batch, "adder": adder},
++        ))
++        self.assertEqual(calls[1][2], {
++            "plan": "plan", "current_semantic_revision": 7,
++        })
++        self.assertEqual(calls[2], ("rejected", (("blocked", "stale"),)))
++
++    def test_native_prefill_filters_before_prefix_match_and_allocation(self):
++        tree = ast.parse(SCHEDULER.read_text(encoding="utf-8"))
++        scheduler = next(
++            node for node in tree.body
++            if isinstance(node, ast.ClassDef) and node.name == "Scheduler"
++        )
++        method = next(
++            node for node in scheduler.body
++            if isinstance(node, ast.FunctionDef)
++            and node.name == "_get_new_batch_prefill_raw"
++        )
++        loop = next(
++            node for node in ast.walk(method)
++            if isinstance(node, ast.For)
++            and isinstance(node.iter, ast.Call)
++            and isinstance(node.iter.func, ast.Attribute)
++            and node.iter.func.attr == "_beliefkv_prefill_candidates"
++        )
++        matched = next(
++            node.lineno for node in ast.walk(loop)
++            if isinstance(node, ast.Call)
++            and isinstance(node.func, ast.Attribute)
++            and node.func.attr == "init_next_round_input"
++        )
++        allocation = next(
++            node.lineno for node in ast.walk(loop)
++            if isinstance(node, ast.Call)
++            and isinstance(node.func, ast.Attribute)
++            and node.func.attr == "add_one_req"
++        )
++        self.assertLess(loop.lineno, matched)
++        self.assertLess(matched, allocation)
++
 +    def test_normal_and_radix_native_request_metadata_is_forwarded(self):
 +        tree = ast.parse(SCHEDULER.read_text(encoding="utf-8"))
 +        scheduler = next(
@@ -1152,7 +1282,7 @@ index 0000000..7d1605d
 +        self.assertIn("selective running retraction", str(error.exception))
 +        self.assertIsNone(scheduler.beliefkv_runtime)
 +
-+    def test_ack_step_precedes_native_cache_events_on_idle(self):
++    def test_native_cache_events_precede_runtime_plan_on_idle(self):
 +        scheduler, batch, calls = idle_scheduler()
 +        scheduler.beliefkv_runtime = SimpleNamespace(
 +            scheduler_step=lambda: calls.append("ack"),
@@ -1161,7 +1291,7 @@ index 0000000..7d1605d
 +        )
 +        plan = scheduler.get_next_batch_to_run(batch, None)
 +        self.assertIsNone(plan.batch_to_run)
-+        self.assertEqual(calls, ["ack", "abort", "cache", ("selected", None)])
++        self.assertEqual(calls, ["abort", "cache", "ack", ("selected", None)])
 +
 +    def test_overlap_drain_returns_plan_then_notifies_after_result_is_drained(self):
 +        scheduler, batch, calls = idle_scheduler(overlap=True)
@@ -1194,7 +1324,7 @@ index 0000000..7d1605d
 +        )
 +        with self.assertRaisesRegex(RuntimeError, "selective release and ACK"):
 +            scheduler.get_next_batch_to_run(batch, None)
-+        self.assertEqual(calls, ["ack", "abort", "cache"])
++        self.assertEqual(calls, ["abort", "cache", "ack"])
 +
 +    def test_inconsistent_overlap_queue_rejected_before_drain(self):
 +        scheduler, batch, calls = idle_scheduler(overlap=True)
@@ -1253,7 +1383,7 @@ index 0000000..7d1605d
 +                        forward_mode=SimpleNamespace(is_extend=lambda: False)
 +                    ),
 +                )
-+        self.assertEqual(calls, ["ack", "abort", "cache"])
++        self.assertEqual(calls, ["abort", "cache", "ack"])
 +
 +
 +if __name__ == "__main__":

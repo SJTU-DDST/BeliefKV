@@ -18,6 +18,12 @@ request metadata、scheduler 生命周期及 cache-mode 原生 ACK 观察 hook
 `patches/sglang-v0.5.20-beliefkv-staging.patch`，但 unified FULL/MAMBA
 完整物理 ownership、动作 ACK 对账和调度准入尚未迁移，启用 BeliefKV
 会 fail closed。
+新版 staging 在原生 prefill 前增加仅针对 tagged 请求的同步排序/许可
+接口；未标记请求继续按 native order，最终 FULL/MAMBA 资源验收仍在
+SGLang `PrefillAdder`。目前没有可运行的 v0.5.20 plan producer，
+不能把此接口视为新模型预测调度已接入。
+safe point 已改为原生 HiCache ACK 排空后再刷新 BeliefKV mirror/plan；
+这只保证 ACK 的观察顺序，不构成 transfer command 与合并 ACK 的归因。
 **下文所有 P5/P6 在线能力与旧实验结果仍仅指旧模型/旧 SGLang 合同**。
 新模型原生服务或通过的 metadata 单元测试均不能视为预测式 KV 调度已迁移；
 更换模型后还需新 baseline、容量和服务率标定，不能与旧模型吞吐直接比较。
@@ -33,6 +39,10 @@ chat -> tool call -> tool result 续写 smoke；后者确认挂载了 KV + MAMBA
 Host pool，但未施加足够负载触发实际 D2H/H2D。
 smoke 显式关闭 thinking 避免短 `max_tokens` 全部用于 reasoning。
 该轮没有启用 BeliefKV，不能证明 Host KV 转移或预测调度迁移完成。
+带 staging patch 的 checkout 在关闭 BeliefKV、开启 4 GiB HiCache 后也通过
+并发原生请求和 tagged metadata 请求 smoke。默认 FlashInfer sampling 首次
+JIT 遇到 CUDA 13.4 `nvcc` 与 13.0 headers 不兼容；这次仅以 PyTorch
+sampling 验证补丁禁用态，不能用作正式性能比较。
 
 ## 1. 当前结论
 

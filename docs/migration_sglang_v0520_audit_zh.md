@@ -60,8 +60,19 @@ BeliefKV 闭环；不是只把 HTTP 请求送到调度器，也不等于生产�
 scheduler hook 和 tagged request 生命周期回调，以及 unified cache
 在 cache-mode 原生 D2H/H2D ACK 提交后的可选只读通知。buffer-only
 路径没有可用的相同 post-commit 边界；该通知对合并 ACK 只能报告整体
-pool 数量，不能把字节拆分归因给单个 node。启用 BeliefKV 时仍明确抛错。
-30 项新 checkout 定向测试通过，**不能**据此声称 BeliefKV physical KV
+pool 数量，不能把字节拆分归因给单个 node。safe point 现先执行原生
+chunk abort 和 HiCache ACK 排空，再执行 BeliefKV mirror/plan，避免在同一轮
+根据 ACK 之前的状态发布动作。启用 BeliefKV 时仍明确抛错。
+组 3 现有一个尚未激活的同步排序/许可切片：在新版 `policy.calc_priority()`
+后、`Req.init_next_round_input()` 及 `PrefillAdder.add_one_req()` 前按
+request/workflow/invocation/context/epoch/attempt 身份选择 tagged 候选；
+过期或无授权者被跳过，未标记请求保持原生位置，且跳过不会结束后续
+候选遍历。FULL/MAMBA 共享容量、Mamba slot 和 Host load-back 的最终
+资源验收仍由原生 `PrefillAdder` 执行。该接口不复用 rc1 的单值
+`kv_bytes_per_token` admission ticket；也没有完成可运行的 runtime
+plan producer、physical ACK 对账或预测动作，不能视作 group 3 已验收。
+74 项迁移定向测试（含本仓库 observer/selection 测试）通过，
+**不能**据此声称 BeliefKV physical KV
 操作、admission、动作 ACK 对账或预测调度已迁移。
 本仓库的 `beliefkv/runtime/sglang_v0520_observer.py` 另提供 FULL-token、
 MAMBA-slot 和 Host pool 的**只读静态容量上限和占用计数**；两个 device 子池
@@ -126,5 +137,11 @@ chat、解析后的工具调用和工具结果续写均通过。启用 HiCache �
 本次请求未证明真实 D2H/H2D 或 BeliefKV physical action。日志还提示
 `sglang-kernel` 缺少 `kvcacheio.get_device_accessible_ptr` 而使用原始
 Host 地址作为 kernel pointer；需在真实传输 gate 单独验证。
+同日使用带 staging patch 的独立 checkout，开启 4 GiB HiCache，
+并发的原生 chat/tool 请求与携带 metadata 的请求都通过 disabled-path
+smoke。默认 FlashInfer sampling 首次 JIT 编译失败：环境中的 `nvcc`
+为 CUDA 13.4，而 `cuda_runtime_api.h` 标记 CUDA 13.0，CCCL 报 compiler 与
+toolkit headers 不兼容。改用原生 `--sampling-backend pytorch` 后通过，
+但不能以此后端做正式吞吐对比；实验前必须对齐工具链并复验默认采样。
 原 rc1 的正式 patch/profile 是
 `perf-ownership` 而非本次作为对照的 `dynamic-running`；不可混用旧实验结论。

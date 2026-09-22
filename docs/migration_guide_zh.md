@@ -38,6 +38,10 @@ GPU 空闲后可先运行 `bash scripts/launch_qwen35_native_v0520.sh`（必要�
 `conda run -n beliefkv-next python scripts/smoke_qwen35_native_v0520.py`。
 该 smoke 检查原生对话、工具调用解析和工具结果后续写；不检查
 BeliefKV 的 D2H/H2D、allocator ownership 或 predictive 调度。
+当前 `beliefkv-next` 的 CUDA 13.4 `nvcc` 与 13.0 runtime headers 对
+FlashInfer sampling JIT 不兼容。仅验证带 staging patch 的 disabled path
+时可设置 `PYTHONPATH=third_party/sglang-v0.5.20/python` 并在启动脚本末尾
+传入 `--sampling-backend pytorch`；此配置不用于正式吞吐实验。
 新环境 CUDA 13 wheel 的 `libcudart.so.13` 位于 `nvidia/cu13/lib` 而不是
 `lib64`，且没有 JIT 链接所需的未版本化 `libcudart.so`。启动脚本在该 conda
 环境内创建指向 `libcudart.so.13` 的符号链接，并为 JIT 编译和运行时设置
@@ -48,6 +52,8 @@ attention 状态。此数字不是完整的 GPU/Host 物理工作集大小。详
 差异见 `docs/migration_sglang_v0520_audit_zh.md`；在 FULL/MAMBA pool
 容量、物理 ownership、事务 ACK、retraction、预测动作都经真实 GPU
 验证前，新环境只能运行原生对照，不允许打开 BeliefKV 物理动作。
+新版本明确重用 native allocator/HiCache、仅由 BeliefKV 提供因果决策和
+action-local 物理指令的边界，见 `docs/v0520_scheduler_redesign_zh.md`。
 更换模型后训练集 tokenization 和硬件服务率都会变化，必须重训或重新
 校准 predictor，并重新测 GPU/PCIe artifact；不得对旧 64-root
 baseline 直接做跨模型吞吐差。
