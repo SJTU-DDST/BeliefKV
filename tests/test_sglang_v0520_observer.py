@@ -323,12 +323,16 @@ def _node(node_id: int, parent=None, *, device=(), host=(), mamba_host=False):
         host_value=list(host) if host else None,
         lock_ref=0,
         host_lock_ref=0,
+        session_ref=0,
+        session_ids=None,
     )
     mamba = ComponentData(
         value=[1] if device else None,
         host_value=[1] if mamba_host else None,
         lock_ref=0,
         host_lock_ref=0,
+        session_ref=0,
+        session_ids=None,
     )
     return UnifiedTreeNode(
         id=node_id,
@@ -346,6 +350,10 @@ def test_node_closure_captures_only_requested_ancestry() -> None:
     ancestor = _node(4, root, device=[1, 2], host=[10, 11], mamba_host=True)
     leaf = _node(5, ancestor, device=[3])
     leaf.component_data[0].lock_ref = 2
+    leaf.component_data[0].session_ref = 2
+    leaf.component_data[0].session_ids = {"agent-a"}
+    leaf.component_data[2].session_ref = 1
+    leaf.component_data[2].session_ids = {"agent-b"}
     leaf.write_through_pending_id = 5
     cache.tree_core = UnifiedTreeCore(node_by_id=lambda node_id: {5: leaf}[node_id])
     result = observe_unified_node_closure(cache, 5)
@@ -354,6 +362,10 @@ def test_node_closure_captures_only_requested_ancestry() -> None:
     assert result.nodes[0].parent_id == 4
     assert result.nodes[0].full_device_tokens == 1
     assert result.nodes[0].full_device_locks == 2
+    assert result.nodes[0].full_session_refs == 2
+    assert result.nodes[0].mamba_session_refs == 1
+    assert result.nodes[0].full_session_leaf_count == 1
+    assert result.nodes[0].mamba_session_leaf_count == 1
     assert result.nodes[0].pending_write_id == 5
     assert result.nodes[1].full_host_tokens == 2
     assert result.nodes[1].mamba_host_present
@@ -399,6 +411,19 @@ def test_node_closure_rejects_invalid_identity_or_pending(field, value) -> None:
     cache = _cache()
     node = _node(5)
     setattr(node, field, value)
+    cache.tree_core = UnifiedTreeCore(node_by_id=lambda node_id: node)
+    assert not observe_unified_node_closure(cache, 5).observable
+
+
+@pytest.mark.parametrize(
+    "session_ref,session_ids",
+    [(-1, None), (True, None), (0, set()), (0, {"", "valid"}), (0, {str(i) for i in range(65)})],
+)
+def test_node_closure_rejects_unknown_session_reference(session_ref, session_ids) -> None:
+    cache = _cache()
+    node = _node(5)
+    node.component_data[0].session_ref = session_ref
+    node.component_data[0].session_ids = session_ids
     cache.tree_core = UnifiedTreeCore(node_by_id=lambda node_id: node)
     assert not observe_unified_node_closure(cache, 5).observable
 

@@ -22,6 +22,9 @@ request metadata、scheduler 生命周期及 cache-mode 原生 ACK 观察 hook
 接口；未标记请求继续按 native order，最终 FULL/MAMBA 资源验收仍在
 SGLang `PrefillAdder`。目前没有可运行的 v0.5.20 plan producer，
 不能把此接口视为新模型预测调度已接入。
+有界 plan 编译器可以在安全点把*已有*语义排序绑定到 request/context/
+epoch/attempt 和原生 session ID/generation，失效授权会被拒绝；
+它不生成预测排序，也尚未接入新版本 runtime。
 safe point 已改为原生 HiCache ACK 排空后再刷新 BeliefKV mirror/plan；
 这只保证 ACK 的观察顺序，不构成 transfer command 与合并 ACK 的归因。
 **下文所有 P5/P6 在线能力与旧实验结果仍仅指旧模型/旧 SGLang 合同**。
@@ -33,6 +36,14 @@ safe point 已改为原生 HiCache ACK 排空后再刷新 BeliefKV mirror/plan�
 PREPARE/COMMIT/PREFETCH 授权。现可对 Python `UnifiedTreeCore` 的一个
 指定 node 及其祖先读取有界 FULL/MAMBA 驻留、锁和 pending 状态；Rust
 tree 不支持该观察路径。节点快照没有原子 generation 或可转移性证明。
+只读闭包额外区分 FULL/MAMBA 的 session 引用与叶标记数；
+这些引用是可被驱逐的软保护，不是独占所有权，也不是物理命令授权。
+固定 v0.5.20 原生实现 radix 前缀共享与可选 session 引用保留，
+**没有**与 agent TOOL 生命周期集成的自动 KV 保活，亦没有提前
+Host -> GPU 的预测式恢复。原生 storage prefetch 为 storage -> Host，
+原生 H2D load-back 在请求准入时发生。BeliefKV 仍须实现工具事件
+到 session 关闭的生命周期、action-local 物理动作及 ACK 对账；
+具体边界见 `docs/v0520_scheduler_redesign_zh.md`。
 2026-09-22 在 H200 上以安装的 v0.5.20 wheel、Qwen3.5-35B-A3B BF16
 完成不带 HiCache 及启用 4 GiB HiCache 两组原生
 chat -> tool call -> tool result 续写 smoke；后者确认挂载了 KV + MAMBA

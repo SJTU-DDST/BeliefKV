@@ -9,6 +9,7 @@ import pytest
 from beliefkv.runtime.sglang_v0520_admission import (
     NativePrefillPlan,
     PrefillCandidateKey,
+    compile_native_prefill_plan,
     select_native_prefill_candidates,
 )
 
@@ -17,6 +18,8 @@ def _req(request_id: str, *, epoch: int = 0, attempt: int = 0, tagged: bool = Tr
     return NS(
         rid=request_id,
         cache_request_handle=NS(attempt_id=attempt),
+        session_id=None,
+        session_generation=None,
         beliefkv_metadata=(
             {
                 "root_workflow_id": "workflow",
@@ -38,6 +41,8 @@ def _key(req) -> PrefillCandidateKey:
         context_id=req.beliefkv_metadata["context_id"],
         context_epoch=req.beliefkv_metadata["context_epoch"],
         attempt_id=req.cache_request_handle.attempt_id,
+        session_id=req.session_id,
+        session_generation=req.session_generation,
     )
 
 
@@ -110,3 +115,67 @@ def test_rejects_duplicate_authorizations_and_native_request_ids() -> None:
         select_native_prefill_candidates(
             (req, req), plan=NativePrefillPlan(1, (_key(req),)), current_semantic_revision=1
         )
+
+
+def test_native_session_generation_change_invalidates_prefill_authorization() -> None:
+    req = _req("tagged")
+    req.session_id = "context-1"
+    req.session_generation = 7
+    plan = NativePrefillPlan(3, (_key(req),))
+    req.session_generation = 8
+    result = select_native_prefill_candidates(
+        (req,), plan=plan, current_semantic_revision=3
+    )
+    assert result.candidates == ()
+    assert result.rejected == (("tagged", "identity_changed"),)
+
+
+def test_session_controller_identity_and_invalid_session_fail_closed() -> None:
+    req = _req("tagged")
+    req.session = NS(session_id="stream-1")
+    plan = NativePrefillPlan(
+        3, (PrefillCandidateKey("tagged", "workflow", "tagged", "context-tagged", 0, 0, "stream-1"),)
+    )
+    assert select_native_prefill_candidates(
+        (req,), plan=plan, current_semantic_revision=3
+    ).candidates == (req,)
+    req.session_id = "different-session"
+    assert select_native_prefill_candidates(
+        (req,), plan=plan, current_semantic_revision=3
+    ).rejected == (("tagged", "invalid_identity"),)
+    req.session = None
+    req.session_id = "stream-1"
+    req.session_generation = True
+    assert select_native_prefill_candidates(
+        (req,), plan=plan, current_semantic_revision=3
+    ).rejected == (("tagged", "invalid_identity"),)
+
+
+def test_compiler_binds_session_and_only_explicitly_prioritized_requests() -> None:
+    first, last, native = _req("first"), _req("last"), _req("native", tagged=False)
+    first.session_id = "agent-1"
+    first.session_generation = 4
+    plan = compile_native_prefill_plan((last, first), semantic_revision=7)
+    assert plan.prioritized == (_key(last), _key(first))
+    selection = select_native_prefill_candidates(
+        (first, native, last), plan=plan, current_semantic_revision=7
+    )
+    assert selection.candidates == (last, native, first)
+    first.session_generation = 5
+    selection = select_native_prefill_candidates(
+        (first, native, last), plan=plan, current_semantic_revision=7
+    )
+    assert selection.candidates == (native, last)
+    assert selection.rejected == (("first", "identity_changed"),)
+
+
+def test_compiler_rejects_missing_identity_duplicate_and_oversized_decision() -> None:
+    req = _req("first")
+    with pytest.raises(ValueError, match="invalid tagged identity"):
+        compile_native_prefill_plan((_req("plain", tagged=False),), semantic_revision=1)
+    with pytest.raises(ValueError, match="duplicate request ID"):
+        compile_native_prefill_plan((req, req), semantic_revision=1)
+    with pytest.raises(ValueError, match="exceeds bound"):
+        compile_native_prefill_plan((req, req), semantic_revision=1, max_candidates=1)
+    with pytest.raises(ValueError, match="invalid semantic revision"):
+        compile_native_prefill_plan((req,), semantic_revision=True)

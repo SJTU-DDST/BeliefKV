@@ -82,6 +82,14 @@ MAMBA-slot 和 Host pool 的**只读静态容量上限和占用计数**；两个
 index；Rust tree 的 `node_by_id` 尚未实现，该路径明确 fail closed。
 这些值不提供原子 revision、可迁移性判定或动作授权；mock 测试通过，
 尚未在真实 GPU cache 上验收。
+后续固定 checkout 审计确认：`UnifiedTreeCore` 的 page-aligned radix
+共享与 node split 已原生实现；可选 session refs 为驱逐软优先级，
+不是 tool-call-aware 保活；storage prefetch 是 storage -> Host，
+admission load-back 是请求到达后的 Host -> GPU，均不是提前预测
+恢复。`beliefkv_metadata` 只是传输契约，开启 BeliefKV 仍 fail closed。
+有界准入编译器现将 native session ID/generation 一并纳入候选授权
+身份；只读 FULL/MAMBA node 快照记录 session 引用计数/叶标记数，
+**不得**由此推断独占 ownership 或 physical action 已实现。
 组 1-5 + 改写本仓库 runtime/contract 才能定义为“基础 BeliefKV 可运行补丁集”；
 要复现题设 `dynamic-running.patch` 的行为还需组 6。**没有现成可运行的
 v0.5.20 可运行补丁文件**；只搬运上游 diff 或只加入口字段不构成完整补丁集。

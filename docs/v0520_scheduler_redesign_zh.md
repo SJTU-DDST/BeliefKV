@@ -5,6 +5,25 @@
 cache mode。其他 cache backend、TP/PP、disaggregation 和 speculative
 仍需独立验收。
 
+## 固定 v0.5.20 的原生能力
+
+以固定 checkout `94602c9c` 的源码和测试为准，不把后续版本或 RFC
+当成已有功能：
+
+- `UnifiedTreeCore` 原生按 token/page 匹配、分裂 radix node 和共享前缀；
+  BeliefKV 不重建第二棵共享前缀树，也不能把共享祖先算作一个 agent
+  的独占 reclaim 字节。
+- `--enable-session-radix-cache` 可给 FULL/MAMBA 维护 session 引用；
+  原生驱逐会优先保留这些节点，但这是软优先级而不是 pin。
+  必须明确传递 session ID、处理 session generation，并在 context
+  结束时关闭 session，否则既不能保证工具等待期保活，又可能造成 Host 污染。
+  当前 agent 客户端还没有完成这条生命周期接线。
+- v0.5.20 **没有**根据 agent 的 `TOOL_START/RETURN` 自动保活或恢复 KV。
+  已有 `_prefetch_kvcache` 只针对 storage -> Host；`init_load_back`
+  在请求准入时从 Host -> GPU。二者都不等于 BeliefKV 预测的、请求
+  reentry 前的 `PREFETCH_GPU`。工具时间/依赖预测和 PREPARE/PREFETCH
+  动作时机仍由 BeliefKV 决策。
+
 ## 保留的决策
 
 - RCCG 与 Action frontier 保有 agent 因果关系、JOIN 依赖和可见请求资格；
@@ -17,6 +36,9 @@ cache mode。其他 cache backend、TP/PP、disaggregation 和 speculative
   校验的候选，未授权或过期的 tagged 请求跳过并继续扫描下一候选，
   untagged 请求保持其原生相对位置。此切片已写入 staging，但 runtime
   plan producer 尚未接线，服务仍 fail closed。
+  `compile_native_prefill_plan` 可以将已有语义排序在安全点绑定到
+  request/context/epoch/attempt 和 native session ID/generation；
+  session 在授权与应用之间变化时拒绝 tagged 候选，原生请求不受影响。
 
 ## 交还给上游的机制
 
@@ -39,7 +61,9 @@ cache mode。其他 cache backend、TP/PP、disaggregation 和 speculative
 
 1. 将 native pool 的共享字节占用、FULL/token、MAMBA/slot，以及 node
    本地锁和 split 后的 closure 映射进 BeliefKV 的有界 physical view。
-   当前只读 observer 不包含原子 revision，不能授权迁移。
+   当前只读 observer 已暴露 FULL/MAMBA 的 session 引用计数及叶
+   标记数，但没有原子 revision、全部共享 owner 或独占 reclaim 证明，
+   不能据此授权迁移；session 引用也不等同于锁。
 2. 为每个提交的动作建立独立 command identity，区分 *提交* 与 *DMA
    完成*。原生 merged ACK 只有 node IDs 与 pool 总数，缺少 per-node
    bytes/command ID；不能按 ACK 数量猜测 BeliefKV 的完成证书。

@@ -22,6 +22,8 @@ class PrefillCandidateKey:
     context_id: str
     context_epoch: int
     attempt_id: int
+    session_id: str | None = None
+    session_generation: int | None = None
 
 
 @dataclass(frozen=True)
@@ -46,15 +48,64 @@ def _request_key(req: object) -> PrefillCandidateKey | None:
     values = tuple(metadata.get(field) for field in fields)
     epoch = metadata.get("context_epoch")
     attempt = getattr(handle, "attempt_id", None)
+    session_id = getattr(req, "session_id", None)
+    session = getattr(req, "session", None)
+    if session is not None:
+        session_ref = getattr(session, "session_id", None)
+        if session_id is not None and session_id != session_ref:
+            return None
+        session_id = session_ref
+    session_generation = getattr(req, "session_generation", None)
     if (
         any(type(value) is not str or not value for value in values)
         or type(epoch) is not int
         or epoch < 0
         or type(attempt) is not int
         or attempt < 0
+        or (session_id is not None and (type(session_id) is not str or not session_id))
+        or (
+            session_generation is not None
+            and (
+                type(session_generation) is not int
+                or session_generation < 0
+                or session_id is None
+            )
+        )
     ):
         return None
-    return PrefillCandidateKey(request_id, *values, epoch, attempt)
+    return PrefillCandidateKey(
+        request_id, *values, epoch, attempt, session_id, session_generation
+    )
+
+
+def compile_native_prefill_plan(
+    prioritized: Sequence[object],
+    *,
+    semantic_revision: int,
+    max_candidates: int = 512,
+) -> NativePrefillPlan:
+    """Bind a safe-point ordering decision to live request/session identities.
+
+    `prioritized` is an already-authorized order from the semantic planner.
+    This function does not infer capacity or make admission decisions.
+    """
+    if type(semantic_revision) is not int or semantic_revision < 0:
+        raise ValueError("invalid semantic revision")
+    if type(max_candidates) is not int or max_candidates <= 0:
+        raise ValueError("max_candidates must be positive")
+    if len(prioritized) > max_candidates:
+        raise ValueError("prefill plan exceeds bound")
+    keys: list[PrefillCandidateKey] = []
+    seen: set[str] = set()
+    for req in prioritized:
+        key = _request_key(req)
+        if key is None:
+            raise ValueError("prefill plan contains an invalid tagged identity")
+        if key.request_id in seen:
+            raise ValueError("duplicate request ID in prefill plan")
+        seen.add(key.request_id)
+        keys.append(key)
+    return NativePrefillPlan(semantic_revision, tuple(keys))
 
 
 def select_native_prefill_candidates(

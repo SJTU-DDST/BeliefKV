@@ -70,6 +70,10 @@ class UnifiedNodeSummary:
     full_host_locks: int
     mamba_device_locks: int
     mamba_host_locks: int
+    full_session_refs: int
+    mamba_session_refs: int
+    full_session_leaf_count: int
+    mamba_session_leaf_count: int
     pending_write_id: int | None
     pending_load_id: int | None
 
@@ -321,6 +325,24 @@ def observe_unified_node_closure(
                 for item in (full, mamba)
                 for field in ("lock_ref", "host_lock_ref")
             )
+            session_refs = tuple(
+                _bounded(item.session_ref, 2**31 - 1, "session reference count")
+                for item in (full, mamba)
+            )
+            session_leaves = []
+            for item in (full, mamba):
+                ids = item.session_ids
+                if ids is not None:
+                    if type(ids) is not set or not 0 < len(ids) <= 64:
+                        raise ValueError("session leaf identities exceed local bound")
+                    if any(
+                        type(session_id) is not str or not session_id
+                        for session_id in ids
+                    ):
+                        raise ValueError("invalid session leaf identities")
+                session_leaves.append(
+                    0 if ids is None else len(ids)
+                )
             pending_write = node.write_through_pending_id
             pending_load = node.load_back_pending_id
             for pending in (pending_write, pending_load):
@@ -339,6 +361,10 @@ def observe_unified_node_closure(
                     full_host_locks=locks[1],
                     mamba_device_locks=locks[2],
                     mamba_host_locks=locks[3],
+                    full_session_refs=session_refs[0],
+                    mamba_session_refs=session_refs[1],
+                    full_session_leaf_count=session_leaves[0],
+                    mamba_session_leaf_count=session_leaves[1],
                     pending_write_id=pending_write,
                     pending_load_id=pending_load,
                 )
