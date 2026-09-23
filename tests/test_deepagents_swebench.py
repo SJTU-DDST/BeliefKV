@@ -143,6 +143,40 @@ def test_agent_control_summary_separates_protocol_and_guard_outcomes(
     assert summary["duplicate_tool_calls_suppressed"] == 1
 
 
+def test_native_child_natural_language_is_a_terminal_return(
+    tmp_path: Path,
+) -> None:
+    audit_path = tmp_path / "native-child-audit.jsonl"
+    audit = JsonlAudit(audit_path)
+    model = FakeMessagesListChatModel(
+        responses=[AIMessage(content="Found the failing ordering path and test.")],
+    )
+    guard = AgentLoopGuardMiddleware(
+        policy=LoopGuardPolicy(),
+        completion_schema=ChildCompletion,
+        completion_instruction="Return the result to the parent.",
+        audit=audit,
+        scope="native-child-test",
+        accept_natural_completion=True,
+    )
+    agent = create_agent(model=model, tools=[], middleware=[guard])
+
+    result = agent.invoke(
+        {"messages": [HumanMessage(content="Inspect the assigned issue.")]},
+        config={"recursion_limit": 16},
+    )
+    audit.close()
+
+    assert result["messages"][-1].content == (
+        "Found the failing ordering path and test."
+    )
+    summary = summarize_agent_control(audit_path)
+    assert summary["natural_language_return_count"] == 1
+    assert summary["protocol_repaired_completions"] == 0
+    assert summary["event_counts"].get("agent_unstructured_stop_detected", 0) == 0
+    assert summary["event_counts"].get("agent_protocol_repair_attempt", 0) == 0
+
+
 def test_direct_runtime_trace_reports_pairing_and_subagent_lifecycle(
     tmp_path: Path,
 ) -> None:
@@ -1072,6 +1106,16 @@ def test_parallel_analysis_profile_builds_three_read_only_orthogonal_roles(
         "do not modify files" in item["system_prompt"].lower()
         for item in specs
     )
+    assert all("response_format" not in item for item in specs)
+    assert all("valid child return" in item["system_prompt"] for item in specs)
+    child_guards = [
+        middleware
+        for item in specs
+        for middleware in item["middleware"]
+        if isinstance(middleware, AgentLoopGuardMiddleware)
+    ]
+    assert len(child_guards) == len(specs)
+    assert all(item.accept_natural_completion for item in child_guards)
 
 
 def test_native_subagent_prompt_excludes_natural_fanout_policy() -> None:

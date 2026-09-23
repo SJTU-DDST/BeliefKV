@@ -1642,6 +1642,14 @@ approach, add concrete evidence, edit/test when appropriate, or report the block
 honestly. Do not treat equivalent probes as progress.
 """
 
+NATIVE_CHILD_RETURN_INSTRUCTION = """
+NATIVE CHILD RETURN
+When your assigned workstream is complete or you are concretely blocked, return your
+result to the parent in concise natural language and stop. A normal final assistant
+message is a valid child return; do not emit JSON or call a completion-format tool.
+Separate findings from uncertainty, and never claim tests or edits you did not perform.
+"""
+
 DELEGATED_TASK_FOCUS_INSTRUCTION = """
 DELEGATED TASK SCOPE
 Work only on the specific deliverable in the assigned task; do not turn it into a
@@ -1651,8 +1659,9 @@ analysis task, return the smallest concrete evidence that answers the question. 
 implementation task, change only the assigned area and run one focused repository test.
 After a tool failure, read its actual error and change the command or method; never
 repeat an unchanged failing call. Once the assigned deliverable is supported by evidence,
-return ChildCompletion instead of continuing broad exploration. If blocked, report the
-exact command, path, and observed failure without guessing another repository root.
+return the result to the parent instead of continuing broad exploration. If blocked,
+report the exact command, path, and observed failure without guessing another repository
+root.
 """
 
 AUTONOMOUS_NATURAL_SUBAGENT_PROMPT = """
@@ -1820,6 +1829,7 @@ def _loop_guard(
     completion_instruction: str,
     audit: JsonlAudit,
     scope: str,
+    accept_natural_completion: bool = False,
     policy: LoopGuardPolicy | None = None,
     activation_deadline: ActivationDeadline | None = None,
 ) -> AgentLoopGuardMiddleware:
@@ -1834,6 +1844,7 @@ def _loop_guard(
             if completion_schema is WorkflowCompletion
             else frozenset()
         ),
+        accept_natural_completion=accept_natural_completion,
         activation_deadline=activation_deadline,
     )
 
@@ -2100,28 +2111,25 @@ AUTONOMOUS_SUBAGENT_SPECS = (
         "repository-explorer",
         "Trace implementation paths and report concrete code evidence.",
         "Investigate the assigned repository question deeply. Use filesystem and "
-        "execute tools, avoid broad unrelated edits, and finish with the required "
-        "ChildCompletion structured response.",
+        "execute tools and avoid broad unrelated edits. Report concrete evidence and "
+        "remaining uncertainty.",
     ),
     (
         "test-analyst",
         "Reproduce failures and identify focused regression tests.",
         "Analyze or reproduce the assigned failure in the sandbox. Report exact "
-        "commands, relevant tests, and likely regression coverage through the "
-        "required ChildCompletion structured response.",
+        "commands, relevant tests, and likely regression coverage.",
     ),
     (
         "implementation-agent",
         "Implement and validate a self-contained part of the fix.",
         "Implement the delegated part in the shared workspace and run focused "
-        "tests. Finish with the required ChildCompletion structured response, "
-        "including files changed, test results, and unresolved risks.",
+        "tests. Report files changed, test results, and unresolved risks.",
     ),
     (
         str(GENERAL_PURPOSE_SUBAGENT["name"]),
         str(GENERAL_PURPOSE_SUBAGENT["description"]),
-        str(GENERAL_PURPOSE_SUBAGENT["system_prompt"])
-        + "\n\nFinish with the required ChildCompletion structured response.",
+        str(GENERAL_PURPOSE_SUBAGENT["system_prompt"]),
     ),
 )
 
@@ -2194,13 +2202,13 @@ def _autonomous_subagents(
                 "system_prompt": (
                     system_prompt
                     + DELEGATED_TASK_FOCUS_INSTRUCTION
+                    + NATIVE_CHILD_RETURN_INSTRUCTION
                     + TOOL_PROGRESS_INSTRUCTION
                     + SANDBOX_PATH_CONTRACT
                     + repository_sandbox_contract(workload)
                 ),
                 "model": model,
                 "tools": [] if read_only else [_workspace_patch_tool(backend)],
-                "response_format": ToolStrategy(ChildCompletion),
                 "middleware": [
                     TodoListMiddleware(),
                     _filesystem_middleware(
@@ -2232,9 +2240,10 @@ def _autonomous_subagents(
                     _loop_guard(
                         config,
                         completion_schema=ChildCompletion,
-                        completion_instruction=CHILD_COMPLETION_INSTRUCTION,
+                        completion_instruction=NATIVE_CHILD_RETURN_INSTRUCTION,
                         audit=backend.audit,
                         scope=scope,
+                        accept_natural_completion=True,
                         activation_deadline=(
                             deadline_controller.deadline if deadline_controller else None
                         ),
@@ -3208,6 +3217,7 @@ def summarize_agent_control(path: Path) -> dict[str, Any]:
             and not bool(item.get("protocol_normalized", False))
             for item in semantic
         ),
+        "natural_language_return_count": event_counts["agent_natural_return"],
         "forced_semantic_completions": sum(
             bool(item.get("forced", False)) for item in semantic
         ),
@@ -3761,6 +3771,14 @@ def run_experiment(config: DeepAgentsExperimentConfig) -> dict[str, Any]:
                 int(
                     item.get("agent_control", {}).get(
                         "natural_semantic_completions", 0
+                    )
+                )
+                for item in results
+            ),
+            "natural_language_return_count": sum(
+                int(
+                    item.get("agent_control", {}).get(
+                        "natural_language_return_count", 0
                     )
                 )
                 for item in results

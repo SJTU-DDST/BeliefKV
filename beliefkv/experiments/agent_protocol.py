@@ -218,8 +218,6 @@ class LoopGuardState(AgentState[Any]):
     protocol_origin_chars: NotRequired[
         Annotated[int, UntrackedValue, PrivateStateAttr]
     ]
-
-
 def _canonical_tool_call(tool_call: dict[str, Any]) -> str:
     payload = {
         "name": str(tool_call.get("name", "")),
@@ -553,6 +551,7 @@ class AgentLoopGuardMiddleware(AgentMiddleware[LoopGuardState, Any, Any]):
         audit: AuditSink | None,
         scope: str,
         finalization_tool_names: frozenset[str] = frozenset(),
+        accept_natural_completion: bool = False,
         clock: Callable[[], float] = time.monotonic,
         activation_deadline: ActivationDeadline | None = None,
     ) -> None:
@@ -564,6 +563,7 @@ class AgentLoopGuardMiddleware(AgentMiddleware[LoopGuardState, Any, Any]):
         self.audit = audit
         self.scope = scope
         self.finalization_tool_names = finalization_tool_names
+        self.accept_natural_completion = accept_natural_completion
         self.clock = clock
         self.activation_deadline = activation_deadline
 
@@ -1113,6 +1113,23 @@ class AgentLoopGuardMiddleware(AgentMiddleware[LoopGuardState, Any, Any]):
             return {
                 "structured_response": normalized,
                 "protocol_normalized": True,
+                "jump_to": "end",
+            }
+
+        if self.accept_natural_completion:
+            text = _message_text(last_ai_message)
+            self._audit(
+                "agent_natural_return",
+                content_sha256=hashlib.sha256(
+                    text.encode("utf-8", errors="replace")
+                ).hexdigest(),
+                content_chars=len(text),
+                guard_intervened=bool(
+                    state.get("guard_ever_intervened", False)
+                    or state.get("guard_forcing_completion", False)
+                ),
+            )
+            return {
                 "jump_to": "end",
             }
 
