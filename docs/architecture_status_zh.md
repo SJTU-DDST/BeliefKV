@@ -74,8 +74,23 @@ limit、sandbox/命令超时，以及对已确认重复物理失败请求的 cir
 原始 trace 和 dataset export 完整，产生 1 个自然 child RETURN / JOIN_ALL
 及 1 个 eligible JOIN 标签；另外 2 个 workflow 没有 child。pilot 仅验证
 运行配置与数据链路，不进入训练集。唯一重复失败意图发生在 JOIN 之后；
-正式批次仍需统计此类 intervention 和删失样本。本次 pilot 后，正式
-128-root 训练采集尚未启动。
+正式批次仍需统计此类 intervention 和删失样本。
+
+正式 v5 采集第一批已完成：64 个 workflow trace 均结束，耗时约 951.9 秒，
+其中 21 个通过 task correctness/measurement gate。仅 1 个 root 发起了动态
+delegation，共 2 个 child 和 2 次 JOIN_ALL；dataset exporter 只标出 1 个
+eligible JOIN。dataset table integrity 通过，native writer dropped/failed 均为
+0；4,040 个 agent-visible request call 中 3,950 个有完整 native request
+evidence，另有 90 个缺失或不完整。数据满足 local train export 条件，但
+formal training 仍不合格（train-only 且观测到 runtime intervention），不能
+据此宣称 JOIN 时间头已有足够训练样本。
+
+该批实际发生 14 次 512-step hard-limit finalization，以及 15 个 workflow 中
+共 43 次重复失败工具意图抑制，并生成 43 条 censor event。这证明 semantic
+pattern/soft-budget 虽为 observe-only，硬上限和 circuit breaker 仍会干预。
+第二批目前处于 Docker image pull 阶段；第一批服务已关闭，因此两批间 GPU
+空闲属于正常状态。runner 只要求每批至少 1 条 eligible JOIN 才拟合，属于
+自动化门槛而非统计充分性标准；第二批完成后需单独判断是否训练/采用 checkpoint。
 
 新的训练采集计划
 `qwen35_native_reactive_128root_train_plan_2026-09-23.json` 使用身份 v4，
