@@ -27,7 +27,10 @@ The latest Qwen3.5 native reactive collection attempt completed its first
 measurement gates. It emitted only two children from one root and one eligible
 JOIN label; 14 roots hit the 512-step safety fuse. This is diagnostic evidence,
 not a sufficient JOIN training collection. The old runner was stopped during
-the second shard's image preparation, and no collection/server process is active.
+the second shard's image preparation. The replacement is running in tmux session
+`qwen35-overlap-v1`, currently preparing Docker images; the last check showed no
+SGLang process and an idle GPU. Raw output is under
+`experiments/raw/qwen35_native_reactive_overlapped_128root_train_20260923_v1/`.
 
 The 128-root replacement is one frozen collection, not two sequential service
 runs. It merges the two disjoint 64-root train shards, submits roots 0-63 at
@@ -49,6 +52,10 @@ bounded completion, commonly intervening at step 482. Qwen3-Coder also hit a
 repeating the same command before a 2048-step fuse stopped it. Keep the current
 fuse for this collection and censor post-intervention full-episode/JOIN labels;
 do not silently treat a hard-finalized workflow as a natural terminal sample.
+
+The first action gate after startup is to verify one 128-client collector against
+one server, the second 64-root arrival at `t=60s`, and model-selected initial
+fan-out counts in the runtime traces. Do not fit on the earlier sequential shard.
 
 The graph48 gate passed on the H200: the static FULL/MAMBA capacities remain
 1,798,995 tokens and 513 slots, CUDA graphs cover decode batch 48, 64/64

@@ -89,7 +89,10 @@ formal training 仍不合格（train-only 且观测到 runtime intervention）�
 共 43 次重复失败工具意图抑制，并生成 43 条 censor event。这证明 semantic
 pattern/soft-budget 虽为 observe-only，硬上限和 circuit breaker 仍会干预。
 原串行 runner 已在第二批 Docker image pull 阶段停止；第一批结果保留作诊断，
-不是用户要求的 128-root 重叠高压训练数据。当前没有活动实验或 SGLang 进程。
+不是用户要求的 128-root 重叠高压训练数据。修正版已于 2026-09-23 18:24
+通过 tmux session `qwen35-overlap-v1` 启动，当前在预拉 workload 镜像；
+最近一次检查时 SGLang 尚未启动、GPU 空闲。原始输出目录为
+`experiments/raw/qwen35_native_reactive_overlapped_128root_train_20260923_v1/`。
 
 原 v4 计划把两个 64-root batch 顺序运行，每批独立启动和关闭服务，不能形成
 跨批次 KV overlap。修正版将两个不重复的 64-root manifest 合并为一个 128-root
@@ -114,8 +117,8 @@ run 到 step 2017 仍反复执行相同命令，随后由 2048-step fuse 收尾�
 硬保险丝并将干预后的完整 episode/JOIN 标签删失；是否提高 fuse 必须单独权衡长
 循环风险，不能把“取消 guard”当作无成本训练配置。
 
-修正版 128-root overlapped plan 尚未启动；计划门槛是先完成单服务、双波提交和
-首轮 fanout 回归检查，再启动正式采集。训练是否可用仍按 trace 完整性、干预删失、
+修正版 128-root overlapped plan 已启动；正式采集开始后仍需确认单服务、双波提交、
+首轮 fanout 数和 trace 完整性。训练是否可用仍按干预删失、
 有效 SPAWN/JOIN 标签量和 split 身份判断，不能仅以每批出现 1 条 eligible JOIN
 作为充分的数据量标准。
 
