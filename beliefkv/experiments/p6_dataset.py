@@ -117,6 +117,21 @@ def export_p6_training_dataset(
     summary = _merge_workload_summaries(
         summaries, selected_instance_ids=selected_instances
     )
+    runtime_summary = (
+        _read_object(runtime_summary_path)
+        if runtime_summary_path.is_file()
+        else {}
+    )
+    run_id, run_id_source = _resolve_run_identity(
+        source,
+        workload_manifest=manifest,
+        runtime_summary=runtime_summary,
+        evidence_paths=(
+            server_events_path,
+            audit_path,
+            transfer_path,
+        ),
+    )
     collection_contracts = tuple(
         _read_collection_contract(root) for root in workload_roots
     )
@@ -128,14 +143,6 @@ def export_p6_training_dataset(
         allow_formal_local_training=allow_formal_local_training,
         native_reactive=_native_reactive,
     )
-    runtime_summary = (
-        _read_object(runtime_summary_path)
-        if runtime_summary_path.is_file()
-        else {}
-    )
-    run_id = str(manifest.get("run_id") or runtime_summary.get("run_id") or "")
-    if not run_id:
-        raise P6CoverageError("run has no stable run_id")
     workflow_exclusions = _read_workflow_exclusions(source)
     runtime_provenance = _read_runtime_provenance(server)
     runtime_environment_contract = (
@@ -353,6 +360,7 @@ def export_p6_training_dataset(
         "source": {
             "run_dir": str(source),
             "run_id": run_id,
+            "run_id_source": run_id_source,
             "collection_status": collection_status,
             "invalid_source_markers": [path.name for path in invalid_markers],
             "workload_roots": [str(path) for path in workload_roots],
@@ -895,6 +903,55 @@ def _merge_collection_contracts(
         item.get("source_workload_manifest") for item in values
     ]
     return merged
+
+
+def _resolve_run_identity(
+    source: Path,
+    *,
+    workload_manifest: Mapping[str, Any],
+    runtime_summary: Mapping[str, Any],
+    evidence_paths: Sequence[Path],
+) -> tuple[str, str]:
+    candidates: list[tuple[str, str]] = []
+    root_manifest_path = source / "manifest.json"
+    if root_manifest_path.is_file():
+        root_manifest = _read_object(root_manifest_path)
+        value = str(root_manifest.get("run_id") or "").strip()
+        if value:
+            candidates.append((value, "root_manifest"))
+
+    for origin, raw in (
+        ("workload_manifest", workload_manifest),
+        ("runtime_summary", runtime_summary),
+    ):
+        value = str(raw.get("run_id") or "").strip()
+        if value:
+            candidates.append((value, origin))
+
+    distinct_ids = {value for value, _ in candidates}
+    if len(distinct_ids) > 1:
+        raise P6CoverageError(
+            "run identity metadata conflicts: "
+            + ", ".join(f"{origin}={value}" for value, origin in candidates)
+        )
+    if candidates:
+        return candidates[0][0], candidates[0][1]
+
+    # Legacy batch collections did not persist a run UUID. Fingerprinting the
+    # frozen server streams gives the same evidence set a reproducible identity.
+    digest = hashlib.sha256()
+    hashed_paths = 0
+    for path in evidence_paths:
+        if not path.is_file():
+            continue
+        digest.update(path.name.encode("utf-8"))
+        digest.update(b"\0")
+        digest.update(_sha256(path).encode("ascii"))
+        digest.update(b"\0")
+        hashed_paths += 1
+    if not hashed_paths:
+        raise P6CoverageError("run has no stable run_id or fingerprintable evidence")
+    return f"legacy-trace-{digest.hexdigest()[:24]}", "server_trace_fingerprint"
 
 
 def _read_runtime_provenance(server: Path) -> dict[str, Any]:

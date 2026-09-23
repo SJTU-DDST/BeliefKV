@@ -34,6 +34,7 @@ class NativeReactiveTelemetry:
         self._pending: dict[str, float] = {}
         self._active: set[str] = set()
         self._completed: set[str] = set()
+        self._reported_output_tokens: dict[str, int] = {}
         self._launched: dict[int, dict[str, Any]] = {}
         self._previous_completed_mono: float | None = None
         self._sequence = 0
@@ -147,6 +148,7 @@ class NativeReactiveTelemetry:
                 })
                 self._active.add(rid)
             output_before = len(req.output_ids)
+            self._reported_output_tokens.setdefault(rid, output_before)
             extend = max(0, int(getattr(req, "extend_input_len", 0) or 0))
             samples.append({
                 "request_id": rid,
@@ -191,8 +193,13 @@ class NativeReactiveTelemetry:
             if req is None:
                 continue
             if descriptor["phase"] == "decode":
-                sample["token_delta"] = max(
-                    0, len(req.output_ids) - sample["output_tokens_before"]
+                reported_before = self._reported_output_tokens.get(
+                    rid, sample["output_tokens_before"]
+                )
+                output_after = len(req.output_ids)
+                sample["token_delta"] = max(0, output_after - reported_before)
+                self._reported_output_tokens[rid] = max(
+                    reported_before, output_after
                 )
             if req.finished() and rid in self._active:
                 self._emit("events", {

@@ -179,6 +179,22 @@ def test_native_train_preserves_target_local_censoring(tmp_path: Path) -> None:
     assert main(_args(tmp_path, root)) == 0
 
 
+@pytest.mark.parametrize(
+    "plan_id",
+    (
+        "qwen35-native-reactive-v0520-v3",
+        "qwen35-native-reactive-v0520-v4-128root",
+    ),
+)
+def test_native_train_accepts_new_frozen_dynamic_plan_ids(
+    tmp_path: Path, plan_id: str
+) -> None:
+    root = _dataset(tmp_path / plan_id, size=40)
+    _mutate(root, "source.collection_contract.plan_id", plan_id)
+
+    assert main(_args(tmp_path, root)) == 0
+
+
 def test_small_fit_requires_explicit_development_override(tmp_path: Path) -> None:
     root = _dataset(tmp_path / "train")
     args = _args(tmp_path, root)

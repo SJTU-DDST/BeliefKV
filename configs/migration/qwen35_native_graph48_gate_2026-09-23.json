@@ -1,0 +1,20 @@
+{
+  "capacity_artifact": "configs/migration/qwen35_native_hbm_capacity_graph48_2026-09-23.json",
+  "concurrent_request_count": 64,
+  "cuda_graph_decode_observed": true,
+  "cuda_graph_prefill_observed": true,
+  "failed_probe_note": "A temperature=0.2 probe exercised FlashInfer sampling JIT and failed because the environment's CUDA compiler and bundled CCCL headers differ. The production agent runtime uses temperature=0.0; the contract-matched retry passed.",
+  "gate_kind": "qwen35_native_graph48_runtime",
+  "host_pool_gb": 180,
+  "max_observed_queue_requests": 24,
+  "max_observed_running_requests": 47,
+  "max_running_requests": 48,
+  "mamba_usage_peak_observed": 0.37,
+  "mem_fraction_static": 0.94,
+  "passed_request_count": 64,
+  "post_capture_available_gpu_gb": 6.85,
+  "production_sampling_temperature": 0.0,
+  "request_error_count": 0,
+  "schema_version": 1,
+  "sglang_version": "0.5.20"
+}

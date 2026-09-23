@@ -1,6 +1,6 @@
 # BeliefKV Current Execution Plan
 
-Status date: 2026-09-17.
+Status date: 2026-09-23.
 
 This file contains only the active execution order. Completed and superseded
 plans are indexed under `docs/archive/`.
@@ -20,6 +20,34 @@ Primary metrics:
 - synchronous control-plane overhead.
 
 ## Current Evidence
+
+The active migration target is Qwen3.5-35B-A3B BF16 on SGLang v0.5.20.
+The first 64-root native reactive training collection completed with 129
+dynamic subagents and 129 JOIN_ALL events. Seven workflows had harness/runtime
+terminal failures, but all 64 retained complete trace telemetry. The collection
+path now excludes those workflows explicitly instead of discarding the batch,
+and the next frozen collection uses native dynamic one-to-four, multi-round
+delegation rather than forced two-child fan-out.
+
+The forced-two-child v2 collection and its reassessed export are diagnostic
+only and are not inputs to the next model fit. The replacement plan is
+`configs/migration/qwen35_native_reactive_128root_train_plan_2026-09-23.json`:
+two sequential 64-root train batches use disjoint task IDs, for 128 distinct
+workflows under `native_dynamic_1to4`. Each batch gets an independent server
+start, run identity, raw trace directory, and dataset export. Fit only after
+both new exports pass telemetry, split, runtime-prompt, and native SPAWN/JOIN
+checks.
+
+The graph48 gate passed on the H200: the static FULL/MAMBA capacities remain
+1,798,995 tokens and 513 slots, CUDA graphs cover decode batch 48, 64/64
+contract-matched requests completed, and runtime reached 47 running requests
+without OOM. The next collection therefore uses a hard running limit of 48.
+This is an admission/queue experiment, not a claim that GPU utilization will
+rise: the graph32 run already averaged about 94% GPU utilization while queued.
+
+The observed 58% FULL usage peak is effective non-evictable usage, not physical
+HBM residency. Native write-back D2H is triggered by allocator free-slot
+shortfall and can occur while evictable Radix leaves remain physically resident.
 
 The P5 correctness baseline and the bounded predictive transaction machinery
 are frozen at `0ab8c09`. The latest development artifact is FrontierBelief v6:

@@ -127,6 +127,63 @@ def test_native_request_service_and_ack_are_evidence_not_invented_dma(
     assert status["record_counts"] == {"audit": 2, "events": 2, "transfer": 1}
 
 
+def test_decode_deltas_conserve_tokens_when_forward_completions_overlap(
+    tmp_path: Path,
+) -> None:
+    audit = NativeReactiveTelemetry(tmp_path / "server")
+    request = SimpleNamespace(
+        rid="req-overlap",
+        beliefkv_metadata={
+            "root_workflow_id": "w-overlap",
+            "invocation_id": "i-overlap",
+            "context_id": "c-overlap",
+            "context_epoch": 0,
+        },
+        origin_input_ids=list(range(12)),
+        output_ids=[],
+        cached_tokens_device=0,
+        cached_tokens_host=0,
+        extend_input_len=12,
+        sampling_params=SimpleNamespace(max_new_tokens=8),
+        finished=lambda: False,
+    )
+    audit.on_enqueue(request)
+    prefill = SimpleNamespace(
+        forward_mode=_Mode("prefill"), launch_ts=time.monotonic(),
+        forward_iter=1, reqs=[request],
+    )
+    audit.on_launch(prefill)
+    audit.on_completed(prefill)
+
+    older = SimpleNamespace(
+        forward_mode=_Mode("decode"), launch_ts=time.monotonic(),
+        forward_iter=2, reqs=[request],
+    )
+    audit.on_launch(older)
+    request.output_ids.append(11)
+    newer = SimpleNamespace(
+        forward_mode=_Mode("decode"), launch_ts=time.monotonic(),
+        forward_iter=3, reqs=[request],
+    )
+    audit.on_launch(newer)
+    request.output_ids.extend((12, 13))
+    request.finished = lambda: True
+    audit.on_completed(older)
+    audit.on_completed(newer)
+    audit.close()
+
+    records = _read(tmp_path / "server/runtime_audit.jsonl")
+    decode_deltas = [
+        sample["token_delta"]
+        for record in records
+        if record["phase"] == "decode"
+        for sample in record["request_samples"]
+    ]
+    events = _read(tmp_path / "server/runtime_events.sglang.jsonl")
+    result = next(event for event in events if event["kind"] == "llm_result")
+    assert sum(decode_deltas) == result["attributes"]["output_tokens"] == 3
+
+
 def test_aborted_waiting_and_started_requests_do_not_leave_pending_telemetry(
     tmp_path: Path,
 ) -> None:

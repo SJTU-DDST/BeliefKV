@@ -203,6 +203,9 @@ class LoopGuardState(AgentState[Any]):
     protocol_repair_active: NotRequired[
         Annotated[bool, UntrackedValue, PrivateStateAttr]
     ]
+    protocol_repair_attempt: NotRequired[
+        Annotated[int, UntrackedValue, PrivateStateAttr]
+    ]
     protocol_repair_failed: NotRequired[
         Annotated[bool, UntrackedValue, PrivateStateAttr]
     ]
@@ -944,6 +947,7 @@ class AgentLoopGuardMiddleware(AgentMiddleware[LoopGuardState, Any, Any]):
 
     def _format_repair_request(self, request: ModelRequest[Any]) -> ModelRequest[Any]:
         base_prompt = request.system_message.text if request.system_message else ""
+        attempt = max(1, int(request.state.get("protocol_repair_attempt", 1)))
         repair_prompt = (
             f"{base_prompt}\n\n"
             "RUNTIME FORMAT-ONLY REPAIR\n"
@@ -955,6 +959,7 @@ class AgentLoopGuardMiddleware(AgentMiddleware[LoopGuardState, Any, Any]):
         ).strip()
         self._audit(
             "agent_protocol_repair_attempt",
+            attempt=attempt,
             origin_sha256=request.state.get("protocol_origin_sha256"),
             origin_chars=request.state.get("protocol_origin_chars"),
         )
@@ -962,6 +967,68 @@ class AgentLoopGuardMiddleware(AgentMiddleware[LoopGuardState, Any, Any]):
             tools=[],
             tool_choice=None,
             system_message=SystemMessage(content=repair_prompt),
+        )
+
+    def _reject_terminal_regular_tool_calls(
+        self,
+        response: ModelResponse[Any],
+        state: LoopGuardState,
+    ) -> ModelResponse[Any]:
+        """Turn hallucinated regular calls during finalization into repair input."""
+
+        terminal_only = bool(
+            state.get("protocol_repair_active", False)
+            or (
+                state.get("guard_forcing_completion", False)
+                and (
+                    self.policy.enforce_semantic_guard
+                    or self._is_safety_finalization(state)
+                )
+            )
+        )
+        if not terminal_only or response.structured_response is not None:
+            return response
+        rejected: list[str] = []
+        result: list[BaseMessage] = []
+        for message in response.result:
+            if not isinstance(message, AIMessage) or not message.tool_calls:
+                result.append(message)
+                continue
+            regular_calls = [
+                call
+                for call in message.tool_calls
+                if str(call.get("name", "")) not in self.completion_tool_names
+            ]
+            if not regular_calls:
+                result.append(message)
+                continue
+            rejected.extend(str(call.get("name", "")) for call in regular_calls)
+            result.append(
+                message.model_copy(
+                    update={
+                        "tool_calls": [
+                            call
+                            for call in message.tool_calls
+                            if str(call.get("name", ""))
+                            in self.completion_tool_names
+                        ],
+                        "invalid_tool_calls": [],
+                    }
+                )
+            )
+        if not rejected:
+            return response
+        self._audit(
+            "agent_terminal_regular_tool_call_rejected",
+            tool_names=sorted(set(rejected)),
+            protocol_repair_attempt=int(
+                state.get("protocol_repair_attempt", 0)
+            ),
+            reason=state.get("guard_reason"),
+        )
+        return ModelResponse(
+            result=result,
+            structured_response=response.structured_response,
         )
 
     def _normalize_json_terminal(self, message: AIMessage) -> BaseModel | None:
@@ -992,7 +1059,9 @@ class AgentLoopGuardMiddleware(AgentMiddleware[LoopGuardState, Any, Any]):
             or self._is_safety_finalization(request.state)
         ):
             request = self._guard_recovery_request(request)
-        return handler(request)
+        return self._reject_terminal_regular_tool_calls(
+            handler(request), request.state
+        )
 
     async def awrap_model_call(
         self, request: ModelRequest[Any], handler: Any
@@ -1004,7 +1073,9 @@ class AgentLoopGuardMiddleware(AgentMiddleware[LoopGuardState, Any, Any]):
             or self._is_safety_finalization(request.state)
         ):
             request = self._guard_recovery_request(request)
-        return await handler(request)
+        return self._reject_terminal_regular_tool_calls(
+            await handler(request), request.state
+        )
 
     @hook_config(can_jump_to=["model", "end"])
     def after_model(self, state: LoopGuardState, runtime: Any) -> dict[str, Any] | None:
@@ -1045,8 +1116,27 @@ class AgentLoopGuardMiddleware(AgentMiddleware[LoopGuardState, Any, Any]):
         )
         if state.get("protocol_repair_active", False):
             failed_text = _message_text(last_ai_message)
+            attempt = max(1, int(state.get("protocol_repair_attempt", 1)))
+            attempt_limit = 1 if self._is_safety_finalization(state) else 2
+            if attempt < attempt_limit:
+                self._audit(
+                    "agent_protocol_repair_retry",
+                    attempt=attempt,
+                    next_attempt=attempt + 1,
+                    origin_sha256=state.get("protocol_origin_sha256"),
+                    repair_output_sha256=hashlib.sha256(
+                        failed_text.encode("utf-8", errors="replace")
+                    ).hexdigest(),
+                    repair_output_chars=len(failed_text),
+                )
+                return {
+                    "protocol_repair_active": True,
+                    "protocol_repair_attempt": attempt + 1,
+                    "jump_to": "model",
+                }
             self._audit(
                 "agent_protocol_repair_failed",
+                attempt=attempt,
                 origin_sha256=state.get("protocol_origin_sha256"),
                 origin_chars=state.get("protocol_origin_chars"),
                 repair_output_sha256=hashlib.sha256(
@@ -1082,6 +1172,7 @@ class AgentLoopGuardMiddleware(AgentMiddleware[LoopGuardState, Any, Any]):
         )
         return {
             "protocol_repair_active": True,
+            "protocol_repair_attempt": 1,
             "protocol_origin_sha256": origin_sha256,
             "protocol_origin_chars": len(text),
             "jump_to": "model",

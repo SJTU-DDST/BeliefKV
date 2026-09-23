@@ -44,6 +44,12 @@ Return only the checkpoint summary.
 
 
 CONTEXT_LIFECYCLE_PRIVATE_STATE_KEYS = frozenset({"_summarization_event"})
+_EMPTY_SUMMARY_RETRY_SUFFIX = """
+
+The previous summarization attempt returned no checkpoint text. Return a
+non-empty checkpoint now. Preserve uncertainty and incomplete work; do not
+invent progress or a terminal outcome.
+"""
 
 
 @dataclass(frozen=True)
@@ -105,6 +111,24 @@ def _summary_message(messages: list[BaseMessage]) -> BaseMessage | None:
     if candidate.additional_kwargs.get("lc_source") != "summarization":
         return None
     return candidate
+
+
+def _response_checkpoint_text(response: BaseMessage) -> str:
+    """Extract visible checkpoint text without treating reasoning as a summary."""
+
+    text = response.text.strip()
+    if text:
+        return text
+    parts: list[str] = []
+    for block in response.content_blocks:
+        if not isinstance(block, Mapping):
+            continue
+        if block.get("type") not in {"text", "output_text"}:
+            continue
+        value = block.get("text")
+        if isinstance(value, str) and value.strip():
+            parts.append(value.strip())
+    return "\n".join(parts).strip()
 
 
 class ContextLifecycleMiddleware(SummarizationMiddleware):
@@ -223,37 +247,64 @@ class ContextLifecycleMiddleware(SummarizationMiddleware):
             formatted = rendered
         return self._lc_helper.summary_prompt.format(messages=formatted).rstrip()
 
+    def _fallback_checkpoint(self, messages: list[BaseMessage]) -> str:
+        """Retain bounded source evidence when two model summaries are empty."""
+
+        rendered = get_buffer_string(messages, format="xml").strip()
+        prefix = (
+            "Context compaction fallback checkpoint. The summarizer returned "
+            "empty output twice. The text below is bounded source history, not "
+            "a claim that the task or any test completed.\n\n"
+        )
+        max_chars = max(1_024, self.policy.summary_output_tokens * 4)
+        available = max(256, max_chars - len(prefix))
+        if len(rendered) > available:
+            separator = "\n[... middle of source history omitted ...]\n"
+            side = max(1, (available - len(separator)) // 2)
+            rendered = rendered[:side] + separator + rendered[-side:]
+        return (prefix + rendered).strip()
+
     def _create_summary(self, messages_to_summarize: list[BaseMessage]) -> str:
         if not messages_to_summarize:
             raise RuntimeError("context compaction selected an empty history")
-        response = self.model.invoke(
-            self._summary_input(messages_to_summarize),
-            config={
-                "callbacks": list(self.summary_callbacks),
-                "metadata": {"lc_source": "summarization"},
-            },
-        )
-        summary = response.text.strip()
-        if not summary:
-            raise RuntimeError("context summarizer returned an empty checkpoint")
-        return summary
+        prompt = self._summary_input(messages_to_summarize)
+        for attempt in (1, 2):
+            response = self.model.invoke(
+                prompt if attempt == 1 else prompt + _EMPTY_SUMMARY_RETRY_SUFFIX,
+                config={
+                    "callbacks": list(self.summary_callbacks),
+                    "metadata": {
+                        "lc_source": "summarization",
+                        "beliefkv_summary_attempt": attempt,
+                    },
+                },
+            )
+            summary = _response_checkpoint_text(response)
+            if summary:
+                return summary
+        return self._fallback_checkpoint(messages_to_summarize)
 
     async def _acreate_summary(
         self, messages_to_summarize: list[BaseMessage]
     ) -> str:
         if not messages_to_summarize:
             raise RuntimeError("context compaction selected an empty history")
-        response = await self.model.ainvoke(
-            self._summary_input(messages_to_summarize),
-            config={
-                "callbacks": list(self.summary_callbacks),
-                "metadata": {"lc_source": "summarization"},
-            },
-        )
-        summary = response.text.strip()
-        if not summary:
-            raise RuntimeError("context summarizer returned an empty checkpoint")
-        return summary
+        prompt = self._summary_input(messages_to_summarize)
+        for attempt in (1, 2):
+            response = await self.model.ainvoke(
+                prompt if attempt == 1 else prompt + _EMPTY_SUMMARY_RETRY_SUFFIX,
+                config={
+                    "callbacks": list(self.summary_callbacks),
+                    "metadata": {
+                        "lc_source": "summarization",
+                        "beliefkv_summary_attempt": attempt,
+                    },
+                },
+            )
+            summary = _response_checkpoint_text(response)
+            if summary:
+                return summary
+        return self._fallback_checkpoint(messages_to_summarize)
 
     def _is_new_summary(
         self, request: ModelRequest, modified_request: ModelRequest

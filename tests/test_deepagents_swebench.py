@@ -20,7 +20,7 @@ from langchain_core.messages import AIMessage, BaseMessage, HumanMessage, System
 from langchain_core.language_models.fake_chat_models import FakeMessagesListChatModel
 from langchain_core.tools import tool
 from langchain.agents import create_agent
-from langchain.agents.middleware.types import ModelRequest
+from langchain.agents.middleware.types import ModelRequest, ModelResponse
 from langchain.agents.structured_output import ToolStrategy
 
 from beliefkv.experiments.agent_protocol import (
@@ -38,6 +38,7 @@ from beliefkv.experiments.agent_protocol import (
 from beliefkv.experiments.deepagents_swebench import (
     AUTONOMOUS_NATURAL_SUBAGENT_PROMPT,
     AUTONOMOUS_SYSTEM_PROMPT,
+    NATIVE_DYNAMIC_1TO4_PROMPT,
     NATIVE_SUBAGENT_2TO3_PROMPT,
     DeepAgentsExperimentConfig,
     DockerWorkspaceBackend,
@@ -65,6 +66,7 @@ from beliefkv.experiments.deepagents_swebench import (
     validate_workflow_completion,
     _trace_summary,
     _invoke_with_partial_state,
+    _autonomous_fanout_prompt,
     _filesystem_middleware,
     _autonomous_subagents,
     _runtime_verify_changed_tests,
@@ -1058,6 +1060,44 @@ def test_native_subagent_prompt_excludes_natural_fanout_policy() -> None:
     assert "Do not force a second round" in NATIVE_SUBAGENT_2TO3_PROMPT
 
 
+def test_native_dynamic_prompt_allows_optional_multiround_fanout() -> None:
+    prompt = NATIVE_DYNAMIC_1TO4_PROMPT
+    normalized = " ".join(prompt.split())
+
+    assert "spawning subagents is never required" in normalized
+    assert "one to four independent repository" in normalized
+    assert "one task is valid" in normalized
+    assert "do not add or split work merely to reach a fan-out count" in normalized
+    assert "open another one-to-four-task round" in normalized
+    assert "there is no fixed total round count" in normalized
+    assert "retain the native DeepAgents repository tools" in normalized
+    assert "Avoid overlapping write assignments" in normalized
+    assert "exactly these two mandatory" not in normalized
+
+
+def test_native_dynamic_profile_selects_dynamic_supervisor_prompt(
+    tmp_path: Path,
+) -> None:
+    config = DeepAgentsExperimentConfig(
+        mode="autonomous",
+        base_url="http://localhost:18000/v1",
+        model="model",
+        output_dir=tmp_path / "output",
+        workload_manifest=tmp_path / "workloads.json",
+        docker_image="fixture:latest",
+        subagent_fanout_profile="native_dynamic_1to4",
+    )
+
+    assert _autonomous_fanout_prompt(
+        config,
+        delegation_enabled=True,
+    ) == NATIVE_DYNAMIC_1TO4_PROMPT
+    assert _autonomous_fanout_prompt(
+        config,
+        delegation_enabled=False,
+    ) == ""
+
+
 def test_second_native_delegation_round_keeps_root_call_budget() -> None:
     policy = LoopGuardPolicy(
         enforce_call_budgets=True,
@@ -1144,6 +1184,57 @@ def test_native_subagent_profile_builds_read_only_children(tmp_path: Path) -> No
         "compatibility-analyst",
     ]
     assert all(item["tools"] == [] for item in specs)
+
+
+def test_native_dynamic_profile_keeps_native_child_tools(tmp_path: Path) -> None:
+    config = DeepAgentsExperimentConfig(
+        mode="autonomous",
+        base_url="http://localhost:18000/v1",
+        model="model",
+        output_dir=tmp_path / "output",
+        workload_manifest=tmp_path / "workloads.json",
+        docker_image="fixture:latest",
+        subagent_fanout_profile="native_dynamic_1to4",
+    )
+    workspace = tmp_path / "workspace"
+    workspace.mkdir()
+    audit = JsonlAudit(tmp_path / "audit.jsonl")
+    backend = DockerWorkspaceBackend(
+        workspace,
+        image="fixture:latest",
+        audit=audit,
+        support_dir=None,
+    )
+    model = FakeMessagesListChatModel(responses=[AIMessage(content="done")])
+    try:
+        specs = _autonomous_subagents(
+            config,
+            SweBenchWorkload(
+                instance_id="pydata__xarray-1",
+                repo="pydata/xarray",
+                base_commit="deadbeef",
+                problem_statement="Fix an invariant.",
+                difficulty="unknown",
+            ),
+            backend,
+            SimpleNamespace(record_call_censor=lambda _record: None),
+            model,
+            model,
+        )
+    finally:
+        audit.close()
+
+    assert [item["name"] for item in specs] == [
+        "repository-explorer",
+        "test-analyst",
+        "implementation-agent",
+        "general-purpose",
+    ]
+    assert all(item["tools"] for item in specs)
+    assert any(
+        "implement" in item["system_prompt"].lower()
+        for item in specs
+    )
 
 
 def test_semantic_gate_rejects_non_native_profile(tmp_path: Path) -> None:
@@ -2798,11 +2889,68 @@ def test_unstructured_guard_output_repairs_format_without_synthesizing_blocked()
         runtime=None,
     )
     assert second is not None
-    assert second["jump_to"] == "end"
-    assert second["protocol_repair_failed"] is True
+    assert second["jump_to"] == "model"
+    assert second["protocol_repair_attempt"] == 2
     assert "structured_response" not in second
+
+    third = guard.after_model(
+        {
+            "messages": [AIMessage(content="still no structured result")],
+            "guard_forcing_completion": True,
+            "guard_reason": "repeated_tool_call",
+            **first,
+            **second,
+        },
+        runtime=None,
+    )
+    assert third is not None
+    assert third["jump_to"] == "end"
+    assert third["protocol_repair_failed"] is True
+    assert "structured_response" not in third
     with pytest.raises(TerminalProtocolError):
-        require_structured_completion(second, ChildCompletion)
+        require_structured_completion(third, ChildCompletion)
+
+
+def test_graph_limit_finalization_rejects_regular_tool_calls_and_fails_bounded() -> None:
+    guard = AgentLoopGuardMiddleware(
+        policy=LoopGuardPolicy(),
+        completion_schema=WorkflowCompletion,
+        completion_instruction="Return WorkflowCompletion.",
+        audit=None,
+        scope="graph-terminal-tool-test",
+    )
+    state = {
+        "guard_forcing_completion": True,
+        "guard_reason": "graph_step_hard_limit_low",
+        "protocol_repair_active": True,
+        "protocol_repair_attempt": 1,
+    }
+    response = ModelResponse(
+        result=[
+            AIMessage(
+                content="",
+                tool_calls=[
+                    {
+                        "name": "grep",
+                        "args": {"pattern": "x"},
+                        "id": "regular-call",
+                    }
+                ],
+            )
+        ]
+    )
+
+    sanitized = guard._reject_terminal_regular_tool_calls(response, state)
+
+    assert isinstance(sanitized.result[0], AIMessage)
+    assert sanitized.result[0].tool_calls == []
+    failed = guard.after_model(
+        {**state, "messages": list(sanitized.result)},
+        runtime=None,
+    )
+    assert failed is not None
+    assert failed["jump_to"] == "end"
+    assert failed["protocol_repair_failed"] is True
 
 
 def test_loop_guard_exhaustion_requests_honest_completion_without_tools() -> None:

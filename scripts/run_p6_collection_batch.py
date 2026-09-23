@@ -54,6 +54,7 @@ NATIVE_TELEMETRY_STREAMS = (
     "runtime_audit.jsonl",
     "transfer_telemetry.jsonl",
 )
+WORKFLOW_EXCLUSIONS_FILENAME = "TRAINING_EXCLUSIONS.json"
 
 
 def _native_telemetry_fresh(directory: Path) -> bool:
@@ -71,6 +72,70 @@ def _native_telemetry_fresh(directory: Path) -> bool:
         and status.get("pending_batch_count") == 0
         and not any((status.get("record_counts") or {}).values())
     )
+
+
+def _workflow_trace_complete(workflow: dict[str, object]) -> bool:
+    trace = workflow.get("trace")
+    control = workflow.get("runtime_control_delivery")
+    if not isinstance(trace, dict) or not isinstance(control, dict):
+        return False
+    if bool(control.get("degraded")):
+        return False
+    if not all(
+        bool(trace.get(field))
+        for field in (
+            "workflow_lifecycle_valid",
+            "llm_pairing_valid",
+            "tool_pairing_valid",
+        )
+    ):
+        return False
+    if float(trace.get("tool_status_coverage", 0.0)) != 1.0:
+        return False
+    if float(trace.get("workspace_digest_coverage", 0.0)) != 1.0:
+        return False
+    if int(trace.get("dynamic_subagent_count", 0)) > 0:
+        if not bool(trace.get("all_subagents_returned")):
+            return False
+        if not bool(trace.get("all_joins_satisfied")):
+            return False
+    return True
+
+
+def _workflow_export_assessment(
+    summary: dict[str, object],
+) -> tuple[list[dict[str, str]], int]:
+    workflows = summary.get("workflows")
+    if not isinstance(workflows, list):
+        return [], 0
+    exclusions: list[dict[str, str]] = []
+    trace_complete = 0
+    for workflow in workflows:
+        if not isinstance(workflow, dict):
+            continue
+        trace_complete += int(_workflow_trace_complete(workflow))
+        if bool(workflow.get("system_jct_eligible")):
+            continue
+        instance_id = str(workflow.get("instance_id") or "")
+        if not instance_id:
+            continue
+        raw_reasons = workflow.get("system_jct_exclusion_reasons")
+        reasons = (
+            [str(item) for item in raw_reasons if str(item)]
+            if isinstance(raw_reasons, list)
+            else []
+        )
+        error = str(workflow.get("error") or "")
+        if not reasons and error:
+            reasons.append(error.split(":", 1)[0])
+        exclusions.append(
+            {
+                "instance_id": instance_id,
+                "reason": "workflow_censored:"
+                + ",".join(reasons or ["system_jct_ineligible"]),
+            }
+        )
+    return exclusions, trace_complete
 
 
 def _native_model_manifest(
@@ -404,7 +469,12 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--recursion-limit", type=int, default=512)
     parser.add_argument(
         "--subagent-fanout-profile",
-        choices=("natural", "parallel_analysis_2to3", "native_subagent_2to3"),
+        choices=(
+            "natural",
+            "parallel_analysis_2to3",
+            "native_subagent_2to3",
+            "native_dynamic_1to4",
+        ),
         help=(
             "optional assertion of the profile frozen in the collection batch; "
             "it cannot override the manifest"
@@ -869,6 +939,16 @@ def main() -> int:
         ),
     )
     summary = run_experiment(config)
+    workflow_exclusions, trace_complete_workflows = (
+        _workflow_export_assessment(summary)
+    )
+    write_json(
+        output.parent / WORKFLOW_EXCLUSIONS_FILENAME,
+        {
+            "schema_version": 1,
+            "workflows": workflow_exclusions,
+        },
+    )
     final_fingerprint = _runtime_source_fingerprint()
     source_stable = final_fingerprint == source_fingerprint
     model_stable = (
@@ -883,6 +963,7 @@ def main() -> int:
     semantic_gate_passed = (
         summary["semantic_gate_completed_workflows"] == workflow_count
     )
+    raw_trace_complete = trace_complete_workflows == workflow_count
     final_contract = {
         **collection_contract,
         "runtime_source_fingerprint_end": final_fingerprint,
@@ -893,9 +974,14 @@ def main() -> int:
             and not native_reactive
         ),
         "raw_trace_eligible": (
-            system_eligible and source_stable and model_stable
+            raw_trace_complete and source_stable and model_stable
             and not frozen_semantic_gate
         ) if native_reactive else None,
+        "trace_complete_workflows": trace_complete_workflows,
+        "excluded_workflow_count": len(workflow_exclusions),
+        "workflow_exclusions_path": str(
+            output.parent / WORKFLOW_EXCLUSIONS_FILENAME
+        ),
         "model_revision_stable": model_stable if native_reactive else None,
         "semantic_gate_passed": semantic_gate_passed,
         "ineligibility_reasons": [
@@ -907,8 +993,16 @@ def main() -> int:
                     "diagnostic_semantic_gate_not_training_evidence",
                 ),
                 (
-                    not frozen_semantic_gate and not system_eligible,
+                    not frozen_semantic_gate
+                    and not native_reactive
+                    and not system_eligible,
                     "system_jct_gate_failed",
+                ),
+                (
+                    not frozen_semantic_gate
+                    and native_reactive
+                    and not raw_trace_complete,
+                    "raw_trace_telemetry_incomplete",
                 ),
                 (not source_stable, "runtime_source_changed_during_collection"),
                 (not model_stable, "model_manifest_changed_during_collection"),

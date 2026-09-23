@@ -10,7 +10,14 @@ from beliefkv.experiments.deepagents_swebench import load_workload_bundle
 
 
 ALLOWED_SPLITS = frozenset({"train", "calibration", "test_id"})
-ALLOWED_FANOUT_PROFILES = frozenset({"natural", "parallel_analysis_2to3", "native_subagent_2to3"})
+ALLOWED_FANOUT_PROFILES = frozenset(
+    {
+        "natural",
+        "parallel_analysis_2to3",
+        "native_subagent_2to3",
+        "native_dynamic_1to4",
+    }
+)
 ALLOWED_COLLECTION_POLICIES = frozenset(
     {"frozen_p5_observed", "frozen_native_reactive_v0520"}
 )

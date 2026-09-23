@@ -1,6 +1,6 @@
 # BeliefKV 当前架构与实现状态
 
-更新日期：2026-09-22
+更新日期：2026-09-23
 当前 P6 物理执行基线：原 Qwen3-Coder/SGLang 0.5.2rc1；
 Qwen3.5/v0.5.20 已有可选 native admission、工具等待预测和
 JOIN child-completion 三阶段 H2D ticket（概率窗口、结构化完成提示、
@@ -24,10 +24,44 @@ train 任务至 64 个**不同** instance（不足部分取自旧 BF16 formal tr
 的同一 train split），客户端 64 路 eager 提交，使用
 `native_subagent_2to3` 得到原生 child/JOIN；设备端沿用已标定的
 32-running 硬上限，不把 64 个客户端 root 误称为 64 个 GPU running。
-计划身份为 v2，记录每份来源 manifest 的哈希。该批须同时有原生
-SPAWN/JOIN 和至少一个合格 JOIN 标签才能通过；重跑结果单独保存，
-不覆盖 v1 证据。强制子代理变体不代表自然委派概率，后续需要独立
-的自然委派样本和 held-out 校准。
+计划身份为 v2，记录每份来源 manifest 的哈希。
+
+v2 的 64-root 训练采集已经完成：运行 2,210.14 秒，57/64 workflow
+自然完成，产生 11,703 次 LLM 请求、11,140 次工具调用、129 个动态
+subagent 和 129 个 JOIN_ALL。JOIN 窗口 P50/P90/P95 分别约为
+487.7/914.7/1,113.7 秒，最早两个 JOIN 也分别有 22.1 秒和 34.9 秒
+child 窗口，不是启动后立即伪造的 JOIN。7 个失败由 3 次空 summarizer
+checkpoint、2 次 graph recursion limit 和 2 次终态结构协议失败组成；
+这些错误不应使完整 telemetry 随批处理 `set -e` 一起丢失。
+
+2026-09-23 已增加非破坏性恢复：空 checkpoint 有界重试后回退为明确
+标注、长度受限的原始上下文 checkpoint；终态格式修复有有限重试，
+graph hard-limit 时拒绝普通工具调用并尽快终止；仍失败的 workflow
+写入 `TRAINING_EXCLUSIONS.json`，不伪装为成功，但 telemetry 完整时
+其余 workflow 仍可导出。旧 v2 summary 的只读审计结果为 64/64
+trace telemetry 完整、7 个 workflow 应排除、57 个可保留。
+旧批次缺少持久化 run UUID 时，P6 exporter 现在优先使用顶层 run
+manifest；若旧布局完全没有 run ID，则以冻结的 server event/audit/transfer
+文件指纹生成可复现的 `legacy-trace-*` 身份，并记录 `run_id_source`。
+这只补充数据集身份，不改变事件、标签或 workflow 排除结果。
+
+v2 的 `native_subagent_2to3` 强制双 child 只用于制造首批 JOIN 证据，
+不代表目标 runtime。新
+`qwen35_native_reactive_join64_train_plan_2026-09-23.json` 使用计划身份
+v3 和 `native_dynamic_1to4`：在原生 DeepAgents task 语义上只增加
+“可多轮、每轮由模型选择 1--4 个、无需强制 SPAWN、不得为凑数拆分”
+的约束；child 保留原生仓库工具，parent 负责避免重叠写入并整合验证。
+旧 v2 profile 和 plan 保留用于复现；因其强制双 child，不作为本轮模型
+训练数据。本轮停止处理旧 v2 的 reassessed/exported 数据，只留作历史诊断，
+不再分析标签或拟合模型。
+
+新的训练采集计划
+`qwen35_native_reactive_128root_train_plan_2026-09-23.json` 使用身份 v4，
+由两个互不重复的 64-root train batch 组成，共 128 个不同 task。两批均
+采用 `native_dynamic_1to4`、64 客户端并发和 graph48 服务配置；每个
+workflow 允许自然决定是否及如何多轮 SPAWN，不强制 child 数量。数据集仅从
+本轮新采集的原始 trace 导出；拟合前检查完整遥测、workflow 排除项、
+动态 SPAWN/JOIN 和 train split 身份。
 
 收集训练集原始 workflow trace **不依赖**预测动作的跨 epoch ACK 接力、
 FULL/MAMBA 独占 reclaim 证书、COMMIT_CPU 或完整 JointPlan。这些只在
@@ -39,8 +73,8 @@ predictor 和 predictive actions，且 Host cache 实际启用。
 从原冻结 split 派生，仅包含 train 的 9 批/67 次 rollout（51 个唯一任务）；
 原 calibration/test 清单未修改，也尚无新模型 calibration/test 采集结果。
 root 可在 JOIN 后按后续模型输出再次动态 SPAWN，多轮 child 使用独立
-invocation/epoch 和 JOIN 身份；这已覆盖局部回归，不代表 v2 的 64-root
-train batch 已运行。
+invocation/epoch 和 JOIN 身份；该机制已有局部回归，v3 在线分布仍需由
+新训练采集确认。
 新采集入口核验模型和 v0.5.20 服务身份、
 HiCache 配置、模型关键文件哈希、模型 context 上限和数据源稳定性，
 取消 2 小时 workflow 人为截止，保留安全 guard。混合 FULL/MAMBA
@@ -69,6 +103,30 @@ node0 约 18 MB。CUDA graph 后服务报告可用约 6.88 GB，
 已加入 scheduler 原生静态 FULL/MAMBA census、独立标定入口和
 训练批次 fail-closed 核验。标定仅覆盖该模型/版本/硬件/NUMA/池配置
 的静态容量，不代表高压动态峰值、传输或 GPU 服务曲线已标定。
+
+v2 运行期间 FULL usage 平均约 35.7%、峰值约 58%，MAMBA 平均约
+21.4%、峰值约 25%。这里的 FULL usage 不是物理驻留比例：
+v0.5.20 统计为
+`capacity - (available_size + evictable_size)`，已经进入 RadixCache、
+仍驻留 HBM 但可驱逐的 KV 不计入 usage。真实分配判断使用
+`allocator.available_size()`；空间不足时，`write_back` 会先把尚无
+Host backup 的 device leaf D2H，ACK 后 demote 并释放 slot。因此
+58% effective FULL 与 20,919 次 native D2H 不矛盾。累计 FULL D2H
+约 10.13M token/207.4 GB；重复 node 的额外 token 约占 0.82%，主要
+不是同一 KV 的频繁往返。
+
+v2 也证明 32 是 admission 上限：有 queue 时平均 running 约 30.6，
+约 86% 的排队采样处于 running>=31；但此时 GPU utilization 平均已约
+94%，所以增加 running 主要目标是降低 queue wait、改善 token throughput，
+不是把 GPU utilization 从低位拉起。2026-09-23 已完成独立 graph48 gate：
+`max_running_requests=48` 下 FULL/MAMBA 静态池仍为 1,798,995 token /
+513 slot，prefill/decode graph 均成功捕获，启动后约余 6.85 GB；
+64 个 contract-matched `temperature=0` 请求 64/64 成功，实测达到
+47 running、17 queued，33--48 batch 继续使用 CUDA graph，MAMBA usage
+约 37%。新训练入口使用
+`qwen35_native_hbm_capacity_graph48_2026-09-23.json`；旧 graph32 工件
+不修改。graph48 的持续高压收益仍须比较 output tok/s、queue P95、
+D2H bytes/token、retraction 和单请求 latency 后裁决。
 `HOST_NUMA_NODE=1` 默认将服务 CPU/内存绑定到
 node1；预检要求总预算加 8 GiB 余量，并估算 node1 的 MemFree、
 干净可回收 file cache 与部分 reclaimable slab。仅看 MemFree 会漏掉

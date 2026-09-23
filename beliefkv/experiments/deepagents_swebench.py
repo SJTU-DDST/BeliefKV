@@ -82,6 +82,18 @@ SERVER_ARTIFACT_FILENAMES = {
 
 DEFAULT_SANDBOX_TEST_ENV = "/opt/miniconda3/envs/testbed"
 DEFAULT_SANDBOX_SUPPORT_DIR = Path(__file__).with_name("sandbox_support")
+SUBAGENT_FANOUT_PROFILES = (
+    "natural",
+    "parallel_analysis_2to3",
+    "native_subagent_2to3",
+    "native_dynamic_1to4",
+)
+READ_ONLY_SUBAGENT_FANOUT_PROFILES = frozenset(
+    {
+        "parallel_analysis_2to3",
+        "native_subagent_2to3",
+    }
+)
 SANDBOX_PATH_CONTRACT = """
 Sandbox path and environment contract:
 - The repository checkout root is exactly `/workspace`. Filesystem tools and execute
@@ -1334,11 +1346,7 @@ class DeepAgentsExperimentConfig:
     def __post_init__(self) -> None:
         if self.mode not in {"autonomous", "planned"}:
             raise ValueError("mode must be autonomous or planned")
-        if self.subagent_fanout_profile not in {
-            "natural",
-            "parallel_analysis_2to3",
-            "native_subagent_2to3",
-        }:
+        if self.subagent_fanout_profile not in SUBAGENT_FANOUT_PROFILES:
             raise ValueError("unsupported subagent fan-out profile")
         if (
             self.stop_after_first_native_join
@@ -1654,6 +1662,35 @@ three parallel native task calls under the same rules. Do not force a second rou
 fixed total round count, repeat completed work, or split one question merely to satisfy a
 fan-out count. Children are read-only and must not edit the workspace.
 """
+
+
+NATIVE_DYNAMIC_1TO4_PROMPT = """
+Use the native task tool only when delegation is useful; spawning subagents is never
+required. For each delegation round, choose one to four independent repository
+questions and issue all selected task calls together in one assistant message so they
+can run concurrently. Choose the count from the work itself: one task is valid, and do
+not add or split work merely to reach a fan-out count. Wait for every task in the round
+to return in the JOIN, integrate the evidence, and then either continue in the parent
+or open another one-to-four-task round when new independent work justifies it. A JOIN
+does not end delegation, and there is no fixed total round count. Children retain the
+native DeepAgents repository tools and may inspect or implement self-contained work in
+the shared workspace. Avoid overlapping write assignments; the parent must integrate
+the returned work and verify the final repository state and tests.
+"""
+
+
+def _autonomous_fanout_prompt(
+    config: DeepAgentsExperimentConfig,
+    *,
+    delegation_enabled: bool,
+) -> str:
+    if not delegation_enabled:
+        return ""
+    if config.subagent_fanout_profile == "native_subagent_2to3":
+        return NATIVE_SUBAGENT_2TO3_PROMPT
+    if config.subagent_fanout_profile == "native_dynamic_1to4":
+        return NATIVE_DYNAMIC_1TO4_PROMPT
+    return AUTONOMOUS_NATURAL_SUBAGENT_PROMPT
 
 
 PARALLEL_ANALYSIS_PLANNER_PROMPT = """You decompose one SWE-bench issue into a
@@ -2097,10 +2134,9 @@ def _autonomous_subagents(
     deadline_controller: WorkflowDeadlineController | None = None,
 ) -> list[dict[str, Any]]:
     subagents: list[dict[str, Any]] = []
-    read_only = config.subagent_fanout_profile in {
-        "parallel_analysis_2to3",
-        "native_subagent_2to3",
-    }
+    read_only = (
+        config.subagent_fanout_profile in READ_ONLY_SUBAGENT_FANOUT_PROFILES
+    )
     specs = (
         PARALLEL_ANALYSIS_SUBAGENT_SPECS
         if read_only
@@ -2236,17 +2272,9 @@ def _build_autonomous_agent(
         tools=[_workspace_patch_tool(backend)],
         system_prompt=(
             AUTONOMOUS_SYSTEM_PROMPT
-            + (
-                NATIVE_SUBAGENT_2TO3_PROMPT
-                if (
-                    config.subagent_fanout_profile == "native_subagent_2to3"
-                    and delegation_enabled
-                )
-                else (
-                    AUTONOMOUS_NATURAL_SUBAGENT_PROMPT
-                    if delegation_enabled
-                    else ""
-                )
+            + _autonomous_fanout_prompt(
+                config,
+                delegation_enabled=delegation_enabled,
             )
             + repository_sandbox_contract(workload)
             + "\n\n"
@@ -3438,8 +3466,10 @@ def run_experiment(config: DeepAgentsExperimentConfig) -> dict[str, Any]:
             f"frozen root ({config.concurrency} < {len(workloads)})"
         )
     output_dir.mkdir(parents=True)
+    run_id = uuid.uuid4().hex
     manifest = {
         "schema_version": 1,
+        "run_id": run_id,
         "created_at_utc": utc_now(),
         "config": {
             **asdict(config),
@@ -3606,6 +3636,7 @@ def run_experiment(config: DeepAgentsExperimentConfig) -> dict[str, Any]:
         )
     summary = {
         "schema_version": 1,
+        "run_id": run_id,
         "mode": config.mode,
         "duration_seconds": elapsed,
         "workflow_count": len(results),

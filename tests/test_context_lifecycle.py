@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import asyncio
 from types import SimpleNamespace
 from typing import Any
 
@@ -9,7 +10,8 @@ pytest.importorskip("deepagents")
 
 from langchain.agents.middleware.types import ModelRequest, ModelResponse
 from langchain_core.language_models import BaseChatModel
-from langchain_core.messages import HumanMessage, SystemMessage
+from langchain_core.language_models.fake_chat_models import FakeMessagesListChatModel
+from langchain_core.messages import AIMessage, HumanMessage, SystemMessage
 from langchain_core.outputs import ChatResult
 
 from beliefkv.runtime.context_lifecycle import (
@@ -191,3 +193,55 @@ def test_context_lifecycle_rejects_foreign_out_of_bounds_summary_event() -> None
     assert CONTEXT_LIFECYCLE_PRIVATE_STATE_KEYS == frozenset(
         {"_summarization_event"}
     )
+
+
+def _summary_middleware(responses: list[AIMessage]) -> ContextLifecycleMiddleware:
+    return ContextLifecycleMiddleware(
+        FakeMessagesListChatModel(responses=responses),
+        backend=SimpleNamespace(),
+        policy=ContextLifecyclePolicy(),
+        compaction_sink=SimpleNamespace(),
+    )
+
+
+def test_context_summary_retries_one_empty_response() -> None:
+    middleware = _summary_middleware(
+        [
+            AIMessage(content=""),
+            AIMessage(content=[{"type": "text", "text": "durable checkpoint"}]),
+        ]
+    )
+
+    assert middleware._create_summary(
+        [HumanMessage(content="original objective")]
+    ) == "durable checkpoint"
+
+
+def test_context_summary_uses_bounded_source_fallback_without_claiming_success() -> None:
+    middleware = _summary_middleware(
+        [AIMessage(content=""), AIMessage(content="")]
+    )
+    messages = [
+        HumanMessage(content="objective: fix the parser"),
+        HumanMessage(content="latest state: tests have not run " + "x" * 20_000),
+    ]
+
+    summary = middleware._create_summary(messages)
+
+    assert "summarizer returned empty output twice" in summary
+    assert "not a claim that the task or any test completed" in summary
+    assert "objective: fix the parser" in summary
+    assert "latest state: tests have not run" in summary
+    assert len(summary) <= middleware.policy.summary_output_tokens * 4
+
+
+def test_async_context_summary_uses_same_empty_response_recovery() -> None:
+    middleware = _summary_middleware(
+        [AIMessage(content=""), AIMessage(content="async checkpoint")]
+    )
+
+    summary = asyncio.run(
+        middleware._acreate_summary([HumanMessage(content="continue safely")])
+    )
+
+    assert summary == "async checkpoint"

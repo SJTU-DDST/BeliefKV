@@ -7,11 +7,13 @@ PLAN="${PLAN:-$ROOT/configs/migration/qwen35_native_reactive_train_plan_2026-09-
 SPLIT="${SPLIT:-$ROOT/configs/p6/swebench_verified_split_v1.json}"
 RUN_ROOT="${RUN_ROOT:-$ROOT/experiments/raw/qwen35_native_reactive_train_20260922_v1}"
 MODEL_PATH="${MODEL_PATH:-/srv/ai/models/Qwen/Qwen3.5-35B-A3B}"
+MODEL_VERSION="${MODEL_VERSION:-qwen35-native-reactive-train-v1}"
 HICACHE_SIZE_GB="${HICACHE_SIZE_GB:-180}"
 MEM_FRACTION_STATIC="${MEM_FRACTION_STATIC:-0.94}"
+MAX_RUNNING_REQUESTS="${MAX_RUNNING_REQUESTS:-48}"
 HOST_NUMA_NODE="${HOST_NUMA_NODE:-1}"
 BASE_URL="${BASE_URL:-http://127.0.0.1:18000}"
-CAPACITY_CALIBRATION="${CAPACITY_CALIBRATION:-$ROOT/configs/migration/qwen35_native_hbm_capacity_2026-09-22.json}"
+CAPACITY_CALIBRATION="${CAPACITY_CALIBRATION:-$ROOT/configs/migration/qwen35_native_hbm_capacity_graph48_2026-09-23.json}"
 server_pid=""
 batch_id="${BATCH_ID:-}"
 
@@ -39,7 +41,9 @@ if [[ $# -ne 0 ]]; then
   exit 2
 fi
 if [[ "$(jq -r '.plan_id' "$PLAN")" != "qwen35-native-reactive-v0520-v1" \
-    && "$(jq -r '.plan_id' "$PLAN")" != "qwen35-native-reactive-v0520-v2" ]]; then
+    && "$(jq -r '.plan_id' "$PLAN")" != "qwen35-native-reactive-v0520-v2" \
+    && "$(jq -r '.plan_id' "$PLAN")" != "qwen35-native-reactive-v0520-v3" \
+    && "$(jq -r '.plan_id' "$PLAN")" != "qwen35-native-reactive-v0520-v4-128root" ]]; then
   printf 'Expected the frozen Qwen3.5 native train plan\n' >&2
   exit 2
 fi
@@ -58,10 +62,7 @@ mapfile -t batches < <(jq -r '
   | sort_by(if .batch_id == "p6-017-train-mixed-r0" then 0 else 1 end)
   | .[].batch_id
 ' "$PLAN")
-expected_batches=9
-if [[ "$(jq -r '.plan_id' "$PLAN")" == "qwen35-native-reactive-v0520-v2" ]]; then
-  expected_batches=1
-fi
+expected_batches="$(jq '[.batches[] | select(.split == "train")] | length' "$PLAN")"
 if [[ ${#batches[@]} -ne "$expected_batches" ]]; then
   printf 'Frozen train plan must have %s batches\n' "$expected_batches" >&2
   exit 2
@@ -134,6 +135,7 @@ PY
 
   setsid env HICACHE_SIZE_GB="$HICACHE_SIZE_GB" HOST_NUMA_NODE="$HOST_NUMA_NODE" \
     MEM_FRACTION_STATIC="$MEM_FRACTION_STATIC" \
+    MAX_RUNNING_REQUESTS="$MAX_RUNNING_REQUESTS" \
     BELIEFKV_NATIVE_TELEMETRY_DIR="$run_dir/server" \
     SGLANG_SOURCE_CHECKOUT="$ROOT/third_party/sglang-v0.5.20" \
     bash "$ROOT/scripts/launch_qwen35_native_v0520.sh" \
@@ -162,6 +164,7 @@ PY
     --mem-fraction-static "$MEM_FRACTION_STATIC" \
     --verify "$CAPACITY_CALIBRATION"
 
+  set +e
   "$PYTHON" "$ROOT/scripts/run_p6_collection_batch.py" \
     --collection-plan "$PLAN" --batch-id "$batch" \
     --native-telemetry-dir "$run_dir/server" \
@@ -169,14 +172,40 @@ PY
     --base-url "$BASE_URL/v1" --model Qwen3.5-35B-A3B \
     --expected-model-path "$MODEL_PATH" \
     --output "$run_dir/workloads" > "$run_dir/collection.log" 2>&1
+  collection_status="$?"
+  set -e
   printf 'Collected train batch %s; stopping native server\n' "$batch"
   stop_server
+  if [[ ! -f "$run_dir/workloads/summary.json" \
+      || ! -f "$run_dir/workloads/p6_collection_contract.json" ]]; then
+    printf 'Collection did not produce complete trace metadata for %s (status %s)\n' \
+      "$batch" "$collection_status" >&2
+    if [[ "$collection_status" -eq 0 ]]; then
+      collection_status=1
+    fi
+    exit "$collection_status"
+  fi
   printf 'Native server stopped for %s; exporting\n' "$batch"
+  set +e
   "$PYTHON" "$ROOT/scripts/export_native_reactive_p6_dataset.py" "$run_dir" \
     --output-dir "$dataset_dir" --split-manifest "$SPLIT" \
     > "$run_dir/export.log" 2>&1
-  if [[ "$(jq -r '.subagent_fanout_profile // "natural"' "$run_dir/workloads/summary.json")" \
-      == native_subagent_2to3 ]]; then
+  export_status="$?"
+  set -e
+  if [[ "$export_status" -ne 0 ]]; then
+    printf 'Dataset export rejected batch %s (collection=%s, export=%s)\n' \
+      "$batch" "$collection_status" "$export_status" >&2
+    exit "$export_status"
+  fi
+  if [[ "$collection_status" -ne 0 ]]; then
+    printf 'Exported complete telemetry despite censored workflows in %s\n' "$batch"
+  fi
+  fanout_profile="$(
+    jq -r '.subagent_fanout_profile // "natural"' \
+      "$run_dir/workloads/summary.json"
+  )"
+  if [[ "$fanout_profile" == native_subagent_2to3 \
+      || "$fanout_profile" == native_dynamic_1to4 ]]; then
     "$PYTHON" - "$run_dir" <<'PY'
 import json
 import sys
@@ -195,7 +224,7 @@ PY
 done
 
 if [[ -n "$batch_id" ]]; then
-  printf 'Finished requested batch %s; model fitting requires all nine batches\n' "$batch_id"
+  printf 'Finished requested batch %s; model fitting requires every train batch in this plan\n' "$batch_id"
   exit 0
 fi
 
@@ -209,6 +238,6 @@ for batch in "${batches[@]}"; do
   train_args+=(--dataset-dir "$RUN_ROOT/$batch/dataset")
 done
 "$PYTHON" "$ROOT/scripts/train_qwen35_native_frontier.py" \
-  "${train_args[@]}" --model-version qwen35-native-reactive-train-v1 \
+  "${train_args[@]}" --model-version "$MODEL_VERSION" \
   --output "$model" > "$RUN_ROOT/train.log" 2>&1
 printf 'Fitted offline uncalibrated checkpoint: %s\n' "$model"

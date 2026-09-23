@@ -643,9 +643,55 @@ def test_native_reactive_exports_independent_heads_without_dma_claim(
     assert manifest["source"]["collection_contract"]["runtime_policy"] == (
         "frozen_native_reactive_v0520"
     )
+    assert manifest["source"]["run_id"] == "run"
+    assert manifest["source"]["run_id_source"] == "runtime_summary"
 
 
-def test_native_train_export_loads_only_frozen_local_heads(tmp_path: Path) -> None:
+def test_native_reactive_uses_stable_trace_fingerprint_for_legacy_run(
+    tmp_path: Path,
+) -> None:
+    run = _native_run(tmp_path)
+    (run / "server" / "latest_runtime_summary.json").unlink()
+
+    first = export_native_reactive_p6_dataset(run, tmp_path / "native-first")
+    second = export_native_reactive_p6_dataset(run, tmp_path / "native-second")
+
+    assert first["source"]["run_id"].startswith("legacy-trace-")
+    assert first["source"]["run_id"] == second["source"]["run_id"]
+    assert first["source"]["run_id_source"] == "server_trace_fingerprint"
+
+
+def test_native_reactive_prefers_root_run_manifest_identity(
+    tmp_path: Path,
+) -> None:
+    run = _native_run(tmp_path)
+    (run / "manifest.json").write_text(
+        json.dumps({"run_id": "root-run-id"}),
+        encoding="utf-8",
+    )
+    (run / "server" / "latest_runtime_summary.json").write_text(
+        json.dumps({"run_id": "root-run-id"}),
+        encoding="utf-8",
+    )
+
+    manifest = export_native_reactive_p6_dataset(run, tmp_path / "native")
+
+    assert manifest["source"]["run_id"] == "root-run-id"
+    assert manifest["source"]["run_id_source"] == "root_manifest"
+
+
+@pytest.mark.parametrize(
+    "plan_id",
+    (
+        "qwen35-native-reactive-v0520-v1",
+        "qwen35-native-reactive-v0520-v2",
+        "qwen35-native-reactive-v0520-v3",
+        "qwen35-native-reactive-v0520-v4-128root",
+    ),
+)
+def test_native_train_export_loads_only_frozen_local_heads(
+    tmp_path: Path, plan_id: str
+) -> None:
     from beliefkv.predictor.structured_frontier import load_decision_rows
 
     run = _native_run(tmp_path)
@@ -653,7 +699,7 @@ def test_native_train_export_loads_only_frozen_local_heads(tmp_path: Path) -> No
     collection_path = run / "workloads" / "p6_collection_contract.json"
     collection = json.loads(collection_path.read_text(encoding="utf-8"))
     collection.update({
-        "plan_id": "qwen35-native-reactive-v0520-v1",
+        "plan_id": plan_id,
         "split": "train",
         "model_revision_sha256": {
             "config.json": "config-hash", "tokenizer.json": "tokenizer-hash"
