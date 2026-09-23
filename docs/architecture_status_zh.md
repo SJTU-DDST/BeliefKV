@@ -76,7 +76,7 @@ limit、sandbox/命令超时，以及对已确认重复物理失败请求的 cir
 运行配置与数据链路，不进入训练集。唯一重复失败意图发生在 JOIN 之后；
 正式批次仍需统计此类 intervention 和删失样本。
 
-正式 v5 采集第一批已完成：64 个 workflow trace 均结束，耗时约 951.9 秒，
+正式 v5 串行采集的第一批已完成：64 个 workflow trace 均结束，耗时约 951.9 秒，
 其中 21 个通过 task correctness/measurement gate。仅 1 个 root 发起了动态
 delegation，共 2 个 child 和 2 次 JOIN_ALL；dataset exporter 只标出 1 个
 eligible JOIN。dataset table integrity 通过，native writer dropped/failed 均为
@@ -88,19 +88,47 @@ formal training 仍不合格（train-only 且观测到 runtime intervention）�
 该批实际发生 14 次 512-step hard-limit finalization，以及 15 个 workflow 中
 共 43 次重复失败工具意图抑制，并生成 43 条 censor event。这证明 semantic
 pattern/soft-budget 虽为 observe-only，硬上限和 circuit breaker 仍会干预。
-第二批目前处于 Docker image pull 阶段；第一批服务已关闭，因此两批间 GPU
-空闲属于正常状态。runner 只要求每批至少 1 条 eligible JOIN 才拟合，属于
-自动化门槛而非统计充分性标准；第二批完成后需单独判断是否训练/采用 checkpoint。
+原串行 runner 已在第二批 Docker image pull 阶段停止；第一批结果保留作诊断，
+不是用户要求的 128-root 重叠高压训练数据。当前没有活动实验或 SGLang 进程。
 
-新的训练采集计划
-`qwen35_native_reactive_128root_train_plan_2026-09-23.json` 使用身份 v4，
-由两个互不重复的 64-root train batch 组成，共 128 个不同 task。两批均
-采用 `native_dynamic_1to4`、64 客户端并发和 graph48 服务配置；当前 runtime
-提示要求每个 root 先按任务选择 1--4 个有实质内容的 child，并允许 JOIN 后
-继续多轮 SPAWN。prompt 约束不等于行为保证，实际 fanout/JOIN 必须从 trace
-核实。该计划只保存 profile 名称，没有冻结 prompt 内容哈希，所以正式采集
-必须记录实际 run/source revision。数据集只从新采集 trace 导出；拟合前检查
-telemetry、workflow 排除项、动态 SPAWN/JOIN 标签和 train split 身份。
+原 v4 计划把两个 64-root batch 顺序运行，每批独立启动和关闭服务，不能形成
+跨批次 KV overlap。修正版将两个不重复的 64-root manifest 合并为一个 128-root
+collection：第一波 64 roots 在 `t=0` 提交，第二波在 `t=60s` 提交；同一
+SGLang 实例、同一 native telemetry 流，客户端并发 128，服务端仍为
+`MAX_RUNNING_REQUESTS=48`/graph48。所有所需 Docker 镜像在服务启动前准备好，
+避免把镜像拉取延迟混入第二波到达。
+
+v5 第一批的 `native_dynamic_1to4` 当时只有提示词要求，没有 runtime fanout
+执行约束；提示词不是模型调用协议。64 个 root 中 63 个没有 SPAWN，唯一遵从者
+选择了 2 个 child，因此这不是“每个 root 两个 child”，而是全批只有一个 parent
+fanout。修正版首轮由模型通过 `DynamicInitialDelegationPlan` 选择 1--4 个独立
+只读子任务，runtime 校验非空、唯一且数量在界内后并发执行；root 集成后仍可使用
+原生 task middleware 发起后续多轮 delegation。任务数仍由模型选择，不固定为 2。
+
+512-step hard-limit 是独立的安全 fuse，不是 384-step soft-budget，也不是 fanout
+限制。native reactive profile 只关闭 semantic/soft-budget 干预；LangGraph
+`recursion_limit` 默认为 512，loop guard 的硬上限也为 512，并在剩余 32 step
+时开始 finalization，所以常见触发点是 step 482。该保护并非 Qwen3.5 新问题：
+Qwen3-Coder 历史 run 曾在 512 recursion limit 抛错；取消 512 后，另一个无 guard
+run 到 step 2017 仍反复执行相同命令，随后由 2048-step fuse 收尾。因此采集保留
+硬保险丝并将干预后的完整 episode/JOIN 标签删失；是否提高 fuse 必须单独权衡长
+循环风险，不能把“取消 guard”当作无成本训练配置。
+
+修正版 128-root overlapped plan 尚未启动；计划门槛是先完成单服务、双波提交和
+首轮 fanout 回归检查，再启动正式采集。训练是否可用仍按 trace 完整性、干预删失、
+有效 SPAWN/JOIN 标签量和 split 身份判断，不能仅以每批出现 1 条 eligible JOIN
+作为充分的数据量标准。
+
+旧计划
+`qwen35_native_reactive_128root_train_plan_2026-09-23.json`（v4）保留为两个
+独立 shard 的来源，不再直接交给顺序 runner 执行。当前冻结计划为
+`qwen35_native_reactive_overlapped_128root_train_plan_2026-09-23.json`（v5）；
+对应 workload manifest 为
+`qwen35_native_reactive_overlapped_128root_workload_2026-09-23.json`。新计划绑定
+两个来源 manifest 的内容哈希和 128 个唯一 train task，并明确 64+64 到达时间、
+128 client inflight 和单 server 身份。运行时 source fingerprint 仍记录实际代码
+版本；数据集只从该新 trace 导出，拟合前检查 telemetry、workflow 排除项、动态
+SPAWN/JOIN 标签和 train split 身份。
 
 收集训练集原始 workflow trace **不依赖**预测动作的跨 epoch ACK 接力、
 FULL/MAMBA 独占 reclaim 证书、COMMIT_CPU 或完整 JointPlan。这些只在

@@ -44,7 +44,8 @@ fi
 if [[ "$(jq -r '.plan_id' "$PLAN")" != "qwen35-native-reactive-v0520-v1" \
     && "$(jq -r '.plan_id' "$PLAN")" != "qwen35-native-reactive-v0520-v2" \
     && "$(jq -r '.plan_id' "$PLAN")" != "qwen35-native-reactive-v0520-v3" \
-    && "$(jq -r '.plan_id' "$PLAN")" != "qwen35-native-reactive-v0520-v4-128root" ]]; then
+    && "$(jq -r '.plan_id' "$PLAN")" != "qwen35-native-reactive-v0520-v4-128root" \
+    && "$(jq -r '.plan_id' "$PLAN")" != "qwen35-native-reactive-v0520-v5-overlapped-128root" ]]; then
   printf 'Expected the frozen Qwen3.5 native train plan\n' >&2
   exit 2
 fi

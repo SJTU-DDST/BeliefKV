@@ -22,21 +22,33 @@ Primary metrics:
 ## Current Evidence
 
 The active migration target is Qwen3.5-35B-A3B BF16 on SGLang v0.5.20.
-The first 64-root native reactive training collection completed with 129
-dynamic subagents and 129 JOIN_ALL events. Seven workflows had harness/runtime
-terminal failures, but all 64 retained complete trace telemetry. The collection
-path now excludes those workflows explicitly instead of discarding the batch,
-and the next frozen collection uses native dynamic one-to-four, multi-round
-delegation rather than forced two-child fan-out.
+The latest Qwen3.5 native reactive collection attempt completed its first
+64-root shard in 951.9 seconds, with 21/64 workflows passing the correctness and
+measurement gates. It emitted only two children from one root and one eligible
+JOIN label; 14 roots hit the 512-step safety fuse. This is diagnostic evidence,
+not a sufficient JOIN training collection. The old runner was stopped during
+the second shard's image preparation, and no collection/server process is active.
 
-The forced-two-child v2 collection and its reassessed export are diagnostic
-only and are not inputs to the next model fit. The replacement plan is
-`configs/migration/qwen35_native_reactive_128root_train_plan_2026-09-23.json`:
-two sequential 64-root train batches use disjoint task IDs, for 128 distinct
-workflows under `native_dynamic_1to4`. Each batch gets an independent server
-start, run identity, raw trace directory, and dataset export. Fit only after
-both new exports pass telemetry, split, runtime-prompt, and native SPAWN/JOIN
-checks.
+The 128-root replacement is one frozen collection, not two sequential service
+runs. It merges the two disjoint 64-root train shards, submits roots 0-63 at
+`t=0` and roots 64-127 at `t=60s`, and keeps one SGLang instance and telemetry
+stream throughout. Client concurrency is 128; server running/graph capacity
+remains 48. All task images are prepared before service startup.
+
+The earlier `native_dynamic_1to4` profile was prompt-only, so the model could
+ignore the requested initial SPAWN. The next source revision makes the model
+choose a structured one-to-four-task initial delegation plan, validates it at
+runtime, launches those read-only children concurrently, then resumes the root
+with native task middleware available for subsequent rounds. The selected
+fan-out remains model-dependent rather than fixed at two.
+
+The 512-step hard fuse is separate from the observe-only semantic and soft
+guards. It caps LangGraph execution at 512 and reserves the final 32 steps for
+bounded completion, commonly intervening at step 482. Qwen3-Coder also hit a
+512 recursion limit historically; a later no-guard run reached 2017 steps while
+repeating the same command before a 2048-step fuse stopped it. Keep the current
+fuse for this collection and censor post-intervention full-episode/JOIN labels;
+do not silently treat a hard-finalized workflow as a natural terminal sample.
 
 The graph48 gate passed on the H200: the static FULL/MAMBA capacities remain
 1,798,995 tokens and 513 slots, CUDA graphs cover decode batch 48, 64/64

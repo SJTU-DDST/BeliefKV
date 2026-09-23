@@ -850,6 +850,11 @@ def main() -> int:
             else batch.runtime_policy
         ),
         "subagent_fanout_profile": fanout_profile,
+        "initial_delegation_mode": (
+            "model_selected_runtime_plan_1to4"
+            if fanout_profile == "native_dynamic_1to4"
+            else "profile_defined"
+        ),
         "stop_after_first_native_join": frozen_semantic_gate,
         "request_timeout_s": args.request_timeout,
         "completion_semantics": "model_terminal_no_harness_llm_repair",

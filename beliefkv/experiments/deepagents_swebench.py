@@ -1275,6 +1275,18 @@ class ParallelAnalysisPlan(BaseModel):
     )
 
 
+class DynamicInitialDelegationPlan(BaseModel):
+    rationale: str = Field(description="Brief reason for the chosen fan-out")
+    tasks: list[DelegatedTask] = Field(
+        description=(
+            "One to four independent, read-only child investigations selected "
+            "for this issue"
+        ),
+        min_length=1,
+        max_length=4,
+    )
+
+
 class PartialAgentRunError(RuntimeError):
     def __init__(self, cause: BaseException, partial_result: dict[str, Any]) -> None:
         super().__init__(f"{type(cause).__name__}: {cause}")
@@ -1707,13 +1719,10 @@ fan-out count. Children are read-only and must not edit the workspace.
 
 
 NATIVE_DYNAMIC_1TO4_PROMPT = """
-For every root workflow, the root must start with an initial delegation round before
-independently investigating or editing the repository. Use one to four native task
-calls, selected by the root according to the number of genuinely useful, independent
-workstreams. One child is valid when there is only one substantive independent task;
-do not invent duplicate or trivial work just to increase the count. Issue the initial
-task calls together in one assistant message when they are independent, wait for all
-children to return in the JOIN, and integrate their evidence before proceeding.
+The runtime has already launched and joined the model-selected initial delegation
+round; its child reports are included in the task context. Integrate those reports
+before independently investigating or editing the repository, and do not duplicate
+their work.
 
 Choose one child for a localized issue. When the issue has genuinely separable work,
 consider separate bounded tasks for implementation-path analysis, independent test or
@@ -1728,6 +1737,17 @@ round from the work rather than using a fixed number of rounds. Children retain 
 DeepAgents repository tools and may inspect or implement self-contained work in the
 shared workspace. Avoid overlapping write assignments; the root owns final integration,
 verification, and the required WorkflowCompletion response.
+"""
+
+
+NATIVE_DYNAMIC_INITIAL_PLANNER_PROMPT = """
+Choose the initial delegation round for one SWE-bench root workflow. Return one to
+four independent, read-only child investigations, selecting the count and tasks from
+the issue rather than using a fixed count. Do not return zero tasks, duplicate work,
+or split one narrow question into trivial pieces. Every task must be self-contained
+and name a concrete evidence or test deliverable. These children run concurrently and
+report back before the root continues. The root integrates their findings, makes any
+needed edits, and may use the native task tool for later delegation rounds.
 """
 
 
@@ -2391,6 +2411,51 @@ def _run_autonomous(
             f"subagents.\n\n{evidence}"
         )
         delegation_enabled = False
+    elif config.subagent_fanout_profile == "native_dynamic_1to4":
+        planner = _model(config, adapter, deadline_controller).with_structured_output(
+            DynamicInitialDelegationPlan,
+            method="function_calling",
+            strict=False,
+        )
+        plan = planner.invoke(
+            [
+                {
+                    "role": "system",
+                    "content": NATIVE_DYNAMIC_INITIAL_PLANNER_PROMPT,
+                },
+                {"role": "user", "content": prompt},
+            ],
+            config={
+                "callbacks": [adapter],
+                "metadata": {
+                    "beliefkv_mode": "native_dynamic_initial_planner",
+                },
+            },
+        )
+        if not isinstance(plan, DynamicInitialDelegationPlan):
+            plan = DynamicInitialDelegationPlan.model_validate(plan)
+        tasks = _dynamic_initial_delegation_tasks(plan)
+        reports = _run_declared_analysis_children(
+            config,
+            workload,
+            backend,
+            adapter,
+            tasks,
+            artifact_dir,
+            group_id=f"native-initial:{workload.instance_id}",
+            deadline_controller=deadline_controller,
+        )
+        plan_payload = plan.model_dump(mode="json")
+        evidence = "\n\n".join(
+            f"[{item['role']}]\n{str(item['report'])[:24000]}" for item in reports
+        )
+        prompt += (
+            "\n\nThe model-selected initial delegation round has completed. "
+            "Integrate the read-only child findings, avoid repeating their "
+            "investigations, and continue the task. You may use the native task "
+            "tool for additional independent work.\n\n"
+            f"Initial child reports:\n{evidence}"
+        )
     agent = _build_autonomous_agent(
         config,
         workload,
@@ -2530,6 +2595,31 @@ def _parallel_analysis_tasks(plan: ParallelAnalysisPlan) -> list[DelegatedTask]:
                 description=compatibility,
             )
         )
+    return tasks
+
+
+def _dynamic_initial_delegation_tasks(
+    plan: DynamicInitialDelegationPlan,
+) -> list[DelegatedTask]:
+    tasks = [
+        DelegatedTask(
+            role=task.role.strip(),
+            description=task.description.strip(),
+        )
+        for task in plan.tasks
+    ]
+    if not 1 <= len(tasks) <= 4:
+        raise ValueError("dynamic initial delegation requires one to four tasks")
+    if any(not task.role or not task.description for task in tasks):
+        raise ValueError("dynamic initial delegation tasks must be non-empty")
+    normalized_roles = [task.role.casefold() for task in tasks]
+    if len(normalized_roles) != len(set(normalized_roles)):
+        raise ValueError("dynamic initial delegation roles must be unique")
+    normalized_descriptions = [
+        " ".join(task.description.casefold().split()) for task in tasks
+    ]
+    if len(normalized_descriptions) != len(set(normalized_descriptions)):
+        raise ValueError("dynamic initial delegation tasks must be distinct")
     return tasks
 
 

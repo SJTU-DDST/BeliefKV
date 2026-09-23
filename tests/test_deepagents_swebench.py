@@ -39,7 +39,9 @@ from beliefkv.experiments.deepagents_swebench import (
     AUTONOMOUS_NATURAL_SUBAGENT_PROMPT,
     AUTONOMOUS_SYSTEM_PROMPT,
     DELEGATED_TASK_FOCUS_INSTRUCTION,
+    DynamicInitialDelegationPlan,
     NATIVE_DYNAMIC_1TO4_PROMPT,
+    NATIVE_DYNAMIC_INITIAL_PLANNER_PROMPT,
     NATIVE_SUBAGENT_2TO3_PROMPT,
     DeepAgentsExperimentConfig,
     DockerWorkspaceBackend,
@@ -70,7 +72,9 @@ from beliefkv.experiments.deepagents_swebench import (
     _autonomous_fanout_prompt,
     _filesystem_middleware,
     _autonomous_subagents,
+    _dynamic_initial_delegation_tasks,
     _runtime_verify_changed_tests,
+    _run_autonomous,
     _task_prompt,
     _blake2b_file,
     _planned_child_loop_guard_policy,
@@ -1132,19 +1136,175 @@ def test_native_dynamic_prompt_requires_initial_and_allows_multiround_fanout() -
     prompt = NATIVE_DYNAMIC_1TO4_PROMPT
     normalized = " ".join(prompt.split())
 
-    assert "For every root workflow" in normalized
-    assert "must start with an initial delegation round" in normalized
-    assert "Use one to four native task calls" in normalized
-    assert "One child is valid" in normalized
+    assert "runtime has already launched and joined" in normalized
+    assert "Integrate those reports" in normalized
     assert "Choose one child for a localized issue" in normalized
     assert "specific evidence or test deliverable" in normalized
-    assert "Do not force a fixed child count" not in normalized
     assert "A JOIN does not end delegation" in normalized
     assert "may start another one-to-four-task round" in normalized
     assert "retain native DeepAgents repository tools" in normalized
     assert "Avoid overlapping write assignments" in normalized
     assert "exactly these two mandatory" not in normalized
     assert "spawning subagents is never required" not in normalized
+
+
+def test_dynamic_initial_plan_accepts_model_selected_fanout_from_one_to_four() -> None:
+    for count in range(1, 5):
+        plan = DynamicInitialDelegationPlan(
+            rationale="Independent evidence streams",
+            tasks=[
+                {
+                    "role": f"analyst-{index}",
+                    "description": f"Inspect independent area {index} and report evidence.",
+                }
+                for index in range(count)
+            ],
+        )
+        assert len(_dynamic_initial_delegation_tasks(plan)) == count
+    assert "one to four" in " ".join(
+        NATIVE_DYNAMIC_INITIAL_PLANNER_PROMPT.split()
+    )
+
+
+def test_dynamic_initial_plan_rejects_duplicate_or_empty_tasks() -> None:
+    duplicate_roles = DynamicInitialDelegationPlan(
+        rationale="Independent evidence streams",
+        tasks=[
+            {"role": "analyst", "description": "Inspect source and report evidence."},
+            {"role": "ANALYST", "description": "Inspect tests and report evidence."},
+        ],
+    )
+    duplicate_tasks = DynamicInitialDelegationPlan(
+        rationale="Independent evidence streams",
+        tasks=[
+            {"role": "source", "description": "Inspect source and report evidence."},
+            {"role": "tests", "description": "Inspect source and report evidence."},
+        ],
+    )
+    empty_task = DynamicInitialDelegationPlan(
+        rationale="Independent evidence streams",
+        tasks=[{"role": "source", "description": "  "}],
+    )
+
+    with pytest.raises(ValueError, match="roles must be unique"):
+        _dynamic_initial_delegation_tasks(duplicate_roles)
+    with pytest.raises(ValueError, match="tasks must be distinct"):
+        _dynamic_initial_delegation_tasks(duplicate_tasks)
+    with pytest.raises(ValueError, match="tasks must be non-empty"):
+        _dynamic_initial_delegation_tasks(empty_task)
+
+
+def test_autonomous_dynamic_profile_runs_planned_initial_children_then_native_root(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    plan = DynamicInitialDelegationPlan(
+        rationale="Separate implementation and regression evidence.",
+        tasks=[
+            {
+                "role": "source-review",
+                "description": "Trace the implementation and report its invariant.",
+            },
+            {
+                "role": "test-review",
+                "description": "Inspect the regression tests and report a focused test.",
+            },
+        ],
+    )
+
+    class FakePlanner:
+        def with_structured_output(self, *_args: object, **_kwargs: object) -> FakePlanner:
+            return self
+
+        def invoke(self, *_args: object, **_kwargs: object) -> DynamicInitialDelegationPlan:
+            return plan
+
+    captured: dict[str, object] = {}
+
+    monkeypatch.setattr(
+        "beliefkv.experiments.deepagents_swebench._task_prompt",
+        lambda *_args, **_kwargs: "Fix the reported issue.",
+    )
+    monkeypatch.setattr(
+        "beliefkv.experiments.deepagents_swebench._model",
+        lambda *_args, **_kwargs: FakePlanner(),
+    )
+
+    def run_children(_config: object, _workload: object, _backend: object,
+                     _adapter: object, tasks: list[object], _artifact_dir: Path,
+                     *, group_id: str, deadline_controller: object) -> list[dict[str, str]]:
+        del deadline_controller
+        captured["tasks"] = tasks
+        captured["group_id"] = group_id
+        return [
+            {
+                "role": "source-review",
+                "report": "source evidence",
+            },
+            {
+                "role": "test-review",
+                "report": "test evidence",
+            },
+        ]
+
+    monkeypatch.setattr(
+        "beliefkv.experiments.deepagents_swebench._run_declared_analysis_children",
+        run_children,
+    )
+
+    def build_root(*_args: object, delegation_enabled: bool) -> str:
+        captured["delegation_enabled"] = delegation_enabled
+        return "root-agent"
+
+    monkeypatch.setattr(
+        "beliefkv.experiments.deepagents_swebench._build_autonomous_agent",
+        build_root,
+    )
+
+    def invoke(agent: str, inputs: dict[str, object], _config: dict[str, object]) -> dict[str, bool]:
+        captured["agent"] = agent
+        captured["root_prompt"] = inputs["messages"][0]["content"]  # type: ignore[index]
+        return {"ok": True}
+
+    monkeypatch.setattr(
+        "beliefkv.experiments.deepagents_swebench._invoke_with_partial_state",
+        invoke,
+    )
+    config = DeepAgentsExperimentConfig(
+        mode="autonomous",
+        base_url="http://localhost:18000/v1",
+        model="model",
+        output_dir=tmp_path / "output",
+        workload_manifest=tmp_path / "manifest.json",
+        docker_image="fixture:latest",
+        subagent_fanout_profile="native_dynamic_1to4",
+    )
+    workload = SweBenchWorkload(
+        instance_id="django__django-1",
+        repo="django/django",
+        base_commit="deadbeef",
+        problem_statement="Fix the reported issue.",
+        difficulty="unknown",
+    )
+
+    result, plan_payload, reports = _run_autonomous(
+        config,
+        workload,
+        SimpleNamespace(workspace=tmp_path),
+        SimpleNamespace(),
+        tmp_path,
+        SimpleNamespace(),
+    )
+
+    assert result == {"ok": True}
+    assert plan_payload is not None and len(plan_payload["tasks"]) == 2
+    assert len(reports) == 2
+    assert len(captured["tasks"]) == 2  # type: ignore[arg-type]
+    assert captured["group_id"] == "native-initial:django__django-1"
+    assert captured["delegation_enabled"] is True
+    assert captured["agent"] == "root-agent"
+    assert "source evidence" in str(captured["root_prompt"])
+    assert "test evidence" in str(captured["root_prompt"])
 
 
 def test_autonomous_tool_prompt_requires_a_strategy_change_after_repeat() -> None:
