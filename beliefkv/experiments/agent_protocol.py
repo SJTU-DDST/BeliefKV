@@ -92,8 +92,8 @@ class TerminalProtocolError(RuntimeError):
 @dataclass(frozen=True)
 class LoopGuardPolicy:
     enabled: bool = True
-    enforce_semantic_guard: bool = False
-    enforce_soft_graph_budget: bool = False
+    enforce_semantic_guard: bool = True
+    enforce_soft_graph_budget: bool = True
     repeated_call_limit: int = 3
     repeated_failed_call_limit: int = 2
     alternating_cycle_repetitions: int = 3
@@ -288,15 +288,15 @@ def _credible_progress_key(
         return f"workspace:{before}:{after}"
     tool_name = str(message.name or "")
     if not is_error and tool_name in _CAUSAL_PROGRESS_TOOLS:
-        return f"causal:{tool_name}:{signature or output_digest}"
+        return f"causal:{tool_name}:{signature}:{output_digest}"
     if not is_error and tool_name in _CODE_INSPECTION_TOOLS:
-        return f"evidence:{tool_name}:{signature or output_digest}"
+        return f"evidence:{tool_name}:{signature}:{output_digest}"
     if not is_error and tool_name == "execute":
         command = ""
         if isinstance(tool_args, dict):
             command = str(tool_args.get("command", "")).strip().lower()
         if command.startswith(_SHELL_EVIDENCE_PREFIXES):
-            return f"shell-evidence:{signature or output_digest}"
+            return f"shell-evidence:{signature}:{output_digest}"
     if is_error:
         error_class = str(metadata.get("beliefkv_error_class") or "")
         if not error_class:
@@ -355,8 +355,6 @@ def analyze_agent_history(
         if batch_signatures:
             call_batch_signatures.append(tuple(sorted(batch_signatures)))
 
-    seen_signatures: set[str] = set()
-    seen_outputs: set[str] = set()
     seen_progress_keys: set[str] = set()
     completed_tool_calls = 0
     consecutive_errors = 0
@@ -367,6 +365,7 @@ def analyze_agent_history(
     previous_failed_signature: tuple[str, ...] | None = None
     consecutive_no_progress = 0
     progress_keys: set[str] = set()
+    batch_progress: list[bool] = []
     results_by_batch: dict[
         int, list[tuple[str, str, bool, bool, bool, str | None, str | None]]
     ] = {}
@@ -440,9 +439,6 @@ def analyze_agent_history(
             if suppressed_intent:
                 suppressed_repeat_intent_count += 1
                 batch_suppressed_intents += 1
-            if signature:
-                seen_signatures.add(signature)
-            seen_outputs.add(output_digest)
             if progress_key:
                 seen_progress_keys.add(progress_key)
         consecutive_suppressed_repeat_intents = (
@@ -476,6 +472,7 @@ def analyze_agent_history(
         consecutive_no_progress = (
             0 if batch_has_progress else consecutive_no_progress + 1
         )
+        batch_progress.append(batch_has_progress)
 
     reason: str | None = None
     if repeated_failed_calls >= policy.repeated_failed_call_limit:
@@ -490,6 +487,11 @@ def analyze_agent_history(
     if reason is None and (
         len(call_batch_signatures) >= repeated_limit
         and len(set(call_batch_signatures[-repeated_limit:])) == 1
+        # The first call in a repeated run establishes its baseline evidence.
+        # Only later identical calls can show whether the loop is still making
+        # progress; counting the baseline made this guard unreachable at its
+        # configured threshold.
+        and not any(batch_progress[-repeated_limit + 1 :])
     ):
         reason = "repeated_tool_call"
 
@@ -500,6 +502,7 @@ def analyze_agent_history(
             len(set(tail[0::2])) == 1
             and len(set(tail[1::2])) == 1
             and tail[0] != tail[1]
+            and not any(batch_progress[-alternating_span + 2 :])
         ):
             reason = "alternating_tool_cycle"
 
@@ -807,7 +810,7 @@ class AgentLoopGuardMiddleware(AgentMiddleware[LoopGuardState, Any, Any]):
                 state.get("guard_graph_lease_until", self.policy.graph_step_soft_budget)
             )
             graph_progress_baseline = set(
-                state.get("guard_graph_progress_keys", ())
+                state.get("guard_graph_progress_keys", progress_keys)
             )
             if "guard_graph_progress_keys" not in state:
                 update["guard_graph_progress_keys"] = progress_keys

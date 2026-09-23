@@ -1620,7 +1620,25 @@ WorkflowCompletion structured response. Do not finish with ordinary prose. Use
 status=patched_and_tested only after implementing every requirement, leaving unresolved
 empty, and observing a successful focused repository test command. Never access paths
 outside the mounted repository.
+
+TOOL PROGRESS RULES
+Before calling a tool, identify what new evidence or workspace change it should produce.
+Do not repeat the same tool with the same arguments after it returned the same result
+and the workspace or relevant state has not changed. In particular, do not reread an
+already returned file range. After one unchanged repeat, switch to a materially
+different action: inspect a different implementation or test, run a focused test, make
+the supported edit, or return an honest blocked result with the evidence and exact
+blocker. Retry a failed tool only after correcting its inputs or changing the method;
+do not cycle equivalent probes. A new call ID or slightly altered probe that produces
+no new evidence is not progress.
 """ + SANDBOX_PATH_CONTRACT
+
+TOOL_PROGRESS_INSTRUCTION = """
+Avoid repeated tool loops. Do not repeat the same tool call with identical arguments
+when the result and workspace are unchanged. After one unproductive repeat, change
+approach, add concrete evidence, edit/test when appropriate, or report the blocker
+honestly. Do not treat equivalent probes as progress.
+"""
 
 AUTONOMOUS_NATURAL_SUBAGENT_PROMPT = """
 You may delegate repository work through task. Decide the number of subagents at
@@ -1665,17 +1683,20 @@ fan-out count. Children are read-only and must not edit the workspace.
 
 
 NATIVE_DYNAMIC_1TO4_PROMPT = """
-Use the native task tool only when delegation is useful; spawning subagents is never
-required. For each delegation round, choose one to four independent repository
-questions and issue all selected task calls together in one assistant message so they
-can run concurrently. Choose the count from the work itself: one task is valid, and do
-not add or split work merely to reach a fan-out count. Wait for every task in the round
-to return in the JOIN, integrate the evidence, and then either continue in the parent
-or open another one-to-four-task round when new independent work justifies it. A JOIN
-does not end delegation, and there is no fixed total round count. Children retain the
-native DeepAgents repository tools and may inspect or implement self-contained work in
-the shared workspace. Avoid overlapping write assignments; the parent must integrate
-the returned work and verify the final repository state and tests.
+For every root workflow, the root must start with an initial delegation round before
+independently investigating or editing the repository. Use one to four native task
+calls, selected by the root according to the number of genuinely useful, independent
+workstreams. One child is valid when there is only one substantive independent task;
+do not invent duplicate or trivial work just to increase the count. Issue the initial
+task calls together in one assistant message when they are independent, wait for all
+children to return in the JOIN, and integrate their evidence before proceeding.
+
+A JOIN does not end delegation. After integrating a round, the root may start another
+one-to-four-task round when new, independent work remains; choose the count for that
+round from the work rather than using a fixed number of rounds. Children retain native
+DeepAgents repository tools and may inspect or implement self-contained work in the
+shared workspace. Avoid overlapping write assignments; the root owns final integration,
+verification, and the required WorkflowCompletion response.
 """
 
 
@@ -2150,6 +2171,7 @@ def _autonomous_subagents(
                 "description": description,
                 "system_prompt": (
                     system_prompt
+                    + TOOL_PROGRESS_INSTRUCTION
                     + SANDBOX_PATH_CONTRACT
                     + repository_sandbox_contract(workload)
                 ),
@@ -2422,6 +2444,8 @@ def _run_planned_child(
                 "relevant implementation and tests, then report the most likely symbol "
                 "and invariant to change. Do not enumerate many equivalent python -c "
                 "probes. "
+                + TOOL_PROGRESS_INSTRUCTION
+                + " "
                 "You complete the task only by returning the required ChildCompletion "
                 "structured response. Do not finish with ordinary prose."
             ) + SANDBOX_PATH_CONTRACT + repository_sandbox_contract(workload),

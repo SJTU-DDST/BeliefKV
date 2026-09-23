@@ -55,13 +55,32 @@ v3 和 `native_dynamic_1to4`：在原生 DeepAgents task 语义上只增加
 训练数据。本轮停止处理旧 v2 的 reassessed/exported 数据，只留作历史诊断，
 不再分析标签或拟合模型。
 
+复核发现 v3 的“无需强制 SPAWN”与需要每个 root 都采到动态 child/JOIN
+样本的训练目标冲突。2026-09-23 后续代码已修正 `native_dynamic_1to4`：
+每个 root 必须先启动一轮 1--4 个有实质内容的 child；具体数量由模型按独立
+工作流选择，JOIN 后仍可按剩余工作继续多轮 SPAWN。该要求只属于训练 workload
+profile，不代表所有生产任务都必须委派。旧 v3/v4 计划与已采集数据保持不变，
+不能因源码提示词更新而视作使用了新策略。
+
+同一修复也将 tool-progress 与 semantic loop guard 从只观测改为默认执行：
+相同工具参数在状态未变时不得复读；重复调用、交替循环、连续错误或无新证据
+达到阈值后先进入有界恢复，恢复无进展才收敛到结构化 blocked/终态，不再等到
+graph hard limit 才收尾。graph soft budget 从 384 步起只在该 lease 内出现新
+进展时延长，进度基线从 agent 启动时记录；硬上限仍保留终态输出空间。guard
+介入后的轨迹只允许使用干预前的局部标签，不能用强制收尾行为训练自然 RETURN
+时间。代码回归通过后，下一批采集还需验证每 root 的初始 fanout 分布和 guard
+介入/恢复率；本次尚未启动新 GPU 采集。
+
 新的训练采集计划
 `qwen35_native_reactive_128root_train_plan_2026-09-23.json` 使用身份 v4，
 由两个互不重复的 64-root train batch 组成，共 128 个不同 task。两批均
 采用 `native_dynamic_1to4`、64 客户端并发和 graph48 服务配置；每个
-workflow 允许自然决定是否及如何多轮 SPAWN，不强制 child 数量。数据集仅从
-本轮新采集的原始 trace 导出；拟合前检查完整遥测、workflow 排除项、
-动态 SPAWN/JOIN 和 train split 身份。
+workflow 的原始计划说明曾允许自然决定是否 SPAWN。该计划只保存 profile 名称，
+没有冻结 prompt 内容哈希；修复后的源码仍用此 profile 名称，但现在要求每个
+root 先 SPAWN 1--4 个 child。因此修复前采集的数据仍按旧提示词解释；用当前
+源码重跑该 JSON 时则会采用新策略，必须记录新的 run/source revision，不能宣称
+是逐字复现旧提示词。数据集仅从本轮新采集的原始 trace 导出；拟合前检查完整
+遥测、workflow 排除项、每 root 的动态 SPAWN/JOIN 和 train split 身份。
 
 收集训练集原始 workflow trace **不依赖**预测动作的跨 epoch ACK 接力、
 FULL/MAMBA 独占 reclaim 证书、COMMIT_CPU 或完整 JointPlan。这些只在

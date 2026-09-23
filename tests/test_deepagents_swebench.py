@@ -1060,19 +1060,29 @@ def test_native_subagent_prompt_excludes_natural_fanout_policy() -> None:
     assert "Do not force a second round" in NATIVE_SUBAGENT_2TO3_PROMPT
 
 
-def test_native_dynamic_prompt_allows_optional_multiround_fanout() -> None:
+def test_native_dynamic_prompt_requires_initial_and_allows_multiround_fanout() -> None:
     prompt = NATIVE_DYNAMIC_1TO4_PROMPT
     normalized = " ".join(prompt.split())
 
-    assert "spawning subagents is never required" in normalized
-    assert "one to four independent repository" in normalized
-    assert "one task is valid" in normalized
-    assert "do not add or split work merely to reach a fan-out count" in normalized
-    assert "open another one-to-four-task round" in normalized
-    assert "there is no fixed total round count" in normalized
-    assert "retain the native DeepAgents repository tools" in normalized
+    assert "For every root workflow" in normalized
+    assert "must start with an initial delegation round" in normalized
+    assert "Use one to four native task calls" in normalized
+    assert "One child is valid" in normalized
+    assert "A JOIN does not end delegation" in normalized
+    assert "may start another one-to-four-task round" in normalized
+    assert "retain native DeepAgents repository tools" in normalized
     assert "Avoid overlapping write assignments" in normalized
     assert "exactly these two mandatory" not in normalized
+    assert "spawning subagents is never required" not in normalized
+
+
+def test_autonomous_tool_prompt_requires_a_strategy_change_after_repeat() -> None:
+    normalized = " ".join(AUTONOMOUS_SYSTEM_PROMPT.split())
+
+    assert "Do not repeat the same tool with the same arguments" in normalized
+    assert "After one unchanged repeat" in normalized
+    assert "switch to a materially different action" in normalized
+    assert "A new call ID or slightly altered probe" in normalized
 
 
 def test_native_dynamic_profile_selects_dynamic_supervisor_prompt(
@@ -1770,14 +1780,32 @@ def _tool_exchange(
 def test_loop_guard_detects_repeated_and_alternating_calls() -> None:
     policy = LoopGuardPolicy()
     repeated = []
-    for index in range(3):
+    for index in range(4):
         repeated.extend(_tool_exchange("ls", {"path": "/src"}, str(index), "same"))
     assert analyze_agent_history(repeated, policy).reason == "repeated_tool_call"
 
     alternating = []
-    for index, path in enumerate(("/a", "/b", "/a", "/b", "/a", "/b")):
+    for index, path in enumerate(("/a", "/b", "/a", "/b", "/a", "/b", "/a", "/b")):
         alternating.extend(_tool_exchange("read_file", {"path": path}, str(index), path))
     assert analyze_agent_history(alternating, policy).reason == "alternating_tool_cycle"
+
+
+def test_repeated_tool_signature_with_new_output_counts_as_progress() -> None:
+    messages = []
+    for index in range(4):
+        messages.extend(
+            _tool_exchange(
+                "read_file",
+                {"path": "/src/module.py"},
+                str(index),
+                f"new evidence {index}",
+            )
+        )
+
+    snapshot = analyze_agent_history(messages, LoopGuardPolicy())
+
+    assert snapshot.reason is None
+    assert snapshot.consecutive_no_progress == 0
 
 
 def test_loop_guard_resets_after_a_persistent_thread_completion() -> None:
@@ -2349,7 +2377,7 @@ def test_loop_guard_observes_semantic_patterns_without_intervening() -> None:
     for index in range(3):
         messages.extend(_tool_exchange("ls", {"path": "/src"}, str(index), "same"))
     guard = AgentLoopGuardMiddleware(
-        policy=LoopGuardPolicy(),
+        policy=LoopGuardPolicy(enforce_semantic_guard=False),
         completion_schema=ChildCompletion,
         completion_instruction="Return ChildCompletion.",
         audit=None,
@@ -2430,7 +2458,7 @@ def test_loop_guard_enforces_repeated_suppressed_failure_circuit() -> None:
 
 def test_loop_guard_clears_legacy_semantic_finalization_state() -> None:
     guard = AgentLoopGuardMiddleware(
-        policy=LoopGuardPolicy(),
+        policy=LoopGuardPolicy(enforce_semantic_guard=False),
         completion_schema=ChildCompletion,
         completion_instruction="Return ChildCompletion.",
         audit=None,
@@ -2459,7 +2487,7 @@ def test_loop_guard_enters_suspect_before_bounded_recovery() -> None:
     for index in range(3):
         messages.extend(_tool_exchange("ls", {"path": "/src"}, str(index), "same"))
     guard = AgentLoopGuardMiddleware(
-        policy=LoopGuardPolicy(enforce_semantic_guard=True),
+        policy=LoopGuardPolicy(),
         completion_schema=ChildCompletion,
         completion_instruction="Return ChildCompletion.",
         audit=None,
@@ -2563,6 +2591,46 @@ def test_loop_guard_extends_soft_graph_budget_only_with_progress(
     assert stalled["guard_reason"] == "graph_soft_budget_without_progress"
 
 
+def test_soft_graph_guard_tracks_progress_from_agent_start(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    graph_step = [1]
+    monkeypatch.setattr(
+        "beliefkv.experiments.agent_protocol.get_config",
+        lambda: {
+            "recursion_limit": 512,
+            "metadata": {"langgraph_step": graph_step[0]},
+        },
+    )
+    guard = AgentLoopGuardMiddleware(
+        policy=LoopGuardPolicy(),
+        completion_schema=WorkflowCompletion,
+        completion_instruction="Return WorkflowCompletion.",
+        audit=None,
+        scope="soft-lease-baseline-test",
+    )
+    messages = _tool_exchange(
+        "read_file",
+        {"path": "/workspace/requests/models.py"},
+        "read-1",
+        "class Request:",
+    )
+
+    initial = guard.before_model({"messages": messages}, runtime=None)
+    assert initial is not None
+    assert initial["guard_graph_lease_until"] == 384
+    assert initial["guard_graph_progress_keys"]
+
+    graph_step[0] = 384
+    stalled = guard.before_model(
+        {"messages": messages, **initial},
+        runtime=None,
+    )
+    assert stalled is not None
+    assert stalled["guard_phase"] == "SUSPECT"
+    assert stalled["guard_reason"] == "graph_soft_budget_without_progress"
+
+
 def test_loop_guard_observes_soft_graph_budget_without_intervening(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -2574,7 +2642,10 @@ def test_loop_guard_observes_soft_graph_budget_without_intervening(
         },
     )
     guard = AgentLoopGuardMiddleware(
-        policy=LoopGuardPolicy(),
+        policy=LoopGuardPolicy(
+            enforce_semantic_guard=False,
+            enforce_soft_graph_budget=False,
+        ),
         completion_schema=WorkflowCompletion,
         completion_instruction="Return WorkflowCompletion.",
         audit=None,
