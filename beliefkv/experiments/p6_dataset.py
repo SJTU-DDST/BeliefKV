@@ -71,8 +71,11 @@ def export_p6_training_dataset(
     server_events_path = server / "runtime_events.sglang.jsonl"
     audit_path = server / "runtime_audit.jsonl"
     transfer_path = server / "transfer_telemetry.jsonl"
+    host_pool_path = server / "host_pool_telemetry.jsonl"
     runtime_summary_path = server / "latest_runtime_summary.json"
     required = (server_events_path, audit_path, transfer_path)
+    if _native_reactive:
+        required = (*required, host_pool_path)
     if collection_status.startswith("complete"):
         required = (*manifest_paths, *summary_paths, *required)
     missing = [str(path) for path in required if not path.is_file()]
@@ -308,6 +311,9 @@ def export_p6_training_dataset(
                 "events": len(server_events),
                 "audit": len(audit_records),
                 "transfer": len(_read_jsonl(transfer_path)),
+                "host_pool": len(
+                    _read_jsonl(host_pool_path)
+                ),
             },
             server_events=server_events,
         )
@@ -406,6 +412,7 @@ def export_p6_training_dataset(
                     server_events_path,
                     audit_path,
                     transfer_path,
+                    *((host_pool_path,) if _native_reactive else ()),
                     runtime_summary_path,
                     *agent_paths,
                     source / P6_WORKFLOW_EXCLUSIONS_FILENAME,
@@ -542,7 +549,12 @@ def _attach_native_request_features(
             for key in ("workflow_id", "invocation_id", "context_id", "context_epoch")
         ):
             continue
-        for key in ("cached_tokens_device", "cached_tokens_host", "enqueue_ts_ms"):
+        for key in (
+            "cached_tokens_device",
+            "cached_tokens_host",
+            "uncached_prompt_tokens",
+            "enqueue_ts_ms",
+        ):
             if attrs.get(key) is not None:
                 row[key] = attrs[key]
 
@@ -884,20 +896,53 @@ def _merge_collection_contracts(
     merged["training_eligible"] = all(
         item.get("training_eligible") is True for item in values
     )
-    if any("raw_trace_eligible" in item for item in values):
-        merged["raw_trace_eligible"] = all(
-            item.get("raw_trace_eligible") is True for item in values
-        )
-    if any("model_revision_stable" in item for item in values):
-        merged["model_revision_stable"] = all(
-            item.get("model_revision_stable") is True for item in values
-        )
     merged["runtime_source_stable"] = all(
         item.get("runtime_source_stable") is True for item in values
+    )
+    merged["model_revision_stable"] = (
+        all(item.get("model_revision_stable") is True for item in values)
+        if any("model_revision_stable" in item for item in values)
+        else None
     )
     merged["workflow_count"] = sum(
         int(item.get("workflow_count") or 0) for item in values
     )
+    if any("raw_trace_eligible" in item for item in values):
+        coverage_fields_present = all(
+            type(item.get("trace_complete_workflows")) is int
+            and type(item.get("workflow_count")) is int
+            and type(item.get("raw_trace_min_coverage")) in {int, float}
+            for item in values
+        )
+        if coverage_fields_present:
+            complete_count = sum(
+                int(item["trace_complete_workflows"]) for item in values
+            )
+            trace_coverage = (
+                complete_count / merged["workflow_count"]
+                if merged["workflow_count"]
+                else 0.0
+            )
+            minimum_coverage = max(
+                float(item["raw_trace_min_coverage"]) for item in values
+            )
+            merged["trace_complete_workflows"] = complete_count
+            merged["raw_trace_coverage"] = trace_coverage
+            merged["raw_trace_min_coverage"] = minimum_coverage
+            merged["raw_trace_eligible"] = bool(
+                merged["workflow_count"] > 0
+                and trace_coverage >= minimum_coverage
+                and merged["runtime_source_stable"]
+                and (
+                    merged["model_revision_stable"] is True
+                    if any("model_revision_stable" in item for item in values)
+                    else True
+                )
+            )
+        else:
+            merged["raw_trace_eligible"] = all(
+                item.get("raw_trace_eligible") is True for item in values
+            )
     merged["batch_ids"] = [item.get("batch_id") for item in values]
     merged["source_workload_manifests"] = [
         item.get("source_workload_manifest") for item in values

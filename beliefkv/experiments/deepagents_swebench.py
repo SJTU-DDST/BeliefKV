@@ -1161,6 +1161,14 @@ def _demand_load(load: object) -> int:
     raise ValueError("unsupported SGLang load response")
 
 
+def _demand_load_from_metrics(
+    running: float | None, queued: float | None
+) -> int | None:
+    if running is None or queued is None:
+        return None
+    return max(0, int(round(running + queued)))
+
+
 class SGLangMetricsMonitor:
     def __init__(
         self,
@@ -1168,17 +1176,24 @@ class SGLangMetricsMonitor:
         output_path: Path,
         *,
         pool_tokens: int,
-        poll_interval_s: float = 0.1,
+        poll_interval_s: float = 1.0,
+        max_error_backoff_s: float = 8.0,
     ) -> None:
+        if poll_interval_s <= 0 or max_error_backoff_s <= 0:
+            raise ValueError("metrics polling intervals must be positive")
         root = base_url.rstrip("/")
         self.root = root[:-3] if root.endswith("/v1") else root
         self.output_path = output_path
         self.pool_tokens = pool_tokens
         self.poll_interval_s = poll_interval_s
+        self.max_error_backoff_s = max_error_backoff_s
         self.stop = threading.Event()
         self.thread: threading.Thread | None = None
         self.samples: list[dict[str, Any]] = []
         self.error_count = 0
+        self.error_counts: Counter[str] = Counter()
+        self.request_count = 0
+        self.max_request_duration_ms = 0.0
 
     def start(self) -> None:
         self.thread = threading.Thread(target=self._run, daemon=True)
@@ -1187,19 +1202,18 @@ class SGLangMetricsMonitor:
     def _run(self) -> None:
         self.output_path.parent.mkdir(parents=True, exist_ok=True)
         with self.output_path.open("x", encoding="utf-8", buffering=1) as stream:
+            consecutive_errors = 0
             while not self.stop.is_set():
                 sample: dict[str, Any] = {
                     "monotonic_ts_ms": time.monotonic() * 1000.0,
                 }
+                request_started = time.monotonic()
                 try:
+                    self.request_count += 1
                     with urllib.request.urlopen(
-                        f"{self.root}/metrics", timeout=3.0
+                        f"{self.root}/metrics", timeout=5.0
                     ) as response:
                         payload = response.read().decode("utf-8")
-                    with urllib.request.urlopen(
-                        f"{self.root}/get_load", timeout=3.0
-                    ) as response:
-                        load = json.load(response)
                     for metric in (
                         "sglang:num_used_tokens",
                         "sglang:num_running_reqs",
@@ -1212,15 +1226,37 @@ class SGLangMetricsMonitor:
                     resident = sample.get("num_used_tokens")
                     if resident is not None:
                         sample["resident_pressure"] = resident / self.pool_tokens
-                    sample["demand_load"] = _demand_load(load)
+                    sample["demand_load"] = _demand_load_from_metrics(
+                        sample.get("num_running_reqs"),
+                        sample.get("num_queue_reqs"),
+                    )
                     self.samples.append(sample)
+                    consecutive_errors = 0
                 except Exception as error:
                     self.error_count += 1
+                    self.error_counts[type(error).__name__] += 1
                     sample["error"] = f"{type(error).__name__}: {error}"
+                    consecutive_errors += 1
+                finally:
+                    request_duration_ms = (
+                        time.monotonic() - request_started
+                    ) * 1000.0
+                    sample["request_duration_ms"] = request_duration_ms
+                    self.max_request_duration_ms = max(
+                        self.max_request_duration_ms,
+                        request_duration_ms,
+                    )
                 stream.write(
                     json.dumps(sample, sort_keys=True, allow_nan=False) + "\n"
                 )
-                self.stop.wait(self.poll_interval_s)
+                wait_s = self.poll_interval_s
+                if "error" in sample:
+                    wait_s = min(
+                        self.max_error_backoff_s,
+                        self.poll_interval_s
+                        * (2 ** min(consecutive_errors - 1, 20)),
+                    )
+                self.stop.wait(wait_s)
 
     def close(self) -> dict[str, Any]:
         self.stop.set()
@@ -1236,6 +1272,9 @@ class SGLangMetricsMonitor:
         return {
             "sample_count": len(self.samples),
             "error_count": self.error_count,
+            "error_counts": dict(self.error_counts),
+            "metrics_request_count": self.request_count,
+            "max_request_duration_ms": self.max_request_duration_ms,
             "max_resident_tokens": max(resident, default=0),
             "max_resident_pressure": max(resident, default=0) / self.pool_tokens,
         }
@@ -1244,6 +1283,7 @@ class SGLangMetricsMonitor:
 class DelegatedTask(BaseModel):
     role: str = Field(description="Short semantic role for the child agent")
     description: str = Field(description="Self-contained repository analysis task")
+    source_role: str | None = Field(default=None, exclude=True)
 
 
 class DelegationPlan(BaseModel):
@@ -2111,6 +2151,63 @@ def _final_text(result: dict[str, Any]) -> str:
     return messages[-1].text if messages else ""
 
 
+def _planned_child_completion(result: dict[str, Any]) -> ChildCompletion:
+    guard_intervened = bool(
+        result.get("guard_ever_intervened")
+        or result.get("guard_forcing_completion")
+        or result.get("protocol_repair_failed")
+    )
+    guard_reason = str(result.get("guard_reason") or "child_guard_intervened")
+    value = result.get("structured_response")
+    if isinstance(value, ChildCompletion):
+        completion = value
+    elif isinstance(value, dict):
+        completion = ChildCompletion.model_validate(value)
+    else:
+        text = _final_text(result).strip()
+        if not text:
+            raise RuntimeError("child returned neither structured data nor text")
+        normalized_text = text.casefold().lstrip()
+        blocked_prefixes = (
+            "blocked",
+            "unable to complete",
+            "i am unable to complete",
+            "i'm unable to complete",
+            "i cannot complete",
+            "i can't complete",
+            "i could not complete",
+            "i couldn't complete",
+        )
+        explicitly_blocked = normalized_text.startswith(blocked_prefixes)
+        completion = ChildCompletion(
+            status=(
+                "blocked"
+                if guard_intervened or explicitly_blocked
+                else "complete"
+            ),
+            summary=text[:24_000],
+            unresolved=(
+                [
+                    "Loop/protocol guard intervened; treat this as partial "
+                    f"evidence ({guard_reason})."
+                ]
+                if guard_intervened
+                else []
+            ),
+            confidence="low",
+        )
+    if guard_intervened:
+        completion = completion.model_copy(
+            update={
+                "status": "blocked",
+                "unresolved": list(
+                    dict.fromkeys([*completion.unresolved, guard_reason])
+                )[:12],
+            }
+        )
+    return completion
+
+
 def _invoke_with_partial_state(
     agent: Any,
     inputs: dict[str, Any],
@@ -2446,6 +2543,14 @@ def _run_autonomous(
             deadline_controller=deadline_controller,
         )
         plan_payload = plan.model_dump(mode="json")
+        plan_payload["dispatch_tasks"] = [
+            {
+                "source_role": task.source_role or task.role,
+                "dispatch_role": task.role,
+                "description": task.description,
+            }
+            for task in tasks
+        ]
         evidence = "\n\n".join(
             f"[{item['role']}]\n{str(item['report'])[:24000]}" for item in reports
         )
@@ -2529,10 +2634,10 @@ def _run_planned_child(
                     audit=backend.audit,
                     scope=f"planned:child:{handle.invocation_id}",
                     policy=_planned_child_loop_guard_policy(config),
+                    accept_natural_completion=True,
                     activation_deadline=deadline_controller.deadline,
                 ),
             ],
-            response_format=ToolStrategy(ChildCompletion),
             system_prompt=(
                 "You are an analysis child in a code-planned SWE-bench workflow. "
                 "Inspect and test the mounted repository. Do not edit files. Return "
@@ -2543,8 +2648,9 @@ def _run_planned_child(
                 "probes. "
                 + TOOL_PROGRESS_INSTRUCTION
                 + " "
-                "You complete the task only by returning the required ChildCompletion "
-                "structured response. Do not finish with ordinary prose."
+                "Return your findings in concise ordinary prose; no JSON or special "
+                "completion tool is required. If you cannot complete the assigned "
+                "analysis, state what blocked you and return the partial evidence."
             ) + SANDBOX_PATH_CONTRACT + repository_sandbox_contract(workload),
             name=f"beliefkv-planned-{role_name or 'analyst'}",
         )
@@ -2570,9 +2676,7 @@ def _run_planned_child(
                 },
             },
         )
-        completion = require_structured_completion(result, ChildCompletion)
-        assert isinstance(completion, ChildCompletion)
-        return completion
+        return _planned_child_completion(result)
     finally:
         deadline_controller.unregister_backend(child_backend)
         child_backend.close()
@@ -2601,25 +2705,35 @@ def _parallel_analysis_tasks(plan: ParallelAnalysisPlan) -> list[DelegatedTask]:
 def _dynamic_initial_delegation_tasks(
     plan: DynamicInitialDelegationPlan,
 ) -> list[DelegatedTask]:
-    tasks = [
-        DelegatedTask(
-            role=task.role.strip(),
-            description=task.description.strip(),
-        )
-        for task in plan.tasks
-    ]
-    if not 1 <= len(tasks) <= 4:
+    if not 1 <= len(plan.tasks) <= 4:
         raise ValueError("dynamic initial delegation requires one to four tasks")
-    if any(not task.role or not task.description for task in tasks):
-        raise ValueError("dynamic initial delegation tasks must be non-empty")
-    normalized_roles = [task.role.casefold() for task in tasks]
-    if len(normalized_roles) != len(set(normalized_roles)):
-        raise ValueError("dynamic initial delegation roles must be unique")
-    normalized_descriptions = [
-        " ".join(task.description.casefold().split()) for task in tasks
-    ]
-    if len(normalized_descriptions) != len(set(normalized_descriptions)):
-        raise ValueError("dynamic initial delegation tasks must be distinct")
+    tasks: list[DelegatedTask] = []
+    seen_descriptions: set[str] = set()
+    used_roles: set[str] = set()
+    for index, raw_task in enumerate(plan.tasks, start=1):
+        description = raw_task.description.strip()
+        normalized_description = " ".join(description.casefold().split())
+        if not normalized_description or normalized_description in seen_descriptions:
+            continue
+        seen_descriptions.add(normalized_description)
+
+        source_role = raw_task.role.strip()
+        base_role = source_role or f"analyst-{index}"
+        dispatch_role = base_role
+        suffix = 2
+        while dispatch_role.casefold() in used_roles:
+            dispatch_role = f"{base_role}-{suffix}"
+            suffix += 1
+        used_roles.add(dispatch_role.casefold())
+        tasks.append(
+            DelegatedTask(
+                role=dispatch_role,
+                description=description,
+                source_role=source_role or None,
+            )
+        )
+    if not tasks:
+        raise ValueError("dynamic initial delegation has no actionable tasks")
     return tasks
 
 
@@ -2679,6 +2793,7 @@ def _run_declared_analysis_children(
             reports.append(
                 {
                     "role": task.role,
+                    "source_role": task.source_role or task.role,
                     "description": task.description,
                     "invocation_id": handle.invocation_id,
                     "report": report,

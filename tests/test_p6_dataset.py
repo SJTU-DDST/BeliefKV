@@ -12,6 +12,7 @@ from beliefkv.experiments.p6_dataset import (
     _read_workflow_exclusions,
     _invalid_source_markers,
     _join_reentry_row,
+    _merge_collection_contracts,
     _validate_collection_contract,
     export_native_reactive_p6_dataset,
     export_p6_training_dataset,
@@ -523,6 +524,48 @@ def test_collection_contract_fails_closed_on_predictive_or_invalid_evidence() ->
         )
 
 
+def test_native_trace_coverage_merges_across_batches_by_workflow_count() -> None:
+    merged = _merge_collection_contracts(
+        [
+            {
+                "plan_id": "plan",
+                "split": "train",
+                "runtime_policy": "frozen_native_reactive_v0520",
+                "predictor_enabled": False,
+                "predictive_actions_enabled": False,
+                "training_eligible": False,
+                "raw_trace_eligible": False,
+                "trace_complete_workflows": 15,
+                "workflow_count": 16,
+                "raw_trace_min_coverage": 0.95,
+                "runtime_source_stable": True,
+                "model_revision_stable": True,
+                "batch_id": "small",
+            },
+            {
+                "plan_id": "plan",
+                "split": "train",
+                "runtime_policy": "frozen_native_reactive_v0520",
+                "predictor_enabled": False,
+                "predictive_actions_enabled": False,
+                "training_eligible": False,
+                "raw_trace_eligible": True,
+                "trace_complete_workflows": 48,
+                "workflow_count": 48,
+                "raw_trace_min_coverage": 0.95,
+                "runtime_source_stable": True,
+                "model_revision_stable": True,
+                "batch_id": "large",
+            },
+        ]
+    )
+
+    assert merged["trace_complete_workflows"] == 63
+    assert merged["workflow_count"] == 64
+    assert merged["raw_trace_coverage"] == pytest.approx(63 / 64)
+    assert merged["raw_trace_eligible"] is True
+
+
 def _native_run(tmp_path: Path) -> Path:
     test_export_training_tables_preserves_identity_censoring_and_join_closure(
         tmp_path, "workloads"
@@ -591,12 +634,15 @@ def _native_run(tmp_path: Path) -> Path:
             }
         ],
     )
+    _write_jsonl(server / "host_pool_telemetry.jsonl", [])
     (server / "native_telemetry_status.json").write_text(
         json.dumps(
             {
                 "schema_version": 1,
                 "source": "native_sglang_v0520",
-                "record_counts": {"events": 2, "audit": 2, "transfer": 1},
+                "record_counts": {
+                    "events": 2, "audit": 2, "transfer": 1, "host_pool": 0
+                },
                 "pending_request_count": 0,
                 "pending_batch_count": 0,
                 "writer_error": None,
@@ -804,6 +850,7 @@ def test_native_reactive_request_cache_features_are_observed(tmp_path: Path) -> 
         {
             "cached_tokens_device": 40,
             "cached_tokens_host": 40,
+            "uncached_prompt_tokens": 20,
             "enqueue_ts_ms": 15.0,
         }
     )
@@ -812,6 +859,7 @@ def test_native_reactive_request_cache_features_are_observed(tmp_path: Path) -> 
     export_native_reactive_p6_dataset(run, output)
     request = _read_jsonl(output / "request_calls.jsonl")[0]
     assert (request["cached_tokens_device"], request["cached_tokens_host"]) == (40, 40)
+    assert request["uncached_prompt_tokens"] == 20
     assert request["enqueue_ts_ms"] == 15.0
 
 

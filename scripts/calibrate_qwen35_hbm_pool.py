@@ -29,6 +29,7 @@ def capture(
     model_path: Path,
     gpu: int,
     mem_fraction_static: float,
+    expected_full_host_share: float | None = None,
 ) -> dict[str, object]:
     info = fetch_server_info(base_url)
     identity = validate_native_reactive_v0520(
@@ -83,6 +84,15 @@ def capture(
         full_bytes_per_token=geometry["bf16_full_attention_kv_bytes_per_token"],
         gpu_total_bytes=int(mib) * 1024**2,
     )
+    full_host_share = pools["host_full_bytes"] / pools["host_total_bytes"]
+    mamba_host_share = pools["host_mamba_bytes"] / pools["host_total_bytes"]
+    if expected_full_host_share is not None and abs(
+        full_host_share - expected_full_host_share
+    ) > 0.005:
+        raise RuntimeError(
+            "observed FULL Host pool share does not match the preregistered split: "
+            f"observed={full_host_share:.4f}, expected={expected_full_host_share:.4f}"
+        )
     return {
         "schema_version": 1,
         "calibration_kind": "native_qwen35_full_mamba_static_capacity",
@@ -94,6 +104,11 @@ def capture(
         "max_running_requests": int(info.get("max_running_requests") or 0),
         "mem_fraction_static": mem_fraction_static,
         "host_budget_gb": int(host_budget),
+        "host_pool_split": {
+            "full_share": full_host_share,
+            "mamba_share": mamba_host_share,
+            "requested_full_share": expected_full_host_share,
+        },
         "full_bytes_per_token": geometry["bf16_full_attention_kv_bytes_per_token"],
         "pools": pools,
         "device_ceiling_semantics": "static separate FULL and MAMBA allocations; bytes additive",
@@ -111,6 +126,7 @@ def main() -> None:
     )
     parser.add_argument("--gpu", type=int, default=0)
     parser.add_argument("--mem-fraction-static", type=float, default=0.94)
+    parser.add_argument("--expected-full-host-share", type=float)
     group = parser.add_mutually_exclusive_group(required=True)
     group.add_argument("--output", type=Path)
     group.add_argument("--verify", type=Path)
@@ -119,6 +135,7 @@ def main() -> None:
         base_url=args.base_url, telemetry_dir=args.telemetry_dir,
         model_path=args.model_path, gpu=args.gpu,
         mem_fraction_static=args.mem_fraction_static,
+        expected_full_host_share=args.expected_full_host_share,
     )
     if args.verify is not None:
         expected = json.loads(args.verify.read_text(encoding="utf-8"))

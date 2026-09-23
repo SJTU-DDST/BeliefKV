@@ -18,6 +18,7 @@ from scripts.run_p6_collection_batch import (
     _materialize_runtime_workload_manifest,
     _native_model_manifest,
     _native_telemetry_fresh,
+    _raw_trace_coverage_passed,
     _workflow_export_assessment,
     main as run_collection,
 )
@@ -50,7 +51,7 @@ def test_periodic_idle_native_status_does_not_block_collection(tmp_path: Path) -
     assert not _native_telemetry_fresh(tmp_path)
 
 
-def test_workflow_errors_are_excluded_when_trace_telemetry_is_complete() -> None:
+def test_task_censoring_does_not_invalidate_complete_trace_telemetry() -> None:
     trace = {
         "workflow_lifecycle_valid": True,
         "llm_pairing_valid": True,
@@ -58,8 +59,8 @@ def test_workflow_errors_are_excluded_when_trace_telemetry_is_complete() -> None
         "tool_status_coverage": 1.0,
         "workspace_digest_coverage": 1.0,
         "dynamic_subagent_count": 2,
-        "all_subagents_returned": True,
-        "all_joins_satisfied": True,
+        "all_subagents_returned": False,
+        "all_joins_satisfied": False,
     }
     exclusions, complete = _workflow_export_assessment(
         {
@@ -80,6 +81,12 @@ def test_workflow_errors_are_excluded_when_trace_telemetry_is_complete() -> None
                     "trace": trace,
                     "runtime_control_delivery": {"degraded": False},
                 },
+                {
+                    "instance_id": "repo__broken_trace",
+                    "system_jct_eligible": False,
+                    "trace": {**trace, "tool_pairing_valid": False},
+                    "runtime_control_delivery": {"degraded": False},
+                },
             ]
         }
     )
@@ -87,13 +94,17 @@ def test_workflow_errors_are_excluded_when_trace_telemetry_is_complete() -> None
     assert complete == 2
     assert exclusions == [
         {
-            "instance_id": "repo__censored",
-            "reason": (
-                "workflow_censored:outcome:error,"
-                "missing_semantic_completion"
-            ),
+            "instance_id": "repo__broken_trace",
+            "reason": "trace_telemetry_incomplete:tool_pairing_valid",
         }
     ]
+
+
+def test_raw_trace_gate_allows_at_most_five_percent_incomplete_workflows() -> None:
+    assert _raw_trace_coverage_passed(19, 20)
+    assert _raw_trace_coverage_passed(63, 64)
+    assert not _raw_trace_coverage_passed(18, 20)
+    assert not _raw_trace_coverage_passed(0, 0)
 
 
 def test_native_train_script_exports_after_collection_status_is_captured() -> None:
@@ -106,6 +117,9 @@ def test_native_train_script_exports_after_collection_status_is_captured() -> No
     stop = script.index("stop_server", capture)
     export = script.index("export_native_reactive_p6_dataset.py", stop)
     assert capture < stop < export
+    assert ".arrival_contract.root_count" in script
+    assert "qwen35_native_reactive_${PLAN_ROOT_COUNT}root_" in script
+    assert 'CAPACITY_CALIBRATION_MODE="${CAPACITY_CALIBRATION_MODE:-verify}"' in script
 
 
 def test_actual_kv_pool_tokens_uses_server_report(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -340,7 +354,7 @@ def test_native_reactive_collection_preflight_and_raw_trace_provenance(
     }), encoding="utf-8")
     for name in (
         "runtime_events.sglang.jsonl", "runtime_audit.jsonl",
-        "transfer_telemetry.jsonl",
+        "transfer_telemetry.jsonl", "host_pool_telemetry.jsonl",
     ):
         (telemetry / name).touch()
     info = {
@@ -430,7 +444,9 @@ def test_native_reactive_collection_preflight_and_raw_trace_provenance(
     assert contract["runtime_policy"] == "frozen_native_reactive_v0520"
     assert contract["raw_trace_eligible"] is True
     assert contract["trace_complete_workflows"] == 1
-    assert contract["excluded_workflow_count"] == 1
+    assert contract["excluded_workflow_count"] == 0
+    assert contract["raw_trace_coverage"] == 1.0
+    assert contract["raw_trace_min_coverage"] == 0.95
     assert contract["training_eligible"] is False
     assert contract["server_capacity"]["kv_bytes_per_token"] is None
     assert contract["server_capacity"]["kv_pool_bytes"] is None
@@ -442,15 +458,7 @@ def test_native_reactive_collection_preflight_and_raw_trace_provenance(
     exclusions = json.loads(
         (output.parent / "TRAINING_EXCLUSIONS.json").read_text()
     )
-    assert exclusions["workflows"] == [
-        {
-            "instance_id": "repo__task-1",
-            "reason": (
-                "workflow_censored:outcome:error,"
-                "missing_semantic_completion"
-            ),
-        }
-    ]
+    assert exclusions["workflows"] == []
 
     with patch.dict(info, {"enable_beliefkv_admission": True}):
         with pytest.raises(RuntimeError, match="native reactive"):

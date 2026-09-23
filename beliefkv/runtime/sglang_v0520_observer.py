@@ -69,6 +69,16 @@ class UnifiedUsageObservation:
 
 
 @dataclass(frozen=True)
+class StaticHostUsageObservation:
+    observable: bool
+    host_full_used_tokens: int | None = None
+    host_full_used_bytes: int | None = None
+    host_mamba_used_slots: int | None = None
+    host_mamba_used_bytes: int | None = None
+    reason: str | None = None
+
+
+@dataclass(frozen=True)
 class UnifiedNodeSummary:
     node_id: int
     parent_id: int | None
@@ -226,6 +236,36 @@ def observe_static_full_mamba(cache: object) -> dict[str, int | str]:
         "host_mamba_bytes": host_mamba_bytes,
         "host_total_bytes": host_full_bytes + host_mamba_bytes,
     }
+
+
+def observe_static_full_mamba_host_usage(
+    cache: object,
+) -> StaticHostUsageObservation:
+    """Read current allocated slots from the separate FULL and MAMBA host pools."""
+    try:
+        capacity = observe_static_full_mamba(cache)
+        group = cache.host_pool_group
+        host_full = group.entry_map["kv"].host_pool
+        host_mamba = group.entry_map["mamba"].host_pool
+        full_used = _bounded(
+            capacity["host_full_tokens"] - host_full.available_size(),
+            capacity["host_full_tokens"],
+            "static Host FULL used tokens",
+        )
+        mamba_used = _bounded(
+            capacity["host_mamba_slots"] - host_mamba.available_size(),
+            capacity["host_mamba_slots"],
+            "static Host MAMBA used slots",
+        )
+        return StaticHostUsageObservation(
+            observable=True,
+            host_full_used_tokens=full_used,
+            host_full_used_bytes=full_used * host_full.size_per_token,
+            host_mamba_used_slots=mamba_used,
+            host_mamba_used_bytes=mamba_used * host_mamba.size_per_token,
+        )
+    except (AttributeError, KeyError, TypeError, ValueError, RuntimeError) as exc:
+        return StaticHostUsageObservation(observable=False, reason=str(exc))
 
 
 def observe_unified_full_mamba(cache: object) -> UnifiedCapacityObservation:

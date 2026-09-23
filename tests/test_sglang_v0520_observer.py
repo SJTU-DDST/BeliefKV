@@ -10,6 +10,7 @@ import pytest
 
 from beliefkv.runtime.sglang_v0520_observer import (
     observe_static_full_mamba,
+    observe_static_full_mamba_host_usage,
     observe_unified_full_mamba,
     observe_unified_full_mamba_usage,
     observe_unified_node_closure,
@@ -80,6 +81,47 @@ def test_static_full_mamba_census_counts_separate_device_allocations() -> None:
     assert result["device_full_tokens"] == 12
     assert result["device_mamba_slots"] == 3
     assert result["host_total_bytes"] == 980
+
+
+def test_static_host_usage_reports_full_and_mamba_independently(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from beliefkv.runtime import sglang_v0520_observer
+
+    full_pool = NS(
+        size_per_token=32,
+        available_size=lambda: 75,
+    )
+    mamba_pool = NS(
+        size_per_token=128,
+        available_size=lambda: 4,
+    )
+    cache = NS(
+        host_pool_group=NS(
+            entry_map={
+                "kv": NS(host_pool=full_pool),
+                "mamba": NS(host_pool=mamba_pool),
+            }
+        )
+    )
+    monkeypatch.setattr(
+        sglang_v0520_observer,
+        "observe_static_full_mamba",
+        lambda _: {
+            "host_full_tokens": 100,
+            "host_mamba_slots": 10,
+        },
+    )
+
+    result = observe_static_full_mamba_host_usage(cache)
+
+    assert result.observable
+    assert (
+        result.host_full_used_tokens,
+        result.host_full_used_bytes,
+        result.host_mamba_used_slots,
+        result.host_mamba_used_bytes,
+    ) == (25, 800, 6, 768)
 
 
 class ComponentType(IntEnum):

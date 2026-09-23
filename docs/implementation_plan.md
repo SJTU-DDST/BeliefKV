@@ -21,54 +21,32 @@ Primary metrics:
 
 ## Current Evidence
 
-The active migration target is Qwen3.5-35B-A3B BF16 on SGLang v0.5.20.
-The latest Qwen3.5 native reactive collection attempt completed its first
-64-root shard in 951.9 seconds, with 21/64 workflows passing the correctness and
-measurement gates. It emitted only two children from one root and one eligible
-JOIN label; 14 roots hit the 512-step safety fuse. This is diagnostic evidence,
-not a sufficient JOIN training collection.
+The active stage is a fresh Qwen3.5-35B-A3B BF16 native-reactive collection on
+SGLang v0.5.20. The 65/35 and 70/30 Host-pool allocation comparison used the same
+64 root tasks. 70/30 improved FULL Host prompt-token hit share (31.8% vs. 22.0%)
+and reduced uncached prompt share (4.15% vs. 4.84%), while increasing MAMBA Host
+eviction count (13,387 vs. 11,268). Select 70/30 provisionally for the training
+collection; this is a single-run capacity decision, not a statistical claim.
 
-The first overlapped 128-root attempt (`qwen35-overlap-v1`) was cancelled after
-its runner started because both graph and LangGraph limits were frozen at 512.
-Its partial trace/telemetry is retained under
-`experiments/raw/qwen35_native_reactive_overlapped_128root_train_20260923_v1/`;
-it has no complete dataset export and must not be used for training. The 580
-recreatable root/child workspace checkouts were removed (about 119 GiB freed);
-142 MiB of server telemetry, manifests, and request traces remain. SGLang and
-the two residual containers were stopped, and the GPU was released.
+The 70/30 raw trace had 63/64 complete workflows and was rejected by the old
+100%-coverage export gate. The revised collector/exporter admits at least 95%
+batch trace coverage but continues to exclude malformed workflows individually;
+runtime/model provenance, core event pairing, and telemetry writer health remain
+fail-closed. The 65/35 dataset and both capacity runs remain unchanged.
 
-The replacement uses a 2048-step graph hard fuse and a matching LangGraph
-`recursion_limit`, retaining a 32-step finalization reserve and the 384-step
-observe-only soft threshold. This follows the Qwen3 long-run setting: 2048
-allowed execution beyond 512, while a separate repeated-empty-command loop
-still reached the fuse. A brief v2 server startup was stopped before workflow
-collection for disk cleanup. The clean run uses tmux session
-`qwen35-overlap-v3` and a distinct `_v3` raw directory; verify its runtime
-contract reports both limits as 2048 before treating output as the new collection.
+The active collection is one frozen 128-root plan: 64 roots arrive at `t=0`,
+the next 64 at `t=60s`, client inflight is 128, and one SGLang server uses
+`MAX_RUNNING_REQUESTS=48`/graph48. Both graph hard fuse and LangGraph
+`recursion_limit` are 2048 with a 32-step completion reserve; the 384-step soft
+threshold is telemetry-only. The server uses the verified 70/30 Host split on
+NUMA node 1. Model-selected initial fan-out remains one to four children, with
+the root allowed to spawn again after JOIN.
 
-The 128-root replacement is one frozen collection, not two sequential service
-runs. It merges the two disjoint 64-root train shards, submits roots 0-63 at
-`t=0` and roots 64-127 at `t=60s`, and keeps one SGLang instance and telemetry
-stream throughout. Client concurrency is 128; server running/graph capacity
-remains 48. All task images are prepared before service startup.
-
-The earlier `native_dynamic_1to4` profile was prompt-only, so the model could
-ignore the requested initial SPAWN. The next source revision makes the model
-choose a structured one-to-four-task initial delegation plan, validates it at
-runtime, launches those read-only children concurrently, then resumes the root
-with native task middleware available for subsequent rounds. The selected
-fan-out remains model-dependent rather than fixed at two.
-
-The graph hard fuse is separate from the observe-only semantic and soft guards.
-The replacement collection uses 2048 for both the loop-guard cap and LangGraph
-`recursion_limit`, reserving the final 32 steps for bounded completion. Keep
-the fuse and repeated-call circuit breaker, and censor post-intervention
-full-episode/JOIN labels; do not treat a hard-finalized workflow as a natural
-terminal sample.
-
-The first action gate after startup is to verify one 128-client collector against
-one server, the second 64-root arrival at `t=60s`, and model-selected initial
-fan-out counts in the runtime traces. Do not fit on the earlier sequential shard.
+This is training-data collection, not a predictive throughput experiment:
+predictor and predictive actions remain disabled. After collection, validate
+trace coverage and natural/censored JOIN labels, then fit and evaluate the
+Qwen3.5 prediction heads. The earlier P0-P4 predictive-action roadmap below is
+deferred until usable model data and action calibration are available.
 
 The graph48 gate passed on the H200: the static FULL/MAMBA capacities remain
 1,798,995 tokens and 513 slots, CUDA graphs cover decode batch 48, 64/64

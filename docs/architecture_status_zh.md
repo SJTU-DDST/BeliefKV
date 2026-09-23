@@ -235,6 +235,47 @@ workloads 仍会拒绝。单请求 4 GiB GPU 烟测观察到唯一 submit/result
 当正式 Qwen3.5 训练集；calibration/test 和 GPU 大 pool 高压验收尚缺。
 本轮没有解锁预测物理动作。
 
+### 训练轨迹资格口径修订（已合入，待新采集验证）
+
+旧规则将“所有 child 都返回且 JOIN 全满足”混入 raw trace 完整性，
+并把任一 `system_jct_eligible=false` 的 workflow 从整批 P6 数据中排除。
+这会把有效观测的失败/右删失轨迹误当成遥测损坏。修订后的规则拆开三层：
+runtime/model provenance 必须稳定；raw trace 核心生命周期及 LLM/tool 配对
+必须完整；任务成功、child RETURN 和 JOIN 结果作为 outcome/censor 标签，
+由各训练头按可观测范围单独处理。仅遥测不完整的 workflow 进入
+`TRAINING_EXCLUSIONS.json`，不会因为系统 JCT 不合格而抹掉其余局部标签。
+
+批次 raw trace coverage 门槛调整为至少 95%，多批次按 workflow 数加权合并；
+不完整轨迹仍逐条排除。runtime/model 指纹不稳定、native telemetry writer
+不健康或核心事件不配对仍 fail closed。重复 delegation role 现在按稳定顺序
+分配唯一 dispatch role，精确重复任务只执行一次，并保留原始 role 到派发
+role 的映射。planned child 接受自然语言返回；loop/protocol guard 介入后
+向 parent 返回部分结果并标记 `blocked`，不伪装为成功。
+
+上述实现已合入主工作树；collection、dataset 和 DeepAgents 相关测试共
+208 项通过。旧的 65/35、70/30 容量对照保留其原始 source fingerprint；
+下一轮正式采集将使用本次修订后的代码。
+
+### Host FULL/MAMBA 容量比例对照
+
+对同一组 64 个 root task 的两次单轮对照中，Host 总池均约 180 GB，device
+pool、模型和运行上限保持一致。65/35 分配得到 FULL/MAMBA Host 容量
+117.0/63.0 GB；70/30 为 126.0/54.0 GB。FULL Host 命中 token 占 prompt
+token 的比例分别为 22.0% 与 31.8%，uncached prompt 比例为 4.84% 与
+4.15%；70/30 批次的 FULL Host eviction 单位数从 3.58M 降至 1.82M。
+代价是 MAMBA Host eviction 从 11,268 次增至 13,387 次。该 workload 的
+主要收益更依赖 FULL KV 命中，因此后续训练集暂用 70/30；这只是单轮容量
+选择，不是统计显著性结论。
+对照分析后，仅清理了 65/35 批次下 296 个可重建的 workflow workspace
+checkout，释放约 43.5 GiB；dataset、trace、workspace 元数据及其他实验文件
+均保留。
+
+70/30 对照的 63/64 条核心 trace 完整，旧采集器仍按 100% coverage 将整批
+标记为 raw-trace-ineligible，导致正式 exporter 拒绝导出。遥测和原始 trace
+保留供容量分析，但该批不冒充正式训练集。修订后的采集门槛允许批次 coverage
+达到 95%，同时逐条排除不完整 workflow；核心事件配对、模型/runtime provenance
+及 writer 健康仍须通过。新的 128-root 正式采集将验证此口径。
+
 ## 模型与运行时升级（进行中）
 
 迁移前已冻结 tag `checkpoint/pre-sglang-model-upgrade-2026-09-22` 和旧环境

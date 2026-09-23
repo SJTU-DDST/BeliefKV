@@ -68,11 +68,14 @@ from beliefkv.experiments.deepagents_swebench import (
     summarize_agent_control,
     validate_workflow_completion,
     _trace_summary,
+    _demand_load_from_metrics,
+    SGLangMetricsMonitor,
     _invoke_with_partial_state,
     _autonomous_fanout_prompt,
     _filesystem_middleware,
     _autonomous_subagents,
     _dynamic_initial_delegation_tasks,
+    _planned_child_completion,
     _runtime_verify_changed_tests,
     _run_autonomous,
     _task_prompt,
@@ -111,6 +114,107 @@ def test_sglang_load_monitor_accepts_native_dp_loads() -> None:
     assert _demand_load({"load": 4}) == 4
     with pytest.raises(ValueError, match="unsupported"):
         _demand_load([{"num_reqs": "3"}])
+
+
+def test_sglang_demand_load_uses_the_single_metrics_snapshot() -> None:
+    assert _demand_load_from_metrics(12.0, 7.0) == 19
+    assert _demand_load_from_metrics(12.0, None) is None
+
+
+def test_sglang_metrics_monitor_uses_one_metrics_request_per_sample(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from beliefkv.experiments import deepagents_swebench
+
+    requests: list[str] = []
+    payload = (
+        "sglang:num_used_tokens 100\n"
+        "sglang:num_running_reqs 4\n"
+        "sglang:num_queue_reqs 3\n"
+    )
+
+    class Response:
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *args):
+            return False
+
+        def read(self):
+            return payload.encode()
+
+    def fake_urlopen(url: str, timeout: float):
+        requests.append(url)
+        return Response()
+
+    monkeypatch.setattr(deepagents_swebench.urllib.request, "urlopen", fake_urlopen)
+    monitor = SGLangMetricsMonitor(
+        "http://server/v1", tmp_path / "metrics.jsonl",
+        pool_tokens=200, poll_interval_s=60,
+    )
+    monitor.start()
+    deadline = time.monotonic() + 2
+    while not monitor.samples and time.monotonic() < deadline:
+        time.sleep(0.005)
+    summary = monitor.close()
+
+    assert requests == ["http://server/metrics"]
+    assert monitor.samples[0]["demand_load"] == 7
+    assert monitor.samples[0]["resident_pressure"] == 0.5
+    assert summary["error_count"] == 0
+    assert summary["metrics_request_count"] == 1
+
+
+def test_sglang_metrics_monitor_backs_off_after_scrape_timeout(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from beliefkv.experiments import deepagents_swebench
+
+    requests = 0
+    payload = "sglang:num_used_tokens 100\n"
+
+    class Response:
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *args):
+            return False
+
+        def read(self):
+            return payload.encode()
+
+    def fake_urlopen(url: str, timeout: float):
+        nonlocal requests
+        requests += 1
+        if requests == 1:
+            raise TimeoutError("metrics endpoint busy")
+        return Response()
+
+    monkeypatch.setattr(deepagents_swebench.urllib.request, "urlopen", fake_urlopen)
+    monitor = SGLangMetricsMonitor(
+        "http://server/v1",
+        tmp_path / "metrics.jsonl",
+        pool_tokens=200,
+        poll_interval_s=0.01,
+        max_error_backoff_s=0.02,
+    )
+    monitor.start()
+    deadline = time.monotonic() + 2
+    while requests < 2 and time.monotonic() < deadline:
+        time.sleep(0.005)
+    summary = monitor.close()
+
+    records = [
+        json.loads(line)
+        for line in (tmp_path / "metrics.jsonl").read_text().splitlines()
+    ]
+    assert requests == 2
+    assert summary["error_count"] == 1
+    assert summary["error_counts"] == {"TimeoutError": 1}
+    assert records[0]["error"] == "TimeoutError: metrics endpoint busy"
+    assert records[0]["request_duration_ms"] >= 0
+    assert records[1]["num_used_tokens"] == 100
+    assert summary["max_request_duration_ms"] >= 0
 
 
 def test_agent_control_summary_separates_protocol_and_guard_outcomes(
@@ -1166,7 +1270,7 @@ def test_dynamic_initial_plan_accepts_model_selected_fanout_from_one_to_four() -
     )
 
 
-def test_dynamic_initial_plan_rejects_duplicate_or_empty_tasks() -> None:
+def test_dynamic_initial_plan_repairs_duplicate_roles_and_tasks() -> None:
     duplicate_roles = DynamicInitialDelegationPlan(
         rationale="Independent evidence streams",
         tasks=[
@@ -1183,15 +1287,48 @@ def test_dynamic_initial_plan_rejects_duplicate_or_empty_tasks() -> None:
     )
     empty_task = DynamicInitialDelegationPlan(
         rationale="Independent evidence streams",
-        tasks=[{"role": "source", "description": "  "}],
+        tasks=[
+            {"role": "source", "description": "  "},
+            {"role": "", "description": "Inspect a valid independent area."},
+        ],
     )
 
-    with pytest.raises(ValueError, match="roles must be unique"):
-        _dynamic_initial_delegation_tasks(duplicate_roles)
-    with pytest.raises(ValueError, match="tasks must be distinct"):
-        _dynamic_initial_delegation_tasks(duplicate_tasks)
-    with pytest.raises(ValueError, match="tasks must be non-empty"):
-        _dynamic_initial_delegation_tasks(empty_task)
+    role_tasks = _dynamic_initial_delegation_tasks(duplicate_roles)
+    assert [item.role for item in role_tasks] == ["analyst", "ANALYST-2"]
+    assert [item.source_role for item in role_tasks] == ["analyst", "ANALYST"]
+
+    distinct_tasks = _dynamic_initial_delegation_tasks(duplicate_tasks)
+    assert len(distinct_tasks) == 1
+    assert distinct_tasks[0].role == "source"
+
+    nonempty_tasks = _dynamic_initial_delegation_tasks(empty_task)
+    assert len(nonempty_tasks) == 1
+    assert nonempty_tasks[0].role == "analyst-2"
+    assert nonempty_tasks[0].source_role is None
+
+
+def test_planned_child_accepts_natural_text_and_marks_guarded_return_blocked() -> None:
+    natural = _planned_child_completion(
+        {"messages": [AIMessage(content="The failing invariant is in QuerySet._fetch_all.")]}
+    )
+    assert natural.status == "complete"
+    assert "QuerySet._fetch_all" in natural.summary
+    assert natural.confidence == "low"
+
+    explicitly_blocked = _planned_child_completion(
+        {"messages": [AIMessage(content="I could not complete the assigned test analysis.")]}
+    )
+    assert explicitly_blocked.status == "blocked"
+
+    guarded = _planned_child_completion(
+        {
+            "messages": [AIMessage(content="Partial evidence found before the loop guard.")],
+            "guard_ever_intervened": True,
+            "guard_reason": "repeated_tool_call",
+        }
+    )
+    assert guarded.status == "blocked"
+    assert "repeated_tool_call" in guarded.unresolved
 
 
 def test_autonomous_dynamic_profile_runs_planned_initial_children_then_native_root(
@@ -1298,6 +1435,22 @@ def test_autonomous_dynamic_profile_runs_planned_initial_children_then_native_ro
 
     assert result == {"ok": True}
     assert plan_payload is not None and len(plan_payload["tasks"]) == 2
+    assert plan_payload["dispatch_tasks"] == [
+        {
+            "source_role": "source-review",
+            "dispatch_role": "source-review",
+            "description": (
+                "Trace the implementation and report its invariant."
+            ),
+        },
+        {
+            "source_role": "test-review",
+            "dispatch_role": "test-review",
+            "description": (
+                "Inspect the regression tests and report a focused test."
+            ),
+        },
+    ]
     assert len(reports) == 2
     assert len(captured["tasks"]) == 2  # type: ignore[arg-type]
     assert captured["group_id"] == "native-initial:django__django-1"

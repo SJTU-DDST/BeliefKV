@@ -3,18 +3,20 @@ set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 PYTHON="${PYTHON:-/home/longhao/miniconda3/envs/beliefkv-next/bin/python}"
-PLAN="${PLAN:-$ROOT/configs/migration/qwen35_native_reactive_train_plan_2026-09-22.json}"
+PLAN="${PLAN:-$ROOT/configs/migration/qwen35_native_reactive_overlapped_128root_train_plan_2026-09-23.json}"
 SPLIT="${SPLIT:-$ROOT/configs/p6/swebench_verified_split_v1.json}"
-RUN_ROOT="${RUN_ROOT:-$ROOT/experiments/raw/qwen35_native_reactive_train_20260922_v1}"
+RUN_ROOT="${RUN_ROOT:-}"
 MODEL_PATH="${MODEL_PATH:-/srv/ai/models/Qwen/Qwen3.5-35B-A3B}"
 MODEL_VERSION="${MODEL_VERSION:-qwen35-native-reactive-train-v1}"
 HICACHE_SIZE_GB="${HICACHE_SIZE_GB:-180}"
+FULL_MAMBA_HOST_SPLIT="${FULL_MAMBA_HOST_SPLIT:-70:30}"
+CAPACITY_CALIBRATION_MODE="${CAPACITY_CALIBRATION_MODE:-verify}"
 MEM_FRACTION_STATIC="${MEM_FRACTION_STATIC:-0.94}"
 MAX_RUNNING_REQUESTS="${MAX_RUNNING_REQUESTS:-48}"
 RECURSION_LIMIT="${RECURSION_LIMIT:-2048}"
 HOST_NUMA_NODE="${HOST_NUMA_NODE:-1}"
 BASE_URL="${BASE_URL:-http://127.0.0.1:18000}"
-CAPACITY_CALIBRATION="${CAPACITY_CALIBRATION:-$ROOT/configs/migration/qwen35_native_hbm_capacity_graph48_2026-09-23.json}"
+CAPACITY_CALIBRATION="${CAPACITY_CALIBRATION:-}"
 server_pid=""
 batch_id="${BATCH_ID:-}"
 instance_ids_csv="${INSTANCE_IDS:-}"
@@ -50,10 +52,48 @@ if [[ "$(jq -r '.plan_id' "$PLAN")" != "qwen35-native-reactive-v0520-v1" \
   printf 'Expected the frozen Qwen3.5 native train plan\n' >&2
   exit 2
 fi
-if [[ ! -f "$CAPACITY_CALIBRATION" ]]; then
+if [[ ! "$FULL_MAMBA_HOST_SPLIT" =~ ^([0-9]+):([0-9]+)$ ]]; then
+  printf 'FULL_MAMBA_HOST_SPLIT must use FULL:MAMBA integer percentages\n' >&2
+  exit 2
+fi
+FULL_HOST_PERCENT="${BASH_REMATCH[1]}"
+MAMBA_HOST_PERCENT="${BASH_REMATCH[2]}"
+if (( FULL_HOST_PERCENT <= 0 || MAMBA_HOST_PERCENT <= 0 \
+    || FULL_HOST_PERCENT + MAMBA_HOST_PERCENT != 100 )); then
+  printf 'FULL_MAMBA_HOST_SPLIT percentages must be positive and sum to 100\n' >&2
+  exit 2
+fi
+PLAN_ROOT_COUNT="$(
+  jq -r '
+    .arrival_contract.root_count
+    // ([.batches[] | select(.split == "train") | .workflow_count] | add // 0)
+  ' "$PLAN"
+)"
+if [[ ! "$PLAN_ROOT_COUNT" =~ ^[1-9][0-9]*$ ]]; then
+  printf 'Train plan must declare a positive root count\n' >&2
+  exit 2
+fi
+if [[ -z "$RUN_ROOT" ]]; then
+  RUN_ROOT="$ROOT/experiments/raw/qwen35_native_reactive_${PLAN_ROOT_COUNT}root_${FULL_HOST_PERCENT}_${MAMBA_HOST_PERCENT}_20260923_v1"
+fi
+if [[ -z "$CAPACITY_CALIBRATION" ]]; then
+  CAPACITY_CALIBRATION="$RUN_ROOT/host_capacity_calibration.json"
+fi
+if [[ "$CAPACITY_CALIBRATION_MODE" != "capture" && "$CAPACITY_CALIBRATION_MODE" != "verify" ]]; then
+  printf 'CAPACITY_CALIBRATION_MODE must be capture or verify\n' >&2
+  exit 2
+fi
+if [[ "$CAPACITY_CALIBRATION_MODE" == "verify" && ! -f "$CAPACITY_CALIBRATION" ]]; then
   printf 'Train collection blocked: missing HBM pool calibration %s\n' "$CAPACITY_CALIBRATION" >&2
   exit 2
 fi
+if [[ "$CAPACITY_CALIBRATION_MODE" == "capture" && -e "$CAPACITY_CALIBRATION" ]]; then
+  printf 'Refusing to replace existing capacity calibration: %s\n' "$CAPACITY_CALIBRATION" >&2
+  exit 2
+fi
+EXPECTED_FULL_HOST_SHARE="$(
+  awk -v percent="$FULL_HOST_PERCENT" 'BEGIN { printf "%.4f", percent / 100 }'
+)"
 if curl --silent --max-time 2 --fail "$BASE_URL/health" >/dev/null; then
   printf 'Collection requires an unoccupied server port\n' >&2
   exit 2
@@ -151,7 +191,9 @@ PY
       --requirements "$requirements"
   fi
 
-  setsid env HICACHE_SIZE_GB="$HICACHE_SIZE_GB" HOST_NUMA_NODE="$HOST_NUMA_NODE" \
+  setsid env HICACHE_SIZE_GB="$HICACHE_SIZE_GB" \
+    BELIEFKV_FULL_MAMBA_HOST_SPLIT="$FULL_MAMBA_HOST_SPLIT" \
+    HOST_NUMA_NODE="$HOST_NUMA_NODE" \
     MEM_FRACTION_STATIC="$MEM_FRACTION_STATIC" \
     MAX_RUNNING_REQUESTS="$MAX_RUNNING_REQUESTS" \
     BELIEFKV_NATIVE_TELEMETRY_DIR="$run_dir/server" \
@@ -176,11 +218,19 @@ PY
     printf 'Native server failed to become ready for %s\n' "$batch" >&2
     exit 1
   fi
-  "$PYTHON" "$ROOT/scripts/calibrate_qwen35_hbm_pool.py" \
-    --base-url "$BASE_URL" --telemetry-dir "$run_dir/server" \
-    --model-path "$MODEL_PATH" \
-    --mem-fraction-static "$MEM_FRACTION_STATIC" \
-    --verify "$CAPACITY_CALIBRATION"
+  calibration_args=(
+    "$PYTHON" "$ROOT/scripts/calibrate_qwen35_hbm_pool.py"
+    --base-url "$BASE_URL" --telemetry-dir "$run_dir/server"
+    --model-path "$MODEL_PATH"
+    --mem-fraction-static "$MEM_FRACTION_STATIC"
+    --expected-full-host-share "$EXPECTED_FULL_HOST_SHARE"
+  )
+  if [[ "$CAPACITY_CALIBRATION_MODE" == "capture" ]]; then
+    calibration_args+=(--output "$CAPACITY_CALIBRATION")
+  else
+    calibration_args+=(--verify "$CAPACITY_CALIBRATION")
+  fi
+  "${calibration_args[@]}"
 
   collection_args=(
     --collection-plan "$PLAN"
