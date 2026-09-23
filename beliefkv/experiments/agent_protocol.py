@@ -927,9 +927,13 @@ class AgentLoopGuardMiddleware(AgentMiddleware[LoopGuardState, Any, Any]):
                 "RUNTIME RECOVERY DIRECTIVE\n"
                 f"The progress guard detected a non-progressing action pattern: {reason}. "
                 "Do not repeat the same tool call with the same arguments and unchanged "
-                "workspace. Choose a materially different action that can change the "
-                "workspace or add new evidence, hand off when appropriate, or return an "
-                "honest terminal result using the evidence already available. "
+                "workspace or repeat a failed command unchanged. First use the last tool "
+                "result to identify why it failed. If the issue is a path or import "
+                "mismatch, verify `pwd` and `git rev-parse --show-toplevel`, use the "
+                "checkout at `/workspace`, and ensure Python imports the mounted "
+                "`/workspace/src` tree when it exists. Then take one materially "
+                "different evidence-producing action, make the assigned change, hand off "
+                "when appropriate, or report the exact blocker honestly. "
                 f"{self.completion_instruction}"
             ).strip()
         else:

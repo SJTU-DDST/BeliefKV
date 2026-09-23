@@ -16,6 +16,7 @@ BASE_URL="${BASE_URL:-http://127.0.0.1:18000}"
 CAPACITY_CALIBRATION="${CAPACITY_CALIBRATION:-$ROOT/configs/migration/qwen35_native_hbm_capacity_graph48_2026-09-23.json}"
 server_pid=""
 batch_id="${BATCH_ID:-}"
+instance_ids_csv="${INSTANCE_IDS:-}"
 
 stop_server() {
   if [[ -n "$server_pid" ]]; then
@@ -73,6 +74,21 @@ if [[ -n "$batch_id" ]]; then
     exit 2
   fi
   batches=("$batch_id")
+fi
+instance_ids=()
+if [[ -n "$instance_ids_csv" ]]; then
+  if [[ -z "$batch_id" ]]; then
+    printf 'INSTANCE_IDS requires BATCH_ID so pilot collection stays bounded\n' >&2
+    exit 2
+  fi
+  IFS=',' read -r -a instance_ids <<< "$instance_ids_csv"
+  for index in "${!instance_ids[@]}"; do
+    instance_ids[$index]="${instance_ids[$index]//[[:space:]]/}"
+    if [[ -z "${instance_ids[$index]}" ]]; then
+      printf 'INSTANCE_IDS contains an empty item\n' >&2
+      exit 2
+    fi
+  done
 fi
 
 for batch in "${batches[@]}"; do
@@ -164,14 +180,22 @@ PY
     --mem-fraction-static "$MEM_FRACTION_STATIC" \
     --verify "$CAPACITY_CALIBRATION"
 
+  collection_args=(
+    --collection-plan "$PLAN"
+    --batch-id "$batch"
+    --native-telemetry-dir "$run_dir/server"
+    --image-lock "$run_dir/image-requirements.json"
+    --base-url "$BASE_URL/v1"
+    --model Qwen3.5-35B-A3B
+    --expected-model-path "$MODEL_PATH"
+    --output "$run_dir/workloads"
+  )
+  for instance_id in "${instance_ids[@]}"; do
+    collection_args+=(--instance-id "$instance_id")
+  done
   set +e
   "$PYTHON" "$ROOT/scripts/run_p6_collection_batch.py" \
-    --collection-plan "$PLAN" --batch-id "$batch" \
-    --native-telemetry-dir "$run_dir/server" \
-    --image-lock "$run_dir/image-requirements.json" \
-    --base-url "$BASE_URL/v1" --model Qwen3.5-35B-A3B \
-    --expected-model-path "$MODEL_PATH" \
-    --output "$run_dir/workloads" > "$run_dir/collection.log" 2>&1
+    "${collection_args[@]}" > "$run_dir/collection.log" 2>&1
   collection_status="$?"
   set -e
   printf 'Collected train batch %s; stopping native server\n' "$batch"

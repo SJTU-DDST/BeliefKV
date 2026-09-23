@@ -649,11 +649,13 @@ class DockerWorkspaceBackend(FilesystemBackend, SandboxBackendProtocol):
             f"{self.test_env_path}/bin:/opt/miniconda3/bin:/usr/local/sbin:"
             "/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
         )
-        python_path = (
-            f"/beliefkv-support:{self.shell_workdir}"
-            if self.support_dir is not None
-            else self.shell_workdir
+        python_paths = (
+            ["/beliefkv-support"] if self.support_dir is not None else []
         )
+        python_paths.extend(
+            [f"{self.shell_workdir}/src", self.shell_workdir]
+        )
+        python_path = ":".join(python_paths)
         environment = (
             "HOME=/tmp",
             f"PATH={path}",
@@ -1640,6 +1642,19 @@ approach, add concrete evidence, edit/test when appropriate, or report the block
 honestly. Do not treat equivalent probes as progress.
 """
 
+DELEGATED_TASK_FOCUS_INSTRUCTION = """
+DELEGATED TASK SCOPE
+Work only on the specific deliverable in the assigned task; do not turn it into a
+complete independent solution unless implementation was explicitly assigned. Start from
+the mounted checkout at `/workspace` and use repository paths discovered there. For an
+analysis task, return the smallest concrete evidence that answers the question. For an
+implementation task, change only the assigned area and run one focused repository test.
+After a tool failure, read its actual error and change the command or method; never
+repeat an unchanged failing call. Once the assigned deliverable is supported by evidence,
+return ChildCompletion instead of continuing broad exploration. If blocked, report the
+exact command, path, and observed failure without guessing another repository root.
+"""
+
 AUTONOMOUS_NATURAL_SUBAGENT_PROMPT = """
 You may delegate repository work through task. Decide the number of subagents at
 runtime: there is no required or preconfigured count. Delegate only when a task has
@@ -1690,6 +1705,13 @@ workstreams. One child is valid when there is only one substantive independent t
 do not invent duplicate or trivial work just to increase the count. Issue the initial
 task calls together in one assistant message when they are independent, wait for all
 children to return in the JOIN, and integrate their evidence before proceeding.
+
+Choose one child for a localized issue. When the issue has genuinely separable work,
+consider separate bounded tasks for implementation-path analysis, independent test or
+reproduction evidence, and any distinct compatibility question; do not ask multiple
+children to inspect the same code path. Give every child a concrete question and a
+specific evidence or test deliverable. Prefer returning a concise result as soon as that
+deliverable is complete over exhaustive repository exploration.
 
 A JOIN does not end delegation. After integrating a round, the root may start another
 one-to-four-task round when new, independent work remains; choose the count for that
@@ -2171,6 +2193,7 @@ def _autonomous_subagents(
                 "description": description,
                 "system_prompt": (
                     system_prompt
+                    + DELEGATED_TASK_FOCUS_INSTRUCTION
                     + TOOL_PROGRESS_INSTRUCTION
                     + SANDBOX_PATH_CONTRACT
                     + repository_sandbox_contract(workload)

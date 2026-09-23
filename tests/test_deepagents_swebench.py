@@ -38,6 +38,7 @@ from beliefkv.experiments.agent_protocol import (
 from beliefkv.experiments.deepagents_swebench import (
     AUTONOMOUS_NATURAL_SUBAGENT_PROMPT,
     AUTONOMOUS_SYSTEM_PROMPT,
+    DELEGATED_TASK_FOCUS_INSTRUCTION,
     NATIVE_DYNAMIC_1TO4_PROMPT,
     NATIVE_SUBAGENT_2TO3_PROMPT,
     DeepAgentsExperimentConfig,
@@ -529,6 +530,29 @@ def test_docker_backend_preflights_test_environment_before_use(
     preflight = next(item for item in records if item["event"] == "sandbox_preflight")
     assert preflight["returncode"] == 0
     assert preflight["expected_python"] == "/opt/miniconda3/envs/testbed/bin/python"
+
+
+def test_docker_backend_prefers_mounted_src_tree_over_installed_packages(
+    tmp_path: Path,
+) -> None:
+    audit = JsonlAudit(tmp_path / "audit.jsonl")
+    backend = DockerWorkspaceBackend(
+        tmp_path,
+        image="fixture:latest",
+        audit=audit,
+        support_dir=None,
+    )
+
+    environment_args = backend._docker_environment_args()
+    environment = {
+        environment_args[index + 1].split("=", 1)[0]:
+        environment_args[index + 1].split("=", 1)[1]
+        for index, value in enumerate(environment_args[:-1])
+        if value == "--env"
+    }
+
+    assert environment["PYTHONPATH"] == "/workspace/src:/workspace"
+    audit.close()
 
 
 def test_workload_cli_does_not_apply_sympy_preflight_globally(
@@ -1068,6 +1092,9 @@ def test_native_dynamic_prompt_requires_initial_and_allows_multiround_fanout() -
     assert "must start with an initial delegation round" in normalized
     assert "Use one to four native task calls" in normalized
     assert "One child is valid" in normalized
+    assert "Choose one child for a localized issue" in normalized
+    assert "specific evidence or test deliverable" in normalized
+    assert "Do not force a fixed child count" not in normalized
     assert "A JOIN does not end delegation" in normalized
     assert "may start another one-to-four-task round" in normalized
     assert "retain native DeepAgents repository tools" in normalized
@@ -1674,6 +1701,10 @@ def test_autonomous_subagents_have_independent_context_lifecycles(
     assert all(not item.persist_cursor_across_invocations for item in lifecycles)
     assert all(
         "/workspace/django/db/backends/base/base.py" in spec["system_prompt"]
+        for spec in subagents
+    )
+    assert all(
+        DELEGATED_TASK_FOCUS_INSTRUCTION in spec["system_prompt"]
         for spec in subagents
     )
     assert all(item.policy.window_tokens == 32_768 for item in lifecycles)
@@ -2877,6 +2908,10 @@ def test_loop_guard_keeps_alternate_tools_during_bounded_recovery() -> None:
     assert [item.name for item in recovering.tools] == ["apply_patch", "read_file"]
     assert recovering.tool_choice is None
     assert "RUNTIME RECOVERY DIRECTIVE" in recovering.system_message.text
+    assert "verify `pwd` and `git rev-parse --show-toplevel`" in (
+        recovering.system_message.text
+    )
+    assert "mounted `/workspace/src` tree" in recovering.system_message.text
 
     exhausted = guard._guard_recovery_request(
         ModelRequest(
