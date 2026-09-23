@@ -106,7 +106,7 @@ class LoopGuardPolicy:
     suppressed_repeat_intent_limit: int = 3
     graph_step_soft_budget: int = 384
     graph_step_lease_size: int = 256
-    graph_step_hard_limit: int = 512
+    graph_step_hard_limit: int = 2048
     graph_step_reserve: int = 32
     enforce_graph_step_budget: bool = True
     activation_wall_clock_s: float | None = 7200.0

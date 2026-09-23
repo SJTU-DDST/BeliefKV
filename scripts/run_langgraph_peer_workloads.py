@@ -139,7 +139,7 @@ def _parse_args() -> argparse.Namespace:
             "the activation spelling is retained as a deprecated CLI alias."
         ),
     )
-    parser.add_argument("--recursion-limit", type=int, default=512)
+    parser.add_argument("--recursion-limit", type=int, default=2048)
     parser.add_argument("--docker-image", default=DEFAULT_IMAGE)
     parser.add_argument(
         "--sandbox-test-env", default=DEFAULT_SANDBOX_TEST_ENV

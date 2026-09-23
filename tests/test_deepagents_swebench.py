@@ -949,7 +949,7 @@ def test_experiment_config_uses_hard_fuse_as_langgraph_limit(tmp_path: Path) -> 
         workload_manifest=tmp_path / "workloads.json",
         docker_image="fixture:latest",
     )
-    assert config.recursion_limit == 512
+    assert config.recursion_limit == 2048
     assert config.sampling_seed is None
     assert config.workflow_arrival_interval_ms == 0.0
     assert config.workflow_arrival_batch_size == 0
@@ -2959,6 +2959,34 @@ def test_loop_guard_hard_graph_limit_reserves_terminal_completion(
     assert update["guard_forcing_completion"] is True
     assert update["guard_reason"] == "graph_step_hard_limit_low"
     assert update["guard_ever_intervened"] is True
+
+
+def test_loop_guard_2048_step_fuse_reserves_terminal_completion(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(
+        "beliefkv.experiments.agent_protocol.get_config",
+        lambda: {
+            "recursion_limit": 2048,
+            "metadata": {"langgraph_step": 2017},
+        },
+    )
+    policy = LoopGuardPolicy(graph_step_reserve=32)
+    assert policy.graph_step_hard_limit == 2048
+
+    guard = AgentLoopGuardMiddleware(
+        policy=policy,
+        completion_schema=WorkflowCompletion,
+        completion_instruction="Return WorkflowCompletion.",
+        audit=None,
+        scope="graph-budget-2048-test",
+    )
+    update = guard.before_model({"messages": []}, runtime=None)
+
+    assert update is not None
+    assert update["guard_phase"] == "FINALIZE"
+    assert update["guard_forcing_completion"] is True
+    assert update["guard_reason"] == "graph_step_hard_limit_low"
 
 
 def test_graph_budget_finalization_retains_only_completion_tool() -> None:

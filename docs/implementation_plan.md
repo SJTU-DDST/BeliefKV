@@ -26,11 +26,25 @@ The latest Qwen3.5 native reactive collection attempt completed its first
 64-root shard in 951.9 seconds, with 21/64 workflows passing the correctness and
 measurement gates. It emitted only two children from one root and one eligible
 JOIN label; 14 roots hit the 512-step safety fuse. This is diagnostic evidence,
-not a sufficient JOIN training collection. The old runner was stopped during
-the second shard's image preparation. The replacement is running in tmux session
-`qwen35-overlap-v1`, currently preparing Docker images; the last check showed no
-SGLang process and an idle GPU. Raw output is under
-`experiments/raw/qwen35_native_reactive_overlapped_128root_train_20260923_v1/`.
+not a sufficient JOIN training collection.
+
+The first overlapped 128-root attempt (`qwen35-overlap-v1`) was cancelled after
+its runner started because both graph and LangGraph limits were frozen at 512.
+Its partial trace/telemetry is retained under
+`experiments/raw/qwen35_native_reactive_overlapped_128root_train_20260923_v1/`;
+it has no complete dataset export and must not be used for training. The 580
+recreatable root/child workspace checkouts were removed (about 119 GiB freed);
+142 MiB of server telemetry, manifests, and request traces remain. SGLang and
+the two residual containers were stopped, and the GPU was released.
+
+The replacement uses a 2048-step graph hard fuse and a matching LangGraph
+`recursion_limit`, retaining a 32-step finalization reserve and the 384-step
+observe-only soft threshold. This follows the Qwen3 long-run setting: 2048
+allowed execution beyond 512, while a separate repeated-empty-command loop
+still reached the fuse. A brief v2 server startup was stopped before workflow
+collection for disk cleanup. The clean run uses tmux session
+`qwen35-overlap-v3` and a distinct `_v3` raw directory; verify its runtime
+contract reports both limits as 2048 before treating output as the new collection.
 
 The 128-root replacement is one frozen collection, not two sequential service
 runs. It merges the two disjoint 64-root train shards, submits roots 0-63 at
@@ -45,13 +59,12 @@ runtime, launches those read-only children concurrently, then resumes the root
 with native task middleware available for subsequent rounds. The selected
 fan-out remains model-dependent rather than fixed at two.
 
-The 512-step hard fuse is separate from the observe-only semantic and soft
-guards. It caps LangGraph execution at 512 and reserves the final 32 steps for
-bounded completion, commonly intervening at step 482. Qwen3-Coder also hit a
-512 recursion limit historically; a later no-guard run reached 2017 steps while
-repeating the same command before a 2048-step fuse stopped it. Keep the current
-fuse for this collection and censor post-intervention full-episode/JOIN labels;
-do not silently treat a hard-finalized workflow as a natural terminal sample.
+The graph hard fuse is separate from the observe-only semantic and soft guards.
+The replacement collection uses 2048 for both the loop-guard cap and LangGraph
+`recursion_limit`, reserving the final 32 steps for bounded completion. Keep
+the fuse and repeated-call circuit breaker, and censor post-intervention
+full-episode/JOIN labels; do not treat a hard-finalized workflow as a natural
+terminal sample.
 
 The first action gate after startup is to verify one 128-client collector against
 one server, the second 64-root arrival at `t=60s`, and model-selected initial

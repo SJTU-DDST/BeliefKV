@@ -466,7 +466,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--summary-output-tokens", type=int, default=2_048)
     parser.add_argument("--tool-observation-turn-chars", type=int, default=65_536)
     parser.add_argument("--tool-observation-result-chars", type=int, default=16_384)
-    parser.add_argument("--recursion-limit", type=int, default=512)
+    parser.add_argument("--recursion-limit", type=int, default=2048)
     parser.add_argument(
         "--subagent-fanout-profile",
         choices=(

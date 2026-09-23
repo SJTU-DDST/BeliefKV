@@ -64,8 +64,11 @@ profile，不代表所有生产任务都必须委派。旧 v3/v4 计划与已采
 
 native reactive 训练 profile 将 semantic loop pattern 与 graph soft-budget
 设为只观测：不再依据启发式重复/无进展判断改写模型轨迹，384-step soft
-budget 也不再提前收尾。仍保留 512-step hard limit、底层 graph recursion
-limit、sandbox/命令超时，以及对已确认重复物理失败请求的 circuit breaker。
+budget 也不再提前收尾。v5 第一批 512-step hard limit 在 14 个 workflow 上
+触发收尾，step 数本身不能区分长程进展与错误循环。后续训练配置将 graph
+hard limit 与 LangGraph recursion limit 同步提高至 2048，并保留 32-step
+finalization reserve。sandbox/命令超时，以及对已确认重复物理失败请求的
+circuit breaker 仍保留。
 因此“取消 guard”在这里指取消启发式轨迹干预，不是移除安全上限。硬上限
 收尾及任何实际 runtime intervention 之后跨越干预点的标签继续删失，不能
 作为自然 RETURN/JOIN 时间标签；采集合同会记录各开关和干预事件。
@@ -89,10 +92,12 @@ formal training 仍不合格（train-only 且观测到 runtime intervention）�
 共 43 次重复失败工具意图抑制，并生成 43 条 censor event。这证明 semantic
 pattern/soft-budget 虽为 observe-only，硬上限和 circuit breaker 仍会干预。
 原串行 runner 已在第二批 Docker image pull 阶段停止；第一批结果保留作诊断，
-不是用户要求的 128-root 重叠高压训练数据。修正版已于 2026-09-23 18:24
-通过 tmux session `qwen35-overlap-v1` 启动，当前在预拉 workload 镜像；
-最近一次检查时 SGLang 尚未启动、GPU 空闲。原始输出目录为
-`experiments/raw/qwen35_native_reactive_overlapped_128root_train_20260923_v1/`。
+不是用户要求的 128-root 重叠高压训练数据。重叠 v1 于 2026-09-23 启动后，
+因仍使用 512-step 限额而按用户要求中止。v1 留有部分 runtime trace 和
+telemetry，但未完成 workflow collection 或 dataset export，不进入训练；
+其中 580 个可重新从镜像创建的 root/child workspace checkout 已清理，约释放
+119 GiB；142 MiB 的 server telemetry、manifest 和逐请求轨迹保留供诊断。
+运行进程、SGLang 服务及本轮残留容器均已停止，GPU 已释放。
 
 原 v4 计划把两个 64-root batch 顺序运行，每批独立启动和关闭服务，不能形成
 跨批次 KV overlap。修正版将两个不重复的 64-root manifest 合并为一个 128-root
@@ -108,19 +113,20 @@ fanout。修正版首轮由模型通过 `DynamicInitialDelegationPlan` 选择 1-
 只读子任务，runtime 校验非空、唯一且数量在界内后并发执行；root 集成后仍可使用
 原生 task middleware 发起后续多轮 delegation。任务数仍由模型选择，不固定为 2。
 
-512-step hard-limit 是独立的安全 fuse，不是 384-step soft-budget，也不是 fanout
-限制。native reactive profile 只关闭 semantic/soft-budget 干预；LangGraph
-`recursion_limit` 默认为 512，loop guard 的硬上限也为 512，并在剩余 32 step
-时开始 finalization，所以常见触发点是 step 482。该保护并非 Qwen3.5 新问题：
-Qwen3-Coder 历史 run 曾在 512 recursion limit 抛错；取消 512 后，另一个无 guard
-run 到 step 2017 仍反复执行相同命令，随后由 2048-step fuse 收尾。因此采集保留
-硬保险丝并将干预后的完整 episode/JOIN 标签删失；是否提高 fuse 必须单独权衡长
-循环风险，不能把“取消 guard”当作无成本训练配置。
+graph hard-limit 是独立安全 fuse，不是 384-step soft-budget，也不是 fanout
+限制。native reactive profile 关闭 semantic/soft-budget 干预，但保留重复失败和
+重复无效调用保护。Qwen3-Coder 历史 run 曾在 512 recursion limit 抛错；随后将
+LangGraph limit 提高到 2048 后，任务运行至 step 2017，最终因重复执行相同的空输出
+命令而由保留 32-step reserve 的 fuse 收尾。这表明提高上限能给长任务更多执行空间，
+但不能替代循环保护。
 
-修正版 128-root overlapped plan 已启动；正式采集开始后仍需确认单服务、双波提交、
-首轮 fanout 数和 trace 完整性。训练是否可用仍按干预删失、
-有效 SPAWN/JOIN 标签量和 split 身份判断，不能仅以每批出现 1 条 eligible JOIN
-作为充分的数据量标准。
+重启版使用 `graph_step_hard_limit=2048` 和 LangGraph `recursion_limit=2048`，
+reserve 仍为 32，384-step 仍只记 telemetry。v2 仅启动过模型服务，未进入
+workflow collection；为避免复用其启动产物，最终运行使用 tmux session
+`qwen35-overlap-v3` 和独立 `_v3` raw 目录，仍绑定同一份 128-root overlapped
+plan。正式采集开始后需确认单服务、双波提交、首轮 fanout 数和 trace 完整性。
+训练是否可用仍按干预删失、有效 SPAWN/JOIN 标签量和 split 身份判断，不能仅以
+eligible JOIN 数作为充分的数据量标准。
 
 旧计划
 `qwen35_native_reactive_128root_train_plan_2026-09-23.json`（v4）保留为两个

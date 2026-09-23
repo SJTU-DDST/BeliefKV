@@ -1340,7 +1340,7 @@ class DeepAgentsExperimentConfig:
     sampling_seed: int | None = None
     subagent_fanout_profile: str = "natural"
     stop_after_first_native_join: bool = False
-    recursion_limit: int = 512
+    recursion_limit: int = 2048
     request_timeout_s: float = 600.0
     sandbox_command_timeout_s: int = 600
     sandbox_test_env_path: str = DEFAULT_SANDBOX_TEST_ENV
