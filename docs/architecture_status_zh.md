@@ -62,35 +62,30 @@ v3 和 `native_dynamic_1to4`：在原生 DeepAgents task 语义上只增加
 profile，不代表所有生产任务都必须委派。旧 v3/v4 计划与已采集数据保持不变，
 不能因源码提示词更新而视作使用了新策略。
 
-同一修复也将 tool-progress 与 semantic loop guard 从只观测改为默认执行：
-相同工具参数在状态未变时不得复读；重复调用、交替循环、连续错误或无新证据
-达到阈值后先进入有界恢复，恢复无进展才收敛到结构化 blocked/终态，不再等到
-graph hard limit 才收尾。graph soft budget 从 384 步起只在该 lease 内出现新
-进展时延长，进度基线从 agent 启动时记录；硬上限仍保留终态输出空间。guard
-将成功且有新输出的代码读取/搜索，以及非空、达到最小长度且结果未重复的
-诊断执行，记作可观察证据；短的常量探针、重复输出和显式工具错误不重置
-无进展计数。
-介入后的轨迹只允许使用干预前的局部标签，不能用强制收尾行为训练自然 RETURN
-时间。代码回归通过后，下一批采集还需验证每 root 的初始 fanout 分布和 guard
-介入/恢复率；本次尚未启动新 GPU 采集。
+native reactive 训练 profile 将 semantic loop pattern 与 graph soft-budget
+设为只观测：不再依据启发式重复/无进展判断改写模型轨迹，384-step soft
+budget 也不再提前收尾。仍保留 512-step hard limit、底层 graph recursion
+limit、sandbox/命令超时，以及对已确认重复物理失败请求的 circuit breaker。
+因此“取消 guard”在这里指取消启发式轨迹干预，不是移除安全上限。硬上限
+收尾及任何实际 runtime intervention 之后跨越干预点的标签继续删失，不能
+作为自然 RETURN/JOIN 时间标签；采集合同会记录各开关和干预事件。
 
-训练采集的安全策略与在线调度策略分开：native reactive 训练 profile 将
-semantic loop pattern 和 graph soft-budget 设为只观测，避免启发式误判强制
-改写模型自然轨迹；工具重复/失败防护、sandbox 命令与请求超时、512-step
-hard limit 仍保留。hard limit 收尾以及任何显式 runtime intervention 后跨越
-干预点的标签继续删失，不作为自然 RETURN/JOIN 样本。采集合同必须记录这些
-开关，防止合同声明与实际运行策略不一致。
+2026-09-23 已完成 v5 三 workflow guard-observe pilot：服务启动、请求遥测、
+原始 trace 和 dataset export 完整，产生 1 个自然 child RETURN / JOIN_ALL
+及 1 个 eligible JOIN 标签；另外 2 个 workflow 没有 child。pilot 仅验证
+运行配置与数据链路，不进入训练集。唯一重复失败意图发生在 JOIN 之后；
+正式批次仍需统计此类 intervention 和删失样本。本次 pilot 后，正式
+128-root 训练采集尚未启动。
 
 新的训练采集计划
 `qwen35_native_reactive_128root_train_plan_2026-09-23.json` 使用身份 v4，
 由两个互不重复的 64-root train batch 组成，共 128 个不同 task。两批均
-采用 `native_dynamic_1to4`、64 客户端并发和 graph48 服务配置；每个
-workflow 的原始计划说明曾允许自然决定是否 SPAWN。该计划只保存 profile 名称，
-没有冻结 prompt 内容哈希；修复后的源码仍用此 profile 名称，但现在要求每个
-root 先 SPAWN 1--4 个 child。因此修复前采集的数据仍按旧提示词解释；用当前
-源码重跑该 JSON 时则会采用新策略，必须记录新的 run/source revision，不能宣称
-是逐字复现旧提示词。数据集仅从本轮新采集的原始 trace 导出；拟合前检查完整
-遥测、workflow 排除项、每 root 的动态 SPAWN/JOIN 和 train split 身份。
+采用 `native_dynamic_1to4`、64 客户端并发和 graph48 服务配置；当前 runtime
+提示要求每个 root 先按任务选择 1--4 个有实质内容的 child，并允许 JOIN 后
+继续多轮 SPAWN。prompt 约束不等于行为保证，实际 fanout/JOIN 必须从 trace
+核实。该计划只保存 profile 名称，没有冻结 prompt 内容哈希，所以正式采集
+必须记录实际 run/source revision。数据集只从新采集 trace 导出；拟合前检查
+telemetry、workflow 排除项、动态 SPAWN/JOIN 标签和 train split 身份。
 
 收集训练集原始 workflow trace **不依赖**预测动作的跨 epoch ACK 接力、
 FULL/MAMBA 独占 reclaim 证书、COMMIT_CPU 或完整 JointPlan。这些只在
