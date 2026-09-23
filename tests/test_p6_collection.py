@@ -420,6 +420,9 @@ def test_native_reactive_collection_preflight_and_raw_trace_provenance(
     assert json.loads(
         (telemetry / "native_runtime_contract.json").read_text()
     )["contract_state"] == "validated"
+    assert captured[0].loop_guard.enforce_semantic_guard is False
+    assert captured[0].loop_guard.enforce_soft_graph_budget is False
+    assert captured[0].loop_guard.enforce_graph_step_budget is True
     assert captured[0].loop_guard.activation_wall_clock_s is None
     assert captured[0].context_lifecycle.window_tokens == 65_536
     assert captured[0].context_lifecycle.model_context_tokens == 131_072
@@ -433,6 +436,9 @@ def test_native_reactive_collection_preflight_and_raw_trace_provenance(
     assert contract["server_capacity"]["kv_pool_bytes"] is None
     assert contract["model_revision_stable"] is True
     assert contract["formal_dataset_export_ready"] is False
+    assert contract["graph_step_safety"]["semantic_patterns"] == "telemetry_only"
+    assert contract["graph_step_safety"]["soft_budget_mode"] == "telemetry_only"
+    assert contract["graph_step_safety"]["hard_limit_mode"] == "safety_finalization"
     exclusions = json.loads(
         (output.parent / "TRAINING_EXCLUSIONS.json").read_text()
     )

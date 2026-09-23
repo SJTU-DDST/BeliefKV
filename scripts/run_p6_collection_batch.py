@@ -930,7 +930,12 @@ def main() -> int:
             ),
         ),
         loop_guard=(
-            replace(LoopGuardPolicy(), activation_wall_clock_s=None)
+            replace(
+                LoopGuardPolicy(),
+                enforce_semantic_guard=False,
+                enforce_soft_graph_budget=False,
+                activation_wall_clock_s=None,
+            )
             if native_reactive else LoopGuardPolicy()
         ),
         tool_observation_budget=ToolObservationBudgetPolicy(

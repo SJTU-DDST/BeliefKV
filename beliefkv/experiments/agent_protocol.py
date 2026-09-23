@@ -265,6 +265,9 @@ _SHELL_EVIDENCE_PREFIXES = (
     "pytest ",
     "python -m pytest",
 )
+_MIN_EXECUTION_EVIDENCE_CHARS = 48
+
+
 def _tool_metadata(message: ToolMessage) -> dict[str, Any]:
     return dict(message.additional_kwargs or {})
 
@@ -295,6 +298,8 @@ def _credible_progress_key(
             command = str(tool_args.get("command", "")).strip().lower()
         if command.startswith(_SHELL_EVIDENCE_PREFIXES):
             return f"shell-evidence:{signature}:{output_digest}"
+        if len(_message_text(message).strip()) >= _MIN_EXECUTION_EVIDENCE_CHARS:
+            return f"execution-evidence:{signature}:{output_digest}"
     if is_error:
         error_class = str(metadata.get("beliefkv_error_class") or "")
         if not error_class:

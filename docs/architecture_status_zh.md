@@ -67,9 +67,19 @@ profile，不代表所有生产任务都必须委派。旧 v3/v4 计划与已采
 达到阈值后先进入有界恢复，恢复无进展才收敛到结构化 blocked/终态，不再等到
 graph hard limit 才收尾。graph soft budget 从 384 步起只在该 lease 内出现新
 进展时延长，进度基线从 agent 启动时记录；硬上限仍保留终态输出空间。guard
+将成功且有新输出的代码读取/搜索，以及非空、达到最小长度且结果未重复的
+诊断执行，记作可观察证据；短的常量探针、重复输出和显式工具错误不重置
+无进展计数。
 介入后的轨迹只允许使用干预前的局部标签，不能用强制收尾行为训练自然 RETURN
 时间。代码回归通过后，下一批采集还需验证每 root 的初始 fanout 分布和 guard
 介入/恢复率；本次尚未启动新 GPU 采集。
+
+训练采集的安全策略与在线调度策略分开：native reactive 训练 profile 将
+semantic loop pattern 和 graph soft-budget 设为只观测，避免启发式误判强制
+改写模型自然轨迹；工具重复/失败防护、sandbox 命令与请求超时、512-step
+hard limit 仍保留。hard limit 收尾以及任何显式 runtime intervention 后跨越
+干预点的标签继续删失，不作为自然 RETURN/JOIN 样本。采集合同必须记录这些
+开关，防止合同声明与实际运行策略不一致。
 
 新的训练采集计划
 `qwen35_native_reactive_128root_train_plan_2026-09-23.json` 使用身份 v4，

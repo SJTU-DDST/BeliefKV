@@ -2447,6 +2447,45 @@ def test_loop_guard_does_not_treat_distinct_probe_strings_as_progress() -> None:
     assert snapshot.consecutive_no_progress == 8
 
 
+def test_loop_guard_counts_novel_substantive_execute_output_as_progress() -> None:
+    messages = []
+    for index in range(8):
+        messages.extend(
+            _tool_exchange(
+                "execute",
+                {"command": f"python inspect_state_{index}.py"},
+                str(index),
+                f"diagnostic report {index}\n" + ("new repository evidence " * 8),
+            )
+        )
+
+    snapshot = analyze_agent_history(messages, LoopGuardPolicy())
+
+    assert snapshot.reason is None
+    assert snapshot.consecutive_no_progress == 0
+
+
+def test_loop_guard_still_detects_repeated_execute_output() -> None:
+    messages = []
+    for index in range(6):
+        messages.extend(
+            _tool_exchange(
+                "execute",
+                {"command": "python inspect_state.py"},
+                str(index),
+                "same diagnostic output with enough text to be substantive",
+            )
+        )
+
+    snapshot = analyze_agent_history(
+        messages,
+        LoopGuardPolicy(repeated_call_limit=99),
+    )
+
+    assert snapshot.reason == "no_observable_progress"
+    assert snapshot.consecutive_no_progress == 5
+
+
 def test_loop_guard_observes_semantic_patterns_without_intervening() -> None:
     messages = []
     for index in range(3):
