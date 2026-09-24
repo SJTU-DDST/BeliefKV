@@ -184,6 +184,7 @@ def test_native_train_preserves_target_local_censoring(tmp_path: Path) -> None:
     (
         "qwen35-native-reactive-v0520-v3",
         "qwen35-native-reactive-v0520-v4-128root",
+        "qwen35-native-reactive-v0520-v5-overlapped-128root",
     ),
 )
 def test_native_train_accepts_new_frozen_dynamic_plan_ids(

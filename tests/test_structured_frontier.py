@@ -328,7 +328,16 @@ def _write_dataset(
     return root
 
 
-def test_native_formal_loader_only_accepts_verified_local_train(tmp_path: Path) -> None:
+@pytest.mark.parametrize(
+    "plan_id",
+    (
+        "qwen35-native-reactive-v0520-v1",
+        "qwen35-native-reactive-v0520-v5-overlapped-128root",
+    ),
+)
+def test_native_formal_loader_only_accepts_verified_local_train(
+    tmp_path: Path, plan_id: str
+) -> None:
     root = _write_dataset(
         tmp_path / "native", run_id="native-run", split="train",
         decision_id="native-decision", formal_training_eligible=False,
@@ -338,7 +347,7 @@ def test_native_formal_loader_only_accepts_verified_local_train(tmp_path: Path) 
     manifest = json.loads(path.read_text())
     contract = manifest["source"]["collection_contract"]
     contract.update({
-        "plan_id": "qwen35-native-reactive-v0520-v1",
+        "plan_id": plan_id,
         "runtime_policy": "frozen_native_reactive_v0520",
         "raw_trace_eligible": True,
         "model_revision_stable": True,

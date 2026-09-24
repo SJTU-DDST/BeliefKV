@@ -49,6 +49,7 @@ def _manifest_preflight(root: Path) -> tuple[dict[str, Any], str]:
             "qwen35-native-reactive-v0520-v2",
             "qwen35-native-reactive-v0520-v3",
             "qwen35-native-reactive-v0520-v4-128root",
+            "qwen35-native-reactive-v0520-v5-overlapped-128root",
         }
         or contract.get("split") != "train"
         or contract.get("runtime_policy") != "frozen_native_reactive_v0520"

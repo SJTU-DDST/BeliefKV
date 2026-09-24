@@ -46,6 +46,7 @@ FORMAL_P6_PLAN_IDS = frozenset(
         "qwen35-native-reactive-v0520-v2",
         "qwen35-native-reactive-v0520-v3",
         "qwen35-native-reactive-v0520-v4-128root",
+        "qwen35-native-reactive-v0520-v5-overlapped-128root",
     }
 )
 FORBIDDEN_LOAD_COUPLED_LABELS = frozenset(
@@ -2759,6 +2760,7 @@ def _validate_formal_p6_manifest(
         "qwen35-native-reactive-v0520-v2",
         "qwen35-native-reactive-v0520-v3",
         "qwen35-native-reactive-v0520-v4-128root",
+        "qwen35-native-reactive-v0520-v5-overlapped-128root",
     }
     if native_reactive and (
         expected_split != "train"
