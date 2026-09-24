@@ -2,7 +2,6 @@
 from __future__ import annotations
 
 import argparse
-from dataclasses import replace
 from datetime import datetime, timezone
 import hashlib
 import json
@@ -54,6 +53,7 @@ NATIVE_TELEMETRY_STREAMS = (
     "runtime_audit.jsonl",
     "transfer_telemetry.jsonl",
     "host_pool_telemetry.jsonl",
+    "eviction_attribution.jsonl",
 )
 RAW_TRACE_MIN_COVERAGE = 0.95
 WORKFLOW_EXCLUSIONS_FILENAME = "TRAINING_EXCLUSIONS.json"
@@ -469,7 +469,7 @@ def parse_args() -> argparse.Namespace:
             "the server-reported value is used for pressure accounting"
         ),
     )
-    parser.add_argument("--max-completion-tokens", type=int, default=4096)
+    parser.add_argument("--max-completion-tokens", type=int)
     parser.add_argument("--context-window-tokens", type=int)
     parser.add_argument("--context-keep-tokens", type=int, default=8_192)
     parser.add_argument("--summary-output-tokens", type=int, default=2_048)
@@ -564,7 +564,27 @@ def main() -> int:
         allow_test=args.allow_test,
     )
     native_reactive = batch.runtime_policy == "frozen_native_reactive_v0520"
+    if args.max_completion_tokens is None:
+        args.max_completion_tokens = 8192 if native_reactive else 4096
+    collection_loop_guard = (
+        LoopGuardPolicy(
+            enabled=True,
+            enforce_semantic_guard=False,
+            enforce_soft_graph_budget=False,
+            graph_step_hard_limit=2048,
+            graph_step_reserve=32,
+            enforce_graph_step_budget=True,
+            activation_wall_clock_s=None,
+        )
+        if native_reactive
+        else LoopGuardPolicy()
+    )
     if native_reactive:
+        if args.recursion_limit != 2048:
+            raise ValueError(
+                "Qwen3.5 native reactive training requires "
+                "--recursion-limit 2048"
+            )
         if (
             args.model != "Qwen3.5-35B-A3B"
             or args.native_telemetry_dir is None
@@ -869,6 +889,9 @@ def main() -> int:
         "completion_semantics": "model_terminal_no_harness_llm_repair",
         "completion_gate_enabled": False,
         "completion_repair_attempts": 0,
+        "tool_circuit_breaker_suppression": (
+            "disabled" if native_reactive else "enabled"
+        ),
         "runtime_event_ack_timeout_s": args.runtime_event_ack_timeout,
         "runtime_event_ack_retries": args.runtime_event_ack_retries,
         "context_lifecycle": {
@@ -878,12 +901,32 @@ def main() -> int:
             "summary_output_tokens": args.summary_output_tokens,
         },
         "graph_step_safety": {
-            "semantic_patterns": "telemetry_only",
-            "soft_budget_mode": "telemetry_only",
-            "soft_budget": LoopGuardPolicy().graph_step_soft_budget,
-            "hard_limit": LoopGuardPolicy().graph_step_hard_limit,
-            "reserve": LoopGuardPolicy().graph_step_reserve,
-            "hard_limit_mode": "safety_finalization",
+            "middleware_enabled": collection_loop_guard.enabled,
+            "graph_step_enforcement": (
+                collection_loop_guard.enforce_graph_step_budget
+            ),
+            "semantic_patterns": (
+                "telemetry_only" if native_reactive else "enabled"
+            ),
+            "soft_budget_mode": (
+                "telemetry_only" if native_reactive else "enabled"
+            ),
+            "soft_budget": collection_loop_guard.graph_step_soft_budget,
+            "hard_limit": args.recursion_limit if native_reactive else (
+                collection_loop_guard.graph_step_hard_limit
+            ),
+            "reserve": (
+                collection_loop_guard.graph_step_reserve
+            ),
+            "hard_limit_mode": (
+                "safety_finalization"
+                if native_reactive else "guard_finalization"
+            ),
+            "recursion_limit": args.recursion_limit,
+        },
+        "request_timeouts": {
+            "model_request_timeout_s": args.request_timeout,
+            "sandbox_command_timeout_s": args.sandbox_command_timeout,
         },
         "tool_observation_budget": {
             "total_chars_per_turn": args.tool_observation_turn_chars,
@@ -932,6 +975,7 @@ def main() -> int:
         sandbox_preflight_command=batch.preflight_command,
         completion_gate_enabled=False,
         completion_repair_attempts=0,
+        tool_circuit_breaker_enabled=not native_reactive,
         runtime_event_ack_timeout_s=args.runtime_event_ack_timeout,
         runtime_event_ack_retries=args.runtime_event_ack_retries,
         context_lifecycle=ContextLifecyclePolicy(
@@ -943,15 +987,7 @@ def main() -> int:
                 server_context_length if native_reactive else 262_144
             ),
         ),
-        loop_guard=(
-            replace(
-                LoopGuardPolicy(),
-                enforce_semantic_guard=False,
-                enforce_soft_graph_budget=False,
-                activation_wall_clock_s=None,
-            )
-            if native_reactive else LoopGuardPolicy()
-        ),
+        loop_guard=collection_loop_guard,
         tool_observation_budget=ToolObservationBudgetPolicy(
             total_chars_per_turn=args.tool_observation_turn_chars,
             max_chars_per_result=args.tool_observation_result_chars,

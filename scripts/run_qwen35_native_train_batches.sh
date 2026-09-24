@@ -14,9 +14,11 @@ CAPACITY_CALIBRATION_MODE="${CAPACITY_CALIBRATION_MODE:-verify}"
 MEM_FRACTION_STATIC="${MEM_FRACTION_STATIC:-0.94}"
 MAX_RUNNING_REQUESTS="${MAX_RUNNING_REQUESTS:-48}"
 RECURSION_LIMIT="${RECURSION_LIMIT:-2048}"
+MAX_COMPLETION_TOKENS="${MAX_COMPLETION_TOKENS:-8192}"
 HOST_NUMA_NODE="${HOST_NUMA_NODE:-1}"
 BASE_URL="${BASE_URL:-http://127.0.0.1:18000}"
 CAPACITY_CALIBRATION="${CAPACITY_CALIBRATION:-}"
+RUN_DATE="${RUN_DATE:-$(date +%Y%m%d)}"
 server_pid=""
 batch_id="${BATCH_ID:-}"
 instance_ids_csv="${INSTANCE_IDS:-}"
@@ -44,12 +46,27 @@ if [[ $# -ne 0 ]]; then
   printf 'Usage: RUN_ROOT=... bash %s (no positional arguments)\n' "$0" >&2
   exit 2
 fi
-if [[ "$(jq -r '.plan_id' "$PLAN")" != "qwen35-native-reactive-v0520-v1" \
-    && "$(jq -r '.plan_id' "$PLAN")" != "qwen35-native-reactive-v0520-v2" \
-    && "$(jq -r '.plan_id' "$PLAN")" != "qwen35-native-reactive-v0520-v3" \
-    && "$(jq -r '.plan_id' "$PLAN")" != "qwen35-native-reactive-v0520-v4-128root" \
-    && "$(jq -r '.plan_id' "$PLAN")" != "qwen35-native-reactive-v0520-v5-overlapped-128root" ]]; then
-  printf 'Expected the frozen Qwen3.5 native train plan\n' >&2
+PLAN_ID="$(jq -r '.plan_id' "$PLAN")"
+if [[ "$PLAN_ID" != "qwen35-native-reactive-v0520-v5-overlapped-128root" ]]; then
+  printf 'Expected the latest frozen overlapped Qwen3.5 native train plan\n' >&2
+  exit 2
+fi
+if ! jq -e '
+  .arrival_contract as $a
+  | $a.root_count == 128
+    and $a.client_inflight == 128
+    and $a.server_instances == 1
+    and $a.server_max_running_requests == 48
+    and $a.waves == [
+      {"offset_seconds": 0, "root_count": 64, "wave": 1},
+      {"offset_seconds": 60, "root_count": 64, "wave": 2}
+    ]
+' "$PLAN" >/dev/null; then
+  printf 'Frozen plan must be 64+64 roots at t=0/60s, one server, running=48\n' >&2
+  exit 2
+fi
+if [[ ! "$RECURSION_LIMIT" =~ ^[0-9]+$ ]] || (( RECURSION_LIMIT != 2048 )); then
+  printf 'Native training requires RECURSION_LIMIT=2048; refusing stale override\n' >&2
   exit 2
 fi
 if [[ ! "$FULL_MAMBA_HOST_SPLIT" =~ ^([0-9]+):([0-9]+)$ ]]; then
@@ -74,7 +91,7 @@ if [[ ! "$PLAN_ROOT_COUNT" =~ ^[1-9][0-9]*$ ]]; then
   exit 2
 fi
 if [[ -z "$RUN_ROOT" ]]; then
-  RUN_ROOT="$ROOT/experiments/raw/qwen35_native_reactive_${PLAN_ROOT_COUNT}root_${FULL_HOST_PERCENT}_${MAMBA_HOST_PERCENT}_20260923_v1"
+  RUN_ROOT="$ROOT/experiments/raw/qwen35_native_reactive_${PLAN_ROOT_COUNT}root_${FULL_HOST_PERCENT}_${MAMBA_HOST_PERCENT}_${RUN_DATE}_v1"
 fi
 if [[ -z "$CAPACITY_CALIBRATION" ]]; then
   CAPACITY_CALIBRATION="$RUN_ROOT/host_capacity_calibration.json"
@@ -236,6 +253,7 @@ PY
     --collection-plan "$PLAN"
     --batch-id "$batch"
     --recursion-limit "$RECURSION_LIMIT"
+    --max-completion-tokens "$MAX_COMPLETION_TOKENS"
     --native-telemetry-dir "$run_dir/server"
     --image-lock "$run_dir/image-requirements.json"
     --base-url "$BASE_URL/v1"

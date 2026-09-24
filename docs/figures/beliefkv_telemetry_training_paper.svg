@@ -1,0 +1,85 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="1450" height="790" viewBox="0 0 1450 790" role="img" aria-labelledby="title">
+<title id="title">Request-Aligned Telemetry and Labels</title>
+<rect width="100%" height="100%" fill="#ffffff"/>
+<defs>
+<marker id="arrow" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10z" fill="#263746"/></marker>
+<marker id="blue-arrow" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10z" fill="#3d6f9f"/></marker>
+<marker id="teal-arrow" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10z" fill="#357b73"/></marker>
+<marker id="amber-arrow" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10z" fill="#a96f1f"/></marker>
+</defs>
+<style>text{font-family:Arial,"Liberation Sans",sans-serif}.hair{stroke:#d4dbe0;stroke-width:1}</style>
+<text x="56" y="55" font-size="25" fill="#263746" font-weight="700" text-anchor="start">Request-Aligned Telemetry and Labels</text>
+<line x1="56" y1="82" x2="1444" y2="82" class="hair"/>
+<text x="58" y="121" font-size="10.5" fill="#687680" font-weight="700" text-anchor="start">INDEPENDENT EVIDENCE STREAMS</text>
+<text x="58" y="162" font-size="9" fill="#357b73" font-weight="600" text-anchor="start">causal</text>
+<line x1="143" y1="158" x2="992" y2="158" stroke="#d4dbe0" stroke-width="1"/>
+<circle cx="233" cy="158" r="4" fill="#357b73" stroke="#357b73" stroke-width="0.7"/>
+<circle cx="493" cy="158" r="4" fill="#357b73" stroke="#357b73" stroke-width="0.7"/>
+<circle cx="793" cy="158" r="4" fill="#357b73" stroke="#357b73" stroke-width="0.7"/>
+<text x="1001" y="161" font-size="8" fill="#687680" font-weight="450" text-anchor="start">time</text>
+<text x="58" y="226" font-size="9" fill="#3d6f9f" font-weight="600" text-anchor="start">request</text>
+<line x1="143" y1="222" x2="992" y2="222" stroke="#d4dbe0" stroke-width="1"/>
+<circle cx="358" cy="222" r="4" fill="#3d6f9f" stroke="#3d6f9f" stroke-width="0.7"/>
+<circle cx="640" cy="222" r="4" fill="#3d6f9f" stroke="#3d6f9f" stroke-width="0.7"/>
+<circle cx="947" cy="222" r="4" fill="#3d6f9f" stroke="#3d6f9f" stroke-width="0.7"/>
+<text x="1001" y="225" font-size="8" fill="#687680" font-weight="450" text-anchor="start">time</text>
+<text x="58" y="290" font-size="9" fill="#a96f1f" font-weight="600" text-anchor="start">pool</text>
+<line x1="143" y1="286" x2="992" y2="286" stroke="#d4dbe0" stroke-width="1"/>
+<circle cx="233" cy="286" r="4" fill="#a96f1f" stroke="#a96f1f" stroke-width="0.7"/>
+<circle cx="493" cy="286" r="4" fill="#a96f1f" stroke="#a96f1f" stroke-width="0.7"/>
+<circle cx="793" cy="286" r="4" fill="#a96f1f" stroke="#a96f1f" stroke-width="0.7"/>
+<text x="1001" y="289" font-size="8" fill="#687680" font-weight="450" text-anchor="start">time</text>
+<text x="58" y="354" font-size="9" fill="#89959d" font-weight="600" text-anchor="start">HiCache</text>
+<line x1="143" y1="350" x2="992" y2="350" stroke="#d4dbe0" stroke-width="1"/>
+<circle cx="358" cy="350" r="4" fill="#89959d" stroke="#89959d" stroke-width="0.7"/>
+<circle cx="640" cy="350" r="4" fill="#89959d" stroke="#89959d" stroke-width="0.7"/>
+<circle cx="947" cy="350" r="4" fill="#89959d" stroke="#89959d" stroke-width="0.7"/>
+<text x="1001" y="353" font-size="8" fill="#687680" font-weight="450" text-anchor="start">time</text>
+<text x="233" y="136" font-size="7.5" fill="#357b73" font-weight="500" text-anchor="middle">SPAWN</text>
+<text x="358" y="200" font-size="7.5" fill="#3d6f9f" font-weight="500" text-anchor="middle">tokens</text>
+<text x="493" y="264" font-size="7.5" fill="#a96f1f" font-weight="500" text-anchor="middle">evict</text>
+<text x="640" y="328" font-size="7.5" fill="#89959d" font-weight="500" text-anchor="middle">ACK</text>
+<path d="M1026 250 L1081 250" fill="none" stroke="#263746" stroke-width="1.4" marker-end="url(#arrow)"/>
+<rect x="1087" y="210" width="256" height="80" rx="2" fill="#f2f4f5" stroke="#89959d" stroke-width="1.3"/>
+<text x="1215.0" y="253.4" font-size="10" fill="#263746" font-weight="600" text-anchor="middle">join by run · request · epoch · time</text>
+<text x="1215" y="268" font-size="8" fill="#687680" font-weight="450" text-anchor="middle">token + unit conservation</text>
+<line x1="58" y1="408" x2="1392" y2="408" stroke="#d4dbe0" stroke-width="1"/>
+<text x="58" y="441" font-size="10.5" fill="#687680" font-weight="700" text-anchor="start">PER-DECISION LABELS</text>
+<rect x="102" y="466" width="175" height="42" rx="2" fill="#eaf3f1" stroke="#357b73" stroke-width="1.1"/>
+<text x="189" y="492" font-size="9.5" fill="#263746" font-weight="550" text-anchor="middle">return time</text>
+<rect x="328" y="466" width="175" height="42" rx="2" fill="#edf3f8" stroke="#3d6f9f" stroke-width="1.1"/>
+<text x="415" y="492" font-size="9.5" fill="#263746" font-weight="550" text-anchor="middle">token demand</text>
+<rect x="554" y="466" width="175" height="42" rx="2" fill="#fbf2e3" stroke="#a96f1f" stroke-width="1.1"/>
+<text x="641" y="492" font-size="9.5" fill="#263746" font-weight="550" text-anchor="middle">admission</text>
+<rect x="780" y="466" width="175" height="42" rx="2" fill="#edf3f8" stroke="#3d6f9f" stroke-width="1.1"/>
+<text x="867" y="492" font-size="9.5" fill="#263746" font-weight="550" text-anchor="middle">KV action</text>
+<rect x="1006" y="466" width="175" height="42" rx="2" fill="#eaf3f1" stroke="#357b73" stroke-width="1.1"/>
+<text x="1093" y="492" font-size="9.5" fill="#263746" font-weight="550" text-anchor="middle">hit / recompute</text>
+<line x1="277" y1="487" x2="322" y2="487" stroke="#263746" stroke-width="1.3" marker-end="url(#arrow)"/>
+<line x1="503" y1="487" x2="548" y2="487" stroke="#263746" stroke-width="1.3" marker-end="url(#arrow)"/>
+<line x1="729" y1="487" x2="774" y2="487" stroke="#263746" stroke-width="1.3" marker-end="url(#arrow)"/>
+<line x1="955" y1="487" x2="1000" y2="487" stroke="#263746" stroke-width="1.3" marker-end="url(#arrow)"/>
+<rect x="1214" y="466" width="132" height="42" rx="2" fill="#f8edeb" stroke="#a6534d" stroke-width="1.3"/>
+<text x="1280.0" y="490.06" font-size="9" fill="#263746" font-weight="600" text-anchor="middle">censor audit</text>
+<path d="M1134 250 L1178 250 L1178 487 L1208 487" fill="none" stroke="#a6534d" stroke-width="1.2" stroke-dasharray="4 3" marker-end="url(#arrow)"/>
+<text x="1214" y="526" font-size="8" fill="#a6534d" font-weight="500" text-anchor="start">intervention / missing evidence</text>
+<line x1="58" y1="565" x2="1392" y2="565" stroke="#d4dbe0" stroke-width="1"/>
+<text x="58" y="598" font-size="10.5" fill="#687680" font-weight="700" text-anchor="start">WORKFLOW-LEVEL SPLIT AND MODEL GATE</text>
+<rect x="131" y="622" width="151" height="48" rx="2" fill="#ffffff" stroke="#357b73" stroke-width="1.2"/>
+<text x="206" y="651" font-size="10" fill="#357b73" font-weight="600" text-anchor="middle">train</text>
+<text x="206" y="688" font-size="8" fill="#687680" font-weight="450" text-anchor="middle">workflow IDs 1</text>
+<rect x="333" y="622" width="151" height="48" rx="2" fill="#ffffff" stroke="#a96f1f" stroke-width="1.2"/>
+<text x="408" y="651" font-size="10" fill="#a96f1f" font-weight="600" text-anchor="middle">calibration</text>
+<text x="408" y="688" font-size="8" fill="#687680" font-weight="450" text-anchor="middle">workflow IDs 2</text>
+<rect x="535" y="622" width="151" height="48" rx="2" fill="#ffffff" stroke="#3d6f9f" stroke-width="1.2"/>
+<text x="610" y="651" font-size="10" fill="#3d6f9f" font-weight="600" text-anchor="middle">test</text>
+<text x="610" y="688" font-size="8" fill="#687680" font-weight="450" text-anchor="middle">workflow IDs 3</text>
+<path d="M686 646 L775 646" fill="none" stroke="#263746" stroke-width="1.4" marker-end="url(#arrow)"/>
+<rect x="782" y="622" width="173" height="48" rx="2" fill="#edf3f8" stroke="#3d6f9f" stroke-width="1.3"/>
+<text x="868.5" y="649.23" font-size="9.5" fill="#263746" font-weight="600" text-anchor="middle">versioned artifact</text>
+<path d="M955 646 L1044 646" fill="none" stroke="#3d6f9f" stroke-width="1.4" stroke-dasharray="5 3" marker-end="url(#blue-arrow)"/>
+<rect x="1051" y="622" width="173" height="48" rx="2" fill="#fbf2e3" stroke="#a96f1f" stroke-width="1.3"/>
+<text x="1137.5" y="649.06" font-size="9" fill="#263746" font-weight="600" text-anchor="middle">online eligibility gate</text>
+<text x="58" y="744" font-size="9.2" fill="#687680" font-weight="500" text-anchor="start">Native 0.5.20 ACKs lack DMA bytes / duration; PCIe service labels remain unavailable.</text>
+</svg>

@@ -1,0 +1,94 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="1500" height="1010" viewBox="0 0 1500 1010" role="img" aria-labelledby="fig-title fig-desc">
+<title id="fig-title">Prediction-to-Action Pipeline</title>
+<desc id="fig-desc">Prediction proposes a timed action package; observed causality and live physical evidence retain final authority.</desc>
+<rect x="0" y="0" width="1500" height="1010" rx="0" fill="#ffffff" stroke="none" stroke-width="1.4"/>
+<text x="48" y="52" font-family="DejaVu Sans, Arial, sans-serif" font-size="27" font-weight="700" text-anchor="start" fill="#243444">Prediction-to-Action Pipeline</text>
+<text x="50" y="79" font-family="DejaVu Sans, Arial, sans-serif" font-size="13.5" font-weight="400" text-anchor="start" fill="#5f6b76">Prediction proposes a timed action package; observed causality and live physical evidence retain final authority.</text>
+<defs><marker id="arrow-main" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M 0 0 L 10 5 L 0 10 z" fill="#34495a"/></marker><marker id="arrow-predict" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M 0 0 L 10 5 L 0 10 z" fill="#396da7"/></marker><marker id="arrow-feedback" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M 0 0 L 10 5 L 0 10 z" fill="#568078"/></marker><marker id="arrow-fallback" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M 0 0 L 10 5 L 0 10 z" fill="#7c8791"/></marker><marker id="arrow-amber" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M 0 0 L 10 5 L 0 10 z" fill="#a56a18"/></marker></defs><style>text { dominant-baseline: alphabetic; }</style>
+<rect x="42" y="108" width="1416" height="199" rx="8" fill="#edf3fc" stroke="#6487bb" stroke-width="1.2"/>
+<text x="62" y="135" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="700" text-anchor="start" fill="#315b91">1  Rolling state and action-conditioned prediction</text>
+<rect x="73" y="162" width="252" height="98" rx="7" fill="#edf7f1" stroke="#4f9470" stroke-width="1.7"/>
+<text x="199.0" y="190" font-family="DejaVu Sans, Arial, sans-serif" font-size="17" font-weight="700" text-anchor="middle" fill="#246346">Live frontier</text>
+<text x="199.0" y="212.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="13.5" font-weight="400" text-anchor="middle" fill="#5f6b76">TOOL / JOIN / READY state</text>
+<text x="199.0" y="232.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="13.5" font-weight="400" text-anchor="middle" fill="#5f6b76">Context, session and epoch</text>
+<rect x="376" y="150" width="315" height="122" rx="7" fill="#edf3fc" stroke="#6487bb" stroke-width="1.7" stroke-dasharray="7 5"/>
+<text x="533.5" y="178" font-family="DejaVu Sans, Arial, sans-serif" font-size="17" font-weight="700" text-anchor="middle" fill="#315b91">FrontierBelief</text>
+<text x="533.5" y="202.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="13.5" font-weight="400" text-anchor="middle" fill="#5f6b76">Release-time distribution</text>
+<text x="533.5" y="222.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="13.5" font-weight="400" text-anchor="middle" fill="#5f6b76">Remaining decode / prompt growth</text>
+<text x="533.5" y="242.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="13.5" font-weight="400" text-anchor="middle" fill="#5f6b76">KV demand and uncertainty</text>
+<rect x="741" y="150" width="318" height="122" rx="7" fill="#ffffff" stroke="#aeb8c1" stroke-width="1.7"/>
+<text x="900.0" y="178" font-family="DejaVu Sans, Arial, sans-serif" font-size="17" font-weight="700" text-anchor="middle" fill="#243444">Scenario evaluator</text>
+<text x="900.0" y="202.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="13.5" font-weight="400" text-anchor="middle" fill="#5f6b76">Baseline vs local action delta</text>
+<text x="900.0" y="222.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="13.5" font-weight="400" text-anchor="middle" fill="#5f6b76">Future deficit · transfer overlap</text>
+<text x="900.0" y="242.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="13.5" font-weight="400" text-anchor="middle" fill="#5f6b76">Latest-start / expected utility</text>
+<rect x="1110" y="162" width="300" height="98" rx="7" fill="#fff5e6" stroke="#c48a36" stroke-width="1.7"/>
+<text x="1260.0" y="190" font-family="DejaVu Sans, Arial, sans-serif" font-size="17" font-weight="700" text-anchor="middle" fill="#855510">Action candidate</text>
+<text x="1260.0" y="212.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="13.5" font-weight="400" text-anchor="middle" fill="#5f6b76">Beneficiary + victim bundle</text>
+<text x="1260.0" y="232.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="13.5" font-weight="400" text-anchor="middle" fill="#5f6b76">Action + expiry + evidence</text>
+<path d="M 325 211 L 371 211" fill="none" stroke="#34495a" stroke-width="2.2" marker-end="url(#arrow-main)"/>
+<path d="M 691 211 L 736 211" fill="none" stroke="#396da7" stroke-width="2.2" stroke-dasharray="8 6" marker-end="url(#arrow-predict)"/>
+<path d="M 1059 211 L 1105 211" fill="none" stroke="#396da7" stroke-width="2.2" stroke-dasharray="8 6" marker-end="url(#arrow-predict)"/>
+<text x="329" y="193" font-family="DejaVu Sans, Arial, sans-serif" font-size="11.5" font-weight="600" text-anchor="start" fill="#34495a">observed features</text>
+<text x="697" y="193" font-family="DejaVu Sans, Arial, sans-serif" font-size="11.5" font-weight="600" text-anchor="start" fill="#34495a">distribution</text>
+<text x="1064" y="193" font-family="DejaVu Sans, Arial, sans-serif" font-size="11.5" font-weight="600" text-anchor="start" fill="#315b91">risk result</text>
+<rect x="42" y="319" width="1416" height="267" rx="8" fill="#edf6f5" stroke="#5b9994" stroke-width="1.2"/>
+<text x="62" y="346" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="700" text-anchor="start" fill="#286b66">2  Join-aware H2D: three evidence stages</text>
+<rect x="76" y="381" width="388" height="148" rx="7" fill="#ffffff" stroke="#aeb8c1" stroke-width="1.7"/>
+<text x="270.0" y="409" font-family="DejaVu Sans, Arial, sans-serif" font-size="17" font-weight="700" text-anchor="middle" fill="#243444">Stage 1 · rolling watch</text>
+<text x="270.0" y="446.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="13.5" font-weight="400" text-anchor="middle" fill="#5f6b76">A calibrated JOIN window approaches</text>
+<text x="270.0" y="466.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="13.5" font-weight="400" text-anchor="middle" fill="#5f6b76">latest-start; observe parent closure</text>
+<text x="270.0" y="486.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="13.5" font-weight="400" text-anchor="middle" fill="#5f6b76">Do not reserve a running slot</text>
+<rect x="555" y="381" width="388" height="148" rx="7" fill="#ffffff" stroke="#aeb8c1" stroke-width="1.7"/>
+<text x="749.0" y="409" font-family="DejaVu Sans, Arial, sans-serif" font-size="17" font-weight="700" text-anchor="middle" fill="#243444">Stage 2 · provisional signal</text>
+<text x="749.0" y="446.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="13.5" font-weight="400" text-anchor="middle" fill="#5f6b76">Child emits structured completion intent</text>
+<text x="749.0" y="466.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="13.5" font-weight="400" text-anchor="middle" fill="#5f6b76">Candidate H2D may be prepared</text>
+<text x="749.0" y="486.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="13.5" font-weight="400" text-anchor="middle" fill="#5f6b76">Intent is not RETURN or JOIN success</text>
+<rect x="1034" y="381" width="374" height="148" rx="7" fill="#ffffff" stroke="#aeb8c1" stroke-width="1.7"/>
+<text x="1221.0" y="409" font-family="DejaVu Sans, Arial, sans-serif" font-size="17" font-weight="700" text-anchor="middle" fill="#243444">Stage 3 · confirmed reentry</text>
+<text x="1221.0" y="446.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="13.5" font-weight="400" text-anchor="middle" fill="#5f6b76">RETURN / JOIN_SATISFIED observed</text>
+<text x="1221.0" y="466.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="13.5" font-weight="400" text-anchor="middle" fill="#5f6b76">Rebind parent epoch and physical closure</text>
+<text x="1221.0" y="486.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="13.5" font-weight="400" text-anchor="middle" fill="#5f6b76">ACK before admission / first service</text>
+<path d="M 464 455 L 550 455" fill="none" stroke="#396da7" stroke-width="2.2" stroke-dasharray="8 6" marker-end="url(#arrow-predict)"/>
+<path d="M 943 455 L 1029 455" fill="none" stroke="#34495a" stroke-width="2.2" marker-end="url(#arrow-main)"/>
+<text x="478" y="437" font-family="DejaVu Sans, Arial, sans-serif" font-size="11.5" font-weight="600" text-anchor="start" fill="#315b91">child progress</text>
+<text x="954" y="437" font-family="DejaVu Sans, Arial, sans-serif" font-size="11.5" font-weight="600" text-anchor="start" fill="#34495a">causal confirmation</text>
+<text x="1092" y="551" font-family="DejaVu Sans, Arial, sans-serif" font-size="11.5" font-weight="400" text-anchor="start" fill="#5f6b76">Stale epoch, cancellation, timeout or changed membership expires the ticket.</text>
+<rect x="42" y="615" width="1416" height="226" rx="8" fill="#fff5e6" stroke="#c48a36" stroke-width="1.2"/>
+<text x="62" y="642" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="700" text-anchor="start" fill="#855510">3  Timed KV actions and conservative fallback</text>
+<rect x="74" y="670" width="292" height="116" rx="7" fill="#edf3fc" stroke="#6487bb" stroke-width="1.7"/>
+<text x="220.0" y="698" font-family="DejaVu Sans, Arial, sans-serif" font-size="17" font-weight="700" text-anchor="middle" fill="#315b91">PREPARE_HOST</text>
+<text x="220.0" y="719.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="13.5" font-weight="400" text-anchor="middle" fill="#5f6b76">D2H shadow copy</text>
+<text x="220.0" y="739.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="13.5" font-weight="400" text-anchor="middle" fill="#5f6b76">GPU copy remains resident</text>
+<text x="220.0" y="759.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="13.5" font-weight="400" text-anchor="middle" fill="#5f6b76">No HBM reclaimed yet</text>
+<rect x="428" y="670" width="292" height="116" rx="7" fill="#fff5e6" stroke="#c48a36" stroke-width="1.7"/>
+<text x="574.0" y="698" font-family="DejaVu Sans, Arial, sans-serif" font-size="17" font-weight="700" text-anchor="middle" fill="#855510">COMMIT_CPU</text>
+<text x="574.0" y="719.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="13.5" font-weight="400" text-anchor="middle" fill="#5f6b76">Only after real deficit</text>
+<text x="574.0" y="739.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="13.5" font-weight="400" text-anchor="middle" fill="#5f6b76">Consume valid prepared victim</text>
+<text x="574.0" y="759.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="13.5" font-weight="400" text-anchor="middle" fill="#5f6b76">Release HBM on ACK</text>
+<rect x="782" y="670" width="292" height="116" rx="7" fill="#edf6f5" stroke="#5b9994" stroke-width="1.7"/>
+<text x="928.0" y="698" font-family="DejaVu Sans, Arial, sans-serif" font-size="17" font-weight="700" text-anchor="middle" fill="#286b66">PREFETCH_GPU</text>
+<text x="928.0" y="719.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="13.5" font-weight="400" text-anchor="middle" fill="#5f6b76">H2D at predicted latest-start</text>
+<text x="928.0" y="739.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="13.5" font-weight="400" text-anchor="middle" fill="#5f6b76">Capacity / closure recheck</text>
+<text x="928.0" y="759.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="13.5" font-weight="400" text-anchor="middle" fill="#5f6b76">ACK gates admission lease</text>
+<rect x="1136" y="670" width="292" height="116" rx="7" fill="#f0f2f4" stroke="#89939c" stroke-width="1.7"/>
+<text x="1282.0" y="698" font-family="DejaVu Sans, Arial, sans-serif" font-size="17" font-weight="700" text-anchor="middle" fill="#4f5b65">Native fallback</text>
+<text x="1282.0" y="719.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="13.5" font-weight="400" text-anchor="middle" fill="#5f6b76">Demand-load or recompute</text>
+<text x="1282.0" y="739.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="13.5" font-weight="400" text-anchor="middle" fill="#5f6b76">If stale / OOD / infeasible</text>
+<text x="1282.0" y="759.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="13.5" font-weight="400" text-anchor="middle" fill="#5f6b76">Never block scheduler</text>
+<path d="M 366 728 L 423 728" fill="none" stroke="#34495a" stroke-width="2.2" marker-end="url(#arrow-main)"/>
+<path d="M 720 728 L 777 728" fill="none" stroke="#396da7" stroke-width="2.2" stroke-dasharray="8 6" marker-end="url(#arrow-predict)"/>
+<path d="M 1074 728 L 1131 728" fill="none" stroke="#7c8791" stroke-width="2.2" stroke-dasharray="5 5" marker-end="url(#arrow-fallback)"/>
+<text x="375" y="710" font-family="DejaVu Sans, Arial, sans-serif" font-size="11.5" font-weight="600" text-anchor="start" fill="#34495a">deficit observed</text>
+<text x="730" y="710" font-family="DejaVu Sans, Arial, sans-serif" font-size="11.5" font-weight="600" text-anchor="start" fill="#315b91">reentry likely</text>
+<text x="1081" y="710" font-family="DejaVu Sans, Arial, sans-serif" font-size="11.5" font-weight="600" text-anchor="start" fill="#34495a">otherwise</text>
+<rect x="42" y="870" width="1416" height="77" rx="8" fill="#f0f2f4" stroke="#89939c" stroke-width="1.2"/>
+<text x="62" y="897" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" font-weight="700" text-anchor="start" fill="#4f5b65">Authority boundary</text>
+<text x="74" y="918" font-family="DejaVu Sans, Arial, sans-serif" font-size="13" font-weight="600" text-anchor="start" fill="#243444">BeliefKV proposes; the safe point rematerializes live evidence; SGLang HiCache / allocator performs and acknowledges physical work.</text>
+<path d="M 52 980 L 94 980" fill="none" stroke="#34495a" stroke-width="2.2" marker-end="url(#arrow-main)"/>
+<text x="104" y="985" font-family="DejaVu Sans, Arial, sans-serif" font-size="11.5" font-weight="400" text-anchor="start" fill="#5f6b76">Observed / native control</text>
+<path d="M 297 980 L 339 980" fill="none" stroke="#396da7" stroke-width="2.2" stroke-dasharray="8 6" marker-end="url(#arrow-predict)"/>
+<text x="349" y="985" font-family="DejaVu Sans, Arial, sans-serif" font-size="11.5" font-weight="400" text-anchor="start" fill="#5f6b76">Predictive proposal</text>
+<path d="M 532 980 L 574 980" fill="none" stroke="#568078" stroke-width="2.2" stroke-dasharray="2 5" marker-end="url(#arrow-feedback)"/>
+<text x="584" y="985" font-family="DejaVu Sans, Arial, sans-serif" font-size="11.5" font-weight="400" text-anchor="start" fill="#5f6b76">Telemetry / ACK</text>
+</svg>

@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="1450" height="790" viewBox="0 0 1450 790" role="img" aria-labelledby="title">
+<title id="title">Predictive KV Handoff: Copy, Reclaim, Prefetch</title>
+<rect width="100%" height="100%" fill="#ffffff"/>
+<defs>
+<marker id="arrow" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10z" fill="#263746"/></marker>
+<marker id="blue-arrow" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10z" fill="#3d6f9f"/></marker>
+<marker id="teal-arrow" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10z" fill="#357b73"/></marker>
+<marker id="amber-arrow" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10z" fill="#a96f1f"/></marker>
+</defs>
+<style>text{font-family:Arial,"Liberation Sans",sans-serif}.hair{stroke:#d4dbe0;stroke-width:1}</style>
+<text x="56" y="55" font-size="25" fill="#263746" font-weight="700" text-anchor="start">Predictive KV Handoff: Copy, Reclaim, Prefetch</text>
+<line x1="56" y1="82" x2="1444" y2="82" class="hair"/>
+<text x="1392" y="109" font-size="9" fill="#3d6f9f" font-weight="700" text-anchor="end">P6 TARGET</text>
+<text x="1392" y="126" font-size="8.5" fill="#687680" font-weight="450" text-anchor="end">action gate off on 0.5.20</text>
+<line x1="190" y1="180" x2="1394" y2="180" stroke="#d4dbe0" stroke-width="1"/>
+<line x1="190" y1="292" x2="1394" y2="292" stroke="#d4dbe0" stroke-width="1"/>
+<line x1="190" y1="408" x2="1394" y2="408" stroke="#d4dbe0" stroke-width="1"/>
+<line x1="190" y1="524" x2="1394" y2="524" stroke="#d4dbe0" stroke-width="1"/>
+<line x1="190" y1="640" x2="1394" y2="640" stroke="#d4dbe0" stroke-width="1"/>
+<line x1="220" y1="681" x2="220" y2="697" stroke="#263746" stroke-width="1"/>
+<text x="220" y="716" font-size="8.8" fill="#687680" font-weight="450" text-anchor="middle">wait</text>
+<line x1="485" y1="681" x2="485" y2="697" stroke="#263746" stroke-width="1"/>
+<text x="485" y="716" font-size="8.8" fill="#687680" font-weight="450" text-anchor="middle">rolling update</text>
+<line x1="745" y1="681" x2="745" y2="697" stroke="#263746" stroke-width="1"/>
+<text x="745" y="716" font-size="8.8" fill="#687680" font-weight="450" text-anchor="middle">latest start</text>
+<line x1="1060" y1="681" x2="1060" y2="697" stroke="#263746" stroke-width="1"/>
+<text x="1060" y="716" font-size="8.8" fill="#687680" font-weight="450" text-anchor="middle">confirmed return</text>
+<line x1="1240" y1="681" x2="1240" y2="697" stroke="#263746" stroke-width="1"/>
+<text x="1240" y="716" font-size="8.8" fill="#687680" font-weight="450" text-anchor="middle">admit</text>
+<line x1="1380" y1="681" x2="1380" y2="697" stroke="#263746" stroke-width="1"/>
+<text x="1380" y="716" font-size="8.8" fill="#687680" font-weight="450" text-anchor="middle">service</text>
+<line x1="190" y1="689" x2="1394" y2="689" stroke="#263746" stroke-width="1.2"/>
+<text x="58" y="164" font-size="9" fill="#687680" font-weight="650" text-anchor="start">CONTEXT</text>
+<text x="58" y="278" font-size="9" fill="#687680" font-weight="650" text-anchor="start">BELIEF</text>
+<text x="58" y="394" font-size="9" fill="#687680" font-weight="650" text-anchor="start">D2H</text>
+<text x="58" y="510" font-size="9" fill="#687680" font-weight="650" text-anchor="start">RESIDENCY</text>
+<text x="58" y="626" font-size="9" fill="#687680" font-weight="650" text-anchor="start">H2D / SERVICE</text>
+<circle cx="220" cy="180" r="5" fill="#357b73" stroke="#357b73" stroke-width="1.5"/>
+<text x="220" y="155" font-size="9" fill="#357b73" font-weight="550" text-anchor="middle">TOOL_START / child wait</text>
+<circle cx="1060" cy="180" r="5" fill="#357b73" stroke="#357b73" stroke-width="1.5"/>
+<text x="1060" y="155" font-size="9" fill="#357b73" font-weight="550" text-anchor="middle">RETURN / JOIN_SATISFIED</text>
+<line x1="226" y1="180" x2="1054" y2="180" stroke="#357b73" stroke-width="1.5"/>
+<line x1="485" y1="292" x2="840" y2="292" stroke="#3d6f9f" stroke-width="4" stroke-dasharray="7 5"/>
+<line x1="610" y1="279" x2="610" y2="305" stroke="#3d6f9f" stroke-width="1.2"/>
+<line x1="745" y1="277" x2="745" y2="307" stroke="#3d6f9f" stroke-width="1.6"/>
+<line x1="840" y1="279" x2="840" y2="305" stroke="#3d6f9f" stroke-width="1.2"/>
+<text x="485" y="271" font-size="8.5" fill="#3d6f9f" font-weight="600" text-anchor="start">P10</text>
+<text x="745" y="271" font-size="8.5" fill="#3d6f9f" font-weight="600" text-anchor="middle">P50</text>
+<text x="840" y="271" font-size="8.5" fill="#3d6f9f" font-weight="600" text-anchor="middle">P90</text>
+<circle cx="930" cy="292" r="6" fill="#fbf2e3" stroke="#a96f1f" stroke-width="1.4"/>
+<text x="942" y="296" font-size="8.7" fill="#a96f1f" font-weight="500" text-anchor="start">provisional completion</text>
+<rect x="315" y="377" width="175" height="26" rx="1" fill="#edf3f8" stroke="#3d6f9f" stroke-width="1"/>
+<text x="402" y="395" font-size="8.8" fill="#3d6f9f" font-weight="600" text-anchor="middle">PREPARE_HOST  ·  D2H</text>
+<circle cx="490" cy="390" r="5" fill="#357b73" stroke="#357b73" stroke-width="1.5"/>
+<text x="490" y="414" font-size="8" fill="#357b73" font-weight="550" text-anchor="middle">ACK</text>
+<rect x="600" y="377" width="100" height="26" rx="1" fill="#fbf2e3" stroke="#a96f1f" stroke-width="1"/>
+<text x="650" y="395" font-size="8.3" fill="#a96f1f" font-weight="600" text-anchor="middle">COMMIT_CPU</text>
+<line x1="650" y1="403" x2="650" y2="465" stroke="#a96f1f" stroke-width="1.2" marker-end="url(#amber-arrow)"/>
+<text x="716" y="426" font-size="8.3" fill="#a96f1f" font-weight="500" text-anchor="start">only on observed deficit</text>
+<line x1="220" y1="523" x2="650" y2="523" stroke="#3d6f9f" stroke-width="5"/>
+<text x="225" y="512" font-size="8.5" fill="#3d6f9f" font-weight="550" text-anchor="start">GPU copy</text>
+<line x1="490" y1="536" x2="940" y2="536" stroke="#357b73" stroke-width="4" stroke-dasharray="2 3"/>
+<text x="498" y="555" font-size="8.5" fill="#357b73" font-weight="550" text-anchor="start">Host shadow</text>
+<circle cx="650" cy="523" r="5" fill="#a96f1f" stroke="#a96f1f" stroke-width="1.5"/>
+<text x="650" y="501" font-size="8" fill="#a96f1f" font-weight="550" text-anchor="middle">release</text>
+<rect x="745" y="610" width="255" height="26" rx="1" fill="#edf3f8" stroke="#3d6f9f" stroke-width="1" stroke-dasharray="6 3"/>
+<text x="872" y="628" font-size="8.8" fill="#3d6f9f" font-weight="600" text-anchor="middle">PREFETCH_GPU  ·  H2D</text>
+<circle cx="1000" cy="623" r="5" fill="#357b73" stroke="#357b73" stroke-width="1.5"/>
+<text x="1000" y="647" font-size="8" fill="#357b73" font-weight="550" text-anchor="middle">ACK</text>
+<line x1="1060" y1="622" x2="1235" y2="622" stroke="#263746" stroke-width="1.8" marker-end="url(#arrow)"/>
+<circle cx="1240" cy="622" r="5" fill="#357b73" stroke="#357b73" stroke-width="1.5"/>
+<text x="1240" y="603" font-size="8" fill="#357b73" font-weight="550" text-anchor="middle">admit</text>
+<line x1="1246" y1="622" x2="1372" y2="622" stroke="#263746" stroke-width="1.8" marker-end="url(#arrow)"/>
+<circle cx="1380" cy="622" r="5" fill="#357b73" stroke="#357b73" stroke-width="1.5"/>
+<text x="1380" y="603" font-size="8" fill="#357b73" font-weight="550" text-anchor="middle">first service</text>
+<text x="58" y="755" font-size="9.5" fill="#687680" font-weight="500" text-anchor="start">PREPARE creates a Host copy; COMMIT releases HBM; H2D ACK precedes reentry.</text>
+</svg>

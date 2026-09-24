@@ -355,6 +355,7 @@ def test_native_reactive_collection_preflight_and_raw_trace_provenance(
     for name in (
         "runtime_events.sglang.jsonl", "runtime_audit.jsonl",
         "transfer_telemetry.jsonl", "host_pool_telemetry.jsonl",
+        "eviction_attribution.jsonl",
     ):
         (telemetry / name).touch()
     info = {
@@ -436,8 +437,14 @@ def test_native_reactive_collection_preflight_and_raw_trace_provenance(
     )["contract_state"] == "validated"
     assert captured[0].loop_guard.enforce_semantic_guard is False
     assert captured[0].loop_guard.enforce_soft_graph_budget is False
+    assert captured[0].loop_guard.enabled is True
     assert captured[0].loop_guard.enforce_graph_step_budget is True
+    assert captured[0].loop_guard.graph_step_hard_limit == 2048
+    assert captured[0].loop_guard.graph_step_reserve == 32
     assert captured[0].loop_guard.activation_wall_clock_s is None
+    assert captured[0].tool_circuit_breaker_enabled is False
+    assert captured[0].max_completion_tokens == 8192
+    assert captured[0].completion_gate_enabled is False
     assert captured[0].context_lifecycle.window_tokens == 65_536
     assert captured[0].context_lifecycle.model_context_tokens == 131_072
     contract = json.loads((output / "p6_collection_contract.json").read_text())
@@ -454,7 +461,16 @@ def test_native_reactive_collection_preflight_and_raw_trace_provenance(
     assert contract["formal_dataset_export_ready"] is False
     assert contract["graph_step_safety"]["semantic_patterns"] == "telemetry_only"
     assert contract["graph_step_safety"]["soft_budget_mode"] == "telemetry_only"
-    assert contract["graph_step_safety"]["hard_limit_mode"] == "safety_finalization"
+    assert (
+        contract["graph_step_safety"]["hard_limit_mode"]
+        == "safety_finalization"
+    )
+    assert contract["graph_step_safety"]["middleware_enabled"] is True
+    assert contract["graph_step_safety"]["graph_step_enforcement"] is True
+    assert contract["graph_step_safety"]["hard_limit"] == 2048
+    assert contract["graph_step_safety"]["reserve"] == 32
+    assert contract["graph_step_safety"]["recursion_limit"] == 2048
+    assert contract["tool_circuit_breaker_suppression"] == "disabled"
     exclusions = json.loads(
         (output.parent / "TRAINING_EXCLUSIONS.json").read_text()
     )
@@ -465,6 +481,9 @@ def test_native_reactive_collection_preflight_and_raw_trace_provenance(
             run_collection()
     monkeypatch.setattr(sys, "argv", [*args, "--control-socket", "/tmp/invalid.sock"])
     with pytest.raises(ValueError, match="no BeliefKV control"):
+        run_collection()
+    monkeypatch.setattr(sys, "argv", [*args, "--recursion-limit", "512"])
+    with pytest.raises(ValueError, match="requires.*2048"):
         run_collection()
     config["text_config"]["head_dim"] = 16
     (model / "config.json").write_text(json.dumps(config), encoding="utf-8")

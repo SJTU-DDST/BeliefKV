@@ -12,6 +12,7 @@ from typing import Any, Callable, Iterator, Mapping, Protocol, Sequence
 from uuid import UUID
 
 from langchain_core.callbacks import BaseCallbackHandler
+from langchain_core.exceptions import ContextOverflowError
 from langchain_core.messages import AIMessage, BaseMessage
 from langchain_core.messages.utils import count_tokens_approximately
 from langchain_openai import ChatOpenAI
@@ -1631,7 +1632,7 @@ class BeliefKVChatOpenAI(ChatOpenAI):
         )
 
     def _preflight_model_context(self, messages: list[BaseMessage]) -> None:
-        """Reject oversized prompts before they consume scheduler capacity."""
+        """Signal overflow so the context middleware can compact before retry."""
 
         raw_limit = self._beliefkv_max_prompt_tokens
         if raw_limit is None:
@@ -1643,7 +1644,7 @@ class BeliefKVChatOpenAI(ChatOpenAI):
         counter = self._beliefkv_prompt_token_counter
         prompt_tokens = counter(messages) if counter is not None else 0
         if prompt_tokens > limit:
-            raise ValueError(
+            raise ContextOverflowError(
                 "BeliefKV prompt context preflight failed: "
                 f"prompt_tokens={prompt_tokens} limit={limit} "
                 f"model={self.model_name!r}"

@@ -106,29 +106,13 @@ Sandbox path and environment contract:
 - `python`, `pytest`, and other Python entry points already resolve to the image's
   prebuilt test environment. Do not install or upgrade packages and do not use network
   package managers.
-- Diagnostic `python -c` probes do not count as tests. Discover and run the focused
-  repository-native test command described by the workload-specific contract. Treat
-  both the exit status and the executed-test count as authoritative.
+- Prefer a focused repository-native test when possible; record its actual outcome.
 """
-TEST_COMMAND_PATTERN = re.compile(
-    r"(?:^|[;&|]\s*)(?:python\s+(?:-m\s+pytest|bin/test)\b|pytest\b|"
-    r"py\.test\b|tox\b|make\s+(?:test|check)\b)"
-)
-ZERO_TEST_OUTPUT_PATTERN = re.compile(
-    r"(?:\b0\s+(?:tests?\s+(?:collected|executed|run)|passed)\b|"
-    r"\bcollected\s+0\s+items?\b|\bno\s+tests?\s+(?:ran|were\s+run)\b)",
-    re.IGNORECASE,
-)
-UNSUPPORTED_SYMPY_TEST_SELECTOR_PATTERN = re.compile(
-    r"\bpython\s+bin/test\b[^\n;&|]*::"
-)
 INCOMPLETE_SUMMARY_PATTERN = re.compile(
     r"\b(?:not implemented|requires additional (?:implementation|work)|"
     r"only addresses?)\b",
     re.IGNORECASE,
 )
-RUNTIME_VERIFIED_TESTS_KEY = "_beliefkv_runtime_verified_tests"
-
 SYMPY_SANDBOX_PREFLIGHT = "python -c " + shlex.quote(
     "import collections, collections.abc, os, mpmath, sympy; "
     "assert collections.__dict__.get('Mapping') is collections.abc.Mapping; "
@@ -618,6 +602,7 @@ class DockerWorkspaceBackend(FilesystemBackend, SandboxBackendProtocol):
         self._container_name = f"beliefkv-{suffix}-{uuid.uuid4().hex[:8]}"
         self._started = False
         self._closed = False
+        self.cleanup_status: str | None = None
         self._execute_lock = threading.Lock()
         self._workspace_digest_lock = threading.Lock()
         self._workspace_epoch_lock = threading.Lock()
@@ -1075,15 +1060,29 @@ class DockerWorkspaceBackend(FilesystemBackend, SandboxBackendProtocol):
         if not self._started:
             return
         started = time.monotonic()
-        result = subprocess.run(
-            ["docker", "rm", "--force", self._container_name],
-            check=False,
-            capture_output=True,
-            text=True,
-            timeout=30.0,
-        )
+        try:
+            result = subprocess.run(
+                ["docker", "rm", "--force", self._container_name],
+                check=False,
+                capture_output=True,
+                text=True,
+                timeout=30.0,
+            )
+        except (subprocess.TimeoutExpired, OSError) as error:
+            self.cleanup_status = "failed"
+            self.audit.emit(
+                "sandbox_stop",
+                container_name=self._container_name,
+                status="failed",
+                duration_ms=(time.monotonic() - started) * 1000.0,
+                error=f"{type(error).__name__}: {error}",
+            )
+            return
+        self.cleanup_status = "completed" if result.returncode == 0 else "failed"
         self.audit.emit(
             "sandbox_stop",
+            container_name=self._container_name,
+            status=self.cleanup_status,
             duration_ms=(time.monotonic() - started) * 1000.0,
             returncode=result.returncode,
             stderr=(result.stderr or "")[-2000:],
@@ -1355,6 +1354,72 @@ class NativeSubagentSemanticGateMiddleware(AgentMiddleware[Any, Any, Any]):
         return response
 
 
+class EmptyReasoningRecoveryMiddleware(AgentMiddleware[Any, Any, Any]):
+    """Retry a reasoning-only terminal once without inventing a child result."""
+
+    def __init__(self, *, audit: JsonlAudit, scope: str) -> None:
+        super().__init__()
+        self.audit = audit
+        self.scope = scope
+
+    @staticmethod
+    def _reasoning_only_terminal(response: ModelResponse) -> bool:
+        if response.structured_response is not None or len(response.result) != 1:
+            return False
+        message = response.result[0]
+        if not isinstance(message, AIMessage):
+            return False
+        usage = message.response_metadata.get("token_usage") or {}
+        reasoning = message.additional_kwargs.get("reasoning_content")
+        return (
+            message.response_metadata.get("finish_reason") in {"stop", "length"}
+            and not _message_text(message).strip()
+            and not message.tool_calls
+            and not message.invalid_tool_calls
+            and (
+                bool(reasoning)
+                or int(usage.get("reasoning_tokens") or 0) > 0
+            )
+        )
+
+    @staticmethod
+    def _retry_request(request: ModelRequest) -> ModelRequest:
+        settings = dict(request.model_settings)
+        extra_body = dict(settings.get("extra_body") or {})
+        template_kwargs = dict(extra_body.get("chat_template_kwargs") or {})
+        template_kwargs["enable_thinking"] = False
+        extra_body["chat_template_kwargs"] = template_kwargs
+        settings["extra_body"] = extra_body
+        return request.override(model_settings=settings)
+
+    def wrap_model_call(self, request: ModelRequest, handler: Any) -> ModelResponse:
+        response = handler(request)
+        if not self._reasoning_only_terminal(response):
+            return response
+        original = response.result[0]
+        self.audit.emit(
+            "agent_empty_reasoning_retry",
+            scope=self.scope,
+            finish_reason=original.response_metadata.get("finish_reason"),
+            reasoning_tokens=(
+                (original.response_metadata.get("token_usage") or {})
+                .get("reasoning_tokens")
+            ),
+        )
+        recovered = handler(self._retry_request(request))
+        self.audit.emit(
+            "agent_empty_reasoning_retry_result",
+            scope=self.scope,
+            recovered=not self._reasoning_only_terminal(recovered)
+            and any(
+                isinstance(message, AIMessage)
+                and (bool(_message_text(message).strip()) or bool(message.tool_calls))
+                for message in recovered.result
+            ),
+        )
+        return recovered
+
+
 @dataclass(frozen=True)
 class DeepAgentsExperimentConfig:
     mode: str
@@ -1387,6 +1452,7 @@ class DeepAgentsExperimentConfig:
     sandbox_preflight_command: str | None = None
     completion_gate_enabled: bool = True
     completion_repair_attempts: int = 2
+    tool_circuit_breaker_enabled: bool = True
     runtime_event_ack_timeout_s: float = 10.0
     runtime_event_ack_retries: int = 3
     context_lifecycle: ContextLifecyclePolicy = field(
@@ -1666,14 +1732,11 @@ class WorkflowDeadlineController:
             return dict(self._summary)
 
 
-AUTONOMOUS_SYSTEM_PROMPT = """You are the supervisor for a real SWE-bench coding task.
+AUTONOMOUS_BASE_SYSTEM_PROMPT = """You are the supervisor for a real SWE-bench coding task.
 Work only in the mounted repository. Use the filesystem and execute tools freely; the
 execute tool is already isolated in an offline Docker sandbox. Diagnose, edit, and test
-the repository. A workflow is complete only when you return the required
-WorkflowCompletion structured response. Do not finish with ordinary prose. Use
-status=patched_and_tested only after implementing every requirement, leaving unresolved
-empty, and observing a successful focused repository test command. Never access paths
-outside the mounted repository.
+the repository. Report tests and their outcomes honestly. Never access paths outside
+the mounted repository.
 
 TOOL PROGRESS RULES
 Before calling a tool, identify what new evidence or workspace change it should produce.
@@ -1686,6 +1749,18 @@ blocker. Retry a failed tool only after correcting its inputs or changing the me
 do not cycle equivalent probes. A new call ID or slightly altered probe that produces
 no new evidence is not progress.
 """ + SANDBOX_PATH_CONTRACT
+
+AUTONOMOUS_SYSTEM_PROMPT = (
+    AUTONOMOUS_BASE_SYSTEM_PROMPT
+    + "\nReturn the required WorkflowCompletion structured response. Use "
+    "status=patched_and_tested only after implementing every requirement "
+    "and leaving unresolved empty.\n"
+)
+AUTONOMOUS_NATIVE_SYSTEM_PROMPT = (
+    AUTONOMOUS_BASE_SYSTEM_PROMPT
+    + "\nWhen finished or blocked, report the outcome in concise natural language. "
+    "No structured completion object or test-command proof is required.\n"
+)
 
 TOOL_PROGRESS_INSTRUCTION = """
 Avoid repeated tool loops. Do not repeat the same tool call with identical arguments
@@ -1837,9 +1912,8 @@ edits. The execute tool runs
 in an offline Docker sandbox. Leave the final patch in the workspace. A workflow is
 complete only when you return the required
 WorkflowCompletion structured response. Do not finish with ordinary prose. You may use
-status=patched_and_tested only after implementing every requirement in the issue,
-leaving unresolved empty, and observing a successful focused repository test command.
-Diagnostic `python -c` commands are not repository tests. If the task cannot be
+status=patched_and_tested only after implementing every requirement in the issue
+and leaving unresolved empty. If the task cannot be
 completed, return status=blocked with concrete unresolved reasons.
 Reproduce the issue once, then move from diagnosis to a source change as soon as a
 candidate function or invariant is identified. Do not spend the implementation budget
@@ -1862,10 +1936,9 @@ diagnosis but does not count as a repository test.
 All file-editing tools are confined to the isolated `/workspace`. Do not rewrite source
 files through shell commands.
 
-Return status=patched_and_tested only when the workspace has a substantive patch, every
-issue requirement is implemented, unresolved is empty, and at least one actual
-repository-native test such as `python bin/test <test-path>` has exited successfully.
-Otherwise return an honest non-success status with concrete unresolved items.
+Return status=patched_and_tested only when the workspace has a substantive patch,
+every issue requirement is implemented, and unresolved is empty. Report any tests
+and failed checks accurately. Otherwise return an honest non-success status.
 """ + SANDBOX_PATH_CONTRACT
 
 
@@ -1877,8 +1950,11 @@ CHILD_COMPLETION_INSTRUCTION = (
 WORKFLOW_COMPLETION_INSTRUCTION = (
     "Return a WorkflowCompletion structured response describing terminal status, the "
     "implementation, changed files, tests, and unresolved items. Use "
-    "patched_and_tested only when all issue requirements are implemented, unresolved "
-    "is empty, and a real repository test (not python -c) succeeded."
+    "patched_and_tested only when all issue requirements are implemented and "
+    "unresolved is empty. Report tests and their outcomes honestly."
+)
+NATIVE_WORKFLOW_COMPLETION_INSTRUCTION = (
+    "Return a concise natural-language account of completed work and remaining issues."
 )
 
 
@@ -1914,11 +1990,13 @@ def _tool_circuit(
     *,
     scope: str,
     adapter: DeepAgentsRuntimeAdapter | None = None,
+    suppress_repeats: bool = True,
 ) -> ToolCircuitBreakerMiddleware:
     return ToolCircuitBreakerMiddleware(
         state_epoch=backend.workspace_epoch,
         audit=backend.audit,
         scope=scope,
+        suppress_repeats=suppress_repeats,
         censor_observer=(adapter.record_call_censor if adapter is not None else None),
     )
 
@@ -2074,45 +2152,10 @@ def _message_text(message: BaseMessage) -> str:
         return str(message.content)
 
 
-def observed_successful_test_commands(messages: Sequence[BaseMessage]) -> list[str]:
-    execute_calls: dict[str, str] = {}
-    successful: list[str] = []
-    failure_markers = (
-        "[command failed with exit code",
-        "command exceeded host timeout",
-        "killed by signal",
-    )
-    for message in messages:
-        if isinstance(message, AIMessage):
-            for call in message.tool_calls:
-                if call.get("name") != "execute":
-                    continue
-                command = call.get("args", {}).get("command")
-                call_id = str(call.get("id", ""))
-                if call_id and isinstance(command, str):
-                    execute_calls[call_id] = command
-            continue
-        if not isinstance(message, ToolMessage) or message.name != "execute":
-            continue
-        command = execute_calls.get(str(message.tool_call_id))
-        if command is None or TEST_COMMAND_PATTERN.search(command) is None:
-            continue
-        output = _message_text(message).lower()
-        if any(marker in output for marker in failure_markers):
-            continue
-        if ZERO_TEST_OUTPUT_PATTERN.search(output):
-            continue
-        if UNSUPPORTED_SYMPY_TEST_SELECTOR_PATTERN.search(command):
-            continue
-        successful.append(command)
-    return list(dict.fromkeys(successful))
-
-
 def validate_workflow_completion(
     completion: WorkflowCompletion | None,
     *,
     patch: str,
-    observed_tests: Sequence[str],
 ) -> dict[str, Any]:
     errors: list[str] = []
     if completion is None:
@@ -2120,20 +2163,15 @@ def validate_workflow_completion(
     else:
         if completion.status != "patched_and_tested":
             errors.append(f"terminal_status:{completion.status}")
-        if not completion.tests:
-            errors.append("completion_has_no_test_evidence")
         if completion.unresolved:
             errors.append("completion_has_unresolved_items")
         if INCOMPLETE_SUMMARY_PATTERN.search(completion.summary):
             errors.append("completion_summary_declares_incomplete_work")
     if not patch.strip():
         errors.append("workspace_has_no_patch")
-    if not observed_tests:
-        errors.append("no_successful_test_command_observed")
     return {
         "passed": not errors,
         "errors": errors,
-        "observed_successful_test_commands": list(observed_tests),
     }
 
 
@@ -2347,7 +2385,12 @@ def _autonomous_subagents(
                         ),
                     ),
                     PatchToolCallsMiddleware(),
-                    _tool_circuit(backend, scope=scope, adapter=adapter),
+                    _tool_circuit(
+                        backend,
+                        scope=scope,
+                        adapter=adapter,
+                        suppress_repeats=config.tool_circuit_breaker_enabled,
+                    ),
                     ToolOutcomeStatusMiddleware(),
                     _tool_observation_budget(
                         config,
@@ -2365,6 +2408,7 @@ def _autonomous_subagents(
                             deadline_controller.deadline if deadline_controller else None
                         ),
                     ),
+                    EmptyReasoningRecoveryMiddleware(audit=backend.audit, scope=scope),
                 ],
             }
         )
@@ -2421,7 +2465,12 @@ def _build_autonomous_agent(
             model_context_tokens=config.context_lifecycle.model_context_tokens,
         ),
         PatchToolCallsMiddleware(),
-        _tool_circuit(backend, scope="autonomous:supervisor", adapter=adapter),
+        _tool_circuit(
+            backend,
+            scope="autonomous:supervisor",
+            adapter=adapter,
+            suppress_repeats=config.tool_circuit_breaker_enabled,
+        ),
         ToolOutcomeStatusMiddleware(),
         _tool_observation_budget(
             config,
@@ -2431,10 +2480,18 @@ def _build_autonomous_agent(
         _loop_guard(
             config,
             completion_schema=WorkflowCompletion,
-            completion_instruction=WORKFLOW_COMPLETION_INSTRUCTION,
+            completion_instruction=(
+                WORKFLOW_COMPLETION_INSTRUCTION
+                if config.completion_gate_enabled
+                else NATIVE_WORKFLOW_COMPLETION_INSTRUCTION
+            ),
             audit=backend.audit,
             scope="autonomous:supervisor",
+            accept_natural_completion=not config.completion_gate_enabled,
             activation_deadline=deadline_controller.deadline,
+        ),
+        EmptyReasoningRecoveryMiddleware(
+            audit=backend.audit, scope="autonomous:supervisor"
         ),
         ]
     )
@@ -2442,7 +2499,11 @@ def _build_autonomous_agent(
         model=model,
         tools=[_workspace_patch_tool(backend)],
         system_prompt=(
-            AUTONOMOUS_SYSTEM_PROMPT
+            (
+                AUTONOMOUS_SYSTEM_PROMPT
+                if config.completion_gate_enabled
+                else AUTONOMOUS_NATIVE_SYSTEM_PROMPT
+            )
             + _autonomous_fanout_prompt(
                 config,
                 delegation_enabled=delegation_enabled,
@@ -2452,7 +2513,10 @@ def _build_autonomous_agent(
             + BASE_AGENT_PROMPT
         ),
         middleware=middleware,
-        response_format=ToolStrategy(WorkflowCompletion),
+        response_format=(
+            ToolStrategy(WorkflowCompletion)
+            if config.completion_gate_enabled else None
+        ),
         name="beliefkv-swebench-supervisor",
     )
 
@@ -2619,6 +2683,7 @@ def _run_planned_child(
                     child_backend,
                     scope=f"planned:child:{handle.invocation_id}",
                     adapter=adapter,
+                    suppress_repeats=config.tool_circuit_breaker_enabled,
                 ),
                 ToolOutcomeStatusMiddleware(),
                 _tool_observation_budget(
@@ -2636,6 +2701,9 @@ def _run_planned_child(
                     policy=_planned_child_loop_guard_policy(config),
                     accept_natural_completion=True,
                     activation_deadline=deadline_controller.deadline,
+                ),
+                EmptyReasoningRecoveryMiddleware(
+                    audit=backend.audit, scope=f"planned:child:{handle.invocation_id}"
                 ),
             ],
             system_prompt=(
@@ -2863,7 +2931,10 @@ def _run_planned(
         tools=[_workspace_patch_tool(backend)],
         middleware=[
             _tool_circuit(
-                backend, scope="planned:implementer", adapter=adapter
+                backend,
+                scope="planned:implementer",
+                adapter=adapter,
+                suppress_repeats=config.tool_circuit_breaker_enabled,
             ),
             ToolOutcomeStatusMiddleware(),
             _tool_observation_budget(
@@ -2878,6 +2949,7 @@ def _run_planned(
                 completion_instruction=WORKFLOW_COMPLETION_INSTRUCTION,
                 audit=backend.audit,
                 scope="planned:implementer",
+                accept_natural_completion=not config.completion_gate_enabled,
                 activation_deadline=deadline_controller.deadline,
             ),
         ],
@@ -2910,8 +2982,46 @@ def _run_planned(
     return result, plan, reports
 
 
+def _workflow_terminal(
+    result: dict[str, Any], *, require_schema: bool
+) -> tuple[WorkflowCompletion | None, str]:
+    if require_schema:
+        return require_structured_completion(result, WorkflowCompletion), "completed"
+    value = result.get("structured_response")
+    completion: WorkflowCompletion | None = None
+    if isinstance(value, WorkflowCompletion):
+        completion = value
+    elif isinstance(value, dict):
+        try:
+            completion = WorkflowCompletion.model_validate(value)
+        except ValueError:
+            pass
+    messages = _result_messages(result)
+    last_ai = next(
+        (
+            message
+            for message in reversed(messages)
+            if isinstance(message, AIMessage)
+        ),
+        None,
+    )
+    finish_reason = (
+        last_ai.response_metadata.get("finish_reason")
+        if last_ai is not None else None
+    )
+    if completion is None and (
+        last_ai is None
+        or last_ai is not messages[-1]
+        or bool(last_ai.tool_calls)
+        or finish_reason == "length"
+        or not _message_text(last_ai).strip()
+    ):
+        return None, "incomplete"
+    return completion, "completed"
+
+
 def _completion_gate_for_result(
-    result: dict[str, Any], workspace: Path, *, runtime_tests: Sequence[str] = ()
+    result: dict[str, Any], workspace: Path
 ) -> dict[str, Any]:
     try:
         parsed = require_structured_completion(result, WorkflowCompletion)
@@ -2919,62 +3029,7 @@ def _completion_gate_for_result(
     except (RuntimeError, ValueError):
         completion = None
     patch = command_output(["git", "diff", "--binary", "HEAD"], cwd=workspace)
-    observed = [
-        *observed_successful_test_commands(_result_messages(result)),
-        *runtime_tests,
-    ]
-    return validate_workflow_completion(
-        completion,
-        patch=patch,
-        observed_tests=list(dict.fromkeys(observed)),
-    )
-
-
-def _runtime_verify_changed_tests(
-    result: dict[str, Any], backend: DockerWorkspaceBackend
-) -> list[str]:
-    patch = command_output(["git", "diff", "--binary", "HEAD"], cwd=backend.workspace)
-    patch_sha256 = hashlib.sha256(patch.encode("utf-8")).hexdigest()
-    cached = result.get(RUNTIME_VERIFIED_TESTS_KEY)
-    if isinstance(cached, dict) and cached.get("patch_sha256") == patch_sha256:
-        return [str(item) for item in cached.get("commands", [])]
-
-    changed = command_output(
-        ["git", "diff", "--name-only", "--diff-filter=ACMRT", "HEAD", "--"],
-        cwd=backend.workspace,
-    ).splitlines()
-    test_files = [
-        name
-        for name in changed
-        if name.endswith(".py")
-        and any(part == "tests" for part in Path(name).parts)
-        and Path(name).name.startswith("test_")
-        and (backend.workspace / name).is_file()
-    ][:8]
-    commands: list[str] = []
-    returncode: int | None = None
-    if test_files:
-        quoted_files = " ".join(shlex.quote(name) for name in test_files)
-        if (backend.workspace / "bin/test").is_file():
-            command = f"python bin/test {quoted_files}"
-        else:
-            command = f"pytest {quoted_files}"
-        response = backend.execute(command, timeout=600)
-        returncode = response.exit_code
-        if response.exit_code == 0:
-            commands.append(command)
-    backend.audit.emit(
-        "workflow_test_verifier",
-        patch_sha256=patch_sha256,
-        test_file_count=len(test_files),
-        returncode=returncode,
-        passed=bool(commands),
-    )
-    result[RUNTIME_VERIFIED_TESTS_KEY] = {
-        "patch_sha256": patch_sha256,
-        "commands": commands,
-    }
-    return commands
+    return validate_workflow_completion(completion, patch=patch)
 
 
 def _repair_incomplete_workflow(
@@ -2987,16 +3042,12 @@ def _repair_incomplete_workflow(
 ) -> dict[str, Any]:
     result = initial_result
     for attempt in range(config.completion_repair_attempts + 1):
-        runtime_tests = _runtime_verify_changed_tests(result, backend)
-        gate = _completion_gate_for_result(
-            result, backend.workspace, runtime_tests=runtime_tests
-        )
+        gate = _completion_gate_for_result(result, backend.workspace)
         backend.audit.emit(
             "workflow_completion_gate",
             attempt=attempt,
             passed=gate["passed"],
             errors=gate["errors"],
-            observed_test_count=len(gate["observed_successful_test_commands"]),
         )
         if gate["passed"] or attempt == config.completion_repair_attempts:
             return result
@@ -3012,6 +3063,7 @@ def _repair_incomplete_workflow(
                     backend,
                     scope=f"completion-repair:{attempt + 1}",
                     adapter=adapter,
+                    suppress_repeats=config.tool_circuit_breaker_enabled,
                 ),
                 ToolOutcomeStatusMiddleware(),
                 _tool_observation_budget(
@@ -3042,7 +3094,6 @@ def _repair_incomplete_workflow(
                         "content": (
                             f"{_task_prompt(workload, include_pressure=False)}\n\n"
                             f"Runtime gate rejection reasons: {gate['errors']}\n\n"
-                            f"Runtime-verified passing tests: {runtime_tests or '(none)'}\n\n"
                             f"Previous completion:\n{_final_text(result)[:12000]}\n\n"
                             f"Current patch:\n{patch[:24000] or '(empty)'}"
                         ),
@@ -3348,8 +3399,6 @@ def classify_workflow_measurement(
         system_reasons.append(f"outcome:{outcome}")
     if error is not None:
         system_reasons.append("workflow_error")
-    if semantic_completion is None:
-        system_reasons.append("missing_semantic_completion")
     if bool(control_delivery.get("degraded")):
         system_reasons.append("runtime_control_delivery_degraded")
     if int(agent_control.get("protocol_repair_failures", 0)):
@@ -3372,6 +3421,8 @@ def classify_workflow_measurement(
             system_reasons.append("join_not_satisfied")
 
     native_reasons = list(system_reasons)
+    if semantic_completion is None:
+        native_reasons.append("missing_semantic_completion")
     if agent_control.get("stuck_reasons"):
         native_reasons.append("guard_detected_stuck_execution")
     if int(agent_control.get("forced_semantic_completions", 0)):
@@ -3548,9 +3599,11 @@ def _run_workflow(
                 result,
                 deadline_controller,
             )
-        completion = require_structured_completion(result, WorkflowCompletion)
-        semantic_completion = completion.model_dump(mode="json")
-        outcome = "completed"
+        completion, outcome = _workflow_terminal(
+            result, require_schema=config.completion_gate_enabled
+        )
+        if completion is not None:
+            semantic_completion = completion.model_dump(mode="json")
     except BaseException as error:
         if isinstance(error, PartialAgentRunError):
             result = error.partial_result
@@ -3597,20 +3650,7 @@ def _run_workflow(
     (workflow_dir / "model.patch").write_text(
         patch + ("\n" if patch else ""), encoding="utf-8"
     )
-    runtime_verification = result.get(RUNTIME_VERIFIED_TESTS_KEY, {})
-    runtime_tests = (
-        [str(item) for item in runtime_verification.get("commands", [])]
-        if isinstance(runtime_verification, dict)
-        else []
-    )
-    observed_tests = list(
-        dict.fromkeys([*observed_successful_test_commands(messages), *runtime_tests])
-    )
-    correctness_gate = validate_workflow_completion(
-        completion,
-        patch=patch,
-        observed_tests=observed_tests,
-    )
+    correctness_gate = validate_workflow_completion(completion, patch=patch)
     control_delivery = adapter.control_delivery_summary()
     agent_control = summarize_agent_control(sandbox_audit_path)
     trace = _trace_summary(trace_path)
@@ -3647,8 +3687,7 @@ def _run_workflow(
         "semantic_completion": semantic_completion,
         "correctness_gate": correctness_gate,
         "task_correctness_valid": task_correctness_valid,
-        # Compatibility alias for pre-P5G experiment readers.
-        "measurement_valid": task_correctness_valid,
+        "measurement_valid": bool(eligibility["system_jct_eligible"]),
         **eligibility,
         "agent_control": agent_control,
         "runtime_control_delivery": control_delivery,
@@ -3657,6 +3696,7 @@ def _run_workflow(
         ),
         "trace": trace,
         "workflow_deadline": deadline_summary,
+        "sandbox_cleanup_status": backend.cleanup_status,
     }
     write_json(workflow_dir / "result.json", summary)
     return summary

@@ -40,6 +40,7 @@ from beliefkv.experiments.deepagents_swebench import (
     AUTONOMOUS_SYSTEM_PROMPT,
     DELEGATED_TASK_FOCUS_INSTRUCTION,
     DynamicInitialDelegationPlan,
+    EmptyReasoningRecoveryMiddleware,
     NATIVE_DYNAMIC_1TO4_PROMPT,
     NATIVE_DYNAMIC_INITIAL_PLANNER_PROMPT,
     NATIVE_SUBAGENT_2TO3_PROMPT,
@@ -60,7 +61,6 @@ from beliefkv.experiments.deepagents_swebench import (
     collect_workspace_artifacts,
     copy_append_window,
     load_workload_bundle,
-    observed_successful_test_commands,
     prepare_workspace,
     prometheus_gauge_sum,
     _demand_load,
@@ -76,7 +76,7 @@ from beliefkv.experiments.deepagents_swebench import (
     _autonomous_subagents,
     _dynamic_initial_delegation_tasks,
     _planned_child_completion,
-    _runtime_verify_changed_tests,
+    _workflow_terminal,
     _run_autonomous,
     _task_prompt,
     _blake2b_file,
@@ -366,6 +366,29 @@ def test_system_jct_allows_recovered_protocol_but_native_jct_does_not() -> None:
     ]
 
 
+def test_natural_workflow_return_preserves_system_measurement() -> None:
+    result = classify_workflow_measurement(
+        outcome="completed",
+        error=None,
+        semantic_completion=None,
+        agent_control={},
+        control_delivery={"degraded": False},
+        trace={
+            "workflow_lifecycle_valid": True,
+            "llm_pairing_valid": True,
+            "tool_pairing_valid": True,
+            "tool_status_coverage": 1.0,
+            "workspace_digest_coverage": 1.0,
+            "dynamic_subagent_count": 0,
+        },
+    )
+    assert result["system_jct_eligible"]
+    assert not result["native_agent_jct_eligible"]
+    assert result["native_agent_jct_exclusion_reasons"] == [
+        "missing_semantic_completion"
+    ]
+
+
 def test_copy_append_window_freezes_only_new_bytes(tmp_path: Path) -> None:
     source = tmp_path / "server.jsonl"
     source.write_bytes(b'{"old":1}\n')
@@ -492,6 +515,32 @@ def test_docker_backend_hashes_commands_and_truncates_output(
         execute_argv
     )
     assert execute_argv[-3:-1] == ["/bin/sh", "-c"]
+
+
+def test_docker_cleanup_timeout_is_audited_without_losing_workflow_result(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    audit = JsonlAudit(tmp_path / "audit.jsonl")
+    backend = DockerWorkspaceBackend(tmp_path, image="fixture:latest", audit=audit)
+    backend._started = True
+
+    def timed_out(argv: list[str], **kwargs: Any) -> Any:
+        del kwargs
+        raise subprocess.TimeoutExpired(argv, 30.0)
+
+    monkeypatch.setattr(subprocess, "run", timed_out)
+    backend.close()
+    audit.close()
+
+    records = [
+        json.loads(line)
+        for line in (tmp_path / "audit.jsonl").read_text(encoding="utf-8").splitlines()
+    ]
+    assert backend.cleanup_status == "failed"
+    assert records[-1]["event"] == "sandbox_stop"
+    assert records[-1]["status"] == "failed"
+    assert records[-1]["container_name"] == backend.id
+    assert "TimeoutExpired" in records[-1]["error"]
 
 
 def test_tool_observation_budget_bounds_parallel_turn_deterministically(
@@ -872,96 +921,23 @@ def test_writable_filesystem_middleware_exposes_sandboxed_edit_tools(
     audit.close()
 
 
-def test_runtime_verifier_runs_changed_repository_tests(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-) -> None:
-    test_file = tmp_path / "package/tests/test_feature.py"
-    test_file.parent.mkdir(parents=True)
-    test_file.write_text("def test_feature(): pass\n", encoding="utf-8")
-    (tmp_path / "bin").mkdir()
-    (tmp_path / "bin/test").write_text("", encoding="utf-8")
-    audit = JsonlAudit(tmp_path / "audit.jsonl")
-    backend = DockerWorkspaceBackend(tmp_path, image="fixture:latest", audit=audit)
-    commands: list[str] = []
-
-    def fake_command_output(command, *, cwd, timeout=60.0):
-        del cwd, timeout
-        if "--name-only" in command:
-            return "package/tests/test_feature.py"
-        return "diff --git a/package/tests/test_feature.py b/package/tests/test_feature.py"
-
-    def fake_execute(command: str, *, timeout: int | None = None):
-        assert timeout == 600
-        commands.append(command)
-        return ExecuteResponse(output="1 passed", exit_code=0, truncated=False)
-
-    monkeypatch.setattr(
-        "beliefkv.experiments.deepagents_swebench.command_output",
-        fake_command_output,
-    )
-    monkeypatch.setattr(backend, "execute", fake_execute)
-    result: dict[str, object] = {}
-    observed = _runtime_verify_changed_tests(result, backend)
-
-    assert observed == [
-        "python bin/test package/tests/test_feature.py"
-    ]
-    assert commands == observed
-    assert _runtime_verify_changed_tests(result, backend) == observed
-    assert commands == observed
-    audit.close()
-
-
-def test_workflow_success_requires_patch_and_observed_passing_test() -> None:
-    passing_command = "python bin/test sympy/core/tests/test_basic.py -k test_args"
-    messages = [
-        AIMessage(
-            content="",
-            tool_calls=[
-                {
-                    "name": "execute",
-                    "args": {"command": passing_command},
-                    "id": "test-pass",
-                },
-                {
-                    "name": "execute",
-                    "args": {"command": "pytest failing_test.py"},
-                    "id": "test-fail",
-                },
-            ],
-        ),
-        ToolMessage(
-            content="3 passed in 0.4 seconds",
-            tool_call_id="test-pass",
-            name="execute",
-        ),
-        ToolMessage(
-            content="1 failed\n[Command failed with exit code 1]",
-            tool_call_id="test-fail",
-            name="execute",
-        ),
-    ]
-    observed = observed_successful_test_commands(messages)
-    assert observed == [passing_command]
-
+def test_workflow_completion_gate_does_not_require_a_test_command() -> None:
     completion = WorkflowCompletion(
         status="patched_and_tested",
         summary="Fixed the issue",
         files_changed=["sympy/core/basic.py"],
-        tests=[f"{passing_command}: passed"],
+        tests=[],
         unresolved=[],
     )
     accepted = validate_workflow_completion(
         completion,
         patch="diff --git a/sympy/core/basic.py b/sympy/core/basic.py",
-        observed_tests=observed,
     )
     assert accepted["passed"]
 
     unresolved = validate_workflow_completion(
         completion.model_copy(update={"unresolved": ["second requirement missing"]}),
         patch="diff --git a/sympy/core/basic.py b/sympy/core/basic.py",
-        observed_tests=observed,
     )
     assert not unresolved["passed"]
     assert "completion_has_unresolved_items" in unresolved["errors"]
@@ -973,7 +949,6 @@ def test_workflow_success_requires_patch_and_observed_passing_test() -> None:
             }
         ),
         patch="diff --git a/sympy/core/basic.py b/sympy/core/basic.py",
-        observed_tests=observed,
     )
     assert not self_declared_incomplete["passed"]
     assert "completion_summary_declares_incomplete_work" in self_declared_incomplete[
@@ -983,53 +958,46 @@ def test_workflow_success_requires_patch_and_observed_passing_test() -> None:
     rejected = validate_workflow_completion(
         completion.model_copy(update={"status": "blocked"}),
         patch="",
-        observed_tests=[],
     )
     assert not rejected["passed"]
     assert "terminal_status:blocked" in rejected["errors"]
     assert "workspace_has_no_patch" in rejected["errors"]
 
 
-@pytest.mark.parametrize(
-    ("command", "output"),
-    [
-        (
-            "python bin/test sympy/core/tests/test_arit.py::test_Mod",
-            "tests finished: 0 passed, in 0.00 seconds\n"
-            "[Command succeeded with exit code 0]",
-        ),
-        (
-            "pytest sympy/core/tests/test_arit.py -k does_not_exist",
-            "collected 0 items\n[Command succeeded with exit code 0]",
-        ),
-        (
-            "python -m pytest sympy/core/tests/test_arit.py -k does_not_exist",
-            "no tests ran in 0.01s\n[Command succeeded with exit code 0]",
-        ),
-    ],
-)
-def test_workflow_gate_rejects_successful_exit_with_zero_tests(
-    command: str, output: str
-) -> None:
-    messages = [
-        AIMessage(
-            content="",
-            tool_calls=[
-                {
-                    "name": "execute",
-                    "args": {"command": command},
-                    "id": "zero-tests",
-                }
-            ],
-        ),
-        ToolMessage(
-            content=output,
-            tool_call_id="zero-tests",
-            name="execute",
-        ),
-    ]
+def test_native_root_natural_completion_and_length_exhaustion() -> None:
+    natural = {"messages": [AIMessage(content="Implemented the change.")]}
+    completion, outcome = _workflow_terminal(natural, require_schema=False)
+    assert completion is None
+    assert outcome == "completed"
+    with pytest.raises(RuntimeError, match="WorkflowCompletion"):
+        _workflow_terminal(natural, require_schema=True)
 
-    assert observed_successful_test_commands(messages) == []
+    exhausted = {
+        "messages": [
+            AIMessage(
+                content="",
+                response_metadata={
+                    "finish_reason": "length",
+                    "token_usage": {"completion_tokens": 4096, "reasoning_tokens": 4096},
+                },
+            )
+        ]
+    }
+    assert _workflow_terminal(exhausted, require_schema=False) == (
+        None, "incomplete"
+    )
+    interrupted_after_tool = {
+        "messages": [
+            AIMessage(
+                content="",
+                tool_calls=[{"name": "execute", "args": {"command": "pwd"}, "id": "t"}],
+            ),
+            ToolMessage(content="/workspace", tool_call_id="t", name="execute"),
+        ]
+    }
+    assert _workflow_terminal(interrupted_after_tool, require_schema=False) == (
+        None, "incomplete"
+    )
 
 
 def test_experiment_config_rejects_unsupported_mode(tmp_path: Path) -> None:
@@ -2074,6 +2042,167 @@ def test_autonomous_subagents_have_independent_context_lifecycles(
         )
         for spec in subagents
     )
+    assert all(
+        any(
+            isinstance(item, EmptyReasoningRecoveryMiddleware)
+            for item in spec["middleware"]
+        )
+        for spec in subagents
+    )
+
+
+@pytest.mark.parametrize("finish_reason", ["stop", "length"])
+def test_empty_reasoning_terminal_retries_once_without_thinking(
+    tmp_path: Path, finish_reason: str
+) -> None:
+    audit = JsonlAudit(tmp_path / "retry.jsonl")
+    middleware = EmptyReasoningRecoveryMiddleware(audit=audit, scope="child")
+    request = ModelRequest(
+        model=FakeMessagesListChatModel(responses=[AIMessage(content="unused")]),
+        messages=[HumanMessage(content="inspect")],
+        model_settings={
+            "max_tokens": 8192,
+            "extra_body": {"chat_template_kwargs": {"some_setting": 1}},
+        },
+    )
+    first = ModelResponse(
+        result=[
+            AIMessage(
+                content="",
+                additional_kwargs={"reasoning_content": "I should report findings."},
+                response_metadata={
+                    "finish_reason": finish_reason,
+                    "token_usage": {"reasoning_tokens": 16},
+                },
+            )
+        ]
+    )
+    second = ModelResponse(result=[AIMessage(content="A useful report.")])
+    calls: list[ModelRequest] = []
+
+    def handler(attempt: ModelRequest) -> ModelResponse:
+        calls.append(attempt)
+        return first if len(calls) == 1 else second
+
+    try:
+        assert middleware.wrap_model_call(request, handler) is second
+    finally:
+        audit.close()
+    assert len(calls) == 2
+    assert calls[0].model_settings == request.model_settings
+    assert calls[1].model_settings == {
+        "max_tokens": 8192,
+        "extra_body": {
+            "chat_template_kwargs": {
+                "some_setting": 1,
+                "enable_thinking": False,
+            }
+        },
+    }
+    assert request.model_settings["extra_body"]["chat_template_kwargs"] == {
+        "some_setting": 1
+    }
+    events = [
+        json.loads(line)
+        for line in (tmp_path / "retry.jsonl").read_text().splitlines()
+    ]
+    assert [item["event"] for item in events] == [
+        "agent_empty_reasoning_retry",
+        "agent_empty_reasoning_retry_result",
+    ]
+    assert events[0]["finish_reason"] == finish_reason
+    assert events[-1]["recovered"] is True
+
+
+@pytest.mark.parametrize(
+    "message",
+    [
+        AIMessage(content="A natural report.", response_metadata={"finish_reason": "stop"}),
+        AIMessage(
+            content="",
+            response_metadata={
+                "finish_reason": "length",
+                "token_usage": {"reasoning_tokens": 0},
+            },
+        ),
+        AIMessage(
+            content="",
+            response_metadata={
+                "finish_reason": "stop",
+                "token_usage": {"reasoning_tokens": 0},
+            },
+        ),
+        AIMessage(
+            content="",
+            tool_calls=[{"name": "read_file", "args": {}, "id": "call-1"}],
+            response_metadata={
+                "finish_reason": "tool_calls",
+                "token_usage": {"reasoning_tokens": 16},
+            },
+        ),
+    ],
+)
+def test_empty_reasoning_recovery_does_not_retry_other_outputs(
+    tmp_path: Path, message: AIMessage
+) -> None:
+    audit = JsonlAudit(tmp_path / "retry.jsonl")
+    middleware = EmptyReasoningRecoveryMiddleware(audit=audit, scope="child")
+    request = ModelRequest(
+        model=FakeMessagesListChatModel(responses=[AIMessage(content="unused")]),
+        messages=[HumanMessage(content="inspect")],
+    )
+    response = ModelResponse(result=[message])
+    calls = 0
+
+    def handler(_request: ModelRequest) -> ModelResponse:
+        nonlocal calls
+        calls += 1
+        return response
+
+    try:
+        assert middleware.wrap_model_call(request, handler) is response
+    finally:
+        audit.close()
+    assert calls == 1
+
+
+def test_empty_reasoning_recovery_never_forges_a_child_result(
+    tmp_path: Path,
+) -> None:
+    audit = JsonlAudit(tmp_path / "retry.jsonl")
+    middleware = EmptyReasoningRecoveryMiddleware(audit=audit, scope="child")
+    request = ModelRequest(
+        model=FakeMessagesListChatModel(responses=[AIMessage(content="unused")]),
+        messages=[HumanMessage(content="inspect")],
+    )
+    blank = ModelResponse(
+        result=[
+            AIMessage(
+                content="",
+                response_metadata={
+                    "finish_reason": "stop",
+                    "token_usage": {"reasoning_tokens": 20},
+                },
+            )
+        ]
+    )
+    calls = 0
+
+    def handler(_request: ModelRequest) -> ModelResponse:
+        nonlocal calls
+        calls += 1
+        return blank
+
+    try:
+        assert middleware.wrap_model_call(request, handler) is blank
+    finally:
+        audit.close()
+    assert calls == 2
+    events = [
+        json.loads(line)
+        for line in (tmp_path / "retry.jsonl").read_text().splitlines()
+    ]
+    assert events[-1]["recovered"] is False
 
 
 @pytest.mark.parametrize(
@@ -3121,7 +3250,7 @@ def test_loop_guard_2048_step_fuse_reserves_terminal_completion(
         "beliefkv.experiments.agent_protocol.get_config",
         lambda: {
             "recursion_limit": 2048,
-            "metadata": {"langgraph_step": 2017},
+            "metadata": {"langgraph_step": 2016},
         },
     )
     policy = LoopGuardPolicy(graph_step_reserve=32)

@@ -1,6 +1,6 @@
 # BeliefKV Current Execution Plan
 
-Status date: 2026-09-23.
+Status date: 2026-09-24.
 
 This file contains only the active execution order. Completed and superseded
 plans are indexed under `docs/archive/`.
@@ -32,15 +32,30 @@ The 70/30 raw trace had 63/64 complete workflows and was rejected by the old
 100%-coverage export gate. The revised collector/exporter admits at least 95%
 batch trace coverage but continues to exclude malformed workflows individually;
 runtime/model provenance, core event pairing, and telemetry writer health remain
-fail-closed. The 65/35 dataset and both capacity runs remain unchanged.
+fail-closed. The raw 65/35 and 70/30 traces, summaries, and capacity
+calibration remain available for the Host-pool decision. Their exported
+training tables are not reused; invalidated dataset manifests are retained
+outside the standard training path.
 
 The active collection is one frozen 128-root plan: 64 roots arrive at `t=0`,
 the next 64 at `t=60s`, client inflight is 128, and one SGLang server uses
-`MAX_RUNNING_REQUESTS=48`/graph48. Both graph hard fuse and LangGraph
-`recursion_limit` are 2048 with a 32-step completion reserve; the 384-step soft
-threshold is telemetry-only. The server uses the verified 70/30 Host split on
-NUMA node 1. Model-selected initial fan-out remains one to four children, with
-the root allowed to spawn again after JOIN.
+`MAX_RUNNING_REQUESTS=48`/graph48. LangGraph `recursion_limit=2048` is the hard
+limit; a 32-step reserve starts bounded FINALIZE at approximately step 2016.
+This is the only enforced graph-step guard. Semantic loop/stuck patterns and
+the 384-step soft budget are telemetry-only; repeated-tool suppression,
+tool circuit breaker, completion gate, and format repair are disabled.
+Model-request and sandbox-command timeouts remain. The server uses the verified
+180 decimal GB Host pool with a 70/30 FULL/MAMBA split on NUMA node 1 and
+`mem_fraction_static=0.94`. Model-selected initial fan-out remains one to four
+children, with the root allowed to spawn again after JOIN.
+
+All earlier Qwen3.5 native-reactive training exports are invalidated because
+their step/guard configuration or telemetry contract does not match this
+collection. Preserve raw runtime and per-workflow traces, contracts, summaries,
+and capacity calibration for audit; discard unusable derived tables and the
+uncalibrated fitted artifact. The current collector requires block-level Host
+eviction attribution (`eviction_attribution.jsonl`) and fails closed if the
+patched SGLang TreeCore observer is unavailable.
 
 This is training-data collection, not a predictive throughput experiment:
 predictor and predictive actions remain disabled. After collection, validate

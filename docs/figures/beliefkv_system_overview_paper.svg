@@ -1,0 +1,141 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="1500" height="850" viewBox="0 0 1500 850" role="img" aria-labelledby="title">
+<title id="title">BeliefKV System Overview</title>
+<rect width="100%" height="100%" fill="#ffffff"/>
+<defs>
+<marker id="arrow" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10z" fill="#263746"/></marker>
+<marker id="blue-arrow" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10z" fill="#3d6f9f"/></marker>
+<marker id="teal-arrow" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10z" fill="#357b73"/></marker>
+<marker id="amber-arrow" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10z" fill="#a96f1f"/></marker>
+</defs>
+<style>text{font-family:Arial,"Liberation Sans",sans-serif}.hair{stroke:#d4dbe0;stroke-width:1}</style>
+<text x="56" y="55" font-size="25" fill="#263746" font-weight="700" text-anchor="start">BeliefKV System Overview</text>
+<line x1="56" y1="82" x2="1444" y2="82" class="hair"/>
+<text x="58" y="112" font-size="10.5" fill="#687680" font-weight="700" text-anchor="start">AGENT WORKFLOW</text>
+<text x="445" y="112" font-size="10.5" fill="#687680" font-weight="700" text-anchor="start">CAUSAL STATE</text>
+<text x="755" y="112" font-size="10.5" fill="#687680" font-weight="700" text-anchor="start">ACTION FRONTIER</text>
+<text x="1004" y="112" font-size="10.5" fill="#687680" font-weight="700" text-anchor="start">SCHEDULER / SGLANG</text>
+<circle cx="98" cy="190" r="20" fill="#eaf3f1" stroke="#357b73" stroke-width="1.4"/>
+<text x="98" y="194.2" font-size="12" fill="#263746" font-weight="700" text-anchor="middle">R</text>
+<circle cx="213" cy="144" r="19" fill="#ffffff" stroke="#89959d" stroke-width="1.4"/>
+<text x="213" y="147.85" font-size="11" fill="#263746" font-weight="700" text-anchor="middle">A</text>
+<circle cx="213" cy="239" r="19" fill="#fbf2e3" stroke="#a96f1f" stroke-width="1.4"/>
+<text x="213" y="242.85" font-size="11" fill="#263746" font-weight="700" text-anchor="middle">B</text>
+<rect x="291" y="126" width="64" height="34" rx="2" fill="#fbf2e3" stroke="#a96f1f" stroke-width="1.3"/>
+<text x="323.0" y="146.4" font-size="10" fill="#263746" font-weight="600" text-anchor="middle">tool</text>
+<polygon points="365,212.0 404.0,239 365,266.0 326.0,239" fill="#fbf2e3" stroke="#a96f1f" stroke-width="1.5"/>
+<text x="365" y="243" font-size="9.5" fill="#263746" font-weight="700" text-anchor="middle">JOIN</text>
+<path d="M118 182 L150 158 L194 148" fill="none" stroke="#357b73" stroke-width="1.5" marker-end="url(#teal-arrow)"/>
+<path d="M118 198 L152 225 L194 236" fill="none" stroke="#357b73" stroke-width="1.5" marker-end="url(#teal-arrow)"/>
+<line x1="232" y1="144" x2="286" y2="144" stroke="#a96f1f" stroke-width="1.5" marker-end="url(#amber-arrow)"/>
+<path d="M355 144 L378 144 L378 212" fill="none" stroke="#a96f1f" stroke-width="1.5" marker-end="url(#amber-arrow)"/>
+<path d="M232 239 L321 239" fill="none" stroke="#a96f1f" stroke-width="1.5" marker-end="url(#amber-arrow)"/>
+<text x="98" y="225" font-size="9.5" fill="#687680" font-weight="400" text-anchor="middle">parent</text>
+<text x="213" y="178" font-size="9.5" fill="#687680" font-weight="400" text-anchor="middle">child</text>
+<text x="213" y="273" font-size="9.5" fill="#687680" font-weight="400" text-anchor="middle">child</text>
+<text x="366" y="278" font-size="9.5" fill="#687680" font-weight="400" text-anchor="middle">barrier</text>
+<text x="58" y="315" font-size="10" fill="#687680" font-weight="600" text-anchor="start">SPAWN  ·  TOOL  ·  RETURN  ·  JOIN</text>
+<line x1="58" y1="330" x2="407" y2="330" stroke="#d4dbe0" stroke-width="1"/>
+<circle cx="482" cy="178" r="18" fill="#eaf3f1" stroke="#357b73" stroke-width="1.4"/>
+<text x="482" y="181.85" font-size="11" fill="#263746" font-weight="700" text-anchor="middle">R</text>
+<circle cx="572" cy="140" r="17" fill="#ffffff" stroke="#89959d" stroke-width="1.4"/>
+<text x="572" y="143.85" font-size="11" fill="#263746" font-weight="700" text-anchor="middle">A</text>
+<circle cx="572" cy="216" r="17" fill="#fbf2e3" stroke="#a96f1f" stroke-width="1.4"/>
+<text x="572" y="219.85" font-size="11" fill="#263746" font-weight="700" text-anchor="middle">B</text>
+<polygon points="666,154.0 697.0,178 666,202.0 635.0,178" fill="#fbf2e3" stroke="#a96f1f" stroke-width="1.5"/>
+<text x="666" y="181" font-size="9" fill="#263746" font-weight="700" text-anchor="middle">AND</text>
+<line x1="500" y1="170" x2="555" y2="147" stroke="#357b73" stroke-width="1.4" marker-end="url(#teal-arrow)"/>
+<line x1="500" y1="186" x2="555" y2="209" stroke="#357b73" stroke-width="1.4" marker-end="url(#teal-arrow)"/>
+<path d="M589 140 L630 140 L646 164" fill="none" stroke="#263746" stroke-width="1.4" marker-end="url(#arrow)"/>
+<line x1="589" y1="216" x2="635" y2="187" stroke="#a96f1f" stroke-width="1.5" marker-end="url(#amber-arrow)"/>
+<text x="572" y="177" font-size="8.5" fill="#687680" font-weight="400" text-anchor="middle">WAIT_TOOL</text>
+<text x="572" y="253" font-size="8.5" fill="#687680" font-weight="400" text-anchor="middle">RUN</text>
+<text x="666" y="218" font-size="9" fill="#687680" font-weight="400" text-anchor="middle">JOIN_ALL</text>
+<circle cx="777" cy="132" r="7" fill="#fbf2e3" stroke="#a96f1f" stroke-width="1.2"/>
+<text x="793" y="136" font-size="10.5" fill="#263746" font-weight="500" text-anchor="start">JOIN blocker</text>
+<circle cx="777" cy="169" r="7" fill="#eaf3f1" stroke="#357b73" stroke-width="1.2"/>
+<text x="793" y="173" font-size="10.5" fill="#263746" font-weight="500" text-anchor="start">causal unlock</text>
+<circle cx="777" cy="206" r="7" fill="#f2f4f5" stroke="#89959d" stroke-width="1.2"/>
+<text x="793" y="210" font-size="10.5" fill="#263746" font-weight="500" text-anchor="start">ready</text>
+<path d="M701 178 L735 178 L735 169 L766 169" fill="none" stroke="#263746" stroke-width="1.5" marker-end="url(#arrow)"/>
+<text x="755" y="247" font-size="9.5" fill="#687680" font-weight="400" text-anchor="start">RETURN changes readiness;</text>
+<text x="755" y="262" font-size="9.5" fill="#687680" font-weight="400" text-anchor="start">ETA only shifts action timing.</text>
+<text x="1012" y="139" font-size="10.5" fill="#687680" font-weight="700" text-anchor="start">WAITING QUEUE</text>
+<rect x="1022" y="154" width="34" height="24" rx="2" fill="#ffffff" stroke="#89959d" stroke-width="1"/>
+<text x="1039" y="170" font-size="9.5" fill="#263746" font-weight="600" text-anchor="middle">r1</text>
+<line x1="1057" y1="166" x2="1062" y2="166" stroke="#263746" stroke-width="1.2" marker-end="url(#arrow)"/>
+<rect x="1064" y="154" width="34" height="24" rx="2" fill="#ffffff" stroke="#89959d" stroke-width="1"/>
+<text x="1081" y="170" font-size="9.5" fill="#263746" font-weight="600" text-anchor="middle">r2</text>
+<line x1="1099" y1="166" x2="1104" y2="166" stroke="#263746" stroke-width="1.2" marker-end="url(#arrow)"/>
+<rect x="1106" y="154" width="34" height="24" rx="2" fill="#ffffff" stroke="#89959d" stroke-width="1"/>
+<text x="1123" y="170" font-size="9.5" fill="#263746" font-weight="600" text-anchor="middle">r3</text>
+<rect x="1155" y="144" width="68" height="44" rx="2" fill="#fbf2e3" stroke="#a96f1f" stroke-width="1.3"/>
+<text x="1189.0" y="169.4" font-size="10" fill="#263746" font-weight="600" text-anchor="middle">safe
+point</text>
+<rect x="1240" y="144" width="91" height="44" rx="2" fill="#f2f4f5" stroke="#89959d" stroke-width="1.3"/>
+<text x="1285.5" y="169.4" font-size="10" fill="#263746" font-weight="600" text-anchor="middle">PrefillAdder</text>
+<rect x="1361" y="139" width="80" height="54" rx="2" fill="#edf3f8" stroke="#3d6f9f" stroke-width="1.4"/>
+<rect x="1370" y="149" width="15" height="33" rx="1" fill="#d9e5ef" stroke="#3d6f9f" stroke-width="0.8"/>
+<rect x="1391" y="149" width="15" height="33" rx="1" fill="#d9e5ef" stroke="#3d6f9f" stroke-width="0.8"/>
+<rect x="1412" y="149" width="15" height="33" rx="1" fill="#d9e5ef" stroke="#3d6f9f" stroke-width="0.8"/>
+<text x="1401" y="207" font-size="9.5" fill="#687680" font-weight="500" text-anchor="middle">GPU batch</text>
+<line x1="1140" y1="166" x2="1150" y2="166" stroke="#263746" stroke-width="1.4" marker-end="url(#arrow)"/>
+<line x1="1223" y1="166" x2="1235" y2="166" stroke="#263746" stroke-width="1.4" marker-end="url(#arrow)"/>
+<line x1="1331" y1="166" x2="1355" y2="166" stroke="#263746" stroke-width="1.4" marker-end="url(#arrow)"/>
+<text x="461" y="304" font-size="10.5" fill="#687680" font-weight="700" text-anchor="start">ASYNCHRONOUS PREDICTION</text>
+<rect x="468" y="325" width="104" height="38" rx="2" fill="#f2f4f5" stroke="#89959d" stroke-width="1.3"/>
+<text x="520.0" y="347.4" font-size="10" fill="#263746" font-weight="600" text-anchor="middle">snapshot</text>
+<rect x="611" y="325" width="122" height="38" rx="2" fill="#edf3f8" stroke="#3d6f9f" stroke-width="1.3" stroke-dasharray="5 3"/>
+<text x="672.0" y="347.4" font-size="10" fill="#263746" font-weight="600" text-anchor="middle">predictor</text>
+<rect x="776" y="325" width="114" height="38" rx="2" fill="#edf3f8" stroke="#3d6f9f" stroke-width="1.3" stroke-dasharray="5 3"/>
+<text x="833.0" y="347.4" font-size="10" fill="#263746" font-weight="600" text-anchor="middle">candidate</text>
+<line x1="572" y1="344" x2="606" y2="344" stroke="#3d6f9f" stroke-width="1.5" stroke-dasharray="5 3" marker-end="url(#blue-arrow)"/>
+<line x1="733" y1="344" x2="771" y2="344" stroke="#3d6f9f" stroke-width="1.5" stroke-dasharray="5 3" marker-end="url(#blue-arrow)"/>
+<path d="M890 344 L1189 344 L1189 194" fill="none" stroke="#3d6f9f" stroke-width="1.5" stroke-dasharray="5 3" marker-end="url(#blue-arrow)"/>
+<text x="1000" y="337" font-size="9.5" fill="#3d6f9f" font-weight="500" text-anchor="start">latest result; live recheck</text>
+<line x1="823" y1="274" x2="823" y2="318" stroke="#3d6f9f" stroke-width="1.2" stroke-dasharray="5 3" marker-end="url(#blue-arrow)"/>
+<text x="903" y="363" font-size="9.5" fill="#3d6f9f" font-weight="500" text-anchor="start">P6 candidate path: disabled by default on Qwen3.5 / SGLang 0.5.20</text>
+<text x="58" y="432" font-size="10.5" fill="#687680" font-weight="700" text-anchor="start">KV DATA PLANE</text>
+<text x="1030" y="432" font-size="9.5" fill="#687680" font-weight="600" text-anchor="middle">device</text>
+<text x="1289" y="432" font-size="9.5" fill="#687680" font-weight="600" text-anchor="middle">NUMA-local host</text>
+<rect x="964" y="447" width="142" height="30" rx="1" fill="#edf3f8" stroke="#3d6f9f" stroke-width="1.2"/>
+<rect x="964" y="481" width="142" height="30" rx="1" fill="#eaf3f1" stroke="#357b73" stroke-width="1.2"/>
+<text x="1035" y="467" font-size="10" fill="#3d6f9f" font-weight="600" text-anchor="middle">FULL pages</text>
+<text x="1035" y="501" font-size="10" fill="#357b73" font-weight="600" text-anchor="middle">MAMBA slots</text>
+<rect x="1216" y="447" width="142" height="30" rx="1" fill="#edf3f8" stroke="#3d6f9f" stroke-width="1.2"/>
+<rect x="1216" y="481" width="142" height="30" rx="1" fill="#eaf3f1" stroke="#357b73" stroke-width="1.2"/>
+<text x="1287" y="467" font-size="10" fill="#3d6f9f" font-weight="600" text-anchor="middle">FULL pool</text>
+<text x="1287" y="501" font-size="10" fill="#357b73" font-weight="600" text-anchor="middle">MAMBA pool</text>
+<line x1="1112" y1="457" x2="1207" y2="457" stroke="#263746" stroke-width="1.4" marker-end="url(#arrow)"/>
+<line x1="1207" y1="491" x2="1112" y2="491" stroke="#357b73" stroke-width="1.4" marker-end="url(#teal-arrow)"/>
+<text x="1160" y="451" font-size="8.5" fill="#263746" font-weight="600" text-anchor="middle">D2H</text>
+<text x="1160" y="507" font-size="8.5" fill="#357b73" font-weight="600" text-anchor="middle">H2D</text>
+<rect x="1082" y="531" width="126" height="34" rx="2" fill="#eaf3f1" stroke="#357b73" stroke-width="1.3"/>
+<text x="1145.0" y="551.4" font-size="10" fill="#263746" font-weight="600" text-anchor="middle">ACK ledger</text>
+<path d="M1160 512 L1160 524" fill="none" stroke="#357b73" stroke-width="1.2" stroke-dasharray="2 3" marker-end="url(#teal-arrow)"/>
+<path d="M1082 548 L1001 548 L1001 198" fill="none" stroke="#357b73" stroke-width="1.2" stroke-dasharray="2 3" marker-end="url(#teal-arrow)"/>
+<text x="58" y="474" font-size="10" fill="#687680" font-weight="400" text-anchor="start">FULL and MAMBA have</text>
+<text x="58" y="490" font-size="10" fill="#687680" font-weight="400" text-anchor="start">separate pool accounting.</text>
+<text x="58" y="519" font-size="10" fill="#687680" font-weight="400" text-anchor="start">ACK updates physical state;</text>
+<text x="58" y="535" font-size="10" fill="#687680" font-weight="400" text-anchor="start">enqueue alone does not.</text>
+<line x1="58" y1="609" x2="1442" y2="609" stroke="#d4dbe0" stroke-width="1"/>
+<text x="58" y="636" font-size="10.5" fill="#687680" font-weight="700" text-anchor="start">OFFLINE EVIDENCE LOOP</text>
+<circle cx="230" cy="683" r="5" fill="#357b73" stroke="#357b73" stroke-width="1"/>
+<text x="243" y="687" font-size="10" fill="#687680" font-weight="400" text-anchor="start">causal events</text>
+<circle cx="416" cy="683" r="5" fill="#357b73" stroke="#357b73" stroke-width="1"/>
+<text x="429" y="687" font-size="10" fill="#687680" font-weight="400" text-anchor="start">request tokens</text>
+<circle cx="602" cy="683" r="5" fill="#357b73" stroke="#357b73" stroke-width="1"/>
+<text x="615" y="687" font-size="10" fill="#687680" font-weight="400" text-anchor="start">pool / ACK</text>
+<path d="M335 683 L746 683" fill="none" stroke="#357b73" stroke-width="1.1" stroke-dasharray="2 3" marker-end="url(#teal-arrow)"/>
+<rect x="756" y="663" width="108" height="40" rx="2" fill="#f2f4f5" stroke="#89959d" stroke-width="1.3"/>
+<text x="810.0" y="686.4" font-size="10" fill="#263746" font-weight="600" text-anchor="middle">trace join</text>
+<line x1="864" y1="683" x2="903" y2="683" stroke="#263746" stroke-width="1.3" marker-end="url(#arrow)"/>
+<rect x="909" y="663" width="120" height="40" rx="2" fill="#fbf2e3" stroke="#a96f1f" stroke-width="1.3"/>
+<text x="969.0" y="686.4" font-size="10" fill="#263746" font-weight="600" text-anchor="middle">label + audit</text>
+<line x1="1029" y1="683" x2="1068" y2="683" stroke="#263746" stroke-width="1.3" marker-end="url(#arrow)"/>
+<rect x="1074" y="663" width="128" height="40" rx="2" fill="#fbf2e3" stroke="#a96f1f" stroke-width="1.3"/>
+<text x="1138.0" y="686.4" font-size="10" fill="#263746" font-weight="600" text-anchor="middle">train / calibrate</text>
+<line x1="1202" y1="683" x2="1241" y2="683" stroke="#3d6f9f" stroke-width="1.3" stroke-dasharray="5 3" marker-end="url(#blue-arrow)"/>
+<rect x="1247" y="663" width="126" height="40" rx="2" fill="#edf3f8" stroke="#3d6f9f" stroke-width="1.3"/>
+<text x="1310.0" y="686.4" font-size="10" fill="#263746" font-weight="600" text-anchor="middle">gated model</text>
+</svg>

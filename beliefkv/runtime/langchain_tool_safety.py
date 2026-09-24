@@ -191,6 +191,7 @@ class ToolCircuitBreakerMiddleware(AgentMiddleware[Any, Any, Any]):
         state_epoch: Callable[[], int],
         audit: Any | None,
         scope: str,
+        suppress_repeats: bool = True,
         transient_retry_limit: int = 1,
         no_effect_execution_limit: int = 2,
         max_records: int = 2048,
@@ -207,6 +208,7 @@ class ToolCircuitBreakerMiddleware(AgentMiddleware[Any, Any, Any]):
         self._state_epoch = state_epoch
         self._audit = audit
         self._scope = scope
+        self._suppress_repeats = suppress_repeats
         self._transient_retry_limit = transient_retry_limit
         self._no_effect_execution_limit = no_effect_execution_limit
         self._max_records = max_records
@@ -349,7 +351,23 @@ class ToolCircuitBreakerMiddleware(AgentMiddleware[Any, Any, Any]):
             record = self._records.get(key)
             if record is not None:
                 self._records.move_to_end(key)
-            if record is None or not self._should_suppress(record):
+            should_suppress = (
+                record is not None
+                and self._suppress_repeats
+                and self._should_suppress(record)
+            )
+            if record is None or not should_suppress:
+                if record is not None and not self._suppress_repeats:
+                    self._emit(
+                        "agent_tool_repeat_observed",
+                        tool_name=tool_name,
+                        signature=signature,
+                        workspace_epoch=epoch,
+                        previous_status=record.outcome_status,
+                        previous_error_class=record.error_class,
+                        previous_execution_count=record.execution_count,
+                        suppression_enabled=False,
+                    )
                 reservation = _CircuitRecord(
                     execution_count=(record.execution_count + 1 if record else 1),
                     outcome_status="inflight",

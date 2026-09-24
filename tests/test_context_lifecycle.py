@@ -9,6 +9,7 @@ import pytest
 pytest.importorskip("deepagents")
 
 from langchain.agents.middleware.types import ModelRequest, ModelResponse
+from langchain_core.exceptions import ContextOverflowError
 from langchain_core.language_models import BaseChatModel
 from langchain_core.language_models.fake_chat_models import FakeMessagesListChatModel
 from langchain_core.messages import AIMessage, HumanMessage, SystemMessage
@@ -151,7 +152,7 @@ def test_model_preflight_rejects_prompt_above_budget_limit() -> None:
         completion_tokens=8,
     )
 
-    with pytest.raises(ValueError, match="prompt context preflight failed"):
+    with pytest.raises(ContextOverflowError, match="prompt context preflight failed"):
         model._preflight_model_context([HumanMessage(content="too long")])
 
 
