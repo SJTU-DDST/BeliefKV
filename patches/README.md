@@ -1,6 +1,6 @@
 # SGLang Runtime Patches
 
-Updated: 2026-09-15.
+Updated: 2026-09-24.
 
 The current canonical patch is
 `sglang-0.5.2rc1-beliefkv-perf-ownership.patch`. It is generated from and
@@ -53,3 +53,14 @@ to them:
 Do not select a patch by filename recency. Read the frozen profile's
 `source_contract.canonical_sglang_patch` field. The current H200 v7 profile uses
 the `perf-ownership` patch and also validates the expected patched-tree hash.
+
+The separate
+`sglang-v0.5.20-beliefkv-staging.patch` targets commit
+`94602c9c2b7cbdb8efd5c52802dac6a1c180089e`. It includes the Qwen3.5 native
+adapter, explicit FULL/MAMBA Host-pool split, and per-node Host eviction
+observer required by `eviction_attribution.jsonl`. The v0.5.20 training runner
+checks that this complete patch is present before starting SGLang.
+The current staging patch also propagates native transfer submission timestamps,
+merged physical bytes, unacknowledged bytes at submit, and synchronized CUDA
+transfer-stream elapsed time into the cache ACK observer. These measurements
+must not be reported as isolated PCIe DMA latency or instantaneous bus usage.

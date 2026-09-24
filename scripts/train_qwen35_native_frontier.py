@@ -169,6 +169,7 @@ def main(argv: list[str] | None = None) -> int:
             for manifest, _ in checked
         ],
         "formal_diversity_gate": diversity,
+        "fit_projects": diversity["projects"],
     })
     print(json.dumps({"output": str(args.output), "summary": summary,
                       "diversity": diversity}, indent=2, sort_keys=True))

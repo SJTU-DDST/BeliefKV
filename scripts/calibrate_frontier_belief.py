@@ -129,6 +129,11 @@ def main() -> int:
         if not rows:
             raise SystemExit("no calibration decision points were found")
         fit_projects = set(raw_model.get("metadata", {}).get("fit_projects", ()))
+        if not fit_projects:
+            raise SystemExit(
+                "fitted model has no fit_projects provenance; formal calibration "
+                "cannot prove project disjointness"
+            )
         calibration_projects = sorted(
             {str(row.get("project") or "unknown") for row in rows}
         )

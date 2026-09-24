@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import time
+from array import array
 from pathlib import Path
 from types import SimpleNamespace
 
@@ -49,7 +50,10 @@ def test_capacity_census_is_scheduler_local_and_fail_closed(
                 "kv": SimpleNamespace(host_pool=SimpleNamespace(size_per_token=16)),
                 "mamba": SimpleNamespace(host_pool=SimpleNamespace(size_per_token=32)),
             }
-        )
+        ),
+        tree_core=SimpleNamespace(
+            set_beliefkv_host_eviction_observer=lambda observer: None
+        ),
     )
     audit = NativeReactiveTelemetry(tmp_path / "server")
     audit.record_capacity(cache)
@@ -69,6 +73,57 @@ def test_capacity_census_is_scheduler_local_and_fail_closed(
         second.record_capacity(object())
     second.close()
     assert not (tmp_path / "unavailable/native_capacity_census.json").exists()
+
+    monkeypatch.setattr(
+        sglang_v0520_observer, "observe_static_full_mamba",
+        lambda _cache: {
+            "pool_layout": "static_separate_full_mamba",
+            "device_total_bytes": 800,
+            "host_full_tokens": 10,
+            "host_mamba_slots": 4,
+        },
+    )
+    unsupported = NativeReactiveTelemetry(tmp_path / "unsupported")
+    unsupported_cache = SimpleNamespace(
+        host_pool_group=cache.host_pool_group,
+        tree_core=SimpleNamespace(),
+    )
+    with pytest.raises(RuntimeError, match="block-level Host eviction"):
+        unsupported.record_capacity(unsupported_cache)
+    unsupported.close()
+    assert not (
+        tmp_path / "unsupported/native_capacity_census.json"
+    ).exists()
+    assert not hasattr(unsupported_cache, "on_hicache_host_eviction")
+
+
+def test_native_transfer_stream_and_submit_ack_are_distinct_evidence(
+    tmp_path: Path,
+) -> None:
+    audit = NativeReactiveTelemetry(tmp_path / "server")
+    audit.on_native_transfer_commit(SimpleNamespace(
+        direction="d2h",
+        status="completed",
+        node_ids=(1,),
+        num_tokens_by_pool=(("kv", 8), ("mamba", 1)),
+        actual_bytes=8192,
+        submit_ts_ms=1000.0,
+        ack_ts_ms=1010.0,
+        submit_to_ack_ms=10.0,
+        transfer_stream_elapsed_ms=2.5,
+        unacked_bytes_at_submit=4096,
+    ))
+    audit.close()
+
+    transfer = _read(tmp_path / "server/transfer_telemetry.jsonl")[0]
+    assert transfer["actual_bytes"] == 8192
+    assert transfer["submit_ts_ms"] == 1000.0
+    assert transfer["complete_ts_ms"] == 1010.0
+    assert transfer["submit_to_ack_ms"] == 10.0
+    assert transfer["transfer_stream_elapsed_ms"] == 2.5
+    assert transfer["native_unacked_bytes_at_submit"] == 4096
+    assert transfer["start_ts_ms"] is None
+    assert transfer["start_timestamp_semantics"] == "device_event_no_wall_anchor"
 
 
 def test_native_request_service_and_ack_are_evidence_not_invented_dma(
@@ -294,8 +349,119 @@ def test_post_eviction_cache_hits_and_recompute_are_split_by_pool(
     assert (
         evidence["after_first_mamba_host_eviction"]["mamba_host_hit_slots"] == 2
     )
-    assert "not node-level identity matching" in (
+    assert "node-level FULL reaccess attribution" in (
         status["request_cache_evidence_semantics"]["after_eviction"]
+    )
+
+
+def test_host_block_eviction_is_attributed_to_later_full_and_mamba_access(
+    tmp_path: Path,
+) -> None:
+    audit = NativeReactiveTelemetry(tmp_path / "server")
+    audit._host_pool_geometry = {
+        "full": {"capacity_units": 100, "bytes_per_unit": 16},
+        "mamba": {"capacity_units": 10, "bytes_per_unit": 64},
+    }
+    root = SimpleNamespace(parent=None, key=None)
+    key = SimpleNamespace(
+        raw_token_ids=lambda: array("q", range(1, 9)),
+        extra_key="tenant-a",
+        cache_salt="salt-a",
+        is_bigram=False,
+    )
+    node = SimpleNamespace(id=8, parent=root, key=key)
+    audit.on_native_host_block_eviction(node, 0, 4)
+    audit.on_native_host_block_eviction(node, 2, 2)
+
+    request = SimpleNamespace(
+        rid="req-revisit",
+        beliefkv_metadata={
+            "root_workflow_id": "w-1",
+            "invocation_id": "i-1",
+            "context_id": "c-1",
+            "context_epoch": 0,
+        },
+        origin_input_ids=array("q", range(1, 9)),
+        extra_key="tenant-a",
+        cache_salt="salt-a",
+        output_ids=[],
+        cached_tokens_device=5,
+        cached_tokens_host=1,
+        mamba_host_hit_length=3,
+        extend_input_len=2,
+        sampling_params=SimpleNamespace(max_new_tokens=8),
+        finished=lambda: False,
+    )
+    audit.on_enqueue(request)
+    batch = SimpleNamespace(
+        forward_mode=_Mode("prefill"),
+        launch_ts=time.monotonic(),
+        forward_iter=1,
+        reqs=[request],
+    )
+    audit.on_launch(batch)
+    audit.on_completed(batch)
+    audit.close()
+
+    rows = _read(tmp_path / "server/eviction_attribution.jsonl")
+    attributed = [
+        row for row in rows if row["event"] == "host_block_reaccess_attributed"
+    ]
+    full = next(row for row in attributed if row["pool"] == "full")
+    assert full["outcome"] == "full_partial_hit_and_recompute"
+    assert full["full_device_hit_units"] == 1
+    assert full["full_host_hit_units"] == 1
+    assert full["full_recomputed_units"] == 2
+    assert full["attribution_semantics"] == (
+        "exact_radix_prefix_and_full_token_interval"
+    )
+
+    mamba = next(row for row in attributed if row["pool"] == "mamba")
+    assert mamba["outcome"] == "mamba_prefix_revisited_hit_location_unknown"
+    assert mamba["mamba_host_hit_slots_at_request"] == 3
+    assert "not exposed" in mamba["attribution_semantics"]
+    assert all("input_ids" not in row and "key_path" not in row for row in rows)
+    assert all("raw_token_ids" not in json.dumps(row) for row in rows)
+
+    status = json.loads(
+        (tmp_path / "server/native_telemetry_status.json").read_text()
+    )
+    evidence = status["host_block_eviction_attribution"]
+    assert evidence["available"] is False
+    assert evidence["reused_full_units"] == 2
+    assert evidence["recomputed_full_units"] == 2
+
+
+def test_block_attribution_processing_error_does_not_stop_core_telemetry(
+    tmp_path: Path,
+) -> None:
+    audit = NativeReactiveTelemetry(tmp_path / "server")
+
+    def fail_attribution(_record: dict, _output: object) -> None:
+        raise ValueError("bad attribution payload")
+
+    audit._write_block_eviction = fail_attribution
+    audit._emit("eviction_attribution", {
+        "_internal_event": "host_block_eviction",
+        "pool": "full",
+    })
+    audit._emit("audit", {"event": "core_audit_survives"})
+    audit.close()
+
+    attribution = _read(tmp_path / "server/eviction_attribution.jsonl")
+    assert attribution[0]["event"] == "host_block_attribution_error"
+    assert attribution[0]["error_type"] == "ValueError"
+    assert _read(tmp_path / "server/runtime_audit.jsonl") == [
+        {"event": "core_audit_survives"}
+    ]
+    status = json.loads(
+        (tmp_path / "server/native_telemetry_status.json").read_text()
+    )
+    assert status["writer_error"] is None
+    assert status["failed_records"] == 0
+    assert (
+        status["host_block_eviction_attribution"]["counts"]["processing_errors"]
+        == 1
     )
 
 

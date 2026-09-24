@@ -3,6 +3,7 @@ from __future__ import annotations
 from collections import Counter, defaultdict
 import hashlib
 import json
+import math
 from pathlib import Path
 from typing import Any, Iterable, Mapping, Sequence
 
@@ -72,6 +73,7 @@ def export_p6_training_dataset(
     audit_path = server / "runtime_audit.jsonl"
     transfer_path = server / "transfer_telemetry.jsonl"
     host_pool_path = server / "host_pool_telemetry.jsonl"
+    eviction_attribution_path = server / "eviction_attribution.jsonl"
     runtime_summary_path = server / "latest_runtime_summary.json"
     required = (server_events_path, audit_path, transfer_path)
     if _native_reactive:
@@ -314,6 +316,11 @@ def export_p6_training_dataset(
                 "host_pool": len(
                     _read_jsonl(host_pool_path)
                 ),
+                "eviction_attribution": (
+                    len(_read_jsonl(eviction_attribution_path))
+                    if eviction_attribution_path.is_file()
+                    else -1
+                ),
             },
             server_events=server_events,
         )
@@ -413,6 +420,7 @@ def export_p6_training_dataset(
                     audit_path,
                     transfer_path,
                     *((host_pool_path,) if _native_reactive else ()),
+                    *((eviction_attribution_path,) if _native_reactive else ()),
                     runtime_summary_path,
                     *agent_paths,
                     source / P6_WORKFLOW_EXCLUSIONS_FILENAME,
@@ -585,9 +593,16 @@ def _apply_native_reactive_evidence(
         and record_counts is not None
         and all(
             type(counts.get(stream, 0)) is int
-            and counts.get(stream, 0) == count
+            and (
+                count >= counts[stream]
+                if stream == "eviction_attribution"
+                else count == counts[stream]
+            )
             for stream, count in record_counts.items()
         )
+        and not (status.get("host_block_eviction_attribution") or {})
+        .get("counts", {})
+        .get("processing_errors", 0)
         and not any(
             row.get("event") == "gpu_service_sample_failed"
             for row in audit_records
@@ -1887,6 +1902,24 @@ def _pcie_rows(path: Path, *, run_id: str) -> list[dict[str, Any]]:
             if direct_dma
             else None
         )
+        native_stream_ms = record.get("transfer_stream_elapsed_ms")
+        native_submit_to_ack_ms = record.get("submit_to_ack_ms")
+        native_unacked = record.get("native_unacked_bytes_at_submit")
+        native_service = (
+            record.get("telemetry_origin") == "native_hicache_ack_v0520"
+            and completed
+            and type(record.get("actual_bytes")) is int
+            and record["actual_bytes"] > 0
+            and type(native_stream_ms) in (int, float)
+            and math.isfinite(native_stream_ms)
+            and native_stream_ms > 0
+            and type(native_submit_to_ack_ms) in (int, float)
+            and math.isfinite(native_submit_to_ack_ms)
+            and native_submit_to_ack_ms > 0
+            and type(native_unacked) is int
+            and native_unacked >= 0
+            and submit_duration is not None
+        )
         conditioning_complete = all(
             (
                 record.get("direction") is not None,
@@ -1924,6 +1957,8 @@ def _pcie_rows(path: Path, *, run_id: str) -> list[dict[str, Any]]:
                 "native_inflight_operation_count_at_submit": record.get(
                     "native_inflight_operation_count_at_submit"
                 ),
+                "native_unacked_bytes_at_submit": native_unacked,
+                "transfer_stream_elapsed_ms": native_stream_ms,
                 "allocator_submit_ms": record.get("allocator_submit_ms"),
                 "allocator_wait_ms": record.get("allocator_wait_ms"),
                 "compute_wait_ms": record.get("compute_wait_ms"),
@@ -1934,13 +1969,23 @@ def _pcie_rows(path: Path, *, run_id: str) -> list[dict[str, Any]]:
                 "start_timestamp_semantics": record.get(
                     "start_timestamp_semantics"
                 ),
-                "submit_to_complete_ms": submit_duration,
+                "submit_to_complete_ms": (
+                    native_submit_to_ack_ms
+                    if native_service else submit_duration
+                ),
                 "direct_dma_duration_ms": direct_duration,
                 "duration_label_kind": (
-                    "direct_dma" if direct_duration is not None else "submit_to_complete"
+                    "native_transfer_stream"
+                    if native_service else (
+                        "direct_dma"
+                        if direct_duration is not None else "submit_to_complete"
+                    )
                 ),
                 "training_eligible_service_curve": bool(
-                    completed and conditioning_complete and submit_duration is not None
+                    native_service or (
+                        completed and conditioning_complete
+                        and submit_duration is not None
+                    )
                 ),
             }
         )
@@ -2021,7 +2066,6 @@ def _dataset_integrity(
 _RUNTIME_INTERVENTION_EVENTS = {
     "agent_graph_budget_finalization": "graph_step_budget_finalization",
     "agent_stuck_detected": "loop_guard_finalization",
-    "agent_unstructured_stop_detected": "terminal_protocol_repair",
 }
 
 

@@ -1,6 +1,6 @@
 # BeliefKV 当前架构与实现状态
 
-更新日期：2026-09-23
+更新日期：2026-09-24
 当前 P6 物理执行基线：原 Qwen3-Coder/SGLang 0.5.2rc1；
 Qwen3.5/v0.5.20 已有可选 native admission、工具等待预测和
 JOIN child-completion 三阶段 H2D ticket（概率窗口、结构化完成提示、
@@ -12,6 +12,48 @@ JOIN child-completion 三阶段 H2D ticket（概率窗口、结构化完成提�
 `docs/experiments/`。
 
 ### Qwen3.5 native reactive 数据采集
+
+截至 2026-09-24，先前所有 Qwen3.5 native-reactive 训练集导出均不作为本轮
+模型训练输入。旧批次存在 512-step 配置、2048-step 下的 middleware reserve/
+loop/circuit-breaker 干预，或缺少逐块 Host eviction 到后续命中/重算的归因遥测。
+原始 runtime trace、逐 workflow trajectory/result、运行合同和 Host/HBM 容量标定
+保留用于审计和容量分析；旧 dataset 表及未校准拟合产物删除，失效的 dataset
+manifest 改名并附独立失效记录，避免再次进入标准训练路径。旧 workspace 是可从
+镜像重建的 checkout，仅删除这些目录，不删除 trajectory、result、patch、
+runtime/transfer/eviction telemetry 或 workload manifest。2026-09-24 已将 8 个
+旧导出 manifest 改名、删除 21.31 GiB 派生训练表，清理 586 个 workspace 和
+4.58 GiB reassessment 表及旧拟合文件，释放约 145 GiB；当前文件系统可用约
+456 GiB。因 `workloads/server` 副本与源目录不完全一致，均保留。
+
+重新采集只接受冻结的 v5 overlapped 128-root 计划：64 个 root 在 `t=0` 到达，
+另 64 个在 `t=60s` 到达，单一服务端、128 client inflight、
+`MAX_RUNNING_REQUESTS=48`。运行配置为 Qwen3.5-35B-A3B BF16、SGLang 0.5.20、
+NUMA node 1 上 180 decimal GB Host pool、FULL/MAMBA=70:30、
+`mem_fraction_static=0.94`。启动脚本校验 Host/HBM capacity calibration。
+LangGraph `recursion_limit=2048`；唯一强制 guard 是在保留 32 步时触发
+FINALIZE（约从 step 2016 开始），为 workflow 提供有界终态收尾。384-step
+soft budget 与重复/停滞模式只记 telemetry；不强制改写 prompt、不屏蔽普通工具。
+tool circuit breaker、completion gate 和格式修复关闭。模型请求及 sandbox
+命令超时仍保留；触发 2048/32 安全收尾的标签记作干预/删失，不作为自然 RETURN/JOIN。
+
+2026-09-24 复核第一批 128-root 原始轨迹后修正 harness：模型返回的
+`WorkflowCompletion` 只用于任务终态摘要，并非 BeliefKV 的调度前置条件。
+native 数据采集现在允许 root 以自然语言返回，停止用额外模型调用追求输出
+格式；单次模型 completion 预算由 4096 提到可覆盖长 reasoning 的默认 8192。
+输出 `finish_reason=length` 或空正文时记 incomplete，不生成伪成功终态。
+先前以测试命令正则白名单作为 correctness/measurement gate 的做法已删除；
+任务完成自报告与遥测/JCT 资格分开记录，原始工具/测试输出仍可审计。
+这一修改只影响未来采集，旧批次不会因此获得新的模型输出或原生 JCT 标签。
+逐请求身份、GPU token 守恒、事件配对、Host/Device 物理容量与真实
+writer 错误仍必须独立验证。首次 128-root 批次的归因流逻辑计数与展开
+JSONL 行数不相等使导出误拒绝；导出器已改为对该流核验物理条数下界，
+不放松其他原生流的精确对账。
+
+新一轮导出要求 SGLang TreeCore 提供逐节点 Host eviction observer，并将
+`server/eviction_attribution.jsonl` 纳入遥测完整性与 SHA-256 合同。该流使用
+run-keyed HMAC 标识 radix token prefix，不落盘原始 token ID；FULL eviction 后可
+区分 Host 命中、Device 命中和剩余区间重算。MAMBA 记录精确 prefix revisit，但不
+伪称已有逐节点 MAMBA hit-location。缺少 observer 或 stream 时启动/导出 fail-closed。
 
 2026-09-22 首批 `p6-017-train-mixed-r0` 的 v1 原始采集历时约 231 秒，
 8 个 root 中 7 个完成、4 个 measurement-valid，但 `natural` fanout 没有
@@ -63,15 +105,26 @@ profile，不代表所有生产任务都必须委派。旧 v3/v4 计划与已采
 不能因源码提示词更新而视作使用了新策略。
 
 native reactive 训练 profile 将 semantic loop pattern 与 graph soft-budget
-设为只观测：不再依据启发式重复/无进展判断改写模型轨迹，384-step soft
-budget 也不再提前收尾。v5 第一批 512-step hard limit 在 14 个 workflow 上
-触发收尾，step 数本身不能区分长程进展与错误循环。后续训练配置将 graph
-hard limit 与 LangGraph recursion limit 同步提高至 2048，并保留 32-step
-finalization reserve。sandbox/命令超时，以及对已确认重复物理失败请求的
-circuit breaker 仍保留。
-因此“取消 guard”在这里指取消启发式轨迹干预，不是移除安全上限。硬上限
-收尾及任何实际 runtime intervention 之后跨越干预点的标签继续删失，不能
-作为自然 RETURN/JOIN 时间标签；采集合同会记录各开关和干预事件。
+设为只观测，384-step soft budget 不提前收尾。最初的 v5 串行 64-root 批次
+仍使用 512 recursion limit，在 14 个 workflow 上触发 graph-budget finalization。
+提交 `dd465fa` 后，collection runner 与 agent config 的默认 recursion limit
+均提高至 2048；重叠 128-root runner 也显式传入 `RECURSION_LIMIT=2048`。
+
+复核实际完成的 128-root collection 合同，其 `graph_step_safety` 为
+`hard_limit=2048`、`reserve=32`、`soft_budget=384`，不是 512。审计中唯一
+graph hard-fuse 事件来自 `pydata__xarray-6599`：`graph_step=2017`、
+`graph_recursion_limit=2048`、`graph_step_reserve=32`。因此先前“重叠 v1
+仍因 512-step 限额中止”的状态记录描述的是较早的启动尝试，不是这份已完成
+128-root trace；文档在此处混淆了两次运行。自然语言 child RETURN 不触发
+格式修复；该批的 49 次成功格式修复均发生在 `autonomous:supervisor`，不属于
+child 返回。该批 257 次重复工具意图抑制中，240 次为 `execute`，其余为
+`write_file`、`edit_file`、`read_file` 和格式错误的工具名。
+
+后续 native reactive 采集关闭启发式 loop/stuck 强制干预、重复工具抑制、
+tool circuit breaker、completion gate 和格式修复；仅保留 2048 总限与 32 步
+FINALIZE reserve。384-step soft budget 与语义 pattern 仍可观测，但 `enforced=false`。
+触发硬限安全收尾或真实 runtime intervention 的标签按删失规则处理，不能作为自然
+RETURN/JOIN 标签；采集合同记录 middleware、recursion limit、reserve 及干预事件。
 
 2026-09-23 已完成 v5 三 workflow guard-observe pilot：服务启动、请求遥测、
 原始 trace 和 dataset export 完整，产生 1 个自然 child RETURN / JOIN_ALL
@@ -92,12 +145,12 @@ formal training 仍不合格（train-only 且观测到 runtime intervention）�
 共 43 次重复失败工具意图抑制，并生成 43 条 censor event。这证明 semantic
 pattern/soft-budget 虽为 observe-only，硬上限和 circuit breaker 仍会干预。
 原串行 runner 已在第二批 Docker image pull 阶段停止；第一批结果保留作诊断，
-不是用户要求的 128-root 重叠高压训练数据。重叠 v1 于 2026-09-23 启动后，
-因仍使用 512-step 限额而按用户要求中止。v1 留有部分 runtime trace 和
-telemetry，但未完成 workflow collection 或 dataset export，不进入训练；
-其中 580 个可重新从镜像创建的 root/child workspace checkout 已清理，约释放
-119 GiB；142 MiB 的 server telemetry、manifest 和逐请求轨迹保留供诊断。
-运行进程、SGLang 服务及本轮残留容器均已停止，GPU 已释放。
+不是用户要求的 128-root 重叠高压训练数据。2026-09-23 早期重叠启动尝试确实
+加载了旧的 512 配置并按用户要求中止；之后按 2048 配置重启的 128-root
+collection 已完成并导出 trace。两次启动不能合并为同一轮结果，也不能只凭
+目录后缀判断配置。早期尝试中 580 个可重新从镜像创建的 root/child workspace
+checkout 已清理，约释放 119 GiB；其 server telemetry、manifest 和逐请求轨迹
+仅保留作诊断。
 
 原 v4 计划把两个 64-root batch 顺序运行，每批独立启动和关闭服务，不能形成
 跨批次 KV overlap。修正版将两个不重复的 64-root manifest 合并为一个 128-root
@@ -114,19 +167,13 @@ fanout。修正版首轮由模型通过 `DynamicInitialDelegationPlan` 选择 1-
 原生 task middleware 发起后续多轮 delegation。任务数仍由模型选择，不固定为 2。
 
 graph hard-limit 是独立安全 fuse，不是 384-step soft-budget，也不是 fanout
-限制。native reactive profile 关闭 semantic/soft-budget 干预，但保留重复失败和
-重复无效调用保护。Qwen3-Coder 历史 run 曾在 512 recursion limit 抛错；随后将
-LangGraph limit 提高到 2048 后，任务运行至 step 2017，最终因重复执行相同的空输出
-命令而由保留 32-step reserve 的 fuse 收尾。这表明提高上限能给长任务更多执行空间，
-但不能替代循环保护。
-
-重启版使用 `graph_step_hard_limit=2048` 和 LangGraph `recursion_limit=2048`，
-reserve 仍为 32，384-step 仍只记 telemetry。v2 仅启动过模型服务，未进入
-workflow collection；为避免复用其启动产物，最终运行使用 tmux session
-`qwen35-overlap-v3` 和独立 `_v3` raw 目录，仍绑定同一份 128-root overlapped
-plan。正式采集开始后需确认单服务、双波提交、首轮 fanout 数和 trace 完整性。
-训练是否可用仍按干预删失、有效 SPAWN/JOIN 标签量和 split 身份判断，不能仅以
-eligible JOIN 数作为充分的数据量标准。
+限制。早期 native profile 在 2048 limit 下仍启用 32-step middleware reserve；
+完成的 overlapped 128-root run 因此在 step 2017 触发一次 finalization。该 run
+另有 22 次重复受抑制工具意图检测，分布于 18 个 workflow；当前待验证的采集配置
+关闭启发式强制干预和重复抑制，但保留 LangGraph 2048 hard limit 与 32-step
+安全收尾。训练是否可用仍按
+干预删失、有效 SPAWN/JOIN 标签量和 split 身份判断，不能仅以 eligible JOIN 数作为
+充分的数据量标准。
 
 旧计划
 `qwen35_native_reactive_128root_train_plan_2026-09-23.json`（v4）保留为两个
@@ -277,6 +324,16 @@ checkout，释放约 43.5 GiB；dataset、trace、workspace 元数据及其他�
 及 writer 健康仍须通过。新的 128-root 正式采集将验证此口径。
 
 ## 模型与运行时升级（进行中）
+
+2026-09-24：Qwen3.5 native-reactive v2 的高比例 child 取消已定位为模型调用
+返回空终态的直接后果，非 JOIN 墙钟超时或自然语言结果被拒。当前在 root 和
+child 的 agent 模型边界对 reasoning-only `stop`/`length` 做一次关闭 thinking
+的重试；
+保留普通响应路径和真实失败语义，并在 sandbox audit 记录恢复效果。v2 已暂停、
+仅保留诊断证据，不纳入正式训练；单 workflow 在线验证 4/4 child 返回、
+JOIN 满足、root 完成，其中一条空终态成功恢复。完整高压新批次的 child/JOIN
+成功率仍待验证。
+细节见 `docs/experiments/qwen35_native_training_reset_2026-09-24_zh.md`。
 
 迁移前已冻结 tag `checkpoint/pre-sglang-model-upgrade-2026-09-22` 和旧环境
 清单。目标是 Qwen3.5-35B-A3B BF16 + SGLang v0.5.20，agent、SGLang、
@@ -1496,6 +1553,18 @@ artifact。旧 epoch H2D 与新 epoch 请求交叉时，ACK 仍可能因身份
 契约下的 fixed-32、fixed-48、dynamic-32/48 和 dynamic-32/48+P6 配对实验裁决。
 
 执行细节见 `docs/implementation_plan.md`。
+
+截至 2026-09-24，Qwen3.5/v0.5.20 的 v3 native-reactive 训练批次已导出
+134,235 条合格 frontier 决策，跨 7 项目/127 task 拟合了离线未校准
+FrontierBelief checkpoint；该产物 `online_eligible=false`，尚无独立验证
+精度或 predictive action 收益证明。v3 的 native HiCache 只有传输完成 ACK，
+不能训练 PCIe 服务头；当前源码已补提交边界、实际字节、ACK 时延和
+CUDA transfer stream 区间，但尚待新 GPU 运行验证，不能回填 v3。
+新校准批次需匹配新的 patch 指纹、与新训练批次项目隔离。
+采集中发现的 Docker 清理超时丢结果、
+prompt preflight 不触发压缩的问题已在后续代码修复，不影响 v3 训练行的
+原始可追溯性。详细计数及产物见
+`docs/experiments/qwen35_native_training_reset_2026-09-24_zh.md`。
 
 ## 8. 权威资料
 

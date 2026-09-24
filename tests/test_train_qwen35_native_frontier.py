@@ -150,6 +150,9 @@ def test_formal_train_fit_is_offline_uncalibrated_and_seals_tests(tmp_path: Path
     assert metadata["formal_diversity_gate"]["project_count"] == 5
     assert metadata["formal_diversity_gate"]["task_count"] == 40
     assert metadata["formal_diversity_gate"]["workflow_count"] == 40
+    assert set(metadata["fit_projects"]) == set(
+        metadata["formal_diversity_gate"]["projects"]
+    )
     assert metadata["development_only"] is False
     assert metadata["online_eligible"] is False
     assert metadata["predictive_action_eligible"] is False

@@ -635,13 +635,18 @@ def _native_run(tmp_path: Path) -> Path:
         ],
     )
     _write_jsonl(server / "host_pool_telemetry.jsonl", [])
+    _write_jsonl(server / "eviction_attribution.jsonl", [])
     (server / "native_telemetry_status.json").write_text(
         json.dumps(
             {
                 "schema_version": 1,
                 "source": "native_sglang_v0520",
                 "record_counts": {
-                    "events": 2, "audit": 2, "transfer": 1, "host_pool": 0
+                    "events": 2,
+                    "audit": 2,
+                    "transfer": 1,
+                    "host_pool": 0,
+                    "eviction_attribution": 0,
                 },
                 "pending_request_count": 0,
                 "pending_batch_count": 0,
@@ -691,6 +696,43 @@ def test_native_reactive_exports_independent_heads_without_dma_claim(
     )
     assert manifest["source"]["run_id"] == "run"
     assert manifest["source"]["run_id_source"] == "runtime_summary"
+
+
+def test_native_transfer_service_requires_measured_stream_interval(
+    tmp_path: Path,
+) -> None:
+    from beliefkv.experiments.p6_dataset import _pcie_rows
+
+    path = tmp_path / "transfer.jsonl"
+    base = {
+        "command_id": "native-1",
+        "telemetry_origin": "native_hicache_ack_v0520",
+        "direction": "h2d",
+        "status": "completed",
+        "actual_bytes": 8192,
+        "submit_ts_ms": 1000.0,
+        "complete_ts_ms": 1010.0,
+        "submit_to_ack_ms": 9.0,
+        "native_unacked_bytes_at_submit": 1024,
+        "transfer_stream_elapsed_ms": 2.0,
+        "start_timestamp_semantics": "device_event_no_wall_anchor",
+    }
+    path.write_text(
+        "".join(json.dumps({**base, **change}) + "\n" for change in (
+            {},
+            {"command_id": "native-2", "transfer_stream_elapsed_ms": None},
+            {"command_id": "native-3", "actual_bytes": None},
+        )),
+        encoding="utf-8",
+    )
+    rows = _pcie_rows(path, run_id="train")
+
+    assert rows[0]["training_eligible_service_curve"] is True
+    assert rows[0]["duration_label_kind"] == "native_transfer_stream"
+    assert rows[0]["transfer_stream_elapsed_ms"] == 2.0
+    assert rows[0]["submit_to_complete_ms"] == 9.0
+    assert rows[0]["direct_dma_duration_ms"] is None
+    assert all(not row["training_eligible_service_curve"] for row in rows[1:])
 
 
 def test_native_reactive_uses_stable_trace_fingerprint_for_legacy_run(
@@ -896,6 +938,28 @@ def test_native_reactive_missing_or_dropped_telemetry_fails_closed(
         not row["training_eligible"]
         for row in _read_jsonl(output / "frontier_decision_points.jsonl")
     )
+
+
+def test_native_eviction_attribution_expands_one_input_into_multiple_rows(
+    tmp_path: Path,
+) -> None:
+    run = _native_run(tmp_path)
+    server = run / "server"
+    status_path = server / "native_telemetry_status.json"
+    status = json.loads(status_path.read_text(encoding="utf-8"))
+    status["record_counts"]["eviction_attribution"] = 1
+    status_path.write_text(json.dumps(status), encoding="utf-8")
+    _write_jsonl(
+        server / "eviction_attribution.jsonl",
+        [{"event": "host_block_evicted"}, {"event": "host_block_reaccess"}],
+    )
+    manifest = export_native_reactive_p6_dataset(run, tmp_path / "expanded")
+    assert manifest["source"]["native_request_evidence"]["telemetry_complete"]
+
+    status["record_counts"]["eviction_attribution"] = 3
+    status_path.write_text(json.dumps(status), encoding="utf-8")
+    manifest = export_native_reactive_p6_dataset(run, tmp_path / "truncated")
+    assert not manifest["source"]["native_request_evidence"]["telemetry_complete"]
 
 
 def test_native_reactive_rejects_unstable_raw_trace(tmp_path: Path) -> None:
