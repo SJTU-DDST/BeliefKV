@@ -32,3 +32,23 @@ def test_native_export_cli_passes_frozen_split_and_reports_eligibility(
         ]) == 0
     export.assert_called_once_with(run, output, split_manifest=split)
     assert '"telemetry_complete": true' in capsys.readouterr().out
+
+
+def test_native_export_cli_separates_calibration_split(tmp_path: Path) -> None:
+    with patch(
+        "scripts.export_native_reactive_p6_dataset.export_native_reactive_p6_dataset",
+        return_value={
+            "formal_local_training_eligible": True,
+            "source": {"native_request_evidence": {"telemetry_complete": True}},
+            "training_readiness": {},
+        },
+    ) as export:
+        assert main([
+            str(tmp_path), "--output-dir", str(tmp_path / "output"),
+            "--split-manifest", str(tmp_path / "split.json"),
+            "--expected-split", "calibration",
+        ]) == 0
+    export.assert_called_once_with(
+        tmp_path, tmp_path / "output",
+        split_manifest=tmp_path / "split.json", expected_split="calibration",
+    )

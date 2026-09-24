@@ -229,6 +229,35 @@ def test_native_reactive_collection_requires_separate_frozen_policy(tmp_path: Pa
         load_collection_batch(native, "batch-1")
 
 
+def test_native_calibration_requires_explicit_authorization_and_frozen_source(
+    tmp_path: Path,
+) -> None:
+    original = _write_fixture(tmp_path / "donor", split="calibration")
+    source = tmp_path / "frozen-source.json"
+    source.write_text('{"frozen": true}', encoding="utf-8")
+    raw = json.loads(original.read_text(encoding="utf-8"))
+    raw["runtime_policy"] = "frozen_native_reactive_v0520"
+    raw["batches"][0]["policy"] = "frozen_native_reactive_v0520"
+    raw["source_plan"] = str(source)
+    raw["source_plan_sha256"] = hashlib.sha256(source.read_bytes()).hexdigest()
+    plan = tmp_path / "native-calibration.json"
+    plan.write_text(json.dumps(raw), encoding="utf-8")
+    with pytest.raises(ValueError, match="unauthorized split"):
+        load_collection_batch(plan, "batch-1")
+    assert load_collection_batch(
+        plan, "batch-1", allow_calibration=True
+    ).split == "calibration"
+    raw["batches"][0]["split"] = "test_id"
+    plan.write_text(json.dumps(raw), encoding="utf-8")
+    with pytest.raises(ValueError, match="unauthorized split"):
+        load_collection_batch(plan, "batch-1", allow_calibration=True)
+    raw["batches"][0]["split"] = "calibration"
+    source.write_text('{"frozen": false}', encoding="utf-8")
+    plan.write_text(json.dumps(raw), encoding="utf-8")
+    with pytest.raises(ValueError, match="changed after freeze"):
+        load_collection_batch(plan, "batch-1", allow_calibration=True)
+
+
 def test_native_plan_freezes_only_train_without_relabeling_other_splits(
     tmp_path: Path,
 ) -> None:

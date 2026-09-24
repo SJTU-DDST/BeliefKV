@@ -377,6 +377,43 @@ def test_native_formal_loader_only_accepts_verified_local_train(
         )
 
 
+def test_native_calibration_loader_is_split_bound_and_requires_permission(
+    tmp_path: Path,
+) -> None:
+    root = _write_dataset(
+        tmp_path / "native-calibration", run_id="native-calibration-run",
+        split="calibration", decision_id="calibration-decision",
+        formal_training_eligible=False, formal_local_training_eligible=True,
+    )
+    path = root / "dataset_manifest.json"
+    manifest = json.loads(path.read_text())
+    manifest["source"]["collection_contract"].update({
+        "plan_id": "qwen35-native-reactive-v0520-v1-calibration-66root",
+        "runtime_policy": "frozen_native_reactive_v0520",
+        "raw_trace_eligible": True,
+        "model_revision_stable": True,
+        "training_eligible": False,
+    })
+    manifest["source"]["runtime_environment_contract"].update({
+        "runtime_kind": "native_reactive_v0520",
+        "runtime_profile": None,
+    })
+    manifest["source"]["native_request_evidence"] = {"telemetry_complete": True}
+    path.write_text(json.dumps(manifest))
+    with pytest.raises(ValueError, match="formal evaluation input is ineligible"):
+        load_evaluation_rows((root,), split="calibration")
+    rows, _ = load_evaluation_rows(
+        (root,), split="calibration", allow_formal_local=True,
+    )
+    assert len(rows) == 1
+    with pytest.raises(ValueError, match="cannot provide 'train' evidence"):
+        load_decision_rows((root,), allowed_splits=("train",), allow_formal_local=True)
+    manifest["source"]["native_request_evidence"]["telemetry_complete"] = False
+    path.write_text(json.dumps(manifest))
+    with pytest.raises(ValueError, match="native reactive input"):
+        load_evaluation_rows((root,), split="calibration", allow_formal_local=True)
+
+
 def test_formal_loaders_fail_closed_on_ineligible_dataset(tmp_path: Path) -> None:
     train = _write_dataset(
         tmp_path / "train",

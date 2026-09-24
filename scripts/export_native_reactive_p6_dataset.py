@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Export train-only Qwen3.5 native reactive evidence with per-head gates."""
+"""Export split-isolated Qwen3.5 native reactive evidence with per-head gates."""
 
 from __future__ import annotations
 
@@ -21,9 +21,13 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("run_dir", type=Path)
     parser.add_argument("--output-dir", type=Path, required=True)
     parser.add_argument("--split-manifest", type=Path, required=True)
+    parser.add_argument("--expected-split", choices=("train", "calibration"), default="train")
     args = parser.parse_args(argv)
+    kwargs = {"split_manifest": args.split_manifest}
+    if args.expected_split != "train":
+        kwargs["expected_split"] = args.expected_split
     manifest = export_native_reactive_p6_dataset(
-        args.run_dir, args.output_dir, split_manifest=args.split_manifest
+        args.run_dir, args.output_dir, **kwargs
     )
     print(
         json.dumps(

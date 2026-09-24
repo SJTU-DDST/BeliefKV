@@ -523,9 +523,12 @@ def export_native_reactive_p6_dataset(
     split_manifest: str | Path | Mapping[str, Any] | None = None,
     workload_dirs: Sequence[str | Path] | None = None,
     selected_instance_ids: Iterable[str] | None = None,
+    expected_split: str = "train",
 ) -> dict[str, Any]:
-    """Export v0.5.20 native reactive evidence without asserting P5 provenance."""
+    """Export split-isolated v0.5.20 native reactive evidence."""
 
+    if expected_split not in {"train", "calibration"}:
+        raise ValueError("native reactive export requires train or calibration")
     return export_p6_training_dataset(
         run_dir,
         output_dir,
@@ -533,7 +536,7 @@ def export_native_reactive_p6_dataset(
         workload_dirs=workload_dirs,
         selected_instance_ids=selected_instance_ids,
         allow_formal_local_training=split_manifest is not None,
-        formal_local_expected_split="train" if split_manifest is not None else None,
+        formal_local_expected_split=expected_split if split_manifest is not None else None,
         _native_reactive=True,
     )
 

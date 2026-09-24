@@ -71,12 +71,13 @@ def load_collection_batch(
             "source_plan_sha256"
         ]:
             raise ValueError("native reactive source plan changed after freeze")
+        permitted_splits = {"train", "calibration"} if allow_calibration else {"train"}
         if any(
-            item.get("split") != "train"
+            item.get("split") not in permitted_splits
             for item in raw.get("batches", ())
             if isinstance(item, dict)
         ):
-            raise ValueError("native reactive plan must contain train batches only")
+            raise ValueError("native reactive plan contains an unauthorized split")
 
     matches = [
         item

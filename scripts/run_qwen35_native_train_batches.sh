@@ -4,6 +4,7 @@ set -euo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 PYTHON="${PYTHON:-/home/longhao/miniconda3/envs/beliefkv-next/bin/python}"
 PLAN="${PLAN:-$ROOT/configs/migration/qwen35_native_reactive_overlapped_128root_train_plan_2026-09-23.json}"
+COLLECTION_SPLIT="${COLLECTION_SPLIT:-train}"
 SPLIT="${SPLIT:-$ROOT/configs/p6/swebench_verified_split_v1.json}"
 RUN_ROOT="${RUN_ROOT:-}"
 MODEL_PATH="${MODEL_PATH:-/srv/ai/models/Qwen/Qwen3.5-35B-A3B}"
@@ -47,11 +48,16 @@ if [[ $# -ne 0 ]]; then
   exit 2
 fi
 PLAN_ID="$(jq -r '.plan_id' "$PLAN")"
-if [[ "$PLAN_ID" != "qwen35-native-reactive-v0520-v5-overlapped-128root" ]]; then
-  printf 'Expected the latest frozen overlapped Qwen3.5 native train plan\n' >&2
+if [[ "$COLLECTION_SPLIT" != train && "$COLLECTION_SPLIT" != calibration ]]; then
+  printf 'Collection split must be train or calibration\n' >&2
   exit 2
 fi
-if ! jq -e '
+if [[ "$COLLECTION_SPLIT" == train && "$PLAN_ID" != "qwen35-native-reactive-v0520-v5-overlapped-128root" ]] \
+  || [[ "$COLLECTION_SPLIT" == calibration && "$PLAN_ID" != "qwen35-native-reactive-v0520-v1-calibration-66root" ]]; then
+  printf 'Unexpected frozen Qwen3.5 collection plan ID for %s\n' "$COLLECTION_SPLIT" >&2
+  exit 2
+fi
+if [[ "$COLLECTION_SPLIT" == train ]] && ! jq -e '
   .arrival_contract as $a
   | $a.root_count == 128
     and $a.client_inflight == 128
@@ -63,6 +69,20 @@ if ! jq -e '
     ]
 ' "$PLAN" >/dev/null; then
   printf 'Frozen plan must be 64+64 roots at t=0/60s, one server, running=48\n' >&2
+  exit 2
+fi
+if [[ "$COLLECTION_SPLIT" == calibration ]] && ! jq -e '
+  .arrival_contract as $a
+  | $a.root_count == 66
+    and $a.client_inflight == 66
+    and $a.server_instances == 1
+    and $a.server_max_running_requests == 48
+    and $a.waves == [
+      {"offset_seconds": 0, "root_count": 33, "wave": 1},
+      {"offset_seconds": 60, "root_count": 33, "wave": 2}
+    ]
+' "$PLAN" >/dev/null; then
+  printf 'Frozen calibration plan must be 33+33 roots at t=0/60s, running=48\n' >&2
   exit 2
 fi
 if [[ ! "$RECURSION_LIMIT" =~ ^[0-9]+$ ]] || (( RECURSION_LIMIT != 2048 )); then
@@ -81,9 +101,9 @@ if (( FULL_HOST_PERCENT <= 0 || MAMBA_HOST_PERCENT <= 0 \
   exit 2
 fi
 PLAN_ROOT_COUNT="$(
-  jq -r '
+  jq -r --arg split "$COLLECTION_SPLIT" '
     .arrival_contract.root_count
-    // ([.batches[] | select(.split == "train") | .workflow_count] | add // 0)
+    // ([.batches[] | select(.split == $split) | .workflow_count] | add // 0)
   ' "$PLAN"
 )"
 if [[ ! "$PLAN_ROOT_COUNT" =~ ^[1-9][0-9]*$ ]]; then
@@ -117,12 +137,12 @@ if curl --silent --max-time 2 --fail "$BASE_URL/health" >/dev/null; then
 fi
 
 mkdir -p "$RUN_ROOT"
-mapfile -t batches < <(jq -r '
-  [.batches[] | select(.split == "train")]
+mapfile -t batches < <(jq -r --arg split "$COLLECTION_SPLIT" '
+  [.batches[] | select(.split == $split)]
   | sort_by(if .batch_id == "p6-017-train-mixed-r0" then 0 else 1 end)
   | .[].batch_id
 ' "$PLAN")
-expected_batches="$(jq '[.batches[] | select(.split == "train")] | length' "$PLAN")"
+expected_batches="$(jq --arg split "$COLLECTION_SPLIT" '[.batches[] | select(.split == $split)] | length' "$PLAN")"
 if [[ ${#batches[@]} -ne "$expected_batches" ]]; then
   printf 'Frozen train plan must have %s batches\n' "$expected_batches" >&2
   exit 2
@@ -151,7 +171,7 @@ if [[ -n "$instance_ids_csv" ]]; then
 fi
 
 for batch in "${batches[@]}"; do
-  printf 'Starting train batch %s\n' "$batch"
+  printf 'Starting %s batch %s\n' "$COLLECTION_SPLIT" "$batch"
   run_dir="$RUN_ROOT/$batch"
   dataset_dir="$run_dir/dataset"
   if [[ -f "$dataset_dir/dataset_manifest.json" ]]; then
@@ -261,6 +281,9 @@ PY
     --expected-model-path "$MODEL_PATH"
     --output "$run_dir/workloads"
   )
+  if [[ "$COLLECTION_SPLIT" == calibration ]]; then
+    collection_args+=(--allow-calibration)
+  fi
   for instance_id in "${instance_ids[@]}"; do
     collection_args+=(--instance-id "$instance_id")
   done
@@ -284,6 +307,7 @@ PY
   set +e
   "$PYTHON" "$ROOT/scripts/export_native_reactive_p6_dataset.py" "$run_dir" \
     --output-dir "$dataset_dir" --split-manifest "$SPLIT" \
+    --expected-split "$COLLECTION_SPLIT" \
     > "$run_dir/export.log" 2>&1
   export_status="$?"
   set -e
@@ -318,6 +342,10 @@ PY
   printf 'Exported train batch %s\n' "$batch"
 done
 
+if [[ "$COLLECTION_SPLIT" == calibration ]]; then
+  printf 'Exported isolated calibration evidence; model fitting is disabled\n'
+  exit 0
+fi
 if [[ -n "$batch_id" ]]; then
   printf 'Finished requested batch %s; model fitting requires every train batch in this plan\n' "$batch_id"
   exit 0

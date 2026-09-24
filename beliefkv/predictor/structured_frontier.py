@@ -47,6 +47,7 @@ FORMAL_P6_PLAN_IDS = frozenset(
         "qwen35-native-reactive-v0520-v3",
         "qwen35-native-reactive-v0520-v4-128root",
         "qwen35-native-reactive-v0520-v5-overlapped-128root",
+        "qwen35-native-reactive-v0520-v1-calibration-66root",
     }
 )
 FORBIDDEN_LOAD_COUPLED_LABELS = frozenset(
@@ -2748,6 +2749,7 @@ def _validate_formal_p6_manifest(
     plan_split = {
         "h200-bf16-formal-train-v1": "train",
         "h200-bf16-formal-calibration-v1": "calibration",
+        "qwen35-native-reactive-v0520-v1-calibration-66root": "calibration",
     }.get(str(plan_id))
     if plan_split is not None and plan_split != expected_split:
         raise ValueError(
@@ -2761,10 +2763,10 @@ def _validate_formal_p6_manifest(
         "qwen35-native-reactive-v0520-v3",
         "qwen35-native-reactive-v0520-v4-128root",
         "qwen35-native-reactive-v0520-v5-overlapped-128root",
+        "qwen35-native-reactive-v0520-v1-calibration-66root",
     }
     if native_reactive and (
-        expected_split != "train"
-        or not allow_formal_local
+        not allow_formal_local
         or manifest.get("formal_local_training_eligible") is not True
         or contract.get("runtime_policy") != "frozen_native_reactive_v0520"
         or contract.get("raw_trace_eligible") is not True
@@ -2774,7 +2776,7 @@ def _validate_formal_p6_manifest(
             "telemetry_complete"
         ) is not True
     ):
-        raise ValueError(f"native reactive input is not verified local train: {root}")
+        raise ValueError(f"native reactive input is not verified local {expected_split}: {root}")
     profile = environment.get("runtime_profile") or {}
     revisions = environment.get("model_revision_sha256") or {}
     identity = environment.get("server_identity") or {}
