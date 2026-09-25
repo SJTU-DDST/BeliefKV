@@ -99,6 +99,12 @@ def _read_workflow(
                 "invocation": str(event.get("invocation_id") or ""),
                 "class": str(start_attrs.get("observed_command_class") or "unknown"),
                 "shape": str(start_attrs.get("observed_command_shape") or "unknown"),
+                "other_workflow_2s_peers": start_attrs.get(
+                    "project_class_inflight_other_workflow_2s_peers", 0
+                ),
+                "project_class_completed_support": start_attrs.get(
+                    "project_class_completed_support", 0
+                ),
                 "input_chars": start_attrs.get("input_chars"),
                 "input_sha256": str(start_attrs.get("input_sha256") or ""),
                 "duration_ms": duration,
