@@ -264,6 +264,13 @@ def audit(
                 / len(values["first_by_child"])
                 if values["first_by_child"] else None
             ),
+            "returned_child_first_trigger_recall": (
+                sum(
+                    child in returned_children and predicted
+                    for child, (predicted, _) in values["first_by_child"].items()
+                ) / len(returned_children)
+                if returned_children else None
+            ),
             "first_trigger_true_lead_p50_ms": _quantile(
                 [lead for predicted, lead in values["first_by_child"].values()
                  if predicted and lead is not None],
@@ -313,6 +320,13 @@ def audit(
             "last_child_first_trigger_true": sum(
                 child in last_children and predicted
                 for child, (predicted, _) in values["first_by_child"].items()
+            ),
+            "last_child_first_trigger_recall": (
+                sum(
+                    child in last_children and predicted
+                    for child, (predicted, _) in values["first_by_child"].items()
+                ) / len(last_children)
+                if last_children else None
             ),
             "last_child_first_trigger_lead_p50_ms": _quantile(
                 [lead for child, (predicted, lead)

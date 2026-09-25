@@ -127,6 +127,7 @@ def test_stream_shadow_audits_early_cue_and_tool_call_false_positive(tmp_path):
         json.dumps(_join()) + "\n", encoding="utf-8"
     )
     events = [
+        _event(0, "invocation_create", relation_type="spawn"),
         _event(10, "structured_action",
                beliefkv_child_first_content_shadow=True, request_id="first"),
         _event(20, "llm_result", request_id="first", tool_call_count=1),
@@ -161,6 +162,9 @@ def test_stream_shadow_audits_early_cue_and_tool_call_false_positive(tmp_path):
     assert substantial["substantial_content_timer_shadow"]["250"][
         "first_trigger_precision"
     ] == 1
+    assert substantial["substantial_content_timer_shadow"]["250"][
+        "returned_child_first_trigger_recall"
+    ] == 1
     late = audit_stream_shadow(
         tmp_path / "workflows", dataset, cue="substantial_content",
         content_threshold_chars=1024,
@@ -174,6 +178,9 @@ def test_stream_shadow_audits_early_cue_and_tool_call_false_positive(tmp_path):
     ] == 0
     assert substantial["substantial_content_timer_shadow"]["250"][
         "last_child_first_trigger_true"
+    ] == 1
+    assert substantial["substantial_content_timer_shadow"]["250"][
+        "last_child_first_trigger_recall"
     ] == 1
     timed = audit_stream_shadow(
         tmp_path / "workflows", dataset, cue="substantial_content",
