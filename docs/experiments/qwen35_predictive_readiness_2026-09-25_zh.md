@@ -471,6 +471,14 @@ child `execute` 中 480 次真实长于 2 秒；各项目得分最高的
 legacy 推断后，仅有 36 次支持充分的短调用，P50 约
 615→35 ms，但没有长调用样本。新高压/独立项目 trace、
 真实控制链与 HBM 占用仍是部署前提。
+训练采集完成并以新导出器重建原始 dataset 后，用
+`scripts/compare_qwen35_tool_timing_models.py` 在相同首次
+TOOL_START 快照逐调用对比 v7/v8；按 child/root、是否有成功
+同输入历史、真实长于 2 秒的 child 等分组，报告 P50/P90/P95、
+500 ms 命中率与 workflow 等权误差。普通首调用必须与
+同批次 v7 对照；不得以 v8 重复子集的收益代替全量评估。
+同时用既有 `diagnose_native_join_groups.py` 检查整组 JOIN 首次
+WAIT_JOIN，而不将工具时长改善冒充 JOIN 改善。
 
 独立 worktree 加入有界 `SameInputToolHistory`，在 TOOL_START 附带
 前次已完成时长、年龄和状态；导出器可从旧原始事件按相同因果
