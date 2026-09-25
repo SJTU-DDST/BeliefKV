@@ -28,6 +28,7 @@ from scripts.audit_stream_join_beneficiary import (
 from scripts.audit_stream_stage_eta import candidates as stage_eta_candidates
 from scripts.audit_stream_stage_eta import _quality as stage_eta_quality
 from scripts.pilot_stream_rate_eta import evaluate as evaluate_stream_rate
+from scripts.pilot_tool_nearest_history import _neighbor_prior
 
 
 def _event(timestamp: float, kind: str, **attributes):
@@ -556,6 +557,26 @@ def test_stream_rate_eta_fits_training_only_and_scores_join_subset():
     assert result["rate_slope"] == pytest.approx(2)
     assert result["cohorts"]["last_child_join"]["rate_mae_p50_ms"] == 0
     assert result["cohorts"]["last_child_join"]["fixed_mae_p50_ms"] > 0
+
+
+def test_tool_nearest_history_excludes_overlapping_and_future_results():
+    now = {"start_ts_ms": 2000, "input_chars": 100}
+    completed = [
+        {"input_chars": 98, "duration_ms": 3000,
+         "terminal_ts_ms": 1000 + index, "status": "success"}
+        for index in range(4)
+    ]
+    overlapping = {
+        "input_chars": 100, "duration_ms": 90000,
+        "terminal_ts_ms": 2100, "status": "success",
+    }
+    failed = {
+        "input_chars": 100, "duration_ms": 90000,
+        "terminal_ts_ms": 1500, "status": "error",
+    }
+    result, support = _neighbor_prior(now, completed + [overlapping, failed])
+    assert (result, support) == (3000, 4)
+    assert _neighbor_prior(now, completed[:3]) == (None, 3)
 
 
 def test_stream_eta_regression_only_consumes_causal_features():
