@@ -468,6 +468,18 @@ def test_export_training_tables_preserves_identity_censoring_and_join_closure(
     assert manifest["tables"]["reentries"]["row_count"] == 2
     assert manifest["tables"]["pcie_operations"]["row_count"] == 1
     assert manifest["tables"]["frontier_decision_points"]["row_count"] >= 1
+    tool_decisions = [
+        row for row in _read_jsonl(output / "frontier_decision_points.jsonl")
+        if row["trigger_kind"] == "tool_start"
+    ]
+    assert any(
+        row["trigger_invocation_id"] == "root"
+        and any(
+            item["invocation_id"] == "root" and item["is_child"] is False
+            for item in row["invocations"]
+        )
+        for row in tool_decisions
+    )
     assert manifest["tables"]["censor_events"]["row_count"] == 0
     assert manifest["training_readiness"] == {
         "remaining_decode_demand_eligible_request_count": 1,
