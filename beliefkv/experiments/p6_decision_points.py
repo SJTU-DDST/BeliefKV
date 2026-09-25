@@ -8,6 +8,7 @@ from beliefkv.control.causal_graph import InvocationState, RuntimeCausalContextG
 from beliefkv.core.events import RuntimeEvent, RuntimeEventKind
 from beliefkv.predictor.composer import observed_boundary_action
 from beliefkv.predictor.frontier_belief import BeliefScopeBuilder
+from beliefkv.predictor.project_tool_history import ProjectToolHistory
 from beliefkv.predictor.same_input_history import SameInputToolHistory
 
 
@@ -81,7 +82,7 @@ def build_frontier_decision_points(
             service_by_request[request_id].append(row)
 
     resource_samples = _resource_samples(audit_records, hbm_pressure_ratio)
-    triggers = _event_triggers(events)
+    triggers = _event_triggers(events, workflow_metadata=workflow_metadata)
     triggers.extend(_decode_triggers(service, decode_quantum_tokens))
     triggers.extend(resource_samples["triggers"])
     triggers.extend(_transfer_triggers(transfer_records))
@@ -234,8 +235,14 @@ def build_frontier_decision_points(
     return rows
 
 
-def _event_triggers(events: Iterable[RuntimeEvent]) -> list[dict[str, Any]]:
+def _event_triggers(
+    events: Iterable[RuntimeEvent],
+    *,
+    workflow_metadata: Mapping[str, Mapping[str, Any]] | None = None,
+) -> list[dict[str, Any]]:
     histories: dict[str, SameInputToolHistory] = {}
+    project_history = ProjectToolHistory()
+    metadata = workflow_metadata or {}
     triggers = []
     for event in events:
         history = histories.setdefault(event.workflow_id, SameInputToolHistory())
@@ -250,8 +257,21 @@ def _event_triggers(events: Iterable[RuntimeEvent]) -> list[dict[str, Any]]:
             ):
                 raise ValueError("online/offline same-input history disagrees")
             attrs.update(previous)
+            project_prior = project_history.start(
+                event.workflow_id,
+                str(metadata.get(event.workflow_id, {}).get("project") or ""),
+                attrs, event.ts_ms,
+            )
+            if "project_class_duration_median_ms" in attrs and (
+                abs(float(attrs["project_class_duration_median_ms"]) -
+                    float(project_prior.get("project_class_duration_median_ms", -1)))
+                > .01
+            ):
+                raise ValueError("online/offline project tool history disagrees")
+            attrs.update(project_prior)
         elif event.kind == RuntimeEventKind.TOOL_END and event.invocation_id:
             history.end(event.workflow_id, event.invocation_id, attrs, event.ts_ms)
+            project_history.end(event.workflow_id, attrs, event.ts_ms)
         elif event.kind in (RuntimeEventKind.RETURN, RuntimeEventKind.INVOCATION_CANCEL):
             if event.invocation_id:
                 history.discard_invocation(event.workflow_id, event.invocation_id)
@@ -277,6 +297,8 @@ def _event_triggers(events: Iterable[RuntimeEvent]) -> list[dict[str, Any]]:
                     "previous_same_input_duration_ms",
                     "previous_same_input_age_ms",
                     "previous_same_input_status",
+                    "project_class_duration_median_ms",
+                    "project_class_completed_support",
                     "prompt_semantic_sha256",
                     "sampling_seed",
                     "status",

@@ -141,6 +141,77 @@ def test_repeat_tool_contract_requires_fitted_uncertainty_and_causal_success() -
         FrontierBeliefModel.from_dict({**model.to_dict(), "schema_version": 7})
 
 
+def test_project_tool_contract_uses_cold_child_prior_after_sufficient_support() -> None:
+    rows = []
+    for index in range(80):
+        row = _tool_row(f"project-{index}", 3000.0 + index, "success")
+        row["workflow_id"] = f"workflow-{index // 8}"
+        row["trigger_invocation_id"] = "worker"
+        row["trigger_attributes"].update({
+            "tool_name": "execute", "observed_command_class": "test_suite",
+            "is_child": True, "project_class_duration_median_ms": 3000.0,
+            "project_class_completed_support": 16,
+        })
+        row["invocations"][0]["is_child"] = True
+        rows.append(row)
+    model = FrontierBeliefModel(
+        tool_feature_contract="observed_command_child_project_v3"
+    )
+    model.fit(rows)
+    assert model.project_error_p90_ms == 71.0
+    features = _local_features_from_row(
+        rows[0], rows[0]["invocations"][0],
+        tool_feature_contract=model.tool_feature_contract,
+    )
+    assert model.predict(features).wait_belief.support_detail == (
+        "completed_project_command"
+    )
+    assert model.predict(features).wait_belief.residual_duration.quantile(.5) == 3000
+    loaded = FrontierBeliefModel.from_dict(model.to_dict())
+    assert loaded.predict(features).wait_belief.residual_duration.quantile(.5) == 3000
+    repeated = LocalFrontierFeatures.from_dict({
+        **features.to_dict(), "previous_same_input_duration_ms": 4000.0,
+    })
+    assert model.predict(repeated).wait_belief.support_detail == (
+        "completed_project_command"
+    )
+    model.repeat_error_p90_ms = 120.0
+    assert model.predict(repeated).wait_belief.support_detail == (
+        "same_input_completed"
+    )
+    insufficient = _local_features_from_row(
+        {
+            **rows[0],
+            "trigger_attributes": {
+                **rows[0]["trigger_attributes"],
+                "project_class_completed_support": 15,
+            },
+        }, rows[0]["invocations"][0],
+        tool_feature_contract=model.tool_feature_contract,
+    )
+    assert insufficient.project_class_duration_median_ms is None
+    with pytest.raises(ValueError, match="schema v9"):
+        FrontierBeliefModel.from_dict({**model.to_dict(), "schema_version": 8})
+    calibration = []
+    for index in range(7):
+        row = _tool_row(f"cal-project-{index}", 3050.0, "success")
+        row["split"] = "calibration"
+        row["workflow_id"] = f"cal-workflow-{index}"
+        row["trigger_invocation_id"] = "worker"
+        row["trigger_attributes"].update({
+            "tool_name": "execute", "observed_command_class": "test_suite",
+            "is_child": True, "project_class_duration_median_ms": 3000.0,
+            "project_class_completed_support": 16,
+        })
+        row["invocations"][0]["is_child"] = True
+        calibration.append(row)
+    loaded.calibrate(calibration)
+    assert loaded.project_error_p90_ms is None
+    assert loaded.predict(features).wait_belief.support_detail != (
+        "completed_project_command"
+    )
+
+
 def test_repeat_tool_calibration_is_workflow_grouped_and_falls_back_if_sparse() -> None:
     fit_rows = []
     for index in range(40):

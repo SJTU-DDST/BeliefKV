@@ -239,6 +239,17 @@ def test_promotes_only_replayed_admission_evidence(evidence, tmp_path):
     assert json.loads(evidence["artifact"].read_text())["metadata"]["online_eligible"] is False
 
 
+def test_new_project_timing_contract_cannot_be_promoted_without_validation(
+    evidence, tmp_path,
+):
+    artifact = _modified_artifact(
+        evidence, tmp_path,
+        lambda raw: raw.update(tool_feature_contract="observed_command_child_project_v3"),
+    )
+    with pytest.raises(ValueError, match="sealed formal calibrated fit"):
+        _promote(evidence, tmp_path, artifact=artifact)
+
+
 @pytest.mark.parametrize(
     ("field", "value", "reason"),
     [

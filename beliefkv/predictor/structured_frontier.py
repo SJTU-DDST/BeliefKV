@@ -33,10 +33,11 @@ from beliefkv.predictor.frontier_belief import (
 )
 
 
-STRUCTURED_FRONTIER_SCHEMA_VERSION = 8
-SUPPORTED_STRUCTURED_FRONTIER_SCHEMA_VERSIONS = frozenset({4, 5, 6, 7, 8})
+STRUCTURED_FRONTIER_SCHEMA_VERSION = 9
+SUPPORTED_STRUCTURED_FRONTIER_SCHEMA_VERSIONS = frozenset({4, 5, 6, 7, 8, 9})
 TOOL_FEATURE_CONTRACTS = frozenset({
-    "legacy", "observed_command_child_v1", "observed_command_child_repeat_v2"
+    "legacy", "observed_command_child_v1", "observed_command_child_repeat_v2",
+    "observed_command_child_project_v3",
 })
 MINIMUM_DEMAND_DECISION_SCHEMA_VERSION = 2
 FORMAL_P6_DATASET_KIND = "beliefkv_p6_training_evidence"
@@ -195,6 +196,7 @@ class LocalFrontierFeatures:
     command_class: str = "unknown"
     observed_command_class: str = "unknown"
     previous_same_input_duration_ms: float | None = None
+    project_class_duration_median_ms: float | None = None
     generated_tokens: int = 0
     elapsed_wait_ms: float = 0.0
     current_sequence_tokens: int = 0
@@ -225,6 +227,12 @@ class LocalFrontierFeatures:
                  or self.previous_same_input_duration_ms < 0)
         ):
             raise ValueError("previous tool duration must be finite and non-negative")
+        if (
+            self.project_class_duration_median_ms is not None
+            and (not math.isfinite(self.project_class_duration_median_ms)
+                 or self.project_class_duration_median_ms < 0)
+        ):
+            raise ValueError("project tool duration must be finite and non-negative")
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -237,6 +245,7 @@ class LocalFrontierFeatures:
             "command_class": self.command_class,
             "observed_command_class": self.observed_command_class,
             "previous_same_input_duration_ms": self.previous_same_input_duration_ms,
+            "project_class_duration_median_ms": self.project_class_duration_median_ms,
             "generated_tokens": self.generated_tokens,
             "elapsed_wait_ms": self.elapsed_wait_ms,
             "current_sequence_tokens": self.current_sequence_tokens,
@@ -268,6 +277,10 @@ class LocalFrontierFeatures:
             previous_same_input_duration_ms=(
                 float(raw["previous_same_input_duration_ms"])
                 if raw.get("previous_same_input_duration_ms") is not None else None
+            ),
+            project_class_duration_median_ms=(
+                float(raw["project_class_duration_median_ms"])
+                if raw.get("project_class_duration_median_ms") is not None else None
             ),
             generated_tokens=int(raw.get("generated_tokens") or 0),
             elapsed_wait_ms=float(raw.get("elapsed_wait_ms") or 0.0),
@@ -1168,6 +1181,7 @@ class FrontierBeliefModel:
             smoothing=self.hyperparameters.tool_smoothing,
         )
         self.repeat_error_p90_ms: float | None = None
+        self.project_error_p90_ms: float | None = None
         self.operational_release = OperationalReleaseModel(
             regularization=(
                 self.hyperparameters.operational_timing_regularization
@@ -1213,6 +1227,8 @@ class FrontierBeliefModel:
         observed = Counter()
         repeat_errors: list[float] = []
         repeat_workflows: set[str] = set()
+        project_errors: list[float] = []
+        project_workflows: set[str] = set()
         split_counts = Counter(str(row.get("split") or "unknown") for row in values)
         for row in values:
             episode = str(row.get("episode_group_id") or row.get("decision_id"))
@@ -1358,7 +1374,10 @@ class FrontierBeliefModel:
                     if delay is not None and _target_eligible(label, "external_wait"):
                         if (
                             self.tool_feature_contract
-                            == "observed_command_child_repeat_v2"
+                            in (
+                                "observed_command_child_repeat_v2",
+                                "observed_command_child_project_v3",
+                            )
                             and trigger_attrs.get("tool_name") == "execute"
                             and trigger_attrs.get("previous_same_input_status")
                             == "success"
@@ -1372,6 +1391,20 @@ class FrontierBeliefModel:
                             if math.isfinite(previous) and previous >= 0:
                                 repeat_errors.append(abs(float(delay) - previous))
                                 repeat_workflows.add(str(row.get("workflow_id") or ""))
+                        if (
+                            self.tool_feature_contract
+                            == "observed_command_child_project_v3"
+                            and local_features.is_child
+                            and local_features.command_class == "execute"
+                            and local_features.previous_same_input_duration_ms is None
+                            and local_features.project_class_duration_median_ms is not None
+                            and not right_censored
+                        ):
+                            project_errors.append(abs(
+                                float(delay)
+                                - local_features.project_class_duration_median_ms
+                            ))
+                            project_workflows.add(str(row.get("workflow_id") or ""))
                         tool_weight = tool_fit_weights.get(
                             _tool_row_identity(row, features), weight
                         )
@@ -1409,7 +1442,13 @@ class FrontierBeliefModel:
             self.repeat_error_p90_ms = ordered[
                 math.ceil(.9 * len(ordered)) - 1
             ]
+        if len(project_errors) >= 64 and len(project_workflows) >= 8:
+            ordered = sorted(project_errors)
+            self.project_error_p90_ms = ordered[
+                math.ceil(.9 * len(ordered)) - 1
+            ]
         observed["repeat_tool"] = len(repeat_errors)
+        observed["project_tool"] = len(project_errors)
         pooled_summary = {
             "remaining_decode_tokens": self.pooled_decode_demand.fit(
                 pooled_decode_samples
@@ -1567,7 +1606,10 @@ class FrontierBeliefModel:
             )
             previous = features.previous_same_input_duration_ms
             if (
-                self.tool_feature_contract == "observed_command_child_repeat_v2"
+                self.tool_feature_contract in (
+                    "observed_command_child_repeat_v2",
+                    "observed_command_child_project_v3",
+                )
                 and features.command_class == "execute"
                 and previous is not None and self.repeat_error_p90_ms is not None
             ):
@@ -1582,6 +1624,23 @@ class FrontierBeliefModel:
                 )
                 tool_level = "backoff"
                 tool_support_detail = "same_input_completed"
+            elif (
+                self.tool_feature_contract == "observed_command_child_project_v3"
+                and features.is_child and features.command_class == "execute"
+                and features.project_class_duration_median_ms is not None
+                and self.project_error_p90_ms is not None
+            ):
+                prior = features.project_class_duration_median_ms
+                margin = self.project_error_p90_ms
+                wait = EmpiricalDistribution(
+                    tuple(max(0.0, value - features.elapsed_wait_ms)
+                          for value in (
+                              max(0.0, prior - margin), prior, prior + margin,
+                          )),
+                    (.1, .79, .11), 1.0,
+                )
+                tool_level = "backoff"
+                tool_support_detail = "completed_project_command"
             terminal = _temperature_scale(terminal, self.tool_temperature)
             pooled_terminal = self.pooled_tool_terminal.predict(features)
             if (
@@ -1773,6 +1832,7 @@ class FrontierBeliefModel:
             lambda: defaultdict(list)
         )
         repeat_errors_by_workflow: dict[str, list[float]] = defaultdict(list)
+        project_errors_by_workflow: dict[str, list[float]] = defaultdict(list)
         observation_counts: Counter[str] = Counter()
         for row in values:
             episode = str(row.get("episode_group_id") or row.get("decision_id"))
@@ -1798,7 +1858,10 @@ class FrontierBeliefModel:
                 )
                 prediction = self.predict(features)
                 if (
-                    self.tool_feature_contract == "observed_command_child_repeat_v2"
+                    self.tool_feature_contract in (
+                        "observed_command_child_repeat_v2",
+                        "observed_command_child_project_v3",
+                    )
                     and trigger == RuntimeEventKind.TOOL_START.value
                     and row.get("trigger_invocation_id") == invocation_id
                     and features.state == InvocationState.WAIT_TOOL.value
@@ -1813,6 +1876,24 @@ class FrontierBeliefModel:
                             - features.previous_same_input_duration_ms
                         )
                     )
+                if (
+                    self.tool_feature_contract
+                    == "observed_command_child_project_v3"
+                    and trigger == RuntimeEventKind.TOOL_START.value
+                    and row.get("trigger_invocation_id") == invocation_id
+                    and features.state == InvocationState.WAIT_TOOL.value
+                    and features.is_child
+                    and features.command_class == "execute"
+                    and features.previous_same_input_duration_ms is None
+                    and features.project_class_duration_median_ms is not None
+                    and _target_eligible(label, "external_wait")
+                    and not _target_right_censored(label, "external_wait")
+                    and label.get("next_boundary_delay_ms") is not None
+                ):
+                    project_errors_by_workflow[workflow].append(abs(
+                        float(label["next_boundary_delay_ms"])
+                        - features.project_class_duration_median_ms
+                    ))
                 boundary = _normalize_boundary(label.get("next_boundary_kind"))
                 if (
                     features.state == InvocationState.RUNNING_LLM.value
@@ -1906,7 +1987,10 @@ class FrontierBeliefModel:
                         f"{wait_target}_right_censored_excluded_from_interval"
                     ] += 1
 
-        if self.tool_feature_contract == "observed_command_child_repeat_v2":
+        if self.tool_feature_contract in (
+            "observed_command_child_repeat_v2",
+            "observed_command_child_project_v3",
+        ):
             grouped_errors = sorted(
                 max(errors) for errors in repeat_errors_by_workflow.values()
             )
@@ -1924,6 +2008,21 @@ class FrontierBeliefModel:
             observation_counts["repeat_calls_calibrated"] = sum(
                 len(errors) for errors in repeat_errors_by_workflow.values()
             )
+        if self.tool_feature_contract == "observed_command_child_project_v3":
+            grouped_errors = sorted(
+                max(errors) for errors in project_errors_by_workflow.values()
+            )
+            if len(grouped_errors) >= 8:
+                index = min(
+                    len(grouped_errors) - 1,
+                    math.ceil((len(grouped_errors) + 1) * target_coverage) - 1,
+                )
+                self.project_error_p90_ms = max(
+                    self.project_error_p90_ms or 0.0, grouped_errors[index]
+                )
+            else:
+                self.project_error_p90_ms = None
+            observation_counts["project_workflows_calibrated"] = len(grouped_errors)
 
         # Always calibrate the current model's raw action probability. This also
         # makes recalibration idempotent when loading an already calibrated model.
@@ -2009,6 +2108,7 @@ class FrontierBeliefModel:
             "interval_slack": dict(sorted(self.interval_slack.items())),
             "observation_counts": dict(sorted(observation_counts.items())),
             "repeat_same_input_margin_ms": self.repeat_error_p90_ms,
+            "project_command_margin_ms": self.project_error_p90_ms,
             "conformal_unit": "episode_max_nonconformity",
             "training_counts_refit": False,
             "action_target_schema_version": 4 if action_values else None,
@@ -2023,6 +2123,7 @@ class FrontierBeliefModel:
             "model_version": self.model_version,
             "tool_feature_contract": self.tool_feature_contract,
             "repeat_error_p90_ms": self.repeat_error_p90_ms,
+            "project_error_p90_ms": self.project_error_p90_ms,
             "decision_authority": "none; ScenarioRiskPlanner owns actions",
             "join_semantics": "not learned; RCCG composer applies ALL/ANY",
             "hyperparameters": self.hyperparameters.to_dict(),
@@ -2075,15 +2176,28 @@ class FrontierBeliefModel:
         if schema_version < 7 and model.tool_feature_contract != "legacy":
             raise ValueError("older model schema cannot use observed tool features")
         if (
-            model.tool_feature_contract == "observed_command_child_repeat_v2"
+            model.tool_feature_contract in (
+                "observed_command_child_repeat_v2",
+                "observed_command_child_project_v3",
+            )
             and schema_version < 8
         ):
             raise ValueError("repeat tool features require model schema v8")
+        if (
+            model.tool_feature_contract == "observed_command_child_project_v3"
+            and schema_version < 9
+        ):
+            raise ValueError("project tool features require model schema v9")
         repeat_error = raw.get("repeat_error_p90_ms")
         if repeat_error is not None:
             model.repeat_error_p90_ms = float(repeat_error)
             if not math.isfinite(model.repeat_error_p90_ms) or model.repeat_error_p90_ms < 0:
                 raise ValueError("invalid repeat tool uncertainty")
+        project_error = raw.get("project_error_p90_ms")
+        if project_error is not None:
+            model.project_error_p90_ms = float(project_error)
+            if not math.isfinite(model.project_error_p90_ms) or model.project_error_p90_ms < 0:
+                raise ValueError("invalid project tool uncertainty")
         components = raw.get("components", {})
         model.boundary = _BoundaryContextTree.from_dict(components.get("boundary", {}))
         model.decode_demand = _HierarchicalEmpiricalModel.from_dict(
@@ -3944,10 +4058,23 @@ def _local_features_from_row(
         ),
         previous_same_input_duration_ms=(
             float(trigger_attributes["previous_same_input_duration_ms"])
-            if tool_feature_contract == "observed_command_child_repeat_v2"
+            if tool_feature_contract in (
+                "observed_command_child_repeat_v2",
+                "observed_command_child_project_v3",
+            )
             and trigger_attributes.get("previous_same_input_status") == "success"
             and trigger_attributes.get("tool_name") == "execute"
             and type(trigger_attributes.get("previous_same_input_duration_ms"))
+            in (int, float) else None
+        ),
+        project_class_duration_median_ms=(
+            float(trigger_attributes["project_class_duration_median_ms"])
+            if tool_feature_contract == "observed_command_child_project_v3"
+            and trigger_attributes.get("tool_name") == "execute"
+            and trigger_attributes.get("is_child") is True
+            and int(trigger_attributes.get("project_class_completed_support") or 0)
+            >= 16
+            and type(trigger_attributes.get("project_class_duration_median_ms"))
             in (int, float) else None
         ),
         generated_tokens=int(features.get("observed_output_tokens") or 0),

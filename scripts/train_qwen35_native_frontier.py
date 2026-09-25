@@ -105,7 +105,11 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--model-version", required=True)
     parser.add_argument(
         "--tool-feature-contract",
-        choices=("observed_command_child_v1", "observed_command_child_repeat_v2"),
+        choices=(
+            "observed_command_child_v1",
+            "observed_command_child_repeat_v2",
+            "observed_command_child_project_v3",
+        ),
         default="observed_command_child_v1",
     )
     parser.add_argument("--output", type=Path, required=True)

@@ -107,12 +107,27 @@ def compare(
         dimensions.append("child" if child else "root")
         if child:
             has_prior = attrs.get("previous_same_input_status") == "success"
+            has_project_prior = (
+                type(attrs.get("project_class_duration_median_ms"))
+                in (int, float)
+                and int(attrs.get("project_class_completed_support") or 0) >= 16
+            )
             dimensions.append("child_with_prior" if has_prior else "child_cold")
+            if not has_prior:
+                dimensions.append(
+                    "child_cold_with_project_prior"
+                    if has_project_prior else "child_cold_no_project_prior"
+                )
             if actual >= 2_000:
                 dimensions.append("child_long")
                 dimensions.append(
                     "child_long_with_prior" if has_prior else "child_long_cold"
                 )
+                if not has_prior:
+                    dimensions.append(
+                        "child_long_cold_with_project_prior"
+                        if has_project_prior else "child_long_cold_no_project_prior"
+                    )
         for dimension in dimensions:
             groups[dimension].append(sample)
     return {

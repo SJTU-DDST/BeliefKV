@@ -255,7 +255,9 @@ def promote(
     metadata = raw.get("metadata")
     _require(type(metadata) is dict, "missing artifact metadata")
     _require(
-        type(raw.get("schema_version")) is int and raw["schema_version"] in (4, 5, 6, 7, 8)
+        type(raw.get("schema_version")) is int
+        and raw["schema_version"] in (4, 5, 6, 7, 8, 9)
+        and raw.get("tool_feature_contract") != "observed_command_child_project_v3"
         and raw.get("model_kind") == "pooled_action_conditional_particle_frontier"
         and metadata.get("fit_split") == "train"
         and metadata.get("calibration_split") == "calibration"

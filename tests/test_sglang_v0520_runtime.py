@@ -968,6 +968,20 @@ def test_join_wait_prediction_tracks_child_revisions_and_expires_on_return():
     child_features = submitted[-1][-1][0][1]
     assert child_features.invocation_elapsed_ms == 8.0
     assert child_features.state_elapsed_ms == 8.0
+    runtime.graph.invocations["child"].parent_invocation_id = "parent"
+    runtime._tool_metadata["child"] = (
+        "sandbox", "execute", "test_suite", None, "", 3100.0, 16,
+    )
+    child_features = runtime._local_frontier_features(
+        runtime.graph.invocations["child"], 0, now_ms=10.0,
+    )
+    assert child_features.project_class_duration_median_ms == 3100.0
+    runtime._tool_metadata["child"] = (
+        "sandbox", "execute", "test_suite", None, "", 3100.0, 15,
+    )
+    assert runtime._local_frontier_features(
+        runtime.graph.invocations["child"], 0, now_ms=10.0,
+    ).project_class_duration_median_ms is None
     now = time.monotonic() * 1000
     pending.append(NativeJoinWaitHint(
         key, "join", "all", ("child",), (("child", 2.0, "ready", 0),),

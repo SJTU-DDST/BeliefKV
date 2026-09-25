@@ -56,6 +56,7 @@ def pilot(
         lambda: deque(maxlen=64)
     )
     groups: dict[tuple[str, int], list[dict]] = defaultdict(list)
+    all_cold: list[dict] = []
     total_long_child = 0
     eligible_long_child = 0
     for sequence, row in enumerate(calls):
@@ -74,39 +75,70 @@ def pilot(
         long_call = row["duration_ms"] >= 2_000
         total_long_child += long_call
         history = observed[(row["project"], row["class"])]
-        if len(history) < minimum_support:
-            continue
-        eligible_long_child += long_call
         general, medians = baseline[row["project"]]
         reference = medians.get(row["class"], general)
-        prior = median(history)
-        long_rate = sum(value >= 2_000 for value in history) / len(history)
+        supported = len(history) >= minimum_support
+        eligible_long_child += long_call and supported
+        prior = median(history) if supported else reference
+        long_rate = (
+            sum(value >= 2_000 for value in history) / len(history)
+            if supported else 0.0
+        )
         item = {
             "project": row["project"], "workflow": row["workflow"],
             "long": long_call, "duration_ms": row["duration_ms"],
             "prior_error_ms": abs(row["duration_ms"] - prior),
             "baseline_error_ms": abs(row["duration_ms"] - reference),
             "prior_ms": prior, "historical_long_rate": long_rate,
+            "supported": supported,
         }
-        groups[(row["project"], minimum_support)].append(item)
+        all_cold.append(item)
+        if supported:
+            groups[(row["project"], minimum_support)].append(item)
     all_rows = [row for group in groups.values() for row in group]
     selected = [
         row for row in all_rows
         if row["historical_long_rate"] >= .8 and row["prior_ms"] >= 2_000
     ]
     def metrics(rows: list[dict]) -> dict:
+        workflows = defaultdict(list)
+        for row in rows:
+            workflows[row["workflow"]].append(row)
         return {
             "count": len(rows),
             "long_count": sum(row["long"] for row in rows),
-            "workflow_count": len({row["workflow"] for row in rows}),
+            "workflow_count": len(workflows),
+            "supported_count": sum(row["supported"] for row in rows),
             "prior_p50_error_ms": _quantile([
                 row["prior_error_ms"] for row in rows
             ], .5),
             "prior_p90_error_ms": _quantile([
                 row["prior_error_ms"] for row in rows
             ], .9),
+            "prior_p95_error_ms": _quantile([
+                row["prior_error_ms"] for row in rows
+            ], .95),
             "baseline_p50_error_ms": _quantile([
                 row["baseline_error_ms"] for row in rows
+            ], .5),
+            "baseline_p90_error_ms": _quantile([
+                row["baseline_error_ms"] for row in rows
+            ], .9),
+            "prior_within_500ms": (
+                sum(row["prior_error_ms"] <= 500 for row in rows) / len(rows)
+                if rows else None
+            ),
+            "baseline_within_500ms": (
+                sum(row["baseline_error_ms"] <= 500 for row in rows) / len(rows)
+                if rows else None
+            ),
+            "prior_workflow_weighted_p50_ms": _quantile([
+                _quantile([row["prior_error_ms"] for row in values], .5)
+                for values in workflows.values()
+            ], .5),
+            "baseline_workflow_weighted_p50_ms": _quantile([
+                _quantile([row["baseline_error_ms"] for row in values], .5)
+                for values in workflows.values()
             ], .5),
         }
     return {
@@ -115,6 +147,21 @@ def pilot(
         "minimum_completed_project_class_samples": minimum_support,
         "total_cold_child_long": total_long_child,
         "long_after_support": eligible_long_child,
+        "all_cold_child": metrics(all_cold),
+        "all_cold_child_long": metrics([row for row in all_cold if row["long"]]),
+        "predicted_long": {
+            "count": sum(row["prior_ms"] >= 2_000 for row in all_cold),
+            "true_long": sum(
+                row["long"] for row in all_cold if row["prior_ms"] >= 2_000
+            ),
+            "false_long": sum(
+                not row["long"] for row in all_cold if row["prior_ms"] >= 2_000
+            ),
+            "long_recall": (
+                sum(row["long"] for row in all_cold if row["prior_ms"] >= 2_000)
+                / total_long_child if total_long_child else None
+            ),
+        },
         "supported": metrics(all_rows),
         "supported_long": metrics([row for row in all_rows if row["long"]]),
         "high_confidence_long_selection": {

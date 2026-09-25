@@ -36,6 +36,7 @@ from langchain_core.tools import BaseTool, tool
 from pydantic import BaseModel, Field, field_validator
 
 from beliefkv.experiments.arrival_schedule import build_workflow_arrivals
+from beliefkv.predictor.project_tool_history import ProjectToolHistory
 from beliefkv.experiments.swebench_prompt import (
     build_swebench_task_prompt,
     repository_sandbox_contract as repository_sandbox_contract_for_repo,
@@ -3514,6 +3515,7 @@ def _run_workflow(
     config: DeepAgentsExperimentConfig,
     bundle: WorkloadBundle,
     workload: SweBenchWorkload,
+    project_tool_history: ProjectToolHistory | None = None,
 ) -> dict[str, Any]:
     workflow_dir = config.output_dir / "workflows" / workload.instance_id
     workflow_dir.mkdir(parents=True, exist_ok=False)
@@ -3567,6 +3569,8 @@ def _run_workflow(
         root_metadata,
         control_sink=control_sink,
         workspace_digest_provider=backend.tool_state_digest,
+        project_tool_history=project_tool_history,
+        project_id=workload.instance_id.split("__", 1)[0],
     )
     deadline_controller = WorkflowDeadlineController(
         deadline=ActivationDeadline(),
@@ -3850,6 +3854,7 @@ def run_experiment(config: DeepAgentsExperimentConfig) -> dict[str, Any]:
     gpu_monitor.start()
     sglang_monitor.start()
     results: list[dict[str, Any]] = []
+    project_tool_history = ProjectToolHistory()
     if config.workflow_arrival_batch_size > 0:
         arrivals = build_workflow_arrivals(
             len(workloads),
@@ -3888,7 +3893,7 @@ def run_experiment(config: DeepAgentsExperimentConfig) -> dict[str, Any]:
                 workloads,
                 concurrency=config.concurrency,
                 run_one=lambda workload: _run_workflow(
-                    config, bundle, workload
+                    config, bundle, workload, project_tool_history
                 ),
             ):
                 record_result(future, workload)
@@ -3902,7 +3907,10 @@ def run_experiment(config: DeepAgentsExperimentConfig) -> dict[str, Any]:
                         time.sleep(delay)
                     workload = workloads[arrival.workflow_index]
                     futures[
-                        executor.submit(_run_workflow, config, bundle, workload)
+                        executor.submit(
+                            _run_workflow, config, bundle, workload,
+                            project_tool_history,
+                        )
                     ] = workload
                 for future in as_completed(futures):
                     record_result(future, futures[future])

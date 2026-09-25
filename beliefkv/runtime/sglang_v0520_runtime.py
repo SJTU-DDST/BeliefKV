@@ -152,7 +152,9 @@ class NativeAdmissionRuntime:
         self._native_cache: object | None = None
         self._context_tokens: dict[str, tuple[int, int, int, bool]] = {}
         self._boundary_history: dict[str, deque[str]] = {}
-        self._tool_metadata: dict[str, tuple[str, str, str, float | None, str]] = {}
+        self._tool_metadata: dict[
+            str, tuple[str, str, str, float | None, str, float | None, int]
+        ] = {}
         self._next_wait_refresh_ms = 0.0
         self._refresh_join_next = False
         self._scan_unhinted_next = False
@@ -342,6 +344,12 @@ class NativeAdmissionRuntime:
                                 in (int, float) else None
                             ),
                             str(attrs.get("previous_same_input_status") or ""),
+                            (
+                                float(attrs["project_class_duration_median_ms"])
+                                if type(attrs.get("project_class_duration_median_ms"))
+                                in (int, float) else None
+                            ),
+                            int(attrs.get("project_class_completed_support") or 0),
                         )
                     elif event.kind in (
                         RuntimeEventKind.TOOL_END,
@@ -890,9 +898,11 @@ class NativeAdmissionRuntime:
         family_count = sum(
             item.active_tool_family == family for item in active_tools
         )
-        backend, command, observed_command, previous_duration, previous_status = (
+        (backend, command, observed_command, previous_duration,
+         previous_status, project_duration, project_support) = (
             self._tool_metadata.get(
-                invocation.invocation_id, ("unknown", "unknown", "unknown", None, "")
+                invocation.invocation_id,
+                ("unknown", "unknown", "unknown", None, "", None, 0),
             )
         )
         return LocalFrontierFeatures(
@@ -908,6 +918,12 @@ class NativeAdmissionRuntime:
             observed_command_class=observed_command,
             previous_same_input_duration_ms=(
                 previous_duration if previous_status == "success" else None
+            ),
+            project_class_duration_median_ms=(
+                project_duration
+                if project_support >= 16 and command == "execute"
+                and bool(stored_child or invocation.parent_invocation_id)
+                else None
             ),
             generated_tokens=output,
             elapsed_wait_ms=max(

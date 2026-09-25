@@ -27,6 +27,7 @@ from beliefkv.core.events import (
     RuntimeEventKind,
 )
 from beliefkv.predictor.command_class import execute_command_class
+from beliefkv.predictor.project_tool_history import ProjectToolHistory
 from beliefkv.predictor.same_input_history import SameInputToolHistory
 from beliefkv.runtime.agent_safety import classify_tool_outcome
 from beliefkv.predictor.taxonomy import ToolTaxonomy
@@ -211,6 +212,8 @@ class DeepAgentsRuntimeAdapter(BaseCallbackHandler):
             Callable[[str, Mapping[str, Any]], str | None] | None
         ) = None,
         native_radix_sessions: NativeRadixSessionLeases | None = None,
+        project_tool_history: ProjectToolHistory | None = None,
+        project_id: str = "",
     ) -> None:
         super().__init__()
         if root_metadata.relation_type != RelationType.ROOT.value:
@@ -226,6 +229,8 @@ class DeepAgentsRuntimeAdapter(BaseCallbackHandler):
         self.allowed_subagent_types = allowed_subagent_types
         self.workspace_digest_provider = workspace_digest_provider
         self.native_radix_sessions = native_radix_sessions
+        self._project_tool_history = project_tool_history
+        self._project_id = project_id
         self._lock = threading.RLock()
         self._publication_lock = threading.RLock()
         self._sequence = 0
@@ -1033,6 +1038,9 @@ class DeepAgentsRuntimeAdapter(BaseCallbackHandler):
         input_chars, input_sha256 = _json_stats(payload)
         tool_call_id = str(kwargs.get("tool_call_id") or key)
         workspace_digest_before = self._workspace_digest(tool_name, payload)
+        observed_command = (
+            execute_command_class(payload) if tool_name == "execute" else tool_name
+        )
         with self._lock:
             identity = self._identities.get(parent_invocation_id)
             is_child = bool(
@@ -1053,6 +1061,17 @@ class DeepAgentsRuntimeAdapter(BaseCallbackHandler):
                  "input_sha256": input_sha256},
                 ts_ms,
             )
+            project_prior = (
+                self._project_tool_history.start(
+                    self.root_metadata.root_workflow_id, self._project_id,
+                    {
+                        "tool_call_id": tool_call_id, "tool_name": tool_name,
+                        "observed_command_class": observed_command,
+                        "is_child": is_child,
+                    }, ts_ms,
+                )
+                if self._project_tool_history is not None else {}
+            )
         event = self._event(
             RuntimeEventKind.TOOL_START,
             ts_ms=ts_ms,
@@ -1065,14 +1084,12 @@ class DeepAgentsRuntimeAdapter(BaseCallbackHandler):
                 "tool_family": normalized.family,
                 "backend_class": normalized.backend_class,
                 "is_child": is_child,
-                "observed_command_class": (
-                    execute_command_class(payload)
-                    if tool_name == "execute" else tool_name
-                ),
+                "observed_command_class": observed_command,
                 "input_chars": input_chars,
                 "input_sha256": input_sha256,
                 "parameter_signature": input_sha256,
                 **same_input,
+                **project_prior,
                 "workspace_digest_before": workspace_digest_before,
             },
         )
@@ -1452,6 +1469,10 @@ class DeepAgentsRuntimeAdapter(BaseCallbackHandler):
                 self.root_metadata.root_workflow_id, active.invocation_id,
                 event.attributes, ts_ms,
             )
+            if self._project_tool_history is not None:
+                self._project_tool_history.end(
+                    self.root_metadata.root_workflow_id, event.attributes, ts_ms,
+                )
         self._publish((event,), control=True)
 
     def _workspace_digest(
