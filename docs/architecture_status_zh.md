@@ -1577,6 +1577,18 @@ prompt preflight 不触发压缩的问题已在后续代码修复，不影响 v3
 字符串而失败；仅对可解析为数组的字符串进行规范化，其他异常仍报错。
 这两项修复的 GPU 效果尚待后续批次验证，正在运行的校准批次不受影响。
 
+2026-09-25 校准批次结束：66 个 root 中 64 个完成、2 个 incomplete，
+项目限定为 `astropy/astropy` 与 `sphinx-doc/sphinx`，与训练的 7 个项目
+互斥。导出器确认 `formal_local_training_eligible=true`，可用的
+JOIN reentry、PCIe service 和 frontier decision 标签分别为 64、
+64,069 和 74,285。基于此批次完成 native heads-only 校准，产物为
+`experiments/raw/qwen35_native_reactive_refit_20260924_v1/frontier_qwen35_native_heads_calibrated.json`。
+该产物的 `calibration_status=calibrated_native_heads_only`，不含 action
+target，`online_eligible=false`、`predictive_action_eligible=false`；
+JOIN 剩余时间 90% 目标区间的 conformal slack 约 361 秒，不能将其视作
+精确 JOIN 时刻预测或已验证的预测式预取策略。本次校准采集在上述
+context/planner 修复合并前完成，后续新 runtime 行为仍需单独验证。
+
 ## 8. 权威资料
 
 - 当前设计：`docs/beliefkv_design.md`
