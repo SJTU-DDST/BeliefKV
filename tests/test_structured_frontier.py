@@ -18,6 +18,7 @@ from beliefkv.predictor.structured_frontier import (
     EmpiricalDistribution,
     evaluate_frontier_model,
     _demand_feature_key,
+    _local_features_from_row,
     FrontierBeliefModel,
     FrontierModelHyperparameters,
     FrontierScenarioComposer,
@@ -70,6 +71,7 @@ def test_observed_command_contract_keeps_child_and_root_tool_heads_separate() ->
             "is_child": index >= 6,
             "observed_command_class": "test_suite",
         })
+        row["trigger_invocation_id"] = "worker"
         row["invocations"][0]["is_child"] = index >= 6
         rows.append(row)
     model = FrontierBeliefModel(tool_feature_contract="observed_command_child_v1")
@@ -105,11 +107,57 @@ def test_observed_command_contract_rejects_incomplete_tool_provenance() -> None:
     model = FrontierBeliefModel(tool_feature_contract="observed_command_child_v1")
     row = _tool_row("no-origin", 100.0, "success")
     row["trigger_attributes"]["tool_name"] = "execute"
+    with pytest.raises(ValueError, match="trigger invocation identity"):
+        model.fit([row])
+    row["trigger_invocation_id"] = "worker"
     with pytest.raises(ValueError, match="provenance"):
         model.fit([row])
     row["trigger_attributes"]["is_child"] = False
     with pytest.raises(ValueError, match="observed command class"):
         model.fit([row])
+
+
+def test_observed_tool_head_ignores_sibling_waiting_on_other_tool() -> None:
+    rows = []
+    for index in range(6):
+        row = _tool_row(f"parallel-{index}", 100.0, "success")
+        row["trigger_invocation_id"] = "worker"
+        row["trigger_attributes"].update({
+            "tool_name": "execute", "observed_command_class": "python_inline",
+            "is_child": False,
+        })
+        sibling = dict(row["invocations"][0])
+        sibling.update({"invocation_id": "sibling", "is_child": True})
+        row["invocations"].append(sibling)
+        row["labels"].append({
+            "invocation_id": "sibling",
+            "next_boundary_status": "success",
+            "next_boundary_delay_ms": 5000.0,
+        })
+        rows.append(row)
+    model = FrontierBeliefModel(tool_feature_contract="observed_command_child_v1")
+    model.fit(rows)
+    assert model.child_tool.to_dict()["status"] == []
+    assert sum(
+        item["counts"].get("success", 0)
+        for item in model.tool.to_dict()["status"]
+        if item["key"] == ["*"]
+    ) == pytest.approx(6.0)
+    sibling_features = _local_features_from_row(
+        rows[0], rows[0]["invocations"][1],
+        tool_feature_contract=model.tool_feature_contract,
+    )
+    assert sibling_features.observed_command_class == "unknown"
+    initiated_child = dict(rows[0])
+    initiated_child["trigger_invocation_id"] = "sibling"
+    initiated_child["trigger_attributes"] = {
+        **rows[0]["trigger_attributes"], "is_child": True
+    }
+    assert _local_features_from_row(
+        initiated_child,
+        {"invocation_id": "sibling", "state": "wait_tool"},
+        tool_feature_contract=model.tool_feature_contract,
+    ).is_child is True
 
 
 def _row(decision: str, remaining: int, target: str = "function_call") -> dict:

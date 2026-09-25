@@ -34,7 +34,10 @@ def _summarize(
             counters["no_wait_tool_snapshot"] += 1
             continue
         row, features, ts = snapshot
-        prediction = model.predict(_local_features_from_row(row, features))
+        prediction = model.predict(_local_features_from_row(
+            row, features,
+            tool_feature_contract=getattr(model, "tool_feature_contract", "legacy"),
+        ))
         wait = prediction.wait_belief
         if wait.kind is not WaitBeliefKind.TOOL or not wait.residual_duration.values:
             counters["wait_head_unavailable"] += 1
@@ -236,7 +239,10 @@ def diagnose_tool_returns(
         ):
             if not remaining_windows:
                 break
-            prediction = model.predict(_local_features_from_row(row, features))
+            prediction = model.predict(_local_features_from_row(
+                row, features,
+                tool_feature_contract=getattr(model, "tool_feature_contract", "legacy"),
+            ))
             wait = prediction.wait_belief
             if (
                 wait.kind is not WaitBeliefKind.TOOL

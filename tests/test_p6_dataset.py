@@ -252,6 +252,7 @@ def test_execute_category_is_available_for_future_decision_export():
         },
     ))])[0]
     assert trigger["attributes"]["observed_command_class"] == "test_suite"
+    assert trigger["invocation_id"] == "root"
     assert "command" not in trigger["attributes"]
 
 

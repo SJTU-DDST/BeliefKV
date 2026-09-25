@@ -194,6 +194,7 @@ def build_frontier_decision_points(
                     "timestamp_ms": ts_ms,
                     "trigger_kind": trigger["kind"],
                     "trigger_id": trigger["trigger_id"],
+                    "trigger_invocation_id": trigger.get("invocation_id"),
                     "trigger_request_id": trigger.get("request_id"),
                     "trigger_attributes": trigger.get("attributes", {}),
                     "workflow_id": workflow_id,
@@ -239,6 +240,7 @@ def _event_triggers(events: Iterable[RuntimeEvent]) -> list[dict[str, Any]]:
             "priority": 0,
             "kind": event.kind.value,
             "trigger_id": event.event_id,
+            "invocation_id": event.invocation_id,
             "workflow_id": event.workflow_id,
             "request_id": event.attributes.get("request_id"),
             "attributes": {
@@ -430,6 +432,7 @@ def _invocation_features(
     )
     return {
         "invocation_id": invocation.invocation_id,
+        "is_child": invocation.parent_invocation_id is not None,
         "agent_definition_id": invocation.agent_definition_id,
         "context_id": invocation.context_id,
         "context_epoch": context_epoch,

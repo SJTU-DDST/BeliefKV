@@ -1183,7 +1183,9 @@ class FrontierBeliefModel:
         )
         local_episode_counts = _local_episode_counts(values)
         workflow_episode_counts = _workflow_local_episode_counts(values)
-        tool_fit_weights = _tool_fit_weights(values)
+        tool_fit_weights = _tool_fit_weights(
+            values, trigger_only=self.tool_feature_contract != "legacy"
+        )
         child_completion_weights = _child_completion_fit_weights(values)
         pooled_decode_samples: list[tuple[object, float, float]] = []
         pooled_output_samples: list[tuple[object, float, float]] = []
@@ -1231,7 +1233,9 @@ class FrontierBeliefModel:
                     or "unknown"
                 )
                 key = _demand_feature_key(role, state, family, features)
-                local_features = _local_features_from_row(row, features)
+                local_features = _local_features_from_row(
+                    row, features, tool_feature_contract=self.tool_feature_contract
+                )
                 boundary = _normalize_boundary(label.get("next_boundary_kind"))
                 if state == InvocationState.RUNNING_LLM.value and boundary is not None and _target_eligible(label, "action_boundary"):
                     self.boundary.observe(
@@ -1310,6 +1314,10 @@ class FrontierBeliefModel:
                     and state == InvocationState.WAIT_TOOL.value
                 ):
                     if self.tool_feature_contract != "legacy":
+                        if not row.get("trigger_invocation_id"):
+                            raise ValueError("tool start lacks trigger invocation identity")
+                        if row["trigger_invocation_id"] != invocation_id:
+                            continue
                         if type(trigger_attrs.get("is_child")) is not bool:
                             raise ValueError("tool start lacks root/child provenance")
                         if not trigger_attrs.get("observed_command_class"):
@@ -1691,7 +1699,9 @@ class FrontierBeliefModel:
         )
         local_episode_counts = _local_episode_counts(values)
         workflow_episode_counts = _workflow_local_episode_counts(values)
-        tool_weights = _tool_fit_weights(values)
+        tool_weights = _tool_fit_weights(
+            values, trigger_only=self.tool_feature_contract != "legacy"
+        )
         boundary_records: list[tuple[Mapping[str, float], str, float]] = []
         tool_records: list[tuple[Mapping[str, float], str, float]] = []
         tool_survival_records: list[tuple[float, bool, float]] = []
@@ -1720,7 +1730,10 @@ class FrontierBeliefModel:
                 )
                 workflow = _workflow_group_id(row)
                 weight /= max(1, workflow_episode_counts[workflow])
-                features = _local_features_from_row(row, raw_features)
+                features = _local_features_from_row(
+                    row, raw_features,
+                    tool_feature_contract=self.tool_feature_contract,
+                )
                 prediction = self.predict(features)
                 boundary = _normalize_boundary(label.get("next_boundary_kind"))
                 if (
@@ -1736,6 +1749,10 @@ class FrontierBeliefModel:
                     trigger == RuntimeEventKind.TOOL_START.value
                     and features.state == InvocationState.WAIT_TOOL.value
                     and _target_eligible(label, "external_wait")
+                    and (
+                        self.tool_feature_contract == "legacy"
+                        or row.get("trigger_invocation_id") == invocation_id
+                    )
                 ):
                     if _target_right_censored(label, "external_wait"):
                         observation_counts[
@@ -3106,7 +3123,10 @@ def evaluate_frontier_model(
             weight = 1.0 / max(1, local_counts[(episode, invocation_id)])
             workflow = _workflow_group_id(row)
             weight /= max(1, workflow_episode_counts[workflow])
-            features = _local_features_from_row(row, raw_features)
+            features = _local_features_from_row(
+                row, raw_features,
+                tool_feature_contract=model.tool_feature_contract,
+            )
             prediction = model.predict(features)
             support_weight[prediction.support_level] += weight
             generic_action_heads = (
@@ -3774,9 +3794,17 @@ def _finalize_classification(metrics: Mapping[str, Any]) -> dict[str, Any]:
 
 
 def _local_features_from_row(
-    row: Mapping[str, Any], features: Mapping[str, Any]
+    row: Mapping[str, Any],
+    features: Mapping[str, Any],
+    *,
+    tool_feature_contract: str = "legacy",
 ) -> LocalFrontierFeatures:
-    trigger_attributes = row.get("trigger_attributes") or {}
+    trigger_attributes = (
+        row.get("trigger_attributes") or {}
+        if tool_feature_contract == "legacy"
+        or row.get("trigger_invocation_id") == features.get("invocation_id")
+        else {}
+    )
     return LocalFrontierFeatures(
         invocation_id=str(features.get("invocation_id") or ""),
         state=str(features.get("state") or "unknown"),
@@ -3823,7 +3851,14 @@ def _local_features_from_row(
         unfinished_child_count=int(
             features.get("unfinished_child_count") or 0
         ),
-        is_child=features.get("is_child") is True,
+        is_child=(
+            features.get("is_child") is True
+            or (
+                tool_feature_contract != "legacy"
+                and row.get("trigger_invocation_id") == features.get("invocation_id")
+                and trigger_attributes.get("is_child") is True
+            )
+        ),
     )
 
 
@@ -3904,6 +3939,8 @@ def _tool_row_identity(
 
 def _tool_fit_weights(
     rows: Sequence[Mapping[str, Any]],
+    *,
+    trigger_only: bool = False,
 ) -> dict[tuple[str, str, str], float]:
     identities_by_workflow: defaultdict[str, set[tuple[str, str, str]]] = (
         defaultdict(set)
@@ -3917,6 +3954,8 @@ def _tool_fit_weights(
         }
         for features in row.get("invocations", ()):
             invocation_id = str(features.get("invocation_id") or "")
+            if trigger_only and invocation_id != row.get("trigger_invocation_id"):
+                continue
             label = labels.get(invocation_id)
             if (
                 str(features.get("state") or "") == InvocationState.WAIT_TOOL.value

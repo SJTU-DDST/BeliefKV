@@ -167,7 +167,9 @@ def _compare_frontier_model(dataset: Path, matched, model_path: Path,
         ), None)
         if features is None:
             continue
-        prediction = model.predict(_local_features_from_row(row, features))
+        prediction = model.predict(_local_features_from_row(
+            row, features, tool_feature_contract=model.tool_feature_contract,
+        ))
         wait = prediction.wait_belief
         if wait.kind is not WaitBeliefKind.TOOL or not wait.residual_duration.values:
             continue

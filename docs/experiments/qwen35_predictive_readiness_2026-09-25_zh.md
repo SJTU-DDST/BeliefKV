@@ -342,3 +342,16 @@ Frontier artifact schema v7 增加 `tool_feature_contract`。默认 `legacy`
 新数据必须用新埋点重新采集；此前旧批次没有该契约必需的标签，
 不能直接按 v7 重训。需要报告项目隔离的 root/child 分层误差、
 不少于 2 秒调用的误差、首次触发的提前量及误报，物理动作继续关闭。
+
+在 v7 训练检查中发现 TOOL_START 的跨 invocation 混用：同一 workflow
+多个 child 同时 WAIT_TOOL 时，旧导出行只有 `trigger_id`，训练曾将
+新工具的类别套到全部等待 child 上。旧训练集 31,863 个工具触发行中
+335 行包含多个 WAIT_TOOL，最多污染 344/32,207 个工具等待样本；
+这个比例不足以单独解释原有的大误差，但会破坏 root/child 分头的
+可验证性。隔离分支增加 `trigger_invocation_id`，新契约只用该调用的
+标签拟合工具头和做 terminal 校准；对其他 invocation 的预测特征不
+借用触发工具的类别或后端。导出器对每个 invocation 保留原生
+parent/child 身份，TOOL_START 当前调用可从事件身份交叉验证；
+此前只对部分 JOIN 标签补 child 身份会导致工具预测分头回放失真。
+之前正在运行的高压采集保存了原始事件，
+必须待完成后**重新导出决策行**，不能把旧导出文件当成已修正数据。

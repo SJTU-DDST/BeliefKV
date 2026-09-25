@@ -38,7 +38,10 @@ def _summarize_snapshots(
             counters["missing_pending_child"] += 1
             continue
         predictions = [
-            model.predict(_local_features_from_row(row, child))
+            model.predict(_local_features_from_row(
+                row, child,
+                tool_feature_contract=getattr(model, "tool_feature_contract", "legacy"),
+            ))
             for child in pending.values()
         ]
         if any(
@@ -215,7 +218,10 @@ def diagnose_join_groups(
                 trigger_counters["incomplete_snapshot"] += 1
                 continue
             predictions = [
-                model.predict(_local_features_from_row(row, child))
+                model.predict(_local_features_from_row(
+                    row, child,
+                    tool_feature_contract=getattr(model, "tool_feature_contract", "legacy"),
+                ))
                 for child in pending.values()
             ]
             if any(
