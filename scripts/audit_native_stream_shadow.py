@@ -62,11 +62,16 @@ def audit(
     content_threshold_chars: int = 64,
     project_prefix: str | None = None,
     completed_workflows_only: bool = False,
+    eta_prior_ms: float | None = None,
 ) -> dict:
     if cue not in {"first_content", "substantial_content", "final_marker"}:
         raise ValueError("unsupported stream cue")
     if content_threshold_chars < 1:
         raise ValueError("content threshold must be positive")
+    if eta_prior_ms is not None and (
+        not math.isfinite(eta_prior_ms) or eta_prior_ms < 0
+    ):
+        raise ValueError("eta prior must be a finite nonnegative duration")
     cue_attribute = {
         "first_content": "beliefkv_child_first_content_shadow",
         "substantial_content": "beliefkv_child_substantial_content_shadow",
@@ -99,7 +104,9 @@ def audit(
     for path in paths:
         workflow_events = list(_rows(path))
         if completed_workflows_only and not any(
-            event.get("kind") == "workflow_end" for event in workflow_events
+            event.get("kind") == "workflow_end"
+            and (event.get("attributes") or {}).get("outcome") == "completed"
+            for event in workflow_events
         ):
             continue
         included_workflows += 1
@@ -111,7 +118,10 @@ def audit(
     cues = positives = negatives = unknown = joined = 0
     returned_children = set()
     marked_children = set()
-    timer_thresholds = (250, 500, 750, 1000, 1250, 1500, 2000, 2500)
+    timer_thresholds = (
+        250, 500, 750, 1000, 1250, 1500, 2000, 2500,
+        3000, 4000, 5000, 6000, 8000,
+    )
     timers = {
         delay: {"triggered": 0, "true_returns": 0, "false_triggers": 0,
                 "return_leads_ms": [], "first_by_child": {},
@@ -259,6 +269,43 @@ def audit(
                  if predicted and lead is not None],
                 .5,
             ),
+            "first_trigger_true_lead_p10_ms": _quantile(
+                [lead for predicted, lead in values["first_by_child"].values()
+                 if predicted and lead is not None],
+                .1,
+            ),
+            "first_trigger_true_lead_p90_ms": _quantile(
+                [lead for predicted, lead in values["first_by_child"].values()
+                 if predicted and lead is not None],
+                .9,
+            ),
+            "first_trigger_true_lead_at_least_500ms": sum(
+                predicted and lead is not None and lead >= 500
+                for predicted, lead in values["first_by_child"].values()
+            ),
+            "first_trigger_true_lead_at_least_2000ms": sum(
+                predicted and lead is not None and lead >= 2000
+                for predicted, lead in values["first_by_child"].values()
+            ),
+            "first_trigger_true_lead_at_least_5000ms": sum(
+                predicted and lead is not None and lead >= 5000
+                for predicted, lead in values["first_by_child"].values()
+            ),
+            "first_trigger_eta_error_p50_ms": (
+                _quantile(
+                    [abs(lead - eta_prior_ms)
+                     for predicted, lead in values["first_by_child"].values()
+                     if predicted and lead is not None],
+                    .5,
+                ) if eta_prior_ms is not None else None
+            ),
+            "first_trigger_eta_within_500ms": (
+                sum(
+                    predicted and lead is not None
+                    and abs(lead - eta_prior_ms) <= 500
+                    for predicted, lead in values["first_by_child"].values()
+                ) if eta_prior_ms is not None else None
+            ),
             "eligible_last_children": len(last_children),
             "last_child_first_triggered": sum(
                 child in last_children for child in values["first_by_child"]
@@ -289,6 +336,7 @@ def audit(
         "content_threshold_chars": (
             content_threshold_chars if cue == "substantial_content" else None
         ),
+        "eta_prior_ms": eta_prior_ms,
         "cues": cues,
         "confirmed_final_return": positives,
         "confirmed_not_final": negatives,
@@ -335,6 +383,7 @@ def main() -> None:
     parser.add_argument("--project-prefix")
     parser.add_argument("--completed-workflows-only", action="store_true")
     parser.add_argument("--content-threshold-chars", type=int, default=64)
+    parser.add_argument("--eta-prior-ms", type=float)
     parser.add_argument("--output", type=Path, required=True)
     args = parser.parse_args()
     result = audit(
@@ -342,6 +391,7 @@ def main() -> None:
         content_threshold_chars=args.content_threshold_chars,
         project_prefix=args.project_prefix,
         completed_workflows_only=args.completed_workflows_only,
+        eta_prior_ms=args.eta_prior_ms,
     )
     args.output.parent.mkdir(parents=True, exist_ok=True)
     args.output.write_text(

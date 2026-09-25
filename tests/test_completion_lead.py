@@ -175,6 +175,16 @@ def test_stream_shadow_audits_early_cue_and_tool_call_false_positive(tmp_path):
     assert substantial["substantial_content_timer_shadow"]["250"][
         "last_child_first_trigger_true"
     ] == 1
+    timed = audit_stream_shadow(
+        tmp_path / "workflows", dataset, cue="substantial_content",
+        content_threshold_chars=64, eta_prior_ms=300,
+    )
+    assert timed["substantial_content_timer_shadow"]["250"][
+        "first_trigger_eta_error_p50_ms"
+    ] == 150
+    assert timed["substantial_content_timer_shadow"]["250"][
+        "first_trigger_eta_within_500ms"
+    ] == 1
 
 
 def test_stream_timer_excludes_early_tool_chunk_but_not_late_tool_chunk(tmp_path):
@@ -260,8 +270,8 @@ def test_stream_audit_can_exclude_in_progress_workflows(tmp_path):
                    finish_reason="stop", output_chars=12),
             _event(300, "return"),
         ]
-        if done:
-            events.append(_event(400, "workflow_end"))
+        events.append(_event(400, "workflow_end",
+                             outcome="completed" if done else "incomplete"))
         (path / "runtime_events.deepagents.jsonl").write_text(
             "".join(json.dumps(item) + "\n" for item in events),
             encoding="utf-8",
