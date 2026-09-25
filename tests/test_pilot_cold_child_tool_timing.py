@@ -73,3 +73,8 @@ def test_inflight_peer_count_uses_only_other_workflow_live_at_start():
         {**rows[4], "start_ts_ms": 5_001},
     ])
     assert signals["b", "e"]["project_long_completed_median_ms"] == 5_000
+    same_timestamp = _as_of_project_signals([
+        {**rows[0], "status": "success"},
+        {**rows[4], "start_ts_ms": 5_000},
+    ])
+    assert same_timestamp["b", "e"]["project_long_completed_support"] == 0

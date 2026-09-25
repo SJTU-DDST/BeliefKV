@@ -73,7 +73,7 @@ def _as_of_project_signals(rows: list[dict]) -> dict[tuple[str, str], dict]:
         enumerate(rows), key=lambda pair: (float(pair[1]["start_ts_ms"]), pair[0])
     ):
         start = float(row["start_ts_ms"])
-        while closing and closing[0][0] <= start:
+        while closing and closing[0][0] < start:
             _, old_index, key, previous = heapq.heappop(closing)
             active[key].pop(old_index, None)
             duration = (

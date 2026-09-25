@@ -184,6 +184,52 @@ def test_project_long_history_only_uses_completed_successes() -> None:
     assert "project_class_duration_median_ms" not in result
 
 
+def test_export_rebuilds_long_tool_history_and_rejects_mismatch() -> None:
+    metadata = {"first": {"project": "repo"}, "second": {"project": "repo"}}
+    events = []
+    for index in range(3):
+        start = 10_000 * index
+        attrs = {"tool_name": "glob", "is_child": True,
+                 "observed_command_class": "glob",
+                 "tool_call_id": str(index)}
+        events.extend([
+            RuntimeEvent(
+                event_id=f"start-{index}", ts_ms=start,
+                kind=RuntimeEventKind.TOOL_START, workflow_id="first",
+                invocation_id="child", attributes=attrs,
+            ),
+            RuntimeEvent(
+                event_id=f"end-{index}", ts_ms=start + 3_000,
+                kind=RuntimeEventKind.TOOL_END, workflow_id="first",
+                invocation_id="child", attributes={**attrs, "status": "success"},
+            ),
+        ])
+    attrs = {
+        "tool_name": "glob", "is_child": True,
+        "observed_command_class": "glob",
+        "tool_call_id": "new",
+        "project_long_completed_median_ms": 3_000,
+        "project_long_completed_support": 3,
+    }
+    target = RuntimeEvent(
+        event_id="target", ts_ms=23_001,
+        kind=RuntimeEventKind.TOOL_START, workflow_id="second",
+        invocation_id="child", attributes=attrs,
+    )
+    assert _event_triggers(
+        [*events, target], workflow_metadata=metadata,
+    )[-1]["attributes"]["project_long_completed_median_ms"] == 3_000
+    with pytest.raises(ValueError, match="long tool history disagrees"):
+        _event_triggers(
+            [*events, RuntimeEvent(
+                event_id="bad", ts_ms=23_001,
+                kind=RuntimeEventKind.TOOL_START, workflow_id="second",
+                invocation_id="child",
+                attributes={**attrs, "project_long_completed_support": 4},
+            )], workflow_metadata=metadata,
+        )
+
+
 def test_export_rebuilds_project_history_and_rejects_conflicting_online_value() -> None:
     metadata = {"wf-a": {"project": "repo"}, "wf-b": {"project": "repo"}}
     events = []
