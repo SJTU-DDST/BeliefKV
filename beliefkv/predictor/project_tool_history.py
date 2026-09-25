@@ -68,3 +68,9 @@ class ProjectToolHistory:
             self._completed.move_to_end(key)
             while len(self._completed) > self.max_keys:
                 self._completed.popitem(last=False)
+
+    def discard_workflow(self, workflow_id: str) -> None:
+        with self._lock:
+            for key in tuple(self._open):
+                if key[0] == workflow_id:
+                    del self._open[key]

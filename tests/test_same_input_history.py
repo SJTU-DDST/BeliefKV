@@ -105,6 +105,10 @@ def test_project_history_scopes_tool_call_ids_by_workflow() -> None:
     assert history.start(
         "fourth", "repo", {**attrs, "tool_call_id": "final"}, 230
     )["project_class_duration_median_ms"] == 150
+    history.discard_workflow("third")
+    assert history.start(
+        "third", "repo", {**attrs, "tool_call_id": "other"}, 240
+    )["project_class_duration_median_ms"] == 150
 
 
 def test_export_rebuilds_project_history_and_rejects_conflicting_online_value() -> None:

@@ -3648,6 +3648,8 @@ def _run_workflow(
             if error_text is None:
                 error_text = f"{type(finish_error).__name__}: {finish_error}"
                 outcome = "error"
+        if project_tool_history is not None:
+            project_tool_history.discard_workflow(workflow_id)
         if control_sink is not None:
             control_sink.close()
         trace_sink.close()

@@ -272,6 +272,8 @@ def _event_triggers(
         elif event.kind == RuntimeEventKind.TOOL_END and event.invocation_id:
             history.end(event.workflow_id, event.invocation_id, attrs, event.ts_ms)
             project_history.end(event.workflow_id, attrs, event.ts_ms)
+        elif event.kind == RuntimeEventKind.WORKFLOW_END:
+            project_history.discard_workflow(event.workflow_id)
         elif event.kind in (RuntimeEventKind.RETURN, RuntimeEventKind.INVOCATION_CANCEL):
             if event.invocation_id:
                 history.discard_invocation(event.workflow_id, event.invocation_id)
