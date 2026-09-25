@@ -235,6 +235,14 @@ child 最终自然语言答复以特定前缀开头；对应
 RETURN 都没有输出此前缀，覆盖率为零，已撤销该无效试验代码。
 两次 pilot 都只有单个 workflow，且使用不同于正式批次的
 流式模式、较小并发和零 Host 池；仅证明该原始信号不够可靠。
+另一诊断 `qwen35_ready_handoff_pilot_20260925_v1` 给 child
+提供 `ready_to_finish` 工具并提示它在最终自然语言报告前声明；
+3 个 child 正常返回却没有一次调用该工具，故撤销这套零覆盖率
+的试验代码。这个结果**不能**证明受运行时强制约束的两阶段
+完成协议无效，只证明单纯添加工具/提示词不足以建立该协议。
+旧校准 trace 中 `write_todos` 仅覆盖 14 个 child，其 58 次
+工具结束只有 1 次的下一模型回复直接 RETURN；它也不是可靠
+的普适完成阈值。
 
 短窗头可以通过同时设置 `BELIEFKV_COMPLETION_LEAD_ARTIFACT`
 和 `BELIEFKV_COMPLETION_LEAD_SHA256` 显式加载经 SHA-256
