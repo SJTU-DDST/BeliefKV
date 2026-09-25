@@ -46,6 +46,11 @@ def test_only_completed_earlier_same_invocation_available(tmp_path: Path) -> Non
     assert by_start[10]["previous"] is None
     assert by_start[110]["previous"] is None
     assert by_start[120]["previous"] == (100, 100, "success")
+    by_start_workflow = {
+        row["start_ts_ms"]: row
+        for row in _read_workflow(path, history_scope="workflow")
+    }
+    assert by_start_workflow[110]["previous"] == (100, 100, "success")
 
 
 def test_project_held_out_repeat_report(tmp_path: Path) -> None:

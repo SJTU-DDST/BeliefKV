@@ -53,7 +53,12 @@ def _summarize(rows: list[dict]) -> dict:
     }
 
 
-def _read_workflow(path: Path, *, allow_legacy_origin: bool = False) -> list[dict]:
+def _read_workflow(
+    path: Path, *, allow_legacy_origin: bool = False,
+    history_scope: str = "invocation",
+) -> list[dict]:
+    if history_scope not in ("invocation", "workflow"):
+        raise ValueError("unsupported history scope")
     events = []
     with path.open("rb") as stream:
         for line in stream:
@@ -75,7 +80,7 @@ def _read_workflow(path: Path, *, allow_legacy_origin: bool = False) -> list[dic
         if event["kind"] == "tool_start":
             signature = str(attrs.get("input_sha256") or "")
             invocation = str(event.get("invocation_id") or "")
-            key = (invocation, signature)
+            key = (invocation if history_scope == "invocation" else "*", signature)
             previous = history.get(key) if signature and invocation else None
             started[call_id] = (ts, attrs, previous)
         elif call_id in started:
@@ -102,19 +107,24 @@ def _read_workflow(path: Path, *, allow_legacy_origin: bool = False) -> list[dic
             completed.append(row)
             signature = str(start_attrs.get("input_sha256") or "")
             if signature and row["invocation"]:
-                # A failed invocation should not become a duration prior for success.
-                history[(row["invocation"], signature)] = (
+                history[(
+                    row["invocation"] if history_scope == "invocation" else "*",
+                    signature,
+                )] = (
                     duration, ts, row["status"]
                 )
     return completed
 
 
-def replay(workflows: Path, *, minimum_class_samples: int = 8) -> dict:
+def replay(
+    workflows: Path, *, minimum_class_samples: int = 8,
+    history_scope: str = "invocation",
+) -> dict:
     if minimum_class_samples < 1:
         raise ValueError("minimum_class_samples must be positive")
     rows = []
     for path in sorted(workflows.glob("*/runtime_events.deepagents.jsonl")):
-        rows.extend(_read_workflow(path))
+        rows.extend(_read_workflow(path, history_scope=history_scope))
     projects = sorted({row["project"] for row in rows})
     if len(projects) < 2:
         raise ValueError("project-held-out analysis requires at least two projects")
@@ -134,6 +144,27 @@ def replay(workflows: Path, *, minimum_class_samples: int = 8) -> dict:
         for row in eval_rows:
             counts["all_calls"] += 1
             previous = row["previous"]
+            baseline = priors.get(row["class"], global_duration)
+            hybrid = (
+                previous[0] if previous is not None and previous[2] == "success"
+                else baseline
+            )
+            aggregate = ["all_calls"]
+            if row["is_child"] is True:
+                aggregate.append("all_child_calls")
+            if row["duration_ms"] >= 2_000:
+                aggregate.append("all_long_calls")
+                if row["is_child"] is True:
+                    aggregate.append("all_long_child_calls")
+                    if previous is None or previous[2] != "success":
+                        counts["long_child_without_successful_prior"] += 1
+            for dimension in aggregate:
+                results[dimension + ":class"].append({
+                    **row, "error_ms": abs(row["duration_ms"] - baseline)
+                })
+                results[dimension + ":hybrid"].append({
+                    **row, "error_ms": abs(row["duration_ms"] - hybrid)
+                })
             if previous is None:
                 counts["no_completed_same_input"] += 1
                 continue
@@ -145,7 +176,6 @@ def replay(workflows: Path, *, minimum_class_samples: int = 8) -> dict:
             if not status_matches:
                 counts["outcome_changed"] += 1
             age = row["start_ts_ms"] - prev_end
-            baseline = priors.get(row["class"], global_duration)
             dimensions = ["all_repeats"]
             dimensions.append(
                 "child" if row["is_child"] is True
@@ -206,6 +236,7 @@ def replay(workflows: Path, *, minimum_class_samples: int = 8) -> dict:
                         counts[f"{prefix}_more_than_2s_early"] += 1
     return {
         "status": "offline_causal_replay_not_deployable",
+        "history_scope": history_scope,
         "project_count": len(projects),
         "projects": projects,
         "counts": dict(sorted(counts.items())),
@@ -216,16 +247,18 @@ def replay(workflows: Path, *, minimum_class_samples: int = 8) -> dict:
 def transfer_replay(
     train_workflows: Path, evaluation_workflows: Path,
     *, allow_legacy_evaluation_origin: bool = False,
+    history_scope: str = "invocation",
 ) -> dict:
     train = [
         row for path in sorted(train_workflows.glob("*/runtime_events.deepagents.jsonl"))
-        for row in _read_workflow(path)
+        for row in _read_workflow(path, history_scope=history_scope)
         if row["previous"] is not None and row["previous"][2] == "success"
     ]
     evaluation = [
         row for path in sorted(evaluation_workflows.glob("*/runtime_events.deepagents.jsonl"))
         for row in _read_workflow(
-            path, allow_legacy_origin=allow_legacy_evaluation_origin
+            path, allow_legacy_origin=allow_legacy_evaluation_origin,
+            history_scope=history_scope,
         )
         if row["previous"] is not None and row["previous"][2] == "success"
     ]
@@ -248,6 +281,7 @@ def transfer_replay(
         per_workflow[row["workflow"]].append(row["error_ms"])
     return {
         "status": "cross_run_project_disjoint_diagnostic_not_formal_test",
+        "history_scope": history_scope,
         "legacy_evaluation_origin_inferred": allow_legacy_evaluation_origin,
         "train_repeat_count": len(train),
         "evaluation_repeat_count": len(rows),
@@ -285,13 +319,18 @@ def main() -> None:
     parser.add_argument("--workflows", type=Path, required=True)
     parser.add_argument("--evaluation-workflows", type=Path)
     parser.add_argument("--allow-legacy-evaluation-origin", action="store_true")
+    parser.add_argument(
+        "--history-scope", choices=("invocation", "workflow"),
+        default="invocation",
+    )
     parser.add_argument("--output", type=Path, required=True)
     args = parser.parse_args()
-    result = replay(args.workflows)
+    result = replay(args.workflows, history_scope=args.history_scope)
     if args.evaluation_workflows is not None:
         result["project_isolated_transfer"] = transfer_replay(
             args.workflows, args.evaluation_workflows,
             allow_legacy_evaluation_origin=args.allow_legacy_evaluation_origin,
+            history_scope=args.history_scope,
         )
     args.output.parent.mkdir(parents=True, exist_ok=True)
     args.output.write_text(json.dumps(result, indent=2, sort_keys=True) + "\n")
