@@ -1041,6 +1041,17 @@ class DeepAgentsRuntimeAdapter(BaseCallbackHandler):
                 else self._identities[invocation_id].metadata.context_id
             )
             epoch = metadata.context_epoch if metadata is not None else None
+        cause_types = []
+        cause_errnos = []
+        seen = {id(error)}
+        cause = error.__cause__ or error.__context__
+        while cause is not None and id(cause) not in seen and len(cause_types) < 4:
+            seen.add(id(cause))
+            cause_types.append(type(cause).__name__)
+            errno = getattr(cause, "errno", None)
+            if isinstance(errno, int):
+                cause_errnos.append(errno)
+            cause = cause.__cause__ or cause.__context__
         event = self._event(
             RuntimeEventKind.LLM_RESULT,
             invocation_id=invocation_id,
@@ -1052,6 +1063,8 @@ class DeepAgentsRuntimeAdapter(BaseCallbackHandler):
                 "runtime_internal": runtime_internal,
                 "request_id": _native_request_id(run_id),
                 "exception_type": type(error).__name__,
+                "exception_cause_types": cause_types,
+                "exception_cause_errnos": cause_errnos,
                 "censored": True,
                 "censor_reason": _error_censor_reason(error),
             },
@@ -1064,6 +1077,8 @@ class DeepAgentsRuntimeAdapter(BaseCallbackHandler):
                 "request_id": _native_request_id(run_id),
                 "invocation_id": invocation_id,
                 "exception_type": type(error).__name__,
+                "exception_cause_types": cause_types,
+                "exception_cause_errnos": cause_errnos,
             }
         )
         self._finish_internal_summary(key, error=error)

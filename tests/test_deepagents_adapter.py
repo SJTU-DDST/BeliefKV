@@ -569,6 +569,30 @@ def test_stream_counts_whitespace_as_content_without_first_body_cue() -> None:
     assert result.attributes["stream_content_counted_chars"] == 1
 
 
+def test_llm_error_records_only_cause_types_and_errno() -> None:
+    trace = CollectingSink()
+    adapter = DeepAgentsRuntimeAdapter(
+        trace, BeliefKVRequestMetadata("wf", "root", "ctx", 0),
+    )
+    adapter.start()
+    run = uuid4()
+    adapter.on_chat_model_start(
+        {}, [[HumanMessage(content="private prompt")]], run_id=run,
+    )
+    error = RuntimeError("private response body")
+    error.__cause__ = ConnectionRefusedError(111, "private server details")
+    adapter.on_llm_error(error, run_id=run)
+    result = next(
+        event for event in trace.events
+        if event.kind == RuntimeEventKind.LLM_RESULT
+    )
+    assert result.attributes["exception_cause_types"] == [
+        "ConnectionRefusedError"
+    ]
+    assert result.attributes["exception_cause_errnos"] == [111]
+    assert "private" not in json.dumps(result.to_dict())
+
+
 def test_streaming_entrypoints_preserve_child_identity() -> None:
     trace = CollectingSink()
     adapter = DeepAgentsRuntimeAdapter(
