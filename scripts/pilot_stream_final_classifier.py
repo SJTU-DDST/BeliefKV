@@ -232,6 +232,11 @@ def _quality(
     true = [row for row in selected if row["final"]]
     positives = sum(row["final"] for row in rows)
     leads = [row["return_lead_ms"] for row in true]
+    selected_last_leads = [
+        row["return_lead_ms"] for row in true
+        if (row["trace_path"], row["workflow"], row["child"])
+        in last_children
+    ]
     raw_last = sum(
         row["final"]
         and (row["trace_path"], row["workflow"], row["child"])
@@ -266,6 +271,12 @@ def _quality(
         "selected_true_last_children": sum(
             (row["trace_path"], row["workflow"], row["child"]) in last_children
             for row in true
+        ),
+        "selected_last_child_lead_p50_ms": (
+            median(selected_last_leads) if selected_last_leads else None
+        ),
+        "selected_last_child_lead_at_least_2000ms": sum(
+            lead >= 2000 for lead in selected_last_leads
         ),
         "last_child_recall": (
             sum(

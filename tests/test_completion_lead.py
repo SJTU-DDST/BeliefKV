@@ -454,6 +454,7 @@ def test_stream_join_counts_repeated_workflows_in_distinct_runs(tmp_path):
     )
     assert result["selected_true_last_children"] == 2
     assert result["last_child_recall"] == 1
+    assert result["selected_last_child_lead_at_least_2000ms"] == 0
 
 
 def test_stream_eta_regression_only_consumes_causal_features():

@@ -6,6 +6,7 @@ from __future__ import annotations
 import argparse
 import json
 from pathlib import Path
+from statistics import median
 import sys
 
 import numpy as np
@@ -57,6 +58,11 @@ def _quality(
         (row["trace_path"], row["workflow"], row["child"]) in last_children
         for row in useful
     )
+    last_leads = [
+        row["return_lead_ms"] for row in useful
+        if (row["trace_path"], row["workflow"], row["child"])
+        in last_children
+    ]
     return {
         "children": len(rows),
         "returned_children": returns,
@@ -79,6 +85,9 @@ def _quality(
         "useful_recall": len(useful) / potential if potential else None,
         "eligible_last_children": len(last_children),
         "useful_last_children": useful_last,
+        "useful_last_child_lead_p50_ms": (
+            median(last_leads) if last_leads else None
+        ),
         "last_child_useful_recall": (
             useful_last / len(last_children) if last_children else None
         ),
