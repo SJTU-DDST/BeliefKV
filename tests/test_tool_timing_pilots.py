@@ -61,6 +61,9 @@ def test_project_adaptation_never_uses_unfinished_history(tmp_path: Path) -> Non
         tmp_path, minimum_support=2, exclude_same_workflow_history=True,
     )
     assert strict["supported"]["count"] == 0
+    local = pilot(tmp_path, minimum_support=2, same_workflow_only=True)
+    assert local["supported"]["count"] == 1
+    assert local["same_workflow_only"] is True
     capped = pilot(tmp_path, minimum_support=2, max_per_workflow=1)
     assert capped["supported"]["count"] == 0
     assert capped["max_per_workflow"] == 1

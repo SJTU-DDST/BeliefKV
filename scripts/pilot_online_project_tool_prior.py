@@ -21,12 +21,15 @@ def pilot(
     workflows: Path, *, minimum_support: int = 16,
     allow_legacy_origin: bool = False,
     exclude_same_workflow_history: bool = False,
+    same_workflow_only: bool = False,
     max_per_workflow: int | None = None,
 ) -> dict:
     if minimum_support < 2:
         raise ValueError("minimum support must be at least two")
     if max_per_workflow is not None and max_per_workflow < 1:
         raise ValueError("max per workflow must be positive")
+    if exclude_same_workflow_history and same_workflow_only:
+        raise ValueError("workflow history scopes are mutually exclusive")
     calls = sorted(
         (
             row
@@ -81,7 +84,8 @@ def pilot(
         history_entries = [
             (duration, source)
             for duration, source in observed[(row["project"], row["class"])]
-            if not exclude_same_workflow_history or source != row["workflow"]
+            if (not exclude_same_workflow_history or source != row["workflow"])
+            and (not same_workflow_only or source == row["workflow"])
         ]
         if max_per_workflow is not None:
             selected = []
@@ -203,6 +207,7 @@ def pilot(
         "status": "offline_causal_online_adaptation_pilot_not_deployable",
         "legacy_origin_inferred": allow_legacy_origin,
         "exclude_same_workflow_history": exclude_same_workflow_history,
+        "same_workflow_only": same_workflow_only,
         "max_per_workflow": max_per_workflow,
         "minimum_completed_project_class_samples": minimum_support,
         "total_cold_child_long": total_long_child,
@@ -267,12 +272,14 @@ def main() -> None:
     parser.add_argument("--max-per-workflow", type=int)
     parser.add_argument("--allow-legacy-origin", action="store_true")
     parser.add_argument("--exclude-same-workflow-history", action="store_true")
+    parser.add_argument("--same-workflow-only", action="store_true")
     parser.add_argument("--output", type=Path, required=True)
     args = parser.parse_args()
     report = pilot(
         args.workflows, minimum_support=args.minimum_support,
         allow_legacy_origin=args.allow_legacy_origin,
         exclude_same_workflow_history=args.exclude_same_workflow_history,
+        same_workflow_only=args.same_workflow_only,
         max_per_workflow=args.max_per_workflow,
     )
     args.output.parent.mkdir(parents=True, exist_ok=True)
