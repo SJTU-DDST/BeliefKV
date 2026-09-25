@@ -136,7 +136,7 @@ def test_stream_shadow_audits_early_cue_and_tool_call_false_positive(tmp_path):
                beliefkv_child_substantial_content_shadow=True, request_id="final",
                content_threshold_chars=1024),
         _event(1000, "llm_result", request_id="final", tool_call_count=0,
-               invalid_tool_call_count=0, finish_reason="stop"),
+               invalid_tool_call_count=0, finish_reason="stop", output_chars=12),
         _event(1200, "return"),
     ]
     (workflow / "runtime_events.deepagents.jsonl").write_text(
@@ -179,7 +179,7 @@ def test_stream_timer_excludes_early_tool_chunk_but_not_late_tool_chunk(tmp_path
         _event(1000, "structured_action",
                beliefkv_child_first_content_shadow=True, request_id="final"),
         _event(2200, "llm_result", request_id="final", tool_call_count=0,
-               finish_reason="stop"),
+               finish_reason="stop", output_chars=12),
         _event(2300, "return"),
     ]
     (workflow / "runtime_events.deepagents.jsonl").write_text(
@@ -195,3 +195,22 @@ def test_stream_timer_excludes_early_tool_chunk_but_not_late_tool_chunk(tmp_path
     assert timers["500"]["precision"] == 1
     assert timers["500"]["first_trigger_precision"] == 1
     assert timers["500"]["true_return_lead_p50_ms"] == 800
+
+
+def test_stream_shadow_rejects_empty_stop_even_if_child_returns(tmp_path):
+    workflow = tmp_path / "workflows" / "one"
+    workflow.mkdir(parents=True)
+    events = [
+        _event(100, "structured_action",
+               beliefkv_child_first_content_shadow=True, request_id="empty"),
+        _event(500, "llm_result", request_id="empty", tool_call_count=0,
+               finish_reason="stop", output_chars=0),
+        _event(600, "return"),
+    ]
+    (workflow / "runtime_events.deepagents.jsonl").write_text(
+        "".join(json.dumps(item) + "\n" for item in events), encoding="utf-8"
+    )
+    result = audit_stream_shadow(tmp_path / "workflows")
+    assert result["confirmed_final_return"] == 0
+    assert result["confirmed_not_final"] == 1
+    assert result["first_content_timer_shadow"]["250"]["false_triggers"] == 1

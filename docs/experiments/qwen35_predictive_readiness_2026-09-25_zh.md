@@ -272,6 +272,20 @@ Astropy 的四个 child 中仅两个自然 RETURN，首正文后等待
 没有可评价的真实终态。流式执行还改变了任务轨迹，
 默认保持关闭。
 
+后续复核 `qwen35_contextbound_stream_normal_20260925_v1` 的
+`on_llm_new_token` 发现：以前在流式 chunk 的 `message.content`
+缺失时，回退使用回调的 `token` 判定「首正文」，可能将 reasoning
+片段误判为用户可见正文。现只接受明确的字符串 content chunk，
+而工具调用仍由明确的 tool-call chunk 判定。离线审计同时要求最终
+`llm_result.output_chars > 0`，不再把空 `stop` 回复视为可靠终态。
+以修正后的离线终态定义复核该 pilot，21 个首正文提示仅有 2 个
+最终有效 RETURN，其余 19 个都不是有效终态；250 ms 定时器
+触发 9 次，仅 2 次对应有效终态。该 pilot 的四个 Sphinx child
+均因无正文返回失败，既非标准非流式轨迹，也不能据此评价正常
+调度下的首正文精度；旧 trace 缺少完整 chunk 内容，不能事后
+算出上述回调修复本身减少了多少误报。默认不启用流式候选动作，
+独立项目校准仍使用原有非流式运行时。
+
 另一只读试验 `scripts/pilot_native_join_progress.py` 只用训练集
 已完成 JOIN 的当时可见 child 进展拟合剩余时间，按完整 JOIN
 在既有项目隔离校准组验证。首个 WAIT_JOIN 快照中位绝对

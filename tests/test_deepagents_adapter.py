@@ -374,6 +374,16 @@ def test_stream_first_content_is_trace_only_and_one_per_child_model_run() -> Non
         )
         adapter.on_llm_new_token(" ", run_id=run)
         adapter.on_llm_new_token(
+            "private reasoning", run_id=run,
+            chunk=SimpleNamespace(message=SimpleNamespace(
+                content=None, tool_call_chunks=[],
+            )),
+        )
+        assert not any(
+            event.attributes.get("beliefkv_child_first_content_shadow")
+            for event in trace.events
+        )
+        adapter.on_llm_new_token(
             "secret final answer", run_id=run,
             chunk=SimpleNamespace(message=SimpleNamespace(
                 content="secret final answer", tool_call_chunks=[],
@@ -414,8 +424,18 @@ def test_stream_first_content_is_trace_only_and_one_per_child_model_run() -> Non
             run_id=another_run, parent_run_id=tool_run,
         )
         for _ in range(4):
-            adapter.on_llm_new_token("private paragraph", run_id=another_run)
-        adapter.on_llm_new_token("more private words", run_id=another_run)
+            adapter.on_llm_new_token(
+                "private paragraph", run_id=another_run,
+                chunk=SimpleNamespace(message=SimpleNamespace(
+                    content="private paragraph", tool_call_chunks=[],
+                )),
+            )
+        adapter.on_llm_new_token(
+            "more private words", run_id=another_run,
+            chunk=SimpleNamespace(message=SimpleNamespace(
+                content="more private words", tool_call_chunks=[],
+            )),
+        )
         substantial = [
             event for event in trace.events
             if event.attributes.get("beliefkv_child_substantial_content_shadow")

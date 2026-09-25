@@ -126,6 +126,7 @@ def audit(
             is_final = (
                 successor.get("kind") == "return"
                 and attrs.get("runtime_internal") is not True
+                and int(attrs.get("output_chars") or 0) > 0
                 and attrs.get("tool_call_count") == 0
                 and attrs.get("invalid_tool_call_count", 0) == 0
                 and attrs.get("finish_reason") in (None, "stop")

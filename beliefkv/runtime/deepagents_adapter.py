@@ -728,13 +728,14 @@ class DeepAgentsRuntimeAdapter(BaseCallbackHandler):
         **kwargs: Any,
     ) -> None:
         """Capture a prospective final-answer boundary without scheduling actions."""
-        del kwargs
-        content = getattr(getattr(chunk, "message", None), "content", token)
+        del kwargs, token
+        # A token may be reasoning text even when the streamed AIMessage has
+        # no visible content. Only an explicit content chunk is a body cue.
+        message = getattr(chunk, "message", None)
+        content = getattr(message, "content", None)
         content_seen = isinstance(content, str) and bool(content.strip())
         content_chars = len(content.strip()) if isinstance(content, str) else 0
-        tool_seen = bool(getattr(
-            getattr(chunk, "message", None), "tool_call_chunks", None
-        ))
+        tool_seen = bool(getattr(message, "tool_call_chunks", None))
         if not content_seen and not tool_seen:
             return
         key = _run_key(run_id)
