@@ -21,6 +21,7 @@ from scripts.pilot_stream_final_classifier import samples as stream_classifier_s
 from scripts.pilot_stream_final_classifier import _quality as stream_classifier_quality
 from scripts.pilot_stream_eta_regression import fit_eta, predict_eta
 from scripts.pilot_stream_actionable_window import _quality as actionable_quality
+from scripts.pilot_stream_online_eta import evaluate_online
 
 
 def _event(timestamp: float, kind: str, **attributes):
@@ -490,6 +491,22 @@ def test_actionable_window_counts_late_returns_as_not_useful():
     assert quality["selected_nonreturn"] == 1
     assert quality["last_child_useful_recall"] == 1
     assert quality["raw_candidate_useful_precision"] == 1 / 3
+
+
+def test_online_eta_uses_only_completed_project_returns():
+    rows = [
+        {
+            "trace_path": f"/workflows/project__task-{index}/trace.jsonl",
+            "trigger_ms": index * 1000,
+            "final": True,
+            "return_lead_ms": 300 if index < 8 else 350,
+        }
+        for index in range(9)
+    ]
+    result = evaluate_online(rows, np.ones(9), .5, 800)
+    assert result["project_supported_selected_returns"] == 1
+    assert result["project_local_eta_error_p50_ms"] == 50
+    assert result["fixed_prior_same_cohort_error_p50_ms"] == 450
 
 
 def test_natural_content_threshold_audit_counts_returns_and_false_signals():
