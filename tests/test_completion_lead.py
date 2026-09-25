@@ -12,6 +12,7 @@ from beliefkv.predictor.completion_lead import (
     load_pinned_completion_lead,
 )
 from scripts.audit_native_stream_shadow import audit as audit_stream_shadow
+from scripts.fit_native_completion_lead import _content_threshold_audit
 
 
 def _event(timestamp: float, kind: str, **attributes):
@@ -214,3 +215,18 @@ def test_stream_shadow_rejects_empty_stop_even_if_child_returns(tmp_path):
     assert result["confirmed_final_return"] == 0
     assert result["confirmed_not_final"] == 1
     assert result["first_content_timer_shadow"]["250"]["false_triggers"] == 1
+
+
+def test_natural_content_threshold_audit_counts_returns_and_false_signals():
+    records = [
+        {"output_chars": 2, "returned": False, "last_child": False,
+         "next_event_kind": "llm_submit"},
+        {"output_chars": 2, "returned": True, "last_child": True,
+         "next_event_kind": "return"},
+        {"output_chars": 10, "returned": True, "last_child": True,
+         "next_event_kind": "return"},
+    ]
+    report = _content_threshold_audit(records)
+    assert report["1"]["confirmed_nonreturn_signals"] == 1
+    assert report["3"]["confirmed_nonreturn_signals"] == 0
+    assert report["3"]["last_child_signals"] == 1

@@ -164,6 +164,7 @@ def completion_signal_records(
                 "returned": returned,
                 "lead_ms": lead_ms,
                 "eligible": eligible,
+                "output_chars": attrs.get("output_chars"),
                 "next_event_kind": (
                     next_event.get("kind") if next_event is not None else None
                 ),

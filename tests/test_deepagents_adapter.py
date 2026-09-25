@@ -236,6 +236,7 @@ def test_natural_child_final_is_provisional_and_rejects_ambiguous_output() -> No
         )
         for output in (
             _natural_child_result(" "),
+            _natural_child_result("OK"),
             _natural_child_result("unfinished", finish_reason="length"),
             _natural_child_result("invalid tool", invalid=True),
         ):

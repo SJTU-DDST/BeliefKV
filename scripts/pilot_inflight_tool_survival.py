@@ -19,10 +19,13 @@ def _rows(path: Path):
                 yield orjson.loads(line)
 
 
-def audit(dataset: Path) -> dict:
+def audit(dataset: Path, *, all_child_tools: bool = False) -> dict:
     waits = {}
     for row in _rows(dataset / "external_waits.jsonl"):
-        if row.get("tool_name") != "execute" or row.get("is_child") is not True:
+        if (
+            (row.get("tool_name") != "execute" and not all_child_tools)
+            or row.get("is_child") is not True
+        ):
             continue
         key = str(row.get("workflow_id")), str(row.get("tool_call_id"))
         waits[key] = row
@@ -69,10 +72,13 @@ def audit(dataset: Path) -> dict:
                 continue
             details = attrs[key]
             if (
-                details.get("previous_same_input_status") == "success"
-                or type(details.get("project_class_duration_median_ms"))
-                in (int, float)
-                and int(details.get("project_class_completed_support") or 0) >= 16
+                details.get("tool_name") == "execute"
+                and (
+                    details.get("previous_same_input_status") == "success"
+                    or type(details.get("project_class_duration_median_ms"))
+                    in (int, float)
+                    and int(details.get("project_class_completed_support") or 0) >= 16
+                )
             ):
                 continue
             for clock in (0, 500):
@@ -106,6 +112,7 @@ def audit(dataset: Path) -> dict:
                             entry["workflows"].add(key[0])
     return {
         "status": "offline_as_of_survival_pilot_not_action_eligible",
+        "all_child_tools": all_child_tools,
         "semantics": (
             "same-project same-command child execute, without successful same-input "
             "or supported completed-project prior; only already-started and "
@@ -138,8 +145,9 @@ def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--dataset-dir", type=Path, required=True)
     parser.add_argument("--output", type=Path, required=True)
+    parser.add_argument("--all-child-tools", action="store_true")
     args = parser.parse_args()
-    result = audit(args.dataset_dir)
+    result = audit(args.dataset_dir, all_child_tools=args.all_child_tools)
     args.output.parent.mkdir(parents=True, exist_ok=True)
     args.output.write_text(
         json.dumps(result, indent=2, sort_keys=True) + "\n",

@@ -268,6 +268,26 @@ def _event_triggers(
                 > .01
             ):
                 raise ValueError("online/offline project tool history disagrees")
+            if (
+                "project_class_inflight_other_workflow_2s_peers" in attrs
+                and int(attrs["project_class_inflight_other_workflow_2s_peers"])
+                != project_prior.get(
+                    "project_class_inflight_other_workflow_2s_peers", 0
+                )
+            ):
+                raise ValueError("online/offline in-flight tool history disagrees")
+            if (
+                "project_long_completed_median_ms" in attrs
+                and (
+                    abs(
+                        float(attrs["project_long_completed_median_ms"])
+                        - float(project_prior.get("project_long_completed_median_ms", -1))
+                    ) > .01
+                    or int(attrs.get("project_long_completed_support", -1))
+                    != int(project_prior.get("project_long_completed_support", -1))
+                )
+            ):
+                raise ValueError("online/offline long tool history disagrees")
             attrs.update(project_prior)
         elif event.kind == RuntimeEventKind.TOOL_END and event.invocation_id:
             history.end(event.workflow_id, event.invocation_id, attrs, event.ts_ms)
@@ -301,6 +321,9 @@ def _event_triggers(
                     "previous_same_input_status",
                     "project_class_duration_median_ms",
                     "project_class_completed_support",
+                    "project_class_inflight_other_workflow_2s_peers",
+                    "project_long_completed_median_ms",
+                    "project_long_completed_support",
                     "prompt_semantic_sha256",
                     "sampling_seed",
                     "status",

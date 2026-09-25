@@ -17,8 +17,11 @@ class ProjectToolHistory:
         self.window = window
         self.max_keys = max_keys
         self._lock = RLock()
-        self._open: dict[tuple[str, str], tuple[str, str, float]] = {}
+        self._open: dict[tuple[str, str], tuple[str, str, float, bool]] = {}
         self._completed: OrderedDict[
+            tuple[str, str], deque[tuple[float, float]]
+        ] = OrderedDict()
+        self._long_completed: OrderedDict[
             tuple[str, str], deque[tuple[float, float]]
         ] = OrderedDict()
 
@@ -26,10 +29,7 @@ class ProjectToolHistory:
         self, workflow_id: str, project: str, attrs: Mapping[str, Any],
         ts_ms: float,
     ) -> dict[str, float | int]:
-        if (
-            not project or attrs.get("tool_name") != "execute"
-            or attrs.get("is_child") is not True
-        ):
+        if not project or attrs.get("is_child") is not True:
             return {}
         call_id = str(attrs.get("tool_call_id") or "")
         command = str(attrs.get("observed_command_class") or "")
@@ -39,12 +39,37 @@ class ProjectToolHistory:
             call_key = workflow_id, call_id
             if call_key in self._open:
                 raise ValueError("duplicate open project tool call")
-            self._open[call_key] = project, command, ts_ms
+            peers = sum(
+                other_workflow != workflow_id
+                and other_project == project and other_command == command
+                and 0 <= other_start <= ts_ms - 2_000
+                for (other_workflow, _), (other_project, other_command,
+                                           other_start, _) in self._open.items()
+            )
+            is_execute = attrs.get("tool_name") == "execute"
+            self._open[call_key] = project, command, ts_ms, is_execute
+            observed = (
+                {"project_class_inflight_other_workflow_2s_peers": peers}
+                if peers else {}
+            )
+            long_values = [
+                duration for duration, end
+                in self._long_completed.get((project, command), ())
+                if end < ts_ms
+            ]
+            if len(long_values) >= 3:
+                observed.update({
+                    "project_long_completed_median_ms": float(median(long_values)),
+                    "project_long_completed_support": len(long_values),
+                })
+            if not is_execute:
+                return observed
             history = self._completed.get((project, command), ())
             values = [duration for duration, end in history if end < ts_ms]
             if len(values) < self.minimum_support:
-                return {}
+                return observed
             return {
+                **observed,
                 "project_class_duration_median_ms": float(median(values)),
                 "project_class_completed_support": len(values),
             }
@@ -57,14 +82,25 @@ class ProjectToolHistory:
             opened = self._open.pop(call_key, None)
             if opened is None:
                 return
-            project, command, start_ts = opened
+            project, command, start_ts, is_execute = opened
             if ts_ms < start_ts:
                 raise ValueError("project tool end precedes its start")
             if attrs.get("status") != "success":
                 return
             key = project, command
+            duration = ts_ms - start_ts
+            if duration >= 2_000:
+                long_history = self._long_completed.setdefault(
+                    key, deque(maxlen=self.window)
+                )
+                long_history.append((duration, ts_ms))
+                self._long_completed.move_to_end(key)
+                while len(self._long_completed) > self.max_keys:
+                    self._long_completed.popitem(last=False)
+            if not is_execute:
+                return
             history = self._completed.setdefault(key, deque(maxlen=self.window))
-            history.append((ts_ms - start_ts, ts_ms))
+            history.append((duration, ts_ms))
             self._completed.move_to_end(key)
             while len(self._completed) > self.max_keys:
                 self._completed.popitem(last=False)

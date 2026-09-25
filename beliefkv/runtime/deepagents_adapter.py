@@ -39,6 +39,7 @@ from beliefkv.runtime.sglang_adapter import BeliefKVRequestMetadata
 from beliefkv.runtime.sglang_v0520_sessions import NativeRadixSessionLeases
 
 STREAM_CONTENT_THRESHOLDS = (64, 1024)
+MIN_NATURAL_FINAL_HINT_CHARS = 8
 
 
 def _digest(value: str, *, length: int = 16) -> str:
@@ -909,7 +910,9 @@ class DeepAgentsRuntimeAdapter(BaseCallbackHandler):
             and not tool_calls
             and not getattr(messages[0], "invalid_tool_calls", ())
             and isinstance(messages[0].text, str)
-            and bool(messages[0].text.strip())
+            # A terse acknowledgement may be followed by another model turn.
+            # This affects speculative hints, not acceptance of the child result.
+            and len(messages[0].text.strip()) >= MIN_NATURAL_FINAL_HINT_CHARS
             and (getattr(messages[0], "response_metadata", None) or {}).get(
                 "finish_reason", "stop"
             ) == "stop"

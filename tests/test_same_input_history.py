@@ -111,6 +111,79 @@ def test_project_history_scopes_tool_call_ids_by_workflow() -> None:
     )["project_class_duration_median_ms"] == 150
 
 
+def test_project_history_reports_only_current_other_workflow_long_peers() -> None:
+    history = ProjectToolHistory(minimum_support=1)
+    attrs = {"tool_name": "glob", "is_child": True,
+             "observed_command_class": "glob"}
+    assert history.start("a", "repo", {**attrs, "tool_call_id": "a"}, 10) == {}
+    assert history.start("a", "repo", {**attrs, "tool_call_id": "b"}, 2100) == {}
+    assert history.start("b", "other", {**attrs, "tool_call_id": "c"}, 2110) == {}
+    assert history.start("b", "repo", {**attrs, "tool_call_id": "d"}, 2110) == {
+        "project_class_inflight_other_workflow_2s_peers": 1,
+    }
+    history.end("a", {"tool_call_id": "a", "status": "success"}, 2200)
+    history.end("a", {"tool_call_id": "b", "status": "success"}, 3000)
+    assert history.start("b", "repo", {**attrs, "tool_call_id": "e"}, 4300) == {}
+    assert history.start("c", "repo", {
+        **attrs, "tool_name": "execute",
+        "observed_command_class": "test_suite", "tool_call_id": "f",
+    }, 4310) == {}
+    history.discard_workflow("b")
+    history.discard_workflow("a")
+    assert history.start("c", "repo", {**attrs, "tool_call_id": "g"}, 4400) == {}
+
+
+def test_export_keeps_causal_inflight_peer_count() -> None:
+    metadata = {"wf-a": {"project": "repo"}, "wf-b": {"project": "repo"}}
+    def event(workflow: str, call: str, time_ms: int,
+              *, peers: int | None = None) -> RuntimeEvent:
+        attrs = {
+            "tool_name": "glob", "tool_call_id": call,
+            "is_child": True, "observed_command_class": "glob",
+        }
+        if peers is not None:
+            attrs["project_class_inflight_other_workflow_2s_peers"] = peers
+        return RuntimeEvent(
+            event_id=f"{workflow}-{call}", ts_ms=time_ms,
+            kind=RuntimeEventKind.TOOL_START, workflow_id=workflow,
+            invocation_id="child", attributes=attrs,
+        )
+    earlier = event("wf-a", "earlier", 1)
+    later = event("wf-b", "later", 2100, peers=1)
+    assert _event_triggers(
+        [earlier, later], workflow_metadata=metadata,
+    )[-1]["attributes"]["project_class_inflight_other_workflow_2s_peers"] == 1
+    with pytest.raises(ValueError, match="in-flight tool history disagrees"):
+        _event_triggers(
+            [earlier, event("wf-b", "wrong", 2100, peers=2)],
+            workflow_metadata=metadata,
+        )
+
+
+def test_project_long_history_only_uses_completed_successes() -> None:
+    history = ProjectToolHistory(minimum_support=2)
+    attrs = {"tool_name": "glob", "is_child": True,
+             "observed_command_class": "glob"}
+    for index, (start, end) in enumerate(((0, 4_000), (10, 5_010),
+                                           (20, 6_020))):
+        history.start(f"wf-{index}", "repo", {
+            **attrs, "tool_call_id": str(index),
+        }, start)
+    history.end("wf-0", {"tool_call_id": "0", "status": "success"}, 4_000)
+    history.end("wf-1", {"tool_call_id": "1", "status": "error"}, 5_010)
+    history.end("wf-2", {"tool_call_id": "2", "status": "success"}, 6_020)
+    assert history.start(
+        "wf-3", "repo", {**attrs, "tool_call_id": "3"}, 6_100
+    ).get("project_long_completed_median_ms") is None
+    history.end("wf-3", {"tool_call_id": "3", "status": "success"}, 9_100)
+    result = history.start(
+        "wf-4", "repo", {**attrs, "tool_call_id": "4"}, 9_101
+    )
+    assert result["project_long_completed_median_ms"] == 4_000
+    assert result["project_long_completed_support"] == 3
+    assert "project_class_duration_median_ms" not in result
+
+
 def test_export_rebuilds_project_history_and_rejects_conflicting_online_value() -> None:
     metadata = {"wf-a": {"project": "repo"}, "wf-b": {"project": "repo"}}
     events = []
