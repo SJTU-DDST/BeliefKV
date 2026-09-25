@@ -95,6 +95,8 @@ def build_action_target_rows(
     decision_rows: Sequence[Mapping[str, Any]],
     external_wait_rows: Sequence[Mapping[str, Any]],
     contract: OperationalActionTargetContract,
+    reentry_rows: Sequence[Mapping[str, Any]] = (),
+    pcie_operations: Sequence[Mapping[str, Any]] = (),
 ) -> tuple[list[dict[str, Any]], dict[str, Any]]:
     """Build action-aligned labels without mutating frozen semantic rows.
 
@@ -262,11 +264,20 @@ def build_action_target_rows(
                 actions[action] = {
                     "direction": direction,
                     "transfer_p95_ms": transfer_ms,
+                    "transfer_evidence": "estimated_byte_scaled_anchor",
                     "commit_guard_ms": contract.commit_guard_ms,
                     "operational_tau_ms": tau_ms,
                     "outcome_kind": outcome_kind,
                     "outcome_known": known,
                     "outcome": outcome,
+                    "outcome_evidence": (
+                        "observed_release_vs_estimated_tau"
+                        if release_observed else (
+                            "observed_censor_lower_bound_vs_estimated_tau"
+                            if known else "unavailable"
+                        )
+                    ),
+                    "observed_reward_ms": None,
                 }
                 counters[f"{action}_rows"] += 1
                 counters[f"{action}_known"] += int(known)
@@ -307,6 +318,9 @@ def build_action_target_rows(
                     "actual_kv_bytes": actual_bytes,
                     "tau_evidence": "byte_scaled_from_current_patch_anchor",
                     "physical_shape_available": False,
+                    "observed_released_kv_bytes": None,
+                    "observed_available_kv_bytes": None,
+                    "observed_physical_execution": None,
                     "actions": actions,
                 }
             )
@@ -314,6 +328,24 @@ def build_action_target_rows(
             counters["right_censored_rows"] += int(right_censored)
             counters["multi_tool_rows"] += int(len(active) > 1)
 
+    reactive = _reactive_observation_rows(
+        decision_rows, reentry_rows, pcie_operations, contract
+    )
+    output.extend(reactive)
+    counters.update(
+        Counter(
+            f"{item['candidate_action']}_rows" for item in reactive
+        )
+    )
+    counters.update(
+        Counter(
+            f"{item['candidate_action']}_timing_eligible"
+            for item in reactive
+            if item["timing_training_eligible"]
+        )
+    )
+    counters["reactive_observation_rows"] = len(reactive)
+    counters["output_rows"] = len(output)
     report = {
         "schema_version": ACTION_TARGET_SCHEMA_VERSION,
         "contract_id": contract.contract_id,
@@ -332,11 +364,316 @@ def build_action_target_rows(
             "unavailable in the frozen semantic decision rows"
         ),
         "online_eligibility": False,
+        "unrecoverable_measured_labels": [
+            "counterfactual PREPARE_HOST/COMMIT_CPU/PREFETCH_GPU reward and completion",
+            "per-invocation released or CPU-backed available KV bytes",
+            "admission prefetch eligibility and beneficiary-linked H2D from PCIe operations",
+            "physical extent morphology and action-specific DMA service for unexecuted actions",
+        ],
     }
     return output, report
 
 
+def _reactive_observation_rows(
+    decisions: Sequence[Mapping[str, Any]],
+    reentries: Sequence[Mapping[str, Any]],
+    pcie_operations: Sequence[Mapping[str, Any]],
+    contract: OperationalActionTargetContract | None,
+) -> list[dict[str, Any]]:
+    """Export semantic windows without claiming a reactive copy was predictive."""
+    Snapshot = tuple[float, Mapping[str, Any], Mapping[str, Any]]
+    by_invocation: defaultdict[tuple[str, str], list[Snapshot]] = defaultdict(list)
+    joins: defaultdict[tuple[str, str], list[Mapping[str, Any]]] = defaultdict(list)
+    resumes: dict[tuple[str, str, float], Mapping[str, Any]] = {}
+    transfers = {
+        str(item["command_id"]): item
+        for item in pcie_operations
+        if item.get("command_id")
+    }
+    for entry in reentries:
+        key = (
+            str(entry.get("workflow_id") or ""),
+            str(entry.get("invocation_id") or ""),
+        )
+        if entry.get("reentry_kind") == "join":
+            joins[key].append(entry)
+        elif (
+            entry.get("reentry_kind") == "reactivate"
+            and entry.get("reentry_ts_ms") is not None
+        ):
+            resumes[(*key, float(entry["reentry_ts_ms"]))] = entry
+    for decision in decisions:
+        ts = float(decision.get("timestamp_ms") or 0.0)
+        workflow = str(decision.get("workflow_id") or "")
+        for features in decision.get("invocations", ()):
+            invocation = str(features.get("invocation_id") or "")
+            if workflow and invocation:
+                by_invocation[(workflow, invocation)].append((ts, decision, features))
+    for values in by_invocation.values():
+        values.sort(key=lambda item: (item[0], str(item[1].get("decision_id") or "")))
+
+    output: list[dict[str, Any]] = []
+    for (workflow, invocation), snapshots in by_invocation.items():
+        next_transition: dict[str, list[Snapshot | None]] = {
+            "wait_child": [None] * len(snapshots),
+            "ready": [None] * len(snapshots),
+        }
+        for previous_state in next_transition:
+            next_snapshot: Snapshot | None = None
+            end = len(snapshots)
+            while end:
+                start = end - 1
+                while start and snapshots[start - 1][0] == snapshots[end - 1][0]:
+                    start -= 1
+                for position in range(start, end):
+                    next_transition[previous_state][position] = next_snapshot
+                next_snapshot = next(
+                    (item for item in snapshots[start:end]
+                     if item[2].get("state") != previous_state),
+                    next_snapshot,
+                )
+                end = start
+        for index, (ts, decision, features) in enumerate(snapshots):
+            state = str(features.get("state") or "")
+            if state not in {"wait_join", "wait_child", "ready"}:
+                continue
+            release_ts: float | None = None
+            source: str | None = None
+            eligible = False
+            evidence_id: str | None = None
+            if state == "wait_join":
+                action = "join_parent_prefetch_gpu"
+                candidates = [
+                    entry for entry in joins[(workflow, invocation)]
+                    if entry.get("wait_start_ts_ms") is not None
+                    and float(entry["wait_start_ts_ms"]) <= ts
+                    and entry.get("reentry_ts_ms") is not None
+                    and float(entry["reentry_ts_ms"]) > ts
+                ]
+                if candidates:
+                    entry = min(
+                        candidates, key=lambda item: float(item["reentry_ts_ms"])
+                    )
+                    if entry.get("terminal_status") == "satisfied":
+                        release_ts = float(entry["reentry_ts_ms"])
+                        source = "observed_join_reentry"
+                        evidence_id = str(entry.get("reentry_id") or "") or None
+                        eligible = bool(
+                            entry.get("training_eligible")
+                            and decision.get("training_eligible") is not False
+                            and entry.get("member_invocation_ids")
+                            and len(entry.get("member_outcomes", ()))
+                            == len(entry["member_invocation_ids"])
+                            and all(
+                                member.get("return_ts_ms") is not None
+                                and float(member["return_ts_ms"]) <= release_ts
+                                for member in entry.get("member_outcomes", ())
+                            )
+                        )
+            elif state == "wait_child":
+                action = "child_resume_prefetch_gpu"
+                future = next_transition["wait_child"][index]
+                if future is not None:
+                    future_ts, future_row, current = future
+                    if current.get("state") == "ready":
+                        explicit = resumes.get((workflow, invocation, future_ts))
+                        if (
+                            explicit is not None
+                            and current.get("state_elapsed_ms") is not None
+                            and abs(float(current["state_elapsed_ms"])) <= 1e-6
+                        ):
+                            source = "observed_reactivate_reentry"
+                            eligible = bool(explicit.get("training_eligible"))
+                            evidence_id = str(explicit.get("reentry_id") or "") or None
+                        elif (
+                            future_row.get("trigger_kind") == "return"
+                            and current.get("state_elapsed_ms") is not None
+                            and abs(float(current["state_elapsed_ms"])) <= 1e-6
+                        ):
+                            source = "observed_frontier_resume_on_return"
+                            eligible = True
+                            evidence_id = str(future_row.get("trigger_id") or "") or None
+                        if source:
+                            release_ts = future_ts
+            else:
+                action = "admission_prefetch_gpu"
+                future = next_transition["ready"][index]
+                if future is not None:
+                    future_ts, future_row, current = future
+                    if (
+                        future_row.get("trigger_kind") == "llm_submit"
+                        and current.get("state") == "running_llm"
+                        and current.get("context_id") == features.get("context_id")
+                        and current.get("request_id")
+                        and current.get("state_elapsed_ms") is not None
+                        and abs(float(current["state_elapsed_ms"])) <= 1e-6
+                    ):
+                        release_ts = future_ts
+                        source = "observed_llm_submit"
+                        evidence_id = str(current["request_id"])
+                        eligible = True
+
+            tokens = int(
+                features.get("current_sequence_tokens")
+                or features.get("context_tokens")
+                or 0
+            )
+            estimated_bytes = (
+                tokens * contract.kv_bytes_per_token
+                if tokens > 0 and contract is not None else None
+            )
+            estimated_h2d = (
+                contract.estimate_p95_ms("h2d", estimated_bytes)
+                if estimated_bytes is not None else None
+            )
+            resources = decision.get("observed_resources") or {}
+            snapshot_ts = resources.get("snapshot_ts_ms")
+            resource_current = (
+                resources.get("availability") == "observed_resource_snapshot"
+                and snapshot_ts is not None
+                and float(snapshot_ts) <= ts
+            )
+
+            def free_bytes(used: str, capacity: str) -> int | None:
+                if not resource_current:
+                    return None
+                used_value = resources.get(used)
+                capacity_value = resources.get(capacity)
+                if used_value is None or capacity_value is None:
+                    return None
+                return max(0, int(capacity_value) - int(used_value))
+
+            trigger_id = str(decision.get("trigger_id") or "")
+            transfer = (
+                transfers.get(trigger_id.removeprefix("transfer:"))
+                if decision.get("trigger_kind") == "transfer_completion"
+                and trigger_id.startswith("transfer:")
+                else None
+            )
+            observed_transfer = None
+            if (
+                transfer is not None
+                and transfer.get("status") == "completed"
+                and transfer.get("complete_ts_ms") is not None
+                and float(transfer["complete_ts_ms"]) <= ts
+            ):
+                observed_transfer = {
+                    "command_id": transfer.get("command_id"),
+                    "command_kind": transfer.get("command_kind"),
+                    "direction": transfer.get("direction"),
+                    "actual_bytes": transfer.get("actual_bytes"),
+                    "transfer_stream_elapsed_ms": transfer.get(
+                        "transfer_stream_elapsed_ms"
+                    ),
+                    "training_eligible_service_curve": bool(
+                        transfer.get("training_eligible_service_curve")
+                    ),
+                    "attribution": "unlinked_to_invocation_or_released_kv",
+                }
+            output.append({
+                "schema_version": ACTION_TARGET_SCHEMA_VERSION,
+                "row_type": "reactive_action_observation",
+                "contract_id": (
+                    contract.contract_id if contract is not None
+                    else "native-reactive-observed-v1"
+                ),
+                "deployment_profile_id": (
+                    contract.deployment_profile_id if contract is not None
+                    else "native-reactive-v0520"
+                ),
+                "decision_id": decision.get("decision_id"),
+                "workflow_id": workflow,
+                "instance_id": decision.get("instance_id"),
+                "project": decision.get("project"),
+                "split": decision.get("split"),
+                "invocation_id": invocation,
+                "timing_episode_id": evidence_id,
+                "timestamp_ms": ts,
+                "invocation_state": state,
+                "candidate_action": action,
+                "timing_training_eligible": eligible,
+                "timing_ineligibility_reason": (
+                    None if eligible else (
+                        "incomplete_or_ineligible_reentry"
+                        if state == "wait_join" and release_ts is not None
+                        else "no_proven_resume_or_admission_boundary"
+                    )
+                ),
+                "physical_eligibility": None,
+                "physical_eligibility_reason": (
+                    "no_per_invocation_kv_residency_or_executable_action_evidence"
+                ),
+                "timing": {
+                    "observed_boundary_ts_ms": release_ts,
+                    "observed_residual_ms": (
+                        max(0.0, release_ts - ts) if release_ts is not None else None
+                    ),
+                    "observed_source": source,
+                    "evidence_id": evidence_id,
+                    "estimated_h2d_p95_ms": estimated_h2d,
+                    "estimated_latest_start_ts_ms": (
+                        release_ts - estimated_h2d - contract.commit_guard_ms
+                        if release_ts is not None and estimated_h2d is not None
+                        and contract is not None
+                        else None
+                    ),
+                },
+                "kv_evidence": {
+                    "estimated_context_kv_bytes": estimated_bytes,
+                    "observed_available_hbm_bytes": free_bytes(
+                        "hbm_used_bytes", "hbm_capacity_bytes"
+                    ),
+                    "observed_available_host_bytes": free_bytes(
+                        "host_used_bytes", "host_capacity_bytes"
+                    ),
+                    "resource_snapshot_ts_ms": (
+                        snapshot_ts if resource_current else None
+                    ),
+                    "observed_released_kv_bytes": None,
+                    "observed_available_kv_bytes": None,
+                    "coincident_completed_transfer": observed_transfer,
+                },
+                "observed_reward_ms": None,
+                "observed_physical_execution": None,
+                "actions": {},
+            })
+    return output
+
+
+def build_native_reactive_observations(
+    decisions: Sequence[Mapping[str, Any]],
+    reentries: Sequence[Mapping[str, Any]],
+    transfers: Sequence[Mapping[str, Any]],
+) -> tuple[list[dict[str, Any]], dict[str, Any]]:
+    """Export observed boundaries only; native FULL/Mamba have no BF16 KV anchor."""
+    rows = _reactive_observation_rows(decisions, reentries, transfers, None)
+    counter = Counter(
+        f"{row['candidate_action']}_timing_eligible"
+        if row["timing_training_eligible"] else
+        f"{row['candidate_action']}_timing_unavailable"
+        for row in rows
+    )
+    episodes: defaultdict[str, set[tuple[str, str]]] = defaultdict(set)
+    for row in rows:
+        if row["timing_training_eligible"] and row["timing_episode_id"]:
+            episodes[row["candidate_action"]].add(
+                (str(row["workflow_id"]), str(row["timing_episode_id"]))
+            )
+    return rows, {
+        "schema_version": ACTION_TARGET_SCHEMA_VERSION,
+        "row_type": "native_reactive_observation_report",
+        "counts": {"rows": len(rows), **dict(sorted(counter.items()))},
+        "eligible_distinct_timing_episodes": {
+            action: len(identities) for action, identities in sorted(episodes.items())
+        },
+        "transfer_model": "unavailable_no_qwen35_full_mamba_service_anchor",
+        "physical_action_reward_available": False,
+        "online_eligibility": False,
+    }
+
+
 def load_action_target_rows(paths: Iterable[str | Path]) -> list[dict[str, Any]]:
+    """Read v4 tool-action labels; reactive observations are diagnostic only."""
     rows: list[dict[str, Any]] = []
     seen: set[tuple[str, str]] = set()
     for path in paths:
@@ -347,6 +684,10 @@ def load_action_target_rows(paths: Iterable[str | Path]) -> list[dict[str, Any]]
                 row = json.loads(line)
                 if int(row.get("schema_version", -1)) != ACTION_TARGET_SCHEMA_VERSION:
                     raise ValueError("unsupported action-target row schema")
+                if row.get("row_type") == "reactive_action_observation":
+                    continue
+                if row.get("row_type", "operational_action_target") != "operational_action_target":
+                    raise ValueError("unsupported action-target row type")
                 identity = (
                     str(row.get("decision_id") or ""),
                     str(row.get("invocation_id") or ""),
