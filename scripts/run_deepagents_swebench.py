@@ -79,12 +79,19 @@ def parse_args() -> argparse.Namespace:
     )
     parser.add_argument(
         "--subagent-fanout-profile",
-        choices=("natural", "parallel_analysis_2to3", "native_subagent_2to3"),
+        choices=(
+            "natural", "parallel_analysis_2to3", "native_subagent_2to3",
+            "native_dynamic_1to4",
+        ),
         default="natural",
     )
     parser.add_argument("--gpu", type=int, default=0)
     parser.add_argument("--pool-tokens", type=int, default=163_840)
     parser.add_argument("--max-completion-tokens", type=int, default=2048)
+    parser.add_argument(
+        "--stream-completion-shadow", action="store_true",
+        help="Stream model responses to audit first child content; no predictive actions.",
+    )
     parser.add_argument(
         "--sampling-seed",
         type=int,
@@ -216,6 +223,7 @@ def main() -> int:
         pool_tokens=args.pool_tokens,
         max_completion_tokens=args.max_completion_tokens,
         sampling_seed=args.sampling_seed,
+        stream_completion_shadow=args.stream_completion_shadow,
         subagent_fanout_profile=args.subagent_fanout_profile,
         stop_after_first_native_join=args.stop_after_first_native_join,
         recursion_limit=args.recursion_limit,

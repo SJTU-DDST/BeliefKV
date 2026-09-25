@@ -317,6 +317,51 @@ def test_child_completion_intent_has_bound_identity_and_no_model_payload() -> No
         queued.close()
 
 
+def test_stream_first_content_is_trace_only_and_one_per_child_model_run() -> None:
+    trace = CollectingSink()
+    control = CollectingSink()
+    queued = QueuedRuntimeEventSink(control)
+    adapter = DeepAgentsRuntimeAdapter(
+        trace, BeliefKVRequestMetadata("wf", "root", "ctx", 0),
+        control_sink=queued,
+    )
+    try:
+        adapter.start()
+        task = adapter.declare_runtime_tasks(
+            [("explorer", "private task")], group_id="stream-shadow"
+        )[0]
+        tool_run = uuid4()
+        adapter.on_tool_start(
+            {"name": "task"}, "", run_id=tool_run,
+            inputs={"subagent_type": "explorer", "description": "private task"},
+            tool_call_id=task.tool_call_id,
+        )
+        run = uuid4()
+        adapter.on_chat_model_start(
+            {}, [[HumanMessage(content="private prompt")]],
+            run_id=run, parent_run_id=tool_run,
+        )
+        adapter.on_llm_new_token(" ", run_id=run)
+        adapter.on_llm_new_token(
+            "secret final answer", run_id=run,
+            chunk=SimpleNamespace(content="secret final answer"),
+        )
+        adapter.on_llm_new_token("another private token", run_id=run)
+        queued.close()
+        shadows = [
+            event for event in trace.events
+            if event.attributes.get("beliefkv_child_first_content_shadow")
+        ]
+        assert len(shadows) == 1
+        assert shadows[0].invocation_id == task.invocation_id
+        assert shadows[0].join_id == task.join_id
+        assert shadows[0].attributes["diagnostic_only"] is True
+        assert shadows[0] not in control.events
+        assert "secret" not in json.dumps(shadows[0].to_dict())
+    finally:
+        queued.close()
+
+
 def test_child_completion_intent_rejects_unbound_ambiguous_repeated_and_terminal() -> None:
     control = CollectingSink()
     queued = QueuedRuntimeEventSink(control)

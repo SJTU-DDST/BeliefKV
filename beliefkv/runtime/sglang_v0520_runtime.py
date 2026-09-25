@@ -8,6 +8,7 @@ from __future__ import annotations
 from collections import Counter, deque
 from collections.abc import Sequence
 from dataclasses import dataclass
+import os
 import time
 from typing import TYPE_CHECKING
 from uuid import uuid4
@@ -16,6 +17,10 @@ from beliefkv.control.causal_graph import InvocationState, RuntimeCausalContextG
 from beliefkv.core.events import RuntimeEventKind
 from beliefkv.policy.causal_frontier import CausalFrontierScheduler
 from beliefkv.predictor.composer import observed_boundary_action
+from beliefkv.predictor.completion_lead import (
+    CompletionLead,
+    load_pinned_completion_lead,
+)
 from beliefkv.runtime.event_channel import RuntimeEventDatagramServer
 from beliefkv.runtime.sglang_v0520_admission import (
     _request_key,
@@ -78,6 +83,15 @@ class _JoinPrefetchTicket:
     issued_nodes: int = 0
 
 
+@dataclass(frozen=True)
+class _CompletionReentryHint:
+    key: PrefillCandidateKey
+    join_id: str
+    child_id: str
+    child_epoch: int
+    issued_monotonic_ms: float
+
+
 class NativeAdmissionRuntime:
     """Rebind causal order to live request identities at each prefill safe point."""
 
@@ -90,11 +104,22 @@ class NativeAdmissionRuntime:
         model_path: str | None = None,
         enable_local_predictor: bool = False,
         enable_admission_prefetch: bool = False,
+        completion_lead: CompletionLead | None = None,
     ) -> None:
         if enable_admission_prefetch and (
             not enable_local_predictor or not predictor_artifact_path
         ):
             raise ValueError("admission H2D requires a pinned, live action predictor")
+        completion_path = os.environ.get("BELIEFKV_COMPLETION_LEAD_ARTIFACT")
+        completion_sha = os.environ.get("BELIEFKV_COMPLETION_LEAD_SHA256")
+        if bool(completion_path) != bool(completion_sha):
+            raise ValueError("completion lead requires both artifact and SHA-256")
+        if completion_path:
+            if completion_lead is not None:
+                raise ValueError("completion lead supplied by two sources")
+            completion_lead = load_pinned_completion_lead(
+                completion_path, completion_sha
+            )
         if bool(predictor_sha256) != bool(predictor_artifact_path):
             raise ValueError("predictive admission requires both artifact and SHA-256")
         if predictor_sha256 is not None and (
@@ -118,6 +143,8 @@ class NativeAdmissionRuntime:
         self.demand_hints: dict[str, NativeDemandHint] = {}
         self.tool_wait_hints: dict[str, NativeToolWaitHint] = {}
         self.join_wait_hints: dict[str, NativeJoinWaitHint] = {}
+        self.completion_lead = completion_lead
+        self._completion_hints: dict[str, _CompletionReentryHint] = {}
         self._join_ticket: _JoinPrefetchTicket | None = None
         self.enable_admission_prefetch = enable_admission_prefetch
         self._admission_lease: _AdmissionPrefetchLease | None = None
@@ -264,6 +291,7 @@ class NativeAdmissionRuntime:
             self.context_sessions.clear()
             self.tool_wait_hint = None
             self.join_wait_hint = None
+            self._completion_hints.clear()
             self._join_ticket = None
             self._admission_lease = None
             self.shadow_candidate = None
@@ -380,6 +408,10 @@ class NativeAdmissionRuntime:
                 join_id: hint for join_id, hint in self.join_wait_hints.items()
                 if self._live_join_hint(hint)
             }
+            self._completion_hints = {
+                join_id: hint for join_id, hint in self._completion_hints.items()
+                if self._live_completion_hint(hint)
+            }
             if self._join_ticket is not None and not self._live_join_ticket():
                 self._join_ticket = None
             if any(event.kind in (
@@ -418,6 +450,10 @@ class NativeAdmissionRuntime:
         for join_id in expired_join:
             self.join_wait_hints.pop(join_id)
         self.counts["join_wait_expired"] += len(expired_join)
+        self._completion_hints = {
+            join_id: hint for join_id, hint in self._completion_hints.items()
+            if self._live_completion_hint(hint)
+        }
         if self._model_worker is not None:
             hints = self._model_worker.poll()
             for hint in hints:
@@ -621,6 +657,63 @@ class NativeAdmissionRuntime:
             ticket.expires_at = time.monotonic() + 2.0
         self.counts["join_intent_accepted"] += 1
         self.counts[f"join_intent_{signal_kind}_accepted"] += 1
+        age_ms = time.monotonic() * 1000 - event.ts_ms
+        if age_ms >= 0:
+            for limit in (50, 100, 250, 500):
+                if age_ms <= limit:
+                    self.counts[f"join_intent_delivery_le_{limit}ms"] += 1
+            if age_ms > 500:
+                self.counts["join_intent_delivery_over_500ms"] += 1
+        if (
+            self.completion_lead is not None
+            and 0 <= age_ms <= self.completion_lead.p90_ms
+        ):
+            self._completion_hints[join_id] = _CompletionReentryHint(
+                key, join_id, child_id, context.epoch, event.ts_ms
+            )
+            self.counts["join_completion_forecast_accepted"] += 1
+        elif self.completion_lead is not None:
+            self.counts["join_completion_forecast_too_late"] += 1
+
+    def _live_completion_hint(self, hint: _CompletionReentryHint) -> bool:
+        if self.completion_lead is None:
+            return False
+        now_ms = time.monotonic() * 1000
+        join = self.graph.joins.get(hint.join_id)
+        parent = self.graph.invocations.get(hint.key.invocation_id)
+        child = self.graph.invocations.get(hint.child_id)
+        context = self.graph.contexts.get(child.context_id) if child else None
+        return bool(
+            hint.issued_monotonic_ms <= now_ms
+            <= hint.issued_monotonic_ms + self.completion_lead.p90_ms
+            and join is not None and not join.satisfied
+            and join.workflow_id == hint.key.root_workflow_id
+            and hint.child_id in join.member_invocation_ids - join.completed_member_ids
+            and parent is not None and parent.state is InvocationState.WAIT_JOIN
+            and parent.join_id == hint.join_id
+            and self.context_sessions.get(hint.key.context_id) == hint.key
+            and child is not None and not child.state.terminal
+            and context is not None and context.epoch == hint.child_epoch
+        )
+
+    def read_only_join_completion_forecast(
+        self, join_id: str
+    ) -> tuple[float, float, float] | None:
+        """Conditional on a fresh completion intent; never authorizes H2D."""
+        hint = self._completion_hints.get(join_id)
+        if hint is None or not self._live_completion_hint(hint):
+            self._completion_hints.pop(join_id, None)
+            return None
+        assert self.completion_lead is not None
+        age_ms = time.monotonic() * 1000 - hint.issued_monotonic_ms
+        return tuple(
+            max(0.0, quantile - age_ms)
+            for quantile in (
+                self.completion_lead.p10_ms,
+                self.completion_lead.p50_ms,
+                self.completion_lead.p90_ms,
+            )
+        )
 
     def _advance_join_ticket(self, event: RuntimeEvent) -> None:
         ticket = self._join_ticket

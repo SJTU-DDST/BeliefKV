@@ -501,6 +501,15 @@ native H2D ACK 后再做原生 FULL/MAMBA 准入。无 CPU-backed node、
 该选项默认关闭，现有晋升脚本的 artifact 一律不具备动作资格。
 此处尚未证明能够压低 H2D stall，也未迁移旧 checkpoint 的完整
 JOIN latest-start、COMMIT 和可归因收益链，需后续在线 gate。
+独立的 completion-intent 短窗头在 train 轨迹拟合、项目隔离
+calibration 上检查通知到 RETURN 的时延；运行时只有绑定同一
+JOIN/parent session、最后 child 尚未终止且通知投递未超过 P90
+窗口时，才提供 `read_only_join_completion_forecast`。它不修改
+概率 JOIN 头，也不签发物理事务；在没有可信长提前信号前不能
+用其替代大块 H2D 的 latest-start 规划。
+该只读头必须用诊断 artifact 路径及 SHA-256 成对显式配置。
+流式首正文仅在独立 shadow pilot 中脱敏采集；一次 6 个候选
+只有 3 个是真正终态，绝不将其作为在线完成证据。
 冻结环境中的 `sglang 0.5.20` 目前以 wheel 形式安装，
 `source_is_active=false`；直接运行 `python -m sglang.launch_server`
 默认不会加载 staging checkout。原生启动脚本保留 wheel smoke 默认，

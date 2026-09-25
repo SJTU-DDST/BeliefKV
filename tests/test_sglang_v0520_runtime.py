@@ -3,14 +3,17 @@
 from __future__ import annotations
 
 import json
+import hashlib
 import socket
 import time
+from dataclasses import replace
 from types import SimpleNamespace as NS
 from unittest.mock import patch
 
 import pytest
 
 from beliefkv.core.events import RuntimeEvent, RuntimeEventKind
+from beliefkv.predictor.completion_lead import CompletionLead
 from beliefkv.runtime.event_channel import SCHEMA_VERSION
 from beliefkv.runtime.sglang_v0520_admission import (
     PrefillCandidateKey,
@@ -1109,6 +1112,106 @@ def test_join_prefetch_all_requires_last_child_and_rejects_false_intent():
         9, RuntimeEventKind.INVOCATION_CANCEL, invocation_id="b",
     ),))
     assert runtime._join_ticket is None
+
+
+def test_read_only_completion_forecast_requires_live_child_and_fresh_delivery():
+    model = CompletionLead(145, 186, 246, 428)
+    runtime = NativeAdmissionRuntime(completion_lead=model)
+    parent = req("parent")
+    parent.session_id, parent.session_generation = "session-parent", 1
+    runtime.register_visible_request(parent)
+    runtime.on_events((
+        event(0, RuntimeEventKind.WORKFLOW_START),
+        event(1, RuntimeEventKind.INVOCATION_CREATE,
+              invocation_id="parent", context_id="ctx-parent",
+              agent_definition_id="parent", agent_instance_id="parent"),
+        event(2, RuntimeEventKind.INVOCATION_CREATE,
+              invocation_id="child", context_id="ctx-child",
+              agent_definition_id="child", agent_instance_id="child"),
+        event(3, RuntimeEventKind.JOIN_CREATE,
+              join_id="join", member_invocation_ids=("child",)),
+        event(4, RuntimeEventKind.JOIN_WAIT,
+              invocation_id="parent", join_id="join"),
+    ))
+    now = time.monotonic() * 1000
+    intent = event(
+        5, RuntimeEventKind.STRUCTURED_ACTION,
+        invocation_id="child", context_id="ctx-child",
+        context_epoch=0, join_id="join",
+        attributes={
+            "beliefkv_child_completion_intent": True,
+            "structured_action_names": [],
+            "child_completion_signal_kind": "natural_final",
+            "request_id": "child-request",
+        },
+    )
+    runtime.on_events((replace(intent, ts_ms=now),))
+    forecast = runtime.read_only_join_completion_forecast("join")
+    assert forecast is not None
+    assert 0 <= forecast[0] <= forecast[1] <= forecast[2] <= 246
+    assert runtime.counts["join_completion_forecast_accepted"] == 1
+    assert runtime.physical_ledger.pending_count == 0
+    runtime.on_events((replace(
+        event(6, RuntimeEventKind.RETURN, invocation_id="child"),
+        ts_ms=now + 1,
+    ),))
+    assert runtime.read_only_join_completion_forecast("join") is None
+
+
+def test_late_completion_intent_never_makes_short_forecast():
+    runtime = NativeAdmissionRuntime(
+        completion_lead=CompletionLead(145, 186, 246, 428)
+    )
+    parent = req("parent")
+    parent.session_id, parent.session_generation = "session-parent", 1
+    runtime.register_visible_request(parent)
+    runtime.on_events((
+        event(0, RuntimeEventKind.WORKFLOW_START),
+        event(1, RuntimeEventKind.INVOCATION_CREATE,
+              invocation_id="parent", context_id="ctx-parent",
+              agent_definition_id="parent", agent_instance_id="parent"),
+        event(2, RuntimeEventKind.INVOCATION_CREATE,
+              invocation_id="child", context_id="ctx-child",
+              agent_definition_id="child", agent_instance_id="child"),
+        event(3, RuntimeEventKind.JOIN_CREATE,
+              join_id="join", member_invocation_ids=("child",)),
+        event(4, RuntimeEventKind.JOIN_WAIT,
+              invocation_id="parent", join_id="join"),
+    ))
+    runtime.on_events((event(
+        5, RuntimeEventKind.STRUCTURED_ACTION,
+        invocation_id="child", context_id="ctx-child",
+        context_epoch=0, join_id="join",
+        attributes={
+            "beliefkv_child_completion_intent": True,
+            "structured_action_names": ["ChildCompletion"],
+            "request_id": "child-request",
+        },
+    ),))
+    assert runtime.counts["join_completion_forecast_too_late"] == 1
+    assert runtime.read_only_join_completion_forecast("join") is None
+
+
+def test_completion_lead_environment_must_be_pinned_and_read_only(
+    tmp_path, monkeypatch
+):
+    path = tmp_path / "completion.json"
+    path.write_text(json.dumps({
+        "status": "offline_conditional_signal_diagnostic_only",
+        "model": CompletionLead(145, 186, 246, 428).to_dict(),
+    }), encoding="utf-8")
+    monkeypatch.setenv("BELIEFKV_COMPLETION_LEAD_ARTIFACT", str(path))
+    with pytest.raises(ValueError, match="both artifact and SHA-256"):
+        NativeAdmissionRuntime()
+    monkeypatch.setenv(
+        "BELIEFKV_COMPLETION_LEAD_SHA256",
+        hashlib.sha256(path.read_bytes()).hexdigest(),
+    )
+    runtime = NativeAdmissionRuntime()
+    assert runtime.completion_lead == CompletionLead(145, 186, 246, 428)
+    assert runtime.enable_admission_prefetch is False
+    with pytest.raises(ValueError, match="two sources"):
+        NativeAdmissionRuntime(completion_lead=CompletionLead(1, 2, 3, 4))
 
 
 def test_natural_final_join_signal_stays_bound_and_survives_late_model_hint():

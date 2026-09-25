@@ -1450,6 +1450,7 @@ class DeepAgentsExperimentConfig:
     pool_tokens: int = 163_840
     max_completion_tokens: int = 2048
     sampling_seed: int | None = None
+    stream_completion_shadow: bool = False
     subagent_fanout_profile: str = "natural"
     stop_after_first_native_join: bool = False
     recursion_limit: int = 2048
@@ -2085,8 +2086,10 @@ def _model(
         max_completion_tokens=config.max_completion_tokens,
         timeout=config.request_timeout_s,
         max_retries=0,
-        streaming=False,
-        disable_streaming="tool_calling",
+        streaming=config.stream_completion_shadow,
+        disable_streaming=(
+            False if config.stream_completion_shadow else "tool_calling"
+        ),
     )
     model.set_beliefkv_prompt_limit(
         model_context_tokens=config.context_lifecycle.model_context_tokens,

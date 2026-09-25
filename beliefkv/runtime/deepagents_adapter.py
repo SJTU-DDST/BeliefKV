@@ -241,6 +241,7 @@ class DeepAgentsRuntimeAdapter(BaseCallbackHandler):
         self._pending_by_parent: dict[str, list[str]] = {}
         self._task_run_to_call: dict[str, str] = {}
         self._child_completion_intent_runs: set[str] = set()
+        self._child_first_content_shadow_runs: set[str] = set()
         self._join_members: dict[str, set[str]] = {}
         self._join_completed: dict[str, set[str]] = {}
         self._join_cancelled: dict[str, set[str]] = {}
@@ -704,6 +705,51 @@ class DeepAgentsRuntimeAdapter(BaseCallbackHandler):
             },
         )
         self._publish((event,), control=False)
+
+    def on_llm_new_token(
+        self,
+        token: str,
+        *,
+        run_id: UUID,
+        chunk: Any | None = None,
+        **kwargs: Any,
+    ) -> None:
+        """Capture a prospective final-answer boundary without scheduling actions."""
+        del kwargs
+        content = getattr(chunk, "content", token)
+        if not isinstance(content, str) or not content.strip():
+            return
+        key = _run_key(run_id)
+        with self._lock:
+            if (
+                key is None
+                or key in self._child_first_content_shadow_runs
+                or key in self._internal_summary_runs
+                or key not in self._model_metadata
+            ):
+                return
+            invocation_id = self._resolve_invocation(key)
+            pending = self._bound_pending_child(key, invocation_id)
+            if pending is None or pending.terminal:
+                return
+            metadata = self._model_metadata[key]
+            self._child_first_content_shadow_runs.add(key)
+        self._publish((
+            self._event(
+                RuntimeEventKind.STRUCTURED_ACTION,
+                invocation_id=invocation_id,
+                context_id=metadata.context_id,
+                context_epoch=metadata.context_epoch,
+                join_id=pending.join_id,
+                confidence=EventConfidence.INFERRED,
+                attributes={
+                    "source": "deepagents_stream_shadow",
+                    "beliefkv_child_first_content_shadow": True,
+                    "diagnostic_only": True,
+                    "request_id": _native_request_id(run_id),
+                },
+            ),
+        ), control=False)
 
     def on_llm_end(
         self,

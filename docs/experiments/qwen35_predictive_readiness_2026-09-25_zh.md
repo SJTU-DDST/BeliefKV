@@ -173,3 +173,72 @@ session/epoch、invocation revision 和 JOIN child 集合的新鲜度检查；
 `scripts/diagnose_native_child_terminal_signals.py`、
 `scripts/fit_native_pcie_service.py`、
 `scripts/export_p6_action_targets.py --native-reactive-only`。
+
+## 6. 完成通知条件下的短窗预测（2026-09-25）
+
+`scripts/audit_native_return_cues.py` 在同一训练/校准 trace 中揭示：
+仅凭 `ready` 且边界历史以 `final_answer` 结尾，首次出现时仍有
+训练集 140/428、校准集 79/224 个 child 距真正 RETURN 超过
+2 秒；不得将历史最终回答当作确定性结束。必须用 runtime 的
+非内部、单条完整模型回复且不含工具调用的**当前完成通知**，
+并绑定 child、JOIN、context epoch 和 parent session。
+
+`scripts/fit_native_completion_lead.py` 仅用七个 train 项目的
+428 个已完成 child 通知拟合独立的完成通知→RETURN 短窗头：
+P10/P50/P90 分别约 145/186/246 ms。对项目隔离的 Astropy/Sphinx
+64 个完整 JOIN 的最后 child，P50 **绝对误差中位 21.6 ms**，
+P90 55.9 ms，63/64 在 500 ms 内，P10--P90 覆盖 84.4%。
+这比通用 child 时长头在事后选出的 JOIN 前 2 秒快照上
+约 44.7 秒的 P50 误差显著准确，但**两种指标的触发时刻不同**，
+不得说成早期 JOIN 预测达到 21.6 ms。扩大审计至所有已派发
+child 后，训练组有 439 次信号，428 次属于合格 JOIN，11 次
+对应不合格 JOIN 的实际 RETURN；校准组为 229 次，其中
+224 次属于合格 JOIN，5 次实际 RETURN 但 JOIN 不合格。
+两组均未观察到信号后继续调用工具或取消，但分别有 4、2 个
+派发 child 未产生信号；旧 trace 未完整记录 finish reason，
+样本有限，不能据此证明在线零误报。
+训练组最后 child 通知至 RETURN 的中位提前量仅 172 ms；
+校准组约 180 ms，64 次仅 3 次达到 500 ms。该头主要用于
+短时间内的部分 KV 或晚期重排，不能单靠它隐藏大块 H2D。
+runtime 的 `read_only_join_completion_forecast` 在信号晚到、
+身份失效、JOIN 结束或 P90 窗口耗尽时拒绝提示；
+`join_intent_delivery_le_*ms` 记录实际控制链投递年龄。
+物理动作资格保持关闭，尚未在新代码 GPU trace 上验证投递年龄。
+
+作为更早候选的 `TOOL_END` 提供较长提前量：若下一轮恰为 child
+RETURN，训练/校准组中位提前约 73/34 秒，但训练组仅
+380/21,031、校准组仅 196/10,574 次 `TOOL_END` 满足该条件。
+`scripts/pilot_native_preterminal_classifier.py` 用事件当时可见特征
+训练，项目留出组中得分最高 1% 的精度仅 7.6%，隔离校准组
+仅 6.6%；不足以驱动预测性 H2D，未接入线上。
+另一个 child RETURN 树回归试验在隔离校准组首次 JOIN
+快照的中位绝对误差仍约 1066 秒，近 2 秒快照约 48 秒；
+`scripts/pilot_native_return_model.py` 仅留作阴性对照。
+要提前数秒且保持高精度，需采集更早的可靠完成阶段信号，
+并在新测试项目和实际调度下验证其领先量、误报率及控制链延迟。
+
+为寻找更早边界，可在独立诊断 workload 使用
+`scripts/run_deepagents_swebench.py --stream-completion-shadow`。
+该选项将模型响应切换到流式，并将 child 首个非空正文片段记为
+脱敏的 `beliefkv_child_first_content_shadow` 事件；事件只写
+trace，不进入调度控制通道。`scripts/audit_native_stream_shadow.py`
+用于统计误报、距离 RETURN 的时间和最后 child 覆盖率。
+**默认关闭**：流式模式会改变工具调用与服务路径，不可与既有
+非流式训练/校准批次混合，首正文也不能直接证明 child 即将结束。
+
+隔离单 workflow 的 `qwen35_completion_stream_pilot_20260925_v1`
+实测 6 次首正文通知，3 次最终 RETURN、3 次继续调用 `execute`；
+3 个真阳性距 RETURN 的 P50 提前量约 1.89 秒，
+**精度只有 50%**，不能开启预取。尝试在诊断提示词中要求
+child 最终自然语言答复以特定前缀开头；对应
+`qwen35_completion_marker_pilot_20260925_v1` 中 3 个正常
+RETURN 都没有输出此前缀，覆盖率为零，已撤销该无效试验代码。
+两次 pilot 都只有单个 workflow，且使用不同于正式批次的
+流式模式、较小并发和零 Host 池；仅证明该原始信号不够可靠。
+
+短窗头可以通过同时设置 `BELIEFKV_COMPLETION_LEAD_ARTIFACT`
+和 `BELIEFKV_COMPLETION_LEAD_SHA256` 显式加载经 SHA-256
+固定的诊断 JSON；缺任一项、哈希变化或非只读诊断状态均拒绝。
+它仅提供只读剩余时间三分位，不改变物理动作资格或默认配置。
+截至本次 pilot，尚无带该头的 GPU 控制链投递延迟分布，
+更早且可靠的 JOIN 终态信号仍未找到。
