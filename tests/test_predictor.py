@@ -56,6 +56,31 @@ class SurvivalModelTest(unittest.TestCase):
         self.assertEqual(unknown.backoff_level, "global")
         self.assertGreater(unknown.ood_score, exact.ood_score)
 
+    def test_active_tool_past_last_completion_has_no_supported_eta(self):
+        curve = KaplanMeierCurve().fit([(100, True), (200, True)])
+        self.assertEqual(curve.survival(200), 0)
+        self.assertEqual(curve.conditional_survival(250, 50), 1)
+        self.assertTrue(math.isinf(curve.remaining_quantile(250, .5)))
+        model = HierarchicalToolSurvivalModel(
+            min_backend_samples=1, min_family_samples=1,
+        )
+        model.fit([
+            ToolDurationSample(duration, True, "shell", "bash")
+            for duration in (100, 200)
+        ])
+        prediction = model.predict(
+            context_id="ctx",
+            now_ms=250,
+            elapsed_ms=250,
+            family="shell",
+            backend_class="bash",
+            transfer_window_ms=50,
+        )
+        self.assertFalse(prediction.usable)
+        self.assertTrue(math.isinf(prediction.p50_ms))
+        self.assertEqual(prediction.resume_within_transfer_probability, 0)
+        self.assertEqual(prediction.backoff_level, "backend_tail_unsupported")
+
 
 class ContextTreeTest(unittest.TestCase):
     def test_longest_supported_context_changes_next_action(self):

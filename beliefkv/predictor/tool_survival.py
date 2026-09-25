@@ -73,7 +73,9 @@ class KaplanMeierCurve:
             raise ValueError("elapsed and future times must be non-negative")
         base = self.survival(elapsed_ms)
         if base <= 0:
-            return 0.0
+            # An active call beyond the observed tail is not a certain
+            # imminent completion; the empirical curve has no support here.
+            return 1.0
         return max(
             0.0,
             min(1.0, self.survival(elapsed_ms + future_ms) / base),
@@ -84,7 +86,7 @@ class KaplanMeierCurve:
             raise ValueError("q must be in (0, 1)")
         base = self.survival(elapsed_ms)
         if base <= 0:
-            return 0.0
+            return inf
         threshold = 1.0 - q
         for step_time, step_survival in self._steps:
             if step_time < elapsed_ms:
@@ -175,6 +177,13 @@ class HierarchicalToolSurvivalModel:
         curve, level = self._select_curve(family, backend_class)
         if curve.sample_count == 0:
             return RemainingTimePrediction(context_id=context_id, generated_ts_ms=now_ms)
+        if curve.survival(elapsed_ms) <= 0:
+            return RemainingTimePrediction(
+                context_id=context_id,
+                generated_ts_ms=now_ms,
+                next_event_distribution={"tool_end": 1.0},
+                backoff_level=f"{level}_tail_unsupported",
+            )
         event_fraction = curve.event_count / curve.sample_count
         sample_scale = {
             "backend": self.min_backend_samples,
