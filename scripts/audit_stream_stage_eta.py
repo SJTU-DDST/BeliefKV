@@ -113,11 +113,11 @@ def candidates(workflows: Path) -> dict[str, list[dict]]:
                     continue
                 request = attrs.get("request_id")
                 result = results.get(request)
-                if not request or result is None:
+                if not request:
                     continue
                 trigger = float(event["ts_ms"]) + DELAYS_MS[stage]
                 if stage != "result" and (
-                    trigger >= float(result["ts_ms"])
+                    result is not None and trigger >= float(result["ts_ms"])
                     or chunks.get(request, math.inf) <= trigger
                 ):
                     continue
@@ -134,12 +134,31 @@ def candidates(workflows: Path) -> dict[str, list[dict]]:
                     continue
                 successor = next((
                     later for later in child_events
-                    if float(later["ts_ms"]) > float(result["ts_ms"])
+                    if result is not None
+                    and float(later["ts_ms"]) > float(result["ts_ms"])
                     and later["kind"] in {
                         "return", "invocation_cancel", "llm_submit", "tool_start"
                     }
                 ), None)
+                row = {
+                    "join": (str(path), join),
+                    "child": child,
+                    "trigger_ms": trigger,
+                    "eligible_last_child": (
+                        (event["workflow_id"], child) in last_children
+                    ),
+                }
                 if successor is None:
+                    canceled_after_trigger = result is None and any(
+                        later["kind"] == "invocation_cancel"
+                        and float(later["ts_ms"]) > trigger
+                        for later in child_events
+                    )
+                    output[stage].append({
+                        **row,
+                        "final": False if canceled_after_trigger else None,
+                        "lead_ms": None,
+                    })
                     continue
                 result_attrs = result.get("attributes") or {}
                 final = (
@@ -154,15 +173,10 @@ def candidates(workflows: Path) -> dict[str, list[dict]]:
                     and float(successor["ts_ms"]) <= terminal[1]
                 )
                 output[stage].append({
-                    "join": (str(path), join),
-                    "child": child,
-                    "trigger_ms": trigger,
+                    **row,
                     "final": final,
                     "lead_ms": (
                         float(successor["ts_ms"]) - trigger if final else None
-                    ),
-                    "eligible_last_child": (
-                        (event["workflow_id"], child) in last_children
                     ),
                 })
     return {
@@ -176,12 +190,15 @@ def candidates(workflows: Path) -> dict[str, list[dict]]:
 
 
 def _quality(rows: list[dict], prior: float | None) -> dict:
+    determined = [row for row in rows if row["final"] is not None]
     true = [row for row in rows if row["final"]]
     leads = [row["lead_ms"] for row in true]
     return {
         "join_candidates": len(rows),
+        "determined_join_candidates": len(determined),
+        "censored_join_candidates": len(rows) - len(determined),
         "true_next_return_join": len(true),
-        "precision": len(true) / len(rows) if rows else None,
+        "precision": len(true) / len(determined) if determined else None,
         "lead_p50_ms": median(leads) if leads else None,
         "lead_at_least_500ms": sum(lead >= 500 for lead in leads),
         "lead_at_least_2000ms": sum(lead >= 2000 for lead in leads),

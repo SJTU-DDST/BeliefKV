@@ -1,8 +1,11 @@
 from __future__ import annotations
 
+import json
+
 import pytest
 
 from scripts.audit_stream_stage_eta import STAGES
+from scripts.audit_stream_stage_eta import candidates
 from scripts.evaluate_stream_stage_holdout import _paths, evaluate
 
 
@@ -69,3 +72,44 @@ def test_multi_batch_evaluation_rejects_duplicate_workflow_instance(tmp_path):
         directories.append(path.parent)
     with pytest.raises(ValueError, match="repeated workflow instances"):
         _paths(directories)
+
+
+def test_unfinished_stream_candidate_is_censored_not_a_success(tmp_path):
+    workflows = tmp_path / "workflows"
+    for name, canceled in (("pending", False), ("canceled", True)):
+        path = workflows / f"django__{name}"
+        path.mkdir(parents=True)
+        events = [
+            {
+                "ts_ms": 0, "kind": "join_create", "join_id": name,
+                "invocation_id": None, "member_invocation_ids": ["child"],
+                "attributes": {"mode": "all"}, "workflow_id": name,
+            },
+            {
+                "ts_ms": 100, "kind": "structured_action",
+                "invocation_id": "child", "workflow_id": name,
+                "attributes": {
+                    "request_id": "req",
+                    "beliefkv_child_substantial_content_shadow": True,
+                    "content_threshold_chars": 2400,
+                },
+            },
+        ]
+        if canceled:
+            events.append({
+                "ts_ms": 200, "kind": "invocation_cancel",
+                "invocation_id": "child", "workflow_id": name,
+            })
+        (path / "runtime_events.deepagents.jsonl").write_text(
+            "".join(json.dumps(event) + "\n" for event in events),
+        )
+    rows = candidates(workflows)["content_2400"]
+    assert len(rows) == 2
+    assert {row["final"] for row in rows} == {None, False}
+    report = evaluate(
+        {stage: [] for stage in STAGES},
+        {stage: rows if stage == "content_2400" else [] for stage in STAGES},
+        set(), set(),
+    )
+    assert report["heldout"]["content_2400"]["censored_join_candidates"] == 1
+    assert report["heldout"]["content_2400"]["false_next_return_join"] == 1

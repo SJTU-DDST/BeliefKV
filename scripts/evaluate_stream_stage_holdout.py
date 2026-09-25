@@ -44,6 +44,7 @@ def _quality(
     rows: list[dict], eligible: set[tuple[str, str]], prior: float | None,
 ) -> dict:
     positives = [row for row in rows if row["final"]]
+    determined = [row for row in rows if row["final"] is not None]
     leads = [float(row["lead_ms"]) for row in positives]
     errors = [abs(lead - prior) for lead in leads] if prior is not None else []
     covered = {
@@ -53,13 +54,19 @@ def _quality(
     workflow_count = len({row["join"][0] for row in rows})
     return {
         "first_join_candidates": len(rows),
+        "determined_join_candidates": len(determined),
+        "censored_join_candidates": len(rows) - len(determined),
         "candidate_workflows": workflow_count,
         "true_next_return_join": len(positives),
-        "false_next_return_join": len(rows) - len(positives),
-        "precision": len(positives) / len(rows) if rows else None,
+        "false_next_return_join": len(determined) - len(positives),
+        "precision": (
+            len(positives) / len(determined) if determined else None
+        ),
         "precision_two_sided_95pct_lower": (
-            float(beta.ppf(.025, len(positives), len(rows) - len(positives) + 1))
-            if positives else 0.0 if rows else None
+            float(beta.ppf(
+                .025, len(positives), len(determined) - len(positives) + 1
+            ))
+            if positives else 0.0 if determined else None
         ),
         "complete_last_child_joins": len(eligible),
         "covered_last_child_joins": len(covered),
@@ -112,7 +119,7 @@ def evaluate(
     eligible_stages = [
         stage for stage in STAGES
         if (
-            dev[stage]["first_join_candidates"] >= 10
+            dev[stage]["determined_join_candidates"] >= 10
             and dev[stage]["candidate_workflows"] >= 5
             and dev[stage]["precision"] >= .9
             and dev[stage]["true_lead_at_least_500ms_fraction"] >= .7
@@ -156,7 +163,7 @@ def evaluate(
         "heldout_by_project": dict(sorted(per_project.items())),
         "pre_registered_holdout_gate_passed": bool(
             chosen_quality is not None
-            and chosen_quality["first_join_candidates"] >= 30
+            and chosen_quality["determined_join_candidates"] >= 30
             and chosen_quality["candidate_workflows"] >= 20
             and len(heldout_projects) >= 2
             and chosen_quality["precision_two_sided_95pct_lower"] >= .9
@@ -167,8 +174,9 @@ def evaluate(
             and chosen_quality["eta_error_p90_ms"] <= 1000
         ),
         "limitations": (
-            "Known first candidate per JOIN/stage with completed successor; "
-            "unresolved responses require separate censoring audit. "
+            "First candidate per JOIN/stage; unresolved responses are "
+            "right-censored and excluded from determined precision, "
+            "not counted as true returns. "
             "Transfer availability, control latency and H2D are unverified."
         ),
     }
