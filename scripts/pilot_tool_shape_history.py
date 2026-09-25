@@ -4,7 +4,7 @@
 from __future__ import annotations
 
 import argparse
-from collections import defaultdict
+from collections import Counter, defaultdict
 import json
 import math
 from pathlib import Path
@@ -102,6 +102,7 @@ def replay(evaluation: list[dict]) -> dict:
     selected = []
     recent_selected = []
     actual_long_workflows = set()
+    actual_long_shapes = Counter()
     child_calls = actual_long = 0
     for row in sorted(evaluation, key=lambda item: item["start_ts_ms"]):
         key = row["project"], row["class"]
@@ -111,6 +112,7 @@ def replay(evaluation: list[dict]) -> dict:
             if row["duration_ms"] >= 2000:
                 actual_long += 1
                 actual_long_workflows.add(row["workflow"])
+                actual_long_shapes[row["shape"]] += 1
             estimate = stable_long_prior(row, history_by_shape[shape_key])
             recency_estimate = stable_long_prior(
                 row, history_by_shape[shape_key], recent_ties=True
@@ -181,6 +183,7 @@ def replay(evaluation: list[dict]) -> dict:
         "cold_child_calls": child_calls,
         "actual_cold_long": actual_long,
         "actual_long_workflow_count": len(actual_long_workflows),
+        "actual_long_by_shape": dict(sorted(actual_long_shapes.items())),
         "selected_predicted_long": len(selected),
         "selected_true_long": len(true_long),
         "selected_false_long": len(selected) - len(true_long),
@@ -188,6 +191,26 @@ def replay(evaluation: list[dict]) -> dict:
         "long_recall": len(true_long) / actual_long if actual_long else None,
         "shape_timing": metrics,
         "selected_true_long_timing": _summarize(true_long),
+        "selected_by_shape": {
+            shape: {
+                "selected": len(items),
+                "true_long": sum(
+                    row["duration_ms"] >= 2000 for row in items
+                ),
+                "workflow_count": len({row["workflow"] for row in items}),
+                "true_long_timing": _summarize([
+                    row for row in items if row["duration_ms"] >= 2000
+                ]),
+                "true_long_500ms_budget_500ms_lead": sum(
+                    row["duration_ms"] - max(
+                        0, row["estimate_ms"] - 500
+                    ) >= 500
+                    for row in items if row["duration_ms"] >= 2000
+                ),
+            }
+            for shape in sorted({row["shape"] for row in selected})
+            if (items := [row for row in selected if row["shape"] == shape])
+        },
         "class_neighbor_matched": baseline,
         "recency_tie_ablation_read_only": {
             "selected_predicted_long": len(recent_selected),

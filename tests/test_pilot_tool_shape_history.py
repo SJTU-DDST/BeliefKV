@@ -47,6 +47,10 @@ def test_shape_replay_reports_selective_precision_without_future_data():
     assert result["long_precision"] == 1
     assert result["selected_false_long"] == 0
     assert result["selected_true_long_timing"]["p50_error_ms"] == 50
+    assert result["actual_long_by_shape"] == {"python_inline_test": 5}
+    shape = result["selected_by_shape"]["python_inline_test"]
+    assert shape["selected"] == shape["true_long"] == shape["workflow_count"] == 1
+    assert shape["true_long_timing"]["p50_error_ms"] == 50
     assert result["pre_registered_acceptance"]["accepted"] is False
     assert result["pre_registered_acceptance"]["checks"][
         "at_least_30_actual_long"
