@@ -29,14 +29,18 @@ def audit(
     dataset: Path | None = None,
     *,
     cue: str = "first_content",
+    content_threshold_chars: int = 64,
     project_prefix: str | None = None,
 ) -> dict:
-    if cue not in {"first_content", "final_marker"}:
+    if cue not in {"first_content", "substantial_content", "final_marker"}:
         raise ValueError("unsupported stream cue")
-    cue_attribute = (
-        "beliefkv_child_first_content_shadow"
-        if cue == "first_content" else "beliefkv_child_final_marker_shadow"
-    )
+    if content_threshold_chars < 1:
+        raise ValueError("content threshold must be positive")
+    cue_attribute = {
+        "first_content": "beliefkv_child_first_content_shadow",
+        "substantial_content": "beliefkv_child_substantial_content_shadow",
+        "final_marker": "beliefkv_child_final_marker_shadow",
+    }[cue]
     last_children = set()
     if dataset is not None:
         for row in _rows(dataset / "reentries.jsonl"):
@@ -82,7 +86,12 @@ def audit(
         ):
             returned_children.add(child)
         for index, event in enumerate(events):
-            if not (event.get("attributes") or {}).get(cue_attribute):
+            cue_attrs = event.get("attributes") or {}
+            if not cue_attrs.get(cue_attribute) or (
+                cue == "substantial_content"
+                and cue_attrs.get("content_threshold_chars")
+                != content_threshold_chars
+            ):
                 continue
             cues += 1
             request_id = event["attributes"].get("request_id")
@@ -191,6 +200,9 @@ def audit(
     return {
         "project_prefix": project_prefix,
         "cue": cue,
+        "content_threshold_chars": (
+            content_threshold_chars if cue == "substantial_content" else None
+        ),
         "cues": cues,
         "confirmed_final_return": positives,
         "confirmed_not_final": negatives,
@@ -227,13 +239,17 @@ def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--workflows", type=Path, required=True)
     parser.add_argument("--dataset", type=Path)
-    parser.add_argument("--cue", choices=("first_content", "final_marker"),
+    parser.add_argument("--cue", choices=(
+        "first_content", "substantial_content", "final_marker",
+    ),
                         default="first_content")
     parser.add_argument("--project-prefix")
+    parser.add_argument("--content-threshold-chars", type=int, default=64)
     parser.add_argument("--output", type=Path, required=True)
     args = parser.parse_args()
     result = audit(
         args.workflows, args.dataset, cue=args.cue,
+        content_threshold_chars=args.content_threshold_chars,
         project_prefix=args.project_prefix,
     )
     args.output.parent.mkdir(parents=True, exist_ok=True)

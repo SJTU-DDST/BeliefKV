@@ -129,6 +129,12 @@ def test_stream_shadow_audits_early_cue_and_tool_call_false_positive(tmp_path):
         _event(30, "tool_start"),
         _event(100, "structured_action",
                beliefkv_child_first_content_shadow=True, request_id="final"),
+        _event(500, "structured_action",
+               beliefkv_child_substantial_content_shadow=True, request_id="final",
+               content_threshold_chars=64),
+        _event(700, "structured_action",
+               beliefkv_child_substantial_content_shadow=True, request_id="final",
+               content_threshold_chars=1024),
         _event(1000, "llm_result", request_id="final", tool_call_count=0,
                invalid_tool_call_count=0, finish_reason="stop"),
         _event(1200, "return"),
@@ -142,6 +148,17 @@ def test_stream_shadow_audits_early_cue_and_tool_call_false_positive(tmp_path):
     assert result["confirmed_not_final"] == 1
     assert result["lead_ms"]["p50"] == 1100
     assert result["complete_response_lead_p50_ms"] == 200
+    substantial = audit_stream_shadow(
+        tmp_path / "workflows", dataset, cue="substantial_content"
+    )
+    assert substantial["confirmed_final_return"] == 1
+    assert substantial["confirmed_not_final"] == 0
+    assert substantial["lead_ms"]["p50"] == 700
+    late = audit_stream_shadow(
+        tmp_path / "workflows", dataset, cue="substantial_content",
+        content_threshold_chars=1024,
+    )
+    assert late["lead_ms"]["p50"] == 500
 
 
 def test_stream_timer_excludes_early_tool_chunk_but_not_late_tool_chunk(tmp_path):

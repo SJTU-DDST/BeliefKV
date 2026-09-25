@@ -100,6 +100,23 @@ def pilot(
         row for row in all_rows
         if row["historical_long_rate"] >= .8 and row["prior_ms"] >= 2_000
     ]
+    selection_sweep = {}
+    for cut in (.5, .6, .7, .8, .9):
+        chosen = [
+            row for row in all_rows
+            if row["historical_long_rate"] >= cut and row["prior_ms"] >= 2_000
+        ]
+        true_long = sum(row["long"] for row in chosen)
+        selection_sweep[str(cut)] = {
+            "selected": len(chosen),
+            "true_long": true_long,
+            "false_long": len(chosen) - true_long,
+            "precision": true_long / len(chosen) if chosen else None,
+            "recall_of_all_cold_long": (
+                true_long / total_long_child if total_long_child else None
+            ),
+            "workflow_count": len({row["workflow"] for row in chosen}),
+        }
     def metrics(rows: list[dict]) -> dict:
         workflows = defaultdict(list)
         for row in rows:
@@ -175,6 +192,7 @@ def pilot(
                 if total_long_child else None
             ),
         },
+        "long_selection_sweep": selection_sweep,
         "by_project": {
             project: {
                 "supported": metrics([

@@ -38,6 +38,8 @@ from beliefkv.runtime.event_channel import QueuedRuntimeEventSink
 from beliefkv.runtime.sglang_adapter import BeliefKVRequestMetadata
 from beliefkv.runtime.sglang_v0520_sessions import NativeRadixSessionLeases
 
+STREAM_CONTENT_THRESHOLDS = (64, 1024)
+
 
 def _digest(value: str, *, length: int = 16) -> str:
     return hashlib.sha256(value.encode("utf-8")).hexdigest()[:length]
@@ -250,6 +252,8 @@ class DeepAgentsRuntimeAdapter(BaseCallbackHandler):
         self._child_completion_intent_runs: set[str] = set()
         self._child_first_content_shadow_runs: set[str] = set()
         self._child_first_tool_chunk_shadow_runs: set[str] = set()
+        self._child_substantial_content_shadow_runs: set[tuple[str, int]] = set()
+        self._child_stream_content_chars: dict[str, int] = {}
         self._join_members: dict[str, set[str]] = {}
         self._join_completed: dict[str, set[str]] = {}
         self._join_cancelled: dict[str, set[str]] = {}
@@ -727,13 +731,14 @@ class DeepAgentsRuntimeAdapter(BaseCallbackHandler):
         del kwargs
         content = getattr(getattr(chunk, "message", None), "content", token)
         content_seen = isinstance(content, str) and bool(content.strip())
+        content_chars = len(content.strip()) if isinstance(content, str) else 0
         tool_seen = bool(getattr(
             getattr(chunk, "message", None), "tool_call_chunks", None
         ))
         if not content_seen and not tool_seen:
             return
         key = _run_key(run_id)
-        emitted = []
+        emitted: list[tuple[str, int | None]] = []
         with self._lock:
             if (
                 key is None
@@ -748,10 +753,32 @@ class DeepAgentsRuntimeAdapter(BaseCallbackHandler):
             metadata = self._model_metadata[key]
             if content_seen and key not in self._child_first_content_shadow_runs:
                 self._child_first_content_shadow_runs.add(key)
-                emitted.append("beliefkv_child_first_content_shadow")
+                emitted.append(("beliefkv_child_first_content_shadow", None))
             if tool_seen and key not in self._child_first_tool_chunk_shadow_runs:
                 self._child_first_tool_chunk_shadow_runs.add(key)
-                emitted.append("beliefkv_child_first_tool_chunk_shadow")
+                emitted.append(("beliefkv_child_first_tool_chunk_shadow", None))
+            if (
+                content_chars
+                and key not in self._child_first_tool_chunk_shadow_runs
+            ):
+                count = min(
+                    STREAM_CONTENT_THRESHOLDS[-1],
+                    self._child_stream_content_chars.get(key, 0) + content_chars,
+                )
+                self._child_stream_content_chars[key] = count
+                for threshold in STREAM_CONTENT_THRESHOLDS:
+                    if (
+                        count >= threshold
+                        and (key, threshold)
+                        not in self._child_substantial_content_shadow_runs
+                    ):
+                        self._child_substantial_content_shadow_runs.add(
+                            (key, threshold)
+                        )
+                        emitted.append((
+                            "beliefkv_child_substantial_content_shadow",
+                            threshold,
+                        ))
         self._publish(tuple(
             self._event(
                 RuntimeEventKind.STRUCTURED_ACTION,
@@ -765,8 +792,10 @@ class DeepAgentsRuntimeAdapter(BaseCallbackHandler):
                     name: True,
                     "diagnostic_only": True,
                     "request_id": _native_request_id(run_id),
+                    **({"content_threshold_chars": threshold}
+                       if threshold is not None else {}),
                 },
-            ) for name in emitted
+            ) for name, threshold in emitted
         ), control=False)
 
     def on_llm_end(
@@ -779,6 +808,8 @@ class DeepAgentsRuntimeAdapter(BaseCallbackHandler):
     ) -> None:
         del kwargs
         key = self._remember_run(run_id, parent_run_id)
+        with self._lock:
+            self._child_stream_content_chars.pop(key, None)
         invocation_id = self._resolve_invocation(key)
         with self._lock:
             runtime_internal = key in self._internal_summary_runs
@@ -958,6 +989,8 @@ class DeepAgentsRuntimeAdapter(BaseCallbackHandler):
     ) -> None:
         del kwargs
         key = self._remember_run(run_id, parent_run_id)
+        with self._lock:
+            self._child_stream_content_chars.pop(key, None)
         invocation_id = self._resolve_invocation(key)
         with self._lock:
             runtime_internal = key in self._internal_summary_runs

@@ -404,6 +404,27 @@ def test_stream_first_content_is_trace_only_and_one_per_child_model_run() -> Non
         assert len(tools) == 1
         assert tools[0] not in control.events
         assert "execute" not in json.dumps(tools[0].to_dict())
+        assert not any(
+            item.attributes.get("beliefkv_child_substantial_content_shadow")
+            for item in trace.events
+        )
+        another_run = uuid4()
+        adapter.on_chat_model_start(
+            {}, [[HumanMessage(content="private prompt")]],
+            run_id=another_run, parent_run_id=tool_run,
+        )
+        for _ in range(4):
+            adapter.on_llm_new_token("private paragraph", run_id=another_run)
+        adapter.on_llm_new_token("more private words", run_id=another_run)
+        substantial = [
+            event for event in trace.events
+            if event.attributes.get("beliefkv_child_substantial_content_shadow")
+        ]
+        assert len(substantial) == 1
+        assert substantial[0].attributes["content_threshold_chars"] == 64
+        assert substantial[0].join_id == task.join_id
+        assert substantial[0] not in control.events
+        assert "private paragraph" not in json.dumps(substantial[0].to_dict())
     finally:
         queued.close()
 
