@@ -19,17 +19,24 @@ from scripts.audit_repeated_tool_timing import _read_workflow, _summarize
 
 def _neighbor_prior(row: dict, history: list[dict]) -> tuple[float | None, int]:
     size = row["input_chars"]
-    if type(size) is not int or size <= 0:
+    if type(size) is not int or size <= 0 or row["class"] == "unknown":
         return None, 0
+    completed = sorted(
+        (
+            past for past in history
+            if past["terminal_ts_ms"] < row["start_ts_ms"]
+            and past["status"] == "success"
+            and past["is_child"] is True
+        ),
+        key=lambda past: past["terminal_ts_ms"],
+    )[-64:]
     ranked = sorted(
         (
             abs(math.log(size / past["input_chars"])),
             past["duration_ms"],
         )
-        for past in history
-        if past["terminal_ts_ms"] < row["start_ts_ms"]
-        and past["status"] == "success"
-        and type(past["input_chars"]) is int
+        for past in completed
+        if type(past["input_chars"]) is int
         and past["input_chars"] > 0
     )
     neighbors = [
@@ -98,7 +105,8 @@ def replay(train: list[dict], evaluation: list[dict]) -> dict:
                 metrics["cold_long_child"].append(data)
                 metrics[f"cold_long_child_{group}"].append(data)
         counts[group] += 1
-        history[scope].append(row)
+        if row["is_child"] is True and row["class"] != "unknown":
+            history[scope].append(row)
 
     return {
         "status": "causal_nearest_history_diagnostic_only",

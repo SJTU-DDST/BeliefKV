@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from collections import OrderedDict, deque
+import math
 from statistics import median
 from threading import RLock
 from typing import Any, Mapping
@@ -17,9 +18,11 @@ class ProjectToolHistory:
         self.window = window
         self.max_keys = max_keys
         self._lock = RLock()
-        self._open: dict[tuple[str, str], tuple[str, str, float, bool]] = {}
+        self._open: dict[
+            tuple[str, str], tuple[str, str, float, bool, int | None]
+        ] = {}
         self._completed: OrderedDict[
-            tuple[str, str], deque[tuple[float, float]]
+            tuple[str, str], deque[tuple[float, float, int | None]]
         ] = OrderedDict()
         self._long_completed: OrderedDict[
             tuple[str, str], deque[tuple[float, float]]
@@ -44,10 +47,12 @@ class ProjectToolHistory:
                 and other_project == project and other_command == command
                 and 0 <= other_start <= ts_ms - 2_000
                 for (other_workflow, _), (other_project, other_command,
-                                           other_start, _) in self._open.items()
+                                           other_start, _, _) in self._open.items()
             )
             is_execute = attrs.get("tool_name") == "execute"
-            self._open[call_key] = project, command, ts_ms, is_execute
+            size = attrs.get("input_chars")
+            size = size if type(size) is int and size > 0 else None
+            self._open[call_key] = project, command, ts_ms, is_execute, size
             observed = (
                 {"project_class_inflight_other_workflow_2s_peers": peers}
                 if peers else {}
@@ -65,7 +70,30 @@ class ProjectToolHistory:
             if not is_execute:
                 return observed
             history = self._completed.get((project, command), ())
-            values = [duration for duration, end in history if end < ts_ms]
+            completed = [
+                (duration, end, prior_size) for duration, end, prior_size in history
+                if end < ts_ms
+            ]
+            if size is not None:
+                nearby = sorted(
+                    (
+                        abs(math.log(size / prior_size)), duration
+                    )
+                    for duration, _, prior_size in completed
+                    if prior_size is not None
+                )
+                neighbors = [
+                    duration for distance, duration in nearby[:8]
+                    if distance <= math.log(2)
+                ]
+                if len(neighbors) >= 4:
+                    observed.update({
+                        "project_input_neighbor_duration_ms": float(
+                            median(neighbors)
+                        ),
+                        "project_input_neighbor_support": len(neighbors),
+                    })
+            values = [duration for duration, _, _ in completed]
             if len(values) < self.minimum_support:
                 return observed
             return {
@@ -82,7 +110,7 @@ class ProjectToolHistory:
             opened = self._open.pop(call_key, None)
             if opened is None:
                 return
-            project, command, start_ts, is_execute = opened
+            project, command, start_ts, is_execute, input_chars = opened
             if ts_ms < start_ts:
                 raise ValueError("project tool end precedes its start")
             if attrs.get("status") != "success":
@@ -100,7 +128,7 @@ class ProjectToolHistory:
             if not is_execute:
                 return
             history = self._completed.setdefault(key, deque(maxlen=self.window))
-            history.append((duration, ts_ms))
+            history.append((duration, ts_ms, input_chars))
             self._completed.move_to_end(key)
             while len(self._completed) > self.max_keys:
                 self._completed.popitem(last=False)

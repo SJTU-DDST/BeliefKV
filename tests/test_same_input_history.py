@@ -89,6 +89,106 @@ def test_project_history_never_uses_open_or_failed_calls() -> None:
     ] == 55.0
 
 
+def test_project_input_neighbors_use_bounded_completed_child_history() -> None:
+    history = ProjectToolHistory(minimum_support=16, window=64)
+    attrs = {
+        "tool_name": "execute", "is_child": True,
+        "observed_command_class": "python_inline", "input_chars": 100,
+    }
+    for index in range(4):
+        call = {"tool_call_id": f"child-{index}"}
+        history.start(f"wf-{index}", "project", {**attrs, **call}, index * 200)
+        history.end(
+            f"wf-{index}", {**call, "status": "success"},
+            index * 200 + 100,
+        )
+    history.start("open", "project", {
+        **attrs, "tool_call_id": "open",
+    }, 900)
+    history.start("root", "project", {
+        **attrs, "tool_call_id": "root", "is_child": False,
+    }, 900)
+    history.start("failed", "project", {
+        **attrs, "tool_call_id": "failed",
+    }, 900)
+    history.end("failed", {"tool_call_id": "failed", "status": "error"}, 950)
+    result = history.start("target", "project", {
+        **attrs, "tool_call_id": "target", "input_chars": 110,
+    }, 1000)
+    assert result["project_input_neighbor_duration_ms"] == 100
+    assert result["project_input_neighbor_support"] == 4
+    assert "project_class_duration_median_ms" not in result
+    assert "project_input_neighbor_duration_ms" not in history.start(
+        "other", "project", {
+            **attrs, "tool_call_id": "other", "input_chars": 1000,
+        }, 1001
+    )
+    for index in range(64):
+        call = {"tool_call_id": f"replacement-{index}"}
+        ts = 2000 + index * 200
+        history.start(f"replacement-{index}", "project", {
+            **attrs, **call, "input_chars": 1000,
+        }, ts)
+        history.end(
+            f"replacement-{index}", {**call, "status": "success"},
+            ts + 100,
+        )
+    bounded = history.start("after-window", "project", {
+        **attrs, "tool_call_id": "after-window", "input_chars": 100,
+    }, 15000)
+    assert "project_input_neighbor_duration_ms" not in bounded
+
+
+def test_export_rebuilds_and_checks_input_neighbor_history() -> None:
+    events = []
+    metadata = {}
+    for index in range(4):
+        workflow = f"history-{index}"
+        metadata[workflow] = {"project": "repo"}
+        attrs = {
+            "tool_name": "execute", "tool_call_id": f"call-{index}",
+            "is_child": True, "observed_command_class": "python_inline",
+            "input_chars": 100,
+        }
+        events.extend([
+            RuntimeEvent(
+                event_id=f"start-{index}", ts_ms=index * 200,
+                kind=RuntimeEventKind.TOOL_START, workflow_id=workflow,
+                invocation_id="child", attributes=attrs,
+            ),
+            RuntimeEvent(
+                event_id=f"end-{index}", ts_ms=index * 200 + 100,
+                kind=RuntimeEventKind.TOOL_END, workflow_id=workflow,
+                invocation_id="child", attributes={
+                    "tool_call_id": f"call-{index}", "status": "success",
+                },
+            ),
+        ])
+    metadata["target"] = {"project": "repo"}
+    target = RuntimeEvent(
+        event_id="target", ts_ms=1000, kind=RuntimeEventKind.TOOL_START,
+        workflow_id="target", invocation_id="child", attributes={
+            "tool_name": "execute", "tool_call_id": "target",
+            "is_child": True, "observed_command_class": "python_inline",
+            "input_chars": 110, "project_input_neighbor_duration_ms": 100,
+            "project_input_neighbor_support": 4,
+        },
+    )
+    exported = _event_triggers(events + [target], workflow_metadata=metadata)
+    assert exported[-1]["attributes"]["input_chars"] == 110
+    assert exported[-1]["attributes"]["project_input_neighbor_support"] == 4
+    with pytest.raises(ValueError, match="input-neighbor history disagrees"):
+        _event_triggers(events + [
+            RuntimeEvent(
+                event_id="bad-target", ts_ms=1000,
+                kind=RuntimeEventKind.TOOL_START, workflow_id="target",
+                invocation_id="child", attributes={
+                    **target.attributes, "project_input_neighbor_duration_ms": 999,
+                },
+            )
+        ], workflow_metadata=metadata)
+
+
 def test_project_history_scopes_tool_call_ids_by_workflow() -> None:
     history = ProjectToolHistory(minimum_support=1)
     attrs = {

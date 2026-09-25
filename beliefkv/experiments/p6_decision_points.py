@@ -268,6 +268,14 @@ def _event_triggers(
                 > .01
             ):
                 raise ValueError("online/offline project tool history disagrees")
+            if "project_input_neighbor_duration_ms" in attrs and (
+                abs(float(attrs["project_input_neighbor_duration_ms"]) -
+                    float(project_prior.get("project_input_neighbor_duration_ms", -1)))
+                > .01
+                or int(attrs.get("project_input_neighbor_support", -1))
+                != int(project_prior.get("project_input_neighbor_support", -1))
+            ):
+                raise ValueError("online/offline input-neighbor history disagrees")
             if (
                 "project_class_inflight_other_workflow_2s_peers" in attrs
                 and int(attrs["project_class_inflight_other_workflow_2s_peers"])
@@ -316,11 +324,14 @@ def _event_triggers(
                     "backend_class",
                     "is_child",
                     "observed_command_class",
+                    "input_chars",
                     "previous_same_input_duration_ms",
                     "previous_same_input_age_ms",
                     "previous_same_input_status",
                     "project_class_duration_median_ms",
                     "project_class_completed_support",
+                    "project_input_neighbor_duration_ms",
+                    "project_input_neighbor_support",
                     "project_class_inflight_other_workflow_2s_peers",
                     "project_long_completed_median_ms",
                     "project_long_completed_support",

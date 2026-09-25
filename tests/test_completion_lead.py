@@ -563,18 +563,26 @@ def test_tool_nearest_history_excludes_overlapping_and_future_results():
     now = {"start_ts_ms": 2000, "input_chars": 100}
     completed = [
         {"input_chars": 98, "duration_ms": 3000,
-         "terminal_ts_ms": 1000 + index, "status": "success"}
+         "terminal_ts_ms": 1000 + index, "status": "success",
+         "is_child": True}
         for index in range(4)
     ]
     overlapping = {
         "input_chars": 100, "duration_ms": 90000,
-        "terminal_ts_ms": 2100, "status": "success",
+        "terminal_ts_ms": 2100, "status": "success", "is_child": True,
     }
     failed = {
         "input_chars": 100, "duration_ms": 90000,
-        "terminal_ts_ms": 1500, "status": "error",
+        "terminal_ts_ms": 1500, "status": "error", "is_child": True,
     }
-    result, support = _neighbor_prior(now, completed + [overlapping, failed])
+    root = {
+        "input_chars": 100, "duration_ms": 90000,
+        "terminal_ts_ms": 1500, "status": "success", "is_child": False,
+    }
+    now["class"] = "python_inline"
+    result, support = _neighbor_prior(
+        now, completed + [overlapping, failed, root]
+    )
     assert (result, support) == (3000, 4)
     assert _neighbor_prior(now, completed[:3]) == (None, 3)
 
