@@ -794,7 +794,10 @@ def _apply_native_reactive_evidence(
         if row.get("reentry_kind") not in {"join", "tool_return"}:
             row["training_eligible"] = bool(healthy and row["training_eligible"])
     for row in tables["pcie_operations"]:
-        row["training_eligible_service_curve"] = False
+        row["training_eligible_service_curve"] = bool(
+            healthy and row["training_eligible_service_curve"]
+            and row.get("duration_label_kind") == "native_transfer_stream"
+        )
     for row in tables["censor_events"]:
         row["training_eligible"] = bool(healthy and row["training_eligible"])
     return {

@@ -7,7 +7,7 @@ TRAIN_ROOT="${TRAIN_ROOT:-$ROOT/experiments/raw/qwen35_native_reactive_refit_202
 CALIBRATION_ROOT="${CALIBRATION_ROOT:-$ROOT/experiments/raw/qwen35_native_reactive_calibration_20260924_v1}"
 PLAN="${PLAN:-$ROOT/configs/migration/qwen35_native_reactive_calibration_66root_plan_2026-09-24.json}"
 MODEL="$TRAIN_ROOT/frontier_qwen35_native_train_uncalibrated.json"
-TRAIN_DATASET="$TRAIN_ROOT/qwen35-native-reactive-overlapped-128root-train-r0/dataset/dataset_manifest.json"
+TRAIN_DATASET="$TRAIN_ROOT/qwen35-native-reactive-overlapped-128root-train-r0/dataset_native_transfer_v2/dataset_manifest.json"
 
 printf 'Waiting for independent train collection and model refit: %s\n' "$TRAIN_SESSION"
 while tmux has-session -t "$TRAIN_SESSION" 2>/dev/null; do
@@ -27,6 +27,7 @@ model, dataset, plan = (json.loads(Path(item).read_text()) for item in sys.argv[
 assert dataset["formal_local_training_eligible"] is True
 assert dataset["source"]["native_request_evidence"]["telemetry_complete"] is True
 assert dataset["source"]["collection_contract"]["split"] == "train"
+assert dataset["training_readiness"]["pcie_service_eligible_count"] > 0
 assert plan["batches"][0]["split"] == "calibration"
 assert set(model["metadata"]["fit_projects"]).isdisjoint(plan["batches"][0]["projects"])
 PY

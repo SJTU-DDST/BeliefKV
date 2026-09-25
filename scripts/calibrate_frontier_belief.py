@@ -21,7 +21,7 @@ from beliefkv.predictor.structured_frontier import (
 from beliefkv.predictor.action_targets import load_action_target_rows
 
 
-def main() -> int:
+def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(
         description="Calibrate a fitted FrontierBeliefModel on held-out projects."
     )
@@ -30,6 +30,11 @@ def main() -> int:
     parser.add_argument("--action-target", type=Path, action="append")
     parser.add_argument("--action-target-report", type=Path)
     parser.add_argument("--target-coverage", type=float, default=0.9)
+    parser.add_argument(
+        "--native-heads-only",
+        action="store_true",
+        help="Calibrate native predictive heads without claiming action calibration.",
+    )
     parser.add_argument(
         "--model-version",
         help="Version for the calibrated artifact; defaults to the fitted model version.",
@@ -51,9 +56,16 @@ def main() -> int:
             "artifact development_only. Never use this for formal evidence."
         ),
     )
-    args = parser.parse_args()
+    args = parser.parse_args(argv)
     if args.output.resolve() == args.model.resolve():
         raise SystemExit("calibration output must not overwrite the fitted model")
+    if args.native_heads_only and (
+        args.development_on_train or args.action_target or args.action_target_report
+        or args.coverage_report
+    ):
+        raise SystemExit(
+            "native heads-only calibration cannot accept development or action evidence"
+        )
 
     raw_model = json.loads(args.model.read_text(encoding="utf-8"))
     model = FrontierBeliefModel.from_dict(raw_model)
@@ -93,34 +105,37 @@ def main() -> int:
             action_targets=action_targets,
         )
     else:
-        if not action_targets or args.action_target_report is None:
+        if not args.native_heads_only and (
+            not action_targets or args.action_target_report is None
+        ):
             raise SystemExit(
                 "formal predictor calibration requires action targets and report"
             )
-        if args.coverage_report is None:
+        if not args.native_heads_only and args.coverage_report is None:
             raise SystemExit(
                 "formal calibration requires --coverage-report"
             )
-        coverage = json.loads(
-            args.coverage_report.read_text(encoding="utf-8")
-        )
-        if (
-            coverage.get("split") != "calibration"
-            or coverage.get("coverage_gate_passed") is not True
-            or coverage.get("calibration_blockers")
-        ):
-            raise SystemExit("calibration coverage report did not pass")
-        reported_dirs = {
-            str(Path(item).resolve())
-            for item in (coverage.get("source") or {}).get(
-                "dataset_dirs", ()
+        if args.coverage_report is not None:
+            coverage = json.loads(
+                args.coverage_report.read_text(encoding="utf-8")
             )
-        }
-        requested_dirs = {str(item.resolve()) for item in args.dataset_dir}
-        if reported_dirs != requested_dirs:
-            raise SystemExit(
-                "calibration coverage report does not bind the requested datasets"
-            )
+            if (
+                coverage.get("split") != "calibration"
+                or coverage.get("coverage_gate_passed") is not True
+                or coverage.get("calibration_blockers")
+            ):
+                raise SystemExit("calibration coverage report did not pass")
+            reported_dirs = {
+                str(Path(item).resolve())
+                for item in (coverage.get("source") or {}).get(
+                    "dataset_dirs", ()
+                )
+            }
+            requested_dirs = {str(item.resolve()) for item in args.dataset_dir}
+            if reported_dirs != requested_dirs:
+                raise SystemExit(
+                    "calibration coverage report does not bind the requested datasets"
+                )
         rows, manifests = load_evaluation_rows(
             args.dataset_dir,
             split="calibration",
@@ -159,17 +174,41 @@ def main() -> int:
             raise SystemExit(
                 "calibration runtime environment differs from the fitted model"
             )
-        if (coverage.get("source") or {}).get(
+        if args.coverage_report is not None and (coverage.get("source") or {}).get(
             "runtime_environment_digest"
         ) not in fit_environments:
             raise SystemExit(
                 "calibration coverage environment differs from the fitted model"
             )
+        if args.native_heads_only:
+            if len(calibration_projects) < 2 or any(
+                (manifest.get("source") or {}).get("collection_contract", {}).get(
+                    "plan_id"
+                ) != "qwen35-native-reactive-v0520-v1-calibration-66root"
+                or (manifest.get("training_readiness") or {}).get(
+                    "join_reentry_eligible_count", 0
+                ) < 1
+                or (manifest.get("training_readiness") or {}).get(
+                    "remaining_decode_demand_eligible_request_count", 0
+                ) < 1
+                or (manifest.get("training_readiness") or {}).get(
+                    "pcie_service_eligible_count", 0
+                ) < 1
+                for manifest in manifests
+            ):
+                raise SystemExit(
+                    "native calibration lacks disjoint projects or required measured labels"
+                )
         summary = model.calibrate(
             rows,
             target_coverage=args.target_coverage,
             action_targets=action_targets,
         )
+        if args.native_heads_only and (
+            summary["observation_counts"].get("remaining_to_return_ms", 0) < 8
+            or summary["observation_counts"].get("next_output_tokens", 0) < 8
+        ):
+            raise SystemExit("native calibration has insufficient held-out head labels")
     calibration_projects = sorted(
         {str(row.get("project") or "unknown") for row in rows}
     )
@@ -183,7 +222,14 @@ def main() -> int:
                 str(item.resolve()) for item in args.dataset_dir
             ],
             "calibration_projects": calibration_projects,
-            "calibration_status": "calibrated",
+            "calibration_status": (
+                "calibrated_native_heads_only"
+                if args.native_heads_only else "calibrated"
+            ),
+            "action_calibration_status": (
+                "unavailable_no_action_targets"
+                if args.native_heads_only else "calibrated"
+            ),
             "parent_model_version": parent_model_version,
             "online_eligible": False,
             "predictive_action_eligible": False,

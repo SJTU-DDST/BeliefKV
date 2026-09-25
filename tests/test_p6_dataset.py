@@ -735,6 +735,42 @@ def test_native_transfer_service_requires_measured_stream_interval(
     assert all(not row["training_eligible_service_curve"] for row in rows[1:])
 
 
+def test_native_export_retains_measured_transfer_labels_only_when_healthy(
+    tmp_path: Path,
+) -> None:
+    run = _native_run(tmp_path)
+    server = run / "server"
+    _write_jsonl(
+        server / "transfer_telemetry.jsonl",
+        [{
+            "command_id": "native-ack",
+            "command_kind": "native_hicache_ack",
+            "telemetry_origin": "native_hicache_ack_v0520",
+            "direction": "h2d",
+            "status": "completed",
+            "actual_bytes": 8192,
+            "submit_ts_ms": 1000.0,
+            "complete_ts_ms": 1010.0,
+            "submit_to_ack_ms": 9.0,
+            "native_unacked_bytes_at_submit": 0,
+            "transfer_stream_elapsed_ms": 2.0,
+            "start_timestamp_semantics": "device_event_no_wall_anchor",
+        }],
+    )
+    good = export_native_reactive_p6_dataset(run, tmp_path / "good")
+    assert good["training_readiness"]["pcie_service_eligible_count"] == 1
+    assert _read_jsonl(tmp_path / "good/pcie_operations.jsonl")[0][
+        "training_eligible_service_curve"
+    ] is True
+
+    status = server / "native_telemetry_status.json"
+    raw = json.loads(status.read_text(encoding="utf-8"))
+    raw["writer_error"] = "writer failed"
+    status.write_text(json.dumps(raw), encoding="utf-8")
+    bad = export_native_reactive_p6_dataset(run, tmp_path / "bad")
+    assert bad["training_readiness"]["pcie_service_eligible_count"] == 0
+
+
 def test_native_reactive_uses_stable_trace_fingerprint_for_legacy_run(
     tmp_path: Path,
 ) -> None:

@@ -26,3 +26,25 @@
   passing native calibration coverage report, and check fitted and held-out
   runtime-environment digests agree. Insufficient target coverage must be
   reported rather than presented as a successful calibration.
+
+## September 25 result and recovery
+
+The 128-root refit collection finished with 127 completed workflows; all 128
+traces passed the raw trace gate. The frozen training export was locally
+eligible (123 JOIN labels, 32,813 eligible decode-demand requests), but its
+PCIe label count was zero: the native evidence gate overrode measured transfer
+eligibility with `False`. A separate, non-destructive export from the same
+raw telemetry now preserves completed native transfer-stream intervals only
+when the telemetry writer is healthy. The collection shell also terminated
+after a successful export while its file was being edited during the run;
+it did not produce a fitted checkpoint. The recovery sequence is: re-export
+to `dataset_native_transfer_v2`, check train provenance and PCIe labels,
+fit the model on that dataset alone, run the frozen 66-root calibration
+collection, then calibrate available prediction heads only if the held-out
+labels pass. No GPU re-collection is needed for the train split.
+
+The optional `--native-heads-only` calibration output is explicitly **not**
+action-calibrated or online-eligible. Action thresholds and predictive
+transfer service calibration still require separately proven action/service
+targets and a native coverage audit; absence of these targets must not be
+converted into a full model promotion.
