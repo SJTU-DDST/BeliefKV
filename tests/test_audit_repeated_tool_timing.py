@@ -86,16 +86,58 @@ def test_project_disjoint_transfer_checks_margins_and_long_false_positives(
         _event("tool_start", 3100, 3, "second", "child"),
         _event("tool_end", 6200, 4, "second", "child"),
     ])
-    _write(evaluation, "sphinx", [
+    eval_events = [
         _event("tool_start", 0, 1, "first", "child"),
         _event("tool_end", 3100, 2, "first", "child"),
         _event("tool_start", 3200, 3, "second", "child"),
         _event("tool_end", 3300, 4, "second", "child"),
-    ])
+    ]
+    for event in eval_events:
+        if event["kind"] == "tool_start":
+            event["attributes"]["is_child"] = True
+    _write(evaluation, "sphinx", eval_events)
     result = transfer_replay(train, evaluation)
     assert result["train_p90_absolute_residual_ms"] == 100
     assert result["evaluation_within_train_p90_margin"] == 0
     assert result["predicted_long_false_positive_count"] == 1
+    gate = result["early_action_1000ms_budget"]
+    assert gate["completed_long_child_calls"] == 1
+    assert gate["selected_completed_child_calls"] == 1
+    assert gate["selected_actual_short"] == 1
+    assert gate["selected_expired_before_trigger"] == 1
+    assert gate["selected_lead_at_least_500ms"] == 0
+
+
+def test_unfinished_repeated_call_is_reported_without_future_duration(
+    tmp_path: Path,
+) -> None:
+    train = tmp_path / "train"
+    evaluation = tmp_path / "evaluation"
+    _write(train, "django", [
+        _event("tool_start", 0, 1, "first", "child"),
+        _event("tool_end", 3_000, 2, "first", "child"),
+        _event("tool_start", 3_010, 3, "second", "child"),
+        _event("tool_end", 6_010, 4, "second", "child"),
+    ])
+    events = [
+        _event("tool_start", 0, 1, "first", "child"),
+        _event("tool_end", 3_000, 2, "first", "child"),
+        _event("tool_start", 3_010, 3, "pending", "child"),
+        _event("tool_start", 3_020, 4, "second", "child"),
+        _event("tool_end", 6_020, 5, "second", "child"),
+    ]
+    for event in events:
+        if event["kind"] == "tool_start":
+            event["attributes"]["is_child"] = True
+    _write(evaluation, "sphinx", events)
+    result = transfer_replay(train, evaluation)
+    assert result["early_action_1000ms_budget"]["selected_completed_child_calls"] == 1
+    assert result["unfinished_or_missing_end_calls"] == {
+        "unfinished_or_missing_end_execute": 1,
+        "unfinished_or_missing_end_child_execute": 1,
+        "unfinished_or_missing_end_repeated_child": 1,
+        "unfinished_or_missing_end_selected_child": 1,
+    }
 
 
 def test_legacy_origin_inference_is_opt_in(tmp_path: Path) -> None:

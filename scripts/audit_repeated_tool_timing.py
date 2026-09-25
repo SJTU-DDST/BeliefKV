@@ -96,6 +96,7 @@ def _read_workflow(
             row = {
                 "project": path.parent.name.split("__", 1)[0],
                 "workflow": str(event["workflow_id"]),
+                "tool_call_id": call_id,
                 "invocation": str(event.get("invocation_id") or ""),
                 "class": str(start_attrs.get("observed_command_class") or "unknown"),
                 "shape": str(start_attrs.get("observed_command_shape") or "unknown"),
@@ -124,6 +125,103 @@ def _read_workflow(
                     duration, ts, row["status"]
                 )
     return completed
+
+
+def _unfinished_calls(workflows: Path) -> dict[str, int]:
+    counts = Counter()
+    for path in sorted(workflows.glob("*/runtime_events.deepagents.jsonl")):
+        starts = {}
+        ended = set()
+        with path.open("rb") as stream:
+            for line in stream:
+                if not line.strip():
+                    continue
+                event = orjson.loads(line)
+                attrs = event.get("attributes") or {}
+                call_id = attrs.get("tool_call_id")
+                if not call_id or attrs.get("tool_name") != "execute":
+                    continue
+                if event.get("kind") == "tool_start":
+                    starts[call_id] = event
+                elif event.get("kind") == "tool_end":
+                    ended.add(call_id)
+        completed = _read_workflow(path)
+        for call_id, start in starts.items():
+            if call_id in ended:
+                continue
+            counts["unfinished_or_missing_end_execute"] += 1
+            attrs = start.get("attributes") or {}
+            if attrs.get("is_child") is not True:
+                continue
+            counts["unfinished_or_missing_end_child_execute"] += 1
+            prior = [
+                row for row in completed
+                if row["invocation"] == start.get("invocation_id")
+                and row["input_sha256"] == attrs.get("input_sha256")
+                and row["input_sha256"]
+                and row["terminal_ts_ms"] < float(start["ts_ms"])
+                and row["status"] == "success"
+            ]
+            if prior:
+                counts["unfinished_or_missing_end_repeated_child"] += 1
+                if max(prior, key=lambda row: row["terminal_ts_ms"])[
+                    "duration_ms"
+                ] >= 2_000:
+                    counts["unfinished_or_missing_end_selected_child"] += 1
+    return dict(counts)
+
+
+def _early_action_quality(
+    selected: list[dict], all_completed: list[dict], *, lead_budget_ms: int,
+) -> dict:
+    child = [
+        row for row in selected
+        if row["is_child"] is True and row["previous"][0] >= 2_000
+    ]
+    realized = [
+        {
+            **row,
+            "remaining_ms": row["duration_ms"]
+            - max(0.0, row["previous"][0] - lead_budget_ms),
+        }
+        for row in child
+    ]
+    true_long = sum(
+        row["is_child"] is True and row["duration_ms"] >= 2_000
+        for row in all_completed
+    )
+    errors = [abs(row["duration_ms"] - row["previous"][0]) for row in child]
+    return {
+        "lead_budget_ms": lead_budget_ms,
+        "completed_long_child_calls": true_long,
+        "selected_completed_child_calls": len(child),
+        "selected_workflow_count": len({row["workflow"] for row in child}),
+        "selected_projects": dict(sorted(Counter(
+            row["project"] for row in child
+        ).items())),
+        "selected_actual_long": sum(
+            row["duration_ms"] >= 2_000 for row in child
+        ),
+        "selected_actual_short": sum(
+            row["duration_ms"] < 2_000 for row in child
+        ),
+        "selected_point_error_p50_ms": _quantile(errors, .5),
+        "selected_point_error_p90_ms": _quantile(errors, .9),
+        "selected_point_within_500ms": sum(error <= 500 for error in errors),
+        "selected_lead_at_least_500ms": sum(
+            row["remaining_ms"] >= 500 for row in realized
+        ),
+        "selected_expired_before_trigger": sum(
+            row["remaining_ms"] < 0 for row in realized
+        ),
+        "selected_more_than_2s_early": sum(
+            row["remaining_ms"] > 2_000 for row in realized
+        ),
+        "completed_long_child_coverage": (
+            sum(row["duration_ms"] >= 2_000 for row in child) / true_long
+            if true_long else None
+        ),
+    }
 
 
 def replay(
@@ -272,6 +370,13 @@ def transfer_replay(
         )
         if row["previous"] is not None and row["previous"][2] == "success"
     ]
+    all_completed = [
+        row for path in sorted(evaluation_workflows.glob("*/runtime_events.deepagents.jsonl"))
+        for row in _read_workflow(
+            path, allow_legacy_origin=allow_legacy_evaluation_origin,
+            history_scope=history_scope,
+        )
+    ]
     if not train or not evaluation:
         raise ValueError("both groups require prior-success repeat samples")
     if {row["project"] for row in train} & {row["project"] for row in evaluation}:
@@ -320,6 +425,18 @@ def transfer_replay(
         "predicted_long_false_positive_count": sum(
             row["previous"][0] >= 2_000 and row["duration_ms"] < 2_000
             for row in rows
+        ),
+        "early_action_1000ms_budget": _early_action_quality(
+            evaluation, all_completed, lead_budget_ms=1_000,
+        ),
+        "unfinished_or_missing_end_calls": _unfinished_calls(
+            evaluation_workflows
+        ),
+        "action_limitation": (
+            "Trigger is based only on the previous completed call. Remaining "
+            "time assumes zero control/PCIe delay and does not prove physical "
+            "prefetch. Unfinished calls are not assigned a duration or silently "
+            "treated as successful."
         ),
     }
 
