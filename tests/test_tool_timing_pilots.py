@@ -53,3 +53,10 @@ def test_project_adaptation_never_uses_unfinished_history(tmp_path: Path) -> Non
     result = pilot(tmp_path, minimum_support=2)
     assert result["supported"]["count"] == 1
     assert result["by_project"]["django"]["supported"]["prior_p50_error_ms"] == 0
+    assert result["zero_latency_first_trigger_upper_bounds"][
+        "long_fraction_0.8_budget_1000ms"
+    ]["candidates"] == 0
+    strict = pilot(
+        tmp_path, minimum_support=2, exclude_same_workflow_history=True,
+    )
+    assert strict["supported"]["count"] == 0

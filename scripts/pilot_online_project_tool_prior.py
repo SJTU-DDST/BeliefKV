@@ -20,6 +20,7 @@ from scripts.audit_repeated_tool_timing import _quantile, _read_workflow
 def pilot(
     workflows: Path, *, minimum_support: int = 16,
     allow_legacy_origin: bool = False,
+    exclude_same_workflow_history: bool = False,
 ) -> dict:
     if minimum_support < 2:
         raise ValueError("minimum support must be at least two")
@@ -52,7 +53,7 @@ def pilot(
              if len(values) >= 8},
         )
     pending = []
-    observed: dict[tuple[str, str], deque[float]] = defaultdict(
+    observed: dict[tuple[str, str], deque[tuple[float, str]]] = defaultdict(
         lambda: deque(maxlen=64)
     )
     groups: dict[tuple[str, int], list[dict]] = defaultdict(list)
@@ -65,7 +66,7 @@ def pilot(
             _, _, done = heapq.heappop(pending)
             if done["status"] == "success" and done["is_child"] is True:
                 observed[(done["project"], done["class"])].append(
-                    done["duration_ms"]
+                    (done["duration_ms"], done["workflow"])
                 )
         heapq.heappush(pending, (row["terminal_ts_ms"], sequence, row))
         if row["is_child"] is not True or (
@@ -74,7 +75,10 @@ def pilot(
             continue
         long_call = row["duration_ms"] >= 2_000
         total_long_child += long_call
-        history = observed[(row["project"], row["class"])]
+        history = [
+            duration for duration, source in observed[(row["project"], row["class"])]
+            if not exclude_same_workflow_history or source != row["workflow"]
+        ]
         general, medians = baseline[row["project"]]
         reference = medians.get(row["class"], general)
         supported = len(history) >= minimum_support
@@ -117,6 +121,27 @@ def pilot(
             ),
             "workflow_count": len({row["workflow"] for row in chosen}),
         }
+    trigger_upper_bounds = {}
+    for cut in (.7, .8):
+        candidates = [
+            row for row in all_rows
+            if row["historical_long_rate"] >= cut and row["prior_ms"] >= 2_000
+        ]
+        for lead_budget in (500, 1000, 1500):
+            leads = [
+                row["duration_ms"] - max(0.0, row["prior_ms"] - lead_budget)
+                for row in candidates
+            ]
+            trigger_upper_bounds[f"long_fraction_{cut}_budget_{lead_budget}ms"] = {
+                "candidates": len(candidates),
+                "return_before_trigger": sum(lead < 0 for lead in leads),
+                "late_under_500ms": sum(0 <= lead < 500 for lead in leads),
+                "useful_500ms_to_2s": sum(
+                    500 <= lead <= 2000 for lead in leads
+                ),
+                "early_over_2s": sum(lead > 2000 for lead in leads),
+                "true_long": sum(row["long"] for row in candidates),
+            }
     def metrics(rows: list[dict]) -> dict:
         workflows = defaultdict(list)
         for row in rows:
@@ -161,6 +186,7 @@ def pilot(
     return {
         "status": "offline_causal_online_adaptation_pilot_not_deployable",
         "legacy_origin_inferred": allow_legacy_origin,
+        "exclude_same_workflow_history": exclude_same_workflow_history,
         "minimum_completed_project_class_samples": minimum_support,
         "total_cold_child_long": total_long_child,
         "long_after_support": eligible_long_child,
@@ -193,6 +219,7 @@ def pilot(
             ),
         },
         "long_selection_sweep": selection_sweep,
+        "zero_latency_first_trigger_upper_bounds": trigger_upper_bounds,
         "by_project": {
             project: {
                 "supported": metrics([
@@ -212,11 +239,13 @@ def main() -> None:
     parser.add_argument("--workflows", type=Path, required=True)
     parser.add_argument("--minimum-support", type=int, default=16)
     parser.add_argument("--allow-legacy-origin", action="store_true")
+    parser.add_argument("--exclude-same-workflow-history", action="store_true")
     parser.add_argument("--output", type=Path, required=True)
     args = parser.parse_args()
     report = pilot(
         args.workflows, minimum_support=args.minimum_support,
         allow_legacy_origin=args.allow_legacy_origin,
+        exclude_same_workflow_history=args.exclude_same_workflow_history,
     )
     args.output.parent.mkdir(parents=True, exist_ok=True)
     args.output.write_text(json.dumps(report, indent=2, sort_keys=True) + "\n")
