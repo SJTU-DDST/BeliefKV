@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from collections import deque
 from dataclasses import dataclass
 import os
 import selectors
@@ -19,6 +20,8 @@ class OutputTiming:
     observed_bytes: int
     elapsed_ms: float
     timed_out: bool
+    recent_output_chunks: tuple[tuple[float, int], ...]
+    total_output_chunks: int
 
 
 def observe_output(argv: Sequence[str], *, timeout_s: float) -> OutputTiming:
@@ -27,6 +30,8 @@ def observe_output(argv: Sequence[str], *, timeout_s: float) -> OutputTiming:
     started = time.monotonic()
     deadline = started + timeout_s
     chunks: list[bytes] = []
+    recent: deque[tuple[float, int]] = deque(maxlen=64)
+    total_chunks = 0
     first = last = None
     timed_out = False
     with subprocess.Popen(
@@ -47,6 +52,8 @@ def observe_output(argv: Sequence[str], *, timeout_s: float) -> OutputTiming:
                         first = observed if first is None else first
                         last = observed
                         chunks.append(data)
+                        recent.append(((observed - started) * 1000.0, len(data)))
+                        total_chunks += 1
                     else:
                         selector.unregister(key.fileobj)
         if timed_out:
@@ -64,4 +71,6 @@ def observe_output(argv: Sequence[str], *, timeout_s: float) -> OutputTiming:
         observed_bytes=sum(map(len, chunks)),
         elapsed_ms=elapsed_ms,
         timed_out=timed_out,
+        recent_output_chunks=tuple(recent),
+        total_output_chunks=total_chunks,
     )

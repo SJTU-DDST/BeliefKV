@@ -6,7 +6,7 @@ import sys
 import pytest
 
 from beliefkv.experiments.sandbox_progress import observe_output
-from scripts.audit_sandbox_output_timing import audit
+from scripts.audit_sandbox_output_timing import _first_silence_lead_ms, audit
 
 
 def test_output_timing_observes_first_and_later_bytes_without_body_in_metadata():
@@ -21,6 +21,8 @@ def test_output_timing_observes_first_and_later_bytes_without_body_in_metadata()
     assert result.first_output_ms is not None
     assert result.last_output_ms is not None
     assert result.first_output_ms < result.last_output_ms <= result.elapsed_ms
+    assert sum(size for _, size in result.recent_output_chunks) == 9
+    assert result.total_output_chunks == len(result.recent_output_chunks) == 2
     assert result.timed_out is False
 
 
@@ -30,6 +32,8 @@ def test_output_timing_handles_empty_output_and_host_timeout():
     assert empty.first_output_ms is None
     assert empty.last_output_ms is None
     assert empty.observed_bytes == 0
+    assert empty.recent_output_chunks == ()
+    assert empty.total_output_chunks == 0
     timed = observe_output([
         sys.executable, "-c",
         "import sys,time; sys.stdout.write('partial'); sys.stdout.flush(); "
@@ -107,3 +111,19 @@ def test_stdout_timing_audit_matches_one_causal_tool_end(tmp_path):
     assert report["by_shape_long_commands_matched"]["test_suite"][
         "first_output_at_least_500ms_before_exit"
     ] == 1
+
+
+def test_silence_signal_uses_only_chunks_seen_before_trigger():
+    row = {
+        "execute_elapsed_ms": 3000,
+        "recent_output_chunks": ((100, 1), (300, 2), (1300, 3)),
+        "total_output_chunks": 3,
+    }
+    assert _first_silence_lead_ms(row) == 3000 - 550
+    row["recent_output_chunks"] = ((100, 1), (200, 2), (300, 3))
+    assert _first_silence_lead_ms(row) == 3000 - 550
+    row["total_output_chunks"] = 4
+    assert _first_silence_lead_ms(row) is None
+    row["total_output_chunks"] = 3
+    row["execute_elapsed_ms"] = 450
+    assert _first_silence_lead_ms(row) is None

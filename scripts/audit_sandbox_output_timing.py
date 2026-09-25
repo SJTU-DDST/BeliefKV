@@ -17,6 +17,20 @@ if str(ROOT) not in sys.path:
 from scripts.audit_native_stream_shadow import _quantile, _rows
 
 
+def _first_silence_lead_ms(row: dict, *, silence_ms: float = 250.0) -> float | None:
+    chunks = row.get("recent_output_chunks") or []
+    if not chunks or row.get("total_output_chunks") != len(chunks):
+        return None
+    completed = float(row["execute_elapsed_ms"])
+    for index, (at_ms, _) in enumerate(chunks):
+        trigger = float(at_ms) + silence_ms
+        if trigger >= completed:
+            return None
+        if index + 1 == len(chunks) or float(chunks[index + 1][0]) > trigger:
+            return completed - trigger
+    return None
+
+
 def summarize(rows: list[dict]) -> dict:
     observed = [
         row for row in rows
@@ -26,6 +40,16 @@ def summarize(rows: list[dict]) -> dict:
         max(0.0, float(row["execute_elapsed_ms"])
             - float(row["first_output_after_execute_ms"]))
         for row in observed
+    ]
+    complete_progress = [
+        row for row in rows
+        if row.get("recent_output_chunks")
+        and row.get("total_output_chunks") == len(row["recent_output_chunks"])
+        and row.get("exit_code") != 124
+    ]
+    silence_leads = [
+        lead for row in complete_progress
+        if (lead := _first_silence_lead_ms(row)) is not None
     ]
     return {
         "command_count": len(rows),
@@ -43,6 +67,28 @@ def summarize(rows: list[dict]) -> dict:
         "first_output_within_500ms_of_exit": sum(
             lead < 500 for lead in leads
         ),
+        "first_silence_250ms": {
+            "fully_observed_command_count": len(complete_progress),
+            "triggered_before_exit": len(silence_leads),
+            "lead_p50_ms": median(silence_leads) if silence_leads else None,
+            "lead_p90_ms": _quantile(silence_leads, .9),
+            "return_within_500ms": sum(
+                0 <= lead <= 500 for lead in silence_leads
+            ),
+            "lead_at_least_500ms": sum(
+                lead >= 500 for lead in silence_leads
+            ),
+            "more_than_2s_early": sum(
+                lead > 2_000 for lead in silence_leads
+            ),
+            "missing_or_truncated_progress": sum(
+                row.get("total_output_chunks") != len(
+                    row.get("recent_output_chunks") or []
+                )
+                for row in rows if row.get("first_output_after_execute_ms")
+                is not None
+            ),
+        },
     }
 
 

@@ -926,6 +926,8 @@ class DockerWorkspaceBackend(FilesystemBackend, SandboxBackendProtocol):
                 "first_output_after_execute_ms": timing.first_output_ms,
                 "last_output_after_execute_ms": timing.last_output_ms,
                 "observed_output_bytes": timing.observed_bytes,
+                "recent_output_chunks": timing.recent_output_chunks,
+                "total_output_chunks": timing.total_output_chunks,
                 "output_timing_shadow": True,
             } if self.output_timing_shadow else {}),
         )
