@@ -137,6 +137,35 @@ class CollectingSink:
         pass
 
 
+def test_completed_same_input_duration_is_emitted_at_next_tool_start() -> None:
+    now = [1000.0]
+    trace = CollectingSink()
+    adapter = DeepAgentsRuntimeAdapter(
+        trace, BeliefKVRequestMetadata("wf", "root", "ctx", 0),
+        clock_ms=lambda: now[0],
+    )
+    adapter.start()
+    first = uuid4()
+    adapter.on_tool_start(
+        {"name": "execute"}, "", run_id=first,
+        inputs={"command": "echo ready"}, tool_call_id="first",
+    )
+    now[0] = 1100.0
+    adapter.on_tool_end("ready", run_id=first)
+    now[0] = 1120.0
+    second = uuid4()
+    adapter.on_tool_start(
+        {"name": "execute"}, "", run_id=second,
+        inputs={"command": "echo ready"}, tool_call_id="second",
+    )
+    starts = [event for event in trace.events
+              if event.kind == RuntimeEventKind.TOOL_START]
+    assert "previous_same_input_duration_ms" not in starts[0].attributes
+    assert starts[1].attributes["previous_same_input_duration_ms"] == 100
+    assert starts[1].attributes["previous_same_input_age_ms"] == 20
+    assert starts[1].attributes["previous_same_input_status"] == "success"
+    assert "echo ready" not in json.dumps(starts[1].to_dict())
+
 class BatchCollectingSink(CollectingSink):
     def __init__(self) -> None:
         super().__init__()

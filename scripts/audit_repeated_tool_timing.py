@@ -154,10 +154,16 @@ def replay(workflows: Path, *, minimum_class_samples: int = 8) -> dict:
             )
             if row["duration_ms"] >= 2_000:
                 dimensions.append("actual_at_least_2s")
+                if row["is_child"] is True:
+                    dimensions.append("child_actual_at_least_2s")
             if prev_duration >= 2_000:
                 dimensions.append("predicted_at_least_2s")
+                if row["is_child"] is True:
+                    dimensions.append("child_predicted_at_least_2s")
                 if row["duration_ms"] < 2_000:
                     counts["long_prediction_false_positive"] += 1
+                    if row["is_child"] is True:
+                        counts["child_long_prediction_false_positive"] += 1
             if status_matches:
                 dimensions.append("same_outcome")
             else:
@@ -184,6 +190,20 @@ def replay(workflows: Path, *, minimum_class_samples: int = 8) -> dict:
                 counts["previous_more_than_500ms_early"] += 1
             if prev_duration > row["duration_ms"] + 500:
                 counts["previous_more_than_500ms_late"] += 1
+            if prev_duration >= 2_000 and row["is_child"] is True:
+                for lead_budget in (500, 750, 1000, 1500):
+                    # Negative latest-starts trigger at TOOL_START, not before it.
+                    trigger_ts = max(0.0, prev_duration - lead_budget)
+                    lead = row["duration_ms"] - trigger_ts
+                    prefix = f"child_forecast_budget_{lead_budget}ms"
+                    if lead < 0:
+                        counts[f"{prefix}_after_return"] += 1
+                    elif lead >= 500:
+                        counts[f"{prefix}_at_least_500ms_lead"] += 1
+                    else:
+                        counts[f"{prefix}_under_500ms_lead"] += 1
+                    if lead > 2000:
+                        counts[f"{prefix}_more_than_2s_early"] += 1
     return {
         "status": "offline_causal_replay_not_deployable",
         "project_count": len(projects),
