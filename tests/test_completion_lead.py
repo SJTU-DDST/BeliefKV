@@ -3,6 +3,7 @@ from __future__ import annotations
 import json
 import hashlib
 
+import numpy as np
 import pytest
 
 from beliefkv.predictor.completion_lead import (
@@ -17,6 +18,7 @@ from scripts.audit_native_stream_shadow import (
 )
 from scripts.fit_native_completion_lead import _content_threshold_audit
 from scripts.pilot_stream_final_classifier import samples as stream_classifier_samples
+from scripts.pilot_stream_final_classifier import _quality as stream_classifier_quality
 
 
 def _event(timestamp: float, kind: str, **attributes):
@@ -361,12 +363,89 @@ def test_stream_classifier_features_do_not_use_future_tool_chunk(tmp_path):
             "".join(json.dumps(event) + "\n" for event in events),
             encoding="utf-8",
         )
-    rows, censored = stream_classifier_samples(workflows)
+    rows, censored, last_children = stream_classifier_samples(workflows)
     assert censored == 0
+    assert not last_children
     assert len(rows) == 2
     assert rows[0]["features"] == rows[1]["features"]
     assert {row["final"] for row in rows} == {False, True}
     assert next(row for row in rows if row["final"])["return_lead_ms"] == 1000
+
+
+def test_stream_join_feature_only_sees_completed_siblings(tmp_path):
+    workflows = tmp_path / "workflows"
+    for name, sibling_return in (("ready", 2000), ("pending", 2600)):
+        path = workflows / name
+        path.mkdir(parents=True)
+        events = [
+            {
+                **_event(0, "join_create", mode="all"),
+                "workflow_id": name, "join_id": "join",
+                "member_invocation_ids": ["child", "other"],
+            },
+            {**_event(100, "llm_submit", request_id="req"),
+             "workflow_id": name},
+            {**_event(150, "structured_action", request_id="req",
+                      beliefkv_child_first_content_shadow=True),
+             "workflow_id": name},
+            {
+                **_event(500, "structured_action", request_id="req",
+                         beliefkv_child_substantial_content_shadow=True,
+                         content_threshold_chars=1024),
+                "workflow_id": name, "join_id": "join",
+            },
+            {**_event(sibling_return, "return"),
+             "workflow_id": name, "invocation_id": "other"},
+            {**_event(3000, "llm_result", request_id="req",
+                      tool_call_count=0, finish_reason="stop",
+                      output_chars=1500),
+             "workflow_id": name},
+            {**_event(3500, "return"), "workflow_id": name},
+        ]
+        (path / "runtime_events.deepagents.jsonl").write_text(
+            "".join(json.dumps(event) + "\n" for event in events),
+            encoding="utf-8",
+        )
+    rows, censored, _ = stream_classifier_samples(workflows)
+    assert censored == 0
+    assert {row["workflow"]: row["join_last_outstanding"] for row in rows} == {
+        "ready": True, "pending": False,
+    }
+
+
+def test_stream_join_counts_repeated_workflows_in_distinct_runs(tmp_path):
+    workflows = tmp_path / "workflows"
+    for name in ("first", "second"):
+        path = workflows / name
+        path.mkdir(parents=True)
+        events = [
+            {
+                **_event(0, "join_create", mode="all"),
+                "join_id": "join", "member_invocation_ids": ["child"],
+            },
+            _event(100, "llm_submit", request_id="req"),
+            _event(150, "structured_action", request_id="req",
+                   beliefkv_child_first_content_shadow=True),
+            _event(500, "structured_action", request_id="req",
+                   beliefkv_child_substantial_content_shadow=True,
+                   content_threshold_chars=1024),
+            _event(3000, "llm_result", request_id="req",
+                   tool_call_count=0, finish_reason="stop", output_chars=1600),
+            _event(3500, "return"),
+            {**_event(3500, "join_satisfied"), "join_id": "join"},
+        ]
+        (path / "runtime_events.deepagents.jsonl").write_text(
+            "".join(json.dumps(event) + "\n" for event in events),
+            encoding="utf-8",
+        )
+    rows, censored, last_children = stream_classifier_samples(workflows)
+    assert censored == 0
+    assert len(rows) == len(last_children) == 2
+    result = stream_classifier_quality(
+        rows, np.array([1.0, 1.0]), .5, last_children
+    )
+    assert result["selected_true_last_children"] == 2
+    assert result["last_child_recall"] == 1
 
 
 def test_natural_content_threshold_audit_counts_returns_and_false_signals():
