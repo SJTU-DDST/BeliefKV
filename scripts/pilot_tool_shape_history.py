@@ -73,6 +73,7 @@ def replay(evaluation: list[dict]) -> dict:
                 comparison, _ = _neighbor_prior(row, history_by_class[key])
                 selected.append({
                     **row,
+                    "estimate_ms": estimate,
                     "error_ms": abs(row["duration_ms"] - estimate),
                     "class_neighbor_error_ms": (
                         abs(row["duration_ms"] - comparison)
@@ -89,16 +90,33 @@ def replay(evaluation: list[dict]) -> dict:
         {**row, "error_ms": row["class_neighbor_error_ms"]}
         for row in selected if row["class_neighbor_error_ms"] is not None
     ])
+    scheduling_windows = {}
+    for budget in (500, 1000, 2000):
+        # Both forecasts and true durations are measured from TOOL_START.
+        # This is only a zero-control-overhead upper bound for a timed action.
+        leads = [
+            row["duration_ms"] - max(0, row["estimate_ms"] - budget)
+            for row in selected
+        ]
+        scheduling_windows[f"desired_lead_{budget}ms"] = {
+            "before_tool_end": sum(lead >= 0 for lead in leads),
+            "at_least_500ms_before_end": sum(lead >= 500 for lead in leads),
+            "over_2000ms_before_end": sum(lead > 2000 for lead in leads),
+            "after_tool_end": sum(lead < 0 for lead in leads),
+        }
     return {
         "status": "read_only_selective_shape_timing_no_physical_action",
         "cold_child_calls": child_calls,
         "actual_cold_long": actual_long,
         "selected_predicted_long": len(selected),
         "selected_true_long": len(true_long),
+        "selected_false_long": len(selected) - len(true_long),
         "long_precision": len(true_long) / len(selected) if selected else None,
         "long_recall": len(true_long) / actual_long if actual_long else None,
         "shape_timing": metrics,
+        "selected_true_long_timing": _summarize(true_long),
         "class_neighbor_matched": baseline,
+        "scheduling_windows_zero_overhead_upper_bound": scheduling_windows,
     }
 
 

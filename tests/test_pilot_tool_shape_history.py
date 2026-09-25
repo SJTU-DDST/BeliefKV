@@ -45,3 +45,23 @@ def test_shape_replay_reports_selective_precision_without_future_data():
     assert result["selected_true_long"] == 1
     assert result["shape_timing"]["p50_error_ms"] == 50
     assert result["long_precision"] == 1
+    assert result["selected_false_long"] == 0
+    assert result["selected_true_long_timing"]["p50_error_ms"] == 50
+    assert result["scheduling_windows_zero_overhead_upper_bound"][
+        "desired_lead_500ms"
+    ]["at_least_500ms_before_end"] == 1
+
+
+def test_shape_replay_counts_short_false_positives_and_late_tickets():
+    rows = [_row(index, 3000 + (index % 2) * 100)
+            for index in range(4)]
+    rows.extend((_row(4, 3150), _row(5, 250)))
+    result = replay(rows)
+    assert result["selected_predicted_long"] == 2
+    assert result["selected_false_long"] == 1
+    assert result["actual_cold_long"] == 5
+    assert result["long_precision"] == .5
+    assert result["long_recall"] == .2
+    assert result["scheduling_windows_zero_overhead_upper_bound"][
+        "desired_lead_500ms"
+    ]["after_tool_end"] == 1
