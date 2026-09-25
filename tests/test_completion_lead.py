@@ -290,6 +290,39 @@ def test_stream_audit_can_exclude_in_progress_workflows(tmp_path):
     assert report["cues"] == 1
 
 
+def test_stream_eta_uses_only_previously_completed_returns(tmp_path):
+    workflows = tmp_path / "workflows"
+    for index in range(9):
+        path = workflows / str(index)
+        path.mkdir(parents=True)
+        started = index * 1000
+        events = [
+            {**_event(started, "invocation_create", relation_type="spawn"),
+             "workflow_id": str(index)},
+            {**_event(started, "structured_action",
+                      beliefkv_child_first_content_shadow=True,
+                      request_id=str(index)),
+             "workflow_id": str(index)},
+            {**_event(started + 500, "llm_result",
+                      request_id=str(index), tool_call_count=0,
+                      finish_reason="stop", output_chars=128),
+             "workflow_id": str(index)},
+            {**_event(started + (600 if index < 8 else 900), "return"),
+             "workflow_id": str(index)},
+        ]
+        (path / "runtime_events.deepagents.jsonl").write_text(
+            "".join(json.dumps(event) + "\n" for event in events),
+            encoding="utf-8",
+        )
+    result = audit_stream_shadow(workflows)
+    online = result["first_content_timer_shadow"]["250"][
+        "online_completed_history_eta"
+    ]
+    assert online["evaluated_true_returns"] == 1
+    assert online["error_p50_ms"] == 300
+    assert online["within_500ms"] == 1
+
+
 def test_natural_content_threshold_audit_counts_returns_and_false_signals():
     records = [
         {"output_chars": 2, "returned": False, "last_child": False,

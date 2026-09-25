@@ -5,9 +5,11 @@ from __future__ import annotations
 
 import argparse
 from collections import defaultdict
+import heapq
 import json
 import math
 from pathlib import Path
+from statistics import median
 
 
 def _rows(path: Path):
@@ -125,6 +127,7 @@ def audit(
     timers = {
         delay: {"triggered": 0, "true_returns": 0, "false_triggers": 0,
                 "return_leads_ms": [], "first_by_child": {},
+                "first_trigger_ts": {},
                 "false_examples": []}
         for delay in timer_thresholds
     }
@@ -200,6 +203,7 @@ def audit(
                             if is_final else None,
                         ),
                     )
+                    timer["first_trigger_ts"].setdefault(child, trigger_ts)
                     if is_final:
                         timer["true_returns"] += 1
                         timer["return_leads_ms"].append(
@@ -242,6 +246,32 @@ def audit(
                     joined_leads.append(lead)
             else:
                 negatives += 1
+    online_etas = {}
+    for delay, timer in timers.items():
+        known_returns = []
+        prior_leads = []
+        measured_errors = []
+        for child, (is_final, lead) in sorted(
+            timer["first_by_child"].items(),
+            key=lambda item: timer["first_trigger_ts"][item[0]],
+        ):
+            issued_ts = timer["first_trigger_ts"][child]
+            while known_returns and known_returns[0][0] < issued_ts:
+                _, _, finished_lead = heapq.heappop(known_returns)
+                prior_leads.append(finished_lead)
+            if is_final and lead is not None:
+                if len(prior_leads) >= 8:
+                    measured_errors.append(abs(
+                        lead - median(prior_leads[-64:])
+                    ))
+                heapq.heappush(
+                    known_returns, (issued_ts + lead, issued_ts, lead)
+                )
+        online_etas[delay] = {
+            "evaluated_true_returns": len(measured_errors),
+            "error_p50_ms": _quantile(measured_errors, .5),
+            "within_500ms": sum(error <= 500 for error in measured_errors),
+        }
     timer_results = {
         str(delay): {
             "triggered": values["triggered"],
@@ -313,6 +343,7 @@ def audit(
                     for predicted, lead in values["first_by_child"].values()
                 ) if eta_prior_ms is not None else None
             ),
+            "online_completed_history_eta": online_etas[delay],
             "eligible_last_children": len(last_children),
             "last_child_first_triggered": sum(
                 child in last_children for child in values["first_by_child"]
