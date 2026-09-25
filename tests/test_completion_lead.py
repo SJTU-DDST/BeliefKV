@@ -11,7 +11,10 @@ from beliefkv.predictor.completion_lead import (
     evaluate_completion_lead,
     load_pinned_completion_lead,
 )
-from scripts.audit_native_stream_shadow import audit as audit_stream_shadow
+from scripts.audit_native_stream_shadow import (
+    _satisfied_last_children,
+    audit as audit_stream_shadow,
+)
 from scripts.fit_native_completion_lead import _content_threshold_audit
 
 
@@ -215,6 +218,22 @@ def test_stream_shadow_rejects_empty_stop_even_if_child_returns(tmp_path):
     assert result["confirmed_final_return"] == 0
     assert result["confirmed_not_final"] == 1
     assert result["first_content_timer_shadow"]["250"]["false_triggers"] == 1
+
+
+def test_stream_audit_derives_last_child_only_for_complete_satisfied_join():
+    first = [
+        {**_event(0, "join_create"), "join_id": "join",
+         "member_invocation_ids": ["a", "b"],
+         "attributes": {"mode": "all"}},
+        {**_event(10, "return"), "invocation_id": "a"},
+        {**_event(20, "return"), "invocation_id": "b"},
+        {**_event(20, "join_satisfied"), "join_id": "join"},
+    ]
+    assert _satisfied_last_children(first) == {("workflow", "b")}
+    assert _satisfied_last_children(first[:-2] + [first[-1]]) == set()
+    assert _satisfied_last_children(
+        first[:-1] + [{**first[-1], "ts_ms": 50}]
+    ) == set()
 
 
 def test_natural_content_threshold_audit_counts_returns_and_false_signals():

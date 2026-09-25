@@ -24,6 +24,36 @@ def _quantile(values: list[float], q: float) -> float | None:
     return ordered[math.ceil(q * len(ordered)) - 1]
 
 
+def _satisfied_last_children(events: list[dict]) -> set[tuple[str, str]]:
+    returns = {
+        event["invocation_id"]: float(event["ts_ms"])
+        for event in events
+        if event.get("kind") == "return" and event.get("invocation_id")
+    }
+    groups = {
+        event["join_id"]: event
+        for event in events
+        if event.get("kind") == "join_create"
+        and event.get("join_id")
+        and (event.get("attributes") or {}).get("mode") == "all"
+        and event.get("member_invocation_ids")
+    }
+    result = set()
+    for event in events:
+        if event.get("kind") != "join_satisfied":
+            continue
+        group = groups.get(event.get("join_id"))
+        if group is None:
+            continue
+        members = group["member_invocation_ids"]
+        if any(member not in returns for member in members):
+            continue
+        last = max(members, key=returns.__getitem__)
+        if abs(returns[last] - float(event["ts_ms"])) <= 1:
+            result.add((event["workflow_id"], last))
+    return result
+
+
 def audit(
     workflows: Path,
     dataset: Path | None = None,
@@ -65,7 +95,10 @@ def audit(
         raise ValueError(f"no workflow event traces in {workflows}")
     by_child = defaultdict(list)
     for path in paths:
-        for event in _rows(path):
+        workflow_events = list(_rows(path))
+        if dataset is None:
+            last_children.update(_satisfied_last_children(workflow_events))
+        for event in workflow_events:
             if event.get("invocation_id"):
                 by_child[(event["workflow_id"], event["invocation_id"])].append(event)
     cues = positives = negatives = unknown = joined = 0
