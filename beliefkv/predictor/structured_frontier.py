@@ -361,6 +361,29 @@ class EmpiricalDistribution:
         )
 
 
+def _conditioned_completed_duration_prior(
+    duration_ms: float, margin_ms: float, elapsed_ms: float,
+) -> EmpiricalDistribution | None:
+    totals = (
+        max(0.0, duration_ms - margin_ms),
+        duration_ms,
+        duration_ms + margin_ms,
+    )
+    survivors = [
+        (total - elapsed_ms, mass)
+        for total, mass in zip(totals, (.1, .79, .11))
+        if total > elapsed_ms
+    ]
+    if not survivors:
+        return None
+    surviving_mass = sum(mass for _, mass in survivors)
+    return EmpiricalDistribution(
+        tuple(residual for residual, _ in survivors),
+        tuple(mass / surviving_mass for _, mass in survivors),
+        1.0,
+    )
+
+
 class WaitBeliefKind(str, Enum):
     NONE = "none"
     TOOL = "tool"
@@ -1613,34 +1636,27 @@ class FrontierBeliefModel:
                 and features.command_class == "execute"
                 and previous is not None and self.repeat_error_p90_ms is not None
             ):
-                margin = self.repeat_error_p90_ms
-                total = (
-                    max(0.0, previous - margin), previous, previous + margin
+                conditioned = _conditioned_completed_duration_prior(
+                    previous, self.repeat_error_p90_ms, features.elapsed_wait_ms,
                 )
-                wait = EmpiricalDistribution(
-                    tuple(max(0.0, value - features.elapsed_wait_ms)
-                          for value in total),
-                    (.1, .79, .11), 1.0,
-                )
-                tool_level = "backoff"
-                tool_support_detail = "same_input_completed"
+                if conditioned is not None:
+                    wait = conditioned
+                    tool_level = "backoff"
+                    tool_support_detail = "same_input_completed"
             elif (
                 self.tool_feature_contract == "observed_command_child_project_v3"
                 and features.is_child and features.command_class == "execute"
                 and features.project_class_duration_median_ms is not None
                 and self.project_error_p90_ms is not None
             ):
-                prior = features.project_class_duration_median_ms
-                margin = self.project_error_p90_ms
-                wait = EmpiricalDistribution(
-                    tuple(max(0.0, value - features.elapsed_wait_ms)
-                          for value in (
-                              max(0.0, prior - margin), prior, prior + margin,
-                          )),
-                    (.1, .79, .11), 1.0,
+                conditioned = _conditioned_completed_duration_prior(
+                    features.project_class_duration_median_ms,
+                    self.project_error_p90_ms, features.elapsed_wait_ms,
                 )
-                tool_level = "backoff"
-                tool_support_detail = "completed_project_command"
+                if conditioned is not None:
+                    wait = conditioned
+                    tool_level = "backoff"
+                    tool_support_detail = "completed_project_command"
             terminal = _temperature_scale(terminal, self.tool_temperature)
             pooled_terminal = self.pooled_tool_terminal.predict(features)
             if (

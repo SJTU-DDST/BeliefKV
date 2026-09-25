@@ -131,6 +131,18 @@ def test_repeat_tool_contract_requires_fitted_uncertainty_and_causal_success() -
     wait = model.predict(features).wait_belief
     assert wait.residual_duration.quantile(.5) == 2500.0
     assert wait.residual_duration.quantile(.9) == 2545.0
+    just_past_median = LocalFrontierFeatures.from_dict({
+        **features.to_dict(), "elapsed_wait_ms": 3001.0,
+    })
+    surviving = model.predict(just_past_median).wait_belief
+    assert surviving.support_detail == "same_input_completed"
+    assert surviving.residual_duration.quantile(.5) == 44.0
+    after_upper_bound = LocalFrontierFeatures.from_dict({
+        **features.to_dict(), "elapsed_wait_ms": 3050.0,
+    })
+    overrun = model.predict(after_upper_bound).wait_belief
+    assert overrun.support_detail != "same_input_completed"
+    assert overrun.residual_duration.values == ()
     assert FrontierBeliefModel.from_dict(model.to_dict()).predict(
         features
     ).wait_belief.residual_duration.quantile(.5) == 2500.0
@@ -167,6 +179,16 @@ def test_project_tool_contract_uses_cold_child_prior_after_sufficient_support() 
         "completed_project_command"
     )
     assert model.predict(features).wait_belief.residual_duration.quantile(.5) == 3000
+    after_median = LocalFrontierFeatures.from_dict({
+        **features.to_dict(), "elapsed_wait_ms": 3001.0,
+    })
+    assert model.predict(after_median).wait_belief.residual_duration.quantile(.5) == 70
+    after_upper_bound = LocalFrontierFeatures.from_dict({
+        **features.to_dict(), "elapsed_wait_ms": 3080.0,
+    })
+    assert model.predict(after_upper_bound).wait_belief.support_detail != (
+        "completed_project_command"
+    )
     loaded = FrontierBeliefModel.from_dict(model.to_dict())
     assert loaded.predict(features).wait_belief.residual_duration.quantile(.5) == 3000
     repeated = LocalFrontierFeatures.from_dict({
