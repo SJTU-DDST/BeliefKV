@@ -75,3 +75,18 @@ def test_censored_tools_and_missing_late_snapshot_not_synthetic():
     )
     assert censored["completed_episode_count"] == 0
     assert censored["exclusions"]["censored_or_ineligible_tool"] == 1
+
+
+def test_tool_trigger_reports_first_eligible_crossing_and_long_wait():
+    result = diagnose_tool_returns(
+        StubToolModel(),
+        [decision(10), decision(115), decision(119)],
+        [tool()],
+        trigger_windows_ms=(1, 2, 200),
+    )["online_like_trigger"]["by_window_ms"]
+    assert result["1"]["never_triggered_episodes"] == 1
+    assert result["2"]["triggered_episodes"] == 1
+    assert result["2"]["median_observed_lead_ms"] == 110
+    assert result["2"]["lead_above_window"] == 1
+    assert result["2"]["lead_within_window_and_at_least_500ms"] == 0
+    assert result["200"]["lead_above_window"] == 0

@@ -7,7 +7,10 @@ from collections.abc import Iterable, Mapping
 import math
 from typing import Any
 
-from beliefkv.experiments.join_group_diagnostic import DEFAULT_HORIZONS_MS
+from beliefkv.experiments.join_group_diagnostic import (
+    DEFAULT_HORIZONS_MS,
+    DEFAULT_TRIGGER_WINDOWS_MS,
+)
 from beliefkv.predictor.structured_frontier import (
     FrontierBeliefModel,
     WaitBeliefKind,
@@ -90,6 +93,7 @@ def diagnose_tool_returns(
     external_waits: Iterable[Mapping[str, Any]],
     *,
     horizons_ms: tuple[int, ...] = DEFAULT_HORIZONS_MS,
+    trigger_windows_ms: tuple[int, ...] = DEFAULT_TRIGGER_WINDOWS_MS,
 ) -> dict[str, Any]:
     """Select at most one decision per observed episode/horizon.
 
@@ -97,8 +101,11 @@ def diagnose_tool_returns(
     This measures forecast quality conditional on reaching the window, not
     whether an online scheduler can recognize the window in advance.
     """
-    if not horizons_ms or len(set(horizons_ms)) != len(horizons_ms) or any(
-        limit <= 0 for limit in horizons_ms
+    if (
+        not horizons_ms or not trigger_windows_ms
+        or len(set(horizons_ms)) != len(horizons_ms)
+        or len(set(trigger_windows_ms)) != len(trigger_windows_ms)
+        or any(limit <= 0 for limit in (*horizons_ms, *trigger_windows_ms))
     ):
         raise ValueError("horizons must be distinct positive milliseconds")
     waits: defaultdict[tuple[str, str], list[Mapping[str, Any]]] = defaultdict(list)
@@ -155,10 +162,12 @@ def diagnose_tool_returns(
                 "release_ts": release_ts,
                 "first": None,
                 "horizons": {limit: None for limit in horizons_ms},
+                "decision_snapshots": [],
             })
             if not math.isclose(episode["release_ts"], release_ts, abs_tol=1e-6):
                 raise ValueError(f"conflicting release timestamp for tool episode: {key}")
             snapshot = (row, features, ts)
+            episode["decision_snapshots"].append(snapshot)
             if episode["first"] is None or ts < episode["first"][2]:
                 episode["first"] = snapshot
             for limit, previous in episode["horizons"].items():
@@ -176,6 +185,62 @@ def diagnose_tool_returns(
             metrics["episode_count"] / len(episodes) if episodes else None
         )
         by_horizon[str(limit)] = metrics
+    trigger_counts: Counter[str] = Counter()
+    leads: dict[int, list[tuple[float, float]]] = {
+        limit: [] for limit in trigger_windows_ms
+    }
+    for episode in episodes.values():
+        remaining_windows = set(trigger_windows_ms)
+        evaluated = False
+        for row, features, timestamp in sorted(
+            episode["decision_snapshots"], key=lambda snapshot: snapshot[2]
+        ):
+            if not remaining_windows:
+                break
+            prediction = model.predict(_local_features_from_row(row, features))
+            wait = prediction.wait_belief
+            if (
+                wait.kind is not WaitBeliefKind.TOOL
+                or not wait.residual_duration.values
+                or prediction.ood_reasons
+            ):
+                trigger_counts["unavailable_snapshot"] += 1
+                continue
+            evaluated = True
+            trigger_counts["evaluated_snapshots"] += 1
+            forecast = wait.residual_duration.quantile(0.1)
+            for limit in tuple(remaining_windows):
+                if forecast <= limit:
+                    leads[limit].append((
+                        episode["release_ts"] - timestamp,
+                        episode["release_ts"] - episode["first"][2],
+                    ))
+                    remaining_windows.remove(limit)
+        if not evaluated:
+            trigger_counts["episodes_with_no_evaluable_snapshot"] += 1
+    trigger_metrics = {}
+    for limit, observed in leads.items():
+        ordered = sorted(lead for lead, _ in observed)
+        trigger_metrics[str(limit)] = {
+            "triggered_episodes": len(ordered),
+            "never_triggered_episodes": len(episodes) - len(ordered),
+            "median_observed_lead_ms": (
+                ordered[(len(ordered) - 1) // 2] if ordered else None
+            ),
+            "lead_at_least_500ms": sum(lead >= 500 for lead in ordered),
+            "lead_below_500ms": sum(lead < 500 for lead in ordered),
+            "lead_above_window": sum(lead > limit for lead in ordered),
+            "lead_within_window_and_at_least_500ms": sum(
+                500 <= lead <= limit for lead in ordered
+            ),
+            "long_wait_at_first_snapshot_at_least_2000ms": sum(
+                initial >= 2_000 for _, initial in observed
+            ),
+            "long_wait_triggered_within_window_and_at_least_500ms": sum(
+                initial >= 2_000 and 500 <= lead <= limit
+                for lead, initial in observed
+            ),
+        }
     return {
         "semantics": (
             "completed tool-call sets; earliest eligible WAIT_TOOL snapshot per "
@@ -185,4 +250,13 @@ def diagnose_tool_returns(
         "exclusions": dict(sorted(counters.items())),
         "first_snapshot": first,
         "by_horizon_ms": by_horizon,
+        "online_like_trigger": {
+            "semantics": (
+                "first observed WAIT_TOOL decision whose residual P10 enters a "
+                "predeclared window; excludes censored episodes, not an actual "
+                "online trigger or independently validated action policy"
+            ),
+            "counts": dict(sorted(trigger_counts.items())),
+            "by_window_ms": trigger_metrics,
+        },
     }

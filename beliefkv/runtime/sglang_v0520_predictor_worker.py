@@ -270,6 +270,13 @@ class NativePredictorWorker:
             return None
         return fd if type(fd) is int and fd >= 0 else None
 
+    def idle_for_refresh(self) -> bool:
+        """Never replace a queued demand or an in-flight semantic prediction."""
+        return bool(
+            not self.disabled and not self._closed
+            and self._active_sequence is None and self._next is None
+        )
+
     def poll(self) -> tuple[NativeDemandHint | NativeToolWaitHint, ...]:
         if self.disabled or self._closed:
             return ()

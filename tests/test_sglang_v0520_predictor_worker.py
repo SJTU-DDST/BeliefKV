@@ -276,7 +276,9 @@ def test_tool_wait_rejects_unsupported_or_invalid_residuals(variant):
 def test_only_newest_batch_is_dispatched_and_published(fake_context):
     worker = NativePredictorWorker("unused", "a" * 64)
     try:
+        assert worker.idle_for_refresh()
         worker.submit(batch("old"))
+        assert not worker.idle_for_refresh()
         worker.submit(batch("replaced"))
         worker.submit(batch("new"))
         assert worker._input_queue.qsize() == 1

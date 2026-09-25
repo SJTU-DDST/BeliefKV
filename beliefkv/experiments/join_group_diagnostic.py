@@ -13,6 +13,7 @@ from beliefkv.predictor.structured_frontier import (
 )
 
 DEFAULT_HORIZONS_MS = (300_000, 60_000, 10_000, 2_000, 500)
+DEFAULT_TRIGGER_WINDOWS_MS = (500, 2_000, 10_000)
 
 
 def _summarize_snapshots(
@@ -81,6 +82,7 @@ def diagnose_join_groups(
     reentries: Iterable[Mapping[str, Any]],
     *,
     horizons_ms: tuple[int, ...] = DEFAULT_HORIZONS_MS,
+    trigger_windows_ms: tuple[int, ...] = DEFAULT_TRIGGER_WINDOWS_MS,
 ) -> dict[str, Any]:
     """Evaluate ALL-compatible observed joins, one earliest complete snapshot each.
 
@@ -88,10 +90,13 @@ def diagnose_join_groups(
     agrees with the last member RETURN can be diagnosed as ALL-compatible.
     Pointwise marginal quantile envelopes are not joint calibrated intervals.
     """
-    if not horizons_ms or any(value <= 0 for value in horizons_ms):
-        raise ValueError("horizons must be positive")
-    if len(set(horizons_ms)) != len(horizons_ms):
-        raise ValueError("duplicate horizons")
+    if (
+        not horizons_ms or not trigger_windows_ms
+        or any(value <= 0 for value in (*horizons_ms, *trigger_windows_ms))
+        or len(set(horizons_ms)) != len(horizons_ms)
+        or len(set(trigger_windows_ms)) != len(trigger_windows_ms)
+    ):
+        raise ValueError("diagnostic windows must be distinct positive milliseconds")
     groups: dict[tuple[str, str], dict[str, Any]] = {}
     counters: Counter[str] = Counter()
     for item in reentries:
@@ -136,6 +141,7 @@ def diagnose_join_groups(
             "wait_start": float(item.get("wait_start_ts_ms") or 0.0),
             "snapshot": None,
             "horizon_snapshots": {limit: None for limit in horizons_ms},
+            "decision_snapshots": [],
         }
 
     by_workflow: dict[str, list[dict[str, Any]]] = {}
@@ -168,6 +174,7 @@ def diagnose_join_groups(
             # A partial child snapshot is a coverage failure, not a fabricated
             # JOIN timing prediction; keep the first eligible decision.
             snapshot = (row, timestamp, pending)
+            group["decision_snapshots"].append(snapshot)
             if group["snapshot"] is None or timestamp < group["snapshot"][1]:
                 group["snapshot"] = snapshot
             for limit, previous in group["horizon_snapshots"].items():
@@ -191,6 +198,61 @@ def diagnose_join_groups(
             metrics["groups_with_timing_hint"] / len(groups) if groups else None
         )
         horizon_metrics[str(limit)] = metrics
+    trigger_metrics = {}
+    trigger_counters: Counter[str] = Counter()
+    triggers: dict[int, list[float]] = {limit: [] for limit in trigger_windows_ms}
+    for group in groups.values():
+        # Select a trigger from the observed decision stream, without using the
+        # actual reentry time to select a snapshot or construct model features.
+        remaining_windows = set(trigger_windows_ms)
+        evaluated = False
+        for row, timestamp, pending in sorted(
+            group["decision_snapshots"], key=lambda value: value[1]
+        ):
+            if not remaining_windows:
+                break
+            if any(child is None for child in pending.values()):
+                trigger_counters["incomplete_snapshot"] += 1
+                continue
+            predictions = [
+                model.predict(_local_features_from_row(row, child))
+                for child in pending.values()
+            ]
+            if any(
+                not prediction.remaining_to_return_ms.values
+                or prediction.support_for("child_completion") == "unavailable"
+                or prediction.ood_reasons
+                for prediction in predictions
+            ):
+                trigger_counters["unavailable_snapshot"] += 1
+                continue
+            trigger_counters["evaluated_snapshots"] += 1
+            evaluated = True
+            forecast = max(
+                prediction.remaining_to_return_ms.quantile(0.1)
+                for prediction in predictions
+            )
+            for limit in tuple(remaining_windows):
+                if forecast <= limit:
+                    triggers[limit].append(group["reentry_ts"] - timestamp)
+                    remaining_windows.remove(limit)
+        if not evaluated:
+            trigger_counters["groups_with_no_evaluable_snapshot"] += 1
+    for limit, leads in triggers.items():
+        ordered = sorted(leads)
+        trigger_metrics[str(limit)] = {
+            "triggered_groups": len(ordered),
+            "never_triggered_groups": len(groups) - len(ordered),
+            "median_observed_lead_ms": (
+                ordered[(len(ordered) - 1) // 2] if ordered else None
+            ),
+            "lead_at_least_500ms": sum(lead >= 500 for lead in ordered),
+            "lead_below_500ms": sum(lead < 500 for lead in ordered),
+            "lead_above_window": sum(lead > limit for lead in ordered),
+            "lead_within_window_and_at_least_500ms": sum(
+                500 <= lead <= limit for lead in ordered
+            ),
+        }
     return {
         "evidence": "read_only_group_diagnostic"
         if counters["groups_with_timing_hint"] else "no_group_hints",
@@ -202,4 +264,14 @@ def diagnose_join_groups(
         "counts": dict(sorted(counters.items())),
         **first,
         "by_horizon_ms": horizon_metrics,
+        "online_like_trigger": {
+            "semantics": (
+                "first observed WAIT_JOIN decision with max child marginal P10 "
+                "within a predeclared window; no hindsight snapshot selection; "
+                "event-only sampling and retrospective completed-JOIN cohort "
+                "are not a full online or joint calibration evaluation"
+            ),
+            "counts": dict(sorted(trigger_counters.items())),
+            "by_window_ms": trigger_metrics,
+        },
     }

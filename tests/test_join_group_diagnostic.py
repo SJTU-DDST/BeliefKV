@@ -84,3 +84,30 @@ def test_join_horizon_reports_absent_late_decision():
     )
     assert result["by_horizon_ms"]["1"]["join_group_coverage"] == 0
     assert result["by_horizon_ms"]["1"]["median_absolute_error_ms"] is None
+
+
+def test_join_trigger_uses_first_forecast_crossing_not_hindsight_snapshot():
+    decisions = [
+        _decision(),
+        {**_decision(), "timestamp_ms": 115.0},
+        {**_decision(), "timestamp_ms": 119.5},
+    ]
+    result = diagnose_join_groups(
+        StubModel(), decisions, [_reentry()],
+        trigger_windows_ms=(25, 50, 200),
+    )["online_like_trigger"]["by_window_ms"]
+    assert result["25"]["never_triggered_groups"] == 1
+    assert result["50"]["triggered_groups"] == 1
+    assert result["50"]["median_observed_lead_ms"] == 110.0
+    assert result["50"]["lead_above_window"] == 1
+    assert result["200"]["lead_above_window"] == 0
+    assert result["200"]["lead_below_500ms"] == 1
+
+
+def test_join_trigger_requires_complete_child_snapshot():
+    result = diagnose_join_groups(
+        StubModel(), [_decision(("a",))], [_reentry()],
+        trigger_windows_ms=(100,),
+    )["online_like_trigger"]
+    assert result["by_window_ms"]["100"]["triggered_groups"] == 0
+    assert result["counts"]["groups_with_no_evaluable_snapshot"] == 1

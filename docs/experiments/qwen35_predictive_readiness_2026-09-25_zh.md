@@ -54,6 +54,21 @@ provisional/confirmed ticket。信号过期或取消立即撤销 ticket。
 信号仍不足以独立隐藏大块 H2D，且当前物理动作资格保持关闭。
 只读报告：`child_terminal_signal_diagnostic.json`。
 
+进一步按决策时间顺序进行**首次触发**回放，而不是事后选取临近
+RETURN 的快照。预先列出 500 ms、2 s、10 s 三个观察窗口：
+64 个 JOIN 的约 44,254 个可评价快照中，整组 child 边际 P10 在
+500 ms 和 2 s 门槛下均触发 **0/64**；10 s 门槛触发 45/64，
+其中 21 个在真实 JOIN 前超过 10 s，23 个距 JOIN 不足 500 ms，
+只有 1 个处于 500 ms--10 s。工具的 17,805 个完成 episode
+在 P10≤500 ms 时全部于首个等待快照触发；其中 3,282 个真实
+剩余时长超过 500 ms，包括全部 197 个不少于 2 s 的长等待。
+**降低门槛并不能得到既有提前量又有选择性的动作。**两个诊断仅
+使用当时特征决定首次触发；完成事件限定回放对象、事后衡量提前量。
+这是基于决策事件的上界评估，不包含真实 worker 排队、安全点延迟、
+PCIe 和中途被取消的等待，也不是未经使用的独立测试。
+结果：`join_group_online_trigger_diagnostic_calibration.json`、
+`tool_return_online_trigger_diagnostic_calibration.json`。
+
 ## 2. PCIe 时延证据
 
 `scripts/fit_native_pcie_service.py` 对 train 的真实传输按方向分头拟合，
@@ -135,6 +150,16 @@ PREPARE_HOST，须有可卸载概率、可重用 KV、物理成本及浪费上�
 已完成且非干预/非截尾的标签滚动校准，保留独立测试项目和
 reactive 对照；阶段性更新需重新经过误报、安全和物理收益门禁，
 不能由自选的 predictive 轨迹直接声称无偏增益。
+
+新版原生运行时已补齐可实时观测的部分训练特征：同一
+`observed_boundary_action` 定义的最近边界、工具后端/命令类别、
+同时等待工具数和家族压力、以及活跃 LLM 批次的生成 token。
+对于已被接受且仍存活的工具/JOIN 提示，运行时在等待 2 秒后
+可于 worker 空闲时有限速地重估存活时间；身份或状态变化仍使
+旧结果失效。当前仅维护各一个 tool/JOIN 提示，且提示失效后
+不能保证在多个并发 JOIN 间公平轮询；刷新不能单独修复概率头
+无判别力的问题。这些修改尚无新模型及独立负载验证，
+`online_eligible=false` 和物理动作资格保持关闭。
 
 复现脚本：`scripts/diagnose_native_join_groups.py`、
 `scripts/diagnose_native_tool_returns.py`、

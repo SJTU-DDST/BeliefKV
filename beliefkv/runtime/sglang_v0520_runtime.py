@@ -15,6 +15,7 @@ from uuid import uuid4
 from beliefkv.control.causal_graph import InvocationState, RuntimeCausalContextGraph
 from beliefkv.core.events import RuntimeEventKind
 from beliefkv.policy.causal_frontier import CausalFrontierScheduler
+from beliefkv.predictor.composer import observed_boundary_action
 from beliefkv.runtime.event_channel import RuntimeEventDatagramServer
 from beliefkv.runtime.sglang_v0520_admission import (
     _request_key,
@@ -61,6 +62,8 @@ class _AdmissionPrefetchLease:
 
 
 CHILD_COMPLETION_INTENT = "beliefkv_child_completion_intent"
+WAIT_REFRESH_AGE_MS = 2_000.0
+WAIT_REFRESH_SPACING_MS = 500.0
 
 
 @dataclass
@@ -121,6 +124,10 @@ class NativeAdmissionRuntime:
         self.shadow_candidate: ActionLocalShadowCandidate | None = None
         self._native_cache: object | None = None
         self._context_tokens: dict[str, tuple[int, int, int, bool]] = {}
+        self._boundary_history: dict[str, deque[str]] = {}
+        self._tool_metadata: dict[str, tuple[str, str]] = {}
+        self._next_wait_refresh_ms = 0.0
+        self._refresh_join_next = False
         self._last_model_signature: tuple[object, ...] | None = None
         self._model_worker = None
         if enable_local_predictor:
@@ -218,6 +225,9 @@ class NativeAdmissionRuntime:
             self._admission_lease = None
             self.shadow_candidate = None
             self._context_tokens.clear()
+            self._boundary_history.clear()
+            self._tool_metadata.clear()
+            self._next_wait_refresh_ms = 0.0
             self.semantic_revision += 1
             self.counts["causal_mirror_discarded"] += 1
             raise
@@ -237,6 +247,33 @@ class NativeAdmissionRuntime:
                     self.demand_hints[hint.key.request_id] = hint
                     self.counts["prediction_accepted"] += 1
             for event in events:
+                if self._model_worker is not None and event.invocation_id is not None:
+                    boundary = observed_boundary_action(event)
+                    if boundary is not None:
+                        self._boundary_history.setdefault(
+                            event.invocation_id, deque(maxlen=8)
+                        ).append(boundary)
+                    if event.kind is RuntimeEventKind.TOOL_START:
+                        attrs = event.attributes
+                        self._tool_metadata[event.invocation_id] = (
+                            str(attrs.get("backend_class") or "unknown"),
+                            str(
+                                attrs.get("command_class")
+                                or attrs.get("tool_name")
+                                or attrs.get("backend_class")
+                                or "unknown"
+                            ),
+                        )
+                    elif event.kind in (
+                        RuntimeEventKind.TOOL_END,
+                        RuntimeEventKind.RETURN,
+                        RuntimeEventKind.INVOCATION_CANCEL,
+                    ):
+                        self._tool_metadata.pop(event.invocation_id, None)
+                    if event.kind in (
+                        RuntimeEventKind.RETURN, RuntimeEventKind.INVOCATION_CANCEL
+                    ):
+                        self._boundary_history.pop(event.invocation_id, None)
                 context_id = event.context_id
                 if context_id is None and event.invocation_id is not None:
                     invocation = self.graph.invocations.get(event.invocation_id)
@@ -259,6 +296,15 @@ class NativeAdmissionRuntime:
                         self.tool_wait_hint = None
                         self.shadow_candidate = None
                 if event.kind is RuntimeEventKind.WORKFLOW_END:
+                    for invocation_id in (
+                        set(self._boundary_history) | set(self._tool_metadata)
+                    ):
+                        invocation = self.graph.invocations.get(invocation_id)
+                        if invocation is not None and (
+                            invocation.workflow_id == event.workflow_id
+                        ):
+                            self._boundary_history.pop(invocation_id, None)
+                            self._tool_metadata.pop(invocation_id, None)
                     self.context_sessions = {
                         context: key
                         for context, key in self.context_sessions.items()
@@ -368,6 +414,7 @@ class NativeAdmissionRuntime:
                     self.semantic_revision += 1
             if self._model_worker.disabled:
                 self.counts["model_worker_disabled"] = 1
+            self._refresh_live_wait_hint()
         expired = self.physical_ledger.expire()
         self.counts["physical_expired"] += len(expired)
         lease = self._admission_lease
@@ -398,6 +445,37 @@ class NativeAdmissionRuntime:
             ):
                 return key
         return None
+
+    def _refresh_live_wait_hint(self) -> None:
+        worker = self._model_worker
+        if worker is None or not callable(
+            ready := getattr(worker, "idle_for_refresh", None)
+        ) or not ready():
+            return
+        now_ms = time.monotonic() * 1000
+        if now_ms < self._next_wait_refresh_ms:
+            return
+        tool = self.tool_wait_hint
+        join = self.join_wait_hint
+        due_tool = bool(
+            tool is not None and tool.live(tool.key, now_ms=now_ms)
+            and now_ms - tool.issued_monotonic_ms >= WAIT_REFRESH_AGE_MS
+        )
+        due_join = bool(
+            join is not None and self._live_join_hint(join)
+            and now_ms - join.issued_monotonic_ms >= WAIT_REFRESH_AGE_MS
+        )
+        if not (due_tool or due_join):
+            return
+        use_join = due_join and (not due_tool or self._refresh_join_next)
+        self._next_wait_refresh_ms = now_ms + WAIT_REFRESH_SPACING_MS
+        self._refresh_join_next = not use_join
+        if use_join:
+            self._submit_join_wait((), join_ids={join.join_id})
+            self.counts["join_wait_refresh_submitted"] += 1
+        else:
+            self._submit_tool_wait(tool.key.context_id)
+            self.counts["tool_wait_refresh_submitted"] += 1
 
     def _observe_child_completion_intent(self, event: RuntimeEvent) -> None:
         if event.attributes.get(CHILD_COMPLETION_INTENT) is not True:
@@ -594,33 +672,60 @@ class NativeAdmissionRuntime:
         ):
             self.counts["tool_wait_context_stale"] += 1
             return
-        stored = self._context_tokens.get(context_id)
-        prompt, output, is_child = (
+        now_ms = time.monotonic() * 1000
+        features = self._local_frontier_features(
+            invocation, context.epoch, now_ms=now_ms
+        )
+        worker.submit_tool_wait(((key, features, invocation.updated_ts_ms),))
+        self.counts["tool_wait_submitted"] += 1
+
+    def _local_frontier_features(
+        self, invocation: object, context_epoch: int, *, now_ms: float
+    ) -> LocalFrontierFeatures:
+        stored = self._context_tokens.get(invocation.context_id)
+        prompt, output, stored_child = (
             (stored[1], stored[2], stored[3])
-            if stored is not None and stored[0] == key.context_epoch
+            if stored is not None and stored[0] == context_epoch
             else (0, 0, False)
         )
-        now_ms = time.monotonic() * 1000
-        features = LocalFrontierFeatures(
-            invocation_id=key.invocation_id,
+        active_tools = [
+            item for item in self.graph.invocations.values()
+            if item.state is InvocationState.WAIT_TOOL
+        ]
+        family = invocation.active_tool_family or "unknown"
+        family_count = sum(
+            item.active_tool_family == family for item in active_tools
+        )
+        backend, command = self._tool_metadata.get(
+            invocation.invocation_id, ("unknown", "unknown")
+        )
+        return LocalFrontierFeatures(
+            invocation_id=invocation.invocation_id,
             state=invocation.state.value,
             agent_definition_id=invocation.agent_definition_id,
-            tool_family=invocation.active_tool_family or "unknown",
+            boundary_history=tuple(
+                self._boundary_history.get(invocation.invocation_id, ())
+            ),
+            tool_family=family,
+            backend_class=backend,
+            command_class=command,
             generated_tokens=output,
             elapsed_wait_ms=max(
                 0.0, now_ms - invocation.active_tool_start_ms
             ) if invocation.active_tool_start_ms is not None else 0.0,
             current_sequence_tokens=prompt + output,
-            active_tool_count=1,
+            active_tool_count=len(active_tools),
+            backend_pressure=(
+                f"active_family:{family_count}"
+                if family != "unknown" else "unknown"
+            ),
             invocation_elapsed_ms=max(0.0, now_ms - invocation.created_ts_ms),
             state_elapsed_ms=max(0.0, now_ms - invocation.updated_ts_ms),
             llm_round=invocation.llm_round,
             child_count=len(invocation.child_invocation_ids),
             unfinished_child_count=len(invocation.blocking_child_ids),
-            is_child=is_child,
+            is_child=stored_child or invocation.parent_invocation_id is not None,
         )
-        worker.submit_tool_wait(((key, features, invocation.updated_ts_ms),))
-        self.counts["tool_wait_submitted"] += 1
 
     def _accept_tool_wait(self, hint: NativeToolWaitHint) -> None:
         key = hint.key
@@ -694,13 +799,18 @@ class NativeAdmissionRuntime:
             and not self._terminal(key)
         )
 
-    def _submit_join_wait(self, events: tuple[RuntimeEvent, ...]) -> None:
+    def _submit_join_wait(
+        self, events: tuple[RuntimeEvent, ...], *, join_ids: set[str] | None = None
+    ) -> None:
         worker = self._model_worker
         if worker is None or worker.disabled:
             return
         now_ms = time.monotonic() * 1000
         affected = {event.invocation_id for event in events if event.invocation_id}
-        affected_joins = {event.join_id for event in events if event.join_id}
+        affected_joins = (
+            set(join_ids) if join_ids is not None
+            else {event.join_id for event in events if event.join_id}
+        )
         for invocation_id in affected:
             affected_joins.update(self._join_by_invocation.get(invocation_id, ()))
         for join_id in sorted(affected_joins):
@@ -729,34 +839,10 @@ class NativeAdmissionRuntime:
                     )
                     if child is None or child_context is None or child.state.terminal:
                         break
-                    stored = self._context_tokens.get(child.context_id)
-                    prompt, output, is_child = (
-                        (stored[1], stored[2], stored[3])
-                        if stored is not None
-                        and stored[0] == child_context.epoch
-                        else (0, 0, True)
-                    )
                     children.append((
                         child_id,
-                        LocalFrontierFeatures(
-                            invocation_id=child_id, state=child.state.value,
-                            agent_definition_id=child.agent_definition_id,
-                            tool_family=child.active_tool_family or "unknown",
-                            generated_tokens=output,
-                            elapsed_wait_ms=max(
-                                0.0, now_ms - child.active_tool_start_ms
-                            ) if child.active_tool_start_ms is not None else 0.0,
-                            current_sequence_tokens=prompt + output,
-                            invocation_elapsed_ms=max(
-                                0.0, now_ms - child.created_ts_ms
-                            ),
-                            state_elapsed_ms=max(
-                                0.0, now_ms - child.updated_ts_ms
-                            ),
-                            llm_round=child.llm_round,
-                            child_count=len(child.child_invocation_ids),
-                            unfinished_child_count=len(child.blocking_child_ids),
-                            is_child=is_child,
+                        self._local_frontier_features(
+                            child, child_context.epoch, now_ms=now_ms
                         ),
                         child.updated_ts_ms,
                         child_context.epoch,
@@ -1433,20 +1519,21 @@ class NativeAdmissionRuntime:
 
     def on_batch_completed(self, batch: object) -> None:
         for req in batch.reqs:
+            if (
+                self._model_worker is not None
+                and req.rid in self.visible
+                and (key := self.visible[req.rid]).session_id is not None
+                and key.session_generation is not None
+            ):
+                self._context_tokens[key.context_id] = (
+                    key.context_epoch,
+                    len(getattr(req, "origin_input_ids", ()) or ()),
+                    len(getattr(req, "output_ids", ()) or ()),
+                    req.beliefkv_metadata.get("parent_invocation_id") is not None,
+                )
             if req.rid in self.visible and req.finished():
                 context_id = self.visible[req.rid].context_id
                 key = self.visible[req.rid]
-                if (
-                    self._model_worker is not None
-                    and key.session_id is not None
-                    and key.session_generation is not None
-                ):
-                    self._context_tokens[context_id] = (
-                        key.context_epoch,
-                        len(getattr(req, "origin_input_ids", ())),
-                        len(getattr(req, "output_ids", ())),
-                        req.beliefkv_metadata.get("parent_invocation_id") is not None,
-                    )
                 del self.visible[req.rid]
                 self.demand_hints.pop(req.rid, None)
                 session_key = self.context_sessions.get(context_id)

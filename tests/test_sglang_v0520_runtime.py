@@ -189,12 +189,17 @@ def test_tool_start_triggers_bounded_wait_prediction_then_local_probe():
             agent_definition_id="role", agent_instance_id="tool",
         ),
     ))
+    runtime.on_batch_completed(NS(reqs=(request,)))
+    assert runtime._context_tokens["ctx-tool"] == (0, 3, 2, False)
     request.finished = lambda: True
     runtime.on_batch_completed(NS(reqs=(request,)))
     runtime.on_events((
         event(
             2, RuntimeEventKind.TOOL_START,
-            invocation_id="tool", attributes={"tool_family": "shell"},
+            invocation_id="tool", attributes={
+                "tool_family": "shell", "backend_class": "sandbox",
+                "command_class": "shell_read",
+            },
         ),
     ))
     assert len(sent) == 1
@@ -204,6 +209,10 @@ def test_tool_start_triggers_bounded_wait_prediction_then_local_probe():
     assert features.generated_tokens == 2
     assert features.current_sequence_tokens == 5
     assert features.tool_family == "shell"
+    assert features.backend_class == "sandbox"
+    assert features.command_class == "shell_read"
+    assert features.active_tool_count == 1
+    assert features.backend_pressure == "active_family:1"
     assert revision == 2.0
     with patch("beliefkv.runtime.sglang_v0520_runtime.time.monotonic", return_value=3.5):
         runtime._submit_tool_wait("ctx-tool")
@@ -246,6 +255,8 @@ def test_tool_start_triggers_bounded_wait_prediction_then_local_probe():
     runtime.on_events((
         event(3, RuntimeEventKind.TOOL_END, invocation_id="tool"),
     ))
+    assert tuple(runtime._boundary_history["tool"]) == ("tool_end",)
+    assert "tool" not in runtime._tool_metadata
     assert runtime.tool_wait_hint is None
     assert runtime.shadow_candidate is None
     with patch.object(runtime, "capture_shadow_candidate") as capture:
@@ -254,6 +265,175 @@ def test_tool_start_triggers_bounded_wait_prediction_then_local_probe():
     runtime.scheduler_step()
     assert runtime.counts["tool_wait_result_stale"] == 1
     runtime.close()
+
+
+def test_live_child_decode_progress_enters_join_forecast():
+    runtime = NativeAdmissionRuntime()
+    runtime.predictor_sha256 = "a" * 64
+    submitted = []
+    runtime._model_worker = NS(
+        disabled=False, submit_join_wait=lambda batch: submitted.extend(batch),
+    )
+    parent, child = req("parent"), req("child")
+    parent.session_id, parent.session_generation = "parent-session", 1
+    child.session_id, child.session_generation = "child-session", 1
+    child.beliefkv_metadata["parent_invocation_id"] = "parent"
+    child.origin_input_ids = list(range(10))
+    child.output_ids = list(range(3))
+    runtime.register_visible_request(parent)
+    runtime.register_visible_request(child)
+    runtime.on_events((
+        event(0, RuntimeEventKind.WORKFLOW_START),
+        event(1, RuntimeEventKind.INVOCATION_CREATE,
+              invocation_id="parent", context_id="ctx-parent",
+              agent_definition_id="parent", agent_instance_id="parent"),
+        event(2, RuntimeEventKind.INVOCATION_CREATE,
+              invocation_id="child", context_id="ctx-child",
+              parent_invocation_id="parent", relation_type="spawn",
+              agent_definition_id="child", agent_instance_id="child"),
+        event(3, RuntimeEventKind.JOIN_CREATE,
+              join_id="join", member_invocation_ids=("child",)),
+        event(4, RuntimeEventKind.JOIN_WAIT,
+              invocation_id="parent", join_id="join"),
+    ))
+    runtime.on_batch_completed(NS(reqs=(child,)))
+    runtime._submit_join_wait((event(
+        4, RuntimeEventKind.JOIN_WAIT, invocation_id="parent", join_id="join"
+    ),))
+    features = submitted[-1][-1][0][1]
+    assert (features.generated_tokens, features.current_sequence_tokens) == (3, 13)
+    assert features.is_child is True
+    child.output_ids.append(3)
+    runtime.on_batch_completed(NS(reqs=(child,)))
+    runtime._submit_join_wait((event(
+        4, RuntimeEventKind.JOIN_WAIT, invocation_id="parent", join_id="join"
+    ),))
+    assert submitted[-1][-1][0][1].generated_tokens == 4
+
+
+def test_long_tool_wait_refresh_is_bounded_and_requires_idle_worker():
+    runtime = NativeAdmissionRuntime()
+    runtime.predictor_sha256 = "a" * 64
+    submitted = []
+    idle = [True]
+    runtime._model_worker = NS(
+        disabled=False, poll=lambda: (), fileno=lambda: 71,
+        idle_for_refresh=lambda: idle[0],
+        submit_tool_wait=lambda batch: submitted.append(batch),
+    )
+    request = req("tool")
+    request.session_id, request.session_generation = "session-tool", 1
+    runtime.register_visible_request(request)
+    runtime.on_events((
+        event(0, RuntimeEventKind.WORKFLOW_START),
+        event(1, RuntimeEventKind.INVOCATION_CREATE,
+              invocation_id="tool", context_id="ctx-tool",
+              agent_definition_id="tool", agent_instance_id="tool"),
+        event(2, RuntimeEventKind.TOOL_START,
+              invocation_id="tool", attributes={"tool_family": "shell"}),
+    ))
+    key = runtime.context_sessions["ctx-tool"]
+    runtime.tool_wait_hint = NativeToolWaitHint(
+        key, 300.0, 1000.0, 5000.0, 900.0, 8000.0,
+        "a" * 64, runtime.graph.invocations["tool"].updated_ts_ms,
+    )
+    submitted.clear()
+    with patch("beliefkv.runtime.sglang_v0520_runtime.time.monotonic",
+               return_value=3.0):
+        idle[0] = False
+        runtime.scheduler_step()
+        assert not submitted
+        idle[0] = True
+        runtime.scheduler_step()
+        runtime.scheduler_step()
+        assert len(submitted) == 1
+        assert runtime.counts["tool_wait_refresh_submitted"] == 1
+    runtime.on_events((event(
+        3, RuntimeEventKind.TOOL_END, invocation_id="tool"
+    ),))
+    with patch("beliefkv.runtime.sglang_v0520_runtime.time.monotonic",
+               return_value=3.6):
+        runtime.scheduler_step()
+    assert len(submitted) == 1
+
+
+def test_online_boundary_feature_matches_observed_result_action():
+    runtime = NativeAdmissionRuntime()
+    runtime.predictor_sha256 = "a" * 64
+    submitted = []
+    runtime._model_worker = NS(
+        disabled=False, submit_tool_wait=lambda batch: submitted.extend(batch),
+    )
+    request = req("tool")
+    request.session_id, request.session_generation = "session-tool", 1
+    runtime.register_visible_request(request)
+    runtime.on_events((
+        event(0, RuntimeEventKind.WORKFLOW_START),
+        event(1, RuntimeEventKind.INVOCATION_CREATE,
+              invocation_id="tool", context_id="ctx-tool",
+              agent_definition_id="tool", agent_instance_id="tool"),
+        event(2, RuntimeEventKind.LLM_RESULT, invocation_id="tool",
+              attributes={"structured_action_kinds": ["function_call"]}),
+        event(3, RuntimeEventKind.TOOL_START, invocation_id="tool",
+              attributes={"tool_family": "shell"}),
+    ))
+    assert submitted[-1][1].boundary_history == ("function_call",)
+    runtime.on_events((
+        event(4, RuntimeEventKind.TOOL_END, invocation_id="tool"),
+        event(5, RuntimeEventKind.RETURN, invocation_id="tool"),
+    ))
+    assert "tool" not in runtime._boundary_history
+    assert "tool" not in runtime._tool_metadata
+
+
+def test_long_join_wait_refresh_preserves_provisional_ticket():
+    runtime = NativeAdmissionRuntime()
+    runtime.predictor_sha256 = "a" * 64
+    runtime.enable_admission_prefetch = True
+    parent = req("parent")
+    parent.session_id, parent.session_generation = "session-parent", 1
+    runtime.register_visible_request(parent)
+    sent = []
+    runtime._model_worker = NS(
+        disabled=False, poll=lambda: (), fileno=lambda: 72,
+        idle_for_refresh=lambda: True,
+        submit_join_wait=lambda batch: sent.extend(batch),
+    )
+    runtime.on_events((
+        event(0, RuntimeEventKind.WORKFLOW_START),
+        event(1, RuntimeEventKind.INVOCATION_CREATE,
+              invocation_id="parent", context_id="ctx-parent",
+              agent_definition_id="parent", agent_instance_id="parent"),
+        event(2, RuntimeEventKind.INVOCATION_CREATE,
+              invocation_id="child", context_id="ctx-child",
+              agent_definition_id="child", agent_instance_id="child"),
+        event(3, RuntimeEventKind.JOIN_CREATE,
+              join_id="join", member_invocation_ids=("child",)),
+        event(4, RuntimeEventKind.JOIN_WAIT,
+              invocation_id="parent", join_id="join"),
+    ))
+    key = runtime.context_sessions["ctx-parent"]
+    child = runtime.graph.invocations["child"]
+    runtime.join_wait_hint = NativeJoinWaitHint(
+        key, "join", "all", ("child",),
+        (("child", child.updated_ts_ms, child.state.value, 0),),
+        300.0, 1000.0, 5000.0, 900.0, 8000.0,
+        "a" * 64, runtime.graph.invocations["parent"].updated_ts_ms,
+    )
+    sent.clear()
+    with patch("beliefkv.runtime.sglang_v0520_runtime.time.monotonic",
+               return_value=3.0):
+        runtime.scheduler_step()
+        assert len(sent) == 1
+        assert sent[0][2] == "join"
+        assert runtime.counts["join_wait_refresh_submitted"] == 1
+    runtime.on_events((event(
+        5, RuntimeEventKind.RETURN, invocation_id="child"
+    ),))
+    with patch("beliefkv.runtime.sglang_v0520_runtime.time.monotonic",
+               return_value=3.6):
+        runtime.scheduler_step()
+    assert len(sent) == 1
 
 
 def test_shadow_step_recheck_rejects_changed_tool_invocation():
