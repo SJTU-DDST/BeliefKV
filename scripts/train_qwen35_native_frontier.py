@@ -146,7 +146,10 @@ def main(argv: list[str] | None = None) -> int:
         minimum_tasks=minimums[1],
         minimum_workflows=minimums[2],
     )
-    model = FrontierBeliefModel(model_version=args.model_version)
+    model = FrontierBeliefModel(
+        model_version=args.model_version,
+        tool_feature_contract="observed_command_child_v1",
+    )
     summary = model.fit(rows)
     if summary["action_target_count"] != 0 or summary["operational_timing"]["sample_count"] != 0:
         raise ValueError("native fit unexpectedly trained an action head")

@@ -143,6 +143,7 @@ def test_formal_train_fit_is_offline_uncalibrated_and_seals_tests(tmp_path: Path
     raw = json.loads((tmp_path / "model.json").read_text(encoding="utf-8"))
     metadata = raw["metadata"]
     assert raw["training_summary"]["split_counts"] == {"train": 40}
+    assert raw["tool_feature_contract"] == "observed_command_child_v1"
     assert raw["training_summary"]["action_target_count"] == 0
     assert raw["training_summary"]["operational_timing"]["sample_count"] == 0
     assert raw["calibration_summary"] == {}

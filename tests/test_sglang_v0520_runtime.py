@@ -202,6 +202,7 @@ def test_tool_start_triggers_bounded_wait_prediction_then_local_probe():
             invocation_id="tool", attributes={
                 "tool_family": "shell", "backend_class": "sandbox",
                 "command_class": "shell_read",
+                "observed_command_class": "test_suite",
             },
         ),
     ))
@@ -214,6 +215,7 @@ def test_tool_start_triggers_bounded_wait_prediction_then_local_probe():
     assert features.tool_family == "shell"
     assert features.backend_class == "sandbox"
     assert features.command_class == "shell_read"
+    assert features.observed_command_class == "test_suite"
     assert features.active_tool_count == 1
     assert features.backend_pressure == "active_family:1"
     assert revision == 2.0

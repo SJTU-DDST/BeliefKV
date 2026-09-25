@@ -33,8 +33,9 @@ from beliefkv.predictor.frontier_belief import (
 )
 
 
-STRUCTURED_FRONTIER_SCHEMA_VERSION = 6
-SUPPORTED_STRUCTURED_FRONTIER_SCHEMA_VERSIONS = frozenset({4, 5, 6})
+STRUCTURED_FRONTIER_SCHEMA_VERSION = 7
+SUPPORTED_STRUCTURED_FRONTIER_SCHEMA_VERSIONS = frozenset({4, 5, 6, 7})
+TOOL_FEATURE_CONTRACTS = frozenset({"legacy", "observed_command_child_v1"})
 MINIMUM_DEMAND_DECISION_SCHEMA_VERSION = 2
 FORMAL_P6_DATASET_KIND = "beliefkv_p6_training_evidence"
 FORMAL_P6_PLAN_IDS = frozenset(
@@ -190,6 +191,7 @@ class LocalFrontierFeatures:
     tool_family: str = "unknown"
     backend_class: str = "unknown"
     command_class: str = "unknown"
+    observed_command_class: str = "unknown"
     generated_tokens: int = 0
     elapsed_wait_ms: float = 0.0
     current_sequence_tokens: int = 0
@@ -224,6 +226,7 @@ class LocalFrontierFeatures:
             "tool_family": self.tool_family,
             "backend_class": self.backend_class,
             "command_class": self.command_class,
+            "observed_command_class": self.observed_command_class,
             "generated_tokens": self.generated_tokens,
             "elapsed_wait_ms": self.elapsed_wait_ms,
             "current_sequence_tokens": self.current_sequence_tokens,
@@ -249,6 +252,9 @@ class LocalFrontierFeatures:
             tool_family=str(raw.get("tool_family") or "unknown"),
             backend_class=str(raw.get("backend_class") or "unknown"),
             command_class=str(raw.get("command_class") or "unknown"),
+            observed_command_class=str(
+                raw.get("observed_command_class") or "unknown"
+            ),
             generated_tokens=int(raw.get("generated_tokens") or 0),
             elapsed_wait_ms=float(raw.get("elapsed_wait_ms") or 0.0),
             current_sequence_tokens=int(raw.get("current_sequence_tokens") or 0),
@@ -1098,8 +1104,12 @@ class FrontierBeliefModel:
         *,
         model_version: str = "frontier-development",
         hyperparameters: FrontierModelHyperparameters | None = None,
+        tool_feature_contract: str = "legacy",
     ) -> None:
+        if tool_feature_contract not in TOOL_FEATURE_CONTRACTS:
+            raise ValueError("unsupported tool feature contract")
         self.model_version = model_version
+        self.tool_feature_contract = tool_feature_contract
         self.hyperparameters = hyperparameters or FrontierModelHyperparameters()
         self.boundary = _BoundaryContextTree(
             max_order=self.hyperparameters.boundary_max_order,
@@ -1136,6 +1146,10 @@ class FrontierBeliefModel:
             balance_power=self.hyperparameters.pooled_classifier_balance_power,
         )
         self.tool = _CompetingRiskToolModel(
+            minimum_support=self.hyperparameters.tool_minimum_support,
+            smoothing=self.hyperparameters.tool_smoothing,
+        )
+        self.child_tool = _CompetingRiskToolModel(
             minimum_support=self.hyperparameters.tool_minimum_support,
             smoothing=self.hyperparameters.tool_smoothing,
         )
@@ -1295,6 +1309,14 @@ class FrontierBeliefModel:
                     trigger == RuntimeEventKind.TOOL_START.value
                     and state == InvocationState.WAIT_TOOL.value
                 ):
+                    if self.tool_feature_contract != "legacy":
+                        if type(trigger_attrs.get("is_child")) is not bool:
+                            raise ValueError("tool start lacks root/child provenance")
+                        if (
+                            trigger_attrs.get("tool_name") == "execute"
+                            and not trigger_attrs.get("observed_command_class")
+                        ):
+                            raise ValueError("execute lacks observed command class")
                     right_censored = _target_right_censored(
                         label, "external_wait"
                     )
@@ -1310,14 +1332,25 @@ class FrontierBeliefModel:
                         tool_weight = tool_fit_weights.get(
                             _tool_row_identity(row, features), weight
                         )
-                        self.tool.observe(
+                        tool_model = (
+                            self.child_tool
+                            if self.tool_feature_contract != "legacy"
+                            and trigger_attrs["is_child"]
+                            else self.tool
+                        )
+                        tool_model.observe(
                             _tool_feature_key(
                                 role,
                                 family,
                                 {
                                     **features,
                                     "backend_class": backend,
-                                    "command_class": command,
+                                    "command_class": (
+                                        local_features.observed_command_class
+                                        if self.tool_feature_contract != "legacy"
+                                        and trigger_attrs.get("tool_name") == "execute"
+                                        else command
+                                    ),
                                 },
                             ),
                             status=status,
@@ -1460,7 +1493,12 @@ class FrontierBeliefModel:
         terminal: Mapping[str, float] = {}
         wait_belief: WaitBelief
         if features.state == InvocationState.WAIT_TOOL.value:
-            terminal, wait, tool_level, tool_support_detail = self.tool.predict(
+            tool_model = (
+                self.child_tool
+                if self.tool_feature_contract != "legacy" and features.is_child
+                else self.tool
+            )
+            terminal, wait, tool_level, tool_support_detail = tool_model.predict(
                 _tool_feature_key(
                     features.agent_definition_id,
                     features.tool_family,
@@ -1469,7 +1507,12 @@ class FrontierBeliefModel:
                         "active_tool_count": features.active_tool_count,
                         "backend_pressure": features.backend_pressure,
                         "backend_class": features.backend_class,
-                        "command_class": features.command_class,
+                        "command_class": (
+                            features.observed_command_class
+                            if self.tool_feature_contract != "legacy"
+                            and features.command_class == "execute"
+                            else features.command_class
+                        ),
                     },
                 ),
                 elapsed_ms=features.elapsed_wait_ms,
@@ -1867,6 +1910,7 @@ class FrontierBeliefModel:
             "schema_version": STRUCTURED_FRONTIER_SCHEMA_VERSION,
             "model_kind": "pooled_action_conditional_particle_frontier",
             "model_version": self.model_version,
+            "tool_feature_contract": self.tool_feature_contract,
             "decision_authority": "none; ScenarioRiskPlanner owns actions",
             "join_semantics": "not learned; RCCG composer applies ALL/ANY",
             "hyperparameters": self.hyperparameters.to_dict(),
@@ -1899,6 +1943,7 @@ class FrontierBeliefModel:
                 "pooled_boundary": self.pooled_boundary.to_dict(),
                 "pooled_tool_terminal": self.pooled_tool_terminal.to_dict(),
                 "tool": self.tool.to_dict(),
+                "child_tool": self.child_tool.to_dict(),
                 "operational_release": self.operational_release.to_dict(),
             },
         }
@@ -1913,7 +1958,10 @@ class FrontierBeliefModel:
             hyperparameters=FrontierModelHyperparameters.from_dict(
                 raw.get("hyperparameters")
             ),
+            tool_feature_contract=str(raw.get("tool_feature_contract") or "legacy"),
         )
+        if schema_version < 7 and model.tool_feature_contract != "legacy":
+            raise ValueError("older model schema cannot use observed tool features")
         components = raw.get("components", {})
         model.boundary = _BoundaryContextTree.from_dict(components.get("boundary", {}))
         model.decode_demand = _HierarchicalEmpiricalModel.from_dict(
@@ -1942,6 +1990,9 @@ class FrontierBeliefModel:
             components.get("pooled_tool_terminal", {})
         )
         model.tool = _CompetingRiskToolModel.from_dict(components.get("tool", {}))
+        model.child_tool = _CompetingRiskToolModel.from_dict(
+            components.get("child_tool", {})
+        )
         model.operational_release = OperationalReleaseModel.from_dict(
             components.get("operational_release", {})
         )
@@ -3754,6 +3805,9 @@ def _local_features_from_row(
             or trigger_attributes.get("tool_name")
             or trigger_attributes.get("backend_class")
             or "unknown"
+        ),
+        observed_command_class=str(
+            trigger_attributes.get("observed_command_class") or "unknown"
         ),
         generated_tokens=int(features.get("observed_output_tokens") or 0),
         elapsed_wait_ms=float(features.get("active_tool_elapsed_ms") or 0.0),

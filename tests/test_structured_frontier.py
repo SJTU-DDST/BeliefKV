@@ -44,6 +44,7 @@ def test_local_frontier_features_round_trip() -> None:
         tool_family="shell",
         backend_class="sandbox",
         command_class="pytest",
+        observed_command_class="test_suite",
         generated_tokens=37,
         elapsed_wait_ms=125.5,
         current_sequence_tokens=8192,
@@ -58,6 +59,57 @@ def test_local_frontier_features_round_trip() -> None:
     )
 
     assert LocalFrontierFeatures.from_dict(features.to_dict()) == features
+
+
+def test_observed_command_contract_keeps_child_and_root_tool_heads_separate() -> None:
+    rows = []
+    for index in range(12):
+        row = _tool_row(f"isolated-{index}", 80.0 if index < 6 else 4000.0, "success")
+        row["trigger_attributes"].update({
+            "tool_name": "execute",
+            "is_child": index >= 6,
+            "observed_command_class": "test_suite",
+        })
+        row["invocations"][0]["is_child"] = index >= 6
+        rows.append(row)
+    model = FrontierBeliefModel(tool_feature_contract="observed_command_child_v1")
+    model.fit(rows)
+    root = LocalFrontierFeatures(
+        invocation_id="root", state="wait_tool", agent_definition_id="worker",
+        tool_family="shell", command_class="execute",
+        observed_command_class="test_suite", current_sequence_tokens=4096,
+        active_tool_count=1, backend_pressure="active_family:1",
+    )
+    child = LocalFrontierFeatures.from_dict({**root.to_dict(), "is_child": True})
+    root_p50 = model.predict(root).wait_belief.residual_duration.quantile(0.5)
+    child_p50 = model.predict(child).wait_belief.residual_duration.quantile(0.5)
+    assert root_p50 < 500
+    assert child_p50 > 2000
+    loaded = FrontierBeliefModel.from_dict(model.to_dict())
+    assert loaded.tool_feature_contract == "observed_command_child_v1"
+    assert loaded.predict(child).wait_belief.residual_duration.quantile(0.5) == child_p50
+    assert loaded.predict(root).wait_belief.residual_duration.quantile(0.5) == root_p50
+
+    legacy_raw = FrontierBeliefModel.from_dict(
+        FrontierBeliefModel().to_dict()
+    ).to_dict()
+    legacy_raw["schema_version"] = 6
+    legacy_raw.pop("tool_feature_contract")
+    legacy_raw["components"].pop("child_tool")
+    legacy = FrontierBeliefModel.from_dict(legacy_raw)
+    assert legacy.tool_feature_contract == "legacy"
+    assert legacy.predict(root).wait_belief.support_level == "unavailable"
+
+
+def test_observed_command_contract_rejects_incomplete_tool_provenance() -> None:
+    model = FrontierBeliefModel(tool_feature_contract="observed_command_child_v1")
+    row = _tool_row("no-origin", 100.0, "success")
+    row["trigger_attributes"]["tool_name"] = "execute"
+    with pytest.raises(ValueError, match="provenance"):
+        model.fit([row])
+    row["trigger_attributes"]["is_child"] = False
+    with pytest.raises(ValueError, match="observed command class"):
+        model.fit([row])
 
 
 def _row(decision: str, remaining: int, target: str = "function_call") -> dict:

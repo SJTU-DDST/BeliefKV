@@ -152,7 +152,7 @@ class NativeAdmissionRuntime:
         self._native_cache: object | None = None
         self._context_tokens: dict[str, tuple[int, int, int, bool]] = {}
         self._boundary_history: dict[str, deque[str]] = {}
-        self._tool_metadata: dict[str, tuple[str, str]] = {}
+        self._tool_metadata: dict[str, tuple[str, str, str]] = {}
         self._next_wait_refresh_ms = 0.0
         self._refresh_join_next = False
         self._scan_unhinted_next = False
@@ -335,6 +335,7 @@ class NativeAdmissionRuntime:
                                 or attrs.get("backend_class")
                                 or "unknown"
                             ),
+                            str(attrs.get("observed_command_class") or "unknown"),
                         )
                     elif event.kind in (
                         RuntimeEventKind.TOOL_END,
@@ -883,8 +884,8 @@ class NativeAdmissionRuntime:
         family_count = sum(
             item.active_tool_family == family for item in active_tools
         )
-        backend, command = self._tool_metadata.get(
-            invocation.invocation_id, ("unknown", "unknown")
+        backend, command, observed_command = self._tool_metadata.get(
+            invocation.invocation_id, ("unknown", "unknown", "unknown")
         )
         return LocalFrontierFeatures(
             invocation_id=invocation.invocation_id,
@@ -896,6 +897,7 @@ class NativeAdmissionRuntime:
             tool_family=family,
             backend_class=backend,
             command_class=command,
+            observed_command_class=observed_command,
             generated_tokens=output,
             elapsed_wait_ms=max(
                 0.0, now_ms - invocation.active_tool_start_ms
