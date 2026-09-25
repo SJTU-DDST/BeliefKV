@@ -476,12 +476,97 @@ def test_stream_first_content_is_trace_only_and_one_per_child_model_run() -> Non
         assert "private late answer" not in json.dumps(
             [event.to_dict() for event in trace.events]
         )
+        adapter.on_llm_end(
+            _natural_child_result("short private answer"), run_id=another_run,
+        )
+        results = [
+            event for event in trace.events
+            if event.kind == RuntimeEventKind.LLM_RESULT
+            and event.attributes.get("request_id") == f"beliefkv:{another_run}"
+        ]
+        assert len(results) == 1
+        assert results[0].attributes["stream_content_counted_chars"] == 7000
+        assert results[0].attributes["stream_content_max_chunk_chars"] == 7000
+        assert results[0].attributes["stream_content_chunk_count"] == 109
+        assert "private paragraph" not in json.dumps(results[0].to_dict())
         assert not any(
             event.attributes.get("beliefkv_child_substantial_content_shadow")
             for event in control.events
         )
     finally:
         queued.close()
+
+
+def test_stream_milestones_deduplicate_same_chunk_not_equal_text() -> None:
+    trace = CollectingSink()
+    adapter = DeepAgentsRuntimeAdapter(
+        trace, BeliefKVRequestMetadata("wf", "root", "ctx", 0),
+    )
+    adapter.start()
+    task = adapter.declare_runtime_tasks([("explorer", "inspect")])[0]
+    tool_run = uuid4()
+    adapter.on_tool_start(
+        {"name": "task"}, "", run_id=tool_run,
+        inputs={"subagent_type": "explorer", "description": "inspect"},
+        tool_call_id=task.tool_call_id,
+    )
+    run = uuid4()
+    adapter.on_chat_model_start(
+        {}, [[HumanMessage(content="prompt")]],
+        run_id=run, parent_run_id=tool_run,
+    )
+    for _ in range(5):
+        chunk = SimpleNamespace(message=SimpleNamespace(
+            content="same text", tool_call_chunks=[],
+        ))
+        adapter.on_llm_new_token("same text", chunk=chunk, run_id=run)
+        adapter.on_llm_new_token("same text", chunk=chunk, run_id=run)
+    adapter.on_llm_end(_natural_child_result("same text" * 5), run_id=run)
+    result = next(
+        event for event in trace.events
+        if event.kind == RuntimeEventKind.LLM_RESULT
+    )
+    assert result.attributes["stream_content_chunk_count"] == 5
+    assert result.attributes["stream_content_counted_chars"] == 45
+    assert result.attributes["stream_content_token_chars"] == 45
+    assert not any(
+        event.attributes.get("beliefkv_child_substantial_content_shadow")
+        for event in trace.events
+    )
+
+
+def test_stream_counts_whitespace_as_content_without_first_body_cue() -> None:
+    trace = CollectingSink()
+    adapter = DeepAgentsRuntimeAdapter(
+        trace, BeliefKVRequestMetadata("wf", "root", "ctx", 0),
+    )
+    adapter.start()
+    task = adapter.declare_runtime_tasks([("explorer", "inspect")])[0]
+    tool_run = uuid4()
+    adapter.on_tool_start(
+        {"name": "task"}, "", run_id=tool_run,
+        inputs={"subagent_type": "explorer", "description": "inspect"},
+        tool_call_id=task.tool_call_id,
+    )
+    run = uuid4()
+    adapter.on_chat_model_start(
+        {}, [[HumanMessage(content="prompt")]],
+        run_id=run, parent_run_id=tool_run,
+    )
+    chunk = SimpleNamespace(message=SimpleNamespace(
+        content=" ", tool_call_chunks=[],
+    ))
+    adapter.on_llm_new_token(" ", chunk=chunk, run_id=run)
+    assert not any(
+        event.attributes.get("beliefkv_child_first_content_shadow")
+        for event in trace.events
+    )
+    adapter.on_llm_end(_natural_child_result(" "), run_id=run)
+    result = next(
+        event for event in trace.events
+        if event.kind == RuntimeEventKind.LLM_RESULT
+    )
+    assert result.attributes["stream_content_counted_chars"] == 1
 
 
 def test_streaming_entrypoints_preserve_child_identity() -> None:

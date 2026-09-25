@@ -11,6 +11,7 @@ WORKLOAD_OFFSET="${WORKLOAD_OFFSET:-0}"
 WORKLOAD_POOL_SIZE="${WORKLOAD_POOL_SIZE:-32}"
 WORKLOAD_PREFERRED_PREFIX="${WORKLOAD_PREFERRED_PREFIX:-}"
 WORKLOAD_EXCLUDE_MANIFEST="${WORKLOAD_EXCLUDE_MANIFEST:-}"
+PILOT_WORKFLOW_COUNT="${PILOT_WORKFLOW_COUNT:-32}"
 server_pid=""
 
 stop_server() {
@@ -42,40 +43,45 @@ if [[ -n "$WORKLOAD_EXCLUDE_MANIFEST" ]]; then
   fi
   excluded_instances="$(jq -c '.instance_ids' "$WORKLOAD_EXCLUDE_MANIFEST")"
 fi
-if [[ ! "$WORKLOAD_OFFSET" =~ ^[0-9]+$ \
+if [[ ! "$PILOT_WORKFLOW_COUNT" =~ ^[0-9]+$ \
+  || "$PILOT_WORKFLOW_COUNT" -lt 1 \
+  || "$PILOT_WORKFLOW_COUNT" -gt 32 \
+  || ! "$WORKLOAD_OFFSET" =~ ^[0-9]+$ \
   || ! "$WORKLOAD_POOL_SIZE" =~ ^[0-9]+$ \
-  || "$WORKLOAD_POOL_SIZE" -lt 32 ]]; then
-  printf 'WORKLOAD_OFFSET must be nonnegative; pool size must be at least 32\n' >&2
+  || "$WORKLOAD_POOL_SIZE" -lt "$PILOT_WORKFLOW_COUNT" ]]; then
+  printf 'Invalid pilot workflow count, offset or workload pool size\n' >&2
   exit 1
 fi
 selected_workloads="$(
   jq -c --argjson offset "$WORKLOAD_OFFSET" \
     --argjson pool "$WORKLOAD_POOL_SIZE" \
+    --argjson count "$PILOT_WORKFLOW_COUNT" \
     --argjson excluded "$excluded_instances" \
     --arg prefix "$WORKLOAD_PREFERRED_PREFIX" '
       [.workloads[$offset:($offset+$pool)][]
        | select(.instance_id as $id | $excluded | index($id) | not)]
       as $workloads
-      | if $prefix == "" then $workloads[:32]
+      | if $prefix == "" then $workloads[:$count]
         else (
           [$workloads[] | select(.instance_id | startswith($prefix))]
           + [$workloads[] | select((.instance_id | startswith($prefix)) | not)]
-        )[:32] end
+        )[:$count] end
     ' "$SOURCE/runtime_workload_manifest.json"
 )"
 mapfile -t selected_instances < <(
   jq -r '.[].instance_id' <<< "$selected_workloads"
 )
-if [[ "${#selected_instances[@]}" -ne 32 ]]; then
+if [[ "${#selected_instances[@]}" -ne "$PILOT_WORKFLOW_COUNT" ]]; then
   printf 'Not enough distinct tasks starting at offset %s\n' "$WORKLOAD_OFFSET" >&2
   exit 1
 fi
-if [[ "$(jq 'map(.instance_id) | unique | length' <<< "$selected_workloads")" -ne 32 ]]; then
+if [[ "$(jq 'map(.instance_id) | unique | length' <<< "$selected_workloads")" -ne "$PILOT_WORKFLOW_COUNT" ]]; then
   printf 'Selected tasks are not distinct\n' >&2
   exit 1
 fi
 instance_args=()
-if (( WORKLOAD_OFFSET > 0 )) || [[ -n "$WORKLOAD_PREFERRED_PREFIX" ]]; then
+if (( WORKLOAD_OFFSET > 0 )) || [[ -n "$WORKLOAD_PREFERRED_PREFIX" ]] \
+  || (( PILOT_WORKFLOW_COUNT < 32 )); then
   for instance in "${selected_instances[@]}"; do
     instance_args+=(--instance "$instance")
   done
@@ -125,8 +131,8 @@ fi
   --model Qwen3.5-35B-A3B \
   --workload-manifest "$SOURCE/runtime_workload_manifest.json" \
   "${instance_args[@]}" \
-  --max-workflows 32 \
-  --concurrency 32 \
+  --max-workflows "$PILOT_WORKFLOW_COUNT" \
+  --concurrency "$PILOT_WORKFLOW_COUNT" \
   --workflow-arrival-batch-size 16 \
   --workflow-arrival-batch-interval-ms 60000 \
   --subagent-fanout-profile native_dynamic_1to4 \

@@ -1358,3 +1358,46 @@ JOIN child 分别约 2027/2024 ms，回归
 它在新数据上还可能更差；未来要达到
 数百毫秒精度需要更早且可靠的新增完成状态
 观测，而不是微调这几个字符阈值。
+
+## 24. v9b 完成、流式里程碑计数修复
+
+v9b 已自然结束，32 个 workflow 中 21 completed、
+11 incomplete；2 个 root 的 `APIConnectionError`
+在 LLM 请求上记为删失，不纳入完整 RETURN/JOIN 标签。
+沙箱 stdout 审计中 33 个至少 2 秒的命令仅 10 个首字节
+比命令退出早至少 500 ms，不可把首字节当成稳定的结束时钟。
+两批旧开发集的 1700 字符阶段覆盖 12/12 个完整 JOIN，
+但按旧里程碑计算的样本内 ETA 误差 P50/P90 为
+2033/5845 ms；完成响应阶段误差为 36/171 ms，
+中位提前仅 277 ms。这些数字还要受到以下计数故障的
+更严格限定，不能视作有效的字符进度模型评价。
+
+`audit_stream_content_accounting.py` 发现旧 v9 与 v9b
+分别有 75/75 和 73/73 个达到至少 1024 字符阶段
+的请求，其最高阶段超过该请求最终可见正文长度。
+原因是当前 LangChain 组合在 `ChatOpenAI._stream`
+及 `BaseChatModel._generate_with_cache` 两层对同一个
+生成 chunk 发出 token 回调；BeliefKV 原来两次累计
+同一段正文。以相同 2 个 Astropy 任务作非正式诊断，
+旧代码出现 9/9 次大阶段超过最终正文；
+按同一 run、同一 chunk 身份去重后为 0/5。
+新 trace 还保存字符总量、单块最大字符数及 chunk 数，
+不保存正文。细节见两批
+`qwen35_stream_content_accounting_pilot_2root_v{1,2}` 的
+`stream_content_accounting.json` 和逐请求 trace。
+两个诊断批次均 2/2 完成，但 0/2 通过任务正确性，
+故仅用于验证计数，不作正式训练或收益证明。
+
+完成去重后，单独 `strip()` 每个 chunk 还会丢掉
+词间空白并推迟进度里程碑；现在只用去空白判断
+首次可见正文，里程碑按原始增量字符计数。
+此最后一步由单元测试覆盖，还需在下一批真实运行
+检验。`evaluate_stream_stage_holdout.py` 新增原始 trace
+对账：若任何至少 1024 字符里程碑超出最终正文，
+状态为 `invalid_stream_content_accounting`、
+禁止选择阶段和宣称验收通过；同时保留全部候选作诊断，
+不允许利用未来最终长度过滤坏样本以虚增精度。
+旧批次不能再直接训练字符时间头。即使新批次
+里程碑对齐，仍须按不同项目验证提前量、ETA 误差、
+误报和真实 H2D；完成响应虽准但提前量不足，
+不能替代可行动的提前预取。

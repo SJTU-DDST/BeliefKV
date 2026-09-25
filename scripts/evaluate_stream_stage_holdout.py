@@ -8,10 +8,15 @@ from collections import defaultdict
 import json
 from pathlib import Path
 from statistics import median
+import sys
 
 from scipy.stats import beta
 
+ROOT = Path(__file__).resolve().parents[1]
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
 from scripts.audit_native_stream_shadow import _quantile, _rows, _satisfied_last_children
+from scripts.audit_stream_content_accounting import audit as audit_stream_content
 from scripts.audit_stream_stage_eta import STAGES, candidates
 
 
@@ -94,6 +99,8 @@ def evaluate(
     heldout: dict[str, list[dict]],
     train_eligible: set[tuple[str, str]],
     heldout_eligible: set[tuple[str, str]],
+    *,
+    accounting: dict | None = None,
 ) -> dict:
     train_projects = {
         _project(Path(row["join"][0]))
@@ -128,13 +135,20 @@ def evaluate(
             and dev[stage]["eta_error_p90_ms"] <= 1000
         )
     ]
-    chosen = max(
-        eligible_stages,
-        key=lambda stage: (
-            dev[stage]["covered_last_child_joins"],
-            -dev[stage]["eta_error_p50_ms"],
-        ),
-        default=None,
+    accounting_valid = accounting is None or all(
+        not batch.get("large_milestone_exceeds_final")
+        for batch in accounting.values()
+    )
+    chosen = (
+        max(
+            eligible_stages,
+            key=lambda stage: (
+                dev[stage]["covered_last_child_joins"],
+                -dev[stage]["eta_error_p50_ms"],
+            ),
+            default=None,
+        )
+        if accounting_valid else None
     )
     per_project = defaultdict(dict)
     for stage in STAGES:
@@ -154,7 +168,11 @@ def evaluate(
     }
     chosen_quality = evaluation[chosen] if chosen is not None else None
     return {
-        "status": "read_only_stage_project_holdout_no_physical_h2d",
+        "status": (
+            "read_only_stage_project_holdout_no_physical_h2d"
+            if accounting_valid else "invalid_stream_content_accounting"
+        ),
+        "stream_content_accounting": accounting,
         "training_projects": sorted(train_projects),
         "heldout_projects": sorted(heldout_projects),
         "development_stage": chosen,
@@ -177,7 +195,10 @@ def evaluate(
             "First candidate per JOIN/stage; unresolved responses are "
             "right-censored and excluded from determined precision, "
             "not counted as true returns. "
-            "Transfer availability, control latency and H2D are unverified."
+            "Transfer availability, control latency and H2D are unverified. "
+            "If stream content milestones exceed final visible text, stage "
+            "timestamps cannot qualify a model; do not drop invalid rows "
+            "using future results to inflate apparent precision."
         ),
     }
 
@@ -202,9 +223,23 @@ def main() -> None:
     for directory in args.evaluate_workflows:
         for stage, rows in candidates(directory).items():
             heldout[stage].extend(rows)
+    accounting = {}
+    for group, directories in (
+        ("training", args.train_workflows),
+        ("heldout", args.evaluate_workflows),
+    ):
+        accounting[group] = {
+            "large_milestone_exceeds_final": sum(
+                audit_stream_content(directory)["totals"].get(
+                    "large_milestone_exceeds_final", 0
+                )
+                for directory in directories
+            )
+        }
     report = evaluate(
         training, heldout, _last_children(train_paths),
         _last_children(eval_paths),
+        accounting=accounting,
     )
     args.output.parent.mkdir(parents=True, exist_ok=True)
     args.output.write_text(json.dumps(report, indent=2) + "\n")

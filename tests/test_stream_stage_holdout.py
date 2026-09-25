@@ -63,6 +63,29 @@ def test_stage_evaluation_rejects_overlap_and_no_coverage():
     assert report["heldout"]["content_1024"]["complete_last_child_recall"] is None
 
 
+def test_future_content_length_mismatch_invalidates_stage_without_filtering_rows():
+    training_rows = [
+        _row("pydata", str(i), lead=600 + i)
+        for i in range(10)
+    ]
+    heldout = [_row("sphinx-doc", "other", lead=700)]
+    train = {stage: [] for stage in STAGES}
+    train["content_4200"] = training_rows
+    evaluation = {stage: [] for stage in STAGES}
+    evaluation["content_4200"] = heldout
+    report = evaluate(
+        train, evaluation, _eligible(training_rows), _eligible(heldout),
+        accounting={
+            "training": {"large_milestone_exceeds_final": 1},
+            "heldout": {"large_milestone_exceeds_final": 0},
+        },
+    )
+    assert report["status"] == "invalid_stream_content_accounting"
+    assert report["development_stage"] is None
+    assert report["training"]["content_4200"]["determined_join_candidates"] == 10
+    assert report["pre_registered_holdout_gate_passed"] is False
+
+
 def test_multi_batch_evaluation_rejects_duplicate_workflow_instance(tmp_path):
     directories = []
     for run in ("run-a", "run-b"):

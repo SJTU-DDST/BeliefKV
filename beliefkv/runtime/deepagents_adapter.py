@@ -259,6 +259,10 @@ class DeepAgentsRuntimeAdapter(BaseCallbackHandler):
         self._child_first_tool_chunk_shadow_runs: set[str] = set()
         self._child_substantial_content_shadow_runs: set[tuple[str, int]] = set()
         self._child_stream_content_chars: dict[str, int] = {}
+        self._child_stream_max_chunk_chars: dict[str, int] = {}
+        self._child_stream_token_chars: dict[str, int] = {}
+        self._child_stream_chunk_count: dict[str, int] = {}
+        self._child_stream_last_chunk: dict[str, Any] = {}
         self._join_members: dict[str, set[str]] = {}
         self._join_completed: dict[str, set[str]] = {}
         self._join_cancelled: dict[str, set[str]] = {}
@@ -733,15 +737,15 @@ class DeepAgentsRuntimeAdapter(BaseCallbackHandler):
         **kwargs: Any,
     ) -> None:
         """Capture a prospective final-answer boundary without scheduling actions."""
-        del kwargs, token
+        del kwargs
         # A token may be reasoning text even when the streamed AIMessage has
         # no visible content. Only an explicit content chunk is a body cue.
         message = getattr(chunk, "message", None)
         content = getattr(message, "content", None)
         content_seen = isinstance(content, str) and bool(content.strip())
-        content_chars = len(content.strip()) if isinstance(content, str) else 0
+        content_chars = len(content) if isinstance(content, str) else 0
         tool_seen = bool(getattr(message, "tool_call_chunks", None))
-        if not content_seen and not tool_seen:
+        if not content_chars and not tool_seen:
             return
         key = _run_key(run_id)
         emitted: list[tuple[str, int | None]] = []
@@ -757,6 +761,12 @@ class DeepAgentsRuntimeAdapter(BaseCallbackHandler):
             if pending is None or pending.terminal:
                 return
             metadata = self._model_metadata[key]
+            # ChatOpenAI and BaseChatModel may dispatch callbacks for the
+            # same generation chunk. Count it only once, without collapsing
+            # distinct chunks that happen to contain identical text.
+            if chunk is self._child_stream_last_chunk.get(key):
+                return
+            self._child_stream_last_chunk[key] = chunk
             if content_seen and key not in self._child_first_content_shadow_runs:
                 self._child_first_content_shadow_runs.add(key)
                 emitted.append(("beliefkv_child_first_content_shadow", None))
@@ -767,6 +777,16 @@ class DeepAgentsRuntimeAdapter(BaseCallbackHandler):
                 content_chars
                 and key not in self._child_first_tool_chunk_shadow_runs
             ):
+                self._child_stream_max_chunk_chars[key] = max(
+                    self._child_stream_max_chunk_chars.get(key, 0),
+                    content_chars,
+                )
+                self._child_stream_token_chars[key] = (
+                    self._child_stream_token_chars.get(key, 0) + len(token)
+                )
+                self._child_stream_chunk_count[key] = (
+                    self._child_stream_chunk_count.get(key, 0) + 1
+                )
                 count = min(
                     STREAM_CONTENT_THRESHOLDS[-1],
                     self._child_stream_content_chars.get(key, 0) + content_chars,
@@ -815,7 +835,11 @@ class DeepAgentsRuntimeAdapter(BaseCallbackHandler):
         del kwargs
         key = self._remember_run(run_id, parent_run_id)
         with self._lock:
-            self._child_stream_content_chars.pop(key, None)
+            stream_chars = self._child_stream_content_chars.pop(key, None)
+            stream_max_chunk = self._child_stream_max_chunk_chars.pop(key, None)
+            stream_token_chars = self._child_stream_token_chars.pop(key, None)
+            stream_chunk_count = self._child_stream_chunk_count.pop(key, None)
+            self._child_stream_last_chunk.pop(key, None)
         invocation_id = self._resolve_invocation(key)
         with self._lock:
             runtime_internal = key in self._internal_summary_runs
@@ -886,6 +910,10 @@ class DeepAgentsRuntimeAdapter(BaseCallbackHandler):
                 "runtime_internal": runtime_internal,
                 "request_id": _native_request_id(run_id),
                 "output_chars": output_chars,
+                "stream_content_counted_chars": stream_chars,
+                "stream_content_max_chunk_chars": stream_max_chunk,
+                "stream_content_token_chars": stream_token_chars,
+                "stream_content_chunk_count": stream_chunk_count,
                 "output_tokens": output_tokens or None,
                 "tool_call_count": len(tool_calls),
                 "invalid_tool_call_count": invalid_tool_call_count,
@@ -999,6 +1027,10 @@ class DeepAgentsRuntimeAdapter(BaseCallbackHandler):
         key = self._remember_run(run_id, parent_run_id)
         with self._lock:
             self._child_stream_content_chars.pop(key, None)
+            self._child_stream_max_chunk_chars.pop(key, None)
+            self._child_stream_token_chars.pop(key, None)
+            self._child_stream_chunk_count.pop(key, None)
+            self._child_stream_last_chunk.pop(key, None)
         invocation_id = self._resolve_invocation(key)
         with self._lock:
             runtime_internal = key in self._internal_summary_runs
