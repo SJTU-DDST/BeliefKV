@@ -3,7 +3,7 @@ from __future__ import annotations
 import pytest
 
 from scripts.audit_stream_stage_eta import STAGES
-from scripts.evaluate_stream_stage_holdout import evaluate
+from scripts.evaluate_stream_stage_holdout import _paths, evaluate
 
 
 def _row(project: str, workflow: str, *, lead: float, final: bool = True):
@@ -58,3 +58,14 @@ def test_stage_evaluation_rejects_overlap_and_no_coverage():
     report = evaluate(train, eval_rows, _eligible([row]), set())
     assert report["development_stage"] is None
     assert report["heldout"]["content_1024"]["complete_last_child_recall"] is None
+
+
+def test_multi_batch_evaluation_rejects_duplicate_workflow_instance(tmp_path):
+    directories = []
+    for run in ("run-a", "run-b"):
+        path = tmp_path / run / "same__task"
+        path.mkdir(parents=True)
+        (path / "runtime_events.deepagents.jsonl").write_text("")
+        directories.append(path.parent)
+    with pytest.raises(ValueError, match="repeated workflow instances"):
+        _paths(directories)

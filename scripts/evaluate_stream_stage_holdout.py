@@ -22,6 +22,9 @@ def _paths(directories: list[Path]) -> list[Path]:
     ]
     if not paths:
         raise ValueError("no workflow event traces")
+    instances = [path.parent.name for path in paths]
+    if len(instances) != len(set(instances)):
+        raise ValueError("repeated workflow instances across input batches")
     return paths
 
 
@@ -174,11 +177,11 @@ def evaluate(
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--train-workflows", type=Path, action="append", required=True)
-    parser.add_argument("--evaluate-workflows", type=Path, required=True)
+    parser.add_argument("--evaluate-workflows", type=Path, action="append", required=True)
     parser.add_argument("--output", type=Path, required=True)
     args = parser.parse_args()
     train_paths = _paths(args.train_workflows)
-    eval_paths = _paths([args.evaluate_workflows])
+    eval_paths = _paths(args.evaluate_workflows)
     train_projects = {_project(path) for path in train_paths}
     eval_projects = {_project(path) for path in eval_paths}
     if overlap := train_projects & eval_projects:
@@ -187,9 +190,13 @@ def main() -> None:
     for directory in args.train_workflows:
         for stage, rows in candidates(directory).items():
             training[stage].extend(rows)
+    heldout = {stage: [] for stage in STAGES}
+    for directory in args.evaluate_workflows:
+        for stage, rows in candidates(directory).items():
+            heldout[stage].extend(rows)
     report = evaluate(
-        training, candidates(args.evaluate_workflows),
-        _last_children(train_paths), _last_children(eval_paths),
+        training, heldout, _last_children(train_paths),
+        _last_children(eval_paths),
     )
     args.output.parent.mkdir(parents=True, exist_ok=True)
     args.output.write_text(json.dumps(report, indent=2) + "\n")
