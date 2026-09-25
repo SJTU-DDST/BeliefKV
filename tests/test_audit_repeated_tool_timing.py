@@ -3,7 +3,9 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
-from scripts.audit_repeated_tool_timing import _read_workflow, replay
+from scripts.audit_repeated_tool_timing import (
+    _read_workflow, replay, transfer_replay
+)
 
 
 def _event(kind: str, ts: int, seq: int, call: str, invocation: str,
@@ -57,3 +59,26 @@ def test_project_held_out_repeat_report(tmp_path: Path) -> None:
     result = replay(tmp_path, minimum_class_samples=1)
     assert result["counts"]["has_completed_same_input"] == 2
     assert result["metrics"]["actual_at_least_2s:previous"]["p50_error_ms"] == 0
+
+
+def test_project_disjoint_transfer_checks_margins_and_long_false_positives(
+    tmp_path: Path,
+) -> None:
+    train = tmp_path / "train"
+    evaluation = tmp_path / "evaluation"
+    _write(train, "django", [
+        _event("tool_start", 0, 1, "first", "child"),
+        _event("tool_end", 3000, 2, "first", "child"),
+        _event("tool_start", 3100, 3, "second", "child"),
+        _event("tool_end", 6200, 4, "second", "child"),
+    ])
+    _write(evaluation, "sphinx", [
+        _event("tool_start", 0, 1, "first", "child"),
+        _event("tool_end", 3100, 2, "first", "child"),
+        _event("tool_start", 3200, 3, "second", "child"),
+        _event("tool_end", 3300, 4, "second", "child"),
+    ])
+    result = transfer_replay(train, evaluation)
+    assert result["train_p90_absolute_residual_ms"] == 100
+    assert result["evaluation_within_train_p90_margin"] == 0
+    assert result["predicted_long_false_positive_count"] == 1

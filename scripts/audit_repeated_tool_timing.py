@@ -182,15 +182,76 @@ def replay(workflows: Path, *, minimum_class_samples: int = 8) -> dict:
     }
 
 
+def transfer_replay(train_workflows: Path, evaluation_workflows: Path) -> dict:
+    train = [
+        row for path in sorted(train_workflows.glob("*/runtime_events.deepagents.jsonl"))
+        for row in _read_workflow(path)
+        if row["previous"] is not None and row["previous"][2] == "success"
+    ]
+    evaluation = [
+        row for path in sorted(evaluation_workflows.glob("*/runtime_events.deepagents.jsonl"))
+        for row in _read_workflow(path)
+        if row["previous"] is not None and row["previous"][2] == "success"
+    ]
+    if not train or not evaluation:
+        raise ValueError("both groups require prior-success repeat samples")
+    if {row["project"] for row in train} & {row["project"] for row in evaluation}:
+        raise ValueError("train/evaluation project overlap")
+    train_errors = [
+        abs(row["duration_ms"] - row["previous"][0]) for row in train
+    ]
+    margin = _quantile(train_errors, .9)
+    rows = []
+    for row in evaluation:
+        predicted = row["previous"][0]
+        rows.append({
+            **row, "error_ms": abs(row["duration_ms"] - predicted)
+        })
+    per_workflow = defaultdict(list)
+    for row in rows:
+        per_workflow[row["workflow"]].append(row["error_ms"])
+    return {
+        "status": "cross_run_project_disjoint_diagnostic_not_formal_test",
+        "train_repeat_count": len(train),
+        "evaluation_repeat_count": len(rows),
+        "train_p90_absolute_residual_ms": margin,
+        "evaluation": _summarize(rows),
+        "evaluation_within_train_p90_margin": (
+            sum(row["error_ms"] <= margin for row in rows) / len(rows)
+        ),
+        "workflow_all_repeats_within_margin": (
+            sum(max(errors) <= margin for errors in per_workflow.values())
+            / len(per_workflow)
+        ),
+        "evaluation_actual_at_least_2s": _summarize([
+            row for row in rows if row["duration_ms"] >= 2_000
+        ]),
+        "predicted_at_least_2s_count": sum(
+            row["previous"][0] >= 2_000 for row in rows
+        ),
+        "predicted_long_false_positive_count": sum(
+            row["previous"][0] >= 2_000 and row["duration_ms"] < 2_000
+            for row in rows
+        ),
+    }
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--workflows", type=Path, required=True)
+    parser.add_argument("--evaluation-workflows", type=Path)
     parser.add_argument("--output", type=Path, required=True)
     args = parser.parse_args()
     result = replay(args.workflows)
+    if args.evaluation_workflows is not None:
+        result["project_isolated_transfer"] = transfer_replay(
+            args.workflows, args.evaluation_workflows
+        )
     args.output.parent.mkdir(parents=True, exist_ok=True)
     args.output.write_text(json.dumps(result, indent=2, sort_keys=True) + "\n")
-    print(json.dumps({"counts": result["counts"], "all_repeats": {
+    print(json.dumps({"counts": result["counts"], "cross_run": result.get(
+        "project_isolated_transfer"
+    ), "all_repeats": {
         name: result["metrics"].get("all_repeats:" + name)
         for name in ("previous", "class")
     }}, indent=2))
