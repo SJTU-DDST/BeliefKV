@@ -8,7 +8,7 @@ import urllib.request
 from contextlib import contextmanager
 from contextvars import ContextVar
 from dataclasses import dataclass, replace
-from typing import Any, Callable, Iterator, Mapping, Protocol, Sequence
+from typing import Any, AsyncIterator, Callable, Iterator, Mapping, Protocol, Sequence
 from uuid import UUID
 
 from langchain_core.callbacks import BaseCallbackHandler
@@ -26,6 +26,7 @@ from beliefkv.core.events import (
     RuntimeEvent,
     RuntimeEventKind,
 )
+from beliefkv.predictor.command_class import execute_command_class
 from beliefkv.runtime.agent_safety import classify_tool_outcome
 from beliefkv.predictor.taxonomy import ToolTaxonomy
 from beliefkv.runtime.agent_runtime_adapter import RuntimeEventSink
@@ -242,6 +243,7 @@ class DeepAgentsRuntimeAdapter(BaseCallbackHandler):
         self._task_run_to_call: dict[str, str] = {}
         self._child_completion_intent_runs: set[str] = set()
         self._child_first_content_shadow_runs: set[str] = set()
+        self._child_first_tool_chunk_shadow_runs: set[str] = set()
         self._join_members: dict[str, set[str]] = {}
         self._join_completed: dict[str, set[str]] = {}
         self._join_cancelled: dict[str, set[str]] = {}
@@ -716,14 +718,18 @@ class DeepAgentsRuntimeAdapter(BaseCallbackHandler):
     ) -> None:
         """Capture a prospective final-answer boundary without scheduling actions."""
         del kwargs
-        content = getattr(chunk, "content", token)
-        if not isinstance(content, str) or not content.strip():
+        content = getattr(getattr(chunk, "message", None), "content", token)
+        content_seen = isinstance(content, str) and bool(content.strip())
+        tool_seen = bool(getattr(
+            getattr(chunk, "message", None), "tool_call_chunks", None
+        ))
+        if not content_seen and not tool_seen:
             return
         key = _run_key(run_id)
+        emitted = []
         with self._lock:
             if (
                 key is None
-                or key in self._child_first_content_shadow_runs
                 or key in self._internal_summary_runs
                 or key not in self._model_metadata
             ):
@@ -733,8 +739,13 @@ class DeepAgentsRuntimeAdapter(BaseCallbackHandler):
             if pending is None or pending.terminal:
                 return
             metadata = self._model_metadata[key]
-            self._child_first_content_shadow_runs.add(key)
-        self._publish((
+            if content_seen and key not in self._child_first_content_shadow_runs:
+                self._child_first_content_shadow_runs.add(key)
+                emitted.append("beliefkv_child_first_content_shadow")
+            if tool_seen and key not in self._child_first_tool_chunk_shadow_runs:
+                self._child_first_tool_chunk_shadow_runs.add(key)
+                emitted.append("beliefkv_child_first_tool_chunk_shadow")
+        self._publish(tuple(
             self._event(
                 RuntimeEventKind.STRUCTURED_ACTION,
                 invocation_id=invocation_id,
@@ -744,11 +755,11 @@ class DeepAgentsRuntimeAdapter(BaseCallbackHandler):
                 confidence=EventConfidence.INFERRED,
                 attributes={
                     "source": "deepagents_stream_shadow",
-                    "beliefkv_child_first_content_shadow": True,
+                    name: True,
                     "diagnostic_only": True,
                     "request_id": _native_request_id(run_id),
                 },
-            ),
+            ) for name in emitted
         ), control=False)
 
     def on_llm_end(
@@ -1040,6 +1051,10 @@ class DeepAgentsRuntimeAdapter(BaseCallbackHandler):
                 "tool_name": tool_name,
                 "tool_family": normalized.family,
                 "backend_class": normalized.backend_class,
+                "observed_command_class": (
+                    execute_command_class(payload)
+                    if tool_name == "execute" else tool_name
+                ),
                 "input_chars": input_chars,
                 "input_sha256": input_sha256,
                 "parameter_signature": input_sha256,
@@ -1668,6 +1683,11 @@ class BeliefKVChatOpenAI(ChatOpenAI):
     _active_rids: set[str] = PrivateAttr(default_factory=set)
     _active_rids_lock: threading.Lock = PrivateAttr(default_factory=threading.Lock)
     _beliefkv_max_prompt_tokens: int | None = PrivateAttr(default=None)
+    _stream_run_manager: ContextVar[Any | None] = PrivateAttr(
+        default_factory=lambda: ContextVar(
+            "beliefkv_stream_run_manager", default=None
+        )
+    )
     _beliefkv_prompt_token_counter: (
         Callable[[list[BaseMessage]], int] | None
     ) = PrivateAttr(default=None)
@@ -1725,6 +1745,36 @@ class BeliefKVChatOpenAI(ChatOpenAI):
                 f"model={self.model_name!r}"
             )
 
+    def _generate_with_cache(
+        self,
+        messages: list[BaseMessage],
+        stop: list[str] | None = None,
+        run_manager: Any | None = None,
+        **kwargs: Any,
+    ) -> Any:
+        token = self._stream_run_manager.set(run_manager)
+        try:
+            return super()._generate_with_cache(
+                messages, stop, run_manager, **kwargs
+            )
+        finally:
+            self._stream_run_manager.reset(token)
+
+    async def _agenerate_with_cache(
+        self,
+        messages: list[BaseMessage],
+        stop: list[str] | None = None,
+        run_manager: Any | None = None,
+        **kwargs: Any,
+    ) -> Any:
+        token = self._stream_run_manager.set(run_manager)
+        try:
+            return await super()._agenerate_with_cache(
+                messages, stop, run_manager, **kwargs
+            )
+        finally:
+            self._stream_run_manager.reset(token)
+
     def _generate(
         self,
         messages: list[BaseMessage],
@@ -1746,6 +1796,29 @@ class BeliefKVChatOpenAI(ChatOpenAI):
             if rid is not None:
                 self._untrack_request(rid)
 
+    def _stream(
+        self,
+        messages: list[BaseMessage],
+        stop: list[str] | None = None,
+        run_manager: Any | None = None,
+        **kwargs: Any,
+    ) -> Iterator[Any]:
+        rid: str | None = None
+        try:
+            self._preflight_model_context(messages)
+            if run_manager is None:
+                run_manager = self._stream_run_manager.get()
+            kwargs, rid = self._with_beliefkv_runtime(run_manager, kwargs)
+            self._track_request(rid)
+            yield from super()._stream(messages, stop, run_manager, **kwargs)
+        except BaseException:
+            if rid is not None:
+                self._abort_request(rid)
+            raise
+        finally:
+            if rid is not None:
+                self._untrack_request(rid)
+
     async def _agenerate(
         self,
         messages: list[BaseMessage],
@@ -1759,6 +1832,32 @@ class BeliefKVChatOpenAI(ChatOpenAI):
             kwargs, rid = self._with_beliefkv_runtime(run_manager, kwargs)
             self._track_request(rid)
             return await super()._agenerate(messages, stop, run_manager, **kwargs)
+        except BaseException:
+            if rid is not None:
+                self._abort_request(rid)
+            raise
+        finally:
+            if rid is not None:
+                self._untrack_request(rid)
+
+    async def _astream(
+        self,
+        messages: list[BaseMessage],
+        stop: list[str] | None = None,
+        run_manager: Any | None = None,
+        **kwargs: Any,
+    ) -> AsyncIterator[Any]:
+        rid: str | None = None
+        try:
+            self._preflight_model_context(messages)
+            if run_manager is None:
+                run_manager = self._stream_run_manager.get()
+            kwargs, rid = self._with_beliefkv_runtime(run_manager, kwargs)
+            self._track_request(rid)
+            async for chunk in super()._astream(
+                messages, stop, run_manager, **kwargs
+            ):
+                yield chunk
         except BaseException:
             if rid is not None:
                 self._abort_request(rid)

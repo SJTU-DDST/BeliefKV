@@ -142,3 +142,39 @@ def test_stream_shadow_audits_early_cue_and_tool_call_false_positive(tmp_path):
     assert result["confirmed_not_final"] == 1
     assert result["lead_ms"]["p50"] == 1100
     assert result["complete_response_lead_p50_ms"] == 200
+
+
+def test_stream_timer_excludes_early_tool_chunk_but_not_late_tool_chunk(tmp_path):
+    dataset = tmp_path / "dataset"
+    workflow = tmp_path / "workflows" / "one"
+    dataset.mkdir()
+    workflow.mkdir(parents=True)
+    (dataset / "reentries.jsonl").write_text(
+        json.dumps(_join()) + "\n", encoding="utf-8"
+    )
+    events = [
+        _event(100, "structured_action",
+               beliefkv_child_first_content_shadow=True, request_id="tool"),
+        _event(400, "structured_action",
+               beliefkv_child_first_tool_chunk_shadow=True, request_id="tool"),
+        _event(900, "llm_result", request_id="tool", tool_call_count=1),
+        _event(950, "tool_start"),
+        _event(1000, "structured_action",
+               beliefkv_child_first_content_shadow=True, request_id="final"),
+        _event(2200, "llm_result", request_id="final", tool_call_count=0,
+               finish_reason="stop"),
+        _event(2300, "return"),
+    ]
+    (workflow / "runtime_events.deepagents.jsonl").write_text(
+        "".join(json.dumps(item) + "\n" for item in events), encoding="utf-8"
+    )
+    timers = audit_stream_shadow(tmp_path / "workflows", dataset)[
+        "first_content_timer_shadow"
+    ]
+    assert timers["250"]["triggered"] == 2
+    assert timers["250"]["false_triggers"] == 1
+    assert timers["250"]["first_trigger_precision"] == 0
+    assert timers["500"]["triggered"] == 1
+    assert timers["500"]["precision"] == 1
+    assert timers["500"]["first_trigger_precision"] == 1
+    assert timers["500"]["true_return_lead_p50_ms"] == 800

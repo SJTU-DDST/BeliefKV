@@ -1,11 +1,13 @@
 from __future__ import annotations
 
+import asyncio
 import itertools
 import json
 import threading
 import time
 from types import SimpleNamespace
 from typing import Any, Sequence
+from unittest.mock import patch
 from uuid import uuid4
 
 import pytest
@@ -344,7 +346,15 @@ def test_stream_first_content_is_trace_only_and_one_per_child_model_run() -> Non
         adapter.on_llm_new_token(" ", run_id=run)
         adapter.on_llm_new_token(
             "secret final answer", run_id=run,
-            chunk=SimpleNamespace(content="secret final answer"),
+            chunk=SimpleNamespace(message=SimpleNamespace(
+                content="secret final answer", tool_call_chunks=[],
+            )),
+        )
+        adapter.on_llm_new_token(
+            "", run_id=run,
+            chunk=SimpleNamespace(message=SimpleNamespace(
+                content="", tool_call_chunks=[{"name": "execute"}],
+            )),
         )
         adapter.on_llm_new_token("another private token", run_id=run)
         queued.close()
@@ -358,8 +368,122 @@ def test_stream_first_content_is_trace_only_and_one_per_child_model_run() -> Non
         assert shadows[0].attributes["diagnostic_only"] is True
         assert shadows[0] not in control.events
         assert "secret" not in json.dumps(shadows[0].to_dict())
+        tools = [
+            event for event in trace.events
+            if event.attributes.get("beliefkv_child_first_tool_chunk_shadow")
+        ]
+        assert len(tools) == 1
+        assert tools[0] not in control.events
+        assert "execute" not in json.dumps(tools[0].to_dict())
     finally:
         queued.close()
+
+
+def test_streaming_entrypoints_preserve_child_identity() -> None:
+    trace = CollectingSink()
+    adapter = DeepAgentsRuntimeAdapter(
+        trace, BeliefKVRequestMetadata("wf", "root", "ctx", 0)
+    )
+    adapter.start()
+    child = adapter.declare_runtime_tasks(
+        [("explorer", "private task")], group_id="streamed-identity"
+    )[0]
+    tool_run = uuid4()
+    adapter.on_tool_start(
+        {"name": "task"}, "", run_id=tool_run,
+        inputs={"subagent_type": "explorer", "description": "private task"},
+        tool_call_id=child.tool_call_id,
+    )
+    client = BeliefKVChatOpenAI(
+        beliefkv_adapter=adapter,
+        model="test-model", base_url="http://127.0.0.1:30000/v1",
+        api_key="EMPTY", max_retries=0,
+    )
+    captured = []
+
+    def stream_stub(self, messages, stop=None, run_manager=None, **kwargs):
+        captured.append(kwargs)
+        yield "chunk"
+
+    async def astream_stub(self, messages, stop=None, run_manager=None, **kwargs):
+        captured.append(kwargs)
+        yield "chunk"
+
+    async def consume(run):
+        return [
+            chunk async for chunk in client._astream(
+                [HumanMessage(content="child")],
+                run_manager=SimpleNamespace(run_id=run),
+                tools=[{"type": "function"}],
+            )
+        ]
+
+    for asynchronous in (False, True):
+        run = uuid4()
+        adapter.on_chat_model_start(
+            {}, [[HumanMessage(content="child")]],
+            run_id=run, parent_run_id=tool_run,
+        )
+        with (
+            patch.object(ChatOpenAI, "_stream", stream_stub),
+            patch.object(ChatOpenAI, "_astream", astream_stub),
+        ):
+            chunks = (
+                asyncio.run(consume(run))
+                if asynchronous else list(client._stream(
+                    [HumanMessage(content="child")],
+                    run_manager=SimpleNamespace(run_id=run),
+                    tools=[{"type": "function"}],
+                ))
+            )
+        assert chunks == ["chunk"]
+        assert captured[-1]["extra_body"]["rid"] == f"beliefkv:{run}"
+        assert captured[-1]["extra_body"]["beliefkv_metadata"]["invocation_id"] == (
+            child.invocation_id
+        )
+        assert "tool_choice" not in captured[-1]
+        assert client.active_request_count() == 0
+
+    def implicit_generate(self, messages, stop=None, run_manager=None, **kwargs):
+        return list(self._stream(messages, stop=stop, **kwargs))
+
+    async def implicit_agenerate(
+        self, messages, stop=None, run_manager=None, **kwargs
+    ):
+        return [
+            chunk async for chunk in self._astream(
+                messages, stop=stop, **kwargs
+            )
+        ]
+
+    for asynchronous in (False, True):
+        run = uuid4()
+        adapter.on_chat_model_start(
+            {}, [[HumanMessage(content="child")]],
+            run_id=run, parent_run_id=tool_run,
+        )
+        with (
+            patch.object(ChatOpenAI, "_stream", stream_stub),
+            patch.object(ChatOpenAI, "_astream", astream_stub),
+            patch.object(ChatOpenAI, "_generate_with_cache", implicit_generate),
+            patch.object(ChatOpenAI, "_agenerate_with_cache", implicit_agenerate),
+        ):
+            chunks = (
+                asyncio.run(client._agenerate_with_cache(
+                    [HumanMessage(content="child")],
+                    run_manager=SimpleNamespace(run_id=run),
+                    tools=[{"type": "function"}],
+                ))
+                if asynchronous else client._generate_with_cache(
+                    [HumanMessage(content="child")],
+                    run_manager=SimpleNamespace(run_id=run),
+                    tools=[{"type": "function"}],
+                )
+            )
+        assert chunks == ["chunk"]
+        assert captured[-1]["extra_body"]["rid"] == f"beliefkv:{run}"
+        assert "tool_choice" not in captured[-1]
+        assert client.active_request_count() == 0
 
 
 def test_child_completion_intent_rejects_unbound_ambiguous_repeated_and_terminal() -> None:

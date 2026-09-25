@@ -18,6 +18,8 @@ from beliefkv.experiments.p6_dataset import (
     export_p6_training_dataset,
 )
 from beliefkv.experiments.p6_coverage import P6CoverageError
+from beliefkv.experiments.p6_decision_points import _event_triggers
+from beliefkv.core.events import RuntimeEvent
 
 
 def _write_jsonl(path: Path, records: list[dict[str, object]]) -> None:
@@ -241,6 +243,18 @@ def _read_jsonl(path: Path) -> list[dict[str, object]]:
     return [json.loads(line) for line in path.read_text(encoding="utf-8").splitlines()]
 
 
+def test_execute_category_is_available_for_future_decision_export():
+    trigger = _event_triggers([RuntimeEvent.from_dict(_event(
+        1, "tool_start", attributes={
+            "tool_call_id": "call-one", "tool_name": "execute",
+            "observed_command_class": "test_suite",
+            "command": "sensitive text must not leak",
+        },
+    ))])[0]
+    assert trigger["attributes"]["observed_command_class"] == "test_suite"
+    assert "command" not in trigger["attributes"]
+
+
 @pytest.mark.parametrize(
     "marker_name",
     ("PILOT_INVALID.json", "COLLECTION_INVALID.json", "STARTUP_FAILED.json"),
@@ -326,6 +340,7 @@ def test_export_training_tables_preserves_identity_censoring_and_join_closure(
                     "tool_call_id": "tool",
                     "tool_name": "search",
                     "tool_family": "search",
+                    "observed_command_class": "test_suite",
                     "parameter_signature": "signature",
                 },
             ),
@@ -444,6 +459,9 @@ def test_export_training_tables_preserves_identity_censoring_and_join_closure(
     assert manifest["tables"]["gpu_service_intervals"]["row_count"] == 1
     assert manifest["tables"]["gpu_batch_service_intervals"]["row_count"] == 1
     assert manifest["tables"]["external_waits"]["row_count"] == 1
+    assert _read_jsonl(output / "external_waits.jsonl")[0][
+        "observed_command_class"
+    ] == "test_suite"
     assert manifest["tables"]["reentries"]["row_count"] == 2
     assert manifest["tables"]["pcie_operations"]["row_count"] == 1
     assert manifest["tables"]["frontier_decision_points"]["row_count"] >= 1

@@ -25,7 +25,11 @@ def _quantile(values: list[float], q: float) -> float | None:
 
 
 def audit(
-    workflows: Path, dataset: Path | None = None, *, cue: str = "first_content"
+    workflows: Path,
+    dataset: Path | None = None,
+    *,
+    cue: str = "first_content",
+    project_prefix: str | None = None,
 ) -> dict:
     if cue not in {"first_content", "final_marker"}:
         raise ValueError("unsupported stream cue")
@@ -51,6 +55,8 @@ def audit(
             last_children.add((row["workflow_id"], last["invocation_id"]))
 
     paths = sorted(workflows.glob("*/runtime_events.deepagents.jsonl"))
+    if project_prefix:
+        paths = [path for path in paths if path.parent.name.startswith(project_prefix)]
     if not paths:
         raise ValueError(f"no workflow event traces in {workflows}")
     by_child = defaultdict(list)
@@ -61,6 +67,12 @@ def audit(
     cues = positives = negatives = unknown = joined = 0
     returned_children = set()
     marked_children = set()
+    timer_thresholds = (250, 500, 750, 1000, 1250, 1500, 2000, 2500)
+    timers = {
+        delay: {"triggered": 0, "true_returns": 0, "false_triggers": 0,
+                "return_leads_ms": [], "first_by_child": {}}
+        for delay in timer_thresholds
+    }
     leads, final_result_leads, joined_leads = [], [], []
     for child, events in by_child.items():
         events.sort(key=lambda event: float(event["ts_ms"]))
@@ -82,6 +94,15 @@ def audit(
             if result is None:
                 unknown += 1
                 continue
+            tool_chunk = next((
+                later for later in events
+                if later.get("kind") == "structured_action"
+                and (later.get("attributes") or {}).get(
+                    "beliefkv_child_first_tool_chunk_shadow"
+                )
+                and (later.get("attributes") or {}).get("request_id") == request_id
+                and float(later["ts_ms"]) <= float(result["ts_ms"])
+            ), None)
             attrs = result.get("attributes") or {}
             successor = next((
                 later for later in events
@@ -90,13 +111,42 @@ def audit(
                     "return", "invocation_cancel", "llm_submit", "tool_start"
                 }
             ), None)
-            if (
-                successor is not None and successor.get("kind") == "return"
+            if successor is None:
+                unknown += 1
+                continue
+            is_final = (
+                successor.get("kind") == "return"
                 and attrs.get("runtime_internal") is not True
                 and attrs.get("tool_call_count") == 0
                 and attrs.get("invalid_tool_call_count", 0) == 0
                 and attrs.get("finish_reason") in (None, "stop")
-            ):
+            )
+            if cue == "first_content":
+                for delay, timer in timers.items():
+                    trigger_ts = float(event["ts_ms"]) + delay
+                    if (
+                        trigger_ts >= float(result["ts_ms"])
+                        or tool_chunk is not None
+                        and float(tool_chunk["ts_ms"]) <= trigger_ts
+                    ):
+                        continue
+                    timer["triggered"] += 1
+                    timer["first_by_child"].setdefault(
+                        child,
+                        (
+                            is_final,
+                            float(successor["ts_ms"]) - trigger_ts
+                            if is_final else None,
+                        ),
+                    )
+                    if is_final:
+                        timer["true_returns"] += 1
+                        timer["return_leads_ms"].append(
+                            float(successor["ts_ms"]) - trigger_ts
+                        )
+                    else:
+                        timer["false_triggers"] += 1
+            if is_final:
                 positives += 1
                 marked_children.add(child)
                 lead = float(successor["ts_ms"]) - float(event["ts_ms"])
@@ -109,7 +159,37 @@ def audit(
                     joined_leads.append(lead)
             else:
                 negatives += 1
+    timer_results = {
+        str(delay): {
+            "triggered": values["triggered"],
+            "true_returns": values["true_returns"],
+            "false_triggers": values["false_triggers"],
+            "precision": (
+                values["true_returns"] / values["triggered"]
+                if values["triggered"] else None
+            ),
+            "true_return_lead_p50_ms": _quantile(
+                values["return_leads_ms"], .5
+            ),
+            "first_triggered_children": len(values["first_by_child"]),
+            "first_trigger_true": sum(
+                predicted for predicted, _ in values["first_by_child"].values()
+            ),
+            "first_trigger_precision": (
+                sum(predicted for predicted, _ in values["first_by_child"].values())
+                / len(values["first_by_child"])
+                if values["first_by_child"] else None
+            ),
+            "first_trigger_true_lead_p50_ms": _quantile(
+                [lead for predicted, lead in values["first_by_child"].values()
+                 if predicted and lead is not None],
+                .5,
+            ),
+        }
+        for delay, values in timers.items()
+    }
     return {
+        "project_prefix": project_prefix,
         "cue": cue,
         "cues": cues,
         "confirmed_final_return": positives,
@@ -135,6 +215,9 @@ def audit(
             "p90": _quantile(joined_leads, .9),
         },
         "complete_response_lead_p50_ms": _quantile(final_result_leads, .5),
+        "first_content_timer_shadow": (
+            timer_results if cue == "first_content" else None
+        ),
         "join_cohort_available": dataset is not None,
         "status": "offline_stream_shadow_diagnostic_only",
     }
@@ -146,9 +229,13 @@ def main() -> None:
     parser.add_argument("--dataset", type=Path)
     parser.add_argument("--cue", choices=("first_content", "final_marker"),
                         default="first_content")
+    parser.add_argument("--project-prefix")
     parser.add_argument("--output", type=Path, required=True)
     args = parser.parse_args()
-    result = audit(args.workflows, args.dataset, cue=args.cue)
+    result = audit(
+        args.workflows, args.dataset, cue=args.cue,
+        project_prefix=args.project_prefix,
+    )
     args.output.parent.mkdir(parents=True, exist_ok=True)
     args.output.write_text(
         json.dumps(result, indent=2, sort_keys=True) + "\n", encoding="utf-8"

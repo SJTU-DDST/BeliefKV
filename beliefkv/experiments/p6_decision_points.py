@@ -248,6 +248,7 @@ def _event_triggers(events: Iterable[RuntimeEvent]) -> list[dict[str, Any]]:
                     "tool_name",
                     "tool_family",
                     "backend_class",
+                    "observed_command_class",
                     "prompt_semantic_sha256",
                     "sampling_seed",
                     "status",

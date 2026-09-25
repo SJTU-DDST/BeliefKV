@@ -244,6 +244,68 @@ RETURN 都没有输出此前缀，覆盖率为零，已撤销该无效试验代�
 工具结束只有 1 次的下一模型回复直接 RETURN；它也不是可靠
 的普适完成阈值。
 
+早期流式试验绕过了 `BeliefKVChatOpenAI` 非流式 `_generate/_agenerate`
+入口，没有可靠地向服务端注入 RID 与 invocation 身份；上述 pilot
+仅用于观察输出形态，不能验证正式服务条件下的预取误差。
+现同步/异步 `_stream/_astream` 都做上下文预检、RID 注入、
+活跃请求跟踪和异常 abort；LangChain 隐式进入流式路径时，
+由调用作用域的 `ContextVar` 传递 run manager。首个工具调用
+片段也以脱敏、只读事件记录。旧的
+`qwen35_stream_tool_chunk_{pilot,test}_20260925_v1` 中，等待
+2 秒且尚未观察到工具片段的规则在不同项目上仍有误报，
+不得以此开启预测传输。
+
+`qwen35_forced_completion_contextbound_20260925_v1` 曾向 child
+加入 `finish_work` 并强制每次调用一个工具。41 次 child
+请求确实发出了 required tool choice，但没有一次调用
+`finish_work`；三个 child 均未正常 RETURN，最终被取消。
+该方案改变了任务执行轨迹，不能作为精度样本；强制工具选择、
+额外工具及提示词已撤回。仅保留与正常工作负载兼容的流式身份
+修复及只读事件。后续验证须同时报告误报率、正常 child RETURN
+覆盖率、提前量，以及按完整 JOIN 计的误差。
+
+修复身份后的正常子代理流式诊断
+`qwen35_contextbound_stream_normal_20260925_v1` 有两个项目：
+Astropy 的四个 child 中仅两个自然 RETURN，首正文后等待
+1.5 秒且未出现工具片段的提示在这两个 child 上无误报，
+但样本太少，不能据此证明泛化；Sphinx 四个 child 全部取消，
+没有可评价的真实终态。流式执行还改变了任务轨迹，
+默认保持关闭。
+
+另一只读试验 `scripts/pilot_native_join_progress.py` 只用训练集
+已完成 JOIN 的当时可见 child 进展拟合剩余时间，按完整 JOIN
+在既有项目隔离校准组验证。首个 WAIT_JOIN 快照中位绝对
+误差由原头约 1016 秒降到约 581 秒，但 64/64 个 JOIN
+都没有进入模型预测的 2 秒触发窗口。仅改变损失尺度结果
+仍约 572 秒；同为 66-root 压力下 Astropy→Sphinx 及
+Sphinx→Astropy 的项目互测误差分别约 1284/363 秒，亦均无
+2 秒触发。这是离线模型诊断，不构成可上线的精度提升。
+训练集 128-root 与校准集 66-root 的负载差异并非唯一原因：
+任务尚未给出完成信号时，仅由累积执行量不能倒推出剩余
+完成时间。大块 H2D 应继续依赖有容量预留的准入交接或
+较早且可验证的阶段边界；不得通过缩小区间、事后选快照
+或降低触发门槛虚构准确率。
+
+工具时长有一个可修复的可观测特征缺口：旧 `execute`
+调用的 `command_class` 仅退化为工具名。只读的
+`scripts/pilot_native_execute_timing.py` 将旧 root trajectory
+按工具调用 ID 对齐到已完成工具时长，训练组 5,363 次，
+项目隔离校准组 3,052 次。仅用测试命令、Python 临时代码、
+Git 等粗分类，校准组调用起点的中位绝对误差由约
+332 ms 降至 167 ms；但真实时长至少 2 秒的 122 次中，
+误差仍约 2,018 ms（原约 2,261 ms）。child 的命令没有
+记录在旧 trajectory 中，不能将这个 root 子集结论外推
+至全部 child。新增 TOOL_START 脱敏字段
+`observed_command_class` 和 P6 工具行持久化，不存储原命令；
+不更改当前线上模型使用的 `command_class`，以免旧 artifact
+匹配键变化。需要从新埋点收集完整 child 样本、重训并独立
+验证长工具调用后，方可考虑启用。
+在完全相同的 3,052 次首个 TOOL_START 决策快照上，当前
+已校准 Frontier 工具头的中位绝对误差约 321 ms，分类候选
+约 167 ms；64 个 workflow 等权的中位数约 347→126 ms。
+这个对照证明新特征在 root `execute` 子集上优于现有头，
+**不证明**已能准确预测 2 秒以上调用，亦不证明 JOIN 提前量。
+
 短窗头可以通过同时设置 `BELIEFKV_COMPLETION_LEAD_ARTIFACT`
 和 `BELIEFKV_COMPLETION_LEAD_SHA256` 显式加载经 SHA-256
 固定的诊断 JSON；缺任一项、哈希变化或非只读诊断状态均拒绝。
