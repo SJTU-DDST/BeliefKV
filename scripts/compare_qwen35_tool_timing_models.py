@@ -50,6 +50,34 @@ def _metrics(rows: list[dict], name: str) -> dict:
     }
 
 
+def _start_trigger_quality(rows: list[dict], name: str) -> dict:
+    eligible = [
+        row for row in rows
+        if type(row.get(f"{name}_forecast_ms")) in (int, float)
+        and math.isfinite(row[f"{name}_forecast_ms"])
+    ]
+    imminent = [
+        row for row in eligible if row[f"{name}_forecast_ms"] <= 500
+    ]
+    predicted_long = [
+        row for row in eligible if row[f"{name}_forecast_ms"] >= 2_000
+    ]
+    actual_long = sum(row["actual_ms"] >= 2_000 for row in eligible)
+    true_long = sum(row["actual_ms"] >= 2_000 for row in predicted_long)
+    return {
+        "predicted_imminent_count": len(imminent),
+        "imminent_false_over_2s": sum(
+            row["actual_ms"] > 2_000 for row in imminent
+        ),
+        "predicted_long_count": len(predicted_long),
+        "actual_long_count": actual_long,
+        "long_precision": (
+            true_long / len(predicted_long) if predicted_long else None
+        ),
+        "long_recall": true_long / actual_long if actual_long else None,
+    }
+
+
 def _checkpoint_groups_metrics(groups: dict) -> dict:
     return {
         name: {
@@ -294,6 +322,7 @@ def compare(
         first_snapshots[key] = (row, invocation)
         actual = max(0.0, float(wait["terminal_ts_ms"]) - float(row["timestamp_ms"]))
         errors = {}
+        forecasts = {}
         for name, model in (("reference", reference), ("candidate", candidate)):
             features = _local_features_from_row(
                 row, invocation, tool_feature_contract=model.tool_feature_contract,
@@ -309,11 +338,14 @@ def compare(
                 continue
             value = belief.residual_duration.quantile(.5)
             errors[name] = abs(value - actual) if math.isfinite(value) else None
+            forecasts[name] = value
         if errors["reference"] is None or errors["candidate"] is None:
             counts["not_jointly_available"] += 1
             continue
         sample = {
-            "workflow": key[0], "actual_ms": actual, "zero": actual, **errors
+            "workflow": key[0], "actual_ms": actual, "zero": actual, **errors,
+            **{f"{name}_forecast_ms": forecast
+               for name, forecast in forecasts.items()},
         }
         dimensions = ["all"]
         child = invocation.get("is_child") is True
@@ -372,6 +404,10 @@ def compare(
                 "zero_remaining_baseline": _metrics(samples, "zero"),
                 "reference": _metrics(samples, "reference"),
                 "candidate": _metrics(samples, "candidate"),
+                "tool_start_trigger_quality": {
+                    name: _start_trigger_quality(samples, name)
+                    for name in ("reference", "candidate")
+                },
             }
             for group, samples in sorted(groups.items())
         },

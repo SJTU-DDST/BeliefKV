@@ -70,6 +70,43 @@ def test_compare_first_trigger_matches_identity_and_explicit_prior(
     assert result["groups"]["child_with_prior"]["zero_remaining_baseline"][
         "p50_absolute_error_ms"
     ] == 100
+    assert result["groups"]["child_with_prior"]["tool_start_trigger_quality"][
+        "candidate"
+    ]["imminent_false_over_2s"] == 0
+
+
+def test_compare_counts_false_imminent_at_first_tool_start(tmp_path: Path) -> None:
+    waits = [{
+        "workflow_id": "workflow", "tool_call_id": "slow",
+        "invocation_id": "child", "terminal_ts_ms": 5_010,
+        "training_eligible_survival": True, "censored": False,
+    }]
+    decisions = [{
+        "workflow_id": "workflow", "trigger_kind": "tool_start",
+        "timestamp_ms": 10, "trigger_invocation_id": "child",
+        "trigger_attributes": {
+            "tool_call_id": "slow", "tool_name": "execute",
+            "is_child": True, "observed_command_class": "test_suite",
+            "previous_same_input_status": "success",
+            "previous_same_input_duration_ms": 100,
+        },
+        "invocations": [{
+            "invocation_id": "child", "state": "wait_tool", "is_child": True,
+        }],
+    }]
+    for name, items in (
+        ("external_waits.jsonl", waits),
+        ("frontier_decision_points.jsonl", decisions),
+    ):
+        (tmp_path / name).write_text(
+            "".join(json.dumps(item) + "\n" for item in items)
+        )
+    result = compare(tmp_path, _FakeModel(repeat=False), _FakeModel(repeat=True))
+    quality = result["groups"]["child_long"]["tool_start_trigger_quality"]
+    assert quality["candidate"]["predicted_imminent_count"] == 1
+    assert quality["candidate"]["imminent_false_over_2s"] == 1
+    assert quality["candidate"]["actual_long_count"] == 1
+    assert quality["candidate"]["long_recall"] == 0
 
 
 def test_compare_reports_cold_project_prior_separately(tmp_path: Path) -> None:
