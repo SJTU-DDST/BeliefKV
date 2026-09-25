@@ -58,6 +58,42 @@ def stable_long_prior(
     return estimate
 
 
+def acceptance(report: dict) -> dict:
+    timing = report["selected_true_long_timing"]
+    count = report["selected_true_long"]
+    useful = report["true_long_scheduling_windows_zero_overhead_upper_bound"][
+        "desired_lead_500ms"
+    ]["at_least_500ms_before_end"]
+    checks = {
+        "at_least_30_actual_long": report["actual_cold_long"] >= 30,
+        "at_least_5_long_workflows": report["actual_long_workflow_count"] >= 5,
+        "predicted_long_precision_at_least_70pct": (
+            report["long_precision"] is not None
+            and report["long_precision"] >= .7
+        ),
+        "actual_long_recall_at_least_30pct": (
+            report["long_recall"] is not None
+            and report["long_recall"] >= .3
+        ),
+        "true_long_p50_at_most_500ms": (
+            timing["p50_error_ms"] is not None
+            and timing["p50_error_ms"] <= 500
+        ),
+        "true_long_p90_at_most_1000ms": (
+            timing["p90_error_ms"] is not None
+            and timing["p90_error_ms"] <= 1000
+        ),
+        "true_long_workflow_weighted_p50_at_most_500ms": (
+            timing["workflow_weighted_p50_ms"] is not None
+            and timing["workflow_weighted_p50_ms"] <= 500
+        ),
+        "true_long_500ms_lead_at_least_70pct": (
+            count > 0 and useful / count >= .7
+        ),
+    }
+    return {"accepted": all(checks.values()), "checks": checks}
+
+
 def replay(evaluation: list[dict]) -> dict:
     if not evaluation:
         raise ValueError("no tool calls to evaluate")
@@ -65,6 +101,7 @@ def replay(evaluation: list[dict]) -> dict:
     history_by_shape = defaultdict(list)
     selected = []
     recent_selected = []
+    actual_long_workflows = set()
     child_calls = actual_long = 0
     for row in sorted(evaluation, key=lambda item: item["start_ts_ms"]):
         key = row["project"], row["class"]
@@ -73,6 +110,7 @@ def replay(evaluation: list[dict]) -> dict:
             child_calls += 1
             if row["duration_ms"] >= 2000:
                 actual_long += 1
+                actual_long_workflows.add(row["workflow"])
             estimate = stable_long_prior(row, history_by_shape[shape_key])
             recency_estimate = stable_long_prior(
                 row, history_by_shape[shape_key], recent_ties=True
@@ -114,6 +152,7 @@ def replay(evaluation: list[dict]) -> dict:
         row for row in recent_selected if row["legacy_error_ms"] is not None
     ]
     scheduling_windows = {}
+    true_scheduling_windows = {}
     for budget in (500, 1000, 2000):
         # Both forecasts and true durations are measured from TOOL_START.
         # This is only a zero-control-overhead upper bound for a timed action.
@@ -127,10 +166,21 @@ def replay(evaluation: list[dict]) -> dict:
             "over_2000ms_before_end": sum(lead > 2000 for lead in leads),
             "after_tool_end": sum(lead < 0 for lead in leads),
         }
-    return {
+        true_leads = [
+            row["duration_ms"] - max(0, row["estimate_ms"] - budget)
+            for row in true_long
+        ]
+        true_scheduling_windows[f"desired_lead_{budget}ms"] = {
+            "at_least_500ms_before_end": sum(
+                lead >= 500 for lead in true_leads
+            ),
+            "after_tool_end": sum(lead < 0 for lead in true_leads),
+        }
+    report = {
         "status": "read_only_selective_shape_timing_no_physical_action",
         "cold_child_calls": child_calls,
         "actual_cold_long": actual_long,
+        "actual_long_workflow_count": len(actual_long_workflows),
         "selected_predicted_long": len(selected),
         "selected_true_long": len(true_long),
         "selected_false_long": len(selected) - len(true_long),
@@ -157,7 +207,12 @@ def replay(evaluation: list[dict]) -> dict:
             ]),
         },
         "scheduling_windows_zero_overhead_upper_bound": scheduling_windows,
+        "true_long_scheduling_windows_zero_overhead_upper_bound": (
+            true_scheduling_windows
+        ),
     }
+    report["pre_registered_acceptance"] = acceptance(report)
+    return report
 
 
 def main() -> None:

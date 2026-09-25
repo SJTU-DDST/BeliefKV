@@ -47,6 +47,10 @@ def test_shape_replay_reports_selective_precision_without_future_data():
     assert result["long_precision"] == 1
     assert result["selected_false_long"] == 0
     assert result["selected_true_long_timing"]["p50_error_ms"] == 50
+    assert result["pre_registered_acceptance"]["accepted"] is False
+    assert result["pre_registered_acceptance"]["checks"][
+        "at_least_30_actual_long"
+    ] is False
     assert result["scheduling_windows_zero_overhead_upper_bound"][
         "desired_lead_500ms"
     ]["at_least_500ms_before_end"] == 1
