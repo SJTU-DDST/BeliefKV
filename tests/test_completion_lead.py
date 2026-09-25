@@ -22,6 +22,12 @@ from scripts.pilot_stream_final_classifier import _quality as stream_classifier_
 from scripts.pilot_stream_eta_regression import fit_eta, predict_eta
 from scripts.pilot_stream_actionable_window import _quality as actionable_quality
 from scripts.pilot_stream_online_eta import evaluate_online
+from scripts.audit_stream_join_beneficiary import (
+    _first_per_join, _quality as beneficiary_quality,
+)
+from scripts.audit_stream_stage_eta import candidates as stage_eta_candidates
+from scripts.audit_stream_stage_eta import _quality as stage_eta_quality
+from scripts.pilot_stream_rate_eta import evaluate as evaluate_stream_rate
 
 
 def _event(timestamp: float, kind: str, **attributes):
@@ -456,6 +462,100 @@ def test_stream_join_counts_repeated_workflows_in_distinct_runs(tmp_path):
     assert result["selected_true_last_children"] == 2
     assert result["last_child_recall"] == 1
     assert result["selected_last_child_lead_at_least_2000ms"] == 0
+
+
+def test_join_beneficiary_does_not_credit_later_return_after_tool(tmp_path):
+    workflows = tmp_path / "workflows"
+    for name, end_kind, final in (
+        ("good", "join_satisfied", True),
+        ("late", "join_satisfied", False),
+        ("timeout", "join_timeout", False),
+    ):
+        path = workflows / name
+        path.mkdir(parents=True)
+        events = [
+            {**_event(0, "join_create", mode="all"),
+             "join_id": "join", "member_invocation_ids": ["child"]},
+            _event(100, "llm_submit", request_id="req"),
+            _event(150, "structured_action", request_id="req",
+                   beliefkv_child_first_content_shadow=True),
+            {**_event(500, "structured_action", request_id="req",
+                       beliefkv_child_substantial_content_shadow=True,
+                       content_threshold_chars=1024), "join_id": "join"},
+            _event(3000, "llm_result", request_id="req",
+                   tool_call_count=0 if final else 1,
+                   finish_reason="stop" if final else "tool_calls",
+                   output_chars=1600),
+            _event(3500, "return" if final else "tool_start"),
+            *([_event(8000, "return")] if name == "late" else []),
+            {**_event(8000 if name == "late" else 3500, end_kind),
+             "join_id": "join"},
+            _event(9000, "workflow_end", outcome="completed"),
+        ]
+        (path / "runtime_events.deepagents.jsonl").write_text(
+            "".join(json.dumps(event) + "\n" for event in events),
+            encoding="utf-8",
+        )
+    rows, _, last_children = stream_classifier_samples(workflows)
+    report = beneficiary_quality(_first_per_join(rows), last_children)
+    assert report["signaled_join_groups"] == 3
+    assert report["observed_satisfied"] == 1
+    assert report["premature_then_satisfied"] == 1
+    assert report["observed_timeout"] == 1
+    assert report["precision_on_determined"] == 1 / 3
+    assert report["satisfied_lead_p50_ms"] == 1000
+
+
+def test_stage_eta_requires_last_child_and_reports_remaining_window(tmp_path):
+    path = tmp_path / "workflows" / "one"
+    path.mkdir(parents=True)
+    events = [
+        {**_event(0, "join_create", mode="all"),
+         "join_id": "join", "member_invocation_ids": ["child", "other"]},
+        {**_event(100, "return"), "invocation_id": "other"},
+        _event(200, "llm_submit", request_id="req"),
+        _event(250, "structured_action", request_id="req",
+               beliefkv_child_first_content_shadow=True),
+        _event(500, "structured_action", request_id="req",
+               beliefkv_child_substantial_content_shadow=True,
+               content_threshold_chars=1024),
+        _event(1000, "structured_action", request_id="req",
+               beliefkv_child_substantial_content_shadow=True,
+               content_threshold_chars=1700),
+        _event(3000, "llm_result", request_id="req", tool_call_count=0,
+               output_chars=1800, finish_reason="stop"),
+        _event(3200, "return"),
+        {**_event(3200, "join_satisfied"), "join_id": "join"},
+    ]
+    (path / "runtime_events.deepagents.jsonl").write_text(
+        "".join(json.dumps(event) + "\n" for event in events),
+        encoding="utf-8",
+    )
+    stages = stage_eta_candidates(tmp_path / "workflows")
+    assert {
+        stage: rows[0]["lead_ms"] for stage, rows in stages.items()
+    } == {"content_1024": 700, "content_1700": 1950, "result": 200}
+    assert all(rows[0]["eligible_last_child"] for rows in stages.values())
+    quality = stage_eta_quality(stages["result"], prior=210)
+    assert quality["eta_error_p50_ms"] == 10
+    assert quality["lead_at_least_500ms"] == 0
+
+
+def test_stream_rate_eta_fits_training_only_and_scores_join_subset():
+    train = [
+        {"rate_interval_ms": i * 100, "lead_ms": 2000 + i * 200,
+         "join_last_child": False}
+        for i in range(12)
+    ]
+    heldout = [
+        {"rate_interval_ms": 600, "lead_ms": 3200, "join_last_child": True},
+        {"rate_interval_ms": 400, "lead_ms": 2800, "join_last_child": False},
+    ]
+    result = evaluate_stream_rate(train, heldout)
+    assert result["train_samples"] == 12
+    assert result["rate_slope"] == pytest.approx(2)
+    assert result["cohorts"]["last_child_join"]["rate_mae_p50_ms"] == 0
+    assert result["cohorts"]["last_child_join"]["fixed_mae_p50_ms"] > 0
 
 
 def test_stream_eta_regression_only_consumes_causal_features():

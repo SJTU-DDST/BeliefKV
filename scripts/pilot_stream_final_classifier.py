@@ -47,6 +47,16 @@ def samples(workflows: Path) -> tuple[list[dict], int, set[tuple[str, str]]]:
             and (event.get("attributes") or {}).get("mode") == "all"
             and event.get("member_invocation_ids")
         }
+        join_terminals = {
+            event["join_id"]: (event["kind"], float(event["ts_ms"]))
+            for event in workflow_events
+            if event.get("kind") in {"join_satisfied", "join_timeout"}
+            and event.get("join_id")
+        }
+        workflow_terminals = [
+            event for event in workflow_events
+            if event.get("kind") == "workflow_end"
+        ]
         returns = {
             event["invocation_id"]: float(event["ts_ms"])
             for event in workflow_events
@@ -124,6 +134,10 @@ def samples(workflows: Path) -> tuple[list[dict], int, set[tuple[str, str]]]:
                     created, members = group
                     last_outstanding = (
                         created <= now and child in members
+                        and (
+                            event.get("join_id") not in join_terminals
+                            or join_terminals[event["join_id"]][1] > now
+                        )
                         and all(
                             member == child or returns.get(member, math.inf) < now
                             for member in members
@@ -157,6 +171,13 @@ def samples(workflows: Path) -> tuple[list[dict], int, set[tuple[str, str]]]:
                     "trace_path": str(path),
                     "workflow": event["workflow_id"],
                     "child": child,
+                    "join_id": event.get("join_id"),
+                    "join_terminal": join_terminals.get(event.get("join_id")),
+                    "child_return_ms": returns.get(child),
+                    "workflow_outcome": (
+                        (workflow_terminals[-1].get("attributes") or {})
+                        .get("outcome") if workflow_terminals else None
+                    ),
                     "trigger_ms": now,
                     "join_last_outstanding": last_outstanding,
                     "features": [
