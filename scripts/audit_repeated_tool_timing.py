@@ -1,0 +1,200 @@
+#!/usr/bin/env python3
+"""Causal replay of same-input tool timing, with project-held-out priors."""
+
+from __future__ import annotations
+
+import argparse
+from collections import Counter, defaultdict
+import json
+import math
+from pathlib import Path
+from statistics import median
+
+import orjson
+
+
+def _quantile(values: list[float], q: float) -> float | None:
+    if not values:
+        return None
+    ordered = sorted(values)
+    return ordered[max(0, math.ceil(len(ordered) * q) - 1)]
+
+
+def _summarize(rows: list[dict]) -> dict:
+    errors = [row["error_ms"] for row in rows]
+    projects = defaultdict(list)
+    workflows = defaultdict(list)
+    for row in rows:
+        projects[row["project"]].append(row)
+        workflows[row["workflow"]].append(row["error_ms"])
+    counts = Counter(row["workflow"] for row in rows)
+    return {
+        "count": len(rows),
+        "p50_error_ms": _quantile(errors, .5),
+        "p90_error_ms": _quantile(errors, .9),
+        "p95_error_ms": _quantile(errors, .95),
+        "within_500ms": sum(e <= 500 for e in errors) / len(errors) if errors else None,
+        "workflow_weighted_p50_ms": _quantile(
+            [median(values) for values in workflows.values()], .5
+        ),
+        "workflow_count": len(workflows),
+        "top_5_workflow_share": (
+            sum(value for _, value in counts.most_common(5)) / len(rows)
+            if rows else None
+        ),
+        "by_project": {
+            project: {
+                "count": len(items),
+                "p50_error_ms": _quantile([item["error_ms"] for item in items], .5),
+                "p90_error_ms": _quantile([item["error_ms"] for item in items], .9),
+            }
+            for project, items in sorted(projects.items())
+        },
+    }
+
+
+def _read_workflow(path: Path) -> list[dict]:
+    events = []
+    with path.open("rb") as stream:
+        for line in stream:
+            if line.strip():
+                event = orjson.loads(line)
+                if event.get("kind") in ("tool_start", "tool_end"):
+                    events.append(event)
+    # The callback's timestamp, not file append order, is the availability clock.
+    events.sort(key=lambda event: (float(event["ts_ms"]), event["sequence"]))
+    started = {}
+    history = {}
+    completed = []
+    for event in events:
+        attrs = event.get("attributes") or {}
+        call_id = str(attrs.get("tool_call_id") or "")
+        if not call_id or attrs.get("tool_name") != "execute":
+            continue
+        ts = float(event["ts_ms"])
+        if event["kind"] == "tool_start":
+            signature = str(attrs.get("input_sha256") or "")
+            invocation = str(event.get("invocation_id") or "")
+            key = (invocation, signature)
+            previous = history.get(key) if signature and invocation else None
+            started[call_id] = (ts, attrs, previous)
+        elif call_id in started:
+            start_ts, start_attrs, previous = started.pop(call_id)
+            duration = ts - start_ts
+            if duration < 0:
+                raise ValueError(f"negative tool duration in {path}")
+            row = {
+                "project": path.parent.name.split("__", 1)[0],
+                "workflow": str(event["workflow_id"]),
+                "invocation": str(event.get("invocation_id") or ""),
+                "class": str(start_attrs.get("observed_command_class") or "unknown"),
+                "duration_ms": duration,
+                "status": str(attrs.get("status") or "unknown"),
+                "previous": previous,
+                "start_ts_ms": start_ts,
+            }
+            completed.append(row)
+            signature = str(start_attrs.get("input_sha256") or "")
+            if signature and row["invocation"]:
+                # A failed invocation should not become a duration prior for success.
+                history[(row["invocation"], signature)] = (
+                    duration, ts, row["status"]
+                )
+    return completed
+
+
+def replay(workflows: Path, *, minimum_class_samples: int = 8) -> dict:
+    if minimum_class_samples < 1:
+        raise ValueError("minimum_class_samples must be positive")
+    rows = []
+    for path in sorted(workflows.glob("*/runtime_events.deepagents.jsonl")):
+        rows.extend(_read_workflow(path))
+    projects = sorted({row["project"] for row in rows})
+    if len(projects) < 2:
+        raise ValueError("project-held-out analysis requires at least two projects")
+    results = defaultdict(list)
+    counts = defaultdict(int)
+    for project in projects:
+        train = [r for r in rows if r["project"] != project]
+        eval_rows = [r for r in rows if r["project"] == project]
+        by_class = defaultdict(list)
+        for row in train:
+            by_class[row["class"]].append(row["duration_ms"])
+        global_duration = median(row["duration_ms"] for row in train)
+        priors = {
+            name: median(values)
+            for name, values in by_class.items() if len(values) >= minimum_class_samples
+        }
+        for row in eval_rows:
+            counts["all_calls"] += 1
+            previous = row["previous"]
+            if previous is None:
+                counts["no_completed_same_input"] += 1
+                continue
+            prev_duration, prev_end, prev_status = previous
+            if prev_end >= row["start_ts_ms"]:
+                raise ValueError("future tool result leaked into current prediction")
+            counts["has_completed_same_input"] += 1
+            status_matches = row["status"] == prev_status
+            if not status_matches:
+                counts["outcome_changed"] += 1
+            age = row["start_ts_ms"] - prev_end
+            baseline = priors.get(row["class"], global_duration)
+            dimensions = ["all_repeats"]
+            if row["duration_ms"] >= 2_000:
+                dimensions.append("actual_at_least_2s")
+            if prev_duration >= 2_000:
+                dimensions.append("predicted_at_least_2s")
+                if row["duration_ms"] < 2_000:
+                    counts["long_prediction_false_positive"] += 1
+            if status_matches:
+                dimensions.append("same_outcome")
+            else:
+                dimensions.append("changed_outcome")
+            dimensions.append(
+                "prior_success" if prev_status == "success" else "prior_non_success"
+            )
+            if age > 60_000:
+                dimensions.append("older_than_1min")
+            else:
+                dimensions.append("within_1min")
+            if row["status"] not in ("success", "ok", "completed"):
+                dimensions.append("non_success")
+            for dimension in dimensions:
+                results[dimension + ":previous"].append({
+                    **row, "error_ms": abs(row["duration_ms"] - prev_duration)
+                })
+                results[dimension + ":class"].append({
+                    **row, "error_ms": abs(row["duration_ms"] - baseline)
+                })
+            # Premature actions at prior duration P50 are unsafe without a
+            # calibrated residual interval and useful lead-time evidence.
+            if prev_duration < row["duration_ms"] - 500:
+                counts["previous_more_than_500ms_early"] += 1
+            if prev_duration > row["duration_ms"] + 500:
+                counts["previous_more_than_500ms_late"] += 1
+    return {
+        "status": "offline_causal_replay_not_deployable",
+        "project_count": len(projects),
+        "projects": projects,
+        "counts": dict(sorted(counts.items())),
+        "metrics": {name: _summarize(value) for name, value in sorted(results.items())},
+    }
+
+
+def main() -> None:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--workflows", type=Path, required=True)
+    parser.add_argument("--output", type=Path, required=True)
+    args = parser.parse_args()
+    result = replay(args.workflows)
+    args.output.parent.mkdir(parents=True, exist_ok=True)
+    args.output.write_text(json.dumps(result, indent=2, sort_keys=True) + "\n")
+    print(json.dumps({"counts": result["counts"], "all_repeats": {
+        name: result["metrics"].get("all_repeats:" + name)
+        for name in ("previous", "class")
+    }}, indent=2))
+
+
+if __name__ == "__main__":
+    main()

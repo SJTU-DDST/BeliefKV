@@ -103,6 +103,44 @@ def test_observed_command_contract_keeps_child_and_root_tool_heads_separate() ->
     assert legacy.predict(root).wait_belief.support_level == "unavailable"
 
 
+def test_repeat_tool_contract_requires_fitted_uncertainty_and_causal_success() -> None:
+    rows = []
+    for index in range(40):
+        row = _tool_row(f"repeat-{index}", 3010.0 + index, "success")
+        row["workflow_id"] = f"workflow-{index // 4}"
+        row["trigger_invocation_id"] = "worker"
+        row["trigger_attributes"].update({
+            "tool_name": "execute",
+            "observed_command_class": "test_suite",
+            "is_child": True,
+            "previous_same_input_status": "success",
+            "previous_same_input_duration_ms": 3000.0,
+        })
+        row["invocations"][0]["is_child"] = True
+        rows.append(row)
+    model = FrontierBeliefModel(
+        tool_feature_contract="observed_command_child_repeat_v2"
+    )
+    model.fit(rows)
+    assert model.repeat_error_p90_ms == 45.0
+    features = LocalFrontierFeatures(
+        invocation_id="child", state="wait_tool", is_child=True,
+        command_class="execute", observed_command_class="test_suite",
+        previous_same_input_duration_ms=3000.0, elapsed_wait_ms=500.0,
+    )
+    wait = model.predict(features).wait_belief
+    assert wait.residual_duration.quantile(.5) == 2500.0
+    assert wait.residual_duration.quantile(.9) == 2545.0
+    assert FrontierBeliefModel.from_dict(model.to_dict()).predict(
+        features
+    ).wait_belief.residual_duration.quantile(.5) == 2500.0
+    v7 = FrontierBeliefModel(tool_feature_contract="observed_command_child_v1")
+    v7.fit(rows)
+    assert v7.predict(features).wait_belief.residual_duration.quantile(.5) != 2500.0
+    with pytest.raises(ValueError, match="schema v8"):
+        FrontierBeliefModel.from_dict({**model.to_dict(), "schema_version": 7})
+
+
 def test_observed_command_contract_rejects_incomplete_tool_provenance() -> None:
     model = FrontierBeliefModel(tool_feature_contract="observed_command_child_v1")
     row = _tool_row("no-origin", 100.0, "success")

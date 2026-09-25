@@ -103,6 +103,11 @@ def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--dataset-dir", type=Path, action="append", required=True)
     parser.add_argument("--model-version", required=True)
+    parser.add_argument(
+        "--tool-feature-contract",
+        choices=("observed_command_child_v1", "observed_command_child_repeat_v2"),
+        default="observed_command_child_v1",
+    )
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--development-only", action="store_true")
     parser.add_argument("--minimum-projects", type=int)
@@ -148,7 +153,7 @@ def main(argv: list[str] | None = None) -> int:
     )
     model = FrontierBeliefModel(
         model_version=args.model_version,
-        tool_feature_contract="observed_command_child_v1",
+        tool_feature_contract=args.tool_feature_contract,
     )
     summary = model.fit(rows)
     if summary["action_target_count"] != 0 or summary["operational_timing"]["sample_count"] != 0:

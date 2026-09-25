@@ -27,6 +27,7 @@ from beliefkv.core.events import (
     RuntimeEventKind,
 )
 from beliefkv.predictor.command_class import execute_command_class
+from beliefkv.predictor.same_input_history import SameInputToolHistory
 from beliefkv.runtime.agent_safety import classify_tool_outcome
 from beliefkv.predictor.taxonomy import ToolTaxonomy
 from beliefkv.runtime.agent_runtime_adapter import RuntimeEventSink
@@ -252,6 +253,7 @@ class DeepAgentsRuntimeAdapter(BaseCallbackHandler):
         self._post_join_model_runs: dict[str, str] = {}
         self._semantic_gate_result: dict[str, Any] | None = None
         self._ordinary_tools: dict[str, _OrdinaryToolRun] = {}
+        self._same_input_history = SameInputToolHistory()
         self._ignored_tool_runs: set[str] = set()
         self._internal_summary_runs: dict[str, _InternalSummaryRun] = {}
         self._terminal_invocation_ids: set[str] = set()
@@ -1045,6 +1047,12 @@ class DeepAgentsRuntimeAdapter(BaseCallbackHandler):
                 payload=dict(payload),
                 workspace_digest_before=workspace_digest_before,
             )
+            same_input = self._same_input_history.start(
+                self.root_metadata.root_workflow_id, parent_invocation_id,
+                {"tool_call_id": tool_call_id, "tool_name": tool_name,
+                 "input_sha256": input_sha256},
+                ts_ms,
+            )
         event = self._event(
             RuntimeEventKind.TOOL_START,
             ts_ms=ts_ms,
@@ -1064,6 +1072,7 @@ class DeepAgentsRuntimeAdapter(BaseCallbackHandler):
                 "input_chars": input_chars,
                 "input_sha256": input_sha256,
                 "parameter_signature": input_sha256,
+                **same_input,
                 "workspace_digest_before": workspace_digest_before,
             },
         )
@@ -1438,6 +1447,11 @@ class DeepAgentsRuntimeAdapter(BaseCallbackHandler):
                 ),
             },
         )
+        with self._lock:
+            self._same_input_history.end(
+                self.root_metadata.root_workflow_id, active.invocation_id,
+                event.attributes, ts_ms,
+            )
         self._publish((event,), control=True)
 
     def _workspace_digest(

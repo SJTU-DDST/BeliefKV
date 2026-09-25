@@ -8,6 +8,7 @@ from beliefkv.control.causal_graph import InvocationState, RuntimeCausalContextG
 from beliefkv.core.events import RuntimeEvent, RuntimeEventKind
 from beliefkv.predictor.composer import observed_boundary_action
 from beliefkv.predictor.frontier_belief import BeliefScopeBuilder
+from beliefkv.predictor.same_input_history import SameInputToolHistory
 
 
 DECISION_POINT_SCHEMA_VERSION = 2
@@ -234,17 +235,38 @@ def build_frontier_decision_points(
 
 
 def _event_triggers(events: Iterable[RuntimeEvent]) -> list[dict[str, Any]]:
-    return [
-        {
+    histories: dict[str, SameInputToolHistory] = {}
+    triggers = []
+    for event in events:
+        history = histories.setdefault(event.workflow_id, SameInputToolHistory())
+        attrs = dict(event.attributes)
+        if event.kind == RuntimeEventKind.TOOL_START and event.invocation_id:
+            previous = history.start(
+                event.workflow_id, event.invocation_id, attrs, event.ts_ms
+            )
+            if "previous_same_input_duration_ms" in attrs and (
+                abs(float(attrs["previous_same_input_duration_ms"]) -
+                    float(previous.get("previous_same_input_duration_ms", -1))) > .01
+            ):
+                raise ValueError("online/offline same-input history disagrees")
+            attrs.update(previous)
+        elif event.kind == RuntimeEventKind.TOOL_END and event.invocation_id:
+            history.end(event.workflow_id, event.invocation_id, attrs, event.ts_ms)
+        elif event.kind in (RuntimeEventKind.RETURN, RuntimeEventKind.INVOCATION_CANCEL):
+            if event.invocation_id:
+                history.discard_invocation(event.workflow_id, event.invocation_id)
+        if event.kind not in _EVENT_TRIGGERS:
+            continue
+        triggers.append({
             "ts_ms": event.ts_ms,
             "priority": 0,
             "kind": event.kind.value,
             "trigger_id": event.event_id,
             "invocation_id": event.invocation_id,
             "workflow_id": event.workflow_id,
-            "request_id": event.attributes.get("request_id"),
+            "request_id": attrs.get("request_id"),
             "attributes": {
-                key: event.attributes.get(key)
+                key: attrs.get(key)
                 for key in (
                     "tool_call_id",
                     "tool_name",
@@ -252,17 +274,18 @@ def _event_triggers(events: Iterable[RuntimeEvent]) -> list[dict[str, Any]]:
                     "backend_class",
                     "is_child",
                     "observed_command_class",
+                    "previous_same_input_duration_ms",
+                    "previous_same_input_age_ms",
+                    "previous_same_input_status",
                     "prompt_semantic_sha256",
                     "sampling_seed",
                     "status",
                     "censor_reason",
                 )
-                if event.attributes.get(key) is not None
+                if attrs.get(key) is not None
             },
-        }
-        for event in events
-        if event.kind in _EVENT_TRIGGERS
-    ]
+        })
+    return triggers
 
 
 def _decode_triggers(
