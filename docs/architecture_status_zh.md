@@ -1566,6 +1566,17 @@ prompt preflight 不触发压缩的问题已在后续代码修复，不影响 v3
 原始可追溯性。详细计数及产物见
 `docs/experiments/qwen35_native_training_reset_2026-09-24_zh.md`。
 
+2026-09-25 补充：训练批次中 4 个 child 因 prompt 预检超出
+122,880-token 限额而取消，造成 4 个 JOIN 标签缺失。服务及 runtime
+的总 context 均为 131,072 token，另预留 8,192 completion token；
+先前压缩仅按动态消息、以 4 字符/token 计数，预检则以 3 字符/token
+计数且包含静态 system prompt。修复后两处统一使用相同估算，
+静态提示和工具 schema 会缩减动态压缩触发阈值，并预留 4,096-token
+余量；不能把这个问题误判为服务只配置了 96k context。
+另有 1 个 workflow 的初始派发因模型把 `tasks` 数组编码为 JSON
+字符串而失败；仅对可解析为数组的字符串进行规范化，其他异常仍报错。
+这两项修复的 GPU 效果尚待后续批次验证，正在运行的校准批次不受影响。
+
 ## 8. 权威资料
 
 - 当前设计：`docs/beliefkv_design.md`

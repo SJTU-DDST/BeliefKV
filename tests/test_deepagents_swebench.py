@@ -1238,6 +1238,27 @@ def test_dynamic_initial_plan_accepts_model_selected_fanout_from_one_to_four() -
     )
 
 
+def test_dynamic_initial_plan_decodes_json_array_in_tasks_field() -> None:
+    plan = DynamicInitialDelegationPlan.model_validate(
+        {
+            "rationale": "Independent source and test analysis",
+            "tasks": '[{"role":"source","description":"Inspect source and report."}]',
+        }
+    )
+
+    assert [task.role for task in _dynamic_initial_delegation_tasks(plan)] == [
+        "source"
+    ]
+    with pytest.raises(ValueError):
+        DynamicInitialDelegationPlan.model_validate(
+            {"rationale": "Invalid", "tasks": '{"role":"source"}'}
+        )
+    with pytest.raises(ValueError):
+        DynamicInitialDelegationPlan.model_validate(
+            {"rationale": "Invalid", "tasks": "not JSON"}
+        )
+
+
 def test_dynamic_initial_plan_repairs_duplicate_roles_and_tasks() -> None:
     duplicate_roles = DynamicInitialDelegationPlan(
         rationale="Independent evidence streams",

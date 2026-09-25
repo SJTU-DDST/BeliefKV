@@ -13,6 +13,7 @@ from langchain_core.exceptions import ContextOverflowError
 from langchain_core.language_models import BaseChatModel
 from langchain_core.language_models.fake_chat_models import FakeMessagesListChatModel
 from langchain_core.messages import AIMessage, HumanMessage, SystemMessage
+from langchain_core.messages.utils import count_tokens_approximately
 from langchain_core.outputs import ChatResult
 
 from beliefkv.runtime.context_lifecycle import (
@@ -82,6 +83,47 @@ def test_32k_budget_excludes_static_system_prompt_and_tool_schema() -> None:
 
     assert with_static_schema == dynamic_only
     assert with_static_schema < 32_768
+
+
+def test_static_prompt_pressure_triggers_compaction_before_preflight() -> None:
+    policy = ContextLifecyclePolicy(
+        window_tokens=8_192,
+        keep_tokens=1_024,
+        model_context_tokens=16_384,
+    )
+    middleware = ContextLifecycleMiddleware(
+        _FakeModel(),
+        backend=SimpleNamespace(),
+        policy=policy,
+        completion_tokens=2_048,
+        compaction_sink=SimpleNamespace(),
+    )
+    messages = [HumanMessage(content="d" * 12_000)]
+    system = SystemMessage(content="s" * 18_000)
+    tools = [{"type": "function", "function": {"description": "t" * 12_000}}]
+
+    assert middleware._count_tokens(messages, None, None) < policy.window_tokens
+    assert (
+        count_tokens_approximately(
+            [system, *messages], tools=tools, chars_per_token=3.0
+        )
+        < policy.model_context_tokens - 2_048
+    )
+    assert middleware._count_tokens(messages, system, tools) >= policy.window_tokens
+
+
+def test_compaction_uses_the_same_counter_as_preflight() -> None:
+    middleware = ContextLifecycleMiddleware(
+        _FakeModel(),
+        backend=SimpleNamespace(),
+        policy=ContextLifecyclePolicy(),
+        compaction_sink=SimpleNamespace(),
+    )
+    messages = [HumanMessage(content="x" * 12_000)]
+
+    assert middleware.token_counter(messages) == count_tokens_approximately(
+        messages, chars_per_token=3.0
+    )
 
 
 def test_summarization_cursor_is_declared_as_private_graph_state() -> None:

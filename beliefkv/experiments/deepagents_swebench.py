@@ -33,7 +33,7 @@ from langchain.agents.middleware.types import ModelRequest, ModelResponse
 from langchain.agents.structured_output import ToolStrategy
 from langchain_core.messages import AIMessage, BaseMessage, ToolMessage
 from langchain_core.tools import BaseTool, tool
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 
 from beliefkv.experiments.arrival_schedule import build_workflow_arrivals
 from beliefkv.experiments.swebench_prompt import (
@@ -1325,6 +1325,13 @@ class DynamicInitialDelegationPlan(BaseModel):
         max_length=4,
     )
 
+    @field_validator("tasks", mode="before")
+    @classmethod
+    def parse_encoded_tasks(cls, value: Any) -> Any:
+        if isinstance(value, str):
+            value = json.loads(value)
+        return value
+
 
 class PartialAgentRunError(RuntimeError):
     def __init__(self, cause: BaseException, partial_result: dict[str, Any]) -> None:
@@ -1863,6 +1870,7 @@ or split one narrow question into trivial pieces. Every task must be self-contai
 and name a concrete evidence or test deliverable. These children run concurrently and
 report back before the root continues. The root integrates their findings, makes any
 needed edits, and may use the native task tool for later delegation rounds.
+The tasks field must be an array of objects, not a JSON-encoded string.
 """
 
 
@@ -2327,6 +2335,7 @@ def _context_lifecycle_middleware(
         compaction_sink=adapter,
         summary_callbacks=(adapter,),
         persist_cursor_across_invocations=persist_cursor_across_invocations,
+        completion_tokens=config.max_completion_tokens,
     )
 
 

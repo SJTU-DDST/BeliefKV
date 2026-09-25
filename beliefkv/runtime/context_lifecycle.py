@@ -5,6 +5,7 @@ import threading
 from collections.abc import Mapping
 from contextlib import AbstractContextManager
 from dataclasses import dataclass
+from functools import partial
 from typing import Annotated, Any, Awaitable, Callable, Protocol, Sequence
 
 from deepagents.middleware.summarization import SummarizationMiddleware
@@ -18,7 +19,7 @@ from langchain.agents.middleware.types import (
 )
 from langchain_core.callbacks import BaseCallbackHandler
 from langchain_core.messages import BaseMessage
-from langchain_core.messages.utils import get_buffer_string
+from langchain_core.messages.utils import count_tokens_approximately, get_buffer_string
 from langchain_core.language_models import BaseChatModel
 from typing_extensions import NotRequired
 
@@ -145,7 +146,16 @@ class ContextLifecycleMiddleware(SummarizationMiddleware):
         compaction_sink: ContextCompactionSink,
         summary_callbacks: Sequence[BaseCallbackHandler] = (),
         persist_cursor_across_invocations: bool = False,
+        completion_tokens: int | None = None,
     ) -> None:
+        self.policy = policy
+        self.completion_tokens = (
+            max(policy.intermediate_output_tokens, policy.summary_output_tokens)
+            if completion_tokens is None
+            else completion_tokens
+        )
+        if not 0 < self.completion_tokens < policy.model_context_tokens:
+            raise ValueError("completion budget must fit inside model context")
         super().__init__(
             model,
             backend=backend,
@@ -154,8 +164,8 @@ class ContextLifecycleMiddleware(SummarizationMiddleware):
             summary_prompt=CONTEXT_SUMMARY_PROMPT,
             trim_tokens_to_summarize=policy.window_tokens - policy.keep_tokens,
             truncate_args_settings=None,
+            token_counter=partial(count_tokens_approximately, chars_per_token=3.0),
         )
-        self.policy = policy
         self.compaction_sink = compaction_sink
         self.summary_callbacks = tuple(summary_callbacks)
         self.persist_cursor_across_invocations = (
@@ -207,10 +217,19 @@ class ContextLifecycleMiddleware(SummarizationMiddleware):
         system_message: BaseMessage | None,
         tools: list[Any] | None,
     ) -> int:
-        """Apply the 32K budget to dynamic history, not static agent schemas."""
+        """Count dynamic history with the same estimate as the request preflight.
 
-        del system_message, tools
-        return self.token_counter(messages)
+        Static prompt/schema bytes cannot be compacted, so they reduce the
+        available dynamic window without becoming part of the keep budget.
+        """
+
+        dynamic_tokens = self.token_counter(messages)
+        static_tokens = self.token_counter(
+            [system_message] if system_message is not None else [], tools=tools
+        )
+        prompt_limit = self.policy.model_context_tokens - self.completion_tokens
+        dynamic_limit = prompt_limit - static_tokens - 4_096
+        return dynamic_tokens + max(0, self.policy.window_tokens - dynamic_limit)
 
     @staticmethod
     def _sanitize_summarization_event(request: ModelRequest) -> ModelRequest:
