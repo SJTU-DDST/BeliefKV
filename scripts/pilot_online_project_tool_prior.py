@@ -90,6 +90,7 @@ def pilot(
         )
         item = {
             "project": row["project"], "workflow": row["workflow"],
+            "command_class": row["class"],
             "long": long_call, "duration_ms": row["duration_ms"],
             "prior_error_ms": abs(row["duration_ms"] - prior),
             "baseline_error_ms": abs(row["duration_ms"] - reference),
@@ -192,6 +193,15 @@ def pilot(
         "long_after_support": eligible_long_child,
         "all_cold_child": metrics(all_cold),
         "all_cold_child_long": metrics([row for row in all_cold if row["long"]]),
+        "cold_long_by_command_class": {
+            command: metrics([
+                row for row in all_cold
+                if row["long"] and row["command_class"] == command
+            ])
+            for command in sorted({
+                row["command_class"] for row in all_cold if row["long"]
+            })
+        },
         "predicted_long": {
             "count": sum(row["prior_ms"] >= 2_000 for row in all_cold),
             "true_long": sum(
