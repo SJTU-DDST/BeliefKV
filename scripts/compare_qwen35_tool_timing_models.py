@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import argparse
+from bisect import bisect_right
 from collections import defaultdict
 import json
 import math
@@ -49,6 +50,214 @@ def _metrics(rows: list[dict], name: str) -> dict:
     }
 
 
+def _checkpoint_groups_metrics(groups: dict) -> dict:
+    return {
+        name: {
+            "joint_samples": len(samples),
+            "zero_remaining_baseline": _metrics(samples, "zero"),
+            "reference": _metrics(samples, "reference"),
+            "candidate": _metrics(samples, "candidate"),
+            "false_imminent_with_over_2s_remaining": {
+                side: sum(
+                    sample[f"{side}_forecast_ms"] <= 500
+                    and sample["actual_ms"] > 2_000
+                    for sample in samples
+                )
+                for side in ("reference", "candidate")
+            },
+        }
+        for name, samples in sorted(groups.items())
+    }
+
+
+def _fixed_clock_checkpoints(
+    waits: dict, first_snapshots: dict,
+    reference: FrontierBeliefModel, candidate: FrontierBeliefModel,
+) -> dict:
+    groups = defaultdict(list)
+    counts = defaultdict(int)
+    for key, (row, invocation) in first_snapshots.items():
+        wait = waits[key]
+        start = wait.get("start_ts_ms")
+        if type(start) not in (int, float) or not math.isfinite(start):
+            continue
+        end = float(wait["terminal_ts_ms"])
+        if start > float(row["timestamp_ms"]):
+            continue
+        attrs = row.get("trigger_attributes") or {}
+        for threshold in (500, 2_000):
+            timestamp = float(start) + threshold
+            if timestamp < float(row["timestamp_ms"]) or timestamp >= end:
+                continue
+            counts[f"alive_after_{threshold}ms"] += 1
+            actual = end - timestamp
+            live = {**invocation, "active_tool_elapsed_ms": threshold}
+            forecasts = {}
+            errors = {}
+            for name, model in (("reference", reference), ("candidate", candidate)):
+                belief = model.predict(_local_features_from_row(
+                    row, live,
+                    tool_feature_contract=model.tool_feature_contract,
+                )).wait_belief
+                if (
+                    belief is None or belief.kind is not WaitBeliefKind.TOOL
+                    or not belief.residual_duration.values
+                ):
+                    errors[name] = None
+                    break
+                forecast = belief.residual_duration.quantile(.5)
+                forecasts[name] = forecast
+                errors[name] = abs(actual - forecast)
+            if len(forecasts) != 2:
+                counts[f"joint_unavailable_after_{threshold}ms"] += 1
+                continue
+            sample = {
+                "workflow": key[0], "actual_ms": actual, "zero": actual,
+                **errors,
+                "reference_forecast_ms": forecasts["reference"],
+                "candidate_forecast_ms": forecasts["candidate"],
+            }
+            base = f"after_{threshold}ms"
+            dimensions = [base]
+            if invocation.get("is_child") is True:
+                dimensions.append(f"{base}_child")
+                if attrs.get("tool_name") == "execute":
+                    dimensions.append(f"{base}_child_execute")
+            if end - start >= 2_000:
+                dimensions.append(f"{base}_long")
+                if invocation.get("is_child") is True:
+                    dimensions.append(f"{base}_child_long")
+            for dimension in dimensions:
+                groups[dimension].append(sample)
+    return {
+        "semantics": (
+            "counterfactual fixed-clock checks conditional on tool survival, "
+            "with TOOL_START features frozen except elapsed time; no observed "
+            "scheduler decision at the check time and no physical action evidence"
+        ),
+        "counts": dict(counts),
+        "groups": _checkpoint_groups_metrics(groups),
+    }
+
+
+def _ongoing_checkpoints(
+    dataset: Path, waits: dict, first_attributes: dict,
+    reference: FrontierBeliefModel, candidate: FrontierBeliefModel,
+) -> dict:
+    by_invocation = defaultdict(list)
+    for (workflow, tool_call_id), wait in waits.items():
+        start = wait.get("start_ts_ms")
+        if (
+            type(start) not in (int, float)
+            or not math.isfinite(start)
+            or (workflow, tool_call_id) not in first_attributes
+        ):
+            continue
+        by_invocation[(workflow, str(wait.get("invocation_id") or ""))].append(
+            (float(start), float(wait["terminal_ts_ms"]), tool_call_id)
+        )
+    for entries in by_invocation.values():
+        entries.sort()
+    starts = {
+        key: [entry[0] for entry in entries]
+        for key, entries in by_invocation.items()
+    }
+    prior_max_end = {}
+    for key, entries in by_invocation.items():
+        seen_end = float("-inf")
+        ends = []
+        for _, end, _ in entries:
+            ends.append(seen_end)
+            seen_end = max(seen_end, end)
+        prior_max_end[key] = ends
+    checkpoints = (500, 2_000)
+    observed = set()
+    groups = defaultdict(list)
+    counts = defaultdict(int)
+    for row in _rows(dataset / "frontier_decision_points.jsonl"):
+        workflow = str(row.get("workflow_id") or "")
+        timestamp = float(row.get("timestamp_ms") or 0)
+        for invocation in row.get("invocations") or ():
+            if invocation.get("state") != "wait_tool":
+                continue
+            identity = workflow, str(invocation.get("invocation_id") or "")
+            entries = by_invocation.get(identity)
+            if not entries:
+                continue
+            index = bisect_right(starts[identity], timestamp) - 1
+            if index < 0:
+                continue
+            start, end, call_id = entries[index]
+            if not start <= timestamp < end:
+                continue
+            if prior_max_end[identity][index] > timestamp:
+                counts["ambiguous_overlapping_tool_wait"] += 1
+                continue
+            attrs = first_attributes[(workflow, call_id)]
+            for threshold in checkpoints:
+                key = workflow, call_id, threshold
+                if timestamp - start < threshold or key in observed:
+                    continue
+                observed.add(key)
+                counts[f"first_snapshot_after_{threshold}ms"] += 1
+                elapsed = max(0.0, timestamp - start)
+                actual = end - timestamp
+                # Restore only this live tool's TOOL_START metadata, as the
+                # runtime does; other invocations' trigger attributes are never reused.
+                snapshot = {
+                    **row, "trigger_invocation_id": identity[1],
+                    "trigger_attributes": attrs,
+                }
+                live = {**invocation, "active_tool_elapsed_ms": elapsed}
+                errors = {}
+                forecasts = {}
+                for name, model in (("reference", reference), ("candidate", candidate)):
+                    prediction = model.predict(_local_features_from_row(
+                        snapshot, live,
+                        tool_feature_contract=model.tool_feature_contract,
+                    ))
+                    belief = prediction.wait_belief
+                    if (
+                        belief is None or belief.kind is not WaitBeliefKind.TOOL
+                        or not belief.residual_duration.values
+                    ):
+                        errors[name] = None
+                        continue
+                    forecast = belief.residual_duration.quantile(.5)
+                    forecasts[name] = forecast
+                    errors[name] = abs(forecast - actual)
+                if errors["reference"] is None or errors["candidate"] is None:
+                    counts[f"joint_unavailable_after_{threshold}ms"] += 1
+                    continue
+                sample = {
+                    "workflow": workflow, "actual_ms": actual,
+                    "zero": actual, **errors,
+                    "reference_forecast_ms": forecasts["reference"],
+                    "candidate_forecast_ms": forecasts["candidate"],
+                }
+                base = f"after_{threshold}ms"
+                dimensions = [base]
+                if invocation.get("is_child") is True:
+                    dimensions.append(f"{base}_child")
+                    if attrs.get("tool_name") == "execute":
+                        dimensions.append(f"{base}_child_execute")
+                if end - start >= 2_000:
+                    dimensions.append(f"{base}_long")
+                    if invocation.get("is_child") is True:
+                        dimensions.append(f"{base}_child_long")
+                for dimension in dimensions:
+                    groups[dimension].append(sample)
+    return {
+        "semantics": (
+            "first observed WAIT_TOOL decision at/after each elapsed threshold, "
+            "joined by workflow/invocation/tool-call and causal start metadata; "
+            "completed, unambiguous waits only; not a physical-action evaluation"
+        ),
+        "counts": dict(counts),
+        "groups": _checkpoint_groups_metrics(groups),
+    }
+
+
 def compare(
     dataset: Path, reference: FrontierBeliefModel,
     candidate: FrontierBeliefModel,
@@ -60,6 +269,8 @@ def compare(
         and row.get("censored") is not True
     }
     seen = set()
+    first_attributes = {}
+    first_snapshots = {}
     groups = defaultdict(list)
     counts = defaultdict(int)
     for row in _rows(dataset / "frontier_decision_points.jsonl"):
@@ -79,6 +290,8 @@ def compare(
             counts["identity_or_state_unavailable"] += 1
             continue
         seen.add(key)
+        first_attributes[key] = dict(attrs)
+        first_snapshots[key] = (row, invocation)
         actual = max(0.0, float(wait["terminal_ts_ms"]) - float(row["timestamp_ms"]))
         errors = {}
         for name, model in (("reference", reference), ("candidate", candidate)):
@@ -162,6 +375,12 @@ def compare(
             }
             for group, samples in sorted(groups.items())
         },
+        "ongoing_checkpoints": _ongoing_checkpoints(
+            dataset, waits, first_attributes, reference, candidate,
+        ),
+        "fixed_clock_checkpoints": _fixed_clock_checkpoints(
+            waits, first_snapshots, reference, candidate,
+        ),
     }
 
 

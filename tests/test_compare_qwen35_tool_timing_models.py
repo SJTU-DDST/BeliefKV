@@ -136,3 +136,70 @@ def test_non_execute_repeat_is_not_counted_as_execute_timing_prior(
     assert "child_with_prior" not in result["groups"]
     assert "child_execute" not in result["groups"]
     assert result["groups"]["child_cold"]["joint_samples"] == 1
+
+
+def test_compare_ongoing_tool_checkpoints_use_original_call_metadata(
+    tmp_path: Path,
+) -> None:
+    waits = [{
+        "workflow_id": "workflow", "tool_call_id": "call-1",
+        "invocation_id": "child", "start_ts_ms": 10.0,
+        "terminal_ts_ms": 5_010.0,
+        "training_eligible_survival": True, "censored": False,
+    }]
+    start = {
+        "workflow_id": "workflow", "trigger_kind": "tool_start",
+        "timestamp_ms": 10.0, "trigger_invocation_id": "child",
+        "trigger_attributes": {
+            "tool_call_id": "call-1", "tool_name": "execute",
+            "is_child": True, "observed_command_class": "test_suite",
+            "previous_same_input_status": "success",
+            "previous_same_input_duration_ms": 100.0,
+        },
+        "invocations": [{
+            "invocation_id": "child", "state": "wait_tool", "is_child": True,
+        }],
+    }
+    decisions = [
+        start,
+        {
+            **start, "timestamp_ms": 520.0, "trigger_kind": "llm_submit",
+            "trigger_invocation_id": "unrelated", "trigger_attributes": {},
+        },
+        {
+            **start, "timestamp_ms": 2_510.0, "trigger_kind": "llm_submit",
+            "trigger_invocation_id": "unrelated", "trigger_attributes": {},
+        },
+    ]
+    for name, items in (
+        ("external_waits.jsonl", waits),
+        ("frontier_decision_points.jsonl", decisions),
+    ):
+        (tmp_path / name).write_text(
+            "".join(json.dumps(item) + "\n" for item in items)
+        )
+    result = compare(tmp_path, _FakeModel(repeat=False), _FakeModel(repeat=True))
+    checkpoints = result["ongoing_checkpoints"]["groups"]
+    for elapsed in (500, 2_000):
+        group = checkpoints[f"after_{elapsed}ms_child_long"]
+        assert group["joint_samples"] == 1
+        assert group["false_imminent_with_over_2s_remaining"] == {
+            "reference": 1, "candidate": 1,
+        }
+    assert checkpoints["after_500ms"]["candidate"]["p50_absolute_error_ms"] == 4_390
+    fixed = result["fixed_clock_checkpoints"]["groups"]
+    assert result["fixed_clock_checkpoints"]["counts"] == {
+        "alive_after_500ms": 1,
+        "alive_after_2000ms": 1,
+    }
+    assert result["ongoing_checkpoints"]["counts"] == {
+        "first_snapshot_after_500ms": 1,
+        "first_snapshot_after_2000ms": 1,
+    }
+    assert fixed["after_500ms_child_long"]["joint_samples"] == 1
+    assert fixed["after_500ms_child_long"]["candidate"][
+        "p50_absolute_error_ms"
+    ] == 4_400
+    assert fixed["after_2000ms_child_long"][
+        "false_imminent_with_over_2s_remaining"
+    ]["candidate"] == 1
