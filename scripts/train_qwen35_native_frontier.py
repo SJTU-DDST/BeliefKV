@@ -150,6 +150,12 @@ def main(argv: list[str] | None = None) -> int:
     summary = model.fit(rows)
     if summary["action_target_count"] != 0 or summary["operational_timing"]["sample_count"] != 0:
         raise ValueError("native fit unexpectedly trained an action head")
+    native_transfer_evidence_count = sum(
+        (manifest.get("training_readiness") or {}).get(
+            "pcie_service_eligible_count", 0
+        )
+        for manifest, _ in checked
+    )
     model.save(args.output, metadata={
         "fit_split": "train",
         "runtime_policy": "frozen_native_reactive_v0520",
@@ -161,7 +167,12 @@ def main(argv: list[str] | None = None) -> int:
         "test_id_status": "sealed_not_evaluated",
         "test_ood_status": "sealed_not_evaluated",
         "action_target_count": 0,
-        "pcie_service_head": "not_fitted_no_verified_evidence",
+        "pcie_service_head": (
+            "not_fitted_separate_service_model_required"
+            if native_transfer_evidence_count > 0
+            else "not_fitted_no_verified_evidence"
+        ),
+        "native_transfer_evidence_count": native_transfer_evidence_count,
         "dataset_dirs": [str(root) for root in roots],
         "dataset_manifest_file_sha256s": [digest for _, digest in checked],
         "runtime_environment_contract_digests": [

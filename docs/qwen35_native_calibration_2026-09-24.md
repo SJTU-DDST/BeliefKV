@@ -36,8 +36,10 @@ PCIe label count was zero: the native evidence gate overrode measured transfer
 eligibility with `False`. A separate, non-destructive export from the same
 raw telemetry now preserves completed native transfer-stream intervals only
 when the telemetry writer is healthy. The collection shell also terminated
-after a successful export while its file was being edited during the run;
-it did not produce a fitted checkpoint. The recovery sequence is: re-export
+after a successful export, printing an inconsistent `export=0` rejection;
+its script was edited while the process was running, so that shell exit
+cannot establish a dataset defect. It did not produce a fitted checkpoint.
+The recovery sequence is: re-export
 to `dataset_native_transfer_v2`, check train provenance and PCIe labels,
 fit the model on that dataset alone, run the frozen 66-root calibration
 collection, then calibrate available prediction heads only if the held-out

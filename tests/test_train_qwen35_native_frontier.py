@@ -166,6 +166,21 @@ def test_formal_train_fit_is_offline_uncalibrated_and_seals_tests(tmp_path: Path
     ] == 40
 
 
+def test_native_fit_records_measured_transfer_evidence_without_fitting_service(
+    tmp_path: Path,
+) -> None:
+    root = _dataset(tmp_path / "train", size=40)
+    _mutate(root, "training_readiness", {"pcie_service_eligible_count": 23})
+    assert main(_args(tmp_path, root)) == 0
+    metadata = json.loads(
+        (tmp_path / "model.json").read_text(encoding="utf-8")
+    )["metadata"]
+    assert metadata["native_transfer_evidence_count"] == 23
+    assert metadata["pcie_service_head"] == (
+        "not_fitted_separate_service_model_required"
+    )
+
+
 def test_native_train_preserves_target_local_censoring(tmp_path: Path) -> None:
     root = _dataset(tmp_path / "train", size=40)
     manifest_path = root / "dataset_manifest.json"
