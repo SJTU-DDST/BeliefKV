@@ -141,6 +141,48 @@ def test_repeat_tool_contract_requires_fitted_uncertainty_and_causal_success() -
         FrontierBeliefModel.from_dict({**model.to_dict(), "schema_version": 7})
 
 
+def test_repeat_tool_calibration_is_workflow_grouped_and_falls_back_if_sparse() -> None:
+    fit_rows = []
+    for index in range(40):
+        row = _tool_row(f"fit-{index}", 3020.0, "success")
+        row["workflow_id"] = f"fit-workflow-{index // 4}"
+        row["trigger_invocation_id"] = "worker"
+        row["trigger_attributes"].update({
+            "tool_name": "execute", "observed_command_class": "test_suite",
+            "is_child": True, "previous_same_input_status": "success",
+            "previous_same_input_duration_ms": 3000.0,
+        })
+        row["invocations"][0]["is_child"] = True
+        fit_rows.append(row)
+    model = FrontierBeliefModel(
+        tool_feature_contract="observed_command_child_repeat_v2"
+    )
+    model.fit(fit_rows)
+    original = model.to_dict()
+    calibration_rows = []
+    for index in range(8):
+        row = _tool_row(
+            f"cal-{index}", 4000.0 if index == 7 else 3030.0, "success"
+        )
+        row["split"] = "calibration"
+        row["workflow_id"] = f"cal-workflow-{index}"
+        row["trigger_invocation_id"] = "worker"
+        row["trigger_attributes"].update({
+            "tool_name": "execute", "observed_command_class": "test_suite",
+            "is_child": True, "previous_same_input_status": "success",
+            "previous_same_input_duration_ms": 3000.0,
+        })
+        row["invocations"][0]["is_child"] = True
+        calibration_rows.append(row)
+    summary = model.calibrate(calibration_rows)
+    assert summary["observation_counts"]["repeat_workflows_calibrated"] == 8
+    assert summary["repeat_same_input_margin_ms"] >= 1000.0
+    sparse = FrontierBeliefModel.from_dict(original)
+    sparse_summary = sparse.calibrate(calibration_rows[:7])
+    assert sparse_summary["repeat_same_input_margin_ms"] is None
+    assert sparse.repeat_error_p90_ms is None
+
+
 def test_observed_command_contract_rejects_incomplete_tool_provenance() -> None:
     model = FrontierBeliefModel(tool_feature_contract="observed_command_child_v1")
     row = _tool_row("no-origin", 100.0, "success")
