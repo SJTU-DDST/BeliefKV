@@ -8,10 +8,30 @@ from collections import defaultdict
 import json
 import math
 from pathlib import Path
+import shlex
 
 import orjson
 
 from beliefkv.predictor.command_class import execute_command_class
+
+
+def _diagnostic_command_class(command: str, *, detailed: bool) -> str:
+    coarse = execute_command_class({"command": command})
+    if not detailed or coarse != "test_suite":
+        return coarse
+    try:
+        words = shlex.split(command)
+    except ValueError:
+        return coarse
+    if any("::" in item or (
+        item.startswith("tests.") and item.count(".") >= 4
+    ) for item in words):
+        return "test_case"
+    if any(item.startswith("tests.") or (
+        item.startswith("tests/") and item.endswith(".py")
+    ) for item in words if not item.endswith("runtests.py")):
+        return "test_module"
+    return coarse
 
 
 def _rows(path):
@@ -21,7 +41,7 @@ def _rows(path):
                 yield orjson.loads(line)
 
 
-def _collect(root: Path):
+def _collect(root: Path, *, detailed: bool):
     dataset = root / "dataset" / "external_waits.jsonl"
     workflows = root / "workloads" / "workflows"
     waits = defaultdict(list)
@@ -54,7 +74,7 @@ def _collect(root: Path):
                 "tool_call_id": item["tool_call_id"],
                 "invocation": item["invocation_id"],
                 "start_ts_ms": float(item["start_ts_ms"]),
-                "class": execute_command_class({"command": command}),
+                "class": _diagnostic_command_class(command, detailed=detailed),
                 "duration_ms": float(item["observed_duration_ms"]),
             })
     return matched, sum(map(len, waits.values()))
@@ -130,6 +150,7 @@ def _compare_frontier_model(dataset: Path, matched, model_path: Path,
     }
     found = set()
     base_errors, classified_errors = [], []
+    long_base, long_classified = [], []
     by_workflow = defaultdict(lambda: ([], []))
     for row in _rows(dataset / "frontier_decision_points.jsonl"):
         attrs = row.get("trigger_attributes") or {}
@@ -160,6 +181,9 @@ def _compare_frontier_model(dataset: Path, matched, model_path: Path,
         classified = abs(actual - class_prediction)
         base_errors.append(base)
         classified_errors.append(classified)
+        if sample["duration_ms"] >= 2_000:
+            long_base.append(base)
+            long_classified.append(classified)
         by_workflow[sample["workflow"]][0].append(base)
         by_workflow[sample["workflow"]][1].append(classified)
         found.add(key)
@@ -167,6 +191,9 @@ def _compare_frontier_model(dataset: Path, matched, model_path: Path,
         "matched_first_decisions": len(found),
         "frontier_p50_absolute_error_ms": _quantile(base_errors, .5),
         "class_p50_absolute_error_ms": _quantile(classified_errors, .5),
+        "long_calls_at_least_2s": len(long_base),
+        "long_frontier_p50_absolute_error_ms": _quantile(long_base, .5),
+        "long_class_p50_absolute_error_ms": _quantile(long_classified, .5),
         "workflow_count": len(by_workflow),
         "workflow_weighted_frontier_p50_absolute_error_ms": _quantile([
             _quantile(values[0], .5) for values in by_workflow.values()
@@ -183,9 +210,14 @@ def main():
     parser.add_argument("--calibration-root", type=Path, required=True)
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--frontier-model", type=Path)
+    parser.add_argument("--detailed-test-classes", action="store_true")
     args = parser.parse_args()
-    training, training_total = _collect(args.train_root)
-    calibration, calibration_total = _collect(args.calibration_root)
+    training, training_total = _collect(
+        args.train_root, detailed=args.detailed_test_classes
+    )
+    calibration, calibration_total = _collect(
+        args.calibration_root, detailed=args.detailed_test_classes
+    )
     overlap = {row["project"] for row in training} & {
         row["project"] for row in calibration
     }
@@ -202,6 +234,7 @@ def main():
     class_median["execute"] = global_median
     report = {
         "status": "offline_exploration_not_deployable",
+        "detailed_test_classes": args.detailed_test_classes,
         "train_total_execute_calls": training_total,
         "calibration_total_execute_calls": calibration_total,
         "class_support": {key: len(values)

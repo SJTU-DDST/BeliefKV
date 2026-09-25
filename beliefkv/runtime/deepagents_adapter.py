@@ -1032,6 +1032,11 @@ class DeepAgentsRuntimeAdapter(BaseCallbackHandler):
         tool_call_id = str(kwargs.get("tool_call_id") or key)
         workspace_digest_before = self._workspace_digest(tool_name, payload)
         with self._lock:
+            identity = self._identities.get(parent_invocation_id)
+            is_child = bool(
+                identity is not None
+                and identity.metadata.relation_type == RelationType.SPAWN.value
+            )
             self._ordinary_tools[key] = _OrdinaryToolRun(
                 invocation_id=parent_invocation_id,
                 tool_name=tool_name,
@@ -1051,6 +1056,7 @@ class DeepAgentsRuntimeAdapter(BaseCallbackHandler):
                 "tool_name": tool_name,
                 "tool_family": normalized.family,
                 "backend_class": normalized.backend_class,
+                "is_child": is_child,
                 "observed_command_class": (
                     execute_command_class(payload)
                     if tool_name == "execute" else tool_name

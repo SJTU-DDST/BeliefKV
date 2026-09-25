@@ -1675,6 +1675,7 @@ def _external_and_reentry_rows(
                     "tool_name": start_attrs.get("tool_name") or attrs.get("tool_name"),
                     "tool_family": start_attrs.get("tool_family"),
                     "backend_class": start_attrs.get("backend_class"),
+                    "is_child": start_attrs.get("is_child"),
                     "observed_command_class": start_attrs.get(
                         "observed_command_class"
                     ),
@@ -1775,6 +1776,7 @@ def _external_and_reentry_rows(
                     "tool_name": attrs.get("tool_name"),
                     "tool_family": attrs.get("tool_family"),
                     "backend_class": attrs.get("backend_class"),
+                    "is_child": attrs.get("is_child"),
                     "observed_command_class": attrs.get("observed_command_class"),
                     "start_ts_ms": start.ts_ms,
                     "terminal_ts_ms": None,

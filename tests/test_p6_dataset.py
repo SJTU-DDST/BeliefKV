@@ -340,6 +340,7 @@ def test_export_training_tables_preserves_identity_censoring_and_join_closure(
                     "tool_call_id": "tool",
                     "tool_name": "search",
                     "tool_family": "search",
+                    "is_child": True,
                     "observed_command_class": "test_suite",
                     "parameter_signature": "signature",
                 },
@@ -462,6 +463,7 @@ def test_export_training_tables_preserves_identity_censoring_and_join_closure(
     assert _read_jsonl(output / "external_waits.jsonl")[0][
         "observed_command_class"
     ] == "test_suite"
+    assert _read_jsonl(output / "external_waits.jsonl")[0]["is_child"] is True
     assert manifest["tables"]["reentries"]["row_count"] == 2
     assert manifest["tables"]["pcie_operations"]["row_count"] == 1
     assert manifest["tables"]["frontier_decision_points"]["row_count"] >= 1
