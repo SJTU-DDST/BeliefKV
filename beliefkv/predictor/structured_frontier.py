@@ -1320,6 +1320,11 @@ class FrontierBeliefModel:
                             continue
                         if type(trigger_attrs.get("is_child")) is not bool:
                             raise ValueError("tool start lacks root/child provenance")
+                        if (
+                            type(features.get("is_child")) is bool
+                            and features["is_child"] != trigger_attrs["is_child"]
+                        ):
+                            raise ValueError("tool start disagrees with invocation origin")
                         if not trigger_attrs.get("observed_command_class"):
                             raise ValueError("tool start lacks observed command class")
                     right_censored = _target_right_censored(

@@ -115,6 +115,10 @@ def test_observed_command_contract_rejects_incomplete_tool_provenance() -> None:
     row["trigger_attributes"]["is_child"] = False
     with pytest.raises(ValueError, match="observed command class"):
         model.fit([row])
+    row["trigger_attributes"]["observed_command_class"] = "other"
+    row["invocations"][0]["is_child"] = True
+    with pytest.raises(ValueError, match="disagrees with invocation origin"):
+        model.fit([row])
 
 
 def test_observed_tool_head_ignores_sibling_waiting_on_other_tool() -> None:

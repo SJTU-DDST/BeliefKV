@@ -23,39 +23,40 @@ def _child_calls(workflows: Path, *, allow_legacy_origin: bool) -> list[dict]:
     calls: list[dict] = []
     for path in sorted(workflows.glob("*/runtime_events.deepagents.jsonl")):
         starts: dict[str, dict] = {}
-        for line in path.open("rb"):
-            if not line.strip():
-                continue
-            event = orjson.loads(line)
-            attrs = event.get("attributes") or {}
-            if attrs.get("tool_name") != "execute":
-                continue
-            call_id = str(attrs.get("tool_call_id") or "")
-            if not call_id:
-                continue
-            if event["kind"] == "tool_start":
-                starts[call_id] = event
-            elif event["kind"] == "tool_end" and call_id in starts:
-                start = starts.pop(call_id)
-                origin = start["attributes"].get("is_child")
-                if origin is None and allow_legacy_origin:
-                    origin = str(start.get("invocation_id") or "").startswith(
-                        "deepagents-invocation:"
-                    )
-                if origin is not True:
+        with path.open("rb") as stream:
+            for line in stream:
+                if not line.strip():
                     continue
-                duration = float(event["ts_ms"]) - float(start["ts_ms"])
-                if duration < 0:
-                    raise ValueError(f"negative tool duration in {path}")
-                calls.append({
-                    "project": str(path.parent.name.split("__", 1)[0]),
-                    "workflow": str(event["workflow_id"]),
-                    "class": str(
-                        start["attributes"].get("observed_command_class")
-                        or "unknown"
-                    ),
-                    "duration_ms": duration,
-                })
+                event = orjson.loads(line)
+                attrs = event.get("attributes") or {}
+                if attrs.get("tool_name") != "execute":
+                    continue
+                call_id = str(attrs.get("tool_call_id") or "")
+                if not call_id:
+                    continue
+                if event["kind"] == "tool_start":
+                    starts[call_id] = event
+                elif event["kind"] == "tool_end" and call_id in starts:
+                    start = starts.pop(call_id)
+                    origin = start["attributes"].get("is_child")
+                    if origin is None and allow_legacy_origin:
+                        origin = str(start.get("invocation_id") or "").startswith(
+                            "deepagents-invocation:"
+                        )
+                    if origin is not True:
+                        continue
+                    duration = float(event["ts_ms"]) - float(start["ts_ms"])
+                    if duration < 0:
+                        raise ValueError(f"negative tool duration in {path}")
+                    calls.append({
+                        "project": str(path.parent.name.split("__", 1)[0]),
+                        "workflow": str(event["workflow_id"]),
+                        "class": str(
+                            start["attributes"].get("observed_command_class")
+                            or "unknown"
+                        ),
+                        "duration_ms": duration,
+                    })
     return calls
 
 
