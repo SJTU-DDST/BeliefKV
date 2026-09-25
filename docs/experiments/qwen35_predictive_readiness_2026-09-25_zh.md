@@ -331,11 +331,11 @@ child `execute`。直接套用 root 先验时，按调用统计的
 
 Frontier artifact schema v7 增加 `tool_feature_contract`。默认 `legacy`
 完全保留旧模型的工具特征键；新 Qwen3.5 训练入口显式选择
-`observed_command_child_v1`。该契约只在 `execute` 工具等待中使用
-TOOL_START 时可见的脱敏 `observed_command_class`，非 execute 工具继续
-使用原有工具名/后端类别。工具时长的 root 和 child 各自训练独立的
+`observed_command_child_v1`。该契约使用 TOOL_START 时可见的脱敏
+`observed_command_class`（`execute` 为粗命令类别，其他工具为工具名）。
+工具时长的 root 和 child 各自训练独立的
 生存时长分布和回退层次，child 样本不足时不借 root 全局时长先验；
-数据缺少 TOOL_START 身份或 execute 类别时直接拒绝训练。运行时通过
+数据缺少 TOOL_START 身份或观测类别时直接拒绝训练。运行时通过
 同一事件传递原始旧类别及新类别，按加载的模型契约选择特征；序列化
 和旧 artifact 加载已有定向测试。当前改动只修复可观测特征与训练/服务
 不一致，**尚未证明 child 的长尾时长或早期 JOIN 窗口改善**。

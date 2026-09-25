@@ -53,11 +53,16 @@ def test_one_tool_episode_at_each_horizon():
     result = diagnose_tool_returns(
         StubToolModel(),
         [decision(10), decision(115), decision(119)],
-        [tool()],
+        [tool(is_child=True, observed_command_class="test_suite")],
         horizons_ms=(5, 1),
     )
     assert result["completed_episode_count"] == 1
     assert result["first_snapshot"]["median_absolute_error_ms"] == 100
+    assert result["first_snapshot"]["workflow_count"] == 1
+    assert result["first_snapshot"]["workflow_median_absolute_error_ms"] == 100
+    assert result["first_snapshot_by_origin"]["child"]["episode_count"] == 1
+    assert result["first_snapshot_by_origin"]["root"]["episode_count"] == 0
+    assert result["first_snapshot_by_command_class"]["test_suite"]["episode_count"] == 1
     assert result["first_snapshot"]["zero_baseline_mean_absolute_error_ms"] == 110
     assert result["by_horizon_ms"]["5"]["median_absolute_error_ms"] == 5
     assert result["by_horizon_ms"]["1"]["episode_count"] == 1

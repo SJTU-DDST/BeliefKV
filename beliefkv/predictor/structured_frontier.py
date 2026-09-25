@@ -1312,11 +1312,8 @@ class FrontierBeliefModel:
                     if self.tool_feature_contract != "legacy":
                         if type(trigger_attrs.get("is_child")) is not bool:
                             raise ValueError("tool start lacks root/child provenance")
-                        if (
-                            trigger_attrs.get("tool_name") == "execute"
-                            and not trigger_attrs.get("observed_command_class")
-                        ):
-                            raise ValueError("execute lacks observed command class")
+                        if not trigger_attrs.get("observed_command_class"):
+                            raise ValueError("tool start lacks observed command class")
                     right_censored = _target_right_censored(
                         label, "external_wait"
                     )
@@ -1348,7 +1345,6 @@ class FrontierBeliefModel:
                                     "command_class": (
                                         local_features.observed_command_class
                                         if self.tool_feature_contract != "legacy"
-                                        and trigger_attrs.get("tool_name") == "execute"
                                         else command
                                     ),
                                 },
@@ -1510,7 +1506,7 @@ class FrontierBeliefModel:
                         "command_class": (
                             features.observed_command_class
                             if self.tool_feature_contract != "legacy"
-                            and features.command_class == "execute"
+                            and features.observed_command_class != "unknown"
                             else features.command_class
                         ),
                     },

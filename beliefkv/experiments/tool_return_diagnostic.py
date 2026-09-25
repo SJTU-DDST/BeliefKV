@@ -27,6 +27,7 @@ def _summarize(
     errors: list[float] = []
     pairs: list[tuple[float, float]] = []
     covered = 0
+    workflow_errors: defaultdict[str, list[float]] = defaultdict(list)
     for episode in episodes:
         snapshot = episode[field]
         if snapshot is None:
@@ -42,6 +43,7 @@ def _summarize(
         error = abs(actual - wait.residual_duration.quantile(0.5))
         errors.append(error)
         pairs.append((actual, error))
+        workflow_errors[str(episode["workflow"])].append(error)
         covered += (
             wait.residual_duration.quantile(0.1)
             <= actual
@@ -49,6 +51,10 @@ def _summarize(
         )
     errors.sort()
     actuals = sorted(actual for actual, _ in pairs)
+    workflow_medians = sorted(
+        sorted(values)[(len(values) - 1) // 2]
+        for values in workflow_errors.values()
+    )
     longer_waits = {}
     for minimum in (500, 2_000, 10_000):
         subset = sorted(error for actual, error in pairs if actual >= minimum)
@@ -64,6 +70,11 @@ def _summarize(
         }
     return {
         "episode_count": len(errors),
+        "workflow_count": len(workflow_medians),
+        "workflow_median_absolute_error_ms": (
+            workflow_medians[(len(workflow_medians) - 1) // 2]
+            if workflow_medians else None
+        ),
         "missing": dict(sorted(counters.items())),
         "actual_remaining_ms_p50": actuals[(len(actuals) - 1) // 2]
         if actuals else None,
@@ -159,6 +170,16 @@ def diagnose_tool_returns(
                 continue
             key = (workflow, invocation, "+".join(sorted(tool_ids)))
             episode = episodes.setdefault(key, {
+                "workflow": workflow,
+                "is_child": (
+                    active[0].get("is_child")
+                    if all(item.get("is_child") == active[0].get("is_child")
+                           for item in active) else None
+                ),
+                "command_class": (
+                    str(active[0].get("observed_command_class") or "unknown")
+                    if len(active) == 1 else "multiple"
+                ),
                 "release_ts": release_ts,
                 "first": None,
                 "horizons": {limit: None for limit in horizons_ms},
@@ -176,6 +197,24 @@ def diagnose_tool_returns(
                 ):
                     episode["horizons"][limit] = snapshot
     first = _summarize(model, episodes.values(), "first")
+    by_origin = {
+        name: _summarize(
+            model,
+            (episode for episode in episodes.values()
+             if episode["is_child"] is child),
+            "first",
+        )
+        for name, child in (("root", False), ("child", True))
+    }
+    by_command_class = {
+        command: _summarize(
+            model,
+            (episode for episode in episodes.values()
+             if episode["command_class"] == command),
+            "first",
+        )
+        for command in sorted({episode["command_class"] for episode in episodes.values()})
+    }
     by_horizon = {}
     for limit in horizons_ms:
         for episode in episodes.values():
@@ -249,6 +288,8 @@ def diagnose_tool_returns(
         "completed_episode_count": len(episodes),
         "exclusions": dict(sorted(counters.items())),
         "first_snapshot": first,
+        "first_snapshot_by_origin": by_origin,
+        "first_snapshot_by_command_class": by_command_class,
         "by_horizon_ms": by_horizon,
         "online_like_trigger": {
             "semantics": (
