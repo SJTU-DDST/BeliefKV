@@ -5,7 +5,7 @@ set -euo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 PYTHON="${PYTHON:-/home/longhao/miniconda3/envs/beliefkv-next/bin/python}"
 RUN_ROOT="${RUN_ROOT:-$ROOT/experiments/raw/qwen35_stream_completion_shadow_32root_20260925_v1}"
-SOURCE="$ROOT/experiments/raw/qwen35_native_reactive_calibration_timing_v3_20260925/qwen35-native-reactive-calibration-66root-r0"
+SOURCE="${WORKLOAD_SOURCE:-$ROOT/experiments/raw/qwen35_native_reactive_calibration_timing_v3_20260925/qwen35-native-reactive-calibration-66root-r0}"
 BASE_URL="${BASE_URL:-http://127.0.0.1:18000}"
 WORKLOAD_OFFSET="${WORKLOAD_OFFSET:-0}"
 server_pid=""
