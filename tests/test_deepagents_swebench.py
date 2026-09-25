@@ -508,6 +508,12 @@ def test_docker_backend_hashes_commands_and_truncates_output(
     ]
     execute = next(item for item in records if item["event"] == "sandbox_execute")
     assert execute["command_chars"] == len("printf abcdef")
+    assert execute["container_name"] == backend._container_name
+    assert execute["lock_wait_ms"] >= 0
+    assert execute["execute_elapsed_ms"] >= 0
+    assert execute["lock_wait_ms"] + execute["execute_elapsed_ms"] == pytest.approx(
+        execute["duration_ms"]
+    )
     assert "command" not in execute
     execute_argv = invocations[0][0][0]
     assert execute_argv[:4] == ["docker", "exec", "--workdir", "/workspace"]

@@ -366,3 +366,11 @@ train 已完成的 1,703 次 child `execute` 调用拟合粗类别时长中位�
 或 JOIN 长程误差已达标。留存的初步报告为
 `experiments/raw/qwen35_execute_class_child_pilot_20260925_v1/`
 `high_pressure_child_category_preliminary_20260925.json`。
+
+高压调用的 sandbox audit 此前仅记录 `sandbox_execute` 总耗时；
+该计时从拿内部执行锁**之前**开始，又缺少容器身份，不能把它解释成
+纯命令服务时间，更不能凭时间顺序配对并行 child 的 TOOL_START。
+独立分支补充 `container_name`、`lock_wait_ms` 和
+`execute_elapsed_ms`，其和必须等于既有 `duration_ms`；待下轮
+采集后分别报告内部锁排队和实际子进程执行，仍需调用级身份配对
+才能训练从 TOOL_START 到完成的端到端时延头。

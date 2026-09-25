@@ -875,6 +875,7 @@ class DockerWorkspaceBackend(FilesystemBackend, SandboxBackendProtocol):
         argv = self._docker_exec_argv(wrapped)
         started = time.monotonic()
         with self._execute_lock:
+            acquired = time.monotonic()
             try:
                 result = subprocess.run(
                     argv,
@@ -895,14 +896,18 @@ class DockerWorkspaceBackend(FilesystemBackend, SandboxBackendProtocol):
                 )
                 output += f"\nCommand exceeded host timeout ({timeout_s + 15}s)."
                 exit_code = 124
+            completed = time.monotonic()
         truncated = len(output) > self.max_output_chars
         if truncated:
             output = output[: self.max_output_chars] + "\n... output truncated ..."
         self.audit.emit(
             "sandbox_execute",
+            container_name=self._container_name,
             command_chars=len(command),
             command_sha256=command_sha256,
-            duration_ms=(time.monotonic() - started) * 1000.0,
+            duration_ms=(completed - started) * 1000.0,
+            lock_wait_ms=(acquired - started) * 1000.0,
+            execute_elapsed_ms=(completed - acquired) * 1000.0,
             exit_code=exit_code,
             output_chars=len(output),
             output_sha256=hashlib.sha256(output.encode("utf-8")).hexdigest(),
