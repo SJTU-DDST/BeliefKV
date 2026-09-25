@@ -1,0 +1,241 @@
+#!/usr/bin/env python3
+"""Read-only, task-held-out classification of child return from stream timing."""
+
+from __future__ import annotations
+
+import argparse
+from collections import defaultdict
+import json
+import math
+from pathlib import Path
+import sys
+
+import numpy as np
+from scipy.optimize import minimize
+from scipy.special import expit
+
+ROOT = Path(__file__).resolve().parents[1]
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
+
+from scripts.audit_native_stream_shadow import _rows
+
+
+DELAY_MS = 2000
+MIN_PRECISION = .95
+MIN_SELECTED = 12
+
+
+def samples(workflows: Path) -> tuple[list[dict], int]:
+    known, censored = [], 0
+    for path in sorted(workflows.glob("*/runtime_events.deepagents.jsonl")):
+        by_child = defaultdict(list)
+        for event in _rows(path):
+            if event.get("invocation_id"):
+                by_child[event["invocation_id"]].append(event)
+        for child, events in by_child.items():
+            events.sort(key=lambda item: float(item["ts_ms"]))
+            first_content = {}
+            submits = {}
+            tool_chunks = {}
+            results = {}
+            for event in events:
+                attrs = event.get("attributes") or {}
+                request = attrs.get("request_id")
+                if not request:
+                    continue
+                if event["kind"] == "llm_submit":
+                    submits[request] = event
+                elif event["kind"] == "llm_result":
+                    results[request] = event
+                elif event["kind"] == "structured_action":
+                    if attrs.get("beliefkv_child_first_content_shadow"):
+                        first_content[request] = event
+                    if attrs.get("beliefkv_child_first_tool_chunk_shadow"):
+                        tool_chunks[request] = event
+            for index, event in enumerate(events):
+                attrs = event.get("attributes") or {}
+                if (
+                    event["kind"] != "structured_action"
+                    or not attrs.get("beliefkv_child_substantial_content_shadow")
+                    or attrs.get("content_threshold_chars") != 1024
+                ):
+                    continue
+                request = attrs.get("request_id")
+                submit = submits.get(request)
+                result = results.get(request)
+                first = first_content.get(request)
+                if submit is None or first is None or result is None:
+                    censored += 1
+                    continue
+                now = float(event["ts_ms"]) + DELAY_MS
+                chunk = tool_chunks.get(request)
+                if (
+                    now >= float(result["ts_ms"])
+                    or chunk is not None and float(chunk["ts_ms"]) <= now
+                ):
+                    continue
+                successor = next((
+                    later for later in events[index + 1:]
+                    if float(later["ts_ms"]) > float(result["ts_ms"])
+                    and later["kind"] in {
+                        "return", "invocation_cancel", "llm_submit", "tool_start"
+                    }
+                ), None)
+                if successor is None:
+                    censored += 1
+                    continue
+                current = float(event["ts_ms"])
+                submitted = float(submit["ts_ms"])
+                started = float(first["ts_ms"])
+                if not submitted <= started <= current:
+                    continue
+                previous = events[:index]
+                prior_rounds = sum(
+                    prior["kind"] == "llm_submit"
+                    and float(prior["ts_ms"]) < submitted
+                    for prior in previous
+                )
+                prior_tools = sum(
+                    prior["kind"] == "tool_end"
+                    and float(prior["ts_ms"]) < submitted
+                    for prior in previous
+                )
+                outcome = result.get("attributes") or {}
+                final = (
+                    successor["kind"] == "return"
+                    and not outcome.get("runtime_internal")
+                    and int(outcome.get("output_chars") or 0) > 0
+                    and outcome.get("tool_call_count") == 0
+                    and outcome.get("invalid_tool_call_count", 0) == 0
+                    and outcome.get("finish_reason") in (None, "stop")
+                )
+                known.append({
+                    "workflow": event["workflow_id"],
+                    "child": child,
+                    "trigger_ms": now,
+                    "features": [
+                        math.log1p((current - started) / 1000),
+                        math.log1p((current - submitted) / 1000),
+                        math.log1p(prior_rounds),
+                        math.log1p(prior_tools),
+                    ],
+                    "final": final,
+                    "return_lead_ms": (
+                        float(successor["ts_ms"]) - now if final else None
+                    ),
+                })
+    first_by_child = {}
+    for sample in sorted(known, key=lambda row: row["trigger_ms"]):
+        first_by_child.setdefault(
+            (sample["workflow"], sample["child"]), sample
+        )
+    return list(first_by_child.values()), censored
+
+
+def _fit(training: list[dict]):
+    matrix = np.array([row["features"] for row in training], dtype=float)
+    labels = np.array([row["final"] for row in training], dtype=float)
+    if len(training) < 20 or not 0 < labels.sum() < len(labels):
+        raise ValueError("insufficient positive and negative training episodes")
+    mean = matrix.mean(axis=0)
+    scale = np.maximum(matrix.std(axis=0), .1)
+    matrix = (matrix - mean) / scale
+    design = np.column_stack((np.ones(len(matrix)), matrix))
+
+    def loss(weights):
+        logits = design @ weights
+        regularizer = .5 * (weights[1:] @ weights[1:])
+        value = np.logaddexp(0, logits).sum() - labels @ logits + regularizer
+        gradient = design.T @ (expit(logits) - labels)
+        gradient[1:] += weights[1:]
+        return value, gradient
+
+    fitted = minimize(
+        loss, np.zeros(design.shape[1]), jac=True, method="L-BFGS-B"
+    )
+    if not fitted.success:
+        raise ValueError(f"optimizer failed: {fitted.message}")
+    return fitted.x, mean, scale
+
+
+def _scores(rows: list[dict], model) -> np.ndarray:
+    if not rows:
+        return np.array([])
+    weights, mean, scale = model
+    features = (np.array([row["features"] for row in rows]) - mean) / scale
+    return expit(np.column_stack((np.ones(len(rows)), features)) @ weights)
+
+
+def _quality(rows: list[dict], scores: np.ndarray, threshold: float) -> dict:
+    selected = [row for row, score in zip(rows, scores) if score >= threshold]
+    true = [row for row in selected if row["final"]]
+    positives = sum(row["final"] for row in rows)
+    return {
+        "evaluated_children": len(rows),
+        "true_return_children": positives,
+        "selected": len(selected),
+        "true_selected": len(true),
+        "precision": len(true) / len(selected) if selected else None,
+        "return_recall": len(true) / positives if positives else None,
+        "lead_at_least_2000ms": sum(
+            row["return_lead_ms"] >= 2000 for row in true
+        ),
+        "false_examples": [
+            {"workflow": row["workflow"], "child": row["child"]}
+            for row in selected if not row["final"]
+        ][:12],
+    }
+
+
+def main() -> None:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--train-workflows", type=Path, action="append", required=True)
+    parser.add_argument("--evaluate-workflows", type=Path, required=True)
+    parser.add_argument("--output", type=Path, required=True)
+    args = parser.parse_args()
+    training = []
+    censored_train = 0
+    for directory in args.train_workflows:
+        rows, censored = samples(directory)
+        training.extend(rows)
+        censored_train += censored
+    evaluation, censored_evaluation = samples(args.evaluate_workflows)
+    model = _fit(training)
+    scores = _scores(training, model)
+    thresholds = sorted(set(scores), reverse=True)
+    acceptable = [
+        value for value in thresholds
+        if (chosen := scores >= value).sum() >= MIN_SELECTED
+        and np.mean([
+            row["final"] for row, flag in zip(training, chosen) if flag
+        ]) >= MIN_PRECISION
+    ]
+    if not acceptable:
+        report = {"status": "no_acceptable_development_threshold"}
+    else:
+        threshold = min(acceptable)
+        report = {
+            "status": "read_only_stream_pilot",
+            "threshold": float(threshold),
+            "training": _quality(training, scores, threshold),
+            "task_holdout": _quality(
+                evaluation, _scores(evaluation, model), threshold
+            ),
+        }
+    report.update({
+        "train_censored": censored_train,
+        "evaluate_censored": censored_evaluation,
+        "feature_names": (
+            "first_content_to_1024_ms", "submit_to_1024_ms",
+            "prior_model_rounds", "prior_tool_ends",
+        ),
+        "observation_delay_ms": DELAY_MS,
+    })
+    args.output.parent.mkdir(parents=True, exist_ok=True)
+    args.output.write_text(json.dumps(report, indent=2) + "\n")
+    print(json.dumps(report, indent=2))
+
+
+if __name__ == "__main__":
+    main()

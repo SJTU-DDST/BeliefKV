@@ -16,6 +16,7 @@ from scripts.audit_native_stream_shadow import (
     audit as audit_stream_shadow,
 )
 from scripts.fit_native_completion_lead import _content_threshold_audit
+from scripts.pilot_stream_final_classifier import samples as stream_classifier_samples
 
 
 def _event(timestamp: float, kind: str, **attributes):
@@ -321,6 +322,51 @@ def test_stream_eta_uses_only_previously_completed_returns(tmp_path):
     assert online["evaluated_true_returns"] == 1
     assert online["error_p50_ms"] == 300
     assert online["within_500ms"] == 1
+
+
+def test_stream_classifier_features_do_not_use_future_tool_chunk(tmp_path):
+    workflows = tmp_path / "workflows"
+    for name, final in (("final", True), ("tool", False)):
+        path = workflows / name
+        path.mkdir(parents=True)
+        events = [
+            {**_event(0, "invocation_create", relation_type="spawn"),
+             "workflow_id": name},
+            {**_event(100, "llm_submit", request_id="req"),
+             "workflow_id": name},
+            {**_event(150, "structured_action",
+                      request_id="req",
+                      beliefkv_child_first_content_shadow=True),
+             "workflow_id": name},
+            {**_event(500, "structured_action",
+                      request_id="req", content_threshold_chars=1024,
+                      beliefkv_child_substantial_content_shadow=True),
+             "workflow_id": name},
+        ]
+        if not final:
+            events.append({
+                **_event(2700, "structured_action", request_id="req",
+                         beliefkv_child_first_tool_chunk_shadow=True),
+                "workflow_id": name,
+            })
+        events.extend([
+            {**_event(3000, "llm_result", request_id="req",
+                      tool_call_count=0 if final else 1,
+                      output_chars=1700, finish_reason="stop" if final else "tool_calls"),
+             "workflow_id": name},
+            {**_event(3500, "return" if final else "tool_start"),
+             "workflow_id": name},
+        ])
+        (path / "runtime_events.deepagents.jsonl").write_text(
+            "".join(json.dumps(event) + "\n" for event in events),
+            encoding="utf-8",
+        )
+    rows, censored = stream_classifier_samples(workflows)
+    assert censored == 0
+    assert len(rows) == 2
+    assert rows[0]["features"] == rows[1]["features"]
+    assert {row["final"] for row in rows} == {False, True}
+    assert next(row for row in rows if row["final"])["return_lead_ms"] == 1000
 
 
 def test_natural_content_threshold_audit_counts_returns_and_false_signals():
