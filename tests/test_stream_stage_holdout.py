@@ -43,6 +43,8 @@ def test_stage_selection_is_frozen_on_training_and_reports_holdout_failure():
     assert report["heldout"]["content_4200"]["false_next_return_join"] == 1
     assert report["heldout"]["content_4200"]["eta_error_p50_ms"] >= 2000
     assert report["heldout"]["content_4200"]["complete_last_child_recall"] == 1
+    assert report["heldout"]["content_4200"]["return_in_500ms_to_20s_window"] == 9
+    assert report["heldout"]["content_4200"]["window_precision_among_determined"] == .9
     assert report["pre_registered_holdout_gate_passed"] is False
     assert report["heldout_by_project"]["django"]["content_4200"] == (
         report["heldout"]["content_4200"]
@@ -136,3 +138,20 @@ def test_unfinished_stream_candidate_is_censored_not_a_success(tmp_path):
     )
     assert report["heldout"]["content_2400"]["censored_join_candidates"] == 1
     assert report["heldout"]["content_2400"]["false_next_return_join"] == 1
+    assert report["heldout"]["content_2400"]["window_precision_among_determined"] == 0
+
+
+def test_window_precision_excludes_late_and_early_returns():
+    train = {stage: [] for stage in STAGES}
+    heldout = {stage: [] for stage in STAGES}
+    heldout["content_1700"] = [
+        _row("django", "early", lead=499),
+        _row("django", "inside", lead=20_000),
+        _row("django", "late", lead=20_001),
+        _row("django", "false", lead=0, final=False),
+    ]
+    report = evaluate(train, heldout, set(), set())
+    quality = report["heldout"]["content_1700"]
+    assert quality["return_in_500ms_to_20s_window"] == 1
+    assert quality["window_precision_among_determined"] == .25
+    assert report["pre_registered_holdout_gate_passed"] is False

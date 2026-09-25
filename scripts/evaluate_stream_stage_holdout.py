@@ -52,6 +52,7 @@ def _quality(
     determined = [row for row in rows if row["final"] is not None]
     leads = [float(row["lead_ms"]) for row in positives]
     errors = [abs(lead - prior) for lead in leads] if prior is not None else []
+    bounded_returns = sum(500 <= lead <= 20_000 for lead in leads)
     covered = {
         (row["join"][0], row["child"])
         for row in positives
@@ -82,6 +83,17 @@ def _quality(
         "true_lead_at_least_500ms": sum(lead >= 500 for lead in leads),
         "true_lead_at_least_500ms_fraction": (
             sum(lead >= 500 for lead in leads) / len(leads) if leads else None
+        ),
+        "return_in_500ms_to_20s_window": bounded_returns,
+        "window_precision_among_determined": (
+            bounded_returns / len(determined) if determined else None
+        ),
+        "window_precision_two_sided_95pct_lower": (
+            float(beta.ppf(
+                .025, bounded_returns,
+                len(determined) - bounded_returns + 1,
+            ))
+            if bounded_returns else 0.0 if determined else None
         ),
         "eta_prior_ms": prior,
         "eta_error_p50_ms": median(errors) if errors else None,
