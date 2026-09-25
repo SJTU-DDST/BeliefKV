@@ -440,6 +440,11 @@ P90 约 111 ms，再对上述 Astropy/Sphinx 的 3,519 次前次成功
 覆盖约 1,824→2,019，长 child 整体 P50 仍约 2 秒，
 重复长 child P95 约 381→452 ms，误报增加；故只保留
 离线消融，不扩大线上 invocation 身份作用域。
+按真实完成时间在同一项目不同 workflow 中寻找相同命令的
+`scripts/pilot_project_level_tool_history.py` 又找到约 245 次此前
+无同 invocation 成功历史的 child 调用，但实际长调用仅 1 次，
+该次误差约 573 ms；预测为长调用的 2 次中有 1 次误报。
+跨任务的镜像版本和工作区状态也未被控制，不采纳项目级在线共享。
 
 独立 worktree 加入有界 `SameInputToolHistory`，在 TOOL_START 附带
 前次已完成时长、年龄和状态；导出器可从旧原始事件按相同因果
