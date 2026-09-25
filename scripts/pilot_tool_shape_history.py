@@ -18,7 +18,9 @@ from scripts.audit_repeated_tool_timing import _read_workflow, _summarize
 from scripts.pilot_tool_nearest_history import _neighbor_prior
 
 
-def stable_long_prior(row: dict, history: list[dict]) -> float | None:
+def stable_long_prior(
+    row: dict, history: list[dict], *, recent_ties: bool = False,
+) -> float | None:
     if row["shape"] == "unknown":
         return None
     size = row["input_chars"]
@@ -34,13 +36,15 @@ def stable_long_prior(row: dict, history: list[dict]) -> float | None:
     )[-64:]
     nearest = sorted(
         (
-            abs(math.log(size / past["input_chars"])), past["duration_ms"]
+            abs(math.log(size / past["input_chars"])),
+            -past["terminal_ts_ms"] if recent_ties else past["duration_ms"],
+            past["duration_ms"],
         )
         for past in completed
         if type(past["input_chars"]) is int and past["input_chars"] > 0
     )[:8]
     times = sorted(
-        duration for distance, duration in nearest
+        duration for distance, _, duration in nearest
         if distance <= math.log(2)
     )
     if len(times) < 4:
@@ -60,6 +64,7 @@ def replay(evaluation: list[dict]) -> dict:
     history_by_class = defaultdict(list)
     history_by_shape = defaultdict(list)
     selected = []
+    recent_selected = []
     child_calls = actual_long = 0
     for row in sorted(evaluation, key=lambda item: item["start_ts_ms"]):
         key = row["project"], row["class"]
@@ -69,6 +74,18 @@ def replay(evaluation: list[dict]) -> dict:
             if row["duration_ms"] >= 2000:
                 actual_long += 1
             estimate = stable_long_prior(row, history_by_shape[shape_key])
+            recency_estimate = stable_long_prior(
+                row, history_by_shape[shape_key], recent_ties=True
+            )
+            if recency_estimate is not None:
+                recent_selected.append({
+                    **row,
+                    "error_ms": abs(row["duration_ms"] - recency_estimate),
+                    "legacy_error_ms": (
+                        abs(row["duration_ms"] - estimate)
+                        if estimate is not None else None
+                    ),
+                })
             if estimate is not None:
                 comparison, _ = _neighbor_prior(row, history_by_class[key])
                 selected.append({
@@ -90,6 +107,12 @@ def replay(evaluation: list[dict]) -> dict:
         {**row, "error_ms": row["class_neighbor_error_ms"]}
         for row in selected if row["class_neighbor_error_ms"] is not None
     ])
+    recent_true_long = [
+        row for row in recent_selected if row["duration_ms"] >= 2000
+    ]
+    recency_matched = [
+        row for row in recent_selected if row["legacy_error_ms"] is not None
+    ]
     scheduling_windows = {}
     for budget in (500, 1000, 2000):
         # Both forecasts and true durations are measured from TOOL_START.
@@ -116,6 +139,23 @@ def replay(evaluation: list[dict]) -> dict:
         "shape_timing": metrics,
         "selected_true_long_timing": _summarize(true_long),
         "class_neighbor_matched": baseline,
+        "recency_tie_ablation_read_only": {
+            "selected_predicted_long": len(recent_selected),
+            "selected_true_long": len(recent_true_long),
+            "precision": (
+                len(recent_true_long) / len(recent_selected)
+                if recent_selected else None
+            ),
+            "recall": (
+                len(recent_true_long) / actual_long if actual_long else None
+            ),
+            "timing": _summarize(recent_selected),
+            "paired_recency_timing": _summarize(recency_matched),
+            "paired_legacy_timing": _summarize([
+                {**row, "error_ms": row["legacy_error_ms"]}
+                for row in recency_matched
+            ]),
+        },
         "scheduling_windows_zero_overhead_upper_bound": scheduling_windows,
     }
 

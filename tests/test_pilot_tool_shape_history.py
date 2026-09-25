@@ -65,3 +65,15 @@ def test_shape_replay_counts_short_false_positives_and_late_tickets():
     assert result["scheduling_windows_zero_overhead_upper_bound"][
         "desired_lead_500ms"
     ]["after_tool_end"] == 1
+
+
+def test_equal_input_sizes_do_not_choose_shortest_durations_in_recency_ablation():
+    history = [_row(index, 100) for index in range(4)]
+    history.extend(_row(index, 3000) for index in range(4, 12))
+    target = _row(12, 3050)
+    assert stable_long_prior(target, history) is None
+    assert stable_long_prior(target, history, recent_ties=True) == 3000
+    result = replay([*history, target])
+    assert result["selected_predicted_long"] == 0
+    assert result["recency_tie_ablation_read_only"]["selected_predicted_long"] == 1
+    assert result["recency_tie_ablation_read_only"]["timing"]["p50_error_ms"] == 50
