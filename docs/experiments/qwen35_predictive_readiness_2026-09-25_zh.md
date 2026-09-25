@@ -1472,3 +1472,16 @@ keep-alive 是唯一根因。v12 的活动 workspace 和服务
 需待 v12 自然结束，再使用修正后、不共享项目的
 流式 trace 验证分类误报、完整 JOIN 覆盖、
 提前量与时间误差；当前没有放行物理 H2D。
+
+另发现 v12 一条 Django workflow 在 2-CPU sandbox 内
+执行 `python tests/runtests.py`，其默认并行度取宿主机
+CPU 数，产生约 128 个测试子进程；一次命令持续
+600 秒后超时，下一次相似命令仍在执行。这是测试
+环境资源配额与 Django 默认进程数不一致，不是正常
+工具时延分布，也不能拿它检验冷启动时间头。
+新建 sandbox 现显式设置
+`DJANGO_TEST_PROCESSES=max(1, floor(cpus))`；
+默认 2-CPU 配额对应 2 个测试进程。已启动的 v12
+不会追溯生效，后续新批次与 v12 存在环境版本差异，
+需在比较工具服务时间时单列说明。该修复不改变
+agent 提示词、GPU 调度或物理预测动作。

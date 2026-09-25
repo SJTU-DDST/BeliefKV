@@ -781,6 +781,18 @@ def test_docker_backend_prefers_mounted_src_tree_over_installed_packages(
     }
 
     assert environment["PYTHONPATH"] == "/workspace/src:/workspace"
+    assert environment["DJANGO_TEST_PROCESSES"] == "2"
+    audit.close()
+
+
+def test_django_test_workers_respect_sandbox_cpu_quota(tmp_path: Path) -> None:
+    audit = JsonlAudit(tmp_path / "audit.jsonl")
+    backend = DockerWorkspaceBackend(
+        tmp_path, image="fixture:latest", audit=audit, cpus=0.5,
+        support_dir=None,
+    )
+    environment = backend._docker_environment_args()
+    assert "DJANGO_TEST_PROCESSES=1" in environment
     audit.close()
 
 

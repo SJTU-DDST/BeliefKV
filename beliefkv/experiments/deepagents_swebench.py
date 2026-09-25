@@ -655,6 +655,7 @@ class DockerWorkspaceBackend(FilesystemBackend, SandboxBackendProtocol):
             "PIP_DISABLE_PIP_VERSION_CHECK=1",
             "PIP_NO_INDEX=1",
             "GIT_OPTIONAL_LOCKS=0",
+            f"DJANGO_TEST_PROCESSES={max(1, math.floor(self.cpus))}",
         )
         return [item for value in environment for item in ("--env", value)]
 
