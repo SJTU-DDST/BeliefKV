@@ -89,6 +89,24 @@ def test_project_history_never_uses_open_or_failed_calls() -> None:
     ] == 55.0
 
 
+def test_project_history_scopes_tool_call_ids_by_workflow() -> None:
+    history = ProjectToolHistory(minimum_support=1)
+    attrs = {
+        "tool_name": "execute", "is_child": True,
+        "observed_command_class": "test_suite", "tool_call_id": "same-id",
+    }
+    assert history.start("first", "repo", attrs, 10) == {}
+    assert history.start("second", "repo", attrs, 20) == {}
+    history.end("first", {"tool_call_id": "same-id", "status": "success"}, 110)
+    assert history.start(
+        "third", "repo", {**attrs, "tool_call_id": "other"}, 120
+    )["project_class_duration_median_ms"] == 100
+    history.end("second", {"tool_call_id": "same-id", "status": "success"}, 220)
+    assert history.start(
+        "fourth", "repo", {**attrs, "tool_call_id": "final"}, 230
+    )["project_class_duration_median_ms"] == 150
+
+
 def test_export_rebuilds_project_history_and_rejects_conflicting_online_value() -> None:
     metadata = {"wf-a": {"project": "repo"}, "wf-b": {"project": "repo"}}
     events = []
