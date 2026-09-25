@@ -67,6 +67,9 @@ def test_compare_first_trigger_matches_identity_and_explicit_prior(
     assert "child_cold_with_project_prior" not in result["groups"]
     assert result["groups"]["child_with_prior"]["reference"]["p50_absolute_error_ms"] == 100
     assert result["groups"]["child_with_prior"]["candidate"]["p50_absolute_error_ms"] == 0
+    assert result["groups"]["child_with_prior"]["zero_remaining_baseline"][
+        "p50_absolute_error_ms"
+    ] == 100
 
 
 def test_compare_reports_cold_project_prior_separately(tmp_path: Path) -> None:

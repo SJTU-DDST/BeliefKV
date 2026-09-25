@@ -100,7 +100,7 @@ def compare(
             counts["not_jointly_available"] += 1
             continue
         sample = {
-            "workflow": key[0], "actual_ms": actual, **errors
+            "workflow": key[0], "actual_ms": actual, "zero": actual, **errors
         }
         dimensions = ["all"]
         child = invocation.get("is_child") is True
@@ -156,6 +156,7 @@ def compare(
         "groups": {
             group: {
                 "joint_samples": len(samples),
+                "zero_remaining_baseline": _metrics(samples, "zero"),
                 "reference": _metrics(samples, "reference"),
                 "candidate": _metrics(samples, "candidate"),
             }
