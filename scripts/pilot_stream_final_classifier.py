@@ -8,6 +8,7 @@ from collections import defaultdict
 import json
 import math
 from pathlib import Path
+from statistics import median
 import sys
 
 import numpy as np
@@ -225,10 +226,12 @@ def _scores(rows: list[dict], model, *, join_aware: bool = False) -> np.ndarray:
 def _quality(
     rows: list[dict], scores: np.ndarray, threshold: float,
     last_children: set[tuple[str, str, str]],
+    *, eta_prior_ms: float | None = None,
 ) -> dict:
     selected = [row for row, score in zip(rows, scores) if score >= threshold]
     true = [row for row in selected if row["final"]]
     positives = sum(row["final"] for row in rows)
+    leads = [row["return_lead_ms"] for row in true]
     return {
         "evaluated_children": len(rows),
         "true_return_children": positives,
@@ -238,6 +241,16 @@ def _quality(
         "return_recall": len(true) / positives if positives else None,
         "lead_at_least_2000ms": sum(
             row["return_lead_ms"] >= 2000 for row in true
+        ),
+        "lead_p50_ms": median(leads) if leads else None,
+        "fixed_eta_prior_ms": eta_prior_ms,
+        "fixed_eta_error_p50_ms": (
+            median(abs(lead - eta_prior_ms) for lead in leads)
+            if leads and eta_prior_ms is not None else None
+        ),
+        "fixed_eta_within_500ms": (
+            sum(abs(lead - eta_prior_ms) <= 500 for lead in leads)
+            if eta_prior_ms is not None else None
         ),
         "eligible_last_children": len(last_children),
         "selected_true_last_children": sum(
@@ -291,17 +304,19 @@ def main() -> None:
         report = {"status": "no_acceptable_development_threshold"}
     else:
         threshold = min(acceptable)
+        training_quality = _quality(
+            training, scores, threshold, train_last_children
+        )
         report = {
             "status": "read_only_stream_pilot",
             "threshold": float(threshold),
-            "training": _quality(
-                training, scores, threshold, train_last_children
-            ),
+            "training": training_quality,
             "task_holdout": _quality(
                 evaluation,
                 _scores(evaluation, model, join_aware=args.join_aware),
                 threshold,
                 eval_last_children,
+                eta_prior_ms=training_quality["lead_p50_ms"],
             ),
         }
     report.update({

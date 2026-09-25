@@ -370,6 +370,11 @@ def test_stream_classifier_features_do_not_use_future_tool_chunk(tmp_path):
     assert rows[0]["features"] == rows[1]["features"]
     assert {row["final"] for row in rows} == {False, True}
     assert next(row for row in rows if row["final"])["return_lead_ms"] == 1000
+    report = stream_classifier_quality(
+        rows, np.array([1.0, 1.0]), .5, set(), eta_prior_ms=800
+    )
+    assert report["fixed_eta_error_p50_ms"] == 200
+    assert report["fixed_eta_within_500ms"] == 1
 
 
 def test_stream_join_feature_only_sees_completed_siblings(tmp_path):
