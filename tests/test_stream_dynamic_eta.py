@@ -52,6 +52,41 @@ def test_dynamic_stage_uses_only_completed_prefix_and_keeps_nonfinal(tmp_path):
     assert rows[1]["lead_ms"] == 700
 
 
+def test_early_stage_uses_only_as_of_milestones(tmp_path):
+    directory = tmp_path / "workflows" / "django__one"
+    directory.mkdir(parents=True)
+    events = [
+        {**_event(0, "invocation_create", workflow="wf"),
+         "relation_type": "spawn"},
+        _event(100, "llm_submit", workflow="wf", request_id="answer"),
+    ]
+    for chars, when in ((64, 200), (1024, 400), (1700, 3000)):
+        events.append(_event(
+            when, "structured_action", workflow="wf", request_id="answer",
+            beliefkv_child_substantial_content_shadow=True,
+            content_threshold_chars=chars,
+        ))
+    events.extend((
+        _event(5000, "llm_result", workflow="wf", request_id="answer",
+               output_chars=1800, tool_call_count=0, finish_reason="stop"),
+        _event(5200, "return", workflow="wf"),
+    ))
+    (directory / "runtime_events.deepagents.jsonl").write_text(
+        "".join(json.dumps(event) + "\n" for event in events),
+    )
+    early, censored = samples(directory.parent, stage_chars=1024)
+    assert censored == 0
+    assert len(early) == 1
+    assert early[0]["lead_ms"] == 2800
+    assert early[0]["features"][2:4] == [0, 0]
+    later, _ = samples(directory.parent, stage_chars=1700)
+    assert len(later) == 1
+    assert later[0]["lead_ms"] == 1950
+    assert later[0]["features"][2] > 0
+    assert later[0]["features"][3] == 0
+    assert samples(directory.parent, stage_chars=2400)[0] == []
+
+
 def test_dynamic_eta_rejects_project_overlap_and_reports_conditional_limit():
     train = [
         {

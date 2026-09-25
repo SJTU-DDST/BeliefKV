@@ -18,9 +18,15 @@ if str(ROOT) not in sys.path:
 from scripts.audit_native_stream_shadow import _quantile, _rows, _satisfied_last_children
 
 MILESTONES = (64, 1024, 1700, 2400)
+STAGE_DELAYS_MS = {1024: 2000, 1700: 250, 2400: 0}
 
 
-def samples(workflows: Path) -> tuple[list[dict], int]:
+def samples(
+    workflows: Path, *, stage_chars: int = 2400,
+) -> tuple[list[dict], int]:
+    if stage_chars not in STAGE_DELAYS_MS:
+        raise ValueError("unsupported stream stage")
+    required = tuple(chars for chars in MILESTONES if chars <= stage_chars)
     rows = []
     censored = 0
     for path in sorted(workflows.glob("*/runtime_events.deepagents.jsonl")):
@@ -61,9 +67,9 @@ def samples(workflows: Path) -> tuple[list[dict], int]:
                         if chars in MILESTONES:
                             record[chars] = float(event["ts_ms"])
             for request, record in by_request.items():
-                if not all(item in record for item in (*MILESTONES, "submit")):
+                if not all(item in record for item in (*required, "submit")):
                     continue
-                trigger = record[2400]
+                trigger = record[stage_chars] + STAGE_DELAYS_MS[stage_chars]
                 result = record.get("result")
                 if (
                     record.get("tool_chunk", float("inf")) <= trigger
@@ -95,8 +101,8 @@ def samples(workflows: Path) -> tuple[list[dict], int]:
                 intervals = (
                     trigger - record["submit"],
                     record[1024] - record[64],
-                    record[1700] - record[1024],
-                    record[2400] - record[1700],
+                    record[1700] - record[1024] if stage_chars >= 1700 else 0,
+                    record[2400] - record[1700] if stage_chars >= 2400 else 0,
                 )
                 if any(item < 0 for item in intervals):
                     raise ValueError(f"non-monotone milestones in {path}")
@@ -112,6 +118,7 @@ def samples(workflows: Path) -> tuple[list[dict], int]:
                     "last_join_child": (
                         (result["workflow_id"], child) in last_children
                     ),
+                    "stage_chars": stage_chars,
                     "features": [
                         *[np.log1p(item) for item in intervals],
                         np.log1p(sum(
@@ -165,7 +172,10 @@ def _quality(rows: list[dict], prediction: list[float], prior: float) -> dict:
     }
 
 
-def evaluate(train: list[dict], heldout: list[dict], censored: int) -> dict:
+def evaluate(
+    train: list[dict], heldout: list[dict], censored: int,
+    *, stage_chars: int = 2400,
+) -> dict:
     projects_train = {
         Path(row["trace_path"]).parent.name.split("__", 1)[0] for row in train
     }
@@ -191,7 +201,8 @@ def evaluate(train: list[dict], heldout: list[dict], censored: int) -> dict:
         )
     return {
         "status": "read_only_oracle_return_conditioned_stream_eta",
-        "stage_chars": 2400,
+        "stage_chars": stage_chars,
+        "stage_delay_ms": STAGE_DELAYS_MS[stage_chars],
         "development_projects": sorted(projects_train),
         "heldout_projects": sorted(projects_test),
         "fixed_prior_ms": prior,
@@ -221,6 +232,9 @@ def main() -> None:
     parser.add_argument("--train-workflows", type=Path, action="append", required=True)
     parser.add_argument("--evaluate-workflows", type=Path, action="append", required=True)
     parser.add_argument("--output", type=Path, required=True)
+    parser.add_argument(
+        "--stage-chars", type=int, choices=sorted(STAGE_DELAYS_MS), default=2400,
+    )
     args = parser.parse_args()
     train_projects = {
         path.parent.name.split("__", 1)[0]
@@ -236,15 +250,15 @@ def main() -> None:
         raise ValueError(f"projects overlap: {sorted(overlap)}")
     training = []
     for directory in args.train_workflows:
-        rows, _ = samples(directory)
+        rows, _ = samples(directory, stage_chars=args.stage_chars)
         training.extend(rows)
     testing = []
     censored = 0
     for directory in args.evaluate_workflows:
-        rows, missing = samples(directory)
+        rows, missing = samples(directory, stage_chars=args.stage_chars)
         testing.extend(rows)
         censored += missing
-    report = evaluate(training, testing, censored)
+    report = evaluate(training, testing, censored, stage_chars=args.stage_chars)
     args.output.parent.mkdir(parents=True, exist_ok=True)
     args.output.write_text(json.dumps(report, indent=2) + "\n")
     print(json.dumps(report, indent=2))
