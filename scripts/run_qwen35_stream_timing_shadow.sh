@@ -134,7 +134,7 @@ fi
 
 for cue in first_content substantial_content; do
   if [[ "$cue" == substantial_content ]]; then
-    for threshold in 64 1024 1700; do
+    for threshold in 64 1024 1700 2400 3200 4200 5600 7000; do
       "$PYTHON" "$ROOT/scripts/audit_native_stream_shadow.py" \
         --workflows "$RUN_ROOT/workloads/workflows" \
         --cue "$cue" --content-threshold-chars "$threshold" \

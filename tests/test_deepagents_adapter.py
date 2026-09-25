@@ -459,6 +459,23 @@ def test_stream_first_content_is_trace_only_and_one_per_child_model_run() -> Non
             if event.attributes.get("beliefkv_child_substantial_content_shadow")
         ]
         assert thresholds == [64, 1024, 1700]
+        adapter.on_llm_new_token(
+            "private late answer", run_id=another_run,
+            chunk=SimpleNamespace(message=SimpleNamespace(
+                content="a" * 7000, tool_call_chunks=[],
+            )),
+        )
+        thresholds = [
+            event.attributes["content_threshold_chars"]
+            for event in trace.events
+            if event.attributes.get("beliefkv_child_substantial_content_shadow")
+        ]
+        assert thresholds == [
+            64, 1024, 1700, 2400, 3200, 4200, 5600, 7000
+        ]
+        assert "private late answer" not in json.dumps(
+            [event.to_dict() for event in trace.events]
+        )
         assert not any(
             event.attributes.get("beliefkv_child_substantial_content_shadow")
             for event in control.events

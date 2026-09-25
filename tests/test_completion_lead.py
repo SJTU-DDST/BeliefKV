@@ -524,8 +524,17 @@ def test_stage_eta_requires_last_child_and_reports_remaining_window(tmp_path):
         _event(1000, "structured_action", request_id="req",
                beliefkv_child_substantial_content_shadow=True,
                content_threshold_chars=1700),
+        *[
+            _event(ts, "structured_action", request_id="req",
+                   beliefkv_child_substantial_content_shadow=True,
+                   content_threshold_chars=chars)
+            for chars, ts in (
+                (2400, 1400), (3200, 1700), (4200, 2000),
+                (5600, 2300), (7000, 2600),
+            )
+        ],
         _event(3000, "llm_result", request_id="req", tool_call_count=0,
-               output_chars=1800, finish_reason="stop"),
+               output_chars=7200, finish_reason="stop"),
         _event(3200, "return"),
         {**_event(3200, "join_satisfied"), "join_id": "join"},
     ]
@@ -536,7 +545,12 @@ def test_stage_eta_requires_last_child_and_reports_remaining_window(tmp_path):
     stages = stage_eta_candidates(tmp_path / "workflows")
     assert {
         stage: rows[0]["lead_ms"] for stage, rows in stages.items()
-    } == {"content_1024": 700, "content_1700": 1950, "result": 200}
+    } == {
+        "content_1024": 700, "content_1700": 1950,
+        "content_2400": 1800, "content_3200": 1500,
+        "content_4200": 1200, "content_5600": 900,
+        "content_7000": 600, "result": 200,
+    }
     assert all(rows[0]["eligible_last_child"] for rows in stages.values())
     quality = stage_eta_quality(stages["result"], prior=210)
     assert quality["eta_error_p50_ms"] == 10

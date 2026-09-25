@@ -17,8 +17,15 @@ if str(ROOT) not in sys.path:
 from scripts.audit_native_stream_shadow import _rows, _satisfied_last_children
 
 
-STAGES = ("content_1024", "content_1700", "result")
-DELAYS_MS = {"content_1024": 2000, "content_1700": 250, "result": 0}
+STAGES = (
+    "content_1024", "content_1700", "content_2400", "content_3200",
+    "content_4200", "content_5600", "content_7000", "result",
+)
+DELAYS_MS = {
+    "content_1024": 2000, "content_1700": 250,
+    "content_2400": 0, "content_3200": 0, "content_4200": 0,
+    "content_5600": 0, "content_7000": 0, "result": 0,
+}
 
 
 def candidates(workflows: Path) -> dict[str, list[dict]]:
@@ -90,7 +97,7 @@ def candidates(workflows: Path) -> dict[str, list[dict]]:
                     "beliefkv_child_substantial_content_shadow"
                 ):
                     chars = attrs.get("content_threshold_chars")
-                    if chars in (1024, 1700):
+                    if chars in (1024, 1700, 2400, 3200, 4200, 5600, 7000):
                         stage = f"content_{chars}"
                 elif event["kind"] == "llm_result":
                     stage = "result"
