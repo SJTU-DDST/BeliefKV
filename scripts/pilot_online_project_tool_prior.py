@@ -21,9 +21,12 @@ def pilot(
     workflows: Path, *, minimum_support: int = 16,
     allow_legacy_origin: bool = False,
     exclude_same_workflow_history: bool = False,
+    max_per_workflow: int | None = None,
 ) -> dict:
     if minimum_support < 2:
         raise ValueError("minimum support must be at least two")
+    if max_per_workflow is not None and max_per_workflow < 1:
+        raise ValueError("max per workflow must be positive")
     calls = sorted(
         (
             row
@@ -75,10 +78,22 @@ def pilot(
             continue
         long_call = row["duration_ms"] >= 2_000
         total_long_child += long_call
-        history = [
-            duration for duration, source in observed[(row["project"], row["class"])]
+        history_entries = [
+            (duration, source)
+            for duration, source in observed[(row["project"], row["class"])]
             if not exclude_same_workflow_history or source != row["workflow"]
         ]
+        if max_per_workflow is not None:
+            selected = []
+            per_workflow = defaultdict(int)
+            for duration, source in reversed(history_entries):
+                if per_workflow[source] >= max_per_workflow:
+                    continue
+                selected.append(duration)
+                per_workflow[source] += 1
+            history = list(reversed(selected))
+        else:
+            history = [duration for duration, _ in history_entries]
         general, medians = baseline[row["project"]]
         reference = medians.get(row["class"], general)
         supported = len(history) >= minimum_support
@@ -188,6 +203,7 @@ def pilot(
         "status": "offline_causal_online_adaptation_pilot_not_deployable",
         "legacy_origin_inferred": allow_legacy_origin,
         "exclude_same_workflow_history": exclude_same_workflow_history,
+        "max_per_workflow": max_per_workflow,
         "minimum_completed_project_class_samples": minimum_support,
         "total_cold_child_long": total_long_child,
         "long_after_support": eligible_long_child,
@@ -248,6 +264,7 @@ def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--workflows", type=Path, required=True)
     parser.add_argument("--minimum-support", type=int, default=16)
+    parser.add_argument("--max-per-workflow", type=int)
     parser.add_argument("--allow-legacy-origin", action="store_true")
     parser.add_argument("--exclude-same-workflow-history", action="store_true")
     parser.add_argument("--output", type=Path, required=True)
@@ -256,6 +273,7 @@ def main() -> None:
         args.workflows, minimum_support=args.minimum_support,
         allow_legacy_origin=args.allow_legacy_origin,
         exclude_same_workflow_history=args.exclude_same_workflow_history,
+        max_per_workflow=args.max_per_workflow,
     )
     args.output.parent.mkdir(parents=True, exist_ok=True)
     args.output.write_text(json.dumps(report, indent=2, sort_keys=True) + "\n")
