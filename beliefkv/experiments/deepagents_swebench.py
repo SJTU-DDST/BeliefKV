@@ -1368,7 +1368,7 @@ class NativeSubagentSemanticGateMiddleware(AgentMiddleware[Any, Any, Any]):
 
 
 class EmptyReasoningRecoveryMiddleware(AgentMiddleware[Any, Any, Any]):
-    """Retry a reasoning-only terminal once without inventing a child result."""
+    """Retry an empty terminal once without inventing a child result."""
 
     def __init__(self, *, audit: JsonlAudit, scope: str) -> None:
         super().__init__()
@@ -1382,17 +1382,11 @@ class EmptyReasoningRecoveryMiddleware(AgentMiddleware[Any, Any, Any]):
         message = response.result[0]
         if not isinstance(message, AIMessage):
             return False
-        usage = message.response_metadata.get("token_usage") or {}
-        reasoning = message.additional_kwargs.get("reasoning_content")
         return (
             message.response_metadata.get("finish_reason") in {"stop", "length"}
             and not _message_text(message).strip()
             and not message.tool_calls
             and not message.invalid_tool_calls
-            and (
-                bool(reasoning)
-                or int(usage.get("reasoning_tokens") or 0) > 0
-            )
         )
 
     @staticmethod

@@ -61,6 +61,7 @@ def audit(
     cue: str = "first_content",
     content_threshold_chars: int = 64,
     project_prefix: str | None = None,
+    completed_workflows_only: bool = False,
 ) -> dict:
     if cue not in {"first_content", "substantial_content", "final_marker"}:
         raise ValueError("unsupported stream cue")
@@ -94,8 +95,14 @@ def audit(
     if not paths:
         raise ValueError(f"no workflow event traces in {workflows}")
     by_child = defaultdict(list)
+    included_workflows = 0
     for path in paths:
         workflow_events = list(_rows(path))
+        if completed_workflows_only and not any(
+            event.get("kind") == "workflow_end" for event in workflow_events
+        ):
+            continue
+        included_workflows += 1
         if dataset is None:
             last_children.update(_satisfied_last_children(workflow_events))
         for event in workflow_events:
@@ -107,7 +114,8 @@ def audit(
     timer_thresholds = (250, 500, 750, 1000, 1250, 1500, 2000, 2500)
     timers = {
         delay: {"triggered": 0, "true_returns": 0, "false_triggers": 0,
-                "return_leads_ms": [], "first_by_child": {}}
+                "return_leads_ms": [], "first_by_child": {},
+                "false_examples": []}
         for delay in timer_thresholds
     }
     leads, final_result_leads, joined_leads = [], [], []
@@ -164,7 +172,7 @@ def audit(
                 and attrs.get("invalid_tool_call_count", 0) == 0
                 and attrs.get("finish_reason") in (None, "stop")
             )
-            if cue == "first_content":
+            if cue in {"first_content", "substantial_content"}:
                 for delay, timer in timers.items():
                     trigger_ts = float(event["ts_ms"]) + delay
                     if (
@@ -189,6 +197,28 @@ def audit(
                         )
                     else:
                         timer["false_triggers"] += 1
+                        if len(timer["false_examples"]) < 12:
+                            timer["false_examples"].append({
+                                "workflow_id": child[0],
+                                "child_id": child[1],
+                                "next_event_kind": successor.get("kind"),
+                                "finish_reason": attrs.get("finish_reason"),
+                                "output_chars": attrs.get("output_chars"),
+                                "tool_call_count": attrs.get("tool_call_count"),
+                                "tool_chunk_after_trigger": (
+                                    tool_chunk is not None
+                                    and float(tool_chunk["ts_ms"]) > trigger_ts
+                                ),
+                                "tool_chunk_after_trigger_ms": (
+                                    float(tool_chunk["ts_ms"]) - trigger_ts
+                                    if tool_chunk is not None
+                                    and float(tool_chunk["ts_ms"]) > trigger_ts
+                                    else None
+                                ),
+                                "trigger_to_response_end_ms": (
+                                    float(result["ts_ms"]) - trigger_ts
+                                ),
+                            })
             if is_final:
                 positives += 1
                 marked_children.add(child)
@@ -207,6 +237,7 @@ def audit(
             "triggered": values["triggered"],
             "true_returns": values["true_returns"],
             "false_triggers": values["false_triggers"],
+            "false_examples": values["false_examples"],
             "precision": (
                 values["true_returns"] / values["triggered"]
                 if values["triggered"] else None
@@ -228,11 +259,32 @@ def audit(
                  if predicted and lead is not None],
                 .5,
             ),
+            "eligible_last_children": len(last_children),
+            "last_child_first_triggered": sum(
+                child in last_children for child in values["first_by_child"]
+            ),
+            "last_child_first_trigger_true": sum(
+                child in last_children and predicted
+                for child, (predicted, _) in values["first_by_child"].items()
+            ),
+            "last_child_first_trigger_lead_p50_ms": _quantile(
+                [lead for child, (predicted, lead)
+                 in values["first_by_child"].items()
+                 if child in last_children and predicted and lead is not None],
+                .5,
+            ),
+            "last_child_first_trigger_at_least_500ms": sum(
+                child in last_children and predicted
+                and lead is not None and lead >= 500
+                for child, (predicted, lead) in values["first_by_child"].items()
+            ),
         }
         for delay, values in timers.items()
     }
     return {
         "project_prefix": project_prefix,
+        "completed_workflows_only": completed_workflows_only,
+        "included_workflows": included_workflows,
         "cue": cue,
         "content_threshold_chars": (
             content_threshold_chars if cue == "substantial_content" else None
@@ -264,6 +316,9 @@ def audit(
         "first_content_timer_shadow": (
             timer_results if cue == "first_content" else None
         ),
+        "substantial_content_timer_shadow": (
+            timer_results if cue == "substantial_content" else None
+        ),
         "join_cohort_available": dataset is not None,
         "status": "offline_stream_shadow_diagnostic_only",
     }
@@ -278,6 +333,7 @@ def main() -> None:
     ),
                         default="first_content")
     parser.add_argument("--project-prefix")
+    parser.add_argument("--completed-workflows-only", action="store_true")
     parser.add_argument("--content-threshold-chars", type=int, default=64)
     parser.add_argument("--output", type=Path, required=True)
     args = parser.parse_args()
@@ -285,6 +341,7 @@ def main() -> None:
         args.workflows, args.dataset, cue=args.cue,
         content_threshold_chars=args.content_threshold_chars,
         project_prefix=args.project_prefix,
+        completed_workflows_only=args.completed_workflows_only,
     )
     args.output.parent.mkdir(parents=True, exist_ok=True)
     args.output.write_text(

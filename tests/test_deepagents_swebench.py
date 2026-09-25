@@ -2147,20 +2147,6 @@ def test_empty_reasoning_terminal_retries_once_without_thinking(
         AIMessage(content="A natural report.", response_metadata={"finish_reason": "stop"}),
         AIMessage(
             content="",
-            response_metadata={
-                "finish_reason": "length",
-                "token_usage": {"reasoning_tokens": 0},
-            },
-        ),
-        AIMessage(
-            content="",
-            response_metadata={
-                "finish_reason": "stop",
-                "token_usage": {"reasoning_tokens": 0},
-            },
-        ),
-        AIMessage(
-            content="",
             tool_calls=[{"name": "read_file", "args": {}, "id": "call-1"}],
             response_metadata={
                 "finish_reason": "tool_calls",
@@ -2191,6 +2177,36 @@ def test_empty_reasoning_recovery_does_not_retry_other_outputs(
     finally:
         audit.close()
     assert calls == 1
+
+
+@pytest.mark.parametrize("finish_reason", ["stop", "length"])
+def test_empty_stream_terminal_without_reasoning_metadata_retries_once(
+    tmp_path: Path, finish_reason: str
+) -> None:
+    audit = JsonlAudit(tmp_path / "retry.jsonl")
+    middleware = EmptyReasoningRecoveryMiddleware(audit=audit, scope="child")
+    request = ModelRequest(
+        model=FakeMessagesListChatModel(responses=[AIMessage(content="unused")]),
+        messages=[HumanMessage(content="inspect")],
+    )
+    empty = ModelResponse(result=[
+        AIMessage(content="", response_metadata={"finish_reason": finish_reason})
+    ])
+    complete = ModelResponse(result=[
+        AIMessage(content="Child finished.", response_metadata={"finish_reason": "stop"})
+    ])
+    calls = 0
+
+    def handler(_request: ModelRequest) -> ModelResponse:
+        nonlocal calls
+        calls += 1
+        return empty if calls == 1 else complete
+
+    try:
+        assert middleware.wrap_model_call(request, handler) is complete
+    finally:
+        audit.close()
+    assert calls == 2
 
 
 def test_empty_reasoning_recovery_never_forges_a_child_result(

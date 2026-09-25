@@ -158,11 +158,23 @@ def test_stream_shadow_audits_early_cue_and_tool_call_false_positive(tmp_path):
     assert substantial["confirmed_final_return"] == 1
     assert substantial["confirmed_not_final"] == 0
     assert substantial["lead_ms"]["p50"] == 700
+    assert substantial["substantial_content_timer_shadow"]["250"][
+        "first_trigger_precision"
+    ] == 1
     late = audit_stream_shadow(
         tmp_path / "workflows", dataset, cue="substantial_content",
         content_threshold_chars=1024,
     )
     assert late["lead_ms"]["p50"] == 500
+    assert substantial["substantial_content_timer_shadow"]["250"][
+        "eligible_last_children"
+    ] == 1
+    assert substantial["substantial_content_timer_shadow"]["250"][
+        "last_child_first_trigger_at_least_500ms"
+    ] == 0
+    assert substantial["substantial_content_timer_shadow"]["250"][
+        "last_child_first_trigger_true"
+    ] == 1
 
 
 def test_stream_timer_excludes_early_tool_chunk_but_not_late_tool_chunk(tmp_path):
@@ -234,6 +246,31 @@ def test_stream_audit_derives_last_child_only_for_complete_satisfied_join():
     assert _satisfied_last_children(
         first[:-1] + [{**first[-1], "ts_ms": 50}]
     ) == set()
+
+
+def test_stream_audit_can_exclude_in_progress_workflows(tmp_path):
+    workflows = tmp_path / "workflows"
+    for name, done in (("complete", True), ("pending", False)):
+        path = workflows / name
+        path.mkdir(parents=True)
+        events = [
+            _event(100, "structured_action",
+                   beliefkv_child_first_content_shadow=True, request_id=name),
+            _event(200, "llm_result", request_id=name, tool_call_count=0,
+                   finish_reason="stop", output_chars=12),
+            _event(300, "return"),
+        ]
+        if done:
+            events.append(_event(400, "workflow_end"))
+        (path / "runtime_events.deepagents.jsonl").write_text(
+            "".join(json.dumps(item) + "\n" for item in events),
+            encoding="utf-8",
+        )
+    report = audit_stream_shadow(
+        workflows, completed_workflows_only=True,
+    )
+    assert report["included_workflows"] == 1
+    assert report["cues"] == 1
 
 
 def test_natural_content_threshold_audit_counts_returns_and_false_signals():
