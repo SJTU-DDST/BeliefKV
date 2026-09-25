@@ -446,6 +446,23 @@ def test_stream_first_content_is_trace_only_and_one_per_child_model_run() -> Non
         assert substantial[0].join_id == task.join_id
         assert substantial[0] not in control.events
         assert "private paragraph" not in json.dumps(substantial[0].to_dict())
+        for _ in range(103):
+            adapter.on_llm_new_token(
+                "private paragraph", run_id=another_run,
+                chunk=SimpleNamespace(message=SimpleNamespace(
+                    content="private paragraph", tool_call_chunks=[],
+                )),
+            )
+        thresholds = [
+            event.attributes["content_threshold_chars"]
+            for event in trace.events
+            if event.attributes.get("beliefkv_child_substantial_content_shadow")
+        ]
+        assert thresholds == [64, 1024, 1700]
+        assert not any(
+            event.attributes.get("beliefkv_child_substantial_content_shadow")
+            for event in control.events
+        )
     finally:
         queued.close()
 

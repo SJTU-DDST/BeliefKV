@@ -7,6 +7,7 @@ PYTHON="${PYTHON:-/home/longhao/miniconda3/envs/beliefkv-next/bin/python}"
 RUN_ROOT="${RUN_ROOT:-$ROOT/experiments/raw/qwen35_stream_completion_shadow_32root_20260925_v1}"
 SOURCE="$ROOT/experiments/raw/qwen35_native_reactive_calibration_timing_v3_20260925/qwen35-native-reactive-calibration-66root-r0"
 BASE_URL="${BASE_URL:-http://127.0.0.1:18000}"
+WORKLOAD_OFFSET="${WORKLOAD_OFFSET:-0}"
 server_pid=""
 
 stop_server() {
@@ -30,12 +31,35 @@ if [[ ! -f "$SOURCE/runtime_workload_manifest.json" ]]; then
   printf 'Missing frozen calibration workload manifest\n' >&2
   exit 1
 fi
+if [[ ! "$WORKLOAD_OFFSET" =~ ^[0-9]+$ ]]; then
+  printf 'WORKLOAD_OFFSET must be a nonnegative integer\n' >&2
+  exit 1
+fi
+mapfile -t selected_instances < <(
+  jq -r --argjson offset "$WORKLOAD_OFFSET" \
+    '.workloads[$offset:($offset+32)][].instance_id' \
+    "$SOURCE/runtime_workload_manifest.json"
+)
+if [[ "${#selected_instances[@]}" -ne 32 ]]; then
+  printf 'Not enough distinct tasks starting at offset %s\n' "$WORKLOAD_OFFSET" >&2
+  exit 1
+fi
+instance_args=()
+if (( WORKLOAD_OFFSET > 0 )); then
+  for instance in "${selected_instances[@]}"; do
+    instance_args+=(--instance "$instance")
+  done
+fi
 while IFS= read -r image; do
   if ! docker image inspect "$image" >/dev/null 2>&1; then
     printf 'Required image is not cached: %s\n' "$image" >&2
     exit 1
   fi
-done < <(jq -r '.workloads[:32][].docker_image' "$SOURCE/runtime_workload_manifest.json")
+done < <(
+  jq -r --argjson offset "$WORKLOAD_OFFSET" \
+    '.workloads[$offset:($offset+32)][].docker_image' \
+    "$SOURCE/runtime_workload_manifest.json"
+)
 
 mkdir -p "$RUN_ROOT/server"
 setsid env \
@@ -72,6 +96,7 @@ fi
   --base-url "$BASE_URL/v1" \
   --model Qwen3.5-35B-A3B \
   --workload-manifest "$SOURCE/runtime_workload_manifest.json" \
+  "${instance_args[@]}" \
   --max-workflows 32 \
   --concurrency 32 \
   --workflow-arrival-batch-size 16 \
@@ -93,7 +118,7 @@ fi
 
 for cue in first_content substantial_content; do
   if [[ "$cue" == substantial_content ]]; then
-    for threshold in 64 1024; do
+    for threshold in 64 1024 1700; do
       "$PYTHON" "$ROOT/scripts/audit_native_stream_shadow.py" \
         --workflows "$RUN_ROOT/workloads/workflows" \
         --cue "$cue" --content-threshold-chars "$threshold" \

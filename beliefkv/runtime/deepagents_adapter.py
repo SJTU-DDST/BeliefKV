@@ -38,7 +38,7 @@ from beliefkv.runtime.event_channel import QueuedRuntimeEventSink
 from beliefkv.runtime.sglang_adapter import BeliefKVRequestMetadata
 from beliefkv.runtime.sglang_v0520_sessions import NativeRadixSessionLeases
 
-STREAM_CONTENT_THRESHOLDS = (64, 1024)
+STREAM_CONTENT_THRESHOLDS = (64, 1024, 1700)
 MIN_NATURAL_FINAL_HINT_CHARS = 8
 
 
