@@ -28,7 +28,7 @@ from scripts.audit_stream_join_beneficiary import (
 from scripts.audit_stream_stage_eta import candidates as stage_eta_candidates
 from scripts.audit_stream_stage_eta import _quality as stage_eta_quality
 from scripts.pilot_stream_rate_eta import evaluate as evaluate_stream_rate
-from scripts.pilot_tool_nearest_history import _neighbor_prior
+from scripts.pilot_tool_nearest_history import _neighbor_prior, acceptance
 
 
 def _event(timestamp: float, kind: str, **attributes):
@@ -585,6 +585,36 @@ def test_tool_nearest_history_excludes_overlapping_and_future_results():
     )
     assert (result, support) == (3000, 4)
     assert _neighbor_prior(now, completed[:3]) == (None, 3)
+
+
+def test_cold_tool_acceptance_rejects_thin_or_miscalibrated_long_calls():
+    report = {
+        "groups": {
+            "cold_child": {
+                "baseline": {"p50_error_ms": 300},
+                "candidate": {"p50_error_ms": 150},
+                "duration_classification": {
+                    "predicted_long": {"candidate": {"precision": .75}},
+                    "false_imminent_when_actual_long": {"candidate": 3},
+                },
+            },
+            "cold_long_child": {
+                "baseline": {"p50_error_ms": 1800},
+                "candidate": {
+                    "count": 100, "workflow_count": 12, "p50_error_ms": 400,
+                },
+                "duration_classification": {"actual_long": 100},
+            },
+        },
+    }
+    assert acceptance(report)["accepted"]
+    report["groups"]["cold_long_child"]["candidate"]["workflow_count"] = 3
+    assert not acceptance(report)["accepted"]
+    report["groups"]["cold_long_child"]["candidate"]["workflow_count"] = 12
+    report["groups"]["cold_child"]["duration_classification"][
+        "predicted_long"
+    ]["candidate"]["precision"] = .6
+    assert not acceptance(report)["accepted"]
 
 
 def test_stream_eta_regression_only_consumes_causal_features():

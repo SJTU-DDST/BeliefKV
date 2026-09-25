@@ -69,6 +69,40 @@ def _outcome(rows: list[dict]) -> dict:
     return report
 
 
+def acceptance(report: dict) -> dict:
+    cold = report["groups"].get("cold_child")
+    long = report["groups"].get("cold_long_child")
+    if cold is None or long is None:
+        return {"accepted": False, "checks": {"cohorts_present": False}}
+    baseline = long["baseline"]
+    candidate = long["candidate"]
+    long_class = long["duration_classification"]
+    precision = cold["duration_classification"]["predicted_long"][
+        "candidate"
+    ]["precision"]
+    checks = {
+        "at_least_30_cold_long": candidate["count"] >= 30,
+        "at_least_5_long_workflows": candidate["workflow_count"] >= 5,
+        "cold_child_p50_at_most_70pct_baseline": (
+            cold["candidate"]["p50_error_ms"]
+            <= .7 * cold["baseline"]["p50_error_ms"]
+        ),
+        "cold_long_p50_at_most_50pct_baseline": (
+            candidate["p50_error_ms"] <= .5 * baseline["p50_error_ms"]
+        ),
+        "cold_long_p50_at_most_500ms": candidate["p50_error_ms"] <= 500,
+        "predicted_long_precision_at_least_70pct": (
+            precision is not None and precision >= .7
+        ),
+        "false_imminent_at_most_5pct_of_actual_long": (
+            cold["duration_classification"]["false_imminent_when_actual_long"][
+                "candidate"
+            ] <= math.ceil(.05 * long_class["actual_long"])
+        ),
+    }
+    return {"accepted": all(checks.values()), "checks": checks}
+
+
 def replay(train: list[dict], evaluation: list[dict]) -> dict:
     by_class = defaultdict(list)
     for row in train:
@@ -108,7 +142,7 @@ def replay(train: list[dict], evaluation: list[dict]) -> dict:
         if row["is_child"] is True and row["class"] != "unknown":
             history[scope].append(row)
 
-    return {
+    report = {
         "status": "causal_nearest_history_diagnostic_only",
         "counts": dict(counts),
         "groups": {
@@ -126,6 +160,8 @@ def replay(train: list[dict], evaluation: list[dict]) -> dict:
             for key, rows in sorted(metrics.items())
         },
     }
+    report["acceptance"] = acceptance(report)
+    return report
 
 
 def main() -> None:
@@ -151,6 +187,7 @@ def main() -> None:
     print(json.dumps({
         "status": report["status"],
         "counts": report["counts"],
+        "acceptance": report["acceptance"],
         "groups": {
             key: {
                 model: {
