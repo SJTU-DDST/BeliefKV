@@ -10,6 +10,7 @@ from statistics import median
 import sys
 
 import numpy as np
+from scipy.stats import beta
 
 ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
@@ -65,6 +66,10 @@ def _quality(
         ),
         "censored": len(rows) - determined,
         "precision_on_determined": len(lead) / determined if determined else None,
+        "precision_two_sided_95pct_lower": (
+            float(beta.ppf(.025, len(lead), determined - len(lead) + 1))
+            if len(lead) else 0.0 if determined else None
+        ),
         "last_child_join_coverage": (
             len(lead) / len(eligible_last_children)
             if eligible_last_children else None

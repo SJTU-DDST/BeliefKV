@@ -504,6 +504,7 @@ def test_join_beneficiary_does_not_credit_later_return_after_tool(tmp_path):
     assert report["premature_then_satisfied"] == 1
     assert report["observed_timeout"] == 1
     assert report["precision_on_determined"] == 1 / 3
+    assert 0 < report["precision_two_sided_95pct_lower"] < 1 / 3
     assert report["satisfied_lead_p50_ms"] == 1000
 
 
