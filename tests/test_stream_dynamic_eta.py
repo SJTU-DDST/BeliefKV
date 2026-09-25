@@ -50,6 +50,8 @@ def test_dynamic_stage_uses_only_completed_prefix_and_keeps_nonfinal(tmp_path):
     assert rows[0]["features"][:4] == rows[1]["features"][:4]
     assert rows[0]["features"][4] < rows[1]["features"][4]
     assert rows[1]["lead_ms"] == 700
+    assert rows[1]["trigger_ms"] == 5900
+    assert rows[1]["join_id"] is None
 
 
 def test_early_stage_uses_only_as_of_milestones(tmp_path):
@@ -65,7 +67,7 @@ def test_early_stage_uses_only_as_of_milestones(tmp_path):
             when, "structured_action", workflow="wf", request_id="answer",
             beliefkv_child_substantial_content_shadow=True,
             content_threshold_chars=chars,
-        ))
+        ) | {"join_id": "join-1"})
     events.extend((
         _event(5000, "llm_result", workflow="wf", request_id="answer",
                output_chars=1800, tool_call_count=0, finish_reason="stop"),
@@ -78,10 +80,13 @@ def test_early_stage_uses_only_as_of_milestones(tmp_path):
     assert censored == 0
     assert len(early) == 1
     assert early[0]["lead_ms"] == 2800
+    assert early[0]["join_id"] == "join-1"
+    assert early[0]["trigger_ms"] == 2400
     assert early[0]["features"][2:4] == [0, 0]
     later, _ = samples(directory.parent, stage_chars=1700)
     assert len(later) == 1
     assert later[0]["lead_ms"] == 1950
+    assert later[0]["trigger_ms"] == 3250
     assert later[0]["features"][2] > 0
     assert later[0]["features"][3] == 0
     assert samples(directory.parent, stage_chars=2400)[0] == []

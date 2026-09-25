@@ -66,6 +66,7 @@ def samples(
                         chars = attrs.get("content_threshold_chars")
                         if chars in MILESTONES:
                             record[chars] = float(event["ts_ms"])
+                            record["join_id"] = event.get("join_id")
             for request, record in by_request.items():
                 if not all(item in record for item in (*required, "submit")):
                     continue
@@ -111,6 +112,8 @@ def samples(
                     "workflow_id": result["workflow_id"],
                     "child": child,
                     "request_id": request,
+                    "join_id": record.get("join_id"),
+                    "trigger_ms": trigger,
                     "final": final,
                     "lead_ms": (
                         float(successor["ts_ms"]) - trigger if final else None
