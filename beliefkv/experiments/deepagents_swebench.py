@@ -3570,7 +3570,7 @@ def _run_workflow(
         control_sink=control_sink,
         workspace_digest_provider=backend.tool_state_digest,
         project_tool_history=project_tool_history,
-        project_id=workload.instance_id.split("__", 1)[0],
+        project_id=workload.repo,
     )
     deadline_controller = WorkflowDeadlineController(
         deadline=ActivationDeadline(),
