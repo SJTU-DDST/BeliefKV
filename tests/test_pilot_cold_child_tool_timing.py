@@ -1,7 +1,12 @@
 import numpy as np
+from types import SimpleNamespace
 
 from scripts.pilot_cold_child_tool_timing import (
-    _as_of_project_signals, _cold, _evaluate, _inflight_peers, _threshold,
+    _as_of_project_signals, _cold, _evaluate, _fixed_clock,
+    _inflight_peers, _threshold,
+)
+from beliefkv.predictor.structured_frontier import (
+    EmpiricalDistribution, LocalFrontierFeatures, WaitBelief, WaitBeliefKind,
 )
 
 
@@ -78,3 +83,30 @@ def test_inflight_peer_count_uses_only_other_workflow_live_at_start():
         {**rows[4], "start_ts_ms": 5_000},
     ])
     assert same_timestamp["b", "e"]["project_long_completed_support"] == 0
+
+
+def test_fixed_clock_uses_live_elapsed_without_future_duration_as_feature():
+    class Model:
+        def predict(self, features):
+            assert features.elapsed_wait_ms in (500, 2_000, 4_000)
+            return SimpleNamespace(wait_belief=WaitBelief(
+                kind=WaitBeliefKind.TOOL,
+                residual_duration=EmpiricalDistribution((50,), (1,), 1),
+            ))
+
+    samples = [{
+        "workflow": "w", "total_duration_ms": 4_001,
+        "start_features": LocalFrontierFeatures(
+            invocation_id="child", state="wait_tool",
+        ),
+        "long_history_ms": 3_000.,
+    }]
+    report = _fixed_clock(samples, np.asarray([1.]), .7, Model())
+    early = report["by_elapsed_ms"]["500"]
+    assert early["alive"] == 1
+    assert early["false_imminent_with_over_2s_remaining"] == {
+        "reference": 1, "candidate": 0,
+    }
+    assert early["long"]["candidate"]["p50_absolute_error_ms"] < (
+        early["long"]["reference"]["p50_absolute_error_ms"]
+    )

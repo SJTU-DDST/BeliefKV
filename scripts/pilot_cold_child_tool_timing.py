@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import argparse
 from collections import defaultdict, deque
+from dataclasses import replace
 import heapq
 import json
 import math
@@ -145,9 +146,10 @@ def _collect(dataset: Path, reference: FrontierBeliefModel) -> list[dict]:
         remaining = float(wait["terminal_ts_ms"]) - float(row["timestamp_ms"])
         if elapsed < 0 or remaining < 0:
             continue
-        belief = reference.predict(_local_features_from_row(
+        local = _local_features_from_row(
             row, invocation, tool_feature_contract=reference.tool_feature_contract,
-        )).wait_belief
+        )
+        belief = reference.predict(local).wait_belief
         if belief is None or belief.kind is not WaitBeliefKind.TOOL:
             continue
         baseline = belief.residual_duration.quantile(.5)
@@ -175,6 +177,9 @@ def _collect(dataset: Path, reference: FrontierBeliefModel) -> list[dict]:
             "tool_name": attrs.get("tool_name"),
             "features": features, "actual_ms": remaining,
             "baseline_ms": baseline,
+            "total_duration_ms": float(wait["terminal_ts_ms"])
+            - float(wait["start_ts_ms"]),
+            "start_features": local,
             "long_history_ms": (
                 signals["project_long_completed_median_ms"]
                 if signals.get("project_long_completed_support", 0) >= 3
@@ -280,6 +285,66 @@ def _evaluate(samples: list[dict], scores: np.ndarray, duration: np.ndarray,
     }
 
 
+def _fixed_clock(samples: list[dict], scores: np.ndarray,
+                 threshold: float | None, model: FrontierBeliefModel) -> dict:
+    reports = {}
+    for clock in (500, 2_000, 4_000):
+        live = []
+        for sample, score in zip(samples, scores):
+            if sample["total_duration_ms"] <= clock:
+                continue
+            belief = model.predict(replace(
+                sample["start_features"], elapsed_wait_ms=float(clock)
+            )).wait_belief
+            if belief is None or belief.kind is not WaitBeliefKind.TOOL:
+                continue
+            reference = belief.residual_duration.quantile(.5)
+            if not math.isfinite(reference):
+                continue
+            forecast = reference
+            if threshold is not None and score >= threshold:
+                forecast = max(forecast, 2_000. - clock)
+                history = sample["long_history_ms"]
+                if history is not None and history > clock:
+                    forecast = max(forecast, history - clock)
+            actual = sample["total_duration_ms"] - clock
+            live.append({
+                "workflow": sample["workflow"], "actual_ms": actual,
+                "reference": abs(actual - reference),
+                "candidate": abs(actual - forecast),
+                "reference_forecast_ms": reference,
+                "candidate_forecast_ms": forecast,
+                "total_duration_ms": sample["total_duration_ms"],
+            })
+        long = [row for row in live if row["total_duration_ms"] >= 2_000]
+        reports[str(clock)] = {
+            "alive": len(live),
+            "long_total": len(long),
+            "all": {
+                side: _metrics(live, side)
+                for side in ("reference", "candidate")
+            },
+            "long": {
+                side: _metrics(long, side)
+                for side in ("reference", "candidate")
+            },
+            "false_imminent_with_over_2s_remaining": {
+                side: sum(
+                    row[f"{side}_forecast_ms"] <= 500
+                    and row["actual_ms"] > 2_000 for row in live
+                )
+                for side in ("reference", "candidate")
+            },
+        }
+    return {
+        "semantics": (
+            "counterfactual fixed-clock wait survival; TOOL_START features frozen "
+            "except elapsed time; not an observed scheduler safe point"
+        ),
+        "by_elapsed_ms": reports,
+    }
+
+
 def pilot(train: Path, calibration: Path, reference: FrontierBeliefModel) -> dict:
     if reference.tool_feature_contract != "observed_command_child_project_v3":
         raise ValueError("expected v9 timing contract")
@@ -380,6 +445,14 @@ def pilot(train: Path, calibration: Path, reference: FrontierBeliefModel) -> dic
         "calibration": _evaluate(
             calibration_samples, cal_scores, cal_durations, threshold,
         ),
+        "fixed_clock": {
+            "development": _fixed_clock(
+                development, dev_scores, threshold, reference,
+            ),
+            "calibration": _fixed_clock(
+                calibration_samples, cal_scores, threshold, reference,
+            ),
+        },
         "exploratory_four_peer_rule": {
             "development": peer_rule(development),
             "calibration": peer_rule(calibration_samples),
