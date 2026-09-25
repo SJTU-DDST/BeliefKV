@@ -10,6 +10,7 @@ BASE_URL="${BASE_URL:-http://127.0.0.1:18000}"
 WORKLOAD_OFFSET="${WORKLOAD_OFFSET:-0}"
 WORKLOAD_POOL_SIZE="${WORKLOAD_POOL_SIZE:-32}"
 WORKLOAD_PREFERRED_PREFIX="${WORKLOAD_PREFERRED_PREFIX:-}"
+WORKLOAD_EXCLUDE_MANIFEST="${WORKLOAD_EXCLUDE_MANIFEST:-}"
 server_pid=""
 
 stop_server() {
@@ -33,6 +34,14 @@ if [[ ! -f "$SOURCE/runtime_workload_manifest.json" ]]; then
   printf 'Missing frozen calibration workload manifest\n' >&2
   exit 1
 fi
+excluded_instances='[]'
+if [[ -n "$WORKLOAD_EXCLUDE_MANIFEST" ]]; then
+  if [[ ! -f "$WORKLOAD_EXCLUDE_MANIFEST" ]]; then
+    printf 'Missing exclusion manifest: %s\n' "$WORKLOAD_EXCLUDE_MANIFEST" >&2
+    exit 1
+  fi
+  excluded_instances="$(jq -c '.instance_ids' "$WORKLOAD_EXCLUDE_MANIFEST")"
+fi
 if [[ ! "$WORKLOAD_OFFSET" =~ ^[0-9]+$ \
   || ! "$WORKLOAD_POOL_SIZE" =~ ^[0-9]+$ \
   || "$WORKLOAD_POOL_SIZE" -lt 32 ]]; then
@@ -42,8 +51,11 @@ fi
 selected_workloads="$(
   jq -c --argjson offset "$WORKLOAD_OFFSET" \
     --argjson pool "$WORKLOAD_POOL_SIZE" \
+    --argjson excluded "$excluded_instances" \
     --arg prefix "$WORKLOAD_PREFERRED_PREFIX" '
-      .workloads[$offset:($offset+$pool)] as $workloads
+      [.workloads[$offset:($offset+$pool)][]
+       | select(.instance_id as $id | $excluded | index($id) | not)]
+      as $workloads
       | if $prefix == "" then $workloads[:32]
         else (
           [$workloads[] | select(.instance_id | startswith($prefix))]
