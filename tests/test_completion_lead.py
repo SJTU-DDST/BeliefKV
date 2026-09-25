@@ -20,6 +20,7 @@ from scripts.fit_native_completion_lead import _content_threshold_audit
 from scripts.pilot_stream_final_classifier import samples as stream_classifier_samples
 from scripts.pilot_stream_final_classifier import _quality as stream_classifier_quality
 from scripts.pilot_stream_eta_regression import fit_eta, predict_eta
+from scripts.pilot_stream_actionable_window import _quality as actionable_quality
 
 
 def _event(timestamp: float, kind: str, **attributes):
@@ -468,6 +469,24 @@ def test_stream_eta_regression_only_consumes_causal_features():
     assert len(predictions) == len(rows)
     assert np.isfinite(predictions).all()
     assert predictions[0] < predictions[-1]
+
+
+def test_actionable_window_counts_late_returns_as_not_useful():
+    rows = [
+        {"final": True, "return_lead_ms": 3000,
+         "trace_path": "a", "workflow": "w", "child": "c1"},
+        {"final": True, "return_lead_ms": 1000,
+         "trace_path": "a", "workflow": "w", "child": "c2"},
+        {"final": False, "return_lead_ms": None,
+         "trace_path": "a", "workflow": "w", "child": "c3"},
+    ]
+    quality = actionable_quality(
+        rows, np.ones(3), .5, {("a", "w", "c1")}
+    )
+    assert quality["selected_useful"] == 1
+    assert quality["selected_late_return"] == 1
+    assert quality["selected_nonreturn"] == 1
+    assert quality["last_child_useful_recall"] == 1
 
 
 def test_natural_content_threshold_audit_counts_returns_and_false_signals():
