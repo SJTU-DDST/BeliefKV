@@ -172,6 +172,49 @@ def test_predict_tool_wait_batch_uses_trained_calibrated_residual_head():
     ) == ()
 
 
+def test_predict_tool_wait_batch_keeps_new_child_class_head_separate() -> None:
+    rows = []
+    for index in range(12):
+        child = index >= 6
+        rows.append({
+            "schema_version": 2, "decision_id": f"tool-{index}",
+            "episode_group_id": f"episode-{index}",
+            "trigger_kind": "tool_start", "trigger_invocation_id": "worker",
+            "trigger_attributes": {
+                "tool_name": "execute", "tool_family": "shell",
+                "is_child": child, "observed_command_class": "test_suite",
+            },
+            "invocations": [{
+                "invocation_id": "worker", "state": "wait_tool",
+                "is_child": child, "agent_definition_id": "worker",
+                "active_tool_family": "shell", "current_sequence_tokens": 4096,
+            }],
+            "labels": [{
+                "invocation_id": "worker", "next_boundary_status": "success",
+                "next_boundary_delay_ms": 100.0 if not child else 4000.0,
+                "reentry_prompt_delta_tokens": 32,
+            }],
+        })
+    model = FrontierBeliefModel(tool_feature_contract="observed_command_child_v1")
+    model.fit(rows)
+    model.calibration_coverage = 0.9
+    root = LocalFrontierFeatures(
+        "root", "wait_tool", agent_definition_id="worker",
+        tool_family="shell", command_class="execute",
+        observed_command_class="test_suite", current_sequence_tokens=4096,
+    )
+    child = LocalFrontierFeatures.from_dict({
+        **root.to_dict(), "invocation_id": "child", "is_child": True,
+    })
+    hints = predict_tool_wait_batch((
+        (key("root"), root, 1.0),
+        (key("child"), child, 1.0),
+    ), model=model)
+    assert len(hints) == 2
+    assert hints[0][2] < 500
+    assert hints[1][2] > 2000
+
+
 def test_join_prediction_uses_child_completion_not_parent_structural_wait():
     class Model:
         def predict(self, features):
