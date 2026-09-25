@@ -53,7 +53,7 @@ def _summarize(rows: list[dict]) -> dict:
     }
 
 
-def _read_workflow(path: Path) -> list[dict]:
+def _read_workflow(path: Path, *, allow_legacy_origin: bool = False) -> list[dict]:
     events = []
     with path.open("rb") as stream:
         for line in stream:
@@ -83,12 +83,18 @@ def _read_workflow(path: Path) -> list[dict]:
             duration = ts - start_ts
             if duration < 0:
                 raise ValueError(f"negative tool duration in {path}")
+            origin = start_attrs.get("is_child")
+            if origin is None and allow_legacy_origin:
+                origin = str(event.get("invocation_id") or "").startswith(
+                    "deepagents-invocation:"
+                )
             row = {
                 "project": path.parent.name.split("__", 1)[0],
                 "workflow": str(event["workflow_id"]),
                 "invocation": str(event.get("invocation_id") or ""),
                 "class": str(start_attrs.get("observed_command_class") or "unknown"),
                 "duration_ms": duration,
+                "is_child": origin,
                 "status": str(attrs.get("status") or "unknown"),
                 "previous": previous,
                 "start_ts_ms": start_ts,
@@ -141,6 +147,11 @@ def replay(workflows: Path, *, minimum_class_samples: int = 8) -> dict:
             age = row["start_ts_ms"] - prev_end
             baseline = priors.get(row["class"], global_duration)
             dimensions = ["all_repeats"]
+            dimensions.append(
+                "child" if row["is_child"] is True
+                else "root" if row["is_child"] is False
+                else "origin_unknown"
+            )
             if row["duration_ms"] >= 2_000:
                 dimensions.append("actual_at_least_2s")
             if prev_duration >= 2_000:
@@ -182,7 +193,10 @@ def replay(workflows: Path, *, minimum_class_samples: int = 8) -> dict:
     }
 
 
-def transfer_replay(train_workflows: Path, evaluation_workflows: Path) -> dict:
+def transfer_replay(
+    train_workflows: Path, evaluation_workflows: Path,
+    *, allow_legacy_evaluation_origin: bool = False,
+) -> dict:
     train = [
         row for path in sorted(train_workflows.glob("*/runtime_events.deepagents.jsonl"))
         for row in _read_workflow(path)
@@ -190,7 +204,9 @@ def transfer_replay(train_workflows: Path, evaluation_workflows: Path) -> dict:
     ]
     evaluation = [
         row for path in sorted(evaluation_workflows.glob("*/runtime_events.deepagents.jsonl"))
-        for row in _read_workflow(path)
+        for row in _read_workflow(
+            path, allow_legacy_origin=allow_legacy_evaluation_origin
+        )
         if row["previous"] is not None and row["previous"][2] == "success"
     ]
     if not train or not evaluation:
@@ -212,6 +228,7 @@ def transfer_replay(train_workflows: Path, evaluation_workflows: Path) -> dict:
         per_workflow[row["workflow"]].append(row["error_ms"])
     return {
         "status": "cross_run_project_disjoint_diagnostic_not_formal_test",
+        "legacy_evaluation_origin_inferred": allow_legacy_evaluation_origin,
         "train_repeat_count": len(train),
         "evaluation_repeat_count": len(rows),
         "train_p90_absolute_residual_ms": margin,
@@ -225,6 +242,13 @@ def transfer_replay(train_workflows: Path, evaluation_workflows: Path) -> dict:
         ),
         "evaluation_actual_at_least_2s": _summarize([
             row for row in rows if row["duration_ms"] >= 2_000
+        ]),
+        "evaluation_child": _summarize([
+            row for row in rows if row["is_child"] is True
+        ]),
+        "evaluation_child_at_least_2s": _summarize([
+            row for row in rows if row["is_child"] is True
+            and row["duration_ms"] >= 2_000
         ]),
         "predicted_at_least_2s_count": sum(
             row["previous"][0] >= 2_000 for row in rows
@@ -240,12 +264,14 @@ def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--workflows", type=Path, required=True)
     parser.add_argument("--evaluation-workflows", type=Path)
+    parser.add_argument("--allow-legacy-evaluation-origin", action="store_true")
     parser.add_argument("--output", type=Path, required=True)
     args = parser.parse_args()
     result = replay(args.workflows)
     if args.evaluation_workflows is not None:
         result["project_isolated_transfer"] = transfer_replay(
-            args.workflows, args.evaluation_workflows
+            args.workflows, args.evaluation_workflows,
+            allow_legacy_evaluation_origin=args.allow_legacy_evaluation_origin,
         )
     args.output.parent.mkdir(parents=True, exist_ok=True)
     args.output.write_text(json.dumps(result, indent=2, sort_keys=True) + "\n")

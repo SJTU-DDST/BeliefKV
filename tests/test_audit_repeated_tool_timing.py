@@ -82,3 +82,12 @@ def test_project_disjoint_transfer_checks_margins_and_long_false_positives(
     assert result["train_p90_absolute_residual_ms"] == 100
     assert result["evaluation_within_train_p90_margin"] == 0
     assert result["predicted_long_false_positive_count"] == 1
+
+
+def test_legacy_origin_inference_is_opt_in(tmp_path: Path) -> None:
+    path = _write(tmp_path, "sphinx", [
+        _event("tool_start", 0, 1, "first", "deepagents-invocation:child"),
+        _event("tool_end", 100, 2, "first", "deepagents-invocation:child"),
+    ])
+    assert _read_workflow(path)[0]["is_child"] is None
+    assert _read_workflow(path, allow_legacy_origin=True)[0]["is_child"] is True

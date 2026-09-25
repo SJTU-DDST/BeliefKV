@@ -423,6 +423,10 @@ P90 约 111 ms，再对上述 Astropy/Sphinx 的 3,519 次前次成功
 调用 workflow 全部落入此边界。逐调用覆盖不能代替 workflow 级
 动作安全性，因此 v8 校准采用每 workflow 最大误差决定保守区间。
 旧 66-root trace 已用于原模型校准及此轮分析，不能充当密封测试集。
+旧 trace 没有显式 `is_child`，诊断脚本必须用
+`--allow-legacy-evaluation-origin` 才按 invocation ID 命名约定推断；
+该方式得到 2,143 次有历史的 child `execute`，P50/P95 约
+12/116 ms，但实际长于 2 秒的 child 样本为零，不能外推长窗口。
 
 独立 worktree 加入有界 `SameInputToolHistory`，在 TOOL_START 附带
 前次已完成时长、年龄和状态；导出器可从旧原始事件按相同因果
