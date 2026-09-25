@@ -26,7 +26,9 @@ from beliefkv.core.events import (
     RuntimeEvent,
     RuntimeEventKind,
 )
-from beliefkv.predictor.command_class import execute_command_class
+from beliefkv.predictor.command_class import (
+    execute_command_class, execute_command_shape,
+)
 from beliefkv.predictor.project_tool_history import ProjectToolHistory
 from beliefkv.predictor.same_input_history import SameInputToolHistory
 from beliefkv.runtime.agent_safety import classify_tool_outcome
@@ -1078,6 +1080,9 @@ class DeepAgentsRuntimeAdapter(BaseCallbackHandler):
         observed_command = (
             execute_command_class(payload) if tool_name == "execute" else tool_name
         )
+        observed_shape = (
+            execute_command_shape(payload) if tool_name == "execute" else tool_name
+        )
         with self._lock:
             identity = self._identities.get(parent_invocation_id)
             is_child = bool(
@@ -1123,6 +1128,7 @@ class DeepAgentsRuntimeAdapter(BaseCallbackHandler):
                 "backend_class": normalized.backend_class,
                 "is_child": is_child,
                 "observed_command_class": observed_command,
+                "observed_command_shape": observed_shape,
                 "input_chars": input_chars,
                 "input_sha256": input_sha256,
                 "parameter_signature": input_sha256,

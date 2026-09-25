@@ -98,6 +98,7 @@ def _read_workflow(
                 "workflow": str(event["workflow_id"]),
                 "invocation": str(event.get("invocation_id") or ""),
                 "class": str(start_attrs.get("observed_command_class") or "unknown"),
+                "shape": str(start_attrs.get("observed_command_shape") or "unknown"),
                 "input_chars": start_attrs.get("input_chars"),
                 "input_sha256": str(start_attrs.get("input_sha256") or ""),
                 "duration_ms": duration,

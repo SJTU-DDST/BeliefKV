@@ -53,6 +53,15 @@ def test_only_completed_earlier_same_invocation_available(tmp_path: Path) -> Non
     assert by_start_workflow[110]["previous"] == (100, 100, "success")
 
 
+def test_replay_preserves_causal_command_shape(tmp_path: Path) -> None:
+    start = _event("tool_start", 0, 1, "a", "child")
+    start["attributes"]["observed_command_shape"] = "python_inline_test"
+    path = _write(tmp_path, "django", [
+        start, _event("tool_end", 200, 2, "a", "child"),
+    ])
+    assert _read_workflow(path)[0]["shape"] == "python_inline_test"
+
+
 def test_project_held_out_repeat_report(tmp_path: Path) -> None:
     for project, duration in (("django", 3000), ("sphinx", 3200)):
         _write(tmp_path, project, [

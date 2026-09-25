@@ -324,6 +324,7 @@ def _event_triggers(
                     "backend_class",
                     "is_child",
                     "observed_command_class",
+                    "observed_command_shape",
                     "input_chars",
                     "previous_same_input_duration_ms",
                     "previous_same_input_age_ms",
