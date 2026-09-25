@@ -3,7 +3,7 @@ from types import SimpleNamespace
 
 from scripts.pilot_cold_child_tool_timing import (
     _as_of_project_signals, _cold, _evaluate, _fixed_clock,
-    _inflight_peers, _threshold,
+    _inflight_peers, _scheduled_long_call_trigger, _threshold,
 )
 from beliefkv.predictor.structured_frontier import (
     EmpiricalDistribution, LocalFrontierFeatures, WaitBelief, WaitBeliefKind,
@@ -110,3 +110,17 @@ def test_fixed_clock_uses_live_elapsed_without_future_duration_as_feature():
     assert early["long"]["candidate"]["p50_absolute_error_ms"] < (
         early["long"]["reference"]["p50_absolute_error_ms"]
     )
+
+
+def test_scheduled_trigger_counts_expired_early_and_useful_separately():
+    durations = [700, 2_900, 3_500, 6_000]
+    samples = [{
+        "workflow": str(index), "baseline_ms": 0,
+        "total_duration_ms": duration, "long_history_ms": 4_000,
+        "features": {"project_class_inflight_other_workflow_2s_peers": 1},
+    } for index, duration in enumerate(durations)]
+    result = _scheduled_long_call_trigger(samples, min_peers=1)
+    assert result["eligible"] == 4
+    assert result["expired_before_trigger"] == 2
+    assert result["useful_500_to_2000ms"] == 1
+    assert result["early_over_2000ms"] == 1

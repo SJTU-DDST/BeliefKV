@@ -345,6 +345,46 @@ def _fixed_clock(samples: list[dict], scores: np.ndarray,
     }
 
 
+def _scheduled_long_call_trigger(samples: list[dict], *, min_peers: int,
+                                 lead_ms: float = 1_000.) -> dict:
+    if min_peers < 0 or lead_ms <= 0:
+        raise ValueError("peer count and lead must be non-negative/positive")
+    selected = [
+        row for row in samples
+        if row.get("long_history_ms") is not None
+        and row["features"]["project_class_inflight_other_workflow_2s_peers"]
+        >= min_peers
+    ]
+    leads = [
+        (
+            row["total_duration_ms"]
+            - max(0., row["long_history_ms"] - lead_ms)
+        )
+        for row in selected
+    ]
+    long = [
+        {
+            "workflow": row["workflow"],
+            "reference": abs(row["total_duration_ms"] - row["baseline_ms"]),
+            "candidate": abs(
+                row["total_duration_ms"] - row["long_history_ms"]
+            ),
+        }
+        for row in selected if row["total_duration_ms"] >= 2_000
+    ]
+    return {
+        "eligible": len(selected),
+        "true_long": len(long),
+        "expired_before_trigger": sum(value < 0 for value in leads),
+        "late_under_500ms": sum(0 <= value < 500 for value in leads),
+        "useful_500_to_2000ms": sum(500 <= value <= 2_000 for value in leads),
+        "early_over_2000ms": sum(value > 2_000 for value in leads),
+        "long_total_duration_error": {
+            side: _metrics(long, side) for side in ("reference", "candidate")
+        },
+    }
+
+
 def pilot(train: Path, calibration: Path, reference: FrontierBeliefModel) -> dict:
     if reference.tool_feature_contract != "observed_command_child_project_v3":
         raise ValueError("expected v9 timing contract")
@@ -452,6 +492,17 @@ def pilot(train: Path, calibration: Path, reference: FrontierBeliefModel) -> dic
             "calibration": _fixed_clock(
                 calibration_samples, cal_scores, threshold, reference,
             ),
+        },
+        "long_call_first_trigger": {
+            str(peers): {
+                "development": _scheduled_long_call_trigger(
+                    development, min_peers=peers,
+                ),
+                "calibration": _scheduled_long_call_trigger(
+                    calibration_samples, min_peers=peers,
+                ),
+            }
+            for peers in (0, 1, 4)
         },
         "exploratory_four_peer_rule": {
             "development": peer_rule(development),
