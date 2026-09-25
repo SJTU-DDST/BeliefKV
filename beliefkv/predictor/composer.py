@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import math
 from dataclasses import dataclass, field, replace
 from math import inf
 from pathlib import Path
@@ -51,6 +52,9 @@ def observed_boundary_action(event: RuntimeEvent) -> str | None:
 class InvocationPredictionFeatures:
     tool_backend_class: str = "unknown"
     tool_command_class: str = "unknown"
+    tool_observed_command_class: str = "unknown"
+    tool_previous_same_input_duration_ms: float | None = None
+    tool_project_class_duration_median_ms: float | None = None
     action_history: list[ActionKind] = field(default_factory=list)
     boundary_history: list[str] = field(default_factory=list)
     model: str = "unknown"
@@ -135,12 +139,38 @@ class RemainingTimePredictor:
                 or event.attributes.get("backend_class")
                 or "unknown"
             )
+            features.tool_observed_command_class = str(
+                event.attributes.get("observed_command_class") or "unknown"
+            )
+            features.tool_previous_same_input_duration_ms = None
+            features.tool_project_class_duration_median_ms = None
+            if event.attributes.get("tool_name") == "execute":
+                previous = event.attributes.get("previous_same_input_duration_ms")
+                if (
+                    event.attributes.get("previous_same_input_status") == "success"
+                    and type(previous) in (int, float)
+                    and math.isfinite(previous) and previous >= 0
+                ):
+                    features.tool_previous_same_input_duration_ms = float(previous)
+                project = event.attributes.get("project_class_duration_median_ms")
+                support = event.attributes.get("project_class_completed_support")
+                if (
+                    event.attributes.get("is_child") is True
+                    and type(support) is int and support >= 16
+                    and type(project) in (int, float)
+                    and math.isfinite(project) and project >= 0
+                ):
+                    features.tool_project_class_duration_median_ms = float(project)
             action = {
                 "shell": ActionKind.TOOL_SHELL,
                 "search": ActionKind.TOOL_SEARCH,
                 "file": ActionKind.TOOL_FILE,
                 "browser": ActionKind.TOOL_BROWSER,
             }.get(family, ActionKind.TOOL_OTHER)
+        elif event.kind == RuntimeEventKind.TOOL_END:
+            features.tool_observed_command_class = "unknown"
+            features.tool_previous_same_input_duration_ms = None
+            features.tool_project_class_duration_median_ms = None
         elif event.kind in {RuntimeEventKind.CALL, RuntimeEventKind.SPAWN}:
             action = ActionKind.SPAWN_CHILD
         elif event.kind == RuntimeEventKind.JOIN_WAIT:

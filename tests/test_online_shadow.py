@@ -1,7 +1,7 @@
 import unittest
 
 from beliefkv.control.causal_graph import RuntimeCausalContextGraph
-from beliefkv.core.events import RuntimeEvent, RuntimeEventKind
+from beliefkv.core.events import RelationType, RuntimeEvent, RuntimeEventKind
 from beliefkv.predictor.composer import (
     InvocationPredictionFeatures,
     RemainingTimePredictor,
@@ -77,6 +77,59 @@ def build_graph() -> RuntimeCausalContextGraph:
 
 
 class OnlineShadowTest(unittest.TestCase):
+    def test_tool_timing_features_reach_live_child_and_expire(self) -> None:
+        graph = build_graph()
+        create = RuntimeEvent(
+            event_id="child-create", ts_ms=4.0,
+            kind=RuntimeEventKind.INVOCATION_CREATE,
+            workflow_id="wf", invocation_id="child", context_id="child-ctx",
+            context_epoch=0, parent_invocation_id="root",
+            relation_type=RelationType.SPAWN,
+        )
+        graph.apply(create)
+        start = RuntimeEvent(
+            event_id="child-tool", ts_ms=5.0,
+            kind=RuntimeEventKind.TOOL_START,
+            workflow_id="wf", invocation_id="child",
+            attributes={
+                "tool_family": "shell", "tool_name": "execute",
+                "command_class": "execute",
+                "observed_command_class": "python_inline",
+                "previous_same_input_status": "success",
+                "previous_same_input_duration_ms": 2500,
+                "project_class_duration_median_ms": 3100,
+                "project_class_completed_support": 16,
+                "is_child": True,
+            },
+        )
+        predictor = RemainingTimePredictor()
+        graph.apply(start)
+        predictor.observe_event(start)
+        features = _features_for_invocation(
+            graph, "child", predictor, now_ms=1505.0,
+            active_tool_count=1, family_counts={"shell": 1},
+        )
+        self.assertTrue(features.is_child)
+        self.assertEqual(features.elapsed_wait_ms, 1500.0)
+        self.assertEqual(features.observed_command_class, "python_inline")
+        self.assertEqual(features.previous_same_input_duration_ms, 2500.0)
+        self.assertEqual(features.project_class_duration_median_ms, 3100.0)
+
+        end = RuntimeEvent(
+            event_id="child-end", ts_ms=1506.0,
+            kind=RuntimeEventKind.TOOL_END,
+            workflow_id="wf", invocation_id="child",
+        )
+        graph.apply(end)
+        predictor.observe_event(end)
+        after = _features_for_invocation(
+            graph, "child", predictor, now_ms=1507.0,
+            active_tool_count=0, family_counts={},
+        )
+        self.assertEqual(after.observed_command_class, "unknown")
+        self.assertIsNone(after.previous_same_input_duration_ms)
+        self.assertIsNone(after.project_class_duration_median_ms)
+
     def test_no_frontier_model_emits_nothing(self) -> None:
         predictor = RemainingTimePredictor()
         records, signatures = build_frontier_shadow_records(

@@ -91,12 +91,23 @@ def _features_for_invocation(
     generated_tokens = 0
     tool_backend_class = "unknown"
     tool_command_class = "unknown"
+    tool_observed_command_class = "unknown"
+    tool_previous_same_input_duration_ms = None
+    tool_project_class_duration_median_ms = None
     if online is not None:
         history = tuple(online.boundary_history)[-8:]
         context_tokens = max(0, int(online.context_tokens or 0))
         generated_tokens = max(0, int(online.generated_tokens or 0))
         tool_backend_class = str(online.tool_backend_class or "unknown")
         tool_command_class = str(online.tool_command_class or "unknown")
+        if invocation.state == InvocationState.WAIT_TOOL:
+            tool_observed_command_class = online.tool_observed_command_class
+            tool_previous_same_input_duration_ms = (
+                online.tool_previous_same_input_duration_ms
+            )
+            tool_project_class_duration_median_ms = (
+                online.tool_project_class_duration_median_ms
+            )
     elapsed_wait_ms = 0.0
     if (
         invocation.state == InvocationState.WAIT_TOOL
@@ -117,6 +128,9 @@ def _features_for_invocation(
         tool_family=tool_family,
         backend_class=tool_backend_class,
         command_class=tool_command_class,
+        observed_command_class=tool_observed_command_class,
+        previous_same_input_duration_ms=tool_previous_same_input_duration_ms,
+        project_class_duration_median_ms=tool_project_class_duration_median_ms,
         generated_tokens=generated_tokens,
         elapsed_wait_ms=elapsed_wait_ms,
         current_sequence_tokens=context_tokens,
