@@ -523,6 +523,38 @@ def test_docker_backend_hashes_commands_and_truncates_output(
     assert execute_argv[-3:-1] == ["/bin/sh", "-c"]
 
 
+def test_docker_backend_opt_in_stdout_timing_keeps_command_body_out_of_audit(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    audit = JsonlAudit(tmp_path / "audit.jsonl")
+    backend = DockerWorkspaceBackend(
+        tmp_path, image="fixture:latest", audit=audit,
+        output_timing_shadow=True,
+    )
+    backend._started = True
+    monkeypatch.setattr(backend, "_docker_exec_argv", lambda _: [
+        "/bin/sh", "-c", "printf first; sleep .05; printf last",
+    ])
+    response = backend.execute("private command text")
+    backend._started = False
+    backend.close()
+    audit.close()
+    assert response.output == "firstlast"
+    assert response.exit_code == 0
+    record = next(
+        json.loads(line)
+        for line in (tmp_path / "audit.jsonl").read_text().splitlines()
+        if json.loads(line)["event"] == "sandbox_execute"
+    )
+    assert record["output_timing_shadow"] is True
+    assert record["observed_output_bytes"] == len(b"firstlast")
+    assert (0 <= record["first_output_after_execute_ms"]
+            < record["last_output_after_execute_ms"]
+            <= record["execute_elapsed_ms"])
+    assert "private command text" not in str(record)
+    assert "firstlast" not in str(record)
+
+
 def test_docker_cleanup_timeout_is_audited_without_losing_workflow_result(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:

@@ -36,6 +36,7 @@ from langchain_core.tools import BaseTool, tool
 from pydantic import BaseModel, Field, field_validator
 
 from beliefkv.experiments.arrival_schedule import build_workflow_arrivals
+from beliefkv.experiments.sandbox_progress import observe_output
 from beliefkv.predictor.project_tool_history import ProjectToolHistory
 from beliefkv.experiments.swebench_prompt import (
     build_swebench_task_prompt,
@@ -579,6 +580,7 @@ class DockerWorkspaceBackend(FilesystemBackend, SandboxBackendProtocol):
         test_env_path: str = DEFAULT_SANDBOX_TEST_ENV,
         preflight_command: str | None = None,
         support_dir: Path | None = DEFAULT_SANDBOX_SUPPORT_DIR,
+        output_timing_shadow: bool = False,
     ) -> None:
         super().__init__(root_dir=workspace, virtual_mode=True)
         if cpus <= 0 or memory_gib <= 0 or default_timeout_s <= 0:
@@ -592,6 +594,7 @@ class DockerWorkspaceBackend(FilesystemBackend, SandboxBackendProtocol):
         self.max_output_chars = max_output_chars
         self.test_env_path = test_env_path.rstrip("/")
         self.preflight_command = preflight_command
+        self.output_timing_shadow = output_timing_shadow
         self.support_dir = support_dir.resolve() if support_dir is not None else None
         if not self.test_env_path.startswith("/"):
             raise ValueError("sandbox test environment path must be absolute")
@@ -877,26 +880,31 @@ class DockerWorkspaceBackend(FilesystemBackend, SandboxBackendProtocol):
         started = time.monotonic()
         with self._execute_lock:
             acquired = time.monotonic()
-            try:
-                result = subprocess.run(
-                    argv,
-                    check=False,
-                    stdout=subprocess.PIPE,
-                    stderr=subprocess.STDOUT,
-                    text=True,
-                    timeout=timeout_s + 15.0,
-                )
-                output = result.stdout or ""
-                exit_code: int | None = result.returncode
-            except subprocess.TimeoutExpired as error:
-                partial = error.stdout or ""
-                output = (
-                    partial.decode("utf-8", errors="replace")
-                    if isinstance(partial, bytes)
-                    else partial
-                )
-                output += f"\nCommand exceeded host timeout ({timeout_s + 15}s)."
-                exit_code = 124
+            if self.output_timing_shadow:
+                timing = observe_output(argv, timeout_s=timeout_s + 15.0)
+                output = timing.output
+                exit_code: int | None = timing.exit_code
+            else:
+                try:
+                    result = subprocess.run(
+                        argv,
+                        check=False,
+                        stdout=subprocess.PIPE,
+                        stderr=subprocess.STDOUT,
+                        text=True,
+                        timeout=timeout_s + 15.0,
+                    )
+                    output = result.stdout or ""
+                    exit_code = result.returncode
+                except subprocess.TimeoutExpired as error:
+                    partial = error.stdout or ""
+                    output = (
+                        partial.decode("utf-8", errors="replace")
+                        if isinstance(partial, bytes)
+                        else partial
+                    )
+                    output += f"\nCommand exceeded host timeout ({timeout_s + 15}s)."
+                    exit_code = 124
             completed = time.monotonic()
         truncated = len(output) > self.max_output_chars
         if truncated:
@@ -913,6 +921,12 @@ class DockerWorkspaceBackend(FilesystemBackend, SandboxBackendProtocol):
             output_chars=len(output),
             output_sha256=hashlib.sha256(output.encode("utf-8")).hexdigest(),
             truncated=truncated,
+            **({
+                "first_output_after_execute_ms": timing.first_output_ms,
+                "last_output_after_execute_ms": timing.last_output_ms,
+                "observed_output_bytes": timing.observed_bytes,
+                "output_timing_shadow": True,
+            } if self.output_timing_shadow else {}),
         )
         return ExecuteResponse(
             output=output,
@@ -2683,6 +2697,7 @@ def _run_planned_child(
         test_env_path=backend.test_env_path,
         preflight_command=backend.preflight_command,
         support_dir=backend.support_dir,
+        output_timing_shadow=backend.output_timing_shadow,
     )
     deadline_controller.register_backend(child_backend)
     try:
@@ -3529,6 +3544,9 @@ def _run_workflow(
         test_env_path=config.sandbox_test_env_path,
         preflight_command=(
             workload.preflight_command or config.sandbox_preflight_command
+        ),
+        output_timing_shadow=(
+            os.environ.get("BELIEFKV_SANDBOX_OUTPUT_TIMING_SHADOW") == "1"
         ),
     )
     workflow_token = hashlib.sha256(

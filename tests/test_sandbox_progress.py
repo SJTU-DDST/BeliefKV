@@ -1,0 +1,71 @@
+from __future__ import annotations
+
+import json
+import sys
+
+import pytest
+
+from beliefkv.experiments.sandbox_progress import observe_output
+from scripts.audit_sandbox_output_timing import audit
+
+
+def test_output_timing_observes_first_and_later_bytes_without_body_in_metadata():
+    result = observe_output([
+        sys.executable, "-c",
+        "import sys,time; sys.stdout.write('first'); sys.stdout.flush(); "
+        "time.sleep(.06); sys.stdout.write('last')",
+    ], timeout_s=2)
+    assert result.output == "firstlast"
+    assert result.exit_code == 0
+    assert result.observed_bytes == len(b"firstlast")
+    assert result.first_output_ms is not None
+    assert result.last_output_ms is not None
+    assert result.first_output_ms < result.last_output_ms <= result.elapsed_ms
+    assert result.timed_out is False
+
+
+def test_output_timing_handles_empty_output_and_host_timeout():
+    empty = observe_output([sys.executable, "-c", "pass"], timeout_s=2)
+    assert empty.output == ""
+    assert empty.first_output_ms is None
+    assert empty.last_output_ms is None
+    assert empty.observed_bytes == 0
+    timed = observe_output([
+        sys.executable, "-c",
+        "import sys,time; sys.stdout.write('partial'); sys.stdout.flush(); "
+        "time.sleep(5)",
+    ], timeout_s=.1)
+    assert timed.exit_code == 124
+    assert timed.timed_out
+    assert timed.output.startswith("partial\nCommand exceeded host timeout")
+    assert timed.first_output_ms is not None
+    assert timed.elapsed_ms < 2000
+
+
+def test_output_timing_rejects_nonpositive_timeout():
+    with pytest.raises(ValueError, match="timeout"):
+        observe_output(["true"], timeout_s=0)
+
+
+def test_stdout_timing_audit_separates_projects_and_long_commands(tmp_path):
+    for project, elapsed, first in (
+        ("pydata", 4000, 1000),
+        ("django", 3000, None),
+        ("pydata", 500, 300),
+    ):
+        path = tmp_path / f"{project}__task" / "sandbox_audit.jsonl"
+        path.parent.mkdir(parents=True, exist_ok=True)
+        with path.open("a") as stream:
+            stream.write(json.dumps({
+                "event": "sandbox_execute",
+                "output_timing_shadow": True,
+                "execute_elapsed_ms": elapsed,
+                "first_output_after_execute_ms": first,
+                "exit_code": 0,
+            }) + "\n")
+    report = audit(tmp_path)
+    assert report["long_commands_at_least_2s"]["command_count"] == 2
+    assert report["long_commands_at_least_2s"][
+        "first_output_at_least_2000ms_before_exit"
+    ] == 1
+    assert report["by_project_long_commands"]["django"]["no_output_count"] == 1
