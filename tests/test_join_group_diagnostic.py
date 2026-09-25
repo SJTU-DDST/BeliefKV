@@ -60,3 +60,27 @@ def test_incomplete_snapshot_and_non_all_compatible_not_counted():
     different = dict(_reentry(), reentry_ts_ms=80.0)
     excluded = diagnose_join_groups(StubModel(), [_decision()], [different])
     assert excluded["counts"]["not_all_compatible"] == 1
+
+
+def test_join_horizons_count_events_not_decision_rows():
+    decisions = [
+        _decision(),
+        {**_decision(), "timestamp_ms": 115.0},
+        {**_decision(), "timestamp_ms": 119.5},
+    ]
+    result = diagnose_join_groups(
+        StubModel(), decisions, [_reentry()], horizons_ms=(5, 1)
+    )
+    assert result["counts"]["groups_with_timing_hint"] == 1
+    assert result["by_horizon_ms"]["5"]["groups_with_timing_hint"] == 1
+    assert result["by_horizon_ms"]["1"]["groups_with_timing_hint"] == 1
+    assert result["by_horizon_ms"]["5"]["median_absolute_error_ms"] == 95.0
+    assert result["by_horizon_ms"]["1"]["median_absolute_error_ms"] == 99.5
+
+
+def test_join_horizon_reports_absent_late_decision():
+    result = diagnose_join_groups(
+        StubModel(), [_decision()], [_reentry()], horizons_ms=(1,)
+    )
+    assert result["by_horizon_ms"]["1"]["join_group_coverage"] == 0
+    assert result["by_horizon_ms"]["1"]["median_absolute_error_ms"] is None

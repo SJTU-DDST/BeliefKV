@@ -12,11 +12,75 @@ from beliefkv.predictor.structured_frontier import (
     _local_features_from_row,
 )
 
+DEFAULT_HORIZONS_MS = (300_000, 60_000, 10_000, 2_000, 500)
+
+
+def _summarize_snapshots(
+    model: FrontierBeliefModel,
+    groups: Iterable[Mapping[str, Any]],
+    *,
+    snapshot_field: str,
+) -> dict[str, Any]:
+    counters: Counter[str] = Counter()
+    absolute_errors = []
+    signed_errors = []
+    envelope_covered = 0
+    envelope_widths = []
+    child_counts = []
+    for group in groups:
+        snapshot = group[snapshot_field]
+        if snapshot is None:
+            counters["no_wait_join_snapshot"] += 1
+            continue
+        row, timestamp, pending = snapshot
+        if any(child is None for child in pending.values()):
+            counters["missing_pending_child"] += 1
+            continue
+        predictions = [
+            model.predict(_local_features_from_row(row, child))
+            for child in pending.values()
+        ]
+        if any(
+            not prediction.remaining_to_return_ms.values
+            or prediction.support_for("child_completion") == "unavailable"
+            or prediction.ood_reasons
+            for prediction in predictions
+        ):
+            counters["unavailable_child_prediction"] += 1
+            continue
+        p10 = max(pred.remaining_to_return_ms.quantile(0.1) for pred in predictions)
+        p50 = max(pred.remaining_to_return_ms.quantile(0.5) for pred in predictions)
+        p90 = max(pred.remaining_to_return_ms.quantile(0.9) for pred in predictions)
+        actual = group["reentry_ts"] - timestamp
+        absolute_errors.append(abs(actual - p50))
+        signed_errors.append(p50 - actual)
+        envelope_covered += p10 <= actual <= p90
+        envelope_widths.append(p90 - p10)
+        child_counts.append(len(predictions))
+    errors = sorted(absolute_errors)
+    return {
+        "counts": dict(sorted(counters.items())),
+        "groups_with_timing_hint": len(errors),
+        "mean_absolute_error_ms": sum(errors) / len(errors) if errors else None,
+        "median_absolute_error_ms": errors[(len(errors) - 1) // 2] if errors else None,
+        "p90_absolute_error_ms": errors[math.ceil(len(errors) * 0.9) - 1] if errors else None,
+        "within_500ms_rate": sum(value <= 500 for value in errors) / len(errors)
+        if errors else None,
+        "mean_signed_error_ms": sum(signed_errors) / len(errors) if errors else None,
+        "marginal_envelope_coverage": envelope_covered / len(errors) if errors else None,
+        "mean_marginal_envelope_width_ms": (
+            sum(envelope_widths) / len(errors) if errors else None
+        ),
+        "mean_pending_children": sum(child_counts) / len(errors) if errors else None,
+    }
+
 
 def diagnose_join_groups(
     model: FrontierBeliefModel,
     decision_rows: Iterable[Mapping[str, Any]],
     reentries: Iterable[Mapping[str, Any]],
+    *,
+    horizons_ms: tuple[int, ...] = DEFAULT_HORIZONS_MS,
 ) -> dict[str, Any]:
     """Evaluate ALL-compatible observed joins, one earliest complete snapshot each.
 
@@ -24,6 +88,10 @@ def diagnose_join_groups(
     agrees with the last member RETURN can be diagnosed as ALL-compatible.
     Pointwise marginal quantile envelopes are not joint calibrated intervals.
     """
+    if not horizons_ms or any(value <= 0 for value in horizons_ms):
+        raise ValueError("horizons must be positive")
+    if len(set(horizons_ms)) != len(horizons_ms):
+        raise ValueError("duplicate horizons")
     groups: dict[tuple[str, str], dict[str, Any]] = {}
     counters: Counter[str] = Counter()
     for item in reentries:
@@ -67,6 +135,7 @@ def diagnose_join_groups(
             "parent": key[1], "reentry_ts": reentry_ts, "returns": returns,
             "wait_start": float(item.get("wait_start_ts_ms") or 0.0),
             "snapshot": None,
+            "horizon_snapshots": {limit: None for limit in horizons_ms},
         }
 
     by_workflow: dict[str, list[dict[str, Any]]] = {}
@@ -84,8 +153,7 @@ def diagnose_join_groups(
         }
         for group in candidate_groups:
             if (
-                group["snapshot"] is not None
-                or timestamp < group["wait_start"]
+                timestamp < group["wait_start"]
                 or timestamp >= group["reentry_ts"]
                 or features.get(group["parent"], {}).get("state") != "wait_join"
             ):
@@ -99,60 +167,39 @@ def diagnose_join_groups(
                 continue
             # A partial child snapshot is a coverage failure, not a fabricated
             # JOIN timing prediction; keep the first eligible decision.
-            group["snapshot"] = (row, timestamp, pending)
-
-    absolute_errors = []
-    signed_errors = []
-    envelope_covered = 0
-    envelope_widths = []
-    child_counts = []
-    for group in groups.values():
-        snapshot = group["snapshot"]
-        if snapshot is None:
-            counters["no_wait_join_snapshot"] += 1
-            continue
-        row, timestamp, pending = snapshot
-        if any(child is None for child in pending.values()):
-            counters["missing_pending_child"] += 1
-            continue
-        predictions = [
-            model.predict(_local_features_from_row(row, child))
-            for child in pending.values()
-        ]
-        if any(
-            not prediction.remaining_to_return_ms.values
-            or prediction.support_for("child_completion") == "unavailable"
-            or prediction.ood_reasons
-            for prediction in predictions
-        ):
-            counters["unavailable_child_prediction"] += 1
-            continue
-        p10 = max(pred.remaining_to_return_ms.quantile(0.1) for pred in predictions)
-        p50 = max(pred.remaining_to_return_ms.quantile(0.5) for pred in predictions)
-        p90 = max(pred.remaining_to_return_ms.quantile(0.9) for pred in predictions)
-        actual = group["reentry_ts"] - timestamp
-        absolute_errors.append(abs(actual - p50))
-        signed_errors.append(p50 - actual)
-        envelope_covered += p10 <= actual <= p90
-        envelope_widths.append(p90 - p10)
-        child_counts.append(len(predictions))
+            snapshot = (row, timestamp, pending)
+            if group["snapshot"] is None or timestamp < group["snapshot"][1]:
+                group["snapshot"] = snapshot
+            for limit, previous in group["horizon_snapshots"].items():
+                if group["reentry_ts"] - timestamp <= limit and (
+                    previous is None or timestamp < previous[1]
+                ):
+                    group["horizon_snapshots"][limit] = snapshot
 
     counters["all_compatible_join_groups"] = len(groups)
-    counters["groups_with_timing_hint"] = len(absolute_errors)
-    errors = sorted(absolute_errors)
+    first = _summarize_snapshots(model, groups.values(), snapshot_field="snapshot")
+    counters.update(first.pop("counts"))
+    counters["groups_with_timing_hint"] = first.pop("groups_with_timing_hint")
+    horizon_metrics = {}
+    for limit in horizons_ms:
+        for group in groups.values():
+            group["selected_horizon_snapshot"] = group["horizon_snapshots"][limit]
+        metrics = _summarize_snapshots(
+            model, groups.values(), snapshot_field="selected_horizon_snapshot"
+        )
+        metrics["join_group_coverage"] = (
+            metrics["groups_with_timing_hint"] / len(groups) if groups else None
+        )
+        horizon_metrics[str(limit)] = metrics
     return {
-        "evidence": "read_only_group_diagnostic" if errors else "no_group_hints",
+        "evidence": "read_only_group_diagnostic"
+        if counters["groups_with_timing_hint"] else "no_group_hints",
         "semantics": (
-            "first WAIT_JOIN snapshot per ALL-compatible join; empirical p10/p90 "
+            "one earliest WAIT_JOIN snapshot per JOIN/horizon, selected retrospectively "
+            "using observed reentry; empirical p10/p90 "
             "envelope is NOT a calibrated joint JOIN interval"
         ),
         "counts": dict(sorted(counters.items())),
-        "mean_absolute_error_ms": sum(errors) / len(errors) if errors else None,
-        "median_absolute_error_ms": errors[(len(errors) - 1) // 2] if errors else None,
-        "mean_signed_error_ms": sum(signed_errors) / len(signed_errors) if errors else None,
-        "marginal_envelope_coverage": envelope_covered / len(errors) if errors else None,
-        "mean_marginal_envelope_width_ms": (
-            sum(envelope_widths) / len(errors) if errors else None
-        ),
-        "mean_pending_children": sum(child_counts) / len(errors) if errors else None,
+        **first,
+        "by_horizon_ms": horizon_metrics,
     }

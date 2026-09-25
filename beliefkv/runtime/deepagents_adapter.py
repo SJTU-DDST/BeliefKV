@@ -727,6 +727,14 @@ class DeepAgentsRuntimeAdapter(BaseCallbackHandler):
                 )
         messages = self._response_messages(response)
         output_chars = sum(len(message.text or "") for message in messages)
+        invalid_tool_call_count = sum(
+            len(getattr(message, "invalid_tool_calls", ()) or ())
+            for message in messages
+        )
+        finish_reason = (
+            (getattr(messages[0], "response_metadata", None) or {}).get("finish_reason")
+            if len(messages) == 1 else None
+        )
         tool_calls = [
             call
             for message in messages
@@ -779,6 +787,8 @@ class DeepAgentsRuntimeAdapter(BaseCallbackHandler):
                 "output_chars": output_chars,
                 "output_tokens": output_tokens or None,
                 "tool_call_count": len(tool_calls),
+                "invalid_tool_call_count": invalid_tool_call_count,
+                "finish_reason": finish_reason,
                 "rejected_task_call_count": len(task_calls)
                 - len(executable_task_calls),
                 "parser_status": "valid" if action_kinds else "unknown",
@@ -793,13 +803,26 @@ class DeepAgentsRuntimeAdapter(BaseCallbackHandler):
             },
         )
         self._publish((result,), control=False)
+        explicit_completion = (
+            len(tool_calls) == 1
+            and len(getattr(messages[0], "tool_calls", ())) == 1
+            and tool_calls[0].get("name") == "ChildCompletion"
+        ) if len(messages) == 1 else False
+        natural_final = (
+            len(messages) == 1
+            and not tool_calls
+            and not getattr(messages[0], "invalid_tool_calls", ())
+            and isinstance(messages[0].text, str)
+            and bool(messages[0].text.strip())
+            and (getattr(messages[0], "response_metadata", None) or {}).get(
+                "finish_reason", "stop"
+            ) == "stop"
+        )
         if (
             not runtime_internal
             and len(messages) == 1
-            and len(tool_calls) == 1
-            and len(getattr(messages[0], "tool_calls", ())) == 1
             and not getattr(messages[0], "invalid_tool_calls", ())
-            and tool_calls[0].get("name") == "ChildCompletion"
+            and (explicit_completion or natural_final)
             and isinstance(self.control_sink, QueuedRuntimeEventSink)
             and self.control_sink is not self.trace_sink
         ):
@@ -833,7 +856,13 @@ class DeepAgentsRuntimeAdapter(BaseCallbackHandler):
                                 "structured_action_kinds": [
                                     StructuredActionKind.FINAL_ANSWER.value
                                 ],
-                                "structured_action_names": ["ChildCompletion"],
+                                "structured_action_names": (
+                                    ["ChildCompletion"] if explicit_completion else []
+                                ),
+                                "child_completion_signal_kind": (
+                                    "explicit" if explicit_completion
+                                    else "natural_final"
+                                ),
                             },
                         ),
                     ),

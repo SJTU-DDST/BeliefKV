@@ -330,6 +330,13 @@ class NativeAdmissionRuntime:
                     if self._live_join_hint(hint):
                         self.join_wait_hint = hint
                         ticket = self._join_ticket
+                        if ticket is not None and self._live_join_ticket() and (
+                            ticket.phase in ("provisional", "confirmed")
+                            or ticket.command_id is not None
+                        ):
+                            self.counts["join_wait_ticket_preserved"] += 1
+                            self.counts["join_wait_accepted"] += 1
+                            continue
                         if ticket is None or (
                             ticket.key, ticket.join_id
                         ) != (hint.key, hint.join_id):
@@ -400,6 +407,9 @@ class NativeAdmissionRuntime:
         join = self.graph.joins.get(join_id) if isinstance(join_id, str) else None
         child = self.graph.invocations.get(child_id) if child_id else None
         context = self.graph.contexts.get(event.context_id) if event.context_id else None
+        signal_kind = event.attributes.get(
+            "child_completion_signal_kind", "explicit"
+        )
         if (
             join is None or join.satisfied or child is None or context is None
             or join.workflow_id != event.workflow_id
@@ -412,7 +422,10 @@ class NativeAdmissionRuntime:
                 join.mode.value == "all"
                 and len(join.member_invocation_ids - join.completed_member_ids) != 1
             )
-            or event.attributes.get("structured_action_names") != ["ChildCompletion"]
+            or signal_kind not in ("explicit", "natural_final")
+            or event.attributes.get("structured_action_names") != (
+                ["ChildCompletion"] if signal_kind == "explicit" else []
+            )
             or not isinstance(event.attributes.get("request_id"), str)
             or not event.attributes["request_id"]
         ):
@@ -435,6 +448,7 @@ class NativeAdmissionRuntime:
             ticket.phase = "provisional"
             ticket.expires_at = time.monotonic() + 2.0
         self.counts["join_intent_accepted"] += 1
+        self.counts[f"join_intent_{signal_kind}_accepted"] += 1
 
     def _advance_join_ticket(self, event: RuntimeEvent) -> None:
         ticket = self._join_ticket
@@ -586,14 +600,20 @@ class NativeAdmissionRuntime:
             if stored is not None and stored[0] == key.context_epoch
             else (0, 0, False)
         )
+        now_ms = time.monotonic() * 1000
         features = LocalFrontierFeatures(
             invocation_id=key.invocation_id,
             state=invocation.state.value,
             agent_definition_id=invocation.agent_definition_id,
             tool_family=invocation.active_tool_family or "unknown",
             generated_tokens=output,
+            elapsed_wait_ms=max(
+                0.0, now_ms - invocation.active_tool_start_ms
+            ) if invocation.active_tool_start_ms is not None else 0.0,
             current_sequence_tokens=prompt + output,
             active_tool_count=1,
+            invocation_elapsed_ms=max(0.0, now_ms - invocation.created_ts_ms),
+            state_elapsed_ms=max(0.0, now_ms - invocation.updated_ts_ms),
             llm_round=invocation.llm_round,
             child_count=len(invocation.child_invocation_ids),
             unfinished_child_count=len(invocation.blocking_child_ids),
@@ -678,6 +698,7 @@ class NativeAdmissionRuntime:
         worker = self._model_worker
         if worker is None or worker.disabled:
             return
+        now_ms = time.monotonic() * 1000
         affected = {event.invocation_id for event in events if event.invocation_id}
         affected_joins = {event.join_id for event in events if event.join_id}
         for invocation_id in affected:
@@ -722,7 +743,16 @@ class NativeAdmissionRuntime:
                             agent_definition_id=child.agent_definition_id,
                             tool_family=child.active_tool_family or "unknown",
                             generated_tokens=output,
+                            elapsed_wait_ms=max(
+                                0.0, now_ms - child.active_tool_start_ms
+                            ) if child.active_tool_start_ms is not None else 0.0,
                             current_sequence_tokens=prompt + output,
+                            invocation_elapsed_ms=max(
+                                0.0, now_ms - child.created_ts_ms
+                            ),
+                            state_elapsed_ms=max(
+                                0.0, now_ms - child.updated_ts_ms
+                            ),
                             llm_round=child.llm_round,
                             child_count=len(child.child_invocation_ids),
                             unfinished_child_count=len(child.blocking_child_ids),

@@ -205,6 +205,12 @@ def test_tool_start_triggers_bounded_wait_prediction_then_local_probe():
     assert features.current_sequence_tokens == 5
     assert features.tool_family == "shell"
     assert revision == 2.0
+    with patch("beliefkv.runtime.sglang_v0520_runtime.time.monotonic", return_value=3.5):
+        runtime._submit_tool_wait("ctx-tool")
+    updated = sent[-1][0][1]
+    assert updated.invocation_elapsed_ms == 3499.0
+    assert updated.state_elapsed_ms == 3498.0
+    assert updated.elapsed_wait_ms == 3498.0
     now = time.monotonic() * 1000
     hint = NativeToolWaitHint(key, 100.0, 300.0, 600.0, now, now + 5_000, "a" * 64, revision)
     worker.poll = lambda: (hint,)
@@ -597,6 +603,12 @@ def test_join_wait_prediction_tracks_child_revisions_and_expires_on_return():
     )
     assert children[0][0] == "child"
     assert completed == ()
+    with patch("beliefkv.runtime.sglang_v0520_runtime.time.monotonic", return_value=0.01):
+        runtime._submit_join_wait((event(4, RuntimeEventKind.JOIN_WAIT,
+                                         invocation_id="parent", join_id="join"),))
+    child_features = submitted[-1][-1][0][1]
+    assert child_features.invocation_elapsed_ms == 8.0
+    assert child_features.state_elapsed_ms == 8.0
     now = time.monotonic() * 1000
     pending.append(NativeJoinWaitHint(
         key, "join", "all", ("child",), (("child", 2.0, "ready", 0),),
@@ -741,6 +753,75 @@ def test_join_prefetch_all_requires_last_child_and_rejects_false_intent():
     assert runtime._join_ticket.phase == "provisional"
     runtime.on_events((event(
         9, RuntimeEventKind.INVOCATION_CANCEL, invocation_id="b",
+    ),))
+    assert runtime._join_ticket is None
+
+
+def test_natural_final_join_signal_stays_bound_and_survives_late_model_hint():
+    runtime = NativeAdmissionRuntime()
+    runtime.predictor_sha256 = "a" * 64
+    runtime.enable_admission_prefetch = True
+    parent = req("parent")
+    parent.session_id, parent.session_generation = "s", 1
+    runtime.register_visible_request(parent)
+    runtime.on_events((
+        event(0, RuntimeEventKind.WORKFLOW_START),
+        event(1, RuntimeEventKind.INVOCATION_CREATE,
+              invocation_id="parent", context_id="ctx-parent",
+              agent_definition_id="parent", agent_instance_id="parent"),
+        event(2, RuntimeEventKind.INVOCATION_CREATE,
+              invocation_id="a", context_id="ctx-a",
+              agent_definition_id="a", agent_instance_id="a"),
+        event(3, RuntimeEventKind.INVOCATION_CREATE,
+              invocation_id="b", context_id="ctx-b",
+              agent_definition_id="b", agent_instance_id="b"),
+        event(4, RuntimeEventKind.JOIN_CREATE,
+              join_id="join", member_invocation_ids=("a", "b")),
+        event(5, RuntimeEventKind.JOIN_WAIT,
+              invocation_id="parent", join_id="join"),
+    ))
+
+    def natural(seq, child="b", *, names=()):
+        return event(
+            seq, RuntimeEventKind.STRUCTURED_ACTION,
+            invocation_id=child, context_id=f"ctx-{child}",
+            context_epoch=0, join_id="join",
+            attributes={
+                "beliefkv_child_completion_intent": True,
+                "child_completion_signal_kind": "natural_final",
+                "structured_action_names": list(names),
+                "request_id": f"req-{child}",
+            },
+        )
+
+    runtime.on_events((natural(6, "a"),))
+    assert runtime._join_ticket is None
+    runtime.on_events((event(7, RuntimeEventKind.RETURN, invocation_id="a"),))
+    runtime.on_events((natural(8, names=("ChildCompletion",)),))
+    assert runtime._join_ticket is None
+    runtime.on_events((natural(9),))
+    assert runtime._join_ticket.phase == "provisional"
+    assert runtime.counts["join_intent_natural_final_accepted"] == 1
+    key = runtime.context_sessions["ctx-parent"]
+    child = runtime.graph.invocations["b"]
+    parent_invocation = runtime.graph.invocations["parent"]
+    now_ms = time.monotonic() * 1000
+    hint = NativeJoinWaitHint(
+        key, "join", "all", ("a", "b"), (
+            ("b", child.updated_ts_ms, child.state.value, 0),
+        ), 30_000.0, 40_000.0, 50_000.0,
+        now_ms, now_ms + 5_000,
+        "a" * 64, parent_invocation.updated_ts_ms,
+    )
+    runtime._model_worker = NS(
+        disabled=False, poll=lambda: (hint,), fileno=lambda: 72,
+    )
+    runtime.scheduler_step()
+    runtime._model_worker = None
+    assert runtime._join_ticket.phase == "provisional"
+    assert runtime.counts["join_wait_ticket_preserved"] == 1
+    runtime.on_events((event(
+        10, RuntimeEventKind.INVOCATION_CANCEL, invocation_id="b",
     ),))
     assert runtime._join_ticket is None
 

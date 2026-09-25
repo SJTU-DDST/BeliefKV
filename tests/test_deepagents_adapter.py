@@ -173,6 +173,76 @@ def _child_completion_result(*tool_names: str) -> LLMResult:
     )
 
 
+def _natural_child_result(
+    text: str, *, finish_reason: str = "stop", invalid: bool = False
+) -> LLMResult:
+    return LLMResult(generations=[[
+        ChatGeneration(message=AIMessage(
+            content=text,
+            response_metadata={"finish_reason": finish_reason},
+            invalid_tool_calls=(
+                [{"name": "task", "args": "{", "id": "bad", "error": "invalid"}]
+                if invalid else []
+            ),
+        ))
+    ]])
+
+
+def test_natural_child_final_is_provisional_and_rejects_ambiguous_output() -> None:
+    trace = CollectingSink()
+    control = CollectingSink()
+    queued = QueuedRuntimeEventSink(control)
+    adapter = DeepAgentsRuntimeAdapter(
+        trace, BeliefKVRequestMetadata("wf", "root", "ctx", 0),
+        control_sink=queued,
+    )
+    try:
+        adapter.start()
+        task = adapter.declare_runtime_tasks([("explorer", "Inspect")])[0]
+        chain = uuid4()
+        adapter.on_chain_start(
+            {}, {}, run_id=chain, metadata=adapter.invocation_scope(task),
+        )
+        for output in (
+            _natural_child_result(" "),
+            _natural_child_result("unfinished", finish_reason="length"),
+            _natural_child_result("invalid tool", invalid=True),
+        ):
+            run = uuid4()
+            adapter.on_chat_model_start(
+                {}, [[HumanMessage(content="child")]],
+                run_id=run, parent_run_id=chain,
+            )
+            adapter.on_llm_end(output, run_id=run, parent_run_id=chain)
+        run = uuid4()
+        adapter.on_chat_model_start(
+            {}, [[HumanMessage(content="child")]],
+            run_id=run, parent_run_id=chain,
+        )
+        adapter.on_llm_end(
+            _natural_child_result("Private final answer"),
+            run_id=run, parent_run_id=chain,
+        )
+        queued.close()
+        intents = [
+            event for event in control.events
+            if event.kind == RuntimeEventKind.STRUCTURED_ACTION
+        ]
+        assert len(intents) == 1
+        intent = intents[0]
+        assert intent.invocation_id == task.invocation_id
+        assert intent.join_id == task.join_id
+        assert intent.attributes["child_completion_signal_kind"] == "natural_final"
+        assert intent.attributes["structured_action_names"] == []
+        assert intent.attributes["request_id"] == f"beliefkv:{run}"
+        assert "Private final answer" not in json.dumps(intent.to_dict())
+        assert not any(
+            event.kind == RuntimeEventKind.RETURN for event in control.events
+        )
+    finally:
+        queued.close()
+
+
 def test_child_completion_intent_has_bound_identity_and_no_model_payload() -> None:
     trace = CollectingSink()
     control = CollectingSink()
@@ -236,6 +306,7 @@ def test_child_completion_intent_has_bound_identity_and_no_model_payload() -> No
         assert event.attributes["provisional"] is True
         assert event.attributes["structured_action_kinds"] == ["final_answer"]
         assert event.attributes["structured_action_names"] == ["ChildCompletion"]
+        assert event.attributes["child_completion_signal_kind"] == "explicit"
         assert "private" not in json.dumps(event.to_dict())
         assert event in trace.events
         assert [

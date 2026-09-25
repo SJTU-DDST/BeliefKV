@@ -25,6 +25,35 @@ WAIT_JOIN 快照，把尚未返回的 child 边际 P10/P50/P90 按 ALL 取 max�
 `evaluation_calibration_diagnostic.json`、
 `join_group_diagnostic_calibration.json`。
 
+新增逐 JOIN 临近窗口诊断：距真实 reentry 2 秒时 64/64 个 JOIN 有
+WAIT_JOIN 快照，P50 绝对误差约 **44.7 秒**，无一例达到 500 ms；
+500 ms 窗口内 61/64 有快照，P50 误差仍约 44.7 秒。窗口按事后真实
+reentry 选取，**不是在线模型能识别该窗口的证据**。现有 child-return
+边际分布即使接近终点仍明显偏晚，不能直接用于短窗大块 H2D。
+
+逐工具等待 episode 诊断有 17,805 个合格完成事件：首次等待快照
+真实剩余时长 P50/P90 约 94/721 ms；模型绝对误差 P50/P90 约
+86/360 ms。但不做预测、立即返回的零基线已有 **81.6%** 的
+500 ms 命中率。真实剩余至少 2 秒的 197 个 episode，模型误差
+P50 约 2.58 秒，500 ms 命中率 0%；至少 10 秒的 11 个事件
+误差 P50 约 23.56 秒。因此总体误差小不代表具有可迁移 KV 的
+提前量。报告：`join_group_horizon_diagnostic_calibration.json`、
+`tool_return_horizon_diagnostic_calibration.json`。
+
+对于自然语言 child 终态（无需 `ChildCompletion` 工具），只读回放
+检查了 66 个 workflow 的 231 个 spawn child：229 个出现候选，
+其下一关键事件均为 RETURN。64 个合格 JOIN 的最后 child 均有候选，
+从候选到 RETURN 的提前量中位约 **180 ms**、P90 约 226 ms；
+只有 3 个达到 500 ms。历史原始日志没有 finish reason 和
+invalid tool call 计数，此处只是弱信号的事后审计，不是上线保证。
+新埋点保留这两个字段；仅单个完整、非内部、非空、没有工具调用或
+无效工具调用、且 finish reason 未提示截断的 child 响应产生
+`natural_final` provisional intent。已有 JOIN/epoch/session 身份检查和
+安全点物理检查不变；晚到的模型 JOIN hint 不再覆盖更新的
+provisional/confirmed ticket。信号过期或取消立即撤销 ticket。
+信号仍不足以独立隐藏大块 H2D，且当前物理动作资格保持关闭。
+只读报告：`child_terminal_signal_diagnostic.json`。
+
 ## 2. PCIe 时延证据
 
 `scripts/fit_native_pcie_service.py` 对 train 的真实传输按方向分头拟合，
@@ -88,6 +117,27 @@ reactive 观测：JOIN parent reentry、child 恢复、READY 至 LLM submit
    验证 D2H/H2D 和首次服务以及吞吐，对比同配置 reactive。
    **本次证据未通过第 1--3 步，因此不运行物理 canary。**
 
+## 5. 下一轮预测与在线适应
+
+采用分层时机而非要求同一回归头精确预报长程 JOIN：工具的可观测
+完成通知、child 终态或 RETURN、父 JOIN 条件、scheduler 准入分别
+作为独立时钟起点。长程概率只用于预算有限的候选排序和部分
+PREPARE_HOST，须有可卸载概率、可重用 KV、物理成本及浪费上限；
+临近的结构化或自然终态只缩小触发窗口，确认 RETURN 后可继续按
+真实 ACK 完成迁移。需要更早隐藏大块 H2D，必须收集 child 进度
+或外部工具可靠的**前置完成信号**，量化其提前量、误报和调度延迟，
+不能把平均返回时间当作精确截止时间。
+
+预测调度改变服务顺序、工具等待和缓存命中，reactive 轨迹上拟合
+的剩余时间分布会偏移。先为每个决策保存策略版本、动作倾向、
+可观测完成/取消和延迟标签；按 workflow 分组监测各压力档位、
+工具类型、child 状态下的误差、覆盖和动作净收益。线上更新仅以
+已完成且非干预/非截尾的标签滚动校准，保留独立测试项目和
+reactive 对照；阶段性更新需重新经过误报、安全和物理收益门禁，
+不能由自选的 predictive 轨迹直接声称无偏增益。
+
 复现脚本：`scripts/diagnose_native_join_groups.py`、
+`scripts/diagnose_native_tool_returns.py`、
+`scripts/diagnose_native_child_terminal_signals.py`、
 `scripts/fit_native_pcie_service.py`、
 `scripts/export_p6_action_targets.py --native-reactive-only`。
