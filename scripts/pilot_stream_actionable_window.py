@@ -47,6 +47,12 @@ def _quality(
         row["final"] and row["return_lead_ms"] >= MIN_USEFUL_LEAD_MS
         for row in rows
     )
+    raw_useful_last = sum(
+        row["final"] and row["return_lead_ms"] >= MIN_USEFUL_LEAD_MS
+        and (row["trace_path"], row["workflow"], row["child"])
+        in last_children
+        for row in rows
+    )
     useful_last = sum(
         (row["trace_path"], row["workflow"], row["child"]) in last_children
         for row in useful
@@ -55,6 +61,12 @@ def _quality(
         "children": len(rows),
         "returned_children": returns,
         "potential_useful_windows": potential,
+        "raw_candidate_useful_precision": (
+            potential / len(rows) if rows else None
+        ),
+        "raw_candidate_last_child_useful_recall": (
+            raw_useful_last / len(last_children) if last_children else None
+        ),
         "selected": len(chosen),
         "selected_returned": sum(row["final"] for row in chosen),
         "selected_useful": len(useful),

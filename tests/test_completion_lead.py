@@ -377,6 +377,7 @@ def test_stream_classifier_features_do_not_use_future_tool_chunk(tmp_path):
     )
     assert report["fixed_eta_error_p50_ms"] == 200
     assert report["fixed_eta_within_500ms"] == 1
+    assert report["raw_candidate_precision"] == .5
 
 
 def test_stream_join_feature_only_sees_completed_siblings(tmp_path):
@@ -487,6 +488,7 @@ def test_actionable_window_counts_late_returns_as_not_useful():
     assert quality["selected_late_return"] == 1
     assert quality["selected_nonreturn"] == 1
     assert quality["last_child_useful_recall"] == 1
+    assert quality["raw_candidate_useful_precision"] == 1 / 3
 
 
 def test_natural_content_threshold_audit_counts_returns_and_false_signals():

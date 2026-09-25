@@ -232,9 +232,19 @@ def _quality(
     true = [row for row in selected if row["final"]]
     positives = sum(row["final"] for row in rows)
     leads = [row["return_lead_ms"] for row in true]
+    raw_last = sum(
+        row["final"]
+        and (row["trace_path"], row["workflow"], row["child"])
+        in last_children
+        for row in rows
+    )
     return {
         "evaluated_children": len(rows),
         "true_return_children": positives,
+        "raw_candidate_precision": positives / len(rows) if rows else None,
+        "raw_candidate_last_child_recall": (
+            raw_last / len(last_children) if last_children else None
+        ),
         "selected": len(selected),
         "true_selected": len(true),
         "precision": len(true) / len(selected) if selected else None,
