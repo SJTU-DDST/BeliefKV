@@ -355,3 +355,14 @@ parent/child 身份，TOOL_START 当前调用可从事件身份交叉验证；
 此前只对部分 JOIN 标签补 child 身份会导致工具预测分头回放失真。
 之前正在运行的高压采集保存了原始事件，
 必须待完成后**重新导出决策行**，不能把旧导出文件当成已修正数据。
+
+只读 `scripts/pilot_child_execute_generalization.py` 对运行中的高压
+train 已完成的 1,703 次 child `execute` 调用拟合粗类别时长中位，
+在项目隔离但压力不同的早期 Astropy/Sphinx pilot 83 次调用上，
+全局中位先验到分类先验的逐调用 P50 绝对误差约 181→90 ms，
+按 4 个 workflow 等权的 P50 约 164→151 ms。仅 3 次调用超过
+2 秒，其误差仍约 2.01→1.65 秒；不是本次 Frontier v7 artifact
+的正式精度，训练样本还在增长，不能证明高压泛化、物理动作收益
+或 JOIN 长程误差已达标。留存的初步报告为
+`experiments/raw/qwen35_execute_class_child_pilot_20260925_v1/`
+`high_pressure_child_category_preliminary_20260925.json`。
