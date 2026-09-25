@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import argparse
+from bisect import bisect_left
 from collections import defaultdict
 import json
 from pathlib import Path
@@ -45,14 +46,46 @@ def summarize(rows: list[dict]) -> dict:
     }
 
 
+def _tool_ends(path: Path) -> tuple[list[float], list[dict]]:
+    trace = path.parent / "runtime_events.deepagents.jsonl"
+    if not trace.exists():
+        return [], []
+    starts = {}
+    ends = []
+    for event in _rows(trace):
+        attrs = event.get("attributes") or {}
+        call_id = attrs.get("tool_call_id")
+        if not call_id or attrs.get("tool_name") != "execute":
+            continue
+        if event.get("kind") == "tool_start":
+            starts[call_id] = (
+                float(event["ts_ms"]),
+                str(attrs.get("observed_command_shape") or "unknown"),
+            )
+        elif event.get("kind") == "tool_end" and call_id in starts:
+            start, shape = starts.pop(call_id)
+            ends.append({
+                "ts_ms": float(event["ts_ms"]),
+                "duration_ms": float(event["ts_ms"]) - start,
+                "shape": shape,
+                "status": attrs.get("status"),
+            })
+    ends.sort(key=lambda event: event["ts_ms"])
+    return [event["ts_ms"] for event in ends], ends
+
+
 def audit(workflows: Path) -> dict:
     traces = list(sorted(workflows.glob("**/sandbox_audit.jsonl")))
     if not traces:
         raise ValueError("no sandbox audit traces")
     by_project = defaultdict(list)
+    by_shape_long = defaultdict(list)
+    matched = ambiguous = 0
     rows = []
     for path in traces:
         project = path.relative_to(workflows).parts[0].split("__", 1)[0]
+        times, tool_ends = _tool_ends(path)
+        used = set()
         for row in _rows(path):
             if row.get("event") != "sandbox_execute" or not row.get(
                 "output_timing_shadow"
@@ -60,6 +93,24 @@ def audit(workflows: Path) -> dict:
                 continue
             rows.append(row)
             by_project[project].append(row)
+            ended = float(row["ts_ms"])
+            index = bisect_left(times, ended)
+            choices = []
+            while index < len(times) and times[index] - ended <= 200:
+                end = tool_ends[index]
+                if index not in used and abs(
+                    end["duration_ms"] - float(row["duration_ms"])
+                ) <= max(250, .15 * float(row["duration_ms"])):
+                    choices.append(index)
+                index += 1
+            if len(choices) == 1:
+                chosen = choices[0]
+                used.add(chosen)
+                matched += 1
+                if float(row["execute_elapsed_ms"]) >= 2000:
+                    by_shape_long[tool_ends[chosen]["shape"]].append(row)
+            elif len(choices) > 1:
+                ambiguous += 1
     if not rows:
         raise ValueError("no opt-in stdout timing observations")
     return {
@@ -68,6 +119,12 @@ def audit(workflows: Path) -> dict:
         "long_commands_at_least_2s": summarize([
             row for row in rows if float(row["execute_elapsed_ms"]) >= 2000
         ]),
+        "matched_tool_end_count": matched,
+        "ambiguous_tool_end_count": ambiguous,
+        "by_shape_long_commands_matched": {
+            shape: summarize(shape_rows)
+            for shape, shape_rows in sorted(by_shape_long.items())
+        },
         "by_project_long_commands": {
             project: summarize([
                 row for row in project_rows

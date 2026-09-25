@@ -59,6 +59,8 @@ def test_stdout_timing_audit_separates_projects_and_long_commands(tmp_path):
             stream.write(json.dumps({
                 "event": "sandbox_execute",
                 "output_timing_shadow": True,
+                "ts_ms": elapsed + 10,
+                "duration_ms": elapsed,
                 "execute_elapsed_ms": elapsed,
                 "first_output_after_execute_ms": first,
                 "exit_code": 0,
@@ -69,3 +71,39 @@ def test_stdout_timing_audit_separates_projects_and_long_commands(tmp_path):
         "first_output_at_least_2000ms_before_exit"
     ] == 1
     assert report["by_project_long_commands"]["django"]["no_output_count"] == 1
+    assert report["matched_tool_end_count"] == 0
+
+
+def test_stdout_timing_audit_matches_one_causal_tool_end(tmp_path):
+    path = tmp_path / "pytest-dev__one"
+    path.mkdir(parents=True)
+    (path / "sandbox_audit.jsonl").write_text(
+        json.dumps({
+            "event": "sandbox_execute", "output_timing_shadow": True,
+            "ts_ms": 2990, "duration_ms": 2980, "execute_elapsed_ms": 2980,
+            "first_output_after_execute_ms": 1000, "exit_code": 0,
+        }) + "\n",
+    )
+    (path / "runtime_events.deepagents.jsonl").write_text(
+        "".join(json.dumps(event) + "\n" for event in (
+            {
+                "ts_ms": 0, "kind": "tool_start",
+                "attributes": {
+                    "tool_call_id": "one", "tool_name": "execute",
+                    "observed_command_shape": "test_suite",
+                },
+            },
+            {
+                "ts_ms": 3000, "kind": "tool_end",
+                "attributes": {
+                    "tool_call_id": "one", "tool_name": "execute",
+                    "status": "success",
+                },
+            },
+        )),
+    )
+    report = audit(tmp_path)
+    assert report["matched_tool_end_count"] == 1
+    assert report["by_shape_long_commands_matched"]["test_suite"][
+        "first_output_at_least_500ms_before_exit"
+    ] == 1
