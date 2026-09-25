@@ -355,6 +355,12 @@ parent/child 身份，TOOL_START 当前调用可从事件身份交叉验证；
 此前只对部分 JOIN 标签补 child 身份会导致工具预测分头回放失真。
 之前正在运行的高压采集保存了原始事件，
 必须待完成后**重新导出决策行**，不能把旧导出文件当成已修正数据。
+在旧 66-root 校准 trace 上独立重导出预检确认：17,805 条 TOOL_START
+决策全部具备触发 invocation ID，所有 invocation 快照都写有
+`is_child`；291 条决策同时包含多个 WAIT_TOOL。重导出 manifest
+通过本地训练证据完整性校验。预检完成后仅删除这次创建的 14 GB
+临时导出，原始校准证据保持不变；该旧 trace 缺少新版命令类别
+观测，不能用于新版工具头的正式独立校准。
 
 只读 `scripts/pilot_child_execute_generalization.py` 对运行中的高压
 train 已完成的 1,703 次 child `execute` 调用拟合粗类别时长中位，
