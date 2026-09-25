@@ -19,6 +19,7 @@ from scripts.audit_native_stream_shadow import (
 from scripts.fit_native_completion_lead import _content_threshold_audit
 from scripts.pilot_stream_final_classifier import samples as stream_classifier_samples
 from scripts.pilot_stream_final_classifier import _quality as stream_classifier_quality
+from scripts.pilot_stream_eta_regression import fit_eta, predict_eta
 
 
 def _event(timestamp: float, kind: str, **attributes):
@@ -451,6 +452,22 @@ def test_stream_join_counts_repeated_workflows_in_distinct_runs(tmp_path):
     )
     assert result["selected_true_last_children"] == 2
     assert result["last_child_recall"] == 1
+
+
+def test_stream_eta_regression_only_consumes_causal_features():
+    rows = [
+        {
+            "features": [index / 10, .5, 2., 1.],
+            "join_last_outstanding": index % 2 == 0,
+            "return_lead_ms": 1500 + 90 * index,
+        }
+        for index in range(25)
+    ]
+    model = fit_eta(rows, join_aware=True)
+    predictions = predict_eta(rows, model, join_aware=True)
+    assert len(predictions) == len(rows)
+    assert np.isfinite(predictions).all()
+    assert predictions[0] < predictions[-1]
 
 
 def test_natural_content_threshold_audit_counts_returns_and_false_signals():
