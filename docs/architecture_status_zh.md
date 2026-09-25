@@ -483,6 +483,14 @@ node 本地闭包重验及原生 H2D 事务入口；当前没有 JOIN latest-sta
 与搬运服务率校准，也没有 scheduler 自动派发，故不声称在线 JOIN
 预测传输已发生。
 
+2026-09-25 的等待提示改为按工具 context、JOIN ID 保存，不再让后到的
+另一个 agent 提示覆盖前者。worker 保持单在途批次，待处理工具/JOIN
+按身份去重且各最多 8 项，交替服务；空闲时以 500 ms 间隔轮转
+补采无提示的等待目标。动作 safe point 仍须再次核验目标 session、
+epoch、invocation revision 及物理闭包。JOIN 物理 ticket 目前仍是
+单槽，且新提示与补采均未在独立 GPU 负载上验证收益；覆盖率修复
+不等于 JOIN 剩余时间误差已满足预取窗口。
+
 对于被 semantic admission 选中的 READY request，原生
 `PrefillAdder` 之前可执行 bounded pre-admission H2D：仅在显式
 `--beliefkv-admission-prefetch`、已校准且

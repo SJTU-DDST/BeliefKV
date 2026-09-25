@@ -156,9 +156,16 @@ reactive 对照；阶段性更新需重新经过误报、安全和物理收益�
 同时等待工具数和家族压力、以及活跃 LLM 批次的生成 token。
 对于已被接受且仍存活的工具/JOIN 提示，运行时在等待 2 秒后
 可于 worker 空闲时有限速地重估存活时间；身份或状态变化仍使
-旧结果失效。当前仅维护各一个 tool/JOIN 提示，且提示失效后
-不能保证在多个并发 JOIN 间公平轮询；刷新不能单独修复概率头
-无判别力的问题。这些修改尚无新模型及独立负载验证，
+旧结果失效。2026-09-25 补充逐 context 的 tool hint 和逐 JOIN
+的 parent hint：同一批 JOIN 最多提交 8 个目标；单进程 worker
+仍只有一个在途批次，但待处理任务按身份合并，同类最多缓存
+8 个，tool 与 JOIN 交替服务，并为 demand 保留间歇机会。
+空闲时每 500 ms 最多补扫 8 个无 hint 等待目标，游标轮转覆盖
+超过单批上限的并发等待。每个结果仍需通过 workflow、
+session/epoch、invocation revision 和 JOIN child 集合的新鲜度检查；
+旧结果只由同身份的新版本取代，其他 context 不会被覆盖。
+这修复的是预测**覆盖**，并不能单独修复概率头对短窗口
+无判别力或 JOIN 时间误差大的问题。这些修改尚无独立负载验证，
 `online_eligible=false` 和物理动作资格保持关闭。
 
 复现脚本：`scripts/diagnose_native_join_groups.py`、

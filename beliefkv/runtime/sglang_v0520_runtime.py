@@ -116,8 +116,8 @@ class NativeAdmissionRuntime:
         self.semantic_revision = 0
         self.predictor_sha256 = predictor_sha256
         self.demand_hints: dict[str, NativeDemandHint] = {}
-        self.tool_wait_hint: NativeToolWaitHint | None = None
-        self.join_wait_hint: NativeJoinWaitHint | None = None
+        self.tool_wait_hints: dict[str, NativeToolWaitHint] = {}
+        self.join_wait_hints: dict[str, NativeJoinWaitHint] = {}
         self._join_ticket: _JoinPrefetchTicket | None = None
         self.enable_admission_prefetch = enable_admission_prefetch
         self._admission_lease: _AdmissionPrefetchLease | None = None
@@ -128,6 +128,9 @@ class NativeAdmissionRuntime:
         self._tool_metadata: dict[str, tuple[str, str]] = {}
         self._next_wait_refresh_ms = 0.0
         self._refresh_join_next = False
+        self._scan_unhinted_next = False
+        self._scan_join_next = False
+        self._scan_offsets = {"tool_wait": 0, "join_wait": 0}
         self._last_model_signature: tuple[object, ...] | None = None
         self._model_worker = None
         if enable_local_predictor:
@@ -156,6 +159,46 @@ class NativeAdmissionRuntime:
             if event_socket_path
             else None
         )
+
+    @property
+    def tool_wait_hint(self) -> NativeToolWaitHint | None:
+        if not self.tool_wait_hints:
+            return None
+        now_ms = time.monotonic() * 1000
+        return min(
+            self.tool_wait_hints.values(),
+            key=lambda hint: (
+                hint.wait_p10_ms - (now_ms - hint.issued_monotonic_ms),
+                hint.issued_monotonic_ms, hint.key.context_id,
+            ),
+        )
+
+    @tool_wait_hint.setter
+    def tool_wait_hint(self, hint: NativeToolWaitHint | None) -> None:
+        if hint is None:
+            self.tool_wait_hints.clear()
+        else:
+            self.tool_wait_hints[hint.key.context_id] = hint
+
+    @property
+    def join_wait_hint(self) -> NativeJoinWaitHint | None:
+        if not self.join_wait_hints:
+            return None
+        now_ms = time.monotonic() * 1000
+        return min(
+            self.join_wait_hints.values(),
+            key=lambda hint: (
+                hint.wait_p10_ms - (now_ms - hint.issued_monotonic_ms),
+                hint.issued_monotonic_ms, hint.join_id,
+            ),
+        )
+
+    @join_wait_hint.setter
+    def join_wait_hint(self, hint: NativeJoinWaitHint | None) -> None:
+        if hint is None:
+            self.join_wait_hints.clear()
+        else:
+            self.join_wait_hints[hint.join_id] = hint
 
     def close(self) -> None:
         if self._model_worker is not None:
@@ -228,6 +271,7 @@ class NativeAdmissionRuntime:
             self._boundary_history.clear()
             self._tool_metadata.clear()
             self._next_wait_refresh_ms = 0.0
+            self._scan_offsets = {"tool_wait": 0, "join_wait": 0}
             self.semantic_revision += 1
             self.counts["causal_mirror_discarded"] += 1
             raise
@@ -290,10 +334,8 @@ class NativeAdmissionRuntime:
                         RuntimeEventKind.RETURN,
                         RuntimeEventKind.INVOCATION_CANCEL,
                         RuntimeEventKind.CONTEXT_ADVANCE,
-                    ) and self.tool_wait_hint is not None and (
-                        self.tool_wait_hint.key.context_id == context_id
                     ):
-                        self.tool_wait_hint = None
+                        self.tool_wait_hints.pop(context_id, None)
                         self.shadow_candidate = None
                 if event.kind is RuntimeEventKind.WORKFLOW_END:
                     for invocation_id in (
@@ -315,11 +357,15 @@ class NativeAdmissionRuntime:
                         for context, tokens in self._context_tokens.items()
                         if context in self.context_sessions
                     }
-                    if self.tool_wait_hint is not None and (
-                        self.tool_wait_hint.key.root_workflow_id == event.workflow_id
-                    ):
-                        self.tool_wait_hint = None
-                        self.shadow_candidate = None
+                    self.tool_wait_hints = {
+                        context: hint for context, hint in self.tool_wait_hints.items()
+                        if hint.key.root_workflow_id != event.workflow_id
+                    }
+                    self.join_wait_hints = {
+                        join_id: hint for join_id, hint in self.join_wait_hints.items()
+                        if hint.key.root_workflow_id != event.workflow_id
+                    }
+                    self.shadow_candidate = None
                 if event.kind is RuntimeEventKind.TOOL_START and context_id is not None:
                     self._submit_tool_wait(context_id)
             for event in events:
@@ -330,10 +376,10 @@ class NativeAdmissionRuntime:
                     RuntimeEventKind.JOIN_TIMEOUT, RuntimeEventKind.INVOCATION_CANCEL,
                 ):
                     self._advance_join_ticket(event)
-            if self.join_wait_hint is not None and not self._live_join_hint(
-                self.join_wait_hint
-            ):
-                self.join_wait_hint = None
+            self.join_wait_hints = {
+                join_id: hint for join_id, hint in self.join_wait_hints.items()
+                if self._live_join_hint(hint)
+            }
             if self._join_ticket is not None and not self._live_join_ticket():
                 self._join_ticket = None
             if any(event.kind in (
@@ -355,17 +401,23 @@ class NativeAdmissionRuntime:
     def scheduler_step(self) -> None:
         if self.event_server is not None:
             self.event_server.drain(max_messages=16)
-        if self.tool_wait_hint is not None and not self.tool_wait_hint.live(
-            self.tool_wait_hint.key, now_ms=time.monotonic() * 1000
-        ):
-            self.tool_wait_hint = None
+        now_ms = time.monotonic() * 1000
+        expired_tool = [
+            context for context, hint in self.tool_wait_hints.items()
+            if not hint.live(hint.key, now_ms=now_ms)
+        ]
+        for context in expired_tool:
+            self.tool_wait_hints.pop(context)
+        if expired_tool:
             self.shadow_candidate = None
-            self.counts["tool_wait_expired"] += 1
-        if self.join_wait_hint is not None and not self._live_join_hint(
-            self.join_wait_hint
-        ):
-            self.join_wait_hint = None
-            self.counts["join_wait_expired"] += 1
+            self.counts["tool_wait_expired"] += len(expired_tool)
+        expired_join = [
+            join_id for join_id, hint in self.join_wait_hints.items()
+            if not self._live_join_hint(hint)
+        ]
+        for join_id in expired_join:
+            self.join_wait_hints.pop(join_id)
+        self.counts["join_wait_expired"] += len(expired_join)
         if self._model_worker is not None:
             hints = self._model_worker.poll()
             for hint in hints:
@@ -386,11 +438,12 @@ class NativeAdmissionRuntime:
                         if ticket is None or (
                             ticket.key, ticket.join_id
                         ) != (hint.key, hint.join_id):
-                            self._join_ticket = _JoinPrefetchTicket(
-                                hint.key, hint.join_id, hint.join_mode,
-                                hint.member_ids, "probabilistic",
-                                hint.expires_monotonic_ms / 1000,
-                            )
+                            if ticket is None or not self._live_join_ticket():
+                                self._join_ticket = _JoinPrefetchTicket(
+                                    hint.key, hint.join_id, hint.join_mode,
+                                    hint.member_ids, "probabilistic",
+                                    hint.expires_monotonic_ms / 1000,
+                                )
                         self.counts["join_wait_accepted"] += 1
                     else:
                         self.counts["join_wait_result_stale"] += 1
@@ -455,20 +508,30 @@ class NativeAdmissionRuntime:
         now_ms = time.monotonic() * 1000
         if now_ms < self._next_wait_refresh_ms:
             return
-        tool = self.tool_wait_hint
-        join = self.join_wait_hint
-        due_tool = bool(
-            tool is not None and tool.live(tool.key, now_ms=now_ms)
-            and now_ms - tool.issued_monotonic_ms >= WAIT_REFRESH_AGE_MS
+        tool = min(
+            (hint for hint in self.tool_wait_hints.values()
+             if hint.live(hint.key, now_ms=now_ms)
+             and now_ms - hint.issued_monotonic_ms >= WAIT_REFRESH_AGE_MS),
+            key=lambda hint: hint.issued_monotonic_ms, default=None,
         )
-        due_join = bool(
-            join is not None and self._live_join_hint(join)
-            and now_ms - join.issued_monotonic_ms >= WAIT_REFRESH_AGE_MS
+        join = min(
+            (hint for hint in self.join_wait_hints.values()
+             if self._live_join_hint(hint)
+             and now_ms - hint.issued_monotonic_ms >= WAIT_REFRESH_AGE_MS),
+            key=lambda hint: hint.issued_monotonic_ms, default=None,
         )
+        due_tool = tool is not None
+        due_join = join is not None
+        self._next_wait_refresh_ms = now_ms + WAIT_REFRESH_SPACING_MS
+        if (not (due_tool or due_join) or self._scan_unhinted_next) and (
+            self._scan_unhinted_wait()
+        ):
+            self._scan_unhinted_next = False
+            return
         if not (due_tool or due_join):
             return
+        self._scan_unhinted_next = True
         use_join = due_join and (not due_tool or self._refresh_join_next)
-        self._next_wait_refresh_ms = now_ms + WAIT_REFRESH_SPACING_MS
         self._refresh_join_next = not use_join
         if use_join:
             self._submit_join_wait((), join_ids={join.join_id})
@@ -476,6 +539,37 @@ class NativeAdmissionRuntime:
         else:
             self._submit_tool_wait(tool.key.context_id)
             self.counts["tool_wait_refresh_submitted"] += 1
+
+    def _scan_unhinted_wait(self) -> bool:
+        """Revisit overflowed or unhinted waits only while the worker is idle."""
+        tools = sorted(
+            context_id for context_id, key in self.context_sessions.items()
+            if context_id not in self.tool_wait_hints
+            and (invocation := self.graph.invocations.get(key.invocation_id)) is not None
+            and invocation.state is InvocationState.WAIT_TOOL
+            and not self._terminal(key)
+        )
+        joins = sorted(
+            join_id for join_id, join in self.graph.joins.items()
+            if join_id not in self.join_wait_hints and not join.satisfied
+            and self._join_parent_key(join_id) is not None
+        )
+        if not tools and not joins:
+            return False
+        use_join = bool(joins) and (not tools or self._scan_join_next)
+        kind = "join_wait" if use_join else "tool_wait"
+        targets = joins if use_join else tools
+        offset = self._scan_offsets[kind] % len(targets)
+        selected = (targets[offset:] + targets[:offset])[:8]
+        self._scan_offsets[kind] = (offset + len(selected)) % len(targets)
+        self._scan_join_next = not use_join
+        if use_join:
+            self._submit_join_wait((), join_ids=set(selected))
+        else:
+            for context_id in selected:
+                self._submit_tool_wait(context_id)
+        self.counts[f"{kind}_unhinted_scanned"] += len(selected)
+        return True
 
     def _observe_child_completion_intent(self, event: RuntimeEvent) -> None:
         if event.attributes.get(CHILD_COMPLETION_INTENT) is not True:
@@ -634,7 +728,7 @@ class NativeAdmissionRuntime:
         if ticket.issued_nodes >= 2 or self.physical_ledger.pending_count:
             return
         if ticket.phase == "probabilistic":
-            hint = self.join_wait_hint
+            hint = self.join_wait_hints.get(ticket.join_id)
             if hint is None or not self._live_join_hint(hint):
                 return
             remaining_p10_ms = hint.wait_p10_ms - (
@@ -748,7 +842,7 @@ class NativeAdmissionRuntime:
         ):
             self.counts["tool_wait_result_stale"] += 1
             return
-        self.tool_wait_hint = hint
+        self.tool_wait_hints[key.context_id] = hint
         self.counts["tool_wait_accepted"] += 1
         self.shadow_candidate = (
             self.capture_shadow_candidate(
@@ -813,6 +907,7 @@ class NativeAdmissionRuntime:
         )
         for invocation_id in affected:
             affected_joins.update(self._join_by_invocation.get(invocation_id, ()))
+        items = []
         for join_id in sorted(affected_joins):
             join = self.graph.joins.get(join_id)
             if join is None:
@@ -849,13 +944,18 @@ class NativeAdmissionRuntime:
                     ))
                 if len(children) != len(join.member_invocation_ids - join.completed_member_ids):
                     continue
-                worker.submit_join_wait(((
+                items.append((
                     key, parent.updated_ts_ms, join.join_id, join.mode.value,
                     tuple(sorted(join.member_invocation_ids)),
                     tuple(sorted(join.completed_member_ids)), tuple(children),
-                ),))
-                self.counts["join_wait_submitted"] += 1
-                return
+                ))
+                if len(items) == 8:
+                    break
+            if len(items) == 8:
+                break
+        if items:
+            worker.submit_join_wait(tuple(items))
+            self.counts["join_wait_submitted"] += len(items)
 
     def register_physical_action(self, expected: PhysicalActionExpectation) -> None:
         """Accept only a live causal identity; this does not issue the transfer."""
@@ -950,9 +1050,12 @@ class NativeAdmissionRuntime:
             cache, anchors, for_prefetch=for_prefetch
         )
 
-    def refreshed_shadow_backup_step(self) -> ShadowBackupStep | None:
+    def refreshed_shadow_backup_step(
+        self, *, context_id: str | None = None
+    ) -> ShadowBackupStep | None:
         """Recheck a tool wait and its native closure at the action safe point."""
-        hint = self.tool_wait_hint
+        hint = (self.tool_wait_hints.get(context_id) if context_id is not None
+                else self.tool_wait_hint)
         cache = self._native_cache
         if hint is None or cache is None:
             return None
@@ -967,7 +1070,7 @@ class NativeAdmissionRuntime:
             or invocation.updated_ts_ms != hint.invocation_revision_ts_ms
             or self._terminal(key)
         ):
-            self.tool_wait_hint = None
+            self.tool_wait_hints.pop(key.context_id, None)
             self.shadow_candidate = None
             return None
         candidate = self.capture_shadow_candidate(
@@ -987,7 +1090,7 @@ class NativeAdmissionRuntime:
             self.physical_disabled
             or cache is None
             or not isinstance(step, ShadowBackupStep)
-            or self.refreshed_shadow_backup_step() != step
+            or self.refreshed_shadow_backup_step(context_id=step.key.context_id) != step
         ):
             self.counts["shadow_step_stale"] += 1
             return None
@@ -1030,14 +1133,15 @@ class NativeAdmissionRuntime:
         return command_id
 
     def refreshed_prefetch_gpu_step(
-        self, *, source: str = "tool_wait"
+        self, *, source: str = "tool_wait", context_id: str | None = None
     ) -> PrefetchLoadStep | None:
         """Revalidate the explicit causal or admission source before native H2D."""
         cache = self._native_cache
         if cache is None:
             return None
         if source == "tool_wait":
-            hint = self.tool_wait_hint
+            hint = (self.tool_wait_hints.get(context_id) if context_id is not None
+                    else self.tool_wait_hint)
             if hint is None:
                 return None
             key = hint.key
@@ -1069,7 +1173,7 @@ class NativeAdmissionRuntime:
             if ticket is None or not self._live_join_ticket():
                 return None
             key = ticket.key
-            hint = self.join_wait_hint
+            hint = self.join_wait_hints.get(ticket.join_id)
             valid_source = (
                 ticket.phase != "probabilistic"
                 or hint is not None and self._live_join_hint(hint)
@@ -1115,7 +1219,10 @@ class NativeAdmissionRuntime:
             self.physical_disabled
             or cache is None
             or not isinstance(step, PrefetchLoadStep)
-            or self.refreshed_prefetch_gpu_step(source=source) != step
+            or self.refreshed_prefetch_gpu_step(
+                source=source,
+                **({"context_id": step.key.context_id} if source == "tool_wait" else {}),
+            ) != step
         ):
             self.counts["prefetch_step_stale"] += 1
             return None
@@ -1276,14 +1383,15 @@ class NativeAdmissionRuntime:
             return False
         if key.request_id in self.visible:
             raise ValueError(f"duplicate visible request: {key.request_id}")
-        if (
-            self.tool_wait_hint is not None
-            and self.tool_wait_hint.key.context_id == key.context_id
-            and self.tool_wait_hint.key != key
-        ):
-            self.tool_wait_hint = None
+        old_hint = self.tool_wait_hints.get(key.context_id)
+        if old_hint is not None and old_hint.key != key:
+            self.tool_wait_hints.pop(key.context_id)
             self.shadow_candidate = None
             self._context_tokens.pop(key.context_id, None)
+        self.join_wait_hints = {
+            join_id: hint for join_id, hint in self.join_wait_hints.items()
+            if hint.key.context_id != key.context_id or hint.key == key
+        }
         self.visible[key.request_id] = key
         if key.session_id is not None and key.session_generation is not None:
             self.context_sessions[key.context_id] = key
@@ -1334,14 +1442,15 @@ class NativeAdmissionRuntime:
             key = _request_key(req)
             if key is None or key.request_id not in self.visible:
                 raise ValueError("requeued request has no live tagged identity")
-            if (
-                self.tool_wait_hint is not None
-                and self.tool_wait_hint.key.context_id == key.context_id
-                and self.tool_wait_hint.key != key
-            ):
-                self.tool_wait_hint = None
+            old_hint = self.tool_wait_hints.get(key.context_id)
+            if old_hint is not None and old_hint.key != key:
+                self.tool_wait_hints.pop(key.context_id)
                 self.shadow_candidate = None
                 self._context_tokens.pop(key.context_id, None)
+            self.join_wait_hints = {
+                join_id: hint for join_id, hint in self.join_wait_hints.items()
+                if hint.key.context_id != key.context_id or hint.key == key
+            }
             self.visible[key.request_id] = key
             if key.session_id is not None and key.session_generation is not None:
                 self.context_sessions[key.context_id] = key
@@ -1355,12 +1464,12 @@ class NativeAdmissionRuntime:
             if key.request_id == request_id:
                 del self.context_sessions[context_id]
                 self._context_tokens.pop(context_id, None)
-                if (
-                    self.tool_wait_hint is not None
-                    and self.tool_wait_hint.key.context_id == context_id
-                ):
-                    self.tool_wait_hint = None
-                    self.shadow_candidate = None
+                self.tool_wait_hints.pop(context_id, None)
+                self.join_wait_hints = {
+                    join_id: hint for join_id, hint in self.join_wait_hints.items()
+                    if hint.key.context_id != context_id
+                }
+                self.shadow_candidate = None
 
     def _causal_rank(
         self,
@@ -1561,11 +1670,12 @@ class NativeAdmissionRuntime:
             if getattr(abort, "abort_all", False) or key.request_id.startswith(abort.rid):
                 del self.context_sessions[context_id]
                 self._context_tokens.pop(context_id, None)
-                if self.tool_wait_hint is not None and (
-                    self.tool_wait_hint.key.context_id == context_id
-                ):
-                    self.tool_wait_hint = None
-                    self.shadow_candidate = None
+                self.tool_wait_hints.pop(context_id, None)
+                self.join_wait_hints = {
+                    join_id: hint for join_id, hint in self.join_wait_hints.items()
+                    if hint.key.context_id != context_id
+                }
+                self.shadow_candidate = None
 
     def running_batch_retraction_barrier_required(self, batch: object) -> bool:
         return False

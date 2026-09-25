@@ -172,7 +172,7 @@ def _worker_main(
 
 
 class NativePredictorWorker:
-    """Single in-flight batch; retain only the newest waiting batch."""
+    """Single in-flight batch with bounded, identity-coalesced pending work."""
 
     def __init__(
         self, artifact_path: str, predictor_sha256: str, *, timeout_s: float = 10.0
@@ -194,8 +194,11 @@ class NativePredictorWorker:
         self._active_kind: str | None = None
         self._started_at: float | None = None
         self._latest_sequence = 0
-        self._next: tuple[tuple[PrefillCandidateKey, LocalFrontierFeatures, float], ...] | None = None
-        self._next_kind: str | None = None
+        self._pending: dict[str, dict[object, tuple[object, ...]]] = {
+            "tool_wait": {}, "join_wait": {}, "admission": {},
+        }
+        self._last_wait_kind = "join_wait"
+        self._wait_streak = 0
         self.failure_count = 0
         self.disabled = False
         self._closed = False
@@ -215,7 +218,7 @@ class NativePredictorWorker:
 
     def _submit(
         self,
-        items: tuple[tuple[PrefillCandidateKey, LocalFrontierFeatures, float], ...],
+        items: tuple[tuple[object, ...], ...],
         *,
         kind: str,
     ) -> None:
@@ -226,27 +229,45 @@ class NativePredictorWorker:
         if self._closed:
             raise RuntimeError(f"{kind} predictor worker is closed")
         if items:
-            if (
-                kind == "admission" and self._next_kind in ("tool_wait", "join_wait")
-                or kind == "join_wait" and self._next_kind == "tool_wait"
-            ):
-                return
-            self._latest_sequence += 1
-            self._next = items
-            self._next_kind = kind
+            if kind == "admission":
+                # Demand is replaceable; semantic waits are not.
+                self._pending[kind] = {item[0]: item for item in items}
+            else:
+                pending = self._pending[kind]
+                for item in items:
+                    identity = self._identity(kind, item)
+                    if identity in pending or len(pending) < 8:
+                        pending[identity] = item
             self._dispatch()
 
+    @staticmethod
+    def _identity(kind: str, item: tuple[object, ...]) -> object:
+        return (item[0], item[2]) if kind == "join_wait" else item[0]
+
     def _dispatch(self) -> None:
-        if self._active_sequence is not None or self._next is None or self.disabled:
+        if self._active_sequence is not None or self.disabled:
             return
+        waits = [kind for kind in ("tool_wait", "join_wait") if self._pending[kind]]
+        if self._pending["admission"] and self._wait_streak >= 4:
+            kind = "admission"
+        elif len(waits) == 2:
+            kind = "join_wait" if self._last_wait_kind == "tool_wait" else "tool_wait"
+        elif waits:
+            kind = waits[0]
+        elif self._pending["admission"]:
+            kind = "admission"
+        else:
+            return
+        items = tuple(self._pending[kind].values())
         if not self._process.is_alive():
             self._fail()
             return
+        sequence = self._latest_sequence + 1
         try:
-            if self._next_kind in ("tool_wait", "join_wait"):
-                request = (self._latest_sequence, self._next_kind, self._next)
+            if kind in ("tool_wait", "join_wait"):
+                request = (sequence, kind, items)
             else:
-                request = (self._latest_sequence, self._next)
+                request = (sequence, items)
             self._input_queue.put_nowait(request)
         except Full:
             self._fail()
@@ -254,11 +275,16 @@ class NativePredictorWorker:
         except (OSError, ValueError):
             self._fail()
             return
-        self._active_sequence = self._latest_sequence
-        self._active_kind = self._next_kind
+        self._latest_sequence = sequence
+        self._active_sequence = sequence
+        self._active_kind = kind
         self._started_at = time.monotonic()
-        self._next = None
-        self._next_kind = None
+        self._pending[kind].clear()
+        if kind in ("tool_wait", "join_wait"):
+            self._last_wait_kind = kind
+            self._wait_streak += 1
+        else:
+            self._wait_streak = 0
 
     def fileno(self) -> int | None:
         """Return the result pipe fd for idle scheduler wakeups."""
@@ -274,10 +300,13 @@ class NativePredictorWorker:
         """Never replace a queued demand or an in-flight semantic prediction."""
         return bool(
             not self.disabled and not self._closed
-            and self._active_sequence is None and self._next is None
+            and self._active_sequence is None
+            and not any(self._pending.values())
         )
 
-    def poll(self) -> tuple[NativeDemandHint | NativeToolWaitHint, ...]:
+    def poll(
+        self,
+    ) -> tuple[NativeDemandHint | NativeToolWaitHint | NativeJoinWaitHint, ...]:
         if self.disabled or self._closed:
             return ()
         if not self._process.is_alive():
@@ -308,18 +337,21 @@ class NativePredictorWorker:
         if sequence != self._active_sequence or kind != self._active_kind:
             self._fail()
             return ()
-        # Admission may queue behind an in-flight tool wait without making the
-        # still-live tool prediction obsolete. A newer tool wait does supersede it.
-        superseded = self._next is not None and (
-            kind == "admission"
-            or self._next_kind == "tool_wait"
-            or kind == "join_wait" and self._next_kind == "join_wait"
-        )
+        pending = self._pending[kind]
+        # A newer revision only supersedes the same wait identity. A different
+        # invocation must not erase a still-live result from the active batch.
+        if kind == "admission" and pending:
+            values = ()
+        else:
+            values = tuple(
+                value for value in values
+                if self._identity(kind, value) not in pending
+            )
         self._active_sequence = None
         self._active_kind = None
         self._started_at = None
         self._dispatch()
-        if self.disabled or superseded:
+        if self.disabled:
             return ()
         issued = time.monotonic() * 1000
         if kind == "join_wait":
@@ -361,16 +393,16 @@ class NativePredictorWorker:
         if not self.disabled:
             self.failure_count += 1
             self.disabled = True
-            self._next = None
-            self._next_kind = None
+            for pending in self._pending.values():
+                pending.clear()
             self.close()
 
     def close(self) -> None:
         if self._closed:
             return
         self._closed = True
-        self._next = None
-        self._next_kind = None
+        for pending in self._pending.values():
+            pending.clear()
         self._active_sequence = None
         self._active_kind = None
         self._started_at = None

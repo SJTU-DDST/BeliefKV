@@ -282,14 +282,14 @@ def test_only_newest_batch_is_dispatched_and_published(fake_context):
         worker.submit(batch("replaced"))
         worker.submit(batch("new"))
         assert worker._input_queue.qsize() == 1
-        assert worker._next == batch("new")
+        assert tuple(worker._pending["admission"].values()) == batch("new")
         assert worker._input_queue.get_nowait() == (1, batch("old"))
 
         # The old result has completed, but must not be issued after newer submits.
         worker._output_queue.put_nowait((1, ((key("old"), 4, 7.0),)))
         assert worker.poll() == ()
-        assert worker._input_queue.get_nowait() == (3, batch("new"))
-        worker._output_queue.put_nowait((3, ((key("new"), 6, 7.0),)))
+        assert worker._input_queue.get_nowait() == (2, batch("new"))
+        worker._output_queue.put_nowait((2, ((key("new"), 6, 7.0),)))
         hints = worker.poll()
         assert len(hints) == 1
         assert hints[0].key == key("new")
@@ -300,7 +300,7 @@ def test_only_newest_batch_is_dispatched_and_published(fake_context):
         worker.close()
 
 
-def test_tool_wait_preempts_pending_admission_and_keeps_latest_wait(fake_context):
+def test_tool_wait_preempts_pending_admission_and_keeps_distinct_waits(fake_context):
     worker = NativePredictorWorker("unused", "a" * 64)
     try:
         worker.submit(batch("inflight"))
@@ -311,18 +311,22 @@ def test_tool_wait_preempts_pending_admission_and_keeps_latest_wait(fake_context
         assert worker._input_queue.get_nowait() == (1, batch("inflight"))
         worker._output_queue.put_nowait((1, ((key("inflight"), 4, 7.0),)))
         assert worker.poll() == ()
-        assert worker._input_queue.get_nowait() == (4, "tool_wait", batch("wait-new"))
+        assert worker._input_queue.get_nowait() == (
+            2, "tool_wait", batch("wait-old") + batch("wait-new")
+        )
         worker._output_queue.put_nowait(
-            (4, "tool_wait", ((key("wait-new"), 10.0, 20.0, 30.0, 7.0),))
+            (2, "tool_wait", (
+                (key("wait-old"), 10.0, 20.0, 30.0, 7.0),
+                (key("wait-new"), 10.0, 20.0, 30.0, 7.0),
+            ))
         )
-        (hint,) = worker.poll()
-        assert isinstance(hint, NativeToolWaitHint)
-        assert (hint.key, hint.wait_p10_ms, hint.wait_p50_ms, hint.wait_p90_ms) == (
-            key("wait-new"), 10.0, 20.0, 30.0,
-        )
-        assert hint.invocation_revision_ts_ms == 7.0
-        assert hint.predictor_sha256 == "a" * 64
-        assert hint.live(key("wait-new"), now_ms=hint.issued_monotonic_ms)
+        hints = worker.poll()
+        assert [hint.key for hint in hints] == [key("wait-old"), key("wait-new")]
+        assert all(isinstance(hint, NativeToolWaitHint) for hint in hints)
+        assert all(hint.wait_p10_ms == 10.0 for hint in hints)
+        assert all(hint.predictor_sha256 == "a" * 64 for hint in hints)
+        assert all(hint.live(hint.key, now_ms=hint.issued_monotonic_ms)
+                   for hint in hints)
         assert worker.failure_count == 0
     finally:
         worker.close()
@@ -343,6 +347,93 @@ def test_tool_wait_active_result_survives_newer_admission(fake_context):
         assert worker._input_queue.get_nowait() == (2, batch("new"))
         worker._output_queue.put_nowait((2, ((key("new"), 4, 7.0),)))
         assert worker.poll()[0].next_output_tokens == 4
+    finally:
+        worker.close()
+
+def test_distinct_active_wait_survives_pending_wait_but_same_identity_is_replaced(
+    fake_context,
+):
+    worker = NativePredictorWorker("unused", "a" * 64)
+    try:
+        worker.submit_tool_wait(batch("first"))
+        worker._input_queue.get_nowait()
+        worker.submit_tool_wait(batch("second"))
+        worker._output_queue.put_nowait(
+            (1, "tool_wait", ((key("first"), 10.0, 20.0, 30.0, 7.0),))
+        )
+        assert tuple(hint.key for hint in worker.poll()) == (key("first"),)
+        sequence, kind, items = worker._input_queue.get_nowait()
+        assert kind == "tool_wait" and items == batch("second")
+        worker.submit_tool_wait(((key("second"), LocalFrontierFeatures(
+            "second", "wait_tool"), 8.0),))
+        worker._output_queue.put_nowait(
+            (sequence, kind, ((key("second"), 10.0, 20.0, 30.0, 7.0),))
+        )
+        assert worker.poll() == ()
+        assert worker._input_queue.get_nowait()[-1][0][-1] == 8.0
+    finally:
+        worker.close()
+
+
+def test_pending_join_and_tool_batches_take_turns_without_losing_ids(fake_context):
+    worker = NativePredictorWorker("unused", "a" * 64)
+    try:
+        worker.submit(batch("inflight"))
+        worker._input_queue.get_nowait()
+        def join(name):
+            return (key(name), 7.0, f"join-{name}", "all", ("child",), (),
+                    (("child", LocalFrontierFeatures("child", "running_llm"),
+                      3.0, 0),))
+        worker.submit_join_wait((join("one"),))
+        worker.submit_tool_wait(batch("tool"))
+        worker.submit_join_wait((join("two"),))
+        worker._output_queue.put_nowait((1, ()))
+        worker.poll()
+        sequence, kind, items = worker._input_queue.get_nowait()
+        assert kind == "tool_wait" and items == batch("tool")
+        worker._output_queue.put_nowait((sequence, kind, ()))
+        worker.poll()
+        sequence, kind, items = worker._input_queue.get_nowait()
+        assert kind == "join_wait" and items == (join("one"), join("two"))
+    finally:
+        worker.close()
+
+
+def test_admission_gets_service_under_continuous_wait_submissions(fake_context):
+    worker = NativePredictorWorker("unused", "a" * 64)
+    try:
+        worker.submit_tool_wait(batch("initial"))
+        worker.submit(batch("admit"))
+        worker._input_queue.get_nowait()
+        for index in range(4):
+            worker.submit_tool_wait(batch(f"wait-{index}"))
+            worker._output_queue.put_nowait(
+                (index + 1, "tool_wait", ())
+            )
+            assert worker.poll() == ()
+            request = worker._input_queue.get_nowait()
+            sequence = request[0]
+            kind = request[1] if len(request) == 3 else "admission"
+            assert sequence == index + 2
+            assert kind == ("admission" if index == 3 else "tool_wait")
+    finally:
+        worker.close()
+
+
+def test_tool_wait_pending_bound_does_not_disable_worker(fake_context):
+    worker = NativePredictorWorker("unused", "a" * 64)
+    try:
+        worker.submit_tool_wait(batch("active"))
+        worker._input_queue.get_nowait()
+        for index in range(10):
+            worker.submit_tool_wait(batch(f"pending-{index}"))
+        assert len(worker._pending["tool_wait"]) == 8
+        assert not worker.disabled
+        worker._output_queue.put_nowait((1, "tool_wait", ()))
+        worker.poll()
+        _, kind, items = worker._input_queue.get_nowait()
+        assert kind == "tool_wait"
+        assert len(items) == 8
     finally:
         worker.close()
 
@@ -421,7 +512,7 @@ def test_worker_crash_discards_ready_result_and_pending_batch(fake_context):
     assert worker.poll() == ()
     assert worker.disabled
     assert worker.failure_count == 1
-    assert worker._next is None
+    assert not any(worker._pending.values())
     assert worker.poll() == ()
     worker.close()
 
@@ -504,6 +595,6 @@ def test_spawned_worker_fails_closed_when_child_exits(tmp_path):
         assert worker.poll() == ()
         assert worker.disabled
         assert worker.failure_count == 1
-        assert worker._next is None
+        assert not any(worker._pending.values())
     finally:
         worker.close()

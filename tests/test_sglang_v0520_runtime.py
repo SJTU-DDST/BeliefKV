@@ -357,6 +357,180 @@ def test_long_tool_wait_refresh_is_bounded_and_requires_idle_worker():
     assert len(submitted) == 1
 
 
+def test_two_tool_wait_hints_survive_other_context_completion():
+    runtime = NativeAdmissionRuntime()
+    runtime.predictor_sha256 = "a" * 64
+    requests = (req("a"), req("b"))
+    for request in requests:
+        request.session_id = f"session-{request.rid}"
+        request.session_generation = 1
+        runtime.register_visible_request(request)
+    pending = []
+    submitted = []
+    runtime._model_worker = NS(
+        disabled=False, poll=lambda: tuple(pending),
+        submit_tool_wait=lambda batch: submitted.append(batch),
+    )
+    runtime.on_events((
+        event(0, RuntimeEventKind.WORKFLOW_START),
+        event(1, RuntimeEventKind.INVOCATION_CREATE,
+              invocation_id="a", context_id="ctx-a",
+              agent_definition_id="a", agent_instance_id="a"),
+        event(2, RuntimeEventKind.INVOCATION_CREATE,
+              invocation_id="b", context_id="ctx-b",
+              agent_definition_id="b", agent_instance_id="b"),
+        event(3, RuntimeEventKind.TOOL_START,
+              invocation_id="a", context_id="ctx-a"),
+        event(4, RuntimeEventKind.TOOL_START,
+              invocation_id="b", context_id="ctx-b"),
+    ))
+    assert {batch[0][0].request_id for batch in submitted} == {"a", "b"}
+    now = time.monotonic() * 1000
+    pending.extend(
+        NativeToolWaitHint(
+            runtime.context_sessions[f"ctx-{name}"],
+            300.0, 1000.0, 5000.0, now, now + 5_000, "a" * 64,
+            runtime.graph.invocations[name].updated_ts_ms,
+        )
+        for name in ("a", "b")
+    )
+    runtime.scheduler_step()
+    assert set(runtime.tool_wait_hints) == {"ctx-a", "ctx-b"}
+    runtime.on_events((event(5, RuntimeEventKind.TOOL_END,
+                             invocation_id="a", context_id="ctx-a"),))
+    assert set(runtime.tool_wait_hints) == {"ctx-b"}
+    assert runtime.tool_wait_hint.key.context_id == "ctx-b"
+
+
+def test_idle_wait_scan_revisits_tool_waits_beyond_worker_batch_bound():
+    runtime = NativeAdmissionRuntime()
+    runtime.predictor_sha256 = "a" * 64
+    submitted = []
+    runtime._model_worker = NS(
+        disabled=False, poll=lambda: (), idle_for_refresh=lambda: True,
+        submit_tool_wait=lambda items: submitted.append(items),
+    )
+    requests = [req(f"tool-{index}") for index in range(10)]
+    for request in requests:
+        request.session_id, request.session_generation = request.rid, 1
+        runtime.register_visible_request(request)
+    events = [event(0, RuntimeEventKind.WORKFLOW_START)]
+    events.extend(
+        event(index + 1, RuntimeEventKind.INVOCATION_CREATE,
+              invocation_id=request.rid, context_id=f"ctx-{request.rid}",
+              agent_definition_id="role", agent_instance_id=request.rid)
+        for index, request in enumerate(requests)
+    )
+    events.extend(
+        event(index + 11, RuntimeEventKind.TOOL_START,
+              invocation_id=request.rid, context_id=f"ctx-{request.rid}")
+        for index, request in enumerate(requests)
+    )
+    runtime.on_events(tuple(events))
+    submitted.clear()
+    with patch("beliefkv.runtime.sglang_v0520_runtime.time.monotonic",
+               return_value=3.0):
+        runtime.scheduler_step()
+    with patch("beliefkv.runtime.sglang_v0520_runtime.time.monotonic",
+               return_value=3.6):
+        runtime.scheduler_step()
+    assert len(submitted) == 16
+    assert {batch[0][0].context_id for batch in submitted} == {
+        f"ctx-tool-{index}" for index in range(10)
+    }
+
+
+def test_join_wait_batch_covers_two_independent_parents():
+    runtime = NativeAdmissionRuntime()
+    runtime.predictor_sha256 = "a" * 64
+    submitted = []
+    runtime._model_worker = NS(
+        disabled=False, submit_join_wait=lambda items: submitted.append(items),
+        poll=lambda: (),
+    )
+    for name in ("parent-a", "parent-b"):
+        request = req(name)
+        request.session_id, request.session_generation = f"session-{name}", 1
+        runtime.register_visible_request(request)
+    runtime.on_events((
+        event(0, RuntimeEventKind.WORKFLOW_START),
+        event(1, RuntimeEventKind.INVOCATION_CREATE,
+              invocation_id="parent-a", context_id="ctx-parent-a",
+              agent_definition_id="parent", agent_instance_id="parent-a"),
+        event(2, RuntimeEventKind.INVOCATION_CREATE,
+              invocation_id="parent-b", context_id="ctx-parent-b",
+              agent_definition_id="parent", agent_instance_id="parent-b"),
+        event(3, RuntimeEventKind.INVOCATION_CREATE,
+              invocation_id="child-a", context_id="ctx-child-a",
+              agent_definition_id="child", agent_instance_id="child-a"),
+        event(4, RuntimeEventKind.INVOCATION_CREATE,
+              invocation_id="child-b", context_id="ctx-child-b",
+              agent_definition_id="child", agent_instance_id="child-b"),
+        event(5, RuntimeEventKind.JOIN_CREATE,
+              join_id="join-a", member_invocation_ids=("child-a",)),
+        event(6, RuntimeEventKind.JOIN_CREATE,
+              join_id="join-b", member_invocation_ids=("child-b",)),
+        event(7, RuntimeEventKind.JOIN_WAIT,
+              invocation_id="parent-a", join_id="join-a"),
+        event(8, RuntimeEventKind.JOIN_WAIT,
+              invocation_id="parent-b", join_id="join-b"),
+    ))
+    assert len(submitted) == 1
+    assert {item[2] for item in submitted[0]} == {"join-a", "join-b"}
+
+
+def test_join_hints_for_independent_parents_do_not_replace_each_other():
+    runtime = NativeAdmissionRuntime()
+    runtime.predictor_sha256 = "a" * 64
+    pending = []
+    runtime._model_worker = NS(
+        disabled=False, poll=lambda: tuple(pending), submit_join_wait=lambda _: None,
+    )
+    for name in ("parent-a", "parent-b"):
+        request = req(name)
+        request.session_id, request.session_generation = name, 1
+        runtime.register_visible_request(request)
+    runtime.on_events((
+        event(0, RuntimeEventKind.WORKFLOW_START),
+        event(1, RuntimeEventKind.INVOCATION_CREATE,
+              invocation_id="parent-a", context_id="ctx-parent-a",
+              agent_definition_id="parent", agent_instance_id="parent-a"),
+        event(2, RuntimeEventKind.INVOCATION_CREATE,
+              invocation_id="parent-b", context_id="ctx-parent-b",
+              agent_definition_id="parent", agent_instance_id="parent-b"),
+        event(3, RuntimeEventKind.INVOCATION_CREATE,
+              invocation_id="child-a", context_id="ctx-child-a",
+              agent_definition_id="child", agent_instance_id="child-a"),
+        event(4, RuntimeEventKind.INVOCATION_CREATE,
+              invocation_id="child-b", context_id="ctx-child-b",
+              agent_definition_id="child", agent_instance_id="child-b"),
+        event(5, RuntimeEventKind.JOIN_CREATE,
+              join_id="join-a", member_invocation_ids=("child-a",)),
+        event(6, RuntimeEventKind.JOIN_CREATE,
+              join_id="join-b", member_invocation_ids=("child-b",)),
+        event(7, RuntimeEventKind.JOIN_WAIT,
+              invocation_id="parent-a", join_id="join-a"),
+        event(8, RuntimeEventKind.JOIN_WAIT,
+              invocation_id="parent-b", join_id="join-b"),
+    ))
+    now = time.monotonic() * 1000
+    for suffix in ("a", "b"):
+        child = runtime.graph.invocations[f"child-{suffix}"]
+        parent = runtime.graph.invocations[f"parent-{suffix}"]
+        pending.append(NativeJoinWaitHint(
+            runtime.context_sessions[parent.context_id],
+            f"join-{suffix}", "all", (f"child-{suffix}",),
+            ((child.invocation_id, child.updated_ts_ms, child.state.value, 0),),
+            100.0, 200.0, 300.0, now, now + 5_000, "a" * 64,
+            parent.updated_ts_ms,
+        ))
+    runtime.scheduler_step()
+    assert set(runtime.join_wait_hints) == {"join-a", "join-b"}
+    runtime.on_events((event(9, RuntimeEventKind.RETURN,
+                             invocation_id="child-a"),))
+    assert set(runtime.join_wait_hints) == {"join-b"}
+
+
 def test_online_boundary_feature_matches_observed_result_action():
     runtime = NativeAdmissionRuntime()
     runtime.predictor_sha256 = "a" * 64
