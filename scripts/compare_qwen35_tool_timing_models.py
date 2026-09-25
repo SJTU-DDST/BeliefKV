@@ -106,13 +106,26 @@ def compare(
         child = invocation.get("is_child") is True
         dimensions.append("child" if child else "root")
         if child:
-            has_prior = attrs.get("previous_same_input_status") == "success"
+            is_execute = attrs.get("tool_name") == "execute"
+            has_prior = (
+                is_execute
+                and attrs.get("previous_same_input_status") == "success"
+                and type(attrs.get("previous_same_input_duration_ms"))
+                in (int, float)
+            )
             has_project_prior = (
-                type(attrs.get("project_class_duration_median_ms"))
+                is_execute
+                and type(attrs.get("project_class_duration_median_ms"))
                 in (int, float)
                 and int(attrs.get("project_class_completed_support") or 0) >= 16
             )
             dimensions.append("child_with_prior" if has_prior else "child_cold")
+            if is_execute:
+                dimensions.append("child_execute")
+                dimensions.append(
+                    "child_execute_with_prior" if has_prior
+                    else "child_execute_cold"
+                )
             if not has_prior:
                 dimensions.append(
                     "child_cold_with_project_prior"
@@ -120,6 +133,8 @@ def compare(
                 )
             if actual >= 2_000:
                 dimensions.append("child_long")
+                if is_execute:
+                    dimensions.append("child_execute_long")
                 dimensions.append(
                     "child_long_with_prior" if has_prior else "child_long_cold"
                 )

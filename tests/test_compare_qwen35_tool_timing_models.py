@@ -99,3 +99,37 @@ def test_compare_reports_cold_project_prior_separately(tmp_path: Path) -> None:
     assert result["groups"]["child_long_cold_with_project_prior"][
         "joint_samples"
     ] == 1
+
+
+def test_non_execute_repeat_is_not_counted_as_execute_timing_prior(
+    tmp_path: Path,
+) -> None:
+    waits = [{
+        "workflow_id": "workflow", "tool_call_id": "call",
+        "invocation_id": "child", "terminal_ts_ms": 210.0,
+        "training_eligible_survival": True, "censored": False,
+    }]
+    decisions = [{
+        "workflow_id": "workflow", "trigger_kind": "tool_start",
+        "timestamp_ms": 10.0, "trigger_invocation_id": "child",
+        "trigger_attributes": {
+            "tool_call_id": "call", "tool_name": "read_file",
+            "is_child": True, "observed_command_class": "read_file",
+            "previous_same_input_status": "success",
+            "previous_same_input_duration_ms": 200.0,
+        },
+        "invocations": [{
+            "invocation_id": "child", "state": "wait_tool", "is_child": True,
+        }],
+    }]
+    for name, items in (
+        ("external_waits.jsonl", waits),
+        ("frontier_decision_points.jsonl", decisions),
+    ):
+        (tmp_path / name).write_text(
+            "".join(json.dumps(item) + "\n" for item in items)
+        )
+    result = compare(tmp_path, _FakeModel(repeat=False), _FakeModel(repeat=True))
+    assert "child_with_prior" not in result["groups"]
+    assert "child_execute" not in result["groups"]
+    assert result["groups"]["child_cold"]["joint_samples"] == 1
