@@ -79,24 +79,31 @@ def audit(dataset: Path) -> dict:
                 now = start + clock
                 if now >= end:
                     continue
-                other_survivors = sum(
-                    previous_start <= now - 2_000
-                    and previous_end > now and previous_key != key
+                survivor_keys = [
+                    previous_key
                     for previous_start, previous_end, previous_key in entries
                     if previous_start <= now
-                )
+                    and previous_start <= now - 2_000
+                    and previous_end > now and previous_key != key
+                ]
                 actual_long = end - now >= 2_000
-                for minimum in (1, 4, 8):
-                    predicted = other_survivors >= minimum
-                    for group_name in ("all", project):
-                        entry = checks[
-                            f"elapsed_{clock}ms"
-                        ][f"{group_name}:peers_{minimum}"]
-                        entry["samples"] += 1
-                        entry["true_long"] += actual_long
-                        entry["predicted_long"] += predicted
-                        entry["correct_long"] += predicted and actual_long
-                        entry["workflows"].add(key[0])
+                for scope, peer_count in (
+                    ("any", len(survivor_keys)),
+                    ("other_workflow", sum(
+                        peer[0] != key[0] for peer in survivor_keys
+                    )),
+                ):
+                    for minimum in (1, 4, 8):
+                        predicted = peer_count >= minimum
+                        for group_name in ("all", project):
+                            entry = checks[
+                                f"elapsed_{clock}ms"
+                            ][f"{group_name}:{scope}:peers_{minimum}"]
+                            entry["samples"] += 1
+                            entry["true_long"] += actual_long
+                            entry["predicted_long"] += predicted
+                            entry["correct_long"] += predicted and actual_long
+                            entry["workflows"].add(key[0])
     return {
         "status": "offline_as_of_survival_pilot_not_action_eligible",
         "semantics": (

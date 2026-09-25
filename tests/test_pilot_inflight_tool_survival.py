@@ -30,9 +30,12 @@ def test_only_prior_inflight_peers_count_without_target_leak(tmp_path):
         for name, _, _, _ in waits
     ))
     result = audit(tmp_path)
-    starts = result["groups"]["elapsed_0ms"]["all:peers_1"]
+    starts = result["groups"]["elapsed_0ms"]["all:any:peers_1"]
     assert starts["samples"] == 4
     assert starts["true_long"] == 3
     assert starts["predicted_long"] == 2
     assert starts["correct_long"] == 1
     assert starts["precision"] == 0.5
+    assert result["groups"]["elapsed_0ms"][
+        "all:other_workflow:peers_1"
+    ]["predicted_long"] == 0
