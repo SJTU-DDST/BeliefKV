@@ -8,6 +8,8 @@ RUN_ROOT="${RUN_ROOT:-$ROOT/experiments/raw/qwen35_stream_completion_shadow_32ro
 SOURCE="${WORKLOAD_SOURCE:-$ROOT/experiments/raw/qwen35_native_reactive_calibration_timing_v3_20260925/qwen35-native-reactive-calibration-66root-r0}"
 BASE_URL="${BASE_URL:-http://127.0.0.1:18000}"
 WORKLOAD_OFFSET="${WORKLOAD_OFFSET:-0}"
+WORKLOAD_POOL_SIZE="${WORKLOAD_POOL_SIZE:-32}"
+WORKLOAD_PREFERRED_PREFIX="${WORKLOAD_PREFERRED_PREFIX:-}"
 server_pid=""
 
 stop_server() {
@@ -31,21 +33,37 @@ if [[ ! -f "$SOURCE/runtime_workload_manifest.json" ]]; then
   printf 'Missing frozen calibration workload manifest\n' >&2
   exit 1
 fi
-if [[ ! "$WORKLOAD_OFFSET" =~ ^[0-9]+$ ]]; then
-  printf 'WORKLOAD_OFFSET must be a nonnegative integer\n' >&2
+if [[ ! "$WORKLOAD_OFFSET" =~ ^[0-9]+$ \
+  || ! "$WORKLOAD_POOL_SIZE" =~ ^[0-9]+$ \
+  || "$WORKLOAD_POOL_SIZE" -lt 32 ]]; then
+  printf 'WORKLOAD_OFFSET must be nonnegative; pool size must be at least 32\n' >&2
   exit 1
 fi
+selected_workloads="$(
+  jq -c --argjson offset "$WORKLOAD_OFFSET" \
+    --argjson pool "$WORKLOAD_POOL_SIZE" \
+    --arg prefix "$WORKLOAD_PREFERRED_PREFIX" '
+      .workloads[$offset:($offset+$pool)] as $workloads
+      | if $prefix == "" then $workloads[:32]
+        else (
+          [$workloads[] | select(.instance_id | startswith($prefix))]
+          + [$workloads[] | select((.instance_id | startswith($prefix)) | not)]
+        )[:32] end
+    ' "$SOURCE/runtime_workload_manifest.json"
+)"
 mapfile -t selected_instances < <(
-  jq -r --argjson offset "$WORKLOAD_OFFSET" \
-    '.workloads[$offset:($offset+32)][].instance_id' \
-    "$SOURCE/runtime_workload_manifest.json"
+  jq -r '.[].instance_id' <<< "$selected_workloads"
 )
 if [[ "${#selected_instances[@]}" -ne 32 ]]; then
   printf 'Not enough distinct tasks starting at offset %s\n' "$WORKLOAD_OFFSET" >&2
   exit 1
 fi
+if [[ "$(jq 'map(.instance_id) | unique | length' <<< "$selected_workloads")" -ne 32 ]]; then
+  printf 'Selected tasks are not distinct\n' >&2
+  exit 1
+fi
 instance_args=()
-if (( WORKLOAD_OFFSET > 0 )); then
+if (( WORKLOAD_OFFSET > 0 )) || [[ -n "$WORKLOAD_PREFERRED_PREFIX" ]]; then
   for instance in "${selected_instances[@]}"; do
     instance_args+=(--instance "$instance")
   done
@@ -56,9 +74,7 @@ while IFS= read -r image; do
     exit 1
   fi
 done < <(
-  jq -r --argjson offset "$WORKLOAD_OFFSET" \
-    '.workloads[$offset:($offset+32)][].docker_image' \
-    "$SOURCE/runtime_workload_manifest.json"
+  jq -r '.[].docker_image' <<< "$selected_workloads"
 )
 
 mkdir -p "$RUN_ROOT/server"
