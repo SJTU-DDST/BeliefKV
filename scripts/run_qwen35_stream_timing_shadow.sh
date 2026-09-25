@@ -10,6 +10,7 @@ BASE_URL="${BASE_URL:-http://127.0.0.1:18000}"
 WORKLOAD_OFFSET="${WORKLOAD_OFFSET:-0}"
 WORKLOAD_POOL_SIZE="${WORKLOAD_POOL_SIZE:-32}"
 WORKLOAD_PREFERRED_PREFIX="${WORKLOAD_PREFERRED_PREFIX:-}"
+WORKLOAD_EXCLUDE_PREFIX="${WORKLOAD_EXCLUDE_PREFIX:-}"
 WORKLOAD_EXCLUDE_MANIFEST="${WORKLOAD_EXCLUDE_MANIFEST:-}"
 PILOT_WORKFLOW_COUNT="${PILOT_WORKFLOW_COUNT:-32}"
 server_pid=""
@@ -57,9 +58,14 @@ selected_workloads="$(
     --argjson pool "$WORKLOAD_POOL_SIZE" \
     --argjson count "$PILOT_WORKFLOW_COUNT" \
     --argjson excluded "$excluded_instances" \
-    --arg prefix "$WORKLOAD_PREFERRED_PREFIX" '
+    --arg prefix "$WORKLOAD_PREFERRED_PREFIX" \
+    --arg excluded_prefix "$WORKLOAD_EXCLUDE_PREFIX" '
       [.workloads[$offset:($offset+$pool)][]
-       | select(.instance_id as $id | $excluded | index($id) | not)]
+       | select(
+           .instance_id as $id
+           | ($excluded | index($id) | not)
+             and ($excluded_prefix == "" or ($id | startswith($excluded_prefix) | not))
+         )]
       as $workloads
       | if $prefix == "" then $workloads[:$count]
         else (
@@ -81,6 +87,8 @@ if [[ "$(jq 'map(.instance_id) | unique | length' <<< "$selected_workloads")" -n
 fi
 instance_args=()
 if (( WORKLOAD_OFFSET > 0 )) || [[ -n "$WORKLOAD_PREFERRED_PREFIX" ]] \
+  || [[ -n "$WORKLOAD_EXCLUDE_PREFIX" ]] \
+  || [[ -n "$WORKLOAD_EXCLUDE_MANIFEST" ]] \
   || (( PILOT_WORKFLOW_COUNT < 32 )); then
   for instance in "${selected_instances[@]}"; do
     instance_args+=(--instance "$instance")
