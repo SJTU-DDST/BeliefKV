@@ -3,7 +3,7 @@ import pytest
 
 from scripts.pilot_cold_child_tool_long import (
     _shape_matrix, _shape_threshold_report, shape_transfer_pilot,
-    shape_transfer_peer_ablation, transfer_pilot,
+    shape_transfer_peer_ablation, train_shape_screen, transfer_pilot,
 )
 
 
@@ -77,6 +77,17 @@ def test_shape_screen_does_not_select_threshold_from_heldout_calls():
         for index, row in enumerate(train[:15])
     ]
     report = shape_transfer_pilot(train, heldout)
+    training_only = train_shape_screen(train)
+    assert report["train_project_cv"] == training_only["train_project_cv"]
+    assert report["threshold_chosen_on_train_cv"] == (
+        training_only["threshold_chosen_on_train_cv"]
+    )
+    flipped = shape_transfer_pilot(
+        train, [{**row, "duration_ms": 100.} for row in heldout],
+    )
+    assert flipped["threshold_chosen_on_train_cv"] == (
+        training_only["threshold_chosen_on_train_cv"]
+    )
     assert report["threshold_chosen_on_train_cv"] is None
     assert report["heldout_at_frozen_threshold"] is None
     assert report["heldout_long_calls"] is None

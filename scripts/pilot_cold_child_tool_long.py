@@ -153,19 +153,15 @@ def _shape_threshold_report(scored: list[tuple], threshold: float) -> dict:
     }
 
 
-def shape_transfer_pilot(
-    train: list[dict], heldout: list[dict], *,
+def train_shape_screen(
+    train: list[dict], *,
     include_live_peers: bool = True,
     include_long_history: bool = False,
     include_duration_priors: bool = False,
 ) -> dict:
     train_projects = {row["project"] for row in train}
-    heldout_projects = {row["project"] for row in heldout}
-    if (
-        len(train_projects) < 3 or not heldout or
-        train_projects & heldout_projects
-    ):
-        raise ValueError("need three training projects and disjoint heldout calls")
+    if len(train_projects) < 3:
+        raise ValueError("need at least three training projects")
     fold_scores = []
     for project in sorted(train_projects):
         fit = [row for row in train if row["project"] != project]
@@ -206,22 +202,43 @@ def shape_transfer_pilot(
         + (["log_completed_class_median_ms", "log_near_input_median_ms",
             "log_near_input_support"] if include_duration_priors else []),
         "train_projects": sorted(train_projects),
-        "heldout_projects": sorted(heldout_projects),
         "train_calls": len(train),
         "train_long_calls": sum(row["duration_ms"] >= 2_000 for row in train),
-        "heldout_calls": len(heldout),
-        "heldout_long_calls": None,
         "train_project_cv": train_cv,
         "threshold_chosen_on_train_cv": (
             selected["threshold"] if selected is not None else None
         ),
-        "heldout_at_frozen_threshold": None,
         "limitation": (
             "This screens tool duration >=2s, not remaining-time ETA. "
             "No tool-return or JOIN prefetch eligibility follows."
         ),
     }
-    if selected is not None:
+    return result
+
+
+def shape_transfer_pilot(
+    train: list[dict], heldout: list[dict], *,
+    include_live_peers: bool = True,
+    include_long_history: bool = False,
+    include_duration_priors: bool = False,
+) -> dict:
+    if not heldout or {row["project"] for row in train} & {
+        row["project"] for row in heldout
+    }:
+        raise ValueError("need disjoint heldout calls")
+    result = train_shape_screen(
+        train, include_live_peers=include_live_peers,
+        include_long_history=include_long_history,
+        include_duration_priors=include_duration_priors,
+    )
+    result.update({
+        "heldout_projects": sorted({row["project"] for row in heldout}),
+        "heldout_calls": len(heldout),
+        "heldout_long_calls": None,
+        "heldout_at_frozen_threshold": None,
+    })
+    threshold = result["threshold_chosen_on_train_cv"]
+    if threshold is not None:
         scores = _shape_scores(
             _fit_shape_head(
                 train, include_live_peers=include_live_peers,
@@ -236,7 +253,7 @@ def shape_transfer_pilot(
             row["duration_ms"] >= 2_000 for row in heldout
         )
         result["heldout_at_frozen_threshold"] = _shape_threshold_report(
-            list(zip(heldout, scores)), selected["threshold"],
+            list(zip(heldout, scores)), threshold,
         )
     return result
 
