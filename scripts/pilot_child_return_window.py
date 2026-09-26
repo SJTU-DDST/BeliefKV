@@ -32,7 +32,6 @@ else:
 STAGE_TOKENS = 512
 TARGET_START_MS = 500
 TARGET_END_MS = 3000
-FAR_NEGATIVE_MS = 5000
 THRESHOLDS = tuple(round(i / 100, 2) for i in range(50, 96, 5))
 
 
@@ -44,14 +43,52 @@ def score(model: tuple, samples: list[tuple]) -> np.ndarray:
     )
 
 
-def fit_window(records: list[dict]) -> tuple:
+def causal_observations(record: dict, cues: dict) -> list[tuple[float, tuple]]:
+    cue = cues.get(record["rid"], {})
+    content_ts = cue.get("content")
+    if content_ts is None:
+        return []
+    tool_ts = cue.get("tool", float("inf"))
+    first_arrival = record["first_arrival_ms"]
+    observations = []
+    previous = None
+    for sample in record["samples"]:
+        sample_ts = first_arrival + sample[1]
+        if sample_ts < content_ts:
+            previous = sample
+            continue
+        if previous is not None:
+            if content_ts < tool_ts:
+                lead = (
+                    record["return_ms"] - content_ts if record["terminal"]
+                    else None
+                )
+                observations.append((
+                    content_ts,
+                    (previous[0], previous[1], lead, previous[3]),
+                ))
+            previous = None
+        if sample_ts >= tool_ts:
+            break
+        lead = record["return_ms"] - sample_ts if record["terminal"] else None
+        observations.append((
+            sample_ts, (sample[0], sample[1], lead, sample[3]),
+        ))
+    if previous is not None and content_ts < tool_ts:
+        lead = record["return_ms"] - content_ts if record["terminal"] else None
+        observations.append((
+            content_ts, (previous[0], previous[1], lead, previous[3]),
+        ))
+    return observations
+
+
+def fit_window(records: list[dict], cues: dict) -> tuple:
     positive = []
     negative_nonterminal = []
     negative_timing = []
     for record in records:
-        samples = record["samples"]
-        # Sampling depends only on the current ordinal, not the future length.
-        for index, sample in enumerate(samples):
+        # The most recent pre-content state first becomes usable at content arrival.
+        for index, (_, sample) in enumerate(causal_observations(record, cues)):
             if index >= 8 and index % 4:
                 continue
             lead = sample[2]
@@ -59,10 +96,10 @@ def fit_window(records: list[dict]) -> tuple:
                 positive.append(sample)
             elif not record["terminal"]:
                 negative_nonterminal.append(sample)
-            elif lead < TARGET_START_MS or lead > FAR_NEGATIVE_MS:
+            elif lead < TARGET_START_MS or lead > TARGET_END_MS:
                 negative_timing.append(sample)
-    if len(positive) < 10 or not negative_nonterminal or not negative_timing:
-        raise ValueError("too few causal window labels across terminal/nonterminal rounds")
+    if len(positive) < 10 or not negative_timing:
+        raise ValueError("too few observable positive/negative window labels")
     random.Random(61).shuffle(negative_nonterminal)
     random.Random(67).shuffle(negative_timing)
     # Keep both wrong-round and wrong-time negatives in every fit.
@@ -94,20 +131,14 @@ def scored_sequences(
     for record, stage_score in zip(records, stage_scores):
         if stage_score < 0.5:
             continue
-        cue = cues.get(record["rid"], {})
-        content = cue.get("content")
-        if content is None:
+        eligible = causal_observations(record, cues)
+        if not eligible:
             continue
-        tool = cue.get("tool", float("inf"))
-        observations = []
-        scores = score(window_head, record["samples"])
-        for sample, value in zip(record["samples"], scores):
-            sample_ts = record["first_arrival_ms"] + sample[1]
-            if sample_ts < content:
-                continue
-            if tool <= sample_ts:
-                break
-            observations.append((sample_ts, float(value)))
+        scores = score(window_head, [sample for _, sample in eligible])
+        observations = [
+            (sample_ts, float(value))
+            for (sample_ts, _), value in zip(eligible, scores)
+        ]
         if observations:
             sequences.append({
                 "project": record["project"],
@@ -194,12 +225,15 @@ def select_threshold(sequences: list[dict]) -> tuple[float, int] | None:
 
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--stage-tokens", type=int, default=STAGE_TOKENS)
     parser.add_argument("--train-traces", type=Path, action="append", required=True)
     parser.add_argument("--heldout-traces", type=Path, required=True)
     parser.add_argument("--train-workflows", type=Path, action="append", required=True)
     parser.add_argument("--heldout-workflows", type=Path, action="append", required=True)
     parser.add_argument("--output", type=Path, required=True)
     args = parser.parse_args()
+    if args.stage_tokens < 32 or args.stage_tokens % 32:
+        parser.error("stage-tokens must be a positive multiple of 32")
     if len(args.train_traces) != len(args.train_workflows):
         parser.error("provide one --train-traces per --train-workflows, in the same order")
     train, train_counts = load_batch_records(
@@ -212,7 +246,7 @@ def main() -> None:
     heldout_projects = {row["project"] for row in heldout}
     if train_projects & heldout_projects or len(train_projects) < 3:
         parser.error("need at least three training projects and a disjoint heldout project")
-    stage_train = at_stage(train, STAGE_TOKENS)
+    stage_train = at_stage(train, args.stage_tokens)
     train_cues = {}
     for root in args.train_workflows:
         train_cues.update(content_cues(root))
@@ -221,7 +255,7 @@ def main() -> None:
         fit = [row for row in stage_train if row["project"] != project]
         validation = [row for row in stage_train if row["project"] == project]
         folds.extend(scored_sequences(
-            validation, fit_head(fit), fit_window(fit), train_cues,
+            validation, fit_head(fit), fit_window(fit, train_cues), train_cues,
         ))
     selected = select_threshold(folds)
     result = {
@@ -230,7 +264,7 @@ def main() -> None:
         "heldout_projects": sorted(heldout_projects),
         "train": train_counts,
         "heldout": heldout_counts,
-        "stage_tokens": STAGE_TOKENS,
+        "stage_tokens": args.stage_tokens,
         "window_ms": [TARGET_START_MS, TARGET_END_MS],
         "threshold_chosen_on_train_project_cv": selected,
         "project_cv": {
@@ -245,8 +279,8 @@ def main() -> None:
         for root in args.heldout_workflows:
             heldout_cues.update(content_cues(root))
         sequences = scored_sequences(
-            at_stage(heldout, STAGE_TOKENS),
-            fit_head(stage_train), fit_window(stage_train),
+            at_stage(heldout, args.stage_tokens),
+            fit_head(stage_train), fit_window(stage_train, train_cues),
             heldout_cues,
         )
         result["heldout_at_frozen_threshold"] = report(sequences, *selected)

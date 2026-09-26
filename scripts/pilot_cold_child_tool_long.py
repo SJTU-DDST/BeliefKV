@@ -41,6 +41,132 @@ def _matrix(rows: list[dict], vocabulary: dict[str, int]) -> np.ndarray:
     return matrix
 
 
+SHAPE_THRESHOLDS = (0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9)
+
+
+def _shape_matrix(rows: list[dict], vocabulary: dict[str, int]) -> np.ndarray:
+    matrix = np.zeros((len(rows), 4), dtype=np.float32)
+    for index, row in enumerate(rows):
+        matrix[index, 0] = vocabulary.get(row["shape"], -1)
+        matrix[index, 1] = math.log1p(max(0, row["input_chars"]))
+        matrix[index, 2] = math.log1p(max(
+            0, float(row.get("project_class_completed_support") or 0),
+        ))
+        matrix[index, 3] = math.log1p(max(
+            0, float(row.get("other_workflow_2s_peers") or 0),
+        ))
+    return matrix
+
+
+def _fit_shape_head(rows: list[dict]) -> tuple:
+    labels = np.asarray(
+        [row["duration_ms"] >= 2_000 for row in rows], dtype=np.int32,
+    )
+    if labels.sum() < 10 or len(labels) - labels.sum() < 20:
+        raise ValueError("insufficient long/short train calls")
+    vocabulary = {
+        shape: index for index, shape in enumerate(
+            sorted({row["shape"] for row in rows}),
+        )
+    }
+    model = lgb.train(
+        {
+            "objective": "binary", "learning_rate": .04, "num_leaves": 7,
+            "min_data_in_leaf": 12, "lambda_l2": 8, "max_bin": 127,
+            "seed": 42, "num_threads": 4, "verbosity": -1,
+        },
+        lgb.Dataset(
+            _shape_matrix(rows, vocabulary), label=labels,
+            categorical_feature=[0],
+        ),
+        num_boost_round=100,
+    )
+    return model, vocabulary
+
+
+def _shape_scores(model: tuple, rows: list[dict]) -> np.ndarray:
+    head, vocabulary = model
+    return head.predict(_shape_matrix(rows, vocabulary), num_threads=4)
+
+
+def _shape_threshold_report(scored: list[tuple], threshold: float) -> dict:
+    selected = [
+        row for row, value in scored if value >= threshold
+    ]
+    true = sum(row["duration_ms"] >= 2_000 for row in selected)
+    return {
+        "threshold": threshold,
+        "selected": len(selected),
+        "true_long": true,
+        "false_short": len(selected) - true,
+        "workflow_count": len({row["workflow"] for row in selected}),
+        "project_count": len({row["project"] for row in selected}),
+        "precision": round(true / len(selected), 4) if selected else None,
+    }
+
+
+def shape_transfer_pilot(train: list[dict], heldout: list[dict]) -> dict:
+    train_projects = {row["project"] for row in train}
+    heldout_projects = {row["project"] for row in heldout}
+    if (
+        len(train_projects) < 3 or not heldout or
+        train_projects & heldout_projects
+    ):
+        raise ValueError("need three training projects and disjoint heldout calls")
+    fold_scores = []
+    for project in sorted(train_projects):
+        fit = [row for row in train if row["project"] != project]
+        validation = [row for row in train if row["project"] == project]
+        fold_scores.extend(zip(
+            validation, _shape_scores(_fit_shape_head(fit), validation),
+        ))
+    train_cv = {
+        str(threshold): _shape_threshold_report(fold_scores, threshold)
+        for threshold in SHAPE_THRESHOLDS
+    }
+    eligible = [
+        item for item in train_cv.values()
+        if item["true_long"] >= 8 and item["project_count"] >= 2
+        and item["precision"] is not None and item["precision"] >= .8
+    ]
+    selected = max(
+        eligible, key=lambda item: (item["true_long"], item["threshold"]),
+        default=None,
+    )
+    result = {
+        "status": "read_only_project_disjoint_shape_screen_not_deployable",
+        "features": [
+            "observed_command_shape", "log_input_chars",
+            "log_completed_project_class_support",
+            "log_inflight_other_workflow_2s_peers",
+        ],
+        "train_projects": sorted(train_projects),
+        "heldout_projects": sorted(heldout_projects),
+        "train_calls": len(train),
+        "train_long_calls": sum(row["duration_ms"] >= 2_000 for row in train),
+        "heldout_calls": len(heldout),
+        "heldout_long_calls": None,
+        "train_project_cv": train_cv,
+        "threshold_chosen_on_train_cv": (
+            selected["threshold"] if selected is not None else None
+        ),
+        "heldout_at_frozen_threshold": None,
+        "limitation": (
+            "This screens tool duration >=2s, not remaining-time ETA. "
+            "No tool-return or JOIN prefetch eligibility follows."
+        ),
+    }
+    if selected is not None:
+        scores = _shape_scores(_fit_shape_head(train), heldout)
+        result["heldout_long_calls"] = sum(
+            row["duration_ms"] >= 2_000 for row in heldout
+        )
+        result["heldout_at_frozen_threshold"] = _shape_threshold_report(
+            list(zip(heldout, scores)), selected["threshold"],
+        )
+    return result
+
+
 def transfer_pilot(train: list[dict], heldout: list[dict]) -> dict:
     train_projects = {row["project"] for row in train}
     heldout_projects = {row["project"] for row in heldout}
@@ -181,13 +307,45 @@ def pilot(workflows: Path) -> dict:
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--workflows", type=Path, required=True)
+    parser.add_argument(
+        "--additional-training-workflows", type=Path, action="append", default=[],
+    )
+    parser.add_argument("--exclude-train-project", action="append", default=[])
     parser.add_argument("--evaluation-workflows", type=Path)
+    parser.add_argument("--evaluation-project", action="append", default=[])
+    parser.add_argument("--shape-transfer", action="store_true")
     parser.add_argument("--output", type=Path, required=True)
     args = parser.parse_args()
+    if args.shape_transfer and args.evaluation_workflows is None:
+        parser.error("--shape-transfer requires --evaluation-workflows")
+    if not args.shape_transfer and (
+        args.additional_training_workflows or args.exclude_train_project
+        or args.evaluation_project
+    ):
+        parser.error("extra roots and project filters require --shape-transfer")
+    train = _cold_child_calls(
+        args.workflows, min_projects=1 if args.shape_transfer else 3,
+    )
+    if args.shape_transfer:
+        for root in args.additional_training_workflows:
+            train.extend(_cold_child_calls(root, min_projects=1))
+        train = [
+            row for row in train
+            if row["project"] not in args.exclude_train_project
+        ]
+    heldout = (
+        _cold_child_calls(args.evaluation_workflows, min_projects=1)
+        if args.evaluation_workflows is not None else None
+    )
+    if heldout is not None and args.evaluation_project:
+        heldout = [
+            row for row in heldout
+            if row["project"] in args.evaluation_project
+        ]
     report = (
-        transfer_pilot(
-            _cold_child_calls(args.workflows),
-            _cold_child_calls(args.evaluation_workflows, min_projects=1),
+        (shape_transfer_pilot if args.shape_transfer else transfer_pilot)(
+            train,
+            heldout,
         )
         if args.evaluation_workflows else pilot(args.workflows)
     )
