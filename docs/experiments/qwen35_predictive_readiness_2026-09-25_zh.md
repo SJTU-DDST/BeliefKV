@@ -4527,3 +4527,39 @@ intervened/censored 的首触发分母，
 即使通过初筛，也需完整训练集拟合时长和
 独立项目复验点误差及误报，不能用三任务
 pilot 宣称可用的 JOIN 时钟。
+
+### 冷长工具 RETURN 的下一批训练任务预选
+
+现有八任务结构桶训练批次的 21 个冷长 child
+`execute` 全部来自 Xarray，无法训练跨项目长调用
+时钟。为预选补采任务，仅扫描旧的
+`qwen35_native_reactive_overlapped_128root_train_20260923_v3`
+原始 `TOOL_START`/成功 `TOOL_END` 配对事件：
+调用启动时为 child、没有该 invocation 已成功的
+同输入记录，且实际持续不少于 2000 ms。
+该旧版本没有显式 `is_child` 字段，使用审计器的
+legacy invocation 身份推断；统计只用于选样，
+不能混入新 runtime 的训练或验证标签。
+旧批次 Django 有 14 次、分布在 9 个 workflow，
+Pytest 有 12 次、分布在 6 个 workflow；
+同一口径 Xarray 有 299 次、分布在 20 个
+workflow。任务和镜像在旧训练 manifest 中
+存在且镜像已缓存。
+
+冻结下一批 Django `11149/14349/11999/11095`
+和 Pytest `7521/5840/7236/7571`，保持
+Qwen3.5、当前 native-reactive guard、
+2048/32、7200 秒 workflow 截止、相同 Host/
+running 配置，单 `intent` 臂。继续单列失败、
+取消、未完成和 guard 干预；新批次须实际检验
+两项目的冷长调用覆盖，不能把旧 trace 中的
+长调用视为新批必然复现。采集时保留
+`BELIEFKV_COMMAND_STRUCTURE_SHADOW=1` 的匿名
+结构桶，不能将原始命令或事后时长输入模型。
+只在训练项目选择
+TOOL_START 特征、时长模型和动作阈值；
+Astropy/Sphinx 等项目在规则冻结前不得用于
+阈值选择。项目隔离评价应报告冷长调用召回、
+误触发、自然 RETURN 点误差及至少 500 ms 的
+真实可用提前量，并与现有头在**同一子集**
+配对比较。未证明显著改善前不启用物理迁移。
