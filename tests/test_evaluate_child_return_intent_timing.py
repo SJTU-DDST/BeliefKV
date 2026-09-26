@@ -77,6 +77,7 @@ def test_timing_uses_only_notice_time_and_fits_on_other_projects(tmp_path):
     assert after["pooled"] == before["pooled"]
     revised_rows, _ = load_episodes(tmp_path)
     assert revised_rows[0]["post_notice"]["final_output_tokens"] == 1
+    assert revised_rows[0]["post_notice"]["final_output_chars"] == 20
     assert before["post_notice_decomposition"]["valid"] == 3
     assert next(fold for fold in before["folds"]
                 if fold["heldout_project"] == "alpha")["train_median"][

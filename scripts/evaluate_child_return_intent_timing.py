@@ -130,6 +130,11 @@ def load_episodes(root: Path) -> tuple[list[dict], dict[str, int]]:
                         if type(attrs.get("output_tokens")) in (int, float)
                         else None
                     ),
+                    "final_output_chars": (
+                        attrs.get("output_chars")
+                        if type(attrs.get("output_chars")) in (int, float)
+                        else None
+                    ),
                 }
             episodes.append({
                 "project": workflow.name.split("__", 1)[0],
@@ -188,6 +193,7 @@ def _post_notice_components(episodes: list[dict]) -> dict:
     fields = (
         "notice_to_llm_submit_ms", "llm_submit_to_result_ms",
         "llm_result_to_return_ms", "final_output_tokens",
+        "final_output_chars",
     )
     return {
         "valid": len(complete),

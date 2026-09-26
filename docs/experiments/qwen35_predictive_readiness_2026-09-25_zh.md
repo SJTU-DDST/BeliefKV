@@ -3380,3 +3380,48 @@ blocked/cancel/incomplete 比例、最终报告质量、通知到 RETURN 的
 此处只是事先冻结的诊断契约，不改变
 `online_eligible=false`、`predictive_action_eligible=false`，
 也不启动预测式物理迁移。
+
+### Django 项目隔离配对诊断（2026-09-26）
+
+`819c119` 的代码冻结后，使用训练 manifest 中此前未用于**本次
+最终轮次干预设计**的四个 Django 任务
+`14500/13023/12741/14349`，对比相同通知提示的 `intent`
+与仅紧邻通知的最终轮次关闭 thinking 的 `final`。
+两臂串行、无固定模型采样随机性，原始结果在
+`experiments/raw/qwen35_child_final_report_django_pair_20260926_v1/`。
+两臂各四个 workflow；`intent` 为 4 completed、
+1 system-measurement-valid，`final` 为 3 completed、
+1 incomplete、1 system-measurement-valid。两臂
+均不能用于吞吐/JCT A/B；Django 项目也曾参与更早的开发
+试验，不能称为密封测试。最终服务在采集结束后关闭。
+
+`final` 臂实际写入 **13** 次 `child_final_report_shadow`
+触发，而 `intent` 为 0。严格自然 child RETURN 分别为
+**10/12** 次，完整 JOIN 最后 child 均仅 **1** 次；
+`final` 另有 1 次非自然/blocked 完成通知。
+通知到自然 RETURN 的 P50/P90 分别为约
+**5477/7174 ms** 和 **4674/7115 ms**。已匹配的最终
+模型提交到结果 P50 分别约 **5275/4519 ms**，
+结果到 RETURN P50 约 **164/147 ms**；最终回复正文
+长度 P50 约 **1913/1955 字符**，不是文本长度骤减
+造成的虚假加速。流式 `output_tokens` 仍缺失，不能
+将字符数冒充输出 token 或精确服务速率。冻结 PSF
+自然通知先验在 Django 两臂的绝对 RETURN 误差
+P50 分别约 **1000/961 ms**，500 ms 命中分别为
+**1/10、3/12**；JOIN 子集各仅 1 条，无法比较
+跨项目 JOIN 精度。两臂任务执行轨迹不同，时间差
+不能被解释为固定输入下 thinking 开关的因果收益。
+报告见 `intent_psf_prior_heldout.json`、
+`final_psf_prior_heldout.json` 及各自的
+`*_intent_chunk_stages.json`。
+
+另用原有 `pilot_workflow_tool_dispersion.py` 在两臂
+只读筛查，均得到 0 个可评分的 cold long child 和
+0 个稳定历史候选；这批**不**提供工具 RETURN 模型
+的改进证据。结论是保持新开关默认关闭，不把较短的
+最终轮次等同于高精度 JOIN 预测，更不能开启物理
+H2D/D2H。下一步需要更早、更稳定的完成阶段标志，
+或带可撤销容量预算的提前准备，并在实际控制和
+传输延迟下单独评价净收益；长工具进度继续独立研究。
+两臂合计 38 个可重建的 `workspace/` checkout 已在确认
+服务退出且无容器挂载后清理；结果、事件及评估报告保留。
