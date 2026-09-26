@@ -7,11 +7,16 @@ def _workflow(
     root, project, *, sibling_return=100, child_return=2200,
     cancelled=False, later_tool=False, join_satisfied=True,
     sibling_final=True, sibling_report_status=None,
+    child_report_status=None, parent_wait=False, parent_submit=None,
+    parent_cancel=None, parent_next_join=None, future_waiter_at=None,
+    parent_submit_epoch=0, parent_submit_context="root-context",
+    child_outcome="completed",
 ):
     folder = root / f"{project}__task"
     folder.mkdir(parents=True)
     first = f"{project}:first"
     last = f"{project}:last"
+    parent = f"{project}:root"
     join_id = f"{project}:join"
     events = [
         {"kind": "spawn", "target_invocation_id": first, "ts_ms": 0},
@@ -28,8 +33,30 @@ def _workflow(
          "attributes": {"finish_reason": "stop", "output_chars": 32,
                         "request_id": f"{project}:rid"}},
         {"kind": "return", "invocation_id": last, "ts_ms": child_return,
-         "attributes": {"outcome": "completed"}},
+         "attributes": {"outcome": child_outcome, **(
+             {"child_report_status": child_report_status}
+             if child_report_status is not None else {}
+         )}},
     ]
+    if parent_wait:
+        events.append({"kind": "join_wait", "join_id": join_id,
+                       "invocation_id": parent, "context_id": "root-context",
+                       "context_epoch": 0, "ts_ms": 2})
+    if future_waiter_at is not None:
+        events.append({"kind": "join_wait", "join_id": join_id,
+                       "invocation_id": f"{project}:other",
+                       "ts_ms": future_waiter_at})
+    if parent_submit is not None:
+        events.append({"kind": "llm_submit", "invocation_id": parent,
+                       "context_id": parent_submit_context,
+                       "context_epoch": parent_submit_epoch,
+                       "ts_ms": parent_submit})
+    if parent_cancel is not None:
+        events.append({"kind": "invocation_cancel", "invocation_id": parent,
+                       "ts_ms": parent_cancel})
+    if parent_next_join is not None:
+        events.append({"kind": "join_wait", "join_id": f"{project}:next",
+                       "invocation_id": parent, "ts_ms": parent_next_join})
     if sibling_final:
         events.append({"kind": "llm_result", "invocation_id": first,
                        "ts_ms": sibling_return - 1,
@@ -90,3 +117,65 @@ def test_project_heldout_lower_bound_exposes_violation(tmp_path):
         "500": 1, "1000": 0, "2000": 0,
     }
     assert report["folds"]["alpha"]["natural_join_before_floor_count"] == 0
+
+
+def test_blocked_child_still_can_wake_parent_without_natural_join(tmp_path):
+    _workflow(tmp_path, "alpha", parent_wait=True, parent_submit=2300,
+              child_report_status="blocked")
+    _workflow(tmp_path, "beta", parent_wait=True, parent_submit=2600,
+              later_tool=True)
+    _workflow(tmp_path, "gamma", parent_wait=True, parent_submit=2400)
+    rows = {item["project"]: item for item in collect([tmp_path])}
+    assert not rows["alpha"]["natural_join"]
+    assert rows["alpha"]["child_report_status"] == "blocked"
+    assert rows["alpha"]["parent_reentry_lead_ms"] == 2100
+    assert rows["alpha"]["parent_submit_after_join_ms"] == 100
+    assert rows["beta"]["revoked_by_tool"]
+    assert rows["beta"]["parent_reentry_observed"]
+    report = evaluate(list(rows.values()))["folds"]
+    assert report["alpha"]["parent_reentry_without_natural_label_count"] == 1
+    assert report["alpha"]["natural_join_count"] == 0
+    assert report["beta"]["parent_reentry_after_notice_revocation_count"] == 1
+    assert report["alpha"]["parent_reentry_train_count"] == 1
+    assert report["alpha"]["parent_reentry_train_median_ms"] == 2200
+    assert report["alpha"]["parent_reentry_abs_error_p50_ms"] == 100
+    assert report["alpha"]["parent_reentry_within_500ms_count"] == 1
+    assert report["beta"]["parent_reentry_observed_count"] == 1
+    assert report["beta"]["parent_reentry_count"] == 0
+
+
+def test_reentry_requires_an_existing_unique_waiter_and_current_parent(tmp_path):
+    _workflow(tmp_path, "alpha", parent_submit=2300)
+    _workflow(tmp_path, "beta", parent_wait=True, future_waiter_at=300,
+              parent_submit=2300)
+    _workflow(tmp_path, "gamma", parent_wait=True, parent_cancel=2250,
+              parent_submit=2300)
+    _workflow(tmp_path, "delta", parent_wait=True, parent_next_join=2250,
+              parent_submit=2300)
+    _workflow(tmp_path, "epsilon", parent_wait=True, parent_submit=2300,
+              join_satisfied=False)
+    _workflow(tmp_path, "zeta", parent_wait=True, future_waiter_at=150,
+              parent_submit=2300)
+    _workflow(tmp_path, "eta", parent_wait=True, parent_submit=2300,
+              parent_submit_context="other-context")
+    _workflow(tmp_path, "theta", parent_wait=True, parent_submit=2300,
+              parent_submit_epoch=1)
+    rows = {item["project"]: item for item in collect([tmp_path])}
+    assert set(rows) == {
+        "alpha", "beta", "gamma", "delta", "epsilon", "zeta", "eta", "theta",
+    }
+    assert rows["beta"]["parent_reentry_observed"]
+    assert rows["theta"]["parent_reentry_observed"]
+    assert all(
+        not row["parent_reentry_observed"]
+        for project, row in rows.items() if project not in {"beta", "theta"}
+    )
+
+
+def test_non_completed_return_does_not_become_natural_label(tmp_path):
+    _workflow(tmp_path, "alpha", child_outcome="cancelled",
+              parent_wait=True, parent_submit=2300)
+    row, = collect([tmp_path])
+    assert not row["natural_join"]
+    assert row["failure"] == "no_natural_child_return"
+    assert row["parent_reentry_observed"]

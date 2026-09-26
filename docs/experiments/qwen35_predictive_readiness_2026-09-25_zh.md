@@ -3759,3 +3759,54 @@ timer 投递、safe-point 排队和 H2D 成本，
 同时提供充足提前量与稳定点精度**，
 更不能替代尚未取得的 child JOIN
 项目隔离精度提升。保持预测动作关闭。
+
+## 63. JOIN 自然标签与实际 parent 恢复需求的区分（2026-09-26）
+
+在第 61 节的训练侧 8 个和项目留出侧 8 个 workflow 上，
+复跑只读 `audit_join_intent_lower_bound.py`。首次 child 通知
+时的候选选择仍只使用当时已创建的 ALL JOIN、已观察到的
+其他成员 RETURN 和此前唯一的 parent `JOIN_WAIT`；
+后续 `JOIN_SATISFIED` 与 parent 第一次 `LLM_SUBMIT`
+仅作**事后标签**。同一 parent 在恢复前被取消、RETURN、
+进入另一 JOIN，或可见的 context 身份改变时，不能将之后的
+LLM 请求归因于原 JOIN。JOIN 恢复可以产生新
+context epoch，不能因此否定同一 parent 的恢复。
+child 明确 `blocked` 或未以
+`completed` 结束时不构成严格自然 RETURN，但仍可能
+满足 JOIN 并唤醒 parent；通知后的 child 工具调用须单列
+为被撤销的候选。
+
+训练侧与留出侧合并后，通知时仅剩一个 child 的候选共
+**8 个、涉及 5 个项目**；严格自然 JOIN 仅 **3 个**，
+但 **8/8** 都在 JOIN 满足后观测到同一 parent 的
+首次 LLM 提交，因此自然标签之外还有 **5 个**
+实际 parent 恢复需求。若要求通知当时可见的 sibling
+非空终态/`complete` 状态，候选缩为 **4 个**，
+其中 **4/4** 有 parent 恢复、**3/4** 是严格自然 JOIN；
+Xarray `3305` 的最后 child 报告 `blocked`，
+仍在 JOIN 满足后约 **210 ms** 触发 parent 请求。
+其余部分无自然标签的 JOIN 主要因 sibling 的严格终态
+证明不足，并不意味着 parent 没有请求 KV。
+逐项目计数和时间在
+`experiments/raw/qwen35_command_structure_project_holdout8_20260926_v1/`
+`sole_pending_join_parent_reentry_project_cv.json`。
+
+各项目首次通知到 parent 请求的中位提前量落在
+约 **3.77--5.27 秒**，JOIN 满足到 parent 首次提交的
+项目中位延迟约 **135--419 ms**。这些窗口说明不应
+将“非自然 JOIN 标签”直接设成禁止 parent 预取的
+硬门禁；但两侧任务均属于已经用于其他开发/校准分析的
+项目，只有 8 个候选，且本回放没有记录 parent 可用
+Host KV、DMA、safe-point 投递或首次 GPU 服务。
+以其他项目已观测且通知未失效的 parent 恢复时间中位数
+作为**项目留一**点预测先验，8 个恢复事件仅 **3/8**
+落在 500 ms 内；各项目绝对误差中位数约
+**424--1172 ms**，其中 Sphinx 约 **1172 ms**。
+本小样本只对最终确实恢复的事件打分，且通知改变了
+执行路径；不能与最初 reactive 批次 1016 秒的
+首次 WAIT_JOIN 快照误差作同分布的模型增益对比。
+**8/8 是事后 parent 需求标签，不是 JOIN 时点预测精度、
+可执行 H2D 次数或吞吐收益。**未来须将自然 RETURN
+点预测、parent 实际恢复需求和通知失效风险分别评价，
+在全新项目上检验在线首次触发与实际剩余窗口后才能
+讨论物理动作门禁。

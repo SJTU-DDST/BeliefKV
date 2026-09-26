@@ -68,11 +68,16 @@ def collect(
                 for row in events
                 if row["kind"] == "return" and row.get("invocation_id")
             }
+            blocked = blocked_child_invocations(path.parent) | {
+                child for child, status in returned_status.items()
+                if status == "blocked"
+            }
             terminals, join_last = index_workflow(
-                events, blocked_invocations=blocked_child_invocations(path.parent),
+                events, blocked_invocations=blocked,
             )
             natural_returns = {
                 child: float(ts) for child, ts in terminals.values()
+                if child in returned
             }
             observed_finals = {
                 row["invocation_id"]: float(row["ts_ms"])
@@ -88,6 +93,26 @@ def collect(
                 row["join_id"]: float(row["ts_ms"]) for row in events
                 if row["kind"] == "join_satisfied"
             }
+            waiters = defaultdict(list)
+            for row in events:
+                if row["kind"] == "join_wait" and row.get("join_id") and row.get(
+                    "invocation_id"
+                ):
+                    waiters[row["join_id"]].append(row)
+            model_submissions = defaultdict(list)
+            for row in events:
+                if row["kind"] == "llm_submit" and row.get("invocation_id") and not (
+                    row.get("attributes") or {}
+                ).get("runtime_internal"):
+                    model_submissions[row["invocation_id"]].append(row)
+            parent_invalidations = defaultdict(list)
+            for row in events:
+                parent = row.get("invocation_id")
+                if parent and (
+                    row["kind"] in {"invocation_cancel", "return"}
+                    or row["kind"] == "join_wait"
+                ):
+                    parent_invalidations[parent].append(row)
             cancels = defaultdict(list)
             tools = defaultdict(list)
             for row in events:
@@ -134,6 +159,47 @@ def collect(
                 if len(sole) != 1 or len(candidates) != 1:
                     continue
                 join = sole[0]
+                join_id = join["join_id"]
+                earlier_waiters = [
+                    row for row in waiters[join_id]
+                    if float(row["ts_ms"]) <= when
+                ]
+                parent_ids = {row["invocation_id"] for row in earlier_waiters}
+                waiter = (
+                    max(earlier_waiters, key=lambda row: float(row["ts_ms"]))
+                    if len(parent_ids) == 1 else None
+                )
+                parent = waiter["invocation_id"] if waiter else None
+                satisfied_at = satisfied.get(join_id)
+                next_invalid_at = min(
+                    (
+                        float(row["ts_ms"])
+                        for row in parent_invalidations[parent]
+                        if float(row["ts_ms"]) > when
+                        and (
+                            row["kind"] != "join_wait"
+                            or row.get("join_id") != join_id
+                        )
+                    ),
+                    default=float("inf"),
+                ) if parent is not None else float("inf")
+                parent_reentry_at = (
+                    min(
+                        (
+                            float(row["ts_ms"])
+                            for row in model_submissions[parent]
+                            if satisfied_at <= float(row["ts_ms"]) < next_invalid_at
+                            and (
+                                not waiter.get("context_id")
+                                or not row.get("context_id")
+                                or waiter["context_id"] == row["context_id"]
+                            )
+                        ),
+                        default=None,
+                    )
+                    if parent is not None and satisfied_at is not None
+                    and satisfied_at > when else None
+                )
                 end = natural_returns.get(child)
                 later_tool = any(
                     when < ts < (end if end is not None else float("inf"))
@@ -165,6 +231,19 @@ def collect(
                     "revoked_by_tool": later_tool,
                     "censored_or_nonterminal": not valid and not later_tool,
                     "failure": failure,
+                    "join_satisfied_after_notice": (
+                        satisfied_at is not None and satisfied_at > when
+                    ),
+                    "child_report_status": returned_status.get(child),
+                    "parent_reentry_observed": parent_reentry_at is not None,
+                    "parent_reentry_lead_ms": (
+                        parent_reentry_at - when
+                        if parent_reentry_at is not None else None
+                    ),
+                    "parent_submit_after_join_ms": (
+                        parent_reentry_at - satisfied_at
+                        if parent_reentry_at is not None else None
+                    ),
                 })
     return records
 
@@ -185,6 +264,19 @@ def evaluate(records: list[dict]) -> dict:
         # guarantee for a new project's future child.
         floor = max(0.0, min(durations) - 200.0) if durations else None
         eligible = [item["lead_ms"] for item in test if item["natural_join"]]
+        training_reentries = [
+            item["parent_reentry_lead_ms"] for item in records
+            if item["project"] != heldout and item["parent_reentry_observed"]
+            and not item["revoked_by_tool"]
+        ]
+        reentries = [
+            item["parent_reentry_lead_ms"] for item in test
+            if item["parent_reentry_observed"] and not item["revoked_by_tool"]
+        ]
+        reentry_prior = median(training_reentries) if training_reentries else None
+        reentry_errors = [
+            abs(lead - reentry_prior) for lead in reentries
+        ] if reentry_prior is not None else []
         folds[heldout] = {
             "training_projects": sorted({item["project"] for item in training}),
             "training_natural_join_count": len(training),
@@ -201,6 +293,38 @@ def evaluate(records: list[dict]) -> dict:
                 item["failure"] for item in test if item["failure"]
             )),
             "lead_p50_ms": median(eligible) if eligible else None,
+            "join_satisfied_after_notice_count": sum(
+                item["join_satisfied_after_notice"] for item in test
+            ),
+            "parent_reentry_observed_count": sum(
+                item["parent_reentry_observed"] for item in test
+            ),
+            "parent_reentry_count": len(reentries),
+            "parent_reentry_without_natural_label_count": sum(
+                item["parent_reentry_observed"] and not item["natural_join"]
+                for item in test
+            ),
+            "parent_reentry_after_notice_revocation_count": sum(
+                item["parent_reentry_observed"] and item["revoked_by_tool"]
+                for item in test
+            ),
+            "parent_reentry_train_count": len(training_reentries),
+            "parent_reentry_train_median_ms": reentry_prior,
+            "parent_reentry_abs_error_p50_ms": (
+                median(reentry_errors) if reentry_errors else None
+            ),
+            "parent_reentry_within_500ms_count": sum(
+                error <= 500 for error in reentry_errors
+            ),
+            "parent_reentry_lead_p50_ms": (
+                median(reentries) if reentries else None
+            ),
+            "parent_submit_after_join_p50_ms": (
+                median(
+                    item["parent_submit_after_join_ms"] for item in test
+                    if item["parent_reentry_observed"]
+                ) if reentries else None
+            ),
             "window_success_counts": {
                 str(window): sum(lead >= window for lead in eligible)
                 for window in WINDOWS_MS
@@ -219,11 +343,17 @@ def evaluate(records: list[dict]) -> dict:
         ),
         "folds": folds,
         "scope": (
-            "Development projects already used for other analyses. Only "
-            "conditional timing of natural satisfied JOIN is scored; censored "
-            "and revoked candidates are counted separately, not assumed useful. "
-            "Historical minimum has no distribution-free coverage guarantee. "
-            "No physical transfer, return point-ETA, or throughput evidence."
+            "Development projects already used for other analyses. Natural "
+            "JOIN labels exclude blocked returns, while parent reentry counts "
+            "include the first matching submit after satisfied JOIN and before "
+            "parent cancellation, return, or another JOIN. Revoked notices are "
+            "counted separately and do not provide actionable lead. The parent "
+            "point-error prior uses only other projects' observed nonrevoked "
+            "reentries and is scored only on observed future reentries; missing "
+            "or censored reentries are reported separately. Historical "
+            "minimum has no distribution-free coverage guarantee. No residency, "
+            "physical transfer, validated child RETURN point-ETA, or throughput "
+            "evidence."
         ),
     }
 
