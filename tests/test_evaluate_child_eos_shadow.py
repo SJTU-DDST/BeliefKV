@@ -4,7 +4,7 @@ import json
 
 import pytest
 
-from scripts.evaluate_child_eos_shadow import audit, evaluate, load
+from scripts.evaluate_child_eos_shadow import audit, evaluate, load, score
 
 
 def _trace(root, project, name, *, cue=True, label="true", cue_ts=1200):
@@ -109,10 +109,11 @@ def test_eos_audit_does_not_count_late_delivery_as_advance(monkeypatch, tmp_path
 def test_low_prob_audit_requires_trace_collection_contract(monkeypatch, tmp_path):
     workflows = tmp_path / "run" / "workflows"
     row = _trace(workflows, "alpha", "one")
+    row["observed_first_content_ts_ms"] = 950.
     path = workflows / row["task_id"] / "runtime_events.deepagents.jsonl"
     events = [json.loads(line) for line in path.read_text().splitlines()]
     events.append({
-        "kind": "structured_action", "ts_ms": 1100,
+        "kind": "structured_action", "ts_ms": 970,
         "invocation_id": "child", "context_id": "ctx", "context_epoch": 1,
         "attributes": {
             "request_id": "req", "beliefkv_child_eos_shadow": True,
@@ -137,4 +138,23 @@ def test_low_prob_audit_requires_trace_collection_contract(monkeypatch, tmp_path
     }))
     low = audit(workflows, (0.001, 0.01))["thresholds"]["0.001"]
     assert low["natural_first_trigger"] == 1
-    assert low["natural_lead_ms"]["median"] == 900
+    assert low["natural_lead_ms"]["median"] == 1030
+
+
+def test_early_eos_uses_only_first_content_baseline():
+    train = {
+        "task_id": "train__one", "label": "true", "lead_ms": 1000.,
+        "return_ts_ms": 2000., "signal_ts_ms": 1000.,
+        "observed_first_content_ts_ms": 900.,
+        "first_eos_ts": {0.001: 980.}, "join_last": True,
+        "scored_tokens": 5, "top_hits": 1,
+    }
+    test = {
+        **train, "task_id": "heldout__one", "return_ts_ms": 2100.,
+        "first_eos_ts": {0.001: 950.},
+    }
+    report = score([train], [test], 0.001)
+    assert report["first_trigger_before_64_chars"] == 1
+    timing = report["return_timing_same_triggers"]
+    assert timing["train_first_64_prior_at_cue"] is None
+    assert timing["train_first_content_prior_at_cue"]["count"] == 1
