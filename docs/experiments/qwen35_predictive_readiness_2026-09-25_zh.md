@@ -2499,3 +2499,61 @@ child 结论。45 条匹配的至少 2 秒 child `execute` 中，
 应明确将冷调用交给带风险预算的容量预备，不能训练一个
 不存在的亚秒精确 RETURN 时钟。物理动作和模型资格
 保持关闭。
+
+## 38. 冷长工具前置信号和局部先验边界（2026-09-26）
+
+第 37 节的 6-root 批次进一步用已有
+`audit_sandbox_output_timing.py` 审计 stdout：485 条
+命令中有 74 条至少执行 2 秒，45 条能唯一匹配到
+长 child `execute`；这 45 条的宿主首输出到命令退出
+P50/P90 约 **213/257 ms**，提前至少 500 ms 的
+**0/45**。其中 33 条 `python_inline_complex` 的首输出
+P50/P90 约 **215/323 ms**，同样 0/33 达到 500 ms。
+250 ms 静默规则只在 2/45 条长 child 命令退出前触发，
+且提前量均不足 500 ms。结果为同一实验目录的
+`stdout_timing_audit.json`；stdout 不是这一批长 child
+的可靠预取时钟。
+
+只读因果回放重查已有的工具时长先验：新 6-root
+批次中 37 条**已完成**且无同输入成功历史的长 child，
+项目/命令类滚动中位数（至少 16 个已完成先例）使
+逐调用 P50 误差约 2389→810 ms，但被支持的 19 条
+全来自**一个 workflow**，支持子集仍为 0/19 落入
+500 ms。改为同 workflow 已完成同类调用至少 4 次时，
+这 19 条支持子集 P50 约 55 ms，但其余 18 条仍缺
+有效支持，不能以一个 workflow 代表项目泛化。
+
+`pilot_workflow_tool_dispersion.py` 新增只读、有界诊断：
+同 workflow、同命令类只保留最近 4 次**已经成功结束**
+的调用；其时长中位数至少 2 秒、相对中位数的最大偏差
+不超过 250 ms，才考虑在中位时长前 1 秒产生候选。
+后续返回时间、成功/失败和其它 workflow 的未来结果
+均不用于当时筛选；脚本分别报告预测点误差、
+真实提前量、过早/过晚和短调用误报，且排除已有
+成功同输入历史的请求。250 ms 来自目标 500 ms
+误差预算的一半，**不是**从旧校准数据调出的阈值。
+
+该规则在旧 128-root train trace（child 身份只能按
+`--allow-legacy-origin` 旧命名推断）选中 153 次、
+跨 8 个 workflow，141 次实际长调用，138 次点误差
+≤500 ms；但候选**只来自 Xarray**，12 次是短调用。
+新 6-root 中选中 14 次、跨 2 个 Xarray workflow，
+12 次长调用，13 次处于 RETURN 前 0.5--2 秒窗口。
+旧 Astropy/Sphinx 66-root、具有显式 child 身份的
+项目隔离开发批次则有 62 条已完成冷长 child、
+24 条具有至少 4 次同 workflow 同类历史，
+**0 次**符合固定离散度筛选。因此未证明任何
+跨项目的有效候选，不能为了补覆盖而根据该旧
+校准集事后调松阈值。三个报告分别为同一新
+6-root 目录下的 `workflow_dispersion_train128_legacy.json`、
+`workflow_dispersion_train6.json`、
+`workflow_dispersion_calibration66.json`。
+
+这些报告均只对最终完成的调用评分，取消或未返回
+命令不作为真实负例，且没有任何完整 JOIN、HBM
+residency、投递或 DMA 时延保证。旧 Astropy/Sphinx
+校准数据已在其他探索中使用，也不是密封测试。
+新版 `observed_command_shape` 在这份旧校准 trace
+缺失；不能后补或推断其标签并宣称有形态验证。
+当前不把此低支持规则加入在线头，不调整
+`online_eligible=false` 或预测式物理动作资格。
