@@ -2557,3 +2557,40 @@ residency、投递或 DMA 时延保证。旧 Astropy/Sphinx
 缺失；不能后补或推断其标签并宣称有形态验证。
 当前不把此低支持规则加入在线头，不调整
 `online_eligible=false` 或预测式物理动作资格。
+
+## 39. 有限等待确认与请求失效的因果回放（2026-09-26）
+
+在第 35 节的 256-token 训练项目留一短窗筛查上，扩展
+`pilot_child_return_window.py`：首次达到分数及连续采样门槛后，
+只读回放 0/250/500/750/1000/1500/2000 ms 确认等待；如果
+等待结束前同一请求出现工具调用片段、`llm_result` 或同一
+invocation 的取消/返回/context epoch 变化，就撤销候选。
+请求结束事件缺失时也不把等待后的候选当成有效触发。失效事件
+必须晚于本次 `llm_submit`，否则历史 context 事件会制造
+虚假的取消；同时按实际最早事件归因，不能把 `llm_result`
+之后的 RETURN 错记成身份失效。只用**训练项目留一**评分选
+阈值、确认次数和等待时长；SymPy 16-task development 不参与
+规则选择。回放只检验因果时间戳，不证明在线隐状态投递时延。
+
+训练侧无延迟、0.5 分数、连续 3 次确认的候选为 **9/12**
+落入 RETURN 前 0.5--3 秒窗口，3 次超过 3 秒，完整 JOIN
+最后 child 为 **0 次**。作为对照，1.5 秒延迟、
+0.75 分数、1 次确认的候选为 **14/19** 落入窗口，
+仍有 5 次过早；4 个 JOIN 最后 child 候选中 3 次
+落入窗口，另外 8 个候选在 `llm_result` 先到时被撤销。
+这是从网格中事后展示的配置，不是满足门槛的冻结规则。
+预先确定的至少 8 个窗口内触发、跨两个训练项目及窗口
+精度不低于 90% 的组合**仍不存在**：
+`delayed_rule_chosen_on_train_project_cv=null`，因此
+`heldout_at_frozen_delayed_rule=null`；不查看 SymPy 对应
+配置以反向调参。
+
+报告存于 `experiments/raw/qwen35_hidden_child_real_train_fresh32_20260926/`
+`return_window_delayed_project_cv.json`。单纯推迟候选不能同时
+解决过早触发和保持首次 JOIN 的可用提前量。下一步需寻找
+工具执行中或 child 生成中可提前观测、身份明确且实际能
+在线送达的完成阶段信号，再在训练项目定规则，并以尚未用于
+规则搜索的项目验证完整 JOIN 的首次触发、控制投递和
+物理 H2D 完成；不能把局部负结果解释为可靠短窗头。
+`online_eligible=false`、`predictive_action_eligible=false`
+及物理预测动作关闭状态保持不变。

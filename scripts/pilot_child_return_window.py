@@ -33,6 +33,71 @@ STAGE_TOKENS = 512
 TARGET_START_MS = 500
 TARGET_END_MS = 3000
 THRESHOLDS = tuple(round(i / 100, 2) for i in range(50, 96, 5))
+CONFIRMATION_DELAYS_MS = (0, 250, 500, 750, 1000, 1500, 2000)
+
+
+def window_cues(workflows: Path) -> dict[str, dict[str, float]]:
+    cues = content_cues(workflows)
+    for path in workflows.glob("*/runtime_events.deepagents.jsonl"):
+        requests = {}
+        invalidations = {}
+        contexts = {}
+        context_events = {}
+        submitted = {}
+        with path.open() as stream:
+            for line in stream:
+                event = json.loads(line)
+                kind = event.get("kind")
+                invocation = event.get("invocation_id")
+                ts = event.get("ts_ms")
+                context_id = event.get("context_id")
+                epoch = event.get("context_epoch")
+                attrs = event.get("attributes") or {}
+                rid = attrs.get("request_id")
+                if kind in {"llm_submit", "llm_result"} and rid and invocation:
+                    requests[rid] = invocation
+                    if kind == "llm_submit":
+                        submitted[rid] = min(
+                            ts, submitted.get(rid, float("inf")),
+                        )
+                    if context_id is not None:
+                        contexts.setdefault(rid, (context_id, epoch))
+                    if kind == "llm_result":
+                        cue = cues.setdefault(rid, {})
+                        cue["result"] = min(ts, cue.get("result", float("inf")))
+                if kind in {"return", "invocation_cancel"} and invocation:
+                    invalidations.setdefault(invocation, []).append(ts)
+                if invocation and context_id is not None:
+                    context_events.setdefault(invocation, []).append(
+                        (ts, context_id, epoch),
+                    )
+        for rid, invocation in requests.items():
+            if invocation in invalidations:
+                earliest = min(
+                    (ts for ts in invalidations[invocation]
+                     if ts >= submitted.get(rid, float("inf"))),
+                    default=float("inf"),
+                )
+                if earliest < float("inf"):
+                    cue = cues.setdefault(rid, {})
+                    cue["invalidated"] = min(
+                        earliest, cue.get("invalidated", float("inf")),
+                    )
+            if rid in contexts:
+                context_id, epoch = contexts[rid]
+                other_epoch = (
+                    ts for ts, observed_id, observed_epoch
+                    in context_events.get(invocation, [])
+                    if ts >= submitted.get(rid, float("inf"))
+                    if observed_id != context_id or observed_epoch != epoch
+                )
+                earliest = min(other_epoch, default=float("inf"))
+                if earliest < float("inf"):
+                    cue = cues.setdefault(rid, {})
+                    cue["invalidated"] = min(
+                        earliest, cue.get("invalidated", float("inf")),
+                    )
+    return cues
 
 
 def score(model: tuple, samples: list[tuple]) -> np.ndarray:
@@ -48,7 +113,11 @@ def causal_observations(record: dict, cues: dict) -> list[tuple[float, tuple]]:
     content_ts = cue.get("content")
     if content_ts is None:
         return []
-    tool_ts = cue.get("tool", float("inf"))
+    end_ts = min(
+        cue.get("tool", float("inf")),
+        cue.get("result", float("inf")),
+        cue.get("invalidated", float("inf")),
+    )
     first_arrival = record["first_arrival_ms"]
     observations = []
     previous = None
@@ -58,7 +127,7 @@ def causal_observations(record: dict, cues: dict) -> list[tuple[float, tuple]]:
             previous = sample
             continue
         if previous is not None:
-            if content_ts < tool_ts:
+            if content_ts < end_ts:
                 lead = (
                     record["return_ms"] - content_ts if record["terminal"]
                     else None
@@ -68,13 +137,13 @@ def causal_observations(record: dict, cues: dict) -> list[tuple[float, tuple]]:
                     (previous[0], previous[1], lead, previous[3]),
                 ))
             previous = None
-        if sample_ts >= tool_ts:
+        if sample_ts >= end_ts:
             break
         lead = record["return_ms"] - sample_ts if record["terminal"] else None
         observations.append((
             sample_ts, (sample[0], sample[1], lead, sample[3]),
         ))
-    if previous is not None and content_ts < tool_ts:
+    if previous is not None and content_ts < end_ts:
         lead = record["return_ms"] - content_ts if record["terminal"] else None
         observations.append((
             content_ts, (previous[0], previous[1], lead, previous[3]),
@@ -147,21 +216,30 @@ def scored_sequences(
                 "return_ms": record["return_ms"],
                 "join_last": record.get("join_last", False),
                 "observations": observations,
+                "tool_ms": cues.get(record["rid"], {}).get("tool", float("inf")),
+                "result_ms": cues.get(record["rid"], {}).get("result"),
+                "invalidated_ms": cues.get(record["rid"], {}).get(
+                    "invalidated", float("inf"),
+                ),
             })
     return sequences
 
 
 def report(
     sequences: list[dict], threshold: float, confirmation_samples: int = 1,
+    delay_ms: int = 0,
 ) -> dict:
     if confirmation_samples < 1:
         raise ValueError("confirmation_samples must be positive")
+    if delay_ms < 0:
+        raise ValueError("delay_ms must be nonnegative")
     leads = []
     join_leads = []
     false_rounds = 0
+    cancelled_tool = cancelled_result = cancelled_identity = missing_result = 0
     projects = set()
     for sequence in sequences:
-        trigger = next(
+        candidate = next(
             (
                 at for index, (at, value) in enumerate(sequence["observations"])
                 if index + 1 >= confirmation_samples
@@ -175,8 +253,29 @@ def report(
             ),
             None,
         )
-        if trigger is None:
+        if candidate is None:
             continue
+        trigger = candidate + delay_ms
+        if delay_ms:
+            # An absent end event cannot certify that the request still exists
+            # when the confirmation timer fires.
+            result_ms = sequence.get("result_ms")
+            if result_ms is None:
+                missing_result += 1
+                continue
+            first_end = min(
+                (sequence.get("tool_ms", float("inf")), "tool"),
+                (result_ms, "result"),
+                (sequence.get("invalidated_ms", float("inf")), "identity"),
+            )
+            if first_end[0] <= trigger:
+                if first_end[1] == "tool":
+                    cancelled_tool += 1
+                elif first_end[1] == "result":
+                    cancelled_result += 1
+                else:
+                    cancelled_identity += 1
+                continue
         projects.add(sequence["project"])
         if sequence["terminal"]:
             lead = sequence["return_ms"] - trigger
@@ -190,6 +289,7 @@ def report(
     return {
         "threshold": threshold,
         "confirmation_samples": confirmation_samples,
+        "delay_ms": delay_ms,
         "first_trigger_count": total,
         "projects_with_triggers": len(projects),
         "nonterminal_false_triggers": false_rounds,
@@ -200,6 +300,11 @@ def report(
         "join_last_window_triggers": sum(
             TARGET_START_MS <= x <= TARGET_END_MS for x in join_leads
         ),
+        "join_last_triggers": len(join_leads),
+        "cancelled_tool": cancelled_tool,
+        "cancelled_result": cancelled_result,
+        "cancelled_identity": cancelled_identity,
+        "missing_result": missing_result,
         "window_precision": round(in_window / total, 4) if total else None,
         "lead_p50_ms": round(median(leads), 2) if leads else None,
     }
@@ -221,6 +326,32 @@ def select_threshold(sequences: list[dict]) -> tuple[float, int] | None:
         return None
     _, threshold, samples = max(eligible, key=lambda row: (row[0], row[1], -row[2]))
     return threshold, samples
+
+
+def select_delayed_rule(
+    sequences: list[dict],
+) -> tuple[float, int, int] | None:
+    eligible = []
+    for delay_ms in CONFIRMATION_DELAYS_MS:
+        for samples in (1, 2, 3):
+            for threshold in THRESHOLDS:
+                result = report(sequences, threshold, samples, delay_ms)
+                if (
+                    result["window_true_triggers"] >= 8
+                    and result["projects_with_triggers"] >= 2
+                    and result["window_precision"] is not None
+                    and result["window_precision"] >= 0.90
+                ):
+                    eligible.append((
+                        result["window_true_triggers"],
+                        threshold, samples, delay_ms,
+                    ))
+    if not eligible:
+        return None
+    _, threshold, samples, delay_ms = max(
+        eligible, key=lambda row: (row[0], row[1], -row[2], -row[3]),
+    )
+    return threshold, samples, delay_ms
 
 
 def main() -> None:
@@ -249,7 +380,7 @@ def main() -> None:
     stage_train = at_stage(train, args.stage_tokens)
     train_cues = {}
     for root in args.train_workflows:
-        train_cues.update(content_cues(root))
+        train_cues.update(window_cues(root))
     folds = []
     for project in sorted(train_projects):
         fit = [row for row in stage_train if row["project"] != project]
@@ -258,6 +389,7 @@ def main() -> None:
             validation, fit_head(fit), fit_window(fit, train_cues), train_cues,
         ))
     selected = select_threshold(folds)
+    delayed = select_delayed_rule(folds)
     result = {
         "diagnostic_only": True,
         "train_projects": sorted(train_projects),
@@ -267,23 +399,36 @@ def main() -> None:
         "stage_tokens": args.stage_tokens,
         "window_ms": [TARGET_START_MS, TARGET_END_MS],
         "threshold_chosen_on_train_project_cv": selected,
+        "delayed_rule_chosen_on_train_project_cv": delayed,
         "project_cv": {
             str(samples): {
                 str(value): report(folds, value, samples) for value in THRESHOLDS
             } for samples in (1, 2, 3)
         },
         "heldout_at_frozen_threshold": None,
+        "heldout_at_frozen_delayed_rule": None,
     }
-    if selected is not None:
+    if selected is not None or delayed is not None:
         heldout_cues = {}
         for root in args.heldout_workflows:
-            heldout_cues.update(content_cues(root))
+            heldout_cues.update(window_cues(root))
         sequences = scored_sequences(
             at_stage(heldout, args.stage_tokens),
             fit_head(stage_train), fit_window(stage_train, train_cues),
             heldout_cues,
         )
-        result["heldout_at_frozen_threshold"] = report(sequences, *selected)
+        if selected is not None:
+            result["heldout_at_frozen_threshold"] = report(sequences, *selected)
+        if delayed is not None:
+            result["heldout_at_frozen_delayed_rule"] = report(sequences, *delayed)
+    result["delayed_project_cv"] = {
+        str(delay_ms): {
+            str(samples): {
+                str(value): report(folds, value, samples, delay_ms)
+                for value in THRESHOLDS
+            } for samples in (1, 2, 3)
+        } for delay_ms in CONFIRMATION_DELAYS_MS
+    }
     args.output.parent.mkdir(parents=True, exist_ok=True)
     args.output.write_text(json.dumps(result, indent=2) + "\n", encoding="utf-8")
     print(json.dumps(result, indent=2))
