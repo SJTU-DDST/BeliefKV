@@ -133,6 +133,7 @@ def load_episodes(root: Path) -> tuple[list[dict], dict[str, int]]:
                 }
             episodes.append({
                 "project": workflow.name.split("__", 1)[0],
+                "task_id": workflow.name,
                 "lead_ms": end - notice,
                 "join_last": child in join_last,
                 "post_notice": post_notice,

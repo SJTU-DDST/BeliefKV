@@ -3141,3 +3141,82 @@ request ID 和最终自然 RETURN；额外提交、跳跃 epoch、
 因果触发规则，再选能产生完整 JOIN 的未用于规则选择的
 任务，按首次在线可见的信号和实际投递时刻量化短窗误报、
 点误差及可用提前量。物理预测动作仍关闭。
+
+## 52. Astropy 项目隔离的双阶段时序复验（2026-09-26）
+
+仅用上一节 Sphinx 的 6 次严格自然 child RETURN
+拟合冻结的首通知/最终片段时延先验；然后在同一
+Astropy 冻结校准 manifest 中按原始顺序选取前 8 个
+任务（12907/13033/13236/13398/13453/13579/13977/
+14096）。这 8 个任务在本轮双阶段规则选择中未使用，
+但 Astropy 曾参加更早的模型校准，**不是密封测试集**。
+两臂均开流式与最终片段只读埋点，仅通知臂开主动
+完成通知；模型、Host 池、GPU 服务和任务集合一致，
+不启用物理预测动作。采集脚本记录的 `source_commit`
+是 `7808c99`；仅运行脚本的任务选择入口在实验开始后
+提交为 `8fec39c`，模型/适配器代码本轮未更改。
+原始目录：`experiments/raw/qwen35_child_intent_chunk_astropy_pair_20260926_v1/`。
+
+两臂各有 8 份结果，均为 **4 completed、2 个系统测量
+有效**；这不是合格的吞吐或 JCT A/B。通知臂有 27 个
+动态 child；其中 21 个是严格自然 RETURN，只有 3 个
+对应完整 JOIN 的最后 child。其首通知和通知后的首个
+最终片段都通过 RID、相邻 epoch、同 context 和最终
+自然 RETURN 的身份审计；没有把被取消/blocked child
+或不完整 workflow 当作完整 JOIN 正例。
+
+`evaluate_child_intent_project_holdout.py` 按 Sphinx 中
+**3 个有合格通知的任务**等权拟合固定先验约
+5503 ms；留出 Astropy 21 次自然 RETURN 的绝对
+点误差 P50/P90 为 **619/1457 ms**，仅 7/21
+不超过 500 ms。完整 JOIN 最后 child 的 3 次
+误差中位 **1060 ms、0/3 不超过 500 ms**。
+这批通知到 RETURN 的实际中位提前量约 4926 ms，
+完整 JOIN 子集约 4443 ms；有可供部分准备的
+时间，却不能用固定先验精确安排首次服务。
+对应报告 `intent_project_holdout.json`。
+
+冻结 Sphinx 最终片段先验约 182 ms。在 Astropy
+通知臂，21 次最终片段的 RETURN 误差 P50/P90
+为 **20.7/51.6 ms**，完整 JOIN 子集 P50 约
+20.7 ms；真实提前量中位仅 **175 ms**，完整
+JOIN 子集约 **200 ms**，片段相对 `llm_result`
+早约 **4.7 ms**。无通知的 Astropy 对照臂也有
+21 次自然 RETURN、3 次完整 JOIN 最后 child，
+对应 P50 误差约 23.9/37.3 ms、提前量约
+158/144 ms；故晚期高精度主要来自**已结束的
+流式回复**，不能归功于主动通知，也不能由此
+证明大块 H2D 已被隐藏。两臂各有不完整
+workflow，所有指标仅为严格自然子集的诊断。
+报告为 `final_chunk_project_holdout_{control,intent}.json`。
+
+通知与最终片段之间已有固定的只读正文里程碑。
+`evaluate_child_intent_stream_milestones.py` 在**不看
+Astropy 标签选阈值**的情况下，分别回放现有
+1024/1700 字符阈值及首通知后的第一触发，严格
+核对 RID/context/相邻 epoch；训练仍只用 Sphinx。
+1024 字符在 Astropy 有 21 次严格自然样本，
+提前量中位约 2111 ms，但固定先验误差 P50
+约 **949 ms**，仅 5/21 不超过 500 ms；
+3 个完整 JOIN 的中位误差约 1087 ms。
+1700 字符覆盖 18 次自然样本，提前量中位
+约 738 ms，误差 P50 约 **834 ms**、
+4/18 不超过 500 ms；完整 JOIN 3 次的
+中位误差约 934 ms。这些都是开发用阈值的
+并列阴性诊断，不能事后挑中较佳者声称
+门槛通过。报告 `stream_milestone_project_holdout.json`。
+
+结论：这组项目隔离复验确认**临终片段条件下**
+的 RETURN 点误差已到数十毫秒，却只有不足
+200 ms 的物理提前量；有数秒提前量的通知和
+中间里程碑，其 JOIN 时点仍不满足 500 ms
+目标，也没有 PCIe/HBM 物理收益验证。下一步
+应验证通知后的实时生成速率、最终回复长度
+不确定性和工具执行期前置信号，用独立项目
+检验有用提前量与误报，不能将本轮不同触发
+时刻的误差互相替代。服务已自行关闭；清理
+本轮 71 个可重建 `workspace/` checkout 后
+剩余数为 0，16 份 result/trajectory/patch/
+sandbox audit、服务遥测和评价报告均保留。
+`online_eligible=false`、
+`predictive_action_eligible=false` 不变。
