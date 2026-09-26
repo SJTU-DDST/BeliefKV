@@ -107,11 +107,32 @@ def _task_median(rows: list[dict], key: str) -> float:
     return median(median(group) for group in values.values())
 
 
+def _stage_64_ts(row: dict) -> float | None:
+    if "first_64_ts_ms" in row:
+        return row["first_64_ts_ms"]
+    return (
+        row["signal_ts_ms"]
+        if row.get("stage_threshold_chars", 64) == 64 else None
+    )
+
+
 def score(train: list[dict], test: list[dict], threshold: float) -> dict:
     train_stage = [row for row in train if row["label"] == "true"]
     if not train_stage:
         raise ValueError("no natural training stage returns")
-    stage_prior = _task_median(train_stage, "lead_ms")
+    stage_64_train = [
+        {
+            **row,
+            "stage_64_lead_ms": row["return_ts_ms"] - stage_ts,
+        }
+        for row in train_stage
+        if (stage_ts := _stage_64_ts(row)) is not None
+        and stage_ts < row["return_ts_ms"]
+    ]
+    stage_prior = (
+        _task_median(stage_64_train, "stage_64_lead_ms")
+        if stage_64_train else None
+    )
     first_content_train = [
         {
             **row,
@@ -143,8 +164,8 @@ def score(train: list[dict], test: list[dict], threshold: float) -> dict:
         ]
         after_stage = [
             row for row in rows
-            if row.get("stage_threshold_chars", 64) == 64
-            and row["first_eos_ts"][threshold] >= row["signal_ts_ms"]
+            if (stage_ts := _stage_64_ts(row)) is not None
+            and row["first_eos_ts"][threshold] >= stage_ts
         ]
         from_content = [
             row for row in rows
@@ -157,14 +178,16 @@ def score(train: list[dict], test: list[dict], threshold: float) -> dict:
                 _metrics(actual, [cue_prior] * len(rows))
                 if cue_prior is not None else None
             ),
-            "train_first_64_prior_at_cue": _metrics([
-                row["return_ts_ms"] - row["first_eos_ts"][threshold]
-                for row in after_stage
-            ], [
-                max(0., stage_prior - (
-                    row["first_eos_ts"][threshold] - row["signal_ts_ms"]
-                )) for row in after_stage
-            ]),
+            "train_first_64_prior_at_cue": (
+                _metrics([
+                    row["return_ts_ms"] - row["first_eos_ts"][threshold]
+                    for row in after_stage
+                ], [
+                    max(0., stage_prior - (
+                        row["first_eos_ts"][threshold] - _stage_64_ts(row)
+                    )) for row in after_stage
+                ]) if stage_prior is not None else None
+            ),
             "train_first_content_prior_at_cue": (
                 _metrics([
                     row["return_ts_ms"] - row["first_eos_ts"][threshold]
@@ -201,12 +224,8 @@ def score(train: list[dict], test: list[dict], threshold: float) -> dict:
         ),
         "first_trigger": len(observed),
         "first_trigger_before_64_chars": sum(
-            (
-                row.get("first_64_ts_ms", row["signal_ts_ms"])
-                is None
-                or row["first_eos_ts"][threshold]
-                < row.get("first_64_ts_ms", row["signal_ts_ms"])
-            )
+            (_stage_64_ts(row) is None
+             or row["first_eos_ts"][threshold] < _stage_64_ts(row))
             for row in observed
         ),
         "first_trigger_labels": dict(Counter(row["label"] for row in observed)),

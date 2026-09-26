@@ -158,3 +158,23 @@ def test_early_eos_uses_only_first_content_baseline():
     timing = report["return_timing_same_triggers"]
     assert timing["train_first_64_prior_at_cue"] is None
     assert timing["train_first_content_prior_at_cue"]["count"] == 1
+
+
+def test_late_low_eos_may_compare_to_past_64_char_stage():
+    train = {
+        "task_id": "train__one", "label": "true", "lead_ms": 1100.,
+        "return_ts_ms": 2000., "signal_ts_ms": 900.,
+        "first_64_ts_ms": 1050., "stage_threshold_chars": 0,
+        "observed_first_content_ts_ms": 900.,
+        "first_eos_ts": {0.001: 1200.}, "join_last": True,
+        "scored_tokens": 5, "top_hits": 1,
+    }
+    test = {
+        **train, "task_id": "heldout__one", "return_ts_ms": 2100.,
+        "first_eos_ts": {0.001: 1250.},
+    }
+    report = score([train], [test], 0.001)
+    assert report["first_trigger_before_64_chars"] == 0
+    assert report["return_timing_same_triggers"][
+        "train_first_64_prior_at_cue"
+    ]["count"] == 1
