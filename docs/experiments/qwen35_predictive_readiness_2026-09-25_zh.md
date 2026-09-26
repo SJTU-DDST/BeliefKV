@@ -4245,3 +4245,46 @@ root 在 child 全部返回后继续工具工作，恰在 900 秒
 超时，graph 2048/32 强制收尾保持不变。未来按
 workflow 配对比较时必须记录相同的截止配置，
 已被旧 900 秒截止删失的 root 不能追认为自然完成。
+
+## 68. 完成通知后 EOS 候选概率的只读试验
+
+上一节的自然标题没有覆盖率；事后知道完整输出长度的
+oracle 不能作为在线特征。SGLang 的 Chat 流可以返回
+top-token logprobs，当前 LangChain 回调保留每个块的
+`generation_info.logprobs`。Qwen3.5 的停止 token
+包括 `<|im_end|>` 和 `<|endoftext|>`；增加默认关闭的
+`--child-eos-shadow`，只在 child 一次有效完成意图的
+**下一次**模型请求上启用 `logprobs=true/top_logprobs=20`，
+不改变 thinking/prompt 或运行中的调度动作。选中
+EOS 的块或带 finish reason 的终止块不产生提前信号。
+不记录普通 token、正文或完整概率分布；仅保存未选中
+EOS 的 top 候选首次跨越 1%、5%、10%、25%、50%
+概率阈值的实际回调投递时刻，按 request/child/
+epoch 绑定，并统计有效得分 token 数及 EOS top
+命中块数。缺席 top20 不等于 EOS 概率为零。
+
+评价脚本 `scripts/evaluate_child_eos_shadow.py` 从完成
+通知后的首个 64 字符阶段起评估每个阈值的首次触发；
+训练项目按 workflow 等权拟合剩余时长中位先验，
+留出项目在相同触发子集上比较旧 64 字符阶段先验、
+零时长先验。须单列继续调用工具的假触发、没有
+概率数据、没有候选、被删失、完整 JOIN 最后 child，
+以及首次触发到自然 RETURN 是否真有至少 500 ms
+乃至 2 s 的提前量。不能仅按最后几个 token 的
+小绝对误差宣称能够隐藏 KV 传输；日志中的
+`logprobs` 是已生成 token 后才到达回调的概率，
+不是未来 token 的已知结束时间。
+
+先以 train split 的 `pydata__xarray-3151` 做单任务
+端到端数据形态检查。只有后续真正得到提前信号，
+才按事前固定的训练项目
+Xarray `2905/3095/3151/3305`、
+Django `10097/10880`、Pylint `4604/6528`
+与项目隔离的 Astropy `13033/13398`、
+Sphinx `10435/10449` 运行完整诊断。
+两侧都使用相同的流式完成意图/EOS 开关、2048/32
+graph guard、7200 秒 workflow 上限和 Host/running
+配置。Astropy/Sphinx 已参与先前开发，因此这只是
+按项目隔离的复验，不是密封测试。若单任务没有
+可解析元数据或无实际提前量，先修复采集链或记录
+阴性结果，不启动大批次。物理动作资格不变。

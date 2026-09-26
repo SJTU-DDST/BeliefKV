@@ -12,6 +12,7 @@ from langchain_core.messages import HumanMessage
 
 from beliefkv.core.events import RuntimeEventKind
 from beliefkv.runtime.deepagents_adapter import DeepAgentsRuntimeAdapter
+from beliefkv.runtime.eos_shadow import eos_top_logprob
 from beliefkv.runtime.report_phase import ReportPhaseTracker
 from beliefkv.runtime.sglang_adapter import BeliefKVRequestMetadata
 
@@ -81,3 +82,78 @@ def test_child_phase_events_are_trace_only_bound_to_request_epoch():
     assert phases[0].attributes["phase_kind"] == "summary"
     assert phases[0].attributes["diagnostic_only"] is True
     assert "private" not in json.dumps(phases[0].to_dict())
+
+
+def test_eos_top_logprob_ignores_sampled_terminal_and_absent_top():
+    found, scored = eos_top_logprob({
+        "content": [
+            {
+                "token": "ordinary",
+                "top_logprobs": [
+                    {"token": "<|im_end|>", "logprob": -2.0},
+                    {"token": "private", "logprob": -0.1},
+                ],
+            },
+            {
+                "token": "<|im_end|>",
+                "top_logprobs": [
+                    {"token": "<|im_end|>", "logprob": 0.},
+                ],
+            },
+        ],
+    })
+    assert found == -2.0
+    assert scored == 2
+    assert eos_top_logprob({"content": [{"token": "word"}]}) == (None, 1)
+
+
+def test_child_eos_threshold_uses_current_request_and_deduplicates():
+    trace = _Sink()
+    adapter = DeepAgentsRuntimeAdapter(
+        trace, BeliefKVRequestMetadata("wf", "root", "ctx", 0),
+        eos_shadow=True,
+    )
+    adapter.start()
+    task = adapter.declare_runtime_tasks([("explorer", "private")])[0]
+    tool_run = uuid4()
+    adapter.on_tool_start(
+        {"name": "task"}, "", run_id=tool_run,
+        inputs={"subagent_type": "explorer", "description": "private"},
+        tool_call_id=task.tool_call_id,
+    )
+    run = uuid4()
+    adapter.on_chat_model_start(
+        {}, [[HumanMessage(content="private prompt")]],
+        run_id=run, parent_run_id=tool_run,
+    )
+    def chunk(text, *, finish=None, sampled="word"):
+        return SimpleNamespace(
+            generation_info={
+                "logprobs": {"content": [{
+                    "token": sampled, "top_logprobs": [{
+                        "token": "<|im_end|>", "logprob": -1.9,
+                    }],
+                }]},
+                **({"finish_reason": finish} if finish else {}),
+            },
+            message=SimpleNamespace(content=text, tool_call_chunks=[]),
+        )
+    first = chunk("visible")
+    adapter.on_llm_new_token("visible", chunk=first, run_id=run)
+    second = chunk("private")
+    adapter.on_llm_new_token("private", chunk=second, run_id=run)
+    adapter.on_llm_new_token("private", chunk=second, run_id=run)
+    adapter.on_llm_new_token("", chunk=chunk(
+        "", finish="stop", sampled="<|im_end|>",
+    ), run_id=run)
+    cues = [
+        event for event in trace.events
+        if event.attributes.get("beliefkv_child_eos_shadow")
+    ]
+    assert [event.attributes["eos_top_probability_threshold"] for event in cues] == [
+        0.01, 0.05, 0.1,
+    ]
+    assert all(event.invocation_id == task.invocation_id for event in cues)
+    assert all(event.join_id == task.join_id for event in cues)
+    assert all(event.attributes["request_id"] == f"beliefkv:{run}" for event in cues)
+    assert "private" not in json.dumps([event.to_dict() for event in cues])

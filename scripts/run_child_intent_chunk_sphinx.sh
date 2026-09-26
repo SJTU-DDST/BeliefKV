@@ -103,6 +103,9 @@ for arm in "${arms[@]}"; do
   if [[ "${REPORT_PHASE_SHADOW:-0}" == 1 ]]; then
     intent_arg+=(--child-report-phase-shadow)
   fi
+  if [[ "${CHILD_EOS_SHADOW:-0}" == 1 && "$arm" != control ]]; then
+    intent_arg+=(--child-eos-shadow)
+  fi
   if ! "$PYTHON" "$ROOT/scripts/run_deepagents_swebench.py" \
     --mode autonomous --base-url "http://127.0.0.1:$PORT/v1" \
     --model Qwen3.5-35B-A3B --workload-manifest "$SOURCE" \

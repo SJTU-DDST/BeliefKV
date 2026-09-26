@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import math
 import threading
 import time
 import urllib.request
@@ -37,6 +38,7 @@ from beliefkv.runtime.agent_runtime_adapter import RuntimeEventSink
 from beliefkv.runtime.action_frontier import StructuredActionKind
 from beliefkv.runtime.context_lifecycle import ContextCompactionRecord
 from beliefkv.runtime.event_channel import QueuedRuntimeEventSink
+from beliefkv.runtime.eos_shadow import EOS_PROB_THRESHOLDS, eos_top_logprob
 from beliefkv.runtime.report_phase import ReportPhaseTracker
 from beliefkv.runtime.sglang_adapter import BeliefKVRequestMetadata
 from beliefkv.runtime.sglang_v0520_sessions import NativeRadixSessionLeases
@@ -225,6 +227,7 @@ class DeepAgentsRuntimeAdapter(BaseCallbackHandler):
         finish_chunk_shadow: bool = False,
         command_structure_shadow: bool = False,
         report_phase_shadow: bool = False,
+        eos_shadow: bool = False,
     ) -> None:
         super().__init__()
         if root_metadata.relation_type != RelationType.ROOT.value:
@@ -245,6 +248,7 @@ class DeepAgentsRuntimeAdapter(BaseCallbackHandler):
         self._finish_chunk_shadow = finish_chunk_shadow
         self._command_structure_shadow = command_structure_shadow
         self._report_phase_shadow = report_phase_shadow
+        self._eos_shadow = eos_shadow
         self._lock = threading.RLock()
         self._publication_lock = threading.RLock()
         self._sequence = 0
@@ -271,6 +275,9 @@ class DeepAgentsRuntimeAdapter(BaseCallbackHandler):
         self._child_stream_chunk_count: dict[str, int] = {}
         self._child_stream_last_chunk: dict[str, Any] = {}
         self._child_report_phase_trackers: dict[str, ReportPhaseTracker] = {}
+        self._child_eos_seen: set[tuple[str, float]] = set()
+        self._child_eos_scored_tokens: dict[str, int] = {}
+        self._child_eos_top_hits: dict[str, int] = {}
         self._child_finish_chunk_ts_ms: dict[str, float] = {}
         self._join_members: dict[str, set[str]] = {}
         self._join_completed: dict[str, set[str]] = {}
@@ -752,7 +759,6 @@ class DeepAgentsRuntimeAdapter(BaseCallbackHandler):
         **kwargs: Any,
     ) -> None:
         """Capture a prospective final-answer boundary without scheduling actions."""
-        del kwargs
         # A token may be reasoning text even when the streamed AIMessage has
         # no visible content. Only an explicit content chunk is a body cue.
         message = getattr(chunk, "message", None)
@@ -762,6 +768,11 @@ class DeepAgentsRuntimeAdapter(BaseCallbackHandler):
         tool_seen = bool(getattr(message, "tool_call_chunks", None))
         key = _run_key(run_id)
         generation_info = getattr(chunk, "generation_info", None)
+        logprobs = (
+            generation_info.get("logprobs") or kwargs.get("logprobs")
+            if isinstance(generation_info, Mapping)
+            else kwargs.get("logprobs")
+        )
         final_candidate = None
         if (
             self._finish_chunk_shadow
@@ -811,10 +822,13 @@ class DeepAgentsRuntimeAdapter(BaseCallbackHandler):
                     },
                 ),
             ), control=False)
-        if not content_chars and not tool_seen:
+        if not content_chars and not tool_seen and not (
+            self._eos_shadow and logprobs
+        ):
             return
         emitted: list[tuple[str, int | None]] = []
         phase_events: list[tuple[str, int]] = []
+        eos_events: list[float] = []
         with self._lock:
             if (
                 key is None
@@ -833,6 +847,32 @@ class DeepAgentsRuntimeAdapter(BaseCallbackHandler):
             if chunk is self._child_stream_last_chunk.get(key):
                 return
             self._child_stream_last_chunk[key] = chunk
+            if (
+                self._eos_shadow
+                and logprobs
+                and key in self._child_first_content_shadow_runs
+                and not tool_seen
+                and key not in self._child_first_tool_chunk_shadow_runs
+                and not (
+                    isinstance(generation_info, Mapping)
+                    and generation_info.get("finish_reason")
+                )
+            ):
+                eos_logprob, scored = eos_top_logprob(logprobs)
+                self._child_eos_scored_tokens[key] = (
+                    self._child_eos_scored_tokens.get(key, 0) + scored
+                )
+                if eos_logprob is not None:
+                    self._child_eos_top_hits[key] = (
+                        self._child_eos_top_hits.get(key, 0) + 1
+                    )
+                    for threshold in EOS_PROB_THRESHOLDS:
+                        if (
+                            eos_logprob >= math.log(threshold)
+                            and (key, threshold) not in self._child_eos_seen
+                        ):
+                            self._child_eos_seen.add((key, threshold))
+                            eos_events.append(threshold)
             if content_seen and key not in self._child_first_content_shadow_runs:
                 self._child_first_content_shadow_runs.add(key)
                 emitted.append(("beliefkv_child_first_content_shadow", None))
@@ -912,6 +952,24 @@ class DeepAgentsRuntimeAdapter(BaseCallbackHandler):
                     },
                 ) for phase, offset in phase_events
             ), control=False)
+        if eos_events:
+            self._publish(tuple(
+                self._event(
+                    RuntimeEventKind.STRUCTURED_ACTION,
+                    invocation_id=invocation_id,
+                    context_id=metadata.context_id,
+                    context_epoch=metadata.context_epoch,
+                    join_id=pending.join_id,
+                    confidence=EventConfidence.INFERRED,
+                    attributes={
+                        "source": "deepagents_stream_shadow",
+                        "beliefkv_child_eos_shadow": True,
+                        "diagnostic_only": True,
+                        "request_id": _native_request_id(run_id),
+                        "eos_top_probability_threshold": threshold,
+                    },
+                ) for threshold in eos_events
+            ), control=False)
 
     def on_llm_end(
         self,
@@ -933,6 +991,12 @@ class DeepAgentsRuntimeAdapter(BaseCallbackHandler):
             stream_chunk_count = self._child_stream_chunk_count.pop(key, None)
             self._child_stream_last_chunk.pop(key, None)
             self._child_report_phase_trackers.pop(key, None)
+            eos_scored_tokens = self._child_eos_scored_tokens.pop(key, None)
+            eos_top_hits = self._child_eos_top_hits.pop(key, None)
+            if self._eos_shadow:
+                self._child_eos_seen.difference_update(
+                    (key, threshold) for threshold in EOS_PROB_THRESHOLDS
+                )
             finish_chunk_ts_ms = self._child_finish_chunk_ts_ms.pop(key, None)
         invocation_id = self._resolve_invocation(key)
         with self._lock:
@@ -1008,6 +1072,13 @@ class DeepAgentsRuntimeAdapter(BaseCallbackHandler):
                 "stream_content_max_chunk_chars": stream_max_chunk,
                 "stream_content_token_chars": stream_token_chars,
                 "stream_content_chunk_count": stream_chunk_count,
+                **(
+                    {
+                        "eos_shadow_scored_tokens": eos_scored_tokens or 0,
+                        "eos_shadow_top_hits": eos_top_hits or 0,
+                    }
+                    if self._eos_shadow and eos_scored_tokens is not None else {}
+                ),
                 "output_tokens": output_tokens or None,
                 "tool_call_count": len(tool_calls),
                 "invalid_tool_call_count": invalid_tool_call_count,
@@ -1133,6 +1204,12 @@ class DeepAgentsRuntimeAdapter(BaseCallbackHandler):
             self._child_stream_chunk_count.pop(key, None)
             self._child_stream_last_chunk.pop(key, None)
             self._child_report_phase_trackers.pop(key, None)
+            self._child_eos_scored_tokens.pop(key, None)
+            self._child_eos_top_hits.pop(key, None)
+            if self._eos_shadow:
+                self._child_eos_seen.difference_update(
+                    (key, threshold) for threshold in EOS_PROB_THRESHOLDS
+                )
             self._child_finish_chunk_ts_ms.pop(key, None)
         invocation_id = self._resolve_invocation(key)
         with self._lock:

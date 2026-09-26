@@ -2516,6 +2516,48 @@ def test_child_final_report_shadow_requires_notice(tmp_path: Path) -> None:
         **kwargs, child_report_length_shadow=True,
         child_return_intent_shadow=True,
     ).child_report_length_shadow is True
+    with pytest.raises(ValueError, match="EOS shadow requires"):
+        DeepAgentsExperimentConfig(**kwargs, child_eos_shadow=True)
+    with pytest.raises(ValueError, match="EOS shadow requires"):
+        DeepAgentsExperimentConfig(
+            **kwargs, child_eos_shadow=True, child_return_intent_shadow=True,
+        )
+    assert DeepAgentsExperimentConfig(
+        **kwargs, child_eos_shadow=True, child_return_intent_shadow=True,
+        stream_completion_shadow=True,
+    ).child_eos_shadow is True
+
+
+def test_post_notice_eos_shadow_does_not_change_thinking(tmp_path: Path) -> None:
+    audit = JsonlAudit(tmp_path / "eos.jsonl")
+    middleware = ChildFinalReportShadowMiddleware(
+        audit=audit, scope="child", disable_thinking=False, eos_shadow=True,
+    )
+    notice = AIMessage(content="", tool_calls=[
+        {"name": "announce_completion_intent", "args": {}, "id": "call-1"},
+    ])
+    outcome = ToolMessage(
+        content="ready", tool_call_id="call-1", name="announce_completion_intent",
+    )
+    request = ModelRequest(
+        model=FakeMessagesListChatModel(responses=[AIMessage(content="report")]),
+        messages=[HumanMessage(content="task"), notice, outcome],
+        model_settings={"extra_body": {"chat_template_kwargs": {"existing": True}}},
+    )
+    sent = []
+    try:
+        middleware.wrap_model_call(
+            request, lambda req: (
+                sent.append(req.model_settings)
+                or ModelResponse(result=[AIMessage(content="report")])
+            ),
+        )
+    finally:
+        audit.close()
+    assert sent[0]["logprobs"] is True
+    assert sent[0]["top_logprobs"] == 20
+    assert sent[0]["extra_body"]["chat_template_kwargs"] == {"existing": True}
+    assert "logprobs" not in request.model_settings
 
 
 def test_child_final_report_shadow_matches_real_agent_tool_result(tmp_path: Path) -> None:

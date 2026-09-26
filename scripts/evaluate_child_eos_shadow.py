@@ -1,0 +1,249 @@
+#!/usr/bin/env python3
+"""Evaluate delivered EOS top-logprob cues without future-text features."""
+
+from __future__ import annotations
+
+import argparse
+from collections import Counter, defaultdict
+import json
+from pathlib import Path
+from statistics import median
+
+try:
+    from beliefkv.runtime.eos_shadow import EOS_PROB_THRESHOLDS
+    from scripts.evaluate_child_intent_stream_milestones import collect
+    from scripts.evaluate_child_return_intent_timing import _metrics
+except ModuleNotFoundError:
+    from beliefkv.runtime.eos_shadow import EOS_PROB_THRESHOLDS
+    from evaluate_child_intent_stream_milestones import collect
+    from evaluate_child_return_intent_timing import _metrics
+
+
+def load(workflows: Path) -> tuple[list[dict], dict]:
+    stages, counts = collect(workflows, 64)
+    events_by_task = {
+        path.parent.name: [
+            json.loads(line)
+            for line in path.read_text(encoding="utf-8").splitlines()
+        ]
+        for path in workflows.glob("*/runtime_events.deepagents.jsonl")
+    }
+    for row in stages:
+        events = events_by_task[row["task_id"]]
+        result = next((
+            event for event in events
+            if event.get("kind") == "llm_result"
+            and event.get("invocation_id") == row["invocation_id"]
+            and (event.get("attributes") or {}).get("request_id") == row["request_id"]
+        ), None)
+        attrs = (result or {}).get("attributes") or {}
+        row["scored_tokens"] = attrs.get("eos_shadow_scored_tokens")
+        row["top_hits"] = attrs.get("eos_shadow_top_hits")
+        row["first_eos_ts"] = {}
+        for event in events:
+            attrs = event.get("attributes") or {}
+            threshold = attrs.get("eos_top_probability_threshold")
+            if (
+                event.get("kind") != "structured_action"
+                or not attrs.get("beliefkv_child_eos_shadow")
+                or type(threshold) not in {int, float}
+                or threshold not in EOS_PROB_THRESHOLDS
+                or attrs.get("request_id") != row["request_id"]
+                or event.get("invocation_id") != row["invocation_id"]
+                or (event.get("context_id"), event.get("context_epoch"))
+                != (row["context_id"], row["context_epoch"])
+                or float(event["ts_ms"]) < row["signal_ts_ms"]
+            ):
+                continue
+            ts = float(event["ts_ms"])
+            current = row["first_eos_ts"].get(threshold)
+            if current is None or ts < current:
+                row["first_eos_ts"][threshold] = ts
+    return stages, counts
+
+
+def _task_median(rows: list[dict], key: str) -> float:
+    values = defaultdict(list)
+    for row in rows:
+        values[row["task_id"]].append(row[key])
+    return median(median(group) for group in values.values())
+
+
+def score(train: list[dict], test: list[dict], threshold: float) -> dict:
+    train_stage = [row for row in train if row["label"] == "true"]
+    if not train_stage:
+        raise ValueError("no natural training stage returns")
+    stage_prior = _task_median(train_stage, "lead_ms")
+    train_cues = [
+        {**row, "cue_lead": row["return_ts_ms"] - row["first_eos_ts"][threshold]}
+        for row in train_stage if threshold in row["first_eos_ts"]
+        and row["return_ts_ms"] >= row["first_eos_ts"][threshold]
+    ]
+    cue_prior = _task_median(train_cues, "cue_lead") if train_cues else None
+    observed = [row for row in test if threshold in row["first_eos_ts"]]
+    natural = [
+        row for row in observed if row["label"] == "true"
+        and row["return_ts_ms"] >= row["first_eos_ts"][threshold]
+    ]
+
+    def timing(rows: list[dict]) -> dict:
+        actual = [
+            row["return_ts_ms"] - row["first_eos_ts"][threshold] for row in rows
+        ]
+        return {
+            "train_eos_prior": (
+                _metrics(actual, [cue_prior] * len(rows))
+                if cue_prior is not None else None
+            ),
+            "train_first_64_prior_at_cue": _metrics(actual, [
+                max(0., stage_prior - (
+                    row["first_eos_ts"][threshold] - row["signal_ts_ms"]
+                )) for row in rows
+            ]),
+            "immediate_return_at_cue": _metrics(actual, [0.] * len(rows)),
+        }
+
+    return {
+        "eligible_first_64_stage": len(test),
+        "natural_stage": sum(row["label"] == "true" for row in test),
+        "scored_tokens_available": sum(
+            type(row["scored_tokens"]) is int and row["scored_tokens"] > 0
+            for row in test
+        ),
+        "eos_top_hit_available": sum(
+            type(row["top_hits"]) is int and row["top_hits"] > 0
+            for row in test
+        ),
+        "first_trigger": len(observed),
+        "first_trigger_labels": dict(Counter(row["label"] for row in observed)),
+        "natural_first_trigger": len(natural),
+        "natural_without_trigger": sum(
+            row["label"] == "true" and threshold not in row["first_eos_ts"]
+            for row in test
+        ),
+        "natural_trigger_lead_at_least_500ms": sum(
+            row["return_ts_ms"] - row["first_eos_ts"][threshold] >= 500
+            for row in natural
+        ),
+        "natural_trigger_lead_at_least_2000ms": sum(
+            row["return_ts_ms"] - row["first_eos_ts"][threshold] >= 2000
+            for row in natural
+        ),
+        "natural_join_last_trigger": sum(row["join_last"] for row in natural),
+        "train_trigger_rows": len(train_cues),
+        "train_trigger_workflows": len({row["task_id"] for row in train_cues}),
+        "train_eos_prior_ms": cue_prior,
+        "return_timing_same_triggers": timing(natural),
+        "join_last_timing_same_triggers": timing([
+            row for row in natural if row["join_last"]
+        ]),
+    }
+
+
+def audit(workflows: Path) -> dict:
+    rows, counts = load(workflows)
+    return {
+        "diagnostic_only": True,
+        "collector": counts,
+        "eligible_first_64_stage": len(rows),
+        "labels": dict(Counter(row["label"] for row in rows)),
+        "natural_join_last": sum(
+            row["join_last"] and row["label"] == "true" for row in rows
+        ),
+        "thresholds": {
+            str(threshold): {
+                "first_trigger": sum(
+                    threshold in row["first_eos_ts"] for row in rows
+                ),
+                "natural_first_trigger": sum(
+                    threshold in row["first_eos_ts"] and row["label"] == "true"
+                    for row in rows
+                ),
+                "natural_with_500ms_lead": sum(
+                    threshold in row["first_eos_ts"]
+                    and row["label"] == "true"
+                    and row["return_ts_ms"] - row["first_eos_ts"][threshold] >= 500
+                    for row in rows
+                ),
+            } for threshold in EOS_PROB_THRESHOLDS
+        },
+        "eos_scored_tokens_available": sum(
+            type(row["scored_tokens"]) is int and row["scored_tokens"] > 0
+            for row in rows
+        ),
+        "eos_top_hit_available": sum(
+            type(row["top_hits"]) is int and row["top_hits"] > 0
+            for row in rows
+        ),
+        "scope": (
+            "Notice-bound first 64-character stages only; no causal fit or "
+            "physical transfer. A top-k miss is not zero EOS probability."
+        ),
+    }
+
+
+def evaluate(train_roots: list[Path], heldout_root: Path) -> dict:
+    train, train_info, tasks, projects = [], {}, set(), set()
+    for root in train_roots:
+        rows, counts = load(root)
+        ids = {row["task_id"] for row in rows}
+        if ids & tasks:
+            raise ValueError("training workflows overlap")
+        tasks |= ids
+        projects |= {row["project"] for row in rows}
+        train.extend(rows)
+        train_info[str(root)] = counts
+    heldout, heldout_info = load(heldout_root)
+    eval_projects = {row["project"] for row in heldout}
+    if (
+        not projects or not eval_projects or projects & eval_projects
+        or tasks & {row["task_id"] for row in heldout}
+    ):
+        raise ValueError("train and held-out projects/tasks must be disjoint")
+    return {
+        "diagnostic_only": True,
+        "train_projects": sorted(projects),
+        "heldout_projects": sorted(eval_projects),
+        "train_collectors": train_info,
+        "heldout_collector": heldout_info,
+        "thresholds": {
+            str(threshold): {
+                "evaluation": score(train, heldout, threshold),
+                "by_project": {
+                    project: score(
+                        train, [
+                            row for row in heldout if row["project"] == project
+                        ], threshold,
+                    ) for project in sorted(eval_projects)
+                },
+            } for threshold in EOS_PROB_THRESHOLDS
+        },
+        "scope": (
+            "Scores delivered unsampled EOS top-logprob crossings only after "
+            "a notice-bound first 64-character stage. Priors use training "
+            "projects exclusively. No action readiness or H2D benefit implied."
+        ),
+    }
+
+
+def main() -> None:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--audit-workflows", type=Path)
+    parser.add_argument("--train-workflows", type=Path, action="append")
+    parser.add_argument("--heldout-workflows", type=Path)
+    parser.add_argument("--output", type=Path, required=True)
+    args = parser.parse_args()
+    if args.audit_workflows:
+        if args.train_workflows or args.heldout_workflows:
+            parser.error("--audit-workflows cannot be combined with evaluation")
+        result = audit(args.audit_workflows)
+    else:
+        if not args.train_workflows or args.heldout_workflows is None:
+            parser.error("evaluation requires train and held-out workflows")
+        result = evaluate(args.train_workflows, args.heldout_workflows)
+    args.output.parent.mkdir(parents=True, exist_ok=True)
+    args.output.write_text(json.dumps(result, indent=2) + "\n", encoding="utf-8")
+
+
+if __name__ == "__main__":
+    main()

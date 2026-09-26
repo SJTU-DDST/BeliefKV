@@ -1471,12 +1471,17 @@ class EmptyReasoningRecoveryMiddleware(AgentMiddleware[Any, Any, Any]):
 
 
 class ChildFinalReportShadowMiddleware(AgentMiddleware[Any, Any, Any]):
-    """Opt-in non-thinking final report immediately after a child notification."""
+    """Opt-in final-report controls immediately after a child notification."""
 
-    def __init__(self, *, audit: JsonlAudit, scope: str) -> None:
+    def __init__(
+        self, *, audit: JsonlAudit, scope: str,
+        disable_thinking: bool = True, eos_shadow: bool = False,
+    ) -> None:
         super().__init__()
         self.audit = audit
         self.scope = scope
+        self.disable_thinking = disable_thinking
+        self.eos_shadow = eos_shadow
         self._seen_call_ids: set[str] = set()
         self._lock = threading.Lock()
 
@@ -1501,13 +1506,25 @@ class ChildFinalReportShadowMiddleware(AgentMiddleware[Any, Any, Any]):
                 self._seen_call_ids.add(outcome.tool_call_id)
         if not first_attempt:
             return handler(request)
-        self.audit.emit(
-            "child_final_report_shadow",
-            scope=self.scope,
-            tool_call_id=outcome.tool_call_id,
-            enable_thinking=False,
-        )
-        return handler(EmptyReasoningRecoveryMiddleware._retry_request(request))
+        if self.disable_thinking:
+            self.audit.emit(
+                "child_final_report_shadow",
+                scope=self.scope,
+                tool_call_id=outcome.tool_call_id,
+                enable_thinking=False,
+            )
+            request = EmptyReasoningRecoveryMiddleware._retry_request(request)
+        if self.eos_shadow:
+            self.audit.emit(
+                "child_eos_shadow",
+                scope=self.scope,
+                tool_call_id=outcome.tool_call_id,
+                top_logprobs=20,
+            )
+            settings = dict(request.model_settings)
+            settings.update(logprobs=True, top_logprobs=20)
+            request = request.override(model_settings=settings)
+        return handler(request)
 
 
 @dataclass(frozen=True)
@@ -1536,6 +1553,7 @@ class DeepAgentsExperimentConfig:
     stream_completion_shadow: bool = False
     child_finish_chunk_shadow: bool = False
     child_report_phase_shadow: bool = False
+    child_eos_shadow: bool = False
     child_return_intent_shadow: bool = False
     child_final_report_shadow: bool = False
     child_report_length_shadow: bool = False
@@ -1570,6 +1588,10 @@ class DeepAgentsExperimentConfig:
             raise ValueError("child final-chunk shadow requires streamed completion")
         if self.child_report_phase_shadow and not self.stream_completion_shadow:
             raise ValueError("child report phases require streamed completion")
+        if self.child_eos_shadow and (
+            not self.stream_completion_shadow or not self.child_return_intent_shadow
+        ):
+            raise ValueError("child EOS shadow requires streamed child return intent")
         if self.subagent_fanout_profile not in SUBAGENT_FANOUT_PROFILES:
             raise ValueError("unsupported subagent fan-out profile")
         if (
@@ -2886,8 +2908,11 @@ def _run_planned_child(
                     [ChildFinalReportShadowMiddleware(
                         audit=backend.audit,
                         scope=f"planned:child:{handle.invocation_id}",
+                        disable_thinking=config.child_final_report_shadow,
+                        eos_shadow=config.child_eos_shadow,
                     )]
-                    if config.child_final_report_shadow else []
+                    if config.child_final_report_shadow or config.child_eos_shadow
+                    else []
                 ),
             ],
             system_prompt=(
@@ -3780,6 +3805,7 @@ def _run_workflow(
             or os.environ.get("BELIEFKV_CHILD_FINISH_CHUNK_SHADOW") == "1"
         ),
         report_phase_shadow=config.child_report_phase_shadow,
+        eos_shadow=config.child_eos_shadow,
         command_structure_shadow=(
             os.environ.get("BELIEFKV_COMMAND_STRUCTURE_SHADOW") == "1"
         ),
