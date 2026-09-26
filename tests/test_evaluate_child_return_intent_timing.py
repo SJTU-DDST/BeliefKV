@@ -5,6 +5,9 @@ import pytest
 from scripts.evaluate_child_return_intent_timing import (
     evaluate, evaluate_heldout, load_episodes,
 )
+from scripts.evaluate_child_intent_service_load import (
+    _metrics_at_notice, evaluate as evaluate_asof_load,
+)
 
 
 def _workflow(root, project, *, lead=1000, later_tool=False, blocked=False):
@@ -116,3 +119,33 @@ def test_heldout_fit_does_not_consume_target_labels_or_overlap_projects(tmp_path
     _workflow(test, "alpha")
     with pytest.raises(ValueError, match="overlap"):
         evaluate_heldout(train, test)
+
+
+def test_asof_load_ignores_future_metrics_and_rejects_stale_data(tmp_path):
+    train = tmp_path / "fit"
+    test = tmp_path / "heldout"
+    for project, lead in (("alpha", 1000), ("beta", 3000), ("gamma", 4000)):
+        workflow = _workflow(train, project, lead=lead)
+        (workflow.parent.parent / "sglang_metrics.jsonl").write_text(json.dumps({
+            "monotonic_ts_ms": 100, "num_running_reqs": 2,
+            "num_queue_reqs": 0,
+        }) + "\n")
+    target = _workflow(test, "delta", lead=2500)
+    path = target.parent.parent / "sglang_metrics.jsonl"
+    path.write_text(json.dumps({
+        "monotonic_ts_ms": 100, "num_running_reqs": 8,
+        "num_queue_reqs": 1,
+    }) + "\n")
+    result = evaluate_asof_load(train, test)
+    assert result["pre_notice_load"]["development"]["running_p50"] == 8
+    assert result["results"]["train_median"]["return"]["count"] == 1
+    path.write_text(path.read_text() + json.dumps({
+        "monotonic_ts_ms": 600, "num_running_reqs": 1000,
+        "num_queue_reqs": 1000,
+    }) + "\n")
+    assert evaluate_asof_load(train, test) == result
+    with pytest.raises(ValueError, match="no recent metric"):
+        _metrics_at_notice(path, 4000)
+    path.unlink()
+    with pytest.raises(FileNotFoundError, match="contemporaneous metrics"):
+        evaluate_asof_load(train, test)

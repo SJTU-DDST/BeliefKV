@@ -136,6 +136,8 @@ def load_episodes(root: Path) -> tuple[list[dict], dict[str, int]]:
                 "lead_ms": end - notice,
                 "join_last": child in join_last,
                 "post_notice": post_notice,
+                "notice_ms": notice,
+                "metrics_path": workflow.parent.parent / "sglang_metrics.jsonl",
                 "features": [
                     notice - creates[0],
                     sum(row["kind"] == "llm_result" and not
