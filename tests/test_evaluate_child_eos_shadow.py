@@ -7,7 +7,7 @@ import pytest
 from scripts.evaluate_child_eos_shadow import audit, evaluate, load
 
 
-def _trace(root, project, name, *, cue=True, label="true"):
+def _trace(root, project, name, *, cue=True, label="true", cue_ts=1200):
     task = root / f"{project}__{name}"
     task.mkdir(parents=True)
     events = [{
@@ -21,7 +21,7 @@ def _trace(root, project, name, *, cue=True, label="true"):
     }]
     if cue:
         events.append({
-            "kind": "structured_action", "ts_ms": 1200,
+            "kind": "structured_action", "ts_ms": cue_ts,
             "invocation_id": "child", "context_id": "ctx",
             "context_epoch": 1,
             "attributes": {
@@ -65,8 +65,32 @@ def test_eos_first_delivery_project_split_and_missing(monkeypatch, tmp_path):
     assert report["first_trigger_labels"] == {"true": 1, "false": 1}
     assert report["natural_without_trigger"] == 1
     assert report["natural_trigger_lead_at_least_500ms"] == 1
-    assert audit(heldout)["eos_scored_tokens_available"] == 3
+    coverage = audit(heldout)
+    assert coverage["eos_scored_tokens_available"] == 3
+    assert coverage["thresholds"]["0.1"]["false_first_trigger"] == 1
+    assert coverage["thresholds"]["0.1"]["natural_lead_ms"] == {
+        "min": 800., "median": 800., "max": 800.,
+    }
     duplicate = _trace(heldout, "alpha", "1")
     heldout_rows.append(duplicate)
     with pytest.raises(ValueError, match="disjoint"):
         evaluate([train], heldout)
+
+
+def test_eos_audit_does_not_count_late_delivery_as_advance(monkeypatch, tmp_path):
+    root = tmp_path / "workflows"
+    rows = [
+        _trace(root, "alpha", "on_time"),
+        _trace(root, "alpha", "late", cue_ts=2200),
+        _trace(root, "alpha", "simultaneous", cue_ts=2000),
+    ]
+    monkeypatch.setattr(
+        "scripts.evaluate_child_eos_shadow.collect",
+        lambda _root, _threshold: (rows, {"workflows": 3}),
+    )
+    coverage = audit(root)["thresholds"]["0.1"]
+    assert coverage["first_trigger"] == 3
+    assert coverage["natural_first_trigger"] == 1
+    assert coverage["after_return_trigger"] == 2
+    assert coverage["natural_with_500ms_lead"] == 1
+    assert coverage["natural_join_last_trigger"] == 1

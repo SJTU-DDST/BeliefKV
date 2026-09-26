@@ -77,13 +77,13 @@ def score(train: list[dict], test: list[dict], threshold: float) -> dict:
     train_cues = [
         {**row, "cue_lead": row["return_ts_ms"] - row["first_eos_ts"][threshold]}
         for row in train_stage if threshold in row["first_eos_ts"]
-        and row["return_ts_ms"] >= row["first_eos_ts"][threshold]
+        and row["return_ts_ms"] > row["first_eos_ts"][threshold]
     ]
     cue_prior = _task_median(train_cues, "cue_lead") if train_cues else None
     observed = [row for row in test if threshold in row["first_eos_ts"]]
     natural = [
         row for row in observed if row["label"] == "true"
-        and row["return_ts_ms"] >= row["first_eos_ts"][threshold]
+        and row["return_ts_ms"] > row["first_eos_ts"][threshold]
     ]
 
     def timing(rows: list[dict]) -> dict:
@@ -116,6 +116,11 @@ def score(train: list[dict], test: list[dict], threshold: float) -> dict:
         ),
         "first_trigger": len(observed),
         "first_trigger_labels": dict(Counter(row["label"] for row in observed)),
+        "after_return_trigger": sum(
+            row["label"] == "true"
+            and row["first_eos_ts"][threshold] >= row["return_ts_ms"]
+            for row in observed
+        ),
         "natural_first_trigger": len(natural),
         "natural_without_trigger": sum(
             row["label"] == "true" and threshold not in row["first_eos_ts"]
@@ -142,6 +147,41 @@ def score(train: list[dict], test: list[dict], threshold: float) -> dict:
 
 def audit(workflows: Path) -> dict:
     rows, counts = load(workflows)
+    thresholds = {}
+    for threshold in EOS_PROB_THRESHOLDS:
+        triggered = [
+            row for row in rows if threshold in row["first_eos_ts"]
+        ]
+        natural = [
+            row for row in triggered if row["label"] == "true"
+            and row["first_eos_ts"][threshold] < row["return_ts_ms"]
+        ]
+        leads = [
+            row["return_ts_ms"] - row["first_eos_ts"][threshold]
+            for row in natural
+        ]
+        thresholds[str(threshold)] = {
+            "first_trigger": len(triggered),
+            "natural_first_trigger": len(natural),
+            "false_first_trigger": sum(
+                row["label"] == "false" for row in triggered
+            ),
+            "censored_first_trigger": sum(
+                row["label"] == "censored" for row in triggered
+            ),
+            "after_return_trigger": sum(
+                row["label"] == "true"
+                and row["first_eos_ts"][threshold] >= row["return_ts_ms"]
+                for row in triggered
+            ),
+            "natural_with_500ms_lead": sum(lead >= 500 for lead in leads),
+            "natural_with_2000ms_lead": sum(lead >= 2000 for lead in leads),
+            "natural_join_last_trigger": sum(row["join_last"] for row in natural),
+            "natural_lead_ms": (
+                {"min": min(leads), "median": median(leads), "max": max(leads)}
+                if leads else None
+            ),
+        }
     return {
         "diagnostic_only": True,
         "collector": counts,
@@ -150,23 +190,7 @@ def audit(workflows: Path) -> dict:
         "natural_join_last": sum(
             row["join_last"] and row["label"] == "true" for row in rows
         ),
-        "thresholds": {
-            str(threshold): {
-                "first_trigger": sum(
-                    threshold in row["first_eos_ts"] for row in rows
-                ),
-                "natural_first_trigger": sum(
-                    threshold in row["first_eos_ts"] and row["label"] == "true"
-                    for row in rows
-                ),
-                "natural_with_500ms_lead": sum(
-                    threshold in row["first_eos_ts"]
-                    and row["label"] == "true"
-                    and row["return_ts_ms"] - row["first_eos_ts"][threshold] >= 500
-                    for row in rows
-                ),
-            } for threshold in EOS_PROB_THRESHOLDS
-        },
+        "thresholds": thresholds,
         "eos_scored_tokens_available": sum(
             type(row["scored_tokens"]) is int and row["scored_tokens"] > 0
             for row in rows
