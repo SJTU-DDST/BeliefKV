@@ -97,6 +97,10 @@ def parse_args() -> argparse.Namespace:
         help="Audit the final child stream chunk; requires --stream-completion-shadow.",
     )
     parser.add_argument(
+        "--child-report-phase-shadow", action="store_true",
+        help="Audit de-identified child report headings during streaming; no actions.",
+    )
+    parser.add_argument(
         "--child-return-intent-shadow", action="store_true",
         help="Opt-in child completion notification tool for read-only timing diagnosis.",
     )
@@ -256,6 +260,7 @@ def main() -> int:
         sampling_seed=args.sampling_seed,
         stream_completion_shadow=args.stream_completion_shadow,
         child_finish_chunk_shadow=args.child_finish_chunk_shadow,
+        child_report_phase_shadow=args.child_report_phase_shadow,
         child_return_intent_shadow=args.child_return_intent_shadow,
         child_final_report_shadow=args.child_final_report_shadow,
         child_report_length_shadow=args.child_report_length_shadow,

@@ -37,6 +37,7 @@ from beliefkv.runtime.agent_runtime_adapter import RuntimeEventSink
 from beliefkv.runtime.action_frontier import StructuredActionKind
 from beliefkv.runtime.context_lifecycle import ContextCompactionRecord
 from beliefkv.runtime.event_channel import QueuedRuntimeEventSink
+from beliefkv.runtime.report_phase import ReportPhaseTracker
 from beliefkv.runtime.sglang_adapter import BeliefKVRequestMetadata
 from beliefkv.runtime.sglang_v0520_sessions import NativeRadixSessionLeases
 
@@ -223,6 +224,7 @@ class DeepAgentsRuntimeAdapter(BaseCallbackHandler):
         project_id: str = "",
         finish_chunk_shadow: bool = False,
         command_structure_shadow: bool = False,
+        report_phase_shadow: bool = False,
     ) -> None:
         super().__init__()
         if root_metadata.relation_type != RelationType.ROOT.value:
@@ -242,6 +244,7 @@ class DeepAgentsRuntimeAdapter(BaseCallbackHandler):
         self._project_id = project_id
         self._finish_chunk_shadow = finish_chunk_shadow
         self._command_structure_shadow = command_structure_shadow
+        self._report_phase_shadow = report_phase_shadow
         self._lock = threading.RLock()
         self._publication_lock = threading.RLock()
         self._sequence = 0
@@ -267,6 +270,7 @@ class DeepAgentsRuntimeAdapter(BaseCallbackHandler):
         self._child_stream_token_chars: dict[str, int] = {}
         self._child_stream_chunk_count: dict[str, int] = {}
         self._child_stream_last_chunk: dict[str, Any] = {}
+        self._child_report_phase_trackers: dict[str, ReportPhaseTracker] = {}
         self._child_finish_chunk_ts_ms: dict[str, float] = {}
         self._join_members: dict[str, set[str]] = {}
         self._join_completed: dict[str, set[str]] = {}
@@ -810,6 +814,7 @@ class DeepAgentsRuntimeAdapter(BaseCallbackHandler):
         if not content_chars and not tool_seen:
             return
         emitted: list[tuple[str, int | None]] = []
+        phase_events: list[tuple[str, int]] = []
         with self._lock:
             if (
                 key is None
@@ -838,6 +843,10 @@ class DeepAgentsRuntimeAdapter(BaseCallbackHandler):
                 content_chars
                 and key not in self._child_first_tool_chunk_shadow_runs
             ):
+                if self._report_phase_shadow:
+                    phase_events = self._child_report_phase_trackers.setdefault(
+                        key, ReportPhaseTracker()
+                    ).feed(content)
                 self._child_stream_max_chunk_chars[key] = max(
                     self._child_stream_max_chunk_chars.get(key, 0),
                     content_chars,
@@ -884,6 +893,25 @@ class DeepAgentsRuntimeAdapter(BaseCallbackHandler):
                 },
             ) for name, threshold in emitted
         ), control=False)
+        if phase_events:
+            self._publish(tuple(
+                self._event(
+                    RuntimeEventKind.STRUCTURED_ACTION,
+                    invocation_id=invocation_id,
+                    context_id=metadata.context_id,
+                    context_epoch=metadata.context_epoch,
+                    join_id=pending.join_id,
+                    confidence=EventConfidence.INFERRED,
+                    attributes={
+                        "source": "deepagents_stream_shadow",
+                        "beliefkv_child_report_phase_shadow": True,
+                        "diagnostic_only": True,
+                        "request_id": _native_request_id(run_id),
+                        "phase_kind": phase,
+                        "stream_content_chars": offset,
+                    },
+                ) for phase, offset in phase_events
+            ), control=False)
 
     def on_llm_end(
         self,
@@ -904,6 +932,7 @@ class DeepAgentsRuntimeAdapter(BaseCallbackHandler):
             stream_token_chars = self._child_stream_token_chars.pop(key, None)
             stream_chunk_count = self._child_stream_chunk_count.pop(key, None)
             self._child_stream_last_chunk.pop(key, None)
+            self._child_report_phase_trackers.pop(key, None)
             finish_chunk_ts_ms = self._child_finish_chunk_ts_ms.pop(key, None)
         invocation_id = self._resolve_invocation(key)
         with self._lock:
@@ -1103,6 +1132,7 @@ class DeepAgentsRuntimeAdapter(BaseCallbackHandler):
             self._child_stream_token_chars.pop(key, None)
             self._child_stream_chunk_count.pop(key, None)
             self._child_stream_last_chunk.pop(key, None)
+            self._child_report_phase_trackers.pop(key, None)
             self._child_finish_chunk_ts_ms.pop(key, None)
         invocation_id = self._resolve_invocation(key)
         with self._lock:

@@ -1535,6 +1535,7 @@ class DeepAgentsExperimentConfig:
     sampling_seed: int | None = None
     stream_completion_shadow: bool = False
     child_finish_chunk_shadow: bool = False
+    child_report_phase_shadow: bool = False
     child_return_intent_shadow: bool = False
     child_final_report_shadow: bool = False
     child_report_length_shadow: bool = False
@@ -1567,6 +1568,8 @@ class DeepAgentsExperimentConfig:
             raise ValueError("mode must be autonomous or planned")
         if self.child_finish_chunk_shadow and not self.stream_completion_shadow:
             raise ValueError("child final-chunk shadow requires streamed completion")
+        if self.child_report_phase_shadow and not self.stream_completion_shadow:
+            raise ValueError("child report phases require streamed completion")
         if self.subagent_fanout_profile not in SUBAGENT_FANOUT_PROFILES:
             raise ValueError("unsupported subagent fan-out profile")
         if (
@@ -3776,6 +3779,7 @@ def _run_workflow(
             config.child_finish_chunk_shadow
             or os.environ.get("BELIEFKV_CHILD_FINISH_CHUNK_SHADOW") == "1"
         ),
+        report_phase_shadow=config.child_report_phase_shadow,
         command_structure_shadow=(
             os.environ.get("BELIEFKV_COMMAND_STRUCTURE_SHADOW") == "1"
         ),

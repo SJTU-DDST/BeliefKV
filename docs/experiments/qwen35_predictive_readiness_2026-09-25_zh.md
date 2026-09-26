@@ -4173,3 +4173,36 @@ JOIN **4/4**，JOIN oracle 绝对误差中位
 模型更准。报告为同目录的
 `prefix_structure_guard_diagnostic.json`；
 当前模型及物理预测动作资格继续关闭。
+
+## 67. 流式报告阶段边界的冻结只读试验
+
+此前的报告前缀结构是事后截取最终文本，不能证明章节边界曾在
+child 仍生成时到达运行时。现在增加**默认关闭**的
+`--child-report-phase-shadow`，要求同时启用流式响应。回调仅在同一
+child/request/context epoch 上记录已经完整生成、以换行结尾的
+Markdown 二至四级标题；跳过代码围栏和过长行，最多观察 64 个标题。
+事件只写 trace，不发送调度控制消息；只保留标题类别
+`summary/conclusion/validation/next_steps/other`、字符位置和身份，
+不保存标题原文、推断最终报告长度或改变 prompt。标题（包括
+`Summary`）不是终态证明。
+
+冻结判定口径：使用首次 child 完成通知后的首个 1024 字符阶段，
+只允许同一 request/epoch、该阶段以后**首次**递送的四类候选
+标题作为触发点；训练项目按 workflow 等权拟合类别剩余时长
+中位数，项目不重叠的评价组按同一覆盖子集比较固定 1024 阶段
+先验、零时长先验。必须同时报告未覆盖的自然 RETURN、继续调用
+工具的错误候选、删失、距真实 RETURN 至少 500 ms 的提前量、
+JOIN 最后 child 的点误差和样本数；不能仅在事后成功的报告上
+挑选最好标题。脚本：
+`scripts/evaluate_child_report_phase_shadow.py`。
+
+首次采集冻结任务：训练侧来自旧 train split，依次为
+`pydata__xarray-2905/3095/3151/3305`、
+`django__django-10097/10880`、
+`pylint-dev__pylint-4604/6528`；评价侧为已有
+Astropy `13033/13398` 和 Sphinx `10435/10449`。
+两侧使用相同的 opt-in intent/stream/phase、2048/32 guard、
+120 GB NUMA-local Host、running 48，`ARMS=intent`；
+评价项目曾用于前期开发，故只称项目隔离复验，不称密封测试。
+必须保存每侧采集的源码提交与 manifest 哈希；若阶段仍不足以
+达到可用提前量和准确率，则作为阴性证据，不开启物理迁移。

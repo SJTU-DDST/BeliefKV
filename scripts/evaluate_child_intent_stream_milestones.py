@@ -159,6 +159,8 @@ def collect(workflows: Path, threshold: int) -> tuple[list[dict], dict]:
                 "task_id": path.parent.name,
                 "invocation_id": child,
                 "request_id": rid,
+                "context_id": stage["context_id"],
+                "context_epoch": stage["context_epoch"],
                 "join_last": child in join_last,
                 "label": label,
                 "lead_ms": lead_ms,
