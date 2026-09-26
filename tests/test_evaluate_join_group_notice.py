@@ -1,4 +1,6 @@
 import json
+from pathlib import Path
+import subprocess
 import sys
 
 import pytest
@@ -300,3 +302,16 @@ def test_main_counts_frozen_workflows_even_when_runner_trace_is_missing(
     assert result["heldout_missing_trace_workflows"] == ["astropy__two"]
     assert result["heldout_runner_errors"] == ["astropy__two"]
     assert result["heldout_counts"]["workflows"] == 1
+
+    script = (
+        Path(__file__).resolve().parents[1]
+        / "scripts/evaluate_join_group_notice.py"
+    )
+    direct_output = tmp_path / "join_direct.json"
+    subprocess.run([
+        sys.executable, str(script),
+        "--train-workflows", str(train / "workflows"),
+        "--heldout-workflows", str(heldout / "workflows"),
+        "--output", str(direct_output),
+    ], cwd=tmp_path, check=True, capture_output=True, text=True)
+    assert json.loads(direct_output.read_text()) == result

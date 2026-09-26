@@ -11,9 +11,11 @@ from statistics import median
 
 try:
     from scripts.audit_child_hidden_trace import blocked_child_invocations
+    from scripts.evaluate_cold_tool_project_loo import require_complete_batch
     from scripts.evaluate_child_return_intent_timing import _metrics, load_episodes
 except ModuleNotFoundError:
     from audit_child_hidden_trace import blocked_child_invocations
+    from evaluate_cold_tool_project_loo import require_complete_batch
     from evaluate_child_return_intent_timing import _metrics, load_episodes
 
 
@@ -370,8 +372,6 @@ def main() -> None:
     parser.add_argument("--heldout-workflows", type=Path, required=True)
     parser.add_argument("--output", type=Path, required=True)
     args = parser.parse_args()
-    from scripts.evaluate_cold_tool_project_loo import require_complete_batch
-
     train_ids, train_errors = require_complete_batch(args.train_workflows)
     heldout_ids, heldout_errors = require_complete_batch(args.heldout_workflows)
     trace_ids = {
