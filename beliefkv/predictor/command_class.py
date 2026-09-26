@@ -115,3 +115,37 @@ def execute_command_shape(payload: Mapping[str, Any]) -> str:
     if "django" in modules and "setup" in calls:
         return "python_inline_framework"
     return "python_inline_complex" if len(nodes) >= 100 else "python_inline_simple"
+
+
+def execute_inline_structure(payload: Mapping[str, Any]) -> dict[str, int] | None:
+    """Summarize inline Python syntax without retaining source or identifiers."""
+    if execute_command_class(payload) != "python_inline":
+        return None
+    command = payload.get("command")
+    if not isinstance(command, str) or len(command) > 65_536:
+        return None
+    try:
+        words = shlex.split(command)
+        position = words.index("-c")
+        tree = ast.parse(words[position + 1])
+    except (ValueError, IndexError, SyntaxError):
+        return None
+
+    nodes = list(ast.walk(tree))
+
+    def bucket(count: int) -> int:
+        return 0 if count == 0 else 1 if count == 1 else 2 if count <= 4 else 3
+
+    return {
+        "nodes": min(4, len(nodes).bit_length() // 3),
+        "loops": bucket(sum(isinstance(node, (ast.For, ast.AsyncFor, ast.While))
+                            for node in nodes)),
+        "calls": bucket(sum(isinstance(node, ast.Call) for node in nodes)),
+        "functions": bucket(sum(isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef))
+                                for node in nodes)),
+        "comprehensions": bucket(sum(isinstance(
+            node, (ast.ListComp, ast.SetComp, ast.DictComp, ast.GeneratorExp)
+        ) for node in nodes)),
+        "exception_blocks": bucket(sum(isinstance(node, (ast.Try, ast.TryStar))
+                                       for node in nodes)),
+    }

@@ -248,10 +248,15 @@ def test_execute_category_is_available_for_future_decision_export():
         1, "tool_start", attributes={
             "tool_call_id": "call-one", "tool_name": "execute",
             "observed_command_class": "test_suite",
+            "observed_inline_structure": {
+                "nodes": 1, "loops": 0, "calls": 1,
+                "functions": 0, "comprehensions": 0, "exception_blocks": 0,
+            },
             "command": "sensitive text must not leak",
         },
     ))])[0]
     assert trigger["attributes"]["observed_command_class"] == "test_suite"
+    assert trigger["attributes"]["observed_inline_structure"]["calls"] == 1
     assert trigger["invocation_id"] == "root"
     assert "command" not in trigger["attributes"]
 

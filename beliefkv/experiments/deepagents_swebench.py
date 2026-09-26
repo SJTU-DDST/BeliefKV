@@ -3740,6 +3740,9 @@ def _run_workflow(
             config.child_finish_chunk_shadow
             or os.environ.get("BELIEFKV_CHILD_FINISH_CHUNK_SHADOW") == "1"
         ),
+        command_structure_shadow=(
+            os.environ.get("BELIEFKV_COMMAND_STRUCTURE_SHADOW") == "1"
+        ),
     )
     deadline_controller = WorkflowDeadlineController(
         deadline=ActivationDeadline(),

@@ -27,7 +27,7 @@ from beliefkv.core.events import (
     RuntimeEventKind,
 )
 from beliefkv.predictor.command_class import (
-    execute_command_class, execute_command_shape,
+    execute_command_class, execute_command_shape, execute_inline_structure,
 )
 from beliefkv.predictor.project_tool_history import ProjectToolHistory
 from beliefkv.predictor.same_input_history import SameInputToolHistory
@@ -222,6 +222,7 @@ class DeepAgentsRuntimeAdapter(BaseCallbackHandler):
         project_tool_history: ProjectToolHistory | None = None,
         project_id: str = "",
         finish_chunk_shadow: bool = False,
+        command_structure_shadow: bool = False,
     ) -> None:
         super().__init__()
         if root_metadata.relation_type != RelationType.ROOT.value:
@@ -240,6 +241,7 @@ class DeepAgentsRuntimeAdapter(BaseCallbackHandler):
         self._project_tool_history = project_tool_history
         self._project_id = project_id
         self._finish_chunk_shadow = finish_chunk_shadow
+        self._command_structure_shadow = command_structure_shadow
         self._lock = threading.RLock()
         self._publication_lock = threading.RLock()
         self._sequence = 0
@@ -1203,6 +1205,10 @@ class DeepAgentsRuntimeAdapter(BaseCallbackHandler):
         observed_shape = (
             execute_command_shape(payload) if tool_name == "execute" else tool_name
         )
+        structure = (
+            execute_inline_structure(payload)
+            if tool_name == "execute" and self._command_structure_shadow else None
+        )
         with self._lock:
             identity = self._identities.get(parent_invocation_id)
             is_child = bool(
@@ -1249,6 +1255,8 @@ class DeepAgentsRuntimeAdapter(BaseCallbackHandler):
                 "is_child": is_child,
                 "observed_command_class": observed_command,
                 "observed_command_shape": observed_shape,
+                **({"observed_inline_structure": structure}
+                   if structure is not None else {}),
                 "input_chars": input_chars,
                 "input_sha256": input_sha256,
                 "parameter_signature": input_sha256,

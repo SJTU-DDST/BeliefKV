@@ -3501,3 +3501,80 @@ child `execute`，工具预测仍需独立采集/验证。
 旧 Pylint 的 2/3 反例和 PSF 的下界越界仍有效，
 不能用这批 2/2 消除。服务已退出，只清理本轮
 17 个可重建的 `workspace/`；事件、报告和补丁保留。
+
+## 58. 冻结流式阶段先验的跨项目只读回放（2026-09-26）
+
+在既有 1024/1700 字符里程碑上冻结 Sphinx 通知批次拟合的
+阶段先验，不再选择门槛；使用 Django `intent`/`final`
+配对批次和 pytest-dev 四任务批次作为留出项目回放。
+候选取首次通知之后首次达到阶段的时刻，要求同一 child
+身份及 epoch；RETURN 只用于事后打标签。`final` 臂打开
+非 thinking 最终报告，和 `intent` 臂轨迹不同，不能把
+两臂的数值差解释为单一开关的因果增益。Django、
+pytest-dev 也不是从未参与过任何探索的密封测试项目。
+
+| 留出批次 | 1024 阶段 RETURN 点误差 P50 / 命中 500 ms | 1700 阶段 RETURN 点误差 P50 / 命中 500 ms | 1700 阶段真实提前量 P50 |
+| --- | --- | --- | --- |
+| Django `intent` | 959 ms；1/10 | 965 ms；1/7 | 1122 ms |
+| Django `final` | 1366 ms；1/12 | 1052 ms；0/9 | 743 ms |
+| pytest-dev | 1502 ms；0/8 | 1258 ms；1/4 | 263 ms |
+
+1700 阶段在三批分别缺失 3/10、3/12、4/8 个
+已有通知的自然 RETURN；不能只看覆盖子集的 P50
+就称它优于 1024 阶段。因果项目内滚动历史在不同
+批次有增有退，且训练/评价规模过小，不能用事后
+选择批次或阈值代替跨项目验收。尤其 pytest-dev
+1700 阶段虽然有一次 500 ms 点误差命中，已覆盖
+样本的真实提前量中位数只有 263 ms，尚未扣除
+预测、投递、安全点和物理传输的时延。
+
+报告为 `qwen35_child_final_report_django_pair_20260926_v1/`
+下的 `intent_stream_stage_sphinx_holdout.json`、
+`final_stream_stage_sphinx_holdout.json`，以及
+`qwen35_join_semantic_status_pytest_20260926_v1/`
+下的 `stream_stage_sphinx_holdout.json`。本回放
+没有检验 JOIN 首次触发和 cold long child 工具调用，
+不支持在线或物理预测迁移；`online_eligible=false`、
+`predictive_action_eligible=false` 保持不变。
+
+## 59. 冷长工具的项目覆盖与前置命令结构采集（2026-09-26）
+
+重新以 TOOL_START 当时的 `is_child`、同输入成功历史、
+命令形态为资格，从已配对 TOOL_END 的 trace 统计：
+旧 32-root `qwen35_hidden_child_real_train_fresh32_20260926`
+有 1025 个冷 child `execute`，其中 156 个至少
+持续 2 秒，来自 16 个 workflow；**154 个来自
+pydata/Xarray，仅 2 个来自 Django**。这些长调用
+的已知形态包括 `python_inline_complex` 82 个、
+`python_inline_simple` 37 个和 `test_suite_targeted`
+25 个。新 6-root pytest 进度批次有 306 个冷 child
+调用，37 个长调用全部来自 3 个 pydata/Xarray
+workflow，其中一个 workflow 占 27 个；
+新 Django `intent`/`final` 共 384 个冷 child 调用，
+pytest-dev 四任务共 163 个，都没有长调用。
+这些仅是完成且可配对调用的分布清点，不包含
+右删失的调用，不是模型准确率评价。
+
+因此用旧样本拟合“长调用”很可能只学到项目及命令
+组合，不能从短工具平均误差或同一 workflow 的
+重复命令推出跨项目冷长 RETURN 点精度。sandbox
+审计只记录命令哈希和退出时延；child 原始命令
+正文未保存在可复验的工具事件中，不能事后
+从旧 trace 计算新的 AST 特征。为下一轮采集
+增加默认关闭的 `BELIEFKV_COMMAND_STRUCTURE_SHADOW=1`：
+仅对 TOOL_START 时可解析的 `python -c`，输出
+匿名且有界的 AST 节点、循环、调用、函数、推导式
+及异常块计数桶；不保存命令文本、路径、常量或
+标识符。该字段透传到 P6 决策点；
+缺失值保持缺失，不从旧标签补造，也不输入
+当前预测头或改变调度。
+
+下一步先在冻结 train 任务中**补采有非 Xarray
+长 child 调用的项目**，按项目和 workflow 汇报
+正例及覆盖，并对删失/失败单列。仅当训练侧
+至少有多个项目与多个独立 workflow 支持后，
+才冻结结构桶的模型和动作阈值，使用未参与选择
+的项目检验长调用的首次触发、RETURN 点误差、
+500 ms 以上真实提前量及假阳性；若没有这样的
+可观测调用，不能宣称新增特征有效，须依赖
+预算受限的部分 PREPARE 而不是虚构精确时钟。

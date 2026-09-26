@@ -5,7 +5,7 @@ from uuid import uuid4
 
 from beliefkv.core.events import RuntimeEventKind
 from beliefkv.predictor.command_class import (
-    execute_command_class, execute_command_shape,
+    execute_command_class, execute_command_shape, execute_inline_structure,
 )
 from beliefkv.runtime.deepagents_adapter import DeepAgentsRuntimeAdapter
 from beliefkv.runtime.sglang_adapter import BeliefKVRequestMetadata
@@ -51,6 +51,7 @@ def test_execute_command_categories_do_not_record_command_text():
     assert events[0].attributes["is_child"] is False
     assert "command_class" not in events[0].attributes
     assert "confidential_private_test" not in str(events[0].to_dict())
+    assert "observed_inline_structure" not in events[0].attributes
 
     task = adapter.declare_runtime_tasks(
         [("explorer", "private task")], group_id="command-class-child"
@@ -101,6 +102,32 @@ def test_command_shape_distinguishes_python_and_test_structure():
     assert execute_command_shape({
         "command": "python -c 'not : syntax'",
     }) == "python_inline_unparsed"
+
+
+def test_inline_structure_shadow_is_bounded_and_does_not_record_source():
+    command = "python -c 'for confidential_path in range(9): print(confidential_path)'"
+    structure = execute_inline_structure({"command": command})
+    assert structure == {
+        "nodes": 1, "loops": 1, "calls": 2, "functions": 0,
+        "comprehensions": 0, "exception_blocks": 0,
+    }
+    assert execute_inline_structure({"command": "python -c 'not : syntax'"}) is None
+    assert execute_inline_structure({"command": "pytest confidential_path"}) is None
+    assert "confidential_path" not in str(structure)
+
+    trace = Sink()
+    adapter = DeepAgentsRuntimeAdapter(
+        trace, BeliefKVRequestMetadata("wf", "root", "ctx", 0),
+        command_structure_shadow=True,
+    )
+    adapter.start()
+    adapter.on_tool_start(
+        {"name": "execute"}, "", run_id=uuid4(), inputs={"command": command},
+    )
+    event = [event for event in trace.events
+             if event.kind is RuntimeEventKind.TOOL_START][-1]
+    assert event.attributes["observed_inline_structure"] == structure
+    assert "confidential_path" not in str(event.to_dict())
 
 
 def test_execute_audit_pairs_child_tools_and_ignores_open_calls(tmp_path):
