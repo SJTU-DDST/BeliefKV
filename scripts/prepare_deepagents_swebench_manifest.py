@@ -5,10 +5,16 @@ import argparse
 import hashlib
 import json
 import subprocess
+import sys
 from pathlib import Path
 
 import pyarrow as pa
 import pyarrow.ipc as ipc
+
+ROOT = Path(__file__).resolve().parents[1]
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
+from beliefkv.experiments.swebench_source import verify_workload_source_objects  # noqa: E402
 
 
 DEFAULT_INSTANCE_IDS = (
@@ -96,6 +102,9 @@ def main() -> int:
                 "problem_statement": str(row["problem_statement"]),
             }
         )
+    verify_workload_source_objects(
+        (source_repo, item["base_commit"]) for item in workloads
+    )
 
     payload = {
         "schema_version": 1,

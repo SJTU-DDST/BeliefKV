@@ -42,6 +42,7 @@ from beliefkv.experiments.swebench_prompt import (
     build_swebench_task_prompt,
     repository_sandbox_contract as repository_sandbox_contract_for_repo,
 )
+from beliefkv.experiments.swebench_source import verify_workload_source_objects
 from beliefkv.experiments.agent_protocol import (
     AgentLoopGuardMiddleware,
     ChildCompletion,
@@ -3803,6 +3804,9 @@ def run_experiment(config: DeepAgentsExperimentConfig) -> dict[str, Any]:
         workloads = tuple(indexed[item] for item in config.instance_ids)
     else:
         workloads = bundle.workloads[: config.max_workflows]
+    verify_workload_source_objects(
+        (item.source_repo, item.base_commit) for item in workloads
+    )
     if config.saturated_root_backlog and config.concurrency < len(workloads):
         raise ValueError(
             "--saturated-root-backlog requires --concurrency to cover every "

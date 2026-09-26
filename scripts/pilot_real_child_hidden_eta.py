@@ -104,9 +104,15 @@ def load_records(workflows: Path, traces: Path) -> tuple[list[dict], dict]:
 def load_batch_records(
     roots: list[Path], traces: Path,
 ) -> tuple[list[dict], dict]:
+    if not traces.is_dir():
+        raise FileNotFoundError(f"hidden-state trace directory is absent: {traces}")
     records = []
     counts = {}
     for root in roots:
+        if not root.is_dir() or not any(
+            root.glob("*/runtime_events.deepagents.jsonl")
+        ):
+            raise FileNotFoundError(f"workflow events are absent from {root}")
         batch, metrics = load_records(root, traces)
         records.extend(batch)
         for key, count in metrics.items():

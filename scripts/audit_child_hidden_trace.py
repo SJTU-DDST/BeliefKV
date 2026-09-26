@@ -25,7 +25,11 @@ def index_workflow(events: list[dict]) -> tuple[dict, dict]:
     }
     results = defaultdict(list)
     for event in events:
-        if event["kind"] == "llm_result" and event.get("invocation_id") in children:
+        if (
+            event["kind"] == "llm_result"
+            and event.get("invocation_id") in children
+            and not (event.get("attributes") or {}).get("runtime_internal")
+        ):
             results[event["invocation_id"]].append(event)
     terminal_rids = {}
     for invocation_id, returned_at in returns.items():
@@ -73,8 +77,15 @@ def summarize(
     final_chunk_times = {}
     callback_entry_times = {}
     final_chunk_candidate_true = []
+    final_chunk_candidate_to_result = []
+    final_chunk_candidate_result_to_return = []
     final_chunk_candidate_false = 0
     final_chunk_candidate_censored = 0
+    final_chunk_signal_count = 0
+    final_chunk_signal_matched = 0
+    final_chunk_signal_invalid = 0
+    final_chunk_signal_unresolved = 0
+    final_chunk_signal_join_last = 0
     abnormal_reasons = defaultdict(int)
     natural_returns = 0
     roots = [workflow_root] if isinstance(workflow_root, Path) else workflow_root
@@ -92,10 +103,13 @@ def summarize(
         }
         child_results = defaultdict(list)
         first_tool_chunk_rids = set()
+        signals = defaultdict(list)
         for event in events:
             if event["kind"] == "llm_result" and str(
                 event.get("invocation_id") or ""
-            ).startswith("deepagents-invocation:"):
+            ).startswith("deepagents-invocation:") and not (
+                event.get("attributes") or {}
+            ).get("runtime_internal"):
                 child_results[event["invocation_id"]].append(event)
             if (
                 event["kind"] == "structured_action"
@@ -106,6 +120,50 @@ def summarize(
                 first_tool_chunk_rids.add(
                     (event.get("attributes") or {}).get("request_id")
                 )
+            if (
+                event["kind"] == "structured_action"
+                and (event.get("attributes") or {}).get(
+                    "beliefkv_child_final_chunk_shadow"
+                )
+            ):
+                signals[(event.get("attributes") or {}).get("request_id")].append(
+                    event
+                )
+                final_chunk_signal_count += 1
+        result_by_rid = {
+            (event.get("attributes") or {}).get("request_id"): (
+                invocation_id, index, event, results
+            )
+            for invocation_id, results in child_results.items()
+            for index, event in enumerate(results)
+        }
+        for rid, notices in signals.items():
+            matched = result_by_rid.get(rid)
+            if matched is None:
+                final_chunk_signal_unresolved += len(notices)
+                continue
+            invocation_id, index, event, results = matched
+            attrs = event.get("attributes") or {}
+            chunk_ts = attrs.get("stream_final_chunk_ts_ms")
+            if (
+                len(notices) != 1
+                or not isinstance(chunk_ts, (int, float))
+                or notices[0].get("invocation_id") != invocation_id
+                or abs(notices[0]["ts_ms"] - chunk_ts) > 1
+                or notices[0]["ts_ms"] > event["ts_ms"]
+                or attrs.get("finish_reason") != "stop"
+                or not (attrs.get("stream_content_counted_chars") or 0)
+                or rid in first_tool_chunk_rids
+            ):
+                final_chunk_signal_invalid += len(notices)
+                continue
+            final_chunk_signal_matched += 1
+            confirmed = terminal_by_child.get(invocation_id)
+            if confirmed is not None and confirmed[0] == rid:
+                if invocation_id in join_last:
+                    final_chunk_signal_join_last += 1
+            elif index == len(results) - 1 and confirmed is None:
+                final_chunk_signal_unresolved += 1
         for invocation_id, results in child_results.items():
             for index, event in enumerate(results):
                 attrs = event.get("attributes") or {}
@@ -121,6 +179,12 @@ def summarize(
                 confirmed = terminal_by_child.get(invocation_id)
                 if confirmed is not None and confirmed[0] == rid:
                     final_chunk_candidate_true.append(confirmed[1] - chunk_ts)
+                    final_chunk_candidate_to_result.append(
+                        event["ts_ms"] - chunk_ts
+                    )
+                    final_chunk_candidate_result_to_return.append(
+                        confirmed[1] - event["ts_ms"]
+                    )
                 elif index < len(results) - 1 or confirmed is not None:
                     final_chunk_candidate_false += 1
                 else:
@@ -138,7 +202,7 @@ def summarize(
             rid = (event.get("attributes") or {}).get("request_id")
             if rid and event.get("invocation_id", "").startswith(
                 "deepagents-invocation:"
-            ):
+            ) and not (event.get("attributes") or {}).get("runtime_internal"):
                 all_child_results.add(rid)
                 reason = (event.get("attributes") or {}).get("finish_reason")
                 if reason in {"stop", "tool_calls", "length"}:
@@ -287,6 +351,17 @@ def summarize(
         "final_chunk_candidate_true_lead_p50_ms": median(
             final_chunk_candidate_true
         ),
+        "final_chunk_candidate_to_result_p50_ms": median(
+            final_chunk_candidate_to_result
+        ),
+        "final_chunk_candidate_result_to_return_p50_ms": median(
+            final_chunk_candidate_result_to_return
+        ),
+        "final_chunk_signal_count": final_chunk_signal_count,
+        "final_chunk_signal_matched": final_chunk_signal_matched,
+        "final_chunk_signal_invalid": final_chunk_signal_invalid,
+        "final_chunk_signal_unresolved": final_chunk_signal_unresolved,
+        "final_chunk_signal_join_last": final_chunk_signal_join_last,
         "natural_child_returns": natural_returns,
         "eligible_terminal_rids": len(indexed),
         "matched_terminal_rounds": terminal_matched,

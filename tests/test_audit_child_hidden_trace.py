@@ -38,6 +38,21 @@ def test_only_last_real_child_round_gets_terminal_label():
     assert join_last == {"deepagents-invocation:child"}
 
 
+def test_internal_summary_after_final_does_not_replace_child_terminal():
+    events = _events()
+    events.insert(4, {
+        "kind": "llm_result", "invocation_id": "deepagents-invocation:child",
+        "ts_ms": 2050., "attributes": {
+            "request_id": "internal-summary", "finish_reason": "stop",
+            "output_chars": 200, "tool_call_count": 0,
+            "runtime_internal": True,
+        },
+    })
+    terminal, _ = index_workflow(events)
+    assert "internal-summary" not in terminal
+    assert terminal["final-round"] == ("deepagents-invocation:child", 2100.)
+
+
 def test_summarize_links_no_text_hidden_trace_to_return(tmp_path):
     root = tmp_path / "workflows"
     workflow = root / "example"
@@ -83,6 +98,8 @@ def test_summarize_links_no_text_hidden_trace_to_return(tmp_path):
     assert report["final_chunk_candidate_true"] == 1
     assert report["final_chunk_candidate_false"] == 0
     assert report["final_chunk_candidate_true_lead_p50_ms"] == 130
+    assert report["final_chunk_candidate_to_result_p50_ms"] == 30
+    assert report["final_chunk_candidate_result_to_return_p50_ms"] == 100
     assert report["first_hidden_to_return_p50_ms"] == 1100
     assert report["last_hidden_to_return_p50_ms"] == 200
     assert report["join_last_child_count"] == 1
@@ -175,3 +192,31 @@ def test_final_chunk_candidate_censors_unreturned_child_and_counts_repeated_roun
     assert report["final_chunk_candidate_true"] == 1
     assert report["final_chunk_candidate_false"] == 1
     assert report["final_chunk_candidate_censored"] == 1
+
+
+def test_final_chunk_shadow_event_matches_result_and_join_identity(tmp_path):
+    root = tmp_path / "workflows"
+    workflow = root / "example"
+    workflow.mkdir(parents=True)
+    events = _events()
+    events.insert(4, {
+        "kind": "structured_action",
+        "invocation_id": "deepagents-invocation:child",
+        "ts_ms": 1970.,
+        "attributes": {
+            "request_id": "final-round",
+            "beliefkv_child_final_chunk_shadow": True,
+            "diagnostic_only": True,
+        },
+    })
+    (workflow / "runtime_events.deepagents.jsonl").write_text(
+        "".join(json.dumps(event) + "\n" for event in events)
+    )
+    traces = tmp_path / "traces"
+    traces.mkdir()
+    report = summarize(traces, root)
+    assert report["final_chunk_signal_count"] == 1
+    assert report["final_chunk_signal_matched"] == 1
+    assert report["final_chunk_signal_join_last"] == 1
+    assert report["final_chunk_signal_invalid"] == 0
+    assert report["final_chunk_signal_unresolved"] == 0

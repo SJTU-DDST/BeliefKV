@@ -2027,3 +2027,90 @@ P50/P95 为 **284.86/1160.81 ms**。主延迟并不在 adapter
 child/join 身份，不向 scheduler 投递，也不签发 H2D；
 将来必须在**自然完成、项目隔离、压力匹配**的轨迹上验证
 首触发精度、误报与真实可用提前量，然后才讨论物理动作。
+
+### 冻结的新 SymPy 任务与源码预检（2026-09-26）
+
+为验证新最终 chunk 候选，冻结 SymPy development 列表中的
+第 9--16 个任务；它们与上一组 8 个 SymPy 任务的 instance ID
+不重叠，且 SymPy 不参与当前隐状态头的训练。
+manifest 保存于
+`experiments/raw/qwen35_child_final_sympy_fresh8_20260926/workload_manifest.json`，
+SHA-256 为
+`1e4214eeaac9678281dd422e840b7c3daa0e9144b24a5dfc3fbeceb8235f1379`。
+任务沿用 Qwen3.5-35B-A3B、隔离 v0.5.20 shadow 服务、
+8-root 并发和相同流式设置，不启用 Host pool 或物理动作，
+不设置人为 workflow 截止。**SymPy 曾用于更早的阶段探索**，
+本批是任务不重叠、模型训练项目隔离的 development 检验，
+不得称为整个项目的密封测试。
+
+首次启动在 workspace checkout 处 8/8 失败，LLM 请求
+为零，故不产生时间标签。原因是原生源码为 `blob:none`
+部分克隆，旧 manifest 工具只确认 base commit 对象存在，
+没有确认树中所有 blob 已本地可用；本地 clone
+随后出现成批缺失文件。对冻结的八个 base commit 使用
+`git fetch --refetch --no-filter` 预取完整文件对象；
+普通 `git fetch --no-filter` 因 commit 已存在而未补齐
+缺失对象。manifest 生成器和正式 runner 均增加
+`GIT_NO_LAZY_FETCH=1` 的工作树 blob 预检，在 GPU
+实验前明确拒绝缺失对象。保留首轮 0-request
+`workloads/summary.json` 作为环境失败证据，重新采集
+写入独立 `workloads_refetch`。
+
+`evaluate_child_final_chunk_forecast.py` 固定只用训练项目
+已确认的 chunk→RETURN 时延建立按 task 等权的中位先验；
+留出项目须不同且 task ID 不重叠。新批只读报告需单列
+真实 RETURN 数、完整 JOIN 最后 child 数、实际触发的
+真/假/删失、信号身份与时钟一致性、至少 500 ms 提前量、
+冻结先验的 P50/P90 绝对误差和相对零时延先验的收益。
+内部摘要轮次不参与 child 终态标签。新结果出来前
+`online_eligible=false`、`predictive_action_eligible=false`
+保持不变。
+
+新批 `workloads_refetch` **自然结束**：8 个 root 中 3 个
+completed、5 个 incomplete；1411 个模型请求、1431 次工具调用，
+17 个自然 child RETURN、3 个完整 JOIN 的最后 child。
+937/937 个正常 child 模型轮次与 NPZ 配对，埋点时序和
+15 个只读最终 chunk 信号身份检查均无异常；15 次信号都对应
+已确认终态，另外 2 次自然 child RETURN 不满足严格终态标签。
+但 15 次的 RETURN 提前量中位仅 **165.45 ms**，**0/15**
+达到 500 ms；3/3 个完整 JOIN 的最后 child 有信号，
+不能把它解释为有足够 H2D 窗口。相同请求
+chunk→`llm_result` P50 约 4.56 ms，
+`llm_result`→RETURN P50 约 157.07 ms；
+所有 937 次正常请求的 finish→`llm_result` P95
+约 92.16 ms。该批与训练侧 16-root 的负载和项目
+均不同，不能把时间漂移单独归因于某一因素。
+
+只用训练项目共 21 个已确认候选、按 9 个不同 task
+等权得到冻结的 chunk→RETURN 中位先验 **804.47 ms**；
+对该 SymPy 批的点 ETA 误差 P50/P90 为
+**639.03/658.17 ms**，仅 1/15 在 500 ms 内，
+差于无需拟合的零时延先验 P50 165.45 ms。
+故不晋升此固定先验。报告为
+`final_chunk_forecast_development.json`；评估器拒绝
+训练/留出项目或 task ID 重叠，且缺失输入目录不再
+静默视作零样本。SymPy 项目此前参与开发探索，
+这些 15 个正例也不足以建立低误报率统计保证。
+
+纠正 8-root 训练事件目录后，使用训练侧
+**61 个**严格终态轮次重训冻结 512-token Ridge：
+新 SymPy 的 15 个终态中命中 4 个、观察到 0 次
+非终态误报，4 次均至少提前 500 ms，
+中位提前约 **1248 ms**，但完整 JOIN
+最后 child 仅命中 **1/3**；相应近 RETURN
+点 ETA 中位误差仍约 **1049 ms**。
+256-token 探索规则为 7/15 真、1 次误报，
+中位提前约 4741 ms，时机更加不准。
+结果保存在 `hidden_eta_development.json`。
+一次错误命令将原 8-root 训练路径写成不存在的
+`workloads/workflows`，使训练实际只有 45 个终态；
+已覆盖此错误产物并为输入路径增加 fail-closed
+校验。**分类选择性提升不等于 JOIN 时刻准确。**
+
+工具侧保守地将 665/666 条 `execute` 配对到 sandbox，
+其中 419 条来自 child；≥2 秒的 child 命令只有
+3 条、跨 2 个 workflow，缺少可验证的长同输入
+重复历史。工具调用完成后回调的间隔仅数毫秒，
+不能据此声称有 500 ms 的冷长工具预取窗口。
+`tool_sandbox_development.json` 保留这些观测，
+但不拟合新的冷长工具 ETA。
