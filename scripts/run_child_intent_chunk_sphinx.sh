@@ -139,6 +139,15 @@ for arm in intent final length; do
     "$PYTHON" "$ROOT/scripts/audit_child_intent_to_final_chunk.py" \
       --workflows "$OUT/${arm}_workloads/workflows" \
       --output "$OUT/${arm}_intent_chunk_stages.json"
+    if [[ "${CHILD_EOS_SHADOW:-0}" == 1 ]]; then
+      low_arg=()
+      if [[ "${CHILD_EOS_LOW_PROB_SHADOW:-0}" == 1 ]]; then
+        low_arg=(--include-low-prob)
+      fi
+      "$PYTHON" "$ROOT/scripts/evaluate_child_eos_shadow.py" \
+        --audit-workflows "$OUT/${arm}_workloads/workflows" \
+        "${low_arg[@]}" --output "$OUT/${arm}_eos_coverage.json"
+    fi
   fi
 done
 stop_server
