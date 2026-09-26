@@ -4911,3 +4911,41 @@ manifest、请求或 RETURN 标签；缺少最终 summary、
 工具调用视为短样本。通过此门禁只允许启动冻结
 Astropy/Sphinx **采集和评价**，并不证明时延头
 已经准确，更不解锁物理预测动作。
+
+### 128-root 完整批次与冻结留出启动
+
+训练批次已写出 128/128 个终态结果：95 个
+`completed`、32 个 `error`、1 个 `incomplete`；
+大部分错误为 7200 秒共享 workflow 截止。
+这些不自然结束的 workflow 不能用于完整自然
+JOIN 标签，也不能把未完成工具调用当短调用。
+严格可配对且成功的冷 child `execute` 中有
+445 次至少 2 秒，跨 64 个 workflow；
+各训练项目分别为 Xarray 368、Django 28、
+Pytest 21、Pylint 13、PSF 8、Seaborn 5、
+Flask 2。正式训练侧门禁报告保存在
+`qwen35_cold_tool_overlapped_128root_train_20260927_v1/
+train_readiness.json`：项目留一筛选折选中阈值
+0.5，71 次候选中 60 次实际长调用，折内
+精度 84.51%，涉及 5 个项目、44 个 workflow。
+这是训练侧折内门槛，不是独立留出精度。
+
+同一批次的 `cold_tool_project_loo.json` 显示：
+可评价的 Django、Xarray、Pylint、Pytest
+四个项目，现有匿名结构时长头的跨项目
+配对收益门禁均未通过；不能由折内分类精度
+推出 TOOL_END 亚秒时钟。对完成的训练批次
+复核滚动完整 JOIN：1024/1700 字符阶段
+有 99/62 个单剩余 child 候选；当持有项目
+被排除、只用其它训练项目的阶段时长中位数
+预测，该项目的点误差仍为秒级，且候选覆盖
+不同，不能按少量短窗命中声称模型已可靠。
+
+确认无运行容器挂载后，仅清理了该训练批次
+128 个可重建 `workspace/`，结果、事件、
+审计和评估报告全部保留。冻结的 66-root
+Astropy/Sphinx 留出随后以 33+33 到达、
+running 48、同一 7200 秒截止启动；
+`source_commit.txt` 固定为 `50fa46b`。
+项目隔离评价尚未完成，任何预测式物理
+迁移仍保持关闭。
