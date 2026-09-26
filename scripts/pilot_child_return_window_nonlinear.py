@@ -19,20 +19,20 @@ import numpy as np
 if __package__:
     from scripts.pilot_child_return_window import (
         STAGE_TOKENS, THRESHOLDS, TARGET_END_MS, TARGET_START_MS,
-        causal_observations, report, select_threshold,
+        causal_observations, report, select_threshold, window_cues,
     )
     from scripts.pilot_child_terminal_threshold import fit_head
     from scripts.pilot_real_child_hidden_eta import (
-        at_stage, content_cues, first_features, load_batch_records,
+        at_stage, first_features, load_batch_records,
     )
 else:
     from pilot_child_return_window import (
         STAGE_TOKENS, THRESHOLDS, TARGET_END_MS, TARGET_START_MS,
-        causal_observations, report, select_threshold,
+        causal_observations, report, select_threshold, window_cues,
     )
     from pilot_child_terminal_threshold import fit_head
     from pilot_real_child_hidden_eta import (
-        at_stage, content_cues, first_features, load_batch_records,
+        at_stage, first_features, load_batch_records,
     )
 
 
@@ -150,8 +150,8 @@ def scored_sequences(records: list[dict], terminal_head, model, cues: dict,
 
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--train-traces", type=Path, required=True)
-    parser.add_argument("--train-workflows", type=Path, required=True)
+    parser.add_argument("--train-traces", type=Path, action="append", required=True)
+    parser.add_argument("--train-workflows", type=Path, action="append", required=True)
     parser.add_argument("--heldout-traces", type=Path, required=True)
     parser.add_argument("--heldout-workflows", type=Path, required=True)
     parser.add_argument("--stage-tokens", type=int, default=STAGE_TOKENS)
@@ -159,8 +159,10 @@ def main() -> None:
     args = parser.parse_args()
     if args.stage_tokens < 32 or args.stage_tokens % 32:
         parser.error("stage-tokens must be a positive multiple of 32")
+    if len(args.train_traces) != len(args.train_workflows):
+        parser.error("provide one --train-traces per --train-workflows")
     train, train_counts = load_batch_records(
-        [args.train_workflows], args.train_traces,
+        args.train_workflows, args.train_traces,
     )
     heldout, heldout_counts = load_batch_records(
         [args.heldout_workflows], args.heldout_traces,
@@ -170,7 +172,9 @@ def main() -> None:
     if len(projects) < 3 or projects & heldout_projects:
         parser.error("need three training projects and a disjoint heldout project")
     stage = at_stage(train, args.stage_tokens)
-    cues = content_cues(args.train_workflows)
+    cues = {}
+    for root in args.train_workflows:
+        cues.update(window_cues(root))
     result = {
         "diagnostic_only": True,
         "stage_tokens": args.stage_tokens,
@@ -205,7 +209,7 @@ def main() -> None:
             target = scored_sequences(
                 at_stage(heldout, args.stage_tokens),
                 fit_head(stage), fit_window(stage, cues, hidden=hidden),
-                content_cues(args.heldout_workflows), hidden=hidden,
+                window_cues(args.heldout_workflows), hidden=hidden,
             )
             result["heldout_at_frozen_threshold"][name] = report(target, *choice)
     args.output.parent.mkdir(parents=True, exist_ok=True)

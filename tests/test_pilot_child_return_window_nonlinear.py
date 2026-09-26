@@ -1,7 +1,10 @@
+import sys
+
 import numpy as np
+import pytest
 
 from scripts.pilot_child_return_window_nonlinear import (
-    observable_features, scored_sequences,
+    main, observable_features, scored_sequences,
 )
 
 
@@ -36,3 +39,14 @@ def test_nonlinear_scorer_skips_nonobservable_round():
         [record], head, None,
         {"child": {"content": 1400., "tool": 1300.}}, hidden=False,
     ) == []
+
+
+def test_nonlinear_requires_one_trace_root_per_training_batch(monkeypatch, capsys):
+    monkeypatch.setattr(sys, "argv", [
+        "pilot", "--train-traces", "trace", "--train-workflows", "first",
+        "--train-workflows", "second", "--heldout-traces", "heldout-trace",
+        "--heldout-workflows", "heldout-workflows", "--output", "report",
+    ])
+    with pytest.raises(SystemExit, match="2"):
+        main()
+    assert "one --train-traces per --train-workflows" in capsys.readouterr().err
