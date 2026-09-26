@@ -2,6 +2,7 @@ import json
 
 import pytest
 
+from scripts.evaluate_child_eos_shadow import audit as eos_audit
 from scripts.evaluate_child_intent_stream_milestones import collect, evaluate
 
 
@@ -140,6 +141,64 @@ def test_stage_collector_counts_join_last_without_notice(tmp_path):
     assert counts["natural_join_last_total"] == 0
     assert counts["observed_join_last_total"] == 1
     assert counts["excluded_join_last_due_to_blocked_child_total"] == 1
+
+
+def test_first_content_stage_keeps_early_tool_reentry_false_label(tmp_path):
+    task = "alpha__early"
+    workflows = tmp_path / "workflows"
+    _workflow(workflows, task, lead_ms=200, first64=False)
+    path = workflows / task / "runtime_events.deepagents.jsonl"
+    events = [json.loads(line) for line in path.read_text().splitlines()]
+    events = [
+        event for event in events
+        if not (event["kind"] == "structured_action"
+                and (event.get("attributes") or {}).get(
+                    "beliefkv_child_substantial_content_shadow"))
+    ]
+    base = next(
+        event for event in events if event["kind"] == "llm_submit"
+    )
+    events.extend([
+        {
+            "kind": "structured_action", "ts_ms": 1060,
+            "invocation_id": base["invocation_id"],
+            "context_id": base["context_id"],
+            "context_epoch": base["context_epoch"],
+            "attributes": {
+                "request_id": "first",
+                "beliefkv_child_first_content_shadow": True,
+            },
+        },
+        {
+            "kind": "tool_start", "ts_ms": 1210,
+            "invocation_id": base["invocation_id"],
+            "attributes": {"tool_name": "grep"},
+        },
+        {
+            "kind": "structured_action", "ts_ms": 1070,
+            "invocation_id": base["invocation_id"],
+            "context_id": base["context_id"],
+            "context_epoch": base["context_epoch"],
+            "attributes": {
+                "request_id": "first", "beliefkv_child_eos_shadow": True,
+                "eos_top_probability_threshold": 0.001,
+            },
+        },
+    ])
+    path.write_text("".join(json.dumps(event) + "\n" for event in events))
+    first_content, counts = collect(workflows, 0)
+    assert len(first_content) == 1
+    assert first_content[0]["stage_threshold_chars"] == 0
+    assert first_content[0]["observed_first_content_ts_ms"] == 1060
+    assert first_content[0]["label"] == "false"
+    assert counts["natural_child_returns_total"] == 1
+    (tmp_path / "manifest.json").write_text(json.dumps({
+        "config": {"child_eos_low_prob_shadow": True},
+    }))
+    report = eos_audit(workflows, (0.001, 0.01))
+    assert report["eligible_first_content_stage"] == 1
+    assert report["eligible_first_64_stage"] == 0
+    assert report["thresholds"]["0.001"]["false_first_trigger"] == 1
 
 
 def test_skipped_epoch_does_not_get_a_stage_label(tmp_path):

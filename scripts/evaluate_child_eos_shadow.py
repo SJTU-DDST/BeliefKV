@@ -35,7 +35,11 @@ def load(
                     .get("config") or {}).get("child_eos_low_prob_shadow")
         ):
             raise ValueError(f"low-probability EOS was not collected in {workflows}")
-    stages, counts = collect(workflows, 64)
+    stages, counts = collect(
+        workflows, 0 if any(
+            t in EOS_LOW_PROB_THRESHOLDS for t in thresholds
+        ) else 64,
+    )
     events_by_task = {
         path.parent.name: [
             json.loads(line)
@@ -60,6 +64,19 @@ def load(
         attrs = (result or {}).get("attributes") or {}
         row["scored_tokens"] = attrs.get("eos_shadow_scored_tokens")
         row["top_hits"] = attrs.get("eos_shadow_top_hits")
+        stage_64 = [
+            float(event["ts_ms"]) for event in events
+            if event.get("kind") == "structured_action"
+            and (event.get("attributes") or {}).get(
+                "beliefkv_child_substantial_content_shadow"
+            )
+            and (event.get("attributes") or {}).get("content_threshold_chars") == 64
+            and (event.get("attributes") or {}).get("request_id") == row["request_id"]
+            and event.get("invocation_id") == row["invocation_id"]
+            and (event.get("context_id"), event.get("context_epoch"))
+            == (row["context_id"], row["context_epoch"])
+        ]
+        row["first_64_ts_ms"] = min(stage_64) if stage_64 else None
         row["first_eos_ts"] = {}
         for event in events:
             attrs = event.get("attributes") or {}
@@ -126,7 +143,8 @@ def score(train: list[dict], test: list[dict], threshold: float) -> dict:
         ]
         after_stage = [
             row for row in rows
-            if row["first_eos_ts"][threshold] >= row["signal_ts_ms"]
+            if row.get("stage_threshold_chars", 64) == 64
+            and row["first_eos_ts"][threshold] >= row["signal_ts_ms"]
         ]
         from_content = [
             row for row in rows
@@ -162,7 +180,16 @@ def score(train: list[dict], test: list[dict], threshold: float) -> dict:
         }
 
     return {
-        "eligible_first_64_stage": len(test),
+        "eligible_stage": len(test),
+        "eligible_first_64_stage": sum(
+            row.get("stage_threshold_chars", 64) == 64 for row in test
+        ),
+        "eligible_first_content_stage": sum(
+            row.get("stage_threshold_chars") == 0 for row in test
+        ),
+        "stage_threshold_chars": (
+            test[0].get("stage_threshold_chars", 64) if test else None
+        ),
         "natural_stage": sum(row["label"] == "true" for row in test),
         "scored_tokens_available": sum(
             type(row["scored_tokens"]) is int and row["scored_tokens"] > 0
@@ -174,7 +201,12 @@ def score(train: list[dict], test: list[dict], threshold: float) -> dict:
         ),
         "first_trigger": len(observed),
         "first_trigger_before_64_chars": sum(
-            row["first_eos_ts"][threshold] < row["signal_ts_ms"]
+            (
+                row.get("first_64_ts_ms", row["signal_ts_ms"])
+                is None
+                or row["first_eos_ts"][threshold]
+                < row.get("first_64_ts_ms", row["signal_ts_ms"])
+            )
             for row in observed
         ),
         "first_trigger_labels": dict(Counter(row["label"] for row in observed)),
@@ -250,7 +282,16 @@ def audit(
     return {
         "diagnostic_only": True,
         "collector": counts,
-        "eligible_first_64_stage": len(rows),
+        "stage_threshold_chars": (
+            0 if any(t in EOS_LOW_PROB_THRESHOLDS for t in thresholds) else 64
+        ),
+        "eligible_stage": len(rows),
+        "eligible_first_64_stage": sum(
+            row.get("stage_threshold_chars", 64) == 64 for row in rows
+        ),
+        "eligible_first_content_stage": sum(
+            row.get("stage_threshold_chars") == 0 for row in rows
+        ),
         "labels": dict(Counter(row["label"] for row in rows)),
         "observed_child_returns_total": counts["observed_child_returns_total"],
         "observed_join_last_total": counts["observed_join_last_total"],

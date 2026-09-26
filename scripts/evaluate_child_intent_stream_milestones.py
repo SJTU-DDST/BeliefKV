@@ -92,12 +92,18 @@ def collect(workflows: Path, threshold: int) -> tuple[list[dict], dict]:
                 (
                     event for event in observed
                     if event["kind"] == "structured_action"
-                    and (event.get("attributes") or {}).get(
-                        "beliefkv_child_substantial_content_shadow"
+                    and (
+                        (event.get("attributes") or {}).get(
+                            "beliefkv_child_first_content_shadow"
+                        ) if threshold == 0 else (
+                            (event.get("attributes") or {}).get(
+                                "beliefkv_child_substantial_content_shadow"
+                            )
+                            and (event.get("attributes") or {}).get(
+                                "content_threshold_chars"
+                            ) == threshold
+                        )
                     )
-                    and (event.get("attributes") or {}).get(
-                        "content_threshold_chars"
-                    ) == threshold
                     and float(event["ts_ms"]) > notice
                 ),
                 key=lambda event: float(event["ts_ms"]),
@@ -160,7 +166,7 @@ def collect(workflows: Path, threshold: int) -> tuple[list[dict], dict]:
                 and terminal is not None
                 and float(event["ts_ms"]) <= terminal[1]
             ), None)
-            first_content = next((
+            first_content = stage if threshold == 0 else next((
                 event for event in observed
                 if event["kind"] == "structured_action"
                 and (event.get("attributes") or {}).get(
@@ -183,6 +189,7 @@ def collect(workflows: Path, threshold: int) -> tuple[list[dict], dict]:
                 "label": label,
                 "lead_ms": lead_ms,
                 "signal_ts_ms": ts,
+                "stage_threshold_chars": threshold,
                 "return_ts_ms": terminal[1] if label == "true" else None,
                 "observed_first_content_ts_ms": (
                     float(first_content["ts_ms"]) if first_content else None

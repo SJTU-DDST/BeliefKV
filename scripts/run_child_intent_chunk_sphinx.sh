@@ -131,7 +131,6 @@ for arm in "${arms[@]}"; do
     failed=true
   fi
 done
-stop_server
 for arm in intent final length; do
   if [[ -d "$OUT/${arm}_workloads/workflows" ]]; then
     "$PYTHON" "$ROOT/scripts/audit_child_return_intent_shadow.py" \
@@ -142,6 +141,7 @@ for arm in intent final length; do
       --output "$OUT/${arm}_intent_chunk_stages.json"
   fi
 done
+stop_server
 if [[ "$failed" == true ]]; then
   exit 1
 fi
