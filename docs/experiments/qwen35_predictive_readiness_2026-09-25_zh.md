@@ -5293,3 +5293,85 @@ child 请求的 RID 关联 SGLang 的提交/结果事件与
 trace 上评分，但覆盖率的任务分母不得只取
 存在 trace 的子集。训练/留出中出现 manifest
 之外的 trace 时直接拒绝评价。
+
+### 冷工具与 JOIN 项目隔离留出验收（2026-09-27）
+
+完整训练批次为 128 root，留出为 66 root
+（Astropy 22、Sphinx 44）；两侧项目及任务不重叠，
+留出批次已自然终结，66 条 runtime trace 均在，
+无 runner error。62 个 workflow completed；另外
+Astropy 的 `13453`、`8707` 分别在约 1716、1592 秒
+以 `APIConnectionError` 结束，`14598` 在约 7207 秒
+触及共享 7200 秒 deadline，`13579` 约 4872 秒结束为
+incomplete。前两次连接异常的发生时间早于实验结束时
+server.log 尾部的 SIGTERM，不能用关闭过程解释它们。
+评价保留冻结 66 个任务作为覆盖率分母，不把错误或
+不完整的轨迹追认为自然完成，也不把开放调用记作短调用。
+
+只读报告在
+`experiments/raw/qwen35_cold_tool_peer_holdout_66root_v1/holdout_evaluation/`。
+成功返回工具调用口径下，500 ms 存活检查点、
+**同一批具在线项目/命令形态历史支持的调用**，
+Astropy 冻结/在线时钟的剩余时间中位绝对误差为
+1032/124 ms，配对 workflow bootstrap 收益
+95% 下界为 699 ms；Sphinx 为 706/130 ms，
+下界 342 ms。固定 1 秒传输预算下，
+Astropy 35 个候选中 31 个在实际返回前仍有
+至少 500 ms；Sphinx 7 个候选中 0 个满足。
+补充纳入已经返回的非零退出工具调用，Astropy
+相应候选为 38 个中 37 个，Sphinx 仍需按
+`cold_tool_survival_returned_failures.json` 的
+同口径结果解释。上述均是离线时钟与实际提前量，
+未计入 dispatch、safe point、H2D ACK 和首次服务；
+不能用短工具的大样本误差替代长工具预取收益。
+
+训练项目上冻结的冷长工具结构筛选在留出
+2451 个成功调用中只选中 21 个，全部位于 Astropy；
+其中 13 个真正长于 2 秒，8 个短调用误选，
+precision 13/21，覆盖 44 个长调用中的 13 个，
+Sphinx 的 14 个长调用命中数为 0。对 Astropy
+真正选中的 13 个长调用，使用在当前
+`TOOL_START` 前已经完成的同项目长调用历史，
+时间中位绝对误差约 483 ms，较相同选中集的
+长调用回归头约 1632 ms；但只有 6 个独立 workflow，
+Sphinx 无可检验样本，不能宣称跨项目长工具
+精确预测，也不宜将此筛选上线。
+
+全组 JOIN 的首次有效通知只有 49 个自然候选，
+冻结时钟的 JOIN 中位绝对误差约 60.5 秒，
+500 ms 内 **0/49**。后续已观察到
+parent 等待、只剩最后一个 child、且具有身份匹配
+阶段信号时，1024 字符阶段覆盖 47 个自然 JOIN，
+JOIN 中位绝对误差约 5.29 秒，500 ms 内 0/47；
+1700 字符阶段覆盖 27 个，中位误差约 3.47 秒，
+500 ms 内仅 1/27。后一个阶段更接近 RETURN，
+但自然覆盖从 47 降为 27，不是同一样本集的
+无代价改进；它们分别有 47/47、25/27 次真实
+提前量不少于 500 ms，**有物理窗口不等于
+能正确安排触发时刻**。JOIN 与 parent 恢复不能
+按 child 的边际分布或工具时钟误差代替。
+
+评价出处：首次 `evaluate_cold_tool_peer_holdout66.sh`
+运行时 `evaluate_join_group_notice.py` 的直接 CLI
+导入失败，其产物位于
+`holdout_evaluation_failed_cli_import/`，不得作为
+完整验收。修复并增加 CLI 回归测试后提交
+`d16ad3b`，独立重跑生成
+`holdout_evaluation/join_group_notice_verified_d16ad3b.json`；
+它与原成功目录的 `join_group_notice.json` SHA-256
+均为 `8fd53105b5d0f640f2b9c8f7f9f36171458f32ed9a993e937c6cc0980fa31dac`。
+原目录 `evaluator_commit.txt` 仍记录旧的
+`aead8dc`，只能证明批次启动时的 HEAD，
+不能作为全部最终评价脚本的版本标识；
+修复后脚本哈希为
+`c88ab77790d6de60df875db71d1bbdedc5bb16e20a89f0d989726532aa7d28ed`。
+
+当前只能认为**具历史支持的工具剩余时钟改善得到
+分项目验证**；尚未解决可靠识别长调用和 Sphinx
+物理窗口覆盖，也未得到亚秒级 JOIN 时钟。
+继续在训练项目寻找更早的可认证终态或生成进度
+信号，并在新的、预先冻结的项目隔离批次检验
+覆盖、点误差和真实传输窗口。不能依据本次
+Astropy/Sphinx 留出回选阈值、改模型后复用其
+独立验证资格；`online_eligible=false` 与
+`predictive_action_eligible=false` 保持不变。
