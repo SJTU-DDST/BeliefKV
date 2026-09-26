@@ -1,7 +1,7 @@
 agent:
   step_limit: 12
   cost_limit: 0.0
-  wall_time_limit_seconds: 900
+  wall_time_limit_seconds: 7200
   max_consecutive_format_errors: 3
 
 environment:

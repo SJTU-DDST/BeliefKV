@@ -4254,6 +4254,11 @@ workflow 配对比较时必须记录相同的截止配置，
 900 秒截止而重启该批次。独立的旧 Codex subagent
 benchmark 曾保留共享 900 秒截止，其默认值现也改为
 7200 秒；显式传入 `--timeout-seconds` 仍可覆盖。
+另一个遗留入口 `configs/workloads/minisweagent_qwen2_5_7b_reactive.yaml`
+原将单 agent 墙钟截止设为 900 秒，现改为 7200 秒；
+其 sandbox 单命令超时 120 秒不变。旧 pilot 的实际运行
+记录和冻结 trace 不作修改；当前 Qwen3.5 留出批次原本已是
+共享 workflow 截止 7200 秒，不受此配置变更影响。
 
 ## 68. 完成通知后 EOS 候选概率的只读试验
 
