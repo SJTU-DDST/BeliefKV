@@ -1,0 +1,122 @@
+diff --git a/python/sglang/srt/entrypoints/openai/serving_chat.py b/python/sglang/srt/entrypoints/openai/serving_chat.py
+--- a/python/sglang/srt/entrypoints/openai/serving_chat.py
++++ b/python/sglang/srt/entrypoints/openai/serving_chat.py
+@@ -3,13 +3,17 @@
++import asyncio
+ import copy
++import hashlib
+ import json
+ import logging
+ import math
+ import os
+ import time
+ import uuid
+-from collections import OrderedDict
++from collections import OrderedDict, deque
+ from enum import Enum
+ from http import HTTPStatus
++from pathlib import Path
+ from typing import TYPE_CHECKING, Any, AsyncGenerator, Dict, List, Optional, Union
+ 
++import numpy as np
+ from sglang.srt.runtime_context import get_model, get_serving
+@@ -113,6 +113,34 @@ if TYPE_CHECKING:
+ 
+ logger = logging.getLogger(__name__)
+ 
++
++def _write_child_hidden_trace(
++    directory: Path,
++    rid: str,
++    samples: list,
++    finish_ns: int,
++    finish_reason: str,
++) -> None:
++    path = directory / f"{hashlib.sha256(rid.encode()).hexdigest()}.npz"
++    fd = os.open(path, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
++    try:
++        with os.fdopen(fd, "wb") as output:
++            np.savez_compressed(
++                output,
++                rid=np.asarray(rid),
++                token_counts=np.asarray([row[0] for row in samples], dtype=np.int32),
++                arrival_ns=np.asarray([row[1] for row in samples], dtype=np.int64),
++                hidden=np.asarray([row[2] for row in samples], dtype=np.float16).reshape(
++                    -1, 2048
++                ),
++                finish_ns=np.asarray(finish_ns, dtype=np.int64),
++                finish_reason=np.asarray(finish_reason),
++            )
++    except BaseException:
++        path.unlink(missing_ok=True)
++        raise
++
++
+ _MEDIA_CONTENT_PART_TYPES = frozenset({"image_url", "video_url", "audio_url"})
+ _CHAT_TEMPLATE_CACHE_MAX_SIZE = 128
+ 
+@@ -1766,6 +1794,23 @@ class OpenAIServingChat(OpenAIServingBase):
+         raw_request: Request,
+     ) -> AsyncGenerator[str, None]:
+         """Generate streaming chat completion response"""
++        shadow_dir = os.environ.get("BELIEFKV_HIDDEN_CHILD_TRACE_DIR")
++        metadata = request.beliefkv_metadata or {}
++        trace_child = bool(
++            shadow_dir
++            and metadata.get("relation_type") == "spawn"
++            and request.rid
++            and request.n == 1
++            and request.return_hidden_states is False
++        )
++        if trace_child:
++            if not Path(shadow_dir).is_dir():
++                raise ValueError("BELIEFKV_HIDDEN_CHILD_TRACE_DIR must exist")
++            adapted_request.return_hidden_states = "last"
++        first_shadow_samples = []
++        tail_shadow_samples = deque(maxlen=64)
++        shadow_finish_ns = None
++        shadow_finish_reason = None
+         # Parsers for tool calls and reasoning
+         parser_dict = {}
+         reasoning_parser_dict = {}
+@@ -1838,6 +1883,24 @@ class OpenAIServingChat(OpenAIServingBase):
+ 
+                 finish_reason = content["meta_info"].get("finish_reason", None)
+                 finish_reason_type = finish_reason["type"] if finish_reason else None
++                if trace_child:
++                    if finish_reason_type:
++                        shadow_finish_ns = time.monotonic_ns()
++                        shadow_finish_reason = finish_reason_type
++                    elif (
++                        completion_tokens[index] > 0
++                        and completion_tokens[index] % 32 == 0
++                        and hidden_states[index] is not None
++                    ):
++                        sample = (
++                            completion_tokens[index],
++                            time.monotonic_ns(),
++                            hidden_states[index],
++                        )
++                        if len(first_shadow_samples) < 16:
++                            first_shadow_samples.append(sample)
++                        else:
++                            tail_shadow_samples.append(sample)
+ 
+                 if return_input_ids and input_ids is None:
+                     # The prompt is the full, shared prompt (same across choices
+@@ -2112,6 +2175,15 @@ class OpenAIServingChat(OpenAIServingBase):
+             error = self.create_streaming_error_response(str(e))
+             yield f"data: {error}\n\n"
+ 
++        if trace_child and shadow_finish_ns is not None:
++            await asyncio.to_thread(
++                _write_child_hidden_trace,
++                Path(shadow_dir),
++                request.rid,
++                first_shadow_samples + list(tail_shadow_samples),
++                shadow_finish_ns,
++                shadow_finish_reason,
++            )
+         yield "data: [DONE]\n\n"
+ 
+     async def _handle_non_streaming_request(
