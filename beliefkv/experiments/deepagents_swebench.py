@@ -3017,7 +3017,13 @@ def _run_declared_analysis_children(
                 )
                 report = partial or f"Child failed: {type(caught).__name__}: {caught}"
             finally:
-                adapter.complete_runtime_task(handle, error=error)
+                adapter.complete_runtime_task(
+                    handle, error=error,
+                    child_report_status=(
+                        completion_payload.get("status")
+                        if completion_payload is not None else None
+                    ),
+                )
             reports.append(
                 {
                     "role": task.role,

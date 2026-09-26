@@ -1408,6 +1408,33 @@ def test_cancelled_runtime_task_does_not_satisfy_join() -> None:
     assert kinds.count(RuntimeEventKind.JOIN_TIMEOUT) == 1
 
 
+def test_declared_child_return_carries_report_status_without_changing_join() -> None:
+    sink = CollectingSink()
+    root = BeliefKVRequestMetadata("wf", "root", "ctx", 0, "supervisor", "root")
+    adapter = DeepAgentsRuntimeAdapter(sink, root)
+    adapter.start()
+    tasks = adapter.declare_runtime_tasks(
+        [("explorer", "Inspect"), ("tester", "Test")], group_id="reports",
+    )
+    with pytest.raises(ValueError, match="invalid child report status"):
+        adapter.complete_runtime_task(tasks[0], child_report_status="incomplete")
+    with pytest.raises(ValueError, match="failed runtime task"):
+        adapter.complete_runtime_task(
+            tasks[0], error=RuntimeError("fail"), child_report_status="blocked",
+        )
+    adapter.complete_runtime_task(tasks[0], child_report_status="complete")
+    adapter.complete_runtime_task(tasks[1], child_report_status="blocked")
+    returns = [
+        event for event in sink.events if event.kind == RuntimeEventKind.RETURN
+    ]
+    assert [event.attributes["child_report_status"] for event in returns] == [
+        "complete", "blocked",
+    ]
+    assert sum(
+        event.kind == RuntimeEventKind.JOIN_SATISFIED for event in sink.events
+    ) == 1
+
+
 def test_deadline_cancels_pending_children_in_one_control_batch() -> None:
     trace_sink = CollectingSink()
     control_sink = BatchCollectingSink()

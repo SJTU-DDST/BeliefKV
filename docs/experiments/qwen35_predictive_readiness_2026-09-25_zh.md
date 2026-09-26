@@ -3425,3 +3425,46 @@ H2D/D2H。下一步需要更早、更稳定的完成阶段标志，
 传输延迟下单独评价净收益；长工具进度继续独立研究。
 两臂合计 38 个可重建的 `workspace/` checkout 已在确认
 服务退出且无容器挂载后清理；结果、事件及评估报告保留。
+
+## 57. JOIN 完成通知的因果候选与保守时间下界（2026-09-26）
+
+新增只读 `audit_join_intent_lower_bound.py`：在 **首次** child
+完成通知当时，只选择已存在的 ALL JOIN、仅该 child 未返回、
+其他成员均已观测到 RETURN 且无当时已知取消的组；再单列
+其后额外工具、取消/blocked、不完整和完整自然 JOIN。
+第二种候选还要求其他成员在其 RETURN 前有可观察的非空
+自然终态模型回复；有明确 `child_report_status=blocked`
+的成员被排除。未来的 child/JOIN 结果只作标签，不参加
+候选选择。其他项目自然 JOIN 样本的最小提前量减 200 ms
+仅作**探索性的历史下界**，没有跨项目覆盖保证。
+
+在既有 Sphinx、Astropy、PSF、Django 通知批次上，
+只需 RETURN 的候选依项目分别为 **2/6/4/1** 次，
+其中完整自然 JOIN 分别为 **0/1/3/1**；Astropy
+有 5 次未形成可评分的完整 JOIN。加入 sibling 终态
+可见性后，候选分别为 **0/1/3/1**，五次都成为
+完整自然 JOIN。但这项条件是在查看这四批结果后提出，
+**5/5 不是独立精度**。对当时未用于这条筛选的旧
+Pylint 通知批次按同一规则复验，两种候选均为 **3 次，
+2 次完整自然 JOIN、1 次未形成完整 JOIN**；旧 Pylint
+通知缺显式 JOIN ID，靠同一时刻唯一的组身份进行
+只读关联，仍不足以作为在线物理动作证明。
+
+五项目留一历史下界在 PSF 的三个真实 JOIN 上
+**2/3 过早**；不能把跨项目最短提前量当作未来
+硬门槛。已形成的完整 JOIN 在上述各批均有至少
+2 秒通知提前量，但要面对未形成 JOIN 的候选和
+极少样本，不能把条件性提前量当作 100% 的
+预取精度，更不是数百毫秒内的 JOIN 点 ETA。
+报告保存在 `qwen35_child_final_report_django_pair_20260926_v1/`
+`sole_pending_join_project_cv_with_pylint.json`。
+
+新采集路径现在把 planned child 的语义 `complete`/`blocked`
+随 `RETURN.attributes.child_report_status` 发给运行时；
+错误/取消仍走原有取消事件，JOIN 满足语义不变。
+旧 trace 没有该字段，不能用未来 `child_reports.json`
+反向填充通知时可见状态。须在新任务的在线事件中核验
+RETURN 与 sibling 语义状态的时序、JOIN 候选召回和
+误触发；再用与开发项目隔离的任务和足够的完整 JOIN
+比较下界、控制时延和传输是否可用。现阶段预测式
+物理 H2D/D2H 仍关闭。

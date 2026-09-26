@@ -403,9 +403,14 @@ class DeepAgentsRuntimeAdapter(BaseCallbackHandler):
         task: DeclaredRuntimeTask,
         *,
         error: BaseException | None = None,
+        child_report_status: str | None = None,
     ) -> None:
         """Complete a child dispatched directly by a code orchestrator."""
 
+        if child_report_status not in (None, "complete", "blocked"):
+            raise ValueError("invalid child report status")
+        if error is not None and child_report_status is not None:
+            raise ValueError("failed runtime task cannot have a child report status")
         with self._lock:
             pending = self._pending_tasks.get(task.tool_call_id)
             if pending is None or pending.child_invocation_id != task.invocation_id:
@@ -414,6 +419,7 @@ class DeepAgentsRuntimeAdapter(BaseCallbackHandler):
             task.tool_call_id,
             cancelled=error is not None,
             error=error,
+            child_report_status=child_report_status,
         )
 
     def cancel_pending_tasks(self, *, reason: str) -> int:
@@ -1486,11 +1492,13 @@ class DeepAgentsRuntimeAdapter(BaseCallbackHandler):
         *,
         cancelled: bool,
         error: BaseException | None,
+        child_report_status: str | None = None,
     ) -> None:
         events = self._complete_task_events(
             tool_call_id,
             cancelled=cancelled,
             error=error,
+            child_report_status=child_report_status,
         )
         self._publish(events, control=True)
 
@@ -1500,6 +1508,7 @@ class DeepAgentsRuntimeAdapter(BaseCallbackHandler):
         *,
         cancelled: bool,
         error: BaseException | None,
+        child_report_status: str | None = None,
     ) -> tuple[RuntimeEvent, ...]:
         with self._lock:
             pending = self._pending_tasks[tool_call_id]
@@ -1536,6 +1545,10 @@ class DeepAgentsRuntimeAdapter(BaseCallbackHandler):
                     "source": "deepagents_task",
                     "outcome": "error" if cancelled else "completed",
                     "exception_type": type(error).__name__ if error else None,
+                    **(
+                        {"child_report_status": child_report_status}
+                        if child_report_status is not None else {}
+                    ),
                 },
             )
         ]
