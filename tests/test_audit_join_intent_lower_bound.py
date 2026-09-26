@@ -10,7 +10,7 @@ def _workflow(
     child_report_status=None, parent_wait=False, parent_submit=None,
     parent_cancel=None, parent_next_join=None, future_waiter_at=None,
     parent_submit_epoch=0, parent_submit_context="root-context",
-    child_outcome="completed",
+    child_outcome="completed", final_chunk_at=None, tool_after_chunk_at=None,
 ):
     folder = root / f"{project}__task"
     folder.mkdir(parents=True)
@@ -30,8 +30,12 @@ def _workflow(
              if sibling_report_status is not None else {}
          )}},
         {"kind": "llm_result", "invocation_id": last, "ts_ms": child_return - 1,
+         "context_id": "child-context", "context_epoch": 1,
          "attributes": {"finish_reason": "stop", "output_chars": 32,
-                        "request_id": f"{project}:rid"}},
+                        "request_id": f"{project}:rid", **(
+                            {"stream_final_chunk_ts_ms": final_chunk_at}
+                            if final_chunk_at is not None else {}
+                        )}},
         {"kind": "return", "invocation_id": last, "ts_ms": child_return,
          "attributes": {"outcome": child_outcome, **(
              {"child_report_status": child_report_status}
@@ -42,6 +46,18 @@ def _workflow(
         events.append({"kind": "join_wait", "join_id": join_id,
                        "invocation_id": parent, "context_id": "root-context",
                        "context_epoch": 0, "ts_ms": 2})
+    if final_chunk_at is not None:
+        events.append({
+            "kind": "structured_action", "invocation_id": last,
+            "join_id": join_id, "context_id": "child-context",
+            "context_epoch": 1, "ts_ms": final_chunk_at,
+            "attributes": {"beliefkv_child_final_chunk_shadow": True,
+                           "request_id": f"{project}:rid"},
+        })
+    if tool_after_chunk_at is not None:
+        events.append({"kind": "tool_start", "invocation_id": last,
+                       "attributes": {"tool_name": "execute"},
+                       "ts_ms": tool_after_chunk_at})
     if future_waiter_at is not None:
         events.append({"kind": "join_wait", "join_id": join_id,
                        "invocation_id": f"{project}:other",
@@ -179,3 +195,54 @@ def test_non_completed_return_does_not_become_natural_label(tmp_path):
     assert not row["natural_join"]
     assert row["failure"] == "no_natural_child_return"
     assert row["parent_reentry_observed"]
+
+
+def test_first_live_final_chunk_is_bound_to_terminal_child_request(tmp_path):
+    _workflow(tmp_path, "alpha", parent_wait=True, parent_submit=2300,
+              final_chunk_at=2000)
+    _workflow(tmp_path, "beta", parent_wait=True, parent_submit=2300,
+              final_chunk_at=2000, tool_after_chunk_at=2100)
+    _workflow(tmp_path, "gamma", parent_wait=True, parent_submit=2300,
+              final_chunk_at=2200)
+    rows = {item["project"]: item for item in collect([tmp_path])}
+    assert rows["alpha"]["first_final_chunk_seen"]
+    assert rows["alpha"]["first_final_chunk_parent_reentry"]
+    assert rows["alpha"]["first_final_chunk_parent_lead_ms"] == 300
+    assert rows["beta"]["first_final_chunk_seen"]
+    assert not rows["beta"]["first_final_chunk_parent_reentry"]
+    assert not rows["gamma"]["first_final_chunk_seen"]
+    report = evaluate(list(rows.values()))["folds"]
+    assert report["beta"]["first_final_chunk_candidate_count"] == 1
+    assert report["beta"]["first_final_chunk_true_parent_count"] == 0
+    assert report["alpha"]["first_final_chunk_zero_baseline_within_500ms_count"] == 1
+
+
+def test_first_chunk_does_not_select_later_correct_signal(tmp_path):
+    _workflow(tmp_path, "alpha", parent_wait=True, parent_submit=2300,
+              final_chunk_at=2000)
+    event_path = (
+        tmp_path / "alpha__task" / "runtime_events.deepagents.jsonl"
+    )
+    events = [
+        json.loads(line) for line in event_path.read_text().splitlines()
+    ]
+    events.extend([
+        {"kind": "structured_action", "invocation_id": "alpha:last",
+         "join_id": "alpha:join", "context_id": "child-context",
+         "context_epoch": 0, "ts_ms": 1000,
+         "attributes": {"beliefkv_child_final_chunk_shadow": True,
+                        "request_id": "alpha:early"}},
+        {"kind": "llm_result", "invocation_id": "alpha:last",
+         "context_id": "child-context", "context_epoch": 0, "ts_ms": 1010,
+         "attributes": {"finish_reason": "stop", "output_chars": 12,
+                        "stream_final_chunk_ts_ms": 1000,
+                        "request_id": "alpha:early"}},
+        {"kind": "llm_submit", "invocation_id": "alpha:last",
+         "ts_ms": 1500},
+    ])
+    event_path.write_text(
+        "".join(json.dumps(event) + "\n" for event in events)
+    )
+    row, = collect([tmp_path])
+    assert row["first_final_chunk_seen"]
+    assert not row["first_final_chunk_parent_reentry"]

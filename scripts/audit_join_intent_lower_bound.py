@@ -100,11 +100,23 @@ def collect(
                 ):
                     waiters[row["join_id"]].append(row)
             model_submissions = defaultdict(list)
+            model_results = defaultdict(list)
+            final_chunks = defaultdict(list)
             for row in events:
                 if row["kind"] == "llm_submit" and row.get("invocation_id") and not (
                     row.get("attributes") or {}
                 ).get("runtime_internal"):
                     model_submissions[row["invocation_id"]].append(row)
+                if row["kind"] == "llm_result" and (row.get("attributes") or {}).get(
+                    "request_id"
+                ):
+                    model_results[(
+                        row["invocation_id"], row["attributes"]["request_id"],
+                    )].append(row)
+                if row["kind"] == "structured_action" and (row.get(
+                    "attributes"
+                ) or {}).get("beliefkv_child_final_chunk_shadow"):
+                    final_chunks[row["invocation_id"]].append(row)
             parent_invalidations = defaultdict(list)
             for row in events:
                 parent = row.get("invocation_id")
@@ -200,6 +212,55 @@ def collect(
                     if parent is not None and satisfied_at is not None
                     and satisfied_at > when else None
                 )
+                chunk = min(
+                    (
+                        row for row in final_chunks[child]
+                        if row.get("join_id") == join_id
+                        and when < float(row["ts_ms"])
+                        and (
+                            satisfied_at is None
+                            or float(row["ts_ms"]) < satisfied_at
+                        )
+                        and (
+                            returned.get(child) is None
+                            or float(row["ts_ms"]) < returned[child]
+                        )
+                        and (
+                            parent_reentry_at is None
+                            or float(row["ts_ms"]) < parent_reentry_at
+                        )
+                    ),
+                    key=lambda row: float(row["ts_ms"]),
+                    default=None,
+                )
+                chunk_ts = float(chunk["ts_ms"]) if chunk else None
+                chunk_rid = (chunk.get("attributes") or {}).get(
+                    "request_id"
+                ) if chunk else None
+                matches = model_results[(child, chunk_rid)] if chunk_rid else []
+                child_return_at = returned.get(child)
+                chunk_final_for_parent = (
+                    chunk is not None and len(matches) == 1
+                    and child_return_at is not None
+                    and parent_reentry_at is not None
+                    and chunk_ts < float(matches[0]["ts_ms"]) <= child_return_at
+                    and child_return_at <= satisfied_at
+                    and matches[0].get("context_id") == chunk.get("context_id")
+                    and matches[0].get("context_epoch") == chunk.get("context_epoch")
+                    and (attrs := matches[0].get("attributes") or {}).get(
+                        "stream_final_chunk_ts_ms"
+                    ) is not None
+                    and abs(float(attrs["stream_final_chunk_ts_ms"]) - chunk_ts) < 1
+                    and attrs.get("finish_reason") == "stop"
+                    and attrs.get("output_chars", 0) > 0
+                    and not attrs.get("tool_call_count")
+                    and not any(
+                        child == row.get("invocation_id")
+                        and row["kind"] in {"llm_submit", "tool_start", "invocation_cancel"}
+                        and chunk_ts < float(row["ts_ms"]) < child_return_at
+                        for row in events
+                    )
+                )
                 end = natural_returns.get(child)
                 later_tool = any(
                     when < ts < (end if end is not None else float("inf"))
@@ -244,6 +305,12 @@ def collect(
                         parent_reentry_at - satisfied_at
                         if parent_reentry_at is not None else None
                     ),
+                    "first_final_chunk_seen": chunk is not None,
+                    "first_final_chunk_parent_reentry": chunk_final_for_parent,
+                    "first_final_chunk_parent_lead_ms": (
+                        parent_reentry_at - chunk_ts
+                        if chunk_final_for_parent else None
+                    ),
                 })
     return records
 
@@ -277,6 +344,19 @@ def evaluate(records: list[dict]) -> dict:
         reentry_errors = [
             abs(lead - reentry_prior) for lead in reentries
         ] if reentry_prior is not None else []
+        training_chunks = [
+            item["first_final_chunk_parent_lead_ms"] for item in records
+            if item["project"] != heldout
+            and item["first_final_chunk_parent_reentry"]
+        ]
+        chunks = [
+            item["first_final_chunk_parent_lead_ms"] for item in test
+            if item["first_final_chunk_parent_reentry"]
+        ]
+        chunk_prior = median(training_chunks) if training_chunks else None
+        chunk_errors = [
+            abs(lead - chunk_prior) for lead in chunks
+        ] if chunk_prior is not None else []
         folds[heldout] = {
             "training_projects": sorted({item["project"] for item in training}),
             "training_natural_join_count": len(training),
@@ -325,6 +405,27 @@ def evaluate(records: list[dict]) -> dict:
                     if item["parent_reentry_observed"]
                 ) if reentries else None
             ),
+            "first_final_chunk_candidate_count": sum(
+                item["first_final_chunk_seen"] for item in test
+            ),
+            "first_final_chunk_true_parent_count": len(chunks),
+            "first_final_chunk_train_count": len(training_chunks),
+            "first_final_chunk_train_median_ms": chunk_prior,
+            "first_final_chunk_point_abs_error_p50_ms": (
+                median(chunk_errors) if chunk_errors else None
+            ),
+            "first_final_chunk_within_500ms_count": sum(
+                error <= 500 for error in chunk_errors
+            ),
+            "first_final_chunk_lead_p50_ms": (
+                median(chunks) if chunks else None
+            ),
+            "first_final_chunk_lead_at_least_500ms_count": sum(
+                lead >= 500 for lead in chunks
+            ),
+            "first_final_chunk_zero_baseline_within_500ms_count": sum(
+                lead <= 500 for lead in chunks
+            ),
             "window_success_counts": {
                 str(window): sum(lead >= window for lead in eligible)
                 for window in WINDOWS_MS
@@ -353,7 +454,9 @@ def evaluate(records: list[dict]) -> dict:
             "or censored reentries are reported separately. Historical "
             "minimum has no distribution-free coverage guarantee. No residency, "
             "physical transfer, validated child RETURN point-ETA, or throughput "
-            "evidence."
+            "evidence. First final-chunk signal must match the child, JOIN, RID, "
+            "result and terminal path; only projects with actual live signals "
+            "contribute to late-stage timing."
         ),
     }
 
