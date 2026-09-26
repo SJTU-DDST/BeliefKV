@@ -1,12 +1,15 @@
 from __future__ import annotations
 
 import json
+import os
+from pathlib import Path
 import sys
 
 import pytest
 
-from beliefkv.experiments.sandbox_progress import observe_output
+from beliefkv.experiments.sandbox_progress import _ProgressFrames, observe_output
 from scripts.audit_sandbox_output_timing import _first_silence_lead_ms, audit
+from scripts.audit_sandbox_test_progress import summarize as summarize_test_progress
 
 
 def test_output_timing_observes_first_and_later_bytes_without_body_in_metadata():
@@ -154,3 +157,110 @@ def test_silence_signal_uses_only_chunks_seen_before_trigger():
     row["total_output_chunks"] = 3
     row["execute_elapsed_ms"] = 450
     assert _first_silence_lead_ms(row) is None
+
+
+def test_progress_frames_preserve_invalid_frames_and_split_output():
+    frames = _ProgressFrames()
+    first, events = frames.feed(b"before\x1eBKVP:{\"phase\":\"test_done\",")
+    assert first == b"before"
+    assert events == []
+    second, events = frames.feed(b"\"completed\":1,\"total\":2}\x1fafter")
+    assert second == b"after"[:max(0, len(b"after") - len(frames.PREFIX) + 1)]
+    assert events == [("test_done", 1, 2)]
+    tail, events = frames.feed(b"", final=True)
+    assert first + second + tail == b"beforeafter"
+    assert events == []
+    bad, events = frames.feed(
+        b"\x1eBKVP:{\"phase\":\"test_done\",\"completed\":5,\"total\":2}\x1f",
+        final=True,
+    )
+    assert b"completed" in bad
+    assert events == []
+
+
+def test_opt_in_pytest_progress_arrives_before_command_end_without_leaking(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    test_file = tmp_path / "test_progress_example.py"
+    test_file.write_text(
+        "import time\n"
+        "def test_one():\n    time.sleep(.03)\n"
+        "def test_two():\n    time.sleep(.18)\n"
+    )
+    support = Path(__file__).resolve().parents[1] / (
+        "beliefkv/experiments/sandbox_support"
+    )
+    monkeypatch.setenv("PYTHONPATH", str(support))
+    monkeypatch.setenv("PYTEST_PLUGINS", "beliefkv_pytest_progress")
+    monkeypatch.setenv("PYTEST_DISABLE_PLUGIN_AUTOLOAD", "1")
+    result = observe_output(
+        [sys.executable, "-m", "pytest", "-q", "-c", os.devnull, str(test_file)],
+        timeout_s=20, test_progress_shadow=True,
+    )
+    assert result.exit_code == 0, result.output
+    assert result.total_progress_events == 4
+    assert [row[1:] for row in result.recent_progress_events] == [
+        ("collection", 0, 2),
+        ("test_done", 1, 2),
+        ("test_done", 2, 2),
+        ("session_finish", 2, 2),
+    ]
+    assert [row[1] for row in result.first_progress_stages] == [
+        "collection", "all_tests_done",
+    ]
+    first_test_ms = result.recent_progress_events[1][0]
+    assert result.elapsed_ms - first_test_ms >= 100
+    assert "2 passed" in result.output
+    assert "BKVP" not in result.output
+    assert b"\x1e" not in result.output.encode()
+
+
+def test_pytest_progress_audit_requires_observed_collection_and_nonterminal_lead():
+    report = summarize_test_progress([{
+        "execute_elapsed_ms": 3000,
+        "exit_code": 0,
+        "total_test_progress_events": 4,
+        "recent_test_progress_events": (
+            (200, "collection", 0, 10),
+            (1000, "test_done", 9, 10),
+            (2880, "test_done", 10, 10),
+            (2900, "session_finish", 10, 10),
+        ),
+    }])
+    assert report["stages"]["ninety_percent_before_last"][
+        "lead_500_to_3000ms"
+    ] == 1
+    assert report["stages"]["all_tests_done"]["lead_at_least_500ms"] == 0
+    assert report["truncated_progress_count"] == 0
+
+
+def test_pytest_progress_audit_allows_bounded_tail_but_not_missing_first_crossing():
+    report = summarize_test_progress([{
+        "execute_elapsed_ms": 3000,
+        "exit_code": 0,
+        "total_test_progress_events": 350,
+        "recent_test_progress_events": (
+            (1000, "test_done", 300, 320),
+            (2000, "test_done", 320, 320),
+        ),
+    }])
+    assert report["truncated_progress_count"] == 1
+    assert report["stages"]["ninety_percent_before_last"]["trigger_count"] == 0
+    assert report["stages"]["all_tests_done"]["trigger_count"] == 1
+    with_stage = summarize_test_progress([{
+        "execute_elapsed_ms": 3000,
+        "exit_code": 0,
+        "total_test_progress_events": 350,
+        "recent_test_progress_events": (
+            (1000, "test_done", 300, 320),
+            (2000, "test_done", 320, 320),
+        ),
+        "first_test_progress_stages": (
+            (100, "collection", 0, 320),
+            (800, "ninety_percent_before_last", 288, 320),
+            (2000, "all_tests_done", 320, 320),
+        ),
+    }])
+    assert with_stage["stages"]["ninety_percent_before_last"][
+        "lead_500_to_3000ms"
+    ] == 1

@@ -2437,3 +2437,32 @@ Pytest 为主，Requests、Seaborn、Flask 的
 冻结 train 项目上拟合、在项目隔离批次
 验收，不把分类“长调用”的概率冒充
 精确 RETURN ETA 或 JOIN 预测。
+
+## 37. 结构化 pytest 进度的只读采集（2026-09-26）
+
+在第 36 节冷工具形态预测跨项目失败后，新增默认关闭的
+`BELIEFKV_SANDBOX_TEST_PROGRESS_SHADOW=1`。它必须与
+`BELIEFKV_SANDBOX_OUTPUT_TIMING_SHADOW=1` 同时启用。
+sandbox 的只读支持目录提供 pytest 插件，向宿主发送
+`collection`、每例 `test_done`、`session_finish` 的完成数/
+总数，不发送测试名称、参数或正文。宿主用收到完整标记的
+单调时钟记录最近 128 次事件、总事件数以及首次
+90%（且未全部完成）与全部完成的时间戳；标记从返回给
+agent 的 stdout/stderr 中剥离，默认运行路径不变。
+计划派发的 child 继承同一开关。pytest-xdist 的 worker
+计数不代表整个命令，当前不产生可评分的整组进度。
+非 pytest 命令也没有此信号，尤其不能外推到 Django
+原生 `tests/runtests.py`。
+
+`scripts/audit_sandbox_test_progress.py` 只读比较首次达到
+90%（且尚未全部完成）及全部测试完成到命令退出的提前量；
+最近事件被截断时，审计使用单独保存的首次阶段时间戳；
+缺少首次跨越阈值的证据则不计为首次触发。它**不**把
+“90% 用例完成”冒充剩余时间估计，也不把所有测试完成
+冒充 child `TOOL_END` 或完整 JOIN。宿主进程合成 pytest
+测试及真实 SWE-bench Docker sandbox 中的合成测试均已
+验证计数在进程退出前到达，标记未泄露到工具输出；
+尚无真实项目长 child 工具调用的跨项目提前量与误报数据。
+即使后续发现有效 pytest 阶段信号，还须评估测试框架开销、
+对 workload 的干预及负载下的完整控制链。物理预测动作
+保持关闭，模型上线资格不变。

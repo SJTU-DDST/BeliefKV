@@ -583,6 +583,7 @@ class DockerWorkspaceBackend(FilesystemBackend, SandboxBackendProtocol):
         support_dir: Path | None = DEFAULT_SANDBOX_SUPPORT_DIR,
         output_timing_shadow: bool = False,
         unbuffered_output_shadow: bool = False,
+        test_progress_shadow: bool = False,
     ) -> None:
         super().__init__(root_dir=workspace, virtual_mode=True)
         if cpus <= 0 or memory_gib <= 0 or default_timeout_s <= 0:
@@ -600,6 +601,11 @@ class DockerWorkspaceBackend(FilesystemBackend, SandboxBackendProtocol):
         if unbuffered_output_shadow and not output_timing_shadow:
             raise ValueError("unbuffered output requires sandbox output timing shadow")
         self.unbuffered_output_shadow = unbuffered_output_shadow
+        if test_progress_shadow and not output_timing_shadow:
+            raise ValueError("test progress requires sandbox output timing shadow")
+        if test_progress_shadow and support_dir is None:
+            raise ValueError("test progress requires sandbox support directory")
+        self.test_progress_shadow = test_progress_shadow
         self.support_dir = support_dir.resolve() if support_dir is not None else None
         if not self.test_env_path.startswith("/"):
             raise ValueError("sandbox test environment path must be absolute")
@@ -664,6 +670,8 @@ class DockerWorkspaceBackend(FilesystemBackend, SandboxBackendProtocol):
         )
         if self.unbuffered_output_shadow:
             environment += ("PYTHONUNBUFFERED=1",)
+        if self.test_progress_shadow:
+            environment += ("PYTEST_PLUGINS=beliefkv_pytest_progress",)
         return [item for value in environment for item in ("--env", value)]
 
     def _docker_exec_argv(self, command: str) -> list[str]:
@@ -889,7 +897,10 @@ class DockerWorkspaceBackend(FilesystemBackend, SandboxBackendProtocol):
         with self._execute_lock:
             acquired = time.monotonic()
             if self.output_timing_shadow:
-                timing = observe_output(argv, timeout_s=timeout_s + 15.0)
+                timing = observe_output(
+                    argv, timeout_s=timeout_s + 15.0,
+                    test_progress_shadow=self.test_progress_shadow,
+                )
                 output = timing.output
                 exit_code: int | None = timing.exit_code
             else:
@@ -937,6 +948,13 @@ class DockerWorkspaceBackend(FilesystemBackend, SandboxBackendProtocol):
                 "total_output_chunks": timing.total_output_chunks,
                 "output_timing_shadow": True,
                 "unbuffered_output_shadow": self.unbuffered_output_shadow,
+                **({
+                    "test_progress_shadow": True,
+                    "recent_test_progress_events": timing.recent_progress_events,
+                    "total_test_progress_events": timing.total_progress_events,
+                    "first_test_progress_stages": timing.first_progress_stages,
+                    "test_progress_collection_count": timing.progress_collection_count,
+                } if self.test_progress_shadow else {}),
             } if self.output_timing_shadow else {}),
         )
         return ExecuteResponse(
@@ -2710,6 +2728,7 @@ def _run_planned_child(
         support_dir=backend.support_dir,
         output_timing_shadow=backend.output_timing_shadow,
         unbuffered_output_shadow=backend.unbuffered_output_shadow,
+        test_progress_shadow=backend.test_progress_shadow,
     )
     deadline_controller.register_backend(child_backend)
     try:
@@ -3562,6 +3581,9 @@ def _run_workflow(
         ),
         unbuffered_output_shadow=(
             os.environ.get("BELIEFKV_SANDBOX_UNBUFFERED_SHADOW") == "1"
+        ),
+        test_progress_shadow=(
+            os.environ.get("BELIEFKV_SANDBOX_TEST_PROGRESS_SHADOW") == "1"
         ),
     )
     workflow_token = hashlib.sha256(

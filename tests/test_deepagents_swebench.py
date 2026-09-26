@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import gzip
+import os
 import subprocess
 import threading
 import time
@@ -573,6 +574,79 @@ def test_unbuffered_python_output_is_only_allowed_in_explicit_shadow(
     )
     assert "PYTHONUNBUFFERED=1" in opt_in._docker_environment_args()
     audit.close()
+
+
+def test_test_progress_shadow_requires_support_and_stdout_shadow(
+    tmp_path: Path,
+) -> None:
+    audit = JsonlAudit(tmp_path / "audit.jsonl")
+    with pytest.raises(ValueError, match="requires sandbox output timing"):
+        DockerWorkspaceBackend(
+            tmp_path, image="fixture:latest", audit=audit,
+            test_progress_shadow=True,
+        )
+    with pytest.raises(ValueError, match="requires sandbox support"):
+        DockerWorkspaceBackend(
+            tmp_path, image="fixture:latest", audit=audit,
+            support_dir=None, output_timing_shadow=True,
+            test_progress_shadow=True,
+        )
+    backend = DockerWorkspaceBackend(
+        tmp_path, image="fixture:latest", audit=audit,
+        output_timing_shadow=True, test_progress_shadow=True,
+    )
+    assert "PYTEST_PLUGINS=beliefkv_pytest_progress" in (
+        backend._docker_environment_args()
+    )
+    audit.close()
+
+
+@pytest.mark.skipif(
+    os.environ.get("BELIEFKV_TEST_SANDBOX_DOCKER") != "1",
+    reason="requires explicitly selected cached SWE-bench Docker image",
+)
+def test_test_progress_shadow_in_real_sandbox(tmp_path: Path) -> None:
+    image = os.environ["BELIEFKV_TEST_SANDBOX_IMAGE"]
+    workspace = tmp_path / "workspace"
+    subprocess.run(["git", "init", "-q", str(workspace)], check=True)
+    (workspace / "test_progress_example.py").write_text(
+        "import time\n"
+        "def test_first():\n    time.sleep(.02)\n"
+        "def test_second():\n    time.sleep(.2)\n"
+    )
+    audit = JsonlAudit(tmp_path / "audit.jsonl")
+    backend = DockerWorkspaceBackend(
+        workspace, image=image, audit=audit,
+        output_timing_shadow=True, test_progress_shadow=True,
+    )
+    try:
+        backend.start()
+        result = backend.execute(
+            "python -m pytest -q -c /dev/null /workspace/test_progress_example.py",
+            timeout=30,
+        )
+        assert result.exit_code == 0, result.output
+        assert "2 passed" in result.output
+        assert "BKVP" not in result.output
+    finally:
+        backend.close()
+        audit.close()
+    records = [
+        json.loads(line)
+        for line in (tmp_path / "audit.jsonl").read_text().splitlines()
+    ]
+    execution = next(row for row in records if row["event"] == "sandbox_execute")
+    assert execution["total_test_progress_events"] == 4
+    assert execution["recent_test_progress_events"][1][1:] == [
+        "test_done", 1, 2,
+    ]
+    assert [row[1] for row in execution["first_test_progress_stages"]] == [
+        "collection", "all_tests_done",
+    ]
+    assert (
+        execution["execute_elapsed_ms"]
+        - execution["recent_test_progress_events"][1][0]
+    ) >= 100
 
 
 def test_planned_child_inherits_unbuffered_output_shadow(
