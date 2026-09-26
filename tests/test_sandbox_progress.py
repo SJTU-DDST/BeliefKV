@@ -9,7 +9,10 @@ import pytest
 
 from beliefkv.experiments.sandbox_progress import _ProgressFrames, observe_output
 from scripts.audit_sandbox_output_timing import _first_silence_lead_ms, audit
-from scripts.audit_sandbox_test_progress import summarize as summarize_test_progress
+from scripts.audit_sandbox_test_progress import (
+    audit as audit_test_progress,
+    summarize as summarize_test_progress,
+)
 
 
 def test_output_timing_observes_first_and_later_bytes_without_body_in_metadata():
@@ -230,6 +233,7 @@ def test_pytest_progress_audit_requires_observed_collection_and_nonterminal_lead
     assert report["stages"]["ninety_percent_before_last"][
         "lead_500_to_3000ms"
     ] == 1
+    assert report["stages"]["collection"]["lead_at_least_500ms"] == 0
     assert report["stages"]["all_tests_done"]["lead_at_least_500ms"] == 0
     assert report["truncated_progress_count"] == 0
 
@@ -264,3 +268,47 @@ def test_pytest_progress_audit_allows_bounded_tail_but_not_missing_first_crossin
     assert with_stage["stages"]["ninety_percent_before_last"][
         "lead_500_to_3000ms"
     ] == 1
+    assert with_stage["stages"]["collection"]["lead_at_least_500ms"] == 1
+
+
+def test_pytest_progress_audit_separates_matched_long_child(tmp_path: Path):
+    path = tmp_path / "pydata__task"
+    path.mkdir()
+    (path / "sandbox_audit.jsonl").write_text(json.dumps({
+        "event": "sandbox_execute", "test_progress_shadow": True,
+        "ts_ms": 2990, "duration_ms": 2980, "execute_elapsed_ms": 2980,
+        "exit_code": 0, "total_test_progress_events": 3,
+        "test_progress_collection_count": 1,
+        "recent_test_progress_events": [
+            [100, "collection", 0, 2],
+            [2000, "test_done", 1, 2],
+            [2600, "test_done", 2, 2],
+        ],
+    }) + "\n")
+    (path / "runtime_events.deepagents.jsonl").write_text(
+        "".join(json.dumps(event) + "\n" for event in (
+            {
+                "ts_ms": 0, "kind": "tool_start",
+                "attributes": {
+                    "tool_call_id": "one", "tool_name": "execute",
+                    "is_child": True,
+                    "observed_command_shape": "test_suite_targeted",
+                },
+            },
+            {
+                "ts_ms": 3000, "kind": "tool_end",
+                "attributes": {
+                    "tool_call_id": "one", "tool_name": "execute",
+                    "status": "success",
+                },
+            },
+        ))
+    )
+    report = audit_test_progress(tmp_path)
+    assert report["matched_tool_end_count"] == 1
+    assert report["by_origin_long_commands_matched"]["child"][
+        "command_count"
+    ] == 1
+    assert report["by_shape_long_commands_matched"][
+        "test_suite_targeted"
+    ]["command_count"] == 1

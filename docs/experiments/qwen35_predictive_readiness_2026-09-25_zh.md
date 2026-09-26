@@ -2454,15 +2454,48 @@ agent 的 stdout/stderr 中剥离，默认运行路径不变。
 非 pytest 命令也没有此信号，尤其不能外推到 Django
 原生 `tests/runtests.py`。
 
-`scripts/audit_sandbox_test_progress.py` 只读比较首次达到
-90%（且尚未全部完成）及全部测试完成到命令退出的提前量；
+`scripts/audit_sandbox_test_progress.py` 只读比较收集完成、
+首次达到 90%（且尚未全部完成）及全部测试完成到命令退出的提前量；
 最近事件被截断时，审计使用单独保存的首次阶段时间戳；
 缺少首次跨越阈值的证据则不计为首次触发。它**不**把
 “90% 用例完成”冒充剩余时间估计，也不把所有测试完成
 冒充 child `TOOL_END` 或完整 JOIN。宿主进程合成 pytest
 测试及真实 SWE-bench Docker sandbox 中的合成测试均已
 验证计数在进程退出前到达，标记未泄露到工具输出；
-尚无真实项目长 child 工具调用的跨项目提前量与误报数据。
-即使后续发现有效 pytest 阶段信号，还须评估测试框架开销、
+下述真实项目批次提供了时序诊断，但未证明跨项目的准确
+RETURN 时钟。即使后续发现有效 pytest 阶段信号，还须评估测试框架开销、
 对 workload 的干预及负载下的完整控制链。物理预测动作
 保持关闭，模型上线资格不变。
+
+### 两项目 6-root 真实诊断结果（2026-09-26）
+
+`qwen35_pytest_progress_shadow_train6_20260926` 复用冻结 train split
+中的 Xarray 3 题、pytest-dev 3 题，以当前 18001 端口的
+隔离 Qwen3.5 服务运行；仅打开 sandbox output/test progress
+shadow，不打开物理预测动作。6 个 workflow 中 4 completed、
+2 incomplete，只有 1 个通过 system 测量门禁；本批**不能**
+用于训练/校准 JOIN 或比较任务正确性。原始 trace 和
+`test_progress_audit.json` 保留，分析仅涉及已经完成并唯一
+对应到工具结束的命令时序。
+
+485 条 sandbox 命令中 21 条记录了可评分的 pytest
+`collection`；19 条有全部测试完成。收集到命令退出
+的提前量 P50/P90 约 **5/320 ms**，只有 1 条达到 500 ms，
+而且不是已匹配的长 child 命令。全部测试完成的 P50/P90
+约 **5/247 ms**，没有一条提前 500 ms。用工具事件时间
+唯一匹配了 468 条，17 条存在多重候选，不将后者用于
+child 结论。45 条匹配的至少 2 秒 child `execute` 中，
+仅 6 条有 `collection` 和全部完成信号；这 6 条
+收集到命令退出的 P50/P90 约 **4.6/5.2 ms**，
+达到 500 ms 的 **0/6**。其余 39 条没有可评分 pytest
+阶段；已有命令形态对应大量内联 Python，这项插件
+不能覆盖其执行主体。首次 90% 完成在本批没有可用触发。
+
+因此结构化 pytest 阶段本身虽可在真实 Docker 环境
+无正文泄漏地采到，却**没有**解决冷长 child TOOL_END
+的可用提前量；也不能从这 6 个任务推广到其他项目、
+工具形态或完整 JOIN。后续优先研究内联 Python 执行期
+是否存在低干预、实际可在线交付的前置阶段；若没有，
+应明确将冷调用交给带风险预算的容量预备，不能训练一个
+不存在的亚秒精确 RETURN 时钟。物理动作和模型资格
+保持关闭。

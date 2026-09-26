@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import argparse
+from bisect import bisect_left
 from collections import defaultdict
 import json
 from pathlib import Path
@@ -14,6 +15,7 @@ ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 from scripts.audit_native_stream_shadow import _quantile, _rows
+from scripts.audit_sandbox_output_timing import _tool_ends
 
 
 def summarize(rows: list[dict]) -> dict:
@@ -51,6 +53,7 @@ def summarize(rows: list[dict]) -> dict:
         elapsed = float(row["execute_elapsed_ms"])
         # The first crossing uses only counters available at that instant.
         for name, criterion in (
+            ("collection", lambda done: done == 0),
             ("ninety_percent_before_last", lambda done: 0 < done < total
              and done * 10 >= total * 9),
             ("all_tests_done", lambda done: done == total),
@@ -61,6 +64,8 @@ def summarize(rows: list[dict]) -> dict:
             else:
                 # Without a saved first crossing, the recent window is safe
                 # only if it includes the state before the threshold.
+                if name == "collection":
+                    continue
                 if (name == "ninety_percent_before_last"
                     and (not completed or completed[0][2] * 10 > total * 9)):
                     continue
@@ -87,7 +92,9 @@ def summarize(rows: list[dict]) -> dict:
             }
             for name, stage in (
                 (stage, leads[stage])
-                for stage in ("ninety_percent_before_last", "all_tests_done")
+                for stage in (
+                    "collection", "ninety_percent_before_last", "all_tests_done"
+                )
             )
         },
     }
@@ -95,13 +102,41 @@ def summarize(rows: list[dict]) -> dict:
 
 def audit(workflows: Path) -> dict:
     by_project: dict[str, list[dict]] = defaultdict(list)
+    by_origin_long: dict[str, list[dict]] = defaultdict(list)
+    by_shape_long: dict[str, list[dict]] = defaultdict(list)
+    matched = ambiguous = 0
     for path in sorted(workflows.glob("**/sandbox_audit.jsonl")):
         project = path.relative_to(workflows).parts[0].split("__", 1)[0]
+        times, tool_ends = _tool_ends(path)
+        used: set[int] = set()
         for row in _rows(path):
             if row.get("event") == "sandbox_execute" and row.get(
                 "test_progress_shadow"
             ):
                 by_project[project].append(row)
+                ended = float(row["ts_ms"])
+                index = bisect_left(times, ended)
+                choices = []
+                while index < len(times) and times[index] - ended <= 200:
+                    tool_end = tool_ends[index]
+                    if index not in used and abs(
+                        tool_end["duration_ms"] - float(row["duration_ms"])
+                    ) <= max(250, .15 * float(row["duration_ms"])):
+                        choices.append(index)
+                    index += 1
+                if len(choices) == 1:
+                    match = choices[0]
+                    used.add(match)
+                    matched += 1
+                    if float(row["execute_elapsed_ms"]) >= 2000:
+                        origin = tool_ends[match]["is_child"]
+                        by_origin_long[
+                            "child" if origin is True else
+                            "root" if origin is False else "unknown"
+                        ].append(row)
+                        by_shape_long[tool_ends[match]["shape"]].append(row)
+                elif len(choices) > 1:
+                    ambiguous += 1
     if not by_project:
         raise ValueError("no opt-in pytest progress observations")
     return {
@@ -109,6 +144,17 @@ def audit(workflows: Path) -> dict:
         "all_commands": summarize([
             row for rows in by_project.values() for row in rows
         ]),
+        "matched_tool_end_count": matched,
+        "ambiguous_tool_end_count": ambiguous,
+        "by_origin_long_commands_matched": {
+            origin: summarize(rows) for origin, rows in sorted(
+                by_origin_long.items()
+            )
+        },
+        "by_shape_long_commands_matched": {
+            shape: summarize(rows)
+            for shape, rows in sorted(by_shape_long.items())
+        },
         "by_project": {
             project: summarize(rows) for project, rows in sorted(by_project.items())
         },
