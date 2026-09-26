@@ -5183,3 +5183,15 @@ Pytest 更新臂的配对 95% 增益下界为负。
 另外 23 个没有完整组通知候选。该修复只提高
 标签身份一致性，不代表 JOIN ETA 精度提高；
 独立留出终结前不读其中的部分结果或修改时钟。
+
+为冻结批次新增 `scripts/evaluate_cold_tool_peer_holdout66.sh`：
+先核验两批的最终 manifest、summary 和结果文件，
+要求训练 128、留出 66 个不重叠任务，留出项目
+为 Astropy 22、Sphinx 44 且与训练项目隔离；
+通过后才运行成功调用与非零返回补充口径的
+滚动存活评价、首次完整 JOIN 通知评价和 child
+RETURN 评价。报告单独写在
+`qwen35_cold_tool_peer_holdout_66root_v1/holdout_evaluation/`，
+保存评价代码提交和源 manifest 摘要；已有报告
+不会被覆盖。若批次还在运行则拒绝执行，
+不读取部分轨迹作为正式结果。
