@@ -1494,6 +1494,7 @@ class DeepAgentsExperimentConfig:
     max_completion_tokens: int = 2048
     sampling_seed: int | None = None
     stream_completion_shadow: bool = False
+    child_return_intent_shadow: bool = False
     subagent_fanout_profile: str = "natural"
     stop_after_first_native_join: bool = False
     recursion_limit: int = 2048
@@ -2094,6 +2095,21 @@ def _workspace_patch_tool(backend: DockerWorkspaceBackend) -> BaseTool:
         return backend.apply_unified_patch(patch)
 
     return apply_patch_tool
+
+
+def _child_return_intent_shadow_tool(
+    audit: JsonlAudit, invocation_id: str,
+) -> BaseTool:
+    @tool("announce_completion_intent")
+    def announce_completion_intent() -> str:
+        """Announce that your analysis is complete before the final response."""
+
+        audit.emit(
+            "child_return_intent_shadow", invocation_id=invocation_id,
+        )
+        return "Completion intent recorded. Return your concise final report now."
+
+    return announce_completion_intent
 
 
 def _filesystem_middleware(
@@ -2739,9 +2755,15 @@ def _run_planned_child(
     deadline_controller.register_backend(child_backend)
     try:
         child_backend.start()
+        shadow_tools = (
+            [_child_return_intent_shadow_tool(
+                backend.audit, handle.invocation_id,
+            )]
+            if config.child_return_intent_shadow else []
+        )
         child = create_agent(
             model=_model(config, adapter, deadline_controller),
-            tools=[],
+            tools=shadow_tools,
             middleware=[
                 _tool_circuit(
                     child_backend,
@@ -2783,6 +2805,13 @@ def _run_planned_child(
                 "Return your findings in concise ordinary prose; no JSON or special "
                 "completion tool is required. If you cannot complete the assigned "
                 "analysis, state what blocked you and return the partial evidence."
+                + (
+                    " When your analysis is finished and no more tool work is needed, "
+                    "call announce_completion_intent once, then give your final report. "
+                    "Do not call it when you still need to investigate; if new work "
+                    "becomes necessary, continue normally."
+                    if config.child_return_intent_shadow else ""
+                )
             ) + SANDBOX_PATH_CONTRACT + repository_sandbox_contract(workload),
             name=f"beliefkv-planned-{role_name or 'analyst'}",
         )

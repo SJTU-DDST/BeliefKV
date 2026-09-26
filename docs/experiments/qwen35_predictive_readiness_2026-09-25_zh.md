@@ -2891,3 +2891,69 @@ JOIN 短窗模型跨项目不过门槛的核心问题仍在。
 `blocked` 部分报告在 GPU 上已被触发；
 对应缺文本分支和标签排除仍由单元测试覆盖。
 隔离服务在实验后已经关闭。
+
+## 46. child 主动完成通知的跨项目 shadow pilot（2026-09-26）
+
+四项目留一时，首次短窗误判主要是**过早**：
+最低 0.50 阈值、单样本确认共有 53 个训练侧
+首次触发，只有 20 个在 0.5--3 秒目标窗口，
+31 个早于 RETURN 超过 3 秒，仅 1 个为
+非终态轮次。这表明“本轮有望终态”与
+“何时终态”不能由现有 hidden 分数混用。
+
+新增默认关闭的 `--child-return-intent-shadow`：
+只给只读 analysis child 提供
+`announce_completion_intent` 工具；当 child
+判断已经完成分析且不再需要其它工具时，
+模型可先调用它，再输出普通最终报告。
+工具只写单调时钟及 invocation 身份到宿主
+`sandbox_audit`，不接入 safe point，不发
+H2D/D2H，也不改变正常模式的提示词或工具。
+`audit_child_return_intent_shadow.py` 以**首个**
+intent 计时；intent 后若仍调用非通知工具则
+撤销，取消、blocked、未返回均单列，不能
+借事后最终 RETURN 选择最有利的一次信号。
+此工具和新增提示本身会改变 agent 轨迹，
+因此不能把这批 JCT 与旧 reactive 批直接
+比较为预测收益。
+
+隔离 BF16 服务上并行跑了四个单 workflow
+shadow pilot（均为此前开发项目/任务，不是
+独立密封测试），原始数据位于
+`experiments/raw/qwen35_child_completion_intent_pilot_20260926/`：
+
+- Pytest：3 个自然 RETURN 均有有效 intent，
+  3/3 处于 0.5--3 秒窗口；完整 JOIN 最后
+  child 提前约 2.77 秒，workflow 测量有效。
+- PSF：2 个严格自然 RETURN 均有 intent，
+  1/2 落在目标窗口、另 1 次过早；
+  第三个 child 遇到重复工具调用，以新代码
+  返回明确 `blocked` 报告。JOIN 虽满足，
+  workflow 因非自然终态被排除测量资格，
+  该 child 不产生自然 JOIN 标签。
+- Django：4 个自然 RETURN 均有 intent，
+  **0/4** 落在目标窗口，全部过早；
+  完整 JOIN 最后 child 提前约 4.08 秒。
+- Xarray：3 个自然 RETURN 均有 intent，
+  **0/3** 落在目标窗口，全部过早；
+  完整 JOIN 最后 child 提前约 3.45 秒。
+
+合计 12 个可严格标注的自然 RETURN 都有
+intent 且未观察到后续非通知工具调用，但
+**仅 4/12** 在预先定义的 0.5--3 秒窗口；
+3 个自然完整 JOIN 的最后 child 有有效
+通知。样本只有四个 workflow，跨项目
+差异明显，不能用“12/12 最终返回”声称
+JOIN 时点已准确；同样也不能把所有大于
+3 秒的提前通知简单当成负收益，其是否
+有助于分阶段准备取决于真实 KV、容量、
+PCIe 与首次服务的条件。下一轮必须先
+冻结 intent 可用性/撤销及软启动规则，
+在按项目分组的更多**新任务**和匹配的
+无通知对照下同时量化误报、延迟分布、
+额外模型轮次/工具开销以及完整 JOIN
+最后 child 的窗口；冷长工具 RETURN
+仍需独立的执行进度信号。未过门禁前
+`online_eligible=false`、
+`predictive_action_eligible=false`，不运行
+物理预测迁移。
