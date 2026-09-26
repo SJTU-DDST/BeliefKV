@@ -1,8 +1,9 @@
 import json
+import sys
 
 import pytest
 
-from scripts.evaluate_join_group_notice import collect, evaluate
+from scripts.evaluate_join_group_notice import collect, evaluate, main
 
 
 def _write(root, task, *, two_children=False, notices=(1000,), revoke=False,
@@ -259,3 +260,43 @@ def test_same_project_cannot_evaluate(tmp_path):
     _write(heldout, "astropy__two")
     with pytest.raises(ValueError, match="disjoint projects"):
         evaluate(train / "workflows", heldout / "workflows")
+
+
+def test_main_counts_frozen_workflows_even_when_runner_trace_is_missing(
+    tmp_path, monkeypatch,
+):
+    train = tmp_path / "train"
+    heldout = tmp_path / "heldout"
+    _write(train, "sphinx-doc__one")
+    _write(heldout, "astropy__one")
+    for run, ids, runner_error in (
+        (train, ["sphinx-doc__one"], None),
+        (heldout, ["astropy__one", "astropy__two"], "astropy__two"),
+    ):
+        (run / "manifest.json").write_text(json.dumps({"instance_ids": ids}))
+        (run / "summary.json").write_text(json.dumps({
+            "workflow_count": len(ids),
+            "workflows": [
+                {"instance_id": task, "outcome": (
+                    "runner_error" if task == runner_error else "completed"
+                )}
+                for task in ids
+            ],
+        }))
+        for task in ids:
+            if task != runner_error:
+                (run / "workflows" / task / "result.json").write_text("{}")
+    output = tmp_path / "join_report.json"
+    monkeypatch.setattr(sys, "argv", [
+        "evaluate_join_group_notice.py",
+        "--train-workflows", str(train / "workflows"),
+        "--heldout-workflows", str(heldout / "workflows"),
+        "--output", str(output),
+    ])
+    main()
+    result = json.loads(output.read_text())
+    assert result["heldout_frozen_workflows"] == 2
+    assert result["heldout_frozen_by_project"] == {"astropy": 2}
+    assert result["heldout_missing_trace_workflows"] == ["astropy__two"]
+    assert result["heldout_runner_errors"] == ["astropy__two"]
+    assert result["heldout_counts"]["workflows"] == 1

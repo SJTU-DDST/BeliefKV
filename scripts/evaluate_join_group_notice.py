@@ -374,11 +374,24 @@ def main() -> None:
 
     train_ids, train_errors = require_complete_batch(args.train_workflows)
     heldout_ids, heldout_errors = require_complete_batch(args.heldout_workflows)
+    trace_ids = {
+        path.parent.name for path in args.heldout_workflows.glob(
+            "*/runtime_events.deepagents.jsonl"
+        )
+    }
+    if trace_ids - set(heldout_ids):
+        raise ValueError("held-out trace is not in the frozen manifest")
     result = evaluate(args.train_workflows, args.heldout_workflows)
     result["train_frozen_workflows"] = len(train_ids)
     result["heldout_frozen_workflows"] = len(heldout_ids)
     result["train_runner_errors"] = train_errors
     result["heldout_runner_errors"] = heldout_errors
+    result["heldout_frozen_by_project"] = dict(sorted(Counter(
+        task.split("__", 1)[0] for task in heldout_ids
+    ).items()))
+    result["heldout_missing_trace_workflows"] = sorted(
+        set(heldout_ids) - trace_ids
+    )
     args.output.parent.mkdir(parents=True, exist_ok=True)
     args.output.write_text(json.dumps(result, indent=2) + "\n", encoding="utf-8")
 

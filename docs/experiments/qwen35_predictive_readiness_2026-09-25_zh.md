@@ -5285,3 +5285,11 @@ child 请求的 RID 关联 SGLang 的提交/结果事件与
 不将这两个新头用于当前正式留出选模或物理动作。
 这也不是独立项目验收，完整 JOIN 的 parent
 恢复时间需与 child 服务时长分开评分。
+
+首次完整 JOIN 通知的正式评价另外核对最终 manifest：
+报告冻结的 Astropy/Sphinx 分项目任务数，
+将因 runner error 而没有 runtime trace 的 workflow
+逐项列出；JOIN 候选及 parent 恢复仍只在实际
+trace 上评分，但覆盖率的任务分母不得只取
+存在 trace 的子集。训练/留出中出现 manifest
+之外的 trace 时直接拒绝评价。
