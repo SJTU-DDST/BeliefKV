@@ -2,7 +2,9 @@ from __future__ import annotations
 
 import pytest
 
-from scripts.evaluate_cold_tool_survival_landmarks import evaluate
+from scripts.evaluate_cold_tool_survival_landmarks import (
+    _online_project_predictions, _scheduled_window, evaluate,
+)
 
 
 def _row(project, workflow, shape, duration):
@@ -40,3 +42,84 @@ def test_survival_landmarks_use_training_durations_and_actual_survivors_only():
 def test_landmark_training_and_heldout_cannot_share_project():
     with pytest.raises(ValueError, match="disjoint"):
         evaluate([_row("p", "a", "x", 3000)], [_row("p", "b", "x", 3500)])
+
+
+def test_online_project_history_uses_only_finished_distinct_workflows():
+    prior = {"global": 2500., "shape": {"x": 2500.}}
+    calls = [
+        {
+            **_row("heldout", f"wf-{i % 3}", "x", 4000),
+            "start_ts_ms": i * 5000,
+            "terminal_ts_ms": i * 5000 + 4000,
+        }
+        for i in range(4)
+    ]
+    calls += [
+        {
+            **_row("heldout", "early", "x", 4100),
+            "start_ts_ms": 18500., "terminal_ts_ms": 22600.,
+        },
+        {
+            **_row("heldout", "later", "x", 4200),
+            "start_ts_ms": 20500., "terminal_ts_ms": 24700.,
+        },
+    ]
+    predictions, supported = _online_project_predictions(calls, 500, prior)
+
+    assert supported == [5]
+    assert predictions[-2] == 2500.
+    assert predictions[-1] == 4000.
+
+
+def test_online_project_history_rejects_missing_timestamps():
+    with pytest.raises(ValueError, match="timestamps"):
+        _online_project_predictions(
+            [_row("heldout", "wf", "x", 3000)], 500,
+            {"global": 2500., "shape": {}},
+        )
+
+
+def test_online_project_history_evicts_old_workflow_support():
+    past = [
+        {
+            **_row("heldout", f"older-{i}", "x", 4000.),
+            "start_ts_ms": float(i * 5000),
+            "terminal_ts_ms": float(i * 5000 + 4000),
+        }
+        for i in range(4)
+    ]
+    recent = [
+        {
+            **_row("heldout", "one-workflow", "x", 4000.),
+            "start_ts_ms": float(20000 + i * 5000),
+            "terminal_ts_ms": float(24000 + i * 5000),
+        }
+        for i in range(64)
+    ]
+    current = {
+        **_row("heldout", "current", "x", 4200.),
+        "start_ts_ms": 340000.,
+        "terminal_ts_ms": 344200.,
+    }
+    predicted, supported = _online_project_predictions(
+        past + recent + [current], 500,
+        {"global": 2500., "shape": {"x": 2500.}},
+    )
+
+    assert len(supported) > 0
+    assert len(past + recent) not in supported
+    assert predicted[-1] == 2500.
+
+
+def test_scheduled_window_censors_return_before_predicted_trigger():
+    survivors = [
+        _row("p", "early", "x", 700),
+        _row("p", "useful", "x", 3200),
+        _row("p", "too_late", "x", 3100),
+    ]
+    window = _scheduled_window(
+        survivors, [3000., 3000., 1200.], [0, 1, 2], 500,
+    )
+    assert window["eligible"] == 2
+    assert window["actual_return_before_scheduled"] == 1
+    assert window["actual_lead_at_least_500ms"] == 1
