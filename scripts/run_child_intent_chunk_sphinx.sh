@@ -8,6 +8,10 @@ SOURCE="${SOURCE_MANIFEST:-$ROOT/experiments/raw/qwen35_native_reactive_calibrat
 OUT="${RUN_ROOT:-$ROOT/experiments/raw/qwen35_child_intent_chunk_sphinx_20260926}"
 PORT="${PORT:-18001}"
 WORKFLOW_DEADLINE_SECONDS="${WORKFLOW_DEADLINE_SECONDS:-7200}"
+REQUEST_TIMEOUT_SECONDS="${REQUEST_TIMEOUT_SECONDS:-600}"
+CLIENT_CONCURRENCY="${CLIENT_CONCURRENCY:-4}"
+WORKFLOW_ARRIVAL_BATCH_SIZE="${WORKFLOW_ARRIVAL_BATCH_SIZE:-0}"
+WORKFLOW_ARRIVAL_BATCH_INTERVAL_MS="${WORKFLOW_ARRIVAL_BATCH_INTERVAL_MS:-0}"
 IDS=(
   sphinx-doc__sphinx-7748
   sphinx-doc__sphinx-7757
@@ -125,11 +129,15 @@ for arm in "${arms[@]}"; do
   if ! "$PYTHON" "$ROOT/scripts/run_deepagents_swebench.py" \
     --mode autonomous --base-url "http://127.0.0.1:$PORT/v1" \
     --model Qwen3.5-35B-A3B --workload-manifest "$SOURCE" \
-    "${instance_args[@]}" --max-workflows "${#IDS[@]}" --concurrency 4 \
+    "${instance_args[@]}" --max-workflows "${#IDS[@]}" \
+    --concurrency "$CLIENT_CONCURRENCY" \
+    --workflow-arrival-batch-size "$WORKFLOW_ARRIVAL_BATCH_SIZE" \
+    --workflow-arrival-batch-interval-ms "$WORKFLOW_ARRIVAL_BATCH_INTERVAL_MS" \
     --subagent-fanout-profile native_dynamic_1to4 \
     --max-completion-tokens 8192 --model-context-tokens 131072 \
     --recursion-limit 2048 \
     --activation-wall-clock-seconds "$WORKFLOW_DEADLINE_SECONDS" \
+    --request-timeout "$REQUEST_TIMEOUT_SECONDS" \
     --native-reactive-guard-profile \
     --disable-completion-gate --gate system --stream-completion-shadow \
     --child-finish-chunk-shadow \
