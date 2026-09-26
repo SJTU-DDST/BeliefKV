@@ -8,6 +8,7 @@ is 500-3000 ms away at the snapshot; it does not authorize physical prefetch.
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import random
 from pathlib import Path
@@ -106,6 +107,56 @@ def score(model: tuple, samples: list[tuple]) -> np.ndarray:
         (features(samples, True) - mean) / scale @ weights + intercept,
         0, 1,
     )
+
+
+def restrict_to_live_delivery(
+    records: list[dict], delivery_path: Path,
+) -> tuple[list[dict], dict]:
+    """Use only samples the host actually received before request completion."""
+    delivered = {}
+    with delivery_path.open(encoding="utf-8") as stream:
+        for line in stream:
+            row = json.loads(line)
+            if "received_monotonic_ns" not in row:
+                raise ValueError("live replay requires actual receiver timestamps")
+            key = (row["request_sha256"], int(row["token_count"]))
+            if key in delivered:
+                raise ValueError("duplicate live child snapshot")
+            delivered[key] = row
+    retained = []
+    missed = late = observed = 0
+    for record in records:
+        digest = hashlib.sha256(record["rid"].encode()).hexdigest()
+        samples = []
+        for ordinal, elapsed_ms, _lead, vector in record["samples"]:
+            row = delivered.get((digest, ordinal * 32))
+            if row is None:
+                missed += 1
+                continue
+            received_ms = int(row["received_monotonic_ns"]) / 1e6
+            sent_ms = record["first_arrival_ms"] + elapsed_ms
+            if abs(received_ms - sent_ms - float(row["transport_age_ms"])) > .002:
+                raise ValueError("live snapshot time does not match NPZ sample")
+            if (record["terminal"]
+                    and received_ms >= record["return_ms"]):
+                late += 1
+                continue
+            samples.append((
+                ordinal, received_ms - record["first_arrival_ms"],
+                record["return_ms"] - received_ms if record["terminal"] else None,
+                vector,
+            ))
+            observed += 1
+        if samples:
+            retained.append({**record, "samples": samples})
+    return retained, {
+        "received_retained_samples": observed,
+        "missing_retained_samples": missed,
+        "after_child_return": late,
+        "eligible_rounds_with_delivery": len(retained),
+        "delivery_rows": len(delivered),
+        "clock": "receiver_monotonic_ns",
+    }
 
 
 def causal_observations(record: dict, cues: dict) -> list[tuple[float, tuple]]:
@@ -361,6 +412,14 @@ def main() -> None:
     parser.add_argument("--heldout-traces", type=Path, required=True)
     parser.add_argument("--train-workflows", type=Path, action="append", required=True)
     parser.add_argument("--heldout-workflows", type=Path, action="append", required=True)
+    parser.add_argument(
+        "--exclude-train-project", action="append", default=[],
+        help="Exclude a project from fit and threshold selection before evaluation.",
+    )
+    parser.add_argument(
+        "--heldout-live-delivery", type=Path,
+        help="Require actual host delivery time for heldout snapshots; diagnostic only.",
+    )
     parser.add_argument("--output", type=Path, required=True)
     args = parser.parse_args()
     if args.stage_tokens < 32 or args.stage_tokens % 32:
@@ -370,9 +429,21 @@ def main() -> None:
     train, train_counts = load_batch_records(
         args.train_workflows, args.train_traces,
     )
+    excluded = set(args.exclude_train_project)
+    train = [
+        record for record in train
+        if record["project"] not in excluded
+    ]
     heldout, heldout_counts = load_batch_records(
         args.heldout_workflows, args.heldout_traces,
     )
+    live_counts = None
+    if args.heldout_live_delivery:
+        heldout, live_counts = restrict_to_live_delivery(
+            heldout, args.heldout_live_delivery,
+        )
+        if not heldout:
+            parser.error("heldout had no matched live snapshots")
     train_projects = {row["project"] for row in train}
     heldout_projects = {row["project"] for row in heldout}
     if train_projects & heldout_projects or len(train_projects) < 3:
@@ -393,9 +464,15 @@ def main() -> None:
     result = {
         "diagnostic_only": True,
         "train_projects": sorted(train_projects),
+        "excluded_train_projects": sorted(excluded),
         "heldout_projects": sorted(heldout_projects),
         "train": train_counts,
+        "used_train_rounds_after_exclusion": len(train),
+        "used_train_terminal_rounds_after_exclusion": sum(
+            record["terminal"] for record in train
+        ),
         "heldout": heldout_counts,
+        "heldout_live_delivery": live_counts,
         "stage_tokens": args.stage_tokens,
         "window_ms": [TARGET_START_MS, TARGET_END_MS],
         "threshold_chosen_on_train_project_cv": selected,

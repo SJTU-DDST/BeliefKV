@@ -1,3 +1,4 @@
+import hashlib
 import json
 import sys
 
@@ -6,7 +7,7 @@ import pytest
 
 from scripts.pilot_child_return_window import (
     causal_observations, fit_window, main, report, scored_sequences,
-    select_delayed_rule, select_threshold, window_cues,
+    restrict_to_live_delivery, select_delayed_rule, select_threshold, window_cues,
 )
 
 
@@ -181,6 +182,51 @@ def test_hidden_snapshot_is_first_available_at_content_and_never_after_tool():
     assert causal_observations(
         record, {"child": {"content": 1250., "invalidated": 1240.}},
     ) == []
+
+
+def test_live_replay_drops_missing_and_late_samples_without_npz_fallback(
+    tmp_path,
+):
+    rid = "beliefkv:child"
+    digest = hashlib.sha256(rid.encode()).hexdigest()
+    record = {
+        "rid": rid, "terminal": True, "return_ms": 2000.,
+        "first_arrival_ms": 1000., "samples": [
+            (8, 100., 900., np.zeros(2048)),
+            (9, 300., 700., np.ones(2048)),
+            (10, 999., 1., np.ones(2048)),
+        ],
+    }
+    rows = [
+        {
+            "request_sha256": digest, "token_count": 256,
+            "received_monotonic_ns": 1_100_500_000,
+            "transport_age_ms": .5,
+        },
+        {
+            "request_sha256": digest, "token_count": 320,
+            "received_monotonic_ns": 2_000_000_000,
+            "transport_age_ms": 1.,
+        },
+    ]
+    path = tmp_path / "live.jsonl"
+    path.write_text(
+        "".join(json.dumps(row) + "\n" for row in rows), encoding="utf-8",
+    )
+    retained, counters = restrict_to_live_delivery([record], path)
+    assert counters["received_retained_samples"] == 1
+    assert counters["missing_retained_samples"] == 1
+    assert counters["after_child_return"] == 1
+    observations = causal_observations(
+        retained[0], {rid: {"content": 1050., "result": 1900.}},
+    )
+    assert len(observations) == 1
+    assert observations[0][0] == pytest.approx(1100.5)
+    assert observations[0][1][2] == pytest.approx(899.5)
+    rows[0].pop("received_monotonic_ns")
+    path.write_text(json.dumps(rows[0]) + "\n", encoding="utf-8")
+    with pytest.raises(ValueError, match="receiver timestamps"):
+        restrict_to_live_delivery([record], path)
 
 
 def test_no_observable_snapshot_does_not_call_window_head(monkeypatch):
