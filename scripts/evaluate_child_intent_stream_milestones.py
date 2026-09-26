@@ -140,6 +140,8 @@ def collect(workflows: Path, threshold: int) -> tuple[list[dict], dict]:
                 "join_last": child in join_last,
                 "label": label,
                 "lead_ms": lead_ms,
+                "signal_ts_ms": ts,
+                "return_ts_ms": terminal[1] if label == "true" else None,
             })
     return rows, dict(counts)
 
@@ -174,6 +176,30 @@ def evaluate(train_workflows: Path, heldout_workflows: Path) -> dict:
         prior = median([median(values) for values in by_task.values()])
         positives = [row for row in heldout if row["label"] == "true"]
         join = [row for row in positives if row["join_last"]]
+        rolling_predicted = []
+        supported = 0
+        for row in positives:
+            history = sorted(
+                (
+                    previous for previous in heldout
+                    if previous["label"] == "true"
+                    and previous["project"] == row["project"]
+                    and previous["task_id"] != row["task_id"]
+                    and previous["return_ts_ms"] < row["signal_ts_ms"]
+                ),
+                key=lambda item: item["return_ts_ms"],
+            )[-16:]
+            if len(history) >= 4 and len({item["task_id"] for item in history}) >= 2:
+                supported += 1
+                rolling_predicted.append(
+                    median([item["lead_ms"] for item in history])
+                )
+            else:
+                rolling_predicted.append(prior)
+        join_predicted = [
+            predicted for row, predicted in zip(positives, rolling_predicted)
+            if row["join_last"]
+        ]
         result[str(threshold)] = {
             "train_projects": sorted(projects),
             "heldout_projects": sorted(heldout_projects),
@@ -192,17 +218,26 @@ def evaluate(train_workflows: Path, heldout_workflows: Path) -> dict:
             "heldout_point_error_ms": _metrics(
                 [row["lead_ms"] for row in positives], [prior] * len(positives),
             ),
+            "causal_project_history_supported": supported,
+            "causal_project_history_point_error_ms": _metrics(
+                [row["lead_ms"] for row in positives], rolling_predicted,
+            ),
             "heldout_join_last_lead_ms": _metrics(
                 [row["lead_ms"] for row in join], [0.] * len(join),
             ),
             "heldout_join_last_point_error_ms": _metrics(
                 [row["lead_ms"] for row in join], [prior] * len(join),
             ),
+            "causal_project_history_join_last_point_error_ms": _metrics(
+                [row["lead_ms"] for row in join], join_predicted,
+            ),
         }
     result["scope"] = (
         "First stage after first notice; fixed existing 1024/1700 character "
-        "milestones. Future natural return used only to label. No online "
-        "delivery, physical transfer, or sealed-test claim."
+        "milestones. Causal project history uses only returns completed before "
+        "this signal, excluding the current task; requires four completed "
+        "samples across two tasks, last sixteen. Future natural return used "
+        "only to label. No online delivery, physical transfer, or sealed-test claim."
     )
     return result
 
