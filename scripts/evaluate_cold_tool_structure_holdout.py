@@ -27,9 +27,9 @@ THRESHOLDS = (.2, .3, .5)
 BEHAVIOR_INTERVENTIONS = frozenset({
     "agent_tool_duplicate_suppressed",
     "agent_guard_finalization_attempt",
-    "agent_empty_reasoning_retry",
     "agent_terminal_regular_tool_call_rejected",
 })
+PRE_TOOL_RECOVERY = "agent_empty_reasoning_retry"
 
 
 def cold_calls(workflows: Path) -> tuple[list[dict], dict]:
@@ -38,8 +38,11 @@ def cold_calls(workflows: Path) -> tuple[list[dict], dict]:
     completed_status = Counter()
     excluded_intervened = 0
     missing_input_chars = 0
+    recovered_success = 0
+    recovered_long = 0
     for path in sorted(workflows.glob("*/runtime_events.deepagents.jsonl")):
         interventions = {}
+        recovered = {}
         audit = path.parent / "sandbox_audit.jsonl"
         if audit.exists():
             with audit.open(encoding="utf-8") as stream:
@@ -47,7 +50,11 @@ def cold_calls(workflows: Path) -> tuple[list[dict], dict]:
                     if not line.strip():
                         continue
                     event = json.loads(line)
-                    if event.get("event") not in BEHAVIOR_INTERVENTIONS:
+                    event_name = event.get("event")
+                    if (
+                        event_name not in BEHAVIOR_INTERVENTIONS
+                        and event_name != PRE_TOOL_RECOVERY
+                    ):
                         continue
                     scope = str(event.get("agent_scope") or "")
                     invocation = scope.partition("deepagents-invocation:")[2]
@@ -58,7 +65,11 @@ def cold_calls(workflows: Path) -> tuple[list[dict], dict]:
                         if invocation else "*"
                     )
                     ts = float(event["ts_ms"])
-                    interventions[key] = min(interventions.get(key, ts), ts)
+                    target = (
+                        recovered if event_name == PRE_TOOL_RECOVERY
+                        else interventions
+                    )
+                    target[key] = min(target.get(key, ts), ts)
         for row in _read_workflow(path):
             if row["is_child"] is not True or (
                 row["previous"] is not None and row["previous"][2] == "success"
@@ -74,6 +85,12 @@ def cold_calls(workflows: Path) -> tuple[list[dict], dict]:
             if row["status"] == "success":
                 if type(row["input_chars"]) is int:
                     rows.append(row)
+                    if min(
+                        recovered.get(row["invocation"], float("inf")),
+                        recovered.get("*", float("inf")),
+                    ) < row["start_ts_ms"]:
+                        recovered_success += 1
+                        recovered_long += row["duration_ms"] >= 2_000
                 else:
                     missing_input_chars += 1
         # Open child execute calls are never assumed to be short negatives.
@@ -97,6 +114,8 @@ def cold_calls(workflows: Path) -> tuple[list[dict], dict]:
         "completed_cold_child_status": dict(sorted(completed_status.items())),
         "completed_cold_child_excluded_after_intervention": excluded_intervened,
         "successful_cold_child_missing_input_chars": missing_input_chars,
+        "successful_cold_child_after_pre_tool_recovery": recovered_success,
+        "long_success_after_pre_tool_recovery": recovered_long,
     }
 
 

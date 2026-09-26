@@ -4608,3 +4608,45 @@ RETURN，缺乏足够的非 RETURN 判别分母。
 分类和在线 ETA，但须有足够的负例和独立
 项目验证，不能把本轮的真 RETURN 条件
 提前量当成触发精确率。
+
+### Django/Pytest 冷长工具补采结果与过度删失修复
+
+冻结的八任务单 `intent` 臂在源码 `f81d0b2`
+下自行结束：8/8 workflow 写出 completed，
+其中 7/8 系统测量有效；Pytest `7521`
+缺少完整 child RETURN/JOIN。原始数据保存在
+`qwen35_cold_tool_train_django_pytest_v1/`，
+该 8-root 小批不等于旧 128-root 的系统压力。
+两侧配对的冷 child `execute` 有 831 次成功、
+180 次工具错误、0 次未结束；成功调用中只有
+**3 次不少于 2 秒**，全部在 Django 的 2 个
+workflow，Pytest 为 0。因而不具备两项目
+长调用训练支持，不能从此批拟合并宣称
+项目隔离的长工具 RETURN 精度改善。
+
+初版评估器仅保留 765 次成功调用，其中
+66 次因 invocation 较早发生过
+`agent_empty_reasoning_retry` 而被整段排除；
+两次成功的 2.39/2.55 秒 targeted test
+调用也因此丢失。该重试发生在 TOOL_START
+之前，不更改之后已经完整配对的 sandbox
+执行时长。评估器现只对可能改变工具行为的
+guard/抑制事件保留原有排除逻辑，
+把先前空 reasoning 恢复后开始的成功调用
+单独计数（66 次，其中长调用 2 次），
+同时允许其物理 TOOL_RETURN 时长入样。
+结构桶覆盖 163/831 个成功调用；3 个长调用
+分别属于 git 及两次 targeted test，均不属于
+匿名 Python inline AST 桶。修正评估器
+**没有改变运行时实验**或将错误调用
+归为成功；重试后的完整 child/JOIN 标签
+仍须按原干预口径处理。
+
+旧 128-root 曾提供更多 Django/Pytest
+长调用，但此次 8-root 下未复现；压力、
+任务路径和 runtime prompt 都可能改变
+命令分布，不能仅凭两批断言是哪一种原因。
+后续若补采工具时延，应在计划中的
+实际并发压力下先检验长调用跨项目、
+跨 workflow 支持与错误/删失分母，
+不能把旧压力下的时长直接灌入新 artifact。

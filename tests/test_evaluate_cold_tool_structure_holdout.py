@@ -130,6 +130,43 @@ def test_cold_calls_do_not_label_failed_or_open_as_short(tmp_path):
     assert counts["completed_cold_child_excluded_after_intervention"] == 1
 
 
+def test_empty_reasoning_retry_before_tool_does_not_censor_tool_duration(tmp_path):
+    workflow = tmp_path / "django__sample"
+    workflow.mkdir()
+    attrs = {
+        "tool_name": "execute", "tool_call_id": "long",
+        "input_chars": 50, "is_child": True,
+        "observed_command_shape": "test_suite_targeted",
+    }
+    events = [
+        {
+            "kind": "tool_start", "ts_ms": 1000, "sequence": 1,
+            "workflow_id": "wf", "invocation_id": "deepagents-invocation:child",
+            "attributes": attrs,
+        },
+        {
+            "kind": "tool_end", "ts_ms": 3600, "sequence": 2,
+            "workflow_id": "wf", "invocation_id": "deepagents-invocation:child",
+            "attributes": {**attrs, "status": "success"},
+        },
+    ]
+    (workflow / "runtime_events.deepagents.jsonl").write_text(
+        "".join(json.dumps(event) + "\n" for event in events),
+        encoding="utf-8",
+    )
+    (workflow / "sandbox_audit.jsonl").write_text(json.dumps({
+        "event": "agent_empty_reasoning_retry",
+        "agent_scope": "planned:child:deepagents-invocation:child",
+        "ts_ms": 900,
+    }) + "\n", encoding="utf-8")
+    rows, counts = cold_calls(tmp_path)
+    assert len(rows) == 1
+    assert rows[0]["duration_ms"] == 2600
+    assert counts["completed_cold_child_excluded_after_intervention"] == 0
+    assert counts["successful_cold_child_after_pre_tool_recovery"] == 1
+    assert counts["long_success_after_pre_tool_recovery"] == 1
+
+
 def test_evaluate_runs_frozen_project_split_without_heldout_threshold_search():
     train = [
         _row(
