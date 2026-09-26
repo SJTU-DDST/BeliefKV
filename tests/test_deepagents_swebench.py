@@ -1134,6 +1134,8 @@ def test_workload_cli_native_reactive_guard_matches_p6_collection(
         ],
     )
     assert cli.parse_args().activation_wall_clock_seconds == 7200
+    assert cli.main() == 0
+    assert configs[-1].loop_guard.activation_wall_clock_s == 7200
 
     monkeypatch.setattr(
         "sys.argv",
