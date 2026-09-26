@@ -64,6 +64,7 @@ def test_timing_uses_only_notice_time_and_fits_on_other_projects(tmp_path):
     ]
     rows, _ = load_episodes(tmp_path)
     assert rows[0]["features"] == [500, 1, 1]
+    assert rows[0]["post_notice"]["final_request_id"] == "final-alpha"
     # The final response is after the notice; its size and timing must not
     # become prediction features.
     path = first / "runtime_events.deepagents.jsonl"

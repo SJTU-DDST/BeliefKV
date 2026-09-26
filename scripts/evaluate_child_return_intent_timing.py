@@ -122,6 +122,7 @@ def load_episodes(root: Path) -> tuple[list[dict], dict[str, int]]:
                     and submitted[0] <= completed[0][0]):
                 result_ts, attrs = completed[0]
                 post_notice = {
+                    "final_request_id": attrs.get("request_id"),
                     "notice_to_llm_submit_ms": submitted[0] - notice,
                     "llm_submit_to_result_ms": result_ts - submitted[0],
                     "llm_result_to_return_ms": end - result_ts,
