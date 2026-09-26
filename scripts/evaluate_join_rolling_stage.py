@@ -192,6 +192,14 @@ def evaluate(train_workflows: Path, heldout_workflows: Path) -> dict:
             median(median(values) for values in by_task.values())
             if by_task else None
         )
+        parent_by_task = defaultdict(list)
+        for row in train:
+            if row["group_label"] != "revoked" and row["parent_lead_ms"] is not None:
+                parent_by_task[row["task_id"]].append(row["parent_lead_ms"])
+        parent_prior = (
+            median(median(values) for values in parent_by_task.values())
+            if parent_by_task else None
+        )
         natural = [
             row for row in heldout
             if row["group_label"] == "natural" and row["label"] == "true"
@@ -202,6 +210,44 @@ def evaluate(train_workflows: Path, heldout_workflows: Path) -> dict:
             if row["parent_lead_ms"] is not None
             and row["group_label"] != "revoked"
         ]
+        def summarize_project(project: str) -> dict:
+            candidates = [row for row in heldout if row["project"] == project]
+            project_natural = [
+                row for row in natural if row["project"] == project
+            ]
+            project_parent = [
+                row for row in parent if row["project"] == project
+            ]
+            join_actual = [row["join_lead_ms"] for row in project_natural]
+            parent_actual = [row["parent_lead_ms"] for row in project_parent]
+            return {
+                "tasks": sum(
+                    task.split("__", 1)[0] == project for task in heldout_tasks
+                ),
+                "first_sole_pending_candidates": len(candidates),
+                "natural_join_candidates": len(project_natural),
+                "parent_reentry_candidates": len(project_parent),
+                "natural_join_lead_ms": _metrics(
+                    join_actual, [0.] * len(join_actual),
+                ),
+                "natural_join_point_error_ms": (
+                    _metrics(join_actual, [prior] * len(join_actual))
+                    if prior is not None else None
+                ),
+                "parent_reentry_lead_ms": _metrics(
+                    parent_actual, [0.] * len(parent_actual),
+                ),
+                "parent_reentry_point_error_ms": (
+                    _metrics(parent_actual, [parent_prior] * len(parent_actual))
+                    if parent_prior is not None else None
+                ),
+                "natural_join_lead_at_least_500ms": sum(
+                    value >= 500 for value in join_actual
+                ),
+                "parent_reentry_lead_at_least_500ms": sum(
+                    value >= 500 for value in parent_actual
+                ),
+            }
         result[str(threshold)] = {
             "train_counts": train_counts,
             "heldout_counts": heldout_counts,
@@ -209,6 +255,12 @@ def evaluate(train_workflows: Path, heldout_workflows: Path) -> dict:
             "heldout_projects": sorted(heldout_projects),
             "train_natural_join_tasks": len(by_task),
             "train_stage_prior_ms": prior,
+            "train_parent_reentry_tasks": len(parent_by_task),
+            "train_parent_reentry_prior_ms": parent_prior,
+            "heldout_by_project": {
+                project: summarize_project(project)
+                for project in sorted(heldout_projects)
+            },
             "heldout_natural_join_workflows": len({
                 row["task_id"] for row in natural
             }),
@@ -230,6 +282,12 @@ def evaluate(train_workflows: Path, heldout_workflows: Path) -> dict:
             ),
             "heldout_parent_real_lead_at_least_500ms": sum(
                 row["parent_lead_ms"] >= 500 for row in parent
+            ),
+            "heldout_parent_reentry_point_error_ms": (
+                _metrics(
+                    [row["parent_lead_ms"] for row in parent],
+                    [parent_prior] * len(parent),
+                ) if parent_prior is not None else None
             ),
         }
     return result

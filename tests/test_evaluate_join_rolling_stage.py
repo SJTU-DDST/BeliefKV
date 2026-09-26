@@ -156,15 +156,42 @@ def test_heldout_join_time_cannot_change_training_stage_prior(
     )
     first = rolling.evaluate(train, heldout)
     assert first["1700"]["train_stage_prior_ms"] == 2000.
+    assert first["1700"]["train_parent_reentry_prior_ms"] == 2100.
     assert first["1700"]["heldout_join_point_error_ms"][
         "median_absolute_error_ms"
     ] == 0.
+    assert first["1700"]["heldout_by_project"]["psf"][
+        "parent_reentry_point_error_ms"
+    ]["median_absolute_error_ms"] == 0.
     heldout_rows[0]["join_lead_ms"] = 9000.
     second = rolling.evaluate(train, heldout)
     assert second["1700"]["train_stage_prior_ms"] == 2000.
+    assert second["1700"]["train_parent_reentry_prior_ms"] == 2100.
     assert second["1700"]["heldout_join_point_error_ms"][
         "median_absolute_error_ms"
     ] == 7000.
+    assert second["1700"]["heldout_by_project"]["psf"]["tasks"] == 1
+
+
+def test_heldout_project_with_no_stage_is_reported(
+    tmp_path, monkeypatch,
+):
+    train = tmp_path / "train" / "workflows"
+    heldout = tmp_path / "heldout" / "workflows"
+    for root, name in ((train, "django__one"), (heldout, "astropy__two")):
+        folder = root / name
+        folder.mkdir(parents=True)
+        (folder / "runtime_events.deepagents.jsonl").write_text(
+            "", encoding="utf-8",
+        )
+    monkeypatch.setattr(
+        rolling, "collect", lambda *_args: ([], {"sole_pending_candidates": 0}),
+    )
+    result = rolling.evaluate(train, heldout)
+    project = result["1700"]["heldout_by_project"]["astropy"]
+    assert project["tasks"] == 1
+    assert project["first_sole_pending_candidates"] == 0
+    assert project["natural_join_point_error_ms"] is None
 
 
 def test_cli_runs_from_outside_repository(tmp_path):
