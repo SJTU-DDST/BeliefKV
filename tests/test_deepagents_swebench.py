@@ -1232,6 +1232,7 @@ def test_experiment_config_uses_hard_fuse_as_langgraph_limit(tmp_path: Path) -> 
     )
     assert config.recursion_limit == 2048
     assert config.sampling_seed is None
+    assert config.child_finish_chunk_shadow is False
     assert config.workflow_arrival_interval_ms == 0.0
     assert config.workflow_arrival_batch_size == 0
     assert config.workflow_arrival_batch_interval_ms == 0.0
@@ -1246,6 +1247,36 @@ def test_experiment_config_uses_hard_fuse_as_langgraph_limit(tmp_path: Path) -> 
     assert config.sandbox_preflight_command is None
     assert "/workspace" in SANDBOX_PATH_CONTRACT
     assert "sympy/core/basic.py" not in SANDBOX_PATH_CONTRACT
+
+
+def test_final_chunk_shadow_requires_streaming_and_has_explicit_cli(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    required = {
+        "mode": "autonomous",
+        "base_url": "http://localhost:18000/v1",
+        "model": "model",
+        "output_dir": tmp_path,
+        "workload_manifest": tmp_path / "workloads.json",
+        "docker_image": "fixture:latest",
+        "child_finish_chunk_shadow": True,
+    }
+    with pytest.raises(ValueError, match="requires streamed completion"):
+        DeepAgentsExperimentConfig(**required)
+    configured = DeepAgentsExperimentConfig(
+        **required, stream_completion_shadow=True,
+    )
+    assert configured.child_finish_chunk_shadow is True
+
+    from scripts.run_deepagents_swebench import parse_args
+
+    monkeypatch.setattr("sys.argv", [
+        "run_deepagents_swebench.py", "--mode", "autonomous",
+        "--stream-completion-shadow", "--child-finish-chunk-shadow",
+    ])
+    parsed = parse_args()
+    assert parsed.stream_completion_shadow is True
+    assert parsed.child_finish_chunk_shadow is True
 
 
 def test_saturated_root_pool_submits_all_roots_before_any_completion() -> None:

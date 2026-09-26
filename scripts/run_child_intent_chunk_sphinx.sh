@@ -90,6 +90,7 @@ for arm in control intent; do
     --max-completion-tokens 8192 --model-context-tokens 131072 \
     --recursion-limit 2048 --activation-wall-clock-seconds 900 \
     --disable-completion-gate --gate system --stream-completion-shadow \
+    --child-finish-chunk-shadow \
     "${intent_arg[@]}" --output "$OUT/${arm}_workloads" \
     > "$OUT/${arm}.log" 2>&1; then
     printf '%s arm incomplete; inspect individual workflows\n' "$arm" >&2

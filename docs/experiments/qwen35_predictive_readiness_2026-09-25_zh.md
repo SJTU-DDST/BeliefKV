@@ -3075,3 +3075,32 @@ Pylint 数据已经促成负载特征的设计，**它不再是该消融的
 及时投递、控制及物理传输有净收益前继续保持动作关闭。
 工具 RETURN 的执行期进度另行验收，不以 child 的结果
 代替。
+
+## 50. 同一 child 双阶段通知的首轮采集缺口（2026-09-26）
+
+冻结 `70b247a` 的四个 Sphinx 项目校准集任务（7748/7757/
+7889/7910）准备测试同一 child 的主动完成通知及最终流式
+片段，服务端保持 Qwen3.5 BF16/v0.5.20、NUMA 1 的
+120 GB Host pool，预测式物理动作关闭；对照和通知均用
+`--stream-completion-shadow`。**本轮没有产出有效的
+最终片段链**：流式正文提示存在，但
+`BELIEFKV_CHILD_FINISH_CHUNK_SHADOW` 未开启，适配器
+不会生成最终片段事件或记录 `stream_final_chunk_ts_ms`。
+对照臂 4 个 workflow 有 14 个自然 child RETURN，
+但 2 个不完整、另外 2 个有非自然 child 收尾，没有
+完整 system 测量资格。发现缺开关后终止通知臂，
+保持原始事件；截至停止，9 个严格自然 child RETURN
+均有有效主动通知，通知到 RETURN 中位约 **4.65 秒**，
+但 9 个均无最终片段记录。**零最终片段属于采集
+配置缺失，不是模型未产生终态，也不能算预测失败。**
+
+修复时新增显式 `--child-finish-chunk-shadow` CLI 与
+`DeepAgentsExperimentConfig.child_finish_chunk_shadow`：
+写入运行 manifest，且只有同时打开流式才允许启用；
+旧环境变量保持兼容。双阶段运行脚本会同时传入两个
+开关，重新写到独立目录。需要验证 manifest 中两个
+布尔量均为 true，已提交/接收最终片段数量、严格
+自然 child 和完整 JOIN 的第一触发链，随后才评价
+时序精度和误报；本轮无效目录为
+`qwen35_child_intent_chunk_sphinx_20260926/`，不删除
+也不纳入拟合或短窗验收。

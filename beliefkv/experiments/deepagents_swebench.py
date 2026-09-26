@@ -1494,6 +1494,7 @@ class DeepAgentsExperimentConfig:
     max_completion_tokens: int = 2048
     sampling_seed: int | None = None
     stream_completion_shadow: bool = False
+    child_finish_chunk_shadow: bool = False
     child_return_intent_shadow: bool = False
     subagent_fanout_profile: str = "natural"
     stop_after_first_native_join: bool = False
@@ -1518,6 +1519,8 @@ class DeepAgentsExperimentConfig:
     def __post_init__(self) -> None:
         if self.mode not in {"autonomous", "planned"}:
             raise ValueError("mode must be autonomous or planned")
+        if self.child_finish_chunk_shadow and not self.stream_completion_shadow:
+            raise ValueError("child final-chunk shadow requires streamed completion")
         if self.subagent_fanout_profile not in SUBAGENT_FANOUT_PROFILES:
             raise ValueError("unsupported subagent fan-out profile")
         if (
@@ -3664,7 +3667,8 @@ def _run_workflow(
         project_tool_history=project_tool_history,
         project_id=workload.repo,
         finish_chunk_shadow=(
-            os.environ.get("BELIEFKV_CHILD_FINISH_CHUNK_SHADOW") == "1"
+            config.child_finish_chunk_shadow
+            or os.environ.get("BELIEFKV_CHILD_FINISH_CHUNK_SHADOW") == "1"
         ),
     )
     deadline_controller = WorkflowDeadlineController(

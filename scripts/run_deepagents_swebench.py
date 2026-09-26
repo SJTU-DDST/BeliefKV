@@ -93,6 +93,10 @@ def parse_args() -> argparse.Namespace:
         help="Stream model responses to audit first child content; no predictive actions.",
     )
     parser.add_argument(
+        "--child-finish-chunk-shadow", action="store_true",
+        help="Audit the final child stream chunk; requires --stream-completion-shadow.",
+    )
+    parser.add_argument(
         "--child-return-intent-shadow", action="store_true",
         help="Opt-in child completion notification tool for read-only timing diagnosis.",
     )
@@ -228,6 +232,7 @@ def main() -> int:
         max_completion_tokens=args.max_completion_tokens,
         sampling_seed=args.sampling_seed,
         stream_completion_shadow=args.stream_completion_shadow,
+        child_finish_chunk_shadow=args.child_finish_chunk_shadow,
         child_return_intent_shadow=args.child_return_intent_shadow,
         subagent_fanout_profile=args.subagent_fanout_profile,
         stop_after_first_native_join=args.stop_after_first_native_join,
