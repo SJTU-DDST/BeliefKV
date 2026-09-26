@@ -1,4 +1,6 @@
 import json
+import subprocess
+import sys
 
 import pytest
 
@@ -163,3 +165,12 @@ def test_heldout_join_time_cannot_change_training_stage_prior(
     assert second["1700"]["heldout_join_point_error_ms"][
         "median_absolute_error_ms"
     ] == 7000.
+
+
+def test_cli_runs_from_outside_repository(tmp_path):
+    run = subprocess.run(
+        [sys.executable, str(rolling.ROOT / "scripts" /
+                             "evaluate_join_rolling_stage.py"), "--help"],
+        cwd=tmp_path, capture_output=True, text=True, check=True,
+    )
+    assert "--heldout-workflows" in run.stdout

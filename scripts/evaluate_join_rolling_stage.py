@@ -8,6 +8,11 @@ from collections import Counter, defaultdict
 import json
 from pathlib import Path
 from statistics import median
+import sys
+
+ROOT = Path(__file__).resolve().parents[1]
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
 
 from scripts.evaluate_child_intent_project_holdout import _metrics
 from scripts.evaluate_child_intent_stream_milestones import collect as collect_stages

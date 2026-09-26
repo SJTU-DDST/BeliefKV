@@ -1,4 +1,6 @@
 import pytest
+import subprocess
+import sys
 
 from scripts import check_cold_tool_train_readiness as readiness
 
@@ -86,3 +88,12 @@ def test_missing_final_summary_is_not_a_partial_training_batch(
     )
     with pytest.raises(ValueError, match="final manifest and summary"):
         readiness.assess(tmp_path)
+
+
+def test_cli_runs_from_outside_repository(tmp_path):
+    run = subprocess.run(
+        [sys.executable, str(readiness.ROOT / "scripts" /
+                             "check_cold_tool_train_readiness.py"), "--help"],
+        cwd=tmp_path, capture_output=True, text=True, check=True,
+    )
+    assert "--train-workflows" in run.stdout
