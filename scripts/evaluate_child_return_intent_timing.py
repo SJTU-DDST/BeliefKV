@@ -102,10 +102,40 @@ def load_episodes(root: Path) -> tuple[list[dict], dict[str, int]]:
             ]
             if len(creates) != 1 or notice < creates[0]:
                 raise ValueError(f"missing or invalid child start in {workflow}")
+            submitted = sorted(
+                float(row["ts_ms"]) for row in events
+                if row["kind"] == "llm_submit"
+                and row.get("invocation_id") == child
+                and not (row.get("attributes") or {}).get("runtime_internal")
+                and notice < float(row["ts_ms"]) < end
+            )
+            completed = sorted(
+                (float(row["ts_ms"]), row.get("attributes") or {})
+                for row in events
+                if row["kind"] == "llm_result"
+                and row.get("invocation_id") == child
+                and not (row.get("attributes") or {}).get("runtime_internal")
+                and notice < float(row["ts_ms"]) < end
+            )
+            post_notice = None
+            if (len(submitted) == 1 and len(completed) == 1
+                    and submitted[0] <= completed[0][0]):
+                result_ts, attrs = completed[0]
+                post_notice = {
+                    "notice_to_llm_submit_ms": submitted[0] - notice,
+                    "llm_submit_to_result_ms": result_ts - submitted[0],
+                    "llm_result_to_return_ms": end - result_ts,
+                    "final_output_tokens": (
+                        attrs.get("output_tokens")
+                        if type(attrs.get("output_tokens")) in (int, float)
+                        else None
+                    ),
+                }
             episodes.append({
                 "project": workflow.name.split("__", 1)[0],
                 "lead_ms": end - notice,
                 "join_last": child in join_last,
+                "post_notice": post_notice,
                 "features": [
                     notice - creates[0],
                     sum(row["kind"] == "llm_result" and not
@@ -147,6 +177,26 @@ def _metrics(actual: list[float], predicted: list[float]) -> dict | None:
         )),
         "prediction_over_3000ms": int(np.sum(prediction > 3000)),
         "actual_over_3000ms": int(np.sum(target > 3000)),
+    }
+
+
+def _post_notice_components(episodes: list[dict]) -> dict:
+    complete = [row["post_notice"] for row in episodes if row["post_notice"]]
+    fields = (
+        "notice_to_llm_submit_ms", "llm_submit_to_result_ms",
+        "llm_result_to_return_ms", "final_output_tokens",
+    )
+    return {
+        "valid": len(complete),
+        "missing_or_ambiguous": len(episodes) - len(complete),
+        "posthoc_not_prediction_features": {
+            field: {
+                "p50": float(np.percentile(values, 50)),
+                "p90": float(np.percentile(values, 90)),
+            } if (values := [row[field] for row in complete
+                            if row[field] is not None]) else None
+            for field in fields
+        },
     }
 
 
@@ -223,6 +273,7 @@ def evaluate(root: Path) -> dict:
             }
             for name, values in methods.items()
         },
+        "post_notice_decomposition": _post_notice_components(episodes),
         "scope": (
             "Development pilot, not sealed test; opt-in tool changes agent "
             "trajectory. Revoked and censored episodes excluded from point "
@@ -258,6 +309,7 @@ def evaluate_heldout(train_root: Path, heldout_root: Path) -> dict:
         "heldout_projects": sorted(test_projects),
         "train_counts": train_counts,
         "heldout_counts": test_counts,
+        "post_notice_decomposition": _post_notice_components(test),
         "results": {
             name: {
                 "return": _metrics(

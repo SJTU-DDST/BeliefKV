@@ -27,6 +27,7 @@ def _workflow(root, project, *, lead=1000, later_tool=False, blocked=False):
                        "attributes": {"tool_name": "grep"}})
     if not blocked:
         events.extend([
+            {"kind": "llm_submit", "invocation_id": child, "ts_ms": 700},
             {"kind": "llm_result", "invocation_id": child, "ts_ms": 500 + lead - 10,
              "attributes": {"request_id": f"final-{project}",
                             "finish_reason": "stop", "output_chars": 20,
@@ -68,7 +69,12 @@ def test_timing_uses_only_notice_time_and_fits_on_other_projects(tmp_path):
                  and event["ts_ms"] > 500)
     final["attributes"]["output_tokens"] = 1
     path.write_text("".join(json.dumps(event) + "\n" for event in events))
-    assert evaluate(tmp_path) == before
+    after = evaluate(tmp_path)
+    assert after["folds"] == before["folds"]
+    assert after["pooled"] == before["pooled"]
+    revised_rows, _ = load_episodes(tmp_path)
+    assert revised_rows[0]["post_notice"]["final_output_tokens"] == 1
+    assert before["post_notice_decomposition"]["valid"] == 3
     assert next(fold for fold in before["folds"]
                 if fold["heldout_project"] == "alpha")["train_median"][
                     "return"]["median_absolute_error_ms"] == 2800
@@ -104,7 +110,9 @@ def test_heldout_fit_does_not_consume_target_labels_or_overlap_projects(tmp_path
     events = [json.loads(line) for line in path.read_text().splitlines()]
     events[-3]["attributes"]["output_tokens"] = 2
     path.write_text("".join(json.dumps(event) + "\n" for event in events))
-    assert evaluate_heldout(train, test) == before
+    after = evaluate_heldout(train, test)
+    assert after["results"] == before["results"]
+    assert after["post_notice_decomposition"] != before["post_notice_decomposition"]
     _workflow(test, "alpha")
     with pytest.raises(ValueError, match="overlap"):
         evaluate_heldout(train, test)
