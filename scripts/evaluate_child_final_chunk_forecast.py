@@ -154,6 +154,40 @@ def evaluate(train: dict, heldout: dict) -> dict:
     prior_ms = float(median([
         median(values) for values in positive_by_task.values()
     ]))
+    project_cv = {}
+    for project in sorted(train["projects"]):
+        other_tasks = defaultdict(list)
+        for row in train["rows"]:
+            if row["project"] != project and row["label"] == "true" and row["lead_ms"] >= 0:
+                other_tasks[row["task_id"]].append(row["lead_ms"])
+        project_rows = [
+            row for row in train["rows"]
+            if row["project"] == project and row["label"] == "true"
+            and row["lead_ms"] >= 0
+        ]
+        if not other_tasks or not project_rows:
+            project_cv[project] = {"insufficient_data": True}
+            continue
+        fold_prior = float(median([
+            median(values) for values in other_tasks.values()
+        ]))
+        fold_errors = [abs(row["lead_ms"] - fold_prior) for row in project_rows]
+        join_errors = [
+            abs(row["lead_ms"] - fold_prior)
+            for row in project_rows if row["join_last"]
+        ]
+        project_cv[project] = {
+            "prior_ms": round(fold_prior, 2),
+            "terminal_count": len(project_rows),
+            "task_count": len({row["task_id"] for row in project_rows}),
+            "join_last_count": len(join_errors),
+            "eta_error_p50_ms": quantile(fold_errors, 0.5),
+            "eta_error_p90_ms": quantile(fold_errors, 0.9),
+            "join_last_eta_error_p50_ms": quantile(join_errors, 0.5),
+            "zero_prior_error_p50_ms": quantile(
+                [row["lead_ms"] for row in project_rows], 0.5
+            ),
+        }
     positives = [
         row for row in heldout["rows"]
         if row["label"] == "true" and row["lead_ms"] >= 0
@@ -161,6 +195,8 @@ def evaluate(train: dict, heldout: dict) -> dict:
     false_count = sum(row["label"] == "false" for row in heldout["rows"])
     censored_count = sum(row["label"] == "censored" for row in heldout["rows"])
     errors = [abs(row["lead_ms"] - prior_ms) for row in positives]
+    join_positives = [row for row in positives if row["join_last"]]
+    join_errors = [abs(row["lead_ms"] - prior_ms) for row in join_positives]
     return {
         "diagnostic_only": True,
         "train_projects": sorted(train["projects"]),
@@ -169,6 +205,7 @@ def evaluate(train: dict, heldout: dict) -> dict:
         "train_positive_count": sum(len(v) for v in positive_by_task.values()),
         "train_unique_positive_tasks": len(positive_by_task),
         "frozen_train_median_lead_ms": round(prior_ms, 2),
+        "train_leave_project_out": project_cv,
         "heldout_child_returns": heldout["child_returns"],
         "heldout_join_last_returns": heldout["join_last_returns"],
         "heldout_true_candidates": len(positives),
@@ -178,6 +215,18 @@ def evaluate(train: dict, heldout: dict) -> dict:
         "heldout_signal_without_result": heldout["signal_without_result"],
         "heldout_join_last_true_candidates": sum(
             row["join_last"] for row in positives
+        ),
+        "heldout_join_last_at_least_500ms_early": sum(
+            row["lead_ms"] >= 500 for row in join_positives
+        ),
+        "heldout_join_last_lead_p50_ms": quantile(
+            [row["lead_ms"] for row in join_positives], 0.5
+        ),
+        "heldout_join_last_eta_error_p50_ms": quantile(join_errors, 0.5),
+        "heldout_join_last_eta_error_p90_ms": quantile(join_errors, 0.9),
+        "heldout_join_last_within_500ms": (
+            round(sum(error <= 500 for error in join_errors) / len(join_errors), 4)
+            if join_errors else None
         ),
         "heldout_at_least_500ms_early": sum(
             row["lead_ms"] >= 500 for row in positives

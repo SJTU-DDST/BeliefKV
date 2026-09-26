@@ -13,6 +13,7 @@ import json
 import random
 import statistics
 from pathlib import Path
+from typing import Sequence
 
 import numpy as np
 
@@ -102,18 +103,26 @@ def load_records(workflows: Path, traces: Path) -> tuple[list[dict], dict]:
 
 
 def load_batch_records(
-    roots: list[Path], traces: Path,
+    roots: list[Path], traces: Path | Sequence[Path],
 ) -> tuple[list[dict], dict]:
-    if not traces.is_dir():
-        raise FileNotFoundError(f"hidden-state trace directory is absent: {traces}")
+    trace_roots = (
+        [traces] * len(roots) if isinstance(traces, Path) else list(traces)
+    )
+    if len(trace_roots) != len(roots):
+        raise ValueError("one hidden-state trace root is required per workflow batch")
+    for trace_root in trace_roots:
+        if not trace_root.is_dir():
+            raise FileNotFoundError(
+                f"hidden-state trace directory is absent: {trace_root}"
+            )
     records = []
     counts = {}
-    for root in roots:
+    for root, trace_root in zip(roots, trace_roots):
         if not root.is_dir() or not any(
             root.glob("*/runtime_events.deepagents.jsonl")
         ):
             raise FileNotFoundError(f"workflow events are absent from {root}")
-        batch, metrics = load_records(root, traces)
+        batch, metrics = load_records(root, trace_root)
         records.extend(batch)
         for key, count in metrics.items():
             counts[key] = counts.get(key, 0) + count

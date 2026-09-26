@@ -107,25 +107,28 @@ def _tool_ends(path: Path) -> tuple[list[float], list[dict]]:
             starts[call_id] = (
                 float(event["ts_ms"]),
                 str(attrs.get("observed_command_shape") or "unknown"),
+                attrs.get("is_child"),
             )
         elif event.get("kind") == "tool_end" and call_id in starts:
-            start, shape = starts.pop(call_id)
+            start, shape, is_child = starts.pop(call_id)
             ends.append({
                 "ts_ms": float(event["ts_ms"]),
                 "duration_ms": float(event["ts_ms"]) - start,
                 "shape": shape,
                 "status": attrs.get("status"),
+                "is_child": is_child,
             })
     ends.sort(key=lambda event: event["ts_ms"])
     return [event["ts_ms"] for event in ends], ends
 
 
-def audit(workflows: Path) -> dict:
+def audit(workflows: Path, *, expected_unbuffered: bool | None = None) -> dict:
     traces = list(sorted(workflows.glob("**/sandbox_audit.jsonl")))
     if not traces:
         raise ValueError("no sandbox audit traces")
     by_project = defaultdict(list)
     by_shape_long = defaultdict(list)
+    by_origin_long = defaultdict(list)
     matched = ambiguous = 0
     rows = []
     for path in traces:
@@ -155,12 +158,30 @@ def audit(workflows: Path) -> dict:
                 matched += 1
                 if float(row["execute_elapsed_ms"]) >= 2000:
                     by_shape_long[tool_ends[chosen]["shape"]].append(row)
+                    origin = tool_ends[chosen]["is_child"]
+                    by_origin_long[
+                        "child" if origin is True else
+                        "root" if origin is False else "unknown"
+                    ].append(row)
             elif len(choices) > 1:
                 ambiguous += 1
     if not rows:
         raise ValueError("no opt-in stdout timing observations")
+    modes = {
+        "buffered": sum(row.get("unbuffered_output_shadow") is False for row in rows),
+        "unbuffered": sum(row.get("unbuffered_output_shadow") is True for row in rows),
+        "unknown": sum(row.get("unbuffered_output_shadow") is None for row in rows),
+    }
+    if expected_unbuffered is not None:
+        expected = "unbuffered" if expected_unbuffered else "buffered"
+        if modes[expected] != len(rows):
+            raise ValueError(
+                f"expected all sandbox commands to use {expected} mode; "
+                f"observed {modes}"
+            )
     return {
         "status": "read_only_sandbox_stdout_timing_no_physical_actions",
+        "output_modes": modes,
         "all_commands": summarize(rows),
         "long_commands_at_least_2s": summarize([
             row for row in rows if float(row["execute_elapsed_ms"]) >= 2000
@@ -170,6 +191,10 @@ def audit(workflows: Path) -> dict:
         "by_shape_long_commands_matched": {
             shape: summarize(shape_rows)
             for shape, shape_rows in sorted(by_shape_long.items())
+        },
+        "by_origin_long_commands_matched": {
+            origin: summarize(origin_rows)
+            for origin, origin_rows in sorted(by_origin_long.items())
         },
         "by_project_long_commands": {
             project: summarize([
@@ -191,8 +216,15 @@ def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--workflows", type=Path, required=True)
     parser.add_argument("--output", type=Path, required=True)
+    mode = parser.add_mutually_exclusive_group()
+    mode.add_argument("--expect-buffered", action="store_true")
+    mode.add_argument("--expect-unbuffered", action="store_true")
     args = parser.parse_args()
-    report = audit(args.workflows)
+    expected = (
+        True if args.expect_unbuffered else
+        False if args.expect_buffered else None
+    )
+    report = audit(args.workflows, expected_unbuffered=expected)
     args.output.parent.mkdir(parents=True, exist_ok=True)
     args.output.write_text(json.dumps(report, indent=2) + "\n")
     print(json.dumps(report, indent=2))

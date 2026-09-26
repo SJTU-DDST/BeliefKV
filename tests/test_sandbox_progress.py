@@ -95,6 +95,7 @@ def test_stdout_timing_audit_matches_one_causal_tool_end(tmp_path):
                 "attributes": {
                     "tool_call_id": "one", "tool_name": "execute",
                     "observed_command_shape": "test_suite",
+                    "is_child": True,
                 },
             },
             {
@@ -111,6 +112,32 @@ def test_stdout_timing_audit_matches_one_causal_tool_end(tmp_path):
     assert report["by_shape_long_commands_matched"]["test_suite"][
         "first_output_at_least_500ms_before_exit"
     ] == 1
+    assert report["by_origin_long_commands_matched"]["child"][
+        "command_count"
+    ] == 1
+
+
+def test_stdout_timing_audit_rejects_mixed_output_modes(tmp_path):
+    path = tmp_path / "astropy__one"
+    path.mkdir()
+    (path / "sandbox_audit.jsonl").write_text(
+        "".join(json.dumps({
+            "event": "sandbox_execute", "output_timing_shadow": True,
+            "unbuffered_output_shadow": flag,
+            "ts_ms": index * 1000, "duration_ms": 100,
+            "execute_elapsed_ms": 100,
+            "first_output_after_execute_ms": 50,
+            "exit_code": 0,
+        }) + "\n" for index, flag in enumerate((True, False))),
+    )
+    report = audit(tmp_path)
+    assert report["output_modes"] == {
+        "buffered": 1, "unbuffered": 1, "unknown": 0,
+    }
+    with pytest.raises(ValueError, match="expected all sandbox commands"):
+        audit(tmp_path, expected_unbuffered=True)
+    with pytest.raises(ValueError, match="expected all sandbox commands"):
+        audit(tmp_path, expected_unbuffered=False)
 
 
 def test_silence_signal_uses_only_chunks_seen_before_trigger():

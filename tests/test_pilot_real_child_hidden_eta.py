@@ -53,6 +53,10 @@ def test_real_child_features_never_use_future_round_as_first_snapshot(tmp_path):
     assert by_terminal[True]["join_last"] is False
     with pytest.raises(ValueError, match="duplicate request IDs"):
         load_batch_records([tmp_path / "workflows"] * 2, traces)
+    with pytest.raises(ValueError, match="one hidden-state trace root"):
+        load_batch_records([tmp_path / "workflows"] * 2, [traces])
+    with pytest.raises(ValueError, match="duplicate request IDs"):
+        load_batch_records([tmp_path / "workflows"] * 2, [traces, traces])
     with pytest.raises(FileNotFoundError, match="workflow events"):
         load_batch_records([tmp_path / "missing-workflows"], traces)
     with pytest.raises(FileNotFoundError, match="trace directory"):

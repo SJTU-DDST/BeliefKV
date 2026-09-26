@@ -2190,3 +2190,137 @@ task ID 不重叠、与拟合项目隔离的 development 证据；
 及按 workflow/项目分组的首触发验收条件，再在未参与
 规则选择的项目上自然完成验证。`online_eligible=false`、
 `predictive_action_eligible=false` 及物理动作关闭状态不变。
+
+## 33. 补充 train split 的自然终态与工具数据（2026-09-26）
+
+`prepare_deepagents_train_manifest.py` 从冻结 train split
+按项目顺序选取未用于前两批隐状态拟合的 Xarray 14、
+Django 8、Pytest 6、Pylint 4 个任务，核对 Arrow 中的
+base commit、完整 Git blob 及本机 Docker 镜像，
+使用逐任务源仓库和镜像，不暴露 benchmark gold 字段。
+manifest 位于 `experiments/raw/qwen35_hidden_child_real_train_fresh32_20260926/`
+`workload_manifest.json`，SHA-256
+`81928bf7a4ed3347082311366b00e9d1dc777c8e4cdc50bdf465f01b0d4291b7`。
+与 SymPy 16-root development 批共享隔离 SGLang 服务，
+相同单次 8192-token 输出预算及 16-root 客户端并发；
+没有 Host pool、物理预测动作或人为 workflow deadline。
+NPZ 存于服务启动时已固定的
+`qwen35_child_final_sympy_fresh8_20260926/traces`，
+按请求 ID 对齐，不能把该目录所有文件都算成本批标签。
+
+32 个 root 中 22 completed、10 incomplete，运行约
+941.7 秒，生成 4672 次 LLM 请求、4559 次工具调用。
+未完成 workflow 中已自然返回的 child 仍可按自然
+RETURN 单独标注；取消 child 的最终轮次不得伪造
+负例。正常 child 模型轮次 **3465/3465** 与 NPZ 配对，
+85 次自然 child RETURN 中 83 次有严格终态标签；
+另有 15 个完整 JOIN 最后 child。服务端 finish→runtime
+`llm_result` P95 约 **541 ms**，高并发尾部控制开销
+仍不能忽略。
+
+最终 chunk 短窗时间头使用**训练任务等权**的 83 个
+已确认自然信号拟合固定中位先验 **215.39 ms**，
+仅在其他项目上评价：
+
+- 留一训练项目：Django、Xarray、Pylint、Pytest
+  终态 ETA 绝对误差 P50 分别约 **62.8、190.6、
+  25.2、42.9 ms**；Django、Xarray 的 P90 仍约
+  **1022、663 ms**。这是四个项目而非 83 个
+  独立泛化域。
+- 与训练项目隔离、但早先用于开发探索的 SymPy
+  16-task 批：40 个严格信号的 ETA 绝对误差
+  P50/P90 约 **61/379 ms**；同批先前使用的
+  804 ms 高压限时诊断先验约 **588/655 ms**。
+  9 个完整 JOIN 最后 child 均有严格信号，
+  ETA 误差 P50/P90 约 **42/270 ms**，
+  但信号到 RETURN 的中位提前仅约 **204 ms**，
+  **0/9** 至少提前 500 ms。故准确时钟不等于
+  可隐藏大块 H2D 的窗口，不得只报告 42 ms。
+
+结果见 `final_chunk_sympy_dev16.json`；训练项目的留一
+评价、总 child 与完整 JOIN 的时间误差分开落盘。
+这些样本只来自可判定的自然终态，没有独立密封测试，
+不可推断在线误报率或物理预取收益。
+
+早期流式头单用新 83 个严格终态训练时，SymPy 的
+512-token 终态候选为 19/40，非终态可判定轮次
+在内容门禁后观察到 0 次误报；但加上
+`ETA <= 1500 ms` 的因果首触发，11 次中只有
+5 次处于 RETURN 前 0.5--3 秒。
+旧 61 条与新 83 条终态合并为 144 条训练侧样本后，
+新 `pilot_child_return_window.py` 同时以非终态
+及过早/过晚快照作负例，阈值仅在训练项目
+留一交叉验证的 0.50--0.95 与连续 1--3 次
+确认网格上选择。事先设置至少 8 次正确触发、
+跨至少 2 个项目且目标窗口 precision ≥90%；
+**没有配置通过**，输出阈值 `null`，没有据
+SymPy development 数据选新门禁。对应
+`hidden_eta_sympy_dev16.json`、
+`return_window_combined_project_cv.json`。
+
+新训练批的冷长 child `execute` 中，有 **156 次**
+没有同一 invocation 先前成功的同输入调用。
+用训练侧已有的命令类别与输入长度训练固定
+LightGBM 二秒长调用分类器，在不同项目的
+Astropy/Sphinx development v14 批中，长 child
+调用分别为 33/3 次；事先列出的 0.5/0.7/0.9
+阈值均选中 **0/36**。这只能证明当前粗特征
+在该 development 批没有跨项目长调用覆盖，
+不能靠同输入短命令 13/87 ms 的误差宣称
+冷工具返回已解决。报告
+`cold_tool_astropy_sphinx_dev32.json`。
+下一步应寻找可提前观测的真实工具执行进度，
+同时核算改变输出缓冲对轨迹的干预；不能在
+Astropy/Sphinx 上事后降低阈值冒充验证。
+
+至此，JOIN 临近结束的**点 ETA** 在该项目隔离
+development 检验中显著改善，但早期 JOIN
+窗口和冷长工具 ETA 仍未取得所需准确度；
+`online_eligible=false`、`predictive_action_eligible=false`
+维持不变。
+
+## 34. Sandbox 输出缓冲的配对诊断（2026-09-26）
+
+为检验冷长工具是否因 Python stdout 缓冲失去提前观测，
+使用同一冻结 Astropy 前 8 个任务、8-root 并发、seed 42、
+同一隔离 SGLang 服务和 `BELIEFKV_SANDBOX_OUTPUT_TIMING_SHADOW=1`
+先后运行默认缓冲组与 `BELIEFKV_SANDBOX_UNBUFFERED_SHADOW=1`
+组。后者只在 opt-in 诊断中给容器传入 `PYTHONUNBUFFERED=1`；
+正式工具路径及预测式物理动作均不变。输出审计不保存正文。
+报告位于 `experiments/raw/qwen35_child_tool_unbuffered_paired8_20260926/`
+下的 `buffered_output_timing.json` 和
+`unbuffered_v2_output_timing.json`。
+
+首次无缓冲运行**无效**：root backend 有开关，初始派发的
+planned child backend 未继承。305 条命令里只有 114 条
+无缓冲，191 条仍为缓冲，不能作为配对对照。
+现已修复 child 的开关传递并添加回归；
+审计器新增 `--expect-buffered` / `--expect-unbuffered`
+模式验证，混合配置直接拒绝。有效重跑的 460 条命令
+全部确认无缓冲，缓冲组的 486 条命令全部确认缓冲。
+两组服务端错误均为零，分别有 5/8 和 6/8 个
+workflow completed；runner 的 system gate 非零退出
+不代表服务端异常。
+
+缓冲组 22 条至少 2 秒的命令首输出提前退出至少
+500 ms 的只有 1 条；其中匹配的 4 条长 **child**
+命令为 **0/4**。无缓冲重跑共 23 条长命令有
+5 条首输出至少提前 500 ms，但匹配的 7 条长
+**child** 命令仍为 **0/7**，这 5 条来自 root。
+child 的首输出提前量 P50/P90 从缓冲组约
+117/144 ms，到无缓冲组约 95/186 ms；
+均不能推出 500 ms 的可靠 child TOOL_END 窗口，
+更不能推出 child RETURN/JOIN 或 H2D 的窗口。
+按同一 task ID 和唯一 command SHA 严格配对后，
+两组均超过 2 秒的命令只有 **1 条**（首输出到退出
+分别约 4/9 ms）；不同轨迹使整体 22/23 条长
+命令的差异**不具因果归因资格**。
+
+这次结果只否定“在该批 child 长工具中仅靠设置
+`PYTHONUNBUFFERED` 即得到可用提前信号”的假设，
+不否定其他项目/命令的结构化进度信号。后续应优先
+寻找有可核实剩余工作量的工具进度事件，并在训练
+项目上确定规则、在未参与规则选择的项目上按
+首次触发与自然完成验证，分别报告冷长工具和
+完整 JOIN 的提前量、误报及 ETA；此批 Astropy
+诊断不能充当项目隔离测试。上线资格继续保持关闭。

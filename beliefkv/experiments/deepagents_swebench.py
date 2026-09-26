@@ -582,6 +582,7 @@ class DockerWorkspaceBackend(FilesystemBackend, SandboxBackendProtocol):
         preflight_command: str | None = None,
         support_dir: Path | None = DEFAULT_SANDBOX_SUPPORT_DIR,
         output_timing_shadow: bool = False,
+        unbuffered_output_shadow: bool = False,
     ) -> None:
         super().__init__(root_dir=workspace, virtual_mode=True)
         if cpus <= 0 or memory_gib <= 0 or default_timeout_s <= 0:
@@ -596,6 +597,9 @@ class DockerWorkspaceBackend(FilesystemBackend, SandboxBackendProtocol):
         self.test_env_path = test_env_path.rstrip("/")
         self.preflight_command = preflight_command
         self.output_timing_shadow = output_timing_shadow
+        if unbuffered_output_shadow and not output_timing_shadow:
+            raise ValueError("unbuffered output requires sandbox output timing shadow")
+        self.unbuffered_output_shadow = unbuffered_output_shadow
         self.support_dir = support_dir.resolve() if support_dir is not None else None
         if not self.test_env_path.startswith("/"):
             raise ValueError("sandbox test environment path must be absolute")
@@ -658,6 +662,8 @@ class DockerWorkspaceBackend(FilesystemBackend, SandboxBackendProtocol):
             "GIT_OPTIONAL_LOCKS=0",
             f"DJANGO_TEST_PROCESSES={max(1, math.floor(self.cpus))}",
         )
+        if self.unbuffered_output_shadow:
+            environment += ("PYTHONUNBUFFERED=1",)
         return [item for value in environment for item in ("--env", value)]
 
     def _docker_exec_argv(self, command: str) -> list[str]:
@@ -930,6 +936,7 @@ class DockerWorkspaceBackend(FilesystemBackend, SandboxBackendProtocol):
                 "recent_output_chunks": timing.recent_output_chunks,
                 "total_output_chunks": timing.total_output_chunks,
                 "output_timing_shadow": True,
+                "unbuffered_output_shadow": self.unbuffered_output_shadow,
             } if self.output_timing_shadow else {}),
         )
         return ExecuteResponse(
@@ -2702,6 +2709,7 @@ def _run_planned_child(
         preflight_command=backend.preflight_command,
         support_dir=backend.support_dir,
         output_timing_shadow=backend.output_timing_shadow,
+        unbuffered_output_shadow=backend.unbuffered_output_shadow,
     )
     deadline_controller.register_backend(child_backend)
     try:
@@ -3551,6 +3559,9 @@ def _run_workflow(
         ),
         output_timing_shadow=(
             os.environ.get("BELIEFKV_SANDBOX_OUTPUT_TIMING_SHADOW") == "1"
+        ),
+        unbuffered_output_shadow=(
+            os.environ.get("BELIEFKV_SANDBOX_UNBUFFERED_SHADOW") == "1"
         ),
     )
     workflow_token = hashlib.sha256(

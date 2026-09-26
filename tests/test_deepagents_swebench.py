@@ -76,6 +76,7 @@ from beliefkv.experiments.deepagents_swebench import (
     _autonomous_subagents,
     _dynamic_initial_delegation_tasks,
     _planned_child_completion,
+    _run_planned_child,
     _workflow_terminal,
     _run_autonomous,
     _task_prompt,
@@ -553,6 +554,63 @@ def test_docker_backend_opt_in_stdout_timing_keeps_command_body_out_of_audit(
             <= record["execute_elapsed_ms"])
     assert "private command text" not in str(record)
     assert "firstlast" not in str(record)
+
+
+def test_unbuffered_python_output_is_only_allowed_in_explicit_shadow(
+    tmp_path: Path,
+) -> None:
+    audit = JsonlAudit(tmp_path / "audit.jsonl")
+    with pytest.raises(ValueError, match="requires sandbox output timing shadow"):
+        DockerWorkspaceBackend(
+            tmp_path, image="fixture:latest", audit=audit,
+            unbuffered_output_shadow=True,
+        )
+    plain = DockerWorkspaceBackend(tmp_path, image="fixture:latest", audit=audit)
+    assert "PYTHONUNBUFFERED=1" not in plain._docker_environment_args()
+    opt_in = DockerWorkspaceBackend(
+        tmp_path, image="fixture:latest", audit=audit,
+        output_timing_shadow=True, unbuffered_output_shadow=True,
+    )
+    assert "PYTHONUNBUFFERED=1" in opt_in._docker_environment_args()
+    audit.close()
+
+
+def test_planned_child_inherits_unbuffered_output_shadow(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    audit = JsonlAudit(tmp_path / "audit.jsonl")
+    backend = DockerWorkspaceBackend(
+        tmp_path / "workspace", image="fixture:latest", audit=audit,
+        support_dir=None, output_timing_shadow=True,
+        unbuffered_output_shadow=True,
+    )
+    monkeypatch.setattr(
+        "beliefkv.experiments.deepagents_swebench.prepare_workspace",
+        lambda *_: None,
+    )
+    child_backends = []
+
+    def check_child(child: DockerWorkspaceBackend) -> None:
+        assert child.output_timing_shadow is True
+        assert child.unbuffered_output_shadow is True
+        assert "PYTHONUNBUFFERED=1" in child._docker_environment_args()
+        raise RuntimeError("checked child backend")
+
+    monkeypatch.setattr(DockerWorkspaceBackend, "start", check_child)
+    monkeypatch.setattr(DockerWorkspaceBackend, "close", lambda _: None)
+    controller = SimpleNamespace(
+        register_backend=child_backends.append,
+        unregister_backend=child_backends.remove,
+    )
+    with pytest.raises(RuntimeError, match="checked child backend"):
+        _run_planned_child(
+            None, None, backend, None,
+            SimpleNamespace(invocation_id="child-1"),
+            SimpleNamespace(role="analysis"),
+            controller,
+        )
+    assert not child_backends
+    audit.close()
 
 
 def test_docker_cleanup_timeout_is_audited_without_losing_workflow_result(

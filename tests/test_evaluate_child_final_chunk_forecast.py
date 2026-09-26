@@ -82,6 +82,8 @@ def test_heldout_prior_ignores_repeated_task_and_censors_last_round(tmp_path):
     assert result["heldout_false_candidates"] == 1
     assert result["heldout_censored_candidates"] == 1
     assert result["heldout_join_last_true_candidates"] == 1
+    assert result["heldout_join_last_eta_error_p50_ms"] == 200
+    assert result["heldout_join_last_at_least_500ms_early"] == 1
     assert result["heldout_eta_error_p50_ms"] == 200
     assert result["heldout_control_saved_p50_ms"] == 100
 
@@ -98,3 +100,22 @@ def test_project_overlap_rejected_before_reporting(tmp_path):
         )
     with pytest.raises(FileNotFoundError, match="workflow events"):
         collect([tmp_path / "nonexistent"], require_signal=True)
+
+
+def test_train_leave_project_out_uses_only_other_projects(tmp_path):
+    train = tmp_path / "train"
+    heldout = tmp_path / "heldout"
+    _write_workflow(train, "django__one", lead_ms=200)
+    _write_workflow(train, "pydata__one", lead_ms=300)
+    _write_workflow(train, "pytest-dev__one", lead_ms=2000)
+    _write_workflow(heldout, "sympy__one", lead_ms=250)
+    result = evaluate(
+        collect([train], require_signal=False),
+        collect([heldout], require_signal=True),
+    )
+    folds = result["train_leave_project_out"]
+    assert folds["django"]["terminal_count"] == 1
+    assert folds["django"]["prior_ms"] == 1150
+    assert folds["django"]["eta_error_p50_ms"] == 950
+    assert folds["pytest-dev"]["prior_ms"] == 250
+    assert folds["pytest-dev"]["eta_error_p50_ms"] == 1750
