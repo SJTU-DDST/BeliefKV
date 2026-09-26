@@ -209,7 +209,12 @@ def main() -> int:
     parser.add_argument("--codex", default=shutil.which("codex") or "codex")
     parser.add_argument("--concurrency", type=int, default=4)
     parser.add_argument("--max-completion-tokens", type=int, default=768)
-    parser.add_argument("--timeout-seconds", type=float, default=900.0)
+    parser.add_argument(
+        "--timeout-seconds",
+        type=float,
+        default=7200.0,
+        help="Shared deadline for all roots and subagents (default: 7200 seconds).",
+    )
     parser.add_argument("--gpu-index", type=int, default=0)
     parser.add_argument("--min-subagents-per-workflow", type=int, default=2)
     parser.add_argument(

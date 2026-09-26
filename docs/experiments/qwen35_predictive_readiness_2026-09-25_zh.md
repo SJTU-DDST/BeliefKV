@@ -4248,6 +4248,12 @@ workflow 配对比较时必须记录相同的截止配置，
 最近两轮 EOS 采集的 manifest 和 workflow 审计均确认实际
 共享截止为 7200 秒；`request_timeout_s=600` 只约束单次
 模型请求，不是 root 的累计运行时长上限。
+当前 128-root 冷工具训练批次的 manifest 进一步确认
+`loop_guard.activation_wall_clock_s=7200` 且
+`request_timeout_s=7200`；不需要为修正旧 pilot 的
+900 秒截止而重启该批次。独立的旧 Codex subagent
+benchmark 曾保留共享 900 秒截止，其默认值现也改为
+7200 秒；显式传入 `--timeout-seconds` 仍可覆盖。
 
 ## 68. 完成通知后 EOS 候选概率的只读试验
 
