@@ -101,6 +101,13 @@ def parse_args() -> argparse.Namespace:
         help="Opt-in child completion notification tool for read-only timing diagnosis.",
     )
     parser.add_argument(
+        "--child-final-report-shadow", action="store_true",
+        help=(
+            "Only the model call immediately after a single child completion "
+            "notification runs without thinking; requires --child-return-intent-shadow."
+        ),
+    )
+    parser.add_argument(
         "--sampling-seed",
         type=int,
         help=(
@@ -234,6 +241,7 @@ def main() -> int:
         stream_completion_shadow=args.stream_completion_shadow,
         child_finish_chunk_shadow=args.child_finish_chunk_shadow,
         child_return_intent_shadow=args.child_return_intent_shadow,
+        child_final_report_shadow=args.child_final_report_shadow,
         subagent_fanout_profile=args.subagent_fanout_profile,
         stop_after_first_native_join=args.stop_after_first_native_join,
         recursion_limit=args.recursion_limit,

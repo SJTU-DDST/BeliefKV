@@ -1470,6 +1470,46 @@ class EmptyReasoningRecoveryMiddleware(AgentMiddleware[Any, Any, Any]):
         return recovered
 
 
+class ChildFinalReportShadowMiddleware(AgentMiddleware[Any, Any, Any]):
+    """Opt-in non-thinking final report immediately after a child notification."""
+
+    def __init__(self, *, audit: JsonlAudit, scope: str) -> None:
+        super().__init__()
+        self.audit = audit
+        self.scope = scope
+        self._seen_call_ids: set[str] = set()
+        self._lock = threading.Lock()
+
+    def wrap_model_call(self, request: ModelRequest, handler: Any) -> ModelResponse:
+        messages = request.messages
+        if len(messages) < 2 or not isinstance(messages[-1], ToolMessage):
+            return handler(request)
+        outcome = messages[-1]
+        preceding = messages[-2]
+        if (
+            outcome.name != "announce_completion_intent"
+            or outcome.status != "success"
+            or not isinstance(preceding, AIMessage)
+            or len(preceding.tool_calls) != 1
+            or preceding.tool_calls[0].get("name") != "announce_completion_intent"
+            or preceding.tool_calls[0].get("id") != outcome.tool_call_id
+        ):
+            return handler(request)
+        with self._lock:
+            first_attempt = outcome.tool_call_id not in self._seen_call_ids
+            if first_attempt:
+                self._seen_call_ids.add(outcome.tool_call_id)
+        if not first_attempt:
+            return handler(request)
+        self.audit.emit(
+            "child_final_report_shadow",
+            scope=self.scope,
+            tool_call_id=outcome.tool_call_id,
+            enable_thinking=False,
+        )
+        return handler(EmptyReasoningRecoveryMiddleware._retry_request(request))
+
+
 @dataclass(frozen=True)
 class DeepAgentsExperimentConfig:
     mode: str
@@ -1496,6 +1536,7 @@ class DeepAgentsExperimentConfig:
     stream_completion_shadow: bool = False
     child_finish_chunk_shadow: bool = False
     child_return_intent_shadow: bool = False
+    child_final_report_shadow: bool = False
     subagent_fanout_profile: str = "natural"
     stop_after_first_native_join: bool = False
     recursion_limit: int = 2048
@@ -1517,6 +1558,8 @@ class DeepAgentsExperimentConfig:
     )
 
     def __post_init__(self) -> None:
+        if self.child_final_report_shadow and not self.child_return_intent_shadow:
+            raise ValueError("child final report shadow requires child return intent")
         if self.mode not in {"autonomous", "planned"}:
             raise ValueError("mode must be autonomous or planned")
         if self.child_finish_chunk_shadow and not self.stream_completion_shadow:
@@ -2807,6 +2850,13 @@ def _run_planned_child(
                 ),
                 EmptyReasoningRecoveryMiddleware(
                     audit=backend.audit, scope=f"planned:child:{handle.invocation_id}"
+                ),
+                *(
+                    [ChildFinalReportShadowMiddleware(
+                        audit=backend.audit,
+                        scope=f"planned:child:{handle.invocation_id}",
+                    )]
+                    if config.child_final_report_shadow else []
                 ),
             ],
             system_prompt=(

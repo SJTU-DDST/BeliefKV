@@ -3355,3 +3355,28 @@ tool chunk 接入 JOIN 控制通道，也不把后验匹配宣称为
 明确、可靠地暴露，并保留无效、撤销与不同项目任务
 的首次触发评价；工具 RETURN 则还须独立寻找
 进度或执行时限的可观测前置信号。
+
+## 56. 完成通知后最终模型轮次的隔离干预（2026-09-26，待验证）
+
+完成通知到 RETURN 的主要可变时延来自紧随通知的最终模型生成，而
+不是通知工具本身。为检验这一时延能否变成稳定的短窗，新增**默认关闭**
+的 `--child-final-report-shadow`，必须与
+`--child-return-intent-shadow` 同时启用。仅初始派发的 planned
+analysis child 使用该开关；只有最新消息是单独且成功执行的
+`announce_completion_intent` 工具结果、并且与前一模型消息中唯一
+的 tool-call ID 一致时，下一次模型调用才设置
+`extra_body.chat_template_kwargs.enable_thinking=false`。同一工具调用
+只尝试一次；其他 child、root、后续工具轮次和默认路径均不变。
+原有空终态重试继续保留。每次触发写入 `child_final_report_shadow`
+审计事件，以便验证实际覆盖，不以配置开关推断生效。
+
+配对脚本 `scripts/run_child_intent_chunk_sphinx.sh` 支持
+`ARMS="intent final"`；须使用新的输出目录及冻结任务列表。
+验收须分别统计两个臂的自然 child RETURN、完整 JOIN 最后 child、
+blocked/cancel/incomplete 比例、最终报告质量、通知到 RETURN 的
+提前量与按项目隔离的点误差。不能仅报告更短的生成时延，也不能把
+改变模型行为后的轨迹与旧 reactive 批次直接比较 JCT。
+若没有足够的完整 JOIN 或报告质量退化，应停用干预并保留阴性结果。
+此处只是事先冻结的诊断契约，不改变
+`online_eligible=false`、`predictive_action_eligible=false`，
+也不启动预测式物理迁移。

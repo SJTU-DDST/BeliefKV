@@ -84,10 +84,17 @@ for id in "${IDS[@]}"; do
   instance_args+=(--instance "$id")
 done
 failed=false
-for arm in control intent; do
+read -r -a arms <<< "${ARMS:-control intent}"
+for arm in "${arms[@]}"; do
   intent_arg=()
-  if [[ "$arm" == intent ]]; then
+  if [[ "$arm" == intent || "$arm" == final ]]; then
     intent_arg=(--child-return-intent-shadow)
+  elif [[ "$arm" != control ]]; then
+    printf 'Unknown arm: %s\n' "$arm" >&2
+    exit 2
+  fi
+  if [[ "$arm" == final ]]; then
+    intent_arg+=(--child-final-report-shadow)
   fi
   if ! "$PYTHON" "$ROOT/scripts/run_deepagents_swebench.py" \
     --mode autonomous --base-url "http://127.0.0.1:$PORT/v1" \
@@ -105,14 +112,16 @@ for arm in control intent; do
   fi
 done
 stop_server
-if [[ -d "$OUT/intent_workloads/workflows" ]]; then
-  "$PYTHON" "$ROOT/scripts/audit_child_return_intent_shadow.py" \
-    --workflows "$OUT/intent_workloads/workflows" \
-    --output "$OUT/intent_audit.json"
-  "$PYTHON" "$ROOT/scripts/audit_child_intent_to_final_chunk.py" \
-    --workflows "$OUT/intent_workloads/workflows" \
-    --output "$OUT/intent_chunk_stages.json"
-fi
+for arm in intent final; do
+  if [[ -d "$OUT/${arm}_workloads/workflows" ]]; then
+    "$PYTHON" "$ROOT/scripts/audit_child_return_intent_shadow.py" \
+      --workflows "$OUT/${arm}_workloads/workflows" \
+      --output "$OUT/${arm}_intent_audit.json"
+    "$PYTHON" "$ROOT/scripts/audit_child_intent_to_final_chunk.py" \
+      --workflows "$OUT/${arm}_workloads/workflows" \
+      --output "$OUT/${arm}_intent_chunk_stages.json"
+  fi
+done
 if [[ "$failed" == true ]]; then
   exit 1
 fi

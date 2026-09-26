@@ -42,6 +42,7 @@ from beliefkv.experiments.deepagents_swebench import (
     DELEGATED_TASK_FOCUS_INSTRUCTION,
     DynamicInitialDelegationPlan,
     EmptyReasoningRecoveryMiddleware,
+    ChildFinalReportShadowMiddleware,
     NATIVE_DYNAMIC_1TO4_PROMPT,
     NATIVE_DYNAMIC_INITIAL_PLANNER_PROMPT,
     NATIVE_SUBAGENT_2TO3_PROMPT,
@@ -2376,6 +2377,123 @@ def test_empty_reasoning_terminal_retries_once_without_thinking(
     ]
     assert events[0]["finish_reason"] == finish_reason
     assert events[-1]["recovered"] is True
+
+
+def test_child_final_report_shadow_only_for_immediate_single_notice(tmp_path: Path) -> None:
+    audit = JsonlAudit(tmp_path / "final.jsonl")
+    middleware = ChildFinalReportShadowMiddleware(
+        audit=audit, scope="planned:child:one"
+    )
+    notice = AIMessage(
+        content="",
+        tool_calls=[{"name": "announce_completion_intent", "args": {}, "id": "call-1"}],
+    )
+    outcome = ToolMessage(
+        content="Completion intent recorded.",
+        tool_call_id="call-1",
+        name="announce_completion_intent",
+    )
+    settings = {"extra_body": {"chat_template_kwargs": {"existing": True}}}
+    request = ModelRequest(
+        model=FakeMessagesListChatModel(responses=[AIMessage(content="report")]),
+        messages=[HumanMessage(content="analyze"), notice, outcome],
+        model_settings=settings,
+    )
+    seen: list[ModelRequest] = []
+
+    def handler(value: ModelRequest) -> ModelResponse:
+        seen.append(value)
+        return ModelResponse(result=[AIMessage(content="report")])
+
+    try:
+        middleware.wrap_model_call(request, handler)
+        middleware.wrap_model_call(request, handler)
+        for messages in (
+            [HumanMessage(content="analyze"), notice, outcome,
+             HumanMessage(content="work further")],
+            [HumanMessage(content="analyze"), notice,
+             ToolMessage(content="oops", tool_call_id="call-1",
+                         name="announce_completion_intent", status="error")],
+            [HumanMessage(content="analyze"), notice,
+             ToolMessage(content="other", tool_call_id="call-2",
+                         name="announce_completion_intent")],
+            [HumanMessage(content="analyze"),
+             AIMessage(content="", tool_calls=[
+                 {"name": "announce_completion_intent", "args": {}, "id": "call-3"},
+                 {"name": "read_file", "args": {}, "id": "call-4"},
+             ]),
+             ToolMessage(content="ok", tool_call_id="call-3",
+                         name="announce_completion_intent")],
+        ):
+            middleware.wrap_model_call(request.override(messages=messages), handler)
+    finally:
+        audit.close()
+    assert len(seen) == 6
+    assert seen[0].model_settings["extra_body"]["chat_template_kwargs"] == {
+        "existing": True, "enable_thinking": False,
+    }
+    assert all(item.model_settings == settings for item in seen[1:])
+    assert request.model_settings == settings
+    events = [json.loads(line) for line in (tmp_path / "final.jsonl").read_text().splitlines()]
+    assert len(events) == 1
+    assert events[0]["event"] == "child_final_report_shadow"
+    assert events[0]["tool_call_id"] == "call-1"
+
+
+def test_child_final_report_shadow_requires_notice(tmp_path: Path) -> None:
+    kwargs = {
+        "mode": "autonomous",
+        "base_url": "http://127.0.0.1:18001/v1",
+        "model": "Qwen3.5-35B-A3B",
+        "output_dir": tmp_path / "out",
+        "workload_manifest": tmp_path / "tasks.json",
+        "docker_image": "fixture:latest",
+    }
+    assert DeepAgentsExperimentConfig(**kwargs).child_final_report_shadow is False
+    with pytest.raises(ValueError, match="requires child return intent"):
+        DeepAgentsExperimentConfig(**kwargs, child_final_report_shadow=True)
+    assert DeepAgentsExperimentConfig(
+        **kwargs, child_final_report_shadow=True,
+        child_return_intent_shadow=True,
+    ).child_final_report_shadow is True
+
+
+def test_child_final_report_shadow_matches_real_agent_tool_result(tmp_path: Path) -> None:
+    class ToolCallingFakeModel(FakeMessagesListChatModel):
+        def bind_tools(self, tools, **kwargs):
+            del tools, kwargs
+            return self
+
+    @tool("announce_completion_intent")
+    def announce_completion_intent() -> str:
+        """Announce completion before the final report."""
+
+        return "Completion intent recorded."
+
+    model = ToolCallingFakeModel(responses=[
+        AIMessage(content="", tool_calls=[
+            {"name": "announce_completion_intent", "args": {}, "id": "notice-1"}
+        ]),
+        AIMessage(content="Final analysis report."),
+    ])
+    audit = JsonlAudit(tmp_path / "final.jsonl")
+    try:
+        agent = create_agent(
+            model=model, tools=[announce_completion_intent],
+            middleware=[ChildFinalReportShadowMiddleware(
+                audit=audit, scope="planned:child:one",
+            )],
+        )
+        result = agent.invoke(
+            {"messages": [{"role": "user", "content": "Analyze the issue."}]},
+            config={"recursion_limit": 20},
+        )
+    finally:
+        audit.close()
+    assert result["messages"][-1].content == "Final analysis report."
+    events = [json.loads(line) for line in (tmp_path / "final.jsonl").read_text().splitlines()]
+    assert len(events) == 1
+    assert events[0]["tool_call_id"] == "notice-1"
 
 
 @pytest.mark.parametrize(
