@@ -56,11 +56,26 @@ def test_incomplete_batch_is_rejected_before_scoring(tmp_path):
     }))
     with pytest.raises(ValueError, match="final manifest and summary"):
         loo.require_complete_batch(workflows)
-    (run / "summary.json").write_text(json.dumps({"workflow_count": 2}))
+    (run / "summary.json").write_text(json.dumps({
+        "workflow_count": 2,
+        "workflows": [
+            {"instance_id": "a", "outcome": "completed"},
+            {"instance_id": "b", "outcome": "completed"},
+        ],
+    }))
     (workflows / "a").mkdir()
     (workflows / "a" / "result.json").write_text("{}")
     with pytest.raises(ValueError, match="lacks workflow results"):
         loo.require_complete_batch(workflows)
     (workflows / "b").mkdir()
     (workflows / "b" / "result.json").write_text("{}")
-    assert loo.require_complete_batch(workflows) == ["a", "b"]
+    assert loo.require_complete_batch(workflows) == (["a", "b"], [])
+    (workflows / "b" / "result.json").unlink()
+    (run / "summary.json").write_text(json.dumps({
+        "workflow_count": 2,
+        "workflows": [
+            {"instance_id": "a", "outcome": "completed"},
+            {"instance_id": "b", "outcome": "runner_error"},
+        ],
+    }))
+    assert loo.require_complete_batch(workflows) == (["a", "b"], ["b"])

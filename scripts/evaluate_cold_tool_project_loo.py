@@ -15,7 +15,7 @@ if str(ROOT) not in sys.path:
 from scripts.evaluate_cold_tool_structure_holdout import cold_calls, evaluate
 
 
-def require_complete_batch(workflows: Path) -> list[str]:
+def require_complete_batch(workflows: Path) -> tuple[list[str], list[str]]:
     run = workflows.parent
     manifest = run / "manifest.json"
     summary = run / "summary.json"
@@ -27,13 +27,24 @@ def require_complete_batch(workflows: Path) -> list[str]:
     recorded = json.loads(summary.read_text(encoding="utf-8"))
     if recorded.get("workflow_count") != len(ids):
         raise ValueError("batch summary does not cover the frozen tasks")
+    items = recorded.get("workflows")
+    if not isinstance(items, list) or len(items) != len(ids):
+        raise ValueError("batch summary lacks terminal workflow records")
+    by_id = {item.get("instance_id"): item for item in items}
+    if len(by_id) != len(ids) or set(by_id) != set(ids):
+        raise ValueError("batch summary identities differ from frozen tasks")
+    runner_errors = [
+        instance for instance in ids
+        if by_id[instance].get("outcome") == "runner_error"
+    ]
     missing = [
         instance for instance in ids
         if not (workflows / instance / "result.json").is_file()
+        and instance not in runner_errors
     ]
     if missing:
         raise ValueError(f"batch lacks workflow results: {missing[:5]}")
-    return ids
+    return ids, runner_errors
 
 
 def project_leave_one_out(rows: list[dict]) -> dict:
@@ -84,10 +95,11 @@ def main() -> None:
     parser.add_argument("--workflows", required=True, type=Path)
     parser.add_argument("--output", required=True, type=Path)
     args = parser.parse_args()
-    instance_ids = require_complete_batch(args.workflows)
+    instance_ids, runner_errors = require_complete_batch(args.workflows)
     rows, censor = cold_calls(args.workflows)
     result = project_leave_one_out(rows)
     result["frozen_workflow_count"] = len(instance_ids)
+    result["runner_error_workflows"] = runner_errors
     result["censor"] = censor
     result["long_by_project"] = dict(sorted(Counter(
         row["project"] for row in rows if row["duration_ms"] >= 2_000
