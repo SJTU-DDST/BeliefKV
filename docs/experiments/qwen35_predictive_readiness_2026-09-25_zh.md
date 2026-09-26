@@ -1722,3 +1722,31 @@ trace、服务日志和阶段审计保留。
 长程剩余时长作为不确定的容量规划量，
 只对高置信候选作预算受限的部分 KV 预备，
 而不是以伪精确的 JOIN 时刻启动大块 H2D。
+
+## 28. SGLang 隐状态流式接口的时序微实验
+
+`pilot_sglang_hidden_timing.py` 在独立端口对
+Qwen3.5-35B-A3B 发起两次同提示词、最多 512 token
+的短 SSE 诊断；脚本只统计请求 ID、事件时间、
+载荷字节数和隐状态维度，不存储提示词、生成文本
+或向量。原生 SGLang 0.5.20 默认拒绝
+`return_hidden_states=last`（HTTP 400），需要
+单独以 `--return-hidden-states-mode last` 重启，
+正式 BeliefKV 服务配置未改。
+
+启用后 SSE 的 512 个正文 chunk 从约 39 ms 开始，
+`finish_reason=length` 于约 2082.58 ms 到达；
+**唯一一个 2048 维隐状态 chunk 却在约
+2082.70 ms 才到达**，比 finish 晚约 0.11 ms。
+单次对照的默认请求 SSE 约 123 KB，隐状态模式
+约 143 KB（隐状态事件约 20 KB）。
+这仅是接口行为检查、不是时延基准测试，也没有
+真实 JOIN/完成时间训练标签。SGLang 的
+`serving_chat._generate_chat_stream` 将隐状态
+保存在生成循环的局部变量中，循环结束发完
+finish 后才发送隐状态 SSE；现有 API 因此
+不能作为早期的 child 终止提示。独立服务已停止。
+若需逐 token 隐状态或 EOS 风险信号，需要单独
+设计采集点、以真实工作流训练并做项目隔离验证，
+同时计入 GPU 同步、传输和控制时延；当前结果
+不授权修改正式 SGLang 接口或启动物理预取。
