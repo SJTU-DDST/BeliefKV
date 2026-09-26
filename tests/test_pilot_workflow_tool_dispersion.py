@@ -1,7 +1,11 @@
 from __future__ import annotations
 
+import json
+import sys
+
 import pytest
 
+from scripts import pilot_workflow_tool_dispersion as pilot
 from scripts.pilot_workflow_tool_dispersion import screen
 
 
@@ -62,3 +66,43 @@ def test_screen_does_not_use_same_timestamp_or_other_workflow_as_history():
     result = screen(calls)
     assert result["selection"]["selected"] == 0
     assert result["supported_cold_child_long"] == 0
+
+
+def test_shape_history_does_not_pool_unrelated_shapes_of_same_class():
+    calls = [
+        {**_call(i, i * 4000, 3000), "shape": f"shape-{i % 2}"}
+        for i in range(5)
+    ]
+    assert screen(calls)["selection"]["selected"] == 1
+    assert screen(calls, history_key="shape")["selection"]["selected"] == 0
+    with pytest.raises(ValueError, match="history_key"):
+        screen(calls, history_key="project")
+
+
+def test_cli_clean_cold_mode_reports_censor_and_shape(
+    monkeypatch: pytest.MonkeyPatch, tmp_path,
+):
+    from scripts import evaluate_cold_tool_structure_holdout as extractor
+
+    calls = [
+        {**_call(i, i * 4000, 3000), "shape": "python_inline_simple"}
+        for i in range(5)
+    ]
+    monkeypatch.setattr(
+        extractor, "cold_calls",
+        lambda _path: (calls, {"completed_cold_child_status": {"error": 1}}),
+    )
+    output = tmp_path / "report.json"
+    monkeypatch.setattr(sys, "argv", [
+        "pilot_workflow_tool_dispersion.py",
+        "--workflows", str(tmp_path),
+        "--output", str(output),
+        "--successful-cold-only", "--history-key", "shape",
+    ])
+    pilot.main()
+
+    result = json.loads(output.read_text(encoding="utf-8"))
+    assert result["successful_cold_only"] is True
+    assert result["parameters"]["history_key"] == "shape"
+    assert result["censor"]["completed_cold_child_status"]["error"] == 1
+    assert result["selection"]["selected"] == 1

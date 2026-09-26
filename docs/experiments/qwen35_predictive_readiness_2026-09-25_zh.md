@@ -4988,3 +4988,30 @@ P50 点误差分别约 11946/5492/1225/3578 ms，
 部分项目较固定时长先验更差；不采用该
 阶段速度头。正式 Astropy/Sphinx 项目
 留出不参与上述特征/阈值筛选。
+
+### 训练侧同 workflow 命令形态时钟补充诊断
+
+仅用已完成的 128-root **训练**批次对比同 workflow 内
+`class` 和更细的 `shape` 历史：某调用开始之前须已有
+至少 4 次成功结束、同组时长围绕其中位数最多偏离
+250 ms，且中位时长至少 2 秒。严格只计成功、未受
+runtime 干预且非精确重复的 child `execute`；
+未结束和失败调用均不作短调用标签。报告分别保存在
+`workflow_cold_class_dispersion.json` 和
+`workflow_cold_shape_dispersion.json`，命令行须显式
+使用 `--successful-cold-only`，不能与旧口径的
+`workflow_class_dispersion.json` 混算。
+
+训练集共有 445 次至少 2 秒的合格冷调用。
+`class` 筛出 138 次，其中 123 次确为长调用，
+含短调用误报的选中集合 P50/P90 点误差约
+89/484 ms；`shape` 筛出 134 次，其中 120 次
+确为长调用，同口径 P50/P90 约 98/345 ms。
+两者均**只来自 Xarray 的 11 个
+workflow**：其它训练项目即使有长调用，筛选数
+仍为零。`shape` 未获得跨项目覆盖，且局部准确性
+受同一项目与少数 workflow 主导；不作为 JOIN
+或物理预取时钟推广，不用正在运行的 Astropy/
+Sphinx 留出集回调阈值。后续优先寻找调用执行中
+可观测的进度或明确结束信号，而不是继续收窄
+TOOL_START 静态形态筛选。

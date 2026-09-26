@@ -20,9 +20,12 @@ from scripts.audit_repeated_tool_timing import _quantile, _read_workflow
 def screen(
     calls: list[dict], *, minimum_support: int = 4,
     max_deviation_ms: float = 250.0, lead_budget_ms: float = 1000.0,
+    history_key: str = "class",
 ) -> dict:
     if minimum_support < 2 or max_deviation_ms < 0 or lead_budget_ms <= 0:
         raise ValueError("invalid screening parameters")
+    if history_key not in ("class", "shape"):
+        raise ValueError("history_key must be class or shape")
     history: dict[tuple[str, str], deque[float]] = defaultdict(
         lambda: deque(maxlen=minimum_support)
     )
@@ -40,7 +43,7 @@ def screen(
             _, _, previous = heapq.heappop(pending)
             if previous["status"] == "success" and previous["is_child"] is True:
                 history[
-                    previous["workflow"], previous["class"]
+                    previous["workflow"], previous[history_key]
                 ].append(float(previous["duration_ms"]))
         heapq.heappush(
             pending, (float(row["terminal_ts_ms"]), sequence, row),
@@ -52,7 +55,7 @@ def screen(
             continue
         actual = float(row["duration_ms"])
         child_long += actual >= 2000
-        prior = history[row["workflow"], row["class"]]
+        prior = history[row["workflow"], row[history_key]]
         if len(prior) < minimum_support:
             continue
         supported_long += actual >= 2000
@@ -99,6 +102,7 @@ def screen(
             "minimum_support": minimum_support,
             "max_deviation_ms": max_deviation_ms,
             "lead_budget_ms": lead_budget_ms,
+            "history_key": history_key,
         },
         "completed_cold_child_long": child_long,
         "supported_cold_child_long": supported_long,
@@ -121,17 +125,33 @@ def main() -> None:
     parser.add_argument("--workflows", type=Path, required=True)
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--allow-legacy-origin", action="store_true")
+    parser.add_argument("--history-key", choices=("class", "shape"), default="class")
+    parser.add_argument(
+        "--successful-cold-only", action="store_true",
+        help="Exclude failed, intervened, and exact-repeat child execute calls.",
+    )
     args = parser.parse_args()
-    calls = [
-        row for path in sorted(args.workflows.glob(
-            "*/runtime_events.deepagents.jsonl"
-        ))
-        for row in _read_workflow(
-            path, allow_legacy_origin=args.allow_legacy_origin,
-        )
-    ]
-    result = screen(calls)
+    if args.allow_legacy_origin and args.successful_cold_only:
+        parser.error("legacy-origin inference cannot use the cold-call extractor")
+    if args.successful_cold_only:
+        from scripts.evaluate_cold_tool_structure_holdout import cold_calls
+
+        calls, censor = cold_calls(args.workflows)
+    else:
+        calls = [
+            row for path in sorted(args.workflows.glob(
+                "*/runtime_events.deepagents.jsonl"
+            ))
+            for row in _read_workflow(
+                path, allow_legacy_origin=args.allow_legacy_origin,
+            )
+        ]
+        censor = None
+    result = screen(calls, history_key=args.history_key)
     result["legacy_origin_inferred"] = args.allow_legacy_origin
+    result["successful_cold_only"] = args.successful_cold_only
+    if censor is not None:
+        result["censor"] = censor
     args.output.write_text(json.dumps(result, sort_keys=True, indent=2) + "\n")
     print(json.dumps(result, sort_keys=True, indent=2))
 
