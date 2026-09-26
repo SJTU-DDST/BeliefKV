@@ -134,6 +134,26 @@ def collect(workflows: Path, threshold: int) -> tuple[list[dict], dict]:
             else:
                 label = "censored"
                 lead_ms = None
+            result = next((
+                event for event in observed
+                if event["kind"] == "llm_result"
+                and (event.get("attributes") or {}).get("request_id") == rid
+                and float(event["ts_ms"]) >= ts
+                and terminal is not None
+                and float(event["ts_ms"]) <= terminal[1]
+            ), None)
+            first_content = next((
+                event for event in observed
+                if event["kind"] == "structured_action"
+                and (event.get("attributes") or {}).get(
+                    "beliefkv_child_substantial_content_shadow"
+                )
+                and (event.get("attributes") or {}).get(
+                    "content_threshold_chars"
+                ) == 64
+                and (event.get("attributes") or {}).get("request_id") == rid
+                and notice < float(event["ts_ms"]) < ts
+            ), None)
             rows.append({
                 "project": path.parent.name.split("__", 1)[0],
                 "task_id": path.parent.name,
@@ -142,6 +162,17 @@ def collect(workflows: Path, threshold: int) -> tuple[list[dict], dict]:
                 "lead_ms": lead_ms,
                 "signal_ts_ms": ts,
                 "return_ts_ms": terminal[1] if label == "true" else None,
+                "observed_first_content_ts_ms": (
+                    float(first_content["ts_ms"]) if first_content else None
+                ),
+                "final_output_chars_oracle": (
+                    (result.get("attributes") or {}).get("output_chars")
+                    if label == "true" and result is not None else None
+                ),
+                "result_to_return_ms_oracle": (
+                    terminal[1] - float(result["ts_ms"])
+                    if label == "true" and result is not None else None
+                ),
             })
     return rows, dict(counts)
 

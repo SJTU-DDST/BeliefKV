@@ -2,11 +2,11 @@ import json
 
 import pytest
 
-from scripts.evaluate_child_intent_stream_milestones import evaluate
+from scripts.evaluate_child_intent_stream_milestones import collect, evaluate
 
 
 def _workflow(root, task, *, lead_ms, false_first=False, stale=False,
-              offset_ms=0):
+              offset_ms=0, first64=False, final_chars=20):
     path = root / task
     path.mkdir(parents=True)
     child = f"deepagents-invocation:{task}"
@@ -39,9 +39,18 @@ def _workflow(root, task, *, lead_ms, false_first=False, stale=False,
         {"kind": "llm_result", "ts_ms": 1250,
          "attributes": {
              "request_id": "first", "finish_reason": "stop",
-             "output_chars": 20, "tool_call_count": 0,
+             "output_chars": final_chars, "tool_call_count": 0,
          }, **successor},
     ]
+    if first64:
+        events.append({
+            "kind": "structured_action", "ts_ms": 1060,
+            "attributes": {
+                "request_id": "first",
+                "beliefkv_child_substantial_content_shadow": True,
+                "content_threshold_chars": 64,
+            }, **successor,
+        })
     if false_first:
         events.extend([
             {"kind": "llm_submit", "ts_ms": 1300,
@@ -111,3 +120,13 @@ def test_rolling_project_prior_only_uses_completed_other_tasks(tmp_path):
               offset_ms=1000)
     result = evaluate(train, heldout)["1024"]
     assert result["causal_project_history_supported"] == 1
+
+
+def test_first_content_rate_and_future_length_are_separate_fields(tmp_path):
+    _workflow(tmp_path, "astropy__one", lead_ms=700, first64=True,
+              final_chars=1900)
+    rows, _ = collect(tmp_path, 1024)
+    assert len(rows) == 1
+    assert rows[0]["observed_first_content_ts_ms"] == 1060
+    assert rows[0]["final_output_chars_oracle"] == 1900
+    assert rows[0]["result_to_return_ms_oracle"] == 550
