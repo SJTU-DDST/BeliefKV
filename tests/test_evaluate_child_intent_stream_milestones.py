@@ -134,5 +134,7 @@ def test_first_content_rate_and_future_length_are_separate_fields(tmp_path):
     assert len(rows) == 1
     assert rows[0]["observed_first_content_ts_ms"] == 1060
     assert rows[0]["final_output_chars_oracle"] == 1900
+    assert rows[0]["invocation_id"] == "deepagents-invocation:astropy__one"
+    assert rows[0]["request_id"] == "first"
     assert rows[0]["planned_final_report_chars_at_notice"] == 1800
     assert rows[0]["result_to_return_ms_oracle"] == 550

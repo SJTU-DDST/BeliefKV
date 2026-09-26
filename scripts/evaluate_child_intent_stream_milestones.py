@@ -157,6 +157,8 @@ def collect(workflows: Path, threshold: int) -> tuple[list[dict], dict]:
             rows.append({
                 "project": path.parent.name.split("__", 1)[0],
                 "task_id": path.parent.name,
+                "invocation_id": child,
+                "request_id": rid,
                 "join_last": child in join_last,
                 "label": label,
                 "lead_ms": lead_ms,
