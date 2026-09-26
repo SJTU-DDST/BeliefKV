@@ -3468,3 +3468,32 @@ RETURN 与 sibling 语义状态的时序、JOIN 候选召回和
 误触发；再用与开发项目隔离的任务和足够的完整 JOIN
 比较下界、控制时延和传输是否可用。现阶段预测式
 物理 H2D/D2H 仍关闭。
+
+### pytest-dev 新任务的状态事件验证（2026-09-26）
+
+在冻结提交 `49a2a93` 后，以尚未参加本次
+JOIN 规则选择的 pytest-dev 四个任务
+`10051/5262/5787/5840` 跑一臂完成通知 shadow；
+Qwen3.5 BF16、SGLang 0.5.20、NUMA 1 Host 120 GB、
+running 48 不变，物理预测动作关闭。原始数据及
+`sole_pending_join_project_cv.json` 在
+`experiments/raw/qwen35_join_semantic_status_pytest_20260926_v1/`。
+13 个 declared child `RETURN` 都携带
+`child_report_status`：8 个 `complete`、5 个
+`blocked`；这证实字段确实进入在线事件流，不只是
+测试 mock。4 个 workflow 中 2 completed、2 incomplete，
+只有 1 个系统测量有效，不能比较吞吐或任务 JCT。
+
+首次通知时只剩该 child 的候选为 **2** 个，增加
+可见 sibling 完成状态筛选后仍为 2；两者均严格自然
+满足 JOIN，通知到最后 child RETURN 的中位约
+**3990 ms**。冻结在其他项目自然样本上的探索性
+最小提前量减 200 ms 为约 **2751 ms**，这两条
+未越界；但只有 2 个 JOIN，不足以支持可靠概率
+或稳定时间下界，而且不会检验未入选的自然 JOIN。
+从所有已完成轨迹审计，8 次自然 child RETURN、
+2 次完整 JOIN 最后 child；本轮没有可评分冷长
+child `execute`，工具预测仍需独立采集/验证。
+旧 Pylint 的 2/3 反例和 PSF 的下界越界仍有效，
+不能用这批 2/2 消除。服务已退出，只清理本轮
+17 个可重建的 `workspace/`；事件、报告和补丁保留。
