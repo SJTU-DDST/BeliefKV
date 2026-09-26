@@ -42,9 +42,27 @@ def collect(workflows: Path, threshold: int) -> tuple[list[dict], dict]:
         terminals, join_last = index_workflow(
             events, blocked_invocations=blocked,
         )
+        observed_terminals, observed_join_last = (
+            index_workflow(events) if blocked else (terminals, join_last)
+        )
+        counts["observed_child_returns_total"] += len(observed_terminals)
+        counts["observed_join_last_total"] += len(
+            observed_join_last & {
+                child for child, _ in observed_terminals.values()
+            }
+        )
         terminal_by_child = {
             child: (rid, float(ts)) for rid, (child, ts) in terminals.items()
         }
+        counts["natural_child_returns_total"] += len(terminal_by_child)
+        counts["natural_join_last_total"] += len(
+            join_last & terminal_by_child.keys()
+        )
+        counts["excluded_join_last_due_to_blocked_child_total"] += (
+            len(observed_join_last & {
+                child for child, _ in observed_terminals.values()
+            }) - len(join_last & terminal_by_child.keys())
+        )
         by_child = defaultdict(list)
         for event in events:
             if event.get("invocation_id") in notices:

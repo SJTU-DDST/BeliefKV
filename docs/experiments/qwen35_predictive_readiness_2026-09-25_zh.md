@@ -4289,17 +4289,21 @@ graph guard、7200 秒 workflow 上限和 Host/running
 可解析元数据或无实际提前量，先修复采集链或记录
 阴性结果，不启动大批次。物理动作资格不变。
 
-### EOS 单任务端到端检查（2026-09-27）
+### EOS 单任务端到端检查（2026-09-26 UTC）
 
 `pydata__xarray-3151` 在源码提交 `f262c48`、
-`activation_wall_clock_seconds=7200` 下自然结束；
-3 个 child 返回且 JOIN 满足，2 个 child 在返回前
+`activation_wall_clock_seconds=7200` 下结束；
+3 个 child 返回且 JOIN 满足，但最后一个 child
+在反复调用工具后于 graph 2017 步受到强制
+收尾干预，因此不属于自然 RETURN/JOIN 标签。
+另外 2 个 child 自然返回，且在返回前
 发出有效完成通知并达到 64 字符阶段。
 1% EOS top20 首次触发覆盖这 2 个 child，
 实际投递至 RETURN 的提前量分别为约 543/586 ms；
 5% 和 10% 各覆盖 1 个，提前量约 586 ms；
-25% 和 50% 均为 0。**最后满足 JOIN 的 child
-未发完成通知，所有阈值对这次 JOIN 的覆盖均为 0**。
+25% 和 50% 均为 0。**被干预的 JOIN-last child
+未发完成通知；本轮无合格的自然 JOIN-last
+标签，不能据此计算自然 JOIN 触发召回率**。
 没有 2 s 以上的触发提前量，因而这个 pilot 只能
 证明端到端信号可采、部分 child 有微弱提前量，
 不能证明大块 H2D 有可隐藏的服务窗口，也不能
@@ -4309,10 +4313,13 @@ graph guard、7200 秒 workflow 上限和 Host/running
 
 审计脚本现分别记录错误/删失触发、RETURN 后迟到
 触发、有效触发的提前量分布与 JOIN-last 覆盖，
-迟到信号不再计为自然预测。该任务的 root 曾触发
-graph-budget 收尾，任务正确性门禁未通过；
-child 自然返回和完整 JOIN 的事件仍可用于上述
-只读时钟诊断，不能将其等同于合格任务结果。
+并同时记录所有实际返回/JOIN-last 与排除干预后的
+自然 RETURN/JOIN-last 总数；不能只报告可观测
+信号子集的准确率。迟到信号不计为有效提前量。
+该任务的 child 曾触发 graph-budget 收尾，
+任务正确性门禁未通过；另外两个 child 的自然
+RETURN 事件仍可用于上述只读时钟诊断，
+不能将整个 JOIN 当作合格自然训练标签。
 下一步先在预先冻结的八个训练任务上检验覆盖与
 提前量；若仍集中在最后约半秒且 JOIN-last
 覆盖不足，记录阴性证据并寻找更早的可交付

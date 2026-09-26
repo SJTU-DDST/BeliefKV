@@ -101,6 +101,47 @@ def test_fixed_stream_stage_prior_requires_disjoint_projects(tmp_path):
         evaluate(train, train)
 
 
+def test_stage_collector_counts_join_last_without_notice(tmp_path):
+    task = "alpha__one"
+    _workflow(tmp_path, task, lead_ms=200, first64=True)
+    path = tmp_path / task / "runtime_events.deepagents.jsonl"
+    events = [json.loads(line) for line in path.read_text().splitlines()]
+    silent = "deepagents-invocation:unannounced"
+    next_return = 1400
+    for event in events:
+        if event["kind"] == "join_create":
+            event["member_invocation_ids"].append(silent)
+        elif event["kind"] == "join_satisfied":
+            event["ts_ms"] = next_return
+    events.extend([
+        {"kind": "spawn", "target_invocation_id": silent, "ts_ms": 0},
+        {"kind": "llm_result", "invocation_id": silent, "ts_ms": 1390,
+         "attributes": {
+             "request_id": "silent", "finish_reason": "stop",
+             "output_chars": 12, "tool_call_count": 0,
+         }},
+        {"kind": "return", "invocation_id": silent, "ts_ms": next_return},
+    ])
+    path.write_text("".join(json.dumps(event) + "\n" for event in events))
+    rows, counts = collect(tmp_path, 64)
+    assert len(rows) == 1
+    assert not rows[0]["join_last"]
+    assert counts["natural_child_returns_total"] == 2
+    assert counts["natural_join_last_total"] == 1
+    assert counts["observed_join_last_total"] == 1
+    assert counts["excluded_join_last_due_to_blocked_child_total"] == 0
+    (tmp_path / task / "child_reports.json").write_text(json.dumps([{
+        "invocation_id": silent,
+        "semantic_completion": {"status": "blocked"},
+    }]))
+    rows, counts = collect(tmp_path, 64)
+    assert len(rows) == 1
+    assert counts["natural_child_returns_total"] == 1
+    assert counts["natural_join_last_total"] == 0
+    assert counts["observed_join_last_total"] == 1
+    assert counts["excluded_join_last_due_to_blocked_child_total"] == 1
+
+
 def test_skipped_epoch_does_not_get_a_stage_label(tmp_path):
     train = tmp_path / "train"
     heldout = tmp_path / "heldout"

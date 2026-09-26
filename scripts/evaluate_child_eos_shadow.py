@@ -187,6 +187,10 @@ def audit(workflows: Path) -> dict:
         "collector": counts,
         "eligible_first_64_stage": len(rows),
         "labels": dict(Counter(row["label"] for row in rows)),
+        "observed_child_returns_total": counts["observed_child_returns_total"],
+        "observed_join_last_total": counts["observed_join_last_total"],
+        "natural_child_returns_total": counts["natural_child_returns_total"],
+        "natural_join_last_total": counts["natural_join_last_total"],
         "natural_join_last": sum(
             row["join_last"] and row["label"] == "true" for row in rows
         ),

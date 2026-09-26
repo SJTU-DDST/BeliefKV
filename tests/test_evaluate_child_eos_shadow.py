@@ -53,7 +53,10 @@ def test_eos_first_delivery_project_split_and_missing(monkeypatch, tmp_path):
     monkeypatch.setattr(
         "scripts.evaluate_child_eos_shadow.collect",
         lambda root, threshold: (
-            [train_row] if root == train else heldout_rows, {"workflows": 3}
+            [train_row] if root == train else heldout_rows,
+            {"workflows": 3, "observed_child_returns_total": 3,
+             "observed_join_last_total": 2, "natural_child_returns_total": 3,
+             "natural_join_last_total": 2},
         ),
     )
     rows, _ = load(heldout)
@@ -67,6 +70,8 @@ def test_eos_first_delivery_project_split_and_missing(monkeypatch, tmp_path):
     assert report["natural_trigger_lead_at_least_500ms"] == 1
     coverage = audit(heldout)
     assert coverage["eos_scored_tokens_available"] == 3
+    assert coverage["natural_join_last_total"] == 2
+    assert coverage["observed_join_last_total"] == 2
     assert coverage["thresholds"]["0.1"]["false_first_trigger"] == 1
     assert coverage["thresholds"]["0.1"]["natural_lead_ms"] == {
         "min": 800., "median": 800., "max": 800.,
@@ -86,7 +91,12 @@ def test_eos_audit_does_not_count_late_delivery_as_advance(monkeypatch, tmp_path
     ]
     monkeypatch.setattr(
         "scripts.evaluate_child_eos_shadow.collect",
-        lambda _root, _threshold: (rows, {"workflows": 3}),
+        lambda _root, _threshold: (
+            rows, {"workflows": 3, "observed_child_returns_total": 3,
+                   "observed_join_last_total": 3,
+                   "natural_child_returns_total": 3,
+                   "natural_join_last_total": 3},
+        ),
     )
     coverage = audit(root)["thresholds"]["0.1"]
     assert coverage["first_trigger"] == 3
