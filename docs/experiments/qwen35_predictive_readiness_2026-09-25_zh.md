@@ -3995,3 +3995,45 @@ oracle 的 500 ms RETURN 点误差命中分别为
 结果可见之前固定，评价脚本为
 `scripts/audit_oracle_stream_length_bound.py`，
 训练侧报告为 `length_train_bias_diagnostic.json`。
+
+### 固定训练项目到留出项目的长度承诺复验（2026-09-26）
+
+冻结 Astropy/Sphinx 各四个任务、顺序跑 `intent` 和
+`length` 臂；均为 8/8 个结果，但分别只有 1/1 个系统
+测量有效 workflow，`intent` 臂四个、`length` 臂两个
+workflow 不完整。两臂 prompt/schema 不同，没有可比的
+吞吐 A/B。`intent` 臂 16 个自然 child RETURN 均有有效
+通知，`length` 臂 21 个自然 RETURN 中仅 18 个有有效
+通知、另有 1 个通知后再用工具而撤销；因此不能把有
+1024 字符阶段的条件样本外推为所有通知的在线精度。
+本批原始证据、两臂审计及评价报告位于
+`experiments/raw/qwen35_report_length_project_holdout8_20260926_v1/`，
+其运行时 `source_commit.txt` 仍为 `854f5b8`。
+
+只使用 Django/Xarray/Pylint 的 10 个训练侧合格里程碑
+拟合长度与阶段先验、task-balanced 偏差；Astropy/Sphinx
+项目的标签仅用于评分。留出臂首个有效 1024 字符阶段
+共 **15/15** 自然 RETURN 且有合法长度提示，
+Astropy 11 个、Sphinx 4 个，最后 child 仅 Astropy
+**2 个**；另外没有满足本阶段身份及生成速率条件的
+child 不进入时间误差分母。15 个样本均有至少 500 ms
+真实提前量。提示相比真实报告的绝对字符误差均值
+分别为 Astropy **999**、Sphinx **523** 字符。
+
+同一可评分子集的 RETURN 500 ms 点误差命中为：
+原始长度提示 **2/15**、训练侧偏差校正 **3/15**、
+仅按其它项目固定阶段时长 **5/15**、事后知道
+报告最终长度的 oracle **13/15**；校正方法的
+中位绝对误差约 **1424 ms**，JOIN 最后 child
+**0/2**，oracle 对 JOIN **1/2**。
+Astropy/Sphinx 的校正命中各为 3/11 和 0/4，
+与仅用固定时长的 4/11 和 1/4 比也未提升。
+留出项目在旧试验中参与过开发/校准，并非密封
+新测试；然而在已冻结的这次项目隔离复验中，
+“child 在通知时估计自己的最终报告长度”没有
+达到显著、可泛化的时机准确率提升。此信号不
+进入在线头，`online_eligible=false`、
+`predictive_action_eligible=false` 保持不变；
+需寻找在 1024 字符阶段仍保留提前量、且能真正
+约束剩余文本长度的在线证据，而非再次依赖
+事后 oracle 或同一项目的小样本偏差校正。
