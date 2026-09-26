@@ -62,6 +62,16 @@ def match(workflow: Path, *, max_callback_gap_ms: float = 200) -> tuple[list[dic
         pairs.append({
             **row,
             "sandbox_duration_ms": float(audit["duration_ms"]),
+            "sandbox_lock_wait_ms": (
+                float(audit["lock_wait_ms"])
+                if isinstance(audit.get("lock_wait_ms"), (int, float))
+                else None
+            ),
+            "sandbox_execute_elapsed_ms": (
+                float(audit["execute_elapsed_ms"])
+                if isinstance(audit.get("execute_elapsed_ms"), (int, float))
+                else None
+            ),
             "callback_gap_ms": gap,
             "outside_sandbox_ms": row["duration_ms"] - float(audit["duration_ms"]),
         })
@@ -69,6 +79,11 @@ def match(workflow: Path, *, max_callback_gap_ms: float = 200) -> tuple[list[dic
 
 
 def _stats(rows: list[dict]) -> dict:
+    segmented = [
+        row for row in rows
+        if row["sandbox_lock_wait_ms"] is not None
+        and row["sandbox_execute_elapsed_ms"] is not None
+    ]
     return {
         "count": len(rows),
         "tool_p50_ms": _quantile([r["duration_ms"] for r in rows], .5),
@@ -77,6 +92,20 @@ def _stats(rows: list[dict]) -> dict:
         "outside_sandbox_p50_ms": _quantile([r["outside_sandbox_ms"] for r in rows], .5),
         "outside_sandbox_p90_ms": _quantile([r["outside_sandbox_ms"] for r in rows], .9),
         "callback_gap_p95_ms": _quantile([r["callback_gap_ms"] for r in rows], .95),
+        "segmented_sandbox_count": len(segmented),
+        "lock_wait_p50_ms": _quantile([
+            r["sandbox_lock_wait_ms"] for r in segmented
+        ], .5),
+        "lock_wait_p90_ms": _quantile([
+            r["sandbox_lock_wait_ms"] for r in segmented
+        ], .9),
+        "execute_elapsed_p50_ms": _quantile([
+            r["sandbox_execute_elapsed_ms"] for r in segmented
+        ], .5),
+        "lock_wait_dominant_count": sum(
+            r["sandbox_lock_wait_ms"] > r["sandbox_execute_elapsed_ms"]
+            for r in segmented
+        ),
         "workflow_count": len({r["workflow"] for r in rows}),
         "by_project": {
             project: {
@@ -112,9 +141,10 @@ def audit(workflows: Path) -> dict:
         "counts": dict(counts),
         "metrics": {name: _stats(group) for name, group in sorted(buckets.items())},
         "note": (
-            "Sandbox duration includes internal lock wait. The current raw trace "
-            "has no separate lock_wait_ms or execute_elapsed_ms; ambiguous matches "
-            "were excluded, not assigned by nearest timestamp."
+            "Sandbox duration includes internal lock wait. Segmented lock/execute "
+            "fields are used only where recorded. Matches use a unique terminal "
+            "timestamp candidate, not command identity; ambiguous matches are "
+            "excluded. Segment fields are post-hoc labels, not TOOL_START features."
         ),
     }
 
