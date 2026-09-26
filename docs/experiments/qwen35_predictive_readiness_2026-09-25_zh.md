@@ -2114,3 +2114,79 @@ chunk→`llm_result` P50 约 4.56 ms，
 不能据此声称有 500 ms 的冷长工具预取窗口。
 `tool_sandbox_development.json` 保留这些观测，
 但不拟合新的冷长工具 ETA。
+
+## 32. 冻结 SymPy 后续 16-task development 批（2026-09-26）
+
+从 `swebench_verified_split_v1.json` 的 SymPy development 项目按
+instance ID 顺序，剔除前两组各 8 个任务后取前 16 个；未按结果
+筛选。manifest 位于
+`experiments/raw/qwen35_child_final_sympy_follow16_20260926/`
+`workload_manifest.json`，SHA-256
+`9f4990767761940ab34a34e04e98a2e6550c329bf7d92bc366cdd569b86c909c`。
+新增 blob 完整性预检通过后，沿用前批的隔离 SGLang 服务、
+Qwen3.5-35B-A3B、8192 completion token、无 Host 池和物理动作，
+以 16-root 并发自然完成；SGLang 服务的只读隐状态 NPZ 与前批
+保存在同一 `qwen35_child_final_sympy_fresh8_20260926/traces`，
+按 request ID 配对，不将其他批次样本算入当前标签。
+
+16 个 root 中 15 个 completed、1 个 incomplete，历时约
+505.5 秒，产生 2212 个模型请求、2133 次工具调用。
+`sympy__sympy-13031` 的 4 个 child 均被取消，root 虽结束但
+无自然 child RETURN，不能当作终态负例或完整 JOIN；
+其 workspace 保留供诊断。其余 15 个完成任务的 66 个
+可重建 workspace 已清理，trace、NPZ、结果、补丁、
+sandbox 审计与未完成任务的 5 个 workspace 保留。
+该批中观察到 43 个自然 child RETURN、9 个完整 JOIN 的
+最后 child；40 个 RETURN 满足严格终态标签且有隐状态，
+其中 6 个是完整 JOIN 的最后 child。
+
+冻结的 512-token Ridge 终态头、0.5 门槛和非空正文/先前
+未见工具片段门禁不变。新批 40 个严格终态中命中 13 个，
+在**已完成 child 的可判定非终态轮次**中观察到 0 次
+门禁误报；6 个严格 JOIN 最后 child 命中 5 个，命中
+RETURN 的中位提前约 1.84 秒。未返回的 child 最后轮次
+仍按删失排除，故不能将观察到的零误报外推为安全保证。
+
+此前的 `return_eta` 报告只在真实终态且已知实际剩余时间
+为 0.5--5 秒的样本上计算点误差，不能证明线上可用时机。
+现增加 `first_eta_trigger_report`：在已被 512-token 门禁接受
+的**所有可判定轮次**上，按当时 hidden 样本、
+第一条可观测正文及工具片段时间顺序，寻找首次
+`ETA <= 1500 ms` 的触发；同轮之后的工具调用作为可判定
+误报计入分母，且早于触发的工具片段直接阻止触发。
+前 8-task 批原先 4 个终态门禁命中，在此定义下只有
+3 次真正触发，其中 2 次在 RETURN 前 0.5--3 秒，
+**0 次**是此窗口内的完整 JOIN 最后 child。新 16-task
+批有 6 次首次触发，3 次在目标窗口、2 次早于
+3 秒、1 次不足 500 ms；其中 3 次是完整 JOIN 最后
+child 且均在目标窗口。条件终态点 ETA 的
+样本内中位误差仍约 **1.27 秒**，绝不以 3 次
+JOIN 触发声称已达到数百毫秒的普遍时钟精度。
+256-token 规则在新批 17/18 为终态，但其开发阶段
+已有误报及不稳定的时机，继续仅作探索，不晋升门禁。
+
+最终 chunk 只读信号在 43 次自然 RETURN 中对应
+40 次严格终态，未观察到可判定误报，但中位提前
+仅约 **216 ms**，只有 5/40 提前至少 500 ms。
+冻结的训练项目固定 804 ms 时延先验在新项目上
+点误差 P50/P90 约 **588/655 ms**，而零时延先验
+中位误差约 216 ms；不能用此固定先验启动大块 H2D。
+同一批结果见 `final_chunk_forecast_development.json` 与
+`hidden_eta_development.json`。
+
+工具侧用训练项目完成的同输入调用作因果先验，
+在新 SymPy 项目 114 次可评价重复调用上的绝对误差
+P50/P90 约 **13/87 ms**。然而新批只有 3 次已完成
+的至少 2 秒 child `execute`，已完成的历史规则
+选中 **0/3**；114 次重复调用中的唯一 ≥2 秒事件
+绝对误差约 2.48 秒。这些样本不支持冷长工具
+RETURN 精确预测。结果见 `tool_timing_project_isolated.json`。
+
+上述 SymPy 项目此前已经用于开发探索，本次只是与前两批
+task ID 不重叠、与拟合项目隔离的 development 证据；
+16-root 与先前 8-root 压力不同。下一步不能再以该项目
+调整阈值并反称独立测试通过；应先在训练项目内处理
+高压控制链与冷长工具的可观测前置进度，固定候选门禁
+及按 workflow/项目分组的首触发验收条件，再在未参与
+规则选择的项目上自然完成验证。`online_eligible=false`、
+`predictive_action_eligible=false` 及物理动作关闭状态不变。

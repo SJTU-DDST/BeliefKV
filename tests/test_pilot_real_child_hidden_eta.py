@@ -6,6 +6,7 @@ import pytest
 from scripts.pilot_real_child_hidden_eta import (
     classification_report,
     content_gated_report,
+    first_eta_trigger_report,
     load_records,
     load_batch_records,
 )
@@ -90,3 +91,36 @@ def test_frozen_content_gate_never_uses_later_tool_cue_to_accept():
     assert report["eligible_join_last_terminal_rounds"] == 1
     assert report["join_last_true_positive"] == 1
     assert report["join_last_at_least_500ms_early"] == 1
+
+
+def test_first_eta_trigger_counts_nonterminal_and_gates_late_tool(monkeypatch):
+    monkeypatch.setattr(
+        "scripts.pilot_real_child_hidden_eta.predict",
+        lambda model, samples: np.asarray([900.0] * len(samples)),
+    )
+    def record(rid, terminal, return_ms=None, join_last=False):
+        return {
+            "rid": rid, "terminal": terminal, "return_ms": return_ms,
+            "join_last": join_last, "first_arrival_ms": 1000.,
+            "samples": [(16, 300., 0. if terminal else None, None)],
+        }
+    records = [
+        record("join", True, 2300., True),
+        record("nonterminal", False),
+        record("tool-before", False),
+        record("tool-after", False),
+    ]
+    report = first_eta_trigger_report(
+        (), records, np.ones(len(records), dtype=bool),
+        {
+            "join": {"content": 1400.},
+            "nonterminal": {"content": 1200.},
+            "tool-before": {"content": 1400., "tool": 1350.},
+            "tool-after": {"content": 1400., "tool": 1450.},
+        },
+        hidden=False,
+    )
+    assert report["first_triggered_rounds"] == 3
+    assert report["nonterminal_false_triggers"] == 2
+    assert report["join_last_trigger_500_to_3000ms"] == 1
+    assert report["first_trigger_actionable_precision"] == 0.3333

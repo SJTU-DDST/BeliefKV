@@ -270,6 +270,61 @@ def eta_report(model: tuple, records: list[dict], chosen: np.ndarray,
     }
 
 
+def first_eta_trigger_report(
+    model: tuple, records: list[dict], chosen: np.ndarray,
+    cues: dict[str, dict[str, float]], hidden: bool,
+    threshold_ms: float = 1500,
+) -> dict:
+    leads = []
+    join_leads = []
+    false_triggers = 0
+    for record, accepted in zip(records, chosen):
+        if not accepted:
+            continue
+        cue = cues.get(record["rid"], {})
+        content_ts = cue.get("content")
+        if content_ts is None:
+            continue
+        predictions = predict(model, features(record["samples"], hidden))
+        for sample, prediction in zip(record["samples"], predictions):
+            if prediction > threshold_ms:
+                continue
+            trigger_ts = max(
+                record["first_arrival_ms"] + sample[1], content_ts,
+            )
+            if cue.get("tool", float("inf")) <= trigger_ts:
+                continue
+            if record["terminal"]:
+                lead = record["return_ms"] - trigger_ts
+                leads.append(lead)
+                if record.get("join_last"):
+                    join_leads.append(lead)
+            else:
+                false_triggers += 1
+            break
+    total = len(leads) + false_triggers
+    actionable = sum(500 <= lead <= 3000 for lead in leads)
+    return {
+        "threshold_ms": threshold_ms,
+        "first_triggered_rounds": total,
+        "nonterminal_false_triggers": false_triggers,
+        "terminal_true_triggers": len(leads),
+        "join_last_true_triggers": len(join_leads),
+        "first_trigger_500_to_3000ms": actionable,
+        "first_trigger_over_3000ms": sum(lead > 3000 for lead in leads),
+        "first_trigger_under_500ms": sum(lead < 500 for lead in leads),
+        "join_last_trigger_500_to_3000ms": sum(
+            500 <= lead <= 3000 for lead in join_leads
+        ),
+        "first_trigger_actionable_precision": (
+            round(actionable / total, 4) if total else None
+        ),
+        "first_trigger_lead_p50_ms": (
+            round(statistics.median(leads), 2) if leads else None
+        ),
+    }
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--traces", required=True, type=Path)
@@ -280,6 +335,7 @@ def main() -> None:
     parser.add_argument(
         "--heldout-workflows", required=True, type=Path, action="append",
     )
+    parser.add_argument("--output", type=Path)
     args = parser.parse_args()
     train, train_counts = load_batch_records(
         args.train_workflows, args.traces,
@@ -356,8 +412,17 @@ def main() -> None:
                 stage_result[gate_name] = content_gated_report(
                     selected_heldout, chosen, cues, terminal_count,
                 )
+                stage_result[gate_name]["first_eta_trigger"] = (
+                    first_eta_trigger_report(
+                        eta_model, selected_heldout, chosen, cues, hidden,
+                    )
+                )
         result["stages"][stage] = stage_result
-    print(json.dumps(result, indent=2))
+    rendered = json.dumps(result, indent=2) + "\n"
+    if args.output:
+        args.output.parent.mkdir(parents=True, exist_ok=True)
+        args.output.write_text(rendered, encoding="utf-8")
+    print(rendered, end="")
 
 
 if __name__ == "__main__":
