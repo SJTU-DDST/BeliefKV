@@ -3329,3 +3329,29 @@ patch、sandbox audit 及服务遥测和评价报告
 跨项目进度语义的信号，不能仅靠固定
 正文长度。工具长调用的执行期前置信号
 仍是独立未解问题。
+
+## 55. 零参数完成通知工具的首片段提前量上界（2026-09-26）
+
+`audit_child_intent_tool_chunk.py` 对 Sphinx、Astropy、
+PSF 三个已完成的通知 shadow trace 只读配对：
+同一 child/context epoch、同一 RID、单次工具调用的
+`llm_submit → 首个 tool-call chunk → llm_result →
+announce_completion_intent tool_start`。Sphinx **6/6**、
+Astropy **21/21**、PSF **25/25** 均可一一配对，
+没有多工具轮次或身份不匹配样本。首工具片段到通知
+工具开始的 P50/P90 分别约 **69/155 ms、63/155 ms、
+79/174 ms**；各组最大约 **233/214/390 ms**，
+三组合计 **0/52 达到 500 ms**。分组报告在
+三个原始实验目录的 `first_tool_chunk_intent_bound.json`。
+
+这是乐观**后验上界**：现有片段标志只说明
+“本轮出现了工具调用”，没有在线可识别的工具名称；
+只有事后看 `llm_result` 和下游 `tool_start` 才能确认
+该片段属于完成通知。即使忽略识别、控制投递和 PCIe
+开销，它也没有给大块迁移留出足够时间。不将 generic
+tool chunk 接入 JOIN 控制通道，也不把后验匹配宣称为
+可用的预测准确率。下一项具有实际提前量的方案必须
+让完成阶段在模型生成充分长度的剩余内容**之前**
+明确、可靠地暴露，并保留无效、撤销与不同项目任务
+的首次触发评价；工具 RETURN 则还须独立寻找
+进度或执行时限的可观测前置信号。
