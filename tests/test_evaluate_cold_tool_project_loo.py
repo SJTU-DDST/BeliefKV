@@ -47,6 +47,29 @@ def test_project_leave_one_out_reports_unsupported_folds(monkeypatch):
     assert result["evidence_gates"]["two_supported_heldout_projects"] is True
 
 
+def test_peer_ablation_uses_each_project_only_for_heldout_scoring(monkeypatch):
+    rows = [
+        {"project": project, "workflow": project, "duration_ms": 2_500}
+        for project in ("a", "b", "c")
+    ]
+    monkeypatch.setattr(loo, "evaluate", lambda train, test: {
+        "evidence_gates": {"all_met": False}
+    })
+    seen = []
+
+    def fake_ablation(train, heldout):
+        training = {row["project"] for row in train}
+        heldout_projects = {row["project"] for row in heldout}
+        assert not training & heldout_projects
+        seen.append(heldout_projects)
+        return {"heldout_projects": sorted(heldout_projects)}
+
+    monkeypatch.setattr(loo, "shape_transfer_peer_ablation", fake_ablation)
+    result = loo.project_leave_one_out(rows, peer_ablation=True)
+    assert seen == [{"a"}, {"b"}, {"c"}]
+    assert result["folds"]["b"]["peer_ablation"]["heldout_projects"] == ["b"]
+
+
 def test_incomplete_batch_is_rejected_before_scoring(tmp_path):
     run = tmp_path / "run"
     workflows = run / "workflows"

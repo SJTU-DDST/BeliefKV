@@ -44,21 +44,25 @@ def _matrix(rows: list[dict], vocabulary: dict[str, int]) -> np.ndarray:
 SHAPE_THRESHOLDS = (0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9)
 
 
-def _shape_matrix(rows: list[dict], vocabulary: dict[str, int]) -> np.ndarray:
-    matrix = np.zeros((len(rows), 4), dtype=np.float32)
+def _shape_matrix(
+    rows: list[dict], vocabulary: dict[str, int], *,
+    include_live_peers: bool = True,
+) -> np.ndarray:
+    matrix = np.zeros((len(rows), 4 if include_live_peers else 3), dtype=np.float32)
     for index, row in enumerate(rows):
         matrix[index, 0] = vocabulary.get(row["shape"], -1)
         matrix[index, 1] = math.log1p(max(0, row["input_chars"]))
         matrix[index, 2] = math.log1p(max(
             0, float(row.get("project_class_completed_support") or 0),
         ))
-        matrix[index, 3] = math.log1p(max(
-            0, float(row.get("other_workflow_2s_peers") or 0),
-        ))
+        if include_live_peers:
+            matrix[index, 3] = math.log1p(max(
+                0, float(row.get("other_workflow_2s_peers") or 0),
+            ))
     return matrix
 
 
-def _fit_shape_head(rows: list[dict]) -> tuple:
+def _fit_shape_head(rows: list[dict], *, include_live_peers: bool = True) -> tuple:
     labels = np.asarray(
         [row["duration_ms"] >= 2_000 for row in rows], dtype=np.int32,
     )
@@ -76,7 +80,8 @@ def _fit_shape_head(rows: list[dict]) -> tuple:
             "seed": 42, "num_threads": 4, "verbosity": -1,
         },
         lgb.Dataset(
-            _shape_matrix(rows, vocabulary), label=labels,
+            _shape_matrix(rows, vocabulary, include_live_peers=include_live_peers),
+            label=labels,
             categorical_feature=[0],
         ),
         num_boost_round=100,
@@ -84,9 +89,14 @@ def _fit_shape_head(rows: list[dict]) -> tuple:
     return model, vocabulary
 
 
-def _shape_scores(model: tuple, rows: list[dict]) -> np.ndarray:
+def _shape_scores(
+    model: tuple, rows: list[dict], *, include_live_peers: bool = True,
+) -> np.ndarray:
     head, vocabulary = model
-    return head.predict(_shape_matrix(rows, vocabulary), num_threads=4)
+    return head.predict(
+        _shape_matrix(rows, vocabulary, include_live_peers=include_live_peers),
+        num_threads=4,
+    )
 
 
 def _shape_threshold_report(scored: list[tuple], threshold: float) -> dict:
@@ -105,7 +115,10 @@ def _shape_threshold_report(scored: list[tuple], threshold: float) -> dict:
     }
 
 
-def shape_transfer_pilot(train: list[dict], heldout: list[dict]) -> dict:
+def shape_transfer_pilot(
+    train: list[dict], heldout: list[dict], *,
+    include_live_peers: bool = True,
+) -> dict:
     train_projects = {row["project"] for row in train}
     heldout_projects = {row["project"] for row in heldout}
     if (
@@ -118,7 +131,10 @@ def shape_transfer_pilot(train: list[dict], heldout: list[dict]) -> dict:
         fit = [row for row in train if row["project"] != project]
         validation = [row for row in train if row["project"] == project]
         fold_scores.extend(zip(
-            validation, _shape_scores(_fit_shape_head(fit), validation),
+            validation, _shape_scores(
+                _fit_shape_head(fit, include_live_peers=include_live_peers),
+                validation, include_live_peers=include_live_peers,
+            ),
         ))
     train_cv = {
         str(threshold): _shape_threshold_report(fold_scores, threshold)
@@ -138,8 +154,7 @@ def shape_transfer_pilot(train: list[dict], heldout: list[dict]) -> dict:
         "features": [
             "observed_command_shape", "log_input_chars",
             "log_completed_project_class_support",
-            "log_inflight_other_workflow_2s_peers",
-        ],
+        ] + (["log_inflight_other_workflow_2s_peers"] if include_live_peers else []),
         "train_projects": sorted(train_projects),
         "heldout_projects": sorted(heldout_projects),
         "train_calls": len(train),
@@ -157,7 +172,10 @@ def shape_transfer_pilot(train: list[dict], heldout: list[dict]) -> dict:
         ),
     }
     if selected is not None:
-        scores = _shape_scores(_fit_shape_head(train), heldout)
+        scores = _shape_scores(
+            _fit_shape_head(train, include_live_peers=include_live_peers),
+            heldout, include_live_peers=include_live_peers,
+        )
         result["heldout_long_calls"] = sum(
             row["duration_ms"] >= 2_000 for row in heldout
         )
@@ -165,6 +183,19 @@ def shape_transfer_pilot(train: list[dict], heldout: list[dict]) -> dict:
             list(zip(heldout, scores)), selected["threshold"],
         )
     return result
+
+
+def shape_transfer_peer_ablation(train: list[dict], heldout: list[dict]) -> dict:
+    return {
+        "status": "read_only_project_disjoint_live_peer_ablation_not_eta",
+        "heldout_long_calls": sum(row["duration_ms"] >= 2_000 for row in heldout),
+        "without_live_peers": shape_transfer_pilot(
+            train, heldout, include_live_peers=False,
+        ),
+        "with_live_peers": shape_transfer_pilot(
+            train, heldout, include_live_peers=True,
+        ),
+    }
 
 
 def transfer_pilot(train: list[dict], heldout: list[dict]) -> dict:

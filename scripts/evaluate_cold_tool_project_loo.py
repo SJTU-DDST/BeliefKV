@@ -13,6 +13,7 @@ ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 from scripts.evaluate_cold_tool_structure_holdout import cold_calls, evaluate
+from scripts.pilot_cold_child_tool_long import shape_transfer_peer_ablation
 
 
 def require_complete_batch(workflows: Path) -> tuple[list[str], list[str]]:
@@ -47,7 +48,9 @@ def require_complete_batch(workflows: Path) -> tuple[list[str], list[str]]:
     return ids, runner_errors
 
 
-def project_leave_one_out(rows: list[dict]) -> dict:
+def project_leave_one_out(
+    rows: list[dict], *, peer_ablation: bool = False,
+) -> dict:
     projects = sorted({row["project"] for row in rows})
     if len(projects) < 3:
         raise ValueError("project holdout requires at least three projects")
@@ -62,6 +65,10 @@ def project_leave_one_out(rows: list[dict]) -> dict:
             "heldout_long_workflows": len({row["workflow"] for row in long}),
             "report": evaluate(train, test),
         }
+        if peer_ablation:
+            folds[project]["peer_ablation"] = shape_transfer_peer_ablation(
+                train, test,
+            )
     supported = [
         project for project, fold in folds.items()
         if fold["heldout_long"] >= 5 and fold["heldout_long_workflows"] >= 5
@@ -94,10 +101,14 @@ def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--workflows", required=True, type=Path)
     parser.add_argument("--output", required=True, type=Path)
+    parser.add_argument(
+        "--peer-ablation", action="store_true",
+        help="Compare frozen project-CV long-call gates with and without live peers.",
+    )
     args = parser.parse_args()
     instance_ids, runner_errors = require_complete_batch(args.workflows)
     rows, censor = cold_calls(args.workflows)
-    result = project_leave_one_out(rows)
+    result = project_leave_one_out(rows, peer_ablation=args.peer_ablation)
     result["frozen_workflow_count"] = len(instance_ids)
     result["runner_error_workflows"] = runner_errors
     result["censor"] = censor

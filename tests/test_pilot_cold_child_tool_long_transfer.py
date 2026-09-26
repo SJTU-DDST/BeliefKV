@@ -3,7 +3,7 @@ import pytest
 
 from scripts.pilot_cold_child_tool_long import (
     _shape_matrix, _shape_threshold_report, shape_transfer_pilot,
-    transfer_pilot,
+    shape_transfer_peer_ablation, transfer_pilot,
 )
 
 
@@ -29,6 +29,16 @@ def test_shape_features_do_not_depend_on_future_duration():
     row["duration_ms"] = 100.
     assert np.array_equal(features, _shape_matrix([row], vocabulary))
     assert features.shape == (1, 4)
+    without_peers = _shape_matrix(
+        [row], vocabulary, include_live_peers=False,
+    )
+    row["other_workflow_2s_peers"] = 10
+    assert np.array_equal(
+        without_peers,
+        _shape_matrix([row], vocabulary, include_live_peers=False),
+    )
+    assert without_peers.shape == (1, 3)
+    assert not np.array_equal(features, _shape_matrix([row], vocabulary))
 
 
 def test_shape_screen_requires_project_split_and_reports_realized_precision():
@@ -70,3 +80,7 @@ def test_shape_screen_does_not_select_threshold_from_heldout_calls():
     assert report["threshold_chosen_on_train_cv"] is None
     assert report["heldout_at_frozen_threshold"] is None
     assert report["heldout_long_calls"] is None
+    ablation = shape_transfer_peer_ablation(train, heldout)
+    assert ablation["with_live_peers"]["threshold_chosen_on_train_cv"] is None
+    assert ablation["without_live_peers"]["threshold_chosen_on_train_cv"] is None
+    assert ablation["heldout_long_calls"] == 15
