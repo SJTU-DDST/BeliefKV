@@ -157,3 +157,44 @@ def test_child_eos_threshold_uses_current_request_and_deduplicates():
     assert all(event.join_id == task.join_id for event in cues)
     assert all(event.attributes["request_id"] == f"beliefkv:{run}" for event in cues)
     assert "private" not in json.dumps([event.to_dict() for event in cues])
+
+
+def test_opt_in_low_eos_threshold_delivers_earlier_without_changing_defaults():
+    trace = _Sink()
+    adapter = DeepAgentsRuntimeAdapter(
+        trace, BeliefKVRequestMetadata("wf", "root", "ctx", 0),
+        eos_shadow=True, eos_low_prob_shadow=True,
+    )
+    adapter.start()
+    task = adapter.declare_runtime_tasks([("explorer", "private")])[0]
+    tool_run = uuid4()
+    adapter.on_tool_start(
+        {"name": "task"}, "", run_id=tool_run,
+        inputs={"subagent_type": "explorer", "description": "private"},
+        tool_call_id=task.tool_call_id,
+    )
+    run = uuid4()
+    adapter.on_chat_model_start(
+        {}, [[HumanMessage(content="private prompt")]],
+        run_id=run, parent_run_id=tool_run,
+    )
+
+    def chunk(logprob):
+        return SimpleNamespace(
+            generation_info={"logprobs": {"content": [{
+                "token": "word",
+                "top_logprobs": [{
+                    "token": "<|im_end|>", "logprob": logprob,
+                }],
+            }]}},
+            message=SimpleNamespace(content="visible", tool_call_chunks=[]),
+        )
+
+    adapter.on_llm_new_token("visible", chunk=chunk(-7.), run_id=run)
+    adapter.on_llm_new_token("visible", chunk=chunk(-6.), run_id=run)
+    cues = [
+        event.attributes["eos_top_probability_threshold"]
+        for event in trace.events
+        if event.attributes.get("beliefkv_child_eos_shadow")
+    ]
+    assert cues == [0.0001, 0.001]

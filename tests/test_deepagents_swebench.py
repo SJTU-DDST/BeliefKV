@@ -2526,6 +2526,12 @@ def test_child_final_report_shadow_requires_notice(tmp_path: Path) -> None:
         **kwargs, child_eos_shadow=True, child_return_intent_shadow=True,
         stream_completion_shadow=True,
     ).child_eos_shadow is True
+    with pytest.raises(ValueError, match="low-probability EOS shadow requires"):
+        DeepAgentsExperimentConfig(**kwargs, child_eos_low_prob_shadow=True)
+    assert DeepAgentsExperimentConfig(
+        **kwargs, child_eos_shadow=True, child_eos_low_prob_shadow=True,
+        child_return_intent_shadow=True, stream_completion_shadow=True,
+    ).child_eos_low_prob_shadow is True
 
 
 def test_post_notice_eos_shadow_does_not_change_thinking(tmp_path: Path) -> None:

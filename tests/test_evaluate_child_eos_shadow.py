@@ -104,3 +104,37 @@ def test_eos_audit_does_not_count_late_delivery_as_advance(monkeypatch, tmp_path
     assert coverage["after_return_trigger"] == 2
     assert coverage["natural_with_500ms_lead"] == 1
     assert coverage["natural_join_last_trigger"] == 1
+
+
+def test_low_prob_audit_requires_trace_collection_contract(monkeypatch, tmp_path):
+    workflows = tmp_path / "run" / "workflows"
+    row = _trace(workflows, "alpha", "one")
+    path = workflows / row["task_id"] / "runtime_events.deepagents.jsonl"
+    events = [json.loads(line) for line in path.read_text().splitlines()]
+    events.append({
+        "kind": "structured_action", "ts_ms": 1100,
+        "invocation_id": "child", "context_id": "ctx", "context_epoch": 1,
+        "attributes": {
+            "request_id": "req", "beliefkv_child_eos_shadow": True,
+            "eos_top_probability_threshold": 0.001,
+        },
+    })
+    path.write_text("".join(json.dumps(event) + "\n" for event in events))
+    monkeypatch.setattr(
+        "scripts.evaluate_child_eos_shadow.collect",
+        lambda _root, _threshold: (
+            [row], {"workflows": 1, "observed_child_returns_total": 1,
+                    "observed_join_last_total": 1,
+                    "natural_child_returns_total": 1,
+                    "natural_join_last_total": 1},
+        ),
+    )
+    assert "0.001" not in audit(workflows)["thresholds"]
+    with pytest.raises(ValueError, match="was not collected"):
+        audit(workflows, (0.001, 0.01))
+    (workflows.parent / "manifest.json").write_text(json.dumps({
+        "config": {"child_eos_low_prob_shadow": True},
+    }))
+    low = audit(workflows, (0.001, 0.01))["thresholds"]["0.001"]
+    assert low["natural_first_trigger"] == 1
+    assert low["natural_lead_ms"]["median"] == 900

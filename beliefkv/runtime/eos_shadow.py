@@ -7,6 +7,7 @@ from typing import Any, Mapping
 
 EOS_TOKENS = frozenset({"<|im_end|>", "<|endoftext|>"})
 EOS_PROB_THRESHOLDS = (0.01, 0.05, 0.1, 0.25, 0.5)
+EOS_LOW_PROB_THRESHOLDS = (0.0001, 0.001)
 
 
 def eos_top_logprob(logprobs: Any) -> tuple[float | None, int]:

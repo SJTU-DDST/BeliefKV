@@ -105,6 +105,10 @@ def parse_args() -> argparse.Namespace:
         help="Audit post-notice EOS top-logprob cues; requires stream and intent.",
     )
     parser.add_argument(
+        "--child-eos-low-prob-shadow", action="store_true",
+        help="Also audit 0.01%% and 0.1%% EOS cues; requires --child-eos-shadow.",
+    )
+    parser.add_argument(
         "--child-return-intent-shadow", action="store_true",
         help="Opt-in child completion notification tool for read-only timing diagnosis.",
     )
@@ -266,6 +270,7 @@ def main() -> int:
         child_finish_chunk_shadow=args.child_finish_chunk_shadow,
         child_report_phase_shadow=args.child_report_phase_shadow,
         child_eos_shadow=args.child_eos_shadow,
+        child_eos_low_prob_shadow=args.child_eos_low_prob_shadow,
         child_return_intent_shadow=args.child_return_intent_shadow,
         child_final_report_shadow=args.child_final_report_shadow,
         child_report_length_shadow=args.child_report_length_shadow,

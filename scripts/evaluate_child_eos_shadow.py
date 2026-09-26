@@ -10,16 +10,31 @@ from pathlib import Path
 from statistics import median
 
 try:
-    from beliefkv.runtime.eos_shadow import EOS_PROB_THRESHOLDS
+    from beliefkv.runtime.eos_shadow import (
+        EOS_LOW_PROB_THRESHOLDS, EOS_PROB_THRESHOLDS,
+    )
     from scripts.evaluate_child_intent_stream_milestones import collect
     from scripts.evaluate_child_return_intent_timing import _metrics
 except ModuleNotFoundError:
-    from beliefkv.runtime.eos_shadow import EOS_PROB_THRESHOLDS
+    from beliefkv.runtime.eos_shadow import (
+        EOS_LOW_PROB_THRESHOLDS, EOS_PROB_THRESHOLDS,
+    )
     from evaluate_child_intent_stream_milestones import collect
     from evaluate_child_return_intent_timing import _metrics
 
 
-def load(workflows: Path) -> tuple[list[dict], dict]:
+def load(
+    workflows: Path,
+    thresholds: tuple[float, ...] = EOS_PROB_THRESHOLDS,
+) -> tuple[list[dict], dict]:
+    if any(threshold in EOS_LOW_PROB_THRESHOLDS for threshold in thresholds):
+        manifest = workflows.parent / "manifest.json"
+        if (
+            not manifest.is_file()
+            or not (json.loads(manifest.read_text(encoding="utf-8"))
+                    .get("config") or {}).get("child_eos_low_prob_shadow")
+        ):
+            raise ValueError(f"low-probability EOS was not collected in {workflows}")
     stages, counts = collect(workflows, 64)
     events_by_task = {
         path.parent.name: [
@@ -47,7 +62,7 @@ def load(workflows: Path) -> tuple[list[dict], dict]:
                 event.get("kind") != "structured_action"
                 or not attrs.get("beliefkv_child_eos_shadow")
                 or type(threshold) not in {int, float}
-                or threshold not in EOS_PROB_THRESHOLDS
+                or threshold not in thresholds
                 or attrs.get("request_id") != row["request_id"]
                 or event.get("invocation_id") != row["invocation_id"]
                 or (event.get("context_id"), event.get("context_epoch"))
@@ -145,10 +160,13 @@ def score(train: list[dict], test: list[dict], threshold: float) -> dict:
     }
 
 
-def audit(workflows: Path) -> dict:
-    rows, counts = load(workflows)
-    thresholds = {}
-    for threshold in EOS_PROB_THRESHOLDS:
+def audit(
+    workflows: Path,
+    thresholds: tuple[float, ...] = EOS_PROB_THRESHOLDS,
+) -> dict:
+    rows, counts = load(workflows, thresholds)
+    by_threshold = {}
+    for threshold in thresholds:
         triggered = [
             row for row in rows if threshold in row["first_eos_ts"]
         ]
@@ -160,7 +178,7 @@ def audit(workflows: Path) -> dict:
             row["return_ts_ms"] - row["first_eos_ts"][threshold]
             for row in natural
         ]
-        thresholds[str(threshold)] = {
+        by_threshold[str(threshold)] = {
             "first_trigger": len(triggered),
             "natural_first_trigger": len(natural),
             "false_first_trigger": sum(
@@ -194,7 +212,7 @@ def audit(workflows: Path) -> dict:
         "natural_join_last": sum(
             row["join_last"] and row["label"] == "true" for row in rows
         ),
-        "thresholds": thresholds,
+        "thresholds": by_threshold,
         "eos_scored_tokens_available": sum(
             type(row["scored_tokens"]) is int and row["scored_tokens"] > 0
             for row in rows
@@ -210,10 +228,13 @@ def audit(workflows: Path) -> dict:
     }
 
 
-def evaluate(train_roots: list[Path], heldout_root: Path) -> dict:
+def evaluate(
+    train_roots: list[Path], heldout_root: Path,
+    thresholds: tuple[float, ...] = EOS_PROB_THRESHOLDS,
+) -> dict:
     train, train_info, tasks, projects = [], {}, set(), set()
     for root in train_roots:
-        rows, counts = load(root)
+        rows, counts = load(root, thresholds)
         ids = {row["task_id"] for row in rows}
         if ids & tasks:
             raise ValueError("training workflows overlap")
@@ -221,7 +242,7 @@ def evaluate(train_roots: list[Path], heldout_root: Path) -> dict:
         projects |= {row["project"] for row in rows}
         train.extend(rows)
         train_info[str(root)] = counts
-    heldout, heldout_info = load(heldout_root)
+    heldout, heldout_info = load(heldout_root, thresholds)
     eval_projects = {row["project"] for row in heldout}
     if (
         not projects or not eval_projects or projects & eval_projects
@@ -244,7 +265,7 @@ def evaluate(train_roots: list[Path], heldout_root: Path) -> dict:
                         ], threshold,
                     ) for project in sorted(eval_projects)
                 },
-            } for threshold in EOS_PROB_THRESHOLDS
+            } for threshold in thresholds
         },
         "scope": (
             "Scores delivered unsampled EOS top-logprob crossings only after "
@@ -259,16 +280,26 @@ def main() -> None:
     parser.add_argument("--audit-workflows", type=Path)
     parser.add_argument("--train-workflows", type=Path, action="append")
     parser.add_argument("--heldout-workflows", type=Path)
+    parser.add_argument(
+        "--include-low-prob", action="store_true",
+        help="Evaluate 0.01%%/0.1%% signals only when both splits collected them.",
+    )
     parser.add_argument("--output", type=Path, required=True)
     args = parser.parse_args()
+    thresholds = (
+        EOS_LOW_PROB_THRESHOLDS + EOS_PROB_THRESHOLDS
+        if args.include_low_prob else EOS_PROB_THRESHOLDS
+    )
     if args.audit_workflows:
         if args.train_workflows or args.heldout_workflows:
             parser.error("--audit-workflows cannot be combined with evaluation")
-        result = audit(args.audit_workflows)
+        result = audit(args.audit_workflows, thresholds)
     else:
         if not args.train_workflows or args.heldout_workflows is None:
             parser.error("evaluation requires train and held-out workflows")
-        result = evaluate(args.train_workflows, args.heldout_workflows)
+        result = evaluate(
+            args.train_workflows, args.heldout_workflows, thresholds,
+        )
     args.output.parent.mkdir(parents=True, exist_ok=True)
     args.output.write_text(json.dumps(result, indent=2) + "\n", encoding="utf-8")
 

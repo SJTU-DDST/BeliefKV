@@ -1554,6 +1554,7 @@ class DeepAgentsExperimentConfig:
     child_finish_chunk_shadow: bool = False
     child_report_phase_shadow: bool = False
     child_eos_shadow: bool = False
+    child_eos_low_prob_shadow: bool = False
     child_return_intent_shadow: bool = False
     child_final_report_shadow: bool = False
     child_report_length_shadow: bool = False
@@ -1592,6 +1593,8 @@ class DeepAgentsExperimentConfig:
             not self.stream_completion_shadow or not self.child_return_intent_shadow
         ):
             raise ValueError("child EOS shadow requires streamed child return intent")
+        if self.child_eos_low_prob_shadow and not self.child_eos_shadow:
+            raise ValueError("low-probability EOS shadow requires child EOS shadow")
         if self.subagent_fanout_profile not in SUBAGENT_FANOUT_PROFILES:
             raise ValueError("unsupported subagent fan-out profile")
         if (
@@ -3806,6 +3809,7 @@ def _run_workflow(
         ),
         report_phase_shadow=config.child_report_phase_shadow,
         eos_shadow=config.child_eos_shadow,
+        eos_low_prob_shadow=config.child_eos_low_prob_shadow,
         command_structure_shadow=(
             os.environ.get("BELIEFKV_COMMAND_STRUCTURE_SHADOW") == "1"
         ),

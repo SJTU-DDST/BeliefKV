@@ -38,7 +38,9 @@ from beliefkv.runtime.agent_runtime_adapter import RuntimeEventSink
 from beliefkv.runtime.action_frontier import StructuredActionKind
 from beliefkv.runtime.context_lifecycle import ContextCompactionRecord
 from beliefkv.runtime.event_channel import QueuedRuntimeEventSink
-from beliefkv.runtime.eos_shadow import EOS_PROB_THRESHOLDS, eos_top_logprob
+from beliefkv.runtime.eos_shadow import (
+    EOS_LOW_PROB_THRESHOLDS, EOS_PROB_THRESHOLDS, eos_top_logprob,
+)
 from beliefkv.runtime.report_phase import ReportPhaseTracker
 from beliefkv.runtime.sglang_adapter import BeliefKVRequestMetadata
 from beliefkv.runtime.sglang_v0520_sessions import NativeRadixSessionLeases
@@ -228,10 +230,13 @@ class DeepAgentsRuntimeAdapter(BaseCallbackHandler):
         command_structure_shadow: bool = False,
         report_phase_shadow: bool = False,
         eos_shadow: bool = False,
+        eos_low_prob_shadow: bool = False,
     ) -> None:
         super().__init__()
         if root_metadata.relation_type != RelationType.ROOT.value:
             raise ValueError("Deep Agents root metadata must use relation_type=root")
+        if eos_low_prob_shadow and not eos_shadow:
+            raise ValueError("low-probability EOS shadow requires EOS shadow")
         self.trace_sink = trace_sink
         self.control_sink = control_sink
         self.root_metadata = root_metadata
@@ -249,6 +254,10 @@ class DeepAgentsRuntimeAdapter(BaseCallbackHandler):
         self._command_structure_shadow = command_structure_shadow
         self._report_phase_shadow = report_phase_shadow
         self._eos_shadow = eos_shadow
+        self._eos_thresholds = (
+            EOS_LOW_PROB_THRESHOLDS + EOS_PROB_THRESHOLDS
+            if eos_low_prob_shadow else EOS_PROB_THRESHOLDS
+        )
         self._lock = threading.RLock()
         self._publication_lock = threading.RLock()
         self._sequence = 0
@@ -866,7 +875,7 @@ class DeepAgentsRuntimeAdapter(BaseCallbackHandler):
                     self._child_eos_top_hits[key] = (
                         self._child_eos_top_hits.get(key, 0) + 1
                     )
-                    for threshold in EOS_PROB_THRESHOLDS:
+                    for threshold in self._eos_thresholds:
                         if (
                             eos_logprob >= math.log(threshold)
                             and (key, threshold) not in self._child_eos_seen
@@ -995,7 +1004,7 @@ class DeepAgentsRuntimeAdapter(BaseCallbackHandler):
             eos_top_hits = self._child_eos_top_hits.pop(key, None)
             if self._eos_shadow:
                 self._child_eos_seen.difference_update(
-                    (key, threshold) for threshold in EOS_PROB_THRESHOLDS
+                    (key, threshold) for threshold in self._eos_thresholds
                 )
             finish_chunk_ts_ms = self._child_finish_chunk_ts_ms.pop(key, None)
         invocation_id = self._resolve_invocation(key)
@@ -1208,7 +1217,7 @@ class DeepAgentsRuntimeAdapter(BaseCallbackHandler):
             self._child_eos_top_hits.pop(key, None)
             if self._eos_shadow:
                 self._child_eos_seen.difference_update(
-                    (key, threshold) for threshold in EOS_PROB_THRESHOLDS
+                    (key, threshold) for threshold in self._eos_thresholds
                 )
             self._child_finish_chunk_ts_ms.pop(key, None)
         invocation_id = self._resolve_invocation(key)

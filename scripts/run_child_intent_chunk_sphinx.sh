@@ -21,6 +21,11 @@ if [[ ${#IDS[@]} -eq 0 ]]; then
   printf 'At least one frozen task ID is required\n' >&2
   exit 1
 fi
+if [[ "${CHILD_EOS_LOW_PROB_SHADOW:-0}" == 1 \
+  && "${CHILD_EOS_SHADOW:-0}" != 1 ]]; then
+  printf 'Low-probability EOS shadow requires CHILD_EOS_SHADOW=1\n' >&2
+  exit 1
+fi
 SERVER_PID=""
 
 stop_server() {
@@ -105,6 +110,9 @@ for arm in "${arms[@]}"; do
   fi
   if [[ "${CHILD_EOS_SHADOW:-0}" == 1 && "$arm" != control ]]; then
     intent_arg+=(--child-eos-shadow)
+    if [[ "${CHILD_EOS_LOW_PROB_SHADOW:-0}" == 1 ]]; then
+      intent_arg+=(--child-eos-low-prob-shadow)
+    fi
   fi
   if ! "$PYTHON" "$ROOT/scripts/run_deepagents_swebench.py" \
     --mode autonomous --base-url "http://127.0.0.1:$PORT/v1" \
