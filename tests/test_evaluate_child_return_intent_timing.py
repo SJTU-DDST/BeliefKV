@@ -2,7 +2,9 @@ import json
 
 import pytest
 
-from scripts.evaluate_child_return_intent_timing import evaluate, load_episodes
+from scripts.evaluate_child_return_intent_timing import (
+    evaluate, evaluate_heldout, load_episodes,
+)
 
 
 def _workflow(root, project, *, lead=1000, later_tool=False, blocked=False):
@@ -82,3 +84,26 @@ def test_revoked_and_blocked_intents_are_not_success_labels(tmp_path):
     assert counts["nonterminal_or_censored"] == 1
     with pytest.raises(ValueError, match="at least three projects"):
         evaluate(tmp_path)
+
+
+def test_heldout_fit_does_not_consume_target_labels_or_overlap_projects(tmp_path):
+    train = tmp_path / "fit"
+    test = tmp_path / "heldout"
+    _workflow(train, "alpha", lead=1000)
+    _workflow(train, "beta", lead=3000)
+    _workflow(train, "gamma", lead=4000)
+    target = _workflow(test, "delta", lead=2000)
+    before = evaluate_heldout(train, test)
+    assert evaluate_heldout(train, test / "delta_workloads") == before
+    assert before["train_projects"] == ["alpha", "beta", "gamma"]
+    assert before["heldout_projects"] == ["delta"]
+    assert before["results"]["train_median"]["return"]["mae_ms"] == 1000
+    # Held-out response size is not an input.
+    path = target / "runtime_events.deepagents.jsonl"
+    events = [json.loads(line) for line in path.read_text().splitlines()]
+    events[-3]["attributes"]["output_tokens"] = 2
+    path.write_text("".join(json.dumps(event) + "\n" for event in events))
+    assert evaluate_heldout(train, test) == before
+    _workflow(test, "alpha")
+    with pytest.raises(ValueError, match="overlap"):
+        evaluate_heldout(train, test)

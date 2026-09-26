@@ -21,8 +21,15 @@ except ModuleNotFoundError:
 FEATURES = ("child_age_ms", "prior_llm_results", "prior_tool_ends")
 
 
+def _workflow_files(root: Path) -> list[Path]:
+    direct = sorted(root.glob("workflows/*/runtime_events.deepagents.jsonl"))
+    return direct or sorted(root.glob(
+        "*/workflows/*/runtime_events.deepagents.jsonl",
+    ))
+
+
 def load_episodes(root: Path) -> tuple[list[dict], dict[str, int]]:
-    files = sorted(root.glob("*/workflows/*/runtime_events.deepagents.jsonl"))
+    files = _workflow_files(root)
     if not files:
         raise FileNotFoundError(f"missing workflow events in {root}")
     episodes = []
@@ -215,13 +222,66 @@ def evaluate(root: Path) -> dict:
     }
 
 
+def evaluate_heldout(train_root: Path, heldout_root: Path) -> dict:
+    train, train_counts = load_episodes(train_root)
+    test, test_counts = load_episodes(heldout_root)
+    train_projects = {row["project"] for row in train}
+    test_projects = {
+        path.parent.name.split("__", 1)[0]
+        for path in _workflow_files(heldout_root)
+    }
+    if train_projects & test_projects:
+        raise ValueError("held-out projects overlap with fit projects")
+    if not train or not test_projects:
+        raise ValueError("need fit episodes and held-out workflow events")
+    fixed = [float(np.median([row["lead_ms"] for row in train]))] * len(test)
+    predictions = {
+        "train_median": fixed,
+        "causal_ridge": _ridge_predict(train, test) if test else [],
+    }
+    return {
+        "diagnostic_only": True,
+        "protocol": (
+            "Fit on specified prior projects only; evaluate separately on "
+            "the new project(s), with no threshold or feature selection."
+        ),
+        "train_projects": sorted(train_projects),
+        "heldout_projects": sorted(test_projects),
+        "train_counts": train_counts,
+        "heldout_counts": test_counts,
+        "results": {
+            name: {
+                "return": _metrics(
+                    [row["lead_ms"] for row in test], estimates,
+                ),
+                "join_last_child": _metrics(
+                    [row["lead_ms"] for row in test if row["join_last"]],
+                    [estimate for row, estimate in zip(test, estimates)
+                     if row["join_last"]],
+                ),
+            }
+            for name, estimates in predictions.items()
+        },
+        "scope": (
+            "Development project holdout, not sealed test; tool changes "
+            "trajectory. Censored/revoked episodes do not count as point "
+            "forecasts. No physical migration."
+        ),
+    }
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--pilot-root", type=Path, required=True)
+    parser.add_argument("--heldout-root", type=Path)
     parser.add_argument("--output", type=Path, required=True)
     args = parser.parse_args()
+    result = (
+        evaluate_heldout(args.pilot_root, args.heldout_root)
+        if args.heldout_root else evaluate(args.pilot_root)
+    )
     args.output.write_text(
-        json.dumps(evaluate(args.pilot_root), indent=2) + "\n", encoding="utf-8",
+        json.dumps(result, indent=2) + "\n", encoding="utf-8",
     )
 
 
