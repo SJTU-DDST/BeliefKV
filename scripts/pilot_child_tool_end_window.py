@@ -18,9 +18,11 @@ import lightgbm as lgb
 import numpy as np
 
 if __package__:
-    from scripts.audit_child_hidden_trace import index_workflow
+    from scripts.audit_child_hidden_trace import (
+        blocked_child_invocations, index_workflow,
+    )
 else:
-    from audit_child_hidden_trace import index_workflow
+    from audit_child_hidden_trace import blocked_child_invocations, index_workflow
 
 
 WINDOW_START_MS = 500
@@ -40,11 +42,15 @@ def samples(workflows: Path) -> list[dict]:
     output = []
     for path in sorted(workflows.glob("*/runtime_events.deepagents.jsonl")):
         events = _events(path)
-        terminal, join_last = index_workflow(events)
+        blocked = blocked_child_invocations(path.parent)
+        terminal, join_last = index_workflow(
+            events, blocked_invocations=blocked,
+        )
         children = {
             row["target_invocation_id"]
             for row in events
             if row["kind"] == "spawn" and row.get("target_invocation_id")
+            and row["target_invocation_id"] not in blocked
         }
         by_child = defaultdict(list)
         for event in events:

@@ -12,7 +12,23 @@ from pathlib import Path
 import numpy as np
 
 
-def index_workflow(events: list[dict]) -> tuple[dict, dict]:
+def blocked_child_invocations(workflow: Path) -> set[str]:
+    path = workflow / "child_reports.json"
+    if not path.is_file():
+        return set()
+    reports = json.loads(path.read_text(encoding="utf-8"))
+    return {
+        report["invocation_id"]
+        for report in reports
+        if report.get("invocation_id")
+        and (report.get("semantic_completion") or {}).get("status") == "blocked"
+    }
+
+
+def index_workflow(
+    events: list[dict], *, blocked_invocations: set[str] | None = None,
+) -> tuple[dict, dict]:
+    blocked_invocations = blocked_invocations or set()
     children = {
         event["target_invocation_id"]
         for event in events
@@ -21,7 +37,8 @@ def index_workflow(events: list[dict]) -> tuple[dict, dict]:
     returns = {
         event["invocation_id"]: event["ts_ms"]
         for event in events
-        if event["kind"] == "return" and event.get("invocation_id") in children
+        if event["kind"] == "return"
+        and event.get("invocation_id") in children - blocked_invocations
     }
     results = defaultdict(list)
     for event in events:
@@ -96,7 +113,10 @@ def summarize(
     ):
         with event_file.open() as stream:
             events = [json.loads(line) for line in stream]
-        terminal, join_last = index_workflow(events)
+        blocked = blocked_child_invocations(event_file.parent)
+        terminal, join_last = index_workflow(
+            events, blocked_invocations=blocked,
+        )
         terminal_by_child = {
             invocation_id: (rid, return_ts)
             for rid, (invocation_id, return_ts) in terminal.items()
@@ -107,7 +127,9 @@ def summarize(
         for event in events:
             if event["kind"] == "llm_result" and str(
                 event.get("invocation_id") or ""
-            ).startswith("deepagents-invocation:") and not (
+            ).startswith("deepagents-invocation:") and (
+                event.get("invocation_id") not in blocked
+            ) and not (
                 event.get("attributes") or {}
             ).get("runtime_internal"):
                 child_results[event["invocation_id"]].append(event)
@@ -194,6 +216,7 @@ def summarize(
             and str(event.get("invocation_id") or "").startswith(
                 "deepagents-invocation:"
             )
+            and event.get("invocation_id") not in blocked
             for event in events
         )
         for event in events:

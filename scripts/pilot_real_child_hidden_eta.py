@@ -18,10 +18,12 @@ from typing import Sequence
 import numpy as np
 
 if __package__:
-    from scripts.audit_child_hidden_trace import index_workflow
+    from scripts.audit_child_hidden_trace import (
+        blocked_child_invocations, index_workflow,
+    )
     from scripts.pilot_hidden_eta_project_split import features, fit_ridge, predict
 else:
-    from audit_child_hidden_trace import index_workflow
+    from audit_child_hidden_trace import blocked_child_invocations, index_workflow
     from pilot_hidden_eta_project_split import features, fit_ridge, predict
 
 
@@ -32,7 +34,10 @@ def load_records(workflows: Path, traces: Path) -> tuple[list[dict], dict]:
     for event_file in workflows.glob("*/runtime_events.deepagents.jsonl"):
         with event_file.open() as stream:
             events = [json.loads(line) for line in stream]
-        terminals, join_last_children = index_workflow(events)
+        blocked = blocked_child_invocations(event_file.parent)
+        terminals, join_last_children = index_workflow(
+            events, blocked_invocations=blocked,
+        )
         result_by_invocation = {}
         for event in events:
             if event["kind"] == "llm_result":
@@ -45,7 +50,8 @@ def load_records(workflows: Path, traces: Path) -> tuple[list[dict], dict]:
             if event["kind"] != "return":
                 continue
             invocation = event.get("invocation_id")
-            if invocation and invocation.startswith("deepagents-invocation:"):
+            if (invocation and invocation.startswith("deepagents-invocation:")
+                    and invocation not in blocked):
                 complete_children.add(invocation)
         for rid, (invocation, return_ms) in terminals.items():
             terminal_requests[rid] = (invocation, return_ms)

@@ -12,9 +12,11 @@ from pathlib import Path
 import numpy as np
 
 try:
-    from scripts.audit_child_hidden_trace import index_workflow
+    from scripts.audit_child_hidden_trace import (
+        blocked_child_invocations, index_workflow,
+    )
 except ModuleNotFoundError:
-    from audit_child_hidden_trace import index_workflow
+    from audit_child_hidden_trace import blocked_child_invocations, index_workflow
 
 
 def _quantiles(values: list[float]) -> dict | None:
@@ -61,7 +63,9 @@ def audit(delivery_path: Path, trace_dir: Path, workflows: Path) -> dict:
             and event.get("invocation_id") in children
             if (attrs := event.get("attributes") or {}).get("request_id")
         )
-        by_request, last_children = index_workflow(events)
+        by_request, last_children = index_workflow(
+            events, blocked_invocations=blocked_child_invocations(path.parent),
+        )
         terminal.update(by_request)
         join_last.update(last_children)
 

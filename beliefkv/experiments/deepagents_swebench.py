@@ -2258,36 +2258,42 @@ def _planned_child_completion(result: dict[str, Any]) -> ChildCompletion:
     else:
         text = _final_text(result).strip()
         if not text:
-            raise RuntimeError("child returned neither structured data nor text")
-        normalized_text = text.casefold().lstrip()
-        blocked_prefixes = (
-            "blocked",
-            "unable to complete",
-            "i am unable to complete",
-            "i'm unable to complete",
-            "i cannot complete",
-            "i can't complete",
-            "i could not complete",
-            "i couldn't complete",
-        )
-        explicitly_blocked = normalized_text.startswith(blocked_prefixes)
-        completion = ChildCompletion(
-            status=(
-                "blocked"
-                if guard_intervened or explicitly_blocked
-                else "complete"
-            ),
-            summary=text[:24_000],
-            unresolved=(
-                [
-                    "Loop/protocol guard intervened; treat this as partial "
-                    f"evidence ({guard_reason})."
-                ]
-                if guard_intervened
-                else []
-            ),
-            confidence="low",
-        )
+            completion = ChildCompletion(
+                status="blocked",
+                summary="Child stopped without a final response.",
+                unresolved=["no_natural_final_text"],
+                confidence="low",
+            )
+        else:
+            normalized_text = text.casefold().lstrip()
+            blocked_prefixes = (
+                "blocked",
+                "unable to complete",
+                "i am unable to complete",
+                "i'm unable to complete",
+                "i cannot complete",
+                "i can't complete",
+                "i could not complete",
+                "i couldn't complete",
+            )
+            explicitly_blocked = normalized_text.startswith(blocked_prefixes)
+            completion = ChildCompletion(
+                status=(
+                    "blocked"
+                    if guard_intervened or explicitly_blocked
+                    else "complete"
+                ),
+                summary=text[:24_000],
+                unresolved=(
+                    [
+                        "Loop/protocol guard intervened; treat this as partial "
+                        f"evidence ({guard_reason})."
+                    ]
+                    if guard_intervened
+                    else []
+                ),
+                confidence="low",
+            )
     if guard_intervened:
         completion = completion.model_copy(
             update={
@@ -3449,6 +3455,7 @@ def classify_workflow_measurement(
     agent_control: Mapping[str, Any],
     control_delivery: Mapping[str, Any],
     trace: Mapping[str, Any],
+    child_reports: Sequence[Mapping[str, Any]] = (),
 ) -> dict[str, Any]:
     """Separate system-measurement validity from native agent quality."""
 
@@ -3461,6 +3468,13 @@ def classify_workflow_measurement(
         system_reasons.append("runtime_control_delivery_degraded")
     if int(agent_control.get("protocol_repair_failures", 0)):
         system_reasons.append("protocol_repair_failed")
+    if any(
+        "no_natural_final_text" in (
+            (item.get("semantic_completion") or {}).get("unresolved") or []
+        )
+        for item in child_reports
+    ):
+        system_reasons.append("child_missing_natural_final")
     for field in (
         "workflow_lifecycle_valid",
         "llm_pairing_valid",
@@ -3736,6 +3750,7 @@ def _run_workflow(
         agent_control=agent_control,
         control_delivery=control_delivery,
         trace=trace,
+        child_reports=child_reports,
     )
     task_correctness_valid = bool(correctness_gate.get("passed")) and not bool(
         control_delivery.get("degraded")

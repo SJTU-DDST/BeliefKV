@@ -2,7 +2,9 @@ import json
 
 import numpy as np
 
-from scripts.audit_child_hidden_trace import index_workflow, summarize
+from scripts.audit_child_hidden_trace import (
+    blocked_child_invocations, index_workflow, summarize,
+)
 
 
 def _events():
@@ -36,6 +38,20 @@ def test_only_last_real_child_round_gets_terminal_label():
         "final-round": ("deepagents-invocation:child", 2100.)
     }
     assert join_last == {"deepagents-invocation:child"}
+
+
+def test_blocked_child_report_excludes_return_and_join_labels(tmp_path):
+    (tmp_path / "child_reports.json").write_text(json.dumps([{
+        "invocation_id": "deepagents-invocation:child",
+        "semantic_completion": {
+            "status": "blocked", "unresolved": ["no_natural_final_text"],
+        },
+    }]), encoding="utf-8")
+    blocked = blocked_child_invocations(tmp_path)
+    assert blocked == {"deepagents-invocation:child"}
+    assert index_workflow(
+        _events(), blocked_invocations=blocked,
+    ) == ({}, set())
 
 
 def test_internal_summary_after_final_does_not_replace_child_terminal():

@@ -391,6 +391,33 @@ def test_natural_workflow_return_preserves_system_measurement() -> None:
     ]
 
 
+def test_missing_child_final_is_not_eligible_after_blocked_join() -> None:
+    result = classify_workflow_measurement(
+        outcome="completed",
+        error=None,
+        semantic_completion=None,
+        agent_control={},
+        control_delivery={"degraded": False},
+        trace={
+            "workflow_lifecycle_valid": True,
+            "llm_pairing_valid": True,
+            "tool_pairing_valid": True,
+            "tool_status_coverage": 1.0,
+            "workspace_digest_coverage": 1.0,
+            "dynamic_subagent_count": 1,
+            "all_subagents_returned": True,
+            "all_joins_satisfied": True,
+        },
+        child_reports=[{
+            "semantic_completion": {
+                "status": "blocked", "unresolved": ["no_natural_final_text"],
+            },
+        }],
+    )
+    assert not result["system_jct_eligible"]
+    assert "child_missing_natural_final" in result["system_jct_exclusion_reasons"]
+
+
 def test_copy_append_window_freezes_only_new_bytes(tmp_path: Path) -> None:
     source = tmp_path / "server.jsonl"
     source.write_bytes(b'{"old":1}\n')
@@ -1500,6 +1527,9 @@ def test_planned_child_accepts_natural_text_and_marks_guarded_return_blocked() -
     )
     assert guarded.status == "blocked"
     assert "repeated_tool_call" in guarded.unresolved
+    empty = _planned_child_completion({"messages": [AIMessage(content="")]})
+    assert empty.status == "blocked"
+    assert empty.unresolved == ["no_natural_final_text"]
 
 
 def test_autonomous_dynamic_profile_runs_planned_initial_children_then_native_root(

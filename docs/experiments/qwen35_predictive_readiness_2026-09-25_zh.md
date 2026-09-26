@@ -2820,3 +2820,62 @@ H2D 收益尚无证据。后续应扩充不同项目的自然
 终态/非终态样本，寻找更早的明确完成阶段信号，
 在项目隔离的规则选择后再用未参与选择的任务
 验证，而非降低门槛或打开物理动作。
+
+## 45. PSF 训练项目扩充与无文本 child 的保守收尾（2026-09-26）
+
+冻结 SWE-bench Verified train split 中 `psf/requests`
+的 8 个任务，manifest SHA-256 为
+`e5d3b012573d19d9ecccdf49eabc2cdc0ea1a5b23a5ceaa674ea68ff58c5a5a9`；
+完整源码对象、逐任务 Docker 镜像均通过预检。
+PSF 项目曾参加此前 reactive 采集，因此**不是**
+从未见过的独立测试，仅作为本轮 hidden 短窗规则的
+新增训练项目。隔离服务使用同一 Qwen3.5 BF16、
+8 root 并发、stream shadow，物理预测动作关闭；
+首次启动漏设 `CUDA_HOME` 在模型加载前失败，
+补齐环境后运行 225.8 秒。8 个 workflow 中
+7 completed、4 个 system 测量有效；30 个派发
+child，4 次完整 JOIN 满足，另外 4 次 JOIN
+因 child 取消而未满足。这些失败不得伪造
+完整 JOIN 训练正例。
+
+本批服务器逐请求记录 **2754** 个样本已发送、
+**0** 个发送端丢弃，接收器实际收到 **2754** 个；
+与本批完成请求所保留的 NPZ 样本配对缺失为
+**0**。本机组帧后送达到接收的年龄 P50/P95
+为 **0.170/0.346 ms**；严格自然 child RETURN
+有 **24** 个、完整 JOIN 最后 child 有 **4** 个。
+4 个最后 child 的首个已送达样本距真实 RETURN
+提前量中位约 **6.45 s**，最后样本提前量中位
+约 **0.67 s**。这些仍是**事后配对窗口**，
+不能作为 6 秒前已经知道哪个 child 即将结束
+的证据；GPU hidden 抽取开销、模型评分和高压
+负载下的投递均未验证。原始 trace、投递日志与
+`delivery_audit.json` 在
+`experiments/raw/qwen35_hidden_child_psf_train8_20260926/`。
+
+训练侧将这批 PSF 与原 16+32-root 配对数据合并，
+在拟合/阈值选择前排除 pytest-dev 后，
+Django/PSF/Xarray/Pylint 四项目共 **3399**
+个可用轮次（含 **127** 个严格自然终态）。
+仍沿用 256 token、RETURN 前 0.5--3 秒、
+至少 8 次命中、跨两个训练项目、窗口精度
+至少 90% 的原门槛；即时和有界延迟候选
+**均无合格冻结规则**。所以已有 pytest-dev
+live pilot 不用于事后挑阈值，也没有新的
+预测准确率提升可宣称。结果为同目录
+`return_window_psf_augmented_project_cv.json`。
+
+失败的 5 个 child 报告均为“既无结构化终态也
+无文本”；运行时 trace 的最后 LLM 响应仍为
+`tool_calls`，guard 曾尝试终止重复调用，
+不是自然 child RETURN，也不是 JOIN 固定时间
+门限超时。新代码将这类 child 的状态改成明确
+的 `blocked` 部分报告：允许 parent 收到报告，
+但标注 `no_natural_final_text`，不使 workflow
+获得 system 测量资格；hidden/JOIN 时间读取器
+也不会用它生成自然标签。本批原始轨迹是在
+该修复**之前**采集，保持原有取消和无效 JOIN
+结论；修复只有单元测试，还需在后续真实
+workflow 上验证 parent 汇总、身份失效及标签
+排除。工具长调用缺少可靠的前置完成信号、
+JOIN 短窗模型跨项目不过门槛的核心问题仍在。

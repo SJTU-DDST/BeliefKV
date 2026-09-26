@@ -11,9 +11,11 @@ from pathlib import Path
 from statistics import median
 
 if __package__:
-    from scripts.audit_child_hidden_trace import index_workflow
+    from scripts.audit_child_hidden_trace import (
+        blocked_child_invocations, index_workflow,
+    )
 else:
-    from audit_child_hidden_trace import index_workflow
+    from audit_child_hidden_trace import blocked_child_invocations, index_workflow
 
 
 def quantile(values: list[float], fraction: float) -> float | None:
@@ -42,7 +44,10 @@ def collect(roots: list[Path], *, require_signal: bool) -> dict:
             projects.add(project)
             with path.open(encoding="utf-8") as stream:
                 events = [json.loads(line) for line in stream if line.strip()]
-            terminal, join_last = index_workflow(events)
+            blocked = blocked_child_invocations(path.parent)
+            terminal, join_last = index_workflow(
+                events, blocked_invocations=blocked,
+            )
             terminal_by_child = {
                 invocation_id: (rid, return_ts)
                 for rid, (invocation_id, return_ts) in terminal.items()
@@ -56,7 +61,7 @@ def collect(roots: list[Path], *, require_signal: bool) -> dict:
                 event["invocation_id"]
                 for event in events
                 if event["kind"] == "return"
-                and event.get("invocation_id") in child_ids
+                and event.get("invocation_id") in child_ids - blocked
             }
             child_returns += len(returned)
             join_last_returns += len(join_last)
