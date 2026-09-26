@@ -190,6 +190,24 @@ def test_parent_reentry_must_precede_parent_invalidating_transition(tmp_path):
     assert counts.get("candidate_parent_reentry_observed", 0) == 0
 
 
+def test_parent_cancel_before_join_satisfied_invalidates_reentry(tmp_path):
+    root = tmp_path / "heldout"
+    _write(root, "astropy__one", notices=(1000,))
+    event_path = (
+        root / "workflows" / "astropy__one" /
+        "runtime_events.deepagents.jsonl"
+    )
+    events = [json.loads(line) for line in event_path.read_text().splitlines()]
+    events.append({
+        "kind": "invocation_cancel", "invocation_id": "root:astropy__one",
+        "ts_ms": 1600,
+    })
+    event_path.write_text("".join(json.dumps(row) + "\n" for row in events))
+    groups, counts = collect(root / "workflows")
+    assert groups[0]["parent_reentry_lead_ms"] is None
+    assert counts.get("candidate_parent_reentry_observed", 0) == 0
+
+
 def test_project_disjoint_group_error_and_coverage(tmp_path):
     train, heldout = tmp_path / "train", tmp_path / "heldout"
     _write(train, "sphinx-doc__one", notices=(800,))

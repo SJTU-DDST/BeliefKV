@@ -86,7 +86,7 @@ def collect(workflows: Path) -> tuple[list[dict], dict]:
                     (
                         float(event["ts_ms"]) for event in events
                         if event.get("invocation_id") == parent
-                        and float(event["ts_ms"]) > finished
+                        and float(event["ts_ms"]) > started
                         and (
                             event["kind"] in {"return", "invocation_cancel"}
                             or (
