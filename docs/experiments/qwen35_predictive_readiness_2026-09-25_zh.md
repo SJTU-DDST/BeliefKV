@@ -2879,3 +2879,15 @@ live pilot 不用于事后挑阈值，也没有新的
 workflow 上验证 parent 汇总、身份失效及标签
 排除。工具长调用缺少可靠的前置完成信号、
 JOIN 短窗模型跨项目不过门槛的核心问题仍在。
+
+修复后以同一 train-split
+`psf__requests-1724` 做一次限时、单 root、
+无预测物理动作的 GPU 复验，结果见
+`experiments/raw/qwen35_empty_child_retry_20260926/workloads/`：
+约 **104 秒**自然完成、4 个 child 自然 RETURN、
+1 个 JOIN 满足、0 个 child 取消，system
+测量有效。此随机重跑**没有复现**先前的空终态，
+因此仅验证正常 JOIN 路径未回退，不能证明
+`blocked` 部分报告在 GPU 上已被触发；
+对应缺文本分支和标签排除仍由单元测试覆盖。
+隔离服务在实验后已经关闭。
