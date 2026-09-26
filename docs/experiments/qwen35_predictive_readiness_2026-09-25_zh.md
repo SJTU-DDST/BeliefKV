@@ -3467,7 +3467,11 @@ Pylint 通知批次按同一规则复验，两种候选均为 **3 次，
 RETURN 与 sibling 语义状态的时序、JOIN 候选召回和
 误触发；再用与开发项目隔离的任务和足够的完整 JOIN
 比较下界、控制时延和传输是否可用。现阶段预测式
-物理 H2D/D2H 仍关闭。
+物理 H2D/D2H 仍关闭。`blocked` 是**自然完整轨迹标签**
+的排除依据，不能直接变成线上 prefetch 硬否决：含
+blocked 报告的 JOIN 也可能满足并唤醒 parent，仍然
+可能需要 parent KV。下一步须分别测量自然 RETURN
+点时机与所有实际 parent reentry 的 KV 需求。
 
 ### pytest-dev 新任务的状态事件验证（2026-09-26）
 
