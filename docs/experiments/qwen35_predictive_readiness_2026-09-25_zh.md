@@ -3104,3 +3104,40 @@ Pylint 数据已经促成负载特征的设计，**它不再是该消融的
 时序精度和误报；本轮无效目录为
 `qwen35_child_intent_chunk_sphinx_20260926/`，不删除
 也不纳入拟合或短窗验收。
+
+## 51. 双阶段通知复采与 epoch 身份修正（2026-09-26）
+
+修复采集开关后，同一四个 Sphinx 开发任务分别运行流式对照和
+完成通知 shadow，原始证据位于
+`experiments/raw/qwen35_child_intent_chunk_sphinx_fixed_20260926/`。
+两臂均已结束，服务已关闭；部分 workflow 不完整或有非自然
+child 收尾，不能用于正式吞吐/JCT 对比。通知臂 4 个 workflow
+中有 6 次严格自然 child RETURN，6 次均有首个有效通知，
+通知至 RETURN 的 P50/P90 约 5311/6968 ms。**没有一次
+完整 JOIN 的最后 child**，故不能估计 JOIN 首次触发的时机、
+覆盖或点误差。
+
+初版 `intent_chunk_stages.json` 将这 6 个最终片段全部判为
+`first_chunk_identity_mismatch`。这是审计器的错误：通知由
+当前工具轮次产生，例如 context epoch 27；通知后的唯一
+`llm_submit` 才是 epoch 28，其 request ID、context 和
+epoch 与首个最终片段及其 `llm_result` 一致。修正后的审计
+检查通知来源身份、**唯一相邻 epoch 的后继提交**、相同
+request ID 和最终自然 RETURN；额外提交、跳跃 epoch、
+错误 context/RID 或先出现的非终态片段均不通过。
+旧采集的通知日志缺来源 epoch 时仍可从通知之前的原生事件
+核对；新采集明确记录 context、epoch 和 JOIN 身份。
+保留初版报告，重算结果存于同目录
+`intent_chunk_stages_epoch_corrected.json`。
+
+重算后 6/6 个最终片段对应严格自然 RETURN，片段至 RETURN
+的 P50/P90 约 **179/202 ms**，6/6 均在 500 ms 内。
+这是**事后确认的已发生最终片段**至 RETURN 的时差，
+不是通知时刻就能在 500 ms 内预报 RETURN 的证据：
+通知本身到 RETURN 中位超过 5 秒，最终片段又只有
+约 0.18 秒提前量。这批仅有 6 次、来自一个开发项目且
+没有完整 JOIN 的样本，不能推断跨项目精度、物理预取
+收益或工具 RETURN 预测改进。下一轮应先冻结双阶段
+因果触发规则，再选能产生完整 JOIN 的未用于规则选择的
+任务，按首次在线可见的信号和实际投递时刻量化短窗误报、
+点误差及可用提前量。物理预测动作仍关闭。

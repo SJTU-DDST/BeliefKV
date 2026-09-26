@@ -1,4 +1,5 @@
 import json
+from types import SimpleNamespace
 
 from beliefkv.experiments.deepagents_swebench import (
     JsonlAudit, _child_return_intent_shadow_tool,
@@ -66,6 +67,23 @@ def test_intent_tool_only_emits_identity_and_monotonic_timestamp(tmp_path):
     assert rows[0]["event"] == "child_return_intent_shadow"
     assert rows[0]["invocation_id"] == "deepagents-invocation:child"
     assert rows[0]["ts_ms"] > 0
+
+
+def test_intent_tool_records_source_context_epoch_and_join(tmp_path):
+    path = tmp_path / "audit.jsonl"
+    audit = JsonlAudit(path)
+    try:
+        _child_return_intent_shadow_tool(
+            audit, "deepagents-invocation:child",
+            adapter=SimpleNamespace(latest_context_epoch=lambda invocation: 27),
+            context_id="context:child", join_id="join:parent",
+        ).invoke({})
+    finally:
+        audit.close()
+    row = json.loads(path.read_text().strip())
+    assert row["context_id"] == "context:child"
+    assert row["context_epoch"] == 27
+    assert row["join_id"] == "join:parent"
 
 
 def test_natural_join_intent_has_one_second_lead(tmp_path):

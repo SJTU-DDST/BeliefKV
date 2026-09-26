@@ -2101,14 +2101,26 @@ def _workspace_patch_tool(backend: DockerWorkspaceBackend) -> BaseTool:
 
 
 def _child_return_intent_shadow_tool(
-    audit: JsonlAudit, invocation_id: str,
+    audit: JsonlAudit, invocation_id: str, *,
+    adapter: DeepAgentsRuntimeAdapter | None = None,
+    context_id: str | None = None,
+    join_id: str | None = None,
 ) -> BaseTool:
     @tool("announce_completion_intent")
     def announce_completion_intent() -> str:
         """Announce that your analysis is complete before the final response."""
 
+        identity = (
+            {
+                "context_id": context_id,
+                "context_epoch": adapter.latest_context_epoch(invocation_id),
+                "join_id": join_id,
+            }
+            if adapter is not None else {}
+        )
         audit.emit(
             "child_return_intent_shadow", invocation_id=invocation_id,
+            **identity,
         )
         return "Completion intent recorded. Return your concise final report now."
 
@@ -2761,6 +2773,8 @@ def _run_planned_child(
         shadow_tools = (
             [_child_return_intent_shadow_tool(
                 backend.audit, handle.invocation_id,
+                adapter=adapter, context_id=handle.context_id,
+                join_id=handle.join_id,
             )]
             if config.child_return_intent_shadow else []
         )
