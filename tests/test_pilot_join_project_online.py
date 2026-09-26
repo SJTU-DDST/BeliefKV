@@ -47,6 +47,12 @@ def test_train_only_loo_reports_projects_with_zero_candidate():
     assert report["thresholds"]["1024"]["join_lead_ms"]["django"][
         "online_supported"
     ] == 0
+    late = project_leave_one_out({
+        2400: rows,
+    }, frozen_ids, thresholds=(2400,))
+    assert late["thresholds"]["2400"]["join_lead_ms"]["django"][
+        "natural_candidates"
+    ] == 1
     with pytest.raises(ValueError, match="not in frozen"):
         project_leave_one_out({
             1024: rows + [_row("pydata__unexpected", 20000., 3000.)],

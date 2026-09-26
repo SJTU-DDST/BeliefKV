@@ -17,7 +17,9 @@ if str(ROOT) not in sys.path:
 from scripts.audit_repeated_tool_timing import _quantile
 from scripts.evaluate_cold_tool_project_loo import require_complete_batch
 from scripts.evaluate_cold_tool_structure_holdout import _paired_long_gain
-from scripts.evaluate_join_rolling_stage import THRESHOLDS, collect
+from scripts.evaluate_join_rolling_stage import (
+    OBSERVED_THRESHOLDS, THRESHOLDS, collect,
+)
 
 
 def causal_project_predictions(
@@ -52,6 +54,7 @@ def causal_project_predictions(
 
 def project_leave_one_out(
     by_threshold: dict[int, list[dict]], frozen_ids: list[str],
+    *, thresholds: tuple[int, ...] = THRESHOLDS,
 ) -> dict:
     projects = sorted({task.split("__", 1)[0] for task in frozen_ids})
     if len(projects) < 3:
@@ -70,7 +73,7 @@ def project_leave_one_out(
             "or physical H2D eligibility."
         ),
     }
-    for threshold in THRESHOLDS:
+    for threshold in thresholds:
         rows = by_threshold[threshold]
         if {row["task_id"] for row in rows} - set(frozen_ids):
             raise ValueError("JOIN candidate not in frozen training manifest")
@@ -146,12 +149,19 @@ def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--workflows", type=Path, required=True)
     parser.add_argument("--output", type=Path, required=True)
+    parser.add_argument(
+        "--include-late-stages", action="store_true",
+        help="Train-only coverage audit of observed 2400-7000 char stages.",
+    )
     args = parser.parse_args()
     frozen_ids, runner_errors = require_complete_batch(args.workflows)
+    thresholds = (
+        OBSERVED_THRESHOLDS if args.include_late_stages else THRESHOLDS
+    )
     report = project_leave_one_out({
         threshold: collect(args.workflows, threshold)[0]
-        for threshold in THRESHOLDS
-    }, frozen_ids)
+        for threshold in thresholds
+    }, frozen_ids, thresholds=thresholds)
     report["runner_error_workflows"] = runner_errors
     args.output.parent.mkdir(parents=True, exist_ok=True)
     args.output.write_text(json.dumps(report, indent=2) + "\n", encoding="utf-8")

@@ -97,6 +97,8 @@ def test_first_causal_stage_keeps_posthoc_label_separate(
     assert counts["sole_pending_parent_reentry"] == 1
     with pytest.raises(ValueError, match="unsupported"):
         rolling.collect(workflows, 777)
+    assert 2400 in rolling.OBSERVED_THRESHOLDS
+    assert 2400 not in rolling.THRESHOLDS
 
 
 def test_project_split_rejects_overlap_even_without_stage_candidates(

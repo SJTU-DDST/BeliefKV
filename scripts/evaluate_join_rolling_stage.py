@@ -21,6 +21,7 @@ from scripts.evaluate_join_group_notice import collect as collect_groups
 
 
 THRESHOLDS = (1024, 1700)
+OBSERVED_THRESHOLDS = THRESHOLDS + (2400, 3200, 4200, 5600, 7000)
 
 
 def _sole_pending(
@@ -64,7 +65,7 @@ def _sole_pending(
 
 
 def collect(workflows: Path, threshold: int) -> tuple[list[dict], dict]:
-    if threshold not in THRESHOLDS:
+    if threshold not in OBSERVED_THRESHOLDS:
         raise ValueError("unsupported frozen stage threshold")
     groups, counts = collect_groups(workflows)
     stages, stage_counts = collect_stages(workflows, threshold)
