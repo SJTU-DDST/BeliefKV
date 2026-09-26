@@ -2711,3 +2711,76 @@ SymPy development 没有被用来调模型或声称
 阶段通知及其控制/计算开销，不能从
 `TOOL_END` 粗特征外推精确 JOIN 时钟。
 物理预测传输和在线动作门禁保持关闭。
+
+## 43. child hidden 状态的本机实时递送契约（2026-09-26）
+
+第 29--42 节的真实 child hidden NPZ 只有在请求结束后
+才写盘。离线可用时刻不等于调度器已能实时读取：
+即使窗口分类通过，也不能靠这份离线证据发出
+实际提前的预取。新增**仅用于隔离 shadow checkout**
+的 `sglang-v0.5.20-child-hidden-live-shadow.patch`，
+须在 staging、early hidden-stream、child trace 三个
+既有补丁之后应用。只有现有 child trace 开关已开启、
+请求具备 `relation_type=spawn`/RID、单路流式生成且
+`BELIEFKV_HIDDEN_CHILD_LIVE_SOCKET` 非空时，
+每 32 个 token 尝试向本地 Unix datagram socket
+递送 `(RID, token_count, monotonic_ns, 2048 维 FP16)`
+样本。单条固定长度 4177 字节；发送端非阻塞，
+socket 不存在、队列满、身份/向量无效均丢弃该
+shadow 样本，**不得改变模型生成或把丢包伪造
+成低延迟命中**。更新后的补丁在每请求结束时
+以 info 日志记录发送/丢弃计数；下面已运行的
+pilot 使用的是更新日志级别前的隔离 checkout，
+不能从该日志推断总发送数。本补丁不是正式服务补丁。
+
+`beliefkv.experiments.child_hidden_live_shadow` 提供
+版本/长度/身份/采样间距与同机单调时钟检查。
+接收端要求自身拥有且其他用户不可访问的 socket
+父目录，只以排他方式创建输出文件；默认只写
+哈希 RID、token 位置、接收端单调时钟和传输年龄，不写
+原始身份、模型正文或隐状态。每条记录及时 flush；
+进程内回调可读取
+当前样本的向量以供未来只读模型评分，但不得将
+其误称为已完成的预测头或授予物理动作资格。
+`audit_child_hidden_live_delivery.py` 用本轮 workflow
+的 child 请求身份过滤共享 NPZ 目录，再配对保留的
+采样时钟、严格自然 RETURN 和完整 JOIN 最后 child。
+测试只在**临时源码副本**应用补丁，验证语法、
+数据帧往返、丢失接收端的非阻塞回退和不落盘
+向量；正式 SGLang checkout/进程没有改动。
+
+两个单 workflow 训练项目 smoke pilot 使用隔离服务、
+stream completion shadow，未启用预测动作：
+
+- `pytest-dev__pytest-5631` 约 155 秒，4 个 child
+  有 3 个自然 RETURN，另 1 个取消，完整 JOIN 未满足。
+  停止接收器并 flush 后共收到 **968** 个样本、
+  181 个 child 请求，送达年龄 P50/P95 为
+  **0.341/0.375 ms**；与本轮 NPZ 保留样本配对后
+  缺失 0。先前未 flush 时误见的 23 条“丢失”
+  实为接收器输出缓冲，不能作为丢包证据。
+- `pytest-dev__pytest-5809` 约 33 秒，3 个 child
+  自然 RETURN，1 个完整 JOIN 满足，测量有效。
+  共收到 **72** 个样本、21 个 child 请求，
+  NPZ 保留样本缺失 0，送达年龄 P50/P95 为
+  **0.352/0.379 ms**。3 个终态请求的首次已送达
+  样本距 RETURN 的提前量中位 **1830 ms**，
+  最后样本提前量中位 **245 ms**；完整 JOIN
+  的最后 child（仅 **1** 例）首次样本提前
+  **2102 ms**，最后样本提前 **245 ms**。
+  上述是按真实结果**事后配对的信号窗口**，
+  不是首次触发的预测准确率，更非 H2D 收益。
+
+审计结果在 `experiments/raw/qwen35_child_hidden_live_smoke_20260926/`
+的 `delivery_audit.json` 和 `join_pilot_delivery_audit.json`。
+该年龄只覆盖服务器组帧送出到本机 socket 接收，
+不覆盖 GPU hidden 抽取、模型判断、safe point 或 PCIe；
+首尾 NPZ 不保存长请求的全部样本，也没有匹配压力
+对照来量化吞吐损耗，不能推断高并发丢包率。
+下一步在匹配的隔离训练与**尚未参与选规则的项目**
+留出批次中，
+把**接收端实到时间**用于回放，而不是 NPZ 中的
+采样时间；先验证工具/最后 JOIN 的因果首次触发、
+误报、提前量与服务开销，再考虑任何物理 H2D。
+`online_eligible=false`、
+`predictive_action_eligible=false` 保持不变。

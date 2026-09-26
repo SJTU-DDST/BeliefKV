@@ -1,0 +1,88 @@
+diff --git a/python/sglang/srt/entrypoints/openai/serving_chat.py b/python/sglang/srt/entrypoints/openai/serving_chat.py
+--- a/python/sglang/srt/entrypoints/openai/serving_chat.py
++++ b/python/sglang/srt/entrypoints/openai/serving_chat.py
+@@ -11,6 +11,8 @@ import math
+ import os
+ import time
+ import uuid
++import socket
++import struct
+ from collections import OrderedDict, deque
+ from enum import Enum
+ from http import HTTPStatus
+@@ -153,5 +155,25 @@ def _child_hidden_trace_done(task: asyncio.Task) -> None:
+         logger.exception("Child hidden-state shadow write failed")
+ 
+ 
++def _send_child_hidden_live(sock, path, rid, tokens, sent_ns, hidden):
++    """Drop on a full or absent local socket; never stall model streaming."""
++    try:
++        identity = rid.encode("ascii")
++        if len(identity) > 64:
++            return False
++        vector = np.asarray(hidden, dtype="<f2")
++        if vector.shape != (2048,) or not np.isfinite(vector).all():
++            return False
++        payload = (
++            struct.pack(
++                "!4sB64sIQ", b"BKVH", 1, identity, tokens, sent_ns
++            )
++            + vector.tobytes()
++        )
++        return sock.sendto(payload, path) == len(payload)
++    except (OSError, ValueError, UnicodeError):
++        return False
++
++
+ _MEDIA_CONTENT_PART_TYPES = frozenset({"image_url", "video_url", "audio_url"})
+ _CHAT_TEMPLATE_CACHE_MAX_SIZE = 128
+@@ -1824,6 +1851,20 @@ class OpenAIServingChat(OpenAIServingBase):
+             if not Path(shadow_dir).is_dir():
+                 raise ValueError("BELIEFKV_HIDDEN_CHILD_TRACE_DIR must exist")
+             adapted_request.return_hidden_states = "last"
++        live_path = (
++            os.environ.get("BELIEFKV_HIDDEN_CHILD_LIVE_SOCKET")
++            if trace_child else None
++        )
++        live_sock = None
++        if live_path:
++            try:
++                live_sock = socket.socket(socket.AF_UNIX, socket.SOCK_DGRAM)
++                live_sock.setblocking(False)
++            except OSError:
++                logger.warning("Child hidden live socket unavailable")
++                live_sock = None
++        live_sent = 0
++        live_dropped = 0
+         first_shadow_samples = []
+         tail_shadow_samples = deque(maxlen=64)
+         shadow_finish_ns = None
+@@ -1912,6 +1955,15 @@ class OpenAIServingChat(OpenAIServingBase):
+                             time.monotonic_ns(),
+                             hidden_states[index],
+                         )
++                        if live_sock is not None:
++                            delivered = _send_child_hidden_live(
++                                live_sock, live_path, request.rid,
++                                sample[0], sample[1], sample[2],
++                            )
++                            if delivered:
++                                live_sent += 1
++                            else:
++                                live_dropped += 1
+                         if len(first_shadow_samples) < 16:
+                             first_shadow_samples.append(sample)
+                         else:
+@@ -2192,6 +2245,12 @@ class OpenAIServingChat(OpenAIServingBase):
+             error = self.create_streaming_error_response(str(e))
+             yield f"data: {error}\n\n"
+ 
++        finally:
++            if live_sock is not None:
++                live_sock.close()
++                logger.info("Child hidden live sent=%d dropped=%d",
++                             live_sent, live_dropped)
++
+         if trace_child and shadow_finish_ns is not None:
+             shadow_done_ns = time.monotonic_ns()
+             task = asyncio.create_task(
