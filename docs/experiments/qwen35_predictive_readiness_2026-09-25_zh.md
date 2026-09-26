@@ -3966,3 +3966,32 @@ RETURN 的候选要按撤销/取消/删失计数，
 监测报告质量和子 agent 取消。如果承诺与
 oracle 差距仍大，不开在线头，也不加大 GPU
 批量，仅记录阴性结果。
+
+### 训练侧采集与训练项目留一诊断（2026-09-26）
+
+训练侧两臂共 16/16 个 workflow 写出结果，但包装脚本因
+`intent` 臂两个和 `length` 臂三个 workflow 不完整返回非零。
+`intent`/`length` 分别只有 2/1 个系统测量有效 workflow，
+这不是任务吞吐 A/B。两臂分别有 19/11 个严格自然 child
+RETURN，首次通知分别覆盖 19/10 个自然 RETURN；
+`length` 臂 10 个可评分 1024 字符里程碑全部携带合法报告
+长度承诺，完整 JOIN 最后 child 仅 1 个。没有用未完成、
+受干预或不具自然 RETURN 的 child 训练时长头。
+原始目录为
+`experiments/raw/qwen35_report_length_train8_20260926_v1/`，
+运行时代码提交为 `854f5b8`；项目留出臂仍须单独评价。
+
+训练侧 10 个有标签里程碑的承诺均小于真实最终长度，
+平均绝对字符误差按项目为 Django 750、Xarray 691、
+Pylint 828 字符。按其余训练项目的 task-balanced
+`median(final_chars - hint_chars)` 做因果偏差校正：
+每折使用 5--9 个其它项目训练提示，绝不读取该项目的
+未来报告长度。未校正承诺、校正承诺、固定阶段先验和
+oracle 的 500 ms RETURN 点误差命中分别为
+**2/10、2/10、4/10、7/10**；校正虽减小平均误差，
+并未增加命中。JOIN 最后 child 仅 1 个，四者均
+没有命中。以上只是训练项目留一**开发诊断**，
+不支持参数上线或预测性物理传输。校正规则在留出项目
+结果可见之前固定，评价脚本为
+`scripts/audit_oracle_stream_length_bound.py`，
+训练侧报告为 `length_train_bias_diagnostic.json`。

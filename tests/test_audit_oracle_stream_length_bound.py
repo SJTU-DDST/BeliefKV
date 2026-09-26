@@ -99,8 +99,12 @@ def test_notice_length_hint_is_separate_from_oracle_and_reports_coverage():
 def test_fixed_training_excludes_all_heldout_project_labels():
     train = [_row("alpha", chars=1800, lead=1100),
              _row("beta", chars=2100, lead=1400)]
+    train[0]["planned_final_report_chars_at_notice"] = 1200
+    train[1]["planned_final_report_chars_at_notice"] = 2000
     test = [_row("gamma", chars=1900, lead=1200),
             _row("delta", chars=2500, lead=1700)]
+    test[0]["planned_final_report_chars_at_notice"] = 1850
+    test[1]["planned_final_report_chars_at_notice"] = 1850
     result = evaluate_rows(test, train_rows=train)
     assert result["protocol"] == "fixed_project_disjoint_train_heldout"
     assert result["train_projects"] == ["alpha", "beta"]
@@ -109,6 +113,17 @@ def test_fixed_training_excludes_all_heldout_project_labels():
     assert (
         result["folds"]["gamma"]["final_length_prior_chars"]
         == result["folds"]["delta"]["final_length_prior_chars"]
+    )
+    assert result["folds"]["gamma"]["train_length_hint_bias_chars"] == 350
+    assert result["folds"]["delta"]["train_length_hint_bias_chars"] == 350
+    altered = [dict(row) for row in test]
+    altered[0]["final_output_chars_oracle"] = 9000
+    rescored = evaluate_rows(altered, train_rows=train)
+    assert (
+        result["folds"]["gamma"]["bias_corrected_reported_length_hint"]
+        ["child_return"]["predicted_500_to_3000ms"]
+        == rescored["folds"]["gamma"]["bias_corrected_reported_length_hint"]
+        ["child_return"]["predicted_500_to_3000ms"]
     )
     with pytest.raises(ValueError, match="disjoint"):
         evaluate_rows(test, train_rows=[*train, test[0]])

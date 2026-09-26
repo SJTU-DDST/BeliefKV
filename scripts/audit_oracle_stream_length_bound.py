@@ -78,6 +78,7 @@ def evaluate_rows(
         for name in (
             "fixed_stage_prior", "causal_length_prior",
             "causal_project_length_prior", "reported_length_hint",
+            "bias_corrected_reported_length_hint",
             "oracle_length",
         )
     }
@@ -90,6 +91,18 @@ def evaluate_rows(
         stage_prior = _task_median(train, lambda row: row["lead_ms"])
         length_prior = _task_median(
             train, lambda row: row["final_output_chars_oracle"]
+        )
+        train_hints = [
+            row for row in train
+            if type(row.get("planned_final_report_chars_at_notice")) is int
+            and 256 <= row["planned_final_report_chars_at_notice"] <= 12_000
+        ]
+        length_hint_bias = (
+            _task_median(
+                train_hints,
+                lambda row: row["final_output_chars_oracle"]
+                - row["planned_final_report_chars_at_notice"],
+            ) if train_hints else 0.
         )
         tail_prior = max(0., _task_median(
             train,
@@ -133,6 +146,15 @@ def evaluate_rows(
                 )
                 for row, hint, valid in zip(test, hints, hint_valid)
             ],
+            "bias_corrected_reported_length_hint": [
+                max(0., (max(THRESHOLD_CHARS, hint + length_hint_bias)
+                    - THRESHOLD_CHARS) * row["ms_per_char"] + tail_prior)
+                if valid and train_hints else max(
+                    0., (length_prior - THRESHOLD_CHARS)
+                    * row["ms_per_char"] + tail_prior,
+                )
+                for row, hint, valid in zip(test, hints, hint_valid)
+            ],
             "oracle_length": [
                 max(0., (
                     row["final_output_chars_oracle"] - THRESHOLD_CHARS
@@ -164,6 +186,10 @@ def evaluate_rows(
             "tail_prior_ms": tail_prior,
             "causal_project_length_supported": project_supported,
             "reported_length_hint_count": sum(hint_valid),
+            "train_length_hint_count": len(train_hints),
+            "train_length_hint_bias_chars": (
+                length_hint_bias if train_hints else None
+            ),
             "reported_length_hint_char_mae": (
                 sum(
                     abs(hint - row["final_output_chars_oracle"])
@@ -228,6 +254,9 @@ def evaluate_rows(
             "examples in two workflows and otherwise reverting to train prior. "
             "A notice-time character hint is evaluated on the same full "
             "support, falling back to the train-only length median if absent. "
+            "The bias correction is the task-balanced median of final minus "
+            "announced characters from other training projects only; it "
+            "falls back to the training length median without training hints. "
             "Stage false/censored signals are excluded from timing errors. "
             "Historical development projects, no independent sealed test or "
             "physical transfer. An oracle is not an online predictor."
