@@ -1,0 +1,229 @@
+#!/usr/bin/env python3
+"""Project-held-out timing diagnostic for opt-in child completion notices."""
+
+from __future__ import annotations
+
+import argparse
+from collections import Counter, defaultdict
+import json
+from pathlib import Path
+
+import numpy as np
+
+try:
+    from scripts.audit_child_hidden_trace import (
+        blocked_child_invocations, index_workflow,
+    )
+except ModuleNotFoundError:
+    from audit_child_hidden_trace import blocked_child_invocations, index_workflow
+
+
+FEATURES = ("child_age_ms", "prior_llm_results", "prior_tool_ends")
+
+
+def load_episodes(root: Path) -> tuple[list[dict], dict[str, int]]:
+    files = sorted(root.glob("*/workflows/*/runtime_events.deepagents.jsonl"))
+    if not files:
+        raise FileNotFoundError(f"missing workflow events in {root}")
+    episodes = []
+    counts: Counter[str] = Counter(workflows=len(files))
+    for path in files:
+        workflow = path.parent
+        events = [
+            json.loads(line) for line in path.read_text(encoding="utf-8").splitlines()
+        ]
+        audit_path = workflow / "sandbox_audit.jsonl"
+        if not audit_path.is_file():
+            raise FileNotFoundError(f"missing sandbox audit for {workflow}")
+        notices = defaultdict(list)
+        for line in audit_path.read_text(encoding="utf-8").splitlines():
+            row = json.loads(line)
+            if row.get("event") == "child_return_intent_shadow":
+                notices[row["invocation_id"]].append(float(row["ts_ms"]))
+        terminals, join_last = index_workflow(
+            events, blocked_invocations=blocked_child_invocations(workflow),
+        )
+        returned = {
+            child: float(ts) for _, (child, ts) in terminals.items()
+        }
+        children = {
+            row["target_invocation_id"]
+            for row in events
+            if row["kind"] == "spawn" and row.get("target_invocation_id")
+        }
+        counts["natural_returns"] += len(returned)
+        for child, times in notices.items():
+            if child not in children:
+                raise ValueError(f"unbound child intent in {workflow}")
+            counts["announced_children"] += 1
+            counts["repeated_notices"] += len(times) - 1
+            notice = min(times)
+            end = returned.get(child)
+            later_tool = any(
+                row["kind"] == "tool_start"
+                and row.get("invocation_id") == child
+                and (row.get("attributes") or {}).get("tool_name")
+                != "announce_completion_intent"
+                and notice < float(row["ts_ms"]) < (
+                    end if end is not None else float("inf")
+                )
+                for row in events
+            )
+            if later_tool or (end is not None and end <= notice):
+                counts["revoked_or_late"] += 1
+                continue
+            if end is None:
+                counts["nonterminal_or_censored"] += 1
+                continue
+            prior = [
+                row for row in events
+                if row.get("invocation_id") == child
+                and float(row["ts_ms"]) <= notice
+            ]
+            creates = [
+                float(row["ts_ms"]) for row in prior
+                if row["kind"] == "invocation_create"
+            ]
+            if len(creates) != 1 or notice < creates[0]:
+                raise ValueError(f"missing or invalid child start in {workflow}")
+            episodes.append({
+                "project": workflow.name.split("__", 1)[0],
+                "lead_ms": end - notice,
+                "join_last": child in join_last,
+                "features": [
+                    notice - creates[0],
+                    sum(row["kind"] == "llm_result" and not
+                        (row.get("attributes") or {}).get("runtime_internal")
+                        for row in prior),
+                    sum(row["kind"] == "tool_end" and
+                        (row.get("attributes") or {}).get("tool_name")
+                        != "announce_completion_intent" for row in prior),
+                ],
+            })
+    counts["valid_intents"] = len(episodes)
+    for key in (
+        "announced_children", "repeated_notices", "revoked_or_late",
+        "nonterminal_or_censored",
+    ):
+        counts.setdefault(key, 0)
+    return episodes, dict(counts)
+
+
+def _metrics(actual: list[float], predicted: list[float]) -> dict | None:
+    if not actual:
+        return None
+    target = np.asarray(actual)
+    prediction = np.asarray(predicted)
+    errors = np.abs(target - prediction)
+    return {
+        "count": len(actual),
+        "mae_ms": float(np.mean(errors)),
+        "median_absolute_error_ms": float(np.median(errors)),
+        "p90_absolute_error_ms": float(np.percentile(errors, 90)),
+        "within_500ms": int(np.sum(errors <= 500)),
+        "forecast_over_500ms_too_early": int(np.sum(target - prediction > 500)),
+        "forecast_over_500ms_too_late": int(np.sum(prediction - target > 500)),
+        "predicted_500_to_3000ms": int(np.sum(
+            (prediction >= 500) & (prediction <= 3000),
+        )),
+        "actual_500_to_3000ms": int(np.sum(
+            (target >= 500) & (target <= 3000),
+        )),
+        "prediction_over_3000ms": int(np.sum(prediction > 3000)),
+        "actual_over_3000ms": int(np.sum(target > 3000)),
+    }
+
+
+def _ridge_predict(train: list[dict], test: list[dict]) -> list[float]:
+    # Regularize the small-sample residual against the train-only median prior.
+    x_train = np.log1p(np.asarray([row["features"] for row in train]))
+    x_test = np.log1p(np.asarray([row["features"] for row in test]))
+    center = x_train.mean(axis=0)
+    scale = np.maximum(x_train.std(axis=0), 1.)
+    x_train = (x_train - center) / scale
+    x_test = (x_test - center) / scale
+    target = np.log1p([row["lead_ms"] for row in train])
+    prior = float(np.median(target))
+    fitted = np.linalg.solve(
+        x_train.T @ x_train + 8. * np.eye(x_train.shape[1]),
+        x_train.T @ (target - prior),
+    )
+    return list(np.maximum(0., np.expm1(prior + x_test @ fitted)))
+
+
+def evaluate(root: Path) -> dict:
+    episodes, counts = load_episodes(root)
+    projects = sorted({row["project"] for row in episodes})
+    if len(projects) < 3:
+        raise ValueError("need at least three projects with valid intent episodes")
+    methods: dict[str, dict[str, list[float]]] = {
+        name: {"actual": [], "predicted": [], "join_actual": [],
+               "join_predicted": []}
+        for name in ("train_median", "causal_ridge")
+    }
+    folds = []
+    for project in projects:
+        train = [row for row in episodes if row["project"] != project]
+        test = [row for row in episodes if row["project"] == project]
+        fixed = [float(np.median([row["lead_ms"] for row in train]))] * len(test)
+        candidates = {"train_median": fixed, "causal_ridge": _ridge_predict(train, test)}
+        fold = {"heldout_project": project, "train_children": len(train),
+                "test_children": len(test)}
+        for name, predictions in candidates.items():
+            actual = [row["lead_ms"] for row in test]
+            join_pairs = [
+                (row["lead_ms"], predicted)
+                for row, predicted in zip(test, predictions) if row["join_last"]
+            ]
+            metrics = methods[name]
+            metrics["actual"].extend(actual)
+            metrics["predicted"].extend(predictions)
+            metrics["join_actual"].extend(pair[0] for pair in join_pairs)
+            metrics["join_predicted"].extend(pair[1] for pair in join_pairs)
+            fold[name] = {
+                "return": _metrics(actual, predictions),
+                "join_last_child": _metrics(
+                    [pair[0] for pair in join_pairs],
+                    [pair[1] for pair in join_pairs],
+                ),
+            }
+        folds.append(fold)
+    return {
+        "diagnostic_only": True,
+        "counts": counts,
+        "causal_features": list(FEATURES),
+        "protocol": (
+            "Leave-one-project-out; fit median and fixed log-linear ridge "
+            "(penalty=8) on other projects only. Notice-time features only. "
+            "No threshold/model selection using held-out projects."
+        ),
+        "folds": folds,
+        "pooled": {
+            name: {
+                "return": _metrics(values["actual"], values["predicted"]),
+                "join_last_child": _metrics(
+                    values["join_actual"], values["join_predicted"],
+                ),
+            }
+            for name, values in methods.items()
+        },
+        "scope": (
+            "Development pilot, not sealed test; opt-in tool changes agent "
+            "trajectory. Revoked and censored episodes excluded from point "
+            "errors but counted separately. No physical H2D/D2H claim."
+        ),
+    }
+
+
+def main() -> None:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--pilot-root", type=Path, required=True)
+    parser.add_argument("--output", type=Path, required=True)
+    args = parser.parse_args()
+    args.output.write_text(
+        json.dumps(evaluate(args.pilot_root), indent=2) + "\n", encoding="utf-8",
+    )
+
+
+if __name__ == "__main__":
+    main()
