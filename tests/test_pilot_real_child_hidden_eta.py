@@ -61,6 +61,17 @@ def test_real_child_features_never_use_future_round_as_first_snapshot(tmp_path):
         load_batch_records([tmp_path / "missing-workflows"], traces)
     with pytest.raises(FileNotFoundError, match="trace directory"):
         load_batch_records([tmp_path / "workflows"], tmp_path / "missing-traces")
+    empty_traces = tmp_path / "empty-traces"
+    empty_traces.mkdir()
+    with pytest.raises(ValueError, match="no matching hidden-state evidence"):
+        load_batch_records([tmp_path / "workflows"], empty_traces)
+    nonterminal_only = tmp_path / "nonterminal-only"
+    nonterminal_only.mkdir()
+    (nonterminal_only / "tool-round.npz").symlink_to(
+        traces / "tool-round.npz"
+    )
+    with pytest.raises(ValueError, match="no matching hidden-state evidence"):
+        load_batch_records([tmp_path / "workflows"], nonterminal_only)
 
 
 def test_classification_report_counts_false_early_terminal():

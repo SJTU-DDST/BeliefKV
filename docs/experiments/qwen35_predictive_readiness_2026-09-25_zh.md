@@ -2594,3 +2594,47 @@ invocation 的取消/返回/context epoch 变化，就撤销候选。
 物理 H2D 完成；不能把局部负结果解释为可靠短窗头。
 `online_eligible=false`、`predictive_action_eligible=false`
 及物理预测动作关闭状态保持不变。
+
+## 40. 扩充 256-token 训练与跨项目反例（2026-09-26）
+
+在第 39 节的可撤销因果回放中加入此前独立采集的
+16-root Django/Xarray/Pylint/Pytest 训练批，和新 32-root
+批共同做**按项目留一**拟合、筛选。两批的 hidden NPZ
+不在同一目录：旧 16-root 的文件在
+`qwen35_hidden_child_synthetic_smoke_20260926/traces`，
+新 32-root 的文件在
+`qwen35_child_final_sympy_fresh8_20260926/traces`，
+均按 request ID 匹配，目录名不等同于训练/测试归属。
+最初误把两批指向同一 NPZ 目录时，导出器虽报告
+130 个自然 child RETURN，却只加载到新批的 83 个
+终态隐状态轮次；这个所谓“合并报告”是无效的。
+`load_batch_records` 现在对整批零配对、或者该批有
+终态标签却一个终态 NPZ 都未配对的情形报错。
+正确路径下两批共有 128 个配对终态轮次和
+3678 个可判定非终态轮次。
+
+训练侧留一选择 256-token、阈值 0.55、连续 3 个
+高分样本、0 ms 人为延迟：12 次首触发中 **11 次**
+落入 child RETURN 前 0.5--3 秒，4 次完整 JOIN
+最后 child 首触发中 3 次命中。相较只用新 32-root
+的 9/12，这表明扩大训练样本改变了留一筛选结果，
+但两者的样本、模型均不同，不是同一评估集上的
+因果改进证明。冻结该规则后，已经用于阶段开发探索
+的 SymPy 16-task 项目为 **8/10**、最后 child
+**1/2** 命中；旧 Astropy/Sphinx 8-task 批为
+**3/5**、最后 child **0/1** 命中。后两批均非
+密封测试，压力和任务组成不同，且样本极少；
+尤其 60% 的跨项目窗口精度反驳了把训练侧
+91.7% 当作泛化精度的说法。
+
+两个只读报告分别为 `qwen35_hidden_child_real_train_fresh32_20260926/`
+`return_window_combined_stage256_delayed_cv.json` 和
+`return_window_combined_stage256_astropy_sphinx_dev8.json`。
+下一轮不能用这些 development 结果重新挑选阈值后
+称它们是独立验证。要提高真实工具 RETURN 和完整
+JOIN 的时间精度，应先找到在**当前请求结束前**可在线
+交付且有提前量的工具/生成阶段信号，冻结规则后用
+任务和项目均未参与选择的完整 workflow 验证首次触发、
+取消、控制投递及物理时间预算。离线 hidden NPZ
+在请求结束后才落盘，本项回放仍不能证明在线可观测
+或真实 H2D 收益。预测物理动作保持关闭。

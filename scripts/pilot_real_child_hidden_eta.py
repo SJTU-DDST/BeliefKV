@@ -123,6 +123,14 @@ def load_batch_records(
         ):
             raise FileNotFoundError(f"workflow events are absent from {root}")
         batch, metrics = load_records(root, trace_root)
+        if not batch or (
+            metrics["eligible_terminal_requests"]
+            and not metrics["terminal_rounds_with_hidden"]
+        ):
+            raise ValueError(
+                f"no matching hidden-state evidence for workflow batch {root} "
+                f"in trace directory {trace_root}"
+            )
         records.extend(batch)
         for key, count in metrics.items():
             counts[key] = counts.get(key, 0) + count
