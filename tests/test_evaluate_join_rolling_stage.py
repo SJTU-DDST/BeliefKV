@@ -194,6 +194,44 @@ def test_heldout_project_with_no_stage_is_reported(
     assert project["natural_join_point_error_ms"] is None
 
 
+def test_frozen_tasks_without_trace_still_count_in_project_denominator(
+    tmp_path, monkeypatch,
+):
+    train = tmp_path / "train" / "workflows"
+    heldout = tmp_path / "heldout" / "workflows"
+    train.mkdir(parents=True)
+    heldout.mkdir(parents=True)
+    monkeypatch.setattr(
+        rolling, "collect",
+        lambda *_args: ([], {"sole_pending_candidates": 0}),
+    )
+    report = rolling.evaluate(
+        train, heldout, frozen_train_ids=["django__one"],
+        frozen_heldout_ids=["astropy__one", "sphinx-doc__no_trace"],
+    )
+    assert report["1700"]["heldout_by_project"]["astropy"]["tasks"] == 1
+    assert report["1700"]["heldout_by_project"]["sphinx-doc"]["tasks"] == 1
+    assert report["1700"]["heldout_by_project"]["sphinx-doc"][
+        "first_sole_pending_candidates"
+    ] == 0
+
+
+def test_join_cli_rejects_incomplete_batches(tmp_path):
+    run = subprocess.run(
+        [
+            sys.executable,
+            str(rolling.ROOT / "scripts" / "evaluate_join_rolling_stage.py"),
+            "--train-workflows", str(tmp_path / "train" / "workflows"),
+            "--heldout-workflows", str(tmp_path / "heldout" / "workflows"),
+            "--output", str(tmp_path / "report.json"),
+        ],
+        capture_output=True, text=True,
+    )
+    assert run.returncode != 0
+    assert "final manifest and summary" in run.stderr
+    assert not (tmp_path / "report.json").exists()
+
+
 def test_cli_runs_from_outside_repository(tmp_path):
     run = subprocess.run(
         [sys.executable, str(rolling.ROOT / "scripts" /

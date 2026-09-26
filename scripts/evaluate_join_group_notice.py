@@ -365,7 +365,15 @@ def main() -> None:
     parser.add_argument("--heldout-workflows", type=Path, required=True)
     parser.add_argument("--output", type=Path, required=True)
     args = parser.parse_args()
+    from scripts.evaluate_cold_tool_project_loo import require_complete_batch
+
+    train_ids, train_errors = require_complete_batch(args.train_workflows)
+    heldout_ids, heldout_errors = require_complete_batch(args.heldout_workflows)
     result = evaluate(args.train_workflows, args.heldout_workflows)
+    result["train_frozen_workflows"] = len(train_ids)
+    result["heldout_frozen_workflows"] = len(heldout_ids)
+    result["train_runner_errors"] = train_errors
+    result["heldout_runner_errors"] = heldout_errors
     args.output.parent.mkdir(parents=True, exist_ok=True)
     args.output.write_text(json.dumps(result, indent=2) + "\n", encoding="utf-8")
 

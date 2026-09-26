@@ -1,7 +1,10 @@
 from __future__ import annotations
 
+import sys
+
 import pytest
 
+from scripts import evaluate_cold_tool_survival_landmarks as survival
 from scripts.evaluate_cold_tool_survival_landmarks import (
     _online_project_predictions, _scheduled_window, evaluate,
 )
@@ -123,3 +126,16 @@ def test_scheduled_window_censors_return_before_predicted_trigger():
     assert window["eligible"] == 2
     assert window["actual_return_before_scheduled"] == 1
     assert window["actual_lead_at_least_500ms"] == 1
+
+
+def test_survival_cli_rejects_unfinished_batches(tmp_path, monkeypatch):
+    output = tmp_path / "result.json"
+    monkeypatch.setattr(sys, "argv", [
+        "evaluate_cold_tool_survival_landmarks.py",
+        "--train-workflows", str(tmp_path / "train" / "workflows"),
+        "--heldout-workflows", str(tmp_path / "heldout" / "workflows"),
+        "--output", str(output),
+    ])
+    with pytest.raises(ValueError, match="final manifest and summary"):
+        survival.main()
+    assert not output.exists()

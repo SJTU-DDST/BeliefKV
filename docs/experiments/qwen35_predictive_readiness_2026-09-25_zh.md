@@ -5084,3 +5084,8 @@ safe point、HBM 容量或 H2D 开销。
 冻结规则验收独立 Astropy/Sphinx 留出，
 尤其分别列出首次可用窗口、短调用误报、
 无历史支持、失败/删失和 JOIN-last 的分母。
+正式评价 CLI 在训练与留出两侧均要求最终
+manifest/summary 覆盖全部冻结任务；JOIN 滚动
+报告按 manifest 的项目和任务计数，即使某任务
+没有 runtime trace，也不能从零候选项目分母
+中消失。留出批次尚未终结时拒绝输出正式报告。

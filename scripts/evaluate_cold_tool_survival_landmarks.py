@@ -15,6 +15,7 @@ ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 from scripts.audit_repeated_tool_timing import _quantile
+from scripts.evaluate_cold_tool_project_loo import require_complete_batch
 from scripts.evaluate_cold_tool_structure_holdout import (
     _paired_long_gain, cold_calls,
 )
@@ -271,6 +272,8 @@ def main() -> None:
         help="Evaluate only already-completed same-project shape history.",
     )
     args = parser.parse_args()
+    train_ids, train_errors = require_complete_batch(args.train_workflows)
+    heldout_ids, heldout_errors = require_complete_batch(args.heldout_workflows)
     train, train_censor = cold_calls(args.train_workflows)
     heldout, heldout_censor = cold_calls(args.heldout_workflows)
     report = evaluate(
@@ -278,6 +281,10 @@ def main() -> None:
     )
     report["train_censor"] = train_censor
     report["heldout_censor"] = heldout_censor
+    report["train_frozen_workflows"] = len(train_ids)
+    report["heldout_frozen_workflows"] = len(heldout_ids)
+    report["train_runner_errors"] = train_errors
+    report["heldout_runner_errors"] = heldout_errors
     args.output.parent.mkdir(parents=True, exist_ok=True)
     args.output.write_text(json.dumps(report, indent=2) + "\n", encoding="utf-8")
     print(json.dumps(report, indent=2))

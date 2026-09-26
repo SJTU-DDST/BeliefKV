@@ -16,6 +16,7 @@ if str(ROOT) not in sys.path:
 
 from scripts.evaluate_child_intent_project_holdout import _metrics
 from scripts.evaluate_child_intent_stream_milestones import collect as collect_stages
+from scripts.evaluate_cold_tool_project_loo import require_complete_batch
 from scripts.evaluate_join_group_notice import collect as collect_groups
 
 
@@ -143,17 +144,34 @@ def collect(workflows: Path, threshold: int) -> tuple[list[dict], dict]:
     }
 
 
-def evaluate(train_workflows: Path, heldout_workflows: Path) -> dict:
-    train_tasks = {
+def evaluate(
+    train_workflows: Path, heldout_workflows: Path, *,
+    frozen_train_ids: list[str] | None = None,
+    frozen_heldout_ids: list[str] | None = None,
+) -> dict:
+    observed_train_tasks = {
         path.parent.name for path in train_workflows.glob(
             "*/runtime_events.deepagents.jsonl"
         )
     }
-    heldout_tasks = {
+    observed_heldout_tasks = {
         path.parent.name for path in heldout_workflows.glob(
             "*/runtime_events.deepagents.jsonl"
         )
     }
+    train_tasks = (
+        set(frozen_train_ids) if frozen_train_ids is not None
+        else observed_train_tasks
+    )
+    heldout_tasks = (
+        set(frozen_heldout_ids) if frozen_heldout_ids is not None
+        else observed_heldout_tasks
+    )
+    if not (
+        observed_train_tasks <= train_tasks
+        and observed_heldout_tasks <= heldout_tasks
+    ):
+        raise ValueError("observed JOIN tasks differ from frozen manifest")
     train_projects = {task.split("__", 1)[0] for task in train_tasks}
     heldout_projects = {task.split("__", 1)[0] for task in heldout_tasks}
     if (
@@ -299,7 +317,16 @@ def main() -> None:
     parser.add_argument("--heldout-workflows", required=True, type=Path)
     parser.add_argument("--output", required=True, type=Path)
     args = parser.parse_args()
-    report = evaluate(args.train_workflows, args.heldout_workflows)
+    train_ids, train_errors = require_complete_batch(args.train_workflows)
+    heldout_ids, heldout_errors = require_complete_batch(args.heldout_workflows)
+    report = evaluate(
+        args.train_workflows, args.heldout_workflows,
+        frozen_train_ids=train_ids, frozen_heldout_ids=heldout_ids,
+    )
+    report["train_frozen_workflows"] = len(train_ids)
+    report["heldout_frozen_workflows"] = len(heldout_ids)
+    report["train_runner_errors"] = train_errors
+    report["heldout_runner_errors"] = heldout_errors
     args.output.parent.mkdir(parents=True, exist_ok=True)
     args.output.write_text(json.dumps(report, indent=2) + "\n", encoding="utf-8")
 
