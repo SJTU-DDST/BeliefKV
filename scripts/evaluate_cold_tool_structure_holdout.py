@@ -32,14 +32,18 @@ BEHAVIOR_INTERVENTIONS = frozenset({
 PRE_TOOL_RECOVERY = "agent_empty_reasoning_retry"
 
 
-def cold_calls(workflows: Path) -> tuple[list[dict], dict]:
+def cold_calls(
+    workflows: Path, *, include_returned_failures: bool = False,
+) -> tuple[list[dict], dict]:
     rows = []
     open_starts = 0
     completed_status = Counter()
     excluded_intervened = 0
     missing_input_chars = 0
+    returned_error_missing_input_chars = 0
     recovered_success = 0
     recovered_long = 0
+    included_error_returns = Counter()
     for path in sorted(workflows.glob("*/runtime_events.deepagents.jsonl")):
         interventions = {}
         recovered = {}
@@ -82,17 +86,28 @@ def cold_calls(workflows: Path) -> tuple[list[dict], dict]:
             ):
                 excluded_intervened += 1
                 continue
-            if row["status"] == "success":
+            if row["status"] == "success" or (
+                include_returned_failures
+                and row["status"] == "error"
+                and row.get("exception_type") is None
+            ):
                 if type(row["input_chars"]) is int:
                     rows.append(row)
-                    if min(
+                    if row["status"] == "error":
+                        included_error_returns[
+                            row.get("tool_error_class") or "unknown"
+                        ] += 1
+                    elif min(
                         recovered.get(row["invocation"], float("inf")),
                         recovered.get("*", float("inf")),
                     ) < row["start_ts_ms"]:
                         recovered_success += 1
                         recovered_long += row["duration_ms"] >= 2_000
                 else:
-                    missing_input_chars += 1
+                    if row["status"] == "success":
+                        missing_input_chars += 1
+                    else:
+                        returned_error_missing_input_chars += 1
         # Open child execute calls are never assumed to be short negatives.
         starts = {}
         with path.open(encoding="utf-8") as stream:
@@ -114,8 +129,14 @@ def cold_calls(workflows: Path) -> tuple[list[dict], dict]:
         "completed_cold_child_status": dict(sorted(completed_status.items())),
         "completed_cold_child_excluded_after_intervention": excluded_intervened,
         "successful_cold_child_missing_input_chars": missing_input_chars,
+        "returned_error_missing_input_chars": (
+            returned_error_missing_input_chars
+        ),
         "successful_cold_child_after_pre_tool_recovery": recovered_success,
         "long_success_after_pre_tool_recovery": recovered_long,
+        "included_returned_error_by_class": dict(sorted(
+            included_error_returns.items()
+        )),
     }
 
 

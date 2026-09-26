@@ -130,6 +130,46 @@ def test_cold_calls_do_not_label_failed_or_open_as_short(tmp_path):
     assert counts["completed_cold_child_excluded_after_intervention"] == 1
 
 
+def test_observed_error_return_is_timed_but_exception_remains_excluded(tmp_path):
+    workflow = tmp_path / "django__one"
+    workflow.mkdir()
+    events = []
+    for index, (status, error_class, exception) in enumerate((
+        ("success", None, None),
+        ("error", "command_failed", None),
+        ("error", "exception", "RuntimeError"),
+    )):
+        attrs = {
+            "tool_name": "execute", "tool_call_id": str(index),
+            "input_chars": 30, "is_child": True,
+            "observed_command_shape": "python_inline_complex",
+        }
+        common = {
+            "workflow_id": "wf", "invocation_id": "deepagents-invocation:child",
+        }
+        events.extend([
+            {**common, "kind": "tool_start", "ts_ms": index * 4000,
+             "sequence": index * 2, "attributes": attrs},
+            {**common, "kind": "tool_end", "ts_ms": index * 4000 + 3000,
+             "sequence": index * 2 + 1, "attributes": {
+                 **attrs, "status": status, "tool_error_class": error_class,
+                 "exception_type": exception,
+             }},
+        ])
+    (workflow / "runtime_events.deepagents.jsonl").write_text(
+        "".join(json.dumps(event) + "\n" for event in events),
+        encoding="utf-8",
+    )
+
+    success, _ = cold_calls(tmp_path)
+    observed, censor = cold_calls(tmp_path, include_returned_failures=True)
+    assert len(success) == 1
+    assert [row["status"] for row in observed] == ["success", "error"]
+    assert observed[1]["duration_ms"] == 3000
+    assert censor["included_returned_error_by_class"] == {"command_failed": 1}
+    assert censor["completed_cold_child_status"] == {"success": 1, "error": 2}
+
+
 def test_empty_reasoning_retry_before_tool_does_not_censor_tool_duration(tmp_path):
     workflow = tmp_path / "django__sample"
     workflow.mkdir()

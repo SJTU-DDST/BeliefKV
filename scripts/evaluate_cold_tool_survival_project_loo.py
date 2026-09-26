@@ -36,9 +36,10 @@ def project_leave_one_out(rows: list[dict]) -> dict:
             "Model priors fit only other training projects; the online arm "
             "uses completed calls of its own evaluated project strictly before "
             "each landmark. This is causal test-time adaptation, not zero-shot "
-            "project generalization. Scoring conditions on successful completed "
-            "calls and excludes censored/error/intervened calls; no action, "
-            "safe-point or physical transfer is validated."
+            "project generalization. Scoring defaults to successful completed "
+            "calls; the optional returned-failure arm also counts non-exception "
+            "error TOOL_END. Open, exception and intervened calls remain "
+            "excluded; no action, safe-point or physical transfer is validated."
         ),
     }
 
@@ -47,10 +48,18 @@ def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--workflows", type=Path, required=True)
     parser.add_argument("--output", type=Path, required=True)
+    parser.add_argument(
+        "--include-returned-failures", action="store_true",
+        help="Include non-exception TOOL_END errors as observed return times.",
+    )
     args = parser.parse_args()
     ids, errors = require_complete_batch(args.workflows)
-    rows, censor = cold_calls(args.workflows)
+    rows, censor = cold_calls(
+        args.workflows,
+        include_returned_failures=args.include_returned_failures,
+    )
     result = project_leave_one_out(rows)
+    result["include_returned_failures"] = args.include_returned_failures
     result["frozen_workflow_count"] = len(ids)
     result["runner_error_workflows"] = errors
     result["censor"] = censor

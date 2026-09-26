@@ -128,6 +128,8 @@ def _read_workflow(
                 "terminal_ts_ms": ts,
                 "is_child": origin,
                 "status": str(attrs.get("status") or "unknown"),
+                "tool_error_class": attrs.get("tool_error_class"),
+                "exception_type": attrs.get("exception_type"),
                 "previous": previous,
                 "start_ts_ms": start_ts,
             }

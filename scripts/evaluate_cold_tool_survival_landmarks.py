@@ -172,11 +172,13 @@ def evaluate(
         ),
         "limitation": (
             "The observed landmark is causal, but evaluation conditions on "
-            "successful completed calls; open/error/intervention calls are "
-            "not negatives. Optional project-local adaptation only observes "
-            "calls completed strictly before each live landmark; its frozen "
-            "starting prior fits other projects. No real timer delivery, "
-            "safe point, KV or PCIe."
+            "completed calls: success only by default, optionally also "
+            "non-exception error returns. Open, exception, and intervened "
+            "calls are not short negatives. Optional project-local adaptation "
+            "only observes calls completed strictly before each live landmark; "
+            "its frozen starting prior fits other projects. The extended "
+            "error-return history is not yet the runtime ProjectToolHistory. "
+            "No real timer delivery, safe point, KV or PCIe."
         ),
     }
     for landmark in LANDMARKS_MS:
@@ -271,11 +273,21 @@ def main() -> None:
         "--online-project-history", action="store_true",
         help="Evaluate only already-completed same-project shape history.",
     )
+    parser.add_argument(
+        "--include-returned-failures", action="store_true",
+        help="Include non-exception TOOL_END errors as observed return times.",
+    )
     args = parser.parse_args()
     train_ids, train_errors = require_complete_batch(args.train_workflows)
     heldout_ids, heldout_errors = require_complete_batch(args.heldout_workflows)
-    train, train_censor = cold_calls(args.train_workflows)
-    heldout, heldout_censor = cold_calls(args.heldout_workflows)
+    train, train_censor = cold_calls(
+        args.train_workflows,
+        include_returned_failures=args.include_returned_failures,
+    )
+    heldout, heldout_censor = cold_calls(
+        args.heldout_workflows,
+        include_returned_failures=args.include_returned_failures,
+    )
     report = evaluate(
         train, heldout, online_project_history=args.online_project_history,
     )
@@ -285,6 +297,7 @@ def main() -> None:
     report["heldout_frozen_workflows"] = len(heldout_ids)
     report["train_runner_errors"] = train_errors
     report["heldout_runner_errors"] = heldout_errors
+    report["include_returned_failures"] = args.include_returned_failures
     args.output.parent.mkdir(parents=True, exist_ok=True)
     args.output.write_text(json.dumps(report, indent=2) + "\n", encoding="utf-8")
     print(json.dumps(report, indent=2))

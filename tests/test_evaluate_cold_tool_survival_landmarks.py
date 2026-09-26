@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 import sys
 
 import pytest
@@ -139,3 +140,41 @@ def test_survival_cli_rejects_unfinished_batches(tmp_path, monkeypatch):
     with pytest.raises(ValueError, match="final manifest and summary"):
         survival.main()
     assert not output.exists()
+
+
+def test_survival_cli_applies_returned_failure_scope_to_both_sides(
+    tmp_path, monkeypatch,
+):
+    output = tmp_path / "result.json"
+    scopes = []
+    monkeypatch.setattr(
+        survival, "require_complete_batch",
+        lambda _path: (["task__one"], []),
+    )
+    monkeypatch.setattr(
+        survival, "cold_calls",
+        lambda _path, *, include_returned_failures: (
+            scopes.append(include_returned_failures) or [],
+            {"included_returned_error_by_class": {}},
+        ),
+    )
+    monkeypatch.setattr(
+        survival, "evaluate",
+        lambda _train, _heldout, *, online_project_history: {
+            "online_project_history": online_project_history,
+        },
+    )
+    monkeypatch.setattr(sys, "argv", [
+        "evaluate_cold_tool_survival_landmarks.py",
+        "--train-workflows", str(tmp_path / "train" / "workflows"),
+        "--heldout-workflows", str(tmp_path / "heldout" / "workflows"),
+        "--output", str(output),
+        "--include-returned-failures",
+    ])
+    survival.main()
+
+    report = json.loads(output.read_text(encoding="utf-8"))
+    assert scopes == [True, True]
+    assert report["include_returned_failures"] is True
+    assert report["train_frozen_workflows"] == 1
+    assert report["heldout_frozen_workflows"] == 1
