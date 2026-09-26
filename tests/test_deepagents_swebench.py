@@ -1045,6 +1045,14 @@ def test_workload_cli_native_reactive_guard_matches_p6_collection(
     assert config.loop_guard.graph_step_reserve == 32
     assert config.loop_guard.activation_wall_clock_s == 900
     assert config.tool_circuit_breaker_enabled is False
+    monkeypatch.setattr(
+        "sys.argv",
+        [
+            "run_deepagents_swebench.py", "--mode", "autonomous",
+            "--native-reactive-guard-profile",
+        ],
+    )
+    assert cli.parse_args().activation_wall_clock_seconds == 7200
 
     monkeypatch.setattr(
         "sys.argv",

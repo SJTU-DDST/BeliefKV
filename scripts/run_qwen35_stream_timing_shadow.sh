@@ -7,6 +7,7 @@ PYTHON="${PYTHON:-/home/longhao/miniconda3/envs/beliefkv-next/bin/python}"
 RUN_ROOT="${RUN_ROOT:-$ROOT/experiments/raw/qwen35_stream_completion_shadow_32root_20260925_v1}"
 SOURCE="${WORKLOAD_SOURCE:-$ROOT/experiments/raw/qwen35_native_reactive_calibration_timing_v3_20260925/qwen35-native-reactive-calibration-66root-r0}"
 BASE_URL="${BASE_URL:-http://127.0.0.1:18000}"
+WORKFLOW_DEADLINE_SECONDS="${WORKFLOW_DEADLINE_SECONDS:-7200}"
 WORKLOAD_OFFSET="${WORKLOAD_OFFSET:-0}"
 WORKLOAD_POOL_SIZE="${WORKLOAD_POOL_SIZE:-32}"
 WORKLOAD_PREFERRED_PREFIX="${WORKLOAD_PREFERRED_PREFIX:-}"
@@ -148,7 +149,7 @@ fi
   --max-completion-tokens 8192 \
   --recursion-limit 2048 \
   --stream-completion-shadow \
-  --activation-wall-clock-seconds 1800 \
+  --activation-wall-clock-seconds "$WORKFLOW_DEADLINE_SECONDS" \
   --disable-completion-gate \
   --gate system \
   --output "$RUN_ROOT/workloads" > "$RUN_ROOT/collection.log" 2>&1 \

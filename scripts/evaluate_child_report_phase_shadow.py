@@ -131,6 +131,36 @@ def _score(train: list[dict], test: list[dict]) -> dict:
     }
 
 
+def audit_workflows(workflows: Path) -> dict:
+    rows, counts = load(workflows)
+    candidates = [row for row in rows if row["phase_kind"] is not None]
+    return {
+        "diagnostic_only": True,
+        "collector": counts,
+        "stage_count": len(rows),
+        "stage_labels": dict(Counter(row["label"] for row in rows)),
+        "natural_join_last": sum(
+            row["label"] == "true" and row["join_last"] for row in rows
+        ),
+        "first_trigger_count": len(candidates),
+        "first_trigger_labels": dict(Counter(
+            row["label"] for row in candidates
+        )),
+        "first_trigger_phases": dict(Counter(
+            row["phase_kind"] for row in candidates
+        )),
+        "natural_first_trigger_with_500ms_lead": sum(
+            row["label"] == "true" and row["phase_lead_ms"] >= 500
+            for row in candidates
+        ),
+        "limitation": (
+            "This counts only notice-bound identity-checked 1024-character "
+            "stages; it is a training-side coverage audit, not an independent "
+            "accuracy result or an online action qualification."
+        ),
+    }
+
+
 def evaluate(train_roots: list[Path], heldout_root: Path) -> dict:
     train, train_info, seen_tasks, train_projects = [], {}, set(), set()
     for root in train_roots:
@@ -174,11 +204,19 @@ def evaluate(train_roots: list[Path], heldout_root: Path) -> dict:
 
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--train-workflows", type=Path, action="append", required=True)
-    parser.add_argument("--heldout-workflows", type=Path, required=True)
+    parser.add_argument("--audit-workflows", type=Path)
+    parser.add_argument("--train-workflows", type=Path, action="append")
+    parser.add_argument("--heldout-workflows", type=Path)
     parser.add_argument("--output", type=Path, required=True)
     args = parser.parse_args()
-    result = evaluate(args.train_workflows, args.heldout_workflows)
+    if args.audit_workflows is not None:
+        if args.train_workflows or args.heldout_workflows:
+            parser.error("--audit-workflows cannot be combined with evaluation")
+        result = audit_workflows(args.audit_workflows)
+    else:
+        if not args.train_workflows or args.heldout_workflows is None:
+            parser.error("evaluation requires training and held-out workflows")
+        result = evaluate(args.train_workflows, args.heldout_workflows)
     args.output.parent.mkdir(parents=True, exist_ok=True)
     args.output.write_text(json.dumps(result, indent=2) + "\n", encoding="utf-8")
 

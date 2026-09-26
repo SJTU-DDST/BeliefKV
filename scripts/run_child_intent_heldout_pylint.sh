@@ -8,6 +8,7 @@ MANIFEST="$ROOT/experiments/raw/qwen35_hidden_child_real_train_fresh32_20260926/
 PRIOR="$ROOT/experiments/raw/qwen35_child_completion_intent_pilot_20260926"
 OUT="${RUN_ROOT:-$ROOT/experiments/raw/qwen35_child_intent_pylint_holdout_20260926}"
 PORT="${PORT:-18001}"
+WORKFLOW_DEADLINE_SECONDS="${WORKFLOW_DEADLINE_SECONDS:-7200}"
 SERVER_PID=""
 
 stop_server() {
@@ -94,7 +95,8 @@ for arm in control intent; do
     "${instance_args[@]}" --max-workflows 4 --concurrency 4 \
     --subagent-fanout-profile native_dynamic_1to4 \
     --max-completion-tokens 8192 --model-context-tokens 131072 \
-    --recursion-limit 2048 --activation-wall-clock-seconds 900 \
+    --recursion-limit 2048 \
+    --activation-wall-clock-seconds "$WORKFLOW_DEADLINE_SECONDS" \
     --disable-completion-gate --gate system \
     "${intent_arg[@]}" --output "$OUT/${arm}_workloads" \
     > "$OUT/${arm}.log" 2>&1; then

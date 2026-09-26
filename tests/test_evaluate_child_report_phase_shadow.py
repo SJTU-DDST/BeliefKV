@@ -4,7 +4,7 @@ import json
 
 import pytest
 
-from scripts.evaluate_child_report_phase_shadow import evaluate, load
+from scripts.evaluate_child_report_phase_shadow import audit_workflows, evaluate, load
 
 
 def _write_workflow(workflows, project, index, *, phase=True):
@@ -78,6 +78,9 @@ def test_phase_audit_pairs_first_trigger_on_same_request_and_scores_missing(
     assert rows[0]["phase_kind"] == "summary"
     assert rows[0]["phase_lead_ms"] == 800.
     assert rows[1]["phase_kind"] is None
+    coverage = audit_workflows(heldout)
+    assert coverage["stage_count"] == 2
+    assert coverage["first_trigger_count"] == 1
     result = evaluate([train], heldout)["evaluation"]
     assert result["candidate_first_trigger"] == 1
     assert result["natural_without_candidate"] == 1

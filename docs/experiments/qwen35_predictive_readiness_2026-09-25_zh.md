@@ -4206,3 +4206,42 @@ Astropy `13033/13398` 和 Sphinx `10435/10449`。
 评价项目曾用于前期开发，故只称项目隔离复验，不称密封测试。
 必须保存每侧采集的源码提交与 manifest 哈希；若阶段仍不足以
 达到可用提前量和准确率，则作为阴性证据，不开启物理迁移。
+
+### 首轮训练侧采集与门禁
+
+冻结的八个训练任务在源码提交 `8f54821` 下完成：
+8/8 workflow 完成且系统测量有效，27 个已通知 child 均自然
+RETURN，8/8 次完整 JOIN 满足。阶段审计按请求、invocation、
+context epoch 核验出 27 个 1024 字符阶段；预设四类收尾
+标题在这些阶段之后的首次触发为 **0/27**，即使
+按完整 JOIN 的最后 child 计也为 **0/8**。
+流式采集本身确有章节标题，但 1024 字符之后观测到的
+标题全部属于冻结规则的 `other`；训练侧原始报告更常使用
+`Analysis Report`、`Root Cause`、`Evidence`、`Fix Required` 等
+问题分析类章节。逐任务证据保存在
+`experiments/raw/qwen35_report_phase_train8_shadow_v1/`；
+只读审计保存于同目录的 `phase_train_coverage.json`。
+
+该规则训练侧没有可拟合的阶段时钟，因而不启动原计划的
+Astropy/Sphinx 评价批次：运行它只会得到没有训练支持的
+回退基线，不能验证“阶段信息显著提升精度”。也不依据
+评价项目修改关键词并宣称项目隔离泛化；需要优先寻找
+发生得更早、具有真正结束语义的在线信号或有界资源
+预备策略。当前预测头与物理迁移资格不变。
+
+### shadow root 截止时间修正
+
+上述训练侧 pilot 仍使用旧脚本指定的单 workflow
+`activation_wall_clock_seconds=900`；该批 8/8 个
+workflow 均自然完成，因此不改变 0/27 阶段候选
+这一结果。此前对齐 guard 的四任务 pilot 中有一个
+root 在 child 全部返回后继续工具工作，恰在 900 秒
+截断；900 秒是 root 与所有 descendants 共用的
+**绝对 workflow 截止**，并非单次 child 或工具超时。
+
+后续三个 shadow 启动脚本统一采用 CLI 默认的
+`WORKFLOW_DEADLINE_SECONDS=7200`，可按长任务实验
+显式覆盖；单次模型请求和 sandbox 命令仍分别有自身
+超时，graph 2048/32 强制收尾保持不变。未来按
+workflow 配对比较时必须记录相同的截止配置，
+已被旧 900 秒截止删失的 root 不能追认为自然完成。

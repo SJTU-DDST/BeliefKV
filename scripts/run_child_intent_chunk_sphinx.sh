@@ -7,6 +7,7 @@ PYTHON="${PYTHON:-/home/longhao/miniconda3/envs/beliefkv-next/bin/python}"
 SOURCE="${SOURCE_MANIFEST:-$ROOT/experiments/raw/qwen35_native_reactive_calibration_timing_v3_20260925/qwen35-native-reactive-calibration-66root-r0/runtime_workload_manifest.json}"
 OUT="${RUN_ROOT:-$ROOT/experiments/raw/qwen35_child_intent_chunk_sphinx_20260926}"
 PORT="${PORT:-18001}"
+WORKFLOW_DEADLINE_SECONDS="${WORKFLOW_DEADLINE_SECONDS:-7200}"
 IDS=(
   sphinx-doc__sphinx-7748
   sphinx-doc__sphinx-7757
@@ -108,7 +109,8 @@ for arm in "${arms[@]}"; do
     "${instance_args[@]}" --max-workflows "${#IDS[@]}" --concurrency 4 \
     --subagent-fanout-profile native_dynamic_1to4 \
     --max-completion-tokens 8192 --model-context-tokens 131072 \
-    --recursion-limit 2048 --activation-wall-clock-seconds 900 \
+    --recursion-limit 2048 \
+    --activation-wall-clock-seconds "$WORKFLOW_DEADLINE_SECONDS" \
     --native-reactive-guard-profile \
     --disable-completion-gate --gate system --stream-completion-shadow \
     --child-finish-chunk-shadow \
