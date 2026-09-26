@@ -47,8 +47,13 @@ SHAPE_THRESHOLDS = (0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9)
 def _shape_matrix(
     rows: list[dict], vocabulary: dict[str, int], *,
     include_live_peers: bool = True,
+    include_long_history: bool = False,
+    include_duration_priors: bool = False,
 ) -> np.ndarray:
-    matrix = np.zeros((len(rows), 4 if include_live_peers else 3), dtype=np.float32)
+    matrix = np.zeros((
+        len(rows), 3 + int(include_live_peers) + 2 * int(include_long_history)
+        + 3 * int(include_duration_priors),
+    ), dtype=np.float32)
     for index, row in enumerate(rows):
         matrix[index, 0] = vocabulary.get(row["shape"], -1)
         matrix[index, 1] = math.log1p(max(0, row["input_chars"]))
@@ -59,10 +64,33 @@ def _shape_matrix(
             matrix[index, 3] = math.log1p(max(
                 0, float(row.get("other_workflow_2s_peers") or 0),
             ))
+        if include_long_history:
+            offset = 3 + int(include_live_peers)
+            matrix[index, offset] = math.log1p(max(
+                0, float(row.get("project_long_completed_support") or 0),
+            ))
+            matrix[index, offset + 1] = math.log1p(max(
+                0, float(row.get("project_long_completed_median_ms") or 0),
+            ))
+        if include_duration_priors:
+            offset = 3 + int(include_live_peers) + 2 * int(include_long_history)
+            matrix[index, offset] = math.log1p(max(
+                0, float(row.get("project_class_duration_median_ms") or 0),
+            ))
+            matrix[index, offset + 1] = math.log1p(max(
+                0, float(row.get("project_input_neighbor_duration_ms") or 0),
+            ))
+            matrix[index, offset + 2] = math.log1p(max(
+                0, float(row.get("project_input_neighbor_support") or 0),
+            ))
     return matrix
 
 
-def _fit_shape_head(rows: list[dict], *, include_live_peers: bool = True) -> tuple:
+def _fit_shape_head(
+    rows: list[dict], *, include_live_peers: bool = True,
+    include_long_history: bool = False,
+    include_duration_priors: bool = False,
+) -> tuple:
     labels = np.asarray(
         [row["duration_ms"] >= 2_000 for row in rows], dtype=np.int32,
     )
@@ -80,7 +108,11 @@ def _fit_shape_head(rows: list[dict], *, include_live_peers: bool = True) -> tup
             "seed": 42, "num_threads": 4, "verbosity": -1,
         },
         lgb.Dataset(
-            _shape_matrix(rows, vocabulary, include_live_peers=include_live_peers),
+            _shape_matrix(
+                rows, vocabulary, include_live_peers=include_live_peers,
+                include_long_history=include_long_history,
+                include_duration_priors=include_duration_priors,
+            ),
             label=labels,
             categorical_feature=[0],
         ),
@@ -91,10 +123,16 @@ def _fit_shape_head(rows: list[dict], *, include_live_peers: bool = True) -> tup
 
 def _shape_scores(
     model: tuple, rows: list[dict], *, include_live_peers: bool = True,
+    include_long_history: bool = False,
+    include_duration_priors: bool = False,
 ) -> np.ndarray:
     head, vocabulary = model
     return head.predict(
-        _shape_matrix(rows, vocabulary, include_live_peers=include_live_peers),
+        _shape_matrix(
+            rows, vocabulary, include_live_peers=include_live_peers,
+            include_long_history=include_long_history,
+            include_duration_priors=include_duration_priors,
+        ),
         num_threads=4,
     )
 
@@ -118,6 +156,8 @@ def _shape_threshold_report(scored: list[tuple], threshold: float) -> dict:
 def shape_transfer_pilot(
     train: list[dict], heldout: list[dict], *,
     include_live_peers: bool = True,
+    include_long_history: bool = False,
+    include_duration_priors: bool = False,
 ) -> dict:
     train_projects = {row["project"] for row in train}
     heldout_projects = {row["project"] for row in heldout}
@@ -132,8 +172,14 @@ def shape_transfer_pilot(
         validation = [row for row in train if row["project"] == project]
         fold_scores.extend(zip(
             validation, _shape_scores(
-                _fit_shape_head(fit, include_live_peers=include_live_peers),
+                _fit_shape_head(
+                    fit, include_live_peers=include_live_peers,
+                    include_long_history=include_long_history,
+                    include_duration_priors=include_duration_priors,
+                ),
                 validation, include_live_peers=include_live_peers,
+                include_long_history=include_long_history,
+                include_duration_priors=include_duration_priors,
             ),
         ))
     train_cv = {
@@ -154,7 +200,11 @@ def shape_transfer_pilot(
         "features": [
             "observed_command_shape", "log_input_chars",
             "log_completed_project_class_support",
-        ] + (["log_inflight_other_workflow_2s_peers"] if include_live_peers else []),
+        ] + (["log_inflight_other_workflow_2s_peers"] if include_live_peers else [])
+        + (["log_completed_long_class_support", "log_completed_long_class_median_ms"]
+           if include_long_history else [])
+        + (["log_completed_class_median_ms", "log_near_input_median_ms",
+            "log_near_input_support"] if include_duration_priors else []),
         "train_projects": sorted(train_projects),
         "heldout_projects": sorted(heldout_projects),
         "train_calls": len(train),
@@ -173,8 +223,14 @@ def shape_transfer_pilot(
     }
     if selected is not None:
         scores = _shape_scores(
-            _fit_shape_head(train, include_live_peers=include_live_peers),
+            _fit_shape_head(
+                train, include_live_peers=include_live_peers,
+                include_long_history=include_long_history,
+                include_duration_priors=include_duration_priors,
+            ),
             heldout, include_live_peers=include_live_peers,
+            include_long_history=include_long_history,
+            include_duration_priors=include_duration_priors,
         )
         result["heldout_long_calls"] = sum(
             row["duration_ms"] >= 2_000 for row in heldout

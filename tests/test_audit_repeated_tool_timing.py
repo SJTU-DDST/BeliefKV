@@ -56,10 +56,21 @@ def test_only_completed_earlier_same_invocation_available(tmp_path: Path) -> Non
 def test_replay_preserves_causal_command_shape(tmp_path: Path) -> None:
     start = _event("tool_start", 0, 1, "a", "child")
     start["attributes"]["observed_command_shape"] = "python_inline_test"
+    start["attributes"]["project_long_completed_median_ms"] = 3200.0
+    start["attributes"]["project_long_completed_support"] = 4
+    start["attributes"]["project_class_duration_median_ms"] = 1800.0
+    start["attributes"]["project_input_neighbor_duration_ms"] = 2400.0
+    start["attributes"]["project_input_neighbor_support"] = 5
     path = _write(tmp_path, "django", [
         start, _event("tool_end", 200, 2, "a", "child"),
     ])
-    assert _read_workflow(path)[0]["shape"] == "python_inline_test"
+    row = _read_workflow(path)[0]
+    assert row["shape"] == "python_inline_test"
+    assert row["project_long_completed_median_ms"] == 3200.0
+    assert row["project_long_completed_support"] == 4
+    assert row["project_class_duration_median_ms"] == 1800.0
+    assert row["project_input_neighbor_duration_ms"] == 2400.0
+    assert row["project_input_neighbor_support"] == 5
 
 
 def test_project_held_out_repeat_report(tmp_path: Path) -> None:

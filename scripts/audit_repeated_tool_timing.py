@@ -107,6 +107,21 @@ def _read_workflow(
                 "project_class_completed_support": start_attrs.get(
                     "project_class_completed_support", 0
                 ),
+                "project_class_duration_median_ms": start_attrs.get(
+                    "project_class_duration_median_ms"
+                ),
+                "project_input_neighbor_duration_ms": start_attrs.get(
+                    "project_input_neighbor_duration_ms"
+                ),
+                "project_input_neighbor_support": start_attrs.get(
+                    "project_input_neighbor_support", 0
+                ),
+                "project_long_completed_median_ms": start_attrs.get(
+                    "project_long_completed_median_ms"
+                ),
+                "project_long_completed_support": start_attrs.get(
+                    "project_long_completed_support", 0
+                ),
                 "input_chars": start_attrs.get("input_chars"),
                 "input_sha256": str(start_attrs.get("input_sha256") or ""),
                 "duration_ms": duration,
