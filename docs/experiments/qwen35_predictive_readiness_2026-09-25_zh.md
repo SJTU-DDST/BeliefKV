@@ -4118,3 +4118,45 @@ JOIN 覆盖和未完成率；如任务不再被 guard
 可迁移 KV 的 TOOL_RETURN 预测已解决。
 报告为该留出批次的
 `repeated_tool_project_holdout.json`。
+
+### 对齐 guard 的四任务真实复验
+
+固定此前曾出现 child 提前收尾的
+Astropy `13033/13398` 和 Sphinx `10435/10449`，
+仅采 `intent` 臂。`source_commit.txt` 为
+`63ff1fb`；其余服务仍为 Qwen3.5 BF16、
+SGLang 0.5.20、NUMA 1 Host 120 GB、
+running 48，独立 pilot 额外保留 900 秒
+workflow 截止。4/4 个 workflow 有结果，
+其中 3 个自然 completed 且 system 有效；
+Astropy `13398` 的全部四个 child 先完成，
+但 root 后续持续调用工具，到截止时报错，
+不得纳入完整 workflow/JCT 标签。
+
+四个任务共 **15/15 个 child 自然 RETURN**、
+**4/4 次完整 JOIN 最后 child**，首次通知
+覆盖 15/15 个自然 RETURN，未见通知后
+继续调用非通知工具。三个任务出现共 14 条
+语义循环模式审计，均为 `enforced=false`；
+旧版会因此干预的重复/错误模式不再提前将
+child 置为 `blocked`。这验证了 guard 配置
+生效，**不是**同一随机轨迹的因果 A/B：
+不同 prompt、模型采样和旧运行结果不可直接
+相减，也没有证明关掉早期干预改善任务正确性。
+第四个 root 的截止说明不能无条件扩大
+无 guard 的运行时间。
+
+使用第 65 节五个其它训练项目共 52 个
+1024 字符自然样本拟合固定阶段先验，
+这四个任务的 15 个可评分 child 均有
+至少 500 ms 真实提前量；先验 RETURN
+500 ms 点误差仅 **3/15**，JOIN 最后 child
+**1/4**。事后真实最终输出长度和当时已见
+流式速率的 oracle 为 **14/15**、
+JOIN **4/4**，JOIN oracle 绝对误差中位
+约 **78 ms**。说明提高自然标签覆盖并未
+让当前**在线**时间头准确；输出长度仍是
+主要信息缺口。报告保存在
+`experiments/raw/qwen35_native_guard_shadow_pilot_v1/`
+的 `intent_intent_audit.json` 和
+`stage_timing_project_diagnostic.json`。
