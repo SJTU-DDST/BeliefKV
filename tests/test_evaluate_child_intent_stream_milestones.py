@@ -211,6 +211,67 @@ def test_skipped_epoch_does_not_get_a_stage_label(tmp_path):
     assert result["1024"]["heldout_true"] == 0
 
 
+def test_empty_reasoning_retry_is_measured_but_not_natural_return(tmp_path):
+    root = tmp_path / "run"
+    task = "alpha__recovered"
+    _workflow(root / "workflows", task, lead_ms=500, first64=True)
+    path = root / "workflows" / task / "runtime_events.deepagents.jsonl"
+    events = [json.loads(line) for line in path.read_text().splitlines()]
+    child = f"deepagents-invocation:{task}"
+    for event in events:
+        attrs = event.get("attributes") or {}
+        if event["kind"] == "llm_result" and attrs.get("request_id") == "first":
+            event["ts_ms"] = 1065
+            attrs["output_chars"] = 0
+        elif event["kind"] == "structured_action":
+            attrs["request_id"] = "recovered"
+            event["context_epoch"] = 4
+    events.extend([
+        {"kind": "llm_submit", "ts_ms": 1070,
+         "invocation_id": child, "context_id": "context:child",
+         "context_epoch": 4, "attributes": {"request_id": "recovered"}},
+        {"kind": "structured_action", "ts_ms": 1085,
+         "invocation_id": child, "context_id": "context:child",
+         "context_epoch": 4, "attributes": {
+             "request_id": "recovered",
+             "beliefkv_child_first_content_shadow": True,
+         }},
+        {"kind": "llm_result", "ts_ms": 1250,
+         "invocation_id": child, "context_id": "context:child",
+         "context_epoch": 4, "attributes": {
+             "request_id": "recovered", "finish_reason": "stop",
+             "output_chars": 100, "tool_call_count": 0,
+         }},
+        {"kind": "structured_action", "ts_ms": 1150,
+         "invocation_id": child, "context_id": "context:child",
+         "context_epoch": 4, "attributes": {
+             "request_id": "recovered", "beliefkv_child_eos_shadow": True,
+             "eos_top_probability_threshold": 0.001,
+         }},
+    ])
+    path.write_text("".join(json.dumps(event) + "\n" for event in events))
+    rows, counts = collect(root / "workflows", 0)
+    assert rows == []
+    assert counts["stage_identity_mismatch"] == 1
+    audit_path = root / "workflows" / task / "sandbox_audit.jsonl"
+    with audit_path.open("a") as stream:
+        stream.write(json.dumps({
+            "event": "agent_empty_reasoning_retry",
+            "scope": f"planned:child:{child}", "ts_ms": 1068,
+        }) + "\n")
+    rows, counts = collect(root / "workflows", 0)
+    assert len(rows) == 1
+    assert rows[0]["label"] == "intervened"
+    assert rows[0]["join_last"] is True
+    assert counts["empty_retry_stage_intervened"] == 1
+    (root / "manifest.json").write_text(json.dumps({
+        "config": {"child_eos_low_prob_shadow": True},
+    }))
+    report = eos_audit(root / "workflows", (0.001,))
+    assert report["thresholds"]["0.001"]["intervened_first_trigger"] == 1
+    assert report["thresholds"]["0.001"]["natural_first_trigger"] == 0
+
+
 def test_rolling_project_prior_only_uses_completed_other_tasks(tmp_path):
     train = tmp_path / "train"
     heldout = tmp_path / "heldout"

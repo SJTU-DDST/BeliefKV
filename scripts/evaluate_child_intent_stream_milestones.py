@@ -34,10 +34,18 @@ def collect(workflows: Path, threshold: int) -> tuple[list[dict], dict]:
         if not audit_path.is_file():
             raise FileNotFoundError(f"missing sandbox audit in {path.parent}")
         notices = defaultdict(list)
+        empty_retries = defaultdict(list)
         for line in audit_path.read_text().splitlines():
             event = json.loads(line)
             if event.get("event") == "child_return_intent_shadow":
                 notices[event["invocation_id"]].append(event)
+            elif (
+                event.get("event") == "agent_empty_reasoning_retry"
+                and str(event.get("scope", "")).startswith("planned:child:")
+            ):
+                empty_retries[event["scope"].removeprefix("planned:child:")].append(
+                    float(event["ts_ms"])
+                )
         blocked = blocked_child_invocations(path.parent)
         terminals, join_last = index_workflow(
             events, blocked_invocations=blocked,
@@ -129,16 +137,49 @@ def collect(workflows: Path, threshold: int) -> tuple[list[dict], dict]:
                 and notice < float(event["ts_ms"]) <= ts
             ]
             rid = (stage.get("attributes") or {}).get("request_id")
-            if (
-                len(submits) != 1 or not rid
-                or (submits[0].get("attributes") or {}).get("request_id") != rid
-                or (submits[0].get("context_id"), submits[0].get("context_epoch"))
-                != (stage.get("context_id"), stage.get("context_epoch"))
-                or submits[0].get("context_id") != source["context_id"]
-                or submits[0].get("context_epoch") != source["context_epoch"] + 1
-            ):
+            direct = (
+                len(submits) == 1
+                and (submits[0].get("attributes") or {}).get("request_id") == rid
+                and (submits[0].get("context_id"), submits[0].get("context_epoch"))
+                == (stage.get("context_id"), stage.get("context_epoch"))
+                and submits[0].get("context_id") == source["context_id"]
+                and submits[0].get("context_epoch") == source["context_epoch"] + 1
+            )
+            recovered = False
+            if not direct and len(submits) == 2 and rid:
+                first_submit, second_submit = submits
+                first_rid = (first_submit.get("attributes") or {}).get("request_id")
+                first_result = next((
+                    event for event in observed
+                    if event["kind"] == "llm_result"
+                    and (event.get("attributes") or {}).get("request_id") == first_rid
+                    and float(first_submit["ts_ms"]) < float(event["ts_ms"])
+                    < float(second_submit["ts_ms"])
+                ), None)
+                first_attrs = (first_result or {}).get("attributes") or {}
+                recovered = (
+                    first_rid is not None and first_rid != rid
+                    and first_submit.get("context_id") == source["context_id"]
+                    and first_submit.get("context_epoch")
+                    == source["context_epoch"] + 1
+                    and (second_submit.get("context_id"),
+                         second_submit.get("context_epoch"))
+                    == (stage.get("context_id"), stage.get("context_epoch"))
+                    == (source["context_id"], source["context_epoch"] + 2)
+                    and first_attrs.get("finish_reason") in {"stop", "length"}
+                    and not first_attrs.get("tool_call_count")
+                    and first_attrs.get("output_chars") == 0
+                    and any(
+                        float(first_result["ts_ms"]) <= retry_ts
+                        <= float(second_submit["ts_ms"])
+                        for retry_ts in empty_retries[child]
+                    )
+                )
+            if not rid or (not direct and not recovered):
                 counts["stage_identity_mismatch"] += 1
                 continue
+            if recovered:
+                counts["empty_retry_stage_intervened"] += 1
             terminal = terminal_by_child.get(child)
             later_tool = any(
                 event["kind"] == "tool_start"
@@ -150,7 +191,7 @@ def collect(workflows: Path, threshold: int) -> tuple[list[dict], dict]:
                 for event in observed
             )
             if terminal and rid == terminal[0] and ts < terminal[1] and not later_tool:
-                label = "true"
+                label = "intervened" if recovered else "true"
                 lead_ms = terminal[1] - ts
             elif later_tool or terminal:
                 label = "false"

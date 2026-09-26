@@ -2647,6 +2647,56 @@ def test_post_notice_eos_shadow_does_not_change_thinking(tmp_path: Path) -> None
     assert "logprobs" not in request.model_settings
 
 
+def test_post_notice_eos_shadow_survives_only_empty_reasoning_retry(
+    tmp_path: Path,
+) -> None:
+    audit = JsonlAudit(tmp_path / "eos_retry.jsonl")
+    shadow = ChildFinalReportShadowMiddleware(
+        audit=audit, scope="child", disable_thinking=False, eos_shadow=True,
+    )
+    recovery = EmptyReasoningRecoveryMiddleware(audit=audit, scope="child")
+    notice = AIMessage(content="", tool_calls=[
+        {"name": "announce_completion_intent", "args": {}, "id": "call-1"},
+    ])
+    outcome = ToolMessage(
+        content="ready", tool_call_id="call-1", name="announce_completion_intent",
+    )
+    request = ModelRequest(
+        model=FakeMessagesListChatModel(responses=[AIMessage(content="report")]),
+        messages=[HumanMessage(content="task"), notice, outcome],
+        model_settings={"extra_body": {"chat_template_kwargs": {}}},
+    )
+    sent = []
+
+    def model(attempt: ModelRequest) -> ModelResponse:
+        sent.append(attempt.model_settings)
+        return ModelResponse(result=[AIMessage(
+            content="" if len(sent) == 1 else "report",
+            response_metadata={"finish_reason": "stop"},
+        )])
+
+    try:
+        recovery.wrap_model_call(
+            request, lambda attempt: shadow.wrap_model_call(attempt, model),
+        )
+        shadow.wrap_model_call(request, model)
+    finally:
+        audit.close()
+    assert [settings.get("logprobs") for settings in sent] == [True, True, None]
+    assert sent[0]["extra_body"]["chat_template_kwargs"] == {}
+    assert sent[1]["extra_body"]["chat_template_kwargs"] == {
+        "enable_thinking": False,
+    }
+    events = [
+        json.loads(line) for line in (tmp_path / "eos_retry.jsonl")
+        .read_text().splitlines()
+    ]
+    assert [event["event"] for event in events].count("child_eos_shadow") == 2
+    assert [event["event"] for event in events].count(
+        "agent_empty_reasoning_retry"
+    ) == 1
+
+
 def test_child_final_report_shadow_matches_real_agent_tool_result(tmp_path: Path) -> None:
     class ToolCallingFakeModel(FakeMessagesListChatModel):
         def bind_tools(self, tools, **kwargs):

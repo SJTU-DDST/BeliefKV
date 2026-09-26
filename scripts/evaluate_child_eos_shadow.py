@@ -235,6 +235,9 @@ def score(train: list[dict], test: list[dict], threshold: float) -> dict:
             for row in observed
         ),
         "natural_first_trigger": len(natural),
+        "intervened_first_trigger": sum(
+            row["label"] == "intervened" for row in observed
+        ),
         "natural_without_trigger": sum(
             row["label"] == "true" and threshold not in row["first_eos_ts"]
             for row in test
@@ -279,6 +282,9 @@ def audit(
         by_threshold[str(threshold)] = {
             "first_trigger": len(triggered),
             "natural_first_trigger": len(natural),
+            "intervened_first_trigger": sum(
+                row["label"] == "intervened" for row in triggered
+            ),
             "false_first_trigger": sum(
                 row["label"] == "false" for row in triggered
             ),
@@ -331,8 +337,9 @@ def audit(
         "scope": (
             "Notice-bound first-content stages for low-probability thresholds; "
             "otherwise first 64-character stages. Only the immediately following "
-            "request is eligible; empty-response retries are excluded. No causal "
-            "fit or physical transfer. A top-k miss is not zero EOS probability."
+            "request is naturally eligible; verified empty-response retries are "
+            "reported as interventions, not natural returns. No causal fit or "
+            "physical transfer. A top-k miss is not zero EOS probability."
         ),
     }
 

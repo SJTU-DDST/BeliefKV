@@ -1524,7 +1524,14 @@ class ChildFinalReportShadowMiddleware(AgentMiddleware[Any, Any, Any]):
             settings = dict(request.model_settings)
             settings.update(logprobs=True, top_logprobs=20)
             request = request.override(model_settings=settings)
-        return handler(request)
+        response = handler(request)
+        if (
+            self.eos_shadow
+            and EmptyReasoningRecoveryMiddleware._reasoning_only_terminal(response)
+        ):
+            with self._lock:
+                self._seen_call_ids.discard(outcome.tool_call_id)
+        return response
 
 
 @dataclass(frozen=True)

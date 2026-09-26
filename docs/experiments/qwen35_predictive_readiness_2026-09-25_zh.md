@@ -4393,8 +4393,10 @@ predictive_action_eligible。
 3 个 child 均 RETURN，1 次 JOIN 满足，root 自然结束；
 workflow 配置的绝对截止为 7200 秒，未触发取消。
 `qwen35_eos_low_train_smoke_xarray3305_v1/eos_coverage.json`
-审计仅有 2 个可评分的通知后首请求；0.01% 与 0.1%
-分别覆盖 2/2，首次触发到 RETURN 为约 420--680 ms，
+审计含 2 个可评分的自然通知后首请求及 1 个
+空响应恢复干预阶段；0.01% 与 0.1%
+分别覆盖 2/2 个自然请求，首次触发到 RETURN
+约 420--680 ms，
 只有 1/2 达到 500 ms，0/2 达到 2 秒；
 1% 对相同两条的首次触发仅约 292--420 ms。
 最低阈值也没有在此 pilot 产生足以隐藏大块 KV
@@ -4403,11 +4405,16 @@ workflow 配置的绝对截止为 7200 秒，未触发取消。
 剩余的 JOIN-last child 在通知后首请求返回空正文
 `finish_reason=stop`，runtime 的空推理恢复又发出
 第二次模型请求，最终正文来自比通知大两个 epoch
-的请求；`stage_identity_mismatch=1` 正确排除了
-该样本。该次 JOIN 虽然满足，却没有通知后首请求的
-EOS 可用标签；不能将最终成功的第二次请求事后
-并入首请求以虚增覆盖率。需要单独评价空响应恢复
-的干预比例及其对 JOIN 时机的影响。
+的请求。原审计的 `stage_identity_mismatch=1`
+没有将它归为自然样本；新版审计要求第一请求确为
+空 `stop`、存在同一 child 的恢复审计和连续 epoch，
+才将第二请求标为 `intervened`，不参与自然 ETA
+拟合。此旧 pilot 的恢复请求没有 EOS 打点，
+因此首次触发数仍为 2、自然 JOIN-last 触发为 0。
+修复后的 opt-in shadow 仅在空终态重试时继续采
+EOS，普通后续请求仍保持一次性限制；需要新采集
+验证恢复请求的信号、误报和实际窗口，不能将旧
+批次的 JOIN 成功事后充当 EOS 覆盖。
 
 另查明先前 `pylint-6528` planned child 在第 331
 次模型请求的预检中遇到 `prompt_tokens=123013`
@@ -4418,5 +4425,5 @@ planned child 接入同一上下文生命周期及独立注册的
 这一改动仅影响修复后启动的进程；上述低阈值 pilot
 及此前批次使用旧 runtime，不得当成修复后正式训练
 样本。针对性与生命周期相关回归为
-157 passed、1 skipped；物理返回与项目隔离精度
+162 passed、1 skipped；物理返回与项目隔离精度
 仍需另行验证。
