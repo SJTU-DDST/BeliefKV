@@ -109,6 +109,10 @@ def parse_args() -> argparse.Namespace:
         help="Also audit 0.01%% and 0.1%% EOS cues; requires --child-eos-shadow.",
     )
     parser.add_argument(
+        "--child-eos-top-hit-shadow", action="store_true",
+        help="Audit first unsampled EOS top-20 candidate; requires --child-eos-shadow.",
+    )
+    parser.add_argument(
         "--child-return-intent-shadow", action="store_true",
         help="Opt-in child completion notification tool for read-only timing diagnosis.",
     )
@@ -271,6 +275,7 @@ def main() -> int:
         child_report_phase_shadow=args.child_report_phase_shadow,
         child_eos_shadow=args.child_eos_shadow,
         child_eos_low_prob_shadow=args.child_eos_low_prob_shadow,
+        child_eos_top_hit_shadow=args.child_eos_top_hit_shadow,
         child_return_intent_shadow=args.child_return_intent_shadow,
         child_final_report_shadow=args.child_final_report_shadow,
         child_report_length_shadow=args.child_report_length_shadow,

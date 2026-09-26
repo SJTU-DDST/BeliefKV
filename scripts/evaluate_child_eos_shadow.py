@@ -23,22 +23,35 @@ except ModuleNotFoundError:
     from evaluate_child_return_intent_timing import _metrics
 
 
+TOP_HIT = "top20"
+
+
+def _first_content_scope(thresholds: tuple[float | str, ...]) -> bool:
+    return any(
+        threshold in EOS_LOW_PROB_THRESHOLDS or threshold == TOP_HIT
+        for threshold in thresholds
+    )
+
+
 def load(
     workflows: Path,
-    thresholds: tuple[float, ...] = EOS_PROB_THRESHOLDS,
+    thresholds: tuple[float | str, ...] = EOS_PROB_THRESHOLDS,
 ) -> tuple[list[dict], dict]:
-    if any(threshold in EOS_LOW_PROB_THRESHOLDS for threshold in thresholds):
+    if _first_content_scope(thresholds):
         manifest = workflows.parent / "manifest.json"
+        config = (
+            (json.loads(manifest.read_text(encoding="utf-8")).get("config") or {})
+            if manifest.is_file() else {}
+        )
         if (
-            not manifest.is_file()
-            or not (json.loads(manifest.read_text(encoding="utf-8"))
-                    .get("config") or {}).get("child_eos_low_prob_shadow")
+            any(t in EOS_LOW_PROB_THRESHOLDS for t in thresholds)
+            and not config.get("child_eos_low_prob_shadow")
         ):
             raise ValueError(f"low-probability EOS was not collected in {workflows}")
+        if TOP_HIT in thresholds and not config.get("child_eos_top_hit_shadow"):
+            raise ValueError(f"EOS top-hit was not collected in {workflows}")
     stages, counts = collect(
-        workflows, 0 if any(
-            t in EOS_LOW_PROB_THRESHOLDS for t in thresholds
-        ) else 64,
+        workflows, 0 if _first_content_scope(thresholds) else 64,
     )
     events_by_task = {
         path.parent.name: [
@@ -51,7 +64,7 @@ def load(
         events = events_by_task[row["task_id"]]
         earliest_cue_ts = (
             row.get("observed_first_content_ts_ms")
-            if any(t in EOS_LOW_PROB_THRESHOLDS for t in thresholds)
+            if _first_content_scope(thresholds)
             and row.get("observed_first_content_ts_ms") is not None
             else row["signal_ts_ms"]
         )
@@ -81,11 +94,20 @@ def load(
         for event in events:
             attrs = event.get("attributes") or {}
             threshold = attrs.get("eos_top_probability_threshold")
+            signal = (
+                TOP_HIT
+                if attrs.get("beliefkv_child_eos_first_top_hit_shadow")
+                else threshold
+            )
             if (
                 event.get("kind") != "structured_action"
-                or not attrs.get("beliefkv_child_eos_shadow")
-                or type(threshold) not in {int, float}
-                or threshold not in thresholds
+                or not (
+                    (signal == TOP_HIT
+                     and attrs.get("beliefkv_child_eos_first_top_hit_shadow"))
+                    or (attrs.get("beliefkv_child_eos_shadow")
+                        and type(threshold) in {int, float})
+                )
+                or signal not in thresholds
                 or attrs.get("request_id") != row["request_id"]
                 or event.get("invocation_id") != row["invocation_id"]
                 or (event.get("context_id"), event.get("context_epoch"))
@@ -94,9 +116,9 @@ def load(
             ):
                 continue
             ts = float(event["ts_ms"])
-            current = row["first_eos_ts"].get(threshold)
+            current = row["first_eos_ts"].get(signal)
             if current is None or ts < current:
-                row["first_eos_ts"][threshold] = ts
+                row["first_eos_ts"][signal] = ts
     return stages, counts
 
 
@@ -116,7 +138,7 @@ def _stage_64_ts(row: dict) -> float | None:
     )
 
 
-def score(train: list[dict], test: list[dict], threshold: float) -> dict:
+def score(train: list[dict], test: list[dict], threshold: float | str) -> dict:
     train_stage = [row for row in train if row["label"] == "true"]
     if not train_stage:
         raise ValueError("no natural training stage returns")
@@ -263,7 +285,7 @@ def score(train: list[dict], test: list[dict], threshold: float) -> dict:
 
 def audit(
     workflows: Path,
-    thresholds: tuple[float, ...] = EOS_PROB_THRESHOLDS,
+    thresholds: tuple[float | str, ...] = EOS_PROB_THRESHOLDS,
 ) -> dict:
     rows, counts = load(workflows, thresholds)
     by_threshold = {}
@@ -308,7 +330,7 @@ def audit(
         "diagnostic_only": True,
         "collector": counts,
         "stage_threshold_chars": (
-            0 if any(t in EOS_LOW_PROB_THRESHOLDS for t in thresholds) else 64
+            0 if _first_content_scope(thresholds) else 64
         ),
         "eligible_stage": len(rows),
         "eligible_first_64_stage": sum(
@@ -335,7 +357,8 @@ def audit(
             for row in rows
         ),
         "scope": (
-            "Notice-bound first-content stages for low-probability thresholds; "
+            "Notice-bound first-content stages for low-probability and top-hit "
+            "signals (a top-hit is not a calibrated probability); "
             "otherwise first 64-character stages. Only the immediately following "
             "request is naturally eligible; verified empty-response retries are "
             "reported as interventions, not natural returns. No causal fit or "
@@ -346,7 +369,7 @@ def audit(
 
 def evaluate(
     train_roots: list[Path], heldout_root: Path,
-    thresholds: tuple[float, ...] = EOS_PROB_THRESHOLDS,
+    thresholds: tuple[float | str, ...] = EOS_PROB_THRESHOLDS,
 ) -> dict:
     train, train_info, tasks, projects = [], {}, set(), set()
     for root in train_roots:
@@ -384,8 +407,8 @@ def evaluate(
             } for threshold in thresholds
         },
         "scope": (
-            "Scores delivered unsampled EOS top-logprob crossings only after "
-            "a notice-bound first 64-character stage. Priors use training "
+            "Scores delivered unsampled EOS top-logprob crossings or the first "
+            "top-20 hit after a notice-bound content stage. Priors use training "
             "projects exclusively. No action readiness or H2D benefit implied."
         ),
     }
@@ -400,11 +423,16 @@ def main() -> None:
         "--include-low-prob", action="store_true",
         help="Evaluate 0.01%%/0.1%% signals only when both splits collected them.",
     )
+    parser.add_argument(
+        "--include-top-hit", action="store_true",
+        help="Evaluate first EOS top-20 hit only when both splits collected it.",
+    )
     parser.add_argument("--output", type=Path, required=True)
     args = parser.parse_args()
     thresholds = (
-        EOS_LOW_PROB_THRESHOLDS + EOS_PROB_THRESHOLDS
-        if args.include_low_prob else EOS_PROB_THRESHOLDS
+        ((TOP_HIT,) if args.include_top_hit else ())
+        + (EOS_LOW_PROB_THRESHOLDS if args.include_low_prob else ())
+        + EOS_PROB_THRESHOLDS
     )
     if args.audit_workflows:
         if args.train_workflows or args.heldout_workflows:

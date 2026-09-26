@@ -141,6 +141,58 @@ def test_low_prob_audit_requires_trace_collection_contract(monkeypatch, tmp_path
     assert low["natural_lead_ms"]["median"] == 1030
 
 
+def test_first_top_hit_requires_explicit_collection_and_project_holdout(
+    monkeypatch, tmp_path,
+):
+    train = tmp_path / "train"
+    heldout = tmp_path / "heldout"
+    train_rows = [_trace(train / "workflows", "alpha", "one")]
+    eval_rows = [
+        _trace(heldout / "workflows", "beta", "one"),
+        _trace(heldout / "workflows", "beta", "two", label="false"),
+    ]
+    for row in train_rows + eval_rows:
+        row["stage_threshold_chars"] = 0
+        row["observed_first_content_ts_ms"] = 1000.
+    for root in (train, heldout):
+        for path in (root / "workflows").glob("*/runtime_events.deepagents.jsonl"):
+            with path.open("a") as stream:
+                stream.write(json.dumps({
+                    "kind": "structured_action", "ts_ms": 1050,
+                    "invocation_id": "child", "context_id": "ctx",
+                    "context_epoch": 1, "attributes": {
+                        "request_id": "req",
+                        "beliefkv_child_eos_first_top_hit_shadow": True,
+                    },
+                }) + "\n")
+    monkeypatch.setattr(
+        "scripts.evaluate_child_eos_shadow.collect",
+        lambda root, stage: (
+            train_rows if root == train / "workflows" else eval_rows,
+            {"workflows": 2, "observed_child_returns_total": 2,
+             "observed_join_last_total": 1, "natural_child_returns_total": 1,
+             "natural_join_last_total": 1},
+        ),
+    )
+    with pytest.raises(ValueError, match="top-hit was not collected"):
+        load(train / "workflows", ("top20",))
+    for root in (train, heldout):
+        (root / "manifest.json").write_text(json.dumps({
+            "config": {"child_eos_top_hit_shadow": True},
+        }))
+    rows, _ = load(train / "workflows", ("top20",))
+    assert rows[0]["first_eos_ts"]["top20"] == 1050
+    report = evaluate(
+        [train / "workflows"], heldout / "workflows", ("top20",)
+    )["thresholds"]["top20"]["evaluation"]
+    assert report["eligible_first_content_stage"] == 2
+    assert report["first_trigger_labels"] == {"true": 1, "false": 1}
+    assert report["natural_trigger_lead_at_least_500ms"] == 1
+    assert audit(heldout / "workflows", ("top20",))["thresholds"][
+        "top20"
+    ]["false_first_trigger"] == 1
+
+
 def test_early_eos_uses_only_first_content_baseline():
     train = {
         "task_id": "train__one", "label": "true", "lead_ms": 1000.,

@@ -26,6 +26,11 @@ if [[ "${CHILD_EOS_LOW_PROB_SHADOW:-0}" == 1 \
   printf 'Low-probability EOS shadow requires CHILD_EOS_SHADOW=1\n' >&2
   exit 1
 fi
+if [[ "${CHILD_EOS_TOP_HIT_SHADOW:-0}" == 1 \
+  && "${CHILD_EOS_SHADOW:-0}" != 1 ]]; then
+  printf 'EOS top-hit shadow requires CHILD_EOS_SHADOW=1\n' >&2
+  exit 1
+fi
 SERVER_PID=""
 
 stop_server() {
@@ -113,6 +118,9 @@ for arm in "${arms[@]}"; do
     if [[ "${CHILD_EOS_LOW_PROB_SHADOW:-0}" == 1 ]]; then
       intent_arg+=(--child-eos-low-prob-shadow)
     fi
+    if [[ "${CHILD_EOS_TOP_HIT_SHADOW:-0}" == 1 ]]; then
+      intent_arg+=(--child-eos-top-hit-shadow)
+    fi
   fi
   if ! "$PYTHON" "$ROOT/scripts/run_deepagents_swebench.py" \
     --mode autonomous --base-url "http://127.0.0.1:$PORT/v1" \
@@ -143,6 +151,9 @@ for arm in intent final length; do
       low_arg=()
       if [[ "${CHILD_EOS_LOW_PROB_SHADOW:-0}" == 1 ]]; then
         low_arg=(--include-low-prob)
+      fi
+      if [[ "${CHILD_EOS_TOP_HIT_SHADOW:-0}" == 1 ]]; then
+        low_arg+=(--include-top-hit)
       fi
       "$PYTHON" "$ROOT/scripts/evaluate_child_eos_shadow.py" \
         --audit-workflows "$OUT/${arm}_workloads/workflows" \

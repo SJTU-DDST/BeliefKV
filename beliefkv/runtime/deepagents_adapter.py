@@ -231,12 +231,15 @@ class DeepAgentsRuntimeAdapter(BaseCallbackHandler):
         report_phase_shadow: bool = False,
         eos_shadow: bool = False,
         eos_low_prob_shadow: bool = False,
+        eos_top_hit_shadow: bool = False,
     ) -> None:
         super().__init__()
         if root_metadata.relation_type != RelationType.ROOT.value:
             raise ValueError("Deep Agents root metadata must use relation_type=root")
         if eos_low_prob_shadow and not eos_shadow:
             raise ValueError("low-probability EOS shadow requires EOS shadow")
+        if eos_top_hit_shadow and not eos_shadow:
+            raise ValueError("EOS top-hit shadow requires EOS shadow")
         self.trace_sink = trace_sink
         self.control_sink = control_sink
         self.root_metadata = root_metadata
@@ -254,6 +257,7 @@ class DeepAgentsRuntimeAdapter(BaseCallbackHandler):
         self._command_structure_shadow = command_structure_shadow
         self._report_phase_shadow = report_phase_shadow
         self._eos_shadow = eos_shadow
+        self._eos_top_hit_shadow = eos_top_hit_shadow
         self._eos_thresholds = (
             EOS_LOW_PROB_THRESHOLDS + EOS_PROB_THRESHOLDS
             if eos_low_prob_shadow else EOS_PROB_THRESHOLDS
@@ -285,6 +289,7 @@ class DeepAgentsRuntimeAdapter(BaseCallbackHandler):
         self._child_stream_last_chunk: dict[str, Any] = {}
         self._child_report_phase_trackers: dict[str, ReportPhaseTracker] = {}
         self._child_eos_seen: set[tuple[str, float]] = set()
+        self._child_eos_first_top_hit_runs: set[str] = set()
         self._child_eos_scored_tokens: dict[str, int] = {}
         self._child_eos_top_hits: dict[str, int] = {}
         self._child_finish_chunk_ts_ms: dict[str, float] = {}
@@ -838,6 +843,7 @@ class DeepAgentsRuntimeAdapter(BaseCallbackHandler):
         emitted: list[tuple[str, int | None]] = []
         phase_events: list[tuple[str, int]] = []
         eos_events: list[float] = []
+        first_top_hit = False
         with self._lock:
             if (
                 key is None
@@ -859,7 +865,10 @@ class DeepAgentsRuntimeAdapter(BaseCallbackHandler):
             if (
                 self._eos_shadow
                 and logprobs
-                and key in self._child_first_content_shadow_runs
+                and (
+                    key in self._child_first_content_shadow_runs
+                    or (self._eos_top_hit_shadow and content_seen)
+                )
                 and not tool_seen
                 and key not in self._child_first_tool_chunk_shadow_runs
                 and not (
@@ -875,6 +884,12 @@ class DeepAgentsRuntimeAdapter(BaseCallbackHandler):
                     self._child_eos_top_hits[key] = (
                         self._child_eos_top_hits.get(key, 0) + 1
                     )
+                    if (
+                        self._eos_top_hit_shadow
+                        and key not in self._child_eos_first_top_hit_runs
+                    ):
+                        self._child_eos_first_top_hit_runs.add(key)
+                        first_top_hit = True
                     for threshold in self._eos_thresholds:
                         if (
                             eos_logprob >= math.log(threshold)
@@ -961,6 +976,23 @@ class DeepAgentsRuntimeAdapter(BaseCallbackHandler):
                     },
                 ) for phase, offset in phase_events
             ), control=False)
+        if first_top_hit:
+            self._publish((
+                self._event(
+                    RuntimeEventKind.STRUCTURED_ACTION,
+                    invocation_id=invocation_id,
+                    context_id=metadata.context_id,
+                    context_epoch=metadata.context_epoch,
+                    join_id=pending.join_id,
+                    confidence=EventConfidence.INFERRED,
+                    attributes={
+                        "source": "deepagents_stream_shadow",
+                        "beliefkv_child_eos_first_top_hit_shadow": True,
+                        "diagnostic_only": True,
+                        "request_id": _native_request_id(run_id),
+                    },
+                ),
+            ), control=False)
         if eos_events:
             self._publish(tuple(
                 self._event(
@@ -1006,6 +1038,7 @@ class DeepAgentsRuntimeAdapter(BaseCallbackHandler):
                 self._child_eos_seen.difference_update(
                     (key, threshold) for threshold in self._eos_thresholds
                 )
+                self._child_eos_first_top_hit_runs.discard(key)
             finish_chunk_ts_ms = self._child_finish_chunk_ts_ms.pop(key, None)
         invocation_id = self._resolve_invocation(key)
         with self._lock:
@@ -1219,6 +1252,7 @@ class DeepAgentsRuntimeAdapter(BaseCallbackHandler):
                 self._child_eos_seen.difference_update(
                     (key, threshold) for threshold in self._eos_thresholds
                 )
+                self._child_eos_first_top_hit_runs.discard(key)
             self._child_finish_chunk_ts_ms.pop(key, None)
         invocation_id = self._resolve_invocation(key)
         with self._lock:

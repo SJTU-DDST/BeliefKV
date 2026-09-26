@@ -198,3 +198,74 @@ def test_opt_in_low_eos_threshold_delivers_earlier_without_changing_defaults():
         if event.attributes.get("beliefkv_child_eos_shadow")
     ]
     assert cues == [0.0001, 0.001]
+
+
+def test_first_unsampled_eos_top_hit_emits_once_on_visible_content():
+    trace = _Sink()
+    with pytest.raises(ValueError, match="top-hit shadow requires"):
+        DeepAgentsRuntimeAdapter(
+            trace, BeliefKVRequestMetadata("wf", "root", "ctx", 0),
+            eos_top_hit_shadow=True,
+        )
+    adapter = DeepAgentsRuntimeAdapter(
+        trace, BeliefKVRequestMetadata("wf", "root", "ctx", 0),
+        eos_shadow=True, eos_top_hit_shadow=True,
+    )
+    adapter.start()
+    task = adapter.declare_runtime_tasks([("explorer", "private")])[0]
+    tool_run = uuid4()
+    adapter.on_tool_start(
+        {"name": "task"}, "", run_id=tool_run,
+        inputs={"subagent_type": "explorer", "description": "private"},
+        tool_call_id=task.tool_call_id,
+    )
+    run = uuid4()
+    adapter.on_chat_model_start(
+        {}, [[HumanMessage(content="private prompt")]],
+        run_id=run, parent_run_id=tool_run,
+    )
+    chunk = SimpleNamespace(
+        generation_info={"logprobs": {"content": [{
+            "token": "text",
+            "top_logprobs": [
+                {"token": "<|im_end|>", "logprob": -12.0},
+            ],
+        }]}},
+        message=SimpleNamespace(content="visible", tool_call_chunks=[]),
+    )
+    reasoning = SimpleNamespace(
+        generation_info=chunk.generation_info,
+        message=SimpleNamespace(content="", tool_call_chunks=[]),
+    )
+    adapter.on_llm_new_token("", chunk=reasoning, run_id=run)
+    assert not any(
+        event.attributes.get("beliefkv_child_eos_first_top_hit_shadow")
+        for event in trace.events
+    )
+    adapter.on_llm_new_token("visible", chunk=chunk, run_id=run)
+    adapter.on_llm_new_token("visible", chunk=chunk, run_id=run)
+    next_chunk = SimpleNamespace(
+        generation_info=chunk.generation_info,
+        message=SimpleNamespace(content="more", tool_call_chunks=[]),
+    )
+    adapter.on_llm_new_token("more", chunk=next_chunk, run_id=run)
+    first_content = [
+        event for event in trace.events
+        if event.attributes.get("beliefkv_child_first_content_shadow")
+    ]
+    hits = [
+        event for event in trace.events
+        if event.attributes.get("beliefkv_child_eos_first_top_hit_shadow")
+    ]
+    assert len(first_content) == len(hits) == 1
+    assert trace.events.index(first_content[0]) < trace.events.index(hits[0])
+    assert hits[0].kind == RuntimeEventKind.STRUCTURED_ACTION
+    assert hits[0].invocation_id == task.invocation_id
+    assert hits[0].join_id == task.join_id
+    assert hits[0].attributes["request_id"] == f"beliefkv:{run}"
+    assert hits[0].attributes["diagnostic_only"] is True
+    assert not any(
+        event.attributes.get("beliefkv_child_eos_shadow")
+        for event in trace.events
+    )
+    assert "private" not in json.dumps(hits[0].to_dict())
