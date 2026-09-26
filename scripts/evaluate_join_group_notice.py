@@ -55,7 +55,7 @@ def collect(workflows: Path) -> tuple[list[dict], dict]:
                 continue
             counts["all_mode_groups"] += 1
             waiting = [
-                float(event["ts_ms"]) for event in events
+                event for event in events
                 if event["kind"] == "join_wait" and event.get("join_id") == join_id
             ]
             completed = [
@@ -66,8 +66,50 @@ def collect(workflows: Path) -> tuple[list[dict], dict]:
             if not waiting:
                 counts["no_parent_wait"] += 1
                 continue
-            started = max(float(join["ts_ms"]), min(waiting))
+            started = max(
+                float(join["ts_ms"]),
+                min(float(event["ts_ms"]) for event in waiting),
+            )
             finished = min(completed) if completed else None
+            parents = {
+                event["invocation_id"] for event in waiting
+                if event.get("invocation_id")
+            }
+            parent_reentry = None
+            if finished is not None and len(parents) == 1:
+                parent = next(iter(parents))
+                waiter = min(
+                    (event for event in waiting if event["invocation_id"] == parent),
+                    key=lambda event: float(event["ts_ms"]),
+                )
+                invalidation = min(
+                    (
+                        float(event["ts_ms"]) for event in events
+                        if event.get("invocation_id") == parent
+                        and float(event["ts_ms"]) > finished
+                        and (
+                            event["kind"] in {"return", "invocation_cancel"}
+                            or (
+                                event["kind"] == "join_wait"
+                                and event.get("join_id") != join_id
+                            )
+                        )
+                    ),
+                    default=float("inf"),
+                )
+                submits = [
+                    float(event["ts_ms"]) for event in events
+                    if event["kind"] == "llm_submit"
+                    and event.get("invocation_id") == parent
+                    and not (event.get("attributes") or {}).get("runtime_internal")
+                    and finished <= float(event["ts_ms"]) < invalidation
+                    and (
+                        waiter.get("context_id") is None
+                        or event.get("context_id") is None
+                        or waiter["context_id"] == event["context_id"]
+                    )
+                ]
+                parent_reentry = min(submits) if submits else None
             returns = {
                 event["invocation_id"]: event
                 for event in events
@@ -193,6 +235,8 @@ def collect(workflows: Path) -> tuple[list[dict], dict]:
                 else "censored"
             )
             counts[f"candidate_{label}"] += 1
+            if parent_reentry is not None:
+                counts["candidate_parent_reentry_observed"] += 1
             groups.append({
                 "project": path.parent.name.split("__", 1)[0],
                 "task_id": path.parent.name,
@@ -202,12 +246,22 @@ def collect(workflows: Path) -> tuple[list[dict], dict]:
                 "pending_notices_ms": pending,
                 "label": label,
                 "lead_ms": finished - trigger if label == "natural" else None,
+                "parent_reentry_lead_ms": (
+                    parent_reentry - trigger if parent_reentry is not None
+                    else None
+                ),
+                "join_to_parent_submit_ms": (
+                    parent_reentry - finished
+                    if parent_reentry is not None and finished is not None
+                    else None
+                ),
             })
     return groups, dict(counts)
 
 
 def evaluate(train_workflows: Path, heldout_workflows: Path) -> dict:
     train, train_counts = load_episodes(train_workflows.parent)
+    train_groups, train_group_counts = collect(train_workflows)
     heldout, counts = collect(heldout_workflows)
     train_projects = {row["project"] for row in train}
     heldout_projects = {row["project"] for row in heldout}
@@ -221,6 +275,24 @@ def evaluate(train_workflows: Path, heldout_workflows: Path) -> dict:
     for row in train:
         by_task[row["task_id"]].append(row["lead_ms"])
     prior_ms = median(median(values) for values in by_task.values())
+    parent_by_task = defaultdict(list)
+    for row in train_groups:
+        if row["parent_reentry_lead_ms"] is not None and row["label"] != "revoked":
+            parent_by_task[row["task_id"]].append(
+                row["parent_reentry_lead_ms"]
+            )
+    parent_prior_ms = (
+        median(median(values) for values in parent_by_task.values())
+        if parent_by_task else None
+    )
+    submit_by_task = defaultdict(list)
+    for row in train_groups:
+        if row["join_to_parent_submit_ms"] is not None and row["label"] != "revoked":
+            submit_by_task[row["task_id"]].append(row["join_to_parent_submit_ms"])
+    submit_prior_ms = (
+        median(median(values) for values in submit_by_task.values())
+        if submit_by_task else None
+    )
     true = [row for row in heldout if row["label"] == "natural"]
     prediction = [
         max(0., *(prior_ms + notice - row["trigger_ts_ms"]
@@ -228,23 +300,60 @@ def evaluate(train_workflows: Path, heldout_workflows: Path) -> dict:
         for row in true
     ]
     actual = [row["lead_ms"] for row in true]
+    parent = [
+        row for row in heldout
+        if row["parent_reentry_lead_ms"] is not None and row["label"] != "revoked"
+    ]
+    parent_actual = [row["parent_reentry_lead_ms"] for row in parent]
+    parent_predicted = (
+        [parent_prior_ms] * len(parent_actual)
+        if parent_prior_ms is not None else []
+    )
+    composed_prediction = (
+        [
+            max(0., *(prior_ms + notice - row["trigger_ts_ms"]
+                      for notice in row["pending_notices_ms"].values()))
+            + submit_prior_ms
+            for row in parent
+        ]
+        if submit_prior_ms is not None else []
+    )
     return {
         "status": "read_only_first_whole_join_candidate_not_action_eligible",
         "train_projects": sorted(train_projects),
         "heldout_projects": sorted(heldout_projects),
         "train_counts": train_counts,
+        "train_group_counts": train_group_counts,
         "heldout_counts": counts,
         "train_task_balanced_child_notice_prior_ms": prior_ms,
+        "train_task_balanced_parent_reentry_prior_ms": parent_prior_ms,
+        "train_task_balanced_join_to_parent_submit_prior_ms": submit_prior_ms,
         "heldout_natural_group_lead_ms": _metrics(
             actual, [0.] * len(actual),
         ),
         "heldout_natural_group_point_error_ms": _metrics(actual, prediction),
+        "heldout_observed_parent_reentry_lead_ms": _metrics(
+            parent_actual, [0.] * len(parent_actual),
+        ),
+        "heldout_observed_parent_reentry_point_error_ms": (
+            _metrics(parent_actual, parent_predicted)
+            if parent_prior_ms is not None else None
+        ),
+        "heldout_observed_parent_reentry_composed_point_error_ms": (
+            _metrics(parent_actual, composed_prediction)
+            if submit_prior_ms is not None else None
+        ),
         "scope": (
             "First causal all-member coverage after parent JOIN_WAIT: every "
             "unfinished child has a non-revoked notice. Completed children "
             "need no ETA. Project-disjoint child notice prior is frozen before "
-            "held-out groups; future events only label revocation, censoring "
-            "and JOIN satisfaction. No conditional-on-last-child oracle, "
+            "held-out groups. Parent reentry is the first matched non-internal "
+            "LLM_SUBMIT after JOIN satisfaction, before parent invalidation; "
+            "it is evaluated separately even if child completion is blocked. "
+            "The composed ETA uses the latest pending-child notice extrapolated "
+            "with a train-only child prior, plus a train-only JOIN-to-parent "
+            "submit lag. Future events only label revocation, censoring and reentry. "
+            "No conditional-on-last-child oracle, "
             "physical H2D, online delivery or task-performance claim."
         ),
     }
