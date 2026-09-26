@@ -14,12 +14,14 @@ import numpy as np
 if __package__:
     from scripts.pilot_hidden_eta_project_split import features, fit_ridge
     from scripts.pilot_real_child_hidden_eta import (
-        at_stage, content_cues, first_features, load_records,
+        at_stage, content_cues, first_features,
+        load_batch_records,
     )
 else:
     from pilot_hidden_eta_project_split import features, fit_ridge
     from pilot_real_child_hidden_eta import (
-        at_stage, content_cues, first_features, load_records,
+        at_stage, content_cues, first_features,
+        load_batch_records,
     )
 
 
@@ -77,6 +79,8 @@ def evaluate(
     candidate_count = 0
     triggered = []
     missed = 0
+    false_triggers = 0
+    nonterminal_candidates = 0
     for record in at_stage(heldout, 512):
         score = np.clip(
             (first_features([record], True) - mean) / scale @ weights
@@ -94,25 +98,35 @@ def evaluate(
             continue
         candidate_count += 1
         if not record["terminal"]:
-            continue
+            nonterminal_candidates += 1
         eligible = [
             row for row in record["samples"]
             if record["first_arrival_ms"] + row[1] >= gate_at
         ]
         if not eligible:
-            missed += 1
+            if record["terminal"]:
+                missed += 1
             continue
         scores = score_binary(hazard, eligible, hidden)
         matches = np.flatnonzero(scores >= 0.5)
         if not len(matches):
-            missed += 1
+            if record["terminal"]:
+                missed += 1
             continue
-        triggered.append(float(eligible[matches[0]][2]))
+        if record["terminal"]:
+            triggered.append(float(eligible[matches[0]][2]))
+        else:
+            false_triggers += 1
     return {
         **counts,
         "frozen_gate_candidates": candidate_count,
+        "nonterminal_gate_candidates": nonterminal_candidates,
         "terminal_hazard_triggered": len(triggered),
         "terminal_hazard_missed": missed,
+        "nonterminal_hazard_triggered": false_triggers,
+        "hazard_trigger_precision": round(
+            len(triggered) / (len(triggered) + false_triggers), 4
+        ) if triggered or false_triggers else None,
         "trigger_500_to_1500ms": sum(500 <= lead <= 1500 for lead in triggered),
         "trigger_under_500ms": sum(lead < 500 for lead in triggered),
         "trigger_over_1500ms": sum(lead > 1500 for lead in triggered),
@@ -126,14 +140,25 @@ def evaluate(
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--traces", required=True, type=Path)
-    parser.add_argument("--train-workflows", required=True, type=Path)
-    parser.add_argument("--heldout-workflows", required=True, type=Path)
+    parser.add_argument("--heldout-traces", type=Path)
+    parser.add_argument(
+        "--train-workflows", required=True, type=Path, action="append",
+    )
+    parser.add_argument(
+        "--heldout-workflows", required=True, type=Path, action="append",
+    )
     args = parser.parse_args()
-    train, train_counts = load_records(args.train_workflows, args.traces)
-    heldout, heldout_counts = load_records(args.heldout_workflows, args.traces)
+    train, train_counts = load_batch_records(
+        args.train_workflows, args.traces,
+    )
+    heldout, heldout_counts = load_batch_records(
+        args.heldout_workflows, args.heldout_traces or args.traces,
+    )
     if {row["project"] for row in train} & {row["project"] for row in heldout}:
         parser.error("projects overlap")
-    cues = content_cues(args.heldout_workflows)
+    cues = {}
+    for root in args.heldout_workflows:
+        cues.update(content_cues(root))
     print(json.dumps({
         "diagnostic_only": True,
         "hazard_label": "return_within_1000ms_after_snapshot",

@@ -1,11 +1,13 @@
 import json
 
 import numpy as np
+import pytest
 
 from scripts.pilot_real_child_hidden_eta import (
     classification_report,
     content_gated_report,
     load_records,
+    load_batch_records,
 )
 
 
@@ -47,6 +49,9 @@ def test_real_child_features_never_use_future_round_as_first_snapshot(tmp_path):
     by_terminal = {record["terminal"]: record for record in records}
     assert by_terminal[True]["samples"][0][:3] == (1, 0., 300.)
     assert by_terminal[False]["samples"][0][2] is None
+    assert by_terminal[True]["join_last"] is False
+    with pytest.raises(ValueError, match="duplicate request IDs"):
+        load_batch_records([tmp_path / "workflows"] * 2, traces)
 
 
 def test_classification_report_counts_false_early_terminal():
@@ -58,7 +63,8 @@ def test_classification_report_counts_false_early_terminal():
 def test_frozen_content_gate_never_uses_later_tool_cue_to_accept():
     records = [
         {"rid": "final", "terminal": True, "return_ms": 2100.,
-         "first_arrival_ms": 1000., "samples": [(16, 400., 700., None)]},
+         "join_last": True, "first_arrival_ms": 1000.,
+         "samples": [(16, 400., 700., None)]},
         {"rid": "tool-before", "terminal": False, "return_ms": None,
          "first_arrival_ms": 1000., "samples": [(16, 400., None, None)]},
         {"rid": "tool-after", "terminal": False, "return_ms": None,
@@ -76,3 +82,7 @@ def test_frozen_content_gate_never_uses_later_tool_cue_to_accept():
     assert report["true_positive"] == 1
     assert report["false_positive"] == 1
     assert report["median_return_lead_ms"] == 600
+    assert report["actionable_precision"] == 0.5
+    assert report["eligible_join_last_terminal_rounds"] == 1
+    assert report["join_last_true_positive"] == 1
+    assert report["join_last_at_least_500ms_early"] == 1

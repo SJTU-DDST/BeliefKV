@@ -31,7 +31,7 @@ def load_records(workflows: Path, traces: Path) -> tuple[list[dict], dict]:
     for event_file in workflows.glob("*/runtime_events.deepagents.jsonl"):
         with event_file.open() as stream:
             events = [json.loads(line) for line in stream]
-        terminals, _ = index_workflow(events)
+        terminals, join_last_children = index_workflow(events)
         result_by_invocation = {}
         for event in events:
             if event["kind"] == "llm_result":
@@ -58,6 +58,10 @@ def load_records(workflows: Path, traces: Path) -> tuple[list[dict], dict]:
                         "invocation": invocation,
                         "project": event_file.parent.name.split("__", 1)[0],
                         "terminal": rid in terminals,
+                        "join_last": (
+                            rid in terminals
+                            and invocation in join_last_children
+                        ),
                         "return_ms": terminals[rid][1] if rid in terminals else None,
                     }
     records = []
@@ -95,6 +99,21 @@ def load_records(workflows: Path, traces: Path) -> tuple[list[dict], dict]:
         "terminal_rounds_with_hidden": sum(r["terminal"] for r in records),
         "other_rounds_with_hidden": sum(not r["terminal"] for r in records),
     }
+
+
+def load_batch_records(
+    roots: list[Path], traces: Path,
+) -> tuple[list[dict], dict]:
+    records = []
+    counts = {}
+    for root in roots:
+        batch, metrics = load_records(root, traces)
+        records.extend(batch)
+        for key, count in metrics.items():
+            counts[key] = counts.get(key, 0) + count
+    if len({row["rid"] for row in records}) != len(records):
+        raise ValueError("workflow batches contain duplicate request IDs")
+    return records, counts
 
 
 def first_features(records: list[dict], hidden: bool) -> np.ndarray:
@@ -143,6 +162,7 @@ def content_gated_report(
 ) -> dict:
     true_positive = false_positive = 0
     leads = []
+    join_leads = []
     for record, accepted in zip(records, chosen):
         if not accepted:
             continue
@@ -159,8 +179,11 @@ def content_gated_report(
         if record["terminal"]:
             true_positive += 1
             leads.append(record["return_ms"] - candidate)
+            if record.get("join_last"):
+                join_leads.append(record["return_ms"] - candidate)
         else:
             false_positive += 1
+    join_total = sum(row.get("join_last", False) for row in records)
     return {
         "true_positive": true_positive,
         "false_positive": false_positive,
@@ -174,6 +197,18 @@ def content_gated_report(
             statistics.median(leads), 2
         ) if leads else None,
         "at_least_500ms_early": sum(lead >= 500 for lead in leads),
+        "actionable_precision": round(
+            sum(lead >= 500 for lead in leads)
+            / (true_positive + false_positive), 4
+        ) if true_positive + false_positive else None,
+        "eligible_join_last_terminal_rounds": join_total,
+        "join_last_true_positive": len(join_leads),
+        "join_last_at_least_500ms_early": sum(
+            lead >= 500 for lead in join_leads
+        ),
+        "join_last_median_return_lead_ms": (
+            round(statistics.median(join_leads), 2) if join_leads else None
+        ),
     }
 
 
@@ -232,11 +267,20 @@ def eta_report(model: tuple, records: list[dict], chosen: np.ndarray,
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--traces", required=True, type=Path)
-    parser.add_argument("--train-workflows", required=True, type=Path)
-    parser.add_argument("--heldout-workflows", required=True, type=Path)
+    parser.add_argument("--heldout-traces", type=Path)
+    parser.add_argument(
+        "--train-workflows", required=True, type=Path, action="append",
+    )
+    parser.add_argument(
+        "--heldout-workflows", required=True, type=Path, action="append",
+    )
     args = parser.parse_args()
-    train, train_counts = load_records(args.train_workflows, args.traces)
-    heldout, heldout_counts = load_records(args.heldout_workflows, args.traces)
+    train, train_counts = load_batch_records(
+        args.train_workflows, args.traces,
+    )
+    heldout, heldout_counts = load_batch_records(
+        args.heldout_workflows, args.heldout_traces or args.traces,
+    )
     train_projects = {row["project"] for row in train}
     heldout_projects = {row["project"] for row in heldout}
     if not train_projects.isdisjoint(heldout_projects):
@@ -249,7 +293,9 @@ def main() -> None:
         "heldout": heldout_counts,
         "stages": {},
     }
-    cues = content_cues(args.heldout_workflows)
+    cues = {}
+    for root in args.heldout_workflows:
+        cues.update(content_cues(root))
     terminal_count = sum(row["terminal"] for row in heldout)
     for stage in (32, 256, 512):
         selected_train = at_stage(train, stage)
@@ -296,8 +342,12 @@ def main() -> None:
                     eta_model, selected_heldout, chosen, hidden
                 ),
             }
-            if hidden and stage == 512:
-                stage_result["frozen_content_gate"] = content_gated_report(
+            if hidden and stage in (256, 512):
+                gate_name = (
+                    "frozen_content_gate" if stage == 512
+                    else "exploratory_content_gate"
+                )
+                stage_result[gate_name] = content_gated_report(
                     selected_heldout, chosen, cues, terminal_count,
                 )
         result["stages"][stage] = stage_result

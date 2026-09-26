@@ -497,6 +497,97 @@ def test_stream_first_content_is_trace_only_and_one_per_child_model_run() -> Non
         queued.close()
 
 
+def test_final_stream_chunk_shadow_measures_child_delivery_without_content() -> None:
+    trace = CollectingSink()
+    control = CollectingSink()
+    queued = QueuedRuntimeEventSink(control)
+    adapter = DeepAgentsRuntimeAdapter(
+        trace, BeliefKVRequestMetadata("wf", "root", "ctx", 0),
+        control_sink=queued,
+        finish_chunk_shadow=True,
+    )
+    adapter.start()
+    task = adapter.declare_runtime_tasks([("explorer", "private task")])[0]
+    tool_run = uuid4()
+    adapter.on_tool_start(
+        {"name": "task"}, "", run_id=tool_run,
+        inputs={"subagent_type": "explorer", "description": "private task"},
+        tool_call_id=task.tool_call_id,
+    )
+    run = uuid4()
+    adapter.on_chat_model_start(
+        {}, [[HumanMessage(content="private prompt")]],
+        run_id=run, parent_run_id=tool_run,
+    )
+    adapter.on_llm_new_token(
+        "private answer", run_id=run,
+        chunk=SimpleNamespace(
+            generation_info=None,
+            message=SimpleNamespace(content="private answer", tool_call_chunks=[]),
+        ),
+    )
+    final_chunk = SimpleNamespace(
+        generation_info={"finish_reason": "stop"},
+        message=SimpleNamespace(content="", tool_call_chunks=[]),
+    )
+    adapter.on_llm_new_token("", run_id=run, chunk=final_chunk)
+    expected_ts = adapter._child_finish_chunk_ts_ms[str(run)]
+    candidates = [
+        event for event in trace.events
+        if event.attributes.get("beliefkv_child_final_chunk_shadow")
+    ]
+    assert len(candidates) == 1
+    assert candidates[0].ts_ms == expected_ts
+    assert candidates[0].join_id == task.join_id
+    assert candidates[0].attributes["diagnostic_only"] is True
+    assert candidates[0] not in control.events
+    assert "private answer" not in json.dumps(candidates[0].to_dict())
+    adapter.on_llm_new_token("", run_id=run, chunk=final_chunk)
+    assert sum(
+        bool(event.attributes.get("beliefkv_child_final_chunk_shadow"))
+        for event in trace.events
+    ) == 1
+    adapter.on_llm_end(_natural_child_result("private answer"), run_id=run)
+    result = next(
+        event for event in trace.events
+        if event.kind == RuntimeEventKind.LLM_RESULT
+        and event.attributes.get("request_id") == f"beliefkv:{run}"
+    )
+    assert result.attributes["stream_final_chunk_ts_ms"] == expected_ts
+    assert (
+        result.attributes["llm_end_callback_entry_ts_ms"]
+        >= expected_ts
+    )
+    assert str(run) not in adapter._child_finish_chunk_ts_ms
+    assert "private answer" not in json.dumps(result.to_dict())
+    queued.close()
+
+
+def test_final_stream_chunk_shadow_is_opt_in_and_excludes_root() -> None:
+    trace = CollectingSink()
+    root = BeliefKVRequestMetadata("wf", "root", "ctx", 0)
+    final_chunk = SimpleNamespace(
+        generation_info={"finish_reason": "stop"},
+        message=SimpleNamespace(content="", tool_call_chunks=[]),
+    )
+    for enabled in (False, True):
+        adapter = DeepAgentsRuntimeAdapter(
+            trace, root, finish_chunk_shadow=enabled,
+        )
+        adapter.start()
+        run = uuid4()
+        adapter.on_chat_model_start(
+            {}, [[HumanMessage(content="root prompt")]], run_id=run,
+        )
+        adapter.on_llm_new_token("", run_id=run, chunk=final_chunk)
+        adapter.on_llm_end(_natural_child_result("root answer"), run_id=run)
+    assert all(
+        "stream_final_chunk_ts_ms" not in event.attributes
+        and "llm_end_callback_entry_ts_ms" not in event.attributes
+        for event in trace.events if event.kind == RuntimeEventKind.LLM_RESULT
+    )
+
+
 def test_stream_milestones_deduplicate_same_chunk_not_equal_text() -> None:
     trace = CollectingSink()
     adapter = DeepAgentsRuntimeAdapter(

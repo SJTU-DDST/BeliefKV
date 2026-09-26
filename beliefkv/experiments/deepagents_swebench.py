@@ -3586,6 +3586,9 @@ def _run_workflow(
         workspace_digest_provider=backend.tool_state_digest,
         project_tool_history=project_tool_history,
         project_id=workload.repo,
+        finish_chunk_shadow=(
+            os.environ.get("BELIEFKV_CHILD_FINISH_CHUNK_SHADOW") == "1"
+        ),
     )
     deadline_controller = WorkflowDeadlineController(
         deadline=ActivationDeadline(),

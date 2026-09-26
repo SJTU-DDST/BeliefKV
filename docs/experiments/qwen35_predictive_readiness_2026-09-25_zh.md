@@ -1882,3 +1882,148 @@ psf 任务曾参与旧版模型的训练来源，结果也不等于整个系统�
 时间头继续不具备上线资格；下一步需要更多自然完成 child，
 并在压力匹配、项目隔离条件下校准时序风险，而非对已有留出
 项目反复调阈值。
+
+## 31. 扩充真实 child 训练、独立项目诊断与控制链分段（2026-09-26）
+
+新增同配置 16-root 真实 child 训练诊断：13/16 workflow 完成，
+45 个自然 child RETURN 的终态模型轮次全部与隐状态对齐，
+共有 2287/2287 个 child 模型轮次匹配。与先前 8-root 训练批次
+合并后，共有 61 个严格终态模型轮次；模型仍只在 Django、
+Xarray、Pylint、Pytest 项目拟合。旧 8-root 与新增 16-root
+部分任务重复，因此这不是 61 个独立 workflow，更不能把
+每轮采样当作独立 child 事件。
+
+512-token 观察点、Ridge 阈值 0.5 和「当轮已出现非空正文且
+此前未见工具 chunk」门禁保持不变，仅扩充训练数据。在
+已经用于探索的 Astropy/Sphinx 和 psf 批次，终态触发分别
+从 4/21 增至 7/21、从 8/25 增至 11/25，均观察到 0 次
+非终态误报；这两个项目的结果**不是新的密封测试**。
+另外单列真实解锁完整 JOIN 的最后 child，不以所有 child
+RETURN 的覆盖代替 JOIN 覆盖。
+
+SymPy 来自冻结 split 的 development 项目，未参与该隐状态头
+训练和 512-token 门禁选择。原 8-task manifest 指向已删除的
+源码目录；初次尝试仅 1 个 task 自然完成，另外 7 个因本地
+blobless Git 源缺少旧 commit 文件对象而未启动。预取 7 个
+冻结 commit 的文件对象、验证派生 clone 的工作树干净后，仅
+重跑失败的 7 个；两批分别有 1/1、4/7 个 workflow 完成，
+共有 20 个可用自然终态、2 个完整 JOIN 的最后 child。
+1073/1073 个正常完成的模型轮次与 0600 NPZ 匹配；另 1 个
+无 finish reason 的截止事件不当成正常缺失。独立项目上，
+8-root 训练头的 512-token 门禁为 2/20、0 误报、
+2 次至少提前 500 ms；合并训练头为 **6/20、0 误报、
+5 次至少提前 500 ms**，1/2 个完整 JOIN 的最后 child
+触发且提前约 1548 ms（旧头 0/2）。第二个最后 child
+没有达到 512 token 观察点，不能把 1/1 的条件覆盖冒充
+1/2 的完整 JOIN 覆盖。只有 20 个 RETURN、2 个 JOIN，
+无力证明低误报保证或 JOIN 时钟的普遍改进。
+
+更早的 256-token 规则在既有 psf、Astropy/Sphinx 开发
+数据上覆盖较高，但分别有 1/14、3/15 次误报。
+`pilot_child_terminal_threshold.py` 仅用训练项目留一交叉验证
+选择阈值：0.5 阈值是 23 次真终态、5 次误报，提前
+至少 500 ms 的触发精度 82.14%；0.9 仅有 1 次真终态。
+没有阈值同时满足至少 5 次真触发和 95% 的可用提前
+触发精度，因此**不启用 256-token 新门禁**。SymPy 上
+256-token 阶段的只读诊断是 6/20、0 误报、0/2 最后
+JOIN child，不用它追调阈值。扩大训练后的近 RETURN
+风险头在 SymPy 的 6 个 512-token 门禁候选中只触发
+2 次，1 次早于 RETURN 超过 1500 ms、1 次不足
+500 ms；**500--1500 ms 合格触发为零**。终态分类覆盖
+改善不等于时间预测达标。
+
+工具侧对 16-root 轨迹的 198 次成功同输入重复调用，
+前次时长预测绝对误差 P50/P90 约 22/102 ms；57 次
+长 child 工具调用没有已完成的同输入历史。以此为参考、
+在项目隔离的 SymPy 7-task 重跑中，61 次重复调用的
+P50/P90 约 14/102 ms，但全部是短调用；23 次已完成
+的至少 2 s child 工具调用，1000 ms 提前预算下的
+选中覆盖为 **0/23**。不能据重复短调用的准确率声称
+冷长工具的返回已可精确预测。
+
+只读埋点原来同步等待 NPZ 压缩写盘，现于服务端 `[DONE]`
+之前将写盘任务移交后台，并在独立 shadow checkout 加入
+finish 与 DONE 的同一单调时钟时间戳。审计区分正常
+`stop`/`tool_calls`/`length` 与 abort/无 finish reason，
+避免截止取消污染时延。旧同步 8-root、16-root 的
+finish→runtime `llm_result` P95 分别约 185/1187 ms；
+新异步 4-root 为约 50 ms，但限时 16-root 的 1503 条
+正常完成请求虽全部配对，P95 仍约 **897 ms**。
+该 16-root 批次在新增 DONE 字段加载前启动，不能拆分
+两段；新的 SymPy 7-root 则有 finish→DONE P95
+约 0.31 ms、DONE→runtime P95 约 43.68 ms。
+低负载写盘延迟改善**不能**外推为高并发控制链已修复；
+仍需使用新时间戳做匹配并发复测并定位 DONE 之后的
+客户端/回调排队。所有隐状态实验都使用独立影子服务，
+没有大 Host KV pool，也不是正式吞吐或物理 H2D 实验；
+`online_eligible=false`、`predictive_action_eligible=false` 不变。
+
+### 高并发 DONE 分段及客户端最终 chunk（2026-09-26，续）
+
+新增 DONE 时间戳的限时 16-root 诊断在约 131 秒截止，客户端已退出，
+16 个 workflow 均非自然完成；因此它**只**提供正常完成的单次模型请求
+传递时延，不提供完整 JOIN 或训练资格。已落盘的 1107 个 child
+`llm_result` 中，1062 个具有 `stop`/`tool_calls`/`length` 正常
+结束理由且全部匹配隐状态 NPZ；35 个结束理由缺失、10 个 abort
+被排除。正常请求的服务端 finish→DONE P95 为 **0.18 ms**，
+DONE→runtime `llm_result` P50/P95 为约 **189.7/897.9 ms**，
+finish→runtime P95 为 **898.0 ms**；时序倒置计数为零。
+限时截止造成的取消不能归咎于服务端 FINISH→DONE，也不能被当作
+自然 RETURN 样本。审计命令使用 `scripts/audit_child_hidden_trace.py`
+并传入该批次的 `traces` 和 `workloads/workflows`。
+
+为了进一步拆开 DONE 后的延迟，实验客户端可通过
+`BELIEFKV_CHILD_FINISH_CHUNK_SHADOW=1` 在 child 流式回调收到
+`finish_reason` chunk 时记录同钟域的单调时间，并把
+`stream_final_chunk_ts_ms` 仅作为 `llm_result` 数值属性写入
+本地 trace。该开关默认关闭，不向调度器发送动作，不存正文。
+审计器分别报告服务端 finish→客户端最终 chunk 和客户端最终
+chunk→`llm_result`；服务端先发 finish 再发 `[DONE]`，所以
+客户端最终 chunk **可能早于**服务端 DONE，二者的有符号差不能
+当作传输顺序违规。必须在相同并发规模复测、检验配对与时间顺序后，
+才判断 SSE 交付与客户端回调何者是主瓶颈。
+
+首次开启最终 chunk shadow 的限时 16-root 诊断使用同一隔离服务、
+但没有固定前一批的 16 个 task ID；因此只能用于**分段定位**，
+不能解释两次总 P95 差值为代码回归或负载收益。任务由外部
+`timeout` 强制结束，没有完整 batch summary；逐请求事件和服务端
+NPZ 均保留。1001 次正常 child 请求全部按 ID 配对，时间倒序为零：
+finish→DONE P95 约 **0.22 ms**，finish→客户端最终 chunk
+P50/P95 为 **98.30/613.57 ms**，客户端最终 chunk→runtime
+`llm_result` P50/P95 为 **56.39/1073.47 ms**；
+finish→runtime P50/P95 为 **263.25/1361.85 ms**。
+不同阶段的 P95 不可相加，**两侧都存在尾部延迟**。进一步给
+`on_llm_end` 的入口增加仅 shadow 有效的时间戳，以检验“最终
+chunk→回调入口”和“回调入口→事件”各自贡献；该埋点在首次
+chunk shadow 批次启动后添加，不能从旧 trace 反推。
+
+第二次相同并发规模的限时 shadow 诊断在 65 秒 activation deadline
+后正常清理并生成 summary：16/16 个 workflow 均因诊断截止而未
+自然完成，不能用作准确率、JOIN 完成率或训练证据。其 664 条
+child `llm_result` 中 610 条具有正常 finish reason，全部匹配
+NPZ 和最终 chunk 时间戳；54 条缺失/abort 被排除，三段时间顺序
+错误均为零。正常请求 finish→DONE P95 约 **0.22 ms**；
+finish→客户端最终 chunk P50/P95 约 **71.37/397.11 ms**；
+最终 chunk→`on_llm_end` 入口 P50/P95 约
+**159.89/933.62 ms**；回调入口→`llm_result` P50/P95
+仅 **0.10/0.12 ms**。整体 finish→`llm_result`
+P50/P95 为 **284.86/1160.81 ms**。主延迟并不在 adapter
+`on_llm_end` 事件处理，而是在服务端完成后的流交付和客户端
+进入最终回调之前；不同请求子集的 P95 仍不可相加。
+仅记录最终 chunk 的 `finish_reason=stop` 不等于 child RETURN，
+因为 agent 还可能继续进行模型轮次或工具调用；任何借此提前
+唤醒 JOIN 的策略必须按 child 完整生命周期评估假阳性与提前量。
+
+离线只以已 RETURN 的 child 最后有效轮次为真例、已继续下一
+模型轮次的候选为反例、截止时仍未返回的最后一轮为删失；
+候选要求 `stop`、最终 chunk 前已观察到非空正文且未见工具
+片段。首次/第二次高并发限时诊断分别有 **13/8 个真例、
+0/0 个可判定反例**，从客户端最终 chunk 到 child RETURN
+中位约 **823/846 ms**；两批的完整 JOIN 最后 child
+都只有 **1 个**。由于强制截止和标签选择，这不是
+“0 误报”的可靠统计保证，且没有独立项目上的完整 JOIN
+样本。运行时现在仅在显式 shadow 开关开启时为此条件发出
+`beliefkv_child_final_chunk_shadow` 本地只读事件，绑定当时
+child/join 身份，不向 scheduler 投递，也不签发 H2D；
+将来必须在**自然完成、项目隔离、压力匹配**的轨迹上验证
+首触发精度、误报与真实可用提前量，然后才讨论物理动作。

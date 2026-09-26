@@ -221,6 +221,7 @@ class DeepAgentsRuntimeAdapter(BaseCallbackHandler):
         native_radix_sessions: NativeRadixSessionLeases | None = None,
         project_tool_history: ProjectToolHistory | None = None,
         project_id: str = "",
+        finish_chunk_shadow: bool = False,
     ) -> None:
         super().__init__()
         if root_metadata.relation_type != RelationType.ROOT.value:
@@ -238,6 +239,7 @@ class DeepAgentsRuntimeAdapter(BaseCallbackHandler):
         self.native_radix_sessions = native_radix_sessions
         self._project_tool_history = project_tool_history
         self._project_id = project_id
+        self._finish_chunk_shadow = finish_chunk_shadow
         self._lock = threading.RLock()
         self._publication_lock = threading.RLock()
         self._sequence = 0
@@ -263,6 +265,7 @@ class DeepAgentsRuntimeAdapter(BaseCallbackHandler):
         self._child_stream_token_chars: dict[str, int] = {}
         self._child_stream_chunk_count: dict[str, int] = {}
         self._child_stream_last_chunk: dict[str, Any] = {}
+        self._child_finish_chunk_ts_ms: dict[str, float] = {}
         self._join_members: dict[str, set[str]] = {}
         self._join_completed: dict[str, set[str]] = {}
         self._join_cancelled: dict[str, set[str]] = {}
@@ -745,9 +748,59 @@ class DeepAgentsRuntimeAdapter(BaseCallbackHandler):
         content_seen = isinstance(content, str) and bool(content.strip())
         content_chars = len(content) if isinstance(content, str) else 0
         tool_seen = bool(getattr(message, "tool_call_chunks", None))
+        key = _run_key(run_id)
+        generation_info = getattr(chunk, "generation_info", None)
+        final_candidate = None
+        if (
+            self._finish_chunk_shadow
+            and key is not None
+            and isinstance(generation_info, Mapping)
+            and generation_info.get("finish_reason") in {"stop", "tool_calls", "length"}
+        ):
+            with self._lock:
+                invocation_id = self._resolve_invocation(key)
+                if (
+                    key in self._model_metadata
+                    and key not in self._internal_summary_runs
+                    and invocation_id != self.root_metadata.invocation_id
+                    and key not in self._child_finish_chunk_ts_ms
+                ):
+                    chunk_ts_ms = self.clock_ms()
+                    self._child_finish_chunk_ts_ms[key] = chunk_ts_ms
+                    pending = self._bound_pending_child(key, invocation_id)
+                    if (
+                        generation_info["finish_reason"] == "stop"
+                        and pending is not None
+                        and not pending.terminal
+                        and (content_seen or key in self._child_first_content_shadow_runs)
+                        and not tool_seen
+                        and key not in self._child_first_tool_chunk_shadow_runs
+                    ):
+                        final_candidate = (
+                            invocation_id, self._model_metadata[key],
+                            pending.join_id, chunk_ts_ms,
+                        )
+        if final_candidate is not None:
+            invocation_id, metadata, join_id, chunk_ts_ms = final_candidate
+            self._publish((
+                self._event(
+                    RuntimeEventKind.STRUCTURED_ACTION,
+                    ts_ms=chunk_ts_ms,
+                    invocation_id=invocation_id,
+                    context_id=metadata.context_id,
+                    context_epoch=metadata.context_epoch,
+                    join_id=join_id,
+                    confidence=EventConfidence.INFERRED,
+                    attributes={
+                        "source": "deepagents_stream_shadow",
+                        "beliefkv_child_final_chunk_shadow": True,
+                        "diagnostic_only": True,
+                        "request_id": _native_request_id(run_id),
+                    },
+                ),
+            ), control=False)
         if not content_chars and not tool_seen:
             return
-        key = _run_key(run_id)
         emitted: list[tuple[str, int | None]] = []
         with self._lock:
             if (
@@ -832,6 +885,9 @@ class DeepAgentsRuntimeAdapter(BaseCallbackHandler):
         parent_run_id: UUID | None = None,
         **kwargs: Any,
     ) -> None:
+        callback_entry_ts_ms = (
+            self.clock_ms() if self._finish_chunk_shadow else None
+        )
         del kwargs
         key = self._remember_run(run_id, parent_run_id)
         with self._lock:
@@ -840,6 +896,7 @@ class DeepAgentsRuntimeAdapter(BaseCallbackHandler):
             stream_token_chars = self._child_stream_token_chars.pop(key, None)
             stream_chunk_count = self._child_stream_chunk_count.pop(key, None)
             self._child_stream_last_chunk.pop(key, None)
+            finish_chunk_ts_ms = self._child_finish_chunk_ts_ms.pop(key, None)
         invocation_id = self._resolve_invocation(key)
         with self._lock:
             runtime_internal = key in self._internal_summary_runs
@@ -918,6 +975,13 @@ class DeepAgentsRuntimeAdapter(BaseCallbackHandler):
                 "tool_call_count": len(tool_calls),
                 "invalid_tool_call_count": invalid_tool_call_count,
                 "finish_reason": finish_reason,
+                **(
+                    {
+                        "stream_final_chunk_ts_ms": finish_chunk_ts_ms,
+                        "llm_end_callback_entry_ts_ms": callback_entry_ts_ms,
+                    }
+                    if finish_chunk_ts_ms is not None else {}
+                ),
                 "rejected_task_call_count": len(task_calls)
                 - len(executable_task_calls),
                 "parser_status": "valid" if action_kinds else "unknown",
@@ -1031,6 +1095,7 @@ class DeepAgentsRuntimeAdapter(BaseCallbackHandler):
             self._child_stream_token_chars.pop(key, None)
             self._child_stream_chunk_count.pop(key, None)
             self._child_stream_last_chunk.pop(key, None)
+            self._child_finish_chunk_ts_ms.pop(key, None)
         invocation_id = self._resolve_invocation(key)
         with self._lock:
             runtime_internal = key in self._internal_summary_runs
