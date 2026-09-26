@@ -4758,6 +4758,12 @@ graph guard 与 7200 秒 workflow/请求截止。
 启动第二个 GPU 服务；输出须使用独立目录
 `qwen35_cold_tool_peer_holdout_66root_v1/`，
 保留两次采集各自的 manifest、源码提交和原始轨迹。
+冻结执行入口 `scripts/run_cold_tool_peer_holdout66.sh`
+校验源 manifest SHA-256 和 22/44 项目组成，
+按原序运行全部 66 个 task；固定单 `intent` 臂、
+33+33 间隔 60 秒、命令结构采集、7200 秒
+workflow/单请求限制，并拒绝覆盖已有目录。
+**当前 128-root 进程和服务仍在运行，不启动留出入口。**
 
 先以当前 128-root **完整**批次的严格可配对、
 无工具行为干预的 child 冷调用冻结项目 CV 阈值；
