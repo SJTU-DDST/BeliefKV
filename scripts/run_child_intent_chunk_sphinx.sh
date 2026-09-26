@@ -4,7 +4,7 @@ set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 PYTHON="${PYTHON:-/home/longhao/miniconda3/envs/beliefkv-next/bin/python}"
-SOURCE="$ROOT/experiments/raw/qwen35_native_reactive_calibration_timing_v3_20260925/qwen35-native-reactive-calibration-66root-r0/runtime_workload_manifest.json"
+SOURCE="${SOURCE_MANIFEST:-$ROOT/experiments/raw/qwen35_native_reactive_calibration_timing_v3_20260925/qwen35-native-reactive-calibration-66root-r0/runtime_workload_manifest.json}"
 OUT="${RUN_ROOT:-$ROOT/experiments/raw/qwen35_child_intent_chunk_sphinx_20260926}"
 PORT="${PORT:-18001}"
 IDS=(
@@ -13,6 +13,13 @@ IDS=(
   sphinx-doc__sphinx-7889
   sphinx-doc__sphinx-7910
 )
+if [[ -n "${TASK_IDS:-}" ]]; then
+  read -r -a IDS <<< "$TASK_IDS"
+fi
+if [[ ${#IDS[@]} -eq 0 ]]; then
+  printf 'At least one frozen task ID is required\n' >&2
+  exit 1
+fi
 SERVER_PID=""
 
 stop_server() {
@@ -85,7 +92,7 @@ for arm in control intent; do
   if ! "$PYTHON" "$ROOT/scripts/run_deepagents_swebench.py" \
     --mode autonomous --base-url "http://127.0.0.1:$PORT/v1" \
     --model Qwen3.5-35B-A3B --workload-manifest "$SOURCE" \
-    "${instance_args[@]}" --max-workflows 4 --concurrency 4 \
+    "${instance_args[@]}" --max-workflows "${#IDS[@]}" --concurrency 4 \
     --subagent-fanout-profile native_dynamic_1to4 \
     --max-completion-tokens 8192 --model-context-tokens 131072 \
     --recursion-limit 2048 --activation-wall-clock-seconds 900 \
