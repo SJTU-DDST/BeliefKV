@@ -87,7 +87,7 @@ failed=false
 read -r -a arms <<< "${ARMS:-control intent}"
 for arm in "${arms[@]}"; do
   intent_arg=()
-  if [[ "$arm" == intent || "$arm" == final ]]; then
+  if [[ "$arm" == intent || "$arm" == final || "$arm" == length ]]; then
     intent_arg=(--child-return-intent-shadow)
   elif [[ "$arm" != control ]]; then
     printf 'Unknown arm: %s\n' "$arm" >&2
@@ -95,6 +95,9 @@ for arm in "${arms[@]}"; do
   fi
   if [[ "$arm" == final ]]; then
     intent_arg+=(--child-final-report-shadow)
+  fi
+  if [[ "$arm" == length ]]; then
+    intent_arg+=(--child-report-length-shadow)
   fi
   if ! "$PYTHON" "$ROOT/scripts/run_deepagents_swebench.py" \
     --mode autonomous --base-url "http://127.0.0.1:$PORT/v1" \
@@ -112,7 +115,7 @@ for arm in "${arms[@]}"; do
   fi
 done
 stop_server
-for arm in intent final; do
+for arm in intent final length; do
   if [[ -d "$OUT/${arm}_workloads/workflows" ]]; then
     "$PYTHON" "$ROOT/scripts/audit_child_return_intent_shadow.py" \
       --workflows "$OUT/${arm}_workloads/workflows" \

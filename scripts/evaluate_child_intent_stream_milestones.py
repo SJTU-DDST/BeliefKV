@@ -173,6 +173,9 @@ def collect(workflows: Path, threshold: int) -> tuple[list[dict], dict]:
                     terminal[1] - float(result["ts_ms"])
                     if label == "true" and result is not None else None
                 ),
+                "planned_final_report_chars_at_notice": (
+                    first.get("planned_final_report_chars")
+                ),
             })
     return rows, dict(counts)
 

@@ -45,11 +45,8 @@ def _live_project_length(
     ), True
 
 
-def evaluate_rows(rows: list[dict]) -> dict:
-    projects = sorted({row["project"] for row in rows})
-    if len(projects) < 3:
-        raise ValueError("at least three projects with stage events required")
-    eligible = [
+def _eligible(rows: list[dict]) -> list[dict]:
+    return [
         {**row, "ms_per_char": (
             row["signal_ts_ms"] - row["observed_first_content_ts_ms"]
         ) / (THRESHOLD_CHARS - FIRST_CONTENT_CHARS)}
@@ -60,17 +57,33 @@ def evaluate_rows(rows: list[dict]) -> dict:
         and row["observed_first_content_ts_ms"] is not None
         and row["observed_first_content_ts_ms"] < row["signal_ts_ms"]
     ]
+
+
+def evaluate_rows(
+    rows: list[dict], *, train_rows: list[dict] | None = None,
+) -> dict:
+    projects = sorted({row["project"] for row in rows})
+    if train_rows is None and len(projects) < 3:
+        raise ValueError("at least three projects with stage events required")
+    if train_rows is not None:
+        if not projects or not train_rows or {
+            row["project"] for row in train_rows
+        } & set(projects):
+            raise ValueError("fixed training and held-out projects must be disjoint")
+    eligible = _eligible(rows)
+    fit = _eligible(train_rows) if train_rows is not None else eligible
     pooled = {
         name: {"actual": [], "estimate": [], "join_actual": [],
                "join_estimate": []}
         for name in (
             "fixed_stage_prior", "causal_length_prior",
-            "causal_project_length_prior", "oracle_length",
+            "causal_project_length_prior", "reported_length_hint",
+            "oracle_length",
         )
     }
     folds = {}
     for project in projects:
-        train = [row for row in eligible if row["project"] != project]
+        train = [row for row in fit if row["project"] != project]
         test = [row for row in eligible if row["project"] == project]
         if not train:
             raise ValueError("stage has no other-project length support")
@@ -91,6 +104,14 @@ def evaluate_rows(rows: list[dict]) -> dict:
             length, supported = _live_project_length(row, test, length_prior)
             project_supported += supported
             online_lengths.append(length)
+        hints = [
+            row.get("planned_final_report_chars_at_notice")
+            for row in test
+        ]
+        hint_valid = [
+            type(value) is int and 256 <= value <= 12_000
+            for value in hints
+        ]
         estimates = {
             "fixed_stage_prior": [stage_prior] * len(test),
             "causal_length_prior": [
@@ -102,6 +123,15 @@ def evaluate_rows(rows: list[dict]) -> dict:
                 max(0., (length - THRESHOLD_CHARS) * row["ms_per_char"]
                     + tail_prior)
                 for row, length in zip(test, online_lengths)
+            ],
+            "reported_length_hint": [
+                max(0., (max(THRESHOLD_CHARS, hint) - THRESHOLD_CHARS)
+                    * row["ms_per_char"] + tail_prior)
+                if valid else max(
+                    0., (length_prior - THRESHOLD_CHARS)
+                    * row["ms_per_char"] + tail_prior,
+                )
+                for row, hint, valid in zip(test, hints, hint_valid)
             ],
             "oracle_length": [
                 max(0., (
@@ -133,6 +163,15 @@ def evaluate_rows(rows: list[dict]) -> dict:
             "final_length_prior_chars": length_prior,
             "tail_prior_ms": tail_prior,
             "causal_project_length_supported": project_supported,
+            "reported_length_hint_count": sum(hint_valid),
+            "reported_length_hint_char_mae": (
+                sum(
+                    abs(hint - row["final_output_chars_oracle"])
+                    for row, hint, valid in zip(test, hints, hint_valid)
+                    if valid
+                ) / sum(hint_valid)
+                if any(hint_valid) else None
+            ),
         }
         for name, estimate in estimates.items():
             current = pooled[name]
@@ -153,6 +192,15 @@ def evaluate_rows(rows: list[dict]) -> dict:
         folds[project] = fold
     return {
         "diagnostic_only": True,
+        "protocol": (
+            "fixed_project_disjoint_train_heldout" if train_rows is not None
+            else "development_leave_one_project_out"
+        ),
+        "train_projects": (
+            sorted({row["project"] for row in train_rows})
+            if train_rows is not None else None
+        ),
+        "train_evaluable": len(fit) if train_rows is not None else None,
         "projects": projects,
         "threshold_chars": THRESHOLD_CHARS,
         "first_content_chars": FIRST_CONTENT_CHARS,
@@ -178,6 +226,8 @@ def evaluate_rows(rows: list[dict]) -> dict:
             "Project history includes only other workflows whose RETURN was "
             "observed before the current stage, requiring four completed "
             "examples in two workflows and otherwise reverting to train prior. "
+            "A notice-time character hint is evaluated on the same full "
+            "support, falling back to the train-only length median if absent. "
             "Stage false/censored signals are excluded from timing errors. "
             "Historical development projects, no independent sealed test or "
             "physical transfer. An oracle is not an online predictor."
@@ -185,9 +235,8 @@ def evaluate_rows(rows: list[dict]) -> dict:
     }
 
 
-def evaluate(workflows: list[Path]) -> dict:
+def _load_roots(workflows: list[Path], seen_tasks: set[str]) -> list[dict]:
     rows = []
-    seen_tasks = set()
     for root in workflows:
         paths = sorted(root.glob("*/runtime_events.deepagents.jsonl"))
         if not paths:
@@ -198,16 +247,39 @@ def evaluate(workflows: list[Path]) -> dict:
         seen_tasks.update(path.parent.name for path in paths)
         current, _ = collect(root, THRESHOLD_CHARS)
         rows.extend(current)
-    return evaluate_rows(rows)
+    return rows
+
+
+def evaluate(
+    workflows: list[Path], *, train_workflows: list[Path] | None = None,
+) -> dict:
+    seen_tasks: set[str] = set()
+    train_rows = (
+        _load_roots(train_workflows, seen_tasks)
+        if train_workflows is not None else None
+    )
+    rows = _load_roots(workflows, seen_tasks)
+    return evaluate_rows(rows, train_rows=train_rows)
 
 
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--workflows", type=Path, action="append", required=True)
+    parser.add_argument("--workflows", type=Path, action="append")
+    parser.add_argument("--train-workflows", type=Path, action="append")
+    parser.add_argument("--heldout-workflows", type=Path, action="append")
     parser.add_argument("--output", type=Path, required=True)
     args = parser.parse_args()
+    if args.workflows and (args.train_workflows or args.heldout_workflows):
+        parser.error("choose --workflows or fixed --train/--heldout-workflows")
+    if not args.workflows and not (args.train_workflows and args.heldout_workflows):
+        parser.error("both --train-workflows and --heldout-workflows required")
     args.output.write_text(
-        json.dumps(evaluate(args.workflows), indent=2, sort_keys=True) + "\n",
+        json.dumps(
+            evaluate(
+                args.workflows or args.heldout_workflows,
+                train_workflows=args.train_workflows,
+            ), indent=2, sort_keys=True,
+        ) + "\n",
         encoding="utf-8",
     )
 

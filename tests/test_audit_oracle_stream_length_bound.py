@@ -75,3 +75,40 @@ def test_project_length_uses_only_completed_other_workflows():
     assert _live_project_length(current, too_late, 1600) == (1600, False)
     same_task = [{**row, "task_id": "a3"} for row in prior]
     assert _live_project_length(current, same_task, 1600) == (1600, False)
+
+
+def test_notice_length_hint_is_separate_from_oracle_and_reports_coverage():
+    rows = [
+        _row("alpha", chars=1800, lead=1100),
+        _row("beta", chars=2100, lead=1400),
+        _row("gamma", chars=1900, lead=1200),
+    ]
+    rows[2]["planned_final_report_chars_at_notice"] = 1850
+    base = evaluate_rows(rows)
+    assert base["folds"]["gamma"]["reported_length_hint_count"] == 1
+    assert base["folds"]["gamma"]["reported_length_hint_char_mae"] == 50
+    rows[2]["planned_final_report_chars_at_notice"] = 0
+    absent = evaluate_rows(rows)
+    assert absent["folds"]["gamma"]["reported_length_hint_count"] == 0
+    assert (
+        absent["folds"]["gamma"]["reported_length_hint"]["child_return"]
+        == absent["folds"]["gamma"]["causal_length_prior"]["child_return"]
+    )
+
+
+def test_fixed_training_excludes_all_heldout_project_labels():
+    train = [_row("alpha", chars=1800, lead=1100),
+             _row("beta", chars=2100, lead=1400)]
+    test = [_row("gamma", chars=1900, lead=1200),
+            _row("delta", chars=2500, lead=1700)]
+    result = evaluate_rows(test, train_rows=train)
+    assert result["protocol"] == "fixed_project_disjoint_train_heldout"
+    assert result["train_projects"] == ["alpha", "beta"]
+    assert result["folds"]["gamma"]["train_workflows"] == 2
+    assert result["folds"]["delta"]["train_workflows"] == 2
+    assert (
+        result["folds"]["gamma"]["final_length_prior_chars"]
+        == result["folds"]["delta"]["final_length_prior_chars"]
+    )
+    with pytest.raises(ValueError, match="disjoint"):
+        evaluate_rows(test, train_rows=[*train, test[0]])

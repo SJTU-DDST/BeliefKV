@@ -3927,3 +3927,42 @@ pytest-dev 8/8、Sphinx 5/6。报告见
 报告长度承诺是否真实可用，再冻结方法、项目隔离
 复验实际误差与质量；若提示不准，则转向更早的
 结构化生成进度或预算受限的部分 KV 预备。
+
+### 报告长度承诺的配对影子试验（运行前冻结）
+
+新增默认关闭的 `--child-report-length-shadow`，只能和
+`--child-return-intent-shadow` 一起使用；仅 planned
+analysis child 的 `announce_completion_intent` 要求给出
+`estimated_final_report_chars`，记录当时可见的计划字符数，
+随后照常生成完整自然语言报告。不得为匹配承诺而删减
+证据或填充正文。默认路径的 tool schema、提示词和
+safe point 完全不变；该字段只供审计，**不进入在线
+预测或物理 D2H/H2D**。
+
+先以第 61 节的 Django/Xarray/Pylint 8 个固定
+train 任务、再以 Astropy/Sphinx 8 个固定项目隔离
+任务，每组顺序运行原 `intent` 与新 `length` 臂；
+两臂同一服务配置：Qwen3.5-35B-A3B、
+SGLang 0.5.20、Host 120 GB NUMA 1、
+FULL/Mamba 70/30、running 48。
+训练侧只能确定长度先验和评估规则，
+不能按项目留出结果再调字符数门槛或拟合超参数。
+已知 Astropy/Sphinx 项目曾用于前述开发，故这里
+的项目隔离仍不是密封测试集；两个臂 prompt/schema
+不同，轨迹也可能不同，不能把运行时间差当作
+预测策略的因果吞吐改善。
+
+验收按首个通知、同一 child/JOIN/RID 的首个
+64→1024 字符里程碑分组：报告 8+8
+workflow 完成/测量有效数、通知及长度承诺覆盖，
+承诺相对真实最终字符数的误差、提示缺失和
+新增工具校验错误；项目留出中在**同一可评分
+样本**上对比固定时长、其他项目长度先验、
+承诺长度和事后 oracle 的点误差及 500 ms 命中，
+另外单列 JOIN 最后 child 及阶段到 RETURN
+至少 500 ms 的真实提前量。没有响应或自然
+RETURN 的候选要按撤销/取消/删失计数，
+不能从 ETA 分母消失后宣称首次触发高精度；
+监测报告质量和子 agent 取消。如果承诺与
+oracle 差距仍大，不开在线头，也不加大 GPU
+批量，仅记录阴性结果。

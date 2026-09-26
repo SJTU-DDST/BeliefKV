@@ -1537,6 +1537,7 @@ class DeepAgentsExperimentConfig:
     child_finish_chunk_shadow: bool = False
     child_return_intent_shadow: bool = False
     child_final_report_shadow: bool = False
+    child_report_length_shadow: bool = False
     subagent_fanout_profile: str = "natural"
     stop_after_first_native_join: bool = False
     recursion_limit: int = 2048
@@ -1560,6 +1561,8 @@ class DeepAgentsExperimentConfig:
     def __post_init__(self) -> None:
         if self.child_final_report_shadow and not self.child_return_intent_shadow:
             raise ValueError("child final report shadow requires child return intent")
+        if self.child_report_length_shadow and not self.child_return_intent_shadow:
+            raise ValueError("child report length shadow requires child return intent")
         if self.mode not in {"autonomous", "planned"}:
             raise ValueError("mode must be autonomous or planned")
         if self.child_finish_chunk_shadow and not self.stream_completion_shadow:
@@ -2148,11 +2151,9 @@ def _child_return_intent_shadow_tool(
     adapter: DeepAgentsRuntimeAdapter | None = None,
     context_id: str | None = None,
     join_id: str | None = None,
+    report_length_shadow: bool = False,
 ) -> BaseTool:
-    @tool("announce_completion_intent")
-    def announce_completion_intent() -> str:
-        """Announce that your analysis is complete before the final response."""
-
+    def record(estimated_final_report_chars: int | None = None) -> str:
         identity = (
             {
                 "context_id": context_id,
@@ -2163,9 +2164,35 @@ def _child_return_intent_shadow_tool(
         )
         audit.emit(
             "child_return_intent_shadow", invocation_id=invocation_id,
+            **(
+                {"planned_final_report_chars": estimated_final_report_chars}
+                if estimated_final_report_chars is not None
+                and 256 <= estimated_final_report_chars <= 12_000
+                else {"invalid_report_length_hint": True}
+                if report_length_shadow else {}
+            ),
             **identity,
         )
         return "Completion intent recorded. Return your concise final report now."
+
+    if report_length_shadow:
+        @tool("announce_completion_intent")
+        def announce_completion_intent(
+            estimated_final_report_chars: int,
+        ) -> str:
+            """Estimate visible final report characters, then announce completion.
+
+            Include spaces and punctuation. Keep the report natural; do not
+            pad or omit evidence just to match this diagnostic estimate.
+            """
+            return record(estimated_final_report_chars)
+
+        return announce_completion_intent
+
+    @tool("announce_completion_intent")
+    def announce_completion_intent() -> str:
+        """Announce that your analysis is complete before the final response."""
+        return record()
 
     return announce_completion_intent
 
@@ -2818,6 +2845,7 @@ def _run_planned_child(
                 backend.audit, handle.invocation_id,
                 adapter=adapter, context_id=handle.context_id,
                 join_id=handle.join_id,
+                report_length_shadow=config.child_report_length_shadow,
             )]
             if config.child_return_intent_shadow else []
         )
@@ -2878,6 +2906,14 @@ def _run_planned_child(
                     "Do not call it when you still need to investigate; if new work "
                     "becomes necessary, continue normally."
                     if config.child_return_intent_shadow else ""
+                )
+                + (
+                    " At announcement, estimate the number of visible characters "
+                    "(including spaces) in your ordinary final report via "
+                    "estimated_final_report_chars. Give the natural report you "
+                    "would have given anyway; do not pad or omit evidence to "
+                    "match the estimate."
+                    if config.child_report_length_shadow else ""
                 )
             ) + SANDBOX_PATH_CONTRACT + repository_sandbox_contract(workload),
             name=f"beliefkv-planned-{role_name or 'analyst'}",

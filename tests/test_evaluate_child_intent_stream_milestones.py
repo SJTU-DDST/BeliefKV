@@ -6,7 +6,8 @@ from scripts.evaluate_child_intent_stream_milestones import collect, evaluate
 
 
 def _workflow(root, task, *, lead_ms, false_first=False, stale=False,
-              offset_ms=0, first64=False, final_chars=20):
+              offset_ms=0, first64=False, final_chars=20,
+              planned_chars=None):
     path = root / task
     path.mkdir(parents=True)
     child = f"deepagents-invocation:{task}"
@@ -75,6 +76,10 @@ def _workflow(root, task, *, lead_ms, false_first=False, stale=False,
         "event": "child_return_intent_shadow", "invocation_id": child,
         "ts_ms": 1000 + offset_ms, "context_id": base["context_id"],
         "context_epoch": base["context_epoch"],
+        **(
+            {"planned_final_report_chars": planned_chars}
+            if planned_chars is not None else {}
+        ),
     }) + "\n")
 
 
@@ -124,9 +129,10 @@ def test_rolling_project_prior_only_uses_completed_other_tasks(tmp_path):
 
 def test_first_content_rate_and_future_length_are_separate_fields(tmp_path):
     _workflow(tmp_path, "astropy__one", lead_ms=700, first64=True,
-              final_chars=1900)
+              final_chars=1900, planned_chars=1800)
     rows, _ = collect(tmp_path, 1024)
     assert len(rows) == 1
     assert rows[0]["observed_first_content_ts_ms"] == 1060
     assert rows[0]["final_output_chars_oracle"] == 1900
+    assert rows[0]["planned_final_report_chars_at_notice"] == 1800
     assert rows[0]["result_to_return_ms_oracle"] == 550

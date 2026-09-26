@@ -108,6 +108,13 @@ def parse_args() -> argparse.Namespace:
         ),
     )
     parser.add_argument(
+        "--child-report-length-shadow", action="store_true",
+        help=(
+            "Opt-in child final-report length estimate in the completion notice; "
+            "requires --child-return-intent-shadow, audit only."
+        ),
+    )
+    parser.add_argument(
         "--sampling-seed",
         type=int,
         help=(
@@ -242,6 +249,7 @@ def main() -> int:
         child_finish_chunk_shadow=args.child_finish_chunk_shadow,
         child_return_intent_shadow=args.child_return_intent_shadow,
         child_final_report_shadow=args.child_final_report_shadow,
+        child_report_length_shadow=args.child_report_length_shadow,
         subagent_fanout_profile=args.subagent_fanout_profile,
         stop_after_first_native_join=args.stop_after_first_native_join,
         recursion_limit=args.recursion_limit,

@@ -2456,6 +2456,12 @@ def test_child_final_report_shadow_requires_notice(tmp_path: Path) -> None:
         **kwargs, child_final_report_shadow=True,
         child_return_intent_shadow=True,
     ).child_final_report_shadow is True
+    with pytest.raises(ValueError, match="child report length shadow"):
+        DeepAgentsExperimentConfig(**kwargs, child_report_length_shadow=True)
+    assert DeepAgentsExperimentConfig(
+        **kwargs, child_report_length_shadow=True,
+        child_return_intent_shadow=True,
+    ).child_report_length_shadow is True
 
 
 def test_child_final_report_shadow_matches_real_agent_tool_result(tmp_path: Path) -> None:

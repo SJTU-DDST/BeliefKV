@@ -1,6 +1,8 @@
 import json
 from types import SimpleNamespace
 
+import pytest
+
 from beliefkv.experiments.deepagents_swebench import (
     JsonlAudit, _child_return_intent_shadow_tool,
 )
@@ -84,6 +86,30 @@ def test_intent_tool_records_source_context_epoch_and_join(tmp_path):
     assert row["context_id"] == "context:child"
     assert row["context_epoch"] == 27
     assert row["join_id"] == "join:parent"
+
+
+def test_report_length_shadow_is_opt_in_and_only_adds_audit_evidence(tmp_path):
+    path = tmp_path / "audit.jsonl"
+    audit = JsonlAudit(path)
+    try:
+        tool = _child_return_intent_shadow_tool(
+            audit, "deepagents-invocation:child",
+            report_length_shadow=True,
+        )
+        with pytest.raises(Exception, match="estimated_final_report_chars"):
+            tool.invoke({})
+        assert "final report" in tool.invoke({
+            "estimated_final_report_chars": 1750,
+        })
+        tool.invoke({"estimated_final_report_chars": 0})
+    finally:
+        audit.close()
+    rows = [json.loads(line) for line in path.read_text().splitlines()]
+    assert len(rows) == 2
+    assert rows[0]["planned_final_report_chars"] == 1750
+    assert not rows[0].get("invalid_report_length_hint")
+    assert rows[1]["invalid_report_length_hint"]
+    assert "planned_final_report_chars" not in rows[1]
 
 
 def test_natural_join_intent_has_one_second_lead(tmp_path):
