@@ -3603,3 +3603,40 @@ pytest-dev 四任务共 163 个，都没有长调用。
 执行期的可交付进度信号或可靠的任务语义时钟，
 而不是把容器锁等待调小。报告保存在两批原始
 实验目录各自的 `sandbox_wall_segments.json`。
+
+## 61. 匿名命令结构桶的冻结跨项目采样方案（2026-09-26，运行前）
+
+在看本轮结果前固定两臂，各只运行一次
+`ARMS=intent` 和 `BELIEFKV_COMMAND_STRUCTURE_SHADOW=1`，
+保持 Qwen3.5-35B-A3B、SGLang 0.5.20、Host 120 GB、
+running 48、同一 `run_child_intent_chunk_sphinx.sh`
+及无预测物理动作。输出分别为
+`qwen35_command_structure_train8_20260926_v1` 和
+`qwen35_command_structure_project_holdout8_20260926_v1`。
+训练侧取冻结 train manifest 的：
+`pydata__xarray-2905/3095/3151/3305`、
+`django__django-10097/10880`、
+`pylint-dev__pylint-4604/6528`；Xarray
+是因已知冷长调用多而选入**训练侧**，不能据此
+报告随机任务覆盖。验证侧按旧校准 manifest 的
+项目内固定顺序取 Astropy `12907/13033/13236/13398`
+与 Sphinx `10323/10435/10449/10466`，
+不依照本轮 RETURN 时间挑选。两个项目参与过
+旧校准/开发，虽与本轮训练项目隔离，却**不是
+密封未见测试项目**。
+
+先只统计 TOOL_START 已知的 child 身份、
+同输入成功历史、匿名结构桶是否覆盖，以及
+实际工具开始至成功结束不少于 2 秒的冷调用；
+失败、取消和右删失逐项计数，不作短调用负例。
+拟合与阈值仅使用 train 项目：对比仅粗类别/
+输入长度、现有 `observed_command_shape`、加匿名
+结构桶三种输入；不能根据验证项目结果改结构
+桶或筛选规则。验证侧要同时报告各项目和各
+workflow 的长调用个数、首次触发覆盖、长调用
+识别精确率/召回率、真实 RETURN 点误差 P50/P90、
+500 ms 命中及真实可用提前量，并与零时长或
+现有头在同一支持子集比较。若训练侧非 Xarray
+正例不足、任一验证项目不足 5 个长调用或
+任一模型只靠极少 workflow 支撑，则结论为
+证据不足；不启用在线头或预测物理动作。

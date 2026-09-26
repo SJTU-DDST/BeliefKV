@@ -100,6 +100,7 @@ def _read_workflow(
                 "invocation": str(event.get("invocation_id") or ""),
                 "class": str(start_attrs.get("observed_command_class") or "unknown"),
                 "shape": str(start_attrs.get("observed_command_shape") or "unknown"),
+                "inline_structure": start_attrs.get("observed_inline_structure"),
                 "other_workflow_2s_peers": start_attrs.get(
                     "project_class_inflight_other_workflow_2s_peers", 0
                 ),
