@@ -1,0 +1,43 @@
+diff --git a/python/sglang/srt/entrypoints/openai/serving_chat.py b/python/sglang/srt/entrypoints/openai/serving_chat.py
+--- a/python/sglang/srt/entrypoints/openai/serving_chat.py
++++ b/python/sglang/srt/entrypoints/openai/serving_chat.py
+@@ -4,6 +4,7 @@ import copy
+ import json
+ import logging
+ import math
++import os
+ import time
+ import uuid
+ from collections import OrderedDict
+@@ -1927,6 +1928,31 @@ class OpenAIServingChat(OpenAIServingBase):
+                 ):
+                     yield chunk
+ 
++                if (
++                    os.environ.get("BELIEFKV_HIDDEN_EARLY_SHADOW") == "1"
++                    and request.return_hidden_states == "last"
++                    and not finish_reason_type
++                    and completion_tokens[index] % 32 == 0
++                    and hidden_states.get(index)
++                ):
++                    diagnostic_chunk = ChatCompletionStreamResponse(
++                        id=content["meta_info"]["id"],
++                        created=int(time.time()),
++                        choices=[
++                            ChatCompletionResponseStreamChoice(
++                                index=index,
++                                delta=DeltaMessage(
++                                    hidden_states=process_hidden_states_for_response(
++                                        hidden_states[index], "last"
++                                    )
++                                ),
++                                finish_reason=None,
++                            )
++                        ],
++                        model=request.model,
++                    )
++                    yield f"data: {diagnostic_chunk.model_dump_json()}\n\n"
++
+             # Send finish_reason chunks for each index that completed
+             for idx, finish_reason_data in finish_reasons.items():
+                 finish_reason_type = finish_reason_data["type"]

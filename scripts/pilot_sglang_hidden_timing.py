@@ -34,10 +34,40 @@ def _observe_event(summary: dict, event: dict, elapsed_ms: float) -> None:
         if delta.get("hidden_states") is not None:
             summary["hidden_chunks"] += 1
             summary["first_hidden_ms"] = summary["first_hidden_ms"] or elapsed_ms
+            summary["hidden_event_times_ms"].append(elapsed_ms)
             summary["hidden_shapes"].append(_hidden_shape(delta["hidden_states"]))
         if choice.get("finish_reason"):
             summary["first_finish_ms"] = summary["first_finish_ms"] or elapsed_ms
             summary["finish_reason"] = choice["finish_reason"]
+
+
+def _finish_summary(summary: dict) -> dict:
+    summary["hidden_before_finish"] = (
+        summary["first_hidden_ms"] is not None
+        and summary["first_finish_ms"] is not None
+        and summary["first_hidden_ms"] < summary["first_finish_ms"]
+    )
+    if summary["first_finish_ms"] is not None:
+        early = [
+            t for t in summary.pop("hidden_event_times_ms")
+            if t < summary["first_finish_ms"]
+        ]
+        summary["early_hidden_chunks"] = len(early)
+        summary["last_hidden_lead_ms"] = (
+            summary["first_finish_ms"] - early[-1] if early else None
+        )
+        summary["first_hidden_lead_ms"] = (
+            summary["first_finish_ms"] - early[0] if early else None
+        )
+    else:
+        summary.pop("hidden_event_times_ms")
+        summary["early_hidden_chunks"] = 0
+        summary["last_hidden_lead_ms"] = None
+        summary["first_hidden_lead_ms"] = None
+    summary["hidden_shapes"] = sorted({
+        tuple(shape) for shape in summary["hidden_shapes"]
+    })
+    return summary
 
 
 def run(base_url: str, *, hidden: bool, max_tokens: int) -> dict:
@@ -65,6 +95,7 @@ def run(base_url: str, *, hidden: bool, max_tokens: int) -> dict:
         "first_text_ms": None,
         "hidden_chunks": 0,
         "first_hidden_ms": None,
+        "hidden_event_times_ms": [],
         "hidden_shapes": [],
         "first_finish_ms": None,
         "finish_reason": None,
@@ -94,15 +125,7 @@ def run(base_url: str, *, hidden: bool, max_tokens: int) -> dict:
             if summary["hidden_chunks"] > before:
                 summary["hidden_event_bytes"] += len(payload)
     summary["total_ms"] = (time.monotonic() - started) * 1000
-    summary["hidden_before_finish"] = (
-        summary["first_hidden_ms"] is not None
-        and summary["first_finish_ms"] is not None
-        and summary["first_hidden_ms"] < summary["first_finish_ms"]
-    )
-    summary["hidden_shapes"] = sorted({
-        tuple(shape) for shape in summary["hidden_shapes"]
-    })
-    return summary
+    return _finish_summary(summary)
 
 
 def main() -> None:
