@@ -142,10 +142,19 @@ def parse_args() -> argparse.Namespace:
             "native JOIN. The run is never JCT or training eligible."
         ),
     )
-    parser.add_argument(
+    guard_group = parser.add_mutually_exclusive_group()
+    guard_group.add_argument(
         "--disable-loop-guard",
         action="store_true",
         help="Disable stuck detection while retaining semantic completion",
+    )
+    guard_group.add_argument(
+        "--native-reactive-guard-profile",
+        action="store_true",
+        help=(
+            "Match native-reactive P6 collection: observe semantic patterns, "
+            "enforce only hard graph finalization, and permit repeated tool calls."
+        ),
     )
     parser.add_argument("--stuck-repeated-call-limit", type=int, default=3)
     parser.add_argument("--stuck-alternating-repetitions", type=int, default=3)
@@ -259,6 +268,7 @@ def main() -> int:
         sandbox_preflight_command=args.sandbox_preflight_command or None,
         completion_gate_enabled=not args.disable_completion_gate,
         completion_repair_attempts=args.completion_repair_attempts,
+        tool_circuit_breaker_enabled=not args.native_reactive_guard_profile,
         context_lifecycle=ContextLifecyclePolicy(
             window_tokens=args.context_window_tokens,
             keep_tokens=args.context_keep_tokens,
@@ -268,6 +278,8 @@ def main() -> int:
         ),
         loop_guard=LoopGuardPolicy(
             enabled=not args.disable_loop_guard,
+            enforce_semantic_guard=not args.native_reactive_guard_profile,
+            enforce_soft_graph_budget=not args.native_reactive_guard_profile,
             repeated_call_limit=args.stuck_repeated_call_limit,
             alternating_cycle_repetitions=args.stuck_alternating_repetitions,
             consecutive_error_limit=args.stuck_consecutive_error_limit,

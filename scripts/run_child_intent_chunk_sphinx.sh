@@ -106,6 +106,7 @@ for arm in "${arms[@]}"; do
     --subagent-fanout-profile native_dynamic_1to4 \
     --max-completion-tokens 8192 --model-context-tokens 131072 \
     --recursion-limit 2048 --activation-wall-clock-seconds 900 \
+    --native-reactive-guard-profile \
     --disable-completion-gate --gate system --stream-completion-shadow \
     --child-finish-chunk-shadow \
     "${intent_arg[@]}" --output "$OUT/${arm}_workloads" \

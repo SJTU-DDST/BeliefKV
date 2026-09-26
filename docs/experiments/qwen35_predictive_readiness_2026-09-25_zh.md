@@ -4071,3 +4071,50 @@ Django 批次与新长度实验的 prompt 和采集条件
 因此即使数值提升也须额外做独立验证。
 报告在新长度留出实验目录的
 `prefix_structure_holdout.json`。
+
+## 66. shadow 实验与正式训练的 guard 配置不一致
+
+第 64--65 节两批 shadow 并未复用 P6 正式
+native-reactive 采集的 runtime guard 策略：
+后者仅观察语义循环/软 graph budget，关闭
+重复工具的 circuit breaker，同时保留
+2048 步上限前 32 步强制 FINALIZE；
+独立 `run_deepagents_swebench.py` 的默认 guard
+却会在三次重复调用或连续工具错误时强制
+child 提前报告 `blocked`。从四个 8-task
+`intent`/`length` 实验臂的 `child_reports.json`
+事后数到 `blocked` 分别为训练侧 **9/17**、
+留出侧 **14/9**；其中大量原因是
+`repeated_tool_call`、`consecutive_tool_errors`
+或 `no_observable_progress`，而非到达硬
+graph 步数。这损失自然 RETURN/JOIN 标签，
+也说明 shadow A/B 不能冒充同配置正式训练。
+它**不改变**对已可评分自然子集的项目隔离
+阴性结论；无法把未发生的终态补作训练标签。
+
+独立 runner 增加明确的
+`--native-reactive-guard-profile`：与正式
+P6 一样使语义循环和软 graph budget
+observe-only，关闭重复工具 suppression，
+但保留 hard graph 2048/32 收尾；
+可选的 activation deadline 在小批 pilot
+仍单独生效，超过截止必须单列为删失，
+不是自然 child RETURN。新 shadow 采样脚本
+显式传该开关，旧实验的 `source_commit`
+与结果均不追溯修改。下一步在曾被提前
+guard 的任务上小批复验自然 child RETURN、
+JOIN 覆盖和未完成率；如任务不再被 guard
+截断但陷入重复工具循环，不得把更多
+长运行时间误认为预测精度改善。
+
+同时，新长度留出批次的同输入工具时长
+项目隔离回放：43 条成功同输入重复调用
+点误差全在 500 ms 内，其中 34 条属于
+四个 Sphinx workflow 的 child；
+**0 条**是至少 2 秒的 child 长调用，
+留出侧真实 7 条长 child 没有一条被该机制
+覆盖，按 1 秒提前预算选择 0 条。
+短重复工具调用的高命中率不能证明
+可迁移 KV 的 TOOL_RETURN 预测已解决。
+报告为该留出批次的
+`repeated_tool_project_holdout.json`。

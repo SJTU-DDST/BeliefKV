@@ -1012,6 +1012,52 @@ def test_workload_cli_can_disable_activation_deadline(
     assert args.disable_activation_deadline is True
 
 
+def test_workload_cli_native_reactive_guard_matches_p6_collection(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path,
+) -> None:
+    from scripts import run_deepagents_swebench as cli
+
+    configs = []
+    monkeypatch.setattr(cli, "run_experiment", lambda config: (
+        configs.append(config) or {
+            "workflow_count": 0, "system_jct_eligible_workflows": 0,
+            "native_agent_jct_eligible_workflows": 0,
+            "successful_workflows": 0,
+            "semantic_gate_completed_workflows": 0,
+        }
+    ))
+    monkeypatch.setattr(
+        "sys.argv",
+        [
+            "run_deepagents_swebench.py", "--mode", "autonomous",
+            "--native-reactive-guard-profile",
+            "--activation-wall-clock-seconds", "900",
+            "--output", str(tmp_path / "pilot"),
+        ],
+    )
+    assert cli.main() == 0
+    config = configs[0]
+    assert config.loop_guard.enabled is True
+    assert config.loop_guard.enforce_semantic_guard is False
+    assert config.loop_guard.enforce_soft_graph_budget is False
+    assert config.loop_guard.enforce_graph_step_budget is True
+    assert config.loop_guard.graph_step_hard_limit == 2048
+    assert config.loop_guard.graph_step_reserve == 32
+    assert config.loop_guard.activation_wall_clock_s == 900
+    assert config.tool_circuit_breaker_enabled is False
+
+    monkeypatch.setattr(
+        "sys.argv",
+        [
+            "run_deepagents_swebench.py", "--mode", "autonomous",
+            "--native-reactive-guard-profile", "--disable-loop-guard",
+        ],
+    )
+    with pytest.raises(SystemExit) as exc:
+        cli.parse_args()
+    assert exc.value.code == 2
+
+
 def test_docker_backend_recovers_when_timed_out_run_is_already_running(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
