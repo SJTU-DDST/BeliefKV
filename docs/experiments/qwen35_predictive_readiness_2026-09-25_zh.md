@@ -4563,3 +4563,34 @@ Astropy/Sphinx 等项目在规则冻结前不得用于
 误触发、自然 RETURN 点误差及至少 500 ms 的
 真实可用提前量，并与现有头在**同一子集**
 配对比较。未证明显著改善前不启用物理迁移。
+
+### EOS top-20 三项目 pilot：独立增量门槛未通过
+
+冻结的 Xarray `3305`、Django `10097`、Pylint
+`4604` 单 `intent` 臂在源码 `95c1f09` 下完成：
+3/3 workflow completed 且系统测量有效，
+11/11 次自然 child RETURN、3/3 次完整
+JOIN-last；没有 workflow deadline 取消。
+`qwen35_eos_top20_train3_20260927/intent_eos_coverage.json`
+显示 top-20 首次命中 11/11，其中 8/11
+到 RETURN 至少还有 2 秒，中位约 2944 ms；
+三个 JOIN-last 均命中，但仅 Django 的一次
+有至少 2 秒提前量。0.01% 门槛命中 10/11，
+没有一次提前至少 2 秒。
+
+这些数值不能视为 top-20 的独立预测收益：
+11 次命中中 **10 次在首次正文后 250 ms
+之内**，命中与首次正文间隔中位仅约 43 ms，
+仅一条晚约 710 ms；本批自然样本的首次
+正文到 RETURN 中位约 2994 ms。
+本轮未观察到 false/intervened/censored
+首命中，但只有三条 workflow、11 次自然
+RETURN，缺乏足够的非 RETURN 判别分母。
+按预先冻结的“基本等于首次正文则不扩展”
+门槛，**否决 top-20 作为独立的提前时钟**，
+不启动它的 Astropy/Sphinx 留出实验，
+不据此宣称项目隔离精度提升或物理 H2D
+资格。仍可单独研究首次正文的真假 RETURN
+分类和在线 ETA，但须有足够的负例和独立
+项目验证，不能把本轮的真 RETURN 条件
+提前量当成触发精确率。
