@@ -4776,3 +4776,33 @@ TOOL_START 到 TOOL_END 点时长误差。
 66-root 的压力也弱于训练侧的 128-root，
 必须单列服务负载差异。完整 JOIN 的剩余时间
 准确率继续独立核验，不由工具长调用分类替代。
+
+### 首次完整 JOIN 通知覆盖的项目隔离审计
+
+新增只读 `scripts/evaluate_join_group_notice.py`：针对
+`mode=all` 的 JOIN，在 parent 已进入 `JOIN_WAIT` 后，
+只有全部尚未 RETURN 的 child 均有当前未撤销的完成通知，
+才记录**首次**可决策候选；已 RETURN 的 child 无须再预测。
+脚本检查通知 join 身份、context/epoch、工具重入和取消，
+将 revoked、未得到自然完整 JOIN 的候选分别计数，
+不会用事后才知道的“最后返回的 child”选候选。
+每个训练任务的自然通知提前量先取中位数，再跨任务取
+中位数作为固定先验；对每个在途 child 按通知时刻外推
+RETURN，完整 JOIN ETA 取最迟的外推结果。先验只用
+训练项目，留出项目未来 RETURN/JOIN 只用于打标签。
+
+以已有 Sphinx 4 个任务、6 条自然 child 通知冻结
+5503 ms 先验，留出 Astropy 8 个 `mode=all` JOIN：
+3 个自然完整 JOIN 均在首次覆盖时产生候选，
+另 5 个候选无自然完整 JOIN 标签。自然子集提前量
+中位 4443 ms，点误差中位 1060 ms，
+**0/3** 在 500 ms 内。相同先验另在 Pylint 4 个
+JOIN 上检验：2 个自然 JOIN 均产生候选，1 个候选
+删失、1 个没有完整成员通知；自然子集点误差中位
+1214 ms，**0/2** 在 500 ms 内。报告分别存于
+两个留出采集目录的 `join_group_notice_project_holdout.json`。
+这是小样本、既有项目上的开发诊断，不是显著精度提升；
+不能将未完成/blocked JOIN 记为成功或失败预测，也不
+足以证明有足够物理 H2D 提前量。运行中的 128-root
+批次结束后，应按同一完整组定义重算压力下的覆盖率、
+删失和误差，并只在未见项目上评估任何新的时钟头。
