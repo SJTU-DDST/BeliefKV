@@ -2877,8 +2877,13 @@ def _run_planned_child(
             )]
             if config.child_return_intent_shadow else []
         )
+        child_model = _model(config, adapter, deadline_controller)
+        summary_model = child_model.model_copy(
+            update={"max_tokens": config.context_lifecycle.summary_output_tokens}
+        )
+        deadline_controller.register_model(summary_model)
         child = create_agent(
-            model=_model(config, adapter, deadline_controller),
+            model=child_model,
             tools=shadow_tools,
             middleware=[
                 _tool_circuit(
@@ -2894,6 +2899,18 @@ def _run_planned_child(
                     scope=f"planned:child:{handle.invocation_id}",
                 ),
                 _filesystem_middleware(child_backend, allow_direct_edits=False),
+                _context_lifecycle_middleware(
+                    config, child_backend, adapter, summary_model,
+                ),
+                CompletionBudgetMiddleware(
+                    intermediate_tokens=(
+                        config.context_lifecycle.intermediate_output_tokens
+                    ),
+                    final_tokens=config.max_completion_tokens,
+                    model_context_tokens=(
+                        config.context_lifecycle.model_context_tokens
+                    ),
+                ),
                 _loop_guard(
                     config,
                     completion_schema=ChildCompletion,

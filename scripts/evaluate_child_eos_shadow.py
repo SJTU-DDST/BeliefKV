@@ -329,8 +329,10 @@ def audit(
             for row in rows
         ),
         "scope": (
-            "Notice-bound first 64-character stages only; no causal fit or "
-            "physical transfer. A top-k miss is not zero EOS probability."
+            "Notice-bound first-content stages for low-probability thresholds; "
+            "otherwise first 64-character stages. Only the immediately following "
+            "request is eligible; empty-response retries are excluded. No causal "
+            "fit or physical transfer. A top-k miss is not zero EOS probability."
         ),
     }
 

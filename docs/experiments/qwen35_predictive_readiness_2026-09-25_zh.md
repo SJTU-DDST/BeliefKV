@@ -4386,3 +4386,37 @@ predictive_action_eligible。
 `experiments/raw/qwen35_eos_train8_20260927_v1/`。
 当前 1% 信号不能证明稳定的大块迁移窗口，
 不启用在线 ETA 或物理预取。
+
+### 低阈值单任务复核与 planned child 上下文修复
+
+冻结的 Xarray `3305` 单任务低阈值 pilot 已完成：
+3 个 child 均 RETURN，1 次 JOIN 满足，root 自然结束；
+workflow 配置的绝对截止为 7200 秒，未触发取消。
+`qwen35_eos_low_train_smoke_xarray3305_v1/eos_coverage.json`
+审计仅有 2 个可评分的通知后首请求；0.01% 与 0.1%
+分别覆盖 2/2，首次触发到 RETURN 为约 420--680 ms，
+只有 1/2 达到 500 ms，0/2 达到 2 秒；
+1% 对相同两条的首次触发仅约 292--420 ms。
+最低阈值也没有在此 pilot 产生足以隐藏大块 KV
+迁移的早期窗口，不凭该单任务启用在线动作或声称泛化。
+
+剩余的 JOIN-last child 在通知后首请求返回空正文
+`finish_reason=stop`，runtime 的空推理恢复又发出
+第二次模型请求，最终正文来自比通知大两个 epoch
+的请求；`stage_identity_mismatch=1` 正确排除了
+该样本。该次 JOIN 虽然满足，却没有通知后首请求的
+EOS 可用标签；不能将最终成功的第二次请求事后
+并入首请求以虚增覆盖率。需要单独评价空响应恢复
+的干预比例及其对 JOIN 时机的影响。
+
+另查明先前 `pylint-6528` planned child 在第 331
+次模型请求的预检中遇到 `prompt_tokens=123013`
+超过 `limit=122880`，该模式的 child 缺少 root
+已有的上下文压缩和 completion 预算中间件。现为
+planned child 接入同一上下文生命周期及独立注册的
+摘要模型，预防长工具循环累积历史导致 child 取消。
+这一改动仅影响修复后启动的进程；上述低阈值 pilot
+及此前批次使用旧 runtime，不得当成修复后正式训练
+样本。针对性与生命周期相关回归为
+157 passed、1 skipped；物理返回与项目隔离精度
+仍需另行验证。

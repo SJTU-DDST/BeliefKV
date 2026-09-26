@@ -715,6 +715,87 @@ def test_planned_child_inherits_unbuffered_output_shadow(
     audit.close()
 
 
+def test_planned_child_has_context_compaction_and_completion_budget(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    audit = JsonlAudit(tmp_path / "audit.jsonl")
+    backend = DockerWorkspaceBackend(
+        tmp_path / "workspace", image="fixture:latest", audit=audit,
+    )
+    config = DeepAgentsExperimentConfig(
+        mode="planned", base_url="http://localhost:18000/v1",
+        model="model", output_dir=tmp_path,
+        workload_manifest=tmp_path / "workloads.json",
+        docker_image="fixture:latest",
+    )
+    child_backends = []
+    summaries = []
+    context_middleware = object()
+    fake_model = SimpleNamespace(
+        model_copy=lambda *, update: SimpleNamespace(**update),
+    )
+    controller = SimpleNamespace(
+        register_backend=child_backends.append,
+        unregister_backend=child_backends.remove,
+        register_model=summaries.append,
+        deadline=ActivationDeadline(),
+    )
+
+    def context_for_child(policy, child_backend, runtime, summary_model):
+        assert policy is config
+        assert child_backend is not backend
+        assert child_backend in child_backends
+        assert runtime is adapter
+        assert summary_model in summaries
+        return context_middleware
+
+    def check_agent(*, middleware, **kwargs):
+        del kwargs
+        assert context_middleware in middleware
+        budget = next(
+            item for item in middleware
+            if isinstance(item, CompletionBudgetMiddleware)
+        )
+        assert budget.final_tokens == config.max_completion_tokens
+        assert middleware.index(context_middleware) < middleware.index(budget)
+        raise RuntimeError("checked planned child middleware")
+
+    monkeypatch.setattr(
+        "beliefkv.experiments.deepagents_swebench.prepare_workspace",
+        lambda *_: None,
+    )
+    monkeypatch.setattr(DockerWorkspaceBackend, "start", lambda _: None)
+    monkeypatch.setattr(DockerWorkspaceBackend, "close", lambda _: None)
+    monkeypatch.setattr(
+        "beliefkv.experiments.deepagents_swebench._model",
+        lambda *_: fake_model,
+    )
+    monkeypatch.setattr(
+        "beliefkv.experiments.deepagents_swebench._context_lifecycle_middleware",
+        context_for_child,
+    )
+    monkeypatch.setattr(
+        "beliefkv.experiments.deepagents_swebench.repository_sandbox_contract",
+        lambda _: "",
+    )
+    monkeypatch.setattr(
+        "beliefkv.experiments.deepagents_swebench.create_agent", check_agent,
+    )
+    adapter = SimpleNamespace(record_call_censor=lambda *args, **kwargs: None)
+    with pytest.raises(RuntimeError, match="checked planned child middleware"):
+        _run_planned_child(
+            config, SimpleNamespace(problem_statement="issue"),
+            backend, adapter,
+            SimpleNamespace(invocation_id="child-1", context_id="ctx",
+                            join_id="join"),
+            SimpleNamespace(role="analysis", description="inspect"),
+            controller,
+        )
+    assert not child_backends
+    assert len(summaries) == 1
+    audit.close()
+
+
 def test_docker_cleanup_timeout_is_audited_without_losing_workflow_result(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
