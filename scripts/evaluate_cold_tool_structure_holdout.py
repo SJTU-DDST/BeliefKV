@@ -194,6 +194,66 @@ def _timing(rows: list[dict], estimates: np.ndarray) -> dict:
     }
 
 
+def _paired_long_gain(
+    rows: list[dict], baseline: np.ndarray, candidate: np.ndarray,
+    *, draws: int = 2_000,
+) -> dict:
+    if len(rows) != len(baseline) or len(rows) != len(candidate):
+        raise ValueError("paired timing requires identical long-call support")
+    clusters = defaultdict(list)
+    for row, reference, estimate in zip(rows, baseline, candidate):
+        clusters[row["workflow"]].append((
+            abs(row["duration_ms"] - float(reference)),
+            abs(row["duration_ms"] - float(estimate)),
+        ))
+    groups = list(clusters.values())
+    if len(groups) < 5:
+        return {
+            "status": "insufficient_independent_workflows",
+            "long_calls": len(rows),
+            "workflows": len(groups),
+            "p50_error_gain_ms": None,
+            "ci95_lower_ms": None,
+            "ci95_upper_ms": None,
+            "paired_positive_95pct": False,
+        }
+
+    def gain(pairs: list[tuple[float, float]]) -> float:
+        return _quantile([pair[0] for pair in pairs], .5) - _quantile(
+            [pair[1] for pair in pairs], .5
+        )
+
+    random = np.random.default_rng(42)
+    samples = []
+    for _ in range(draws):
+        chosen = random.integers(0, len(groups), size=len(groups))
+        samples.append(gain([
+            pair for index in chosen for pair in groups[index]
+        ]))
+    lower = _quantile(samples, .025)
+    return {
+        "status": "workflow_cluster_bootstrap",
+        "long_calls": len(rows),
+        "workflows": len(groups),
+        "p50_error_gain_ms": gain([
+            pair for group in groups for pair in group
+        ]),
+        "ci95_lower_ms": lower,
+        "ci95_upper_ms": _quantile(samples, .975),
+        "paired_positive_95pct": lower > 0,
+    }
+
+
+def _useful_long_trigger(head: dict) -> bool:
+    return (
+        head["frozen_threshold"] is not None
+        and head["true_long"] >= 5
+        and head["true_long_workflows"] >= 3
+        and head["long_precision"] >= .7
+        and head["long_recall"] >= .5
+    )
+
+
 def evaluate(train: list[dict], heldout: list[dict]) -> dict:
     train_projects = {row["project"] for row in train}
     heldout_projects = {row["project"] for row in heldout}
@@ -270,14 +330,17 @@ def evaluate(train: list[dict], heldout: list[dict]) -> dict:
                 isinstance(row.get("inline_structure"), dict) for row in rows
             ),
             "heads": {},
+            "paired_long_gain_vs_baselines": {},
             "zero_duration_oracle_long_baseline": _timing(
                 [rows[i] for i in long_indices], np.zeros(len(long_indices))
             ),
         }
+        durations_by_mode = {}
         for mode in MODES:
             head = fitted[mode]
             scores = _predict(head["binary"], rows, mode, task="binary")
             durations = _predict(head["regression"], rows, mode, task="regression")
+            durations_by_mode[mode] = durations
             cutoff = head["threshold"]
             selected = [i for i, value in enumerate(scores)
                         if cutoff is not None and value >= cutoff]
@@ -286,7 +349,13 @@ def evaluate(train: list[dict], heldout: list[dict]) -> dict:
                 "frozen_threshold": cutoff,
                 "selected": len(selected),
                 "true_long": len(true_selected),
+                "true_long_workflows": len({
+                    rows[i]["workflow"] for i in true_selected
+                }),
                 "false_short": len(selected) - len(true_selected),
+                "long_precision": (
+                    len(true_selected) / len(selected) if selected else None
+                ),
                 "long_recall": (
                     len(true_selected) / len(long_indices) if long_indices else None
                 ),
@@ -302,6 +371,14 @@ def evaluate(train: list[dict], heldout: list[dict]) -> dict:
                     for i in true_selected
                 ),
             }
+        for baseline in ("class", "shape"):
+            project_result["paired_long_gain_vs_baselines"][baseline] = (
+                _paired_long_gain(
+                    [rows[i] for i in long_indices],
+                    durations_by_mode[baseline][long_indices],
+                    durations_by_mode["structure"][long_indices],
+                )
+            )
         result["heldout"][project] = project_result
     result["evidence_gates"]["heldout_each_project_five_long"] = all(
         group["long"] >= 5 for group in result["heldout"].values()
@@ -320,6 +397,15 @@ def evaluate(train: list[dict], heldout: list[dict]) -> dict:
                 for mode in ("class", "shape")
             )
         )
+        for group in result["heldout"].values()
+    )
+    result["evidence_gates"]["structure_paired_gain_positive_95pct"] = all(
+        comparison["paired_positive_95pct"]
+        for group in result["heldout"].values()
+        for comparison in group["paired_long_gain_vs_baselines"].values()
+    )
+    result["evidence_gates"]["frozen_structure_trigger_covers_long"] = all(
+        _useful_long_trigger(group["heads"]["structure"])
         for group in result["heldout"].values()
     )
     result["evidence_gates"]["all_met"] = all(result["evidence_gates"].values())

@@ -3,7 +3,7 @@ from __future__ import annotations
 import pytest
 
 from scripts.evaluate_cold_tool_structure_holdout import (
-    _features, _threshold, _timing, cold_calls, evaluate,
+    _features, _paired_long_gain, _threshold, _timing, cold_calls, evaluate,
 )
 import numpy as np
 import json
@@ -52,6 +52,27 @@ def test_train_threshold_requires_multiple_workflows_and_precision():
 
 def test_timing_empty_selection_does_not_look_like_perfect_accuracy():
     assert _timing([], np.array([]))["p50_error_ms"] is None
+
+
+def test_paired_long_gain_requires_independent_workflows_and_shared_support():
+    rows = [_row(workflow=f"wf-{i // 2}") for i in range(10)]
+    baseline = np.full(10, 2000.)
+    better = np.full(10, 2800.)
+    result = _paired_long_gain(rows, baseline, better, draws=100)
+    assert result["status"] == "workflow_cluster_bootstrap"
+    assert result["workflows"] == 5
+    assert result["p50_error_gain_ms"] == 800.
+    assert result["ci95_lower_ms"] == 800.
+    assert result["paired_positive_95pct"] is True
+    worse = _paired_long_gain(rows, baseline, np.full(10, 1000.), draws=100)
+    assert worse["ci95_upper_ms"] == -1000.
+    assert worse["paired_positive_95pct"] is False
+    insufficient = _paired_long_gain(rows[:8], baseline[:8], better[:8])
+    assert insufficient["status"] == "insufficient_independent_workflows"
+    assert insufficient["ci95_lower_ms"] is None
+    assert insufficient["paired_positive_95pct"] is False
+    with pytest.raises(ValueError, match="identical"):
+        _paired_long_gain(rows, baseline[:8], better)
 
 
 def test_cold_calls_do_not_label_failed_or_open_as_short(tmp_path):
@@ -130,6 +151,16 @@ def test_evaluate_runs_frozen_project_split_without_heldout_threshold_search():
     assert report["train_long"] == 34
     assert report["train_inline_structure_count"] == len(train)
     assert report["evidence_gates"]["train_long_from_two_projects"] is False
+    assert report["evidence_gates"]["structure_paired_gain_positive_95pct"] is False
+    assert report["evidence_gates"]["frozen_structure_trigger_covers_long"] is False
+    assert report["heldout"]["heldout"]["paired_long_gain_vs_baselines"]["class"][
+        "status"
+    ] == "insufficient_independent_workflows"
+    head = report["heldout"]["heldout"]["heads"]["structure"]
+    assert head["long_precision"] == (
+        head["true_long"] / head["selected"] if head["selected"] else None
+    )
+    assert head["true_long_workflows"] <= head["true_long"]
     assert report["evidence_gates"]["all_met"] is False
     assert report["heldout"]["heldout"]["zero_duration_oracle_long_baseline"][
         "count"
