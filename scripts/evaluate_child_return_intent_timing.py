@@ -47,8 +47,9 @@ def load_episodes(root: Path) -> tuple[list[dict], dict[str, int]]:
             row = json.loads(line)
             if row.get("event") == "child_return_intent_shadow":
                 notices[row["invocation_id"]].append(float(row["ts_ms"]))
+        blocked = blocked_child_invocations(workflow)
         terminals, join_last = index_workflow(
-            events, blocked_invocations=blocked_child_invocations(workflow),
+            events, blocked_invocations=blocked,
         )
         returned = {
             child: float(ts) for _, (child, ts) in terminals.items()
@@ -80,7 +81,15 @@ def load_episodes(root: Path) -> tuple[list[dict], dict[str, int]]:
                 counts["revoked_or_late"] += 1
                 continue
             if end is None:
-                counts["nonterminal_or_censored"] += 1
+                if child in blocked or any(
+                    row["kind"] == "invocation_cancel"
+                    and row.get("invocation_id") == child
+                    and float(row["ts_ms"]) > notice
+                    for row in events
+                ):
+                    counts["nonterminal_or_blocked"] += 1
+                else:
+                    counts["censored_without_terminal"] += 1
                 continue
             prior = [
                 row for row in events
@@ -110,7 +119,7 @@ def load_episodes(root: Path) -> tuple[list[dict], dict[str, int]]:
     counts["valid_intents"] = len(episodes)
     for key in (
         "announced_children", "repeated_notices", "revoked_or_late",
-        "nonterminal_or_censored",
+        "nonterminal_or_blocked", "censored_without_terminal",
     ):
         counts.setdefault(key, 0)
     return episodes, dict(counts)

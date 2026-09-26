@@ -81,7 +81,8 @@ def test_revoked_and_blocked_intents_are_not_success_labels(tmp_path):
     rows, counts = load_episodes(tmp_path)
     assert len(rows) == 1
     assert counts["revoked_or_late"] == 1
-    assert counts["nonterminal_or_censored"] == 1
+    assert counts["nonterminal_or_blocked"] == 1
+    assert counts["censored_without_terminal"] == 0
     with pytest.raises(ValueError, match="at least three projects"):
         evaluate(tmp_path)
 
