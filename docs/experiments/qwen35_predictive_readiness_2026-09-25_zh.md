@@ -4160,3 +4160,16 @@ JOIN **4/4**，JOIN oracle 绝对误差中位
 `experiments/raw/qwen35_native_guard_shadow_pilot_v1/`
 的 `intent_intent_audit.json` 和
 `stage_timing_project_diagnostic.json`。
+
+另将第 65 节冻结的 52 样本、固定正则前缀结构
+模型原样重放到这四个任务的 15 个自然 RETURN；
+15 个均能按 child 身份匹配最终文本，无
+长度不一致排除。RETURN 500 ms 点误差命中
+**3/15**，与训练侧固定阶段先验 **3/15**
+相同；JOIN 最后 child 均为 **1/4**。
+前缀结构模型的 RETURN 中位绝对误差约
+**1001 ms**，距离在线大块 H2D 要求仍远；
+不能因 natural JOIN 标签变多便认定时钟
+模型更准。报告为同目录的
+`prefix_structure_guard_diagnostic.json`；
+当前模型及物理预测动作资格继续关闭。
