@@ -190,6 +190,31 @@ def test_parent_reentry_must_precede_parent_invalidating_transition(tmp_path):
     assert counts.get("candidate_parent_reentry_observed", 0) == 0
 
 
+def test_parent_reentry_does_not_cross_context_epoch(tmp_path):
+    root = tmp_path / "heldout"
+    _write(root, "astropy__one", notices=(1000,))
+    event_path = (
+        root / "workflows" / "astropy__one" /
+        "runtime_events.deepagents.jsonl"
+    )
+    events = [json.loads(line) for line in event_path.read_text().splitlines()]
+    waiter = next(row for row in events if row["kind"] == "join_wait")
+    submit = next(row for row in events if row["kind"] == "llm_submit")
+    waiter["context_epoch"] = 2
+    submit["context_epoch"] = 3
+    event_path.write_text("".join(json.dumps(row) + "\n" for row in events))
+    groups, counts = collect(root / "workflows")
+    assert groups[0]["label"] == "natural"
+    assert groups[0]["parent_reentry_lead_ms"] is None
+    assert counts.get("candidate_parent_reentry_observed", 0) == 0
+
+    submit["context_epoch"] = 2
+    event_path.write_text("".join(json.dumps(row) + "\n" for row in events))
+    groups, counts = collect(root / "workflows")
+    assert groups[0]["parent_reentry_lead_ms"] == 900
+    assert counts["candidate_parent_reentry_observed"] == 1
+
+
 def test_parent_cancel_before_join_satisfied_invalidates_reentry(tmp_path):
     root = tmp_path / "heldout"
     _write(root, "astropy__one", notices=(1000,))

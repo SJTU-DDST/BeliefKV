@@ -108,6 +108,11 @@ def collect(workflows: Path) -> tuple[list[dict], dict]:
                         or event.get("context_id") is None
                         or waiter["context_id"] == event["context_id"]
                     )
+                    and (
+                        waiter.get("context_epoch") is None
+                        or event.get("context_epoch") is None
+                        or waiter["context_epoch"] == event["context_epoch"]
+                    )
                 ]
                 parent_reentry = min(submits) if submits else None
             returns = {
