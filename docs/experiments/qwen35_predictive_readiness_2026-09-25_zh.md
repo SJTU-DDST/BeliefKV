@@ -4741,3 +4741,38 @@ Django、Xarray、Pylint 的部分轨迹也呈现类似
 不能据此开启 predictive 物理动作。由于已查看
 本批部分标签，最终同批项目留一仍属开发复验，
 需要新任务独立验证。
+
+### live peer 特征的后续项目隔离复验（留出采集前冻结）
+
+在本批 128 root 完整结束并核对工具配对后，用已有
+`qwen35_native_reactive_calibration_timing_v3_20260925/
+qwen35-native-reactive-calibration-66root-r0/
+runtime_workload_manifest.json` 的全部 66 个任务，
+依原 manifest 顺序采 Astropy 22、Sphinx 44；
+两波各 33 root，间隔 60 秒、客户端并发 66。
+使用同一模型和 SGLang 0.5.20、Host 120 GB
+NUMA 1、FULL/Mamba 70/30、running 48，
+单 `intent` 臂、匿名命令结构采集、2048/32
+graph guard 与 7200 秒 workflow/请求截止。
+这些镜像已在本机缓存。训练批次未结束时不得并行
+启动第二个 GPU 服务；输出须使用独立目录
+`qwen35_cold_tool_peer_holdout_66root_v1/`，
+保留两次采集各自的 manifest、源码提交和原始轨迹。
+
+先以当前 128-root **完整**批次的严格可配对、
+无工具行为干预的 child 冷调用冻结项目 CV 阈值；
+然后原样用于 Astropy/Sphinx 两个项目，各自
+报告长调用覆盖的独立 workflow 数、实际
+长调用识别 precision/recall、误触发及
+TOOL_START 到 TOOL_END 点时长误差。
+有/无 live peer 消融保持相同的 shape、输入长度、
+已完成项目历史支持和模型超参数；同一留出调用
+上的时长误差需做 workflow 成组配对区间，
+阈值不可使用留出标签回选。任一项目不足 5 条
+来自 5 个独立 workflow 的长调用，则该项目
+证据不足；不能只用已知长调用的条件误差
+证明可用的在线动作。留出项目曾用于此前其它
+算法探索，故这是项目隔离复验、并非密封测试；
+66-root 的压力也弱于训练侧的 128-root，
+必须单列服务负载差异。完整 JOIN 的剩余时间
+准确率继续独立核验，不由工具长调用分类替代。
