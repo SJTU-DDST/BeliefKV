@@ -1077,6 +1077,21 @@ def test_workload_cli_does_not_apply_sympy_preflight_globally(
     assert args.sandbox_preflight_command is None
 
 
+def test_workload_cli_accepts_in_graph_fanout_profile(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from scripts.run_deepagents_swebench import parse_args
+
+    monkeypatch.setattr(
+        "sys.argv",
+        [
+            "run_deepagents_swebench.py", "--mode", "autonomous",
+            "--subagent-fanout-profile", "native_in_graph_1to4",
+        ],
+    )
+    assert parse_args().subagent_fanout_profile == "native_in_graph_1to4"
+
+
 def test_workload_cli_defaults_model_context_independent_of_lifecycle_window(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:

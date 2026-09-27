@@ -16,6 +16,7 @@ if str(REPOSITORY_ROOT) not in sys.path:
 
 from beliefkv.experiments.deepagents_swebench import (
     DeepAgentsExperimentConfig,
+    SUBAGENT_FANOUT_PROFILES,
     SYMPY_SANDBOX_PREFLIGHT,
     run_experiment,
 )
@@ -87,10 +88,7 @@ def parse_args() -> argparse.Namespace:
     )
     parser.add_argument(
         "--subagent-fanout-profile",
-        choices=(
-            "natural", "parallel_analysis_2to3", "native_subagent_2to3",
-            "native_dynamic_1to4",
-        ),
+        choices=SUBAGENT_FANOUT_PROFILES,
         default="natural",
     )
     parser.add_argument("--gpu", type=int, default=0)

@@ -386,3 +386,14 @@ child 报告追加到任务文本，才启动真正的 root agent 对话。
 planner 预先启动 children。后者是否实际派发、多轮 JOIN 是否
 形成有用 Host-backed KV，以及首次服务能否复用，仍需新 GPU
 试采验证。两种配置不能互作同任务同配置的 reactive/P6 配对。
+
+## 200 GB / 25:75 / write-back / 8-root：in-graph 试采 v1 启动失败
+
+`...native_in_graph_join_200g_25_75_8root_v1/` 的服务端启动后
+`/health` 返回 200，但客户端参数解析拒绝 `native_in_graph_1to4`：
+runtime 已支持该配置，`run_deepagents_swebench.py` 的 argparse
+仍重复枚举旧 profile。客户端在提交 workflow 前退出，包装脚本
+随后终止服务端；本次没有 JOIN、物理动作或可评估 workflow。
+已将 CLI 选项与 runtime 的 `SUBAGENT_FANOUT_PROFILES` 共用，
+增加解析回归测试；同物理配置试采需用新目录重跑。v1 的空遥测
+不能作为 JOIN/H2D 不可行动的证据。
