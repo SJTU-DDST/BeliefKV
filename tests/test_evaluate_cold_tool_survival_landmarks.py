@@ -77,6 +77,32 @@ def test_online_project_history_uses_only_finished_distinct_workflows():
     assert predictions[-1] == 4000.
 
 
+def test_workflow_balanced_prior_does_not_let_repeated_calls_dominate():
+    prior = {"global": 1500., "shape": {"x": 1500.}}
+    calls = []
+    for i, (workflow, duration) in enumerate((
+        ("a", 1000.), ("b", 2000.), ("c", 3000.),
+        ("c", 3000.), ("c", 3000.), ("c", 3000.),
+    )):
+        start = i * 5000.
+        calls.append({
+            **_row("heldout", workflow, "x", duration),
+            "start_ts_ms": start, "terminal_ts_ms": start + duration,
+        })
+    calls.append({
+        **_row("heldout", "target", "x", 2100.),
+        "start_ts_ms": 30_000., "terminal_ts_ms": 32_100.,
+    })
+    ordinary, ordinary_support = _online_project_predictions(calls, 500, prior)
+    balanced, balanced_support = _online_project_predictions(
+        calls, 500, prior, workflow_balanced=True,
+    )
+    assert ordinary_support == balanced_support
+    assert 6 in balanced_support
+    assert ordinary[-1] == 3000.
+    assert balanced[-1] == 2000.
+
+
 def test_online_shape_history_does_not_cross_projects():
     prior = {"global": 2500., "shape": {"x": 2500.}}
     calls = [
@@ -362,10 +388,11 @@ def test_survival_cli_applies_returned_failure_scope_to_both_sides(
     monkeypatch.setattr(
         survival, "evaluate",
         lambda _train, _heldout, *, online_project_history, shape_quantile,
-        max_deviation_p90_ms: {
+        max_deviation_p90_ms, workflow_balanced: {
             "online_project_history": online_project_history,
             "shape_quantile": shape_quantile,
             "max_deviation_p90_ms": max_deviation_p90_ms,
+            "workflow_balanced": workflow_balanced,
         },
     )
     monkeypatch.setattr(sys, "argv", [

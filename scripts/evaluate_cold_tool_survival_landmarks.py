@@ -72,6 +72,7 @@ def _online_project_predictions(
     minimum_support: int = 4, minimum_workflows: int = 3,
     success_only_history: bool = True, shape_quantile: float = .5,
     max_deviation_p90_ms: float | None = None,
+    workflow_balanced: bool = False,
 ) -> tuple[list[float], list[int]]:
     if minimum_support < 2 or minimum_workflows < 2:
         raise ValueError("online history needs independent completed support")
@@ -122,7 +123,13 @@ def _online_project_predictions(
             len(matches) >= minimum_support
             and len({past["workflow"] for past in matches}) >= minimum_workflows
         ):
-            durations = [past["duration_ms"] for past in matches]
+            if workflow_balanced:
+                by_workflow: dict[str, list[float]] = defaultdict(list)
+                for past in matches:
+                    by_workflow[past["workflow"]].append(past["duration_ms"])
+                durations = [float(median(group)) for group in by_workflow.values()]
+            else:
+                durations = [past["duration_ms"] for past in matches]
             estimate_ms = float(np.quantile(durations, shape_quantile))
             spread = float(np.quantile(
                 [abs(value - estimate_ms) for value in durations], .9,
@@ -180,6 +187,7 @@ def evaluate(
     compare_success_history: bool = False,
     shape_quantile: float = .5,
     max_deviation_p90_ms: float | None = None,
+    workflow_balanced: bool = False,
 ) -> dict:
     train_projects = {row["project"] for row in train}
     heldout_projects = {row["project"] for row in heldout}
@@ -205,6 +213,7 @@ def evaluate(
         "online_project_history": online_project_history,
         "shape_quantile": shape_quantile,
         "max_deviation_p90_ms": max_deviation_p90_ms,
+        "workflow_balanced": workflow_balanced,
         "online_history_snapshot": (
             "tool_start_success_only" if online_project_history else None
         ),
@@ -279,6 +288,7 @@ def evaluate(
                 predictions, supported = _online_project_predictions(
                     rows, landmark, estimates, shape_quantile=shape_quantile,
                     max_deviation_p90_ms=max_deviation_p90_ms,
+                    workflow_balanced=workflow_balanced,
                 )
                 score = _summary(
                     survivors, landmark, estimates, predictions,
@@ -312,6 +322,7 @@ def evaluate(
                             success_only_history=False,
                             shape_quantile=shape_quantile,
                             max_deviation_p90_ms=max_deviation_p90_ms,
+                            workflow_balanced=workflow_balanced,
                         )
                     )
                     returned_indices = set(returned_supported)
@@ -391,6 +402,10 @@ def main() -> None:
         "--history-deviation-p90-ms", type=float, default=None,
         help="Read-only risk gate on the P90 absolute spread of past shape durations.",
     )
+    parser.add_argument(
+        "--workflow-balanced-history", action="store_true",
+        help="Read-only ablation: aggregate each workflow before estimating shape timing.",
+    )
     args = parser.parse_args()
     if args.compare_success_history and (
         not args.online_project_history or not args.include_returned_failures
@@ -413,6 +428,7 @@ def main() -> None:
         train, heldout, online_project_history=args.online_project_history,
         shape_quantile=args.shape_quantile,
         max_deviation_p90_ms=args.history_deviation_p90_ms,
+        workflow_balanced=args.workflow_balanced_history,
         **({"compare_success_history": True}
            if args.compare_success_history else {}),
     )

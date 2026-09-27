@@ -55,6 +55,20 @@ def test_project_loo_requires_multiple_projects():
         project_leave_one_out([_row("one", 0), _row("two", 0)])
 
 
+def test_project_loo_propagates_workflow_balanced_history():
+    rows = [
+        _row(project, index)
+        for project in ("django", "pydata", "pytest-dev")
+        for index in range(9)
+    ]
+    result = project_leave_one_out(rows, workflow_balanced=True)
+    assert result["workflow_balanced"] is True
+    assert all(
+        fold["workflow_balanced"] is True
+        for fold in result["folds"].values()
+    )
+
+
 def test_project_loo_compares_error_history_without_cross_project_leakage():
     rows = [
         {**_row(project, index),

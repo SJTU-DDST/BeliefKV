@@ -6294,3 +6294,31 @@ P50 约 99 ms），但它只覆盖一个已参与开发的
 500 ms 观察延迟 P50/P95 约 2.5/43 ms；
 本修改未重新采集实验，不能把旧延迟归因全部
 消除，也不能据此声称成功预测传输或 JOIN。
+
+### 同形态历史按 workflow 均衡的只读消融
+
+当前项目/命令形态的存活时钟按历史调用取中位数；
+一个 workflow 的密集成功调用可能压过其它独立
+workflow。新增默认关闭的离线
+`--workflow-balanced-history` 消融：只用工具启动
+前已经成功结束的最近 64 条同项目/形态调用，
+先求各历史 workflow 的时长中位数，再对这些
+中位数求分位数；历史支持和三个独立 workflow
+的下限不变。线上计时与调度均未改动。
+
+在既有完整 128-root 训练批次，固定 100 ms
+存活点、1000 ms 历史偏差上限，按七个项目
+逐项留一，与原“按调用计中位数”作对照。
+复现报告为
+`experiments/raw/qwen35_cold_tool_overlapped_128root_train_20260927_v1/intent_workloads/early_landmarks_workflow_balanced_stable1000_train_loo_20260927.json`；
+基线为同目录 `early_landmarks_stable1000_train_loo_20260927.json`。
+在受支持的事后成功工具子集上，Django
+误差 P50 约 62→77 ms、Xarray 约 107→151 ms、
+Pylint 约 98→115 ms；Xarray 规划 1000 ms
+传输预算时，可留至少 500 ms 的窗口从
+49/63 增至 54/74，但计划时工具已经返回的
+次数仍为 9。支持集合发生变化，上述误差
+对比不是严格配对因果收益；方向上也不支持
+整体精度提升。不将该消融加入在线先验，
+不借项目重复调用增加的覆盖率宣称 JOIN 或
+物理预取收益。

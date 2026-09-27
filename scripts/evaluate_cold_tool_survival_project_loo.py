@@ -21,6 +21,7 @@ def project_leave_one_out(
     rows: list[dict], *, compare_success_history: bool = False,
     shape_quantile: float = .5,
     max_deviation_p90_ms: float | None = None,
+    workflow_balanced: bool = False,
 ) -> dict:
     projects = sorted({row["project"] for row in rows})
     if len(projects) < 3:
@@ -30,6 +31,7 @@ def project_leave_one_out(
         "projects": projects,
         "shape_quantile": shape_quantile,
         "max_deviation_p90_ms": max_deviation_p90_ms,
+        "workflow_balanced": workflow_balanced,
         "folds": {
             project: evaluate(
                 [row for row in rows if row["project"] != project],
@@ -38,6 +40,7 @@ def project_leave_one_out(
                 compare_success_history=compare_success_history,
                 shape_quantile=shape_quantile,
                 max_deviation_p90_ms=max_deviation_p90_ms,
+                workflow_balanced=workflow_balanced,
             )
             for project in projects
         },
@@ -73,6 +76,10 @@ def main() -> None:
         "--history-deviation-p90-ms", type=float, default=None,
         help="Read-only risk gate on historical P90 absolute shape deviation.",
     )
+    parser.add_argument(
+        "--workflow-balanced-history", action="store_true",
+        help="Read-only ablation: aggregate each workflow before estimating shape timing.",
+    )
     args = parser.parse_args()
     if args.compare_success_history and not args.include_returned_failures:
         parser.error(
@@ -87,6 +94,7 @@ def main() -> None:
         rows, compare_success_history=args.compare_success_history,
         shape_quantile=args.shape_quantile,
         max_deviation_p90_ms=args.history_deviation_p90_ms,
+        workflow_balanced=args.workflow_balanced_history,
     )
     result["include_returned_failures"] = args.include_returned_failures
     result["frozen_workflow_count"] = len(ids)
