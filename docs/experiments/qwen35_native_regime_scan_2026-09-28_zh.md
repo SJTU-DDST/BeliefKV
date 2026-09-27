@@ -77,6 +77,30 @@ JCT 合格，但不因此标记任务正确；旧结果仍保留原始判定，
 且有用 KV 丢失后重算较少时冻结主配置；否则报告机会不足，
 不要单纯增加并发去制造高压。
 
+## 180 GB / 35:65 / selective / 8-root：Mamba 先于 HBM 满载
+
+沿用同一训练清单的前 8 项，独立冷启动并自然结束；原始数据在
+`experiments/raw/qwen35_native_regime_selective_180g_35_65_8root_v1/`。
+8/8 workflow 完成并具备 native-agent JCT 资格，writer 完整关闭，
+没有服务端监控错误。任务正确性尚无官方判定，不能报告成功任务吞吐。
+FULL Host 高水位 1,535,599/3,076,172 tokens（约 49.9%），
+Mamba Host 1,818/1,818 slots（100%），发生 24 次 Mamba Host 驱逐。
+这些被驱逐前缀没有已观测的后续再访问；不能推断发生或未发生
+Mamba 重算。FULL 没有 Host 驱逐，观测到的有效 HBM resident
+峰值约 26.0%，不能等同于全部物理 HBM 占用。
+
+2,225 条轮转抽样的 H2D 观察中，JOIN wait 有 1,304 条
+`no_host_backed_step` 和 256 条 `already_device_resident`；此轮
+仍使用旧版只读字段，`no_host_backed_step` **不能**精确区分
+完全没有 Host 副本与已有副本但被祖先闭包挡住。已有 1,560
+条 JOIN wait 和 40 条 TOOL wait 的 Host PREPARE 容量可容纳观察，
+它们不是独立请求数，也没有真正触发 PREPARE。FULL native D2H/H2D
+为 1,537,858/0 tokens，Mamba 为 1,842/22 slots，不是预测动作。
+下一轮使用新增的 Host-backed 缺 Device、祖先阻塞及 unbacked
+节点字段区分物理机会。当前 35:65/8-root 的 Mamba 已无余量，
+不可选为主场景；用同一 8-root 到达流试 25:75 分配，独立冷启动，
+观察是否同时保住 FULL 和 Mamba 余量。
+
 `write_through` 会自动备份部分 KV；其 native D2H 不能作为选择性
 `PREPARE_HOST` 的收益。单 node PREPARE/H2D 原语和只读机会观察
 已在源代码中放行 `write_through_selective`，保留原有身份、
