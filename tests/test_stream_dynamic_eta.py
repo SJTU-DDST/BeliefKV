@@ -4,7 +4,7 @@ import json
 
 import pytest
 
-from scripts.pilot_stream_dynamic_eta import evaluate, samples
+from scripts.pilot_stream_dynamic_eta import _paired_gain, evaluate, samples
 
 
 def _event(ts: float, kind: str, *, workflow: str, **attrs) -> dict:
@@ -113,5 +113,30 @@ def test_dynamic_eta_rejects_project_overlap_and_reports_conditional_limit():
     report = evaluate(train, heldout, 2)
     assert report["heldout"]["natural_returns"] == 1
     assert report["heldout_last_join_child"]["natural_returns"] == 1
+    assert report["heldout_last_join_paired_gain"]["status"] == (
+        "insufficient_independent_workflows"
+    )
     assert report["heldout_censored_candidates"] == 2
     assert report["status"].startswith("read_only_oracle")
+
+
+def test_paired_gain_bootstraps_workflows_not_adjacent_stream_rows():
+    rows = [
+        {
+            "trace_path": f"/workflows/task-{index}/trace.jsonl",
+            "lead_ms": 2_000.,
+        }
+        for index in range(6)
+    ]
+    gain = _paired_gain(rows, [2_000.] * 6, 4_000., draws=100)
+    assert gain["workflows"] == 6
+    assert gain["p50_error_gain_ms"] == 2_000.
+    assert gain["ci95_lower_ms"] == 2_000.
+    assert gain["paired_positive_95pct"] is True
+    duplicate = [{**row, "trace_path": "/same-workflow/trace.jsonl"}
+                 for row in rows]
+    assert _paired_gain(duplicate, [2_000.] * 6, 4_000.)["status"] == (
+        "insufficient_independent_workflows"
+    )
+    with pytest.raises(ValueError, match="identical episode"):
+        _paired_gain(rows, [2_000.], 4_000.)

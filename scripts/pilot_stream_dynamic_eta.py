@@ -175,6 +175,57 @@ def _quality(rows: list[dict], prediction: list[float], prior: float) -> dict:
     }
 
 
+def _paired_gain(
+    rows: list[dict], prediction: list[float], prior: float, *,
+    draws: int = 2_000,
+) -> dict:
+    if len(rows) != len(prediction):
+        raise ValueError("paired timing requires identical episode support")
+    clusters = defaultdict(list)
+    for row, estimate in zip(rows, prediction):
+        clusters[row["trace_path"]].append((
+            abs(row["lead_ms"] - prior),
+            abs(row["lead_ms"] - estimate),
+        ))
+    groups = list(clusters.values())
+    result = {
+        "natural_returns": len(rows),
+        "workflows": len(groups),
+        "p50_error_gain_ms": None,
+        "ci95_lower_ms": None,
+        "ci95_upper_ms": None,
+        "paired_positive_95pct": False,
+    }
+    if len(groups) < 5:
+        return {"status": "insufficient_independent_workflows", **result}
+
+    def gain(pairs: list[tuple[float, float]]) -> float:
+        return median(pair[0] for pair in pairs) - median(
+            pair[1] for pair in pairs
+        )
+
+    random = np.random.default_rng(42)
+    samples = [
+        gain([
+            pair for index in random.integers(
+                0, len(groups), size=len(groups)
+            ) for pair in groups[index]
+        ])
+        for _ in range(draws)
+    ]
+    lower = float(np.quantile(samples, .025))
+    return {
+        "status": "workflow_cluster_bootstrap",
+        **result,
+        "p50_error_gain_ms": gain([
+            pair for group in groups for pair in group
+        ]),
+        "ci95_lower_ms": lower,
+        "ci95_upper_ms": float(np.quantile(samples, .975)),
+        "paired_positive_95pct": lower > 0,
+    }
+
+
 def evaluate(
     train: list[dict], heldout: list[dict], censored: int,
     *, stage_chars: int = 2400,
@@ -193,6 +244,8 @@ def evaluate(
         raise ValueError("insufficient naturally returning development children")
     model = _fit(true_train)
     prior = median(row["lead_ms"] for row in true_train)
+    join_eval = [row for row in true_eval if row["last_join_child"]]
+    join_predictions = _predict(join_eval, model)
     by_project = {}
     for project in projects_test:
         project_rows = [
@@ -212,11 +265,10 @@ def evaluate(
         "development": _quality(true_train, _predict(true_train, model), prior),
         "heldout": _quality(true_eval, _predict(true_eval, model), prior),
         "heldout_last_join_child": _quality(
-            [row for row in true_eval if row["last_join_child"]],
-            _predict(
-                [row for row in true_eval if row["last_join_child"]], model,
-            ),
-            prior,
+            join_eval, join_predictions, prior,
+        ),
+        "heldout_last_join_paired_gain": _paired_gain(
+            join_eval, join_predictions, prior,
         ),
         "heldout_by_project": dict(sorted(by_project.items())),
         "heldout_nonfinal_candidates": len(heldout) - len(true_eval),
