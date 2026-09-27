@@ -181,6 +181,40 @@ def test_early_timer_is_anchored_before_tool_start_publication(
     adapter.on_tool_end("done", run_id=run)
 
 
+def test_500ms_timer_is_anchored_before_tool_start_publication(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    deadlines: list[tuple[float, object]] = []
+
+    class CaptureTimer:
+        def schedule(self, deadline: float, callback: object) -> bool:
+            deadlines.append((deadline, callback))
+            return True
+
+    original = DeepAgentsRuntimeAdapter._publish
+
+    def slow_publish(self, events, **kwargs):
+        if any(
+            event.kind == RuntimeEventKind.TOOL_START
+            and event.attributes.get("tool_call_id") == "target"
+            for event in events
+        ):
+            time.sleep(.13)
+        return original(self, events, **kwargs)
+
+    monkeypatch.setattr(DeepAgentsRuntimeAdapter, "_publish", slow_publish)
+    now = [50_000.]
+    adapter, trace, run = _child_tool(now, timer=CaptureTimer())
+    assert len(deadlines) == 1
+    deadline, callback = deadlines[0]
+    assert 0 < deadline - time.monotonic() < .5
+    now[0] += 501
+    assert callback()
+    observation, = _observations(trace)
+    assert observation.attributes["tool_elapsed_ms"] == 501
+    adapter.on_tool_end("done", run_id=run)
+
+
 def test_tool_wait_observation_is_causal_trace_only_and_non_mutating() -> None:
     now = [50_000.]
     control = _Sink()

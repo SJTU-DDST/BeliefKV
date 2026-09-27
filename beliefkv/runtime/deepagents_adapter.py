@@ -1483,7 +1483,7 @@ class DeepAgentsRuntimeAdapter(BaseCallbackHandler):
         self._publish((event,), control=True)
         if eligible and self._tool_wait_shadow_timer is not None:
             self._tool_wait_shadow_timer.schedule(
-                time.monotonic() + 0.5,
+                start_monotonic + 0.5,
                 lambda: self.observe_tool_wait(
                     key, parent_invocation_id, tool_call_id
                 ),
