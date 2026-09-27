@@ -14,7 +14,7 @@ from scripts.evaluate_cold_tool_survival_landmarks import (
 def _row(project, workflow, shape, duration):
     return {
         "project": project, "workflow": workflow,
-        "shape": shape, "duration_ms": duration,
+        "shape": shape, "duration_ms": duration, "status": "success",
     }
 
 
@@ -33,6 +33,8 @@ def test_survival_landmarks_use_training_durations_and_actual_survivors_only():
         _row("heldout", "h4", "test_suite_targeted", 250),
     ]
     result = evaluate(train, heldout)
+    assert result["landmarks"]["100"]["heldout"]["heldout"]["survivors"] == 4
+    assert result["landmarks"]["250"]["heldout"]["heldout"]["survivors"] == 3
     half_second = result["landmarks"]["500"]
     assert half_second["train_survivors"] == 9
     assert half_second["shape_supported"] == {"test_suite_targeted": 9}
@@ -73,6 +75,31 @@ def test_online_project_history_uses_only_finished_distinct_workflows():
     assert supported == [5]
     assert predictions[-2] == 2500.
     assert predictions[-1] == 4000.
+
+
+def test_landmark_history_is_frozen_at_tool_start_not_updated_by_peer_return():
+    prior = {"global": 2500., "shape": {"x": 2500.}}
+    past = [
+        {
+            **_row("heldout", f"prior-{i}", "x", 600.),
+            "start_ts_ms": float(i * 1000),
+            "terminal_ts_ms": float(i * 1000 + 600),
+        }
+        for i in range(3)
+    ]
+    peer = {
+        **_row("heldout", "peer", "x", 800.),
+        "start_ts_ms": 3000., "terminal_ts_ms": 3800.,
+    }
+    target = {
+        **_row("heldout", "target", "x", 2600.),
+        "start_ts_ms": 3600., "terminal_ts_ms": 6200.,
+    }
+    predictions, supported = _online_project_predictions(
+        past + [peer, target], 500, prior,
+    )
+    assert len(past) + 1 not in supported
+    assert predictions[-1] == 2500.
 
 
 def test_online_project_history_rejects_missing_timestamps():
@@ -131,10 +158,10 @@ def test_returned_errors_add_causal_support_without_looking_ahead():
         "terminal_ts_ms": 23100.,
     })
     returned, returned_support = _online_project_predictions(
-        calls, 500, prior,
+        calls, 500, prior, success_only_history=False,
     )
     success, success_support = _online_project_predictions(
-        calls, 500, prior, success_only_history=True,
+        calls, 500, prior,
     )
     assert returned_support == [4]
     assert returned[-1] == 3000.
@@ -159,6 +186,10 @@ def test_history_ablation_compares_identical_survivors():
         train, heldout, online_project_history=True,
         compare_success_history=True,
     )
+    assert result["online_history_snapshot"] == "tool_start_success_only"
+    assert result["landmarks"]["500"]["heldout_online_project"]["heldout"][
+        "online_project_shape_supported"
+    ] == 1
     ablation = result["landmarks"]["500"][
         "heldout_online_project"]["heldout"]["returned_failure_history_ablation"]
     assert ablation["returned_history_supported"] == 5
@@ -191,7 +222,9 @@ def test_returned_errors_can_evict_success_support_in_shared_window():
         "status": "success", "start_ts_ms": 340000.,
         "terminal_ts_ms": 343100.,
     }]
-    _, returned_support = _online_project_predictions(calls, 500, prior)
+    _, returned_support = _online_project_predictions(
+        calls, 500, prior, success_only_history=False,
+    )
     _, success_support = _online_project_predictions(
         calls, 500, prior, success_only_history=True,
     )

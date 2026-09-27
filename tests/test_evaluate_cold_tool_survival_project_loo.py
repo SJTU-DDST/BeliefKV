@@ -15,6 +15,7 @@ def _row(project: str, index: int) -> dict:
         "workflow": f"{project}-{index % 3}",
         "shape": "test_suite_targeted",
         "duration_ms": duration,
+        "status": "success",
         "start_ts_ms": start,
         "terminal_ts_ms": start + duration,
     }

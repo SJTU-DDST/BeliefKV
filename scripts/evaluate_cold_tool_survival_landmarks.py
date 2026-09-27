@@ -21,7 +21,7 @@ from scripts.evaluate_cold_tool_structure_holdout import (
 )
 
 
-LANDMARKS_MS = (500, 1000, 1500, 2000)
+LANDMARKS_MS = (100, 250, 500, 1000, 1500, 2000)
 ONLINE_PROJECT_SHAPE_WINDOW = 64
 
 
@@ -68,7 +68,7 @@ def _summary(
 def _online_project_predictions(
     calls: list[dict], landmark: int, estimate: dict, *,
     minimum_support: int = 4, minimum_workflows: int = 3,
-    success_only_history: bool = False,
+    success_only_history: bool = True,
 ) -> tuple[list[float], list[int]]:
     if minimum_support < 2 or minimum_workflows < 2:
         raise ValueError("online history needs independent completed support")
@@ -96,7 +96,8 @@ def _online_project_predictions(
             item[1][1]["start_ts_ms"] + landmark, item[1][0],
         ),
     ):
-        observed_at = row["start_ts_ms"] + landmark
+        # Runtime freezes this prior at TOOL_START, not at the later landmark.
+        observed_at = row["start_ts_ms"]
         while (
             completed < len(pending)
             and pending[completed][1]["terminal_ts_ms"] < observed_at
@@ -177,6 +178,9 @@ def evaluate(
         "heldout_projects": sorted(heldout_projects),
         "landmarks": {},
         "online_project_history": online_project_history,
+        "online_history_snapshot": (
+            "tool_start_success_only" if online_project_history else None
+        ),
         "compare_success_history": compare_success_history,
         "online_project_shape_window": (
             ONLINE_PROJECT_SHAPE_WINDOW if online_project_history else None
@@ -186,9 +190,12 @@ def evaluate(
             "completed calls: success only by default, optionally also "
             "non-exception error returns. Open, exception, and intervened "
             "calls are not short negatives. Optional project-local adaptation "
-            "only observes calls completed strictly before each live landmark; "
+            "only observes successful calls completed strictly before the "
+            "current TOOL_START, when runtime freezes the shape prior; "
             "its frozen starting prior fits other projects. The extended "
             "error-return history is not yet the runtime ProjectToolHistory. "
+            "The 100/250 ms arms require separate survivor histories; "
+            "runtime currently records only calls surviving 500 ms. "
             "No real timer delivery, safe point, KV or PCIe."
         ),
     }
@@ -271,14 +278,14 @@ def evaluate(
                     survivors, predictions, supported, landmark,
                 )
                 if compare_success_history:
-                    success_predictions, success_supported = (
+                    returned_predictions, returned_supported = (
                         _online_project_predictions(
                             rows, landmark, estimates,
-                            success_only_history=True,
+                            success_only_history=False,
                         )
                     )
-                    returned_indices = set(supported)
-                    success_indices = set(success_supported)
+                    returned_indices = set(returned_supported)
+                    success_indices = set(supported)
                     both = sorted(returned_indices & success_indices)
                     added = sorted(returned_indices - success_indices)
                     lost = sorted(success_indices - returned_indices)
@@ -286,35 +293,35 @@ def evaluate(
                     added_rows = [survivors[index] for index in added]
                     hybrid_supported = sorted(returned_indices | success_indices)
                     hybrid_predictions = [
-                        success_predictions[index]
-                        if index in success_indices else predictions[index]
+                        predictions[index]
+                        if index in success_indices else returned_predictions[index]
                         for index in hybrid_supported
                     ]
                     score["returned_failure_history_ablation"] = {
-                        "success_history_supported": len(success_supported),
-                        "returned_history_supported": len(supported),
+                        "success_history_supported": len(supported),
+                        "returned_history_supported": len(returned_supported),
                         "common_supported": len(both),
                         "lost_success_support": _summary(
                             [survivors[index] for index in lost],
                             landmark, estimates,
-                            [success_predictions[index] for index in lost],
+                            [predictions[index] for index in lost],
                         ),
                         "success_only_common": _summary(
                             common_rows, landmark, estimates,
-                            [success_predictions[index] for index in both],
+                            [predictions[index] for index in both],
                         ),
                         "returned_common": _summary(
                             common_rows, landmark, estimates,
-                            [predictions[index] for index in both],
+                            [returned_predictions[index] for index in both],
                         ),
                         "common_paired_gain": _paired_long_gain(
                             common_rows,
-                            [success_predictions[index] for index in both],
                             [predictions[index] for index in both],
+                            [returned_predictions[index] for index in both],
                         ) if both else None,
                         "newly_supported": _summary(
                             added_rows, landmark, estimates,
-                            [predictions[index] for index in added],
+                            [returned_predictions[index] for index in added],
                         ),
                         "newly_supported_frozen": _summary(
                             added_rows, landmark, estimates,
