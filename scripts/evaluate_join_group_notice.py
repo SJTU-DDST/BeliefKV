@@ -203,7 +203,7 @@ def collect(
                 elif kind == "llm_submit" and not (
                     (event.get("attributes") or {}).get("runtime_internal")
                 ):
-                    changes.append((when, 0, "revoke", child, event))
+                    changes.append((when, 0, "submit", child, event))
                 elif _nonterminal_tool(event):
                     changes.append((when, 0, "revoke", child, event))
             for notice in notices:
@@ -239,6 +239,7 @@ def collect(
             latest: dict[str, float] = {}
             returned: set[str] = set()
             cancelled: set[str] = set()
+            submits_after_notice: dict[str, int] = defaultdict(int)
             candidate = None
             for when, _, kind, child, _ in sorted(
                 changes, key=lambda change: (change[0], change[1])
@@ -251,8 +252,16 @@ def collect(
                     latest.pop(child, None)
                 elif kind == "revoke":
                     latest.pop(child, None)
+                elif kind == "submit" and child in latest:
+                    submits_after_notice[child] += 1
+                    if (
+                        notice_source == "llm_result"
+                        or submits_after_notice[child] > 1
+                    ):
+                        latest.pop(child, None)
                 elif kind == "notice" and child not in returned | cancelled:
                     latest[child] = when
+                    submits_after_notice[child] = 0
                 pending = members - returned
                 if when >= started and pending and pending <= latest.keys():
                     candidate = {
@@ -267,19 +276,29 @@ def collect(
                 continue
             trigger = candidate["trigger_ts_ms"]
             pending = candidate["pending_notices_ms"]
-            later_activity = any(
-                event["kind"] in {"tool_start", "llm_submit"}
+            followup_submits = Counter(
+                event["invocation_id"] for event in events
+                if event["kind"] == "llm_submit"
                 and event.get("invocation_id") in pending
                 and not (event.get("attributes") or {}).get("runtime_internal")
-                and (
-                    event["kind"] == "llm_submit"
-                    or _nonterminal_tool(event)
+                and pending[event["invocation_id"]] < float(event["ts_ms"])
+                < (
+                    float(returns[event["invocation_id"]]["ts_ms"])
+                    if event["invocation_id"] in returns else float("inf")
                 )
+            )
+            later_activity = any(
+                _nonterminal_tool(event)
+                and event.get("invocation_id") in pending
+                and not (event.get("attributes") or {}).get("runtime_internal")
                 and trigger < float(event["ts_ms"]) < (
                     float(returns[event["invocation_id"]]["ts_ms"])
                     if event["invocation_id"] in returns else float("inf")
                 )
                 for event in events
+            ) or any(
+                count > (1 if notice_source == "shadow" else 0)
+                for count in followup_submits.values()
             )
             label = (
                 "revoked" if later_activity else

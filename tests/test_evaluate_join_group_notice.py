@@ -340,6 +340,30 @@ def test_llm_result_notice_is_revoked_on_model_reentry_without_tool(tmp_path):
     assert groups[0]["lead_ms"] is None
 
 
+def test_shadow_notice_allows_one_final_model_call_then_revokes_retry(tmp_path):
+    root = tmp_path / "train"
+    _write(root, "django__one", notices=(1000,))
+    path = root / "workflows" / "django__one" / "runtime_events.deepagents.jsonl"
+    events = [json.loads(line) for line in path.read_text().splitlines()]
+    events.append({
+        "kind": "llm_submit", "invocation_id": "child:django__one:a",
+        "ts_ms": 1100,
+    })
+    path.write_text("".join(json.dumps(row) + "\n" for row in events))
+    groups, counts = collect(root / "workflows", notice_source="shadow")
+    assert counts["candidate_natural"] == 1
+    assert groups[0]["lead_ms"] == 800
+
+    events.append({
+        "kind": "llm_submit", "invocation_id": "child:django__one:a",
+        "ts_ms": 1500,
+    })
+    path.write_text("".join(json.dumps(row) + "\n" for row in events))
+    groups, counts = collect(root / "workflows", notice_source="shadow")
+    assert counts["candidate_revoked"] == 1
+    assert groups[0]["trigger_ts_ms"] == 1000
+
+
 def test_terminal_child_completion_tool_does_not_revoke_notice(tmp_path):
     root = tmp_path / "train"
     _write(root, "django__one", notices=())
