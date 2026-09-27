@@ -4260,6 +4260,15 @@ benchmark 曾保留共享 900 秒截止，其默认值现也改为
 记录和冻结 trace 不作修改；当前 Qwen3.5 留出批次原本已是
 共享 workflow 截止 7200 秒，不受此配置变更影响。
 
+遗留 LangGraph peer runner 的 `--timeout` 原默认 900 秒，
+是单次客户端模型请求上限，不是 root 的共享截止；但长请求
+可能因此先于 workflow 截止失败。现将其与 agentic peer
+backend 的默认请求超时设为 7200 秒，保留显式覆盖。共享
+workflow 截止仍独立计时且包括 root 和 descendants；服务端
+无进展 watchdog、单条 sandbox 命令超时也不随之更改。
+正在执行的实验按其已冻结的 manifest 配置运行，不因
+代码默认值变化而改变截止时间。
+
 ## 68. 完成通知后 EOS 候选概率的只读试验
 
 上一节的自然标题没有覆盖率；事后知道完整输出长度的

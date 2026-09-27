@@ -121,7 +121,12 @@ def _parse_args() -> argparse.Namespace:
         default=2_048,
         help="Output budget for the internal context summarizer.",
     )
-    parser.add_argument("--timeout", type=float, default=900.0)
+    parser.add_argument(
+        "--timeout",
+        type=float,
+        default=7200.0,
+        help="Per-model-request client timeout; the workflow deadline remains independent.",
+    )
     parser.add_argument(
         "--sandbox-command-timeout-seconds",
         type=int,

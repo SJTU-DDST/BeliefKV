@@ -9,9 +9,29 @@ import pytest
 pytest.importorskip("langchain")
 
 from scripts.run_langgraph_peer_workloads import (
+    _parse_args,
     _collect_workspace_artifacts,
     _initial_spawn_range_valid,
 )
+
+
+def test_default_workflow_and_request_timeouts_are_long_enough(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    monkeypatch.setattr(
+        "sys.argv",
+        [
+            "run_langgraph_peer_workloads.py",
+            "--output-dir",
+            str(tmp_path / "output"),
+            "--control-socket",
+            str(tmp_path / "socket"),
+        ],
+    )
+    args = _parse_args()
+    assert args.workflow_wall_clock_seconds == 7200
+    assert args.timeout == 7200
 
 
 def test_spawn_range_uses_initial_batch_not_total_dynamic_children() -> None:

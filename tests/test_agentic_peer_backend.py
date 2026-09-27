@@ -39,6 +39,8 @@ def test_required_initial_subagent_range_is_validated() -> None:
         required_initial_subagent_min=2,
         required_initial_subagent_max=4,
     )
+    assert config.request_timeout_s == 7200
+    assert config.loop_guard.activation_wall_clock_s == 7200
     assert config.required_initial_subagent_min == 2
     assert config.required_initial_subagent_max == 4
 

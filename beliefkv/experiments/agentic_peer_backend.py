@@ -377,7 +377,7 @@ class AgenticPeerBackendConfig:
     model: str
     base_url: str
     max_completion_tokens: int = 4096
-    request_timeout_s: float = 900.0
+    request_timeout_s: float = 7200.0
     recursion_limit: int = 2048
     max_decision_repairs: int = 2
     enable_subagents: bool = True
