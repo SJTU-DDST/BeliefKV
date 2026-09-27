@@ -36,6 +36,11 @@ staging 补丁。`patches/sglang-v0.5.20-beliefkv-confirmed-join-canary.patch`
 `SGLANG_PATCH_FLAVOR=confirmed_join_canary` 显式选择后者；启动器照样
 执行反向补丁验证并在服务端日志记录补丁 SHA。未指定时仍检查当前
 staging 补丁。canary 不构成正式 predictive A/B 或环境清单的追溯改写。
+`patches/sglang-v0.5.20-beliefkv-writeback-prepare.patch` 是隔离工作树
+生成的下一版完整补丁，额外允许 native write-back tree 的单节点
+非驱逐 PREPARE；Host 空间不足直接拒绝，已通过 CPU 回归。
+它尚未接入正在运行的服务或启动器，不可将当前实验归因于该改动，
+也不能把补丁存在视为 PREPARE 的物理消费已验证。
 `third_party/sglang-v0.5.20` 是被忽略的 checkout，迁移到新机器时在
 同一上游 commit 上执行 `git apply patches/sglang-v0.5.20-beliefkv-staging.patch`
 （命令工作目录为 checkout，补丁路径应为主仓库的绝对路径）。原生 smoke

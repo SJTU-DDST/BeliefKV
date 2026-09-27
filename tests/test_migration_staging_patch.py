@@ -15,6 +15,7 @@ import pytest
 ROOT = Path(__file__).resolve().parents[1]
 PATCH = ROOT / "patches/sglang-v0.5.20-beliefkv-staging.patch"
 CANARY_PATCH = ROOT / "patches/sglang-v0.5.20-beliefkv-confirmed-join-canary.patch"
+WRITEBACK_PREPARE_PATCH = ROOT / "patches/sglang-v0.5.20-beliefkv-writeback-prepare.patch"
 FROZEN_ENV_PATCH = ROOT / "patches/sglang-v0.5.20-beliefkv-env-cc6ee5.patch"
 CHECKOUT = ROOT / "third_party/sglang-v0.5.20"
 MODEL = ROOT / "configs/migration/2026-09-22_qwen35_model_artifact.json"
@@ -61,6 +62,23 @@ def test_confirmed_join_canary_patch_is_reproducible() -> None:
     text = CANARY_PATCH.read_text()
     assert "beliefkv_confirmed_join_canary" in text
     assert "confirmed_join_canary" in text
+
+
+def test_write_back_prepare_patch_is_reproducible() -> None:
+    if not (CHECKOUT / ".git").exists():
+        pytest.skip("the optional SGLang source checkout is absent")
+    with tempfile.TemporaryDirectory() as temporary:
+        env = {**os.environ, "GIT_INDEX_FILE": str(Path(temporary) / "index")}
+        subprocess.run(["git", "read-tree", "HEAD"], cwd=CHECKOUT, check=True, env=env)
+        subprocess.run(
+            ["git", "apply", "--cached", "--check", str(WRITEBACK_PREPARE_PATCH)],
+            cwd=CHECKOUT,
+            check=True,
+            env=env,
+        )
+    text = WRITEBACK_PREPARE_PATCH.read_text()
+    assert "test_write_back_prepare_keeps_device_until_tagged_ack" in text
+    assert "test_write_back_prepare_never_reclaims_other_host_nodes" in text
 
 
 def test_new_model_and_environment_are_frozen() -> None:
