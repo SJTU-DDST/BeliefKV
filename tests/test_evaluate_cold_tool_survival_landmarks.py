@@ -102,6 +102,30 @@ def test_landmark_history_is_frozen_at_tool_start_not_updated_by_peer_return():
     assert predictions[-1] == 2500.
 
 
+def test_lower_duration_quantile_uses_only_past_successful_shape_calls():
+    prior = {"global": 2500., "shape": {"x": 2500.}}
+    durations = [1000., 1200., 1400., 5000.]
+    calls = [
+        {
+            **_row("heldout", f"wf-{i}", "x", duration),
+            "start_ts_ms": float(i * 6000),
+            "terminal_ts_ms": float(i * 6000 + duration),
+        }
+        for i, duration in enumerate(durations)
+    ]
+    calls.append({
+        **_row("heldout", "target", "x", 2500.),
+        "start_ts_ms": 24000., "terminal_ts_ms": 26500.,
+    })
+    predictions, supported = _online_project_predictions(
+        calls, 100, prior, shape_quantile=.25,
+    )
+    assert supported == [4]
+    assert predictions[-1] == 1150.
+    with pytest.raises(ValueError, match="shape quantile"):
+        _online_project_predictions(calls, 100, prior, shape_quantile=0.)
+
+
 def test_online_project_history_rejects_missing_timestamps():
     with pytest.raises(ValueError, match="timestamps"):
         _online_project_predictions(
@@ -277,8 +301,9 @@ def test_survival_cli_applies_returned_failure_scope_to_both_sides(
     )
     monkeypatch.setattr(
         survival, "evaluate",
-        lambda _train, _heldout, *, online_project_history: {
+        lambda _train, _heldout, *, online_project_history, shape_quantile: {
             "online_project_history": online_project_history,
+            "shape_quantile": shape_quantile,
         },
     )
     monkeypatch.setattr(sys, "argv", [
@@ -292,6 +317,7 @@ def test_survival_cli_applies_returned_failure_scope_to_both_sides(
 
     report = json.loads(output.read_text(encoding="utf-8"))
     assert scopes == [True, True]
+    assert report["shape_quantile"] == .5
     assert report["include_returned_failures"] is True
     assert report["train_frozen_workflows"] == 1
     assert report["heldout_frozen_workflows"] == 1

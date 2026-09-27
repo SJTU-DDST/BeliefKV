@@ -19,6 +19,7 @@ from scripts.evaluate_cold_tool_survival_landmarks import evaluate
 
 def project_leave_one_out(
     rows: list[dict], *, compare_success_history: bool = False,
+    shape_quantile: float = .5,
 ) -> dict:
     projects = sorted({row["project"] for row in rows})
     if len(projects) < 3:
@@ -26,12 +27,14 @@ def project_leave_one_out(
     return {
         "status": "train_only_project_loo_online_adaptation_not_action_eligible",
         "projects": projects,
+        "shape_quantile": shape_quantile,
         "folds": {
             project: evaluate(
                 [row for row in rows if row["project"] != project],
                 [row for row in rows if row["project"] == project],
                 online_project_history=True,
                 compare_success_history=compare_success_history,
+                shape_quantile=shape_quantile,
             )
             for project in projects
         },
@@ -59,6 +62,10 @@ def main() -> None:
         "--compare-success-history", action="store_true",
         help="Compare success-only and returned-error histories on identical calls.",
     )
+    parser.add_argument(
+        "--shape-quantile", type=float, default=.5,
+        help="Read-only risk ablation: lower completed shape-duration quantile.",
+    )
     args = parser.parse_args()
     if args.compare_success_history and not args.include_returned_failures:
         parser.error(
@@ -71,6 +78,7 @@ def main() -> None:
     )
     result = project_leave_one_out(
         rows, compare_success_history=args.compare_success_history,
+        shape_quantile=args.shape_quantile,
     )
     result["include_returned_failures"] = args.include_returned_failures
     result["frozen_workflow_count"] = len(ids)

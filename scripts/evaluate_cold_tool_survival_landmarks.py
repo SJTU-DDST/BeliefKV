@@ -11,6 +11,8 @@ from pathlib import Path
 from statistics import median
 import sys
 
+import numpy as np
+
 ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
@@ -68,10 +70,12 @@ def _summary(
 def _online_project_predictions(
     calls: list[dict], landmark: int, estimate: dict, *,
     minimum_support: int = 4, minimum_workflows: int = 3,
-    success_only_history: bool = True,
+    success_only_history: bool = True, shape_quantile: float = .5,
 ) -> tuple[list[float], list[int]]:
     if minimum_support < 2 or minimum_workflows < 2:
         raise ValueError("online history needs independent completed support")
+    if not (0 < shape_quantile <= .5):
+        raise ValueError("shape quantile must be in (0, 0.5]")
     for row in calls:
         if not (
             all(type(row.get(key)) in (int, float) and math.isfinite(row[key])
@@ -113,9 +117,9 @@ def _online_project_predictions(
             len(matches) >= minimum_support
             and len({past["workflow"] for past in matches}) >= minimum_workflows
         ):
-            predictions[output_index] = median(
-                past["duration_ms"] for past in matches
-            )
+            predictions[output_index] = float(np.quantile(
+                [past["duration_ms"] for past in matches], shape_quantile,
+            ))
             supported_indices.append(output_index)
         else:
             predictions[output_index] = estimate["shape"].get(
@@ -161,6 +165,7 @@ def evaluate(
     train: list[dict], heldout: list[dict], *,
     online_project_history: bool = False,
     compare_success_history: bool = False,
+    shape_quantile: float = .5,
 ) -> dict:
     train_projects = {row["project"] for row in train}
     heldout_projects = {row["project"] for row in heldout}
@@ -168,6 +173,8 @@ def evaluate(
         raise ValueError("nonempty training and heldout projects must be disjoint")
     if compare_success_history and not online_project_history:
         raise ValueError("history comparison needs online project history")
+    if not (0 < shape_quantile <= .5):
+        raise ValueError("shape quantile must be in (0, 0.5]")
     if compare_success_history and any(
         row.get("status") not in ("success", "error") for row in heldout
     ):
@@ -178,6 +185,7 @@ def evaluate(
         "heldout_projects": sorted(heldout_projects),
         "landmarks": {},
         "online_project_history": online_project_history,
+        "shape_quantile": shape_quantile,
         "online_history_snapshot": (
             "tool_start_success_only" if online_project_history else None
         ),
@@ -250,7 +258,7 @@ def evaluate(
                     row for row in rows if row["duration_ms"] > landmark
                 ]
                 predictions, supported = _online_project_predictions(
-                    rows, landmark, estimates,
+                    rows, landmark, estimates, shape_quantile=shape_quantile,
                 )
                 score = _summary(
                     survivors, landmark, estimates, predictions,
@@ -282,6 +290,7 @@ def evaluate(
                         _online_project_predictions(
                             rows, landmark, estimates,
                             success_only_history=False,
+                            shape_quantile=shape_quantile,
                         )
                     )
                     returned_indices = set(returned_supported)
@@ -353,6 +362,10 @@ def main() -> None:
         "--compare-success-history", action="store_true",
         help="Compare success-only and returned-error histories on identical calls.",
     )
+    parser.add_argument(
+        "--shape-quantile", type=float, default=.5,
+        help="Read-only risk ablation: lower completed shape-duration quantile.",
+    )
     args = parser.parse_args()
     if args.compare_success_history and (
         not args.online_project_history or not args.include_returned_failures
@@ -373,6 +386,7 @@ def main() -> None:
     )
     report = evaluate(
         train, heldout, online_project_history=args.online_project_history,
+        shape_quantile=args.shape_quantile,
         **({"compare_success_history": True}
            if args.compare_success_history else {}),
     )
