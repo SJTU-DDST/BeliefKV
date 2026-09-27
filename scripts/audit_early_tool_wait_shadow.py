@@ -59,8 +59,14 @@ def audit(workflows: Path, *, manifest: Path | None = None) -> dict:
     errors: list[float] = []
     successful_errors: list[float] = []
     failed_errors: list[float] = []
+    successful_leads: list[float] = []
+    failed_leads: list[float] = []
+    predicted_success_500ms_leads: list[float] = []
+    predicted_error_500ms_leads: list[float] = []
     unique_input_errors: list[float] = []
     workflow_errors: list[float] = []
+    successful_input_keys: set[tuple[str, str, str]] = set()
+    successful_input_leads: list[float] = []
     per_workflow: dict[str, dict] = {}
     for path in paths:
         events = _events(path)
@@ -158,11 +164,36 @@ def audit(workflows: Path, *, manifest: Path | None = None) -> dict:
                 counts["lead_at_least_500ms"] += 1
             if lead >= 1000:
                 counts["lead_at_least_1000ms"] += 1
+            predicted_500ms_lead = total - (
+                float(signal["ts_ms"]) - float(start["ts_ms"])
+            ) >= 500
             if (end.get("attributes") or {}).get("status") != "success":
                 counts["observed_failed_tools"] += 1
                 failed_errors.append(error)
+                failed_leads.append(lead)
+                if predicted_500ms_lead:
+                    predicted_error_500ms_leads.append(lead)
             else:
                 successful_errors.append(error)
+                successful_leads.append(lead)
+                if lead >= 500:
+                    counts["successful_lead_at_least_500ms"] += 1
+                if lead >= 1000:
+                    counts["successful_lead_at_least_1000ms"] += 1
+                if predicted_500ms_lead:
+                    predicted_success_500ms_leads.append(lead)
+                input_hash = attrs.get("input_sha256")
+                if not (
+                    isinstance(input_hash, str)
+                    and len(input_hash) == 64
+                    and all(char in "0123456789abcdef" for char in input_hash)
+                ):
+                    counts["successful_observed_missing_input_sha256"] += 1
+                else:
+                    success_key = path.parent.name, key[0], input_hash
+                    if success_key not in successful_input_keys:
+                        successful_input_keys.add(success_key)
+                        successful_input_leads.append(lead)
         if workflow_errors_returned:
             workflow_errors.append(median(workflow_errors_returned))
         per_workflow[path.parent.name] = {
@@ -188,6 +219,37 @@ def audit(workflows: Path, *, manifest: Path | None = None) -> dict:
         "success_eta_absolute_error_p50_ms": (
             median(successful_errors) if successful_errors else None
         ),
+        "successful_observed_return_lead_p50_ms": (
+            median(successful_leads) if successful_leads else None
+        ),
+        "failed_observed_return_lead_p50_ms": (
+            median(failed_leads) if failed_leads else None
+        ),
+        "successful_distinct_inputs": len(successful_input_keys),
+        "successful_distinct_inputs_lead_at_least_500ms": sum(
+            lead >= 500 for lead in successful_input_leads
+        ),
+        "successful_distinct_inputs_lead_at_least_1000ms": sum(
+            lead >= 1000 for lead in successful_input_leads
+        ),
+        "success_predicted_500ms_lead": {
+            "selected": len(predicted_success_500ms_leads),
+            "true_at_least_500ms": sum(
+                lead >= 500 for lead in predicted_success_500ms_leads
+            ),
+            "returned_before_500ms": sum(
+                lead < 500 for lead in predicted_success_500ms_leads
+            ),
+        },
+        "error_predicted_500ms_lead": {
+            "selected": len(predicted_error_500ms_leads),
+            "true_at_least_500ms": sum(
+                lead >= 500 for lead in predicted_error_500ms_leads
+            ),
+            "returned_before_500ms": sum(
+                lead < 500 for lead in predicted_error_500ms_leads
+            ),
+        },
         "failed_eta_absolute_error_p50_ms": (
             median(failed_errors) if failed_errors else None
         ),

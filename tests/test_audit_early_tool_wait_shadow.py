@@ -28,6 +28,7 @@ def test_audit_includes_missing_workflows_and_late_or_expired_landmarks(tmp_path
     }))
     attrs = {
         "is_child": True, "tool_name": "execute",
+        "input_sha256": "a" * 64,
         "project_shape_survivor_100ms_total_median_ms": 2400,
         "project_shape_survivor_100ms_support": 4,
         "project_shape_survivor_100ms_deviation_p90_ms": 100,
@@ -37,9 +38,13 @@ def test_audit_includes_missing_workflows_and_late_or_expired_landmarks(tmp_path
         _event("structured_action", 1130, "candidate",
                beliefkv_tool_wait_early_shadow=True, diagnostic_only=True),
         _event("tool_end", 1700, "candidate", status="success"),
-        _event("tool_start", 2000, "short", **attrs),
+        _event("tool_start", 2000, "short", **{
+            **attrs, "input_sha256": "b" * 64,
+        }),
         _event("tool_end", 2080, "short", status="success"),
-        _event("tool_start", 3000, "missed", **attrs),
+        _event("tool_start", 3000, "missed", **{
+            **attrs, "input_sha256": "c" * 64,
+        }),
         _event("tool_end", 3900, "missed", status="error"),
         _event("workflow_end", 4000),
     ])
@@ -50,6 +55,12 @@ def test_audit_includes_missing_workflows_and_late_or_expired_landmarks(tmp_path
     assert report["counts"]["returned_by_100ms"] == 1
     assert report["counts"]["missed_live_landmark"] == 1
     assert report["counts"]["lead_at_least_500ms"] == 1
+    assert report["counts"]["successful_lead_at_least_500ms"] == 1
+    assert report["success_predicted_500ms_lead"] == {
+        "selected": 1, "true_at_least_500ms": 1,
+        "returned_before_500ms": 0,
+    }
+    assert report["successful_distinct_inputs"] == 1
     assert report["dispatch_lateness_p50_ms"] == 30
     assert report["lead_p50_ms"] == 570
     assert report["eta_absolute_error_p50_ms"] == 1700
@@ -90,7 +101,7 @@ def test_audit_reports_repeated_failed_input_separately(tmp_path):
     workflows = tmp_path / "workflows"
     attrs = {
         "is_child": True, "tool_name": "execute",
-        "input_sha256": "same-payload",
+        "input_sha256": "b" * 64,
         "project_shape_survivor_100ms_total_median_ms": 1700,
         "project_shape_survivor_100ms_support": 4,
         "project_shape_survivor_100ms_deviation_p90_ms": 200,
@@ -115,3 +126,48 @@ def test_audit_reports_repeated_failed_input_separately(tmp_path):
     assert report["success_eta_absolute_error_p50_ms"] == 0
     assert report["failed_eta_absolute_error_p50_ms"] == 100
     assert report["distinct_input_eta_absolute_error_p50_ms"] == 100
+    assert report["successful_distinct_inputs"] == 1
+    assert report["success_predicted_500ms_lead"]["true_at_least_500ms"] == 1
+    assert report["error_predicted_500ms_lead"]["true_at_least_500ms"] == 1
+
+
+def test_audit_does_not_invent_distinct_input_for_missing_hash(tmp_path):
+    workflows = tmp_path / "workflows"
+    attrs = {
+        "is_child": True, "tool_name": "execute",
+        "project_shape_survivor_100ms_total_median_ms": 2400,
+        "project_shape_survivor_100ms_support": 4,
+        "project_shape_survivor_100ms_deviation_p90_ms": 100,
+    }
+    _write(workflows, "a", [
+        _event("tool_start", 1000, "candidate", **attrs),
+        _event("structured_action", 1101, "candidate",
+               beliefkv_tool_wait_early_shadow=True, diagnostic_only=True),
+        _event("tool_end", 2000, "candidate", status="success"),
+    ])
+    report = audit(workflows)
+    assert report["counts"]["successful_observed_missing_input_sha256"] == 1
+    assert report["successful_distinct_inputs"] == 0
+
+
+def test_audit_counts_predicted_window_that_ends_too_soon(tmp_path):
+    workflows = tmp_path / "workflows"
+    attrs = {
+        "is_child": True, "tool_name": "execute",
+        "input_sha256": "c" * 64,
+        "project_shape_survivor_100ms_total_median_ms": 2400,
+        "project_shape_survivor_100ms_support": 4,
+        "project_shape_survivor_100ms_deviation_p90_ms": 100,
+    }
+    _write(workflows, "a", [
+        _event("tool_start", 1000, "candidate", **attrs),
+        _event("structured_action", 1101, "candidate",
+               beliefkv_tool_wait_early_shadow=True, diagnostic_only=True),
+        _event("tool_end", 1400, "candidate", status="success"),
+    ])
+    report = audit(workflows)
+    assert report["success_predicted_500ms_lead"] == {
+        "selected": 1, "true_at_least_500ms": 0,
+        "returned_before_500ms": 1,
+    }
+    assert report["successful_distinct_inputs_lead_at_least_500ms"] == 0
