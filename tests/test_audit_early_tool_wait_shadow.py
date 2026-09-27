@@ -52,6 +52,9 @@ def test_audit_includes_missing_workflows_and_late_or_expired_landmarks(tmp_path
     assert report["counts"]["lead_at_least_500ms"] == 1
     assert report["dispatch_lateness_p50_ms"] == 30
     assert report["lead_p50_ms"] == 570
+    assert report["eta_absolute_error_p50_ms"] == 1700
+    assert report["per_workflow"]["a"]["distinct_candidate_inputs"] == 3
+    assert report["per_workflow"]["a"]["distinct_observed_returned_inputs"] == 1
 
 
 def test_audit_rejects_orphan_and_wrong_manifest(tmp_path):
@@ -81,3 +84,34 @@ def test_audit_rejects_signal_with_ineligible_frozen_history(tmp_path):
     ])
     with pytest.raises(ValueError, match="unqualified early observation"):
         audit(workflows)
+
+
+def test_audit_reports_repeated_failed_input_separately(tmp_path):
+    workflows = tmp_path / "workflows"
+    attrs = {
+        "is_child": True, "tool_name": "execute",
+        "input_sha256": "same-payload",
+        "project_shape_survivor_100ms_total_median_ms": 1700,
+        "project_shape_survivor_100ms_support": 4,
+        "project_shape_survivor_100ms_deviation_p90_ms": 200,
+    }
+    _write(workflows, "a", [
+        _event("tool_start", 1000, "first", **attrs),
+        _event("structured_action", 1101, "first",
+               beliefkv_tool_wait_early_shadow=True, diagnostic_only=True),
+        _event("tool_end", 2800, "first", status="error"),
+        _event("tool_start", 4000, "second", **attrs,
+               previous_same_input_status="error"),
+        _event("structured_action", 4101, "second",
+               beliefkv_tool_wait_early_shadow=True, diagnostic_only=True),
+        _event("tool_end", 5700, "second", status="success"),
+    ])
+    report = audit(workflows)
+    assert report["counts"]["observations"] == 2
+    assert report["counts"]["repeat_after_error_starts"] == 1
+    assert report["per_workflow"]["a"]["distinct_candidate_inputs"] == 1
+    assert report["per_workflow"]["a"]["distinct_observed_returned_inputs"] == 1
+    assert report["eta_absolute_error_p50_ms"] == 50
+    assert report["success_eta_absolute_error_p50_ms"] == 0
+    assert report["failed_eta_absolute_error_p50_ms"] == 100
+    assert report["distinct_input_eta_absolute_error_p50_ms"] == 100

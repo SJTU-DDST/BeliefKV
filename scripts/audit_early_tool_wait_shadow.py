@@ -56,8 +56,18 @@ def audit(workflows: Path, *, manifest: Path | None = None) -> dict:
     counts: Counter[str] = Counter()
     delays: list[float] = []
     leads: list[float] = []
+    errors: list[float] = []
+    successful_errors: list[float] = []
+    failed_errors: list[float] = []
+    unique_input_errors: list[float] = []
+    workflow_errors: list[float] = []
+    per_workflow: dict[str, dict] = {}
     for path in paths:
         events = _events(path)
+        workflow_counts: Counter[str] = Counter()
+        workflow_errors_returned: list[float] = []
+        unique_inputs: set[tuple[str, str]] = set()
+        observed_inputs: set[tuple[str, str]] = set()
         if any(
             row.get("kind") == "workflow_end"
             and (row.get("attributes") or {}).get("outcome") == "completed"
@@ -103,6 +113,14 @@ def audit(workflows: Path, *, manifest: Path | None = None) -> dict:
             if not _eligible(attrs):
                 continue
             counts["eligible_tool_starts"] += 1
+            workflow_counts["eligible_tool_starts"] += 1
+            input_key = (
+                key[0], str(attrs.get("input_sha256") or key[1])
+            )
+            unique_inputs.add(input_key)
+            if attrs.get("previous_same_input_status") == "error":
+                counts["repeat_after_error_starts"] += 1
+                workflow_counts["repeat_after_error_starts"] += 1
             end = ends.get(key)
             signal = signals.get(key)
             if end is None:
@@ -115,6 +133,7 @@ def audit(workflows: Path, *, manifest: Path | None = None) -> dict:
                     counts["missed_live_landmark"] += 1
                 continue
             counts["observations"] += 1
+            workflow_counts["observations"] += 1
             delay = float(signal["ts_ms"] - start["ts_ms"] - 100)
             if delay < 0:
                 raise ValueError(f"early observation precedes 100 ms: {path}: {key}")
@@ -127,12 +146,34 @@ def audit(workflows: Path, *, manifest: Path | None = None) -> dict:
                 raise ValueError(f"early observation after tool end: {path}: {key}")
             leads.append(lead)
             counts["observed_returned"] += 1
+            duration = float(end["ts_ms"] - start["ts_ms"])
+            total = float(attrs["project_shape_survivor_100ms_total_median_ms"])
+            error = abs(duration - total)
+            errors.append(error)
+            workflow_errors_returned.append(error)
+            if input_key not in observed_inputs:
+                observed_inputs.add(input_key)
+                unique_input_errors.append(error)
             if lead >= 500:
                 counts["lead_at_least_500ms"] += 1
             if lead >= 1000:
                 counts["lead_at_least_1000ms"] += 1
             if (end.get("attributes") or {}).get("status") != "success":
                 counts["observed_failed_tools"] += 1
+                failed_errors.append(error)
+            else:
+                successful_errors.append(error)
+        if workflow_errors_returned:
+            workflow_errors.append(median(workflow_errors_returned))
+        per_workflow[path.parent.name] = {
+            **dict(workflow_counts),
+            "distinct_candidate_inputs": len(unique_inputs),
+            "distinct_observed_returned_inputs": len(observed_inputs),
+            "observed_eta_absolute_error_p50_ms": (
+                median(workflow_errors_returned)
+                if workflow_errors_returned else None
+            ),
+        }
     return {
         "expected_workflows": len(expected) if expected is not None else None,
         "traced_workflows": len(paths),
@@ -142,6 +183,21 @@ def audit(workflows: Path, *, manifest: Path | None = None) -> dict:
         "dispatch_lateness_p95_ms": _p95(delays),
         "lead_p50_ms": median(leads) if leads else None,
         "lead_p95_ms": _p95(leads),
+        "eta_absolute_error_p50_ms": median(errors) if errors else None,
+        "eta_absolute_error_p95_ms": _p95(errors),
+        "success_eta_absolute_error_p50_ms": (
+            median(successful_errors) if successful_errors else None
+        ),
+        "failed_eta_absolute_error_p50_ms": (
+            median(failed_errors) if failed_errors else None
+        ),
+        "distinct_input_eta_absolute_error_p50_ms": (
+            median(unique_input_errors) if unique_input_errors else None
+        ),
+        "workflow_weighted_eta_absolute_error_p50_ms": (
+            median(workflow_errors) if workflow_errors else None
+        ),
+        "per_workflow": per_workflow,
         "interpretation": "trace_only_not_physical_transfer_or_action_eligible",
     }
 
