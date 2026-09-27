@@ -7011,3 +7011,23 @@ P50 约 23.4 ms，相比全局先验的 task 聚类
 称作全新密封验收。对晚期通知应保留简单
 训练先验；不要因高压队列相关性直接套用
 早期通知的压力/队列时钟。
+
+### 高并发早期通知训练批次（待验证）
+
+`scripts/run_qwen35_high_pressure_tool_join_train40.sh`
+从冻结 128-root manifest 中按项目与 task ID
+稳定选出五个项目各八个 root，40 root 同时
+提交；相同 70:30 Host 池、running 48、
+共享 root deadline 7200 秒，启用 child
+完成意图及冻结工具 100 ms shadow。所有
+项目与既有模型训练集重合，冻结工具审计
+必须标为 `training_replay`，不可冒充跨项目
+验证。最小空闲磁盘 60 GiB，实验不清理
+已有数据或 workspace。
+
+只有在新批次实际产生自然完整的 early
+whole-JOIN 候选、且通知前 metrics 显示
+所需排队压力时，才能将它用于高/低压
+项目留一；还需在项目隔离的开发集上复核
+时钟和真实的传输窗口。运行前的任务
+平衡、冻结 SHA 及脚本语法有针对性测试。
