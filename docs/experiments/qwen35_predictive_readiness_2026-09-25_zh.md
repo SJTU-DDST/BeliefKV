@@ -6145,3 +6145,35 @@ Astropy 368/415、Sphinx 468/539，修正前后相同；
 回放也受同一键错误影响，旧折数值不作为策略选择
 依据；它并未提供新的项目独立验收，也没有使
 工具或 JOIN 时间预测达到亚秒级动作资格。
+
+### 高低压双阶段 JOIN 窗口的同组审计（2026-09-27）
+
+新增只读 `scripts/audit_join_two_stage_windows.py`，先核验两个
+冻结批次的 workflow 身份与项目不重叠，再分别以早期意图和
+最终 `LLM_RESULT` 建立完整 JOIN 候选，并按
+`(task_id, join_id)` 配对自然完成组。撤销、删失、无候选及
+未见 parent 下一次模型提交各占独立分母；输出位于
+`qwen35_cold_tool_peer_holdout_66root_v1/holdout_evaluation/`
+的 `join_two_stage_windows_20260927.json`。Astropy/Sphinx
+曾参与开发，本报告不属于新的密封项目验收。
+
+128-root 高压训练批次的自然完整 JOIN：早期意图 104 个，
+全部在真实 JOIN 前至少 500 ms；最终信号 105 个，其中
+仅 5 个距 JOIN 至少 500 ms、47 个距 parent 下次
+`LLM_SUBMIT` 至少 500 ms。两个信号共同覆盖 104 个，
+另 1 个仅有终态自然候选。旧 66-root Astropy/Sphinx
+批次两阶段均覆盖 49 个自然 JOIN；早期意图 49/49
+距 JOIN 至少 500 ms，最终信号仅 6/49；
+最终信号距 parent 下次提交至少 500 ms 为 41/49。
+终态到 parent 提交的中位窗口高压约 473 ms、
+低压约 1010 ms，不能将低压 41/49 的机会
+外推到高压。这里的下次提交**不是 GPU 首次服务**，
+500 ms 也不是 H2D 完成证明。
+
+后续联合交接必须同时利用早期意图提供的准备窗口与临近
+终态的身份/时钟校正；仅等最终 `LLM_RESULT` 才发起
+大块 H2D，在高压样本上最多只有上述晚期窗口，
+尚未计入 safe-point、容量与 PCIe 排队。早期信号
+目前的跨压力点误差仍约秒级，不能把意图有时间余量
+当成已准确预测 JOIN；新项目、真实 H2D ACK 与首次
+服务验证前维持 `predictive_action_eligible=false`。
