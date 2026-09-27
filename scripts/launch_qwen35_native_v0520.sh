@@ -63,7 +63,7 @@ if ! [[ "${HICACHE_SIZE_GB}" =~ ^(0|[1-9][0-9]{0,2})$ ]] \
   printf 'HICACHE_SIZE_GB must be an integer from 0 to 200 (total FULL+MAMBA)\n' >&2
   exit 2
 fi
-if [[ "${HICACHE_WRITE_POLICY}" != "write_back" && "${HICACHE_WRITE_POLICY}" != "write_through" ]] \
+if [[ "${HICACHE_WRITE_POLICY}" != "write_back" && "${HICACHE_WRITE_POLICY}" != "write_through" && "${HICACHE_WRITE_POLICY}" != "write_through_selective" ]] \
     || [[ "${ENABLE_SESSION_RADIX_CACHE}" != "0" && "${ENABLE_SESSION_RADIX_CACHE}" != "1" ]] \
     || [[ "${ENABLE_SESSION_RADIX_CACHE}" == "1" && "${HICACHE_SIZE_GB}" -le 0 ]]; then
   printf 'Invalid HiCache write/session configuration\n' >&2

@@ -179,6 +179,14 @@ def test_launch_binds_one_node_and_passes_telemetry_dir(tmp_path: Path) -> None:
     assert (tmp_path / "telemetry").read_text() == str(telemetry)
 
 
+def test_launch_accepts_selective_write_through(tmp_path: Path) -> None:
+    env = {**_stub(tmp_path), "HICACHE_WRITE_POLICY": "write_through_selective"}
+    result = subprocess.run(["bash", str(LAUNCH)], env=env, capture_output=True, text=True)
+    assert result.returncode == 0, result.stderr
+    args = (tmp_path / "numactl-args").read_text().splitlines()
+    assert args[args.index("--hicache-write-policy") + 1] == "write_through_selective"
+
+
 def test_launch_stops_when_numa_preflight_fails(tmp_path: Path) -> None:
     env = {**_stub(tmp_path), "BLOCK_PREFLIGHT": "1"}
     result = subprocess.run(["bash", str(LAUNCH)], env=env, capture_output=True)

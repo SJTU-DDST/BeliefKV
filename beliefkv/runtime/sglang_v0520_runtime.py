@@ -625,7 +625,8 @@ class NativeAdmissionRuntime:
                 row.update({
                     "reason": (
                         "headroom_unobservable" if not headroom.observable
-                        else "no_host_backed_step" if step is None
+                        else (observation.no_step_reason or "no_host_backed_step")
+                        if step is None
                         else "fits_current_free_lists"
                         if observation.fits_current_free_lists else "insufficient_free_lists"
                     ),
@@ -640,7 +641,7 @@ class NativeAdmissionRuntime:
                     "node_id": step.node_id if step else None,
                     "fits_current_free_lists": observation.fits_current_free_lists,
                 })
-            if source == "tool_wait" and key.session_id is not None:
+            if source in ("tool_wait", "join_wait") and key.session_id is not None:
                 self._observe_prepare_opportunity(key, row, observation)
             writer.record(row)
         census["sample_wall_ms"] = (time.perf_counter() - sample_start) * 1000
@@ -657,7 +658,7 @@ class NativeAdmissionRuntime:
         if (
             getattr(cache, "enable_session_radix_cache", False) is not True
             or getattr(getattr(cache, "cache_controller", None), "write_policy", None)
-            != "write_through"
+            not in ("write_through", "write_through_selective")
         ):
             row["prepare_reason"] = "native_prepare_prerequisites_disabled"
             return

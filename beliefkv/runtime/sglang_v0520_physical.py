@@ -66,14 +66,26 @@ class SessionH2DOpportunity:
     required_full_tokens: int
     required_mamba_slots: int
     fits_current_free_lists: bool | None
+    no_step_reason: str | None = None
 
 
 def inspect_session_h2d_opportunity(
     cache: object, anchors: ContextSessionAnchors,
 ) -> SessionH2DOpportunity:
     headroom = observe_static_full_mamba_headroom(cache)
-    candidate = capture_action_local_shadow(cache, anchors, for_prefetch=True)
+    candidate = capture_action_local_shadow(
+        cache, anchors, for_prefetch=True, include_non_actionable=True,
+    )
     step = next_prefetch_gpu_step(candidate) if candidate is not None else None
+    no_step_reason = None
+    if step is None:
+        if candidate is None:
+            no_step_reason = "closure_unobservable"
+        elif not (candidate.missing_full_device_tokens
+                  or candidate.missing_mamba_device_nodes):
+            no_step_reason = "already_device_resident"
+        else:
+            no_step_reason = "no_host_backed_step"
     full_tokens = mamba_slots = 0
     if step is not None:
         node = next(
@@ -91,7 +103,7 @@ def inspect_session_h2d_opportunity(
         if headroom.observable and step is not None else None
     )
     return SessionH2DOpportunity(
-        anchors, headroom, step, full_tokens, mamba_slots, fits,
+        anchors, headroom, step, full_tokens, mamba_slots, fits, no_step_reason,
     )
 
 
@@ -319,11 +331,12 @@ def capture_action_local_shadow(
     *,
     max_nodes: int = 64,
     for_prefetch: bool = False,
+    include_non_actionable: bool = False,
 ) -> ActionLocalShadowCandidate | ActionLocalPrefetchCandidate | None:
     """Inspect only one context's session leaves, without issuing native work."""
     if type(max_nodes) is not int or not 0 < max_nodes <= 256:
         raise ValueError("invalid shadow closure bound")
-    if type(for_prefetch) is not bool:
+    if type(for_prefetch) is not bool or type(include_non_actionable) is not bool:
         raise ValueError("invalid prefetch capture mode")
     by_component = dict(anchors.component_leaves)
     if (
@@ -373,7 +386,7 @@ def capture_action_local_shadow(
             and node.mamba_host_present and not node.mamba_device_present
             for node in nodes.values()
         )
-        if not missing_full and not missing_mamba:
+        if not missing_full and not missing_mamba and not include_non_actionable:
             return None
         candidate = ActionLocalPrefetchCandidate(
             anchors=anchors,
@@ -381,7 +394,10 @@ def capture_action_local_shadow(
             missing_full_device_tokens=missing_full,
             missing_mamba_device_nodes=missing_mamba,
         )
-        return candidate if next_prefetch_gpu_step(candidate) is not None else None
+        return (
+            candidate if include_non_actionable
+            or next_prefetch_gpu_step(candidate) is not None else None
+        )
     missing_full = sum(
         max(node.full_device_tokens - node.full_host_tokens, 0)
         for node in nodes.values()

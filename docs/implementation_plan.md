@@ -6,6 +6,13 @@ The active execution order is the Qwen3.5 section below. Older planning notes
 are retained at the end for traceability but are not startup instructions.
 Completed and superseded plans are indexed under `docs/archive/`.
 
+The ongoing 180 GB Host pressure scan is documented in
+`docs/experiments/qwen35_native_regime_scan_2026-09-28_zh.md`.
+The initial 70:30, 12-root run saturated the Mamba Host pool while FULL
+remained mostly free; its Mamba eviction-to-revisit rows do not identify
+whether the revisited state was recomputed. This run is a rejected regime,
+not a predictive result or a usable matched throughput comparison.
+
 ## Objective
 
 Establish a defensible Qwen3.5/SGLang v0.5.20 result for predictive Host

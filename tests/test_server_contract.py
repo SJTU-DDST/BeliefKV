@@ -112,6 +112,14 @@ def test_hybrid_reactive_capacity_does_not_invent_scalar_kv_bytes(tmp_path: Path
         expected_kv_dtype="bfloat16",
     )
     assert identity["sglang_version"] == "0.5.20"
+    selective = {**info, "hicache_write_policy": "write_through_selective"}
+    assert validate_native_reactive_v0520(
+        selective,
+        expected_model="Qwen3-Coder-30B-A3B-Instruct",
+        expected_model_path=tmp_path / "model",
+        expected_weight_dtype="bfloat16",
+        expected_kv_dtype="bfloat16",
+    )["sglang_version"] == "0.5.20"
     capacity = capacity_contract(
         info, kv_bytes_per_token=None, hbm_safety_margin_bytes=1_024,
     )

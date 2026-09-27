@@ -275,21 +275,38 @@ def test_safe_point_persists_bounded_wait_and_admission_opportunities(tmp_path):
     ] is True
 
 
-def test_tool_wait_prepare_probe_requires_native_prerequisites_and_host_space(tmp_path):
+@pytest.mark.parametrize("source", ("tool_wait", "join_wait"))
+def test_wait_prepare_probe_requires_native_prerequisites_and_host_space(
+    tmp_path, source,
+):
     runtime = NativeAdmissionRuntime(opportunity_dir=str(tmp_path))
     request = req("tool")
     request.session_id = "session-tool"
     request.session_generation = 1
     assert runtime.register_visible_request(request)
-    runtime.on_events((
+    events = [
         event(0, RuntimeEventKind.WORKFLOW_START),
         event(1, RuntimeEventKind.INVOCATION_CREATE,
               invocation_id="tool", context_id="ctx-tool"),
-        event(2, RuntimeEventKind.TOOL_START,
-              invocation_id="tool", context_id="ctx-tool"),
-    ))
+    ]
+    if source == "tool_wait":
+        events.append(event(2, RuntimeEventKind.TOOL_START,
+                            invocation_id="tool", context_id="ctx-tool"))
+    else:
+        events.extend((
+            event(2, RuntimeEventKind.INVOCATION_CREATE,
+                  invocation_id="child", context_id="ctx-child"),
+            event(3, RuntimeEventKind.JOIN_CREATE,
+                  join_id="join", member_invocation_ids=("child",)),
+            event(4, RuntimeEventKind.JOIN_WAIT,
+                  invocation_id="tool", join_id="join"),
+        ))
+    runtime.on_events(tuple(events))
     cache = NS(enable_session_radix_cache=True,
-               cache_controller=NS(write_policy="write_through"))
+               cache_controller=NS(write_policy=(
+                   "write_through" if source == "tool_wait"
+                   else "write_through_selective"
+               )))
     runtime.attach_native_cache(cache)
     key = runtime.context_sessions["ctx-tool"]
     anchors = ContextSessionAnchors(key, ((0, ((11, 1),)), (2, ((11, 1),))), 1.0)
@@ -318,7 +335,7 @@ def test_tool_wait_prepare_probe_requires_native_prerequisites_and_host_space(tm
     ]
     prepare = next(row for row in rows
                    if row["event"] == "session_h2d_opportunity")
-    assert prepare["source"] == "tool_wait"
+    assert prepare["source"] == source
     assert prepare["prepare_node_id"] == 11
     assert prepare["prepare_required_full_tokens"] == 20
     assert prepare["prepare_required_mamba_slots"] == 1

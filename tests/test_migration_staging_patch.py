@@ -4,8 +4,10 @@ from __future__ import annotations
 
 import hashlib
 import json
+import os
 from pathlib import Path
 import subprocess
+import tempfile
 
 import pytest
 
@@ -19,7 +21,7 @@ ENV = ROOT / "configs/migration/2026-09-22_next_environment.json"
 
 def test_staging_patch_remains_fail_closed() -> None:
     patch = PATCH.read_text()
-    assert "BeliefKV v0.5.20 activation unsupported" in patch
+    assert "BeliefKV v0.5.20 physical activation unsupported" in patch
     assert "beliefkv_metadata" in patch
     assert "test/srt/test_beliefkv_metadata.py" in patch
     assert "test/srt/test_beliefkv_scheduler_hook.py" in patch
@@ -31,16 +33,20 @@ def test_patch_applies_to_pinned_upstream_index() -> None:
     assert subprocess.check_output(
         ["git", "rev-parse", "HEAD"], cwd=CHECKOUT, text=True
     ).strip() == "94602c9c2b7cbdb8efd5c52802dac6a1c180089e"
-    subprocess.run(
-        ["git", "apply", "--cached", "--check", str(PATCH)],
-        cwd=CHECKOUT,
-        check=True,
-    )
+    with tempfile.TemporaryDirectory() as temporary:
+        env = {**os.environ, "GIT_INDEX_FILE": str(Path(temporary) / "index")}
+        subprocess.run(["git", "read-tree", "HEAD"], cwd=CHECKOUT, check=True, env=env)
+        subprocess.run(
+            ["git", "apply", "--cached", "--check", str(PATCH)],
+            cwd=CHECKOUT,
+            check=True,
+            env=env,
+        )
 
 
 def test_new_model_and_environment_are_frozen() -> None:
     model = json.loads(MODEL.read_text())
-    assert len(model["files"]) == 17
+    assert len(model["files"]) == 18
     assert len([name for name in model["files"] if name.endswith(".safetensors")]) == 14
     assert all(
         entry["size_bytes"] > 0 and len(entry["sha256"]) == 64

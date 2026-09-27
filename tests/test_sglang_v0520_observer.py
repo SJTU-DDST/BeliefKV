@@ -593,6 +593,7 @@ def test_static_full_mamba_action_closure_uses_real_separate_pool_layout() -> No
         1, 0,
     )
     assert opportunity.fits_current_free_lists is True
+    assert opportunity.no_step_reason is None
     cache.token_to_kv_pool_allocator.available_size = lambda: 0
     assert inspect_session_h2d_opportunity(
         cache, anchors,
@@ -602,6 +603,12 @@ def test_static_full_mamba_action_closure_uses_real_separate_pool_layout() -> No
     opportunity = inspect_session_h2d_opportunity(cache, anchors)
     assert opportunity.required_mamba_slots == 1
     assert opportunity.fits_current_free_lists is False
+    leaf.component_data[0].value = [1]
+    leaf.component_data[2].value = [2]
+    assert capture_action_local_shadow(cache, anchors, for_prefetch=True) is None
+    resident = inspect_session_h2d_opportunity(cache, anchors)
+    assert resident.step is None
+    assert resident.no_step_reason == "already_device_resident"
     cache.host_pool_group.entry_map["mamba"].device_pool = object()
     assert not observe_unified_node_closure(cache, 5).observable
     assert capture_action_local_shadow(cache, anchors, for_prefetch=True) is None
@@ -609,6 +616,7 @@ def test_static_full_mamba_action_closure_uses_real_separate_pool_layout() -> No
     assert not opportunity.headroom.observable
     assert opportunity.step is None
     assert opportunity.fits_current_free_lists is None
+    assert opportunity.no_step_reason == "closure_unobservable"
 
 
 def test_static_action_closure_rejects_capacity_and_tree_backend_mismatch() -> None:

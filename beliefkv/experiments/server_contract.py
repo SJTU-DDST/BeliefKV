@@ -210,7 +210,7 @@ def validate_native_reactive_v0520(
         or server_info.get("enable_hierarchical_cache") is not True
         or type(size) not in (int, float) or size <= 0
         or server_info.get("hicache_write_policy") not in (
-            "write_back", "write_through",
+            "write_back", "write_through", "write_through_selective",
         )
         or server_info.get("enable_beliefkv") is True
         or server_info.get("enable_beliefkv_admission") is True
