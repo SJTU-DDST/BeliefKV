@@ -5856,3 +5856,66 @@ invocation 终止、workflow deadline 或 teardown
 运行及 control 臂均不改变。首次运行先用训练侧
 Xarray 任务检验 timer 投递和分母，不能作为新的
 项目隔离验收；磁盘或服务状态不满足时不得启动。
+
+### 100 ms shadow 训练侧在线终局与重复调用归因
+
+源码 `49b2819` 下的 8 个 Xarray root 分四波、
+每波两项启动；8/8 个 workflow 自然写出终态，
+共享截止 7200 秒，关闭任务正确性 completion gate。
+因此只验证时间遥测和系统执行完成，不声称解题
+成功。冻结子集与两版只读审计保存在
+`experiments/raw/qwen35_early_tool_train_xarray8_shadow_v1/`。
+182 个在 `TOOL_START` 已具备历史资格的 child
+`execute` 调用全部在原调用仍存活时投递一次只读
+事件；投递超过 100 ms 检查点的 P50/P95 延迟约
+0.12/0.48 ms，182/182 次之后真实余量至少
+500 ms，179 次至少 1 秒。这验证 timer/trace
+投递，但没有真实 H2D、beneficiary 或吞吐收益。
+
+为避免调用数冒充独立证据，审计 v2 按 workflow、
+invocation、原始输入哈希去重并单列成功/失败。
+182 次投递中 78 次最终失败，66 次来自
+`xarray-3151` 同一错误输入的连续重试：
+它在报告中仍算实际已发生的工具返回，但只算
+**一个**独立输入。所有已返回投递的冻结总时长
+ETA 绝对误差 P50/P95 约 270/709 ms；
+按每独立输入首次事件的 P50 约 106 ms，
+按 workflow 误差中位再取中位约 219 ms。
+`xarray-2905` 的 workflow 中位误差约 627 ms，
+不能用整体 106 ms 宣称每个项目/任务都精确。
+审计 v2 报告 SHA-256 为
+`98ed410e638eb2123559165d9b7313e05c605c100c49fa49293a398239a64bdf`。
+现有运行时仍不对重复失败调用抑制预报：
+失败也会唤醒 child；是否在物理动作层排除
+无进展的重试需单独评估，不以样本选择代替修复。
+
+### 同输入失败历史的训练侧因果时钟消融
+
+不改正在执行的 pilot 代码，在独立 worktree
+增加 `scripts/evaluate_same_input_error_timing.py`。
+只有相同 invocation/输入哈希的**上一条错误调用
+已在本次 `TOOL_START` 之前完成**，且当前调用
+真实返回并存活超过 100 ms 时，才比较该上次
+时长与同一调用起始时冻结的项目历史先验。
+原 128-root 完整训练批次由 manifest SHA-256
+`50c1f95036424b291f409d1face95ea5a5901733712e5960813b518c5f265d33`
+校验，报告保存在
+`experiments/raw/qwen35_cold_tool_overlapped_128root_train_20260927_v1/same_input_error_train_diagnostic_20260927.json`。
+老批次未采集 100 ms 形态先验，本节配对
+对照是当时冻结的**项目命令类**中位时长，
+不能把它偷换成本次在线形态先验。
+
+441 个匹配调用来自 43 个 workflow，但只含
+85 个不同的 workflow/invocation/输入组合；
+按每个组合只取首次合格调用，误差中位约
+100→43 ms，workflow 聚类 bootstrap 改善
+约 57 ms（95% 区间 11–101 ms）。500 ms
+内命中仍是 80/85，实际成功返回只有 11 次；
+Django 的独立输入折有改善，Pytest 折
+约 94→105 ms 且 500 ms 命中下降。
+因此它是**条件时钟消融**，不是跨项目稳定的
+预测式调度收益，也没有改在线工具头、JOIN 头
+或 `predictive_action_eligible`。接下来用原
+Astropy/Sphinx 的冻结批次做项目隔离复核，
+两项目过去参与过其它方案探索，须明确标注
+不是新的密封验收；不得依据其结果调参数。
