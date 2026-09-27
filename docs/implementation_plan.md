@@ -1,31 +1,38 @@
 # BeliefKV Current Execution Plan
 
-Status date: 2026-09-27.
+Status date: 2026-09-28.
 
 The active execution order is the Qwen3.5 section below. Older planning notes
 are retained at the end for traceability but are not startup instructions.
 Completed and superseded plans are indexed under `docs/archive/`.
 
-The ongoing 180 GB Host pressure scan is documented in
+The 180 GB Host pressure scan is documented in
 `docs/experiments/qwen35_native_regime_scan_2026-09-28_zh.md`.
-The initial 70:30, 12-root run saturated the Mamba Host pool while FULL
-remained mostly free; its Mamba eviction-to-revisit rows do not identify
-whether the revisited state was recomputed. This run is a rejected regime,
-not a predictive result or a usable matched throughput comparison.
+Both ordinary write-through trials saturated the Mamba Host pool; their
+Mamba eviction-to-revisit rows do not identify whether the revisited state
+was recomputed. The selective 6-root trial avoided Host evictions but has
+not established actionable Host-backed predictive H2D targets or valid
+native-agent JCT; none is a predictive result or a matched A/B comparison.
 
 ## Objective
 
-Establish a defensible Qwen3.5/SGLang v0.5.20 result for predictive Host
-backup and GPU restoration where HBM has **free space or safely reclaimable
-cold KV**, Host capacity and PCIe offer transfer opportunities, and useful
-KV loss followed by recomputation remains rare. Use a paired P5 reactive
-baseline. The primary question is whether PREPARE_HOST and predictive H2D
-hide transfer cost without displacing hotter work; do not assume an H2D
-benefit when the session is already on device. High-pressure, compute-bound
-or Host-thrashing regimes are fallback and limitation tests, not the primary
-optimization target. Separate time accuracy, physical utility, and workflow
-outcomes. Exact wall-clock RETURN/JOIN ETA is not a prerequisite for a
-bounded physical opportunity experiment.
+Establish a defensible Qwen3.5/SGLang v0.5.20 result for selective predictive
+Host backup and GPU restoration in a workload where HBM has **free space or
+safely reclaimable cold KV**, Host/PCIe have transfer capacity, useful KV
+loss followed by recomputation is rare, and some future consumers actually
+need Host-backed KV or benefit from an early Host shadow. This is a
+workload-qualification gate, not a predefined root count or occupancy
+threshold. Start with idle-HBM opportunities; treat cold-KV replacement as
+a separately measured extension. Use the same tasks, arrivals and physical
+configuration for a paired P5 reactive baseline. The primary question is
+whether PREPARE_HOST and predictive H2D save synchronous transfer wait and
+improve successful workflow throughput/JCT *after* accounting for wasted
+transfers, HBM residency and interference. A session already on Device is
+not an H2D opportunity. High-pressure, compute-bound or Host-thrashing
+regimes are fallback and limitation tests, not the primary optimization
+target. Separate time accuracy, physical utility and workflow outcomes;
+exact wall-clock RETURN/JOIN ETA is not a prerequisite for a bounded
+physical-opportunity experiment.
 
 Primary metrics:
 
@@ -60,6 +67,11 @@ Primary metrics:
    observed free HBM or revalidatable cold/evictable KV, Host-backed H2D
    candidates or future-eviction PREPARE candidates, and low useful
    eviction-to-miss/recompute before freezing a primary configuration.
+   Reject a configuration if all apparent JOIN candidates already reside on
+   Device or lack a valid Host-backed step; a low Host eviction count alone
+   does not establish a useful predictive workload. Keep correctness/JCT
+   eligibility separate from presence of telemetry and final natural-language
+   output when judging completed diagnostic runs.
    Record GPU/PCIe utilization and reactive H2D stall: free HBM by itself
    cannot save a transfer if no future reuse exists. Characterize each load's
    request-level queue/service,

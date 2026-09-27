@@ -1,6 +1,6 @@
 # BeliefKV 当前架构与实现状态
 
-更新日期：2026-09-27
+更新日期：2026-09-28
 当前 P6 物理执行基线：原 Qwen3-Coder/SGLang 0.5.2rc1；
 Qwen3.5/v0.5.20 已有可选 native admission、工具等待预测和
 JOIN child-completion 三阶段 H2D ticket（概率窗口、结构化完成提示、
@@ -31,8 +31,8 @@ write_through 和 session radix 开启时采样）。记录缺失 session、不�
 无法拟合的原因。异步有界队列单独写
 `admission_opportunities.jsonl`，关闭时写状态文件；队列溢出或
 写入失败将使该次观测无效。census 记录采样耗时和未扫描队列/上下文数量，
-因此样本**不是全量机会分母**。该接入尚未在目标 GPU 运行和
-核验 sampling cost，更没有独占 ownership、未来容量预留、
+因此样本**不是全量机会分母**。已在目标 GPU 做 native 只读试采，
+但尚未核验 sampling cost，更没有独占 ownership、未来容量预留、
 与实际 transfer / first-use 的联接；beneficiary/victim 联合
 handoff 和完整 D2H/H2D 首次消费闭环仍待实现。
 
@@ -50,8 +50,10 @@ context/workflow 终态关闭引用。根 workflow/invocation 和 LLM
 submit/result 因果边界也会发送到 control sink，补齐服务端
 RCCG 镜像的起点和 epoch；模型请求与真实传输仍以服务端为
 物理事实来源。缺少 control socket 时 runner 拒绝 session 模式。
-这些变更目前仅通过 CPU 回归测试，真实 session generation、
-Host/Device 候选和传输 ACK 仍须 GPU 验证。
+这些变更已有 CPU 回归和一轮 6-root GPU native 试采：Host 未驱逐、
+原生 ACK 可审计，但 JOIN 候选主要无 Host-backed step，
+主动预测动作的身份/容量预留、ACK 至首次消费仍须 GPU 验证。
+见 `docs/experiments/qwen35_native_regime_scan_2026-09-28_zh.md`。
 
 近期主评估场景改为 HBM 有空闲空间或可安全迁出的冷
 KV、Host/PCIe 尚有余量且有效 KV 丢弃后重算较少的压力区间。
