@@ -2013,11 +2013,14 @@ verification, and the required WorkflowCompletion response.
 
 NATIVE_IN_GRAPH_1TO4_PROMPT = """
 Choose delegation from the actual task as part of this same root conversation.
-When a question can be worked on independently, use one to four native task
-calls in one turn, assigning each child a concrete deliverable. Do not force
-delegation for a task that has no independent work, duplicate a completed
-investigation, or split one question merely to increase fan-out. Wait for
-the child results in this conversation before integrating them.
+For a task with an independently checkable repository question, begin with an
+initial delegation round before reading, executing, or editing repository files:
+issue one to four native task calls in one turn. Choose the number from the
+independent work; one child is valid. Give each child a concrete code-path,
+reproduction, test, or compatibility deliverable. If the task is genuinely
+atomic and has no independent work, proceed directly. Do not duplicate work
+or split one question merely to increase fan-out. Wait for the child results
+in this conversation before integrating them.
 
 After a JOIN, you may launch another round if new independent questions
 remain. The root is responsible for integration, verification, and the

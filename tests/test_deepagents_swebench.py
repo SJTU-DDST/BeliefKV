@@ -2043,9 +2043,13 @@ def test_in_graph_profile_starts_root_without_external_planner(
     assert reports == []
     assert "Fix the reported issue" in result["messages"][0]["content"]
     assert "initial delegation round has completed" not in result["messages"][0]["content"]
-    assert "one to four native task" in _autonomous_fanout_prompt(
+    in_graph_prompt = _autonomous_fanout_prompt(
         config, delegation_enabled=True,
     )
+    assert "initial delegation round before reading" in in_graph_prompt
+    assert "one to four native task calls" in in_graph_prompt
+    assert "one child is valid" in in_graph_prompt
+    assert "After a JOIN, you may launch another round" in in_graph_prompt
 
 
 def test_second_native_delegation_round_keeps_root_call_budget() -> None:

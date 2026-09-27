@@ -397,3 +397,19 @@ runtime 已支持该配置，`run_deepagents_swebench.py` 的 argparse
 已将 CLI 选项与 runtime 的 `SUBAGENT_FANOUT_PROFILES` 共用，
 增加解析回归测试；同物理配置试采需用新目录重跑。v1 的空遥测
 不能作为 JOIN/H2D 不可行动的证据。
+
+## 200 GB / 25:75 / write-back / 8-root：in-graph 试采 v2 无 JOIN
+
+修正 CLI 后，`...native_in_graph_join_200g_25_75_8root_v2/`
+提交了 8 个 root 并进入原生推理。试采被主动中止时，服务端已记录
+589 次 `llm_submit`、587 次 `llm_result`；客户端已记录约 577 次
+工具启动，均为常规仓库工具，无 `task` 调用，也无 SPAWN/JOIN。
+因此此轮不具备验证 JOIN H2D 的事件，不能作为预测物理效果
+或完成吞吐的结果。客户端退出后服务端已关闭，原始日志保留。
+
+原因是原 `native_in_graph_1to4` 只在模型自判“有可独立工作”时
+要求派发；实际模型优先直接探索仓库。现改为：对存在独立可检验
+问题的任务，在首次仓库读/执行/编辑之前，先由模型选择一至四个
+原生 `task` 同轮派发；确实原子性的任务允许不派发，JOIN 后是否
+还有新一轮仍由模型决定。这是工作负载提示词调整，不是预测
+策略的收益。需用独立冷启动目录验证真正的 root 派发和前缀复用。
