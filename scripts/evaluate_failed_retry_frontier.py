@@ -36,6 +36,12 @@ def _score(samples: list[dict]) -> dict:
         available = [sample for sample in samples if sample[model] is not None]
         errors = sorted(abs(sample["actual_ms"] - sample[model])
                         for sample in available)
+        probabilities = [
+            (sample[f"{model}_success_probability"],
+             sample["status"] == "success")
+            for sample in samples
+            if sample[f"{model}_success_probability"] is not None
+        ]
         result[model] = {
             "available": len(available),
             "absolute_error_p50_ms": median(errors) if errors else None,
@@ -50,6 +56,23 @@ def _score(samples: list[dict]) -> dict:
                     for group in by_workflow.values()
                     if any(sample[model] is not None for sample in group)
                 ]) if available else None
+            ),
+            "terminal_probability_count": len(probabilities),
+            "success_brier": (
+                sum((probability - int(success)) ** 2
+                    for probability, success in probabilities) / len(probabilities)
+                if probabilities else None
+            ),
+            "success_predicted_at_least_0_9": sum(
+                probability >= .9 for probability, _ in probabilities
+            ),
+            "false_success_predicted_at_least_0_9": sum(
+                probability >= .9 and not success
+                for probability, success in probabilities
+            ),
+            "natural_success_predicted_at_least_0_5": sum(
+                probability >= .5 and success
+                for probability, success in probabilities
             ),
         }
     return result
@@ -104,12 +127,16 @@ def evaluate(
             )
             if local.state != "wait_tool":
                 break
-            wait = model.predict(local).wait_belief
+            prediction = model.predict(local)
+            wait = prediction.wait_belief
             predictions[name] = (
                 wait.residual_duration.quantile(.5)
                 if wait.residual_duration.values else None
             )
             predictions[f"{name}_support"] = wait.support_detail
+            predictions[f"{name}_success_probability"] = (
+                prediction.tool_terminal_distribution.get("success")
+            )
         else:
             first[key] = {
                 "workflow": key[0],

@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from beliefkv.predictor.structured_frontier import FrontierBeliefModel
-from scripts.evaluate_failed_retry_frontier import evaluate
+from scripts.evaluate_failed_retry_frontier import _score, evaluate
 
 
 def _row(
@@ -72,3 +72,31 @@ def test_failed_retry_paired_evaluation_deduplicates_inputs_and_splits_status() 
     assert report["first_per_workflow_invocation_input"]["baseline"][
         "absolute_error_p50_ms"
     ] > 1700
+    assert report["natural_success"]["baseline"]["terminal_probability_count"] <= 1
+    assert report["natural_error"]["candidate"]["terminal_probability_count"] <= 1
+
+
+def test_terminal_probability_metrics_do_not_hide_missed_natural_success() -> None:
+    report = _score([
+        {
+            "workflow": "wf-1", "status": "success", "actual_ms": 1000,
+            "baseline": 900, "candidate": 900,
+            "baseline_success_probability": .8,
+            "candidate_success_probability": .1,
+        },
+        {
+            "workflow": "wf-2", "status": "error", "actual_ms": 1000,
+            "baseline": 900, "candidate": 900,
+            "baseline_success_probability": .8,
+            "candidate_success_probability": .1,
+        },
+        {
+            "workflow": "wf-3", "status": "error", "actual_ms": 1000,
+            "baseline": 900, "candidate": 900,
+            "baseline_success_probability": .8,
+            "candidate_success_probability": .1,
+        },
+    ])
+    assert report["candidate"]["success_brier"] < report["baseline"]["success_brier"]
+    assert report["baseline"]["natural_success_predicted_at_least_0_5"] == 1
+    assert report["candidate"]["natural_success_predicted_at_least_0_5"] == 0
