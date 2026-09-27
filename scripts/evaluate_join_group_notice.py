@@ -9,6 +9,10 @@ import json
 from pathlib import Path
 from statistics import median
 
+import numpy as np
+
+from beliefkv.runtime.deepagents_adapter import MIN_NATURAL_FINAL_HINT_CHARS
+
 try:
     from scripts.audit_child_hidden_trace import blocked_child_invocations
     from scripts.evaluate_cold_tool_project_loo import require_complete_batch
@@ -19,7 +23,28 @@ except ModuleNotFoundError:
     from evaluate_child_return_intent_timing import _metrics, load_episodes
 
 
-def collect(workflows: Path) -> tuple[list[dict], dict]:
+def _final_result_notice(event: dict) -> bool:
+    if event["kind"] != "llm_result":
+        return False
+    attrs = event.get("attributes") or {}
+    if attrs.get("runtime_internal") or attrs.get("invalid_tool_call_count"):
+        return False
+    names = attrs.get("structured_action_names") or []
+    if attrs.get("tool_call_count") == 1 and names == ["ChildCompletion"]:
+        return True
+    return (
+        attrs.get("tool_call_count") == 0
+        and (attrs.get("finish_reason") or "stop") == "stop"
+        and isinstance(attrs.get("output_chars"), int)
+        and attrs["output_chars"] >= MIN_NATURAL_FINAL_HINT_CHARS
+    )
+
+
+def collect(
+    workflows: Path, *, notice_source: str = "shadow",
+) -> tuple[list[dict], dict]:
+    if notice_source not in {"shadow", "llm_result"}:
+        raise ValueError(f"unknown notice source: {notice_source}")
     files = sorted(workflows.glob("*/runtime_events.deepagents.jsonl"))
     if not files:
         raise FileNotFoundError(f"missing workflow events in {workflows}")
@@ -33,11 +58,17 @@ def collect(workflows: Path) -> tuple[list[dict], dict]:
         audit_path = path.parent / "sandbox_audit.jsonl"
         if not audit_path.is_file():
             raise FileNotFoundError(f"missing sandbox audit in {path.parent}")
-        notices = [
-            row for line in audit_path.read_text(encoding="utf-8").splitlines()
-            if line.strip()
-            if (row := json.loads(line)).get("event") == "child_return_intent_shadow"
-        ]
+        notices = (
+            [
+                row for line in audit_path.read_text(encoding="utf-8").splitlines()
+                if line.strip()
+                if (row := json.loads(line)).get("event")
+                == "child_return_intent_shadow"
+            ]
+            if notice_source == "shadow" else [
+                event for event in events if _final_result_notice(event)
+            ]
+        )
         context_events = defaultdict(list)
         for event in events:
             if event.get("invocation_id") and event.get("context_id") is not None and (
@@ -161,6 +192,10 @@ def collect(workflows: Path) -> tuple[list[dict], dict]:
                     changes.append((when, 0, "return", child, event))
                 elif kind == "invocation_cancel":
                     changes.append((when, 0, "cancel", child, event))
+                elif kind == "llm_submit" and not (
+                    (event.get("attributes") or {}).get("runtime_internal")
+                ):
+                    changes.append((when, 0, "revoke", child, event))
                 elif kind == "tool_start" and (
                     (event.get("attributes") or {}).get("tool_name")
                     != "announce_completion_intent"
@@ -174,6 +209,8 @@ def collect(workflows: Path) -> tuple[list[dict], dict]:
                     and (finished is None or when < finished)
                     and notice.get("join_id") in (None, join_id)
                 ):
+                    if notice_source == "llm_result":
+                        counts["eligible_child_final_results"] += 1
                     if notice.get("context_id") is not None or (
                         notice.get("context_epoch") is not None
                     ):
@@ -225,11 +262,15 @@ def collect(workflows: Path) -> tuple[list[dict], dict]:
                 continue
             trigger = candidate["trigger_ts_ms"]
             pending = candidate["pending_notices_ms"]
-            later_tool = any(
-                event["kind"] == "tool_start"
+            later_activity = any(
+                event["kind"] in {"tool_start", "llm_submit"}
                 and event.get("invocation_id") in pending
-                and (event.get("attributes") or {}).get("tool_name")
-                != "announce_completion_intent"
+                and not (event.get("attributes") or {}).get("runtime_internal")
+                and (
+                    event["kind"] != "tool_start"
+                    or (event.get("attributes") or {}).get("tool_name")
+                    != "announce_completion_intent"
+                )
                 and trigger < float(event["ts_ms"]) < (
                     float(returns[event["invocation_id"]]["ts_ms"])
                     if event["invocation_id"] in returns else float("inf")
@@ -237,7 +278,7 @@ def collect(workflows: Path) -> tuple[list[dict], dict]:
                 for event in events
             )
             label = (
-                "revoked" if later_tool else
+                "revoked" if later_activity else
                 "natural" if natural and finished is not None and trigger < finished
                 else "censored"
             )
@@ -251,6 +292,13 @@ def collect(workflows: Path) -> tuple[list[dict], dict]:
                 "members": len(members),
                 "trigger_ts_ms": trigger,
                 "pending_notices_ms": pending,
+                "pending_return_lead_ms": (
+                    {
+                        child: float(returns[child]["ts_ms"]) - notice
+                        for child, notice in pending.items()
+                    }
+                    if label == "natural" else None
+                ),
                 "label": label,
                 "lead_ms": finished - trigger if label == "natural" else None,
                 "parent_reentry_lead_ms": (
@@ -266,18 +314,70 @@ def collect(workflows: Path) -> tuple[list[dict], dict]:
     return groups, dict(counts)
 
 
-def evaluate(train_workflows: Path, heldout_workflows: Path) -> dict:
-    train, train_counts = load_episodes(train_workflows.parent)
-    train_groups, train_group_counts = collect(train_workflows)
-    heldout, counts = collect(heldout_workflows)
-    train_projects = {row["project"] for row in train}
-    heldout_projects = {row["project"] for row in heldout}
+def _task_clustered_improvement(
+    rows: list[dict], predicted: list[float], *, target: str,
+) -> dict | None:
+    if not rows:
+        return None
+    by_task = defaultdict(list)
+    for row, estimate in zip(rows, predicted, strict=True):
+        actual = row[target]
+        by_task[row["task_id"]].append(
+            abs(actual) - abs(actual - estimate)
+        )
+    task_means = np.asarray([
+        np.mean(by_task[task]) for task in sorted(by_task)
+    ])
+    rng = np.random.default_rng(0)
+    draws = rng.choice(
+        task_means, size=(4000, len(task_means)), replace=True,
+    ).mean(axis=1)
+    return {
+        "tasks": len(task_means),
+        "paired_mae_improvement_ms": float(np.mean(task_means)),
+        "task_bootstrap_95pct_ci_ms": [
+            float(value) for value in np.percentile(draws, [2.5, 97.5])
+        ],
+    }
+
+
+def evaluate(
+    train_workflows: Path, heldout_workflows: Path, *,
+    notice_source: str = "shadow",
+) -> dict:
+    train_groups, train_group_counts = collect(
+        train_workflows, notice_source=notice_source,
+    )
+    heldout, counts = collect(heldout_workflows, notice_source=notice_source)
+    if notice_source == "shadow":
+        train, train_counts = load_episodes(train_workflows.parent)
+    else:
+        train = [
+            {
+                "project": row["project"],
+                "task_id": row["task_id"],
+                "lead_ms": lead,
+            }
+            for row in train_groups if row["label"] == "natural"
+            for lead in row["pending_return_lead_ms"].values()
+        ]
+        train_counts = {"natural_pending_child_notices": len(train)}
+    train_projects = {
+        path.parent.name.split("__", 1)[0]
+        for path in train_workflows.glob("*/runtime_events.deepagents.jsonl")
+    }
+    heldout_projects = {
+        path.parent.name.split("__", 1)[0]
+        for path in heldout_workflows.glob("*/runtime_events.deepagents.jsonl")
+    }
     if not train_projects or not heldout_projects or (
         train_projects & heldout_projects
     ):
         raise ValueError("training notices and held-out JOIN groups need disjoint projects")
     if {row["task_id"] for row in train} & {row["task_id"] for row in heldout}:
         raise ValueError("training and held-out task IDs overlap")
+    if not train:
+        raise ValueError("no natural training notices for the selected source")
     by_task = defaultdict(list)
     for row in train:
         by_task[row["task_id"]].append(row["lead_ms"])
@@ -325,23 +425,75 @@ def evaluate(train_workflows: Path, heldout_workflows: Path) -> dict:
         ]
         if submit_prior_ms is not None else []
     )
+    project_slices = {}
+    for project in sorted(heldout_projects):
+        natural_pairs = [
+            (row, estimate) for row, estimate in zip(true, prediction, strict=True)
+            if row["project"] == project
+        ]
+        parent_pairs = [
+            (row, estimate)
+            for row, estimate in zip(parent, composed_prediction, strict=True)
+            if row["project"] == project
+        ]
+        project_slices[project] = {
+            "natural_groups": sum(
+                row["project"] == project and row["label"] == "natural"
+                for row in heldout
+            ),
+            "natural_candidate_point_error_ms": _metrics(
+                [row["lead_ms"] for row, _ in natural_pairs],
+                [estimate for _, estimate in natural_pairs],
+            ),
+            "natural_candidate_gain_vs_zero": _task_clustered_improvement(
+                [row for row, _ in natural_pairs],
+                [estimate for _, estimate in natural_pairs],
+                target="lead_ms",
+            ),
+            "parent_candidate_point_error_ms": _metrics(
+                [row["parent_reentry_lead_ms"] for row, _ in parent_pairs],
+                [estimate for _, estimate in parent_pairs],
+            ),
+            "parent_candidate_gain_vs_zero": _task_clustered_improvement(
+                [row for row, _ in parent_pairs],
+                [estimate for _, estimate in parent_pairs],
+                target="parent_reentry_lead_ms",
+            ),
+        }
     return {
         "status": "read_only_first_whole_join_candidate_not_action_eligible",
+        "notice_source": notice_source,
         "train_projects": sorted(train_projects),
         "heldout_projects": sorted(heldout_projects),
         "train_counts": train_counts,
         "train_group_counts": train_group_counts,
         "heldout_counts": counts,
+        "heldout_by_project": project_slices,
         "train_task_balanced_child_notice_prior_ms": prior_ms,
         "train_task_balanced_parent_reentry_prior_ms": parent_prior_ms,
         "train_task_balanced_join_to_parent_submit_prior_ms": submit_prior_ms,
         "heldout_natural_group_lead_ms": _metrics(
             actual, [0.] * len(actual),
         ),
+        "heldout_natural_group_lead_windows": {
+            f"at_least_{threshold}ms": sum(
+                row["lead_ms"] >= threshold for row in true
+            )
+            for threshold in (250, 500, 1000)
+        },
         "heldout_natural_group_point_error_ms": _metrics(actual, prediction),
+        "heldout_natural_group_paired_gain_vs_zero": _task_clustered_improvement(
+            true, prediction, target="lead_ms",
+        ),
         "heldout_observed_parent_reentry_lead_ms": _metrics(
             parent_actual, [0.] * len(parent_actual),
         ),
+        "heldout_observed_parent_reentry_lead_windows": {
+            f"at_least_{threshold}ms": sum(
+                row["parent_reentry_lead_ms"] >= threshold for row in parent
+            )
+            for threshold in (250, 500, 1000)
+        },
         "heldout_observed_parent_reentry_point_error_ms": (
             _metrics(parent_actual, parent_predicted)
             if parent_prior_ms is not None else None
@@ -349,6 +501,11 @@ def evaluate(train_workflows: Path, heldout_workflows: Path) -> dict:
         "heldout_observed_parent_reentry_composed_point_error_ms": (
             _metrics(parent_actual, composed_prediction)
             if submit_prior_ms is not None else None
+        ),
+        "heldout_observed_parent_reentry_composed_gain_vs_zero": (
+            _task_clustered_improvement(
+                parent, composed_prediction, target="parent_reentry_lead_ms",
+            ) if submit_prior_ms is not None else None
         ),
         "scope": (
             "First causal all-member coverage after parent JOIN_WAIT: every "
@@ -360,6 +517,7 @@ def evaluate(train_workflows: Path, heldout_workflows: Path) -> dict:
             "The composed ETA uses the latest pending-child notice extrapolated "
             "with a train-only child prior, plus a train-only JOIN-to-parent "
             "submit lag. Future events only label revocation, censoring and reentry. "
+            "Model or tool reentry revokes an earlier completion notice. "
             "No conditional-on-last-child oracle, "
             "physical H2D, online delivery or task-performance claim."
         ),
@@ -371,6 +529,10 @@ def main() -> None:
     parser.add_argument("--train-workflows", type=Path, required=True)
     parser.add_argument("--heldout-workflows", type=Path, required=True)
     parser.add_argument("--output", type=Path, required=True)
+    parser.add_argument(
+        "--notice-source", choices=("shadow", "llm_result"), default="shadow",
+        help="Use opt-in intent audit or reconstruct causal final results.",
+    )
     args = parser.parse_args()
     train_ids, train_errors = require_complete_batch(args.train_workflows)
     heldout_ids, heldout_errors = require_complete_batch(args.heldout_workflows)
@@ -381,7 +543,10 @@ def main() -> None:
     }
     if trace_ids - set(heldout_ids):
         raise ValueError("held-out trace is not in the frozen manifest")
-    result = evaluate(args.train_workflows, args.heldout_workflows)
+    result = evaluate(
+        args.train_workflows, args.heldout_workflows,
+        notice_source=args.notice_source,
+    )
     result["train_frozen_workflows"] = len(train_ids)
     result["heldout_frozen_workflows"] = len(heldout_ids)
     result["train_runner_errors"] = train_errors

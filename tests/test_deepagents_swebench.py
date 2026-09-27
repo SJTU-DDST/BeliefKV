@@ -4005,6 +4005,31 @@ def test_loop_guard_tracks_and_enforces_activation_wall_clock() -> None:
     assert exhausted["guard_reason"] == "activation_wall_clock_exhausted"
 
 
+def test_default_workflow_deadline_does_not_truncate_root_at_900_seconds() -> None:
+    now = [10.0]
+    policy = LoopGuardPolicy()
+    assert policy.activation_wall_clock_s == 7200.0
+    deadline = ActivationDeadline(clock=lambda: now[0])
+    deadline.start(policy.activation_wall_clock_s)
+    guard = AgentLoopGuardMiddleware(
+        policy=policy,
+        completion_schema=ChildCompletion,
+        completion_instruction="Return ChildCompletion.",
+        audit=None,
+        scope="long-root-test",
+        activation_deadline=deadline,
+    )
+
+    now[0] = 911.0
+    assert deadline.request_timeout_s(600.0) == 600.0
+    assert guard.before_model({"messages": []}, runtime=None) is None
+
+    now[0] = 7210.0
+    exhausted = guard.before_model({"messages": []}, runtime=None)
+    assert exhausted is not None
+    assert exhausted["guard_reason"] == "activation_wall_clock_exhausted"
+
+
 def test_loop_guard_allows_unbounded_activation_wall_clock() -> None:
     now = [10.0]
     guard = AgentLoopGuardMiddleware(

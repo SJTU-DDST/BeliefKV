@@ -5,7 +5,9 @@ import sys
 
 import pytest
 
-from scripts.evaluate_join_group_notice import collect, evaluate, main
+from scripts.evaluate_join_group_notice import (
+    _final_result_notice, collect, evaluate, main,
+)
 
 
 def _write(root, task, *, two_children=False, notices=(1000,), revoke=False,
@@ -262,6 +264,101 @@ def test_same_project_cannot_evaluate(tmp_path):
     _write(heldout, "astropy__two")
     with pytest.raises(ValueError, match="disjoint projects"):
         evaluate(train / "workflows", heldout / "workflows")
+
+
+@pytest.mark.parametrize(
+    ("attrs", "expected"),
+    [
+        ({"tool_call_count": 0, "output_chars": 8}, True),
+        ({"tool_call_count": 1, "structured_action_names": [
+            "ChildCompletion",
+        ]}, True),
+        ({"tool_call_count": 0, "output_chars": 7}, False),
+        ({"tool_call_count": 0, "output_chars": 30,
+          "finish_reason": "length"}, False),
+        ({"tool_call_count": 0, "output_chars": 30,
+          "invalid_tool_call_count": 1}, False),
+        ({"tool_call_count": 0, "output_chars": 30,
+          "runtime_internal": True}, False),
+        ({"tool_call_count": 1, "output_chars": 30,
+          "structured_action_names": ["execute"]}, False),
+    ],
+)
+def test_final_result_notice_matches_runtime_hint(attrs, expected):
+    assert _final_result_notice({"kind": "llm_result", "attributes": attrs}) == expected
+
+
+def test_llm_result_replay_requires_all_live_members_and_no_shadow(tmp_path):
+    root = tmp_path / "train"
+    _write(root, "django__one", two_children=True, notices=())
+    groups, counts = collect(root / "workflows", notice_source="llm_result")
+    assert counts["all_mode_groups"] == 1
+    assert counts["eligible_child_final_results"] == 2
+    assert counts["candidate_natural"] == 1
+    assert groups[0]["trigger_ts_ms"] == 1995
+    assert groups[0]["pending_return_lead_ms"] == {
+        "child:django__one:b": 5,
+    }
+
+    events_path = (
+        root / "workflows" / "django__one" /
+        "runtime_events.deepagents.jsonl"
+    )
+    events = [json.loads(line) for line in events_path.read_text().splitlines()]
+    last_result = next(
+        row for row in events if row["kind"] == "llm_result"
+        and row["invocation_id"] == "child:django__one:b"
+    )
+    last_result["attributes"]["output_chars"] = 1
+    events_path.write_text("".join(json.dumps(row) + "\n" for row in events))
+    groups, counts = collect(root / "workflows", notice_source="llm_result")
+    assert not groups
+    assert counts["no_whole_group_candidate"] == 1
+
+
+def test_llm_result_notice_is_revoked_on_model_reentry_without_tool(tmp_path):
+    root = tmp_path / "train"
+    _write(root, "django__one", notices=())
+    path = root / "workflows" / "django__one" / "runtime_events.deepagents.jsonl"
+    events = [json.loads(line) for line in path.read_text().splitlines()]
+    events += [
+        {
+            "kind": "llm_result", "invocation_id": "child:django__one:a",
+            "ts_ms": 1000, "attributes": {
+                "tool_call_count": 0, "output_chars": 40,
+            },
+        },
+        {
+            "kind": "llm_submit", "invocation_id": "child:django__one:a",
+            "ts_ms": 1200,
+        },
+    ]
+    path.write_text("".join(json.dumps(row) + "\n" for row in events))
+    groups, counts = collect(root / "workflows", notice_source="llm_result")
+    assert counts["candidate_revoked"] == 1
+    assert groups[0]["trigger_ts_ms"] == 1000
+    assert groups[0]["lead_ms"] is None
+
+
+def test_llm_result_prior_uses_only_project_disjoint_training_groups(tmp_path):
+    train, heldout = tmp_path / "train", tmp_path / "heldout"
+    _write(train, "django__one", notices=())
+    _write(heldout, "astropy__one", notices=())
+    report = evaluate(
+        train / "workflows", heldout / "workflows",
+        notice_source="llm_result",
+    )
+    assert report["notice_source"] == "llm_result"
+    assert report["train_counts"]["natural_pending_child_notices"] == 1
+    assert report["train_task_balanced_child_notice_prior_ms"] == 5
+    assert report["heldout_natural_group_point_error_ms"]["mae_ms"] == 0
+    assert report["heldout_natural_group_lead_windows"]["at_least_500ms"] == 0
+    gain = report["heldout_natural_group_paired_gain_vs_zero"]
+    assert gain["tasks"] == 1
+    assert gain["task_bootstrap_95pct_ci_ms"] == [5, 5]
+    assert report["heldout_by_project"]["astropy"][
+        "natural_candidate_gain_vs_zero"
+    ]["paired_mae_improvement_ms"] == 5
 
 
 def test_main_counts_frozen_workflows_even_when_runner_trace_is_missing(

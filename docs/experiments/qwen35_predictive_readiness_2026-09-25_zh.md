@@ -5947,3 +5947,67 @@ Sphinx 25 个首次输入、16 个 workflow
 密封的新测试项目。当前正式预测头和
 `predictive_action_eligible` 均保持原状；
 JOIN 时钟及物理 H2D 收益未由此验证。
+
+### 完整 JOIN 的临近终态通知回放（2026-09-27）
+
+扩展只读 `scripts/evaluate_join_group_notice.py`，以
+`--notice-source llm_result` 复用既有逐请求 trace，
+无需旧批次未配置的 control socket 或事后识别的
+“最后 child”。候选仅来自当前 child 已完成的
+`LLM_RESULT`：恰好一个 ChildCompletion 工具调用，
+或者无工具调用、无非法工具调用、停止原因正常且
+输出至少 8 字符的自然回复；内部 summarizer 不算。
+全组状态机必须在 parent `JOIN_WAIT` 后、所有尚未
+RETURN 的 child 均有未撤销通知时才触发一次；
+通知后的模型重入、工具调用、取消均纳入审计。
+通知到实际 RETURN/JOIN 的时长仅用于训练先验或
+离线标签，不会提前流入候选筛选。
+
+完整训练批次为
+`qwen35_cold_tool_overlapped_128root_train_20260927_v1/intent_workloads`，
+manifest SHA-256 为
+`90db2bea95b5cc5a911ecb2c70b08ecdd0de34ddeef384b690a2f12a67bef52f`；
+项目隔离留出为 Astropy/Sphinx 原 66-root 批次，
+manifest SHA-256 为
+`dd9eccd8a5fcfd0ae8e5c3c3d247589769ea81f2311c58decddab31b347d179b`。
+训练 128/128 条 trace 有 128 个完整组，其中 105 个
+自然完整 JOIN 均有首次候选；留出 66/66 条 trace
+有 66 个完整组，61 个自然 JOIN 中 59 个有候选，
+另有 1 个候选删失、6 个无候选。不能以自然子集
+59 条作为总覆盖分母，也不能把删失计作成功。
+训练项目按 task 均衡的 child 通知到 RETURN 先验
+为 232.6 ms，JOIN 满足到 parent 提交先验为
+236.2 ms；不在留出数据上调节先验。
+
+留出 59 个自然候选的通知→JOIN 提前量中位
+175.5 ms，**0/59** 达到 250 ms。对照“通知即
+JOIN”（剩余时间预测为 0），训练先验的同组
+点误差中位从 175.5 降到 57.0 ms，平均绝对
+误差从 178.1 降到 55.6 ms；59 个 workflow
+聚类配对平均改善 122.5 ms，bootstrap 95%
+区间 108.5–136.8 ms。Astropy 21 个候选的
+平均改善 127.5 ms（95% 区间 100.9–152.8 ms），
+Sphinx 38 个为 119.7 ms（102.5–136.9 ms）；
+两项目分别为正，但不能推广到未见压力和项目。
+在 parent 有后续请求的
+60 个候选上，通知→首次 parent `LLM_SUBMIT`
+的时间中位 354.3 ms，其中 9/60 至少 500 ms、
+0/60 至少 1000 ms；组合训练侧 child 与
+JOIN→parent 先验后，平均绝对误差由零预测的
+400.4 降到 132.0 ms，60 个 workflow 的配对
+平均改善区间为 237.8–300.2 ms。只读报告存于
+留出批次根目录的
+`llm_result_join_group_notice_train128_holdout_20260927.json`。
+
+**限制**：上面的显著提升仅对应“已看到接近最终
+返回的完整组通知”之后的短条件时钟，不是从
+SPAWN/JOIN_WAIT 起预测 JOIN 的效果，更没有
+证明足以完成 H2D。原生 128-root 批次未向
+control sink 投递该候选；实际调度 dispatch、
+Host KV 可用性、DMA 和 ACK 均未测试。
+Astropy/Sphinx 曾参与其它方向探索，属于
+项目隔离的开发复核，不是密封验收；两侧的
+并发压力也不同。下一步针对更早的真实可观察
+信号和高压同配置的**新项目**开展有完整成员
+覆盖与物理窗口的独立验证，不能据此开启
+predictive action。
