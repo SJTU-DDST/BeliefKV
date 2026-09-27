@@ -176,8 +176,16 @@ for arm in intent final length; do
         --output "$OUT/${arm}_early_tool_wait_audit.json"
     fi
     if [[ -n "${TOOL_WINDOW_ARTIFACT:-}" && "$arm" == intent ]]; then
+      audit_scope=()
+      if [[ "${TOOL_WINDOW_AUDIT_MODE:-project_holdout}" == training_replay ]]; then
+        audit_scope=(--training-replay)
+      elif [[ "${TOOL_WINDOW_AUDIT_MODE:-project_holdout}" != project_holdout ]]; then
+        printf 'Unknown tool window audit mode: %s\n' "$TOOL_WINDOW_AUDIT_MODE" >&2
+        exit 2
+      fi
       "$PYTHON" "$ROOT/scripts/audit_frozen_tool_window_shadow.py" \
         --run-dir "$OUT" --artifact "$TOOL_WINDOW_ARTIFACT" \
+        "${audit_scope[@]}" \
         --output "$OUT/${arm}_frozen_tool_window_audit.json"
     fi
     "$PYTHON" "$ROOT/scripts/audit_child_return_intent_shadow.py" \

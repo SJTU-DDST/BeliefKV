@@ -133,17 +133,20 @@ def summarize(rows: list[dict]) -> dict:
     }
 
 
-def evaluate(train_workflows: list[Path], heldout_workflows: Path) -> dict:
+def evaluate(
+    train_workflows: list[Path], heldout_workflows: Path,
+    *, notice_source: str = "shadow",
+) -> dict:
     if not train_workflows or len({
         path.resolve() for path in train_workflows
     }) != len(train_workflows):
         raise ValueError("training batches must be nonempty and distinct")
     train, train_projects = [], set()
     for workflows in train_workflows:
-        rows, metadata = load(workflows)
+        rows, metadata = load(workflows, notice_source=notice_source)
         train.extend(rows)
         train_projects.update(metadata["frozen_projects"])
-    heldout, metadata = load(heldout_workflows)
+    heldout, metadata = load(heldout_workflows, notice_source=notice_source)
     if train_projects & set(metadata["frozen_projects"]):
         raise ValueError("training and held-out manifests overlap in projects")
     nested = []
@@ -158,6 +161,7 @@ def evaluate(train_workflows: list[Path], heldout_workflows: Path) -> dict:
     gates, evidence = select_bins(project_oof(train))
     heldout_predictions = apply_bins(forecast(train, heldout), gates)
     return {
+        "notice_source": notice_source,
         "status": "read_only_nested_project_holdout_not_action_eligible",
         "training_projects": sorted(train_projects),
         "heldout_projects": metadata["frozen_projects"],
@@ -191,11 +195,17 @@ def main() -> None:
         "--train-workflows", type=Path, action="append", required=True,
     )
     parser.add_argument("--heldout-workflows", type=Path, required=True)
+    parser.add_argument(
+        "--notice-source", choices=("shadow", "llm_result"), default="shadow",
+    )
     parser.add_argument("--output", type=Path, required=True)
     args = parser.parse_args()
     if args.output.exists():
         raise FileExistsError(args.output)
-    result = evaluate(args.train_workflows, args.heldout_workflows)
+    result = evaluate(
+        args.train_workflows, args.heldout_workflows,
+        notice_source=args.notice_source,
+    )
     args.output.parent.mkdir(parents=True, exist_ok=True)
     args.output.write_text(
         json.dumps(result, indent=2, sort_keys=True, allow_nan=False) + "\n",

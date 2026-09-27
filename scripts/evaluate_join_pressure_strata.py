@@ -80,9 +80,11 @@ def attach_asof(
     return rows, dict(skipped)
 
 
-def load(workflows: Path) -> tuple[list[dict], dict]:
+def load(
+    workflows: Path, *, notice_source: str = "shadow",
+) -> tuple[list[dict], dict]:
     ids, errors = require_complete_batch(workflows)
-    groups, counts = collect(workflows, notice_source="shadow")
+    groups, counts = collect(workflows, notice_source=notice_source)
     if {row["task_id"] for row in groups} - set(ids):
         raise ValueError("JOIN trace outside frozen batch manifest")
     metrics_path = workflows.parent / "sglang_metrics.jsonl"
@@ -90,6 +92,7 @@ def load(workflows: Path) -> tuple[list[dict], dict]:
         metrics = [json.loads(line) for line in stream if line.strip()]
     rows, skipped = attach_asof(groups, metrics, batch=str(workflows.parent))
     return rows, {
+        "notice_source": notice_source,
         "frozen_workflows": len(ids),
         "frozen_projects": sorted({
             task.split("__", 1)[0] for task in ids
@@ -282,14 +285,17 @@ def summarize_online(rows: list[dict]) -> dict:
     }
 
 
-def evaluate(train_workflows: list[Path], heldout_workflows: Path | None) -> dict:
+def evaluate(
+    train_workflows: list[Path], heldout_workflows: Path | None,
+    *, notice_source: str = "shadow",
+) -> dict:
     if not train_workflows or len({
         path.resolve() for path in train_workflows
     }) != len(train_workflows):
         raise ValueError("training batches must be nonempty and distinct")
     train, train_sources = [], {}
     for workflows in train_workflows:
-        rows, source = load(workflows)
+        rows, source = load(workflows, notice_source=notice_source)
         train.extend(rows)
         train_sources[str(workflows)] = source
     projects = sorted({row["project"] for row in train})
@@ -328,6 +334,7 @@ def evaluate(train_workflows: list[Path], heldout_workflows: Path | None) -> dic
             },
         }
     report = {
+        "notice_source": notice_source,
         "status": "train_only_pressure_join_clock_not_action_eligible",
         "training_projects": projects,
         "train_sources": train_sources,
@@ -347,7 +354,8 @@ def evaluate(train_workflows: list[Path], heldout_workflows: Path | None) -> dic
         },
         "train_loo_folds": folds,
         "scope": (
-            "The earliest all-member early notice is scored only for a natural "
+            "The earliest all-member notice of the recorded source is scored "
+            "only for a natural "
             "complete JOIN. Metrics must precede the trigger by at most 2 s. "
             "Four pressure strata are fixed before scoring, and unsupported "
             "strata back off to their queue family or the task-balanced global "
@@ -362,7 +370,7 @@ def evaluate(train_workflows: list[Path], heldout_workflows: Path | None) -> dic
         ),
     }
     if heldout_workflows is not None:
-        heldout, source = load(heldout_workflows)
+        heldout, source = load(heldout_workflows, notice_source=notice_source)
         if {
             project
             for item in train_sources.values()
@@ -399,11 +407,17 @@ def main() -> None:
         "--train-workflows", type=Path, action="append", required=True,
     )
     parser.add_argument("--heldout-workflows", type=Path)
+    parser.add_argument(
+        "--notice-source", choices=("shadow", "llm_result"), default="shadow",
+    )
     parser.add_argument("--output", type=Path, required=True)
     args = parser.parse_args()
     if args.output.exists():
         raise FileExistsError(args.output)
-    report = evaluate(args.train_workflows, args.heldout_workflows)
+    report = evaluate(
+        args.train_workflows, args.heldout_workflows,
+        notice_source=args.notice_source,
+    )
     args.output.parent.mkdir(parents=True, exist_ok=True)
     args.output.write_text(
         json.dumps(report, indent=2, sort_keys=True, allow_nan=False) + "\n",

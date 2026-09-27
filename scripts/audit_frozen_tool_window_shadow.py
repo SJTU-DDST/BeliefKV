@@ -23,7 +23,9 @@ from scripts.evaluate_cold_tool_project_loo import require_complete_batch
 from scripts.evaluate_cold_tool_structure_holdout import _paired_long_gain
 
 
-def audit(run_dir: Path, *, artifact: Path) -> dict:
+def audit(
+    run_dir: Path, *, artifact: Path, training_replay: bool = False,
+) -> dict:
     workloads = run_dir / "intent_workloads"
     workflows = workloads / "workflows"
     expected, errors = require_complete_batch(workflows)
@@ -48,9 +50,11 @@ def audit(run_dir: Path, *, artifact: Path) -> dict:
     ):
         raise ValueError("run does not use the requested isolated shadow artifact")
     head = FrozenToolWindowShadow(artifact)
-    if head.training_projects & {
-        name.split("__", 1)[0] for name in expected
-    }:
+    run_projects = {name.split("__", 1)[0] for name in expected}
+    if training_replay:
+        if not run_projects <= head.training_projects:
+            raise ValueError("training replay contains projects outside the artifact")
+    elif head.training_projects & run_projects:
         raise ValueError("training and heldout projects overlap")
     first_inputs = set()
     actual_windows = set()
@@ -236,12 +240,16 @@ def audit(run_dir: Path, *, artifact: Path) -> dict:
             ], .5),
         }
     return {
-        "status": "project_disjoint_live_100ms_shadow_not_action_eligible",
+        "status": (
+            "training_replay_live_100ms_shadow_not_action_eligible"
+            if training_replay else
+            "project_disjoint_live_100ms_shadow_not_action_eligible"
+        ),
+        "evaluation_scope": "training_replay" if training_replay else "project_holdout",
         "artifact_sha256": head.artifact_sha256,
         "training_projects": sorted(head.training_projects),
-        "heldout_projects": sorted({
-            name.split("__", 1)[0] for name in expected
-        }),
+        "run_projects": sorted(run_projects),
+        "heldout_projects": None if training_replay else sorted(run_projects),
         "frozen_workflows": len(expected),
         "first_cold_inputs": len(first_inputs),
         "actual_start_to_return_600ms_windows": len(actual_windows),
@@ -272,10 +280,17 @@ def main() -> None:
     parser.add_argument("--run-dir", type=Path, required=True)
     parser.add_argument("--artifact", type=Path, required=True)
     parser.add_argument("--output", type=Path, required=True)
+    parser.add_argument(
+        "--training-replay", action="store_true",
+        help="Audit repeated training projects without claiming project holdout.",
+    )
     args = parser.parse_args()
     if args.output.exists():
         raise FileExistsError(args.output)
-    report = audit(args.run_dir, artifact=args.artifact)
+    report = audit(
+        args.run_dir, artifact=args.artifact,
+        training_replay=args.training_replay,
+    )
     args.output.parent.mkdir(parents=True, exist_ok=True)
     args.output.write_text(
         json.dumps(report, indent=2, sort_keys=True, allow_nan=False) + "\n",

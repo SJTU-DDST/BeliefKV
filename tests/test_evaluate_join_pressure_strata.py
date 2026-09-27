@@ -84,7 +84,7 @@ def test_no_single_project_can_supply_pressure_stratum():
 def test_heldout_manifest_project_is_rejected_even_without_natural_joins(
     monkeypatch, tmp_path,
 ):
-    def fake_load(path):
+    def fake_load(path, *, notice_source="shadow"):
         if path.name == "train":
             return [
                 _row(project, i, 1000, "idle")
@@ -98,6 +98,26 @@ def test_heldout_manifest_project_is_rejected_even_without_natural_joins(
     )
     with pytest.raises(ValueError, match="manifests overlap"):
         evaluate([tmp_path / "train"], tmp_path / "heldout")
+
+
+def test_notice_source_is_shared_by_all_project_folds(monkeypatch, tmp_path):
+    seen = []
+
+    def fake_load(path, *, notice_source="shadow"):
+        seen.append((path.name, notice_source))
+        return [
+            _row(project, 1, 1000, "idle")
+            for project in ("one", "two", "three")
+        ], {"frozen_projects": ["one", "two", "three"]}
+
+    monkeypatch.setattr(
+        "scripts.evaluate_join_pressure_strata.load", fake_load,
+    )
+    result = evaluate(
+        [tmp_path / "train"], None, notice_source="llm_result",
+    )
+    assert result["notice_source"] == "llm_result"
+    assert seen == [("train", "llm_result")]
 
 
 def test_online_history_uses_only_completed_other_workflows_in_same_batch_and_bin():

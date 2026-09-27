@@ -142,3 +142,24 @@ def test_audit_rejects_stale_signal_and_timer_mismatch(tmp_path, monkeypatch):
     summary.write_text(json.dumps(data))
     with pytest.raises(ValueError, match="timer accounting"):
         audit(root, artifact=artifact)
+
+
+def test_training_replay_is_explicit_and_never_project_holdout(
+    tmp_path, monkeypatch,
+):
+    root, artifact = _batch(tmp_path, [("success", 900)])
+    head = _FakeHead()
+    head.training_projects = frozenset({"sphinx-doc"})
+    monkeypatch.setattr(
+        "scripts.audit_frozen_tool_window_shadow.FrozenToolWindowShadow",
+        lambda _path: head,
+    )
+    with pytest.raises(ValueError, match="projects overlap"):
+        audit(root, artifact=artifact)
+    report = audit(root, artifact=artifact, training_replay=True)
+    assert report["evaluation_scope"] == "training_replay"
+    assert report["status"] == "training_replay_live_100ms_shadow_not_action_eligible"
+    assert report["run_projects"] == ["sphinx-doc"]
+    head.training_projects = frozenset({"django"})
+    with pytest.raises(ValueError, match="outside the artifact"):
+        audit(root, artifact=artifact, training_replay=True)

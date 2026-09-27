@@ -37,6 +37,22 @@ def test_queue_clock_fails_closed_on_heldout_project_overlap():
         predict(train, [_row("a", 11, 40, 6000)])
 
 
+def test_terminal_notice_does_not_inherit_early_notice_eta_floor():
+    train = [
+        _row(project, index, 20 + index * 3, 125 + index * 3)
+        for project in ("a", "b", "c")
+        for index in range(5)
+    ]
+    target = [_row("heldout", 1, 25, 130)]
+    early, _ = predict(train, target)
+    terminal, model = predict(train, target, min_eta_ms=0.)
+    assert early[0]["queue_clock_eta_ms"] == 500.
+    assert 0 < terminal[0]["queue_clock_eta_ms"] < 500.
+    assert model["min_eta_ms"] == 0.
+    with pytest.raises(ValueError, match="negative"):
+        predict(train, target, min_eta_ms=-1.)
+
+
 def test_summary_clusters_replicated_task_in_bootstrap():
     rows = [{
         **_row(project, 0, 20, 4000),

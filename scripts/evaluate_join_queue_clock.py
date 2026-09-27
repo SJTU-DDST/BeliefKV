@@ -55,8 +55,10 @@ def fit_queue_clock(rows: list[dict]) -> tuple[float, float] | None:
 
 
 def predict(
-    train: list[dict], test: list[dict],
+    train: list[dict], test: list[dict], *, min_eta_ms: float = 500.,
 ) -> tuple[list[dict], dict]:
+    if min_eta_ms < 0:
+        raise ValueError("negative JOIN ETA floor")
     if {row["project"] for row in train} & {
         row["project"] for row in test
     }:
@@ -69,7 +71,9 @@ def predict(
         eta = row["selective_eta_ms"]
         if row["pressure_bin"] == "heavy_queue" and model is not None:
             intercept, slope = model
-            eta = min(600_000., max(500., intercept + slope * row["queued"]))
+            eta = min(
+                600_000., max(min_eta_ms, intercept + slope * row["queued"]),
+            )
         predictions.append({
             **row, "queue_clock_eta_ms": eta,
             "queue_clock_applied": (
@@ -77,6 +81,7 @@ def predict(
             ),
         })
     return predictions, {
+        "min_eta_ms": min_eta_ms,
         "selected_pressure_gates": sorted(gates),
         "gate_evidence": evidence,
         "queue_intercept_ms": model[0] if model else None,
@@ -128,14 +133,17 @@ def summarize(rows: list[dict]) -> dict:
     }
 
 
-def evaluate(train_workflows: list[Path], heldout_workflows: Path | None) -> dict:
+def evaluate(
+    train_workflows: list[Path], heldout_workflows: Path | None,
+    *, notice_source: str = "shadow",
+) -> dict:
     if not train_workflows or len({
         path.resolve() for path in train_workflows
     }) != len(train_workflows):
         raise ValueError("training batches must be nonempty and distinct")
     train, sources, projects = [], {}, set()
     for workflows in train_workflows:
-        rows, metadata = load(workflows)
+        rows, metadata = load(workflows, notice_source=notice_source)
         train.extend(rows)
         sources[str(workflows)] = metadata
         projects.update(metadata["frozen_projects"])
@@ -144,14 +152,17 @@ def evaluate(train_workflows: list[Path], heldout_workflows: Path | None) -> dic
         raise ValueError("nested project holdout needs four training projects")
     folds = []
     models = {}
+    min_eta_ms = 0. if notice_source == "llm_result" else 500.
     for project in project_rows:
         predictions, model = predict(
             [row for row in train if row["project"] != project],
             [row for row in train if row["project"] == project],
+            min_eta_ms=min_eta_ms,
         )
         folds.extend(predictions)
         models[project] = model
     result = {
+        "notice_source": notice_source,
         "status": "read_only_nested_project_holdout_not_action_eligible",
         "training_projects": sorted(projects),
         "training_sources": sources,
@@ -177,10 +188,14 @@ def evaluate(train_workflows: list[Path], heldout_workflows: Path | None) -> dic
         ),
     }
     if heldout_workflows is not None:
-        heldout, metadata = load(heldout_workflows)
+        heldout, metadata = load(
+            heldout_workflows, notice_source=notice_source,
+        )
         if projects & set(metadata["frozen_projects"]):
             raise ValueError("training and held-out manifests overlap in projects")
-        scored, model = predict(train, heldout)
+        scored, model = predict(
+            train, heldout, min_eta_ms=min_eta_ms,
+        )
         result["status"] = "project_disjoint_development_not_action_eligible"
         result["heldout_source"] = metadata
         result["heldout_model"] = model
@@ -197,11 +212,17 @@ def main() -> None:
         "--train-workflows", type=Path, action="append", required=True,
     )
     parser.add_argument("--heldout-workflows", type=Path)
+    parser.add_argument(
+        "--notice-source", choices=("shadow", "llm_result"), default="shadow",
+    )
     parser.add_argument("--output", type=Path, required=True)
     args = parser.parse_args()
     if args.output.exists():
         raise FileExistsError(args.output)
-    result = evaluate(args.train_workflows, args.heldout_workflows)
+    result = evaluate(
+        args.train_workflows, args.heldout_workflows,
+        notice_source=args.notice_source,
+    )
     args.output.parent.mkdir(parents=True, exist_ok=True)
     args.output.write_text(
         json.dumps(result, indent=2, sort_keys=True, allow_nan=False) + "\n",

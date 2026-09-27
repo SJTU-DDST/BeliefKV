@@ -56,7 +56,7 @@ def test_inner_holdout_gate_does_not_read_outer_project():
 
 
 def test_heldout_manifest_overlap_rejected_before_fitting(monkeypatch, tmp_path):
-    def fake_load(path):
+    def fake_load(path, *, notice_source="shadow"):
         return (
             [_row("train", i, 1200, "idle") for i in range(8)]
             if path.name == "train" else [],

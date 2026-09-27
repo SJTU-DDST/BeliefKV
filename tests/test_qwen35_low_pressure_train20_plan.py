@@ -38,5 +38,6 @@ def test_low_pressure_training_tasks_are_frozen_and_balanced():
     assert set(ids) <= frozen
     assert "CLIENT_CONCURRENCY=4" in script
     assert 'WORKFLOW_DEADLINE_SECONDS="${WORKFLOW_DEADLINE_SECONDS:-7200}"' in script
+    assert "TOOL_WINDOW_AUDIT_MODE=training_replay" in script
     assert "MIN_AVAILABLE_KIB=$((60 * 1024 * 1024))" in script
     subprocess.run(["bash", "-n", str(SCRIPT)], check=True)
