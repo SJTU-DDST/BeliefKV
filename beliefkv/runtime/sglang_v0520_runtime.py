@@ -57,6 +57,7 @@ from beliefkv.runtime.sglang_v0520_physical import (
     shadow_expectation_from_native_op,
 )
 from beliefkv.runtime.sglang_v0520_observer import (
+    normalize_native_creation_time,
     observe_static_full_mamba_headroom,
 )
 from beliefkv.predictor.structured_frontier import LocalFrontierFeatures
@@ -1329,6 +1330,17 @@ class NativeAdmissionRuntime:
             leaves = cache.session_refs.snapshot_session_leaf_anchors(
                 key.session_id, key.session_generation, max_leaves=8
             )
+            if leaves is not None:
+                leaves = tuple(
+                    (
+                        component,
+                        tuple(
+                            (node_id, normalize_native_creation_time(created))
+                            for node_id, created in component_anchors
+                        ),
+                    )
+                    for component, component_anchors in leaves
+                )
         except (AttributeError, KeyError, TypeError, ValueError):
             return None
         if leaves is None or not any(anchors for _, anchors in leaves):

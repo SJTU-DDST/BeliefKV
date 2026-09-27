@@ -131,3 +131,29 @@ FULL/Mamba 分配没有让这组 8-root 工作流同时保住两池余量；
 自动备份与不可观测闭包在观察结果中尚未充分区分。后续仍需验证 FULL/
 Mamba 身份、Host 预留、ACK/消费闭环，不能仅更改启动参数或将
 已有原生传输重新命名为预测式动作。
+
+## 180 GB / 35:65 / selective / 6-root：准入状态与时间戳类型复查
+
+同一训练清单前 6 项，独立冷启动、自行完成；
+`experiments/raw/qwen35_native_regime_selective_180g_35_65_6root_admission_v2/`。
+此轮已包含 native waiting 状态修复和 `blocked_detail` 观察，
+**不包含**下述创建时间规范化修复。6/6 workflow 有测量资格，
+`successful_workflows=0`，不能计算正确完成吞吐；机会 writer 完整
+（1,701 条样本、无错误），原生遥测无丢失。Host FULL 高水位
+1,429,604/3,076,172 tokens，Mamba 为 1,715/1,818 slots（约 94.3%），
+均无 Host 驱逐；Mamba 余量较窄，不能仅据此认定更高并发也适用。
+FULL/Mamba 的原生 D2H 为 1,429,924 tokens/1,716 slots，
+原生 H2D 为 0 tokens/10 slots；不代表预测动作。
+
+轮转观察中，845 条 `host_backed_step_blocked` 均给出
+`other_selector_invariant`，其中 773 条属于 JOIN wait、71 条属于
+TOOL wait、1 条属于 admission；另有 261 条 `already_device_resident`
+和 595 条 `no_live_session_or_anchors`。这些是重复安全点采样，
+不是 845 个独立请求。排查发现 SGLang 节点创建时间使用
+`numpy.float64`，BeliefKV 选择器与原生单节点 H2D 命令却只接收
+内建 `int/float`；旧只读快照传递原始值，使符合其他门禁的目标
+在选择器前置校验处被拒。现仅在只读闭包和 session anchor 边界将
+有限、非负的 native `float64` 转为等值的内建 `float`，无效值
+继续拒绝；修复有 CPU 回归，但 v2 服务端不含此修改。
+下轮独立冷启动需确认是否出现 `fits_current_free_lists`，
+随后才可做身份/容量安全的真实 H2D canary 和首次服务归因。

@@ -564,6 +564,41 @@ def test_node_closure_captures_only_requested_ancestry() -> None:
     assert not result.physical_actions_supported
 
 
+def test_native_float64_node_creation_time_is_normalized_for_h2d() -> None:
+    cache = _static_cache()
+    root = _node(0)
+    parent = _node(4, root, device=[1, 2])
+    leaf = _node(5, parent, device=[3], mamba_host=True)
+    leaf.component_data[2].value = None
+    for node in (root, parent, leaf):
+        node.creation_time = np.float64(node.creation_time)
+    cache.tree_core = UnifiedTreeCore(
+        node_by_id=lambda node_id: {5: leaf}[node_id]
+    )
+    observed = observe_unified_node_closure(cache, 5)
+    assert observed.observable
+    assert all(type(node.creation_time) is float for node in observed.nodes)
+    anchors = ContextSessionAnchors(
+        key=PrefillCandidateKey("req", "wf", "parent", "ctx", 2, 0, "session", 1),
+        component_leaves=((0, ((5, 15.0),)), (2, ((5, 15.0),))),
+        captured_monotonic_s=1.0,
+    )
+    opportunity = inspect_session_h2d_opportunity(cache, anchors)
+    assert opportunity.step is not None
+    assert opportunity.step.node_id == 5
+    assert type(opportunity.step.creation_time) is float
+    assert opportunity.required_mamba_slots == 1
+
+
+@pytest.mark.parametrize("created", [np.float64("nan"), np.float64("inf"), True])
+def test_node_closure_rejects_invalid_creation_time(created) -> None:
+    cache = _static_cache()
+    node = _node(5)
+    node.creation_time = created
+    cache.tree_core = UnifiedTreeCore(node_by_id=lambda node_id: node)
+    assert not observe_unified_node_closure(cache, 5).observable
+
+
 def test_static_full_mamba_action_closure_uses_real_separate_pool_layout() -> None:
     cache = _static_cache()
     assert not observe_unified_full_mamba(cache).observable

@@ -11,8 +11,24 @@ point for a coherent snapshot; concurrent pool updates are not synchronized.
 from __future__ import annotations
 
 from dataclasses import dataclass
+from math import isfinite
 import operator
 import time
+
+from numpy import float64
+
+
+def normalize_native_creation_time(value: object) -> int | float:
+    """Preserve native node identity in a form accepted by the H2D primitive."""
+    if type(value) is float64:
+        value = float(value)
+    if (
+        type(value) not in (int, float)
+        or value < 0
+        or (type(value) is float and not isfinite(value))
+    ):
+        raise ValueError("invalid native node creation time")
+    return value
 
 
 _UNSUPPORTED = (
@@ -580,7 +596,7 @@ def observe_unified_node_closure(
                 UnifiedNodeSummary(
                     node_id=node.id,
                     parent_id=None if parent is None else parent.id,
-                    creation_time=node.creation_time,
+                    creation_time=normalize_native_creation_time(node.creation_time),
                     full_device_tokens=full_device_tokens,
                     full_host_tokens=full_host_tokens,
                     mamba_device_present=mamba.value is not None,

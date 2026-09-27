@@ -171,6 +171,43 @@ def test_finished_tool_context_keeps_session_anchor_but_rechecks_wait_state():
     ) is None
 
 
+def test_session_anchors_normalize_native_float64_for_physical_step():
+    import numpy as np
+
+    runtime = NativeAdmissionRuntime()
+    tagged = req("a")
+    tagged.session_id = "session-a"
+    tagged.session_generation = 4
+    assert runtime.register_visible_request(tagged)
+    runtime.on_events((
+        event(0, RuntimeEventKind.WORKFLOW_START),
+        event(
+            1, RuntimeEventKind.INVOCATION_CREATE,
+            invocation_id="a", context_id="ctx-a",
+            agent_definition_id="a", agent_instance_id="a",
+        ),
+        event(
+            2, RuntimeEventKind.TOOL_START,
+            invocation_id="a", context_id="ctx-a",
+            attributes={"tool_family": "shell"},
+        ),
+    ))
+    cache = NS(session_refs=NS(
+        snapshot_session_leaf_anchors=lambda *args, **kwargs: (
+            (0, ((11, np.float64(25)),)),
+            (2, ((11, np.float64(25)),)),
+        )
+    ))
+    anchors = runtime.snapshot_session_anchors(
+        cache, context_id="ctx-a", context_epoch=0
+    )
+    assert anchors is not None
+    assert anchors.component_leaves == (
+        (0, ((11, 25.0),)), (2, ((11, 25.0),))
+    )
+    assert type(anchors.component_leaves[0][1][0][1]) is float
+
+
 def test_context_opportunity_requires_live_wait_or_ready_session_epoch():
     runtime = NativeAdmissionRuntime()
     tagged = req("a")
