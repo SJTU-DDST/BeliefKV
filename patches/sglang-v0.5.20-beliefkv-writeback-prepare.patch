@@ -311,10 +311,10 @@ index 7811e44..9630078 100755
          self.session_generation: Optional[int] = None
          self.input_embeds = input_embeds
 diff --git a/python/sglang/srt/managers/scheduler.py b/python/sglang/srt/managers/scheduler.py
-index 743c8af..7a3546c 100644
+index 743c8af..1816cb0 100644
 --- a/python/sglang/srt/managers/scheduler.py
 +++ b/python/sglang/srt/managers/scheduler.py
-@@ -725,9 +725,136 @@ class Scheduler(
+@@ -725,9 +725,139 @@ class Scheduler(
  
          self.init_rank_consensus_checker()
  
@@ -446,12 +446,15 @@ index 743c8af..7a3546c 100644
 +            telemetry.on_native_transfer_commit(commit)
 +        runtime = self.beliefkv_runtime
 +        if runtime is not None:
-+            runtime.on_native_transfer_commit(commit)
++            completed = runtime.on_native_transfer_commit(commit)
++            if telemetry is not None and completed:
++                for action in completed:
++                    telemetry.on_verified_action_ack(action)
 +
      def init_startup_timing_begin(self) -> None:
          self.scheduler_startup_begin = time.perf_counter()
  
-@@ -2789,6 +2916,7 @@ class Scheduler(
+@@ -2789,6 +2919,7 @@ class Scheduler(
                  dllm_config=self.dllm_config,
                  time_stats=recv_req.time_stats,
                  multi_item_delimiter_indices=recv_req.multi_item_delimiter_indices,
@@ -459,7 +462,7 @@ index 743c8af..7a3546c 100644
              )
              req.tokenizer = self.tokenizer
  
-@@ -3190,6 +3318,33 @@ class Scheduler(
+@@ -3190,6 +3321,33 @@ class Scheduler(
          self._retry_storage_prefetch(req)
          return True
  
@@ -493,7 +496,7 @@ index 743c8af..7a3546c 100644
      def _add_request_to_queue(self, req: Req, is_retracted: bool = False):
          if not self._set_or_validate_priority(req):
              return
-@@ -3200,6 +3355,12 @@ class Scheduler(
+@@ -3200,6 +3358,12 @@ class Scheduler(
          if self.disaggregation_mode == DisaggregationMode.NULL:
              if self._abort_on_queued_limit(req):
                  return
@@ -506,7 +509,7 @@ index 743c8af..7a3546c 100644
              self._prefetch_kvcache(req)
              self.waiting_queue.append(req)
              req.time_stats.set_wait_queue_entry_time()
-@@ -3281,6 +3442,7 @@ class Scheduler(
+@@ -3281,6 +3445,7 @@ class Scheduler(
                  direction * recv_req.priority < direction * candidate_req.priority
              )
              if abort_existing_req:
@@ -514,7 +517,7 @@ index 743c8af..7a3546c 100644
                  self._release_aborted_request(candidate_req)
                  self.waiting_queue.pop(idx)
                  self.beam_coordinator.retire_group(candidate_req)
-@@ -3558,12 +3720,76 @@ class Scheduler(
+@@ -3558,12 +3723,76 @@ class Scheduler(
              if self.enable_hicache_storage:
                  self._process_storage_prefetch_retries()
  
@@ -591,7 +594,7 @@ index 743c8af..7a3546c 100644
  
          if self.enable_fpm:
              self._fpm_batch_t0 = time.monotonic()
-@@ -3647,6 +3873,13 @@ class Scheduler(
+@@ -3647,6 +3876,13 @@ class Scheduler(
              if running_batch.is_empty():
                  running_batch.batch_is_full = False
  
@@ -605,7 +608,7 @@ index 743c8af..7a3546c 100644
          if self.dllm_config is not None:
              new_batch = self.get_new_batch_dllm(running_batch)
          elif self._should_defer_prefill():
-@@ -3705,6 +3938,8 @@ class Scheduler(
+@@ -3705,6 +3941,8 @@ class Scheduler(
              if self.enable_fpm:
                  ret.fpm_start_time = self._fpm_batch_t0
  
@@ -614,7 +617,7 @@ index 743c8af..7a3546c 100644
          return NextBatchPlan(batch_to_run=ret, running_batch=running_batch)
  
      def get_num_allocatable_reqs(
-@@ -3754,6 +3989,50 @@ class Scheduler(
+@@ -3754,6 +3992,50 @@ class Scheduler(
  
          return NextBatchPlan(batch_to_run=ret, running_batch=running_batch)
  
@@ -665,7 +668,7 @@ index 743c8af..7a3546c 100644
      def _get_new_batch_prefill_raw(
          self,
          prefill_delayer_single_pass: Optional[PrefillDelayerSinglePassExecutor],
-@@ -3871,7 +4150,7 @@ class Scheduler(
+@@ -3871,7 +4153,7 @@ class Scheduler(
              mamba_allocator.alloc_group_begin(len(self.waiting_queue))
          buffer_pipeline = self.tree_cache.buffer_pipeline
          # Get requests from the waiting queue to a new prefill batch
@@ -674,7 +677,7 @@ index 743c8af..7a3546c 100644
              if self.enable_lora and not self.can_schedule_lora_req(req, running_loras):
                  continue
  
-@@ -3897,6 +4176,12 @@ class Scheduler(
+@@ -3897,6 +4179,12 @@ class Scheduler(
                  ):
                      break
  
@@ -687,7 +690,7 @@ index 743c8af..7a3546c 100644
              if self.enable_hicache_storage:
                  prefetch_done = self.tree_cache.check_prefetch_progress(
                      req.cache_request_handle
-@@ -3932,6 +4217,10 @@ class Scheduler(
+@@ -3932,6 +4220,10 @@ class Scheduler(
                  has_chunked_req=(self.chunked_req is not None),
                  truncation_align_size=self.truncation_align_size,
              )
@@ -698,7 +701,7 @@ index 743c8af..7a3546c 100644
  
              if self.enable_lora:
                  running_loras.add(req.lora_id)
-@@ -4254,6 +4543,9 @@ class Scheduler(
+@@ -4254,6 +4546,9 @@ class Scheduler(
          batch.launch_ts = time.monotonic()
          batch.after_idle_gap = self._sched_idled
          self._sched_idled = False
@@ -708,7 +711,7 @@ index 743c8af..7a3546c 100644
  
          # Accumulate the prefill-token counter used by the HRRN scheduling policy. Decode / prebuilt batches contribute 0.
          if batch.extend_num_tokens:
-@@ -4622,6 +4914,10 @@ class Scheduler(
+@@ -4622,6 +4917,10 @@ class Scheduler(
          elif batch.forward_mode.is_idle():
              self.batch_result_processor.process_batch_result_idle(batch, result)
  
@@ -719,7 +722,7 @@ index 743c8af..7a3546c 100644
          self._record_step_counters(batch, result)
  
          self.metrics_reporter.log_batch_result_stats(batch, result)
-@@ -4634,6 +4930,19 @@ class Scheduler(
+@@ -4634,6 +4933,19 @@ class Scheduler(
          self.maybe_send_health_check_signal()
          self.metrics_reporter.update_device_timer()
  
@@ -739,7 +742,7 @@ index 743c8af..7a3546c 100644
      def _record_step_counters(
          self, batch: ScheduleBatch, result: GenerationBatchResult
      ) -> None:
-@@ -5215,6 +5524,9 @@ class Scheduler(
+@@ -5215,6 +5527,9 @@ class Scheduler(
          }
  
      def abort_request(self, recv_req: AbortReq):
@@ -749,7 +752,7 @@ index 743c8af..7a3546c 100644
          if (chunked_req := self.chunked_req) is not None:
              if recv_req.abort_all or chunked_req.rid.startswith(recv_req.rid):
                  self._pending_chunked_abort_req = chunked_req
-@@ -5369,6 +5681,25 @@ class Scheduler(
+@@ -5369,6 +5684,25 @@ class Scheduler(
                  else:
                      req.to_finish = FINISH_ABORT()
  
@@ -775,7 +778,7 @@ index 743c8af..7a3546c 100644
      def _pause_engine(self) -> Tuple[List[Req], int]:
          raise NotImplementedError()
  
-@@ -5652,6 +5983,16 @@ class Scheduler(
+@@ -5652,6 +5986,16 @@ class Scheduler(
  
      def handle_shutdown(self, recv_req: ShutdownReq):
          # Break the event loop; the finally in run_scheduler_process releases resources.
@@ -2474,10 +2477,10 @@ index 0000000..a8a2ead
 +    unittest.main()
 diff --git a/test/srt/test_beliefkv_scheduler_hook.py b/test/srt/test_beliefkv_scheduler_hook.py
 new file mode 100644
-index 0000000..ae81704
+index 0000000..8e5f10b
 --- /dev/null
 +++ b/test/srt/test_beliefkv_scheduler_hook.py
-@@ -0,0 +1,622 @@
+@@ -0,0 +1,646 @@
 +"""BeliefKV scheduler safe-point contract, without model/GPU dependencies."""
 +
 +import ast
@@ -2604,6 +2607,30 @@ index 0000000..ae81704
 +        scheduler._native_reactive_telemetry = None
 +        scheduler._beliefkv_on_native_transfer_commit(event)
 +        self.assertEqual(calls[-1], ("ledger", event))
++
++    def test_only_ledger_verified_actions_get_an_action_ack_record(self):
++        scheduler = Hook()
++        calls = []
++        action = object()
++        scheduler._native_reactive_telemetry = SimpleNamespace(
++            on_native_transfer_commit=lambda event: calls.append(("native", event)),
++            on_verified_action_ack=lambda completed: calls.append(("verified", completed)),
++        )
++        scheduler.beliefkv_runtime = SimpleNamespace(
++            on_native_transfer_commit=lambda event: (
++                calls.append(("ledger", event)) or (action,)
++            )
++        )
++        event = object()
++        scheduler._beliefkv_on_native_transfer_commit(event)
++        self.assertEqual(calls, [
++            ("native", event), ("ledger", event), ("verified", action)
++        ])
++        scheduler.beliefkv_runtime.on_native_transfer_commit = (
++            lambda event: calls.append(("rejected", event)) or ()
++        )
++        scheduler._beliefkv_on_native_transfer_commit(event)
++        self.assertEqual(calls[-2:], [("native", event), ("rejected", event)])
 +
 +    def test_admission_observation_telemetry_is_independent_of_reactive(self):
 +        scheduler = Hook()

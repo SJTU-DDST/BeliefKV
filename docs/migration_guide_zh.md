@@ -39,6 +39,8 @@ staging 补丁。canary 不构成正式 predictive A/B 或环境清单的追溯�
 `patches/sglang-v0.5.20-beliefkv-writeback-prepare.patch` 是隔离工作树
 生成的下一版完整补丁，额外允许 native write-back tree 的单节点
 非驱逐 PREPARE；Host 空间不足直接拒绝，已通过 CPU 回归。
+此版本还将经过 BeliefKV 物理账本核对的动作 ACK 单独写入
+`physical_action_ack.jsonl`，不把原生迁移的汇总 ACK 当作已验证动作。
 它尚未接入正在运行的服务或启动器，不可将当前实验归因于该改动，
 也不能把补丁存在视为 PREPARE 的物理消费已验证。
 `third_party/sglang-v0.5.20` 是被忽略的 checkout，迁移到新机器时在
