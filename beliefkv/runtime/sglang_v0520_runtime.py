@@ -2173,10 +2173,36 @@ class NativeAdmissionRuntime:
             return False
         ticket.drained_for_issued_nodes = ticket.issued_nodes
         self.counts["join_overlap_drain_requested"] += 1
+        if self.enable_confirmed_join_canary and self._opportunity_writer is not None:
+            self._opportunity_writer.record({
+                "event": "confirmed_join_overlap_drain_requested",
+                "ts_ms": time.time() * 1000.0,
+                "join_id": ticket.join_id,
+                "workflow_id": ticket.key.root_workflow_id,
+                "context_id": ticket.key.context_id,
+                "context_epoch": ticket.key.context_epoch,
+                "issued_nodes": ticket.issued_nodes,
+            })
         return True
 
     def on_running_batch_retraction_barrier_drained(self, batch: object) -> None:
         self.counts["join_overlap_drain_completed"] += 1
+        ticket = self._join_ticket
+        if (
+            ticket is not None
+            and self.enable_confirmed_join_canary
+            and self._opportunity_writer is not None
+        ):
+            self._opportunity_writer.record({
+                "event": "confirmed_join_overlap_drain_completed",
+                "ts_ms": time.time() * 1000.0,
+                "join_id": ticket.join_id,
+                "workflow_id": ticket.key.root_workflow_id,
+                "context_id": ticket.key.context_id,
+                "context_epoch": ticket.key.context_epoch,
+                "issued_nodes": ticket.issued_nodes,
+                "ticket_live": self._live_join_ticket(),
+            })
 
     def plan_running_batch_retraction(self, batch: object) -> None:
         return None

@@ -1551,6 +1551,14 @@ def test_confirmed_join_canary_is_bounded_without_predictor(tmp_path):
     ]
     assert len(confirmed) == 1
     assert confirmed[0]["join_id"] == "join"
+    assert sum(
+        row["event"] == "confirmed_join_overlap_drain_requested"
+        for row in records
+    ) == 1
+    assert sum(
+        row["event"] == "confirmed_join_overlap_drain_completed"
+        for row in records
+    ) == 1
     assert len(rejected) == 1
     assert rejected[0]["reason"] == "already_device_resident"
     assert rejected[0]["join_id"] == "join"

@@ -102,7 +102,8 @@ child RETURN
 到不了物理动作安全点的问题，新 runtime 在已确认 ticket 上按
 单节点预算至多请求一次现有 overlap drain；drain 后继续以原生
 身份、FULL/Mamba 容量与 ACK 门禁核验，不允许在 overlap 未清空
-时发 DMA。该修复仅有 CPU 回归，仍需在下一轮 GPU canary 中确认
+时发 DMA。新审计分别记录 drain 请求和抵达安全点，便于定位
+ticket 过期与动作未下发。该修复仅有 CPU 回归，仍需在下一轮 GPU canary 中确认
 实际 drain、预测性物理 H2D 及首次服务的 KV 复用。
 
 目前 Qwen3.5 的 `online_eligible=false`、
