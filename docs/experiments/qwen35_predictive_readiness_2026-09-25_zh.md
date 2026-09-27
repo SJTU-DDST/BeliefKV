@@ -6730,3 +6730,55 @@ ETA 绝对误差中位约 195 ms；但它们
 占全部预测事件的比例。即使总体
 精度很好，只要独立 workflow 覆盖不足
 或严重集中，也不能打开预测动作门禁。
+
+### Astropy8 完整批次的终局复核与低压训练补样
+
+`qwen35_tool_window_astropy8_online_20260927_v1`
+自然结束后，8/8 workflow 写出 completed、
+measurement_valid=true，全部满足 JOIN，
+没有 child cancel。`astropy__astropy-14598`
+有 4 个 child RETURN 和一次 JOIN_SATISFIED，
+但其中一个 child 因 graph step 逼近硬上限
+被强制 FINALIZE，报告为 blocked；该 workflow
+有两次 graph-budget finalization。因此它不
+提供自然完整 JOIN 标签：早期全组通知没有
+合格候选，最终通知的候选为 censored，
+不能将 8/8 JOIN 满足写成 8 个自然标签。
+
+冻结工具审计识别 535 个首次冷输入，其中
+191 个实际总时长至少 600 ms；仅 16 个
+首次输入被投递，全部来自
+`astropy__astropy-14598`，占观测的 100%。
+这 16 个均自然留有至少 500 ms 的剩余窗口，
+选中样本的 ETA 绝对误差 P50 约 192 ms、
+P90 约 2145 ms；由于只有一个 workflow，
+不能证明项目隔离精度或泛化覆盖。训练规则
+的因果在线历史回放额外选中 5/5 个真窗口，
+但仅分布于两个 workflow，ETA 增益仍无
+足够独立样本证明显著性。独立文件见该批
+`intent_frozen_tool_window_audit.json` 和
+`tool_window_online_history_train128_dev_20260927.json`。
+
+7 个自然完整 JOIN 的早期全组通知均至少
+提前 500 ms，中位提前约 4.98 秒；最终
+LLM_RESULT 到 JOIN 的中位提前量约 162 ms，
+0/7 达到 500 ms。高压训练侧全局先验在
+这七个低压开发样本上的误差 P50 约 49.4 秒；
+只读压力分层降为约 1.57 秒，仍是 0/7
+落在 500 ms 内；因果同档历史降为约
+1.37 秒，只有 2/7 落在 500 ms 内。
+Astropy 已参与策略开发，这些数字不是新的
+密封测试结果，更不是物理 H2D 或首次服务收益。
+两阶段及压力报告分别为同目录下的
+`join_two_stage_train128_dev_20260927.json` 和
+`join_pressure_strata_train_mixed_dev_20260927.json`。
+
+下一步用冻结的 20 个训练项目任务、同模型和
+硬件配置、客户端并发 4 补采低压样本；此批
+只扩充训练分层，按 workflow 聚类，不参与
+项目隔离验收。入口
+`scripts/run_qwen35_low_pressure_tool_join_train20.sh`
+固定 manifest 哈希和任务集合，root 共享
+截止默认 7200 秒；必须待批次自然结束后
+检查终态、guard 删失及事件身份，再选择
+仍未参与任何规则开发的独立项目做最终评价。
