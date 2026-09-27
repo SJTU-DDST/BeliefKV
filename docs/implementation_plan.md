@@ -35,12 +35,13 @@ and no FULL H2D targets among its 995 free-list-fitting observations.
 Neither is the FULL-transfer primary workload. Deduplicate sampled session
 observations by physical target/epoch before estimating opportunities.
 
-## Objective
+## Objective (Current Stage)
 
 Establish a defensible Qwen3.5/SGLang v0.5.20 result for selective predictive
 Host backup and GPU restoration in a **low-to-moderate-pressure regime with
-actionable free HBM**: the FULL/Mamba Device pools each have enough *free
-physical capacity for that action's actual requirements*, both Host pools
+actionable free HBM and little useful-KV recomputation**: the FULL/Mamba
+Device pools each have enough *free physical capacity for that action's actual
+requirements*, both Host pools
 remain stable, PCIe has a useful transfer window, and useful KV is only rarely discarded
 and recomputed. The primary policy does not reclaim Device KV to make room
 for speculative H2D. Cold-KV replacement, joint handoff and high-pressure
@@ -86,6 +87,16 @@ H2D -> ACK -> first-service reuse with measurable synchronous stall saved;
 capacity, liveness or displaced-workflow tail-latency constraints. Native
 transfers, read-only opportunities and early HBM residency alone do not
 complete any later stage.
+
+Stop/redirect criteria: if no train-project configuration has both usable
+targets and low recomputation without Host thrash, report the opportunity
+bound rather than raise load to force migrations. If physical actions occur
+but do not reduce blocking or improve the matched workflow outcome after
+accounting for HBM byte-time and other workflows, report that limit rather
+than promote action count as success. Cold-KV replacement, speculative
+victim selection, joint handoff and high-pressure eviction optimization are
+future experiments, not dependencies of this stage. Keep high pressure only
+as an abstention/safety boundary.
 
 Current boundary: the 14-root write-back scan is a *candidate for stage 1*,
 not proof of stage 2 or 3. Its 14 distinct H2D nodes (13 with missing FULL
