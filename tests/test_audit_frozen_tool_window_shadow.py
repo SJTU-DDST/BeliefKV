@@ -104,6 +104,19 @@ def test_audit_reports_selected_success_and_error_without_physical_claim(
     }
     assert report["by_status"]["success"]["true_remaining_500ms"] == 1
     assert report["by_status"]["error"]["true_remaining_500ms"] == 0
+    assert report["observed_workflows"] == 2
+    assert report["largest_workflow_observation_share"] == .5
+    assert report["by_workflow"]["sphinx-doc__0"] == {
+        "first_cold_inputs": 1,
+        "actual_start_to_return_600ms_windows": 1,
+        "selected_starts": 1,
+        "observed": 1,
+        "true_remaining_500ms": 1,
+        "eta_p50_absolute_error_ms": 400.,
+    }
+    assert report["by_workflow"]["sphinx-doc__1"][
+        "actual_start_to_return_600ms_windows"
+    ] == 0
     assert report["by_status"]["success"][
         "paired_eta_gain_vs_global"]["paired_positive_95pct"
     ] is False

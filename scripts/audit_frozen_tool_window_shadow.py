@@ -4,7 +4,7 @@
 from __future__ import annotations
 
 import argparse
-from collections import Counter
+from collections import Counter, defaultdict
 import json
 import math
 from pathlib import Path
@@ -56,6 +56,7 @@ def audit(run_dir: Path, *, artifact: Path) -> dict:
     actual_windows = set()
     censored = 0
     observed = []
+    selected_by_workflow: Counter[str] = Counter()
     reasons: Counter[str] = Counter()
     other_published = 0
     for instance in expected:
@@ -140,6 +141,7 @@ def audit(run_dir: Path, *, artifact: Path) -> dict:
                 raise ValueError(f"unselected tool produced observation: {key}")
             if selected:
                 reasons["selected_starts"] += 1
+                selected_by_workflow[instance] += 1
             if key not in signals:
                 if selected:
                     reasons["selected_without_observation"] += 1
@@ -211,6 +213,28 @@ def audit(run_dir: Path, *, artifact: Path) -> dict:
                 np.asarray([row["eta_ms"] for row in group]),
             ),
         }
+    observed_by_workflow: dict[str, list[dict]] = defaultdict(list)
+    for row in observed:
+        observed_by_workflow[row["workflow"]].append(row)
+    by_workflow = {}
+    for instance in expected:
+        group = observed_by_workflow[instance]
+        by_workflow[instance] = {
+            "first_cold_inputs": sum(
+                key[0] == instance for key in first_inputs
+            ),
+            "actual_start_to_return_600ms_windows": sum(
+                key[0] == instance for key in actual_windows
+            ),
+            "selected_starts": selected_by_workflow[instance],
+            "observed": len(group),
+            "true_remaining_500ms": sum(
+                row["lead_ms"] >= 500 for row in group
+            ),
+            "eta_p50_absolute_error_ms": _quantile([
+                abs(row["duration_ms"] - row["eta_ms"]) for row in group
+            ], .5),
+        }
     return {
         "status": "project_disjoint_live_100ms_shadow_not_action_eligible",
         "artifact_sha256": head.artifact_sha256,
@@ -223,6 +247,14 @@ def audit(run_dir: Path, *, artifact: Path) -> dict:
         "actual_start_to_return_600ms_windows": len(actual_windows),
         "right_censored_first_inputs": censored,
         "counts": dict(sorted(reasons.items())),
+        "by_workflow": dict(sorted(by_workflow.items())),
+        "observed_workflows": sum(
+            bool(group) for group in observed_by_workflow.values()
+        ),
+        "largest_workflow_observation_share": (
+            max(len(group) for group in observed_by_workflow.values())
+            / len(observed) if observed else None
+        ),
         "by_status": by_status,
         "timer": timer,
         "limitation": (
