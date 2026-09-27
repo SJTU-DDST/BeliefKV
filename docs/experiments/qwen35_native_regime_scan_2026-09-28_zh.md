@@ -261,3 +261,33 @@ KV。抽样不是全量机会分母，也不证明迁移发生在有利的时间
 `write_back` 模式，同时保留 session/epoch、祖先闭包、无 Device
 回收和原生 ACK 校验；并未放行 write-back PREPARE。这项改动有
 CPU 回归，但本轮服务启动早于改动，不是物理预测闭环证据。
+
+## 200 GB / 25:75 / write-back / 12-root：Host 稳定但缺少 H2D 目标
+
+同一训练清单前 12 项独立冷启动，running=48，
+`experiments/raw/qwen35_native_regime_writeback_200g_25_75_12root_v1/`
+留下 12/12 workflow 结果，其中 11 条符合 native-agent JCT 测量条件；
+独立任务评分尚缺。Host FULL/Mamba 高水位分别约为
+25.64/85.32 GB，两个池均未发生 Host 驱逐。3,018 条有界
+H2D 机会观察中，2,387 条为 `already_device_resident`，
+631 条没有有效 session/anchor，没有一条 Host-backed、
+缺 Device 且可装入的目标。逐请求 Host 命中和原生 H2D ACK
+均为零。这轮支持 Host 稳定一侧的边界，但不符合主场景的
+物理机会门槛；`successful_workflows=0` 使用旧结构化自报门禁，
+不能代替独立任务评分。
+
+服务端和机会 writer 都已关闭且未报告写入错误；只清理了此轮
+55 个可重建的 `workspace` 目录，保留轨迹、结果、日志、
+原生迁移和 Host 遥测。下一档在同配置、同清单下测试
+14-root，分别核对可装入的 FULL/Mamba 物理节点、Host
+驱逐后重算及传输 ACK，不能仅凭采样次数判断收益。
+
+14-root 首次启动在正式模型加载前被 staging 补丁指纹检查拒绝，
+`...14root_v1/` 仅含失败日志，没有 workload 数据。为了保留
+旧环境清单和旧补丁的可复现性，`...14root_v2/` 显式使用基于
+同一上游 commit 的 `confirmed_join_canary` 完整补丁；此轮
+**没有打开** canary 动作开关，仍是原生响应式加只读机会采样。
+运行中的快照曾观察到缺 Device 的 FULL 目标且 Host 尚未驱逐，
+只有终态 Host 水位、完整复访和正确性审计才能决定其是否进入
+主场景。两轮 12/14-root 的补丁指纹不同，做正式 A/B 时须用
+同一指纹重新采两臂，不能拿它们直接作吞吐对照。

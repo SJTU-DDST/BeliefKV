@@ -7,6 +7,7 @@ MODEL_PATH="${MODEL_PATH:-/srv/ai/models/Qwen/Qwen3.5-35B-A3B}"
 SERVED_MODEL_NAME="${SERVED_MODEL_NAME:-Qwen3.5-35B-A3B}"
 PYTHON="${PYTHON:-/home/longhao/miniconda3/envs/beliefkv-next/bin/python}"
 SGLANG_SOURCE_CHECKOUT="${SGLANG_SOURCE_CHECKOUT:-}"
+SGLANG_PATCH_FLAVOR="${SGLANG_PATCH_FLAVOR:-staging}"
 HOST="${HOST:-127.0.0.1}"
 PORT="${PORT:-18000}"
 MEM_FRACTION_STATIC="${MEM_FRACTION_STATIC:-0.90}"
@@ -115,8 +116,21 @@ if [[ -n "${SGLANG_SOURCE_CHECKOUT}" ]]; then
     printf 'Expected patched v0.5.20 checkout: %s\n' "${SGLANG_SOURCE_CHECKOUT}" >&2
     exit 2
   fi
-  git -C "${SGLANG_SOURCE_CHECKOUT}" apply --reverse --check \
-    "${BELIEFKV_ROOT}/patches/sglang-v0.5.20-beliefkv-staging.patch"
+  case "${SGLANG_PATCH_FLAVOR}" in
+    staging)
+      sglang_patch="${BELIEFKV_ROOT}/patches/sglang-v0.5.20-beliefkv-staging.patch"
+      ;;
+    confirmed_join_canary)
+      sglang_patch="${BELIEFKV_ROOT}/patches/sglang-v0.5.20-beliefkv-confirmed-join-canary.patch"
+      ;;
+    *)
+      printf 'Unknown SGLang patch flavor: %s\n' "${SGLANG_PATCH_FLAVOR}" >&2
+      exit 2
+      ;;
+  esac
+  git -C "${SGLANG_SOURCE_CHECKOUT}" apply --reverse --check "${sglang_patch}"
+  printf 'SGLang source patch: %s sha256=%s\n' \
+    "${SGLANG_PATCH_FLAVOR}" "$(sha256sum "${sglang_patch}" | cut -d' ' -f1)"
   export PYTHONPATH="${SGLANG_SOURCE_CHECKOUT}/python:${BELIEFKV_ROOT}${PYTHONPATH:+:${PYTHONPATH}}"
   "${PYTHON}" -c \
     'import pathlib,sglang; assert pathlib.Path(sglang.__file__).resolve().is_relative_to(pathlib.Path(__import__("sys").argv[1]).resolve())' \

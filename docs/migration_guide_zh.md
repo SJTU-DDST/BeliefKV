@@ -28,6 +28,14 @@ safe-point hook，并为 cache-mode 原生传输完成加入可选只读通知�
 启用 BeliefKV 会明确失败，因为 unified FULL/MAMBA 的完整 ownership、
 物理 D2H/H2D 动作、ACK 对账、admission 和 selective retraction
 尚未适配。
+冻结的初始环境清单所记 SHA 对应
+`patches/sglang-v0.5.20-beliefkv-env-cc6ee5.patch`；它不是后续持续更新的
+staging 补丁。`patches/sglang-v0.5.20-beliefkv-confirmed-join-canary.patch`
+是基于同一上游 commit 的另一份完整补丁，额外包含仅确认 JOIN、
+最多单节点的开发态 H2D 试验接线，不能与 staging 补丁叠加。
+`SGLANG_PATCH_FLAVOR=confirmed_join_canary` 显式选择后者；启动器照样
+执行反向补丁验证并在服务端日志记录补丁 SHA。未指定时仍检查当前
+staging 补丁。canary 不构成正式 predictive A/B 或环境清单的追溯改写。
 `third_party/sglang-v0.5.20` 是被忽略的 checkout，迁移到新机器时在
 同一上游 commit 上执行 `git apply patches/sglang-v0.5.20-beliefkv-staging.patch`
 （命令工作目录为 checkout，补丁路径应为主仓库的绝对路径）。原生 smoke
