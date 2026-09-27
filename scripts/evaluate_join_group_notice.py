@@ -40,6 +40,14 @@ def _final_result_notice(event: dict) -> bool:
     )
 
 
+def _nonterminal_tool(event: dict) -> bool:
+    return (
+        event["kind"] == "tool_start"
+        and (event.get("attributes") or {}).get("tool_name")
+        not in {"announce_completion_intent", "ChildCompletion"}
+    )
+
+
 def collect(
     workflows: Path, *, notice_source: str = "shadow",
 ) -> tuple[list[dict], dict]:
@@ -196,10 +204,7 @@ def collect(
                     (event.get("attributes") or {}).get("runtime_internal")
                 ):
                     changes.append((when, 0, "revoke", child, event))
-                elif kind == "tool_start" and (
-                    (event.get("attributes") or {}).get("tool_name")
-                    != "announce_completion_intent"
-                ):
+                elif _nonterminal_tool(event):
                     changes.append((when, 0, "revoke", child, event))
             for notice in notices:
                 child = notice.get("invocation_id")
@@ -267,9 +272,8 @@ def collect(
                 and event.get("invocation_id") in pending
                 and not (event.get("attributes") or {}).get("runtime_internal")
                 and (
-                    event["kind"] != "tool_start"
-                    or (event.get("attributes") or {}).get("tool_name")
-                    != "announce_completion_intent"
+                    event["kind"] == "llm_submit"
+                    or _nonterminal_tool(event)
                 )
                 and trigger < float(event["ts_ms"]) < (
                     float(returns[event["invocation_id"]]["ts_ms"])

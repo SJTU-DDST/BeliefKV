@@ -340,6 +340,27 @@ def test_llm_result_notice_is_revoked_on_model_reentry_without_tool(tmp_path):
     assert groups[0]["lead_ms"] is None
 
 
+def test_terminal_child_completion_tool_does_not_revoke_notice(tmp_path):
+    root = tmp_path / "train"
+    _write(root, "django__one", notices=())
+    path = root / "workflows" / "django__one" / "runtime_events.deepagents.jsonl"
+    events = [json.loads(line) for line in path.read_text().splitlines()]
+    final = next(row for row in events if row["kind"] == "llm_result")
+    final["attributes"] = {
+        "tool_call_count": 1,
+        "structured_action_names": ["ChildCompletion"],
+        "output_chars": 0,
+    }
+    events.append({
+        "kind": "tool_start", "invocation_id": "child:django__one:a",
+        "ts_ms": 1796, "attributes": {"tool_name": "ChildCompletion"},
+    })
+    path.write_text("".join(json.dumps(row) + "\n" for row in events))
+    groups, counts = collect(root / "workflows", notice_source="llm_result")
+    assert counts["candidate_natural"] == 1
+    assert groups[0]["lead_ms"] == 5
+
+
 def test_llm_result_prior_uses_only_project_disjoint_training_groups(tmp_path):
     train, heldout = tmp_path / "train", tmp_path / "heldout"
     _write(train, "django__one", notices=())
