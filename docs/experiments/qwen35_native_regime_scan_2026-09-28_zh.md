@@ -183,14 +183,32 @@ JOIN 满足约 76 至 260 秒；尚未证明如此长的提前驻留有净收益
 在训练项目另找 FULL 有效 Host 副本而低重算的负载，同时接入
 独立正确性评分；不可把不合格标签改称“成功”。
 
-## 200 GB / 25:75 / selective / 8-root：文本试采进行中
+## 200 GB / 25:75 / selective / 8-root：Host Mamba 容量边界
 
 首次启动在 VLM 图像 warmup 的 CUDA 图像搬运处 OOM，client 未
 启动，不能作为负载结果。随后在同一计划配置下独立启动
 `experiments/raw/qwen35_native_regime_selective_200g_25_75_8root_text_v2/`，
 服务端显式跳过图像 warmup，仅对真实文本请求进行 native reactive
-和只读机会采样。截至本节记录时进程仍在运行；不根据中途水位断言
-Host 稳定、workflow 正确或 FULL H2D 机会存在。结束后核对 writer
-状态、两池容量/驱逐、物理目标去重、后续实际复用与任务正确性。
+和只读机会采样。6/8 workflow 有完整结果时 Mamba Host 达
+2330/2330 slots，FULL 高水位 1,831,480/2,441,407 tokens。
+此后出现 54 次 Mamba Host 驱逐和 8 次 FULL Host 驱逐，遂中断
+剩余两个 client workflow，并由包装脚本关闭服务端。原生遥测与
+机会 writer 均完整关闭，无记录丢失或写入错误；被中断的工作流
+不能用于正确完成吞吐或完整 JCT。8 次 FULL 驱逐涉及 8,145
+tokens，Mamba 驱逐 54 slots；停止时尚无已确认的驱逐后复访，
+不能推断所有被驱逐内容此后是否会被重算。
+
+2,324 条轮转机会观察中，有 995 条 `fits_current_free_lists`，
+去重 `node_id` 仅 26、49、1932 三个共享 Mamba 节点；它们来自
+32 个 session/generation 观察，不是 995 次独立可迁移机会。
+可装入观察中 FULL 需求一律为零。原生 FULL D2H/H2D 为
+1,840,441/0 tokens，Mamba 为 2,384/26 slots；没有主动预测式
+H2D。该配置既没有 FULL H2D 目标，又已耗尽 Mamba Host，
+不能作为低 Host churn 的主要 A/B 区间。
+
+本轮旧采样只记录节点 ID，不记录创建时间；对共享节点的去重只是
+同一次服务生命周期内的近似，不能替代物理 identity/epoch 证明。
+后续机会日志补记 H2D/PREPARE 的 node 与叶节点创建时间，供
+新运行的保守去重与 stale 判断使用，不追溯改写本轮原始数据。
 如将该配置用于 P5/P6 配对实验，两臂必须采用相同 warmup 设置，
 并验证实际 CUDA graph/运行契约一致。

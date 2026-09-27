@@ -648,6 +648,9 @@ class NativeAdmissionRuntime:
                     "unbacked_mamba_leaves": observation.unbacked_mamba_leaves,
                     "blocked_detail": observation.blocked_detail,
                     "node_id": step.node_id if step else None,
+                    "node_creation_time": step.creation_time if step else None,
+                    "leaf_node_id": step.leaf_node_id if step else None,
+                    "leaf_creation_time": step.leaf_creation_time if step else None,
                     "fits_current_free_lists": observation.fits_current_free_lists,
                 })
             if source in ("tool_wait", "join_wait") and key.session_id is not None:
@@ -700,6 +703,9 @@ class NativeAdmissionRuntime:
                 "insufficient_host_free_lists"
             ),
             "prepare_node_id": step.node_id,
+            "prepare_node_creation_time": step.creation_time,
+            "prepare_leaf_node_id": step.leaf_node_id,
+            "prepare_leaf_creation_time": step.leaf_creation_time,
             "prepare_required_full_tokens": full_needed,
             "prepare_required_mamba_slots": mamba_needed,
             "prepare_host_full_free_tokens": headroom.host_full_free_tokens,

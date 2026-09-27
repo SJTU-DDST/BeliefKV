@@ -282,7 +282,7 @@ def test_safe_point_persists_bounded_wait_and_admission_opportunities(tmp_path):
     )
     opportunity = SessionH2DOpportunity(
         ContextSessionAnchors(key, (), 1.0), headroom,
-        PrefetchLoadStep(key, 11, 1, 11, 1), 20, 1, True,
+        PrefetchLoadStep(key, 11, 2.5, 11, 2.5), 20, 1, True,
         host_backed_full_missing_device_tokens=20,
         host_backed_mamba_missing_device_nodes=1,
         unbacked_full_nodes=0,
@@ -316,7 +316,12 @@ def test_safe_point_persists_bounded_wait_and_admission_opportunities(tmp_path):
     assert by_source["admission_candidate"]["blocked_detail"] == "parent_full_not_device"
     assert by_source["admission_candidate"]["fits_current_free_lists"] is True
     assert by_source["admission_candidate"]["session_generation"] == 2
+    assert by_source["admission_candidate"]["node_id"] == 11
+    assert by_source["admission_candidate"]["node_creation_time"] == 2.5
+    assert by_source["admission_candidate"]["leaf_node_id"] == 11
+    assert by_source["admission_candidate"]["leaf_creation_time"] == 2.5
     assert by_source["tool_wait"]["reason"] == "no_live_session_or_anchors"
+    assert "node_creation_time" not in by_source["tool_wait"]
     assert json.loads((tmp_path / "admission_opportunities_status.json").read_text())[
         "complete"
     ] is True
@@ -362,7 +367,7 @@ def test_wait_prepare_probe_requires_native_prerequisites_and_host_space(
         mamba_device_present=True, mamba_host_present=False,
     )
     candidate = ActionLocalShadowCandidate(anchors, (node,), 20, 1)
-    step = ShadowBackupStep(key, 11, 1, 11, 1)
+    step = ShadowBackupStep(key, 11, 2.5, 11, 2.5)
     headroom = StaticPoolHeadroomObservation(
         True, device_full_free_tokens=200, device_mamba_free_slots=8,
         host_full_free_tokens=10, host_mamba_free_slots=2,
@@ -384,6 +389,9 @@ def test_wait_prepare_probe_requires_native_prerequisites_and_host_space(
                    if row["event"] == "session_h2d_opportunity")
     assert prepare["source"] == source
     assert prepare["prepare_node_id"] == 11
+    assert prepare["prepare_node_creation_time"] == 2.5
+    assert prepare["prepare_leaf_node_id"] == 11
+    assert prepare["prepare_leaf_creation_time"] == 2.5
     assert prepare["prepare_required_full_tokens"] == 20
     assert prepare["prepare_required_mamba_slots"] == 1
     assert prepare["prepare_reason"] == "insufficient_host_free_lists"
