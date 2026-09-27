@@ -1134,7 +1134,7 @@ index 6815679..fc9deaa 100644
      def reset(self) -> None:
          """Drop the entire tree and reinitialize empty state."""
 diff --git a/python/sglang/srt/mem_cache/unified_radix_cache.py b/python/sglang/srt/mem_cache/unified_radix_cache.py
-index d417d7d..c9e081d 100644
+index d417d7d..34af8dd 100644
 --- a/python/sglang/srt/mem_cache/unified_radix_cache.py
 +++ b/python/sglang/srt/mem_cache/unified_radix_cache.py
 @@ -6,7 +6,7 @@ import threading
@@ -1398,7 +1398,7 @@ index d417d7d..c9e081d 100644
              )
              if host_indices is None:
                  return 0
-@@ -1554,6 +1756,129 @@ class UnifiedRadixCache(BasePrefixCache):
+@@ -1554,6 +1756,134 @@ class UnifiedRadixCache(BasePrefixCache):
              written = len(host_indices)
          return written
  
@@ -1422,13 +1422,18 @@ index d417d7d..c9e081d 100644
 +        """
 +        declined = PrefetchGpuNodeResult(False, None)
 +        controller = self.cache_controller
++        write_policy = getattr(controller, "write_policy", None)
 +        if (
 +            self.host_memory_mode != "cache"
 +            or self.buffer_pipeline is not None
 +            or controller is None
 +            or not callable(getattr(controller, "load", None))
-+            or getattr(controller, "write_policy", None)
-+            not in ("write_through", "write_through_selective")
++            or write_policy
++            not in ("write_through", "write_through_selective", "write_back")
++            or (
++                write_policy == "write_back"
++                and getattr(self.tree_core, "is_write_back", False) is not True
++            )
 +            or not self.enable_session_radix_cache
 +            or type(session_id) is not str
 +            or not session_id
@@ -1528,7 +1533,7 @@ index d417d7d..c9e081d 100644
      @staticmethod
      def _backup_publish_node_ids(
          node_id: NodeId, comp_xfers: dict[ComponentType, list[PoolTransfer]]
-@@ -1574,18 +1899,74 @@ class UnifiedRadixCache(BasePrefixCache):
+@@ -1574,18 +1904,74 @@ class UnifiedRadixCache(BasePrefixCache):
              CacheTransferPhase.BACKUP_HOST, kv_xfer, comp_xfers
          )
  
@@ -1605,7 +1610,7 @@ index d417d7d..c9e081d 100644
          )
  
      def _track_write_through_node(
-@@ -1627,10 +2008,10 @@ class UnifiedRadixCache(BasePrefixCache):
+@@ -1627,10 +2013,10 @@ class UnifiedRadixCache(BasePrefixCache):
              updated_node_ids,
          )
  
@@ -1618,7 +1623,7 @@ index d417d7d..c9e081d 100644
  
          lock_node_id, lock_params, publish_node_ids = self.ongoing_write_through.pop(
              ack_id
-@@ -1643,12 +2024,17 @@ class UnifiedRadixCache(BasePrefixCache):
+@@ -1643,12 +2029,17 @@ class UnifiedRadixCache(BasePrefixCache):
              # suffix; the prefix fragment must be persisted as well.
              for node_id in publish_node_ids:
                  self.write_backup_storage(node_id)
@@ -1636,7 +1641,7 @@ index d417d7d..c9e081d 100644
      ) -> bool:
          """Load evicted KV data from host back to device (H→D)."""
          if self.cache_controller is None:
-@@ -1675,6 +2061,9 @@ class UnifiedRadixCache(BasePrefixCache):
+@@ -1675,6 +2066,9 @@ class UnifiedRadixCache(BasePrefixCache):
                  result=result,
                  ancestor_lock_params=ancestor_lock_params,
                  host_anchor_params=host_anchor_params,
@@ -1646,7 +1651,7 @@ index d417d7d..c9e081d 100644
              )
              return success
          finally:
-@@ -1690,6 +2079,9 @@ class UnifiedRadixCache(BasePrefixCache):
+@@ -1690,6 +2084,9 @@ class UnifiedRadixCache(BasePrefixCache):
          result: IncLockRefResult,
          ancestor_lock_params: DecLockRefParams,
          host_anchor_params: DecLockRefParams,
@@ -1656,7 +1661,7 @@ index d417d7d..c9e081d 100644
      ) -> bool:
          # Build the KV + per-component aux transfers.
          kv_xfer, comp_xfers = self.tree_core.build_load_back_spec(node_id, req=req)
-@@ -1703,7 +2095,8 @@ class UnifiedRadixCache(BasePrefixCache):
+@@ -1703,7 +2100,8 @@ class UnifiedRadixCache(BasePrefixCache):
          # when the Full-KV load is skipped by thresholding. max(1, ...): an
          # entirely empty spec (e.g. foreign-pin rejection) must never report
          # success, even at load_back_threshold <= 0.
@@ -1666,7 +1671,7 @@ index d417d7d..c9e081d 100644
              mem_quota is not None and kv_tokens + result.delta > mem_quota
          ):
              self.dec_lock_ref(node_id, ancestor_lock_params)
-@@ -1714,6 +2107,10 @@ class UnifiedRadixCache(BasePrefixCache):
+@@ -1714,6 +2112,10 @@ class UnifiedRadixCache(BasePrefixCache):
              self.token_to_kv_pool_allocator, "c128_attn_allocator", None
          )
          if c128_allocator is not None:
@@ -1677,7 +1682,7 @@ index d417d7d..c9e081d 100644
              c128_num_pages = _c128_transfer_num_pages(
                  comp_xfers.get(ComponentType.C128, ()),
                  c128_allocator.page_size,
-@@ -1727,6 +2124,10 @@ class UnifiedRadixCache(BasePrefixCache):
+@@ -1727,6 +2129,10 @@ class UnifiedRadixCache(BasePrefixCache):
  
          avail = self._component_available_size(ComponentType.FULL)
          if avail < kv_tokens:
@@ -1688,7 +1693,7 @@ index d417d7d..c9e081d 100644
              needed = kv_tokens - avail
              self.evict_for_alloc(EvictParams(num_tokens=needed))
              if self._component_available_size(ComponentType.FULL) < kv_tokens:
-@@ -1741,6 +2142,9 @@ class UnifiedRadixCache(BasePrefixCache):
+@@ -1741,6 +2147,9 @@ class UnifiedRadixCache(BasePrefixCache):
              host_indices=kv_xfer.host_indices,
              node_id=node_id,
              extra_pools=aux_xfers or None,
@@ -1698,7 +1703,7 @@ index d417d7d..c9e081d 100644
          )
  
          self.dec_lock_ref(node_id, ancestor_lock_params)
-@@ -3130,10 +3534,24 @@ class UnifiedRadixCache(BasePrefixCache):
+@@ -3130,10 +3539,24 @@ class UnifiedRadixCache(BasePrefixCache):
              while self.ongoing_write_through:
                  for ack in cc.ack_write_queue:
                      ack.finish_event.synchronize()
@@ -1724,7 +1729,7 @@ index d417d7d..c9e081d 100644
                  cc.ack_write_queue.clear()
                  assert len(self.ongoing_write_through) == 0
              return
-@@ -3154,11 +3572,117 @@ class UnifiedRadixCache(BasePrefixCache):
+@@ -3154,11 +3577,117 @@ class UnifiedRadixCache(BasePrefixCache):
          while finish_count > 0:
              ack = cc.ack_write_queue.pop(0)
              ack.finish_event.synchronize()
@@ -1843,7 +1848,7 @@ index d417d7d..c9e081d 100644
      def _log_write_ack_metrics(self, ack: HiCacheAck) -> None:
          """Record D->H backup volume and duration for a completed write ack."""
          if self.metrics_collector is None:
-@@ -3200,6 +3724,8 @@ class UnifiedRadixCache(BasePrefixCache):
+@@ -3200,6 +3729,8 @@ class UnifiedRadixCache(BasePrefixCache):
          while finish_count > 0:
              ack = cc.ack_load_queue.pop(0)
              ack.finish_event.synchronize()
@@ -1852,7 +1857,7 @@ index d417d7d..c9e081d 100644
              for ack_id in ack.node_ids:
                  if (
                      self.buffer_pipeline is not None
-@@ -3211,6 +3737,8 @@ class UnifiedRadixCache(BasePrefixCache):
+@@ -3211,6 +3742,8 @@ class UnifiedRadixCache(BasePrefixCache):
                  self.dec_host_lock_ref(node, host_lock_params)
                  # Unpin the loaded nodes; host copies stay as reclaimable duplicates.
                  self.tree_core.finish_load_back(node)
@@ -1861,7 +1866,7 @@ index d417d7d..c9e081d 100644
  
              if self.metrics_collector is not None:
                  for pool, num_tokens in (ack.num_tokens_by_pool or {}).items():
-@@ -3225,6 +3753,13 @@ class UnifiedRadixCache(BasePrefixCache):
+@@ -3225,6 +3758,13 @@ class UnifiedRadixCache(BasePrefixCache):
                      self.metrics_collector.observe_load_back_duration(
                          duration_ms / 1000.0
                      )
@@ -3066,10 +3071,10 @@ index 0000000..388cb28
 +    assert tracker.snapshot_session_leaf_anchors("session", generation) is None
 diff --git a/test/srt/test_beliefkv_shadow_dispatch.py b/test/srt/test_beliefkv_shadow_dispatch.py
 new file mode 100644
-index 0000000..cfca542
+index 0000000..f27d3bb
 --- /dev/null
 +++ b/test/srt/test_beliefkv_shadow_dispatch.py
-@@ -0,0 +1,762 @@
+@@ -0,0 +1,820 @@
 +"""CPU-only action-local shadow dispatch tests, without importing the GPU runtime."""
 +
 +import ast
@@ -3367,6 +3372,7 @@ index 0000000..cfca542
 +
 +    cache.tree_core = SimpleNamespace(
 +        root_node=root,
++        is_write_back=False,
 +        node_by_id=Mock(side_effect=nodes.__getitem__),
 +        build_backup_spec=Mock(side_effect=backup_spec),
 +        commit_backup=Mock(side_effect=commit_backup),
@@ -3660,6 +3666,63 @@ index 0000000..cfca542
 +
 +
 +class TestPrefetchGpuNode(unittest.TestCase):
++    def test_write_back_full_node_uses_non_reclaiming_load(self):
++        cache, _, _, leaf, _, _, args = fixture()
++        cache.cache_controller.write_policy = "write_back"
++        cache.tree_core.is_write_back = True
++        leaf.component_data[ComponentType.FULL].host_value = torch.arange(2)
++        leaf.component_data[ComponentType.FULL].value = None
++        cache.tree_core.build_load_back_spec = Mock(return_value=(
++            SimpleNamespace(host_indices=torch.arange(2), nodes_to_load=[leaf.id]),
++            {},
++        ))
++
++        def load_back(node_id, **kwargs):
++            cache.ongoing_load_back[node_id] = object()
++            return True
++
++        cache.load_back = Mock(side_effect=load_back)
++        self.assertTrue(cache.prefetch_gpu_session_node(
++            **args, beliefkv_before_enqueue=lambda op: True
++        ).issued)
++        self.assertTrue(cache.load_back.call_args.kwargs["beliefkv_no_device_reclaim"])
++        cache.evict_host.assert_not_called()
++
++    def test_write_back_policy_requires_native_tree_mode(self):
++        cache, _, _, leaf, _, _, args = fixture()
++        cache.cache_controller.write_policy = "write_back"
++        cache.load_back = Mock()
++        self.assertFalse(cache.prefetch_gpu_session_node(
++            **args, beliefkv_before_enqueue=lambda op: True
++        ).issued)
++        cache.load_back.assert_not_called()
++
++    def test_write_back_mamba_only_load_keeps_no_reclaim(self):
++        cache, _, _, leaf, _, _, args = fixture()
++        cache.cache_controller.write_policy = "write_back"
++        cache.tree_core.is_write_back = True
++        leaf.component_data[ComponentType.MAMBA].host_value = torch.arange(1)
++        cache.tree_core.build_load_back_spec = Mock(return_value=(
++            SimpleNamespace(host_indices=torch.arange(0), nodes_to_load=[]),
++            {ComponentType.MAMBA: [SimpleNamespace(nodes_to_load=[leaf.id])]},
++        ))
++
++        def load_back(node_id, **kwargs):
++            cache.ongoing_load_back[node_id] = object()
++            return True
++
++        cache.load_back = Mock(side_effect=load_back)
++        self.assertTrue(cache.prefetch_gpu_session_node(
++            **args, beliefkv_before_enqueue=lambda op: True
++        ).issued)
++        self.assertTrue(cache.load_back.call_args.kwargs["beliefkv_no_device_reclaim"])
++
++    def test_write_back_does_not_enable_prepare(self):
++        cache, _, _, _, _, _, args = fixture()
++        cache.cache_controller.write_policy = "write_back"
++        cache.tree_core.is_write_back = True
++        self.assertFalse(cache.prepare_host_shadow(**args).issued)
++
 +    def test_selective_policy_uses_same_non_reclaiming_load(self):
 +        cache, _, _, leaf, _, _, args = fixture()
 +        cache.cache_controller.write_policy = "write_through_selective"

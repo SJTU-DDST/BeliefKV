@@ -39,11 +39,12 @@ observations by physical target/epoch before estimating opportunities.
 
 Establish a defensible Qwen3.5/SGLang v0.5.20 result for selective predictive
 Host backup and GPU restoration in a **moderate-pressure operating regime**:
-HBM has actionable spare space for migration, both FULL/Mamba Host pools
-retain headroom, transfers can finish before useful reentry, and useful KV
-is only rarely discarded and recomputed. The primary experiment uses idle
-HBM capacity; bounded replacement of demonstrably cold, evictable KV is a
-separately reported extension, not a prerequisite for the main result.
+HBM has sufficient *free physical space* for a useful migration, both
+FULL/Mamba Host pools retain headroom, transfers can finish before useful
+reentry, and useful KV is only rarely discarded and recomputed. The
+primary experiment uses idle HBM capacity; cold-KV replacement, joint
+handoff and high-pressure recomputation reduction are later, separately
+reported extensions, not prerequisites for the main result.
 This is a workload-qualification gate, not a predefined root count or HBM
 occupancy threshold. It also requires real future consumers: valid
 Host-backed KV missing on Device for H2D, or a later native eviction that
@@ -68,8 +69,9 @@ low eviction counts or root count alone as a proxy. If no stratum qualifies,
 report the actionable-opportunity upper bound instead of escalating load
 just to create migration events.
 
-Success is staged: (1) establish a reproducible moderate-pressure stratum
-with low useful recomputation and genuinely actionable physical targets;
+Success is staged: (1) establish a reproducible stratum with sufficient
+free HBM for the intended transfer, stable Host pools, low useful
+recomputation and genuinely actionable physical targets;
 (2) demonstrate selective PREPARE -> later native consumption and predictive
 H2D -> ACK -> first-service reuse with measurable synchronous stall saved;
 (3) show a net gain against matched reactive P5 without violating correctness,

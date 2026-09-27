@@ -229,3 +229,35 @@ H2D。该配置既没有 FULL H2D 目标，又已耗尽 Mamba Host，
 新运行的保守去重与 stale 判断使用，不追溯改写本轮原始数据。
 如将该配置用于 P5/P6 配对实验，两臂必须采用相同 warmup 设置，
 并验证实际 CUDA graph/运行契约一致。
+
+## 200 GB / 25:75 / write-back / 16-root：有 FULL 机会，但 Host 容量越界
+
+在同一训练清单的前 16 项上独立冷启动，running=48，
+原生 `write_back`，原始数据位于
+`experiments/raw/qwen35_native_regime_writeback_200g_25_75_16root_v1/`。
+13/16 个 workflow 写出结果后，Host FULL 到达 100%，Mamba
+高水位约 97.8%，出现持续 Host 驱逐；中断 client，包装脚本正常
+关闭服务，遥测 writer 无写入失败且机会日志完整关闭。此轮没有
+完整 workflow 结果与正式任务正确性评分，不得报告成功任务吞吐。
+
+终态 Host 驱逐合计 FULL 234,277 tokens、Mamba 540 slots；
+两池原生 D2H ACK 分别为 2,674,910 tokens、2,352 slots，
+H2D ACK 分别为 83,718 tokens、1,110 slots。FULL 重算归因
+暂为零，但仍有 881 个 FULL 被驱逐块没有后续请求探针结论；
+Mamba 再访问位置不可区分，不能将零已确认重算解释为低重算。
+上述 H2D 均是原生迁移，**不是预测性 H2D**。
+
+6,113 条有界 H2D 机会抽样中，2,811 条瞬时 free-list 可容纳、
+452 条 free-list 不足；前者去重 node ID/创建时间后仅 19 个
+物理节点，其中 17 个节点存在 Host-backed、缺 Device 的 FULL
+KV。抽样不是全量机会分母，也不证明迁移发生在有利的时间窗口。
+这表明 `write_back` 能提供先前 `write_through_selective` 试采
+缺少的 FULL 物理目标，但 16-root 全程不满足稳定 Host 余量门槛。
+下一档应在相同训练任务集合中降低同时活跃的数量，并分别检查
+阶段性可装入 FULL 目标、Host 水位及 Host eviction 到后续 miss；
+不能把该轮的短暂机会直接当成完整 A/B 场景。
+
+已在隔离 SGLang worktree 中使单节点预测 H2D 原语接受真实
+`write_back` 模式，同时保留 session/epoch、祖先闭包、无 Device
+回收和原生 ACK 校验；并未放行 write-back PREPARE。这项改动有
+CPU 回归，但本轮服务启动早于改动，不是物理预测闭环证据。
