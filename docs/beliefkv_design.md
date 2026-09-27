@@ -54,7 +54,8 @@ Host 驱逐到后续 miss/重算的归因，以及服务端和 workflow 的正�
 2. predictive H2D 从 native 或 PREPARE 得到的 Host 副本中提前
    恢复真正会服务的 KV，包括 JOIN parent 和接下来要执行的 agent；
    以 H2D ACK 后首次 GPU 服务的 KV 命中、节省的等待与提前驻留
-   成本为验收。关键路径 parent 可有界替换冷 KV，但不可抢占热页。
+   成本为验收。当前主实验只使用已有空闲 HBM；关键路径 parent
+   有界替换冷 KV 属于后续独立扩展，且不得抢占热页。
 
 执行 frontier、native 准入与 KV 余量必须共同决定下一请求的
 恢复时机；联合 handoff（有界选择 victim、D2H 与 H2D 重叠）仍是

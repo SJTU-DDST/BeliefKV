@@ -67,13 +67,16 @@ Host-backed H2D 观察仍被创建时间类型挡住：SGLang 的
 校验。现对 session anchor 和节点闭包分别做有限非负数值规范化，
 CPU 回归通过；旧 GPU 试采不含该修复，不能声称已有预测性 H2D。
 
-近期主评估场景改为 HBM 有空闲空间或可安全迁出的冷
-KV、Host/PCIe 尚有余量且有效 KV 丢弃后重算较少的压力区间。
-先由训练项目上的并发扫描确定该区间，不能仅按 root 数认定低压或
-可预取；将闲置容量预取和替换冷 KV 分开归因。重点验证
+近期主评估场景限定为 FULL/Mamba HBM 各自满足目标动作实际需求的
+空闲物理容量、Host/PCIe 尚有余量且有用 KV 丢弃后重算很少的
+动态低至中等压力区间；主策略不通过驱逐 Device KV 为预测性 H2D
+腾空间。先由训练项目上的并发扫描确定该区间，不能仅按 root 数
+认定低压或可预取；缺 Device 但有有效 Host 副本、或未来 native
+卸载可消费部分 PREPARE shadow，是必要的物理机会。冷 KV 替换、
+联合 handoff 和高压减少重算留作单独评估的后续扩展。重点验证
 `PREPARE_HOST` 的部分/完整 shadow 后续是否被卸载消费，
 以及 Host-backed predictive H2D 的 ACK 后是否实际在首次 GPU
-服务复用，并计入 HBM 字节时间及被替换 KV 的后续 miss。
+服务复用，并计入提前驻留的 HBM 字节时间及 Host 驱逐后重算。
 极端高压及 Host thrash 仅用作安全回退和收益边界，不以减少
 大规模重算作为近期主贡献。时间头（JOIN/工具时刻）、动作头（是否
 值得迁移）和最终 workflow 收益分别验收，不能因为亚秒级 JOIN

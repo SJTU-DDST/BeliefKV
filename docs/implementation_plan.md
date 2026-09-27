@@ -38,17 +38,20 @@ observations by physical target/epoch before estimating opportunities.
 ## Objective
 
 Establish a defensible Qwen3.5/SGLang v0.5.20 result for selective predictive
-Host backup and GPU restoration in a **moderate-pressure operating regime**:
-HBM has sufficient *free physical space* for a useful migration, both
-FULL/Mamba Host pools retain headroom, transfers can finish before useful
-reentry, and useful KV is only rarely discarded and recomputed. The
-primary experiment uses idle HBM capacity; cold-KV replacement, joint
-handoff and high-pressure recomputation reduction are later, separately
-reported extensions, not prerequisites for the main result.
+Host backup and GPU restoration in a **low-to-moderate-pressure regime with
+actionable free HBM**: the FULL/Mamba Device pools each have enough *free
+physical capacity for that action's actual requirements*, both Host pools
+remain stable, PCIe has a useful transfer window, and useful KV is only rarely discarded
+and recomputed. The primary policy does not reclaim Device KV to make room
+for speculative H2D. Cold-KV replacement, joint handoff and high-pressure
+recomputation reduction are deferred, separately evaluated extensions; do
+not make them prerequisites or optimize the primary workload for them.
 This is a workload-qualification gate, not a predefined root count or HBM
 occupancy threshold. It also requires real future consumers: valid
 Host-backed KV missing on Device for H2D, or a later native eviction that
-can consume a partial PREPARE shadow. Idle capacity alone is insufficient.
+can consume a partial PREPARE shadow. A workload with spare HBM but only
+already-resident reentry targets does not qualify; neither does a workload
+that obtains targets mainly by Host eviction and subsequent recomputation.
 Use the same tasks, arrivals and physical configuration for a paired P5
 reactive baseline. The primary question is whether PREPARE_HOST and
 predictive H2D save synchronous transfer wait and improve correctly
@@ -70,8 +73,8 @@ report the actionable-opportunity upper bound instead of escalating load
 just to create migration events.
 
 Success is staged: (1) establish a reproducible stratum with sufficient
-free HBM for the intended transfer, stable Host pools, low useful
-recomputation and genuinely actionable physical targets;
+free HBM for each target's FULL/Mamba requirements, stable Host pools,
+low useful eviction-to-recomputation and genuinely actionable physical targets;
 (2) demonstrate selective PREPARE -> later native consumption and predictive
 H2D -> ACK -> first-service reuse with measurable synchronous stall saved;
 (3) show a net gain against matched reactive P5 without violating correctness,
