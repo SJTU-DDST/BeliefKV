@@ -34,6 +34,16 @@ target. Separate time accuracy, physical utility and workflow outcomes;
 exact wall-clock RETURN/JOIN ETA is not a prerequisite for a bounded
 physical-opportunity experiment.
 
+Freeze the primary stratum on train projects only after checking FULL and
+Mamba headroom separately, valid Host-backed targets or consumable future
+shadows, transfer-to-first-use lead, eviction-to-subsequent-miss/recompute
+attribution, and workflow correctness. Set any numerical opportunity,
+recompute and residency-cost budgets on those train projects before an
+independent paired evaluation; do not infer actionability from idle HBM,
+low eviction counts or a chosen root count alone. If no stratum qualifies,
+report the actionable-opportunity upper bound instead of escalating load
+just to create migration events.
+
 Primary metrics:
 
 - successful workflows/hour and p50/p95/max workflow JCT, with correctness
