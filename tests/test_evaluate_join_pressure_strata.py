@@ -1,7 +1,8 @@
 import pytest
 
 from scripts.evaluate_join_pressure_strata import (
-    attach_asof, evaluate, forecast, pressure_bin, summarize,
+    attach_asof, evaluate, forecast, online_forecast, pressure_bin,
+    summarize, summarize_online,
 )
 
 
@@ -9,6 +10,7 @@ def _row(project, task, lead, pressure):
     return {
         "project": project, "task_id": f"{project}__{task}",
         "lead_ms": lead, "pressure_bin": pressure,
+        "batch": "synthetic_batch", "trigger_ts_ms": 1000.,
     }
 
 
@@ -96,3 +98,35 @@ def test_heldout_manifest_project_is_rejected_even_without_natural_joins(
     )
     with pytest.raises(ValueError, match="manifests overlap"):
         evaluate([tmp_path / "train"], tmp_path / "heldout")
+
+
+def test_online_history_uses_only_completed_other_workflows_in_same_batch_and_bin():
+    rows = [
+        {
+            **_row("heldout", name, lead, pressure),
+            "batch": batch, "trigger_ts_ms": when,
+            "pressure_eta_ms": 3000.,
+        }
+        for name, when, lead, pressure, batch in [
+            ("a", 0, 100, "idle", "b"),
+            ("b", 200, 120, "idle", "b"),
+            ("c", 400, 140, "idle", "b"),
+            ("same_input", 500, 120, "idle", "other_batch"),
+            ("other_bin", 500, 120, "heavy_queue", "b"),
+            ("future", 600, 2000, "idle", "b"),
+            ("candidate", 1000, 150, "idle", "b"),
+            ("same_task", 1200, 100, "idle", "b"),
+        ]
+    ]
+    rows[-1]["task_id"] = rows[-2]["task_id"]
+    forecast_rows = online_forecast(rows)
+    candidate = next(
+        row for row in forecast_rows if row["trigger_ts_ms"] == 1000
+    )
+    assert candidate["causal_same_batch_bin_workflows"] == 3
+    assert candidate["online_eta_ms"] == 120
+    last = next(row for row in forecast_rows if row["trigger_ts_ms"] == 1200)
+    assert last["causal_same_batch_bin_workflows"] == 3
+    assert summarize_online(forecast_rows)["with_causal_history"] == 3
+    with pytest.raises(ValueError, match="history"):
+        online_forecast(rows, min_history=0)

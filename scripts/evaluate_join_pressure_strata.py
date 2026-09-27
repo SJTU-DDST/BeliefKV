@@ -70,6 +70,7 @@ def attach_asof(
             "project": group["project"],
             "join_id": group["join_id"],
             "batch": batch,
+            "trigger_ts_ms": when,
             "lead_ms": group["lead_ms"],
             "pressure_bin": pressure_bin(running, queued),
             "running": running,
@@ -157,6 +158,54 @@ def forecast(train: list[dict], test: list[dict]) -> list[dict]:
     return out
 
 
+def online_forecast(
+    predictions: list[dict], *, min_history: int = 3,
+    history_limit: int = 8,
+) -> list[dict]:
+    if not 0 < min_history <= history_limit:
+        raise ValueError("invalid causal JOIN history support")
+    completed = sorted(
+        predictions, key=lambda row: row["trigger_ts_ms"] + row["lead_ms"],
+    )
+    history = []
+    index = 0
+    out = []
+    for row in sorted(predictions, key=lambda item: (
+        item["trigger_ts_ms"], item["batch"], item["task_id"],
+    )):
+        now = row["trigger_ts_ms"]
+        while (
+            index < len(completed)
+            and completed[index]["trigger_ts_ms"] + completed[index]["lead_ms"] < now
+        ):
+            history.append(completed[index])
+            index += 1
+        prior = []
+        seen = set()
+        for old in reversed(history):
+            if (
+                old["batch"] != row["batch"]
+                or old["pressure_bin"] != row["pressure_bin"]
+                or old["task_id"] == row["task_id"]
+                or old["task_id"] in seen
+            ):
+                continue
+            seen.add(old["task_id"])
+            prior.append(old["lead_ms"])
+            if len(prior) >= history_limit:
+                break
+        out.append({
+            **row,
+            "causal_same_batch_bin_workflows": len(prior),
+            "online_history_applied": len(prior) >= min_history,
+            "online_eta_ms": (
+                median(prior)
+                if len(prior) >= min_history else row["pressure_eta_ms"]
+            ),
+        })
+    return out
+
+
 def summarize(rows: list[dict]) -> dict:
     if not rows:
         return {"events": 0}
@@ -194,6 +243,45 @@ def summarize(rows: list[dict]) -> dict:
     }
 
 
+def summarize_online(rows: list[dict]) -> dict:
+    if not rows:
+        return {"events": 0}
+    by_task = defaultdict(list)
+    for row in rows:
+        base = abs(row["lead_ms"] - row["pressure_eta_ms"])
+        candidate = abs(row["lead_ms"] - row["online_eta_ms"])
+        by_task[row["task_id"]].append(base - candidate)
+    means = np.asarray([
+        np.mean(values) for _, values in sorted(by_task.items())
+    ])
+    draws = np.random.default_rng(42).choice(
+        means, size=(4000, len(means)), replace=True,
+    ).mean(axis=1)
+    return {
+        "events": len(rows),
+        "independent_workflows": len(means),
+        "with_causal_history": sum(
+            row["online_history_applied"] for row in rows
+        ),
+        "pressure_p50_absolute_error_ms": _quantile([
+            abs(row["lead_ms"] - row["pressure_eta_ms"]) for row in rows
+        ], .5),
+        "online_p50_absolute_error_ms": _quantile([
+            abs(row["lead_ms"] - row["online_eta_ms"]) for row in rows
+        ], .5),
+        "pressure_within_500ms": sum(
+            abs(row["lead_ms"] - row["pressure_eta_ms"]) <= 500 for row in rows
+        ),
+        "online_within_500ms": sum(
+            abs(row["lead_ms"] - row["online_eta_ms"]) <= 500 for row in rows
+        ),
+        "workflow_mean_mae_gain_ms": float(np.mean(means)),
+        "workflow_bootstrap_95pct_ci_ms": [
+            float(x) for x in np.percentile(draws, [2.5, 97.5])
+        ],
+    }
+
+
 def evaluate(train_workflows: list[Path], heldout_workflows: Path | None) -> dict:
     if not train_workflows or len({
         path.resolve() for path in train_workflows
@@ -208,15 +296,27 @@ def evaluate(train_workflows: list[Path], heldout_workflows: Path | None) -> dic
     if len(projects) < 3:
         raise ValueError("need three training projects for project LOO")
     fold_rows = []
+    online_rows = []
     folds = {}
     for project in projects:
         test = [row for row in train if row["project"] == project]
         predictions = forecast(
             [row for row in train if row["project"] != project], test,
         )
+        online = online_forecast(predictions)
         fold_rows.extend(predictions)
+        online_rows.extend(online)
         folds[project] = {
             "all": summarize(predictions),
+            "online": summarize_online(online),
+            "online_by_pressure": {
+                pressure: summarize_online([
+                    row for row in online if row["pressure_bin"] == pressure
+                ])
+                for pressure in (
+                    "idle", "busy_no_queue", "light_queue", "heavy_queue",
+                )
+            },
             "by_pressure": {
                 pressure: summarize([
                     row for row in predictions
@@ -232,6 +332,13 @@ def evaluate(train_workflows: list[Path], heldout_workflows: Path | None) -> dic
         "training_projects": projects,
         "train_sources": train_sources,
         "train_loo": summarize(fold_rows),
+        "train_loo_online": summarize_online(online_rows),
+        "train_loo_online_by_pressure": {
+            pressure: summarize_online([
+                row for row in online_rows if row["pressure_bin"] == pressure
+            ])
+            for pressure in ("idle", "busy_no_queue", "light_queue", "heavy_queue")
+        },
         "train_loo_by_pressure": {
             pressure: summarize([
                 row for row in fold_rows if row["pressure_bin"] == pressure
@@ -245,6 +352,10 @@ def evaluate(train_workflows: list[Path], heldout_workflows: Path | None) -> dic
             "Four pressure strata are fixed before scoring, and unsupported "
             "strata back off to their queue family or the task-balanced global "
             "prior. Training folds exclude every batch of the held-out project. "
+            "The exploratory online arm replaces the stratum prior only after "
+            "three other workflows in the same batch and pressure bin finished "
+            "strictly before the trigger; it keeps at most eight recent distinct "
+            "workflows. The rule is not selected on held-out labels. "
             "Repeated task IDs across training batches share a bootstrap "
             "workflow cluster. Absolute JOIN time, parent first service, and "
             "predictive transfer remain unverified."
@@ -259,12 +370,20 @@ def evaluate(train_workflows: list[Path], heldout_workflows: Path | None) -> dic
         } & set(source["frozen_projects"]):
             raise ValueError("training and held-out manifests overlap in projects")
         forecast_rows = forecast(train, heldout)
+        heldout_online = online_forecast(forecast_rows)
         report["status"] = "project_disjoint_development_not_action_eligible"
         report["heldout_projects"] = sorted({
             row["project"] for row in heldout
         })
         report["heldout_source"] = source
         report["heldout"] = summarize(forecast_rows)
+        report["heldout_online"] = summarize_online(heldout_online)
+        report["heldout_online_by_pressure"] = {
+            pressure: summarize_online([
+                row for row in heldout_online if row["pressure_bin"] == pressure
+            ])
+            for pressure in ("idle", "busy_no_queue", "light_queue", "heavy_queue")
+        }
         report["heldout_by_pressure"] = {
             pressure: summarize([
                 row for row in forecast_rows if row["pressure_bin"] == pressure
