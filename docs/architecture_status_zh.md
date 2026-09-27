@@ -115,6 +115,11 @@ request 级 Device 命中，不能归因到预取节点。新
 的首次 GPU launch，使用节点身份、FULL value 和完整前缀验证；
 失去证据则记为未验证或 censored，Mamba 首次消费仍未确认。
 此埋点只对新启动进程有效，不可用 v2 原始日志回填节点级复用。
+`native_telemetry_status.json` 在 writer 队列空闲时也会写入，存在
+该文件不代表服务端已关闭；连续高负载下快照可能落后于事件日志。
+为了让正在运行的新实验也能审计低频物理证据，后续服务端对
+`physical_action_ack.jsonl` 和 `physical_action_use.jsonl` 逐条
+flush，而非等整个队列空闲；已运行进程不受此代码更新影响。
 
 目前 Qwen3.5 的 `online_eligible=false`、
 `predictive_action_eligible=false`；旧 Qwen3 P6 物理闭环不得外推为

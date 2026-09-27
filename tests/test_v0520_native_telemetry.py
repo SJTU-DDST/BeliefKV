@@ -4,10 +4,12 @@ import json
 import time
 from array import array
 from pathlib import Path
+from queue import Queue
 from types import SimpleNamespace
 
 import pytest
 
+import beliefkv.runtime.v0520_native_telemetry as telemetry_module
 from beliefkv.runtime.v0520_native_telemetry import NativeReactiveTelemetry
 
 
@@ -53,6 +55,37 @@ def test_confirmed_join_canary_has_distinct_provenance(tmp_path: Path) -> None:
     assert ready["collection_mode"] == "confirmed_join_canary"
     assert status["collection_mode"] == "confirmed_join_canary"
     assert status["writer_error"] is None
+
+
+def test_physical_action_evidence_flushes_without_idle_queue(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    class NoIdleFlushQueue(Queue):
+        def get(self, block: bool = True, timeout: float | None = None):
+            return super().get(block=block, timeout=None)
+
+    monkeypatch.setattr(telemetry_module, "Queue", NoIdleFlushQueue)
+    audit = NativeReactiveTelemetry(tmp_path / "service")
+    try:
+        audit._emit("action_ack", {"event": "ack"})
+        audit._emit("action_use", {"event": "use"})
+        deadline = time.monotonic() + 5
+        while time.monotonic() < deadline:
+            if all(
+                (path := tmp_path / f"service/{name}").exists()
+                and path.stat().st_size > 0
+                for name in ("physical_action_ack.jsonl", "physical_action_use.jsonl")
+            ):
+                break
+            time.sleep(0.01)
+        assert _read(tmp_path / "service/physical_action_ack.jsonl") == [
+            {"event": "ack"}
+        ]
+        assert _read(tmp_path / "service/physical_action_use.jsonl") == [
+            {"event": "use"}
+        ]
+    finally:
+        audit.close()
 
 
 def test_verified_prefetch_records_node_match_at_first_gpu_service(

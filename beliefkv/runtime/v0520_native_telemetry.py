@@ -1185,6 +1185,8 @@ class NativeReactiveTelemetry:
                         json.dumps(record, separators=(",", ":"), allow_nan=False) + "\n"
                     )
                     self._counts[stream] += 1
+                    if stream in ("action_ack", "action_use"):
+                        handles[stream].flush()
                 if self._pending_block_evictions:
                     pending_by_pool: Counter[str] = Counter()
                     units_by_pool: Counter[str] = Counter()
