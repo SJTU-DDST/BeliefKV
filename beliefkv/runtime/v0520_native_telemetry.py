@@ -35,6 +35,7 @@ class NativeReactiveTelemetry:
             "events": self.directory / "runtime_events.sglang.jsonl",
             "audit": self.directory / "runtime_audit.jsonl",
             "transfer": self.directory / "transfer_telemetry.jsonl",
+            "action_ack": self.directory / "physical_action_ack.jsonl",
             "host_pool": self.directory / "host_pool_telemetry.jsonl",
             "eviction_attribution": self.directory / "eviction_attribution.jsonl",
         }
@@ -917,6 +918,16 @@ class NativeReactiveTelemetry:
             ),
             "host_copy_state": "unknown",
             "training_eligible_service_curve": False,
+            "tagged_child_commits": [
+                {
+                    "command_id": child.command_id,
+                    "anchor_node_id": child.anchor_node_id,
+                    "published_node_ids": list(child.published_node_ids),
+                    "num_tokens_by_pool": dict(child.num_tokens_by_pool),
+                    "num_bytes": child.num_bytes,
+                }
+                for child in getattr(event, "child_commits", ())
+            ],
         })
         if direction in self._transfer_units:
             self._emit("host_pool", {
@@ -934,12 +945,28 @@ class NativeReactiveTelemetry:
             if self._cache is not None:
                 self.record_host_pool_usage(self._cache)
 
+    def on_verified_action_ack(self, action: Any) -> None:
+        """Persist only actions reconciled by the physical transaction ledger."""
+        self._emit("action_ack", {
+            "event": "beliefkv_physical_action_ack",
+            "ts_ms": time.time() * 1000.0,
+            "command_id": action.command_id,
+            "action": action.action,
+            "context_id": action.context_id,
+            "context_epoch": action.context_epoch,
+            "node_ids": list(action.node_ids),
+            "pool_bytes": dict(action.pool_bytes),
+            "num_bytes": action.num_bytes,
+            "evidence": "native_child_commit_reconciled_with_live_context",
+        })
+
     def _write(self) -> None:
         try:
             with (
                 self._paths["events"].open("x", encoding="utf-8") as events,
                 self._paths["audit"].open("x", encoding="utf-8") as audit,
                 self._paths["transfer"].open("x", encoding="utf-8") as transfer,
+                self._paths["action_ack"].open("x", encoding="utf-8") as action_ack,
                 self._paths["host_pool"].open("x", encoding="utf-8") as host_pool,
                 self._paths["eviction_attribution"].open(
                     "x", encoding="utf-8"
@@ -963,6 +990,7 @@ class NativeReactiveTelemetry:
                 )
                 handles = {
                     "events": events, "audit": audit, "transfer": transfer,
+                    "action_ack": action_ack,
                     "host_pool": host_pool,
                     "eviction_attribution": eviction_attribution,
                 }

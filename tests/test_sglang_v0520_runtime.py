@@ -62,7 +62,7 @@ def test_native_ack_is_credited_only_after_live_context_reconciliation():
         pool_bytes_per_token=(("kv", 10), ("mamba", 5)),
     )
     runtime.register_physical_action(expectation)
-    runtime.on_native_transfer_commit(NS(
+    completed = runtime.on_native_transfer_commit(NS(
         direction="d2h", status="completed", node_ids=(11,),
         num_tokens_by_pool=(("kv", 2), ("mamba", 1)),
         child_commits=(NS(
@@ -72,12 +72,11 @@ def test_native_ack_is_credited_only_after_live_context_reconciliation():
             num_bytes=25,
         ),),
     ))
-    assert [action.command_id for action in runtime.completed_physical_actions] == [
-        "prepare-a"
-    ]
+    assert [action.command_id for action in completed] == ["prepare-a"]
+    assert list(runtime.completed_physical_actions) == list(completed)
     assert runtime.counts["native_physical_completed"] == 1
     assert runtime.physical_ledger.pending_count == 0
-    runtime.on_native_transfer_commit(NS(
+    replay = runtime.on_native_transfer_commit(NS(
         direction="d2h", status="completed", node_ids=(11,),
         num_tokens_by_pool=(("kv", 2), ("mamba", 1)),
         child_commits=(NS(
@@ -87,6 +86,7 @@ def test_native_ack_is_credited_only_after_live_context_reconciliation():
             num_bytes=25,
         ),),
     ))
+    assert replay == ()
     assert runtime.physical_disabled
     assert runtime.counts["physical_receipt_failed"] == 1
     with pytest.raises(PhysicalReceiptError, match="no live causal context"):

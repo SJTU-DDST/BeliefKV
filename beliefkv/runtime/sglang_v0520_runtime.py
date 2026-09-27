@@ -1744,10 +1744,12 @@ class NativeAdmissionRuntime:
         self.counts["admission_prefetch_issued"] += 1
         return True
 
-    def on_native_transfer_commit(self, commit: object) -> None:
+    def on_native_transfer_commit(
+        self, commit: object
+    ) -> tuple[PhysicalActionCompleted, ...]:
         """Observe synchronized native ACKs, never infer completion from enqueue."""
         if self.physical_disabled:
-            return
+            return ()
         live_epochs = {
             context_id: context.epoch
             for context_id in self.physical_ledger.pending_context_ids
@@ -1769,9 +1771,10 @@ class NativeAdmissionRuntime:
         except PhysicalReceiptError:
             self.physical_disabled = True
             self.counts["physical_receipt_failed"] += 1
-            return
+            return ()
         self.completed_physical_actions.extend(completed)
         self.counts["native_physical_completed"] += len(completed)
+        return completed
 
     def register_visible_request(self, req: object) -> bool:
         key = _request_key(req)

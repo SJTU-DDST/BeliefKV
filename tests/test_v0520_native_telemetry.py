@@ -135,12 +135,22 @@ def test_native_transfer_stream_and_submit_ack_are_distinct_evidence(
         status="completed",
         node_ids=(1,),
         num_tokens_by_pool=(("kv", 8), ("mamba", 1)),
+        child_commits=(SimpleNamespace(
+            command_id="beliefkv-shadow-1", anchor_node_id=1,
+            published_node_ids=(1,), num_tokens_by_pool=(("kv", 8),),
+            num_bytes=8192,
+        ),),
         actual_bytes=8192,
         submit_ts_ms=1000.0,
         ack_ts_ms=1010.0,
         submit_to_ack_ms=10.0,
         transfer_stream_elapsed_ms=2.5,
         unacked_bytes_at_submit=4096,
+    ))
+    audit.on_verified_action_ack(SimpleNamespace(
+        command_id="beliefkv-shadow-1", action="PREPARE_HOST",
+        context_id="context-1", context_epoch=2, node_ids=(1,),
+        pool_bytes=(("kv", 8192),), num_bytes=8192,
     ))
     audit.close()
 
@@ -153,6 +163,18 @@ def test_native_transfer_stream_and_submit_ack_are_distinct_evidence(
     assert transfer["native_unacked_bytes_at_submit"] == 4096
     assert transfer["start_ts_ms"] is None
     assert transfer["start_timestamp_semantics"] == "device_event_no_wall_anchor"
+    assert transfer["tagged_child_commits"] == [{
+        "command_id": "beliefkv-shadow-1",
+        "anchor_node_id": 1,
+        "published_node_ids": [1],
+        "num_tokens_by_pool": {"kv": 8},
+        "num_bytes": 8192,
+    }]
+    verified = _read(tmp_path / "server/physical_action_ack.jsonl")
+    assert len(verified) == 1
+    assert verified[0]["command_id"] == "beliefkv-shadow-1"
+    assert verified[0]["pool_bytes"] == {"kv": 8192}
+    assert verified[0]["evidence"] == "native_child_commit_reconciled_with_live_context"
 
 
 def test_native_request_service_and_ack_are_evidence_not_invented_dma(
