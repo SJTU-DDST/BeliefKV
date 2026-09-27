@@ -21,7 +21,9 @@ class NativeReactiveTelemetry:
         self, directory: str | Path, *, scheduler_path: str | Path | None = None,
         collection_mode: str = "native_reactive",
     ) -> None:
-        if collection_mode not in {"native_reactive", "admission_observation"}:
+        if collection_mode not in {
+            "native_reactive", "admission_observation", "confirmed_join_canary"
+        }:
             raise ValueError("unsupported native telemetry collection mode")
         self.collection_mode = collection_mode
         self.directory = Path(directory).resolve()
@@ -1070,6 +1072,7 @@ class NativeReactiveTelemetry:
         status = {
             "schema_version": 1,
             "source": "native_sglang_v0520",
+            "collection_mode": self.collection_mode,
             "record_counts": dict(self._counts),
             "pending_request_count": len(self._pending) + len(self._active),
             "pending_batch_count": len(self._launched),

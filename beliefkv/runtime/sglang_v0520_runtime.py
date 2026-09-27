@@ -112,9 +112,21 @@ class NativeAdmissionRuntime:
         model_path: str | None = None,
         enable_local_predictor: bool = False,
         enable_admission_prefetch: bool = False,
+        enable_confirmed_join_canary: bool = False,
         completion_lead: CompletionLead | None = None,
         opportunity_dir: str | None = None,
     ) -> None:
+        if enable_confirmed_join_canary and (
+            enable_admission_prefetch
+            or enable_local_predictor
+            or predictor_sha256 is not None
+            or predictor_artifact_path is not None
+            or not event_socket_path
+        ):
+            raise ValueError(
+                "confirmed JOIN canary requires an event socket and no predictor "
+                "or predictive admission"
+            )
         if enable_admission_prefetch and (
             not enable_local_predictor or not predictor_artifact_path
         ):
@@ -156,6 +168,7 @@ class NativeAdmissionRuntime:
         self._completion_hints: dict[str, _CompletionReentryHint] = {}
         self._join_ticket: _JoinPrefetchTicket | None = None
         self.enable_admission_prefetch = enable_admission_prefetch
+        self.enable_confirmed_join_canary = enable_confirmed_join_canary
         self._admission_lease: _AdmissionPrefetchLease | None = None
         self.shadow_candidate: ActionLocalShadowCandidate | None = None
         self._native_cache: object | None = None
@@ -192,6 +205,8 @@ class NativeAdmissionRuntime:
         )
         self.physical_disabled = False
         self.counts: Counter[str] = Counter()
+        if enable_confirmed_join_canary:
+            self.counts["confirmed_join_canary_configured"] = 1
         opportunity_dir = opportunity_dir or os.environ.get(
             "BELIEFKV_ADMISSION_OPPORTUNITY_DIR"
         )
@@ -802,6 +817,8 @@ class NativeAdmissionRuntime:
         return True
 
     def _observe_child_completion_intent(self, event: RuntimeEvent) -> None:
+        if self.enable_confirmed_join_canary:
+            return
         if event.attributes.get(CHILD_COMPLETION_INTENT) is not True:
             return
         join_id = event.join_id
@@ -912,7 +929,9 @@ class NativeAdmissionRuntime:
     def _advance_join_ticket(self, event: RuntimeEvent) -> None:
         ticket = self._join_ticket
         if ticket is None:
-            if not self.enable_admission_prefetch or event.kind not in (
+            if not (
+                self.enable_admission_prefetch or self.enable_confirmed_join_canary
+            ) or event.kind not in (
                 RuntimeEventKind.RETURN, RuntimeEventKind.JOIN_SATISFIED,
             ):
                 return
@@ -975,7 +994,10 @@ class NativeAdmissionRuntime:
         parent = self.graph.invocations.get(key.invocation_id)
         context = self.graph.contexts.get(key.context_id)
         return bool(
-            self.enable_admission_prefetch and not self.physical_disabled
+            (
+                self.enable_admission_prefetch
+                or self.enable_confirmed_join_canary and ticket.phase == "confirmed"
+            ) and not self.physical_disabled
             and join is not None and join.workflow_id == key.root_workflow_id
             and join.mode.value == ticket.join_mode
             and tuple(sorted(join.member_invocation_ids)) == ticket.member_ids
@@ -1012,7 +1034,8 @@ class NativeAdmissionRuntime:
                 return
             ticket.command_id = None
             self.counts["join_prefetch_acked"] += 1
-        if ticket.issued_nodes >= 2 or self.physical_ledger.pending_count:
+        max_nodes = 1 if self.enable_confirmed_join_canary else 2
+        if ticket.issued_nodes >= max_nodes or self.physical_ledger.pending_count:
             return
         if ticket.phase == "probabilistic":
             hint = self.join_wait_hints.get(ticket.join_id)
@@ -1571,6 +1594,8 @@ class NativeAdmissionRuntime:
         self, step: PrefetchLoadStep, *, source: str = "tool_wait"
     ) -> str | None:
         """Submit one bounded native H2D; completion requires matching ACK."""
+        if self.enable_confirmed_join_canary and source != "join_ticket":
+            return None
         cache = self._native_cache
         if (
             self.physical_disabled

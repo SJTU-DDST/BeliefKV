@@ -1421,6 +1421,81 @@ def test_join_prefetch_three_stages_and_confirmed_parent_ticket():
     assert runtime._join_ticket is None
 
 
+def test_confirmed_join_canary_is_bounded_without_predictor(tmp_path):
+    with pytest.raises(ValueError, match="event socket and no predictor"):
+        NativeAdmissionRuntime(enable_confirmed_join_canary=True)
+    with pytest.raises(ValueError, match="event socket and no predictor"):
+        NativeAdmissionRuntime(
+            event_socket_path=str(tmp_path / "invalid.sock"),
+            enable_confirmed_join_canary=True,
+            enable_admission_prefetch=True,
+        )
+
+    runtime = NativeAdmissionRuntime(
+        event_socket_path=str(tmp_path / "confirmed.sock"),
+        enable_confirmed_join_canary=True,
+    )
+    try:
+        assert runtime.predictor_sha256 is None
+        assert runtime.enable_admission_prefetch is False
+        assert runtime.counts["confirmed_join_canary_configured"] == 1
+        parent = req("parent")
+        parent.session_id, parent.session_generation = "s", 1
+        assert runtime.register_visible_request(parent)
+        runtime.on_events((
+            event(0, RuntimeEventKind.WORKFLOW_START),
+            event(1, RuntimeEventKind.INVOCATION_CREATE,
+                  invocation_id="parent", context_id="ctx-parent",
+                  agent_definition_id="parent", agent_instance_id="parent"),
+            event(2, RuntimeEventKind.INVOCATION_CREATE,
+                  invocation_id="child", context_id="ctx-child",
+                  agent_definition_id="child", agent_instance_id="child"),
+            event(3, RuntimeEventKind.JOIN_CREATE,
+                  join_id="join", member_invocation_ids=("child",)),
+            event(4, RuntimeEventKind.JOIN_WAIT,
+                  invocation_id="parent", join_id="join"),
+            event(5, RuntimeEventKind.STRUCTURED_ACTION,
+                  invocation_id="child", context_id="ctx-child",
+                  context_epoch=0, join_id="join",
+                  attributes={
+                      "beliefkv_child_completion_intent": True,
+                      "structured_action_names": ["ChildCompletion"],
+                      "request_id": "child-llm",
+                  }),
+        ))
+        assert runtime._join_ticket is None
+        runtime.on_events((event(
+            6, RuntimeEventKind.RETURN, invocation_id="child",
+        ),))
+        assert runtime._join_ticket is not None
+        assert runtime._join_ticket.phase == "confirmed"
+        assert runtime._live_join_ticket()
+        runtime.attach_native_cache(object())
+        key = runtime.context_sessions["ctx-parent"]
+        step = PrefetchLoadStep(key, 11, 4, 11, 4)
+        with patch.object(runtime, "refreshed_prefetch_gpu_step", return_value=step):
+            with patch.object(runtime, "issue_prefetch_gpu_step",
+                              return_value="confirmed-h2d") as issue:
+                runtime.dispatch_join_prefetch()
+                issue.assert_called_once_with(step, source="join_ticket")
+                runtime.completed_physical_actions.append(
+                    NS(command_id="confirmed-h2d", action="PREFETCH_GPU")
+                )
+                runtime.dispatch_join_prefetch()
+                assert issue.call_count == 1
+        assert runtime._join_ticket.issued_nodes == 1
+        assert runtime.counts["join_prefetch_confirmed_issued"] == 1
+        assert runtime.counts["join_prefetch_acked"] == 1
+        assert runtime.issue_prefetch_gpu_step(step, source="tool_wait") is None
+        runtime.on_events((event(
+            7, RuntimeEventKind.CONTEXT_ADVANCE,
+            invocation_id="parent", context_id="ctx-parent", context_epoch=1,
+        ),))
+        assert runtime._join_ticket is None
+    finally:
+        runtime.close()
+
+
 def test_join_prefetch_all_requires_last_child_and_rejects_false_intent():
     runtime = NativeAdmissionRuntime()
     runtime.enable_admission_prefetch = True

@@ -39,6 +39,22 @@ def test_admission_observation_has_distinct_provenance(tmp_path: Path) -> None:
     assert ready["collection_mode"] == "admission_observation"
 
 
+def test_confirmed_join_canary_has_distinct_provenance(tmp_path: Path) -> None:
+    audit = NativeReactiveTelemetry(
+        tmp_path / "canary", collection_mode="confirmed_join_canary"
+    )
+    audit.close()
+    ready = json.loads(
+        (tmp_path / "canary/native_telemetry_ready.json").read_text()
+    )
+    status = json.loads(
+        (tmp_path / "canary/native_telemetry_status.json").read_text()
+    )
+    assert ready["collection_mode"] == "confirmed_join_canary"
+    assert status["collection_mode"] == "confirmed_join_canary"
+    assert status["writer_error"] is None
+
+
 def test_capacity_census_is_scheduler_local_and_fail_closed(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch,
 ) -> None:
