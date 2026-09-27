@@ -7178,3 +7178,22 @@ H2D 字节、容量和 ACK 仍需独立核验。
 `join_parent_first_gpu_service_*_20260927.json`，
 门禁复核为低压批次目录的
 `join_terminal_parent_service_gate_dev_20260927.json`。
+
+### 未见项目终态 JOIN 密封复核计划
+
+冻结 `configs/migration/qwen35_terminal_join_sealed_2026-09-27/`：
+P6 v2 中 Matplotlib 与 scikit-learn 各 8 个 `test_id`
+任务单独评分；32 个 Django、Requests、Xarray、
+Pylint、Pytest 训练项目任务仅制造负载，不提供新的
+JOIN 时钟或门禁拟合标签。源 manifest SHA-256、
+数据集 revision、逐任务镜像与测试任务顺序均冻结。
+启动器 `scripts/run_qwen35_terminal_join_sealed.sh`
+在同一 Qwen3.5/SGLang 服务运行两路任务，保持
+running 48、Host 120 GB/70:30/NUMA1；root 与所有
+child 共用 14400 秒绝对截止，单请求 7200 秒。
+高压项目隔离评估只使用已有高压 128-root 和低压
+20-root 训练批次的先验，未见项目标签不得用于调
+`heavy_queue` 门槛或时钟。若目标批次没有自然 JOIN
+或没有队列压力候选，应如实报告覆盖不足，不能把
+开发集 16/16 代替密封验证；在此之前不得宣称
+具备物理 H2D 收益或可靠的全体 JOIN 亚秒级预测。
