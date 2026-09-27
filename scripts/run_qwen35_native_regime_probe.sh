@@ -7,6 +7,7 @@ PORT="${PORT:-18454}"
 ROOT_COUNT="${ROOT_COUNT:-8}"
 HOST_SPLIT="${HOST_SPLIT:-35:65}"
 HICACHE_SIZE_GB="${HICACHE_SIZE_GB:-180}"
+HICACHE_WRITE_POLICY="${HICACHE_WRITE_POLICY:-write_through_selective}"
 SKIP_SERVER_WARMUP="${SKIP_SERVER_WARMUP:-0}"
 RUN_ROOT="${RUN_ROOT:-$ROOT/experiments/raw/qwen35_native_regime_selective_${HICACHE_SIZE_GB}g_${HOST_SPLIT/:/_}_${ROOT_COUNT}root_v1}"
 MANIFEST="$ROOT/configs/migration/qwen35_native_reactive_overlapped_128root_workload_2026-09-23.json"
@@ -29,12 +30,13 @@ if [[ $# -ne 0 || ! "$ROOT_COUNT" =~ ^[1-9][0-9]*$ ]] \
   || (( ROOT_COUNT > 16 )) \
   || [[ ! "$HICACHE_SIZE_GB" =~ ^[1-9][0-9]*$ ]] \
   || (( HICACHE_SIZE_GB > 200 )) \
+  || [[ "$HICACHE_WRITE_POLICY" != "write_through_selective" && "$HICACHE_WRITE_POLICY" != "write_back" ]] \
   || [[ "$SKIP_SERVER_WARMUP" != "0" && "$SKIP_SERVER_WARMUP" != "1" ]] \
   || [[ ! "$HOST_SPLIT" =~ ^([1-9][0-9]?):([1-9][0-9]?)$ ]] \
   || (( ${BASH_REMATCH[1]:-0} + ${BASH_REMATCH[2]:-0} != 100 )) \
   || [[ ! "$PORT" =~ ^[1-9][0-9]*$ ]] \
   || [[ -e "$RUN_ROOT" || -e "$SOCKET" ]]; then
-  printf 'Usage: PORT=18454 ROOT_COUNT=8 HICACHE_SIZE_GB=180 HOST_SPLIT=35:65 SKIP_SERVER_WARMUP=0 RUN_ROOT=<new path> bash %s\n' "$0" >&2
+  printf 'Usage: PORT=18454 ROOT_COUNT=8 HICACHE_SIZE_GB=180 HOST_SPLIT=35:65 HICACHE_WRITE_POLICY=write_through_selective|write_back SKIP_SERVER_WARMUP=0 RUN_ROOT=<new path> bash %s\n' "$0" >&2
   exit 2
 fi
 if [[ -e /tmp/beliefkv-experiments.paused ]] \
@@ -53,7 +55,7 @@ if [[ "$SKIP_SERVER_WARMUP" == "1" ]]; then
 fi
 setsid env PORT="$PORT" HICACHE_SIZE_GB="$HICACHE_SIZE_GB" \
   BELIEFKV_FULL_MAMBA_HOST_SPLIT="$HOST_SPLIT" \
-  HICACHE_WRITE_POLICY=write_through_selective \
+  HICACHE_WRITE_POLICY="$HICACHE_WRITE_POLICY" \
   ENABLE_SESSION_RADIX_CACHE=1 HOST_NUMA_NODE=1 \
   MEM_FRACTION_STATIC=0.94 MAX_RUNNING_REQUESTS=48 \
   BELIEFKV_ADMISSION_TELEMETRY_DIR="$RUN_ROOT/server" \
