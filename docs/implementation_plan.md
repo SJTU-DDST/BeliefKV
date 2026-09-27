@@ -11,8 +11,18 @@ The 180 GB Host pressure scan is documented in
 Both ordinary write-through trials saturated the Mamba Host pool; their
 Mamba eviction-to-revisit rows do not identify whether the revisited state
 was recomputed. The selective 6-root trial avoided Host evictions but has
-not established actionable Host-backed predictive H2D targets or valid
-native-agent JCT; none is a predictive result or a matched A/B comparison.
+not established predictive physical transfer or official task correctness;
+none is a predictive result or a matched A/B comparison. A later independent
+6-root read-only probe has 6/6 native-agent JCT-eligible workflows but
+`successful_workflows=0` because its self-report gate requires a structured
+completion that natural-language replies do not provide. Do not silently
+promote measured JCT to correct-task throughput: official patch grading
+must be integrated before the paired A/B correctness claim. The same probe
+identified a native NumPy float64 node timestamp rejected by the H2D
+selector; its normalized rerun is in progress. Early rerun samples show
+feasible Host-backed Mamba targets (mostly shared physical nodes 28 and 49),
+not physical H2D or first-service reuse. Deduplicate sampled session
+observations by physical target/epoch before estimating opportunities.
 
 ## Objective
 

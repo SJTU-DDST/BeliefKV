@@ -157,3 +157,16 @@ TOOL wait、1 条属于 admission；另有 261 条 `already_device_resident`
 继续拒绝；修复有 CPU 回归，但 v2 服务端不含此修改。
 下轮独立冷启动需确认是否出现 `fits_current_free_lists`，
 随后才可做身份/容量安全的真实 H2D canary 和首次服务归因。
+
+独立冷启动 v3 已在 `bkv-regime-float64-6` 中开始：
+`experiments/raw/qwen35_native_regime_selective_180g_35_65_6root_float64_v3/`。
+**截至本次运行中观察，尚无终态 summary/writer 状态**；修复后
+JOIN wait 已出现 `fits_current_free_lists`，也有 Mamba Device
+空槽为零而拒绝的观察。六条 JOIN parent 的候选大多指向同一
+共享物理节点 28，部分 tool wait 指向节点 49；不能把重复的
+安全点观察视作独立的 H2D 动作。在一条 JOIN 上，可行动采样
+距实际 JOIN 满足约 76 至 260 秒，但未签发预测动作，不能
+据此断言有收益。v2 的 `successful_workflows=0` 来自六条
+自然语言终态均不满足现有自报告结构化协议；6/6 JCT
+资格不代表任务已通过官方正确性评估。v3 应自行结束并
+复核 writer、Host FULL/Mamba 水位、驱逐及请求归因后再定主场景。
