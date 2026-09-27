@@ -1568,6 +1568,7 @@ class DeepAgentsExperimentConfig:
     child_final_report_shadow: bool = False
     child_report_length_shadow: bool = False
     early_tool_wait_shadow: bool = False
+    tool_window_shadow_artifact: Path | None = None
     subagent_fanout_profile: str = "natural"
     stop_after_first_native_join: bool = False
     recursion_limit: int = 2048
@@ -1589,6 +1590,13 @@ class DeepAgentsExperimentConfig:
     )
 
     def __post_init__(self) -> None:
+        if self.tool_window_shadow_artifact is not None:
+            if self.early_tool_wait_shadow:
+                raise ValueError(
+                    "tool window artifact and legacy early shadow share a timer"
+                )
+            if not self.tool_window_shadow_artifact.is_file():
+                raise FileNotFoundError(self.tool_window_shadow_artifact)
         if self.child_final_report_shadow and not self.child_return_intent_shadow:
             raise ValueError("child final report shadow requires child return intent")
         if self.child_report_length_shadow and not self.child_return_intent_shadow:
@@ -3769,6 +3777,7 @@ def _run_workflow(
     workload: SweBenchWorkload,
     project_tool_history: ProjectToolHistory | None = None,
     tool_wait_shadow_timer: ToolWaitShadowTimer | None = None,
+    tool_window_shadow: Any = None,
 ) -> dict[str, Any]:
     workflow_dir = config.output_dir / "workflows" / workload.instance_id
     workflow_dir.mkdir(parents=True, exist_ok=False)
@@ -3837,6 +3846,7 @@ def _run_workflow(
         tool_wait_shadow_timer=tool_wait_shadow_timer,
         tool_wait_shadow_expired=workflow_deadline.expired,
         early_tool_wait_shadow=config.early_tool_wait_shadow,
+        tool_window_shadow=tool_window_shadow,
         finish_chunk_shadow=(
             config.child_finish_chunk_shadow
             or os.environ.get("BELIEFKV_CHILD_FINISH_CHUNK_SHADOW") == "1"
@@ -4044,6 +4054,13 @@ def run_experiment(config: DeepAgentsExperimentConfig) -> dict[str, Any]:
         raise FileNotFoundError(
             f"BeliefKV control socket is absent: {config.control_socket}"
         )
+    tool_window_shadow = None
+    if config.tool_window_shadow_artifact is not None:
+        from beliefkv.predictor.tool_window_shadow import FrozenToolWindowShadow
+
+        tool_window_shadow = FrozenToolWindowShadow(
+            config.tool_window_shadow_artifact
+        )
     server_sources = {
         "runtime_audit": config.server_audit_path,
         "runtime_events": config.server_event_path,
@@ -4082,6 +4099,10 @@ def run_experiment(config: DeepAgentsExperimentConfig) -> dict[str, Any]:
             **asdict(config),
             "output_dir": str(output_dir),
             "workload_manifest": str(config.workload_manifest),
+            "tool_window_shadow_artifact": (
+                str(config.tool_window_shadow_artifact)
+                if config.tool_window_shadow_artifact else None
+            ),
             "control_socket": (
                 str(config.control_socket) if config.control_socket else None
             ),
@@ -4181,7 +4202,7 @@ def run_experiment(config: DeepAgentsExperimentConfig) -> dict[str, Any]:
                 concurrency=config.concurrency,
                 run_one=lambda workload: _run_workflow(
                     config, bundle, workload, project_tool_history,
-                    tool_wait_shadow_timer,
+                    tool_wait_shadow_timer, tool_window_shadow,
                 ),
             ):
                 record_result(future, workload)
@@ -4198,6 +4219,7 @@ def run_experiment(config: DeepAgentsExperimentConfig) -> dict[str, Any]:
                         executor.submit(
                             _run_workflow, config, bundle, workload,
                             project_tool_history, tool_wait_shadow_timer,
+                            tool_window_shadow,
                         )
                     ] = workload
                 for future in as_completed(futures):

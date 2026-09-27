@@ -90,9 +90,12 @@ def _fit_shape_head(
     rows: list[dict], *, include_live_peers: bool = True,
     include_long_history: bool = False,
     include_duration_priors: bool = False,
+    target_ms: int = 2_000,
 ) -> tuple:
+    if target_ms <= 0:
+        raise ValueError("target_ms must be positive")
     labels = np.asarray(
-        [row["duration_ms"] >= 2_000 for row in rows], dtype=np.int32,
+        [row["duration_ms"] >= target_ms for row in rows], dtype=np.int32,
     )
     if labels.sum() < 10 or len(labels) - labels.sum() < 20:
         raise ValueError("insufficient long/short train calls")

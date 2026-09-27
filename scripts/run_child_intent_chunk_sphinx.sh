@@ -30,6 +30,13 @@ if [[ "${CHILD_EOS_LOW_PROB_SHADOW:-0}" == 1 \
   printf 'Low-probability EOS shadow requires CHILD_EOS_SHADOW=1\n' >&2
   exit 1
 fi
+if [[ -n "${TOOL_WINDOW_ARTIFACT:-}" ]]; then
+  if [[ ! -f "$TOOL_WINDOW_ARTIFACT" ]] \
+    || [[ "${EARLY_TOOL_WAIT_SHADOW:-0}" == 1 ]]; then
+    printf 'Frozen tool shadow needs an artifact and no legacy early shadow\n' >&2
+    exit 1
+  fi
+fi
 if [[ "${CHILD_EOS_TOP_HIT_SHADOW:-0}" == 1 \
   && "${CHILD_EOS_SHADOW:-0}" != 1 ]]; then
   printf 'EOS top-hit shadow requires CHILD_EOS_SHADOW=1\n' >&2
@@ -68,7 +75,8 @@ done
 mkdir -p "$OUT/server"
 sha256sum "$SOURCE" > "$OUT/source_manifest.sha256"
 git -C "$ROOT" rev-parse HEAD > "$OUT/source_commit.txt"
-if [[ "${EARLY_TOOL_WAIT_SHADOW:-0}" == 1 ]]; then
+if [[ "${EARLY_TOOL_WAIT_SHADOW:-0}" == 1 \
+  || -n "${TOOL_WINDOW_ARTIFACT:-}" ]]; then
   ids_json="$(printf '%s\n' "${IDS[@]}" | jq -R . | jq -sc .)"
   jq --argjson ids "$ids_json" \
     '.workloads |= map(select(.instance_id as $id | $ids | index($id)))' \
@@ -123,6 +131,9 @@ for arm in "${arms[@]}"; do
   if [[ "${REPORT_PHASE_SHADOW:-0}" == 1 ]]; then
     intent_arg+=(--child-report-phase-shadow)
   fi
+  if [[ -n "${TOOL_WINDOW_ARTIFACT:-}" && "$arm" == intent ]]; then
+    intent_arg+=(--tool-window-shadow-artifact "$TOOL_WINDOW_ARTIFACT")
+  fi
   if [[ "${EARLY_TOOL_WAIT_SHADOW:-0}" == 1 && "$arm" != control ]]; then
     intent_arg+=(--early-tool-wait-shadow)
   fi
@@ -163,6 +174,11 @@ for arm in intent final length; do
         --workflows "$OUT/${arm}_workloads/workflows" \
         --workload-manifest "$OUT/selected_workload_manifest.json" \
         --output "$OUT/${arm}_early_tool_wait_audit.json"
+    fi
+    if [[ -n "${TOOL_WINDOW_ARTIFACT:-}" && "$arm" == intent ]]; then
+      "$PYTHON" "$ROOT/scripts/audit_frozen_tool_window_shadow.py" \
+        --run-dir "$OUT" --artifact "$TOOL_WINDOW_ARTIFACT" \
+        --output "$OUT/${arm}_frozen_tool_window_audit.json"
     fi
     "$PYTHON" "$ROOT/scripts/audit_child_return_intent_shadow.py" \
       --workflows "$OUT/${arm}_workloads/workflows" \

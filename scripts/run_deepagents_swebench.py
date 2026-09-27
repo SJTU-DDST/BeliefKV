@@ -138,6 +138,10 @@ def parse_args() -> argparse.Namespace:
         ),
     )
     parser.add_argument(
+        "--tool-window-shadow-artifact", type=Path,
+        help="Frozen 100 ms tool window classifier; trace-only, no KV actions.",
+    )
+    parser.add_argument(
         "--sampling-seed",
         type=int,
         help=(
@@ -287,6 +291,7 @@ def main() -> int:
         child_final_report_shadow=args.child_final_report_shadow,
         child_report_length_shadow=args.child_report_length_shadow,
         early_tool_wait_shadow=args.early_tool_wait_shadow,
+        tool_window_shadow_artifact=args.tool_window_shadow_artifact,
         subagent_fanout_profile=args.subagent_fanout_profile,
         stop_after_first_native_join=args.stop_after_first_native_join,
         recursion_limit=args.recursion_limit,

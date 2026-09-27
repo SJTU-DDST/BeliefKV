@@ -6410,3 +6410,74 @@ result 和 trace 的两批数据，逐项核对冻结任务 ID，
 批次中复验。放松 `1100 ms` 过滤本身不构成
 准确率提升，Sphinx 已用于诊断，不能再称为
 未触碰的密封测试集。
+
+### 冻结工具窗口头与独立的条件 ETA 头
+
+新增 `scripts/pilot_tool_return_window_100ms.py`：
+在已完成、未受 runtime 干预的冷 child execute
+调用中，每个 `(workflow, invocation, input_sha256)`
+只计首次调用，失败后的重复调用不得冒充
+独立命中；首次返回未存活 100 ms 时也不能
+拿后续重试填补。目标是工具启动后累计
+600 ms 才返回，即理想 100 ms 观察后仍有
+500 ms；失败但实际返回的工具单列风险。
+七个项目逐项留一拟合二分类窗口筛选，
+另用真实累计时长 ≥600 ms 的训练返回
+拟合条件 ETA；均只使用 `TOOL_START`
+当时已知的形态、输入长度、已结束历史和
+并行工具数量，不依赖未来完成状态。
+
+完整 128-root 训练批次中有 7,372 次符合
+冷返回条件的工具，按首次输入去重且存活
+100 ms 后剩 5,969 条，其中 1,845 条
+具有理想窗口。仅形态和大小的分类器不能
+跨项目识别长尾。加入已完成命令历史的
+训练项目留一消融，在阈值 0.8 下选中
+700 次、615 次真实窗口（精确率 87.9%、
+召回率 33.3%）；但入选集中 Xarray
+占 452 次，Django 仅 138/217 为真，
+不能用汇总精度掩盖项目差异。
+阈值是**训练侧探索选定**，不是物理传输
+准入。可复现报告为
+`experiments/raw/qwen35_cold_tool_overlapped_128root_train_20260927_v1/intent_workloads/tool_window_100ms_classifier_project_loo_v1_20260927.json`。
+
+冻结此阈值后在已用于开发分析、但与训练
+项目隔离的批次上只读回放：Sphinx 8-root
+有 14/14 个被选调用真实留有理想窗口，
+仅分布于 3 个 workflow；Astropy 12-root
+有 158/170，分布于 11 个 workflow，
+含 12 次工具过早返回。因此风险尚未达到
+完全可靠，且两个项目均**不是未触碰的
+密封测试**。分类器之外，形态条件 ETA
+在 Astropy 被选调用上误差 P50 约 1121 ms，
+独立回归头约 164 ms；后者相对冻结
+全局长调用时钟约 199 ms 的配对 95% 增益
+区间跨零。Sphinx 的条件回归 P50 约
+187 ms，不优于形态时钟约 147 ms。
+两项任务不得拼接为“JOIN 或工具时间点
+均已精准预测”的结论。报告分别为
+`tool_window_100ms_classifier_sphinx_dev_v2_20260927.json`
+和 `tool_window_100ms_classifier_astropy_dev_v3_20260927.json`，
+均在上述 128-root 训练批次的 `intent_workloads/` 下。
+
+只读冻结模型放在
+`artifacts/qwen35_tool_window_100ms_train128_20260927_v1/`：
+manifest 记录七项目、128-root manifest 的
+SHA-256、二分类阈值 0.8、模型各自的
+shape vocabulary 与模型文件 SHA-256。
+只有显式 `--tool-window-shadow-artifact`
+才加载；校验文件哈希后，对首个 child
+execute 的原始输入在启动时预测。
+timer 在 100 ms 时再次验证工具调用仍属于
+相同 invocation 且存活，只向逐 workflow
+trace 投递 `beliefkv_tool_window_100ms_shadow`
+诊断事件，**不进入**调度 control sink，
+不触发真实 `PREPARE_HOST`/`PREFETCH_GPU`。
+`scripts/audit_frozen_tool_window_shadow.py`
+按冻结任务和项目核对身份、模型分数、
+100 ms 实际投递及 `tool_end` 配对，右删失单列；
+这里不包含 DMA ACK。
+下一个工程批次应实测计时器延迟、被选
+成功/失败工具的真实剩余窗口与模型误差；
+在此之前上述数值只是回放上界，不代表
+KV 迁移或 JOIN 收益。

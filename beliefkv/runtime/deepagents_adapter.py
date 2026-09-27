@@ -9,7 +9,10 @@ import urllib.request
 from contextlib import contextmanager
 from contextvars import ContextVar
 from dataclasses import dataclass, replace
-from typing import Any, AsyncIterator, Callable, Iterator, Mapping, Protocol, Sequence
+from typing import (
+    TYPE_CHECKING, Any, AsyncIterator, Callable, Iterator, Mapping, Protocol,
+    Sequence,
+)
 from uuid import UUID
 
 from langchain_core.callbacks import BaseCallbackHandler
@@ -45,6 +48,9 @@ from beliefkv.runtime.report_phase import ReportPhaseTracker
 from beliefkv.runtime.sglang_adapter import BeliefKVRequestMetadata
 from beliefkv.runtime.sglang_v0520_sessions import NativeRadixSessionLeases
 from beliefkv.runtime.tool_wait_shadow import ToolWaitShadowTimer
+
+if TYPE_CHECKING:
+    from beliefkv.predictor.tool_window_shadow import FrozenToolWindowShadow
 
 STREAM_CONTENT_THRESHOLDS = (
     64, 1024, 1700, 2400, 3200, 4200, 5600, 7000
@@ -187,6 +193,10 @@ class _OrdinaryToolRun:
     early_shape_total_ms: float | None = None
     early_shape_support: int = 0
     early_shape_deviation_p90_ms: float | None = None
+    window_probability: float | None = None
+    window_total_eta_ms: float | None = None
+    window_global_eta_ms: float | None = None
+    window_artifact_sha256: str | None = None
 
 
 @dataclass(frozen=True)
@@ -235,6 +245,7 @@ class DeepAgentsRuntimeAdapter(BaseCallbackHandler):
         tool_wait_shadow_timer: ToolWaitShadowTimer | None = None,
         tool_wait_shadow_expired: Callable[[], bool] | None = None,
         early_tool_wait_shadow: bool = False,
+        tool_window_shadow: FrozenToolWindowShadow | None = None,
         finish_chunk_shadow: bool = False,
         command_structure_shadow: bool = False,
         report_phase_shadow: bool = False,
@@ -265,6 +276,7 @@ class DeepAgentsRuntimeAdapter(BaseCallbackHandler):
         self._tool_wait_shadow_timer = tool_wait_shadow_timer
         self._tool_wait_shadow_expired = tool_wait_shadow_expired
         self._early_tool_wait_shadow = early_tool_wait_shadow
+        self._tool_window_shadow = tool_window_shadow
         self._finish_chunk_shadow = finish_chunk_shadow
         self._command_structure_shadow = command_structure_shadow
         self._report_phase_shadow = report_phase_shadow
@@ -1437,6 +1449,24 @@ class DeepAgentsRuntimeAdapter(BaseCallbackHandler):
                 and math.isfinite(early_deviation)
                 and 0 <= early_deviation <= 1_000
             )
+            window_estimate = (
+                self._tool_window_shadow.estimate({
+                    "observed_command_shape": observed_shape,
+                    "input_chars": input_chars,
+                    **project_prior,
+                })
+                if (
+                    self._tool_window_shadow is not None
+                    and is_child and tool_name == "execute"
+                    and "previous_same_input_status" not in same_input
+                )
+                else None
+            )
+            eligible_window = (
+                window_estimate is not None
+                and window_estimate.probability
+                >= self._tool_window_shadow.threshold
+            )
             self._ordinary_tools[key] = _OrdinaryToolRun(
                 invocation_id=parent_invocation_id,
                 tool_name=tool_name,
@@ -1454,6 +1484,19 @@ class DeepAgentsRuntimeAdapter(BaseCallbackHandler):
                 ),
                 early_shape_deviation_p90_ms=(
                     float(early_deviation) if eligible_early else None
+                ),
+                window_probability=(
+                    window_estimate.probability if eligible_window else None
+                ),
+                window_total_eta_ms=(
+                    window_estimate.total_eta_ms if eligible_window else None
+                ),
+                window_global_eta_ms=(
+                    window_estimate.global_eta_ms if eligible_window else None
+                ),
+                window_artifact_sha256=(
+                    self._tool_window_shadow.artifact_sha256
+                    if eligible_window else None
                 ),
             )
         event = self._event(
@@ -1477,6 +1520,18 @@ class DeepAgentsRuntimeAdapter(BaseCallbackHandler):
                 "parameter_signature": input_sha256,
                 **same_input,
                 **project_prior,
+                **({
+                    "tool_window_shadow_probability": window_estimate.probability,
+                    "tool_window_shadow_total_eta_ms": (
+                        window_estimate.total_eta_ms
+                    ),
+                    "tool_window_shadow_global_eta_ms": (
+                        window_estimate.global_eta_ms
+                    ),
+                    "tool_window_shadow_artifact_sha256": (
+                        self._tool_window_shadow.artifact_sha256
+                    ),
+                } if window_estimate is not None else {}),
                 "workspace_digest_before": workspace_digest_before,
             },
         )
@@ -1492,6 +1547,13 @@ class DeepAgentsRuntimeAdapter(BaseCallbackHandler):
             self._tool_wait_shadow_timer.schedule(
                 start_monotonic + 0.1,
                 lambda: self.observe_early_tool_wait(
+                    key, parent_invocation_id, tool_call_id
+                ),
+            )
+        if eligible_window and self._tool_wait_shadow_timer is not None:
+            self._tool_wait_shadow_timer.schedule(
+                start_monotonic + 0.1,
+                lambda: self.observe_tool_window_shadow(
                     key, parent_invocation_id, tool_call_id
                 ),
             )
@@ -1979,6 +2041,58 @@ class DeepAgentsRuntimeAdapter(BaseCallbackHandler):
                         ),
                         "tool_wait_shape_eta_ms_p50": (
                             active.early_shape_total_ms - elapsed
+                        ),
+                    },
+                )
+            self._publish((event,), control=False)
+            return True
+
+    def observe_tool_window_shadow(
+        self, tool_run_id: str, invocation_id: str, tool_call_id: str,
+    ) -> bool:
+        """Record an authenticated live candidate, never an H2D intent."""
+
+        with self._publication_lock:
+            with self._lock:
+                active = self._ordinary_tools.get(tool_run_id)
+                if (
+                    self._finished or self._tool_wait_shadow_closed
+                    or active is None
+                    or active.invocation_id != invocation_id
+                    or active.tool_call_id != tool_call_id
+                    or active.window_probability is None
+                    or invocation_id in self._terminal_invocation_ids
+                    or (
+                        self._tool_wait_shadow_expired is not None
+                        and self._tool_wait_shadow_expired()
+                    )
+                ):
+                    return False
+                ts_ms = self._timestamp()
+                elapsed = max(0., ts_ms - active.start_ts_ms)
+                if elapsed < 100:
+                    return False
+                event = self._event(
+                    RuntimeEventKind.STRUCTURED_ACTION,
+                    ts_ms=ts_ms,
+                    invocation_id=invocation_id,
+                    confidence=EventConfidence.OBSERVED_EXACT,
+                    attributes={
+                        "source": "deepagents_tool_window_shadow",
+                        "beliefkv_tool_window_100ms_shadow": True,
+                        "diagnostic_only": True,
+                        "tool_call_id": tool_call_id,
+                        "tool_name": active.tool_name,
+                        "tool_elapsed_ms": elapsed,
+                        "tool_window_probability": active.window_probability,
+                        "tool_window_threshold": self._tool_window_shadow.threshold,
+                        "tool_window_total_eta_ms": active.window_total_eta_ms,
+                        "tool_window_remaining_eta_ms": (
+                            active.window_total_eta_ms - elapsed
+                        ),
+                        "tool_window_global_eta_ms": active.window_global_eta_ms,
+                        "tool_window_artifact_sha256": (
+                            active.window_artifact_sha256
                         ),
                     },
                 )

@@ -17,6 +17,7 @@ from beliefkv.predictor.command_class import (
     execute_command_class, execute_command_shape,
 )
 from beliefkv.predictor.project_tool_history import ProjectToolHistory
+from beliefkv.predictor.tool_window_shadow import ToolWindowEstimate
 from beliefkv.runtime.deepagents_adapter import DeepAgentsRuntimeAdapter
 from beliefkv.runtime.sglang_adapter import BeliefKVRequestMetadata
 from beliefkv.runtime.tool_wait_shadow import ToolWaitShadowTimer
@@ -55,6 +56,7 @@ def _child_tool(
     now: list[float], *, timer: ToolWaitShadowTimer | None = None,
     control: _Sink | None = None,
     early: bool = False,
+    window_head: object | None = None,
 ) -> tuple[DeepAgentsRuntimeAdapter, _Sink, object]:
     trace = _Sink()
     adapter = DeepAgentsRuntimeAdapter(
@@ -63,6 +65,7 @@ def _child_tool(
         project_tool_history=_history(now[0], early=early), project_id="repo",
         tool_wait_shadow_timer=timer,
         early_tool_wait_shadow=early,
+        tool_window_shadow=window_head,
     )
     adapter.start()
     task = adapter.declare_runtime_tasks([("explorer", "inspect")])[0]
@@ -79,6 +82,73 @@ def _child_tool(
         tool_call_id="target",
     )
     return adapter, trace, tool_run
+
+
+class _WindowHead:
+    threshold = .8
+    artifact_sha256 = "frozen-hash"
+
+    def __init__(self, probability: float = .9) -> None:
+        self.calls = 0
+        self.probability = probability
+
+    def estimate(self, _attrs: object) -> ToolWindowEstimate:
+        self.calls += 1
+        return ToolWindowEstimate(self.probability, 1400., 1100.)
+
+
+def test_frozen_window_shadow_is_trace_only_and_bound_to_open_tool() -> None:
+    deadlines: list[tuple[float, object]] = []
+
+    class CaptureTimer:
+        def schedule(self, deadline: float, callback: object) -> bool:
+            deadlines.append((deadline, callback))
+            return True
+
+    head = _WindowHead()
+    now = [50_000.]
+    control = _Sink()
+    adapter, trace, run = _child_tool(
+        now, timer=CaptureTimer(), control=control, window_head=head,
+    )
+    assert head.calls == 1
+    start, = [
+        event for event in trace.events
+        if event.kind == RuntimeEventKind.TOOL_START
+        and event.attributes.get("tool_call_id") == "target"
+    ]
+    assert start.attributes["tool_window_shadow_probability"] == .9
+    window_deadline, callback = min(deadlines)
+    assert window_deadline < max(deadline for deadline, _ in deadlines)
+    assert not callback()
+    now[0] += 101
+    assert callback()
+    window, = [
+        event for event in trace.events
+        if event.attributes.get("beliefkv_tool_window_100ms_shadow") is True
+    ]
+    assert window.attributes["tool_window_remaining_eta_ms"] == 1299
+    assert window.attributes["tool_window_artifact_sha256"] == "frozen-hash"
+    assert not any(
+        event.attributes.get("beliefkv_tool_window_100ms_shadow")
+        for event in control.events
+    )
+    adapter.on_tool_end("done", run_id=run)
+    assert not callback()
+    adapter.finish(outcome="completed")
+    assert not callback()
+
+
+def test_frozen_window_shadow_does_not_publish_below_threshold() -> None:
+    now = [50_000.]
+    head = _WindowHead(probability=.4)
+    adapter, trace, run = _child_tool(now, window_head=head)
+    assert head.calls == 1
+    assert not any(
+        event.attributes.get("beliefkv_tool_window_100ms_shadow")
+        for event in trace.events
+    )
+    adapter.on_tool_end("done", run_id=run)
 
 
 def _observations(trace: _Sink) -> list[RuntimeEvent]:

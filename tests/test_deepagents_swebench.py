@@ -1149,6 +1149,29 @@ def test_workload_cli_native_reactive_guard_matches_p6_collection(
     assert cli.main() == 0
     assert configs[-1].early_tool_wait_shadow is True
 
+    frozen = tmp_path / "tool_window_model.json"
+    frozen.write_text("{}", encoding="utf-8")
+    monkeypatch.setattr(
+        "sys.argv",
+        [
+            "run_deepagents_swebench.py", "--mode", "autonomous",
+            "--tool-window-shadow-artifact", str(frozen),
+        ],
+    )
+    assert cli.main() == 0
+    assert configs[-1].tool_window_shadow_artifact == frozen
+    assert configs[-1].early_tool_wait_shadow is False
+    monkeypatch.setattr(
+        "sys.argv",
+        [
+            "run_deepagents_swebench.py", "--mode", "autonomous",
+            "--tool-window-shadow-artifact", str(frozen),
+            "--early-tool-wait-shadow",
+        ],
+    )
+    with pytest.raises(ValueError, match="share a timer"):
+        cli.main()
+
     monkeypatch.setattr(
         "sys.argv",
         [
