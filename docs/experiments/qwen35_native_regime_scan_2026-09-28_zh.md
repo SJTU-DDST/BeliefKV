@@ -4,7 +4,8 @@
 扫描目的是找出适度压力下 HBM 有可迁移余量、Host 有有效副本及
 传输余量、而有用 KV 驱逐后重算很少的主评估区间；优先检验闲置
 HBM，冷页替换单列。root 数本身不是压力或收益标签。当前服务
-只做 native reactive 和 admission 机会观察，没有启用预测式物理动作。
+的早期扫描只做 native reactive 和 admission 机会观察；
+后续确认 JOIN canary 单独打开了预测式物理 H2D。
 
 ## 180 GB / 70:30 / 12-root：超出候选区间
 
@@ -350,3 +351,9 @@ ACK 后各 context 首次 LLM 请求均进入下一 context epoch；
 新埋点的 CPU 测试通过，但 **v2 不能回填这项证据**。正式验收仍需
 新进程采集节点级首次复用、正确性评分及同配置 reactive 配对 A/B；
 部分 `PREPARE_HOST` 的后续卸载消费也尚未在此轮证明。
+另外，v2 只读 PREPARE 有 4,122 条满足 Host 空槽条件的重复快照，
+按 context/节点创建时间去重为 70 组，按物理 node ID 去重仅
+3 个节点；其中 1 个 node ID 在首次成为候选后出现 native D2H。
+这一关联没有备份动作及后续消费回执，不能当成 PREPARE 成功；
+选择性策略必须以物理节点去重，避免按快照次数批量传输。
+本轮结束后仅删除 14 个可重建的 `workspace`，其它结果保持原样。
