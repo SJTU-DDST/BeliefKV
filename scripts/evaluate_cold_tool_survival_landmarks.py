@@ -116,8 +116,8 @@ def _online_project_predictions(
             if past["duration_ms"] > landmark and (
                 not success_only_history or past["status"] == "success"
             ):
-                history[past["shape"]].append(past)
-        matches = history[row["shape"]]
+                history[(past["project"], past["shape"])].append(past)
+        matches = history[(row["project"], row["shape"])]
         if (
             len(matches) >= minimum_support
             and len({past["workflow"] for past in matches}) >= minimum_workflows

@@ -6116,3 +6116,32 @@ P90 分别约 162/47 秒。输出长度中位相近，
 `holdout_evaluation/child_final_token_budget_audit_20260927.json`
 （SHA-256
 `30cb9b54ed1b3e4945ab6ecb5f8363bb16a9d70cf8f28998a61b3ce1e2c32bba`）。
+
+### 工具存活历史回放的项目键修正（2026-09-27）
+
+离线 `_online_project_predictions` 原按命令 shape 累积已完成
+调用，运行时 `ProjectToolHistory` 则按 `(project, shape)` 隔离。
+即使训练与评价项目集合不重叠，评价批次内部两个项目的
+在线历史仍可能串用；这会高估测试时的同项目支持。现按
+运行时键修正并增加跨项目回归测试，保持 `TOOL_START`
+时冻结先验、严格早于启动时刻的完成记录及窗口大小不变。
+
+新报告分别为 `qwen35_cold_tool_peer_holdout_66root_v1/holdout_evaluation/`
+下的 `cold_tool_survival_project_key_fix_20260927.json`、
+`returned_history_project_key_fix_20260927.json`，以及训练批次
+`qwen35_cold_tool_overlapped_128root_train_20260927_v1/`
+下的 `online_project_key_fix_loo_20260927.json`。此前的
+`cold_tool_survival_success.json`、
+`returned_history_ablation_complete_20260927.json` 和
+`returned_history_ablation_train_loo_20260927.json` 只作
+历史对照；引用在线历史数值须采用修正报告。
+
+500 ms 存活点、留出成功调用集合的项目内支持：
+Astropy 368/415、Sphinx 468/539，修正前后相同；
+加入已返回错误调用后的成功历史支持 Astropy
+812→811、Sphinx 581→581，混合历史支持
+595→594、620→620。两项目原有计划触发及真实
+至少 500 ms 窗口计数均未改变。训练项目留一
+回放也受同一键错误影响，旧折数值不作为策略选择
+依据；它并未提供新的项目独立验收，也没有使
+工具或 JOIN 时间预测达到亚秒级动作资格。

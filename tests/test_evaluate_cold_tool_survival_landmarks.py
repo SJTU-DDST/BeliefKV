@@ -77,6 +77,32 @@ def test_online_project_history_uses_only_finished_distinct_workflows():
     assert predictions[-1] == 4000.
 
 
+def test_online_shape_history_does_not_cross_projects():
+    prior = {"global": 2500., "shape": {"x": 2500.}}
+    calls = [
+        {
+            **_row("alpha", f"alpha-{i}", "x", 4000),
+            "start_ts_ms": float(i * 5000),
+            "terminal_ts_ms": float(i * 5000 + 4000),
+        }
+        for i in range(4)
+    ] + [
+        {
+            **_row("beta", "beta-first", "x", 3000),
+            "start_ts_ms": 20500., "terminal_ts_ms": 23500.,
+        },
+        {
+            **_row("alpha", "alpha-next", "x", 4200),
+            "start_ts_ms": 22000., "terminal_ts_ms": 26200.,
+        },
+    ]
+    predicted, supported = _online_project_predictions(calls, 500, prior)
+
+    assert supported == [5]
+    assert predicted[4] == 2500.
+    assert predicted[5] == 4000.
+
+
 def test_landmark_history_is_frozen_at_tool_start_not_updated_by_peer_return():
     prior = {"global": 2500., "shape": {"x": 2500.}}
     past = [
