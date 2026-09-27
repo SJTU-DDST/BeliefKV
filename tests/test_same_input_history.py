@@ -89,6 +89,136 @@ def test_project_history_never_uses_open_or_failed_calls() -> None:
     ] == 55.0
 
 
+def test_project_shape_survival_prior_is_causal_bounded_and_independent() -> None:
+    history = ProjectToolHistory(window=4)
+    attrs = {
+        "tool_name": "execute", "is_child": True,
+        "observed_command_class": "python_inline",
+        "observed_command_shape": "python_inline_complex",
+        "input_chars": 100,
+    }
+    for index in range(4):
+        workflow = f"wf-{index % 3}"
+        started = index * 4_000
+        call = str(index)
+        history.start(workflow, "repo", {
+            **attrs, "tool_call_id": call,
+        }, started)
+        history.end(workflow, {
+            "tool_call_id": call, "status": "success",
+        }, started + 2_400 + index * 100)
+
+    key = "project_shape_survivor_500ms_total_median_ms"
+    assert key not in history.start("edge", "repo", {
+        **attrs, "tool_call_id": "edge",
+    }, 14_700)
+    assert key not in history.start("other", "different", {
+        **attrs, "tool_call_id": "other",
+    }, 14_701)
+    assert key not in history.start("shape", "repo", {
+        **attrs, "observed_command_shape": "different",
+        "tool_call_id": "shape",
+    }, 14_701)
+    result = history.start("target", "repo", {
+        **attrs, "tool_call_id": "target",
+    }, 14_701)
+    assert result[key] == 2_550
+    assert result["project_shape_survivor_500ms_support"] == 4
+
+    history.start("bad", "repo", {
+        **attrs, "tool_call_id": "bad",
+    }, 15_000)
+    history.end("bad", {
+        "tool_call_id": "bad", "status": "error",
+    }, 19_000)
+    assert history.start("still", "repo", {
+        **attrs, "tool_call_id": "still",
+    }, 19_001)[key] == 2_550
+
+    history.start("repeated", "repo", {
+        **attrs, "tool_call_id": "repeated",
+        "previous_same_input_status": "success",
+    }, 19_002)
+    history.end("repeated", {
+        "tool_call_id": "repeated", "status": "success",
+    }, 21_502)
+    assert history.start("still-cold", "repo", {
+        **attrs, "tool_call_id": "still-cold",
+    }, 21_503)[key] == 2_550
+
+    for index in range(3):
+        call = f"repeat-{index}"
+        started = 20_000 + index * 4_000
+        history.start("repeat", "repo", {
+            **attrs, "tool_call_id": call,
+        }, started)
+        history.end("repeat", {
+            "tool_call_id": call, "status": "success",
+        }, started + 2_500)
+    assert key not in history.start("after-window", "repo", {
+        **attrs, "tool_call_id": "after-window",
+    }, 30_501)
+
+
+def test_export_replays_shape_survivor_prior_and_rejects_mismatch() -> None:
+    events = []
+    metadata = {}
+    for index in range(4):
+        workflow = f"wf-{index % 3}"
+        metadata[workflow] = {"project": "repo"}
+        started = index * 4000
+        attrs = {
+            "tool_name": "execute", "is_child": True,
+            "tool_call_id": f"call-{index}",
+            "observed_command_class": "python_inline",
+            "observed_command_shape": "python_inline_complex",
+        }
+        for kind, timestamp in (
+            (RuntimeEventKind.TOOL_START, started),
+            (RuntimeEventKind.TOOL_END, started + 2400),
+        ):
+            events.append(RuntimeEvent(
+                event_id=f"{workflow}-{index}-{kind.value}",
+                ts_ms=timestamp, kind=kind, workflow_id=workflow,
+                invocation_id="child", attributes={
+                    **attrs,
+                    **({"status": "success"}
+                       if kind == RuntimeEventKind.TOOL_END else {}),
+                },
+            ))
+    target = RuntimeEvent(
+        event_id="target", ts_ms=14_401,
+        kind=RuntimeEventKind.TOOL_START,
+        workflow_id="target", invocation_id="child",
+        attributes={
+            "tool_name": "execute", "is_child": True,
+            "tool_call_id": "target",
+            "observed_command_class": "python_inline",
+            "observed_command_shape": "python_inline_complex",
+        },
+    )
+    metadata["target"] = {"project": "repo"}
+    replayed = _event_triggers(
+        [*events, target], workflow_metadata=metadata,
+    )[-1]["attributes"]
+    assert replayed["project_shape_survivor_500ms_total_median_ms"] == 2400
+    assert replayed["project_shape_survivor_500ms_support"] == 4
+    with pytest.raises(ValueError, match="shape survivor history disagrees"):
+        _event_triggers(
+            [*events, RuntimeEvent(
+                event_id="bad", ts_ms=14_401,
+                kind=RuntimeEventKind.TOOL_START, workflow_id="target",
+                invocation_id="child",
+                attributes={
+                    **target.attributes,
+                    "project_shape_survivor_500ms_total_median_ms": 3000,
+                    "project_shape_survivor_500ms_support": 4,
+                },
+            )],
+            workflow_metadata=metadata,
+        )
+
+
 def test_project_input_neighbors_use_bounded_completed_child_history() -> None:
     history = ProjectToolHistory(minimum_support=16, window=64)
     attrs = {

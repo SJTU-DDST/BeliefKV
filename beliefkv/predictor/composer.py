@@ -55,6 +55,7 @@ class InvocationPredictionFeatures:
     tool_observed_command_class: str = "unknown"
     tool_previous_same_input_duration_ms: float | None = None
     tool_project_class_duration_median_ms: float | None = None
+    tool_project_shape_survivor_500ms_total_median_ms: float | None = None
     action_history: list[ActionKind] = field(default_factory=list)
     boundary_history: list[str] = field(default_factory=list)
     model: str = "unknown"
@@ -144,7 +145,23 @@ class RemainingTimePredictor:
             )
             features.tool_previous_same_input_duration_ms = None
             features.tool_project_class_duration_median_ms = None
+            features.tool_project_shape_survivor_500ms_total_median_ms = None
             if event.attributes.get("tool_name") == "execute":
+                shape_total = event.attributes.get(
+                    "project_shape_survivor_500ms_total_median_ms"
+                )
+                shape_support = event.attributes.get(
+                    "project_shape_survivor_500ms_support"
+                )
+                if (
+                    event.attributes.get("is_child") is True
+                    and type(shape_support) is int and shape_support >= 4
+                    and type(shape_total) in (int, float)
+                    and math.isfinite(shape_total) and shape_total > 500
+                ):
+                    features.tool_project_shape_survivor_500ms_total_median_ms = (
+                        float(shape_total)
+                    )
                 previous = event.attributes.get("previous_same_input_duration_ms")
                 if (
                     event.attributes.get("previous_same_input_status") == "success"
@@ -171,6 +188,7 @@ class RemainingTimePredictor:
             features.tool_observed_command_class = "unknown"
             features.tool_previous_same_input_duration_ms = None
             features.tool_project_class_duration_median_ms = None
+            features.tool_project_shape_survivor_500ms_total_median_ms = None
         elif event.kind in {RuntimeEventKind.CALL, RuntimeEventKind.SPAWN}:
             action = ActionKind.SPAWN_CHILD
         elif event.kind == RuntimeEventKind.JOIN_WAIT:

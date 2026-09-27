@@ -1385,8 +1385,12 @@ class DeepAgentsRuntimeAdapter(BaseCallbackHandler):
                     {
                         "tool_call_id": tool_call_id, "tool_name": tool_name,
                         "observed_command_class": observed_command,
+                        "observed_command_shape": observed_shape,
                         "is_child": is_child,
                         "input_chars": input_chars,
+                        "previous_same_input_status": same_input.get(
+                            "previous_same_input_status"
+                        ),
                     }, ts_ms,
                 )
                 if self._project_tool_history is not None else {}

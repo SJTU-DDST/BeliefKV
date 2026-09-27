@@ -138,6 +138,57 @@ class OnlineShadowTest(unittest.TestCase):
         self.assertEqual(records, ())
         self.assertEqual(signatures, {})
 
+    def test_shape_survival_clock_is_shadow_only_and_expires(self) -> None:
+        graph = build_graph()
+        create = RuntimeEvent(
+            event_id="shape-child", ts_ms=4.0,
+            kind=RuntimeEventKind.INVOCATION_CREATE,
+            workflow_id="wf", invocation_id="child", context_id="child-ctx",
+            context_epoch=0, parent_invocation_id="root",
+            relation_type=RelationType.SPAWN,
+        )
+        graph.apply(create)
+        start = RuntimeEvent(
+            event_id="shape-start", ts_ms=5.0,
+            kind=RuntimeEventKind.TOOL_START,
+            workflow_id="wf", invocation_id="child",
+            attributes={
+                "tool_name": "execute", "tool_family": "shell",
+                "is_child": True,
+                "project_shape_survivor_500ms_total_median_ms": 2500.,
+                "project_shape_survivor_500ms_support": 4,
+            },
+        )
+        graph.apply(start)
+        predictor = RemainingTimePredictor(_frontier=FakeFrontierModel())
+        predictor.observe_event(start)
+
+        before, signatures = build_frontier_shadow_records(
+            graph, predictor, now_ms=504., min_interval_ms=0,
+        )
+        assert next(row for row in before if row.invocation_id == "child"
+                    ).tool_wait_shape_eta_ms_p50 is None
+        after, signatures = build_frontier_shadow_records(
+            graph, predictor, now_ms=505., last_signatures=signatures,
+            min_interval_ms=0,
+        )
+        assert next(row for row in after if row.invocation_id == "child"
+                    ).tool_wait_shape_eta_ms_p50 == 2000.
+
+        end = RuntimeEvent(
+            event_id="shape-end", ts_ms=506.,
+            kind=RuntimeEventKind.TOOL_END,
+            workflow_id="wf", invocation_id="child",
+        )
+        graph.apply(end)
+        predictor.observe_event(end)
+        expired, _ = build_frontier_shadow_records(
+            graph, predictor, now_ms=507., last_signatures=signatures,
+            min_interval_ms=0,
+        )
+        assert next(row for row in expired if row.invocation_id == "child"
+                    ).tool_wait_shape_eta_ms_p50 is None
+
     def test_emits_only_on_signature_change_after_interval(self) -> None:
         graph = build_graph()
         model = FakeFrontierModel()

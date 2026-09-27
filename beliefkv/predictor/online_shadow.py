@@ -13,6 +13,7 @@ from __future__ import annotations
 
 import hashlib
 import collections
+import math
 from dataclasses import dataclass, field
 from typing import Any, Mapping, Sequence
 
@@ -49,6 +50,31 @@ class FrontierShadowRecord:
     next_output_tokens_p50: float
     feature_source: str = "online_approx"
     signature: str = ""
+    tool_wait_shape_eta_ms_p50: float | None = None
+
+
+def _shape_tool_wait_eta(
+    graph: RuntimeCausalContextGraph,
+    predictor: RemainingTimePredictor,
+    invocation_id: str,
+    now_ms: float,
+) -> float | None:
+    invocation = graph.invocations[invocation_id]
+    online = predictor.features.get(invocation_id)
+    if (
+        invocation.state != InvocationState.WAIT_TOOL
+        or invocation.active_tool_start_ms is None
+        or online is None
+    ):
+        return None
+    total = online.tool_project_shape_survivor_500ms_total_median_ms
+    elapsed = max(0., now_ms - invocation.active_tool_start_ms)
+    if (
+        total is None or not math.isfinite(total)
+        or elapsed < 500 or elapsed >= total
+    ):
+        return None
+    return total - elapsed
 
 
 def _boundary_top(distribution: Mapping[str, float]) -> str:
@@ -262,7 +288,12 @@ def build_frontier_shadow_records(
         prediction = predictions.get(invocation.invocation_id)
         if prediction is None:
             continue
-        signature = _record_signature(prediction)
+        shape_eta = _shape_tool_wait_eta(
+            graph, predictor, invocation.invocation_id, now_ms,
+        )
+        signature = _record_signature(prediction) + (
+            ":shape_500ms" if shape_eta is not None else ""
+        )
         previous_signature, previous_ts = signatures.get(
             invocation.invocation_id, ("", float("-inf"))
         )
@@ -318,6 +349,7 @@ def build_frontier_shadow_records(
                         prediction.next_output_tokens.quantile(0.5)
                     ),
                     signature=signature,
+                    tool_wait_shape_eta_ms_p50=shape_eta,
                 )
             )
             signatures[invocation.invocation_id] = (signature, now_ms)

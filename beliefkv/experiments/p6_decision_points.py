@@ -296,6 +296,22 @@ def _event_triggers(
                 )
             ):
                 raise ValueError("online/offline long tool history disagrees")
+            if (
+                "project_shape_survivor_500ms_total_median_ms" in attrs
+                and (
+                    abs(
+                        float(attrs["project_shape_survivor_500ms_total_median_ms"])
+                        - float(project_prior.get(
+                            "project_shape_survivor_500ms_total_median_ms", -1
+                        ))
+                    ) > .01
+                    or int(attrs.get("project_shape_survivor_500ms_support", -1))
+                    != int(project_prior.get(
+                        "project_shape_survivor_500ms_support", -1
+                    ))
+                )
+            ):
+                raise ValueError("online/offline shape survivor history disagrees")
             attrs.update(project_prior)
         elif event.kind == RuntimeEventKind.TOOL_END and event.invocation_id:
             history.end(event.workflow_id, event.invocation_id, attrs, event.ts_ms)
@@ -337,6 +353,8 @@ def _event_triggers(
                     "project_class_inflight_other_workflow_2s_peers",
                     "project_long_completed_median_ms",
                     "project_long_completed_support",
+                    "project_shape_survivor_500ms_total_median_ms",
+                    "project_shape_survivor_500ms_support",
                     "prompt_semantic_sha256",
                     "sampling_seed",
                     "status",

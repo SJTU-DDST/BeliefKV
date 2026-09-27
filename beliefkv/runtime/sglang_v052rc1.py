@@ -11127,6 +11127,9 @@ class EmbeddedSGLangRuntime:
                 ),
                 wait_kind=shadow_event.wait_kind,
                 tool_wait_ms_p50=shadow_event.tool_wait_ms_p50,
+                tool_wait_shape_eta_ms_p50=(
+                    shadow_event.tool_wait_shape_eta_ms_p50
+                ),
                 tool_wait_survival=dict(shadow_event.tool_wait_survival),
                 remaining_external_wait_ms_p50=(
                     shadow_event.remaining_external_wait_ms_p50

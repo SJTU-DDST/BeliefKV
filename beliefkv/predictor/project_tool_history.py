@@ -19,13 +19,16 @@ class ProjectToolHistory:
         self.max_keys = max_keys
         self._lock = RLock()
         self._open: dict[
-            tuple[str, str], tuple[str, str, float, bool, int | None]
+            tuple[str, str], tuple[str, str, float, bool, int | None, str, bool]
         ] = {}
         self._completed: OrderedDict[
             tuple[str, str], deque[tuple[float, float, int | None]]
         ] = OrderedDict()
         self._long_completed: OrderedDict[
             tuple[str, str], deque[tuple[float, float]]
+        ] = OrderedDict()
+        self._shape_survivors: OrderedDict[
+            tuple[str, str], deque[tuple[str, float, float]]
         ] = OrderedDict()
 
     def start(
@@ -36,6 +39,7 @@ class ProjectToolHistory:
             return {}
         call_id = str(attrs.get("tool_call_id") or "")
         command = str(attrs.get("observed_command_class") or "")
+        shape = str(attrs.get("observed_command_shape") or "")
         if not call_id or not command or command == "unknown":
             return {}
         with self._lock:
@@ -47,16 +51,35 @@ class ProjectToolHistory:
                 and other_project == project and other_command == command
                 and 0 <= other_start <= ts_ms - 2_000
                 for (other_workflow, _), (other_project, other_command,
-                                           other_start, _, _) in self._open.items()
+                                           other_start, _, _, _, _) in self._open.items()
             )
             is_execute = attrs.get("tool_name") == "execute"
+            cold = attrs.get("previous_same_input_status") != "success"
             size = attrs.get("input_chars")
             size = size if type(size) is int and size > 0 else None
-            self._open[call_key] = project, command, ts_ms, is_execute, size
+            self._open[call_key] = (
+                project, command, ts_ms, is_execute, size, shape, cold
+            )
             observed = (
                 {"project_class_inflight_other_workflow_2s_peers": peers}
                 if peers else {}
             )
+            if is_execute and shape and shape != "unknown":
+                survivors = [
+                    (workflow, duration)
+                    for workflow, duration, end
+                    in self._shape_survivors.get((project, shape), ())
+                    if end < ts_ms
+                ]
+                if len(survivors) >= 4 and len({
+                    workflow for workflow, _ in survivors
+                }) >= 3:
+                    observed.update({
+                        "project_shape_survivor_500ms_total_median_ms": float(
+                            median(duration for _, duration in survivors)
+                        ),
+                        "project_shape_survivor_500ms_support": len(survivors),
+                    })
             long_values = [
                 duration for duration, end
                 in self._long_completed.get((project, command), ())
@@ -110,7 +133,7 @@ class ProjectToolHistory:
             opened = self._open.pop(call_key, None)
             if opened is None:
                 return
-            project, command, start_ts, is_execute, input_chars = opened
+            project, command, start_ts, is_execute, input_chars, shape, cold = opened
             if ts_ms < start_ts:
                 raise ValueError("project tool end precedes its start")
             if attrs.get("status") != "success":
@@ -127,6 +150,15 @@ class ProjectToolHistory:
                     self._long_completed.popitem(last=False)
             if not is_execute:
                 return
+            if cold and duration > 500 and shape and shape != "unknown":
+                shape_key = project, shape
+                survivors = self._shape_survivors.setdefault(
+                    shape_key, deque(maxlen=self.window)
+                )
+                survivors.append((workflow_id, duration, ts_ms))
+                self._shape_survivors.move_to_end(shape_key)
+                while len(self._shape_survivors) > self.max_keys:
+                    self._shape_survivors.popitem(last=False)
             history = self._completed.setdefault(key, deque(maxlen=self.window))
             history.append((duration, ts_ms, input_chars))
             self._completed.move_to_end(key)
