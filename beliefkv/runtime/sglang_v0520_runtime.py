@@ -611,6 +611,7 @@ class NativeAdmissionRuntime:
             }
             observation = self.inspect_context_h2d_opportunity(
                 context_id=key.context_id, context_epoch=key.context_epoch,
+                admission_candidate=source == "admission_candidate",
             )
             if observation is None:
                 row["reason"] = (
@@ -1351,6 +1352,7 @@ class NativeAdmissionRuntime:
 
     def inspect_context_h2d_opportunity(
         self, *, context_id: str, context_epoch: int,
+        admission_candidate: bool = False,
     ) -> SessionH2DOpportunity | None:
         """Read action-local session/allocator evidence; never dispatch H2D."""
         cache = self._native_cache
@@ -1365,6 +1367,11 @@ class NativeAdmissionRuntime:
             or invocation.state not in (
                 InvocationState.WAIT_TOOL, InvocationState.WAIT_JOIN,
                 InvocationState.READY,
+            )
+            and not (
+                admission_candidate
+                and invocation.state is InvocationState.RUNNING_LLM
+                and self.visible.get(key.request_id) == key
             )
             or self._terminal(key)
         ):
@@ -1518,11 +1525,15 @@ class NativeAdmissionRuntime:
             or invocation is None
             or invocation.workflow_id != key.root_workflow_id
             or invocation.context_id != key.context_id
-            or invocation.state.value != (
-                "ready" if source == "admission"
-                or source == "join_ticket" and ticket.phase == "confirmed"
-                else "wait_join" if source in ("join_wait", "join_ticket")
-                else "wait_tool"
+            or (
+                invocation.state.value not in ("ready", "running_llm")
+                if source == "admission"
+                else invocation.state.value != (
+                    "ready" if source == "join_ticket"
+                    and ticket.phase == "confirmed"
+                    else "wait_join" if source in ("join_wait", "join_ticket")
+                    else "wait_tool"
+                )
             )
             or (
                 source != "join_ticket"
@@ -1591,7 +1602,7 @@ class NativeAdmissionRuntime:
         return command_id
 
     def defer_prefill_for_prefetch(self, req: object) -> bool:
-        """Hold at most one READY request in waiting until bounded native H2D ACK.
+        """Hold at most one submitted request in waiting until bounded native H2D ACK.
 
         This runs after the native slot test but before prefix match or running
         admission. A failed/expired step falls back to ordinary PrefillAdder.
@@ -1612,6 +1623,16 @@ class NativeAdmissionRuntime:
                 return False
             self._admission_lease = None
             lease = None
+        if lease is not None and (
+            self.visible.get(key.request_id) != key
+            or self._terminal(key)
+            or (
+                (current := self.graph.invocations.get(key.invocation_id)) is None
+                or current.state.value not in ("ready", "running_llm")
+            )
+        ):
+            self._admission_lease = None
+            return False
         if (
             lease is not None
             and lease.command_id is not None
@@ -1631,7 +1652,7 @@ class NativeAdmissionRuntime:
             or key.session_id is None
             or key.session_generation is None
             or invocation is None
-            or invocation.state.value != "ready"
+            or invocation.state.value not in ("ready", "running_llm")
             or hint is None
             or hint.predictor_sha256 != self.predictor_sha256
             or not hint.live(key, now_ms=time.monotonic() * 1000)
@@ -1847,6 +1868,35 @@ class NativeAdmissionRuntime:
             for workflow_id in workflows
             for item in self.frontier.candidates(workflow_id)
         }
+        # LLM_SUBMIT marks an invocation RUNNING_LLM before the native waiting
+        # request has received its first GPU service. Only inspect bounded
+        # candidates supplied by SGLang's waiting queue here.
+        for _, req in tagged[:8]:
+            key = _request_key(req)
+            if (
+                key is None
+                or key.invocation_id in ready_ranks
+                or self.visible.get(key.request_id) != key
+                or self.context_sessions.get(key.context_id) != key
+                or self._terminal(key)
+            ):
+                continue
+            invocation = self.graph.invocations.get(key.invocation_id)
+            context = self.graph.contexts.get(key.context_id)
+            if (
+                invocation is None
+                or invocation.state is not InvocationState.RUNNING_LLM
+                or invocation.workflow_id != key.root_workflow_id
+                or invocation.context_id != key.context_id
+                or context is None
+                or context.workflow_id != key.root_workflow_id
+                or context.epoch != key.context_epoch
+            ):
+                continue
+            candidate = self.frontier.describe_invocation(key.invocation_id)
+            ready_ranks[key.invocation_id] = (
+                candidate.score[0], -candidate.unblock_depth,
+            )
         self._submit_local_predictions(tagged, ready_ranks)
         now_ms = time.monotonic() * 1000
         ranks = {

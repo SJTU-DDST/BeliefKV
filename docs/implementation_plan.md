@@ -115,6 +115,14 @@ Primary metrics:
    representative physical opportunity rates, allocator ownership and
    transfer/first-consumption reconciliation are not yet verified. Do
    not treat `fits_current_free_lists` as a reservation or H2D permit.
+   Real waiting requests are already `RUNNING_LLM` in RCCG after
+   `LLM_SUBMIT`; the READY-only admission gate missed them. The bounded
+   waiting-list prediction, read-only opportunity probe and pre-admission
+   lease now admit that submitted state only with current request/session/
+   context identity; a stale/terminal lease cannot keep deferring native
+   admission. This is CPU-tested, not a claim of GPU H2D success; repeat
+   the independent GPU gate with the revised server before evaluating
+   next-agent handoff or promoting physical actions.
    Deep Agents now has an opt-in `--native-radix-sessions` mode requiring
    `--control-socket`. Start the server with
    `ENABLE_SESSION_RADIX_CACHE=1`, `HICACHE_WRITE_POLICY=write_through`,

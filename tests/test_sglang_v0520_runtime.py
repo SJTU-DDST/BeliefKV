@@ -252,7 +252,8 @@ def test_safe_point_persists_bounded_wait_and_admission_opportunities(tmp_path):
         unbacked_mamba_leaves=0,
     )
     with patch.object(runtime, "inspect_context_h2d_opportunity",
-                      side_effect=lambda *, context_id, context_epoch:
+                      side_effect=lambda *, context_id, context_epoch,
+                      admission_candidate=False:
                       opportunity if context_id == "ctx-waiting" else None) as inspect:
         runtime.scheduler_step(waiting_queue=[waiting])
         runtime.scheduler_step(waiting_queue=[waiting])
@@ -1115,6 +1116,71 @@ def test_ready_admission_prefetch_waits_for_ack_before_native_prefill():
                 assert not runtime.defer_prefill_for_prefetch(request)
     assert runtime._admission_lease is None
     assert runtime.counts["admission_prefetch_acked"] == 1
+
+
+def test_submitted_waiting_request_can_predict_and_prefetch_before_admission():
+    runtime = NativeAdmissionRuntime()
+    runtime.predictor_sha256 = "a" * 64
+    runtime.enable_admission_prefetch = True
+    request = req("submitted")
+    request.session_id = "session-submitted"
+    request.session_generation = 3
+    assert runtime.register_visible_request(request)
+    runtime.on_events((
+        event(0, RuntimeEventKind.WORKFLOW_START),
+        event(1, RuntimeEventKind.INVOCATION_CREATE,
+              invocation_id="submitted", context_id="ctx-submitted",
+              agent_definition_id="role", agent_instance_id="submitted"),
+        event(2, RuntimeEventKind.LLM_SUBMIT,
+              invocation_id="submitted", context_id="ctx-submitted"),
+    ))
+    key = runtime.context_sessions["ctx-submitted"]
+    tasks = []
+    runtime._model_worker = NS(disabled=False, submit=lambda batch: tasks.extend(batch))
+    runtime.plan_native_prefill([request], running_batch=None, adder=None)
+    assert len(tasks) == 1
+    assert tasks[0][0] == key
+    assert tasks[0][1].state == "running_llm"
+
+    cache = NS(session_refs=NS(
+        snapshot_session_leaf_anchors=lambda session, generation, max_leaves:
+        ((0, ((11, 4),)), (2, ((11, 4),))),
+    ))
+    runtime.attach_native_cache(cache)
+    with patch(
+        "beliefkv.runtime.sglang_v0520_runtime.inspect_session_h2d_opportunity",
+        return_value=object(),
+    ) as inspect:
+        assert runtime.inspect_context_h2d_opportunity(
+            context_id=key.context_id, context_epoch=0,
+        ) is None
+        assert runtime.inspect_context_h2d_opportunity(
+            context_id=key.context_id, context_epoch=0,
+            admission_candidate=True,
+        ) is not None
+        assert inspect.call_count == 1
+
+    now = time.monotonic() * 1000
+    runtime.demand_hints[request.rid] = NativeDemandHint(
+        key, 12, now, now + 5000, "a" * 64,
+        runtime.graph.invocations["submitted"].updated_ts_ms,
+    )
+    step = PrefetchLoadStep(key, 11, 4, 11, 4)
+    with patch.object(runtime, "capture_shadow_candidate", return_value=object()):
+        with patch("beliefkv.runtime.sglang_v0520_runtime.next_prefetch_gpu_step",
+                   return_value=step):
+            with patch.object(runtime, "issue_prefetch_gpu_step",
+                              return_value="h2d-submitted") as issue:
+                assert runtime.defer_prefill_for_prefetch(request)
+                issue.assert_called_once_with(step, source="admission")
+    runtime.physical_ledger.is_pending = lambda command_id: True
+    runtime.on_events((
+        event(3, RuntimeEventKind.LLM_RESULT,
+              invocation_id="submitted", context_id="ctx-submitted",
+              attributes={"terminal": True}),
+    ))
+    assert not runtime.defer_prefill_for_prefetch(request)
+    assert runtime._admission_lease is None
 
 
 def test_admission_prefetch_cannot_block_native_without_fresh_identity_or_hint():

@@ -54,6 +54,13 @@ RCCG 镜像的起点和 epoch；模型请求与真实传输仍以服务端为
 原生 ACK 可审计，但 JOIN 候选主要无 Host-backed step，
 主动预测动作的身份/容量预留、ACK 至首次消费仍须 GPU 验证。
 见 `docs/experiments/qwen35_native_regime_scan_2026-09-28_zh.md`。
+进一步核对真实 waiting queue 后发现：`LLM_SUBMIT` 先将 RCCG
+状态推进到 `RUNNING_LLM`，实际请求却还在 native waiting；此前
+只接受 `READY` 的准入预测、只读 H2D 机会和 prefetch lease 会
+错过此类请求。现已在 native waiting queue 的请求身份、session
+和 epoch 验证下，接受这类已提交但尚未获得 GPU 服务的请求；
+失效/终态 lease 不再延续。仅有 CPU 回归，已启动的旧服务端
+不含此修复，仍须后续独立 GPU 试采确认机会与物理动作。
 
 近期主评估场景改为 HBM 有空闲空间或可安全迁出的冷
 KV、Host/PCIe 尚有余量且有效 KV 丢弃后重算较少的压力区间。
