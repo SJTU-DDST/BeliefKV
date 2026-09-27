@@ -55,6 +55,7 @@ def _run(tmp_path: Path) -> Path:
             attrs.update({
                 "project_shape_survivor_500ms_total_median_ms": 2400.,
                 "project_shape_survivor_500ms_support": 4,
+                "input_sha256": "a" * 64,
             })
         events = [
             _event(instance, 0, base, "workflow_start"),
@@ -93,6 +94,21 @@ def test_complete_canary_audits_causal_survival_and_lag(tmp_path: Path) -> None:
     assert result["observed_success_point_absolute_error"]["p50_ms"] == 0.
     assert result["observed_lag_after_500ms"]["p50_ms"] == 1.
     assert result["observed_return_lead"]["p50_ms"] == 1899.
+    assert result["observed_success_return_lead"]["p50_ms"] == 1899.
+    assert result["observed_success_lead_at_least_500ms"] == 1
+    assert result["observed_success_lead_at_least_1000ms"] == 1
+    assert result["observed_success_actionable_500ms_workflows"] == 1
+    assert result["observed_success_actionable_500ms_within_500ms"] == 1
+    assert result["observed_success_actionable_500ms_point_error"]["p50_ms"] == 0.
+    assert result["observed_success_predicted_500ms_lead"] == {
+        "selected": 1,
+        "true_at_least_500ms": 1,
+        "returned_before_500ms": 0,
+    }
+    assert result["observed_success_distinct_inputs"] == 1
+    assert result["observed_success_distinct_input_lead_at_least_500ms"] == 1
+    assert result["observed_success_distinct_input_lead_at_least_1000ms"] == 1
+    assert result["observed_success_distinct_input_error"]["p50_ms"] == 0.
 
 
 def test_canary_rejects_partial_and_bad_timer_counters(tmp_path: Path) -> None:

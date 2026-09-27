@@ -100,6 +100,7 @@ def audit(run_dir: Path, *, expected_workflows: int) -> dict[str, Any]:
                 starts[key] = {
                     "start_ms": float(event["ts_ms"]),
                     "invocation_id": event["invocation_id"],
+                    "input_sha256": attrs.get("input_sha256"),
                     "prior_total_ms": attrs.get(
                         "project_shape_survivor_500ms_total_median_ms"
                     ),
@@ -150,6 +151,13 @@ def audit(run_dir: Path, *, expected_workflows: int) -> dict[str, Any]:
         workflow_metadata=metadata,
     )
     clock_errors, leads, dispatch_lag = [], [], []
+    success_leads, error_leads = [], []
+    first_success_by_input: dict[tuple[str, str, str], dict[str, float]] = {}
+    success_actionable_workflows: set[str] = set()
+    success_actionable_errors: list[float] = []
+    predicted_success_500ms_leads: list[float] = []
+    predicted_error_500ms_leads: list[float] = []
+    success_missing_input_identity = 0
     returned = observed_returned = returned_after_750 = observed_censored = 0
     observed_after_750 = 0
     censored = finished_before_500 = 0
@@ -172,11 +180,32 @@ def audit(run_dir: Path, *, expected_workflows: int) -> dict[str, Any]:
         if observed is not None:
             observed_returned += 1
             dispatch_lag.append(observed - call["start_ms"] - 500)
-            leads.append(ended - observed)
+            lead = ended - observed
+            leads.append(lead)
             if duration >= 750:
                 observed_after_750 += 1
             if call["status"] == "success":
-                clock_errors.append(abs(duration - call["prior_total_ms"]))
+                error = abs(duration - call["prior_total_ms"])
+                clock_errors.append(error)
+                success_leads.append(lead)
+                if call["prior_total_ms"] - (observed - call["start_ms"]) >= 500:
+                    predicted_success_500ms_leads.append(lead)
+                if lead >= 500:
+                    success_actionable_workflows.add(key[0])
+                    success_actionable_errors.append(error)
+                input_sha256 = call["input_sha256"]
+                if not isinstance(input_sha256, str) or not input_sha256:
+                    success_missing_input_identity += 1
+                else:
+                    distinct_key = key[0], call["invocation_id"], input_sha256
+                    if distinct_key not in first_success_by_input:
+                        first_success_by_input[distinct_key] = {
+                            "lead_ms": lead, "error_ms": error,
+                        }
+            elif call["status"] == "error":
+                error_leads.append(lead)
+                if call["prior_total_ms"] - (observed - call["start_ms"]) >= 500:
+                    predicted_error_500ms_leads.append(lead)
     timer = summary["tool_wait_shadow"]
     if (
         timer["published"] != len(observations)
@@ -200,7 +229,53 @@ def audit(run_dir: Path, *, expected_workflows: int) -> dict[str, Any]:
         "observed_returned_after_750ms": observed_after_750,
         "observed_lag_after_500ms": _stats(dispatch_lag),
         "observed_return_lead": _stats(leads),
+        "observed_success_return_lead": _stats(success_leads),
+        "observed_success_lead_at_least_500ms": sum(
+            lead >= 500 for lead in success_leads
+        ),
+        "observed_success_lead_at_least_1000ms": sum(
+            lead >= 1000 for lead in success_leads
+        ),
+        "observed_success_actionable_500ms_workflows": len(
+            success_actionable_workflows
+        ),
+        "observed_success_actionable_500ms_point_error": _stats(
+            success_actionable_errors
+        ),
+        "observed_success_actionable_500ms_within_500ms": sum(
+            error <= 500 for error in success_actionable_errors
+        ),
+        "observed_success_predicted_500ms_lead": {
+            "selected": len(predicted_success_500ms_leads),
+            "true_at_least_500ms": sum(
+                lead >= 500 for lead in predicted_success_500ms_leads
+            ),
+            "returned_before_500ms": sum(
+                lead < 500 for lead in predicted_success_500ms_leads
+            ),
+        },
+        "observed_error_predicted_500ms_lead": {
+            "selected": len(predicted_error_500ms_leads),
+            "true_at_least_500ms": sum(
+                lead >= 500 for lead in predicted_error_500ms_leads
+            ),
+            "returned_before_500ms": sum(
+                lead < 500 for lead in predicted_error_500ms_leads
+            ),
+        },
+        "observed_error_return_lead": _stats(error_leads),
         "observed_success_point_absolute_error": _stats(clock_errors),
+        "observed_success_missing_input_identity": success_missing_input_identity,
+        "observed_success_distinct_inputs": len(first_success_by_input),
+        "observed_success_distinct_input_lead_at_least_500ms": sum(
+            row["lead_ms"] >= 500 for row in first_success_by_input.values()
+        ),
+        "observed_success_distinct_input_lead_at_least_1000ms": sum(
+            row["lead_ms"] >= 1000 for row in first_success_by_input.values()
+        ),
+        "observed_success_distinct_input_error": _stats([
+            row["error_ms"] for row in first_success_by_input.values()
+        ]),
         "observed_lead_at_least_500ms": sum(lead >= 500 for lead in leads),
         "timer": timer,
         "scope": (
