@@ -5472,3 +5472,52 @@ Sphinx 留出集已被用于方案评估，不能把
 既未校准 JOIN 时间，也未启用预测性
 H2D/D2H；`online_eligible=false` 和
 `predictive_action_eligible=false` 不变。
+
+### 500 ms 在线投递的 Astropy 工程 canary（2026-09-27，运行前冻结）
+
+以 `5f1f51c` 的源码启动单个 `intent` 臂：
+从原 66-root 留出 manifest 的 Astropy 项目
+**按原顺序取前 12 个**，客户端并发 12，
+Qwen3.5-35B-A3B、SGLang 0.5.20，
+Host 120 GB NUMA 1、FULL/Mamba 70/30、
+running 48，workflow 和单请求截止均为
+7200 秒。源 manifest 的 SHA-256 为
+`fbce7fb3175d73ac0d2b881e3e16a669c32cc3063b56ca25a883eb606d07e2cb`。
+独立目录
+`experiments/raw/qwen35_tool_wait_observation_astropy12_20260927/`
+保留启动源码提交、trace、计时器计数及服务日志；
+不与旧实验混合。此为**同项目同任务的运行链路
+工程 canary**，Astropy 标签已用于此前项目留出
+评估，不能作为新的项目隔离精度验收。
+
+终结后逐条检查：
+
+- 只把在 `TOOL_START` 时已具有至少四条、来自
+  至少三个其他历史 workflow 的冷 child execute
+  形态先验的调用列为可投递候选；按真实结束时刻
+  区分 500 ms 前结束、超出历史总时长及调用被撤销。
+- 对新 `tool_wait_observation` 核验同一 workflow、
+  invocation、tool call、起始先验、结束之前的在线
+  时间戳、是否迟于 500 ms，以及有无重复或
+  `WORKFLOW_END` 之后的陈旧写入。
+- 汇总有支持的合格存活调用数、真实投递覆盖、
+  `tool_elapsed_ms-500` 延迟分布及失败/删失分母；
+  计时器 `dropped`、`errors` 必须分别为零。
+  如支持调用数为零，则只说明 canary 未形成
+  验证窗口，不能按零误报宣称功能通过。
+- 对真正观测且事后成功返回的调用，单列在相同
+  子集上的剩余 ETA 点误差及早于工具结束的
+  可用提前量；不据此回选算法阈值，不报告
+  新项目泛化收益，也不推断 D2H/H2D 成功。
+
+本批尚未结束；任何部分 trace 只做运行健康检查，
+不作终局精度或覆盖结论。JOIN 阶段的早期
+时钟精度仍需新的因果信号和独立项目复验。
+结束后运行
+`python scripts/audit_tool_wait_observations.py
+--run-dir experiments/raw/qwen35_tool_wait_observation_astropy12_20260927
+--expected-workflows 12
+--output experiments/raw/qwen35_tool_wait_observation_astropy12_20260927/tool_wait_observation_audit.json`。
+审计器校验源 workflow 身份、完整终态和计时器计数，
+从 trace 重放项目历史，分开计算历史支持、工具实际
+存活、迟到投递、成功返回点误差与开放调用删失。
