@@ -2069,7 +2069,7 @@ def test_in_graph_first_turn_requires_task_then_restores_root_tools() -> None:
         tools=[repository_tool, task],
     )
     middleware.wrap_model_call(first, handler)
-    assert requests[-1].tools == [task]
+    assert requests[-1].tools == [repository_tool, task]
     assert requests[-1].tool_choice == "task"
     assert first.tools == [repository_tool, task]
     assert first.tool_choice is None

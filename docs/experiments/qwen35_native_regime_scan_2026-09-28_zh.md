@@ -428,3 +428,20 @@ runtime 已支持该配置，`run_deepagents_swebench.py` 的 argparse
 不使用独立 planner，不改变其它 reactive profile。此机制必须
 先通过原生模型/tool parser 与真实 SPAWN/JOIN 的 GPU 试采，
 才可继续验证预测性 H2D 的物理节点首次复用。
+
+## 200 GB / 25:75 / write-back / 8-root：v4 启动阶段撤销
+
+`...native_in_graph_join_200g_25_75_8root_v4/` 启动期间发现：
+仅首轮把客户端工具列表缩成 `task` 会改变系统提示词中的工具 schema；
+即使只改具名 `tool_choice`，原 SGLang 也会把 chat template 的
+工具定义过滤为具名工具。这会使首轮 root 与 JOIN 后的 root
+请求不共享精确前缀。因此在客户端提交之前停止 v4；该轮既无
+可测 workflow，也不属于 H2D 失败。
+
+新的局部修复让首轮客户端仍传完整工具列表，只用 `tool_choice=task`
+约束输出；服务端仅对带 BeliefKV 元数据的具名 `task` 请求保留
+完整工具定义参与模板渲染，解析约束仍要求生成 `task`。普通
+具名工具保持原过滤规则。客户端/服务端单测核对了首轮与后续
+工具定义一致，但尚未验证线上 prompt token 前缀和首次服务 KV
+复用；下一轮要同时检查真实 `task`、SPAWN/JOIN、物理 H2D 与
+JOIN 后 first-service 的 Device 前缀命中，缺一不可。

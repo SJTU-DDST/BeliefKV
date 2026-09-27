@@ -47,10 +47,30 @@ index d1509a7..1ddca96 100644
      tool_choice: Union[ToolChoice, Literal["auto", "required", "none"]] = Field(
          default="auto", examples=["none"]
 diff --git a/python/sglang/srt/entrypoints/openai/serving_chat.py b/python/sglang/srt/entrypoints/openai/serving_chat.py
-index 89cac80..caa54c4 100644
+index 89cac80..09e3ede 100644
 --- a/python/sglang/srt/entrypoints/openai/serving_chat.py
 +++ b/python/sglang/srt/entrypoints/openai/serving_chat.py
-@@ -1176,6 +1176,7 @@ class OpenAIServingChat(OpenAIServingBase):
+@@ -120,1 +120,19 @@
++def _prompt_tool_definitions(request: ChatCompletionRequest) -> Optional[List[Dict]]:
++    if not request.tools:
++        return None
++    if isinstance(request.tool_choice, str):
++        return [item.model_dump() for item in request.tools]
++    # The first BeliefKV root turn must constrain output to task without changing
++    # the tool definitions embedded in the reusable session prefix.
++    keep_all = (
++        request.beliefkv_metadata is not None
++        and request.tool_choice.function.name == "task"
++    )
++    return [
++        item.model_dump()
++        for item in request.tools
++        if keep_all or item.function.name == request.tool_choice.function.name
++    ] or None
++
++
+ def normalize_tool_content(role: str, content):
+@@ -1176,6 +1194,7 @@ class OpenAIServingChat(OpenAIServingBase):
              routed_experts_start_len=request.routed_experts_start_len,
              rid=request.rid,
              session_id=request.session_id,
@@ -58,6 +78,22 @@ index 89cac80..caa54c4 100644
              extra_key=request.extra_key,
              cache_salt=request.cache_salt,
              require_reasoning=processed_messages.require_reasoning,
+@@ -1256,14 +1275,7 @@ class OpenAIServingChat(OpenAIServingBase):
+         required_parsed_natively = glm_constraint
+         if effective_tools and request.tool_choice != "none":
+             request.skip_special_tokens = False
+-            if not isinstance(request.tool_choice, str):
+-                tools = [
+-                    item.model_dump()
+-                    for item in request.tools or []
+-                    if item.function.name == request.tool_choice.function.name
+-                ] or None
+-            elif request.tools:
+-                tools = [item.model_dump() for item in request.tools]
++            tools = _prompt_tool_definitions(request)
+             if self.tool_call_parser and not glm_constraint:
+                 parser = FunctionCallParser(
+                     effective_tools,
 diff --git a/python/sglang/srt/managers/cache_controller.py b/python/sglang/srt/managers/cache_controller.py
 index b9a134e..9d2959b 100644
 --- a/python/sglang/srt/managers/cache_controller.py
@@ -2279,10 +2315,10 @@ index 0000000..88361ff
 +    unittest.main()
 diff --git a/test/srt/test_beliefkv_metadata.py b/test/srt/test_beliefkv_metadata.py
 new file mode 100644
-index 0000000..a8a2ead
+index 0000000..47acbbf
 --- /dev/null
 +++ b/test/srt/test_beliefkv_metadata.py
-@@ -0,0 +1,192 @@
+@@ -0,0 +1,226 @@
 +"""BeliefKV request identity transport in the v0.5.20 ingress path."""
 +
 +import unittest
@@ -2300,7 +2336,10 @@ index 0000000..a8a2ead
 +    ChatCompletionRequest,
 +    MessageProcessingResult,
 +)
-+from sglang.srt.entrypoints.openai.serving_chat import OpenAIServingChat
++from sglang.srt.entrypoints.openai.serving_chat import (
++    OpenAIServingChat,
++    _prompt_tool_definitions,
++)
 +from sglang.srt.managers.io_struct import (
 +    GenerateReqInput,
 +    SessionParams,
@@ -2314,6 +2353,37 @@ index 0000000..a8a2ead
 +
 +
 +class BeliefKVMetadataTest(unittest.TestCase):
++    def test_named_task_keeps_full_session_tool_prompt(self):
++        base = {
++            "model": "test",
++            "messages": [{"role": "user", "content": "delegate and solve"}],
++            "tools": [
++                {"type": "function", "function": {
++                    "name": name, "parameters": {"type": "object", "properties": {}}
++                }}
++                for name in ("task", "read_file")
++            ],
++        }
++        automatic = ChatCompletionRequest.model_validate(base)
++        named = ChatCompletionRequest.model_validate({
++            **base,
++            "beliefkv_metadata": {"conversation_id": "root"},
++            "tool_choice": {"type": "function", "function": {"name": "task"}},
++        })
++        other = ChatCompletionRequest.model_validate({
++            **base,
++            "tool_choice": {"type": "function", "function": {"name": "task"}},
++        })
++
++        self.assertEqual(
++            _prompt_tool_definitions(named),
++            _prompt_tool_definitions(automatic),
++        )
++        self.assertEqual(
++            [item["function"]["name"] for item in _prompt_tool_definitions(other)],
++            ["task"],
++        )
++
 +    def test_openai_request_preserves_metadata_and_session_id(self):
 +        metadata = {"conversation_id": "conversation", "turn_id": "turn-1"}
 +        request = ChatCompletionRequest.model_validate(

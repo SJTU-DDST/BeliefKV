@@ -2027,17 +2027,14 @@ required WorkflowCompletion response.
 
 
 class InitialInGraphDelegationMiddleware(AgentMiddleware[Any, Any, Any]):
-    """Constrain the first root turn to the native task tool."""
+    """Require an initial task call without changing the session's tool schema."""
 
     def wrap_model_call(self, request: ModelRequest, handler: Any) -> ModelResponse:
         if any(isinstance(message, AIMessage) for message in request.messages):
             return handler(request)
-        task_tools = [
-            tool for tool in request.tools if getattr(tool, "name", None) == "task"
-        ]
-        if len(task_tools) != 1:
+        if sum(getattr(tool, "name", None) == "task" for tool in request.tools) != 1:
             raise RuntimeError("in-graph delegation requires exactly one task tool")
-        return handler(request.override(tools=task_tools, tool_choice="task"))
+        return handler(request.override(tool_choice="task"))
 
 
 NATIVE_DYNAMIC_INITIAL_PLANNER_PROMPT = """
