@@ -90,6 +90,7 @@ class _JoinPrefetchTicket:
     command_id: str | None = None
     issued_nodes: int = 0
     no_step_recorded: bool = False
+    drained_for_issued_nodes: int | None = None
 
 
 @dataclass(frozen=True)
@@ -2157,10 +2158,25 @@ class NativeAdmissionRuntime:
                 self.shadow_candidate = None
 
     def running_batch_retraction_barrier_required(self, batch: object) -> bool:
-        return False
+        # SGLang uses this drain to reach the same safe point needed for a
+        # native JOIN H2D. Request it once per node budget, never per decode tick.
+        ticket = self._join_ticket
+        if (
+            ticket is None
+            or ticket.phase != "confirmed"
+            or not self._live_join_ticket()
+            or ticket.command_id is not None
+            or self.physical_ledger.pending_count
+            or ticket.issued_nodes >= (1 if self.enable_confirmed_join_canary else 2)
+            or ticket.drained_for_issued_nodes == ticket.issued_nodes
+        ):
+            return False
+        ticket.drained_for_issued_nodes = ticket.issued_nodes
+        self.counts["join_overlap_drain_requested"] += 1
+        return True
 
     def on_running_batch_retraction_barrier_drained(self, batch: object) -> None:
-        pass
+        self.counts["join_overlap_drain_completed"] += 1
 
     def plan_running_batch_retraction(self, batch: object) -> None:
         return None

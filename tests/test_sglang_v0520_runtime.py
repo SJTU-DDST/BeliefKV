@@ -1490,6 +1490,11 @@ def test_confirmed_join_canary_is_bounded_without_predictor(tmp_path):
         assert runtime._join_ticket is not None
         assert runtime._join_ticket.phase == "confirmed"
         assert runtime._live_join_ticket()
+        assert runtime.running_batch_retraction_barrier_required(object())
+        assert not runtime.running_batch_retraction_barrier_required(object())
+        runtime.on_running_batch_retraction_barrier_drained(object())
+        assert runtime.counts["join_overlap_drain_requested"] == 1
+        assert runtime.counts["join_overlap_drain_completed"] == 1
         runtime.attach_native_cache(object())
         observation = NS(
             step=None, no_step_reason="already_device_resident",
@@ -1520,6 +1525,7 @@ def test_confirmed_join_canary_is_bounded_without_predictor(tmp_path):
                 runtime.dispatch_join_prefetch()
                 assert issue.call_count == 1
         assert runtime._join_ticket.issued_nodes == 1
+        assert not runtime.running_batch_retraction_barrier_required(object())
         assert runtime.counts["join_prefetch_confirmed_issued"] == 1
         assert runtime.counts["join_prefetch_acked"] == 1
         assert runtime.issue_prefetch_gpu_step(step, source="tool_wait") is None
@@ -1528,6 +1534,7 @@ def test_confirmed_join_canary_is_bounded_without_predictor(tmp_path):
             invocation_id="parent", context_id="ctx-parent", context_epoch=1,
         ),))
         assert runtime._join_ticket is None
+        assert not runtime.running_batch_retraction_barrier_required(object())
     finally:
         runtime.close()
     records = [

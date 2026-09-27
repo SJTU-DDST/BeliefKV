@@ -98,6 +98,12 @@ child RETURN
 副本或闭包被挡住），不改变动作门禁。已启动的 14-root canary
 加载的是修改前代码，不具备这项拒绝归因；它的原生 H2D ACK
 不能记为预测收益，预测动作需以独立的物理动作 ACK 核验。
+针对 overlap scheduling 连续有在途 batch 时 JOIN ticket 迟迟
+到不了物理动作安全点的问题，新 runtime 在已确认 ticket 上按
+单节点预算至多请求一次现有 overlap drain；drain 后继续以原生
+身份、FULL/Mamba 容量与 ACK 门禁核验，不允许在 overlap 未清空
+时发 DMA。该修复仅有 CPU 回归，仍需在下一轮 GPU canary 中确认
+实际 drain、预测性物理 H2D 及首次服务的 KV 复用。
 
 目前 Qwen3.5 的 `online_eligible=false`、
 `predictive_action_eligible=false`；旧 Qwen3 P6 物理闭环不得外推为
