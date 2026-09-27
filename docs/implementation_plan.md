@@ -8,20 +8,21 @@ Completed and superseded plans are indexed under `docs/archive/`.
 
 ## Objective
 
-Establish a defensible Qwen3.5/SGLang v0.5.20 result for predictive Agent/KV
+Establish a defensible Qwen3.5/SGLang v0.5.20 result for causal Agent/KV
 joint scheduling at **dynamic medium/high memory pressure**, with a paired
-reactive baseline. Separate model time accuracy from physical-action benefit.
-Low-pressure idle-HBM prefetch and overload fallback are boundary checks, not
-substitutes for the primary pressure regime.
+reactive baseline. Test idle-HBM/PCIe prefetch at low pressure as a separate
+opportunity and overload fallback as a safety boundary. Separate model time
+accuracy, physical-action utility, and workflow outcomes. Exact wall-clock
+RETURN/JOIN ETA is not a prerequisite for bounded physical experiments.
 
 Primary metrics:
 
-- successful workflows/hour;
-- GPU service tokens/second and utilization;
-- useful action-unlock rate;
-- admission and reentry stall;
-- useful/wasted D2H/H2D bytes;
-- synchronous control-plane overhead.
+- successful workflows/hour and p50/p95/max workflow JCT, with correctness
+  and bounded starvation as constraints;
+- attributed eviction-to-miss/recompute and saved admission/reentry stall;
+- useful/wasted D2H/H2D bytes and HBM byte-seconds, including victim debt;
+- GPU service tokens/second, utilization and synchronous control overhead
+  as explanations, not standalone wins.
 
 ## Active Order (Qwen3.5/v0.5.20)
 
@@ -37,7 +38,7 @@ Primary metrics:
    `docs/experiments/qwen35_terminal_join_sealed_2026-09-27_zh.md`.
    Treat this holdout as consumed: no model/threshold selection on its
    outcomes; the next method needs new project-disjoint validation.
-2. **Check workload bottlenecks and causal observability on train projects.**
+2. **Freeze operating regimes and check causal opportunity on train projects.**
    Characterize 64+64 arrival pressure using request-level queue/service,
    FULL/Mamba resident vs evictable bytes, Host eviction-to-miss/recompute
    attribution, transfer identity/ACK, and critical-path blocker changes.
@@ -50,9 +51,16 @@ Primary metrics:
    Compare low and overloaded regimes only under otherwise identical model,
    engine, Host pool, instrumented workload, admission cap and hardware.
    Existing 64/128 runs with unmatched Host configurations are not a paired
-   throughput comparison. If medium/high load is compute-saturated or Host
-   thrashes, quantify the cost and restrict optimistic prefetch claims.
-3. **Improve tool and child timing on train projects before another seal.**
+   throughput comparison. For each candidate action, log event time, online
+   frontier/blockers, Host availability, reclaimable/locked FULL/Mamba bytes,
+   affected physical extents, transfer ACK, first *actual* KV consumption,
+   eviction-to-miss/recompute and displaced-workflow delay. Attribute
+   queue/no-service time separately from H2D and GPU service. First compute
+   an opportunity upper bound (recoverable KV, actionable reclaim capacity
+   and enough live time to transfer); do not use a reactive queue tail as
+   counterfactual transfer savings. If medium/high load is compute-saturated
+   or Host thrashes, quantify the cost and restrict optimistic claims.
+3. **Evaluate timing as an auxiliary signal, without blocking physical gates.**
    Test tool ETA and long-window calibration across task, project, and
    success/error strata; do not select the workflow-weighted candidate just
    because its held-out score was good (training-project LOO was worse).
@@ -65,17 +73,24 @@ Primary metrics:
    inference. Validate work/service demand across pressure and project folds
    versus wall-clock ETA; discard if no stable improvement. Refit/calibrate
    separately for action policy and pressure as needed, with online updates
-   using only past confirmed labels and drift-aware fallback.
+   using only past confirmed labels and drift-aware fallback. A policy may
+   instead use confirmed JOIN/tool events, causal frontier and a bounded
+   time-to-use interval; report full-group coverage, abstentions, false
+   starts and conditional ETA error independently. Do not claim subsecond
+   prediction from a handful of near-terminal groups.
 4. **Implement bounded critical-path parent admission as a JointPlan extension
-   only after the observability and safety gates.** Use sole JOIN straggler and
-   factual frontier as existing signals; compare parent unlock against victim
-   future-use, D2H/H2D, restore/recompute debt, fairness and HBM byte-time.
+   only after the physical observability and safety gates.** Use sole JOIN
+   straggler and factual frontier as existing signals; compare parent unlock
+   against victim future-use, D2H/H2D, restore/recompute debt, fairness
+   and HBM byte-time.
    Parent can replace cold KV, not engine-locked or hotter work. Reserve
    complete or useful partial ancestor-closed KV, bind request/context epoch,
    page generation and lease expiry; commit admission only on valid capacity
    and sufficient ACK. Include next-agent handoff and native Host KV, not just
    predictive PREPARE-created shadows. Keep P5 fallback for stale/no-KV
-   opportunities. Verify liveness, expired tickets and no starvation.
+   opportunities. Verify liveness, expired tickets and no starvation. Test
+   idle-capacity-only prefetch separately from critical-path cold-KV
+   replacement: do not bundle their benefits into a single action count.
 5. **Run staged physical validation, then matched A/B.** Shadow-log proposed
    time, bytes, alternative beneficiary and reason for abstaining. Canary
    checks intent -> physical transfer -> ACK -> parent ready -> first service
@@ -90,9 +105,17 @@ Primary metrics:
    for speculative H2D, bounded parent replacement and execution handoff.
    Count correctness failures, censored workflows, p50/p95 JCT and maximal
    per-workflow slowdown; never trade an unbounded victim tail for a higher
-   mean completion rate.
+   mean completion rate. Include an execution-order-only ablation to isolate
+   recomputation reduction from H2D gains, and a transfer-only ablation to
+   isolate idle-bandwidth gains from workflow prioritization. Do not compare
+   different root counts as if they were a matched policy A/B.
 
-Promotion requires physical benefit and no correctness/liveness regression;
+Decision gate: if no pressure stratum has recoverable reusable KV plus
+transfer/capacity slack, report a workload/hardware limit rather than tuning
+predictive thresholds. If the high-pressure handoff merely shifts delays to
+other workflows or increases miss/recompute, retain reactive P5 there; a
+low-pressure win may be reported separately, not relabeled as a high-pressure
+one. Promotion requires physical benefit and no correctness/liveness regression;
 time-model accuracy alone is insufficient. Do not enable Qwen3.5
 `online_eligible` or `predictive_action_eligible` just because an offline
 window gate or shadow decision looks promising. Full safety/ownership evidence

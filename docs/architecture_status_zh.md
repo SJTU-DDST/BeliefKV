@@ -14,10 +14,16 @@ JOIN child-completion 三阶段 H2D ticket（概率窗口、结构化完成提�
 ### 当前研究目标与未完成能力
 
 新版主评估场景定为动态中高压力，低压闲置容量和极端过载分别作为边界
-验证。当前 `causal_frontier.py` 和 `joint_scheduler.py` 已按 JOIN straggler、
+验证；低压预取作为独立机会单列，不能用它的成功替代中高压联合
+调度的证据。时间头（JOIN/工具时刻）、动作头（是否值得迁移）和
+最终 workflow 收益分别验收，不能因为亚秒级 JOIN 时间头尚未
+达标就禁止有界的物理机会实验。当前 `causal_frontier.py` 和
+`joint_scheduler.py` 已按 JOIN straggler、
 已知下游解锁及 HBM demand 排序，并支持有约束的 beneficiary-bound
 回收；**尚未实现**按机会成本预算的关键路径 parent 抢占、到期驻留租约
-及跨执行选择的预取收益闭环。Qwen3.5 训练行的 child RETURN
+及跨执行选择的预取收益闭环，也尚无中高压下减少后续
+miss/recompute 和改善 workflow JCT 的配对因果证据。Qwen3.5 训练行的
+child RETURN
 目标仍为决策时刻至实际 RETURN 的墙钟差；把 GPU 工作、排队与工具执行
 拆成可识别的预测目标，及根据新调度轨迹在线更新，均属待验证研究工作。
 

@@ -15,12 +15,11 @@ BeliefKV 面向单 GPU、HBM 受限的动态 Agent 工作流：
 - GPU KV、CPU KV 和 raw-token recompute 可以共同参与容量管理；
 - SGLang RadixCache/HiCache 仍是物理 KV 与 allocator 的唯一事实源。
 
-优化目标按优先级为：
-
-1. successful workflows/hour 和 action throughput；
-2. GPU service utilization 与有效 batch；
-3. action unlock、reentry 和 admission stall；
-4. D2H/H2D、recompute 与控制面开销。
+主要优化目标是**相同到达流下的成功 workflow 吞吐及 JCT 分布**；
+任务正确性、无界饥饿和物理容量安全是不允许交换掉的约束。
+GPU service utilization、action throughput、action unlock、reentry/admission
+stall、D2H/H2D、recompute 与控制面开销是用于解释因果和判断退化的指标，
+不能仅凭 GPU 利用率或预取次数宣称性能收益。
 
 Workflow fairness 只作为有界防饿死和最终 tie-break，不以平均分配 GPU 时间为目标。
 
@@ -43,10 +42,47 @@ recompute、Host/Device hit、排队、可回收容量和传输重叠机会确�
    尽快完成 workflow 并释放容量的工作，但将其它 workflow 的 JCT 尾部、
    饥饿和重算债务计入机会成本，不能简单地固定一个 workflow 跑到底。
 
+当 Host 无可恢复副本或 GPU 计算已经饱和时，第一种收益可能消失，
+第二种也可能因集中服务引起其它 workflow 的长尾。不要把
+「同一个 workflow 的请求挨着执行」等同于节省 KV：只有减少随后
+eviction-to-miss/recompute 或缩短阻塞，并且没有等量挤出更有价值的
+工作，才能归因于联合调度。低压的机会来自可回收的闲置 HBM 和
+PCIe，而不要求预测精确到返回的毫秒；中高压允许关键路径 parent
+在有界时间内置换冷 KV，但必须计入 victim 的恢复债务和尾延迟。
+
 主指标为同配置下成功 workflow 吞吐和 JCT 分布，同时报告最慢 workflow、
-任务正确性、GPU 服务、重算、Host/Device hit、HBM 占用时间及公平性。
+任务正确性、GPU 服务、重算、Host/Device hit、HBM 占用字节时间及公平性。
 若 GPU 计算始终满载、或 Host 已把可复用 KV 大量丢弃，预取可能净负收益；
 策略应降低预测动作强度并保留 P5 的活性/正确性回退，而非强行制造 H2D。
+
+### 1.2 可证伪的研究假设与对照
+
+- **低压、迁移可隐藏**：有真实的再入请求、Host 副本及闲置 HBM/PCIe
+  时，受限的提前 D2H/H2D 比同一请求的 reactive 恢复减少等待；
+  无消费的 KV 与 HBM 字节时间、PCIe 干扰必须计入成本。
+- **中高压、容量竞争**：已知 frontier 中可以选出能解锁下游且物理
+  KV 可恢复的 beneficiary 时，执行选择、victim 回收和 beneficiary
+  预取组成同一个有期限的 handoff。与相同负载的 P5 reactive 相比，
+  检验重算和有效阻塞是否减少，同时检验其它 workflow 的 JCT
+  P95/最大 slowdown 是否恶化。没有冷页或不值得牺牲的 victim 时，
+  主动放弃抢占。
+- **过载、计算或 Host 容量主导**：若增加 H2D/驻留无法转化为
+  真实消费或节省阻塞，应回退到响应式路径，并报告机会缺失；
+  不将此压力档的 speculative H2D 数量视作成功。
+
+各压力档必须由训练工作负载中的**物理状态**划分：runnable backlog、
+可回收/锁定的 FULL 与 Mamba 字节、Host 有效副本和驱逐后 miss、
+GPU 服务饱和度、传输队列及重叠余量。根数只用于重复配置，不用作
+压力标签；同一模型、Host/NUMA、HBM/graph、runtime 和到达流
+下比较 P5、受限低压预取、带 JOIN/工具信号的预取、联合 handoff。
+分档门槛与动作预算只在训练项目冻结，项目隔离测试不回调参数。
+
+与已有 Agent-aware offload/predictive upload（TokenCake,
+arXiv:2510.18586）及 next-step KV prefetch（KVFlow,
+arXiv:2507.07400）相比，不能把「提前迁移」本身作为新颖性主张。
+待验证的区别是**在线因果 frontier 与真实物理页共同决定
+谁先服务、哪笔 KV 值得驻留/置换、何时在同一 handoff 内完成
+回收与恢复**，以及在没有可靠精确返回时钟时有界地放弃动作。
 
 ## 2. 当前核心设计
 
@@ -231,7 +267,8 @@ seed rank 作后续排序键。boundary top-2 scenarios 可以估计 unlock 分�
 不只在事后成功的长窗口子集计算精度。JOIN 不等同于单个 child RETURN；
 有多个未完成 child 时需按实时 blocker 集合组合；只剩最后一个 child 时
 可把结构化终态提示作为近端信号，但不能把其发出视为已确认 RETURN。
-继续追求有用的亚秒级时间精度，但不能把该阈值当成每次预取获益的必要条件。
+继续追求有用的亚秒级时间精度，但不能把该阈值当成每次预取获益的必要条件，
+也不能用只覆盖少数近终态 JOIN 的条件误差替代整体表现。
 
 **动作头**预测在当前可见状态下某笔迁移的条件收益，而非旧 P5 调度下
 绝对 wall-clock JOIN 时间。令 `R` 为 JOIN 真正满足、parent 可提交的时刻，
@@ -259,7 +296,11 @@ reactive 与 predictive 下分别校准/按压力分层，之后只用历史已�
 滚动校正；在线更新必须经过因果时序、漂移及安全回退门禁。
 目前 JOIN 标签仍是墙钟 RETURN 差，分头方案**不是**已验证的精度提升。
 
-先做离线可识别性与 shadow 策略评价，再做真实物理闭环和配对 canary。
+不将 JOIN/工具墙钟点预测达到亚秒级设为物理实验的先决条件。
+先做离线可识别性、shadow 策略与收益上界审计；可凭确定性 frontier、
+已观察的临近事件和保守时机范围进行有界 canary，再做配对 A/B。
+时间模型单独按全体与条件覆盖验收，未获项目隔离验证的头不得作为
+无回退的物理门禁。
 不基于正在运行的密封留出集调整压力阈值、ETA、模型或准入门禁。
 
 ## 6. 未来可选方案：Predictive Eviction
