@@ -123,6 +123,9 @@ if [[ -n "${SGLANG_SOURCE_CHECKOUT}" ]]; then
     confirmed_join_canary)
       sglang_patch="${BELIEFKV_ROOT}/patches/sglang-v0.5.20-beliefkv-confirmed-join-canary.patch"
       ;;
+    writeback_prepare)
+      sglang_patch="${BELIEFKV_ROOT}/patches/sglang-v0.5.20-beliefkv-writeback-prepare.patch"
+      ;;
     *)
       printf 'Unknown SGLang patch flavor: %s\n' "${SGLANG_PATCH_FLAVOR}" >&2
       exit 2
