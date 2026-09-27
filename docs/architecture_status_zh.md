@@ -36,6 +36,19 @@ write_through 和 session radix 开启时采样）。记录缺失 session、不�
 与实际 transfer / first-use 的联接；beneficiary/victim 联合
 handoff 和完整 D2H/H2D 首次消费闭环仍待实现。
 
+真实 Deep Agents 工作负载的 native session 需要显式开启：
+runner 使用 `--native-radix-sessions --control-socket <path>`，
+服务端使用 `ENABLE_SESSION_RADIX_CACHE=1` 和对应的
+`--beliefkv-event-socket-path <path>`。runner 按 workflow/context
+复用原生 session；普通 LLM 轮次即使推进 context_epoch 也不关闭，
+只有成功的 `CONTEXT_COMPACT` 才先关闭旧引用再为新请求创建引用；
+context/workflow 终态关闭引用。根 workflow/invocation 和 LLM
+submit/result 因果边界也会发送到 control sink，补齐服务端
+RCCG 镜像的起点和 epoch；模型请求与真实传输仍以服务端为
+物理事实来源。缺少 control socket 时 runner 拒绝 session 模式。
+这些变更目前仅通过 CPU 回归测试，真实 session generation、
+Host/Device 候选和传输 ACK 仍须 GPU 验证。
+
 近期主评估场景改为 HBM 有空闲空间或可安全迁出的冷
 KV、Host/PCIe 尚有余量且有效 KV 丢弃后重算较少的压力区间。
 先由训练项目上的并发扫描确定该区间，不能仅按 root 数认定低压或

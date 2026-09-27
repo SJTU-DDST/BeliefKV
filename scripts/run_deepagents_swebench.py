@@ -46,6 +46,14 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--docker-image", default=DEFAULT_IMAGE)
     parser.add_argument("--control-socket", type=Path)
     parser.add_argument(
+        "--native-radix-sessions",
+        action="store_true",
+        help=(
+            "Bind each workflow context to a native radix session; requires "
+            "--control-socket and a server started with --enable-session-radix-cache."
+        ),
+    )
+    parser.add_argument(
         "--server-audit",
         type=Path,
         help="Append-only BeliefKV runtime audit to slice for this experiment",
@@ -268,6 +276,7 @@ def main() -> int:
         workload_manifest=args.workload_manifest,
         docker_image=args.docker_image,
         control_socket=args.control_socket,
+        native_radix_sessions=args.native_radix_sessions,
         server_audit_path=args.server_audit,
         server_event_path=args.server_events,
         server_log_path=args.server_log,

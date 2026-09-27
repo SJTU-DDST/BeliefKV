@@ -13,7 +13,7 @@ from beliefkv.runtime.sglang_adapter import BeliefKVRequestMetadata
 
 
 class NativeRadixSessionLeases:
-    """One native session per (workflow, context, epoch), closed at terminal.
+    """One native session per (workflow, context, compaction), closed at terminal.
 
     The server must be started with --enable-session-radix-cache. This only
     biases native eviction; it is not a tool-wait pin or a predictive transfer.
@@ -24,6 +24,7 @@ class NativeRadixSessionLeases:
         self._namespace = uuid.uuid4().hex
         self._lock = threading.RLock()
         self._active: dict[tuple[str, str], tuple[int, str]] = {}
+        self._last_epoch: dict[tuple[str, str], int] = {}
         self._terminal: set[tuple[str, str]] = set()
         self._terminal_workflows: set[str] = set()
 
@@ -37,22 +38,35 @@ class NativeRadixSessionLeases:
                 raise RuntimeError("native radix session requested after context terminal")
             if not metadata.full_prompt_replay_guaranteed:
                 return None
+            last_epoch = self._last_epoch.get(context, -1)
+            if metadata.context_epoch < last_epoch:
+                raise RuntimeError("native radix session epoch regressed")
             previous = self._active.get(context)
             if previous is not None:
-                previous_epoch, previous_id = previous
-                if metadata.context_epoch < previous_epoch:
-                    raise RuntimeError("native radix session epoch regressed")
-                if metadata.context_epoch == previous_epoch:
-                    return previous_id
-                # Do not mint a new session until the old reference is released.
-                self._close_session(previous_id)
+                self._last_epoch[context] = metadata.context_epoch
+                self._active[context] = (metadata.context_epoch, previous[1])
+                return previous[1]
             digest = hashlib.sha256(
                 f"{self._namespace}:{context[0]}:{context[1]}:"
                 f"{metadata.context_epoch}".encode("utf-8")
             ).hexdigest()[:32]
             session_id = f"beliefkv-{digest}"
             self._active[context] = (metadata.context_epoch, session_id)
+            self._last_epoch[context] = metadata.context_epoch
             return session_id
+
+    def compact(self, workflow_id: str, context_id: str, new_epoch: int) -> None:
+        context = (workflow_id, context_id)
+        with self._lock:
+            if context in self._terminal or workflow_id in self._terminal_workflows:
+                raise RuntimeError("native radix session compacted after context terminal")
+            if new_epoch <= self._last_epoch.get(context, -1):
+                raise RuntimeError("native radix compaction must advance context epoch")
+            active = self._active.get(context)
+            if active is not None:
+                self._close_session(active[1])
+                del self._active[context]
+            self._last_epoch[context] = new_epoch
 
     def retire(self, workflow_id: str, context_id: str) -> None:
         context = (workflow_id, context_id)

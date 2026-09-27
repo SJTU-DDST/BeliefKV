@@ -456,6 +456,7 @@ def parse_args() -> argparse.Namespace:
         "--hbm-safety-margin-bytes", type=int, default=1_073_741_824
     )
     parser.add_argument("--control-socket", type=Path)
+    parser.add_argument("--native-radix-sessions", action="store_true")
     parser.add_argument("--server-audit", type=Path)
     parser.add_argument("--server-events", type=Path)
     parser.add_argument("--server-log", type=Path)
@@ -947,6 +948,7 @@ def main() -> int:
         workload_manifest=workload_manifest,
         docker_image="unused:per-workload-image-required",
         control_socket=args.control_socket,
+        native_radix_sessions=args.native_radix_sessions,
         server_audit_path=(
             telemetry_dir / "runtime_audit.jsonl"
             if telemetry_dir else args.server_audit

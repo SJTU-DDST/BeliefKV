@@ -74,6 +74,10 @@ from beliefkv.runtime.context_lifecycle import (
     ContextLifecyclePolicy,
 )
 from beliefkv.runtime.sglang_adapter import BeliefKVRequestMetadata
+from beliefkv.runtime.sglang_v0520_sessions import (
+    NativeRadixSessionLeases,
+    close_native_radix_session,
+)
 from beliefkv.runtime.subagent_state import PrivateStateIsolatingSubAgentMiddleware
 from beliefkv.runtime.tool_wait_shadow import ToolWaitShadowTimer
 
@@ -1544,6 +1548,7 @@ class DeepAgentsExperimentConfig:
     workload_manifest: Path
     docker_image: str
     control_socket: Path | None = None
+    native_radix_sessions: bool = False
     server_audit_path: Path | None = None
     server_event_path: Path | None = None
     server_log_path: Path | None = None
@@ -1590,6 +1595,8 @@ class DeepAgentsExperimentConfig:
     )
 
     def __post_init__(self) -> None:
+        if self.native_radix_sessions and self.control_socket is None:
+            raise ValueError("native radix sessions require a control socket")
         if self.tool_window_shadow_artifact is not None:
             if self.early_tool_wait_shadow:
                 raise ValueError(
@@ -3840,6 +3847,14 @@ def _run_workflow(
         trace_sink,
         root_metadata,
         control_sink=control_sink,
+        native_radix_sessions=(
+            NativeRadixSessionLeases(
+                lambda session_id: close_native_radix_session(
+                    config.base_url, session_id
+                )
+            )
+            if config.native_radix_sessions else None
+        ),
         workspace_digest_provider=backend.tool_state_digest,
         project_tool_history=project_tool_history,
         project_id=workload.repo,
@@ -4024,6 +4039,27 @@ def server_alive(base_url: str, timeout_s: float = 5.0) -> bool:
         return False
 
 
+def verify_native_session_server(config: DeepAgentsExperimentConfig) -> None:
+    if not config.native_radix_sessions:
+        return
+    root = config.base_url.rstrip("/").removesuffix("/v1")
+    with urllib.request.urlopen(f"{root}/server_info", timeout=5.0) as response:
+        info = json.load(response)
+    if not isinstance(info, dict):
+        raise RuntimeError("native session server_info is not an object")
+    if not info.get("enable_session_radix_cache"):
+        raise RuntimeError("server must enable session radix cache")
+    if not info.get("enable_beliefkv_admission"):
+        raise RuntimeError("server must enable BeliefKV admission")
+    server_socket = info.get("beliefkv_event_socket_path")
+    if (
+        not isinstance(server_socket, str)
+        or Path(server_socket).expanduser().resolve()
+        != config.control_socket.expanduser().resolve()
+    ):
+        raise RuntimeError("server BeliefKV event socket does not match runner")
+
+
 def _execute_saturated_root_pool(
     workloads: Sequence[SweBenchWorkload],
     *,
@@ -4054,6 +4090,7 @@ def run_experiment(config: DeepAgentsExperimentConfig) -> dict[str, Any]:
         raise FileNotFoundError(
             f"BeliefKV control socket is absent: {config.control_socket}"
         )
+    verify_native_session_server(config)
     tool_window_shadow = None
     if config.tool_window_shadow_artifact is not None:
         from beliefkv.predictor.tool_window_shadow import FrozenToolWindowShadow

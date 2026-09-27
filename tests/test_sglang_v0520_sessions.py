@@ -30,7 +30,10 @@ def test_session_survives_tool_wait_and_closes_once_at_context_terminal() -> Non
     first = leases.for_request(root)
     assert first is not None and first.startswith("beliefkv-")
     assert leases.for_request(root) == first
-    assert leases.for_request(replace(root, context_epoch=0)) == first
+    assert leases.for_request(replace(root, context_epoch=1)) == first
+    assert leases.for_request(replace(root, context_epoch=2)) == first
+    with pytest.raises(RuntimeError, match="regressed"):
+        leases.for_request(root)
     assert closed == []
     child = leases.for_request(
         _metadata(invocation_id="child", context_id="child-context")
@@ -39,7 +42,7 @@ def test_session_survives_tool_wait_and_closes_once_at_context_terminal() -> Non
     leases.retire("workflow", "child-context")
     leases.retire("workflow", "child-context")
     assert closed == [child]
-    assert leases.for_request(root) == first
+    assert leases.for_request(replace(root, context_epoch=2)) == first
     leases.retire("workflow", "root-context")
     assert closed == [child, first]
     with pytest.raises(RuntimeError, match="terminal"):
@@ -51,13 +54,33 @@ def test_compaction_closes_prior_epoch_before_reusing_context() -> None:
     leases = NativeRadixSessionLeases(closed.append)
     root = _metadata()
     first = leases.for_request(root)
-    second = leases.for_request(replace(root, context_epoch=1))
+    assert leases.for_request(replace(root, context_epoch=1)) == first
+    leases.compact("workflow", "root-context", 2)
     assert closed == [first]
+    second = leases.for_request(replace(root, context_epoch=2))
     assert second != first
     with pytest.raises(RuntimeError, match="regressed"):
         leases.for_request(root)
     leases.retire("workflow", "root-context")
     assert closed == [first, second]
+
+
+def test_compaction_close_failure_preserves_old_reference_for_retry() -> None:
+    closed = []
+
+    def close(session_id: str) -> None:
+        closed.append(session_id)
+        if len(closed) == 1:
+            raise OSError("close failed")
+
+    leases = NativeRadixSessionLeases(close)
+    root = _metadata()
+    first = leases.for_request(root)
+    with pytest.raises(OSError, match="close failed"):
+        leases.compact("workflow", "root-context", 1)
+    leases.compact("workflow", "root-context", 1)
+    assert closed == [first, first]
+    assert leases.for_request(replace(root, context_epoch=1)) != first
 
 
 def test_close_failure_never_forgets_reference_and_can_retry() -> None:

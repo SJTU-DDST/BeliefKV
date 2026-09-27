@@ -96,6 +96,18 @@ Primary metrics:
    representative physical opportunity rates, allocator ownership and
    transfer/first-consumption reconciliation are not yet verified. Do
    not treat `fits_current_free_lists` as a reservation or H2D permit.
+   Deep Agents now has an opt-in `--native-radix-sessions` mode requiring
+   `--control-socket`. Start the server with
+   `ENABLE_SESSION_RADIX_CACHE=1`, `HICACHE_WRITE_POLICY=write_through`,
+   `--enable-beliefkv-admission` and
+   `--beliefkv-event-socket-path <same socket>` before enabling the runner.
+   Runtime workflow/create and LLM submit/result events reach the control
+   mirror; normal model rounds reuse the native session, while observed
+   compaction rotates it. Validate real session generations, mirror discard
+   counts, and sampled non-`no_bound_session` candidates in a bounded
+   training-project GPU gate before a pressure sweep. Reject samples from
+   degraded control delivery or opportunity-writer overflow. This wiring
+   has CPU coverage but no physical transfer or utility result yet.
 3. **Evaluate timing as an auxiliary signal, without blocking physical gates.**
    Test tool ETA and long-window calibration across task, project, and
    success/error strata; do not select the workflow-weighted candidate just

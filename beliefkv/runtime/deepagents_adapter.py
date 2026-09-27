@@ -216,8 +216,8 @@ class DeepAgentsRuntimeAdapter(BaseCallbackHandler):
     """Translate Deep Agents callbacks into authoritative BeliefKV events.
 
     The full trace sink receives all framework events. The optional control sink
-    receives only events that SGLang cannot reconstruct from request metadata.
-    SGLang remains the authority for its own LLM submit/result boundaries.
+    receives causal boundaries that request metadata alone cannot reconstruct;
+    SGLang remains the authority for physical request/transfer telemetry.
     """
 
     raise_error = True
@@ -369,7 +369,7 @@ class DeepAgentsRuntimeAdapter(BaseCallbackHandler):
                 attributes={"persistent": True, "source": "deepagents"},
             ),
         )
-        self._publish(events, control=False)
+        self._publish(events, control=True)
 
     def finish(self, *, outcome: str) -> None:
         with self._publication_lock:
@@ -792,7 +792,7 @@ class DeepAgentsRuntimeAdapter(BaseCallbackHandler):
                 "sampling_seed": sampling_seed,
             },
         )
-        self._publish((event,), control=False)
+        self._publish((event,), control=True)
 
     def on_llm_new_token(
         self,
@@ -1175,7 +1175,7 @@ class DeepAgentsRuntimeAdapter(BaseCallbackHandler):
                 ),
             },
         )
-        self._publish((result,), control=False)
+        self._publish((result,), control=True)
         explicit_completion = (
             len(tool_calls) == 1
             and len(getattr(messages[0], "tool_calls", ())) == 1
@@ -1322,7 +1322,7 @@ class DeepAgentsRuntimeAdapter(BaseCallbackHandler):
                 "censor_reason": _error_censor_reason(error),
             },
         )
-        self._publish((event,), control=False)
+        self._publish((event,), control=True)
         self.record_call_censor(
             {
                 "call_kind": "llm",
@@ -2284,6 +2284,12 @@ class DeepAgentsRuntimeAdapter(BaseCallbackHandler):
             return
         for event in events:
             if (
+                event.kind == RuntimeEventKind.CONTEXT_COMPACT
+                and event.context_id is not None
+                and event.context_epoch is not None
+            ):
+                sessions.compact(event.workflow_id, event.context_id, event.context_epoch)
+            elif (
                 event.kind in {RuntimeEventKind.RETURN, RuntimeEventKind.INVOCATION_CANCEL}
                 and event.context_id is not None
             ):

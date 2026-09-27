@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import io
 import json
 import gzip
 import os
@@ -69,6 +70,7 @@ from beliefkv.experiments.deepagents_swebench import (
     repository_sandbox_contract,
     summarize_agent_control,
     validate_workflow_completion,
+    verify_native_session_server,
     _trace_summary,
     _demand_load_from_metrics,
     SGLangMetricsMonitor,
@@ -1450,6 +1452,69 @@ def test_final_chunk_shadow_requires_streaming_and_has_explicit_cli(
     parsed = parse_args()
     assert parsed.stream_completion_shadow is True
     assert parsed.child_finish_chunk_shadow is True
+
+
+def test_native_radix_sessions_are_explicit_and_require_control(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    required = dict(
+        mode="autonomous", base_url="http://localhost:18000/v1",
+        model="model", output_dir=tmp_path,
+        workload_manifest=tmp_path / "workloads.json",
+        docker_image="fixture:latest",
+    )
+    with pytest.raises(ValueError, match="require a control socket"):
+        DeepAgentsExperimentConfig(**required, native_radix_sessions=True)
+    config = DeepAgentsExperimentConfig(
+        **required, native_radix_sessions=True,
+        control_socket=tmp_path / "events.sock",
+    )
+    assert config.native_radix_sessions
+
+    from scripts.run_deepagents_swebench import parse_args
+
+    monkeypatch.setattr("sys.argv", [
+        "run_deepagents_swebench.py", "--mode", "autonomous",
+        "--control-socket", str(tmp_path / "events.sock"),
+        "--native-radix-sessions",
+    ])
+    assert parse_args().native_radix_sessions is True
+
+
+def test_native_session_server_preflight_checks_live_flags_and_socket(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from beliefkv.experiments import deepagents_swebench
+
+    socket = tmp_path / "events.sock"
+    config = DeepAgentsExperimentConfig(
+        mode="autonomous", base_url="http://localhost:18000/v1",
+        model="model", output_dir=tmp_path,
+        workload_manifest=tmp_path / "workloads.json",
+        docker_image="fixture:latest",
+        control_socket=socket, native_radix_sessions=True,
+    )
+    info = {
+        "enable_session_radix_cache": True,
+        "enable_beliefkv_admission": True,
+        "beliefkv_event_socket_path": str(socket),
+    }
+    requested = []
+
+    def respond(url, *, timeout):
+        requested.append((url, timeout))
+        return io.BytesIO(json.dumps(info).encode())
+
+    monkeypatch.setattr(deepagents_swebench.urllib.request, "urlopen", respond)
+    verify_native_session_server(config)
+    assert requested == [("http://localhost:18000/server_info", 5.0)]
+    info["beliefkv_event_socket_path"] = str(tmp_path / "other.sock")
+    with pytest.raises(RuntimeError, match="does not match"):
+        verify_native_session_server(config)
+    info["beliefkv_event_socket_path"] = str(socket)
+    info["enable_session_radix_cache"] = False
+    with pytest.raises(RuntimeError, match="session radix"):
+        verify_native_session_server(config)
 
 
 def test_saturated_root_pool_submits_all_roots_before_any_completion() -> None:

@@ -1251,10 +1251,18 @@ def test_deepagents_task_callbacks_form_replayable_parent_child_join() -> None:
     )
 
     control_kinds = [event.kind for event in control_sink.events]
-    assert RuntimeEventKind.WORKFLOW_START not in control_kinds
-    assert RuntimeEventKind.LLM_SUBMIT not in control_kinds
+    assert control_kinds[:2] == [
+        RuntimeEventKind.WORKFLOW_START,
+        RuntimeEventKind.INVOCATION_CREATE,
+    ]
+    assert control_kinds.count(RuntimeEventKind.LLM_SUBMIT) == 3
+    assert control_kinds.count(RuntimeEventKind.LLM_RESULT) == 3
     assert RuntimeEventKind.SPAWN in control_kinds
     assert RuntimeEventKind.JOIN_WAIT in control_kinds
+    control_graph = RuntimeCausalContextGraph()
+    control_graph.apply_batch(control_sink.events)
+    assert control_graph.invocations["root"].state == InvocationState.DONE
+    assert control_graph.contexts["ctx-root"].epoch == 1
 
 def test_parallel_task_declaration_uses_one_all_join() -> None:
     trace_sink = CollectingSink()
@@ -1858,6 +1866,55 @@ def test_context_compaction_advances_epoch_before_next_model_submit() -> None:
     graph = RuntimeCausalContextGraph()
     graph.apply_batch(trace_sink.events)
     assert graph.contexts["ctx"].epoch == 1
+    control_graph = RuntimeCausalContextGraph()
+    control_graph.apply_batch(control_sink.events)
+    assert control_graph.contexts["ctx"].epoch == 1
+
+
+def test_native_session_survives_rounds_and_rotates_on_real_compaction() -> None:
+    trace = CollectingSink()
+    control = CollectingSink()
+    closed = []
+    sessions = NativeRadixSessionLeases(closed.append)
+    adapter = DeepAgentsRuntimeAdapter(
+        trace, BeliefKVRequestMetadata(
+            "wf", "root", "ctx", 0, full_prompt_replay_guaranteed=True
+        ),
+        control_sink=control, native_radix_sessions=sessions,
+    )
+    adapter.start()
+    client = BeliefKVChatOpenAI(
+        beliefkv_adapter=adapter, model="test-model",
+        base_url="http://127.0.0.1:30000/v1", api_key="EMPTY", max_retries=0,
+    )
+
+    def submit() -> str:
+        run = uuid4()
+        adapter.on_chat_model_start(
+            {}, [[HumanMessage(content="next")]], run_id=run
+        )
+        sid = client._with_beliefkv_runtime(
+            SimpleNamespace(run_id=run), {}
+        )[0]["extra_body"]["session_id"]
+        adapter.on_llm_end(_natural_child_result("continue"), run_id=run)
+        return sid
+
+    first = submit()
+    assert submit() == first
+    assert closed == []
+    with adapter.stage_context_compaction(ContextCompactionRecord(
+        source_message_count=40, retained_message_count=8,
+        summary_chars=512, summary_sha256="a" * 64,
+        trigger_tokens=24_576, keep_tokens=8_192,
+    )):
+        second = submit()
+    assert second != first
+    assert closed == [first]
+    graph = RuntimeCausalContextGraph()
+    graph.apply_batch(control.events)
+    assert graph.contexts["ctx"].epoch == 2
+    adapter.finish(outcome="completed")
+    assert closed == [first, second]
 
 
 def test_summary_model_call_has_ephemeral_runtime_internal_context() -> None:
