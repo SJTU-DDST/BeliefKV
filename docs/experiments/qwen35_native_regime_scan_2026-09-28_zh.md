@@ -300,3 +300,30 @@ H2D 机会观察中，2,387 条为 `already_device_resident`，
 不是正式 A/B 已通过的证据。两轮 12/14-root 的补丁指纹不同，
 正式 A/B 必须用同一指纹、任务与到达流重采两臂，
 不能拿它们直接作吞吐对照。
+
+## 200 GB / 25:75 / write-back / 14-root：确认 JOIN canary v1
+
+原始数据位于
+`experiments/raw/qwen35_native_regime_confirmed_join_200g_25_75_14root_v1/`。
+与上一轮只读 14-root 扫描使用相同训练任务、到达方式、Host 容量和
+running 上限，但显式打开确认 JOIN 后最多单节点的 H2D canary。
+14/14 workflow 自然结束且具备测量资格；旧结构化自报规则仍给出
+`successful_workflows=0`，独立任务正确性尚未评分。服务端和机会
+writer 均正常关闭，无丢失或写入错误；Host FULL/Mamba 高水位为
+1,995,026/2,441,407 tokens 和 1,676/2,330 slots，两池均无驱逐。
+
+本轮 `physical_action_ack.jsonl` 为 0 行；原生 FULL/Mamba H2D ACK
+分别为 36,243 tokens 和 407 slots，**都不能计作预测式 H2D**。
+4,527 条有界机会观察中，JOIN wait 有 574 条瞬时可装入、72 条
+容量不足、2,825 条目标已在 Device；这些是重复安全点快照，
+不是独立动作数。已确认部分 JOIN 满足前仍有可装入目标，而 parent
+在满足后数百毫秒即再次提交请求；仅凭 v1 的只读样本和零 ACK
+不能区分 ticket 未建立、overlap 下迟迟未抵达动作安全点，或临界
+时刻目标已变更。此轮代码没有持久化这些拒绝原因。
+
+下一轮 `...14root_v2/` 在相同工作负载和物理配置上加载了
+确认 ticket 与无 H2D step 原因审计，以及每个确认 ticket/节点预算
+至多一次的 overlap safe-point drain。只有其独立物理动作 ACK
+与后续首次服务 KV 消费闭合，才能认为预测性 H2D 物理链成立。
+两轮已完成实验仅删除可重建的 workflow `workspace`，保留结果、
+补丁、原始事件、传输及 Host 遥测供复核。
