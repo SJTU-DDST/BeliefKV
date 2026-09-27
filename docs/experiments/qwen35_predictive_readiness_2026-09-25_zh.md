@@ -5791,3 +5791,33 @@ Pytest 的 6 个为 3782/3829 ms；
 无法直接刻画单请求**未来**服务停顿，故该
 消融只保留诊断，不加入线上预测模型，
 也不据此启动预测式 H2D。
+
+### 请求级 GPU service 进度的训练项目消融
+
+服务端 `runtime_audit.jsonl` 已含按 request ID
+划分的 `gpu_service_sample`，记录 decode token
+进度；其时间戳是墙钟，客户端流式阶段是单调钟。
+新增只读 `pilot_join_service_progress.py`：用同一
+request 的 server/client `llm_submit` 和
+`llm_result` 分别构造偏移上、下界。训练批次
+28,750 对提交、28,722 对结果把偏移约束在
+**44.64 ms** 的区间；不使用会混入排队时延的
+提交差值均值。采样截止进一步在下界前留
+100 ms 余量，只有明确早于当前触发的同请求
+decode sample 才成为特征，未来样本被拒绝。
+实验结果保存在训练批次
+`intent_workloads/join_service_progress_train_loo_20260927.json`。
+
+60/60 个训练侧自然 sole-pending JOIN 都找到
+不少于两条安全的服务采样，共 2332 条；
+在相同候选上，以当前可见 token 数、近期
+decode 速率和最近服务间隔补充五维流式模型，
+按项目留一。Django 34 条的误差中位从
+2722 ms 恶化到 3317 ms，Xarray 9 条从
+3547 ms 改善到 2480 ms，Pylint 7 条
+从 1590 ms 恶化到 1941 ms；各主要项目
+配对增益区间下界均小于零。服务端历史采样
+说明请求级进度可以在时钟约束下无前视地
+恢复，但**并不能预测未来**的生成停止/服务
+停顿。因此不新增线上特征或物理预取资格；
+未验证的跨项目模型不能因某一折改善而上线。
