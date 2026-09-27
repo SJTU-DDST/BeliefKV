@@ -226,12 +226,13 @@ Primary metrics:
    physical observability and safety gates.** Use tool wait, JOIN
    straggler and factual frontier as signals. Prepare the ancestor-closed
    part likely to need eviction rather than backing up every waiting agent;
-   measure later shadow consumption. Restore Host-backed KV before native
-   admission when its destination is available or can replace strictly colder
-   evictable KV; compare time saved with victim future-use, byte-time and
-   transfer overhead. Include next-agent handoff when the same constraints
-   permit it, not as a prerequisite for H2D-only gains.
-   Parent can replace cold KV, not engine-locked or hotter work. Reserve
+   measure later shadow consumption. In the primary stratum, restore Host-backed
+   KV before native admission only when its destination fits actual free
+   physical capacity; compare time saved with byte-time and transfer overhead.
+   Study colder-KV replacement and victim future-use separately after the
+   idle-headroom result; do not require replacement to produce the primary
+   H2D canary. Include next-agent handoff when the same constraints
+   permit it, not as a prerequisite for H2D-only gains. Reserve
    complete or useful partial ancestor-closed KV, bind request/context epoch,
    page generation and lease expiry; commit admission only on valid capacity
    and sufficient ACK. Include next-agent handoff and native Host KV, not just
@@ -251,14 +252,15 @@ Primary metrics:
    saved. Matched P5 vs P6 uses same tasks/arrival order, source fingerprint,
    runtime/hardware/Host/graph48 contract and instrumentation; report workflow
    completion throughput and JCT distribution plus other-workflow slowdown,
-   recompute, HBM occupancy time and guardrail violations. Include ablations
-   for PREPARE, speculative H2D, idle-capacity use, cold-KV replacement and
-   execution handoff.
+   recompute, HBM occupancy time and guardrail violations. Include primary
+   ablations for PREPARE, speculative H2D and idle-capacity use. Report
+   cold-KV replacement and execution handoff only if separately implemented
+   and validated; do not mix them into the primary comparison.
    Count correctness failures, censored workflows, p50/p95 JCT and maximal
    per-workflow slowdown; never trade an unbounded victim tail for a higher
-   mean completion rate. Include an execution-order-only ablation to isolate
-   recomputation reduction from H2D gains, and a transfer-only ablation to
-   isolate idle-bandwidth gains from workflow prioritization. Do not compare
+   mean completion rate. If execution order is changed, include an
+   execution-order-only ablation; include a transfer-only ablation to isolate
+   idle-bandwidth gains from workflow prioritization. Do not compare
    different root counts as if they were a matched policy A/B.
 
 Decision gate: if no chosen operating stratum has reusable KV (or a later
