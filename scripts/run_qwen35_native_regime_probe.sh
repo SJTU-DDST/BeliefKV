@@ -7,6 +7,7 @@ PORT="${PORT:-18454}"
 ROOT_COUNT="${ROOT_COUNT:-8}"
 HOST_SPLIT="${HOST_SPLIT:-35:65}"
 HICACHE_SIZE_GB="${HICACHE_SIZE_GB:-180}"
+SKIP_SERVER_WARMUP="${SKIP_SERVER_WARMUP:-0}"
 RUN_ROOT="${RUN_ROOT:-$ROOT/experiments/raw/qwen35_native_regime_selective_${HICACHE_SIZE_GB}g_${HOST_SPLIT/:/_}_${ROOT_COUNT}root_v1}"
 MANIFEST="$ROOT/configs/migration/qwen35_native_reactive_overlapped_128root_workload_2026-09-23.json"
 BASE_URL="http://127.0.0.1:$PORT"
@@ -28,11 +29,12 @@ if [[ $# -ne 0 || ! "$ROOT_COUNT" =~ ^[1-9][0-9]*$ ]] \
   || (( ROOT_COUNT > 16 )) \
   || [[ ! "$HICACHE_SIZE_GB" =~ ^[1-9][0-9]*$ ]] \
   || (( HICACHE_SIZE_GB > 200 )) \
+  || [[ "$SKIP_SERVER_WARMUP" != "0" && "$SKIP_SERVER_WARMUP" != "1" ]] \
   || [[ ! "$HOST_SPLIT" =~ ^([1-9][0-9]?):([1-9][0-9]?)$ ]] \
   || (( ${BASH_REMATCH[1]:-0} + ${BASH_REMATCH[2]:-0} != 100 )) \
   || [[ ! "$PORT" =~ ^[1-9][0-9]*$ ]] \
   || [[ -e "$RUN_ROOT" || -e "$SOCKET" ]]; then
-  printf 'Usage: PORT=18454 ROOT_COUNT=8 HICACHE_SIZE_GB=180 HOST_SPLIT=35:65 RUN_ROOT=<new path> bash %s\n' "$0" >&2
+  printf 'Usage: PORT=18454 ROOT_COUNT=8 HICACHE_SIZE_GB=180 HOST_SPLIT=35:65 SKIP_SERVER_WARMUP=0 RUN_ROOT=<new path> bash %s\n' "$0" >&2
   exit 2
 fi
 if [[ -e /tmp/beliefkv-experiments.paused ]] \
@@ -43,6 +45,12 @@ if [[ -e /tmp/beliefkv-experiments.paused ]] \
 fi
 mkdir -p "$RUN_ROOT/server" "$RUN_ROOT/opportunities"
 
+server_flags=(
+  --enable-beliefkv-admission --beliefkv-event-socket-path "$SOCKET"
+)
+if [[ "$SKIP_SERVER_WARMUP" == "1" ]]; then
+  server_flags+=(--skip-server-warmup)
+fi
 setsid env PORT="$PORT" HICACHE_SIZE_GB="$HICACHE_SIZE_GB" \
   BELIEFKV_FULL_MAMBA_HOST_SPLIT="$HOST_SPLIT" \
   HICACHE_WRITE_POLICY=write_through_selective \
@@ -52,7 +60,7 @@ setsid env PORT="$PORT" HICACHE_SIZE_GB="$HICACHE_SIZE_GB" \
   BELIEFKV_ADMISSION_OPPORTUNITY_DIR="$RUN_ROOT/opportunities" \
   SGLANG_SOURCE_CHECKOUT="$ROOT/third_party/sglang-v0.5.20" \
   bash "$ROOT/scripts/launch_qwen35_native_v0520.sh" \
-  --enable-beliefkv-admission --beliefkv-event-socket-path "$SOCKET" \
+  "${server_flags[@]}" \
   > "$RUN_ROOT/server.log" 2>&1 &
 server_pid="$!"
 
