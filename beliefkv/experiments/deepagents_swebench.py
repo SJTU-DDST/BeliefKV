@@ -3665,6 +3665,7 @@ def classify_workflow_measurement(
     outcome: str,
     error: str | None,
     semantic_completion: Mapping[str, Any] | None,
+    natural_terminal: bool = False,
     agent_control: Mapping[str, Any],
     control_delivery: Mapping[str, Any],
     trace: Mapping[str, Any],
@@ -3706,7 +3707,7 @@ def classify_workflow_measurement(
             system_reasons.append("join_not_satisfied")
 
     native_reasons = list(system_reasons)
-    if semantic_completion is None:
+    if semantic_completion is None and not natural_terminal:
         native_reasons.append("missing_semantic_completion")
     if agent_control.get("stuck_reasons"):
         native_reasons.append("guard_detected_stuck_execution")
@@ -3984,6 +3985,7 @@ def _run_workflow(
         outcome=outcome,
         error=error_text,
         semantic_completion=semantic_completion,
+        natural_terminal=completion is None and outcome == "completed",
         agent_control=agent_control,
         control_delivery=control_delivery,
         trace=trace,
@@ -4012,6 +4014,7 @@ def _run_workflow(
         "final_status": final_status,
         "artifact_collection": artifact_collection,
         "semantic_completion": semantic_completion,
+        "natural_terminal": completion is None and outcome == "completed",
         "correctness_gate": correctness_gate,
         "task_correctness_valid": task_correctness_valid,
         "measurement_valid": bool(eligibility["system_jct_eligible"]),

@@ -376,6 +376,29 @@ def test_natural_workflow_return_preserves_system_measurement() -> None:
         outcome="completed",
         error=None,
         semantic_completion=None,
+        natural_terminal=True,
+        agent_control={},
+        control_delivery={"degraded": False},
+        trace={
+            "workflow_lifecycle_valid": True,
+            "llm_pairing_valid": True,
+            "tool_pairing_valid": True,
+            "tool_status_coverage": 1.0,
+            "workspace_digest_coverage": 1.0,
+            "dynamic_subagent_count": 0,
+        },
+    )
+    assert result["system_jct_eligible"]
+    assert result["native_agent_jct_eligible"]
+    assert result["native_agent_jct_exclusion_reasons"] == []
+
+
+def test_missing_both_structured_and_natural_terminal_excludes_native_jct() -> None:
+    result = classify_workflow_measurement(
+        outcome="completed",
+        error=None,
+        semantic_completion=None,
+        natural_terminal=False,
         agent_control={},
         control_delivery={"degraded": False},
         trace={
@@ -1353,6 +1376,9 @@ def test_native_root_natural_completion_and_length_exhaustion() -> None:
     completion, outcome = _workflow_terminal(natural, require_schema=False)
     assert completion is None
     assert outcome == "completed"
+    assert not validate_workflow_completion(
+        completion, patch="diff --git a/file b/file"
+    )["passed"]
     with pytest.raises(RuntimeError, match="WorkflowCompletion"):
         _workflow_terminal(natural, require_schema=True)
 
