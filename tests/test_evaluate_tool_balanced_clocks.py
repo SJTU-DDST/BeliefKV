@@ -1,7 +1,9 @@
 import numpy as np
 import pytest
 
-from scripts.evaluate_tool_balanced_clocks import summarize, weights
+from scripts.evaluate_tool_balanced_clocks import (
+    load_training_batches, namespace_batch, summarize, weights,
+)
 
 
 def test_weights_equalize_workflows_and_projects():
@@ -50,3 +52,46 @@ def test_threshold_scan_uses_same_true_long_calls_and_raw_eta():
     assert report["by_threshold"]["0.95"][
         "selected_true_eta_calls_p50_absolute_error_ms"
     ] == 100.
+
+
+def test_batch_loader_retains_replicated_tasks_but_rejects_duplicate_sources(
+    monkeypatch, tmp_path,
+):
+    def fake_ids(path):
+        return (["one__task", f"two__{path.name}"], [])
+
+    def fake_rows(path, *, include_returned_failures):
+        assert include_returned_failures
+        return ([{
+            "project": "one", "workflow": "same-workflow",
+            "invocation": "child", "input_sha256": path.name,
+            "tool_call_id": "tool", "start_ts_ms": 1., "duration_ms": 800.,
+        }], {})
+
+    monkeypatch.setattr(
+        "scripts.evaluate_tool_balanced_clocks.require_complete_batch",
+        fake_ids,
+    )
+    monkeypatch.setattr(
+        "scripts.evaluate_tool_balanced_clocks.cold_calls", fake_rows,
+    )
+    batches = [tmp_path / "high", tmp_path / "low"]
+    for batch in batches:
+        result = batch / "one__task" / "result.json"
+        result.parent.mkdir(parents=True)
+        result.write_text(
+            '{"instance_id": "one__task", "workflow_id": "same-workflow"}',
+            encoding="utf-8",
+        )
+    rows, projects, metadata = load_training_batches(batches)
+    assert len(rows) == 2
+    assert len({row["workflow"] for row in rows}) == 2
+    assert {row["task_id"] for row in rows} == {"one__task"}
+    assert projects == {"one", "two"}
+    assert metadata["workflow_runs"] == 4
+    assert metadata["distinct_tasks"] == 3
+    assert metadata["replicated_task_ids"] == 1
+    with pytest.raises(ValueError, match="distinct"):
+        load_training_batches([batches[0], batches[0]])
+    with pytest.raises(ValueError, match="completed workflow identity"):
+        namespace_batch(batches[0], [{"workflow": "other"}])

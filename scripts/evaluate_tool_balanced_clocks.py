@@ -210,7 +210,10 @@ def summarize(rows: list[dict]) -> dict:
         }
         if mode != "calls":
             by_mode[mode]["eta_paired_gain_vs_calls"] = _paired_long_gain(
-                long,
+                [
+                    {**row, "workflow": row.get("task_id", row["workflow"])}
+                    for row in long
+                ],
                 np.asarray([
                     row["eta_ms"]["calls"] for row in long
                 ]),
@@ -223,41 +226,101 @@ def summarize(rows: list[dict]) -> dict:
         "independent_workflows": len({
             row["workflow"] for row in rows
         }),
+        "distinct_tasks": len({
+            row.get("task_id", row["workflow"]) for row in rows
+        }),
         "real_windows": len(long),
         "modes": by_mode,
     }
 
 
-def evaluate(train_workflows: Path, heldout_workflows: Path | None) -> dict:
-    train_ids, train_errors = require_complete_batch(train_workflows)
-    train_raw, train_censor = cold_calls(
-        train_workflows, include_returned_failures=True,
-    )
-    train = first_inputs(train_raw)
+def namespace_batch(workflows: Path, rows: list[dict]) -> list[dict]:
+    identities = {}
+    for result_path in workflows.glob("*/result.json"):
+        result = json.loads(result_path.read_text(encoding="utf-8"))
+        workflow = result.get("workflow_id")
+        task = result.get("instance_id")
+        if (
+            not isinstance(workflow, str) or not workflow
+            or task != result_path.parent.name
+            or workflow in identities
+        ):
+            raise ValueError("invalid or duplicate workflow result identity")
+        identities[workflow] = task
+    batch_id = str(workflows.resolve())
+    annotated = []
+    for row in rows:
+        workflow = row["workflow"]
+        if workflow not in identities:
+            raise ValueError("tool row lacks completed workflow identity")
+        annotated.append({
+            **row,
+            "task_id": identities[workflow],
+            "workflow": f"{batch_id}::{workflow}",
+        })
+    return annotated
+
+
+def load_training_batches(
+    batches: list[Path],
+) -> tuple[list[dict], set[str], dict]:
+    if not batches or len({path.resolve() for path in batches}) != len(batches):
+        raise ValueError("training batches must be nonempty and distinct")
+    ids = []
+    rows = []
+    sources = {}
+    for workflows in batches:
+        batch_ids, errors = require_complete_batch(workflows)
+        batch_rows, censor = cold_calls(
+            workflows, include_returned_failures=True,
+        )
+        ids.extend(batch_ids)
+        rows.extend(namespace_batch(workflows, batch_rows))
+        sources[str(workflows)] = {
+            "workflows": len(batch_ids),
+            "runner_errors": errors,
+            "censor": censor,
+        }
+    return first_inputs(rows), {
+        task.split("__", 1)[0] for task in ids
+    }, {
+        "sources": sources,
+        "workflow_runs": len(ids),
+        "distinct_tasks": len(set(ids)),
+        "replicated_task_ids": sum(
+            count > 1 for count in Counter(ids).values()
+        ),
+    }
+
+
+def evaluate(
+    train_workflows: list[Path], heldout_workflows: Path | None,
+) -> dict:
+    train, train_projects, train_source = load_training_batches(train_workflows)
     report = {
         "status": "train_only_workflow_weight_ablation_not_action_eligible",
-        "train_workflows": len(train_ids),
-        "train_errors": train_errors,
-        "train_censor": train_censor,
+        "train_sources": train_source,
         "train_project_loo": summarize(project_folds(train)),
         "scope": (
             "Each training project is scored only by heads fitted on other "
-            "projects. Probability threshold 0.8 is held fixed. Regression "
-            "ETA is compared on the same oracle-long completed tool calls, "
-            "not cherry-picked by a candidate classifier. At 100 ms survival "
+            "projects across all provided batches. Repeated task IDs in "
+            "multiple batches are correlated, not independent projects. "
+            "Probability threshold 0.8 is held fixed. Regression ETA is "
+            "compared on the same oracle-long completed tool calls, not "
+            "cherry-picked by a candidate classifier. At 100 ms survival "
             "this is a retrospective screen, not delivered H2D or JOIN."
         ),
     }
     if heldout_workflows is not None:
         heldout_ids, heldout_errors = require_complete_batch(heldout_workflows)
-        if {
-            task.split("__", 1)[0] for task in train_ids
-        } & {task.split("__", 1)[0] for task in heldout_ids}:
+        if train_projects & {
+            task.split("__", 1)[0] for task in heldout_ids
+        }:
             raise ValueError("heldout must have disjoint projects")
         heldout_raw, heldout_censor = cold_calls(
             heldout_workflows, include_returned_failures=True,
         )
-        heldout = first_inputs(heldout_raw)
+        heldout = first_inputs(namespace_batch(heldout_workflows, heldout_raw))
         # No model or threshold selection reads the held-out labels.
         scored = []
         long = [row for row in heldout if row["duration_ms"] >= TARGET_MS]
@@ -294,7 +357,9 @@ def evaluate(train_workflows: Path, heldout_workflows: Path | None) -> dict:
 
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--train-workflows", type=Path, required=True)
+    parser.add_argument(
+        "--train-workflows", type=Path, action="append", required=True,
+    )
     parser.add_argument("--heldout-workflows", type=Path)
     parser.add_argument("--output", type=Path, required=True)
     args = parser.parse_args()
