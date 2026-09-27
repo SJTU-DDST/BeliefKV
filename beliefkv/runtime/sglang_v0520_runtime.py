@@ -8,6 +8,7 @@ from __future__ import annotations
 from collections import Counter, deque
 from collections.abc import Sequence
 from dataclasses import dataclass
+from itertools import islice
 import os
 import time
 from typing import TYPE_CHECKING
@@ -22,6 +23,7 @@ from beliefkv.predictor.completion_lead import (
     load_pinned_completion_lead,
 )
 from beliefkv.runtime.event_channel import RuntimeEventDatagramServer
+from beliefkv.runtime.v0520_opportunity_telemetry import NativeOpportunityTelemetry
 from beliefkv.runtime.sglang_v0520_admission import (
     _request_key,
     NativePrefillPlan,
@@ -53,6 +55,9 @@ from beliefkv.runtime.sglang_v0520_physical import (
     next_shadow_backup_step,
     prefetch_expectation_from_native_op,
     shadow_expectation_from_native_op,
+)
+from beliefkv.runtime.sglang_v0520_observer import (
+    observe_static_full_mamba_headroom,
 )
 from beliefkv.predictor.structured_frontier import LocalFrontierFeatures
 
@@ -107,6 +112,7 @@ class NativeAdmissionRuntime:
         enable_local_predictor: bool = False,
         enable_admission_prefetch: bool = False,
         completion_lead: CompletionLead | None = None,
+        opportunity_dir: str | None = None,
     ) -> None:
         if enable_admission_prefetch and (
             not enable_local_predictor or not predictor_artifact_path
@@ -185,6 +191,14 @@ class NativeAdmissionRuntime:
         )
         self.physical_disabled = False
         self.counts: Counter[str] = Counter()
+        opportunity_dir = opportunity_dir or os.environ.get(
+            "BELIEFKV_ADMISSION_OPPORTUNITY_DIR"
+        )
+        self._opportunity_writer = (
+            NativeOpportunityTelemetry(opportunity_dir) if opportunity_dir else None
+        )
+        self._opportunity_next_ms = 0.0
+        self._opportunity_cursor = 0
         self.event_server = (
             RuntimeEventDatagramServer(event_socket_path, self.on_events)
             if event_socket_path
@@ -232,6 +246,9 @@ class NativeAdmissionRuntime:
             self.join_wait_hints[hint.join_id] = hint
 
     def close(self) -> None:
+        if self._opportunity_writer is not None:
+            self._opportunity_writer.close()
+            self._opportunity_writer = None
         if self._model_worker is not None:
             self._model_worker.close()
             self._model_worker = None
@@ -447,7 +464,7 @@ class NativeAdmissionRuntime:
                 }
             self.semantic_revision += 1
 
-    def scheduler_step(self) -> None:
+    def scheduler_step(self, waiting_queue: Sequence[object] = ()) -> None:
         if self.event_server is not None:
             self.event_server.drain(max_messages=16)
         now_ms = time.monotonic() * 1000
@@ -535,6 +552,150 @@ class NativeAdmissionRuntime:
             self.counts["join_prefetch_expired"] += 1
         if ticket is not None and not self._live_join_ticket():
             self._join_ticket = None
+        self._sample_h2d_opportunities(waiting_queue, now_ms=now_ms)
+
+    def _sample_h2d_opportunities(
+        self, waiting_queue: Sequence[object], *, now_ms: float,
+    ) -> None:
+        writer = self._opportunity_writer
+        if writer is None or now_ms < self._opportunity_next_ms:
+            return
+        self._opportunity_next_ms = now_ms + 1000.0
+        sample_start = time.perf_counter()
+        # Bound both the native queue traversal and session map scan at the
+        # scheduler safe point; report the unseen tail in the census row.
+        waiting: dict[str, PrefillCandidateKey] = {}
+        for req in islice(waiting_queue, 512):
+            key = _request_key(req)
+            if key is not None and self.visible.get(key.request_id) == key:
+                waiting[key.context_id] = key
+        keys = dict(waiting)
+        for context_id, key in islice(self.context_sessions.items(), 2048):
+            invocation = self.graph.invocations.get(key.invocation_id)
+            if invocation is not None and invocation.state in (
+                InvocationState.WAIT_TOOL, InvocationState.WAIT_JOIN,
+            ):
+                keys.setdefault(context_id, key)
+        candidates = list(keys.values())
+        start = self._opportunity_cursor % len(candidates) if candidates else 0
+        selected = (candidates[start:] + candidates[:start])[:16]
+        self._opportunity_cursor = (start + len(selected)) % len(candidates) if candidates else 0
+        wall_ms = time.time() * 1000
+        census = {
+            "event": "safe_point_census", "ts_ms": wall_ms,
+            "monotonic_ms": now_ms, "semantic_revision": self.semantic_revision,
+            "waiting_queue_size": len(waiting_queue),
+            "waiting_scanned": min(len(waiting_queue), 512),
+            "session_count": len(self.context_sessions),
+            "sessions_scanned": min(len(self.context_sessions), 2048),
+            "candidate_count": len(candidates), "sampled": len(selected),
+            "pending_transfers": self.physical_ledger.pending_count,
+        }
+        for key in selected:
+            invocation = self.graph.invocations.get(key.invocation_id)
+            source = (
+                "admission_candidate" if waiting.get(key.context_id) == key
+                else "join_wait" if invocation and invocation.state is InvocationState.WAIT_JOIN
+                else "tool_wait"
+            )
+            row = {
+                "event": "session_h2d_opportunity", "ts_ms": wall_ms,
+                "monotonic_ms": now_ms, "source": source,
+                "workflow_id": key.root_workflow_id,
+                "request_id": key.request_id, "invocation_id": key.invocation_id,
+                "context_id": key.context_id, "context_epoch": key.context_epoch,
+                "attempt_id": key.attempt_id, "session_id": key.session_id,
+                "session_generation": key.session_generation,
+                "invocation_state": invocation.state.value if invocation else None,
+                "semantic_revision": self.semantic_revision,
+            }
+            observation = self.inspect_context_h2d_opportunity(
+                context_id=key.context_id, context_epoch=key.context_epoch,
+            )
+            if observation is None:
+                row["reason"] = (
+                    "no_bound_session" if key.session_id is None
+                    or key.session_generation is None else
+                    "native_cache_unavailable" if self._native_cache is None else
+                    "no_live_session_or_anchors"
+                )
+            else:
+                headroom = observation.headroom
+                step = observation.step
+                row.update({
+                    "reason": (
+                        "headroom_unobservable" if not headroom.observable
+                        else "no_host_backed_step" if step is None
+                        else "fits_current_free_lists"
+                        if observation.fits_current_free_lists else "insufficient_free_lists"
+                    ),
+                    "headroom_reason": headroom.reason,
+                    "headroom_observable": headroom.observable,
+                    "device_full_free_tokens": headroom.device_full_free_tokens,
+                    "device_mamba_free_slots": headroom.device_mamba_free_slots,
+                    "host_full_free_tokens": headroom.host_full_free_tokens,
+                    "host_mamba_free_slots": headroom.host_mamba_free_slots,
+                    "required_full_tokens": observation.required_full_tokens,
+                    "required_mamba_slots": observation.required_mamba_slots,
+                    "node_id": step.node_id if step else None,
+                    "fits_current_free_lists": observation.fits_current_free_lists,
+                })
+            if source == "tool_wait" and key.session_id is not None:
+                self._observe_prepare_opportunity(key, row, observation)
+            writer.record(row)
+        census["sample_wall_ms"] = (time.perf_counter() - sample_start) * 1000
+        writer.record(census)
+
+    def _observe_prepare_opportunity(
+        self, key: PrefillCandidateKey, row: dict,
+        h2d: SessionH2DOpportunity | None,
+    ) -> None:
+        cache = self._native_cache
+        if cache is None:
+            row["prepare_reason"] = "native_cache_unavailable"
+            return
+        if (
+            getattr(cache, "enable_session_radix_cache", False) is not True
+            or getattr(getattr(cache, "cache_controller", None), "write_policy", None)
+            != "write_through"
+        ):
+            row["prepare_reason"] = "native_prepare_prerequisites_disabled"
+            return
+        candidate = self.capture_shadow_candidate(
+            cache, context_id=key.context_id, context_epoch=key.context_epoch,
+        )
+        if not isinstance(candidate, ActionLocalShadowCandidate):
+            row["prepare_reason"] = "no_observable_shadow_closure"
+            return
+        step = next_shadow_backup_step(candidate)
+        if step is None:
+            row["prepare_reason"] = "no_eligible_shadow_step"
+            return
+        node = next(node for node in candidate.nodes if node.node_id == step.node_id)
+        full_needed = max(node.full_device_tokens - node.full_host_tokens, 0)
+        mamba_needed = int(node.mamba_device_present and not node.mamba_host_present)
+        headroom = (
+            h2d.headroom if h2d is not None else
+            observe_static_full_mamba_headroom(cache)
+        )
+        fits = (
+            headroom.host_full_free_tokens >= full_needed
+            and headroom.host_mamba_free_slots >= mamba_needed
+            if headroom.observable else None
+        )
+        row.update({
+            "prepare_reason": (
+                "headroom_unobservable" if not headroom.observable else
+                "fits_current_host_free_lists" if fits else
+                "insufficient_host_free_lists"
+            ),
+            "prepare_node_id": step.node_id,
+            "prepare_required_full_tokens": full_needed,
+            "prepare_required_mamba_slots": mamba_needed,
+            "prepare_host_full_free_tokens": headroom.host_full_free_tokens,
+            "prepare_host_mamba_free_slots": headroom.host_mamba_free_slots,
+            "prepare_fits_current_host_free_lists": fits,
+        })
 
     def _join_parent_key(self, join_id: str) -> PrefillCandidateKey | None:
         join = self.graph.joins.get(join_id)

@@ -8,19 +8,28 @@ Completed and superseded plans are indexed under `docs/archive/`.
 
 ## Objective
 
-Establish a defensible Qwen3.5/SGLang v0.5.20 result for causal Agent/KV
-joint scheduling at **dynamic medium/high memory pressure**, with a paired
-reactive baseline. Test idle-HBM/PCIe prefetch at low pressure as a separate
-opportunity and overload fallback as a safety boundary. Separate model time
-accuracy, physical-action utility, and workflow outcomes. Exact wall-clock
-RETURN/JOIN ETA is not a prerequisite for bounded physical experiments.
+Establish a defensible Qwen3.5/SGLang v0.5.20 result for predictive Host
+backup and GPU restoration where HBM has **free space or safely reclaimable
+cold KV**, Host capacity and PCIe offer transfer opportunities, and useful
+KV loss followed by recomputation remains rare. Use a paired P5 reactive
+baseline. The primary question is whether PREPARE_HOST and predictive H2D
+hide transfer cost without displacing hotter work; do not assume an H2D
+benefit when the session is already on device. High-pressure, compute-bound
+or Host-thrashing regimes are fallback and limitation tests, not the primary
+optimization target. Separate time accuracy, physical utility, and workflow
+outcomes. Exact wall-clock RETURN/JOIN ETA is not a prerequisite for a
+bounded physical opportunity experiment.
 
 Primary metrics:
 
 - successful workflows/hour and p50/p95/max workflow JCT, with correctness
   and bounded starvation as constraints;
-- attributed eviction-to-miss/recompute and saved admission/reentry stall;
-- useful/wasted D2H/H2D bytes and HBM byte-seconds, including victim debt;
+- actual prepared bytes later used for a native eviction/writeback, and
+  predictive H2D bytes later consumed at first GPU service;
+- saved admission/reentry H2D stall, useful/wasted D2H/H2D bytes, HBM
+  byte-seconds, displaced cold-KV miss and victim debt;
+- eviction-to-miss/recompute as a low-rate workload qualification check and
+  guardrail, not the primary claimed benefit;
 - GPU service tokens/second, utilization and synchronous control overhead
   as explanations, not standalone wins.
 
@@ -38,18 +47,24 @@ Primary metrics:
    `docs/experiments/qwen35_terminal_join_sealed_2026-09-27_zh.md`.
    Treat this holdout as consumed: no model/threshold selection on its
    outcomes; the next method needs new project-disjoint validation.
-2. **Freeze operating regimes and check causal opportunity on train projects.**
-   Characterize 64+64 arrival pressure using request-level queue/service,
+2. **Find and freeze the actionable-HBM regime on train projects.**
+   Sweep bounded arrival concurrency on training workloads, without selecting
+   a root count from a previous high-pressure experiment alone. Require
+   observed free HBM or revalidatable cold/evictable KV, Host-backed H2D
+   candidates or future-eviction PREPARE candidates, and low useful
+   eviction-to-miss/recompute before freezing a primary configuration.
+   Record GPU/PCIe utilization and reactive H2D stall: free HBM by itself
+   cannot save a transfer if no future reuse exists. Characterize each load's
+   request-level queue/service,
    FULL/Mamba resident vs evictable bytes, Host eviction-to-miss/recompute
    attribution, transfer identity/ACK, and critical-path blocker changes.
-   Freeze pressure strata and any byte-time/slowdown budgets on training
-   workloads before evaluating held-out projects. Low pressure must expose
-   idle-capacity opportunities; medium/high pressure must expose recoverable
-   KV and actual HBM contention; overload must test fallback when the Host
-   copy or GPU service is no longer economically useful. Report failed and
-   abstained decisions in every stratum, not only successful prefetches.
-   Compare low and overloaded regimes only under otherwise identical model,
-   engine, Host pool, instrumented workload, admission cap and hardware.
+   Freeze the chosen regime and byte-time/slowdown budgets on training
+   workloads before held-out evaluation. Separately measure idle-headroom
+   prefetch and cold-KV replacement; do not equate free bytes with
+   evictable bytes. Test high-pressure fallback where Host/compute pressure
+   suppresses transfer opportunities; report abstentions and guardrail
+   violations as well as successful actions. All regimes must use the same
+   model, engine, Host pool, instrumented workload, admission cap and hardware.
    Existing 64/128 runs with unmatched Host configurations are not a paired
    throughput comparison. For each candidate action, log event time, online
    frontier/blockers, Host availability, reclaimable/locked FULL/Mamba bytes,
@@ -57,9 +72,10 @@ Primary metrics:
    eviction-to-miss/recompute and displaced-workflow delay. Attribute
    queue/no-service time separately from H2D and GPU service. First compute
    an opportunity upper bound (recoverable KV, actionable reclaim capacity
-   and enough live time to transfer); do not use a reactive queue tail as
-   counterfactual transfer savings. If medium/high load is compute-saturated
-   or Host thrashes, quantify the cost and restrict optimistic claims.
+   and enough live time to transfer); include partially prepared KV that is
+   later offloaded. Do not use a reactive queue tail as counterfactual transfer
+   savings. If higher load is compute-saturated or Host thrashes, quantify
+   the limit rather than tune that load for a headline result.
    A train-only 128-root JOIN audit finds 0/105 FULL Host hits and 3/105
    Mamba Host hits at parent submit; 101/105 have a FULL Device prefix hit.
    These are submit-time observations, not notice-time residency or an
@@ -68,8 +84,18 @@ Primary metrics:
    The action-local closure observer now recognizes the actual static
    FULL/Mamba allocator, and a read-only, epoch-bound session probe can
    report a candidate H2D node and instantaneous pool free-list counts.
-   This has CPU coverage only: it has not yet been emitted at live decision
-   safe points or reconciled with GPU transfer/consumption evidence.
+   The admission safe point can now emit an opt-in, bounded, rotating
+   `BELIEFKV_ADMISSION_OPPORTUNITY_DIR` observation stream: live native
+   waiting candidates and tool/JOIN waits carry session epochs, one
+   ancestor-closed H2D node, FULL/Mamba requirements and instantaneous
+   free-list headroom or a rejection reason; tool waits also record an
+   observable single-node PREPARE candidate with Host free lists where
+   write-through and session radix are enabled. The census records sampled
+   safe-point wall time and
+   unsampled tail. This has CPU coverage only: GPU sampling overhead,
+   representative physical opportunity rates, allocator ownership and
+   transfer/first-consumption reconciliation are not yet verified. Do
+   not treat `fits_current_free_lists` as a reservation or H2D permit.
 3. **Evaluate timing as an auxiliary signal, without blocking physical gates.**
    Test tool ETA and long-window calibration across task, project, and
    success/error strata; do not select the workflow-weighted candidate just
@@ -104,11 +130,15 @@ Primary metrics:
    scoring, capacity, complete environment contract and arrival pressure
    are frozen independently. See
    `docs/experiments/qwen35_swebench_live_ood_preflight_2026-09-27_zh.md`.
-4. **Implement bounded critical-path parent admission as a JointPlan extension
-   only after the physical observability and safety gates.** Use sole JOIN
-   straggler and factual frontier as existing signals; compare parent unlock
-   against victim future-use, D2H/H2D, restore/recompute debt, fairness
-   and HBM byte-time.
+4. **Implement bounded PREPARE and pre-admission H2D only after the
+   physical observability and safety gates.** Use tool wait, JOIN
+   straggler and factual frontier as signals. Prepare the ancestor-closed
+   part likely to need eviction rather than backing up every waiting agent;
+   measure later shadow consumption. Restore Host-backed KV before native
+   admission when its destination is available or can replace strictly colder
+   evictable KV; compare time saved with victim future-use, byte-time and
+   transfer overhead. Include next-agent handoff when the same constraints
+   permit it, not as a prerequisite for H2D-only gains.
    Parent can replace cold KV, not engine-locked or hotter work. Reserve
    complete or useful partial ancestor-closed KV, bind request/context epoch,
    page generation and lease expiry; commit admission only on valid capacity
@@ -120,15 +150,18 @@ Primary metrics:
 5. **Run staged physical validation, then matched A/B.** Shadow-log proposed
    time, bytes, alternative beneficiary and reason for abstaining. Canary
    checks intent -> physical transfer -> ACK -> parent ready -> first service
-   and subsequent actual KV use; distinguish complete/partial/late/wasted
-   bytes. For joined parent define useful lead `0 <= R-C <= T_max`, with
+   and subsequent actual KV use; for PREPARE also observe whether the
+   shadow is consumed by later eviction, not merely D2H ACK. Distinguish
+   complete/partial/late/wasted bytes. For joined parent define useful lead
+   `0 <= R-C <= T_max`, with
    `T_max` set from measured HBM opportunity cost rather than the old
    reactive queue tail. Count partially hidden transfers by measured stall
    saved. Matched P5 vs P6 uses same tasks/arrival order, source fingerprint,
    runtime/hardware/Host/graph48 contract and instrumentation; report workflow
    completion throughput and JCT distribution plus other-workflow slowdown,
    recompute, HBM occupancy time and guardrail violations. Include ablations
-   for speculative H2D, bounded parent replacement and execution handoff.
+   for PREPARE, speculative H2D, idle-capacity use, cold-KV replacement and
+   execution handoff.
    Count correctness failures, censored workflows, p50/p95 JCT and maximal
    per-workflow slowdown; never trade an unbounded victim tail for a higher
    mean completion rate. Include an execution-order-only ablation to isolate
@@ -136,12 +169,13 @@ Primary metrics:
    isolate idle-bandwidth gains from workflow prioritization. Do not compare
    different root counts as if they were a matched policy A/B.
 
-Decision gate: if no pressure stratum has recoverable reusable KV plus
-transfer/capacity slack, report a workload/hardware limit rather than tuning
-predictive thresholds. If the high-pressure handoff merely shifts delays to
-other workflows or increases miss/recompute, retain reactive P5 there; a
-low-pressure win may be reported separately, not relabeled as a high-pressure
-one. Promotion requires physical benefit and no correctness/liveness regression;
+Decision gate: if no chosen operating stratum has reusable KV (or a later
+useful PREPARE shadow), sufficient lead and transfer/capacity slack, report
+a workload/hardware limit rather than tuning predictive thresholds.
+Do not use unqualified zero-pressure success to claim benefits from
+overlapping transfers with meaningful workload execution. Retain reactive
+P5 at high pressure when handoff shifts delays or raises miss/recompute.
+Promotion requires physical benefit and no correctness/liveness regression;
 time-model accuracy alone is insufficient. Do not enable Qwen3.5
 `online_eligible` or `predictive_action_eligible` just because an offline
 window gate or shadow decision looks promising. Full safety/ownership evidence

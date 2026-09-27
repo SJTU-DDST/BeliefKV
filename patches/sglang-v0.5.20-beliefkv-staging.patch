@@ -423,7 +423,7 @@ index 743c8af..e41a8be 100644
          self._process_hicache_events()
 +        if (beliefkv_runtime := getattr(self, "beliefkv_runtime", None)) is not None:
 +            # Native ACKs/locks settle before BeliefKV mirrors and plans.
-+            beliefkv_runtime.scheduler_step()
++            beliefkv_runtime.scheduler_step(waiting_queue=self.waiting_queue)
 +            predictor_fd = getattr(self, "_beliefkv_predictor_fd", None)
 +            if (
 +                predictor_fd is not None
@@ -2043,10 +2043,11 @@ new file mode 100644
 index 0000000..018a9d0
 --- /dev/null
 +++ b/test/srt/test_beliefkv_scheduler_hook.py
-@@ -0,0 +1,479 @@
+@@ -0,0 +1,482 @@
 +"""BeliefKV scheduler safe-point contract, without model/GPU dependencies."""
 +
 +import ast
++import os
 +import sys
 +import types
 +import unittest
@@ -2104,6 +2105,7 @@ index 0000000..018a9d0
 +    )
 +    ast.fix_missing_locations(module)
 +    namespace = {
++        "os": os,
 +        "NextBatchPlan": PLAN,
 +        "DisaggregationMode": SimpleNamespace(NULL="null"),
 +        "HTTPStatus": SimpleNamespace(SERVICE_UNAVAILABLE=503),
@@ -2127,6 +2129,7 @@ index 0000000..018a9d0
 +    scheduler.ps = SimpleNamespace(tp_size=1, pp_size=1)
 +    scheduler.enable_overlap = overlap
 +    scheduler.result_queue = []
++    scheduler.waiting_queue = []
 +    scheduler.chunked_req = None
 +    scheduler.process_pending_chunked_abort = lambda: calls.append("abort")
 +    scheduler._process_hicache_events = lambda: calls.append("cache")
@@ -2354,7 +2357,7 @@ index 0000000..018a9d0
 +            predictor_fileno=lambda: 73,
 +            attach_native_cache=lambda cache: None,
 +            on_native_transfer_commit=lambda commit: None,
-+            scheduler_step=lambda: None,
++            scheduler_step=lambda **kwargs: None,
 +            dispatch_join_prefetch=lambda: None,
 +            plan_running_batch_retraction=lambda running: None,
 +            on_batch_selected=lambda batch: None,
@@ -2418,7 +2421,7 @@ index 0000000..018a9d0
 +    def test_native_cache_events_precede_runtime_plan_on_idle(self):
 +        scheduler, batch, calls = idle_scheduler()
 +        scheduler.beliefkv_runtime = SimpleNamespace(
-+            scheduler_step=lambda: calls.append("ack"),
++            scheduler_step=lambda **kwargs: calls.append("ack"),
 +            dispatch_join_prefetch=lambda: None,
 +            plan_running_batch_retraction=lambda _: None,
 +            on_batch_selected=lambda selected: calls.append(("selected", selected)),
@@ -2430,7 +2433,7 @@ index 0000000..018a9d0
 +    def test_overlap_drain_returns_plan_then_notifies_after_result_is_drained(self):
 +        scheduler, batch, calls = idle_scheduler(overlap=True)
 +        runtime = SimpleNamespace(
-+            scheduler_step=lambda: calls.append("ack"),
++            scheduler_step=lambda **kwargs: calls.append("ack"),
 +            dispatch_join_prefetch=lambda: None,
 +            running_batch_retraction_barrier_required=lambda _: True,
 +            on_running_batch_retraction_barrier_drained=lambda _: calls.append("drained"),
@@ -2454,7 +2457,7 @@ index 0000000..018a9d0
 +    def test_retraction_plan_is_rejected_before_native_scheduling(self):
 +        scheduler, batch, calls = idle_scheduler()
 +        scheduler.beliefkv_runtime = SimpleNamespace(
-+            scheduler_step=lambda: calls.append("ack"),
++            scheduler_step=lambda **kwargs: calls.append("ack"),
 +            plan_running_batch_retraction=lambda _: object(),
 +        )
 +        with self.assertRaisesRegex(RuntimeError, "selective release and ACK"):
@@ -2464,7 +2467,7 @@ index 0000000..018a9d0
 +    def test_inconsistent_overlap_queue_rejected_before_drain(self):
 +        scheduler, batch, calls = idle_scheduler(overlap=True)
 +        scheduler.beliefkv_runtime = SimpleNamespace(
-+            scheduler_step=lambda: calls.append("ack")
++            scheduler_step=lambda **kwargs: calls.append("ack")
 +        )
 +        with self.assertRaisesRegex(RuntimeError, "result queue"):
 +            scheduler.get_next_batch_to_run(
@@ -2481,7 +2484,7 @@ index 0000000..018a9d0
 +        scheduler.tp_group = SimpleNamespace(device="cpu", device_group=object())
 +        scheduler.result_queue.append("inflight")
 +        scheduler.beliefkv_runtime = SimpleNamespace(
-+            scheduler_step=lambda: calls.append("ack"),
++            scheduler_step=lambda **kwargs: calls.append("ack"),
 +            running_batch_retraction_barrier_required=lambda _: True,
 +        )
 +

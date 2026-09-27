@@ -23,32 +23,35 @@ stall、D2H/H2D、recompute 与控制面开销是用于解释因果和判断退�
 
 Workflow fairness 只作为有界防饿死和最终 tie-break，不以平均分配 GPU 时间为目标。
 
-### 1.1 当前研究聚焦：动态中高压力
+### 1.1 当前研究聚焦：可行动的 HBM 余量
 
-论文主场景选在**HBM 竞争真实存在、但尚未被计算或 Host 容量彻底压垮**的
-动态多 workflow 负载：既有 runnable backlog，也有工具等待和 child JOIN，
-且 Host 中存在可恢复 KV、HBM 中存在可安全回收的低价值驻留页。这是待检验的
-工作区间，不以 root 数量、GPU 利用率或单个 usage 比例定义“内存瓶颈”。
-以同一 workload 的 64+64 两波到达作为候选压力配置，最终按实际
-recompute、Host/Device hit、排队、可回收容量和传输重叠机会确认。
-低压组验证是否能用闲置 HBM/PCIe 隐藏传输；极端过载组验证退化到响应式
-策略是否安全，不以极端过载下的虚假预取次数作为主要结果。
+近期主场景选在**HBM 中有空闲容量或可安全腾挪的冷 KV、Host/PCIe
+可承载传输，且有用 KV 被丢弃后重算较少**的动态多 workflow 负载。
+同时需要真实的工具等待、child JOIN 或候选执行请求，确保提前迁移
+有未来消费对象；HBM 空闲本身不构成收益。这是待测工作区间，不以
+root 数、GPU 利用率或单个使用率定义。由训练项目上的并发/到达
+压力扫描冻结主配置，不预设 64+64 或必须使 Host/HBM 满载。
+分别测闲置 HBM 预取与有界替换冷 KV；高压作为物理机会枯竭、
+计算饱和及 Host thrash 时的安全回退/研究边界，暂不追求
+高压下减少大规模 recompute 的主结果。
 
-在这个工作区间，同时研究两种**可能互相竞争**的收益来源：
+在这个工作区间，优先验证两条传输路径的**实际效用**：
 
-1. 等待工具/JOIN 的 parent 在将重新可运行之前恢复有用 KV，减少 reentry
-   等待；如果 parent 是关键路径，允许其有界占用 HBM，必要时替换冷 KV。
-2. 高压时把执行选择和 KV 准入/回收联合起来：优先推进能实际解锁下游、
-   尽快完成 workflow 并释放容量的工作，但将其它 workflow 的 JCT 尾部、
-   饥饿和重算债务计入机会成本，不能简单地固定一个 workflow 跑到底。
+1. `PREPARE_HOST` 选择未来更可能卸载且值得复用的祖先闭包，可先
+   备份部分已生成 KV；以之后 native 卸载是否使用 Host shadow 和
+   避免了多少同步 D2H 为验收，不以 D2H 完成次数替代效用。
+2. predictive H2D 从 native 或 PREPARE 得到的 Host 副本中提前
+   恢复真正会服务的 KV，包括 JOIN parent 和接下来要执行的 agent；
+   以 H2D ACK 后首次 GPU 服务的 KV 命中、节省的等待与提前驻留
+   成本为验收。关键路径 parent 可有界替换冷 KV，但不可抢占热页。
 
-当 Host 无可恢复副本或 GPU 计算已经饱和时，第一种收益可能消失，
-第二种也可能因集中服务引起其它 workflow 的长尾。不要把
-「同一个 workflow 的请求挨着执行」等同于节省 KV：只有减少随后
-eviction-to-miss/recompute 或缩短阻塞，并且没有等量挤出更有价值的
-工作，才能归因于联合调度。低压的机会来自可回收的闲置 HBM 和
-PCIe，而不要求预测精确到返回的毫秒；中高压允许关键路径 parent
-在有界时间内置换冷 KV，但必须计入 victim 的恢复债务和尾延迟。
+执行 frontier、native 准入与 KV 余量必须共同决定下一请求的
+恢复时机；联合 handoff（有界选择 victim、D2H 与 H2D 重叠）仍是
+可选后续扩展，必须单独证明收益超过同步开销和 victim 债务。
+不能将 reactive 队列等待全算作可隐藏的传输时延，也不能因精确
+RETURN/JOIN ETA 误差大而否定由确定性事件和容量余量支持的动作。
+如果 session 本已在 GPU、Host 无可用副本或抢占会伤害其它
+workflow，则 abstain 并交还 P5 native reactive 路径。
 
 主指标为同配置下成功 workflow 吞吐和 JCT 分布，同时报告最慢 workflow、
 任务正确性、GPU 服务、重算、Host/Device hit、HBM 占用字节时间及公平性。
@@ -57,15 +60,15 @@ PCIe，而不要求预测精确到返回的毫秒；中高压允许关键路径 
 
 ### 1.2 可证伪的研究假设与对照
 
-- **低压、迁移可隐藏**：有真实的再入请求、Host 副本及闲置 HBM/PCIe
-  时，受限的提前 D2H/H2D 比同一请求的 reactive 恢复减少等待；
-  无消费的 KV 与 HBM 字节时间、PCIe 干扰必须计入成本。
-- **中高压、容量竞争**：已知 frontier 中可以选出能解锁下游且物理
-  KV 可恢复的 beneficiary 时，执行选择、victim 回收和 beneficiary
-  预取组成同一个有期限的 handoff。与相同负载的 P5 reactive 相比，
-  检验重算和有效阻塞是否减少，同时检验其它 workflow 的 JCT
-  P95/最大 slowdown 是否恶化。没有冷页或不值得牺牲的 victim 时，
-  主动放弃抢占。
+- **HBM 有可行动余量**：工具等待或 JOIN 提供足够 lead，且未来
+  卸载会消费提前备份、未来服务会消费提前恢复的 KV 时，
+  `PREPARE_HOST`/predictive H2D 相比同到达流 P5 可缩短同步
+  D2H/H2D 停顿；计入无效备份、提前驻留字节时间及 PCIe 干扰。
+- **有冷 KV 可置换**：当 free-list 不足但可安全收回更冷页时，
+  在有界 lease 下预取关键路径 parent 或下一 agent；将 victim
+  后续 miss、其它 workflow JCT 和尾延迟纳入成本。缺乏冷页时
+  放弃替换。联动执行顺序/回收的 handoff 另作消融，不用它掩盖
+  PREPARE/H2D 自身是否有净效益。
 - **过载、计算或 Host 容量主导**：若增加 H2D/驻留无法转化为
   真实消费或节省阻塞，应回退到响应式路径，并报告机会缺失；
   不将此压力档的 speculative H2D 数量视作成功。
@@ -74,15 +77,16 @@ PCIe，而不要求预测精确到返回的毫秒；中高压允许关键路径 
 可回收/锁定的 FULL 与 Mamba 字节、Host 有效副本和驱逐后 miss、
 GPU 服务饱和度、传输队列及重叠余量。根数只用于重复配置，不用作
 压力标签；同一模型、Host/NUMA、HBM/graph、runtime 和到达流
-下比较 P5、受限低压预取、带 JOIN/工具信号的预取、联合 handoff。
+下比较 P5、PREPARE、H2D、闲置容量使用、冷页替换与可选联合 handoff。
 分档门槛与动作预算只在训练项目冻结，项目隔离测试不回调参数。
 
 与已有 Agent-aware offload/predictive upload（TokenCake,
 arXiv:2510.18586）及 next-step KV prefetch（KVFlow,
 arXiv:2507.07400）相比，不能把「提前迁移」本身作为新颖性主张。
-待验证的区别是**在线因果 frontier 与真实物理页共同决定
-谁先服务、哪笔 KV 值得驻留/置换、何时在同一 handoff 内完成
-回收与恢复**，以及在没有可靠精确返回时钟时有界地放弃动作。
+待验证的区别是**在线因果 frontier 和 FULL/Mamba 物理余量共同
+决定哪笔 KV 值得提前备份/恢复、是否替换冷页、何时准入执行**，
+在缺乏可靠精确时钟或有用物理机会时有界地放弃动作。联合
+handoff 是可选增强，不能作为尚未验证的当前收益。
 
 ## 2. 当前核心设计
 

@@ -22,19 +22,36 @@ FULL/Mamba Device/Host free-list 快照。`inspect_context_h2d_opportunity`
 在有效 context/session epoch 下组合祖先闭包、候选 node 的
 FULL/Mamba 需求与当前 free-list 是否够用；未知池或批内分配状态
 仍拒绝。**这不是独占 ownership、未来容量预留或 native 动作授权**：
-尚未在目标 GPU 上采集该快照的真实机会分母，也未接入持续遥测、
-beneficiary/victim 联合 handoff 和完整 D2H/H2D 首次消费闭环。
+已增加可选的 `BELIEFKV_ADMISSION_OPPORTUNITY_DIR` 安全点日志：
+每秒最多一次、一次最多检查 16 个 context，轮转采样并记录原生
+waiting queue 候选、WAIT_TOOL/WAIT_JOIN 的 session/epoch、单 node
+FULL/Mamba H2D 需求和瞬时 free-list；对于 WAIT_TOOL，还记录
+单 node 可备份的 FULL/Mamba 数据及 Host 余量（仅在 native
+write_through 和 session radix 开启时采样）。记录缺失 session、不可观测、
+无法拟合的原因。异步有界队列单独写
+`admission_opportunities.jsonl`，关闭时写状态文件；队列溢出或
+写入失败将使该次观测无效。census 记录采样耗时和未扫描队列/上下文数量，
+因此样本**不是全量机会分母**。该接入尚未在目标 GPU 运行和
+核验 sampling cost，更没有独占 ownership、未来容量预留、
+与实际 transfer / first-use 的联接；beneficiary/victim 联合
+handoff 和完整 D2H/H2D 首次消费闭环仍待实现。
 
-新版主评估场景定为动态中高压力，低压闲置容量和极端过载分别作为边界
-验证；低压预取作为独立机会单列，不能用它的成功替代中高压联合
-调度的证据。时间头（JOIN/工具时刻）、动作头（是否值得迁移）和
-最终 workflow 收益分别验收，不能因为亚秒级 JOIN 时间头尚未
-达标就禁止有界的物理机会实验。当前 `causal_frontier.py` 和
+近期主评估场景改为 HBM 有空闲空间或可安全迁出的冷
+KV、Host/PCIe 尚有余量且有效 KV 丢弃后重算较少的压力区间。
+先由训练项目上的并发扫描确定该区间，不能仅按 root 数认定低压或
+可预取；将闲置容量预取和替换冷 KV 分开归因。重点验证
+`PREPARE_HOST` 的部分/完整 shadow 后续是否被卸载消费，
+以及 Host-backed predictive H2D 的 ACK 后是否实际在首次 GPU
+服务复用，并计入 HBM 字节时间及被替换 KV 的后续 miss。
+极端高压及 Host thrash 仅用作安全回退和收益边界，不以减少
+大规模重算作为近期主贡献。时间头（JOIN/工具时刻）、动作头（是否
+值得迁移）和最终 workflow 收益分别验收，不能因为亚秒级 JOIN
+时间头尚未达标就禁止有界的物理机会实验。当前 `causal_frontier.py` 和
 `joint_scheduler.py` 已按 JOIN straggler、
 已知下游解锁及 HBM demand 排序，并支持有约束的 beneficiary-bound
 回收；**尚未实现**按机会成本预算的关键路径 parent 抢占、到期驻留租约
-及跨执行选择的预取收益闭环，也尚无中高压下减少后续
-miss/recompute 和改善 workflow JCT 的配对因果证据。Qwen3.5 训练行的
+及跨执行选择的预取收益闭环，也尚无新目标场景下
+PREPARE/H2D 首次复用和改善 workflow JCT 的配对因果证据。Qwen3.5 训练行的
 child RETURN
 目标仍为决策时刻至实际 RETURN 的墙钟差；把 GPU 工作、排队与工具执行
 拆成可识别的预测目标，及根据新调度轨迹在线更新，均属待验证研究工作。

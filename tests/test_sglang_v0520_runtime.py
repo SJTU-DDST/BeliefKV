@@ -24,13 +24,16 @@ from beliefkv.runtime.sglang_v0520_prediction import (
     NativeDemandHint, NativeJoinWaitHint, NativeToolWaitHint,
 )
 from beliefkv.runtime.sglang_v0520_physical import (
+    ActionLocalShadowCandidate,
     ContextSessionAnchors,
     PhysicalActionExpectation,
     PhysicalChildExpectation,
     PhysicalReceiptError,
     PrefetchLoadStep,
+    SessionH2DOpportunity,
     ShadowBackupStep,
 )
+from beliefkv.runtime.sglang_v0520_observer import StaticPoolHeadroomObservation
 
 
 def test_native_ack_is_credited_only_after_live_context_reconciliation():
@@ -216,6 +219,151 @@ def test_context_opportunity_requires_live_wait_or_ready_session_epoch():
             context_id="ctx-a", context_epoch=0,
         ) is None
         assert inspect.call_count == 1
+
+
+def test_safe_point_persists_bounded_wait_and_admission_opportunities(tmp_path):
+    runtime = NativeAdmissionRuntime(opportunity_dir=str(tmp_path))
+    waiting, tool = req("waiting"), req("tool")
+    for request in (waiting, tool):
+        request.session_id = f"session-{request.rid}"
+        request.session_generation = 2
+        assert runtime.register_visible_request(request)
+    runtime.on_events((
+        event(0, RuntimeEventKind.WORKFLOW_START),
+        event(1, RuntimeEventKind.INVOCATION_CREATE,
+              invocation_id="waiting", context_id="ctx-waiting"),
+        event(2, RuntimeEventKind.INVOCATION_CREATE,
+              invocation_id="tool", context_id="ctx-tool"),
+        event(3, RuntimeEventKind.TOOL_START,
+              invocation_id="tool", context_id="ctx-tool"),
+    ))
+    runtime.attach_native_cache(object())
+    key = runtime.context_sessions["ctx-waiting"]
+    headroom = StaticPoolHeadroomObservation(
+        True, device_full_free_tokens=100, device_mamba_free_slots=4,
+        host_full_free_tokens=50, host_mamba_free_slots=2,
+    )
+    opportunity = SessionH2DOpportunity(
+        ContextSessionAnchors(key, (), 1.0), headroom,
+        PrefetchLoadStep(key, 11, 1, 11, 1), 20, 1, True,
+    )
+    with patch.object(runtime, "inspect_context_h2d_opportunity",
+                      side_effect=lambda *, context_id, context_epoch:
+                      opportunity if context_id == "ctx-waiting" else None) as inspect:
+        runtime.scheduler_step(waiting_queue=[waiting])
+        runtime.scheduler_step(waiting_queue=[waiting])
+        assert inspect.call_count == 2  # 1-second sampling interval
+    assert runtime.physical_ledger.pending_count == 0
+    runtime.close()
+    rows = [
+        json.loads(line) for line in
+        (tmp_path / "admission_opportunities.jsonl").read_text().splitlines()
+    ]
+    assert len(rows) == 3
+    census = next(row for row in rows if row["event"] == "safe_point_census")
+    assert census["candidate_count"] == 2
+    assert census["waiting_queue_size"] == 1
+    assert census["sample_wall_ms"] >= 0
+    by_source = {row["source"]: row for row in rows
+                 if row["event"] == "session_h2d_opportunity"}
+    assert by_source["admission_candidate"]["required_full_tokens"] == 20
+    assert by_source["admission_candidate"]["fits_current_free_lists"] is True
+    assert by_source["admission_candidate"]["session_generation"] == 2
+    assert by_source["tool_wait"]["reason"] == "no_live_session_or_anchors"
+    assert json.loads((tmp_path / "admission_opportunities_status.json").read_text())[
+        "complete"
+    ] is True
+
+
+def test_tool_wait_prepare_probe_requires_native_prerequisites_and_host_space(tmp_path):
+    runtime = NativeAdmissionRuntime(opportunity_dir=str(tmp_path))
+    request = req("tool")
+    request.session_id = "session-tool"
+    request.session_generation = 1
+    assert runtime.register_visible_request(request)
+    runtime.on_events((
+        event(0, RuntimeEventKind.WORKFLOW_START),
+        event(1, RuntimeEventKind.INVOCATION_CREATE,
+              invocation_id="tool", context_id="ctx-tool"),
+        event(2, RuntimeEventKind.TOOL_START,
+              invocation_id="tool", context_id="ctx-tool"),
+    ))
+    cache = NS(enable_session_radix_cache=True,
+               cache_controller=NS(write_policy="write_through"))
+    runtime.attach_native_cache(cache)
+    key = runtime.context_sessions["ctx-tool"]
+    anchors = ContextSessionAnchors(key, ((0, ((11, 1),)), (2, ((11, 1),))), 1.0)
+    node = NS(
+        node_id=11, full_device_tokens=20, full_host_tokens=0,
+        mamba_device_present=True, mamba_host_present=False,
+    )
+    candidate = ActionLocalShadowCandidate(anchors, (node,), 20, 1)
+    step = ShadowBackupStep(key, 11, 1, 11, 1)
+    headroom = StaticPoolHeadroomObservation(
+        True, device_full_free_tokens=200, device_mamba_free_slots=8,
+        host_full_free_tokens=10, host_mamba_free_slots=2,
+    )
+    h2d = SessionH2DOpportunity(anchors, headroom, None, 0, 0, None)
+    with (
+        patch.object(runtime, "inspect_context_h2d_opportunity", return_value=h2d),
+        patch.object(runtime, "capture_shadow_candidate", return_value=candidate),
+        patch("beliefkv.runtime.sglang_v0520_runtime.next_shadow_backup_step",
+              return_value=step),
+    ):
+        runtime.scheduler_step()
+    runtime.close()
+    rows = [
+        json.loads(line) for line in
+        (tmp_path / "admission_opportunities.jsonl").read_text().splitlines()
+    ]
+    prepare = next(row for row in rows
+                   if row["event"] == "session_h2d_opportunity")
+    assert prepare["source"] == "tool_wait"
+    assert prepare["prepare_node_id"] == 11
+    assert prepare["prepare_required_full_tokens"] == 20
+    assert prepare["prepare_required_mamba_slots"] == 1
+    assert prepare["prepare_reason"] == "insufficient_host_free_lists"
+    assert prepare["prepare_fits_current_host_free_lists"] is False
+
+
+def test_safe_point_records_missing_session_and_bounded_queue_scan(tmp_path):
+    runtime = NativeAdmissionRuntime(opportunity_dir=str(tmp_path))
+    no_session = req("unbound")
+    assert runtime.register_visible_request(no_session)
+    runtime.scheduler_step(waiting_queue=[no_session] + [req("plain", tagged=False)] * 513)
+    runtime.close()
+    rows = [
+        json.loads(line) for line in
+        (tmp_path / "admission_opportunities.jsonl").read_text().splitlines()
+    ]
+    census = next(row for row in rows if row["event"] == "safe_point_census")
+    candidate = next(row for row in rows
+                     if row["event"] == "session_h2d_opportunity")
+    assert census["waiting_queue_size"] == 514
+    assert census["waiting_scanned"] == 512
+    assert candidate["reason"] == "no_bound_session"
+
+
+def test_safe_point_rotates_through_more_candidates_than_per_tick_limit(tmp_path):
+    runtime = NativeAdmissionRuntime(opportunity_dir=str(tmp_path))
+    requests = [req(str(index)) for index in range(20)]
+    for request in requests:
+        assert runtime.register_visible_request(request)
+    with patch("beliefkv.runtime.sglang_v0520_runtime.time.monotonic",
+               side_effect=(1.0, 2.1)):
+        runtime.scheduler_step(waiting_queue=requests)
+        runtime.scheduler_step(waiting_queue=requests)
+    runtime.close()
+    rows = [
+        json.loads(line) for line in
+        (tmp_path / "admission_opportunities.jsonl").read_text().splitlines()
+    ]
+    seen = {row["request_id"] for row in rows
+            if row["event"] == "session_h2d_opportunity"}
+    assert len(seen) == 20
+    assert [row["sampled"] for row in rows if row["event"] == "safe_point_census"] == [
+        16, 16,
+    ]
 
 
 def test_tool_start_triggers_bounded_wait_prediction_then_local_probe():
