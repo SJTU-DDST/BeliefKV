@@ -341,6 +341,44 @@ def test_project_history_scopes_tool_call_ids_by_workflow() -> None:
     )["project_class_duration_median_ms"] == 150
 
 
+def test_early_project_history_requires_cold_success_and_distinct_workflows() -> None:
+    history = ProjectToolHistory(early_survivor_shadow=True)
+    attrs = {
+        "tool_name": "execute", "is_child": True,
+        "observed_command_class": "test_suite",
+        "observed_command_shape": "test_suite_targeted",
+    }
+    for index, (wf, status, cold, duration) in enumerate((
+        ("a", "success", True, 3000),
+        ("a", "success", True, 3050),
+        ("b", "error", True, 3020),
+        ("b", "success", False, 3100),
+        ("b", "success", True, 100),
+        ("b", "success", True, 2950),
+        ("c", "success", True, 3010),
+    )):
+        start = index * 10_000.
+        call_id = f"seed-{index}"
+        history.start(wf, "repo", {
+            **attrs, "tool_call_id": call_id,
+            **({"previous_same_input_status": "success"} if not cold else {}),
+        }, start)
+        history.end(wf, {"tool_call_id": call_id, "status": status},
+                    start + duration)
+    target = {**attrs, "tool_call_id": "target"}
+    assert not history.start("target", "repo", target, 62_000).get(
+        "project_shape_survivor_100ms_support"
+    )
+    history.discard_workflow("target")
+    history.start("d", "repo", {**attrs, "tool_call_id": "seed-last"}, 70_000)
+    history.end("d", {"tool_call_id": "seed-last", "status": "success"}, 73_020)
+    result = history.start("target", "repo", target, 74_000)
+    assert result["project_shape_survivor_100ms_support"] == 5
+    assert result["project_shape_survivor_100ms_total_median_ms"] == 3010
+    assert result["project_shape_survivor_100ms_deviation_p90_ms"] <= 100
+    assert not ProjectToolHistory().start("fresh", "repo", target, 74_000)
+
+
 def test_project_history_reports_only_current_other_workflow_long_peers() -> None:
     history = ProjectToolHistory(minimum_support=1)
     attrs = {"tool_name": "glob", "is_child": True,

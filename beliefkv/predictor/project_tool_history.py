@@ -11,12 +11,14 @@ from typing import Any, Mapping
 
 class ProjectToolHistory:
     def __init__(self, *, minimum_support: int = 16, window: int = 64,
-                 max_keys: int = 256) -> None:
+                 max_keys: int = 256,
+                 early_survivor_shadow: bool = False) -> None:
         if min(minimum_support, window, max_keys) < 1:
             raise ValueError("project history bounds must be positive")
         self.minimum_support = minimum_support
         self.window = window
         self.max_keys = max_keys
+        self.early_survivor_shadow = early_survivor_shadow
         self._lock = RLock()
         self._open: dict[
             tuple[str, str], tuple[str, str, float, bool, int | None, str, bool]
@@ -30,6 +32,19 @@ class ProjectToolHistory:
         self._shape_survivors: OrderedDict[
             tuple[str, str], deque[tuple[str, float, float]]
         ] = OrderedDict()
+        self._early_shape_survivors: OrderedDict[
+            tuple[str, str], deque[tuple[str, float, float]]
+        ] = OrderedDict()
+
+    @staticmethod
+    def _p90_deviation(values: list[float], center: float) -> float:
+        deviations = sorted(abs(value - center) for value in values)
+        rank = .9 * (len(deviations) - 1)
+        lower = int(rank)
+        upper = min(lower + 1, len(deviations) - 1)
+        return deviations[lower] + (rank - lower) * (
+            deviations[upper] - deviations[lower]
+        )
 
     def start(
         self, workflow_id: str, project: str, attrs: Mapping[str, Any],
@@ -65,6 +80,27 @@ class ProjectToolHistory:
                 if peers else {}
             )
             if is_execute and shape and shape != "unknown":
+                if self.early_survivor_shadow:
+                    early = [
+                        (workflow, duration)
+                        for workflow, duration, end
+                        in self._early_shape_survivors.get(
+                            (project, shape), ()
+                        )
+                        if end < ts_ms
+                    ]
+                    if len(early) >= 4 and len({
+                        workflow for workflow, _ in early
+                    }) >= 3:
+                        durations = [duration for _, duration in early]
+                        center = float(median(durations))
+                        observed.update({
+                            "project_shape_survivor_100ms_total_median_ms": center,
+                            "project_shape_survivor_100ms_support": len(early),
+                            "project_shape_survivor_100ms_deviation_p90_ms": (
+                                self._p90_deviation(durations, center)
+                            ),
+                        })
                 survivors = [
                     (workflow, duration)
                     for workflow, duration, end
@@ -150,6 +186,18 @@ class ProjectToolHistory:
                     self._long_completed.popitem(last=False)
             if not is_execute:
                 return
+            if (
+                self.early_survivor_shadow and cold and duration > 100
+                and shape and shape != "unknown"
+            ):
+                shape_key = project, shape
+                early = self._early_shape_survivors.setdefault(
+                    shape_key, deque(maxlen=self.window)
+                )
+                early.append((workflow_id, duration, ts_ms))
+                self._early_shape_survivors.move_to_end(shape_key)
+                while len(self._early_shape_survivors) > self.max_keys:
+                    self._early_shape_survivors.popitem(last=False)
             if cold and duration > 500 and shape and shape != "unknown":
                 shape_key = project, shape
                 survivors = self._shape_survivors.setdefault(

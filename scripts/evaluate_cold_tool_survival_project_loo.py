@@ -20,6 +20,7 @@ from scripts.evaluate_cold_tool_survival_landmarks import evaluate
 def project_leave_one_out(
     rows: list[dict], *, compare_success_history: bool = False,
     shape_quantile: float = .5,
+    max_deviation_p90_ms: float | None = None,
 ) -> dict:
     projects = sorted({row["project"] for row in rows})
     if len(projects) < 3:
@@ -28,6 +29,7 @@ def project_leave_one_out(
         "status": "train_only_project_loo_online_adaptation_not_action_eligible",
         "projects": projects,
         "shape_quantile": shape_quantile,
+        "max_deviation_p90_ms": max_deviation_p90_ms,
         "folds": {
             project: evaluate(
                 [row for row in rows if row["project"] != project],
@@ -35,6 +37,7 @@ def project_leave_one_out(
                 online_project_history=True,
                 compare_success_history=compare_success_history,
                 shape_quantile=shape_quantile,
+                max_deviation_p90_ms=max_deviation_p90_ms,
             )
             for project in projects
         },
@@ -66,6 +69,10 @@ def main() -> None:
         "--shape-quantile", type=float, default=.5,
         help="Read-only risk ablation: lower completed shape-duration quantile.",
     )
+    parser.add_argument(
+        "--history-deviation-p90-ms", type=float, default=None,
+        help="Read-only risk gate on historical P90 absolute shape deviation.",
+    )
     args = parser.parse_args()
     if args.compare_success_history and not args.include_returned_failures:
         parser.error(
@@ -79,6 +86,7 @@ def main() -> None:
     result = project_leave_one_out(
         rows, compare_success_history=args.compare_success_history,
         shape_quantile=args.shape_quantile,
+        max_deviation_p90_ms=args.history_deviation_p90_ms,
     )
     result["include_returned_failures"] = args.include_returned_failures
     result["frozen_workflow_count"] = len(ids)

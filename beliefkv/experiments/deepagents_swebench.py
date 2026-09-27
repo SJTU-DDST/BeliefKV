@@ -1567,6 +1567,7 @@ class DeepAgentsExperimentConfig:
     child_return_intent_shadow: bool = False
     child_final_report_shadow: bool = False
     child_report_length_shadow: bool = False
+    early_tool_wait_shadow: bool = False
     subagent_fanout_profile: str = "natural"
     stop_after_first_native_join: bool = False
     recursion_limit: int = 2048
@@ -3835,6 +3836,7 @@ def _run_workflow(
         project_id=workload.repo,
         tool_wait_shadow_timer=tool_wait_shadow_timer,
         tool_wait_shadow_expired=workflow_deadline.expired,
+        early_tool_wait_shadow=config.early_tool_wait_shadow,
         finish_chunk_shadow=(
             config.child_finish_chunk_shadow
             or os.environ.get("BELIEFKV_CHILD_FINISH_CHUNK_SHADOW") == "1"
@@ -4136,7 +4138,9 @@ def run_experiment(config: DeepAgentsExperimentConfig) -> dict[str, Any]:
     gpu_monitor.start()
     sglang_monitor.start()
     results: list[dict[str, Any]] = []
-    project_tool_history = ProjectToolHistory()
+    project_tool_history = ProjectToolHistory(
+        early_survivor_shadow=config.early_tool_wait_shadow
+    )
     tool_wait_shadow_timer = ToolWaitShadowTimer()
     if config.workflow_arrival_batch_size > 0:
         arrivals = build_workflow_arrivals(

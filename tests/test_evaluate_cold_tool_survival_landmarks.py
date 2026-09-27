@@ -126,6 +126,40 @@ def test_lower_duration_quantile_uses_only_past_successful_shape_calls():
         _online_project_predictions(calls, 100, prior, shape_quantile=0.)
 
 
+def test_history_stability_gate_requires_low_p90_past_deviation():
+    prior = {"global": 2500., "shape": {"x": 2500.}}
+    durations = [3000., 3050., 2950., 3010.]
+    past = [
+        {
+            **_row("heldout", f"wf-{i}", "x", duration),
+            "start_ts_ms": float(i * 12000),
+            "terminal_ts_ms": float(i * 12000 + duration),
+        }
+        for i, duration in enumerate(durations)
+    ]
+    target = {
+        **_row("heldout", "target", "x", 3100.),
+        "start_ts_ms": 50000., "terminal_ts_ms": 53100.,
+    }
+    stable, supported = _online_project_predictions(
+        past + [target], 100, prior, max_deviation_p90_ms=100.,
+    )
+    assert supported == [4]
+    assert stable[-1] == 3005.
+    noisy = [*past[:-1], {
+        **past[-1], "duration_ms": 5000., "terminal_ts_ms": 41000.,
+    }, target]
+    prediction, supported = _online_project_predictions(
+        noisy, 100, prior, max_deviation_p90_ms=100.,
+    )
+    assert supported == []
+    assert prediction[-1] == 2500.
+    with pytest.raises(ValueError, match="history deviation cap"):
+        _online_project_predictions(
+            past + [target], 100, prior, max_deviation_p90_ms=-1.,
+        )
+
+
 def test_online_project_history_rejects_missing_timestamps():
     with pytest.raises(ValueError, match="timestamps"):
         _online_project_predictions(
@@ -301,9 +335,11 @@ def test_survival_cli_applies_returned_failure_scope_to_both_sides(
     )
     monkeypatch.setattr(
         survival, "evaluate",
-        lambda _train, _heldout, *, online_project_history, shape_quantile: {
+        lambda _train, _heldout, *, online_project_history, shape_quantile,
+        max_deviation_p90_ms: {
             "online_project_history": online_project_history,
             "shape_quantile": shape_quantile,
+            "max_deviation_p90_ms": max_deviation_p90_ms,
         },
     )
     monkeypatch.setattr(sys, "argv", [

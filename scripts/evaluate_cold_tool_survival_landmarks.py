@@ -71,11 +71,16 @@ def _online_project_predictions(
     calls: list[dict], landmark: int, estimate: dict, *,
     minimum_support: int = 4, minimum_workflows: int = 3,
     success_only_history: bool = True, shape_quantile: float = .5,
+    max_deviation_p90_ms: float | None = None,
 ) -> tuple[list[float], list[int]]:
     if minimum_support < 2 or minimum_workflows < 2:
         raise ValueError("online history needs independent completed support")
     if not (0 < shape_quantile <= .5):
         raise ValueError("shape quantile must be in (0, 0.5]")
+    if max_deviation_p90_ms is not None and (
+        not math.isfinite(max_deviation_p90_ms) or max_deviation_p90_ms < 0
+    ):
+        raise ValueError("history deviation cap must be finite and nonnegative")
     for row in calls:
         if not (
             all(type(row.get(key)) in (int, float) and math.isfinite(row[key])
@@ -117,10 +122,18 @@ def _online_project_predictions(
             len(matches) >= minimum_support
             and len({past["workflow"] for past in matches}) >= minimum_workflows
         ):
-            predictions[output_index] = float(np.quantile(
-                [past["duration_ms"] for past in matches], shape_quantile,
+            durations = [past["duration_ms"] for past in matches]
+            estimate_ms = float(np.quantile(durations, shape_quantile))
+            spread = float(np.quantile(
+                [abs(value - estimate_ms) for value in durations], .9,
             ))
-            supported_indices.append(output_index)
+            if max_deviation_p90_ms is None or spread <= max_deviation_p90_ms:
+                predictions[output_index] = estimate_ms
+                supported_indices.append(output_index)
+            else:
+                predictions[output_index] = estimate["shape"].get(
+                    row["shape"], estimate["global"],
+                )
         else:
             predictions[output_index] = estimate["shape"].get(
                 row["shape"], estimate["global"],
@@ -166,6 +179,7 @@ def evaluate(
     online_project_history: bool = False,
     compare_success_history: bool = False,
     shape_quantile: float = .5,
+    max_deviation_p90_ms: float | None = None,
 ) -> dict:
     train_projects = {row["project"] for row in train}
     heldout_projects = {row["project"] for row in heldout}
@@ -175,6 +189,10 @@ def evaluate(
         raise ValueError("history comparison needs online project history")
     if not (0 < shape_quantile <= .5):
         raise ValueError("shape quantile must be in (0, 0.5]")
+    if max_deviation_p90_ms is not None and (
+        not math.isfinite(max_deviation_p90_ms) or max_deviation_p90_ms < 0
+    ):
+        raise ValueError("history deviation cap must be finite and nonnegative")
     if compare_success_history and any(
         row.get("status") not in ("success", "error") for row in heldout
     ):
@@ -186,6 +204,7 @@ def evaluate(
         "landmarks": {},
         "online_project_history": online_project_history,
         "shape_quantile": shape_quantile,
+        "max_deviation_p90_ms": max_deviation_p90_ms,
         "online_history_snapshot": (
             "tool_start_success_only" if online_project_history else None
         ),
@@ -259,6 +278,7 @@ def evaluate(
                 ]
                 predictions, supported = _online_project_predictions(
                     rows, landmark, estimates, shape_quantile=shape_quantile,
+                    max_deviation_p90_ms=max_deviation_p90_ms,
                 )
                 score = _summary(
                     survivors, landmark, estimates, predictions,
@@ -291,6 +311,7 @@ def evaluate(
                             rows, landmark, estimates,
                             success_only_history=False,
                             shape_quantile=shape_quantile,
+                            max_deviation_p90_ms=max_deviation_p90_ms,
                         )
                     )
                     returned_indices = set(returned_supported)
@@ -366,6 +387,10 @@ def main() -> None:
         "--shape-quantile", type=float, default=.5,
         help="Read-only risk ablation: lower completed shape-duration quantile.",
     )
+    parser.add_argument(
+        "--history-deviation-p90-ms", type=float, default=None,
+        help="Read-only risk gate on the P90 absolute spread of past shape durations.",
+    )
     args = parser.parse_args()
     if args.compare_success_history and (
         not args.online_project_history or not args.include_returned_failures
@@ -387,6 +412,7 @@ def main() -> None:
     report = evaluate(
         train, heldout, online_project_history=args.online_project_history,
         shape_quantile=args.shape_quantile,
+        max_deviation_p90_ms=args.history_deviation_p90_ms,
         **({"compare_success_history": True}
            if args.compare_success_history else {}),
     )

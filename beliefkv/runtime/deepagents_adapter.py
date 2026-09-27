@@ -184,6 +184,9 @@ class _OrdinaryToolRun:
     workspace_digest_before: str | None
     shape_total_ms: float | None = None
     shape_support: int = 0
+    early_shape_total_ms: float | None = None
+    early_shape_support: int = 0
+    early_shape_deviation_p90_ms: float | None = None
 
 
 @dataclass(frozen=True)
@@ -231,6 +234,7 @@ class DeepAgentsRuntimeAdapter(BaseCallbackHandler):
         project_id: str = "",
         tool_wait_shadow_timer: ToolWaitShadowTimer | None = None,
         tool_wait_shadow_expired: Callable[[], bool] | None = None,
+        early_tool_wait_shadow: bool = False,
         finish_chunk_shadow: bool = False,
         command_structure_shadow: bool = False,
         report_phase_shadow: bool = False,
@@ -260,6 +264,7 @@ class DeepAgentsRuntimeAdapter(BaseCallbackHandler):
         self._project_id = project_id
         self._tool_wait_shadow_timer = tool_wait_shadow_timer
         self._tool_wait_shadow_expired = tool_wait_shadow_expired
+        self._early_tool_wait_shadow = early_tool_wait_shadow
         self._finish_chunk_shadow = finish_chunk_shadow
         self._command_structure_shadow = command_structure_shadow
         self._report_phase_shadow = report_phase_shadow
@@ -1372,6 +1377,7 @@ class DeepAgentsRuntimeAdapter(BaseCallbackHandler):
             if tool_name == "execute" and self._command_structure_shadow else None
         )
         ts_ms = self._timestamp()
+        start_monotonic = time.monotonic()
         with self._lock:
             identity = self._identities.get(parent_invocation_id)
             is_child = bool(
@@ -1404,12 +1410,32 @@ class DeepAgentsRuntimeAdapter(BaseCallbackHandler):
                 "project_shape_survivor_500ms_total_median_ms"
             )
             shape_support = project_prior.get("project_shape_survivor_500ms_support")
+            early_total = project_prior.get(
+                "project_shape_survivor_100ms_total_median_ms"
+            )
+            early_support = project_prior.get(
+                "project_shape_survivor_100ms_support"
+            )
+            early_deviation = project_prior.get(
+                "project_shape_survivor_100ms_deviation_p90_ms"
+            )
             eligible = (
                 is_child and tool_name == "execute"
                 and same_input.get("previous_same_input_status") != "success"
                 and type(shape_total) in (int, float)
                 and math.isfinite(shape_total) and shape_total > 500
                 and type(shape_support) is int and shape_support >= 4
+            )
+            eligible_early = (
+                self._early_tool_wait_shadow
+                and is_child and tool_name == "execute"
+                and same_input.get("previous_same_input_status") != "success"
+                and type(early_total) in (int, float)
+                and math.isfinite(early_total) and early_total > 1_100
+                and type(early_support) is int and early_support >= 4
+                and type(early_deviation) in (int, float)
+                and math.isfinite(early_deviation)
+                and 0 <= early_deviation <= 1_000
             )
             self._ordinary_tools[key] = _OrdinaryToolRun(
                 invocation_id=parent_invocation_id,
@@ -1420,6 +1446,15 @@ class DeepAgentsRuntimeAdapter(BaseCallbackHandler):
                 workspace_digest_before=workspace_digest_before,
                 shape_total_ms=float(shape_total) if eligible else None,
                 shape_support=shape_support if eligible else 0,
+                early_shape_total_ms=(
+                    float(early_total) if eligible_early else None
+                ),
+                early_shape_support=(
+                    early_support if eligible_early else 0
+                ),
+                early_shape_deviation_p90_ms=(
+                    float(early_deviation) if eligible_early else None
+                ),
             )
         event = self._event(
             RuntimeEventKind.TOOL_START,
@@ -1450,6 +1485,13 @@ class DeepAgentsRuntimeAdapter(BaseCallbackHandler):
             self._tool_wait_shadow_timer.schedule(
                 time.monotonic() + 0.5,
                 lambda: self.observe_tool_wait(
+                    key, parent_invocation_id, tool_call_id
+                ),
+            )
+        if eligible_early and self._tool_wait_shadow_timer is not None:
+            self._tool_wait_shadow_timer.schedule(
+                start_monotonic + 0.1,
+                lambda: self.observe_early_tool_wait(
                     key, parent_invocation_id, tool_call_id
                 ),
             )
@@ -1883,6 +1925,60 @@ class DeepAgentsRuntimeAdapter(BaseCallbackHandler):
                         ),
                         "tool_wait_shape_eta_ms_p50": (
                             active.shape_total_ms - elapsed
+                        ),
+                    },
+                )
+            self._publish((event,), control=False)
+            return True
+
+    def observe_early_tool_wait(
+        self, tool_run_id: str, invocation_id: str, tool_call_id: str
+    ) -> bool:
+        """Report a live 100 ms timing candidate without a control action."""
+
+        with self._publication_lock:
+            with self._lock:
+                active = self._ordinary_tools.get(tool_run_id)
+                if (
+                    self._finished or self._tool_wait_shadow_closed
+                    or active is None
+                    or active.invocation_id != invocation_id
+                    or active.tool_call_id != tool_call_id
+                    or active.early_shape_total_ms is None
+                    or invocation_id in self._terminal_invocation_ids
+                    or (
+                        self._tool_wait_shadow_expired is not None
+                        and self._tool_wait_shadow_expired()
+                    )
+                ):
+                    return False
+                ts_ms = self._timestamp()
+                elapsed = max(0.0, ts_ms - active.start_ts_ms)
+                if elapsed < 100 or elapsed >= active.early_shape_total_ms:
+                    return False
+                event = self._event(
+                    RuntimeEventKind.STRUCTURED_ACTION,
+                    ts_ms=ts_ms,
+                    invocation_id=invocation_id,
+                    confidence=EventConfidence.OBSERVED_EXACT,
+                    attributes={
+                        "source": "deepagents_tool_wait_shadow",
+                        "beliefkv_tool_wait_early_shadow": True,
+                        "diagnostic_only": True,
+                        "tool_call_id": tool_call_id,
+                        "tool_name": active.tool_name,
+                        "tool_elapsed_ms": elapsed,
+                        "project_shape_survivor_100ms_total_median_ms": (
+                            active.early_shape_total_ms
+                        ),
+                        "project_shape_survivor_100ms_support": (
+                            active.early_shape_support
+                        ),
+                        "project_shape_survivor_100ms_deviation_p90_ms": (
+                            active.early_shape_deviation_p90_ms
+                        ),
+                        "tool_wait_shape_eta_ms_p50": (
+                            active.early_shape_total_ms - elapsed
                         ),
                     },
                 )

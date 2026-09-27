@@ -131,6 +131,13 @@ def parse_args() -> argparse.Namespace:
         ),
     )
     parser.add_argument(
+        "--early-tool-wait-shadow", action="store_true",
+        help=(
+            "Audit causally stable child tool waits surviving 100 ms; "
+            "trace-only, no predictive transfer actions."
+        ),
+    )
+    parser.add_argument(
         "--sampling-seed",
         type=int,
         help=(
@@ -279,6 +286,7 @@ def main() -> int:
         child_return_intent_shadow=args.child_return_intent_shadow,
         child_final_report_shadow=args.child_final_report_shadow,
         child_report_length_shadow=args.child_report_length_shadow,
+        early_tool_wait_shadow=args.early_tool_wait_shadow,
         subagent_fanout_profile=args.subagent_fanout_profile,
         stop_after_first_native_join=args.stop_after_first_native_join,
         recursion_limit=args.recursion_limit,

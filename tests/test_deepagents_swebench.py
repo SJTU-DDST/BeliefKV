@@ -1134,8 +1134,20 @@ def test_workload_cli_native_reactive_guard_matches_p6_collection(
         ],
     )
     assert cli.parse_args().activation_wall_clock_seconds == 7200
+    assert cli.parse_args().early_tool_wait_shadow is False
     assert cli.main() == 0
     assert configs[-1].loop_guard.activation_wall_clock_s == 7200
+    assert configs[-1].early_tool_wait_shadow is False
+
+    monkeypatch.setattr(
+        "sys.argv",
+        [
+            "run_deepagents_swebench.py", "--mode", "autonomous",
+            "--early-tool-wait-shadow",
+        ],
+    )
+    assert cli.main() == 0
+    assert configs[-1].early_tool_wait_shadow is True
 
     monkeypatch.setattr(
         "sys.argv",

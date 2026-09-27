@@ -33,8 +33,8 @@ class _Sink:
 COMMAND = "python -c 'print(1)'"
 
 
-def _history(now: float) -> ProjectToolHistory:
-    history = ProjectToolHistory()
+def _history(now: float, *, early: bool = False) -> ProjectToolHistory:
+    history = ProjectToolHistory(early_survivor_shadow=early)
     for index in range(4):
         start = now - 40_000 + index * 4_000
         call_id = f"seed-{index}"
@@ -54,13 +54,15 @@ def _history(now: float) -> ProjectToolHistory:
 def _child_tool(
     now: list[float], *, timer: ToolWaitShadowTimer | None = None,
     control: _Sink | None = None,
+    early: bool = False,
 ) -> tuple[DeepAgentsRuntimeAdapter, _Sink, object]:
     trace = _Sink()
     adapter = DeepAgentsRuntimeAdapter(
         trace, BeliefKVRequestMetadata("wf", "root", "ctx", 0),
         control_sink=control, clock_ms=lambda: now[0],
-        project_tool_history=_history(now[0]), project_id="repo",
+        project_tool_history=_history(now[0], early=early), project_id="repo",
         tool_wait_shadow_timer=timer,
+        early_tool_wait_shadow=early,
     )
     adapter.start()
     task = adapter.declare_runtime_tasks([("explorer", "inspect")])[0]
@@ -84,6 +86,99 @@ def _observations(trace: _Sink) -> list[RuntimeEvent]:
         event for event in trace.events
         if event.kind == RuntimeEventKind.TOOL_WAIT_OBSERVATION
     ]
+
+
+def _early_observations(trace: _Sink) -> list[RuntimeEvent]:
+    return [
+        event for event in trace.events
+        if event.kind == RuntimeEventKind.STRUCTURED_ACTION
+        and event.attributes.get("beliefkv_tool_wait_early_shadow") is True
+    ]
+
+
+def test_early_tool_wait_is_opt_in_and_trace_only() -> None:
+    now = [50_000.]
+    control = _Sink()
+    adapter, trace, run = _child_tool(now, control=control)
+    invocation = next(
+        event.invocation_id for event in trace.events
+        if event.kind == RuntimeEventKind.TOOL_START
+        and event.attributes.get("tool_call_id") == "target"
+    )
+    now[0] += 101
+    assert not adapter.observe_early_tool_wait(str(run), invocation, "target")
+    adapter.on_tool_end("done", run_id=run)
+
+    now = [50_000.]
+    adapter, trace, run = _child_tool(now, control=control, early=True)
+    invocation = next(
+        event.invocation_id for event in trace.events
+        if event.kind == RuntimeEventKind.TOOL_START
+        and event.attributes.get("tool_call_id") == "target"
+    )
+    assert not adapter.observe_early_tool_wait(str(run), invocation, "target")
+    now[0] += 101
+    assert not adapter.observe_early_tool_wait(str(run), invocation, "wrong")
+    assert not adapter.observe_early_tool_wait(str(run), "stale", "target")
+    assert adapter.observe_early_tool_wait(str(run), invocation, "target")
+    early, = _early_observations(trace)
+    assert early.attributes["tool_wait_shape_eta_ms_p50"] == 2299
+    assert early.attributes["diagnostic_only"] is True
+    assert not _early_observations(control)
+    adapter.on_tool_end("done", run_id=run)
+    assert not adapter.observe_early_tool_wait(str(run), invocation, "target")
+    adapter.finish(outcome="completed")
+    assert not adapter.observe_early_tool_wait(str(run), invocation, "target")
+
+
+def test_early_tool_wait_ignores_failed_and_expired_calls() -> None:
+    now = [50_000.]
+    adapter, trace, run = _child_tool(now, early=True)
+    invocation = next(
+        event.invocation_id for event in trace.events
+        if event.kind == RuntimeEventKind.TOOL_START
+        and event.attributes.get("tool_call_id") == "target"
+    )
+    adapter._tool_wait_shadow_expired = lambda: True
+    now[0] += 101
+    assert not adapter.observe_early_tool_wait(str(run), invocation, "target")
+    adapter._tool_wait_shadow_expired = lambda: False
+    adapter.on_tool_error(RuntimeError("failed"), run_id=run)
+    assert not adapter.observe_early_tool_wait(str(run), invocation, "target")
+    assert not _early_observations(trace)
+
+
+def test_early_timer_is_anchored_before_tool_start_publication(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    deadlines: list[tuple[float, object]] = []
+
+    class CaptureTimer:
+        def schedule(self, deadline: float, callback: object) -> bool:
+            deadlines.append((deadline, callback))
+            return True
+
+    original = DeepAgentsRuntimeAdapter._publish
+
+    def slow_publish(self, events, **kwargs):
+        if any(
+            event.kind == RuntimeEventKind.TOOL_START
+            and event.attributes.get("tool_call_id") == "target"
+            for event in events
+        ):
+            time.sleep(.13)
+        return original(self, events, **kwargs)
+
+    monkeypatch.setattr(DeepAgentsRuntimeAdapter, "_publish", slow_publish)
+    now = [50_000.]
+    adapter, trace, run = _child_tool(now, timer=CaptureTimer(), early=True)
+    assert len(deadlines) == 2
+    early_deadline, callback = min(deadlines)
+    assert early_deadline <= time.monotonic()
+    now[0] += 130
+    assert callback()
+    assert len(_early_observations(trace)) == 1
+    adapter.on_tool_end("done", run_id=run)
 
 
 def test_tool_wait_observation_is_causal_trace_only_and_non_mutating() -> None:
@@ -308,6 +403,86 @@ def test_export_validates_tool_wait_survival_and_identity() -> None:
             invocation_id="child", attributes={
                 "tool_call_id": "target", "status": "success",
             }), observation], workflow_metadata=metadata)
+
+
+def test_export_validates_early_shadow_causal_history() -> None:
+    events: list[RuntimeEvent] = []
+    metadata = {"target": {"project": "repo"}}
+    for index in range(4):
+        wf = f"prior-{index}"
+        metadata[wf] = {"project": "repo"}
+        start = index * 4_000.
+        attrs = {
+            "tool_call_id": f"seed-{index}", "tool_name": "execute",
+            "observed_command_class": execute_command_class({"command": COMMAND}),
+            "observed_command_shape": execute_command_shape({"command": COMMAND}),
+            "is_child": True, "input_chars": 100,
+        }
+        events.extend((
+            RuntimeEvent(f"start-{index}", start, RuntimeEventKind.TOOL_START,
+                         wf, invocation_id="child", attributes=attrs),
+            RuntimeEvent(f"end-{index}", start + 2400, RuntimeEventKind.TOOL_END,
+                         wf, invocation_id="child", attributes={
+                             "tool_call_id": f"seed-{index}", "status": "success",
+                         }),
+        ))
+    target_attrs = {
+        "tool_call_id": "target", "tool_name": "execute", "is_child": True,
+        "observed_command_class": execute_command_class({"command": COMMAND}),
+        "observed_command_shape": execute_command_shape({"command": COMMAND}),
+        "input_chars": 100,
+        "project_shape_survivor_100ms_total_median_ms": 2400,
+        "project_shape_survivor_100ms_support": 4,
+        "project_shape_survivor_100ms_deviation_p90_ms": 0,
+    }
+    target = RuntimeEvent(
+        "target-start", 20_000, RuntimeEventKind.TOOL_START, "target",
+        invocation_id="child", attributes=target_attrs,
+    )
+    attrs = {
+        "beliefkv_tool_wait_early_shadow": True,
+        "diagnostic_only": True, "source": "deepagents_tool_wait_shadow",
+        "tool_call_id": "target", "tool_elapsed_ms": 101,
+        "project_shape_survivor_100ms_total_median_ms": 2400,
+        "project_shape_survivor_100ms_support": 4,
+        "project_shape_survivor_100ms_deviation_p90_ms": 0,
+        "tool_wait_shape_eta_ms_p50": 2299,
+    }
+
+    def early(ts: float = 20_101, **overrides: object) -> RuntimeEvent:
+        return RuntimeEvent(
+            f"early-{ts}", ts, RuntimeEventKind.STRUCTURED_ACTION, "target",
+            invocation_id="child", attributes={**attrs, **overrides},
+        )
+
+    assert _event_triggers([*events, target, early()],
+                           workflow_metadata=metadata)[-1]["kind"] == "tool_start"
+    with pytest.raises(ValueError, match="early tool wait has no unique"):
+        _event_triggers([*events, early()], workflow_metadata=metadata)
+    with pytest.raises(ValueError, match="early tool wait has no unique"):
+        _event_triggers([*events, target, early(), early(20_102)],
+                        workflow_metadata=metadata)
+    with pytest.raises(ValueError, match="early tool wait has no unique"):
+        _event_triggers([*events, target, RuntimeEvent(
+            "target-end", 20_100, RuntimeEventKind.TOOL_END, "target",
+            invocation_id="child", attributes={
+                "tool_call_id": "target", "status": "success",
+            }), early()], workflow_metadata=metadata)
+    with pytest.raises(ValueError, match="early tool wait disagrees"):
+        _event_triggers([*events, target, early(20_099)],
+                        workflow_metadata=metadata)
+    with pytest.raises(ValueError, match="early tool wait disagrees"):
+        _event_triggers([*events, target, early(tool_wait_shape_eta_ms_p50=999)],
+                        workflow_metadata=metadata)
+    with pytest.raises(ValueError, match="early shape history disagrees"):
+        _event_triggers([
+            *events,
+            RuntimeEvent("bad", 20_000, RuntimeEventKind.TOOL_START, "target",
+                         invocation_id="child", attributes={
+                             **target_attrs,
+                             "project_shape_survivor_100ms_support": 5,
+                         }),
+        ], workflow_metadata=metadata)
 
 
 def test_p6_replay_keeps_only_valid_wait_tool_landmark() -> None:

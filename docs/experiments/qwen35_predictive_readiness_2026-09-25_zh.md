@@ -5821,3 +5821,31 @@ decode 速率和最近服务间隔补充五维流式模型，
 恢复，但**并不能预测未来**的生成停止/服务
 停顿。因此不新增线上特征或物理预取资格；
 未验证的跨项目模型不能因某一折改善而上线。
+
+### 100 ms 冷工具存活点在线只读验证入口（2026-09-27）
+
+训练侧发现仅凭同形态完成时长的中位数触发过多；
+现增加默认关闭的 `--early-tool-wait-shadow`，仅对
+child `execute`、当前并非同参数已成功调用、同项目
+同命令形态至少四个跨三个 workflow 的严格已完成
+成功样本生效。冻结的历史中位总时长须超过 1100 ms，
+样本相对中位数的绝对偏差 P90 不超过 1000 ms。
+所有历史在 `TOOL_START` 冻结；真实工具仍活到
+100 ms 后才会向 trace 发布一次 `structured_action`
+只读诊断，**不送控制 sink**、不触发任何物理 H2D
+或 D2H，也不替换现有 500 ms `TOOL_WAIT_OBSERVATION`。
+timer 从工具开始而非事件发布完成计时；调用结束、
+invocation 终止、workflow deadline 或 teardown
+均禁止过期诊断。P6 回放验证历史、身份、100 ms
+存活、单次投递和残差，且不把诊断加入训练决策点。
+
+首次独立 pilot 必须以采集前冻结的 workload manifest
+为分母，保存脚本和代码提交；运行
+`scripts/audit_early_tool_wait_shadow.py --workflows <run>/workflows
+--workload-manifest <manifest> --output <report.json>`。
+分别报告有资格工具数、实际诊断数、100 ms 前结束、
+存活但未投递、dispatch 延迟、投递后余量
+≥500 ms/≥1000 ms、失败或未终结调用；
+项目隔离验收前不根据留出项目调整门槛。
+当前只有训练侧离线探索与回放/定时器单元测试，
+**没有这一路径的新项目在线准确率或物理收益证据**。

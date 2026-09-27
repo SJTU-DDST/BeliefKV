@@ -245,12 +245,25 @@ def _event_triggers(
     *,
     workflow_metadata: Mapping[str, Mapping[str, Any]] | None = None,
 ) -> list[dict[str, Any]]:
+    events = tuple(events)
     histories: dict[str, SameInputToolHistory] = {}
-    project_history = ProjectToolHistory()
+    project_history = ProjectToolHistory(
+        early_survivor_shadow=any(
+            event.kind == RuntimeEventKind.TOOL_START
+            and "project_shape_survivor_100ms_total_median_ms"
+            in event.attributes
+            for event in events
+        )
+    )
     metadata = workflow_metadata or {}
     triggers = []
     open_tools: dict[tuple[str, str], tuple[str, float, float, int]] = {}
+    early_open_tools: dict[
+        tuple[str, str], tuple[str, float, float, int, float]
+    ] = {}
     observed_tool_waits: set[tuple[str, str]] = set()
+    observed_early_waits: set[tuple[str, str]] = set()
+    terminal_invocations: set[tuple[str, str]] = set()
     for event in events:
         history = histories.setdefault(event.workflow_id, SameInputToolHistory())
         attrs = dict(event.attributes)
@@ -319,6 +332,27 @@ def _event_triggers(
                 )
             ):
                 raise ValueError("online/offline shape survivor history disagrees")
+            if "project_shape_survivor_100ms_total_median_ms" in attrs and (
+                abs(
+                    float(attrs["project_shape_survivor_100ms_total_median_ms"])
+                    - float(project_prior.get(
+                        "project_shape_survivor_100ms_total_median_ms", -1
+                    ))
+                ) > .01
+                or int(attrs.get("project_shape_survivor_100ms_support", -1))
+                != int(project_prior.get(
+                    "project_shape_survivor_100ms_support", -1
+                ))
+                or abs(
+                    float(attrs.get(
+                        "project_shape_survivor_100ms_deviation_p90_ms", -1
+                    ))
+                    - float(project_prior.get(
+                        "project_shape_survivor_100ms_deviation_p90_ms", -1
+                    ))
+                ) > .01
+            ):
+                raise ValueError("online/offline early shape history disagrees")
             attrs.update(project_prior)
             call_id = str(attrs.get("tool_call_id") or "")
             if call_id:
@@ -330,12 +364,57 @@ def _event_triggers(
                     float(shape_total or 0),
                     int(attrs.get("project_shape_survivor_500ms_support") or 0),
                 )
+                early_total = attrs.get(
+                    "project_shape_survivor_100ms_total_median_ms"
+                )
+                if early_total is not None:
+                    early_open_tools[event.workflow_id, call_id] = (
+                        event.invocation_id, event.ts_ms, float(early_total),
+                        int(attrs["project_shape_survivor_100ms_support"]),
+                        float(attrs["project_shape_survivor_100ms_deviation_p90_ms"]),
+                    )
         elif event.kind == RuntimeEventKind.TOOL_END and event.invocation_id:
             history.end(event.workflow_id, event.invocation_id, attrs, event.ts_ms)
             project_history.end(event.workflow_id, attrs, event.ts_ms)
             open_tools.pop(
                 (event.workflow_id, str(attrs.get("tool_call_id") or "")), None
             )
+            early_open_tools.pop(
+                (event.workflow_id, str(attrs.get("tool_call_id") or "")), None
+            )
+        elif (
+            event.kind == RuntimeEventKind.STRUCTURED_ACTION
+            and attrs.get("beliefkv_tool_wait_early_shadow") is True
+        ):
+            call_id = str(attrs.get("tool_call_id") or "")
+            key = event.workflow_id, call_id
+            opened = early_open_tools.get(key)
+            if not call_id or opened is None or key in observed_early_waits:
+                raise ValueError("early tool wait has no unique open call")
+            invocation_id, start_ms, total_ms, support, deviation = opened
+            elapsed_ms = event.ts_ms - start_ms
+            if (
+                event.invocation_id != invocation_id
+                or (event.workflow_id, invocation_id) in terminal_invocations
+                or attrs.get("diagnostic_only") is not True
+                or attrs.get("source") != "deepagents_tool_wait_shadow"
+                or elapsed_ms < 100 or elapsed_ms >= total_ms
+                or total_ms <= 1_100 or support < 4
+                or deviation < 0 or deviation > 1_000
+                or abs(float(attrs.get("tool_elapsed_ms") or -1) - elapsed_ms) > 1
+                or abs(float(attrs.get(
+                    "project_shape_survivor_100ms_total_median_ms") or -1
+                ) - total_ms) > .01
+                or int(attrs.get("project_shape_survivor_100ms_support") or 0)
+                != support
+                or abs(float(attrs.get(
+                    "project_shape_survivor_100ms_deviation_p90_ms", -1
+                )) - deviation) > .01
+                or abs(float(attrs.get("tool_wait_shape_eta_ms_p50") or -1)
+                       - (total_ms - elapsed_ms)) > 1
+            ):
+                raise ValueError("early tool wait disagrees with causal history")
+            observed_early_waits.add(key)
         elif event.kind == RuntimeEventKind.TOOL_WAIT_OBSERVATION:
             call_id = str(attrs.get("tool_call_id") or "")
             key = event.workflow_id, call_id
@@ -363,6 +442,7 @@ def _event_triggers(
             project_history.discard_workflow(event.workflow_id)
         elif event.kind in (RuntimeEventKind.RETURN, RuntimeEventKind.INVOCATION_CANCEL):
             if event.invocation_id:
+                terminal_invocations.add((event.workflow_id, event.invocation_id))
                 history.discard_invocation(event.workflow_id, event.invocation_id)
         if event.kind not in _EVENT_TRIGGERS:
             continue
