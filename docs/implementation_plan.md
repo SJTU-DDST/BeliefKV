@@ -86,6 +86,14 @@ Primary metrics:
    or used for development, calibration, or sealed evaluation; another
    formal unseen-project test needs an independently sourced project,
    not another rollout of the consumed test projects.
+   A new SWE-bench-Live lite source is now *frozen, not evaluated*: eight
+   tasks each from cfn-lint, Haystack and Reflex are disjoint from Verified,
+   plus a separate one-task pvlib environment pilot. All 24 target image
+   manifests exist; only the pilot source checkout and sandbox preflight
+   have passed. This is not a valid new sealed result until the predictor,
+   scoring, capacity, complete environment contract and arrival pressure
+   are frozen independently. See
+   `docs/experiments/qwen35_swebench_live_ood_preflight_2026-09-27_zh.md`.
 4. **Implement bounded critical-path parent admission as a JointPlan extension
    only after the physical observability and safety gates.** Use sole JOIN
    straggler and factual frontier as existing signals; compare parent unlock

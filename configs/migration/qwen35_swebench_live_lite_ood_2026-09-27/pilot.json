@@ -1,0 +1,19 @@
+{
+  "dataset": "SWE-bench-Live/SWE-bench-Live",
+  "dataset_revision": "b51a86422e10cfd403beb4773e5a2947953e36ec",
+  "schema_version": 2,
+  "selection_policy": "first instance_id in independent pilot repository",
+  "source_split": "lite",
+  "split": "development",
+  "workloads": [
+    {
+      "base_commit": "38eb89e5a9ac3b61ca71834a3e92af7dd51e03f5",
+      "docker_image": "starryzhang/sweb.eval.x86_64.pvlib_1776_pvlib-python-2249:latest",
+      "instance_id": "pvlib__pvlib-python-2249",
+      "problem_statement": "Failed unit test for nrel 2008 solar position algorithm\n**Describe the bug**\r\nIn the documentation for the nrel 2008 solar position algorithm, there are a set of \"unit tests\" in table A4.1 \r\n\r\n![image](https://github.com/pvlib/pvlib-python/assets/33131958/3a4ee954-8ec3-414b-93e7-b327e7794713)\r\nhttps://www.nrel.gov/docs/fy08osti/34302.pdf\r\n\r\n**To Reproduce**\r\nSteps to reproduce the behavior:\r\n1. run `julian_day_dt()` with the following parameters\r\n```\r\nyear = 837,\r\nmonth = 4,\r\nday = 10,\r\nhour = 7,\r\nminute = 12,\r\nsecond = 0,\r\nmicrosecond = 0\r\n```\r\n2. result is 2026867.8\r\n\r\n**Expected behavior**\r\nexpected result in table A4.1 is 2026871.8\r\n\r\n**Screenshots**\r\n![image](https://github.com/pvlib/pvlib-python/assets/33131958/23822da6-2de0-4e71-ad1f-6c27285661cf)\r\n\r\n**Versions:**\r\n - ``pvlib.10.5`: \r\n - python: 3.11\r\n\r\n**Additional context**\r\nPerhaps this has something to do with the gregorian / julian date cutoff?  All of the other tests complete as expected.\r\n\n",
+      "repo": "pvlib/pvlib-python",
+      "rollout_index": 0,
+      "source_repo": "/home/longhao/experiment/BeliefKV/workloads/sources/p6_swebench_live/pvlib__pvlib-python"
+    }
+  ]
+}

@@ -1,0 +1,41 @@
+{
+  "dataset": "SWE-bench-Live/SWE-bench-Live",
+  "dataset_revision": "b51a86422e10cfd403beb4773e5a2947953e36ec",
+  "parquet_sha256": "7ee0a75c41bfc954fd441b67ce738fc5c1cbae00721c4e30e7db4d893057c9ab",
+  "pilot_instance_id": "pvlib__pvlib-python-2249",
+  "pilot_project": "pvlib/pvlib-python",
+  "policy": "Project-disjoint from all prior Verified splits. Only public visible columns were loaded. Pilot project and test projects are disjoint. Freeze is not environment or predictor eligibility.",
+  "source_split": "lite",
+  "test_instance_ids": [
+    "aws-cloudformation__cfn-lint-3749",
+    "aws-cloudformation__cfn-lint-3764",
+    "aws-cloudformation__cfn-lint-3767",
+    "aws-cloudformation__cfn-lint-3768",
+    "aws-cloudformation__cfn-lint-3770",
+    "aws-cloudformation__cfn-lint-3779",
+    "aws-cloudformation__cfn-lint-3789",
+    "aws-cloudformation__cfn-lint-3798",
+    "deepset-ai__haystack-8489",
+    "deepset-ai__haystack-8525",
+    "deepset-ai__haystack-8609",
+    "deepset-ai__haystack-8619",
+    "deepset-ai__haystack-8725",
+    "deepset-ai__haystack-8799",
+    "deepset-ai__haystack-8879",
+    "deepset-ai__haystack-8940",
+    "reflex-dev__reflex-4087",
+    "reflex-dev__reflex-4129",
+    "reflex-dev__reflex-4266",
+    "reflex-dev__reflex-4347",
+    "reflex-dev__reflex-4371",
+    "reflex-dev__reflex-4427",
+    "reflex-dev__reflex-4510",
+    "reflex-dev__reflex-4563"
+  ],
+  "test_project_counts": {
+    "aws-cloudformation/cfn-lint": 8,
+    "deepset-ai/haystack": 8,
+    "reflex-dev/reflex": 8
+  },
+  "verified_split_sha256": "61462e7f18d76e0be2fda8f037948541228c558a455922ef0483f1ac1d62e3e0"
+}
