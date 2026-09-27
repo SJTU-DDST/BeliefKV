@@ -1286,7 +1286,27 @@ def test_parallel_task_declaration_uses_one_all_join() -> None:
     assert len(join.member_invocation_ids) == 2
     assert len(tasks) == 2
     assert join.attributes["mode"] == "all"
+    assert join.attributes["parent_prefix_continuation"] is True
     assert sum(event.kind == RuntimeEventKind.JOIN_WAIT for event in trace_sink.events) == 1
+
+
+def test_external_initial_planner_join_marks_parent_prefix_discontinuous() -> None:
+    trace_sink = CollectingSink()
+    adapter = DeepAgentsRuntimeAdapter(
+        trace_sink,
+        BeliefKVRequestMetadata("wf", "root", "ctx", 0, "supervisor", "root"),
+    )
+    adapter.start()
+    adapter.declare_runtime_tasks(
+        [("explorer", "Inspect")],
+        group_id="native-initial:task",
+        parent_prefix_continuation=False,
+    )
+    join = next(
+        event for event in trace_sink.events
+        if event.kind == RuntimeEventKind.JOIN_CREATE
+    )
+    assert join.attributes["parent_prefix_continuation"] is False
 
 
 def test_code_orchestrator_can_bind_dynamic_child_runs() -> None:

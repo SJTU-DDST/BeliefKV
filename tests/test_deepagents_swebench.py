@@ -1865,10 +1865,12 @@ def test_autonomous_dynamic_profile_runs_planned_initial_children_then_native_ro
 
     def run_children(_config: object, _workload: object, _backend: object,
                      _adapter: object, tasks: list[object], _artifact_dir: Path,
-                     *, group_id: str, deadline_controller: object) -> list[dict[str, str]]:
+                     *, group_id: str, parent_prefix_continuation: bool,
+                     deadline_controller: object) -> list[dict[str, str]]:
         del deadline_controller
         captured["tasks"] = tasks
         captured["group_id"] = group_id
+        captured["parent_prefix_continuation"] = parent_prefix_continuation
         return [
             {
                 "role": "source-review",
@@ -1950,6 +1952,7 @@ def test_autonomous_dynamic_profile_runs_planned_initial_children_then_native_ro
     assert len(reports) == 2
     assert len(captured["tasks"]) == 2  # type: ignore[arg-type]
     assert captured["group_id"] == "native-initial:django__django-1"
+    assert captured["parent_prefix_continuation"] is False
     assert captured["delegation_enabled"] is True
     assert captured["agent"] == "root-agent"
     assert "source evidence" in str(captured["root_prompt"])
@@ -1986,6 +1989,48 @@ def test_native_dynamic_profile_selects_dynamic_supervisor_prompt(
         config,
         delegation_enabled=False,
     ) == ""
+
+
+def test_in_graph_profile_starts_root_without_external_planner(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    config = DeepAgentsExperimentConfig(
+        mode="autonomous",
+        base_url="http://localhost:18000/v1",
+        model="model",
+        output_dir=tmp_path / "output",
+        workload_manifest=tmp_path / "manifest.json",
+        docker_image="fixture:latest",
+        subagent_fanout_profile="native_in_graph_1to4",
+    )
+    workload = SweBenchWorkload(
+        instance_id="django__django-1", repo="django/django",
+        base_commit="deadbeef", problem_statement="Fix the reported issue.",
+        difficulty="unknown",
+    )
+    monkeypatch.setattr(
+        "beliefkv.experiments.deepagents_swebench._model",
+        lambda *_args, **_kwargs: pytest.fail("external planner invoked"),
+    )
+    monkeypatch.setattr(
+        "beliefkv.experiments.deepagents_swebench._build_autonomous_agent",
+        lambda *_args, delegation_enabled: delegation_enabled,
+    )
+    monkeypatch.setattr(
+        "beliefkv.experiments.deepagents_swebench._invoke_with_partial_state",
+        lambda _agent, inputs, _config: inputs,
+    )
+    result, plan_payload, reports = _run_autonomous(
+        config, workload, SimpleNamespace(workspace=tmp_path),
+        SimpleNamespace(), tmp_path, SimpleNamespace(),
+    )
+    assert plan_payload is None
+    assert reports == []
+    assert "Fix the reported issue" in result["messages"][0]["content"]
+    assert "initial delegation round has completed" not in result["messages"][0]["content"]
+    assert "one to four native task" in _autonomous_fanout_prompt(
+        config, delegation_enabled=True,
+    )
 
 
 def test_second_native_delegation_round_keeps_root_call_budget() -> None:

@@ -407,6 +407,7 @@ class DeepAgentsRuntimeAdapter(BaseCallbackHandler):
         *,
         parent_invocation_id: str | None = None,
         group_id: str | None = None,
+        parent_prefix_continuation: bool = True,
     ) -> tuple[DeclaredRuntimeTask, ...]:
         """Declare planner-selected children before code dispatches their runs.
 
@@ -434,7 +435,10 @@ class DeepAgentsRuntimeAdapter(BaseCallbackHandler):
             }
             for index, (subagent_type, description) in enumerate(tasks)
         ]
-        pending = self._declare_task_group(parent_id, group_key, calls)
+        pending = self._declare_task_group(
+            parent_id, group_key, calls,
+            parent_prefix_continuation=parent_prefix_continuation,
+        )
         return tuple(
             DeclaredRuntimeTask(
                 tool_call_id=item.tool_call_id,
@@ -1603,6 +1607,8 @@ class DeepAgentsRuntimeAdapter(BaseCallbackHandler):
         parent_invocation_id: str,
         model_run_id: str,
         task_calls: list[dict[str, Any]],
+        *,
+        parent_prefix_continuation: bool = True,
     ) -> tuple[_PendingTask, ...]:
         parent = self._identities[parent_invocation_id].metadata
         join_id = (
@@ -1700,7 +1706,11 @@ class DeepAgentsRuntimeAdapter(BaseCallbackHandler):
                     ts_ms=ts_ms,
                     join_id=join_id,
                     member_invocation_ids=child_ids,
-                    attributes={"mode": "all", "source": "deepagents_task"},
+                    attributes={
+                        "mode": "all",
+                        "source": "deepagents_task",
+                        "parent_prefix_continuation": parent_prefix_continuation,
+                    },
                 ),
                 self._event(
                     RuntimeEventKind.JOIN_WAIT,

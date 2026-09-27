@@ -357,3 +357,32 @@ ACK 后各 context 首次 LLM 请求均进入下一 context epoch；
 这一关联没有备份动作及后续消费回执，不能当成 PREPARE 成功；
 选择性策略必须以物理节点去重，避免按快照次数批量传输。
 本轮结束后仅删除 14 个可重建的 `workspace`，其它结果保持原样。
+
+## 200 GB / 25:75 / write-back / 14-root：首次复用核验 v3
+
+`...14root_v3/` 保持 v2 的任务、到达方式和物理配置，新增
+`physical_action_use.jsonl` 节点级首次 GPU launch 观察。
+14/14 workflow 自然结束且具备测量资格，Host FULL/Mamba 均无
+驱逐，机会与原生遥测 writer 正常关闭。确认 JOIN ticket 14 个，
+drain 请求/完成各 7 次；物理账本记录 6 次 `PREFETCH_GPU` ACK，
+首次 GPU launch 的 FULL 节点复用为 **0/6**。Mamba 节点级消费
+仍不可验证。此轮没有证明预取缩短等待或改善 workflow JCT；
+任务正确性也尚未独立评分。
+
+问题不在于 H2D 没有实际发生。当前 `native_dynamic_1to4` 先用
+单独的结构化 planner 请求选择初始 children，再在 JOIN 后把全部
+child 报告追加到任务文本，才启动真正的 root agent 对话。
+两段请求沿用 root context 身份，却不共享可延续的 prompt 前缀；
+例如 flask-5014 的 planner 请求为 777 tokens，JOIN 后 root 的
+首次请求为 10,236 tokens 且 Device 前缀命中为 0。六次预取
+在 ACK 后均遇到下一 epoch 的首次请求，但六次都没有预取节点
+进入该请求的 Device 前缀。这是目标前缀不连续，而非对 JOIN
+返回时间的抽象预测误差。
+
+修复分两层：外部 planner 的 bootstrap JOIN 在创建事件上显式标明
+`parent_prefix_continuation=false`，调度器保留 JOIN 时间观察但
+不为其预取旧 planner KV；新增 `native_in_graph_1to4` 实验配置，
+由真实 root agent 在自身对话内选择一至四个 child，而非由外部
+planner 预先启动 children。后者是否实际派发、多轮 JOIN 是否
+形成有用 Host-backed KV，以及首次服务能否复用，仍需新 GPU
+试采验证。两种配置不能互作同任务同配置的 reactive/P6 配对。

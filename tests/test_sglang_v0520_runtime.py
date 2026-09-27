@@ -1440,6 +1440,36 @@ def test_join_prefetch_three_stages_and_confirmed_parent_ticket():
     assert runtime._join_ticket is None
 
 
+def test_bootstrap_join_does_not_prefetch_unrelated_planner_kv():
+    runtime = NativeAdmissionRuntime()
+    runtime.enable_confirmed_join_canary = True
+    parent, child = req("parent"), req("child")
+    parent.session_id, parent.session_generation = "session-parent", 2
+    runtime.register_visible_request(parent)
+    runtime.register_visible_request(child)
+    runtime.on_events((
+        event(0, RuntimeEventKind.WORKFLOW_START),
+        event(1, RuntimeEventKind.INVOCATION_CREATE,
+              invocation_id="parent", context_id="ctx-parent",
+              agent_definition_id="parent", agent_instance_id="parent"),
+        event(2, RuntimeEventKind.INVOCATION_CREATE,
+              invocation_id="child", context_id="ctx-child",
+              agent_definition_id="child", agent_instance_id="child"),
+        event(3, RuntimeEventKind.JOIN_CREATE, join_id="join",
+              member_invocation_ids=("child",),
+              attributes={"mode": "all", "parent_prefix_continuation": False}),
+        event(4, RuntimeEventKind.JOIN_WAIT,
+              invocation_id="parent", join_id="join"),
+    ))
+    runtime.on_events((event(5, RuntimeEventKind.RETURN,
+                             invocation_id="child"),))
+    runtime.on_events((event(6, RuntimeEventKind.JOIN_SATISFIED,
+                             join_id="join"),))
+    assert runtime.graph.joins["join"].satisfied
+    assert runtime._join_ticket is None
+    assert runtime.counts["join_prefetch_prefix_discontinuous"] > 0
+
+
 def test_confirmed_join_canary_is_bounded_without_predictor(tmp_path):
     with pytest.raises(ValueError, match="event socket and no predictor"):
         NativeAdmissionRuntime(enable_confirmed_join_canary=True)

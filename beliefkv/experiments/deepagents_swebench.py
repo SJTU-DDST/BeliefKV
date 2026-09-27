@@ -95,6 +95,7 @@ SUBAGENT_FANOUT_PROFILES = (
     "parallel_analysis_2to3",
     "native_subagent_2to3",
     "native_dynamic_1to4",
+    "native_in_graph_1to4",
 )
 READ_ONLY_SUBAGENT_FANOUT_PROFILES = frozenset(
     {
@@ -2010,6 +2011,19 @@ shared workspace. Avoid overlapping write assignments; the root owns final integ
 verification, and the required WorkflowCompletion response.
 """
 
+NATIVE_IN_GRAPH_1TO4_PROMPT = """
+Choose delegation from the actual task as part of this same root conversation.
+When a question can be worked on independently, use one to four native task
+calls in one turn, assigning each child a concrete deliverable. Do not force
+delegation for a task that has no independent work, duplicate a completed
+investigation, or split one question merely to increase fan-out. Wait for
+the child results in this conversation before integrating them.
+
+After a JOIN, you may launch another round if new independent questions
+remain. The root is responsible for integration, verification, and the
+required WorkflowCompletion response.
+"""
+
 
 NATIVE_DYNAMIC_INITIAL_PLANNER_PROMPT = """
 Choose the initial delegation round for one SWE-bench root workflow. Return one to
@@ -2034,6 +2048,8 @@ def _autonomous_fanout_prompt(
         return NATIVE_SUBAGENT_2TO3_PROMPT
     if config.subagent_fanout_profile == "native_dynamic_1to4":
         return NATIVE_DYNAMIC_1TO4_PROMPT
+    if config.subagent_fanout_profile == "native_in_graph_1to4":
+        return NATIVE_IN_GRAPH_1TO4_PROMPT
     return AUTONOMOUS_NATURAL_SUBAGENT_PROMPT
 
 
@@ -2821,6 +2837,7 @@ def _run_autonomous(
             tasks,
             artifact_dir,
             group_id=f"native-initial:{workload.instance_id}",
+            parent_prefix_continuation=False,
             deadline_controller=deadline_controller,
         )
         plan_payload = plan.model_dump(mode="json")
@@ -3085,11 +3102,13 @@ def _run_declared_analysis_children(
     artifact_dir: Path,
     *,
     group_id: str,
+    parent_prefix_continuation: bool = True,
     deadline_controller: WorkflowDeadlineController,
 ) -> list[dict[str, Any]]:
     handles = adapter.declare_runtime_tasks(
         [(item.role, item.description) for item in tasks],
         group_id=group_id,
+        parent_prefix_continuation=parent_prefix_continuation,
     )
     reports: list[dict[str, Any]] = []
     with ThreadPoolExecutor(max_workers=max(1, len(handles))) as executor:

@@ -121,6 +121,19 @@ request 级 Device 命中，不能归因到预取节点。新
 `physical_action_ack.jsonl` 和 `physical_action_use.jsonl` 逐条
 flush，而非等整个队列空闲；已运行进程不受此代码更新影响。
 
+节点级 v3 canary 的 6 次预测性 H2D ACK 后，首次 GPU 请求的
+FULL 节点复用全部为 false。此轮 14/14 workflow 有测量资格且
+Host 无驱逐，但首次复用和净收益均未成立。根因是实验所用
+`native_dynamic_1to4` 的 bootstrap：外部 planner 先用短提示词
+申请 child，JOIN 后真正的 root agent 用包含 child 报告的任务
+重新开启对话，二者虽然共用 root context ID，却不共享 KV
+前缀。bootstrap JOIN 已新增 `parent_prefix_continuation=false`
+事件契约，控制层据此拒绝为旧 planner KV 下发 JOIN H2D，
+不改变普通 in-graph JOIN 的三阶段预测路径。另新增
+`native_in_graph_1to4` 以允许真实 root 在自身对话内派发，
+目前只有 CPU 测试；需要独立 GPU 验证其实际动态派发及有用
+JOIN 预取，不得把旧 v3 ACK 当作新策略收益。
+
 目前 Qwen3.5 的 `online_eligible=false`、
 `predictive_action_eligible=false`；旧 Qwen3 P6 物理闭环不得外推为
 新版已有 predictive H2D。未见项目密封实验已完成：5/15 个自然

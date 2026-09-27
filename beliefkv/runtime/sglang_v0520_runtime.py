@@ -198,6 +198,7 @@ class NativeAdmissionRuntime:
             )
         self.graph = RuntimeCausalContextGraph(strict_timestamps=False)
         self._join_by_invocation: dict[str, set[str]] = {}
+        self._noncontinuing_joins: set[str] = set()
         self.frontier = CausalFrontierScheduler(self.graph)
         self.visible: dict[str, PrefillCandidateKey] = {}
         self.context_sessions: dict[str, PrefillCandidateKey] = {}
@@ -324,6 +325,7 @@ class NativeAdmissionRuntime:
             # A partially applied batch cannot remain a scheduling authority.
             self.graph = RuntimeCausalContextGraph(strict_timestamps=False)
             self._join_by_invocation.clear()
+            self._noncontinuing_joins.clear()
             self.frontier = CausalFrontierScheduler(self.graph)
             self.demand_hints.clear()
             self._last_model_signature = None
@@ -347,6 +349,8 @@ class NativeAdmissionRuntime:
                 if event.kind is RuntimeEventKind.JOIN_CREATE and event.join_id:
                     join = self.graph.joins.get(event.join_id)
                     if join is not None:
+                        if event.attributes.get("parent_prefix_continuation") is False:
+                            self._noncontinuing_joins.add(join.join_id)
                         for member in join.member_invocation_ids:
                             self._join_by_invocation.setdefault(member, set()).add(join.join_id)
                 elif event.kind is RuntimeEventKind.JOIN_WAIT and event.join_id and event.invocation_id:
@@ -418,6 +422,11 @@ class NativeAdmissionRuntime:
                         self.tool_wait_hints.pop(context_id, None)
                         self.shadow_candidate = None
                 if event.kind is RuntimeEventKind.WORKFLOW_END:
+                    self._noncontinuing_joins = {
+                        join_id for join_id in self._noncontinuing_joins
+                        if (join := self.graph.joins.get(join_id)) is not None
+                        and join.workflow_id != event.workflow_id
+                    }
                     for invocation_id in (
                         set(self._boundary_history) | set(self._tool_metadata)
                     ):
@@ -829,6 +838,9 @@ class NativeAdmissionRuntime:
         if event.attributes.get(CHILD_COMPLETION_INTENT) is not True:
             return
         join_id = event.join_id
+        if join_id in self._noncontinuing_joins:
+            self.counts["join_prefetch_prefix_discontinuous"] += 1
+            return
         child_id = event.invocation_id
         join = self.graph.joins.get(join_id) if isinstance(join_id, str) else None
         child = self.graph.invocations.get(child_id) if child_id else None
@@ -935,6 +947,9 @@ class NativeAdmissionRuntime:
 
     def _advance_join_ticket(self, event: RuntimeEvent) -> None:
         ticket = self._join_ticket
+        if ticket is not None and ticket.join_id in self._noncontinuing_joins:
+            self._join_ticket = None
+            return
         if ticket is None:
             if not (
                 self.enable_admission_prefetch or self.enable_confirmed_join_canary
@@ -947,6 +962,9 @@ class NativeAdmissionRuntime:
                 tuple(sorted(self._join_by_invocation.get(event.invocation_id, ())))
             )
             for join_id in candidate_joins:
+                if join_id in self._noncontinuing_joins:
+                    self.counts["join_prefetch_prefix_discontinuous"] += 1
+                    continue
                 join = self.graph.joins.get(join_id)
                 if (
                     join is None or not join.satisfied
@@ -1016,6 +1034,7 @@ class NativeAdmissionRuntime:
                 self.enable_admission_prefetch
                 or self.enable_confirmed_join_canary and ticket.phase == "confirmed"
             ) and not self.physical_disabled
+            and ticket.join_id not in self._noncontinuing_joins
             and join is not None and join.workflow_id == key.root_workflow_id
             and join.mode.value == ticket.join_mode
             and tuple(sorted(join.member_invocation_ids)) == ticket.member_ids

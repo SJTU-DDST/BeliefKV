@@ -10,6 +10,7 @@ HICACHE_SIZE_GB="${HICACHE_SIZE_GB:-180}"
 HICACHE_WRITE_POLICY="${HICACHE_WRITE_POLICY:-write_through_selective}"
 SKIP_SERVER_WARMUP="${SKIP_SERVER_WARMUP:-0}"
 CONFIRMED_JOIN_CANARY="${CONFIRMED_JOIN_CANARY:-0}"
+FANOUT_PROFILE="${FANOUT_PROFILE:-native_dynamic_1to4}"
 RUN_ROOT="${RUN_ROOT:-$ROOT/experiments/raw/qwen35_native_regime_selective_${HICACHE_SIZE_GB}g_${HOST_SPLIT/:/_}_${ROOT_COUNT}root_v1}"
 MANIFEST="$ROOT/configs/migration/qwen35_native_reactive_overlapped_128root_workload_2026-09-23.json"
 BASE_URL="http://127.0.0.1:$PORT"
@@ -34,12 +35,13 @@ if [[ $# -ne 0 || ! "$ROOT_COUNT" =~ ^[1-9][0-9]*$ ]] \
   || [[ "$HICACHE_WRITE_POLICY" != "write_through_selective" && "$HICACHE_WRITE_POLICY" != "write_back" ]] \
   || [[ "$SKIP_SERVER_WARMUP" != "0" && "$SKIP_SERVER_WARMUP" != "1" ]] \
   || [[ "$CONFIRMED_JOIN_CANARY" != "0" && "$CONFIRMED_JOIN_CANARY" != "1" ]] \
+  || [[ "$FANOUT_PROFILE" != "native_dynamic_1to4" && "$FANOUT_PROFILE" != "native_in_graph_1to4" ]] \
   || [[ "$CONFIRMED_JOIN_CANARY" == "1" && "${SGLANG_PATCH_FLAVOR:-}" != "writeback_prepare" ]] \
   || [[ ! "$HOST_SPLIT" =~ ^([1-9][0-9]?):([1-9][0-9]?)$ ]] \
   || (( ${BASH_REMATCH[1]:-0} + ${BASH_REMATCH[2]:-0} != 100 )) \
   || [[ ! "$PORT" =~ ^[1-9][0-9]*$ ]] \
   || [[ -e "$RUN_ROOT" || -e "$SOCKET" ]]; then
-  printf 'Usage: PORT=18454 ROOT_COUNT=8 HICACHE_SIZE_GB=180 HOST_SPLIT=35:65 HICACHE_WRITE_POLICY=write_through_selective|write_back SKIP_SERVER_WARMUP=0 CONFIRMED_JOIN_CANARY=0|1 SGLANG_PATCH_FLAVOR=writeback_prepare RUN_ROOT=<new path> bash %s\n' "$0" >&2
+  printf 'Usage: PORT=18454 ROOT_COUNT=8 HICACHE_SIZE_GB=180 HOST_SPLIT=35:65 HICACHE_WRITE_POLICY=write_through_selective|write_back SKIP_SERVER_WARMUP=0 CONFIRMED_JOIN_CANARY=0|1 FANOUT_PROFILE=native_dynamic_1to4|native_in_graph_1to4 SGLANG_PATCH_FLAVOR=writeback_prepare RUN_ROOT=<new path> bash %s\n' "$0" >&2
   exit 2
 fi
 if [[ -e /tmp/beliefkv-experiments.paused ]] \
@@ -94,7 +96,7 @@ set +e
 "$PYTHON" "$ROOT/scripts/run_deepagents_swebench.py" \
   --mode autonomous --base-url "$BASE_URL/v1" --model Qwen3.5-35B-A3B \
   --workload-manifest "$MANIFEST" --max-workflows "$ROOT_COUNT" \
-  --concurrency "$ROOT_COUNT" --subagent-fanout-profile native_dynamic_1to4 \
+  --concurrency "$ROOT_COUNT" --subagent-fanout-profile "$FANOUT_PROFILE" \
   --native-radix-sessions --control-socket "$SOCKET" \
   --server-audit "$RUN_ROOT/server/runtime_audit.jsonl" \
   --server-events "$RUN_ROOT/server/runtime_events.sglang.jsonl" \
