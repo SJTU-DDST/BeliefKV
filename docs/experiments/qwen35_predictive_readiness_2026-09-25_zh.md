@@ -5919,3 +5919,31 @@ Django 的独立输入折有改善，Pytest 折
 Astropy/Sphinx 的冻结批次做项目隔离复核，
 两项目过去参与过其它方案探索，须明确标注
 不是新的密封验收；不得依据其结果调参数。
+
+冻结 `5274dc2` 的同输入时钟评估代码后，在
+与训练项目完全隔离的 Astropy/Sphinx 原
+66-task 批次运行**同一个**评估器；66/66
+个任务有 trace，manifest SHA-256 为
+`fbce7fb3175d73ac0d2b881e3e16a669c32cc3063b56ca25a883eb606d07e2cb`。
+四个 workflow 未自然完成，但这里只对已有
+真实 `TOOL_END` 的调用计时，不补失踪结果。
+冻结报告保存在
+`experiments/raw/qwen35_cold_tool_peer_holdout_66root_v1/holdout_evaluation/same_input_error_project_holdout_20260927.json`，
+SHA-256 为
+`a8a60483fe60f5eb761dcc10fd1d423b5d04ff7e18bd27978e6e063354997edc`。
+首次独立输入 36 次、来自 21 个 workflow；
+项目命令类冻结先验与同输入上次失败时长
+在**同一批调用**上的误差中位为 161→55 ms，
+workflow 聚类 bootstrap 的中位改善为
+106 ms（95% 区间 50–199 ms）。Astropy
+11 个首次输入、五个 workflow 约 234→62 ms；
+Sphinx 25 个首次输入、16 个 workflow
+约 161→52 ms；两个项目单独的 workflow
+聚类改善区间下界亦大于零。
+500 ms 内命中为 31→35/36，但实际成功
+返回仅 3/36；不能把连续失败调用的时钟精度
+推广到自然成功工具调用。两项目虽然与训练
+项目隔离，之前曾用于其他方法研究，仍不是
+密封的新测试项目。当前正式预测头和
+`predictive_action_eligible` 均保持原状；
+JOIN 时钟及物理 H2D 收益未由此验证。
