@@ -6578,3 +6578,53 @@ Astropy 项目曾用于策略探索，此为项目隔离
 工具返回的项目漂移仍需因果的在线历史、
 更强的执行期任务语义，或在风险预算内
 不依赖精确返回点的提前备份策略。
+
+### 早期完整 JOIN 通知的压力分层时钟（2026-09-27）
+
+新 Astropy 8-task 在线只读批次在本节分析时仍有
+一个 root 在运行；7 个已完成的自然完整 JOIN
+的意图通知到 JOIN 中位约 5.0 秒，全部留有
+至少 500 ms，而 128-root 高压训练批次的
+task-balanced 静态先验为约 85.8 秒。
+这是**运行压力导致的服务时钟漂移**，不能把
+“捕捉到通知”直接解释成“准确预测返回时间”。
+这些是运行中的暂时性诊断，不是完整留出报告。
+
+新增只读 `scripts/evaluate_join_pressure_strata.py`，
+按首次有效全组意图通知前严格早于事件、距离
+不超过 2 秒的 SGLang running/queue 指标，
+预先将负载划为 idle、无排队但 running 多、
+轻排队和重排队四类。分层先验按 task 平衡，
+每层至少五个不同 workflow、两个训练项目，
+不足时退到同一队列族或全局先验。
+七个已有训练项目的 128-root 高压批次，加上
+同项目的六个较低压力历史批次，仅作为训练；
+后六批分别是
+`qwen35_child_intent_chunk_psf_pair_20260926_v1`、
+`qwen35_child_final_report_django_pair_20260926_v1`、
+`qwen35_early_tool_train_xarray8_shadow_v1`、
+`qwen35_join_semantic_status_pytest_20260926_v1`、
+`qwen35_report_length_train8_20260926_v1` 和
+`qwen35_child_intent_pylint_holdout_20260926`。
+相同 task 在多个批次出现时按同一 workflow
+聚类。按**整个项目**留一拟合先验，不从
+Astropy 标签选择分层阈值或备选规则。
+报告位于 128-root 训练批次的 `intent_workloads/
+join_pressure_strata_train_loo_20260927.json`。
+
+121 个训练项目留一自然完整 JOIN 有有效
+as-of 快照，其中 idle 18 个事件、17 个
+不同 workflow。idle 事件的静态/分层误差
+P50 约 51.4 秒/0.60 秒；四个有 idle
+样本的项目分别有 2、4、9、3 个事件。
+但重排队组 92 个事件的误差 P50 从
+约 22.9 秒**恶化**至 30.6 秒，项目间
+服务时间异质性仍大，不能启用全域压力
+模型，更不能据此声称已达到 JOIN 亚秒级
+预测或物理 H2D 收益。不同 pilot 的源码、
+上下文和负载配置亦未完全配对，不能将其
+差异全归因于 queue。低压分层目前只有
+四个项目且最小项目仅两条，不足以宣称
+稳健泛化；下一步在自然完成的新批次上
+报告任务簇误差、真正小于 500 ms 的比例、
+提前窗口和首次服务，并保持模型只读。
