@@ -26,6 +26,19 @@ def _read(path: Path) -> list[dict]:
     return [json.loads(line) for line in path.read_text().splitlines()]
 
 
+def test_admission_observation_has_distinct_provenance(tmp_path: Path) -> None:
+    with pytest.raises(ValueError, match="unsupported"):
+        NativeReactiveTelemetry(tmp_path / "invalid", collection_mode="unknown")
+    audit = NativeReactiveTelemetry(
+        tmp_path / "observation", collection_mode="admission_observation"
+    )
+    audit.close()
+    ready = json.loads(
+        (tmp_path / "observation/native_telemetry_ready.json").read_text()
+    )
+    assert ready["collection_mode"] == "admission_observation"
+
+
 def test_capacity_census_is_scheduler_local_and_fail_closed(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch,
 ) -> None:

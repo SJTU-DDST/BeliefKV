@@ -39,7 +39,11 @@ handoff 和完整 D2H/H2D 首次消费闭环仍待实现。
 真实 Deep Agents 工作负载的 native session 需要显式开启：
 runner 使用 `--native-radix-sessions --control-socket <path>`，
 服务端使用 `ENABLE_SESSION_RADIX_CACHE=1` 和对应的
-`--beliefkv-event-socket-path <path>`。runner 按 workflow/context
+`--beliefkv-event-socket-path <path>`。admission 的逐请求、
+Host pool 和原生 ACK 遥测要单独设
+`BELIEFKV_ADMISSION_TELEMETRY_DIR`；不得复用冻结的 reactive
+`BELIEFKV_NATIVE_TELEMETRY_DIR`。原生 ACK 回调同时投递至
+admission 物理账本与审计日志。runner 按 workflow/context
 复用原生 session；普通 LLM 轮次即使推进 context_epoch 也不关闭，
 只有成功的 `CONTEXT_COMPACT` 才先关闭旧引用再为新请求创建引用；
 context/workflow 终态关闭引用。根 workflow/invocation 和 LLM

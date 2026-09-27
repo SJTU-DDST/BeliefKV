@@ -187,6 +187,27 @@ def test_launch_stops_when_numa_preflight_fails(tmp_path: Path) -> None:
     assert not (tmp_path / "numactl-args").exists()
 
 
+def test_launch_accepts_separate_admission_observation_telemetry(
+    tmp_path: Path,
+) -> None:
+    env = _stub(tmp_path)
+    checkout = tmp_path / "sglang"
+    scheduler = checkout / "python/sglang/srt/managers/scheduler.py"
+    scheduler.parent.mkdir(parents=True)
+    scheduler.write_text("")
+    env["SGLANG_SOURCE_CHECKOUT"] = str(checkout)
+    telemetry = tmp_path / "admission-telemetry"
+    telemetry.mkdir()
+    env["BELIEFKV_ADMISSION_TELEMETRY_DIR"] = str(telemetry)
+    result = subprocess.run(
+        ["bash", str(LAUNCH), "--enable-beliefkv-admission"],
+        env=env, capture_output=True, text=True,
+    )
+    assert result.returncode == 0, result.stderr
+    args = (tmp_path / "numactl-args").read_text().splitlines()
+    assert "--enable-beliefkv-admission" in args
+
+
 def test_no_host_smoke_does_not_bind_or_preflight(tmp_path: Path) -> None:
     env = {**_stub(tmp_path), "HICACHE_SIZE_GB": "0"}
     result = subprocess.run(["bash", str(LAUNCH)], env=env, capture_output=True)
@@ -206,6 +227,27 @@ def test_no_host_smoke_does_not_bind_or_preflight(tmp_path: Path) -> None:
         ({"HICACHE_SIZE_GB": "0"}, ["--enable-hierarchical-cache"], "NUMA binding"),
         ({"BELIEFKV_NATIVE_TELEMETRY_DIR": "/nonexistent/beliefkv-telemetry"}, [], "SGLANG_SOURCE_CHECKOUT"),
         ({"BELIEFKV_NATIVE_TELEMETRY_DIR": ""}, [], "SGLANG_SOURCE_CHECKOUT"),
+        (
+            {
+                "SGLANG_SOURCE_CHECKOUT": "/nonexistent/sglang",
+                "BELIEFKV_NATIVE_TELEMETRY_DIR": "/tmp",
+            },
+            ["--enable-beliefkv-admission"],
+            "Reactive telemetry",
+        ),
+        (
+            {"BELIEFKV_ADMISSION_TELEMETRY_DIR": "/tmp"},
+            ["--enable-beliefkv-admission"],
+            "Admission telemetry requires patched",
+        ),
+        (
+            {
+                "BELIEFKV_ADMISSION_TELEMETRY_DIR": "/tmp",
+                "SGLANG_SOURCE_CHECKOUT": "/nonexistent/sglang",
+            },
+            [],
+            "Admission telemetry requires patched",
+        ),
         (
             {
                 "SGLANG_SOURCE_CHECKOUT": "/nonexistent/sglang",

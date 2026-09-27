@@ -32,6 +32,28 @@ if [[ ${BELIEFKV_NATIVE_TELEMETRY_DIR+x} ]]; then
   fi
   export BELIEFKV_NATIVE_TELEMETRY_DIR
 fi
+admission_requested=0
+for arg in "$@"; do
+  if [[ "${arg}" == "--enable-beliefkv-admission" ]]; then
+    admission_requested=1
+  fi
+done
+if [[ ${BELIEFKV_ADMISSION_TELEMETRY_DIR+x} ]]; then
+  if [[ -z "${SGLANG_SOURCE_CHECKOUT}" ]] \
+      || [[ ${BELIEFKV_NATIVE_TELEMETRY_DIR+x} ]] \
+      || (( admission_requested == 0 )); then
+    printf 'Admission telemetry requires patched SGLang, admission enabled, and no reactive telemetry\n' >&2
+    exit 2
+  fi
+  if [[ ! -d "${BELIEFKV_ADMISSION_TELEMETRY_DIR}" || ! -w "${BELIEFKV_ADMISSION_TELEMETRY_DIR}" ]]; then
+    printf 'Admission telemetry directory must exist and be writable: %s\n' "${BELIEFKV_ADMISSION_TELEMETRY_DIR}" >&2
+    exit 2
+  fi
+  export BELIEFKV_ADMISSION_TELEMETRY_DIR
+elif [[ ${BELIEFKV_NATIVE_TELEMETRY_DIR+x} ]] && (( admission_requested )); then
+  printf 'Reactive telemetry cannot be used with BeliefKV admission\n' >&2
+  exit 2
+fi
 if [[ ! -x "${PYTHON}" || ! -f "${MODEL_PATH}/config.json" ]]; then
   printf 'Missing Python or model config: %s %s\n' "${PYTHON}" "${MODEL_PATH}" >&2
   exit 2

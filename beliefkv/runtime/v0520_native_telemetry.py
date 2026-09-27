@@ -1,4 +1,4 @@
-"""Opt-in, scheduler-local evidence for Qwen3.5 native reactive collection."""
+"""Opt-in, scheduler-local evidence for Qwen3.5 native collection."""
 
 from __future__ import annotations
 
@@ -18,8 +18,12 @@ from typing import Any
 
 class NativeReactiveTelemetry:
     def __init__(
-        self, directory: str | Path, *, scheduler_path: str | Path | None = None
+        self, directory: str | Path, *, scheduler_path: str | Path | None = None,
+        collection_mode: str = "native_reactive",
     ) -> None:
+        if collection_mode not in {"native_reactive", "admission_observation"}:
+            raise ValueError("unsupported native telemetry collection mode")
+        self.collection_mode = collection_mode
         self.directory = Path(directory).resolve()
         self.scheduler_path = (
             Path(scheduler_path).resolve() if scheduler_path is not None else None
@@ -143,6 +147,7 @@ class NativeReactiveTelemetry:
             json.dump({
                 "schema_version": 1,
                 "source": "native_sglang_v0520",
+                "collection_mode": self.collection_mode,
                 "scheduler_pid": os.getpid(),
                 "capacity": observation,
             }, output, indent=2, sort_keys=True)
@@ -942,6 +947,7 @@ class NativeReactiveTelemetry:
                     json.dumps({
                         "schema_version": 1,
                         "source": "native_sglang_v0520",
+                        "collection_mode": self.collection_mode,
                         "scheduler_pid": os.getpid(),
                         "scheduler_path": (
                             str(self.scheduler_path) if self.scheduler_path else None

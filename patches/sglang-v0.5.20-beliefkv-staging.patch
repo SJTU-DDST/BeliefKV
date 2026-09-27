@@ -217,7 +217,7 @@ index 7811e44..9630078 100755
 +        self.beliefkv_metadata = beliefkv_metadata
          # Used by the session radix cache to reject registration after a close/reopen.
 diff --git a/python/sglang/srt/managers/scheduler.py b/python/sglang/srt/managers/scheduler.py
-index 743c8af..e41a8be 100644
+index 743c8af..c40a0c3 100644
 --- a/python/sglang/srt/managers/scheduler.py
 +++ b/python/sglang/srt/managers/scheduler.py
 @@ -727,2 +727,4 @@ class Scheduler(
@@ -225,7 +225,7 @@ index 743c8af..e41a8be 100644
 +        self.init_beliefkv_runtime()
 +
          self.is_initializing = False
-@@ -730,2 +732,90 @@ class Scheduler(
+@@ -730,2 +732,109 @@ class Scheduler(
  
 +    def init_beliefkv_runtime(self) -> None:
 +        self.beliefkv_runtime = None
@@ -244,10 +244,17 @@ index 743c8af..e41a8be 100644
 +            and not getattr(self.server_args, "enable_beliefkv_admission", False)
 +        ):
 +            raise RuntimeError("BeliefKV admission H2D requires admission ordering")
-+        native_audit_dir = os.environ.get("BELIEFKV_NATIVE_TELEMETRY_DIR")
++        reactive_audit_dir = os.environ.get("BELIEFKV_NATIVE_TELEMETRY_DIR")
++        admission_audit_dir = os.environ.get("BELIEFKV_ADMISSION_TELEMETRY_DIR")
++        if reactive_audit_dir and admission_audit_dir:
++            raise RuntimeError("reactive and admission telemetry directories are exclusive")
++        admission_enabled = getattr(self.server_args, "enable_beliefkv_admission", False)
++        if admission_audit_dir and not admission_enabled:
++            raise RuntimeError("admission telemetry requires BeliefKV admission")
++        native_audit_dir = reactive_audit_dir or admission_audit_dir
 +        if native_audit_dir:
 +            if (
-+                getattr(self.server_args, "enable_beliefkv_admission", False)
++                (reactive_audit_dir and admission_enabled)
 +                or self.server_args.tp_size != 1
 +                or not hasattr(self.tree_cache, "on_hicache_transfer_commit")
 +            ):
@@ -258,11 +265,15 @@ index 743c8af..e41a8be 100644
 +            from beliefkv.runtime.v0520_native_telemetry import NativeReactiveTelemetry
 +
 +            self._native_reactive_telemetry = NativeReactiveTelemetry(
-+                native_audit_dir, scheduler_path=__file__
++                native_audit_dir, scheduler_path=__file__,
++                collection_mode=(
++                    "admission_observation"
++                    if admission_audit_dir else "native_reactive"
++                ),
 +            )
 +            self._native_reactive_telemetry.record_capacity(self.tree_cache)
 +            self.tree_cache.on_hicache_transfer_commit = (
-+                self._native_reactive_telemetry.on_native_transfer_commit
++                self._beliefkv_on_native_transfer_commit
 +            )
 +        if not getattr(self.server_args, "enable_beliefkv_admission", False):
 +            return
@@ -306,7 +317,7 @@ index 743c8af..e41a8be 100644
 +        self.beliefkv_runtime = runtime
 +        runtime.attach_native_cache(self.tree_cache)
 +        self.tree_cache.on_hicache_transfer_commit = (
-+            runtime.on_native_transfer_commit
++            self._beliefkv_on_native_transfer_commit
 +        )
 +        if runtime.event_server is not None and self.idle_sleeper is not None:
 +            self.idle_sleeper.poller.register(runtime.event_server.fileno())
@@ -315,12 +326,20 @@ index 743c8af..e41a8be 100644
 +            self.idle_sleeper.poller.register(predictor_fd)
 +            self._beliefkv_predictor_fd = predictor_fd
 +
++    def _beliefkv_on_native_transfer_commit(self, commit: object) -> None:
++        telemetry = self._native_reactive_telemetry
++        if telemetry is not None:
++            telemetry.on_native_transfer_commit(commit)
++        runtime = self.beliefkv_runtime
++        if runtime is not None:
++            runtime.on_native_transfer_commit(commit)
++
      def init_startup_timing_begin(self) -> None:
-@@ -2791,2 +2881,3 @@ class Scheduler(
+@@ -2791,2 +2900,3 @@ class Scheduler(
                  multi_item_delimiter_indices=recv_req.multi_item_delimiter_indices,
 +                beliefkv_metadata=recv_req.beliefkv_metadata,
              )
-@@ -3192,2 +3283,29 @@ class Scheduler(
+@@ -3192,2 +3302,29 @@ class Scheduler(
  
 +    def _beliefkv_on_enqueue(self, req: Req, *, is_retracted: bool) -> bool:
 +        runtime = getattr(self, "beliefkv_runtime", None)
@@ -350,7 +369,7 @@ index 743c8af..e41a8be 100644
 +        return True
 +
      def _add_request_to_queue(self, req: Req, is_retracted: bool = False):
-@@ -3202,2 +3320,8 @@ class Scheduler(
+@@ -3202,2 +3339,8 @@ class Scheduler(
                  return
 +        if not self._beliefkv_on_enqueue(req, is_retracted=is_retracted):
 +            return
@@ -359,11 +378,11 @@ index 743c8af..e41a8be 100644
 +            telemetry.on_enqueue(req)
 +        if self.disaggregation_mode == DisaggregationMode.NULL:
              self._prefetch_kvcache(req)
-@@ -3283,2 +3407,3 @@ class Scheduler(
+@@ -3283,2 +3426,3 @@ class Scheduler(
              if abort_existing_req:
 +                self._beliefkv_on_abort(AbortReq(rid=candidate_req.rid), exact=True)
                  self._release_aborted_request(candidate_req)
-@@ -3560,2 +3685,55 @@ class Scheduler(
+@@ -3560,2 +3704,55 @@ class Scheduler(
  
 +    def _beliefkv_tp_agree(self, decision: bool, action: str) -> bool:
 +        if self.ps.tp_size == 1:
@@ -419,7 +438,7 @@ index 743c8af..e41a8be 100644
 +        return False
 +
      @scheduler_stage_method(SCHEDULER_STAGE_GET_NEXT_BATCH)
-@@ -3566,2 +3744,13 @@ class Scheduler(
+@@ -3566,2 +3763,13 @@ class Scheduler(
          self._process_hicache_events()
 +        if (beliefkv_runtime := getattr(self, "beliefkv_runtime", None)) is not None:
 +            # Native ACKs/locks settle before BeliefKV mirrors and plans.
@@ -433,7 +452,7 @@ index 743c8af..e41a8be 100644
 +                self.idle_sleeper.poller.unregister(predictor_fd)
 +                self._beliefkv_predictor_fd = None
  
-@@ -3649,2 +3838,9 @@ class Scheduler(
+@@ -3649,2 +3857,9 @@ class Scheduler(
  
 +        if self._beliefkv_before_batch_selection(running_batch, last_batch):
 +            return NextBatchPlan(batch_to_run=None, running_batch=running_batch)
@@ -443,12 +462,12 @@ index 743c8af..e41a8be 100644
 +            beliefkv_runtime.dispatch_join_prefetch()
 +
          if self.dllm_config is not None:
-@@ -3707,2 +3903,4 @@ class Scheduler(
+@@ -3707,2 +3922,4 @@ class Scheduler(
  
 +        if beliefkv_runtime is not None:
 +            beliefkv_runtime.on_batch_selected(ret)
          return NextBatchPlan(batch_to_run=ret, running_batch=running_batch)
-@@ -3756,2 +3954,46 @@ class Scheduler(
+@@ -3756,2 +3973,46 @@ class Scheduler(
  
 +    def _beliefkv_prefill_candidates(
 +        self, running_batch: ScheduleBatch, adder: PrefillAdder
@@ -495,12 +514,12 @@ index 743c8af..e41a8be 100644
 +        return selection.candidates
 +
      def _get_new_batch_prefill_raw(
-@@ -3873,3 +4115,3 @@ class Scheduler(
+@@ -3873,3 +4134,3 @@ class Scheduler(
          # Get requests from the waiting queue to a new prefill batch
 -        for req in self.waiting_queue:
 +        for req in self._beliefkv_prefill_candidates(running_batch, adder):
              if self.enable_lora and not self.can_schedule_lora_req(req, running_loras):
-@@ -3899,2 +4141,8 @@ class Scheduler(
+@@ -3899,2 +4160,8 @@ class Scheduler(
  
 +            if (
 +                self.beliefkv_runtime is not None
@@ -509,27 +528,27 @@ index 743c8af..e41a8be 100644
 +                continue
 +
              if self.enable_hicache_storage:
-@@ -3934,2 +4182,6 @@ class Scheduler(
+@@ -3934,2 +4201,6 @@ class Scheduler(
              )
 +            if self.beliefkv_runtime is not None:
 +                self.beliefkv_runtime.on_prefill_candidate_result(
 +                    req, admitted=req in adder.can_run_list, result=res.name
 +                )
  
-@@ -4256,2 +4508,5 @@ class Scheduler(
+@@ -4256,2 +4527,5 @@ class Scheduler(
          self._sched_idled = False
 +        telemetry = self._native_reactive_telemetry
 +        if telemetry is not None:
 +            telemetry.on_launch(batch)
  
-@@ -4624,2 +4879,6 @@ class Scheduler(
+@@ -4624,2 +4898,6 @@ class Scheduler(
  
 +        self._beliefkv_on_batch_completed(batch)
 +        telemetry = self._native_reactive_telemetry
 +        if telemetry is not None:
 +            telemetry.on_completed(batch)
          self._record_step_counters(batch, result)
-@@ -4636,2 +4895,15 @@ class Scheduler(
+@@ -4636,2 +4914,15 @@ class Scheduler(
  
 +    def _beliefkv_on_batch_completed(self, batch: ScheduleBatch) -> None:
 +        runtime = getattr(self, "beliefkv_runtime", None)
@@ -545,13 +564,13 @@ index 743c8af..e41a8be 100644
 +        )
 +
      def _record_step_counters(
-@@ -5217,2 +5489,5 @@ class Scheduler(
+@@ -5217,2 +5508,5 @@ class Scheduler(
      def abort_request(self, recv_req: AbortReq):
 +        if self._native_reactive_telemetry is not None:
 +            self._native_reactive_telemetry.on_abort_request(recv_req)
 +        self._beliefkv_on_abort(recv_req)
          if (chunked_req := self.chunked_req) is not None:
-@@ -5371,2 +5646,21 @@ class Scheduler(
+@@ -5371,2 +5665,21 @@ class Scheduler(
  
 +    def _beliefkv_on_abort(self, recv_req: AbortReq, *, exact: bool = False) -> None:
 +        runtime = getattr(self, "beliefkv_runtime", None)
@@ -573,7 +592,7 @@ index 743c8af..e41a8be 100644
 +            self._beliefkv_registered_request_ids.difference_update(matched)
 +
      def _pause_engine(self) -> Tuple[List[Req], int]:
-@@ -5654,2 +5948,12 @@ class Scheduler(
+@@ -5654,2 +5967,12 @@ class Scheduler(
          # Break the event loop; the finally in run_scheduler_process releases resources.
 +        if self._native_reactive_telemetry is not None:
 +            self.tree_cache.on_hicache_transfer_commit = None
@@ -1560,13 +1579,14 @@ index 8d203fc..4b9f77a 100644
      def test_splits_total_budget_by_device_bytes_three_pools(self):
 diff --git a/test/srt/test_beliefkv_lifecycle.py b/test/srt/test_beliefkv_lifecycle.py
 new file mode 100644
-index 0000000..de1cb1f
+index 0000000..88361ff
 --- /dev/null
 +++ b/test/srt/test_beliefkv_lifecycle.py
-@@ -0,0 +1,276 @@
+@@ -0,0 +1,278 @@
 +"""CPU-only contract tests for optional scheduler request lifecycle hooks."""
 +
 +import ast
++import os
 +import unittest
 +from pathlib import Path
 +from types import SimpleNamespace
@@ -1617,6 +1637,7 @@ index 0000000..de1cb1f
 +    )
 +    ast.fix_missing_locations(module)
 +    namespace = {
++        "os": os,
 +        "DisaggregationMode": SimpleNamespace(NULL="null", PREFILL="prefill", DECODE="decode"),
 +        "AbortReq": lambda *, rid: SimpleNamespace(rid=rid, abort_all=False),
 +        "HTTPStatus": SimpleNamespace(SERVICE_UNAVAILABLE=503, BAD_REQUEST=400),
@@ -1818,7 +1839,7 @@ index 0000000..de1cb1f
 +        }
 +        abort = methods["abort_request"]
 +        self.assertEqual(
-+            ast.unparse(abort.body[0]), "self._beliefkv_on_abort(recv_req)"
++            ast.unparse(abort.body[1]), "self._beliefkv_on_abort(recv_req)"
 +        )
 +        result = methods["process_batch_result"]
 +        statements = [ast.unparse(node) for node in result.body]
@@ -2040,10 +2061,10 @@ index 0000000..a8a2ead
 +    unittest.main()
 diff --git a/test/srt/test_beliefkv_scheduler_hook.py b/test/srt/test_beliefkv_scheduler_hook.py
 new file mode 100644
-index 0000000..018a9d0
+index 0000000..7cb6a8a
 --- /dev/null
 +++ b/test/srt/test_beliefkv_scheduler_hook.py
-@@ -0,0 +1,482 @@
+@@ -0,0 +1,548 @@
 +"""BeliefKV scheduler safe-point contract, without model/GPU dependencies."""
 +
 +import ast
@@ -2073,6 +2094,7 @@ index 0000000..018a9d0
 +    )
 +    methods = {
 +        "init_beliefkv_runtime",
++        "_beliefkv_on_native_transfer_commit",
 +        "_beliefkv_tp_agree",
 +        "_beliefkv_before_batch_selection",
 +        "_beliefkv_prefill_candidates",
@@ -2105,6 +2127,7 @@ index 0000000..018a9d0
 +    )
 +    ast.fix_missing_locations(module)
 +    namespace = {
++        "__file__": str(SCHEDULER),
 +        "os": os,
 +        "NextBatchPlan": PLAN,
 +        "DisaggregationMode": SimpleNamespace(NULL="null"),
@@ -2153,6 +2176,70 @@ index 0000000..018a9d0
 +
 +
 +class TestBeliefKVHook(unittest.TestCase):
++    def test_native_transfer_ack_reaches_telemetry_and_physical_ledger(self):
++        scheduler = Hook()
++        calls = []
++        scheduler._native_reactive_telemetry = SimpleNamespace(
++            on_native_transfer_commit=lambda event: calls.append(("telemetry", event))
++        )
++        scheduler.beliefkv_runtime = SimpleNamespace(
++            on_native_transfer_commit=lambda event: calls.append(("ledger", event))
++        )
++        event = object()
++        scheduler._beliefkv_on_native_transfer_commit(event)
++        self.assertEqual(calls, [("telemetry", event), ("ledger", event)])
++        scheduler._native_reactive_telemetry = None
++        scheduler._beliefkv_on_native_transfer_commit(event)
++        self.assertEqual(calls[-1], ("ledger", event))
++
++    def test_admission_observation_telemetry_is_independent_of_reactive(self):
++        scheduler = Hook()
++        scheduler.server_args = SimpleNamespace(
++            enable_beliefkv=False, enable_beliefkv_admission=True,
++            beliefkv_event_socket_path=None, tp_size=1,
++            hicache_host_memory_mode="cache",
++        )
++        scheduler.ps = SimpleNamespace(tp_size=1, pp_size=1)
++        scheduler.spec_algorithm = SimpleNamespace(is_none=lambda: True)
++        scheduler.disaggregation_mode = "null"
++        scheduler.idle_sleeper = None
++        scheduler.tree_cache = type("UnifiedRadixCache", (), {
++            "on_hicache_transfer_commit": None,
++        })()
++        telemetry_calls = []
++        runtime = SimpleNamespace(
++            attach_native_cache=lambda cache: None,
++            event_server=None,
++            predictor_fileno=lambda: None,
++            on_native_transfer_commit=lambda event: None,
++        )
++
++        class FakeTelemetry:
++            def __init__(self, directory, *, scheduler_path, collection_mode):
++                telemetry_calls.append((directory, collection_mode))
++
++            def record_capacity(self, cache):
++                telemetry_calls.append(("capacity", cache))
++
++            def on_native_transfer_commit(self, event):
++                telemetry_calls.append(("ack", event))
++
++        telemetry_module = types.ModuleType("beliefkv.runtime.v0520_native_telemetry")
++        telemetry_module.NativeReactiveTelemetry = FakeTelemetry
++        runtime_module = types.ModuleType("beliefkv.runtime.sglang_v0520_runtime")
++        runtime_module.NativeAdmissionRuntime = lambda **kwargs: runtime
++        with patch.dict(os.environ, {"BELIEFKV_ADMISSION_TELEMETRY_DIR": "/tmp/gate"}), \
++             patch.dict(sys.modules, {
++                 telemetry_module.__name__: telemetry_module,
++                 runtime_module.__name__: runtime_module,
++             }):
++            scheduler.init_beliefkv_runtime()
++        self.assertEqual(telemetry_calls[0], ("/tmp/gate", "admission_observation"))
++        self.assertEqual(telemetry_calls[1], ("capacity", scheduler.tree_cache))
++        self.assertIs(scheduler.beliefkv_runtime, runtime)
++        scheduler.tree_cache.on_hicache_transfer_commit(object())
++        self.assertEqual(telemetry_calls[-1][0], "ack")
++
 +    def test_disabled_prefill_keeps_native_queue_and_does_not_import_adapter(self):
 +        scheduler = Hook()
 +        req = object()
@@ -2321,7 +2408,7 @@ index 0000000..018a9d0
 +        self.assertIsNotNone(scheduler.beliefkv_runtime)
 +        self.assertEqual(
 +            scheduler.tree_cache.on_hicache_transfer_commit,
-+            scheduler.beliefkv_runtime.on_native_transfer_commit,
++            scheduler._beliefkv_on_native_transfer_commit,
 +        )
 +        self.assertEqual(
 +            scheduler.beliefkv_runtime.plan_native_prefill(

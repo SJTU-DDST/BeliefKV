@@ -99,8 +99,14 @@ Primary metrics:
    Deep Agents now has an opt-in `--native-radix-sessions` mode requiring
    `--control-socket`. Start the server with
    `ENABLE_SESSION_RADIX_CACHE=1`, `HICACHE_WRITE_POLICY=write_through`,
+   `BELIEFKV_ADMISSION_TELEMETRY_DIR=<new server dir>`,
    `--enable-beliefkv-admission` and
    `--beliefkv-event-socket-path <same socket>` before enabling the runner.
+   The frozen reactive evidence path `BELIEFKV_NATIVE_TELEMETRY_DIR` remains
+   admission-incompatible; never set both directories. The admission path
+   records its own provenance and fans native transfer ACKs out to both the
+   runtime physical ledger and telemetry writer. Absence of an ACK is still
+   not evidence of useful predictive transfer.
    Runtime workflow/create and LLM submit/result events reach the control
    mirror; normal model rounds reuse the native session, while observed
    compaction rotates it. Validate real session generations, mirror discard
