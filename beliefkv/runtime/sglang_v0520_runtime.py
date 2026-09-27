@@ -89,6 +89,7 @@ class _JoinPrefetchTicket:
     expires_at: float
     command_id: str | None = None
     issued_nodes: int = 0
+    no_step_recorded: bool = False
 
 
 @dataclass(frozen=True)
@@ -966,6 +967,17 @@ class NativeAdmissionRuntime:
                     "confirmed", time.monotonic() + 2.0,
                 )
                 self.counts["join_reentry_confirmed"] += 1
+                if self.enable_confirmed_join_canary and self._opportunity_writer:
+                    self._opportunity_writer.record({
+                        "event": "confirmed_join_ticket",
+                        "ts_ms": time.time() * 1000.0,
+                        "join_id": join_id,
+                        "workflow_id": key.root_workflow_id,
+                        "context_id": key.context_id,
+                        "context_epoch": key.context_epoch,
+                        "session_id": key.session_id,
+                        "session_generation": key.session_generation,
+                    })
                 return
             return
         join = self.graph.joins.get(ticket.join_id)
@@ -1054,6 +1066,44 @@ class NativeAdmissionRuntime:
         step = self.refreshed_prefetch_gpu_step(source="join_ticket")
         if step is None:
             self.counts["join_prefetch_no_cpu_node"] += 1
+            if (
+                self.enable_confirmed_join_canary
+                and not ticket.no_step_recorded
+                and self._opportunity_writer is not None
+            ):
+                observation = self.inspect_context_h2d_opportunity(
+                    context_id=ticket.key.context_id,
+                    context_epoch=ticket.key.context_epoch,
+                )
+                self._opportunity_writer.record({
+                    "event": "confirmed_join_no_h2d_step",
+                    "ts_ms": time.time() * 1000.0,
+                    "join_id": ticket.join_id,
+                    "workflow_id": ticket.key.root_workflow_id,
+                    "context_id": ticket.key.context_id,
+                    "context_epoch": ticket.key.context_epoch,
+                    "session_id": ticket.key.session_id,
+                    "session_generation": ticket.key.session_generation,
+                    "reason": (
+                        "no_live_session_or_anchors" if observation is None
+                        else observation.no_step_reason
+                        if observation.step is None
+                        else "step_changed_during_revalidation"
+                    ),
+                    "host_backed_full_missing_device_tokens": (
+                        observation.host_backed_full_missing_device_tokens
+                        if observation is not None else None
+                    ),
+                    "host_backed_mamba_missing_device_nodes": (
+                        observation.host_backed_mamba_missing_device_nodes
+                        if observation is not None else None
+                    ),
+                    "fits_current_free_lists": (
+                        observation.fits_current_free_lists
+                        if observation is not None else None
+                    ),
+                })
+                ticket.no_step_recorded = True
             return
         command = self.issue_prefetch_gpu_step(step, source="join_ticket")
         if command is not None:

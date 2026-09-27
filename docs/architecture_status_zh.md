@@ -92,6 +92,13 @@ child RETURN
 目标仍为决策时刻至实际 RETURN 的墙钟差；把 GPU 工作、排队与工具执行
 拆成可识别的预测目标，及根据新调度轨迹在线更新，均属待验证研究工作。
 
+确认 JOIN 的开发态 canary 在下一轮运行会记录 ticket 建立；若未找到
+可下发的 H2D 节点，还会按 ticket 仅记录一次物理只读拒绝原因
+（包括已在 Device、无 Host
+副本或闭包被挡住），不改变动作门禁。已启动的 14-root canary
+加载的是修改前代码，不具备这项拒绝归因；它的原生 H2D ACK
+不能记为预测收益，预测动作需以独立的物理动作 ACK 核验。
+
 目前 Qwen3.5 的 `online_eligible=false`、
 `predictive_action_eligible=false`；旧 Qwen3 P6 物理闭环不得外推为
 新版已有 predictive H2D。未见项目密封实验已完成：5/15 个自然

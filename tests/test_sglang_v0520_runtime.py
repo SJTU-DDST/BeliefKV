@@ -1453,6 +1453,7 @@ def test_confirmed_join_canary_is_bounded_without_predictor(tmp_path):
     runtime = NativeAdmissionRuntime(
         event_socket_path=str(tmp_path / "confirmed.sock"),
         enable_confirmed_join_canary=True,
+        opportunity_dir=str(tmp_path / "opportunities"),
     )
     try:
         assert runtime.predictor_sha256 is None
@@ -1490,6 +1491,22 @@ def test_confirmed_join_canary_is_bounded_without_predictor(tmp_path):
         assert runtime._join_ticket.phase == "confirmed"
         assert runtime._live_join_ticket()
         runtime.attach_native_cache(object())
+        observation = NS(
+            step=None, no_step_reason="already_device_resident",
+            host_backed_full_missing_device_tokens=0,
+            host_backed_mamba_missing_device_nodes=0,
+            fits_current_free_lists=None,
+        )
+        with patch.object(runtime, "refreshed_prefetch_gpu_step", return_value=None):
+            with patch.object(
+                runtime, "inspect_context_h2d_opportunity",
+                return_value=observation,
+            ) as inspect:
+                runtime.dispatch_join_prefetch()
+                runtime.dispatch_join_prefetch()
+                inspect.assert_called_once_with(
+                    context_id="ctx-parent", context_epoch=0,
+                )
         key = runtime.context_sessions["ctx-parent"]
         step = PrefetchLoadStep(key, 11, 4, 11, 4)
         with patch.object(runtime, "refreshed_prefetch_gpu_step", return_value=step):
@@ -1513,6 +1530,23 @@ def test_confirmed_join_canary_is_bounded_without_predictor(tmp_path):
         assert runtime._join_ticket is None
     finally:
         runtime.close()
+    records = [
+        json.loads(line)
+        for line in (
+            tmp_path / "opportunities" / "admission_opportunities.jsonl"
+        ).read_text(encoding="utf-8").splitlines()
+    ]
+    rejected = [
+        row for row in records if row["event"] == "confirmed_join_no_h2d_step"
+    ]
+    confirmed = [
+        row for row in records if row["event"] == "confirmed_join_ticket"
+    ]
+    assert len(confirmed) == 1
+    assert confirmed[0]["join_id"] == "join"
+    assert len(rejected) == 1
+    assert rejected[0]["reason"] == "already_device_resident"
+    assert rejected[0]["join_id"] == "join"
 
 
 def test_join_prefetch_all_requires_last_child_and_rejects_false_intent():
