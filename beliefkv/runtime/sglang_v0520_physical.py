@@ -71,6 +71,52 @@ class SessionH2DOpportunity:
     host_backed_mamba_missing_device_nodes: int | None = None
     unbacked_full_nodes: int | None = None
     unbacked_mamba_leaves: int | None = None
+    blocked_detail: str | None = None
+
+
+def _prefetch_block_detail(candidate: ActionLocalPrefetchCandidate) -> str:
+    """Explain an observed rejection without relaxing the native selector."""
+    nodes = {node.node_id: node for node in candidate.nodes}
+    if len(nodes) != len(candidate.nodes):
+        return "duplicate_closure_node"
+    try:
+        components = dict(candidate.anchors.component_leaves)
+        full_leaves = dict(components[0])
+        mamba_leaves = dict(components[2])
+    except (KeyError, TypeError, ValueError):
+        return "invalid_component_leaves"
+    full_paths: set[int] = set()
+    for leaf_id in full_leaves:
+        current = leaf_id
+        visited: set[int] = set()
+        while current is not None:
+            if current not in nodes or current in visited or len(visited) >= 256:
+                return "invalid_full_ancestry"
+            visited.add(current)
+            full_paths.add(current)
+            current = nodes[current].parent_id
+    if any(leaf_id not in full_paths for leaf_id in mamba_leaves):
+        return "mamba_leaf_outside_full_path"
+    if set(nodes) != full_paths:
+        return "closure_outside_full_path"
+    for node in candidate.nodes:
+        host_backed_missing_device = (
+            node.full_device_tokens == 0 and node.full_host_tokens > 0
+            or node.full_device_tokens > 0
+            and node.mamba_host_present and not node.mamba_device_present
+        )
+        parent = nodes.get(node.parent_id)
+        if host_backed_missing_device and parent is not None and (
+            parent.full_device_tokens <= 0
+            and not (
+                parent.parent_id is None
+                and parent.full_host_tokens == 0
+                and not parent.mamba_host_present
+                and not parent.mamba_device_present
+            )
+        ):
+            return "parent_full_not_device"
+    return "other_selector_invariant"
 
 
 def inspect_session_h2d_opportunity(
@@ -82,6 +128,7 @@ def inspect_session_h2d_opportunity(
     )
     step = next_prefetch_gpu_step(candidate) if candidate is not None else None
     no_step_reason = None
+    blocked_detail = None
     unbacked_full = unbacked_mamba = None
     if candidate is not None:
         mamba_leaves = dict(dict(anchors.component_leaves).get(2, ()))
@@ -100,6 +147,7 @@ def inspect_session_h2d_opportunity(
             no_step_reason = "closure_unobservable"
         elif candidate.missing_full_device_tokens or candidate.missing_mamba_device_nodes:
             no_step_reason = "host_backed_step_blocked"
+            blocked_detail = _prefetch_block_detail(candidate)
         elif unbacked_full or unbacked_mamba:
             no_step_reason = "no_host_backed_step"
         else:
@@ -125,6 +173,7 @@ def inspect_session_h2d_opportunity(
         candidate.missing_full_device_tokens if candidate is not None else None,
         candidate.missing_mamba_device_nodes if candidate is not None else None,
         unbacked_full, unbacked_mamba,
+        blocked_detail,
     )
 
 

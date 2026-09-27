@@ -101,6 +101,28 @@ Mamba 重算。FULL 没有 Host 驱逐，观测到的有效 HBM resident
 不可选为主场景；用同一 8-root 到达流试 25:75 分配，独立冷启动，
 观察是否同时保住 FULL 和 Mamba 余量。
 
+## 180 GB / 25:75 / selective / 8-root：同样超出 Host 容量边界
+
+同一 8 个训练任务，独立冷启动；
+`experiments/raw/qwen35_native_regime_selective_180g_25_75_8root_v1/`。
+试采过程中 Mamba Host 仍达 2,097/2,097 slots（100%），
+FULL 达到 1,870,078/2,197,266 tokens（约 85.1%）。
+原生归因记录 Mamba 驱逐 210 slots、FULL 驱逐 448 tokens；
+一个被驱逐的 Mamba 前缀后来再次出现，命中位置不可观测，
+不能断言发生重算。因容量不再满足主场景门槛，
+主动中断余下 workflow，并正常关闭服务端和两个 writer；
+此轮不能用于完整 workflow JCT/正确性或配对吞吐比较。
+原生 FULL D2H/H2D 为 1,888,475/0 tokens，Mamba 为
+2,307/30 slots，不是预测动作。
+
+这轮的新版机会计数将许多 JOIN wait 标为
+`host_backed_step_blocked`：存在 Host-backed、Device 缺失的
+Mamba 状态，但无法形成符合 FULL leaf 祖先和父 FULL Device
+条件的单节点 H2D。仅凭缺失数量尚不能判明具体约束，
+下一轮才会记录 `blocked_detail`。固定 180 GB 下单改
+FULL/Mamba 分配没有让这组 8-root 工作流同时保住两池余量；
+不能据此推断所有到达模式或选择性 Host 备份策略都不可行。
+
 `write_through` 会自动备份部分 KV；其 native D2H 不能作为选择性
 `PREPARE_HOST` 的收益。单 node PREPARE/H2D 原语和只读机会观察
 已在源代码中放行 `write_through_selective`，保留原有身份、

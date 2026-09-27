@@ -550,7 +550,32 @@ def test_h2d_observer_separates_resident_unbacked_and_blocked_closures():
         blocked = inspect_session_h2d_opportunity(object(), anchors)
         assert blocked.step is None
         assert blocked.no_step_reason == "host_backed_step_blocked"
+        assert blocked.blocked_detail == "parent_full_not_device"
         assert blocked.host_backed_full_missing_device_tokens == 8
+
+
+def test_h2d_observer_reports_mamba_leaf_outside_full_session_path():
+    anchors = prefetch_anchors(full_leaf=12, mamba_leaf=13)
+    root = prefetch_node(0, None, 1)
+    full_leaf = prefetch_node(12, 0, 5, full_gpu=8)
+    mamba_leaf = prefetch_node(
+        13, 0, 5, full_gpu=8, mamba_host=True,
+    )
+    with patch(
+        "beliefkv.runtime.sglang_v0520_physical.observe_static_full_mamba_headroom",
+        return_value=NS(observable=True, device_full_free_tokens=100,
+                        device_mamba_free_slots=4),
+    ), patch(
+        "beliefkv.runtime.sglang_v0520_physical.observe_unified_node_closure",
+        side_effect=lambda cache, node_id, max_nodes: NS(
+            observable=True,
+            nodes=(full_leaf if node_id == 12 else mamba_leaf, root),
+        ),
+    ):
+        observed = inspect_session_h2d_opportunity(object(), anchors)
+    assert observed.step is None
+    assert observed.no_step_reason == "host_backed_step_blocked"
+    assert observed.blocked_detail == "mamba_leaf_outside_full_path"
 
 
 def test_prefetch_capture_and_select_root_first_full_host_only():

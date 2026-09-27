@@ -250,6 +250,7 @@ def test_safe_point_persists_bounded_wait_and_admission_opportunities(tmp_path):
         host_backed_mamba_missing_device_nodes=1,
         unbacked_full_nodes=0,
         unbacked_mamba_leaves=0,
+        blocked_detail="parent_full_not_device",
     )
     with patch.object(runtime, "inspect_context_h2d_opportunity",
                       side_effect=lambda *, context_id, context_epoch,
@@ -275,6 +276,7 @@ def test_safe_point_persists_bounded_wait_and_admission_opportunities(tmp_path):
     assert by_source["admission_candidate"]["host_backed_full_missing_device_tokens"] == 20
     assert by_source["admission_candidate"]["host_backed_mamba_missing_device_nodes"] == 1
     assert by_source["admission_candidate"]["unbacked_full_nodes"] == 0
+    assert by_source["admission_candidate"]["blocked_detail"] == "parent_full_not_device"
     assert by_source["admission_candidate"]["fits_current_free_lists"] is True
     assert by_source["admission_candidate"]["session_generation"] == 2
     assert by_source["tool_wait"]["reason"] == "no_live_session_or_anchors"

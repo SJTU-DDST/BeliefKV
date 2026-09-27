@@ -645,6 +645,7 @@ class NativeAdmissionRuntime:
                         observation.host_backed_mamba_missing_device_nodes,
                     "unbacked_full_nodes": observation.unbacked_full_nodes,
                     "unbacked_mamba_leaves": observation.unbacked_mamba_leaves,
+                    "blocked_detail": observation.blocked_detail,
                     "node_id": step.node_id if step else None,
                     "fits_current_free_lists": observation.fits_current_free_lists,
                 })
