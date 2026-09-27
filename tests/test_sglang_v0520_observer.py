@@ -10,14 +10,22 @@ import pytest
 
 from beliefkv.runtime.sglang_v0520_observer import (
     observe_static_full_mamba,
+    observe_static_full_mamba_headroom,
     observe_static_full_mamba_host_usage,
     observe_unified_full_mamba,
     observe_unified_full_mamba_usage,
     observe_unified_node_closure,
 )
+from beliefkv.runtime.sglang_v0520_admission import PrefillCandidateKey
+from beliefkv.runtime.sglang_v0520_physical import (
+    ContextSessionAnchors,
+    capture_action_local_shadow,
+    inspect_session_h2d_opportunity,
+    next_prefetch_gpu_step,
+)
 
 
-def test_static_full_mamba_census_counts_separate_device_allocations() -> None:
+def _static_cache() -> object:
     class TokenToKVPoolAllocator(NS):
         pass
 
@@ -31,6 +39,9 @@ def test_static_full_mamba_census_counts_separate_device_allocations() -> None:
         pass
 
     class MambaPool(NS):
+        pass
+
+    class MambaSlotAllocator(NS):
         pass
 
     class MHATokenToKVPoolHost(NS):
@@ -58,12 +69,24 @@ def test_static_full_mamba_census_counts_separate_device_allocations() -> None:
         mamba_cache=State(conv=[Tensor(30)], temporal=Tensor(90)),
     )
     hybrid = HybridLinearKVPool(full_kv_pool=full, mamba_pool=mamba)
-    allocator = TokenToKVPoolAllocator(size=12, _kvcache=hybrid)
-    req = HybridReqToTokenPool(mamba_pool=mamba)
-    host_full = MHATokenToKVPoolHost(
-        size=25, size_per_token=20, device_pool=full
+    allocator = TokenToKVPoolAllocator(
+        size=12, _kvcache=hybrid,
+        available_size=lambda: 10, free_group=None,
     )
-    host_mamba = MambaPoolHost(size=6, size_per_token=80, device_pool=mamba)
+    req = HybridReqToTokenPool(
+        mamba_pool=mamba,
+        mamba_allocator=MambaSlotAllocator(
+            size=3, available_size=lambda: 2, _alloc_iter=None,
+        ),
+    )
+    host_full = MHATokenToKVPoolHost(
+        size=25, size_per_token=20, device_pool=full,
+        available_size=lambda: 20,
+    )
+    host_mamba = MambaPoolHost(
+        size=6, size_per_token=80, device_pool=mamba,
+        available_size=lambda: 5,
+    )
     full_entry = NS(device_pool=full, host_pool=host_full)
     mamba_entry = NS(device_pool=mamba, host_pool=host_mamba)
     group = HostPoolGroup(
@@ -76,11 +99,60 @@ def test_static_full_mamba_census_counts_separate_device_allocations() -> None:
         host_pool_group=group,
         cache_controller=NS(mem_pool_host=group),
     )
-    result = observe_static_full_mamba(cache)
+    return cache
+
+
+def test_static_full_mamba_census_counts_separate_device_allocations() -> None:
+    result = observe_static_full_mamba(_static_cache())
     assert result["device_total_bytes"] == 500
     assert result["device_full_tokens"] == 12
     assert result["device_mamba_slots"] == 3
     assert result["host_total_bytes"] == 980
+
+
+def test_static_pool_headroom_is_read_only_and_not_a_certificate() -> None:
+    cache = _static_cache()
+    result = observe_static_full_mamba_headroom(cache)
+    assert result.observable
+    assert (
+        result.device_full_free_tokens,
+        result.device_mamba_free_slots,
+        result.host_full_free_tokens,
+        result.host_mamba_free_slots,
+    ) == (10, 2, 20, 5)
+    assert result.physical_actions_supported is False
+
+
+@pytest.mark.parametrize("break_free_list", [
+    lambda cache: setattr(cache.token_to_kv_pool_allocator, "free_group", []),
+    lambda cache: setattr(
+        cache.req_to_token_pool.mamba_allocator, "_alloc_iter", iter(()),
+    ),
+    lambda cache: setattr(
+        cache.req_to_token_pool.mamba_allocator, "available_size", lambda: 4,
+    ),
+    lambda cache: setattr(
+        cache.token_to_kv_pool_allocator, "available_size", lambda: True,
+    ),
+    lambda cache: setattr(
+        cache.host_pool_group.entry_map["kv"].host_pool,
+        "available_size", lambda: -1,
+    ),
+    lambda cache: setattr(
+        cache.req_to_token_pool, "mamba_allocator", NS(
+            size=3, available_size=lambda: 2, _alloc_iter=None,
+        ),
+    ),
+])
+def test_static_headroom_rejects_ambiguous_or_unphysical_free_lists(
+    break_free_list,
+) -> None:
+    cache = _static_cache()
+    break_free_list(cache)
+    result = observe_static_full_mamba_headroom(cache)
+    assert not result.observable
+    assert result.reason
+    assert result.device_full_free_tokens is None
 
 
 def test_static_host_usage_reports_full_and_mamba_independently(
@@ -490,6 +562,78 @@ def test_node_closure_captures_only_requested_ancestry() -> None:
     assert result.nodes[1].mamba_host_present
     assert result.captured_monotonic_s is not None
     assert not result.physical_actions_supported
+
+
+def test_static_full_mamba_action_closure_uses_real_separate_pool_layout() -> None:
+    cache = _static_cache()
+    assert not observe_unified_full_mamba(cache).observable
+    root = _node(0)
+    parent = _node(4, root, device=[1, 2], host=[10, 11], mamba_host=True)
+    leaf = _node(5, parent, host=[12])
+    cache.tree_core = UnifiedTreeCore(
+        node_by_id=lambda node_id: {5: leaf}[node_id]
+    )
+    result = observe_unified_node_closure(cache, 5)
+    assert result.observable
+    assert [node.node_id for node in result.nodes] == [5, 4, 0]
+    assert result.nodes[0].full_host_tokens == 1
+    assert result.nodes[1].mamba_host_present
+    anchors = ContextSessionAnchors(
+        key=PrefillCandidateKey("req", "wf", "parent", "ctx", 2, 0, "session", 1),
+        component_leaves=((0, ((5, 15),)), (2, ((5, 15),))),
+        captured_monotonic_s=1.0,
+    )
+    candidate = capture_action_local_shadow(cache, anchors, for_prefetch=True)
+    assert candidate is not None
+    assert candidate.missing_full_device_tokens == 1
+    assert next_prefetch_gpu_step(candidate).node_id == 5
+    opportunity = inspect_session_h2d_opportunity(cache, anchors)
+    assert opportunity.step.node_id == 5
+    assert (opportunity.required_full_tokens, opportunity.required_mamba_slots) == (
+        1, 0,
+    )
+    assert opportunity.fits_current_free_lists is True
+    cache.token_to_kv_pool_allocator.available_size = lambda: 0
+    assert inspect_session_h2d_opportunity(
+        cache, anchors,
+    ).fits_current_free_lists is False
+    leaf.component_data[2].host_value = [1]
+    cache.req_to_token_pool.mamba_allocator.available_size = lambda: 0
+    opportunity = inspect_session_h2d_opportunity(cache, anchors)
+    assert opportunity.required_mamba_slots == 1
+    assert opportunity.fits_current_free_lists is False
+    cache.host_pool_group.entry_map["mamba"].device_pool = object()
+    assert not observe_unified_node_closure(cache, 5).observable
+    assert capture_action_local_shadow(cache, anchors, for_prefetch=True) is None
+    opportunity = inspect_session_h2d_opportunity(cache, anchors)
+    assert not opportunity.headroom.observable
+    assert opportunity.step is None
+    assert opportunity.fits_current_free_lists is None
+
+
+def test_static_action_closure_rejects_capacity_and_tree_backend_mismatch() -> None:
+    cache = _static_cache()
+    root = _node(0)
+    leaf = _node(5, root, host=list(range(26)))
+    cache.tree_core = UnifiedTreeCore(
+        node_by_id=lambda node_id: {5: leaf}[node_id]
+    )
+    assert not observe_unified_node_closure(cache, 5).observable
+    leaf.component_data[0].host_value = [1]
+    cache.tree_core = NS(node_by_id=lambda _: leaf)
+    assert not observe_unified_node_closure(cache, 5).observable
+
+
+def test_static_action_closure_fails_closed_on_allocator_census_exception() -> None:
+    cache = _static_cache()
+
+    def fail_pool_read() -> None:
+        raise RuntimeError("pool not ready")
+
+    cache.token_to_kv_pool_allocator._kvcache.full_kv_pool.get_kv_size_bytes = fail_pool_read
+    result = observe_unified_node_closure(cache, 5)
+    assert not result.observable
+    assert "pool not ready" in result.reason
 
 
 def test_node_closure_rejects_cycle_excess_depth_and_absent_id() -> None:

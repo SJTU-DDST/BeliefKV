@@ -16,7 +16,9 @@ from typing import Mapping
 
 from beliefkv.runtime.sglang_v0520_admission import PrefillCandidateKey
 from beliefkv.runtime.sglang_v0520_observer import (
+    StaticPoolHeadroomObservation,
     UnifiedNodeSummary,
+    observe_static_full_mamba_headroom,
     observe_unified_node_closure,
 )
 
@@ -52,6 +54,45 @@ class ActionLocalPrefetchCandidate:
     nodes: tuple[UnifiedNodeSummary, ...]
     missing_full_device_tokens: int
     missing_mamba_device_nodes: int
+
+
+@dataclass(frozen=True)
+class SessionH2DOpportunity:
+    """Safe-point evidence, never an allocator reservation or action permit."""
+
+    anchors: ContextSessionAnchors
+    headroom: StaticPoolHeadroomObservation
+    step: PrefetchLoadStep | None
+    required_full_tokens: int
+    required_mamba_slots: int
+    fits_current_free_lists: bool | None
+
+
+def inspect_session_h2d_opportunity(
+    cache: object, anchors: ContextSessionAnchors,
+) -> SessionH2DOpportunity:
+    headroom = observe_static_full_mamba_headroom(cache)
+    candidate = capture_action_local_shadow(cache, anchors, for_prefetch=True)
+    step = next_prefetch_gpu_step(candidate) if candidate is not None else None
+    full_tokens = mamba_slots = 0
+    if step is not None:
+        node = next(
+            node for node in candidate.nodes if node.node_id == step.node_id
+        )
+        full_tokens = (
+            node.full_host_tokens if node.full_device_tokens == 0 else 0
+        )
+        mamba_slots = int(
+            node.mamba_host_present and not node.mamba_device_present
+        )
+    fits = (
+        headroom.device_full_free_tokens >= full_tokens
+        and headroom.device_mamba_free_slots >= mamba_slots
+        if headroom.observable and step is not None else None
+    )
+    return SessionH2DOpportunity(
+        anchors, headroom, step, full_tokens, mamba_slots, fits,
+    )
 
 
 @dataclass(frozen=True)

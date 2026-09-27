@@ -45,8 +45,10 @@ from beliefkv.runtime.sglang_v0520_physical import (
     PhysicalReceiptError,
     PhysicalTransactionLedger,
     PrefetchLoadStep,
+    SessionH2DOpportunity,
     ShadowBackupStep,
     capture_action_local_shadow,
+    inspect_session_h2d_opportunity,
     next_prefetch_gpu_step,
     next_shadow_backup_step,
     prefetch_expectation_from_native_op,
@@ -1177,6 +1179,34 @@ class NativeAdmissionRuntime:
             return None
         return capture_action_local_shadow(
             cache, anchors, for_prefetch=for_prefetch
+        )
+
+    def inspect_context_h2d_opportunity(
+        self, *, context_id: str, context_epoch: int,
+    ) -> SessionH2DOpportunity | None:
+        """Read action-local session/allocator evidence; never dispatch H2D."""
+        cache = self._native_cache
+        key = self.context_sessions.get(context_id)
+        invocation = self.graph.invocations.get(key.invocation_id) if key else None
+        if (
+            cache is None or key is None
+            or key.context_epoch != context_epoch
+            or invocation is None
+            or invocation.context_id != context_id
+            or invocation.workflow_id != key.root_workflow_id
+            or invocation.state not in (
+                InvocationState.WAIT_TOOL, InvocationState.WAIT_JOIN,
+                InvocationState.READY,
+            )
+            or self._terminal(key)
+        ):
+            return None
+        anchors = self.snapshot_session_anchors(
+            cache, context_id=context_id, context_epoch=context_epoch
+        )
+        return (
+            inspect_session_h2d_opportunity(cache, anchors)
+            if anchors is not None else None
         )
 
     def refreshed_shadow_backup_step(

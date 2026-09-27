@@ -13,6 +13,18 @@ JOIN child-completion 三阶段 H2D ticket（概率窗口、结构化完成提�
 
 ### 当前研究目标与未完成能力
 
+Qwen3.5 原生容量 census 使用独立的 FULL/Mamba 设备池
+(`static_separate_full_mamba`)，此前 action-local 闭包却先调用只接受
+统一 allocator 的 `observe_unified_full_mamba`，会在真正检查 Host
+session KV 之前拒绝该运行配置。现已让逐节点只读闭包同时支持经过
+独立验证的静态池和统一池；为静态池增加不修改 LRU/allocator 的
+FULL/Mamba Device/Host free-list 快照。`inspect_context_h2d_opportunity`
+在有效 context/session epoch 下组合祖先闭包、候选 node 的
+FULL/Mamba 需求与当前 free-list 是否够用；未知池或批内分配状态
+仍拒绝。**这不是独占 ownership、未来容量预留或 native 动作授权**：
+尚未在目标 GPU 上采集该快照的真实机会分母，也未接入持续遥测、
+beneficiary/victim 联合 handoff 和完整 D2H/H2D 首次消费闭环。
+
 新版主评估场景定为动态中高压力，低压闲置容量和极端过载分别作为边界
 验证；低压预取作为独立机会单列，不能用它的成功替代中高压联合
 调度的证据。时间头（JOIN/工具时刻）、动作头（是否值得迁移）和

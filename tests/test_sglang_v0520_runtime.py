@@ -24,6 +24,7 @@ from beliefkv.runtime.sglang_v0520_prediction import (
     NativeDemandHint, NativeJoinWaitHint, NativeToolWaitHint,
 )
 from beliefkv.runtime.sglang_v0520_physical import (
+    ContextSessionAnchors,
     PhysicalActionExpectation,
     PhysicalChildExpectation,
     PhysicalReceiptError,
@@ -165,6 +166,56 @@ def test_finished_tool_context_keeps_session_anchor_but_rechecks_wait_state():
     assert runtime.snapshot_session_anchors(
         cache, context_id="ctx-a", context_epoch=0
     ) is None
+
+
+def test_context_opportunity_requires_live_wait_or_ready_session_epoch():
+    runtime = NativeAdmissionRuntime()
+    tagged = req("a")
+    tagged.session_id = "session-a"
+    tagged.session_generation = 4
+    assert runtime.register_visible_request(tagged)
+    runtime.on_events((
+        event(0, RuntimeEventKind.WORKFLOW_START),
+        event(
+            1, RuntimeEventKind.INVOCATION_CREATE,
+            invocation_id="a", context_id="ctx-a",
+            agent_definition_id="a", agent_instance_id="a",
+        ),
+        event(
+            2, RuntimeEventKind.TOOL_START,
+            invocation_id="a", context_id="ctx-a",
+            attributes={"tool_family": "shell"},
+        ),
+    ))
+    cache = NS(session_refs=NS(
+        snapshot_session_leaf_anchors=lambda session, generation, max_leaves: (
+            ((0, ((11, 25),)), (2, ((11, 25),)))
+            if (session, generation, max_leaves) == ("session-a", 4, 8)
+            else None
+        ),
+    ))
+    runtime.attach_native_cache(cache)
+    sentinel = object()
+    with patch(
+        "beliefkv.runtime.sglang_v0520_runtime.inspect_session_h2d_opportunity",
+        return_value=sentinel,
+    ) as inspect:
+        assert runtime.inspect_context_h2d_opportunity(
+            context_id="ctx-a", context_epoch=0,
+        ) is sentinel
+        assert isinstance(inspect.call_args.args[1], ContextSessionAnchors)
+        assert inspect.call_args.args[1].key.session_id == "session-a"
+        assert runtime.inspect_context_h2d_opportunity(
+            context_id="ctx-a", context_epoch=1,
+        ) is None
+        runtime.on_events((
+            event(3, RuntimeEventKind.CONTEXT_ADVANCE,
+                  invocation_id="a", context_id="ctx-a", context_epoch=1),
+        ))
+        assert runtime.inspect_context_h2d_opportunity(
+            context_id="ctx-a", context_epoch=0,
+        ) is None
+        assert inspect.call_count == 1
 
 
 def test_tool_start_triggers_bounded_wait_prediction_then_local_probe():

@@ -65,6 +65,11 @@ Primary metrics:
    These are submit-time observations, not notice-time residency or an
    actionability certificate. See
    `docs/experiments/qwen35_join_host_opportunity_train_only.md`.
+   The action-local closure observer now recognizes the actual static
+   FULL/Mamba allocator, and a read-only, epoch-bound session probe can
+   report a candidate H2D node and instantaneous pool free-list counts.
+   This has CPU coverage only: it has not yet been emitted at live decision
+   safe points or reconciled with GPU transfer/consumption evidence.
 3. **Evaluate timing as an auxiliary signal, without blocking physical gates.**
    Test tool ETA and long-window calibration across task, project, and
    success/error strata; do not select the workflow-weighted candidate just

@@ -79,6 +79,19 @@ class StaticHostUsageObservation:
 
 
 @dataclass(frozen=True)
+class StaticPoolHeadroomObservation:
+    """Instantaneous free-list counts; not an H2D/D2H capacity reservation."""
+
+    observable: bool
+    device_full_free_tokens: int | None = None
+    device_mamba_free_slots: int | None = None
+    host_full_free_tokens: int | None = None
+    host_mamba_free_slots: int | None = None
+    physical_actions_supported: bool = False
+    reason: str | None = None
+
+
+@dataclass(frozen=True)
 class UnifiedNodeSummary:
     node_id: int
     parent_id: int | None
@@ -268,6 +281,51 @@ def observe_static_full_mamba_host_usage(
         return StaticHostUsageObservation(observable=False, reason=str(exc))
 
 
+def observe_static_full_mamba_headroom(
+    cache: object,
+) -> StaticPoolHeadroomObservation:
+    """Sample validated static free lists without touching GPU tensors or LRU.
+
+    A free group or preallocated Mamba batch is an ambiguous in-flight
+    reservation. Even a valid snapshot is not a plan certificate: only native
+    can atomically recheck page ownership and allocate the target slots.
+    """
+    try:
+        capacity = observe_static_full_mamba(cache)
+        full = _named(cache.token_to_kv_pool_allocator, "TokenToKVPoolAllocator")
+        mamba = _named(cache.req_to_token_pool.mamba_allocator, "MambaSlotAllocator")
+        if (
+            full.free_group is not None
+            or mamba._alloc_iter is not None
+            or mamba.size != capacity["device_mamba_slots"]
+        ):
+            raise ValueError("static pool contains an ambiguous allocation group")
+        entries = cache.host_pool_group.entry_map
+        full_host = _named(entries["kv"].host_pool, "MHATokenToKVPoolHost")
+        mamba_host = _named(entries["mamba"].host_pool, "MambaPoolHost")
+        return StaticPoolHeadroomObservation(
+            observable=True,
+            device_full_free_tokens=_bounded(
+                full.available_size(), capacity["device_full_tokens"],
+                "static FULL free tokens",
+            ),
+            device_mamba_free_slots=_bounded(
+                mamba.available_size(), capacity["device_mamba_slots"],
+                "static MAMBA free slots",
+            ),
+            host_full_free_tokens=_bounded(
+                full_host.available_size(), capacity["host_full_tokens"],
+                "static Host FULL free tokens",
+            ),
+            host_mamba_free_slots=_bounded(
+                mamba_host.available_size(), capacity["host_mamba_slots"],
+                "static Host MAMBA free slots",
+            ),
+        )
+    except (AttributeError, KeyError, TypeError, ValueError, RuntimeError) as exc:
+        return StaticPoolHeadroomObservation(observable=False, reason=str(exc))
+
+
 def observe_unified_full_mamba(cache: object) -> UnifiedCapacityObservation:
     """Inspect only the vendored UnifiedRadixCache/UnifiedMamba pair.
 
@@ -438,14 +496,25 @@ def observe_unified_full_mamba_usage(cache: object) -> UnifiedUsageObservation:
 def observe_unified_node_closure(
     cache: object, node_id: int, *, max_nodes: int = 64
 ) -> UnifiedNodeClosureObservation:
-    """Capture only a requested node and its ancestors, never transfer indices.
+    """Capture one FULL/MAMBA tree path for either validated device-pool layout.
 
     `creation_time` and pending/lock fields form a *local fingerprint*, not
     an atomic revision. Recheck the live tree before any physical command.
     """
     capacity = observe_unified_full_mamba(cache)
     if not capacity.observable:
-        return UnifiedNodeClosureObservation(observable=False, reason=capacity.reason)
+        try:
+            static = observe_static_full_mamba(cache)
+        except (AttributeError, KeyError, NotImplementedError, RuntimeError, TypeError, ValueError) as exc:
+            return UnifiedNodeClosureObservation(
+                observable=False,
+                reason=f"unrecognized FULL/MAMBA pool layout: {capacity.reason}; {exc}",
+            )
+        device_full_tokens = static["device_full_tokens"]
+        host_full_tokens = static["host_full_tokens"]
+    else:
+        device_full_tokens = capacity.device_full_tokens
+        host_full_tokens = capacity.host_full_tokens
     try:
         if type(node_id) is not int or node_id < 0:
             raise ValueError("invalid node ID")
@@ -474,10 +543,10 @@ def observe_unified_node_closure(
             for item in (full, mamba):
                 _named(item, "ComponentData")
             full_device_tokens = (
-                0 if full.value is None else _bounded(len(full.value), capacity.device_full_tokens, "FULL device length")
+                0 if full.value is None else _bounded(len(full.value), device_full_tokens, "FULL device length")
             )
             full_host_tokens = (
-                0 if full.host_value is None else _bounded(len(full.host_value), capacity.host_full_tokens, "FULL host length")
+                0 if full.host_value is None else _bounded(len(full.host_value), host_full_tokens, "FULL host length")
             )
             locks = tuple(
                 _bounded(getattr(item, field), 2**31 - 1, "node lock count")
