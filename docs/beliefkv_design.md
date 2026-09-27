@@ -27,7 +27,10 @@ Workflow fairness 只作为有界防饿死和最终 tie-break，不以平均分�
 
 当前主目标限定为**HBM 有足够空闲物理空间完成有用迁移、FULL/Mamba
 Host pool 均不抖动、PCIe 有传输窗口，且有用 KV 被丢弃后重算很少**
-的动态多 workflow 负载。先只在真实空闲 HBM 上验证主结果；
+的动态多 workflow 负载。在该区间分别检验选择性
+`PREPARE_HOST` 提前备份与 predictive H2D 提前恢复能否缩短同步
+迁移等待，并改善正确完成 workflow 的吞吐/JCT。先只在真实空闲
+HBM 上验证主结果；不为提高迁移次数而制造 Host 驱逐或 KV 重算。
 冷 KV 的有界替换、联合 handoff 和高压减少重算均为后续独立扩展，
 不作为主结果的前提，也不以抢占热 KV 建立主结果。
 同时需要真实的工具等待、child JOIN 或候选执行请求，确保提前迁移

@@ -46,6 +46,11 @@ and recomputed. The primary policy does not reclaim Device KV to make room
 for speculative H2D. Cold-KV replacement, joint handoff and high-pressure
 recomputation reduction are deferred, separately evaluated extensions; do
 not make them prerequisites or optimize the primary workload for them.
+The near-term objective is explicitly limited to using *already free*
+FULL/Mamba Device capacity and stable Host-backed KV: demonstrate useful
+PREPARE_HOST and predictive H2D without causing material useful-KV
+eviction/recomputation. Do not increase load merely to create more migrations;
+high-pressure scheduling/eviction optimization is outside the primary result.
 This is a workload-qualification gate, not a predefined root count or HBM
 occupancy threshold. It also requires real future consumers: valid
 Host-backed KV missing on Device for H2D, or a later native eviction that
@@ -81,6 +86,14 @@ H2D -> ACK -> first-service reuse with measurable synchronous stall saved;
 capacity, liveness or displaced-workflow tail-latency constraints. Native
 transfers, read-only opportunities and early HBM residency alone do not
 complete any later stage.
+
+Current boundary: the 14-root write-back scan is a *candidate for stage 1*,
+not proof of stage 2 or 3. Its 14 distinct H2D nodes (13 with missing FULL
+Device KV) were observed in sampled snapshots, while recorded H2D ACKs were
+native reactive. The separately launched, opt-in confirmed-JOIN canary tests
+only predictive H2D; PREPARE emission/consumption, first-service block reuse,
+independent task correctness and matched A/B remain unverified. Treat each
+stage as a separate gate; do not promote the objective on action counts alone.
 
 Primary metrics:
 
