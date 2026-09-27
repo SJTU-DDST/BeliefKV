@@ -5530,3 +5530,67 @@ running 48，workflow 和单请求截止均为
 审计器校验源 workflow 身份、完整终态和计时器计数，
 从 trace 重放项目历史，分开计算历史支持、工具实际
 存活、迟到投递、成功返回点误差与开放调用删失。
+
+### 500 ms 在线投递 canary 的完整验收及返回错误历史消融
+
+上述 12-root Astropy canary 已自行结束，12/12 个 workflow
+具有完整 trace 和系统测量有效性；本实验关闭了任务正确性
+completion gate，不据此声称 12 个任务均解题成功。冻结审计
+产物为
+`qwen35_tool_wait_observation_astropy12_20260927/tool_wait_observation_audit.json`
+（SHA-256 `ab00e510ecc93e820fc7b859f6275a0909c8cf8e0181962016f1fdf660daf36e`）。
+451 次具备起始先验的 child 工具调用中，18 次早于
+500 ms 结束；其余 **433/433** 次在有效调用内投递了
+一次观测。计时器 published=433、dropped=0、
+errors=0、pending=0；投递比目标 500 ms 晚
+P50/P95 约 **2.47/43.08 ms**。这证明该批次
+500 ms 只读观测的身份、计时和投递链路成立，
+不证明预取动作或物理传输。
+
+433 次观测的工具实际剩余时间 P50 约 **301 ms**，
+只有 **76/433** 次还剩至少 500 ms。247 次
+事后成功返回调用的形态历史点误差 P50/P90 约
+**99/355 ms**；这是已具有在线历史支持且已存活
+500 ms 的条件样本，不是全工具召回率、更不是
+可隐藏大块 H2D 的比例。Astropy 项目和部分任务
+曾用于方案开发，本次只验证工程投递，不能重复
+充当新的独立项目精度验收。
+
+相同完成 trace 的 JOIN 只读诊断保存在
+`qwen35_tool_wait_observation_astropy12_20260927/join_stage_12root_diagnostic.json`。
+在 parent 等待且只有最后一个 child 尚未返回的
+1024 字符阶段，9 个自然 JOIN 的冻结跨项目先验
+点误差中位约 **7.40 秒**、500 ms 命中 **0/9**；
+1700 字符阶段为 7 个、中位约 **4.46 秒**、
+500 ms 命中 **1/7**，其中 6/7 个实际还
+有至少 500 ms 提前量。低压下仍不能把
+“有阶段窗口”当成“已准确预测 JOIN”。
+
+另对非异常的错误 `TOOL_END` 做同 cohort、同冻结
+训练先验的只读历史消融：一臂只从成功返回更新
+在线项目/形态历史，另一臂让正常返回的非零退出
+也进入同一个 64 条窗口。先用 128-root 训练批次
+七项目逐项留一，再在既有 Astropy/Sphinx 项目
+隔离批次诊断；脚本、训练侧与留出侧报告分别为
+`scripts/evaluate_cold_tool_survival_landmarks.py`、
+`qwen35_cold_tool_overlapped_128root_train_20260927_v1/returned_history_ablation_train_loo_20260927.json`
+和
+`qwen35_cold_tool_peer_holdout_66root_v1/holdout_evaluation/returned_history_ablation_complete_20260927.json`。
+留出 Astropy 500 ms 阶段，成功历史支持 **812**
+条，直接混合返回错误后仅 **595** 条：共同支持
+588 条、失去 **224** 条，仅新增 7 条。失去支持
+是同一有界窗口内错误调用挤出成功记录和独立
+workflow 的真实代价，不能只报告新增样本。
+共同支持集合上的 P50 误差约 120→124 ms，
+workflow 成组增益区间跨零；Sphinx 共同集合
+约 125→109 ms，区间也跨零。新增支持的
+Sphinx 39 条中只有 4 条实际剩余至少 500 ms。
+训练项目逐项留一同样只在 Django、Pytest 等少数
+项目增加有物理窗口的调用。
+
+因此**不把错误返回直接混入线上成功历史**。
+只在成功历史本来不够时使用错误返回的隔离
+fallback，虽可从消融中得到不会损失原有支持的
+离线分母，仍缺新项目/新任务和真实动作收益验证，
+现在只保留为诊断，不修改线上 `ProjectToolHistory`、
+JOIN 头或预测式 H2D 的资格。

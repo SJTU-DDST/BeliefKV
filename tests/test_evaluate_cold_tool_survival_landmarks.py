@@ -115,6 +115,90 @@ def test_online_project_history_evicts_old_workflow_support():
     assert predicted[-1] == 2500.
 
 
+def test_returned_errors_add_causal_support_without_looking_ahead():
+    prior = {"global": 2500., "shape": {"x": 2500.}}
+    calls = [
+        {
+            **_row("heldout", f"wf-{i}", "x", 3000),
+            "status": "error", "start_ts_ms": float(i * 5000),
+            "terminal_ts_ms": float(i * 5000 + 3000),
+        }
+        for i in range(4)
+    ]
+    calls.append({
+        **_row("heldout", "target", "x", 3100),
+        "status": "success", "start_ts_ms": 20000.,
+        "terminal_ts_ms": 23100.,
+    })
+    returned, returned_support = _online_project_predictions(
+        calls, 500, prior,
+    )
+    success, success_support = _online_project_predictions(
+        calls, 500, prior, success_only_history=True,
+    )
+    assert returned_support == [4]
+    assert returned[-1] == 3000.
+    assert success_support == []
+    assert success[-1] == 2500.
+
+
+def test_history_ablation_compares_identical_survivors():
+    train = [
+        _row("train", f"train-{i}", "x", 2500) for i in range(9)
+    ]
+    heldout = [
+        {
+            **_row("heldout", f"wf-{i}", "x", 3000),
+            "status": "error" if i < 4 else "success",
+            "start_ts_ms": float(i * 5000),
+            "terminal_ts_ms": float(i * 5000 + 3000),
+        }
+        for i in range(9)
+    ]
+    result = evaluate(
+        train, heldout, online_project_history=True,
+        compare_success_history=True,
+    )
+    ablation = result["landmarks"]["500"][
+        "heldout_online_project"]["heldout"]["returned_failure_history_ablation"]
+    assert ablation["returned_history_supported"] == 5
+    assert ablation["success_history_supported"] == 1
+    assert ablation["common_supported"] == 1
+    assert ablation["newly_supported"]["survivors"] == 4
+    assert ablation["newly_supported_frozen"]["survivors"] == 4
+    assert ablation["lost_success_support"]["survivors"] == 0
+    assert ablation["success_preserving_fallback"]["survivors"] == 5
+
+
+def test_returned_errors_can_evict_success_support_in_shared_window():
+    prior = {"global": 2500., "shape": {"x": 2500.}}
+    calls = [
+        {
+            **_row("heldout", f"success-{i}", "x", 3000),
+            "status": "success", "start_ts_ms": float(i * 5000),
+            "terminal_ts_ms": float(i * 5000 + 3000),
+        }
+        for i in range(4)
+    ] + [
+        {
+            **_row("heldout", "repeated-error", "x", 3000),
+            "status": "error", "start_ts_ms": float((i + 4) * 5000),
+            "terminal_ts_ms": float((i + 4) * 5000 + 3000),
+        }
+        for i in range(64)
+    ] + [{
+        **_row("heldout", "target", "x", 3100),
+        "status": "success", "start_ts_ms": 340000.,
+        "terminal_ts_ms": 343100.,
+    }]
+    _, returned_support = _online_project_predictions(calls, 500, prior)
+    _, success_support = _online_project_predictions(
+        calls, 500, prior, success_only_history=True,
+    )
+    assert len(calls) - 1 not in returned_support
+    assert len(calls) - 1 in success_support
+
+
 def test_scheduled_window_censors_return_before_predicted_trigger():
     survivors = [
         _row("p", "early", "x", 700),

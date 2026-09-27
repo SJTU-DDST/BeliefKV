@@ -52,3 +52,22 @@ def test_project_loo_freezes_other_project_prior_and_reports_online_arm():
 def test_project_loo_requires_multiple_projects():
     with pytest.raises(ValueError, match="three projects"):
         project_leave_one_out([_row("one", 0), _row("two", 0)])
+
+
+def test_project_loo_compares_error_history_without_cross_project_leakage():
+    rows = [
+        {**_row(project, index),
+         "status": "error" if index < 4 else "success"}
+        for project in ("django", "pydata", "pytest-dev")
+        for index in range(9)
+    ]
+    report = project_leave_one_out(
+        rows, compare_success_history=True,
+    )
+    for project, fold in report["folds"].items():
+        assert project not in fold["train_projects"]
+        assert fold["compare_success_history"] is True
+        ablation = fold["landmarks"]["500"][
+            "heldout_online_project"][project]["returned_failure_history_ablation"]
+        assert ablation["common_supported"] == 1
+        assert ablation["newly_supported"]["survivors"] == 4

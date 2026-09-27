@@ -68,6 +68,7 @@ def _summary(
 def _online_project_predictions(
     calls: list[dict], landmark: int, estimate: dict, *,
     minimum_support: int = 4, minimum_workflows: int = 3,
+    success_only_history: bool = False,
 ) -> tuple[list[float], list[int]]:
     if minimum_support < 2 or minimum_workflows < 2:
         raise ValueError("online history needs independent completed support")
@@ -102,7 +103,9 @@ def _online_project_predictions(
         ):
             past = pending[completed][1]
             completed += 1
-            if past["duration_ms"] > landmark:
+            if past["duration_ms"] > landmark and (
+                not success_only_history or past["status"] == "success"
+            ):
                 history[past["shape"]].append(past)
         matches = history[row["shape"]]
         if (
@@ -156,17 +159,25 @@ def _scheduled_window(
 def evaluate(
     train: list[dict], heldout: list[dict], *,
     online_project_history: bool = False,
+    compare_success_history: bool = False,
 ) -> dict:
     train_projects = {row["project"] for row in train}
     heldout_projects = {row["project"] for row in heldout}
     if not train or not heldout or train_projects & heldout_projects:
         raise ValueError("nonempty training and heldout projects must be disjoint")
+    if compare_success_history and not online_project_history:
+        raise ValueError("history comparison needs online project history")
+    if compare_success_history and any(
+        row.get("status") not in ("success", "error") for row in heldout
+    ):
+        raise ValueError("history comparison needs explicit return status")
     result = {
         "status": "read_only_completed_survival_landmark_not_action_eligible",
         "train_projects": sorted(train_projects),
         "heldout_projects": sorted(heldout_projects),
         "landmarks": {},
         "online_project_history": online_project_history,
+        "compare_success_history": compare_success_history,
         "online_project_shape_window": (
             ONLINE_PROJECT_SHAPE_WINDOW if online_project_history else None
         ),
@@ -259,6 +270,60 @@ def evaluate(
                 score["scheduled_window"] = _scheduled_window(
                     survivors, predictions, supported, landmark,
                 )
+                if compare_success_history:
+                    success_predictions, success_supported = (
+                        _online_project_predictions(
+                            rows, landmark, estimates,
+                            success_only_history=True,
+                        )
+                    )
+                    returned_indices = set(supported)
+                    success_indices = set(success_supported)
+                    both = sorted(returned_indices & success_indices)
+                    added = sorted(returned_indices - success_indices)
+                    lost = sorted(success_indices - returned_indices)
+                    common_rows = [survivors[index] for index in both]
+                    added_rows = [survivors[index] for index in added]
+                    hybrid_supported = sorted(returned_indices | success_indices)
+                    hybrid_predictions = [
+                        success_predictions[index]
+                        if index in success_indices else predictions[index]
+                        for index in hybrid_supported
+                    ]
+                    score["returned_failure_history_ablation"] = {
+                        "success_history_supported": len(success_supported),
+                        "returned_history_supported": len(supported),
+                        "common_supported": len(both),
+                        "lost_success_support": _summary(
+                            [survivors[index] for index in lost],
+                            landmark, estimates,
+                            [success_predictions[index] for index in lost],
+                        ),
+                        "success_only_common": _summary(
+                            common_rows, landmark, estimates,
+                            [success_predictions[index] for index in both],
+                        ),
+                        "returned_common": _summary(
+                            common_rows, landmark, estimates,
+                            [predictions[index] for index in both],
+                        ),
+                        "common_paired_gain": _paired_long_gain(
+                            common_rows,
+                            [success_predictions[index] for index in both],
+                            [predictions[index] for index in both],
+                        ) if both else None,
+                        "newly_supported": _summary(
+                            added_rows, landmark, estimates,
+                            [predictions[index] for index in added],
+                        ),
+                        "newly_supported_frozen": _summary(
+                            added_rows, landmark, estimates,
+                        ),
+                        "success_preserving_fallback": _summary(
+                            [survivors[index] for index in hybrid_supported],
+                            landmark, estimates, hybrid_predictions,
+                        ),
+                    }
                 report["heldout_online_project"][project] = score
         result["landmarks"][str(landmark)] = report
     return result
@@ -277,7 +342,18 @@ def main() -> None:
         "--include-returned-failures", action="store_true",
         help="Include non-exception TOOL_END errors as observed return times.",
     )
+    parser.add_argument(
+        "--compare-success-history", action="store_true",
+        help="Compare success-only and returned-error histories on identical calls.",
+    )
     args = parser.parse_args()
+    if args.compare_success_history and (
+        not args.online_project_history or not args.include_returned_failures
+    ):
+        parser.error(
+            "--compare-success-history requires --online-project-history "
+            "and --include-returned-failures"
+        )
     train_ids, train_errors = require_complete_batch(args.train_workflows)
     heldout_ids, heldout_errors = require_complete_batch(args.heldout_workflows)
     train, train_censor = cold_calls(
@@ -290,6 +366,8 @@ def main() -> None:
     )
     report = evaluate(
         train, heldout, online_project_history=args.online_project_history,
+        **({"compare_success_history": True}
+           if args.compare_success_history else {}),
     )
     report["train_censor"] = train_censor
     report["heldout_censor"] = heldout_censor

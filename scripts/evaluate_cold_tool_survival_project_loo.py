@@ -17,7 +17,9 @@ from scripts.evaluate_cold_tool_structure_holdout import cold_calls
 from scripts.evaluate_cold_tool_survival_landmarks import evaluate
 
 
-def project_leave_one_out(rows: list[dict]) -> dict:
+def project_leave_one_out(
+    rows: list[dict], *, compare_success_history: bool = False,
+) -> dict:
     projects = sorted({row["project"] for row in rows})
     if len(projects) < 3:
         raise ValueError("at least three projects are required")
@@ -29,6 +31,7 @@ def project_leave_one_out(rows: list[dict]) -> dict:
                 [row for row in rows if row["project"] != project],
                 [row for row in rows if row["project"] == project],
                 online_project_history=True,
+                compare_success_history=compare_success_history,
             )
             for project in projects
         },
@@ -52,13 +55,23 @@ def main() -> None:
         "--include-returned-failures", action="store_true",
         help="Include non-exception TOOL_END errors as observed return times.",
     )
+    parser.add_argument(
+        "--compare-success-history", action="store_true",
+        help="Compare success-only and returned-error histories on identical calls.",
+    )
     args = parser.parse_args()
+    if args.compare_success_history and not args.include_returned_failures:
+        parser.error(
+            "--compare-success-history requires --include-returned-failures"
+        )
     ids, errors = require_complete_batch(args.workflows)
     rows, censor = cold_calls(
         args.workflows,
         include_returned_failures=args.include_returned_failures,
     )
-    result = project_leave_one_out(rows)
+    result = project_leave_one_out(
+        rows, compare_success_history=args.compare_success_history,
+    )
     result["include_returned_failures"] = args.include_returned_failures
     result["frozen_workflow_count"] = len(ids)
     result["runner_error_workflows"] = errors
