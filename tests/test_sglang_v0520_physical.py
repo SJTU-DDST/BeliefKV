@@ -17,6 +17,7 @@ from beliefkv.runtime.sglang_v0520_physical import (
     PhysicalTransactionLedger,
     PrefetchLoadStep,
     capture_action_local_shadow,
+    inspect_session_h2d_opportunity,
     next_prefetch_gpu_step,
     next_shadow_backup_step,
     prefetch_expectation_from_native_op,
@@ -505,6 +506,51 @@ def prefetch_anchors(full_leaf=12, mamba_leaf=12):
         ((0, ((full_leaf, 5),)), (2, ((mamba_leaf, 5),))),
         10.0,
     )
+
+
+def test_h2d_observer_separates_resident_unbacked_and_blocked_closures():
+    anchors = prefetch_anchors()
+    root = prefetch_node(0, None, 1)
+    leaf = prefetch_node(12, 0, 5, full_gpu=8, mamba_gpu=True)
+    headroom = NS(
+        observable=True, device_full_free_tokens=100,
+        device_mamba_free_slots=4,
+    )
+    with patch(
+        "beliefkv.runtime.sglang_v0520_physical.observe_static_full_mamba_headroom",
+        return_value=headroom,
+    ), patch(
+        "beliefkv.runtime.sglang_v0520_physical.observe_unified_node_closure",
+        side_effect=lambda cache, node_id, max_nodes:
+        NS(observable=True, nodes=(leaf, root)),
+    ):
+        resident = inspect_session_h2d_opportunity(object(), anchors)
+        assert resident.no_step_reason == "already_device_resident"
+        assert resident.host_backed_full_missing_device_tokens == 0
+        leaf.full_device_tokens = 0
+        leaf.mamba_device_present = False
+        unbacked = inspect_session_h2d_opportunity(object(), anchors)
+        assert unbacked.no_step_reason == "no_host_backed_step"
+        assert unbacked.unbacked_full_nodes == 1
+        assert unbacked.unbacked_mamba_leaves == 1
+        leaf.full_host_tokens = 8
+        backed = inspect_session_h2d_opportunity(object(), anchors)
+        assert backed.step is not None
+        assert backed.host_backed_full_missing_device_tokens == 8
+
+    parent = prefetch_node(11, 0, 4)
+    leaf.parent_id = 11
+    with patch(
+        "beliefkv.runtime.sglang_v0520_physical.observe_static_full_mamba_headroom",
+        return_value=headroom,
+    ), patch(
+        "beliefkv.runtime.sglang_v0520_physical.observe_unified_node_closure",
+        return_value=NS(observable=True, nodes=(leaf, parent, root)),
+    ):
+        blocked = inspect_session_h2d_opportunity(object(), anchors)
+        assert blocked.step is None
+        assert blocked.no_step_reason == "host_backed_step_blocked"
+        assert blocked.host_backed_full_missing_device_tokens == 8
 
 
 def test_prefetch_capture_and_select_root_first_full_host_only():

@@ -67,6 +67,10 @@ class SessionH2DOpportunity:
     required_mamba_slots: int
     fits_current_free_lists: bool | None
     no_step_reason: str | None = None
+    host_backed_full_missing_device_tokens: int | None = None
+    host_backed_mamba_missing_device_nodes: int | None = None
+    unbacked_full_nodes: int | None = None
+    unbacked_mamba_leaves: int | None = None
 
 
 def inspect_session_h2d_opportunity(
@@ -78,14 +82,28 @@ def inspect_session_h2d_opportunity(
     )
     step = next_prefetch_gpu_step(candidate) if candidate is not None else None
     no_step_reason = None
+    unbacked_full = unbacked_mamba = None
+    if candidate is not None:
+        mamba_leaves = dict(dict(anchors.component_leaves).get(2, ()))
+        unbacked_full = sum(
+            node.parent_id is not None
+            and node.full_device_tokens == 0 and node.full_host_tokens == 0
+            for node in candidate.nodes
+        )
+        unbacked_mamba = sum(
+            node.node_id in mamba_leaves
+            and not node.mamba_device_present and not node.mamba_host_present
+            for node in candidate.nodes
+        )
     if step is None:
         if candidate is None:
             no_step_reason = "closure_unobservable"
-        elif not (candidate.missing_full_device_tokens
-                  or candidate.missing_mamba_device_nodes):
-            no_step_reason = "already_device_resident"
-        else:
+        elif candidate.missing_full_device_tokens or candidate.missing_mamba_device_nodes:
+            no_step_reason = "host_backed_step_blocked"
+        elif unbacked_full or unbacked_mamba:
             no_step_reason = "no_host_backed_step"
+        else:
+            no_step_reason = "already_device_resident"
     full_tokens = mamba_slots = 0
     if step is not None:
         node = next(
@@ -104,6 +122,9 @@ def inspect_session_h2d_opportunity(
     )
     return SessionH2DOpportunity(
         anchors, headroom, step, full_tokens, mamba_slots, fits, no_step_reason,
+        candidate.missing_full_device_tokens if candidate is not None else None,
+        candidate.missing_mamba_device_nodes if candidate is not None else None,
+        unbacked_full, unbacked_mamba,
     )
 
 

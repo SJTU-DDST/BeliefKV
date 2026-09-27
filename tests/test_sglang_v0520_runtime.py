@@ -246,6 +246,10 @@ def test_safe_point_persists_bounded_wait_and_admission_opportunities(tmp_path):
     opportunity = SessionH2DOpportunity(
         ContextSessionAnchors(key, (), 1.0), headroom,
         PrefetchLoadStep(key, 11, 1, 11, 1), 20, 1, True,
+        host_backed_full_missing_device_tokens=20,
+        host_backed_mamba_missing_device_nodes=1,
+        unbacked_full_nodes=0,
+        unbacked_mamba_leaves=0,
     )
     with patch.object(runtime, "inspect_context_h2d_opportunity",
                       side_effect=lambda *, context_id, context_epoch:
@@ -267,6 +271,9 @@ def test_safe_point_persists_bounded_wait_and_admission_opportunities(tmp_path):
     by_source = {row["source"]: row for row in rows
                  if row["event"] == "session_h2d_opportunity"}
     assert by_source["admission_candidate"]["required_full_tokens"] == 20
+    assert by_source["admission_candidate"]["host_backed_full_missing_device_tokens"] == 20
+    assert by_source["admission_candidate"]["host_backed_mamba_missing_device_nodes"] == 1
+    assert by_source["admission_candidate"]["unbacked_full_nodes"] == 0
     assert by_source["admission_candidate"]["fits_current_free_lists"] is True
     assert by_source["admission_candidate"]["session_generation"] == 2
     assert by_source["tool_wait"]["reason"] == "no_live_session_or_anchors"

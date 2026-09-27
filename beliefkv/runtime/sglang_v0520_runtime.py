@@ -638,6 +638,12 @@ class NativeAdmissionRuntime:
                     "host_mamba_free_slots": headroom.host_mamba_free_slots,
                     "required_full_tokens": observation.required_full_tokens,
                     "required_mamba_slots": observation.required_mamba_slots,
+                    "host_backed_full_missing_device_tokens":
+                        observation.host_backed_full_missing_device_tokens,
+                    "host_backed_mamba_missing_device_nodes":
+                        observation.host_backed_mamba_missing_device_nodes,
+                    "unbacked_full_nodes": observation.unbacked_full_nodes,
+                    "unbacked_mamba_leaves": observation.unbacked_mamba_leaves,
                     "node_id": step.node_id if step else None,
                     "fits_current_free_lists": observation.fits_current_free_lists,
                 })
