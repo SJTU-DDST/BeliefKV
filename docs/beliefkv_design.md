@@ -1,6 +1,6 @@
 # BeliefKV 当前系统设计
 
-更新日期：2026-09-17
+更新日期：2026-09-27
 
 状态：本文是当前算法与系统边界的权威说明。历史版本保存在
 `docs/archive/snapshots/beliefkv_design_2026-07-14_zh.md`。
@@ -23,6 +23,30 @@ BeliefKV 面向单 GPU、HBM 受限的动态 Agent 工作流：
 4. D2H/H2D、recompute 与控制面开销。
 
 Workflow fairness 只作为有界防饿死和最终 tie-break，不以平均分配 GPU 时间为目标。
+
+### 1.1 当前研究聚焦：动态中高压力
+
+论文主场景选在**HBM 竞争真实存在、但尚未被计算或 Host 容量彻底压垮**的
+动态多 workflow 负载：既有 runnable backlog，也有工具等待和 child JOIN，
+且 Host 中存在可恢复 KV、HBM 中存在可安全回收的低价值驻留页。这是待检验的
+工作区间，不以 root 数量、GPU 利用率或单个 usage 比例定义“内存瓶颈”。
+以同一 workload 的 64+64 两波到达作为候选压力配置，最终按实际
+recompute、Host/Device hit、排队、可回收容量和传输重叠机会确认。
+低压组验证是否能用闲置 HBM/PCIe 隐藏传输；极端过载组验证退化到响应式
+策略是否安全，不以极端过载下的虚假预取次数作为主要结果。
+
+在这个工作区间，同时研究两种**可能互相竞争**的收益来源：
+
+1. 等待工具/JOIN 的 parent 在将重新可运行之前恢复有用 KV，减少 reentry
+   等待；如果 parent 是关键路径，允许其有界占用 HBM，必要时替换冷 KV。
+2. 高压时把执行选择和 KV 准入/回收联合起来：优先推进能实际解锁下游、
+   尽快完成 workflow 并释放容量的工作，但将其它 workflow 的 JCT 尾部、
+   饥饿和重算债务计入机会成本，不能简单地固定一个 workflow 跑到底。
+
+主指标为同配置下成功 workflow 吞吐和 JCT 分布，同时报告最慢 workflow、
+任务正确性、GPU 服务、重算、Host/Device hit、HBM 占用时间及公平性。
+若 GPU 计算始终满载、或 Host 已把可复用 KV 大量丢弃，预取可能净负收益；
+策略应降低预测动作强度并保留 P5 的活性/正确性回退，而非强行制造 H2D。
 
 ## 2. 当前核心设计
 
@@ -138,6 +162,10 @@ P6 不建立第二个调度器。它在 P5 bounded seed 上识别 deferred benef
 用 FrontierBelief 生成 action-local scenarios，再把合格的 PredictiveIntent 合并回同一个
 JointPlan。
 
+以下 schema-v5、校准精度和动作权限是**原 Qwen3-Coder/SGLang 0.5.2rc1
+基线**的描述；迁移后的 Qwen3.5/SGLang 0.5.20 不继承其精度、物理收益或
+`predictive_action_eligible` 资格。新版具体进度见架构状态页。
+
 预测目标是需求和动作相关因果窗口，而不是旧负载下的 wall-clock GPU 时间。schema-v5
 使用一个版本化 artifact 发布三类局部分布：
 
@@ -196,6 +224,44 @@ seed rank 作后续排序键。boundary top-2 scenarios 可以估计 unlock 分�
 单点 required head；tool-terminal 用于失败风险，不替代 operational-tau。每个动作只消费其
 需要的预测分布，避免恢复 composite OOD 一票否决。
 
+### 5.2 新版的两层预测与验收目标（待实现/验证）
+
+**时间头**仍单独评估工具 release 与完整 JOIN 的预测：使用项目隔离的
+自然事件，按触发阶段、压力桶报告覆盖、误报、条件 P50/P90 误差和删失，
+不只在事后成功的长窗口子集计算精度。JOIN 不等同于单个 child RETURN；
+有多个未完成 child 时需按实时 blocker 集合组合；只剩最后一个 child 时
+可把结构化终态提示作为近端信号，但不能把其发出视为已确认 RETURN。
+继续追求有用的亚秒级时间精度，但不能把该阈值当成每次预取获益的必要条件。
+
+**动作头**预测在当前可见状态下某笔迁移的条件收益，而非旧 P5 调度下
+绝对 wall-clock JOIN 时间。令 `R` 为 JOIN 真正满足、parent 可提交的时刻，
+`C` 为同一物理 KV/epoch 的有效 H2D ACK：完全隐藏传输要求 `C <= R`，
+且 `R-C` 不超过受 HBM 机会成本约束的驻留预算；部分完成只计实测可节省的
+等待。即便 `C <= R`，若没有被首次服务实际消费或挤掉更高价值 KV，也
+不得算 useful。受益必须由 request 级 ACK/extent、实际首次服务及同配置
+reactive 对照验证；不能拿 reactive 的长排队窗口当作预测式 H2D 的节省。
+
+parent 的关键路径价值以剩余 blocker、下游解锁、当前工作流进度和真实
+可回收物理 KV 表示，而不是“所有 parent 永远高优先级”。同一 JointPlan
+比较空闲空间、可安全置换的冷页以及其它 runnable 工作；只在可用 Host
+副本、closure/owner/epoch 与容量证书成立、预计解锁收益覆盖搬运/置换/
+未来 restore 或 recompute 成本时，给 parent 短期驻留租约。租约有
+字节/时间预算、到期或状态变化撤销、防饿死界限；ACK 未到不得按已恢复
+KV 准入。JOIN 之外的 admission handoff 也按相同规则，在选出下一
+beneficiary 后先预留空间、协调 D2H/H2D，再给执行 ticket。
+
+child RETURN 时间拆解为可观测的执行阶段/剩余 GPU 工作、未来 GPU
+服务份额、排队和工具执行，不把未来排队时长作为在线特征。训练时可以
+用有身份关联的 request 服务事件重建**实际发生的**服务时间和排队时间，
+检验“剩余工作/服务需求”头是否跨压力更稳健；工具等待对真实 RETURN
+仍有贡献，不能一律从标签中删除。预测调度会改变服务分配，需在
+reactive 与 predictive 下分别校准/按压力分层，之后只用历史已确认事件
+滚动校正；在线更新必须经过因果时序、漂移及安全回退门禁。
+目前 JOIN 标签仍是墙钟 RETURN 差，分头方案**不是**已验证的精度提升。
+
+先做离线可识别性与 shadow 策略评价，再做真实物理闭环和配对 canary。
+不基于正在运行的密封留出集调整压力阈值、ETA、模型或准入门禁。
+
 ## 6. 未来可选方案：Predictive Eviction
 
 ### 6.1 动机和当前缺口
@@ -248,7 +314,11 @@ safe-point transaction，不新增独立 eviction scheduler。建议把它保留
 必须报告 useful/wasted commit bytes、提前释放的 HBM-time、beneficiary saved stall、
 restore/recompute debt、方向反转率以及最终 workflows/hour。
 
-## 7. 当前实现边界
+## 7. 实现边界（旧 P6 路径及新版缺口）
+
+下表前四条和预测动作机制沿用旧 Qwen3 P6 的能力描述；
+**不能**据此认定 Qwen3.5 已获准在线预测动作。新增的新版
+研究项独立标记为未实现或待验证。
 
 | 能力 | 当前状态 |
 | --- | --- |
@@ -261,6 +331,8 @@ restore/recompute debt、方向反转率以及最终 workflows/hour。
 | Predictive `PREFETCH_GPU` | 完整/partial/funded 路径已实现；仅 development canary，收益未验证 |
 | Predictive `RECLAIM_AND_PREFETCH` | 已实现 staged transaction；自然闭环未验证 |
 | Predictive `COMMIT_CPU` / eviction | 未实现，未来可选 |
+| 新版有界关键路径 parent 驻留/抢占 | 设计目标，尚未实现或经 GPU 验证 |
+| 新版 child 工作/服务/排队分解与在线更新 | 待训练侧可识别性验证，尚未上线 |
 | Peer multi-agent 专项优化 | 非当前关键路径 |
 | Oracle action-space 优化 | 已暂停，仅保留诊断资产 |
 | Morphology 独立策略 | 已降级；shape 仅作 transfer cost/OOD 输入 |
@@ -272,10 +344,15 @@ restore/recompute debt、方向反转率以及最终 workflows/hour。
 - SGLang allocator 和 Radix 始终具有最终权威。
 - 计划字节不能代替 completed ACK 的实际释放字节。
 - 预测动作不能绕过 P5 correctness 和 liveness。
-- 训练目标不使用 batch size 或旧调度策略污染的 GPU wall-clock。
+- 不把旧策略的 wall-clock RETURN 误当调度不变的纯服务需求；未来服务/
+  排队分头必须使用因果可观测的历史输入，并显式报告压力与策略分布差异。
 - 正式性能比较必须使用相同 workload、模型、runtime profile 和 instrumentation。
 
-## 9. 当前实验环境
+## 9. 实验环境（下列为旧基线）
+
+以下配置为 Qwen3-Coder/0.5.2rc1 的已冻结旧实验，**不是**
+当前 Qwen3.5/0.5.20 密封评估的运行配置。新版实验参数以对应
+`configs/migration/` 冻结合同与架构状态页为准。
 
 - GPU：NVIDIA H200 NVL，单卡；
 - 模型：Qwen3-Coder-30B-A3B-Instruct BF16；

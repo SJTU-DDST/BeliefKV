@@ -1,14 +1,18 @@
 # BeliefKV Current Execution Plan
 
-Status date: 2026-09-24.
+Status date: 2026-09-27.
 
-This file contains only the active execution order. Completed and superseded
-plans are indexed under `docs/archive/`.
+The active execution order is the Qwen3.5 section below. Older planning notes
+are retained at the end for traceability but are not startup instructions.
+Completed and superseded plans are indexed under `docs/archive/`.
 
 ## Objective
 
-Obtain the first defensible end-to-end result for predictive Agent/KV joint
-scheduling on the H200 BF16 system without expanding the mechanism surface.
+Establish a defensible Qwen3.5/SGLang v0.5.20 result for predictive Agent/KV
+joint scheduling at **dynamic medium/high memory pressure**, with a paired
+reactive baseline. Separate model time accuracy from physical-action benefit.
+Low-pressure idle-HBM prefetch and overload fallback are boundary checks, not
+substitutes for the primary pressure regime.
 
 Primary metrics:
 
@@ -19,7 +23,78 @@ Primary metrics:
 - useful/wasted D2H/H2D bytes;
 - synchronous control-plane overhead.
 
-## Current Evidence
+## Active Order (Qwen3.5/v0.5.20)
+
+1. **Finish the sealed, project-disjoint tool/JOIN evaluation as frozen.**
+   The running `qwen35_terminal_join_sealed_20260927_v1` batch uses 16
+   Matplotlib/scikit-learn test roots plus 32 unrelated load-generating roots.
+   Do not restart the batch, change the tool evaluator, `heavy_queue` cutoff,
+   model, or thresholds using unfinished test outcomes. After completion, run
+   the frozen tool evaluator separately; report time error, candidate coverage,
+   false alarms and censored outcomes by task and pressure. A selected JOIN
+   subset is not overall JOIN recall. A sealed negative result stays negative.
+2. **Check workload bottlenecks and causal observability on train projects.**
+   Characterize 64+64 arrival pressure using request-level queue/service,
+   FULL/Mamba resident vs evictable bytes, Host eviction-to-miss/recompute
+   attribution, transfer identity/ACK, and critical-path blocker changes.
+   Freeze pressure strata and any byte-time/slowdown budgets on training
+   workloads before evaluating held-out projects. Low pressure must expose
+   idle-capacity opportunities; medium/high pressure must expose recoverable
+   KV and actual HBM contention; overload must test fallback when the Host
+   copy or GPU service is no longer economically useful. Report failed and
+   abstained decisions in every stratum, not only successful prefetches.
+   Compare low and overloaded regimes only under otherwise identical model,
+   engine, Host pool, instrumented workload, admission cap and hardware.
+   Existing 64/128 runs with unmatched Host configurations are not a paired
+   throughput comparison. If medium/high load is compute-saturated or Host
+   thrashes, quantify the cost and restrict optimistic prefetch claims.
+3. **Test a causally reconstructible child remaining-work head on train only.**
+   Partition observed RETURN time into actual request GPU service, queue/no
+   service intervals and tool execution with request/epoch identity; report
+   missing/censored intervals. Do not subtract all no-GPU time from the target
+   (tool waits still affect RETURN) or feed future service/queue durations to
+   inference. Validate work/service demand across pressure and project folds
+   versus wall-clock ETA; discard if no stable improvement. Refit/calibrate
+   separately for action policy and pressure as needed, with online updates
+   using only past confirmed labels and drift-aware fallback.
+4. **Implement bounded critical-path parent admission as a JointPlan extension
+   only after the observability and safety gates.** Use sole JOIN straggler and
+   factual frontier as existing signals; compare parent unlock against victim
+   future-use, D2H/H2D, restore/recompute debt, fairness and HBM byte-time.
+   Parent can replace cold KV, not engine-locked or hotter work. Reserve
+   complete or useful partial ancestor-closed KV, bind request/context epoch,
+   page generation and lease expiry; commit admission only on valid capacity
+   and sufficient ACK. Include next-agent handoff and native Host KV, not just
+   predictive PREPARE-created shadows. Keep P5 fallback for stale/no-KV
+   opportunities. Verify liveness, expired tickets and no starvation.
+5. **Run staged physical validation, then matched A/B.** Shadow-log proposed
+   time, bytes, alternative beneficiary and reason for abstaining. Canary
+   checks intent -> physical transfer -> ACK -> parent ready -> first service
+   and subsequent actual KV use; distinguish complete/partial/late/wasted
+   bytes. For joined parent define useful lead `0 <= R-C <= T_max`, with
+   `T_max` set from measured HBM opportunity cost rather than the old
+   reactive queue tail. Count partially hidden transfers by measured stall
+   saved. Matched P5 vs P6 uses same tasks/arrival order, source fingerprint,
+   runtime/hardware/Host/graph48 contract and instrumentation; report workflow
+   completion throughput and JCT distribution plus other-workflow slowdown,
+   recompute, HBM occupancy time and guardrail violations. Include ablations
+   for speculative H2D, bounded parent replacement and execution handoff.
+   Count correctness failures, censored workflows, p50/p95 JCT and maximal
+   per-workflow slowdown; never trade an unbounded victim tail for a higher
+   mean completion rate.
+
+Promotion requires physical benefit and no correctness/liveness regression;
+time-model accuracy alone is insufficient. Do not enable Qwen3.5
+`online_eligible` or `predictive_action_eligible` just because an offline
+window gate or shadow decision looks promising. Full safety/ownership evidence
+and paired GPU results remain necessary.
+
+The sections below are older migration evidence and
+**Qwen3-Coder/0.5.2rc1 P0-P5 planning snapshots**. They are not active
+prerequisites for the new model; where they conflict with this section, this
+section takes precedence.
+
+## Historical Evidence Snapshot (Superseded)
 
 The active stage is a fresh Qwen3.5-35B-A3B BF16 native-reactive collection on
 SGLang v0.5.20. The 65/35 and 70/30 Host-pool allocation comparison used the same
@@ -315,7 +390,7 @@ The following tasks must not block P2-P4:
 - Oracle action-space expansion;
 - morphology as an independent policy;
 - peer multi-agent-specific optimization;
-- SGLang version migration;
+- another SGLang version migration;
 - broad baseline emulation requiring a predefined DAG;
 - additional model heads without an observed action-space failure.
 

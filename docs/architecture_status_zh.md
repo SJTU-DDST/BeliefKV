@@ -1,6 +1,6 @@
 # BeliefKV 当前架构与实现状态
 
-更新日期：2026-09-24
+更新日期：2026-09-27
 当前 P6 物理执行基线：原 Qwen3-Coder/SGLang 0.5.2rc1；
 Qwen3.5/v0.5.20 已有可选 native admission、工具等待预测和
 JOIN child-completion 三阶段 H2D ticket（概率窗口、结构化完成提示、
@@ -10,6 +10,27 @@ JOIN child-completion 三阶段 H2D ticket（概率窗口、结构化完成提�
 本文只记录当前事实和下一阻塞项，不再追加逐日开发日志。2026-09-12 以前的完整历史保存在
 `docs/archive/snapshots/architecture_status_zh.md`，单次实验细节保存在
 `docs/experiments/`。
+
+### 当前研究目标与未完成能力
+
+新版主评估场景定为动态中高压力，低压闲置容量和极端过载分别作为边界
+验证。当前 `causal_frontier.py` 和 `joint_scheduler.py` 已按 JOIN straggler、
+已知下游解锁及 HBM demand 排序，并支持有约束的 beneficiary-bound
+回收；**尚未实现**按机会成本预算的关键路径 parent 抢占、到期驻留租约
+及跨执行选择的预取收益闭环。Qwen3.5 训练行的 child RETURN
+目标仍为决策时刻至实际 RETURN 的墙钟差；把 GPU 工作、排队与工具执行
+拆成可识别的预测目标，及根据新调度轨迹在线更新，均属待验证研究工作。
+
+目前 Qwen3.5 的 `online_eligible=false`、
+`predictive_action_eligible=false`；旧 Qwen3 P6 物理闭环不得外推为
+新版已有 predictive H2D。正在执行的未见项目密封实验只读评价工具及
+终态 JOIN 的时间窗口和首次服务，不采集预测调度的反事实收益，也不在
+测试结果上修改冻结门槛。高压 reactive 中从终态通知到首次服务的
+约 33.21 秒中位窗口包含排队/准入等因素，缺少逐 request 的 H2D
+归因，不能全部解释为预取可隐藏的传输等待。下一步按
+`docs/implementation_plan.md` 在训练项目上补可识别性审计、
+有界 JointPlan 安全实现和同配置物理 A/B，分开验收预测时间精度、
+实际复用和工作流性能。
 
 ### Qwen3.5 native reactive 数据采集
 
