@@ -100,11 +100,22 @@ as an abstention/safety boundary.
 
 Current boundary: the 14-root write-back scan is a *candidate for stage 1*,
 not proof of stage 2 or 3. Its 14 distinct H2D nodes (13 with missing FULL
-Device KV) were observed in sampled snapshots, while recorded H2D ACKs were
-native reactive. The separately launched, opt-in confirmed-JOIN canary tests
-only predictive H2D; PREPARE emission/consumption, first-service block reuse,
-independent task correctness and matched A/B remain unverified. Treat each
-stage as a separate gate; do not promote the objective on action counts alone.
+Device KV) were observed in sampled snapshots. The subsequent v3 confirmed-
+JOIN canary finished with 14/14 workflow measurements and no FULL/Mamba
+Host eviction; six predictive H2D actions had physical ACKs, but **zero
+of six reused the prefetched prefix at the first request after JOIN**.
+Those JOINs followed an external initial-delegation planner: the parent
+started a different prompt after the child reports, so a shared context ID
+did not imply a reusable KV prefix. Bootstrap JOINs are now excluded from
+parent-prefix prefetch, and an opt-in in-graph root-delegation profile is
+being tested for genuine continuation. Its outcome is not yet evidence of
+reuse. Selective partial PREPARE consumed by later native eviction, saved
+synchronous wait, independent task correctness and matched reactive A/B
+remain unverified. Keep the primary goal on *already free* FULL/Mamba HBM
+capacity, stable Host pools and low useful-KV recomputation; cold-KV
+replacement, joint handoff and high-pressure recomputation reduction are
+separate future studies. Treat each stage as a separate gate; do not
+promote the objective on action counts or ACKs alone.
 
 Primary metrics:
 
