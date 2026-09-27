@@ -19,10 +19,14 @@ completion that natural-language replies do not provide. Do not silently
 promote measured JCT to correct-task throughput: official patch grading
 must be integrated before the paired A/B correctness claim. The same probe
 identified a native NumPy float64 node timestamp rejected by the H2D
-selector; its normalized rerun is in progress. Early rerun samples show
-feasible Host-backed Mamba targets (mostly shared physical nodes 28 and 49),
-not physical H2D or first-service reuse. Deduplicate sampled session
-observations by physical target/epoch before estimating opportunities.
+selector. Its normalized 6-root rerun completed 6/6 measurement-eligible
+workflows with no FULL/Mamba Host eviction, and read-only sampling now finds
+Host-backed targets: all 577 free-list-fitting snapshots concern just two
+shared Mamba physical nodes (28 and 49), with zero missing FULL device
+tokens. No predictive H2D or first-service reuse has been established.
+This supports a shared-state diagnostic, not yet the FULL-transfer primary
+workload. Deduplicate sampled session observations by physical target/epoch
+before estimating opportunities.
 
 ## Objective
 

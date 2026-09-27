@@ -158,15 +158,27 @@ TOOL wait、1 条属于 admission；另有 261 条 `already_device_resident`
 下轮独立冷启动需确认是否出现 `fits_current_free_lists`，
 随后才可做身份/容量安全的真实 H2D canary 和首次服务归因。
 
-独立冷启动 v3 已在 `bkv-regime-float64-6` 中开始：
+独立冷启动 v3 已自行完成：
 `experiments/raw/qwen35_native_regime_selective_180g_35_65_6root_float64_v3/`。
-**截至本次运行中观察，尚无终态 summary/writer 状态**；修复后
-JOIN wait 已出现 `fits_current_free_lists`，也有 Mamba Device
-空槽为零而拒绝的观察。六条 JOIN parent 的候选大多指向同一
-共享物理节点 28，部分 tool wait 指向节点 49；不能把重复的
-安全点观察视作独立的 H2D 动作。在一条 JOIN 上，可行动采样
-距实际 JOIN 满足约 76 至 260 秒，但未签发预测动作，不能
-据此断言有收益。v2 的 `successful_workflows=0` 来自六条
-自然语言终态均不满足现有自报告结构化协议；6/6 JCT
-资格不代表任务已通过官方正确性评估。v3 应自行结束并
-复核 writer、Host FULL/Mamba 水位、驱逐及请求归因后再定主场景。
+6/6 workflow 自然完成且具备 native-agent JCT 测量资格；
+机会 writer 的 1,733 条候选与 680 条 census 完整关闭，
+原生遥测无丢失或写入错误。Host FULL 高水位
+1,443,893/3,076,172 tokens（约 46.9%），Mamba 为
+1,569/1,818 slots（约 86.3%），均无 Host 驱逐。
+FULL 原生 D2H/H2D 为 1,443,942/0 tokens，Mamba 为
+1,569/12 slots；这些都不是预测动作。
+
+修复后 `fits_current_free_lists` 出现于 533 条 JOIN wait、
+42 条 TOOL wait、2 条 admission 观察；另外 185 条 JOIN wait
+因空槽不足拒绝。所有可行动观察的物理目标只有共享 Mamba
+节点 28 和 49，FULL 所需恢复量均为 0；这不是 577 笔独立
+传输。对 xarray-7393 parent，节点 28 可行动采样距实际
+JOIN 满足约 76 至 260 秒；尚未证明如此长的提前驻留有净收益，
+更没有真实 predictive H2D ACK 或首次服务复用证据。v2/v3
+的 `successful_workflows=0` 都来自六条自然语言终态均不满足
+现有自报告结构化协议；测量资格不等于官方任务正确性。
+因此 6-root 可以作为无 Host 驱逐的**小规模共享 Mamba 机会**
+诊断档，不能单独作为 FULL 预取和正确完成吞吐 A/B 的主场景。
+下一步需对共享节点去重、验明 first-use 与真实节省的等待，并
+在训练项目另找 FULL 有效 Host 副本而低重算的负载，同时接入
+独立正确性评分；不可把不合格标签改称“成功”。
