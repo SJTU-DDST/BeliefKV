@@ -23,10 +23,17 @@ selector. Its normalized 6-root rerun completed 6/6 measurement-eligible
 workflows with no FULL/Mamba Host eviction, and read-only sampling now finds
 Host-backed targets: all 577 free-list-fitting snapshots concern just two
 shared Mamba physical nodes (28 and 49), with zero missing FULL device
-tokens. No predictive H2D or first-service reuse has been established.
-This supports a shared-state diagnostic, not yet the FULL-transfer primary
-workload. Deduplicate sampled session observations by physical target/epoch
-before estimating opportunities.
+tokens. Independent SWE-bench 4.1.0 grading of its six exported patches
+resolved two xarray tasks, found three unresolved pylint tasks and one
+empty xarray patch, with no evaluator errors. This replaces the inference
+that structured self-report failure means all six tasks were incorrect;
+it does not supply enough successes for a throughput A/B claim. No
+predictive H2D or first-service reuse has been established. The later
+200 GB/25:75/8-root probe was stopped at full Mamba Host occupancy with
+six of eight workflows complete: 54 Mamba and eight FULL Host evictions,
+and no FULL H2D targets among its 995 free-list-fitting observations.
+Neither is the FULL-transfer primary workload. Deduplicate sampled session
+observations by physical target/epoch before estimating opportunities.
 
 ## Objective
 

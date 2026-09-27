@@ -183,6 +183,23 @@ JOIN 满足约 76 至 260 秒；尚未证明如此长的提前驻留有净收益
 在训练项目另找 FULL 有效 Host 副本而低重算的负载，同时接入
 独立正确性评分；不可把不合格标签改称“成功”。
 
+已对 v3 的 `official_eval_inputs/preds.json` 使用隔离环境的
+SWE-bench 4.1.0 官方 Docker harness、冻结的 Verified 本地
+数据（revision `91aa3ed51b709be6457e12d00300a6a596d4c6a3`）
+及六个已有的实例镜像独立评分：6 条提交中 5 条有非空补丁并
+实际评测，xarray-7233、xarray-7393 解决任务；pylint-4551、
+pylint-4661、pylint-6386 未解决；xarray-7229 为空补丁，
+不计作通过。评测错误为 0，未重建或删除镜像。完整报告保存在
+`experiments/raw/qwen35_native_regime_selective_180g_35_65_6root_float64_v3/official_eval_inputs/`，
+run ID `bkv_native6_float64_v3`；输入 SHA256 为
+`0f0894b2c2fd9f5e8183bc4b186f09ec3274ffa06fc0291257c80cbe2401a504`，
+报告 SHA256 为
+`d5d1234b8ec3b8df685fb9c09114da60611940bdd12042f5dcbf644baec5cbfa`。
+导出时的 manifest 仍是未评分输入的不可变记录，不回写其
+`official_correctness_evaluated=false` 字段。此结果说明自报告
+结构化门禁的 0/6 不等于真实任务正确数，但 2/6 样本过少，
+也不能据此宣称政策吞吐收益。
+
 ## 200 GB / 25:75 / selective / 8-root：Host Mamba 容量边界
 
 首次启动在 VLM 图像 warmup 的 CUDA 图像搬运处 OOM，client 未
