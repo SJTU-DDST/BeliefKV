@@ -25,14 +25,18 @@ Primary metrics:
 
 ## Active Order (Qwen3.5/v0.5.20)
 
-1. **Finish the sealed, project-disjoint tool/JOIN evaluation as frozen.**
-   The running `qwen35_terminal_join_sealed_20260927_v1` batch uses 16
+1. **Sealed project-disjoint tool/JOIN evaluation: completed.**
+   The `qwen35_terminal_join_sealed_20260927_v1` batch used 16
    Matplotlib/scikit-learn test roots plus 32 unrelated load-generating roots.
-   Do not restart the batch, change the tool evaluator, `heavy_queue` cutoff,
-   model, or thresholds using unfinished test outcomes. After completion, run
-   the frozen tool evaluator separately; report time error, candidate coverage,
-   false alarms and censored outcomes by task and pressure. A selected JOIN
-   subset is not overall JOIN recall. A sealed negative result stays negative.
+   The postprocessing CLI import failure was repaired without changing scoring,
+   and both frozen reports are preserved. Only 5/15 matched natural JOIN
+   groups passed `heavy_queue`: point-error p50 improved from 188 to 38 ms,
+   but the service-window P10 overestimated 5/5, and tool-call-weighted ETA
+   had no statistically supported improvement over its global prior.
+   One root was incomplete. See
+   `docs/experiments/qwen35_terminal_join_sealed_2026-09-27_zh.md`.
+   Treat this holdout as consumed: no model/threshold selection on its
+   outcomes; the next method needs new project-disjoint validation.
 2. **Check workload bottlenecks and causal observability on train projects.**
    Characterize 64+64 arrival pressure using request-level queue/service,
    FULL/Mamba resident vs evictable bytes, Host eviction-to-miss/recompute
@@ -48,7 +52,12 @@ Primary metrics:
    Existing 64/128 runs with unmatched Host configurations are not a paired
    throughput comparison. If medium/high load is compute-saturated or Host
    thrashes, quantify the cost and restrict optimistic prefetch claims.
-3. **Test a causally reconstructible child remaining-work head on train only.**
+3. **Improve tool and child timing on train projects before another seal.**
+   Test tool ETA and long-window calibration across task, project, and
+   success/error strata; do not select the workflow-weighted candidate just
+   because its held-out score was good (training-project LOO was worse).
+   Score classifier coverage and conditional time error separately.
+   Reconstruct child remaining work and service as follows:
    Partition observed RETURN time into actual request GPU service, queue/no
    service intervals and tool execution with request/epoch identity; report
    missing/censored intervals. Do not subtract all no-GPU time from the target

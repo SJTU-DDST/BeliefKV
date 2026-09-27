@@ -23,9 +23,15 @@ JOIN child-completion 三阶段 H2D ticket（概率窗口、结构化完成提�
 
 目前 Qwen3.5 的 `online_eligible=false`、
 `predictive_action_eligible=false`；旧 Qwen3 P6 物理闭环不得外推为
-新版已有 predictive H2D。正在执行的未见项目密封实验只读评价工具及
-终态 JOIN 的时间窗口和首次服务，不采集预测调度的反事实收益，也不在
-测试结果上修改冻结门槛。高压 reactive 中从终态通知到首次服务的
+新版已有 predictive H2D。未见项目密封实验已完成：5/15 个自然
+parent 服务可配对 JOIN 被冻结 `heavy_queue` 门禁选中，选中子集
+JOIN 点误差 P50 从约 188 ms 降到约 38 ms，但高压服务窗口
+P10 在 5/5 组选中样本上高估；工具时刻默认 calls 头相对
+全局训练先验的配对改善置信区间跨零。不能用这批
+测试集回选 workflow 权重或门槛。实验报告见
+`docs/experiments/qwen35_terminal_join_sealed_2026-09-27_zh.md`。
+该批只读评价时间窗口和首次服务，不采集预测调度的
+反事实收益。高压 reactive 中从终态通知到首次服务的
 约 33.21 秒中位窗口包含排队/准入等因素，缺少逐 request 的 H2D
 归因，不能全部解释为预取可隐藏的传输等待。下一步按
 `docs/implementation_plan.md` 在训练项目上补可识别性审计、

@@ -6,7 +6,11 @@ from __future__ import annotations
 import argparse
 import json
 from pathlib import Path
+import sys
 
+ROOT = Path(__file__).resolve().parents[1]
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
 from scripts.evaluate_qwen35_terminal_join_sealed import validate_sealed_run
 from scripts.evaluate_tool_balanced_clocks import evaluate
 

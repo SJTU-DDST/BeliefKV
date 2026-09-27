@@ -7,7 +7,11 @@ import argparse
 import hashlib
 import json
 from pathlib import Path
+import sys
 
+ROOT = Path(__file__).resolve().parents[1]
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
 from scripts.evaluate_cold_tool_project_loo import require_complete_batch
 from scripts.evaluate_join_service_window_gate import evaluate
 
