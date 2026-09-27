@@ -78,6 +78,14 @@ Primary metrics:
    time-to-use interval; report full-group coverage, abstentions, false
    starts and conditional ETA error independently. Do not claim subsecond
    prediction from a handful of near-terminal groups.
+   A training-project LOO ablation of landmark-conditioned remaining tool
+   time improves the all-survivor median but *worsens* the same true-long
+   calls versus the frozen calls head; it cannot be promoted as a tool-return
+   clock. See `docs/experiments/qwen35_tool_live_remaining_train_loo_2026-09-27_zh.md`.
+   The twelve projects in the existing Verified split are already allocated
+   or used for development, calibration, or sealed evaluation; another
+   formal unseen-project test needs an independently sourced project,
+   not another rollout of the consumed test projects.
 4. **Implement bounded critical-path parent admission as a JointPlan extension
    only after the physical observability and safety gates.** Use sole JOIN
    straggler and factual frontier as existing signals; compare parent unlock
