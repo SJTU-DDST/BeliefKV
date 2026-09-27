@@ -7,6 +7,7 @@ import argparse
 from collections import Counter, defaultdict
 import json
 from pathlib import Path
+from statistics import median
 
 import lightgbm as lgb
 import numpy as np
@@ -104,6 +105,16 @@ def predict(model: tuple, rows: list[dict], *, regression: bool) -> np.ndarray:
     )
 
 
+def task_balanced_long_prior(rows: list[dict]) -> float:
+    by_task = defaultdict(list)
+    for row in rows:
+        if row["duration_ms"] >= TARGET_MS:
+            by_task[row["task_id"]].append(row["duration_ms"])
+    if not by_task:
+        raise ValueError("no long tool calls for prior")
+    return float(median(median(values) for values in by_task.values()))
+
+
 def project_folds(rows: list[dict]) -> list[dict]:
     projects = sorted({row["project"] for row in rows})
     if len(projects) < 3:
@@ -113,6 +124,7 @@ def project_folds(rows: list[dict]) -> list[dict]:
         fit_rows = [row for row in rows if row["project"] != project]
         test = [row for row in rows if row["project"] == project]
         long = [row for row in test if row["duration_ms"] >= TARGET_MS]
+        global_eta = task_balanced_long_prior(fit_rows)
         predictions = {
             mode: (
                 predict(fit(fit_rows, mode, regression=False), test,
@@ -132,7 +144,10 @@ def project_folds(rows: list[dict]) -> list[dict]:
             scored.append({
                 "project": project,
                 "workflow": row["workflow"],
+                "task_id": row["task_id"],
+                "status": row["status"],
                 "duration_ms": row["duration_ms"],
+                "global_long_eta_ms": global_eta if index in long_indices else None,
                 "probability": {
                     mode: float(values[0][index])
                     for mode, values in predictions.items()
@@ -149,6 +164,10 @@ def project_folds(rows: list[dict]) -> list[dict]:
 
 def summarize(rows: list[dict]) -> dict:
     long = [row for row in rows if row["eta_ms"] is not None]
+    if any(row.get("global_long_eta_ms") is not None for row in long) and any(
+        row.get("global_long_eta_ms") is None for row in long
+    ):
+        raise ValueError("partial global long tool prior")
     by_mode = {}
     for mode in MODES:
         errors = [
@@ -221,7 +240,7 @@ def summarize(rows: list[dict]) -> dict:
                     row["eta_ms"][mode] for row in long
                 ]),
             )
-    return {
+    report = {
         "events": len(rows),
         "independent_workflows": len({
             row["workflow"] for row in rows
@@ -232,6 +251,41 @@ def summarize(rows: list[dict]) -> dict:
         "real_windows": len(long),
         "modes": by_mode,
     }
+    if long and long[0].get("global_long_eta_ms") is not None:
+        def compare(cohort: list[dict]) -> dict:
+            return {
+                "oracle_long_p50_absolute_error_ms": _quantile([
+                    abs(row["duration_ms"] - row["global_long_eta_ms"])
+                    for row in cohort
+                ], .5),
+                "calls_p50_absolute_error_ms": _quantile([
+                    abs(row["duration_ms"] - row["eta_ms"]["calls"])
+                    for row in cohort
+                ], .5),
+                "paired_calls_gain": _paired_long_gain(
+                    [
+                        {**row, "workflow": row["task_id"]}
+                        for row in cohort
+                    ],
+                    np.asarray([row["global_long_eta_ms"] for row in cohort]),
+                    np.asarray([row["eta_ms"]["calls"] for row in cohort]),
+                ),
+            }
+
+        report["global_long_prior"] = {
+            **compare(long),
+            "by_project": {
+                project: compare([
+                    row for row in long if row["project"] == project
+                ]) for project in sorted({row["project"] for row in long})
+            },
+            "by_status": {
+                status: compare([
+                    row for row in long if row["status"] == status
+                ]) for status in sorted({row["status"] for row in long})
+            } if all("status" in row for row in long) else {},
+        }
+    return report
 
 
 def namespace_batch(workflows: Path, rows: list[dict]) -> list[dict]:
@@ -324,6 +378,7 @@ def evaluate(
         # No model or threshold selection reads the held-out labels.
         scored = []
         long = [row for row in heldout if row["duration_ms"] >= TARGET_MS]
+        global_eta = task_balanced_long_prior(train)
         for mode in MODES:
             scores = predict(
                 fit(train, mode, regression=False), heldout,
@@ -338,7 +393,13 @@ def evaluate(
                     scored.append({
                         "project": row["project"],
                         "workflow": row["workflow"],
+                        "task_id": row["task_id"],
+                        "status": row["status"],
                         "duration_ms": row["duration_ms"],
+                        "global_long_eta_ms": (
+                            global_eta if row["duration_ms"] >= TARGET_MS
+                            else None
+                        ),
                         "probability": {},
                         "eta_ms": (
                             {} if row["duration_ms"] >= TARGET_MS else None

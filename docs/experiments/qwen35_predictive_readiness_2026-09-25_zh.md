@@ -4275,6 +4275,17 @@ workflow 截止仍独立计时且包括 root 和 descendants；服务端
 仍独立限制为 600 秒，不能将其误读为 root 截止时间。
 修改启动配置不会追溯影响已完成实验。
 
+后续 128-root 冷工具训练批次
+`qwen35_cold_tool_overlapped_128root_train_20260927_v1`
+的 manifest 确认共享 root 截止为 7200 秒，而非 900 秒。
+该批次摘要中的 42 次 `activation_wall_clock_exhausted`
+分布在 29 个 workflow 中，均以 error 结束；42 是
+agent guard 触发次数，不是 42 个独立 root。它们的完整
+轨迹不可视为自然完成标签。今后若要采集更长的高压
+workflow，应在实验启动前显式提高
+`WORKFLOW_DEADLINE_SECONDS`，并在配对对照中保持相同
+截止配置；更改默认值不会修复这批已删失的轨迹。
+
 ## 68. 完成通知后 EOS 候选概率的只读试验
 
 上一节的自然标题没有覆盖率；事后知道完整输出长度的
@@ -7012,22 +7023,57 @@ P50 约 23.4 ms，相比全局先验的 task 聚类
 训练先验；不要因高压队列相关性直接套用
 早期通知的压力/队列时钟。
 
-### 高并发早期通知训练批次（待验证）
+### 现有高压早期通知数据及重复实验终止
 
-`scripts/run_qwen35_high_pressure_tool_join_train40.sh`
-从冻结 128-root manifest 中按项目与 task ID
-稳定选出五个项目各八个 root，40 root 同时
-提交；相同 70:30 Host 池、running 48、
-共享 root deadline 7200 秒，启用 child
-完成意图及冻结工具 100 ms shadow。所有
-项目与既有模型训练集重合，冻结工具审计
-必须标为 `training_replay`，不可冒充跨项目
-验证。最小空闲磁盘 60 GiB，实验不清理
-已有数据或 workspace。
+上文所称旧 128-root 无同源早期通知，**仅指**
+`qwen35_native_reactive_overlapped_128root_train_20260923_v3`。
+另一批已完成的
+`qwen35_cold_tool_overlapped_128root_train_20260927_v1`
+实际上在 128/128 个 workflow 中启用了
+`child_return_intent_shadow`，有 430 个有效自然
+child intent；metrics 中 running 峰值 48、
+waiting 峰值 386，提供高压早期信号。
+`qwen35_cold_tool_peer_holdout_66root_v1`
+的 Astropy/Sphinx 留出批次同样启用该信号，
+与训练批项目不重叠（此前用于开发，非密封验收）。
 
-只有在新批次实际产生自然完整的 early
-whole-JOIN 候选、且通知前 metrics 显示
-所需排队压力时，才能将它用于高/低压
-项目留一；还需在项目隔离的开发集上复核
-时钟和真实的传输窗口。运行前的任务
-平衡、冻结 SHA 及脚本语法有针对性测试。
+因最初漏查上述批次，曾短暂启动
+`qwen35_tool_join_high_pressure_train40_20260927_v1`；
+确认重复后停止，GPU/服务已退出。停止前
+队列峰值 53，但无自然完整终态，不能作为
+训练标签。只删除了该新批次生成的 root 和
+child workspace，保留约 143 MiB 的
+manifest、日志和部分遥测用于故障追溯；
+其他运行容器未动。重复采集入口和测试
+已移除。下一步直接对已有 128-root 早期
+信号做项目留一，并在 Astropy/Sphinx
+原有项目隔离数据上复核，避免重复 GPU 采集。
+
+### 高低压联合训练的项目隔离开发复核
+
+以已存在的 128-root 高压早期通知批次和 20-root
+低压补样拟合，保留 Astropy/Sphinx 项目用于开发复核。
+早期完整 JOIN 通知的压力分层先验在该开发集
+44 个自然样本上，点误差 P50 为 11.27 秒；
+加入连续 queue 时钟后为 7.02 秒，500 ms
+内仅 2/44。按 task 聚类的平均绝对误差增益
+约 2.00 秒，95% bootstrap 区间
+[-1.87, 6.17] 秒，不能认为已证实跨项目
+显著改善，更不能满足亚秒级预取时机要求。
+报告为低压批次目录的
+`early_join_high128_low20_astropy_sphinx_queue_dev.json`。
+
+工具时钟另以相同两批训练，对项目隔离的
+Astropy/Sphinx 批次评估训练项目平衡的长调用
+常数先验与 LightGBM 逐调用 `calls` ETA。
+对事后确认总时长至少 600 ms 的 1025 个调用，
+二者点误差 P50 分别为 182.44 和 152.07 ms；
+按 task 聚类配对的中位误差改善 95% 区间
+[14.92, 47.08] ms。823 个自然成功调用为
+182.56 到 150.21 ms，区间 [17.68, 49.99] ms；
+错误调用的区间跨零。训练项目留一也非
+所有项目为正，不能把长调用的事后条件精度
+当成在线分类器选中窗口后的端到端精度。
+报告为 `tool_high128_low20_task_global_baseline_by_status_dev.json`。
+这两项均使用已经用于方法探索的项目，
+属于开发复核而非密封验收，也未测量物理迁移收益。

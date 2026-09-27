@@ -2,7 +2,8 @@ import numpy as np
 import pytest
 
 from scripts.evaluate_tool_balanced_clocks import (
-    load_training_batches, namespace_batch, summarize, weights,
+    load_training_batches, namespace_batch, summarize, task_balanced_long_prior,
+    weights,
 )
 
 
@@ -95,3 +96,39 @@ def test_batch_loader_retains_replicated_tasks_but_rejects_duplicate_sources(
         load_training_batches([batches[0], batches[0]])
     with pytest.raises(ValueError, match="completed workflow identity"):
         namespace_batch(batches[0], [{"workflow": "other"}])
+
+
+def test_global_long_prior_weights_tasks_not_repeat_calls():
+    rows = [
+        {"task_id": "one", "duration_ms": 800.} for _ in range(30)
+    ] + [
+        {"task_id": "two", "duration_ms": 1600.},
+        {"task_id": "three", "duration_ms": 100.},
+    ]
+    assert task_balanced_long_prior(rows) == 1200.
+    with pytest.raises(ValueError, match="no long"):
+        task_balanced_long_prior(rows[-1:])
+
+
+def test_global_prior_paired_gain_uses_same_long_calls_and_tasks():
+    rows = [{
+        "project": "p", "workflow": f"wf-{i}-{rep}",
+        "task_id": f"p__{i}", "duration_ms": 1200., "status": "success",
+        "global_long_eta_ms": 700.,
+        "probability": {mode: .9 for mode in (
+            "calls", "workflows", "projects_and_workflows"
+        )},
+        "eta_ms": {mode: 1200. for mode in (
+            "calls", "workflows", "projects_and_workflows"
+        )},
+    } for i in range(5) for rep in range(2)]
+    report = summarize(rows)
+    assert report["global_long_prior"][
+        "oracle_long_p50_absolute_error_ms"
+    ] == 500.
+    paired = report["global_long_prior"]["paired_calls_gain"]
+    assert paired["workflows"] == 5
+    assert paired["ci95_lower_ms"] == 500.
+    assert report["global_long_prior"]["by_status"]["success"][
+        "paired_calls_gain"
+    ]["workflows"] == 5
