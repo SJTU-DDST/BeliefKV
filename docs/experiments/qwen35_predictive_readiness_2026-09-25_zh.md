@@ -7249,3 +7249,39 @@ PCIe 空闲为净收益证明。要对所有候选通知报告
 阈值或预测式物理动作资格。密封结果仍按冻结口径
 独立报告 JOIN ETA 与首次服务窗口，后续实测
 动作效用另设项目隔离的 paired canary 验证。
+
+### 最终 child 请求的服务/无服务区间审计（2026-09-27，训练侧）
+
+扩展 `scripts/audit_child_notice_gpu_service.py`，按 final request ID
+读取服务端 `gpu_service_sample` 的 `service_start_ts_ms` 与
+`complete_ts_ms`，将相交区间去重并裁剪到对应请求的
+`llm_submit`/`llm_result` 边界。只有该请求**所有**服务样本都带
+有效区间时，才输出区间分解；缺边界的样本不通过采样完成时间
+反推服务开始。原有首次服务、首次 decode 与结果时间统计保持不变。
+
+- 20-root 低压训练批：67 个有效通知、66 个不同的最终请求，
+  66/66 个请求有完整区间；请求提交至结果中位约 4.26 秒，
+  其中去重服务区间中位约 4.00 秒、无服务时间中位约
+  0.147 秒。报告
+  `qwen35_tool_join_low_pressure_train20_20260927_v1/child_final_request_service_intervals_train_20260927.json`
+  的 SHA-256 为
+  `e6dde1f67825e41c076bc934f1532cfcba6539c2fd1d72bdc5327eea631d8b7f`。
+- 128-root 高压训练批：430 个有效通知、429 个不同的最终请求，
+  429/429 个请求有完整区间；请求提交至结果中位约
+  79.61 秒，其中服务区间中位约 19.83 秒、无服务时间
+  中位约 62.65 秒；提交至首次服务中位约 52.90 秒。
+  报告
+  `qwen35_cold_tool_overlapped_128root_train_20260927_v1/child_final_request_service_intervals_train_20260927.json`
+  的 SHA-256 为
+  `2d1309e866ad0150a2f4f90a23501bf4487c34d4f040d5f265252cb687aa5007`。
+
+以上均是训练侧的事后请求级分解。每个分量的中位数
+不能相加当作总体中位数；服务区间为 scheduler/worker
+批次区间，非请求独占 CUDA kernel 时间。“无服务”含准入、
+调度与其它间隙，不能直接宣称全部能由 H2D 消除。
+审计只覆盖最终一次 LLM 请求，**不包括** child 先前的
+工具调用和整个 RETURN 生命周期。高低压批次也不是
+除了压力外完全匹配的配对干预，不能仅凭这些比例断言
+换调度策略后的加速幅度。下一步在训练项目检查
+历史可见服务进度与未来剩余工作是否可识别；未见项目
+密封评分保持冻结，不将上述事后时长当成在线特征。

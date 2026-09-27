@@ -6,6 +6,7 @@ from __future__ import annotations
 import argparse
 from collections import Counter, defaultdict
 import json
+import math
 from pathlib import Path
 import sys
 
@@ -25,6 +26,21 @@ STAGES = (
     "first_decode_to_result_ms",
     "submit_to_result_ms",
 )
+
+
+def _union_ms(intervals: list[tuple[float, float]]) -> float:
+    if not intervals:
+        return 0.0
+    ordered = sorted(intervals)
+    start, end = ordered[0]
+    total = 0.0
+    for next_start, next_end in ordered[1:]:
+        if next_start > end:
+            total += end - start
+            start, end = next_start, next_end
+        else:
+            end = max(end, next_end)
+    return total + end - start
 
 
 def audit(
@@ -55,6 +71,9 @@ def audit(
             timestamps[rid][kind] = float(event["ts_ms"])
 
     service: dict[str, dict[str, float]] = defaultdict(dict)
+    intervals: dict[str, list[tuple[float, float]]] = defaultdict(list)
+    missing_interval: Counter[str] = Counter()
+    invalid_interval: Counter[str] = Counter()
     with service_audit.open("rb") as stream:
         for line in stream:
             if not line.strip():
@@ -63,6 +82,8 @@ def audit(
             if event.get("event") != "gpu_service_sample":
                 continue
             ts_ms = float(event["ts_ms"])
+            start_raw = event.get("service_start_ts_ms")
+            end_raw = event.get("complete_ts_ms")
             for sample in event.get("request_samples") or ():
                 rid = sample.get("request_id")
                 if rid not in targets:
@@ -72,10 +93,19 @@ def audit(
                 stages["last"] = ts_ms
                 if sample.get("phase") == "decode":
                     stages.setdefault("decode", ts_ms)
+                if start_raw is None or end_raw is None:
+                    missing_interval[rid] += 1
+                    continue
+                start, end = float(start_raw), float(end_raw)
+                if not (math.isfinite(start) and math.isfinite(end)) or end < start:
+                    invalid_interval[rid] += 1
+                    continue
+                intervals[rid].append((start, end))
 
     matched = []
     excluded = Counter()
     post_result_service = []
+    interval_excluded = Counter()
     for rid, row in targets.items():
         clocks = timestamps.get(rid, {})
         stages = service.get(rid, {})
@@ -98,15 +128,35 @@ def audit(
             continue
         if result < last:
             post_result_service.append(last - result)
-        matched.append({
+        record = {
             "project": row["project"],
             "submit_to_first_service_ms": first - submit,
             "first_service_to_first_decode_ms": decode - first,
             "first_decode_to_result_ms": result - decode,
             "submit_to_result_ms": result - submit,
-        })
+        }
+        if missing_interval[rid] or invalid_interval[rid] or not intervals[rid]:
+            interval_excluded[
+                "missing_interval_boundary" if missing_interval[rid] or not intervals[rid]
+                else "invalid_interval_boundary"
+            ] += 1
+        else:
+            clipped = [
+                (max(submit, start), min(result, end))
+                for start, end in intervals[rid]
+                if end > submit and start < result
+            ]
+            service_ms = _union_ms(clipped)
+            record["request_service_interval_ms"] = service_ms
+            record["request_without_service_ms"] = max(
+                0.0, result - submit - service_ms
+            )
+        matched.append(record)
 
     def summary(rows: list[dict]) -> dict:
+        complete = [
+            item for item in rows if "request_service_interval_ms" in item
+        ]
         return {
             "requests": len(rows),
             "stages": {
@@ -116,6 +166,25 @@ def audit(
                 }
                 for stage in STAGES
             },
+            "interval_decomposition": {
+                "requests": len(complete),
+                "service_interval_ms": {
+                    "p50": _quantile(
+                        [item["request_service_interval_ms"] for item in complete], .5
+                    ),
+                    "p90": _quantile(
+                        [item["request_service_interval_ms"] for item in complete], .9
+                    ),
+                },
+                "without_service_ms": {
+                    "p50": _quantile(
+                        [item["request_without_service_ms"] for item in complete], .5
+                    ),
+                    "p90": _quantile(
+                        [item["request_without_service_ms"] for item in complete], .9
+                    ),
+                },
+            },
         }
 
     projects = sorted({row["project"] for row in episodes})
@@ -124,6 +193,7 @@ def audit(
         "valid_child_intents": len(episodes),
         "identified_final_requests": len(targets),
         "excluded": dict(sorted(excluded.items())),
+        "interval_excluded": dict(sorted(interval_excluded.items())),
         "post_result_service_lag_ms": {
             "p50": _quantile(post_result_service, .5),
             "p90": _quantile(post_result_service, .9),
@@ -144,6 +214,11 @@ def audit(
             "events and service samples share the server clock; client "
             "monotonic timestamps are not subtracted from server time. "
             "First service includes prefill, not necessarily first output. "
+            "Interval decomposition sums the union of scheduler/worker "
+            "service intervals clipped to the final request's submit/result "
+            "bounds; it is not CUDA kernel time, not a future online feature, "
+            "and not the entire child's tool/RETURN duration. Incomplete "
+            "interval coverage excludes the request from that decomposition. "
             "Some final service sample callbacks are timestamped after the "
             "result event; they are counted separately, not interpreted as "
             "useful GPU service after request completion."
