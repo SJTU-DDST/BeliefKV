@@ -60,6 +60,42 @@ def test_export_reconstructs_old_trace_and_rejects_conflicting_online_prior() ->
         ])
 
 
+def test_export_failed_retry_preserves_causal_input_identity_without_raw_command() -> None:
+    def event(
+        kind: RuntimeEventKind, call: str, time_ms: int,
+        *, signature: str = "same-input", status: str | None = None,
+    ) -> RuntimeEvent:
+        attrs = {
+            "tool_name": "execute",
+            "tool_call_id": call,
+            "input_sha256": signature,
+            "command": "private command text",
+        }
+        if status is not None:
+            attrs["status"] = status
+        return RuntimeEvent(
+            event_id=f"e-{time_ms}", ts_ms=time_ms, kind=kind,
+            workflow_id="wf", invocation_id="child", attributes=attrs,
+        )
+
+    events = [
+        event(RuntimeEventKind.TOOL_START, "first", 10),
+        event(RuntimeEventKind.TOOL_START, "parallel", 20),
+        event(RuntimeEventKind.TOOL_END, "first", 150, status="error"),
+        event(RuntimeEventKind.TOOL_START, "different", 160, signature="other"),
+        event(RuntimeEventKind.TOOL_START, "retry", 170),
+    ]
+    triggers = _event_triggers(events)
+    starts = {row["attributes"]["tool_call_id"]: row["attributes"]
+              for row in triggers if row["kind"] == "tool_start"}
+    assert "previous_same_input_duration_ms" not in starts["parallel"]
+    assert "previous_same_input_duration_ms" not in starts["different"]
+    assert starts["retry"]["input_sha256"] == "same-input"
+    assert starts["retry"]["previous_same_input_status"] == "error"
+    assert starts["retry"]["previous_same_input_duration_ms"] == 140
+    assert all("command" not in row["attributes"] for row in triggers)
+
+
 def test_project_history_never_uses_open_or_failed_calls() -> None:
     history = ProjectToolHistory(minimum_support=2, window=2)
     attrs = {

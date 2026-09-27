@@ -349,6 +349,8 @@ def test_export_training_tables_preserves_identity_censoring_and_join_closure(
                     "is_child": True,
                     "observed_command_class": "test_suite",
                     "parameter_signature": "signature",
+                    "input_sha256": "sample-input-sha256",
+                    "command": "private command text",
                 },
             ),
             _event(
@@ -479,6 +481,8 @@ def test_export_training_tables_preserves_identity_censoring_and_join_closure(
     ]
     assert any(
         row["trigger_invocation_id"] == "root"
+        and row["trigger_attributes"]["input_sha256"] == "sample-input-sha256"
+        and "command" not in row["trigger_attributes"]
         and any(
             item["invocation_id"] == "root" and item["is_child"] is False
             for item in row["invocations"]

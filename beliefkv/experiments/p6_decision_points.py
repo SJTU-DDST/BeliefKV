@@ -466,6 +466,7 @@ def _event_triggers(
                     "observed_command_shape",
                     "observed_inline_structure",
                     "input_chars",
+                    "input_sha256",
                     "previous_same_input_duration_ms",
                     "previous_same_input_age_ms",
                     "previous_same_input_status",

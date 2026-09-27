@@ -77,6 +77,48 @@ def build_graph() -> RuntimeCausalContextGraph:
 
 
 class OnlineShadowTest(unittest.TestCase):
+    def test_failed_same_input_timing_reaches_waiting_child_only(self) -> None:
+        graph = build_graph()
+        create = RuntimeEvent(
+            event_id="failed-child", ts_ms=4.0,
+            kind=RuntimeEventKind.INVOCATION_CREATE,
+            workflow_id="wf", invocation_id="child", context_id="child-ctx",
+            context_epoch=0, parent_invocation_id="root",
+            relation_type=RelationType.SPAWN,
+        )
+        graph.apply(create)
+        start = RuntimeEvent(
+            event_id="failed-tool", ts_ms=5.0,
+            kind=RuntimeEventKind.TOOL_START,
+            workflow_id="wf", invocation_id="child",
+            attributes={
+                "tool_family": "shell", "tool_name": "execute",
+                "is_child": True, "previous_same_input_status": "error",
+                "previous_same_input_duration_ms": 1600,
+            },
+        )
+        graph.apply(start)
+        predictor = RemainingTimePredictor()
+        predictor.observe_event(start)
+        current = _features_for_invocation(
+            graph, "child", predictor, now_ms=205.0,
+            active_tool_count=1, family_counts={"shell": 1},
+        )
+        assert current.previous_failed_same_input_duration_ms == 1600.
+        assert current.previous_same_input_duration_ms is None
+        end = RuntimeEvent(
+            event_id="failed-end", ts_ms=206.0,
+            kind=RuntimeEventKind.TOOL_END,
+            workflow_id="wf", invocation_id="child",
+        )
+        graph.apply(end)
+        predictor.observe_event(end)
+        after = _features_for_invocation(
+            graph, "child", predictor, now_ms=207.0,
+            active_tool_count=0, family_counts={},
+        )
+        assert after.previous_failed_same_input_duration_ms is None
+
     def test_tool_timing_features_reach_live_child_and_expire(self) -> None:
         graph = build_graph()
         create = RuntimeEvent(

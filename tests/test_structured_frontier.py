@@ -234,6 +234,149 @@ def test_project_tool_contract_uses_cold_child_prior_after_sufficient_support() 
     )
 
 
+def test_failed_same_input_timing_uses_independent_child_error_margin() -> None:
+    rows = []
+    for index in range(40):
+        row = _tool_row(f"failed-repeat-{index}", 1200.0 + index, "error")
+        row["workflow_id"] = f"workflow-{index // 4}"
+        row["trigger_invocation_id"] = "worker"
+        row["trigger_attributes"].update({
+            "tool_name": "execute", "observed_command_class": "test_suite",
+            "is_child": True, "previous_same_input_status": "error",
+            "previous_same_input_duration_ms": 1200.0,
+            "input_sha256": f"input-{index}",
+        })
+        row["invocations"][0]["is_child"] = True
+        rows.append(row)
+    for index in range(40):
+        row = _tool_row(f"success-repeat-{index}", 3000.0 + index, "success")
+        row["workflow_id"] = f"success-workflow-{index // 4}"
+        row["trigger_invocation_id"] = "worker"
+        row["trigger_attributes"].update({
+            "tool_name": "execute", "observed_command_class": "test_suite",
+            "is_child": True, "previous_same_input_status": "success",
+            "previous_same_input_duration_ms": 3000.0,
+            "input_sha256": f"success-input-{index}",
+        })
+        row["invocations"][0]["is_child"] = True
+        rows.append(row)
+    model = FrontierBeliefModel(
+        tool_feature_contract="observed_command_child_failed_repeat_v4"
+    )
+    summary = model.fit(rows)
+    assert summary["observation_counts"]["failed_repeat_tool"] == 40
+    assert model.failed_repeat_error_p90_ms == 35.0
+    assert summary["observation_counts"]["repeat_tool"] == 40
+    assert model.repeat_error_p90_ms == 35.0
+    features = _local_features_from_row(
+        rows[0], rows[0]["invocations"][0],
+        tool_feature_contract=model.tool_feature_contract,
+    )
+    assert features.previous_failed_same_input_duration_ms == 1200.0
+    assert features.previous_same_input_duration_ms is None
+    wait = model.predict(LocalFrontierFeatures.from_dict({
+        **features.to_dict(), "elapsed_wait_ms": 200.0,
+    })).wait_belief
+    assert wait.support_detail == "same_failed_input_completed"
+    assert wait.residual_duration.quantile(.5) == 1000.0
+    assert wait.residual_duration.quantile(.9) == 1035.0
+    success_features = _local_features_from_row(
+        rows[40], rows[40]["invocations"][0],
+        tool_feature_contract=model.tool_feature_contract,
+    )
+    assert model.predict(success_features).wait_belief.support_detail == (
+        "same_input_completed"
+    )
+    loaded = FrontierBeliefModel.from_dict(model.to_dict())
+    assert loaded.failed_repeat_error_p90_ms == model.failed_repeat_error_p90_ms
+    assert loaded.predict(features).wait_belief.support_detail == (
+        "same_failed_input_completed"
+    )
+    with pytest.raises(ValueError, match="schema v10"):
+        FrontierBeliefModel.from_dict({
+            **model.to_dict(), "schema_version": 9,
+        })
+    legacy = FrontierBeliefModel.from_dict({
+        **model.to_dict(), "schema_version": 9,
+        "failed_repeat_error_p90_ms": None,
+        "tool_feature_contract": "observed_command_child_project_v3",
+    })
+    assert legacy.predict(features).wait_belief.support_detail != (
+        "same_failed_input_completed"
+    )
+    root = LocalFrontierFeatures.from_dict({
+        **features.to_dict(), "is_child": False,
+    })
+    assert model.predict(root).wait_belief.support_detail != (
+        "same_failed_input_completed"
+    )
+    overrun = LocalFrontierFeatures.from_dict({
+        **features.to_dict(), "elapsed_wait_ms": 1300.0,
+    })
+    assert model.predict(overrun).wait_belief.support_detail != (
+        "same_failed_input_completed"
+    )
+    with pytest.raises(ValueError, match="both previous statuses"):
+        LocalFrontierFeatures.from_dict({
+            **features.to_dict(), "previous_same_input_duration_ms": 1200.0,
+        })
+
+    calibration = []
+    for index in range(8):
+        row = _tool_row(f"cal-failed-{index}", 1250.0, "error")
+        row["split"] = "calibration"
+        row["workflow_id"] = f"cal-workflow-{index}"
+        row["trigger_invocation_id"] = "worker"
+        row["trigger_attributes"].update({
+            "tool_name": "execute", "observed_command_class": "test_suite",
+            "is_child": True, "previous_same_input_status": "error",
+            "previous_same_input_duration_ms": 1200.0,
+            "input_sha256": f"cal-input-{index}",
+        })
+        row["invocations"][0]["is_child"] = True
+        calibration.append(row)
+    calibrated = FrontierBeliefModel.from_dict(model.to_dict())
+    report = calibrated.calibrate(calibration)
+    assert report["observation_counts"]["failed_repeat_workflows_calibrated"] == 8
+    assert report["failed_repeat_same_input_margin_ms"] >= 50.0
+    sparse = FrontierBeliefModel.from_dict(model.to_dict())
+    sparse.calibrate(calibration[:7])
+    assert sparse.failed_repeat_error_p90_ms is None
+    assert sparse.predict(features).wait_belief.support_detail != (
+        "same_failed_input_completed"
+    )
+
+
+def test_project_v3_ignores_failed_repeat_observations() -> None:
+    row = _tool_row("old-v3", 1800., "error")
+    row["trigger_invocation_id"] = "worker"
+    row["workflow_id"] = "old-workflow"
+    row["trigger_attributes"].update({
+        "tool_name": "execute",
+        "observed_command_class": "test_suite",
+        "previous_same_input_status": "error",
+        "previous_same_input_duration_ms": 1700.,
+        "input_sha256": "valid-hash",
+        "is_child": True,
+    })
+    row["invocations"][0]["is_child"] = True
+    model = FrontierBeliefModel(
+        tool_feature_contract="observed_command_child_project_v3"
+    )
+    assert model.fit([row])["observation_counts"]["failed_repeat_tool"] == 0
+    raw = {**model.to_dict(), "schema_version": 9}
+    raw.pop("failed_repeat_error_p90_ms")
+    restored = FrontierBeliefModel.from_dict(raw)
+    features = _local_features_from_row(
+        row, row["invocations"][0],
+        tool_feature_contract=restored.tool_feature_contract,
+    )
+    assert features.previous_failed_same_input_duration_ms is None
+    assert restored.predict(features).wait_belief.support_detail != (
+        "same_failed_input_completed"
+    )
+
+
 def test_repeat_tool_calibration_is_workflow_grouped_and_falls_back_if_sparse() -> None:
     fit_rows = []
     for index in range(40):

@@ -109,6 +109,7 @@ def main(argv: list[str] | None = None) -> int:
             "observed_command_child_v1",
             "observed_command_child_repeat_v2",
             "observed_command_child_project_v3",
+            "observed_command_child_failed_repeat_v4",
         ),
         default="observed_command_child_v1",
     )

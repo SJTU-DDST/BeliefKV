@@ -54,6 +54,7 @@ class InvocationPredictionFeatures:
     tool_command_class: str = "unknown"
     tool_observed_command_class: str = "unknown"
     tool_previous_same_input_duration_ms: float | None = None
+    tool_previous_failed_same_input_duration_ms: float | None = None
     tool_project_class_duration_median_ms: float | None = None
     tool_project_shape_survivor_500ms_total_median_ms: float | None = None
     action_history: list[ActionKind] = field(default_factory=list)
@@ -144,6 +145,7 @@ class RemainingTimePredictor:
                 event.attributes.get("observed_command_class") or "unknown"
             )
             features.tool_previous_same_input_duration_ms = None
+            features.tool_previous_failed_same_input_duration_ms = None
             features.tool_project_class_duration_median_ms = None
             features.tool_project_shape_survivor_500ms_total_median_ms = None
             if event.attributes.get("tool_name") == "execute":
@@ -169,6 +171,15 @@ class RemainingTimePredictor:
                     and math.isfinite(previous) and previous >= 0
                 ):
                     features.tool_previous_same_input_duration_ms = float(previous)
+                elif (
+                    event.attributes.get("previous_same_input_status") == "error"
+                    and event.attributes.get("is_child") is True
+                    and type(previous) in (int, float)
+                    and math.isfinite(previous) and previous > 100
+                ):
+                    features.tool_previous_failed_same_input_duration_ms = float(
+                        previous
+                    )
                 project = event.attributes.get("project_class_duration_median_ms")
                 support = event.attributes.get("project_class_completed_support")
                 if (
@@ -187,6 +198,7 @@ class RemainingTimePredictor:
         elif event.kind == RuntimeEventKind.TOOL_END:
             features.tool_observed_command_class = "unknown"
             features.tool_previous_same_input_duration_ms = None
+            features.tool_previous_failed_same_input_duration_ms = None
             features.tool_project_class_duration_median_ms = None
             features.tool_project_shape_survivor_500ms_total_median_ms = None
         elif event.kind in {RuntimeEventKind.CALL, RuntimeEventKind.SPAWN}:

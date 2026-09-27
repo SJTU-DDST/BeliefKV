@@ -919,6 +919,13 @@ class NativeAdmissionRuntime:
             previous_same_input_duration_ms=(
                 previous_duration if previous_status == "success" else None
             ),
+            previous_failed_same_input_duration_ms=(
+                previous_duration
+                if previous_status == "error"
+                and bool(stored_child or invocation.parent_invocation_id)
+                and previous_duration is not None and previous_duration > 100
+                else None
+            ),
             project_class_duration_median_ms=(
                 project_duration
                 if project_support >= 16 and command == "execute"
