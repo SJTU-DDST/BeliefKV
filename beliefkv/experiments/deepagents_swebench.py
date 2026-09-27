@@ -2029,12 +2029,39 @@ required WorkflowCompletion response.
 class InitialInGraphDelegationMiddleware(AgentMiddleware[Any, Any, Any]):
     """Require an initial task call without changing the session's tool schema."""
 
+    def __init__(self, audit: JsonlAudit | None = None) -> None:
+        super().__init__()
+        self.audit = audit
+        self._first_request_seen = False
+
     def wrap_model_call(self, request: ModelRequest, handler: Any) -> ModelResponse:
-        if any(isinstance(message, AIMessage) for message in request.messages):
+        has_prior_ai = any(
+            isinstance(message, AIMessage) for message in request.messages
+        )
+        first_request = not self._first_request_seen
+        self._first_request_seen = True
+        if first_request and self.audit is not None:
+            self.audit.emit(
+                "in_graph_initial_model_request",
+                has_prior_ai=has_prior_ai,
+                message_types=[type(message).__name__ for message in request.messages],
+                tool_names=[getattr(tool, "name", None) for tool in request.tools],
+            )
+        if has_prior_ai:
             return handler(request)
         if sum(getattr(tool, "name", None) == "task" for tool in request.tools) != 1:
             raise RuntimeError("in-graph delegation requires exactly one task tool")
-        return handler(request.override(tool_choice="task"))
+        response = handler(request.override(tool_choice="task"))
+        if first_request and self.audit is not None:
+            self.audit.emit(
+                "in_graph_initial_model_response",
+                tool_names=[
+                    call.get("name")
+                    for message in response.result
+                    for call in getattr(message, "tool_calls", ())
+                ],
+            )
+        return response
 
 
 NATIVE_DYNAMIC_INITIAL_PLANNER_PROMPT = """
@@ -2695,7 +2722,7 @@ def _build_autonomous_agent(
             )
         )
     if config.subagent_fanout_profile == "native_in_graph_1to4":
-        middleware.append(InitialInGraphDelegationMiddleware())
+        middleware.append(InitialInGraphDelegationMiddleware(audit=backend.audit))
     if config.stop_after_first_native_join:
         middleware.append(NativeSubagentSemanticGateMiddleware(adapter))
     middleware.extend(

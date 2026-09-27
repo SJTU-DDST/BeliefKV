@@ -2053,8 +2053,11 @@ def test_in_graph_profile_starts_root_without_external_planner(
     assert "After a JOIN, you may launch another round" in in_graph_prompt
 
 
-def test_in_graph_first_turn_requires_task_then_restores_root_tools() -> None:
-    middleware = InitialInGraphDelegationMiddleware()
+def test_in_graph_first_turn_requires_task_then_restores_root_tools(
+    tmp_path: Path,
+) -> None:
+    audit = JsonlAudit(tmp_path / "initial_gate.jsonl")
+    middleware = InitialInGraphDelegationMiddleware(audit=audit)
     model = FakeMessagesListChatModel(responses=[AIMessage(content="unused")])
     task = SimpleNamespace(name="task")
     repository_tool = SimpleNamespace(name="read_file")
@@ -2094,6 +2097,55 @@ def test_in_graph_first_turn_requires_task_then_restores_root_tools() -> None:
                          tools=[repository_tool]),
             handler,
         )
+    audit.close()
+    events = [
+        json.loads(line)
+        for line in (tmp_path / "initial_gate.jsonl").read_text().splitlines()
+    ]
+    assert [event["event"] for event in events] == [
+        "in_graph_initial_model_request", "in_graph_initial_model_response",
+    ]
+    assert events[0]["has_prior_ai"] is False
+    assert events[0]["tool_names"] == ["read_file", "task"]
+    assert events[1]["tool_names"] == []
+
+
+def test_in_graph_delegation_gate_reaches_real_agent_model_binding() -> None:
+    class RecordingModel(FakeMessagesListChatModel):
+        _bindings: list[tuple[list[str], object]] = PrivateAttr(default_factory=list)
+
+        def bind_tools(self, tools, **kwargs):
+            self._bindings.append(([item.name for item in tools],
+                                   kwargs.get("tool_choice")))
+            return self
+
+    @tool("task")
+    def task(description: str) -> str:
+        """Delegate a bounded repository question."""
+        return f"report: {description}"
+
+    @tool("read_file")
+    def read_file(path: str) -> str:
+        """Read one repository file."""
+        return path
+
+    model = RecordingModel(responses=[
+        AIMessage(content="", tool_calls=[
+            {"name": "task", "args": {"description": "inspect"}, "id": "child"}
+        ]),
+        AIMessage(content="complete"),
+    ])
+    agent = create_agent(
+        model=model, tools=[task, read_file],
+        middleware=[InitialInGraphDelegationMiddleware()],
+    )
+    result = agent.invoke({"messages": [HumanMessage(content="fix the issue")]})
+
+    assert result["messages"][-1].content == "complete"
+    assert model._bindings == [
+        (["task", "read_file"], "task"),
+        (["task", "read_file"], None),
+    ]
 
 
 def test_second_native_delegation_round_keeps_root_call_budget() -> None:

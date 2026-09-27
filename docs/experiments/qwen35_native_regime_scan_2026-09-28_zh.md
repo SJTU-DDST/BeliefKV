@@ -445,3 +445,18 @@ runtime 已支持该配置，`run_deepagents_swebench.py` 的 argparse
 工具定义一致，但尚未验证线上 prompt token 前缀和首次服务 KV
 复用；下一轮要同时检查真实 `task`、SPAWN/JOIN、物理 H2D 与
 JOIN 后 first-service 的 Device 前缀命中，缺一不可。
+
+## 200 GB / 25:75 / write-back / 8-root：v5 首轮门禁未闭环
+
+`...native_in_graph_join_200g_25_75_8root_v5/` 在服务端和客户端
+均加载了稳定工具定义的修复，但 582 次服务端 `llm_submit`
+之后仍未出现一次 `task` 或 JOIN；主动终止客户端并关闭服务端，
+因此不能用于 H2D 收益评估。测试证实普通 LangChain agent 图
+的首轮门禁能把具名 `task` 传到绑定层；Qwen3 Coder 的结构
+约束离线生成结果也仅包含 `task`。先前将失败直接归因于
+“具名约束允许全部工具”**没有证据，已撤回**。
+
+下一轮加入每个 root 一次性的首轮模型请求/响应审计，只记录
+消息类型、工具名和返回的工具名，不记录提示词/工具参数。
+先确认真实运行的首轮是否命中门禁；再根据结果检查模型调用、
+请求序列化及服务端约束，不扩大正式试验。
