@@ -413,3 +413,18 @@ runtime 已支持该配置，`run_deepagents_swebench.py` 的 argparse
 原生 `task` 同轮派发；确实原子性的任务允许不派发，JOIN 后是否
 还有新一轮仍由模型决定。这是工作负载提示词调整，不是预测
 策略的收益。需用独立冷启动目录验证真正的 root 派发和前缀复用。
+
+## 200 GB / 25:75 / write-back / 8-root：in-graph 试采 v3 仍无 JOIN
+
+`...native_in_graph_join_200g_25_75_8root_v3/` 在强化首轮派发
+提示后独立启动；确认客户端 profile 为 `native_in_graph_1to4`，
+且 root 获得原生 subagent middleware。主动中止时已有超过 400 次
+服务端 `llm_submit`，仍无 `task`、SPAWN 或 JOIN。提示词强化本身
+没有建立可测的 in-graph JOIN，不能以本轮评价 H2D。
+
+下一次只对该 opt-in profile 的 root 首次模型调用限制可选工具为
+原生 `task`，并设置具名 `tool_choice=task`；模型仍决定要派发
+哪些独立工作和一至四个 child。第一轮发出后恢复全部仓库工具；
+不使用独立 planner，不改变其它 reactive profile。此机制必须
+先通过原生模型/tool parser 与真实 SPAWN/JOIN 的 GPU 试采，
+才可继续验证预测性 H2D 的物理节点首次复用。

@@ -44,6 +44,7 @@ from beliefkv.experiments.deepagents_swebench import (
     DynamicInitialDelegationPlan,
     EmptyReasoningRecoveryMiddleware,
     ChildFinalReportShadowMiddleware,
+    InitialInGraphDelegationMiddleware,
     NATIVE_DYNAMIC_1TO4_PROMPT,
     NATIVE_DYNAMIC_INITIAL_PLANNER_PROMPT,
     NATIVE_SUBAGENT_2TO3_PROMPT,
@@ -2050,6 +2051,49 @@ def test_in_graph_profile_starts_root_without_external_planner(
     assert "one to four native task calls" in in_graph_prompt
     assert "one child is valid" in in_graph_prompt
     assert "After a JOIN, you may launch another round" in in_graph_prompt
+
+
+def test_in_graph_first_turn_requires_task_then_restores_root_tools() -> None:
+    middleware = InitialInGraphDelegationMiddleware()
+    model = FakeMessagesListChatModel(responses=[AIMessage(content="unused")])
+    task = SimpleNamespace(name="task")
+    repository_tool = SimpleNamespace(name="read_file")
+    requests: list[ModelRequest] = []
+
+    def handler(request: ModelRequest) -> ModelResponse:
+        requests.append(request)
+        return ModelResponse(result=[AIMessage(content="done")])
+
+    first = ModelRequest(
+        model=model, messages=[HumanMessage(content="fix the issue")],
+        tools=[repository_tool, task],
+    )
+    middleware.wrap_model_call(first, handler)
+    assert requests[-1].tools == [task]
+    assert requests[-1].tool_choice == "task"
+    assert first.tools == [repository_tool, task]
+    assert first.tool_choice is None
+
+    after_join = ModelRequest(
+        model=model,
+        messages=[
+            HumanMessage(content="fix the issue"),
+            AIMessage(content="", tool_calls=[
+                {"name": "task", "args": {"description": "inspect"}, "id": "child"}
+            ]),
+            ToolMessage(content="findings", tool_call_id="child"),
+        ],
+        tools=[repository_tool, task],
+    )
+    middleware.wrap_model_call(after_join, handler)
+    assert requests[-1] is after_join
+    assert requests[-1].tool_choice is None
+    with pytest.raises(RuntimeError, match="requires exactly one task tool"):
+        middleware.wrap_model_call(
+            ModelRequest(model=model, messages=[HumanMessage(content="fix")],
+                         tools=[repository_tool]),
+            handler,
+        )
 
 
 def test_second_native_delegation_round_keeps_root_call_budget() -> None:

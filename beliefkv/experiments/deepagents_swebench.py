@@ -2013,19 +2013,31 @@ verification, and the required WorkflowCompletion response.
 
 NATIVE_IN_GRAPH_1TO4_PROMPT = """
 Choose delegation from the actual task as part of this same root conversation.
-For a task with an independently checkable repository question, begin with an
-initial delegation round before reading, executing, or editing repository files:
-issue one to four native task calls in one turn. Choose the number from the
-independent work; one child is valid. Give each child a concrete code-path,
-reproduction, test, or compatibility deliverable. If the task is genuinely
-atomic and has no independent work, proceed directly. Do not duplicate work
-or split one question merely to increase fan-out. Wait for the child results
-in this conversation before integrating them.
+Begin with an initial delegation round before reading, executing, or editing
+repository files: issue one to four native task calls in one turn. Choose
+the number from the independent work; one child is valid. Give each child a
+concrete code-path, reproduction, test, or compatibility deliverable. Do not
+duplicate work or split one question merely to increase fan-out. Wait for
+the child results in this conversation before integrating them.
 
 After a JOIN, you may launch another round if new independent questions
 remain. The root is responsible for integration, verification, and the
 required WorkflowCompletion response.
 """
+
+
+class InitialInGraphDelegationMiddleware(AgentMiddleware[Any, Any, Any]):
+    """Constrain the first root turn to the native task tool."""
+
+    def wrap_model_call(self, request: ModelRequest, handler: Any) -> ModelResponse:
+        if any(isinstance(message, AIMessage) for message in request.messages):
+            return handler(request)
+        task_tools = [
+            tool for tool in request.tools if getattr(tool, "name", None) == "task"
+        ]
+        if len(task_tools) != 1:
+            raise RuntimeError("in-graph delegation requires exactly one task tool")
+        return handler(request.override(tools=task_tools, tool_choice="task"))
 
 
 NATIVE_DYNAMIC_INITIAL_PLANNER_PROMPT = """
@@ -2685,6 +2697,8 @@ def _build_autonomous_agent(
                 ),
             )
         )
+    if config.subagent_fanout_profile == "native_in_graph_1to4":
+        middleware.append(InitialInGraphDelegationMiddleware())
     if config.stop_after_first_native_join:
         middleware.append(NativeSubagentSemanticGateMiddleware(adapter))
     middleware.extend(
