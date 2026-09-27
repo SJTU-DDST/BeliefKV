@@ -703,6 +703,10 @@ class RuntimeCausalContextGraph:
             changed_contexts=frozenset({invocation.context_id}),
         )
 
+    def _on_tool_wait_observation(self, event: RuntimeEvent) -> GraphDelta:
+        self._event_invocation(event)
+        return GraphDelta(event.event_id)
+
     def _on_llm_submit(self, event: RuntimeEvent) -> GraphDelta:
         invocation = self._event_invocation(event)
         self._ensure_not_terminal(invocation)

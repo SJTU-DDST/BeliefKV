@@ -26,6 +26,7 @@ class RuntimeEventKind(str, Enum):
     JOIN_TIMEOUT = "join_timeout"
     TOOL_START = "tool_start"
     TOOL_END = "tool_end"
+    TOOL_WAIT_OBSERVATION = "tool_wait_observation"
     LLM_SUBMIT = "llm_submit"
     LLM_RESULT = "llm_result"
     CALL_CENSORED = "call_censored"

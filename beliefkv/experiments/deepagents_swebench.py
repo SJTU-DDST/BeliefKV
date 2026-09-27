@@ -75,6 +75,7 @@ from beliefkv.runtime.context_lifecycle import (
 )
 from beliefkv.runtime.sglang_adapter import BeliefKVRequestMetadata
 from beliefkv.runtime.subagent_state import PrivateStateIsolatingSubAgentMiddleware
+from beliefkv.runtime.tool_wait_shadow import ToolWaitShadowTimer
 
 
 SERVER_ARTIFACT_FILENAMES = {
@@ -3766,6 +3767,7 @@ def _run_workflow(
     bundle: WorkloadBundle,
     workload: SweBenchWorkload,
     project_tool_history: ProjectToolHistory | None = None,
+    tool_wait_shadow_timer: ToolWaitShadowTimer | None = None,
 ) -> dict[str, Any]:
     workflow_dir = config.output_dir / "workflows" / workload.instance_id
     workflow_dir.mkdir(parents=True, exist_ok=False)
@@ -3823,6 +3825,7 @@ def _run_workflow(
         if config.control_socket is not None
         else None
     )
+    workflow_deadline = ActivationDeadline()
     adapter = DeepAgentsRuntimeAdapter(
         trace_sink,
         root_metadata,
@@ -3830,6 +3833,8 @@ def _run_workflow(
         workspace_digest_provider=backend.tool_state_digest,
         project_tool_history=project_tool_history,
         project_id=workload.repo,
+        tool_wait_shadow_timer=tool_wait_shadow_timer,
+        tool_wait_shadow_expired=workflow_deadline.expired,
         finish_chunk_shadow=(
             config.child_finish_chunk_shadow
             or os.environ.get("BELIEFKV_CHILD_FINISH_CHUNK_SHADOW") == "1"
@@ -3843,7 +3848,7 @@ def _run_workflow(
         ),
     )
     deadline_controller = WorkflowDeadlineController(
-        deadline=ActivationDeadline(),
+        deadline=workflow_deadline,
         adapter=adapter,
         backend=backend,
         audit=sandbox_audit,
@@ -3906,6 +3911,7 @@ def _run_workflow(
         else:
             error_text = f"{type(error).__name__}: {error}"
     finally:
+        adapter.stop_tool_wait_shadow()
         try:
             deadline_summary = deadline_controller.close()
         except BaseException as deadline_error:
@@ -4131,6 +4137,7 @@ def run_experiment(config: DeepAgentsExperimentConfig) -> dict[str, Any]:
     sglang_monitor.start()
     results: list[dict[str, Any]] = []
     project_tool_history = ProjectToolHistory()
+    tool_wait_shadow_timer = ToolWaitShadowTimer()
     if config.workflow_arrival_batch_size > 0:
         arrivals = build_workflow_arrivals(
             len(workloads),
@@ -4169,7 +4176,8 @@ def run_experiment(config: DeepAgentsExperimentConfig) -> dict[str, Any]:
                 workloads,
                 concurrency=config.concurrency,
                 run_one=lambda workload: _run_workflow(
-                    config, bundle, workload, project_tool_history
+                    config, bundle, workload, project_tool_history,
+                    tool_wait_shadow_timer,
                 ),
             ):
                 record_result(future, workload)
@@ -4185,12 +4193,13 @@ def run_experiment(config: DeepAgentsExperimentConfig) -> dict[str, Any]:
                     futures[
                         executor.submit(
                             _run_workflow, config, bundle, workload,
-                            project_tool_history,
+                            project_tool_history, tool_wait_shadow_timer,
                         )
                     ] = workload
                 for future in as_completed(futures):
                     record_result(future, futures[future])
     finally:
+        tool_wait_shadow_timer.close()
         metrics = sglang_monitor.close()
         gpu_monitor.close()
     # The event socket is acknowledged synchronously, while the audit and event
@@ -4242,6 +4251,7 @@ def run_experiment(config: DeepAgentsExperimentConfig) -> dict[str, Any]:
         "run_id": run_id,
         "mode": config.mode,
         "duration_seconds": elapsed,
+        "tool_wait_shadow": tool_wait_shadow_timer.summary(),
         "workflow_count": len(results),
         "completed_workflows": sum(
             item.get("outcome") == "completed" for item in results

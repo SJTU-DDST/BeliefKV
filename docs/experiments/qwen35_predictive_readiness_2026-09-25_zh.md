@@ -5432,3 +5432,43 @@ Sphinx 有 468/468 个历史支持，逐调用总时长
 非零退出返回调用的在线历史尚未纳入；
 Sphinx 的物理提前窗口不足及 JOIN 秒级误差
 仍然存在。
+
+### native-reactive 工具 500 ms 在线存活观测
+
+上一节的条件 ETA 原只在启用 BeliefKV controller 的
+`frontier_shadow` 中出现；Qwen3.5 native-reactive
+采集并未启用该 controller，因此不能据此声称
+训练 trace 已经采到在线 500 ms 时的条件预测。
+现将已支持的冷 child `execute` 形态先验接入
+DeepAgents 采集路径的**只读**定时器：
+每个 runner 共用一个线程，最多排队 8192 项，
+不为每次工具调用开线程。只在 `TOOL_START`
+之前已完成的同项目、同形态成功调用达到
+至少四次、来自至少三个 workflow，且
+历史总时长中位数超过 500 ms 时设置观察点。
+观察点在工具开始事件发布完毕后等待至少
+500 ms，重新验证原 workflow、invocation、
+tool run 和 tool call 未改变、工具尚未结束，
+且未过 workflow 截止或进入收尾。
+新 `tool_wait_observation` 只写 per-workflow
+trace，不传给调度控制通道，也不影响模型、
+工具执行和 KV 迁移。其 `tool_elapsed_ms`、
+历史总时长中位数、支持数及剩余 ETA 均有
+因果时间和身份校验；超出历史总时长不输出
+这一简易 ETA。P6 重放拒绝无打开调用、
+重复或与起始历史不一致的观测；若并发调用
+使图状态不再是 `WAIT_TOOL`，不将其纳入
+该状态的训练决策行。
+
+本地聚焦测试覆盖正常投递、短调用、
+失败/身份替换、并行调用、deadline、
+收尾和关闭竞态，并验证图事件只读及
+P6 导出校验。`tool_wait_shadow` 的投递数、
+丢弃数与错误数保存在实验汇总，供下一轮
+真实 workload 核对触发时刻与误报。
+**尚未进行新的 GPU canary**；先前 Astropy/
+Sphinx 留出集已被用于方案评估，不能把
+相同项目再次当作新的独立验收。此更改
+既未校准 JOIN 时间，也未启用预测性
+H2D/D2H；`online_eligible=false` 和
+`predictive_action_eligible=false` 不变。

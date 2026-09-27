@@ -21,6 +21,7 @@ _EVENT_TRIGGERS = {
     RuntimeEventKind.LLM_RESULT,
     RuntimeEventKind.TOOL_START,
     RuntimeEventKind.TOOL_END,
+    RuntimeEventKind.TOOL_WAIT_OBSERVATION,
     RuntimeEventKind.SPAWN,
     RuntimeEventKind.HANDOFF,
     RuntimeEventKind.RETURN,
@@ -112,6 +113,10 @@ def build_frontier_decision_points(
             if event.invocation_id and observed_action is not None:
                 boundary_history[event.invocation_id].append(observed_action)
             event_index += 1
+        if trigger["kind"] == RuntimeEventKind.TOOL_WAIT_OBSERVATION.value:
+            watched = graph.invocations.get(trigger.get("invocation_id"))
+            if watched is None or watched.state != InvocationState.WAIT_TOOL:
+                continue
         while (
             resource_index < len(resource_timeline)
             and float(resource_timeline[resource_index].get("ts_ms") or 0.0) <= ts_ms
@@ -244,6 +249,8 @@ def _event_triggers(
     project_history = ProjectToolHistory()
     metadata = workflow_metadata or {}
     triggers = []
+    open_tools: dict[tuple[str, str], tuple[str, float, float, int]] = {}
+    observed_tool_waits: set[tuple[str, str]] = set()
     for event in events:
         history = histories.setdefault(event.workflow_id, SameInputToolHistory())
         attrs = dict(event.attributes)
@@ -313,9 +320,45 @@ def _event_triggers(
             ):
                 raise ValueError("online/offline shape survivor history disagrees")
             attrs.update(project_prior)
+            call_id = str(attrs.get("tool_call_id") or "")
+            if call_id:
+                shape_total = attrs.get(
+                    "project_shape_survivor_500ms_total_median_ms"
+                )
+                open_tools[event.workflow_id, call_id] = (
+                    event.invocation_id, event.ts_ms,
+                    float(shape_total or 0),
+                    int(attrs.get("project_shape_survivor_500ms_support") or 0),
+                )
         elif event.kind == RuntimeEventKind.TOOL_END and event.invocation_id:
             history.end(event.workflow_id, event.invocation_id, attrs, event.ts_ms)
             project_history.end(event.workflow_id, attrs, event.ts_ms)
+            open_tools.pop(
+                (event.workflow_id, str(attrs.get("tool_call_id") or "")), None
+            )
+        elif event.kind == RuntimeEventKind.TOOL_WAIT_OBSERVATION:
+            call_id = str(attrs.get("tool_call_id") or "")
+            key = event.workflow_id, call_id
+            opened = open_tools.get(key)
+            if not call_id or opened is None or key in observed_tool_waits:
+                raise ValueError("tool wait observation has no unique open call")
+            invocation_id, start_ms, total_ms, support = opened
+            elapsed_ms = event.ts_ms - start_ms
+            if (
+                event.invocation_id != invocation_id
+                or elapsed_ms < 500 or elapsed_ms >= total_ms
+                or support < 4
+                or abs(float(attrs.get("tool_elapsed_ms") or -1) - elapsed_ms) > 1
+                or abs(float(attrs.get(
+                    "project_shape_survivor_500ms_total_median_ms") or -1
+                ) - total_ms) > .01
+                or int(attrs.get("project_shape_survivor_500ms_support") or 0)
+                != support
+                or abs(float(attrs.get("tool_wait_shape_eta_ms_p50") or -1)
+                       - (total_ms - elapsed_ms)) > 1
+            ):
+                raise ValueError("tool wait observation disagrees with causal history")
+            observed_tool_waits.add(key)
         elif event.kind == RuntimeEventKind.WORKFLOW_END:
             project_history.discard_workflow(event.workflow_id)
         elif event.kind in (RuntimeEventKind.RETURN, RuntimeEventKind.INVOCATION_CANCEL):
@@ -355,6 +398,8 @@ def _event_triggers(
                     "project_long_completed_support",
                     "project_shape_survivor_500ms_total_median_ms",
                     "project_shape_survivor_500ms_support",
+                    "tool_elapsed_ms",
+                    "tool_wait_shape_eta_ms_p50",
                     "prompt_semantic_sha256",
                     "sampling_seed",
                     "status",

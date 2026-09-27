@@ -44,6 +44,7 @@ from beliefkv.runtime.eos_shadow import (
 from beliefkv.runtime.report_phase import ReportPhaseTracker
 from beliefkv.runtime.sglang_adapter import BeliefKVRequestMetadata
 from beliefkv.runtime.sglang_v0520_sessions import NativeRadixSessionLeases
+from beliefkv.runtime.tool_wait_shadow import ToolWaitShadowTimer
 
 STREAM_CONTENT_THRESHOLDS = (
     64, 1024, 1700, 2400, 3200, 4200, 5600, 7000
@@ -181,6 +182,8 @@ class _OrdinaryToolRun:
     tool_call_id: str
     payload: Mapping[str, Any]
     workspace_digest_before: str | None
+    shape_total_ms: float | None = None
+    shape_support: int = 0
 
 
 @dataclass(frozen=True)
@@ -226,6 +229,8 @@ class DeepAgentsRuntimeAdapter(BaseCallbackHandler):
         native_radix_sessions: NativeRadixSessionLeases | None = None,
         project_tool_history: ProjectToolHistory | None = None,
         project_id: str = "",
+        tool_wait_shadow_timer: ToolWaitShadowTimer | None = None,
+        tool_wait_shadow_expired: Callable[[], bool] | None = None,
         finish_chunk_shadow: bool = False,
         command_structure_shadow: bool = False,
         report_phase_shadow: bool = False,
@@ -253,6 +258,8 @@ class DeepAgentsRuntimeAdapter(BaseCallbackHandler):
         self.native_radix_sessions = native_radix_sessions
         self._project_tool_history = project_tool_history
         self._project_id = project_id
+        self._tool_wait_shadow_timer = tool_wait_shadow_timer
+        self._tool_wait_shadow_expired = tool_wait_shadow_expired
         self._finish_chunk_shadow = finish_chunk_shadow
         self._command_structure_shadow = command_structure_shadow
         self._report_phase_shadow = report_phase_shadow
@@ -268,6 +275,7 @@ class DeepAgentsRuntimeAdapter(BaseCallbackHandler):
         self._last_ts_ms = 0.0
         self._started = False
         self._finished = False
+        self._tool_wait_shadow_closed = False
         self._run_parent: dict[str, str | None] = {}
         self._run_invocation: dict[str, str] = {}
         self._model_metadata: dict[str, BeliefKVRequestMetadata] = {}
@@ -347,29 +355,34 @@ class DeepAgentsRuntimeAdapter(BaseCallbackHandler):
         self._publish(events, control=False)
 
     def finish(self, *, outcome: str) -> None:
-        with self._lock:
-            if not self._started:
-                raise RuntimeError("Deep Agents runtime adapter was not started")
-            if self._finished:
-                return
-            self._finished = True
-            self._terminal_invocation_ids.add(self.root_metadata.invocation_id)
-        ts_ms = self._timestamp()
-        events = (
-            self._event(
-                RuntimeEventKind.RETURN,
-                ts_ms=ts_ms,
-                invocation_id=self.root_metadata.invocation_id,
-                context_id=self.root_metadata.context_id,
-                attributes={"outcome": outcome, "source": "deepagents"},
-            ),
-            self._event(
-                RuntimeEventKind.WORKFLOW_END,
-                ts_ms=ts_ms,
-                attributes={"outcome": outcome, "source": "deepagents"},
-            ),
-        )
-        self._publish(events, control=True)
+        with self._publication_lock:
+            with self._lock:
+                if not self._started:
+                    raise RuntimeError("Deep Agents runtime adapter was not started")
+                if self._finished:
+                    return
+                self._finished = True
+                self._terminal_invocation_ids.add(self.root_metadata.invocation_id)
+            ts_ms = self._timestamp()
+            events = (
+                self._event(
+                    RuntimeEventKind.RETURN,
+                    ts_ms=ts_ms,
+                    invocation_id=self.root_metadata.invocation_id,
+                    context_id=self.root_metadata.context_id,
+                    attributes={"outcome": outcome, "source": "deepagents"},
+                ),
+                self._event(
+                    RuntimeEventKind.WORKFLOW_END,
+                    ts_ms=ts_ms,
+                    attributes={"outcome": outcome, "source": "deepagents"},
+                ),
+            )
+            self._publish(events, control=True)
+
+    def stop_tool_wait_shadow(self) -> None:
+        with self._publication_lock:
+            self._tool_wait_shadow_closed = True
 
     def declare_runtime_tasks(
         self,
@@ -1344,7 +1357,6 @@ class DeepAgentsRuntimeAdapter(BaseCallbackHandler):
                 self._run_invocation[key] = pending.child_invocation_id
             return
 
-        ts_ms = self._timestamp()
         normalized = self._taxonomy.normalize(tool_name)
         input_chars, input_sha256 = _json_stats(payload)
         tool_call_id = str(kwargs.get("tool_call_id") or key)
@@ -1359,19 +1371,12 @@ class DeepAgentsRuntimeAdapter(BaseCallbackHandler):
             execute_inline_structure(payload)
             if tool_name == "execute" and self._command_structure_shadow else None
         )
+        ts_ms = self._timestamp()
         with self._lock:
             identity = self._identities.get(parent_invocation_id)
             is_child = bool(
                 identity is not None
                 and identity.metadata.relation_type == RelationType.SPAWN.value
-            )
-            self._ordinary_tools[key] = _OrdinaryToolRun(
-                invocation_id=parent_invocation_id,
-                tool_name=tool_name,
-                start_ts_ms=ts_ms,
-                tool_call_id=tool_call_id,
-                payload=dict(payload),
-                workspace_digest_before=workspace_digest_before,
             )
             same_input = self._same_input_history.start(
                 self.root_metadata.root_workflow_id, parent_invocation_id,
@@ -1394,6 +1399,27 @@ class DeepAgentsRuntimeAdapter(BaseCallbackHandler):
                     }, ts_ms,
                 )
                 if self._project_tool_history is not None else {}
+            )
+            shape_total = project_prior.get(
+                "project_shape_survivor_500ms_total_median_ms"
+            )
+            shape_support = project_prior.get("project_shape_survivor_500ms_support")
+            eligible = (
+                is_child and tool_name == "execute"
+                and same_input.get("previous_same_input_status") != "success"
+                and type(shape_total) in (int, float)
+                and math.isfinite(shape_total) and shape_total > 500
+                and type(shape_support) is int and shape_support >= 4
+            )
+            self._ordinary_tools[key] = _OrdinaryToolRun(
+                invocation_id=parent_invocation_id,
+                tool_name=tool_name,
+                start_ts_ms=ts_ms,
+                tool_call_id=tool_call_id,
+                payload=dict(payload),
+                workspace_digest_before=workspace_digest_before,
+                shape_total_ms=float(shape_total) if eligible else None,
+                shape_support=shape_support if eligible else 0,
             )
         event = self._event(
             RuntimeEventKind.TOOL_START,
@@ -1420,6 +1446,13 @@ class DeepAgentsRuntimeAdapter(BaseCallbackHandler):
             },
         )
         self._publish((event,), control=True)
+        if eligible and self._tool_wait_shadow_timer is not None:
+            self._tool_wait_shadow_timer.schedule(
+                time.monotonic() + 0.5,
+                lambda: self.observe_tool_wait(
+                    key, parent_invocation_id, tool_call_id
+                ),
+            )
 
     def on_tool_end(
         self,
@@ -1807,6 +1840,54 @@ class DeepAgentsRuntimeAdapter(BaseCallbackHandler):
                     self.root_metadata.root_workflow_id, event.attributes, ts_ms,
                 )
         self._publish((event,), control=True)
+
+    def observe_tool_wait(
+        self, tool_run_id: str, invocation_id: str, tool_call_id: str
+    ) -> bool:
+        """Publish a trace-only ETA only while the original call is still open."""
+
+        with self._publication_lock:
+            with self._lock:
+                active = self._ordinary_tools.get(tool_run_id)
+                if (
+                    self._finished or self._tool_wait_shadow_closed
+                    or active is None
+                    or active.invocation_id != invocation_id
+                    or active.tool_call_id != tool_call_id
+                    or active.shape_total_ms is None
+                    or (
+                        self._tool_wait_shadow_expired is not None
+                        and self._tool_wait_shadow_expired()
+                    )
+                ):
+                    return False
+                ts_ms = self._timestamp()
+                elapsed = max(0.0, ts_ms - active.start_ts_ms)
+                if elapsed < 500 or elapsed >= active.shape_total_ms:
+                    return False
+                event = self._event(
+                    RuntimeEventKind.TOOL_WAIT_OBSERVATION,
+                    ts_ms=ts_ms,
+                    invocation_id=invocation_id,
+                    confidence=EventConfidence.OBSERVED_EXACT,
+                    attributes={
+                        "source": "deepagents_tool_wait_shadow",
+                        "tool_call_id": tool_call_id,
+                        "tool_name": active.tool_name,
+                        "tool_elapsed_ms": elapsed,
+                        "project_shape_survivor_500ms_total_median_ms": (
+                            active.shape_total_ms
+                        ),
+                        "project_shape_survivor_500ms_support": (
+                            active.shape_support
+                        ),
+                        "tool_wait_shape_eta_ms_p50": (
+                            active.shape_total_ms - elapsed
+                        ),
+                    },
+                )
+            self._publish((event,), control=False)
+            return True
 
     def _workspace_digest(
         self,
