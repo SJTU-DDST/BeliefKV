@@ -31,32 +31,44 @@ before estimating opportunities.
 ## Objective
 
 Establish a defensible Qwen3.5/SGLang v0.5.20 result for selective predictive
-Host backup and GPU restoration in a workload where HBM has **free space or
-safely reclaimable cold KV**, Host/PCIe have transfer capacity, useful KV
-loss followed by recomputation is rare, and some future consumers actually
-need Host-backed KV or benefit from an early Host shadow. This is a
-workload-qualification gate, not a predefined root count or occupancy
-threshold. Start with idle-HBM opportunities; treat cold-KV replacement as
-a separately measured extension. Use the same tasks, arrivals and physical
-configuration for a paired P5 reactive baseline. The primary question is
-whether PREPARE_HOST and predictive H2D save synchronous transfer wait and
-improve successful workflow throughput/JCT *after* accounting for wasted
-transfers, HBM residency and interference. A session already on Device is
-not an H2D opportunity. High-pressure, compute-bound or Host-thrashing
-regimes are fallback and limitation tests, not the primary optimization
-target. Separate time accuracy, physical utility and workflow outcomes;
-exact wall-clock RETURN/JOIN ETA is not a prerequisite for a bounded
-physical-opportunity experiment.
+Host backup and GPU restoration in a **moderate-pressure operating regime**:
+HBM has actionable spare space for migration, both FULL/Mamba Host pools
+retain headroom, transfers can finish before useful reentry, and useful KV
+is only rarely discarded and recomputed. The primary experiment uses idle
+HBM capacity; bounded replacement of demonstrably cold, evictable KV is a
+separately reported extension, not a prerequisite for the main result.
+This is a workload-qualification gate, not a predefined root count or HBM
+occupancy threshold. It also requires real future consumers: valid
+Host-backed KV missing on Device for H2D, or a later native eviction that
+can consume a partial PREPARE shadow. Idle capacity alone is insufficient.
+Use the same tasks, arrivals and physical configuration for a paired P5
+reactive baseline. The primary question is whether PREPARE_HOST and
+predictive H2D save synchronous transfer wait and improve correctly
+completed workflow throughput/JCT *after* accounting for wasted transfers,
+HBM residency and interference. High pressure (compute saturation, Host
+thrash or substantial useful-KV recomputation) is a safety/fallback and
+limitation test, not a near-term optimization objective. Separate time
+accuracy, physical utility and workflow outcomes; exact wall-clock
+RETURN/JOIN ETA is not a prerequisite for bounded physical-opportunity tests.
 
 Freeze the primary stratum on train projects only after checking FULL and
-Mamba headroom separately, valid Host-backed targets or consumable future
-shadows, transfer-to-first-use lead, eviction-to-subsequent-miss/recompute
-attribution, and workflow correctness. Set any numerical opportunity,
-recompute and residency-cost budgets on those train projects before an
-independent paired evaluation; do not infer actionability from idle HBM,
-low eviction counts or a chosen root count alone. If no stratum qualifies,
+Mamba device/Host headroom separately, usable Host-backed targets or
+consumable future shadows, transfer-to-first-use lead, eviction-to-subsequent-
+miss/recompute attribution, and workflow correctness. Set numerical
+opportunity, low-recompute, transfer-slack and residency-cost budgets on
+train projects before independent paired evaluation; never use idle HBM,
+low eviction counts or root count alone as a proxy. If no stratum qualifies,
 report the actionable-opportunity upper bound instead of escalating load
 just to create migration events.
+
+Success is staged: (1) establish a reproducible moderate-pressure stratum
+with low useful recomputation and genuinely actionable physical targets;
+(2) demonstrate selective PREPARE -> later native consumption and predictive
+H2D -> ACK -> first-service reuse with measurable synchronous stall saved;
+(3) show a net gain against matched reactive P5 without violating correctness,
+capacity, liveness or displaced-workflow tail-latency constraints. Native
+transfers, read-only opportunities and early HBM residency alone do not
+complete any later stage.
 
 Primary metrics:
 
@@ -85,11 +97,13 @@ Primary metrics:
    `docs/experiments/qwen35_terminal_join_sealed_2026-09-27_zh.md`.
    Treat this holdout as consumed: no model/threshold selection on its
    outcomes; the next method needs new project-disjoint validation.
-2. **Find and freeze the actionable-HBM regime on train projects.**
-   Sweep bounded arrival concurrency on training workloads, without selecting
-   a root count from a previous high-pressure experiment alone. Require
-   observed free HBM or revalidatable cold/evictable KV, Host-backed H2D
-   candidates or future-eviction PREPARE candidates, and low useful
+2. **Find and freeze the moderate-pressure, actionable-HBM regime on train projects.**
+   Sweep bounded arrival concurrency and Host FULL/Mamba allocations on
+   training workloads, without selecting a root count from a previous
+   high-pressure experiment alone. First seek available HBM for an actual
+   missing-Device/Host-backed target; measure a cold/evictable-KV alternative
+   separately. Require valid H2D candidates or future-eviction PREPARE
+   candidates, stable Host headroom in both pools and low useful
    eviction-to-miss/recompute before freezing a primary configuration.
    Reject a configuration if all apparent JOIN candidates already reside on
    Device or lack a valid Host-backed step; a low Host eviction count alone
@@ -103,7 +117,7 @@ Primary metrics:
    attribution, transfer identity/ACK, and critical-path blocker changes.
    Freeze the chosen regime and byte-time/slowdown budgets on training
    workloads before held-out evaluation. Separately measure idle-headroom
-   prefetch and cold-KV replacement; do not equate free bytes with
+   prefetch and optional cold-KV replacement; do not equate free bytes with
    evictable bytes. Test high-pressure fallback where Host/compute pressure
    suppresses transfer opportunities; report abstentions and guardrail
    violations as well as successful actions. All regimes must use the same
