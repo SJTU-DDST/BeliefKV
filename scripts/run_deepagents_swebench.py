@@ -194,8 +194,11 @@ def parse_args() -> argparse.Namespace:
     deadline_group.add_argument(
         "--activation-wall-clock-seconds",
         type=float,
-        default=7200.0,
-        help="Single absolute deadline shared by the root and all descendants.",
+        default=14400.0,
+        help=(
+            "Single absolute deadline shared by the root and all descendants "
+            "(default: 14400 seconds)."
+        ),
     )
     deadline_group.add_argument(
         "--disable-activation-deadline",

@@ -1133,10 +1133,10 @@ def test_workload_cli_native_reactive_guard_matches_p6_collection(
             "--native-reactive-guard-profile",
         ],
     )
-    assert cli.parse_args().activation_wall_clock_seconds == 7200
+    assert cli.parse_args().activation_wall_clock_seconds == 14400
     assert cli.parse_args().early_tool_wait_shadow is False
     assert cli.main() == 0
-    assert configs[-1].loop_guard.activation_wall_clock_s == 7200
+    assert configs[-1].loop_guard.activation_wall_clock_s == 14400
     assert configs[-1].early_tool_wait_shadow is False
 
     monkeypatch.setattr(
@@ -4028,10 +4028,10 @@ def test_loop_guard_tracks_and_enforces_activation_wall_clock() -> None:
     assert exhausted["guard_reason"] == "activation_wall_clock_exhausted"
 
 
-def test_default_workflow_deadline_does_not_truncate_root_at_900_seconds() -> None:
+def test_default_workflow_deadline_allows_long_roots() -> None:
     now = [10.0]
     policy = LoopGuardPolicy()
-    assert policy.activation_wall_clock_s == 7200.0
+    assert policy.activation_wall_clock_s == 14400.0
     deadline = ActivationDeadline(clock=lambda: now[0])
     deadline.start(policy.activation_wall_clock_s)
     guard = AgentLoopGuardMiddleware(
@@ -4048,6 +4048,9 @@ def test_default_workflow_deadline_does_not_truncate_root_at_900_seconds() -> No
     assert guard.before_model({"messages": []}, runtime=None) is None
 
     now[0] = 7210.0
+    assert guard.before_model({"messages": []}, runtime=None) is None
+
+    now[0] = 14410.0
     exhausted = guard.before_model({"messages": []}, runtime=None)
     assert exhausted is not None
     assert exhausted["guard_reason"] == "activation_wall_clock_exhausted"

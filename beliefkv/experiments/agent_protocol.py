@@ -109,7 +109,7 @@ class LoopGuardPolicy:
     graph_step_hard_limit: int = 2048
     graph_step_reserve: int = 32
     enforce_graph_step_budget: bool = True
-    activation_wall_clock_s: float | None = 7200.0
+    activation_wall_clock_s: float | None = 14400.0
 
     def __post_init__(self) -> None:
         values = (

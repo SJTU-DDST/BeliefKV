@@ -4231,6 +4231,17 @@ Astropy/Sphinx 评价批次：运行它只会得到没有训练支持的
 
 ### shadow root 截止时间修正
 
+后续主 DeepAgents runner 的默认共享截止进一步从 7200 秒
+调至 14400 秒（4 小时）。此前高压训练中已有 7200 秒
+触发的删失轨迹，900 秒更不适合作为长任务 root 的总时限。
+这是每个 workflow 自启动起 root 与所有 descendants 共用的
+绝对截止，不是每个 child 各获 4 小时；单次模型请求默认
+600 秒、graph 2048 步及预留 32 步均不变。旧 pilot、明确
+传入 7200 秒的启动脚本和已冻结实验记录不受新默认影响；
+未来密封测试应显式传入 `--activation-wall-clock-seconds 14400`
+并将实际值写入 manifest，配对实验保持一致。到期的轨迹
+仍须作为删失样本，不能追认为自然 JOIN。
+
 上述训练侧 pilot 仍使用旧脚本指定的单 workflow
 `activation_wall_clock_seconds=900`；该批 8/8 个
 workflow 均自然完成，因此不改变 0/27 阶段候选
