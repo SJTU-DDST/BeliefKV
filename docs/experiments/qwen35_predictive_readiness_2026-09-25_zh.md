@@ -5849,3 +5849,10 @@ invocation 终止、workflow deadline 或 teardown
 项目隔离验收前不根据留出项目调整门槛。
 当前只有训练侧离线探索与回放/定时器单元测试，
 **没有这一路径的新项目在线准确率或物理收益证据**。
+现有分波 pilot 启动器 `run_child_intent_chunk_sphinx.sh`
+仅在 `EARLY_TOOL_WAIT_SHADOW=1` 且非 control 臂时
+注入只读诊断开关，并冻结本次选中任务的 manifest；
+结束时自动按此子集生成早期工具存活审计。默认
+运行及 control 臂均不改变。首次运行先用训练侧
+Xarray 任务检验 timer 投递和分母，不能作为新的
+项目隔离验收；磁盘或服务状态不满足时不得启动。

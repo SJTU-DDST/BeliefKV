@@ -68,6 +68,12 @@ done
 mkdir -p "$OUT/server"
 sha256sum "$SOURCE" > "$OUT/source_manifest.sha256"
 git -C "$ROOT" rev-parse HEAD > "$OUT/source_commit.txt"
+if [[ "${EARLY_TOOL_WAIT_SHADOW:-0}" == 1 ]]; then
+  ids_json="$(printf '%s\n' "${IDS[@]}" | jq -R . | jq -sc .)"
+  jq --argjson ids "$ids_json" \
+    '.workloads |= map(select(.instance_id as $id | $ids | index($id)))' \
+    "$SOURCE" > "$OUT/selected_workload_manifest.json"
+fi
 setsid env PORT="$PORT" HICACHE_SIZE_GB=120 \
   BELIEFKV_FULL_MAMBA_HOST_SPLIT=70:30 HOST_NUMA_NODE=1 \
   MEM_FRACTION_STATIC=0.94 MAX_RUNNING_REQUESTS=48 \
@@ -117,6 +123,9 @@ for arm in "${arms[@]}"; do
   if [[ "${REPORT_PHASE_SHADOW:-0}" == 1 ]]; then
     intent_arg+=(--child-report-phase-shadow)
   fi
+  if [[ "${EARLY_TOOL_WAIT_SHADOW:-0}" == 1 && "$arm" != control ]]; then
+    intent_arg+=(--early-tool-wait-shadow)
+  fi
   if [[ "${CHILD_EOS_SHADOW:-0}" == 1 && "$arm" != control ]]; then
     intent_arg+=(--child-eos-shadow)
     if [[ "${CHILD_EOS_LOW_PROB_SHADOW:-0}" == 1 ]]; then
@@ -149,6 +158,12 @@ for arm in "${arms[@]}"; do
 done
 for arm in intent final length; do
   if [[ -d "$OUT/${arm}_workloads/workflows" ]]; then
+    if [[ "${EARLY_TOOL_WAIT_SHADOW:-0}" == 1 ]]; then
+      "$PYTHON" "$ROOT/scripts/audit_early_tool_wait_shadow.py" \
+        --workflows "$OUT/${arm}_workloads/workflows" \
+        --workload-manifest "$OUT/selected_workload_manifest.json" \
+        --output "$OUT/${arm}_early_tool_wait_audit.json"
+    fi
     "$PYTHON" "$ROOT/scripts/audit_child_return_intent_shadow.py" \
       --workflows "$OUT/${arm}_workloads/workflows" \
       --output "$OUT/${arm}_intent_audit.json"
