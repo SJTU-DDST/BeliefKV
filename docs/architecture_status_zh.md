@@ -106,6 +106,16 @@ child RETURN
 ticket 过期与动作未下发。该修复仅有 CPU 回归，仍需在下一轮 GPU canary 中确认
 实际 drain、预测性物理 H2D 及首次服务的 KV 复用。
 
+后续 14-root v2 已自然结束：14 个确认 JOIN ticket、8 次 drain
+完成、7 次经账本确认的预测性 H2D ACK；FULL/Mamba Host 均无驱逐。
+这证明动作下发与真实传输，但不证明首次服务消费或吞吐收益：
+ACK 后的首个 parent 请求已跨到下一 context epoch，旧日志只有
+request 级 Device 命中，不能归因到预取节点。新
+`physical_action_use.jsonl` 在原生 ACK 后跟踪当前或下一 epoch
+的首次 GPU launch，使用节点身份、FULL value 和完整前缀验证；
+失去证据则记为未验证或 censored，Mamba 首次消费仍未确认。
+此埋点只对新启动进程有效，不可用 v2 原始日志回填节点级复用。
+
 目前 Qwen3.5 的 `online_eligible=false`、
 `predictive_action_eligible=false`；旧 Qwen3 P6 物理闭环不得外推为
 新版已有 predictive H2D。未见项目密封实验已完成：5/15 个自然

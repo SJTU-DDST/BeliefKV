@@ -55,6 +55,180 @@ def test_confirmed_join_canary_has_distinct_provenance(tmp_path: Path) -> None:
     assert status["writer_error"] is None
 
 
+def test_verified_prefetch_records_node_match_at_first_gpu_service(
+    tmp_path: Path,
+) -> None:
+    audit = NativeReactiveTelemetry(tmp_path / "service")
+    root = SimpleNamespace(id=0, creation_time=0, parent=None)
+    loaded = SimpleNamespace(
+        id=11, creation_time=7, parent=root, key=array("q", range(10)),
+        component_data=(SimpleNamespace(value=object()),),
+    )
+    leaf = SimpleNamespace(
+        id=12, creation_time=8, parent=loaded, key=array("q", range(5)),
+    )
+    nodes = {node.id: node for node in (root, loaded, leaf)}
+    audit._cache = SimpleNamespace(
+        tree_core=SimpleNamespace(node_by_id=nodes.__getitem__),
+    )
+    action = SimpleNamespace(
+        command_id="prefetch-1", action="PREFETCH_GPU",
+        context_id="ctx", context_epoch=2, node_ids=(11,),
+        pool_bytes=(("kv", 2048), ("mamba", 64)), num_bytes=2112,
+    )
+    audit.on_verified_action_ack(action)
+    request = SimpleNamespace(
+        rid="parent-first-service",
+        beliefkv_metadata={
+            "root_workflow_id": "workflow", "invocation_id": "parent",
+            "context_id": "ctx", "context_epoch": 3,
+        },
+        last_node=12, origin_input_ids=list(range(20)), output_ids=[],
+        prefix_indices=list(range(12)),
+        cached_tokens_device=12, cached_tokens_host=0,
+        mamba_host_hit_length=0, extend_input_len=8,
+        sampling_params=SimpleNamespace(max_new_tokens=10),
+        finished=lambda: False,
+    )
+    audit.on_launch(SimpleNamespace(
+        forward_mode=_Mode("prefill"), launch_ts=time.monotonic(),
+        forward_iter=1, reqs=[request],
+    ))
+    audit.close()
+    used = _read(tmp_path / "service/physical_action_use.jsonl")
+    assert len(used) == 1
+    assert used[0]["matched_node_ids"] == [11]
+    assert used[0]["reused_full_node_ids"] == [11]
+    assert used[0]["context_epoch"] == 2
+    assert used[0]["service_context_epoch"] == 3
+    assert used[0]["device_prefix_indices_len"] == 12
+    assert used[0]["full_node_reused"] is True
+    assert used[0]["mamba_reuse"] == "unverified"
+    assert used[0]["request_id"] == request.rid
+
+
+def test_verified_prefetch_unmatched_or_unserved_is_not_credited(
+    tmp_path: Path,
+) -> None:
+    audit = NativeReactiveTelemetry(tmp_path / "service")
+    root = SimpleNamespace(id=0, creation_time=0, parent=None)
+    loaded = SimpleNamespace(
+        id=11, creation_time=7, parent=root, key=array("q", range(10)),
+        component_data=(SimpleNamespace(value=object()),),
+    )
+    nodes = {node.id: node for node in (root, loaded)}
+    audit._cache = SimpleNamespace(
+        tree_core=SimpleNamespace(node_by_id=nodes.__getitem__),
+    )
+    for command_id, context in (("prefetch-miss", "ctx"), ("prefetch-censored", "other")):
+        audit.on_verified_action_ack(SimpleNamespace(
+            command_id=command_id, action="PREFETCH_GPU",
+            context_id=context, context_epoch=2, node_ids=(11,),
+            pool_bytes=(("kv", 2048),), num_bytes=2048,
+        ))
+    request = SimpleNamespace(
+        rid="parent-miss",
+        beliefkv_metadata={
+            "root_workflow_id": "workflow", "invocation_id": "parent",
+            "context_id": "ctx", "context_epoch": 2,
+        },
+        last_node=0, origin_input_ids=list(range(20)), output_ids=[],
+        prefix_indices=[],
+        cached_tokens_device=0, cached_tokens_host=0,
+        mamba_host_hit_length=0, extend_input_len=20,
+        sampling_params=SimpleNamespace(max_new_tokens=10),
+        finished=lambda: False,
+    )
+    audit.on_launch(SimpleNamespace(
+        forward_mode=_Mode("prefill"), launch_ts=time.monotonic(),
+        forward_iter=1, reqs=[request],
+    ))
+    audit.close()
+    outcomes = _read(tmp_path / "service/physical_action_use.jsonl")
+    assert len(outcomes) == 2
+    assert outcomes[0]["command_id"] == "prefetch-miss"
+    assert outcomes[0]["full_node_reused"] is False
+    assert outcomes[1]["command_id"] == "prefetch-censored"
+    assert outcomes[1]["reason"] == "no_subsequent_service_before_shutdown"
+
+
+@pytest.mark.parametrize("cached_device,device_prefix,replace_value,expected", [
+    (5, 10, False, False),
+    (10, 5, False, False),
+    (10, 10, True, False),
+    (10, 10, False, True),
+])
+def test_prefetch_ancestry_requires_same_full_value_and_entire_prefix(
+    tmp_path: Path, cached_device: int, device_prefix: int,
+    replace_value: bool, expected: bool,
+) -> None:
+    audit = NativeReactiveTelemetry(tmp_path / "service")
+    root = SimpleNamespace(id=0, creation_time=0, parent=None)
+    loaded = SimpleNamespace(
+        id=11, creation_time=7, parent=root, key=array("q", range(10)),
+        component_data=(SimpleNamespace(value=object()),),
+    )
+    nodes = {0: root, 11: loaded}
+    audit._cache = SimpleNamespace(
+        tree_core=SimpleNamespace(node_by_id=nodes.__getitem__),
+    )
+    audit.on_verified_action_ack(SimpleNamespace(
+        command_id="prefetch-1", action="PREFETCH_GPU",
+        context_id="ctx", context_epoch=2, node_ids=(11,),
+        pool_bytes=(("kv", 2048),), num_bytes=2048,
+    ))
+    if replace_value:
+        loaded.component_data[0].value = object()
+    request = SimpleNamespace(
+        rid="parent-first-service",
+        beliefkv_metadata={
+            "root_workflow_id": "workflow", "invocation_id": "parent",
+            "context_id": "ctx", "context_epoch": 2,
+        },
+        last_node=11, origin_input_ids=list(range(20)), output_ids=[],
+        prefix_indices=list(range(device_prefix)),
+        cached_tokens_device=cached_device, cached_tokens_host=0,
+        mamba_host_hit_length=0, extend_input_len=20 - cached_device,
+        sampling_params=SimpleNamespace(max_new_tokens=10),
+        finished=lambda: False,
+    )
+    audit.on_launch(SimpleNamespace(
+        forward_mode=_Mode("prefill"), launch_ts=time.monotonic(),
+        forward_iter=1, reqs=[request],
+    ))
+    audit.close()
+    [use] = _read(tmp_path / "service/physical_action_use.jsonl")
+    assert use["matched_node_ids"] == [11]
+    assert use["full_node_reused"] is expected
+    assert use["reused_full_node_ids"] == ([11] if expected else [])
+
+
+def test_prefetch_after_multiple_epoch_changes_is_censored(tmp_path: Path) -> None:
+    audit = NativeReactiveTelemetry(tmp_path / "service")
+    root = SimpleNamespace(id=0, creation_time=0, parent=None)
+    loaded = SimpleNamespace(
+        id=11, creation_time=7, parent=root, key=array("q", range(10)),
+        component_data=(SimpleNamespace(value=object()),),
+    )
+    audit._cache = SimpleNamespace(
+        tree_core=SimpleNamespace(node_by_id={0: root, 11: loaded}.__getitem__),
+    )
+    audit.on_verified_action_ack(SimpleNamespace(
+        command_id="prefetch-stale", action="PREFETCH_GPU",
+        context_id="ctx", context_epoch=2, node_ids=(11,),
+        pool_bytes=(("kv", 2048),), num_bytes=2048,
+    ))
+    audit._record_prefetch_first_service(
+        SimpleNamespace(last_node=11, cached_tokens_device=10,
+                        prefix_indices=list(range(10)), cached_tokens_host=0),
+        {"context_id": "ctx", "context_epoch": 4},
+    )
+    audit.close()
+    [use] = _read(tmp_path / "service/physical_action_use.jsonl")
+    assert use["event"] == "beliefkv_prefetch_first_service_censored"
+    assert use["reason"] == "epoch_advanced_without_first_service"
+
+
 def test_capacity_census_is_scheduler_local_and_fail_closed(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch,
 ) -> None:

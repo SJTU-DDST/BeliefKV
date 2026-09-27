@@ -327,3 +327,26 @@ writer 均正常关闭，无丢失或写入错误；Host FULL/Mamba 高水位为
 与后续首次服务 KV 消费闭合，才能认为预测性 H2D 物理链成立。
 两轮已完成实验仅删除可重建的 workflow `workspace`，保留结果、
 补丁、原始事件、传输及 Host 遥测供复核。
+
+## 200 GB / 25:75 / write-back / 14-root：确认 JOIN canary v2
+
+`...14root_v2/` 已自然结束：14/14 workflow 有完整测量轨迹，
+机会 writer 完成且无错误，原生 writer 无丢失或错误；Host FULL/Mamba
+均无驱逐。确认 JOIN ticket 14 个，overlap drain 请求与完成各 8 次，
+`physical_action_ack.jsonl` 有 7 次经物理账本确认的
+`PREFETCH_GPU` ACK，合计 539,996,160 字节（FULL 89,272,320，
+Mamba 450,723,840）。这些动作在
+`transfer_telemetry.jsonl` 均可按 child command ID 找到对应的
+原生 H2D ACK。相比 v1 的零预测性 ACK，动作下发链已得到物理验证。
+
+ACK 后各 context 首次 LLM 请求均进入下一 context epoch；
+其中 3 次报告非零 Device 命中，4 次报告为 0。
+这仅是 request 级别关联，**不能证明命中的是这 7 笔预取的节点**，
+也不能把非零命中、提前驻留或已完成 H2D 直接计作节省的同步等待。
+旧服务端未记录 `physical_action_use.jsonl`；当前新增埋点只在账本
+确认 H2D 后追踪同 context 当前或下一 epoch 的首次 GPU launch，
+核对原节点对象/创建时间、FULL value 未被替换及完整 Device 前缀
+覆盖，并区分过期/无后续服务；Mamba 节点级消费仍不可验证。
+新埋点的 CPU 测试通过，但 **v2 不能回填这项证据**。正式验收仍需
+新进程采集节点级首次复用、正确性评分及同配置 reactive 配对 A/B；
+部分 `PREPARE_HOST` 的后续卸载消费也尚未在此轮证明。
