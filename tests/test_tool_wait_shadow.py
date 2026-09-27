@@ -10,7 +10,9 @@ pytest.importorskip("deepagents")
 
 from beliefkv.control.causal_graph import RuntimeCausalContextGraph
 from beliefkv.core.events import RuntimeEvent, RuntimeEventKind
-from beliefkv.experiments.p6_decision_points import _event_triggers
+from beliefkv.experiments.p6_decision_points import (
+    _event_triggers, build_frontier_decision_points,
+)
 from beliefkv.predictor.command_class import (
     execute_command_class, execute_command_shape,
 )
@@ -306,3 +308,101 @@ def test_export_validates_tool_wait_survival_and_identity() -> None:
             invocation_id="child", attributes={
                 "tool_call_id": "target", "status": "success",
             }), observation], workflow_metadata=metadata)
+
+
+def test_p6_replay_keeps_only_valid_wait_tool_landmark() -> None:
+    traces = []
+    metadata = {}
+
+    def event(wf: str, name: str, ts_ms: float, kind: RuntimeEventKind,
+              *, invocation: str | None = None, **attrs: object) -> RuntimeEvent:
+        return RuntimeEvent(
+            f"{wf}:{name}", ts_ms, kind, wf, invocation_id=invocation,
+            attributes=attrs,
+        )
+
+    for index in range(4):
+        wf = f"seed-{index}"
+        metadata[wf] = {"project": "repo"}
+        base = index * 4_000.
+        traces.append([
+            event(wf, "workflow", base, RuntimeEventKind.WORKFLOW_START),
+            RuntimeEvent(f"{wf}:root", base + .1, RuntimeEventKind.INVOCATION_CREATE,
+                         wf, invocation_id=f"{wf}:root",
+                         context_id=f"{wf}:root-ctx"),
+            RuntimeEvent(f"{wf}:child", base + .2, RuntimeEventKind.INVOCATION_CREATE,
+                         wf, invocation_id=f"{wf}:child",
+                         context_id=f"{wf}:child-ctx",
+                         parent_invocation_id=f"{wf}:root"),
+            event(wf, "start", base + 1, RuntimeEventKind.TOOL_START,
+                  invocation=f"{wf}:child", tool_name="execute",
+                  tool_call_id=f"call-{index}", is_child=True,
+                  observed_command_class=execute_command_class(
+                      {"command": COMMAND}),
+                  observed_command_shape=execute_command_shape(
+                      {"command": COMMAND})),
+            event(wf, "end", base + 2401, RuntimeEventKind.TOOL_END,
+                  invocation=f"{wf}:child", tool_call_id=f"call-{index}",
+                  status="success"),
+            event(wf, "end-workflow", base + 2402,
+                  RuntimeEventKind.WORKFLOW_END),
+        ])
+    wf = "target"
+    metadata[wf] = {"project": "repo"}
+    target = [
+        event(wf, "workflow", 20_000, RuntimeEventKind.WORKFLOW_START),
+        RuntimeEvent(f"{wf}:root", 20_000.1, RuntimeEventKind.INVOCATION_CREATE,
+                     wf, invocation_id="root", context_id="root-ctx"),
+        RuntimeEvent(f"{wf}:child", 20_000.2, RuntimeEventKind.INVOCATION_CREATE,
+                     wf, invocation_id="child", context_id="child-ctx",
+                     parent_invocation_id="root"),
+        event(wf, "start", 20_010, RuntimeEventKind.TOOL_START,
+              invocation="child", tool_name="execute", tool_call_id="target",
+              is_child=True,
+              observed_command_class=execute_command_class({"command": COMMAND}),
+              observed_command_shape=execute_command_shape({"command": COMMAND}),
+              project_shape_survivor_500ms_total_median_ms=2400.,
+              project_shape_survivor_500ms_support=4),
+        event(wf, "wait", 20_511, RuntimeEventKind.TOOL_WAIT_OBSERVATION,
+              invocation="child", tool_call_id="target", tool_elapsed_ms=501.,
+              project_shape_survivor_500ms_total_median_ms=2400.,
+              project_shape_survivor_500ms_support=4,
+              tool_wait_shape_eta_ms_p50=1899.),
+        event(wf, "end", 20_610, RuntimeEventKind.TOOL_END,
+              invocation="child", tool_call_id="target", status="success"),
+        event(wf, "end-workflow", 20_611, RuntimeEventKind.WORKFLOW_END),
+    ]
+
+    def replay(extra: list[RuntimeEvent]) -> list[dict]:
+        return build_frontier_decision_points(
+            [[item.to_dict() for item in trace] for trace in [*traces, extra]],
+            calls=[], service_rows=[], audit_records=[], transfer_records=[],
+            run_id="run", workflow_metadata=metadata,
+        )
+
+    valid = [
+        row for row in replay(target)
+        if row["trigger_kind"] == "tool_wait_observation"
+    ]
+    assert len(valid) == 1
+    assert valid[0]["trigger_attributes"]["tool_wait_shape_eta_ms_p50"] == 1899
+    assert any(
+        item["invocation_id"] == "child" and item["state"] == "wait_tool"
+        for item in valid[0]["invocations"]
+    )
+    parallel_end = event(
+        wf, "other-end", 20_510, RuntimeEventKind.TOOL_END,
+        invocation="child", tool_call_id="other", status="success",
+    )
+    parallel_start = event(
+        wf, "other-start", 20_009, RuntimeEventKind.TOOL_START,
+        invocation="child", tool_name="execute", tool_call_id="other",
+        is_child=True,
+        observed_command_class=execute_command_class({"command": COMMAND}),
+        observed_command_shape=execute_command_shape({"command": COMMAND}),
+    )
+    invalid = replay([*target[:3], parallel_start, target[3],
+                      parallel_end, *target[4:]])
+    assert not any(
+        row["trigger_kind"] == "tool_wait_observation" for row in invalid
+    )
