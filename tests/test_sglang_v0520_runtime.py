@@ -328,8 +328,9 @@ def test_safe_point_persists_bounded_wait_and_admission_opportunities(tmp_path):
 
 
 @pytest.mark.parametrize("source", ("tool_wait", "join_wait"))
+@pytest.mark.parametrize("write_back", (False, True))
 def test_wait_prepare_probe_requires_native_prerequisites_and_host_space(
-    tmp_path, source,
+    tmp_path, source, write_back,
 ):
     runtime = NativeAdmissionRuntime(opportunity_dir=str(tmp_path))
     request = req("tool")
@@ -354,11 +355,14 @@ def test_wait_prepare_probe_requires_native_prerequisites_and_host_space(
                   invocation_id="tool", join_id="join"),
         ))
     runtime.on_events(tuple(events))
-    cache = NS(enable_session_radix_cache=True,
-               cache_controller=NS(write_policy=(
-                   "write_through" if source == "tool_wait"
-                   else "write_through_selective"
-               )))
+    cache = NS(
+        enable_session_radix_cache=True,
+        cache_controller=NS(write_policy=(
+            "write_back" if write_back else
+            "write_through" if source == "tool_wait" else "write_through_selective"
+        )),
+        tree_core=NS(is_write_back=write_back),
+    )
     runtime.attach_native_cache(cache)
     key = runtime.context_sessions["ctx-tool"]
     anchors = ContextSessionAnchors(key, ((0, ((11, 1),)), (2, ((11, 1),))), 1.0)
@@ -396,6 +400,21 @@ def test_wait_prepare_probe_requires_native_prerequisites_and_host_space(
     assert prepare["prepare_required_mamba_slots"] == 1
     assert prepare["prepare_reason"] == "insufficient_host_free_lists"
     assert prepare["prepare_fits_current_host_free_lists"] is False
+
+
+def test_write_back_prepare_probe_rejects_non_write_back_tree():
+    runtime = NativeAdmissionRuntime()
+    try:
+        runtime.attach_native_cache(NS(
+            enable_session_radix_cache=True,
+            cache_controller=NS(write_policy="write_back"),
+            tree_core=NS(is_write_back=False),
+        ))
+        row = {}
+        runtime._observe_prepare_opportunity(object(), row, None)
+        assert row["prepare_reason"] == "native_prepare_prerequisites_disabled"
+    finally:
+        runtime.close()
 
 
 def test_safe_point_records_missing_session_and_bounded_queue_scan(tmp_path):

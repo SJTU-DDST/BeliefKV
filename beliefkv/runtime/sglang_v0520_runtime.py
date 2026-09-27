@@ -682,10 +682,15 @@ class NativeAdmissionRuntime:
         if cache is None:
             row["prepare_reason"] = "native_cache_unavailable"
             return
+        policy = getattr(getattr(cache, "cache_controller", None), "write_policy", None)
         if (
             getattr(cache, "enable_session_radix_cache", False) is not True
-            or getattr(getattr(cache, "cache_controller", None), "write_policy", None)
-            not in ("write_through", "write_through_selective")
+            or policy not in ("write_through", "write_through_selective", "write_back")
+            or (
+                policy == "write_back"
+                and getattr(getattr(cache, "tree_core", None), "is_write_back", False)
+                is not True
+            )
         ):
             row["prepare_reason"] = "native_prepare_prerequisites_disabled"
             return
