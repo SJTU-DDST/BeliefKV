@@ -60,6 +60,11 @@ Primary metrics:
    and enough live time to transfer); do not use a reactive queue tail as
    counterfactual transfer savings. If medium/high load is compute-saturated
    or Host thrashes, quantify the cost and restrict optimistic claims.
+   A train-only 128-root JOIN audit finds 0/105 FULL Host hits and 3/105
+   Mamba Host hits at parent submit; 101/105 have a FULL Device prefix hit.
+   These are submit-time observations, not notice-time residency or an
+   actionability certificate. See
+   `docs/experiments/qwen35_join_host_opportunity_train_only.md`.
 3. **Evaluate timing as an auxiliary signal, without blocking physical gates.**
    Test tool ETA and long-window calibration across task, project, and
    success/error strata; do not select the workflow-weighted candidate just

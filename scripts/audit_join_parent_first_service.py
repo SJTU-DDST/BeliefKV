@@ -72,7 +72,10 @@ def candidate_parent_requests(
 
 
 def server_service_offsets(
-    server_events: Path, service_audit: Path, request_ids: set[str],
+    server_events: Path, service_audit: Path, request_ids: set[str], *,
+    host_hits: dict[str, tuple[int, int] | None] | None = None,
+    device_uncached: dict[str, tuple[int, int] | None] | None = None,
+    use_service_start: bool = False,
 ) -> tuple[dict[str, float], dict]:
     boundaries = defaultdict(dict)
     with server_events.open("rb") as stream:
@@ -87,6 +90,26 @@ def server_service_offsets(
             if kind in boundaries[rid]:
                 raise ValueError(f"duplicate server {kind} for {rid}")
             boundaries[rid][kind] = float(event["ts_ms"])
+            if kind == "llm_submit" and host_hits is not None:
+                attrs = event.get("attributes") or {}
+                full = attrs.get("cached_tokens_host")
+                mamba = attrs.get("mamba_host_hit_slots")
+                host_hits[rid] = (
+                    (full, mamba)
+                    if type(full) is int and full >= 0
+                    and type(mamba) is int and mamba >= 0
+                    else None
+                )
+            if kind == "llm_submit" and device_uncached is not None:
+                attrs = event.get("attributes") or {}
+                device = attrs.get("cached_tokens_device")
+                uncached = attrs.get("uncached_prompt_tokens")
+                device_uncached[rid] = (
+                    (device, uncached)
+                    if type(device) is int and device >= 0
+                    and type(uncached) is int and uncached >= 0
+                    else None
+                )
     first = {}
     with service_audit.open("rb") as stream:
         for line in stream:
@@ -96,6 +119,14 @@ def server_service_offsets(
             if event.get("event") != "gpu_service_sample":
                 continue
             ts = float(event["ts_ms"])
+            if use_service_start:
+                start = event.get("service_start_ts_ms")
+                if (
+                    type(start) not in (int, float)
+                    or not 0 <= start <= ts
+                ):
+                    continue
+                ts = float(start)
             for sample in event.get("request_samples") or ():
                 rid = sample.get("request_id")
                 if rid in request_ids:
@@ -144,7 +175,66 @@ def summarize(rows: list[dict]) -> dict:
     }
 
 
-def audit_batch(workloads: Path) -> dict:
+def _host_backed_window(
+    rows: list[dict],
+    hits: dict[str, tuple[int, int] | None],
+    device_uncached: dict[str, tuple[int, int] | None],
+) -> dict:
+    """Upper bound only: a later Host hit does not prove earlier availability."""
+    known = [row for row in rows if hits.get(row["parent_request_id"]) is not None]
+    backed = [
+        row for row in known
+        if any(hits[row["parent_request_id"]])
+    ]
+    return {
+        "matched_groups": len(rows),
+        "missing_host_hit_observation": len(rows) - len(known),
+        "host_backed_at_parent_submit": len(backed),
+        "full_host_hit_groups": sum(
+            hits[row["parent_request_id"]][0] > 0 for row in backed
+        ),
+        "mamba_host_hit_groups": sum(
+            hits[row["parent_request_id"]][1] > 0 for row in backed
+        ),
+        "missing_device_uncached_observation": sum(
+            device_uncached.get(row["parent_request_id"]) is None for row in rows
+        ),
+        "full_device_hit_groups": sum(
+            device_uncached[row["parent_request_id"]][0] > 0 for row in rows
+            if device_uncached.get(row["parent_request_id"]) is not None
+        ),
+        "uncached_prompt_groups": sum(
+            device_uncached[row["parent_request_id"]][1] > 0 for row in rows
+            if device_uncached.get(row["parent_request_id"]) is not None
+        ),
+        "uncached_prompt_tokens": sum(
+            device_uncached[row["parent_request_id"]][1] for row in rows
+            if device_uncached.get(row["parent_request_id"]) is not None
+        ),
+        "host_backed_service_window_ge_500ms": sum(
+            row["parent_service_lead_ms"] >= 500 for row in backed
+        ),
+        "host_backed_service_window_ge_2000ms": sum(
+            row["parent_service_lead_ms"] >= 2000 for row in backed
+        ),
+        "host_backed_window_p50_ms": (
+            _quantile([row["parent_service_lead_ms"] for row in backed], .5)
+            if backed else None
+        ),
+        "physical_opportunity_proven": False,
+        "scope": (
+            "Host hit is measured at parent submit, not at JOIN notice. "
+            "Notice-to-service includes queue/admission/restore delays; it "
+            "is not transferable H2D time or saved stall. FULL tokens and "
+            "Mamba slots are different units. Uncached prompt tokens include "
+            "new input and cannot be equated to recomputation. Actionability requires "
+            "notice-time session/epoch, ancestor closure, usable HBM and "
+            "Host residency plus actual transfer ACK and first KV consumption."
+        ),
+    }
+
+
+def audit_batch(workloads: Path, *, include_host_evidence: bool = False) -> dict:
     frozen, errors = require_complete_batch(workloads / "workflows")
     groups = {}
     candidates = {}
@@ -158,10 +248,19 @@ def audit_batch(workloads: Path) -> dict:
         candidates[source] = matched
         request_ids.update(row["parent_request_id"] for row in matched)
         groups[source]["parent_request_excluded"] = excluded
+    host_hits: dict[str, tuple[int, int] | None] | None = (
+        {} if include_host_evidence else None
+    )
+    device_uncached: dict[str, tuple[int, int] | None] | None = (
+        {} if include_host_evidence else None
+    )
     offsets, skipped = server_service_offsets(
         workloads.parent / "server/runtime_events.sglang.jsonl",
         workloads.parent / "server/runtime_audit.jsonl",
         request_ids,
+        host_hits=host_hits,
+        device_uncached=device_uncached,
+        use_service_start=include_host_evidence,
     )
     indexed = {}
     reports = {}
@@ -213,7 +312,7 @@ def audit_batch(workloads: Path) -> dict:
             "terminal": terminal,
             "delta_ms": terminal["trigger_ts_ms"] - early["trigger_ts_ms"],
         })
-    return {
+    report = {
         "status": "posthoc_parent_first_service_not_action_eligible",
         "workflows": len(frozen),
         "runner_errors": errors,
@@ -235,16 +334,27 @@ def audit_batch(workloads: Path) -> dict:
             "Window existence does not prove H2D can fit, execute, or help."
         ),
     }
+    if host_hits is not None:
+        # The natural llm_result notice is the conservative, whole-JOIN
+        # denominator; the earlier shadow notice is evaluated separately.
+        report["host_backed_window_upper_bound"] = _host_backed_window(
+            list(indexed.get("llm_result", {}).values()), host_hits,
+            device_uncached,
+        )
+    return report
 
 
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--workloads", type=Path, required=True)
     parser.add_argument("--output", type=Path, required=True)
+    parser.add_argument("--host-backed-upper-bound", action="store_true")
     args = parser.parse_args()
     if args.output.exists():
         raise FileExistsError(args.output)
-    report = audit_batch(args.workloads)
+    report = audit_batch(
+        args.workloads, include_host_evidence=args.host_backed_upper_bound
+    )
     args.output.write_text(
         json.dumps(report, indent=2, sort_keys=True, allow_nan=False) + "\n",
         encoding="utf-8",
