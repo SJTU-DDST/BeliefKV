@@ -182,6 +182,45 @@ def test_native_fit_records_measured_transfer_evidence_without_fitting_service(
     )
 
 
+def test_native_fit_learns_event_horizons_without_physical_reward(
+    tmp_path: Path,
+) -> None:
+    root = _dataset(tmp_path / "train", size=40)
+    decision_path = root / "frontier_decision_points.jsonl"
+    decisions = [
+        json.loads(line) for line in decision_path.read_text().splitlines()
+    ]
+    waits = []
+    for index, row in enumerate(decisions):
+        row["timestamp_ms"] = 100.0
+        row["invocations"][0]["state"] = "wait_tool"
+        row["labels"][0]["target_training_eligible"]["external_wait"] = True
+        waits.append({
+            "workflow_id": row["workflow_id"],
+            "invocation_id": "worker",
+            "tool_call_id": f"tool-{index}",
+            "start_ts_ms": 20.0,
+            "terminal_ts_ms": 150.0 if index % 2 else 400.0,
+            "censored": False,
+        })
+    decision_table = _write_table(root, "frontier_decision_points", decisions)
+    wait_table = _write_table(root, "external_waits", waits)
+    manifest_path = root / "dataset_manifest.json"
+    manifest = json.loads(manifest_path.read_text())
+    manifest["tables"]["frontier_decision_points"] = decision_table
+    manifest["tables"]["external_waits"] = wait_table
+    manifest_path.write_text(json.dumps(manifest), encoding="utf-8")
+
+    assert main(_args(tmp_path, root)) == 0
+    raw = json.loads((tmp_path / "model.json").read_text())
+    assert raw["training_summary"]["action_target_count"] == 40
+    assert raw["training_summary"]["operational_timing"]["sample_count"] == 280
+    assert raw["metadata"]["action_target_semantics"] == (
+        "observed_tool_release_horizons_only"
+    )
+    assert raw["metadata"]["predictive_action_eligible"] is False
+
+
 def test_native_train_preserves_target_local_censoring(tmp_path: Path) -> None:
     root = _dataset(tmp_path / "train", size=40)
     manifest_path = root / "dataset_manifest.json"

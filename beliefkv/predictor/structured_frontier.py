@@ -1557,6 +1557,15 @@ class FrontierBeliefModel:
         for target in action_values:
             features = _local_features_from_action_target(target)
             identity = _action_target_identity(target)
+            if target.get("row_type") == "native_event_timing_target":
+                probes = target.get("timing_probes") or ()
+                weight = action_weights.get(identity, 0.0) / max(1, len(probes))
+                for probe in probes:
+                    timing_samples.append((
+                        features, float(probe["tau_ms"]),
+                        bool(probe["release_within"]), weight,
+                    ))
+                continue
             known = [
                 (action, value)
                 for action, value in (target.get("actions") or {}).items()
@@ -2176,6 +2185,28 @@ class FrontierBeliefModel:
             features = _local_features_from_action_target(target)
             prediction = self.predict(features)
             identity = _action_target_identity(target)
+            if target.get("row_type") == "native_event_timing_target":
+                probes = target.get("timing_probes") or ()
+                weight = action_weights.get(identity, 0.0) / max(1, len(probes))
+                for probe in probes:
+                    tau_ms = float(probe["tau_ms"])
+                    within = bool(probe["release_within"])
+                    for action, outcome in (
+                        ("prepare_host", not within),
+                        ("prefetch_gpu", within),
+                    ):
+                        timing = prediction.action_timing(action, tau_ms)
+                        if timing is not None:
+                            action_timing_records[action].append((
+                                timing.favorable_probability, outcome, weight,
+                            ))
+                    timing = prediction.action_timing("prepare_host", tau_ms)
+                    if timing is not None:
+                        tool_survival_records.append((
+                            timing.favorable_probability, not within, weight,
+                        ))
+                        observation_counts["native_event_timing"] += 1
+                continue
             known = [
                 (name, value)
                 for name, value in (target.get("actions") or {}).items()

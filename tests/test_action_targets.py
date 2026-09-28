@@ -9,6 +9,7 @@ from beliefkv.predictor.action_targets import (
     OperationalActionTargetContract,
     TransferAnchor,
     build_action_target_rows,
+    build_native_event_timing_targets,
     load_action_target_rows,
 )
 from beliefkv.predictor.structured_frontier import (
@@ -117,6 +118,45 @@ def test_right_censor_only_labels_horizons_proven_before_censor() -> None:
     assert rows[0]["actions"]["prepare_host"]["outcome"] is True
     assert rows[0]["actions"]["prefetch_gpu"]["outcome_known"] is False
     assert rows[0]["actions"]["prefetch_gpu"]["outcome"] is None
+
+
+def test_native_event_target_uses_last_parallel_tool_end_not_gpu_service() -> None:
+    decision = _decision("native-1", "workflow-1", 100.0)
+    decision["labels"][0]["target_training_eligible"]["external_wait"] = True
+    waits = [
+        {"workflow_id": "workflow-1", "invocation_id": "worker",
+         "tool_call_id": "a", "start_ts_ms": 50.0,
+         "terminal_ts_ms": 120.0, "censored": False},
+        {"workflow_id": "workflow-1", "invocation_id": "worker",
+         "tool_call_id": "b", "start_ts_ms": 70.0,
+         "terminal_ts_ms": 350.0, "censored": False},
+    ]
+    targets, report = build_native_event_timing_targets([decision], waits)
+    assert len(targets) == 1
+    assert targets[0]["row_type"] == "native_event_timing_target"
+    assert targets[0]["observed_tool_release_ts_ms"] == 350.0
+    assert targets[0]["timing_probes"][2] == {
+        "tau_ms": 250.0, "release_within": True,
+    }
+    assert targets[0]["timing_probes"][1]["release_within"] is False
+    assert targets[0]["observed_reward_ms"] is None
+    assert report["target"] == "time_until_all_active_tools_return_not_first_gpu_service"
+
+    waits[1]["terminal_ts_ms"] = None
+    waits[1]["observed_duration_ms"] = 110.0
+    waits[1]["censored"] = True
+    targets, _ = build_native_event_timing_targets([decision], waits)
+    assert targets[0]["observed_tool_release_ts_ms"] is None
+    assert targets[0]["timing_probes"] == [
+        {"tau_ms": 50.0, "release_within": False},
+    ]
+
+
+def test_native_event_target_skips_join_snapshots_and_ineligible_waits() -> None:
+    decision = _decision("native-2", "workflow-2", 100.0)
+    decision["invocations"][0]["state"] = "wait_join"
+    targets, _ = build_native_event_timing_targets([decision], [])
+    assert not targets
 
 
 def _frontier(

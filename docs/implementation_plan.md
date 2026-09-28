@@ -2,6 +2,46 @@
 
 Status date: 2026-09-28.
 
+## Event-Time Labels Versus Physical Action Policy
+
+The Qwen3.5 predictor learns when a tool group ends and when each child
+RETURN occurs. A parent's first GPU service after JOIN is **not** a child
+RETURN label. It does not learn whether PREPARE_HOST or PREFETCH_GPU is
+profitable from reactive traces: the counterfactual transfer, freed capacity,
+and interference are not observed in those traces. At each scheduler safe
+point, the runtime must independently compare current FULL/Mamba residency,
+valid Host copies, physical free lists, transfer service estimates, and the
+opportunity cost of occupying either pool before issuing an action.
+
+The native v4 fit now accepts verified WAIT_TOOL snapshots paired with their
+external-wait trace. It fits an event-time survival curve at fixed 50-5000 ms
+probe horizons, properly handling parallel tools and right censoring. This
+is timing supervision, not a label saying an action had positive reward.
+Child completion training continues to use member RETURN timestamps from
+JOIN reentries. Held-out project calibration uses the same horizons; count
+independent tool episodes/workflows, not all correlated probe points as
+independent observations. The metadata remains offline and
+`predictive_action_eligible=false` until runtime physical safety and paired
+use/benefit have been independently verified. Do not bypass the physical
+action gate just because event-time targets are nonzero.
+
+The 2026-09-28 native fit used 128 training workflows and 34,746 eligible
+WAIT_TOOL snapshots (243,222 event-horizon probes). Its child RETURN
+training weighted MAE was approximately 856 seconds: the child point ETA is
+not a subsecond trigger. Held-out calibration used 66 project-disjoint
+workflows and 19,051 WAIT_TOOL event-timing snapshots; a 90%-target
+`remaining_to_return_ms` interval needed about 533 seconds of additional
+slack. This slack is an interval-calibration quantity, not a measured
+held-out MAE or proof of 90% coverage on a new test set. The timing-head
+`prepare_host` and `prefetch_gpu` probability scores describe complementary
+tool-release horizon events, not action reward, Host-copy availability, or
+first-service reuse. The calibrated artifact is
+`experiments/models/qwen35_native_event_horizons_20260928_calibrated.json`;
+it retains `online_eligible=false` and
+`predictive_action_eligible=false`. Evaluate child RETURN timing, short
+event windows, abstention, and transfer utility separately before using
+predicted timing to schedule physical migrations.
+
 The active execution order is the Qwen3.5 section below. Older planning notes
 are retained at the end for traceability but are not startup instructions.
 Completed and superseded plans are indexed under `docs/archive/`.

@@ -21,6 +21,10 @@ from beliefkv.predictor.structured_frontier import (  # noqa: E402
     runtime_environment_digest,
     validate_training_corpus_diversity,
 )
+from beliefkv.predictor.action_targets import (  # noqa: E402
+    NATIVE_EVENT_HORIZONS_MS,
+    build_native_event_timing_targets,
+)
 
 
 def _digest(path: Path) -> str:
@@ -84,8 +88,10 @@ def _manifest_preflight(root: Path) -> tuple[dict[str, Any], str]:
         raise ValueError(f"input is not verified native_reactive_v0520 train: {root}")
 
     # The loader filters non-train rows; reject mixed exports before it can do so.
-    for name in ("frontier_decision_points", "request_calls"):
+    for name in ("frontier_decision_points", "request_calls", "external_waits"):
         table = (manifest.get("tables") or {}).get(name) or {}
+        if name == "external_waits" and not table:
+            continue
         filename = table.get("path")
         if (
             not isinstance(filename, str)
@@ -160,9 +166,18 @@ def main(argv: list[str] | None = None) -> int:
         model_version=args.model_version,
         tool_feature_contract=args.tool_feature_contract,
     )
-    summary = model.fit(rows)
-    if summary["action_target_count"] != 0 or summary["operational_timing"]["sample_count"] != 0:
-        raise ValueError("native fit unexpectedly trained an action head")
+    external_waits = []
+    for root, (manifest, _) in zip(roots, checked):
+        if "external_waits" not in (manifest.get("tables") or {}):
+            continue
+        with (root / "external_waits.jsonl").open(encoding="utf-8") as stream:
+            external_waits.extend(json.loads(line) for line in stream if line.strip())
+    timing_targets, timing_report = build_native_event_timing_targets(
+        rows, external_waits
+    )
+    summary = model.fit(rows, action_targets=timing_targets)
+    if timing_targets and summary["operational_timing"]["sample_count"] == 0:
+        raise ValueError("native event-timing targets did not fit the timing head")
     native_transfer_evidence_count = sum(
         (manifest.get("training_readiness") or {}).get(
             "pcie_service_eligible_count", 0
@@ -179,7 +194,10 @@ def main(argv: list[str] | None = None) -> int:
         "calibration_status": "uncalibrated",
         "test_id_status": "sealed_not_evaluated",
         "test_ood_status": "sealed_not_evaluated",
-        "action_target_count": 0,
+        "action_target_count": len(timing_targets),
+        "action_target_semantics": "observed_tool_release_horizons_only",
+        "native_event_timing_report": timing_report,
+        "native_event_horizons_ms": list(NATIVE_EVENT_HORIZONS_MS),
         "pcie_service_head": (
             "not_fitted_separate_service_model_required"
             if native_transfer_evidence_count > 0

@@ -18,7 +18,10 @@ from beliefkv.predictor.structured_frontier import (
     load_evaluation_rows,
     runtime_environment_digest,
 )
-from beliefkv.predictor.action_targets import load_action_target_rows
+from beliefkv.predictor.action_targets import (
+    build_native_event_timing_targets,
+    load_action_target_rows,
+)
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -73,6 +76,13 @@ def main(argv: list[str] | None = None) -> int:
     if args.model_version:
         model.model_version = args.model_version
     action_targets = load_action_target_rows(args.action_target or ())
+    if not args.native_heads_only and any(
+        target.get("row_type") == "native_event_timing_target"
+        for target in action_targets
+    ):
+        raise SystemExit(
+            "event-timing targets cannot satisfy physical action calibration"
+        )
     if args.development_on_train:
         rows: list[dict[str, object]] = []
         seen: set[str] = set()
@@ -199,6 +209,35 @@ def main(argv: list[str] | None = None) -> int:
                 raise SystemExit(
                     "native calibration lacks disjoint projects or required measured labels"
                 )
+            if (raw_model.get("metadata") or {}).get("action_target_semantics") == (
+                "observed_tool_release_horizons_only"
+            ):
+                waits = []
+                for directory, manifest in zip(args.dataset_dir, manifests):
+                    table = (manifest.get("tables") or {}).get("external_waits") or {}
+                    path = directory / "external_waits.jsonl"
+                    if (
+                        table.get("path") != path.name or not path.is_file()
+                        or table.get("sha256") != hashlib.sha256(
+                            path.read_bytes()
+                        ).hexdigest()
+                    ):
+                        raise SystemExit(
+                            "native event-timing calibration lacks verified external waits"
+                        )
+                    with path.open(encoding="utf-8") as stream:
+                        waits.extend(json.loads(line) for line in stream if line.strip())
+                action_targets, timing_report = build_native_event_timing_targets(
+                    rows, waits
+                )
+                if (
+                    not action_targets
+                    or timing_report["horizons_ms"] !=
+                    raw_model["metadata"].get("native_event_horizons_ms")
+                ):
+                    raise SystemExit(
+                        "native event-timing calibration has no matched horizons"
+                    )
         summary = model.calibrate(
             rows,
             target_coverage=args.target_coverage,
@@ -227,8 +266,9 @@ def main(argv: list[str] | None = None) -> int:
                 if args.native_heads_only else "calibrated"
             ),
             "action_calibration_status": (
-                "unavailable_no_action_targets"
-                if args.native_heads_only else "calibrated"
+                "event_timing_only" if args.native_heads_only and action_targets
+                else "unavailable_no_action_targets" if args.native_heads_only
+                else "calibrated"
             ),
             "parent_model_version": parent_model_version,
             "online_eligible": False,

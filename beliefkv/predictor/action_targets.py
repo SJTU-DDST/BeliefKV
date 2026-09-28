@@ -9,6 +9,7 @@ from typing import Any, Iterable, Mapping, Sequence
 
 
 ACTION_TARGET_SCHEMA_VERSION = 4
+NATIVE_EVENT_HORIZONS_MS = (50.0, 100.0, 250.0, 500.0, 1_000.0, 2_000.0, 5_000.0)
 
 
 @dataclass(frozen=True)
@@ -672,8 +673,141 @@ def build_native_reactive_observations(
     }
 
 
+def build_native_event_timing_targets(
+    decision_rows: Sequence[Mapping[str, Any]],
+    external_wait_rows: Sequence[Mapping[str, Any]],
+) -> tuple[list[dict[str, Any]], dict[str, Any]]:
+    """Label tool release at fixed leads; physical action value remains unknown.
+
+    A parallel tool group releases only when all calls active at the snapshot
+    terminate. A censored call proves survival up to its censor time, but
+    cannot prove that a later release occurred.
+    """
+    waits: defaultdict[tuple[str, str], list[dict[str, Any]]] = defaultdict(list)
+    for raw in external_wait_rows:
+        if raw.get("training_excluded") is True:
+            continue
+        workflow = raw.get("workflow_id")
+        invocation = raw.get("invocation_id")
+        start = raw.get("start_ts_ms")
+        if not workflow or not invocation or not isinstance(start, (int, float)):
+            continue
+        terminal = raw.get("terminal_ts_ms")
+        observed = raw.get("observed_duration_ms")
+        if terminal is None and not isinstance(observed, (int, float)):
+            continue
+        end = float(terminal) if terminal is not None else float(start) + float(observed)
+        if not math.isfinite(end) or end < float(start):
+            continue
+        waits[(str(workflow), str(invocation))].append({
+            "start": float(start), "end": end,
+            "terminal": terminal is not None and raw.get("censored") is not True,
+            "tool_call_id": raw.get("tool_call_id"),
+            "tool_family": raw.get("tool_family"),
+            "backend_class": raw.get("backend_class"),
+            "command_class": raw.get("command_class") or raw.get("tool_name"),
+        })
+    for episodes in waits.values():
+        episodes.sort(key=lambda item: item["start"])
+
+    output: list[dict[str, Any]] = []
+    seen: set[tuple[str, str]] = set()
+    counts: Counter[str] = Counter()
+    for row in decision_rows:
+        if row.get("training_eligible") is False:
+            continue
+        timestamp = row.get("timestamp_ms")
+        if not isinstance(timestamp, (int, float)) or not math.isfinite(timestamp):
+            continue
+        labels = {
+            label.get("invocation_id"): label for label in row.get("labels", ())
+        }
+        for features in row.get("invocations", ()):
+            if features.get("state") != "wait_tool":
+                continue
+            invocation = features.get("invocation_id")
+            label = labels.get(invocation) or {}
+            if not (label.get("target_training_eligible") or {}).get("external_wait"):
+                continue
+            identity = (str(row.get("decision_id") or ""), str(invocation or ""))
+            if not all(identity) or identity in seen:
+                raise ValueError(f"duplicate native timing identity: {identity}")
+            seen.add(identity)
+            active = [
+                item for item in waits.get(
+                    (str(row.get("workflow_id") or ""), identity[1]), ()
+                )
+                if item["start"] <= timestamp <= item["end"]
+            ]
+            if not active:
+                counts["missing_active_wait"] += 1
+                continue
+            known_release = all(item["terminal"] for item in active)
+            release = max(item["end"] for item in active) if known_release else None
+            # Once any active call is censored, the group is only known to
+            # survive through the latest certified lower bound.
+            lower_bound = max(item["end"] for item in active if not item["terminal"]) \
+                if not known_release else None
+            probes = []
+            for horizon in NATIVE_EVENT_HORIZONS_MS:
+                known = known_release or (
+                    lower_bound is not None and lower_bound - timestamp > horizon
+                )
+                if known:
+                    probes.append({
+                        "tau_ms": horizon,
+                        "release_within": bool(
+                            known_release and release - timestamp <= horizon
+                        ),
+                    })
+            if not probes:
+                counts["censored_before_first_horizon"] += 1
+                continue
+            def active_class(field: str, fallback: str) -> str:
+                classes = {str(item[field]) for item in active if item.get(field)}
+                return next(iter(classes)) if len(classes) == 1 else fallback
+
+            output.append({
+                "schema_version": ACTION_TARGET_SCHEMA_VERSION,
+                "row_type": "native_event_timing_target",
+                "decision_id": identity[0],
+                "workflow_id": row["workflow_id"],
+                "invocation_id": identity[1],
+                "project": row.get("project"),
+                "split": row.get("split"),
+                "tool_wait_episode_id": "+".join(sorted(
+                    str(item["tool_call_id"]) for item in active
+                )),
+                "timestamp_ms": timestamp,
+                "observed_tool_release_ts_ms": release,
+                "agent_definition_id": features.get("agent_definition_id"),
+                "boundary_history": features.get("boundary_history", ()),
+                "tool_family": active_class("tool_family", "mixed"),
+                "backend_class": active_class("backend_class", "mixed"),
+                "command_class": active_class("command_class", "multi_tool"),
+                "elapsed_wait_ms": max(0.0, timestamp - min(
+                    item["start"] for item in active
+                )),
+                "current_sequence_tokens": features.get("current_sequence_tokens"),
+                "active_tool_count": len(active),
+                "timing_probes": probes,
+                "physical_eligibility": None,
+                "observed_reward_ms": None,
+            })
+            counts["labeled_snapshots"] += 1
+            counts["labeled_horizons"] += len(probes)
+    return output, {
+        "schema_version": ACTION_TARGET_SCHEMA_VERSION,
+        "row_type": "native_event_timing_report",
+        "counts": dict(counts),
+        "horizons_ms": list(NATIVE_EVENT_HORIZONS_MS),
+        "target": "time_until_all_active_tools_return_not_first_gpu_service",
+        "physical_action_reward_available": False,
+    }
+
+
 def load_action_target_rows(paths: Iterable[str | Path]) -> list[dict[str, Any]]:
-    """Read v4 tool-action labels; reactive observations are diagnostic only."""
+    """Read v4 action or event-horizon targets; observations are diagnostic."""
     rows: list[dict[str, Any]] = []
     seen: set[tuple[str, str]] = set()
     for path in paths:
@@ -686,7 +820,9 @@ def load_action_target_rows(paths: Iterable[str | Path]) -> list[dict[str, Any]]
                     raise ValueError("unsupported action-target row schema")
                 if row.get("row_type") == "reactive_action_observation":
                     continue
-                if row.get("row_type", "operational_action_target") != "operational_action_target":
+                if row.get("row_type", "operational_action_target") not in {
+                    "operational_action_target", "native_event_timing_target"
+                }:
                     raise ValueError("unsupported action-target row type")
                 identity = (
                     str(row.get("decision_id") or ""),
