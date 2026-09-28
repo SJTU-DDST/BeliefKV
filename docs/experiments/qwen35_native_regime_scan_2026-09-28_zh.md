@@ -499,6 +499,9 @@ Host-backed H2D step。`physical_action_ack.jsonl` 和
 2 次 H2D 不能计作预测动作。逐请求 FULL Host 命中仅 2 次、
 合计 2,078 tokens；这些命中说明偶有 Host 复用，但没有证明
 确认 JOIN 当时可对该共享物理节点安全提前恢复。
+838 条满足 Host 空槽条件的 PREPARE 快照按目标物理节点去重后
+只有 2 个节点；它们均未出现在此轮后续已完成的原生 D2H
+节点集合中。因此不能由重复快照推断部分 PREPARE 会被消费。
 
 因此 v7 符合 Host 稳定、低驱逐的一侧，却**未通过主场景的
 可行动 H2D 目标门槛**；无需对此轮做 predictive/reactive
