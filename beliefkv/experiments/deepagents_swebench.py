@@ -2349,6 +2349,7 @@ def _model(
         ),
         request_timeout_s=config.request_timeout_s,
         abort_url=config.base_url.rstrip("/").removesuffix("/v1") + "/abort_request",
+        beliefkv_eos_logprobs=natural_eos_shadow,
         model=config.model,
         base_url=config.base_url,
         api_key="EMPTY",
@@ -2364,7 +2365,6 @@ def _model(
             False if config.stream_completion_shadow else "tool_calling"
         ),
         logprobs=True if natural_eos_shadow else None,
-        top_logprobs=20 if natural_eos_shadow else None,
     )
     model.set_beliefkv_prompt_limit(
         model_context_tokens=config.context_lifecycle.model_context_tokens,

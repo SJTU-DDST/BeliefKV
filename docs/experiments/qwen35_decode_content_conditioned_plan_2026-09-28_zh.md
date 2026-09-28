@@ -1134,3 +1134,20 @@ JOIN-last 覆盖，再由 runtime 依据实际 parent Host
 干扰决定是否发起预取。不得将 EOS 阈值、服务端
 序号下界或离线窗口命中直接升级为
 `predictive_action_eligible`。
+
+### 双 EOS 标量采集路径（待 GPU 验证）
+
+开发版 v0.5.20 聊天请求可选 `beliefkv_eos_logprobs`：
+从当前模型 tokenizer 的词表解析 `<|im_end|>` 和
+`<|endoftext|>` ID，通过原生 `token_ids_logprob` 对每个
+生成 token 单独评分；流式回包只附加这两个候选概率，不再
+传输 top-20 列表。仍保留采样 token 的 logprob 以供现有
+stream observer 排除已采样的 EOS；双 EOS 与本次输出
+token 数不一致时拒绝记录，而非猜测其序号。此选项仅用于
+shadow 测量，不更改推理调度或发起 H2D。
+
+启动器所需 staging patch 已按工作树同步；原有 canary
+改动保留但默认关闭。当前只通过了源码语法和 patch
+一致性检查，尚未验证真实流式计数、传输开销、项目
+隔离的长度对照或物理 ACK/首次复用，因此不能把
+此采集路径视为已验证的预测信号。

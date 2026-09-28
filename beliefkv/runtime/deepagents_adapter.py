@@ -2487,6 +2487,7 @@ class BeliefKVChatOpenAI(ChatOpenAI):
     """ChatOpenAI client that tags every request with its runtime identity."""
 
     _beliefkv_adapter: DeepAgentsRuntimeAdapter = PrivateAttr()
+    _beliefkv_eos_logprobs: bool = PrivateAttr(default=False)
     _activation_deadline: RequestDeadline | None = PrivateAttr(default=None)
     _request_timeout_cap_s: float | None = PrivateAttr(default=None)
     _abort_url: str | None = PrivateAttr(default=None)
@@ -2509,12 +2510,14 @@ class BeliefKVChatOpenAI(ChatOpenAI):
         activation_deadline: RequestDeadline | None = None,
         request_timeout_s: float | None = None,
         abort_url: str | None = None,
+        beliefkv_eos_logprobs: bool = False,
         **kwargs: Any,
     ) -> None:
         if request_timeout_s is not None and request_timeout_s <= 0:
             raise ValueError("request_timeout_s must be positive")
         super().__init__(**kwargs)
         self._beliefkv_adapter = beliefkv_adapter
+        self._beliefkv_eos_logprobs = beliefkv_eos_logprobs
         self._activation_deadline = activation_deadline
         self._request_timeout_cap_s = request_timeout_s
         self._abort_url = abort_url
@@ -2705,6 +2708,8 @@ class BeliefKVChatOpenAI(ChatOpenAI):
             raise RuntimeError("conflicting rid in ChatOpenAI request")
         extra_body["beliefkv_metadata"] = metadata.to_wire()
         extra_body["rid"] = rid
+        if self._beliefkv_eos_logprobs:
+            extra_body["beliefkv_eos_logprobs"] = True
         if self._beliefkv_adapter.native_radix_sessions is not None:
             session_id = self._beliefkv_adapter.native_radix_sessions.for_request(metadata)
             if session_id is not None:

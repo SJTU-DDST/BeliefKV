@@ -2961,7 +2961,8 @@ def test_natural_eos_shadow_requests_logprobs_without_intent_tool(tmp_path: Path
     natural = _model(DeepAgentsExperimentConfig(**base), None)
     params = natural._get_invocation_params()
     assert params["logprobs"] is True
-    assert params["top_logprobs"] == 20
+    assert params["top_logprobs"] is None
+    assert natural._beliefkv_eos_logprobs is True
     assert _model(DeepAgentsExperimentConfig(
         **base, child_return_intent_shadow=True,
     ), None).top_logprobs is None
