@@ -21,6 +21,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Iterable, Mapping, Sequence, TextIO
 
+import httpx
 from deepagents.backends import FilesystemBackend
 from deepagents.backends.protocol import ExecuteResponse, SandboxBackendProtocol
 from deepagents.graph import BASE_AGENT_PROMPT
@@ -2330,6 +2331,12 @@ def _model(
     natural_eos_shadow = (
         config.child_eos_shadow and not config.child_return_intent_shadow
     )
+    # The EOS development stream is connection-heavy. Keep transport changes
+    # scoped to this diagnostic until the disconnect source is established.
+    diagnostic_http = (
+        httpx.AsyncClient(limits=httpx.Limits(max_keepalive_connections=0))
+        if natural_eos_shadow else None
+    )
     model = BeliefKVChatOpenAI(
         beliefkv_adapter=adapter,
         activation_deadline=(
@@ -2345,6 +2352,7 @@ def _model(
         max_completion_tokens=config.max_completion_tokens,
         timeout=config.request_timeout_s,
         max_retries=0,
+        http_async_client=diagnostic_http,
         streaming=config.stream_completion_shadow,
         disable_streaming=(
             False if config.stream_completion_shadow else "tool_calling"
