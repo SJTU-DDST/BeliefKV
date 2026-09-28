@@ -2331,9 +2331,9 @@ def _model(
     natural_eos_shadow = (
         config.child_eos_shadow and not config.child_return_intent_shadow
     )
-    diagnostic_http = (
-        _eos_diagnostic_http_client(config.output_dir)
-        if natural_eos_shadow else None
+    diagnostic_http, diagnostic_async_http = (
+        _eos_diagnostic_http_clients(config.output_dir)
+        if natural_eos_shadow else (None, None)
     )
     model = BeliefKVChatOpenAI(
         beliefkv_adapter=adapter,
@@ -2350,7 +2350,8 @@ def _model(
         max_completion_tokens=config.max_completion_tokens,
         timeout=config.request_timeout_s,
         max_retries=0,
-        http_async_client=diagnostic_http,
+        http_client=diagnostic_http,
+        http_async_client=diagnostic_async_http,
         streaming=config.stream_completion_shadow,
         disable_streaming=(
             False if config.stream_completion_shadow else "tool_calling"
@@ -2368,14 +2369,13 @@ def _model(
     return model
 
 
-def _eos_diagnostic_http_client(output_dir: Path) -> httpx.AsyncClient:
+def _eos_diagnostic_http_clients(
+    output_dir: Path,
+) -> tuple[httpx.Client, httpx.AsyncClient]:
     """Record HTTP transport phases only when an EOS development request fails."""
     failures = output_dir / "eos_http_transport_failures.jsonl"
 
-    async def observe_request(request: httpx.Request) -> None:
-        if request.url.path != "/v1/chat/completions":
-            return
-        body = await request.aread()
+    def trace_request(body: bytes) -> Any:
         try:
             rid = json.loads(body).get("rid")
         except (ValueError, AttributeError):
@@ -2384,7 +2384,7 @@ def _eos_diagnostic_http_client(output_dir: Path) -> httpx.AsyncClient:
         submitted_at_ms = time.time() * 1000
         phases: list[tuple[str, float]] = []
 
-        async def trace(name: str, info: dict[str, Any]) -> None:
+        def trace(name: str, info: dict[str, Any]) -> None:
             elapsed_ms = round((time.monotonic() - started) * 1000, 3)
             phases.append((name, elapsed_ms))
             if not name.endswith(".failed"):
@@ -2406,11 +2406,27 @@ def _eos_diagnostic_http_client(output_dir: Path) -> httpx.AsyncClient:
             except OSError:
                 pass
 
-        request.extensions["trace"] = trace
+        return trace
 
-    return httpx.AsyncClient(
-        limits=httpx.Limits(max_keepalive_connections=0),
-        event_hooks={"request": [observe_request]},
+    def observe_sync(request: httpx.Request) -> None:
+        if request.url.path == "/v1/chat/completions":
+            request.extensions["trace"] = trace_request(request.read())
+
+    async def observe_async(request: httpx.Request) -> None:
+        if request.url.path == "/v1/chat/completions":
+            sync_trace = trace_request(await request.aread())
+
+            async def trace(name: str, info: dict[str, Any]) -> None:
+                sync_trace(name, info)
+
+            request.extensions["trace"] = trace
+
+    limits = httpx.Limits(max_keepalive_connections=0)
+    return (
+        httpx.Client(limits=limits, event_hooks={"request": [observe_sync]}),
+        httpx.AsyncClient(
+            limits=limits, event_hooks={"request": [observe_async]}
+        ),
     )
 
 ORACLE_PRESSURE_CONTEXT_MARKER = (
