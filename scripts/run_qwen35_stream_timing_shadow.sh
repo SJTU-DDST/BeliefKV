@@ -16,6 +16,7 @@ WORKLOAD_INCLUDE_MANIFEST="${WORKLOAD_INCLUDE_MANIFEST:-}"
 WORKLOAD_EXCLUDE_PREFIX="${WORKLOAD_EXCLUDE_PREFIX:-}"
 WORKLOAD_EXCLUDE_MANIFEST="${WORKLOAD_EXCLUDE_MANIFEST:-}"
 PILOT_WORKFLOW_COUNT="${PILOT_WORKFLOW_COUNT:-32}"
+PILOT_CONCURRENCY="${PILOT_CONCURRENCY:-$PILOT_WORKFLOW_COUNT}"
 server_pid=""
 
 stop_server() {
@@ -58,6 +59,9 @@ fi
 if [[ ! "$PILOT_WORKFLOW_COUNT" =~ ^[0-9]+$ \
   || "$PILOT_WORKFLOW_COUNT" -lt 1 \
   || "$PILOT_WORKFLOW_COUNT" -gt 32 \
+  || ! "$PILOT_CONCURRENCY" =~ ^[0-9]+$ \
+  || "$PILOT_CONCURRENCY" -lt 1 \
+  || "$PILOT_CONCURRENCY" -gt "$PILOT_WORKFLOW_COUNT" \
   || ! "$WORKLOAD_OFFSET" =~ ^[0-9]+$ \
   || ! "$WORKLOAD_POOL_SIZE" =~ ^[0-9]+$ \
   || "$WORKLOAD_POOL_SIZE" -lt "$PILOT_WORKFLOW_COUNT" ]]; then
@@ -180,7 +184,7 @@ fi
   --workload-manifest "$SOURCE/runtime_workload_manifest.json" \
   "${instance_args[@]}" \
   --max-workflows "$PILOT_WORKFLOW_COUNT" \
-  --concurrency "$PILOT_WORKFLOW_COUNT" \
+  --concurrency "$PILOT_CONCURRENCY" \
   --workflow-arrival-batch-size 16 \
   --workflow-arrival-batch-interval-ms 60000 \
   --subagent-fanout-profile native_dynamic_1to4 \

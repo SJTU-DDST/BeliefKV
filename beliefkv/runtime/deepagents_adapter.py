@@ -1405,11 +1405,16 @@ class DeepAgentsRuntimeAdapter(BaseCallbackHandler):
             epoch = metadata.context_epoch if metadata is not None else None
         cause_types = []
         cause_errnos = []
+        transport_cause_messages = []
         seen = {id(error)}
         cause = error.__cause__ or error.__context__
         while cause is not None and id(cause) not in seen and len(cause_types) < 4:
             seen.add(id(cause))
             cause_types.append(type(cause).__name__)
+            if type(cause).__name__ in {
+                "RemoteProtocolError", "ReadError", "ConnectionResetError"
+            }:
+                transport_cause_messages.append(str(cause).splitlines()[0][:180])
             errno = getattr(cause, "errno", None)
             if isinstance(errno, int):
                 cause_errnos.append(errno)
@@ -1427,6 +1432,7 @@ class DeepAgentsRuntimeAdapter(BaseCallbackHandler):
                 "exception_type": type(error).__name__,
                 "exception_cause_types": cause_types,
                 "exception_cause_errnos": cause_errnos,
+                "transport_cause_messages": transport_cause_messages,
                 "censored": True,
                 "censor_reason": _error_censor_reason(error),
             },
@@ -1454,6 +1460,7 @@ class DeepAgentsRuntimeAdapter(BaseCallbackHandler):
                 "exception_type": type(error).__name__,
                 "exception_cause_types": cause_types,
                 "exception_cause_errnos": cause_errnos,
+                "transport_cause_messages": transport_cause_messages,
             }
         )
         self._finish_internal_summary(key, error=error)
