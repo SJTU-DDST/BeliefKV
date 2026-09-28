@@ -71,10 +71,17 @@ def summarize(run: Path) -> dict:
             item["sample_count"] += 1
 
     transfer_counts = {"d2h": 0, "h2d": 0}
+    later_transfer_nodes: dict[str, dict[int, list[float]]] = {
+        "d2h": {}, "h2d": {},
+    }
     for row in rows(server / "transfer_telemetry.jsonl"):
         direction = row.get("direction")
         if row.get("status") == "completed" and direction in transfer_counts:
             transfer_counts[direction] += 1
+            ts = row.get("complete_ts_ms")
+            if isinstance(ts, (int, float)):
+                for node_id in row.get("node_ids", []):
+                    later_transfer_nodes[direction].setdefault(node_id, []).append(ts)
 
     action_acks = list(rows(server / "physical_action_ack.jsonl"))
     action_uses = list(rows(server / "physical_action_use.jsonl"))
@@ -121,6 +128,20 @@ def summarize(run: Path) -> dict:
         "prepare_distinct_session_targets": len(prepare),
         "prepare_snapshot_count": sum(
             item["sample_count"] for item in prepare.values()
+        ),
+        # Native ACKs omit creation time and per-request consumption. These
+        # counts are node-ID-only upper bounds, not evidence of action utility.
+        "h2d_targets_with_later_native_h2d_node_id_only": sum(
+            any(ts > item["first_ts_ms"] for ts in later_transfer_nodes["h2d"].get(
+                item["node_id"], ()
+            ))
+            for item in targets
+        ),
+        "prepare_targets_with_later_native_d2h_node_id_only": sum(
+            any(ts > item["first_ts_ms"] for ts in later_transfer_nodes["d2h"].get(
+                item["node_id"], ()
+            ))
+            for item in prepare.values()
         ),
         "native_ack_count": transfer_counts,
         "predictive_h2d_ack_count": sum(

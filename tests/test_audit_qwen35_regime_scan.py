@@ -31,6 +31,10 @@ def test_deduplicates_observations_without_promoting_native_ack(tmp_path):
                 "direction": "h2d", "status": "completed",
                 "complete_ts_ms": ts, "node_ids": [node],
             }) + "\n")
+        file.write(json.dumps({
+            "direction": "d2h", "status": "completed",
+            "complete_ts_ms": 3500, "node_ids": [1013],
+        }) + "\n")
     (server / "physical_action_ack.jsonl").write_text("")
     (server / "physical_action_use.jsonl").write_text("")
     (server / "native_telemetry_status.json").write_text(json.dumps({
@@ -61,6 +65,8 @@ def test_deduplicates_observations_without_promoting_native_ack(tmp_path):
     }]
     assert report["prepare_distinct_session_targets"] == 1
     assert report["native_ack_count"]["h2d"] == 2
+    assert report["h2d_targets_with_later_native_h2d_node_id_only"] == 0
+    assert report["prepare_targets_with_later_native_d2h_node_id_only"] == 1
     assert report["predictive_h2d_ack_count"] == 0
     assert report["verified_first_service_full_reuse_count"] == 0
     assert report["qualification"] == "not_inferred_from_snapshots_or_native_acks"
