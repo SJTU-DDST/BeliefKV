@@ -26,23 +26,15 @@ Workflow fairness 只作为有界防饿死和最终 tie-break，不以平均分�
 ### 1.1 当前阶段目标：低重算负载中的可行动迁移
 
 **本阶段唯一主目标：**在 Qwen3.5/SGLang v0.5.20 上，找到
-FULL/Mamba HBM 均可容纳目标动作、同 NUMA Host 池稳定、PCIe 有
-可利用窗口且有用 KV 丢弃后重算很少的动态负载；在真实后续消费
-存在时，以选择性、可部分备份的 `PREPARE_HOST` 和提前恢复
-Host-backed KV 的 predictive H2D，减少同步迁移等待，并通过同任务、
-同到达流、同物理配置的 reactive A/B 证明正确完成 workflow 的
-吞吐或 JCT 净收益。当前不为预取驱逐 Device KV，也不把高压重算
-优化或联合 victim/beneficiary handoff 作为交付条件。
-
-当前主目标限定为**HBM 中有一定可用于迁移的物理余量、FULL/Mamba
-Host pool 均不抖动、PCIe 有传输窗口，且有用 KV 被丢弃后重算很少**
-的动态多 workflow 负载。这里的余量须按每次动作所需的 FULL 和
-Mamba 空槽分别核实，而非用总体 HBM 使用率推断。在该区间分别检验选择性
-`PREPARE_HOST` 提前备份与 predictive H2D 提前恢复能否缩短同步
-迁移等待，并改善正确完成 workflow 的吞吐/JCT。先只在真实空闲
-HBM 上验证主结果；不为提高迁移次数而制造 Host 驱逐或 KV 重算。
-冷 KV 的有界替换、联合 handoff 和高压减少重算均为后续独立扩展，
-不作为主结果的前提，也不以抢占热 KV 建立主结果。
+FULL/Mamba HBM 有可用于目标 H2D 的真实空闲容量、同 NUMA Host
+池稳定、PCIe 有传输窗口，且有用 KV 丢弃后重算很少的动态负载。
+在真实后续消费存在时，以选择性、可部分备份的 `PREPARE_HOST`
+和提前恢复 Host-backed KV 的 predictive H2D，减少同步迁移等待，
+并通过同任务、同到达流、同物理配置的 reactive A/B 检验正确完成
+workflow 的吞吐和 JCT 净收益。物理余量按每次动作的 FULL/Mamba
+需求分别核实，不由总体 HBM 使用率推断。不为提高迁移次数制造
+Host 驱逐或 KV 重算；冷 KV 的有界替换、联合 handoff 和高压
+减少重算均单列为后续扩展，不作为主结果的前提。
 同时需要真实的工具等待、child JOIN 或候选执行请求，确保提前迁移
 有未来消费对象：PREPARE 必须有未来卸载机会，H2D 必须有尚未在
 Device 驻留的有效 Host-backed KV。HBM 空闲本身不构成收益。

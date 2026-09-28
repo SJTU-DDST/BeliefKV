@@ -38,10 +38,11 @@ observations by physical target/epoch before estimating opportunities.
 ## Objective (Current Stage)
 
 **Primary goal:** On Qwen3.5/SGLang v0.5.20, identify a reproducible
-low-to-moderate-pressure workload with available or demonstrably
-low-cost reclaimable HBM in each required FULL/Mamba pool, stable
-NUMA-local Host pools, useful PCIe windows and little useful-KV eviction
-followed by recomputation.
+workload where the required FULL/Mamba pools have genuinely free HBM for
+useful transfers, NUMA-local Host pools remain stable, PCIe has useful
+transfer windows, and little useful KV is evicted and later recomputed.
+This is a physical operating regime, not a fixed root count or a target
+HBM utilization; bounded reclamation of cold KV is a separate extension.
 Root count and aggregate HBM occupancy do not qualify a workload. There
 must be real future consumers: Host-backed KV absent from Device that a
 subsequent request will use, and/or a native offload that can consume a
@@ -52,10 +53,10 @@ In this regime, implement and verify selective `PREPARE_HOST` and bounded
 tool-return, JOIN and pre-admission predictive H2D. PREPARE requires
 observable live Device KV, Host headroom and a transfer window, not free
 Device space; H2D requires capacity for the target's actual FULL/Mamba
-demands. First use already-free HBM for H2D; evaluate bounded displacement
-of demonstrably cold KV separately only where its measured cost is below
-the prospective gain. Neither policy may sacrifice useful KV to manufacture
-apparent opportunities. Complete
+demands. Use already-free HBM for the primary H2D experiment; evaluate
+bounded displacement of demonstrably cold KV separately only where its
+measured cost is below the prospective gain. Neither policy may sacrifice
+useful KV to manufacture apparent opportunities. Complete
 the causal chain: valid target -> physical transfer ACK -> later native
 offload consumption or first GPU service reuse -> saved synchronous
 transfer wait. Measure useful and wasted bytes, Host/Device residency
