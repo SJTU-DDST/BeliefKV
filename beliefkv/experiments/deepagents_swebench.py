@@ -2331,10 +2331,8 @@ def _model(
     natural_eos_shadow = (
         config.child_eos_shadow and not config.child_return_intent_shadow
     )
-    # The EOS development stream is connection-heavy. Keep transport changes
-    # scoped to this diagnostic until the disconnect source is established.
     diagnostic_http = (
-        httpx.AsyncClient(limits=httpx.Limits(max_keepalive_connections=0))
+        _eos_diagnostic_http_client(config.output_dir)
         if natural_eos_shadow else None
     )
     model = BeliefKVChatOpenAI(
@@ -2368,6 +2366,52 @@ def _model(
     if deadline_controller is not None:
         deadline_controller.register_model(model)
     return model
+
+
+def _eos_diagnostic_http_client(output_dir: Path) -> httpx.AsyncClient:
+    """Record HTTP transport phases only when an EOS development request fails."""
+    failures = output_dir / "eos_http_transport_failures.jsonl"
+
+    async def observe_request(request: httpx.Request) -> None:
+        if request.url.path != "/v1/chat/completions":
+            return
+        body = await request.aread()
+        try:
+            rid = json.loads(body).get("rid")
+        except (ValueError, AttributeError):
+            rid = None
+        started = time.monotonic()
+        submitted_at_ms = time.time() * 1000
+        phases: list[tuple[str, float]] = []
+
+        async def trace(name: str, info: dict[str, Any]) -> None:
+            elapsed_ms = round((time.monotonic() - started) * 1000, 3)
+            phases.append((name, elapsed_ms))
+            if not name.endswith(".failed"):
+                return
+            error = info.get("exception")
+            try:
+                failures.parent.mkdir(parents=True, exist_ok=True)
+                with failures.open("a", encoding="utf-8") as stream:
+                    stream.write(json.dumps({
+                        "request_id": rid,
+                        "submitted_at_ms": submitted_at_ms,
+                        "failed_at_ms": time.time() * 1000,
+                        "request_bytes": len(body),
+                        "stage": name,
+                        "exception_type": type(error).__name__,
+                        "exception": str(error)[:200],
+                        "phases_ms": phases,
+                    }) + "\n")
+            except OSError:
+                pass
+
+        request.extensions["trace"] = trace
+
+    return httpx.AsyncClient(
+        limits=httpx.Limits(max_keepalive_connections=0),
+        event_hooks={"request": [observe_request]},
+    )
 
 ORACLE_PRESSURE_CONTEXT_MARKER = (
     "\n\nFrozen repository context pack for this preregistered KV-pressure "
