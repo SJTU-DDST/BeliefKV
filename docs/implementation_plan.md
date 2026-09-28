@@ -136,7 +136,13 @@ window; the later post-tool H2D receipt named node 4721. Aggregate native
 receipts cannot prove whether node 52 was restored as an ancestor, and
 neither transfer proves predictive reuse. v9 is a
 pressure/opportunity diagnostic, not a qualified stage-1 stratum or a
-paired performance result. Selective partial PREPARE
+paired performance result. The same 24 tasks at 200 GB/35:65 write-back
+(v10b) completed 24/24 naturally without either Host pool evicting, but
+had only one free-list-fitting H2D snapshot (one Mamba slot, zero FULL
+tokens) and no predictive ACK. Across 188 deduplicated PREPARE candidates,
+no node-ID-only later native D2H match was observed; splits and ancestor
+closures remain unproven rather than disproven. v10b is a stable capacity
+bound, not yet an actionable predictive-benefit workload. Selective partial PREPARE
 consumed by later native eviction, saved synchronous wait, independent
 task correctness and matched reactive A/B
 remain unverified. Keep the primary scan on free FULL/Mamba HBM capacity,

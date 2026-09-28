@@ -550,3 +550,39 @@ FULL Host 驱逐 627 块、253,739 units，Mamba 驱逐 288 slots。
 身份闭包，选择仍有缺 Device/Host-backed 消费机会、但 Host
 不抖动的配置；若找不到，则报告可行动机会的上界，不以继续
 加大并发作为默认优化手段。
+
+## 200 GB / 35:65 / write-back / 24-root：v10b Host 稳定，目标稀少
+
+保持与 v9 相同的前 24 个训练任务、同时到达、模型、HBM、
+running=48 和 NUMA 1 的 200 GB Host 总容量，只把 Host
+FULL/Mamba 比例改为 35:65；独立冷启动数据在
+`experiments/raw/qwen35_native_in_graph_join_200g_35_65_24root_v10b/`。
+首次 v10 启动因探针沿用 `staging` 默认补丁、而 checkout 实际
+对应 `writeback_prepare` 补丁，被启动器在请求提交前拒绝；
+v10b 显式指定正确补丁后自然结束。探针默认 flavor 已同步修复。
+
+v10b 客户端退出码为 0，24/24 workflow 自然完成；两路 writer
+完整关闭，无丢记录、写入错误或待处理请求。FULL/Mamba Host
+高水位分别为 2,511,167/3,417,969 tokens（73.5%）和
+1,637/2,019 slots（81.1%），均未驱逐；可归因 FULL 重算为 0。
+原生 D2H/H2D ACK 为 5,152/5 次，预测动作 ACK/首次消费均为 0。
+24 条自然完成不等于任务正确，尚未做官方评分。
+
+逐秒机会采样 4,181 条请求快照，仅 1 条在同一 context epoch
+同时满足 Host-backed、缺 Device、HBM 可容纳：工具等待 parent
+物理节点 59，仅缺 1 个 Mamba slot，没有 FULL tokens；同一
+节点后续两个快照已属另一个 context epoch 且不满足空槽门禁。
+该候选之后没有同节点 ID 的原生 H2D 回执，故不能证明会在
+后续请求中消费。满足 Host 空槽条件的 PREPARE 快照有 2,150
+条，按 context/session/epoch/物理节点去重为 188 个目标；
+没有目标在候选之后出现同节点 ID 的原生 D2H。这是仅按 ID
+匹配的保守观测，节点拆分或祖先闭包无法由现有 ACK 排除。
+
+因此 35:65 解决了 v9 的 Host 容量问题，但没有提供足够可验证
+的 H2D/PREPARE 消费窗口，**不能直接冻结为 predictive A/B
+主场景**。新的只读汇总器
+`scripts/audit_qwen35_regime_scan.py` 保留快照去重、原生 ACK
+与物理预测动作的不同口径；新请求 Host 命中的物理路径埋点
+仅用于后续运行，不回填 v10b。下一步须观察另一个训练配置
+是否同时具备稳定 Host 和可复用目标；若仍稀少，应量化该模型/
+负载下的机会与潜在收益上界，而不是把候选或迁移次数当成收益。
