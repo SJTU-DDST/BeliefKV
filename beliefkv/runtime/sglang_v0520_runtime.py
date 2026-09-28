@@ -265,6 +265,7 @@ class NativeAdmissionRuntime:
             self.join_wait_hints[hint.join_id] = hint
 
     def close(self) -> None:
+        self._discard_join_ticket("shutdown")
         if self._opportunity_writer is not None:
             self._opportunity_writer.close()
             self._opportunity_writer = None
@@ -274,6 +275,28 @@ class NativeAdmissionRuntime:
         if self.event_server is not None:
             self.event_server.close()
             self.event_server = None
+
+    def _discard_join_ticket(self, reason: str) -> None:
+        ticket = self._join_ticket
+        if (
+            ticket is not None
+            and ticket.phase == "confirmed"
+            and self.enable_confirmed_join_canary
+            and self._opportunity_writer is not None
+        ):
+            self._opportunity_writer.record({
+                "event": "confirmed_join_ticket_closed",
+                "ts_ms": time.time() * 1000.0,
+                "join_id": ticket.join_id,
+                "workflow_id": ticket.key.root_workflow_id,
+                "context_id": ticket.key.context_id,
+                "context_epoch": ticket.key.context_epoch,
+                "reason": reason,
+                "issued_nodes": ticket.issued_nodes,
+                "no_step_recorded": ticket.no_step_recorded,
+                "command_id": ticket.command_id,
+            })
+        self._join_ticket = None
 
     def attach_native_cache(self, cache: object) -> None:
         self._native_cache = cache
@@ -333,7 +356,7 @@ class NativeAdmissionRuntime:
             self.tool_wait_hint = None
             self.join_wait_hint = None
             self._completion_hints.clear()
-            self._join_ticket = None
+            self._discard_join_ticket("causal_mirror_discarded")
             self._admission_lease = None
             self.shadow_candidate = None
             self._context_tokens.clear()
@@ -474,7 +497,7 @@ class NativeAdmissionRuntime:
                 if self._live_completion_hint(hint)
             }
             if self._join_ticket is not None and not self._live_join_ticket():
-                self._join_ticket = None
+                self._discard_join_ticket("event_invalidated")
             if any(event.kind in (
                 RuntimeEventKind.JOIN_CREATE, RuntimeEventKind.JOIN_WAIT,
                 RuntimeEventKind.JOIN_SATISFIED, RuntimeEventKind.JOIN_TIMEOUT,
@@ -578,7 +601,10 @@ class NativeAdmissionRuntime:
             ticket.command_id = None
             self.counts["join_prefetch_expired"] += 1
         if ticket is not None and not self._live_join_ticket():
-            self._join_ticket = None
+            self._discard_join_ticket(
+                "expired" if time.monotonic() >= ticket.expires_at
+                else "safe_point_invalidated"
+            )
         self._sample_h2d_opportunities(waiting_queue, now_ms=now_ms)
 
     def _missing_opportunity_detail(
@@ -993,7 +1019,7 @@ class NativeAdmissionRuntime:
     def _advance_join_ticket(self, event: RuntimeEvent) -> None:
         ticket = self._join_ticket
         if ticket is not None and ticket.join_id in self._noncontinuing_joins:
-            self._join_ticket = None
+            self._discard_join_ticket("noncontinuing_join")
             return
         if ticket is None:
             if not (
@@ -1046,15 +1072,15 @@ class NativeAdmissionRuntime:
             return
         join = self.graph.joins.get(ticket.join_id)
         if join is None or join.workflow_id != ticket.key.root_workflow_id:
-            self._join_ticket = None
+            self._discard_join_ticket("join_removed_or_changed")
             return
         if event.kind is RuntimeEventKind.JOIN_TIMEOUT and event.join_id == ticket.join_id:
-            self._join_ticket = None
+            self._discard_join_ticket("join_timeout")
         elif event.kind is RuntimeEventKind.INVOCATION_CANCEL and (
             event.invocation_id == ticket.key.invocation_id
             or event.invocation_id in ticket.member_ids
         ):
-            self._join_ticket = None
+            self._discard_join_ticket("invocation_canceled")
         elif join.satisfied and (
             event.join_id == ticket.join_id
             or event.invocation_id in ticket.member_ids
@@ -1101,7 +1127,11 @@ class NativeAdmissionRuntime:
         """One action-local native H2D per safe point, never grant admission."""
         ticket = self._join_ticket
         if ticket is None or not self._live_join_ticket():
-            self._join_ticket = None
+            if ticket is not None:
+                self._discard_join_ticket(
+                    "expired" if time.monotonic() >= ticket.expires_at
+                    else "dispatch_invalidated"
+                )
             return
         if ticket.command_id is not None:
             if self.physical_ledger.is_pending(ticket.command_id):
@@ -1111,7 +1141,7 @@ class NativeAdmissionRuntime:
                 and action.action == "PREFETCH_GPU"
                 for action in self.completed_physical_actions
             ):
-                self._join_ticket = None
+                self._discard_join_ticket("action_ack_missing")
                 self.counts["join_prefetch_lost_ack"] += 1
                 return
             ticket.command_id = None

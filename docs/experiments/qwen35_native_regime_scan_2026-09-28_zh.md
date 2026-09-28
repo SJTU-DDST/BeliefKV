@@ -633,3 +633,41 @@ COW-forward 完成归因；这些代码没有进入 v11 服务端，不回填
 和首次服务；它只能检验 JOIN 确认后的 H2D 闭环，不等同于
 WAIT_JOIN 期间的提前预测，更不能替代工具、准入前 H2D
 及选择性 PREPARE 的独立验证。
+
+## 200 GB / 30:70 / write-back / 24-root：v12 确认 JOIN canary 缺少物理目标
+
+同 v11 的任务集、到达、NUMA Host 配额、running=48 及 30:70，
+独立冷启动并仅开启 `CONFIRMED_JOIN_CANARY=1`：
+`experiments/raw/qwen35_native_in_graph_join_200g_30_70_24root_canary_v12/`。
+24/24 workflow 自然完成；原生服务正常退出，两路遥测无写入错误、
+丢记录及待处理请求。任务补丁尚未做官方评分，不能拿该轮
+workflow 的自述成功与 v11 比较正确完成吞吐。
+
+FULL/Mamba Host 高水位分别为 55.5%/64.0%，均无 Host 驱逐，
+可归因 FULL 重算为 0。原生 D2H/H2D 分别有 3,623/6 次
+完成回执；6 次 H2D 为 910,807,040 bytes，提交至 ACK
+合计约 352.1 ms，不是可直接节省的 JCT。确认 JOIN 建立了
+26 个 ticket，记录了 20 次无可下发 H2D step，其中 15 次
+目标已在 Device，5 次 session 没有缓存叶节点。其余 6 个
+ticket 在已有数据中没有带原因的无 step 记录或动作回执，
+不能推断它们的具体终止原因。整轮预测动作 ACK 和首次服务
+复用记录均为 0。
+
+每秒轮转的 H2D 机会采样中，JOIN 等待的 2,746 条记录
+只有 `already_device_resident`（2,095）或
+`no_live_session_or_anchors`（651）；无可装入的 Host-backed
+JOIN 节点。两条 `fits_current_free_lists` 快照均来自工具
+等待且各只出现一次，均未在其后观察到同节点 ID 原生 H2D。
+采样不是全量机会分母，同节点 ID 也不是创建版本或首次消费的
+证明；这不能证明未采样瞬间不存在任何机会。
+
+同配置 v11 曾出现约 94 秒的单 Mamba slot JOIN 候选，
+v12 没有复现。说明此任务集的模型执行轨迹和物理驻留具有
+足以改变机会集合的轮间波动；**不能以 v11 单次长窗口冻结
+正式 predictive A/B 主场景**。下一步应在训练项目上寻找
+跨重复运行仍有后续实际消费的机会，同时分别记录工具等待、
+JOIN 和准入前路径；若仍只出现零星 Mamba-only 节点，应据实
+报告该配置的可行动机会及原生传输开销，而不是靠更高 Host
+压力制造失真迁移。已增强只读汇总器以区分机会采样原因、
+JOIN ticket 无 step 原因及同节点 ID 后续原生回执，不能将
+其耗时或次数直接折算为策略收益。

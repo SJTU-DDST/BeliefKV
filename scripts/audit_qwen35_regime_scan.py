@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import argparse
+from collections import Counter
 import json
 from pathlib import Path
 
@@ -22,9 +23,28 @@ def summarize(run: Path) -> dict:
     server = run / "server"
     h2d: dict[tuple, dict] = {}
     prepare: dict[tuple, dict] = {}
+    sampled_reasons: dict[str, Counter[str]] = {}
+    confirmed_tickets: set[tuple[str, str]] = set()
+    confirmed_no_step: dict[str, Counter[str]] = {}
+    confirmed_closed: Counter[str] = Counter()
+    confirmed_closed_ids: set[tuple[str, str]] = set()
     for row in rows(opportunities / "admission_opportunities.jsonl"):
+        if row.get("event") == "confirmed_join_ticket":
+            confirmed_tickets.add((row["workflow_id"], row["join_id"]))
+        elif row.get("event") == "confirmed_join_no_h2d_step":
+            detail = row.get("no_live_detail")
+            reason = row.get("reason", "unknown")
+            if detail:
+                reason = f"{reason}:{detail}"
+            confirmed_no_step.setdefault(row["workflow_id"], Counter())[reason] += 1
+        elif row.get("event") == "confirmed_join_ticket_closed":
+            confirmed_closed[row.get("reason", "unknown")] += 1
+            confirmed_closed_ids.add((row["workflow_id"], row["join_id"]))
         if row.get("event") != "session_h2d_opportunity":
             continue
+        sampled_reasons.setdefault(row["source"], Counter())[
+            row.get("reason", "unknown")
+        ] += 1
         base = (
             row.get("source"), row.get("context_id"), row.get("context_epoch"),
             row.get("session_id"), row.get("session_generation"),
@@ -74,10 +94,17 @@ def summarize(run: Path) -> dict:
     later_transfer_nodes: dict[str, dict[int, list[float]]] = {
         "d2h": {}, "h2d": {},
     }
+    native_h2d_bytes = 0
+    native_h2d_submit_to_ack_ms = 0.0
+    h2d_receipts: list[dict] = []
     for row in rows(server / "transfer_telemetry.jsonl"):
         direction = row.get("direction")
         if row.get("status") == "completed" and direction in transfer_counts:
             transfer_counts[direction] += 1
+            if direction == "h2d":
+                h2d_receipts.append(row)
+                native_h2d_bytes += row.get("actual_bytes") or 0
+                native_h2d_submit_to_ack_ms += row.get("submit_to_ack_ms") or 0.0
             ts = row.get("complete_ts_ms")
             if isinstance(ts, (int, float)):
                 for node_id in row.get("node_ids", []):
@@ -111,11 +138,25 @@ def summarize(run: Path) -> dict:
     targets = sorted(h2d.values(), key=lambda item: item["first_ts_ms"])
     for item in targets:
         item["observed_span_ms"] = item["last_ts_ms"] - item["first_ts_ms"]
+    matched_receipts = [
+        row for row in h2d_receipts
+        if isinstance(row.get("submit_ts_ms"), (int, float))
+        and any(
+            item["first_ts_ms"] < row["submit_ts_ms"]
+            and item["node_id"] in row.get("node_ids", ())
+            for item in targets
+        )
+    ]
     return {
         "collection_complete": bool(
             status is not None and status.get("writer_error") is None
+            and status.get("dropped_records") == 0
+            and status.get("failed_records") == 0
+            and status.get("pending_request_count") == 0
+            and status.get("pending_batch_count") == 0
             and opportunity_status is not None
             and opportunity_status.get("complete") is True
+            and opportunity_status.get("error") is None
         ),
         "workflow_results": len(results),
         "natural_completions": sum(
@@ -125,6 +166,17 @@ def summarize(run: Path) -> dict:
         ),
         "h2d_distinct_session_targets": targets,
         "h2d_snapshot_count": sum(item["sample_count"] for item in targets),
+        "sampled_h2d_reasons_by_source": {
+            source: dict(counts) for source, counts in sampled_reasons.items()
+        },
+        "confirmed_join_ticket_count": len(confirmed_tickets),
+        "confirmed_join_ticket_closed_reasons": dict(confirmed_closed),
+        "confirmed_join_tickets_without_closure_record": len(
+            confirmed_tickets - confirmed_closed_ids
+        ),
+        "confirmed_join_no_step_reasons": dict(
+            sum((counts for counts in confirmed_no_step.values()), Counter())
+        ),
         "prepare_distinct_session_targets": len(prepare),
         "prepare_snapshot_count": sum(
             item["sample_count"] for item in prepare.values()
@@ -144,6 +196,12 @@ def summarize(run: Path) -> dict:
             for item in prepare.values()
         ),
         "native_ack_count": transfer_counts,
+        "native_completed_h2d_bytes": native_h2d_bytes,
+        "native_completed_h2d_submit_to_ack_ms": native_h2d_submit_to_ack_ms,
+        "h2d_candidate_node_id_only_later_native_h2d_count": len(matched_receipts),
+        "h2d_candidate_node_id_only_later_native_submit_to_ack_ms": sum(
+            row.get("submit_to_ack_ms") or 0.0 for row in matched_receipts
+        ),
         "predictive_h2d_ack_count": sum(
             row.get("action") == "PREFETCH_GPU" for row in action_acks
         ),

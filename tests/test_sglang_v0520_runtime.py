@@ -1645,6 +1645,59 @@ def test_confirmed_join_canary_is_bounded_without_predictor(tmp_path):
     assert rejected[0]["reason"] == "already_device_resident"
     assert "no_live_detail" not in rejected[0]
     assert rejected[0]["join_id"] == "join"
+    closed = [
+        row for row in records if row["event"] == "confirmed_join_ticket_closed"
+    ]
+    assert len(closed) == 1
+    assert closed[0]["reason"] == "event_invalidated"
+    assert closed[0]["issued_nodes"] == 1
+    assert closed[0]["no_step_recorded"] is True
+
+
+def test_confirmed_join_ticket_expiry_is_recorded_once(tmp_path):
+    runtime = NativeAdmissionRuntime(
+        event_socket_path=str(tmp_path / "confirmed.sock"),
+        enable_confirmed_join_canary=True,
+        opportunity_dir=str(tmp_path / "opportunities"),
+    )
+    try:
+        parent = req("parent")
+        parent.session_id, parent.session_generation = "s", 1
+        runtime.register_visible_request(parent)
+        runtime.on_events((
+            event(0, RuntimeEventKind.WORKFLOW_START),
+            event(1, RuntimeEventKind.INVOCATION_CREATE,
+                  invocation_id="parent", context_id="ctx-parent",
+                  agent_definition_id="parent", agent_instance_id="parent"),
+            event(2, RuntimeEventKind.INVOCATION_CREATE,
+                  invocation_id="child", context_id="ctx-child",
+                  agent_definition_id="child", agent_instance_id="child"),
+            event(3, RuntimeEventKind.JOIN_CREATE,
+                  join_id="join", member_invocation_ids=("child",)),
+            event(4, RuntimeEventKind.JOIN_WAIT,
+                  invocation_id="parent", join_id="join"),
+            event(5, RuntimeEventKind.RETURN, invocation_id="child"),
+        ))
+        assert runtime._join_ticket is not None
+        runtime._join_ticket.expires_at = time.monotonic() - 1
+        runtime.dispatch_join_prefetch()
+        assert runtime._join_ticket is None
+        runtime.dispatch_join_prefetch()
+    finally:
+        runtime.close()
+    records = [
+        json.loads(line)
+        for line in (
+            tmp_path / "opportunities" / "admission_opportunities.jsonl"
+        ).read_text(encoding="utf-8").splitlines()
+    ]
+    closed = [
+        row for row in records if row["event"] == "confirmed_join_ticket_closed"
+    ]
+    assert len(closed) == 1
+    assert closed[0]["reason"] == "expired"
+    assert closed[0]["issued_nodes"] == 0
+    assert closed[0]["no_step_recorded"] is False
 
 
 def test_join_prefetch_all_requires_last_child_and_rejects_false_intent():
