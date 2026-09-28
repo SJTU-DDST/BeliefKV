@@ -76,6 +76,7 @@ from beliefkv.experiments.deepagents_swebench import (
     _demand_load_from_metrics,
     SGLangMetricsMonitor,
     _invoke_with_partial_state,
+    _model,
     _autonomous_fanout_prompt,
     _filesystem_middleware,
     _autonomous_subagents,
@@ -2885,12 +2886,15 @@ def test_child_final_report_shadow_requires_notice(tmp_path: Path) -> None:
         **kwargs, child_report_length_shadow=True,
         child_return_intent_shadow=True,
     ).child_report_length_shadow is True
-    with pytest.raises(ValueError, match="EOS shadow requires"):
+    with pytest.raises(ValueError, match="EOS shadow requires streamed completion"):
         DeepAgentsExperimentConfig(**kwargs, child_eos_shadow=True)
     with pytest.raises(ValueError, match="EOS shadow requires"):
         DeepAgentsExperimentConfig(
             **kwargs, child_eos_shadow=True, child_return_intent_shadow=True,
         )
+    assert DeepAgentsExperimentConfig(
+        **kwargs, child_eos_shadow=True, stream_completion_shadow=True,
+    ).child_return_intent_shadow is False
     assert DeepAgentsExperimentConfig(
         **kwargs, child_eos_shadow=True, child_return_intent_shadow=True,
         stream_completion_shadow=True,
@@ -2907,6 +2911,26 @@ def test_child_final_report_shadow_requires_notice(tmp_path: Path) -> None:
         **kwargs, child_eos_shadow=True, child_eos_top_hit_shadow=True,
         child_return_intent_shadow=True, stream_completion_shadow=True,
     ).child_eos_top_hit_shadow is True
+
+
+def test_natural_eos_shadow_requests_logprobs_without_intent_tool(tmp_path: Path) -> None:
+    base = {
+        "mode": "autonomous",
+        "base_url": "http://127.0.0.1:18001/v1",
+        "model": "Qwen3.5-35B-A3B",
+        "output_dir": tmp_path / "out",
+        "workload_manifest": tmp_path / "tasks.json",
+        "docker_image": "fixture:latest",
+        "stream_completion_shadow": True,
+        "child_eos_shadow": True,
+    }
+    natural = _model(DeepAgentsExperimentConfig(**base), None)
+    params = natural._get_invocation_params()
+    assert params["logprobs"] is True
+    assert params["top_logprobs"] == 20
+    assert _model(DeepAgentsExperimentConfig(
+        **base, child_return_intent_shadow=True,
+    ), None).top_logprobs is None
 
 
 def test_post_notice_eos_shadow_does_not_change_thinking(tmp_path: Path) -> None:

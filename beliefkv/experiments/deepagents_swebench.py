@@ -1619,10 +1619,8 @@ class DeepAgentsExperimentConfig:
             raise ValueError("child report phases require streamed completion")
         if self.child_stream_content_shadow and not self.stream_completion_shadow:
             raise ValueError("child content shadow requires streamed completion")
-        if self.child_eos_shadow and (
-            not self.stream_completion_shadow or not self.child_return_intent_shadow
-        ):
-            raise ValueError("child EOS shadow requires streamed child return intent")
+        if self.child_eos_shadow and not self.stream_completion_shadow:
+            raise ValueError("child EOS shadow requires streamed completion")
         if self.child_eos_low_prob_shadow and not self.child_eos_shadow:
             raise ValueError("low-probability EOS shadow requires child EOS shadow")
         if self.child_eos_top_hit_shadow and not self.child_eos_shadow:
@@ -2329,6 +2327,9 @@ def _model(
     adapter: DeepAgentsRuntimeAdapter,
     deadline_controller: WorkflowDeadlineController | None = None,
 ) -> BeliefKVChatOpenAI:
+    natural_eos_shadow = (
+        config.child_eos_shadow and not config.child_return_intent_shadow
+    )
     model = BeliefKVChatOpenAI(
         beliefkv_adapter=adapter,
         activation_deadline=(
@@ -2348,6 +2349,8 @@ def _model(
         disable_streaming=(
             False if config.stream_completion_shadow else "tool_calling"
         ),
+        logprobs=True if natural_eos_shadow else None,
+        top_logprobs=20 if natural_eos_shadow else None,
     )
     model.set_beliefkv_prompt_limit(
         model_context_tokens=config.context_lifecycle.model_context_tokens,
@@ -3020,7 +3023,9 @@ def _run_planned_child(
                         disable_thinking=config.child_final_report_shadow,
                         eos_shadow=config.child_eos_shadow,
                     )]
-                    if config.child_final_report_shadow or config.child_eos_shadow
+                    if config.child_final_report_shadow or (
+                        config.child_eos_shadow and config.child_return_intent_shadow
+                    )
                     else []
                 ),
             ],

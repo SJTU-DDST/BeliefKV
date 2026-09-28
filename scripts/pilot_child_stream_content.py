@@ -27,8 +27,8 @@ def collect(
     workflows: Path | Sequence[Path], *, min_snapshot_chars: int = 128,
     exclude_boundary_snapshots: bool = False,
 ) -> tuple[list[dict], Counter]:
-    if min_snapshot_chars not in (32, 64, 128):
-        raise ValueError("min_snapshot_chars must be 32, 64, or 128")
+    if min_snapshot_chars not in (1, 32, 64, 128):
+        raise ValueError("min_snapshot_chars must be 1, 32, 64, or 128")
     rows: list[dict] = []
     counts: Counter = Counter()
     roots = (workflows,) if isinstance(workflows, Path) else workflows
@@ -138,6 +138,10 @@ def collect(
                 "task": task, "project": project, "rid": rid, "label": label,
                 "join_last": child in join_last if child else False,
                 "return_ts": return_ts, "snapshots": snapshots,
+                "result_ts": result["ts_ms"],
+                "invocation_id": child_id,
+                "context_id": result["context_id"],
+                "context_epoch": result["context_epoch"],
             })
     return rows, counts
 
@@ -177,6 +181,64 @@ def decode_progress(rows: list[dict]) -> np.ndarray:
             ))
             previous = snap
     return np.asarray(vectors, dtype=float).reshape(-1, 3)
+
+
+_CONTINUATION = re.compile(
+    r"\b(?:let me|i(?:'ll| will)|need to|next(?: step)?|going to)\b"
+    r".{0,80}\b(?:inspect|check|run|test|read|look|search|verify|try|investigate)\b",
+    re.IGNORECASE | re.DOTALL,
+)
+_RESOLUTION = re.compile(
+    r"\b(?:in summary|in conclusion|overall|therefore|suggested fix|"
+    r"recommended change|root cause|final answer|key takeaway|"
+    r"the fix|to fix this)\b",
+    re.IGNORECASE,
+)
+_OPEN_ISSUE = re.compile(
+    r"\b(?:however|unclear|still need|investigate|hypothesis|"
+    r"potentially|let me|need to|check whether)\b",
+    re.IGNORECASE,
+)
+_ACTIONABLE = re.compile(
+    r"\b(?:the change|recommend|replace|instead of|confirmed|"
+    r"verified|test(?:s)? pass(?:ed)?|resolved)\b",
+    re.IGNORECASE,
+)
+
+
+def phase_features(rows: list[dict]) -> np.ndarray:
+    """Causal content/structure and changes since the previous delivered snapshot."""
+    vectors = []
+    for row in rows:
+        prior = np.zeros(4)
+        previous_chars = 0
+        fence_open = False
+        for snap in row["snapshots"]:
+            text = snap["content_tail"]
+            delta = max(snap["content_chars"] - previous_chars, 0)
+            added = text[-min(delta, len(text)):] if delta and text else ""
+            fence_open ^= added.count("```") % 2 == 1
+            lower = text.lower()
+            cues = np.asarray((
+                bool(_CONTINUATION.search(lower)),
+                bool(_RESOLUTION.search(lower)),
+                bool(_OPEN_ISSUE.search(lower)),
+                bool(_ACTIONABLE.search(lower)),
+            ), dtype=float)
+            stripped = text.rstrip(" \t")
+            vectors.append((
+                *cues,
+                *(cues - prior),
+                float(bool(re.search(r"(?:^|\n)#{1,4}\s+\S", text))),
+                float(fence_open),
+                float(stripped.endswith((".", "!", "?", "。", "！", "？"))),
+                float(stripped.endswith(":")),
+                float(stripped.endswith("\n\n")),
+                float(bool(re.search(r"(?:^|\n)\s*[-*]\s+\S", text))),
+            ))
+            prior = cues
+            previous_chars = snap["content_chars"]
+    return np.asarray(vectors, dtype=float).reshape(-1, 14)
 
 
 def text_features(
@@ -304,6 +366,9 @@ def evaluate(
     train_progress = decode_progress(train)
     cal_progress = decode_progress(cal)
     held_progress = decode_progress(held)
+    train_phase = phase_features(train)
+    cal_phase = phase_features(cal)
+    held_phase = phase_features(held)
     train_text_x, other_text_x = text_features(
         train_text, cal_text + held_text,
         [train[index]["task"] for index in train_idx],
@@ -316,6 +381,11 @@ def evaluate(
     cal_progress = (cal_progress - progress_mean) / progress_std
     held_progress = (held_progress - progress_mean) / progress_std
     train_progress = (train_progress - progress_mean) / progress_std
+    phase_mean = train_phase.mean(axis=0)
+    phase_std = np.maximum(train_phase.std(axis=0), 1e-9)
+    train_phase = (train_phase - phase_mean) / phase_std
+    cal_phase = (cal_phase - phase_mean) / phase_std
+    held_phase = (held_phase - phase_mean) / phase_std
     cal_size = (cal_size - size_mean) / size_std
     held_size = (held_size - size_mean) / size_std
     train_size = (train_size - size_mean) / size_std
@@ -337,6 +407,12 @@ def evaluate(
     )
     cal_progress_residual = other_progress_residual[:len(cal_text)]
     held_progress_residual = other_progress_residual[len(cal_text):]
+    train_phase_residual, other_phase_residual = length_conditioned_text(
+        train_phase, np.concatenate((cal_phase, held_phase)), train_progress,
+        np.concatenate((cal_progress, held_progress)), weights,
+    )
+    cal_phase_residual = other_phase_residual[:len(cal_text)]
+    held_phase_residual = other_phase_residual[len(cal_text):]
     results = {}
     matrices = (
         ("size_only", train_size, cal_size, held_size),
@@ -346,6 +422,7 @@ def evaluate(
          np.column_stack((train_text_x, train_size)),
          np.column_stack((cal_text_x, cal_size)),
          np.column_stack((held_text_x, held_size))),
+        ("phase_only", train_phase, cal_phase, held_phase),
     )
     for mode, window in (("return_vs_tool", None), ("near_return_2000ms", 2000.0)):
         _, _, train_y, _ = features(train, target_window_ms=window)
@@ -358,22 +435,28 @@ def evaluate(
              cal_text_residual, held_text_residual),
             ("progress_conditioned_content", train_progress_residual,
              cal_progress_residual, held_progress_residual),
+            ("progress_conditioned_phase", train_phase_residual,
+             cal_phase_residual, held_phase_residual),
         ):
             predicted_train, predicted_held = centroid_scores(
                 x, x_held, train_y, weights
             )
             predicted_cal = centroid_scores(x, x_cal, train_y, weights)[1]
-            if name in ("length_conditioned_content", "progress_conditioned_content"):
+            if name in (
+                "length_conditioned_content",
+                "progress_conditioned_content",
+                "progress_conditioned_phase",
+            ):
                 baseline_train = (
-                    train_progress if name == "progress_conditioned_content"
+                    train_progress if name.startswith("progress_conditioned_")
                     else train_size
                 )
                 baseline_cal = (
-                    cal_progress if name == "progress_conditioned_content"
+                    cal_progress if name.startswith("progress_conditioned_")
                     else cal_size
                 )
                 baseline_held = (
-                    held_progress if name == "progress_conditioned_content"
+                    held_progress if name.startswith("progress_conditioned_")
                     else held_size
                 )
                 length_train, length_held = centroid_scores(
@@ -525,7 +608,7 @@ def main() -> None:
         "--calibration-projects", help="Comma-separated projects for threshold only",
     )
     parser.add_argument(
-        "--min-snapshot-chars", type=int, choices=(32, 64, 128), default=128,
+        "--min-snapshot-chars", type=int, choices=(1, 32, 64, 128), default=128,
     )
     parser.add_argument(
         "--exclude-boundary-snapshots", action="store_true",

@@ -51,6 +51,27 @@ def test_decode_progress_is_causal_and_uses_recent_rate():
     assert original[2, 2] > original[1, 2]
 
 
+def test_phase_features_use_only_delivered_content_and_track_new_cues():
+    row = {
+        "label": "return", "return_ts": 9000,
+        "snapshots": [
+            {"content_chars": 49, "ts_ms": 10,
+             "content_tail": "Let me check the tests before I continue:"},
+            {"content_chars": 80, "ts_ms": 60,
+             "content_tail": "Let me check the tests before I continue:\n\n"
+                             "In summary, the fix is verified."},
+        ],
+    }
+    original = pilot.phase_features([row])
+    row["return_ts"] = 1
+    assert np.array_equal(original, pilot.phase_features([row]))
+    assert original.shape == (2, 14)
+    assert original[0, 0] == 1
+    assert original[1, 1] == 1
+    assert original[1, 5] == 1
+    assert original[1, 10] == 1
+
+
 def test_vocabulary_requires_distinct_training_workflows():
     with np.testing.assert_raises(ValueError):
         pilot.text_features(["unique unique", "unique unique"], ["unique"],
@@ -217,6 +238,7 @@ def test_project_holdout_counts_tool_rounds_and_first_trigger(monkeypatch, tmp_p
     assert "near_return_2000ms_length_conditioned_content" in result["results"]
     assert "near_return_2000ms_progress_only" in result["results"]
     assert "near_return_2000ms_progress_conditioned_content" in result["results"]
+    assert "near_return_2000ms_progress_conditioned_phase" in result["results"]
     for model in result["results"].values():
         assert model["heldout_return_rounds"] == 4
         assert model["heldout_tool_rounds"] == 4

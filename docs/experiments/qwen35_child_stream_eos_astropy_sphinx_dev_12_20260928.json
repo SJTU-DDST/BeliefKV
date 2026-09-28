@@ -1,0 +1,17 @@
+{
+  "purpose": "Project-disjoint EOS/content development check; not a sealed evaluation",
+  "instance_ids": [
+    "astropy__astropy-14508",
+    "astropy__astropy-14539",
+    "astropy__astropy-14598",
+    "astropy__astropy-14995",
+    "astropy__astropy-7166",
+    "astropy__astropy-7336",
+    "sphinx-doc__sphinx-7748",
+    "sphinx-doc__sphinx-7757",
+    "sphinx-doc__sphinx-7889",
+    "sphinx-doc__sphinx-7910",
+    "sphinx-doc__sphinx-7985",
+    "sphinx-doc__sphinx-8035"
+  ]
+}

@@ -123,6 +123,16 @@ content_args=()
 if [[ "${STREAM_CONTENT_SHADOW:-0}" == 1 ]]; then
   content_args+=(--child-stream-content-shadow)
 fi
+if [[ "${CHILD_EOS_SHADOW:-0}" == 1 ]]; then
+  if [[ "${STREAM_CONTENT_SHADOW:-0}" != 1 ]]; then
+    printf 'Combined EOS diagnostic requires stream content shadow\n' >&2
+    exit 1
+  fi
+  content_args+=(
+    --child-eos-shadow --child-eos-low-prob-shadow
+    --child-eos-top-hit-shadow
+  )
+fi
 while IFS= read -r image; do
   if ! docker image inspect "$image" >/dev/null 2>&1; then
     printf 'Required image is not cached: %s\n' "$image" >&2
@@ -176,6 +186,7 @@ fi
   --subagent-fanout-profile native_dynamic_1to4 \
   --max-completion-tokens 8192 \
   --recursion-limit 2048 \
+  --sandbox-command-timeout "${SANDBOX_COMMAND_TIMEOUT_SECONDS:-600}" \
   --stream-completion-shadow \
   "${content_args[@]}" \
   --activation-wall-clock-seconds "$WORKFLOW_DEADLINE_SECONDS" \
