@@ -110,8 +110,17 @@ def collect(
             child, return_ts = terminal.get(rid, (None, None))
             snapshots = []
             last_chars = -1
+            first_tool_chunk_ts = min(
+                (
+                    row["ts_ms"] for row in sequence
+                    if row["event"] == "child_stream_content" and row["tool_chunk"]
+                ),
+                default=float("inf"),
+            )
             for row in sequence:
                 if row["event"] != "child_stream_content" or row["tool_chunk"]:
+                    continue
+                if row["ts_ms"] >= first_tool_chunk_ts:
                     continue
                 if (
                     exclude_boundary_snapshots

@@ -144,6 +144,56 @@ def snapshot_eos_ts(row: dict, threshold: str, gate: str) -> float | None:
     return None
 
 
+def sampled_eos_window_diagnostic(rows: list[dict], threshold: str) -> dict:
+    """Re-observation is a diagnostic upper bound, not an online trigger policy."""
+    floor = float("-inf") if threshold == "top20" else math.log(float(threshold))
+    result: Counter = Counter()
+    for row in rows:
+        if row["label"] != "return":
+            continue
+        result["return_rounds"] += 1
+        snapshots = row["snapshots"]
+        window = [
+            snap for snap in snapshots
+            if 500 <= row["return_ts"] - snap["ts_ms"] <= 2000
+        ]
+        if window:
+            result["return_with_window_snapshot"] += 1
+        observed = [
+            snap for snap in snapshots
+            if (
+                (value := snap["eos_shadow_max_logprob_since_previous_snapshot"])
+                is not None and math.isfinite(value) and value >= floor
+            )
+        ]
+        if not observed:
+            continue
+        first = observed[0]
+        lead = row["return_ts"] - first["ts_ms"]
+        if lead <= 2000:
+            continue
+        result["early_first_trigger"] += 1
+        if row["join_last"]:
+            result["join_last_early_first_trigger"] += 1
+        if not window:
+            continue
+        result["early_with_window_snapshot"] += 1
+        later_window_eos = any(snap in observed for snap in window)
+        if later_window_eos:
+            result["early_with_later_window_eos"] += 1
+            if row["join_last"]:
+                result["join_last_early_with_later_window_eos"] += 1
+    return {
+        key: result[key] for key in (
+            "return_rounds", "return_with_window_snapshot",
+            "early_first_trigger", "early_with_window_snapshot",
+            "early_with_later_window_eos",
+            "join_last_early_first_trigger",
+            "join_last_early_with_later_window_eos",
+        )
+    }
+
+
 def gated_score(rows: list[dict], threshold: str, gate: str) -> dict:
     sampled = bool(rows and "eos_shadow_max_logprob_since_previous_snapshot"
                    in rows[0]["snapshots"][0])
@@ -339,6 +389,10 @@ def evaluate(workflows: list[Path], heldout_project: str) -> dict:
         "heldout_eos_threshold_scores": held_scores,
         "selected_threshold_from_train": selected,
         "selected_heldout_score": held_scores[selected] if selected else None,
+        "selected_heldout_eos_reobservation": (
+            sampled_eos_window_diagnostic(held, selected)
+            if selected and has_sampled_eos else None
+        ),
         "fused_gate_scope": (
             "Training projects alone select EOS threshold and causal content gate. "
             "An EOS candidate and content must coexist in a delivered snapshot "
