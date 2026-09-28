@@ -8,6 +8,7 @@ from queue import Queue
 from types import SimpleNamespace
 
 import pytest
+from numpy import float64
 
 import beliefkv.runtime.v0520_native_telemetry as telemetry_module
 from beliefkv.runtime.v0520_native_telemetry import NativeReactiveTelemetry
@@ -62,7 +63,7 @@ def test_host_hit_path_records_identity_without_claiming_component_reuse(
 ) -> None:
     audit = NativeReactiveTelemetry(tmp_path / "service")
     root = SimpleNamespace(id=0, creation_time=1, parent=None)
-    ancestor = SimpleNamespace(id=52, creation_time=286, parent=root)
+    ancestor = SimpleNamespace(id=52, creation_time=float64(286), parent=root)
     leaf = SimpleNamespace(id=4721, creation_time=300, parent=ancestor)
     audit._cache = SimpleNamespace(
         tree_core=SimpleNamespace(

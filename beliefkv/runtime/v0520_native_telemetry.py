@@ -15,6 +15,8 @@ from threading import Lock, Thread
 import time
 from typing import Any
 
+from beliefkv.runtime.sglang_v0520_observer import normalize_native_creation_time
+
 
 class NativeReactiveTelemetry:
     def __init__(
@@ -704,14 +706,14 @@ class NativeReactiveTelemetry:
         path: list[list[int | float]] = []
         seen: set[int] = set()
         while node is not None and len(path) < 256:
-            if (
-                id(node) in seen
-                or type(getattr(node, "id", None)) is not int
-                or type(getattr(node, "creation_time", None)) not in (int, float)
-            ):
+            if id(node) in seen or type(getattr(node, "id", None)) is not int:
+                return None
+            try:
+                created = normalize_native_creation_time(node.creation_time)
+            except (AttributeError, ValueError):
                 return None
             seen.add(id(node))
-            path.append([node.id, node.creation_time])
+            path.append([node.id, created])
             node = getattr(node, "parent", None)
         return list(reversed(path)) if node is None else None
 
