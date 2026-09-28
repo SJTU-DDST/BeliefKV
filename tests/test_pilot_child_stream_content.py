@@ -69,12 +69,14 @@ def test_project_holdout_counts_tool_rounds_and_first_trigger(monkeypatch, tmp_p
                 })
     monkeypatch.setattr(pilot, "collect", lambda _: (rows, Counter()))
     result = pilot.evaluate(tmp_path, "sphinx-doc")
+    json.dumps(result)
     assert result["heldout_rounds"] == 8
     assert result["train_rounds"] == 16
     assert result["train_projects"] == ["astropy", "django"]
+    assert "near_return_2000ms_delivered_tail_only" in result["results"]
     for model in result["results"].values():
         assert model["heldout_return_rounds"] == 4
         assert model["heldout_tool_rounds"] == 4
         assert model["heldout_join_last_rounds"] == 4
-        assert model["heldout_true_first_triggers"] <= 4
-        assert model["heldout_false_first_triggers"] <= 4
+        assert model["heldout_triggered_return_rounds"] <= 4
+        assert model["heldout_tool_false_first_triggers"] <= 4

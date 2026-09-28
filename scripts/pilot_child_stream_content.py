@@ -82,11 +82,13 @@ def collect(workflows: Path) -> tuple[list[dict], Counter]:
             if result["tool_call_count"] or result["invalid_tool_call_count"] or followed_by_tool:
                 label = "tool"
                 counts["tool_rounds"] += 1
+                counts[f"{project}_tool_rounds"] += 1
                 if not result["tool_call_count"] and followed_by_tool:
                     counts["text_then_tool_rounds"] += 1
             elif rid in terminal and result["finish_reason"] == "stop":
                 label = "return"
                 counts["natural_return_rounds"] += 1
+                counts[f"{project}_natural_return_rounds"] += 1
             else:
                 counts["ambiguous_final_rounds"] += 1
                 continue
@@ -106,6 +108,7 @@ def collect(workflows: Path) -> tuple[list[dict], Counter]:
                 snapshots.append(row)
             if not snapshots:
                 counts[f"{label}_without_eligible_snapshot"] += 1
+                counts[f"{project}_{label}_without_eligible_snapshot"] += 1
                 continue
             rows.append({
                 "task": task, "project": project, "rid": rid, "label": label,
@@ -115,13 +118,20 @@ def collect(workflows: Path) -> tuple[list[dict], Counter]:
     return rows, counts
 
 
-def features(rows: list[dict]) -> tuple[list[str], np.ndarray, np.ndarray, list[int]]:
+def features(
+    rows: list[dict], *, target_window_ms: float | None = None,
+) -> tuple[list[str], np.ndarray, np.ndarray, list[int]]:
     texts, sizes, labels, call_index = [], [], [], []
     for index, row in enumerate(rows):
         for snap in row["snapshots"]:
             texts.append(snap["content_tail"])
             sizes.append([np.log1p(snap["content_chars"])])
-            labels.append(int(row["label"] == "return"))
+            labels.append(int(
+                row["label"] == "return" and (
+                    target_window_ms is None
+                    or 0 <= row["return_ts"] - snap["ts_ms"] <= target_window_ms
+                )
+            ))
             call_index.append(index)
     return texts, np.asarray(sizes), np.asarray(labels), call_index
 
@@ -170,66 +180,102 @@ def evaluate(workflows: Path, heldout_project: str) -> dict:
             "counts": dict(counts),
             "train_rounds": len(train), "heldout_rounds": len(held),
         }
-    train_text, train_size, train_y, train_idx = features(train)
+    train_text, train_size, _, train_idx = features(train)
     held_text, held_size, _, held_idx = features(held)
     train_text_x, held_text_x = text_features(train_text, held_text)
     size_mean, size_std = train_size.mean(), max(train_size.std(), 1e-9)
     held_size = (held_size - size_mean) / size_std
     train_size = (train_size - size_mean) / size_std
     results = {}
-    for name, x, x_held in (
+    matrices = (
         ("size_only", train_size, held_size),
+        ("delivered_tail_only", train_text_x, held_text_x),
         ("delivered_tail_plus_size",
          np.column_stack((train_text_x, train_size)),
          np.column_stack((held_text_x, held_size))),
-    ):
-        weights = np.asarray([
-            1 / len(train[idx]["snapshots"]) for idx in train_idx
-        ])
-        positive = np.average(x[train_y == 1], axis=0, weights=weights[train_y == 1])
-        negative = np.average(x[train_y == 0], axis=0, weights=weights[train_y == 0])
-        direction = positive - negative
-        predicted_train = x @ direction
-        predicted_held = x_held @ direction
-        # Select once on training projects; count false starts by request,
-        # never by highly correlated decoding snapshots.
-        train_neg_max = [
-            max(predicted_train[i] for i, idx in enumerate(train_idx) if idx == j)
-            for j, row in enumerate(train) if row["label"] == "tool"
-        ]
-        if not train_neg_max:
-            raise ValueError("training set lacks tool-negative requests")
-        threshold = float(np.nextafter(np.quantile(train_neg_max, 0.95), 1.0))
-        triggered = defaultdict(list)
-        for score, idx, snap in zip(predicted_held, held_idx,
-                                    (s for row in held for s in row["snapshots"])):
-            if score >= threshold:
-                triggered[idx].append(snap["ts_ms"])
-        positives = [i for i, row in enumerate(held) if row["label"] == "return"]
-        negatives = [i for i, row in enumerate(held) if row["label"] == "tool"]
-        lead = [
-            held[i]["return_ts"] - min(triggered[i])
-            for i in positives if triggered[i]
-        ]
-        results[name] = {
-            "threshold_selected_on_train": threshold,
-            "train_tool_round_false_starts": sum(
-                score >= threshold for score in train_neg_max
-            ),
-            "heldout_return_rounds": len(positives),
-            "heldout_tool_rounds": len(negatives),
-            "heldout_true_first_triggers": len(lead),
-            "heldout_false_first_triggers": sum(
-                bool(triggered[i]) for i in negatives
-            ),
-            "heldout_join_last_rounds": sum(held[i]["join_last"] for i in positives),
-            "heldout_join_last_triggered": sum(
-                bool(triggered[i]) and held[i]["join_last"] for i in positives
-            ),
-            "lead_ms_median": median(lead) if lead else None,
-            "lead_at_least_500ms": sum(t >= 500 for t in lead),
-            "lead_at_most_10000ms": sum(t <= 10000 for t in lead),
-        }
+    )
+    for mode, window in (("return_vs_tool", None), ("near_return_2000ms", 2000.0)):
+        _, _, train_y, _ = features(train, target_window_ms=window)
+        if len(set(train_y)) < 2:
+            results[mode] = {"status": "insufficient_near_return_snapshots"}
+            continue
+        for name, x, x_held in matrices:
+            weights = np.asarray([
+                1 / len(train[idx]["snapshots"]) for idx in train_idx
+            ])
+            positive = np.average(
+                x[train_y == 1], axis=0, weights=weights[train_y == 1]
+            )
+            negative = np.average(
+                x[train_y == 0], axis=0, weights=weights[train_y == 0]
+            )
+            direction = positive - negative
+            predicted_train = x @ direction
+            predicted_held = x_held @ direction
+            # Training-only threshold. In near mode, early parts of eventual
+            # RETURNs also count as false starts, alongside tool rounds.
+            train_bad_max = [
+                max(
+                    (score for score, idx, snap in zip(
+                        predicted_train, train_idx,
+                        (s for row in train for s in row["snapshots"]),
+                    ) if idx == j and (
+                        row["label"] == "tool"
+                        or (window is not None
+                            and row["return_ts"] - snap["ts_ms"] > window)
+                    )),
+                    default=float("-inf"),
+                )
+                for j, row in enumerate(train)
+            ]
+            train_bad_max = [value for value in train_bad_max if np.isfinite(value)]
+            if not train_bad_max:
+                raise ValueError("training set lacks false-start candidates")
+            threshold = float(
+                np.nextafter(np.quantile(train_bad_max, 0.95), 1.0)
+            )
+            triggered = defaultdict(list)
+            for score, idx, snap in zip(
+                predicted_held, held_idx,
+                (s for row in held for s in row["snapshots"]),
+            ):
+                if score >= threshold:
+                    triggered[idx].append(snap["ts_ms"])
+            positives = [i for i, row in enumerate(held) if row["label"] == "return"]
+            negatives = [i for i, row in enumerate(held) if row["label"] == "tool"]
+            lead = [
+                held[i]["return_ts"] - min(triggered[i])
+                for i in positives if triggered[i]
+            ]
+            results[f"{mode}_{name}"] = {
+                "threshold_selected_on_train": threshold,
+                "train_bad_round_false_starts": int(sum(
+                    score >= threshold for score in train_bad_max
+                )),
+                "heldout_return_rounds": len(positives),
+                "heldout_tool_rounds": len(negatives),
+                "heldout_return_rounds_all": counts[
+                    f"{heldout_project}_natural_return_rounds"
+                ],
+                "heldout_tool_rounds_all": counts[f"{heldout_project}_tool_rounds"],
+                "heldout_triggered_return_rounds": len(lead),
+                "heldout_tool_false_first_triggers": sum(
+                    bool(triggered[i]) for i in negatives
+                ),
+                "heldout_join_last_rounds": sum(
+                    held[i]["join_last"] for i in positives
+                ),
+                "heldout_join_last_triggered": sum(
+                    bool(triggered[i]) and held[i]["join_last"] for i in positives
+                ),
+                "lead_ms_median": median(lead) if lead else None,
+                "lead_at_least_500ms": sum(t >= 500 for t in lead),
+                "lead_between_500_and_2000ms": sum(
+                    500 <= t <= 2000 for t in lead
+                ),
+                "lead_over_2000ms": sum(t > 2000 for t in lead),
+                "lead_over_10000ms": sum(t > 10000 for t in lead),
+            }
     return {
         "status": "diagnostic_project_disjoint_in_sample_threshold",
         "heldout_project": heldout_project,

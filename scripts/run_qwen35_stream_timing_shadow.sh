@@ -191,7 +191,7 @@ if [[ "${STREAM_CONTENT_SHADOW:-0}" == 1 ]]; then
       --workflows "$RUN_ROOT/workloads/workflows" \
       --heldout-project "$project" \
       --output "$RUN_ROOT/content_holdout_${project}.json" \
-      > "$RUN_ROOT/content_holdout_${project}.log"
+      > "$RUN_ROOT/content_holdout_${project}.log" 2>&1
   done
 fi
 exit "${collection_status:-0}"
