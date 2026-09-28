@@ -1,0 +1,27 @@
+{
+  "source_manifest_sha256": "77e5ef62c09cccbc3f4d1d2d6cfd00967ad37f46477266dec308bf2379bf35d8",
+  "selection": "All pydata tasks in the frozen source manifest; threshold calibration only.",
+  "instance_ids": [
+    "pydata__xarray-7229",
+    "pydata__xarray-7233",
+    "pydata__xarray-7393",
+    "pydata__xarray-3993",
+    "pydata__xarray-6461",
+    "pydata__xarray-6599",
+    "pydata__xarray-6721",
+    "pydata__xarray-6744",
+    "pydata__xarray-6938",
+    "pydata__xarray-4356",
+    "pydata__xarray-3305",
+    "pydata__xarray-4966",
+    "pydata__xarray-3151",
+    "pydata__xarray-2905",
+    "pydata__xarray-3095",
+    "pydata__xarray-3677",
+    "pydata__xarray-4075",
+    "pydata__xarray-4094",
+    "pydata__xarray-4629",
+    "pydata__xarray-4687",
+    "pydata__xarray-6992"
+  ]
+}

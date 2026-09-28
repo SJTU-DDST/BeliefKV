@@ -6,6 +6,7 @@ import json
 import numpy as np
 
 from scripts import pilot_child_stream_content as pilot
+from scripts.child_stream_service_index import snapshot_status
 
 
 def test_length_conditioned_text_fits_only_train():
@@ -292,3 +293,52 @@ def test_disjoint_calibration_threshold_does_not_use_heldout(monkeypatch, tmp_pa
             train_projects=("django", "pydata"),
             calibration_projects=("pydata",),
         )
+
+
+def test_service_status_has_clock_guard_and_recent_decode():
+    state = {
+        "server_end_ms": 1200,
+        "offset_lower_ms": 0,
+        "offset_upper_ms": 0,
+        "decode_sample_times_ms": [800],
+    }
+    assert snapshot_status(state, 1000) == "unfinished_with_recent_decode"
+    assert snapshot_status({**state, "decode_sample_times_ms": []}, 1000) == (
+        "unfinished_without_recent_decode"
+    )
+    assert snapshot_status({**state, "server_end_ms": 1000}, 1000) == (
+        "clock_ambiguous"
+    )
+    assert snapshot_status({**state, "server_end_ms": 800}, 1000) == (
+        "server_finished_before_trigger"
+    )
+    assert snapshot_status(None, 1000) == "missing_server_result"
+
+
+def test_service_audit_keeps_first_trigger_and_tool_false_positive():
+    rows = [
+        {"rid": "early", "task": "django__1", "label": "return",
+         "join_last": True, "return_ts": 3000},
+        {"rid": "timely", "task": "django__2", "label": "return",
+         "join_last": True, "return_ts": 3000},
+        {"rid": "tool", "task": "django__3", "label": "tool",
+         "join_last": False, "return_ts": None},
+    ]
+    service = {
+        rid: {
+            "server_end_ms": 4000,
+            "offset_lower_ms": 0, "offset_upper_ms": 0,
+            "decode_sample_times_ms": [400, 1900],
+        }
+        for rid in ("early", "timely", "tool")
+    }
+    result = pilot.first_trigger_service_audit(
+        rows, {0: [600, 2000], 1: [2000], 2: [2000]}, service,
+    )
+    assert result["early_over_2000ms_with_recent_decode"] == 1
+    assert result["window_hits_with_recent_decode"] == 1
+    assert result["join_last_window_hits_with_recent_decode"] == 1
+    assert result["live_window_hits_by_workflow"] == {"django__2": 1}
+    assert result["first_tool_trigger_status"] == {
+        "unfinished_with_recent_decode": 1
+    }

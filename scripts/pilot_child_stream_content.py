@@ -21,6 +21,7 @@ if str(ROOT) not in sys.path:
 from scripts.audit_child_hidden_trace import (
     blocked_child_invocations, index_workflow,
 )
+from scripts.child_stream_service_index import load_index, snapshot_status
 
 
 def collect(
@@ -331,15 +332,91 @@ def centroid_scores(
     return train_x @ direction, held_x @ direction
 
 
+def _service_indices(
+    workflows: Path | Sequence[Path],
+    service_runs: Sequence[Path],
+    rows: list[dict],
+) -> tuple[dict[str, dict], list[dict]]:
+    roots = (workflows,) if isinstance(workflows, Path) else tuple(workflows)
+    if len(roots) != len(service_runs):
+        raise ValueError("one service run is required per workflow root")
+    index: dict[str, dict] = {}
+    reports = []
+    for root, run in zip(roots, service_runs):
+        if root.resolve() != (run / "workloads/workflows").resolve():
+            raise ValueError(f"service run does not match workflow root: {run}")
+        tasks = {path.parent.name for path in root.glob("*/child_stream_content.jsonl")}
+        selected = [row for row in rows if row["task"] in tasks]
+        run_index, bracket, exclusions = load_index(run, selected)
+        if index.keys() & run_index.keys():
+            raise ValueError("duplicate child request identity across service runs")
+        index.update(run_index)
+        reports.append({
+            "run": str(run),
+            "indexed_requests": len(run_index),
+            "clock_bracket": bracket,
+            "excluded": exclusions,
+        })
+    return index, reports
+
+
+def first_trigger_service_audit(
+    held: list[dict],
+    triggered: dict[int, list[float]],
+    service_index: dict[str, dict],
+) -> dict:
+    first_status = {
+        i: snapshot_status(
+            service_index.get(held[i]["rid"]), min(triggers),
+        )
+        for i, triggers in triggered.items() if triggers
+    }
+    live = "unfinished_with_recent_decode"
+    live_hits = [
+        i for i, row in enumerate(held)
+        if row["label"] == "return"
+        and first_status.get(i) == live
+        and 500 <= row["return_ts"] - min(triggered[i]) <= 2000
+    ]
+    return {
+        "first_return_trigger_status": dict(Counter(
+            status for i, status in first_status.items()
+            if held[i]["label"] == "return"
+        )),
+        "first_tool_trigger_status": dict(Counter(
+            status for i, status in first_status.items()
+            if held[i]["label"] == "tool"
+        )),
+        "window_hits_with_recent_decode": len(live_hits),
+        "join_last_window_hits_with_recent_decode": sum(
+            held[i]["join_last"] for i in live_hits
+        ),
+        "live_window_hits_by_workflow": dict(sorted(Counter(
+            held[i]["task"] for i in live_hits
+        ).items())),
+        "early_over_2000ms_with_recent_decode": sum(
+            first_status.get(i) == live
+            and row["return_ts"] - min(triggered[i]) > 2000
+            for i, row in enumerate(held)
+            if row["label"] == "return" and triggered[i]
+        ),
+    }
+
+
 def evaluate(
     workflows: Path | Sequence[Path], heldout_project: str, *, min_snapshot_chars: int = 128,
     train_projects: tuple[str, ...] | None = None,
     calibration_projects: tuple[str, ...] = (),
     exclude_boundary_snapshots: bool = False,
+    service_runs: Sequence[Path] = (),
 ) -> dict:
     rows, counts = collect(
         workflows, min_snapshot_chars=min_snapshot_chars,
         exclude_boundary_snapshots=exclude_boundary_snapshots,
+    )
+    service_index, service_reports = (
+        _service_indices(workflows, service_runs, rows)
+        if service_runs else ({}, [])
     )
     if calibration_projects:
         if not train_projects or (
@@ -527,7 +604,7 @@ def evaluate(
                 held[i]["return_ts"] - min(triggered[i])
                 for i in positives if triggered[i]
             ]
-            results[f"{mode}_{name}"] = {
+            result = {
                 "threshold_selected_on_calibration" if calibration_projects
                 else "threshold_selected_on_train": threshold,
                 "train_bad_round_false_starts": int(sum(
@@ -581,6 +658,11 @@ def evaluate(
                 "lead_over_2000ms": sum(t > 2000 for t in lead),
                 "lead_over_10000ms": sum(t > 10000 for t in lead),
             }
+            if service_runs:
+                result["offline_service_audit"] = first_trigger_service_audit(
+                    held, triggered, service_index,
+                )
+            results[f"{mode}_{name}"] = result
     return {
         "status": (
             "frozen_project_disjoint_calibrated_threshold"
@@ -597,11 +679,14 @@ def evaluate(
         "calibration_rounds": len(cal),
         "heldout_rounds": len(held),
         "results": results,
+        "offline_service_audit": service_reports,
         "limitations": (
             ("Threshold selected on disjoint calibration projects. "
              if calibration_projects else
              "Training threshold is selected in sample; no nested validation. ")
-            + "Streamed-mode-only observations; no physical prefetch or H2D claim."
+            + "Service completion is a retrospective diagnostic, never a "
+            "model feature or threshold input. Streamed-mode-only observations; "
+            "no physical prefetch or H2D claim."
         ),
     }
 
@@ -623,6 +708,10 @@ def main() -> None:
         "--exclude-boundary-snapshots", action="store_true",
         help="Compare against the same run with boundary-only snapshots removed",
     )
+    parser.add_argument(
+        "--service-run", type=Path, action="append",
+        help="Optional run root paired one-to-one with --workflows for offline audit",
+    )
     parser.add_argument("--output", type=Path, required=True)
     args = parser.parse_args()
     result = evaluate(
@@ -636,6 +725,7 @@ def main() -> None:
             if args.calibration_projects else ()
         ),
         exclude_boundary_snapshots=args.exclude_boundary_snapshots,
+        service_runs=args.service_run or (),
     )
     args.output.parent.mkdir(parents=True, exist_ok=True)
     args.output.write_text(json.dumps(result, indent=2) + "\n")

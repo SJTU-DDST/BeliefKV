@@ -897,3 +897,49 @@ agent 轨迹显著分叉，差异不能直接归因为 logprobs 的
 独立校准通过，再检验 parent 的 Host 副本、HBM 容量、
 实际 H2D ACK 和首次服务复用；本批结果不开放
 predictive H2D。
+
+### 首次触发的服务状态与冻结的后续数据边界
+
+`scripts/pilot_child_stream_content.py` 可通过 `--service-run` 为每个
+`--workflows` 配对对应的服务器审计目录；先完成原始的
+训练、门槛拟合与**请求级首次触发**，再用受时钟区间
+保护的服务端结束事件和前 2 秒逐请求 decode 样本对
+首次触发做离线分类。服务端结束与后验 RETURN **不进入**
+模型特征或门槛。`scripts/child_stream_service_index.py` 只索引
+相同 request、child/context/epoch 的事件；修订后的
+`audit_child_live_decode_window.py` 与原结果逐字段一致，
+已有两个项目的评分器训练结果也逐字段一致。
+
+纯内容 16-root 开发批次在 32 字符起始快照下，首次命中
+0.5--2 秒且触发时请求尚未完成、前 2 秒有 decode 样本
+的数量（只报开发诊断，不将后验服务状态作为在线门控）：
+
+| 被留出的开发项目 | 长度 | 已交付进度 | 长度条件化内容 | 进度条件化内容 |
+| --- | ---: | ---: | ---: | ---: |
+| Django (29 RETURN) | 6 | 7 | 6 | 6 |
+| Pytest (27 RETURN) | 1 | 0 | 3 | 2 |
+
+对应 JOIN-last：Django 为 3/2/1/3，Pytest 为
+0/0/1/0；Pytest 的两种条件化内容各有 1 次有正文
+工具轮次的首次误触发。Django 的 29 条包括一个
+measurement-invalid root 的 3 条 child，且两折阈值
+均在训练项目内部选取；目前不满足独立增益、每项目
+无退化或错误控制门禁。这项统计**不能**把首次过早
+触发丢掉、改计同一请求的第二次触发。
+
+下阶段任务身份在采集与校准前固定：
+`qwen35_child_content_train_extra_16root_manifest.json` 是
+与现有 16-root Django/Pytest 不重叠的补充训练；
+`qwen35_child_content_calibration_pydata_21root_manifest.json`
+只用于选择请求级阈值；
+`qwen35_child_content_sealed_pylint_psf_18root_manifest.json`
+只用于冻结阈值后的首次项目级评价。三份清单均绑定
+SHA256 为 `77e5ef62c09cccbc3f4d1d2d6cfd00967ad37f46477266dec308bf2379bf35d8`
+的源 workload manifest。仍固定 32 字符起始、
+长度和已交付进度基线、两种训练侧已定义的条件化
+内容表示、首次触发及工具负例；不能依据 Pydata
+结果调整特征、融合系数、候选名单、项目身份或窗口，
+否则原密封集须作废。跨项目成绩须分别报告首次
+0.5--2 秒命中、过早、工具误报、JOIN-last、按 workflow
+聚类的不确定度，并单列仍在实际 decode 的首次
+触发比例与物理动作门禁。

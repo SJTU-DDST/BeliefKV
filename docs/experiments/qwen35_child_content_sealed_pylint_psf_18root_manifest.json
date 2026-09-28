@@ -1,0 +1,24 @@
+{
+  "source_manifest_sha256": "77e5ef62c09cccbc3f4d1d2d6cfd00967ad37f46477266dec308bf2379bf35d8",
+  "selection": "All pylint-dev and psf tasks in the frozen source manifest; no tuning on outcomes.",
+  "instance_ids": [
+    "pylint-dev__pylint-4551",
+    "pylint-dev__pylint-4661",
+    "pylint-dev__pylint-6386",
+    "pylint-dev__pylint-7080",
+    "pylint-dev__pylint-8898",
+    "psf__requests-1766",
+    "psf__requests-1921",
+    "psf__requests-2317",
+    "psf__requests-6028",
+    "pylint-dev__pylint-4970",
+    "pylint-dev__pylint-6528",
+    "pylint-dev__pylint-6903",
+    "psf__requests-2931",
+    "psf__requests-1724",
+    "pylint-dev__pylint-7277",
+    "psf__requests-1142",
+    "pylint-dev__pylint-4604",
+    "psf__requests-5414"
+  ]
+}
