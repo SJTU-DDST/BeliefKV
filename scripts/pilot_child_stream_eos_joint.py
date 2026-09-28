@@ -208,7 +208,9 @@ def select_policy(train: list[dict]) -> tuple[tuple[str, str] | None, dict]:
     return selected, results
 
 
-def evaluate(workflows: list[Path], heldout_project: str) -> dict:
+def load_rows(
+    workflows: list[Path],
+) -> tuple[list[dict], Counter, list[dict], bool]:
     rows, counts = collect(workflows, min_snapshot_chars=1)
     by_task: dict[str, list[dict]] = {}
     eos_manifests = []
@@ -256,7 +258,11 @@ def evaluate(workflows: list[Path], heldout_project: str) -> dict:
     if any(sampled) and not all(sampled):
         raise ValueError("cannot mix sampled and legacy EOS snapshot evidence")
     has_sampled_eos = bool(sampled and sampled[0])
+    return rows, counts, eos_manifests, has_sampled_eos
 
+
+def evaluate(workflows: list[Path], heldout_project: str) -> dict:
+    rows, counts, eos_manifests, has_sampled_eos = load_rows(workflows)
     train = [row for row in rows if row["project"] != heldout_project]
     held = [row for row in rows if row["project"] == heldout_project]
     if not train or not held or not (
