@@ -186,6 +186,7 @@ fi
   --subagent-fanout-profile native_dynamic_1to4 \
   --max-completion-tokens 8192 \
   --recursion-limit 2048 \
+  --native-reactive-guard-profile \
   --sandbox-command-timeout "${SANDBOX_COMMAND_TIMEOUT_SECONDS:-600}" \
   --stream-completion-shadow \
   "${content_args[@]}" \

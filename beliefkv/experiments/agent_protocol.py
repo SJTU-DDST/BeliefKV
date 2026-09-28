@@ -1123,6 +1123,16 @@ class AgentLoopGuardMiddleware(AgentMiddleware[LoopGuardState, Any, Any]):
 
         if self.accept_natural_completion:
             text = _message_text(last_ai_message)
+            if not text.strip():
+                self._audit(
+                    "agent_empty_terminal_response",
+                    finish_reason=last_ai_message.response_metadata.get("finish_reason"),
+                    guard_intervened=bool(
+                        state.get("guard_ever_intervened", False)
+                        or state.get("guard_forcing_completion", False)
+                    ),
+                )
+                return {"jump_to": "end"}
             self._audit(
                 "agent_natural_return",
                 content_sha256=hashlib.sha256(

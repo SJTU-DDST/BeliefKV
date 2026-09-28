@@ -292,6 +292,40 @@ def test_native_child_natural_language_is_a_terminal_return(
     assert summary["event_counts"].get("agent_protocol_repair_attempt", 0) == 0
 
 
+@pytest.mark.parametrize("content", ["", "\n\n"])
+def test_natural_completion_rejects_blank_terminal_response(
+    tmp_path: Path, content: str
+) -> None:
+    audit_path = tmp_path / "blank-terminal.jsonl"
+    audit = JsonlAudit(audit_path)
+    guard = AgentLoopGuardMiddleware(
+        policy=LoopGuardPolicy(),
+        completion_schema=WorkflowCompletion,
+        completion_instruction="Return the result.",
+        audit=audit,
+        scope="blank-terminal-test",
+        accept_natural_completion=True,
+    )
+    message = AIMessage(
+        content=content,
+        response_metadata={"finish_reason": "tool_calls"},
+    )
+
+    update = guard.after_model(
+        {"messages": [message], "guard_forcing_completion": True},
+        runtime=None,
+    )
+    audit.close()
+
+    assert update == {"jump_to": "end"}
+    assert _workflow_terminal({"messages": [message]}, require_schema=False) == (
+        None, "incomplete"
+    )
+    summary = summarize_agent_control(audit_path)
+    assert summary["natural_language_return_count"] == 0
+    assert summary["event_counts"]["agent_empty_terminal_response"] == 1
+
+
 def test_direct_runtime_trace_reports_pairing_and_subagent_lifecycle(
     tmp_path: Path,
 ) -> None:
