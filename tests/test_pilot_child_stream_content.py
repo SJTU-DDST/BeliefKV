@@ -73,6 +73,49 @@ def test_collect_includes_text_round_that_later_calls_tool(tmp_path):
     assert counts["text_then_tool_rounds"] == 1
 
 
+def test_collect_early_snapshots_does_not_count_finish_or_tool_chunks(tmp_path):
+    workflow = tmp_path / "django__1"
+    workflow.mkdir()
+    (workflow / "child_stream_content_stats.json").write_text(
+        json.dumps({"complete": True})
+    )
+    stream = [
+        {"event": "child_stream_content", "request_id": "rid",
+         "invocation_id": "child", "ts_ms": ts, "content_chars": chars,
+         "content_tail": "final answer", "tool_chunk": tool,
+         "finish_reason": finish}
+        for ts, chars, tool, finish in (
+            (10, 32, False, None), (15, 64, False, None),
+            (16, 128, True, None), (20, 128, False, "stop"),
+        )
+    ]
+    stream.append({
+        "event": "child_stream_result", "request_id": "rid",
+        "invocation_id": "child", "context_id": "ctx", "context_epoch": 1,
+        "ts_ms": 21, "tool_call_count": 0, "invalid_tool_call_count": 0,
+        "finish_reason": "stop",
+    })
+    (workflow / "child_stream_content.jsonl").write_text(
+        "".join(json.dumps(row) + "\n" for row in stream)
+    )
+    events = [
+        {"kind": "spawn", "target_invocation_id": "child", "ts_ms": 0},
+        {"kind": "llm_result", "invocation_id": "child", "context_id": "ctx",
+         "context_epoch": 1, "ts_ms": 21,
+         "attributes": {"request_id": "rid", "finish_reason": "stop",
+                        "output_chars": 128, "tool_call_count": 0}},
+        {"kind": "return", "invocation_id": "child", "ts_ms": 25},
+    ]
+    (workflow / "runtime_events.deepagents.jsonl").write_text(
+        "".join(json.dumps(row) + "\n" for row in events)
+    )
+    early, _ = pilot.collect(tmp_path, min_snapshot_chars=32)
+    assert [s["content_chars"] for s in early[0]["snapshots"]] == [32, 64]
+    later, counts = pilot.collect(tmp_path, min_snapshot_chars=128)
+    assert not later
+    assert counts["return_without_eligible_snapshot"] == 1
+
+
 def test_project_holdout_counts_tool_rounds_and_first_trigger(monkeypatch, tmp_path):
     rows = []
     for project in ("astropy", "django", "sphinx-doc"):
@@ -97,7 +140,7 @@ def test_project_holdout_counts_tool_rounds_and_first_trigger(monkeypatch, tmp_p
                          "content_tail": text + " extra"},
                     ],
                 })
-    monkeypatch.setattr(pilot, "collect", lambda _: (rows, Counter()))
+    monkeypatch.setattr(pilot, "collect", lambda _, **kwargs: (rows, Counter()))
     result = pilot.evaluate(tmp_path, "sphinx-doc")
     json.dumps(result)
     assert result["heldout_rounds"] == 8
@@ -111,3 +154,49 @@ def test_project_holdout_counts_tool_rounds_and_first_trigger(monkeypatch, tmp_p
         assert model["heldout_join_last_rounds"] == 4
         assert model["heldout_triggered_return_rounds"] <= 4
         assert model["heldout_tool_false_first_triggers"] <= 4
+
+
+def test_disjoint_calibration_threshold_does_not_use_heldout(monkeypatch, tmp_path):
+    rows = []
+    for project in ("django", "pytest-dev", "pydata", "pylint-dev"):
+        for index in range(4):
+            for label in ("return", "tool"):
+                text = (
+                    f"Final answer verified {index}" if label == "return"
+                    else f"Need to inspect files {index}"
+                )
+                rows.append({
+                    "task": f"{project}__{index}", "project": project,
+                    "rid": f"{project}-{index}-{label}", "label": label,
+                    "join_last": label == "return",
+                    "return_ts": 1200.0 if label == "return" else None,
+                    "snapshots": [
+                        {"ts_ms": 100, "content_chars": 32, "content_tail": text},
+                        {"ts_ms": 500, "content_chars": 64, "content_tail": text},
+                    ],
+                })
+    monkeypatch.setattr(pilot, "collect", lambda _, **kwargs: (rows, Counter()))
+    options = {
+        "train_projects": ("django", "pytest-dev"),
+        "calibration_projects": ("pydata",),
+        "min_snapshot_chars": 32,
+    }
+    original = pilot.evaluate(tmp_path, "pylint-dev", **options)
+    assert original["status"] == "frozen_project_disjoint_calibrated_threshold"
+    assert original["train_rounds"] == 16
+    assert original["calibration_rounds"] == 8
+    for row in rows:
+        if row["project"] == "pylint-dev":
+            row["snapshots"][0]["content_tail"] = "changed heldout content"
+            row["snapshots"][1]["content_tail"] = "changed heldout content"
+    altered = pilot.evaluate(tmp_path, "pylint-dev", **options)
+    for key, result in original["results"].items():
+        assert result["threshold_selected_on_calibration"] == (
+            altered["results"][key]["threshold_selected_on_calibration"]
+        )
+    with np.testing.assert_raises(ValueError):
+        pilot.evaluate(
+            tmp_path, "pylint-dev",
+            train_projects=("django", "pydata"),
+            calibration_projects=("pydata",),
+        )

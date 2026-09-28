@@ -22,7 +22,11 @@ from scripts.audit_child_hidden_trace import (
 )
 
 
-def collect(workflows: Path) -> tuple[list[dict], Counter]:
+def collect(
+    workflows: Path, *, min_snapshot_chars: int = 128,
+) -> tuple[list[dict], Counter]:
+    if min_snapshot_chars not in (32, 64, 128):
+        raise ValueError("min_snapshot_chars must be 32, 64, or 128")
     rows: list[dict] = []
     counts: Counter = Counter()
     for path in sorted(workflows.glob("*/child_stream_content.jsonl")):
@@ -98,7 +102,10 @@ def collect(workflows: Path) -> tuple[list[dict], Counter]:
             for row in sequence:
                 if row["event"] != "child_stream_content" or row["tool_chunk"]:
                     continue
-                if row["content_chars"] < 128 or row["content_chars"] == last_chars:
+                if (
+                    row["content_chars"] < min_snapshot_chars
+                    or row["content_chars"] == last_chars
+                ):
                     continue
                 if row["finish_reason"]:
                     continue
@@ -133,7 +140,7 @@ def features(
                 )
             ))
             call_index.append(index)
-    return texts, np.asarray(sizes), np.asarray(labels), call_index
+    return texts, np.asarray(sizes, dtype=float).reshape(-1, 1), np.asarray(labels), call_index
 
 
 def text_features(
@@ -217,22 +224,51 @@ def centroid_scores(
     return train_x @ direction, held_x @ direction
 
 
-def evaluate(workflows: Path, heldout_project: str) -> dict:
-    rows, counts = collect(workflows)
-    train = [row for row in rows if row["project"] != heldout_project]
+def evaluate(
+    workflows: Path, heldout_project: str, *, min_snapshot_chars: int = 128,
+    train_projects: tuple[str, ...] | None = None,
+    calibration_projects: tuple[str, ...] = (),
+) -> dict:
+    rows, counts = collect(workflows, min_snapshot_chars=min_snapshot_chars)
+    if calibration_projects:
+        if not train_projects or (
+            set(train_projects) & (set(calibration_projects) | {heldout_project})
+            or heldout_project in calibration_projects
+        ):
+            raise ValueError("train, calibration, and heldout projects must be disjoint")
+    elif train_projects:
+        raise ValueError("train_projects requires independent calibration_projects")
+    train = [
+        row for row in rows
+        if row["project"] in train_projects
+    ] if train_projects else [
+        row for row in rows if row["project"] != heldout_project
+    ]
     held = [row for row in rows if row["project"] == heldout_project]
-    if {row["label"] for row in train} != {"return", "tool"} or not held:
+    cal = [
+        row for row in rows if row["project"] in calibration_projects
+    ]
+    if (
+        {row["label"] for row in train} != {"return", "tool"}
+        or not held or (calibration_projects and not cal)
+    ):
         return {
             "status": "insufficient_project_disjoint_samples",
             "counts": dict(counts),
-            "train_rounds": len(train), "heldout_rounds": len(held),
+            "train_rounds": len(train), "calibration_rounds": len(cal),
+            "heldout_rounds": len(held),
         }
     train_text, train_size, _, train_idx = features(train)
     held_text, held_size, _, held_idx = features(held)
-    train_text_x, held_text_x = text_features(
-        train_text, held_text, [train[index]["task"] for index in train_idx],
+    cal_text, cal_size, _, cal_idx = features(cal)
+    train_text_x, other_text_x = text_features(
+        train_text, cal_text + held_text,
+        [train[index]["task"] for index in train_idx],
     )
+    cal_text_x = other_text_x[:len(cal_text)]
+    held_text_x = other_text_x[len(cal_text):]
     size_mean, size_std = train_size.mean(), max(train_size.std(), 1e-9)
+    cal_size = (cal_size - size_mean) / size_std
     held_size = (held_size - size_mean) / size_std
     train_size = (train_size - size_mean) / size_std
     task_counts = Counter(row["task"] for row in train)
@@ -241,15 +277,19 @@ def evaluate(workflows: Path, heldout_project: str) -> dict:
             task_counts[train[idx]["task"]] * len(train[idx]["snapshots"])
         ) for idx in train_idx
     ])
-    train_text_residual, held_text_residual = length_conditioned_text(
-        train_text_x, held_text_x, train_size, held_size, weights,
+    train_text_residual, other_residual = length_conditioned_text(
+        train_text_x, other_text_x, train_size,
+        np.concatenate((cal_size, held_size)), weights,
     )
+    cal_text_residual = other_residual[:len(cal_text)]
+    held_text_residual = other_residual[len(cal_text):]
     results = {}
     matrices = (
-        ("size_only", train_size, held_size),
-        ("delivered_tail_only", train_text_x, held_text_x),
+        ("size_only", train_size, cal_size, held_size),
+        ("delivered_tail_only", train_text_x, cal_text_x, held_text_x),
         ("delivered_tail_plus_size",
          np.column_stack((train_text_x, train_size)),
+         np.column_stack((cal_text_x, cal_size)),
          np.column_stack((held_text_x, held_size))),
     )
     for mode, window in (("return_vs_tool", None), ("near_return_2000ms", 2000.0)):
@@ -257,17 +297,22 @@ def evaluate(workflows: Path, heldout_project: str) -> dict:
         if len(set(train_y)) < 2:
             results[mode] = {"status": "insufficient_near_return_snapshots"}
             continue
-        for name, x, x_held in (
+        for name, x, x_cal, x_held in (
             *matrices,
-            ("length_conditioned_content", train_text_residual, held_text_residual),
+            ("length_conditioned_content", train_text_residual,
+             cal_text_residual, held_text_residual),
         ):
             predicted_train, predicted_held = centroid_scores(
                 x, x_held, train_y, weights
             )
+            predicted_cal = centroid_scores(x, x_cal, train_y, weights)[1]
             if name == "length_conditioned_content":
                 length_train, length_held = centroid_scores(
                     train_size, held_size, train_y, weights
                 )
+                length_cal = centroid_scores(
+                    train_size, cal_size, train_y, weights
+                )[1]
                 # Fixed diagnostic weight; never select it on the held-out project.
                 length_scale = max(float(length_train.std()), 1e-9)
                 content_scale = max(float(predicted_train.std()), 1e-9)
@@ -279,13 +324,20 @@ def evaluate(workflows: Path, heldout_project: str) -> dict:
                     length_held / length_scale
                     + 0.5 * predicted_held / content_scale
                 )
-            # Training-only threshold. In near mode, early parts of eventual
+                predicted_cal = (
+                    length_cal / length_scale
+                    + 0.5 * predicted_cal / content_scale
+                )
+            # Calibrated threshold. In near mode, early parts of eventual
             # RETURNs also count as false starts, alongside tool rounds.
-            train_bad_max = [
+            threshold_rows = cal if calibration_projects else train
+            threshold_scores = predicted_cal if calibration_projects else predicted_train
+            threshold_indices = cal_idx if calibration_projects else train_idx
+            bad_max = [
                 max(
                     (score for score, idx, snap in zip(
-                        predicted_train, train_idx,
-                        (s for row in train for s in row["snapshots"]),
+                        threshold_scores, threshold_indices,
+                        (s for row in threshold_rows for s in row["snapshots"]),
                     ) if idx == j and (
                         row["label"] == "tool"
                         or (window is not None
@@ -293,13 +345,13 @@ def evaluate(workflows: Path, heldout_project: str) -> dict:
                     )),
                     default=float("-inf"),
                 )
-                for j, row in enumerate(train)
+                for j, row in enumerate(threshold_rows)
             ]
-            train_bad_max = [value for value in train_bad_max if np.isfinite(value)]
-            if not train_bad_max:
-                raise ValueError("training set lacks false-start candidates")
+            bad_max = [value for value in bad_max if np.isfinite(value)]
+            if not bad_max:
+                raise ValueError("calibration set lacks false-start candidates")
             threshold = float(
-                np.nextafter(np.quantile(train_bad_max, 0.95), 1.0)
+                np.nextafter(np.quantile(bad_max, 0.95), 1.0)
             )
             triggered = defaultdict(list)
             for score, idx, snap in zip(
@@ -315,10 +367,12 @@ def evaluate(workflows: Path, heldout_project: str) -> dict:
                 for i in positives if triggered[i]
             ]
             results[f"{mode}_{name}"] = {
-                "threshold_selected_on_train": threshold,
+                "threshold_selected_on_calibration" if calibration_projects
+                else "threshold_selected_on_train": threshold,
                 "train_bad_round_false_starts": int(sum(
-                    score >= threshold for score in train_bad_max
+                    score >= threshold for score in bad_max
                 )),
+                "threshold_bad_round_count": len(bad_max),
                 "heldout_return_rounds": len(positives),
                 "heldout_tool_rounds": len(negatives),
                 "heldout_return_rounds_all": counts[
@@ -355,16 +409,25 @@ def evaluate(workflows: Path, heldout_project: str) -> dict:
                 "lead_over_10000ms": sum(t > 10000 for t in lead),
             }
     return {
-        "status": "diagnostic_project_disjoint_in_sample_threshold",
+        "status": (
+            "frozen_project_disjoint_calibrated_threshold"
+            if calibration_projects
+            else "diagnostic_project_disjoint_in_sample_threshold"
+        ),
         "heldout_project": heldout_project,
+        "min_snapshot_chars": min_snapshot_chars,
         "counts": dict(counts),
         "train_projects": sorted({row["project"] for row in train}),
+        "calibration_projects": sorted({row["project"] for row in cal}),
         "train_rounds": len(train),
+        "calibration_rounds": len(cal),
         "heldout_rounds": len(held),
         "results": results,
         "limitations": (
-            "Training threshold is selected in sample; no nested validation. "
-            "Streamed-mode-only observations; no physical prefetch or H2D claim."
+            ("Threshold selected on disjoint calibration projects. "
+             if calibration_projects else
+             "Training threshold is selected in sample; no nested validation. ")
+            + "Streamed-mode-only observations; no physical prefetch or H2D claim."
         ),
     }
 
@@ -373,9 +436,28 @@ def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--workflows", type=Path, required=True)
     parser.add_argument("--heldout-project", required=True)
+    parser.add_argument(
+        "--train-projects", help="Comma-separated projects frozen before evaluation",
+    )
+    parser.add_argument(
+        "--calibration-projects", help="Comma-separated projects for threshold only",
+    )
+    parser.add_argument(
+        "--min-snapshot-chars", type=int, choices=(32, 64, 128), default=128,
+    )
     parser.add_argument("--output", type=Path, required=True)
     args = parser.parse_args()
-    result = evaluate(args.workflows, args.heldout_project)
+    result = evaluate(
+        args.workflows, args.heldout_project,
+        min_snapshot_chars=args.min_snapshot_chars,
+        train_projects=(
+            tuple(args.train_projects.split(",")) if args.train_projects else None
+        ),
+        calibration_projects=(
+            tuple(args.calibration_projects.split(","))
+            if args.calibration_projects else ()
+        ),
+    )
     args.output.parent.mkdir(parents=True, exist_ok=True)
     args.output.write_text(json.dumps(result, indent=2) + "\n")
     print(json.dumps(result, indent=2))

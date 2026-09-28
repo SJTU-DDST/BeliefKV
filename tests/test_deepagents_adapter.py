@@ -613,6 +613,48 @@ def test_child_content_shadow_records_delivery_and_tool_negative(tmp_path) -> No
     )
 
 
+def test_child_content_shadow_early_milestones_preserve_identity(tmp_path) -> None:
+    shadow = StreamContentShadow(tmp_path / "milestones.jsonl", capacity=16)
+    adapter = DeepAgentsRuntimeAdapter(
+        CollectingSink(), BeliefKVRequestMetadata("wf", "root", "ctx", 0),
+        stream_content_shadow=shadow,
+    )
+    adapter.start()
+    task = adapter.declare_runtime_tasks([("explorer", "inspect")])[0]
+    tool_run = uuid4()
+    adapter.on_tool_start(
+        {"name": "task"}, "", run_id=tool_run,
+        inputs={"subagent_type": "explorer", "description": "inspect"},
+        tool_call_id=task.tool_call_id,
+    )
+    run = uuid4()
+    adapter.on_chat_model_start(
+        {}, [[HumanMessage(content="prompt")]],
+        run_id=run, parent_run_id=tool_run,
+    )
+    for length in (16, 16, 32, 64, 128):
+        chunk = SimpleNamespace(
+            message=SimpleNamespace(content="a" * length, tool_call_chunks=[]),
+            generation_info=None,
+        )
+        adapter.on_llm_new_token("a" * length, chunk=chunk, run_id=run)
+    adapter.on_llm_end(_natural_child_result("done"), run_id=run)
+    assert shadow.close()["complete"]
+    rows = [
+        json.loads(line)
+        for line in (tmp_path / "milestones.jsonl").read_text().splitlines()
+    ]
+    milestones = [
+        row for row in rows if row["event"] == "child_stream_content"
+    ]
+    assert [row["content_chars"] for row in milestones] == [16, 32, 64, 128, 256]
+    assert all(
+        row["invocation_id"] == task.invocation_id
+        and row["request_id"] == f"beliefkv:{run}"
+        for row in milestones
+    )
+
+
 def test_final_stream_chunk_shadow_is_opt_in_and_excludes_root() -> None:
     trace = CollectingSink()
     root = BeliefKVRequestMetadata("wf", "root", "ctx", 0)

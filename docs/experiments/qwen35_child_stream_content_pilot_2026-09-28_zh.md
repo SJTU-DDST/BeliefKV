@@ -11,7 +11,7 @@ RETURN 的最终报告，无法证明该内容曾在对应时刻交付，也没�
 
 ## 采集与判定
 
-每个 child LLM 请求只在首个正文 chunk、正文每跨越 128 字符、
+本次已完成 pilot 使用首个正文 chunk、正文每跨越 128 字符、
 tool chunk 和 finish chunk 记录观测。`child_stream_content.jsonl` 中
 保存请求/child/context epoch/JOIN 身份、回调单调时钟、**截至该时刻**
 累计正文字符数以及最多 128 字符的已交付正文尾部；不保存 reasoning
@@ -36,12 +36,16 @@ tool chunk 和 finish chunk 记录观测。`child_stream_content.jsonl` 中
 另拟合“距 RETURN 不超过 2 秒”的目标；同一最终报告中更早
 已交付的正文也作为过早触发负例，避免只把工具轮次当成负例。
 没有嵌套验证且样本很少，不做可靠泛化或 PCIe 收益结论。
+后续版本补充 32/64 字符诊断里程碑与按档位控制的离线评分，
+详见 `qwen35_decode_content_conditioned_plan_2026-09-28_zh.md`；
+下面的旧结果和实际采样频率不受后续代码变更影响。
 
 ## 执行
 
 `STREAM_CONTENT_SHADOW=1 PILOT_WORKFLOW_COUNT=12 WORKLOAD_POOL_SIZE=32
 RUN_ROOT=... bash scripts/run_qwen35_stream_timing_shadow.sh`
-选 Astropy 与 Sphinx 各 6 个 root；各做一次反向留出测试。
+当时选 Astropy 与 Sphinx 各 6 个 root；各做一次反向留出测试。
+当前启动器已取消这一硬编码，后续必须显式指定来源及项目划分。
 有任何 dropped、结果身份不符、两类不足或只在 finish 后触发，
 本轮结论标记为不充分，不补填“预测成功”。
 

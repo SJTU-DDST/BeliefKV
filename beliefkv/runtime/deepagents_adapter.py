@@ -907,7 +907,7 @@ class DeepAgentsRuntimeAdapter(BaseCallbackHandler):
             self._child_stream_last_chunk[key] = chunk
             if self._stream_content_shadow is not None:
                 count, tail, next_at = self._stream_content_state.get(
-                    key, (0, "", 128)
+                    key, (0, "", 32)
                 )
                 if isinstance(content, str) and content:
                     count += len(content)
@@ -933,7 +933,10 @@ class DeepAgentsRuntimeAdapter(BaseCallbackHandler):
                         "tool_chunk": tool_seen,
                         "finish_reason": finish,
                     }
-                    next_at = (count // 128 + 1) * 128
+                    next_at = (
+                        min((count // 32 + 1) * 32, 128)
+                        if count < 128 else (count // 128 + 1) * 128
+                    )
                 self._stream_content_state[key] = (count, tail, next_at)
             if (
                 self._eos_shadow

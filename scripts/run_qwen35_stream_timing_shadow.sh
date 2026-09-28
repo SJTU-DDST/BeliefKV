@@ -11,6 +11,7 @@ WORKFLOW_DEADLINE_SECONDS="${WORKFLOW_DEADLINE_SECONDS:-7200}"
 WORKLOAD_OFFSET="${WORKLOAD_OFFSET:-0}"
 WORKLOAD_POOL_SIZE="${WORKLOAD_POOL_SIZE:-32}"
 WORKLOAD_PREFERRED_PREFIX="${WORKLOAD_PREFERRED_PREFIX:-}"
+WORKLOAD_ALLOWED_PROJECTS="${WORKLOAD_ALLOWED_PROJECTS:-}"
 WORKLOAD_EXCLUDE_PREFIX="${WORKLOAD_EXCLUDE_PREFIX:-}"
 WORKLOAD_EXCLUDE_MANIFEST="${WORKLOAD_EXCLUDE_MANIFEST:-}"
 PILOT_WORKFLOW_COUNT="${PILOT_WORKFLOW_COUNT:-32}"
@@ -58,23 +59,19 @@ selected_workloads="$(
   jq -c --argjson offset "$WORKLOAD_OFFSET" \
     --argjson pool "$WORKLOAD_POOL_SIZE" \
     --argjson count "$PILOT_WORKFLOW_COUNT" \
-    --argjson content "${STREAM_CONTENT_SHADOW:-0}" \
     --argjson excluded "$excluded_instances" \
     --arg prefix "$WORKLOAD_PREFERRED_PREFIX" \
+    --arg allowed "$WORKLOAD_ALLOWED_PROJECTS" \
     --arg excluded_prefix "$WORKLOAD_EXCLUDE_PREFIX" '
       [.workloads[$offset:($offset+$pool)][]
        | select(
            .instance_id as $id
            | ($excluded | index($id) | not)
              and ($excluded_prefix == "" or ($id | startswith($excluded_prefix) | not))
+             and ($allowed == "" or ($allowed | split(",") | index($id | split("__")[0])) != null)
          )]
       as $workloads
-      | if $content == 1 then
-          ([$workloads[] | select(.instance_id | startswith("astropy__"))]
-           [:($count / 2 | floor)]
-           + [$workloads[] | select(.instance_id | startswith("sphinx-doc__"))]
-           [:($count - ($count / 2 | floor))])
-        elif $prefix == "" then $workloads[:$count]
+      | if $prefix == "" then $workloads[:$count]
         else (
           [$workloads[] | select(.instance_id | startswith($prefix))]
           + [$workloads[] | select((.instance_id | startswith($prefix)) | not)]
@@ -93,7 +90,9 @@ if [[ "$(jq 'map(.instance_id) | unique | length' <<< "$selected_workloads")" -n
   exit 1
 fi
 instance_args=()
-if (( WORKLOAD_OFFSET > 0 )) || [[ -n "$WORKLOAD_PREFERRED_PREFIX" ]] \
+if [[ "${STREAM_CONTENT_SHADOW:-0}" == 1 ]] \
+  || (( WORKLOAD_OFFSET > 0 )) || [[ -n "$WORKLOAD_PREFERRED_PREFIX" ]] \
+  || [[ -n "$WORKLOAD_ALLOWED_PROJECTS" ]] \
   || [[ -n "$WORKLOAD_EXCLUDE_PREFIX" ]] \
   || [[ -n "$WORKLOAD_EXCLUDE_MANIFEST" ]] \
   || (( PILOT_WORKFLOW_COUNT < 32 )); then
@@ -186,12 +185,18 @@ for cue in first_content substantial_content; do
   fi
 done
 if [[ "${STREAM_CONTENT_SHADOW:-0}" == 1 ]]; then
-  for project in astropy sphinx-doc; do
-    "$PYTHON" "$ROOT/scripts/pilot_child_stream_content.py" \
-      --workflows "$RUN_ROOT/workloads/workflows" \
-      --heldout-project "$project" \
-      --output "$RUN_ROOT/content_holdout_${project}.json" \
-      > "$RUN_ROOT/content_holdout_${project}.log" 2>&1
+  mapfile -t content_projects < <(
+    jq -r '.[].instance_id | split("__")[0]' <<< "$selected_workloads" | sort -u
+  )
+  for project in "${content_projects[@]}"; do
+    for min_chars in 32 64 128; do
+      "$PYTHON" "$ROOT/scripts/pilot_child_stream_content.py" \
+        --workflows "$RUN_ROOT/workloads/workflows" \
+        --heldout-project "$project" \
+        --min-snapshot-chars "$min_chars" \
+        --output "$RUN_ROOT/content_${min_chars}_dev_${project}.json" \
+        > "$RUN_ROOT/content_${min_chars}_dev_${project}.log" 2>&1
+    done
   done
 fi
 exit "${collection_status:-0}"
