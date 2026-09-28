@@ -1573,6 +1573,7 @@ class DeepAgentsExperimentConfig:
     child_stream_content_shadow: bool = False
     stream_http_timing_shadow: bool = False
     child_eos_shadow: bool = False
+    child_eos_server_shadow: bool = False
     child_eos_low_prob_shadow: bool = False
     child_eos_top_hit_shadow: bool = False
     child_return_intent_shadow: bool = False
@@ -1626,6 +1627,14 @@ class DeepAgentsExperimentConfig:
             raise ValueError("HTTP stream timing requires child content shadow")
         if self.child_eos_shadow and not self.stream_completion_shadow:
             raise ValueError("child EOS shadow requires streamed completion")
+        if self.child_eos_server_shadow and (
+            not self.child_stream_content_shadow or self.child_eos_shadow
+            or self.child_return_intent_shadow
+        ):
+            raise ValueError(
+                "server-only EOS requires child content shadow without client EOS "
+                "or return-intent intervention"
+            )
         if self.child_eos_low_prob_shadow and not self.child_eos_shadow:
             raise ValueError("low-probability EOS shadow requires child EOS shadow")
         if self.child_eos_top_hit_shadow and not self.child_eos_shadow:
@@ -2349,7 +2358,7 @@ def _model(
         ),
         request_timeout_s=config.request_timeout_s,
         abort_url=config.base_url.rstrip("/").removesuffix("/v1") + "/abort_request",
-        beliefkv_eos_logprobs=natural_eos_shadow,
+        beliefkv_eos_logprobs=natural_eos_shadow or config.child_eos_server_shadow,
         model=config.model,
         base_url=config.base_url,
         api_key="EMPTY",

@@ -1199,3 +1199,26 @@ RETURN 中 GPU 剩余时间的保守下界
 下一步应先降低客户端消费开销并验证首次信号
 在服务端产生的精确时机，再做项目隔离的阈值
 校准和物理 ACK/首次复用实验。
+
+### 服务端首越界观测（待实测）
+
+在 native scheduler 的 batch-result 完成边界读取该请求
+已计算的两个定向 token logprob，逐生成 token 排除
+已经采样 EOS 的位置，并对固定门槛仅记录首次越界。
+`targeted_pair_first_crossing` 保存原生 request/context
+身份、输出 token 序号、门槛和服务端批次完成时间；
+计数不闭合或候选 ID 改变写
+`targeted_pair_ordinal_invalid`，不生成可用触发。
+记录不包含 token 正文，不启动调度动作。
+这里的时间是 scheduler 完成结果处理的**上界**，
+不能冒充精确 CUDA kernel 时间；前向批次内多个 token
+不能由同一完成时间区分。
+
+`--child-eos-server-shadow` 保持 child 内容流，仍让
+SGLang 计算双 EOS 概率，但不向客户端发送逐 token
+logprobs。与旧 `--child-eos-shadow` 互斥，需使用
+同一批任务和服务器配置与纯内容流对照：
+记录服务端先于客户端内容交付的线索比例、真正
+可用的 `max(服务端线索时间, 首个符合条件的内容交付时间)`
+以及整体传输/消费开销。此路径只有源码和单元契约检查，
+尚无新的 GPU 证据，不能视为已校准的在线预测器。

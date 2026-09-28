@@ -49,6 +49,71 @@ def test_admission_observation_has_distinct_provenance(tmp_path: Path) -> None:
     assert ready["collection_mode"] == "admission_observation"
 
 
+def test_targeted_pair_first_crossing_has_decode_ordinal(tmp_path: Path) -> None:
+    audit = NativeReactiveTelemetry(tmp_path / "pair")
+    emitted: list[dict] = []
+    audit._emit = lambda stream, record: emitted.append(record)
+    sample = {
+        "request_id": "r1", "workflow_id": "w1", "invocation_id": "i1",
+        "context_id": "c1", "context_epoch": 0,
+    }
+    req = SimpleNamespace(
+        rid="r1", output_ids=[90, 91],
+        logprob=SimpleNamespace(
+            token_ids_logprob=[10, 11],
+            output_token_ids_logprobs_val=[[-3.1, -3.2]],
+            output_token_ids_logprobs_idx=[[10, 11]],
+        ),
+    )
+    audit._observe_targeted_pair(req, sample, 1000., 1)
+    req.output_ids.append(92)
+    req.logprob.output_token_ids_logprobs_val.append([-2.9, -5.])
+    req.logprob.output_token_ids_logprobs_idx.append([10, 11])
+    audit._observe_targeted_pair(req, sample, 1010., 2)
+    audit._observe_targeted_pair(req, sample, 1020., 3)
+    crossing = [
+        row for row in emitted
+        if row["event"] == "targeted_pair_first_crossing"
+        and row["threshold"] == .05
+    ]
+    assert len(crossing) == 1
+    assert crossing[0]["output_token_ordinal"] == 3
+    assert crossing[0]["ts_ms"] == 1010.
+    assert crossing[0]["context_epoch"] == 0
+    assert crossing[0]["sample_id"] == 2
+    audit.close()
+
+
+def test_targeted_pair_excludes_sampled_probe_and_invalid_alignment(
+    tmp_path: Path,
+) -> None:
+    audit = NativeReactiveTelemetry(tmp_path / "pair")
+    emitted: list[dict] = []
+    audit._emit = lambda stream, record: emitted.append(record)
+    sample = {
+        "request_id": "r1", "workflow_id": "w1", "invocation_id": "i1",
+        "context_id": "c1", "context_epoch": 0,
+    }
+    req = SimpleNamespace(
+        rid="r1", output_ids=[90, 10],
+        logprob=SimpleNamespace(
+            token_ids_logprob=[10, 11],
+            output_token_ids_logprobs_val=[[-.1, -1.]],
+            output_token_ids_logprobs_idx=[[10, 11]],
+        ),
+    )
+    audit._observe_targeted_pair(req, sample, 1000., 1)
+    assert not emitted
+    req.output_ids.append(92)
+    req.logprob.output_token_ids_logprobs_val.append([-.1, -1.])
+    req.logprob.output_token_ids_logprobs_idx.append([11, 10])
+    audit._observe_targeted_pair(req, sample, 1010., 2)
+    assert [row["event"] for row in emitted] == ["targeted_pair_ordinal_invalid"]
+    audit._observe_targeted_pair(req, sample, 1020., 3)
+    assert len(emitted) == 1
+    audit.close()
+
+
 def test_confirmed_join_canary_has_distinct_provenance(tmp_path: Path) -> None:
     audit = NativeReactiveTelemetry(
         tmp_path / "canary", collection_mode="confirmed_join_canary"

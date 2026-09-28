@@ -7,6 +7,7 @@ from array import array
 from collections import Counter, OrderedDict
 import hashlib
 import json
+import math
 import os
 from pathlib import Path
 from queue import Empty, Full, Queue
@@ -16,6 +17,10 @@ import time
 from typing import Any
 
 from beliefkv.runtime.sglang_v0520_observer import normalize_native_creation_time
+from beliefkv.runtime.eos_shadow import (
+    EOS_LOW_PROB_THRESHOLDS,
+    EOS_PROB_THRESHOLDS,
+)
 
 
 class NativeReactiveTelemetry:
@@ -52,6 +57,9 @@ class NativeReactiveTelemetry:
             str, tuple[Any, tuple[tuple[int, Any, Any, int | None, Any], ...], float]
         ] = OrderedDict()
         self._reported_output_tokens: dict[str, int] = {}
+        self._targeted_pair_cursor: dict[str, tuple[int, int, tuple[int, int]]] = {}
+        self._targeted_pair_seen: dict[str, set[float]] = {}
+        self._targeted_pair_invalid: set[str] = set()
         self._launched: dict[int, dict[str, Any]] = {}
         self._previous_completed_mono: float | None = None
         self._sequence = 0
@@ -723,6 +731,7 @@ class NativeReactiveTelemetry:
             if abort.abort_all or rid.startswith(abort.rid)
         ]
         for rid in affected:
+            self._drop_targeted_pair(rid)
             stage = "started" if rid in self._active else "waiting"
             self._pending.pop(rid, None)
             self._active.discard(rid)
@@ -874,6 +883,97 @@ class NativeReactiveTelemetry:
             if self._cache is not None:
                 self.record_host_pool_usage(self._cache)
 
+    def _drop_targeted_pair(self, rid: str) -> None:
+        self._targeted_pair_cursor.pop(rid, None)
+        self._targeted_pair_seen.pop(rid, None)
+        self._targeted_pair_invalid.discard(rid)
+
+    def _observe_targeted_pair(
+        self, req: Any, sample: dict[str, Any], ts_ms: float, sample_id: int
+    ) -> None:
+        rid = sample["request_id"]
+        if rid in self._targeted_pair_invalid:
+            return
+        logprob = getattr(req, "logprob", None)
+        pair = getattr(logprob, "token_ids_logprob", None)
+        if (
+            not isinstance(pair, list)
+            or len(pair) != 2
+            or any(type(token_id) is not int for token_id in pair)
+        ):
+            return
+        scores = getattr(logprob, "output_token_ids_logprobs_val", None)
+        indices = getattr(logprob, "output_token_ids_logprobs_idx", None)
+        if not scores:
+            return
+        prior = self._targeted_pair_cursor.get(rid)
+        base = len(req.output_ids) - len(scores)
+        pair_ids = (pair[0], pair[1])
+        invalid = (
+            not isinstance(indices, list)
+            or len(indices) != len(scores)
+            or base < 0
+            or (prior is None and len(scores) != 1)
+            or (
+                prior is not None
+                and (prior[0] != base or prior[2] != pair_ids
+                     or not prior[1] <= len(scores))
+            )
+        )
+        if invalid:
+            self._targeted_pair_invalid.add(rid)
+            self._emit("audit", {
+                "event": "targeted_pair_ordinal_invalid",
+                "ts_ms": ts_ms,
+                "request_id": rid,
+                "reason": "missing_or_nonmonotonic_output_alignment",
+            })
+            return
+        start = prior[1] if prior is not None else 0
+        seen = self._targeted_pair_seen.setdefault(rid, set())
+        thresholds = EOS_LOW_PROB_THRESHOLDS + EOS_PROB_THRESHOLDS
+        for position in range(start, len(scores)):
+            values = scores[position]
+            if (
+                not isinstance(values, (list, tuple))
+                or len(values) != 2
+                or indices[position] != pair
+                or any(type(value) not in (int, float) for value in values)
+                or any(not math.isfinite(value) for value in values)
+            ):
+                self._targeted_pair_invalid.add(rid)
+                self._emit("audit", {
+                    "event": "targeted_pair_ordinal_invalid",
+                    "ts_ms": ts_ms,
+                    "request_id": rid,
+                    "reason": "invalid_target_logprob_row",
+                })
+                return
+            if req.output_ids[base + position] in pair_ids:
+                continue
+            best = max(values)
+            for threshold in thresholds:
+                if threshold in seen or best < math.log(threshold):
+                    continue
+                seen.add(threshold)
+                self._emit("audit", {
+                    "event": "targeted_pair_first_crossing",
+                    "ts_ms": ts_ms,
+                    **{key: sample[key] for key in (
+                        "workflow_id", "invocation_id", "context_id", "context_epoch"
+                    )},
+                    "request_id": rid,
+                    "sample_id": sample_id,
+                    "output_token_ordinal": base + position + 1,
+                    "probe_token_ids": pair,
+                    "threshold": threshold,
+                    "max_logprob": best,
+                    "timing_boundary": (
+                        "scheduler_batch_result_processed;upper_bound_on_gpu_cue"
+                    ),
+                })
+        self._targeted_pair_cursor[rid] = (base, len(scores), pair_ids)
+
     def on_completed(self, batch: Any) -> None:
         descriptor = self._launched.pop(batch.forward_iter, None)
         if descriptor is None:
@@ -899,6 +999,9 @@ class NativeReactiveTelemetry:
                 self._reported_output_tokens[rid] = max(
                     reported_before, output_after
                 )
+                self._observe_targeted_pair(
+                    req, sample, complete_wall, descriptor["sample_id"]
+                )
             if req.finished() and rid in self._active:
                 self._emit("events", {
                     "kind": "llm_result",
@@ -913,6 +1016,7 @@ class NativeReactiveTelemetry:
                 })
                 self._active.discard(rid)
                 self._completed.add(rid)
+                self._drop_targeted_pair(rid)
         self._emit("audit", {
             "event": "gpu_service_sample",
             "ts_ms": complete_wall,

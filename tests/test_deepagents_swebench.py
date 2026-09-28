@@ -2958,14 +2958,22 @@ def test_natural_eos_shadow_requests_logprobs_without_intent_tool(tmp_path: Path
         "stream_completion_shadow": True,
         "child_eos_shadow": True,
     }
-    natural = _model(DeepAgentsExperimentConfig(**base), None)
+    adapter = SimpleNamespace(record_http_stream_diagnostic=lambda record: None)
+    natural = _model(DeepAgentsExperimentConfig(**base), adapter)
     params = natural._get_invocation_params()
     assert params["logprobs"] is True
-    assert params["top_logprobs"] is None
+    assert params.get("top_logprobs") is None
     assert natural._beliefkv_eos_logprobs is True
     assert _model(DeepAgentsExperimentConfig(
         **base, child_return_intent_shadow=True,
-    ), None).top_logprobs is None
+    ), adapter).top_logprobs is None
+    server = _model(DeepAgentsExperimentConfig(
+        **{**base, "child_eos_shadow": False},
+        child_stream_content_shadow=True,
+        child_eos_server_shadow=True,
+    ), adapter)
+    assert server._beliefkv_eos_logprobs is True
+    assert server.logprobs is None
 
 
 def test_post_notice_eos_shadow_does_not_change_thinking(tmp_path: Path) -> None:

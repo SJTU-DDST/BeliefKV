@@ -144,6 +144,14 @@ if [[ "${CHILD_EOS_SHADOW:-0}" == 1 ]]; then
     --child-eos-top-hit-shadow
   )
 fi
+if [[ "${CHILD_EOS_SERVER_SHADOW:-0}" == 1 ]]; then
+  if [[ "${STREAM_CONTENT_SHADOW:-0}" != 1 ]] \
+    || [[ "${CHILD_EOS_SHADOW:-0}" == 1 ]]; then
+    printf 'Server-only EOS requires content shadow and disables client EOS\\n' >&2
+    exit 1
+  fi
+  content_args+=(--child-eos-server-shadow)
+fi
 while IFS= read -r image; do
   if ! docker image inspect "$image" >/dev/null 2>&1; then
     printf 'Required image is not cached: %s\n' "$image" >&2

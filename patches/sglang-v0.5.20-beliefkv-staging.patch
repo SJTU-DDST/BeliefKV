@@ -48,7 +48,7 @@ index d1509a7..616c758 100644
      tool_choice: Union[ToolChoice, Literal["auto", "required", "none"]] = Field(
          default="auto", examples=["none"]
 diff --git a/python/sglang/srt/entrypoints/openai/serving_chat.py b/python/sglang/srt/entrypoints/openai/serving_chat.py
-index 89cac80..9a80b94 100644
+index 89cac80..26870c3 100644
 --- a/python/sglang/srt/entrypoints/openai/serving_chat.py
 +++ b/python/sglang/srt/entrypoints/openai/serving_chat.py
 @@ -116,6 +116,24 @@ _MEDIA_CONTENT_PART_TYPES = frozenset({"image_url", "video_url", "audio_url"})
@@ -115,15 +115,6 @@ index 89cac80..9a80b94 100644
              if self.tool_call_parser and not glm_constraint:
                  parser = FunctionCallParser(
                      effective_tools,
-@@ -1863,7 +1879,7 @@ class OpenAIServingChat(OpenAIServingBase):
- 
-                 # Handle logprobs
-                 choice_logprobs = None
--                if request.logprobs:
-+                if request.logprobs or request.beliefkv_eos_logprobs:
-                     n_prev_token = n_prev_tokens.get(index, 0)
-                     total_output_logprobs = content["meta_info"][
-                         "output_token_logprobs_length"
 @@ -1872,6 +1888,11 @@ class OpenAIServingChat(OpenAIServingBase):
                          choice_logprobs = self._process_streaming_logprobs(
                              content, n_prev_token, total_output_logprobs
