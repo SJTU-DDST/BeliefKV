@@ -8,6 +8,12 @@ import subprocess
 SCRIPT = Path(__file__).resolve().parents[1] / "scripts/run_qwen35_native_regime_probe.sh"
 
 
+def test_probe_defaults_to_writeback_prepare_patch() -> None:
+    script = SCRIPT.read_text()
+    assert 'SGLANG_PATCH_FLAVOR="${SGLANG_PATCH_FLAVOR:-writeback_prepare}"' in script
+    assert 'SGLANG_PATCH_FLAVOR="$SGLANG_PATCH_FLAVOR" \\' in script
+
+
 def test_confirmed_join_requires_verified_ack_patch_before_start(tmp_path: Path) -> None:
     run_root = tmp_path / "probe"
     result = subprocess.run(
