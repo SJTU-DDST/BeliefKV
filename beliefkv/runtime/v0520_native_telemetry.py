@@ -695,6 +695,26 @@ class NativeReactiveTelemetry:
         if self._identity(req) is not None and req.rid not in self._pending:
             self._pending[req.rid] = time.time() * 1000
 
+    def _match_path(self, node_id: Any) -> list[list[int | float]] | None:
+        tree_core = getattr(self._cache, "tree_core", None)
+        try:
+            node = tree_core.node_by_id(node_id)
+        except (AttributeError, KeyError, TypeError, ValueError):
+            return None
+        path: list[list[int | float]] = []
+        seen: set[int] = set()
+        while node is not None and len(path) < 256:
+            if (
+                id(node) in seen
+                or type(getattr(node, "id", None)) is not int
+                or type(getattr(node, "creation_time", None)) not in (int, float)
+            ):
+                return None
+            seen.add(id(node))
+            path.append([node.id, node.creation_time])
+            node = getattr(node, "parent", None)
+        return list(reversed(path)) if node is None else None
+
     def on_abort_request(self, abort: Any) -> None:
         affected = [
             rid for rid in self._pending.keys() | self._active
@@ -736,6 +756,25 @@ class NativeReactiveTelemetry:
                 cached_host = int(getattr(req, "cached_tokens_host", 0) or 0)
                 mamba_host_hits = int(
                     getattr(req, "mamba_host_hit_length", 0) or 0
+                )
+                host_hit_path = (
+                    {"native_host_hit_match_path": {
+                        "observed_ts_ms": time.time() * 1000.0,
+                        "last_device_path": self._match_path(
+                            getattr(req, "last_node", None)
+                        ),
+                        "last_host_path": self._match_path(
+                            getattr(req, "last_host_node", None)
+                        ),
+                        "best_match_path": self._match_path(
+                            getattr(req, "best_match_node", None)
+                        ),
+                        "evidence": (
+                            "node_identity_at_first_gpu_service_only;"
+                            "not_proof_of_component_reuse"
+                        ),
+                    }}
+                    if cached_host or mamba_host_hits else {}
                 )
                 cache_evidence = {
                     "request_count": 1,
@@ -793,6 +832,7 @@ class NativeReactiveTelemetry:
                         "expected_output_tokens": getattr(
                             req.sampling_params, "max_new_tokens", None
                         ),
+                        **host_hit_path,
                     },
                 })
                 self._queue_block_reaccess_probe(req, identity)

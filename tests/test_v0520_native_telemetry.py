@@ -57,6 +57,42 @@ def test_confirmed_join_canary_has_distinct_provenance(tmp_path: Path) -> None:
     assert status["writer_error"] is None
 
 
+def test_host_hit_path_records_identity_without_claiming_component_reuse(
+    tmp_path: Path,
+) -> None:
+    audit = NativeReactiveTelemetry(tmp_path / "service")
+    root = SimpleNamespace(id=0, creation_time=1, parent=None)
+    ancestor = SimpleNamespace(id=52, creation_time=286, parent=root)
+    leaf = SimpleNamespace(id=4721, creation_time=300, parent=ancestor)
+    audit._cache = SimpleNamespace(
+        tree_core=SimpleNamespace(
+            node_by_id={node.id: node for node in (root, ancestor, leaf)}.__getitem__
+        )
+    )
+    req = SimpleNamespace(
+        rid="request", beliefkv_metadata={
+            "root_workflow_id": "workflow", "invocation_id": "parent",
+            "context_id": "ctx", "context_epoch": 9,
+        },
+        last_node=leaf.id, last_host_node=ancestor.id,
+        best_match_node=leaf.id, origin_input_ids=[1, 2], output_ids=[],
+        cached_tokens_device=1, cached_tokens_host=1,
+        mamba_host_hit_length=1, extend_input_len=0,
+        sampling_params=SimpleNamespace(max_new_tokens=2),
+        finished=lambda: False,
+    )
+    audit.on_launch(SimpleNamespace(
+        forward_mode=_Mode("prefill"), launch_ts=time.monotonic(),
+        forward_iter=1, reqs=[req],
+    ))
+    audit.close()
+    [event] = _read(tmp_path / "service/runtime_events.sglang.jsonl")
+    path = event["attributes"]["native_host_hit_match_path"]
+    assert path["last_device_path"] == [[0, 1], [52, 286], [4721, 300]]
+    assert path["last_host_path"] == [[0, 1], [52, 286]]
+    assert path["evidence"].endswith("not_proof_of_component_reuse")
+
+
 def test_physical_action_evidence_flushes_without_idle_queue(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch,
 ) -> None:
