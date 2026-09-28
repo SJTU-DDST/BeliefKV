@@ -127,6 +127,13 @@ content_args=()
 if [[ "${STREAM_CONTENT_SHADOW:-0}" == 1 ]]; then
   content_args+=(--child-stream-content-shadow)
 fi
+if [[ "${STREAM_HTTP_TIMING_SHADOW:-0}" == 1 ]]; then
+  if [[ "${STREAM_CONTENT_SHADOW:-0}" != 1 ]]; then
+    printf 'HTTP stream timing requires stream content shadow\n' >&2
+    exit 1
+  fi
+  content_args+=(--stream-http-timing-shadow)
+fi
 if [[ "${CHILD_EOS_SHADOW:-0}" == 1 ]]; then
   if [[ "${STREAM_CONTENT_SHADOW:-0}" != 1 ]]; then
     printf 'Combined EOS diagnostic requires stream content shadow\n' >&2

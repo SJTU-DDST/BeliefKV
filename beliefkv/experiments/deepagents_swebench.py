@@ -1571,6 +1571,7 @@ class DeepAgentsExperimentConfig:
     child_finish_chunk_shadow: bool = False
     child_report_phase_shadow: bool = False
     child_stream_content_shadow: bool = False
+    stream_http_timing_shadow: bool = False
     child_eos_shadow: bool = False
     child_eos_low_prob_shadow: bool = False
     child_eos_top_hit_shadow: bool = False
@@ -1621,6 +1622,8 @@ class DeepAgentsExperimentConfig:
             raise ValueError("child report phases require streamed completion")
         if self.child_stream_content_shadow and not self.stream_completion_shadow:
             raise ValueError("child content shadow requires streamed completion")
+        if self.stream_http_timing_shadow and not self.child_stream_content_shadow:
+            raise ValueError("HTTP stream timing requires child content shadow")
         if self.child_eos_shadow and not self.stream_completion_shadow:
             raise ValueError("child EOS shadow requires streamed completion")
         if self.child_eos_low_prob_shadow and not self.child_eos_shadow:
@@ -2333,10 +2336,11 @@ def _model(
         config.child_eos_shadow and not config.child_return_intent_shadow
     )
     diagnostic_http, diagnostic_async_http = (
-        _eos_diagnostic_http_clients(
+        _stream_diagnostic_http_clients(
             config.output_dir, adapter.record_http_stream_diagnostic,
         )
-        if natural_eos_shadow else (None, None)
+        if natural_eos_shadow or config.stream_http_timing_shadow
+        else (None, None)
     )
     model = BeliefKVChatOpenAI(
         beliefkv_adapter=adapter,
@@ -2372,7 +2376,7 @@ def _model(
     return model
 
 
-def _eos_diagnostic_http_clients(
+def _stream_diagnostic_http_clients(
     output_dir: Path,
     record_stream: Callable[[dict[str, Any]], None],
 ) -> tuple[httpx.Client, httpx.AsyncClient]:

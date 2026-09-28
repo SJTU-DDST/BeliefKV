@@ -111,6 +111,10 @@ def parse_args() -> argparse.Namespace:
         help="Local diagnostic: sample delivered child content tails; no actions.",
     )
     parser.add_argument(
+        "--stream-http-timing-shadow", action="store_true",
+        help="Use the EOS diagnostic HTTP client without EOS/logprobs; requires child content shadow.",
+    )
+    parser.add_argument(
         "--child-eos-shadow", action="store_true",
         help="Audit post-notice EOS top-logprob cues; requires stream and intent.",
     )
@@ -299,6 +303,7 @@ def main() -> int:
         child_finish_chunk_shadow=args.child_finish_chunk_shadow,
         child_report_phase_shadow=args.child_report_phase_shadow,
         child_stream_content_shadow=args.child_stream_content_shadow,
+        stream_http_timing_shadow=args.stream_http_timing_shadow,
         child_eos_shadow=args.child_eos_shadow,
         child_eos_low_prob_shadow=args.child_eos_low_prob_shadow,
         child_eos_top_hit_shadow=args.child_eos_top_hit_shadow,
