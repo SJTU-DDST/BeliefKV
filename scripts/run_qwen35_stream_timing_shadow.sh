@@ -123,7 +123,7 @@ setsid env \
   MEM_FRACTION_STATIC=0.94 \
   MAX_RUNNING_REQUESTS=48 \
   BELIEFKV_NATIVE_TELEMETRY_DIR="$RUN_ROOT/server" \
-  SGLANG_SOURCE_CHECKOUT="$ROOT/third_party/sglang-v0.5.20" \
+  SGLANG_SOURCE_CHECKOUT="${SGLANG_SOURCE_CHECKOUT:-$ROOT/third_party/sglang-v0.5.20}" \
   bash "$ROOT/scripts/launch_qwen35_native_v0520.sh" \
   > "$RUN_ROOT/server.log" 2>&1 &
 server_pid="$!"
