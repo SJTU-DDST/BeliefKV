@@ -606,7 +606,20 @@ class NativeAdmissionRuntime:
             and invocation.state is InvocationState.RUNNING_LLM
             and self.visible.get(key.request_id) == key
         ):
-            return "anchor_snapshot_unavailable"
+            cache = self._native_cache
+            if cache is None or key.session_id is None or key.session_generation is None:
+                return "anchor_snapshot_unavailable"
+            try:
+                leaves = cache.session_refs.snapshot_session_leaf_anchors(
+                    key.session_id, key.session_generation, max_leaves=8
+                )
+                if leaves is None:
+                    return "native_anchor_snapshot_rejected"
+                if not any(component_leaves for _, component_leaves in leaves):
+                    return "session_has_no_cached_leaves"
+            except (AttributeError, KeyError, TypeError, ValueError):
+                return "native_anchor_snapshot_failed"
+            return "anchor_snapshot_normalization_failed"
         return "invocation_state_changed"
 
     def _sample_h2d_opportunities(

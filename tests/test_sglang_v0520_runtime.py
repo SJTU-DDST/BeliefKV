@@ -462,8 +462,20 @@ def test_safe_point_distinguishes_missing_anchors_from_stale_context(tmp_path):
         row for row in rows if row["event"] == "session_h2d_opportunity"
     ]
     assert candidate["reason"] == "no_live_session_or_anchors"
-    assert candidate["no_live_detail"] == "anchor_snapshot_unavailable"
+    assert candidate["no_live_detail"] == "native_anchor_snapshot_rejected"
     key = runtime.context_sessions["ctx-root"]
+    cache.session_refs.snapshot_session_leaf_anchors = (
+        lambda *args, **kwargs: ((0, ()), (2, ()))
+    )
+    assert runtime._missing_opportunity_detail(
+        key, admission_candidate=False,
+    ) == "session_has_no_cached_leaves"
+    cache.session_refs.snapshot_session_leaf_anchors = (
+        lambda *args, **kwargs: ((0, ((11, 1),)), (2, ()))
+    )
+    assert runtime._missing_opportunity_detail(
+        key, admission_candidate=False,
+    ) == "anchor_snapshot_normalization_failed"
     runtime.graph.contexts["ctx-root"].epoch = 1
     assert runtime._missing_opportunity_detail(
         key, admission_candidate=False,
