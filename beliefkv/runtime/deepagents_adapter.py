@@ -2321,6 +2321,10 @@ class DeepAgentsRuntimeAdapter(BaseCallbackHandler):
             self._last_ts_ms = max(self._last_ts_ms, value)
             return self._last_ts_ms
 
+    def record_http_stream_diagnostic(self, row: dict[str, Any]) -> None:
+        if self._stream_content_shadow is not None:
+            self._stream_content_shadow.emit(row)
+
     def _event(
         self,
         kind: RuntimeEventKind,

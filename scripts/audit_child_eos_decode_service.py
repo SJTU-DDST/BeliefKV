@@ -71,17 +71,18 @@ def _audit_run(run: Path, rows: list[dict]) -> dict:
                 watched[row["rid"]].append(candidate)
 
     counts = Counter()
+    eligible = {row["rid"]: row for row in rows}
     server_results = {}
     with server_events.open("rb") as stream:
         for line in stream:
             event = orjson.loads(line)
             if event.get("kind") == "llm_result":
                 rid = (event.get("attributes") or {}).get("request_id")
-                if rid in watched:
+                if rid in eligible:
                     server_results[rid] = event
-    for rid, candidates in watched.items():
+    matched_server_results = {}
+    for rid, row in eligible.items():
         result = server_results.get(rid)
-        row = candidates[0]["row"]
         if result is None:
             counts["server_result_missing"] += 1
             continue
@@ -93,6 +94,11 @@ def _audit_run(run: Path, rows: list[dict]) -> dict:
             counts["server_result_identity_mismatch"] += 1
             continue
         server_done = float(result["ts_ms"])
+        matched_server_results[rid] = server_done
+    for rid, candidates in watched.items():
+        server_done = matched_server_results.get(rid)
+        if server_done is None:
+            continue
         for candidate in candidates:
             trigger = candidate["trigger_ms"]
             candidate["server_result_ts_ms"] = server_done
@@ -158,8 +164,45 @@ def _audit_run(run: Path, rows: list[dict]) -> dict:
             ].append(candidate)
     projects = sorted({row["project"] for row in rows})
     results = {}
+    delivery = {}
     for project in projects:
         project_rows = [row for row in rows if row["project"] == project]
+        for label in ("return", "tool"):
+            labeled = [row for row in project_rows if row["label"] == label]
+            matched = [
+                row for row in labeled if row["rid"] in matched_server_results
+            ]
+            first_before = [
+                row for row in matched
+                if row["snapshots"][0]["ts_ms"] + upper + CLOCK_GUARD_MS
+                < matched_server_results[row["rid"]]
+            ]
+            last_after = [
+                row for row in matched
+                if row["snapshots"][-1]["ts_ms"] + lower - CLOCK_GUARD_MS
+                > matched_server_results[row["rid"]]
+            ]
+            delivery[f"{project}|{label}"] = {
+                "rounds_with_content": len(labeled),
+                "server_result_matched": len(matched),
+                "first_content_before_server_end": len(first_before),
+                "last_content_after_server_end": len(last_after),
+                "first_to_last_content_p50_ms": _quantile([
+                    row["snapshots"][-1]["ts_ms"]
+                    - row["snapshots"][0]["ts_ms"]
+                    for row in matched
+                ], .5),
+                "last_content_after_server_end_min_p50_ms": _quantile([
+                    row["snapshots"][-1]["ts_ms"] + lower
+                    - matched_server_results[row["rid"]]
+                    for row in last_after
+                ], .5),
+                "last_content_after_server_end_min_p90_ms": _quantile([
+                    row["snapshots"][-1]["ts_ms"] + lower
+                    - matched_server_results[row["rid"]]
+                    for row in last_after
+                ], .9),
+            }
         for threshold in THRESHOLDS:
             candidates = grouped[project, threshold]
             natural = [
@@ -272,6 +315,7 @@ def _audit_run(run: Path, rows: list[dict]) -> dict:
         "run": run.name,
         "clock_bracket": bracket,
         "decode_counts": dict(counts),
+        "content_delivery": delivery,
         "projects": results,
     }
 

@@ -19,7 +19,7 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 from dataclasses import asdict, dataclass, field, replace
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any, Iterable, Mapping, Sequence, TextIO
+from typing import Any, Callable, Iterable, Mapping, Sequence, TextIO
 
 import httpx
 from deepagents.backends import FilesystemBackend
@@ -76,6 +76,7 @@ from beliefkv.runtime.context_lifecycle import (
 )
 from beliefkv.runtime.sglang_adapter import BeliefKVRequestMetadata
 from beliefkv.runtime.stream_content_shadow import StreamContentShadow
+from beliefkv.runtime.http_stream_timing import TimedSyncByteStream
 from beliefkv.runtime.sglang_v0520_sessions import (
     NativeRadixSessionLeases,
     close_native_radix_session,
@@ -2332,7 +2333,9 @@ def _model(
         config.child_eos_shadow and not config.child_return_intent_shadow
     )
     diagnostic_http, diagnostic_async_http = (
-        _eos_diagnostic_http_clients(config.output_dir)
+        _eos_diagnostic_http_clients(
+            config.output_dir, adapter.record_http_stream_diagnostic,
+        )
         if natural_eos_shadow else (None, None)
     )
     model = BeliefKVChatOpenAI(
@@ -2371,8 +2374,9 @@ def _model(
 
 def _eos_diagnostic_http_clients(
     output_dir: Path,
+    record_stream: Callable[[dict[str, Any]], None],
 ) -> tuple[httpx.Client, httpx.AsyncClient]:
-    """Record HTTP transport phases only when an EOS development request fails."""
+    """Observe EOS development transport errors and sync stream consumption."""
     failures = output_dir / "eos_http_transport_failures.jsonl"
 
     def trace_request(body: bytes) -> Any:
@@ -2406,15 +2410,31 @@ def _eos_diagnostic_http_clients(
             except OSError:
                 pass
 
-        return trace
+        return trace, rid
 
     def observe_sync(request: httpx.Request) -> None:
         if request.url.path == "/v1/chat/completions":
-            request.extensions["trace"] = trace_request(request.read())
+            trace, rid = trace_request(request.read())
+            request.extensions["trace"] = trace
+            request.extensions["beliefkv_rid"] = rid
+
+    def observe_sync_response(response: httpx.Response) -> None:
+        rid = response.request.extensions.get("beliefkv_rid")
+        if (
+            isinstance(rid, str)
+            and rid
+            and response.status_code == 200
+            and response.headers.get("content-type", "").startswith(
+                "text/event-stream"
+            )
+        ):
+            response.stream = TimedSyncByteStream(
+                response.stream, rid, record_stream,
+            )
 
     async def observe_async(request: httpx.Request) -> None:
         if request.url.path == "/v1/chat/completions":
-            sync_trace = trace_request(await request.aread())
+            sync_trace, _ = trace_request(await request.aread())
 
             async def trace(name: str, info: dict[str, Any]) -> None:
                 sync_trace(name, info)
@@ -2423,7 +2443,13 @@ def _eos_diagnostic_http_clients(
 
     limits = httpx.Limits(max_keepalive_connections=0)
     return (
-        httpx.Client(limits=limits, event_hooks={"request": [observe_sync]}),
+        httpx.Client(
+            limits=limits,
+            event_hooks={
+                "request": [observe_sync],
+                "response": [observe_sync_response],
+            },
+        ),
         httpx.AsyncClient(
             limits=limits, event_hooks={"request": [observe_async]}
         ),
