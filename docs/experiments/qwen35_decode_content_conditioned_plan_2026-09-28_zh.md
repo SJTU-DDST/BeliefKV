@@ -598,3 +598,17 @@ sampled-EOS/正文采集；训练、校准、密封项目和请求首次
 转向确定性 child 返回通知和容量感知的 JOIN 交接。
 任何 predictive H2D 仍需单独证明 Host 副本、HBM 预留、
 物理 ACK、首次 GPU KV 复用和对其他 workflow 的干扰。
+
+在读取下一批标签之前冻结开发补采：从既有
+`qwen35-native-reactive-calibration-66root-r0` manifest 原始顺序
+取前 32 个不同任务，即 Astropy 22、Sphinx 10。它们属于
+**开发项目**，曾在其他 pilot 中用于探索，不能当作未见
+项目；与 v5 同样使用 running=48、Host 120 GB（70/30）、
+客户端并发 16、16+16 到达、单命令 120 秒、宽松
+`--native-reactive-guard-profile` 与
+`--disable-completion-gate`，只读采样而不启动预测传输。
+跨来源 manifest 的任务复杂度不同，因此比较模型的请求级
+信号表现，不能把绝对 JCT 或 token 吞吐视为同 workload A/B。
+保留 pydata 用于后续独立阈值校准，pylint-dev/psf 用于
+密封评价；若四个开发项目仍不能提供可泛化的时机和风险
+工作点，不通过重复扫阈值或查看密封标签补造正收益。
