@@ -112,10 +112,10 @@ victim selection, joint handoff and high-pressure eviction optimization are
 future experiments, not dependencies of this stage. Keep high pressure only
 as an abstention/safety boundary.
 
-Execution priority: finish the current in-graph JOIN diagnostic without
-changing its running process; qualify actual missing-Device/Host-backed
-targets and future PREPARE consumers on training projects; validate each
-physical action against first-use and saved blocking time; only then freeze
+Execution priority: use a bounded training-project arrival/concurrency scan
+to qualify actual missing-Device/Host-backed targets and future PREPARE
+consumers; validate each physical action against first-use and saved
+blocking time; only then freeze
 the eligible configuration for paired reactive/predictive evaluation.
 Do not classify an already-Device-resident JOIN, an ACK without first-use,
 or a transfer count without a reactive counterfactual as success.
@@ -129,10 +129,16 @@ of six reused the prefetched prefix at the first request after JOIN**.
 Those JOINs followed an external initial-delegation planner: the parent
 started a different prompt after the child reports, so a shared context ID
 did not imply a reusable KV prefix. Bootstrap JOINs are now excluded from
-parent-prefix prefetch, and an opt-in in-graph root-delegation profile is
-being tested for genuine continuation. Its outcome is not yet evidence of
-reuse. Selective partial PREPARE consumed by later native eviction, saved
-synchronous wait, independent task correctness and matched reactive A/B
+parent-prefix prefetch. The naturally completed 14-root in-graph v7
+had 16/16 satisfied JOINs and stable Host pools, but no actionable
+Host-backed JOIN H2D target or predictive ACK; its two native H2D hits
+were not predictive. A bounded 24-root training-only scan is testing
+whether increased arrival concurrency provides real targets without Host
+churn; its first startup failed during VLM image warmup before the client
+started, so a new run must use the v7-validated skip-warmup setting.
+This is not a paired performance result. Selective partial PREPARE
+consumed by later native eviction, saved synchronous wait, independent
+task correctness and matched reactive A/B
 remain unverified. Keep the primary goal on *already free* FULL/Mamba HBM
 capacity, stable Host pools and low useful-KV recomputation; cold-KV
 replacement, joint handoff and high-pressure recomputation reduction are

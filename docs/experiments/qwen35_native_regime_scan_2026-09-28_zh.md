@@ -506,3 +506,15 @@ Host-backed H2D step。`physical_action_ack.jsonl` 和
 沿用相同物理容量/安全门禁并观察实际 FULL/Mamba 缺 Device
 目标、Host 水位和归因重算；若仍无有效目标，则报告该负载下
 的机会不足，不按采样次数或原生 ACK 制造预测收益。
+
+## 24-root 首次启动 v8：服务预热失败，未提交请求
+
+`...native_in_graph_join_200g_25_75_24root_v8/` 采用相同的模型、
+物理容量和池比例，但误用了探针脚本原有的
+`SKIP_SERVER_WARMUP=0` 默认值。服务在 CUDA graph 捕获和 Host
+池分配之后，以 VLM 图像请求做内建 warmup；图像处理 `.to(device)`
+阶段报 CUDA OOM。v7 的实际参数为 `skip_server_warmup=True`；
+v8 此时尚未启动客户端，原生逐请求事件及机会日志为空，**不能**
+将其纳入容量、正确性或 24-root 性能统计。专用探针现默认跳过
+该图像请求 warmup（CUDA graph 捕获照常执行），保留显式设置
+`SKIP_SERVER_WARMUP=0` 的能力；下一轮独立目录验证启动与客户端提交。
