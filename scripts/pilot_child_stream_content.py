@@ -77,7 +77,10 @@ def collect(
         for rid, sequence in by_rid.items():
             results = [row for row in sequence if row["event"] == "child_stream_result"]
             if len(results) != 1:
-                counts["censored_or_unfinished_rounds"] += 1
+                if all(row["event"] == "llm_stream_http_transport" for row in sequence):
+                    counts["transport_only_requests"] += 1
+                else:
+                    counts["censored_or_unfinished_rounds"] += 1
                 continue
             result = results[0]
             native = results_by_rid.get(rid)
