@@ -10,6 +10,7 @@ from pathlib import Path
 import re
 from statistics import median
 import sys
+from typing import Sequence
 
 import numpy as np
 
@@ -23,13 +24,23 @@ from scripts.audit_child_hidden_trace import (
 
 
 def collect(
-    workflows: Path, *, min_snapshot_chars: int = 128,
+    workflows: Path | Sequence[Path], *, min_snapshot_chars: int = 128,
 ) -> tuple[list[dict], Counter]:
     if min_snapshot_chars not in (32, 64, 128):
         raise ValueError("min_snapshot_chars must be 32, 64, or 128")
     rows: list[dict] = []
     counts: Counter = Counter()
-    for path in sorted(workflows.glob("*/child_stream_content.jsonl")):
+    roots = (workflows,) if isinstance(workflows, Path) else workflows
+    paths = sorted(
+        path for root in roots
+        for path in root.glob("*/child_stream_content.jsonl")
+    )
+    seen_tasks: set[str] = set()
+    for path in paths:
+        task = path.parent.name
+        if task in seen_tasks:
+            raise ValueError(f"workflow task collected more than once: {task}")
+        seen_tasks.add(task)
         stats_path = path.parent / "child_stream_content_stats.json"
         if not stats_path.is_file():
             counts["unfinished_workflows"] += 1
@@ -38,7 +49,6 @@ def collect(
         if not stats["complete"]:
             counts["incomplete_workflows"] += 1
             continue
-        task = path.parent.name
         project = task.split("__", 1)[0]
         with (path.parent / "runtime_events.deepagents.jsonl").open() as stream:
             events = [json.loads(line) for line in stream]
@@ -143,6 +153,25 @@ def features(
     return texts, np.asarray(sizes, dtype=float).reshape(-1, 1), np.asarray(labels), call_index
 
 
+def decode_progress(rows: list[dict]) -> np.ndarray:
+    """Causal delivered-character progress; no final length or future time."""
+    vectors = []
+    for row in rows:
+        first = row["snapshots"][0]
+        previous = first
+        for snap in row["snapshots"]:
+            elapsed = max(snap["ts_ms"] - first["ts_ms"], 0)
+            delta_ms = max(snap["ts_ms"] - previous["ts_ms"], 1)
+            delta_chars = max(snap["content_chars"] - previous["content_chars"], 0)
+            vectors.append((
+                np.log1p(snap["content_chars"]),
+                np.log1p(elapsed / 1000),
+                np.log1p(1000 * delta_chars / delta_ms),
+            ))
+            previous = snap
+    return np.asarray(vectors, dtype=float).reshape(-1, 3)
+
+
 def text_features(
     train: list[str], held: list[str], train_workflows: list[str],
 ) -> tuple[np.ndarray, np.ndarray]:
@@ -194,10 +223,10 @@ def length_conditioned_text(
     held_size: np.ndarray,
     weights: np.ndarray,
 ) -> tuple[np.ndarray, np.ndarray]:
-    """Remove the lexical variation explained by observed length on train only."""
-    train_basis = np.column_stack((np.ones(len(train_size)), train_size[:, 0]))
-    held_basis = np.column_stack((np.ones(len(held_size)), held_size[:, 0]))
-    ridge = np.diag([1e-8, 1e-3])
+    """Remove the lexical variation explained by causal progress on train only."""
+    train_basis = np.column_stack((np.ones(len(train_size)), train_size))
+    held_basis = np.column_stack((np.ones(len(held_size)), held_size))
+    ridge = np.diag([1e-8] + [1e-3] * train_size.shape[1])
     coefficients = np.linalg.solve(
         train_basis.T @ (weights[:, None] * train_basis) + ridge,
         train_basis.T @ (weights[:, None] * train_text),
@@ -225,7 +254,7 @@ def centroid_scores(
 
 
 def evaluate(
-    workflows: Path, heldout_project: str, *, min_snapshot_chars: int = 128,
+    workflows: Path | Sequence[Path], heldout_project: str, *, min_snapshot_chars: int = 128,
     train_projects: tuple[str, ...] | None = None,
     calibration_projects: tuple[str, ...] = (),
 ) -> dict:
@@ -261,6 +290,9 @@ def evaluate(
     train_text, train_size, _, train_idx = features(train)
     held_text, held_size, _, held_idx = features(held)
     cal_text, cal_size, _, cal_idx = features(cal)
+    train_progress = decode_progress(train)
+    cal_progress = decode_progress(cal)
+    held_progress = decode_progress(held)
     train_text_x, other_text_x = text_features(
         train_text, cal_text + held_text,
         [train[index]["task"] for index in train_idx],
@@ -268,6 +300,11 @@ def evaluate(
     cal_text_x = other_text_x[:len(cal_text)]
     held_text_x = other_text_x[len(cal_text):]
     size_mean, size_std = train_size.mean(), max(train_size.std(), 1e-9)
+    progress_mean = train_progress.mean(axis=0)
+    progress_std = np.maximum(train_progress.std(axis=0), 1e-9)
+    cal_progress = (cal_progress - progress_mean) / progress_std
+    held_progress = (held_progress - progress_mean) / progress_std
+    train_progress = (train_progress - progress_mean) / progress_std
     cal_size = (cal_size - size_mean) / size_std
     held_size = (held_size - size_mean) / size_std
     train_size = (train_size - size_mean) / size_std
@@ -283,9 +320,16 @@ def evaluate(
     )
     cal_text_residual = other_residual[:len(cal_text)]
     held_text_residual = other_residual[len(cal_text):]
+    train_progress_residual, other_progress_residual = length_conditioned_text(
+        train_text_x, other_text_x, train_progress,
+        np.concatenate((cal_progress, held_progress)), weights,
+    )
+    cal_progress_residual = other_progress_residual[:len(cal_text)]
+    held_progress_residual = other_progress_residual[len(cal_text):]
     results = {}
     matrices = (
         ("size_only", train_size, cal_size, held_size),
+        ("progress_only", train_progress, cal_progress, held_progress),
         ("delivered_tail_only", train_text_x, cal_text_x, held_text_x),
         ("delivered_tail_plus_size",
          np.column_stack((train_text_x, train_size)),
@@ -301,17 +345,31 @@ def evaluate(
             *matrices,
             ("length_conditioned_content", train_text_residual,
              cal_text_residual, held_text_residual),
+            ("progress_conditioned_content", train_progress_residual,
+             cal_progress_residual, held_progress_residual),
         ):
             predicted_train, predicted_held = centroid_scores(
                 x, x_held, train_y, weights
             )
             predicted_cal = centroid_scores(x, x_cal, train_y, weights)[1]
-            if name == "length_conditioned_content":
+            if name in ("length_conditioned_content", "progress_conditioned_content"):
+                baseline_train = (
+                    train_progress if name == "progress_conditioned_content"
+                    else train_size
+                )
+                baseline_cal = (
+                    cal_progress if name == "progress_conditioned_content"
+                    else cal_size
+                )
+                baseline_held = (
+                    held_progress if name == "progress_conditioned_content"
+                    else held_size
+                )
                 length_train, length_held = centroid_scores(
-                    train_size, held_size, train_y, weights
+                    baseline_train, baseline_held, train_y, weights
                 )
                 length_cal = centroid_scores(
-                    train_size, cal_size, train_y, weights
+                    baseline_train, baseline_cal, train_y, weights
                 )[1]
                 # Fixed diagnostic weight; never select it on the held-out project.
                 length_scale = max(float(length_train.std()), 1e-9)
@@ -395,6 +453,18 @@ def evaluate(
                     and 500 <= held[i]["return_ts"] - min(triggered[i]) <= 2000
                     for i in positives
                 ),
+                "heldout_window_oracle": sum(
+                    any(
+                        500 <= held[i]["return_ts"] - snap["ts_ms"] <= 2000
+                        for snap in held[i]["snapshots"]
+                    ) for i in positives
+                ),
+                "heldout_join_last_window_oracle": sum(
+                    held[i]["join_last"] and any(
+                        500 <= held[i]["return_ts"] - snap["ts_ms"] <= 2000
+                        for snap in held[i]["snapshots"]
+                    ) for i in positives
+                ),
                 "heldout_window_hits_by_workflow": dict(sorted(Counter(
                     held[i]["task"] for i in positives
                     if triggered[i]
@@ -434,7 +504,7 @@ def evaluate(
 
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--workflows", type=Path, required=True)
+    parser.add_argument("--workflows", type=Path, required=True, action="append")
     parser.add_argument("--heldout-project", required=True)
     parser.add_argument(
         "--train-projects", help="Comma-separated projects frozen before evaluation",

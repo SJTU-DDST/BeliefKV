@@ -24,6 +24,33 @@ def test_length_conditioned_text_fits_only_train():
     assert held[0, 0] > 900
 
 
+def test_progress_residual_removes_train_clock_and_length_only():
+    basis = np.array([[-2., 1.], [-1., -1.], [1., -1.], [2., 1.]])
+    text = np.column_stack((3 + 2 * basis[:, 0] + 4 * basis[:, 1],
+                            [1., -1., 1., -1.]))
+    train, held = pilot.length_conditioned_text(
+        text, np.array([[99., 0.]]), basis, np.array([[3., 0.]]),
+        np.ones(len(basis)),
+    )
+    assert np.max(np.abs(train[:, 0])) < 1e-2
+    assert held[0, 0] > 80
+
+
+def test_decode_progress_is_causal_and_uses_recent_rate():
+    snapshots = [
+        {"content_chars": 32, "ts_ms": 100},
+        {"content_chars": 64, "ts_ms": 300},
+        {"content_chars": 128, "ts_ms": 400},
+    ]
+    row = {"label": "return", "return_ts": 10000, "snapshots": snapshots}
+    original = pilot.decode_progress([row]).copy()
+    row["return_ts"] = 1
+    assert np.array_equal(pilot.decode_progress([row]), original)
+    assert original[0, 1] == 0
+    assert original[0, 2] == 0
+    assert original[2, 2] > original[1, 2]
+
+
 def test_vocabulary_requires_distinct_training_workflows():
     with np.testing.assert_raises(ValueError):
         pilot.text_features(["unique unique", "unique unique"], ["unique"],
@@ -116,6 +143,37 @@ def test_collect_early_snapshots_does_not_count_finish_or_tool_chunks(tmp_path):
     assert counts["return_without_eligible_snapshot"] == 1
 
 
+def test_collect_distinct_roots_and_rejects_repeated_task(tmp_path):
+    first = tmp_path / "first"
+    second = tmp_path / "second"
+    for root, task in ((first, "django__1"), (second, "pytest-dev__1")):
+        workflow = root / task
+        workflow.mkdir(parents=True)
+        (workflow / "child_stream_content_stats.json").write_text(
+            json.dumps({"complete": True})
+        )
+        (workflow / "child_stream_content.jsonl").write_text(
+            json.dumps({
+                "event": "child_stream_result", "request_id": task,
+                "invocation_id": "child", "context_id": "ctx", "context_epoch": 1,
+                "ts_ms": 21, "tool_call_count": 1, "invalid_tool_call_count": 0,
+                "finish_reason": "tool_calls",
+            }) + "\n"
+        )
+        (workflow / "runtime_events.deepagents.jsonl").write_text(
+            json.dumps({
+                "kind": "llm_result", "invocation_id": "child",
+                "context_id": "ctx", "context_epoch": 1, "ts_ms": 21,
+                "attributes": {"request_id": task},
+            }) + "\n"
+        )
+    rows, counts = pilot.collect((first, second))
+    assert not rows
+    assert counts["tool_rounds"] == 2
+    with np.testing.assert_raises_regex(ValueError, "more than once"):
+        pilot.collect((first, first))
+
+
 def test_project_holdout_counts_tool_rounds_and_first_trigger(monkeypatch, tmp_path):
     rows = []
     for project in ("astropy", "django", "sphinx-doc"):
@@ -148,12 +206,15 @@ def test_project_holdout_counts_tool_rounds_and_first_trigger(monkeypatch, tmp_p
     assert result["train_projects"] == ["astropy", "django"]
     assert "near_return_2000ms_delivered_tail_only" in result["results"]
     assert "near_return_2000ms_length_conditioned_content" in result["results"]
+    assert "near_return_2000ms_progress_only" in result["results"]
+    assert "near_return_2000ms_progress_conditioned_content" in result["results"]
     for model in result["results"].values():
         assert model["heldout_return_rounds"] == 4
         assert model["heldout_tool_rounds"] == 4
         assert model["heldout_join_last_rounds"] == 4
         assert model["heldout_triggered_return_rounds"] <= 4
         assert model["heldout_tool_false_first_triggers"] <= 4
+        assert model["heldout_window_oracle"] == 4
 
 
 def test_disjoint_calibration_threshold_does_not_use_heldout(monkeypatch, tmp_path):
