@@ -15,14 +15,21 @@ from beliefkv.runtime.v0520_native_telemetry import NativeReactiveTelemetry
 
 
 class _Mode:
-    def __init__(self, phase: str):
+    def __init__(self, phase: str, *, target_verify: bool = False):
         self.phase = phase
+        self.target_verify = target_verify
 
     def is_extend(self) -> bool:
         return self.phase == "prefill"
 
     def is_decode(self) -> bool:
         return self.phase == "decode"
+
+    def is_target_verify(self) -> bool:
+        return self.target_verify
+
+    def is_draft_extend_v2(self) -> bool:
+        return self.phase == "draft_extend_v2"
 
 
 def _read(path: Path) -> list[dict]:
@@ -175,6 +182,76 @@ def test_verified_prefetch_records_node_match_at_first_gpu_service(
     assert used[0]["full_node_reused"] is True
     assert used[0]["mamba_reuse"] == "unverified"
     assert used[0]["request_id"] == request.rid
+
+
+@pytest.mark.parametrize("mismatch", [
+    None, "other_node", "replaced_state", "no_cow", "multi_request",
+    "no_completed_forward", "speculative_verify",
+])
+def test_mamba_prefetch_requires_single_request_cow_and_completed_forward(
+    tmp_path: Path, mismatch: str | None,
+) -> None:
+    audit = NativeReactiveTelemetry(tmp_path / "service")
+    root = SimpleNamespace(id=0, creation_time=0, parent=None)
+    mamba_value = object()
+    loaded = SimpleNamespace(
+        id=11, creation_time=7, parent=root, key=array("q", range(10)),
+        component_data=(
+            SimpleNamespace(value=object()), SimpleNamespace(value=None),
+            SimpleNamespace(value=mamba_value),
+        ),
+    )
+    audit._cache = SimpleNamespace(
+        tree_core=SimpleNamespace(node_by_id={0: root, 11: loaded}.__getitem__),
+    )
+    audit.on_verified_action_ack(SimpleNamespace(
+        command_id="mamba-prefetch", action="PREFETCH_GPU",
+        context_id="ctx", context_epoch=2, node_ids=(11,),
+        pool_bytes=(("mamba", 64),), num_bytes=64,
+    ))
+    request = SimpleNamespace(
+        rid="parent-first-service", beliefkv_metadata={
+            "root_workflow_id": "workflow", "invocation_id": "parent",
+            "context_id": "ctx", "context_epoch": 3,
+        },
+        last_node=11, best_match_node=0 if mismatch == "other_node" else 11,
+        origin_input_ids=list(range(20)), output_ids=[],
+        prefix_indices=list(range(10)), cached_tokens_device=10,
+        cached_tokens_host=0, mamba_host_hit_length=0,
+        extend_input_len=10, sampling_params=SimpleNamespace(max_new_tokens=10),
+        finished=lambda: False,
+    )
+    if mismatch == "replaced_state":
+        loaded.component_data[2].value = object()
+    batch = SimpleNamespace(
+        forward_mode=_Mode(
+            "prefill", target_verify=mismatch == "speculative_verify"
+        ), launch_ts=time.monotonic(), forward_iter=1,
+        reqs=[request] + (
+            [SimpleNamespace(rid="untracked", beliefkv_metadata=None)]
+            if mismatch == "multi_request" else []
+        ),
+        mamba_cow_src_indices=[] if mismatch == "no_cow" else [3],
+        mamba_cow_dst_indices=[] if mismatch == "no_cow" else [7],
+    )
+    audit.on_launch(batch)
+    if mismatch != "no_completed_forward":
+        audit.on_completed(batch)
+    audit.close()
+    use = _read(tmp_path / "service/physical_action_use.jsonl")
+    assert use[0]["mamba_reuse"] == "unverified"
+    verified = [
+        row for row in use
+        if row["event"] == "beliefkv_prefetch_mamba_forward_completed"
+    ]
+    assert len(verified) == (1 if mismatch is None else 0)
+    if verified:
+        assert verified[0]["node_id"] == 11
+        assert verified[0]["request_id"] == request.rid
+        assert verified[0]["service_context_epoch"] == 3
+        assert verified[0]["mamba_reuse"] == (
+            "verified_single_request_cow_forward_completed"
+        )
 
 
 def test_verified_prefetch_unmatched_or_unserved_is_not_credited(

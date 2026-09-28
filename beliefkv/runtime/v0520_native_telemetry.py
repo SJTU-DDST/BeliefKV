@@ -741,6 +741,7 @@ class NativeReactiveTelemetry:
         launch = float(batch.launch_ts)
         phase = "prefill" if mode.is_extend() else "decode"
         samples = []
+        mamba_forward_candidates = []
         for req in batch.reqs:
             identity = self._identity(req)
             if identity is None:
@@ -750,7 +751,9 @@ class NativeReactiveTelemetry:
                 continue
             if rid not in self._active:
                 submit_ts = self._pending.pop(rid, time.time() * 1000)
-                self._record_prefetch_first_service(req, identity)
+                mamba_forward_candidates.extend(
+                    self._record_prefetch_first_service(req, identity, batch)
+                )
                 prompt_tokens = len(req.origin_input_ids)
                 cached_device = int(
                     getattr(req, "cached_tokens_device", 0) or 0
@@ -866,6 +869,7 @@ class NativeReactiveTelemetry:
                 "phase": phase,
                 "batch_size": len(batch.reqs),
                 "request_samples": samples,
+                "mamba_forward_candidates": mamba_forward_candidates,
             }
             if self._cache is not None:
                 self.record_host_pool_usage(self._cache)
@@ -922,6 +926,17 @@ class NativeReactiveTelemetry:
             "timing_semantics_version": "gpu_service_interval_v1",
             "timing_boundary": "scheduler/worker interval, not CUDA kernel time",
         })
+        for candidate in descriptor["mamba_forward_candidates"]:
+            self._emit("action_use", {
+                "event": "beliefkv_prefetch_mamba_forward_completed",
+                **candidate,
+                "forward_complete_ts_ms": complete_wall,
+                "mamba_reuse": "verified_single_request_cow_forward_completed",
+                "evidence": (
+                    "same_node_and_device_value_at_first_prefill;"
+                    "single_request_mamba_cow_queued_and_forward_completed"
+                ),
+            })
         if self._cache is not None:
             self.record_host_pool_usage(self._cache)
 
@@ -1017,11 +1032,16 @@ class NativeReactiveTelemetry:
                         sum(len(key) for key in path) if path is not None else None
                     )
                     full_value = node.component_data[0].value
+                    mamba_value = (
+                        node.component_data[2].value
+                        if len(node.component_data) > 2 else None
+                    )
                     nodes.append((
-                        node_id, node.creation_time, node, prefix_len, full_value,
+                        node_id, node.creation_time, node, prefix_len,
+                        full_value, mamba_value,
                     ))
                 except (AttributeError, KeyError, TypeError, ValueError):
-                    nodes.append((node_id, None, None, None, None))
+                    nodes.append((node_id, None, None, None, None, None))
             while len(self._pending_prefetch_use) >= 128:
                 old_id, (old_action, _, old_ts) = (
                     self._pending_prefetch_use.popitem(last=False)
@@ -1039,8 +1059,9 @@ class NativeReactiveTelemetry:
             )
 
     def _record_prefetch_first_service(
-        self, req: Any, identity: dict[str, Any],
-    ) -> None:
+        self, req: Any, identity: dict[str, Any], batch: Any | None = None,
+    ) -> list[dict[str, Any]]:
+        mamba_forward_candidates: list[dict[str, Any]] = []
         context_id = identity["context_id"]
         context_epoch = identity["context_epoch"]
         matches = [
@@ -1064,7 +1085,7 @@ class NativeReactiveTelemetry:
                 "reason": "epoch_advanced_without_first_service",
             })
         if not matches:
-            return
+            return mamba_forward_candidates
         tree_core = getattr(self._cache, "tree_core", None)
         try:
             last_node = tree_core.node_by_id(req.last_node)
@@ -1086,13 +1107,13 @@ class NativeReactiveTelemetry:
             action, nodes, ack_ts = self._pending_prefetch_use.pop(command_id)
             full_bytes = dict(action.pool_bytes).get("kv", 0)
             matched_nodes = [
-                node_id for node_id, creation_time, original, _, _ in nodes
+                node_id for node_id, creation_time, original, _, _, _ in nodes
                 if original is not None
                 and id(original) in ancestors
                 and original.creation_time == creation_time
             ]
             reused_full_nodes = []
-            for node_id, creation_time, original, prefix_len, full_value in nodes:
+            for node_id, creation_time, original, prefix_len, full_value, _ in nodes:
                 if (
                     tree_core is None or original is None or prefix_len is None
                     or id(original) not in ancestors
@@ -1116,10 +1137,50 @@ class NativeReactiveTelemetry:
                 and all(
                     original is not None and prefix_len is not None
                     and full_value is not None
-                    for _, _, original, prefix_len, full_value in nodes
+                    for _, _, original, prefix_len, full_value, _ in nodes
                 )
                 and full_bytes > 0
             )
+            mamba_node_matches = False
+            if len(nodes) == 1 and nodes[0][2] is not None:
+                try:
+                    mamba_node_matches = (
+                        tree_core.node_by_id(nodes[0][0]) is nodes[0][2]
+                        and nodes[0][2].creation_time == nodes[0][1]
+                        and nodes[0][5] is not None
+                        and nodes[0][2].component_data[2].value is nodes[0][5]
+                    )
+                except (AttributeError, IndexError, KeyError, TypeError, ValueError):
+                    pass
+            if (
+                dict(action.pool_bytes).get("mamba", 0) > 0
+                and mamba_node_matches
+                and batch is not None
+                and len(batch.reqs) == 1
+                and batch.forward_mode.is_extend()
+                and not getattr(
+                    batch.forward_mode, "is_target_verify", lambda: True
+                )()
+                and not getattr(
+                    batch.forward_mode, "is_draft_extend_v2", lambda: True
+                )()
+                and int(getattr(req, "mamba_host_hit_length", 0) or 0) == 0
+                and getattr(req, "best_match_node", None) == nodes[0][0]
+                and getattr(batch, "mamba_cow_src_indices", None) is not None
+                and getattr(batch, "mamba_cow_dst_indices", None) is not None
+                and len(batch.mamba_cow_src_indices) == 1
+                and len(batch.mamba_cow_dst_indices) == 1
+            ):
+                mamba_forward_candidates.append({
+                    "command_id": command_id,
+                    "context_id": action.context_id,
+                    "context_epoch": action.context_epoch,
+                    "service_context_epoch": context_epoch,
+                    "request_id": str(req.rid),
+                    "node_id": nodes[0][0],
+                    "ack_ts_ms": ack_ts,
+                    "first_service_ts_ms": time.time() * 1000.0,
+                })
             self._emit("action_use", {
                 "event": "beliefkv_prefetch_first_service",
                 "command_id": command_id,
@@ -1143,6 +1204,7 @@ class NativeReactiveTelemetry:
                 "mamba_reuse": "unverified",
                 "evidence": "same_context_first_gpu_launch_and_verified_full_prefix",
             })
+        return mamba_forward_candidates
 
     def _write(self) -> None:
         try:

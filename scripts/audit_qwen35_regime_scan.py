@@ -151,6 +151,12 @@ def summarize(run: Path) -> dict:
             row.get("event") == "beliefkv_prefetch_first_service"
             and row.get("full_node_reused") is True for row in action_uses
         ),
+        "verified_first_service_mamba_reuse_count": sum(
+            row.get("event") == "beliefkv_prefetch_mamba_forward_completed"
+            and row.get("mamba_reuse")
+            == "verified_single_request_cow_forward_completed"
+            for row in action_uses
+        ),
         "host_peak_fraction": host_peak,
         "host_evicted_units": evictions,
         "full_recomputed_units": (

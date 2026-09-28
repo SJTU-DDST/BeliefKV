@@ -69,4 +69,5 @@ def test_deduplicates_observations_without_promoting_native_ack(tmp_path):
     assert report["prepare_targets_with_later_native_d2h_node_id_only"] == 1
     assert report["predictive_h2d_ack_count"] == 0
     assert report["verified_first_service_full_reuse_count"] == 0
+    assert report["verified_first_service_mamba_reuse_count"] == 0
     assert report["qualification"] == "not_inferred_from_snapshots_or_native_acks"
