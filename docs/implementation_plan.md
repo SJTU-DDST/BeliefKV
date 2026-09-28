@@ -37,50 +37,45 @@ observations by physical target/epoch before estimating opportunities.
 
 ## Objective (Current Stage)
 
-**Re-scoped primary goal:** Identify a reproducible dynamic
-workload with physical HBM room for the proposed action in *both* FULL and
-Mamba pools, stable NUMA-local Host capacity, useful PCIe slack and few
-useful-KV eviction-to-recomputation events. It must also contain prospective
-consumers: missing-Device, Host-backed KV that will actually be used, or
-native offloads that can consume selectively prepared (possibly partial)
-Host copies. In that regime, establish a causal benefit from selective
-PREPARE_HOST and predictive H2D over the same reactive workload. The
-current-stage policy uses already-free Device capacity, not eviction to
-manufacture prefetch opportunities. High-pressure eviction optimization,
-cold-KV displacement and joint victim/beneficiary handoff are **not**
-current-stage deliverables. Root count and HBM occupancy alone do not
-define this regime.
+**Primary goal:** On Qwen3.5/SGLang v0.5.20, identify a reproducible
+low-to-moderate-pressure workload with available or demonstrably
+low-cost reclaimable HBM in each required FULL/Mamba pool, stable
+NUMA-local Host pools, useful PCIe windows and little useful-KV eviction
+followed by recomputation.
+Root count and aggregate HBM occupancy do not qualify a workload. There
+must be real future consumers: Host-backed KV absent from Device that a
+subsequent request will use, and/or a native offload that can consume a
+selectively prepared, possibly partial, Host shadow. Spare HBM with no
+such consumer is not an opportunity.
 
-Establish a defensible Qwen3.5/SGLang v0.5.20 result for selective predictive
-Host backup and GPU restoration in a **low-to-moderate-pressure regime with
-actionable free HBM and little useful-KV recomputation**: the FULL/Mamba
-Device pools each have enough *free physical capacity for that action's actual
-requirements*, both Host pools
-remain stable, PCIe has a useful transfer window, and useful KV is only rarely discarded
-and recomputed. The primary policy does not reclaim Device KV to make room
-for speculative H2D. Cold-KV replacement, joint handoff and high-pressure
-recomputation reduction are deferred, separately evaluated extensions; do
-not make them prerequisites or optimize the primary workload for them.
-The near-term objective is explicitly limited to using *already free*
-FULL/Mamba Device capacity and stable Host-backed KV: demonstrate useful
-PREPARE_HOST and predictive H2D without causing material useful-KV
-eviction/recomputation. Do not increase load merely to create more migrations;
-high-pressure scheduling/eviction optimization is outside the primary result.
-This is a workload-qualification gate, not a predefined root count or HBM
-occupancy threshold. It also requires real future consumers: valid
-Host-backed KV missing on Device for H2D, or a later native eviction that
-can consume a partial PREPARE shadow. A workload with spare HBM but only
-already-resident reentry targets does not qualify; neither does a workload
-that obtains targets mainly by Host eviction and subsequent recomputation.
-Use the same tasks, arrivals and physical configuration for a paired P5
-reactive baseline. The primary question is whether PREPARE_HOST and
-predictive H2D save synchronous transfer wait and improve correctly
-completed workflow throughput/JCT *after* accounting for wasted transfers,
-HBM residency and interference. High pressure (compute saturation, Host
-thrash or substantial useful-KV recomputation) is a safety/fallback and
-limitation test, not a near-term optimization objective. Separate time
-accuracy, physical utility and workflow outcomes; exact wall-clock
-RETURN/JOIN ETA is not a prerequisite for bounded physical-opportunity tests.
+In this regime, implement and verify selective `PREPARE_HOST` and bounded
+tool-return, JOIN and pre-admission predictive H2D. PREPARE requires
+observable live Device KV, Host headroom and a transfer window, not free
+Device space; H2D requires capacity for the target's actual FULL/Mamba
+demands. First use already-free HBM for H2D; evaluate bounded displacement
+of demonstrably cold KV separately only where its measured cost is below
+the prospective gain. Neither policy may sacrifice useful KV to manufacture
+apparent opportunities. Complete
+the causal chain: valid target -> physical transfer ACK -> later native
+offload consumption or first GPU service reuse -> saved synchronous
+transfer wait. Measure useful and wasted bytes, Host/Device residency
+cost and other workflows' delay; neither ACK counts nor native cache hits
+alone constitute a predictive benefit.
+
+Compare against P5 reactive with identical tasks, arrivals and physical
+configuration, reporting independently graded correct workflow throughput
+and JCT. Correctness, FULL/Mamba capacity safety, liveness and bounded
+tail interference are hard constraints. Evaluate tool-return and complete
+JOIN timing accuracy separately from action utility: subsecond point ETA
+is not a prerequisite for a bounded, physically justified opportunity,
+but inaccurate predictions must remain subject to budgets and abstention.
+
+**Out of scope for this stage:** blanket victim eviction for speculative
+H2D, joint victim/beneficiary handoff, high-pressure recompute
+reduction, Host-thrash tuning and SSD coordination. Preserve these as
+future separately evaluated extensions. Compute-saturated or Host-thrashing
+loads serve only to characterize abstention, safety and the benefit
+boundary; do not increase load solely to inflate migration counts.
 
 Freeze the primary stratum on train projects only after checking FULL and
 Mamba device/Host headroom separately, usable Host-backed targets or
@@ -132,17 +127,23 @@ did not imply a reusable KV prefix. Bootstrap JOINs are now excluded from
 parent-prefix prefetch. The naturally completed 14-root in-graph v7
 had 16/16 satisfied JOINs and stable Host pools, but no actionable
 Host-backed JOIN H2D target or predictive ACK; its two native H2D hits
-were not predictive. A bounded 24-root training-only scan is testing
-whether increased arrival concurrency provides real targets without Host
-churn; its first startup failed during VLM image warmup before the client
-started, so a new run must use the v7-validated skip-warmup setting.
-This is not a paired performance result. Selective partial PREPARE
+were not predictive. The first 24-root startup v8 failed during VLM image
+warmup before the client started; the corrected v9 found a Host-backed,
+missing-Device tool-wait candidate, but FULL Host eviction forced the scan
+to stop. Of 24 workflows, 21 completed naturally and three ended on
+interruption. Node 52 also had a native H2D *before* its later candidate
+window; the later post-tool H2D receipt named node 4721. Aggregate native
+receipts cannot prove whether node 52 was restored as an ancestor, and
+neither transfer proves predictive reuse. v9 is a
+pressure/opportunity diagnostic, not a qualified stage-1 stratum or a
+paired performance result. Selective partial PREPARE
 consumed by later native eviction, saved synchronous wait, independent
 task correctness and matched reactive A/B
-remain unverified. Keep the primary goal on *already free* FULL/Mamba HBM
-capacity, stable Host pools and low useful-KV recomputation; cold-KV
-replacement, joint handoff and high-pressure recomputation reduction are
-separate future studies. Treat each stage as a separate gate; do not
+remain unverified. Keep the primary scan on free FULL/Mamba HBM capacity,
+stable Host pools and low useful-KV recomputation; limited cold-KV
+displacement needs separate cost evidence, while joint handoff and
+high-pressure recomputation reduction remain future studies. Treat each
+stage as a separate gate; do not
 promote the objective on action counts or ACKs alone.
 
 Primary metrics:
@@ -175,9 +176,11 @@ Primary metrics:
 2. **Find and freeze the moderate-pressure, actionable-HBM regime on train projects.**
    Sweep bounded arrival concurrency and Host FULL/Mamba allocations on
    training workloads, without selecting a root count from a previous
-   high-pressure experiment alone. First seek available HBM for an actual
-   missing-Device/Host-backed target; measure a cold/evictable-KV alternative
-   separately. Require valid H2D candidates or future-eviction PREPARE
+   high-pressure experiment alone. First seek free HBM for an actual
+   missing-Device/Host-backed target; assess cold/evictable-KV capacity
+   separately under a measured opportunity-cost budget. PREPARE needs
+   Host space and a future native offload consumer, not free HBM.
+   Require valid H2D candidates or future-eviction PREPARE
    candidates, stable Host headroom in both pools and low useful
    eviction-to-miss/recompute before freezing a primary configuration.
    Reject a configuration if all apparent JOIN candidates already reside on

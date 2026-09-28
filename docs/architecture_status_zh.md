@@ -67,15 +67,17 @@ Host-backed H2D 观察仍被创建时间类型挡住：SGLang 的
 校验。现对 session anchor 和节点闭包分别做有限非负数值规范化，
 CPU 回归通过；旧 GPU 试采不含该修复，不能声称已有预测性 H2D。
 
-近期主评估场景限定为 FULL/Mamba HBM 各自满足目标动作实际需求的
+近期主评估场景限定为 FULL/Mamba HBM 各自可提供目标 H2D 实际需求的
 空闲物理容量、Host/PCIe 尚有余量且有用 KV 丢弃后重算很少的
-动态低至中等压力区间；主策略不通过驱逐 Device KV 为预测性 H2D
-腾空间。近期目标是选择性提前备份和提前恢复带来可验证的同步迁移
+动态低至中等压力区间；有界冷 KV 腾挪须单列并证明机会成本低于
+收益，不通过盲目驱逐 Device KV 制造 H2D 机会。PREPARE_HOST
+需要活跃的 Device KV、Host 容量和传输窗口，本身不要求空闲 HBM。
+近期目标是选择性提前备份和提前恢复带来可验证的同步迁移
 等待节省及正确完成 workflow 的吞吐/JCT 收益，而非增加迁移次数。
 先由训练项目上的并发扫描确定该区间，不能仅按 root 数
 认定低压或可预取；缺 Device 但有有效 Host 副本、或未来 native
-卸载可消费部分 PREPARE shadow，是必要的物理机会。冷 KV 替换、
-联合 handoff 和高压减少重算留作单独评估的后续扩展。重点验证
+卸载可消费部分 PREPARE shadow，是必要的物理机会。低成本冷 KV
+替换单独核算，联合 handoff 和高压减少重算留作后续扩展。重点验证
 `PREPARE_HOST` 的部分/完整 shadow 后续是否被卸载消费，
 以及 Host-backed predictive H2D 的 ACK 后是否实际在首次 GPU
 服务复用，并计入提前驻留的 HBM 字节时间及 Host 驱逐后重算。
@@ -91,6 +93,15 @@ PREPARE/H2D 首次复用和改善 workflow JCT 的配对因果证据。Qwen3.5 �
 child RETURN
 目标仍为决策时刻至实际 RETURN 的墙钟差；把 GPU 工作、排队与工具执行
 拆成可识别的预测目标，及根据新调度轨迹在线更新，均属待验证研究工作。
+
+24-root v9 观察到短暂满足 Host-backed、缺 Device 且 HBM 可容纳的
+工具等待候选，但 FULL Host 后续驱逐，试验主动截断；该节点早于
+候选窗口已发生原生 H2D，工具返回后的回执则命名另一物理节点。
+聚合回执不能证明或排除该候选是后者祖先闭包的一部分，故不能
+证明预测预取收益，
+也不能用于完整 workflow 吞吐比较。主线下一步是保持 Host 稳定
+同时寻找真实未来消费的物理目标，先完成目标节点到首次服务的
+身份闭包，再做选择性 PREPARE 与有界 H2D 的物理验证。
 
 确认 JOIN 的开发态 canary 在下一轮运行会记录 ticket 建立；若未找到
 可下发的 H2D 节点，还会按 ticket 仅记录一次物理只读拒绝原因
