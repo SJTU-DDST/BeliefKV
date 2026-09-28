@@ -29,7 +29,7 @@ trap 'exit 130' INT
 trap 'exit 143' TERM
 
 if [[ $# -ne 0 || ! "$ROOT_COUNT" =~ ^[1-9][0-9]*$ ]] \
-  || (( ROOT_COUNT > 16 )) \
+  || (( ROOT_COUNT > 24 )) \
   || [[ ! "$HICACHE_SIZE_GB" =~ ^[1-9][0-9]*$ ]] \
   || (( HICACHE_SIZE_GB > 200 )) \
   || [[ "$HICACHE_WRITE_POLICY" != "write_through_selective" && "$HICACHE_WRITE_POLICY" != "write_back" ]] \

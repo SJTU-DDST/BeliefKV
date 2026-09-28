@@ -25,3 +25,17 @@ def test_confirmed_join_requires_verified_ack_patch_before_start(tmp_path: Path)
     assert result.returncode == 2
     assert "CONFIRMED_JOIN_CANARY" in result.stderr
     assert not run_root.exists()
+
+
+def test_pressure_scan_rejects_more_than_24_roots_before_start(tmp_path: Path) -> None:
+    run_root = tmp_path / "probe"
+    result = subprocess.run(
+        ["bash", str(SCRIPT)],
+        env={**os.environ, "RUN_ROOT": str(run_root), "ROOT_COUNT": "25"},
+        text=True,
+        capture_output=True,
+        timeout=5,
+    )
+    assert result.returncode == 2
+    assert "Usage:" in result.stderr
+    assert not run_root.exists()

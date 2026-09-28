@@ -37,6 +37,20 @@ observations by physical target/epoch before estimating opportunities.
 
 ## Objective (Current Stage)
 
+**Re-scoped primary goal:** Identify a reproducible dynamic
+workload with physical HBM room for the proposed action in *both* FULL and
+Mamba pools, stable NUMA-local Host capacity, useful PCIe slack and few
+useful-KV eviction-to-recomputation events. It must also contain prospective
+consumers: missing-Device, Host-backed KV that will actually be used, or
+native offloads that can consume selectively prepared (possibly partial)
+Host copies. In that regime, establish a causal benefit from selective
+PREPARE_HOST and predictive H2D over the same reactive workload. The
+current-stage policy uses already-free Device capacity, not eviction to
+manufacture prefetch opportunities. High-pressure eviction optimization,
+cold-KV displacement and joint victim/beneficiary handoff are **not**
+current-stage deliverables. Root count and HBM occupancy alone do not
+define this regime.
+
 Establish a defensible Qwen3.5/SGLang v0.5.20 result for selective predictive
 Host backup and GPU restoration in a **low-to-moderate-pressure regime with
 actionable free HBM and little useful-KV recomputation**: the FULL/Mamba
@@ -97,6 +111,14 @@ than promote action count as success. Cold-KV replacement, speculative
 victim selection, joint handoff and high-pressure eviction optimization are
 future experiments, not dependencies of this stage. Keep high pressure only
 as an abstention/safety boundary.
+
+Execution priority: finish the current in-graph JOIN diagnostic without
+changing its running process; qualify actual missing-Device/Host-backed
+targets and future PREPARE consumers on training projects; validate each
+physical action against first-use and saved blocking time; only then freeze
+the eligible configuration for paired reactive/predictive evaluation.
+Do not classify an already-Device-resident JOIN, an ACK without first-use,
+or a transfer count without a reactive counterfactual as success.
 
 Current boundary: the 14-root write-back scan is a *candidate for stage 1*,
 not proof of stage 2 or 3. Its 14 distinct H2D nodes (13 with missing FULL

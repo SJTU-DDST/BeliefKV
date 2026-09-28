@@ -479,3 +479,30 @@ JOIN 后第一条 root 模型请求为 9,911 prompt tokens，其中
 任务正确性统计。v5 的多 root 无 SPAWN 与 v6 的单 root
 存在配置压力差异；下一轮多 root 需用同样审计定位是否再次
 未派发，并只在有 Host-backed 缺 Device 节点时判断 H2D。
+
+## 200 GB / 25:75 / write-back / 14-root：in-graph 自然完成 v7
+
+`...native_in_graph_join_200g_25_75_14root_v7/` 的 14/14 workflow
+自然结束，16 个 JOIN_CREATE 均有 JOIN_SATISFIED。原生及机会
+writer 完整关闭，均无记录丢失/写入错误；FULL/Mamba Host
+高水位分别为 105,975/2,441,407 tokens 和 498/2,330 slots，
+两池均无 Host 驱逐或可归因的 FULL 重算。这轮能够检验真实
+in-graph 并发，但尚无独立任务正确性评分，不能宣称成功任务吞吐。
+
+16 个 confirmed JOIN ticket 对应的 14 条单次无 H2D step 拒绝记录
+中，11 条为 `already_device_resident`，3 条为
+`no_live_session_or_anchors`；其余 ticket 不应凭快照推定有动作。
+逐秒采样的 JOIN 机会中，742 条为已在 Device、273 条为
+无有效 session/anchor，**没有**一个可装入的缺 Device/
+Host-backed H2D step。`physical_action_ack.jsonl` 和
+`physical_action_use.jsonl` 均为空；原生传输的 498 次 D2H 和
+2 次 H2D 不能计作预测动作。逐请求 FULL Host 命中仅 2 次、
+合计 2,078 tokens；这些命中说明偶有 Host 复用，但没有证明
+确认 JOIN 当时可对该共享物理节点安全提前恢复。
+
+因此 v7 符合 Host 稳定、低驱逐的一侧，却**未通过主场景的
+可行动 H2D 目标门槛**；无需对此轮做 predictive/reactive
+吞吐 A/B。下一档仅在训练项目上有界增加到最多 24 root，
+沿用相同物理容量/安全门禁并观察实际 FULL/Mamba 缺 Device
+目标、Host 水位和归因重算；若仍无有效目标，则报告该负载下
+的机会不足，不按采样次数或原生 ACK 制造预测收益。
