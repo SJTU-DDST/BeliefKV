@@ -258,6 +258,29 @@ def select_policy(train: list[dict]) -> tuple[tuple[str, str] | None, dict]:
     return selected, results
 
 
+def select_threshold_for_gate(rows: list[dict], gate: str) -> tuple[str | None, dict]:
+    scores = {
+        threshold: gated_score(rows, threshold, gate)
+        for threshold in THRESHOLDS
+    }
+    admissible = [
+        threshold for threshold, result in scores.items()
+        if result["tool_rounds_with_content"] >= 20
+        and result["return_rounds"] >= 10
+        and result["first_triggered_tool"] / result["tool_rounds_with_content"] <= 0.05
+        and result["return_trigger_early_over_2000ms"] / result["return_rounds"] <= 0.1
+    ]
+    selected = max(
+        admissible, key=lambda threshold: (
+            scores[threshold]["return_trigger_500_to_2000ms"],
+            -scores[threshold]["first_triggered_tool"],
+            -scores[threshold]["return_trigger_early_over_2000ms"],
+            -THRESHOLDS.index(threshold),
+        ),
+    ) if admissible else None
+    return selected, scores
+
+
 def load_rows(
     workflows: list[Path],
 ) -> tuple[list[dict], Counter, list[dict], bool]:
@@ -311,40 +334,58 @@ def load_rows(
     return rows, counts, eos_manifests, has_sampled_eos
 
 
-def evaluate(workflows: list[Path], heldout_project: str) -> dict:
+def evaluate(
+    workflows: list[Path], heldout_project: str, *,
+    train_projects: tuple[str, ...] | None = None,
+    calibration_projects: tuple[str, ...] = (),
+) -> dict:
+    if calibration_projects:
+        if not train_projects or (
+            set(train_projects) & (set(calibration_projects) | {heldout_project})
+            or heldout_project in calibration_projects
+        ):
+            raise ValueError("train, calibration, and heldout projects must be disjoint")
+    elif train_projects:
+        raise ValueError("train_projects requires independent calibration_projects")
     rows, counts, eos_manifests, has_sampled_eos = load_rows(workflows)
-    train = [row for row in rows if row["project"] != heldout_project]
+    train = [
+        row for row in rows if row["project"] in train_projects
+    ] if train_projects else [
+        row for row in rows if row["project"] != heldout_project
+    ]
+    calibration = [
+        row for row in rows if row["project"] in calibration_projects
+    ]
     held = [row for row in rows if row["project"] == heldout_project]
-    if not train or not held or not (
+    if calibration_projects and (
+        {row["project"] for row in train} != set(train_projects)
+        or {row["project"] for row in calibration} != set(calibration_projects)
+    ):
+        raise ValueError("one or more frozen training/calibration projects are missing")
+    if not train or not held or (calibration_projects and not calibration) or not (
         has_sampled_eos or any(row["eos"] for row in rows)
     ):
         raise ValueError("not enough content/EOS rounds for project holdout")
-    train_scores = {
-        threshold: gated_score(train, threshold, "eos_only")
-        for threshold in THRESHOLDS
-    }
+    selected_train, train_scores = select_threshold_for_gate(train, "eos_only")
+    fused_selected, fused_train_scores = select_policy(train)
+    calibrated_eos, calibration_eos_scores = (
+        select_threshold_for_gate(calibration, "eos_only")
+        if calibration_projects else (None, {})
+    )
+    calibrated_fused, calibration_fused_scores = (
+        select_threshold_for_gate(calibration, fused_selected[1])
+        if calibration_projects and fused_selected else (None, {})
+    )
+    selected = calibrated_eos if calibration_projects else selected_train
+    selected_fused = (
+        (calibrated_fused, fused_selected[1]) if calibrated_fused else None
+    ) if calibration_projects else fused_selected
     held_scores = {
         threshold: gated_score(held, threshold, "eos_only")
         for threshold in THRESHOLDS
     }
-    # Fixed training-only gate. Fail closed when no threshold meets both risks.
-    admissible = [
-        threshold for threshold, result in train_scores.items()
-        if result["tool_rounds_with_content"] >= 20
-        and result["return_rounds"] >= 10
-        and result["first_triggered_tool"] / result["tool_rounds_with_content"] <= 0.05
-        and result["return_trigger_early_over_2000ms"]
-        / result["return_rounds"] <= 0.1
-    ]
-    selected = max(
-        admissible, key=lambda threshold: (
-            train_scores[threshold]["return_trigger_500_to_2000ms"],
-            -train_scores[threshold]["first_triggered_tool"],
-        ),
-    ) if admissible else None
-    fused_selected, fused_train_scores = select_policy(train)
     fused_held_score = (
-        gated_score(held, *fused_selected) if fused_selected else None
+        gated_score(held, *selected_fused) if selected_fused else None
     )
     previous_report = (
         workflows[-1].parent.parent
@@ -353,6 +394,8 @@ def evaluate(workflows: list[Path], heldout_project: str) -> dict:
     cached = json.loads(previous_report.read_text()) if previous_report.is_file() else {}
     if (
         cached.get("heldout_project") == heldout_project
+        and cached.get("train_projects") == sorted({row["project"] for row in train})
+        and cached.get("calibration_projects") == sorted(calibration_projects)
         and cached.get("collected_manifests") == eos_manifests
         and cached.get("counts") == dict(counts)
         and "same_rows_length_progress_baselines" in cached
@@ -360,11 +403,12 @@ def evaluate(workflows: list[Path], heldout_project: str) -> dict:
         baselines_result = cached["same_rows_length_progress_baselines"]
         baselines_source = str(previous_report)
     else:
-        baselines = content_evaluate(workflows, heldout_project, min_snapshot_chars=1)
-        baselines_result = (
-            baselines["results"] if baselines["status"].startswith("diagnostic_")
-            else baselines
+        baselines = content_evaluate(
+            workflows, heldout_project, min_snapshot_chars=1,
+            train_projects=train_projects,
+            calibration_projects=calibration_projects,
         )
+        baselines_result = baselines.get("results", baselines)
         baselines_source = "recomputed"
     keys = (
         "near_return_2000ms_size_only",
@@ -373,7 +417,12 @@ def evaluate(workflows: list[Path], heldout_project: str) -> dict:
         "near_return_2000ms_progress_conditioned_phase",
     )
     return {
-        "scope": "development only: no physical transfer; top-k absence is unknown, not P(EOS)=0",
+        "scope": (
+            "project-disjoint calibration/heldout; no physical transfer; "
+            "top-k absence is unknown, not P(EOS)=0"
+            if calibration_projects else
+            "development only: no physical transfer; top-k absence is unknown, not P(EOS)=0"
+        ),
         "eos_evidence": (
             "max candidate per content-snapshot interval; trigger at delivered snapshot, "
             "not the exact token crossing" if has_sampled_eos else
@@ -381,19 +430,31 @@ def evaluate(workflows: list[Path], heldout_project: str) -> dict:
         ),
         "heldout_project": heldout_project,
         "train_projects": sorted({row["project"] for row in train}),
+        "calibration_projects": sorted(calibration_projects),
         "collected_manifests": eos_manifests,
         "counts": dict(counts),
         "return_with_first_content": sum(row["label"] == "return" for row in rows),
         "tool_with_first_content": sum(row["label"] == "tool" for row in rows),
         "train_eos_threshold_scores": train_scores,
         "heldout_eos_threshold_scores": held_scores,
-        "selected_threshold_from_train": selected,
+        "selected_threshold_from_train": selected_train,
+        "calibration_eos_threshold_scores": calibration_eos_scores,
+        "selected_threshold_from_calibration": calibrated_eos,
         "selected_heldout_score": held_scores[selected] if selected else None,
         "selected_heldout_eos_reobservation": (
             sampled_eos_window_diagnostic(held, selected)
             if selected and has_sampled_eos else None
         ),
         "fused_gate_scope": (
+            "Development projects select the content gate; calibration projects "
+            "select the threshold; heldout projects only score. "
+            "An EOS candidate and content must coexist in a delivered snapshot "
+            "interval; unseen top-k candidates are unknown."
+            if calibration_projects and has_sampled_eos else
+            "Development projects select the content gate; calibration projects "
+            "select the threshold; heldout projects only score. A rejected first "
+            "crossing cannot be reconsidered in a legacy trace."
+            if calibration_projects else
             "Training projects alone select EOS threshold and causal content gate. "
             "An EOS candidate and content must coexist in a delivered snapshot "
             "interval; unseen top-k candidates are unknown."
@@ -403,9 +464,14 @@ def evaluate(workflows: list[Path], heldout_project: str) -> dict:
             "reconsidered: subsequent EOS probabilities were not collected."
         ),
         "train_fused_policy_scores": fused_train_scores,
+        "calibration_fused_threshold_scores": calibration_fused_scores,
         "selected_fused_policy_from_train": (
             {"threshold": fused_selected[0], "gate": fused_selected[1]}
             if fused_selected else None
+        ),
+        "selected_fused_policy_from_calibration": (
+            {"threshold": selected_fused[0], "gate": selected_fused[1]}
+            if calibration_projects and selected_fused else None
         ),
         "selected_fused_heldout_score": fused_held_score,
         "same_rows_length_progress_baselines_source": baselines_source,
@@ -419,14 +485,30 @@ def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--workflows", type=Path, action="append", required=True)
     parser.add_argument("--heldout-project", required=True)
+    parser.add_argument("--train-projects", help="Comma-separated development projects")
+    parser.add_argument(
+        "--calibration-projects", help="Comma-separated projects for threshold only",
+    )
     parser.add_argument("--output", type=Path, required=True)
     args = parser.parse_args()
-    report = evaluate(args.workflows, args.heldout_project)
+    report = evaluate(
+        args.workflows, args.heldout_project,
+        train_projects=(
+            tuple(args.train_projects.split(",")) if args.train_projects else None
+        ),
+        calibration_projects=(
+            tuple(args.calibration_projects.split(","))
+            if args.calibration_projects else ()
+        ),
+    )
     args.output.parent.mkdir(parents=True, exist_ok=True)
     args.output.write_text(json.dumps(report, indent=2) + "\n")
     print(json.dumps({
         "heldout_project": args.heldout_project,
-        "threshold": report["selected_threshold_from_train"],
+        "threshold": (
+            report["selected_threshold_from_calibration"]
+            if args.calibration_projects else report["selected_threshold_from_train"]
+        ),
         "heldout_score": report["selected_heldout_score"],
     }, indent=2))
 
