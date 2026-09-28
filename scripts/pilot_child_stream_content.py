@@ -26,9 +26,11 @@ def collect(workflows: Path) -> tuple[list[dict], Counter]:
     rows: list[dict] = []
     counts: Counter = Counter()
     for path in sorted(workflows.glob("*/child_stream_content.jsonl")):
-        stats = json.loads(
-            (path.parent / "child_stream_content_stats.json").read_text()
-        )
+        stats_path = path.parent / "child_stream_content_stats.json"
+        if not stats_path.is_file():
+            counts["unfinished_workflows"] += 1
+            continue
+        stats = json.loads(stats_path.read_text())
         if not stats["complete"]:
             counts["incomplete_workflows"] += 1
             continue
@@ -39,6 +41,18 @@ def collect(workflows: Path) -> tuple[list[dict], Counter]:
         terminal, join_last = index_workflow(
             events, blocked_invocations=blocked_child_invocations(path.parent),
         )
+        results_by_rid = {
+            (event.get("attributes") or {}).get("request_id"): event
+            for event in events if event["kind"] == "llm_result"
+        }
+        returns_by_child = {
+            event["invocation_id"]: float(event["ts_ms"])
+            for event in events if event["kind"] == "return"
+        }
+        tools_by_child: dict[str, list[float]] = defaultdict(list)
+        for event in events:
+            if event["kind"] == "tool_start":
+                tools_by_child[event["invocation_id"]].append(float(event["ts_ms"]))
         with path.open() as stream:
             observations = [json.loads(line) for line in stream]
         by_rid: dict[str, list[dict]] = defaultdict(list)
@@ -50,9 +64,26 @@ def collect(workflows: Path) -> tuple[list[dict], Counter]:
                 counts["censored_or_unfinished_rounds"] += 1
                 continue
             result = results[0]
-            if result["tool_call_count"] or result["invalid_tool_call_count"]:
+            native = results_by_rid.get(rid)
+            if (
+                native is None
+                or native["invocation_id"] != result["invocation_id"]
+                or native.get("context_id") != result["context_id"]
+                or native.get("context_epoch") != result["context_epoch"]
+            ):
+                counts["result_identity_mismatch"] += 1
+                continue
+            child_id = result["invocation_id"]
+            end_ts = returns_by_child.get(child_id, float("inf"))
+            followed_by_tool = any(
+                float(native["ts_ms"]) < ts < end_ts
+                for ts in tools_by_child[child_id]
+            )
+            if result["tool_call_count"] or result["invalid_tool_call_count"] or followed_by_tool:
                 label = "tool"
                 counts["tool_rounds"] += 1
+                if not result["tool_call_count"] and followed_by_tool:
+                    counts["text_then_tool_rounds"] += 1
             elif rid in terminal and result["finish_reason"] == "stop":
                 label = "return"
                 counts["natural_return_rounds"] += 1

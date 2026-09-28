@@ -21,9 +21,10 @@ tool chunk 和 finish chunk 记录观测。`child_stream_content.jsonl` 中
 从分析中剔除。原有控制 trace 不写入正文。该文件含原文片段，应仅限
 本地诊断，不上传公开训练集。
 
-离线回放按 request_id 和 child 的自然 RETURN 匹配正例；同一 child
-本轮回复最终继续调用工具的 LLM 请求是明确负例；取消、异常或非
-RETURN 的纯文本轮次暂计删失。只允许用到达时刻已收到的正文快照，
+离线回放按 request_id、child/context epoch 和自然 RETURN 匹配正例；
+同一 child 本轮输出 tool_calls，或本轮纯文本回复后又实际启动工具的
+请求，是明确负例；取消、异常或非 RETURN 且无后续工具证据的纯文本
+轮次计删失。只允许用到达时刻已收到的正文快照，
 跳过 finish/tool chunk；每个请求只计算**首次触发**。词形二元组与
 累计正文长度分别构成内容实验组和长度基线。评分方向仅使用训练项目
 拟合，阈值仅用训练项目工具负例的请求级最大分数 95 分位确定；
@@ -42,4 +43,12 @@ RUN_ROOT=... bash scripts/run_qwen35_stream_timing_shadow.sh`
 为释放实验磁盘空间，已从结束的
 `qwen35_terminal_join_sealed_20260927_v1` 仅删除 218 个可重建的
 `workspace` 克隆；保留 `model.patch`、轨迹、审核、manifest、
-评分产物和所有文档。清理前可用空间约 28 GB，清理后约 73 GB。
+评分产物和所有文档。随后也只清理结束的旧工具窗口、
+cold-tool、EOS、hidden-child 与 early-tool 诊断批次的 workspace；
+正式导出的训练/校准表未删。清理前可用空间约 28 GB，最终回升至
+约 97 GB（同时本次 pilot 已写入约 11 GB）。
+
+首次服务启动因共享 SGLang checkout 已有另一补丁而拒绝启动，
+未改动该 checkout；在相同固定 commit 的独立 worktree 应用 staging
+补丁后重启。本次有效采集目录为
+`experiments/raw/qwen35_child_stream_content_pilot_12root_20260928_v2/`。
