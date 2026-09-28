@@ -460,3 +460,22 @@ JOIN 后 first-service 的 Device 前缀命中，缺一不可。
 消息类型、工具名和返回的工具名，不记录提示词/工具参数。
 先确认真实运行的首轮是否命中门禁；再根据结果检查模型调用、
 请求序列化及服务端约束，不扩大正式试验。
+
+## 200 GB / 25:75 / write-back / 1-root：首轮门禁诊断 v6
+
+`...native_in_graph_join_200g_25_75_1root_v6/` 的一次性审计
+记录首轮仅有 `HumanMessage`、可用工具含 `task`，首次模型响应
+调用 `task`。runtime 实际产生 1 个 SPAWN、`JOIN_CREATE` 与
+`JOIN_SATISFIED`；该 JOIN 的 `parent_prefix_continuation=true`。
+JOIN 后第一条 root 模型请求为 9,911 prompt tokens，其中
+9,088 tokens 在 Device 命中。此结果证明 in-graph 路径至少
+存在能延续父前缀的执行，而不是原 bootstrap planner 的零前缀
+复用。
+
+29 条 JOIN 等待机会快照均为 `already_device_resident`，物理
+`PREFETCH_GPU` ACK 为零；这轮没有 Host-backed H2D 目标，
+**不能证明 predictive H2D 收益**。达到首轮与 JOIN 前缀
+诊断目的后主动终止客户端，workflow 未自然完成，不纳入吞吐或
+任务正确性统计。v5 的多 root 无 SPAWN 与 v6 的单 root
+存在配置压力差异；下一轮多 root 需用同样审计定位是否再次
+未派发，并只在有 Host-backed 缺 Device 节点时判断 H2D。
