@@ -58,6 +58,7 @@ selected_workloads="$(
   jq -c --argjson offset "$WORKLOAD_OFFSET" \
     --argjson pool "$WORKLOAD_POOL_SIZE" \
     --argjson count "$PILOT_WORKFLOW_COUNT" \
+    --argjson content "${STREAM_CONTENT_SHADOW:-0}" \
     --argjson excluded "$excluded_instances" \
     --arg prefix "$WORKLOAD_PREFERRED_PREFIX" \
     --arg excluded_prefix "$WORKLOAD_EXCLUDE_PREFIX" '
@@ -68,7 +69,12 @@ selected_workloads="$(
              and ($excluded_prefix == "" or ($id | startswith($excluded_prefix) | not))
          )]
       as $workloads
-      | if $prefix == "" then $workloads[:$count]
+      | if $content == 1 then
+          ([$workloads[] | select(.instance_id | startswith("astropy__"))]
+           [:($count / 2 | floor)]
+           + [$workloads[] | select(.instance_id | startswith("sphinx-doc__"))]
+           [:($count - ($count / 2 | floor))])
+        elif $prefix == "" then $workloads[:$count]
         else (
           [$workloads[] | select(.instance_id | startswith($prefix))]
           + [$workloads[] | select((.instance_id | startswith($prefix)) | not)]
@@ -94,6 +100,10 @@ if (( WORKLOAD_OFFSET > 0 )) || [[ -n "$WORKLOAD_PREFERRED_PREFIX" ]] \
   for instance in "${selected_instances[@]}"; do
     instance_args+=(--instance "$instance")
   done
+fi
+content_args=()
+if [[ "${STREAM_CONTENT_SHADOW:-0}" == 1 ]]; then
+  content_args+=(--child-stream-content-shadow)
 fi
 while IFS= read -r image; do
   if ! docker image inspect "$image" >/dev/null 2>&1; then
@@ -149,6 +159,7 @@ fi
   --max-completion-tokens 8192 \
   --recursion-limit 2048 \
   --stream-completion-shadow \
+  "${content_args[@]}" \
   --activation-wall-clock-seconds "$WORKFLOW_DEADLINE_SECONDS" \
   --disable-completion-gate \
   --gate system \
@@ -174,4 +185,13 @@ for cue in first_content substantial_content; do
       --cue "$cue" --output "$RUN_ROOT/${cue}_audit.json"
   fi
 done
+if [[ "${STREAM_CONTENT_SHADOW:-0}" == 1 ]]; then
+  for project in astropy sphinx-doc; do
+    "$PYTHON" "$ROOT/scripts/pilot_child_stream_content.py" \
+      --workflows "$RUN_ROOT/workloads/workflows" \
+      --heldout-project "$project" \
+      --output "$RUN_ROOT/content_holdout_${project}.json" \
+      > "$RUN_ROOT/content_holdout_${project}.log"
+  done
+fi
 exit "${collection_status:-0}"

@@ -74,6 +74,7 @@ from beliefkv.runtime.context_lifecycle import (
     ContextLifecyclePolicy,
 )
 from beliefkv.runtime.sglang_adapter import BeliefKVRequestMetadata
+from beliefkv.runtime.stream_content_shadow import StreamContentShadow
 from beliefkv.runtime.sglang_v0520_sessions import (
     NativeRadixSessionLeases,
     close_native_radix_session,
@@ -1567,6 +1568,7 @@ class DeepAgentsExperimentConfig:
     stream_completion_shadow: bool = False
     child_finish_chunk_shadow: bool = False
     child_report_phase_shadow: bool = False
+    child_stream_content_shadow: bool = False
     child_eos_shadow: bool = False
     child_eos_low_prob_shadow: bool = False
     child_eos_top_hit_shadow: bool = False
@@ -1615,6 +1617,8 @@ class DeepAgentsExperimentConfig:
             raise ValueError("child final-chunk shadow requires streamed completion")
         if self.child_report_phase_shadow and not self.stream_completion_shadow:
             raise ValueError("child report phases require streamed completion")
+        if self.child_stream_content_shadow and not self.stream_completion_shadow:
+            raise ValueError("child content shadow requires streamed completion")
         if self.child_eos_shadow and (
             not self.stream_completion_shadow or not self.child_return_intent_shadow
         ):
@@ -3892,6 +3896,10 @@ def _run_workflow(
         full_prompt_replay_guaranteed=True,
     )
     trace_sink = JsonlRuntimeEventSink(trace_path)
+    stream_content_shadow = (
+        StreamContentShadow(workflow_dir / "child_stream_content.jsonl")
+        if config.child_stream_content_shadow else None
+    )
     control_sink = (
         QueuedRuntimeEventSink(
             UnixDatagramRuntimeEventSink(
@@ -3928,6 +3936,7 @@ def _run_workflow(
             or os.environ.get("BELIEFKV_CHILD_FINISH_CHUNK_SHADOW") == "1"
         ),
         report_phase_shadow=config.child_report_phase_shadow,
+        stream_content_shadow=stream_content_shadow,
         eos_shadow=config.child_eos_shadow,
         eos_low_prob_shadow=config.child_eos_low_prob_shadow,
         eos_top_hit_shadow=config.child_eos_top_hit_shadow,
@@ -4017,6 +4026,11 @@ def _run_workflow(
         if control_sink is not None:
             control_sink.close()
         trace_sink.close()
+        if stream_content_shadow is not None:
+            write_json(
+                workflow_dir / "child_stream_content_stats.json",
+                stream_content_shadow.close(),
+            )
         backend.close()
         sandbox_audit.close()
 

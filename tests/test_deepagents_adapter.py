@@ -38,6 +38,7 @@ from beliefkv.runtime.context_lifecycle import (
 from beliefkv.runtime.event_channel import QueuedRuntimeEventSink
 from beliefkv.runtime.sglang_adapter import BeliefKVRequestMetadata
 from beliefkv.runtime.sglang_v0520_sessions import NativeRadixSessionLeases
+from beliefkv.runtime.stream_content_shadow import StreamContentShadow
 
 
 def test_native_session_follows_context_not_tool_and_retires_on_return() -> None:
@@ -561,6 +562,55 @@ def test_final_stream_chunk_shadow_measures_child_delivery_without_content() -> 
     assert str(run) not in adapter._child_finish_chunk_ts_ms
     assert "private answer" not in json.dumps(result.to_dict())
     queued.close()
+
+
+def test_child_content_shadow_records_delivery_and_tool_negative(tmp_path) -> None:
+    path = tmp_path / "stream.jsonl"
+    shadow = StreamContentShadow(path, capacity=10)
+    trace = CollectingSink()
+    adapter = DeepAgentsRuntimeAdapter(
+        trace, BeliefKVRequestMetadata("wf", "root", "ctx", 0),
+        stream_content_shadow=shadow,
+    )
+    adapter.start()
+    task = adapter.declare_runtime_tasks([("explorer", "inspect")])[0]
+    tool_run = uuid4()
+    adapter.on_tool_start(
+        {"name": "task"}, "", run_id=tool_run,
+        inputs={"subagent_type": "explorer", "description": "inspect"},
+        tool_call_id=task.tool_call_id,
+    )
+    run = uuid4()
+    adapter.on_chat_model_start(
+        {}, [[HumanMessage(content="prompt")]],
+        run_id=run, parent_run_id=tool_run,
+    )
+    chunk = SimpleNamespace(
+        message=SimpleNamespace(content="Investigating", tool_call_chunks=[]),
+        generation_info=None,
+    )
+    adapter.on_llm_new_token("Investigating", chunk=chunk, run_id=run)
+    adapter.on_llm_new_token("Investigating", chunk=chunk, run_id=run)
+    adapter.on_llm_new_token(
+        "", chunk=SimpleNamespace(
+            message=SimpleNamespace(content="", tool_call_chunks=[{"name": "execute"}]),
+            generation_info={"finish_reason": "tool_calls"},
+        ), run_id=run,
+    )
+    adapter.on_llm_end(_natural_child_result("Investigating"), run_id=run)
+    stats = shadow.close()
+    assert stats["complete"]
+    observations = [json.loads(line) for line in path.read_text().splitlines()]
+    content = [row for row in observations if row["event"] == "child_stream_content"]
+    assert len(content) == 2
+    assert content[0]["content_tail"] == "Investigating"
+    assert content[0]["invocation_id"] == task.invocation_id
+    assert content[1]["tool_chunk"]
+    assert content[1]["finish_reason"] == "tool_calls"
+    assert observations[-1]["event"] == "child_stream_result"
+    assert not any(
+        "Investigating" in json.dumps(event.to_dict()) for event in trace.events
+    )
 
 
 def test_final_stream_chunk_shadow_is_opt_in_and_excludes_root() -> None:

@@ -47,6 +47,7 @@ from beliefkv.runtime.eos_shadow import (
 from beliefkv.runtime.report_phase import ReportPhaseTracker
 from beliefkv.runtime.sglang_adapter import BeliefKVRequestMetadata
 from beliefkv.runtime.sglang_v0520_sessions import NativeRadixSessionLeases
+from beliefkv.runtime.stream_content_shadow import StreamContentShadow
 from beliefkv.runtime.tool_wait_shadow import ToolWaitShadowTimer
 
 if TYPE_CHECKING:
@@ -249,6 +250,7 @@ class DeepAgentsRuntimeAdapter(BaseCallbackHandler):
         finish_chunk_shadow: bool = False,
         command_structure_shadow: bool = False,
         report_phase_shadow: bool = False,
+        stream_content_shadow: StreamContentShadow | None = None,
         eos_shadow: bool = False,
         eos_low_prob_shadow: bool = False,
         eos_top_hit_shadow: bool = False,
@@ -280,6 +282,8 @@ class DeepAgentsRuntimeAdapter(BaseCallbackHandler):
         self._finish_chunk_shadow = finish_chunk_shadow
         self._command_structure_shadow = command_structure_shadow
         self._report_phase_shadow = report_phase_shadow
+        self._stream_content_shadow = stream_content_shadow
+        self._stream_content_state: dict[str, tuple[int, str, int]] = {}
         self._eos_shadow = eos_shadow
         self._eos_top_hit_shadow = eos_top_hit_shadow
         self._eos_thresholds = (
@@ -872,12 +876,17 @@ class DeepAgentsRuntimeAdapter(BaseCallbackHandler):
             ), control=False)
         if not content_chars and not tool_seen and not (
             self._eos_shadow and logprobs
+        ) and not (
+            self._stream_content_shadow is not None
+            and isinstance(generation_info, Mapping)
+            and generation_info.get("finish_reason")
         ):
             return
         emitted: list[tuple[str, int | None]] = []
         phase_events: list[tuple[str, int]] = []
         eos_events: list[float] = []
         first_top_hit = False
+        content_observation: dict[str, Any] | None = None
         with self._lock:
             if (
                 key is None
@@ -896,6 +905,36 @@ class DeepAgentsRuntimeAdapter(BaseCallbackHandler):
             if chunk is self._child_stream_last_chunk.get(key):
                 return
             self._child_stream_last_chunk[key] = chunk
+            if self._stream_content_shadow is not None:
+                count, tail, next_at = self._stream_content_state.get(
+                    key, (0, "", 128)
+                )
+                if isinstance(content, str) and content:
+                    count += len(content)
+                    tail = (tail + content)[-128:]
+                finish = (
+                    generation_info.get("finish_reason")
+                    if isinstance(generation_info, Mapping) else None
+                )
+                if (
+                    (content and (count == len(content) or count >= next_at))
+                    or tool_seen or finish
+                ):
+                    content_observation = {
+                        "event": "child_stream_content",
+                        "ts_ms": self.clock_ms(),
+                        "request_id": _native_request_id(run_id),
+                        "invocation_id": invocation_id,
+                        "context_id": metadata.context_id,
+                        "context_epoch": metadata.context_epoch,
+                        "join_id": pending.join_id,
+                        "content_chars": count,
+                        "content_tail": tail,
+                        "tool_chunk": tool_seen,
+                        "finish_reason": finish,
+                    }
+                    next_at = (count // 128 + 1) * 128
+                self._stream_content_state[key] = (count, tail, next_at)
             if (
                 self._eos_shadow
                 and logprobs
@@ -973,6 +1012,8 @@ class DeepAgentsRuntimeAdapter(BaseCallbackHandler):
                             "beliefkv_child_substantial_content_shadow",
                             threshold,
                         ))
+        if content_observation is not None:
+            self._stream_content_shadow.emit(content_observation)
         self._publish(tuple(
             self._event(
                 RuntimeEventKind.STRUCTURED_ACTION,
@@ -1065,6 +1106,7 @@ class DeepAgentsRuntimeAdapter(BaseCallbackHandler):
             stream_token_chars = self._child_stream_token_chars.pop(key, None)
             stream_chunk_count = self._child_stream_chunk_count.pop(key, None)
             self._child_stream_last_chunk.pop(key, None)
+            self._stream_content_state.pop(key, None)
             self._child_report_phase_trackers.pop(key, None)
             eos_scored_tokens = self._child_eos_scored_tokens.pop(key, None)
             eos_top_hits = self._child_eos_top_hits.pop(key, None)
@@ -1180,6 +1222,23 @@ class DeepAgentsRuntimeAdapter(BaseCallbackHandler):
             },
         )
         self._publish((result,), control=True)
+        if (
+            self._stream_content_shadow is not None
+            and not runtime_internal
+            and invocation_id != self.root_metadata.invocation_id
+        ):
+            self._stream_content_shadow.emit({
+                "event": "child_stream_result",
+                "ts_ms": self.clock_ms(),
+                "request_id": _native_request_id(run_id),
+                "invocation_id": invocation_id,
+                "context_id": metadata.context_id,
+                "context_epoch": metadata.context_epoch,
+                "finish_reason": finish_reason,
+                "tool_call_count": len(tool_calls),
+                "invalid_tool_call_count": invalid_tool_call_count,
+                "output_chars": output_chars,
+            })
         explicit_completion = (
             len(tool_calls) == 1
             and len(getattr(messages[0], "tool_calls", ())) == 1
@@ -1274,6 +1333,7 @@ class DeepAgentsRuntimeAdapter(BaseCallbackHandler):
         del kwargs
         key = self._remember_run(run_id, parent_run_id)
         with self._lock:
+            self._stream_content_state.pop(key, None)
             self._child_stream_content_chars.pop(key, None)
             self._child_stream_max_chunk_chars.pop(key, None)
             self._child_stream_token_chars.pop(key, None)
@@ -1327,6 +1387,19 @@ class DeepAgentsRuntimeAdapter(BaseCallbackHandler):
             },
         )
         self._publish((event,), control=True)
+        if (
+            self._stream_content_shadow is not None
+            and not runtime_internal
+            and invocation_id != self.root_metadata.invocation_id
+        ):
+            self._stream_content_shadow.emit({
+                "event": "child_stream_error",
+                "ts_ms": self.clock_ms(),
+                "request_id": _native_request_id(run_id),
+                "invocation_id": invocation_id,
+                "context_id": context_id,
+                "context_epoch": epoch,
+            })
         self.record_call_censor(
             {
                 "call_kind": "llm",
