@@ -435,6 +435,46 @@ def test_safe_point_records_missing_session_and_bounded_queue_scan(tmp_path):
     assert candidate["reason"] == "no_bound_session"
 
 
+def test_safe_point_distinguishes_missing_anchors_from_stale_context(tmp_path):
+    runtime = NativeAdmissionRuntime(opportunity_dir=str(tmp_path))
+    request = req("root")
+    request.session_id = "session-root"
+    request.session_generation = 3
+    assert runtime.register_visible_request(request)
+    runtime.on_events((
+        event(0, RuntimeEventKind.WORKFLOW_START),
+        event(1, RuntimeEventKind.INVOCATION_CREATE,
+              invocation_id="root", context_id="ctx-root"),
+        event(2, RuntimeEventKind.TOOL_START,
+              invocation_id="root", context_id="ctx-root"),
+    ))
+    cache = NS(session_refs=NS(
+        snapshot_session_leaf_anchors=lambda *args, **kwargs: None,
+    ))
+    runtime.attach_native_cache(cache)
+    runtime.scheduler_step()
+    runtime.close()
+    rows = [
+        json.loads(line) for line in
+        (tmp_path / "admission_opportunities.jsonl").read_text().splitlines()
+    ]
+    [candidate] = [
+        row for row in rows if row["event"] == "session_h2d_opportunity"
+    ]
+    assert candidate["reason"] == "no_live_session_or_anchors"
+    assert candidate["no_live_detail"] == "anchor_snapshot_unavailable"
+    key = runtime.context_sessions["ctx-root"]
+    runtime.graph.contexts["ctx-root"].epoch = 1
+    assert runtime._missing_opportunity_detail(
+        key, admission_candidate=False,
+    ) == "context_epoch_changed"
+    runtime.graph.contexts["ctx-root"].epoch = 0
+    runtime.context_sessions["ctx-root"] = replace(key, context_epoch=1)
+    assert runtime._missing_opportunity_detail(
+        key, admission_candidate=False,
+    ) == "context_binding_changed"
+
+
 def test_safe_point_rotates_through_more_candidates_than_per_tick_limit(tmp_path):
     runtime = NativeAdmissionRuntime(opportunity_dir=str(tmp_path))
     requests = [req(str(index)) for index in range(20)]
@@ -1591,6 +1631,7 @@ def test_confirmed_join_canary_is_bounded_without_predictor(tmp_path):
     ) == 1
     assert len(rejected) == 1
     assert rejected[0]["reason"] == "already_device_resident"
+    assert "no_live_detail" not in rejected[0]
     assert rejected[0]["join_id"] == "join"
 
 

@@ -581,6 +581,34 @@ class NativeAdmissionRuntime:
             self._join_ticket = None
         self._sample_h2d_opportunities(waiting_queue, now_ms=now_ms)
 
+    def _missing_opportunity_detail(
+        self, key: PrefillCandidateKey, *, admission_candidate: bool,
+    ) -> str:
+        """Distinguish stale causal state from a missing native anchor snapshot."""
+        if self.context_sessions.get(key.context_id) != key:
+            return "context_binding_changed"
+        context = self.graph.contexts.get(key.context_id)
+        if context is None or context.epoch != key.context_epoch:
+            return "context_epoch_changed"
+        invocation = self.graph.invocations.get(key.invocation_id)
+        if (
+            invocation is None
+            or invocation.context_id != key.context_id
+            or invocation.workflow_id != key.root_workflow_id
+            or self._terminal(key)
+        ):
+            return "invocation_not_live"
+        if invocation.state in (
+            InvocationState.WAIT_TOOL, InvocationState.WAIT_JOIN,
+            InvocationState.READY,
+        ) or (
+            admission_candidate
+            and invocation.state is InvocationState.RUNNING_LLM
+            and self.visible.get(key.request_id) == key
+        ):
+            return "anchor_snapshot_unavailable"
+        return "invocation_state_changed"
+
     def _sample_h2d_opportunities(
         self, waiting_queue: Sequence[object], *, now_ms: float,
     ) -> None:
@@ -647,6 +675,10 @@ class NativeAdmissionRuntime:
                     "native_cache_unavailable" if self._native_cache is None else
                     "no_live_session_or_anchors"
                 )
+                if row["reason"] == "no_live_session_or_anchors":
+                    row["no_live_detail"] = self._missing_opportunity_detail(
+                        key, admission_candidate=source == "admission_candidate",
+                    )
             else:
                 headroom = observation.headroom
                 step = observation.step
@@ -1095,7 +1127,7 @@ class NativeAdmissionRuntime:
                     context_id=ticket.key.context_id,
                     context_epoch=ticket.key.context_epoch,
                 )
-                self._opportunity_writer.record({
+                no_step_record = {
                     "event": "confirmed_join_no_h2d_step",
                     "ts_ms": time.time() * 1000.0,
                     "join_id": ticket.join_id,
@@ -1122,7 +1154,12 @@ class NativeAdmissionRuntime:
                         observation.fits_current_free_lists
                         if observation is not None else None
                     ),
-                })
+                }
+                if observation is None:
+                    no_step_record["no_live_detail"] = self._missing_opportunity_detail(
+                        ticket.key, admission_candidate=False,
+                    )
+                self._opportunity_writer.record(no_step_record)
                 ticket.no_step_recorded = True
             return
         command = self.issue_prefetch_gpu_step(step, source="join_ticket")
