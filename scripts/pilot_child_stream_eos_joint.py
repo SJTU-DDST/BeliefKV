@@ -6,6 +6,7 @@ from __future__ import annotations
 import argparse
 from collections import Counter
 import json
+import math
 from pathlib import Path
 import sys
 
@@ -13,9 +14,19 @@ ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
-from scripts.pilot_child_stream_content import collect, evaluate as content_evaluate
+from scripts.pilot_child_stream_content import (
+    _OPEN_ISSUE, collect, evaluate as content_evaluate,
+)
 
 THRESHOLDS = ("top20", "0.0001", "0.001", "0.01", "0.05", "0.1", "0.25")
+GATES = (
+    "eos_only",
+    "chars_128",
+    "chars_512",
+    "elapsed_4000ms",
+    "chars_512_elapsed_4000ms",
+    "sentence_end_no_open_issue",
+)
 
 
 def first_eos_events(row: dict, events: list[dict], tool_chunk_ts: float) -> dict[str, float]:
@@ -77,6 +88,126 @@ def score(rows: list[dict], threshold: str) -> dict:
     }
 
 
+def snapshot_gate_accepts(row: dict, observed: dict, ts: float, gate: str) -> bool:
+    """Inspect only content delivered at or before an EOS observation."""
+    snapshots = row["snapshots"]
+    chars = observed["content_chars"]
+    elapsed = ts - snapshots[0]["ts_ms"]
+    if gate == "eos_only":
+        return True
+    if gate == "chars_128":
+        return chars >= 128
+    if gate == "chars_512":
+        return chars >= 512
+    if gate == "elapsed_4000ms":
+        return elapsed >= 4000
+    if gate == "chars_512_elapsed_4000ms":
+        return chars >= 512 and elapsed >= 4000
+    if gate == "sentence_end_no_open_issue":
+        text = observed["content_tail"].rstrip()
+        return (
+            text.endswith((".", "!", "?", "。", "！", "？"))
+            and not _OPEN_ISSUE.search(text)
+        )
+    raise ValueError(f"unknown gate: {gate}")
+
+
+def gate_accepts(row: dict, threshold: str, gate: str) -> bool:
+    """Legacy first-crossing trace: never reuse content delivered later."""
+    ts = row["eos"].get(threshold)
+    if ts is None:
+        return False
+    observed = next((
+        snap for snap in reversed(row["snapshots"])
+        if snap["ts_ms"] <= ts
+    ), None)
+    return (
+        observed is not None
+        and snapshot_gate_accepts(row, observed, ts, gate)
+    )
+
+
+def snapshot_eos_ts(row: dict, threshold: str, gate: str) -> float | None:
+    """First eligible sampled EOS evidence, not an inferred persistent state."""
+    floor = (
+        float("-inf") if threshold == "top20"
+        else math.log(float(threshold))
+    )
+    for snap in row["snapshots"]:
+        value = snap["eos_shadow_max_logprob_since_previous_snapshot"]
+        if (
+            type(value) in (float, int) and math.isfinite(value)
+            and value >= floor
+            and snapshot_gate_accepts(row, snap, snap["ts_ms"], gate)
+        ):
+            return float(snap["ts_ms"])
+    return None
+
+
+def gated_score(rows: list[dict], threshold: str, gate: str) -> dict:
+    sampled = bool(rows and "eos_shadow_max_logprob_since_previous_snapshot"
+                   in rows[0]["snapshots"][0])
+    if sampled:
+        raw = [
+            snapshot_eos_ts(row, threshold, "eos_only") for row in rows
+        ]
+        accepted = [
+            snapshot_eos_ts(row, threshold, gate) for row in rows
+        ]
+    else:
+        # A rejected first crossing cannot be delayed in legacy traces.
+        raw = [row["eos"].get(threshold) for row in rows]
+        accepted = [
+            row["eos"].get(threshold) if gate_accepts(row, threshold, gate)
+            else None for row in rows
+        ]
+    gated = [
+        {**row, "eos": (
+            {threshold: ts} if ts is not None else {}
+        )}
+        for row, ts in zip(rows, accepted)
+    ]
+    result = score(gated, threshold)
+    result["gate_rejected_return_crossings"] = sum(
+        row["label"] == "return" and crossing is not None and accepted_ts is None
+        for row, crossing, accepted_ts in zip(rows, raw, accepted)
+    )
+    result["gate_rejected_tool_crossings"] = sum(
+        row["label"] == "tool" and crossing is not None and accepted_ts is None
+        for row, crossing, accepted_ts in zip(rows, raw, accepted)
+    )
+    return result
+
+
+def select_policy(train: list[dict]) -> tuple[tuple[str, str] | None, dict]:
+    results = {
+        f"{threshold}|{gate}": gated_score(train, threshold, gate)
+        for threshold in THRESHOLDS for gate in GATES
+    }
+    eligible = [
+        (threshold, gate)
+        for threshold in THRESHOLDS for gate in GATES
+        if (
+            (result := results[f"{threshold}|{gate}"])["return_rounds"] >= 10
+            and result["tool_rounds_with_content"] >= 20
+            and result["first_triggered_tool"]
+            / result["tool_rounds_with_content"] <= 0.05
+            and result["return_trigger_early_over_2000ms"]
+            / result["return_rounds"] <= 0.1
+        )
+    ]
+    selected = max(
+        eligible, key=lambda pair: (
+            results["|".join(pair)]["return_trigger_500_to_2000ms"],
+            -results["|".join(pair)]["first_triggered_tool"],
+            -results["|".join(pair)]["return_trigger_early_over_2000ms"],
+            -GATES.index(pair[1]),
+            -THRESHOLDS.index(pair[0]),
+        ),
+    ) if eligible else None
+    return selected, results
+
+
 def evaluate(workflows: list[Path], heldout_project: str) -> dict:
     rows, counts = collect(workflows, min_snapshot_chars=1)
     by_task: dict[str, list[dict]] = {}
@@ -118,13 +249,28 @@ def evaluate(workflows: list[Path], heldout_project: str) -> dict:
             row, by_task[row["task"]],
             tool_chunk_by_task[row["task"]].get(row["rid"], float("inf")),
         )
+    sampled = [
+        "eos_shadow_max_logprob_since_previous_snapshot" in snap
+        for row in rows for snap in row["snapshots"]
+    ]
+    if any(sampled) and not all(sampled):
+        raise ValueError("cannot mix sampled and legacy EOS snapshot evidence")
+    has_sampled_eos = bool(sampled and sampled[0])
 
     train = [row for row in rows if row["project"] != heldout_project]
     held = [row for row in rows if row["project"] == heldout_project]
-    if not train or not held or not any(row["eos"] for row in rows):
+    if not train or not held or not (
+        has_sampled_eos or any(row["eos"] for row in rows)
+    ):
         raise ValueError("not enough content/EOS rounds for project holdout")
-    train_scores = {threshold: score(train, threshold) for threshold in THRESHOLDS}
-    held_scores = {threshold: score(held, threshold) for threshold in THRESHOLDS}
+    train_scores = {
+        threshold: gated_score(train, threshold, "eos_only")
+        for threshold in THRESHOLDS
+    }
+    held_scores = {
+        threshold: gated_score(held, threshold, "eos_only")
+        for threshold in THRESHOLDS
+    }
     # Fixed training-only gate. Fail closed when no threshold meets both risks.
     admissible = [
         threshold for threshold, result in train_scores.items()
@@ -140,7 +286,30 @@ def evaluate(workflows: list[Path], heldout_project: str) -> dict:
             -train_scores[threshold]["first_triggered_tool"],
         ),
     ) if admissible else None
-    baselines = content_evaluate(workflows, heldout_project, min_snapshot_chars=1)
+    fused_selected, fused_train_scores = select_policy(train)
+    fused_held_score = (
+        gated_score(held, *fused_selected) if fused_selected else None
+    )
+    previous_report = (
+        workflows[-1].parent.parent
+        / f"eos_joint_matched_holdout_{heldout_project.split('-', 1)[0]}.json"
+    )
+    cached = json.loads(previous_report.read_text()) if previous_report.is_file() else {}
+    if (
+        cached.get("heldout_project") == heldout_project
+        and cached.get("collected_manifests") == eos_manifests
+        and cached.get("counts") == dict(counts)
+        and "same_rows_length_progress_baselines" in cached
+    ):
+        baselines_result = cached["same_rows_length_progress_baselines"]
+        baselines_source = str(previous_report)
+    else:
+        baselines = content_evaluate(workflows, heldout_project, min_snapshot_chars=1)
+        baselines_result = (
+            baselines["results"] if baselines["status"].startswith("diagnostic_")
+            else baselines
+        )
+        baselines_source = "recomputed"
     keys = (
         "near_return_2000ms_size_only",
         "near_return_2000ms_progress_only",
@@ -149,6 +318,11 @@ def evaluate(workflows: list[Path], heldout_project: str) -> dict:
     )
     return {
         "scope": "development only: no physical transfer; top-k absence is unknown, not P(EOS)=0",
+        "eos_evidence": (
+            "max candidate per content-snapshot interval; trigger at delivered snapshot, "
+            "not the exact token crossing" if has_sampled_eos else
+            "only first EOS threshold crossing per request; no recheck after content gate"
+        ),
         "heldout_project": heldout_project,
         "train_projects": sorted({row["project"] for row in train}),
         "collected_manifests": eos_manifests,
@@ -159,9 +333,25 @@ def evaluate(workflows: list[Path], heldout_project: str) -> dict:
         "heldout_eos_threshold_scores": held_scores,
         "selected_threshold_from_train": selected,
         "selected_heldout_score": held_scores[selected] if selected else None,
+        "fused_gate_scope": (
+            "Training projects alone select EOS threshold and causal content gate. "
+            "An EOS candidate and content must coexist in a delivered snapshot "
+            "interval; unseen top-k candidates are unknown."
+            if has_sampled_eos else
+            "Training projects alone select EOS threshold and same-moment "
+            "causal content gate. A rejected first crossing cannot be "
+            "reconsidered: subsequent EOS probabilities were not collected."
+        ),
+        "train_fused_policy_scores": fused_train_scores,
+        "selected_fused_policy_from_train": (
+            {"threshold": fused_selected[0], "gate": fused_selected[1]}
+            if fused_selected else None
+        ),
+        "selected_fused_heldout_score": fused_held_score,
+        "same_rows_length_progress_baselines_source": baselines_source,
         "same_rows_length_progress_baselines": {
-            key: baselines["results"][key] for key in keys
-        } if baselines["status"].startswith("diagnostic_") else baselines,
+            key: baselines_result[key] for key in keys
+        } if "near_return_2000ms_size_only" in baselines_result else baselines_result,
     }
 
 

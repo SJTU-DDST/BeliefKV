@@ -284,6 +284,7 @@ class DeepAgentsRuntimeAdapter(BaseCallbackHandler):
         self._report_phase_shadow = report_phase_shadow
         self._stream_content_shadow = stream_content_shadow
         self._stream_content_state: dict[str, tuple[int, str, int, int]] = {}
+        self._eos_snapshot_accum: dict[str, tuple[float | None, int, int]] = {}
         self._eos_shadow = eos_shadow
         self._eos_top_hit_shadow = eos_top_hit_shadow
         self._eos_thresholds = (
@@ -975,6 +976,17 @@ class DeepAgentsRuntimeAdapter(BaseCallbackHandler):
                 self._child_eos_scored_tokens[key] = (
                     self._child_eos_scored_tokens.get(key, 0) + scored
                 )
+                if self._stream_content_shadow is not None:
+                    previous_best, previous_scored, previous_hits = (
+                        self._eos_snapshot_accum.get(key, (None, 0, 0))
+                    )
+                    self._eos_snapshot_accum[key] = (
+                        max(previous_best, eos_logprob)
+                        if previous_best is not None and eos_logprob is not None
+                        else previous_best if eos_logprob is None else eos_logprob,
+                        previous_scored + scored,
+                        previous_hits + int(eos_logprob is not None),
+                    )
                 if eos_logprob is not None:
                     self._child_eos_top_hits[key] = (
                         self._child_eos_top_hits.get(key, 0) + 1
@@ -992,6 +1004,15 @@ class DeepAgentsRuntimeAdapter(BaseCallbackHandler):
                         ):
                             self._child_eos_seen.add((key, threshold))
                             eos_events.append(threshold)
+            if content_observation is not None and self._eos_shadow:
+                best, scored, hits = self._eos_snapshot_accum.pop(
+                    key, (None, 0, 0)
+                )
+                content_observation.update({
+                    "eos_shadow_max_logprob_since_previous_snapshot": best,
+                    "eos_shadow_scored_tokens_since_previous_snapshot": scored,
+                    "eos_shadow_top_hits_since_previous_snapshot": hits,
+                })
             if content_seen and key not in self._child_first_content_shadow_runs:
                 self._child_first_content_shadow_runs.add(key)
                 emitted.append(("beliefkv_child_first_content_shadow", None))
@@ -1129,6 +1150,7 @@ class DeepAgentsRuntimeAdapter(BaseCallbackHandler):
             stream_chunk_count = self._child_stream_chunk_count.pop(key, None)
             self._child_stream_last_chunk.pop(key, None)
             self._stream_content_state.pop(key, None)
+            self._eos_snapshot_accum.pop(key, None)
             self._child_report_phase_trackers.pop(key, None)
             eos_scored_tokens = self._child_eos_scored_tokens.pop(key, None)
             eos_top_hits = self._child_eos_top_hits.pop(key, None)
@@ -1356,6 +1378,7 @@ class DeepAgentsRuntimeAdapter(BaseCallbackHandler):
         key = self._remember_run(run_id, parent_run_id)
         with self._lock:
             self._stream_content_state.pop(key, None)
+            self._eos_snapshot_accum.pop(key, None)
             self._child_stream_content_chars.pop(key, None)
             self._child_stream_max_chunk_chars.pop(key, None)
             self._child_stream_token_chars.pop(key, None)
