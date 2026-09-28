@@ -335,3 +335,41 @@ runtime 或更改 predictive 行动资格。旧 EOS top-20
 跨批次只诊断信号可识别性，不把 JCT 或绝对 RETURN
 墙钟时间直接当成同配置对照；正式训练、校准和密封测试
 必须统一工具超时后再作可比性推断。
+
+## 联合 EOS/内容开发采集（2026-09-28）
+
+新采集直接读取流式 top-20 logprobs，不注入完成通知工具。
+`qwen35_child_stream_eos_django_dev_12root_20260928_v2` 为 9/12
+completed；另外 3 个 root 在默认语义 guard 拒绝工具调用后以空白
+响应结束。脚本当时遗漏 `--native-reactive-guard-profile`，这 3 个
+incomplete 不能用作自然完整 workflow。修复后采集的
+`qwen35_child_stream_eos_astropy_sphinx_dev_12root_20260928_v1`
+为 12/12 completed、12 次 JOIN 满足、零 writer 丢失和零语义
+stuck guard 介入。两批均只用于开发，不是同配置、独立项目的
+正式收益比较。
+
+当前请求级 EOS 对照以同一 request/context/epoch 的首次触发为
+单位，训练项目选择门槛，留出开发项目只评分；分母只包含已经
+交付正文的工具轮次。窗口为真实 child RETURN 前 0.5--2 秒：
+
+| 留出开发项目 | 自然 RETURN / 可评分工具轮次 | EOS 窗口命中 / 超前 2 秒 / 工具误报 | 长度窗口命中 / 工具误报 | 进度窗口命中 / 工具误报 | JOIN-last EOS 窗口命中 |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| Django | 32 / 894 | 8 / 2 / 2 | 6 / 7 | 10 / 8 | 2/6 |
+| Astropy | 21 / 538 | 6 / 0 / 0 | 0 / 10 | 1 / 9 | 2/6 |
+| Sphinx | 21 / 445 | 9 / 6 / 1 | 0 / 10 | 0 / 14 | 3/6 |
+
+Sphinx 的过早触发 6/21 已违反预定的 10% 风险门槛；
+单看 EOS 进入 top-20 则在 Astropy/Sphinx 分别误触发
+111/538、110/445 个有正文工具轮次，所有自然 RETURN 的
+首次触发均早于 2 秒。现有评分器只将 EOS 与内容/长度/进度
+基线放在同一批请求上比较，**尚未训练或验证联合融合预测器**。
+不能据此开启 H2D、称 EOS 已有稳定净增益，或将三个开发项目
+误称为未见测试集。
+
+截至本批只有 74 个可配对自然 RETURN 和 18 个 JOIN-last，
+不足原定的 100/30 个样本。下一步在修复后的相同配置下
+重采 Django，使用已冻结的
+`qwen35_child_stream_eos_pytest_dev_19_20260928.json`
+补采第四个开发项目；先扩大正例和工具负例，再只用开发项目
+评估 EOS 与当时已交付的内容/进度是否互补。独立 pydata
+校准及 pylint/psf 密封评价仍未开始，保持 shadow-only。
