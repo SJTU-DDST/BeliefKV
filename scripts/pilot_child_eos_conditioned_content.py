@@ -6,6 +6,7 @@ from __future__ import annotations
 import argparse
 from collections import Counter
 import json
+import math
 from pathlib import Path
 import sys
 
@@ -19,7 +20,7 @@ from scripts.pilot_child_stream_content import (
     centroid_scores, decode_progress, length_conditioned_text, text_features,
 )
 from scripts.pilot_child_stream_eos_joint import (
-    THRESHOLDS, load_rows, score, snapshot_eos_ts,
+    THRESHOLDS, load_rows, score,
 )
 
 MODES = ("eos_only", "progress_only", "progress_plus_content")
@@ -28,10 +29,23 @@ MODES = ("eos_only", "progress_only", "progress_plus_content")
 def candidates(rows: list[dict], threshold: str, sampled: bool) -> list[dict]:
     result = []
     for index, row in enumerate(rows):
-        ts = (
-            snapshot_eos_ts(row, threshold, "eos_only")
-            if sampled else row["eos"].get(threshold)
-        )
+        if sampled:
+            floor = (
+                float("-inf") if threshold == "top20"
+                else math.log(float(threshold))
+            )
+            for position, snap in enumerate(row["snapshots"]):
+                value = snap["eos_shadow_max_logprob_since_previous_snapshot"]
+                if (
+                    type(value) in (int, float) and math.isfinite(value)
+                    and value >= floor
+                ):
+                    result.append({
+                        **row, "snapshots": row["snapshots"][:position + 1],
+                        "signal_ts": snap["ts_ms"], "source_index": index,
+                    })
+            continue
+        ts = row["eos"].get(threshold)
         if ts is None:
             continue
         delivered = [snap for snap in row["snapshots"] if snap["ts_ms"] <= ts]
@@ -69,8 +83,12 @@ def trained_scores(
     std = np.maximum(train_progress.std(axis=0), 1e-9)
     train_progress = (train_progress - mean) / std
     held_progress = (held_progress - mean) / std
-    task_counts = Counter(row["task"] for row in train)
-    weights = np.asarray([1 / task_counts[row["task"]] for row in train])
+    request_counts = Counter((row["task"], row["rid"]) for row in train)
+    task_counts = Counter(task for task, _ in request_counts)
+    weights = np.asarray([
+        1 / (task_counts[row["task"]] * request_counts[row["task"], row["rid"]])
+        for row in train
+    ])
     progress_train, progress_held = centroid_scores(
         train_progress, held_progress, labels, weights
     )
@@ -103,11 +121,10 @@ def gated_metrics(
     rows: list[dict], matched: list[dict], signals: np.ndarray,
     threshold: str, cutoff: float,
 ) -> dict:
-    triggered = {
-        row["source_index"]: row["signal_ts"]
-        for row, value in zip(matched, signals)
-        if value >= cutoff
-    }
+    triggered = {}
+    for row, value in zip(matched, signals):
+        if value >= cutoff:
+            triggered.setdefault(row["source_index"], row["signal_ts"])
     return score([
         {
             **row, "eos": (
@@ -143,11 +160,17 @@ def evaluate(workflows: list[Path], heldout_project: str) -> dict:
         }
         trained = trained_scores(train_candidates, held_candidates)
         for mode, (train_scores, held_scores) in trained.items():
-            bad = [
-                value for row, value in zip(train_candidates, train_scores)
-                if row["label"] == "tool"
-                or row["return_ts"] - row["signal_ts"] > 2000
-            ]
+            bad_by_request = {}
+            for row, value in zip(train_candidates, train_scores):
+                if (
+                    row["label"] == "tool"
+                    or row["return_ts"] - row["signal_ts"] > 2000
+                ):
+                    index = row["source_index"]
+                    bad_by_request[index] = max(
+                        bad_by_request.get(index, float("-inf")), float(value),
+                    )
+            bad = list(bad_by_request.values())
             if len(bad) < 10:
                 continue
             cutoff = float(np.nextafter(np.quantile(bad, 0.95), np.inf))
@@ -192,8 +215,13 @@ def evaluate(workflows: list[Path], heldout_project: str) -> dict:
         "heldout_project": heldout_project,
         "train_projects": sorted({row["project"] for row in train}),
         "eos_evidence": (
-            "snapshot interval max candidate" if sampled
+            "each delivered snapshot interval with an EOS candidate; "
+            "only the first accepted snapshot per request counts" if sampled
             else "first threshold crossing only"
+        ),
+        "risk_cutoff_scope": (
+            "request-level maximum score on tool rounds and early RETURN "
+            "snapshots; no heldout threshold fitting"
         ),
         "manifests": manifests,
         "counts": dict(counts),
