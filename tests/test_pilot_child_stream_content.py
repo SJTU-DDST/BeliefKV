@@ -110,10 +110,13 @@ def test_collect_early_snapshots_does_not_count_finish_or_tool_chunks(tmp_path):
         {"event": "child_stream_content", "request_id": "rid",
          "invocation_id": "child", "ts_ms": ts, "content_chars": chars,
          "content_tail": "final answer", "tool_chunk": tool,
-         "finish_reason": finish}
-        for ts, chars, tool, finish in (
-            (10, 32, False, None), (15, 64, False, None),
-            (16, 128, True, None), (20, 128, False, "stop"),
+         "finish_reason": finish, "sampling_reason": reason}
+        for ts, chars, tool, finish, reason in (
+            (10, 32, False, None, "milestone"),
+            (12, 50, False, None, "content_boundary"),
+            (15, 64, False, None, "milestone"),
+            (16, 128, True, None, "tool_or_finish"),
+            (20, 128, False, "stop", "tool_or_finish"),
         )
     ]
     stream.append({
@@ -137,7 +140,13 @@ def test_collect_early_snapshots_does_not_count_finish_or_tool_chunks(tmp_path):
         "".join(json.dumps(row) + "\n" for row in events)
     )
     early, _ = pilot.collect(tmp_path, min_snapshot_chars=32)
-    assert [s["content_chars"] for s in early[0]["snapshots"]] == [32, 64]
+    assert [s["content_chars"] for s in early[0]["snapshots"]] == [32, 50, 64]
+    without_boundaries, counts = pilot.collect(
+        tmp_path, min_snapshot_chars=32, exclude_boundary_snapshots=True,
+    )
+    assert [s["content_chars"] for s in without_boundaries[0]["snapshots"]] == [32, 64]
+    assert counts["snapshot_content_boundary"] == 0
+    assert counts["snapshot_milestone"] == 2
     later, counts = pilot.collect(tmp_path, min_snapshot_chars=128)
     assert not later
     assert counts["return_without_eligible_snapshot"] == 1

@@ -283,7 +283,7 @@ class DeepAgentsRuntimeAdapter(BaseCallbackHandler):
         self._command_structure_shadow = command_structure_shadow
         self._report_phase_shadow = report_phase_shadow
         self._stream_content_shadow = stream_content_shadow
-        self._stream_content_state: dict[str, tuple[int, str, int]] = {}
+        self._stream_content_state: dict[str, tuple[int, str, int, int]] = {}
         self._eos_shadow = eos_shadow
         self._eos_top_hit_shadow = eos_top_hit_shadow
         self._eos_thresholds = (
@@ -906,8 +906,8 @@ class DeepAgentsRuntimeAdapter(BaseCallbackHandler):
                 return
             self._child_stream_last_chunk[key] = chunk
             if self._stream_content_shadow is not None:
-                count, tail, next_at = self._stream_content_state.get(
-                    key, (0, "", 32)
+                count, tail, next_at, last_emitted = self._stream_content_state.get(
+                    key, (0, "", 32, 0)
                 )
                 if isinstance(content, str) and content:
                     count += len(content)
@@ -916,10 +916,20 @@ class DeepAgentsRuntimeAdapter(BaseCallbackHandler):
                     generation_info.get("finish_reason")
                     if isinstance(generation_info, Mapping) else None
                 )
-                if (
-                    (content and (count == len(content) or count >= next_at))
-                    or tool_seen or finish
-                ):
+                boundary = (
+                    isinstance(content, str)
+                    and not tool_seen
+                    and count - last_emitted >= 24
+                    and (
+                        content.endswith("\n")
+                        or content.rstrip(" \t").endswith(
+                            (".", "!", "?", "。", "！", "？", "```")
+                        )
+                    )
+                )
+                first_content = bool(content and count == len(content))
+                milestone = bool(content and count >= next_at)
+                if first_content or milestone or boundary or tool_seen or finish:
                     content_observation = {
                         "event": "child_stream_content",
                         "ts_ms": self.clock_ms(),
@@ -932,12 +942,21 @@ class DeepAgentsRuntimeAdapter(BaseCallbackHandler):
                         "content_tail": tail,
                         "tool_chunk": tool_seen,
                         "finish_reason": finish,
+                        "sampling_reason": (
+                            "first_content" if first_content
+                            else "milestone" if milestone
+                            else "content_boundary" if boundary
+                            else "tool_or_finish"
+                        ),
                     }
+                    last_emitted = count
                     next_at = (
                         min((count // 32 + 1) * 32, 128)
                         if count < 128 else (count // 128 + 1) * 128
                     )
-                self._stream_content_state[key] = (count, tail, next_at)
+                self._stream_content_state[key] = (
+                    count, tail, next_at, last_emitted
+                )
             if (
                 self._eos_shadow
                 and logprobs

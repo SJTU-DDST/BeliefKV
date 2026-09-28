@@ -25,6 +25,7 @@ from scripts.audit_child_hidden_trace import (
 
 def collect(
     workflows: Path | Sequence[Path], *, min_snapshot_chars: int = 128,
+    exclude_boundary_snapshots: bool = False,
 ) -> tuple[list[dict], Counter]:
     if min_snapshot_chars not in (32, 64, 128):
         raise ValueError("min_snapshot_chars must be 32, 64, or 128")
@@ -113,6 +114,11 @@ def collect(
                 if row["event"] != "child_stream_content" or row["tool_chunk"]:
                     continue
                 if (
+                    exclude_boundary_snapshots
+                    and row.get("sampling_reason") == "content_boundary"
+                ):
+                    continue
+                if (
                     row["content_chars"] < min_snapshot_chars
                     or row["content_chars"] == last_chars
                 ):
@@ -123,6 +129,7 @@ def collect(
                     continue
                 last_chars = row["content_chars"]
                 snapshots.append(row)
+                counts[f"snapshot_{row.get('sampling_reason', 'legacy')}"] += 1
             if not snapshots:
                 counts[f"{label}_without_eligible_snapshot"] += 1
                 counts[f"{project}_{label}_without_eligible_snapshot"] += 1
@@ -257,8 +264,12 @@ def evaluate(
     workflows: Path | Sequence[Path], heldout_project: str, *, min_snapshot_chars: int = 128,
     train_projects: tuple[str, ...] | None = None,
     calibration_projects: tuple[str, ...] = (),
+    exclude_boundary_snapshots: bool = False,
 ) -> dict:
-    rows, counts = collect(workflows, min_snapshot_chars=min_snapshot_chars)
+    rows, counts = collect(
+        workflows, min_snapshot_chars=min_snapshot_chars,
+        exclude_boundary_snapshots=exclude_boundary_snapshots,
+    )
     if calibration_projects:
         if not train_projects or (
             set(train_projects) & (set(calibration_projects) | {heldout_project})
@@ -486,6 +497,7 @@ def evaluate(
         ),
         "heldout_project": heldout_project,
         "min_snapshot_chars": min_snapshot_chars,
+        "exclude_boundary_snapshots": exclude_boundary_snapshots,
         "counts": dict(counts),
         "train_projects": sorted({row["project"] for row in train}),
         "calibration_projects": sorted({row["project"] for row in cal}),
@@ -515,6 +527,10 @@ def main() -> None:
     parser.add_argument(
         "--min-snapshot-chars", type=int, choices=(32, 64, 128), default=128,
     )
+    parser.add_argument(
+        "--exclude-boundary-snapshots", action="store_true",
+        help="Compare against the same run with boundary-only snapshots removed",
+    )
     parser.add_argument("--output", type=Path, required=True)
     args = parser.parse_args()
     result = evaluate(
@@ -527,6 +543,7 @@ def main() -> None:
             tuple(args.calibration_projects.split(","))
             if args.calibration_projects else ()
         ),
+        exclude_boundary_snapshots=args.exclude_boundary_snapshots,
     )
     args.output.parent.mkdir(parents=True, exist_ok=True)
     args.output.write_text(json.dumps(result, indent=2) + "\n")

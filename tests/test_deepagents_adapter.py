@@ -655,6 +655,42 @@ def test_child_content_shadow_early_milestones_preserve_identity(tmp_path) -> No
     )
 
 
+def test_child_content_shadow_records_bounded_sentence_boundary(tmp_path) -> None:
+    path = tmp_path / "sentences.jsonl"
+    shadow = StreamContentShadow(path, capacity=16)
+    adapter = DeepAgentsRuntimeAdapter(
+        CollectingSink(), BeliefKVRequestMetadata("wf", "root", "ctx", 0),
+        stream_content_shadow=shadow,
+    )
+    adapter.start()
+    task = adapter.declare_runtime_tasks([("explorer", "inspect")])[0]
+    tool_run = uuid4()
+    adapter.on_tool_start(
+        {"name": "task"}, "", run_id=tool_run,
+        inputs={"subagent_type": "explorer", "description": "inspect"},
+        tool_call_id=task.tool_call_id,
+    )
+    run = uuid4()
+    adapter.on_chat_model_start(
+        {}, [[HumanMessage(content="prompt")]],
+        run_id=run, parent_run_id=tool_run,
+    )
+    for content in ("a" * 35, "b" * 26 + ".", "c", "."):
+        chunk = SimpleNamespace(
+            message=SimpleNamespace(content=content, tool_call_chunks=[]),
+            generation_info=None,
+        )
+        adapter.on_llm_new_token(content, chunk=chunk, run_id=run)
+    adapter.on_llm_end(_natural_child_result("done"), run_id=run)
+    assert shadow.close()["complete"]
+    rows = [json.loads(line) for line in path.read_text().splitlines()]
+    content = [row for row in rows if row["event"] == "child_stream_content"]
+    assert [(row["content_chars"], row["sampling_reason"]) for row in content] == [
+        (35, "first_content"), (62, "content_boundary"), (64, "milestone"),
+    ]
+    assert all(row["invocation_id"] == task.invocation_id for row in content)
+
+
 def test_final_stream_chunk_shadow_is_opt_in_and_excludes_root() -> None:
     trace = CollectingSink()
     root = BeliefKVRequestMetadata("wf", "root", "ctx", 0)

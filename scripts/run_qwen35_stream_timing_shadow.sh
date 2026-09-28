@@ -12,6 +12,7 @@ WORKLOAD_OFFSET="${WORKLOAD_OFFSET:-0}"
 WORKLOAD_POOL_SIZE="${WORKLOAD_POOL_SIZE:-32}"
 WORKLOAD_PREFERRED_PREFIX="${WORKLOAD_PREFERRED_PREFIX:-}"
 WORKLOAD_ALLOWED_PROJECTS="${WORKLOAD_ALLOWED_PROJECTS:-}"
+WORKLOAD_INCLUDE_MANIFEST="${WORKLOAD_INCLUDE_MANIFEST:-}"
 WORKLOAD_EXCLUDE_PREFIX="${WORKLOAD_EXCLUDE_PREFIX:-}"
 WORKLOAD_EXCLUDE_MANIFEST="${WORKLOAD_EXCLUDE_MANIFEST:-}"
 PILOT_WORKFLOW_COUNT="${PILOT_WORKFLOW_COUNT:-32}"
@@ -39,6 +40,14 @@ if [[ ! -f "$SOURCE/runtime_workload_manifest.json" ]]; then
   exit 1
 fi
 excluded_instances='[]'
+included_instances='[]'
+if [[ -n "$WORKLOAD_INCLUDE_MANIFEST" ]]; then
+  if [[ ! -f "$WORKLOAD_INCLUDE_MANIFEST" ]]; then
+    printf 'Missing inclusion manifest: %s\n' "$WORKLOAD_INCLUDE_MANIFEST" >&2
+    exit 1
+  fi
+  included_instances="$(jq -c '.instance_ids' "$WORKLOAD_INCLUDE_MANIFEST")"
+fi
 if [[ -n "$WORKLOAD_EXCLUDE_MANIFEST" ]]; then
   if [[ ! -f "$WORKLOAD_EXCLUDE_MANIFEST" ]]; then
     printf 'Missing exclusion manifest: %s\n' "$WORKLOAD_EXCLUDE_MANIFEST" >&2
@@ -55,11 +64,18 @@ if [[ ! "$PILOT_WORKFLOW_COUNT" =~ ^[0-9]+$ \
   printf 'Invalid pilot workflow count, offset or workload pool size\n' >&2
   exit 1
 fi
+if [[ -n "$WORKLOAD_INCLUDE_MANIFEST" ]] && [[ "$(
+  jq 'length' <<< "$included_instances"
+)" -ne "$PILOT_WORKFLOW_COUNT" ]]; then
+  printf 'Inclusion manifest count must match pilot workflow count\n' >&2
+  exit 1
+fi
 selected_workloads="$(
   jq -c --argjson offset "$WORKLOAD_OFFSET" \
     --argjson pool "$WORKLOAD_POOL_SIZE" \
     --argjson count "$PILOT_WORKFLOW_COUNT" \
     --argjson excluded "$excluded_instances" \
+    --argjson included "$included_instances" \
     --arg prefix "$WORKLOAD_PREFERRED_PREFIX" \
     --arg allowed "$WORKLOAD_ALLOWED_PROJECTS" \
     --arg excluded_prefix "$WORKLOAD_EXCLUDE_PREFIX" '
@@ -71,7 +87,9 @@ selected_workloads="$(
              and ($allowed == "" or ($allowed | split(",") | index($id | split("__")[0])) != null)
          )]
       as $workloads
-      | if $prefix == "" then $workloads[:$count]
+      | if ($included | length) > 0 then
+          [$included[] as $id | $workloads[] | select(.instance_id == $id)]
+        elif $prefix == "" then $workloads[:$count]
         else (
           [$workloads[] | select(.instance_id | startswith($prefix))]
           + [$workloads[] | select((.instance_id | startswith($prefix)) | not)]
@@ -93,6 +111,7 @@ instance_args=()
 if [[ "${STREAM_CONTENT_SHADOW:-0}" == 1 ]] \
   || (( WORKLOAD_OFFSET > 0 )) || [[ -n "$WORKLOAD_PREFERRED_PREFIX" ]] \
   || [[ -n "$WORKLOAD_ALLOWED_PROJECTS" ]] \
+  || [[ -n "$WORKLOAD_INCLUDE_MANIFEST" ]] \
   || [[ -n "$WORKLOAD_EXCLUDE_PREFIX" ]] \
   || [[ -n "$WORKLOAD_EXCLUDE_MANIFEST" ]] \
   || (( PILOT_WORKFLOW_COUNT < 32 )); then
