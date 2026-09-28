@@ -136,7 +136,12 @@ def features(
     return texts, np.asarray(sizes), np.asarray(labels), call_index
 
 
-def text_features(train: list[str], held: list[str]) -> tuple[np.ndarray, np.ndarray]:
+def text_features(
+    train: list[str], held: list[str], train_workflows: list[str],
+) -> tuple[np.ndarray, np.ndarray]:
+    if len(train) != len(train_workflows):
+        raise ValueError("one workflow identity is required per training snapshot")
+
     def ngrams(text: str) -> Counter[str]:
         words = re.findall(r"[a-z_][a-z_0-9]*|[^\s]", text.lower())
         return Counter(
@@ -145,7 +150,12 @@ def text_features(train: list[str], held: list[str]) -> tuple[np.ndarray, np.nda
 
     train_counts = [ngrams(text) for text in train]
     held_counts = [ngrams(text) for text in held]
-    document_counts = Counter(token for row in train_counts for token in row)
+    seen_by_workflow: dict[str, set[str]] = defaultdict(set)
+    for workflow, row in zip(train_workflows, train_counts):
+        seen_by_workflow[workflow].update(row)
+    document_counts = Counter(
+        token for seen in seen_by_workflow.values() for token in seen
+    )
     vocab = {
         token: index for index, (token, count) in enumerate(
             sorted(
@@ -170,6 +180,43 @@ def text_features(train: list[str], held: list[str]) -> tuple[np.ndarray, np.nda
     return encode(train_counts), encode(held_counts)
 
 
+def length_conditioned_text(
+    train_text: np.ndarray,
+    held_text: np.ndarray,
+    train_size: np.ndarray,
+    held_size: np.ndarray,
+    weights: np.ndarray,
+) -> tuple[np.ndarray, np.ndarray]:
+    """Remove the lexical variation explained by observed length on train only."""
+    train_basis = np.column_stack((np.ones(len(train_size)), train_size[:, 0]))
+    held_basis = np.column_stack((np.ones(len(held_size)), held_size[:, 0]))
+    ridge = np.diag([1e-8, 1e-3])
+    coefficients = np.linalg.solve(
+        train_basis.T @ (weights[:, None] * train_basis) + ridge,
+        train_basis.T @ (weights[:, None] * train_text),
+    )
+    return (
+        train_text - train_basis @ coefficients,
+        held_text - held_basis @ coefficients,
+    )
+
+
+def centroid_scores(
+    train_x: np.ndarray,
+    held_x: np.ndarray,
+    train_y: np.ndarray,
+    weights: np.ndarray,
+) -> tuple[np.ndarray, np.ndarray]:
+    positive = np.average(
+        train_x[train_y == 1], axis=0, weights=weights[train_y == 1]
+    )
+    negative = np.average(
+        train_x[train_y == 0], axis=0, weights=weights[train_y == 0]
+    )
+    direction = positive - negative
+    return train_x @ direction, held_x @ direction
+
+
 def evaluate(workflows: Path, heldout_project: str) -> dict:
     rows, counts = collect(workflows)
     train = [row for row in rows if row["project"] != heldout_project]
@@ -182,10 +229,21 @@ def evaluate(workflows: Path, heldout_project: str) -> dict:
         }
     train_text, train_size, _, train_idx = features(train)
     held_text, held_size, _, held_idx = features(held)
-    train_text_x, held_text_x = text_features(train_text, held_text)
+    train_text_x, held_text_x = text_features(
+        train_text, held_text, [train[index]["task"] for index in train_idx],
+    )
     size_mean, size_std = train_size.mean(), max(train_size.std(), 1e-9)
     held_size = (held_size - size_mean) / size_std
     train_size = (train_size - size_mean) / size_std
+    task_counts = Counter(row["task"] for row in train)
+    weights = np.asarray([
+        1 / (
+            task_counts[train[idx]["task"]] * len(train[idx]["snapshots"])
+        ) for idx in train_idx
+    ])
+    train_text_residual, held_text_residual = length_conditioned_text(
+        train_text_x, held_text_x, train_size, held_size, weights,
+    )
     results = {}
     matrices = (
         ("size_only", train_size, held_size),
@@ -199,19 +257,28 @@ def evaluate(workflows: Path, heldout_project: str) -> dict:
         if len(set(train_y)) < 2:
             results[mode] = {"status": "insufficient_near_return_snapshots"}
             continue
-        for name, x, x_held in matrices:
-            weights = np.asarray([
-                1 / len(train[idx]["snapshots"]) for idx in train_idx
-            ])
-            positive = np.average(
-                x[train_y == 1], axis=0, weights=weights[train_y == 1]
+        for name, x, x_held in (
+            *matrices,
+            ("length_conditioned_content", train_text_residual, held_text_residual),
+        ):
+            predicted_train, predicted_held = centroid_scores(
+                x, x_held, train_y, weights
             )
-            negative = np.average(
-                x[train_y == 0], axis=0, weights=weights[train_y == 0]
-            )
-            direction = positive - negative
-            predicted_train = x @ direction
-            predicted_held = x_held @ direction
+            if name == "length_conditioned_content":
+                length_train, length_held = centroid_scores(
+                    train_size, held_size, train_y, weights
+                )
+                # Fixed diagnostic weight; never select it on the held-out project.
+                length_scale = max(float(length_train.std()), 1e-9)
+                content_scale = max(float(predicted_train.std()), 1e-9)
+                predicted_train = (
+                    length_train / length_scale
+                    + 0.5 * predicted_train / content_scale
+                )
+                predicted_held = (
+                    length_held / length_scale
+                    + 0.5 * predicted_held / content_scale
+                )
             # Training-only threshold. In near mode, early parts of eventual
             # RETURNs also count as false starts, alongside tool rounds.
             train_bad_max = [
@@ -268,6 +335,17 @@ def evaluate(workflows: Path, heldout_project: str) -> dict:
                 "heldout_join_last_triggered": sum(
                     bool(triggered[i]) and held[i]["join_last"] for i in positives
                 ),
+                "heldout_join_last_in_window": sum(
+                    held[i]["join_last"]
+                    and bool(triggered[i])
+                    and 500 <= held[i]["return_ts"] - min(triggered[i]) <= 2000
+                    for i in positives
+                ),
+                "heldout_window_hits_by_workflow": dict(sorted(Counter(
+                    held[i]["task"] for i in positives
+                    if triggered[i]
+                    and 500 <= held[i]["return_ts"] - min(triggered[i]) <= 2000
+                ).items())),
                 "lead_ms_median": median(lead) if lead else None,
                 "lead_at_least_500ms": sum(t >= 500 for t in lead),
                 "lead_between_500_and_2000ms": sum(

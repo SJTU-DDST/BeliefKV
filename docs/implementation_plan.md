@@ -77,6 +77,17 @@ observations by physical target/epoch before estimating opportunities.
 
 ## Objective (Current Stage)
 
+The read-only child decode-content research track is specified in
+`docs/experiments/qwen35_decode_content_conditioned_plan_2026-09-28_zh.md`.
+It separates (a) a no-more-tools child RETURN boundary from (b) enough
+lead for the measured H2D/control service budget. The current lexical
+tail-plus-length pilot is development data, not a calibrated predictive
+action head: workflow-balanced, length-conditioned content helped only
+one of two reused projects and hit none of three JOIN-last target windows.
+Freeze and validate on genuinely new projects, with early-final and
+tool-continuation false starts counted at the request level, before
+considering EOS-distribution or low-overhead hidden-state signals.
+
 **Primary goal:** On Qwen3.5/SGLang v0.5.20, identify a reproducible
 workload where the required FULL/Mamba pools have genuinely free HBM for
 useful transfers, NUMA-local Host pools remain stable, PCIe has useful

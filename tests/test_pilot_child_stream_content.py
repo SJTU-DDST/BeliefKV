@@ -3,7 +3,37 @@ from __future__ import annotations
 from collections import Counter
 import json
 
+import numpy as np
+
 from scripts import pilot_child_stream_content as pilot
+
+
+def test_length_conditioned_text_fits_only_train():
+    lengths = np.array([[-1.], [0.], [1.], [2.]])
+    text = np.column_stack((2 + 3 * lengths[:, 0], [1., 1., -1., -1.]))
+    held_length = np.array([[3.]])
+    weights = np.ones(4)
+    train, held = pilot.length_conditioned_text(
+        text, np.array([[999., 0.]]), lengths, held_length, weights
+    )
+    another_train, _ = pilot.length_conditioned_text(
+        text, np.array([[0., 0.]]), lengths, held_length, weights
+    )
+    assert np.allclose(train, another_train)
+    assert np.max(np.abs(train[:, 0])) < 1e-3
+    assert held[0, 0] > 900
+
+
+def test_vocabulary_requires_distinct_training_workflows():
+    with np.testing.assert_raises(ValueError):
+        pilot.text_features(["unique unique", "unique unique"], ["unique"],
+                            ["one", "one"])
+    train, held = pilot.text_features(
+        ["shared unique", "shared other"], ["shared"],
+        ["one", "two"],
+    )
+    assert train.shape == (2, 1)
+    assert held[0, 0] > 0
 
 
 def test_collect_includes_text_round_that_later_calls_tool(tmp_path):
@@ -74,6 +104,7 @@ def test_project_holdout_counts_tool_rounds_and_first_trigger(monkeypatch, tmp_p
     assert result["train_rounds"] == 16
     assert result["train_projects"] == ["astropy", "django"]
     assert "near_return_2000ms_delivered_tail_only" in result["results"]
+    assert "near_return_2000ms_length_conditioned_content" in result["results"]
     for model in result["results"].values():
         assert model["heldout_return_rounds"] == 4
         assert model["heldout_tool_rounds"] == 4
