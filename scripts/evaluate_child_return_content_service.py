@@ -10,6 +10,7 @@ from pathlib import Path
 import sys
 
 import numpy as np
+import orjson
 
 ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
@@ -18,6 +19,41 @@ if str(ROOT) not in sys.path:
 from scripts.evaluate_child_return_intent_timing import _metrics
 from scripts.pilot_child_stream_content import phase_features
 from scripts.pilot_child_stream_service_progress import service_rows
+
+
+def _notices(workflows: Path) -> dict[tuple[str, str], list[tuple[float, int]]]:
+    by_child: dict[tuple[str, str], list[tuple[float, int]]] = {}
+    for path in workflows.glob("*/runtime_events.deepagents.jsonl"):
+        with path.open("rb") as stream:
+            for line in stream:
+                event = orjson.loads(line)
+                attrs = event.get("attributes") or {}
+                estimate = attrs.get("estimated_final_report_tokens")
+                if (
+                    event.get("kind") != "structured_action"
+                    or attrs.get("child_completion_signal_kind") != "stage"
+                    or attrs.get("beliefkv_child_completion_intent") is not True
+                    or type(estimate) is not int or estimate <= 0
+                ):
+                    continue
+                key = (path.parent.name, event["invocation_id"])
+                by_child.setdefault(key, []).append(
+                    (float(event["ts_ms"]), estimate)
+                )
+    for values in by_child.values():
+        values.sort()
+    return by_child
+
+
+def _latest_notice(
+    notices: dict[tuple[str, str], list[tuple[float, int]]],
+    task: str, child: str | None, when: float,
+) -> tuple[float, int] | None:
+    return next(
+        (notice for notice in reversed(notices.get((task, child), ()))
+         if notice[0] <= when),
+        None,
+    )
 
 
 def _first_snapshots(rows: list[dict], min_chars: int = 0) -> list[dict]:
@@ -98,7 +134,10 @@ def _terminal_screen(train: list[dict], held: list[dict], key: str) -> dict | No
     }
 
 
-def evaluate_rows(rows: list[dict], *, min_chars: int = 0) -> dict:
+def evaluate_rows(
+    rows: list[dict], *, min_chars: int = 0,
+    notices: dict[tuple[str, str], list[tuple[float, int]]] | None = None,
+) -> dict:
     selected = _first_snapshots(rows, min_chars)
     phases = phase_features(selected)
     samples = []
@@ -110,14 +149,25 @@ def evaluate_rows(rows: list[dict], *, min_chars: int = 0) -> dict:
         )
         if remaining is not None and remaining <= 0:
             continue
+        notice = _latest_notice(
+            notices or {}, row["task"], row.get("invocation_id"), snap["ts_ms"],
+        )
         progress = list(snap["decode_features"])
         size = [np.log1p(snap["content_chars"])]
+        notice_features = [
+            int(notice is not None),
+            notice[1] if notice else 0,
+            max(0., snap["ts_ms"] - notice[0]) if notice else 0.,
+        ]
         samples.append({
             "project": row["project"], "task": row["task"],
             "label": row["label"], "remaining_ms": remaining,
+            "notice_seen": notice is not None,
             "size": size,
             "service": size + progress[:3],
+            "notice": size + progress[:3] + notice_features,
             "semantic": size + progress + list(phase),
+            "joint": size + progress + notice_features + list(phase),
         })
     results = {}
     for project in sorted({row["project"] for row in samples}):
@@ -133,7 +183,7 @@ def evaluate_rows(rows: list[dict], *, min_chars: int = 0) -> dict:
                 row["remaining_ms"] for row in returns
             ]))] * len(held_returns)
         }
-        for key in ("size", "service", "semantic"):
+        for key in ("size", "service", "notice", "semantic", "joint"):
             predictions[key] = (
                 _predict(returns, held_returns, key) if held_returns else []
             )
@@ -144,7 +194,7 @@ def evaluate_rows(rows: list[dict], *, min_chars: int = 0) -> dict:
             "return_lead_at_least_500ms": sum(value >= 500 for value in actual),
             "terminal_screen": {
                 key: _terminal_screen(train, held, key)
-                for key in ("size", "service", "semantic")
+                for key in ("size", "service", "notice", "semantic", "joint")
             },
             "eta": {
                 key: _metrics(actual, value)
@@ -170,6 +220,11 @@ def evaluate_rows(rows: list[dict], *, min_chars: int = 0) -> dict:
         "eligible_requests": len(samples),
         "natural_returns": sum(row["label"] == "return" for row in samples),
         "tool_rounds": sum(row["label"] == "tool" for row in samples),
+        "notice_seen": sum(row["notice_seen"] for row in samples),
+        "notice_seen_on_returns": sum(
+            row["notice_seen"] and row["label"] == "return"
+            for row in samples
+        ),
         "project_holdouts": results,
     }
 
@@ -183,9 +238,12 @@ def main() -> None:
     if len(clients) != 1:
         raise ValueError("expected exactly one client workflow root")
     rows, coverage = service_rows([clients[0]], [args.run])
-    report = evaluate_rows(rows)
+    notices = _notices(clients[0])
+    report = evaluate_rows(rows, notices=notices)
     report["rolling_checkpoints"] = {
-        str(threshold): evaluate_rows(rows, min_chars=threshold)
+        str(threshold): evaluate_rows(
+            rows, min_chars=threshold, notices=notices,
+        )
         for threshold in (128, 512, 1024)
     }
     report["collection_coverage"] = coverage

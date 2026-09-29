@@ -1,5 +1,7 @@
+import json
+
 from scripts.evaluate_child_return_content_service import (
-    _first_snapshots, evaluate_rows,
+    _first_snapshots, _latest_notice, _notices, evaluate_rows,
 )
 
 
@@ -77,3 +79,33 @@ def test_terminal_screen_has_project_heldout_tool_denominator():
         screen["held_return_hits"] + screen["held_tool_false_positives"]
         == screen["held_flagged"]
     )
+
+
+def test_notice_only_affects_snapshots_after_delivery(tmp_path):
+    rows = [
+        _row(project, "return", 1000 + i * 200, 128 + i * 32)
+        for i, project in enumerate(("alpha", "beta", "gamma", "delta"))
+    ]
+    for row in rows:
+        row["invocation_id"] = "child"
+    baseline = evaluate_rows(rows)
+    future = {("alpha__task", "child"): [(3100., 4000)]}
+    assert evaluate_rows(rows, notices=future) == baseline
+    now = {("alpha__task", "child"): [(2900., 4000), (3100., 1)]}
+    assert _latest_notice(now, "alpha__task", "child", 3000.) == (2900., 4000)
+    assert _latest_notice(now, "alpha__task", "other-child", 3000.) is None
+    assert evaluate_rows(rows, notices=now)["notice_seen_on_returns"] == 1
+
+    workflow = tmp_path / "alpha__task"
+    workflow.mkdir()
+    (workflow / "runtime_events.deepagents.jsonl").write_text(
+        json.dumps({
+            "kind": "structured_action", "ts_ms": 2900.,
+            "invocation_id": "child", "attributes": {
+                "child_completion_signal_kind": "stage",
+                "beliefkv_child_completion_intent": True,
+                "estimated_final_report_tokens": 4000,
+            },
+        }) + "\n"
+    )
+    assert _notices(tmp_path) == {("alpha__task", "child"): [(2900., 4000)]}
