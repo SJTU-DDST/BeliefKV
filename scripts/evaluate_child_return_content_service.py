@@ -192,6 +192,12 @@ def evaluate_rows(
             "held_return_requests": len(held_returns),
             "held_tool_requests": sum(row["label"] == "tool" for row in held),
             "return_lead_at_least_500ms": sum(value >= 500 for value in actual),
+            "return_lead_p50_ms": (
+                float(np.median(actual)) if actual else None
+            ),
+            "return_lead_p90_ms": (
+                float(np.quantile(actual, .9)) if actual else None
+            ),
             "terminal_screen": {
                 key: _terminal_screen(train, held, key)
                 for key in ("size", "service", "notice", "semantic", "joint")
@@ -201,6 +207,9 @@ def evaluate_rows(
                 for key, value in predictions.items()
             },
         }
+    leads = [
+        row["remaining_ms"] for row in samples if row["label"] == "return"
+    ]
     return {
         "status": "offline_development_not_online_eligible",
         "min_delivered_chars": min_chars,
@@ -225,6 +234,9 @@ def evaluate_rows(
             row["notice_seen"] and row["label"] == "return"
             for row in samples
         ),
+        "return_lead_p50_ms": float(np.median(leads)) if leads else None,
+        "return_lead_p90_ms": float(np.quantile(leads, .9)) if leads else None,
+        "return_lead_at_least_1000ms": sum(lead >= 1000 for lead in leads),
         "project_holdouts": results,
     }
 

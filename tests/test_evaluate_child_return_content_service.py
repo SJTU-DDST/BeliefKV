@@ -32,6 +32,8 @@ def test_project_holdout_first_observed_service_snapshot_only():
     assert report["eligible_requests"] == 5
     assert report["natural_returns"] == 4
     assert report["tool_rounds"] == 1
+    assert report["return_lead_p50_ms"] == 1600
+    assert report["return_lead_at_least_1000ms"] == 3
     assert report["project_holdouts"]["delta"]["held_tool_requests"] == 1
     assert report["project_holdouts"]["delta"]["eta"]["semantic"]["count"] == 1
     assert report["project_holdouts"]["alpha"]["train_return_requests"] == 3
@@ -54,7 +56,9 @@ def test_later_snapshots_cannot_change_first_snapshot_eta():
 
 def test_fixed_threshold_uses_first_causal_crossing():
     rows = [_row("alpha", "return", 2100, 64)]
-    assert evaluate_rows(rows, min_chars=512)["eligible_requests"] == 0
+    empty = evaluate_rows(rows, min_chars=512)
+    assert empty["eligible_requests"] == 0
+    assert empty["return_lead_p50_ms"] is None
     selected = _first_snapshots(rows, 128)
     assert selected[0]["snapshots"][0] is rows[0]["snapshots"][1]
 
