@@ -686,13 +686,14 @@ predictive 臂相对该共同机制的增益单独归因。旧纯 native-reactiv
 同配置对照须固定任务清单、到达流、模型、NUMA、Host/HBM 池、
 running 上限和评分方式，记录实际开关值及阶段动作。
 
-`run_qwen35_native_regime_probe.sh` 的**下一档压力探针默认值**现为
+此阶段曾计划让 `run_qwen35_native_regime_probe.sh` 以
 48 个训练 root 同时到达（可显式 `ROOT_COUNT=64`）、
 `native_in_graph_1to4`、Qwen3.5-35B-A3B、
 patched SGLang v0.5.20、单 GPU、running=48、NUMA 1 的 200 GB
-Host（FULL:Mamba=30:70）、`write_back`，session radix 和阶段预取开启。
+Host（FULL:Mamba=30:70）、`write_back`、session radix 和阶段预取
+扫描压力；当前入口默认值已改为 36-root/35:65，见文末诊断。
 24-root v11 Host 稳定但 JOIN 候选只有一次、v12 未复现，
-不足以证明迁移机会；48/64-root 的**同配置**结果尚无实测，
+不足以证明迁移机会；当时 48/64-root 的同配置结果尚无实测，
 不能将 48-running 的 CUDA graph gate 称为 48-root 压力测试。
 已有 64-root `native_dynamic_1to4`/70:30 旧数据中 Host Mamba
 达满池并驱逐 13,387 slots、FULL 驱逐 1,815,837 tokens；
@@ -782,3 +783,15 @@ Mamba 高水位 1,949/2,175 slots（约 89.6%），
 的点预测误差。更换多轮派发提示词后，应先检查后续批次的
 每 workflow 轮数、通知覆盖、独立留出预测误差和 Host 双池
 驱逐，再判断是否适合作为正式 reactive/predictive 配对负载。
+
+下一轮探针的 Host 默认比例改为 35:65，仅是基于 36-root
+FULL 满池、Mamba 峰值约 125.5/140 GB 的**待验证候选**，
+不是已证明的最优分配。旧 64-root 的 70:30 在不同派发
+profile 下 Mamba 满池；若直接用于当前 200 GB/36-root，
+Mamba 预算仅约 60 GB，显著小于本轮已观测高水位，
+故保留为可显式选择的对照，而不设为默认。提示词改动也会
+改变两池需求；先以相同任务、到达流和新提示词测 35:65
+的驱逐与后续重访，再决定是否需要配对比较 30:70 或
+微调 Host 比例。HBM FULL/Mamba 划分暂不跟随 Host 修改；
+需分别记录活跃使用率、可驱逐驻留、物理空闲和因某池
+不足而阻塞的请求后，才能判断 HBM 容量迁移的净收益。
