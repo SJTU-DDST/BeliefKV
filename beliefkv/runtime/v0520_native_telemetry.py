@@ -904,6 +904,7 @@ class NativeReactiveTelemetry:
             return
         scores = getattr(logprob, "output_token_ids_logprobs_val", None)
         indices = getattr(logprob, "output_token_ids_logprobs_idx", None)
+        sampled_ids = getattr(logprob, "output_token_logprobs_idx", None)
         if not scores:
             return
         prior = self._targeted_pair_cursor.get(rid)
@@ -912,8 +913,9 @@ class NativeReactiveTelemetry:
         invalid = (
             not isinstance(indices, list)
             or len(indices) != len(scores)
+            or not isinstance(sampled_ids, list)
+            or len(sampled_ids) != len(scores)
             or base < 0
-            or (prior is None and len(scores) != 1)
             or (
                 prior is not None
                 and (prior[0] != base or prior[2] != pair_ids
@@ -927,9 +929,34 @@ class NativeReactiveTelemetry:
                 "ts_ms": ts_ms,
                 "request_id": rid,
                 "reason": "missing_or_nonmonotonic_output_alignment",
+                "output_tokens": len(req.output_ids),
+                "scored_tokens": len(scores),
+                "index_rows": len(indices) if isinstance(indices, list) else None,
+                "sampled_id_rows": (
+                    len(sampled_ids) if isinstance(sampled_ids, list) else None
+                ),
+                "computed_base": base,
+                "prior_base": prior[0] if prior is not None else None,
+                "prior_scored_tokens": prior[1] if prior is not None else None,
+                "output_tokens_before_batch": sample.get("output_tokens_before"),
             })
             return
         start = prior[1] if prior is not None else 0
+        if any(
+            sampled_ids[position] != req.output_ids[base + position]
+            for position in range(start, len(scores))
+        ):
+            self._targeted_pair_invalid.add(rid)
+            self._emit("audit", {
+                "event": "targeted_pair_ordinal_invalid",
+                "ts_ms": ts_ms,
+                "request_id": rid,
+                "reason": "sampled_token_id_mismatch",
+                "output_tokens": len(req.output_ids),
+                "scored_tokens": len(scores),
+                "output_tokens_before_batch": sample.get("output_tokens_before"),
+            })
+            return
         seen = self._targeted_pair_seen.setdefault(rid, set())
         thresholds = EOS_LOW_PROB_THRESHOLDS + EOS_PROB_THRESHOLDS
         for position in range(start, len(scores)):
@@ -965,11 +992,15 @@ class NativeReactiveTelemetry:
                     "request_id": rid,
                     "sample_id": sample_id,
                     "output_token_ordinal": base + position + 1,
+                    "token_already_present_before_batch": (
+                        base + position < sample["output_tokens_before"]
+                    ),
                     "probe_token_ids": pair,
                     "threshold": threshold,
                     "max_logprob": best,
                     "timing_boundary": (
-                        "scheduler_batch_result_processed;upper_bound_on_gpu_cue"
+                        "scheduler_batch_result_processed;first_seen_on_scheduler;"
+                        "token_generation_batch_not_inferred"
                     ),
                 })
         self._targeted_pair_cursor[rid] = (base, len(scores), pair_ids)
@@ -990,18 +1021,18 @@ class NativeReactiveTelemetry:
             req = next((item for item in batch.reqs if item.rid == rid), None)
             if req is None:
                 continue
+            reported_before = self._reported_output_tokens.get(
+                rid, sample["output_tokens_before"]
+            )
+            output_after = len(req.output_ids)
             if descriptor["phase"] == "decode":
-                reported_before = self._reported_output_tokens.get(
-                    rid, sample["output_tokens_before"]
-                )
-                output_after = len(req.output_ids)
                 sample["token_delta"] = max(0, output_after - reported_before)
-                self._reported_output_tokens[rid] = max(
-                    reported_before, output_after
-                )
-                self._observe_targeted_pair(
-                    req, sample, complete_wall, descriptor["sample_id"]
-                )
+            self._reported_output_tokens[rid] = max(
+                reported_before, output_after
+            )
+            self._observe_targeted_pair(
+                req, sample, complete_wall, descriptor["sample_id"]
+            )
             if req.finished() and rid in self._active:
                 self._emit("events", {
                     "kind": "llm_result",

@@ -95,7 +95,7 @@ for arm in control intent; do
     "${instance_args[@]}" --max-workflows 4 --concurrency 4 \
     --subagent-fanout-profile native_dynamic_1to4 \
     --max-completion-tokens 8192 --model-context-tokens 131072 \
-    --recursion-limit 2048 \
+    --recursion-limit 2048 --native-reactive-guard-profile \
     --activation-wall-clock-seconds "$WORKFLOW_DEADLINE_SECONDS" \
     --disable-completion-gate --gate system \
     "${intent_arg[@]}" --output "$OUT/${arm}_workloads" \

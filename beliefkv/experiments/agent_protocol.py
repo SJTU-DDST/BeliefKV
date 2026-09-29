@@ -960,15 +960,25 @@ class AgentLoopGuardMiddleware(AgentMiddleware[LoopGuardState, Any, Any]):
     def _format_repair_request(self, request: ModelRequest[Any]) -> ModelRequest[Any]:
         base_prompt = request.system_message.text if request.system_message else ""
         attempt = max(1, int(request.state.get("protocol_repair_attempt", 1)))
-        repair_prompt = (
-            f"{base_prompt}\n\n"
-            "RUNTIME FORMAT-ONLY REPAIR\n"
-            "Your previous response stopped without the required structured terminal "
-            "object. Restate that response in the required schema without adding new "
-            "claims, changing its semantic outcome, or calling tools. Preserve uncertainty "
-            "and failed checks exactly. "
-            f"{self.completion_instruction}"
-        ).strip()
+        if self.accept_natural_completion:
+            repair_prompt = (
+                f"{base_prompt}\n\n"
+                "RUNTIME EMPTY-RESPONSE REPAIR\n"
+                "Your previous response provided no final text. Tools are unavailable. "
+                "Give a nonempty plain-text account of what you actually accomplished "
+                "or why you are blocked. Do not invent tool results or claim success "
+                "without evidence."
+            ).strip()
+        else:
+            repair_prompt = (
+                f"{base_prompt}\n\n"
+                "RUNTIME FORMAT-ONLY REPAIR\n"
+                "Your previous response stopped without the required structured terminal "
+                "object. Restate that response in the required schema without adding new "
+                "claims, changing its semantic outcome, or calling tools. Preserve uncertainty "
+                "and failed checks exactly. "
+                f"{self.completion_instruction}"
+            ).strip()
         self._audit(
             "agent_protocol_repair_attempt",
             attempt=attempt,
@@ -1132,21 +1142,21 @@ class AgentLoopGuardMiddleware(AgentMiddleware[LoopGuardState, Any, Any]):
                         or state.get("guard_forcing_completion", False)
                     ),
                 )
-                return {"jump_to": "end"}
-            self._audit(
-                "agent_natural_return",
-                content_sha256=hashlib.sha256(
-                    text.encode("utf-8", errors="replace")
-                ).hexdigest(),
-                content_chars=len(text),
-                guard_intervened=bool(
-                    state.get("guard_ever_intervened", False)
-                    or state.get("guard_forcing_completion", False)
-                ),
-            )
-            return {
-                "jump_to": "end",
-            }
+            else:
+                self._audit(
+                    "agent_natural_return",
+                    content_sha256=hashlib.sha256(
+                        text.encode("utf-8", errors="replace")
+                    ).hexdigest(),
+                    content_chars=len(text),
+                    guard_intervened=bool(
+                        state.get("guard_ever_intervened", False)
+                        or state.get("guard_forcing_completion", False)
+                    ),
+                )
+                return {
+                    "jump_to": "end",
+                }
 
         snapshot = analyze_agent_history(
             state.get("messages", []),
