@@ -413,6 +413,7 @@ def evaluate(
     exclude_boundary_snapshots: bool = False,
     service_runs: Sequence[Path] = (),
     include_first_triggers: bool = False,
+    include_qualified_snapshot_times: bool = False,
 ) -> dict:
     rows, counts = collect(
         workflows, min_snapshot_chars=min_snapshot_chars,
@@ -665,6 +666,11 @@ def evaluate(
             if include_first_triggers:
                 result["first_trigger_by_request"] = {
                     row["rid"]: min(triggered[i])
+                    for i, row in enumerate(held) if triggered[i]
+                }
+            if include_qualified_snapshot_times:
+                result["qualified_snapshot_times_by_request"] = {
+                    row["rid"]: triggered[i]
                     for i, row in enumerate(held) if triggered[i]
                 }
             if service_runs:
