@@ -59,6 +59,7 @@ class NativeReactiveTelemetry:
         self._reported_output_tokens: dict[str, int] = {}
         self._targeted_pair_cursor: dict[str, tuple[int, int, tuple[int, int]]] = {}
         self._targeted_pair_seen: dict[str, set[float]] = {}
+        self._targeted_pair_windows: dict[str, dict[str, Any]] = {}
         self._targeted_pair_invalid: set[str] = set()
         self._launched: dict[int, dict[str, Any]] = {}
         self._previous_completed_mono: float | None = None
@@ -886,7 +887,37 @@ class NativeReactiveTelemetry:
     def _drop_targeted_pair(self, rid: str) -> None:
         self._targeted_pair_cursor.pop(rid, None)
         self._targeted_pair_seen.pop(rid, None)
+        self._targeted_pair_windows.pop(rid, None)
         self._targeted_pair_invalid.discard(rid)
+
+    def _emit_targeted_pair_window(
+        self, rid: str, sample: dict[str, Any], ts_ms: float, sample_id: str,
+        pair_ids: tuple[int, int], *, finished: bool,
+    ) -> None:
+        window = self._targeted_pair_windows.pop(rid, None)
+        if not window:
+            return
+        self._emit("audit", {
+            "event": "targeted_pair_recent_window",
+            "ts_ms": ts_ms,
+            **{key: sample[key] for key in (
+                "workflow_id", "invocation_id", "context_id", "context_epoch"
+            )},
+            "request_id": rid,
+            "sample_id": sample_id,
+            "probe_token_ids": list(pair_ids),
+            "first_output_token_ordinal": window["first_ordinal"],
+            "last_output_token_ordinal": window["last_ordinal"],
+            "scored_tokens": window["scored_tokens"],
+            "max_logprob": window["max_logprob"],
+            "max_output_token_ordinal": window["max_ordinal"],
+            "last_logprob": window["last_logprob"],
+            "finished_at_boundary": finished,
+            "timing_boundary": (
+                "scheduler_batch_result_processed;recent_sampled_tokens_only;"
+                "token_generation_batch_not_inferred"
+            ),
+        })
 
     def _observe_targeted_pair(
         self, req: Any, sample: dict[str, Any], ts_ms: float, sample_id: str
@@ -924,6 +955,7 @@ class NativeReactiveTelemetry:
         )
         if invalid:
             self._targeted_pair_invalid.add(rid)
+            self._targeted_pair_windows.pop(rid, None)
             self._emit("audit", {
                 "event": "targeted_pair_ordinal_invalid",
                 "ts_ms": ts_ms,
@@ -947,6 +979,7 @@ class NativeReactiveTelemetry:
             for position in range(start, len(scores))
         ):
             self._targeted_pair_invalid.add(rid)
+            self._targeted_pair_windows.pop(rid, None)
             self._emit("audit", {
                 "event": "targeted_pair_ordinal_invalid",
                 "ts_ms": ts_ms,
@@ -969,6 +1002,7 @@ class NativeReactiveTelemetry:
                 or any(not math.isfinite(value) for value in values)
             ):
                 self._targeted_pair_invalid.add(rid)
+                self._targeted_pair_windows.pop(rid, None)
                 self._emit("audit", {
                     "event": "targeted_pair_ordinal_invalid",
                     "ts_ms": ts_ms,
@@ -979,6 +1013,26 @@ class NativeReactiveTelemetry:
             if req.output_ids[base + position] in pair_ids:
                 continue
             best = max(values)
+            ordinal = base + position + 1
+            window = self._targeted_pair_windows.setdefault(rid, {
+                "first_ordinal": ordinal,
+                "last_ordinal": ordinal,
+                "scored_tokens": 0,
+                "max_logprob": float("-inf"),
+                "max_ordinal": ordinal,
+                "last_logprob": best,
+            })
+            window["scored_tokens"] += 1
+            window["last_ordinal"] = ordinal
+            window["last_logprob"] = best
+            if best > window["max_logprob"]:
+                window["max_logprob"] = best
+                window["max_ordinal"] = ordinal
+            if window["scored_tokens"] == 32:
+                self._emit_targeted_pair_window(
+                    rid, sample, ts_ms, sample_id, pair_ids,
+                    finished=bool(req.finished()),
+                )
             for threshold in thresholds:
                 if threshold in seen or best < math.log(threshold):
                     continue
@@ -1004,6 +1058,10 @@ class NativeReactiveTelemetry:
                     ),
                 })
         self._targeted_pair_cursor[rid] = (base, len(scores), pair_ids)
+        if req.finished():
+            self._emit_targeted_pair_window(
+                rid, sample, ts_ms, sample_id, pair_ids, finished=True,
+            )
 
     def on_completed(self, batch: Any) -> None:
         descriptor = self._launched.pop(batch.forward_iter, None)
