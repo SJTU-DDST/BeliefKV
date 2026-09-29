@@ -2042,9 +2042,21 @@ concrete code-path, reproduction, test, or compatibility deliverable. Do not
 duplicate work or split one question merely to increase fan-out. Wait for
 the child results in this conversation before integrating them.
 
-After a JOIN, you may launch another round if new independent questions
-remain. The root is responsible for integration, verification, and the
-required WorkflowCompletion response.
+Treat each JOIN as a phase boundary, not the end of delegation. Integrate
+the reports, identify the next concrete phase (for example, a reproduction,
+a focused fix, independent regression tests, or compatibility validation),
+and actively look for work that can be assigned without duplicating earlier
+work. If at least one substantive, independent deliverable remains, launch
+another round of one to four native task calls before doing that work
+yourself. Repeat this check after every JOIN, including after a fix when
+independent validation remains. For a nontrivial repair, normally plan at
+least one follow-up round after the initial investigation, such as a
+focused implementation task or independent validation of the resulting
+patch. Keep write assignments disjoint and give
+each child a bounded deliverable; the root owns integration and final
+verification. Do not repeat finished work, invent work to hit a round
+count, or delegate when only dependent integration or a trivial step remains.
+Finish with the required WorkflowCompletion response.
 """
 
 

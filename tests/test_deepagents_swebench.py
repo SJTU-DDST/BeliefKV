@@ -2090,7 +2090,10 @@ def test_in_graph_profile_starts_root_without_external_planner(
     assert "initial delegation round before reading" in in_graph_prompt
     assert "one to four native task calls" in in_graph_prompt
     assert "one child is valid" in in_graph_prompt
-    assert "After a JOIN, you may launch another round" in in_graph_prompt
+    assert "Repeat this check after every JOIN" in in_graph_prompt
+    assert "another round of one to four native task calls" in in_graph_prompt
+    assert "at least one follow-up round" in " ".join(in_graph_prompt.split())
+    assert "Do not repeat finished work, invent work" in in_graph_prompt
 
 
 def test_in_graph_first_turn_requires_task_then_restores_root_tools(
