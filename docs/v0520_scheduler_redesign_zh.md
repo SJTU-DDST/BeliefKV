@@ -361,10 +361,20 @@ action-eligible artifact 并验证 stale/OOD 回退和 admission GPU gate；
 未完成 child 的通知才进入短期候选。下一次 LLM 提交绑定请求身份，
 再次调用工具、epoch 变化、取消、RETURN 或超时均撤销候选。
 
-设置 `BELIEFKV_ENABLE_FINAL_STAGE_PREFETCH=1` 可单独试验此路径，要求
-`--enable-beliefkv-admission`、`--beliefkv-event-socket-path`、源码 staging
-补丁与 session radix cache；默认关闭，不要求 admission
-predictor artifact，也不启用 confirmed JOIN canary。收尾请求在 native
+兼容的 Qwen3.5 admission 启动现在默认设置
+`BELIEFKV_ENABLE_FINAL_STAGE_PREFETCH=1`：需同时开启
+`--enable-beliefkv-admission`、`--beliefkv-event-socket-path`、
+patched SGLang 源码和 session radix cache；不要求 admission
+predictor artifact。独立构造 runtime 时仍默认关闭。
+今后的 reactive/predictive 配对均启用相同的 child 收尾工具、
+admission、事件 socket 与阶段开关；reactive 臂只关闭学习型
+predictor/额外预测动作。阶段通知、收尾优先级及阶段 H2D 是
+两臂共同机制，只有额外学习型动作的边际收益归入 predictive。
+这类 reactive 是 stage-enabled admission reactive，不是旧的纯
+native reactive：后者不构造 admission runtime，仅设置环境变量
+不会产生阶段 H2D。旧 confirmed JOIN canary 与此开关互斥，
+不作为正式 A/B 臂。实验清单应记录实际开关值和动作类型。
+收尾请求在 native
 waiting 队列中最多提升一次排序，随后需有四次普通准入才能再次提升；
 不抢占运行中的请求、不保证持续 decode 服务。阶段通知**不直接派发**
 H2D：安全点观察最终请求的实际输出 token 增长和服务速率，结合有界

@@ -2079,16 +2079,27 @@ class DeepAgentsRuntimeAdapter(BaseCallbackHandler):
                     self.root_metadata.root_workflow_id, event.attributes, ts_ms,
                 )
         self._publish((event,), control=True)
-        if active.tool_name == "announce_completion_intent" and outcome.status == "success" and (
-            "Completion stage recorded." in str(getattr(output, "content", output))
+        estimated = active.payload.get("estimated_final_report_tokens")
+        if (
+            active.tool_name == "announce_completion_intent"
+            and outcome.status == "success"
+            and type(estimated) is int and 64 <= estimated <= 4096
         ):
             with self._lock:
                 pending = self._bound_pending_child(tool_run_id, active.invocation_id)
                 identity = self._identities.get(active.invocation_id)
-                estimated = active.payload.get("estimated_final_report_tokens")
+                if pending is None and identity is not None:
+                    matches = [
+                        item for item in self._pending_tasks.values()
+                        if item.child_invocation_id == active.invocation_id
+                        and not item.terminal
+                    ]
+                    if len(matches) == 1:
+                        pending = matches[0]
                 if (
                     pending is None or pending.terminal or identity is None
                     or identity.metadata.relation_type != RelationType.SPAWN.value
+                    or pending.child_context_id != identity.metadata.context_id
                 ):
                     pending = None
                 epoch = self._model_epochs.get(active.invocation_id, 0)
@@ -2105,10 +2116,7 @@ class DeepAgentsRuntimeAdapter(BaseCallbackHandler):
                             "source": "deepagents_completion_stage",
                             "beliefkv_child_completion_intent": True,
                             "child_completion_signal_kind": "stage",
-                            "estimated_final_report_tokens": (
-                                estimated if type(estimated) is int
-                                and 64 <= estimated <= 4096 else None
-                            ),
+                            "estimated_final_report_tokens": estimated,
                         },
                     ),
                 ), control=True, async_control=True)

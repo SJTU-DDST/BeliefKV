@@ -131,6 +131,7 @@ def _stub(tmp_path: Path) -> dict[str, str]:
         "#!/bin/sh\n"
         "printf '%s\\n' \"$@\" > \"$NUMACTL_ARGS_LOG\"\n"
         "printf '%s' \"${BELIEFKV_NATIVE_TELEMETRY_DIR:-}\" > \"$TELEMETRY_LOG\"\n"
+        "printf '%s' \"${BELIEFKV_ENABLE_FINAL_STAGE_PREFETCH:-}\" > \"$STAGE_LOG\"\n"
     )
     numactl.chmod(0o755)
     git = tmp_path / "git"
@@ -151,6 +152,7 @@ def _stub(tmp_path: Path) -> dict[str, str]:
         "PREFLIGHT_ARGS_LOG": str(tmp_path / "preflight-args"),
         "NUMACTL_ARGS_LOG": str(tmp_path / "numactl-args"),
         "TELEMETRY_LOG": str(tmp_path / "telemetry"),
+        "STAGE_LOG": str(tmp_path / "final-stage"),
         "HICACHE_SIZE_GB": "200",
         "HOST_NUMA_NODE": "1",
         "SGLANG_SOURCE_CHECKOUT": "",
@@ -214,6 +216,48 @@ def test_launch_accepts_separate_admission_observation_telemetry(
     assert result.returncode == 0, result.stderr
     args = (tmp_path / "numactl-args").read_text().splitlines()
     assert "--enable-beliefkv-admission" in args
+
+
+def test_compatible_admission_defaults_to_final_stage_and_control_opts_out(
+    tmp_path: Path,
+) -> None:
+    env = _stub(tmp_path)
+    checkout = tmp_path / "sglang"
+    scheduler = checkout / "python/sglang/srt/managers/scheduler.py"
+    scheduler.parent.mkdir(parents=True)
+    scheduler.write_text("")
+    env["SGLANG_SOURCE_CHECKOUT"] = str(checkout)
+    env["ENABLE_SESSION_RADIX_CACHE"] = "1"
+    env.pop("BELIEFKV_ENABLE_FINAL_STAGE_PREFETCH", None)
+    flags = ["--enable-beliefkv-admission", "--beliefkv-event-socket-path",
+             str(tmp_path / "events.sock")]
+    result = subprocess.run(
+        ["bash", str(LAUNCH), *flags], env=env, capture_output=True, text=True,
+    )
+    assert result.returncode == 0, result.stderr
+    assert (tmp_path / "final-stage").read_text() == "1"
+
+    result = subprocess.run(
+        ["bash", str(LAUNCH), *flags, "--beliefkv-admission-prefetch"],
+        env=env, capture_output=True, text=True,
+    )
+    assert result.returncode == 0, result.stderr
+    assert (tmp_path / "final-stage").read_text() == "1"
+
+    env["BELIEFKV_ENABLE_FINAL_STAGE_PREFETCH"] = "0"
+    result = subprocess.run(
+        ["bash", str(LAUNCH), *flags], env=env, capture_output=True, text=True,
+    )
+    assert result.returncode == 0, result.stderr
+    assert (tmp_path / "final-stage").read_text() == "0"
+
+    env.pop("BELIEFKV_ENABLE_FINAL_STAGE_PREFETCH")
+    result = subprocess.run(
+        ["bash", str(LAUNCH), *flags, "--beliefkv-confirmed-join-canary"],
+        env=env, capture_output=True, text=True,
+    )
+    assert result.returncode == 0, result.stderr
+    assert (tmp_path / "final-stage").read_text() == "0"
 
 
 def test_no_host_smoke_does_not_bind_or_preflight(tmp_path: Path) -> None:

@@ -4,16 +4,16 @@ set -euo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 PYTHON="${PYTHON:-/home/longhao/miniconda3/envs/beliefkv-next/bin/python}"
 PORT="${PORT:-18454}"
-ROOT_COUNT="${ROOT_COUNT:-8}"
-HOST_SPLIT="${HOST_SPLIT:-35:65}"
-HICACHE_SIZE_GB="${HICACHE_SIZE_GB:-180}"
-HICACHE_WRITE_POLICY="${HICACHE_WRITE_POLICY:-write_through_selective}"
-SGLANG_PATCH_FLAVOR="${SGLANG_PATCH_FLAVOR:-writeback_prepare}"
+ROOT_COUNT="${ROOT_COUNT:-48}"
+HOST_SPLIT="${HOST_SPLIT:-30:70}"
+HICACHE_SIZE_GB="${HICACHE_SIZE_GB:-200}"
+HICACHE_WRITE_POLICY="${HICACHE_WRITE_POLICY:-write_back}"
+SGLANG_PATCH_FLAVOR="${SGLANG_PATCH_FLAVOR:-staging}"
 # Qwen3.5 advertises VLM support; its image warmup OOMs after 94% static KV sizing.
 SKIP_SERVER_WARMUP="${SKIP_SERVER_WARMUP:-1}"
 CONFIRMED_JOIN_CANARY="${CONFIRMED_JOIN_CANARY:-0}"
-FANOUT_PROFILE="${FANOUT_PROFILE:-native_dynamic_1to4}"
-RUN_ROOT="${RUN_ROOT:-$ROOT/experiments/raw/qwen35_native_regime_selective_${HICACHE_SIZE_GB}g_${HOST_SPLIT/:/_}_${ROOT_COUNT}root_v1}"
+FANOUT_PROFILE="${FANOUT_PROFILE:-native_in_graph_1to4}"
+RUN_ROOT="${RUN_ROOT:-$ROOT/experiments/raw/qwen35_native_regime_${HICACHE_WRITE_POLICY}_${FANOUT_PROFILE}_${HICACHE_SIZE_GB}g_${HOST_SPLIT/:/_}_${ROOT_COUNT}root_v1}"
 MANIFEST="$ROOT/configs/migration/qwen35_native_reactive_overlapped_128root_workload_2026-09-23.json"
 BASE_URL="http://127.0.0.1:$PORT"
 SOCKET="/tmp/bkv-regime-${PORT}.sock"
@@ -31,7 +31,7 @@ trap 'exit 130' INT
 trap 'exit 143' TERM
 
 if [[ $# -ne 0 || ! "$ROOT_COUNT" =~ ^[1-9][0-9]*$ ]] \
-  || (( ROOT_COUNT > 24 )) \
+  || (( ROOT_COUNT > 64 )) \
   || [[ ! "$HICACHE_SIZE_GB" =~ ^[1-9][0-9]*$ ]] \
   || (( HICACHE_SIZE_GB > 200 )) \
   || [[ "$HICACHE_WRITE_POLICY" != "write_through_selective" && "$HICACHE_WRITE_POLICY" != "write_back" ]] \
@@ -43,7 +43,7 @@ if [[ $# -ne 0 || ! "$ROOT_COUNT" =~ ^[1-9][0-9]*$ ]] \
   || (( ${BASH_REMATCH[1]:-0} + ${BASH_REMATCH[2]:-0} != 100 )) \
   || [[ ! "$PORT" =~ ^[1-9][0-9]*$ ]] \
   || [[ -e "$RUN_ROOT" || -e "$SOCKET" ]]; then
-  printf 'Usage: PORT=18454 ROOT_COUNT=8 HICACHE_SIZE_GB=180 HOST_SPLIT=35:65 HICACHE_WRITE_POLICY=write_through_selective|write_back SKIP_SERVER_WARMUP=1 CONFIRMED_JOIN_CANARY=0|1 FANOUT_PROFILE=native_dynamic_1to4|native_in_graph_1to4 SGLANG_PATCH_FLAVOR=writeback_prepare RUN_ROOT=<new path> bash %s\n' "$0" >&2
+  printf 'Usage: PORT=18454 ROOT_COUNT=48|64 HICACHE_SIZE_GB=200 HOST_SPLIT=30:70 HICACHE_WRITE_POLICY=write_back|write_through_selective SKIP_SERVER_WARMUP=1 CONFIRMED_JOIN_CANARY=0|1 FANOUT_PROFILE=native_in_graph_1to4|native_dynamic_1to4 SGLANG_PATCH_FLAVOR=staging RUN_ROOT=<new path> bash %s\n' "$0" >&2
   exit 2
 fi
 if [[ -e /tmp/beliefkv-experiments.paused ]] \

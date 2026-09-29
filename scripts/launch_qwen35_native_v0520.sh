@@ -34,19 +34,34 @@ if [[ ${BELIEFKV_NATIVE_TELEMETRY_DIR+x} ]]; then
   export BELIEFKV_NATIVE_TELEMETRY_DIR
 fi
 admission_requested=0
+event_socket_requested=0
+confirmed_join_requested=0
 for arg in "$@"; do
-  if [[ "${arg}" == "--enable-beliefkv-admission" ]]; then
-    admission_requested=1
-  fi
+  case "${arg}" in
+    --enable-beliefkv-admission) admission_requested=1 ;;
+    --beliefkv-event-socket-path|--beliefkv-event-socket-path=*)
+      event_socket_requested=1 ;;
+    --beliefkv-confirmed-join-canary) confirmed_join_requested=1 ;;
+  esac
 done
-if [[ "${BELIEFKV_ENABLE_FINAL_STAGE_PREFETCH:-0}" == "1" ]]; then
+if [[ ! ${BELIEFKV_ENABLE_FINAL_STAGE_PREFETCH+x} ]]; then
+  BELIEFKV_ENABLE_FINAL_STAGE_PREFETCH=0
+  if (( admission_requested && event_socket_requested && ! confirmed_join_requested )) \
+      && [[ -n "${SGLANG_SOURCE_CHECKOUT}" ]] \
+      && [[ "${ENABLE_SESSION_RADIX_CACHE}" == "1" ]]; then
+    BELIEFKV_ENABLE_FINAL_STAGE_PREFETCH=1
+  fi
+fi
+export BELIEFKV_ENABLE_FINAL_STAGE_PREFETCH
+if [[ "${BELIEFKV_ENABLE_FINAL_STAGE_PREFETCH}" == "1" ]]; then
   if [[ -z "${SGLANG_SOURCE_CHECKOUT}" ]] \
       || (( admission_requested == 0 )) \
+      || (( event_socket_requested == 0 || confirmed_join_requested )) \
       || [[ "${ENABLE_SESSION_RADIX_CACHE}" != "1" ]]; then
-    printf 'Final stage prefetch requires patched SGLang, admission, and session radix cache\n' >&2
+    printf 'Final stage prefetch requires patched SGLang, admission, event socket, session radix cache, and no confirmed JOIN canary\n' >&2
     exit 2
   fi
-elif [[ "${BELIEFKV_ENABLE_FINAL_STAGE_PREFETCH:-0}" != "0" ]]; then
+elif [[ "${BELIEFKV_ENABLE_FINAL_STAGE_PREFETCH}" != "0" ]]; then
   printf 'BELIEFKV_ENABLE_FINAL_STAGE_PREFETCH must be 0 or 1\n' >&2
   exit 2
 fi

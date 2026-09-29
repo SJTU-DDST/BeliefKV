@@ -671,3 +671,84 @@ JOIN 和准入前路径；若仍只出现零星 Mamba-only 节点，应据实
 压力制造失真迁移。已增强只读汇总器以区分机会采样原因、
 JOIN ticket 无 step 原因及同节点 ID 后续原生回执，不能将
 其耗时或次数直接折算为策略收益。
+
+## 后续实验的阶段开关与开发候选
+
+reactive 与 predictive 服务都默认启用
+`BELIEFKV_ENABLE_FINAL_STAGE_PREFETCH=1`，并使用相同的 child
+收尾工具、admission、事件 socket 和 session radix。
+通知本身不会强制产生 H2D；两臂共享有界收尾优先级和阶段 H2D。
+reactive 臂只关闭额外的学习型 predictor/动作，以便同样记录
+`announce_completion_intent` 和阶段到 RETURN 的实际时序；
+predictive 臂相对该共同机制的增益单独归因。旧纯 native-reactive
+模式没有 admission runtime，单设开关无效，不能充当本轮 A/B
+对照。旧 confirmed JOIN canary 与阶段开关互斥，不进入正式配对。
+同配置对照须固定任务清单、到达流、模型、NUMA、Host/HBM 池、
+running 上限和评分方式，记录实际开关值及阶段动作。
+
+`run_qwen35_native_regime_probe.sh` 的**下一档压力探针默认值**现为
+48 个训练 root 同时到达（可显式 `ROOT_COUNT=64`）、
+`native_in_graph_1to4`、Qwen3.5-35B-A3B、
+patched SGLang v0.5.20、单 GPU、running=48、NUMA 1 的 200 GB
+Host（FULL:Mamba=30:70）、`write_back`，session radix 和阶段预取开启。
+24-root v11 Host 稳定但 JOIN 候选只有一次、v12 未复现，
+不足以证明迁移机会；48/64-root 的**同配置**结果尚无实测，
+不能将 48-running 的 CUDA graph gate 称为 48-root 压力测试。
+已有 64-root `native_dynamic_1to4`/70:30 旧数据中 Host Mamba
+达满池并驱逐 13,387 slots、FULL 驱逐 1,815,837 tokens；
+其 workload、Host 分配及开关均不一致，只能警示 64-root
+可能越过低重算区间，不能推算 30:70 新档的驱逐率。
+若新 48-root 已出现持续 Host 驱逐或大规模有用 KV 重算，
+优先停止压力升级，64-root 只用于边界诊断而非正式主负载。
+换用 `native_dynamic_1to4` 的初始 planner 还可能改变
+JOIN parent 前缀连续性，不能无对照地混用。
+
+正式冻结前至少重复核查：Host-backed 且缺 Device 的目标在身份与
+容量门禁后可装入；阶段 H2D 有 ACK 且首次服务实际复用；
+PREPARE 的 Host 备份后续确被卸载/恢复消费；Host 两池没有明显
+驱逐，有用 KV 丢失后的重算保持低位，同时 HBM 确有可迁移空间。
+若此档只有零星 Mamba-only 机会，则在训练任务上小幅调整 HBM
+余量或到达密度并重新配对，不靠极端高并发制造 Host 抖动；
+机会仍不足应报告上界，不能宣称预测传输获益。
+
+## 48-root / 200 GB / 30:70 / write-back：机会增加，但 Host 双池满载
+
+2026-09-29 的训练任务探针使用前 48 个 root 同批提交，
+`native_in_graph_1to4`、running=48、NUMA 1、200 GB Host、
+FULL:Mamba=30:70、`write_back` 和 session radix；原始数据在
+`experiments/raw/qwen35_native_in_graph_join_200g_30_70_48root_stage_v2/`。
+启动时 checkout 只匹配新版 `staging` 补丁，旧默认
+`writeback_prepare` 被 preflight 拒绝，首次启动没有提交任务；
+改用 staging 后 48/48 workflow 自然完成，两路 writer 完整关闭，
+无错误或丢记录。官方任务正确性尚未评分。
+
+FULL/Mamba Host 高水位均为 100%；FULL Host 驱逐 4,863,303
+tokens（约 99.60 GB 的累计驱逐字节，并非同时占用），Mamba
+驱逐 3,125 slots。归因已确认 4,493 FULL token 后续重算；
+Mamba 再访尚不能都归因成重算。可装入的只读 H2D 观察按
+session/epoch/节点去重为 105 个，其中 72 个涉及 FULL；
+这些不是 105 次实际预测传输，也不是已消费的机会。
+服务器阶段动作 ACK/首次服务复用为零：启动时虽已设置阶段开关，
+child 的成功 `announce_completion_intent` 未进入服务器的 `stage`
+事件流。运行后修复了 adapter 对固定工具返回文本及 callback
+父链的脆弱依赖，只有 CPU 回归验证；不能将本轮视作阶段策略
+收益验证，新代码仍需在下一次 GPU 实验确认事件送达。
+
+本轮 51 个 spawned child 中仅 13 个有成功通知并自然 RETURN；
+另外 38 个自然返回而未通知。通知至 RETURN 的 13 个可配对
+样本 P50/P90/P95 分别约 28.06/43.58/44.06 秒。12 个有单次最终
+LLM 请求的样本，通知至请求提交 P50 约 0.084 秒，
+提交至响应结果 P50 约 28.31 秒，结果至 RETURN P50 约
+0.078 秒。提交到结果是墙钟时间，包含排队和 GPU 服务，
+不能把 28 秒解释成纯 decode。通知覆盖率和时间漂移都须在
+后续配对 A/B 中记录。
+
+24-root 30:70 的一次扫描双池峰值约 79%、无 Host 驱逐但
+迁移消费不稳定；48-root 的可行动观察增加，却已产生
+双池容量不足与已确认重算。旧 64-root 70:30 数据来自
+`native_dynamic_1to4`，不能直接和本轮比较、更不能证明
+70:30 在新负载下最优。**在当前低重算目标下不继续启动
+同批 64-root 正式负载**：48-root 已越过 Host 边界。
+下一候选应在训练任务上试 24 与 48 之间的到达强度，
+并把有效通知、真实动作 ACK/复用和 Host 有用驱逐控制在同一
+配对口径；单改 FULL:Mamba 分配不能增加 200 GB 总容量。
