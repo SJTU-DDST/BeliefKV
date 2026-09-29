@@ -346,11 +346,15 @@ def _service_indices(
     index: dict[str, dict] = {}
     reports = []
     for root, run in zip(roots, service_runs):
-        if root.resolve() != (run / "workloads/workflows").resolve():
+        allowed_roots = [run / "workloads/workflows"]
+        allowed_roots.extend(run.glob("client_*/workflows"))
+        if root.resolve() not in {path.resolve() for path in allowed_roots}:
             raise ValueError(f"service run does not match workflow root: {run}")
         tasks = {path.parent.name for path in root.glob("*/child_stream_content.jsonl")}
         selected = [row for row in rows if row["task"] in tasks]
-        run_index, bracket, exclusions = load_index(run, selected)
+        run_index, bracket, exclusions = load_index(
+            run, selected, workflows=root,
+        )
         if index.keys() & run_index.keys():
             raise ValueError("duplicate child request identity across service runs")
         index.update(run_index)

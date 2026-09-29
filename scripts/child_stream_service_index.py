@@ -14,9 +14,9 @@ PRIOR_DECODE_MS = 2000.
 
 
 def load_index(
-    run: Path, rows: list[dict],
+    run: Path, rows: list[dict], *, workflows: Path | None = None,
 ) -> tuple[dict[str, dict], dict, dict]:
-    workflows = run / "workloads/workflows"
+    workflows = workflows or run / "workloads/workflows"
     server = run / "server"
     lower, upper, bracket = clock_bracket(
         workflows, server / "runtime_events.sglang.jsonl",

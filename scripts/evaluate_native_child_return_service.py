@@ -108,8 +108,8 @@ def collect(run: Path) -> tuple[list[dict], dict]:
                 prior_tokens = last_tokens.get(rid, 0)
                 rate = (
                     max(0.0, token_count - prior_tokens) * 1000.0
-                    / max(1.0, when - previous)
-                    if previous is not None and event.get("phase") == "decode"
+                    / max(1.0, when - start)
+                    if event.get("phase") == "decode"
                     else 0.0
                 )
                 last[rid], last_tokens[rid] = when, token_count
