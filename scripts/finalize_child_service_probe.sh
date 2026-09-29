@@ -12,8 +12,13 @@ ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 PYTHON="${PYTHON:-/home/longhao/miniconda3/envs/beliefkv-next/bin/python}"
 
 shopt -s nullglob
-clients=("$RUN"/client_*)
-if [[ ${#clients[@]} -ne 1 || ! -d "${clients[0]}/workflows" ]]; then
+clients=()
+for candidate in "$RUN"/client_*; do
+  if [[ -d "$candidate/workflows" ]]; then
+    clients+=("$candidate")
+  fi
+done
+if [[ ${#clients[@]} -ne 1 ]]; then
   printf 'Expected exactly one client workflow directory: %s\n' "$RUN" >&2
   exit 2
 fi
