@@ -889,7 +889,7 @@ class NativeReactiveTelemetry:
         self._targeted_pair_invalid.discard(rid)
 
     def _observe_targeted_pair(
-        self, req: Any, sample: dict[str, Any], ts_ms: float, sample_id: int
+        self, req: Any, sample: dict[str, Any], ts_ms: float, sample_id: str
     ) -> None:
         rid = sample["request_id"]
         if rid in self._targeted_pair_invalid:
@@ -1020,6 +1020,8 @@ class NativeReactiveTelemetry:
             rid = sample["request_id"]
             req = next((item for item in batch.reqs if item.rid == rid), None)
             if req is None:
+                continue
+            if rid in self._completed:
                 continue
             reported_before = self._reported_output_tokens.get(
                 rid, sample["output_tokens_before"]

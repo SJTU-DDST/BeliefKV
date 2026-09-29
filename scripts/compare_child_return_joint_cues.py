@@ -119,6 +119,7 @@ def compare(run: Path, split: Path, tokenizer_json: Path) -> dict:
         "project_split": {
             "fit": fit, "calibration": calibration, "heldout": heldouts,
         },
+        "clock_bridge": eos["clock_bridge"],
         "eos_excluded": eos["excluded"],
         "eos_invalid_child_requests": eos["invalid_child_requests"],
         "projects": comparison,

@@ -16,6 +16,7 @@ if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
 from scripts.pilot_child_stream_content import collect
+from scripts.pilot_join_service_progress import clock_bracket
 
 
 def expected_eos_ids(tokenizer_json: Path) -> frozenset[int]:
@@ -73,7 +74,11 @@ def audit(
     workflows = run / "workloads/workflows"
     rows, collection = collect(workflows, min_snapshot_chars=1)
     eos_ids = expected_eos_ids(tokenizer_json)
-    server_results = _native_results(run / "server/runtime_events.sglang.jsonl")
+    server_event_path = run / "server/runtime_events.sglang.jsonl"
+    server_results = _native_results(server_event_path)
+    offset_lower, offset_upper, clock_evidence = clock_bracket(
+        workflows, server_event_path
+    )
     tool_chunks = _first_tool_chunks(workflows)
     by_rid = {row["rid"]: row for row in rows}
     if len(by_rid) != len(rows):
@@ -133,10 +138,12 @@ def audit(
                 or type(ordinal) is not int
                 or type(token_count) is not int
                 or not 1 <= ordinal <= token_count
-                or float(event["ts_ms"]) > float(native["ts_ms"])
             ):
                 exclusions["eos_id_or_ordinal_mismatch"] += 1
                 invalid_rids.add(rid)
+                continue
+            if float(event["ts_ms"]) > float(native["ts_ms"]):
+                exclusions["post_result_crossing"] += 1
                 continue
             threshold = event.get("threshold")
             if type(threshold) not in (float, int) or not 0 < threshold < 1:
@@ -146,7 +153,8 @@ def audit(
             key = rid, float(threshold)
             if key in first:
                 exclusions["duplicate_first_crossing"] += 1
-                invalid_rids.add(rid)
+                if float(event["ts_ms"]) < float(first[key]["ts_ms"]):
+                    invalid_rids.add(rid)
                 continue
             first[key] = event
 
@@ -173,11 +181,9 @@ def audit(
             if event is None or row["rid"] in invalid_rids:
                 continue
             score["first_server_crossings"] += 1
-            crossing = float(event["ts_ms"])
+            crossing = float(event["ts_ms"]) - offset_lower
             if crossing < first_content:
                 score["before_first_delivered_content"] += 1
-            if crossing >= float(server_results[row["rid"]]["ts_ms"]):
-                score["at_or_after_native_result"] += 1
             cue = earliest_eligible_cue(
                 crossing, first_content, float(row["result_ts"]),
                 tool_chunks.get(row["rid"], math.inf),
@@ -208,6 +214,12 @@ def audit(
         ),
         "tokenizer_sha256": hashlib.sha256(tokenizer_json.read_bytes()).hexdigest(),
         "eos_token_ids": sorted(eos_ids),
+        "clock_bridge": {
+            **clock_evidence,
+            "conversion": (
+                "server_wall_minus_offset_lower_bounds_latest_client_monotonic_cue"
+            ),
+        },
         "collection": dict(collection),
         "excluded": dict(exclusions),
         "invalid_child_requests": len(invalid_rids),
