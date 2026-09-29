@@ -2141,6 +2141,54 @@ def test_final_stage_promotes_only_bound_join_child_with_admission_budget():
     assert "join" not in runtime._final_stages
 
 
+def test_final_stage_rebinds_one_epoch_late_notice_only_to_live_child_request():
+    stage_records = []
+    runtime = final_stage_runtime(stage_records=stage_records)
+    child = req("child")
+    child.beliefkv_metadata["context_epoch"] = 1
+    runtime.on_events((event(
+        7, RuntimeEventKind.LLM_SUBMIT,
+        invocation_id="child", context_id="ctx-child", context_epoch=1,
+        attributes={"request_id": "child"},
+    ),))
+    runtime.register_visible_request(child)
+    runtime.on_events((event(
+        8, RuntimeEventKind.STRUCTURED_ACTION,
+        invocation_id="child", context_id="ctx-child", context_epoch=0,
+        join_id="join",
+        attributes={
+            "source": "deepagents_completion_stage",
+            "beliefkv_child_completion_intent": True,
+            "child_completion_signal_kind": "stage",
+            "estimated_final_report_tokens": 128,
+        },
+    ),))
+    assert runtime.counts["final_stage_epoch_handoff"] == 1
+    assert runtime._final_stages["join"].child_epoch == 1
+    assert runtime._final_stages["join"].request_id == "child"
+    assert runtime._final_request_stages["child"] is runtime._final_stages["join"]
+    assert stage_records[-1]["epoch_handoff"] is True
+
+    runtime.on_events((event(
+        9, RuntimeEventKind.LLM_SUBMIT,
+        invocation_id="child", context_id="ctx-child", context_epoch=2,
+        attributes={"request_id": "other-request"},
+    ),))
+    runtime.on_events((event(
+        10, RuntimeEventKind.STRUCTURED_ACTION,
+        invocation_id="child", context_id="ctx-child", context_epoch=0,
+        join_id="join",
+        attributes={
+            "source": "deepagents_completion_stage",
+            "beliefkv_child_completion_intent": True,
+            "child_completion_signal_kind": "stage",
+            "estimated_final_report_tokens": 128,
+        },
+    ),))
+    assert runtime.counts["join_intent_stale"] >= 1
+    assert runtime.counts["final_stage_epoch_handoff"] == 1
+
+
 def test_final_stage_can_run_without_predictor_but_not_in_baseline(tmp_path):
     with pytest.raises(ValueError, match="event socket"):
         NativeAdmissionRuntime(enable_final_stage_prefetch=True)

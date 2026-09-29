@@ -7,7 +7,7 @@ from __future__ import annotations
 
 from collections import Counter, deque
 from collections.abc import Sequence
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from itertools import islice
 import math
 import os
@@ -356,11 +356,40 @@ class NativeAdmissionRuntime:
                 if (
                     invocation is None or invocation.state.terminal
                     or invocation.context_id != event.context_id
-                    or context is None or context.epoch != event.context_epoch
+                    or context is None
                     or invocation.workflow_id != event.workflow_id
                 ):
                     self.counts["join_intent_stale"] += 1
                     continue
+                if context.epoch != event.context_epoch:
+                    if (
+                        event.attributes.get("child_completion_signal_kind") != "stage"
+                        or event.attributes.get("source") != "deepagents_completion_stage"
+                        or event.context_epoch is None
+                        or context.epoch != event.context_epoch + 1
+                        or invocation.active_tool_family is not None
+                    ):
+                        self.counts["join_intent_stale"] += 1
+                        continue
+                    current_requests = [
+                        rid for rid, key in self.visible.items()
+                        if key.invocation_id == invocation.invocation_id
+                        and key.context_id == event.context_id
+                        and key.context_epoch == context.epoch
+                    ]
+                    if len(current_requests) != 1:
+                        self.counts["final_stage_epoch_handoff_without_request"] += 1
+                        continue
+                    event = replace(
+                        event,
+                        context_epoch=context.epoch,
+                        attributes={
+                            **event.attributes,
+                            "completion_stage_origin_epoch": event.context_epoch,
+                            "completion_stage_bound_request_id": current_requests[0],
+                        },
+                    )
+                    self.counts["final_stage_epoch_handoff"] += 1
             filtered.append(event)
         events = tuple(filtered)
         if not events:
@@ -1012,10 +1041,17 @@ class NativeAdmissionRuntime:
                 self.counts["final_stage_no_estimate"] += 1
                 return
             self._clear_final_stage(join_id)
-            self._final_stages[join_id] = _ChildFinalStage(
+            bound_request_id = event.attributes.get(
+                "completion_stage_bound_request_id"
+            )
+            stage = _ChildFinalStage(
                 key, join_id, child_id, context.epoch, estimated,
                 time.monotonic() + 120.0,
+                request_id=bound_request_id,
             )
+            self._final_stages[join_id] = stage
+            if bound_request_id is not None:
+                self._final_request_stages[bound_request_id] = stage
             self.counts["final_stage_accepted"] += 1
             if self._opportunity_writer is not None:
                 self._opportunity_writer.record({
@@ -1026,6 +1062,7 @@ class NativeAdmissionRuntime:
                     "child_invocation_id": child_id,
                     "context_epoch": context.epoch,
                     "estimated_final_report_tokens": estimated,
+                    "epoch_handoff": bound_request_id is not None,
                 })
             return
         if join_id in self._final_stages:
