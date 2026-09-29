@@ -2075,11 +2075,13 @@ def select(runtime, native):
     )
 
 
-def final_stage_runtime(*, stage_only=False, event_socket_path=None):
+def final_stage_runtime(*, stage_only=False, event_socket_path=None, stage_records=None):
     runtime = NativeAdmissionRuntime(
         event_socket_path=event_socket_path,
         enable_final_stage_prefetch=stage_only,
     )
+    if stage_records is not None:
+        runtime._opportunity_writer = NS(record=stage_records.append)
     runtime.enable_admission_prefetch = not stage_only
     parent = req("parent")
     parent.session_id, parent.session_generation = "s", 1
@@ -2112,8 +2114,12 @@ def final_stage_runtime(*, stage_only=False, event_socket_path=None):
 
 
 def test_final_stage_promotes_only_bound_join_child_with_admission_budget():
-    runtime = final_stage_runtime()
+    stage_records = []
+    runtime = final_stage_runtime(stage_records=stage_records)
     assert runtime.counts["final_stage_accepted"] == 1
+    assert len(stage_records) == 1
+    assert stage_records[0]["event"] == "child_final_stage_accepted"
+    assert stage_records[0]["join_id"] == "join"
     assert runtime._join_ticket is None
     other, child = req("other"), req("child")
     runtime.register_visible_request(other)

@@ -1017,6 +1017,16 @@ class NativeAdmissionRuntime:
                 time.monotonic() + 120.0,
             )
             self.counts["final_stage_accepted"] += 1
+            if self._opportunity_writer is not None:
+                self._opportunity_writer.record({
+                    "event": "child_final_stage_accepted",
+                    "ts_ms": time.time() * 1000.0,
+                    "workflow_id": event.workflow_id,
+                    "join_id": join_id,
+                    "child_invocation_id": child_id,
+                    "context_epoch": context.epoch,
+                    "estimated_final_report_tokens": estimated,
+                })
             return
         if join_id in self._final_stages:
             # The explicit stage is governed by service progress, not a

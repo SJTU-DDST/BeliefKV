@@ -2760,14 +2760,14 @@ def _autonomous_subagents(
                 "system_prompt": (
                     system_prompt
                     + DELEGATED_TASK_FOCUS_INSTRUCTION
-                    + NATIVE_CHILD_RETURN_INSTRUCTION
                     + TOOL_PROGRESS_INSTRUCTION
                     + SANDBOX_PATH_CONTRACT
                     + repository_sandbox_contract(workload)
+                    + NATIVE_CHILD_RETURN_INSTRUCTION
                 ),
                 "model": model,
                 "tools": (
-                    [] if read_only else
+                    [_native_completion_stage_tool()] if read_only else
                     [_workspace_patch_tool(backend), _native_completion_stage_tool()]
                 ),
                 "middleware": [

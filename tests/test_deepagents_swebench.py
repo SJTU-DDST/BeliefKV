@@ -1734,7 +1734,10 @@ def test_parallel_analysis_profile_builds_three_read_only_orthogonal_roles(
         "test-analyst",
         "compatibility-analyst",
     ]
-    assert all(item["tools"] == [] for item in specs)
+    assert all(
+        [tool.name for tool in item["tools"]] == ["announce_completion_intent"]
+        for item in specs
+    )
     assert all(
         "do not modify files" in item["system_prompt"].lower()
         for item in specs
@@ -2270,7 +2273,10 @@ def test_native_subagent_profile_builds_read_only_children(tmp_path: Path) -> No
         "test-analyst",
         "compatibility-analyst",
     ]
-    assert all(item["tools"] == [] for item in specs)
+    assert all(
+        [tool.name for tool in item["tools"]] == ["announce_completion_intent"]
+        for item in specs
+    )
 
 
 def test_native_dynamic_profile_keeps_native_child_tools(tmp_path: Path) -> None:
