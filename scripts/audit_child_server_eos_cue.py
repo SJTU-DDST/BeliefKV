@@ -67,7 +67,9 @@ def _native_results(events: Path) -> dict[str, dict]:
     return results
 
 
-def audit(run: Path, tokenizer_json: Path) -> dict:
+def audit(
+    run: Path, tokenizer_json: Path, *, include_request_cues: bool = False,
+) -> dict:
     workflows = run / "workloads/workflows"
     rows, collection = collect(workflows, min_snapshot_chars=1)
     eos_ids = expected_eos_ids(tokenizer_json)
@@ -149,11 +151,21 @@ def audit(run: Path, tokenizer_json: Path) -> dict:
             first[key] = event
 
     grouped: dict[tuple[str, float], Counter[str]] = defaultdict(Counter)
+    request_cues: dict[str, dict] = {}
     for row in rows:
         if not valid_workflows[row["task"]][1]:
             continue
         group = row["project"]
         first_content = float(row["snapshots"][0]["ts_ms"])
+        if include_request_cues:
+            request_cues[row["rid"]] = {
+                "project": group,
+                "label": row["label"],
+                "join_last": row["join_last"],
+                "return_ts": row["return_ts"],
+                "result_ts": row["result_ts"],
+                "first_by_threshold": {},
+            }
         for threshold in (.0001, .001, .01, .05, .1, .25, .5):
             score = grouped[group, threshold]
             score[f"{row['label']}_with_content"] += 1
@@ -173,6 +185,8 @@ def audit(run: Path, tokenizer_json: Path) -> dict:
             if cue is None:
                 score["not_causally_eligible_at_client"] += 1
                 continue
+            if include_request_cues:
+                request_cues[row["rid"]]["first_by_threshold"][str(threshold)] = cue
             score[f"eligible_{row['label']}"] += 1
             if row["label"] == "return":
                 lead = float(row["return_ts"]) - cue
@@ -203,6 +217,7 @@ def audit(run: Path, tokenizer_json: Path) -> dict:
                       if name == project}
             for project in sorted({row["project"] for row in rows})
         },
+        **({"request_cues": request_cues} if include_request_cues else {}),
     }
 
 
@@ -210,11 +225,15 @@ def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--run", type=Path, required=True)
     parser.add_argument("--tokenizer-json", type=Path, required=True)
+    parser.add_argument("--include-request-cues", action="store_true")
     parser.add_argument("--output", type=Path, required=True)
     args = parser.parse_args()
     if args.output.exists():
         raise FileExistsError(args.output)
-    report = audit(args.run, args.tokenizer_json)
+    report = audit(
+        args.run, args.tokenizer_json,
+        include_request_cues=args.include_request_cues,
+    )
     args.output.write_text(
         json.dumps(report, indent=2, sort_keys=True, allow_nan=False) + "\n",
         encoding="utf-8",

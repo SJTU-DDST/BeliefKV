@@ -412,6 +412,7 @@ def evaluate(
     calibration_projects: tuple[str, ...] = (),
     exclude_boundary_snapshots: bool = False,
     service_runs: Sequence[Path] = (),
+    include_first_triggers: bool = False,
 ) -> dict:
     rows, counts = collect(
         workflows, min_snapshot_chars=min_snapshot_chars,
@@ -661,6 +662,11 @@ def evaluate(
                 "lead_over_2000ms": sum(t > 2000 for t in lead),
                 "lead_over_10000ms": sum(t > 10000 for t in lead),
             }
+            if include_first_triggers:
+                result["first_trigger_by_request"] = {
+                    row["rid"]: min(triggered[i])
+                    for i, row in enumerate(held) if triggered[i]
+                }
             if service_runs:
                 result["offline_service_audit"] = first_trigger_service_audit(
                     held, triggered, service_index,
