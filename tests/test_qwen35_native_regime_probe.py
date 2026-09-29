@@ -25,6 +25,8 @@ def test_probe_defaults_to_training_only_moderate_pressure_candidate() -> None:
     ):
         assert setting in script
     assert '--enable-beliefkv-admission --beliefkv-event-socket-path "$SOCKET"' in script
+    assert '--mamba-full-memory-ratio 0.9' in script
+    assert '--stream-completion-shadow --child-stream-content-shadow' in script
 
 
 def test_confirmed_join_requires_verified_ack_patch_before_start(tmp_path: Path) -> None:

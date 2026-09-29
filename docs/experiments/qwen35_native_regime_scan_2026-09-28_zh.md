@@ -795,3 +795,39 @@ Mamba 预算仅约 60 GB，显著小于本轮已观测高水位，
 微调 Host 比例。HBM FULL/Mamba 划分暂不跟随 Host 修改；
 需分别记录活跃使用率、可驱逐驻留、物理空闲和因某池
 不足而阻塞的请求后，才能判断 HBM 容量迁移的净收益。
+
+### Mamba 比例与 RETURN 服务时钟
+
+SGLang `mamba_full_memory_ratio=0.9` 是 HBM 中 Mamba 状态
+内存对 FULL KV 内存的预算比例，不是 BeliefKV 的 Host 分池
+比例。当前探针显式传入设备端 `0.9`；Host 默认仍暂用独立
+的 35:65 候选。若取消 Host 覆盖，SGLang 会按设备两池字节数
+分配 200 GB Host，总体约 FULL 105 GB / Mamba 95 GB；
+旧 36-root 的 Mamba 使用高水位为 125.5 GB，因此不能把
+设备端默认比例不加区分地移植到 Host 并宣称无驱逐。
+Host Mamba 驱逐释放 radix 叶节点的 Host 状态；后续未重访
+或仍有可用 Device 状态时不会因此重算。否则可能需要从可用
+检查点继续或重算；当前埋点不能逐次证明具体 Mamba 重算量。
+
+新增只读 `evaluate_native_child_return_service.py`，仅使用
+实际投递的通知估计和服务器已完成的 GPU service sample，
+按项目留一比较首次可观测服务完成、decode 128/512/1024
+token 时的 RETURN 下界 ETA。旧 36-root 的 24 个有效配对中，
+首次服务完成时 train-median / causal-ridge 的中位绝对误差为
+10.33/8.82 秒，128 token 时为 9.92/5.34 秒（500 ms 内仅
+1/24）；512 token 仅覆盖 18/24，误差为 6.65/4.78 秒
+（500 ms 内 1/18）。小样本、成功通知后的事后选中群体以及
+跨服务端/客户端时钟的返回下界，都不允许宣称线上
+亚秒级准确率。报告保存在旧 36-root 目录的
+`child_return_service_project_loo.json`。未来探针同时采集
+`stream_completion_shadow` 和 `child_stream_content_shadow`，
+再验证可见正文语义、工具/最终报告区分及阶段信号；该采集
+改变传输路径，reactive/predictive 对照必须使用同一开关。
+在相同项目留一划分加入通知时提供的报告长度估计及已观测
+的 decode 速率后，首次服务完成的中位误差为 6.84 秒
+（500 ms 内 1/24），decode 128 token 为 4.33 秒
+（3/24），decode 512 token 为 4.02 秒（4/18）；
+decode 1024 token 仅 6 个样本且退化，不能按最好的阶段
+事后选模。上述输出 token 数、速率、长度估计在每个
+触发点均已可见，但这些样本不含未通知 child 和非终态
+轮次；结果只支持继续采样语义信号，不构成线上动作资格。

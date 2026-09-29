@@ -55,6 +55,7 @@ fi
 mkdir -p "$RUN_ROOT/server" "$RUN_ROOT/opportunities"
 
 server_flags=(
+  --mamba-full-memory-ratio 0.9
   --enable-beliefkv-admission --beliefkv-event-socket-path "$SOCKET"
 )
 if [[ "$CONFIRMED_JOIN_CANARY" == "1" ]]; then
@@ -107,6 +108,7 @@ set +e
   --model-context-tokens 131072 --max-completion-tokens 8192 \
   --sampling-seed 21 --recursion-limit 2048 \
   --activation-wall-clock-seconds 3600 \
+  --stream-completion-shadow --child-stream-content-shadow \
   --native-reactive-guard-profile --disable-completion-gate \
   --gate native --output "$RUN_ROOT/client_$ROOT_COUNT" \
   > "$RUN_ROOT/client_$ROOT_COUNT.log" 2>&1
