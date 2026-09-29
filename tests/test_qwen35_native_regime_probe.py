@@ -17,7 +17,7 @@ def test_probe_defaults_to_current_staging_patch() -> None:
 def test_probe_defaults_to_training_only_moderate_pressure_candidate() -> None:
     script = SCRIPT.read_text()
     for setting in (
-        'ROOT_COUNT="${ROOT_COUNT:-48}"',
+        'ROOT_COUNT="${ROOT_COUNT:-36}"',
         'HICACHE_SIZE_GB="${HICACHE_SIZE_GB:-200}"',
         'HOST_SPLIT="${HOST_SPLIT:-30:70}"',
         'HICACHE_WRITE_POLICY="${HICACHE_WRITE_POLICY:-write_back}"',

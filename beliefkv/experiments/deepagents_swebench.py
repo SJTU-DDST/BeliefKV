@@ -1948,9 +1948,12 @@ When your assigned workstream is complete or you are concretely blocked, return 
 result to the parent in concise natural language and stop. A normal final assistant
 message is a valid child return; do not emit JSON or call a completion-format tool.
 Separate findings from uncertainty, and never claim tests or edits you did not perform.
-If announce_completion_intent is available, call it only after all needed tool work
-is finished, with an estimate of the tokens in your final report. Then give the
-report normally; if more investigation becomes necessary, use tools as needed.
+Before your final report, call announce_completion_intent once with an estimate
+of its token length, even when the report is short or you are blocked. Do this
+only after the tool work you need is done; then give the report normally.
+Do not call it merely because you are stopping to use another tool. If new work
+becomes necessary after the notice, continue working and announce again before
+the eventual final report.
 """
 
 DELEGATED_TASK_FOCUS_INSTRUCTION = """
@@ -2330,8 +2333,8 @@ def _native_completion_stage_tool() -> BaseTool:
     @tool("announce_completion_intent")
     def announce_completion_intent(estimated_final_report_tokens: int) -> str:
         """Signal that tool work is done; estimate tokens in the final report."""
-        if not 64 <= estimated_final_report_tokens <= 4096:
-            return "Estimate 64-4096 final report tokens, then call again."
+        if not 1 <= estimated_final_report_tokens <= 4096:
+            return "Estimate 1-4096 final report tokens, then call again."
         return "Completion stage recorded. Give your final report now."
 
     return announce_completion_intent

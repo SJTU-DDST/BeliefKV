@@ -309,6 +309,7 @@ class DeepAgentsRuntimeAdapter(BaseCallbackHandler):
         self._pending_by_parent: dict[str, list[str]] = {}
         self._task_run_to_call: dict[str, str] = {}
         self._child_completion_intent_runs: set[str] = set()
+        self._announced_child_ids: set[str] = set()
         self._child_first_content_shadow_runs: set[str] = set()
         self._child_first_tool_chunk_shadow_runs: set[str] = set()
         self._child_substantial_content_shadow_runs: set[tuple[str, int]] = set()
@@ -1504,6 +1505,9 @@ class DeepAgentsRuntimeAdapter(BaseCallbackHandler):
             return
 
         normalized = self._taxonomy.normalize(tool_name)
+        if tool_name != "announce_completion_intent":
+            with self._lock:
+                self._announced_child_ids.discard(parent_invocation_id)
         input_chars, input_sha256 = _json_stats(payload)
         tool_call_id = str(kwargs.get("tool_call_id") or key)
         workspace_digest_before = self._workspace_digest(tool_name, payload)
@@ -1949,6 +1953,10 @@ class DeepAgentsRuntimeAdapter(BaseCallbackHandler):
             if pending.terminal:
                 return ()
             pending.terminal = True
+            missing_stage_notice = (
+                not cancelled
+                and pending.child_invocation_id not in self._announced_child_ids
+            )
             self._terminal_invocation_ids.add(pending.child_invocation_id)
             completed = self._join_completed[pending.join_id]
             completed.add(pending.child_invocation_id)
@@ -1969,7 +1977,22 @@ class DeepAgentsRuntimeAdapter(BaseCallbackHandler):
             if cancelled
             else RuntimeEventKind.RETURN
         )
-        events = [
+        events = []
+        if missing_stage_notice:
+            events.append(self._event(
+                RuntimeEventKind.STRUCTURED_ACTION,
+                ts_ms=ts_ms,
+                invocation_id=pending.child_invocation_id,
+                context_id=pending.child_context_id,
+                join_id=pending.join_id,
+                confidence=EventConfidence.OBSERVED_EXACT,
+                attributes={
+                    "source": "deepagents_task",
+                    "beliefkv_child_completion_intent": False,
+                    "child_completion_signal_kind": "terminal_fallback",
+                },
+            ))
+        events.append(
             self._event(
                 kind,
                 ts_ms=ts_ms,
@@ -1985,7 +2008,7 @@ class DeepAgentsRuntimeAdapter(BaseCallbackHandler):
                     ),
                 },
             )
-        ]
+        )
         if join_satisfied:
             events.append(
                 self._event(
@@ -2083,34 +2106,29 @@ class DeepAgentsRuntimeAdapter(BaseCallbackHandler):
         if (
             active.tool_name == "announce_completion_intent"
             and outcome.status == "success"
-            and type(estimated) is int and 64 <= estimated <= 4096
+            and type(estimated) is int and 1 <= estimated <= 4096
         ):
             with self._lock:
-                pending = self._bound_pending_child(tool_run_id, active.invocation_id)
                 identity = self._identities.get(active.invocation_id)
-                if pending is None and identity is not None:
-                    matches = [
-                        item for item in self._pending_tasks.values()
-                        if item.child_invocation_id == active.invocation_id
-                        and not item.terminal
-                    ]
-                    if len(matches) == 1:
-                        pending = matches[0]
+                metadata = identity.metadata if identity is not None else None
                 if (
-                    pending is None or pending.terminal or identity is None
-                    or identity.metadata.relation_type != RelationType.SPAWN.value
-                    or pending.child_context_id != identity.metadata.context_id
+                    metadata is None
+                    or metadata.relation_type != RelationType.SPAWN.value
+                    or not metadata.join_id
+                    or active.invocation_id in self._terminal_invocation_ids
                 ):
-                    pending = None
+                    metadata = None
+                else:
+                    self._announced_child_ids.add(active.invocation_id)
                 epoch = self._model_epochs.get(active.invocation_id, 0)
-            if pending is not None:
+            if metadata is not None:
                 self._publish((
                     self._event(
                         RuntimeEventKind.STRUCTURED_ACTION,
                         invocation_id=active.invocation_id,
-                        context_id=pending.child_context_id,
+                        context_id=metadata.context_id,
                         context_epoch=epoch,
-                        join_id=pending.join_id,
+                        join_id=metadata.join_id,
                         confidence=EventConfidence.OBSERVED_EXACT,
                         attributes={
                             "source": "deepagents_completion_stage",

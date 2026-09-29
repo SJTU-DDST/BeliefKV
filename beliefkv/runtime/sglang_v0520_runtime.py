@@ -1008,7 +1008,7 @@ class NativeAdmissionRuntime:
             return
         if signal_kind == "stage":
             estimated = event.attributes.get("estimated_final_report_tokens")
-            if type(estimated) is not int or not 64 <= estimated <= 4096:
+            if type(estimated) is not int or not 1 <= estimated <= 4096:
                 self.counts["final_stage_no_estimate"] += 1
                 return
             self._clear_final_stage(join_id)

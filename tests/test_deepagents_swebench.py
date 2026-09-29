@@ -41,6 +41,7 @@ from beliefkv.experiments.deepagents_swebench import (
     AUTONOMOUS_NATURAL_SUBAGENT_PROMPT,
     AUTONOMOUS_SYSTEM_PROMPT,
     DELEGATED_TASK_FOCUS_INSTRUCTION,
+    NATIVE_CHILD_RETURN_INSTRUCTION,
     DynamicInitialDelegationPlan,
     EmptyReasoningRecoveryMiddleware,
     ChildFinalReportShadowMiddleware,
@@ -60,6 +61,7 @@ from beliefkv.experiments.deepagents_swebench import (
     SweBenchWorkload,
     WorkflowDeadlineController,
     _execute_saturated_root_pool,
+    _native_completion_stage_tool,
     capture_append_offset,
     classify_workflow_measurement,
     collect_workspace_artifacts,
@@ -2325,6 +2327,19 @@ def test_native_dynamic_profile_keeps_native_child_tools(tmp_path: Path) -> None
     assert any(
         "implement" in item["system_prompt"].lower()
         for item in specs
+    )
+
+
+def test_native_child_notice_is_expected_for_short_and_blocked_reports() -> None:
+    assert "Before your final report, call announce_completion_intent once" in (
+        NATIVE_CHILD_RETURN_INSTRUCTION
+    )
+    assert "even when the report is short or you are blocked" in (
+        NATIVE_CHILD_RETURN_INSTRUCTION
+    )
+    notice = _native_completion_stage_tool()
+    assert "Completion stage recorded" in notice.invoke(
+        {"estimated_final_report_tokens": 1}
     )
 
 

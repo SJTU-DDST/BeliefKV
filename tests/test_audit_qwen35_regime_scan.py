@@ -47,6 +47,16 @@ def test_deduplicates_observations_without_promoting_native_ack(tmp_path):
         }) + "\n")
     (server / "physical_action_ack.jsonl").write_text("")
     (server / "physical_action_use.jsonl").write_text("")
+    (server / "eviction_attribution.jsonl").write_text(
+        json.dumps({
+            "event": "host_block_evicted", "pool": "full",
+            "evicted_units": 100,
+        }) + "\n" + json.dumps({
+            "event": "host_block_reaccess_attributed", "pool": "full",
+            "evicted_units_since_prior_reaccess": 4,
+            "full_recomputed_units": 2,
+        }) + "\n"
+    )
     (server / "native_telemetry_status.json").write_text(json.dumps({
         "writer_error": None, "dropped_records": 0, "failed_records": 0,
         "pending_request_count": 0, "pending_batch_count": 0,
@@ -93,6 +103,9 @@ def test_deduplicates_observations_without_promoting_native_ack(tmp_path):
     assert report["predictive_h2d_ack_count"] == 0
     assert report["verified_first_service_full_reuse_count"] == 0
     assert report["verified_first_service_mamba_reuse_count"] == 0
+    assert report["host_evicted_units"]["full"] == 100
+    assert report["full_reaccessed_evicted_units"] == 4
+    assert report["full_recomputed_units"] == 2
     assert report["qualification"] == "not_inferred_from_snapshots_or_native_acks"
 
 

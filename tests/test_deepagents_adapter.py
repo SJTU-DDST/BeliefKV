@@ -393,6 +393,11 @@ def test_completion_stage_tool_ack_binds_child_without_report_payload() -> None:
         )
         assert stage.attributes["estimated_final_report_tokens"] == 256
         assert "private assignment" not in json.dumps(stage.to_dict())
+        adapter.complete_runtime_task(task)
+        assert not any(
+            item.attributes.get("child_completion_signal_kind") == "terminal_fallback"
+            for item in trace.events
+        )
     finally:
         queued.close()
 
@@ -424,6 +429,7 @@ def test_completion_stage_uses_live_child_identity_when_callback_parent_missing(
             inputs={"estimated_final_report_tokens": 256},
         )
         adapter._run_parent.pop(str(stage_run), None)
+        adapter._pending_tasks.clear()
         adapter.on_tool_end(
             ToolMessage(
                 content="Completion stage recorded. Give your final report now.",
@@ -439,6 +445,67 @@ def test_completion_stage_uses_live_child_identity_when_callback_parent_missing(
         ]
         assert len(stages) == 1
         assert stages[0].invocation_id == task.invocation_id
+    finally:
+        queued.close()
+
+
+def test_natural_child_return_has_distinct_terminal_notice_without_tool() -> None:
+    trace = CollectingSink()
+    adapter = DeepAgentsRuntimeAdapter(
+        trace, BeliefKVRequestMetadata("wf", "root", "ctx", 0),
+    )
+    adapter.start()
+    task = adapter.declare_runtime_tasks(
+        [("explorer", "private assignment")], group_id="stage"
+    )[0]
+    adapter.complete_runtime_task(task)
+    child = [
+        event for event in trace.events if event.invocation_id == task.invocation_id
+    ]
+    fallback, returned = child[-2:]
+    assert fallback.kind == RuntimeEventKind.STRUCTURED_ACTION
+    assert fallback.attributes["child_completion_signal_kind"] == "terminal_fallback"
+    assert fallback.attributes["beliefkv_child_completion_intent"] is False
+    assert returned.kind == RuntimeEventKind.RETURN
+    assert fallback.ts_ms <= returned.ts_ms
+
+
+def test_child_tool_after_stage_invalidates_notice_before_return() -> None:
+    trace = CollectingSink()
+    queued = QueuedRuntimeEventSink(CollectingSink())
+    adapter = DeepAgentsRuntimeAdapter(
+        trace, BeliefKVRequestMetadata("wf", "root", "ctx", 0),
+        control_sink=queued,
+    )
+    try:
+        adapter.start()
+        task = adapter.declare_runtime_tasks(
+            [("explorer", "private assignment")], group_id="stage"
+        )[0]
+        task_run, stage_run, other_run = uuid4(), uuid4(), uuid4()
+        adapter.on_tool_start(
+            {"name": "task"}, "", run_id=task_run,
+            inputs={"subagent_type": "explorer", "description": "private assignment"},
+            tool_call_id=task.tool_call_id,
+        )
+        adapter.on_tool_start(
+            {"name": "announce_completion_intent"}, "",
+            run_id=stage_run, parent_run_id=task_run,
+            inputs={"estimated_final_report_tokens": 32},
+        )
+        adapter.on_tool_end("Completion stage recorded.", run_id=stage_run)
+        adapter.on_tool_start(
+            {"name": "read_file"}, "", run_id=other_run, parent_run_id=task_run,
+            inputs={"file_path": "/workspace/example.py"},
+        )
+        adapter.complete_runtime_task(task)
+        signals = [
+            event.attributes.get("child_completion_signal_kind")
+            for event in trace.events
+            if event.invocation_id == task.invocation_id
+            and event.kind == RuntimeEventKind.STRUCTURED_ACTION
+        ]
+        assert signals == ["stage", "terminal_fallback"]
     finally:
         queued.close()
 

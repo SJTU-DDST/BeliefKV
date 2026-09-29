@@ -120,9 +120,22 @@ def summarize(run: Path) -> dict:
                     host_peak[pool], row["pools"][pool]["used_fraction"]
                 )
     evictions = {"full": 0, "mamba": 0}
+    full_reaccessed_evicted_units = 0
+    full_recomputed_units = 0
+    full_reaccess_events = 0
     for row in rows(server / "eviction_attribution.jsonl"):
         if row.get("event") == "host_block_evicted" and row.get("pool") in evictions:
             evictions[row["pool"]] += int(row["evicted_units"])
+        elif (
+            row.get("event") == "host_block_reaccess_attributed"
+            and row.get("pool") == "full"
+        ):
+            full_reaccess_events += 1
+            full_reaccessed_evicted_units += int(
+                row.get("evicted_units_since_prior_reaccess")
+                or row.get("evicted_units") or 0
+            )
+            full_recomputed_units += int(row.get("full_recomputed_units") or 0)
 
     status_path = server / "native_telemetry_status.json"
     opportunity_status_path = opportunities / "admission_opportunities_status.json"
@@ -217,10 +230,13 @@ def summarize(run: Path) -> dict:
         ),
         "host_peak_fraction": host_peak,
         "host_evicted_units": evictions,
-        "full_recomputed_units": (
-            status.get("host_block_eviction_attribution", {}).get(
-                "recomputed_full_units"
-            ) if status is not None else None
+        "full_reaccess_events": full_reaccess_events,
+        "full_reaccessed_evicted_units": full_reaccessed_evicted_units,
+        "full_recomputed_units": full_recomputed_units,
+        "eviction_interpretation": (
+            "Recomputation is attributed only for FULL blocks subsequently "
+            "reaccessed; evicted blocks not revisited are not misses. Mamba "
+            "per-node reaccess location is not available."
         ),
         "qualification": "not_inferred_from_snapshots_or_native_acks",
     }
