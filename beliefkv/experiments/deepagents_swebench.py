@@ -1948,6 +1948,9 @@ When your assigned workstream is complete or you are concretely blocked, return 
 result to the parent in concise natural language and stop. A normal final assistant
 message is a valid child return; do not emit JSON or call a completion-format tool.
 Separate findings from uncertainty, and never claim tests or edits you did not perform.
+If announce_completion_intent is available, call it only after all needed tool work
+is finished, with an estimate of the tokens in your final report. Then give the
+report normally; if more investigation becomes necessary, use tools as needed.
 """
 
 DELEGATED_TASK_FOCUS_INSTRUCTION = """
@@ -2319,6 +2322,17 @@ def _child_return_intent_shadow_tool(
     def announce_completion_intent() -> str:
         """Announce that your analysis is complete before the final response."""
         return record()
+
+    return announce_completion_intent
+
+
+def _native_completion_stage_tool() -> BaseTool:
+    @tool("announce_completion_intent")
+    def announce_completion_intent(estimated_final_report_tokens: int) -> str:
+        """Signal that tool work is done; estimate tokens in the final report."""
+        if not 64 <= estimated_final_report_tokens <= 4096:
+            return "Estimate 64-4096 final report tokens, then call again."
+        return "Completion stage recorded. Give your final report now."
 
     return announce_completion_intent
 
@@ -2749,7 +2763,10 @@ def _autonomous_subagents(
                     + repository_sandbox_contract(workload)
                 ),
                 "model": model,
-                "tools": [] if read_only else [_workspace_patch_tool(backend)],
+                "tools": (
+                    [] if read_only else
+                    [_workspace_patch_tool(backend), _native_completion_stage_tool()]
+                ),
                 "middleware": [
                     TodoListMiddleware(),
                     _filesystem_middleware(

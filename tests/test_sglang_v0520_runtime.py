@@ -2075,6 +2075,201 @@ def select(runtime, native):
     )
 
 
+def final_stage_runtime(*, stage_only=False, event_socket_path=None):
+    runtime = NativeAdmissionRuntime(
+        event_socket_path=event_socket_path,
+        enable_final_stage_prefetch=stage_only,
+    )
+    runtime.enable_admission_prefetch = not stage_only
+    parent = req("parent")
+    parent.session_id, parent.session_generation = "s", 1
+    runtime.register_visible_request(parent)
+    runtime.on_events((
+        event(0, RuntimeEventKind.WORKFLOW_START),
+        event(1, RuntimeEventKind.INVOCATION_CREATE,
+              invocation_id="parent", context_id="ctx-parent",
+              agent_definition_id="parent", agent_instance_id="parent"),
+        event(2, RuntimeEventKind.INVOCATION_CREATE,
+              invocation_id="child", context_id="ctx-child",
+              agent_definition_id="child", agent_instance_id="child"),
+        event(3, RuntimeEventKind.INVOCATION_CREATE,
+              invocation_id="other", context_id="ctx-other",
+              agent_definition_id="other", agent_instance_id="other"),
+        event(4, RuntimeEventKind.JOIN_CREATE,
+              join_id="join", member_invocation_ids=("child",)),
+        event(5, RuntimeEventKind.JOIN_WAIT,
+              invocation_id="parent", join_id="join"),
+    ))
+    runtime.on_events((event(
+        6, RuntimeEventKind.STRUCTURED_ACTION,
+        invocation_id="child", context_id="ctx-child",
+        context_epoch=0, join_id="join",
+        attributes={"beliefkv_child_completion_intent": True,
+                    "child_completion_signal_kind": "stage",
+                    "estimated_final_report_tokens": 128},
+    ),))
+    return runtime
+
+
+def test_final_stage_promotes_only_bound_join_child_with_admission_budget():
+    runtime = final_stage_runtime()
+    assert runtime.counts["final_stage_accepted"] == 1
+    assert runtime._join_ticket is None
+    other, child = req("other"), req("child")
+    runtime.register_visible_request(other)
+    child.beliefkv_metadata["context_epoch"] = 1
+    runtime.on_events((event(
+        7, RuntimeEventKind.LLM_SUBMIT,
+        invocation_id="child", context_id="ctx-child", context_epoch=1,
+        attributes={"request_id": "child"},
+    ),))
+    runtime.register_visible_request(child)
+    assert select(runtime, [other, child]).candidates[0] is child
+    runtime.on_prefill_candidate_result(child, admitted=True, result="ok")
+    assert runtime.counts["final_priority_admitted"] == 1
+    assert select(runtime, [other, child]).candidates[0] is other
+    runtime.on_events((event(
+        8, RuntimeEventKind.TOOL_START,
+        invocation_id="child", context_id="ctx-child",
+    ),))
+    assert "join" not in runtime._final_stages
+
+
+def test_final_stage_can_run_without_predictor_but_not_in_baseline(tmp_path):
+    with pytest.raises(ValueError, match="event socket"):
+        NativeAdmissionRuntime(enable_final_stage_prefetch=True)
+    runtime = final_stage_runtime(
+        stage_only=True, event_socket_path=str(tmp_path / "stage.sock"),
+    )
+    try:
+        other, child = req("other"), req("child")
+        runtime.register_visible_request(other)
+        child.beliefkv_metadata["context_epoch"] = 1
+        runtime.on_events((event(
+            7, RuntimeEventKind.LLM_SUBMIT, invocation_id="child",
+            context_id="ctx-child", context_epoch=1,
+            attributes={"request_id": "child"},
+        ),))
+        runtime.register_visible_request(child)
+        assert runtime.predictor_sha256 is None
+        assert select(runtime, [other, child]).candidates[0] is child
+        assert runtime._live_final_stage(runtime._final_stages["join"])
+    finally:
+        runtime.close()
+
+    baseline = final_stage_runtime()
+    baseline.enable_admission_prefetch = False
+    baseline.register_visible_request(req("other"))
+    child = req("child")
+    child.beliefkv_metadata["context_epoch"] = 1
+    baseline.on_events((event(
+        7, RuntimeEventKind.LLM_SUBMIT, invocation_id="child",
+        context_id="ctx-child", context_epoch=1,
+        attributes={"request_id": "child"},
+    ),))
+    baseline.register_visible_request(child)
+    assert select(baseline, [req("other"), child]).candidates[0].rid == "other"
+
+
+def test_reactive_h2d_ack_bootstraps_final_stage_service_samples():
+    runtime = NativeAdmissionRuntime()
+    for direction, size, elapsed in (
+        ("d2h", 100, 150.0),
+        ("h2d", 105, 200.0),
+        ("h2d", 105, 250.0),
+        ("h2d", 105, 180.0),
+        ("h2d", 0, 50.0),
+    ):
+        runtime.on_native_transfer_commit(NS(
+            direction=direction, status="completed", child_commits=(),
+            actual_bytes=size, submit_to_ack_ms=elapsed,
+        ))
+    assert list(runtime._h2d_samples) == [
+        (105, 200.0), (105, 250.0), (105, 180.0),
+    ]
+    assert runtime.counts["h2d_service_sample"] == 3
+
+
+def test_final_stage_latest_start_requires_serviced_decode_and_h2d_evidence():
+    runtime = final_stage_runtime()
+    child = req("child")
+    child.beliefkv_metadata["context_epoch"] = 1
+    runtime.on_events((event(
+        7, RuntimeEventKind.LLM_SUBMIT, invocation_id="child",
+        context_id="ctx-child", context_epoch=1,
+        attributes={"request_id": "child"},
+    ),))
+    runtime.register_visible_request(child)
+    stage = runtime._final_stages["join"]
+    stage.generated_tokens = 64
+    stage.tokens_per_second = 80
+    runtime.attach_native_cache(NS(cache_controller=NS(
+        mem_pool_host=NS(entry_map={
+            "kv": NS(host_pool=NS(size_per_token=10)),
+            "mamba": NS(host_pool=NS(size_per_token=5)),
+        })
+    )))
+    observation = NS(
+        step=PrefetchLoadStep(stage.key, 11, 4, 11, 4),
+        fits_current_free_lists=True,
+        required_full_tokens=10, required_mamba_slots=1,
+    )
+    with patch.object(runtime, "inspect_context_h2d_opportunity",
+                      return_value=observation), patch.object(
+        runtime, "refreshed_prefetch_gpu_step", return_value=observation.step,
+    ), patch.object(
+        runtime, "issue_prefetch_gpu_step", return_value="command",
+    ) as issue:
+        runtime.dispatch_join_prefetch()
+        issue.assert_not_called()
+        runtime._h2d_samples.extend([(105, 200.0)] * 3)
+        runtime.dispatch_join_prefetch()
+        issue.assert_not_called()  # Still too early in the final decode.
+        stage.generated_tokens = 120
+        runtime.dispatch_join_prefetch()
+        issue.assert_called_once()
+        assert runtime._join_ticket.issued_nodes == stage.issued_nodes == 1
+    runtime.on_events((event(
+        8, RuntimeEventKind.RETURN, invocation_id="child",
+    ),))
+    assert "join" not in runtime._final_stages
+
+
+def test_final_stage_tool_and_epoch_change_cancel_provisional_h2d():
+    runtime = final_stage_runtime()
+    stage = runtime._final_stages["join"]
+    runtime._join_ticket = NS(
+        join_id="join", stage_bound=True, phase="provisional"
+    )
+    runtime.on_events((event(
+        7, RuntimeEventKind.TOOL_START,
+        invocation_id="child", context_id="ctx-child",
+    ),))
+    assert "join" not in runtime._final_stages
+    assert runtime._join_ticket is None
+    assert runtime.counts["final_stage_tool_invalidated"] == 1
+
+    runtime.on_events((event(
+        8, RuntimeEventKind.TOOL_END,
+        invocation_id="child", context_id="ctx-child",
+    ),))
+    runtime.on_events((event(
+        9, RuntimeEventKind.STRUCTURED_ACTION,
+        invocation_id="child", context_id="ctx-child",
+        context_epoch=0, join_id="join",
+        attributes={"beliefkv_child_completion_intent": True,
+                    "child_completion_signal_kind": "stage",
+                    "estimated_final_report_tokens": 128},
+    ),))
+    assert runtime._final_stages["join"].child_id == stage.child_id
+    runtime.on_events((event(
+        10, RuntimeEventKind.CONTEXT_ADVANCE,
+        invocation_id="child", context_id="ctx-child", context_epoch=1,
+    ),))
+    runtime.scheduler_step()
+    assert not runtime._final_stages
+
+
 def test_native_fallback_and_causal_join_straggler_ranking():
     runtime = NativeAdmissionRuntime()
     a, plain, b = req("a"), req("plain", tagged=False), req("b")

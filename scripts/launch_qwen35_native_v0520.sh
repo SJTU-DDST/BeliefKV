@@ -39,6 +39,17 @@ for arg in "$@"; do
     admission_requested=1
   fi
 done
+if [[ "${BELIEFKV_ENABLE_FINAL_STAGE_PREFETCH:-0}" == "1" ]]; then
+  if [[ -z "${SGLANG_SOURCE_CHECKOUT}" ]] \
+      || (( admission_requested == 0 )) \
+      || [[ "${ENABLE_SESSION_RADIX_CACHE}" != "1" ]]; then
+    printf 'Final stage prefetch requires patched SGLang, admission, and session radix cache\n' >&2
+    exit 2
+  fi
+elif [[ "${BELIEFKV_ENABLE_FINAL_STAGE_PREFETCH:-0}" != "0" ]]; then
+  printf 'BELIEFKV_ENABLE_FINAL_STAGE_PREFETCH must be 0 or 1\n' >&2
+  exit 2
+fi
 if [[ ${BELIEFKV_ADMISSION_TELEMETRY_DIR+x} ]]; then
   if [[ -z "${SGLANG_SOURCE_CHECKOUT}" ]] \
       || [[ ${BELIEFKV_NATIVE_TELEMETRY_DIR+x} ]] \

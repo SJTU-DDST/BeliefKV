@@ -2316,6 +2316,12 @@ def test_native_dynamic_profile_keeps_native_child_tools(tmp_path: Path) -> None
         "general-purpose",
     ]
     assert all(item["tools"] for item in specs)
+    assert all(
+        "announce_completion_intent" in {
+            tool.name for tool in item["tools"]
+        }
+        for item in specs
+    )
     assert any(
         "implement" in item["system_prompt"].lower()
         for item in specs

@@ -1,6 +1,6 @@
-"""Bounded semantic admission for v0.5.20's native FULL/MAMBA scheduler.
+"""Bounded semantic admission and action-local native H2D for FULL/MAMBA.
 
-No physical action or capacity certificate is issued by this runtime.
+The SGLang cache remains the physical capacity and transfer authority.
 """
 
 from __future__ import annotations
@@ -9,6 +9,7 @@ from collections import Counter, deque
 from collections.abc import Sequence
 from dataclasses import dataclass
 from itertools import islice
+import math
 import os
 import time
 from typing import TYPE_CHECKING
@@ -91,6 +92,7 @@ class _JoinPrefetchTicket:
     issued_nodes: int = 0
     no_step_recorded: bool = False
     drained_for_issued_nodes: int | None = None
+    stage_bound: bool = False
 
 
 @dataclass(frozen=True)
@@ -100,6 +102,21 @@ class _CompletionReentryHint:
     child_id: str
     child_epoch: int
     issued_monotonic_ms: float
+
+
+@dataclass
+class _ChildFinalStage:
+    key: PrefillCandidateKey
+    join_id: str
+    child_id: str
+    child_epoch: int
+    expected_tokens: int
+    expires_at: float
+    request_id: str | None = None
+    generated_tokens: int = 0
+    last_service_at: float | None = None
+    tokens_per_second: float | None = None
+    issued_nodes: int = 0
 
 
 class NativeAdmissionRuntime:
@@ -115,9 +132,20 @@ class NativeAdmissionRuntime:
         enable_local_predictor: bool = False,
         enable_admission_prefetch: bool = False,
         enable_confirmed_join_canary: bool = False,
+        enable_final_stage_prefetch: bool = False,
         completion_lead: CompletionLead | None = None,
         opportunity_dir: str | None = None,
     ) -> None:
+        stage_setting = os.environ.get("BELIEFKV_ENABLE_FINAL_STAGE_PREFETCH", "0")
+        if stage_setting not in ("0", "1"):
+            raise ValueError("final stage prefetch setting must be 0 or 1")
+        enable_final_stage_prefetch = (
+            enable_final_stage_prefetch or stage_setting == "1"
+        )
+        if enable_final_stage_prefetch and (
+            not event_socket_path or enable_confirmed_join_canary
+        ):
+            raise ValueError("final stage prefetch requires an event socket and no canary")
         if enable_confirmed_join_canary and (
             enable_admission_prefetch
             or enable_local_predictor
@@ -168,8 +196,15 @@ class NativeAdmissionRuntime:
         self.join_wait_hints: dict[str, NativeJoinWaitHint] = {}
         self.completion_lead = completion_lead
         self._completion_hints: dict[str, _CompletionReentryHint] = {}
+        self._final_stages: dict[str, _ChildFinalStage] = {}
+        self._final_request_stages: dict[str, _ChildFinalStage] = {}
+        self._h2d_samples: deque[tuple[int, float]] = deque(maxlen=16)
+        self._final_priority_normal_admissions = 4
+        self._final_priority_promoted: str | None = None
+        self._final_priority_native_rank: int | None = None
         self._join_ticket: _JoinPrefetchTicket | None = None
         self.enable_admission_prefetch = enable_admission_prefetch
+        self.enable_final_stage_prefetch = enable_final_stage_prefetch
         self.enable_confirmed_join_canary = enable_confirmed_join_canary
         self._admission_lease: _AdmissionPrefetchLease | None = None
         self.shadow_candidate: ActionLocalShadowCandidate | None = None
@@ -266,6 +301,8 @@ class NativeAdmissionRuntime:
 
     def close(self) -> None:
         self._discard_join_ticket("shutdown")
+        self._final_stages.clear()
+        self._final_request_stages.clear()
         if self._opportunity_writer is not None:
             self._opportunity_writer.close()
             self._opportunity_writer = None
@@ -356,6 +393,8 @@ class NativeAdmissionRuntime:
             self.tool_wait_hint = None
             self.join_wait_hint = None
             self._completion_hints.clear()
+            self._final_stages.clear()
+            self._final_request_stages.clear()
             self._discard_join_ticket("causal_mirror_discarded")
             self._admission_lease = None
             self.shadow_candidate = None
@@ -483,11 +522,25 @@ class NativeAdmissionRuntime:
             for event in events:
                 if event.kind is RuntimeEventKind.STRUCTURED_ACTION:
                     self._observe_child_completion_intent(event)
+                elif event.kind is RuntimeEventKind.LLM_SUBMIT:
+                    self._bind_final_request(event)
+                elif event.kind is RuntimeEventKind.TOOL_START:
+                    for join_id, stage in tuple(self._final_stages.items()):
+                        if stage.child_id == event.invocation_id:
+                            self._clear_final_stage(join_id)
+                            self.counts["final_stage_tool_invalidated"] += 1
                 elif event.kind in (
                     RuntimeEventKind.RETURN, RuntimeEventKind.JOIN_SATISFIED,
                     RuntimeEventKind.JOIN_TIMEOUT, RuntimeEventKind.INVOCATION_CANCEL,
                 ):
                     self._advance_join_ticket(event)
+                    for join_id, stage in tuple(self._final_stages.items()):
+                        if (
+                            stage.child_id == event.invocation_id
+                            or stage.key.invocation_id == event.invocation_id
+                            or stage.join_id == event.join_id
+                        ):
+                            self._clear_final_stage(join_id)
             self.join_wait_hints = {
                 join_id: hint for join_id, hint in self.join_wait_hints.items()
                 if self._live_join_hint(hint)
@@ -518,6 +571,9 @@ class NativeAdmissionRuntime:
         if self.event_server is not None:
             self.event_server.drain(max_messages=16)
         now_ms = time.monotonic() * 1000
+        for join_id, stage in tuple(self._final_stages.items()):
+            if not self._live_final_stage(stage):
+                self._clear_final_stage(join_id)
         expired_tool = [
             context for context, hint in self.tool_wait_hints.items()
             if not hint.live(hint.key, now_ms=now_ms)
@@ -931,12 +987,17 @@ class NativeAdmissionRuntime:
                 join.mode.value == "all"
                 and len(join.member_invocation_ids - join.completed_member_ids) != 1
             )
-            or signal_kind not in ("explicit", "natural_final")
-            or event.attributes.get("structured_action_names") != (
-                ["ChildCompletion"] if signal_kind == "explicit" else []
+            or signal_kind not in ("stage", "explicit", "natural_final")
+            or (
+                signal_kind != "stage"
+                and (
+                    event.attributes.get("structured_action_names") != (
+                        ["ChildCompletion"] if signal_kind == "explicit" else []
+                    )
+                    or not isinstance(event.attributes.get("request_id"), str)
+                    or not event.attributes["request_id"]
+                )
             )
-            or not isinstance(event.attributes.get("request_id"), str)
-            or not event.attributes["request_id"]
         ):
             self.counts["join_intent_stale"] += 1
             return
@@ -944,6 +1005,22 @@ class NativeAdmissionRuntime:
         parent = self.graph.invocations.get(key.invocation_id) if key else None
         if key is None or parent.state is not InvocationState.WAIT_JOIN:
             self.counts["join_intent_stale"] += 1
+            return
+        if signal_kind == "stage":
+            estimated = event.attributes.get("estimated_final_report_tokens")
+            if type(estimated) is not int or not 64 <= estimated <= 4096:
+                self.counts["final_stage_no_estimate"] += 1
+                return
+            self._clear_final_stage(join_id)
+            self._final_stages[join_id] = _ChildFinalStage(
+                key, join_id, child_id, context.epoch, estimated,
+                time.monotonic() + 120.0,
+            )
+            self.counts["final_stage_accepted"] += 1
+            return
+        if join_id in self._final_stages:
+            # The explicit stage is governed by service progress, not a
+            # second, unconditional two-second completion-intent lease.
             return
         ticket = self._join_ticket
         if ticket is None or (ticket.key, ticket.join_id) != (key, join_id):
@@ -975,6 +1052,139 @@ class NativeAdmissionRuntime:
             self.counts["join_completion_forecast_accepted"] += 1
         elif self.completion_lead is not None:
             self.counts["join_completion_forecast_too_late"] += 1
+
+    def _clear_final_stage(self, join_id: str) -> None:
+        stage = self._final_stages.pop(join_id, None)
+        if stage is not None and stage.request_id is not None:
+            self._final_request_stages.pop(stage.request_id, None)
+        ticket = self._join_ticket
+        if (
+            ticket is not None and ticket.join_id == join_id
+            and ticket.stage_bound and ticket.phase == "provisional"
+        ):
+            self._discard_join_ticket("final_stage_invalidated")
+
+    def _live_final_stage(self, stage: _ChildFinalStage) -> bool:
+        join = self.graph.joins.get(stage.join_id)
+        child = self.graph.invocations.get(stage.child_id)
+        context = self.graph.contexts.get(child.context_id) if child else None
+        parent = self.graph.invocations.get(stage.key.invocation_id)
+        return bool(
+            time.monotonic() < stage.expires_at
+            and join is not None and not join.satisfied
+            and join.mode.value == "all"
+            and join.member_invocation_ids - join.completed_member_ids
+            == {stage.child_id}
+            and child is not None and not child.state.terminal
+            and context is not None and context.epoch == stage.child_epoch
+            and parent is not None and parent.state is InvocationState.WAIT_JOIN
+            and parent.join_id == stage.join_id
+            and self.context_sessions.get(stage.key.context_id) == stage.key
+        )
+
+    def _bind_final_request(self, event: RuntimeEvent) -> None:
+        for stage in self._final_stages.values():
+            if (
+                stage.child_id == event.invocation_id
+                and stage.request_id is None
+                and type(event.attributes.get("request_id")) is str
+                and event.context_id is not None
+                and event.context_epoch is not None
+                and event.context_epoch > stage.child_epoch
+            ):
+                stage.child_epoch = event.context_epoch
+                stage.request_id = event.attributes["request_id"]
+                self._final_request_stages[stage.request_id] = stage
+                self.counts["final_request_bound"] += 1
+
+    def _roll_final_stage(self) -> None:
+        if not (
+            self.enable_final_stage_prefetch or self.enable_admission_prefetch
+        ) or self.physical_disabled:
+            return
+        if len(self._h2d_samples) < 3 or self.physical_ledger.pending_count:
+            return
+        if self._join_ticket is not None and self._live_join_ticket():
+            return
+        for stage in tuple(self._final_stages.values()):
+            if (
+                not self._live_final_stage(stage) or stage.request_id is None
+                or stage.generated_tokens < 16
+                or stage.tokens_per_second is None
+                or stage.issued_nodes >= 2
+            ):
+                continue
+            child_key = self.visible.get(stage.request_id)
+            if (
+                child_key is None or child_key.invocation_id != stage.child_id
+                or child_key.context_epoch != stage.child_epoch
+            ):
+                continue
+            remaining = stage.expected_tokens - stage.generated_tokens
+            if remaining < 4:
+                continue
+            remaining_ms = remaining * 1000 / stage.tokens_per_second
+            if remaining_ms > 2_000:
+                continue
+            observation = self.inspect_context_h2d_opportunity(
+                context_id=stage.key.context_id,
+                context_epoch=stage.key.context_epoch,
+            )
+            if (
+                observation is None or observation.step is None
+                or observation.fits_current_free_lists is not True
+            ):
+                continue
+            cache = self._native_cache
+            entries = getattr(
+                getattr(getattr(cache, "cache_controller", None),
+                        "mem_pool_host", None), "entry_map", {},
+            )
+            try:
+                required_bytes = sum(
+                    tokens * entries[name].host_pool.size_per_token
+                    for name, tokens in (
+                        ("kv", observation.required_full_tokens),
+                        ("mamba", observation.required_mamba_slots),
+                    )
+                )
+            except (AttributeError, KeyError, TypeError):
+                continue
+            if required_bytes <= 0:
+                continue
+            # Use measured synchronized H2D ACKs, including queueing. A lack
+            # of evidence leaves this signal advisory, not a transfer permit.
+            h2d_ms = max(
+                duration_ms * required_bytes / sample_bytes
+                for sample_bytes, duration_ms in self._h2d_samples
+            )
+            # Do not occupy HBM far ahead of RETURN, even when the largest
+            # historical transfer was slow.
+            if remaining_ms > min(h2d_ms + 250, 2_000):
+                continue
+            join = self.graph.joins[stage.join_id]
+            self._join_ticket = _JoinPrefetchTicket(
+                stage.key, stage.join_id, join.mode.value,
+                tuple(sorted(join.member_invocation_ids)),
+                "provisional", min(stage.expires_at, time.monotonic() + 2.0),
+                issued_nodes=stage.issued_nodes,
+                stage_bound=True,
+            )
+            self.counts["final_stage_latest_start"] += 1
+            if self._opportunity_writer is not None:
+                self._opportunity_writer.record({
+                    "event": "final_stage_latest_start",
+                    "ts_ms": time.time() * 1000,
+                    "join_id": stage.join_id,
+                    "workflow_id": stage.key.root_workflow_id,
+                    "child_request_id": stage.request_id,
+                    "generated_tokens": stage.generated_tokens,
+                    "expected_tokens": stage.expected_tokens,
+                    "remaining_ms": remaining_ms,
+                    "h2d_ms": h2d_ms,
+                    "required_bytes": required_bytes,
+                })
+            break
 
     def _live_completion_hint(self, hint: _CompletionReentryHint) -> bool:
         if self.completion_lead is None:
@@ -1103,6 +1313,7 @@ class NativeAdmissionRuntime:
         return bool(
             (
                 self.enable_admission_prefetch
+                or self.enable_final_stage_prefetch and ticket.stage_bound
                 or self.enable_confirmed_join_canary and ticket.phase == "confirmed"
             ) and not self.physical_disabled
             and ticket.join_id not in self._noncontinuing_joins
@@ -1120,11 +1331,19 @@ class NativeAdmissionRuntime:
                 else InvocationState.WAIT_JOIN
             )
             and join.satisfied == (ticket.phase == "confirmed")
+            and (
+                not ticket.stage_bound or ticket.phase == "confirmed"
+                or (
+                    (stage := self._final_stages.get(ticket.join_id)) is not None
+                    and stage.key == key and self._live_final_stage(stage)
+                )
+            )
             and not self._terminal(key)
         )
 
     def dispatch_join_prefetch(self) -> None:
         """One action-local native H2D per safe point, never grant admission."""
+        self._roll_final_stage()
         ticket = self._join_ticket
         if ticket is None or not self._live_join_ticket():
             if ticket is not None:
@@ -1209,6 +1428,9 @@ class NativeAdmissionRuntime:
         if command is not None:
             ticket.command_id = command
             ticket.issued_nodes += 1
+            stage = self._final_stages.get(ticket.join_id)
+            if stage is not None and ticket.phase == "provisional":
+                stage.issued_nodes = ticket.issued_nodes
             self.counts[f"join_prefetch_{ticket.phase}_issued"] += 1
 
     def _submit_tool_wait(self, context_id: str) -> None:
@@ -1923,6 +2145,17 @@ class NativeAdmissionRuntime:
             self.counts["physical_receipt_failed"] += 1
             return ()
         self.completed_physical_actions.extend(completed)
+        actual_bytes = getattr(commit, "actual_bytes", None)
+        ack_ms = getattr(commit, "submit_to_ack_ms", None)
+        if (
+            getattr(commit, "status", None) == "completed"
+            and getattr(commit, "direction", None) == "h2d"
+            and type(actual_bytes) is int and actual_bytes > 0
+            and type(ack_ms) in (int, float)
+            and math.isfinite(ack_ms) and 0 < ack_ms <= 60_000
+        ):
+            self._h2d_samples.append((actual_bytes, float(ack_ms)))
+            self.counts["h2d_service_sample"] += 1
         self.counts["native_physical_completed"] += len(completed)
         return completed
 
@@ -2138,6 +2371,29 @@ class NativeAdmissionRuntime:
                 pair[0],
             ),
         )
+        self._final_priority_promoted = None
+        self._final_priority_native_rank = None
+        if (
+            (self.enable_admission_prefetch or self.enable_final_stage_prefetch)
+            and self._final_priority_normal_admissions >= 4 and ordered
+        ):
+            for stage in self._final_stages.values():
+                if not self._live_final_stage(stage) or stage.request_id is None:
+                    continue
+                candidate = next((
+                    pair for pair in ordered[:32]
+                    if getattr(pair[1], "rid", None) == stage.request_id
+                    and self.visible.get(stage.request_id) == _request_key(pair[1])
+                ), None)
+                if candidate is None or ordered[0] == candidate:
+                    continue
+                native_rank = ordered.index(candidate)
+                ordered.remove(candidate)
+                ordered.insert(0, candidate)
+                self._final_priority_promoted = stage.request_id
+                self._final_priority_native_rank = native_rank
+                self.counts["final_priority_ordered"] += 1
+                break
         return compile_native_prefill_plan(
             [
                 req for _, req in ordered
@@ -2201,12 +2457,52 @@ class NativeAdmissionRuntime:
             self.counts["native_admitted" if admitted else f"native_{result}"] += 1
             if admitted:
                 self.demand_hints.pop(req.rid, None)
+                if req.rid == self._final_priority_promoted:
+                    self._final_priority_normal_admissions = 0
+                    self.counts["final_priority_admitted"] += 1
+                    stage = self._final_request_stages.get(req.rid)
+                    if stage is not None and self._opportunity_writer is not None:
+                        self._opportunity_writer.record({
+                            "event": "final_request_priority_admitted",
+                            "ts_ms": time.time() * 1000,
+                            "workflow_id": stage.key.root_workflow_id,
+                            "join_id": stage.join_id,
+                            "request_id": req.rid,
+                            "tagged_displaced": self._final_priority_native_rank,
+                        })
+                    self._final_priority_promoted = None
+                else:
+                    self._final_priority_normal_admissions = min(
+                        4, self._final_priority_normal_admissions + 1
+                    )
 
     def on_batch_selected(self, batch: object) -> None:
         pass
 
     def on_batch_completed(self, batch: object) -> None:
         for req in batch.reqs:
+            stage = self._final_request_stages.get(getattr(req, "rid", None))
+            if stage is not None:
+                key = _request_key(req)
+                if (
+                    key is not None and key == self.visible.get(key.request_id)
+                    and key.invocation_id == stage.child_id
+                    and key.context_epoch == stage.child_epoch
+                ):
+                    now = time.monotonic()
+                    tokens = len(getattr(req, "output_ids", ()) or ())
+                    if (
+                        stage.last_service_at is not None
+                        and tokens > stage.generated_tokens
+                        and 0 < now - stage.last_service_at <= 0.5
+                    ):
+                        rate = (tokens - stage.generated_tokens) / (
+                            now - stage.last_service_at
+                        )
+                        stage.tokens_per_second = min(500.0, max(1.0, rate))
+                    if tokens > stage.generated_tokens:
+                        stage.generated_tokens = tokens
+                        stage.last_service_at = now
             if (
                 self._model_worker is not None
                 and req.rid in self.visible

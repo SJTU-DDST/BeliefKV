@@ -2079,6 +2079,39 @@ class DeepAgentsRuntimeAdapter(BaseCallbackHandler):
                     self.root_metadata.root_workflow_id, event.attributes, ts_ms,
                 )
         self._publish((event,), control=True)
+        if active.tool_name == "announce_completion_intent" and outcome.status == "success" and (
+            "Completion stage recorded." in str(getattr(output, "content", output))
+        ):
+            with self._lock:
+                pending = self._bound_pending_child(tool_run_id, active.invocation_id)
+                identity = self._identities.get(active.invocation_id)
+                estimated = active.payload.get("estimated_final_report_tokens")
+                if (
+                    pending is None or pending.terminal or identity is None
+                    or identity.metadata.relation_type != RelationType.SPAWN.value
+                ):
+                    pending = None
+                epoch = self._model_epochs.get(active.invocation_id, 0)
+            if pending is not None:
+                self._publish((
+                    self._event(
+                        RuntimeEventKind.STRUCTURED_ACTION,
+                        invocation_id=active.invocation_id,
+                        context_id=pending.child_context_id,
+                        context_epoch=epoch,
+                        join_id=pending.join_id,
+                        confidence=EventConfidence.OBSERVED_EXACT,
+                        attributes={
+                            "source": "deepagents_completion_stage",
+                            "beliefkv_child_completion_intent": True,
+                            "child_completion_signal_kind": "stage",
+                            "estimated_final_report_tokens": (
+                                estimated if type(estimated) is int
+                                and 64 <= estimated <= 4096 else None
+                            ),
+                        },
+                    ),
+                ), control=True, async_control=True)
 
     def observe_tool_wait(
         self, tool_run_id: str, invocation_id: str, tool_call_id: str

@@ -350,6 +350,53 @@ def test_child_completion_intent_has_bound_identity_and_no_model_payload() -> No
         queued.close()
 
 
+def test_completion_stage_tool_ack_binds_child_without_report_payload() -> None:
+    trace = CollectingSink()
+    control = CollectingSink()
+    queued = QueuedRuntimeEventSink(control)
+    adapter = DeepAgentsRuntimeAdapter(
+        trace, BeliefKVRequestMetadata("wf", "root", "ctx", 0),
+        control_sink=queued,
+    )
+    try:
+        adapter.start()
+        task = adapter.declare_runtime_tasks(
+            [("explorer", "private assignment")], group_id="stage"
+        )[0]
+        task_run = uuid4()
+        adapter.on_tool_start(
+            {"name": "task"}, "", run_id=task_run,
+            inputs={"subagent_type": "explorer",
+                    "description": "private assignment"},
+            tool_call_id=task.tool_call_id,
+        )
+        stage_run = uuid4()
+        adapter.on_tool_start(
+            {"name": "announce_completion_intent"}, "",
+            run_id=stage_run, parent_run_id=task_run,
+            inputs={"estimated_final_report_tokens": 256},
+        )
+        adapter.on_tool_end(
+            "Completion stage recorded. Give your final report now.",
+            run_id=stage_run, parent_run_id=task_run,
+        )
+        queued.close()
+        stages = [
+            item for item in control.events
+            if item.kind == RuntimeEventKind.STRUCTURED_ACTION
+            and item.attributes.get("child_completion_signal_kind") == "stage"
+        ]
+        assert len(stages) == 1
+        stage = stages[0]
+        assert (stage.invocation_id, stage.join_id) == (
+            task.invocation_id, task.join_id
+        )
+        assert stage.attributes["estimated_final_report_tokens"] == 256
+        assert "private assignment" not in json.dumps(stage.to_dict())
+    finally:
+        queued.close()
+
+
 def test_stream_first_content_is_trace_only_and_one_per_child_model_run() -> None:
     trace = CollectingSink()
     control = CollectingSink()

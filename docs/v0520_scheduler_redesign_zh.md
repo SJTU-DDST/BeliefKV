@@ -351,3 +351,27 @@ action-eligible artifact 并验证 stale/OOD 回退和 admission GPU gate；
 跨 epoch ACK 接力及 D2H/H2D 归因，重做容量/服务率标定与
 冻结 baseline/P6 高压 A/B。不能用新版原生 smoke 替代这些 gate，
 也不能宣称 P6 完成。
+
+## 收尾阶段与 JOIN 预取实验开关
+
+`native_dynamic_1to4` child 完成工具工作后可调用
+`announce_completion_intent(estimated_final_report_tokens=...)`，再自然生成
+最终报告。回调只传 child/JOIN/context epoch 和有界长度估计，不传报告
+正文；无结构化终态的自然语言返回仍被接受。只有 `JOIN_ALL` 最后一个
+未完成 child 的通知才进入短期候选。下一次 LLM 提交绑定请求身份，
+再次调用工具、epoch 变化、取消、RETURN 或超时均撤销候选。
+
+设置 `BELIEFKV_ENABLE_FINAL_STAGE_PREFETCH=1` 可单独试验此路径，要求
+`--enable-beliefkv-admission`、`--beliefkv-event-socket-path`、源码 staging
+补丁与 session radix cache；默认关闭，不要求 admission
+predictor artifact，也不启用 confirmed JOIN canary。收尾请求在 native
+waiting 队列中最多提升一次排序，随后需有四次普通准入才能再次提升；
+不抢占运行中的请求、不保证持续 decode 服务。阶段通知**不直接派发**
+H2D：安全点观察最终请求的实际输出 token 增长和服务速率，结合有界
+报告长度估计和至少三次 native 响应式 H2D ACK 的实际字节/提交至 ACK
+时延样本，滚动计算 latest
+start。若缺 Host 副本、FULL/Mamba 设备空位、服务证据或测量样本，
+则不发起预测传输；即使历史 H2D 慢，预期驻留也限制在约 2 秒内。
+每次操作仍经 session/node/容量重验和原生 ACK 账本，一个阶段最多
+派发两个 node。首次模型调用和样本不足时会自然退回响应式路径，
+不能将此代码路径当作真实吞吐收益或时间预测精度的实验结论。
