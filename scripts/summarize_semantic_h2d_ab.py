@@ -160,6 +160,7 @@ def main() -> None:
     parser.add_argument("--cleanup-arm", type=Path)
     parser.add_argument("--initialize", action="store_true")
     parser.add_argument("--root-count", type=int, default=36)
+    parser.add_argument("--arm-order", default="reactive predictive_h2d")
     args = parser.parse_args()
     if args.cleanup_arm:
         print(json.dumps(cleanup_workspaces(args.cleanup_arm), indent=2))
@@ -182,7 +183,7 @@ def main() -> None:
             "semantic_artifact_sha256": hashlib.sha256(artifact.read_bytes()).hexdigest(),
             "workload_sha256": hashlib.sha256(manifest.read_bytes()).hexdigest(),
             "priority_in_both_arms": True, "prepare_host_in_both_arms": False,
-            "order": ["reactive", "predictive_h2d"],
+            "order": args.arm_order.split(),
         }
         (args.run_root / "ab_plan.json").write_text(
             json.dumps(plan, indent=2) + "\n", encoding="utf-8",

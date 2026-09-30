@@ -2231,6 +2231,8 @@ def test_semantic_eos_window_creates_only_h2d_candidate_not_final_priority():
         runtime._roll_final_stage()
     assert runtime._join_ticket is not None
     assert runtime._join_ticket.stage_bound
+    assert runtime.running_batch_retraction_barrier_required(NS()) is True
+    assert runtime.running_batch_retraction_barrier_required(NS()) is False
     # The same reply cannot attach to the child's next epoch.
     runtime.on_events((event(
         8, RuntimeEventKind.CONTEXT_ADVANCE, invocation_id="child",

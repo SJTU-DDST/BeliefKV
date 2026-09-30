@@ -35,7 +35,7 @@ Reactive 显式关闭所有本轮预测 H2D；predictive 只允许新模型
 - 新模型使用固定的校准档位，仅作为候选证据；不是 child 门禁。
 
 启动脚本：`scripts/run_qwen35_semantic_h2d_ab.sh`。
-有效对照目录：`experiments/raw/qwen35_semantic_h2d_ab_36root_20260930_v2/`。
+有效对照目录：`experiments/raw/qwen35_semantic_h2d_ab_36root_20260930_v3/`。
 初始化会保存 code commit、workload/模型 SHA256 与共用配置。
 每侧结束后只清理 patch 已归档且正常结束的 workspace，保留原始
 trace、patch、模型、失败现场和报告。
@@ -69,3 +69,12 @@ worker/ownership/telemetry 故障使该侧无效，应修复后重跑；
 该份运行已停止并保留作诊断，不作为对照或训练数据。现将 session
 close 的超时改为 30 秒，不吞掉错误、不修改 guard，修复后两侧均
 重新运行完整 workload，使用新的结果目录版本。
+
+v2 的 reactive 完整结束，36/36 completed，约 3304.84 秒，
+39.22 completed workflow/hour，预测 ACK 为零。v2 predictive
+运行暴露 overlap barrier 仍只接受 confirmed JOIN ticket，导致
+provisional 模型候选无法进入安全 H2D 发射路径。已停止该侧、
+保留 v2 reactive 作为开发参考；不将其拼成同版本正式对照。
+现先在只读阶段生成候选，再允许有效 provisional ticket 请求
+一次有界 overlap drain，物理发射仍在排空后重检。
+v3 将顺序改为完整 predictive、完整 reactive，使用同一修复提交。

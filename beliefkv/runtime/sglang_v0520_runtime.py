@@ -2905,10 +2905,18 @@ class NativeAdmissionRuntime:
     def running_batch_retraction_barrier_required(self, batch: object) -> bool:
         # SGLang uses this drain to reach the same safe point needed for a
         # native JOIN H2D. Request it once per node budget, never per decode tick.
+        if self._semantic_worker is not None:
+            # Build the read-only intent before deciding whether overlap must drain.
+            # Issuance still waits for SGLang's drained safe point and revalidation.
+            self._roll_final_stage()
         ticket = self._join_ticket
         if (
             ticket is None
-            or ticket.phase != "confirmed"
+            or not (
+                ticket.phase == "confirmed"
+                or self._semantic_worker is not None
+                and ticket.stage_bound and ticket.phase == "provisional"
+            )
             or not self._live_join_ticket()
             or ticket.command_id is not None
             or self.physical_ledger.pending_count
