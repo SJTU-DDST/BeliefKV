@@ -2463,15 +2463,42 @@ class NativeAdmissionRuntime:
             and key.session_id is not None
             and key.session_generation is not None
         }
+        # A client LLM_SUBMIT can advance the causal epoch before its HTTP request
+        # registers a new visible key. Native session generation is the authority
+        # for accepting the outstanding old-prefix H2D ACK across that one step.
+        cache = self._native_cache
+        for context_id, epoch, session_id, generation in self.physical_ledger.pending_h2d_sessions:
+            if context_id in live_sessions or live_epochs.get(context_id) != epoch + 1:
+                continue
+            context = self.graph.contexts.get(context_id)
+            workflow = self.graph.workflows.get(context.workflow_id) if context else None
+            if workflow is None or workflow.end_ts_ms is not None or cache is None:
+                continue
+            try:
+                anchors = cache.session_refs.snapshot_session_leaf_anchors(
+                    session_id, generation, max_leaves=8,
+                )
+            except (AttributeError, KeyError, TypeError, ValueError):
+                continue
+            if anchors is not None:
+                live_sessions[context_id] = (session_id, generation)
         try:
             completed = self.physical_ledger.observe(
                 commit,
                 live_context_epochs=live_epochs,
                 live_context_sessions=live_sessions,
             )
-        except PhysicalReceiptError:
+        except PhysicalReceiptError as error:
             self.physical_disabled = True
             self.counts["physical_receipt_failed"] += 1
+            if self._opportunity_writer is not None:
+                self._opportunity_writer.record({
+                    "event": "physical_receipt_failure",
+                    "ts_ms": time.time() * 1000, "error": str(error),
+                    "direction": getattr(commit, "direction", None),
+                    "live_context_epochs": live_epochs,
+                    "live_context_sessions": live_sessions,
+                })
             return ()
         self.completed_physical_actions.extend(completed)
         actual_bytes = getattr(commit, "actual_bytes", None)

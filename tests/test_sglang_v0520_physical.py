@@ -934,6 +934,34 @@ def test_session_generation_must_still_match_at_ack():
     assert completed.command_id == "current"
 
 
+def test_h2d_ack_forwards_only_one_epoch_in_the_same_native_session():
+    from dataclasses import replace
+
+    ledger = PhysicalTransactionLedger()
+    ledger.register(replace(
+        expected(action="PREFETCH_GPU"),
+        session_id="session", session_generation=4,
+    ))
+    (completed,) = ledger.observe(
+        ack(receipt(), direction="h2d"),
+        live_context_epochs={"ctx": 4},
+        live_context_sessions={"ctx": ("session", 4)},
+    )
+    assert completed.context_epoch == 3
+    for live_epoch, live_session in ((5, ("session", 4)), (4, ("session", 5))):
+        other = PhysicalTransactionLedger()
+        other.register(replace(
+            expected(action="PREFETCH_GPU"),
+            session_id="session", session_generation=4,
+        ))
+        with pytest.raises(PhysicalReceiptError, match="epoch/session"):
+            other.observe(
+                ack(receipt(), direction="h2d"),
+                live_context_epochs={"ctx": live_epoch},
+                live_context_sessions={"ctx": live_session},
+            )
+
+
 def test_h2d_child_and_mamba_only_pool_counts():
     ledger = PhysicalTransactionLedger()
     ledger.register(expected(

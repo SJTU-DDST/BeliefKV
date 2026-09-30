@@ -35,7 +35,7 @@ Reactive 显式关闭所有本轮预测 H2D；predictive 只允许新模型
 - 新模型使用固定的校准档位，仅作为候选证据；不是 child 门禁。
 
 启动脚本：`scripts/run_qwen35_semantic_h2d_ab.sh`。
-有效对照目录：`experiments/raw/qwen35_semantic_h2d_ab_36root_20260930_v3/`。
+当前对照目录：`experiments/raw/qwen35_semantic_h2d_ab_36root_20260930_v4/`。
 初始化会保存 code commit、workload/模型 SHA256 与共用配置。
 每侧结束后只清理 patch 已归档且正常结束的 workspace，保留原始
 trace、patch、模型、失败现场和报告。
@@ -78,3 +78,10 @@ provisional 模型候选无法进入安全 H2D 发射路径。已停止该侧、
 现先在只读阶段生成候选，再允许有效 provisional ticket 请求
 一次有界 overlap drain，物理发射仍在排空后重检。
 v3 将顺序改为完整 predictive、完整 reactive，使用同一修复提交。
+
+v3 实际发射了两次 H2D，首次 ACK 被验证，但首次服务未复用 FULL；
+第二次 ACK 跨过 parent continuation 的 epoch 前进，严格相等检查
+错误地停用了预测路径，故该侧已中止且不作为 benchmark。修复允许
+PREFETCH_GPU 在相同、原生仍存活的 session/generation 下前进一步
+接力 ACK，不放宽字节、pool、节点和 generation 校验。v4 会重新
+运行完整 pair；首批 ACK/非复用记录保留作为诊断，不提前计为收益。

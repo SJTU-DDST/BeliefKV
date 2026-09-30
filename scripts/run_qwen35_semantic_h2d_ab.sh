@@ -5,7 +5,7 @@ ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 PYTHON="${PYTHON:-/home/longhao/miniconda3/envs/beliefkv-next/bin/python}"
 ROOT_COUNT="${ROOT_COUNT:-36}"
 PORT="${PORT:-18454}"
-RUN_ROOT="${RUN_ROOT:-$ROOT/experiments/raw/qwen35_semantic_h2d_ab_36root_20260930_v3}"
+RUN_ROOT="${RUN_ROOT:-$ROOT/experiments/raw/qwen35_semantic_h2d_ab_36root_20260930_v4}"
 ARM_ORDER="${ARM_ORDER:-predictive_h2d reactive}"
 ARTIFACT="$ROOT/experiments/models/child_semantic_work_stage2_adapted_20260930_v1/semantic_event_calibrated.json"
 

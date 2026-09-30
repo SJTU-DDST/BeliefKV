@@ -96,6 +96,45 @@ def test_native_ack_is_credited_only_after_live_context_reconciliation():
         runtime.register_physical_action(expectation)
 
 
+def test_h2d_ack_bridge_uses_native_generation_not_a_stale_context_binding():
+    runtime = NativeAdmissionRuntime()
+    tagged = req("a")
+    tagged.session_id, tagged.session_generation = "session", 4
+    runtime.register_visible_request(tagged)
+    runtime.on_events((
+        event(0, RuntimeEventKind.WORKFLOW_START),
+        event(1, RuntimeEventKind.INVOCATION_CREATE,
+              invocation_id="a", context_id="ctx-a"),
+    ))
+    expected = PhysicalActionExpectation(
+        "h2d", "PREFETCH_GPU", "ctx-a", 0,
+        (PhysicalChildExpectation(11, (11,), (("kv", 20),), 20),),
+        (("kv", 10),), session_id="session", session_generation=4,
+    )
+    runtime.register_physical_action(expected)
+    runtime.attach_native_cache(NS(session_refs=NS(
+        snapshot_session_leaf_anchors=lambda session, generation, max_leaves:
+        ((0, ((11, 1),)), (2, ((11, 1),)))
+        if (session, generation) == ("session", 4) else None,
+    )))
+    runtime.on_events((event(
+        2, RuntimeEventKind.LLM_SUBMIT, invocation_id="a", context_id="ctx-a",
+        context_epoch=1, attributes={"request_id": "next"},
+    ),))
+    assert "ctx-a" not in runtime.context_sessions
+    actions = runtime.on_native_transfer_commit(NS(
+        direction="h2d", status="completed", node_ids=(11,),
+        num_tokens_by_pool=(("kv", 2),),
+        child_commits=(NS(
+            command_id="h2d", anchor_node_id=11, published_node_ids=(11,),
+            num_tokens_by_pool=(("kv", 2),), num_bytes=20,
+        ),),
+    ))
+    assert len(actions) == 1
+    assert actions[0].context_epoch == 0
+    assert not runtime.physical_disabled
+
+
 def test_finished_tool_context_keeps_session_anchor_but_rechecks_wait_state():
     runtime = NativeAdmissionRuntime()
     tagged = req("a")

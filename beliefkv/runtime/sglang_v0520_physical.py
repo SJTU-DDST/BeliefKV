@@ -808,6 +808,17 @@ class PhysicalTransactionLedger:
             dict.fromkeys(expected.context_id for expected, _, _ in self._pending.values())
         )
 
+    @property
+    def pending_h2d_sessions(self) -> tuple[tuple[str, int, str, int], ...]:
+        return tuple(
+            (expected.context_id, expected.context_epoch,
+             expected.session_id, expected.session_generation)
+            for expected, _, _ in self._pending.values()
+            if expected.action == "PREFETCH_GPU"
+            and expected.session_id is not None
+            and expected.session_generation is not None
+        )
+
     def _remember(self, command_id: str) -> None:
         if len(self._history) == self._history_size:
             self._seen.remove(self._history.popleft())
@@ -987,10 +998,20 @@ class PhysicalTransactionLedger:
                 self._reject("unknown or repeated command receipt")
             expected, _, already = self._pending[command_id]
             live_epoch = live_context_epochs.get(expected.context_id)
+            same_session = (
+                expected.session_id is not None
+                and live_context_sessions.get(expected.context_id)
+                == (expected.session_id, expected.session_generation)
+            )
+            epoch_matches = (
+                live_epoch == expected.context_epoch
+                or expected.action == "PREFETCH_GPU"
+                and same_session and live_epoch == expected.context_epoch + 1
+            )
             if (
                 direction != ("d2h" if expected.action == "PREPARE_HOST" else "h2d")
                 or type(live_epoch) is not int
-                or live_epoch != expected.context_epoch
+                or not epoch_matches
                 or (
                     expected.session_id is not None
                     and live_context_sessions.get(expected.context_id)
