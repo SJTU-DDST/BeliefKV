@@ -2,8 +2,8 @@
 
 本轮是开发工作负载上的完整收益验证，不是短 gate/canary，也不是
 正式论文测试集。任务、到达、模型、采样 seed、runtime prompt 与
-完成通知保持一致；两侧冷启动服务和 KV 缓存，依次运行 reactive
-和 predictive H2D。代码在启动前提交冻结。
+完成通知保持一致；两侧冷启动服务和 KV 缓存。v4 依次运行
+predictive H2D 和 reactive，代码在启动前提交冻结。
 
 ## 实现
 
@@ -60,8 +60,8 @@ worker/ownership/telemetry 故障使该侧无效，应修复后重跑；
 
 ## 状态
 
-异步接入、共享策略解耦、对照启动和报告脚本已实现并通过聚焦回归。
-完整 GPU 对照将在该提交冻结后启动；本文件不提前填入收益结论。
+异步接入、共享策略解耦、对照启动和报告脚本已实现并通过回归。
+v4 完整 GPU 对照已结束，结果与限制见下文，不提前填入收益结论。
 
 首份 reactive 开发运行在 child 已自然 RETURN、JOIN 已满足后出现
 `TimeoutError`：native session close 的同步 HTTP 默认只有两秒，
@@ -85,3 +85,92 @@ v3 实际发射了两次 H2D，首次 ACK 被验证，但首次服务未复用 F
 PREFETCH_GPU 在相同、原生仍存活的 session/generation 下前进一步
 接力 ACK，不放宽字节、pool、节点和 generation 校验。v4 会重新
 运行完整 pair；首批 ACK/非复用记录保留作为诊断，不提前计为收益。
+
+## v4 完整开发对照
+
+两侧均使用 `dc23b990929ff97dc173140741c92b181ac956f4`，容量校验一致，
+物理账本与模型 worker 未失效，逐请求遥测没有丢失或写入错误。
+完整产物是 `qwen35_semantic_h2d_ab_36root_20260930_v4/comparison.json`。
+`complete` 表示两侧均收齐终态，不表示所有任务成功或收益得到证明。
+
+| 指标 | Reactive | Predictive H2D |
+| --- | ---: | ---: |
+| Workflow completed / error | 35 / 1 | 36 / 0 |
+| 整轮时间，秒 | 2028.99 | 1868.12 |
+| Completed workflow/hour | 62.10 | 69.37 |
+| 35 个共同完成任务的平均 JCT，秒 | 799.47 | 809.39 |
+| 模型调用 | 5779 | 5017 |
+| 工具调用 | 5644 | 4937 |
+| 已完成请求输出 token/s | 573.29 | 565.61 |
+| GPU 利用率采样均值，% | 89.63 | 80.19 |
+| 预测 H2D ACK | 0 | 5 |
+| 可验证 FULL 首次复用字节 | 0 | 0 |
+
+Completed throughput 的表面涨幅为 11.71%，但配对平均 JCT 略差，
+输出 token/s 略低，执行轨迹与调用数量也不同；再加上 reactive
+的一次连接错误，本轮不能作为预测调度提升吞吐的因果证据。
+未运行独立 SWE-bench grading，不把 completed 命名为正确任务。
+
+### 传输与工作负载
+
+五次预测 H2D 共 360,140,800 字节。四次取得首次服务记录，均未
+复用对应 FULL，合计 34,263,040 字节；另一次因 epoch 再次前进
+没有可验证的首次服务记录。Mamba 的首次复用仍未知，不把所有
+传输字节都计为浪费，也不将 ACK 计为收益。
+
+Predictive 有 38 个真实 subagent，均自然 RETURN；38 个 ALL JOIN
+中只有 xarray-7393 和 requests-1766 两个 workflow 有第二轮。
+上下文 summarizer 是内部调用，不能算作动态 subagent。Guard
+干预计数为零，74 次自然语言终态均被接受，没有格式修复或强制
+终态。多轮调用较少是当前 workload 的实际行为，不补造轮次。
+
+Host FULL 高水位分别为 84.94 / 73.45 GB，Mamba 两侧均到 94.65 GB
+满池；FULL eviction 为 5.73 / 3.60 GB，Mamba eviction 为
+110.62 / 69.41 GB。块级证据分别识别到 4505 / 1534 个 FULL token
+在驱逐后被重算，其余未重访块不能判为有用丢弃。Uncached input
+包含新输入，Mamba 的块级恢复位置仍未知，不能将两者直接当成
+完整的 eviction-induced 重算量。
+
+### 在线预测偏差
+
+`scripts/audit_semantic_h2d_online.py` 使用冻结阈值
+0.5816927983520741，按请求记录首次越线与最后一份已接收预测；
+输出在本轮的 `online_forecast_audit.json`，不是新的校准或训练。
+
+152 个有预测的请求中，44 个首次越线：37 个是真实自然终态，
+7 个随后继续执行，终态覆盖 37/38。首次越线的剩余 token
+中位绝对误差为 142.91，中位有符号误差为 -130.94。最后一份
+预测的真实剩余 token 中位数为 14.5，预测中位数为 217.88，
+中位有符号误差为 +196.28。临近结束仍明显高估，是 latest-start
+偏晚的直接线索；不能只用终态分类覆盖率代替时间精度。
+
+五个 latest-start 的 `remaining_ms` 均为零，且均不早于相同 child
+请求的 native result。因此本轮只验证了生成结束至 runtime RETURN
+之间的协议窗口，未验证 decode 尚未结束时的有效预测预取。
+平均模型推理为 14.74 ms，观测年龄中位数为 401.58 ms，两者不同。
+以上是重复使用开发项目的诊断，不是独立泛化精度。
+
+### 连接错误与后续修复
+
+Reactive 的 xarray-6461 child 在 epoch 34 发生
+`APIConnectionError`，底层为 `ReadError` / errno 104。
+请求未出现 native 服务记录，控制事件正常，服务端没有崩溃。
+现有 trace 缺少 HTTP 阶段，不能确认是否由陈旧连接复用引起。
+
+此前仅 EOS/HTTP 诊断路径使用禁用 keep-alive 的同步、异步客户端，
+普通实验仍走默认连接池。完成 v4 后统一覆盖普通路径，并为所有
+请求补 `http_transport_failures.jsonl`，记录连接/发送/响应失败阶段。
+流式消费计时仍按原开关启用，不新增重试、不修改 guard 或终态。
+该修改消除复用已过期连接这一可能原因，尚未通过新 GPU 批次证明
+所有断连已解决，不能回填修改本轮实验身份。
+
+本轮自动删除 71 个已归档且正常完成的 workspace，保留一个失败
+现场及所有 trace、patch、报告；服务器停止后 GPU 已释放。
+
+### 下一步
+
+优先查清恢复锚点为何未被 parent 下一请求复用，区分 FULL 前缀
+连续性、Mamba checkpoint 位置与 native match 的截断行为。然后
+补临近结束的剩余工作训练样本，保持项目隔离与按请求评估。
+不因本轮表面 throughput 涨幅扩大实验，也不将动作收益交给
+预测模型学习；模型负责阶段和剩余工作，runtime 负责容量与传输。

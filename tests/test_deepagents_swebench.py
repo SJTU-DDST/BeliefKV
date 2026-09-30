@@ -319,7 +319,9 @@ def test_natural_completion_rejects_blank_terminal_response(
     )
     audit.close()
 
-    assert update == {"jump_to": "end"}
+    assert update["jump_to"] == "model"
+    assert update["protocol_repair_active"] is True
+    assert update["protocol_repair_attempt"] == 1
     assert _workflow_terminal({"messages": [message]}, require_schema=False) == (
         None, "incomplete"
     )
@@ -3004,6 +3006,25 @@ def test_natural_eos_shadow_requests_logprobs_without_intent_tool(tmp_path: Path
     ), adapter)
     assert server._beliefkv_eos_logprobs is True
     assert server.logprobs is None
+
+
+def test_ordinary_model_isolates_http_connections_without_enabling_eos(tmp_path: Path) -> None:
+    config = DeepAgentsExperimentConfig(
+        mode="autonomous", base_url="http://127.0.0.1:18001/v1",
+        model="Qwen3.5-35B-A3B", output_dir=tmp_path / "out",
+        workload_manifest=tmp_path / "tasks.json", docker_image="fixture:latest",
+    )
+    adapter = SimpleNamespace(record_http_stream_diagnostic=lambda record: None)
+    model = _model(config, adapter)
+    assert model.http_client is not None
+    assert model.http_async_client is not None
+    assert model.http_client._transport._pool._max_keepalive_connections == 0
+    assert model.http_async_client._transport._pool._max_keepalive_connections == 0
+    assert model.logprobs is None
+    assert model.max_retries == 0
+    model.http_client.close()
+    import asyncio
+    asyncio.run(model.http_async_client.aclose())
 
 
 def test_post_notice_eos_shadow_does_not_change_thinking(tmp_path: Path) -> None:

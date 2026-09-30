@@ -2373,12 +2373,9 @@ def _model(
     natural_eos_shadow = (
         config.child_eos_shadow and not config.child_return_intent_shadow
     )
-    diagnostic_http, diagnostic_async_http = (
-        _stream_diagnostic_http_clients(
-            config.output_dir, adapter.record_http_stream_diagnostic,
-        )
-        if natural_eos_shadow or config.stream_http_timing_shadow
-        else (None, None)
+    diagnostic_http, diagnostic_async_http = _stream_diagnostic_http_clients(
+        config.output_dir, adapter.record_http_stream_diagnostic,
+        observe_stream=natural_eos_shadow or config.stream_http_timing_shadow,
     )
     model = BeliefKVChatOpenAI(
         beliefkv_adapter=adapter,
@@ -2417,9 +2414,11 @@ def _model(
 def _stream_diagnostic_http_clients(
     output_dir: Path,
     record_stream: Callable[[dict[str, Any]], None],
+    *,
+    observe_stream: bool = True,
 ) -> tuple[httpx.Client, httpx.AsyncClient]:
-    """Observe EOS development transport errors and sync stream consumption."""
-    failures = output_dir / "eos_http_transport_failures.jsonl"
+    """Isolate connections and record failures independently of EOS sampling."""
+    failures = output_dir / "http_transport_failures.jsonl"
 
     def trace_request(body: bytes) -> Any:
         try:
@@ -2463,7 +2462,8 @@ def _stream_diagnostic_http_clients(
     def observe_sync_response(response: httpx.Response) -> None:
         rid = response.request.extensions.get("beliefkv_rid")
         if (
-            isinstance(rid, str)
+            observe_stream
+            and isinstance(rid, str)
             and rid
             and response.status_code == 200
             and response.headers.get("content-type", "").startswith(
