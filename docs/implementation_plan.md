@@ -2,6 +2,34 @@
 
 Status date: 2026-09-30.
 
+## Stage 2 Semantic And Calibration Goal
+
+The next bounded milestone is a frozen pretrained text encoder, a task-adapted
+comparison, and truly separated model-fit / score-bias-calibration /
+interval-calibration / validation roles. Six existing projects are fit-only;
+Astropy workflows are deterministically split into two calibration subsets;
+Sphinx is model-held-out validation. These are reused historical traces,
+not a newly sealed experiment. Preserve source/harness differences.
+
+Compare raw and calibrated semantic heads, a numeric/event head, the small CNN,
+and the native notice signal on identical observations. Report request-level
+precision/recall, work point error, token-bound width and workflow coverage,
+and full-encoder versus cached-feature CPU cost. Calibrated bounds are not
+P10/P90 quantiles or precise RETURN-time predictions. Runtime still owns H2D
+identity, capacity and value checks. No scoring threshold may cancel children.
+
+The pinned plan is
+`configs/migration/child_semantic_work_stage2_2026-09-30.json`; results and
+scope are recorded in
+`docs/experiments/child_semantic_work_stage2_2026-09-30_zh.md`.
+This bounded milestone is complete: train-only adaptation reduced validation
+tool false first-triggers from 29 to six at the independently calibrated
+operating points, with 33/35 natural RETURNs detected. Token work error has
+not consistently beaten the checkpoint prior, and calibrated intervals remain
+hundreds of tokens wide. The artifact is advisory, not an online H2D timer.
+Next use fresh protocol/pressure-matched projects and an asynchronous shadow
+consumer; full runtime integration and physical benefit are separate work.
+
 ## Active Child Report Phase And Work Goal
 
 The current predictor experiment is event/content driven, not a larger direct

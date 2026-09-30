@@ -13,6 +13,19 @@ JOIN child-completion 三阶段 H2D ticket（概率窗口、结构化完成提�
 
 ### 当前研究目标与未完成能力
 
+第二阶段的语义/校准分支已固定 MiniLM revision，并将六个已有项目、
+Astropy 和 Sphinx 分别用于拟合、校准及模型侧隔离验证。Astropy 的
+workflow 再拆为分数/偏差校准与区间校准，重复快照按 workflow 聚合。
+冻结编码器与末两层任务微调为对照；校准后的 token 边界与精确
+RETURN 时刻仍是不同目标。此分支保持只读，未接到 KV 物理决策，
+旧 trace 的协议/负载差异不能被该划分消除。详见
+`docs/experiments/child_semantic_work_stage2_2026-09-30_zh.md`。
+该阶段的回顾性验证已完成：任务适配后在 Sphinx 的校准档位下识别
+33/35 个自然 RETURN，工具误报由冻结表示的 29 次降至六次。
+剩余 token 点误差未全面胜过先验，校准边界仍宽；只读模型加载、
+有界表示缓存及 request/epoch 输出已实现，异步线上 shadow、
+新版通知的未见项目验证与 H2D 收益仍待完成。
+
 新增 child 预测研究分支采用“正文/通知判断阶段 -> 条件剩余 token 工作 ->
 独立服务与等待分账”，不再把 child 的未来 GPU 等待直接拟合进工作量头。
 `child_report_phase.py` 实现轻量 token CNN 和显式 request/context/epoch

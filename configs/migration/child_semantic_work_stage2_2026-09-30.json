@@ -1,0 +1,28 @@
+{
+  "plan_id": "child-semantic-work-stage2-2026-09-30",
+  "encoder": {
+    "repository": "sentence-transformers/all-MiniLM-L6-v2",
+    "revision": "1110a243fdf4706b3f48f1d95db1a4f5529b4d41",
+    "max_tokens": 256,
+    "local_snapshot": "/home/longhao/.cache/huggingface/hub/models--sentence-transformers--all-MiniLM-L6-v2/snapshots/1110a243fdf4706b3f48f1d95db1a4f5529b4d41"
+  },
+  "training_runs": [
+    "experiments/raw/qwen35_child_service_stream_36root_35_65_v1",
+    "experiments/raw/qwen35_child_return_joint_project_32root_20260929_v1",
+    "experiments/raw/qwen35_child_return_eos_recent_32root_20260929_v1"
+  ],
+  "calibration_evaluation_runs": [
+    "experiments/raw/qwen35_child_stream_eos_sampled_dev_astropy_sphinx_32root_v1"
+  ],
+  "training_projects": ["django", "pallets", "psf", "pydata", "pylint-dev", "pytest-dev"],
+  "calibration_projects": ["astropy"],
+  "evaluation_projects": ["sphinx-doc"],
+  "calibration_workflow_assignment": "sorted_sha256_task_even_selector_odd_interval",
+  "pca_dimensions": 32,
+  "phase_regularization": 0.05,
+  "work_regularization": 0.2,
+  "calibration_precision_target": 0.9,
+  "minimum_selected_calibration_requests": 5,
+  "nominal_workflow_interval_coverage": 0.8,
+  "scope": "Retrospective project-disjoint model validation, not a new sealed workload or physical H2D experiment."
+}

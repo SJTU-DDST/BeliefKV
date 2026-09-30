@@ -78,6 +78,7 @@ class ReportPrediction:
     predicted_phase: str = "unknown"
     completion_notice_score: float = 0.
     score_status: str = "uncalibrated"
+    work_interval_status: str = "nominal_p10_p90_uncalibrated"
     return_eta_ms: None = None
     physical_action_authorized: bool = False
 
