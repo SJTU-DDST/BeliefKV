@@ -29,7 +29,8 @@ if [[ -e "$RUN/final_stage_service_audit.json" \
   exit 2
 fi
 
-while kill -0 "$PID" 2>/dev/null; do
+while kill -0 "$PID" 2>/dev/null \
+  && [[ "$(ps -o stat= -p "$PID" 2>/dev/null)" != Z* ]]; do
   sleep 30
 done
 

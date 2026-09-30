@@ -10,7 +10,7 @@ RUN_ROOT="${RUN_ROOT:-}"
 MODEL_PATH="${MODEL_PATH:-/srv/ai/models/Qwen/Qwen3.5-35B-A3B}"
 MODEL_VERSION="${MODEL_VERSION:-qwen35-native-reactive-train-v1}"
 HICACHE_SIZE_GB="${HICACHE_SIZE_GB:-180}"
-FULL_MAMBA_HOST_SPLIT="${FULL_MAMBA_HOST_SPLIT:-70:30}"
+FULL_MAMBA_HOST_SPLIT="${FULL_MAMBA_HOST_SPLIT:-auto}"
 CAPACITY_CALIBRATION_MODE="${CAPACITY_CALIBRATION_MODE:-verify}"
 MEM_FRACTION_STATIC="${MEM_FRACTION_STATIC:-0.94}"
 MAX_RUNNING_REQUESTS="${MAX_RUNNING_REQUESTS:-48}"
@@ -89,16 +89,18 @@ if [[ ! "$RECURSION_LIMIT" =~ ^[0-9]+$ ]] || (( RECURSION_LIMIT != 2048 )); then
   printf 'Native training requires RECURSION_LIMIT=2048; refusing stale override\n' >&2
   exit 2
 fi
-if [[ ! "$FULL_MAMBA_HOST_SPLIT" =~ ^([0-9]+):([0-9]+)$ ]]; then
-  printf 'FULL_MAMBA_HOST_SPLIT must use FULL:MAMBA integer percentages\n' >&2
-  exit 2
-fi
-FULL_HOST_PERCENT="${BASH_REMATCH[1]}"
-MAMBA_HOST_PERCENT="${BASH_REMATCH[2]}"
-if (( FULL_HOST_PERCENT <= 0 || MAMBA_HOST_PERCENT <= 0 \
-    || FULL_HOST_PERCENT + MAMBA_HOST_PERCENT != 100 )); then
-  printf 'FULL_MAMBA_HOST_SPLIT percentages must be positive and sum to 100\n' >&2
-  exit 2
+if [[ "$FULL_MAMBA_HOST_SPLIT" != auto ]]; then
+  if [[ ! "$FULL_MAMBA_HOST_SPLIT" =~ ^([0-9]+):([0-9]+)$ ]]; then
+    printf 'FULL_MAMBA_HOST_SPLIT must be auto or FULL:MAMBA integer percentages\n' >&2
+    exit 2
+  fi
+  FULL_HOST_PERCENT="${BASH_REMATCH[1]}"
+  MAMBA_HOST_PERCENT="${BASH_REMATCH[2]}"
+  if (( FULL_HOST_PERCENT <= 0 || MAMBA_HOST_PERCENT <= 0 \
+      || FULL_HOST_PERCENT + MAMBA_HOST_PERCENT != 100 )); then
+    printf 'FULL_MAMBA_HOST_SPLIT percentages must be positive and sum to 100\n' >&2
+    exit 2
+  fi
 fi
 PLAN_ROOT_COUNT="$(
   jq -r --arg split "$COLLECTION_SPLIT" '
@@ -111,7 +113,7 @@ if [[ ! "$PLAN_ROOT_COUNT" =~ ^[1-9][0-9]*$ ]]; then
   exit 2
 fi
 if [[ -z "$RUN_ROOT" ]]; then
-  RUN_ROOT="$ROOT/experiments/raw/qwen35_native_reactive_${PLAN_ROOT_COUNT}root_${FULL_HOST_PERCENT}_${MAMBA_HOST_PERCENT}_${RUN_DATE}_v1"
+  RUN_ROOT="$ROOT/experiments/raw/qwen35_native_reactive_${PLAN_ROOT_COUNT}root_${FULL_MAMBA_HOST_SPLIT/:/_}_${RUN_DATE}_v1"
 fi
 if [[ -z "$CAPACITY_CALIBRATION" ]]; then
   CAPACITY_CALIBRATION="$RUN_ROOT/host_capacity_calibration.json"
@@ -128,9 +130,6 @@ if [[ "$CAPACITY_CALIBRATION_MODE" == "capture" && -e "$CAPACITY_CALIBRATION" ]]
   printf 'Refusing to replace existing capacity calibration: %s\n' "$CAPACITY_CALIBRATION" >&2
   exit 2
 fi
-EXPECTED_FULL_HOST_SHARE="$(
-  awk -v percent="$FULL_HOST_PERCENT" 'BEGIN { printf "%.4f", percent / 100 }'
-)"
 if curl --silent --max-time 2 --fail "$BASE_URL/health" >/dev/null; then
   printf 'Collection requires an unoccupied server port\n' >&2
   exit 2
@@ -228,8 +227,12 @@ PY
       --requirements "$requirements"
   fi
 
-  setsid env HICACHE_SIZE_GB="$HICACHE_SIZE_GB" \
-    BELIEFKV_FULL_MAMBA_HOST_SPLIT="$FULL_MAMBA_HOST_SPLIT" \
+  host_split_env=()
+  if [[ "$FULL_MAMBA_HOST_SPLIT" != auto ]]; then
+    host_split_env=(BELIEFKV_FULL_MAMBA_HOST_SPLIT="$FULL_MAMBA_HOST_SPLIT")
+  fi
+  setsid env -u BELIEFKV_FULL_MAMBA_HOST_SPLIT "${host_split_env[@]}" \
+    HICACHE_SIZE_GB="$HICACHE_SIZE_GB" \
     HOST_NUMA_NODE="$HOST_NUMA_NODE" \
     MEM_FRACTION_STATIC="$MEM_FRACTION_STATIC" \
     MAX_RUNNING_REQUESTS="$MAX_RUNNING_REQUESTS" \
@@ -254,6 +257,16 @@ PY
   if [[ "$ready" != true ]]; then
     printf 'Native server failed to become ready for %s\n' "$batch" >&2
     exit 1
+  fi
+  if [[ "$FULL_MAMBA_HOST_SPLIT" == auto ]]; then
+    EXPECTED_FULL_HOST_SHARE="$(
+      jq -r '.capacity.device_full_bytes / .capacity.device_total_bytes' \
+        "$run_dir/server/native_capacity_census.json"
+    )"
+  else
+    EXPECTED_FULL_HOST_SHARE="$(
+      awk -v percent="$FULL_HOST_PERCENT" 'BEGIN { printf "%.4f", percent / 100 }'
+    )"
   fi
   calibration_args=(
     "$PYTHON" "$ROOT/scripts/calibrate_qwen35_hbm_pool.py"

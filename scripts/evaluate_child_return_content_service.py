@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import argparse
 from collections import Counter
+import csv
 import json
 from pathlib import Path
 import sys
@@ -137,6 +138,7 @@ def _terminal_screen(train: list[dict], held: list[dict], key: str) -> dict | No
 def evaluate_rows(
     rows: list[dict], *, min_chars: int = 0,
     notices: dict[tuple[str, str], list[tuple[float, int]]] | None = None,
+    prediction_rows: list[dict] | None = None,
 ) -> dict:
     selected = _first_snapshots(rows, min_chars)
     phases = phase_features(selected)
@@ -163,6 +165,17 @@ def evaluate_rows(
             "project": row["project"], "task": row["task"],
             "label": row["label"], "remaining_ms": remaining,
             "notice_seen": notice is not None,
+            "invocation_id": row.get("invocation_id"),
+            "request_id": row.get("rid"),
+            "context_id": row.get("context_id"),
+            "snapshot_ts_ms": float(snap["ts_ms"]),
+            "return_ts_ms": (
+                float(row["return_ts"]) if remaining is not None else None
+            ),
+            "content_chars": snap["content_chars"],
+            "decode_features": progress,
+            "notice_features": notice_features,
+            "phase_features": list(phase),
             "size": size,
             "service": size + progress[:3],
             "notice": size + progress[:3] + notice_features,
@@ -187,6 +200,35 @@ def evaluate_rows(
             predictions[key] = (
                 _predict(returns, held_returns, key) if held_returns else []
             )
+        if prediction_rows is not None:
+            for index, row in enumerate(held_returns):
+                record = {
+                    "min_delivered_chars": min_chars,
+                    "project": project,
+                    "workflow": row["task"],
+                    "invocation_id": row["invocation_id"],
+                    "request_id": row["request_id"],
+                    "context_id": row["context_id"],
+                    "snapshot_ts_ms": row["snapshot_ts_ms"],
+                    "return_ts_ms": row["return_ts_ms"],
+                    "actual_remaining_ms": row["remaining_ms"],
+                    "content_chars": row["content_chars"],
+                    "notice_seen": row["notice_seen"],
+                    "decode_features": row["decode_features"],
+                    "notice_features": row["notice_features"],
+                    "phase_features": row["phase_features"],
+                    "train_return_requests": len(returns),
+                }
+                for name, values in predictions.items():
+                    predicted = float(values[index])
+                    record[f"{name}_predicted_ms"] = predicted
+                    record[f"{name}_signed_error_ms"] = (
+                        predicted - row["remaining_ms"]
+                    )
+                    record[f"{name}_absolute_error_ms"] = abs(
+                        predicted - row["remaining_ms"]
+                    )
+                prediction_rows.append(record)
         results[project] = {
             "train_return_requests": len(returns),
             "held_return_requests": len(held_returns),
@@ -245,20 +287,48 @@ def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("run", type=Path)
     parser.add_argument("--output", type=Path)
+    parser.add_argument("--rows-output", type=Path)
     args = parser.parse_args()
     clients = list(args.run.glob("client_*/workflows"))
     if len(clients) != 1:
         raise ValueError("expected exactly one client workflow root")
     rows, coverage = service_rows([clients[0]], [args.run])
     notices = _notices(clients[0])
-    report = evaluate_rows(rows, notices=notices)
+    prediction_rows: list[dict] = []
+    report = evaluate_rows(rows, notices=notices, prediction_rows=prediction_rows)
     report["rolling_checkpoints"] = {
         str(threshold): evaluate_rows(
             rows, min_chars=threshold, notices=notices,
+            prediction_rows=prediction_rows,
         )
         for threshold in (128, 512, 1024)
     }
     report["collection_coverage"] = coverage
+    prediction_rows.sort(key=lambda row: (
+        row["workflow"], str(row["invocation_id"]),
+        row["min_delivered_chars"],
+    ))
+    expected_rows = report["natural_returns"] + sum(
+        value["natural_returns"]
+        for value in report["rolling_checkpoints"].values()
+    )
+    if len(prediction_rows) != expected_rows:
+        raise ValueError("prediction row count differs from reported RETURN counts")
+    if args.rows_output:
+        if args.rows_output.exists():
+            raise FileExistsError(args.rows_output)
+        with args.rows_output.open("w", encoding="utf-8", newline="") as stream:
+            writer = csv.DictWriter(
+                stream, fieldnames=list(prediction_rows[0])
+                if prediction_rows else [],
+            )
+            writer.writeheader()
+            for row in prediction_rows:
+                writer.writerow({
+                    key: json.dumps(value, ensure_ascii=False)
+                    if isinstance(value, list) else value
+                    for key, value in row.items()
+                })
     text = json.dumps(report, indent=2, ensure_ascii=False) + "\n"
     if args.output:
         if args.output.exists():

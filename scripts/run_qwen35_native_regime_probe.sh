@@ -5,7 +5,7 @@ ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 PYTHON="${PYTHON:-/home/longhao/miniconda3/envs/beliefkv-next/bin/python}"
 PORT="${PORT:-18454}"
 ROOT_COUNT="${ROOT_COUNT:-36}"
-HOST_SPLIT="${HOST_SPLIT:-35:65}"
+HOST_SPLIT="${HOST_SPLIT:-auto}"
 HICACHE_SIZE_GB="${HICACHE_SIZE_GB:-200}"
 HICACHE_WRITE_POLICY="${HICACHE_WRITE_POLICY:-write_back}"
 SGLANG_PATCH_FLAVOR="${SGLANG_PATCH_FLAVOR:-staging}"
@@ -39,11 +39,12 @@ if [[ $# -ne 0 || ! "$ROOT_COUNT" =~ ^[1-9][0-9]*$ ]] \
   || [[ "$CONFIRMED_JOIN_CANARY" != "0" && "$CONFIRMED_JOIN_CANARY" != "1" ]] \
   || [[ "$FANOUT_PROFILE" != "native_dynamic_1to4" && "$FANOUT_PROFILE" != "native_in_graph_1to4" ]] \
   || [[ "$CONFIRMED_JOIN_CANARY" == "1" && "$SGLANG_PATCH_FLAVOR" != "writeback_prepare" ]] \
-  || [[ ! "$HOST_SPLIT" =~ ^([1-9][0-9]?):([1-9][0-9]?)$ ]] \
-  || (( ${BASH_REMATCH[1]:-0} + ${BASH_REMATCH[2]:-0} != 100 )) \
+  || { [[ "$HOST_SPLIT" != auto ]] \
+    && { [[ ! "$HOST_SPLIT" =~ ^([1-9][0-9]?):([1-9][0-9]?)$ ]] \
+      || (( ${BASH_REMATCH[1]:-0} + ${BASH_REMATCH[2]:-0} != 100 )); }; } \
   || [[ ! "$PORT" =~ ^[1-9][0-9]*$ ]] \
   || [[ -e "$RUN_ROOT" || -e "$SOCKET" ]]; then
-  printf 'Usage: PORT=18454 ROOT_COUNT=36|32 HICACHE_SIZE_GB=200 HOST_SPLIT=35:65 HICACHE_WRITE_POLICY=write_back|write_through_selective SKIP_SERVER_WARMUP=1 CONFIRMED_JOIN_CANARY=0|1 FANOUT_PROFILE=native_in_graph_1to4|native_dynamic_1to4 SGLANG_PATCH_FLAVOR=staging RUN_ROOT=<new path> bash %s\n' "$0" >&2
+  printf 'Usage: PORT=18454 ROOT_COUNT=36|32 HICACHE_SIZE_GB=200 HOST_SPLIT=auto|35:65 HICACHE_WRITE_POLICY=write_back|write_through_selective SKIP_SERVER_WARMUP=1 CONFIRMED_JOIN_CANARY=0|1 FANOUT_PROFILE=native_in_graph_1to4|native_dynamic_1to4 SGLANG_PATCH_FLAVOR=staging RUN_ROOT=<new path> bash %s\n' "$0" >&2
   exit 2
 fi
 if [[ -e /tmp/beliefkv-experiments.paused ]] \
@@ -64,8 +65,12 @@ fi
 if [[ "$SKIP_SERVER_WARMUP" == "1" ]]; then
   server_flags+=(--skip-server-warmup)
 fi
-setsid env PORT="$PORT" HICACHE_SIZE_GB="$HICACHE_SIZE_GB" \
-  BELIEFKV_FULL_MAMBA_HOST_SPLIT="$HOST_SPLIT" \
+host_split_env=()
+if [[ "$HOST_SPLIT" != auto ]]; then
+  host_split_env=(BELIEFKV_FULL_MAMBA_HOST_SPLIT="$HOST_SPLIT")
+fi
+setsid env -u BELIEFKV_FULL_MAMBA_HOST_SPLIT \
+  "${host_split_env[@]}" PORT="$PORT" HICACHE_SIZE_GB="$HICACHE_SIZE_GB" \
   HICACHE_WRITE_POLICY="$HICACHE_WRITE_POLICY" \
   ENABLE_SESSION_RADIX_CACHE=1 HOST_NUMA_NODE=1 \
   MEM_FRACTION_STATIC=0.94 MAX_RUNNING_REQUESTS=48 \

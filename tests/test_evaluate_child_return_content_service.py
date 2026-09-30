@@ -1,5 +1,7 @@
 import json
 
+import numpy as np
+
 from scripts.evaluate_child_return_content_service import (
     _first_snapshots, _latest_notice, _notices, evaluate_rows,
 )
@@ -113,3 +115,49 @@ def test_notice_only_affects_snapshots_after_delivery(tmp_path):
         }) + "\n"
     )
     assert _notices(tmp_path) == {("alpha__task", "child"): [(2900., 4000)]}
+
+
+def test_prediction_rows_match_the_same_project_holdout_metrics():
+    rows = [
+        _row(project, "return", lead, 128 + i * 32)
+        for i, (project, lead) in enumerate(
+            (("alpha", 900), ("beta", 1100), ("gamma", 1500),
+             ("delta", 2100), ("delta", 2500))
+        )
+    ]
+    for i, row in enumerate(rows):
+        row["rid"] = f"request-{i}"
+        row["invocation_id"] = f"child-{i}"
+    predictions = []
+    report = evaluate_rows(rows, prediction_rows=predictions)
+    assert len(predictions) == report["natural_returns"] == 5
+    for project, holdout in report["project_holdouts"].items():
+        selected = [row for row in predictions if row["project"] == project]
+        assert len(selected) == holdout["held_return_requests"]
+        for name in ("train_median", "size", "service", "notice",
+                     "semantic", "joint"):
+            errors = [row[f"{name}_absolute_error_ms"] for row in selected]
+            assert np.mean(errors) == holdout["eta"][name]["mae_ms"]
+            for row in selected:
+                assert row[f"{name}_signed_error_ms"] == (
+                    row[f"{name}_predicted_ms"] - row["actual_remaining_ms"]
+                )
+                assert row["return_ts_ms"] - row["snapshot_ts_ms"] == (
+                    row["actual_remaining_ms"]
+                )
+                assert row["request_id"].startswith("request-")
+
+
+def test_prediction_rows_ignore_future_notices():
+    rows = [
+        _row(project, "return", 1000 + i * 200, 128 + i * 32)
+        for i, project in enumerate(("alpha", "beta", "gamma", "delta"))
+    ]
+    for row in rows:
+        row["invocation_id"] = "child"
+    baseline, future = [], []
+    evaluate_rows(rows, prediction_rows=baseline)
+    evaluate_rows(rows, prediction_rows=future, notices={
+        ("alpha__task", "child"): [(3100., 4000)]
+    })
+    assert baseline == future
