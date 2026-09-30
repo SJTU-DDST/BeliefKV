@@ -87,9 +87,9 @@ class NativeRadixSessionLeases:
 
 
 def close_native_radix_session(
-    server_root_url: str, session_id: str, *, timeout_s: float = 2.0
+    server_root_url: str, session_id: str, *, timeout_s: float = 30.0
 ) -> None:
-    """Call v0.5.20's native close endpoint after the final request completes."""
+    """Close a native reference; tolerate a busy scheduler's service boundary."""
     if not server_root_url.startswith(("http://", "https://")):
         raise ValueError("invalid native session server URL")
     if not session_id.startswith("beliefkv-") or timeout_s <= 0:

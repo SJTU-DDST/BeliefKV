@@ -146,7 +146,7 @@ def test_http_close_uses_native_endpoint_and_checks_status(monkeypatch) -> None:
     )
     close_native_radix_session("http://localhost:30000/v1", "beliefkv-123")
     assert calls == [
-        ("http://localhost:30000/close_session", {"session_id": "beliefkv-123"}, 2.0)
+        ("http://localhost:30000/close_session", {"session_id": "beliefkv-123"}, 30.0)
     ]
     with pytest.raises(ValueError, match="invalid native session close"):
         close_native_radix_session("http://localhost:30000", "foreign-session")

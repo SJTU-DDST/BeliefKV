@@ -35,7 +35,7 @@ Reactive 显式关闭所有本轮预测 H2D；predictive 只允许新模型
 - 新模型使用固定的校准档位，仅作为候选证据；不是 child 门禁。
 
 启动脚本：`scripts/run_qwen35_semantic_h2d_ab.sh`。
-结果目录：`experiments/raw/qwen35_semantic_h2d_ab_36root_20260930_v1/`。
+有效对照目录：`experiments/raw/qwen35_semantic_h2d_ab_36root_20260930_v2/`。
 初始化会保存 code commit、workload/模型 SHA256 与共用配置。
 每侧结束后只清理 patch 已归档且正常结束的 workspace，保留原始
 trace、patch、模型、失败现场和报告。
@@ -62,3 +62,10 @@ worker/ownership/telemetry 故障使该侧无效，应修复后重跑；
 
 异步接入、共享策略解耦、对照启动和报告脚本已实现并通过聚焦回归。
 完整 GPU 对照将在该提交冻结后启动；本文件不提前填入收益结论。
+
+首份 reactive 开发运行在 child 已自然 RETURN、JOIN 已满足后出现
+`TimeoutError`：native session close 的同步 HTTP 默认只有两秒，
+清理异常中断了 parent，而非 workflow deadline 到期或控制链路失效。
+该份运行已停止并保留作诊断，不作为对照或训练数据。现将 session
+close 的超时改为 30 秒，不吞掉错误、不修改 guard，修复后两侧均
+重新运行完整 workload，使用新的结果目录版本。
