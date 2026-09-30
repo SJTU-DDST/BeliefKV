@@ -13,8 +13,10 @@ SGLANG_PATCH_FLAVOR="${SGLANG_PATCH_FLAVOR:-staging}"
 SKIP_SERVER_WARMUP="${SKIP_SERVER_WARMUP:-1}"
 CONFIRMED_JOIN_CANARY="${CONFIRMED_JOIN_CANARY:-0}"
 FANOUT_PROFILE="${FANOUT_PROFILE:-native_in_graph_1to4}"
+AB_MODE="${AB_MODE:-off}"
+SEMANTIC_REPORT_ARTIFACT="${SEMANTIC_REPORT_ARTIFACT:-$ROOT/experiments/models/child_semantic_work_stage2_adapted_20260930_v1/semantic_event_calibrated.json}"
 RUN_ROOT="${RUN_ROOT:-$ROOT/experiments/raw/qwen35_native_regime_${HICACHE_WRITE_POLICY}_${FANOUT_PROFILE}_${HICACHE_SIZE_GB}g_${HOST_SPLIT/:/_}_${ROOT_COUNT}root_v1}"
-MANIFEST="$ROOT/configs/migration/qwen35_native_reactive_overlapped_128root_workload_2026-09-23.json"
+MANIFEST="${WORKLOAD_MANIFEST:-$ROOT/configs/migration/qwen35_native_reactive_overlapped_128root_workload_2026-09-23.json}"
 BASE_URL="http://127.0.0.1:$PORT"
 SOCKET="/tmp/bkv-regime-${PORT}.sock"
 server_pid=""
@@ -38,6 +40,9 @@ if [[ $# -ne 0 || ! "$ROOT_COUNT" =~ ^[1-9][0-9]*$ ]] \
   || [[ "$SKIP_SERVER_WARMUP" != "0" && "$SKIP_SERVER_WARMUP" != "1" ]] \
   || [[ "$CONFIRMED_JOIN_CANARY" != "0" && "$CONFIRMED_JOIN_CANARY" != "1" ]] \
   || [[ "$FANOUT_PROFILE" != "native_dynamic_1to4" && "$FANOUT_PROFILE" != "native_in_graph_1to4" ]] \
+  || [[ "$AB_MODE" != "off" && "$AB_MODE" != "reactive" && "$AB_MODE" != "predictive_h2d" ]] \
+  || [[ "$AB_MODE" != "off" && "$CONFIRMED_JOIN_CANARY" != "0" ]] \
+  || [[ "$AB_MODE" == "predictive_h2d" && ! -f "$SEMANTIC_REPORT_ARTIFACT" ]] \
   || [[ "$CONFIRMED_JOIN_CANARY" == "1" && "$SGLANG_PATCH_FLAVOR" != "writeback_prepare" ]] \
   || { [[ "$HOST_SPLIT" != auto ]] \
     && { [[ ! "$HOST_SPLIT" =~ ^([1-9][0-9]?):([1-9][0-9]?)$ ]] \
@@ -69,7 +74,22 @@ host_split_env=()
 if [[ "$HOST_SPLIT" != auto ]]; then
   host_split_env=(BELIEFKV_FULL_MAMBA_HOST_SPLIT="$HOST_SPLIT")
 fi
-setsid env -u BELIEFKV_FULL_MAMBA_HOST_SPLIT \
+ab_env=()
+unset_env=()
+if [[ "$AB_MODE" != "off" ]]; then
+  unset_env=(-u BELIEFKV_SEMANTIC_REPORT_ARTIFACT \
+    -u BELIEFKV_COMPLETION_LEAD_ARTIFACT -u BELIEFKV_COMPLETION_LEAD_SHA256)
+  export BELIEFKV_EMIT_SEMANTIC_TEXT=1
+  ab_env=(BELIEFKV_ENABLE_FINAL_STAGE_PRIORITY=1 BELIEFKV_ENABLE_PREPARE_HOST=0)
+  if [[ "$AB_MODE" == "reactive" ]]; then
+    ab_env+=(BELIEFKV_ENABLE_FINAL_STAGE_PREFETCH=0)
+  else
+    ab_env+=(BELIEFKV_ENABLE_FINAL_STAGE_PREFETCH=1 \
+      BELIEFKV_SEMANTIC_REPORT_ARTIFACT="$SEMANTIC_REPORT_ARTIFACT")
+  fi
+fi
+setsid env -u BELIEFKV_FULL_MAMBA_HOST_SPLIT "${unset_env[@]}" \
+  "${ab_env[@]}" \
   "${host_split_env[@]}" PORT="$PORT" HICACHE_SIZE_GB="$HICACHE_SIZE_GB" \
   HICACHE_WRITE_POLICY="$HICACHE_WRITE_POLICY" \
   ENABLE_SESSION_RADIX_CACHE=1 HOST_NUMA_NODE=1 \

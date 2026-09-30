@@ -773,6 +773,51 @@ def test_child_content_shadow_records_delivery_and_tool_negative(tmp_path) -> No
     )
 
 
+def test_semantic_text_uses_async_control_and_preserves_full_bounded_history(
+    monkeypatch, tmp_path,
+) -> None:
+    monkeypatch.setenv("BELIEFKV_EMIT_SEMANTIC_TEXT", "1")
+    received = []
+    control = QueuedRuntimeEventSink(SimpleNamespace(
+        emit_batch=lambda events: received.extend(events), close=lambda: None,
+    ))
+    shadow = StreamContentShadow(tmp_path / "semantic.jsonl", capacity=16)
+    adapter = DeepAgentsRuntimeAdapter(
+        CollectingSink(), BeliefKVRequestMetadata("wf", "root", "ctx", 0),
+        control_sink=control, stream_content_shadow=shadow,
+    )
+    adapter.start()
+    task = adapter.declare_runtime_tasks([("explorer", "inspect")])[0]
+    tool_run = uuid4()
+    adapter.on_tool_start(
+        {"name": "task"}, "", run_id=tool_run,
+        inputs={"subagent_type": "explorer", "description": "inspect"},
+        tool_call_id=task.tool_call_id,
+    )
+    run = uuid4()
+    adapter.on_chat_model_start(
+        {}, [[HumanMessage(content="prompt")]], run_id=run, parent_run_id=tool_run,
+    )
+    text = "Evidence complete. " * 30
+    adapter.on_llm_new_token(
+        text, run_id=run,
+        chunk=SimpleNamespace(
+            message=SimpleNamespace(content=text, tool_call_chunks=[]),
+            generation_info=None,
+        ),
+    )
+    control.close()
+    assert shadow.close()["complete"]
+    frames = [
+        item for item in received
+        if item.attributes.get("beliefkv_semantic_child_text")
+    ]
+    assert len(frames) == 1
+    assert frames[0].invocation_id == task.invocation_id
+    assert frames[0].attributes["content_tail"] == text
+    assert frames[0].attributes["request_id"] == f"beliefkv:{run}"
+
+
 def test_child_content_shadow_early_milestones_preserve_identity(tmp_path) -> None:
     shadow = StreamContentShadow(tmp_path / "milestones.jsonl", capacity=16)
     adapter = DeepAgentsRuntimeAdapter(

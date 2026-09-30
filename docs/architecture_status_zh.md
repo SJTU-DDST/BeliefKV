@@ -13,25 +13,35 @@ JOIN child-completion 三阶段 H2D ticket（概率窗口、结构化完成提�
 
 ### 当前研究目标与未完成能力
 
+语义头已接入独立 CPU process，正文观察有界并与过往 native decode
+计数组合，worker 结果复用现有 idle-poller fd 唤醒。结果不改变 RCCG
+执行状态，仅在有效 parent WAIT_JOIN、Host 副本、FULL/Mamba 空间和
+实测 H2D 时机下形成候选；工具/epoch/终态使旧观察失效。
+收尾优先级已与 prefetch 解耦，使两侧实验一致。36-root 完整开发
+A/B 的 reactive 侧显式不运行模型、不执行预测迁移，predictive 侧
+只比较新语义 JOIN H2D，两侧 PREPARE_HOST 均关闭。GPU 收益尚待
+完整结果，见 `docs/experiments/semantic_h2d_ab_36root_2026-09-30_zh.md`。
+
 第二阶段的语义/校准分支已固定 MiniLM revision，并将六个已有项目、
 Astropy 和 Sphinx 分别用于拟合、校准及模型侧隔离验证。Astropy 的
 workflow 再拆为分数/偏差校准与区间校准，重复快照按 workflow 聚合。
 冻结编码器与末两层任务微调为对照；校准后的 token 边界与精确
-RETURN 时刻仍是不同目标。此分支保持只读，未接到 KV 物理决策，
+RETURN 时刻仍是不同目标。模型仍是只读观察，物理决策由 runtime
+承担；当前只在可选 A/B 路径中使用这些观察，
 旧 trace 的协议/负载差异不能被该划分消除。详见
 `docs/experiments/child_semantic_work_stage2_2026-09-30_zh.md`。
 该阶段的回顾性验证已完成：任务适配后在 Sphinx 的校准档位下识别
 33/35 个自然 RETURN，工具误报由冻结表示的 29 次降至六次。
 剩余 token 点误差未全面胜过先验，校准边界仍宽；只读模型加载、
-有界表示缓存及 request/epoch 输出已实现，异步线上 shadow、
-新版通知的未见项目验证与 H2D 收益仍待完成。
+有界表示缓存及 request/epoch 输出已实现，异步入口已补齐，
+新版通知的未见项目验证与 H2D 收益仍待完整实验确认。
 
 新增 child 预测研究分支采用“正文/通知判断阶段 -> 条件剩余 token 工作 ->
 独立服务与等待分账”，不再把 child 的未来 GPU 等待直接拟合进工作量头。
 `child_report_phase.py` 实现轻量 token CNN 和显式 request/context/epoch
 绑定的只读输出；正文历史只由已送达快照重建，缺失片段会标记而不会补造。
-当前只有项目隔离的离线 replay 与 CPU 成本测量，未接入在线事件处理或
-替换现有 final-stage H2D 路径。分数未经校准，名义工作量区间的实际覆盖率
+该小 CNN 仍只有离线 replay 与 CPU 成本测量；在线 A/B 使用的是后续
+任务适配语义头，而非此 CNN。此 CNN 分数未经校准，名义区间实际覆盖率
 须单列；高 RETURN 召回不能掩盖工具轮次误报。runtime 仍独立判断传输收益、
 有效 Host 副本与物理容量，不新增 guard 或强制终态格式。
 执行与结果见 `docs/experiments/child_report_phase_work_2026-09-30_zh.md`。

@@ -10,7 +10,9 @@ from collections.abc import Sequence
 from dataclasses import dataclass, replace
 from itertools import islice
 import math
+import json
 import os
+from pathlib import Path
 import time
 from typing import TYPE_CHECKING
 from uuid import uuid4
@@ -62,6 +64,9 @@ from beliefkv.runtime.sglang_v0520_observer import (
     observe_static_full_mamba_headroom,
 )
 from beliefkv.predictor.structured_frontier import LocalFrontierFeatures
+from beliefkv.runtime.semantic_report_worker import (
+    SEMANTIC_TEXT, SemanticReportInput, SemanticReportReply, SemanticReportWorker,
+)
 
 if TYPE_CHECKING:
     from beliefkv.core.events import RuntimeEvent
@@ -117,6 +122,7 @@ class _ChildFinalStage:
     last_service_at: float | None = None
     tokens_per_second: float | None = None
     issued_nodes: int = 0
+    semantic_only: bool = False
 
 
 class NativeAdmissionRuntime:
@@ -205,6 +211,31 @@ class NativeAdmissionRuntime:
         self._join_ticket: _JoinPrefetchTicket | None = None
         self.enable_admission_prefetch = enable_admission_prefetch
         self.enable_final_stage_prefetch = enable_final_stage_prefetch
+        priority_setting = os.environ.get("BELIEFKV_ENABLE_FINAL_STAGE_PRIORITY")
+        self.enable_final_stage_priority = (
+            None if priority_setting is None else priority_setting == "1"
+        )
+        self.enable_prepare_host = os.environ.get("BELIEFKV_ENABLE_PREPARE_HOST", "1") == "1"
+        semantic_artifact = os.environ.get("BELIEFKV_SEMANTIC_REPORT_ARTIFACT")
+        self._semantic_worker = None
+        self._semantic_score_threshold = .5
+        if semantic_artifact:
+            report = json.loads(
+                (Path(semantic_artifact).resolve().parent / "report.json").read_text()
+            )
+            threshold = report["calibration"]["semantic_event"]["request_operating_point"]["threshold"]
+            if type(threshold) not in (int, float) or not 0 <= threshold <= 1:
+                raise ValueError("semantic H2D needs the frozen calibration operating point")
+            self._semantic_score_threshold = float(threshold)
+            self._semantic_worker = SemanticReportWorker(semantic_artifact)
+        self._semantic_progress: dict[str, deque[tuple[float, int]]] = {}
+        self._semantic_keys: dict[str, PrefillCandidateKey] = {}
+        self._semantic_frames: dict[str, RuntimeEvent] = {}
+        self._semantic_forecasts: dict[str, SemanticReportReply] = {}
+        self._semantic_finished: dict[str, tuple[float, int]] = {}
+        self._semantic_submit_ms: dict[str, float] = {}
+        self._semantic_tool_counts: Counter[str] = Counter()
+        self._runtime_state_next_ms = 0.
         self.enable_confirmed_join_canary = enable_confirmed_join_canary
         self._admission_lease: _AdmissionPrefetchLease | None = None
         self.shadow_candidate: ActionLocalShadowCandidate | None = None
@@ -304,11 +335,15 @@ class NativeAdmissionRuntime:
         self._final_stages.clear()
         self._final_request_stages.clear()
         if self._opportunity_writer is not None:
+            self._record_runtime_state(final=True)
             self._opportunity_writer.close()
             self._opportunity_writer = None
         if self._model_worker is not None:
             self._model_worker.close()
             self._model_worker = None
+        if self._semantic_worker is not None:
+            self._semantic_worker.close()
+            self._semantic_worker = None
         if self.event_server is not None:
             self.event_server.close()
             self.event_server = None
@@ -339,6 +374,8 @@ class NativeAdmissionRuntime:
         self._native_cache = cache
 
     def predictor_fileno(self) -> int | None:
+        if self._semantic_worker is not None:
+            return self._semantic_worker.fileno()
         if self._model_worker is None or self._model_worker.disabled:
             return None
         return self._model_worker.fileno()
@@ -348,6 +385,9 @@ class NativeAdmissionRuntime:
         # advance. It is advisory, so a stale one must not discard the RCCG.
         filtered = []
         for event in events:
+            if event.attributes.get(SEMANTIC_TEXT) is True:
+                self._capture_semantic_text(event)
+                continue
             if event.kind is RuntimeEventKind.STRUCTURED_ACTION and (
                 event.attributes.get(CHILD_COMPLETION_INTENT) is True
             ):
@@ -513,6 +553,9 @@ class NativeAdmissionRuntime:
                         self.tool_wait_hints.pop(context_id, None)
                         self.shadow_candidate = None
                 if event.kind is RuntimeEventKind.WORKFLOW_END:
+                    for key in tuple(self._semantic_keys.values()):
+                        if key.root_workflow_id == event.workflow_id:
+                            self._clear_semantic_invocation(key.invocation_id)
                     self._noncontinuing_joins = {
                         join_id for join_id in self._noncontinuing_joins
                         if (join := self.graph.joins.get(join_id)) is not None
@@ -552,8 +595,11 @@ class NativeAdmissionRuntime:
                 if event.kind is RuntimeEventKind.STRUCTURED_ACTION:
                     self._observe_child_completion_intent(event)
                 elif event.kind is RuntimeEventKind.LLM_SUBMIT:
+                    self._clear_semantic_invocation(event.invocation_id)
                     self._bind_final_request(event)
                 elif event.kind is RuntimeEventKind.TOOL_START:
+                    self._semantic_tool_counts[event.invocation_id] += 1
+                    self._clear_semantic_invocation(event.invocation_id)
                     for join_id, stage in tuple(self._final_stages.items()):
                         if stage.child_id == event.invocation_id:
                             self._clear_final_stage(join_id)
@@ -562,6 +608,8 @@ class NativeAdmissionRuntime:
                     RuntimeEventKind.RETURN, RuntimeEventKind.JOIN_SATISFIED,
                     RuntimeEventKind.JOIN_TIMEOUT, RuntimeEventKind.INVOCATION_CANCEL,
                 ):
+                    if event.invocation_id is not None:
+                        self._clear_semantic_invocation(event.invocation_id)
                     self._advance_join_ticket(event)
                     for join_id, stage in tuple(self._final_stages.items()):
                         if (
@@ -596,10 +644,184 @@ class NativeAdmissionRuntime:
                 }
             self.semantic_revision += 1
 
+    def _clear_semantic_invocation(self, invocation_id: str) -> None:
+        for rid, key in tuple(self._semantic_keys.items()):
+            if key.invocation_id == invocation_id:
+                self._semantic_keys.pop(rid, None)
+                self._semantic_frames.pop(rid, None)
+                self._semantic_forecasts.pop(rid, None)
+                self._semantic_progress.pop(rid, None)
+                self._semantic_finished.pop(rid, None)
+                self._semantic_submit_ms.pop(rid, None)
+
+    def _semantic_key_live(self, key: PrefillCandidateKey, now_ms: float) -> bool:
+        child = self.graph.invocations.get(key.invocation_id)
+        context = self.graph.contexts.get(key.context_id)
+        ended = self._semantic_finished.get(key.request_id)
+        return bool(
+            child is not None and not child.state.terminal
+            and child.active_tool_family is None
+            and child.workflow_id == key.root_workflow_id
+            and child.context_id == key.context_id
+            and context is not None and context.epoch == key.context_epoch
+            and context.workflow_id == key.root_workflow_id
+            and self.context_sessions.get(key.context_id) == key
+            and (
+                self.visible.get(key.request_id) == key
+                or ended is not None and now_ms - ended[0] <= 2_000
+            )
+        )
+
+    def _capture_semantic_text(self, event: RuntimeEvent) -> None:
+        self.counts["semantic_text_received"] += 1
+        rid = event.attributes.get("request_id")
+        key = self.visible.get(rid) or self._semantic_keys.get(rid)
+        if key is None or (
+            key.root_workflow_id != event.workflow_id
+            or
+            key.invocation_id != event.invocation_id
+            or key.context_id != event.context_id
+            or key.context_epoch != event.context_epoch
+        ):
+            self.counts["semantic_text_stale"] += 1
+            return
+        if event.attributes.get("tool_chunk") is True:
+            self._clear_semantic_invocation(key.invocation_id)
+            for join_id, stage in tuple(self._final_stages.items()):
+                if stage.child_id == key.invocation_id:
+                    self._clear_final_stage(join_id)
+            self.counts["semantic_tool_chunk_invalidated"] += 1
+            return
+        if self._semantic_worker is None:
+            return
+        text, chars = (
+            event.attributes.get("content_tail"),
+            event.attributes.get("content_chars"),
+        )
+        if type(text) is not str or type(chars) is not int or chars < 32:
+            return
+        if len(self._semantic_frames) >= 128 and rid not in self._semantic_frames:
+            self.counts["semantic_text_capacity"] += 1
+            return
+        self._semantic_keys[rid] = key
+        self._semantic_frames[rid] = event
+
+    def _semantic_parent(self, child_id: str) -> tuple[str, PrefillCandidateKey] | None:
+        for join_id in sorted(self._join_by_invocation.get(child_id, ())):
+            join = self.graph.joins.get(join_id)
+            key = self._join_parent_key(join_id)
+            if (
+                join is not None and not join.satisfied and join.mode.value == "all"
+                and join.member_invocation_ids - join.completed_member_ids == {child_id}
+                and key is not None
+                and self.graph.invocations[key.invocation_id].state is InvocationState.WAIT_JOIN
+            ):
+                return join_id, key
+        return None
+
+    def _semantic_rate(self, rid: str) -> float | None:
+        progress = self._semantic_progress.get(rid, ())
+        if len(progress) < 2:
+            return None
+        end_ms, end_tokens = progress[-1]
+        prior = next(
+            ((ts, tokens) for ts, tokens in progress if ts >= end_ms - 500),
+            progress[0],
+        )
+        if prior[0] >= end_ms or prior[1] >= end_tokens:
+            return None
+        return min(500., max(1., (end_tokens - prior[1]) * 1000 / (end_ms - prior[0])))
+
+    def _poll_semantic_reports(self, now_ms: float) -> None:
+        worker = self._semantic_worker
+        if worker is None:
+            return
+        for reply in worker.poll():
+            item = reply.observation
+            if (
+                not self._semantic_key_live(item.key, now_ms)
+                or not 0 <= now_ms - item.observed_ts_ms <= 1_500
+            ):
+                self.counts["semantic_result_stale"] += 1
+                continue
+            self._semantic_forecasts[item.key.request_id] = reply
+            self.counts["semantic_result_accepted"] += 1
+            if self._opportunity_writer is not None:
+                self._opportunity_writer.record({
+                    "event": "semantic_child_forecast", "ts_ms": time.time() * 1000,
+                    "request_id": item.key.request_id,
+                    "context_id": item.key.context_id,
+                    "context_epoch": item.key.context_epoch,
+                    "score": reply.final_score,
+                    "remaining_tokens": reply.middle_tokens,
+                    "lower_tokens": reply.lower_tokens, "upper_tokens": reply.upper_tokens,
+                    "inference_ms": reply.inference_ms,
+                    "observation_age_ms": now_ms - item.observed_ts_ms,
+                    "observed_output_tokens": item.observed_output_tokens,
+                })
+            if reply.final_score < self._semantic_score_threshold:
+                continue
+            parent = self._semantic_parent(item.key.invocation_id)
+            if parent is None:
+                continue
+            join_id, parent_key = parent
+            if join_id not in self._final_stages:
+                progress = self._semantic_progress.get(item.key.request_id, ())
+                stage = _ChildFinalStage(
+                    parent_key, join_id, item.key.invocation_id,
+                    item.key.context_epoch,
+                    item.observed_output_tokens + max(0, int(reply.middle_tokens)),
+                    time.monotonic() + 2.,
+                    request_id=item.key.request_id, semantic_only=True,
+                    generated_tokens=progress[-1][1] if progress else 0,
+                    tokens_per_second=self._semantic_rate(item.key.request_id),
+                )
+                self._final_stages[join_id] = stage
+                self._final_request_stages[item.key.request_id] = stage
+                self.counts["semantic_final_stage_created"] += 1
+        self.counts["semantic_worker_ready"] = int(worker.ready)
+        self.counts["semantic_worker_disabled"] = int(worker.disabled)
+        self.counts["semantic_worker_dropped"] = worker.dropped
+        if worker.disabled:
+            return
+        for rid, event in tuple(self._semantic_frames.items()):
+            key = self._semantic_keys.get(rid)
+            if key is None or not self._semantic_key_live(key, now_ms):
+                self._semantic_frames.pop(rid, None)
+                self._semantic_forecasts.pop(rid, None)
+                continue
+            if now_ms - self._semantic_submit_ms.get(rid, 0.) < 250:
+                continue
+            if now_ms - event.ts_ms > 1_500:
+                continue
+            progress = self._semantic_progress.get(rid, ())
+            # Match offline features: only server progress older than the delivered text.
+            observed = next((tokens for ts, tokens in reversed(progress)
+                             if ts <= event.ts_ms - 100), None)
+            if observed is None or observed < 1:
+                continue
+            child = self.graph.invocations.get(key.invocation_id)
+            native_stage = next((
+                stage for stage in self._final_stages.values()
+                if stage.child_id == key.invocation_id and not stage.semantic_only
+                and self._live_final_stage(stage)
+            ), None)
+            worker.submit(SemanticReportInput(
+                key, event.ts_ms, observed, event.attributes["content_chars"],
+                event.attributes["content_tail"][-1024:],
+                native_stage is not None,
+                native_stage.expected_tokens if native_stage else 0,
+                self._semantic_tool_counts[key.invocation_id],
+                child.llm_round,
+            ))
+            self._semantic_submit_ms[rid] = now_ms
+            self.counts["semantic_input_submitted"] += 1
+
     def scheduler_step(self, waiting_queue: Sequence[object] = ()) -> None:
         if self.event_server is not None:
             self.event_server.drain(max_messages=16)
         now_ms = time.monotonic() * 1000
+        self._poll_semantic_reports(now_ms)
         for join_id, stage in tuple(self._final_stages.items()):
             if not self._live_final_stage(stage):
                 self._clear_final_stage(join_id)
@@ -691,6 +913,28 @@ class NativeAdmissionRuntime:
                 else "safe_point_invalidated"
             )
         self._sample_h2d_opportunities(waiting_queue, now_ms=now_ms)
+        if self._opportunity_writer is not None and now_ms >= self._runtime_state_next_ms:
+            self._runtime_state_next_ms = now_ms + 1_000
+            self._record_runtime_state()
+
+    def _record_runtime_state(self, *, final: bool = False) -> None:
+        if self._opportunity_writer is not None:
+            self._opportunity_writer.record({
+                "event": "admission_runtime_state", "ts_ms": time.time() * 1000,
+                "final": final, "counts": dict(self.counts),
+                "physical_disabled": self.physical_disabled,
+                "final_stage_prefetch": self.enable_final_stage_prefetch,
+                "final_stage_priority": (
+                    self.enable_final_stage_priority
+                    if self.enable_final_stage_priority is not None
+                    else self.enable_admission_prefetch or self.enable_final_stage_prefetch
+                ),
+                "prepare_host": self.enable_prepare_host,
+                "semantic_worker_configured": self._semantic_worker is not None,
+                "semantic_worker_error": (
+                    self._semantic_worker.error if self._semantic_worker else ""
+                ),
+            })
 
     def _missing_opportunity_detail(
         self, key: PrefillCandidateKey, *, admission_candidate: bool,
@@ -1154,6 +1398,11 @@ class NativeAdmissionRuntime:
         if self._join_ticket is not None and self._live_join_ticket():
             return
         for stage in tuple(self._final_stages.values()):
+            if self._semantic_worker is not None and stage.request_id is not None:
+                progress = self._semantic_progress.get(stage.request_id, ())
+                if progress:
+                    stage.generated_tokens = progress[-1][1]
+                    stage.tokens_per_second = self._semantic_rate(stage.request_id)
             if (
                 not self._live_final_stage(stage) or stage.request_id is None
                 or stage.generated_tokens < 16
@@ -1161,26 +1410,52 @@ class NativeAdmissionRuntime:
                 or stage.issued_nodes >= 2
             ):
                 continue
-            child_key = self.visible.get(stage.request_id)
+            child_key = self.visible.get(stage.request_id) or self._semantic_keys.get(stage.request_id)
             if (
                 child_key is None or child_key.invocation_id != stage.child_id
                 or child_key.context_epoch != stage.child_epoch
             ):
                 continue
-            remaining = stage.expected_tokens - stage.generated_tokens
-            if remaining < 4:
-                continue
-            remaining_ms = remaining * 1000 / stage.tokens_per_second
+            if self._semantic_worker is not None:
+                forecast = self._semantic_forecasts.get(stage.request_id)
+                now_ms = time.monotonic() * 1000
+                if (
+                    forecast is None or forecast.final_score < self._semantic_score_threshold
+                    or now_ms - forecast.observation.observed_ts_ms > 1_500
+                    or not self._semantic_key_live(forecast.observation.key, now_ms)
+                ):
+                    self.counts["semantic_latest_start_no_live_forecast"] += 1
+                    continue
+                progress = self._semantic_progress.get(stage.request_id, ())
+                generated = progress[-1][1] if progress else stage.generated_tokens
+                remaining = max(
+                    0., forecast.middle_tokens
+                    - max(0, generated - forecast.observation.observed_output_tokens),
+                )
+                # EOS is known GPU progress, not confirmation that the child RETURNed.
+                if stage.request_id in self._semantic_finished:
+                    remaining = 0.
+                remaining_ms = remaining * 1000 / stage.tokens_per_second
+            else:
+                remaining = stage.expected_tokens - stage.generated_tokens
+                if remaining < 4:
+                    continue
+                remaining_ms = remaining * 1000 / stage.tokens_per_second
             if remaining_ms > 2_000:
+                if self._semantic_worker is not None:
+                    self.counts["semantic_h2d_too_early"] += 1
                 continue
             observation = self.inspect_context_h2d_opportunity(
                 context_id=stage.key.context_id,
                 context_epoch=stage.key.context_epoch,
             )
-            if (
-                observation is None or observation.step is None
-                or observation.fits_current_free_lists is not True
-            ):
+            if observation is None or observation.step is None:
+                if self._semantic_worker is not None:
+                    self.counts["semantic_h2d_no_host_target"] += 1
+                continue
+            if observation.fits_current_free_lists is not True:
+                if self._semantic_worker is not None:
+                    self.counts["semantic_h2d_no_free_capacity"] += 1
                 continue
             cache = self._native_cache
             entries = getattr(
@@ -1208,6 +1483,8 @@ class NativeAdmissionRuntime:
             # Do not occupy HBM far ahead of RETURN, even when the largest
             # historical transfer was slow.
             if remaining_ms > min(h2d_ms + 250, 2_000):
+                if self._semantic_worker is not None:
+                    self.counts["semantic_h2d_not_latest_start"] += 1
                 continue
             join = self.graph.joins[stage.join_id]
             self._join_ticket = _JoinPrefetchTicket(
@@ -1342,6 +1619,9 @@ class NativeAdmissionRuntime:
             event.join_id == ticket.join_id
             or event.invocation_id in ticket.member_ids
         ):
+            if self._semantic_worker is not None:
+                self._discard_join_ticket("semantic_join_already_returned")
+                return
             if ticket.phase != "confirmed":
                 ticket.phase = "confirmed"
                 ticket.expires_at = time.monotonic() + 2.0
@@ -1854,6 +2134,8 @@ class NativeAdmissionRuntime:
         self, *, context_id: str | None = None
     ) -> ShadowBackupStep | None:
         """Recheck a tool wait and its native closure at the action safe point."""
+        if not self.enable_prepare_host:
+            return None
         hint = (self.tool_wait_hints.get(context_id) if context_id is not None
                 else self.tool_wait_hint)
         cache = self._native_cache
@@ -2421,11 +2703,18 @@ class NativeAdmissionRuntime:
         self._final_priority_promoted = None
         self._final_priority_native_rank = None
         if (
-            (self.enable_admission_prefetch or self.enable_final_stage_prefetch)
+            (
+                self.enable_final_stage_priority
+                if self.enable_final_stage_priority is not None
+                else self.enable_admission_prefetch or self.enable_final_stage_prefetch
+            )
             and self._final_priority_normal_admissions >= 4 and ordered
         ):
             for stage in self._final_stages.values():
-                if not self._live_final_stage(stage) or stage.request_id is None:
+                if (
+                    stage.semantic_only or not self._live_final_stage(stage)
+                    or stage.request_id is None
+                ):
                     continue
                 candidate = next((
                     pair for pair in ordered[:32]
@@ -2528,6 +2817,20 @@ class NativeAdmissionRuntime:
 
     def on_batch_completed(self, batch: object) -> None:
         for req in batch.reqs:
+            if self._semantic_worker is not None:
+                key = self.visible.get(getattr(req, "rid", None))
+                if key is not None:
+                    self._semantic_keys[key.request_id] = key
+                    history = self._semantic_progress.setdefault(
+                        key.request_id, deque(maxlen=128),
+                    )
+                    tokens = len(getattr(req, "output_ids", ()) or ())
+                    if not history or tokens > history[-1][1]:
+                        history.append((time.monotonic() * 1000, tokens))
+                    if req.finished():
+                        self._semantic_finished[key.request_id] = (
+                            time.monotonic() * 1000, tokens,
+                        )
             stage = self._final_request_stages.get(getattr(req, "rid", None))
             if stage is not None:
                 key = _request_key(req)

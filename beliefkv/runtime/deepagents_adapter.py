@@ -3,6 +3,7 @@ from __future__ import annotations
 import hashlib
 import json
 import math
+import os
 import threading
 import time
 import urllib.request
@@ -284,6 +285,8 @@ class DeepAgentsRuntimeAdapter(BaseCallbackHandler):
         self._report_phase_shadow = report_phase_shadow
         self._stream_content_shadow = stream_content_shadow
         self._stream_content_state: dict[str, tuple[int, str, int, int]] = {}
+        self._semantic_text_enabled = os.environ.get("BELIEFKV_EMIT_SEMANTIC_TEXT") == "1"
+        self._semantic_text_last_ms: dict[str, float] = {}
         self._eos_snapshot_accum: dict[str, tuple[float | None, int, int]] = {}
         self._eos_shadow = eos_shadow
         self._eos_top_hit_shadow = eos_top_hit_shadow
@@ -913,7 +916,7 @@ class DeepAgentsRuntimeAdapter(BaseCallbackHandler):
                 )
                 if isinstance(content, str) and content:
                     count += len(content)
-                    tail = (tail + content)[-128:]
+                    tail = (tail + content)[-1024:]
                 finish = (
                     generation_info.get("finish_reason")
                     if isinstance(generation_info, Mapping) else None
@@ -941,7 +944,9 @@ class DeepAgentsRuntimeAdapter(BaseCallbackHandler):
                         "context_epoch": metadata.context_epoch,
                         "join_id": pending.join_id,
                         "content_chars": count,
-                        "content_tail": tail,
+                        "content_tail": tail[-128:],
+                        **({"semantic_content_tail": tail}
+                           if self._semantic_text_enabled else {}),
                         "tool_chunk": tool_seen,
                         "finish_reason": finish,
                         "sampling_reason": (
@@ -1058,6 +1063,25 @@ class DeepAgentsRuntimeAdapter(BaseCallbackHandler):
                         ))
         if content_observation is not None:
             self._stream_content_shadow.emit(content_observation)
+            when = content_observation["ts_ms"]
+            if self._semantic_text_enabled and (
+                tool_seen or when - self._semantic_text_last_ms.get(key, 0.) >= 250
+            ):
+                self._semantic_text_last_ms[key] = when
+                self._publish((self._event(
+                    RuntimeEventKind.STRUCTURED_ACTION,
+                    ts_ms=when, invocation_id=invocation_id,
+                    context_id=metadata.context_id, context_epoch=metadata.context_epoch,
+                    join_id=pending.join_id, confidence=EventConfidence.OBSERVED_EXACT,
+                    attributes={
+                        "source": "deepagents_semantic_text",
+                        "beliefkv_semantic_child_text": True,
+                        "request_id": _native_request_id(run_id),
+                        "content_chars": content_observation["content_chars"],
+                        "content_tail": content_observation["semantic_content_tail"],
+                        "tool_chunk": tool_seen,
+                    },
+                ),), control=True, async_control=True)
         self._publish(tuple(
             self._event(
                 RuntimeEventKind.STRUCTURED_ACTION,
@@ -1151,6 +1175,7 @@ class DeepAgentsRuntimeAdapter(BaseCallbackHandler):
             stream_chunk_count = self._child_stream_chunk_count.pop(key, None)
             self._child_stream_last_chunk.pop(key, None)
             self._stream_content_state.pop(key, None)
+            self._semantic_text_last_ms.pop(key, None)
             self._eos_snapshot_accum.pop(key, None)
             self._child_report_phase_trackers.pop(key, None)
             eos_scored_tokens = self._child_eos_scored_tokens.pop(key, None)
@@ -1379,6 +1404,7 @@ class DeepAgentsRuntimeAdapter(BaseCallbackHandler):
         key = self._remember_run(run_id, parent_run_id)
         with self._lock:
             self._stream_content_state.pop(key, None)
+            self._semantic_text_last_ms.pop(key, None)
             self._eos_snapshot_accum.pop(key, None)
             self._child_stream_content_chars.pop(key, None)
             self._child_stream_max_chunk_chars.pop(key, None)

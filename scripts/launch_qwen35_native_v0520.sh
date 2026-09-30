@@ -53,6 +53,15 @@ if [[ ! ${BELIEFKV_ENABLE_FINAL_STAGE_PREFETCH+x} ]]; then
   fi
 fi
 export BELIEFKV_ENABLE_FINAL_STAGE_PREFETCH
+if [[ ! ${BELIEFKV_ENABLE_FINAL_STAGE_PRIORITY+x} ]]; then
+  BELIEFKV_ENABLE_FINAL_STAGE_PRIORITY=0
+  if (( admission_requested && event_socket_requested && ! confirmed_join_requested )) \
+      && [[ -n "${SGLANG_SOURCE_CHECKOUT}" ]] \
+      && [[ "${ENABLE_SESSION_RADIX_CACHE}" == "1" ]]; then
+    BELIEFKV_ENABLE_FINAL_STAGE_PRIORITY=1
+  fi
+fi
+export BELIEFKV_ENABLE_FINAL_STAGE_PRIORITY
 if [[ "${BELIEFKV_ENABLE_FINAL_STAGE_PREFETCH}" == "1" ]]; then
   if [[ -z "${SGLANG_SOURCE_CHECKOUT}" ]] \
       || (( admission_requested == 0 )) \

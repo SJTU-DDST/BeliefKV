@@ -2,6 +2,23 @@
 
 Status date: 2026-09-30.
 
+## Active Full H2D A/B
+
+The asynchronous semantic head is now connected through bounded delivered-text
+observations and native decode progress, with request/session/epoch validation.
+Native final-request priority is separate from predictive H2D and is shared by
+both arms. The next full development comparison is 36 roots, a fresh native server
+and KV cache per arm, actual Device-matched Host split, no PREPARE_HOST, and no
+canary. Reactive has neither semantic inference nor predictive transfers.
+Predictive uses semantic JOIN H2D while the parent still WAIT_JOINs; known GPU
+EOS is not confused with a confirmed child RETURN.
+
+Configuration and evidence interpretation:
+`docs/experiments/semantic_h2d_ab_36root_2026-09-30_zh.md`.
+Do not change shared runtime code during the pair. Complete both arms, retain
+failures and unknown Mamba attribution, then decide further prediction work from
+measured first-use and throughput rather than offline MAE alone.
+
 ## Stage 2 Semantic And Calibration Goal
 
 The next bounded milestone is a frozen pretrained text encoder, a task-adapted

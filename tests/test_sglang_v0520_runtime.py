@@ -34,6 +34,9 @@ from beliefkv.runtime.sglang_v0520_physical import (
     ShadowBackupStep,
 )
 from beliefkv.runtime.sglang_v0520_observer import StaticPoolHeadroomObservation
+from beliefkv.runtime.semantic_report_worker import (
+    SEMANTIC_TEXT, SemanticReportInput, SemanticReportReply,
+)
 
 
 def test_native_ack_is_credited_only_after_live_context_reconciliation():
@@ -302,6 +305,9 @@ def test_safe_point_persists_bounded_wait_and_admission_opportunities(tmp_path):
         json.loads(line) for line in
         (tmp_path / "admission_opportunities.jsonl").read_text().splitlines()
     ]
+    states = [row for row in rows if row["event"] == "admission_runtime_state"]
+    assert states[-1]["final"] is True
+    rows = [row for row in rows if row["event"] != "admission_runtime_state"]
     assert len(rows) == 3
     census = next(row for row in rows if row["event"] == "safe_point_census")
     assert census["candidate_count"] == 2
@@ -2111,6 +2117,127 @@ def final_stage_runtime(*, stage_only=False, event_socket_path=None, stage_recor
                     "estimated_final_report_tokens": 128},
     ),))
     return runtime
+
+
+def test_reactive_keeps_final_priority_without_any_predictive_transfer(monkeypatch):
+    monkeypatch.setenv("BELIEFKV_ENABLE_FINAL_STAGE_PRIORITY", "1")
+    monkeypatch.setenv("BELIEFKV_ENABLE_PREPARE_HOST", "0")
+    runtime = final_stage_runtime()
+    runtime.enable_admission_prefetch = False
+    child, other = req("child"), req("other")
+    child.beliefkv_metadata["context_epoch"] = 1
+    runtime.on_events((event(
+        7, RuntimeEventKind.LLM_SUBMIT, invocation_id="child",
+        context_id="ctx-child", context_epoch=1,
+        attributes={"request_id": "child"},
+    ),))
+    runtime.register_visible_request(child)
+    runtime.register_visible_request(other)
+    assert select(runtime, [other, child]).candidates[0] is child
+    runtime.dispatch_join_prefetch()
+    assert runtime._join_ticket is None
+    assert runtime.refreshed_shadow_backup_step() is None
+
+
+def test_semantic_body_is_read_only_and_uses_only_prior_decode_progress():
+    from collections import deque
+
+    runtime = final_stage_runtime()
+    child = req("child")
+    child.session_id, child.session_generation = "cs", 1
+    child.beliefkv_metadata["context_epoch"] = 1
+    runtime.on_events((event(
+        7, RuntimeEventKind.LLM_SUBMIT, invocation_id="child",
+        context_id="ctx-child", context_epoch=1,
+        attributes={"request_id": "child"},
+    ),))
+    runtime.register_visible_request(child)
+    key = runtime.visible["child"]
+    now = time.monotonic() * 1000
+    submitted = []
+    worker = NS(
+        poll=lambda: (), submit=submitted.append,
+        ready=True, disabled=False, dropped=0, error="",
+    )
+    runtime._semantic_worker = worker
+    runtime._semantic_keys["child"] = key
+    runtime._semantic_progress["child"] = deque(
+        ((now - 250, 5), (now - 120, 20), (now - 30, 50)),
+    )
+    revision = runtime.semantic_revision
+    runtime.on_events((RuntimeEvent(
+        "body", now, RuntimeEventKind.STRUCTURED_ACTION, "wf",
+        invocation_id="child", context_id="ctx-child", context_epoch=1,
+        attributes={SEMANTIC_TEXT: True, "request_id": "child",
+                    "content_chars": 128, "content_tail": "Report complete."},
+    ),))
+    assert runtime.semantic_revision == revision
+    runtime._poll_semantic_reports(now + 1)
+    assert submitted[0].observed_output_tokens == 20
+    assert submitted[0].key == key
+    runtime.on_events((RuntimeEvent(
+        "tool-body", now + 2, RuntimeEventKind.STRUCTURED_ACTION, "wf",
+        invocation_id="child", context_id="ctx-child", context_epoch=1,
+        attributes={SEMANTIC_TEXT: True, "request_id": "child", "tool_chunk": True},
+    ),))
+    assert "child" not in runtime._semantic_frames
+    assert not runtime._final_stages
+
+
+def test_semantic_eos_window_creates_only_h2d_candidate_not_final_priority():
+    from collections import deque
+
+    runtime = final_stage_runtime()
+    runtime._clear_final_stage("join")
+    child = req("child")
+    child.session_id, child.session_generation = "cs", 1
+    child.beliefkv_metadata["context_epoch"] = 1
+    runtime.on_events((event(
+        7, RuntimeEventKind.LLM_SUBMIT, invocation_id="child",
+        context_id="ctx-child", context_epoch=1,
+        attributes={"request_id": "child"},
+    ),))
+    runtime.register_visible_request(child)
+    key = runtime.visible["child"]
+    now = time.monotonic() * 1000
+    runtime._semantic_keys["child"] = key
+    runtime._semantic_progress["child"] = deque(
+        ((now - 250, 5), (now - 120, 20), (now - 30, 50)),
+    )
+    runtime._semantic_finished["child"] = (now - 10, 50)
+    del runtime.visible["child"]
+    item = SemanticReportInput(key, now - 20, 20, 128, "Done.", False, 0, 1, 2)
+    reply = SemanticReportReply(item, .9, 0., 80., 200., 5.)
+    replies = [reply]
+    runtime._semantic_worker = NS(
+        poll=lambda: tuple(replies), submit=lambda _: None,
+        ready=True, disabled=False, dropped=0, error="",
+    )
+    runtime._poll_semantic_reports(now)
+    stage = runtime._final_stages["join"]
+    assert stage.semantic_only
+    assert stage.generated_tokens == 50
+    assert stage.tokens_per_second is not None
+    assert runtime._live_final_stage(stage)
+    runtime._h2d_samples.extend(((1000, 10.),) * 3)
+    runtime._native_cache = NS(cache_controller=NS(mem_pool_host=NS(entry_map={
+        "kv": NS(host_pool=NS(size_per_token=1)),
+        "mamba": NS(host_pool=NS(size_per_token=1)),
+    })))
+    with patch.object(runtime, "inspect_context_h2d_opportunity", return_value=NS(
+        step="native-step", fits_current_free_lists=True,
+        required_full_tokens=100, required_mamba_slots=1,
+    )):
+        runtime._roll_final_stage()
+    assert runtime._join_ticket is not None
+    assert runtime._join_ticket.stage_bound
+    # The same reply cannot attach to the child's next epoch.
+    runtime.on_events((event(
+        8, RuntimeEventKind.CONTEXT_ADVANCE, invocation_id="child",
+        context_id="ctx-child", context_epoch=2,
+    ),))
+    runtime._poll_semantic_reports(now + 1)
+    assert runtime.counts["semantic_result_stale"] == 1
 
 
 def test_final_stage_promotes_only_bound_join_child_with_admission_budget():
