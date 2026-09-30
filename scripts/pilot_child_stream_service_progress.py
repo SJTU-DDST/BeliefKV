@@ -39,7 +39,7 @@ def service_rows(
     rows, counts = collect(roots, min_snapshot_chars=32)
     indexed, reports = _service_indices(roots, runs, rows)
     by_rid = {row["rid"]: row for row in rows}
-    decoded: dict[str, list[tuple[float, int]]] = defaultdict(list)
+    decoded: dict[str, list[tuple[float, int, int]]] = defaultdict(list)
     excluded = Counter()
     for root, run in zip(roots, runs):
         ids = {
@@ -76,7 +76,10 @@ def service_rows(
                     ):
                         excluded["invalid_decode_delta"] += 1
                         continue
-                    decoded[rid].append((float(event["ts_ms"]), before + delta))
+                    decoded[rid].append((
+                        float(event["ts_ms"]), before + delta,
+                        int(event.get("batch_size") or 0),
+                    ))
 
     selected = []
     for row in rows:
@@ -85,10 +88,10 @@ def service_rows(
             excluded["missing_server_result"] += 1
             continue
         samples = sorted(
-            (ts, tokens) for ts, tokens in decoded.get(row["rid"], [])
+            (ts, tokens, batch) for ts, tokens, batch in decoded.get(row["rid"], [])
             if ts <= state["server_end_ms"]
         )
-        times = [ts for ts, _ in samples]
+        times = [ts for ts, _, _ in samples]
         seen_heading = False
         kept = []
         for snap in row["snapshots"]:
@@ -104,12 +107,17 @@ def service_rows(
             start = bisect_left(times, cutoff - _RECENT_MS)
             if end - start < 2 or cutoff - times[end - 1] > _RECENT_MS:
                 continue
-            first_ts, first_tokens = samples[start]
-            last_ts, last_tokens = samples[end - 1]
+            first_ts, first_tokens, _ = samples[start]
+            last_ts, last_tokens, last_batch = samples[end - 1]
             if last_ts <= first_ts or last_tokens < first_tokens:
                 excluded["invalid_prior_progress"] += 1
                 continue
             rate = (last_tokens - first_tokens) * 1000 / (last_ts - first_ts)
+            initial_ts, initial_tokens, _ = samples[0]
+            lifetime_rate = (
+                (last_tokens - initial_tokens) * 1000
+                / max(last_ts - initial_ts, 1.)
+            )
             kept.append({
                 **snap,
                 "decode_features": (
@@ -117,6 +125,11 @@ def service_rows(
                     math.log1p(rate),
                     math.log1p(cutoff - last_ts),
                     float(seen_heading),
+                ),
+                "decode_history_features": (
+                    math.log1p(max(0., last_ts - initial_ts)),
+                    math.log1p(max(0., lifetime_rate)),
+                    math.log1p(last_batch),
                 ),
             })
         if kept:
