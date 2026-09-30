@@ -1,6 +1,6 @@
 # BeliefKV 当前架构与实现状态
 
-更新日期：2026-09-28
+更新日期：2026-09-30
 当前 P6 物理执行基线：原 Qwen3-Coder/SGLang 0.5.2rc1；
 Qwen3.5/v0.5.20 已有可选 native admission、工具等待预测和
 JOIN child-completion 三阶段 H2D ticket（概率窗口、结构化完成提示、
@@ -12,6 +12,16 @@ JOIN child-completion 三阶段 H2D ticket（概率窗口、结构化完成提�
 `docs/experiments/`。
 
 ### 当前研究目标与未完成能力
+
+新增 child 预测研究分支采用“正文/通知判断阶段 -> 条件剩余 token 工作 ->
+独立服务与等待分账”，不再把 child 的未来 GPU 等待直接拟合进工作量头。
+`child_report_phase.py` 实现轻量 token CNN 和显式 request/context/epoch
+绑定的只读输出；正文历史只由已送达快照重建，缺失片段会标记而不会补造。
+当前只有项目隔离的离线 replay 与 CPU 成本测量，未接入在线事件处理或
+替换现有 final-stage H2D 路径。分数未经校准，名义工作量区间的实际覆盖率
+须单列；高 RETURN 召回不能掩盖工具轮次误报。runtime 仍独立判断传输收益、
+有效 Host 副本与物理容量，不新增 guard 或强制终态格式。
+执行与结果见 `docs/experiments/child_report_phase_work_2026-09-30_zh.md`。
 
 Qwen3.5 原生容量 census 使用独立的 FULL/Mamba 设备池
 (`static_separate_full_mamba`)，此前 action-local 闭包却先调用只接受

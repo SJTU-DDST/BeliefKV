@@ -33,6 +33,18 @@ _HEADING = re.compile(r"(?:^|\n)#{1,4}\s+\S")
 _RECENT_MS = 500.
 
 
+def delivered_history(
+    previous: str, previous_chars: int, snap: dict, *, limit: int = 1024,
+) -> tuple[str, bool]:
+    delta = snap["content_chars"] - previous_chars
+    if delta <= 0:
+        return previous, False
+    tail = snap["content_tail"]
+    gap = delta > len(tail)
+    added = (" [unobserved_text_gap] " + tail) if gap else tail[-delta:]
+    return (previous + added)[-limit:], gap
+
+
 def service_rows(
     roots: list[Path], runs: list[Path],
 ) -> tuple[list[dict], dict]:
@@ -93,8 +105,12 @@ def service_rows(
         )
         times = [ts for ts, _, _ in samples]
         seen_heading = False
+        history, previous_chars, history_gaps = "", 0, 0
         kept = []
         for snap in row["snapshots"]:
+            history, gap = delivered_history(history, previous_chars, snap)
+            previous_chars = snap["content_chars"]
+            history_gaps += gap
             seen_heading |= bool(_HEADING.search(snap["content_tail"]))
             if snapshot_status(state, snap["ts_ms"]) != (
                 "unfinished_with_recent_decode"
@@ -120,6 +136,10 @@ def service_rows(
             )
             kept.append({
                 **snap,
+                "observed_output_tokens": last_tokens,
+                "observed_decode_server_ts_ms": last_ts,
+                "delivered_text_history": history,
+                "delivered_text_history_gaps": history_gaps,
                 "decode_features": (
                     math.log1p(last_tokens),
                     math.log1p(rate),

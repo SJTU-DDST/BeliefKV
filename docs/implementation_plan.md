@@ -1,6 +1,38 @@
 # BeliefKV Current Execution Plan
 
-Status date: 2026-09-28.
+Status date: 2026-09-30.
+
+## Active Child Report Phase And Work Goal
+
+The current predictor experiment is event/content driven, not a larger direct
+RETURN-wall-time regressor. A bounded delivered-token sequence encoder and
+causally valid completion notices classify a no-more-tools report round.
+Conditional heads predict remaining output-token work, with ordered nominal
+intervals. Labels use matched native output-token counts; future service gaps
+and the parent's first GPU service are not model inputs or work labels.
+Scheduler/worker decode intervals and no-service gaps are audited separately.
+The runtime remains the authority for Host-copy validity, FULL/Mamba capacity,
+transfer service, other-child state and H2D value.
+
+The first implementation is a CPU-only, project-held-out replay on the
+36-root trace, with old 32-root data allowed only on the training side and
+all samples of the held project excluded. Compare notice-only,
+content/progress and content/event signals at identical observed snapshots,
+count tool false first-triggers, report conditional token error and nominal
+interval coverage, and measure per-observation CPU cost. Scores are explicitly
+uncalibrated and checkpoints are offline-only. No guard or mandatory completion
+schema is added, and no model output directly authorizes a transfer.
+
+See `docs/experiments/child_report_phase_work_2026-09-30_zh.md` for execution,
+results and remaining limitations. Hidden-state extraction and a new GPU
+workload are later comparisons, not prerequisites for this fast replay.
+The replay is complete: the small token CNN raises natural-RETURN recall
+but produces too many tool false first-triggers and undercovered token
+intervals; it is not an accurate RETURN timer. Completion-notice rounds
+are now a separate phase label, and class balancing did not make that phase
+identifiable. Keep native notices as independent evidence, next compare
+richer semantic representations and project-disjoint work calibration,
+and do not connect this raw checkpoint to physical H2D decisions.
 
 ## Event-Time Labels Versus Physical Action Policy
 
