@@ -54,7 +54,7 @@ class NativeReactiveTelemetry:
         self._active: set[str] = set()
         self._completed: set[str] = set()
         self._pending_prefetch_use: OrderedDict[
-            str, tuple[Any, tuple[tuple[int, Any, Any, int | None, Any], ...], float]
+            str, tuple[Any, tuple[tuple[Any, ...], ...], float, dict[int, tuple[array, Any, Any]]]
         ] = OrderedDict()
         self._reported_output_tokens: dict[str, int] = {}
         self._targeted_pair_cursor: dict[str, tuple[int, int, tuple[int, int]]] = {}
@@ -309,7 +309,7 @@ class NativeReactiveTelemetry:
             raw_ids = (
                 raw_ids()
                 if callable(raw_ids)
-                else getattr(key, "token_ids", ())
+                else getattr(key, "token_ids", key if isinstance(key, array) else ())
             )
             if index and bool(getattr(key, "is_bigram", False)):
                 raw_ids = raw_ids[1:]
@@ -833,6 +833,12 @@ class NativeReactiveTelemetry:
                             getattr(req, "cached_tokens_host", 0) or 0
                         ),
                         "mamba_host_hit_slots": mamba_host_hits,
+                        "native_full_kv_hit_length": getattr(
+                            req, "beliefkv_full_kv_hit_length", None
+                        ),
+                        "native_mamba_branching_seqlen": getattr(
+                            req, "mamba_branching_seqlen", None
+                        ),
                         "cache_hit_tokens": (
                             int(getattr(req, "cached_tokens_device", 0) or 0)
                             + int(getattr(req, "cached_tokens_host", 0) or 0)
@@ -1218,6 +1224,7 @@ class NativeReactiveTelemetry:
         })
         if action.action == "PREFETCH_GPU":
             nodes = []
+            prefixes = {}
             tree_core = getattr(self._cache, "tree_core", None)
             for node_id in action.node_ids:
                 try:
@@ -1235,10 +1242,17 @@ class NativeReactiveTelemetry:
                         node_id, node.creation_time, node, prefix_len,
                         full_value, mamba_value,
                     ))
+                    if path is not None and prefix_len <= 131072:
+                        token_ids = self._key_path_tokens(path)
+                        if token_ids is not None:
+                            prefixes[node_id] = (
+                                token_ids, getattr(path[-1], "extra_key", None),
+                                getattr(path[-1], "cache_salt", None),
+                            )
                 except (AttributeError, KeyError, TypeError, ValueError):
                     nodes.append((node_id, None, None, None, None, None))
             while len(self._pending_prefetch_use) >= 128:
-                old_id, (old_action, _, old_ts) = (
+                old_id, (old_action, _, old_ts, _) = (
                     self._pending_prefetch_use.popitem(last=False)
                 )
                 self._emit("action_use", {
@@ -1250,7 +1264,7 @@ class NativeReactiveTelemetry:
                     "reason": "tracking_capacity_exceeded",
                 })
             self._pending_prefetch_use[action.command_id] = (
-                action, tuple(nodes), time.time() * 1000.0,
+                action, tuple(nodes), time.time() * 1000.0, prefixes,
             )
 
     def _record_prefetch_first_service(
@@ -1260,17 +1274,17 @@ class NativeReactiveTelemetry:
         context_id = identity["context_id"]
         context_epoch = identity["context_epoch"]
         matches = [
-            command_id for command_id, (action, _, _) in self._pending_prefetch_use.items()
+            command_id for command_id, (action, _, _, _) in self._pending_prefetch_use.items()
             if action.context_id == context_id
             and action.context_epoch <= context_epoch <= action.context_epoch + 1
         ]
         expired = [
-            command_id for command_id, (action, _, _) in self._pending_prefetch_use.items()
+            command_id for command_id, (action, _, _, _) in self._pending_prefetch_use.items()
             if action.context_id == context_id
             and context_epoch > action.context_epoch + 1
         ]
         for command_id in expired:
-            action, _, ack_ts = self._pending_prefetch_use.pop(command_id)
+            action, _, ack_ts, _ = self._pending_prefetch_use.pop(command_id)
             self._emit("action_use", {
                 "event": "beliefkv_prefetch_first_service_censored",
                 "command_id": command_id,
@@ -1299,7 +1313,23 @@ class NativeReactiveTelemetry:
             len(prefix_indices) if prefix_indices is not None else None
         )
         for command_id in matches:
-            action, nodes, ack_ts = self._pending_prefetch_use.pop(command_id)
+            action, nodes, ack_ts, prefixes = self._pending_prefetch_use.pop(command_id)
+            target_prefixes = []
+            for node_id, (token_ids, extra_key, cache_salt) in prefixes.items():
+                common = 0
+                for original_token, input_token in zip(token_ids, req.origin_input_ids):
+                    if original_token != input_token:
+                        break
+                    common += 1
+                target_prefixes.append({
+                    "node_id": node_id, "prefix_tokens": len(token_ids),
+                    "common_input_prefix_tokens": common,
+                    "complete_input_prefix": common == len(token_ids),
+                    "same_cache_namespace": (
+                        extra_key == getattr(req, "extra_key", None)
+                        and cache_salt == (getattr(req, "cache_salt", None) or None)
+                    ),
+                })
             full_bytes = dict(action.pool_bytes).get("kv", 0)
             matched_nodes = [
                 node_id for node_id, creation_time, original, _, _, _ in nodes
@@ -1388,6 +1418,14 @@ class NativeReactiveTelemetry:
                 "node_ids": list(action.node_ids),
                 "matched_node_ids": matched_nodes,
                 "reused_full_node_ids": reused_full_nodes,
+                "target_prefixes": target_prefixes,
+                "native_full_kv_hit_length": getattr(
+                    req, "beliefkv_full_kv_hit_length", None
+                ),
+                "native_mamba_branching_seqlen": getattr(
+                    req, "mamba_branching_seqlen", None
+                ),
+                "native_best_match_node_id": getattr(req, "best_match_node", None),
                 "cached_tokens_device": cached_device,
                 "device_prefix_indices_len": device_prefix_len,
                 "cached_tokens_host": int(
@@ -1609,7 +1647,7 @@ class NativeReactiveTelemetry:
     def close(self) -> None:
         if self._closed:
             return
-        for command_id, (action, _, ack_ts) in self._pending_prefetch_use.items():
+        for command_id, (action, _, ack_ts, _) in self._pending_prefetch_use.items():
             self._emit("action_use", {
                 "event": "beliefkv_prefetch_first_service_censored",
                 "command_id": command_id,

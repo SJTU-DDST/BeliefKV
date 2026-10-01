@@ -1077,6 +1077,7 @@ class NativeAdmissionRuntime:
                     "node_creation_time": step.creation_time if step else None,
                     "leaf_node_id": step.leaf_node_id if step else None,
                     "leaf_creation_time": step.leaf_creation_time if step else None,
+                    "reusable_input_tokens": observation.anchors.reusable_input_tokens,
                     "fits_current_free_lists": observation.fits_current_free_lists,
                 })
             if source in ("tool_wait", "join_wait") and key.session_id is not None:
@@ -2081,6 +2082,11 @@ class NativeAdmissionRuntime:
         return ContextSessionAnchors(
             key=key, component_leaves=leaves,
             captured_monotonic_s=time.monotonic(),
+            reusable_input_tokens=(
+                tokens[1]
+                if (tokens := self._context_tokens.get(context_id)) is not None
+                and tokens[0] == key.context_epoch else None
+            ),
         )
 
     def capture_shadow_candidate(
@@ -2349,6 +2355,20 @@ class NativeAdmissionRuntime:
             self.physical_disabled = True
             raise PhysicalReceiptError("native prefetch issued without a matching reservation")
         self.counts["prefetch_native_issued"] += 1
+        if self._opportunity_writer is not None:
+            tokens = self._context_tokens.get(step.key.context_id)
+            self._opportunity_writer.record({
+                "event": "prefetch_native_issued",
+                "ts_ms": time.time() * 1000,
+                "command_id": command_id, "source": source,
+                "context_id": step.key.context_id,
+                "context_epoch": step.key.context_epoch,
+                "node_id": step.node_id, "leaf_node_id": step.leaf_node_id,
+                "reusable_input_tokens": (
+                    tokens[1] if tokens is not None
+                    and tokens[0] == step.key.context_epoch else None
+                ),
+            })
         return command_id
 
     def defer_prefill_for_prefetch(self, req: object) -> bool:
@@ -2881,8 +2901,7 @@ class NativeAdmissionRuntime:
                         stage.generated_tokens = tokens
                         stage.last_service_at = now
             if (
-                self._model_worker is not None
-                and req.rid in self.visible
+                req.rid in self.visible
                 and (key := self.visible[req.rid]).session_id is not None
                 and key.session_generation is not None
             ):

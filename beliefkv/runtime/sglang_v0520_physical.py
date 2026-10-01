@@ -34,6 +34,7 @@ class ContextSessionAnchors:
     key: PrefillCandidateKey
     component_leaves: tuple[tuple[int, tuple[tuple[int, int | float], ...]], ...]
     captured_monotonic_s: float
+    reusable_input_tokens: int | None = None
 
 
 @dataclass(frozen=True)
@@ -145,6 +146,9 @@ def inspect_session_h2d_opportunity(
     if step is None:
         if candidate is None:
             no_step_reason = "closure_unobservable"
+        elif anchors.reusable_input_tokens is not None:
+            no_step_reason = "no_reusable_input_restore_step"
+            blocked_detail = "input_checkpoint_unavailable_or_already_resident"
         elif candidate.missing_full_device_tokens or candidate.missing_mamba_device_nodes:
             no_step_reason = "host_backed_step_blocked"
             blocked_detail = _prefetch_block_detail(candidate)
@@ -202,10 +206,10 @@ class PrefetchLoadStep:
 def next_prefetch_gpu_step(
     candidate: ActionLocalPrefetchCandidate,
 ) -> PrefetchLoadStep | None:
-    """Select one CPU-backed node root-first on the FULL session leaf path.
+    """Restore FULL ancestors and the reusable input checkpoint root-first.
 
     Native must revalidate session, ancestry, pool capacity and node creation
-    before enqueue. An empty root has no FULL KV to restore.
+    before enqueue. Generated output need not survive chat-template round trips.
     """
     anchors = getattr(candidate, "anchors", None)
     if anchors is None:
@@ -300,7 +304,42 @@ def next_prefetch_gpu_step(
         )
     ):
         return None
+    eligible_paths = paths
+    checkpoint_nodes = paths
+    input_limit = anchors.reusable_input_tokens
+    if input_limit is not None:
+        if type(input_limit) is not int or input_limit < 0:
+            return None
+        prefix_lengths: dict[int, int] = {}
+        for node_id in sorted(paths, key=lambda value: (depth[value], value)):
+            node = nodes[node_id]
+            if type(node.key_tokens) is not int or node.key_tokens < 0:
+                return None
+            prefix_lengths[node_id] = (
+                prefix_lengths.get(node.parent_id, 0) + node.key_tokens
+            )
+        eligible_paths = set()
+        checkpoint_nodes = set()
+        for leaf in full_leaves:
+            current = leaf
+            while current is not None:
+                node = nodes[current]
+                if (
+                    node.parent_id is not None
+                    and prefix_lengths[current] <= input_limit
+                    and (node.mamba_device_present or node.mamba_host_present)
+                ):
+                    checkpoint_nodes.add(current)
+                    while current is not None:
+                        eligible_paths.add(current)
+                        current = nodes[current].parent_id
+                    break
+                current = node.parent_id
+        # FULL beyond the last recoverable Mamba boundary cannot be reused.
+        # Older Mamba states on the path are not needed when a deeper one exists.
     for node_id in sorted(paths, key=lambda value: (depth[value], value)):
+        if node_id not in eligible_paths:
+            continue
         node = nodes[node_id]
         parent = nodes.get(node.parent_id)
         if parent is not None and parent.full_device_tokens <= 0 and not (
@@ -313,6 +352,7 @@ def next_prefetch_gpu_step(
         if (
             node.full_device_tokens == 0 and node.full_host_tokens > 0
             or node.full_device_tokens > 0
+            and node_id in checkpoint_nodes
             and node.mamba_host_present and not node.mamba_device_present
         ):
             return PrefetchLoadStep(

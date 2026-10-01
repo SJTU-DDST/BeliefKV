@@ -126,6 +126,7 @@ class UnifiedNodeSummary:
     mamba_session_leaf_count: int
     pending_write_id: int | None
     pending_load_id: int | None
+    key_tokens: int | None = None
 
 
 @dataclass(frozen=True)
@@ -611,6 +612,10 @@ def observe_unified_node_closure(
                     mamba_session_leaf_count=session_leaves[1],
                     pending_write_id=pending_write,
                     pending_load_id=pending_load,
+                    key_tokens=(
+                        _bounded(len(node.key), 2**31 - 1, "node key length")
+                        if getattr(node, "key", None) is not None else None
+                    ),
                 )
             )
             node = parent

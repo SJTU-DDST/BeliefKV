@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import argparse
 from collections import Counter, defaultdict
+from dataclasses import replace
 import json
 from pathlib import Path
 import sys
@@ -140,7 +141,34 @@ def physical_labels(run: Path, rows: list[dict]) -> tuple[dict, dict]:
     }
 
 
-def collect_run(run: Path) -> tuple[list[dict], dict]:
+def select_work_snapshots(snapshots: list[dict], policy: str) -> dict:
+    selected = {}
+    if policy == "fixed_checkpoints":
+        for threshold in CHECKPOINTS:
+            snap = next(
+                (snap for snap in snapshots if snap["content_chars"] >= threshold),
+                None,
+            )
+            if snap is not None:
+                selected.setdefault(snap["ts_ms"], (snap, []))[1].append(threshold)
+    elif policy == "rolling_250ms":
+        previous = None
+        for snap in snapshots:
+            if snap["content_chars"] < 32:
+                continue
+            if previous is not None and snap["ts_ms"] - previous < 250:
+                continue
+            threshold = max(cut for cut in CHECKPOINTS if cut <= snap["content_chars"])
+            selected[snap["ts_ms"]] = (snap, [threshold])
+            previous = snap["ts_ms"]
+    else:
+        raise ValueError(f"unsupported snapshot policy: {policy}")
+    return selected
+
+
+def collect_run(
+    run: Path, *, snapshot_policy: str = "fixed_checkpoints",
+) -> tuple[list[dict], dict]:
     roots = [
         path for path in (*run.glob("client_*/workflows"), run / "workloads/workflows")
         if path.is_dir()
@@ -152,19 +180,14 @@ def collect_run(run: Path) -> tuple[list[dict], dict]:
     labels, coverage["physical_label_coverage"] = physical_labels(run, rows)
     samples, exclusions = [], Counter()
     for row in rows:
-        selected = {}
-        for threshold in CHECKPOINTS:
-            snap = next(
-                (snap for snap in row["snapshots"] if snap["content_chars"] >= threshold),
-                None,
-            )
-            if snap is not None:
-                selected.setdefault(snap["ts_ms"], (snap, []))[1].append(threshold)
+        selected = select_work_snapshots(row["snapshots"], snapshot_policy)
         for snap, thresholds in selected.values():
             child_events = histories.get((row["task"], row["invocation_id"]), [])
             observation = observation_for(
                 row, snap, child_events,
             )
+            if snapshot_policy == "rolling_250ms":
+                observation = replace(observation, content_tail=observation.content_tail[-1024:])
             # Future result metadata is a training label only, never an observation.
             native_result = next((
                 event for event in child_events
@@ -223,6 +246,7 @@ def collect_run(run: Path) -> tuple[list[dict], dict]:
     coverage["snapshots_with_text_history_gaps"] = sum(
         row["delivered_text_history_gaps"] > 0 for row in samples
     )
+    coverage["snapshot_policy"] = snapshot_policy
     return samples, coverage
 
 

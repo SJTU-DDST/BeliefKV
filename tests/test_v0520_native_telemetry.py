@@ -56,19 +56,22 @@ def test_targeted_pair_first_crossing_has_decode_ordinal(tmp_path: Path) -> None
     sample = {
         "request_id": "r1", "workflow_id": "w1", "invocation_id": "i1",
         "context_id": "c1", "context_epoch": 0,
+        "output_tokens_before": 1,
     }
     req = SimpleNamespace(
-        rid="r1", output_ids=[90, 91],
+        rid="r1", output_ids=[90, 91], finished=lambda: False,
         logprob=SimpleNamespace(
             token_ids_logprob=[10, 11],
             output_token_ids_logprobs_val=[[-3.1, -3.2]],
             output_token_ids_logprobs_idx=[[10, 11]],
+            output_token_logprobs_idx=[91],
         ),
     )
     audit._observe_targeted_pair(req, sample, 1000., 1)
     req.output_ids.append(92)
     req.logprob.output_token_ids_logprobs_val.append([-2.9, -5.])
     req.logprob.output_token_ids_logprobs_idx.append([10, 11])
+    req.logprob.output_token_logprobs_idx.append(92)
     audit._observe_targeted_pair(req, sample, 1010., 2)
     audit._observe_targeted_pair(req, sample, 1020., 3)
     crossing = [
@@ -93,13 +96,15 @@ def test_targeted_pair_excludes_sampled_probe_and_invalid_alignment(
     sample = {
         "request_id": "r1", "workflow_id": "w1", "invocation_id": "i1",
         "context_id": "c1", "context_epoch": 0,
+        "output_tokens_before": 1,
     }
     req = SimpleNamespace(
-        rid="r1", output_ids=[90, 10],
+        rid="r1", output_ids=[90, 10], finished=lambda: False,
         logprob=SimpleNamespace(
             token_ids_logprob=[10, 11],
             output_token_ids_logprobs_val=[[-.1, -1.]],
             output_token_ids_logprobs_idx=[[10, 11]],
+            output_token_logprobs_idx=[10],
         ),
     )
     audit._observe_targeted_pair(req, sample, 1000., 1)
@@ -107,6 +112,7 @@ def test_targeted_pair_excludes_sampled_probe_and_invalid_alignment(
     req.output_ids.append(92)
     req.logprob.output_token_ids_logprobs_val.append([-.1, -1.])
     req.logprob.output_token_ids_logprobs_idx.append([11, 10])
+    req.logprob.output_token_logprobs_idx.append(92)
     audit._observe_targeted_pair(req, sample, 1010., 2)
     assert [row["event"] for row in emitted] == ["targeted_pair_ordinal_invalid"]
     audit._observe_targeted_pair(req, sample, 1020., 3)
@@ -247,6 +253,47 @@ def test_verified_prefetch_records_node_match_at_first_gpu_service(
     assert used[0]["full_node_reused"] is True
     assert used[0]["mamba_reuse"] == "unverified"
     assert used[0]["request_id"] == request.rid
+
+
+@pytest.mark.parametrize("changed_prefix", [False, True])
+def test_prefetch_diagnostic_separates_input_divergence_from_mamba_boundary(
+    tmp_path: Path, changed_prefix: bool,
+) -> None:
+    audit = NativeReactiveTelemetry(tmp_path / "restore")
+    root = SimpleNamespace(id=0, creation_time=0, parent=None)
+    loaded = SimpleNamespace(
+        id=11, creation_time=7, parent=root, key=array("q", range(8)),
+        component_data=(SimpleNamespace(value=object()),),
+    )
+    audit._cache = SimpleNamespace(
+        tree_core=SimpleNamespace(node_by_id={0: root, 11: loaded}.__getitem__),
+    )
+    audit.on_verified_action_ack(SimpleNamespace(
+        command_id="restore", action="PREFETCH_GPU",
+        context_id="ctx", context_epoch=2, node_ids=(11,),
+        pool_bytes=(("kv", 80),), num_bytes=80,
+    ))
+    # The ACK snapshot must survive subsequent radix topology/key changes.
+    loaded.key[0] = 99
+    inputs = list(range(12))
+    if changed_prefix:
+        inputs[4] = 90
+    request = SimpleNamespace(
+        rid="next", last_node=0, best_match_node=0,
+        origin_input_ids=inputs, prefix_indices=[], cached_tokens_device=0,
+        cached_tokens_host=0, mamba_host_hit_length=0,
+        beliefkv_full_kv_hit_length=8, mamba_branching_seqlen=8,
+    )
+    audit._record_prefetch_first_service(
+        request, {"context_id": "ctx", "context_epoch": 3},
+    )
+    audit.close()
+    use = _read(tmp_path / "restore/physical_action_use.jsonl")[0]
+    target = use["target_prefixes"][0]
+    assert target["common_input_prefix_tokens"] == (4 if changed_prefix else 8)
+    assert target["complete_input_prefix"] is not changed_prefix
+    assert use["native_full_kv_hit_length"] == 8
+    assert use["native_mamba_branching_seqlen"] == 8
 
 
 @pytest.mark.parametrize("mismatch", [

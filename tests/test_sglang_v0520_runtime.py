@@ -250,6 +250,29 @@ def test_session_anchors_normalize_native_float64_for_physical_step():
     assert type(anchors.component_leaves[0][1][0][1]) is float
 
 
+def test_finished_session_records_input_restore_limit_without_old_model_worker():
+    runtime = NativeAdmissionRuntime()
+    tagged = req("a")
+    tagged.session_id, tagged.session_generation = "session-a", 4
+    tagged.origin_input_ids, tagged.output_ids = list(range(8)), [80, 81, 82]
+    runtime.register_visible_request(tagged)
+    runtime.on_events((
+        event(0, RuntimeEventKind.WORKFLOW_START),
+        event(1, RuntimeEventKind.INVOCATION_CREATE,
+              invocation_id="a", context_id="ctx-a"),
+    ))
+    tagged.finished = lambda: True
+    runtime.on_batch_completed(NS(reqs=(tagged,)))
+    cache = NS(session_refs=NS(
+        snapshot_session_leaf_anchors=lambda *args, **kwargs: (
+            (0, ((11, 25),)), (2, ((11, 25),)),
+        ),
+    ))
+    assert runtime._model_worker is None
+    anchors = runtime.snapshot_session_anchors(cache, context_id="ctx-a", context_epoch=0)
+    assert anchors.reusable_input_tokens == 8
+
+
 def test_context_opportunity_requires_live_wait_or_ready_session_epoch():
     runtime = NativeAdmissionRuntime()
     tagged = req("a")

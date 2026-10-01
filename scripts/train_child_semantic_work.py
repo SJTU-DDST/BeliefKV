@@ -30,7 +30,9 @@ from beliefkv.predictor.child_semantic_work import (
 from scripts.evaluate_child_report_phase_work import CHECKPOINTS, collect_run, fit, quality
 
 
-def cached_samples(run: Path, cache: Path) -> tuple[list[dict], dict]:
+def cached_samples(
+    run: Path, cache: Path, *, snapshot_policy: str = "fixed_checkpoints",
+) -> tuple[list[dict], dict]:
     sources = [
         run / "server/runtime_audit.jsonl",
         run / "server/runtime_events.sglang.jsonl",
@@ -50,10 +52,13 @@ def cached_samples(run: Path, cache: Path) -> tuple[list[dict], dict]:
         ROOT / "scripts/child_stream_service_index.py",
     ):
         sources.append(source)
-    signature = hashlib.sha256(json.dumps([
-        (str(path), path.stat().st_size, path.stat().st_mtime_ns)
-        for path in sorted(sources)
-    ]).encode()).hexdigest()
+    signature = hashlib.sha256(json.dumps({
+        "snapshot_policy": snapshot_policy,
+        "sources": [
+            (str(path), path.stat().st_size, path.stat().st_mtime_ns)
+            for path in sorted(sources)
+        ],
+    }).encode()).hexdigest()
     path = cache / f"samples-{signature}.json.gz"
     if path.exists():
         with gzip.open(path, "rt", encoding="utf-8") as stream:
@@ -63,7 +68,7 @@ def cached_samples(run: Path, cache: Path) -> tuple[list[dict], dict]:
             for row in raw["rows"]
         ]
         return rows, raw["coverage"]
-    rows, coverage = collect_run(run)
+    rows, coverage = collect_run(run, snapshot_policy=snapshot_policy)
     with gzip.open(path, "wt", encoding="utf-8") as stream:
         json.dump({
             "rows": [
@@ -186,7 +191,10 @@ def main() -> None:
     samples, coverage = [], {}
     for run in plan["training_runs"] + plan["calibration_evaluation_runs"]:
         print(f"Collecting {run}", flush=True)
-        rows, coverage[run] = cached_samples(ROOT / run, args.cache)
+        rows, coverage[run] = cached_samples(
+            ROOT / run, args.cache,
+            snapshot_policy=plan.get("snapshot_policy", "fixed_checkpoints"),
+        )
         samples.extend(rows)
     if len({(row["observation"].request_id, row["observation"].ts_ms) for row in samples}) != len(samples):
         raise ValueError("repeated observations across source runs")

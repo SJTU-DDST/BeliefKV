@@ -8,7 +8,9 @@ from beliefkv.predictor.child_report_phase import (
     ChildReportPredictor, ReportObservation, ReportPhaseNetwork,
     fit_vocabulary, pinball_loss, tensors,
 )
-from scripts.evaluate_child_report_phase_work import fit, observation_for, quality
+from scripts.evaluate_child_report_phase_work import (
+    fit, observation_for, quality, select_work_snapshots,
+)
 from scripts.pilot_child_stream_service_progress import delivered_history
 
 
@@ -31,6 +33,24 @@ def test_observation_contains_no_wall_wait_or_future_labels():
     assert notice.features(with_events=False)[5:] == [0., 0., 0.]
     with pytest.raises(ValueError):
         replace(row, context_epoch=-1)
+
+
+def test_rolling_snapshots_cover_the_report_tail_without_future_finish_information():
+    snapshots = [
+        {"ts_ms": float(index * 100), "content_chars": index * 300}
+        for index in range(16)
+    ]
+    fixed = select_work_snapshots(snapshots, "fixed_checkpoints")
+    rolling = select_work_snapshots(snapshots, "rolling_250ms")
+    assert max(fixed) == 400.
+    assert list(rolling) == [100., 400., 700., 1000., 1300.]
+    assert rolling[1300.][0]["content_chars"] == 3900
+    # Appending unseen future text must not change any prior selection.
+    extra = snapshots + [{"ts_ms": 2000., "content_chars": 6000}]
+    assert all(
+        select_work_snapshots(extra, "rolling_250ms")[ts] == value
+        for ts, value in rolling.items()
+    )
 
 
 def test_delivered_history_uses_only_new_delivered_text_and_marks_gaps():

@@ -490,13 +490,14 @@ def test_shadow_step_never_selects_mamba_only_leaf_without_full_provenance():
 
 def prefetch_node(
     node_id, parent_id, created, *,
-    full_gpu=0, full_host=0, mamba_gpu=False, mamba_host=False,
+    full_gpu=0, full_host=0, mamba_gpu=False, mamba_host=False, key_tokens=None,
 ):
     return NS(
         node_id=node_id, parent_id=parent_id, creation_time=created,
         full_device_tokens=full_gpu, full_host_tokens=full_host,
         mamba_device_present=mamba_gpu, mamba_host_present=mamba_host,
         pending_write_id=None, pending_load_id=None,
+        key_tokens=key_tokens,
     )
 
 
@@ -635,6 +636,47 @@ def test_prefetch_mamba_only_needs_full_gpu_and_host_state():
         assert capture_action_local_shadow(
             object(), anchors, for_prefetch=True,
         ) is None
+
+
+def test_prefetch_uses_input_checkpoint_instead_of_generated_output_leaf():
+    anchors = replace(prefetch_anchors(), reusable_input_tokens=10)
+    root = prefetch_node(0, None, 1, key_tokens=0)
+    prompt = prefetch_node(
+        11, 0, 4, full_gpu=8, mamba_host=True, key_tokens=8,
+    )
+    output = prefetch_node(
+        12, 11, 5, full_host=4, mamba_host=True, key_tokens=4,
+    )
+    candidate = ActionLocalPrefetchCandidate(anchors, (root, prompt, output), 4, 1)
+    assert next_prefetch_gpu_step(candidate) == PrefetchLoadStep(
+        anchors.key, 12, 5, 11, 4,
+    )
+    prompt.mamba_device_present = True
+    assert next_prefetch_gpu_step(candidate) is None
+
+
+def test_prefetch_does_not_restore_full_beyond_the_only_reusable_mamba_boundary():
+    anchors = replace(prefetch_anchors(), reusable_input_tokens=10)
+    root = prefetch_node(0, None, 1, key_tokens=0)
+    prompt = prefetch_node(11, 0, 4, full_gpu=8, key_tokens=8)
+    output = prefetch_node(
+        12, 11, 5, full_host=4, mamba_host=True, key_tokens=4,
+    )
+    candidate = ActionLocalPrefetchCandidate(anchors, (root, prompt, output), 4, 0)
+    assert next_prefetch_gpu_step(candidate) is None
+
+
+def test_input_checkpoint_prefetch_still_restores_full_ancestors_first():
+    anchors = replace(prefetch_anchors(), reusable_input_tokens=12)
+    root = prefetch_node(0, None, 1, key_tokens=0)
+    ancestor = prefetch_node(11, 0, 4, full_host=8, key_tokens=8)
+    checkpoint = prefetch_node(
+        12, 11, 5, full_host=4, mamba_host=True, key_tokens=4,
+    )
+    candidate = ActionLocalPrefetchCandidate(anchors, (root, ancestor, checkpoint), 12, 0)
+    assert next_prefetch_gpu_step(candidate).node_id == 11
+    ancestor.full_device_tokens = 8
+    assert next_prefetch_gpu_step(candidate).node_id == 12
 
 
 def test_prefetch_without_cpu_kv_or_with_pending_never_selects():

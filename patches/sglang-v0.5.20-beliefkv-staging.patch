@@ -406,7 +406,7 @@ index d3f13eb..ce0e6e6 100644
      # LoRA related
      lora_id: Optional[str] = None  # None means just use the base model
 diff --git a/python/sglang/srt/managers/schedule_batch.py b/python/sglang/srt/managers/schedule_batch.py
-index 7811e44..9630078 100755
+index 7811e44..15d6fc1 100755
 --- a/python/sglang/srt/managers/schedule_batch.py
 +++ b/python/sglang/srt/managers/schedule_batch.py
 @@ -978,6 +978,7 @@ class Req(ReqDllmMixin):
@@ -425,6 +425,15 @@ index 7811e44..9630078 100755
          # Used by the session radix cache to reject registration after a close/reopen.
          self.session_generation: Optional[int] = None
          self.input_embeds = input_embeds
+@@ -1584,6 +1586,8 @@ class Req(ReqDllmMixin):
+                 match_result = zero_match_result(
+                     tree_cache, match_result, extra_key=self.extra_key
+                 )
++            if self.beliefkv_metadata is not None:
++                self.beliefkv_full_kv_hit_length = match_result.full_kv_hit_length
+             (
+                 self.prefix_indices,
+                 self.last_node,
 diff --git a/python/sglang/srt/managers/scheduler.py b/python/sglang/srt/managers/scheduler.py
 index 743c8af..1816cb0 100644
 --- a/python/sglang/srt/managers/scheduler.py
@@ -2392,6 +2401,45 @@ index 0000000..88361ff
 +
 +if __name__ == "__main__":
 +    unittest.main()
+diff --git a/python/sglang/srt/mem_cache/unified_cache/components/mamba.py b/python/sglang/srt/mem_cache/unified_cache/components/mamba.py
+index 3c18cee..8840592 100644
+--- a/python/sglang/srt/mem_cache/unified_cache/components/mamba.py
++++ b/python/sglang/srt/mem_cache/unified_cache/components/mamba.py
+@@ -78,6 +78,33 @@ class MambaComponent(TreeComponent):
+         # HiCache state
+         self._mamba_pool_host = None  # set to host mamba pool when HiCache enabled
+-
++
++    def resolve_session_leaf(
++        self, req: Req, last_node: Optional[UnifiedTreeNode]
++    ) -> Optional[UnifiedTreeNode]:
++        if isinstance(getattr(req, "beliefkv_metadata", None), dict):
++            path = []
++            node = last_node
++            while node is not None and node is not self.tree_core.root_node:
++                if len(path) >= 256:
++                    return self._find_reusable_session_leaf(last_node)
++                path.append(node)
++                node = node.parent
++            # A chat continuation reserializes generated reasoning/tool calls.
++            # Keep the deepest existing input checkpoint, not that output tail.
++            input_len = len(req.origin_input_ids)
++            prefix_len = 0
++            target = None
++            validator = self.create_match_validator()
++            for node in reversed(path):
++                prefix_len += len(node.key)
++                if prefix_len > input_len:
++                    break
++                if validator(node):
++                    target = node
++            if target is not None:
++                return target
++        return self._find_reusable_session_leaf(last_node)
++
+     def needs_incremental_backup(self, node: UnifiedTreeNode) -> bool:
+         data = node.component_data[self.component_type]
+         return data.value is not None and data.host_value is None
 diff --git a/test/srt/test_beliefkv_metadata.py b/test/srt/test_beliefkv_metadata.py
 new file mode 100644
 index 0000000..47acbbf
