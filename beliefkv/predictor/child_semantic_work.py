@@ -3,7 +3,8 @@
 from __future__ import annotations
 
 from collections import Counter, OrderedDict, defaultdict
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
+import hashlib
 import json
 import math
 from pathlib import Path
@@ -49,9 +50,11 @@ class SemanticReportPredictor:
 
     def __init__(
         self, head: "SemanticHead", encoder: FrozenTextEncoder | None, *, cache_size: int = 128,
+        work_head: "SemanticHead | None" = None,
     ) -> None:
         self.head = head
         self.encoder = encoder
+        self.work_head = work_head
         if cache_size < 0:
             raise ValueError("semantic text cache size must be nonnegative")
         self.cache_size = cache_size
@@ -62,6 +65,17 @@ class SemanticReportPredictor:
         path = Path(path).resolve()
         raw = json.loads(path.read_text())
         head = SemanticHead.load(path)
+        work_head = None
+        if reference := raw.get("conditional_work_head"):
+            work_path = path.parent / reference["path"]
+            if hashlib.sha256(work_path.read_bytes()).hexdigest() != reference["sha256"]:
+                raise ValueError("conditional work head fingerprint changed")
+            work_raw = json.loads(work_path.read_text())
+            phase_encoder = raw["metadata"]["adapted_encoder"]["weights_sha256"]
+            work_encoder = work_raw["metadata"]["plan"]["encoder"]["revision"]
+            if phase_encoder != work_encoder:
+                raise ValueError("phase/work heads require identical frozen encoders")
+            work_head = SemanticHead.load(work_path)
         encoder = None
         if len(head.components):
             metadata = raw["metadata"]
@@ -75,7 +89,7 @@ class SemanticReportPredictor:
             encoder = FrozenTextEncoder(
                 snapshot, max_tokens=metadata["plan"]["encoder"]["max_tokens"],
             )
-        return cls(head, encoder)
+        return cls(head, encoder, work_head=work_head)
 
     def predict(self, observations: Sequence[ReportObservation]) -> list[ReportPrediction]:
         if not observations:
@@ -101,7 +115,15 @@ class SemanticReportPredictor:
             embeddings = np.asarray(values)
             while len(self._text_cache) > self.cache_size:
                 self._text_cache.popitem(last=False)
-        return self.head.predictions(observations, embeddings)
+        predictions = self.head.predictions(observations, embeddings)
+        if self.work_head is not None:
+            work = self.work_head.predictions(observations, embeddings)
+            predictions = [
+                replace(phase, conditional_remaining_tokens=remaining.conditional_remaining_tokens,
+                        work_interval_status=remaining.work_interval_status)
+                for phase, remaining in zip(predictions, work)
+            ]
+        return predictions
 
 
 def workflow_weights(tasks: Sequence[str]) -> np.ndarray:
@@ -125,6 +147,7 @@ class SemanticHead:
     interval_margin: float = 0.
     calibration_status: str = "uncalibrated"
     work_bounds_calibrated: bool = False
+    work_target: str = "remaining"
 
     def design(
         self, observations: Sequence[ReportObservation], embeddings: np.ndarray,
@@ -145,6 +168,12 @@ class SemanticHead:
         work = np.maximum(0., np.expm1(np.clip(
             center[:, None] + self.work_residual_quantiles, 0., 16.,
         )))
+        if self.work_target == "total":
+            # Apply bias and nonnegative clipping only after subtracting observed
+            # progress, avoiding a positive residual floor near completion.
+            work -= np.asarray([row.observed_output_tokens for row in observations])[:, None]
+        elif self.work_target != "remaining":
+            raise ValueError("unsupported semantic work target")
         return logits, work
 
     def arrays(
@@ -212,7 +241,10 @@ class SemanticHead:
 def fit_head(
     samples: list[dict], embeddings: np.ndarray, *, dimensions: int,
     phase_regularization: float, work_regularization: float,
+    work_target: str = "remaining",
 ) -> SemanticHead:
+    if work_target not in ("remaining", "total"):
+        raise ValueError("unsupported semantic work target")
     observations = [row["observation"] for row in samples]
     numeric = np.asarray([row.features(with_events=True) for row in observations])
     center, scale = numeric.mean(axis=0), np.maximum(numeric.std(axis=0), .25)
@@ -257,7 +289,12 @@ def fit_head(
         raise RuntimeError(f"semantic phase fit failed: {fitted.message}")
     mask = np.asarray([row["remaining_tokens"] is not None for row in samples])
     x = design[mask]
-    target = np.log1p([row["remaining_tokens"] for row in samples if row["remaining_tokens"] is not None])
+    target = np.log1p([
+        row["remaining_tokens"] + (
+            row["observation"].observed_output_tokens if work_target == "total" else 0
+        )
+        for row in samples if row["remaining_tokens"] is not None
+    ])
     work_weights = workflow_weights([row["task"] for row in samples if row["remaining_tokens"] is not None])
     ridge = work_regularization * np.eye(design.shape[1])
     ridge[0, 0] = 0.
@@ -271,6 +308,7 @@ def fit_head(
         center, scale, embedding_center, components, component_scale,
         fitted.x.reshape(design.shape[1], len(PHASES)), work,
         np.asarray([min(0., low), 0., max(0., high)]),
+        work_target=work_target,
     )
 
 

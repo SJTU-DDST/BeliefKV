@@ -162,3 +162,41 @@ def test_semantic_cache_reuses_text_but_keeps_new_request_and_epoch():
     assert result.context_epoch == 3
     assert result.physical_action_authorized is False
     assert len(predictor._text_cache) == 1
+
+
+def test_work_only_update_preserves_every_phase_score():
+    training = rows()
+    embeddings = np.zeros((len(training), 8))
+    phase = fit_head(
+        training, embeddings, dimensions=0,
+        phase_regularization=.1, work_regularization=.2,
+    )
+    work = replace(phase, work_coefficients=phase.work_coefficients.copy())
+    work.work_coefficients[0] += 1
+    observations = [row["observation"] for row in training]
+    original = SemanticReportPredictor(phase, None).predict(observations)
+    changed = SemanticReportPredictor(phase, None, work_head=work).predict(observations)
+    assert [row.final_report_score for row in changed] == [
+        row.final_report_score for row in original
+    ]
+    assert [row.completion_notice_score for row in changed] == [
+        row.completion_notice_score for row in original
+    ]
+    assert changed[0].conditional_remaining_tokens != original[0].conditional_remaining_tokens
+
+
+def test_total_length_work_subtracts_observed_progress_before_bias_clipping():
+    training = rows()
+    head = fit_head(
+        training, np.zeros((len(training), 8)), dimensions=0,
+        phase_regularization=.1, work_regularization=.2, work_target="total",
+    )
+    head.work_coefficients[:] = 0
+    head.work_coefficients[0] = np.log1p(100)
+    head.work_residual_quantiles[:] = 0
+    head.token_bias = 10
+    observation = training[0]["observation"]
+    _, first = head.arrays([replace(observation, observed_output_tokens=80)], np.zeros((1, 8)))
+    _, last = head.arrays([replace(observation, observed_output_tokens=120)], np.zeros((1, 8)))
+    assert np.allclose(first, [[30, 30, 30]])
+    assert np.allclose(last, [[0, 0, 0]])

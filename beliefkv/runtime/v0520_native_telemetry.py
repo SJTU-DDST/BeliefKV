@@ -224,6 +224,9 @@ class NativeReactiveTelemetry:
                     for pool, (units, byte_count) in used.items()
                 },
                 "sample_semantics": "scheduler_safe_point_sampled_high_water",
+                "reentry_pressure_backups": dict(
+                    getattr(cache, "beliefkv_reentry_backup_counts", {}) or {}
+                ),
             }
         self._emit("host_pool", record)
         self._last_host_snapshot_ms = now_ms
@@ -839,6 +842,9 @@ class NativeReactiveTelemetry:
                         "native_mamba_branching_seqlen": getattr(
                             req, "mamba_branching_seqlen", None
                         ),
+                        "reentry_checkpoint_seqlen": getattr(
+                            req, "beliefkv_reentry_checkpoint_seqlen", None
+                        ),
                         "cache_hit_tokens": (
                             int(getattr(req, "cached_tokens_device", 0) or 0)
                             + int(getattr(req, "cached_tokens_host", 0) or 0)
@@ -1069,6 +1075,37 @@ class NativeReactiveTelemetry:
                 rid, sample, ts_ms, sample_id, pair_ids, finished=True,
             )
 
+    def _reentry_checkpoint_evidence(self, req: Any) -> dict[str, Any]:
+        cache = self._cache
+        if cache is None or getattr(req, "session_id", None) is None:
+            return {}
+        try:
+            anchors = cache.session_refs.snapshot_session_leaf_anchors(
+                req.session_id, req.session_generation, max_leaves=8,
+            )
+            if anchors is None:
+                return {"status": "snapshot_unavailable"}
+            states = []
+            for component, leaves in anchors:
+                if component != 2:
+                    continue
+                for node_id, created in leaves:
+                    node = cache.tree_core.node_by_id(node_id)
+                    path = self._node_key_path(node)
+                    prefix = sum(len(key) for key in path) if path is not None else None
+                    state = node.component_data[2]
+                    states.append({
+                        "node_id": node_id, "prefix_tokens": prefix,
+                        "within_safe_input": (
+                            prefix < len(req.origin_input_ids) if prefix is not None else None
+                        ),
+                        "device_present": state.value is not None,
+                        "host_present": state.host_value is not None,
+                    })
+            return {"status": "observed", "mamba_states": states}
+        except (AttributeError, KeyError, TypeError, ValueError):
+            return {"status": "snapshot_unavailable"}
+
     def on_completed(self, batch: Any) -> None:
         descriptor = self._launched.pop(batch.forward_iter, None)
         if descriptor is None:
@@ -1109,6 +1146,7 @@ class NativeReactiveTelemetry:
                     "attributes": {
                         "request_id": rid,
                         "output_tokens": len(req.output_ids),
+                        "reentry_checkpoint": self._reentry_checkpoint_evidence(req),
                     },
                 })
                 self._active.discard(rid)

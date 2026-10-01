@@ -406,7 +406,7 @@ index d3f13eb..ce0e6e6 100644
      # LoRA related
      lora_id: Optional[str] = None  # None means just use the base model
 diff --git a/python/sglang/srt/managers/schedule_batch.py b/python/sglang/srt/managers/schedule_batch.py
-index 7811e44..15d6fc1 100755
+index 7811e44..29c4c5c 100755
 --- a/python/sglang/srt/managers/schedule_batch.py
 +++ b/python/sglang/srt/managers/schedule_batch.py
 @@ -978,6 +978,7 @@ class Req(ReqDllmMixin):
@@ -434,6 +434,29 @@ index 7811e44..15d6fc1 100755
              (
                  self.prefix_indices,
                  self.last_node,
+@@ -2978,6 +2982,21 @@ class ScheduleBatch(ScheduleBatchDisaggregationDecodeMixin):
+                     # See _force_track_h() for more details.
+                     mamba_track_seqlen = _force_track_h(req.mamba_branching_seqlen)
+                     mamba_track_seqlen_aligned = req.mamba_branching_seqlen
++            if isinstance(getattr(req, "beliefkv_metadata", None), dict):
++                reentry_seqlen = (
++                    max(0, len(req.origin_input_ids) - 1) // checkpoint_grid
++                ) * checkpoint_grid
++                req.beliefkv_reentry_checkpoint_seqlen = reentry_seqlen
++                extend_end = len(req.prefix_indices) + req.extend_range.length
++                if (
++                    len(req.prefix_indices) < reentry_seqlen < extend_end
++                    and (reentry_seqlen - len(req.prefix_indices)) % cache_chunk_size == 0
++                    and reentry_seqlen != mamba_track_seqlen_aligned
++                ):
++                    # Reuse the native intermediate-state tracker. The final
++                    # generation-prompt token can change during chat replay.
++                    mamba_track_seqlen = _force_track_h(reentry_seqlen)
++                    mamba_track_seqlen_aligned = reentry_seqlen
+             req.kv.mamba_last_track_seqlen = mamba_track_seqlen_aligned
+-
++
+         return _MambaRadixCacheV2TrackEntry(
 diff --git a/python/sglang/srt/managers/scheduler.py b/python/sglang/srt/managers/scheduler.py
 index 743c8af..1816cb0 100644
 --- a/python/sglang/srt/managers/scheduler.py
@@ -1160,6 +1183,45 @@ index 006b52a..83c96cf 100644
          )
      kv_host_pool = build_kv_host_pool(
          kv_pool=kv_pool,
+diff --git a/python/sglang/srt/mem_cache/unified_cache/components/mamba.py b/python/sglang/srt/mem_cache/unified_cache/components/mamba.py
+index 3c18cee..f91bd5a 100644
+--- a/python/sglang/srt/mem_cache/unified_cache/components/mamba.py
++++ b/python/sglang/srt/mem_cache/unified_cache/components/mamba.py
+@@ -78,6 +78,33 @@ class MambaComponent(TreeComponent):
+         # HiCache state
+         self._mamba_pool_host = None  # set to host mamba pool when HiCache enabled
+-
++
++    def resolve_session_leaf(
++        self, req: Req, last_node: Optional[UnifiedTreeNode]
++    ) -> Optional[UnifiedTreeNode]:
++        if isinstance(getattr(req, "beliefkv_metadata", None), dict):
++            path = []
++            node = last_node
++            while node is not None and node is not self.tree_core.root_node:
++                if len(path) >= 256:
++                    return self._find_reusable_session_leaf(last_node)
++                path.append(node)
++                node = node.parent
++            # A chat continuation reserializes generated reasoning/tool calls.
++            # Keep the deepest existing input checkpoint, not that output tail.
++            input_len = max(0, len(req.origin_input_ids) - 1)
++            prefix_len = 0
++            target = None
++            validator = self.create_match_validator()
++            for node in reversed(path):
++                prefix_len += len(node.key)
++                if prefix_len > input_len:
++                    break
++                if validator(node):
++                    target = node
++            if target is not None:
++                return target
++        return self._find_reusable_session_leaf(last_node)
++
+     def needs_incremental_backup(self, node: UnifiedTreeNode) -> bool:
+         data = node.component_data[self.component_type]
+         return data.value is not None and data.host_value is None
 diff --git a/python/sglang/srt/mem_cache/unified_cache/session_ref_tracker.py b/python/sglang/srt/mem_cache/unified_cache/session_ref_tracker.py
 index 406069a..7431436 100644
 --- a/python/sglang/srt/mem_cache/unified_cache/session_ref_tracker.py
@@ -1283,7 +1345,7 @@ index 6815679..fc9deaa 100644
      def reset(self) -> None:
          """Drop the entire tree and reinitialize empty state."""
 diff --git a/python/sglang/srt/mem_cache/unified_radix_cache.py b/python/sglang/srt/mem_cache/unified_radix_cache.py
-index d417d7d..5a303df 100644
+index d417d7d..8e74a0e 100644
 --- a/python/sglang/srt/mem_cache/unified_radix_cache.py
 +++ b/python/sglang/srt/mem_cache/unified_radix_cache.py
 @@ -6,7 +6,7 @@ import threading
@@ -1356,7 +1418,70 @@ index d417d7d..5a303df 100644
          # Owns the storage backend lifecycle; built by init_hicache.
          self._storage_attachment: Optional[StorageAttachment] = None
          self.linker: Optional[UnifiedCacheLinkerWrapper] = None
-@@ -892,7 +938,9 @@ class UnifiedRadixCache(BasePrefixCache):
+@@ -801,6 +847,52 @@ class UnifiedRadixCache(BasePrefixCache):
+         self._accumulate_tracker(tracker, result.tracker)
+         return result.is_dropped
+-
++
++    def _preserve_mamba_reentry_candidates(self, request_cnt: int) -> None:
++        """Back up live interior states about to be discarded under pressure."""
++        if (
++            not self.is_write_back
++            or not self.enable_session_radix_cache
++            or self.host_memory_mode != "cache"
++            or self.cache_controller is None
++            or ComponentType.MAMBA not in self.tree_components
++        ):
++            return
++        counts = getattr(self, "beliefkv_reentry_backup_counts", None)
++        if counts is None:
++            counts = {"attempted": 0, "acked": 0, "declined": 0}
++            self.beliefkv_reentry_backup_counts = counts
++        ct = ComponentType.MAMBA
++        lru = self.tree_core.lru_lists[ct]
++        node = lru.get_lru_no_lock()
++        candidates = []
++        for _ in range(min(max(request_cnt, 0), 4)):
++            if node is None:
++                break
++            candidates.append(node)
++            node = lru.get_prev_no_lock(node)
++        for node in candidates:
++            state = node.component_data[ct]
++            if (
++                self.tree_core.node_by_id(node.id) is not node
++                or state.value is None or state.host_value is not None
++                or state.session_ref <= 0 or state.lock_ref > 0
++                or node in self.tree_core.evictable_device_leaves
++                or node.write_through_pending_id is not None
++                or node.load_back_pending_id is not None
++            ):
++                continue
++            # No Host reclaim: a failed backup leaves ordinary pressure eviction
++            # in charge, rather than evicting unrelated useful Host data here.
++            counts["attempted"] += 1
++            self._execute_and_commit_kv_backup(
++                BackupKV([node.id]), write_back=True, no_host_reclaim=True,
++            )
++            if node.id in self.ongoing_write_through:
++                self.writing_check(write_back=True)
++                counts["acked"] += int(state.host_value is not None)
++            else:
++                counts["declined"] += 1
++
+     def _evict_components(
+         self,
+         request_by_type: dict[ComponentType, int],
+@@ -851,6 +943,8 @@ class UnifiedRadixCache(BasePrefixCache):
+             # on a shared pool, released enough bytes to satisfy its allocation.
+             if tracker[ct] >= request_cnt or target_reached(ct):
+                 continue
++            if ct == ComponentType.MAMBA:
++                self._preserve_mamba_reentry_candidates(request_cnt - tracker[ct])
+             self.tree_core.evict_device_start(ct, request_cnt)
+             try:
+                 while True:
+@@ -892,7 +986,9 @@ class UnifiedRadixCache(BasePrefixCache):
              isinstance(self.tree_core, UnifiedTreeCore)
              and self.host_memory_mode == "cache"
              and self.cache_controller is not None
@@ -1367,7 +1492,38 @@ index d417d7d..5a303df 100644
          )
  
      def _record_dropped_tokens(self, dropped_tokens: int, reason: str) -> None:
-@@ -1309,6 +1357,13 @@ class UnifiedRadixCache(BasePrefixCache):
+@@ -955,6 +1051,18 @@ class UnifiedRadixCache(BasePrefixCache):
+             return DecLockRefResult()
+         return self.tree_core.dec_host_lock_ref(node_id, params)
+-
++
++    def _finished_session_anchor(self, req: Req, result: InsertResult) -> NodeId:
++        if (
++            isinstance(getattr(req, "beliefkv_metadata", None), dict)
++            and result.last_device_node == self.tree_core.root_node.id
++            and req.last_node is not None
++            and req.kv.cache_protected_len > 0
++        ):
++            # Prefill already donated a checkpoint. No later decode tracking
++            # does not mean that the session has no reusable cached input.
++            return req.last_node
++        return result.last_device_node
++
+     @rank_consensus(same_params=["req.rid", "is_insert", "kv_len_to_handle"])
+     def cache_finished_req(
+         self, req: Req, is_insert: bool = True, *, kv_len_to_handle: int, **kwargs
+@@ -1078,7 +1186,7 @@ class UnifiedRadixCache(BasePrefixCache):
+             self._dec_req_lock(req, skip_swa=req.swa_prefix_lock_released)
+-
++
+         if is_insert and result is not None and result.last_device_node is not None:
+-            req.last_node = result.last_device_node
++            req.last_node = self._finished_session_anchor(req, result)
+-
++
+         # cleanup
+         for comp in self._components_tuple:
+@@ -1309,6 +1417,13 @@ class UnifiedRadixCache(BasePrefixCache):
              return 0
          result = self.tree_core.drive_host_eviction(component_type, num_tokens)
          self._free_values(result.device_frees, result.host_frees)
@@ -1381,7 +1537,7 @@ index d417d7d..5a303df 100644
          return result.tracker.get(component_type, 0)
  
      # ---- Decode retraction ----
-@@ -1518,8 +1573,154 @@ class UnifiedRadixCache(BasePrefixCache):
+@@ -1518,8 +1633,154 @@ class UnifiedRadixCache(BasePrefixCache):
  
      # ---- HiCache: Backup / LoadBack ----
  
@@ -1537,7 +1693,7 @@ index d417d7d..5a303df 100644
      ) -> int:
          """Run a backup action top-down, stopping at the first failed backup."""
          if self.buffer_pipeline is not None:
-@@ -1539,7 +1740,13 @@ class UnifiedRadixCache(BasePrefixCache):
+@@ -1539,7 +1800,13 @@ class UnifiedRadixCache(BasePrefixCache):
                  continue
              sidecar_xfers = self._build_backup_sidecar(device_value, comp_xfers)
              host_indices = self._execute_kv_backup(
@@ -1552,7 +1708,7 @@ index d417d7d..5a303df 100644
              )
              if host_indices is None:
                  return 0
-@@ -1554,6 +1761,134 @@ class UnifiedRadixCache(BasePrefixCache):
+@@ -1554,6 +1821,134 @@ class UnifiedRadixCache(BasePrefixCache):
              written = len(host_indices)
          return written
  
@@ -1687,7 +1843,7 @@ index d417d7d..5a303df 100644
      @staticmethod
      def _backup_publish_node_ids(
          node_id: NodeId, comp_xfers: dict[ComponentType, list[PoolTransfer]]
-@@ -1574,18 +1909,74 @@ class UnifiedRadixCache(BasePrefixCache):
+@@ -1574,18 +1969,74 @@ class UnifiedRadixCache(BasePrefixCache):
              CacheTransferPhase.BACKUP_HOST, kv_xfer, comp_xfers
          )
  
@@ -1764,7 +1920,7 @@ index d417d7d..5a303df 100644
          )
  
      def _track_write_through_node(
-@@ -1627,10 +2018,10 @@ class UnifiedRadixCache(BasePrefixCache):
+@@ -1627,10 +2078,10 @@ class UnifiedRadixCache(BasePrefixCache):
              updated_node_ids,
          )
  
@@ -1777,7 +1933,7 @@ index d417d7d..5a303df 100644
  
          lock_node_id, lock_params, publish_node_ids = self.ongoing_write_through.pop(
              ack_id
-@@ -1643,12 +2034,17 @@ class UnifiedRadixCache(BasePrefixCache):
+@@ -1643,12 +2094,17 @@ class UnifiedRadixCache(BasePrefixCache):
              # suffix; the prefix fragment must be persisted as well.
              for node_id in publish_node_ids:
                  self.write_backup_storage(node_id)
@@ -1795,7 +1951,7 @@ index d417d7d..5a303df 100644
      ) -> bool:
          """Load evicted KV data from host back to device (H→D)."""
          if self.cache_controller is None:
-@@ -1675,6 +2071,9 @@ class UnifiedRadixCache(BasePrefixCache):
+@@ -1675,6 +2131,9 @@ class UnifiedRadixCache(BasePrefixCache):
                  result=result,
                  ancestor_lock_params=ancestor_lock_params,
                  host_anchor_params=host_anchor_params,
@@ -1805,7 +1961,7 @@ index d417d7d..5a303df 100644
              )
              return success
          finally:
-@@ -1690,6 +2089,9 @@ class UnifiedRadixCache(BasePrefixCache):
+@@ -1690,6 +2149,9 @@ class UnifiedRadixCache(BasePrefixCache):
          result: IncLockRefResult,
          ancestor_lock_params: DecLockRefParams,
          host_anchor_params: DecLockRefParams,
@@ -1815,7 +1971,7 @@ index d417d7d..5a303df 100644
      ) -> bool:
          # Build the KV + per-component aux transfers.
          kv_xfer, comp_xfers = self.tree_core.build_load_back_spec(node_id, req=req)
-@@ -1703,7 +2105,8 @@ class UnifiedRadixCache(BasePrefixCache):
+@@ -1703,7 +2165,8 @@ class UnifiedRadixCache(BasePrefixCache):
          # when the Full-KV load is skipped by thresholding. max(1, ...): an
          # entirely empty spec (e.g. foreign-pin rejection) must never report
          # success, even at load_back_threshold <= 0.
@@ -1825,7 +1981,7 @@ index d417d7d..5a303df 100644
              mem_quota is not None and kv_tokens + result.delta > mem_quota
          ):
              self.dec_lock_ref(node_id, ancestor_lock_params)
-@@ -1714,6 +2117,10 @@ class UnifiedRadixCache(BasePrefixCache):
+@@ -1714,6 +2177,10 @@ class UnifiedRadixCache(BasePrefixCache):
              self.token_to_kv_pool_allocator, "c128_attn_allocator", None
          )
          if c128_allocator is not None:
@@ -1836,7 +1992,7 @@ index d417d7d..5a303df 100644
              c128_num_pages = _c128_transfer_num_pages(
                  comp_xfers.get(ComponentType.C128, ()),
                  c128_allocator.page_size,
-@@ -1727,6 +2134,10 @@ class UnifiedRadixCache(BasePrefixCache):
+@@ -1727,6 +2194,10 @@ class UnifiedRadixCache(BasePrefixCache):
  
          avail = self._component_available_size(ComponentType.FULL)
          if avail < kv_tokens:
@@ -1847,7 +2003,7 @@ index d417d7d..5a303df 100644
              needed = kv_tokens - avail
              self.evict_for_alloc(EvictParams(num_tokens=needed))
              if self._component_available_size(ComponentType.FULL) < kv_tokens:
-@@ -1741,6 +2152,9 @@ class UnifiedRadixCache(BasePrefixCache):
+@@ -1741,6 +2212,9 @@ class UnifiedRadixCache(BasePrefixCache):
              host_indices=kv_xfer.host_indices,
              node_id=node_id,
              extra_pools=aux_xfers or None,
@@ -1857,7 +2013,7 @@ index d417d7d..5a303df 100644
          )
  
          self.dec_lock_ref(node_id, ancestor_lock_params)
-@@ -3130,10 +3544,24 @@ class UnifiedRadixCache(BasePrefixCache):
+@@ -3130,10 +3604,24 @@ class UnifiedRadixCache(BasePrefixCache):
              while self.ongoing_write_through:
                  for ack in cc.ack_write_queue:
                      ack.finish_event.synchronize()
@@ -1883,7 +2039,7 @@ index d417d7d..5a303df 100644
                  cc.ack_write_queue.clear()
                  assert len(self.ongoing_write_through) == 0
              return
-@@ -3154,11 +3582,117 @@ class UnifiedRadixCache(BasePrefixCache):
+@@ -3154,11 +3642,117 @@ class UnifiedRadixCache(BasePrefixCache):
          while finish_count > 0:
              ack = cc.ack_write_queue.pop(0)
              ack.finish_event.synchronize()
@@ -2002,7 +2158,7 @@ index d417d7d..5a303df 100644
      def _log_write_ack_metrics(self, ack: HiCacheAck) -> None:
          """Record D->H backup volume and duration for a completed write ack."""
          if self.metrics_collector is None:
-@@ -3200,6 +3734,8 @@ class UnifiedRadixCache(BasePrefixCache):
+@@ -3200,6 +3794,8 @@ class UnifiedRadixCache(BasePrefixCache):
          while finish_count > 0:
              ack = cc.ack_load_queue.pop(0)
              ack.finish_event.synchronize()
@@ -2011,7 +2167,7 @@ index d417d7d..5a303df 100644
              for ack_id in ack.node_ids:
                  if (
                      self.buffer_pipeline is not None
-@@ -3211,6 +3747,8 @@ class UnifiedRadixCache(BasePrefixCache):
+@@ -3211,6 +3807,8 @@ class UnifiedRadixCache(BasePrefixCache):
                  self.dec_host_lock_ref(node, host_lock_params)
                  # Unpin the loaded nodes; host copies stay as reclaimable duplicates.
                  self.tree_core.finish_load_back(node)
@@ -2020,7 +2176,7 @@ index d417d7d..5a303df 100644
  
              if self.metrics_collector is not None:
                  for pool, num_tokens in (ack.num_tokens_by_pool or {}).items():
-@@ -3225,6 +3763,13 @@ class UnifiedRadixCache(BasePrefixCache):
+@@ -3225,6 +3823,13 @@ class UnifiedRadixCache(BasePrefixCache):
                      self.metrics_collector.observe_load_back_duration(
                          duration_ms / 1000.0
                      )
@@ -2401,45 +2557,6 @@ index 0000000..88361ff
 +
 +if __name__ == "__main__":
 +    unittest.main()
-diff --git a/python/sglang/srt/mem_cache/unified_cache/components/mamba.py b/python/sglang/srt/mem_cache/unified_cache/components/mamba.py
-index 3c18cee..f91bd5a 100644
---- a/python/sglang/srt/mem_cache/unified_cache/components/mamba.py
-+++ b/python/sglang/srt/mem_cache/unified_cache/components/mamba.py
-@@ -78,6 +78,33 @@ class MambaComponent(TreeComponent):
-         # HiCache state
-         self._mamba_pool_host = None  # set to host mamba pool when HiCache enabled
--
-+
-+    def resolve_session_leaf(
-+        self, req: Req, last_node: Optional[UnifiedTreeNode]
-+    ) -> Optional[UnifiedTreeNode]:
-+        if isinstance(getattr(req, "beliefkv_metadata", None), dict):
-+            path = []
-+            node = last_node
-+            while node is not None and node is not self.tree_core.root_node:
-+                if len(path) >= 256:
-+                    return self._find_reusable_session_leaf(last_node)
-+                path.append(node)
-+                node = node.parent
-+            # A chat continuation reserializes generated reasoning/tool calls.
-+            # Keep the deepest existing input checkpoint, not that output tail.
-+            input_len = max(0, len(req.origin_input_ids) - 1)
-+            prefix_len = 0
-+            target = None
-+            validator = self.create_match_validator()
-+            for node in reversed(path):
-+                prefix_len += len(node.key)
-+                if prefix_len > input_len:
-+                    break
-+                if validator(node):
-+                    target = node
-+            if target is not None:
-+                return target
-+        return self._find_reusable_session_leaf(last_node)
-+
-     def needs_incremental_backup(self, node: UnifiedTreeNode) -> bool:
-         data = node.component_data[self.component_type]
-         return data.value is not None and data.host_value is None
 diff --git a/test/srt/test_beliefkv_metadata.py b/test/srt/test_beliefkv_metadata.py
 new file mode 100644
 index 0000000..47acbbf
