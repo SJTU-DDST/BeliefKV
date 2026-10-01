@@ -28,9 +28,9 @@ def test_audit_groups_requests_and_keeps_native_eos_separate(tmp_path):
     (opportunities / "admission_opportunities.jsonl").write_text("\n".join(
         json.dumps(row) for row in (
             {"event": "semantic_child_forecast", "request_id": "final",
-             "score": .9, "observed_output_tokens": 20, "remaining_tokens": 70},
+             "ts_ms": 50, "score": .9, "observed_output_tokens": 20, "remaining_tokens": 70},
             {"event": "semantic_child_forecast", "request_id": "final",
-             "score": .9, "observed_output_tokens": 95, "remaining_tokens": 35},
+             "ts_ms": 110, "score": .9, "observed_output_tokens": 95, "remaining_tokens": 35},
             {"event": "semantic_child_forecast", "request_id": "tool",
              "score": .8, "observed_output_tokens": 10, "remaining_tokens": 40},
             {"event": "final_stage_latest_start", "child_request_id": "final",
@@ -45,5 +45,6 @@ def test_audit_groups_requests_and_keeps_native_eos_separate(tmp_path):
     assert result["first_crossing_other_count"] == 1
     assert result["work_errors"]["first_threshold_crossing"]["median_signed_error_tokens"] == -10
     assert result["work_errors"]["last_accepted_snapshot"]["median_signed_error_tokens"] == 30
+    assert result["work_errors"]["last_pre_native_result_snapshot"]["median_signed_error_tokens"] == -10
     assert result["latest_start_before_native_result_count"] == 1
     assert result["latest_start_at_or_after_native_result_count"] == 1

@@ -81,10 +81,33 @@ def summarize(arm: Path) -> dict | None:
         for row in records(arm / "server/physical_action_ack.jsonl")
         if row.get("action") == "PREFETCH_GPU"
     }
+    action_uses = list(records(arm / "server/physical_action_use.jsonl"))
     uses = [
-        row for row in records(arm / "server/physical_action_use.jsonl")
+        row for row in action_uses
         if row["event"] == "beliefkv_prefetch_first_service"
     ]
+    first_services = {row["command_id"]: row for row in uses}
+    mamba_verified_commands = set()
+    for row in action_uses:
+        if (
+            row["event"] != "beliefkv_prefetch_mamba_forward_completed"
+            or row.get("mamba_reuse") != "verified_single_request_cow_forward_completed"
+        ):
+            continue
+        ack = acks.get(row["command_id"])
+        first = first_services.get(row["command_id"])
+        if (
+            ack is not None and first is not None
+            and ack.get("node_ids") == [row.get("node_id")]
+            and all(row.get(key) == first.get(key) for key in (
+                "request_id", "context_id", "context_epoch",
+            ))
+        ):
+            mamba_verified_commands.add(row["command_id"])
+    mamba_verified_bytes = sum(
+        dict(acks[command_id].get("pool_bytes") or {}).get("mamba", 0)
+        for command_id in mamba_verified_commands
+    )
     full_reused, full_nonreuse, full_unknown = 0, 0, 0
     potential_residency, mamba_unverified = 0., 0
     for use in uses:
@@ -139,10 +162,16 @@ def summarize(arm: Path) -> dict | None:
             set(acks) - {row["command_id"] for row in uses}
         ),
         "first_service_records": len(uses),
+        "full_first_service_outcomes": {
+            name: sum(row["full_node_reused"] is value for row in uses)
+            for name, value in (("reused", True), ("not_reused", False), ("unknown", None))
+        },
         "verified_full_reused_bytes": full_reused,
         "verified_full_nonreuse_bytes": full_nonreuse,
         "full_reuse_unverified_bytes": full_unknown,
-        "mamba_first_service_unverified_bytes": mamba_unverified,
+        "verified_mamba_forward_count": len(mamba_verified_commands),
+        "verified_mamba_forward_bytes": mamba_verified_bytes,
+        "mamba_first_service_unverified_bytes": mamba_unverified - mamba_verified_bytes,
         "ack_to_first_service_byte_seconds_upper_bound": potential_residency,
         "interpretation": (
             "ACKs are not benefits. Residency is an upper bound if pages were evicted "
@@ -161,6 +190,7 @@ def main() -> None:
     parser.add_argument("--initialize", action="store_true")
     parser.add_argument("--root-count", type=int, default=36)
     parser.add_argument("--arm-order", default="reactive predictive_h2d")
+    parser.add_argument("--semantic-artifact", type=Path)
     args = parser.parse_args()
     if args.cleanup_arm:
         print(json.dumps(cleanup_workspaces(args.cleanup_arm), indent=2))
@@ -169,7 +199,10 @@ def main() -> None:
         raise ValueError("--run-root is required")
     if args.initialize:
         root = Path(__file__).resolve().parents[1]
-        artifact = root / "experiments/models/child_semantic_work_stage2_adapted_20260930_v1/semantic_event_calibrated.json"
+        artifact = (
+            args.semantic_artifact
+            or root / "experiments/models/child_semantic_work_frozen_phase_20261001_v1/semantic_event_calibrated.json"
+        ).resolve()
         manifest = root / "configs/migration/qwen35_native_reactive_overlapped_128root_workload_2026-09-23.json"
         plan = {
             "scope": "single-pair development benefit validation, not final paper test",

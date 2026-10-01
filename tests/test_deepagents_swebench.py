@@ -2869,6 +2869,89 @@ def test_empty_reasoning_terminal_retries_once_without_thinking(
     assert events[-1]["recovered"] is True
 
 
+def test_tool_call_id_normalization_is_stable_and_preserves_tool_inputs(tmp_path: Path) -> None:
+    audit = JsonlAudit(tmp_path / "ids.jsonl")
+    middleware = EmptyReasoningRecoveryMiddleware(audit=audit, scope="root")
+    request = ModelRequest(
+        model=FakeMessagesListChatModel(responses=[AIMessage(content="unused")]),
+        messages=[HumanMessage(content="inspect")],
+    )
+    calls = [
+        {"name": "read_file", "args": {"file_path": "/workspace/a"}, "id": None},
+        {"name": "unknown", "args": {}, "id": "kept"},
+        {"name": "read_file", "args": {"file_path": "/workspace/b"}, "id": "kept"},
+    ]
+    message = AIMessage(
+        content="", tool_calls=calls,
+        additional_kwargs={"tool_calls": [
+            {"id": call["id"], "type": "function", "function": {
+                "name": call["name"], "arguments": json.dumps(call["args"]),
+            }} for call in calls
+        ]},
+        response_metadata={"finish_reason": "tool_calls"},
+    )
+    response = ModelResponse(result=[message])
+    try:
+        middleware.wrap_model_call(request, lambda _: response)
+        ids = [call["id"] for call in message.tool_calls]
+        assert len(set(ids)) == 3
+        assert all(isinstance(call_id, str) and call_id for call_id in ids)
+        assert ids[1] == "kept"
+        assert [call["id"] for call in message.additional_kwargs["tool_calls"]] == ids
+        assert [(call["name"], call["args"]) for call in message.tool_calls] == [
+            (call["name"], call["args"]) for call in calls
+        ]
+        middleware.wrap_model_call(request, lambda _: response)
+        assert [call["id"] for call in message.tool_calls] == ids
+    finally:
+        audit.close()
+    events = [json.loads(line) for line in (tmp_path / "ids.jsonl").read_text().splitlines()]
+    assert [row["reason"] for row in events] == ["missing_or_invalid", "duplicate"]
+
+
+@pytest.mark.parametrize("tool_name", ["inspect_file", "unknown"])
+def test_missing_tool_call_id_does_not_abort_agent_or_invent_a_tool(
+    tmp_path: Path, tool_name: str,
+) -> None:
+    class ToolCallingFakeModel(FakeMessagesListChatModel):
+        def bind_tools(self, tools, **kwargs):
+            return self
+
+    executed = []
+
+    @tool
+    def inspect_file(file_path: str) -> str:
+        """Inspect a file."""
+        executed.append(file_path)
+        return "Evidence found."
+
+    model = ToolCallingFakeModel(responses=[
+        AIMessage(content="", tool_calls=[{
+            "name": tool_name, "args": {"file_path": "/workspace/a"}, "id": None,
+        }], response_metadata={"finish_reason": "tool_calls"}),
+        AIMessage(content="A natural-language final report."),
+    ])
+    audit = JsonlAudit(tmp_path / "ids.jsonl")
+    try:
+        agent = create_agent(
+            model=model, tools=[inspect_file],
+            middleware=[EmptyReasoningRecoveryMiddleware(audit=audit, scope="root")],
+        )
+        result = agent.invoke(
+            {"messages": [HumanMessage(content="Inspect the issue.")]},
+            config={"recursion_limit": 20},
+        )
+    finally:
+        audit.close()
+    assert result["messages"][-1].content == "A natural-language final report."
+    call = next(message for message in result["messages"]
+                if isinstance(message, AIMessage) and message.tool_calls).tool_calls[0]
+    outcome = next(message for message in result["messages"] if isinstance(message, ToolMessage))
+    assert outcome.tool_call_id == call["id"]
+    assert outcome.status == ("error" if tool_name == "unknown" else "success")
+    assert executed == ([] if tool_name == "unknown" else ["/workspace/a"])
+
+
 def test_child_final_report_shadow_only_for_immediate_single_notice(tmp_path: Path) -> None:
     audit = JsonlAudit(tmp_path / "final.jsonl")
     middleware = ChildFinalReportShadowMiddleware(

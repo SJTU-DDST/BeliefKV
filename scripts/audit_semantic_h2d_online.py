@@ -67,10 +67,21 @@ def audit(arm: Path, threshold: float) -> dict:
         is not None
     }
     work_errors = {}
-    for name in ("first_threshold_crossing", "last_accepted_snapshot"):
+    for name in (
+        "first_threshold_crossing", "last_accepted_snapshot",
+        "last_pre_native_result_snapshot",
+    ):
         errors = []
         for rid in terminals & forecasts.keys() & native.keys():
-            snapshot = selected.get(rid) if name == "first_threshold_crossing" else forecasts[rid][-1]
+            if name == "first_threshold_crossing":
+                snapshot = selected.get(rid)
+            elif name == "last_pre_native_result_snapshot":
+                snapshot = next((
+                    row for row in reversed(forecasts[rid])
+                    if row.get("ts_ms", float("inf")) < native[rid]["ts_ms"]
+                ), None)
+            else:
+                snapshot = forecasts[rid][-1]
             if snapshot is None:
                 continue
             actual = native[rid]["attributes"]["output_tokens"] - snapshot["observed_output_tokens"]
@@ -102,6 +113,12 @@ def audit(arm: Path, threshold: float) -> dict:
         "first_crossing_natural_final_count": len(selected.keys() & terminals),
         "first_crossing_other_count": len(selected.keys() - terminals),
         "work_errors": work_errors,
+        "work_error_interpretation": (
+            "The last accepted snapshot may arrive after native EOS and observe "
+            "zero remaining work. Use the separate pre-native-result series "
+            "to assess work prediction before generation ends; neither series "
+            "is child RETURN wall-clock accuracy."
+        ),
         "latest_start_count": len(starts),
         "latest_start_before_native_result_count": before_eos,
         "latest_start_at_or_after_native_result_count": after_eos,

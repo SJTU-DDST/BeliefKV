@@ -73,3 +73,38 @@ def test_cleanup_only_removes_archived_completed_workspace(tmp_path):
     assert len(result["removed_workspaces"]) == 1
     assert (base / "model.patch").read_text() == "patch"
     assert not (base / "workspace").exists()
+
+
+def test_mamba_reuse_requires_matching_forward_proof_and_is_not_double_counted(tmp_path):
+    arm = tmp_path / "predictive_h2d"
+    _, server = fixture(arm)
+    (server / "physical_action_ack.jsonl").write_text(json.dumps({
+        "command_id": "cmd", "action": "PREFETCH_GPU", "node_ids": [1],
+        "num_bytes": 200, "pool_bytes": {"kv": 100, "mamba": 100},
+    }) + "\n")
+    first = {
+        "event": "beliefkv_prefetch_first_service", "command_id": "cmd",
+        "request_id": "r", "context_id": "c", "context_epoch": 0,
+        "full_node_reused": False, "reused_full_node_ids": [],
+        "ack_ts_ms": 10., "first_service_ts_ms": 20.,
+    }
+    forward = {
+        **first, "event": "beliefkv_prefetch_mamba_forward_completed",
+        "node_id": 1, "mamba_reuse": "verified_single_request_cow_forward_completed",
+    }
+    path = server / "physical_action_use.jsonl"
+    path.write_text("\n".join(json.dumps(row) for row in (
+        first, {**forward, "request_id": "other"},
+    )) + "\n")
+    result = summarize(arm)
+    assert result["verified_mamba_forward_bytes"] == 0
+    path.write_text("\n".join(json.dumps(row) for row in (
+        first, forward, forward,
+    )) + "\n")
+    result = summarize(arm)
+    assert result["verified_mamba_forward_count"] == 1
+    assert result["verified_mamba_forward_bytes"] == 100
+    assert result["mamba_first_service_unverified_bytes"] == 0
+    assert result["full_first_service_outcomes"] == {
+        "reused": 0, "not_reused": 1, "unknown": 0,
+    }

@@ -2515,6 +2515,83 @@ def test_final_stage_tool_and_epoch_change_cancel_provisional_h2d():
     assert not runtime._final_stages
 
 
+def test_join_prefetch_budget_survives_stage_recreation_and_counts_only_issued():
+    runtime = final_stage_runtime()
+    child = req("child")
+    child.session_id, child.session_generation = "cs", 1
+    child.beliefkv_metadata["context_epoch"] = 1
+    runtime.on_events((event(
+        7, RuntimeEventKind.LLM_SUBMIT, invocation_id="child",
+        context_id="ctx-child", context_epoch=1,
+        attributes={"request_id": "child"},
+    ),))
+    runtime.register_visible_request(child)
+    key = runtime._final_stages["join"].key
+    runtime._h2d_samples.extend([(105, 200.0)] * 3)
+    runtime.attach_native_cache(NS(cache_controller=NS(
+        mem_pool_host=NS(entry_map={
+            "kv": NS(host_pool=NS(size_per_token=10)),
+            "mamba": NS(host_pool=NS(size_per_token=5)),
+        })
+    )))
+    observation = NS(
+        step=PrefetchLoadStep(key, 11, 4, 11, 4),
+        fits_current_free_lists=True,
+        required_full_tokens=10, required_mamba_slots=1,
+    )
+    with patch.object(
+        runtime, "inspect_context_h2d_opportunity", return_value=observation,
+    ), patch.object(
+        runtime, "refreshed_prefetch_gpu_step", return_value=observation.step,
+    ), patch.object(
+        runtime, "issue_prefetch_gpu_step", side_effect=[None, "cmd-1", "cmd-2"],
+    ) as issue:
+        stage = runtime._final_stages["join"]
+        stage.generated_tokens, stage.tokens_per_second = 120, 80
+        runtime.dispatch_join_prefetch()
+        assert runtime._issued_join_nodes("join", key) == 0
+        runtime.dispatch_join_prefetch()
+        assert runtime._issued_join_nodes("join", key) == 1
+        for sequence in (8, 9, 10):
+            runtime._clear_final_stage("join")
+            runtime.on_events((event(
+                sequence, RuntimeEventKind.STRUCTURED_ACTION,
+                invocation_id="child", context_id="ctx-child", context_epoch=1,
+                join_id="join",
+                attributes={"beliefkv_child_completion_intent": True,
+                            "child_completion_signal_kind": "stage",
+                            "estimated_final_report_tokens": 128},
+            ),))
+            stage = runtime._final_stages["join"]
+            stage.request_id = "child"
+            stage.generated_tokens, stage.tokens_per_second = 120, 80
+            runtime.dispatch_join_prefetch()
+        assert issue.call_count == 3  # One declined call, two issued calls.
+        assert runtime._issued_join_nodes("join", key) == 2
+        assert stage.issued_nodes == 2
+    assert runtime._issued_join_nodes(
+        "join", replace(key, request_id="another-attempt", attempt_id=2),
+    ) == 2
+    assert runtime._issued_join_nodes("join", replace(key, context_epoch=1)) == 0
+    assert runtime._issued_join_nodes("join", replace(key, session_generation=2)) == 0
+    runtime._clear_final_stage("join")
+    child_key = runtime.visible["child"]
+    now_ms = time.monotonic() * 1000
+    runtime._semantic_keys["child"] = child_key
+    reply = SemanticReportReply(
+        SemanticReportInput(child_key, now_ms, 120, 128, "Done.", False, 0, 1, 2),
+        .9, 0., 8., 50., 5.,
+    )
+    runtime._semantic_worker = NS(
+        poll=lambda: (reply,), ready=True, disabled=False, dropped=0,
+    )
+    runtime._poll_semantic_reports(now_ms)
+    assert runtime._final_stages["join"].semantic_only
+    assert runtime._final_stages["join"].issued_nodes == 2
+    runtime.on_events((event(11, RuntimeEventKind.WORKFLOW_END),))
+    assert not runtime._join_prefetch_issued
+
+
 def test_native_fallback_and_causal_join_straggler_ranking():
     runtime = NativeAdmissionRuntime()
     a, plain, b = req("a"), req("plain", tagged=False), req("b")

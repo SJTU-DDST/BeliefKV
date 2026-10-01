@@ -1420,12 +1420,48 @@ class NativeSubagentSemanticGateMiddleware(AgentMiddleware[Any, Any, Any]):
 
 
 class EmptyReasoningRecoveryMiddleware(AgentMiddleware[Any, Any, Any]):
-    """Retry an empty terminal once without inventing a child result."""
+    """Normalize tool identities and retry an empty terminal once."""
 
     def __init__(self, *, audit: JsonlAudit, scope: str) -> None:
         super().__init__()
         self.audit = audit
         self.scope = scope
+
+    def _normalize_tool_call_ids(self, response: ModelResponse) -> None:
+        for message in response.result:
+            if not isinstance(message, AIMessage):
+                continue
+            calls = [*message.tool_calls, *message.invalid_tool_calls]
+            used = {call["id"] for call in calls if isinstance(call.get("id"), str)
+                    and call["id"].strip()}
+            seen: set[str] = set()
+            replacements: dict[int, str] = {}
+            for index, call in enumerate(calls):
+                call_id = call.get("id")
+                duplicate = isinstance(call_id, str) and call_id in seen
+                if not isinstance(call_id, str) or not call_id.strip() or duplicate:
+                    replacement = f"beliefkv-call-{uuid.uuid4().hex}"
+                    while replacement in used:
+                        replacement = f"beliefkv-call-{uuid.uuid4().hex}"
+                    call["id"] = replacement
+                    used.add(replacement)
+                    replacements[index] = replacement
+                    self.audit.emit(
+                        "agent_tool_call_id_normalized",
+                        scope=self.scope, call_index=index,
+                        tool_name=call.get("name"), tool_call_id=replacement,
+                        reason="duplicate" if duplicate else "missing_or_invalid",
+                    )
+                    call_id = replacement
+                seen.add(call_id)
+            raw_calls = message.additional_kwargs.get("tool_calls")
+            if (
+                replacements and not message.invalid_tool_calls
+                and isinstance(raw_calls, list) and len(raw_calls) == len(calls)
+            ):
+                for index, replacement in replacements.items():
+                    if isinstance(raw_calls[index], dict):
+                        raw_calls[index]["id"] = replacement
 
     @staticmethod
     def _reasoning_only_terminal(response: ModelResponse) -> bool:
@@ -1453,6 +1489,7 @@ class EmptyReasoningRecoveryMiddleware(AgentMiddleware[Any, Any, Any]):
 
     def wrap_model_call(self, request: ModelRequest, handler: Any) -> ModelResponse:
         response = handler(request)
+        self._normalize_tool_call_ids(response)
         if not self._reasoning_only_terminal(response):
             return response
         original = response.result[0]
@@ -1466,6 +1503,7 @@ class EmptyReasoningRecoveryMiddleware(AgentMiddleware[Any, Any, Any]):
             ),
         )
         recovered = handler(self._retry_request(request))
+        self._normalize_tool_call_ids(recovered)
         self.audit.emit(
             "agent_empty_reasoning_retry_result",
             scope=self.scope,

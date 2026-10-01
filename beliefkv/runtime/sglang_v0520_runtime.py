@@ -85,6 +85,27 @@ WAIT_REFRESH_AGE_MS = 2_000.0
 WAIT_REFRESH_SPACING_MS = 500.0
 
 
+@dataclass(frozen=True)
+class _JoinPrefetchIdentity:
+    join_id: str
+    workflow_id: str
+    invocation_id: str
+    context_id: str
+    context_epoch: int
+    session_id: str | None
+    session_generation: int | None
+
+    @classmethod
+    def from_parent(
+        cls, join_id: str, key: PrefillCandidateKey,
+    ) -> _JoinPrefetchIdentity:
+        return cls(
+            join_id, key.root_workflow_id, key.invocation_id,
+            key.context_id, key.context_epoch, key.session_id,
+            key.session_generation,
+        )
+
+
 @dataclass
 class _JoinPrefetchTicket:
     key: PrefillCandidateKey
@@ -209,6 +230,7 @@ class NativeAdmissionRuntime:
         self._final_priority_promoted: str | None = None
         self._final_priority_native_rank: int | None = None
         self._join_ticket: _JoinPrefetchTicket | None = None
+        self._join_prefetch_issued: Counter[_JoinPrefetchIdentity] = Counter()
         self.enable_admission_prefetch = enable_admission_prefetch
         self.enable_final_stage_prefetch = enable_final_stage_prefetch
         priority_setting = os.environ.get("BELIEFKV_ENABLE_FINAL_STAGE_PRIORITY")
@@ -553,6 +575,11 @@ class NativeAdmissionRuntime:
                         self.tool_wait_hints.pop(context_id, None)
                         self.shadow_candidate = None
                 if event.kind is RuntimeEventKind.WORKFLOW_END:
+                    self._join_prefetch_issued = Counter({
+                        identity: count
+                        for identity, count in self._join_prefetch_issued.items()
+                        if identity.workflow_id != event.workflow_id
+                    })
                     for key in tuple(self._semantic_keys.values()):
                         if key.root_workflow_id == event.workflow_id:
                             self._clear_semantic_invocation(key.invocation_id)
@@ -611,6 +638,12 @@ class NativeAdmissionRuntime:
                     if event.invocation_id is not None:
                         self._clear_semantic_invocation(event.invocation_id)
                     self._advance_join_ticket(event)
+                    if event.kind is RuntimeEventKind.JOIN_TIMEOUT:
+                        self._join_prefetch_issued = Counter({
+                            identity: count
+                            for identity, count in self._join_prefetch_issued.items()
+                            if identity.join_id != event.join_id
+                        })
                     for join_id, stage in tuple(self._final_stages.items()):
                         if (
                             stage.child_id == event.invocation_id
@@ -775,6 +808,7 @@ class NativeAdmissionRuntime:
                     request_id=item.key.request_id, semantic_only=True,
                     generated_tokens=progress[-1][1] if progress else 0,
                     tokens_per_second=self._semantic_rate(item.key.request_id),
+                    issued_nodes=self._issued_join_nodes(join_id, parent_key),
                 )
                 self._final_stages[join_id] = stage
                 self._final_request_stages[item.key.request_id] = stage
@@ -870,6 +904,9 @@ class NativeAdmissionRuntime:
                                     hint.key, hint.join_id, hint.join_mode,
                                     hint.member_ids, "probabilistic",
                                     hint.expires_monotonic_ms / 1000,
+                                    issued_nodes=self._issued_join_nodes(
+                                        hint.join_id, hint.key,
+                                    ),
                                 )
                         self.counts["join_wait_accepted"] += 1
                     else:
@@ -1293,6 +1330,7 @@ class NativeAdmissionRuntime:
                 key, join_id, child_id, context.epoch, estimated,
                 time.monotonic() + 120.0,
                 request_id=bound_request_id,
+                issued_nodes=self._issued_join_nodes(join_id, key),
             )
             self._final_stages[join_id] = stage
             if bound_request_id is not None:
@@ -1320,6 +1358,7 @@ class NativeAdmissionRuntime:
                 key, join_id, join.mode.value,
                 tuple(sorted(join.member_invocation_ids)),
                 "provisional", time.monotonic() + 2.0,
+                issued_nodes=self._issued_join_nodes(join_id, key),
             )
             self._join_ticket = ticket
         else:
@@ -1355,6 +1394,12 @@ class NativeAdmissionRuntime:
             and ticket.stage_bound and ticket.phase == "provisional"
         ):
             self._discard_join_ticket("final_stage_invalidated")
+
+    def _issued_join_nodes(self, join_id: str, key: PrefillCandidateKey) -> int:
+        # Keep the budget through stage expiry and confirmed reentry.
+        return self._join_prefetch_issued[
+            _JoinPrefetchIdentity.from_parent(join_id, key)
+        ]
 
     def _live_final_stage(self, stage: _ChildFinalStage) -> bool:
         join = self.graph.joins.get(stage.join_id)
@@ -1408,7 +1453,7 @@ class NativeAdmissionRuntime:
                 not self._live_final_stage(stage) or stage.request_id is None
                 or stage.generated_tokens < 16
                 or stage.tokens_per_second is None
-                or stage.issued_nodes >= 2
+                or self._issued_join_nodes(stage.join_id, stage.key) >= 2
             ):
                 continue
             child_key = self.visible.get(stage.request_id) or self._semantic_keys.get(stage.request_id)
@@ -1492,7 +1537,7 @@ class NativeAdmissionRuntime:
                 stage.key, stage.join_id, join.mode.value,
                 tuple(sorted(join.member_invocation_ids)),
                 "provisional", min(stage.expires_at, time.monotonic() + 2.0),
-                issued_nodes=stage.issued_nodes,
+                issued_nodes=self._issued_join_nodes(stage.join_id, stage.key),
                 stage_bound=True,
             )
             self.counts["final_stage_latest_start"] += 1
@@ -1590,6 +1635,7 @@ class NativeAdmissionRuntime:
                     key, join_id, join.mode.value,
                     tuple(sorted(join.member_invocation_ids)),
                     "confirmed", time.monotonic() + 2.0,
+                    issued_nodes=self._issued_join_nodes(join_id, key),
                 )
                 self.counts["join_reentry_confirmed"] += 1
                 if self.enable_confirmed_join_canary and self._opportunity_writer:
@@ -1694,6 +1740,9 @@ class NativeAdmissionRuntime:
             ticket.command_id = None
             self.counts["join_prefetch_acked"] += 1
         max_nodes = 1 if self.enable_confirmed_join_canary else 2
+        ticket.issued_nodes = max(
+            ticket.issued_nodes, self._issued_join_nodes(ticket.join_id, ticket.key),
+        )
         if ticket.issued_nodes >= max_nodes or self.physical_ledger.pending_count:
             return
         if ticket.phase == "probabilistic":
@@ -1756,6 +1805,9 @@ class NativeAdmissionRuntime:
         if command is not None:
             ticket.command_id = command
             ticket.issued_nodes += 1
+            self._join_prefetch_issued[
+                _JoinPrefetchIdentity.from_parent(ticket.join_id, ticket.key)
+            ] = ticket.issued_nodes
             stage = self._final_stages.get(ticket.join_id)
             if stage is not None and ticket.phase == "provisional":
                 stage.issued_nodes = ticket.issued_nodes

@@ -16,7 +16,7 @@ SKIP_SERVER_WARMUP="${SKIP_SERVER_WARMUP:-1}"
 CONFIRMED_JOIN_CANARY="${CONFIRMED_JOIN_CANARY:-0}"
 FANOUT_PROFILE="${FANOUT_PROFILE:-native_in_graph_1to4}"
 AB_MODE="${AB_MODE:-off}"
-SEMANTIC_REPORT_ARTIFACT="${SEMANTIC_REPORT_ARTIFACT:-$ROOT/experiments/models/child_semantic_work_stage2_adapted_20260930_v1/semantic_event_calibrated.json}"
+SEMANTIC_REPORT_ARTIFACT="${SEMANTIC_REPORT_ARTIFACT:-$ROOT/experiments/models/child_semantic_work_frozen_phase_20261001_v1/semantic_event_calibrated.json}"
 RUN_ROOT="${RUN_ROOT:-$ROOT/experiments/raw/qwen35_native_regime_${HICACHE_WRITE_POLICY}_${FANOUT_PROFILE}_${HICACHE_SIZE_GB}g_${HOST_SPLIT/:/_}_${ROOT_COUNT}root_v1}"
 MANIFEST="${WORKLOAD_MANIFEST:-$ROOT/configs/migration/qwen35_native_reactive_overlapped_128root_workload_2026-09-23.json}"
 BASE_URL="http://127.0.0.1:$PORT"
@@ -138,7 +138,7 @@ set +e
   --server-log "$RUN_ROOT/server.log" --pool-tokens 1798995 \
   --model-context-tokens 131072 --max-completion-tokens 8192 \
   --sampling-seed 21 --recursion-limit 2048 \
-  --activation-wall-clock-seconds 3600 \
+  --activation-wall-clock-seconds "${ACTIVATION_WALL_CLOCK_SECONDS:-14400}" \
   --stream-completion-shadow --child-stream-content-shadow \
   --native-reactive-guard-profile --disable-completion-gate \
   --gate native --output "$RUN_ROOT/client_$ROOT_COUNT" \
