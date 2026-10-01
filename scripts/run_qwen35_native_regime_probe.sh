@@ -5,6 +5,8 @@ ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 PYTHON="${PYTHON:-/home/longhao/miniconda3/envs/beliefkv-next/bin/python}"
 PORT="${PORT:-18454}"
 ROOT_COUNT="${ROOT_COUNT:-36}"
+ARRIVAL_BATCH_SIZE="${ARRIVAL_BATCH_SIZE:-0}"
+ARRIVAL_BATCH_INTERVAL_MS="${ARRIVAL_BATCH_INTERVAL_MS:-0}"
 HOST_SPLIT="${HOST_SPLIT:-auto}"
 HICACHE_SIZE_GB="${HICACHE_SIZE_GB:-200}"
 HICACHE_WRITE_POLICY="${HICACHE_WRITE_POLICY:-write_back}"
@@ -33,7 +35,9 @@ trap 'exit 130' INT
 trap 'exit 143' TERM
 
 if [[ $# -ne 0 || ! "$ROOT_COUNT" =~ ^[1-9][0-9]*$ ]] \
-  || (( ROOT_COUNT > 64 )) \
+  || (( ROOT_COUNT > 128 )) \
+  || [[ ! "$ARRIVAL_BATCH_SIZE" =~ ^[0-9]+$ || ! "$ARRIVAL_BATCH_INTERVAL_MS" =~ ^[0-9]+$ ]] \
+  || { (( ROOT_COUNT > 64 )) && [[ "$ARRIVAL_BATCH_SIZE" != "64" || "$ARRIVAL_BATCH_INTERVAL_MS" == "0" ]]; } \
   || [[ ! "$HICACHE_SIZE_GB" =~ ^[1-9][0-9]*$ ]] \
   || (( HICACHE_SIZE_GB > 200 )) \
   || [[ "$HICACHE_WRITE_POLICY" != "write_through_selective" && "$HICACHE_WRITE_POLICY" != "write_back" ]] \
@@ -126,6 +130,8 @@ set +e
   --mode autonomous --base-url "$BASE_URL/v1" --model Qwen3.5-35B-A3B \
   --workload-manifest "$MANIFEST" --max-workflows "$ROOT_COUNT" \
   --concurrency "$ROOT_COUNT" --subagent-fanout-profile "$FANOUT_PROFILE" \
+  --workflow-arrival-batch-size "$ARRIVAL_BATCH_SIZE" \
+  --workflow-arrival-batch-interval-ms "$ARRIVAL_BATCH_INTERVAL_MS" \
   --native-radix-sessions --control-socket "$SOCKET" \
   --server-audit "$RUN_ROOT/server/runtime_audit.jsonl" \
   --server-events "$RUN_ROOT/server/runtime_events.sglang.jsonl" \

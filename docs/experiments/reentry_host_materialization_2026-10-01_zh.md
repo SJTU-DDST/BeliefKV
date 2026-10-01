@@ -67,3 +67,26 @@ Host 副本来自原生实际压力驱逐，不靠手工逐出或短 canary 制�
 压力与恢复机会，不作为可直接与旧 36-root 比较的吞吐实验。
 系统故障需停止；正常情况下区分“状态存在”“Host 有副本”
 “可发射 H2D”“实际 ACK”“首次复用”，不以 ACK 数取代收益。
+
+## 首 64-root 单侧诊断
+
+`qwen35_reentry_source_64root_20261001_v1` 使用提交 `d6c5474`，
+64 个初始 root result 均登记了安全 Mamba 输入状态，旧的初始
+session 空引用问题消失。62 completed、2 incomplete，无物理账本
+或模型 worker 故障；两个 incomplete 的 root 终态为空，不是
+guard 强制终止，失败现场保留，不能算完整自然 JOIN 训练标签。
+
+本批预测 H2D 仍为零，原生 H2D service sample 也未建立。初始
+JOIN 窗口的输入状态都在 GPU，没有可恢复 Host 目标；Host FULL
+后期满池、Mamba 后期约 90% 使用主要发生在 JOIN 后的长工具阶段。
+因此保留压力 attempt/ACK 都为零不是写入故障，而是原生实际
+LRU 压力没有选中这些待 JOIN 的输入状态。
+
+该批验证了状态和引用修复，但不能声称解决了有用预测 H2D，
+不能因 Host 后期占用高而继续重复同配置或补无意义 baseline。
+
+下一轮用同一 128-task manifest 的两波 64+64，第二波在 60 秒
+到达并与第一波重叠，保持服务端 running=48 和其余池配置不变。
+目的只是在 child 尚未 RETURN 的窗口内形成真实迁移压力；
+不是人为逐出缓存、不是 throughput 对照。若只能形成极端
+Host 丢弃或仍无待 JOIN 的 Host 目标，也须照实判定不适用。
