@@ -270,7 +270,7 @@ def test_finished_session_records_input_restore_limit_without_old_model_worker()
     ))
     assert runtime._model_worker is None
     anchors = runtime.snapshot_session_anchors(cache, context_id="ctx-a", context_epoch=0)
-    assert anchors.reusable_input_tokens == 8
+    assert anchors.reusable_input_tokens == 7
 
 
 def test_context_opportunity_requires_live_wait_or_ready_session_epoch():

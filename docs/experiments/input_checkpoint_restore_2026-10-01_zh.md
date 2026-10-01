@@ -84,3 +84,63 @@ reactive 与 predictive；比较两侧必须使用同一新版 staging patch。
 HBM Mamba/FULL=0.9、通知与收尾优先级一致，PREPARE_HOST 均关闭。
 本轮首先验证输入 checkpoint 规则、原生传输、真实首次复用，
 以及新增诊断能否解释剩余失配；不提前填写吞吐收益。
+
+## v5 完整结果
+
+目录为 `experiments/raw/qwen35_input_checkpoint_h2d_ab_36root_20261001_v1/`，
+两侧冻结提交均为 `6a330e9`。两侧 36/36 completed，连接错误、
+guard 干预、遥测丢失和账本失效均为零。未做独立任务正确性 grading。
+
+| 指标 | Reactive | Predictive |
+| --- | ---: | ---: |
+| 整轮时间，秒 | 1963.08 | 2028.74 |
+| Completed workflow/hour | 66.02 | 63.88 |
+| 36 个配对任务平均 JCT，秒 | 755.07 | 857.55 |
+| 模型调用 | 5211 | 6466 |
+| 工具调用 | 5062 | 6360 |
+| 输出 token/s | 498.95 | 627.08 |
+| GPU 利用率采样均值，% | 65.73 | 91.07 |
+| 综合缓存命中，% | 95.44 | 95.40 |
+| 预测 H2D ACK | 0 | 0 |
+
+Predictive completed throughput 低 3.24%，没有预测传输，不能据此
+宣称 H2D 收益。两侧生成轨迹与服务工作量明显不同，较高 GPU
+利用率也不是预测成功的证据。
+
+v4 的 pylint-4551/4661、xarray-7393 首次 parent 服务原来命中
+0/0/4096 token；v5 predictive 命中 8576/8512/9088 token。
+仍有剩余损失：xarray-6721 的原始 FULL 匹配为 11327，但 Hybrid
+device hit 只有 4096，Mamba branching point 为 11264。
+36 个首次 parent continuation 中 reactive/predictive 各有 4/1 次
+零 device hit，中位 device hit 为 8156/8155。缓存复用已有改善，
+但旧版缺少原始 FULL 匹配字段，不能把所有差异都归因于同一机制。
+
+原生 reactive H2D 两侧各为 17/20 个有 Host 命中的请求，Host FULL
+hit 仅 10083/26654 token；Host Mamba hit 为 17/20 个 checkpoint。
+Native D2H 仍发生，不是关闭了传输。但多数被保留的 parent 输入
+checkpoint 已在 GPU，或没有可恢复的输入副本，H2D 机会较少。
+这一轮不能作为有足够预取空间的正式工作负载资格证明。
+
+Reactive 的 Host FULL/Mamba 高水位为 76.09/71.73 GB，均无驱逐；
+predictive 为 103.63/94.65 GB，发生 2.18/16.48 GB 驱逐。差异伴随
+明显不同的模型/工具工作量，不能单独解释为预测开关改变了压力。
+两侧均已清理 36 个正常完成的 workspace，保留所有 trace 和 patch，
+服务器停止，GPU 已释放。
+
+## 实验后输入末端修正
+
+本地 tokenizer 复现发现原生成提示最后一个 token 为单换行
+（198），历史 assistant 重序列化后对应位置为双换行（271）；
+示例初始输入 24 token，公共前缀只有 23。v5 中多条 parent 的
+原始 FULL match 也等于旧输入长度减一。
+
+因此在 v5 完成后，将 H2D 输入上界与 Mamba session 引用上界都改为
+`max(0, input_tokens - 1)`，不再引用恰好覆盖整个输入末端的状态。
+此补丁未进入 v5，两侧实验身份不回填。若输入末端正好与 checkpoint
+网格对齐，而较早状态已不存在，保守跳过仍可能需要重算；当前不
+额外生成 checkpoint，后续需验证原生 prefill 的安全边界追踪。
+
+下一阶段不重复扩大相同配置：先补齐安全输入 checkpoint 的存在性
+和 Host 副本机会，再在保持阶段识别稳定的前提下改善剩余工作头。
+滚动候选只降低约 27% 的末段 token MAE、却增加误报，因此保留为
+离线对照，线上冻结模型尚未替换，亚秒级 RETURN 预测仍未达标。

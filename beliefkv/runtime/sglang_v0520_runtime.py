@@ -2083,7 +2083,7 @@ class NativeAdmissionRuntime:
             key=key, component_leaves=leaves,
             captured_monotonic_s=time.monotonic(),
             reusable_input_tokens=(
-                tokens[1]
+                max(0, tokens[1] - 1)
                 if (tokens := self._context_tokens.get(context_id)) is not None
                 and tokens[0] == key.context_epoch else None
             ),
@@ -2365,7 +2365,7 @@ class NativeAdmissionRuntime:
                 "context_epoch": step.key.context_epoch,
                 "node_id": step.node_id, "leaf_node_id": step.leaf_node_id,
                 "reusable_input_tokens": (
-                    tokens[1] if tokens is not None
+                    max(0, tokens[1] - 1) if tokens is not None
                     and tokens[0] == step.key.context_epoch else None
                 ),
             })

@@ -60,6 +60,23 @@ def test_tagged_session_keeps_existing_input_checkpoint_not_output_tail():
     assert component.resolve_session_leaf(req, output) is output
 
 
+def test_input_end_checkpoint_is_not_stable_across_newline_token_merge():
+    component = native_mamba_methods()
+    root = NS(parent=None)
+    earlier = NS(
+        parent=root, key=list(range(4)),
+        component_data=[None, None, NS(value=object(), host_value=None)],
+    )
+    input_end = NS(
+        parent=earlier, key=list(range(4)),
+        component_data=[None, None, NS(value=object(), host_value=None)],
+    )
+    component.tree_core = NS(root_node=root)
+    component._find_reusable_session_leaf = lambda node: input_end
+    req = NS(beliefkv_metadata={"context_id": "parent"}, origin_input_ids=list(range(8)))
+    assert component.resolve_session_leaf(req, input_end) is earlier
+
+
 def test_full_match_cannot_cross_a_missing_native_mamba_checkpoint():
     component = native_mamba_methods()
     partial_input_node = NS(component_data=[
