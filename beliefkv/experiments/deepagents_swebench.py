@@ -34,6 +34,7 @@ from langchain.agents.middleware.types import ModelRequest, ModelResponse
 from langchain.agents.structured_output import ToolStrategy
 from langchain_core.messages import AIMessage, BaseMessage, ToolMessage
 from langchain_core.tools import BaseTool, tool
+from langgraph.types import Command
 from pydantic import BaseModel, Field, field_validator
 
 from beliefkv.experiments.arrival_schedule import build_workflow_arrivals
@@ -2096,11 +2097,85 @@ independent validation remains. Do not perform a child's assigned investigation 
 Children must answer their bounded question and return promptly.
 
 The root coordinates, integrates, edits where needed, and owns the final
-verification. Keep concurrent write assignments disjoint. If the issue is
-already definitively resolved or a concrete blocker prevents further work,
-report that evidence honestly instead of inventing or repeating tasks to
-reach a count. Finish in concise natural language, not a completion JSON.
+verification. Keep concurrent write assignments disjoint. An apparently
+correct patch still needs the independent review and validation rounds above.
+Only a concrete blocker that prevents useful further work is reason to stop
+earlier; explain it honestly rather than inventing tasks.
+Finish in concise natural language, not a completion JSON.
 """
+
+
+class NativeDelegationRoundPromptMiddleware(AgentMiddleware[Any, Any, Any]):
+    """Persist stage instructions in task results, keeping future KV prefixes stable."""
+
+    def __init__(self, audit: JsonlAudit) -> None:
+        super().__init__()
+        self.audit = audit
+        self._rounds: dict[tuple[str, ...], int] = {}
+        self._lock = threading.Lock()
+
+    def wrap_tool_call(self, request: Any, handler: Any) -> Any:
+        result = handler(request)
+        if request.tool_call.get("name") != "task":
+            return result
+        call_id = request.tool_call.get("id")
+        signature = (call_id,)
+        for message in reversed(request.state.get("messages", [])):
+            if isinstance(message, AIMessage) and any(
+                call.get("id") == call_id for call in message.tool_calls
+            ):
+                signature = tuple(sorted(
+                    call["id"] for call in message.tool_calls if call.get("name") == "task"
+                ))
+                break
+        with self._lock:
+            round_index = self._rounds.setdefault(signature, len(self._rounds) + 1)
+        if isinstance(result, ToolMessage):
+            messages = [result]
+        elif isinstance(result, Command) and isinstance(result.update, Mapping):
+            messages = result.update.get("messages", [])
+        else:
+            return result
+        updated, changed = [], False
+        for message in messages:
+            if (
+                not isinstance(message, ToolMessage)
+                or message.tool_call_id != call_id or message.status == "error"
+            ):
+                updated.append(message)
+                continue
+            if round_index < 3:
+                instruction = (
+                    f"\n\nSUPERVISOR PHASE: delegation round {round_index} has returned. "
+                    "Do not treat one investigation as the whole workflow. "
+                    "Integrate the findings and make the candidate change if needed, "
+                    "then issue another task round for independent patch review or "
+                    "regression/compatibility validation before your final answer. "
+                    "Use at least three useful rounds for this repair; choose 1-4 "
+                    "children for the next round. An apparently resolved issue still "
+                    "needs independent validation. Stop earlier only for a concrete "
+                    "blocker, not because the first child returned."
+                )
+            else:
+                instruction = (
+                    "\n\nSUPERVISOR PHASE: integrate this round and verify the result. "
+                    "Delegate further substantive gaps or failed validation; do not "
+                    "repeat completed work merely to increase the round count."
+                )
+            updated.append(message.model_copy(update={
+                "content": _message_text(message) + instruction,
+            }))
+            changed = True
+        if not changed:
+            return result
+        self.audit.emit(
+            "root_delegation_round_prompt", round_index=round_index,
+            tool_call_id=call_id, persisted_in_tool_result=True,
+            forced_tool_choice=False,
+        )
+        if isinstance(result, ToolMessage):
+            return updated[0]
+        return replace(result, update={**result.update, "messages": updated})
 
 
 class InitialInGraphDelegationMiddleware(AgentMiddleware[Any, Any, Any]):
@@ -2894,6 +2969,8 @@ def _build_autonomous_agent(
         TodoListMiddleware(),
         _filesystem_middleware(backend, allow_direct_edits=True),
     ]
+    if delegation_enabled and config.subagent_fanout_profile == "native_in_graph_1to4":
+        middleware.insert(0, NativeDelegationRoundPromptMiddleware(backend.audit))
     if delegation_enabled:
         middleware.append(
             PrivateStateIsolatingSubAgentMiddleware(

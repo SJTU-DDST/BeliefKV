@@ -46,6 +46,7 @@ from beliefkv.experiments.deepagents_swebench import (
     EmptyReasoningRecoveryMiddleware,
     ChildFinalReportShadowMiddleware,
     InitialInGraphDelegationMiddleware,
+    NativeDelegationRoundPromptMiddleware,
     NATIVE_DYNAMIC_1TO4_PROMPT,
     NATIVE_DYNAMIC_INITIAL_PLANNER_PROMPT,
     NATIVE_SUBAGENT_2TO3_PROMPT,
@@ -2095,8 +2096,72 @@ def test_in_graph_profile_starts_root_without_external_planner(
     assert "Repeat this check after every JOIN" in in_graph_prompt
     assert "at least three useful rounds" in in_graph_prompt
     assert "one to four children" in in_graph_prompt
-    assert "instead of inventing or repeating tasks" in in_graph_prompt
+    assert "explain it honestly rather than inventing tasks" in in_graph_prompt
     assert "not a completion JSON" in in_graph_prompt
+
+
+def test_round_prompt_persists_in_real_agent_history_without_forcing_calls(tmp_path):
+    class ToolCallingFakeModel(FakeMessagesListChatModel):
+        def bind_tools(self, tools, **kwargs):
+            return self
+
+    @tool("task")
+    def delegated_task(description: str) -> str:
+        """Return a delegated task report."""
+        return f"Evidence for {description}."
+
+    model = ToolCallingFakeModel(responses=[
+        AIMessage(content="", tool_calls=[
+            {"name": "task", "args": {"description": name}, "id": str(i)},
+        ]) for i, name in enumerate(("investigate", "review", "validate"))
+    ] + [AIMessage(content="An ordinary final report.")])
+    audit = JsonlAudit(tmp_path / "rounds.jsonl")
+    try:
+        agent = create_agent(
+            model=model, tools=[delegated_task],
+            middleware=[NativeDelegationRoundPromptMiddleware(audit)],
+        )
+        result = agent.invoke(
+            {"messages": [HumanMessage(content="Repair the issue.")]},
+            config={"recursion_limit": 30},
+        )
+    finally:
+        audit.close()
+    outcomes = [m for m in result["messages"] if isinstance(m, ToolMessage)]
+    assert len(outcomes) == 3
+    assert "delegation round 1" in outcomes[0].content
+    assert "delegation round 2" in outcomes[1].content
+    assert "verify the result" in outcomes[2].content
+    assert result["messages"][-1].content == "An ordinary final report."
+    records = [json.loads(line) for line in (tmp_path / "rounds.jsonl").read_text().splitlines()]
+    assert [r["round_index"] for r in records] == [1, 2, 3]
+    assert all(r["persisted_in_tool_result"] and not r["forced_tool_choice"] for r in records)
+
+
+def test_parallel_task_results_are_one_round_and_command_state_is_preserved(tmp_path):
+    from langgraph.types import Command
+
+    audit = JsonlAudit(tmp_path / "parallel.jsonl")
+    middleware = NativeDelegationRoundPromptMiddleware(audit)
+    message = AIMessage(content="", tool_calls=[
+        {"name": "task", "args": {}, "id": call_id} for call_id in ("one", "two")
+    ])
+    try:
+        for call_id in ("one", "two"):
+            output = ToolMessage(content="Report.", tool_call_id=call_id, name="task")
+            request = SimpleNamespace(
+                tool_call={"name": "task", "id": call_id},
+                state={"messages": [message]},
+            )
+            result = middleware.wrap_tool_call(
+                request, lambda _: Command(update={"messages": [output], "other": 7}),
+            )
+            assert result.update["other"] == 7
+            assert "delegation round 1" in result.update["messages"][0].content
+            assert output.content == "Report."
+    finally:
+        audit.close()
+    assert len(middleware._rounds) == 1
 
 
 def test_in_graph_first_turn_requires_task_then_restores_root_tools(

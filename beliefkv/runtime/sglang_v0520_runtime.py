@@ -868,7 +868,7 @@ class NativeAdmissionRuntime:
 
     def scheduler_step(self, waiting_queue: Sequence[object] = ()) -> None:
         if self.event_server is not None:
-            self.event_server.drain(max_messages=16)
+            self.event_server.drain(max_messages=128)
         now_ms = time.monotonic() * 1000
         self._poll_semantic_reports(now_ms)
         for join_id, stage in tuple(self._final_stages.items()):
@@ -1506,6 +1506,10 @@ class NativeAdmissionRuntime:
                 )
                 # EOS is known GPU progress, not confirmation that the child RETURNed.
                 if stage.request_id in self._semantic_finished:
+                    ended_ms = self._semantic_finished[stage.request_id][0]
+                    if now_ms - ended_ms > 50:
+                        self.counts["semantic_eos_protocol_window_expired"] += 1
+                        continue
                     remaining = 0.
                 remaining_ms = remaining * 1000 / stage.tokens_per_second
             else:

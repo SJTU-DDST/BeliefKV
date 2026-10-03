@@ -86,5 +86,37 @@ held project 不混用。受 graph FINALIZE 干预的轨迹不作自然
 RETURN 拟合。研究候选不在 pair 中途替换部署权重。
 
 目录：
-`experiments/raw/qwen35_join_prepare_h2d_ab_64root_20261004_v1/`。
+`experiments/raw/qwen35_join_prepare_h2d_ab_64root_20261004_v2/`。
 本文件记录设计和配置，不提前填入收益或预测精度结论。
+
+## v1 中止与修复
+
+v1 是完整 64-root 启动，不是短 canary。约 30 分钟后检查，
+49 个 workflow 已正常完成，其中 45 个只有一轮、四个两轮，
+所以加强后的静态 prompt 仍未提供所需的多轮 workload。
+已停止 v1，未运行 reactive，不将其当作正式对照或训练集。
+
+中止前有 132 个 PREPARE ACK、六个被直接观察到的压力停放，
+两个 H2D 获得 ACK，且均有 FULL 首次复用与 Mamba forward
+复用证明。虽然数据被消费，两个实际 controller submit 都
+在 child RETURN 之后，平均提前量为 -94.76 ms，不是目标中的
+提前预取，也不是吞吐收益证明。H2D 仍发生在服务端 RCCG
+WAIT_JOIN，是控制镜像更新延迟和末段工作高估的共同风险。
+
+v2 将阶段指示持久化追加到新的 task ToolMessage/Command
+结果；一组并行 task 属于同一轮。指示不修改旧 system prompt，
+也不只临时修改一次 model request，否则下一请求移除指示会
+破坏缓存前缀。独立审查/验证仍是实质工作，已看似解决不再作为
+跳过全部后续轮次的理由；具体阻碍仍允许诚实结束，不添加返回
+门禁、工具抑制或 extra model call。
+
+服务端每步有界处理 causal packet 数由 16 增至 128，以减少
+64-root 突发下 RETURN/JOIN 镜像滞后。原生 EOS 后的确定性协议
+窗口只允许 50 ms 内使用，超时单列，不再用宽松两秒窗口将
+已经发生的 RETURN 当作预测机会。真实提前量仍需独立审计，
+这些条件不是精度已经达标的保证。
+
+CPU 首个非线性 work-only 候选在同一 Sphinx 隔离项目快照上的
+末段 token 中位绝对误差由部署工作头的 110.00 降至 72.78，
+但 P90 从 202.87 到 210.26 未改善；未部署、未声称亚秒效果，
+继续比较低成本树模型与更合适的末段监督。
