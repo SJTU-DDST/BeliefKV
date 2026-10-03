@@ -162,8 +162,13 @@ ToolMessage 校验直接终止了 workflow。现于模型响应进入工具
 也不增加模型调用或强制终态格式。空响应重试后的结果使用
 相同规范化路径。
 
-11 个错误由脚本写死的 workflow 3600 秒 deadline 触发，另有
-2 个 APITimeoutError。现恢复现有 14400 秒默认预算，可用
+2026-10-03 复核 deadline audit：11 个在下一次模型提交前
+触发 `ActivationDeadlineExceeded`，另 2 个 `APITimeoutError`
+也与同一 3600 秒预算有关。django-10554 的 summarizer 请求
+提交时约剩 688 ms，xarray-6721 的 root 请求约剩 154 ms，
+随后 deadline 到期并 abort；不能仅按异常类归为独立网络故障。
+即 13 个 deadline 相关错误和 1 个工具 ID 协议错误。
+现恢复现有 14400 秒默认预算，可用
 `ACTIVATION_WALL_CLOCK_SECONDS` 显式覆盖；2048 graph step 与
 32-step 收尾保留不变。该修改不回填本轮结果或掩盖两条 HTTP
 超时。本轮 14 个错误都保留原始现场，不作为完整自然轨迹拟合。
@@ -194,3 +199,7 @@ workspace，保留 14 个错误 workspace 和全部 trace/patch。
 `bash -n` 与 staging patch reverse-check 均通过。
 这些检查覆盖本轮后的代码修复；新增重复预算与 ID 规范化尚未
 在另一轮 GPU workload 中验证，不冒称已改变本轮的浪费计数。
+
+2026-10-03 后续回到约定的 36-root 主场景，不采用本次高压
+配置制造动作。执行注意事项及 3600 秒限制的引入历史见
+`docs/experiment_operating_notes_zh.md`。

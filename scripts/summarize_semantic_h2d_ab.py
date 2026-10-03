@@ -8,6 +8,7 @@ from collections import Counter
 import csv
 import json
 import hashlib
+import os
 from pathlib import Path
 import shutil
 from statistics import mean, median
@@ -191,6 +192,8 @@ def main() -> None:
     parser.add_argument("--root-count", type=int, default=36)
     parser.add_argument("--arm-order", default="reactive predictive_h2d")
     parser.add_argument("--semantic-artifact", type=Path)
+    parser.add_argument("--activation-wall-clock-seconds", type=float, default=14400.)
+    parser.add_argument("--workload-manifest", type=Path)
     args = parser.parse_args()
     if args.cleanup_arm:
         print(json.dumps(cleanup_workspaces(args.cleanup_arm), indent=2))
@@ -203,18 +206,42 @@ def main() -> None:
             args.semantic_artifact
             or root / "experiments/models/child_semantic_work_frozen_phase_20261001_v1/semantic_event_calibrated.json"
         ).resolve()
-        manifest = root / "configs/migration/qwen35_native_reactive_overlapped_128root_workload_2026-09-23.json"
+        manifest = (
+            args.workload_manifest
+            or root / "configs/migration/qwen35_native_reactive_overlapped_128root_workload_2026-09-23.json"
+        ).resolve()
+        workloads = json.loads(manifest.read_text())["workloads"][:args.root_count]
+        patch = root / "patches/sglang-v0.5.20-beliefkv-staging.patch"
         plan = {
-            "scope": "single-pair development benefit validation, not final paper test",
+            "scope": (
+                "single-arm development mechanism observation; no throughput comparison"
+                if args.arm_order.split() == ["predictive_h2d"]
+                else "single-pair development benefit validation, not final paper test"
+            ),
             "code_commit": subprocess.check_output(
                 ["git", "rev-parse", "HEAD"], cwd=root, text=True,
             ).strip(),
             "root_count": args.root_count, "server_running": 48,
+            "workflow_arrival_batch_size": 0,
+            "workflow_arrival_batch_interval_ms": 0,
+            "activation_wall_clock_seconds": args.activation_wall_clock_seconds,
+            "recursion_limit": 2048, "finalization_reserve_steps": 32,
+            "native_reactive_guard_profile": True,
+            "completion_gate_enabled": False,
+            "fanout_profile": os.environ.get("FANOUT_PROFILE", "native_in_graph_1to4"),
+            "context_tokens": 131072, "max_completion_tokens": 8192,
+            "sampling_seed": 21, "host_numa_node": 1,
+            "mem_fraction_static": .94,
             "host_gb": 200, "host_split": "matches_actual_device_pool_bytes",
             "mamba_full_memory_ratio": .9, "native_write_policy": "write_back",
             "semantic_artifact": str(artifact),
             "semantic_artifact_sha256": hashlib.sha256(artifact.read_bytes()).hexdigest(),
+            "workload_manifest": str(manifest),
             "workload_sha256": hashlib.sha256(manifest.read_bytes()).hexdigest(),
+            "workload_instance_ids_in_manifest_order": [
+                row["instance_id"] for row in workloads
+            ],
+            "sglang_patch_sha256": hashlib.sha256(patch.read_bytes()).hexdigest(),
             "priority_in_both_arms": True, "prepare_host_in_both_arms": False,
             "order": args.arm_order.split(),
         }

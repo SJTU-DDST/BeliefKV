@@ -1,6 +1,6 @@
 # BeliefKV 当前架构与实现状态
 
-更新日期：2026-09-30
+更新日期：2026-10-03
 当前 P6 物理执行基线：原 Qwen3-Coder/SGLang 0.5.2rc1；
 Qwen3.5/v0.5.20 已有可选 native admission、工具等待预测和
 JOIN child-completion 三阶段 H2D ticket（概率窗口、结构化完成提示、
@@ -12,6 +12,14 @@ JOIN child-completion 三阶段 H2D ticket（概率窗口、结构化完成提�
 `docs/experiments/`。
 
 ### 当前研究目标与未完成能力
+
+当前执行约束见 `docs/experiment_operating_notes_zh.md`。主场景仍为
+36-root，3600 秒的小规模诊断预算已恢复为 14400 秒。2026-10-01
+重叠 64+64 的真实预测 H2D/部分复用是高压机制证据，不是主场景
+收益；不因缺预取机会继续自行扩大并发。2026-10-03 先完整重跑
+36-root predictive，检查修复后的 Host 来源与首次消费。
+编码器/阶段头固定，仅条件剩余工作头更新；两侧通知/收尾优先级
+仍相同，不新增语义 guard 或强制 completion schema。
 
 语义头已接入独立 CPU process，正文观察有界并与过往 native decode
 计数组合，worker 结果复用现有 idle-poller fd 唤醒。结果不改变 RCCG

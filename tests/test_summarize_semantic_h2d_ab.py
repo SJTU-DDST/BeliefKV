@@ -1,6 +1,7 @@
 import json
+import sys
 
-from scripts.summarize_semantic_h2d_ab import cleanup_workspaces, summarize
+from scripts.summarize_semantic_h2d_ab import cleanup_workspaces, main, summarize
 
 
 def fixture(arm):
@@ -108,3 +109,26 @@ def test_mamba_reuse_requires_matching_forward_proof_and_is_not_double_counted(t
     assert result["full_first_service_outcomes"] == {
         "reused": 0, "not_reused": 1, "unknown": 0,
     }
+
+
+def test_initialize_records_explicit_long_budget_and_manifest_selection(tmp_path, monkeypatch):
+    artifact = tmp_path / "model.json"
+    artifact.write_text("{}")
+    manifest = tmp_path / "workload.json"
+    manifest.write_text(json.dumps({"workloads": [
+        {"instance_id": "z"}, {"instance_id": "a"}, {"instance_id": "b"},
+    ]}))
+    monkeypatch.setattr(sys, "argv", [
+        "summarize", "--run-root", str(tmp_path), "--initialize",
+        "--root-count", "2", "--arm-order", "predictive_h2d",
+        "--semantic-artifact", str(artifact),
+        "--activation-wall-clock-seconds", "21600",
+        "--workload-manifest", str(manifest),
+    ])
+    main()
+    plan = json.loads((tmp_path / "ab_plan.json").read_text())
+    assert plan["activation_wall_clock_seconds"] == 21600
+    assert plan["workload_instance_ids_in_manifest_order"] == ["z", "a"]
+    assert plan["workflow_arrival_batch_size"] == 0
+    assert plan["order"] == ["predictive_h2d"]
+    assert "no throughput comparison" in plan["scope"]

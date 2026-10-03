@@ -7,22 +7,27 @@ ROOT_COUNT="${ROOT_COUNT:-36}"
 PORT="${PORT:-18454}"
 RUN_ROOT="${RUN_ROOT:-$ROOT/experiments/raw/qwen35_semantic_h2d_ab_36root_20260930_v4}"
 ARM_ORDER="${ARM_ORDER:-predictive_h2d reactive}"
+ACTIVATION_WALL_CLOCK_SECONDS="${ACTIVATION_WALL_CLOCK_SECONDS:-14400}"
 ARTIFACT="${SEMANTIC_REPORT_ARTIFACT:-$ROOT/experiments/models/child_semantic_work_frozen_phase_20261001_v1/semantic_event_calibrated.json}"
 
 if [[ $# -ne 0 || -e "$RUN_ROOT" || ! -f "$ARTIFACT" ]] \
   || [[ ! "$ROOT_COUNT" =~ ^[1-9][0-9]*$ ]] || (( ROOT_COUNT > 64 )) \
-  || [[ "$ARM_ORDER" != "predictive_h2d reactive" && "$ARM_ORDER" != "reactive predictive_h2d" ]]; then
-  printf 'Usage: RUN_ROOT=<new path> ROOT_COUNT=36 PORT=18454 bash %s\n' "$0" >&2
+  || [[ "$ARM_ORDER" != "predictive_h2d reactive" && "$ARM_ORDER" != "reactive predictive_h2d" && "$ARM_ORDER" != "predictive_h2d" ]]; then
+  printf 'Usage: RUN_ROOT=<new path> ROOT_COUNT=36 ARM_ORDER="predictive_h2d reactive"|predictive_h2d ACTIVATION_WALL_CLOCK_SECONDS=14400 PORT=18454 bash %s\n' "$0" >&2
   exit 2
 fi
 mkdir -p "$RUN_ROOT"
 "$PYTHON" "$ROOT/scripts/summarize_semantic_h2d_ab.py" \
   --run-root "$RUN_ROOT" --initialize --root-count "$ROOT_COUNT" \
-  --arm-order "$ARM_ORDER" --semantic-artifact "$ARTIFACT"
+  --arm-order "$ARM_ORDER" --semantic-artifact "$ARTIFACT" \
+  --activation-wall-clock-seconds "$ACTIVATION_WALL_CLOCK_SECONDS" \
+  --workload-manifest "${WORKLOAD_MANIFEST:-$ROOT/configs/migration/qwen35_native_reactive_overlapped_128root_workload_2026-09-23.json}"
 for arm in $ARM_ORDER; do
   printf 'Full %s arm: %s roots, fresh server and KV cache\n' "$arm" "$ROOT_COUNT"
   set +e
   AB_MODE="$arm" ROOT_COUNT="$ROOT_COUNT" PORT="$PORT" \
+    ARRIVAL_BATCH_SIZE=0 ARRIVAL_BATCH_INTERVAL_MS=0 \
+    ACTIVATION_WALL_CLOCK_SECONDS="$ACTIVATION_WALL_CLOCK_SECONDS" \
     HOST_SPLIT=auto HICACHE_SIZE_GB=200 HICACHE_WRITE_POLICY=write_back \
     SGLANG_PATCH_FLAVOR=staging CONFIRMED_JOIN_CANARY=0 \
     SEMANTIC_REPORT_ARTIFACT="$ARTIFACT" RUN_ROOT="$RUN_ROOT/$arm" \
@@ -40,4 +45,9 @@ for arm in $ARM_ORDER; do
   "$PYTHON" "$ROOT/scripts/summarize_semantic_h2d_ab.py" \
     --cleanup-arm "$RUN_ROOT/$arm" > "$RUN_ROOT/$arm.workspace_cleanup.json"
 done
-"$PYTHON" "$ROOT/scripts/summarize_semantic_h2d_ab.py" --run-root "$RUN_ROOT"
+if [[ "$ARM_ORDER" == "predictive_h2d" ]]; then
+  "$PYTHON" "$ROOT/scripts/summarize_semantic_h2d_ab.py" \
+    --run-root "$RUN_ROOT" --allow-incomplete
+else
+  "$PYTHON" "$ROOT/scripts/summarize_semantic_h2d_ab.py" --run-root "$RUN_ROOT"
+fi

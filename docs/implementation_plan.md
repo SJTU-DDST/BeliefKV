@@ -1,6 +1,16 @@
 # BeliefKV Current Execution Plan
 
-Status date: 2026-09-30.
+Status date: 2026-10-03.
+
+## Mandatory Experiment Notes
+
+Read `docs/experiment_operating_notes_zh.md` before launching workloads.
+The current main configuration is **36 roots**, not the later 64+64
+high-pressure diagnostic. Do not increase concurrency to manufacture H2D
+opportunities. Long workflows have an explicit **14400-second** budget,
+graph limit 2048 with the accepted 32-step finalization reserve, and the
+native-reactive guard profile. Check effective launch arguments, not just
+defaults. Natural-language child replies remain valid.
 
 ## Active Full H2D A/B
 
@@ -15,9 +25,15 @@ EOS is not confused with a confirmed child RETURN.
 
 Configuration and evidence interpretation:
 `docs/experiments/semantic_h2d_ab_36root_2026-09-30_zh.md`.
-Do not change shared runtime code during the pair. Complete both arms, retain
-failures and unknown Mamba attribution, then decide further prediction work from
-measured first-use and throughput rather than offline MAE alone.
+The 2026-10-03 restart first completes a full 36-root predictive arm with
+the safe input-checkpoint fixes, durable JOIN prefetch budget and the
+frozen-phase/updated-work artifact. Inspect Host sources, first-use,
+eviction and recomputation before scheduling a matched reactive arm.
+Do not automatically run a no-op baseline or raise root count after a
+zero-opportunity result. This is a full workload, not a short gate/canary.
+Do not change shared runtime code during a comparison; retain failures
+and unknown Mamba attribution and measure first-use and throughput rather
+than interpreting offline MAE or ACK count as benefit.
 
 ## Stage 2 Semantic And Calibration Goal
 
