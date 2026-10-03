@@ -98,6 +98,17 @@ request attempt 改变不能清零预算，也不能长期 pin 预取数据。
 不全部记为有用 KV 丢失，uncached input 不全部记为重算。
 块归因 probe 溢出时不能以观测子集推断全量重算率。
 
+usage 与物理占用分开：SGLang 的 FULL/Mamba usage 会扣除
+可驱逐缓存，物理 free-list 接近零时 usage 仍可能很低。
+不能用日志 usage 推断池未填满，也不能用填满推断热 KV 满池。
+2026-10-03 的 36-root 观测到 FULL usage 峰值 33.34%、
+而 FULL/Mamba 物理占用曾接近/达到 100%。
+
+冷启动时不能要求本轮先发生三次 H2D 才初始化其预测服务估计，
+然后通过增加并发绕过这一依赖。缺实测服务模型时先核对已有
+证据与初始化，不把被服务样本保护挡住的动作算成预测头失败；
+有效输入目标仍驻留 GPU 时，即使估计就绪也不应发 H2D。
+
 native EOS、child RETURN、JOIN satisfied、parent 首次 GPU
 服务是不同边界。ACK 到首次服务不是 child RETURN 预测误差；
 EOS 之后收到的快照不能声称生成结束前预测准确。
