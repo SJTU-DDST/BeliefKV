@@ -1080,7 +1080,11 @@ class NativeReactiveTelemetry:
         if cache is None or getattr(req, "session_id", None) is None:
             return {}
         try:
-            anchors = cache.session_refs.snapshot_session_leaf_anchors(
+            snapshot = getattr(
+                cache.session_refs, "snapshot_latest_session_leaf_anchors",
+                cache.session_refs.snapshot_session_leaf_anchors,
+            )
+            anchors = snapshot(
                 req.session_id, req.session_generation, max_leaves=8,
             )
             if anchors is None:

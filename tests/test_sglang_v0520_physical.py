@@ -104,6 +104,26 @@ def test_native_shadow_expectation_rejects_invalid_operation(change):
         shadow_expectation_from_native_op("prepare-1", step, op, controller)
 
 
+def test_prepare_ack_crosses_only_one_epoch_with_same_live_native_session():
+    obligation = replace(expected(), session_id="s", session_generation=1)
+    for epoch, generation, accepted in ((4, 1, True), (5, 1, False), (4, 2, False)):
+        ledger = PhysicalTransactionLedger()
+        ledger.register(obligation)
+        assert ledger.pending_transfer_sessions == (("ctx", 3, "s", 1),)
+        if accepted:
+            result = ledger.observe(
+                ack(receipt()), live_context_epochs={"ctx": epoch},
+                live_context_sessions={"ctx": ("s", generation)},
+            )
+            assert result[0].action == "PREPARE_HOST"
+        else:
+            with pytest.raises(PhysicalReceiptError):
+                ledger.observe(
+                    ack(receipt()), live_context_epochs={"ctx": epoch},
+                    live_context_sessions={"ctx": ("s", generation)},
+                )
+
+
 class Pool(str, Enum):
     KV = "kv"
     MAMBA = "mamba"

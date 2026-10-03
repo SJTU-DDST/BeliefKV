@@ -194,6 +194,8 @@ def main() -> None:
     parser.add_argument("--semantic-artifact", type=Path)
     parser.add_argument("--activation-wall-clock-seconds", type=float, default=14400.)
     parser.add_argument("--workload-manifest", type=Path)
+    parser.add_argument("--prepare-host", type=int, choices=(0, 1), default=0)
+    parser.add_argument("--h2d-seed", type=Path)
     args = parser.parse_args()
     if args.cleanup_arm:
         print(json.dumps(cleanup_workspaces(args.cleanup_arm), indent=2))
@@ -242,9 +244,15 @@ def main() -> None:
                 row["instance_id"] for row in workloads
             ],
             "sglang_patch_sha256": hashlib.sha256(patch.read_bytes()).hexdigest(),
-            "priority_in_both_arms": True, "prepare_host_in_both_arms": False,
+            "priority_in_both_arms": True,
+            "prepare_host_in_both_arms": bool(args.prepare_host),
+            "shared_pressure_parent_parking": bool(args.prepare_host),
+            "prepare_policy": "live_wait_join_safe_input;host_no_reclaim;real_allocator_pressure",
             "order": args.arm_order.split(),
         }
+        if args.h2d_seed:
+            plan["h2d_seed_artifact"] = str(args.h2d_seed.resolve())
+            plan["h2d_seed_sha256"] = hashlib.sha256(args.h2d_seed.read_bytes()).hexdigest()
         (args.run_root / "ab_plan.json").write_text(
             json.dumps(plan, indent=2) + "\n", encoding="utf-8",
         )
@@ -257,13 +265,18 @@ def main() -> None:
     if missing and not args.allow_incomplete:
         raise ValueError(f"missing terminal arms: {missing}")
     report = {"status": "partial" if missing else "complete", "arms": arms}
+    plan_path = args.run_root / "ab_plan.json"
+    expected_prepare = (
+        json.loads(plan_path.read_text()).get("prepare_host_in_both_arms", False)
+        if plan_path.exists() else False
+    )
     for name, arm in arms.items():
         if arm is None:
             continue
         state = arm["runtime_state"]
         if not state or state["physical_disabled"]:
             raise ValueError(f"{name}: missing runtime evidence or disabled physical ledger")
-        if state["prepare_host"] or not state["final_stage_priority"]:
+        if state["prepare_host"] != expected_prepare or not state["final_stage_priority"]:
             raise ValueError(f"{name}: mismatched PREPARE/priority configuration")
         expected = name == "predictive_h2d"
         if state["final_stage_prefetch"] != expected or state["semantic_worker_configured"] != expected:

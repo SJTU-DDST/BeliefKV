@@ -16,6 +16,8 @@ SKIP_SERVER_WARMUP="${SKIP_SERVER_WARMUP:-1}"
 CONFIRMED_JOIN_CANARY="${CONFIRMED_JOIN_CANARY:-0}"
 FANOUT_PROFILE="${FANOUT_PROFILE:-native_in_graph_1to4}"
 AB_MODE="${AB_MODE:-off}"
+PREPARE_HOST="${PREPARE_HOST:-0}"
+H2D_SEED_ARTIFACT="${H2D_SEED_ARTIFACT:-$ROOT/experiments/models/native_h2d_ack_seed_20261004.json}"
 SEMANTIC_REPORT_ARTIFACT="${SEMANTIC_REPORT_ARTIFACT:-$ROOT/experiments/models/child_semantic_work_frozen_phase_20261001_v1/semantic_event_calibrated.json}"
 RUN_ROOT="${RUN_ROOT:-$ROOT/experiments/raw/qwen35_native_regime_${HICACHE_WRITE_POLICY}_${FANOUT_PROFILE}_${HICACHE_SIZE_GB}g_${HOST_SPLIT/:/_}_${ROOT_COUNT}root_v1}"
 MANIFEST="${WORKLOAD_MANIFEST:-$ROOT/configs/migration/qwen35_native_reactive_overlapped_128root_workload_2026-09-23.json}"
@@ -45,6 +47,7 @@ if [[ $# -ne 0 || ! "$ROOT_COUNT" =~ ^[1-9][0-9]*$ ]] \
   || [[ "$CONFIRMED_JOIN_CANARY" != "0" && "$CONFIRMED_JOIN_CANARY" != "1" ]] \
   || [[ "$FANOUT_PROFILE" != "native_dynamic_1to4" && "$FANOUT_PROFILE" != "native_in_graph_1to4" ]] \
   || [[ "$AB_MODE" != "off" && "$AB_MODE" != "reactive" && "$AB_MODE" != "predictive_h2d" ]] \
+  || [[ "$PREPARE_HOST" != "0" && "$PREPARE_HOST" != "1" ]] \
   || [[ "$AB_MODE" != "off" && "$CONFIRMED_JOIN_CANARY" != "0" ]] \
   || [[ "$AB_MODE" == "predictive_h2d" && ! -f "$SEMANTIC_REPORT_ARTIFACT" ]] \
   || [[ "$CONFIRMED_JOIN_CANARY" == "1" && "$SGLANG_PATCH_FLAVOR" != "writeback_prepare" ]] \
@@ -82,14 +85,19 @@ ab_env=()
 unset_env=()
 if [[ "$AB_MODE" != "off" ]]; then
   unset_env=(-u BELIEFKV_SEMANTIC_REPORT_ARTIFACT \
-    -u BELIEFKV_COMPLETION_LEAD_ARTIFACT -u BELIEFKV_COMPLETION_LEAD_SHA256)
+    -u BELIEFKV_COMPLETION_LEAD_ARTIFACT -u BELIEFKV_COMPLETION_LEAD_SHA256 \
+    -u BELIEFKV_H2D_SEED -u BELIEFKV_H2D_SEED_SHA256)
   export BELIEFKV_EMIT_SEMANTIC_TEXT=1
-  ab_env=(BELIEFKV_ENABLE_FINAL_STAGE_PRIORITY=1 BELIEFKV_ENABLE_PREPARE_HOST=0)
+  ab_env=(BELIEFKV_ENABLE_FINAL_STAGE_PRIORITY=1 BELIEFKV_ENABLE_PREPARE_HOST="$PREPARE_HOST")
   if [[ "$AB_MODE" == "reactive" ]]; then
     ab_env+=(BELIEFKV_ENABLE_FINAL_STAGE_PREFETCH=0)
   else
     ab_env+=(BELIEFKV_ENABLE_FINAL_STAGE_PREFETCH=1 \
       BELIEFKV_SEMANTIC_REPORT_ARTIFACT="$SEMANTIC_REPORT_ARTIFACT")
+    if [[ -f "$H2D_SEED_ARTIFACT" ]]; then
+      ab_env+=(BELIEFKV_H2D_SEED="$H2D_SEED_ARTIFACT" \
+        BELIEFKV_H2D_SEED_SHA256="$(sha256sum "$H2D_SEED_ARTIFACT" | cut -d' ' -f1)")
+    fi
   fi
 fi
 setsid env -u BELIEFKV_FULL_MAMBA_HOST_SPLIT "${unset_env[@]}" \

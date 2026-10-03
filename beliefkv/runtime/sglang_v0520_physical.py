@@ -395,6 +395,7 @@ def next_shadow_backup_step(
             provenance.setdefault(current, leaf)
             current = parent_id
     depth: dict[int, int] = {}
+    prefix_lengths: dict[int, int] = {}
     for node_id in paths:
         current = node_id
         length = 0
@@ -402,9 +403,20 @@ def next_shadow_backup_step(
             length += 1
             current = nodes[current].parent_id
         depth[node_id] = length
+    for node_id in sorted(paths, key=lambda value: (depth[value], value)):
+        node = nodes[node_id]
+        if candidate.anchors.reusable_input_tokens is not None:
+            if type(node.key_tokens) is not int or node.key_tokens < 0:
+                return None
+            prefix_lengths[node_id] = prefix_lengths.get(node.parent_id, 0) + node.key_tokens
     # Depth from root, so a host copy of a parent settles before its child.
     for node_id in sorted(paths, key=lambda value: (depth[value], value)):
         node = nodes[node_id]
+        if (
+            candidate.anchors.reusable_input_tokens is not None
+            and prefix_lengths[node_id] > candidate.anchors.reusable_input_tokens
+        ):
+            continue
         parent = nodes.get(node.parent_id)
         if (
             node.pending_write_id is not None
@@ -859,6 +871,15 @@ class PhysicalTransactionLedger:
             and expected.session_generation is not None
         )
 
+    @property
+    def pending_transfer_sessions(self) -> tuple[tuple[str, int, str, int], ...]:
+        return tuple(
+            (expected.context_id, expected.context_epoch,
+             expected.session_id, expected.session_generation)
+            for expected, _, _ in self._pending.values()
+            if expected.session_id is not None and expected.session_generation is not None
+        )
+
     def _remember(self, command_id: str) -> None:
         if len(self._history) == self._history_size:
             self._seen.remove(self._history.popleft())
@@ -1045,7 +1066,7 @@ class PhysicalTransactionLedger:
             )
             epoch_matches = (
                 live_epoch == expected.context_epoch
-                or expected.action == "PREFETCH_GPU"
+                or expected.action in ("PREFETCH_GPU", "PREPARE_HOST")
                 and same_session and live_epoch == expected.context_epoch + 1
             )
             if (

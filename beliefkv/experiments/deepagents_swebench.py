@@ -2081,20 +2081,25 @@ duplicate work or split one question merely to increase fan-out. Wait for
 the child results in this conversation before integrating them.
 
 Treat each JOIN as a phase boundary, not the end of delegation. Integrate
-the reports, identify the next concrete phase (for example, a reproduction,
-a focused fix, independent regression tests, or compatibility validation),
-and actively look for work that can be assigned without duplicating earlier
-work. If at least one substantive, independent deliverable remains, launch
-another round of one to four native task calls before doing that work
-yourself. Repeat this check after every JOIN, including after a fix when
-independent validation remains. For a nontrivial repair, normally plan at
-least one follow-up round after the initial investigation, such as a
-focused implementation task or independent validation of the resulting
-patch. Keep write assignments disjoint and give
-each child a bounded deliverable; the root owns integration and final
-verification. Do not repeat finished work, invent work to hit a round
-count, or delegate when only dependent integration or a trivial step remains.
-Finish with the required WorkflowCompletion response.
+the reports and explicitly plan the next delegation round. For a substantive
+repair, use at least three useful rounds across the workflow:
+1. Investigate the implementation and reproduction.
+2. After integrating the evidence or making a candidate fix, delegate a
+   bounded review of the changed behavior or remaining failure.
+3. Delegate independent regression or compatibility validation of the
+   integrated result before the root's final verification.
+Each round may contain one to four children; choose the count from the
+independent work, not a fixed fan-out. Launch additional rounds whenever
+new evidence, a material edit, or a failed test exposes another substantive
+question. Repeat this check after every JOIN, including after a fix when
+independent validation remains. Do not perform a child's assigned investigation again yourself.
+Children must answer their bounded question and return promptly.
+
+The root coordinates, integrates, edits where needed, and owns the final
+verification. Keep concurrent write assignments disjoint. If the issue is
+already definitively resolved or a concrete blocker prevents further work,
+report that evidence honestly instead of inventing or repeating tasks to
+reach a count. Finish in concise natural language, not a completion JSON.
 """
 
 
@@ -4233,7 +4238,11 @@ def _run_workflow(
     (workflow_dir / "model.patch").write_text(
         patch + ("\n" if patch else ""), encoding="utf-8"
     )
-    correctness_gate = validate_workflow_completion(completion, patch=patch)
+    correctness_gate = (
+        validate_workflow_completion(completion, patch=patch)
+        if config.completion_gate_enabled else
+        {"passed": None, "status": "not_independently_graded", "errors": []}
+    )
     control_delivery = adapter.control_delivery_summary()
     agent_control = summarize_agent_control(sandbox_audit_path)
     trace = _trace_summary(trace_path)
@@ -4247,8 +4256,9 @@ def _run_workflow(
         trace=trace,
         child_reports=child_reports,
     )
-    task_correctness_valid = bool(correctness_gate.get("passed")) and not bool(
-        control_delivery.get("degraded")
+    task_correctness_valid = (
+        bool(correctness_gate.get("passed")) and not bool(control_delivery.get("degraded"))
+        if config.completion_gate_enabled else None
     )
     summary = {
         "schema_version": 1,
@@ -4581,8 +4591,9 @@ def run_experiment(config: DeepAgentsExperimentConfig) -> dict[str, Any]:
         "semantic_gate_completed_workflows": sum(
             bool(item.get("semantic_gate_controlled_stop")) for item in results
         ),
-        "successful_workflows": sum(
-            bool(item.get("correctness_gate", {}).get("passed")) for item in results
+        "successful_workflows": (
+            sum(bool(item.get("correctness_gate", {}).get("passed")) for item in results)
+            if config.completion_gate_enabled else None
         ),
         "measurement_valid_workflows": sum(
             bool(item.get("measurement_valid")) for item in results

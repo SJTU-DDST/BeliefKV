@@ -1,18 +1,29 @@
 # BeliefKV Current Execution Plan
 
-Status date: 2026-10-03.
+Status date: 2026-10-04.
 
 ## Mandatory Experiment Notes
 
 Read `docs/experiment_operating_notes_zh.md` before launching workloads.
-The current main configuration is **36 roots**, not the later 64+64
-high-pressure diagnostic. Do not increase concurrency to manufacture H2D
+The user approved **64 roots** on 2026-10-04 with multi-round delegation,
+selective waiting-parent PREPARE and pressure-triggered Host-only residency.
+This replaces the previous 36-root diagnostic, not with 128 or 64+64.
+Do not increase concurrency beyond the approved configuration to manufacture H2D
 opportunities. Long workflows have an explicit **14400-second** budget,
 graph limit 2048 with the accepted 32-step finalization reserve, and the
 native-reactive guard profile. Check effective launch arguments, not just
 defaults. Natural-language child replies remain valid.
 
 ## Active Full H2D A/B
+
+The active pair is now
+`docs/experiments/join_prepare_h2d_64root_2026-10-04_zh.md`.
+Both arms share JOIN parent preparation and pressure parking; only predictive
+has pre-RETURN semantic H2D. This isolates early restoration and is not an
+untouched-native baseline. Seed transfer timing with verified historical ACKs,
+audit actual submission relative to child RETURN, and keep work-head research
+separate from the frozen deployed model during the pair.
+The following 36-root paragraphs document the completed earlier comparison.
 
 The asynchronous semantic head is now connected through bounded delivered-text
 observations and native decode progress, with request/session/epoch validation.

@@ -67,6 +67,7 @@ from beliefkv.predictor.structured_frontier import LocalFrontierFeatures
 from beliefkv.runtime.semantic_report_worker import (
     SEMANTIC_TEXT, SemanticReportInput, SemanticReportReply, SemanticReportWorker,
 )
+from beliefkv.runtime.native_h2d_seed import load_h2d_seed
 
 if TYPE_CHECKING:
     from beliefkv.core.events import RuntimeEvent
@@ -225,7 +226,18 @@ class NativeAdmissionRuntime:
         self._completion_hints: dict[str, _CompletionReentryHint] = {}
         self._final_stages: dict[str, _ChildFinalStage] = {}
         self._final_request_stages: dict[str, _ChildFinalStage] = {}
-        self._h2d_samples: deque[tuple[int, float]] = deque(maxlen=16)
+        self._h2d_samples: deque[tuple[int, float]] = deque(maxlen=64)
+        seed_path = os.environ.get("BELIEFKV_H2D_SEED")
+        seed_sha = os.environ.get("BELIEFKV_H2D_SEED_SHA256")
+        if bool(seed_path) != bool(seed_sha):
+            raise ValueError("H2D cold-start seed requires path and SHA256")
+        seed = load_h2d_seed(seed_path, seed_sha) if seed_path else ()
+        self._h2d_samples.extend(seed)
+        self._h2d_seed_count = len(seed)
+        self._join_prepare_cursor = 0
+        self._join_prepare_next_ms = 0.
+        self._join_prepare_commands: dict[_JoinPrefetchIdentity, str] = {}
+        self._parent_pressure_candidates: dict[int, tuple[PrefillCandidateKey, int | float]] = {}
         self._final_priority_normal_admissions = 4
         self._final_priority_promoted: str | None = None
         self._final_priority_native_rank: int | None = None
@@ -394,6 +406,9 @@ class NativeAdmissionRuntime:
 
     def attach_native_cache(self, cache: object) -> None:
         self._native_cache = cache
+        if callable(getattr(cache, "_evict_backed_join_parent", None)):
+            cache.beliefkv_join_pressure_validator = self._live_parent_pressure_node
+            cache.beliefkv_join_pressure_parked = self._on_parent_pressure_parked
 
     def predictor_fileno(self) -> int | None:
         if self._semantic_worker is not None:
@@ -967,6 +982,8 @@ class NativeAdmissionRuntime:
                     else self.enable_admission_prefetch or self.enable_final_stage_prefetch
                 ),
                 "prepare_host": self.enable_prepare_host,
+                "h2d_seed_samples": self._h2d_seed_count,
+                "h2d_service_samples": len(self._h2d_samples),
                 "semantic_worker_configured": self._semantic_worker is not None,
                 "semantic_worker_error": (
                     self._semantic_worker.error if self._semantic_worker else ""
@@ -1002,10 +1019,17 @@ class NativeAdmissionRuntime:
             if cache is None or key.session_id is None or key.session_generation is None:
                 return "anchor_snapshot_unavailable"
             try:
-                leaves = cache.session_refs.snapshot_session_leaf_anchors(
+                snapshot = getattr(
+                    cache.session_refs, "snapshot_latest_session_leaf_anchors",
+                    cache.session_refs.snapshot_session_leaf_anchors,
+                )
+                leaves = snapshot(
                     key.session_id, key.session_generation, max_leaves=8
                 )
                 if leaves is None:
+                    reason = getattr(cache.session_refs, "session_anchor_snapshot_reason", None)
+                    if callable(reason):
+                        return reason(key.session_id, key.session_generation)
                     return "native_anchor_snapshot_rejected"
                 if not any(component_leaves for _, component_leaves in leaves):
                     return "session_has_no_cached_leaves"
@@ -1440,6 +1464,8 @@ class NativeAdmissionRuntime:
         ) or self.physical_disabled:
             return
         if len(self._h2d_samples) < 3 or self.physical_ledger.pending_count:
+            if len(self._h2d_samples) < 3:
+                self.counts["final_stage_no_h2d_service_evidence"] += 1
             return
         if self._join_ticket is not None and self._live_join_ticket():
             return
@@ -1528,7 +1554,7 @@ class NativeAdmissionRuntime:
             )
             # Do not occupy HBM far ahead of RETURN, even when the largest
             # historical transfer was slow.
-            if remaining_ms > min(h2d_ms + 250, 2_000):
+            if remaining_ms > min(h2d_ms + 250, 500):
                 if self._semantic_worker is not None:
                     self.counts["semantic_h2d_not_latest_start"] += 1
                 continue
@@ -1553,6 +1579,9 @@ class NativeAdmissionRuntime:
                     "remaining_ms": remaining_ms,
                     "h2d_ms": h2d_ms,
                     "required_bytes": required_bytes,
+                    "context_id": stage.key.context_id,
+                    "context_epoch": stage.key.context_epoch,
+                    "child_invocation_id": stage.child_id,
                 })
             break
 
@@ -2113,7 +2142,11 @@ class NativeAdmissionRuntime:
         ):
             return None
         try:
-            leaves = cache.session_refs.snapshot_session_leaf_anchors(
+            snapshot = getattr(
+                cache.session_refs, "snapshot_latest_session_leaf_anchors",
+                cache.session_refs.snapshot_session_leaf_anchors,
+            )
+            leaves = snapshot(
                 key.session_id, key.session_generation, max_leaves=8
             )
             if leaves is not None:
@@ -2189,11 +2222,27 @@ class NativeAdmissionRuntime:
         )
 
     def refreshed_shadow_backup_step(
-        self, *, context_id: str | None = None
+        self, *, context_id: str | None = None, source: str = "tool_wait"
     ) -> ShadowBackupStep | None:
         """Recheck a tool wait and its native closure at the action safe point."""
         if not self.enable_prepare_host:
             return None
+        if source == "join_prepare":
+            key = self.context_sessions.get(context_id)
+            parent = self.graph.invocations.get(key.invocation_id) if key else None
+            if (
+                key is None or parent is None or self._terminal(key)
+                or parent.state is not InvocationState.WAIT_JOIN
+                or self._join_parent_key(parent.join_id) != key
+                or parent.join_id in self._noncontinuing_joins
+                or parent.join_id in self._final_stages
+            ):
+                return None
+            candidate = self.capture_shadow_candidate(
+                self._native_cache, context_id=key.context_id,
+                context_epoch=key.context_epoch,
+            )
+            return next_shadow_backup_step(candidate) if candidate is not None else None
         hint = (self.tool_wait_hints.get(context_id) if context_id is not None
                 else self.tool_wait_hint)
         cache = self._native_cache
@@ -2219,7 +2268,9 @@ class NativeAdmissionRuntime:
         self.shadow_candidate = candidate
         return next_shadow_backup_step(candidate) if candidate is not None else None
 
-    def issue_shadow_backup_step(self, step: ShadowBackupStep) -> str | None:
+    def issue_shadow_backup_step(
+        self, step: ShadowBackupStep, *, source: str = "tool_wait",
+    ) -> str | None:
         """Submit a revalidated native shadow; return its ID, not ACK credit.
 
         The scheduler's action policy must first authorize the step. This
@@ -2230,7 +2281,9 @@ class NativeAdmissionRuntime:
             self.physical_disabled
             or cache is None
             or not isinstance(step, ShadowBackupStep)
-            or self.refreshed_shadow_backup_step(context_id=step.key.context_id) != step
+            or self.refreshed_shadow_backup_step(
+                context_id=step.key.context_id, source=source,
+            ) != step
         ):
             self.counts["shadow_step_stale"] += 1
             return None
@@ -2270,7 +2323,146 @@ class NativeAdmissionRuntime:
             self.physical_disabled = True
             raise PhysicalReceiptError("native shadow issued without a matching reservation")
         self.counts["shadow_native_issued"] += 1
+        if self._opportunity_writer is not None:
+            self._opportunity_writer.record({
+                "event": "prepare_native_issued", "ts_ms": time.time() * 1000,
+                "command_id": command_id, "source": source,
+                "context_id": step.key.context_id,
+                "context_epoch": step.key.context_epoch,
+                "node_id": step.node_id, "leaf_node_id": step.leaf_node_id,
+            })
         return command_id
+
+    def _live_parent_pressure_node(self, node_id: int, creation_time: int | float) -> bool:
+        record = self._parent_pressure_candidates.get(node_id)
+        if record is None or record[1] != creation_time:
+            return False
+        key = record[0]
+        parent = self.graph.invocations.get(key.invocation_id)
+        return bool(
+            self.enable_prepare_host and not self.physical_disabled
+            and self.context_sessions.get(key.context_id) == key
+            and parent is not None and parent.state is InvocationState.WAIT_JOIN
+            and self._join_parent_key(parent.join_id) == key
+            and parent.join_id not in self._final_stages
+            and not self._terminal(key)
+        )
+
+    def _on_parent_pressure_parked(self, node_id: int, freed: dict[int, int]) -> None:
+        record = self._parent_pressure_candidates.get(node_id)
+        if record is None:
+            return
+        key = record[0]
+        self.counts["parent_pressure_demoted"] += 1
+        if self._opportunity_writer is not None:
+            self._opportunity_writer.record({
+                "event": "parent_pressure_demoted", "ts_ms": time.time() * 1000,
+                "workflow_id": key.root_workflow_id,
+                "context_id": key.context_id, "context_epoch": key.context_epoch,
+                "node_id": node_id, "freed_units": freed,
+                "evidence": "real_allocation_shortfall;unlocked_exclusive_session;host_copy_settled",
+            })
+
+    def _publish_parent_pressure_candidates(self) -> None:
+        cache = self._native_cache
+        candidates = []
+        for node_id, (_, created) in self._parent_pressure_candidates.items():
+            try:
+                node = cache.tree_core.node_by_id(node_id)
+                state = node.component_data[2]
+            except (AttributeError, KeyError, RuntimeError, ValueError):
+                continue
+            if (
+                node.creation_time == created
+                and state.value is not None and state.host_value is not None
+                and state.lock_ref == 0 and state.session_ref == 1
+                and node_id not in getattr(cache, "ongoing_write_through", {})
+                and node.write_through_pending_id is None
+                and node.load_back_pending_id is None
+            ):
+                candidates.append((node_id, created))
+        cache.beliefkv_join_pressure_candidates = tuple(candidates)
+
+    def dispatch_join_prepare(self, waiting_queue: Sequence[object] = ()) -> None:
+        """Back up waiting parents under pressure; never evict at this safe point."""
+        cache = self._native_cache
+        if not self.enable_prepare_host or cache is None or self.physical_disabled:
+            return
+        now_ms = time.monotonic() * 1000
+        if now_ms < self._join_prepare_next_ms:
+            return
+        self._join_prepare_next_ms = now_ms + 50.
+        self._parent_pressure_candidates = {
+            node: record for node, record in self._parent_pressure_candidates.items()
+            if self._live_parent_pressure_node(node, record[1])
+        }
+        self._publish_parent_pressure_candidates()
+        if self.physical_ledger.pending_count:
+            return
+        headroom = observe_static_full_mamba_headroom(cache)
+        if not headroom.observable:
+            return
+        child_waiting = sum(
+            bool((key := _request_key(req)) and (
+                invocation := self.graph.invocations.get(key.invocation_id)
+            ) and invocation.parent_invocation_id is not None)
+            for req in waiting_queue
+        )
+        if (
+            headroom.device_mamba_free_slots >= max(32, 4 * child_waiting)
+            and headroom.device_full_free_tokens >= max(65536, 8192 * child_waiting)
+        ):
+            return
+        parents = sorted(
+            (key for key in self.context_sessions.values()
+             if (parent := self.graph.invocations.get(key.invocation_id)) is not None
+             and parent.state is InvocationState.WAIT_JOIN),
+            key=lambda key: key.context_id,
+        )
+        if not parents:
+            return
+        for offset in range(min(len(parents), 8)):
+            key = parents[(self._join_prepare_cursor + offset) % len(parents)]
+            parent = self.graph.invocations[key.invocation_id]
+            identity = _JoinPrefetchIdentity.from_parent(parent.join_id, key)
+            prior = self._join_prepare_commands.get(identity)
+            if prior is not None and self.physical_ledger.is_pending(prior):
+                continue
+            step = self.refreshed_shadow_backup_step(
+                context_id=key.context_id, source="join_prepare",
+            )
+            if step is None:
+                anchors = self.snapshot_session_anchors(
+                    cache, context_id=key.context_id, context_epoch=key.context_epoch,
+                )
+                candidate = (
+                    capture_action_local_shadow(
+                        cache, anchors, for_prefetch=True, include_non_actionable=True,
+                    ) if anchors is not None else None
+                )
+                if candidate is not None and anchors.reusable_input_tokens is not None:
+                    nodes = {node.node_id: node for node in candidate.nodes}
+                    for node in candidate.nodes:
+                        if not (node.mamba_device_present and node.mamba_host_present):
+                            continue
+                        prefix, current = 0, node
+                        while current is not None:
+                            prefix += current.key_tokens or 0
+                            current = nodes.get(current.parent_id)
+                        if prefix <= anchors.reusable_input_tokens:
+                            self._parent_pressure_candidates[node.node_id] = (
+                                key, node.creation_time,
+                            )
+                continue
+            command = self.issue_shadow_backup_step(step, source="join_prepare")
+            if command is None:
+                continue
+            self._join_prepare_commands[identity] = command
+            self._parent_pressure_candidates[step.node_id] = (key, step.creation_time)
+            self._join_prepare_cursor = (self._join_prepare_cursor + offset + 1) % len(parents)
+            self.counts["join_prepare_issued"] += 1
+            break
+        self._publish_parent_pressure_candidates()
 
     def refreshed_prefetch_gpu_step(
         self, *, source: str = "tool_wait", context_id: str | None = None
@@ -2409,18 +2601,30 @@ class NativeAdmissionRuntime:
         self.counts["prefetch_native_issued"] += 1
         if self._opportunity_writer is not None:
             tokens = self._context_tokens.get(step.key.context_id)
-            self._opportunity_writer.record({
+            record = {
                 "event": "prefetch_native_issued",
                 "ts_ms": time.time() * 1000,
                 "command_id": command_id, "source": source,
                 "context_id": step.key.context_id,
                 "context_epoch": step.key.context_epoch,
                 "node_id": step.node_id, "leaf_node_id": step.leaf_node_id,
+                "node_creation_time": step.creation_time,
                 "reusable_input_tokens": (
                     max(0, tokens[1] - 1) if tokens is not None
                     and tokens[0] == step.key.context_epoch else None
                 ),
-            })
+            }
+            ticket = self._join_ticket
+            if source == "join_ticket" and ticket is not None:
+                stage = self._final_stages.get(ticket.join_id)
+                record.update({
+                    "workflow_id": step.key.root_workflow_id,
+                    "join_id": ticket.join_id,
+                    "child_invocation_id": stage.child_id if stage else None,
+                    "child_request_id": stage.request_id if stage else None,
+                    "phase": ticket.phase,
+                })
+            self._opportunity_writer.record(record)
         return command_id
 
     def defer_prefill_for_prefetch(self, req: object) -> bool:
@@ -2539,7 +2743,7 @@ class NativeAdmissionRuntime:
         # registers a new visible key. Native session generation is the authority
         # for accepting the outstanding old-prefix H2D ACK across that one step.
         cache = self._native_cache
-        for context_id, epoch, session_id, generation in self.physical_ledger.pending_h2d_sessions:
+        for context_id, epoch, session_id, generation in self.physical_ledger.pending_transfer_sessions:
             if context_id in live_sessions or live_epochs.get(context_id) != epoch + 1:
                 continue
             context = self.graph.contexts.get(context_id)
@@ -2547,7 +2751,11 @@ class NativeAdmissionRuntime:
             if workflow is None or workflow.end_ts_ms is not None or cache is None:
                 continue
             try:
-                anchors = cache.session_refs.snapshot_session_leaf_anchors(
+                snapshot = getattr(
+                    cache.session_refs, "snapshot_latest_session_leaf_anchors",
+                    cache.session_refs.snapshot_session_leaf_anchors,
+                )
+                anchors = snapshot(
                     session_id, generation, max_leaves=8,
                 )
             except (AttributeError, KeyError, TypeError, ValueError):
@@ -2573,6 +2781,10 @@ class NativeAdmissionRuntime:
                 })
             return ()
         self.completed_physical_actions.extend(completed)
+        self._join_prepare_commands = {
+            identity: command for identity, command in self._join_prepare_commands.items()
+            if self.physical_ledger.is_pending(command)
+        }
         actual_bytes = getattr(commit, "actual_bytes", None)
         ack_ms = getattr(commit, "submit_to_ack_ms", None)
         if (

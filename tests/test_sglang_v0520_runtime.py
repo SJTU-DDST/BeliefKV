@@ -2435,6 +2435,30 @@ def test_reactive_h2d_ack_bootstraps_final_stage_service_samples():
     assert runtime.counts["h2d_service_sample"] == 3
 
 
+def test_join_prepare_is_selective_and_invalidates_on_parent_reentry():
+    runtime = final_stage_runtime()
+    runtime._clear_final_stage("join")
+    runtime.enable_prepare_host = True
+    runtime.attach_native_cache(NS())
+    key = runtime.context_sessions["ctx-parent"]
+    step = ShadowBackupStep(key, 11, 4, 11, 4)
+    from beliefkv.runtime.sglang_v0520_observer import StaticPoolHeadroomObservation
+    with patch(
+        "beliefkv.runtime.sglang_v0520_runtime.observe_static_full_mamba_headroom",
+        return_value=StaticPoolHeadroomObservation(
+            True, device_full_free_tokens=0, device_mamba_free_slots=1,
+            host_full_free_tokens=1000, host_mamba_free_slots=10,
+        ),
+    ), patch.object(runtime, "refreshed_shadow_backup_step", return_value=step), patch.object(
+        runtime, "issue_shadow_backup_step", return_value="prepare",
+    ) as issue:
+        runtime.dispatch_join_prepare()
+        issue.assert_called_once_with(step, source="join_prepare")
+    assert runtime._live_parent_pressure_node(11, 4)
+    runtime.on_events((event(7, RuntimeEventKind.RETURN, invocation_id="child"),))
+    assert not runtime._live_parent_pressure_node(11, 4)
+
+
 def test_final_stage_latest_start_requires_serviced_decode_and_h2d_evidence():
     runtime = final_stage_runtime()
     child = req("child")
