@@ -231,3 +231,24 @@ WAIT_JOIN parent。采样消失不是原始 Host 副本已物理丢弃的证明�
 两种依赖完成顺序及已有 native runtime、语义 worker 和预测头。
 这不是已产生预测 H2D 的 GPU 验收；不能将修复前 v2 的零动作
 全部解释为剩余工作模型误差。
+
+## v3 复现配置
+
+v3 保持完整 64-root、单波、running=48、200 GB NUMA Host、
+Device-matched 比例、PREPARE_HOST、14400 秒和 2048 graph 配置。
+先运行 predictive 完整 arm，确认真实恢复窗口和有效动作后再安排
+相同冻结配置的 reactive；不是 canary，也不通过强行驱逐造机会。
+默认 phase/encoder/工作头不变，两个短 token CDF 候选均未部署。
+
+本次新采样补充 100 ms 正文时钟驱动快照和推理提交上限，仍只为
+有真实 Host-only 恢复目标的关键 child 提交语义计算。经过
+Linux boot/time namespace/monotonic-clock 域核验的同机数据可
+使用送达前的已完成 decode，未知/远端/旧样本仍保留 100 ms
+回溯。原生服务和结果增加单调完成时刻；不改历史 trace 时钟，
+不把 GPU EOS 当作 child RETURN，不放宽 50 ms EOS 协议窗口。
+
+采样、时钟、原生遥测和因果/语义路径共 220 项 CPU 测试通过。
+这仍不是 GPU 效果验收。此次清理 80 个旧完成 workspace，
+释放约 10.72 GiB；训练/回放需要的 trace、patch、配置与失败现场
+均保留，清理清单见
+`experiments/analysis/workspace_cleanup_20261004_v3.json`。

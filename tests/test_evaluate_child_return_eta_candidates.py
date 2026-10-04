@@ -170,3 +170,47 @@ def test_decode_history_only_uses_same_request_service_before_snapshot(
     assert np.expm1(later["decode_history_features"][1]) == pytest.approx(
         (80 - 10) * 1000 / (7590 - 6800),
     )
+
+
+@pytest.mark.parametrize("domain, expected_tokens, mode", [
+    ("kernel-A", 25, "shared_linux_monotonic"),
+    ("kernel-B", 15, "guarded_clock_bracket"),
+])
+def test_decode_progress_prefers_verified_monotonic_clock_without_using_future_service(
+    monkeypatch, tmp_path, domain, expected_tokens, mode,
+):
+    row = _row("alpha", 3000, "rid")
+    row["invocation_id"], row["context_id"], row["context_epoch"] = "child-rid", "context-rid", 0
+    row["snapshots"] = [{
+        **row["snapshots"][0], "ts_ms": 6000., "monotonic_clock_domain": domain,
+    }]
+    run = tmp_path / "run"
+    audit = run / "server/runtime_audit.jsonl"
+    audit.parent.mkdir(parents=True)
+    workflow = run / "workloads/workflows/alpha__task"
+    workflow.mkdir(parents=True)
+    (workflow / "child_stream_content.jsonl").touch()
+    points = ((5800., 10), (5850., 15), (5910., 20), (5975., 25), (6001., 9999))
+    audit.write_text("".join(json.dumps({
+        "event": "gpu_service_sample", "phase": "decode", "ts_ms": ts + 1000.,
+        "complete_monotonic_ms": ts, "monotonic_clock_domain": "kernel-A", "batch_size": 3,
+        "request_samples": [{
+            "request_id": "rid", "invocation_id": "child-rid", "context_id": "context-rid",
+            "context_epoch": 0, "token_delta_semantics": "observed_output_ids_delta",
+            "output_tokens_before": count - 1, "token_delta": 1,
+        }],
+    }) + "\n" for ts, count in points))
+    state = {
+        "server_end_ms": 10000., "offset_lower_ms": 1000., "offset_upper_ms": 1000.,
+        "decode_sample_times_ms": [ts + 1000. for ts, _ in points],
+        "server_end_monotonic_ms": 9000., "monotonic_clock_domain": "kernel-A",
+        "decode_sample_monotonic_times_ms": [ts for ts, _ in points],
+    }
+    monkeypatch.setattr(service_module, "collect", lambda *_a, **_k: ([row], {}))
+    monkeypatch.setattr(service_module, "_service_indices", lambda *_a: ({"rid": state}, []))
+    selected, _ = service_module.service_rows([run / "workloads/workflows"], [run])
+    assert len(selected) == 1
+    snap = selected[0]["snapshots"][0]
+    assert snap["observed_output_tokens"] == expected_tokens
+    assert snap["clock_evidence_mode"] == mode
+    assert snap["observed_decode_server_ts_ms"] < 7000.

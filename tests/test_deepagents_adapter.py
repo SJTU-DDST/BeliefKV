@@ -820,6 +820,47 @@ def test_semantic_text_uses_async_control_and_preserves_full_bounded_history(
     assert frames[0].attributes["request_id"] == f"beliefkv:{run}"
 
 
+def test_semantic_periodic_frame_does_not_wait_for_punctuation_or_128_chars(monkeypatch, tmp_path):
+    monkeypatch.setenv("BELIEFKV_EMIT_SEMANTIC_TEXT", "1")
+    now = [1000.]
+    received = []
+    control = QueuedRuntimeEventSink(SimpleNamespace(
+        emit_batch=lambda events: received.extend(events), close=lambda: None,
+    ))
+    shadow = StreamContentShadow(tmp_path / "periodic.jsonl", capacity=16)
+    adapter = DeepAgentsRuntimeAdapter(
+        CollectingSink(), BeliefKVRequestMetadata("wf", "root", "ctx", 0),
+        control_sink=control, stream_content_shadow=shadow, clock_ms=lambda: now[0],
+    )
+    adapter.start()
+    task = adapter.declare_runtime_tasks([("explorer", "inspect")])[0]
+    tool_run, run = uuid4(), uuid4()
+    adapter.on_tool_start(
+        {"name": "task"}, "", run_id=tool_run,
+        inputs={"subagent_type": "explorer", "description": "inspect"},
+        tool_call_id=task.tool_call_id,
+    )
+    adapter.on_chat_model_start(
+        {}, [[HumanMessage(content="prompt")]], run_id=run, parent_run_id=tool_run,
+    )
+    for when, text in ((1000., "x" * 64), (1050., " y"), (1101., " z")):
+        now[0] = when
+        adapter.on_llm_new_token(
+            text, run_id=run, chunk=SimpleNamespace(
+                message=SimpleNamespace(content=text, tool_call_chunks=[]), generation_info=None,
+            ),
+        )
+    control.close()
+    assert shadow.close()["complete"]
+    frames = [row for row in received if row.attributes.get("beliefkv_semantic_child_text")]
+    assert len(frames) == 2
+    assert frames[-1].ts_ms == 1101.
+    assert frames[-1].attributes["content_tail"] == "x" * 64 + " y z"
+    assert frames[-1].attributes["monotonic_clock_domain"] is None
+    rows = [json.loads(line) for line in shadow.path.read_text().splitlines()]
+    assert rows[-1]["sampling_reason"] == "periodic_content"
+
+
 def test_child_content_shadow_early_milestones_preserve_identity(tmp_path) -> None:
     shadow = StreamContentShadow(tmp_path / "milestones.jsonl", capacity=16)
     adapter = DeepAgentsRuntimeAdapter(

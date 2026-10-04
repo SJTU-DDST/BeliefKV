@@ -49,6 +49,10 @@ from beliefkv.runtime.report_phase import ReportPhaseTracker
 from beliefkv.runtime.sglang_adapter import BeliefKVRequestMetadata
 from beliefkv.runtime.sglang_v0520_sessions import NativeRadixSessionLeases
 from beliefkv.runtime.stream_content_shadow import StreamContentShadow
+from beliefkv.runtime.clock_evidence import (
+    SEMANTIC_FRAME_INTERVAL_MS,
+    local_monotonic_clock_domain,
+)
 from beliefkv.runtime.tool_wait_shadow import ToolWaitShadowTimer
 
 if TYPE_CHECKING:
@@ -267,6 +271,9 @@ class DeepAgentsRuntimeAdapter(BaseCallbackHandler):
         self.control_sink = control_sink
         self.root_metadata = root_metadata
         self.clock_ms = clock_ms or (lambda: time.monotonic() * 1000.0)
+        self._monotonic_clock_domain = (
+            local_monotonic_clock_domain() if clock_ms is None else None
+        )
         if not event_namespace or ":" in event_namespace:
             raise ValueError("event_namespace must be non-empty and contain no colon")
         self.event_namespace = event_namespace
@@ -921,10 +928,16 @@ class DeepAgentsRuntimeAdapter(BaseCallbackHandler):
                 )
                 first_content = bool(content and count == len(content))
                 milestone = bool(content and count >= next_at)
-                if first_content or milestone or boundary or tool_seen or finish:
+                when = self.clock_ms()
+                periodic = bool(
+                    self._semantic_text_enabled and content and count > last_emitted
+                    and when - self._semantic_text_last_ms.get(key, 0.) >= SEMANTIC_FRAME_INTERVAL_MS
+                )
+                if first_content or milestone or boundary or periodic or tool_seen or finish:
                     content_observation = {
                         "event": "child_stream_content",
-                        "ts_ms": self.clock_ms(),
+                        "ts_ms": when,
+                        "monotonic_clock_domain": self._monotonic_clock_domain,
                         "request_id": _native_request_id(run_id),
                         "invocation_id": invocation_id,
                         "context_id": metadata.context_id,
@@ -940,6 +953,7 @@ class DeepAgentsRuntimeAdapter(BaseCallbackHandler):
                             "first_content" if first_content
                             else "milestone" if milestone
                             else "content_boundary" if boundary
+                            else "periodic_content" if periodic
                             else "tool_or_finish"
                         ),
                     }
@@ -1052,7 +1066,7 @@ class DeepAgentsRuntimeAdapter(BaseCallbackHandler):
             self._stream_content_shadow.emit(content_observation)
             when = content_observation["ts_ms"]
             if self._semantic_text_enabled and (
-                tool_seen or when - self._semantic_text_last_ms.get(key, 0.) >= 250
+                tool_seen or when - self._semantic_text_last_ms.get(key, 0.) >= SEMANTIC_FRAME_INTERVAL_MS
             ):
                 self._semantic_text_last_ms[key] = when
                 self._publish((self._event(
@@ -1067,6 +1081,7 @@ class DeepAgentsRuntimeAdapter(BaseCallbackHandler):
                         "content_chars": content_observation["content_chars"],
                         "content_tail": content_observation["semantic_content_tail"],
                         "tool_chunk": tool_seen,
+                        "monotonic_clock_domain": self._monotonic_clock_domain,
                     },
                 ),), control=True, async_control=True)
         self._publish(tuple(

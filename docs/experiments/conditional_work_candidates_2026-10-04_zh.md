@@ -60,3 +60,34 @@ controller submit 的提前量评价，优先解决末段偏置和短区间
 phase 分数保持逐位相同；导出与原 PyTorch 候选在验证输入上的
 点差异小于 0.001 token。该接口完成不改变候选被否决的结论，
 实验默认仍使用原冻结部署头，不手动提高 eligibility。
+
+## 短 Token 区间完成概率
+
+新增 `scripts/fit_child_completion_windows.py`，固定 phase/encoder，
+比较条件概率 P(剩余输出 token <= h | 自然最终报告)，h 为
+8、16、32、64。它不是 RETURN 墙钟时刻，也不是预取净收益。
+五类剩余 token 区间共用一个多分类树模型，累计概率天然有序；
+六项目拟合，Astropy 的独立 workflow 子集校准温度和选择模型，
+另一子集选择首次触发阈值，Sphinx 及 v2 只作开发比较。工具轮次
+误触发与过早触发分别统计，不把同一 request 的多快照当独立命中。
+
+250 ms 回放训练的 4563 个有剩余工作标签的快照中，四个短区间
+各有 4 / 18 / 100 / 237 条，其余 4204 条超过 64 token。
+100 ms 回放对应为 7 / 23 / 125 / 357，超过 64 token 为 5824。
+这些是相关快照数量，不是独立 RETURN 事件。两者均未在
+Astropy selector 找到首次触发 precision >= 0.8、至少五个
+独立 request 的操作点；固定 0.8 概率也没有提供有用触发。
+因此两个候选均不部署，不因“无误报但也无动作”声称模型更好。
+
+产物为 `experiments/models/child_completion_windows_candidate_20261004_v1/`
+和 `child_completion_windows_candidate_20261004_v2_100ms/`。
+它们是开发试验，不是新的密封验证或替代默认工作头的依据。
+仅增加旧快照回放密度不能补回原来未观察到的末段文本，也不能
+抹掉旧数据中的保守时钟余量。
+
+后续采集补上真正的 100 ms 正文快照，不再只等标点/128 字符
+milestone；client/server 同时记录 Linux boot/time-namespace/
+CLOCK_MONOTONIC 的哈希域及已完成服务的单调时间。仅域匹配才用
+文本送达前的精确 decode 进度，不加入未来进度；不匹配或旧数据
+继续使用带 100 ms 余量的 clock bracket。新观测与旧样本的输入
+口径不同，须分别记录和重新验证，而非宣称修改采样已提高精度。

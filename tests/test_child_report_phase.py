@@ -45,6 +45,8 @@ def test_rolling_snapshots_cover_the_report_tail_without_future_finish_informati
     assert max(fixed) == 400.
     assert list(rolling) == [100., 400., 700., 1000., 1300.]
     assert rolling[1300.][0]["content_chars"] == 3900
+    rolling_fast = select_work_snapshots(snapshots, "rolling_100ms")
+    assert list(rolling_fast) == [float(index * 100) for index in range(1, 16)]
     # Appending unseen future text must not change any prior selection.
     extra = snapshots + [{"ts_ms": 2000., "content_chars": 6000}]
     assert all(

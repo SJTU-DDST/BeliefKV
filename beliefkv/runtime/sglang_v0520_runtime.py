@@ -67,6 +67,10 @@ from beliefkv.predictor.structured_frontier import LocalFrontierFeatures
 from beliefkv.runtime.semantic_report_worker import (
     SEMANTIC_TEXT, SemanticReportInput, SemanticReportReply, SemanticReportWorker,
 )
+from beliefkv.runtime.clock_evidence import (
+    SEMANTIC_FRAME_INTERVAL_MS,
+    local_monotonic_clock_domain,
+)
 from beliefkv.runtime.native_h2d_seed import load_h2d_seed
 
 if TYPE_CHECKING:
@@ -834,6 +838,7 @@ class NativeAdmissionRuntime:
                     "inference_ms": reply.inference_ms,
                     "observation_age_ms": now_ms - item.observed_ts_ms,
                     "observed_output_tokens": item.observed_output_tokens,
+                    "causal_progress_guard_ms": item.causal_progress_guard_ms,
                 })
             if reply.final_score < self._semantic_score_threshold:
                 continue
@@ -867,7 +872,7 @@ class NativeAdmissionRuntime:
                 self._semantic_frames.pop(rid, None)
                 self._semantic_forecasts.pop(rid, None)
                 continue
-            if now_ms - self._semantic_submit_ms.get(rid, 0.) < 250:
+            if now_ms - self._semantic_submit_ms.get(rid, 0.) < SEMANTIC_FRAME_INTERVAL_MS:
                 continue
             if now_ms - event.ts_ms > 1_500:
                 continue
@@ -879,9 +884,14 @@ class NativeAdmissionRuntime:
                 self.counts["semantic_no_transfer_target_skipped"] += 1
                 continue
             progress = self._semantic_progress.get(rid, ())
-            # Match offline features: only server progress older than the delivered text.
+            domain = local_monotonic_clock_domain()
+            guard_ms = (
+                0. if domain is not None and event.attributes.get("monotonic_clock_domain") == domain
+                else 100.
+            )
+            # Only completed decode older than the delivered text is an input.
             observed = next((tokens for ts, tokens in reversed(progress)
-                             if ts <= event.ts_ms - 100), None)
+                             if ts <= event.ts_ms - guard_ms), None)
             if observed is None or observed < 1:
                 continue
             child = self.graph.invocations.get(key.invocation_id)
@@ -897,6 +907,7 @@ class NativeAdmissionRuntime:
                 native_stage.expected_tokens if native_stage else 0,
                 self._semantic_tool_counts[key.invocation_id],
                 child.llm_round,
+                causal_progress_guard_ms=guard_ms,
             ))
             self._semantic_submit_ms[rid] = now_ms
             self._semantic_submitted_frames[rid] = frame

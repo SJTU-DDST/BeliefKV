@@ -171,12 +171,18 @@ def audit(arm: Path, threshold: float, *, sample_max_age_ms: float = 1500.) -> d
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--arm", type=Path, required=True)
-    parser.add_argument("--threshold", type=float, required=True)
+    source = parser.add_mutually_exclusive_group(required=True)
+    source.add_argument("--threshold", type=float)
+    source.add_argument("--artifact", type=Path)
     parser.add_argument("--output", type=Path, required=True)
     args = parser.parse_args()
-    if not 0 <= args.threshold <= 1:
+    threshold = args.threshold
+    if args.artifact is not None:
+        report = json.loads((args.artifact.resolve().parent / "report.json").read_text())
+        threshold = report["calibration"]["semantic_event"]["request_operating_point"]["threshold"]
+    if type(threshold) not in (int, float) or not 0 <= threshold <= 1:
         parser.error("phase threshold must be a probability")
-    result = audit(args.arm, args.threshold)
+    result = audit(args.arm, threshold)
     args.output.write_text(json.dumps(result, indent=2, allow_nan=False) + "\n")
     print(json.dumps({key: value for key, value in result.items() if key != "rows"}, indent=2))
 

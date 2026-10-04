@@ -2201,9 +2201,18 @@ def test_reactive_keeps_final_priority_without_any_predictive_transfer(monkeypat
     assert runtime.refreshed_shadow_backup_step() is None
 
 
-def test_semantic_body_is_read_only_and_uses_only_prior_decode_progress():
+@pytest.mark.parametrize("clock_domain, expected_tokens, expected_guard", [
+    (None, 20, 100.), ("kernel-A", 50, 0.), ("kernel-B", 20, 100.),
+])
+def test_semantic_body_is_read_only_and_uses_only_prior_decode_progress(
+    monkeypatch, clock_domain, expected_tokens, expected_guard,
+):
     from collections import deque
 
+    monkeypatch.setattr(
+        "beliefkv.runtime.sglang_v0520_runtime.local_monotonic_clock_domain",
+        lambda: "kernel-A",
+    )
     runtime = final_stage_runtime()
     child = req("child")
     child.session_id, child.session_generation = "cs", 1
@@ -2224,18 +2233,20 @@ def test_semantic_body_is_read_only_and_uses_only_prior_decode_progress():
     runtime._semantic_worker = worker
     runtime._semantic_keys["child"] = key
     runtime._semantic_progress["child"] = deque(
-        ((now - 250, 5), (now - 120, 20), (now - 30, 50)),
+        ((now - 250, 5), (now - 120, 20), (now - 30, 50), (now + 10, 9999)),
     )
     revision = runtime.semantic_revision
     runtime.on_events((RuntimeEvent(
         "body", now, RuntimeEventKind.STRUCTURED_ACTION, "wf",
         invocation_id="child", context_id="ctx-child", context_epoch=1,
         attributes={SEMANTIC_TEXT: True, "request_id": "child",
-                    "content_chars": 128, "content_tail": "Report complete."},
+                    "content_chars": 128, "content_tail": "Report complete.",
+                    "monotonic_clock_domain": clock_domain},
     ),))
     assert runtime.semantic_revision == revision
     runtime._poll_semantic_reports(now + 1)
-    assert submitted[0].observed_output_tokens == 20
+    assert submitted[0].observed_output_tokens == expected_tokens
+    assert submitted[0].causal_progress_guard_ms == expected_guard
     assert submitted[0].key == key
     runtime._poll_semantic_reports(now + 400)
     assert len(submitted) == 1

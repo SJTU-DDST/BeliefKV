@@ -36,6 +36,15 @@ Next compare short-token completion CDFs on frozen semantic features, keeping
 workflow-disjoint fit, selector and evaluation roles. Do not deploy the
 rejected MLP or reinterpret stale EOS windows as predictive actions.
 
+The short-token CDF comparisons at 250/100 ms produce no reliable selector
+operating point and remain undeployed. Fresh acquisition now records bounded
+100 ms text observations and matching Linux monotonic clock domains; only
+verified domains remove the 100 ms causal progress guard. Historical traces
+retain their conservative clock bracket. The combined regression suite passes
+220 tests. v3 starts with a full 64-root predictive arm, retaining the deployed
+phase/work weights, and requires actual opportunity/action evidence before a
+matched reactive comparison. Source and runtime settings must remain frozen.
+
 The asynchronous semantic head is now connected through bounded delivered-text
 observations and native decode progress, with request/session/epoch validation.
 Native final-request priority is separate from predictive H2D and is shared by

@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from beliefkv.runtime.clock_evidence import local_monotonic_clock_domain
+
 import atexit
 from array import array
 from collections import Counter, OrderedDict
@@ -1150,6 +1152,8 @@ class NativeReactiveTelemetry:
                     "attributes": {
                         "request_id": rid,
                         "output_tokens": len(req.output_ids),
+                        "complete_monotonic_ms": complete_mono * 1000,
+                        "monotonic_clock_domain": local_monotonic_clock_domain(),
                         "reentry_checkpoint": self._reentry_checkpoint_evidence(req),
                     },
                 })
@@ -1165,6 +1169,9 @@ class NativeReactiveTelemetry:
             "request_samples": descriptor["request_samples"],
             "service_start_ts_ms": complete_wall - (complete_mono - start_mono) * 1000,
             "complete_ts_ms": complete_wall,
+            "service_start_monotonic_ms": start_mono * 1000,
+            "complete_monotonic_ms": complete_mono * 1000,
+            "monotonic_clock_domain": local_monotonic_clock_domain(),
             "service_elapsed_ms": (complete_mono - start_mono) * 1000,
             "timing_semantics_version": "gpu_service_interval_v1",
             "timing_boundary": "scheduler/worker interval, not CUDA kernel time",

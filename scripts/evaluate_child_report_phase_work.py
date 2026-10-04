@@ -151,12 +151,13 @@ def select_work_snapshots(snapshots: list[dict], policy: str) -> dict:
             )
             if snap is not None:
                 selected.setdefault(snap["ts_ms"], (snap, []))[1].append(threshold)
-    elif policy == "rolling_250ms":
+    elif policy in ("rolling_250ms", "rolling_100ms"):
+        interval_ms = 250 if policy == "rolling_250ms" else 100
         previous = None
         for snap in snapshots:
             if snap["content_chars"] < 32:
                 continue
-            if previous is not None and snap["ts_ms"] - previous < 250:
+            if previous is not None and snap["ts_ms"] - previous < interval_ms:
                 continue
             threshold = max(cut for cut in CHECKPOINTS if cut <= snap["content_chars"])
             selected[snap["ts_ms"]] = (snap, [threshold])
@@ -186,7 +187,7 @@ def collect_run(
             observation = observation_for(
                 row, snap, child_events,
             )
-            if snapshot_policy == "rolling_250ms":
+            if snapshot_policy in ("rolling_250ms", "rolling_100ms"):
                 observation = replace(observation, content_tail=observation.content_tail[-1024:])
             # Future result metadata is a training label only, never an observation.
             native_result = next((
@@ -228,6 +229,7 @@ def collect_run(
             samples.append({
                 "observation": observation,
                 "delivered_text_history_gaps": snap.get("delivered_text_history_gaps", 0),
+                "clock_evidence_mode": snap.get("clock_evidence_mode", "guarded_clock_bracket"),
                 "task": row["task"], "project": row["project"],
                 "thresholds": thresholds,
                 "is_return": row["label"] == "return",
@@ -247,6 +249,9 @@ def collect_run(
         row["delivered_text_history_gaps"] > 0 for row in samples
     )
     coverage["snapshot_policy"] = snapshot_policy
+    coverage["clock_evidence_modes"] = dict(Counter(
+        row["clock_evidence_mode"] for row in samples
+    ))
     return samples, coverage
 
 

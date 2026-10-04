@@ -19,7 +19,7 @@ ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
-from scripts.child_stream_service_index import snapshot_status
+from scripts.child_stream_service_index import same_monotonic_clock, snapshot_status
 from scripts.pilot_child_stream_content import (
     _service_indices,
     centroid_scores,
@@ -51,7 +51,7 @@ def service_rows(
     rows, counts = collect(roots, min_snapshot_chars=32)
     indexed, reports = _service_indices(roots, runs, rows)
     by_rid = {row["rid"]: row for row in rows}
-    decoded: dict[str, list[tuple[float, int, int]]] = defaultdict(list)
+    decoded: dict[str, list[tuple[float, int, int, float | None, str | None]]] = defaultdict(list)
     excluded = Counter()
     for root, run in zip(roots, runs):
         ids = {
@@ -91,6 +91,8 @@ def service_rows(
                     decoded[rid].append((
                         float(event["ts_ms"]), before + delta,
                         int(event.get("batch_size") or 0),
+                        event.get("complete_monotonic_ms"),
+                        event.get("monotonic_clock_domain"),
                     ))
 
     selected = []
@@ -99,11 +101,21 @@ def service_rows(
         if state is None:
             excluded["missing_server_result"] += 1
             continue
-        samples = sorted(
-            (ts, tokens, batch) for ts, tokens, batch in decoded.get(row["rid"], [])
+        wall_samples = sorted(
+            (ts, tokens, batch, ts) for ts, tokens, batch, _, _ in decoded.get(row["rid"], [])
             if ts <= state["server_end_ms"]
         )
-        times = [ts for ts, _, _ in samples]
+        mono_samples = sorted(
+            (float(mono), tokens, batch, wall)
+            for wall, tokens, batch, mono, domain in decoded.get(row["rid"], [])
+            if state.get("monotonic_clock_domain") is not None
+            and domain == state["monotonic_clock_domain"]
+            and type(mono) in (int, float) and math.isfinite(mono)
+            and type(state.get("server_end_monotonic_ms")) in (int, float)
+            and mono <= state["server_end_monotonic_ms"]
+        )
+        wall_times = [ts for ts, _, _, _ in wall_samples]
+        mono_times = [ts for ts, _, _, _ in mono_samples]
         seen_heading = False
         history, previous_chars, history_gaps = "", 0, 0
         kept = []
@@ -112,24 +124,28 @@ def service_rows(
             previous_chars = snap["content_chars"]
             history_gaps += gap
             seen_heading |= bool(_HEADING.search(snap["content_tail"]))
-            if snapshot_status(state, snap["ts_ms"]) != (
+            clock_domain = snap.get("monotonic_clock_domain")
+            if snapshot_status(state, snap["ts_ms"], clock_domain=clock_domain) != (
                 "unfinished_with_recent_decode"
             ):
                 continue
-            cutoff = (
+            exact_clock = same_monotonic_clock(state, clock_domain)
+            samples = mono_samples if exact_clock else wall_samples
+            times = mono_times if exact_clock else wall_times
+            cutoff = snap["ts_ms"] if exact_clock else (
                 snap["ts_ms"] + state["offset_lower_ms"] - CLOCK_GUARD_MS
             )
             end = bisect_left(times, cutoff)
             start = bisect_left(times, cutoff - _RECENT_MS)
             if end - start < 2 or cutoff - times[end - 1] > _RECENT_MS:
                 continue
-            first_ts, first_tokens, _ = samples[start]
-            last_ts, last_tokens, last_batch = samples[end - 1]
+            first_ts, first_tokens, _, _ = samples[start]
+            last_ts, last_tokens, last_batch, last_wall_ts = samples[end - 1]
             if last_ts <= first_ts or last_tokens < first_tokens:
                 excluded["invalid_prior_progress"] += 1
                 continue
             rate = (last_tokens - first_tokens) * 1000 / (last_ts - first_ts)
-            initial_ts, initial_tokens, _ = samples[0]
+            initial_ts, initial_tokens, _, _ = samples[0]
             lifetime_rate = (
                 (last_tokens - initial_tokens) * 1000
                 / max(last_ts - initial_ts, 1.)
@@ -137,7 +153,11 @@ def service_rows(
             kept.append({
                 **snap,
                 "observed_output_tokens": last_tokens,
-                "observed_decode_server_ts_ms": last_ts,
+                "observed_decode_server_ts_ms": last_wall_ts,
+                "observed_decode_monotonic_ms": last_ts if exact_clock else None,
+                "clock_evidence_mode": (
+                    "shared_linux_monotonic" if exact_clock else "guarded_clock_bracket"
+                ),
                 "delivered_text_history": history,
                 "delivered_text_history_gaps": history_gaps,
                 "decode_features": (

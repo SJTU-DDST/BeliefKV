@@ -674,6 +674,13 @@ def test_native_request_service_and_ack_are_evidence_not_invented_dma(
     assert service[0]["request_samples"][0]["token_delta"] == 14
     assert service[1]["request_samples"][0]["token_delta"] == 2
     assert all(row["timing_semantics_version"] == "gpu_service_interval_v1" for row in service)
+    for row in service:
+        assert row["complete_monotonic_ms"] >= row["service_start_monotonic_ms"]
+        assert row["complete_monotonic_ms"] - row["service_start_monotonic_ms"] == pytest.approx(
+            row["service_elapsed_ms"], abs=1e-5,
+        )
+        assert row["monotonic_clock_domain"] == events[1]["attributes"]["monotonic_clock_domain"]
+    assert events[1]["attributes"]["complete_monotonic_ms"] == service[-1]["complete_monotonic_ms"]
     transfer = _read(tmp_path / "server/transfer_telemetry.jsonl")[0]
     assert transfer["num_tokens_by_pool"] == {"full": 64, "mamba": 2}
     assert transfer["actual_bytes"] is None

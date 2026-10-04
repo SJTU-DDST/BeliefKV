@@ -26,6 +26,7 @@ class SemanticReportInput:
     estimated_report_tokens: int
     prior_tool_calls: int
     prior_model_rounds: int
+    causal_progress_guard_ms: float = 100.
 
 
 @dataclass(frozen=True)

@@ -5,7 +5,7 @@ ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 PYTHON="${PYTHON:-/home/longhao/miniconda3/envs/beliefkv-next/bin/python}"
 ROOT_COUNT="${ROOT_COUNT:-64}"
 PORT="${PORT:-18454}"
-RUN_ROOT="${RUN_ROOT:-$ROOT/experiments/raw/qwen35_join_prepare_h2d_ab_64root_20261004_v2}"
+RUN_ROOT="${RUN_ROOT:-$ROOT/experiments/raw/qwen35_join_prepare_h2d_ab_64root_20261004_v3}"
 ARM_ORDER="${ARM_ORDER:-predictive_h2d reactive}"
 ACTIVATION_WALL_CLOCK_SECONDS="${ACTIVATION_WALL_CLOCK_SECONDS:-14400}"
 ARTIFACT="${SEMANTIC_REPORT_ARTIFACT:-$ROOT/experiments/models/child_semantic_work_frozen_phase_20261001_v1/semantic_event_calibrated.json}"
@@ -15,7 +15,7 @@ H2D_SEED_ARTIFACT="${H2D_SEED_ARTIFACT:-$ROOT/experiments/models/native_h2d_ack_
 if [[ $# -ne 0 || -e "$RUN_ROOT" || ! -f "$ARTIFACT" ]] \
   || [[ ! "$ROOT_COUNT" =~ ^[1-9][0-9]*$ ]] || (( ROOT_COUNT > 64 )) \
   || [[ "$ARM_ORDER" != "predictive_h2d reactive" && "$ARM_ORDER" != "reactive predictive_h2d" && "$ARM_ORDER" != "predictive_h2d" ]]; then
-  printf 'Usage: RUN_ROOT=<new path> ROOT_COUNT=36 ARM_ORDER="predictive_h2d reactive"|predictive_h2d ACTIVATION_WALL_CLOCK_SECONDS=14400 PORT=18454 bash %s\n' "$0" >&2
+  printf 'Usage: RUN_ROOT=<new path> ROOT_COUNT=64 ARM_ORDER="predictive_h2d reactive"|predictive_h2d ACTIVATION_WALL_CLOCK_SECONDS=14400 PORT=18454 bash %s\n' "$0" >&2
   exit 2
 fi
 mkdir -p "$RUN_ROOT"
@@ -49,6 +49,9 @@ for arm in $ARM_ORDER; do
   if [[ "$arm" == "predictive_h2d" ]]; then
     "$PYTHON" "$ROOT/scripts/audit_join_transfer_windows.py" \
       --arm "$RUN_ROOT/$arm" --output "$RUN_ROOT/$arm/join_transfer_windows.json"
+    "$PYTHON" "$ROOT/scripts/audit_join_candidate_windows.py" \
+      --arm "$RUN_ROOT/$arm" --artifact "$ARTIFACT" \
+      --output "$RUN_ROOT/$arm/join_candidate_windows.json"
   fi
   "$PYTHON" "$ROOT/scripts/summarize_semantic_h2d_ab.py" \
     --cleanup-arm "$RUN_ROOT/$arm" > "$RUN_ROOT/$arm.workspace_cleanup.json"
