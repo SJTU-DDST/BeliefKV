@@ -697,21 +697,7 @@ class DeepAgentsRuntimeAdapter(BaseCallbackHandler):
     ) -> None:
         del serialized, inputs
         key = self._remember_run(run_id, parent_run_id)
-        metadata = kwargs.get("metadata")
-        scoped_invocation = (
-            metadata.get(self.INVOCATION_METADATA_KEY)
-            if isinstance(metadata, dict)
-            else None
-        )
-        if scoped_invocation is None:
-            return
-        scoped_invocation = str(scoped_invocation)
-        with self._lock:
-            if scoped_invocation not in self._identities:
-                raise RuntimeError(
-                    f"LangGraph run references unknown invocation: {scoped_invocation}"
-                )
-            self._run_invocation[key] = scoped_invocation
+        self._bind_invocation_metadata(key, kwargs.get("metadata"))
 
     def on_chat_model_start(
         self,
@@ -725,6 +711,7 @@ class DeepAgentsRuntimeAdapter(BaseCallbackHandler):
         del serialized
         key = self._remember_run(run_id, parent_run_id)
         callback_metadata = kwargs.get("metadata")
+        self._bind_invocation_metadata(key, callback_metadata)
         is_summary = (
             isinstance(callback_metadata, Mapping)
             and callback_metadata.get("lc_source") == "summarization"
@@ -2361,6 +2348,19 @@ class DeepAgentsRuntimeAdapter(BaseCallbackHandler):
                     return self._pending_tasks[task_call_id].child_invocation_id
                 current = self._run_parent.get(current)
             return self.root_metadata.invocation_id
+
+    def _bind_invocation_metadata(self, key: str, metadata: Any) -> None:
+        scoped = (
+            metadata.get(self.INVOCATION_METADATA_KEY)
+            if isinstance(metadata, Mapping) else None
+        )
+        if scoped is None:
+            return
+        scoped = str(scoped)
+        with self._lock:
+            if scoped not in self._identities:
+                raise RuntimeError(f"LangGraph run references unknown invocation: {scoped}")
+            self._run_invocation[key] = scoped
 
     def _bound_pending_child(
         self, model_run_id: str, invocation_id: str

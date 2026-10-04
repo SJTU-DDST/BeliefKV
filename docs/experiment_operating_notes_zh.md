@@ -122,6 +122,15 @@ EOS 之后收到的快照不能声称生成结束前预测准确。
 剩余工作头只用因果有效的已生成 token/正文/通知，
 不混入未来排队等待；RETURN 时间与实际动作提前量分别评估。
 
+内部 summarization 必须继承真实调用 agent 的 callback 祖先链
+和 invocation scope，不能重新构建仅含 handler 的 callback 列表
+使 child summary 回落到 root。检查 JOIN 未满足时 parent 是否
+仍 WAIT_JOIN，不能用错误唤醒的 READY 状态解释为“无恢复目标”。
+foreground 调用和 JOIN 是可同时存在的依赖，完成其一不能绕过
+另一个。此项是因果/遥测正确性，不是额外 agent guard。
+旧的机会采样只用于回放诊断，实际传输仍重新验证身份、副本及
+当前物理容量；采样消失不自动判定为 Host 数据被驱逐。
+
 ## 版本与文件
 
 启动前提交代码，持久化实际 commit、源码 patch、模型/工作头、

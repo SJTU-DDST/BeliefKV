@@ -21,6 +21,10 @@ from langchain_core.callbacks import BaseCallbackHandler
 from langchain_core.messages import BaseMessage
 from langchain_core.messages.utils import count_tokens_approximately, get_buffer_string
 from langchain_core.language_models import BaseChatModel
+from langchain_core.runnables.config import (
+    ensure_config,
+    get_callback_manager_for_config,
+)
 from typing_extensions import NotRequired
 
 
@@ -283,6 +287,22 @@ class ContextLifecycleMiddleware(SummarizationMiddleware):
             rendered = rendered[:side] + separator + rendered[-side:]
         return (prefix + rendered).strip()
 
+    def _summary_config(self, attempt: int) -> dict[str, Any]:
+        inherited = ensure_config()
+        # A fresh handler list detaches the summary from its child run ancestry.
+        callbacks = get_callback_manager_for_config(inherited).copy()
+        for handler in self.summary_callbacks:
+            if handler not in callbacks.handlers:
+                callbacks.add_handler(handler, inherit=True)
+        return {
+            "callbacks": callbacks,
+            "metadata": {
+                **inherited.get("metadata", {}),
+                "lc_source": "summarization",
+                "beliefkv_summary_attempt": attempt,
+            },
+        }
+
     def _create_summary(self, messages_to_summarize: list[BaseMessage]) -> str:
         if not messages_to_summarize:
             raise RuntimeError("context compaction selected an empty history")
@@ -290,13 +310,7 @@ class ContextLifecycleMiddleware(SummarizationMiddleware):
         for attempt in (1, 2):
             response = self.model.invoke(
                 prompt if attempt == 1 else prompt + _EMPTY_SUMMARY_RETRY_SUFFIX,
-                config={
-                    "callbacks": list(self.summary_callbacks),
-                    "metadata": {
-                        "lc_source": "summarization",
-                        "beliefkv_summary_attempt": attempt,
-                    },
-                },
+                config=self._summary_config(attempt),
             )
             summary = _response_checkpoint_text(response)
             if summary:
@@ -312,13 +326,7 @@ class ContextLifecycleMiddleware(SummarizationMiddleware):
         for attempt in (1, 2):
             response = await self.model.ainvoke(
                 prompt if attempt == 1 else prompt + _EMPTY_SUMMARY_RETRY_SUFFIX,
-                config={
-                    "callbacks": list(self.summary_callbacks),
-                    "metadata": {
-                        "lc_source": "summarization",
-                        "beliefkv_summary_attempt": attempt,
-                    },
-                },
+                config=self._summary_config(attempt),
             )
             summary = _response_checkpoint_text(response)
             if summary:

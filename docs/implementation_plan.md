@@ -25,6 +25,17 @@ audit actual submission relative to child RETURN, and keep work-head research
 separate from the frozen deployed model during the pair.
 The following 36-root paragraphs document the completed earlier comparison.
 
+The 2026-10-04 v2 pair is terminal, with zero predictive H2D and no proven
+transfer benefit. A pre-EOS candidate-window audit finds nine JOINs with
+earlier restore targets but no sampled target during their final requests.
+All nine suffered internal summaries attributed to the waiting parent.
+Preserve child callback ancestry and model invocation scope, and keep JOIN
+and foreground-call dependencies conjunctive. The related 156 CPU regressions
+pass; GPU residency and actual pre-RETURN restoration remain unverified.
+Next compare short-token completion CDFs on frozen semantic features, keeping
+workflow-disjoint fit, selector and evaluation roles. Do not deploy the
+rejected MLP or reinterpret stale EOS windows as predictive actions.
+
 The asynchronous semantic head is now connected through bounded delivered-text
 observations and native decode progress, with request/session/epoch validation.
 Native final-request priority is separate from predictive H2D and is shared by

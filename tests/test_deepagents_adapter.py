@@ -21,6 +21,8 @@ from langchain_core.language_models import BaseChatModel
 from langchain_core.messages import AIMessage, BaseMessage, HumanMessage, ToolMessage
 from langchain_core.outputs import ChatGeneration, ChatResult, LLMResult
 from langchain_core.runnables import Runnable
+from langchain_core.callbacks.manager import CallbackManager
+from langchain_core.runnables.config import set_config_context
 from langchain_openai import ChatOpenAI
 
 from beliefkv.control.causal_graph import InvocationState, RuntimeCausalContextGraph
@@ -2320,6 +2322,59 @@ def test_summary_model_call_has_ephemeral_runtime_internal_context() -> None:
     graph.apply_batch(trace_sink.events)
     assert graph.invocations[metadata.invocation_id].state == InvocationState.DONE
     assert graph.invocations["root"].state == InvocationState.READY
+
+
+@pytest.mark.parametrize("async_summary", [False, True])
+def test_child_summary_preserves_callback_ancestry_and_parent_join(tmp_path, async_summary):
+    sink = CollectingSink()
+    adapter = DeepAgentsRuntimeAdapter(
+        sink, BeliefKVRequestMetadata("wf", "root", "ctx", 0),
+    )
+    adapter.start()
+    task = adapter.declare_runtime_tasks([("general-purpose", "investigate")])[0]
+    child_chain = uuid4()
+    adapter.on_chain_start({}, {}, run_id=child_chain, metadata=adapter.invocation_scope(task))
+    callbacks = CallbackManager([adapter], [adapter], parent_run_id=child_chain)
+    middleware = ContextLifecycleMiddleware(
+        QueueToolCallingModel(responses=[AIMessage(content="child checkpoint")]),
+        backend=FilesystemBackend(root_dir=tmp_path, virtual_mode=True),
+        policy=ContextLifecyclePolicy(), compaction_sink=adapter, summary_callbacks=(adapter,),
+    )
+    def summarize():
+        config = middleware._summary_config(1)
+        assert config["callbacks"].parent_run_id == child_chain
+        assert config["callbacks"].handlers.count(adapter) == 1
+        if async_summary:
+            return asyncio.run(middleware._acreate_summary([HumanMessage(content="child history")]))
+        return middleware._create_summary([HumanMessage(content="child history")])
+
+    with set_config_context({"callbacks": callbacks}) as context:
+        text = context.run(summarize)
+    assert text == "child checkpoint"
+    internal_calls = [event for event in sink.events if event.kind is RuntimeEventKind.CALL]
+    assert len(internal_calls) == 1
+    assert internal_calls[0].invocation_id == task.invocation_id
+    graph = RuntimeCausalContextGraph()
+    graph.apply_batch(sink.events)
+    assert graph.invocations["root"].state is InvocationState.WAIT_JOIN
+    assert not graph.joins[task.join_id].satisfied
+    assert graph.invocations[task.invocation_id].state is InvocationState.READY
+
+
+def test_detached_summary_respects_explicit_child_metadata():
+    sink = CollectingSink()
+    adapter = DeepAgentsRuntimeAdapter(sink, BeliefKVRequestMetadata("wf", "root", "ctx", 0))
+    adapter.start()
+    task = adapter.declare_runtime_tasks([("general-purpose", "investigate")])[0]
+    run = uuid4()
+    adapter.on_chat_model_start(
+        {}, [[HumanMessage(content="summarize")]], run_id=run,
+        metadata={"lc_source": "summarization", **adapter.invocation_scope(task)},
+    )
+    assert adapter.metadata_for_model_run(run).parent_invocation_id == task.invocation_id
+    graph = RuntimeCausalContextGraph()
+    graph.apply_batch(sink.events)
+    assert graph.invocations["root"].state is InvocationState.WAIT_JOIN
 
 
 def test_context_lifecycle_runs_summary_then_compacts_parent(tmp_path) -> None:

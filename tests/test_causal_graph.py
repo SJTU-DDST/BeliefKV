@@ -132,6 +132,48 @@ class CausalGraphTest(unittest.TestCase):
         )
         self.assertEqual(delta.awakened_invocations, frozenset({"parent"}))
 
+    def test_foreground_return_does_not_bypass_pending_join(self):
+        self.create(1, "parent", "ctx-parent")
+        self.create(2, "child", "ctx-child")
+        self.create(3, "summary", "ctx-summary")
+        self.graph.apply(event(
+            4, RuntimeEventKind.JOIN_CREATE, join_id="join",
+            member_invocation_ids=("child",),
+        ))
+        self.graph.apply(event(
+            5, RuntimeEventKind.JOIN_WAIT, invocation_id="parent", join_id="join",
+        ))
+        self.graph.apply(event(
+            6, RuntimeEventKind.CALL, invocation_id="parent", target_invocation_id="summary",
+        ))
+        returned = self.graph.apply(event(7, RuntimeEventKind.RETURN, invocation_id="summary"))
+        self.assertFalse(returned.awakened_invocations)
+        self.assertEqual(self.graph.invocations["parent"].state, InvocationState.WAIT_JOIN)
+        joined = self.graph.apply(event(8, RuntimeEventKind.RETURN, invocation_id="child"))
+        self.assertEqual(joined.awakened_invocations, frozenset({"parent"}))
+        self.assertEqual(self.graph.invocations["parent"].state, InvocationState.READY)
+
+    def test_join_satisfied_during_foreground_call_waits_for_both_dependencies(self):
+        self.create(1, "parent", "ctx-parent")
+        self.create(2, "child", "ctx-child")
+        self.create(3, "summary", "ctx-summary")
+        self.graph.apply(event(
+            4, RuntimeEventKind.JOIN_CREATE, join_id="join",
+            member_invocation_ids=("child",),
+        ))
+        self.graph.apply(event(
+            5, RuntimeEventKind.JOIN_WAIT, invocation_id="parent", join_id="join",
+        ))
+        self.graph.apply(event(
+            6, RuntimeEventKind.CALL, invocation_id="parent", target_invocation_id="summary",
+        ))
+        joined = self.graph.apply(event(7, RuntimeEventKind.RETURN, invocation_id="child"))
+        self.assertFalse(joined.awakened_invocations)
+        self.assertEqual(self.graph.invocations["parent"].state, InvocationState.WAIT_CHILD)
+        returned = self.graph.apply(event(8, RuntimeEventKind.RETURN, invocation_id="summary"))
+        self.assertEqual(returned.awakened_invocations, frozenset({"parent"}))
+        self.assertEqual(self.graph.invocations["parent"].state, InvocationState.READY)
+
     def test_handoff_parks_sender_and_wakes_peer(self):
         self.create(1, "coder", "ctx-coder")
         self.create(2, "reviewer", "ctx-reviewer")

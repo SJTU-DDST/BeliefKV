@@ -195,3 +195,39 @@ reactive 有四次、涉及三个 workflow。聚合语义完成干预计数为�
 本轮 64 / 63 个归档完成 workspace 已自动清理，失败现场、
 所有 trace/patch/配置保留。后续不把本轮的表面吞吐差当作
 预测收益，也不盲目增加并发；先验证新的工作头和队列时效。
+
+## JOIN 候选窗口审计与压缩归属修复
+
+补充脚本 `scripts/audit_join_candidate_windows.py` 关联完整 ALL
+JOIN、最后返回 child 的最终 request、native EOS、接受预测的
+时刻与同一等待 parent 的物理机会采样。EOS 后接受的预测不计入
+交集，之前的机会采样最多关联 1500 ms，且仅称采样交集，不将
+旧 free-list 观测视为实时准入许可或连续驻留证明。
+
+v2 predictive 的 79 次完整 JOIN 中，九次曾采到可恢复 Host-only
+目标，涉及八个 parent context；共有 1590 个目标采样，其中
+955 个当时物理空闲容量足够。然而这些 JOIN 在 child 最终
+request 期间没有对应的 WAIT_JOIN 目标采样，也没有“容量可用、
+阶段分数达标、预测在 EOS 前被接受”的采样交集。因此不能用
+全程有 native H2D 或阶段召回高，就断言最终报告窗口有 H2D 目标。
+
+进一步发现 35 次 JOIN 等待期间有记到 parent 上的内部 summary
+CALL；九次曾有目标的 JOIN 全部受影响。上下文 middleware 使用
+全新的 summary callback 列表，丢失调用它的 child run 祖先链；
+adapter 找不到该调用的归属时回退为 root。CALL 将 parent 从
+WAIT_JOIN 改为 WAIT_CHILD，summary RETURN 又把它唤醒为 READY，
+尽管业务 child 尚未返回。物理机会采样和 H2D 选择都会因此失去
+WAIT_JOIN parent。采样消失不是原始 Host 副本已物理丢弃的证明；
+修复后的副本存活、容量和实际恢复仍要重新观测。
+
+修复保留当前 Runnable callback manager 的 parent_run_id 与
+继承元数据，只补入未注册的 summary callback；同步和异步路径
+一致。adapter 在 model callback 上也识别显式 invocation metadata，
+避免直接 model 调用丢失已有 scope。因果图同时保证 foreground
+调用返回后仍须等待未满足的 JOIN；JOIN 先满足时则等待 foreground
+调用，不提前唤醒 parent。不添加 agent guard、模型调用或返回门禁。
+
+156 项相关 CPU 回归通过，包含 child summary 归属、同步/异步、
+两种依赖完成顺序及已有 native runtime、语义 worker 和预测头。
+这不是已产生预测 H2D 的 GPU 验收；不能将修复前 v2 的零动作
+全部解释为剩余工作模型误差。

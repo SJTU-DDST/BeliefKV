@@ -757,9 +757,17 @@ class RuntimeCausalContextGraph:
                 and not parent.blocking_child_ids
                 and not parent.state.terminal
             ):
-                parent.state = InvocationState.READY
+                join = self.joins.get(parent.join_id)
+                join_pending = bool(
+                    join is not None and not join.satisfied
+                    and parent.invocation_id in join.waiter_invocation_ids
+                )
+                parent.state = (
+                    InvocationState.WAIT_JOIN if join_pending else InvocationState.READY
+                )
                 parent.updated_ts_ms = ts_ms
-                awakened.add(parent.invocation_id)
+                if not join_pending:
+                    awakened.add(parent.invocation_id)
 
         for join in self.joins.values():
             if invocation.invocation_id not in join.member_invocation_ids:
