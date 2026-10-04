@@ -230,6 +230,7 @@ def main() -> None:
             "recursion_limit": 2048, "finalization_reserve_steps": 32,
             "native_reactive_guard_profile": True,
             "completion_gate_enabled": False,
+            "child_final_report_shadow": os.environ.get("CHILD_FINAL_REPORT_SHADOW", "1") == "1",
             "fanout_profile": os.environ.get("FANOUT_PROFILE", "native_in_graph_1to4"),
             "context_tokens": 131072, "max_completion_tokens": 8192,
             "sampling_seed": 21, "host_numa_node": 1,

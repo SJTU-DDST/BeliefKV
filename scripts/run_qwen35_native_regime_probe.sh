@@ -17,6 +17,7 @@ CONFIRMED_JOIN_CANARY="${CONFIRMED_JOIN_CANARY:-0}"
 FANOUT_PROFILE="${FANOUT_PROFILE:-native_in_graph_1to4}"
 AB_MODE="${AB_MODE:-off}"
 PREPARE_HOST="${PREPARE_HOST:-0}"
+CHILD_FINAL_REPORT_SHADOW="${CHILD_FINAL_REPORT_SHADOW:-1}"
 H2D_SEED_ARTIFACT="${H2D_SEED_ARTIFACT:-$ROOT/experiments/models/native_h2d_ack_seed_20261004.json}"
 SEMANTIC_REPORT_ARTIFACT="${SEMANTIC_REPORT_ARTIFACT:-$ROOT/experiments/models/child_semantic_work_frozen_phase_20261001_v1/semantic_event_calibrated.json}"
 RUN_ROOT="${RUN_ROOT:-$ROOT/experiments/raw/qwen35_native_regime_${HICACHE_WRITE_POLICY}_${FANOUT_PROFILE}_${HICACHE_SIZE_GB}g_${HOST_SPLIT/:/_}_${ROOT_COUNT}root_v1}"
@@ -48,6 +49,7 @@ if [[ $# -ne 0 || ! "$ROOT_COUNT" =~ ^[1-9][0-9]*$ ]] \
   || [[ "$FANOUT_PROFILE" != "native_dynamic_1to4" && "$FANOUT_PROFILE" != "native_in_graph_1to4" ]] \
   || [[ "$AB_MODE" != "off" && "$AB_MODE" != "reactive" && "$AB_MODE" != "predictive_h2d" ]] \
   || [[ "$PREPARE_HOST" != "0" && "$PREPARE_HOST" != "1" ]] \
+  || [[ "$CHILD_FINAL_REPORT_SHADOW" != "0" && "$CHILD_FINAL_REPORT_SHADOW" != "1" ]] \
   || [[ "$AB_MODE" != "off" && "$CONFIRMED_JOIN_CANARY" != "0" ]] \
   || [[ "$AB_MODE" == "predictive_h2d" && ! -f "$SEMANTIC_REPORT_ARTIFACT" ]] \
   || [[ "$CONFIRMED_JOIN_CANARY" == "1" && "$SGLANG_PATCH_FLAVOR" != "writeback_prepare" ]] \
@@ -134,7 +136,12 @@ if [[ "$ready" != true ]]; then
 fi
 
 set +e
+client_flags=()
+if [[ "$CHILD_FINAL_REPORT_SHADOW" == "1" ]]; then
+  client_flags+=(--child-final-report-shadow)
+fi
 "$PYTHON" "$ROOT/scripts/run_deepagents_swebench.py" \
+  "${client_flags[@]}" \
   --mode autonomous --base-url "$BASE_URL/v1" --model Qwen3.5-35B-A3B \
   --workload-manifest "$MANIFEST" --max-workflows "$ROOT_COUNT" \
   --concurrency "$ROOT_COUNT" --subagent-fanout-profile "$FANOUT_PROFILE" \

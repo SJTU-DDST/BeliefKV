@@ -9,6 +9,7 @@ from beliefkv.predictor.child_semantic_work import (
     choose_request_threshold, fit_head,
 )
 from scripts.train_child_semantic_work import split_roles
+from beliefkv.predictor.conditional_work import NeuralConditionalWork
 
 
 def rows(project="train", count=18):
@@ -42,6 +43,35 @@ def test_roles_and_selector_interval_workflows_are_disjoint():
     assert all(samples[i]["project"] == "train" for i in roles["training"])
     with pytest.raises(ValueError, match="overlap"):
         split_roles(samples, {**plan, "calibration_projects": ["train"]})
+
+
+def test_neural_work_changes_only_remaining_work_and_preserves_tool_invalidation():
+    training = rows()
+    embeddings = np.zeros((len(training), 8))
+    head = fit_head(
+        training, embeddings, dimensions=0,
+        phase_regularization=.1, work_regularization=.2,
+    )
+    width = head.design([training[0]["observation"]], embeddings[:1]).shape[1] + 8
+    work = NeuralConditionalWork({
+        "kind": "neural_conditional_work", "schema_version": 1,
+        "center": [0.] * width, "scale": [1.] * width,
+        "layers": [
+            {"weight": [[0.] * width], "bias": [0.]},
+            {"weight": [[0.]], "bias": [0.]},
+            {"weight": [[0.]], "bias": [np.log1p(300.)]},
+        ],
+        "target": "total", "token_bias": 0., "interval_margin_tokens": 20.,
+    })
+    before = SemanticReportPredictor(head, None)
+    after = SemanticReportPredictor(head, None, neural_work=work)
+    observation = replace(training[0]["observation"], observed_output_tokens=250)
+    old = before.predict([observation])[0]
+    new = after.predict([observation])[0]
+    assert new.final_report_score == old.final_report_score
+    assert new.completion_notice_score == old.completion_notice_score
+    assert new.conditional_remaining_tokens == pytest.approx((30., 50., 70.))
+    assert after.predict([replace(observation, tool_chunk_seen=True)])[0].conditional_remaining_tokens is None
 
 
 @pytest.mark.parametrize("dimensions", [0, 4])

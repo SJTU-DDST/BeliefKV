@@ -116,6 +116,10 @@ Sandbox path and environment contract:
   checkout. Never invent another virtual repository root.
 - Before retrying a missing path, inspect `/workspace` or run `pwd` and
   `git rev-parse --show-toplevel`; do not repeatedly guess path prefixes.
+- `/testbed` is the image's original checkout, not the mounted working repository.
+  Do not copy edits there or replace working-repository directories with symlinks
+  to it. For import discrepancies, inspect the imported module's `__file__` and
+  use the existing `/workspace/src:/workspace` PYTHONPATH.
 - `python`, `pytest`, and other Python entry points already resolve to the image's
   prebuilt test environment. Do not install or upgrade packages and do not use network
   package managers.
@@ -646,7 +650,15 @@ class DockerWorkspaceBackend(FilesystemBackend, SandboxBackendProtocol):
             key = "/"
         elif key.startswith(prefix + "/"):
             key = key[len(prefix) :]
-        return super()._resolve_path(key)
+        try:
+            return super()._resolve_path(key)
+        except ValueError as error:
+            # Upstream filesystem methods return OSError feedback, but let
+            # ValueError escape and terminate an otherwise recoverable tool call.
+            raise PermissionError(
+                f"{error}. Repository files must stay under /workspace; "
+                "do not link them to /testbed or another external directory."
+            ) from error
 
     def _to_virtual_path(self, path: Path) -> str:
         relative = path.resolve().relative_to(self.cwd).as_posix()
@@ -1650,7 +1662,10 @@ class DeepAgentsExperimentConfig:
                 )
             if not self.tool_window_shadow_artifact.is_file():
                 raise FileNotFoundError(self.tool_window_shadow_artifact)
-        if self.child_final_report_shadow and not self.child_return_intent_shadow:
+        if (
+            self.child_final_report_shadow and not self.child_return_intent_shadow
+            and self.mode != "autonomous"
+        ):
             raise ValueError("child final report shadow requires child return intent")
         if self.child_report_length_shadow and not self.child_return_intent_shadow:
             raise ValueError("child report length shadow requires child return intent")
@@ -2080,6 +2095,11 @@ the number from the independent work; one child is valid. Give each child a
 concrete code-path, reproduction, test, or compatibility deliverable. Do not
 duplicate work or split one question merely to increase fan-out. Wait for
 the child results in this conversation before integrating them.
+The initial round is diagnosis only: request fault localization, reproduction,
+or regression requirements, not a complete implementation of the whole issue.
+Do not ask the first child to repair, review, and validate the entire task.
+The root integrates the diagnosis and makes the candidate patch; subsequent
+children independently review it and validate the focused regression.
 
 Treat each JOIN as a phase boundary, not the end of delegation. Integrate
 the reports and explicitly plan the next delegation round. For a substantive
@@ -2149,8 +2169,14 @@ class NativeDelegationRoundPromptMiddleware(AgentMiddleware[Any, Any, Any]):
                     f"\n\nSUPERVISOR PHASE: delegation round {round_index} has returned. "
                     "Do not treat one investigation as the whole workflow. "
                     "Integrate the findings and make the candidate change if needed, "
-                    "then issue another task round for independent patch review or "
-                    "regression/compatibility validation before your final answer. "
+                    + (
+                        "The next round must independently review the candidate patch "
+                        "for missed requirements or unintended behavior. "
+                        if round_index == 1 else
+                        "The next round must independently validate the regression and "
+                        "compatibility of the reviewed patch. "
+                    ) +
+                    "Issue this bounded task round before your final answer. "
                     "Use at least three useful rounds for this repair; choose 1-4 "
                     "children for the next round. An apparently resolved issue still "
                     "needs independent validation. Stop earlier only for a concrete "
@@ -2901,6 +2927,14 @@ def _autonomous_subagents(
                     [_workspace_patch_tool(backend), _native_completion_stage_tool()]
                 ),
                 "middleware": [
+                    *(
+                        [ChildFinalReportShadowMiddleware(
+                            audit=backend.audit, scope=scope,
+                            disable_thinking=True,
+                            eos_shadow=config.child_eos_shadow,
+                        )]
+                        if config.child_final_report_shadow else []
+                    ),
                     TodoListMiddleware(),
                     _filesystem_middleware(
                         backend, allow_direct_edits=not read_only

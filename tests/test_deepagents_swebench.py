@@ -1319,6 +1319,28 @@ def test_docker_backend_uses_workspace_paths_for_file_and_shell_tools(
     audit.close()
 
 
+def test_external_symlink_and_traversal_are_tool_feedback_not_workflow_errors(tmp_path):
+    workspace = tmp_path / "workspace"
+    outside = tmp_path / "outside"
+    workspace.mkdir()
+    outside.mkdir()
+    (outside / "module.py").write_text("PRIVATE = 1\n")
+    (workspace / "linked").symlink_to(outside, target_is_directory=True)
+    audit = JsonlAudit(tmp_path / "audit.jsonl")
+    backend = DockerWorkspaceBackend(workspace, image="fixture:latest", audit=audit)
+    try:
+        read = backend.read("/workspace/linked/module.py")
+        edit = backend.edit("/workspace/linked/module.py", "PRIVATE", "CHANGED")
+        write = backend.write("/workspace/../outside/new.py", "CHANGED")
+    finally:
+        audit.close()
+    assert read.error and "/workspace" in read.error
+    assert edit.error and "/testbed" in edit.error
+    assert write.error
+    assert (outside / "module.py").read_text() == "PRIVATE = 1\n"
+    assert not (outside / "new.py").exists()
+
+
 def test_workspace_patch_tool_checks_then_applies_and_cleans_up(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
@@ -2787,8 +2809,9 @@ def test_repository_contract_does_not_duplicate_django_checkout_root() -> None:
     assert "python tests/runtests.py" in contract
 
 
+@pytest.mark.parametrize("final_report_shadow", [False, True])
 def test_autonomous_subagents_have_independent_context_lifecycles(
-    tmp_path: Path,
+    tmp_path: Path, final_report_shadow: bool,
 ) -> None:
     config = DeepAgentsExperimentConfig(
         mode="autonomous",
@@ -2797,6 +2820,7 @@ def test_autonomous_subagents_have_independent_context_lifecycles(
         output_dir=tmp_path / "output",
         workload_manifest=tmp_path / "workloads.json",
         docker_image="fixture:latest",
+        child_final_report_shadow=final_report_shadow,
         max_completion_tokens=4_096,
         context_lifecycle=ContextLifecyclePolicy(
             window_tokens=32_768,
@@ -2869,6 +2893,10 @@ def test_autonomous_subagents_have_independent_context_lifecycles(
             for item in spec["middleware"]
         )
         for spec in subagents
+    )
+    assert all(
+        any(isinstance(item, ChildFinalReportShadowMiddleware) for item in spec["middleware"])
+        == final_report_shadow for spec in subagents
     )
 
 
@@ -3089,8 +3117,9 @@ def test_child_final_report_shadow_requires_notice(tmp_path: Path) -> None:
         "docker_image": "fixture:latest",
     }
     assert DeepAgentsExperimentConfig(**kwargs).child_final_report_shadow is False
+    assert DeepAgentsExperimentConfig(**kwargs, child_final_report_shadow=True).child_final_report_shadow
     with pytest.raises(ValueError, match="requires child return intent"):
-        DeepAgentsExperimentConfig(**kwargs, child_final_report_shadow=True)
+        DeepAgentsExperimentConfig(**{**kwargs, "mode": "planned"}, child_final_report_shadow=True)
     assert DeepAgentsExperimentConfig(
         **kwargs, child_final_report_shadow=True,
         child_return_intent_shadow=True,

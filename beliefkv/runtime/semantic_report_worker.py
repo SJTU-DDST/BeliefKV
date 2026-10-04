@@ -105,8 +105,11 @@ class SemanticReportWorker:
     def _dispatch(self) -> None:
         if self.disabled or not self.ready or self._active or not self._pending:
             return
-        items = tuple(self._pending.popitem(last=False)[1]
-                      for _ in range(min(4, len(self._pending))))
+        prioritized = sorted(
+            self._pending.values(),
+            key=lambda item: (not item.notice_active, -item.observed_ts_ms),
+        )[:4]
+        items = tuple(self._pending.pop(item.key.request_id) for item in prioritized)
         try:
             self._inputs.put_nowait(items)
         except Full:
@@ -115,6 +118,9 @@ class SemanticReportWorker:
             return
         self._active = True
         self._started = time.monotonic()
+
+    def cancel(self, request_id: str) -> None:
+        self._pending.pop(request_id, None)
 
     def fileno(self) -> int | None:
         if self.disabled or not self._process.is_alive():

@@ -16,6 +16,7 @@ from scipy.special import logsumexp, softmax
 import torch
 
 from beliefkv.predictor.child_report_phase import PHASES, ReportObservation, ReportPrediction
+from beliefkv.predictor.conditional_work import NeuralConditionalWork
 
 
 class FrozenTextEncoder:
@@ -51,10 +52,12 @@ class SemanticReportPredictor:
     def __init__(
         self, head: "SemanticHead", encoder: FrozenTextEncoder | None, *, cache_size: int = 128,
         work_head: "SemanticHead | None" = None,
+        neural_work: NeuralConditionalWork | None = None,
     ) -> None:
         self.head = head
         self.encoder = encoder
         self.work_head = work_head
+        self.neural_work = neural_work
         if cache_size < 0:
             raise ValueError("semantic text cache size must be nonnegative")
         self.cache_size = cache_size
@@ -66,16 +69,24 @@ class SemanticReportPredictor:
         raw = json.loads(path.read_text())
         head = SemanticHead.load(path)
         work_head = None
+        neural_work = None
         if reference := raw.get("conditional_work_head"):
             work_path = path.parent / reference["path"]
             if hashlib.sha256(work_path.read_bytes()).hexdigest() != reference["sha256"]:
                 raise ValueError("conditional work head fingerprint changed")
             work_raw = json.loads(work_path.read_text())
             phase_encoder = raw["metadata"]["adapted_encoder"]["weights_sha256"]
-            work_encoder = work_raw["metadata"]["plan"]["encoder"]["revision"]
+            work_encoder = (
+                work_raw["encoder_weights_sha256"]
+                if work_raw.get("kind") == "neural_conditional_work" else
+                work_raw["metadata"]["plan"]["encoder"]["revision"]
+            )
             if phase_encoder != work_encoder:
                 raise ValueError("phase/work heads require identical frozen encoders")
-            work_head = SemanticHead.load(work_path)
+            if work_raw.get("kind") == "neural_conditional_work":
+                neural_work = NeuralConditionalWork.load(work_path)
+            else:
+                work_head = SemanticHead.load(work_path)
         encoder = None
         if len(head.components):
             metadata = raw["metadata"]
@@ -89,7 +100,7 @@ class SemanticReportPredictor:
             encoder = FrozenTextEncoder(
                 snapshot, max_tokens=metadata["plan"]["encoder"]["max_tokens"],
             )
-        return cls(head, encoder, work_head=work_head)
+        return cls(head, encoder, work_head=work_head, neural_work=neural_work)
 
     def predict(self, observations: Sequence[ReportObservation]) -> list[ReportPrediction]:
         if not observations:
@@ -122,6 +133,14 @@ class SemanticReportPredictor:
                 replace(phase, conditional_remaining_tokens=remaining.conditional_remaining_tokens,
                         work_interval_status=remaining.work_interval_status)
                 for phase, remaining in zip(predictions, work)
+            ]
+        if self.neural_work is not None:
+            work = self.neural_work.arrays(observations, embeddings, self.head)
+            predictions = [
+                replace(prediction, conditional_remaining_tokens=tuple(map(float, bounds)),
+                        work_interval_status="calibration_subset_bounds_not_quantiles")
+                if prediction.conditional_remaining_tokens is not None else prediction
+                for prediction, bounds in zip(predictions, work)
             ]
         return predictions
 

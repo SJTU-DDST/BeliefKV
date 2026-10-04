@@ -268,6 +268,8 @@ class NativeAdmissionRuntime:
         self._semantic_forecasts: dict[str, SemanticReportReply] = {}
         self._semantic_finished: dict[str, tuple[float, int]] = {}
         self._semantic_submit_ms: dict[str, float] = {}
+        self._semantic_submitted_frames: dict[str, tuple[float, int]] = {}
+        self._semantic_target_cache: dict[PrefillCandidateKey, tuple[float, bool]] = {}
         self._semantic_tool_counts: Counter[str] = Counter()
         self._runtime_state_next_ms = 0.
         self.enable_confirmed_join_canary = enable_confirmed_join_canary
@@ -701,6 +703,10 @@ class NativeAdmissionRuntime:
                 self._semantic_progress.pop(rid, None)
                 self._semantic_finished.pop(rid, None)
                 self._semantic_submit_ms.pop(rid, None)
+                self._semantic_submitted_frames.pop(rid, None)
+                cancel = getattr(self._semantic_worker, "cancel", None)
+                if callable(cancel):
+                    cancel(rid)
 
     def _semantic_key_live(self, key: PrefillCandidateKey, now_ms: float) -> bool:
         child = self.graph.invocations.get(key.invocation_id)
@@ -780,6 +786,28 @@ class NativeAdmissionRuntime:
             return None
         return min(500., max(1., (end_tokens - prior[1]) * 1000 / (end_ms - prior[0])))
 
+    def _semantic_transfer_target_ready(self, child_id: str, now_ms: float) -> bool:
+        if not self.enable_final_stage_prefetch or self._native_cache is None:
+            return True
+        parent = self._semantic_parent(child_id)
+        if parent is None:
+            return False
+        _, key = parent
+        cached = self._semantic_target_cache.get(key)
+        if cached is not None and now_ms < cached[0]:
+            return cached[1]
+        observation = self.inspect_context_h2d_opportunity(
+            context_id=key.context_id, context_epoch=key.context_epoch,
+        )
+        ready = observation is not None and observation.step is not None
+        self._semantic_target_cache[key] = (now_ms + 100., ready)
+        if len(self._semantic_target_cache) > 256:
+            self._semantic_target_cache = {
+                k: value for k, value in self._semantic_target_cache.items()
+                if value[0] > now_ms
+            }
+        return ready
+
     def _poll_semantic_reports(self, now_ms: float) -> None:
         worker = self._semantic_worker
         if worker is None:
@@ -843,6 +871,13 @@ class NativeAdmissionRuntime:
                 continue
             if now_ms - event.ts_ms > 1_500:
                 continue
+            frame = (event.ts_ms, event.attributes["content_chars"])
+            if self._semantic_submitted_frames.get(rid) == frame:
+                self.counts["semantic_unchanged_frame_skipped"] += 1
+                continue
+            if not self._semantic_transfer_target_ready(key.invocation_id, now_ms):
+                self.counts["semantic_no_transfer_target_skipped"] += 1
+                continue
             progress = self._semantic_progress.get(rid, ())
             # Match offline features: only server progress older than the delivered text.
             observed = next((tokens for ts, tokens in reversed(progress)
@@ -864,6 +899,7 @@ class NativeAdmissionRuntime:
                 child.llm_round,
             ))
             self._semantic_submit_ms[rid] = now_ms
+            self._semantic_submitted_frames[rid] = frame
             self.counts["semantic_input_submitted"] += 1
 
     def scheduler_step(self, waiting_queue: Sequence[object] = ()) -> None:

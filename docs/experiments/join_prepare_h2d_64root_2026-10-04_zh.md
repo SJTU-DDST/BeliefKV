@@ -120,3 +120,78 @@ CPU 首个非线性 work-only 候选在同一 Sphinx 隔离项目快照上的
 末段 token 中位绝对误差由部署工作头的 110.00 降至 72.78，
 但 P90 从 202.87 到 210.26 未改善；未部署、未声称亚秒效果，
 继续比较低成本树模型与更合适的末段监督。
+
+## v2 完整结果与诊断
+
+| 指标 | Predictive | Reactive |
+| --- | ---: | ---: |
+| completed / error | 64 / 0 | 63 / 1 |
+| 整轮秒数 | 3916.24 | 4369.60 |
+| completed workflow/hour | 58.83 | 51.90 |
+| 63 个共同完成任务平均 JCT，秒 | 1465.32 | 1350.02 |
+| 模型调用 / 工具调用 | 13169 / 12549 | 11210 / 11036 |
+| GPU 利用率均值，% | 84.54 | 70.62 |
+| 预测 H2D ACK | 0 | 0 |
+| PREPARE ACK | 647 | 657 |
+| 直接观察的 backed parent 压力停放 | 9 | 8 |
+| native H2D 请求服务样本 | 73 | 68 |
+
+完成吞吐表面高 13.35%，但没有发生预测 H2D，不能归因于
+提前恢复；共同完成任务平均 JCT 高约 8.54%，模型/工具轨迹
+不同，reactive 还有一个异常。未做官方 patch grading，不作为
+预测调度收益或正确任务吞吐的证明。
+
+两侧 FULL Host 均达 105.36 GB、Mamba Host 达 94.65 GB。
+FULL Host 累计驱逐约 139.63 / 117.14 GB，Mamba 约
+55.05 / 68.25 GB。是有备份与恢复的负载，不能再用没有 HBM
+竞争或没有原生 H2D 解释零预测动作。并非全部备份被消费，
+647 个准备 ACK 和九次直接停放说明选择性准备仍有压缩空间。
+
+predictive 的 64 个 workflow：52 个一轮、九个两轮、三个
+三轮；reactive：52 个一轮、十个两轮、两个三轮。实际 child
+分别 79 / 78，每轮仍主要一个 child。持久化阶段提示确实进入
+了 tool result，但整个问题常在第一轮被交给 child 一次完成，
+所以只加强“多轮”措辞不足以产生期望的阶段分工。
+
+reactive 的 `pytest-dev__pytest-8399` 失败：模型将
+`/workspace/src/_pytest` 等目录替换成指向 `/testbed` 的链接，
+随后 `edit_file` 的虚拟 backend 检测越界，直接抛 ValueError
+并终止 workflow。这不是简单的模型路径笔误，也不应该通过
+允许 host 越界来修复。该失败 workspace 保留。
+
+模型计算均值 14.17 ms，但接收时观察年龄中位数 432.69 ms；
+队列/传递年龄不是单模型推理耗时。EOS 前最后快照的条件剩余
+token 绝对误差中位数 60.12、有符号 +26.57，实际剩余中位数
+36.5；末段仍高估。3155 次 EOS 窗口过期，不放宽两秒窗口将
+RETURN 后恢复冒称提前动作。模型 worker 与物理账本未禁用，
+没有控制投递或遥测丢失。
+
+predictive 有八次允许的 graph FINALIZE、涉及七个 workflow；
+reactive 有四次、涉及三个 workflow。聚合语义完成干预计数为零
+不能代表没有 graph 收尾。此类时点后的自然 RETURN 标签仍
+须剔除/标记，不因此取消整个已完成 workflow 的服务遥测。
+
+## v2 后的优化
+
+1. backend 将越界/遍历的 ValueError 转成文件工具可返回的
+   PermissionError 反馈，不跟随外部链接，不终止整个 workflow；
+   prompt 明确 `/testbed` 不是当前 mounted checkout。
+2. 初始 delegation 明确为诊断/复现，不一次派发完整修复；
+   root 集成并生成候选 patch，后续轮次分别独立审查与验证。
+   不增加返回门禁、轮次 guard 或固定 child 数量。
+3. 每个正文快照只推理一次；线上传输路径只提交有真实
+   Host-only 恢复目标的关键 child，目标检查 100 ms 有界缓存，
+   动作前仍重新验证容量和身份。通知活跃/最新观察优先，
+   失效 pending request 取消，减少无用 FIFO 推理造成的年龄。
+4. 接入 autonomous child 的 final-report thinking 控制。
+   原开关仅 planned child 生效；开启时仅通知后的报告请求
+   disable thinking，两侧共用，不增加 LLM 调用或强制格式。
+5. 非线性 work-only 候选导出为校验 SHA256/encoder 的 JSON，
+   复用一次冻结语义编码，只替换条件工作，不改变 phase 分数。
+   上线接口补齐不等于已取得新的 GPU 或亚秒精度验收。
+   v2 回放末段误差反而由原头 49.00 到候选 87.72 token，
+   已否决默认替换，详见候选比较文档。
+
+本轮 64 / 63 个归档完成 workspace 已自动清理，失败现场、
+所有 trace/patch/配置保留。后续不把本轮的表面吞吐差当作
+预测收益，也不盲目增加并发；先验证新的工作头和队列时效。

@@ -2237,6 +2237,9 @@ def test_semantic_body_is_read_only_and_uses_only_prior_decode_progress():
     runtime._poll_semantic_reports(now + 1)
     assert submitted[0].observed_output_tokens == 20
     assert submitted[0].key == key
+    runtime._poll_semantic_reports(now + 400)
+    assert len(submitted) == 1
+    assert runtime.counts["semantic_unchanged_frame_skipped"] == 1
     runtime.on_events((RuntimeEvent(
         "tool-body", now + 2, RuntimeEventKind.STRUCTURED_ACTION, "wf",
         invocation_id="child", context_id="ctx-child", context_epoch=1,
@@ -2302,6 +2305,19 @@ def test_semantic_eos_window_creates_only_h2d_candidate_not_final_priority():
     ),))
     runtime._poll_semantic_reports(now + 1)
     assert runtime.counts["semantic_result_stale"] == 1
+
+
+def test_semantic_work_queue_requires_real_parent_host_restore_target():
+    runtime = final_stage_runtime()
+    runtime._clear_final_stage("join")
+    runtime.enable_final_stage_prefetch = True
+    runtime._native_cache = NS()
+    with patch.object(runtime, "inspect_context_h2d_opportunity", return_value=NS(step=None)) as inspect:
+        assert not runtime._semantic_transfer_target_ready("child", 1000.)
+        assert not runtime._semantic_transfer_target_ready("child", 1050.)
+        inspect.assert_called_once()
+    with patch.object(runtime, "inspect_context_h2d_opportunity", return_value=NS(step="host-only")):
+        assert runtime._semantic_transfer_target_ready("child", 1101.)
 
 
 def test_final_stage_promotes_only_bound_join_child_with_admission_budget():
