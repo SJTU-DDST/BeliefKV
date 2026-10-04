@@ -74,6 +74,7 @@ class InvocationRecord:
     confidence: EventConfidence = EventConfidence.DECLARED_RUNTIME
     active_tool_family: str | None = None
     active_tool_start_ms: float | None = None
+    active_tool_calls: dict[str, tuple[str, float]] = field(default_factory=dict)
     llm_round: int = 0
 
 
@@ -684,6 +685,14 @@ class RuntimeCausalContextGraph:
         invocation.updated_ts_ms = event.ts_ms
         invocation.active_tool_family = str(event.attributes.get("tool_family", "unknown"))
         invocation.active_tool_start_ms = event.ts_ms
+        identity = str(
+            event.attributes.get("tool_run_id")
+            or event.attributes.get("tool_call_id") or "_legacy"
+        )
+        invocation.active_tool_calls[identity] = (invocation.active_tool_family, event.ts_ms)
+        invocation.active_tool_start_ms = min(
+            start for _, start in invocation.active_tool_calls.values()
+        )
         return GraphDelta(
             event.event_id,
             parked_invocations=frozenset({invocation.invocation_id}),
@@ -693,13 +702,26 @@ class RuntimeCausalContextGraph:
     def _on_tool_end(self, event: RuntimeEvent) -> GraphDelta:
         invocation = self._event_invocation(event)
         self._ensure_not_terminal(invocation)
-        invocation.state = InvocationState.READY
+        identity = str(
+            event.attributes.get("tool_run_id")
+            or event.attributes.get("tool_call_id") or "_legacy"
+        )
+        invocation.active_tool_calls.pop(identity, None)
+        invocation.state = (
+            InvocationState.WAIT_TOOL if invocation.active_tool_calls else InvocationState.READY
+        )
         invocation.updated_ts_ms = event.ts_ms
         invocation.active_tool_family = None
         invocation.active_tool_start_ms = None
+        if invocation.active_tool_calls:
+            family, start = min(invocation.active_tool_calls.values(), key=lambda value: value[1])
+            invocation.active_tool_family, invocation.active_tool_start_ms = family, start
         return GraphDelta(
             event.event_id,
-            awakened_invocations=frozenset({invocation.invocation_id}),
+            awakened_invocations=(
+                frozenset() if invocation.active_tool_calls
+                else frozenset({invocation.invocation_id})
+            ),
             changed_contexts=frozenset({invocation.context_id}),
         )
 
@@ -763,10 +785,11 @@ class RuntimeCausalContextGraph:
                     and parent.invocation_id in join.waiter_invocation_ids
                 )
                 parent.state = (
-                    InvocationState.WAIT_JOIN if join_pending else InvocationState.READY
+                    InvocationState.WAIT_TOOL if parent.active_tool_calls
+                    else InvocationState.WAIT_JOIN if join_pending else InvocationState.READY
                 )
                 parent.updated_ts_ms = ts_ms
-                if not join_pending:
+                if not join_pending and not parent.active_tool_calls:
                     awakened.add(parent.invocation_id)
 
         for join in self.joins.values():

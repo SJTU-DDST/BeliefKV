@@ -1218,6 +1218,7 @@ class NativeReactiveTelemetry:
             "actual_bytes": getattr(event, "actual_bytes", None),
             "submit_ts_ms": getattr(event, "submit_ts_ms", None),
             "submit_to_ack_ms": getattr(event, "submit_to_ack_ms", None),
+            "enqueue_to_submit_ms": getattr(event, "enqueue_to_submit_ms", None),
             "native_unacked_bytes_at_submit": getattr(
                 event, "unacked_bytes_at_submit", None
             ),

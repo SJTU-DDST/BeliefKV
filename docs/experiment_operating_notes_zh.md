@@ -139,6 +139,19 @@ time namespace 与 CLOCK_MONOTONIC 的域标识匹配，才直接使用
 回溯 100 ms。不要为了增加短窗口命中而回填旧的时钟域证明。
 短 token 区间概率与 RETURN 墙钟误差分别报告，无触发不算收益。
 
+工具等待模型必须在启动计划和运行时状态中明确记录为已加载，
+不能仅因存在 tool_wait 代码就声称启用。事件时间预测与 legacy
+admission 的动作资格分离，不修改旧产物的 eligibility 标志。
+并行工具不能在首个 TOOL_END 时唤醒 agent；使用稳定 tool_run_id
+跟踪，时间动作依然绑定真实等待、session/generation/epoch。
+
+预测 load_queue 不能等后续 prefill 才启动并把延迟算成预测误差。
+提前 flush 必须保留原生 stream fence 与 layer producer event，
+不能抢原生 prefill 的 consumer index。服务估计须区分池形态、
+相近大小、enqueue 排队与 submit-to-ACK，不能线性放大固定开销。
+窗口现为 1000 ms，但必须仍按真实 submit 到 RETURN/TOOL_END
+审计；未来未生成的 token、first GPU service 均不能替代返回标签。
+
 ## 版本与文件
 
 启动前提交代码，持久化实际 commit、源码 patch、模型/工作头、

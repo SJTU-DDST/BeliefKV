@@ -98,7 +98,18 @@ def predict_tool_wait_batch(
             )
             and quantiles[0] <= quantiles[1] <= quantiles[2]
         ):
-            results.append((key, *quantiles, revision))
+            curve = getattr(prediction, "operational_timing_curve", None)
+            if curve is not None and curve.support_level != "unavailable":
+                probabilities = tuple(
+                    (float(tau), float(prediction.action_timing(
+                        "prefetch_gpu", tau,
+                    ).favorable_probability))
+                    for tau in curve.tau_ms
+                )
+                observed = revision + features.state_elapsed_ms
+                results.append((key, *quantiles, revision, probabilities, observed))
+            else:
+                results.append((key, *quantiles, revision))
     return tuple(results)
 
 
@@ -364,19 +375,22 @@ class NativePredictorWorker:
                 p10, p50, p90 in values
             )
         if kind == "tool_wait":
-            return tuple(
-                NativeToolWaitHint(
+            hints = []
+            for value in values:
+                key, p10, p50, p90, revision = value[:5]
+                observed = float(value[6]) if len(value) == 7 else issued
+                hints.append(NativeToolWaitHint(
                     key=key,
                     wait_p10_ms=p10,
                     wait_p50_ms=p50,
                     wait_p90_ms=p90,
-                    issued_monotonic_ms=issued,
-                    expires_monotonic_ms=issued + 5_000,
+                    issued_monotonic_ms=observed,
+                    expires_monotonic_ms=observed + 5_000,
                     predictor_sha256=self.predictor_sha256,
                     invocation_revision_ts_ms=revision,
-                )
-                for key, p10, p50, p90, revision in values
-            )
+                    release_cdf=value[5] if len(value) >= 6 else (),
+                ))
+            return tuple(hints)
         return tuple(
             NativeDemandHint(
                 key=key,

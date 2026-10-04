@@ -2260,6 +2260,30 @@ def test_semantic_body_is_read_only_and_uses_only_prior_decode_progress(
     assert not runtime._final_stages
 
 
+def test_native_decode_tool_marker_invalidates_forecast_before_client_tool_chunk():
+    from beliefkv.control.causal_graph import InvocationState
+
+    runtime = final_stage_runtime()
+    child = req("child")
+    child.beliefkv_metadata["context_epoch"] = 1
+    child.session_id, child.session_generation = "cs", 1
+    child.origin_input_ids, child.output_ids = [1, 2], [3, 248058, 4]
+    child.finished = lambda: False
+    runtime.on_events((event(
+        7, RuntimeEventKind.LLM_SUBMIT, invocation_id="child",
+        context_id="ctx-child", context_epoch=1, attributes={"request_id": "child"},
+    ),))
+    runtime.register_visible_request(child)
+    runtime._semantic_worker = NS()
+    runtime._tool_open_token_ids = frozenset({248058})
+    key = runtime.visible["child"]
+    runtime.on_batch_completed(NS(reqs=[child]))
+    assert "child" in runtime._decoded_tool_requests
+    assert not runtime._semantic_key_live(key, time.monotonic() * 1000)
+    assert not runtime._final_stages
+    assert runtime.graph.invocations["child"].state is InvocationState.RUNNING_LLM
+
+
 def test_semantic_eos_window_creates_only_h2d_candidate_not_final_priority():
     from collections import deque
 
@@ -2295,7 +2319,7 @@ def test_semantic_eos_window_creates_only_h2d_candidate_not_final_priority():
     assert stage.generated_tokens == 50
     assert stage.tokens_per_second is not None
     assert runtime._live_final_stage(stage)
-    runtime._h2d_samples.extend(((1000, 10.),) * 3)
+    runtime._h2d_samples.extend(((101, 10.),) * 3)
     runtime._native_cache = NS(cache_controller=NS(mem_pool_host=NS(entry_map={
         "kv": NS(host_pool=NS(size_per_token=1)),
         "mamba": NS(host_pool=NS(size_per_token=1)),
@@ -2498,7 +2522,7 @@ def test_final_stage_latest_start_requires_serviced_decode_and_h2d_evidence():
     runtime.register_visible_request(child)
     stage = runtime._final_stages["join"]
     stage.generated_tokens = 64
-    stage.tokens_per_second = 80
+    stage.tokens_per_second = 40
     runtime.attach_native_cache(NS(cache_controller=NS(
         mem_pool_host=NS(entry_map={
             "kv": NS(host_pool=NS(size_per_token=10)),

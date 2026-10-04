@@ -16,6 +16,20 @@ defaults. Natural-language child replies remain valid.
 
 ## Active Full H2D A/B
 
+The next development pair is v4:
+`docs/experiments/joint_tool_join_h2d_v4_zh.md`.
+It retains 64 roots/running=48/NUMA Host 200 GB and widens the predicted
+lead window to 1000 ms. JOIN and tool-return H2D share native safe submission,
+but are audited against their own actual RETURN/TOOL_END boundaries.
+The calibrated tool event model is independently loaded with pinned source/model
+validation, without promoting its legacy online/action eligibility metadata.
+Both arms share long-wait preparation and pressure-triggered demotion; only
+predictive enables pre-return loads. This is not an untouched native baseline.
+Pure predictive queues start immediately while preserving native layer/fence
+dependencies; size/shape-local timing replaces maximum byte-scaled ACK latency.
+The CPU checks pass 218 project tests, 63 native tests and five patch tests.
+GPU timing, transfer reuse and paired throughput remain to be measured.
+
 The active pair is now
 `docs/experiments/join_prepare_h2d_64root_2026-10-04_zh.md`.
 Both arms share JOIN parent preparation and pressure parking; only predictive

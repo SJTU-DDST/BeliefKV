@@ -196,6 +196,10 @@ def main() -> None:
     parser.add_argument("--workload-manifest", type=Path)
     parser.add_argument("--prepare-host", type=int, choices=(0, 1), default=0)
     parser.add_argument("--h2d-seed", type=Path)
+    parser.add_argument("--tool-timing-artifact", type=Path)
+    parser.add_argument("--enable-tool-timing", type=int, choices=(0, 1), default=0)
+    parser.add_argument("--prefetch-lead-ms", type=int, default=1000)
+    parser.add_argument("--transfer-service-seed", type=Path)
     args = parser.parse_args()
     if args.cleanup_arm:
         print(json.dumps(cleanup_workspaces(args.cleanup_arm), indent=2))
@@ -215,6 +219,20 @@ def main() -> None:
         workloads = json.loads(manifest.read_text())["workloads"][:args.root_count]
         patch = root / "patches/sglang-v0.5.20-beliefkv-staging.patch"
         plan = {
+            "prefetch_lead_ms": args.prefetch_lead_ms,
+            "tool_timing_enabled": bool(args.enable_tool_timing),
+            "tool_timing_artifact": str(args.tool_timing_artifact.resolve()) if args.tool_timing_artifact else None,
+            "tool_timing_sha256": (
+                hashlib.sha256(args.tool_timing_artifact.read_bytes()).hexdigest()
+                if args.tool_timing_artifact else None
+            ),
+            "transfer_service_seed": str(args.transfer_service_seed.resolve()) if args.transfer_service_seed else None,
+            "transfer_service_seed_sha256": (
+                hashlib.sha256(args.transfer_service_seed.read_bytes()).hexdigest()
+                if args.transfer_service_seed and args.transfer_service_seed.is_file() else None
+            ),
+            "tool_prepare_in_both_arms": bool(args.enable_tool_timing and args.prepare_host),
+            "tool_prefetch_predictive_only": bool(args.enable_tool_timing),
             "scope": (
                 "single-arm development mechanism observation; no throughput comparison"
                 if args.arm_order.split() == ["predictive_h2d"]

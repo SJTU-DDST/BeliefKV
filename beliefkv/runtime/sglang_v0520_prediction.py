@@ -30,6 +30,43 @@ _MODEL_MANIFEST_FILES = frozenset((
 ))
 
 
+def validate_tool_timing_artifact(
+    artifact_path: str, *, expected_sha256: str, model_path: str,
+) -> None:
+    """Validate event-time evidence; never promote legacy action eligibility."""
+    data = Path(artifact_path).read_bytes()
+    if hashlib.sha256(data).hexdigest() != expected_sha256:
+        raise ValueError("tool timing artifact SHA-256 mismatch")
+    raw = json.loads(data)
+    metadata = raw.get("metadata") or {}
+    timing = metadata.get("native_event_timing_report") or {}
+    if (
+        metadata.get("calibration_status") not in ("calibrated_native_heads_only", "calibrated")
+        or timing.get("target") != "time_until_all_active_tools_return_not_first_gpu_service"
+        or not (raw.get("components") or {}).get("operational_release")
+        or not 0 < raw.get("calibration_coverage", 0) <= 1
+    ):
+        raise ValueError("tool predictor lacks calibrated event-time evidence")
+    datasets = metadata.get("dataset_dirs") or []
+    hashes = metadata.get("dataset_manifest_file_sha256s") or []
+    if not datasets or len(datasets) != len(hashes):
+        raise ValueError("tool timing predictor has no pinned source manifests")
+    for dataset, expected in zip(datasets, hashes):
+        manifest_data = (Path(dataset) / "dataset_manifest.json").read_bytes()
+        if hashlib.sha256(manifest_data).hexdigest() != expected:
+            raise ValueError("tool timing source manifest changed")
+        contract = json.loads(manifest_data)["source"]["runtime_environment_contract"]
+        identity = contract.get("server_identity") or {}
+        model_hashes = contract.get("model_revision_sha256") or {}
+        if identity.get("sglang_version") != "0.5.20" or "config.json" not in model_hashes:
+            raise ValueError("tool timing model belongs to a different runtime")
+        if set(model_hashes) - _MODEL_MANIFEST_FILES:
+            raise ValueError("unsupported tool timing model manifest")
+        for name, digest in model_hashes.items():
+            if hashlib.sha256((Path(model_path) / name).read_bytes()).hexdigest() != digest:
+                raise ValueError("tool timing model revision changed")
+
+
 def validate_admission_artifact(
     artifact_path: str,
     *,
@@ -101,9 +138,24 @@ class NativeToolWaitHint:
     expires_monotonic_ms: float
     predictor_sha256: str
     invocation_revision_ts_ms: float | None = None
+    release_cdf: tuple[tuple[float, float], ...] = ()
 
     def live(self, key: PrefillCandidateKey, *, now_ms: float) -> bool:
         return self.key == key and self.issued_monotonic_ms <= now_ms < self.expires_monotonic_ms
+
+    def release_probability_within(self, horizon_ms: float, *, now_ms: float) -> float | None:
+        if not self.release_cdf:
+            return None
+        from beliefkv.predictor.action_frontier import ActionTimingCurve
+
+        curve = ActionTimingCurve(
+            tuple(point[0] for point in self.release_cdf),
+            tuple(point[1] for point in self.release_cdf), "pooled", 0.,
+        )
+        age = max(0., now_ms - self.issued_monotonic_ms)
+        past = curve.release_within(age)
+        future = curve.release_within(age + max(0., horizon_ms))
+        return max(0., min(1., (future - past) / max(1. - past, 1e-9)))
 
 
 @dataclass(frozen=True)
