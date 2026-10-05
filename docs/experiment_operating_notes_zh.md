@@ -1,6 +1,6 @@
 # BeliefKV 实验注意事项
 
-更新日期：2026-10-05。本文是当前实验的执行约束，不是新增 agent
+更新日期：2026-10-06。本文是当前实验的执行约束，不是新增 agent
 guard、终态门禁或模型动作授权。启动前同时阅读
 `docs/implementation_plan.md`；旧诊断脚本和历史计划不能覆盖当前约定。
 
@@ -191,3 +191,20 @@ artifact 无错误的旧 workspace。保留 trace、patch、配置、模型
 以及失败现场。检查磁盘余量，不以扩大并发或删除在用数据解决
 磁盘不足。GPU 实验进行中持续区分系统故障与正常长任务，
 真实系统故障及时停止并修复，不以吞掉异常“提高完成率”。
+
+## 最近清理记录
+
+2026-10-06删除24个已被后续导出替代的JSONL及373个已完成、
+sandbox已清理且patch已归档的旧workspace，回收约83.7 GiB，
+磁盘可用空间由约25 GiB增至108 GiB。逐项清单见
+`experiments/analysis/old_artifact_cleanup_20261006_result.json`。
+旧v9/native-transfer导出目录只保留manifest及清理标记，不再是
+完整dataset；不能仅凭manifest存在就重新选为训练源。
+
+保留当前模型引用的 `dataset_failed_repeat_v10`、所有原始
+trace/result/patch、失败及近期workspace、v3/v4/v5证据、模型、
+processed标签、环境依赖和Docker镜像。在用模型文件哈希及443个
+运行源码文件指纹均未变化。
+清理使用低I/O优先级，发生于v5 predictive侧的01:01:59至
+01:02:21（Asia/Shanghai）；它是已记录的背景I/O事件，不改写
+原始性能指标，不据此新增数据资格门禁。
