@@ -1,10 +1,18 @@
 # BeliefKV Current Execution Plan
 
 Status date: 2026-10-04.
+Latest direction update: 2026-10-05.
 
 ## Mandatory Experiment Notes
 
 Read `docs/experiment_operating_notes_zh.md` before launching workloads.
+The user now authorizes **84 roots in a single arrival wave**, keeping
+running=48 and the existing Host/device pool settings. This supersedes the
+64-root notes below; it does not authorize 128 or a staggered 64+64 launch.
+Next pair reverses v4's order to reactive first. Record realized demand and
+all-workflow trace drift; a single live pair is pressure exploration, not
+trajectory-controlled or statistically established policy throughput benefit.
+See `docs/experiments/pressure84_and_fair_comparison_2026-10-05_zh.md`.
 The user approved **64 roots** on 2026-10-04 with multi-round delegation,
 selective waiting-parent PREPARE and pressure-triggered Host-only residency.
 This replaces the previous 36-root diagnostic, not with 128 or 64+64.

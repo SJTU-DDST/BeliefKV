@@ -1,7 +1,12 @@
 import json
 import sys
 
-from scripts.summarize_semantic_h2d_ab import cleanup_workspaces, main, summarize
+import pytest
+
+from scripts.summarize_semantic_h2d_ab import (
+    cleanup_workspaces, main, paired_trajectory_report, summarize,
+    workflow_trajectory_audit, workload_balance,
+)
 
 
 def fixture(arm):
@@ -132,3 +137,72 @@ def test_initialize_records_explicit_long_budget_and_manifest_selection(tmp_path
     assert plan["workflow_arrival_batch_size"] == 0
     assert plan["order"] == ["predictive_h2d"]
     assert "no throughput comparison" in plan["scope"]
+
+
+def test_initialize_accepts_exact_84_roots_and_records_live_fairness_scope(tmp_path, monkeypatch):
+    artifact = tmp_path / "model.json"
+    artifact.write_text("{}")
+    manifest = tmp_path / "workload.json"
+    manifest.write_text(json.dumps({"workloads": [
+        {"instance_id": f"task-{index}"} for index in range(128)
+    ]}))
+    monkeypatch.setattr(sys, "argv", [
+        "summarize", "--run-root", str(tmp_path), "--initialize",
+        "--root-count", "84", "--arm-order", "reactive predictive_h2d",
+        "--semantic-artifact", str(artifact), "--workload-manifest", str(manifest),
+        "--sampling-seed", "22", "--repetition-id", "3",
+    ])
+    main()
+    plan = json.loads((tmp_path / "ab_plan.json").read_text())
+    assert len(plan["workload_instance_ids_in_manifest_order"]) == 84
+    assert plan["workload_instance_ids_in_manifest_order"][-1] == "task-83"
+    assert plan["workflow_arrival_batch_size"] == 0
+    assert plan["server_running"] == 48
+    assert plan["sampling_seed"] == 22
+    assert plan["repetition_id"] == 3
+    assert plan["same_seed_is_not_same_trajectory"]
+    assert "exploration" in plan["scope"]
+    assert plan["formal_paired_repetition_target"] == 4
+    monkeypatch.setattr(sys, "argv", [
+        "summarize", "--run-root", str(tmp_path), "--initialize",
+        "--root-count", "129", "--semantic-artifact", str(artifact),
+        "--workload-manifest", str(manifest),
+    ])
+    with pytest.raises(ValueError, match="manifest"):
+        main()
+
+
+def test_demand_balance_is_diagnostic_not_posthoc_throughput_correction():
+    reactive = {
+        "llm_request_count": 10, "tool_call_count": 8,
+        "submitted_input_tokens": 1000, "completed_request_output_tokens": 100,
+    }
+    result = workload_balance(reactive, {key: value * 2 for key, value in reactive.items()})
+    assert all(value == 1. for value in result["relative_changes_predictive_vs_reactive"].values())
+    assert not result["same_logical_trajectory_verified"]
+    assert "no isolated KV-policy" in result["performance_claim"]
+
+
+def test_request_result_audit_uses_rids_not_parallel_completion_order(tmp_path):
+    arm = tmp_path / "predictive_h2d"
+    client, _ = fixture(arm)
+    workflow = client / "workflows/task"
+    workflow.mkdir(parents=True)
+    rows = [
+        {"kind": "llm_submit", "attributes": {"request_id": "a", "prompt_semantic_sha256": "p-a"}},
+        {"kind": "llm_submit", "attributes": {"request_id": "b", "prompt_semantic_sha256": "p-b"}},
+        {"kind": "llm_result", "attributes": {"request_id": "b", "output_chars": 2}},
+        {"kind": "llm_result", "attributes": {"request_id": "a", "output_chars": 1}},
+    ]
+    (workflow / "runtime_events.deepagents.jsonl").write_text(
+        "".join(json.dumps({**row, "workflow_id": "wf"}) + "\n" for row in rows)
+    )
+    values = workflow_trajectory_audit(arm)
+    sequence = values["task"]["request_sequence"]
+    assert [row["model_result"]["output_chars"] for row in sequence] == [1, 2]
+    assert paired_trajectory_report(values, values)["observed_request_sequence_equal_count"] == 1
+    changed = json.loads(json.dumps(values))
+    changed["task"]["request_sequence"][1]["model_result"]["output_chars"] = 3
+    report = paired_trajectory_report(values, changed)
+    assert report["observed_request_sequence_different_count"] == 1
+    assert report["workflows"][0]["first_observed_request_divergence_ordinal"] == 2

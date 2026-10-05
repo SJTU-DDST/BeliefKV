@@ -1,10 +1,17 @@
 # BeliefKV 实验注意事项
 
-更新日期：2026-10-04。本文是当前实验的执行约束，不是新增 agent
+更新日期：2026-10-05。本文是当前实验的执行约束，不是新增 agent
 guard、终态门禁或模型动作授权。启动前同时阅读
 `docs/implementation_plan.md`；旧诊断脚本和历史计划不能覆盖当前约定。
 
 ## 场景与配置
+
+2026-10-05 用户进一步批准下一轮 **84-root 单波到达**，
+server running=48、Host 200 GB/NUMA node 1及池比例保持不变。
+本条覆盖下文旧64-root约定；不得自动扩到128或重叠64+64。
+当前pair属于live压力探索，不因固定seed就声明轨迹相同。
+正式比较分固定逻辑需求GPU回放和多轮配对live两层，见
+`docs/experiments/pressure84_and_fair_comparison_2026-10-05_zh.md`。
 
 2026-10-04 用户明确批准将下一轮改为 **64-root**、加强多轮
 spawn prompt、启用选择性 JOIN parent PREPARE_HOST，并验证
@@ -32,6 +39,12 @@ reactive/predictive 对照必须使用相同 task 集合、到达方式、
 物理池和原生缓存规则。预测推理和预测动作是实验变量。
 两侧重新冷启动，禁止将不同源码版本或不同配置结果拼成对照。
 没有有效迁移机会时先报告原因，不重复同配置来积累无效 ACK。
+
+原始吞吐/JCT必须和实际工作量差异一起报告。固定seed甚至
+temperature=0都不是逐token、工具结果或workflow路径相同的证明。
+不要筛掉轨迹分歧任务，也不要把总耗时除以token数作为“公平”
+JCT。正式live重复按run/pair统计，不把同轮共享资源的workflow
+当作独立整轮吞吐重复；确定性内核变更必须两側共同验证。
 
 ## 长程任务预算
 

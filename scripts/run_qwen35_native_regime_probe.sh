@@ -4,7 +4,8 @@ set -euo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 PYTHON="${PYTHON:-/home/longhao/miniconda3/envs/beliefkv-next/bin/python}"
 PORT="${PORT:-18454}"
-ROOT_COUNT="${ROOT_COUNT:-36}"
+ROOT_COUNT="${ROOT_COUNT:-84}"
+SAMPLING_SEED="${SAMPLING_SEED:-21}"
 ARRIVAL_BATCH_SIZE="${ARRIVAL_BATCH_SIZE:-0}"
 ARRIVAL_BATCH_INTERVAL_MS="${ARRIVAL_BATCH_INTERVAL_MS:-0}"
 HOST_SPLIT="${HOST_SPLIT:-auto}"
@@ -44,7 +45,9 @@ trap 'exit 143' TERM
 if [[ $# -ne 0 || ! "$ROOT_COUNT" =~ ^[1-9][0-9]*$ ]] \
   || (( ROOT_COUNT > 128 )) \
   || [[ ! "$ARRIVAL_BATCH_SIZE" =~ ^[0-9]+$ || ! "$ARRIVAL_BATCH_INTERVAL_MS" =~ ^[0-9]+$ ]] \
-  || { (( ROOT_COUNT > 64 )) && [[ "$ARRIVAL_BATCH_SIZE" != "64" || "$ARRIVAL_BATCH_INTERVAL_MS" == "0" ]]; } \
+  || { (( ROOT_COUNT > 84 )) && [[ "$ARRIVAL_BATCH_SIZE" != "64" || "$ARRIVAL_BATCH_INTERVAL_MS" == "0" ]]; } \
+  || { [[ "$ARRIVAL_BATCH_SIZE" == "0" ]] && [[ "$ARRIVAL_BATCH_INTERVAL_MS" != "0" ]]; } \
+  || [[ ! "$SAMPLING_SEED" =~ ^[0-9]+$ ]] \
   || [[ ! "$HICACHE_SIZE_GB" =~ ^[1-9][0-9]*$ ]] \
   || (( HICACHE_SIZE_GB > 200 )) \
   || [[ "$HICACHE_WRITE_POLICY" != "write_through_selective" && "$HICACHE_WRITE_POLICY" != "write_back" ]] \
@@ -64,7 +67,7 @@ if [[ $# -ne 0 || ! "$ROOT_COUNT" =~ ^[1-9][0-9]*$ ]] \
       || (( ${BASH_REMATCH[1]:-0} + ${BASH_REMATCH[2]:-0} != 100 )); }; } \
   || [[ ! "$PORT" =~ ^[1-9][0-9]*$ ]] \
   || [[ -e "$RUN_ROOT" || -e "$SOCKET" ]]; then
-  printf 'Usage: PORT=18454 ROOT_COUNT=36|32 HICACHE_SIZE_GB=200 HOST_SPLIT=auto|35:65 HICACHE_WRITE_POLICY=write_back|write_through_selective SKIP_SERVER_WARMUP=1 CONFIRMED_JOIN_CANARY=0|1 FANOUT_PROFILE=native_in_graph_1to4|native_dynamic_1to4 SGLANG_PATCH_FLAVOR=staging RUN_ROOT=<new path> bash %s\n' "$0" >&2
+  printf 'Usage: PORT=18454 ROOT_COUNT=84 ARRIVAL_BATCH_SIZE=0 ARRIVAL_BATCH_INTERVAL_MS=0 SAMPLING_SEED=21 HICACHE_SIZE_GB=200 HOST_SPLIT=auto|35:65 HICACHE_WRITE_POLICY=write_back|write_through_selective SKIP_SERVER_WARMUP=1 CONFIRMED_JOIN_CANARY=0|1 FANOUT_PROFILE=native_in_graph_1to4|native_dynamic_1to4 SGLANG_PATCH_FLAVOR=staging RUN_ROOT=<new path> bash %s\n' "$0" >&2
   exit 2
 fi
 if [[ -e /tmp/beliefkv-experiments.paused ]] \
@@ -175,7 +178,7 @@ fi
   --server-events "$RUN_ROOT/server/runtime_events.sglang.jsonl" \
   --server-log "$RUN_ROOT/server.log" --pool-tokens 1798995 \
   --model-context-tokens 131072 --max-completion-tokens 8192 \
-  --sampling-seed 21 --recursion-limit 2048 \
+  --sampling-seed "$SAMPLING_SEED" --recursion-limit 2048 \
   --activation-wall-clock-seconds "${ACTIVATION_WALL_CLOCK_SECONDS:-14400}" \
   --stream-completion-shadow --child-stream-content-shadow \
   --native-reactive-guard-profile --disable-completion-gate \

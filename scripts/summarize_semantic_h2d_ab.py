@@ -51,6 +51,122 @@ def cleanup_workspaces(arm: Path) -> dict:
     return {"removed_workspaces": removed, "retained_workspaces": retained}
 
 
+def workload_balance(reactive: dict, predictive: dict) -> dict:
+    """Describe realized work without conditioning the headline JCT on it."""
+    quantities = (
+        "llm_request_count", "tool_call_count", "submitted_input_tokens",
+        "completed_request_output_tokens",
+    )
+    return {
+        "scope": "realized live demand; not a correction for counterfactual work",
+        "same_logical_trajectory_verified": False,
+        "matched_seed_guarantees_identical_trajectory": False,
+        "relative_changes_predictive_vs_reactive": {
+            key: predictive[key] / reactive[key] - 1 if reactive[key] else None
+            for key in quantities
+        },
+        "performance_claim": (
+            "single live pair only; trace drift and run-level variation must be "
+            "reported; no isolated KV-policy throughput claim"
+        ),
+    }
+
+
+def workflow_trajectory_audit(arm: Path) -> dict:
+    client = next(arm.glob("client_*/summary.json"))
+    terminal = json.loads(client.read_text())["workflows"]
+    values = {
+        row["instance_id"]: {
+            "outcome": row["outcome"], "duration_seconds": row["duration_seconds"],
+            "llm_calls": 0, "tool_calls": 0, "join_rounds": 0, "children": 0,
+            "prompt_tokens": 0, "output_tokens": 0, "internal_requests": 0,
+            "request_sequence": [], "missing_prompt_fingerprints": 0,
+        } for row in terminal
+    }
+    workflow_tasks = {}
+    for path in sorted((client.parent / "workflows").glob("*/runtime_events.deepagents.jsonl")):
+        task = path.parent.name
+        if task not in values:
+            continue
+        value = values[task]
+        by_rid = {}
+        for row in records(path):
+            workflow_tasks[row["workflow_id"]] = task
+            attrs = row.get("attributes") or {}
+            if row["kind"] == "llm_submit":
+                if attrs.get("runtime_internal"):
+                    value["internal_requests"] += 1
+                else:
+                    value["llm_calls"] += 1
+                    fingerprint = attrs.get("prompt_semantic_sha256")
+                    value["missing_prompt_fingerprints"] += fingerprint is None
+                    value["request_sequence"].append({
+                        "prompt_semantic_sha256": fingerprint,
+                        "model_result": None,
+                    })
+                    if attrs.get("request_id"):
+                        by_rid[attrs["request_id"]] = len(value["request_sequence"]) - 1
+            elif row["kind"] == "llm_result" and not attrs.get("runtime_internal"):
+                index = by_rid.get(attrs.get("request_id"))
+                if index is not None:
+                    value["request_sequence"][index]["model_result"] = {
+                        "finish_reason": attrs.get("finish_reason"),
+                        "output_chars": attrs.get("output_chars"),
+                        "tool_call_count": attrs.get("tool_call_count"),
+                        "structured_action_names": attrs.get("structured_action_names"),
+                    }
+            elif row["kind"] == "tool_start":
+                value["tool_calls"] += 1
+            elif row["kind"] == "join_create":
+                value["join_rounds"] += 1
+                value["children"] += len(row.get("member_invocation_ids") or ())
+    for row in records(arm / "server/runtime_events.sglang.jsonl"):
+        task = workflow_tasks.get(row.get("workflow_id"))
+        if task is None:
+            continue
+        attrs = row.get("attributes") or {}
+        if row["kind"] == "llm_submit":
+            values[task]["prompt_tokens"] += attrs.get("prompt_tokens") or 0
+        elif row["kind"] == "llm_result":
+            values[task]["output_tokens"] += attrs.get("output_tokens") or 0
+    return values
+
+
+def paired_trajectory_report(reactive: dict, predictive: dict) -> dict:
+    rows = []
+    for task in sorted(set(reactive) | set(predictive)):
+        r, p = reactive.get(task), predictive.get(task)
+        same = None
+        divergence = None
+        if r is not None and p is not None:
+            rseq, pseq = r["request_sequence"], p["request_sequence"]
+            if not r["missing_prompt_fingerprints"] and not p["missing_prompt_fingerprints"] and rseq and pseq:
+                same = rseq == pseq
+                for index in range(max(len(rseq), len(pseq))):
+                    if index >= min(len(rseq), len(pseq)) or rseq[index] != pseq[index]:
+                        divergence = index + 1
+                        break
+        rows.append({
+            "task": task, "reactive": {k: v for k, v in (r or {}).items() if k != "request_sequence"},
+            "predictive": {k: v for k, v in (p or {}).items() if k != "request_sequence"},
+            "observed_request_sequence_equal": same,
+            "first_observed_request_divergence_ordinal": divergence,
+        })
+    return {
+        "scope": "all workflows retained; observed order and fingerprints, not token-exact execution proof",
+        "workflows": rows,
+        "observed_request_sequence_equal_count": sum(row["observed_request_sequence_equal"] is True for row in rows),
+        "observed_request_sequence_different_count": sum(row["observed_request_sequence_equal"] is False for row in rows),
+        "observed_request_sequence_unknown_count": sum(row["observed_request_sequence_equal"] is None for row in rows),
+        "interpretation": (
+            "Submission order can differ without a content change. Equality of "
+            "prompt/result metadata is not equality of all generated token IDs. "
+            "Do not drop divergent workflows or claim causal speedup on a "
+            "post-treatment subset."
+        ),
+    }
+
+
 def summarize(arm: Path) -> dict | None:
     clients = list(arm.glob("client_*/summary.json"))
     if not clients:
@@ -200,6 +316,8 @@ def main() -> None:
     parser.add_argument("--enable-tool-timing", type=int, choices=(0, 1), default=0)
     parser.add_argument("--prefetch-lead-ms", type=int, default=1000)
     parser.add_argument("--transfer-service-seed", type=Path)
+    parser.add_argument("--sampling-seed", type=int, default=21)
+    parser.add_argument("--repetition-id", type=int, default=0)
     args = parser.parse_args()
     if args.cleanup_arm:
         print(json.dumps(cleanup_workspaces(args.cleanup_arm), indent=2))
@@ -216,7 +334,12 @@ def main() -> None:
             args.workload_manifest
             or root / "configs/migration/qwen35_native_reactive_overlapped_128root_workload_2026-09-23.json"
         ).resolve()
-        workloads = json.loads(manifest.read_text())["workloads"][:args.root_count]
+        available = json.loads(manifest.read_text())["workloads"]
+        if not 0 < args.root_count <= len(available):
+            raise ValueError("requested root count exceeds the workload manifest")
+        if args.sampling_seed < 0 or args.repetition_id < 0:
+            raise ValueError("sampling seed and repetition ID must be nonnegative")
+        workloads = available[:args.root_count]
         patch = root / "patches/sglang-v0.5.20-beliefkv-staging.patch"
         plan = {
             "prefetch_lead_ms": args.prefetch_lead_ms,
@@ -236,8 +359,13 @@ def main() -> None:
             "scope": (
                 "single-arm development mechanism observation; no throughput comparison"
                 if args.arm_order.split() == ["predictive_h2d"]
-                else "single-pair development benefit validation, not final paper test"
+                else "single-pair live pressure exploration; trajectory-sensitive, not final paper test"
             ),
+            "repetition_id": args.repetition_id,
+            "trajectory_control": "live_agent_uncontrolled_realized_trajectory",
+            "same_seed_is_not_same_trajectory": True,
+            "formal_paired_repetition_target": 4,
+            "formal_repetition_order": ["reactive predictive_h2d", "predictive_h2d reactive"],
             "code_commit": subprocess.check_output(
                 ["git", "rev-parse", "HEAD"], cwd=root, text=True,
             ).strip(),
@@ -251,7 +379,7 @@ def main() -> None:
             "child_final_report_shadow": os.environ.get("CHILD_FINAL_REPORT_SHADOW", "1") == "1",
             "fanout_profile": os.environ.get("FANOUT_PROFILE", "native_in_graph_1to4"),
             "context_tokens": 131072, "max_completion_tokens": 8192,
-            "sampling_seed": 21, "host_numa_node": 1,
+            "sampling_seed": args.sampling_seed, "temperature": 0., "host_numa_node": 1,
             "mem_fraction_static": .94,
             "host_gb": 200, "host_split": "matches_actual_device_pool_bytes",
             "mamba_full_memory_ratio": .9, "native_write_policy": "write_back",
@@ -330,6 +458,17 @@ def main() -> None:
         report["paired_mean_jct_seconds"] = {
             name: mean(values[key] for key in paired) if paired else None
             for name, values in zip(("reactive", "predictive_h2d"), durations)
+        }
+        report["workload_balance"] = workload_balance(r, p)
+        trajectory = paired_trajectory_report(
+            workflow_trajectory_audit(args.run_root / "reactive"),
+            workflow_trajectory_audit(args.run_root / "predictive_h2d"),
+        )
+        trajectory_path = args.run_root / "workflow_trajectory_comparison.json"
+        trajectory_path.write_text(json.dumps(trajectory, indent=2) + "\n")
+        report["workflow_trajectory_comparison"] = {
+            "path": str(trajectory_path),
+            **{key: value for key, value in trajectory.items() if key != "workflows"},
         }
     (args.run_root / "comparison.json").write_text(
         json.dumps(report, indent=2) + "\n", encoding="utf-8",

@@ -3,10 +3,12 @@ set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 PYTHON="${PYTHON:-/home/longhao/miniconda3/envs/beliefkv-next/bin/python}"
-ROOT_COUNT="${ROOT_COUNT:-64}"
+ROOT_COUNT="${ROOT_COUNT:-84}"
 PORT="${PORT:-18454}"
-RUN_ROOT="${RUN_ROOT:-$ROOT/experiments/raw/qwen35_joint_wait_h2d_ab_64root_v4}"
-ARM_ORDER="${ARM_ORDER:-predictive_h2d reactive}"
+RUN_ROOT="${RUN_ROOT:-$ROOT/experiments/raw/qwen35_joint_wait_h2d_ab_${ROOT_COUNT}root_20261005_v5}"
+ARM_ORDER="${ARM_ORDER:-reactive predictive_h2d}"
+SAMPLING_SEED="${SAMPLING_SEED:-21}"
+REPETITION_ID="${REPETITION_ID:-0}"
 ACTIVATION_WALL_CLOCK_SECONDS="${ACTIVATION_WALL_CLOCK_SECONDS:-14400}"
 ARTIFACT="${SEMANTIC_REPORT_ARTIFACT:-$ROOT/experiments/models/child_semantic_work_frozen_phase_20261001_v1/semantic_event_calibrated.json}"
 PREPARE_HOST="${PREPARE_HOST:-1}"
@@ -17,9 +19,10 @@ ENABLE_TOOL_TIMING="${ENABLE_TOOL_TIMING:-1}"
 PREFETCH_LEAD_MS="${PREFETCH_LEAD_MS:-1000}"
 
 if [[ $# -ne 0 || -e "$RUN_ROOT" || ! -f "$ARTIFACT" ]] \
-  || [[ ! "$ROOT_COUNT" =~ ^[1-9][0-9]*$ ]] || (( ROOT_COUNT > 64 )) \
+  || [[ ! "$ROOT_COUNT" =~ ^[1-9][0-9]*$ ]] || (( ROOT_COUNT > 84 )) \
+  || [[ ! "$SAMPLING_SEED" =~ ^[0-9]+$ || ! "$REPETITION_ID" =~ ^[0-9]+$ ]] \
   || [[ "$ARM_ORDER" != "predictive_h2d reactive" && "$ARM_ORDER" != "reactive predictive_h2d" && "$ARM_ORDER" != "predictive_h2d" ]]; then
-  printf 'Usage: RUN_ROOT=<new path> ROOT_COUNT=64 ARM_ORDER="predictive_h2d reactive"|predictive_h2d ACTIVATION_WALL_CLOCK_SECONDS=14400 PORT=18454 bash %s\n' "$0" >&2
+  printf 'Usage: RUN_ROOT=<new path> ROOT_COUNT=84 ARM_ORDER="reactive predictive_h2d"|"predictive_h2d reactive"|predictive_h2d SAMPLING_SEED=21 REPETITION_ID=0 ACTIVATION_WALL_CLOCK_SECONDS=14400 PORT=18454 bash %s\n' "$0" >&2
   exit 2
 fi
 mkdir -p "$RUN_ROOT"
@@ -31,11 +34,12 @@ mkdir -p "$RUN_ROOT"
   --tool-timing-artifact "$TOOL_TIMING_ARTIFACT" \
   --enable-tool-timing "$ENABLE_TOOL_TIMING" --prefetch-lead-ms "$PREFETCH_LEAD_MS" \
   --transfer-service-seed "$TRANSFER_SERVICE_SEED" \
+  --sampling-seed "$SAMPLING_SEED" --repetition-id "$REPETITION_ID" \
   --workload-manifest "${WORKLOAD_MANIFEST:-$ROOT/configs/migration/qwen35_native_reactive_overlapped_128root_workload_2026-09-23.json}"
 for arm in $ARM_ORDER; do
   printf 'Full %s arm: %s roots, fresh server and KV cache\n' "$arm" "$ROOT_COUNT"
   set +e
-  AB_MODE="$arm" ROOT_COUNT="$ROOT_COUNT" PORT="$PORT" \
+  AB_MODE="$arm" ROOT_COUNT="$ROOT_COUNT" PORT="$PORT" SAMPLING_SEED="$SAMPLING_SEED" \
     ARRIVAL_BATCH_SIZE=0 ARRIVAL_BATCH_INTERVAL_MS=0 \
     ACTIVATION_WALL_CLOCK_SECONDS="$ACTIVATION_WALL_CLOCK_SECONDS" \
     PREPARE_HOST="$PREPARE_HOST" H2D_SEED_ARTIFACT="$H2D_SEED_ARTIFACT" \
