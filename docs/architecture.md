@@ -1,17 +1,30 @@
 # Architecture
 
-Updated: 2026-09-19.
+Updated: 2026-10-05.
 
 This page is a concise English entry point. The authoritative system design is
 [beliefkv_design.md](beliefkv_design.md), and the
 current implementation status is
 [architecture_status_zh.md](architecture_status_zh.md).
 
+## Current Mainline
+
+Qwen3.5-35B-A3B BF16 and SGLang 0.5.20 run with the Agent workload in
+the shared `beliefkv-next` environment. FULL and Mamba are managed together;
+native UnifiedRadixCache and allocators remain the physical authority.
+The current development pair uses 84 roots in one arrival wave, running=48,
+and a 200 GB Host pool on NUMA node 1. Runtime, prompts, weights and launch
+arguments are frozen. Repeated live pairs are for later formal evaluation;
+canaries and fixed-demand GPU replay are not prerequisites.
+
 ## System Model
 
 BeliefKV serves concurrent dynamic agent workflows on one HBM-constrained GPU.
 It does not require a predefined workflow DAG. Runtime TOOL, SPAWN, RETURN,
 JOIN, HANDOFF, and MESSAGE events incrementally construct an RCCG.
+
+The diagram below is the target joint architecture, not a claim that every
+legacy JointPlan/COMMIT/retraction path has been migrated.
 
 ```text
 Agent runtime events             SGLang physical state
@@ -28,9 +41,9 @@ Agent runtime events             SGLang physical state
              SGLang batch and HiCache
 ```
 
-## P5 Observed Path
+## Observed Path Contract
 
-The online P5 path is work-conserving and beneficiary-bound:
+The target observed path is work-conserving and beneficiary-bound:
 
 1. select factually runnable requests from the RCCG frontier;
 2. produce a bounded execution and admission seed;
@@ -44,25 +57,34 @@ Requests remain in SGLang's visible waiting queue. BeliefKV emits short-lived
 admission tickets; SGLang remains the allocator and batch-construction
 authority.
 
-## P6 Predictive Overlay
+## Current Predictive Path
 
-FrontierBelief predicts action-local demand and causal slack for tool waits,
-child/JOIN release, messages, and future KV growth. Prediction runs
-asynchronously and may propose only a safe-point-validated action.
+Delivered-text semantics, completion notices and observed decode progress
+support a frozen child phase/remaining-work model. A separate tool-event model
+predicts residual tool time. The models do not learn offline counterfactual
+net benefit or authorize physical actions. Runtime checks the causal frontier,
+safe-input checkpoint, Host copy, FULL/Mamba capacity and transfer service
+cost before issuing bounded native `PREPARE_HOST` or predictive H2D.
+Valid native D2H copies also qualify; prior PREPARE consumption is not required.
 
-The predictive data path now implements `PREPARE_HOST`, full or ancestor-closed
-partial `PREFETCH_GPU`, and a bounded `RECLAIM_AND_PREFETCH` transaction using a
-commit-ready CPU-shadowed victim. These mechanisms are development canaries,
-not a validated throughput result. The current model is not online-eligible:
-rare boundary/tool outcomes are no better than majority baselines, while only
+Both experimental arms share notices, bounded final-report priority,
+waiting-state preparation and real-pressure demotion. Only predictive enables
+early loads. This is not an untouched native baseline.
+v4 had six JOIN H2D ACKs with verified FULL first use and five verified Mamba
+forward uses. Tool H2D was zero, and five JOIN actions followed native EOS.
+Neither broad subsecond RETURN accuracy nor end-to-end throughput benefit
+has been demonstrated.
 
-Model-backed tool-wait `PREPARE_HOST` now uses an event-aligned fast path:
-`TOOL_START` bypasses the periodic prediction poll, and a newly published
-intent is causally and physically validated in the same scheduler safe point
-against the current observed decision. The path still rematerializes live
-physical evidence and enforces transfer, capacity, transaction, and commit
-budgets. Reentry cancels any wait-shadow intent that has not been committed.
-token-demand intervals and PREFETCH timing show useful held-out signal.
+v4's lower average utilization is dominated by an isolated Django workflow
+tail containing two 600-second whole-suite tool timeouts. Pipeline failures
+can also be misreported as success. A smaller nonempty-demand utilization gap
+remains; function-level CPU causality is not recoverable from the collected
+logs. See the updated [v4 report](experiments/joint_tool_join_h2d_v4_zh.md).
+Scheduler/worker service spans must not be called CUDA kernel time.
+
+Full legacy JointPlan, COMMIT and selective running retraction remain
+unvalidated in the new architecture. Their old physical enable path stays
+fail-closed; it is distinct from the bounded native actions already observed.
 
 ## Physical Authority
 
@@ -77,3 +99,5 @@ token-demand intervals and PREFETCH timing show useful held-out signal.
 ![BeliefKV joint scheduling](figures/beliefkv_joint_algorithm_overview.svg)
 
 Historical architecture text is preserved under `docs/archive/snapshots/`.
+The version immediately preceding this update is also available in Git at
+`c219604:docs/architecture.md`.

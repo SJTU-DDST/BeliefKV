@@ -1,6 +1,11 @@
 # BeliefKV 文档导航
 
-更新日期：2026-09-17
+更新日期：2026-10-05
+
+当前主线为Qwen3.5-35B-A3B / SGLang 0.5.20，同一
+`beliefkv-next` 环境。正在运行84-root单波开发pair，running=48、
+Host 200 GB/NUMA node 1；当前只做一对，正式实验再多轮取平均。
+旧Qwen3/0.5.2rc1、canary和旧池配置不作为当前默认。
 
 本页是项目文档的统一入口。文档状态分为：
 
@@ -16,7 +21,8 @@
 | [当前系统设计](beliefkv_design.md) | 算法、状态机、预测质量边界和未来可选方案 |
 | [当前架构状态](architecture_status_zh.md) | 已实现、已验证、未验证和阻塞项 |
 | [当前执行计划](implementation_plan.md) | 唯一有效的近期实施顺序 |
-| [JointPlan 图解](beliefkv_jointplan_visual_zh.md) | 汇报用架构图及简要说明 |
+| [实验注意事项](experiment_operating_notes_zh.md) | 配置、冻结、统计口径及清理约束 |
+| [JointPlan 图解](beliefkv_jointplan_visual_zh.md) | 目标架构参考，不代表新版迁移全部完成 |
 | [Architecture](architecture.md) | 英文简要入口 |
 
 发生冲突时按上表顺序解释语义，但“当前实现是否完成”以架构状态页和代码为准。
@@ -26,8 +32,8 @@
 | 文档 | 状态 |
 | --- | --- |
 | [安装与环境](setup.md) | 当前 |
-| [Runtime 接入](runtime_integration_zh.md) | 当前，具体符号仍以代码为准 |
-| [服务器迁移](migration_guide_zh.md) | 当前 |
+| [Runtime 接入](runtime_integration_zh.md) | 新版入口与旧接口参考分开，具体符号以代码为准 |
+| [服务器迁移](migration_guide_zh.md) | 新版要点与历史迁移记录分开 |
 | [README](../README.md) | 项目入口、命令和目录 |
 
 冻结实验参数应从对应 `configs/` profile 读取，不从历史报告复制。
@@ -54,6 +60,13 @@ characterization。它们遵循：
 当前最相关的报告：
 
 | 报告 | 结论 |
+| --- | --- |
+| [v4工具/JOIN恢复](experiments/joint_tool_join_h2d_v4_zh.md) | 六个JOIN H2D及吞吐负结果；补有GPU利用率根因复核 |
+| [84-root与对照要求](experiments/pressure84_and_fair_comparison_2026-10-05_zh.md) | 当前单pair；正式多轮平均，回放不是前置要求 |
+
+以下为旧Qwen3/0.5.2rc1 checkpoint参考，不能覆盖新版状态：
+
+| 报告 | 当时结论 |
 | --- | --- |
 | [PREFETCH recall 与 funded path](experiments/beliefkv_p6_prefetch_recall_enablement_2026-09-16_zh.md) | v6 校准、在线假阳性修复与最新 bounded gate |
 | [Natural PREPARE no-opportunity](experiments/beliefkv_p6_natural_prepare_canary_no_opportunity_2026-09-12_zh.md) | 高 HBM 不等于存在 beneficiary |
@@ -87,10 +100,11 @@ characterization。它们遵循：
 
 ## 7. 文档维护规则
 
-1. 当前设计变化只修改 `beliefkv_design.md`。
-2. 当前代码和实验门禁只修改 `architecture_status_zh.md`。
-3. 执行优先级只修改 `implementation_plan.md`。
-4. 单次实验新建 `docs/experiments/<name>_<date>_zh.md`。
+1. 按设计/状态/执行分工修改对应权威页，并同步检查其它当前入口。
+2. 模型、框架或实验配置变化时，同步维护环境、runtime及迁移说明。
+3. 已实现、GPU已验证、净收益已证明三类事实必须分开。
+4. 新实验记录对应报告；旧实验的新诊断追加到原报告并注明日期，
+   不能仅新增一份报告而不更新已有状态。
 5. 完成或被替代的计划移动到 `docs/archive/plans/`。
 6. 不再向状态页追加按日期排列的完整实验报告。
 7. 文档中的“已实现”“已验证”“已产生收益”必须分开表述。

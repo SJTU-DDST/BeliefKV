@@ -1,10 +1,30 @@
 # Environment Setup
 
-Updated: 2026-09-15.
+Updated: 2026-10-05.
 
-BeliefKV keeps the serving/control environment separate from the Agent workload
-environment. Machine-specific GPU settings are frozen in a runtime profile and
-must not be reconstructed from an old experiment report.
+## Current Environment
+
+Serving, BeliefKV and Agent experiments share the Python 3.11
+`beliefkv-next` conda environment described by `environment-next.yml`.
+The current model is Qwen3.5-35B-A3B BF16; SGLang is pinned to 0.5.20
+at `94602c9c2b7cbdb8efd5c52802dac6a1c180089e`, with the maintained
+`patches/sglang-v0.5.20-beliefkv-staging.patch`.
+Do not install the old `agents` extra over `agents-next`.
+
+The initial dependency snapshot is
+`configs/migration/2026-09-22_next_environment.json`. Current pool settings,
+launch arguments, patch and model hashes must be taken from the actual run
+records and [architecture status](architecture_status_zh.md), not reconstructed
+from that initial snapshot or an old benchmark report.
+The current experiment entry is `scripts/run_qwen35_semantic_h2d_ab.sh`;
+`launch_qwen35_native_v0520.sh` is a native smoke entry, not the predictive pair.
+Do not reinstall or modify the serving environment during a frozen pair.
+
+## Legacy Setup Reference
+
+The sections below preserve the Qwen3/SGLang 0.5.2rc1 checkpoint procedure
+dated 2026-09-15. Its separate environments, old patch/check command, pool
+capacities and CUDA graph contract are not the current defaults.
 
 ## 1. Conda Environments
 
@@ -67,7 +87,7 @@ The canonical patch path and expected patched-tree hash are also recorded in
 `configs/p6/h200_bf16_v7/frozen_runtime_profile.json`. A source-contract failure
 must stop the experiment.
 
-## 3. Current H200 Contract
+## 3. Legacy H200 Contract
 
 The current frozen profile is:
 

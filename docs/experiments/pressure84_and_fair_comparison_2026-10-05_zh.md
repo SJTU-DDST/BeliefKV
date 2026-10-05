@@ -35,9 +35,14 @@ Triton等执行设置。不得只开启一侧或把换内核后的结果拼到�
 为准；是否覆盖全部MoE/状态缓存路径也需验证，不能凭一个开关
 宣称整个agent workflow确定性。
 
-## 两层实验
+## 当前实验要求
 
-### 固定逻辑需求的GPU机制比较
+用户在本轮讨论后进一步明确：改进阶段只执行当前一个84-root
+pair，不排额外重复；正式实验再多轮取平均。固定需求GPU回放
+不作为前置条件，也不继续投入主线实现。下文回放内容仅保留为
+已讨论的可选设计，不覆盖这一最新要求。
+
+### 固定逻辑需求回放（可选、暂停主线投入）
 
 预先冻结一批来自独立workflow的逻辑轨迹，包括请求的prompt/
 输出token、工具结果及外部执行时间、spawn/JOIN依赖和上下文转换。
@@ -60,7 +65,7 @@ replay和只读policy replay不能直接当作当前Qwen3.5完整迁移后的
 主指标为相同需求下makespan、workflow JCT、实际暴露的恢复等待、
 首次FULL/Mamba复用和重算。ACK和提前量作机制解释，不代替收益。
 
-### 真实agent的多轮配对比较
+### 真实agent的多轮配对比较（仅后续正式实验）
 
 先固定任务集合、到达、池、模型/runtime和预算；每pair两侧fresh
 workspace和cache，禁止中途换权重、prompt或代码。预先规划至少
@@ -92,5 +97,6 @@ JCT，或筛选更容易显示收益的matched subset。
 84个task，不静默截短。报告新增realized workload balance以及
 全workflow请求序列诊断，保持原始吞吐/JCT不变。
 
-固定逻辑需求GPU replay、batch-invariant新内核验证和四pair
-正式汇总仍属后续工作，不能用本次增加84-root的pair代替。
+当前开发只执行现有单pair。正式多轮汇总留待主线稳定，具体
+重复数届时预先冻结；本轮计划中的四pair建议字段不是执行队列。
+GPU replay和batch-invariant新内核属于可选研究，不是当前阻塞。

@@ -1,6 +1,6 @@
 # BeliefKV 当前系统设计
 
-更新日期：2026-09-28
+更新日期：2026-10-05
 
 状态：本文是当前算法与系统边界的权威说明。历史版本保存在
 `docs/archive/snapshots/beliefkv_design_2026-07-14_zh.md`。
@@ -24,6 +24,12 @@ stall、D2H/H2D、recompute 与控制面开销是用于解释因果和判断退�
 Workflow fairness 只作为有界防饿死和最终 tie-break，不以平均分配 GPU 时间为目标。
 
 ### 1.1 当前阶段目标：低重算负载中的可行动迁移
+
+当前开发验证为84-root单波、running=48、NUMA node 1的200 GB
+Host池，FULL/Mamba分别验收。当前只有一对reactive/predictive；
+多轮取平均留到正式实验，固定需求GPU回放不是主线前置条件。
+实际实现和未完成项以 `docs/architecture_status_zh.md` 为准，
+下文旧P5/P6路径的机制描述不代表新版已完成全部JointPlan迁移。
 
 **本阶段唯一主目标：**在 Qwen3.5/SGLang v0.5.20 上，找到
 FULL/Mamba HBM 有可用于目标 H2D 的真实空闲容量、同 NUMA Host
@@ -122,12 +128,17 @@ handoff 是可选增强，不能作为尚未验证的当前收益。
 
 ![BeliefKV 请求与 KV 联合调度](figures/beliefkv_joint_algorithm_overview.svg)
 
+本节及第3-4节描述目标联合架构的合同，不是新版全部已上线的
+能力清单。当前执行通过native causal admission和有界物理动作
+接入SGLang；完整JointPlan、COMMIT与running retraction的迁移
+缺口见第7节。图中的旧P5/P6路径同样不能代替新版实现证据。
+
 BeliefKV 使用两个相互正交的状态视图：
 
 - RCCG 描述 Agent 的因果和执行关系；
 - PageIndex/Radix 描述 KV 页的物理共享、驻留、锁和 generation。
 
-二者只能在 JointPlan 中结合：
+目标架构在 JointPlan 中结合二者：
 
 ```text
 runtime events -> RCCG causal frontier
@@ -145,7 +156,7 @@ JointPlan 同时决定：
 - admission 是否依赖某笔 reclaim/restore ACK；
 - 是否需要 selective running retraction。
 
-## 3. P5：Observed-State JointPlan
+## 3. P5：Observed-State JointPlan 目标合同
 
 ### 3.1 请求调度
 
@@ -178,7 +189,7 @@ safe point 重新验证，SGLang PrefillAdder 和 allocator 保留最终否决�
 共享页使用所有 owner 中最强的保护等级。逻辑 context 不能直接作为迁移单位；系统必须先解析
 为包含共享页和 ancestor closure 的 PhysicalBundle。
 
-### 3.3 当前 HBM offload 是响应式的
+### 3.3 响应式 HBM 释放合同
 
 真正释放 HBM 的 `COMMIT_CPU` 由已经可观测的 beneficiary HBM deficit 触发：
 
@@ -226,77 +237,48 @@ native demand-load；Host copy 不可用时允许从 raw tokens 重算。Restore
 - transfer capability 和 in-flight conflict；
 - beneficiary、deadline 和动作证书。
 
-## 5. P6：FrontierBelief 预测旁路
+## 5. 新版事件与内容驱动的预测旁路
 
-P6 不建立第二个调度器。它在 P5 bounded seed 上识别 deferred beneficiary 和 parked victim，
-用 FrontierBelief 生成 action-local scenarios，再把合格的 PredictiveIntent 合并回同一个
-JointPlan。
+预测旁路不建立第二个调度器，也不控制agent是否可以RETURN。
+当前配置使用冻结MiniLM encoder及phase/work头、独立工具事件
+时间模型和实测传输服务估计；运行中不切换权重或重新校准。
+旧Qwen3 FrontierBelief schema-v5的数值、动作资格与完整
+RECLAIM_AND_PREFETCH机制属于历史参照，原文保存在
+`c219604:docs/beliefkv_design.md`，不能作为新版能力证明。
 
-以下 schema-v5、校准精度和动作权限是**原 Qwen3-Coder/SGLang 0.5.2rc1
-基线**的描述；迁移后的 Qwen3.5/SGLang 0.5.20 不继承其精度、物理收益或
-`predictive_action_eligible` 资格。新版具体进度见架构状态页。
+### 5.1 模型输入输出与运行边界
 
-预测目标是需求和动作相关因果窗口，而不是旧负载下的 wall-clock GPU 时间。schema-v5
-使用一个版本化 artifact 发布三类局部分布：
+child模型输入为已经送达的有界正文语义、正文字符数、已生成
+token数、历史工具/模型轮次、完成通知及其报告长度提示。
+native工具标记另用于使当前轮的终态信号失效。语义推理在
+独立CPU process中运行，scheduler消费有身份与时间证明的结果。
 
-- `OperationalReleaseModel`：直接拟合
-  `P(tool release <= live transfer tau | elapsed, role, tool, backend, command, context)`；
-- pooled conditional demand：remaining decode、next output、prompt growth；
-- pooled conditional classification：boundary 与 tool terminal，稀有类训练后恢复真实类先验；
-- WAIT_CHILD/JOIN：由 RCCG 组合 child 的多轮 LLM、工具等待和 completion；
-- WAIT_MESSAGE：producer dependency；
-- prompt/output/KV growth；
-- 等待窗口能否覆盖迁移时间 `tau`；
-- beneficiary 的 projected future HBM deficit。
+输出分为 `continue_work`、`completion_notice`、`final_report`
+阶段分数，以及条件剩余生成token的下界、中心和上界。
+校准区间不自动等于正确的P10/P50/P90，状态单独保存。
+模型本身不直接授权物理动作，也不把未来GPU准入时刻作为输入。
+runtime依据实际decode进度和已观测服务估计滚动换算近端时机，
+前EOS使用已有工作上界；无工具EOS仅保留短协议窗口。
 
-当前 development 在线预测路径支持：
+工具模型输入包括当前等待elapsed、角色、工具/backend/command
+类别与上下文历史，输出残余时间及事件CDF。当前准入使用配置的
+残余P50窗口，CDF保留诊断；并行工具依赖未满足时不提前唤醒。
+传输模型使用实际FULL/Mamba形态及相近大小的样本，分别估计
+enqueue-to-submit和submit-to-ACK，不线性放大固定ACK开销。
 
-- `PREPARE_HOST`：D2H 建立 CPU shadow，GPU KV 继续保留；
-- `PREFETCH_GPU`：按实时 free HBM 恢复完整 context；
-- `PARTIAL_PREFETCH_GPU`：完整 context 放不下时恢复 ancestor-closed prefix；
-- `RECLAIM_AND_PREFETCH`：只消费已经拥有完整 CPU shadow 的 commit-ready victim，严格执行
-  `COMMIT_CPU ACK -> H2D target ACK -> service lease`。
+runtime才决定是否PREPARE或H2D：检查下一输入可复用的安全
+checkpoint、有效Host副本、FULL/Mamba物理容量、当前因果状态、
+传输时间及驻留机会成本。源副本可以来自native D2H或PREPARE。
+阶段模型、旧模型的eligibility字段与物理动作授权相互独立；
+不通过改写false标志开放旧全套迁移路径。
 
-`PREPARE_HOST` 的 intent、safe-point rematerialization、D2H、ACK 和 terminal 机制门禁已经
-通过；自然 workload 中尚未证明稳定吞吐收益。固定 5% HBM 单动作上限已经删除，容量安全由
-实时 allocator/closure 证书和 safe-point rematerialization 保证。OOD、证书过期、物理形状
-不支持、动作晚于 latest-start、单 victim 无法覆盖 deficit 或收益不足时必须回退 P5。
+v4已有六个JOIN H2D ACK与FULL首次复用，但五个发生在EOS后的
+协议窗口，工具H2D为零，端到端收益仍未证明。这些证据不能
+证明普遍准确的RETURN预测或完整JointPlan已经迁移。
 
-### 5.1 预测质量与动作权限
+### 5.2 模型预测与 runtime 决策的分离验收
 
-FrontierBelief schema-v5 使用 64 个冻结 train workflow 拟合，并在 7 个 train project 内做
-LOPO 选参；16 个 repository 隔离的 calibration workflow 只用于概率和区间校准，`test_id`
-仍封存。artifact 仍明确设置 `online_eligible=false`、`predictive_action_eligible=false`，直到
-真实长任务完成 latest-start、物理闭环和吞吐门禁。显式 development canary 可以验证
-prediction-to-action 机制，但不能形成正式性能结论。
-
-当前各 head 的可用边界是：
-
-- remaining decode calibration MAE 为 384.54 tokens，比 v6 下降约 11.9%；next output 与
-  prompt growth MAE 为 175.84/2,002.41 tokens，继续以校准区间进入资源场景；
-- PREFETCH operational-tau Brier skill 为 +45.67%，动作阈值 precision/recall 为
-  59.66%/90.56%；
-- PREPARE operational-tau Brier skill 为 +19.21%；高置信度 precision/recall 为
-  99.90%/76.51%；
-- boundary top-2 accuracy 为 99.67%，FINAL/SPAWN top-2 recall 为 97.72%/73.76%；
-  top-1 仍受 tool 类 94.96% 先验支配，因此只进入 scenario composition；
-- tool-terminal accuracy 为 81.75%，error recall 为 51.10%，不再退化为恒定 success；
-- JOIN 不学习独立 wall-clock，由 RCCG 组合 child scenarios；WAIT_MESSAGE 尚无独立 head；
-- exact incremental action boundary 仍不可用。
-
-因此系统已具备比 v6 明显更强的动作相关预测，不再由无关 head 或层次 backoff 统一门禁。
-但“离线概率变准”仍不等于“在线吞吐提升”：execution ordering 必须保留 RCCG 确定性状态，
-PREPARE/PREFETCH 还必须经过 beneficiary、physical closure、capacity、latest-start 和净收益门禁。
-
-当前在线权限实现为 action-minimal v2：运行中请求按校准后的 remaining-decode 分布排序，
-waiting request 按 remaining-prefill + next-output demand 排序，并以 live HBM demand 和 observed
-seed rank 作后续排序键。boundary top-2 scenarios 可以估计 unlock 分支，但不属于物理动作的
-单点 required head；tool-terminal 用于失败风险，不替代 operational-tau。每个动作只消费其
-需要的预测分布，避免恢复 composite OOD 一票否决。
-
-### 5.2 新版的两层预测与验收目标（待实现/验证）
-
-**时间头**仍单独评估工具 release 与完整 JOIN 的预测：使用项目隔离的
+**事件与剩余工作头**仍单独评估工具 release 与完整 JOIN 的预测：使用项目隔离的
 自然事件，按触发阶段、压力桶报告覆盖、误报、条件 P50/P90 误差和删失，
 不只在事后成功的长窗口子集计算精度。JOIN 不等同于单个 child RETURN；
 有多个未完成 child 时需按实时 blocker 集合组合；只剩最后一个 child 时
@@ -304,14 +286,16 @@ seed rank 作后续排序键。boundary top-2 scenarios 可以估计 unlock 分�
 继续追求有用的亚秒级时间精度，但不能把该阈值当成每次预取获益的必要条件，
 也不能用只覆盖少数近终态 JOIN 的条件误差替代整体表现。
 
-**动作头**预测在当前可见状态下某笔迁移的条件收益，而非旧 P5 调度下
-绝对 wall-clock JOIN 时间。令 `R` 为 JOIN 真正满足、parent 可提交的时刻，
+**runtime动作决策**判断当前可见状态下某笔迁移是否值得执行，
+不是让模型学习离线trace不可识别的反事实净收益。令 `R` 为
+JOIN真正满足、parent可提交的时刻，
 `C` 为同一物理 KV/epoch 的有效 H2D ACK：完全隐藏传输要求 `C <= R`，
 且 `R-C` 不超过受 HBM 机会成本约束的驻留预算；部分完成只计实测可节省的
 等待。即便 `C <= R`，若没有被首次服务实际消费或挤掉更高价值 KV，也
 不得算 useful。受益必须由 request 级 ACK/extent、实际首次服务及同配置
 reactive 对照验证；不能拿 reactive 的长排队窗口当作预测式 H2D 的节省。
 
+以下冷页抢占与handoff为目标合同，不是当前已上线策略：
 parent 的关键路径价值以剩余 blocker、下游解锁、当前工作流进度和真实
 可回收物理 KV 表示，而不是“所有 parent 永远高优先级”。同一 JointPlan
 比较空闲空间、可安全置换的冷页以及其它 runnable 工作；只在可用 Host
@@ -328,11 +312,13 @@ child RETURN 时间拆解为可观测的执行阶段/剩余 GPU 工作、未来 
 仍有贡献，不能一律从标签中删除。预测调度会改变服务分配，需在
 reactive 与 predictive 下分别校准/按压力分层，之后只用历史已确认事件
 滚动校正；在线更新必须经过因果时序、漂移及安全回退门禁。
-目前 JOIN 标签仍是墙钟 RETURN 差，分头方案**不是**已验证的精度提升。
+当前条件工作头已使用剩余token标签；跨调度的未来服务份额、
+排队分头及在线更新仍未验证，不能声称已消除RETURN墙钟波动。
 
 不将 JOIN/工具墙钟点预测达到亚秒级设为物理实验的先决条件。
-先做离线可识别性、shadow 策略与收益上界审计；可凭确定性 frontier、
-已观察的临近事件和保守时机范围进行有界 canary，再做配对 A/B。
+利用确定性frontier、已观察的临近事件和保守时机进行当前单pair
+开发A/B；不以canary或固定需求GPU回放作为前置步骤，正式实验
+再采用多轮配对取平均。运行中的源码、prompt、权重和参数冻结。
 时间模型单独按全体与条件覆盖验收，未获项目隔离验证的头不得作为
 无回退的物理门禁。
 不基于正在运行的密封留出集调整压力阈值、ETA、模型或准入门禁。
@@ -341,16 +327,18 @@ reactive 与 predictive 下分别校准/按压力分层，之后只用历史已�
 
 ### 6.1 动机和当前缺口
 
-当前 P6 实现的是 predictive transfer/shadowing，不是 predictive eviction：
+当前主线实现有界native predictive transfer/shadowing，不是
+完整predictive eviction或新版完整COMMIT/JointPlan：
 
 ```text
 PREPARE_HOST: GPU_ONLY -> GPU_AND_CPU_SHADOW
 COMMIT_CPU:   GPU_AND_CPU_SHADOW -> CPU_ONLY
 ```
 
-前者提前消除未来 D2H 成本，但不释放 HBM。当前真正释放 HBM 的 COMMIT 仍由已发生的
-beneficiary deficit 响应式触发。如果竞争工作中的主要收益来自提前释放 HBM，BeliefKV
-当前不能声称已经覆盖该收益来源。
+前者提前消除未来D2H成本，但不释放HBM；上述COMMIT转换是算法合同。
+新版当前的等待态回收由真实allocator短缺触发，要求备份已ACK、
+独占且未锁定，不等于完整旧COMMIT事务已经迁移。如果竞争工作
+中的收益来自预测式提前释放HBM，当前不能声称已覆盖该来源。
 
 ### 6.2 可选的两阶段算法
 
@@ -384,33 +372,40 @@ safe-point transaction，不新增独立 eviction scheduler。建议把它保留
 - 现有 `PREPARE_HOST` 在自然 workload 中出现可归因的 useful shadow；
 - trace 中存在“响应式 COMMIT 已经太晚”的 admission stall；
 -离线/影子重放显示 predictive commit 相比 reactive commit 有稳定正收益；
-- 单动作 canary 没有显著增加反向 H2D、recompute 或 HBM-time 浪费。
+- 有界配对机制验证没有显著增加反向 H2D、recompute 或 HBM-time 浪费。
 
 必须报告 useful/wasted commit bytes、提前释放的 HBM-time、beneficiary saved stall、
 restore/recompute debt、方向反转率以及最终 workflows/hour。
 
 ## 7. 实现边界（旧 P6 路径及新版缺口）
 
-下表前四条和预测动作机制沿用旧 Qwen3 P6 的能力描述；
-**不能**据此认定 Qwen3.5 已获准在线预测动作。新增的新版
-研究项独立标记为未实现或待验证。
+下表以当前Qwen3.5/SGLang 0.5.20的有界native路径为准。
+旧Qwen3的完整P5/P6能力属于历史参照，不代表新版已经迁移。
+模型输出不是物理授权，也不需要学习离线不可识别的预取净收益。
 
 | 能力 | 当前状态 |
 | --- | --- |
-| 动态 RCCG 与 FRESH subagent/JOIN | 已实现 |
-| Visible-but-gated admission | 已实现 |
-| P5 beneficiary-bound reactive offload | 已实现 |
-| Running retraction 与 transactional restore | 已实现，持续做 GPU 回归 |
-| P6 action-local prediction 与风险规划 | 已实现 |
-| Predictive `PREPARE_HOST` | 机制已验证，自然收益未证明 |
-| Predictive `PREFETCH_GPU` | 完整/partial/funded 路径已实现；仅 development canary，收益未验证 |
-| Predictive `RECLAIM_AND_PREFETCH` | 已实现 staged transaction；自然闭环未验证 |
-| Predictive `COMMIT_CPU` / eviction | 未实现，未来可选 |
+| 动态 RCCG 与 FRESH subagent/JOIN | 新版已接入，summary与并行工具归属已修复 |
+| Native causal admission | 新版已接入；allocator最终决定准入 |
+| FULL/Mamba物理闭包、身份与ACK | 有界单node原生事务与首次消费证明已接入 |
+| 预测器 | 冻结语义phase/work + 独立工具残余时间/CDF；runtime独立选动作 |
+| Predictive `PREPARE_HOST` | JOIN/长工具已实际运行，备份后真实压力回收；净收益未证明 |
+| JOIN `PREFETCH_GPU` | v4六个ACK且FULL复用，不是canary；精度与净收益未全面达标 |
+| 工具 `PREFETCH_GPU` | v4零动作，P50准入/开销修复进入当前v5待验 |
+| 原生D2H副本恢复 | 同样可用，不强制依赖先前PREPARE |
+| 完整COMMIT/JointPlan/handoff | 尚未完成新版执行/ownership与收益验收 |
+| Running selective retraction | 新版完整适配仍缺失，不开放旧全套物理开关 |
 | 新版有界关键路径 parent 驻留/抢占 | 设计目标，尚未实现或经 GPU 验证 |
 | 新版 child 工作/服务/排队分解与在线更新 | 待训练侧可识别性验证，尚未上线 |
 | Peer multi-agent 专项优化 | 非当前关键路径 |
 | Oracle action-space 优化 | 已暂停，仅保留诊断资产 |
 | Morphology 独立策略 | 已降级；shape 仅作 transfer cost/OOD 输入 |
+
+v4的吞吐负结果不能一句归于模型路径差异。已确认最后一个
+workflow的两次600秒全量测试造成长段无GPU请求；管道上游错误
+可能被tail的成功退出掩盖。CPU inspection和有请求阶段的GPU
+利用率差距仍需profile，不能把scheduler墙钟interval当kernel
+时间，或把所有uncached input都当重算。
 
 ## 8. 不变量
 
@@ -423,34 +418,37 @@ restore/recompute debt、方向反转率以及最终 workflows/hour。
   排队分头必须使用因果可观测的历史输入，并显式报告压力与策略分布差异。
 - 正式性能比较必须使用相同 workload、模型、runtime profile 和 instrumentation。
 
-## 9. 实验环境（下列为旧基线）
+## 9. 当前实验环境
 
-以下配置为 Qwen3-Coder/0.5.2rc1 的已冻结旧实验，**不是**
-当前 Qwen3.5/0.5.20 密封评估的运行配置。新版实验参数以对应
-`configs/migration/` 冻结合同与架构状态页为准。
+H200 NVL单卡、Qwen3.5-35B-A3B BF16、SGLang 0.5.20，
+同一 `beliefkv-next` 环境运行serving与agent实验。
+Device为FULL约36.843 GB/Mamba约33.096 GB，
+Host为NUMA node 1的200.010 GB，按实际Device字节比例分配。
+running=48、context=131072、completion=8192、workflow=14400秒，
+graph=2048/预留32步、宽松native-reactive profile、自然语言终态。
+当前开发为84-root单波的一对reactive/predictive，详情及启动SHA
+见架构状态页和v5 launch记录，不从旧profile推断当前参数。
 
-- GPU：NVIDIA H200 NVL，单卡；
-- 模型：Qwen3-Coder-30B-A3B-Instruct BF16；
-- SGLang：0.5.2rc1，固定上游提交与 BeliefKV patch；
-- context limit：262,144，正式验证覆盖到 196,608；
-- KV pool：850,000 tokens；
-- Host KV pool：96 GiB；
-- max running requests：32；
-- CUDA Graph batch：1/2/4/8/16/24/32。
-
-具体冻结值以 `configs/p6/h200_bf16_v7/frozen_runtime_profile.json` 为准。
+旧Qwen3/0.5.2rc1的冻结基线仍保存在
+`configs/p6/h200_bf16_v7/frozen_runtime_profile.json`，不是当前默认。
 
 ## 10. 代码入口
 
 - RCCG：`beliefkv/control/causal_graph.py`
-- JointPlan：`beliefkv/policy/joint_scheduler.py`
-- Admission：`beliefkv/policy/admission.py`
-- Residency：`beliefkv/policy/residency.py`
-- FrontierBelief：`beliefkv/predictor/structured_frontier.py`
-- Predictive risk：`beliefkv/policy/risk_shadow.py`
-- PageIndex/Bundle：`beliefkv/runtime/page_index.py`、`beliefkv/runtime/bundles.py`
-- SGLang bridge：`beliefkv/runtime/sglang_v052rc1.py`
-- Restore transaction：`beliefkv/runtime/restore_obligation.py`
+- 新版接入/准入：`beliefkv/runtime/sglang_v0520_runtime.py`、
+  `beliefkv/runtime/sglang_v0520_admission.py`
+- 原生session/物理动作：`beliefkv/runtime/sglang_v0520_sessions.py`、
+  `beliefkv/runtime/sglang_v0520_physical.py`
+- JOIN与预测：`beliefkv/runtime/sglang_v0520_join_projection.py`、
+  `beliefkv/runtime/sglang_v0520_prediction.py`
+- 语义phase/work：`beliefkv/predictor/child_semantic_work.py`、
+  `beliefkv/runtime/semantic_report_worker.py`
+- 工具与传输服务：`beliefkv/runtime/tool_wait_shadow.py`、
+  `beliefkv/runtime/native_transfer_service.py`
+- 原生遥测：`beliefkv/runtime/v0520_native_telemetry.py`
+- 旧算法参照：`beliefkv/policy/joint_scheduler.py`、
+  `beliefkv/runtime/sglang_v052rc1.py`、
+  `beliefkv/runtime/restore_obligation.py`，不等于新版迁移完成。
 
 ## 11. 文档权威顺序
 

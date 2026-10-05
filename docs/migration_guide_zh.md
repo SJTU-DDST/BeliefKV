@@ -1,6 +1,29 @@
 # BeliefKV 跨服务器迁移指南
 
-## 2026-09-22 模型与 SGLang 升级分支
+更新日期：2026-10-05。
+
+## 当前迁移入口
+
+Qwen3.5-35B-A3B BF16 / SGLang 0.5.20在同一 `beliefkv-next`
+环境运行。新机器需迁移模型、当前语义/工具模型与服务seed、
+workload manifest及需要保留的raw凭证，而不是所有旧workspace。
+配置与依赖的初始快照在 `configs/migration/2026-09-22_*`；
+实际代码、patch、权重、pool与launch参数以当前实验记录为准。
+
+当前开发启动器为 `scripts/run_qwen35_semantic_h2d_ab.sh`，使用
+staging patch及新版native admission/physical路径。PREPARE和
+JOIN H2D已有GPU证据，但完整旧COMMIT/JointPlan/retraction
+尚未验收；不要因旧全套开关fail-closed而误判新版完全没有传输，
+也不要反向声明完整迁移已完成。
+`launch_qwen35_native_v0520.sh`只做原生smoke，confirmed-join
+canary和隔离writeback补丁不是当前主线启动方案。
+当前容量、NUMA、宽松runtime及冻结约束见
+`docs/architecture_status_zh.md` 和 `docs/experiment_operating_notes_zh.md`。
+
+## 2026-09-22 升级记录（历史，不是当前状态）
+
+本节描述升级当时的进度及环境问题，其中“尚未接入”“当前”
+不能覆盖上述入口或架构状态页。后续原生动作适配已超出当时记录。
 
 现有本文第 1-5 节只适用于冻结的 Qwen3-Coder-30B-A3B-Instruct /
 SGLang `0.5.2rc1` 合同，不能直接套用于新模型。迁移前检查点为 Git tag

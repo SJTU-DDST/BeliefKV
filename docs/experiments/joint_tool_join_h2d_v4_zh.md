@@ -129,3 +129,209 @@ RETURN 前，中位提前 269.85 ms；两个落在 100–500 ms，三个
 修复尚需新的 GPU 验证。本次检查不自动重跑，先完成系统修复、
 CPU 回归和提交。已有完整 trace、模型、patch 和失败诊断保留；
 两侧旧完成 workspace 已由实验脚本清理。
+
+## GPU 利用率与吞吐退化的根因复核
+
+2026-10-05后续复核，仅读取v4原始trace，不修改当时配置或
+回填新埋点。分析脚本及完整数值在
+`experiments/analysis/v4_gpu_root_cause_20261005.py` /
+`experiments/analysis/v4_gpu_root_cause_20261005.json`。
+本节取代“差距主要只是模型路径不同”的简略解释。
+
+### 1. 口径
+
+NVML的gpu_utilization是采样期间kernel-active时间比例，不是
+SM occupancy。以下“busy/idle equivalent seconds”是GPU采样
+的时间加权积分，剪到workflow活跃时段；它是近似量，不是
+CUPTI kernel计时。raw summary均值包含略有不同的前后采样边界，
+所以60.67/82.21与下表60.77/82.40不矛盾。
+分析只累计有效采样覆盖，相邻采样权重上限为一秒，不把采样
+缺口当作已观测时间。官方口径见NVIDIA System Management
+Interface的Utilization说明：
+`https://docs.nvidia.com/deploy/nvidia-smi/index.html`。
+
+`gpu_service_sample` 是scheduler/worker interval，其start为
+max(batch launch,前一batch完成)，包括CPU调度、同步和结果
+处理；不能累计后称为真实GPU计算时间。工具duration同样可能
+包含host排队/回调，不将多个并行工具时长相加成critical path。
+running/queue来自约一秒采样，与NVML采样有滞后；分组是关联
+诊断，不是每毫秒的精确线程状态。
+
+| 时间加权近似量 | Predictive | Reactive | 差值 |
+| --- | ---: | ---: | ---: |
+| 有效GPU采样时段，秒 | 4199.99 | 3012.93 | +1187.06 |
+| Busy equivalent，秒 | 2552.28 | 2482.69 | +69.59 |
+| Idle equivalent，秒 | 1647.71 | 530.24 | +1117.47 |
+| 全程GPU利用率，% | 60.77 | 82.40 | -21.63个百分点 |
+| 有running/queue时GPU利用率，% | 77.34 | 83.16 | -5.82个百分点 |
+| 无running/queue时段，秒 | 946.36 | 99.28 | +847.08 |
+| GPU利用率<=10%的时段，秒 | 934.37 | 58.65 | +875.73 |
+
+整轮多出来的约1187秒中，近似忙碌时间只多70秒，额外约1117秒
+为空闲当量。问题不是GPU多算了20分钟，而是尾部没有GPU请求
+和非空服务阶段发射/服务间隙两部分。额外idle中，约871秒落在
+采样显示无server demand的时段，约247秒落在仍有需求的时段；
+后者不能再用“都在等待工具”解释，但也不能仅据此归因某个CPU函数。
+
+### 2. 主因：最后一个workflow的工具长尾
+
+Predictive第63个workflow完成后，只剩django-16938，持续约
+896.10秒；GPU利用率约1.03%，busy equivalent约9.20秒，
+idle equivalent约886.89秒。Reactive的单workflow尾段约117.36秒，
+idle equivalent约31.77秒。仅这部分额外idle为约855.12秒，
+占全部额外idle约76.5%。这是实测长尾归因，不是泛指路径差异。
+
+django-16938的原问题是自定义manager/select_related下的m2m
+序列化，root在尾部却执行了不带测试标签的两个Django全量测试：
+
+```text
+cd /workspace && python tests/runtests.py --parallel 2>&1 | tail -50
+cd /workspace && python tests/runtests.py --parallel=1 2>&1 | tail -50
+```
+
+两次TOOL_START到TOOL_END分别约600.078/600.072秒；
+sandbox内部执行约600.077/600.072秒，lock_wait均约0.001 ms，
+退出码137，正文仅为Killed。可定位到sandbox audit的sequence
+170/171，trajectory中的对应AI/tool消息ordinal 317-320附近。
+因此不是等待execute锁，也不是GPU队列/H2D耗时。
+
+执行包装器使用 `timeout --signal=KILL 600s /bin/sh -c ...`，
+与两次时长及退出码一致。没有进程栈/逐测试进度，不能进一步
+断言是哪个测试死锁、CPU很慢还是全suite超出预算；不能把
+“触达执行上限”自动解释为模型循环或OOM。
+
+第一个测试开始时其他workflow尚未全部结束，其后半段和第二个
+600秒测试占据了孤立尾部。此时running/queue基本为0，GPU没有
+可选agent；KV恢复得再快也不能缩短CPU测试本身。
+固定数量的一批workflow、没有后续到达，最后一个同步工具等待
+会放大makespan吞吐退化。不能把这段896秒全部当算法GPU效率。
+
+取predictive从首个workflow开始到第63个完成的分段，3303.75秒
+内完成2,217,828个output token，即约671.31 token/s；其后
+孤立尾部只产生2029 token。reactive完整workflow活跃区间
+3012.93秒完成2,023,931 token，即约671.75 token/s。
+二者近似相当，predictive在bulk阶段也确实有更多需求。
+这是阶段诊断，不是删除慢任务后重新报告“公平吞吐”。
+两个分段并非完全配对，不能据此认定控制面无开销或算法性能
+相同；它说明全程平均GPU利用率不能单独证明持续的服务速率退化。
+
+平均JCT还需要另外解释：django-16938自身JCT为4205.71/
+1622.32秒，其差对64-task平均增量贡献约40.37秒，仅占总体
+平均增量272.82秒约14.8%。工具孤立尾部主要解释整轮makespan
+和全程GPU平均值，不能拿它解释全部mean JCT退化。
+
+这不意味着只要删除该workflow结果就合理：必须保留原始
+54.60/75.98吞吐和全量JCT。completion curve显示第63个完成时
+predictive也已比reactive晚约407秒，说明主尾部之外仍有退化，
+尾部诊断不是洗掉整轮负结果。
+
+### 3. Harness反馈存在两个具体问题
+
+- timeout后只返回Killed/137，工具分类为command_failed，没有
+  明确告诉agent是配置的600秒预算到期；未知的进程被杀与timeout
+  信息混在一起，不能假设agent知道应改测试范围。
+- 后续命令 `python tests/runtests.py tests 2>&1 | tail -50`
+  输出显示找到6837个测试、大量error及multiprocessing
+  MaybeEncodingError/PicklingError，但ToolMessage为status=success，
+  尾部写Command succeeded with exit code 0。
+
+后一个不是抽象模型瑕疵：backend用/bin/sh执行管道，不传播
+上游Python失败，tail的0掩盖了真实错误。模型收到“异常+成功”
+相互矛盾的反馈，测试质量和下一轮行为都会受影响。当前prompt
+本已有focused-test指示，不能再断言“prompt直接要求跑全量测试”。
+这些问题需后续在两侧同时修复，不能运行中修改shell或统一
+缩短正常长工具上限，也不通过guard强行终止workflow。
+
+### 4. 非空需求阶段：控制开销真实存在，精确占比尚不可识别
+
+只取采样显示有running或queue的区间，predictive GPU利用率
+仍为77.34%，reactive为83.16%。即使去掉长工具无请求时段，
+仍存在约5.82个百分点差距。17-32 running分组为69.46/78.37%；
+对应17-32 decode的scheduler/worker interval均值为23.875/
+21.995 ms、P95为70.526/63.724 ms。该分组没有同时固定context
+长度和每轮需求，不把差值全称为Python调度耗时。
+
+可从源码与计数证明的额外工作：
+
+| 控制工作 | Predictive | Reactive |
+| --- | ---: | ---: |
+| 接受工具预测 | 83864 | 59279 |
+| 立即读取工具物理闭包：available+unavailable | 83864 | 59279 |
+| JOIN/工具PREPARE issue | 2588 | 2324 |
+| native shadow decline | 53316 | 61808 |
+| 语义模型接受结果 | 1278 | 0 |
+| 缺目标跳过的语义扫描计数 | 68442 | 0 |
+| 请求一次overlap drain的JOIN动作 | 6 | 0 |
+
+v4 `_accept_tool_wait` 每次refresh都在scheduler主线程调用
+`capture_shadow_candidate`，即使没有要下发的动作；还会在
+等待refresh构造features时扫描invocations。predictive额外执行
+语义frame检查、phase/work、关键parent目标查询及roll_final_stage。
+旧工具H2D的CDF>=0.8额外否决与这些无动作扫描共同存在：CPU做了
+大量工作，但工具H2D为0，不能把模型运行次数作为收益。
+
+已实际记录的opportunity sampler累计成本为80.24/59.72秒，
+差20.52秒；每次均值19.28/19.99 ms，没有“predictive单次
+采样特别慢”的证据。累积差异部分来自整轮更长。
+已接受语义结果记录的推理成本合计约39.43秒，发生在独立CPU
+process，不能把这39秒直接加为scheduler阻塞或GPU stall。
+83k物理闭包读取没有逐函数duration，无法诚实算出它独占多少秒。
+
+`1aba1be` 的推迟闭包检查、重复查询降频、短期机会缓存和ACK后
+避免二次drain就是针对这一实现浪费，已进入v5。但它的实际
+吞吐改善仍待GPU结果；后续应做低开销scheduler阶段计时或CPU/
+CUDA联合profile，避免编造“扫描贡献了某个精确百分比”。
+
+### 5. 工作量、batch结构与迁移的证据
+
+两侧64个初始prompt fingerprint全部相同，但49个root的第一个
+AI输出（正文/工具名参数，忽略随机tool-call ID）已不同。
+这发生于轨迹开端，不可能都由后面的六次H2D造成。需要同时
+区分serving数值/批次非确定性和后续工具反馈，不能把所有
+输出变化说成预取策略改变KV或算法本身出错。
+这也不排除预测控制面的CPU工作通过batch时序影响输出；
+初始输出差异不能当作算法之外的纯随机扰动。
+
+Predictive LLM/工具调用多19.12/20.06%，prompt token多22.21%，
+output token多9.68%。Native uncached input为11.049/9.760M，
+但FULL输入hit约95.98/95.66%，没有明显命中率崩溃证据。
+更多uncached token也可能来自新增输入，不能全部称为重算；
+block probe溢出仍使全量重算归因不完整。
+
+工具与batch结构也不同：predictive的grep为2504次，reactive
+1409次；predictive 17-32 decode为43817个batch，reactive33737，
+而2-8 decode分别69471/133384。这改变CPU/GPU重叠和按时间
+加权的平均利用率，不能只比较batch数或只比较总输出token。
+
+Native enqueue到first scheduler service的P50约68.37/63.60 ms，
+P95约167.99/327.98 ms，均值97.67/102.01 ms；没有predictive
+整体GPU准入队列被严重堵死的证据。GPU结果到client结果均值
+620.39/613.92 ms也相近，不能把全部尾部归为OpenAI客户端。
+
+| 实际传输 | Predictive | Reactive |
+| --- | ---: | ---: |
+| 全部H2D batch/GB | 127 / 16.324 | 94 / 12.288 |
+| H2D stream event累计秒 | 0.714 | 0.544 |
+| H2D submit-to-ACK累计秒 | 10.452 | 7.624 |
+| 全部D2H batch/GB | 23872 / 356.863 | 19571 / 308.471 |
+| D2H stream event累计秒 | 67.823 | 56.186 |
+
+这些累计值可重叠，不等于暴露stall，但额外H2D stream时间
+只有约0.17秒、D2H约11.64秒，不能直接解释额外1187秒。
+六个预测H2D的enqueue-to-submit为约1.40-2.29 ms，
+submit-to-ACK约4.61-9.48 ms，v3的几百毫秒排队问题已改善。
+不能把“有更多IO”与“DMA本身拖慢20分钟”混为一谈。
+
+### 6. 可以确定与仍不能确定的结论
+
+**已确定：**最大的平均GPU利用率/整轮吞吐退化来自具体的
+工具超时长尾；工具反馈及pipeline状态存在系统问题；
+额外控制工作存在且工具H2D未转化为动作；即时H2D提交已修复；
+非空请求阶段仍有次级差距，不能只归于孤立尾部。
+
+**仍未识别：**每个CPU函数的独占时间、发生超时的Django
+测试内部堆栈、非空阶段中控制开销与context/batch变化各自的
+因果占比。v4没有采集这些profile，不能事后以模型路径差异或
+一个总开销数字补造根因。本轮84-root仍冻结；结束后优先修复
+真实反馈并补阶段计时，不引入agent guard，也不以删长尾任务
+美化正式吞吐结果。

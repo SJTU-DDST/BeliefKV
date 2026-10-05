@@ -1,10 +1,32 @@
-# BeliefKV 与 SGLang 0.5.2rc1 集成说明
+# BeliefKV 与 SGLang 集成说明
 
-更新日期：2026-09-20。本文描述当前接口契约；具体实验参数以冻结 runtime profile 为准。
+更新日期：2026-10-05。
+
+## 当前0.5.20入口
+
+当前使用固定上游 `94602c9c2b7cbdb8efd5c52802dac6a1c180089e`
+及 `patches/sglang-v0.5.20-beliefkv-staging.patch`。
+`sglang_v0520_runtime.py`、`sglang_v0520_admission.py`、
+`sglang_v0520_sessions.py` 与 `sglang_v0520_physical.py` 接入
+原生因果准入、session、安全输入checkpoint及FULL/Mamba物理动作。
+语义/工具worker独立运行，native telemetry确认传输ACK及首次消费。
+
+有界PREPARE/JOIN H2D已在开发pair运行；完整旧JointPlan、COMMIT、
+ownership与running retraction仍未完成新版验收。
+旧 `--enable-beliefkv` 全套物理路径的fail-closed不等于新版
+独立native路径没有任何传输。当前开关及启动参数以
+`scripts/run_qwen35_semantic_h2d_ab.sh`、实际launch记录和
+`docs/architecture_status_zh.md` 为准，不能复制下文旧接口来启动。
+
+## 旧0.5.2rc1接口参考
+
+下文第1-8节保存2026-09-20的旧接口合同；其中“当前”“已完成”
+均指旧checkpoint，不描述新版状态。旧checker、metadata及
+transaction模式用于追溯，不是当前可直接套用的迁移方案。
 
 ## 1. 固定版本
 
-BeliefKV 当前只支持：
+该旧路径只支持：
 
 ```text
 SGLang tag:    v0.5.2rc1

@@ -8,31 +8,29 @@ guard、终态门禁或模型动作授权。启动前同时阅读
 
 2026-10-05 用户进一步批准下一轮 **84-root 单波到达**，
 server running=48、Host 200 GB/NUMA node 1及池比例保持不变。
-本条覆盖下文旧64-root约定；不得自动扩到128或重叠64+64。
+此前64-root配置仅作历史对照；不得自动扩到128或重叠64+64。
 当前pair属于live压力探索，不因固定seed就声明轨迹相同。
-正式比较分固定逻辑需求GPU回放和多轮配对live两层，见
+开发阶段当前只做一对84-root；正式阶段再多轮配对取平均和报告
+方差。固定需求GPU回放不作为主线或前置要求，见
 `docs/experiments/pressure84_and_fair_comparison_2026-10-05_zh.md`。
-
-2026-10-04 用户明确批准将下一轮改为 **64-root**、加强多轮
-spawn prompt、启用选择性 JOIN parent PREPARE_HOST，并验证
-JOIN 前 H2D 的端到端收益。下文 36-root 是之前的约定，不再是
-本轮启动参数；不得自行改成 128 或重叠 64+64。
 
 场景目标是存在真实可迁移状态与可用 HBM
 空间、且有用 KV 丢弃后重算较少的负载。server running=48 是
-请求执行上限，不是 48 个 root，也不是 36 个 root 的替代配置。
+请求执行上限，不是 root 数，也不代替 root 并发配置。
 
-不得因预测 H2D 为零自行增加到 64、128 或重叠 64+64。先区分
+不得因预测 H2D 为零继续增加已授权的并发或改变到达方式。先区分
 checkpoint 不存在、session 引用丢失、Host 无副本、目标仍在 GPU、
 缺物理空间、预测太早/太晚及传输发射故障。数据仍在 GPU 时，
 不发 H2D 是正确行为，不得人为驱逐或清空 HBM 制造事件。
 调整并发、到达方式、Host 大小或池比例须先说明并取得用户确认。
-用户已批准的 64-root 变更见
+历史上2026-10-04从36-root改为64-root，同时加强多轮spawn
+prompt并启用选择性JOIN parent PREPARE_HOST，见
 `docs/experiments/join_prepare_h2d_64root_2026-10-04_zh.md`。
+该64-root配置不是当前默认。
 
 2026-10-01 的 64+64 仅为高压机制诊断。两池满、频繁 Host 驱逐
 和预取后再次淘汰不符合当前主场景，不能将该批次的 ACK 或
-完成速率当作 36-root 策略收益。
+完成速率当作当前策略收益。
 
 reactive/predictive 对照必须使用相同 task 集合、到达方式、
 模型/采样参数、runtime prompt、通知、收尾优先级、deadline、
@@ -63,6 +61,14 @@ workflow deadline 是 root 与全部 descendants 共用的绝对墙钟
 预算，排队、工具、总结及多轮执行均计入；不是每次 LLM 调用的
 600 秒 timeout，也不是 sandbox 单条命令 timeout。
 graph limit=2048，允许提前 32 步 FINALIZE，不得回退为 512。
+
+workflow deadline、模型请求timeout和工具命令timeout是三个
+边界。v4的django-16938两次全量测试各达到约600秒、返回137/
+Killed，不能归为GPU等待或把它们当成工具自然完成。检查默认
+工具上限及实际命令、超时反馈，不为了改善makespan而统一缩短
+所有正常长工具。实验期间冻结配置，修复须后续同时用于两侧。
+`python ... | tail ...` 的上游失败可能被末端退出0掩盖，
+不能仅凭该退出码或“Command succeeded”判定测试通过。
 
 分类错误必须检查 deadline audit，不能只看异常类。
 64+64 批次的 14 个错误中，11 个在模型提交前报
@@ -151,6 +157,13 @@ time namespace 与 CLOCK_MONOTONIC 的域标识匹配，才直接使用
 正文时刻之前的已完成 GPU 服务；未知时钟和旧 trace 仍保守
 回溯 100 ms。不要为了增加短窗口命中而回填旧的时钟域证明。
 短 token 区间概率与 RETURN 墙钟误差分别报告，无触发不算收益。
+
+GPU利用率低时，先区分无请求/工具长尾、有请求但发射不足、
+batch/context变化和实际kernel繁忙。NVML利用率是采样期间
+kernel-active占比，不是SM occupancy。`gpu_service_sample`
+记录scheduler/worker墙钟interval，包含非kernel开销，不得
+累计后当作GPU kernel时间。完整makespan保留长尾，同时报告
+completion curve及非空服务阶段；诊断分段不能替代正式指标。
 
 工具等待模型必须在启动计划和运行时状态中明确记录为已加载，
 不能仅因存在 tool_wait 代码就声称启用。事件时间预测与 legacy
