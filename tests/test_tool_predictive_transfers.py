@@ -93,6 +93,74 @@ def test_tool_forecast_is_conditioned_on_still_waiting_not_reset_at_reply():
     assert hint.release_probability_within(500., now_ms=1500.) == pytest.approx(.8)
 
 
+def test_one_second_time_window_is_not_vetoed_by_separate_cdf_classifier():
+    runtime, hint = tool_runtime()
+    now = time.monotonic() * 1000
+    weak = NativeToolWaitHint(
+        hint.key, 100., 500., 2000., now, now + 5000.,
+        hint.predictor_sha256, hint.invocation_revision_ts_ms,
+        ((100., .01), (1000., .2), (5000., .6)),
+    )
+    assert runtime._tool_prefetch_ready(weak)
+    far = NativeToolWaitHint(
+        hint.key, 2000., 3000., 6000., now, now + 5000.,
+        hint.predictor_sha256, hint.invocation_revision_ts_ms,
+        ((100., .9), (1000., .95), (5000., .99)),
+    )
+    assert not runtime._tool_prefetch_ready(far)
+
+
+def test_timing_only_hint_acceptance_defers_expensive_physical_ancestry():
+    runtime, hint = tool_runtime()
+    runtime._tool_timing_only = True
+    runtime._model_worker = NS(disabled=False)
+    with patch.object(runtime, "capture_shadow_candidate") as capture:
+        runtime._accept_tool_wait(hint)
+        runtime._accept_tool_wait(hint)
+    capture.assert_not_called()
+    assert runtime.tool_wait_hints[hint.key.context_id] is hint
+    assert runtime.counts["tool_hint_physical_inspection_deferred"] == 2
+
+
+def test_unchanged_long_wait_does_not_submit_prediction_every_decode_tick():
+    runtime, hint = tool_runtime()
+    runtime._tool_timing_only = True
+    submitted = []
+    runtime._model_worker = NS(disabled=False, submit_tool_wait=submitted.append)
+    with patch("beliefkv.runtime.sglang_v0520_runtime.time.monotonic", return_value=3.):
+        runtime._submit_tool_wait("ctx-tool")
+        runtime._submit_tool_wait("ctx-tool")
+    assert len(submitted) == 1
+    assert runtime.counts["tool_unchanged_wait_prediction_skipped"] == 1
+
+
+def test_tool_opportunity_cache_avoids_repeated_native_inspection():
+    runtime, hint = tool_runtime()
+    opportunity = NS(step=None, fits_current_free_lists=None)
+    with patch.object(runtime, "inspect_context_h2d_opportunity", return_value=opportunity) as inspect:
+        runtime._roll_tool_prefetch()
+        runtime._roll_tool_prefetch()
+    assert inspect.call_count == 1
+    assert runtime._tool_ticket is None
+
+
+def test_tool_ack_does_not_drain_overlap_again_for_already_restored_pages():
+    runtime, hint = tool_runtime()
+    step = PrefetchLoadStep(hint.key, 1, 2, 1, 2)
+    with patch.object(runtime, "inspect_context_h2d_opportunity", return_value=NS(
+        step=step, fits_current_free_lists=True,
+    )), patch.object(runtime, "_tool_service_supported", return_value=True), \
+         patch.object(runtime, "refreshed_prefetch_gpu_step", return_value=step), \
+         patch.object(runtime, "issue_prefetch_gpu_step", return_value="c1"):
+        assert runtime.running_batch_retraction_barrier_required(NS())
+        runtime.dispatch_tool_prefetch()
+    runtime.completed_physical_actions.append(NS(command_id="c1", action="PREFETCH_GPU"))
+    with patch.object(runtime, "inspect_context_h2d_opportunity", return_value=None):
+        assert not runtime.running_batch_retraction_barrier_required(NS())
+    assert runtime._tool_ticket is None
+    assert runtime.counts["tool_overlap_drain_requested"] == 1
+
+
 def test_calibrated_event_heads_do_not_require_or_modify_action_eligibility(tmp_path):
     model = tmp_path / "model"
     model.mkdir()

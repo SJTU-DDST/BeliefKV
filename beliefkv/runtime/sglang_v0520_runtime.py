@@ -334,6 +334,8 @@ class NativeAdmissionRuntime:
         self._tool_timing_only = False
         self._tool_refresh_next_ms = 0.
         self._tool_prepare_next_ms = 0.
+        self._tool_last_queries: dict[PrefillCandidateKey, tuple[float, float]] = {}
+        self._tool_opportunity_cache: dict[PrefillCandidateKey, tuple[float, object]] = {}
         tool_setting = os.environ.get("BELIEFKV_ENABLE_TOOL_PREFETCH", "0")
         if tool_setting not in ("0", "1"):
             raise ValueError("tool prefetch setting must be 0 or 1")
@@ -695,6 +697,8 @@ class NativeAdmissionRuntime:
                 if context_id is not None:
                     key = self.context_sessions.get(context_id)
                     if key is not None and self._terminal(key):
+                        self._tool_last_queries.pop(key, None)
+                        self._tool_opportunity_cache.pop(key, None)
                         del self.context_sessions[context_id]
                         self._context_tokens.pop(context_id, None)
                     if event.kind in (
@@ -706,6 +710,12 @@ class NativeAdmissionRuntime:
                         self.tool_wait_hints.pop(context_id, None)
                         self.shadow_candidate = None
                 if event.kind is RuntimeEventKind.WORKFLOW_END:
+                    for key in tuple(self._tool_last_queries):
+                        if key.root_workflow_id == event.workflow_id:
+                            self._tool_last_queries.pop(key, None)
+                    for key in tuple(self._tool_opportunity_cache):
+                        if key.root_workflow_id == event.workflow_id:
+                            self._tool_opportunity_cache.pop(key, None)
                     self._join_prefetch_issued = Counter({
                         identity: count
                         for identity, count in self._join_prefetch_issued.items()
@@ -1704,12 +1714,11 @@ class NativeAdmissionRuntime:
                     if not forecast.observation.notice_active:
                         self.counts["semantic_pre_eos_phase_unconfirmed"] += 1
                         continue
-                    if remaining == 0:
-                        remaining = max(
-                            1., forecast.upper_tokens
-                            - max(0, generated - forecast.observation.observed_output_tokens),
-                        )
-                        self.counts["semantic_zero_work_uses_upper_bound"] += 1
+                    remaining = max(
+                        1., forecast.upper_tokens
+                        - max(0, generated - forecast.observation.observed_output_tokens),
+                    )
+                    self.counts["semantic_pre_eos_uses_work_upper_bound"] += 1
                 # EOS is known GPU progress, not confirmation that the child RETURNed.
                 if stage.request_id in self._semantic_finished:
                     ended_ms = self._semantic_finished[stage.request_id][0]
@@ -2086,10 +2095,29 @@ class NativeAdmissionRuntime:
         metadata = self._tool_metadata.get(invocation.invocation_id)
         if metadata and metadata[1] in ("announce_completion_intent", "ChildCompletion", "WorkflowCompletion"):
             return
+        if self._tool_timing_only:
+            elapsed = max(0., now_ms - (invocation.active_tool_start_ms or now_ms))
+            if elapsed < 50.:
+                self.counts["tool_fast_wait_prediction_skipped"] += 1
+                return
+            previous = self._tool_last_queries.get(key)
+            hint = self.tool_wait_hints.get(context_id)
+            remaining = (
+                max(0., hint.wait_p50_ms - (now_ms - hint.issued_monotonic_ms))
+                if hint is not None and hint.live(key, now_ms=now_ms) else 0.
+            )
+            spacing = 1000. if remaining > 10000. else 500. if remaining > 2000. else 150.
+            if (
+                previous is not None and previous[0] == invocation.updated_ts_ms
+                and now_ms - previous[1] < spacing
+            ):
+                self.counts["tool_unchanged_wait_prediction_skipped"] += 1
+                return
         features = self._local_frontier_features(
             invocation, context.epoch, now_ms=now_ms
         )
         worker.submit_tool_wait(((key, features, invocation.updated_ts_ms),))
+        self._tool_last_queries[key] = (invocation.updated_ts_ms, now_ms)
         self.counts["tool_wait_submitted"] += 1
 
     def _local_frontier_features(
@@ -2184,20 +2212,23 @@ class NativeAdmissionRuntime:
             return
         self.tool_wait_hints[key.context_id] = hint
         self.counts["tool_wait_accepted"] += 1
-        self.shadow_candidate = (
-            self.capture_shadow_candidate(
-                self._native_cache,
-                context_id=key.context_id,
-                context_epoch=key.context_epoch,
+        if self._tool_timing_only:
+            # Physical ancestry is read at an action safe point, not for every
+            # advisory refresh of the same external wait.
+            self.counts["tool_hint_physical_inspection_deferred"] += 1
+        else:
+            self.shadow_candidate = (
+                self.capture_shadow_candidate(
+                    self._native_cache,
+                    context_id=key.context_id,
+                    context_epoch=key.context_epoch,
+                )
+                if self._native_cache is not None else None
             )
-            if self._native_cache is not None
-            else None
-        )
-        self.counts[
-            "tool_wait_shadow_available"
-            if self.shadow_candidate is not None
-            else "tool_wait_shadow_unavailable"
-        ] += 1
+            self.counts[
+                "tool_wait_shadow_available"
+                if self.shadow_candidate is not None else "tool_wait_shadow_unavailable"
+            ] += 1
         if self._opportunity_writer is not None:
             self._opportunity_writer.record({
                 "event": "tool_wait_forecast", "ts_ms": time.time() * 1000,
@@ -2779,6 +2810,21 @@ class NativeAdmissionRuntime:
             return
         ticket = self._tool_ticket
         if ticket is not None:
+            if ticket.command_id is not None:
+                if self.physical_ledger.is_pending(ticket.command_id):
+                    return
+                completed = any(
+                    action.command_id == ticket.command_id and action.action == "PREFETCH_GPU"
+                    for action in self.completed_physical_actions
+                )
+                self._tool_opportunity_cache.pop(ticket.key, None)
+                self._tool_ticket = None
+                if not completed:
+                    self.counts["tool_prefetch_lost_ack"] += 1
+                    return
+                self.counts["tool_prefetch_acked"] += 1
+                ticket = None
+        if ticket is not None:
             hint = self._live_tool_hint(ticket.key)
             if (
                 hint is None or hint.invocation_revision_ts_ms != ticket.revision
@@ -2794,11 +2840,26 @@ class NativeAdmissionRuntime:
             if self._live_tool_hint(hint.key) is None or self._tool_prefetch_budget[hint.key] >= 2:
                 continue
             if not self._tool_prefetch_ready(hint):
+                self.counts["tool_prefetch_not_in_time_window"] += 1
                 continue
-            opportunity = self.inspect_context_h2d_opportunity(
-                context_id=hint.key.context_id, context_epoch=hint.key.context_epoch,
-            )
-            if opportunity is None or opportunity.step is None or opportunity.fits_current_free_lists is not True:
+            cached = self._tool_opportunity_cache.get(hint.key)
+            if cached is not None and now_ms < cached[0]:
+                opportunity = cached[1]
+            else:
+                opportunity = self.inspect_context_h2d_opportunity(
+                    context_id=hint.key.context_id, context_epoch=hint.key.context_epoch,
+                )
+                self._tool_opportunity_cache[hint.key] = (now_ms + 100., opportunity)
+                if len(self._tool_opportunity_cache) > 256:
+                    self._tool_opportunity_cache = {
+                        key: value for key, value in self._tool_opportunity_cache.items()
+                        if value[0] > now_ms
+                    }
+            if opportunity is None or opportunity.step is None:
+                self.counts["tool_prefetch_no_restore_target"] += 1
+                continue
+            if opportunity.fits_current_free_lists is not True:
+                self.counts["tool_prefetch_no_free_capacity"] += 1
                 continue
             if not self._tool_service_supported(opportunity):
                 self.counts["tool_prefetch_service_unsupported"] += 1
@@ -2809,11 +2870,9 @@ class NativeAdmissionRuntime:
 
     def _tool_prefetch_ready(self, hint: NativeToolWaitHint) -> bool:
         now_ms = time.monotonic() * 1000
-        probability = hint.release_probability_within(self.prefetch_lead_ms, now_ms=now_ms)
-        return (
-            probability >= .8 if probability is not None
-            else hint.wait_p50_ms - (now_ms - hint.issued_monotonic_ms) <= self.prefetch_lead_ms
-        )
+        # The configured window is a remaining-time policy. The separately
+        # fitted horizon classifier is diagnostics, not a second action gate.
+        return max(0., hint.wait_p50_ms - (now_ms - hint.issued_monotonic_ms)) <= self.prefetch_lead_ms
 
     def _tool_service_supported(self, opportunity: SessionH2DOpportunity) -> bool:
         try:
@@ -3248,6 +3307,10 @@ class NativeAdmissionRuntime:
             return False
         if key.request_id in self.visible:
             raise ValueError(f"duplicate visible request: {key.request_id}")
+        previous = self.context_sessions.get(key.context_id)
+        if previous is not None and previous != key:
+            self._tool_last_queries.pop(previous, None)
+            self._tool_opportunity_cache.pop(previous, None)
         old_hint = self.tool_wait_hints.get(key.context_id)
         if old_hint is not None and old_hint.key != key:
             self.tool_wait_hints.pop(key.context_id)
@@ -3327,6 +3390,8 @@ class NativeAdmissionRuntime:
     def _forget_session(self, request_id: str) -> None:
         for context_id, key in tuple(self.context_sessions.items()):
             if key.request_id == request_id:
+                self._tool_last_queries.pop(key, None)
+                self._tool_opportunity_cache.pop(key, None)
                 del self.context_sessions[context_id]
                 self._context_tokens.pop(context_id, None)
                 self.tool_wait_hints.pop(context_id, None)
