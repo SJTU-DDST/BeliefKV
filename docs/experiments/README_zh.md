@@ -1,12 +1,22 @@
 # BeliefKV 实验报告索引
 
-更新日期：2026-09-19
+更新日期：2026-10-06
 
 本目录保存单次实验、修复和 characterization 的不可变证据。报告描述的是当时的代码、
 硬件和配置，不自动代表当前系统能力；当前结论以
 [`../architecture_status_zh.md`](../architecture_status_zh.md) 为准。
 
 ## 当前关键证据
+
+| 报告 | 用途 |
+| --- | --- |
+| [v5 84-root联合恢复](joint_tool_join_h2d_v5_84root_zh.md) | 17个预测H2D；JOIN复用与工具自我回收冲突，完整吞吐/JCT负结果 |
+| [v4工具/JOIN联合恢复](joint_tool_join_h2d_v4_zh.md) | 六个预测H2D及GPU利用率退化的逐项根因复核 |
+| [84-root与正式对照约定](pressure84_and_fair_comparison_2026-10-05_zh.md) | 开发单pair；正式多轮平均，回放不是前置要求 |
+
+## 旧checkpoint证据
+
+以下属于Qwen3/0.5.2rc1等历史实现，不覆盖新版Qwen3.5/0.5.20状态。
 
 | 报告 | 用途 |
 | --- | --- |
@@ -31,6 +41,8 @@
 
 ## 报告分类
 
+- `2026-10`：Qwen3.5/SGLang 0.5.20有界native传输、时机与复用开发验证；
+- `2026-09`升级后的报告：以各自manifest/模型/framework为准，不继承旧P6资格；
 - `2026-09`：H200 BF16 beneficiary-bound predictive path 和 PREPARE gate；
 - `2026-08-12` 以后：H200 BF16 数据采集、调度与性能结果；
 - 更早报告：RTX 6000 Ada/FP8 或早期 P1-P5 机制证据；

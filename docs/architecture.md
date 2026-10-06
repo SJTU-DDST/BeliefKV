@@ -1,6 +1,6 @@
 # Architecture
 
-Updated: 2026-10-05.
+Updated: 2026-10-06.
 
 This page is a concise English entry point. The authoritative system design is
 [beliefkv_design.md](beliefkv_design.md), and the
@@ -12,9 +12,10 @@ current implementation status is
 Qwen3.5-35B-A3B BF16 and SGLang 0.5.20 run with the Agent workload in
 the shared `beliefkv-next` environment. FULL and Mamba are managed together;
 native UnifiedRadixCache and allocators remain the physical authority.
-The current development pair uses 84 roots in one arrival wave, running=48,
+The latest completed v5 pair used 84 roots in one arrival wave, running=48,
 and a 200 GB Host pool on NUMA node 1. Runtime, prompts, weights and launch
-arguments are frozen. Repeated live pairs are for later formal evaluation;
+arguments stayed frozen; no new GPU experiment is queued.
+Repeated live pairs are for later formal evaluation;
 canaries and fixed-demand GPU replay are not prerequisites.
 
 ## System Model
@@ -70,10 +71,22 @@ Valid native D2H copies also qualify; prior PREPARE consumption is not required.
 Both experimental arms share notices, bounded final-report priority,
 waiting-state preparation and real-pressure demotion. Only predictive enables
 early loads. This is not an untouched native baseline.
-v4 had six JOIN H2D ACKs with verified FULL first use and five verified Mamba
-forward uses. Tool H2D was zero, and five JOIN actions followed native EOS.
+v5 had 17 H2D ACKs totaling 1.298 GB: 11 JOIN loads with verified FULL first
+use, and six tool loads without FULL reuse. Ten Mamba forward uses were
+verified. All JOIN loads followed native EOS; no pre-EOS load was produced.
 Neither broad subsecond RETURN accuracy nor end-to-end throughput benefit
 has been demonstrated.
+
+v5 exposed opposing temporal/residency policies: clipped P50 countdown
+selected tool prefetch while conditional CDF selected long-wait parking.
+Every tool load was ACKed, pressure-demoted again and reactively reloaded
+before first service. These six actions cannot be called useful simply
+because they completed. The conflict and missing post-ACK short residency
+remain next-work items, not already implemented fixes.
+Both arms had 113 children/joins and zero child cancellations; the predictive
+arm's one incomplete root was an 8192-token, length-ended repetition.
+Completed throughput was -8.95%; paired mean JCT was -8.84%, with differing
+realized work. See the [v5 report](experiments/joint_tool_join_h2d_v5_84root_zh.md).
 
 v4's lower average utilization is dominated by an isolated Django workflow
 tail containing two 600-second whole-suite tool timeouts. Pipeline failures

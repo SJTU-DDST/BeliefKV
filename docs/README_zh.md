@@ -1,10 +1,11 @@
 # BeliefKV 文档导航
 
-更新日期：2026-10-05
+更新日期：2026-10-06
 
 当前主线为Qwen3.5-35B-A3B / SGLang 0.5.20，同一
-`beliefkv-next` 环境。正在运行84-root单波开发pair，running=48、
-Host 200 GB/NUMA node 1；当前只做一对，正式实验再多轮取平均。
+`beliefkv-next` 环境。84-root单波v5开发pair已结束，最近配置
+running=48、Host 200 GB/NUMA node 1；没有新GPU实验队列，
+正式实验再多轮取平均。
 旧Qwen3/0.5.2rc1、canary和旧池配置不作为当前默认。
 
 本页是项目文档的统一入口。文档状态分为：
@@ -61,6 +62,7 @@ characterization。它们遵循：
 
 | 报告 | 结论 |
 | --- | --- |
+| [v5 84-root结果](experiments/joint_tool_join_h2d_v5_84root_zh.md) | 17个预测H2D；JOIN11个复用，工具6个被再回收，完成吞吐-8.95% |
 | [v4工具/JOIN恢复](experiments/joint_tool_join_h2d_v4_zh.md) | 六个JOIN H2D及吞吐负结果；补有GPU利用率根因复核 |
 | [84-root与对照要求](experiments/pressure84_and_fair_comparison_2026-10-05_zh.md) | 当前单pair；正式多轮平均，回放不是前置要求 |
 

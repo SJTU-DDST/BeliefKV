@@ -1,6 +1,6 @@
 # BeliefKV 当前架构与实现状态
 
-更新日期：2026-10-05。
+更新日期：2026-10-06。
 
 本文是当前实现事实的权威入口，不是逐日开发日志。当前主线已是
 Qwen3.5-35B-A3B BF16 / SGLang 0.5.20，不再以旧 Qwen3/SGLang
@@ -16,17 +16,20 @@ Qwen3.5-35B-A3B BF16 / SGLang 0.5.20，不再以旧 Qwen3/SGLang
    身份链已接入。FULL/Mamba 必须共同管理，物理容量由 native
    allocator 和 UnifiedRadixCache 决定。
 2. 有界 PREPARE_HOST 与 JOIN H2D 原生事务已实际运行，不再是
-   默认关闭且无 GPU 证据的阶段。v3 有10个H2D ACK、v4有6个；
-   v4六个全部确认FULL首次复用，五个确认Mamba forward复用。
+   默认关闭且无 GPU 证据的阶段。v5有17个H2D ACK/1.298 GB：
+   JOIN 11个FULL首次复用，工具6个未复用；10个Mamba forward
+   复用已确认。ACK本身不是收益。
 3. 工具时间模型已独立上线到开发配置，不更改旧模型产物
    `online_eligible` / `predictive_action_eligible` 标志。
-   v4发生工具等待KV回收，但工具predictive H2D仍为零。
+   v5工具H2D已下发6次，但都在ACK后被自身pressure parking
+   再回收，后续仍需native H2D；时机/驻留口径冲突尚未修复。
 4. 尚未证明端到端吞吐净收益或普遍亚秒级RETURN预测。
-   v4 predictive比reactive的整轮完成吞吐低28.14%；具体退化
-   不能仅归于路径差异，也不能仅归于预取。
-5. 当前运行v5的84-root单波开发对照，先reactive、后predictive。
-   不排额外重复、不要求固定需求GPU回放；多轮取平均留到
-   正式实验。运行中的代码、prompt、权重和参数冻结。
+   v5 predictive完成吞吐低8.95%，共同完成83项的均值JCT
+   低8.84%，但需求/路径不同，不能直接认定预取净收益。
+5. v5的84-root单波对照已结束，reactive 84 completed，
+   predictive 83 completed/1 length-truncated incomplete，
+   无child取消/serving writer故障，GPU已释放。没有新GPU实验
+   或重复队列；正式阶段再多轮平均，不要求固定需求回放。
 
 ## 2. 当前配置
 
@@ -39,12 +42,12 @@ Qwen3.5-35B-A3B BF16 / SGLang 0.5.20，不再以旧 Qwen3/SGLang
 | Host | 200.010 GB，NUMA node 1；FULL约105.358 GB、Mamba约94.652 GB |
 | 池比例 | Device `mamba-full-memory-ratio=0.9`；Host匹配实际Device字节比例 |
 | GPU执行 | running=48，chunked prefill=4096，CUDA graph覆盖decode batch 48 |
-| 当前负载 | manifest前84个root，单波，不是64+20延后到达 |
+| 最近负载 | 已完成v5：manifest前84个root，单波，不是64+20延后到达 |
 | 生成 | context=131072，completion=8192，temperature=0，seed=21 |
 | 预算 | workflow=14400秒，graph=2048，允许提前32步FINALIZE |
 | Harness | native in-graph 1-4 child，鼓励多轮，自然语言RETURN有效 |
 | 当前预测窗口 | 实际动作目标为RETURN/TOOL_END前0-1000 ms，仍独立审计真实提前量 |
-| 运行代码 | v5启动commit `c219604`，包含runtime修复 `1aba1be` |
+| 最近运行代码 | v5启动commit `c219604`，包含runtime修复 `1aba1be` |
 
 以上GB为十进制；Mamba单位是完整状态/检查点，不是FULL的一个token。
 池usage、物理occupancy、可驱逐容量和free-list不得混用。
@@ -96,7 +99,10 @@ MLP和短token CDF候选没有稳定改善，不作为当前默认模型。
 模型给出残余时间和事件CDF，runtime决定备份、回收、加载。
 
 v4的CDF>=0.8二次否决导致目标候选全部未准入；`1aba1be`改为
-配置的剩余P50窗口，CDF保留诊断。短工具和同一等待有界降频，
+配置的剩余P50窗口，H2D准入中CDF保留诊断。但长等待/pressure
+parking仍使用条件CDF<=0.1；v5证实其与P50倒计时同时支持相反
+驻留决策，且ACK后没有工具目标的短驻留保护，尚未修复。
+短工具和同一等待有界降频，
 时间hint接受不立即扫描物理ancestry，动作选择时才做有界
 inspection/cache，enqueue前仍重新验证。
 工具/语义两个worker FD都进入idle poller，有等待时有界唤醒。
@@ -109,7 +115,7 @@ inspection/cache，enqueue前仍重新验证。
 | PREPARE_HOST | 原生D2H shadow，ACK前不宣称Host副本有效 |
 | 等待态KV回收 | 真实allocator短缺时，dead/cold优先，独占/未锁定/备份已settle才回收 |
 | JOIN H2D | WAIT_JOIN且关键child有效，真实Host-only输入、容量与服务证据下发 |
-| 工具H2D | 代码已接入；v4零动作，修复后的v5待验证 |
+| 工具H2D | v5六个ACK/0.444 GB，均ACK后再回收，FULL未复用 |
 | 提交队列 | 纯预测load_queue安全点立即启动；不抢混合原生队列producer |
 | 同步 | 保留native stream fence、layer event、producer/consumer及同步ACK |
 | 首次消费 | FULL前缀/node/value证明；Mamba单请求COW forward证明或明确未验证 |
@@ -134,7 +140,7 @@ partial backup/多node预算不等于完整context已恢复。
 | v2，64-root | 两側完成64/63；预测H2D为0；summary错归parent阻断WAIT_JOIN |
 | v3，64-root | 10个ACK/814.94 MB，8个RETURN前启动，2个迟发 |
 | v4，64-root pair | 两側64/64；6个ACK/491.09 MB，全部FULL复用，工具H2D为0 |
-| v5，84-root pair | 运行中；包含`1aba1be`，不写入尚未完成的收益 |
+| v5，84-root pair | 84/83 completed；17个ACK，JOIN11个FULL复用，工具6个自我回收；吞吐-8.95% |
 
 v4六次动作中，五个是在native EOS后协议窗口触发；唯一前EOS
 动作提前约6.59秒，是剩余工作低估。全部早于RETURN不等于全部
@@ -150,18 +156,32 @@ NVML近似积分显示额外约1117秒空闲；主要长尾来自django-16938
 工作量/batch变化和迁移干扰需要分别分析，不能用路径差异一句
 带过。现有日志不提供每个CPU函数的独占时间。
 
+v5详细结果见
+`docs/experiments/joint_tool_join_h2d_v5_84root_zh.md`。
+两侧均有113个child/完整JOIN、29次JOIN后再派发，但每轮child
+仍为1。v5十一个JOIN H2D全部在native EOS后启动，RETURN前
+提前中位863 ms，6个在1秒内；不能据此声称语义时间预测已准。
+工具六次早发3.70-7.11秒，全部ACK后94-1652 ms被回收并再次
+native H2D。38次pressure释放均有先前PREPARE ACK，涉及32节点，
+包括重复循环，不全部计为收益。
+Host两池都达满池，FULL hit约95.5%，块归因大量overflow；
+84-root有机会，但不能据此证明有用重算很低或冻结正式负载。
+GPU利用率76.50/81.66%，v4式大空转未重现；predictive仍有
+约899秒仅两workflow的小batch忙碌尾段，不能以利用率高认定吞吐好。
+
 ## 6. 当前阻塞项
 
-1. 验证84-root是否增加可消费PREPARE/恢复机会，而非只增加
-   Host churn、有用KV丢失或预取驻留。
-2. 修复后的工具P50策略是否能及时触发实际H2D；v4机会139个
-   采样中大部分时间头本身未进入窗口，改规则不保证有动作。
-3. 量化scheduler主线程物理inspection/CDF/事件处理开销。
+1. 统一工具长等待回收与H2D时机的条件时间口径；不能同时将
+   同一对象判为cold victim和imminent beneficiary。ACK后的
+   短驻留、真正消费与显式撤销需协同，防止再次回收/重复加载。
+2. 工具P50倒计时过期后clipping到0不是完成信号；条件CDF、
+   新观测与时钟年龄需一致。剩余工作头仍未产生pre-EOS动作。
+3. 量化exposed restore stall和控制处理开销。
    没有profile的v4不能把差值精确分配到单个函数。
 4. harness对SIGKILL/timeout反馈和管道上游失败存在歧义，
    需在后续同配置两侧修复；不在运行中改shell/prompt/timeout。
-5. root多轮spawn仍少，v4每轮均一个child；不能靠强制取消/
-   返回门禁制造JOIN或“提高自然完成率”。
+5. v5多轮workflow为19/15个，但并行fanout仍只有1；不能靠
+   强制取消/返回门禁制造JOIN或“提高自然完成率”。
 6. Host块归因长prefix probe有溢出；不能以观测子集证明全量
    重算率很低。Mamba逐节点命中位置仍有缺口。
 7. 稳定端到端收益尚未证明。开发单pair用于机制验证，正式
@@ -173,8 +193,8 @@ NVML近似积分显示额外约1117秒空闲；主要长尾来自django-16938
 - 当前状态：本文件。
 - 执行顺序：`docs/implementation_plan.md`。
 - 不可违反的实验约定：`docs/experiment_operating_notes_zh.md`。
-- 最近完成的pair：`docs/experiments/joint_tool_join_h2d_v4_zh.md`。
-- 当前单pair验收：v5 raw目录的 `development_validation_plan.json`。
+- 最近完成的pair：`docs/experiments/joint_tool_join_h2d_v5_84root_zh.md`。
+- 最近单pair验收：v5 raw目录的 `development_validation_plan.json`。
 
 修改主线时同步维护上述文件，不以新增实验报告代替更新状态页。
 历史报告保留原配置和原始结论，新诊断明确标注为后续复核。

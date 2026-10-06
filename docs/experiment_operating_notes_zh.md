@@ -13,6 +13,8 @@ server running=48、Host 200 GB/NUMA node 1及池比例保持不变。
 开发阶段当前只做一对84-root；正式阶段再多轮配对取平均和报告
 方差。固定需求GPU回放不作为主线或前置要求，见
 `docs/experiments/pressure84_and_fair_comparison_2026-10-05_zh.md`。
+v5已结束，没有新GPU实验队列。84-root仍是待修复评估的候选，
+不能仅凭脚本默认值自动重跑或当作已冻结的理想正式负载。
 
 场景目标是存在真实可迁移状态与可用 HBM
 空间、且有用 KV 丢弃后重算较少的负载。server running=48 是
@@ -177,6 +179,13 @@ admission 的动作资格分离，不修改旧产物的 eligibility 标志。
 相近大小、enqueue 排队与 submit-to-ACK，不能线性放大固定开销。
 窗口现为 1000 ms，但必须仍按真实 submit 到 RETURN/TOOL_END
 审计；未来未生成的 token、first GPU service 均不能替代返回标签。
+
+v5的工具路径证实，同一target可同时被P50倒计时判为即将恢复，
+又被条件CDF判为长等待victim，导致ACK后再次pressure parking。
+后续须统一时间/驻留口径与短租约，而非增加独立模型门禁。
+EOS后、RETURN前的提前H2D是合法机制证据，但不等于语义头
+在生成结束前已经预测准确。Host归因overflow限制重算结论，
+不应被扩展为拒收整轮逐请求/child事件数据的额外门禁。
 
 ## 版本与文件
 

@@ -1,6 +1,6 @@
 # BeliefKV 当前系统设计
 
-更新日期：2026-10-05
+更新日期：2026-10-06
 
 状态：本文是当前算法与系统边界的权威说明。历史版本保存在
 `docs/archive/snapshots/beliefkv_design_2026-07-14_zh.md`。
@@ -25,8 +25,9 @@ Workflow fairness 只作为有界防饿死和最终 tie-break，不以平均分�
 
 ### 1.1 当前阶段目标：低重算负载中的可行动迁移
 
-当前开发验证为84-root单波、running=48、NUMA node 1的200 GB
-Host池，FULL/Mamba分别验收。当前只有一对reactive/predictive；
+最近完成的v5开发验证为84-root单波、running=48、NUMA node 1的
+200 GB Host池，FULL/Mamba分别验收。当前没有新GPU实验；
+最近仅一对reactive/predictive，
 多轮取平均留到正式实验，固定需求GPU回放不是主线前置条件。
 实际实现和未完成项以 `docs/architecture_status_zh.md` 为准，
 下文旧P5/P6路径的机制描述不代表新版已完成全部JointPlan迁移。
@@ -262,7 +263,9 @@ runtime依据实际decode进度和已观测服务估计滚动换算近端时机�
 
 工具模型输入包括当前等待elapsed、角色、工具/backend/command
 类别与上下文历史，输出残余时间及事件CDF。当前准入使用配置的
-残余P50窗口，CDF保留诊断；并行工具依赖未满足时不提前唤醒。
+残余P50窗口，H2D准入中CDF保留诊断；长等待回收仍使用条件CDF。
+v5证实两个口径可同时将同一目标判为冷victim和预取beneficiary，
+导致ACK后再次回收；此冲突尚未修复。并行工具依赖未满足时不提前唤醒。
 传输模型使用实际FULL/Mamba形态及相近大小的样本，分别估计
 enqueue-to-submit和submit-to-ACK，不线性放大固定ACK开销。
 
@@ -272,9 +275,9 @@ checkpoint、有效Host副本、FULL/Mamba物理容量、当前因果状态、
 阶段模型、旧模型的eligibility字段与物理动作授权相互独立；
 不通过改写false标志开放旧全套迁移路径。
 
-v4已有六个JOIN H2D ACK与FULL首次复用，但五个发生在EOS后的
-协议窗口，工具H2D为零，端到端收益仍未证明。这些证据不能
-证明普遍准确的RETURN预测或完整JointPlan已经迁移。
+v5已有11个JOIN H2D ACK与FULL首次复用，全部发生在EOS后；
+另6个工具H2D全部ACK后再回收、FULL未复用。端到端吞吐净收益
+仍未证明，不能据此证明普遍准确的RETURN预测或完整JointPlan已迁移。
 
 ### 5.2 模型预测与 runtime 决策的分离验收
 
@@ -390,8 +393,8 @@ restore/recompute debt、方向反转率以及最终 workflows/hour。
 | FULL/Mamba物理闭包、身份与ACK | 有界单node原生事务与首次消费证明已接入 |
 | 预测器 | 冻结语义phase/work + 独立工具残余时间/CDF；runtime独立选动作 |
 | Predictive `PREPARE_HOST` | JOIN/长工具已实际运行，备份后真实压力回收；净收益未证明 |
-| JOIN `PREFETCH_GPU` | v4六个ACK且FULL复用，不是canary；精度与净收益未全面达标 |
-| 工具 `PREFETCH_GPU` | v4零动作，P50准入/开销修复进入当前v5待验 |
+| JOIN `PREFETCH_GPU` | v5十一个ACK且FULL复用，均EOS后；精度与净收益未全面达标 |
+| 工具 `PREFETCH_GPU` | v5六个ACK但均再回收/FULL未复用，时机与驻留需联合修复 |
 | 原生D2H副本恢复 | 同样可用，不强制依赖先前PREPARE |
 | 完整COMMIT/JointPlan/handoff | 尚未完成新版执行/ownership与收益验收 |
 | Running selective retraction | 新版完整适配仍缺失，不开放旧全套物理开关 |
@@ -406,6 +409,9 @@ workflow的两次600秒全量测试造成长段无GPU请求；管道上游错误
 可能被tail的成功退出掩盖。CPU inspection和有请求阶段的GPU
 利用率差距仍需profile，不能把scheduler墙钟interval当kernel
 时间，或把所有uncached input都当重算。
+v5的利用率不再低于reactive，但整轮吞吐仍低8.95%；
+真实工具预取被相反的pressure策略抵消。模型只预测时间/工作，
+runtime必须使预取目标、回收候选与短驻留生命周期保持一致。
 
 ## 8. 不变量
 
@@ -426,7 +432,7 @@ Device为FULL约36.843 GB/Mamba约33.096 GB，
 Host为NUMA node 1的200.010 GB，按实际Device字节比例分配。
 running=48、context=131072、completion=8192、workflow=14400秒，
 graph=2048/预留32步、宽松native-reactive profile、自然语言终态。
-当前开发为84-root单波的一对reactive/predictive，详情及启动SHA
+最近开发为已完成的84-root单波reactive/predictive，详情及启动SHA
 见架构状态页和v5 launch记录，不从旧profile推断当前参数。
 
 旧Qwen3/0.5.2rc1的冻结基线仍保存在

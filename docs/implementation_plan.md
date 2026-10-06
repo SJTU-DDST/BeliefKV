@@ -1,6 +1,6 @@
 # BeliefKV Current Execution Plan
 
-Status date: 2026-10-05.
+Status date: 2026-10-06.
 
 This is the active plan, not a chronological log. The previous detailed plan
 is available at `c219604:docs/implementation_plan.md`; older snapshots remain
@@ -22,13 +22,15 @@ Do not change to 128, staggered 64+64 or artificial eviction.
 More traffic is not inherently more useful traffic: report first-use,
 exposed restore waiting, advance residency, Host churn and recomputation.
 
-Development uses only the current single live pair. Multi-pair averaging is
+The single v5 development pair is complete; no new GPU run is queued.
+Multi-pair averaging is
 a later formal-experiment requirement, not a reason to slow development.
 Fixed-demand GPU replay and deterministic-kernel migration are not required
 or active mainline tasks.
 
 ## 2. Frozen v5 Development Pair
 
+- Status: complete; reactive 84 completed, predictive 83 completed/1 incomplete.
 - Directory: `experiments/raw/qwen35_joint_wait_h2d_ab_84root_20261005_v5`.
 - Code at launch: `c219604`, including runtime fixes `1aba1be`.
 - Order: reactive, then predictive_h2d; no queued repetitions.
@@ -44,31 +46,62 @@ or active mainline tasks.
 
 This isolates early restoration over a shared residency policy; it is not
 an untouched native baseline or a complete old-algorithm ablation.
+Predictive also supplies forecast-dependent stage state and CPU processing;
+the pair is not a DMA-only counterfactual.
 Do not edit runtime, prompts, weights, kernels or launch arguments mid-pair.
 Documentation-only maintenance must leave the runtime source fingerprint
 and experiment launch record unchanged.
 
 ## 3. Immediate Work
 
-1. Monitor the single 84-root pair for real serving/ledger/writer failures
-   and disk pressure. Stop genuine system failures; do not truncate merely
-   because a legitimate task is long or add an agent guard.
-2. Inspect tool-prefetch candidates, remaining-time forecasts and actual
-   controller submissions relative to TOOL_END. Native D2H copies qualify;
-   PREPARE consumption is not a prerequisite.
-3. Link PREPARE issue/ACK to real pressure demotion and later first-use,
-   separately for FULL and Mamba. Do not label all duplicate eviction waste.
-4. Verify deferred ancestry inspection, bounded wait-query refresh,
-   opportunity cache revalidation, and no extra overlap drain after ACK.
-5. Check pre-EOS work-upper-bound policy, native tool-marker invalidation,
-   stale packet suppression and true RETURN lead. No widening the 50 ms
-   EOS protocol window to count already returned children.
-6. Report baseline and predictive realized work and phase-dependent
-   utilization. A single live pair cannot establish stable throughput benefit.
-7. After terminal summaries, clean only archived completed workspaces,
-   retaining traces, patches, configuration and failure scenes.
+Prioritize the observed v5 failure before another pressure experiment:
 
-## 4. Known v4 Findings
+1. Reconcile tool long-wait parking with imminent H2D selection. All six tool
+   prefetches were ACKed, pressure-demoted again and reactively reloaded.
+   At issue, recorded forecasts satisfy both opposing policies. Do not add
+   a second CDF veto; use one conditional time/residency interpretation.
+2. A past P50 clipped to zero is not a completion signal. Reconcile surviving
+   tool age, conditional CDF and quantiles before using latest-start.
+3. Coordinate post-ACK short residency with pressure candidates and true
+   next service or explicit cancellation. Bound FULL/Mamba bytes/time, keep
+   native capacity authority, and do not allow an obsolete target to block
+   runnable requests. This is KV lifecycle coordination, not an Agent guard.
+4. Keep phase/encoder weights fixed; improve the conditional work head only
+   after target reuse remains valid. v5 had zero pre-EOS predictive loads.
+5. Identify exposed restore waiting and repair block attribution overflow
+   before calling 84 roots a low-useful-recompute formal workload. Both Host
+   pools reached capacity despite aggregate FULL hits above 95%.
+6. Preserve single-pair negative results and realized work. No repeated queue,
+   concurrency escalation, new canary, blanket guard or automatic retraining.
+7. Finished-workspace cleanup is already complete for 84/83 tasks; retain
+   pytest-7324's incomplete workspace, trace and patch.
+
+The current user request is result inspection; the items above are next-work
+priorities, not claims that new runtime fixes have already been implemented.
+
+## 4. Latest v5 Findings
+
+Completed throughput is 68.75/62.59 workflows per hour (reactive/predictive),
+so predictive is -8.95%. Paired completed mean JCT is 1929.83/1759.18 seconds
+(-8.84%), but LLM/tool/input demand also differs; no causal speedup claim.
+GPU utilization is 76.50/81.66%, not the v4 low-utilization pattern. The
+predictive tail with only two workflows lasts about 899 seconds and remains
+busy; high utilization alone does not imply high batched throughput.
+
+17 tagged H2D ACKs total 1.298 GB: 11 JOIN loads all reuse FULL, while six tool
+loads do not. All JOIN submits follow native EOS; six are within 1 second of
+RETURN. Tool submits precede TOOL_END by 3.70-7.11 seconds, then are demoted
+94-1652 ms after ACK. 38 pressure-demotion events have prior PREPARE ACKs on
+32 nodes, including loops, so consumption exists but is not a net-benefit result.
+Both arms have 113 children and joins with no child cancellation; multi-round
+roots number 19/15, every round still has one child.
+The sole incomplete root loops in its last 8192-token, length-ended response;
+it is not a format guard, expired deadline or old graph=512 configuration.
+
+See `docs/experiments/joint_tool_join_h2d_v5_84root_zh.md` and the existing
+pair's comparison/window files. Serving/ledger/writer failures were absent.
+
+## 5. Known v4 Findings
 
 Both arms completed 64/64. Predictive/Reactive duration was 4219.81/3032.21
 seconds, mean JCT 1614.74/1341.92 seconds, completed throughput
@@ -93,9 +126,11 @@ Already implemented after v4:
 - Pre-EOS JOIN decisions use the existing remaining-work upper bound.
 
 These CPU-tested fixes are included in v5, not retrospectively in v4.
-Their GPU benefit remains to be measured.
+v5 confirms deferred hint inspection and immediate submission. Tool loads
+are now issued, but conflict with parking; pre-EOS JOIN loads remain absent.
+This does not independently prove throughput benefit from those fixes.
 
-## 5. Next Changes After The Pair
+## 6. Other Next Changes
 
 Prioritize evidenced bottlenecks rather than another blind pressure increase:
 
@@ -112,10 +147,10 @@ Prioritize evidenced bottlenecks rather than another blind pressure increase:
 5. Work-head improvements only on workflow-separated data, keeping the
    deployed phase encoder stable; do not deploy rejected candidates.
 
-Do not change these during frozen v5 or reintroduce repeat/format guards.
+Do not retrospectively change completed v5 or reintroduce repeat/format guards.
 Do not reduce every tool's timeout simply to improve the makespan metric.
 
-## 6. Formal Evaluation Later
+## 7. Formal Evaluation Later
 
 Run multiple independent live pairs using the same task set and settings;
 alternate arm order, retain all failures/censors and show every pair plus
@@ -131,7 +166,7 @@ FULL/Mamba capacity and useful eviction/recompute evidence, not root count alone
 Complete algorithm/native baseline/prepare/early-load ablations must be named
 explicitly; their controls are not interchangeable.
 
-## 7. Deferred Scope
+## 8. Deferred Scope
 
 - Full legacy COMMIT_CPU/JointPlan/selective running retraction migration.
 - Joint victim/beneficiary handoff and critical-path hot-page preemption.
@@ -140,7 +175,7 @@ explicitly; their controls are not interchangeable.
 - Hidden-state probes without demonstrated low extraction cost.
 - GPU fixed-demand replay as a non-required optional research branch.
 
-## 8. Documentation Rule
+## 9. Documentation Rule
 
 Update current design/status/plan/operating constraints together when changing
 mainline direction. Experiment reports preserve dated evidence, not competing
