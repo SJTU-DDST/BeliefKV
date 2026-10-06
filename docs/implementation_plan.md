@@ -23,7 +23,8 @@ More traffic is not inherently more useful traffic: report first-use,
 exposed restore waiting, advance residency, Host churn and recomputation.
 
 The single v5 development pair is complete. The coherent-time/soft-residency
-fix is CPU-tested; the next single v6 pair uses the same 84-root configuration.
+fix passed 225 related CPU tests; the single v6 pair has started with the same
+84-root configuration, reactive then predictive. No extra repetitions are queued.
 Multi-pair averaging is
 a later formal-experiment requirement, not a reason to slow development.
 Fixed-demand GPU replay and deterministic-kernel migration are not required
@@ -86,6 +87,10 @@ Only one v6 pair is planned, same model/prompt/weights/pools/running/budgets.
 Read-only v5 replay has 525 sampled restore targets, one near/fit intersection
 under the new timing policy, and zero opposing decisions. No action-reward
 model, eligibility promotion or extra Agent guard is introduced.
+v6 directory: `experiments/raw/qwen35_joint_wait_h2d_ab_84root_20261006_v6`.
+Launch commit: `573f32c`. Runtime fingerprint:
+`c65caec44ecc934cd5cff9d740ec96f19459f48527505c85927bd4ae969fd6b9`.
+Freeze runtime/model/prompt/parameters now; documentation-only updates are separate.
 
 ## 4. Latest v5 Findings
 

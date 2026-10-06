@@ -13,7 +13,7 @@ server running=48、Host 200 GB/NUMA node 1及池比例保持不变。
 开发阶段当前只做一对84-root；正式阶段再多轮配对取平均和报告
 方差。固定需求GPU回放不作为主线或前置要求，见
 `docs/experiments/pressure84_and_fair_comparison_2026-10-05_zh.md`。
-v5已结束；修复后的下一轮是同配置单个v6 pair，不排额外重复。
+v5已结束；修复后的同配置单个v6 pair已启动，不排额外重复。
 84-root仍是待验证的候选，
 不能仅凭脚本默认值自动重跑或当作已冻结的理想正式负载。
 

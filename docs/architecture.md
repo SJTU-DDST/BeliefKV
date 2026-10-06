@@ -15,7 +15,8 @@ native UnifiedRadixCache and allocators remain the physical authority.
 The latest completed v5 pair used 84 roots in one arrival wave, running=48,
 and a 200 GB Host pool on NUMA node 1. Runtime, prompts, weights and launch
 arguments stayed frozen. Coherent-time and soft-residency fixes are CPU-tested;
-the next single v6 pair keeps the model, prompts, weights and configuration.
+the single v6 pair has started with the same model, prompts, weights and
+configuration at launch commit `573f32c`.
 Repeated live pairs are for later formal evaluation;
 canaries and fixed-demand GPU replay are not prerequisites.
 

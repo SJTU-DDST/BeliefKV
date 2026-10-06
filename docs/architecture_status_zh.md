@@ -29,8 +29,8 @@ Qwen3.5-35B-A3B BF16 / SGLang 0.5.20，不再以旧 Qwen3/SGLang
    低8.84%，但需求/路径不同，不能直接认定预取净收益。
 5. v5的84-root单波对照已结束，reactive 84 completed，
    predictive 83 completed/1 length-truncated incomplete，
-   无child取消/serving writer故障，GPU已释放。没有新GPU实验
-   或重复队列；修复后的下一对为同配置v6，不排正式多轮。
+   无child取消/serving writer故障。修复后的同配置v6单pair已启动，
+   当前为reactive服务器初始化；不排正式多轮或额外重复。
    正式阶段再多轮平均，不要求固定需求回放。
 
 ## 2. 当前配置
@@ -50,6 +50,7 @@ Qwen3.5-35B-A3B BF16 / SGLang 0.5.20，不再以旧 Qwen3/SGLang
 | Harness | native in-graph 1-4 child，鼓励多轮，自然语言RETURN有效 |
 | 当前预测窗口 | 实际动作目标为RETURN/TOOL_END前0-1000 ms，仍独立审计真实提前量 |
 | 最近运行代码 | v5启动commit `c219604`，包含runtime修复 `1aba1be` |
+| 当前v6 | `573f32c`；84-root单波/原池与running配置，先reactive后predictive |
 
 以上GB为十进制；Mamba单位是完整状态/检查点，不是FULL的一个token。
 池usage、物理occupancy、可驱逐容量和free-list不得混用。
@@ -211,3 +212,7 @@ v5期间仅修改文档；当时443个Python/shell运行文件指纹为
 指纹算法见 `beliefkv/experiments/decision_characterization.py`。
 Git文档提交的变化不应被误记为v5中途更换运行代码。
 v6使用新的运行源码指纹，由新launch记录冻结，不回填v5。
+v6当前指纹：
+`c65caec44ecc934cd5cff9d740ec96f19459f48527505c85927bd4ae969fd6b9`。
+目录为 `experiments/raw/qwen35_joint_wait_h2d_ab_84root_20261006_v6`；
+225项相关CPU回归通过，GPU收益待本轮终态核对。
