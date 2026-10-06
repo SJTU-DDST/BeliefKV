@@ -7,6 +7,7 @@ allocator reservation, a retraction, or a physical transfer.
 from __future__ import annotations
 
 from dataclasses import dataclass
+from functools import cached_property
 import hashlib
 import json
 import math
@@ -143,19 +144,45 @@ class NativeToolWaitHint:
     def live(self, key: PrefillCandidateKey, *, now_ms: float) -> bool:
         return self.key == key and self.issued_monotonic_ms <= now_ms < self.expires_monotonic_ms
 
-    def release_probability_within(self, horizon_ms: float, *, now_ms: float) -> float | None:
+    @cached_property
+    def _release_curve(self):
         if not self.release_cdf:
             return None
         from beliefkv.predictor.action_frontier import ActionTimingCurve
 
-        curve = ActionTimingCurve(
+        return ActionTimingCurve(
             tuple(point[0] for point in self.release_cdf),
             tuple(point[1] for point in self.release_cdf), "pooled", 0.,
         )
+
+    def release_probability_within(self, horizon_ms: float, *, now_ms: float) -> float | None:
+        curve = self._release_curve
+        if curve is None:
+            return None
         age = max(0., now_ms - self.issued_monotonic_ms)
         past = curve.release_within(age)
+        if past >= 1. - 1e-9:
+            return None
         future = curve.release_within(age + max(0., horizon_ms))
         return max(0., min(1., (future - past) / max(1. - past, 1e-9)))
+
+    def remaining_quantile(self, quantile: float, *, now_ms: float) -> float | None:
+        """Condition residual work on the tool still being active at this age."""
+        if not math.isfinite(quantile) or not 0 < quantile < 1:
+            raise ValueError("tool timing quantile must be strictly between zero and one")
+        age = max(0., now_ms - self.issued_monotonic_ms)
+        curve = self._release_curve
+        if curve is not None:
+            past = curve.release_within(age)
+            if past >= 1. - 1e-9:
+                return None
+            finish = curve.quantile(past + quantile * (1. - past))
+            return max(0., finish - age) if finish is not None else None
+        values = {.1: self.wait_p10_ms, .5: self.wait_p50_ms, .9: self.wait_p90_ms}
+        if quantile not in values:
+            raise ValueError("quantile-only hint supports P10/P50/P90")
+        remaining = values[quantile] - age
+        return remaining if remaining > 0 else None
 
 
 @dataclass(frozen=True)

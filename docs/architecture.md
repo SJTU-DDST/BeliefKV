@@ -14,7 +14,8 @@ the shared `beliefkv-next` environment. FULL and Mamba are managed together;
 native UnifiedRadixCache and allocators remain the physical authority.
 The latest completed v5 pair used 84 roots in one arrival wave, running=48,
 and a 200 GB Host pool on NUMA node 1. Runtime, prompts, weights and launch
-arguments stayed frozen; no new GPU experiment is queued.
+arguments stayed frozen. Coherent-time and soft-residency fixes are CPU-tested;
+the next single v6 pair keeps the model, prompts, weights and configuration.
 Repeated live pairs are for later formal evaluation;
 canaries and fixed-demand GPU replay are not prerequisites.
 
@@ -82,7 +83,10 @@ selected tool prefetch while conditional CDF selected long-wait parking.
 Every tool load was ACKed, pressure-demoted again and reactively reloaded
 before first service. These six actions cannot be called useful simply
 because they completed. The conflict and missing post-ACK short residency
-remain next-work items, not already implemented fixes.
+are now addressed in CPU-tested code, with GPU validation pending. Residual
+P50 is inverted from the same survival-conditioned CDF. The post-ACK soft
+lease excludes BeliefKV parking until service or explicit invalidation; it is
+not an allocator pin, reservation or guaranteed-reuse certificate.
 Both arms had 113 children/joins and zero child cancellations; the predictive
 arm's one incomplete root was an 8192-token, length-ended repetition.
 Completed throughput was -8.95%; paired mean JCT was -8.84%, with differing

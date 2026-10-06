@@ -22,14 +22,16 @@ Qwen3.5-35B-A3B BF16 / SGLang 0.5.20，不再以旧 Qwen3/SGLang
 3. 工具时间模型已独立上线到开发配置，不更改旧模型产物
    `online_eligible` / `predictive_action_eligible` 标志。
    v5工具H2D已下发6次，但都在ACK后被自身pressure parking
-   再回收，后续仍需native H2D；时机/驻留口径冲突尚未修复。
+   再回收，后续仍需native H2D。代码已统一条件时间分布并加入
+   ACK后的有界策略租约，CPU回归通过；新GPU验证尚未完成。
 4. 尚未证明端到端吞吐净收益或普遍亚秒级RETURN预测。
    v5 predictive完成吞吐低8.95%，共同完成83项的均值JCT
    低8.84%，但需求/路径不同，不能直接认定预取净收益。
 5. v5的84-root单波对照已结束，reactive 84 completed，
    predictive 83 completed/1 length-truncated incomplete，
    无child取消/serving writer故障，GPU已释放。没有新GPU实验
-   或重复队列；正式阶段再多轮平均，不要求固定需求回放。
+   或重复队列；修复后的下一对为同配置v6，不排正式多轮。
+   正式阶段再多轮平均，不要求固定需求回放。
 
 ## 2. 当前配置
 
@@ -101,7 +103,12 @@ MLP和短token CDF候选没有稳定改善，不作为当前默认模型。
 v4的CDF>=0.8二次否决导致目标候选全部未准入；`1aba1be`改为
 配置的剩余P50窗口，H2D准入中CDF保留诊断。但长等待/pressure
 parking仍使用条件CDF<=0.1；v5证实其与P50倒计时同时支持相反
-驻留决策，且ACK后没有工具目标的短驻留保护，尚未修复。
+驻留决策。新代码从同一CDF按仍未结束的条件逆算P50；
+不再把过期点预测clipping到0当作完成信号，不增加CDF>=0.8否决。
+经验证H2D ACK建立最多lead+1000 ms的策略租约（当前2秒），
+从自身冷回收候选中排除该node，覆盖下一epoch及native session
+接力；首次GPU服务、预测变化、终态、过期或原生失驻留显式释放。
+它不是全局pin、容量预留或复用证明，native最终回收权保留。
 短工具和同一等待有界降频，
 时间hint接受不立即扫描物理ancestry，动作选择时才做有界
 inspection/cache，enqueue前仍重新验证。
@@ -171,11 +178,12 @@ GPU利用率76.50/81.66%，v4式大空转未重现；predictive仍有
 
 ## 6. 当前阻塞项
 
-1. 统一工具长等待回收与H2D时机的条件时间口径；不能同时将
-   同一对象判为cold victim和imminent beneficiary。ACK后的
-   短驻留、真正消费与显式撤销需协同，防止再次回收/重复加载。
-2. 工具P50倒计时过期后clipping到0不是完成信号；条件CDF、
-   新观测与时钟年龄需一致。剩余工作头仍未产生pre-EOS动作。
+1. 新代码的条件时间与策略租约已有CPU验证，需v6检查实际
+   H2D是否保留到服务、自身重复回收是否消失、原生失驻留及
+   明确撤销是否可归因，不能只看ACK增加或减少。
+2. v5只读回放525个采样恢复目标中，新口径有1个near且容量fit，
+   旧6次错误早发均不再触发；这不是充分的工具时间精度验证。
+   剩余工作头仍未产生pre-EOS动作，阶段/encoder权重未改变。
 3. 量化exposed restore stall和控制处理开销。
    没有profile的v4不能把差值精确分配到单个函数。
 4. harness对SIGKILL/timeout反馈和管道上游失败存在歧义，
@@ -198,7 +206,8 @@ GPU利用率76.50/81.66%，v4式大空转未重现；predictive仍有
 
 修改主线时同步维护上述文件，不以新增实验报告代替更新状态页。
 历史报告保留原配置和原始结论，新诊断明确标注为后续复核。
-本次仅修改文档；启动后的443个Python/shell运行文件指纹仍为
+v5期间仅修改文档；当时443个Python/shell运行文件指纹为
 `4907f0437b65489812eca98b07035952cadf87cab6a00c6a1241cb63a72c4a55`，
 指纹算法见 `beliefkv/experiments/decision_characterization.py`。
 Git文档提交的变化不应被误记为v5中途更换运行代码。
+v6使用新的运行源码指纹，由新launch记录冻结，不回填v5。

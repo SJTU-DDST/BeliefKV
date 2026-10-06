@@ -4,7 +4,8 @@
 
 当前主线为Qwen3.5-35B-A3B / SGLang 0.5.20，同一
 `beliefkv-next` 环境。84-root单波v5开发pair已结束，最近配置
-running=48、Host 200 GB/NUMA node 1；没有新GPU实验队列，
+running=48、Host 200 GB/NUMA node 1；时机/短策略租约已CPU修复，
+下一轮仅同配置v6单pair，不排额外重复，
 正式实验再多轮取平均。
 旧Qwen3/0.5.2rc1、canary和旧池配置不作为当前默认。
 

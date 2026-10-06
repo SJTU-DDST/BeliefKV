@@ -166,6 +166,19 @@ class _ToolPrefetchTicket:
     drained: bool = False
 
 
+@dataclass(frozen=True)
+class _PrefetchServiceLease:
+    key: PrefillCandidateKey
+    command_id: str
+    node_id: int
+    creation_time: int | float
+    source: str
+    wait_revision: float | None
+    acknowledged_at: float
+    expires_at: float
+    pool_bytes: tuple[tuple[str, int], ...]
+
+
 class NativeAdmissionRuntime:
     """Rebind causal order to live request identities at each prefill safe point."""
 
@@ -257,6 +270,10 @@ class NativeAdmissionRuntime:
         if service_path:
             self._native_service_samples.extend(load_native_service_seed(service_path, service_sha))
         self._prefetch_issue_times: dict[str, float] = {}
+        self._prefetch_steps: dict[
+            str, tuple[PrefetchLoadStep, str, float | None]
+        ] = {}
+        self._prefetch_service_leases: dict[str, _PrefetchServiceLease] = {}
         lead_setting = float(os.environ.get("BELIEFKV_PREFETCH_LEAD_MS", "1000"))
         if not math.isfinite(lead_setting) or not 100 <= lead_setting <= 1000:
             raise ValueError("prefetch lead must be between 100 and 1000 ms")
@@ -415,7 +432,10 @@ class NativeAdmissionRuntime:
         return min(
             self.tool_wait_hints.values(),
             key=lambda hint: (
-                hint.wait_p10_ms - (now_ms - hint.issued_monotonic_ms),
+                (
+                    remaining if (remaining := hint.remaining_quantile(.1, now_ms=now_ms))
+                    is not None else math.inf
+                ),
                 hint.issued_monotonic_ms, hint.key.context_id,
             ),
         )
@@ -448,6 +468,9 @@ class NativeAdmissionRuntime:
             self.join_wait_hints[hint.join_id] = hint
 
     def close(self) -> None:
+        for command in tuple(self._prefetch_service_leases):
+            self._release_prefetch_service_lease(command, "shutdown")
+        self._prefetch_steps.clear()
         self._discard_join_ticket("shutdown")
         self._final_stages.clear()
         self._final_request_stages.clear()
@@ -510,6 +533,8 @@ class NativeAdmissionRuntime:
     def idle_poll_timeout_ms(self) -> int:
         if self.physical_ledger.pending_count:
             return 10
+        if self._prefetch_service_leases:
+            return 100
         if self._tool_timing_only and any(
             item.state is InvocationState.WAIT_TOOL for item in self.graph.invocations.values()
         ):
@@ -598,6 +623,9 @@ class NativeAdmissionRuntime:
             self.tool_wait_hint = None
             self.join_wait_hint = None
             self._completion_hints.clear()
+            for command in tuple(self._prefetch_service_leases):
+                self._release_prefetch_service_lease(command, "causal_mirror_discarded")
+            self._prefetch_steps.clear()
             self._final_stages.clear()
             self._final_request_stages.clear()
             self._discard_join_ticket("causal_mirror_discarded")
@@ -798,6 +826,7 @@ class NativeAdmissionRuntime:
                             or stage.join_id == event.join_id
                         ):
                             self._clear_final_stage(join_id)
+            self._refresh_prefetch_service_leases()
             self.join_wait_hints = {
                 join_id: hint for join_id, hint in self.join_wait_hints.items()
                 if self._live_join_hint(hint)
@@ -1046,6 +1075,7 @@ class NativeAdmissionRuntime:
     def scheduler_step(self, waiting_queue: Sequence[object] = ()) -> None:
         if self.event_server is not None:
             self.event_server.drain(max_messages=128)
+        self._refresh_prefetch_service_leases()
         now_ms = time.monotonic() * 1000
         self._poll_semantic_reports(now_ms)
         for join_id, stage in tuple(self._final_stages.items()):
@@ -2102,10 +2132,10 @@ class NativeAdmissionRuntime:
                 return
             previous = self._tool_last_queries.get(key)
             hint = self.tool_wait_hints.get(context_id)
-            remaining = (
-                max(0., hint.wait_p50_ms - (now_ms - hint.issued_monotonic_ms))
-                if hint is not None and hint.live(key, now_ms=now_ms) else 0.
-            )
+            remaining = 0.
+            if hint is not None and hint.live(key, now_ms=now_ms):
+                value = hint.remaining_quantile(.5, now_ms=now_ms)
+                remaining = value if value is not None else math.inf
             spacing = 1000. if remaining > 10000. else 500. if remaining > 2000. else 150.
             if (
                 previous is not None and previous[0] == invocation.updated_ts_ms
@@ -2211,6 +2241,7 @@ class NativeAdmissionRuntime:
             self.counts["tool_wait_result_stale"] += 1
             return
         self.tool_wait_hints[key.context_id] = hint
+        self._refresh_prefetch_service_leases(context_id=key.context_id)
         self.counts["tool_wait_accepted"] += 1
         if self._tool_timing_only:
             # Physical ancestry is read at an action safe point, not for every
@@ -2237,6 +2268,10 @@ class NativeAdmissionRuntime:
                 "context_id": key.context_id, "context_epoch": key.context_epoch,
                 "p10_ms": hint.wait_p10_ms, "p50_ms": hint.wait_p50_ms,
                 "p90_ms": hint.wait_p90_ms, "release_cdf": hint.release_cdf,
+                "conditional_p50_ms": hint.remaining_quantile(
+                    .5, now_ms=time.monotonic() * 1000,
+                ),
+                "timing_policy": "survival_conditioned_cdf_or_unexpired_quantile",
             })
 
     def _live_join_hint(self, hint: NativeJoinWaitHint) -> bool:
@@ -2599,6 +2634,13 @@ class NativeAdmissionRuntime:
         return command_id
 
     def _live_parent_pressure_node(self, node_id: int, creation_time: int | float) -> bool:
+        self._refresh_prefetch_service_leases()
+        if any(
+            lease.node_id == node_id and lease.creation_time == creation_time
+            for lease in self._prefetch_service_leases.values()
+        ):
+            self.counts["prefetch_residency_pressure_protected"] += 1
+            return False
         record = self._parent_pressure_candidates.get(node_id)
         if record is None or record[1] != creation_time:
             return False
@@ -2617,6 +2659,9 @@ class NativeAdmissionRuntime:
         )
 
     def _on_parent_pressure_parked(self, node_id: int, freed: dict[int, int]) -> None:
+        for command, lease in tuple(self._prefetch_service_leases.items()):
+            if lease.node_id == node_id:
+                self._release_prefetch_service_lease(command, "pressure_parked")
         record = self._parent_pressure_candidates.get(node_id)
         if record is None:
             return
@@ -2755,9 +2800,11 @@ class NativeAdmissionRuntime:
         if hint is None:
             return False
         now_ms = time.monotonic() * 1000
-        probability = hint.release_probability_within(2000., now_ms=now_ms)
-        residual_long = hint.wait_p10_ms - (now_ms - hint.issued_monotonic_ms) >= 2000.
-        return residual_long or probability is not None and probability <= .1
+        if hint.release_cdf:
+            probability = hint.release_probability_within(2000., now_ms=now_ms)
+            return probability is not None and probability <= .1
+        remaining = hint.remaining_quantile(.1, now_ms=now_ms)
+        return remaining is not None and remaining >= 2000.
 
     def dispatch_tool_prepare(self, waiting_queue: Sequence[object] = ()) -> None:
         """Back long external waits; native allocator alone decides demotion."""
@@ -2808,6 +2855,7 @@ class NativeAdmissionRuntime:
     def _roll_tool_prefetch(self) -> None:
         if not self.enable_tool_prefetch or self.physical_disabled:
             return
+        self._refresh_prefetch_service_leases()
         ticket = self._tool_ticket
         if ticket is not None:
             if ticket.command_id is not None:
@@ -2836,8 +2884,19 @@ class NativeAdmissionRuntime:
         if self.physical_ledger.pending_count:
             return
         now_ms = time.monotonic() * 1000
-        for hint in sorted(self.tool_wait_hints.values(), key=lambda item: item.wait_p50_ms):
+        for hint in sorted(
+            self.tool_wait_hints.values(),
+            key=lambda item: (
+                remaining if (remaining := item.remaining_quantile(.5, now_ms=now_ms))
+                is not None else math.inf
+            ),
+        ):
             if self._live_tool_hint(hint.key) is None or self._tool_prefetch_budget[hint.key] >= 2:
+                continue
+            if any(
+                lease.key == hint.key
+                for lease in self._prefetch_service_leases.values()
+            ):
                 continue
             if not self._tool_prefetch_ready(hint):
                 self.counts["tool_prefetch_not_in_time_window"] += 1
@@ -2870,9 +2929,9 @@ class NativeAdmissionRuntime:
 
     def _tool_prefetch_ready(self, hint: NativeToolWaitHint) -> bool:
         now_ms = time.monotonic() * 1000
-        # The configured window is a remaining-time policy. The separately
-        # fitted horizon classifier is diagnostics, not a second action gate.
-        return max(0., hint.wait_p50_ms - (now_ms - hint.issued_monotonic_ms)) <= self.prefetch_lead_ms
+        # P50 and parking now refer to the same surviving event distribution.
+        remaining = hint.remaining_quantile(.5, now_ms=now_ms)
+        return remaining is not None and remaining <= self.prefetch_lead_ms
 
     def _tool_service_supported(self, opportunity: SessionH2DOpportunity) -> bool:
         try:
@@ -3038,6 +3097,11 @@ class NativeAdmissionRuntime:
                 self.counts["prefetch_reservation_rejected"] += 1
                 return False
             registered = True
+            invocation = self.graph.invocations.get(step.key.invocation_id)
+            self._prefetch_steps[command_id] = (
+                step, source,
+                invocation.updated_ts_ms if invocation is not None else None,
+            )
             return True
 
         outcome = cache.prefetch_gpu_session_node(
@@ -3053,6 +3117,7 @@ class NativeAdmissionRuntime:
         if not outcome.issued:
             if registered:
                 self.physical_ledger.cancel_unsubmitted(command_id)
+                self._prefetch_steps.pop(command_id, None)
             self.counts["prefetch_native_declined"] += 1
             return None
         if not registered or outcome.node_id != step.node_id:
@@ -3097,12 +3162,134 @@ class NativeAdmissionRuntime:
                     "tool_episode_revision_ms": hint.invocation_revision_ts_ms if hint else None,
                     "active_tool_ids": sorted(invocation.active_tool_calls) if invocation else [],
                     "predicted_remaining_ms": (
-                        max(0., hint.wait_p50_ms - (time.monotonic() * 1000 - hint.issued_monotonic_ms))
+                        hint.remaining_quantile(.5, now_ms=time.monotonic() * 1000)
                         if hint else None
                     ),
+                    "timing_policy": "survival_conditioned_cdf_or_unexpired_quantile",
                 })
             self._opportunity_writer.record(record)
         return command_id
+
+    def _release_prefetch_service_lease(
+        self, command_id: str, reason: str, *, request: object | None = None,
+    ) -> None:
+        lease = self._prefetch_service_leases.pop(command_id, None)
+        if lease is None:
+            return
+        self.counts[f"prefetch_residency_released:{reason}"] += 1
+        if self._opportunity_writer is not None:
+            self._opportunity_writer.record({
+                "event": "prefetch_residency_released", "ts_ms": time.time() * 1000,
+                "command_id": command_id, "source": lease.source, "reason": reason,
+                "context_id": lease.key.context_id, "context_epoch": lease.key.context_epoch,
+                "node_id": lease.node_id, "node_creation_time": lease.creation_time,
+                "residency_ms": max(0., time.monotonic() - lease.acknowledged_at) * 1000,
+                "pool_bytes": dict(lease.pool_bytes),
+                "request_id": getattr(request, "rid", None),
+                "scope": "bounded policy priority; not allocator pin or reuse proof",
+            })
+
+    def _prefetch_lease_invalid_reason(self, lease: _PrefetchServiceLease) -> str | None:
+        if self.physical_disabled:
+            return "physical_disabled"
+        if time.monotonic() >= lease.expires_at:
+            return "service_window_expired"
+        key = lease.key
+        workflow = self.graph.workflows.get(key.root_workflow_id)
+        invocation = self.graph.invocations.get(key.invocation_id)
+        context = self.graph.contexts.get(key.context_id)
+        if workflow is None or invocation is None or context is None:
+            return "causal_identity_missing"
+        if workflow.end_ts_ms is not None or invocation.state.terminal:
+            return "terminal"
+        if (
+            invocation.workflow_id != key.root_workflow_id
+            or invocation.context_id != key.context_id
+            or context.workflow_id != key.root_workflow_id
+            or context.epoch not in (key.context_epoch, key.context_epoch + 1)
+        ):
+            return "context_changed"
+        current = self.context_sessions.get(key.context_id)
+        pending_epoch_handoff = current is None and context.epoch == key.context_epoch + 1
+        if (current is None and not pending_epoch_handoff) or (current is not None and (
+            current.root_workflow_id != key.root_workflow_id
+            or current.invocation_id != key.invocation_id
+            or current.context_epoch not in (key.context_epoch, key.context_epoch + 1)
+            or (current.session_id, current.session_generation)
+            != (key.session_id, key.session_generation)
+        )):
+            return "session_changed"
+        cache = self._native_cache
+        try:
+            sessions = cache.session_refs
+            generations = getattr(sessions, "_session_generations", None)
+            if pending_epoch_handoff and (
+                generations is None
+                or generations.get(key.session_id) != key.session_generation
+            ):
+                return "session_handoff_unproven"
+            if generations is not None and generations.get(key.session_id) != key.session_generation:
+                return "session_changed"
+            if key.session_id in getattr(sessions, "_closed_session_ids", ()):
+                return "session_closed"
+            node = cache.tree_core.node_by_id(lease.node_id)
+            if node.creation_time != lease.creation_time:
+                return "node_generation_changed"
+            if any(
+                amount > 0 and node.component_data[component].value is None
+                for name, amount in lease.pool_bytes
+                for component in (0 if name in ("kv", "full") else 2,)
+            ):
+                return "native_residency_lost"
+        except (AttributeError, KeyError, IndexError, RuntimeError, TypeError, ValueError):
+            return "native_residency_unobservable"
+        if lease.source == "tool_wait" and invocation.state is InvocationState.WAIT_TOOL:
+            if (
+                context.epoch != key.context_epoch
+                or invocation.updated_ts_ms != lease.wait_revision
+            ):
+                return "wait_episode_changed"
+            hint = self._live_tool_hint(key)
+            if hint is not None and not self._tool_prefetch_ready(hint):
+                return "prediction_window_left"
+        return None
+
+    def _refresh_prefetch_service_leases(self, *, context_id: str | None = None) -> None:
+        for command, lease in tuple(self._prefetch_service_leases.items()):
+            if context_id is not None and lease.key.context_id != context_id:
+                continue
+            reason = self._prefetch_lease_invalid_reason(lease)
+            if reason is not None:
+                self._release_prefetch_service_lease(command, reason)
+
+    def _register_prefetch_service_lease(self, action: PhysicalActionCompleted) -> None:
+        pending = self._prefetch_steps.pop(action.command_id, None)
+        if action.action != "PREFETCH_GPU" or pending is None:
+            return
+        step, source, revision = pending
+        now = time.monotonic()
+        lease = _PrefetchServiceLease(
+            step.key, action.command_id, step.node_id, step.creation_time,
+            source, revision, now,
+            now + (self.prefetch_lead_ms + 1000.) / 1000., action.pool_bytes,
+        )
+        reason = self._prefetch_lease_invalid_reason(lease)
+        if reason is not None:
+            self.counts[f"prefetch_residency_registration_skipped:{reason}"] += 1
+            return
+        self._prefetch_service_leases[action.command_id] = lease
+        self.counts["prefetch_residency_registered"] += 1
+        if self._opportunity_writer is not None:
+            self._opportunity_writer.record({
+                "event": "prefetch_residency_registered", "ts_ms": time.time() * 1000,
+                "command_id": action.command_id, "source": source,
+                "context_id": step.key.context_id, "context_epoch": step.key.context_epoch,
+                "session_id": step.key.session_id, "session_generation": step.key.session_generation,
+                "node_id": step.node_id, "node_creation_time": step.creation_time,
+                "pool_bytes": dict(action.pool_bytes),
+                "lease_ms": (lease.expires_at - now) * 1000,
+                "scope": "bounded policy priority; native allocator remains authoritative",
+            })
 
     def defer_prefill_for_prefetch(self, req: object) -> bool:
         """Hold at most one submitted request in waiting until bounded native H2D ACK.
@@ -3247,6 +3434,9 @@ class NativeAdmissionRuntime:
             )
         except PhysicalReceiptError as error:
             self.physical_disabled = True
+            self._prefetch_steps.clear()
+            for command in tuple(self._prefetch_service_leases):
+                self._release_prefetch_service_lease(command, "physical_receipt_failure")
             self.counts["physical_receipt_failed"] += 1
             if self._opportunity_writer is not None:
                 self._opportunity_writer.record({
@@ -3288,6 +3478,7 @@ class NativeAdmissionRuntime:
                 pool_shape(full, mamba), getattr(commit, "enqueue_to_submit_ms", None),
             ))
         for action in completed:
+            self._register_prefetch_service_lease(action)
             issued = self._prefetch_issue_times.pop(action.command_id, None)
             submitted = getattr(commit, "submit_ts_ms", None)
             if issued is not None and submitted is not None and self._opportunity_writer is not None:
@@ -3326,6 +3517,7 @@ class NativeAdmissionRuntime:
         else:
             self.context_sessions.pop(key.context_id, None)
         self.semantic_revision += 1
+        self._refresh_prefetch_service_leases(context_id=key.context_id)
         return True
 
     def _terminal(self, key: PrefillCandidateKey) -> bool:
@@ -3635,6 +3827,21 @@ class NativeAdmissionRuntime:
 
     def on_batch_completed(self, batch: object) -> None:
         for req in batch.reqs:
+            key = _request_key(req)
+            if key is not None:
+                for command, lease in tuple(self._prefetch_service_leases.items()):
+                    target = lease.key
+                    if (
+                        key.root_workflow_id == target.root_workflow_id
+                        and key.invocation_id == target.invocation_id
+                        and key.context_id == target.context_id
+                        and key.context_epoch in (target.context_epoch, target.context_epoch + 1)
+                        and (key.session_id, key.session_generation)
+                        == (target.session_id, target.session_generation)
+                    ):
+                        self._release_prefetch_service_lease(
+                            command, "first_gpu_service", request=req,
+                        )
             if self._semantic_worker is not None:
                 key = self.visible.get(getattr(req, "rid", None))
                 if key is not None:
@@ -3710,6 +3917,7 @@ class NativeAdmissionRuntime:
                     self._forget_session(req.rid)
                     self._context_tokens.pop(context_id, None)
                 self.semantic_revision += 1
+        self._refresh_prefetch_service_leases()
 
     def on_abort_request(self, abort: object) -> None:
         removed = [
@@ -3732,6 +3940,7 @@ class NativeAdmissionRuntime:
                     if hint.key.context_id != context_id
                 }
                 self.shadow_candidate = None
+        self._refresh_prefetch_service_leases()
 
     def running_batch_retraction_barrier_required(self, batch: object) -> bool:
         self._roll_tool_prefetch()

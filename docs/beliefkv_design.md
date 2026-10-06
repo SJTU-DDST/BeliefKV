@@ -265,7 +265,10 @@ runtime依据实际decode进度和已观测服务估计滚动换算近端时机�
 类别与上下文历史，输出残余时间及事件CDF。当前准入使用配置的
 残余P50窗口，H2D准入中CDF保留诊断；长等待回收仍使用条件CDF。
 v5证实两个口径可同时将同一目标判为冷victim和预取beneficiary，
-导致ACK后再次回收；此冲突尚未修复。并行工具依赖未满足时不提前唤醒。
+导致ACK后再次回收。新代码以同一生存条件CDF逆算残余P50，
+并在ACK后建立短期策略租约，排除自身冷回收直到服务/失效。
+不是容量预留或全局pin，原生压力驱逐仍允许且须明确归因。
+CPU已验证，GPU净收益待v6验证。并行工具依赖未满足时不提前唤醒。
 传输模型使用实际FULL/Mamba形态及相近大小的样本，分别估计
 enqueue-to-submit和submit-to-ACK，不线性放大固定ACK开销。
 
@@ -394,7 +397,7 @@ restore/recompute debt、方向反转率以及最终 workflows/hour。
 | 预测器 | 冻结语义phase/work + 独立工具残余时间/CDF；runtime独立选动作 |
 | Predictive `PREPARE_HOST` | JOIN/长工具已实际运行，备份后真实压力回收；净收益未证明 |
 | JOIN `PREFETCH_GPU` | v5十一个ACK且FULL复用，均EOS后；精度与净收益未全面达标 |
-| 工具 `PREFETCH_GPU` | v5六个ACK但均再回收/FULL未复用，时机与驻留需联合修复 |
+| 工具 `PREFETCH_GPU` | v5六个ACK但均再回收；条件时间与短策略租约已CPU修复，GPU待验 |
 | 原生D2H副本恢复 | 同样可用，不强制依赖先前PREPARE |
 | 完整COMMIT/JointPlan/handoff | 尚未完成新版执行/ownership与收益验收 |
 | Running selective retraction | 新版完整适配仍缺失，不开放旧全套物理开关 |

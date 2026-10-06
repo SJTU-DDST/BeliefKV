@@ -302,6 +302,26 @@ class ActionTimingCurve:
             "training_support": self.training_support,
         }
 
+    def quantile(self, probability: float) -> float | None:
+        """Invert the supported CDF, without inventing its unobserved tail."""
+        if not math.isfinite(probability) or not 0 < probability < 1:
+            raise ValueError("timing quantile must be strictly between zero and one")
+        if probability > self.release_within_probability[-1]:
+            return None
+        first = self.release_within_probability[0]
+        if first > 0 and probability <= first:
+            return self.tau_ms[0] * probability / first
+        for index in range(1, len(self.tau_ms)):
+            right = self.release_within_probability[index]
+            left = self.release_within_probability[index - 1]
+            if probability > right or right <= left:
+                continue
+            fraction = (probability - left) / (right - left)
+            lower = math.log1p(self.tau_ms[index - 1])
+            upper = math.log1p(self.tau_ms[index])
+            return math.expm1(lower + fraction * (upper - lower))
+        return None
+
     @classmethod
     def from_dict(cls, raw: Mapping[str, Any]) -> "ActionTimingCurve":
         return cls(

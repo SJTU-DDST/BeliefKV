@@ -22,7 +22,8 @@ Do not change to 128, staggered 64+64 or artificial eviction.
 More traffic is not inherently more useful traffic: report first-use,
 exposed restore waiting, advance residency, Host churn and recomputation.
 
-The single v5 development pair is complete; no new GPU run is queued.
+The single v5 development pair is complete. The coherent-time/soft-residency
+fix is CPU-tested; the next single v6 pair uses the same 84-root configuration.
 Multi-pair averaging is
 a later formal-experiment requirement, not a reason to slow development.
 Fixed-demand GPU replay and deterministic-kernel migration are not required
@@ -56,13 +57,14 @@ and experiment launch record unchanged.
 
 Prioritize the observed v5 failure before another pressure experiment:
 
-1. Reconcile tool long-wait parking with imminent H2D selection. All six tool
+1. CPU implementation complete: reconcile tool long-wait parking with imminent H2D selection. All six tool
    prefetches were ACKed, pressure-demoted again and reactively reloaded.
    At issue, recorded forecasts satisfy both opposing policies. Do not add
    a second CDF veto; use one conditional time/residency interpretation.
-2. A past P50 clipped to zero is not a completion signal. Reconcile surviving
-   tool age, conditional CDF and quantiles before using latest-start.
-3. Coordinate post-ACK short residency with pressure candidates and true
+2. CPU implementation complete: a past P50 clipped to zero is not a completion
+   signal. P50 is now inverted from the same surviving CDF used for parking;
+   unsupported tails remain unknown, not zero.
+3. CPU implementation complete, GPU pending: coordinate post-ACK short residency with pressure candidates and true
    next service or explicit cancellation. Bound FULL/Mamba bytes/time, keep
    native capacity authority, and do not allow an obsolete target to block
    runnable requests. This is KV lifecycle coordination, not an Agent guard.
@@ -76,8 +78,14 @@ Prioritize the observed v5 failure before another pressure experiment:
 7. Finished-workspace cleanup is already complete for 84/83 tasks; retain
    pytest-7324's incomplete workspace, trace and patch.
 
-The current user request is result inspection; the items above are next-work
-priorities, not claims that new runtime fixes have already been implemented.
+The user requested continuation after inspection. Runtime implementation and
+related CPU regression are complete for items 1-3; GPU benefit is not proven.
+The soft lease excludes BeliefKV pressure parking but does not pin native
+allocations. Native eviction explicitly cancels it; do not claim guaranteed reuse.
+Only one v6 pair is planned, same model/prompt/weights/pools/running/budgets.
+Read-only v5 replay has 525 sampled restore targets, one near/fit intersection
+under the new timing policy, and zero opposing decisions. No action-reward
+model, eligibility promotion or extra Agent guard is introduced.
 
 ## 4. Latest v5 Findings
 
