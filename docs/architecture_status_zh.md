@@ -30,7 +30,7 @@ Qwen3.5-35B-A3B BF16 / SGLang 0.5.20，不再以旧 Qwen3/SGLang
 5. v5的84-root单波对照已结束，reactive 84 completed，
    predictive 83 completed/1 length-truncated incomplete，
    无child取消/serving writer故障。修复后的同配置v6单pair已启动，
-   当前为reactive服务器初始化；不排正式多轮或额外重复。
+   当前reactive服务已就绪、workload已启动；不排正式多轮或额外重复。
    正式阶段再多轮平均，不要求固定需求回放。
 
 ## 2. 当前配置
