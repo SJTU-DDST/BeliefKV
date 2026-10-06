@@ -34,7 +34,8 @@ Qwen3.5-35B-A3B BF16 / SGLang 0.5.20，不再以旧 Qwen3/SGLang
    每侧另有8个workflow触发允许的2048步提前32步FINALIZE；
    guard计数不包括它，不能声称全部无干预。
    工作头CPU拟合/回放及独立观测EOS路径修复已完成；
-   下一对v7冻结84-root/500 ms center/250 ms协议窗口，不排额外重复。
+   v7单pair已启动，reactive健康检查通过、84个首请求已提交；
+   冻结84-root/500 ms center/250 ms协议窗口，不排额外重复。
    正式阶段再多轮平均，不要求固定需求回放。
 
 ## 2. 当前配置
@@ -54,7 +55,7 @@ Qwen3.5-35B-A3B BF16 / SGLang 0.5.20，不再以旧 Qwen3/SGLang
 | Harness | native in-graph 1-4 child，鼓励多轮，自然语言RETURN有效 |
 | 当前预测窗口 | 实际动作目标为RETURN/TOOL_END前0-1000 ms，仍独立审计真实提前量 |
 | 最近运行代码 | v6启动commit `573f32c`，运行中未改源码或模型 |
-| 下一候选 | 未加末段权重log-work头，phase/encoder冻结；center500 ms/EOS250 ms |
+| 当前v7 | 未加末段权重log-work头，phase/encoder冻结；center500 ms/EOS250 ms |
 
 以上GB为十进制；Mamba单位是完整状态/检查点，不是FULL的一个token。
 池usage、物理occupancy、可驱逐容量和free-list不得混用。
@@ -234,3 +235,10 @@ v6当前指纹：
 目录为 `experiments/raw/qwen35_joint_wait_h2d_ab_84root_20261006_v6`；
 225项相关CPU回归为v6启动时证据。本轮终态与生命周期已核对，
 正向吞吐观测仍有需求混杂。新候选的拟合/回放不回填v6。
+
+v7目录：`experiments/raw/qwen35_joint_wait_h2d_ab_84root_v7`。
+启动commit为 `5dfdd30`，runtime源码445文件指纹：
+`4257db63689e9a92786f339e706180e56c5370efd421c7bb9d96336be2c466b9`。
+reactive的prefill/decode CUDA graph捕获已完成，decode覆盖batch48；
+84个workflow已提交首模型请求，启动遥测dropped/failed/writer error均0。
+predictive尚未启动，不能报告v7吞吐或预取净收益。运行中只维护文档。

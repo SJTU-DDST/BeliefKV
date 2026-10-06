@@ -98,6 +98,13 @@ and the explicitly logged EOS protocol window=250 ms. Native EOS evidence
 is not model prediction success. Reweighted body features remain a candidate.
 165 related CPU tests pass; the next one-pair GPU check must retain all
 workflows and actual transfer/reuse/trajectory evidence.
+The one v7 pair has started at `5dfdd30`, directory
+`experiments/raw/qwen35_joint_wait_h2d_ab_84root_v7`. Reactive is healthy;
+all 84 first requests are submitted and decode CUDA graph includes batch 48.
+Runtime source SHA (445 Python/shell files):
+`4257db63689e9a92786f339e706180e56c5370efd421c7bb9d96336be2c466b9`.
+Predictive has not started; no v7 performance conclusion. Freeze source,
+weights, prompts and launch settings now; no additional pair is queued.
 
 ## 4. Latest v5 Findings
 

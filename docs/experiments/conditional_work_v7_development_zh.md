@@ -89,6 +89,13 @@ Device Mamba/FULL0.9及Host匹配比例不变。context131072、
 completion8192、workflow14400秒、graph2048/32步reserve、
 prompt及seed21不变。不加Agent guard、canary、人工驱逐、额外重复
 或旧eligibility提升。
+该single pair已在commit `5dfdd30`下启动，目录
+`experiments/raw/qwen35_joint_wait_h2d_ab_84root_v7`，tmux
+`beliefkv-joint-v7`。Reactive健康检查和prefill/decode CUDA graph
+通过，decode覆盖48；84个workflow首请求已提交，启动遥测无丢弃/
+失败/writer error。Predictive尚未启动，GPU效果仍待完整pair。
+445个runtime文件指纹为
+`4257db63689e9a92786f339e706180e56c5370efd421c7bb9d96336be2c466b9`。
 
 部署候选为 `child_semantic_work_live_v7_quantiles`，composite SHA：
 `126e9447789c4361df436383a42afc8db092ca7cf085e8af24eb83aa39feb74d`。
