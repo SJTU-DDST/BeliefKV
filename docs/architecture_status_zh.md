@@ -16,21 +16,25 @@ Qwen3.5-35B-A3B BF16 / SGLang 0.5.20，不再以旧 Qwen3/SGLang
    身份链已接入。FULL/Mamba 必须共同管理，物理容量由 native
    allocator 和 UnifiedRadixCache 决定。
 2. 有界 PREPARE_HOST 与 JOIN H2D 原生事务已实际运行，不再是
-   默认关闭且无 GPU 证据的阶段。v5有17个H2D ACK/1.298 GB：
-   JOIN 11个FULL首次复用，工具6个未复用；10个Mamba forward
-   复用已确认。ACK本身不是收益。
+   默认关闭且无 GPU 证据的阶段。最新v6有7个JOIN H2D ACK/
+   0.533 GB，全部FULL首次复用，6个Mamba forward复用确认；
+   工具H2D为0。ACK本身不是收益。
 3. 工具时间模型已独立上线到开发配置，不更改旧模型产物
    `online_eligible` / `predictive_action_eligible` 标志。
    v5工具H2D已下发6次，但都在ACK后被自身pressure parking
    再回收，后续仍需native H2D。代码已统一条件时间分布并加入
-   ACK后的有界策略租约，CPU回归通过；新GPU验证尚未完成。
+   ACK后的有界策略租约。v6的7个JOIN目标没有自身再次回收/
+   原生重载；工具没有新动作，不能声称该链路已获GPU验证。
 4. 尚未证明端到端吞吐净收益或普遍亚秒级RETURN预测。
-   v5 predictive完成吞吐低8.95%，共同完成83项的均值JCT
-   低8.84%，但需求/路径不同，不能直接认定预取净收益。
-5. v5的84-root单波对照已结束，reactive 84 completed，
-   predictive 83 completed/1 length-truncated incomplete，
-   无child取消/serving writer故障。修复后的同配置v6单pair已启动，
-   当前reactive服务已就绪、workload已启动；不排正式多轮或额外重复。
+   v6 predictive完成吞吐高4.62%、平均JCT低8.01%，但LLM/
+   工具/输入/输出量都更少，84条请求序列均不同。所有动作仍在
+   native EOS后启动，不能认定语义预测或预取的独立净收益。
+5. v6的84-root单波对照已结束，两侧84 completed，measurement
+   valid均84、guard干预计数为0、serving writer无故障。
+   每侧另有8个workflow触发允许的2048步提前32步FINALIZE；
+   guard计数不包括它，不能声称全部无干预。
+   工作头CPU拟合/回放及独立观测EOS路径修复已完成；
+   下一对v7冻结84-root/500 ms center/250 ms协议窗口，不排额外重复。
    正式阶段再多轮平均，不要求固定需求回放。
 
 ## 2. 当前配置
@@ -44,13 +48,13 @@ Qwen3.5-35B-A3B BF16 / SGLang 0.5.20，不再以旧 Qwen3/SGLang
 | Host | 200.010 GB，NUMA node 1；FULL约105.358 GB、Mamba约94.652 GB |
 | 池比例 | Device `mamba-full-memory-ratio=0.9`；Host匹配实际Device字节比例 |
 | GPU执行 | running=48，chunked prefill=4096，CUDA graph覆盖decode batch 48 |
-| 最近负载 | 已完成v5：manifest前84个root，单波，不是64+20延后到达 |
+| 最近负载 | 已完成v6：manifest前84个root，单波，不是64+20延后到达 |
 | 生成 | context=131072，completion=8192，temperature=0，seed=21 |
 | 预算 | workflow=14400秒，graph=2048，允许提前32步FINALIZE |
 | Harness | native in-graph 1-4 child，鼓励多轮，自然语言RETURN有效 |
 | 当前预测窗口 | 实际动作目标为RETURN/TOOL_END前0-1000 ms，仍独立审计真实提前量 |
-| 最近运行代码 | v5启动commit `c219604`，包含runtime修复 `1aba1be` |
-| 当前v6 | `573f32c`；84-root单波/原池与running配置，先reactive后predictive |
+| 最近运行代码 | v6启动commit `573f32c`，运行中未改源码或模型 |
+| 下一候选 | 未加末段权重log-work头，phase/encoder冻结；center500 ms/EOS250 ms |
 
 以上GB为十进制；Mamba单位是完整状态/检查点，不是FULL的一个token。
 池usage、物理occupancy、可驱逐容量和free-list不得混用。
@@ -93,7 +97,18 @@ native `<tool_call>` token提前使该轮终态信号失效，announce
 调用轮与其后的最终报告轮分开。前EOS时机采用已有工作上界；
 无工具EOS保留50 ms以内的协议窗口。模型的阶段和长度预测
 仍不够准确，不能将协议窗口预取都称为准确的语义时间预测。
-MLP和短token CDF候选没有稳定改善，不作为当前默认模型。
+旧MLP和短token CDF候选没有稳定改善，不作为默认模型。
+v6暴露106.25 token的固定上界投影下限；新产物先扩张signed
+residual再截断，旧产物保留原语义。当前只改善条件工作头，
+用v6真实100 ms观测补训练，并比较log-work分位数校准。
+Runtime增加显式center/upper时机选择，默认upper保持旧行为；
+候选不等于已部署，零剩余估计不等于native EOS。
+正常stop且有非空正文、无工具标记的native观测另建立仅H2D阶段，
+短报告不再因NN forecast缺失或TPS不足而完全漏掉协议窗口。
+空白/reasoning-only、length、abort和internal不形成此证据，
+不改变agent返回行为。日志独立标记observed_no_tool_eos，
+不计作模型预测成功。v7工作开发结果见
+`docs/experiments/conditional_work_v7_development_zh.md`。
 
 ### 工具等待
 
@@ -123,7 +138,7 @@ inspection/cache，enqueue前仍重新验证。
 | PREPARE_HOST | 原生D2H shadow，ACK前不宣称Host副本有效 |
 | 等待态KV回收 | 真实allocator短缺时，dead/cold优先，独占/未锁定/备份已settle才回收 |
 | JOIN H2D | WAIT_JOIN且关键child有效，真实Host-only输入、容量与服务证据下发 |
-| 工具H2D | v5六个ACK/0.444 GB，均ACK后再回收，FULL未复用 |
+| 工具H2D | v5六个ACK均ACK后再回收；v6为0，不能证明修复后实际收益 |
 | 提交队列 | 纯预测load_queue安全点立即启动；不抢混合原生队列producer |
 | 同步 | 保留native stream fence、layer event、producer/consumer及同步ACK |
 | 首次消费 | FULL前缀/node/value证明；Mamba单请求COW forward证明或明确未验证 |
@@ -149,6 +164,7 @@ partial backup/多node预算不等于完整context已恢复。
 | v3，64-root | 10个ACK/814.94 MB，8个RETURN前启动，2个迟发 |
 | v4，64-root pair | 两側64/64；6个ACK/491.09 MB，全部FULL复用，工具H2D为0 |
 | v5，84-root pair | 84/83 completed；17个ACK，JOIN11个FULL复用，工具6个自我回收；吞吐-8.95% |
+| v6，84-root pair | 84/84 completed；7个JOIN ACK，全部FULL复用，无再次回收；单轮吞吐+4.62%，需求混杂 |
 
 v4六次动作中，五个是在native EOS后协议窗口触发；唯一前EOS
 动作提前约6.59秒，是剩余工作低估。全部早于RETURN不等于全部
@@ -179,17 +195,18 @@ GPU利用率76.50/81.66%，v4式大空转未重现；predictive仍有
 
 ## 6. 当前阻塞项
 
-1. 新代码的条件时间与策略租约已有CPU验证，需v6检查实际
-   H2D是否保留到服务、自身重复回收是否消失、原生失驻留及
-   明确撤销是否可归因，不能只看ACK增加或减少。
+1. v6已闭合7个JOIN的ACK到首次服务链，无再次回收/原生重载。
+   两个租约过期后仍复用；不把过期视为miss。工具H2D为0，
+   仍缺该链路修复后的GPU行为证据。
 2. v5只读回放525个采样恢复目标中，新口径有1个near且容量fit，
    旧6次错误早发均不再触发；这不是充分的工具时间精度验证。
-   剩余工作头仍未产生pre-EOS动作，阶段/encoder权重未改变。
+   v6的5154次前EOS上界检查全部被过早判断挡住，仍无pre-EOS
+   动作。阶段/encoder权重冻结，改进工作头而非改eligibility。
 3. 量化exposed restore stall和控制处理开销。
    没有profile的v4不能把差值精确分配到单个函数。
 4. harness对SIGKILL/timeout反馈和管道上游失败存在歧义，
    需在后续同配置两侧修复；不在运行中改shell/prompt/timeout。
-5. v5多轮workflow为19/15个，但并行fanout仍只有1；不能靠
+5. v6多轮workflow为18/13个，但单轮JOIN仍只有1 child；不能靠
    强制取消/返回门禁制造JOIN或“提高自然完成率”。
 6. Host块归因长prefix probe有溢出；不能以观测子集证明全量
    重算率很低。Mamba逐节点命中位置仍有缺口。
@@ -202,8 +219,8 @@ GPU利用率76.50/81.66%，v4式大空转未重现；predictive仍有
 - 当前状态：本文件。
 - 执行顺序：`docs/implementation_plan.md`。
 - 不可违反的实验约定：`docs/experiment_operating_notes_zh.md`。
-- 最近完成的pair：`docs/experiments/joint_tool_join_h2d_v5_84root_zh.md`。
-- 最近单pair验收：v5 raw目录的 `development_validation_plan.json`。
+- 最近完成的pair：`docs/experiments/joint_tool_join_h2d_v6_84root_zh.md`。
+- 最近单pair验收：v6 raw目录的 `development_validation_plan.json`。
 
 修改主线时同步维护上述文件，不以新增实验报告代替更新状态页。
 历史报告保留原配置和原始结论，新诊断明确标注为后续复核。
@@ -215,4 +232,5 @@ v6使用新的运行源码指纹，由新launch记录冻结，不回填v5。
 v6当前指纹：
 `c65caec44ecc934cd5cff9d740ec96f19459f48527505c85927bd4ae969fd6b9`。
 目录为 `experiments/raw/qwen35_joint_wait_h2d_ab_84root_20261006_v6`；
-225项相关CPU回归通过，GPU收益待本轮终态核对。
+225项相关CPU回归为v6启动时证据。本轮终态与生命周期已核对，
+正向吞吐观测仍有需求混杂。新候选的拟合/回放不回填v6。

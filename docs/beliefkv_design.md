@@ -268,7 +268,9 @@ v5证实两个口径可同时将同一目标判为冷victim和预取beneficiary�
 导致ACK后再次回收。新代码以同一生存条件CDF逆算残余P50，
 并在ACK后建立短期策略租约，排除自身冷回收直到服务/失效。
 不是容量预留或全局pin，原生压力驱逐仍允许且须明确归因。
-CPU已验证，GPU净收益待v6验证。并行工具依赖未满足时不提前唤醒。
+v6的7个JOIN H2D已保留并首次复用，无自身再次回收；
+工具H2D为0，不能据此完成工具链路GPU验收。
+端到端净收益仍未证明。并行工具依赖未满足时不提前唤醒。
 传输模型使用实际FULL/Mamba形态及相近大小的样本，分别估计
 enqueue-to-submit和submit-to-ACK，不线性放大固定ACK开销。
 
@@ -278,9 +280,25 @@ checkpoint、有效Host副本、FULL/Mamba物理容量、当前因果状态、
 阶段模型、旧模型的eligibility字段与物理动作授权相互独立；
 不通过改写false标志开放旧全套迁移路径。
 
-v5已有11个JOIN H2D ACK与FULL首次复用，全部发生在EOS后；
-另6个工具H2D全部ACK后再回收、FULL未复用。端到端吞吐净收益
+v6已有7个JOIN H2D ACK与FULL首次复用，全部发生在EOS后；
+工具H2D为0。单轮吞吐高4.62%但实际工作量更少。端到端吞吐净收益
 仍未证明，不能据此证明普遍准确的RETURN预测或完整JointPlan已迁移。
+
+工作头先修正区间语义：旧产物先非负截断再加绝对token margin，
+会在末段保留固定正数下限；新候选先在signed residual上扩张
+再截断，并重新按workflow校准，旧产物不默默换语义。
+随后利用真实100 ms正文/进度观测比较log-work分位数头。
+phase/encoder/phase threshold冻结，未来RETURN和服务只用于标签，
+不作为在线输入。Runtime显式选择center/upper时机，旧默认upper；
+不是用整段保守区间否决全部近端动作，也不把中心为零当作EOS。
+首次触发过早、工具轮次误报、区间覆盖与真实预取提前量须分账，
+不能只按整体MAE选模型。
+正常native stop、已观察到非空正文且无工具标记时，协议窗口
+使用独立观测证据，不强制等到NN forecast或TPS可估计。
+该阶段只用于H2D，不改变agent终态或收尾准入优先级；仍验证
+完整ALL JOIN关键child、Host安全副本、身份与容量。
+空白/reasoning-only、length/abort和internal不能作为此证据。
+观测窗口与前EOS模型触发分开统计，协议加载不是预测精度证明。
 
 ### 5.2 模型预测与 runtime 决策的分离验收
 

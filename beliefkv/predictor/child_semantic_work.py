@@ -16,7 +16,10 @@ from scipy.special import logsumexp, softmax
 import torch
 
 from beliefkv.predictor.child_report_phase import PHASES, ReportObservation, ReportPrediction
-from beliefkv.predictor.conditional_work import NeuralConditionalWork
+from beliefkv.predictor.conditional_work import (
+    LEGACY_WORK_PROJECTION, SIGNED_WORK_PROJECTION, NeuralConditionalWork,
+    project_work_bounds,
+)
 
 
 class FrozenTextEncoder:
@@ -44,6 +47,17 @@ class FrozenTextEncoder:
                 pooled = torch.nn.functional.normalize(pooled, dim=1)
                 result.append(pooled.numpy())
         return np.concatenate(result) if result else np.empty((0, 384), dtype=np.float32)
+
+
+def encoder_snapshot(raw: dict, artifact: Path) -> Path:
+    metadata = raw["metadata"]
+    adapted = metadata.get("adapted_encoder")
+    snapshot = Path(
+        adapted["snapshot"] if adapted else metadata["plan"]["encoder"]["local_snapshot"],
+    )
+    if not snapshot.is_absolute():
+        snapshot = artifact.resolve().parent / "adapted_encoder"
+    return snapshot.resolve(strict=True)
 
 
 class SemanticReportPredictor:
@@ -90,15 +104,9 @@ class SemanticReportPredictor:
         encoder = None
         if len(head.components):
             metadata = raw["metadata"]
-            adapted = metadata.get("adapted_encoder")
-            snapshot = (
-                Path(adapted["snapshot"]) if adapted
-                else Path(metadata["plan"]["encoder"]["local_snapshot"])
-            )
-            if not snapshot.is_absolute():
-                snapshot = path.parent / "adapted_encoder"
             encoder = FrozenTextEncoder(
-                snapshot, max_tokens=metadata["plan"]["encoder"]["max_tokens"],
+                encoder_snapshot(raw, path),
+                max_tokens=metadata["plan"]["encoder"]["max_tokens"],
             )
         return cls(head, encoder, work_head=work_head, neural_work=neural_work)
 
@@ -138,7 +146,11 @@ class SemanticReportPredictor:
             work = self.neural_work.arrays(observations, embeddings, self.head)
             predictions = [
                 replace(prediction, conditional_remaining_tokens=tuple(map(float, bounds)),
-                        work_interval_status="calibration_subset_bounds_not_quantiles")
+                        work_interval_status=(
+                            "workflow_split_log_calibrated_bounds_not_quantiles"
+                            if self.neural_work.schema == 2
+                            else "calibration_subset_bounds_not_quantiles"
+                        ))
                 if prediction.conditional_remaining_tokens is not None else prediction
                 for prediction, bounds in zip(predictions, work)
             ]
@@ -167,6 +179,7 @@ class SemanticHead:
     calibration_status: str = "uncalibrated"
     work_bounds_calibrated: bool = False
     work_target: str = "remaining"
+    work_interval_projection: str = LEGACY_WORK_PROJECTION
 
     def design(
         self, observations: Sequence[ReportObservation], embeddings: np.ndarray,
@@ -199,9 +212,10 @@ class SemanticHead:
         self, observations: Sequence[ReportObservation], embeddings: np.ndarray,
     ) -> tuple[np.ndarray, np.ndarray]:
         logits, raw_work = self.raw(observations, embeddings)
-        work = np.maximum(0., raw_work + self.token_bias)
-        work[:, 0] = np.maximum(0., work[:, 0] - self.interval_margin)
-        work[:, 2] += self.interval_margin
+        work = project_work_bounds(
+            raw_work, bias=self.token_bias, margin=self.interval_margin,
+            projection=self.work_interval_projection,
+        )
         return softmax(logits / self.temperature, axis=1), work
 
     def predictions(
@@ -254,6 +268,10 @@ class SemanticHead:
         values["components"] = values["components"].reshape(
             -1, len(values["embedding_center"]),
         )
+        if values.get("work_interval_projection", LEGACY_WORK_PROJECTION) not in (
+            LEGACY_WORK_PROJECTION, SIGNED_WORK_PROJECTION,
+        ):
+            raise ValueError("unsupported work interval projection")
         return cls(**values)
 
 
@@ -261,9 +279,12 @@ def fit_head(
     samples: list[dict], embeddings: np.ndarray, *, dimensions: int,
     phase_regularization: float, work_regularization: float,
     work_target: str = "remaining",
+    work_interval_projection: str = SIGNED_WORK_PROJECTION,
 ) -> SemanticHead:
     if work_target not in ("remaining", "total"):
         raise ValueError("unsupported semantic work target")
+    if work_interval_projection not in (LEGACY_WORK_PROJECTION, SIGNED_WORK_PROJECTION):
+        raise ValueError("unsupported work interval projection")
     observations = [row["observation"] for row in samples]
     numeric = np.asarray([row.features(with_events=True) for row in observations])
     center, scale = numeric.mean(axis=0), np.maximum(numeric.std(axis=0), .25)
@@ -328,6 +349,7 @@ def fit_head(
         fitted.x.reshape(design.shape[1], len(PHASES)), work,
         np.asarray([min(0., low), 0., max(0., high)]),
         work_target=work_target,
+        work_interval_projection=work_interval_projection,
     )
 
 
@@ -367,12 +389,27 @@ def calibrate_scores_and_bias(
 def calibrate_work_bounds(
     head: SemanticHead, samples: list[dict], embeddings: np.ndarray, *, coverage: float,
 ) -> dict:
-    _, work = head.arrays([row["observation"] for row in samples], embeddings)
+    observations = [row["observation"] for row in samples]
+    signed = isinstance(head, SemanticHead) and (
+        head.work_interval_projection == SIGNED_WORK_PROJECTION
+    )
+    if isinstance(head, SemanticHead):
+        _, raw = head.raw(observations, embeddings)
+        # Recalibration must not count an earlier margin as model evidence.
+        work = raw + head.token_bias if signed else project_work_bounds(
+            raw, bias=head.token_bias, margin=0.,
+            projection=head.work_interval_projection,
+        )
+    else:
+        _, work = head.arrays(observations, embeddings)
     scores = defaultdict(list)
     for row, (low, _, high) in zip(samples, work):
         if row["remaining_tokens"] is not None:
             value = row["remaining_tokens"]
-            scores[row["task"]].append(max(0., low - value, value - high))
+            # Projection already covers zero from a negative upper residual.
+            # Positive labels need the margin in signed space, not clipped space.
+            upper_error = value - high if value > 0 or not signed else 0.
+            scores[row["task"]].append(max(0., low - value, upper_error))
     values = sorted(max(group) for group in scores.values())
     rank = math.ceil((len(values) + 1) * coverage)
     if not 0 < rank <= len(values):
@@ -382,6 +419,9 @@ def calibrate_work_bounds(
     return {
         "nominal_workflow_coverage": coverage, "workflow_count": len(values),
         "rank": rank, "added_token_margin": head.interval_margin,
+        "work_interval_projection": getattr(
+            head, "work_interval_projection", LEGACY_WORK_PROJECTION,
+        ),
         "assumption": (
             "Workflow clustering handles repeated snapshots. Cross-project "
             "exchangeability is unverified; report measured coverage, not a guarantee."

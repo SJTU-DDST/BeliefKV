@@ -6,10 +6,13 @@ import pytest
 from beliefkv.predictor.child_report_phase import ReportObservation
 from beliefkv.predictor.child_semantic_work import (
     SemanticHead, SemanticReportPredictor, calibrate_scores_and_bias, calibrate_work_bounds,
-    choose_request_threshold, fit_head,
+    choose_request_threshold, encoder_snapshot, fit_head,
 )
 from scripts.train_child_semantic_work import split_roles
-from beliefkv.predictor.conditional_work import NeuralConditionalWork
+from beliefkv.predictor.conditional_work import (
+    LEGACY_WORK_PROJECTION, SIGNED_WORK_PROJECTION, NeuralConditionalWork,
+    project_work_bounds, structural_work_features,
+)
 
 
 def rows(project="train", count=18):
@@ -230,3 +233,192 @@ def test_total_length_work_subtracts_observed_progress_before_bias_clipping():
     _, last = head.arrays([replace(observation, observed_output_tokens=120)], np.zeros((1, 8)))
     assert np.allclose(first, [[30, 30, 30]])
     assert np.allclose(last, [[0, 0, 0]])
+
+
+def test_signed_work_margin_has_no_clipping_floor_and_legacy_is_unchanged():
+    raw = np.asarray([[-40., -30., -20.], [-15., -10., -5.], [10., 20., 30.]])
+    signed = project_work_bounds(
+        raw, bias=0., margin=10., projection=SIGNED_WORK_PROJECTION,
+    )
+    legacy = project_work_bounds(
+        raw, bias=0., margin=10., projection=LEGACY_WORK_PROJECTION,
+    )
+    assert np.allclose(signed, [[0., 0., 0.], [0., 0., 5.], [0., 20., 40.]])
+    assert np.allclose(legacy, [[0., 0., 10.], [0., 0., 10.], [0., 20., 40.]])
+    assert np.all(np.diff(signed, axis=1) >= 0)
+    with pytest.raises(ValueError, match="unsupported"):
+        project_work_bounds(raw, bias=0., margin=10., projection="unversioned")
+
+
+def test_loading_old_head_preserves_legacy_calibrated_margin(tmp_path):
+    import json
+
+    data = rows()
+    head = fit_head(
+        data, np.zeros((len(data), 8)), dimensions=0,
+        phase_regularization=.1, work_regularization=.2, work_target="total",
+    )
+    head.work_coefficients[:] = 0.
+    head.work_coefficients[0] = np.log1p(10.)
+    head.work_residual_quantiles[:] = 0.
+    head.interval_margin = 15.
+    path = tmp_path / "old.json"
+    head.save(path, metadata={})
+    raw = json.loads(path.read_text())
+    raw["head"].pop("work_interval_projection")
+    path.write_text(json.dumps(raw))
+    old = SemanticHead.load(path)
+    assert old.work_interval_projection == LEGACY_WORK_PROJECTION
+    observation = replace(data[0]["observation"], observed_output_tokens=30)
+    _, bounds = old.arrays([observation], np.zeros((1, 8)))
+    assert bounds[0, 2] == 15.
+    raw["head"]["work_interval_projection"] = SIGNED_WORK_PROJECTION
+    path.write_text(json.dumps(raw))
+    _, new_bounds = SemanticHead.load(path).arrays(
+        [observation], np.zeros((1, 8)),
+    )
+    assert new_bounds[0, 2] == 0.
+
+
+def test_signed_calibration_uses_unclipped_residuals_for_positive_work():
+    data = rows()
+    head = fit_head(
+        data, np.zeros((len(data), 8)), dimensions=0,
+        phase_regularization=.1, work_regularization=.2, work_target="total",
+    )
+    head.work_coefficients[:] = 0.
+    head.work_coefficients[0] = np.log1p(10.)
+    head.work_residual_quantiles[:] = 0.
+    head.token_bias = 0.
+    head.interval_margin = 10000.
+    samples = [
+        {"task": f"task{i}", "observation": replace(
+            data[0]["observation"], observed_output_tokens=20,
+        ), "remaining_tokens": 5.} for i in range(5)
+    ]
+    result = calibrate_work_bounds(head, samples, np.zeros((5, 8)), coverage=.8)
+    assert result["added_token_margin"] == pytest.approx(15.)
+    _, work = head.arrays(
+        [row["observation"] for row in samples], np.zeros((5, 8)),
+    )
+    assert work[:, 2] == pytest.approx(np.full(5, 5.))
+    for row in samples:
+        row["remaining_tokens"] = 0.
+    result = calibrate_work_bounds(head, samples, np.zeros((5, 8)), coverage=.8)
+    assert result["added_token_margin"] == 0.
+
+
+@pytest.mark.parametrize("projection, expected", [
+    (LEGACY_WORK_PROJECTION, 30.),
+    (SIGNED_WORK_PROJECTION, 0.),
+])
+def test_neural_total_work_uses_versioned_interval_projection(projection, expected):
+    class Phase:
+        def design(self, observations, embeddings):
+            return np.zeros((len(observations), 2))
+
+    work = NeuralConditionalWork({
+        "kind": "neural_conditional_work", "schema_version": 1,
+        "center": [0.] * 10, "scale": [1.] * 10,
+        "layers": [
+            {"weight": [[0.] * 10], "bias": [0.]},
+            {"weight": [[0.]], "bias": [0.]},
+            {"weight": [[0.]], "bias": [np.log1p(100.)]},
+        ],
+        "target": "total", "token_bias": 0., "interval_margin_tokens": 30.,
+        "work_interval_projection": projection,
+    })
+    observation = replace(rows()[0]["observation"], observed_output_tokens=140)
+    bounds = work.arrays([observation], np.zeros((1, 8)), Phase())
+    assert bounds[0, 2] == expected
+
+
+def test_work_trigger_reports_first_early_crossing_and_false_tool_round():
+    from scripts.compare_semantic_rolling_work import work_triggers
+
+    row = {
+        "request_id": "return", "snapshot_ts_ms": 100.,
+        "notice_active": True, "observed_output_tokens": 100,
+        "scores": {"candidate": .99}, "candidate": 0.,
+        "candidate_bounds": [0., 0., 0.], "sampled_tokens_per_second": 50.,
+        "actual_remaining_tokens": 100, "remaining_client_wall_ms": 3000.,
+    }
+    later = {
+        **row, "snapshot_ts_ms": 2900., "actual_remaining_tokens": 5,
+        "remaining_client_wall_ms": 200.,
+    }
+    tool = {**row, "request_id": "tool", "actual_remaining_tokens": None}
+    report = work_triggers([row, later, tool], "candidate", .9, time_horizon_ms=1000.)
+    assert report["first_trigger_count"] == 2
+    assert report["tool_round_false_trigger_count"] == 1
+    assert report["lead_over_2000ms_count"] == 1
+    assert report["lead_0_to_1000ms_count"] == 0
+    assert report["upper_underestimated_at_trigger_count"] == 1
+
+
+def test_composite_refit_keeps_the_actual_frozen_encoder_location(tmp_path):
+    original = tmp_path / "original" / "adapted_encoder"
+    original.mkdir(parents=True)
+    refit = tmp_path / "work_refit" / "semantic.json"
+    raw = {"metadata": {"adapted_encoder": {"snapshot": str(original)}}}
+    assert encoder_snapshot(raw, refit) == original
+    raw["metadata"]["adapted_encoder"]["snapshot"] = "adapted_encoder"
+    with pytest.raises(FileNotFoundError):
+        encoder_snapshot(raw, refit)
+    local = refit.parent / "adapted_encoder"
+    local.mkdir(parents=True)
+    assert encoder_snapshot(raw, refit) == local
+
+
+def test_log_quantile_work_keeps_order_and_does_not_reinterpret_scalar_schema():
+    class Phase:
+        def design(self, observations, embeddings):
+            return np.zeros((len(observations), 2))
+
+    raw = {
+        "kind": "neural_conditional_work", "schema_version": 2,
+        "center": [0.] * 10, "scale": [1.] * 10,
+        "layers": [
+            {"weight": [[0.] * 10], "bias": [0.]},
+            {"weight": [[0.]], "bias": [0.]},
+            {"weight": [[0.], [0.], [0.]], "bias": [3., 1., 2.]},
+        ],
+        "target": "remaining", "output_space": "ordered_log1p_quantiles",
+        "log1p_bias": 0., "interval_margin_log1p": .5,
+    }
+    work = NeuralConditionalWork(raw)
+    bounds = work.arrays([rows()[0]["observation"]], np.zeros((1, 8)), Phase())
+    assert bounds[0] == pytest.approx(np.expm1([.5, 2., 3.5]))
+    old = {**raw, "schema_version": 1, "token_bias": 0., "interval_margin_tokens": 10.}
+    with pytest.raises(ValueError, match="width"):
+        NeuralConditionalWork(old)
+    with pytest.raises(ValueError, match="geometry"):
+        NeuralConditionalWork({**raw, "target": "total"})
+
+
+def test_log_work_calibration_clusters_snapshots_and_covers_positive_signed_work():
+    from scripts.fit_semantic_work_quantiles import interval_margin
+
+    actual = np.tile(np.asarray([0., 1.]), 5)
+    raw = np.tile(np.asarray([[-10., -9., -8.], [-4., -3., -2.]]), (5, 1))
+    tasks = [f"task{i}" for i in range(5) for _ in range(2)]
+    margin, calibration = interval_margin(raw, actual, tasks, .8)
+    assert margin == 3.
+    assert calibration == {"workflow_count": 5, "rank": 5}
+    with pytest.raises(ValueError, match="insufficient"):
+        interval_margin(raw[:2], actual[:2], tasks[:2], .8)
+
+
+def test_body_progress_separates_visible_report_from_total_decode_without_future_input():
+    row = replace(
+        rows()[0]["observation"], notice_active=True, estimated_report_tokens=500,
+        content_chars=400, observed_output_tokens=800,
+    )
+    legacy = structural_work_features([row])
+    body = structural_work_features([row], version="body_progress_v2")
+    assert legacy.shape == (1, 8)
+    assert body.shape == (1, 12)
+    assert legacy[0, 7] == 0.
+    assert body[0, 7] == pytest.approx(np.log1p(400))
+    assert body[0, 9] == pytest.approx(.2)
+    assert body[0, 10] == pytest.approx(np.log1p(700))

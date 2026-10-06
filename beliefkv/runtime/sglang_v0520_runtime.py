@@ -278,6 +278,16 @@ class NativeAdmissionRuntime:
         if not math.isfinite(lead_setting) or not 100 <= lead_setting <= 1000:
             raise ValueError("prefetch lead must be between 100 and 1000 ms")
         self.prefetch_lead_ms = lead_setting
+        self.semantic_work_statistic = os.environ.get(
+            "BELIEFKV_SEMANTIC_WORK_STATISTIC", "upper",
+        )
+        if self.semantic_work_statistic not in ("upper", "center"):
+            raise ValueError("semantic work statistic must be upper or center")
+        self.eos_protocol_window_ms = float(os.environ.get(
+            "BELIEFKV_EOS_PROTOCOL_WINDOW_MS", "50",
+        ))
+        if not math.isfinite(self.eos_protocol_window_ms) or not 50 <= self.eos_protocol_window_ms <= 500:
+            raise ValueError("EOS protocol window must be between 50 and 500 ms")
         seed_path = os.environ.get("BELIEFKV_H2D_SEED")
         seed_sha = os.environ.get("BELIEFKV_H2D_SEED_SHA256")
         if bool(seed_path) != bool(seed_sha):
@@ -318,6 +328,9 @@ class NativeAdmissionRuntime:
         self._semantic_frames: dict[str, RuntimeEvent] = {}
         self._semantic_forecasts: dict[str, SemanticReportReply] = {}
         self._semantic_finished: dict[str, tuple[float, int]] = {}
+        self._semantic_body_seen: set[str] = set()
+        self._semantic_normal_stops: set[str] = set()
+        self._semantic_eos_proofs: dict[str, bool] = {}
         self._semantic_submit_ms: dict[str, float] = {}
         self._semantic_submitted_frames: dict[str, tuple[float, int]] = {}
         self._semantic_target_cache: dict[PrefillCandidateKey, tuple[float, bool]] = {}
@@ -325,6 +338,7 @@ class NativeAdmissionRuntime:
         self._decoded_tool_requests: set[str] = set()
         self._decoded_scan_positions: dict[str, int] = {}
         self._tool_open_token_ids: frozenset[int] = frozenset()
+        self._reasoning_close_token_ids: frozenset[int] = frozenset()
         if model_path:
             config = Path(model_path) / "tokenizer_config.json"
             if config.is_file():
@@ -334,6 +348,10 @@ class NativeAdmissionRuntime:
                     if isinstance(token, dict) and token.get("content") in (
                         "<tool_call>", "<|tool_call|>",
                     )
+                )
+                self._reasoning_close_token_ids = frozenset(
+                    int(token_id) for token_id, token in tokens.items()
+                    if isinstance(token, dict) and token.get("content") == "</think>"
                 )
         self._runtime_state_next_ms = 0.
         self.enable_confirmed_join_canary = enable_confirmed_join_canary
@@ -861,6 +879,9 @@ class NativeAdmissionRuntime:
                 self._semantic_forecasts.pop(rid, None)
                 self._semantic_progress.pop(rid, None)
                 self._semantic_finished.pop(rid, None)
+                self._semantic_body_seen.discard(rid)
+                self._semantic_normal_stops.discard(rid)
+                self._semantic_eos_proofs.pop(rid, None)
                 self._semantic_submit_ms.pop(rid, None)
                 self._semantic_submitted_frames.pop(rid, None)
                 self._decoded_tool_requests.discard(rid)
@@ -914,6 +935,11 @@ class NativeAdmissionRuntime:
             event.attributes.get("content_tail"),
             event.attributes.get("content_chars"),
         )
+        if type(text) is str and type(chars) is int and chars > 0 and text.strip():
+            self._semantic_body_seen.add(rid)
+            if rid in self._semantic_normal_stops:
+                self._semantic_eos_proofs[rid] = True
+                self._ensure_observed_final_stage(key)
         if type(text) is not str or type(chars) is not int or chars < 32:
             return
         if len(self._semantic_frames) >= 128 and rid not in self._semantic_frames:
@@ -921,6 +947,70 @@ class NativeAdmissionRuntime:
             return
         self._semantic_keys[rid] = key
         self._semantic_frames[rid] = event
+
+    def _ensure_observed_final_stage(self, key: PrefillCandidateKey) -> None:
+        ended = self._semantic_finished.get(key.request_id)
+        now_ms = time.monotonic() * 1000
+        if not (
+            self._semantic_eos_proofs.get(key.request_id) is True
+            and ended is not None and 0 <= now_ms - ended[0] <= self.eos_protocol_window_ms
+            and self._semantic_key_live(key, now_ms)
+        ):
+            return
+        parent = self._semantic_parent(key.invocation_id)
+        if parent is None:
+            return
+        join_id, parent_key = parent
+        previous = self._final_stages.get(join_id)
+        if (
+            previous is not None and previous.request_id == key.request_id
+            and self._live_final_stage(previous)
+        ):
+            return
+        if previous is not None and previous.request_id is not None:
+            self._final_request_stages.pop(previous.request_id, None)
+        stage = _ChildFinalStage(
+            parent_key, join_id, key.invocation_id, key.context_epoch, ended[1],
+            time.monotonic() + self.eos_protocol_window_ms / 1000.,
+            request_id=key.request_id, generated_tokens=ended[1],
+            semantic_only=True,
+            issued_nodes=self._issued_join_nodes(join_id, parent_key),
+        )
+        self._final_stages[join_id] = stage
+        self._final_request_stages[key.request_id] = stage
+        self.counts["observed_eos_final_stage_created"] += 1
+
+    def _record_native_final_body(self, req: object, key: PrefillCandidateKey) -> None:
+        reason = getattr(req, "finished_reason", None)
+        to_json = getattr(reason, "to_json", None)
+        info = to_json() if callable(to_json) else {}
+        normal = (
+            info.get("type") == "stop" and info.get("matched") != "NaN happened"
+            and key.request_id not in self._decoded_tool_requests
+            and not (getattr(req, "beliefkv_metadata", None) or {}).get("runtime_internal")
+        )
+        if normal:
+            self._semantic_normal_stops.add(key.request_id)
+        body = key.request_id in self._semantic_body_seen
+        outputs = getattr(req, "output_ids", ()) or ()
+        tokenizer = getattr(req, "tokenizer", None)
+        if normal and not body and tokenizer is not None:
+            close = next((
+                index for index in range(len(outputs) - 1, -1, -1)
+                if outputs[index] in self._reasoning_close_token_ids
+            ), None)
+            if close is not None:
+                # Inspect only the completed visible suffix, never the reasoning
+                # prefix or a future decode. No text/token payload is logged.
+                suffix = outputs[max(close + 1, len(outputs) - 64):]
+                try:
+                    body = bool(tokenizer.decode(suffix, skip_special_tokens=True).strip())
+                except (TypeError, ValueError, KeyError, IndexError):
+                    self.counts["native_final_body_decode_unavailable"] += 1
+        self._semantic_eos_proofs[key.request_id] = bool(normal and body)
+        if normal and body:
+            self._semantic_body_seen.add(key.request_id)
+            self._ensure_observed_final_stage(key)
 
     def _semantic_parent(self, child_id: str) -> tuple[str, PrefillCandidateKey] | None:
         for join_id in sorted(self._join_by_invocation.get(child_id, ())):
@@ -1210,6 +1300,8 @@ class NativeAdmissionRuntime:
                 ),
                 "tool_prefetch": self.enable_tool_prefetch,
                 "prefetch_lead_ms": self.prefetch_lead_ms,
+                "semantic_work_statistic": self.semantic_work_statistic,
+                "eos_protocol_window_ms": self.eos_protocol_window_ms,
                 "h2d_seed_samples": self._h2d_seed_count,
                 "h2d_service_samples": len(self._h2d_samples),
                 "semantic_worker_configured": self._semantic_worker is not None,
@@ -1703,6 +1795,9 @@ class NativeAdmissionRuntime:
             return
         if self._join_ticket is not None and self._live_join_ticket():
             return
+        for rid, valid in tuple(self._semantic_eos_proofs.items()):
+            if valid and (key := self._semantic_keys.get(rid)) is not None:
+                self._ensure_observed_final_stage(key)
         for stage in tuple(self._final_stages.values()):
             if self._semantic_worker is not None and stage.request_id is not None:
                 progress = self._semantic_progress.get(stage.request_id, ())
@@ -1711,9 +1806,12 @@ class NativeAdmissionRuntime:
                     stage.tokens_per_second = self._semantic_rate(stage.request_id)
             if (
                 not self._live_final_stage(stage) or stage.request_id is None
-                or stage.generated_tokens < 16
-                or stage.tokens_per_second is None
                 or self._issued_join_nodes(stage.join_id, stage.key) >= 2
+            ):
+                continue
+            observed_eos = self._semantic_eos_proofs.get(stage.request_id) is True
+            if not observed_eos and (
+                stage.generated_tokens < 16 or stage.tokens_per_second is None
             ):
                 continue
             child_key = self.visible.get(stage.request_id) or self._semantic_keys.get(stage.request_id)
@@ -1722,7 +1820,24 @@ class NativeAdmissionRuntime:
                 or child_key.context_epoch != stage.child_epoch
             ):
                 continue
-            if self._semantic_worker is not None:
+            forecast = None
+            trigger_kind = "estimated_work"
+            if self._semantic_worker is not None and observed_eos:
+                now_ms = time.monotonic() * 1000
+                ended_ms = self._semantic_finished[stage.request_id][0]
+                if (
+                    not 0 <= now_ms - ended_ms <= self.eos_protocol_window_ms
+                    or not self._semantic_key_live(child_key, now_ms)
+                ):
+                    self.counts["semantic_eos_protocol_window_expired"] += 1
+                    continue
+                remaining, remaining_ms = 0., 0.
+                trigger_kind = "observed_no_tool_eos"
+                self.counts["observed_eos_h2d_candidate"] += 1
+            elif self._semantic_worker is not None:
+                if self._semantic_eos_proofs.get(stage.request_id) is False:
+                    self.counts["semantic_finish_without_valid_body_skipped"] += 1
+                    continue
                 forecast = self._semantic_forecasts.get(stage.request_id)
                 now_ms = time.monotonic() * 1000
                 if (
@@ -1744,15 +1859,23 @@ class NativeAdmissionRuntime:
                     if not forecast.observation.notice_active:
                         self.counts["semantic_pre_eos_phase_unconfirmed"] += 1
                         continue
+                    work_tokens = (
+                        forecast.upper_tokens if self.semantic_work_statistic == "upper"
+                        else forecast.middle_tokens
+                    )
                     remaining = max(
-                        1., forecast.upper_tokens
+                        1., work_tokens
                         - max(0, generated - forecast.observation.observed_output_tokens),
                     )
-                    self.counts["semantic_pre_eos_uses_work_upper_bound"] += 1
+                    self.counts[
+                        "semantic_pre_eos_uses_work_upper_bound"
+                        if self.semantic_work_statistic == "upper"
+                        else "semantic_pre_eos_uses_work_center"
+                    ] += 1
                 # EOS is known GPU progress, not confirmation that the child RETURNed.
                 if stage.request_id in self._semantic_finished:
                     ended_ms = self._semantic_finished[stage.request_id][0]
-                    if now_ms - ended_ms > 50:
+                    if now_ms - ended_ms > self.eos_protocol_window_ms:
                         self.counts["semantic_eos_protocol_window_expired"] += 1
                         continue
                     remaining = 0.
@@ -1830,6 +1953,14 @@ class NativeAdmissionRuntime:
                     "generated_tokens": stage.generated_tokens,
                     "expected_tokens": stage.expected_tokens,
                     "remaining_ms": remaining_ms,
+                    "trigger_kind": trigger_kind,
+                    "work_statistic": self.semantic_work_statistic,
+                    "forecast_center_tokens": (
+                        forecast.middle_tokens if forecast is not None else None
+                    ),
+                    "forecast_upper_tokens": (
+                        forecast.upper_tokens if forecast is not None else None
+                    ),
                     "h2d_ms": h2d_ms,
                     "prefetch_lead_ms": self.prefetch_lead_ms,
                     "service_sample_count": estimate.sample_count,
@@ -3870,6 +4001,7 @@ class NativeAdmissionRuntime:
                         self._semantic_finished[key.request_id] = (
                             time.monotonic() * 1000, tokens,
                         )
+                        self._record_native_final_body(req, key)
             stage = self._final_request_stages.get(getattr(req, "rid", None))
             if stage is not None:
                 key = _request_key(req)

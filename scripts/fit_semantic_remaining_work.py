@@ -19,9 +19,12 @@ if str(ROOT) not in sys.path:
 
 from beliefkv.predictor.child_semantic_work import (
     FrozenTextEncoder, SemanticHead, calibrate_scores_and_bias, calibrate_work_bounds, fit_head,
+    encoder_snapshot,
 )
+from beliefkv.predictor.conditional_work import LEGACY_WORK_PROJECTION, SIGNED_WORK_PROJECTION
 from scripts.compare_semantic_rolling_work import metrics
 from scripts.train_child_semantic_work import cached_embeddings, cached_samples, split_roles
+from scripts.summarize_semantic_h2d_ab import records
 
 
 def work_rows(samples, work):
@@ -39,16 +42,35 @@ def main() -> None:
     parser.add_argument("--phase-artifact", type=Path, required=True)
     parser.add_argument("--cache", type=Path, required=True)
     parser.add_argument("--output", type=Path, required=True)
+    parser.add_argument(
+        "--work-interval-projection",
+        choices=(LEGACY_WORK_PROJECTION, SIGNED_WORK_PROJECTION),
+        default=SIGNED_WORK_PROJECTION,
+    )
     args = parser.parse_args()
     torch.set_num_threads(2)
+    args.cache.mkdir(parents=True, exist_ok=True)
     plan = json.loads(args.plan.read_text())
     frozen = json.loads(args.phase_artifact.read_text())
     encoder_sha = frozen["metadata"]["adapted_encoder"]["weights_sha256"]
     if plan["encoder"]["revision"] != encoder_sha:
         raise ValueError("work refit must reuse the frozen phase encoder")
-    samples = []
+    samples, excluded = [], {}
     for run in plan["training_runs"] + plan["calibration_evaluation_runs"]:
+        print(f"Collecting {run}", flush=True)
         rows, _ = cached_samples(ROOT / run, args.cache, snapshot_policy=plan["snapshot_policy"])
+        if plan.get("exclude_runtime_interventions", False):
+            rejected = {
+                path.parent.name for path in (
+                    *(ROOT / run).glob("client_*/workflows/*/sandbox_audit.jsonl"),
+                    *(ROOT / run).glob("workloads/workflows/*/sandbox_audit.jsonl"),
+                ) if any(row.get("event") in (
+                    "agent_graph_budget_finalization", "agent_guard_finalization_attempt",
+                    "agent_protocol_repair_attempt",
+                ) for row in records(path))
+            }
+            excluded[run] = sorted(rejected)
+            rows = [row for row in rows if row["task"] not in rejected]
         samples.extend(rows)
     roles = split_roles(samples, plan)
     encoder = FrozenTextEncoder(plan["encoder"]["local_snapshot"], max_tokens=256)
@@ -64,6 +86,7 @@ def main() -> None:
             train, embeddings[roles["training"]], dimensions=plan["pca_dimensions"],
             phase_regularization=plan["phase_regularization"],
             work_regularization=plan["work_regularization"], work_target=target,
+            work_interval_projection=args.work_interval_projection,
         )
         bias = calibrate_scores_and_bias(head, selector, embeddings[roles["selector"]])
         bounds = calibrate_work_bounds(
@@ -85,7 +108,7 @@ def main() -> None:
     )
     work_path = args.output / f"work_{selected}.json"
     composite = copy.deepcopy(frozen)
-    snapshot = args.phase_artifact.resolve().parent / "adapted_encoder"
+    snapshot = encoder_snapshot(frozen, args.phase_artifact)
     composite["metadata"]["adapted_encoder"]["snapshot"] = str(snapshot)
     composite["conditional_work_head"] = {
         "path": work_path.name,
@@ -94,8 +117,13 @@ def main() -> None:
     composite_path = args.output / "semantic_event_calibrated.json"
     composite_path.write_text(json.dumps(composite, indent=2) + "\n")
     phase = SemanticHead.load(args.phase_artifact)
+    reference = frozen.get("conditional_work_head")
+    baseline = SemanticHead.load(
+        args.phase_artifact.parent / reference["path"],
+    ) if reference else phase
     observations = [row["observation"] for row in held]
-    phase_scores, old_work = phase.arrays(observations, embeddings[roles["evaluation"]])
+    phase_scores, _ = phase.arrays(observations, embeddings[roles["evaluation"]])
+    _, old_work = baseline.arrays(observations, embeddings[roles["evaluation"]])
     _, new_work = heads[selected].arrays(observations, embeddings[roles["evaluation"]])
     rows = [{
         **row,
@@ -108,6 +136,14 @@ def main() -> None:
         "encoder_weights_sha256": encoder_sha,
         "plan": plan, "selected_work_target": selected,
         "selection_basis": "calibration selector workflows only",
+        "work_interval_projection": args.work_interval_projection,
+        "baseline_work_head": reference,
+        "excluded_intervened_tasks_by_run": excluded,
+        "role_snapshot_counts": {role: len(indices) for role, indices in roles.items()},
+        "role_workflow_counts": {
+            role: len({samples[i]["task"] for i in indices})
+            for role, indices in roles.items()
+        },
         "work_calibration": calibration,
         "evaluation_projects": plan["evaluation_projects"],
         "evaluation_last_snapshot": {name: metrics(rows, name) for name in ("baseline", "candidate")},

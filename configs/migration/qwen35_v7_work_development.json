@@ -1,0 +1,42 @@
+{
+  "scope": "One live development pair, not formal repeated or causal throughput evaluation.",
+  "root_count": 84,
+  "arrival": "single_wave",
+  "order": ["reactive", "predictive_h2d"],
+  "sampling_seed": 21,
+  "server_running": 48,
+  "host_gb": 200,
+  "host_numa_node": 1,
+  "mamba_full_memory_ratio": 0.9,
+  "host_split": "matches_actual_device_pool_bytes",
+  "context_tokens": 131072,
+  "max_completion_tokens": 8192,
+  "activation_wall_clock_seconds": 14400,
+  "recursion_limit": 2048,
+  "finalization_reserve_steps": 32,
+  "semantic_artifact": {
+    "path": "experiments/models/child_semantic_work_live_v7_quantiles/semantic_event_calibrated.json",
+    "sha256": "126e9447789c4361df436383a42afc8db092ca7cf085e8af24eb83aa39feb74d"
+  },
+  "conditional_work_head": {
+    "path": "experiments/models/child_semantic_work_live_v7_quantiles/work_quantiles.json",
+    "sha256": "c8102e2c126801793ae41e562d58a23e621f033da65c410341a891e238fadbd2"
+  },
+  "frozen_encoder_sha256": "962c85140d46c4a811a4d05c3a120af2918bf85c3de67d8f478891abd039471d",
+  "phase_head_and_threshold": "unchanged",
+  "semantic_work_statistic": "center",
+  "prefetch_lead_ms": 500,
+  "eos_protocol_window_ms": 250,
+  "prepare_host_in_both_arms": true,
+  "final_priority_and_notice_in_both_arms": true,
+  "tool_timing": "unchanged; independent surviving conditional CDF",
+  "selection_basis": "Astropy selector log pinball: unweighted quantiles 0.14608; body/late-weight variant 0.16504. Sphinx is reported, not the variant selector.",
+  "audit_requirements": [
+    "actual controller submit before native EOS versus after EOS before child RETURN",
+    "observed_no_tool_eos must not count as model prediction success",
+    "FULL and Mamba first-service/forward reuse separately",
+    "post-ACK re-parking, native reload, expiry and stale identity separately",
+    "all workflows, graph-budget FINALIZE, realized demand and negative outcomes retained"
+  ],
+  "interpretation": "Token accuracy improved, but subsecond RETURN accuracy and net throughput benefit remain unproven. Runtime selects actions; no offline action-benefit head or eligibility promotion."
+}

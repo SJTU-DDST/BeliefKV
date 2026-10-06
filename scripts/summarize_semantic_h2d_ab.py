@@ -315,6 +315,8 @@ def main() -> None:
     parser.add_argument("--tool-timing-artifact", type=Path)
     parser.add_argument("--enable-tool-timing", type=int, choices=(0, 1), default=0)
     parser.add_argument("--prefetch-lead-ms", type=int, default=1000)
+    parser.add_argument("--semantic-work-statistic", choices=("upper", "center"), default="upper")
+    parser.add_argument("--eos-protocol-window-ms", type=int, default=50)
     parser.add_argument("--transfer-service-seed", type=Path)
     parser.add_argument("--sampling-seed", type=int, default=21)
     parser.add_argument("--repetition-id", type=int, default=0)
@@ -343,6 +345,8 @@ def main() -> None:
         patch = root / "patches/sglang-v0.5.20-beliefkv-staging.patch"
         plan = {
             "prefetch_lead_ms": args.prefetch_lead_ms,
+            "semantic_work_statistic": args.semantic_work_statistic,
+            "eos_protocol_window_ms": args.eos_protocol_window_ms,
             "tool_timing_enabled": bool(args.enable_tool_timing),
             "tool_timing_artifact": str(args.tool_timing_artifact.resolve()) if args.tool_timing_artifact else None,
             "tool_timing_sha256": (
@@ -413,10 +417,8 @@ def main() -> None:
         raise ValueError(f"missing terminal arms: {missing}")
     report = {"status": "partial" if missing else "complete", "arms": arms}
     plan_path = args.run_root / "ab_plan.json"
-    expected_prepare = (
-        json.loads(plan_path.read_text()).get("prepare_host_in_both_arms", False)
-        if plan_path.exists() else False
-    )
+    plan = json.loads(plan_path.read_text()) if plan_path.exists() else {}
+    expected_prepare = plan.get("prepare_host_in_both_arms", False)
     for name, arm in arms.items():
         if arm is None:
             continue
@@ -425,6 +427,9 @@ def main() -> None:
             raise ValueError(f"{name}: missing runtime evidence or disabled physical ledger")
         if state["prepare_host"] != expected_prepare or not state["final_stage_priority"]:
             raise ValueError(f"{name}: mismatched PREPARE/priority configuration")
+        for setting in ("semantic_work_statistic", "eos_protocol_window_ms"):
+            if setting in plan and state.get(setting) != plan[setting]:
+                raise ValueError(f"{name}: mismatched {setting}")
         expected = name == "predictive_h2d"
         if state["final_stage_prefetch"] != expected or state["semantic_worker_configured"] != expected:
             raise ValueError(f"{name}: wrong predictive/model configuration")

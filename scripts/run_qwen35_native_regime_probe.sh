@@ -24,6 +24,8 @@ TRANSFER_SERVICE_SEED="${TRANSFER_SERVICE_SEED:-$ROOT/experiments/models/native_
 TOOL_TIMING_ARTIFACT="${TOOL_TIMING_ARTIFACT:-$ROOT/experiments/models/qwen35_native_event_horizons_20260928_calibrated.json}"
 ENABLE_TOOL_TIMING="${ENABLE_TOOL_TIMING:-1}"
 PREFETCH_LEAD_MS="${PREFETCH_LEAD_MS:-1000}"
+SEMANTIC_WORK_STATISTIC="${SEMANTIC_WORK_STATISTIC:-upper}"
+EOS_PROTOCOL_WINDOW_MS="${EOS_PROTOCOL_WINDOW_MS:-50}"
 SEMANTIC_REPORT_ARTIFACT="${SEMANTIC_REPORT_ARTIFACT:-$ROOT/experiments/models/child_semantic_work_frozen_phase_20261001_v1/semantic_event_calibrated.json}"
 RUN_ROOT="${RUN_ROOT:-$ROOT/experiments/raw/qwen35_native_regime_${HICACHE_WRITE_POLICY}_${FANOUT_PROFILE}_${HICACHE_SIZE_GB}g_${HOST_SPLIT/:/_}_${ROOT_COUNT}root_v1}"
 MANIFEST="${WORKLOAD_MANIFEST:-$ROOT/configs/migration/qwen35_native_reactive_overlapped_128root_workload_2026-09-23.json}"
@@ -59,6 +61,8 @@ if [[ $# -ne 0 || ! "$ROOT_COUNT" =~ ^[1-9][0-9]*$ ]] \
   || [[ "$CHILD_FINAL_REPORT_SHADOW" != "0" && "$CHILD_FINAL_REPORT_SHADOW" != "1" ]] \
   || [[ "$ENABLE_TOOL_TIMING" != "0" && "$ENABLE_TOOL_TIMING" != "1" ]] \
   || [[ ! "$PREFETCH_LEAD_MS" =~ ^[0-9]+$ ]] || (( PREFETCH_LEAD_MS < 100 || PREFETCH_LEAD_MS > 1000 )) \
+  || [[ "$SEMANTIC_WORK_STATISTIC" != upper && "$SEMANTIC_WORK_STATISTIC" != center ]] \
+  || [[ ! "$EOS_PROTOCOL_WINDOW_MS" =~ ^[0-9]+$ ]] || (( EOS_PROTOCOL_WINDOW_MS < 50 || EOS_PROTOCOL_WINDOW_MS > 500 )) \
   || [[ "$AB_MODE" != "off" && "$CONFIRMED_JOIN_CANARY" != "0" ]] \
   || [[ "$AB_MODE" == "predictive_h2d" && ! -f "$SEMANTIC_REPORT_ARTIFACT" ]] \
   || [[ "$CONFIRMED_JOIN_CANARY" == "1" && "$SGLANG_PATCH_FLAVOR" != "writeback_prepare" ]] \
@@ -103,7 +107,9 @@ if [[ "$AB_MODE" != "off" ]]; then
     -u BELIEFKV_TRANSFER_SERVICE_SEED -u BELIEFKV_TRANSFER_SERVICE_SEED_SHA256)
   export BELIEFKV_EMIT_SEMANTIC_TEXT=1
   ab_env=(BELIEFKV_ENABLE_FINAL_STAGE_PRIORITY=1 BELIEFKV_ENABLE_PREPARE_HOST="$PREPARE_HOST"
-    BELIEFKV_PREFETCH_LEAD_MS="$PREFETCH_LEAD_MS")
+    BELIEFKV_PREFETCH_LEAD_MS="$PREFETCH_LEAD_MS"
+    BELIEFKV_SEMANTIC_WORK_STATISTIC="$SEMANTIC_WORK_STATISTIC"
+    BELIEFKV_EOS_PROTOCOL_WINDOW_MS="$EOS_PROTOCOL_WINDOW_MS")
   if [[ "$ENABLE_TOOL_TIMING" == "1" ]]; then
     if [[ ! -f "$TOOL_TIMING_ARTIFACT" ]]; then
       printf 'Tool timing enabled but artifact is missing\n' >&2

@@ -2342,6 +2342,77 @@ def test_semantic_eos_window_creates_only_h2d_candidate_not_final_priority():
     assert runtime.counts["semantic_result_stale"] == 1
 
 
+@pytest.mark.parametrize("reason, body, tools, should_issue", [
+    ("stop", True, False, True), ("stop", False, False, False),
+    ("length", True, False, False), ("abort", True, False, False),
+    ("stop", True, True, False),
+])
+def test_observed_native_final_body_does_not_require_a_model_forecast(
+    monkeypatch, reason, body, tools, should_issue,
+):
+    monkeypatch.setenv("BELIEFKV_EOS_PROTOCOL_WINDOW_MS", "250")
+    runtime = final_stage_runtime()
+    runtime._clear_final_stage("join")
+    child = req("child")
+    child.session_id, child.session_generation = "cs", 1
+    child.beliefkv_metadata["context_epoch"] = 1
+    runtime.on_events((event(
+        7, RuntimeEventKind.LLM_SUBMIT, invocation_id="child",
+        context_id="ctx-child", context_epoch=1,
+        attributes={"request_id": "child"},
+    ),))
+    runtime.register_visible_request(child)
+    key = runtime.visible["child"]
+    now = time.monotonic() * 1000
+    runtime._semantic_worker = NS()
+    runtime._semantic_keys["child"] = key
+    runtime._semantic_finished["child"] = (now, 3)
+    child.finished_reason = NS(to_json=lambda: {"type": reason})
+    child.output_ids = [1, 2, 3]
+    if body:
+        runtime._semantic_body_seen.add("child")
+    if tools:
+        runtime._decoded_tool_requests.add("child")
+    runtime._record_native_final_body(child, key)
+    assert ("join" in runtime._final_stages) is should_issue
+    assert not runtime._semantic_forecasts
+    runtime._h2d_samples.extend(((101, 10.),) * 3)
+    runtime._native_cache = NS(cache_controller=NS(mem_pool_host=NS(entry_map={
+        "kv": NS(host_pool=NS(size_per_token=1)),
+        "mamba": NS(host_pool=NS(size_per_token=1)),
+    })))
+    with patch.object(runtime, "inspect_context_h2d_opportunity", return_value=NS(
+        step="native-step", fits_current_free_lists=True,
+        required_full_tokens=100, required_mamba_slots=1,
+    )):
+        runtime._roll_final_stage()
+    assert (runtime._join_ticket is not None) is should_issue
+    if should_issue:
+        assert runtime._final_stages["join"].semantic_only
+        assert runtime._final_stages["join"].tokens_per_second is None
+        runtime._semantic_finished["child"] = (now - 251, 3)
+        runtime._join_ticket = None
+        runtime._roll_final_stage()
+        assert runtime._join_ticket is None
+
+
+def test_native_reasoning_suffix_proves_visible_body_without_treating_reasoning_as_body():
+    runtime = NativeAdmissionRuntime()
+    runtime._reasoning_close_token_ids = frozenset({99})
+    key = PrefillCandidateKey("r", "wf", "child", "ctx-child", 0, 0)
+    child = NS(
+        output_ids=[1, 2, 99, 10, 11], beliefkv_metadata={},
+        finished_reason=NS(to_json=lambda: {"type": "stop"}),
+        tokenizer=NS(decode=lambda tokens, **kwargs: "Report." if 10 in tokens else ""),
+    )
+    runtime._record_native_final_body(child, key)
+    assert runtime._semantic_eos_proofs["r"] is True
+    empty = replace(key, request_id="empty")
+    child.output_ids = [1, 2, 99, 11]
+    runtime._record_native_final_body(child, empty)
+    assert runtime._semantic_eos_proofs["empty"] is False
+
+
 def test_semantic_work_queue_requires_real_parent_host_restore_target():
     runtime = final_stage_runtime()
     runtime._clear_final_stage("join")
@@ -2553,6 +2624,60 @@ def test_final_stage_latest_start_requires_serviced_decode_and_h2d_evidence():
         8, RuntimeEventKind.RETURN, invocation_id="child",
     ),))
     assert "join" not in runtime._final_stages
+
+
+@pytest.mark.parametrize("statistic, notice, should_issue", [
+    ("upper", True, False), ("center", True, True), ("center", False, False),
+])
+def test_semantic_work_statistic_does_not_bypass_notice_or_physical_checks(
+    monkeypatch, statistic, notice, should_issue,
+):
+    monkeypatch.setenv("BELIEFKV_SEMANTIC_WORK_STATISTIC", statistic)
+    runtime = final_stage_runtime()
+    child = req("child")
+    child.session_id, child.session_generation = "cs", 1
+    child.beliefkv_metadata["context_epoch"] = 1
+    runtime.on_events((event(
+        7, RuntimeEventKind.LLM_SUBMIT, invocation_id="child",
+        context_id="ctx-child", context_epoch=1,
+        attributes={"request_id": "child"},
+    ),))
+    runtime.register_visible_request(child)
+    stage = runtime._final_stages["join"]
+    stage.generated_tokens, stage.tokens_per_second = 120, 40.
+    runtime._semantic_worker = NS()
+    runtime._semantic_forecasts["child"] = SemanticReportReply(
+        SemanticReportInput(
+            runtime.visible["child"], time.monotonic() * 1000,
+            120, 256, "Evidence complete.", notice, 500, 1, 2,
+        ), .99, 0., 4., 400., 5.,
+    )
+    runtime._h2d_samples.extend([(105, 200.)] * 3)
+    runtime.attach_native_cache(NS(cache_controller=NS(
+        mem_pool_host=NS(entry_map={
+            "kv": NS(host_pool=NS(size_per_token=10)),
+            "mamba": NS(host_pool=NS(size_per_token=5)),
+        }),
+    )))
+    observation = NS(
+        step=PrefetchLoadStep(stage.key, 11, 4, 11, 4),
+        fits_current_free_lists=True, required_full_tokens=10, required_mamba_slots=1,
+    )
+    with patch.object(runtime, "inspect_context_h2d_opportunity", return_value=observation), \
+        patch.object(runtime, "refreshed_prefetch_gpu_step", return_value=observation.step), \
+        patch.object(runtime, "issue_prefetch_gpu_step", return_value="command") as issue:
+        runtime.dispatch_join_prefetch()
+        assert bool(issue.call_count) is should_issue
+    assert not runtime._semantic_finished
+    if should_issue:
+        assert runtime._join_ticket.stage_bound
+        assert runtime._issued_join_nodes("join", stage.key) == 1
+
+
+def test_semantic_work_statistic_rejects_unknown_policy(monkeypatch):
+    monkeypatch.setenv("BELIEFKV_SEMANTIC_WORK_STATISTIC", "auto-benefit")
+    with pytest.raises(ValueError, match="work statistic"):
+        NativeAdmissionRuntime()
 
 
 def test_final_stage_tool_and_epoch_change_cancel_provisional_h2d():

@@ -3,9 +3,10 @@
 更新日期：2026-10-06
 
 当前主线为Qwen3.5-35B-A3B / SGLang 0.5.20，同一
-`beliefkv-next` 环境。84-root单波v5开发pair已结束，最近配置
-running=48、Host 200 GB/NUMA node 1；时机/短策略租约已CPU修复，
-同配置v6单pair已启动，不排额外重复，
+`beliefkv-next` 环境。84-root单波v6开发pair已结束，两侧84 completed，
+最近配置running=48、Host 200 GB/NUMA node 1。7个JOIN H2D全部
+首次复用，但仍均在EOS后启动；单轮吞吐+4.62%有实际需求混杂。
+当前冻结阶段头、独立优化末段工作预测，不排额外重复，
 正式实验再多轮取平均。
 旧Qwen3/0.5.2rc1、canary和旧池配置不作为当前默认。
 

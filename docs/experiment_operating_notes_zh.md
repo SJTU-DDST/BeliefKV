@@ -13,9 +13,24 @@ server running=48、Host 200 GB/NUMA node 1及池比例保持不变。
 开发阶段当前只做一对84-root；正式阶段再多轮配对取平均和报告
 方差。固定需求GPU回放不作为主线或前置要求，见
 `docs/experiments/pressure84_and_fair_comparison_2026-10-05_zh.md`。
-v5已结束；修复后的同配置单个v6 pair已启动，不排额外重复。
+v6已结束，两侧84 completed；当前改进条件工作头，不排额外重复。
 84-root仍是待验证的候选，
 不能仅凭脚本默认值自动重跑或当作已冻结的理想正式负载。
+
+v6中7个JOIN H2D全部首次复用，但仍在EOS后启动。下一轮先用
+相同因果快照比较工作中心/区间与首次触发，不通过手改eligibility、
+去掉物理容量检查或新Agent guard制造动作。仅在显式版本的新
+work artifact中修正区间投影并重新校准，旧artifact不默默换语义。
+Runtime的 `SEMANTIC_WORK_STATISTIC=upper|center` 必须写入launch
+manifest与动作日志，旧默认upper。模型只预测事件/工作，动作由
+runtime结合真实Host-only副本、可用容量、节点预算与短租约选择。
+将v6加入训练后只能报告训练回放，项目隔离的旧开发集合也不能
+重新称为密封验证。修复后最多启动一个同配置v7 pair，先提交源码，
+运行中继续冻结源码、prompt、权重和参数。
+`EOS_PROTOCOL_WINDOW_MS` 默认50，v7显式250；它是正常stop后
+cache动作的有效性窗口，不是agent返回门禁。非空正文/无工具/
+非internal证据独立于模型，日志标记observed_no_tool_eos，
+不能把这个路径增加的ACK写成模型预测精度提升。
 
 场景目标是存在真实可迁移状态与可用 HBM
 空间、且有用 KV 丢弃后重算较少的负载。server running=48 是

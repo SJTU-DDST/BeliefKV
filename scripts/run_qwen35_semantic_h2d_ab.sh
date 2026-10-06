@@ -5,7 +5,7 @@ ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 PYTHON="${PYTHON:-/home/longhao/miniconda3/envs/beliefkv-next/bin/python}"
 ROOT_COUNT="${ROOT_COUNT:-84}"
 PORT="${PORT:-18454}"
-RUN_ROOT="${RUN_ROOT:-$ROOT/experiments/raw/qwen35_joint_wait_h2d_ab_${ROOT_COUNT}root_20261006_v6}"
+RUN_ROOT="${RUN_ROOT:-$ROOT/experiments/raw/qwen35_joint_wait_h2d_ab_${ROOT_COUNT}root_v7}"
 ARM_ORDER="${ARM_ORDER:-reactive predictive_h2d}"
 SAMPLING_SEED="${SAMPLING_SEED:-21}"
 REPETITION_ID="${REPETITION_ID:-0}"
@@ -17,6 +17,8 @@ TOOL_TIMING_ARTIFACT="${TOOL_TIMING_ARTIFACT:-$ROOT/experiments/models/qwen35_na
 TRANSFER_SERVICE_SEED="${TRANSFER_SERVICE_SEED:-$ROOT/experiments/models/native_transfer_service_seed_v4.json}"
 ENABLE_TOOL_TIMING="${ENABLE_TOOL_TIMING:-1}"
 PREFETCH_LEAD_MS="${PREFETCH_LEAD_MS:-1000}"
+SEMANTIC_WORK_STATISTIC="${SEMANTIC_WORK_STATISTIC:-upper}"
+EOS_PROTOCOL_WINDOW_MS="${EOS_PROTOCOL_WINDOW_MS:-50}"
 
 if [[ $# -ne 0 || -e "$RUN_ROOT" || ! -f "$ARTIFACT" ]] \
   || [[ ! "$ROOT_COUNT" =~ ^[1-9][0-9]*$ ]] || (( ROOT_COUNT > 84 )) \
@@ -34,6 +36,8 @@ mkdir -p "$RUN_ROOT"
   --tool-timing-artifact "$TOOL_TIMING_ARTIFACT" \
   --enable-tool-timing "$ENABLE_TOOL_TIMING" --prefetch-lead-ms "$PREFETCH_LEAD_MS" \
   --transfer-service-seed "$TRANSFER_SERVICE_SEED" \
+  --semantic-work-statistic "$SEMANTIC_WORK_STATISTIC" \
+  --eos-protocol-window-ms "$EOS_PROTOCOL_WINDOW_MS" \
   --sampling-seed "$SAMPLING_SEED" --repetition-id "$REPETITION_ID" \
   --workload-manifest "${WORKLOAD_MANIFEST:-$ROOT/configs/migration/qwen35_native_reactive_overlapped_128root_workload_2026-09-23.json}"
 for arm in $ARM_ORDER; do
@@ -45,6 +49,8 @@ for arm in $ARM_ORDER; do
     PREPARE_HOST="$PREPARE_HOST" H2D_SEED_ARTIFACT="$H2D_SEED_ARTIFACT" \
     ENABLE_TOOL_TIMING="$ENABLE_TOOL_TIMING" TOOL_TIMING_ARTIFACT="$TOOL_TIMING_ARTIFACT" \
     TRANSFER_SERVICE_SEED="$TRANSFER_SERVICE_SEED" PREFETCH_LEAD_MS="$PREFETCH_LEAD_MS" \
+    SEMANTIC_WORK_STATISTIC="$SEMANTIC_WORK_STATISTIC" \
+    EOS_PROTOCOL_WINDOW_MS="$EOS_PROTOCOL_WINDOW_MS" \
     HOST_SPLIT=auto HICACHE_SIZE_GB=200 HICACHE_WRITE_POLICY=write_back \
     SGLANG_PATCH_FLAVOR=staging CONFIRMED_JOIN_CANARY=0 \
     SEMANTIC_REPORT_ARTIFACT="$ARTIFACT" RUN_ROOT="$RUN_ROOT/$arm" \
@@ -70,6 +76,8 @@ for arm in $ARM_ORDER; do
   fi
   "$PYTHON" "$ROOT/scripts/audit_native_h2d_sources.py" \
     --arm "$RUN_ROOT/$arm" --output "$RUN_ROOT/$arm/native_h2d_sources.json"
+  "$PYTHON" "$ROOT/scripts/audit_prefetch_lifecycle.py" \
+    --arm "$RUN_ROOT/$arm" --output "$RUN_ROOT/$arm/prefetch_lifecycle.json"
   "$PYTHON" "$ROOT/scripts/summarize_semantic_h2d_ab.py" \
     --cleanup-arm "$RUN_ROOT/$arm" > "$RUN_ROOT/$arm.workspace_cleanup.json"
 done

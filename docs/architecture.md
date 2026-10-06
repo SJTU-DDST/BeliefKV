@@ -12,11 +12,13 @@ current implementation status is
 Qwen3.5-35B-A3B BF16 and SGLang 0.5.20 run with the Agent workload in
 the shared `beliefkv-next` environment. FULL and Mamba are managed together;
 native UnifiedRadixCache and allocators remain the physical authority.
-The latest completed v5 pair used 84 roots in one arrival wave, running=48,
+The latest completed v6 pair used 84 roots in one arrival wave, running=48,
 and a 200 GB Host pool on NUMA node 1. Runtime, prompts, weights and launch
-arguments stayed frozen. Coherent-time and soft-residency fixes are CPU-tested;
-the single v6 pair has started with the same model, prompts, weights and
-configuration at launch commit `573f32c`.
+arguments stayed frozen at launch commit `573f32c`. Both arms completed 84/84.
+Seven JOIN H2Ds were actually reused without re-parking or native reload,
+but all followed EOS; tool H2D remained zero. Observed completed throughput
+increased 4.62% with less realized demand, not an isolated speedup.
+Work-only refits keep the phase encoder/head frozen.
 Repeated live pairs are for later formal evaluation;
 canaries and fixed-demand GPU replay are not prerequisites.
 
@@ -73,9 +75,9 @@ Valid native D2H copies also qualify; prior PREPARE consumption is not required.
 Both experimental arms share notices, bounded final-report priority,
 waiting-state preparation and real-pressure demotion. Only predictive enables
 early loads. This is not an untouched native baseline.
-v5 had 17 H2D ACKs totaling 1.298 GB: 11 JOIN loads with verified FULL first
-use, and six tool loads without FULL reuse. Ten Mamba forward uses were
-verified. All JOIN loads followed native EOS; no pre-EOS load was produced.
+v6 had seven JOIN H2D ACKs totaling 0.533 GB, all with verified FULL first
+use; six Mamba forward uses were verified. All followed native EOS;
+no pre-EOS load was produced.
 Neither broad subsecond RETURN accuracy nor end-to-end throughput benefit
 has been demonstrated.
 
@@ -84,7 +86,8 @@ selected tool prefetch while conditional CDF selected long-wait parking.
 Every tool load was ACKed, pressure-demoted again and reactively reloaded
 before first service. These six actions cannot be called useful simply
 because they completed. The conflict and missing post-ACK short residency
-are now addressed in CPU-tested code, with GPU validation pending. Residual
+are now addressed in CPU-tested code. V6 verified the JOIN lifecycle but
+provided no new tool-transfer sample. Residual
 P50 is inverted from the same survival-conditioned CDF. The post-ACK soft
 lease excludes BeliefKV parking until service or explicit invalidation; it is
 not an allocator pin, reservation or guaranteed-reuse certificate.

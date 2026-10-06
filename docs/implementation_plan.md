@@ -22,9 +22,14 @@ Do not change to 128, staggered 64+64 or artificial eviction.
 More traffic is not inherently more useful traffic: report first-use,
 exposed restore waiting, advance residency, Host churn and recomputation.
 
-The single v5 development pair is complete. The coherent-time/soft-residency
-fix passed 225 related CPU tests; the single v6 pair has started with the same
-84-root configuration, reactive then predictive. No extra repetitions are queued.
+The single v6 development pair is complete: both arms finished 84/84. Seven
+JOIN loads actually reused FULL without re-parking/native reload; all were
+post-EOS and tool loads stayed zero. The observed +4.62% completed throughput
+comes with less realized work and is not an isolated KV speedup. Work-only
+refits and first-trigger audits are complete with the phase head/encoder frozen.
+A separate observed-final-body path avoids requiring NN results or TPS
+after a normal no-tool stop.
+No extra repetitions are queued.
 Multi-pair averaging is
 a later formal-experiment requirement, not a reason to slow development.
 Fixed-demand GPU replay and deterministic-kernel migration are not required
@@ -56,41 +61,43 @@ and experiment launch record unchanged.
 
 ## 3. Immediate Work
 
-Prioritize the observed v5 failure before another pressure experiment:
+1. V6 lifecycle audit complete: all seven JOIN FULL targets actually reused;
+   no own re-demotion/native reload. Two soft leases expired before eventual
+   reuse, so expiration is not a miss. No new tool load means its post-ACK
+   GPU behavior remains unverified.
+2. Work-interval repair complete: retain legacy clip-then-expand semantics
+   for old artifacts; expand signed residuals then clip only in explicitly
+   versioned and recalibrated candidates. The isolated repair did not improve
+   point MAE or provide earlier v6 replay triggers.
+3. Fit only the work head using v6 intrinsic remaining-token labels and real
+   100 ms snapshots, keeping phase/encoder/threshold frozen. Compare a small
+   log-work quantile head to the deployed head and linear refit.
+4. Audit first triggers, tool-round errors, early residence and actual
+   recoverable targets. Runtime may explicitly compare center/upper timing;
+   legacy defaults stay upper. Do not turn a whole-trajectory uncertainty
+   bound into a blanket action veto or zero work into EOS.
+5. Commit source and select one measured candidate before one same-config
+   v7 live pair. Keep all 84 tasks, pools/running/prompts/budgets; no blind
+   rerun, canary, artificial eviction, concurrency increase or repeat queue.
+   Models still do not learn offline action net benefit.
+6. Keep exposed restore waiting and block-attribution overflow as explicit
+   measurement gaps. Host is full in both arms; aggregate hit >95% cannot
+   certify low useful recomputation. Preserve both positive and negative runs.
 
-1. CPU implementation complete: reconcile tool long-wait parking with imminent H2D selection. All six tool
-   prefetches were ACKed, pressure-demoted again and reactively reloaded.
-   At issue, recorded forecasts satisfy both opposing policies. Do not add
-   a second CDF veto; use one conditional time/residency interpretation.
-2. CPU implementation complete: a past P50 clipped to zero is not a completion
-   signal. P50 is now inverted from the same surviving CDF used for parking;
-   unsupported tails remain unknown, not zero.
-3. CPU implementation complete, GPU pending: coordinate post-ACK short residency with pressure candidates and true
-   next service or explicit cancellation. Bound FULL/Mamba bytes/time, keep
-   native capacity authority, and do not allow an obsolete target to block
-   runnable requests. This is KV lifecycle coordination, not an Agent guard.
-4. Keep phase/encoder weights fixed; improve the conditional work head only
-   after target reuse remains valid. v5 had zero pre-EOS predictive loads.
-5. Identify exposed restore waiting and repair block attribution overflow
-   before calling 84 roots a low-useful-recompute formal workload. Both Host
-   pools reached capacity despite aggregate FULL hits above 95%.
-6. Preserve single-pair negative results and realized work. No repeated queue,
-   concurrency escalation, new canary, blanket guard or automatic retraining.
-7. Finished-workspace cleanup is already complete for 84/83 tasks; retain
-   pytest-7324's incomplete workspace, trace and patch.
-
-The user requested continuation after inspection. Runtime implementation and
-related CPU regression are complete for items 1-3; GPU benefit is not proven.
-The soft lease excludes BeliefKV pressure parking but does not pin native
-allocations. Native eviction explicitly cancels it; do not claim guaranteed reuse.
-Only one v6 pair is planned, same model/prompt/weights/pools/running/budgets.
-Read-only v5 replay has 525 sampled restore targets, one near/fit intersection
-under the new timing policy, and zero opposing decisions. No action-reward
-model, eligibility promotion or extra Agent guard is introduced.
+V6 is complete and remains frozen as evidence; work refits do not backfill it.
+V6 becomes training replay when added to the fit. Astropy/Sphinx are reused
+project-disjoint development sets, not newly sealed evaluation.
 v6 directory: `experiments/raw/qwen35_joint_wait_h2d_ab_84root_20261006_v6`.
 Launch commit: `573f32c`. Runtime fingerprint:
 `c65caec44ecc934cd5cff9d740ec96f19459f48527505c85927bd4ae969fd6b9`.
-Freeze runtime/model/prompt/parameters now; documentation-only updates are separate.
+Candidate plan: `configs/migration/child_semantic_work_live_v7.json`.
+V6 findings: `docs/experiments/joint_tool_join_h2d_v6_84root_zh.md`.
+V7 development plan: `configs/migration/qwen35_v7_work_development.json`.
+Choose unweighted log quantiles using the Astropy selector, center=500 ms
+and the explicitly logged EOS protocol window=250 ms. Native EOS evidence
+is not model prediction success. Reweighted body features remain a candidate.
+165 related CPU tests pass; the next one-pair GPU check must retain all
+workflows and actual transfer/reuse/trajectory evidence.
 
 ## 4. Latest v5 Findings
 

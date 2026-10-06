@@ -10,6 +10,8 @@
 
 | 报告 | 用途 |
 | --- | --- |
+| [v7工作头开发](conditional_work_v7_development_zh.md) | 冻结phase的log-work拟合、首次触发不足及独立观测EOS路径 |
+| [v6 84-root联合恢复](joint_tool_join_h2d_v6_84root_zh.md) | 84/84；7个JOIN复用，+4.62%吞吐观测存在需求混杂 |
 | [v5 84-root联合恢复](joint_tool_join_h2d_v5_84root_zh.md) | 17个预测H2D；JOIN复用与工具自我回收冲突，完整吞吐/JCT负结果 |
 | [v4工具/JOIN联合恢复](joint_tool_join_h2d_v4_zh.md) | 六个预测H2D及GPU利用率退化的逐项根因复核 |
 | [84-root与正式对照约定](pressure84_and_fair_comparison_2026-10-05_zh.md) | 开发单pair；正式多轮平均，回放不是前置要求 |
