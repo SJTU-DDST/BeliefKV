@@ -30,6 +30,10 @@ Mamba逐节点hit未知仍是归因缺口，不能把它当成完整重算上限
 `qwen35_joint_wait_h2d_predictive_108root_2to4_v8d` 的108-root预测
 开发诊断，资源/权重/窗口不变，不自动重跑reactive或canary。
 因源码修复且旧reactive策略失效，两者不能作为严格吞吐对照。
+v8d已在 `0f04f70` 提交后启动，108条首轮全双task；启动检查
+340次PREPARE issued/ACK、physical_disabled=false、receipt failure=0，
+语义worker ready，JOIN/tool prefetch打开。验证395 passed/1 skipped。
+旧reactive workspace已清理，v8d代码/参数/模型冻结，收益尚未验证。
 以下保留原启动配置及历史截面，不覆盖上述最终诊断。
 
 2026-10-07用户授权108个root单波、每轮同一响应派发2–4个child，

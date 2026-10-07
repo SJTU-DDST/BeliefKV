@@ -26,12 +26,19 @@ pool、session/epoch和重放。忙碌writer改为定时发布状态；
 测试形态不再把管道过滤器/选项参数当作测试标签，shell采用
 bash pipefail反馈上游失败。不新增agent guard或短预算。
 
-下一运行是全新目录
+当前运行是全新目录
 `experiments/raw/qwen35_joint_wait_h2d_predictive_108root_2to4_v8d`，
 修复后的108-root单波predictive机制诊断，保留v7头、500 ms/
 250 ms窗口、running48、Host200 GB/NUMA1和0.9池比例。
 不自动重跑reactive，不将v8c和v8d解释为公平配对或预测独立加速。
 严格比较须后续补同修复版本reactive。以下v8c启动记录作为历史证据保留。
+
+v8d启动commit `0f04f70`；首轮108条实际全部双task，检查时
+340次PREPARE issued/ACK均已完成、physical_disabled=false、
+receipt failure为0。语义worker ready，JOIN/tool prefetch均启用，
+模型SHA与v7冻结产物一致。相关回归395 passed/1 skipped。
+旧reactive的108个已归档workspace已清理，trace/patch保留。
+v8d期间再次冻结代码、prompt、模型及参数，不把启动健康当收益证明。
 
 本文是当前实现事实的权威入口，不是逐日开发日志。当前主线已是
 Qwen3.5-35B-A3B BF16 / SGLang 0.5.20，不再以旧 Qwen3/SGLang

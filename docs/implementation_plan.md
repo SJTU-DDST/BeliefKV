@@ -25,6 +25,13 @@ remove archived completed workspaces before restart.
 
 The prior v8c execution plan below is historical and must not override this update.
 
+The repaired v8d is running at `0f04f70`. All 108 initial groups have two
+children, 340 PREPARE operations have completed without disabling the physical
+lane, and the semantic worker is ready. JOIN/tool prefetch flags are on;
+actual H2D/first-use/lead and final throughput remain to be measured.
+395 related tests passed, one skipped. V8c archived workspaces were removed.
+Freeze this launched version; do not promote a cross-version comparison.
+
 This is the active plan, not a chronological log. The previous detailed plan
 is available at `c219604:docs/implementation_plan.md`; older snapshots remain
 under `docs/archive/`. Current design, implementation evidence and execution
