@@ -87,7 +87,12 @@ class NativeReactiveTelemetry:
         self._block_eviction_lengths: dict[str, OrderedDict[int, None]] = {}
         self._block_eviction_length_refs: Counter[tuple[str, int]] = Counter()
         self._block_eviction_index_limit = 32768
-        self._max_prefix_lengths_per_probe = 1024
+        # The index is bounded already; probing only its newest 1024 lengths
+        # hid older live-prefix losses under multi-workflow pressure.
+        self._max_prefix_lengths_per_probe = self._block_eviction_index_limit
+        self._context_prefix_history: OrderedDict[tuple[Any, ...], dict[str, Any]] = OrderedDict()
+        self._context_prefix_history_limit = 1024
+        self._context_prefix_counts: Counter[str] = Counter()
         self._block_probe_armed = False
         self._block_attribution_counts: Counter[str] = Counter()
         self._block_attribution_evicted_units: Counter[str] = Counter()
@@ -405,6 +410,80 @@ class NativeReactiveTelemetry:
                 getattr(req, "mamba_host_hit_length", 0) or 0
             ),
         })
+
+    def _queue_context_prefix(self, req: Any, identity: dict[str, Any], *, served: bool) -> None:
+        if served and not getattr(req, "output_ids", ()):
+            return
+        self._emit("eviction_attribution", {
+            "_internal_event": "served_context_prefix" if served else "context_prefix_probe",
+            "ts_ms": time.time() * 1000.,
+            **identity, "request_id": str(req.rid),
+            "input_ids": req.origin_input_ids,
+            "extra_key": getattr(req, "extra_key", None),
+            "cache_salt": getattr(req, "cache_salt", None),
+            "session_id": getattr(req, "session_id", None),
+            "session_generation": getattr(req, "session_generation", None),
+            "cached_tokens_device": int(getattr(req, "cached_tokens_device", 0) or 0),
+            "cached_tokens_host": int(getattr(req, "cached_tokens_host", 0) or 0),
+            "mamba_host_hit_slots": int(getattr(req, "mamba_host_hit_length", 0) or 0),
+        })
+
+    def _write_context_prefix(self, record: dict[str, Any], output: Any) -> None:
+        token_ids = array("q", (int(token) for token in record["input_ids"]))
+        namespace = self._namespace_digest(record.get("extra_key"), record.get("cache_salt"))
+        # A fresh native session/compaction is not an eviction-caused loss.
+        scope = (
+            record["workflow_id"], record["context_id"], namespace,
+            record.get("session_id"), record.get("session_generation"),
+        )
+        if record["_internal_event"] == "served_context_prefix":
+            self._context_prefix_history[scope] = {
+                "tokens": token_ids, "request_id": record["request_id"],
+                "context_epoch": record["context_epoch"],
+            }
+            self._context_prefix_history.move_to_end(scope)
+            while len(self._context_prefix_history) > self._context_prefix_history_limit:
+                self._context_prefix_history.popitem(last=False)
+                self._context_prefix_counts["history_capacity_expirations"] += 1
+            return
+        self._context_prefix_counts["request_probes"] += 1
+        previous = self._context_prefix_history.get(scope)
+        if previous is None:
+            self._context_prefix_counts["without_prior_served_prompt"] += 1
+            return
+        if record["context_epoch"] < previous["context_epoch"]:
+            self._context_prefix_counts["epoch_regression"] += 1
+            return
+        common = 0
+        for left, right in zip(token_ids, previous["tokens"]):
+            if left != right:
+                break
+            common += 1
+        cached = min(len(token_ids), max(0, record["cached_tokens_device"] + record["cached_tokens_host"]))
+        lost = max(0, common - cached)
+        new = len(token_ids) - common
+        self._context_prefix_counts["with_prior_served_prompt"] += 1
+        self._context_prefix_counts["previously_served_common_prefix_tokens"] += common
+        self._context_prefix_counts["previously_served_prefix_recompute_proxy_tokens"] += lost
+        self._context_prefix_counts["new_or_changed_prompt_tokens"] += new
+        self._context_prefix_counts["requests_with_prefix_recompute_proxy"] += int(lost > 0)
+        output.write(json.dumps({
+            "event": "context_prefix_reuse_probe", "ts_ms": record["ts_ms"],
+            **{name: record[name] for name in (
+                "workflow_id", "invocation_id", "context_id", "context_epoch", "request_id",
+            )},
+            "prior_request_id": previous["request_id"],
+            "common_previously_served_input_tokens": common,
+            "native_cached_input_tokens": cached,
+            "previously_served_prefix_recompute_proxy_tokens": lost,
+            "new_or_changed_prompt_tokens": new,
+            "mamba_host_hit_slots": record["mamba_host_hit_slots"],
+            "semantics": (
+                "Exact same-session input prefix served by a prior completed generation "
+                "but absent from current native cache-hit counters. Not a per-layer "
+                "kernel-work measurement or proof of eviction cause; excludes new input."
+            ),
+        }, separators=(",", ":"), allow_nan=False) + "\n")
 
     def _remove_block_eviction_index(
         self, identity: tuple[str, str, int, str]
@@ -865,6 +944,7 @@ class NativeReactiveTelemetry:
                     },
                 })
                 self._queue_block_reaccess_probe(req, identity)
+                self._queue_context_prefix(req, identity, served=False)
                 self._active.add(rid)
             output_before = len(req.output_ids)
             self._reported_output_tokens.setdefault(rid, output_before)
@@ -1143,6 +1223,11 @@ class NativeReactiveTelemetry:
                 req, sample, complete_wall, descriptor["sample_id"]
             )
             if req.finished() and rid in self._active:
+                self._queue_context_prefix(req, {
+                    key: sample[key] for key in (
+                        "workflow_id", "invocation_id", "context_id", "context_epoch"
+                    )
+                }, served=True)
                 self._emit("events", {
                     "kind": "llm_result",
                     "ts_ms": complete_wall,
@@ -1547,6 +1632,8 @@ class NativeReactiveTelemetry:
                                 self._write_block_request_probe(
                                     record, eviction_attribution
                                 )
+                            elif internal_event in ("context_prefix_probe", "served_context_prefix"):
+                                self._write_context_prefix(record, eviction_attribution)
                             else:
                                 eviction_attribution.write(
                                     json.dumps(
@@ -1642,6 +1729,15 @@ class NativeReactiveTelemetry:
             "dropped_records": 0 if self._error is None else None,
             "host_pool_evidence": pool_evidence,
             "request_cache_evidence": request_cache_evidence,
+            "context_prefix_reuse_evidence": {
+                "counts": dict(self._context_prefix_counts),
+                "tracked_context_count": len(self._context_prefix_history),
+                "tracking_limit": self._context_prefix_history_limit,
+                "semantics": (
+                    "Previously served same-session input-prefix loss, not newly "
+                    "appended input or a per-layer FULL/Mamba recomputation count."
+                ),
+            },
             "host_block_eviction_attribution": {
                 "available": self._host_block_identity_available,
                 "counts": dict(self._block_attribution_counts),

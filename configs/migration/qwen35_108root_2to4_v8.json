@@ -1,0 +1,45 @@
+{
+  "scope": "One live opportunity/pressure diagnosis pair, not formal average or oracle execution.",
+  "root_count": 108,
+  "arrival": "single_wave",
+  "selection": "first_108_of_existing_128_train_manifest_in_original_order",
+  "fanout_profile": "native_in_graph_2to4",
+  "requested_children_per_round": [2, 4],
+  "fanout_policy": "Prompt only; same-response parallel task calls, no forced cancellation or invented children. Initial auto choice, unchanged tool schema.",
+  "order": ["reactive", "predictive_h2d"],
+  "running": 48,
+  "host_gb": 200,
+  "host_numa_node": 1,
+  "mamba_full_memory_ratio": 0.9,
+  "host_split": "matches_actual_device_pool_bytes",
+  "context_tokens": 131072,
+  "completion_tokens": 8192,
+  "workflow_deadline_seconds": 14400,
+  "graph_steps": 2048,
+  "finalization_reserve_steps": 32,
+  "sampling_seed": 21,
+  "semantic_artifact": {
+    "path": "experiments/models/child_semantic_work_live_v7_quantiles/semantic_event_calibrated.json",
+    "sha256": "126e9447789c4361df436383a42afc8db092ca7cf085e8af24eb83aa39feb74d"
+  },
+  "tool_artifact": {
+    "path": "experiments/models/qwen35_native_event_horizons_20260928_calibrated.json",
+    "sha256": "55ea6fdc3307ecbbc4bb06020dbc961801cf7d5da3a3c13ad09a619276c64e80"
+  },
+  "semantic_work_statistic": "center",
+  "prefetch_lead_ms": 500,
+  "eos_protocol_window_ms": 250,
+  "prepare_and_final_priority_both_arms": true,
+  "terminal_cache_diagnostics_both_arms": true,
+  "prediction_status": "Frozen v7 heads under changed pressure/fanout, not assumed recalibrated. Complete JOIN=max actual member RETURN; early parent restoration only for the last observed unfinished ALL member.",
+  "metrics": [
+    "native/predictive H2D and D2H bytes, CUDA event service, submit-ACK and queue budget",
+    "same-session previously served common input-prefix loss, separate from new input",
+    "complete bounded Host eviction probes, FULL attribution and Mamba uncertainty",
+    "terminal leaf ancestry device/host residency, locks and refs with later snapshots",
+    "session close start/ACK/failure and latency, not physical reclamation",
+    "actual per-round fanout, multiround count, tool/child/whole JOIN time errors",
+    "all outcomes, interventions, realized work, first reuse and wasted/expired prefetch"
+  ],
+  "limits": "No canary, automatic 128-root escalation, artificial eviction, new agent guard or action-benefit head. H2D time is not a whole-system oracle upper bound. Shared terminal ancestry is not exclusive dead data."
+}

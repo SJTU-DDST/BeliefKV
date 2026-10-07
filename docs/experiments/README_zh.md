@@ -10,6 +10,7 @@
 
 | 报告 | 用途 |
 | --- | --- |
+| [v8 108-root/2–4](pressure108_2to4_v8_zh.md) | 用户授权的新负载；迁移预算、旧前缀损失及结束child残留诊断 |
 | [v7工作头开发](conditional_work_v7_development_zh.md) | 冻结phase的log-work拟合、首次触发不足及独立观测EOS路径 |
 | [v6 84-root联合恢复](joint_tool_join_h2d_v6_84root_zh.md) | 84/84；7个JOIN复用，+4.62%吞吐观测存在需求混杂 |
 | [v5 84-root联合恢复](joint_tool_join_h2d_v5_84root_zh.md) | 17个预测H2D；JOIN复用与工具自我回收冲突，完整吞吐/JCT负结果 |

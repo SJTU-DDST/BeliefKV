@@ -5,9 +5,9 @@ The SGLang cache remains the physical capacity and transfer authority.
 
 from __future__ import annotations
 
-from collections import Counter, deque
+from collections import Counter, OrderedDict, deque
 from collections.abc import Sequence
-from dataclasses import dataclass, replace
+from dataclasses import asdict, dataclass, replace
 from itertools import islice
 import math
 import json
@@ -63,6 +63,7 @@ from beliefkv.runtime.sglang_v0520_physical import (
 from beliefkv.runtime.sglang_v0520_observer import (
     normalize_native_creation_time,
     observe_static_full_mamba_headroom,
+    observe_unified_node_closure,
 )
 from beliefkv.predictor.structured_frontier import LocalFrontierFeatures
 from beliefkv.runtime.semantic_report_worker import (
@@ -354,6 +355,11 @@ class NativeAdmissionRuntime:
                     if isinstance(token, dict) and token.get("content") == "</think>"
                 )
         self._runtime_state_next_ms = 0.
+        self._terminal_cache_diagnostics = os.environ.get(
+            "BELIEFKV_TERMINAL_CACHE_DIAGNOSTICS", "0",
+        ) == "1"
+        self._terminal_cache_watches: OrderedDict[tuple[str, str], dict] = OrderedDict()
+        self._terminal_cache_next_ms = 0.
         self.enable_confirmed_join_canary = enable_confirmed_join_canary
         self._admission_lease: _AdmissionPrefetchLease | None = None
         self.shadow_candidate: ActionLocalShadowCandidate | None = None
@@ -743,6 +749,7 @@ class NativeAdmissionRuntime:
                 if context_id is not None:
                     key = self.context_sessions.get(context_id)
                     if key is not None and self._terminal(key):
+                        self._track_terminal_cache(key)
                         self._tool_last_queries.pop(key, None)
                         self._tool_opportunity_cache.pop(key, None)
                         del self.context_sessions[context_id]
@@ -1276,6 +1283,7 @@ class NativeAdmissionRuntime:
                 else "safe_point_invalidated"
             )
         self._sample_h2d_opportunities(waiting_queue, now_ms=now_ms)
+        self._sample_terminal_cache(now_ms=now_ms)
         if self._opportunity_writer is not None and now_ms >= self._runtime_state_next_ms:
             self._runtime_state_next_ms = now_ms + 1_000
             self._record_runtime_state()
@@ -1302,6 +1310,7 @@ class NativeAdmissionRuntime:
                 "prefetch_lead_ms": self.prefetch_lead_ms,
                 "semantic_work_statistic": self.semantic_work_statistic,
                 "eos_protocol_window_ms": self.eos_protocol_window_ms,
+                "terminal_cache_diagnostics": self._terminal_cache_diagnostics,
                 "h2d_seed_samples": self._h2d_seed_count,
                 "h2d_service_samples": len(self._h2d_samples),
                 "semantic_worker_configured": self._semantic_worker is not None,
@@ -2604,6 +2613,91 @@ class NativeAdmissionRuntime:
                 and tokens[0] == key.context_epoch else None
             ),
         )
+
+    def _track_terminal_cache(self, key: PrefillCandidateKey) -> None:
+        if not (
+            self._terminal_cache_diagnostics and self._native_cache is not None
+            and self._opportunity_writer is not None and key.session_id is not None
+            and key.session_generation is not None
+        ):
+            return
+        try:
+            refs = self._native_cache.session_refs
+            snapshot = getattr(refs, "snapshot_latest_session_leaf_anchors", refs.snapshot_session_leaf_anchors)
+            anchors = snapshot(key.session_id, key.session_generation, max_leaves=8)
+            nodes = sorted({
+                (node_id, normalize_native_creation_time(created))
+                for _, values in anchors or () for node_id, created in values
+            })
+        except (AttributeError, KeyError, TypeError, ValueError):
+            nodes = []
+        scope = (key.root_workflow_id, key.context_id)
+        if not nodes:
+            self.counts["terminal_cache_anchor_unavailable"] += 1
+            self._opportunity_writer.record({
+                "event": "terminal_cache_anchor_unavailable", "ts_ms": time.time() * 1000.,
+                "workflow_id": key.root_workflow_id, "invocation_id": key.invocation_id,
+                "context_id": key.context_id, "session_id": key.session_id,
+                "semantics": "missing anchor is unknown, not proof that cache bytes were freed",
+            })
+            return
+        watch = {
+            "key": key, "anchors": nodes[:16], "terminated_ms": time.monotonic() * 1000.,
+            "sample_count": 0,
+        }
+        self._terminal_cache_watches[scope] = watch
+        self._terminal_cache_watches.move_to_end(scope)
+        while len(self._terminal_cache_watches) > 512:
+            self._terminal_cache_watches.popitem(last=False)
+            self.counts["terminal_cache_watch_capacity_expired"] += 1
+        self._record_terminal_cache(watch)
+
+    def _record_terminal_cache(self, watch: dict) -> None:
+        key = watch["key"]
+        summaries, unavailable, gone = {}, [], []
+        for node_id, created in watch["anchors"]:
+            try:
+                node = self._native_cache.tree_core.node_by_id(node_id)
+                if node is None or normalize_native_creation_time(node.creation_time) != created:
+                    gone.append(node_id)
+                    continue
+                observation = observe_unified_node_closure(self._native_cache, node_id, max_nodes=64)
+                if not observation.observable:
+                    unavailable.append({"node_id": node_id, "reason": observation.reason})
+                    continue
+                for summary in observation.nodes:
+                    summaries[(summary.node_id, summary.creation_time)] = asdict(summary)
+            except (AttributeError, KeyError, TypeError, ValueError):
+                unavailable.append({"node_id": node_id, "reason": "native node unavailable"})
+        self._opportunity_writer.record({
+            "event": "terminal_context_cache_sample", "ts_ms": time.time() * 1000.,
+            "workflow_id": key.root_workflow_id, "invocation_id": key.invocation_id,
+            "context_id": key.context_id, "context_epoch": key.context_epoch,
+            "session_id": key.session_id, "sample_index": watch["sample_count"],
+            "elapsed_since_terminal_ms": time.monotonic() * 1000. - watch["terminated_ms"],
+            "anchor_node_ids": [node for node, _ in watch["anchors"]],
+            "nodes": list(summaries.values()), "gone_or_replaced_anchors": gone,
+            "unavailable_anchors": unavailable,
+            "semantics": (
+                "Read-only terminated-context leaf ancestry; ancestors may be shared "
+                "and are not exclusive dead bytes. Session close is not physical "
+                "reclamation; no cache drop/offload is caused by this observation."
+            ),
+        })
+        watch["sample_count"] += 1
+
+    def _sample_terminal_cache(self, *, now_ms: float) -> None:
+        if not self._terminal_cache_diagnostics or now_ms < self._terminal_cache_next_ms:
+            return
+        self._terminal_cache_next_ms = now_ms + 1000.
+        for scope, watch in list(self._terminal_cache_watches.items())[:4]:
+            age = now_ms - watch["terminated_ms"]
+            if age >= 60_000.:
+                self._terminal_cache_watches.pop(scope, None)
+                self.counts["terminal_cache_watch_time_expired"] += 1
+                continue
+            self._record_terminal_cache(watch)
+            self._terminal_cache_watches.move_to_end(scope)
 
     def capture_shadow_candidate(
         self, cache: object, *, context_id: str, context_epoch: int,

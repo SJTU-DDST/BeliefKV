@@ -2181,6 +2181,58 @@ def final_stage_runtime(*, stage_only=False, event_socket_path=None, stage_recor
     return runtime
 
 
+def test_multi_child_join_prefetch_waits_for_the_observed_last_unfinished_child():
+    runtime = NativeAdmissionRuntime()
+    parent = req("parent")
+    parent.session_id, parent.session_generation = "s", 1
+    runtime.register_visible_request(parent)
+    runtime.on_events((
+        event(0, RuntimeEventKind.WORKFLOW_START),
+        event(1, RuntimeEventKind.INVOCATION_CREATE, invocation_id="parent",
+              context_id="ctx-parent", agent_definition_id="root", agent_instance_id="parent"),
+        event(2, RuntimeEventKind.INVOCATION_CREATE, invocation_id="a",
+              context_id="ctx-a", agent_definition_id="child", agent_instance_id="a"),
+        event(3, RuntimeEventKind.INVOCATION_CREATE, invocation_id="b",
+              context_id="ctx-b", agent_definition_id="child", agent_instance_id="b"),
+        event(4, RuntimeEventKind.JOIN_CREATE, join_id="join",
+              member_invocation_ids=("a", "b")),
+        event(5, RuntimeEventKind.JOIN_WAIT, invocation_id="parent", join_id="join"),
+    ))
+    assert runtime._semantic_parent("a") is None
+    assert runtime._semantic_parent("b") is None
+    runtime.on_events((event(6, RuntimeEventKind.RETURN, invocation_id="a"),))
+    assert runtime._semantic_parent("b")[0] == "join"
+    assert not runtime.graph.joins["join"].satisfied
+    runtime.on_events((event(7, RuntimeEventKind.RETURN, invocation_id="b"),))
+    assert runtime.graph.joins["join"].satisfied
+    assert runtime._semantic_parent("b") is None
+
+
+def test_terminal_cache_watch_is_read_only_and_keeps_shared_node_evidence(monkeypatch):
+    monkeypatch.setenv("BELIEFKV_TERMINAL_CACHE_DIAGNOSTICS", "1")
+    runtime = NativeAdmissionRuntime()
+    emitted = []
+    runtime._opportunity_writer = NS(record=emitted.append)
+    key = PrefillCandidateKey("r", "wf", "child", "ctx", 0, 0, "s", 1)
+    refs = NS(snapshot_session_leaf_anchors=lambda *_args, **_kwargs: ((0, ((11, 4),)),))
+    cache = NS(session_refs=refs, tree_core=NS(node_by_id=lambda _node: NS(creation_time=4)))
+    runtime._native_cache = cache
+    from beliefkv.runtime.sglang_v0520_observer import UnifiedNodeSummary
+    summary = UnifiedNodeSummary(
+        11, None, 4, 10, 10, True, True, 0, 0, 0, 0, 2, 2, 2, 2, None, None,
+    )
+    with patch(
+        "beliefkv.runtime.sglang_v0520_runtime.observe_unified_node_closure",
+        return_value=NS(observable=True, nodes=(summary,)),
+    ):
+        runtime._track_terminal_cache(key)
+    [record] = emitted
+    assert record["event"] == "terminal_context_cache_sample"
+    assert record["nodes"][0]["full_session_refs"] == 2
+    assert record["nodes"][0]["mamba_device_present"]
+    assert "not exclusive dead bytes" in record["semantics"]
+
+
 def test_reactive_keeps_final_priority_without_any_predictive_transfer(monkeypatch):
     monkeypatch.setenv("BELIEFKV_ENABLE_FINAL_STAGE_PRIORITY", "1")
     monkeypatch.setenv("BELIEFKV_ENABLE_PREPARE_HOST", "0")

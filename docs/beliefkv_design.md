@@ -240,6 +240,16 @@ native demand-load；Host copy 不可用时允许从 raw tokens 重算。Restore
 
 ## 5. 新版事件与内容驱动的预测旁路
 
+2026-10-07当前v8诊断使用108-root单波及每轮2–4 native task
+调用，保持running48与池配置。这是新压力/fanout组合，不自动
+外推v7校准。JOIN恢复要求完整ALL成员集只剩一个未完成child，
+不能用首个child通知提前唤醒parent。工具CPU并发、GPU无服务
+间隔及任务大小变化须按新trace分别评价。
+新的旧输入前缀未命中代理排除新输入，Host块归因完整探测原有
+有界索引；终态leaf ancestry/锁/refs及close ACK时间独立记录。
+关闭引用不等于释放缓存，祖先可能仍共享，不盲目D2H无用child
+或DROP共享活页。H2D计时预算不是包括调度/重算的完整oracle上限。
+
 预测旁路不建立第二个调度器，也不控制agent是否可以RETURN。
 当前配置使用冻结MiniLM encoder及phase/work头、独立工具事件
 时间模型和实测传输服务估计；运行中不切换权重或重新校准。

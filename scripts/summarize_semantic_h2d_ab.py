@@ -266,6 +266,7 @@ def summarize(arm: Path) -> dict | None:
         "host_pool_evidence": native.get("host_pool_evidence"),
         "cache_evidence": (native.get("request_cache_evidence") or {}).get("all"),
         "host_eviction_attribution": native.get("host_block_eviction_attribution"),
+        "context_prefix_reuse_evidence": native.get("context_prefix_reuse_evidence"),
         "telemetry_status": {
             name: native.get(name) for name in
             ("dropped_records", "failed_records", "writer_error")
@@ -381,7 +382,19 @@ def main() -> None:
             "native_reactive_guard_profile": True,
             "completion_gate_enabled": False,
             "child_final_report_shadow": os.environ.get("CHILD_FINAL_REPORT_SHADOW", "1") == "1",
-            "fanout_profile": os.environ.get("FANOUT_PROFILE", "native_in_graph_1to4"),
+            "fanout_profile": os.environ.get("FANOUT_PROFILE", "native_in_graph_2to4"),
+            "requested_children_per_round": (
+                [2, 4] if os.environ.get("FANOUT_PROFILE", "native_in_graph_2to4") == "native_in_graph_2to4"
+                else [1, 4]
+            ),
+            "join_prediction_semantics": (
+                "complete ALL membership; prefetch from the last observed unfinished child; "
+                "no joint calibration claim from marginal child intervals"
+            ),
+            "prediction_regime_status": (
+                "frozen heads under a changed root/fanout regime; diagnostic, "
+                "not assumed calibrated or a source of offline net-benefit targets"
+            ),
             "context_tokens": 131072, "max_completion_tokens": 8192,
             "sampling_seed": args.sampling_seed, "temperature": 0., "host_numa_node": 1,
             "mem_fraction_static": .94,

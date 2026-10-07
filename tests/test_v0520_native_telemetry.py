@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+from io import StringIO
 import time
 from array import array
 from pathlib import Path
@@ -30,6 +31,57 @@ class _Mode:
 
     def is_draft_extend_v2(self) -> bool:
         return self.phase == "draft_extend_v2"
+
+def test_context_prefix_loss_excludes_new_input_and_fresh_sessions(tmp_path):
+    audit = NativeReactiveTelemetry(tmp_path / "prefix")
+    audit.close()
+    output = StringIO()
+    common = {
+        "ts_ms": 1., "workflow_id": "w", "invocation_id": "i",
+        "context_id": "ctx", "context_epoch": 0, "request_id": "old",
+        "session_id": "s", "session_generation": 1,
+        "extra_key": None, "cache_salt": None, "cached_tokens_device": 0,
+        "cached_tokens_host": 0, "mamba_host_hit_slots": 0,
+    }
+    audit._write_context_prefix({
+        **common, "_internal_event": "served_context_prefix",
+        "input_ids": [1, 2, 3, 4, 5, 6],
+    }, output)
+    audit._write_context_prefix({
+        **common, "request_id": "next", "context_epoch": 1,
+        "_internal_event": "context_prefix_probe", "input_ids": [1, 2, 3, 4, 5, 6, 7, 8],
+        "cached_tokens_device": 2, "cached_tokens_host": 1,
+    }, output)
+    [result] = [json.loads(line) for line in output.getvalue().splitlines()]
+    assert result["common_previously_served_input_tokens"] == 6
+    assert result["previously_served_prefix_recompute_proxy_tokens"] == 3
+    assert result["new_or_changed_prompt_tokens"] == 2
+    audit._write_context_prefix({
+        **common, "session_id": "fresh", "request_id": "compact",
+        "_internal_event": "context_prefix_probe", "input_ids": [1, 2, 3, 4, 5, 6],
+    }, output)
+    assert audit._context_prefix_counts["without_prior_served_prompt"] == 1
+
+
+def test_block_probe_covers_more_than_the_old_1024_length_limit(tmp_path):
+    audit = NativeReactiveTelemetry(tmp_path / "blocks")
+    audit.close()
+    audit._host_pool_geometry["full"] = {"bytes_per_unit": 2}
+    output = StringIO()
+    for length in range(1, 1030):
+        audit._write_block_eviction({
+            "key_path": (array("q", range(length)),), "pool": "full",
+            "node_id": length, "units": 1, "ts_ms": 1.,
+            "extra_key": None, "cache_salt": None,
+        }, output)
+    output = StringIO()
+    audit._write_block_request_probe({
+        "input_ids": array("q", range(1030)), "ts_ms": 2.,
+        "extra_key": None, "cache_salt": None,
+        "cached_tokens_device": 1030, "cached_tokens_host": 0,
+    }, output)
+    assert audit._block_attribution_probe_overflow == 0
+    assert audit._block_attribution_counts["full_device_hit"] == 1029
 
 
 def _read(path: Path) -> list[dict]:
@@ -692,7 +744,8 @@ def test_native_request_service_and_ack_are_evidence_not_invented_dma(
     assert status["writer_error"] is None
     assert status["failed_records"] == 0
     assert status["record_counts"] == {
-        "audit": 2, "events": 2, "host_pool": 1, "transfer": 1
+        "audit": 2, "events": 2, "host_pool": 1, "transfer": 1,
+        "eviction_attribution": 2,
     }
     assert status["request_cache_evidence"]["all"] == {
         "cached_tokens_device": 7,

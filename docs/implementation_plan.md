@@ -1,6 +1,6 @@
 # BeliefKV Current Execution Plan
 
-Status date: 2026-10-06.
+Status date: 2026-10-07.
 
 This is the active plan, not a chronological log. The previous detailed plan
 is available at `c219604:docs/implementation_plan.md`; older snapshots remain
@@ -16,7 +16,8 @@ Model heads predict phase, remaining work or external completion time;
 runtime decides actions from identity, capacity, service and opportunity cost.
 Do not train an offline net-benefit head or promote old eligibility metadata.
 
-The user authorizes 84 roots in one arrival wave. Running stays 48, Host
+The user authorizes 108 roots in one arrival wave, two to four children
+per delegation turn through a new prompt-only profile. Running stays 48, Host
 stays 200 GB on NUMA node 1, and FULL/Mamba pool settings stay fixed.
 Do not change to 128, staggered 64+64 or artificial eviction.
 More traffic is not inherently more useful traffic: report first-use,
@@ -30,6 +31,21 @@ refits and first-trigger audits are complete with the phase head/encoder frozen.
 A separate observed-final-body path avoids requiring NN results or TPS
 after a normal no-tool stop.
 No extra repetitions are queued.
+
+V7 has ended: reactive 83 completed/1 incomplete, predictive 84 completed.
+Only 12/21 roots had multiple rounds; every round still had one child.
+Native H2D CUDA-event time was less than one second and submit-to-ACK roughly
+10 seconds, so H2D volume alone cannot establish an oracle opportunity.
+Current v8 checks the first 108 train tasks in existing order and the new
+native_in_graph_2to4 prompt, retaining old profiles. This is a combined
+pressure/fanout diagnosis, not a root-count-only comparison.
+Add same-session prior-served-prefix loss separate from new input, complete
+bounded eviction probes, session-close timing and terminal native-ancestry
+observations. Do not sum shared ancestry as exclusive dead bytes or offload
+dead data to crowd useful Host copies. Frozen heads are not assumed
+calibrated in the changed regime. JOIN_ALL waits for the full member set;
+early restoration is tied to the last observed unfinished member.
+Current plan: `configs/migration/qwen35_108root_2to4_v8.json`.
 Multi-pair averaging is
 a later formal-experiment requirement, not a reason to slow development.
 Fixed-demand GPU replay and deterministic-kernel migration are not required

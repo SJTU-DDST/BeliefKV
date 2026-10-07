@@ -48,6 +48,7 @@ from beliefkv.experiments.deepagents_swebench import (
     InitialInGraphDelegationMiddleware,
     NativeDelegationRoundPromptMiddleware,
     NATIVE_DYNAMIC_1TO4_PROMPT,
+    NATIVE_IN_GRAPH_2TO4_PROMPT,
     NATIVE_DYNAMIC_INITIAL_PLANNER_PROMPT,
     NATIVE_SUBAGENT_2TO3_PROMPT,
     DeepAgentsExperimentConfig,
@@ -1822,6 +1823,35 @@ def test_dynamic_initial_plan_accepts_model_selected_fanout_from_one_to_four() -
         NATIVE_DYNAMIC_INITIAL_PLANNER_PROMPT.split()
     )
 
+def test_two_to_four_profile_changes_prompt_without_a_fanout_termination_guard(tmp_path):
+    config = DeepAgentsExperimentConfig(
+        mode="autonomous", base_url="http://localhost:18000/v1", model="model",
+        output_dir=tmp_path / "output", workload_manifest=tmp_path / "manifest.json",
+        docker_image="fixture:latest", subagent_fanout_profile="native_in_graph_2to4",
+    )
+    prompt = _autonomous_fanout_prompt(config, delegation_enabled=True)
+    assert prompt == NATIVE_IN_GRAPH_2TO4_PROMPT
+    assert "two to four" in prompt
+    assert "ONE assistant response" in prompt
+    assert "Wait for ALL children" in prompt
+    assert "one child is valid" not in prompt
+    assert "at least three useful rounds" in prompt
+    audit = JsonlAudit(tmp_path / "rounds.jsonl")
+    middleware = NativeDelegationRoundPromptMiddleware(audit, minimum_children=2)
+    message = AIMessage(content="", tool_calls=[
+        {"name": "task", "args": {}, "id": name} for name in ("one", "two")
+    ])
+    try:
+        for name in ("one", "two"):
+            req = SimpleNamespace(tool_call={"name": "task", "id": name}, state={"messages": [message]})
+            result = middleware.wrap_tool_call(
+                req, lambda _: ToolMessage(content="Evidence.", tool_call_id=name),
+            )
+            assert "choose 2-4 children" in result.content
+        assert len(middleware._rounds) == 1
+    finally:
+        audit.close()
+
 
 def test_dynamic_initial_plan_decodes_json_array_in_tasks_field() -> None:
     plan = DynamicInitialDelegationPlan.model_validate(
@@ -2241,6 +2271,28 @@ def test_in_graph_first_turn_requires_task_then_restores_root_tools(
     assert events[0]["has_prior_ai"] is False
     assert events[0]["tool_names"] == ["read_file", "task"]
     assert events[1]["tool_names"] == []
+
+def test_two_to_four_initial_turn_allows_multiple_calls_with_unchanged_schema(tmp_path):
+    audit = JsonlAudit(tmp_path / "initial.jsonl")
+    middleware = InitialInGraphDelegationMiddleware(audit=audit, single_task_choice=False)
+    model = FakeMessagesListChatModel(responses=[AIMessage(content="unused")])
+    tools = [SimpleNamespace(name="task"), SimpleNamespace(name="read_file")]
+    first = ModelRequest(model=model, messages=[HumanMessage(content="Diagnose.")], tools=tools)
+    calls = [
+        {"name": "task", "args": {"description": name}, "id": name} for name in ("source", "tests")
+    ]
+    requests = []
+    try:
+        result = middleware.wrap_model_call(
+            first, lambda request: (
+                requests.append(request) or ModelResponse(result=[AIMessage(content="", tool_calls=calls)])
+            ),
+        )
+        assert len(result.result[0].tool_calls) == 2
+        assert requests[0].tools == tools
+        assert requests[0].tool_choice == "auto"
+    finally:
+        audit.close()
 
 
 def test_in_graph_delegation_gate_reaches_real_agent_model_binding() -> None:

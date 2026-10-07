@@ -120,6 +120,20 @@ def test_workflow_end_retires_orphaned_child_but_not_other_workflows() -> None:
         leases.for_request(_metadata(context_id="late-child"))
 
 
+def test_terminal_session_close_reports_latency_not_physical_reclamation():
+    records = []
+    closed = []
+    leases = NativeRadixSessionLeases(closed.append, lifecycle_observer=records.append)
+    session = leases.for_request(_metadata())
+    leases.retire("workflow", "root-context")
+    assert closed == [session]
+    assert [row["event"] for row in records] == [
+        "native_session_retire_start", "native_session_retire_complete",
+    ]
+    assert records[-1]["close_elapsed_ms"] >= 0
+    assert "not physical cache reclamation" in records[-1]["semantics"]
+
+
 def test_unreplayable_prompt_does_not_create_native_session() -> None:
     leases = NativeRadixSessionLeases(lambda _session_id: None)
     assert leases.for_request(_metadata(full_prompt_replay_guaranteed=False)) is None

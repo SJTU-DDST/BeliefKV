@@ -1,6 +1,6 @@
 # BeliefKV 当前架构与实现状态
 
-更新日期：2026-10-06。
+更新日期：2026-10-07。
 
 本文是当前实现事实的权威入口，不是逐日开发日志。当前主线已是
 Qwen3.5-35B-A3B BF16 / SGLang 0.5.20，不再以旧 Qwen3/SGLang
@@ -34,8 +34,10 @@ Qwen3.5-35B-A3B BF16 / SGLang 0.5.20，不再以旧 Qwen3/SGLang
    每侧另有8个workflow触发允许的2048步提前32步FINALIZE；
    guard计数不包括它，不能声称全部无干预。
    工作头CPU拟合/回放及独立观测EOS路径修复已完成；
-   v7单pair已启动，reactive健康检查通过、84个首请求已提交；
-   冻结84-root/500 ms center/250 ms协议窗口，不排额外重复。
+   v7已结束，reactive83 completed/1 incomplete，predictive84 completed；
+   12个JOIN H2D全部FULL复用，其中3个在EOS前启动，工具H2D仍0。
+   当前v8改为用户授权的108-root单波/每轮2–4 child，
+   保留500 ms center/250 ms协议窗口，不排额外重复。
    正式阶段再多轮平均，不要求固定需求回放。
 
 ## 2. 当前配置
@@ -49,13 +51,13 @@ Qwen3.5-35B-A3B BF16 / SGLang 0.5.20，不再以旧 Qwen3/SGLang
 | Host | 200.010 GB，NUMA node 1；FULL约105.358 GB、Mamba约94.652 GB |
 | 池比例 | Device `mamba-full-memory-ratio=0.9`；Host匹配实际Device字节比例 |
 | GPU执行 | running=48，chunked prefill=4096，CUDA graph覆盖decode batch 48 |
-| 最近负载 | 已完成v6：manifest前84个root，单波，不是64+20延后到达 |
+| 当前负载 | v8：manifest前108个root单波，与每轮2–4 child联合压力诊断 |
 | 生成 | context=131072，completion=8192，temperature=0，seed=21 |
 | 预算 | workflow=14400秒，graph=2048，允许提前32步FINALIZE |
-| Harness | native in-graph 1-4 child，鼓励多轮，自然语言RETURN有效 |
+| Harness | native_in_graph_2to4，同轮2–4调用、鼓励多轮，自然语言RETURN有效 |
 | 当前预测窗口 | 实际动作目标为RETURN/TOOL_END前0-1000 ms，仍独立审计真实提前量 |
 | 最近运行代码 | v6启动commit `573f32c`，运行中未改源码或模型 |
-| 当前v7 | 未加末段权重log-work头，phase/encoder冻结；center500 ms/EOS250 ms |
+| 当前v8 | 沿用v7 log-work头/工具CDF；新并发与fanout下仅诊断，不假定校准有效 |
 
 以上GB为十进制；Mamba单位是完整状态/检查点，不是FULL的一个token。
 池usage、物理occupancy、可驱逐容量和free-list不得混用。

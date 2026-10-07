@@ -100,7 +100,11 @@ SUBAGENT_FANOUT_PROFILES = (
     "native_subagent_2to3",
     "native_dynamic_1to4",
     "native_in_graph_1to4",
+    "native_in_graph_2to4",
 )
+IN_GRAPH_SUBAGENT_PROFILES = frozenset({
+    "native_in_graph_1to4", "native_in_graph_2to4",
+})
 READ_ONLY_SUBAGENT_FANOUT_PROFILES = frozenset(
     {
         "parallel_analysis_2to3",
@@ -2124,13 +2128,39 @@ earlier; explain it honestly rather than inventing tasks.
 Finish in concise natural language, not a completion JSON.
 """
 
+NATIVE_IN_GRAPH_2TO4_PROMPT = """
+Delegate within this same root conversation. Begin with a diagnosis round before
+reading, executing, or editing repository files. In EVERY delegation round, emit
+two to four independent native task calls together in ONE assistant response.
+Do not submit one child and wait before launching the others. Choose two, three,
+or four from the independent evidence needed, not a fixed count.
+For diagnosis, assign complementary implementation-path analysis and independent
+reproduction or regression analysis; add compatibility work only when useful.
+Give each child a bounded concrete deliverable. Do not duplicate investigations
+or ask a child to implement, review, and validate the entire issue.
+
+Wait for ALL children in the round, then integrate their reports in this same
+conversation. The root makes the candidate patch and coordinates disjoint writes.
+For a substantive repair, use at least three useful rounds:
+1. Diagnose the implementation and reproduce the failure.
+2. Independently review the candidate change and any uncovered requirements.
+3. Independently validate focused regression and compatibility behavior.
+Each round uses two to four children. After every JOIN, assess new evidence,
+material edits, or failed tests and delegate further distinct work when needed.
+Do not redo a child's completed investigation merely to fill a round.
+Only a concrete blocker preventing useful further work justifies stopping early;
+explain it honestly rather than inventing work. Finish in concise natural language,
+not a completion JSON.
+"""
+
 
 class NativeDelegationRoundPromptMiddleware(AgentMiddleware[Any, Any, Any]):
     """Persist stage instructions in task results, keeping future KV prefixes stable."""
 
-    def __init__(self, audit: JsonlAudit) -> None:
+    def __init__(self, audit: JsonlAudit, *, minimum_children: int = 1) -> None:
         super().__init__()
         self.audit = audit
+        self.minimum_children = minimum_children
         self._rounds: dict[tuple[str, ...], int] = {}
         self._lock = threading.Lock()
 
@@ -2177,7 +2207,8 @@ class NativeDelegationRoundPromptMiddleware(AgentMiddleware[Any, Any, Any]):
                         "compatibility of the reviewed patch. "
                     ) +
                     "Issue this bounded task round before your final answer. "
-                    "Use at least three useful rounds for this repair; choose 1-4 "
+                    "Use at least three useful rounds for this repair; choose "
+                    f"{self.minimum_children}-4 "
                     "children for the next round. An apparently resolved issue still "
                     "needs independent validation. Stop earlier only for a concrete "
                     "blocker, not because the first child returned."
@@ -2198,6 +2229,9 @@ class NativeDelegationRoundPromptMiddleware(AgentMiddleware[Any, Any, Any]):
             "root_delegation_round_prompt", round_index=round_index,
             tool_call_id=call_id, persisted_in_tool_result=True,
             forced_tool_choice=False,
+            requested_min_children=self.minimum_children,
+            requested_max_children=4,
+            observed_round_children=len(signature),
         )
         if isinstance(result, ToolMessage):
             return updated[0]
@@ -2207,9 +2241,12 @@ class NativeDelegationRoundPromptMiddleware(AgentMiddleware[Any, Any, Any]):
 class InitialInGraphDelegationMiddleware(AgentMiddleware[Any, Any, Any]):
     """Require an initial task call without changing the session's tool schema."""
 
-    def __init__(self, audit: JsonlAudit | None = None) -> None:
+    def __init__(
+        self, audit: JsonlAudit | None = None, *, single_task_choice: bool = True,
+    ) -> None:
         super().__init__()
         self.audit = audit
+        self.single_task_choice = single_task_choice
         self._first_request_seen = False
 
     def wrap_model_call(self, request: ModelRequest, handler: Any) -> ModelResponse:
@@ -2229,7 +2266,10 @@ class InitialInGraphDelegationMiddleware(AgentMiddleware[Any, Any, Any]):
             return handler(request)
         if sum(getattr(tool, "name", None) == "task" for tool in request.tools) != 1:
             raise RuntimeError("in-graph delegation requires exactly one task tool")
-        response = handler(request.override(tool_choice="task"))
+        # Keep the complete tool schema stable across JOIN; auto permits a
+        # multi-call response instead of a named-tool grammar's single call.
+        choice = "task" if self.single_task_choice else "auto"
+        response = handler(request.override(tool_choice=choice))
         if first_request and self.audit is not None:
             self.audit.emit(
                 "in_graph_initial_model_response",
@@ -2238,6 +2278,12 @@ class InitialInGraphDelegationMiddleware(AgentMiddleware[Any, Any, Any]):
                     for message in response.result
                     for call in getattr(message, "tool_calls", ())
                 ],
+                initial_tool_choice=choice,
+                observed_task_calls=sum(
+                    call.get("name") == "task"
+                    for message in response.result
+                    for call in getattr(message, "tool_calls", ())
+                ),
             )
         return response
 
@@ -2267,6 +2313,8 @@ def _autonomous_fanout_prompt(
         return NATIVE_DYNAMIC_1TO4_PROMPT
     if config.subagent_fanout_profile == "native_in_graph_1to4":
         return NATIVE_IN_GRAPH_1TO4_PROMPT
+    if config.subagent_fanout_profile == "native_in_graph_2to4":
+        return NATIVE_IN_GRAPH_2TO4_PROMPT
     return AUTONOMOUS_NATURAL_SUBAGENT_PROMPT
 
 
@@ -3003,8 +3051,11 @@ def _build_autonomous_agent(
         TodoListMiddleware(),
         _filesystem_middleware(backend, allow_direct_edits=True),
     ]
-    if delegation_enabled and config.subagent_fanout_profile == "native_in_graph_1to4":
-        middleware.insert(0, NativeDelegationRoundPromptMiddleware(backend.audit))
+    if delegation_enabled and config.subagent_fanout_profile in IN_GRAPH_SUBAGENT_PROFILES:
+        middleware.insert(0, NativeDelegationRoundPromptMiddleware(
+            backend.audit,
+            minimum_children=2 if config.subagent_fanout_profile == "native_in_graph_2to4" else 1,
+        ))
     if delegation_enabled:
         middleware.append(
             PrivateStateIsolatingSubAgentMiddleware(
@@ -3021,8 +3072,11 @@ def _build_autonomous_agent(
                 ),
             )
         )
-    if config.subagent_fanout_profile == "native_in_graph_1to4":
-        middleware.append(InitialInGraphDelegationMiddleware(audit=backend.audit))
+    if config.subagent_fanout_profile in IN_GRAPH_SUBAGENT_PROFILES:
+        middleware.append(InitialInGraphDelegationMiddleware(
+            audit=backend.audit,
+            single_task_choice=config.subagent_fanout_profile == "native_in_graph_1to4",
+        ))
     if config.stop_after_first_native_join:
         middleware.append(NativeSubagentSemanticGateMiddleware(adapter))
     middleware.extend(
@@ -4218,7 +4272,12 @@ def _run_workflow(
             NativeRadixSessionLeases(
                 lambda session_id: close_native_radix_session(
                     config.base_url, session_id
-                )
+                ),
+                lifecycle_observer=lambda record: backend.audit.emit(
+                    record["event"], **{
+                        key: value for key, value in record.items() if key != "event"
+                    }
+                ),
             )
             if config.native_radix_sessions else None
         ),

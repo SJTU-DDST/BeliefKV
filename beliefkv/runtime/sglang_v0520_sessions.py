@@ -5,6 +5,7 @@ from __future__ import annotations
 import hashlib
 import json
 import threading
+import time
 import urllib.request
 import uuid
 from collections.abc import Callable
@@ -19,8 +20,12 @@ class NativeRadixSessionLeases:
     biases native eviction; it is not a tool-wait pin or a predictive transfer.
     """
 
-    def __init__(self, close_session: Callable[[str], None]) -> None:
+    def __init__(
+        self, close_session: Callable[[str], None], *,
+        lifecycle_observer: Callable[[dict], None] | None = None,
+    ) -> None:
         self._close_session = close_session
+        self._lifecycle_observer = lifecycle_observer
         self._namespace = uuid.uuid4().hex
         self._lock = threading.RLock()
         self._active: dict[tuple[str, str], tuple[int, str]] = {}
@@ -75,7 +80,30 @@ class NativeRadixSessionLeases:
             active = self._active.get(context)
             if active is not None:
                 # Failed close remains retryable; never silently forget a ref.
-                self._close_session(active[1])
+                start = time.monotonic() * 1000.
+                record = {
+                    "workflow_id": workflow_id, "context_id": context_id,
+                    "context_epoch": active[0], "session_id": active[1],
+                    "close_start_monotonic_ms": start,
+                }
+                if self._lifecycle_observer is not None:
+                    self._lifecycle_observer({**record, "event": "native_session_retire_start"})
+                try:
+                    self._close_session(active[1])
+                except Exception as error:
+                    if self._lifecycle_observer is not None:
+                        self._lifecycle_observer({
+                            **record, "event": "native_session_retire_failed",
+                            "close_elapsed_ms": time.monotonic() * 1000. - start,
+                            "error_type": type(error).__name__,
+                        })
+                    raise
+                if self._lifecycle_observer is not None:
+                    self._lifecycle_observer({
+                        **record, "event": "native_session_retire_complete",
+                        "close_elapsed_ms": time.monotonic() * 1000. - start,
+                        "semantics": "native reference close ACK, not physical cache reclamation",
+                    })
                 del self._active[context]
 
     def retire_workflow(self, workflow_id: str) -> None:

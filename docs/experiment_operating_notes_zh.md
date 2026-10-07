@@ -1,21 +1,29 @@
 # BeliefKV 实验注意事项
 
-更新日期：2026-10-06。本文是当前实验的执行约束，不是新增 agent
+更新日期：2026-10-07。本文是当前实验的执行约束，不是新增 agent
 guard、终态门禁或模型动作授权。启动前同时阅读
 `docs/implementation_plan.md`；旧诊断脚本和历史计划不能覆盖当前约定。
 
 ## 场景与配置
 
-2026-10-05 用户进一步批准下一轮 **84-root 单波到达**，
+2026-10-07 用户批准下一轮 **108-root 单波到达、每轮2–4 child**，
 server running=48、Host 200 GB/NUMA node 1及池比例保持不变。
 此前64-root配置仅作历史对照；不得自动扩到128或重叠64+64。
 当前pair属于live压力探索，不因固定seed就声明轨迹相同。
-开发阶段当前只做一对84-root；正式阶段再多轮配对取平均和报告
+开发阶段当前只做一对108-root；正式阶段再多轮配对取平均和报告
 方差。固定需求GPU回放不作为主线或前置要求，见
 `docs/experiments/pressure84_and_fair_comparison_2026-10-05_zh.md`。
-v6已结束，两侧84 completed；当前改进条件工作头，不排额外重复。
-84-root仍是待验证的候选，
+v7已结束，reactive83 completed/1 incomplete、predictive84 completed。
+108-root/2–4属于新的联合负载诊断，不排额外重复，
 不能仅凭脚本默认值自动重跑或当作已冻结的理想正式负载。
+
+两侧共享native_in_graph_2to4 prompt和auto首轮工具选择，不更改
+工具schema，不用guard拒绝/补造child。实际fanout必须按trace核对；
+单个child结束不满足JOIN_ALL，只有最后未完成成员可作为恢复信号。
+冻结旧预测头用于新regime诊断，不假定校准有效。
+新增旧输入共同前缀损失代理、完整有界Host归因、终态路径驻留/
+引用观察及session close耗时。共享祖先不当作独占死字节，
+不把close ACK当物理释放，不盲目D2H死child挤占Host。
 
 v6中7个JOIN H2D全部首次复用，但仍在EOS后启动。下一轮先用
 相同因果快照比较工作中心/区间与首次触发，不通过手改eligibility、

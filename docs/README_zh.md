@@ -1,13 +1,14 @@
 # BeliefKV 文档导航
 
-更新日期：2026-10-06
+更新日期：2026-10-07
 
 当前主线为Qwen3.5-35B-A3B / SGLang 0.5.20，同一
 `beliefkv-next` 环境。84-root单波v6开发pair已结束，两侧84 completed，
 最近配置running=48、Host 200 GB/NUMA node 1。7个JOIN H2D全部
 首次复用，但仍均在EOS后启动；单轮吞吐+4.62%有实际需求混杂。
-阶段头冻结的工作预测改进已提交，v7单pair现已启动reactive，
-500 ms center/250 ms观测协议窗口；84个首请求已提交，不排额外重复，
+v7已结束，下一v8按用户要求108-root单波/每轮2–4 child，
+增加旧前缀重算代理和终态缓存驻留诊断，500 ms center/
+250 ms观测窗口保持；旧预测头跨新regime只作诊断，不排额外重复，
 正式实验再多轮取平均。
 旧Qwen3/0.5.2rc1、canary和旧池配置不作为当前默认。
 

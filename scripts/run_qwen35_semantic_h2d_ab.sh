@@ -3,9 +3,9 @@ set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 PYTHON="${PYTHON:-/home/longhao/miniconda3/envs/beliefkv-next/bin/python}"
-ROOT_COUNT="${ROOT_COUNT:-84}"
+ROOT_COUNT="${ROOT_COUNT:-108}"
 PORT="${PORT:-18454}"
-RUN_ROOT="${RUN_ROOT:-$ROOT/experiments/raw/qwen35_joint_wait_h2d_ab_${ROOT_COUNT}root_v7}"
+RUN_ROOT="${RUN_ROOT:-$ROOT/experiments/raw/qwen35_joint_wait_h2d_ab_${ROOT_COUNT}root_2to4_v8}"
 ARM_ORDER="${ARM_ORDER:-reactive predictive_h2d}"
 SAMPLING_SEED="${SAMPLING_SEED:-21}"
 REPETITION_ID="${REPETITION_ID:-0}"
@@ -19,15 +19,17 @@ ENABLE_TOOL_TIMING="${ENABLE_TOOL_TIMING:-1}"
 PREFETCH_LEAD_MS="${PREFETCH_LEAD_MS:-1000}"
 SEMANTIC_WORK_STATISTIC="${SEMANTIC_WORK_STATISTIC:-upper}"
 EOS_PROTOCOL_WINDOW_MS="${EOS_PROTOCOL_WINDOW_MS:-50}"
+FANOUT_PROFILE="${FANOUT_PROFILE:-native_in_graph_2to4}"
 
 if [[ $# -ne 0 || -e "$RUN_ROOT" || ! -f "$ARTIFACT" ]] \
-  || [[ ! "$ROOT_COUNT" =~ ^[1-9][0-9]*$ ]] || (( ROOT_COUNT > 84 )) \
+  || [[ ! "$ROOT_COUNT" =~ ^[1-9][0-9]*$ ]] || (( ROOT_COUNT > 108 )) \
   || [[ ! "$SAMPLING_SEED" =~ ^[0-9]+$ || ! "$REPETITION_ID" =~ ^[0-9]+$ ]] \
   || [[ "$ARM_ORDER" != "predictive_h2d reactive" && "$ARM_ORDER" != "reactive predictive_h2d" && "$ARM_ORDER" != "predictive_h2d" ]]; then
-  printf 'Usage: RUN_ROOT=<new path> ROOT_COUNT=84 ARM_ORDER="reactive predictive_h2d"|"predictive_h2d reactive"|predictive_h2d SAMPLING_SEED=21 REPETITION_ID=0 ACTIVATION_WALL_CLOCK_SECONDS=14400 PORT=18454 bash %s\n' "$0" >&2
+  printf 'Usage: RUN_ROOT=<new path> ROOT_COUNT=108 FANOUT_PROFILE=native_in_graph_2to4 ARM_ORDER="reactive predictive_h2d"|"predictive_h2d reactive"|predictive_h2d SAMPLING_SEED=21 REPETITION_ID=0 ACTIVATION_WALL_CLOCK_SECONDS=14400 PORT=18454 bash %s\n' "$0" >&2
   exit 2
 fi
 mkdir -p "$RUN_ROOT"
+export FANOUT_PROFILE
 "$PYTHON" "$ROOT/scripts/summarize_semantic_h2d_ab.py" \
   --run-root "$RUN_ROOT" --initialize --root-count "$ROOT_COUNT" \
   --arm-order "$ARM_ORDER" --semantic-artifact "$ARTIFACT" \
@@ -51,6 +53,7 @@ for arm in $ARM_ORDER; do
     TRANSFER_SERVICE_SEED="$TRANSFER_SERVICE_SEED" PREFETCH_LEAD_MS="$PREFETCH_LEAD_MS" \
     SEMANTIC_WORK_STATISTIC="$SEMANTIC_WORK_STATISTIC" \
     EOS_PROTOCOL_WINDOW_MS="$EOS_PROTOCOL_WINDOW_MS" \
+    FANOUT_PROFILE="$FANOUT_PROFILE" \
     HOST_SPLIT=auto HICACHE_SIZE_GB=200 HICACHE_WRITE_POLICY=write_back \
     SGLANG_PATCH_FLAVOR=staging CONFIRMED_JOIN_CANARY=0 \
     SEMANTIC_REPORT_ARTIFACT="$ARTIFACT" RUN_ROOT="$RUN_ROOT/$arm" \
@@ -78,6 +81,8 @@ for arm in $ARM_ORDER; do
     --arm "$RUN_ROOT/$arm" --output "$RUN_ROOT/$arm/native_h2d_sources.json"
   "$PYTHON" "$ROOT/scripts/audit_prefetch_lifecycle.py" \
     --arm "$RUN_ROOT/$arm" --output "$RUN_ROOT/$arm/prefetch_lifecycle.json"
+  "$PYTHON" "$ROOT/scripts/audit_native_memory_opportunity.py" \
+    --arm "$RUN_ROOT/$arm" --output "$RUN_ROOT/$arm/memory_opportunity.json"
   "$PYTHON" "$ROOT/scripts/summarize_semantic_h2d_ab.py" \
     --cleanup-arm "$RUN_ROOT/$arm" > "$RUN_ROOT/$arm.workspace_cleanup.json"
 done

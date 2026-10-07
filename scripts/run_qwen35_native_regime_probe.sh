@@ -4,7 +4,7 @@ set -euo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 PYTHON="${PYTHON:-/home/longhao/miniconda3/envs/beliefkv-next/bin/python}"
 PORT="${PORT:-18454}"
-ROOT_COUNT="${ROOT_COUNT:-84}"
+ROOT_COUNT="${ROOT_COUNT:-108}"
 SAMPLING_SEED="${SAMPLING_SEED:-21}"
 ARRIVAL_BATCH_SIZE="${ARRIVAL_BATCH_SIZE:-0}"
 ARRIVAL_BATCH_INTERVAL_MS="${ARRIVAL_BATCH_INTERVAL_MS:-0}"
@@ -15,7 +15,7 @@ SGLANG_PATCH_FLAVOR="${SGLANG_PATCH_FLAVOR:-staging}"
 # Qwen3.5 advertises VLM support; its image warmup OOMs after 94% static KV sizing.
 SKIP_SERVER_WARMUP="${SKIP_SERVER_WARMUP:-1}"
 CONFIRMED_JOIN_CANARY="${CONFIRMED_JOIN_CANARY:-0}"
-FANOUT_PROFILE="${FANOUT_PROFILE:-native_in_graph_1to4}"
+FANOUT_PROFILE="${FANOUT_PROFILE:-native_in_graph_2to4}"
 AB_MODE="${AB_MODE:-off}"
 PREPARE_HOST="${PREPARE_HOST:-0}"
 CHILD_FINAL_REPORT_SHADOW="${CHILD_FINAL_REPORT_SHADOW:-1}"
@@ -26,6 +26,7 @@ ENABLE_TOOL_TIMING="${ENABLE_TOOL_TIMING:-1}"
 PREFETCH_LEAD_MS="${PREFETCH_LEAD_MS:-1000}"
 SEMANTIC_WORK_STATISTIC="${SEMANTIC_WORK_STATISTIC:-upper}"
 EOS_PROTOCOL_WINDOW_MS="${EOS_PROTOCOL_WINDOW_MS:-50}"
+TERMINAL_CACHE_DIAGNOSTICS="${TERMINAL_CACHE_DIAGNOSTICS:-1}"
 SEMANTIC_REPORT_ARTIFACT="${SEMANTIC_REPORT_ARTIFACT:-$ROOT/experiments/models/child_semantic_work_frozen_phase_20261001_v1/semantic_event_calibrated.json}"
 RUN_ROOT="${RUN_ROOT:-$ROOT/experiments/raw/qwen35_native_regime_${HICACHE_WRITE_POLICY}_${FANOUT_PROFILE}_${HICACHE_SIZE_GB}g_${HOST_SPLIT/:/_}_${ROOT_COUNT}root_v1}"
 MANIFEST="${WORKLOAD_MANIFEST:-$ROOT/configs/migration/qwen35_native_reactive_overlapped_128root_workload_2026-09-23.json}"
@@ -47,7 +48,7 @@ trap 'exit 143' TERM
 if [[ $# -ne 0 || ! "$ROOT_COUNT" =~ ^[1-9][0-9]*$ ]] \
   || (( ROOT_COUNT > 128 )) \
   || [[ ! "$ARRIVAL_BATCH_SIZE" =~ ^[0-9]+$ || ! "$ARRIVAL_BATCH_INTERVAL_MS" =~ ^[0-9]+$ ]] \
-  || { (( ROOT_COUNT > 84 )) && [[ "$ARRIVAL_BATCH_SIZE" != "64" || "$ARRIVAL_BATCH_INTERVAL_MS" == "0" ]]; } \
+  || { (( ROOT_COUNT > 108 )) && [[ "$ARRIVAL_BATCH_SIZE" != "64" || "$ARRIVAL_BATCH_INTERVAL_MS" == "0" ]]; } \
   || { [[ "$ARRIVAL_BATCH_SIZE" == "0" ]] && [[ "$ARRIVAL_BATCH_INTERVAL_MS" != "0" ]]; } \
   || [[ ! "$SAMPLING_SEED" =~ ^[0-9]+$ ]] \
   || [[ ! "$HICACHE_SIZE_GB" =~ ^[1-9][0-9]*$ ]] \
@@ -55,7 +56,7 @@ if [[ $# -ne 0 || ! "$ROOT_COUNT" =~ ^[1-9][0-9]*$ ]] \
   || [[ "$HICACHE_WRITE_POLICY" != "write_through_selective" && "$HICACHE_WRITE_POLICY" != "write_back" ]] \
   || [[ "$SKIP_SERVER_WARMUP" != "0" && "$SKIP_SERVER_WARMUP" != "1" ]] \
   || [[ "$CONFIRMED_JOIN_CANARY" != "0" && "$CONFIRMED_JOIN_CANARY" != "1" ]] \
-  || [[ "$FANOUT_PROFILE" != "native_dynamic_1to4" && "$FANOUT_PROFILE" != "native_in_graph_1to4" ]] \
+  || [[ "$FANOUT_PROFILE" != "native_dynamic_1to4" && "$FANOUT_PROFILE" != "native_in_graph_1to4" && "$FANOUT_PROFILE" != "native_in_graph_2to4" ]] \
   || [[ "$AB_MODE" != "off" && "$AB_MODE" != "reactive" && "$AB_MODE" != "predictive_h2d" ]] \
   || [[ "$PREPARE_HOST" != "0" && "$PREPARE_HOST" != "1" ]] \
   || [[ "$CHILD_FINAL_REPORT_SHADOW" != "0" && "$CHILD_FINAL_REPORT_SHADOW" != "1" ]] \
@@ -71,7 +72,7 @@ if [[ $# -ne 0 || ! "$ROOT_COUNT" =~ ^[1-9][0-9]*$ ]] \
       || (( ${BASH_REMATCH[1]:-0} + ${BASH_REMATCH[2]:-0} != 100 )); }; } \
   || [[ ! "$PORT" =~ ^[1-9][0-9]*$ ]] \
   || [[ -e "$RUN_ROOT" || -e "$SOCKET" ]]; then
-  printf 'Usage: PORT=18454 ROOT_COUNT=84 ARRIVAL_BATCH_SIZE=0 ARRIVAL_BATCH_INTERVAL_MS=0 SAMPLING_SEED=21 HICACHE_SIZE_GB=200 HOST_SPLIT=auto|35:65 HICACHE_WRITE_POLICY=write_back|write_through_selective SKIP_SERVER_WARMUP=1 CONFIRMED_JOIN_CANARY=0|1 FANOUT_PROFILE=native_in_graph_1to4|native_dynamic_1to4 SGLANG_PATCH_FLAVOR=staging RUN_ROOT=<new path> bash %s\n' "$0" >&2
+  printf 'Usage: PORT=18454 ROOT_COUNT=108 ARRIVAL_BATCH_SIZE=0 ARRIVAL_BATCH_INTERVAL_MS=0 SAMPLING_SEED=21 HICACHE_SIZE_GB=200 HOST_SPLIT=auto|35:65 HICACHE_WRITE_POLICY=write_back|write_through_selective SKIP_SERVER_WARMUP=1 CONFIRMED_JOIN_CANARY=0|1 FANOUT_PROFILE=native_in_graph_2to4|native_in_graph_1to4|native_dynamic_1to4 SGLANG_PATCH_FLAVOR=staging RUN_ROOT=<new path> bash %s\n' "$0" >&2
   exit 2
 fi
 if [[ -e /tmp/beliefkv-experiments.paused ]] \
@@ -109,7 +110,8 @@ if [[ "$AB_MODE" != "off" ]]; then
   ab_env=(BELIEFKV_ENABLE_FINAL_STAGE_PRIORITY=1 BELIEFKV_ENABLE_PREPARE_HOST="$PREPARE_HOST"
     BELIEFKV_PREFETCH_LEAD_MS="$PREFETCH_LEAD_MS"
     BELIEFKV_SEMANTIC_WORK_STATISTIC="$SEMANTIC_WORK_STATISTIC"
-    BELIEFKV_EOS_PROTOCOL_WINDOW_MS="$EOS_PROTOCOL_WINDOW_MS")
+    BELIEFKV_EOS_PROTOCOL_WINDOW_MS="$EOS_PROTOCOL_WINDOW_MS"
+    BELIEFKV_TERMINAL_CACHE_DIAGNOSTICS="$TERMINAL_CACHE_DIAGNOSTICS")
   if [[ "$ENABLE_TOOL_TIMING" == "1" ]]; then
     if [[ ! -f "$TOOL_TIMING_ARTIFACT" ]]; then
       printf 'Tool timing enabled but artifact is missing\n' >&2
