@@ -304,6 +304,8 @@ def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--run-root", type=Path)
     parser.add_argument("--allow-incomplete", action="store_true")
+    parser.add_argument("--allow-degraded-runtime", action="store_true",
+                        help="Export diagnostics for a disabled physical lane; never a valid A/B comparison.")
     parser.add_argument("--cleanup-arm", type=Path)
     parser.add_argument("--initialize", action="store_true")
     parser.add_argument("--root-count", type=int, default=36)
@@ -440,6 +442,7 @@ def main() -> None:
     if missing and not args.allow_incomplete:
         raise ValueError(f"missing terminal arms: {missing}")
     report = {"status": "partial" if missing else "complete", "arms": arms}
+    degraded = []
     plan_path = args.run_root / "ab_plan.json"
     plan = json.loads(plan_path.read_text()) if plan_path.exists() else {}
     expected_prepare = plan.get("prepare_host_in_both_arms", False)
@@ -447,8 +450,12 @@ def main() -> None:
         if arm is None:
             continue
         state = arm["runtime_state"]
-        if not state or state["physical_disabled"]:
+        if not state:
             raise ValueError(f"{name}: missing runtime evidence or disabled physical ledger")
+        if state["physical_disabled"]:
+            if not args.allow_degraded_runtime:
+                raise ValueError(f"{name}: missing runtime evidence or disabled physical ledger")
+            degraded.append(name)
         if state["prepare_host"] != expected_prepare or not state["final_stage_priority"]:
             raise ValueError(f"{name}: mismatched PREPARE/priority configuration")
         for setting in ("semantic_work_statistic", "eos_protocol_window_ms"):
@@ -464,6 +471,14 @@ def main() -> None:
             raise ValueError(f"{name}: semantic worker unavailable")
         if not expected and arm["predictive_h2d_acks"]:
             raise ValueError("reactive baseline contains predictive H2D")
+    report["comparison_eligible"] = not missing and not degraded
+    report["degraded_runtime_arms"] = degraded
+    if degraded:
+        report["status"] = "degraded_diagnostic"
+        report["performance_claim"] = (
+            "Physical actions disabled during an arm; retain native/agent evidence "
+            "but do not claim a working shared-residency baseline or predictive speedup."
+        )
     if not missing:
         r, p = arms.values()
         if r["workflow_ids"] != p["workflow_ids"]:

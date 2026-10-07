@@ -3656,6 +3656,7 @@ class NativeAdmissionRuntime:
                 commit,
                 live_context_epochs=live_epochs,
                 live_context_sessions=live_sessions,
+                native_cache=cache,
             )
         except PhysicalReceiptError as error:
             self.physical_disabled = True

@@ -1610,7 +1610,13 @@ class NativeReactiveTelemetry:
                     "host_pool": host_pool,
                     "eviction_attribution": eviction_attribution,
                 }
+                next_status = time.monotonic() + 1.0
                 while True:
+                    if time.monotonic() >= next_status:
+                        for handle in handles.values():
+                            handle.flush()
+                        self._write_status()
+                        next_status = time.monotonic() + 1.0
                     try:
                         item = self._queue.get(timeout=0.5)
                     except Empty:
@@ -1784,6 +1790,8 @@ class NativeReactiveTelemetry:
             },
         }
         path = self.directory / "native_telemetry_status.json"
+        status["snapshot_ts_ms"] = time.time() * 1000.0
+        status["writer_queue_depth"] = self._queue.qsize()
         temporary = path.with_suffix(".json.tmp")
         temporary.write_text(
             json.dumps(status, indent=2, sort_keys=True) + "\n", encoding="utf-8"

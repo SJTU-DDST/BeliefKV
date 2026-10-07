@@ -1,5 +1,37 @@
 # 108-root / 2–4 child 压力与机会诊断
 
+## 最终 reactive 诊断与后续 predictive
+
+v8c reactive 已在2026-10-07 19:45结束：108 completed、0 error/
+incomplete，所有119个JOIN满足、232个child返回。9675.25秒，
+40.19 completed workflow/小时，JCT P50/mean为3628.62/3697.63秒，
+GPU全程平均55.33%；只有11个workflow两轮spawn，无三轮。
+最后django-11734耗时9642.11秒，多次串行全量测试造成CPU长尾。
+其Git HEAD与base commit一致，模型“当前HEAD更新”的说法不是事实。
+
+重要失败：17:05:16，第18个PREPARE的原节点37在D2H期间拆分，
+ACK正确发布535/37；账本按旧单节点集合比较后禁用所有物理动作。
+只有17个PREPARE ACK，reactive虽完整结束，不能当作PREPARE
+正常运行的正式baseline。默认汇总拒绝正确，不能删除检查。
+诊断导出显式用 `--allow-degraded-runtime`，并标记
+`comparison_eligible=false`；原始证据不回填、不“修成正常”。
+
+完整原生H2D为8382批/2.473 TB，CUDA-event 73.14秒，
+submit→ACK 825.29秒、enqueue→submit 64.48秒；D2H 2.234 TB，
+CUDA-event 378.31秒。大流量不等于大JCT收益，安全点等待和
+与计算重叠须分开。原生输入token命中约95.25%，FULL/Mamba Host
+均达到满池。FULL已确认驱逐后重算1675 token；大量索引到期及
+Mamba逐节点hit未知仍是归因缺口，不能把它当成完整重算上限。
+
+修复采用native祖先链/代次/原Host目标索引确认D2H拆分投影，
+继续校验pool、字节、session/epoch和重放。并修复忙碌状态心跳、
+全量测试形态分类和shell管道退出码反馈；不增设agent guard。
+后续只启动全新目录
+`qwen35_joint_wait_h2d_predictive_108root_2to4_v8d` 的108-root预测
+开发诊断，资源/权重/窗口不变，不自动重跑reactive或canary。
+因源码修复且旧reactive策略失效，两者不能作为严格吞吐对照。
+以下保留原启动配置及历史截面，不覆盖上述最终诊断。
+
 2026-10-07用户授权108个root单波、每轮同一响应派发2–4个child，
 观察H2D预算及重算。本轮同时改变root与fanout，是联合负载诊断，
 不隔离其中单项收益。只做一个reactive→predictive pair，不排

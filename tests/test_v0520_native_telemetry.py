@@ -255,6 +255,31 @@ def test_physical_action_evidence_flushes_without_idle_queue(
         audit.close()
 
 
+def test_status_refreshes_while_writer_queue_never_reaches_idle(tmp_path, monkeypatch):
+    class BusyQueue(Queue):
+        def get(self, block=True, timeout=None):
+            item = super().get(block=block, timeout=None)
+            time.sleep(0.002)
+            return item
+
+    monkeypatch.setattr(telemetry_module, "Queue", BusyQueue)
+    audit = NativeReactiveTelemetry(tmp_path / "busy")
+    try:
+        for sequence in range(700):
+            audit._emit("audit", {"event": "busy", "sequence": sequence})
+        path = tmp_path / "busy/native_telemetry_status.json"
+        deadline = time.monotonic() + 5
+        while not path.exists() and time.monotonic() < deadline:
+            time.sleep(0.01)
+        assert path.exists()
+        status = json.loads(path.read_text())
+        assert status["record_counts"]["audit"] > 0
+        assert status["snapshot_ts_ms"] > 0
+        assert status["writer_queue_depth"] > 0
+    finally:
+        audit.close()
+
+
 def test_verified_prefetch_records_node_match_at_first_gpu_service(
     tmp_path: Path,
 ) -> None:

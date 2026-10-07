@@ -60,13 +60,36 @@ def execute_command_shape(payload: Mapping[str, Any]) -> str:
         ), None)
         if runner is None:
             return category
-        targets = [
-            word for word in words[runner + 1:]
-            if not word.startswith("-") and word not in {
-                "|", "&&", ";", "2>&1", ">", ">>", "head", "tail"
-            }
-            and not word.isdigit()
-        ]
+        # Classify only the runner's argv, not downstream filters or flag values.
+        options_with_values = {
+            "-k", "-m", "-n", "-p", "-c", "-o", "-e",
+            "--parallel", "--exclude-tag", "--tag", "--settings", "--verbosity",
+            "--start-at", "--start-after", "--pattern", "--testrunner",
+            "--fail-on-template-vars", "--durations", "--maxfail",
+            "--ignore", "--ignore-glob", "--confcutdir", "--rootdir",
+            "--junitxml", "--basetemp", "--override-ini", "--tb", "--cov",
+            "--cov-report", "--numprocesses", "--dist", "--timeout",
+        }
+        if PurePosixPath(words[runner]).name == "runtests.py":
+            options_with_values.add("-v")
+        targets = []
+        index = runner + 1
+        while index < len(words):
+            word = words[index]
+            if word in {"|", "||", "&&", ";", "&"}:
+                break
+            if word in options_with_values:
+                index += 2
+                continue
+            if word.startswith("-") or word in {"2>&1", "1>&2"}:
+                index += 1
+                continue
+            if word in {">", ">>", "<", "2>", "2>>"}:
+                index += 2
+                continue
+            if not word.isdigit():
+                targets.append(word)
+            index += 1
         return (
             "test_suite_many_targets" if len(targets) >= 3
             else "test_suite_targeted" if targets

@@ -3,6 +3,7 @@ from __future__ import annotations
 import json
 from uuid import uuid4
 
+import pytest
 from beliefkv.core.events import RuntimeEventKind
 from beliefkv.predictor.command_class import (
     execute_command_class, execute_command_shape, execute_inline_structure,
@@ -102,6 +103,23 @@ def test_command_shape_distinguishes_python_and_test_structure():
     assert execute_command_shape({
         "command": "python -c 'not : syntax'",
     }) == "python_inline_unparsed"
+
+
+@pytest.mark.parametrize("command", (
+    "python tests/runtests.py --parallel 1 --exclude-tag selenium 2>&1 | tail -100",
+    'timeout 300 python tests/runtests.py --parallel 1 2>&1 | grep -B 5 "ERROR:" | head -50',
+    "python tests/runtests.py --settings=test_sqlite --verbosity 2",
+    "python -m pytest -k expression --tb short | tail -20",
+))
+def test_full_test_shape_ignores_option_arguments_and_pipeline_filters(command):
+    assert execute_command_shape({"command": command}) == "test_suite_full"
+
+
+def test_targeted_test_shape_keeps_actual_labels_before_pipeline():
+    assert execute_command_shape({
+        "command": "python tests/runtests.py --parallel 1 queries.test_qs_combinators"
+                   " --exclude-tag selenium 2>&1 | grep ERROR",
+    }) == "test_suite_targeted"
 
 
 def test_inline_structure_shadow_is_bounded_and_does_not_record_source():

@@ -1,5 +1,5 @@
 {
-  "scope": "One live opportunity/pressure diagnosis pair, not formal average or oracle execution.",
+  "scope": "Repaired predictive-only development diagnostic after v8c reactive physical-lane failure; not a strict cross-version throughput pair.",
   "root_count": 108,
   "arrival": "single_wave",
   "selection": "first_108_of_existing_128_train_manifest_in_original_order",
@@ -7,7 +7,16 @@
   "requested_children_per_round": [2, 4],
   "fanout_policy": "Prompt-selected 2-4 same-response task calls in every round; first named task request uses native generation bounds 2-4, later rounds remain model-selected from the prompt. Full tool prompt stays unchanged; no fanout response rejection, forced cancellation or invented children.",
   "initial_fanout_generation_bounds": [2, 4],
-  "run_directory": "experiments/raw/qwen35_joint_wait_h2d_ab_108root_2to4_v8c",
+  "run_directory": "experiments/raw/qwen35_joint_wait_h2d_predictive_108root_2to4_v8d",
+  "reactive_reference": {
+    "directory": "experiments/raw/qwen35_joint_wait_h2d_ab_108root_2to4_v8c/reactive",
+    "completed_workflows": 108,
+    "physical_disabled": true,
+    "prepare_issued": 18,
+    "prepare_acked": 17,
+    "failure": "D2H native split publication 37 -> 535/37 was rejected by old ledger",
+    "eligible_for_strict_pair": false
+  },
   "superseded_attempts": [{
     "directory": "experiments/raw/qwen35_joint_wait_h2d_ab_108root_2to4_v8",
     "status": "stopped_invalid_fanout",
@@ -19,7 +28,7 @@
     "eligible_for_requested_2to4_comparison": false,
     "reason": "Repeat-capable but unbounded initial task grammar still produced singleton task replies for all 108 roots."
   }],
-  "order": ["reactive", "predictive_h2d"],
+  "order": ["predictive_h2d"],
   "running": 48,
   "host_gb": 200,
   "host_numa_node": 1,

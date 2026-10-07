@@ -206,3 +206,24 @@ def test_request_result_audit_uses_rids_not_parallel_completion_order(tmp_path):
     report = paired_trajectory_report(values, changed)
     assert report["observed_request_sequence_different_count"] == 1
     assert report["workflows"][0]["first_observed_request_divergence_ordinal"] == 2
+
+
+def test_disabled_physical_lane_is_exportable_only_as_explicit_diagnostic(tmp_path, monkeypatch):
+    arm = tmp_path / "reactive"
+    fixture(arm)
+    (arm / "opportunities/admission_opportunities.jsonl").write_text(json.dumps({
+        "event": "admission_runtime_state", "physical_disabled": True,
+        "prepare_host": False, "final_stage_priority": True,
+        "final_stage_prefetch": False, "semantic_worker_configured": False,
+        "counts": {"physical_receipt_failed": 1},
+    }) + "\n")
+    argv = ["summarize", "--run-root", str(tmp_path), "--allow-incomplete"]
+    monkeypatch.setattr(sys, "argv", argv)
+    with pytest.raises(ValueError, match="disabled physical ledger"):
+        main()
+    monkeypatch.setattr(sys, "argv", argv + ["--allow-degraded-runtime"])
+    main()
+    report = json.loads((tmp_path / "comparison.json").read_text())
+    assert report["status"] == "degraded_diagnostic"
+    assert report["comparison_eligible"] is False
+    assert report["degraded_runtime_arms"] == ["reactive"]

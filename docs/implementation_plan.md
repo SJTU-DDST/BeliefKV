@@ -2,6 +2,29 @@
 
 Status date: 2026-10-07.
 
+## Latest Execution Update
+
+V8c reactive finished 108/108 at 19:45, but its physical lane was disabled
+at 17:05:16 after the eighteenth PREPARE D2H split publication (37 -> 535/37)
+failed an overly rigid node-set reconciliation. Only seventeen PREPARE ACKs
+were credited; native HiCache and agent evidence remain useful diagnostics,
+not a valid working shared-residency baseline.
+
+Fix split ACKs using current native ancestry, original anchor generation and
+exact reserved Host destinations, without dropping byte/pool/session/epoch
+or replay checks. Also repair busy-writer status publication, test-shape argv
+classification, and shell pipeline exit feedback. No new agent guard.
+
+Start only the user's requested repaired predictive diagnostic, 108 roots
+single wave, in `qwen35_joint_wait_h2d_predictive_108root_2to4_v8d`.
+Retain model artifacts and resource settings. Do not automatically rerun
+reactive or claim a strict cross-version throughput comparison against v8c.
+Export v8c only with explicit degraded-runtime diagnostics; the default
+physical-lane failure rejection stays intact. Preserve traces/patches and
+remove archived completed workspaces before restart.
+
+The prior v8c execution plan below is historical and must not override this update.
+
 This is the active plan, not a chronological log. The previous detailed plan
 is available at `c219604:docs/implementation_plan.md`; older snapshots remain
 under `docs/archive/`. Current design, implementation evidence and execution

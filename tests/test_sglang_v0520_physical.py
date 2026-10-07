@@ -52,6 +52,8 @@ def test_native_shadow_expectation_uses_exact_operation_before_ack():
     )
     assert expected.session_id == "s"
     assert expected.session_generation == 4
+    assert expected.children[0].anchor_creation_time == 4
+    assert dict(expected.children[0].host_destination_indices)["kv"] is op.host_indices
     ledger = PhysicalTransactionLedger()
     ledger.register(expected)
     assert ledger.pending_count == 1
@@ -821,6 +823,73 @@ def test_merged_native_and_tagged_ack_credits_only_matched_child():
     assert ledger.pending_count == 0
     with pytest.raises(PhysicalReceiptError, match="unknown"):
         ledger.observe(event, live_context_epochs={"ctx": 3})
+
+
+def split_shadow_case():
+    parent = NS(
+        id=535, creation_time=99, parent=None,
+        component_data={0: NS(host_value=[100]), 2: NS(host_value=None)},
+    )
+    anchor = NS(
+        id=37, creation_time=25, parent=parent,
+        component_data={0: NS(host_value=[101]), 2: NS(host_value=7)},
+    )
+    nodes = {535: parent, 37: anchor}
+    cache = NS(tree_core=NS(node_by_id=nodes.get))
+    part = PhysicalChildExpectation(
+        37, (37,), (("kv", 20), ("mamba", 5)), 25,
+        anchor_creation_time=25,
+        host_destination_indices=(("kv", [100, 101]), ("mamba", [7])),
+    )
+    obligation = expected(children=(part,))
+    event = ack(
+        receipt(anchor=37, published=(535, 37), total=25),
+        nodes=(535, 37),
+    )
+    return obligation, event, cache, nodes
+
+
+def test_d2h_split_ack_uses_actual_publication_and_exact_host_destinations():
+    obligation, event, cache, _ = split_shadow_case()
+    ledger = PhysicalTransactionLedger()
+    ledger.register(obligation)
+    completed, = ledger.observe(
+        event, live_context_epochs={"ctx": 3}, native_cache=cache,
+    )
+    assert completed.node_ids == (535, 37)
+    assert completed.pool_bytes == obligation.children[0].pool_bytes
+    assert completed.num_bytes == 25
+    assert ledger.pending_count == 0
+    assert ledger._published_by_command == {}
+
+
+@pytest.mark.parametrize("damage", (
+    "foreign_parent", "recycled_anchor", "foreign_host_range",
+    "foreign_mamba_slot", "missing_cache", "wrong_bytes", "h2d",
+))
+def test_split_ack_does_not_relax_identity_capacity_or_host_ownership(damage):
+    obligation, event, cache, nodes = split_shadow_case()
+    if damage == "foreign_parent":
+        nodes[37].parent = None
+    elif damage == "recycled_anchor":
+        nodes[37].creation_time = 26
+    elif damage == "foreign_host_range":
+        nodes[535].component_data[0].host_value = [999]
+    elif damage == "foreign_mamba_slot":
+        nodes[37].component_data[2].host_value = 8
+    elif damage == "missing_cache":
+        cache = None
+    elif damage == "wrong_bytes":
+        event.child_commits[0].num_bytes = 26
+    elif damage == "h2d":
+        obligation = replace(obligation, action="PREFETCH_GPU")
+        event.direction = "h2d"
+    ledger = PhysicalTransactionLedger()
+    ledger.register(obligation)
+    with pytest.raises(PhysicalReceiptError):
+        ledger.observe(event, live_context_epochs={"ctx": 3}, native_cache=cache)
+    assert ledger.pending_count == 0
+    assert ledger._published_by_command == {}
 
 
 def test_two_tagged_children_in_same_merged_ack():

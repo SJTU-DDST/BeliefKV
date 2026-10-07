@@ -915,7 +915,7 @@ class DockerWorkspaceBackend(FilesystemBackend, SandboxBackendProtocol):
         timeout_s = max(1, min(int(timeout_s), 3600))
         command_sha256 = hashlib.sha256(command.encode("utf-8")).hexdigest()
         wrapped = (
-            f"timeout --signal=KILL {timeout_s}s /bin/sh -c "
+            f"timeout --signal=KILL {timeout_s}s /bin/bash -o pipefail -c "
             f"{shlex.quote(command)}"
         )
         argv = self._docker_exec_argv(wrapped)

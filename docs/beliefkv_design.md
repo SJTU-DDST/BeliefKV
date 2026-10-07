@@ -240,6 +240,13 @@ native demand-load；Host copy 不可用时允许从 raw tokens 重算。Restore
 
 ## 5. 新版事件与内容驱动的预测旁路
 
+v8c reactive原生迁移数据已完整采集，但D2H在途split ACK的
+旧节点集合校验错误禁用了PREPARE通道，不能证明完整策略baseline。
+修复按native拓扑/代次与原Host目标索引验证发布节点扩展，不放松
+字节、pool、session/epoch和重放约束。后续v8d是修复版本的108-root
+predictive开发诊断，沿用冻结预测头；不将跨版本轨迹当作公平对照，
+模型仍只预测事件/工作量，runtime决定动作。
+
 2026-10-07当前v8c诊断使用108-root单波及每轮2–4 native task
 调用，保持running48与池配置。这是新压力/fanout组合，不自动
 外推v7校准。JOIN恢复要求完整ALL成员集只剩一个未完成child，

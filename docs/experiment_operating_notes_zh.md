@@ -4,6 +4,24 @@
 guard、终态门禁或模型动作授权。启动前同时阅读
 `docs/implementation_plan.md`；旧诊断脚本和历史计划不能覆盖当前约定。
 
+## v8 故障与修复约束
+
+v8c reactive 在17:05:16发生真实账本失效，不能因为108个workflow
+都completed就说物理策略完整有效。Radix拆分在D2H在途时是合法的；
+发布节点集合可以扩展，但必须由真实native祖先链、anchor代次、
+原Host目标索引及守恒的pool/字节证明，不能仅允许任意节点超集。
+不要删除 `physical_disabled` 检查或手改状态。
+
+持续忙碌时必须发布有时间戳的状态快照，而不是只等待队列空闲。
+全量测试的管道过滤器、`--exclude-tag` 等参数不是测试目标；
+管道的末端退出0不代表上游测试或timeout成功。新执行反馈采用
+bash pipefail，但不加语义无进展guard或缩短现有预算。
+
+修复后的v8d predictive与失效的v8c reactive属于开发诊断，
+不是同配置严格配对。保留全部异常和轨迹，不宣称独立吞吐加速，
+不自动排额外reactive或canary。当前108-root、2–4 prompt、
+模型/池/running参数保持不变。
+
 ## 场景与配置
 
 2026-10-07 用户批准下一轮 **108-root 单波到达、每轮2–4 child**，

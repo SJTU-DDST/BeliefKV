@@ -618,6 +618,7 @@ def test_docker_backend_hashes_commands_and_truncates_output(
         execute_argv
     )
     assert execute_argv[-3:-1] == ["/bin/sh", "-c"]
+    assert "/bin/bash -o pipefail -c" in execute_argv[-1]
 
 
 def test_docker_backend_opt_in_stdout_timing_keeps_command_body_out_of_audit(
@@ -1487,6 +1488,22 @@ def test_native_root_natural_completion_and_length_exhaustion() -> None:
     assert _workflow_terminal(interrupted_after_tool, require_schema=False) == (
         None, "incomplete"
     )
+
+
+def test_pipeline_timeout_is_not_hidden_by_a_successful_output_filter(tmp_path, monkeypatch):
+    audit = JsonlAudit(tmp_path / "audit.jsonl")
+    backend = DockerWorkspaceBackend(tmp_path, image="fixture:latest", audit=audit)
+    backend._started = True
+    monkeypatch.setattr(
+        backend, "_docker_exec_argv", lambda wrapped: ["/bin/bash", "-c", wrapped],
+    )
+    try:
+        response = backend.execute("timeout 0.1 sleep 1 | tail -1", timeout=2)
+        assert response.exit_code == 124
+    finally:
+        backend._started = False
+        backend.close()
+        audit.close()
 
 
 def test_experiment_config_rejects_unsupported_mode(tmp_path: Path) -> None:

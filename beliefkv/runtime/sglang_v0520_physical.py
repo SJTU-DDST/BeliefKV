@@ -9,7 +9,7 @@ Pool byte accounting therefore uses the caller's frozen per-token pool sizes.
 from __future__ import annotations
 
 from collections import deque
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from math import isfinite
 from time import monotonic
 from typing import Mapping
@@ -20,6 +20,7 @@ from beliefkv.runtime.sglang_v0520_observer import (
     UnifiedNodeSummary,
     observe_static_full_mamba_headroom,
     observe_unified_node_closure,
+    normalize_native_creation_time,
 )
 
 
@@ -564,6 +565,66 @@ class PhysicalChildExpectation:
     published_node_ids: tuple[int, ...]
     pool_bytes: tuple[tuple[str, int], ...]
     num_bytes: int
+    anchor_creation_time: int | float | None = field(default=None, compare=False)
+    host_destination_indices: tuple[tuple[str, object], ...] = field(
+        default=(), compare=False, repr=False,
+    )
+
+
+def _index_values(indices: object) -> tuple[int, ...]:
+    if indices is None:
+        return ()
+    if type(indices) is int:
+        return (indices,)
+    if callable(getattr(indices, "tolist", None)):
+        indices = indices.tolist()
+    if type(indices) is int:
+        return (indices,)
+    if type(indices) not in (tuple, list) or any(
+        type(value) is not int or value < 0 for value in indices
+    ):
+        raise PhysicalReceiptError("unobservable native host indices")
+    return tuple(indices)
+
+
+def _native_split_publication(
+    child: PhysicalChildExpectation, published: tuple[int, ...], cache: object,
+) -> bool:
+    """Accept only a native split of the original reserved Host destinations."""
+    if (
+        child.published_node_ids != (child.anchor_node_id,)
+        or len(published) < 2
+        or published[-1] != child.anchor_node_id
+        or len(set(published)) != len(published)
+        or child.anchor_creation_time is None
+        or not child.host_destination_indices
+        or {
+            pool for pool, amount in child.pool_bytes if amount
+        } - {pool for pool, _ in child.host_destination_indices}
+    ):
+        return False
+    try:
+        nodes = [cache.tree_core.node_by_id(node_id) for node_id in published]
+        if (
+            any(node is None for node in nodes)
+            or normalize_native_creation_time(nodes[-1].creation_time)
+            != child.anchor_creation_time
+            or any(right.parent is not left for left, right in zip(nodes, nodes[1:]))
+        ):
+            return False
+        for pool, reserved in child.host_destination_indices:
+            component = 0 if pool == "kv" else 2 if pool == "mamba" else None
+            if component is None:
+                return False
+            actual = tuple(
+                index for node in nodes
+                for index in _index_values(node.component_data[component].host_value)
+            )
+            if actual != _index_values(reserved):
+                return False
+        return True
+    except (AttributeError, KeyError, TypeError, ValueError, RuntimeError):
+        return False
 
 
 @dataclass(frozen=True)
@@ -788,6 +849,16 @@ def shadow_expectation_from_native_op(
             published_node_ids=(step.node_id,),
             pool_bytes=tuple(pool_bytes),
             num_bytes=num_bytes,
+            anchor_creation_time=normalize_native_creation_time(step.creation_time),
+            host_destination_indices=(
+                ("kv", operation.host_indices),
+                *(
+                    ("mamba", transfer.host_indices)
+                    for transfer in getattr(operation, "pool_transfers", ()) or ()
+                    if pool_name(transfer.name) == "mamba"
+                    and getattr(transfer, "indices_from_pool", None) is None
+                ),
+            ),
         ),),
         pool_bytes_per_token=tuple(sizes),
         session_id=step.key.session_id,
@@ -845,6 +916,7 @@ class PhysicalTransactionLedger:
         self._pending: dict[str, tuple[PhysicalActionExpectation, float, set[int]]] = {}
         self._history: deque[str] = deque()
         self._seen: set[str] = set()
+        self._published_by_command: dict[str, dict[int, tuple[int, ...]]] = {}
         self._history_size = history_size
 
     @property
@@ -881,6 +953,7 @@ class PhysicalTransactionLedger:
         )
 
     def _remember(self, command_id: str) -> None:
+        self._published_by_command.pop(command_id, None)
         if len(self._history) == self._history_size:
             self._seen.remove(self._history.popleft())
         self._history.append(command_id)
@@ -998,6 +1071,7 @@ class PhysicalTransactionLedger:
         *,
         live_context_epochs: Mapping[str, int],
         live_context_sessions: Mapping[str, tuple[str, int]] | None = None,
+        native_cache: object | None = None,
     ) -> tuple[PhysicalActionCompleted, ...]:
         """Credit only entire commands after native completion and live revalidation.
 
@@ -1010,6 +1084,7 @@ class PhysicalTransactionLedger:
                 commit,
                 live_context_epochs=live_context_epochs,
                 live_context_sessions=live_context_sessions or {},
+                native_cache=native_cache,
             )
         except PhysicalReceiptError:
             for command_id in tuple(self._pending):
@@ -1025,6 +1100,7 @@ class PhysicalTransactionLedger:
         *,
         live_context_epochs: Mapping[str, int],
         live_context_sessions: Mapping[str, tuple[str, int]],
+        native_cache: object | None,
     ) -> tuple[PhysicalActionCompleted, ...]:
         receipts = getattr(commit, "child_commits", ())
         nodes = getattr(commit, "node_ids", ())
@@ -1051,6 +1127,7 @@ class PhysicalTransactionLedger:
         if set(merged_counts) - {"kv", "mamba", "swa", "c128"}:
             self._reject("unexpected merged pool")
         by_command: dict[str, set[int]] = {}
+        publications: dict[str, dict[int, tuple[int, ...]]] = {}
         credited_counts: dict[str, int] = {}
         credited_nodes: set[int] = set()
         for receipt in receipts:
@@ -1090,9 +1167,23 @@ class PhysicalTransactionLedger:
             published = getattr(receipt, "published_node_ids", None)
             if (
                 type(published) is not tuple
-                or published != child.published_node_ids
+                or len(published) > self.max_nodes
+                or (
+                    published != child.published_node_ids
+                    and not (
+                        expected.action == "PREPARE_HOST"
+                        and native_cache is not None
+                        and _native_split_publication(child, published, native_cache)
+                    )
+                )
                 or not set(published).issubset(nodes)
                 or credited_nodes.intersection(published)
+                or any(
+                    set(published).intersection(part.published_node_ids)
+                    for other_id, (other, _, _) in self._pending.items()
+                    if other_id != command_id
+                    for part in other.children
+                )
             ):
                 self._reject("child publication does not match native ACK")
             actual_counts = _counts(
@@ -1110,6 +1201,7 @@ class PhysicalTransactionLedger:
                 credited_counts[pool] = credited_counts.get(pool, 0) + count
             credited_nodes.update(published)
             by_command.setdefault(command_id, set()).add(anchor)
+            publications.setdefault(command_id, {})[anchor] = published
         if any(
             set(nodes).difference(credited_nodes).intersection(child.published_node_ids)
             for expected, _, _ in self._pending.values()
@@ -1123,6 +1215,8 @@ class PhysicalTransactionLedger:
         completed: list[PhysicalActionCompleted] = []
         for command_id, anchors in by_command.items():
             expected, _, already = self._pending[command_id]
+            observed = self._published_by_command.setdefault(command_id, {})
+            observed.update(publications[command_id])
             already.update(anchors)
             if len(already) != len(expected.children):
                 continue
@@ -1137,7 +1231,8 @@ class PhysicalTransactionLedger:
                     context_id=expected.context_id,
                     context_epoch=expected.context_epoch,
                     node_ids=tuple(
-                        node for child in expected.children for node in child.published_node_ids
+                        node for child in expected.children
+                        for node in observed[child.anchor_node_id]
                     ),
                     pool_bytes=tuple(sorted(pool_bytes.items())),
                     num_bytes=sum(child.num_bytes for child in expected.children),

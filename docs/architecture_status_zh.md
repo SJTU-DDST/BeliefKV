@@ -2,6 +2,37 @@
 
 更新日期：2026-10-07。
 
+## 最新诊断与启动
+
+v8c reactive 已于2026-10-07 19:45结束，108/108 completed，
+原生遥测无丢失/写入错误，所有119个JOIN满足、232个child返回。
+但它不是完整工作的PREPARE baseline：17:05:16第18次D2H的
+Radix节点37在途拆为535/37，账本只允许原发布集合37，
+错误触发 `child publication does not match native ACK`。
+随后物理动作全程禁用，仅17个PREPARE获得ACK，原生HiCache仍运行。
+原生迁移/缓存和agent轨迹可作诊断，不可据此声称完整策略对照有效。
+
+总耗时9675.25秒，吞吐40.19 completed workflow/小时，平均JCT
+3697.63秒、P50 3628.62秒，GPU平均利用率55.33%。最后一个
+django-11734耗时9642.11秒，反复全量测试构成长CPU长尾；workspace
+初始及最终HEAD均为要求的base commit，不支持模型“HEAD更新”的说法。
+H2D 8382批/2.473 TB，CUDA-event累计73.14秒、submit→ACK累计
+825.29秒；D2H 2.234 TB。ACK等待不是可直接减去的oracle JCT。
+11/108多轮且仅两轮，后续6个单child组；不补造或取消这些模型输出。
+
+修复保留失败关闭机制，仅用native树祖先关系、原anchor代次及
+原始Host目标索引确认D2H拆分后的发布集合，并仍校验字节、
+pool、session/epoch和重放。忙碌writer改为定时发布状态；
+测试形态不再把管道过滤器/选项参数当作测试标签，shell采用
+bash pipefail反馈上游失败。不新增agent guard或短预算。
+
+下一运行是全新目录
+`experiments/raw/qwen35_joint_wait_h2d_predictive_108root_2to4_v8d`，
+修复后的108-root单波predictive机制诊断，保留v7头、500 ms/
+250 ms窗口、running48、Host200 GB/NUMA1和0.9池比例。
+不自动重跑reactive，不将v8c和v8d解释为公平配对或预测独立加速。
+严格比较须后续补同修复版本reactive。以下v8c启动记录作为历史证据保留。
+
 本文是当前实现事实的权威入口，不是逐日开发日志。当前主线已是
 Qwen3.5-35B-A3B BF16 / SGLang 0.5.20，不再以旧 Qwen3/SGLang
 0.5.2rc1 的 P6 能力描述代替新版事实。迁移前关键节点为
