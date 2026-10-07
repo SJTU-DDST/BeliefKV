@@ -110,6 +110,16 @@ and experiment launch record unchanged.
 4. Export `memory_opportunity.json` per completed arm, retain raw evidence,
    and remove only unused workspaces. Assess H2D opportunity and useful
    cache loss together; DMA/ACK sums are not a whole-system oracle bound.
+5. Busy-writer status snapshots currently update only after a 0.5-second
+   empty queue or close. The v8c status file stopped refreshing at 17:18:56
+   while raw JSONL kept advancing. Use raw timestamps and payload consistency
+   for live diagnosis, not stale zero-error or hit counters. Repair periodic
+   status publication after the frozen pair, not between its two arms.
+   One raw partial snapshot has 8,083 native H2D payloads, 2.419 TB,
+   71.22 s CUDA-event sum and 790.49 s submit-to-ACK sum; no repeated
+   submission timestamps or exact payload rows. These are not a completed
+   makespan or a counterfactual JCT gain. Audit later singleton groups as
+   realized model behavior; do not invent children or cancel workflows.
 
 ### Completed V7 Preparation
 

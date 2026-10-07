@@ -155,6 +155,13 @@ request attempt 改变不能清零预算，也不能长期 pin 预取数据。
 复用、censor 与未验证状态。ACK 不是收益，Host 副本存在也不是
 数据已被消费。未验证 Mamba 不全部记为浪费，Host eviction
 不全部记为有用 KV 丢失，uncached input 不全部记为重算。
+
+持续高负载时 `native_telemetry_status.json` 的更新时间也必须检查。
+当前writer只在队列空闲0.5秒或关闭时写状态；v8c已经观察到
+状态停在17:18:56、但JSONL继续写入。实时计数和健康检查应使用
+原始记录时间、处理/队列错误及载荷一致性，不能将旧快照当作
+实时零错误或命中率证据。修复定时状态发布须在冻结pair结束后
+共同用于后续两侧，不为监控口径问题中途污染对照。
 块归因 probe 溢出时不能以观测子集推断全量重算率。
 
 usage 与物理占用分开：SGLang 的 FULL/Mamba usage 会扣除
