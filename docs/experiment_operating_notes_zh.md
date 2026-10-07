@@ -17,8 +17,13 @@ v7已结束，reactive83 completed/1 incomplete、predictive84 completed。
 108-root/2–4属于新的联合负载诊断，不排额外重复，
 不能仅凭脚本默认值自动重跑或当作已冻结的理想正式负载。
 
-两侧共享native_in_graph_2to4 prompt和auto首轮工具选择，不更改
-工具schema，不用guard拒绝/补造child。实际fanout必须按trace核对；
+两侧共享native_in_graph_2to4 prompt和首轮命名task/显式并行选择。
+本机XGrammar的命名task只允许一个调用，BeliefKV ingress改用
+task子集required约束允许重复；完整工具prompt不变。
+2–4仍由prompt选择，不用guard拒绝/补造child。
+首个v8 auto尝试已停止，不纳入合格对照；v8b使用新目录冷启动。
+专用委派prompt须位于通用“先读文件”要求之后，不能只修改次数
+而不检查真正的生成约束。实际fanout必须按trace核对；
 单个child结束不满足JOIN_ALL，只有最后未完成成员可作为恢复信号。
 冻结旧预测头用于新regime诊断，不假定校准有效。
 新增旧输入共同前缀损失代理、完整有界Host归因、终态路径驻留/

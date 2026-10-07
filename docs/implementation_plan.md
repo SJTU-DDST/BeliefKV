@@ -36,9 +36,18 @@ V7 has ended: reactive 83 completed/1 incomplete, predictive 84 completed.
 Only 12/21 roots had multiple rounds; every round still had one child.
 Native H2D CUDA-event time was less than one second and submit-to-ACK roughly
 10 seconds, so H2D volume alone cannot establish an oracle opportunity.
-Current v8 checks the first 108 train tasks in existing order and the new
+Current v8b checks the first 108 train tasks in existing order and the new
 native_in_graph_2to4 prompt, retaining old profiles. This is a combined
 pressure/fanout diagnosis, not a root-count-only comparison.
+The initial v8 AUTO attempt at debe99d was stopped: 105/108 initial
+responses had no task calls. It is not eligible for the requested 2-4
+comparison or training. Move delegation instructions after the general
+prompt and use named task plus explicit parallel calls. The installed
+XGrammar named-task format permits only one call; use the required grammar
+over the task subset only for BeliefKV parallel named-task requests,
+retaining all prompt tool definitions. Count remains prompt-selected;
+do not reject workflows, invent children, or add a fanout guard.
+Restart in a fresh v8b directory and verify realized round sizes early.
 Add same-session prior-served-prefix loss separate from new input, complete
 bounded eviction probes, session-close timing and terminal native-ancestry
 observations. Do not sum shared ancestry as exclusive dead bytes or offload

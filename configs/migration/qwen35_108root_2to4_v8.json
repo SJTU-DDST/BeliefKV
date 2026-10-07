@@ -5,7 +5,14 @@
   "selection": "first_108_of_existing_128_train_manifest_in_original_order",
   "fanout_profile": "native_in_graph_2to4",
   "requested_children_per_round": [2, 4],
-  "fanout_policy": "Prompt only; same-response parallel task calls, no forced cancellation or invented children. Initial auto choice, unchanged tool schema.",
+  "fanout_policy": "Prompt-selected 2-4 same-response task calls; initial named task with explicit parallel calls and a repeat-capable BeliefKV constraint. Full tool prompt stays unchanged; no fanout rejection, forced cancellation or invented children.",
+  "run_directory": "experiments/raw/qwen35_joint_wait_h2d_ab_108root_2to4_v8b",
+  "superseded_attempt": {
+    "directory": "experiments/raw/qwen35_joint_wait_h2d_ab_108root_2to4_v8",
+    "status": "stopped_invalid_fanout",
+    "eligible_for_requested_2to4_comparison": false,
+    "reason": "Initial auto requests bypassed delegation; local named-task XGrammar also restricted output to one call before the v8b ingress repair."
+  },
   "order": ["reactive", "predictive_h2d"],
   "running": 48,
   "host_gb": 200,

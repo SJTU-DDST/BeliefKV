@@ -48,10 +48,10 @@ index d1509a7..616c758 100644
      tool_choice: Union[ToolChoice, Literal["auto", "required", "none"]] = Field(
          default="auto", examples=["none"]
 diff --git a/python/sglang/srt/entrypoints/openai/serving_chat.py b/python/sglang/srt/entrypoints/openai/serving_chat.py
-index 89cac80..26870c3 100644
+index 89cac80..96f9e3a 100644
 --- a/python/sglang/srt/entrypoints/openai/serving_chat.py
 +++ b/python/sglang/srt/entrypoints/openai/serving_chat.py
-@@ -116,6 +116,24 @@ _MEDIA_CONTENT_PART_TYPES = frozenset({"image_url", "video_url", "audio_url"})
+@@ -116,6 +116,37 @@ _MEDIA_CONTENT_PART_TYPES = frozenset({"image_url", "video_url", "audio_url"})
  _CHAT_TEMPLATE_CACHE_MAX_SIZE = 128
  
  
@@ -73,10 +73,23 @@ index 89cac80..26870c3 100644
 +    ] or None
 +
 +
++def _tool_constraint_spec(request: ChatCompletionRequest, tools: List[Tool]):
++    if (
++        request.beliefkv_metadata is not None
++        and request.parallel_tool_calls
++        and isinstance(request.tool_choice, ToolChoice)
++        and request.tool_choice.function.name == "task"
++    ):
++        # This XGrammar version's named-tool tag permits only one call. Required
++        # over the named subset permits repetition without changing the prompt.
++        return [tool for tool in tools if tool.function.name == "task"], "required"
++    return tools, request.tool_choice
++
++
  def normalize_tool_content(role: str, content):
      """Normalize tool message content from OpenAI array format to plain string.
  
-@@ -1158,9 +1176,13 @@ class OpenAIServingChat(OpenAIServingBase):
+@@ -1158,9 +1189,13 @@ class OpenAIServingChat(OpenAIServingBase):
              video_data=processed_messages.video_data,
              audio_data=processed_messages.audio_data,
              sampling_params=sampling_params,
@@ -91,7 +104,7 @@ index 89cac80..26870c3 100644
              return_sampling_mask=request.return_sampling_mask,
              stream=request.stream,
              return_text_in_logprobs=True,
-@@ -1176,6 +1198,7 @@ class OpenAIServingChat(OpenAIServingBase):
+@@ -1176,6 +1211,7 @@ class OpenAIServingChat(OpenAIServingBase):
              routed_experts_start_len=request.routed_experts_start_len,
              rid=request.rid,
              session_id=request.session_id,
@@ -99,7 +112,7 @@ index 89cac80..26870c3 100644
              extra_key=request.extra_key,
              cache_salt=request.cache_salt,
              require_reasoning=processed_messages.require_reasoning,
-@@ -1256,14 +1279,7 @@ class OpenAIServingChat(OpenAIServingBase):
+@@ -1256,22 +1292,18 @@ class OpenAIServingChat(OpenAIServingBase):
          required_parsed_natively = glm_constraint
          if effective_tools and request.tool_choice != "none":
              request.skip_special_tokens = False
@@ -113,9 +126,22 @@ index 89cac80..26870c3 100644
 -                tools = [item.model_dump() for item in request.tools]
 +            tools = _prompt_tool_definitions(request)
              if self.tool_call_parser and not glm_constraint:
++                constraint_tools, constraint_choice = _tool_constraint_spec(
++                    request, effective_tools
++                )
                  parser = FunctionCallParser(
-                     effective_tools,
-@@ -1872,6 +1888,11 @@ class OpenAIServingChat(OpenAIServingBase):
+-                    effective_tools,
++                    constraint_tools,
+                     self.tool_call_parser,
+                     tokenizer=self.tokenizer_manager.tokenizer,
+                 )
+                 tool_call_constraint = parser.get_structure_constraint(
+-                    request.tool_choice,
++                    constraint_choice,
+                     parallel_tool_calls=request.parallel_tool_calls,
+                     thinking_mode=xgrammar_reasoning,
+                 )
+@@ -1872,6 +1904,11 @@ class OpenAIServingChat(OpenAIServingBase):
                          choice_logprobs = self._process_streaming_logprobs(
                              content, n_prev_token, total_output_logprobs
                          ).model_dump()
@@ -127,7 +153,7 @@ index 89cac80..26870c3 100644
                      n_prev_tokens[index] = total_output_logprobs
  
                  # Track finish_reason for each index
-@@ -2529,6 +2550,45 @@ class OpenAIServingChat(OpenAIServingBase):
+@@ -2529,6 +2566,45 @@ class OpenAIServingChat(OpenAIServingBase):
          token_logprobs = self._process_logprobs_tokens(logprobs, use_token_index=False)
          return ChoiceLogprobs(content=token_logprobs)
  
@@ -2952,10 +2978,10 @@ index 0000000..88361ff
 +    unittest.main()
 diff --git a/test/srt/test_beliefkv_metadata.py b/test/srt/test_beliefkv_metadata.py
 new file mode 100644
-index 0000000..47acbbf
+index 0000000..865a854
 --- /dev/null
 +++ b/test/srt/test_beliefkv_metadata.py
-@@ -0,0 +1,226 @@
+@@ -0,0 +1,267 @@
 +"""BeliefKV request identity transport in the v0.5.20 ingress path."""
 +
 +import unittest
@@ -2976,7 +3002,9 @@ index 0000000..47acbbf
 +from sglang.srt.entrypoints.openai.serving_chat import (
 +    OpenAIServingChat,
 +    _prompt_tool_definitions,
++    _tool_constraint_spec,
 +)
++from sglang.srt.function_call.function_call_parser import FunctionCallParser
 +from sglang.srt.managers.io_struct import (
 +    GenerateReqInput,
 +    SessionParams,
@@ -2990,6 +3018,45 @@ index 0000000..47acbbf
 +
 +
 +class BeliefKVMetadataTest(unittest.TestCase):
++    def test_named_parallel_task_constraint_allows_repeated_calls(self):
++        request = ChatCompletionRequest.model_validate({
++            "model": "test",
++            "messages": [{"role": "user", "content": "delegate two investigations"}],
++            "beliefkv_metadata": {"conversation_id": "root"},
++            "parallel_tool_calls": True,
++            "tool_choice": {"type": "function", "function": {"name": "task"}},
++            "tools": [
++                {"type": "function", "function": {
++                    "name": name, "parameters": {"type": "object", "properties": {}}
++                }}
++                for name in ("task", "read_file")
++            ],
++        })
++        tools, choice = _tool_constraint_spec(request, request.tools)
++        self.assertEqual([tool.function.name for tool in tools], ["task"])
++        self.assertEqual(choice, "required")
++        kind, tag = FunctionCallParser(tools, "qwen3_coder").get_structure_constraint(
++            choice, parallel_tool_calls=True, thinking_mode=False,
++        )
++        self.assertEqual(kind, "structural_tag")
++        self.assertEqual(tag.format.type, "tags_with_separator")
++        self.assertTrue(tag.format.at_least_one)
++        self.assertEqual(len(tag.format.tags), 1)
++        self.assertIn("<function=task>", tag.format.tags[0].begin)
++        self.assertEqual(
++            [item["function"]["name"] for item in _prompt_tool_definitions(request)],
++            ["task", "read_file"],
++        )
++        single = request.model_copy(update={"parallel_tool_calls": False})
++        self.assertEqual(
++            _tool_constraint_spec(single, single.tools), (single.tools, single.tool_choice)
++        )
++        ordinary = request.model_copy(update={"beliefkv_metadata": None})
++        self.assertEqual(
++            _tool_constraint_spec(ordinary, ordinary.tools),
++            (ordinary.tools, ordinary.tool_choice),
++        )
++
 +    def test_named_task_keeps_full_session_tool_prompt(self):
 +        base = {
 +            "model": "test",

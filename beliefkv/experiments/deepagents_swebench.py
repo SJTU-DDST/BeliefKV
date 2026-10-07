@@ -2132,6 +2132,9 @@ NATIVE_IN_GRAPH_2TO4_PROMPT = """
 Delegate within this same root conversation. Begin with a diagnosis round before
 reading, executing, or editing repository files. In EVERY delegation round, emit
 two to four independent native task calls together in ONE assistant response.
+Your first response must contain task calls, not ls, grep, read_file, execute,
+write_todos, or a final answer. Plan the source-analysis task and the independent
+reproduction/test task together, then submit BOTH before waiting for results.
 Do not submit one child and wait before launching the others. Choose two, three,
 or four from the independent evidence needed, not a fixed count.
 For diagnosis, assign complementary implementation-path analysis and independent
@@ -2266,10 +2269,13 @@ class InitialInGraphDelegationMiddleware(AgentMiddleware[Any, Any, Any]):
             return handler(request)
         if sum(getattr(tool, "name", None) == "task" for tool in request.tools) != 1:
             raise RuntimeError("in-graph delegation requires exactly one task tool")
-        # Keep the complete tool schema stable across JOIN; auto permits a
-        # multi-call response instead of a named-tool grammar's single call.
+        # The ingress patch preserves the full tool prompt and allows repeated
+        # named task calls when parallel_tool_calls is enabled.
         choice = "task" if self.single_task_choice else "auto"
-        response = handler(request.override(tool_choice=choice))
+        response = handler(request.override(
+            tool_choice=choice,
+            model_settings={**request.model_settings, "parallel_tool_calls": True},
+        ))
         if first_request and self.audit is not None:
             self.audit.emit(
                 "in_graph_initial_model_response",
@@ -2279,6 +2285,7 @@ class InitialInGraphDelegationMiddleware(AgentMiddleware[Any, Any, Any]):
                     for call in getattr(message, "tool_calls", ())
                 ],
                 initial_tool_choice=choice,
+                parallel_tool_calls=True,
                 observed_task_calls=sum(
                     call.get("name") == "task"
                     for message in response.result
@@ -3075,7 +3082,7 @@ def _build_autonomous_agent(
     if config.subagent_fanout_profile in IN_GRAPH_SUBAGENT_PROFILES:
         middleware.append(InitialInGraphDelegationMiddleware(
             audit=backend.audit,
-            single_task_choice=config.subagent_fanout_profile == "native_in_graph_1to4",
+            single_task_choice=True,
         ))
     if config.stop_after_first_native_join:
         middleware.append(NativeSubagentSemanticGateMiddleware(adapter))
@@ -3132,13 +3139,14 @@ def _build_autonomous_agent(
                 if config.completion_gate_enabled
                 else AUTONOMOUS_NATIVE_SYSTEM_PROMPT
             )
+            + repository_sandbox_contract(workload)
+            + "\n\n"
+            + BASE_AGENT_PROMPT
+            + "\n\nWORKFLOW DELEGATION REQUIREMENTS\n"
             + _autonomous_fanout_prompt(
                 config,
                 delegation_enabled=delegation_enabled,
             )
-            + repository_sandbox_contract(workload)
-            + "\n\n"
-            + BASE_AGENT_PROMPT
         ),
         middleware=middleware,
         response_format=(

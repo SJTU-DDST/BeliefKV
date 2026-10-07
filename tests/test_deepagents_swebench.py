@@ -2237,6 +2237,7 @@ def test_in_graph_first_turn_requires_task_then_restores_root_tools(
     middleware.wrap_model_call(first, handler)
     assert requests[-1].tools == [repository_tool, task]
     assert requests[-1].tool_choice == "task"
+    assert requests[-1].model_settings["parallel_tool_calls"] is True
     assert first.tools == [repository_tool, task]
     assert first.tool_choice is None
 
@@ -2272,9 +2273,14 @@ def test_in_graph_first_turn_requires_task_then_restores_root_tools(
     assert events[0]["tool_names"] == ["read_file", "task"]
     assert events[1]["tool_names"] == []
 
-def test_two_to_four_initial_turn_allows_multiple_calls_with_unchanged_schema(tmp_path):
+@pytest.mark.parametrize("named_task", [True, False])
+def test_two_to_four_initial_turn_allows_multiple_calls_with_unchanged_schema(
+    tmp_path, named_task,
+):
     audit = JsonlAudit(tmp_path / "initial.jsonl")
-    middleware = InitialInGraphDelegationMiddleware(audit=audit, single_task_choice=False)
+    middleware = InitialInGraphDelegationMiddleware(
+        audit=audit, single_task_choice=named_task,
+    )
     model = FakeMessagesListChatModel(responses=[AIMessage(content="unused")])
     tools = [SimpleNamespace(name="task"), SimpleNamespace(name="read_file")]
     first = ModelRequest(model=model, messages=[HumanMessage(content="Diagnose.")], tools=tools)
@@ -2290,7 +2296,8 @@ def test_two_to_four_initial_turn_allows_multiple_calls_with_unchanged_schema(tm
         )
         assert len(result.result[0].tool_calls) == 2
         assert requests[0].tools == tools
-        assert requests[0].tool_choice == "auto"
+        assert requests[0].tool_choice == ("task" if named_task else "auto")
+        assert requests[0].model_settings["parallel_tool_calls"] is True
     finally:
         audit.close()
 

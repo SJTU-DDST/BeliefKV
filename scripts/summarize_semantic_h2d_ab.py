@@ -383,6 +383,12 @@ def main() -> None:
             "completion_gate_enabled": False,
             "child_final_report_shadow": os.environ.get("CHILD_FINAL_REPORT_SHADOW", "1") == "1",
             "fanout_profile": os.environ.get("FANOUT_PROFILE", "native_in_graph_2to4"),
+            "in_graph_initial_tool_choice": "task",
+            "in_graph_initial_parallel_tool_calls": True,
+            "in_graph_named_task_constraint": (
+                "BeliefKV-only required constraint over task subset, permits repeated "
+                "calls; prompt selects count; complete prompt tool schema unchanged"
+            ),
             "requested_children_per_round": (
                 [2, 4] if os.environ.get("FANOUT_PROFILE", "native_in_graph_2to4") == "native_in_graph_2to4"
                 else [1, 4]

@@ -60,6 +60,11 @@ The separate
 adapter, explicit FULL/MAMBA Host-pool split, and per-node Host eviction
 observer required by `eviction_attribution.jsonl`. The v0.5.20 training runner
 checks that this complete patch is present before starting SGLang.
+For BeliefKV named `task` requests with `parallel_tool_calls=true`, it preserves
+the full prompt tool schema and uses a required constraint over the task subset.
+This avoids the installed XGrammar named-tool format's single-call limit while
+leaving ordinary requests and explicit nonparallel calls unchanged. The requested
+2-4 count remains a prompt requirement, not a workflow rejection rule.
 The current staging patch also propagates native transfer submission timestamps,
 merged physical bytes, unacknowledged bytes at submit, and synchronized CUDA
 transfer-stream elapsed time into the cache ACK observer. These measurements

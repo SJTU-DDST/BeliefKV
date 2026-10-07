@@ -17,9 +17,23 @@ completion8192、workflow14400秒、graph2048/32步reserve、seed21不变。
 
 新profile `native_in_graph_2to4` 保留历史1–4 profile。
 每轮要求同一assistant响应发出2–4个互补task调用，等待ALL后
-整合并继续复核/验证。首轮auto，不改变工具schema，避免命名task
-选择只生成单调用。无补造child、取消workflow或格式门禁；
+整合并继续复核/验证。首轮指定task并显式允许并行，不改变工具schema。
+本机XGrammar的命名task结构仅允许一次调用；v8b ingress仅对
+BeliefKV并行task选择使用task子集的required约束，允许重复生成。
+次数仍由prompt要求2–4，不添加次数拒绝/取消guard。
+专用委派要求位于通用“先读文件”提示之后。无补造child或格式门禁；
 实际fanout以trace为准，不将prompt要求当作实测保证。
+
+## 首次尝试已停止
+
+`qwen35_joint_wait_h2d_ab_108root_2to4_v8` 在 `debe99d` 下启动，
+首轮108条回复中105条无task、2条单task、1条双task。
+早期JOIN组有7个单child、1个双child、1个三child。
+因此不是合格的2–4对照；已停止client/server并释放GPU，
+保留原始trace、终态和patch，清理该次遗留容器/workspace。
+不将这次数据混入后续对照或新regime训练。
+修复后使用全新目录 `qwen35_joint_wait_h2d_ab_108root_2to4_v8b`，
+仍只运行一对reactive→predictive，不排额外重复。
 
 ## 缓存诊断
 
@@ -57,5 +71,5 @@ JOIN_ALL真实完成取完整成员集最大RETURN。现有提前恢复要求只
 每侧结束自动导出 `memory_opportunity.json`，汇总迁移服务预算、
 旧前缀损失/新输入、Host归因、终态残留及真实fanout，保留全部
 需求和异常。随后清理不用workspace，保留trace、patch、summary、
-失败证据；磁盘目前约102 GiB空闲，两侧顺序运行。系统故障及时
+失败证据；启动前重新检查磁盘，两侧顺序运行。系统故障及时
 停止核对，不提前终止正常长任务以改善吞吐。
