@@ -34,24 +34,25 @@ index de4267d..ff1fd92 100644
          Optional[int],
          "The maximum number of queued requests. This option is ignored when using disaggregation-mode.",
 diff --git a/python/sglang/srt/entrypoints/openai/protocol.py b/python/sglang/srt/entrypoints/openai/protocol.py
-index d1509a7..616c758 100644
+index d1509a7..dcc1f1e 100644
 --- a/python/sglang/srt/entrypoints/openai/protocol.py
 +++ b/python/sglang/srt/entrypoints/openai/protocol.py
-@@ -878,6 +878,9 @@ class ChatCompletionRequest(BaseModel):
+@@ -878,6 +878,10 @@ class ChatCompletionRequest(BaseModel):
      temperature: Optional[float] = None
      top_p: Optional[float] = None
      user: Optional[str] = None
 +    # Non-standard request extension used by the optional BeliefKV runtime.
 +    beliefkv_metadata: Optional[Dict[str, Any]] = None
 +    beliefkv_eos_logprobs: bool = False
++    beliefkv_task_fanout: Optional[Tuple[int, int]] = None
      tools: Optional[List[Tool]] = Field(default=None, examples=[None])
      tool_choice: Union[ToolChoice, Literal["auto", "required", "none"]] = Field(
          default="auto", examples=["none"]
 diff --git a/python/sglang/srt/entrypoints/openai/serving_chat.py b/python/sglang/srt/entrypoints/openai/serving_chat.py
-index 89cac80..96f9e3a 100644
+index 89cac80..7375315 100644
 --- a/python/sglang/srt/entrypoints/openai/serving_chat.py
 +++ b/python/sglang/srt/entrypoints/openai/serving_chat.py
-@@ -116,6 +116,37 @@ _MEDIA_CONTENT_PART_TYPES = frozenset({"image_url", "video_url", "audio_url"})
+@@ -116,6 +116,63 @@ _MEDIA_CONTENT_PART_TYPES = frozenset({"image_url", "video_url", "audio_url"})
  _CHAT_TEMPLATE_CACHE_MAX_SIZE = 128
  
  
@@ -86,10 +87,36 @@ index 89cac80..96f9e3a 100644
 +    return tools, request.tool_choice
 +
 +
++def _bounded_task_constraint(request: ChatCompletionRequest, constraint):
++    if request.beliefkv_task_fanout is None:
++        return constraint
++    lower, upper = request.beliefkv_task_fanout
++    if (
++        request.beliefkv_metadata is None
++        or not request.parallel_tool_calls
++        or not isinstance(request.tool_choice, ToolChoice)
++        or request.tool_choice.function.name != "task"
++        or not 1 <= lower <= upper <= 4
++        or constraint is None
++        or constraint[0] != "structural_tag"
++        or constraint[1].format.type != "tags_with_separator"
++        or len(constraint[1].format.tags) != 1
++    ):
++        raise ValueError("BeliefKV task fanout requires a parallel native task tag")
++    from xgrammar.structural_tag import RepeatFormat
++
++    kind, tag = constraint
++    bounded = tag.model_copy(update={
++        "format": RepeatFormat(content=tag.format.tags[0], min=lower, max=upper),
++    })
++    logger.info("BeliefKV task generation fanout=%s..%s", lower, upper)
++    return kind, bounded
++
++
  def normalize_tool_content(role: str, content):
      """Normalize tool message content from OpenAI array format to plain string.
  
-@@ -1158,9 +1189,13 @@ class OpenAIServingChat(OpenAIServingBase):
+@@ -1158,9 +1215,13 @@ class OpenAIServingChat(OpenAIServingBase):
              video_data=processed_messages.video_data,
              audio_data=processed_messages.audio_data,
              sampling_params=sampling_params,
@@ -104,7 +131,7 @@ index 89cac80..96f9e3a 100644
              return_sampling_mask=request.return_sampling_mask,
              stream=request.stream,
              return_text_in_logprobs=True,
-@@ -1176,6 +1211,7 @@ class OpenAIServingChat(OpenAIServingBase):
+@@ -1176,6 +1237,7 @@ class OpenAIServingChat(OpenAIServingBase):
              routed_experts_start_len=request.routed_experts_start_len,
              rid=request.rid,
              session_id=request.session_id,
@@ -112,7 +139,7 @@ index 89cac80..96f9e3a 100644
              extra_key=request.extra_key,
              cache_salt=request.cache_salt,
              require_reasoning=processed_messages.require_reasoning,
-@@ -1256,22 +1292,18 @@ class OpenAIServingChat(OpenAIServingBase):
+@@ -1256,25 +1318,24 @@ class OpenAIServingChat(OpenAIServingBase):
          required_parsed_natively = glm_constraint
          if effective_tools and request.tool_choice != "none":
              request.skip_special_tokens = False
@@ -141,7 +168,13 @@ index 89cac80..96f9e3a 100644
                      parallel_tool_calls=request.parallel_tool_calls,
                      thinking_mode=xgrammar_reasoning,
                  )
-@@ -1872,6 +1904,11 @@ class OpenAIServingChat(OpenAIServingBase):
++                tool_call_constraint = _bounded_task_constraint(
++                    request, tool_call_constraint
++                )
+                 required_parsed_natively = parser.detector.parses_required_natively()
+                 if self.chat_encoding_spec == "kimi_k3":
+                     tool_call_stop = parser.detector.eot_token
+@@ -1872,6 +1933,11 @@ class OpenAIServingChat(OpenAIServingBase):
                          choice_logprobs = self._process_streaming_logprobs(
                              content, n_prev_token, total_output_logprobs
                          ).model_dump()
@@ -153,7 +186,7 @@ index 89cac80..96f9e3a 100644
                      n_prev_tokens[index] = total_output_logprobs
  
                  # Track finish_reason for each index
-@@ -2529,6 +2566,45 @@ class OpenAIServingChat(OpenAIServingBase):
+@@ -2529,6 +2595,45 @@ class OpenAIServingChat(OpenAIServingBase):
          token_logprobs = self._process_logprobs_tokens(logprobs, use_token_index=False)
          return ChoiceLogprobs(content=token_logprobs)
  
@@ -2978,10 +3011,10 @@ index 0000000..88361ff
 +    unittest.main()
 diff --git a/test/srt/test_beliefkv_metadata.py b/test/srt/test_beliefkv_metadata.py
 new file mode 100644
-index 0000000..865a854
+index 0000000..0f6eaa2
 --- /dev/null
 +++ b/test/srt/test_beliefkv_metadata.py
-@@ -0,0 +1,267 @@
+@@ -0,0 +1,280 @@
 +"""BeliefKV request identity transport in the v0.5.20 ingress path."""
 +
 +import unittest
@@ -3003,6 +3036,7 @@ index 0000000..865a854
 +    OpenAIServingChat,
 +    _prompt_tool_definitions,
 +    _tool_constraint_spec,
++    _bounded_task_constraint,
 +)
 +from sglang.srt.function_call.function_call_parser import FunctionCallParser
 +from sglang.srt.managers.io_struct import (
@@ -3043,6 +3077,13 @@ index 0000000..865a854
 +        self.assertTrue(tag.format.at_least_one)
 +        self.assertEqual(len(tag.format.tags), 1)
 +        self.assertIn("<function=task>", tag.format.tags[0].begin)
++        bounded_request = request.model_copy(update={"beliefkv_task_fanout": (2, 4)})
++        _, bounded = _bounded_task_constraint(bounded_request, (kind, tag))
++        self.assertEqual(bounded.format.type, "repeat")
++        self.assertEqual((bounded.format.min, bounded.format.max), (2, 4))
++        self.assertEqual(bounded.format.content, tag.format.tags[0])
++        self.assertEqual(tag.format.type, "tags_with_separator")
++        self.assertIs(_bounded_task_constraint(request, (kind, tag))[1], tag)
 +        self.assertEqual(
 +            [item["function"]["name"] for item in _prompt_tool_definitions(request)],
 +            ["task", "read_file"],
@@ -3056,6 +3097,11 @@ index 0000000..865a854
 +            _tool_constraint_spec(ordinary, ordinary.tools),
 +            (ordinary.tools, ordinary.tool_choice),
 +        )
++        with self.assertRaisesRegex(ValueError, "parallel native task"):
++            _bounded_task_constraint(
++                bounded_request.model_copy(update={"parallel_tool_calls": False}),
++                (kind, tag),
++            )
 +
 +    def test_named_task_keeps_full_session_tool_prompt(self):
 +        base = {

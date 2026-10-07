@@ -240,7 +240,7 @@ native demand-load；Host copy 不可用时允许从 raw tokens 重算。Restore
 
 ## 5. 新版事件与内容驱动的预测旁路
 
-2026-10-07当前v8b诊断使用108-root单波及每轮2–4 native task
+2026-10-07当前v8c诊断使用108-root单波及每轮2–4 native task
 调用，保持running48与池配置。这是新压力/fanout组合，不自动
 外推v7校准。JOIN恢复要求完整ALL成员集只剩一个未完成child，
 不能用首个child通知提前唤醒parent。工具CPU并发、GPU无服务
@@ -252,7 +252,10 @@ native demand-load；Host copy 不可用时允许从 raw tokens 重算。Restore
 首次v8因auto首轮绕过委派已停止。v8b后置专用委派prompt，
 首轮命名task且显式并行；仅在BeliefKV ingress对task子集使用
 可重复required约束，避免本机命名工具语法硬性限制为一个调用。
-完整工具prefix不变，2–4不是拒绝或补造child的guard。
+完整工具prefix不变，但v8b仍108个首轮全部单调用，已停止。
+v8c首轮通过RepeatFormat在生成时限定2–4，模型选择数和内容；
+后续轮次保持prompt驱动并记录实际次数。不在输出后拒绝回复，
+不补造child，也不把首轮约束当成所有后续轮次均2–4的证据。
 
 预测旁路不建立第二个调度器，也不控制agent是否可以RETURN。
 当前配置使用冻结MiniLM encoder及phase/work头、独立工具事件

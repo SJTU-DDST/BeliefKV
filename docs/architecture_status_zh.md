@@ -36,12 +36,13 @@ Qwen3.5-35B-A3B BF16 / SGLang 0.5.20，不再以旧 Qwen3/SGLang
    工作头CPU拟合/回放及独立观测EOS路径修复已完成；
    v7已结束，reactive83 completed/1 incomplete，predictive84 completed；
    12个JOIN H2D全部FULL复用，其中3个在EOS前启动，工具H2D仍0。
-   当前v8b改为用户授权的108-root单波/每轮2–4 child，
+   当前v8c改为用户授权的108-root单波/每轮2–4 child，
    保留500 ms center/250 ms协议窗口，不排额外重复。
    正式阶段再多轮平均，不要求固定需求回放。
    首次v8尝试因首轮auto绕过委派已停止，不用于2–4对照。
-   本机命名task约束只允许一次调用；已修复BeliefKV并行task
-   生成约束并后置专用prompt，实际fanout仍待新trace核对。
+   本机命名task约束只允许一次调用；可重复语法修复后的v8b
+   仍108条全单child，也已停止。v8c首轮原生生成范围2–4，
+   不拒绝回复/补造child；后续轮次保持prompt驱动并审计实测。
 
 ## 2. 当前配置
 
@@ -54,13 +55,13 @@ Qwen3.5-35B-A3B BF16 / SGLang 0.5.20，不再以旧 Qwen3/SGLang
 | Host | 200.010 GB，NUMA node 1；FULL约105.358 GB、Mamba约94.652 GB |
 | 池比例 | Device `mamba-full-memory-ratio=0.9`；Host匹配实际Device字节比例 |
 | GPU执行 | running=48，chunked prefill=4096，CUDA graph覆盖decode batch 48 |
-| 当前负载 | v8b：manifest前108个root单波，与每轮2–4 child联合压力诊断 |
+| 当前负载 | v8c：manifest前108个root单波，与每轮2–4 child联合压力诊断 |
 | 生成 | context=131072，completion=8192，temperature=0，seed=21 |
 | 预算 | workflow=14400秒，graph=2048，允许提前32步FINALIZE |
 | Harness | native_in_graph_2to4，同轮2–4调用、鼓励多轮，自然语言RETURN有效 |
 | 当前预测窗口 | 实际动作目标为RETURN/TOOL_END前0-1000 ms，仍独立审计真实提前量 |
-| 最近运行代码 | 首次v8 `debe99d` 已停止；v8b修复提交后冷启动，指纹以launch为准 |
-| 当前v8b | 沿用v7 log-work头/工具CDF；新并发与fanout下仅诊断，不假定校准有效 |
+| 最近运行代码 | v8 `debe99d` 和v8b `026f650` 已停止；v8c指纹以launch为准 |
+| 当前v8c | 沿用v7 log-work头/工具CDF；新并发与fanout下仅诊断，不假定校准有效 |
 
 以上GB为十进制；Mamba单位是完整状态/检查点，不是FULL的一个token。
 池usage、物理occupancy、可驱逐容量和free-list不得混用。
@@ -238,12 +239,21 @@ v6使用新的运行源码指纹，由新launch记录冻结，不回填v5。
 v6当前指纹：
 `c65caec44ecc934cd5cff9d740ec96f19459f48527505c85927bd4ae969fd6b9`。
 目录为 `experiments/raw/qwen35_joint_wait_h2d_ab_84root_20261006_v6`；
-225项相关CPU回归为v6启动时证据。本轮终态与生命周期已核对，
+225项相关CPU回归为v6启动时证据。v6终态与生命周期已核对，
 正向吞吐观测仍有需求混杂。新候选的拟合/回放不回填v6。
 
 v7目录：`experiments/raw/qwen35_joint_wait_h2d_ab_84root_v7`。
 启动commit为 `5dfdd30`，runtime源码445文件指纹：
 `4257db63689e9a92786f339e706180e56c5370efd421c7bb9d96336be2c466b9`。
-reactive的prefill/decode CUDA graph捕获已完成，decode覆盖batch48；
-84个workflow已提交首模型请求，启动遥测dropped/failed/writer error均0。
-predictive尚未启动，不能报告v7吞吐或预取净收益。运行中只维护文档。
+两侧已结束：reactive83 completed/1 incomplete，predictive84 completed。
+分别耗时5389.94/5209.46秒；12个预测JOIN H2D，3个EOS前启动，
+全部FULL首次复用。旧fanout全为单child，不能视为2–4负载证据。
+
+v8b（已停止）目录：
+`experiments/raw/qwen35_joint_wait_h2d_ab_108root_2to4_v8b`。
+启动commit `026f650`，staging patch SHA：
+`4cf11ec7e8041fe262312d02a9fe47d0777860e768311164e9e592196e0e03ab`。
+模型和运行参数见该目录 `ab_plan.json`。虽然CUDA graph捕获成功，
+108个首轮全部单task，不是合格2–4数据。当前v8c使用新目录
+`experiments/raw/qwen35_joint_wait_h2d_ab_108root_2to4_v8c`，
+首轮以原生语法范围2–4生成，不用启动配置代替实际fanout。

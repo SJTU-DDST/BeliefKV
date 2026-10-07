@@ -385,9 +385,14 @@ def main() -> None:
             "fanout_profile": os.environ.get("FANOUT_PROFILE", "native_in_graph_2to4"),
             "in_graph_initial_tool_choice": "task",
             "in_graph_initial_parallel_tool_calls": True,
+            "in_graph_initial_fanout_generation_bounds": (
+                [2, 4]
+                if os.environ.get("FANOUT_PROFILE", "native_in_graph_2to4") == "native_in_graph_2to4"
+                else None
+            ),
             "in_graph_named_task_constraint": (
-                "BeliefKV-only required constraint over task subset, permits repeated "
-                "calls; prompt selects count; complete prompt tool schema unchanged"
+                "BeliefKV-only native task repetition; first 2to4 generation bounded "
+                "to 2-4; no response rejection; complete prompt tool schema unchanged"
             ),
             "requested_children_per_round": (
                 [2, 4] if os.environ.get("FANOUT_PROFILE", "native_in_graph_2to4") == "native_in_graph_2to4"

@@ -17,7 +17,8 @@ runtime decides actions from identity, capacity, service and opportunity cost.
 Do not train an offline net-benefit head or promote old eligibility metadata.
 
 The user authorizes 108 roots in one arrival wave, two to four children
-per delegation turn through a new prompt-only profile. Running stays 48, Host
+per delegation turn through a new prompt profile with native first-turn
+generation bounds of 2-4 (not a post-generation rejection). Running stays 48, Host
 stays 200 GB on NUMA node 1, and FULL/Mamba pool settings stay fixed.
 Do not change to 128, staggered 64+64 or artificial eviction.
 More traffic is not inherently more useful traffic: report first-use,
@@ -36,7 +37,7 @@ V7 has ended: reactive 83 completed/1 incomplete, predictive 84 completed.
 Only 12/21 roots had multiple rounds; every round still had one child.
 Native H2D CUDA-event time was less than one second and submit-to-ACK roughly
 10 seconds, so H2D volume alone cannot establish an oracle opportunity.
-Current v8b checks the first 108 train tasks in existing order and the new
+Current v8c checks the first 108 train tasks in existing order and the new
 native_in_graph_2to4 prompt, retaining old profiles. This is a combined
 pressure/fanout diagnosis, not a root-count-only comparison.
 The initial v8 AUTO attempt at debe99d was stopped: 105/108 initial
@@ -47,7 +48,10 @@ XGrammar named-task format permits only one call; use the required grammar
 over the task subset only for BeliefKV parallel named-task requests,
 retaining all prompt tool definitions. Count remains prompt-selected;
 do not reject workflows, invent children, or add a fanout guard.
-Restart in a fresh v8b directory and verify realized round sizes early.
+V8b's repeat-capable grammar still produced one task for all 108 first replies
+and was stopped. Bound first-turn native generation to 2-4 using RepeatFormat;
+the model chooses count and content. Later rounds remain prompt-driven and
+must be audited, not claimed to be guaranteed. Restart in a fresh v8c directory.
 Add same-session prior-served-prefix loss separate from new input, complete
 bounded eviction probes, session-close timing and terminal native-ancestry
 observations. Do not sum shared ancestry as exclusive dead bytes or offload
@@ -86,6 +90,28 @@ and experiment launch record unchanged.
 
 ## 3. Immediate Work
 
+1. V8b at `026f650` has stopped with invalid singleton fanout.
+   Launch v8c after committing the first-turn native 2-4 generation repair in
+   `experiments/raw/qwen35_joint_wait_h2d_ab_108root_2to4_v8c`.
+   Verify actual initial and later 2-4 task groups early. A configured prompt
+   or passing grammar test is not evidence of realized fanout.
+2. Observe native/predictive FULL and Mamba transfers, queue/submit/ACK
+   intervals, common served-prefix loss, Host eviction attribution and
+   terminal cache references/residency. Keep new input separate from
+   recomputation and shared ancestry separate from dead exclusive data.
+3. Keep both arms frozen and cold-started. Report tool and complete-ALL JOIN
+   timing under the new regime without assuming v7 calibration or
+   counterfactual trajectory equivalence. Diagnose system faults before
+   continuing; do not censor normal long workflows or invent children.
+4. Export `memory_opportunity.json` per completed arm, retain raw evidence,
+   and remove only unused workspaces. Assess H2D opportunity and useful
+   cache loss together; DMA/ACK sums are not a whole-system oracle bound.
+
+### Completed V7 Preparation
+
+The steps below record completed preparation and its limits; they do not
+authorize another v7 run or a source/model change during v8c.
+
 1. V6 lifecycle audit complete: all seven JOIN FULL targets actually reused;
    no own re-demotion/native reload. Two soft leases expired before eventual
    reuse, so expiration is not a miss. No new tool load means its post-ACK
@@ -123,13 +149,16 @@ and the explicitly logged EOS protocol window=250 ms. Native EOS evidence
 is not model prediction success. Reweighted body features remain a candidate.
 165 related CPU tests pass; the next one-pair GPU check must retain all
 workflows and actual transfer/reuse/trajectory evidence.
-The one v7 pair has started at `5dfdd30`, directory
-`experiments/raw/qwen35_joint_wait_h2d_ab_84root_v7`. Reactive is healthy;
-all 84 first requests are submitted and decode CUDA graph includes batch 48.
+The one v7 pair launched at `5dfdd30`, directory
+`experiments/raw/qwen35_joint_wait_h2d_ab_84root_v7`, is complete:
+reactive 83 completed/1 incomplete, predictive 84 completed, makespans
+5389.94/5209.46 seconds. Twelve JOIN loads reused FULL, three pre-EOS;
+all actual task groups were singleton.
 Runtime source SHA (445 Python/shell files):
 `4257db63689e9a92786f339e706180e56c5370efd421c7bb9d96336be2c466b9`.
-Predictive has not started; no v7 performance conclusion. Freeze source,
-weights, prompts and launch settings now; no additional pair is queued.
+This is not an isolated KV speedup or evidence for the new 2-4 regime.
+V8c retains the heads as diagnostics and adds direct cache-opportunity
+evidence; no additional repetition pair is queued.
 
 ## 4. Latest v5 Findings
 

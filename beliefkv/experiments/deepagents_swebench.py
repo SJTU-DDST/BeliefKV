@@ -2246,10 +2246,12 @@ class InitialInGraphDelegationMiddleware(AgentMiddleware[Any, Any, Any]):
 
     def __init__(
         self, audit: JsonlAudit | None = None, *, single_task_choice: bool = True,
+        task_fanout: tuple[int, int] | None = None,
     ) -> None:
         super().__init__()
         self.audit = audit
         self.single_task_choice = single_task_choice
+        self.task_fanout = task_fanout
         self._first_request_seen = False
 
     def wrap_model_call(self, request: ModelRequest, handler: Any) -> ModelResponse:
@@ -2272,9 +2274,15 @@ class InitialInGraphDelegationMiddleware(AgentMiddleware[Any, Any, Any]):
         # The ingress patch preserves the full tool prompt and allows repeated
         # named task calls when parallel_tool_calls is enabled.
         choice = "task" if self.single_task_choice else "auto"
+        settings = {**request.model_settings, "parallel_tool_calls": True}
+        if self.task_fanout is not None and choice == "task":
+            settings["extra_body"] = {
+                **(settings.get("extra_body") or {}),
+                "beliefkv_task_fanout": list(self.task_fanout),
+            }
         response = handler(request.override(
             tool_choice=choice,
-            model_settings={**request.model_settings, "parallel_tool_calls": True},
+            model_settings=settings,
         ))
         if first_request and self.audit is not None:
             self.audit.emit(
@@ -2286,6 +2294,7 @@ class InitialInGraphDelegationMiddleware(AgentMiddleware[Any, Any, Any]):
                 ],
                 initial_tool_choice=choice,
                 parallel_tool_calls=True,
+                requested_task_fanout=self.task_fanout,
                 observed_task_calls=sum(
                     call.get("name") == "task"
                     for message in response.result
@@ -3083,6 +3092,11 @@ def _build_autonomous_agent(
         middleware.append(InitialInGraphDelegationMiddleware(
             audit=backend.audit,
             single_task_choice=True,
+            task_fanout=(
+                (2, 4)
+                if config.subagent_fanout_profile == "native_in_graph_2to4"
+                else None
+            ),
         ))
     if config.stop_after_first_native_join:
         middleware.append(NativeSubagentSemanticGateMiddleware(adapter))

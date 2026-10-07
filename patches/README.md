@@ -63,8 +63,11 @@ checks that this complete patch is present before starting SGLang.
 For BeliefKV named `task` requests with `parallel_tool_calls=true`, it preserves
 the full prompt tool schema and uses a required constraint over the task subset.
 This avoids the installed XGrammar named-tool format's single-call limit while
-leaving ordinary requests and explicit nonparallel calls unchanged. The requested
-2-4 count remains a prompt requirement, not a workflow rejection rule.
+leaving ordinary requests and explicit nonparallel calls unchanged. The optional
+`beliefkv_task_fanout=[2,4]` request extension bounds that first-turn native tag
+with XGrammar RepeatFormat; the model chooses count and content. Later rounds
+remain prompt-driven. No generated response is rejected or expanded into
+invented children.
 The current staging patch also propagates native transfer submission timestamps,
 merged physical bytes, unacknowledged bytes at submit, and synchronized CUDA
 transfer-stream elapsed time into the cache ACK observer. These measurements

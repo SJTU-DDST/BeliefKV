@@ -20,8 +20,10 @@ v7已结束，reactive83 completed/1 incomplete、predictive84 completed。
 两侧共享native_in_graph_2to4 prompt和首轮命名task/显式并行选择。
 本机XGrammar的命名task只允许一个调用，BeliefKV ingress改用
 task子集required约束允许重复；完整工具prompt不变。
-2–4仍由prompt选择，不用guard拒绝/补造child。
-首个v8 auto尝试已停止，不纳入合格对照；v8b使用新目录冷启动。
+v8b仍108条首轮全单task，已停止，不纳入合格对照。
+v8c首轮使用RepeatFormat范围2–4，模型自主选数和内容，不在
+生成后拒绝/补造child。后续轮次保持prompt驱动，须核对实测。
+首个v8 auto尝试也已停止；v8c使用新目录冷启动。
 专用委派prompt须位于通用“先读文件”要求之后，不能只修改次数
 而不检查真正的生成约束。实际fanout必须按trace核对；
 单个child结束不满足JOIN_ALL，只有最后未完成成员可作为恢复信号。

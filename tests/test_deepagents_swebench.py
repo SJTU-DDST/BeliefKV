@@ -2302,6 +2302,33 @@ def test_two_to_four_initial_turn_allows_multiple_calls_with_unchanged_schema(
         audit.close()
 
 
+def test_initial_task_fanout_is_a_generation_option_not_a_response_rejection(tmp_path):
+    audit = JsonlAudit(tmp_path / "initial.jsonl")
+    middleware = InitialInGraphDelegationMiddleware(audit=audit, task_fanout=(2, 4))
+    model = FakeMessagesListChatModel(responses=[AIMessage(content="unused")])
+    request = ModelRequest(
+        model=model, messages=[HumanMessage(content="Diagnose.")],
+        tools=[SimpleNamespace(name="task")],
+        model_settings={"extra_body": {"chat_template_kwargs": {"enable_thinking": False}}},
+    )
+    observed = []
+    response = ModelResponse(result=[AIMessage(content="", tool_calls=[
+        {"name": "task", "args": {"description": "inspect"}, "id": "one"}
+    ])])
+    try:
+        returned = middleware.wrap_model_call(
+            request, lambda modified: (observed.append(modified) or response),
+        )
+        assert returned is response
+        assert observed[0].model_settings["extra_body"] == {
+            "chat_template_kwargs": {"enable_thinking": False},
+            "beliefkv_task_fanout": [2, 4],
+        }
+        assert "beliefkv_task_fanout" not in request.model_settings["extra_body"]
+    finally:
+        audit.close()
+
+
 def test_in_graph_delegation_gate_reaches_real_agent_model_binding() -> None:
     class RecordingModel(FakeMessagesListChatModel):
         _bindings: list[tuple[list[str], object]] = PrivateAttr(default_factory=list)

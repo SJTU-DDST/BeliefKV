@@ -20,7 +20,10 @@ completion8192、workflow14400秒、graph2048/32步reserve、seed21不变。
 整合并继续复核/验证。首轮指定task并显式允许并行，不改变工具schema。
 本机XGrammar的命名task结构仅允许一次调用；v8b ingress仅对
 BeliefKV并行task选择使用task子集的required约束，允许重复生成。
-次数仍由prompt要求2–4，不添加次数拒绝/取消guard。
+但v8b的108个首轮仍全部单调用，已停止。v8c通过原生RepeatFormat
+将首轮生成范围设为2–4，模型选择数量和内容，不在输出后拒绝
+回复/补造child。后续轮次仍通过prompt和持久化结果提示派发，
+实际次数须持续审计；不得声称语法约束已保证所有后续轮次。
 专用委派要求位于通用“先读文件”提示之后。无补造child或格式门禁；
 实际fanout以trace为准，不将prompt要求当作实测保证。
 
@@ -32,8 +35,15 @@ BeliefKV并行task选择使用task子集的required约束，允许重复生成�
 因此不是合格的2–4对照；已停止client/server并释放GPU，
 保留原始trace、终态和patch，清理该次遗留容器/workspace。
 不将这次数据混入后续对照或新regime训练。
-修复后使用全新目录 `qwen35_joint_wait_h2d_ab_108root_2to4_v8b`，
+修复后v8b在 `026f650` 启动，但首轮108条全部单task，亦已停止，
+不用于合格对照或新regime训练。两次都保留trace/patch后清理
+workspace和遗留容器。
+当前使用全新目录 `qwen35_joint_wait_h2d_ab_108root_2to4_v8c`，
 仍只运行一对reactive→predictive，不排额外重复。
+
+v8c须在修复提交后冷启动，staging patch和模型SHA以新目录的
+`ab_plan.json` 为准。启动后冻结源码/权重/prompt/参数，不能
+将已停止v8b的CUDA graph或fanout数据代替新实验结果。
 
 ## 缓存诊断
 
