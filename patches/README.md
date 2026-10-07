@@ -1,8 +1,13 @@
 # SGLang Runtime Patches
 
-Updated: 2026-09-24.
+Updated: 2026-10-07.
 
-The current canonical patch is
+The current Qwen3.5 / SGLang v0.5.20 integration uses
+`sglang-v0.5.20-beliefkv-staging.patch`, pinned to
+`94602c9c2b7cbdb8efd5c52802dac6a1c180089e`; details are below.
+Do not substitute the archived v0.5.2rc1 patch for the current runner.
+
+The archived Qwen3 / SGLang v0.5.2rc1 canonical patch is
 `sglang-0.5.2rc1-beliefkv-perf-ownership.patch`. It is generated from and
 applies only to:
 

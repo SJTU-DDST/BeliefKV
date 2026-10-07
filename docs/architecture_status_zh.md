@@ -16,7 +16,7 @@ Qwen3.5-35B-A3B BF16 / SGLang 0.5.20，不再以旧 Qwen3/SGLang
    身份链已接入。FULL/Mamba 必须共同管理，物理容量由 native
    allocator 和 UnifiedRadixCache 决定。
 2. 有界 PREPARE_HOST 与 JOIN H2D 原生事务已实际运行，不再是
-   默认关闭且无 GPU 证据的阶段。最新v6有7个JOIN H2D ACK/
+   默认关闭且无 GPU 证据的阶段。v6有7个JOIN H2D ACK/
    0.533 GB，全部FULL首次复用，6个Mamba forward复用确认；
    工具H2D为0。ACK本身不是收益。
 3. 工具时间模型已独立上线到开发配置，不更改旧模型产物
@@ -43,6 +43,8 @@ Qwen3.5-35B-A3B BF16 / SGLang 0.5.20，不再以旧 Qwen3/SGLang
    本机命名task约束只允许一次调用；可重复语法修复后的v8b
    仍108条全单child，也已停止。v8c首轮原生生成范围2–4，
    不拒绝回复/补造child；后续轮次保持prompt驱动并审计实测。
+   v8c在 `c744461` 启动；108个root首轮已全部实际派发双child，
+   不是只修改配置。reactive运行中，结束后按冻结配置启动predictive。
 
 ## 2. 当前配置
 
@@ -60,7 +62,7 @@ Qwen3.5-35B-A3B BF16 / SGLang 0.5.20，不再以旧 Qwen3/SGLang
 | 预算 | workflow=14400秒，graph=2048，允许提前32步FINALIZE |
 | Harness | native_in_graph_2to4，同轮2–4调用、鼓励多轮，自然语言RETURN有效 |
 | 当前预测窗口 | 实际动作目标为RETURN/TOOL_END前0-1000 ms，仍独立审计真实提前量 |
-| 最近运行代码 | v8 `debe99d` 和v8b `026f650` 已停止；v8c指纹以launch为准 |
+| 最近运行代码 | v8c `c744461`；v8 `debe99d` 和v8b `026f650` 已停止 |
 | 当前v8c | 沿用v7 log-work头/工具CDF；新并发与fanout下仅诊断，不假定校准有效 |
 
 以上GB为十进制；Mamba单位是完整状态/检查点，不是FULL的一个token。
@@ -257,3 +259,13 @@ v8b（已停止）目录：
 108个首轮全部单task，不是合格2–4数据。当前v8c使用新目录
 `experiments/raw/qwen35_joint_wait_h2d_ab_108root_2to4_v8c`，
 首轮以原生语法范围2–4生成，不用启动配置代替实际fanout。
+v8c启动commit为 `c744461`，staging patch SHA为
+`53109f07cce1662afeaefa369ab913f94c0dd6e249e0a8b00f327c56838f7087`。
+2026-10-07启动核对：108条首轮全部2个task、108个双成员JOIN；
+服务端记录108次2–4生成约束，decode CUDA graph覆盖48。
+native遥测dropped/failed/writer error均0，旧前缀探针已实际写入；
+终态样本位于 `opportunities/admission_opportunities.jsonl`，不是
+`server/runtime_audit.jsonl`。很小的旧前缀缺失不能自动当作驱逐
+重算；需要与对齐尾部和块级归因分开，Mamba逐层重算仍未精确量化。
+本轮尚未结束，不报告完整H2D预算或吞吐收益。后续只改文档，
+保持运行源码、权重、prompt和参数冻结。

@@ -91,14 +91,18 @@ and experiment launch record unchanged.
 ## 3. Immediate Work
 
 1. V8b at `026f650` has stopped with invalid singleton fanout.
-   Launch v8c after committing the first-turn native 2-4 generation repair in
+   V8c is launched at `c744461` with the first-turn native 2-4 repair in
    `experiments/raw/qwen35_joint_wait_h2d_ab_108root_2to4_v8c`.
-   Verify actual initial and later 2-4 task groups early. A configured prompt
-   or passing grammar test is not evidence of realized fanout.
+   All 108 initial replies and JOIN groups actually have two children.
+   Continue auditing later rounds; a configured prompt or first-turn result
+   does not prove all later fanout or all workflow outcomes.
 2. Observe native/predictive FULL and Mamba transfers, queue/submit/ACK
    intervals, common served-prefix loss, Host eviction attribution and
    terminal cache references/residency. Keep new input separate from
    recomputation and shared ancestry separate from dead exclusive data.
+   Small alignment-tail prefix misses are not evidence of useful KV eviction.
+   Read terminal observations from opportunities/admission_opportunities.jsonl;
+   writer health and live prefix evidence are already verified.
 3. Keep both arms frozen and cold-started. Report tool and complete-ALL JOIN
    timing under the new regime without assuming v7 calibration or
    counterfactual trajectory equivalence. Diagnose system faults before

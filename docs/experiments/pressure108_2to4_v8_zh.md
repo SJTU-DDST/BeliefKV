@@ -41,9 +41,15 @@ workspace和遗留容器。
 当前使用全新目录 `qwen35_joint_wait_h2d_ab_108root_2to4_v8c`，
 仍只运行一对reactive→predictive，不排额外重复。
 
-v8c须在修复提交后冷启动，staging patch和模型SHA以新目录的
+v8c已在 `c744461` 提交后冷启动，staging patch和模型SHA以新目录的
 `ab_plan.json` 为准。启动后冻结源码/权重/prompt/参数，不能
 将已停止v8b的CUDA graph或fanout数据代替新实验结果。
+2026-10-07启动核对：108条首轮全部双task、108个双成员JOIN，
+服务端记录108次2–4生成约束；prefill/decode CUDA graph成功捕获，
+decode覆盖48；writer dropped/failed/error均0。
+终态驻留/refs样本实际写在 `opportunities/admission_opportunities.jsonl`；
+旧前缀缺失代理也已写入，几十token的小尾部不能直接当作驱逐重算。
+后续轮次、完整H2D预算和吞吐结果仍须等新trace，不由首轮推断。
 
 ## 缓存诊断
 
