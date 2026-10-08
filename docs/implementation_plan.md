@@ -17,6 +17,14 @@ matching Host byte proportions; context=131072/completion=8192, seed=21,
 temperature=0, graph=2048 with accepted 32-step FINALIZE reserve,
 workflow deadline=14400 s.
 
+Launched on October 8 at 23:07 Asia/Shanghai, runtime commit `f188443`.
+Live preflight confirmed session=true, admission=false, socket=null, FCFS
+and native priority=false. Device FULL/Mamba bytes are 36.843/33.096 GB;
+Host bytes are 105.358/94.652 GB; CUDA graphs include batch 48. Initial
+inspection found all 108 workflows started and 58 initial delegation groups,
+all with two children; telemetry dropped/failed records are zero.
+This is startup evidence only, not a completed performance result.
+
 Implemented before launch:
 - Native receipt locks after H2D ACK, at most four leases and 1 GiB closure.
   Predictive holding stays lead+1 s. Only a matching, actually submitted
@@ -37,6 +45,13 @@ Commit before launch and freeze executable code/model/prompt during the run.
 Do not automatically append another predictive run or call v8c/v8d a
 controlled speedup. Record native baseline results with realized workload,
 H2D time/bytes, cache reuse and recompute, not just GPU utilization.
+
+V8d read-only work audit found 101 natural final requests among 135 first
+phase crossings (34 were not final). First-crossing median signed/absolute
+work errors were -134.02/172.77 tokens; last pre-EOS snapshots were
++40.96/45.05 tokens with median actual remaining work 9 tokens. Do not
+correct both regimes with one global bias or count post-EOS zero labels
+as pre-EOS accuracy. This is same-run diagnosis, not held-out validation.
 
 ## V8d Result And Priorities
 

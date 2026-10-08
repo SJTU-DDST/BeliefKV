@@ -4,8 +4,8 @@
 
 ## 当前修复与原生策略对照
 
-按用户要求，下一轮采用同一manifest前108个任务、单波到达，
-运行原生SGLang FCFS/HiCache策略。目录为
+按用户要求，2026-10-08 23:07启动同一manifest前108个任务、单波
+到达的原生SGLang FCFS/HiCache策略实验，启动commit `f188443`。目录为
 `experiments/raw/qwen35_native_policy_108root_2to4_20261008_v9/native`。
 关闭BeliefKV admission、控制socket、PREPARE、预测H2D及收尾优先级；
 保留相同harness、通知、自然语言返回、首轮2–4原生生成约束、
@@ -31,6 +31,20 @@ JOIN时间投影改用500ms/2s/5s已观测墙钟速率中的保守值，避免
 不声称RETURN精度已改善或亚秒级目标已达到。
 相关CPU回归325 passed/1 skipped，staging补丁反向校验通过。
 启动后冻结源码、prompt及权重；启动健康不等于性能收益。
+
+服务端预检实测session=true、BeliefKV admission=false、socket=null、
+FCFS、priority=false。CUDA graph覆盖batch48；Device FULL/Mamba为
+36.843/33.096 GB，Host为105.358/94.652 GB。初始核查108个workflow
+均已开始，58个已观测首轮派发组全部双child，遥测dropped/failed=0。
+这只是运行中的启动快照，未形成最终吞吐或收益结论。
+
+v8d新增只读forecast核对：135条请求首次跨阶段阈值，其中101条
+是child自然RETURN的最终请求，34条不是最终请求。101条最终请求
+首次跨阈值的剩余token有符号误差P50=-134.02、绝对误差P50=172.77；
+最后一个native EOS前快照为+40.96/45.05 token，真实剩余P50=9。
+早期低估与末段高估同时存在，不能用全局平移修复；
+EOS后快照的零剩余标签不能代替EOS前精度。这是同轮开发诊断，
+不是独立验证、完整JOIN墙钟误差或已上线新模型。
 
 ## v8 Predictive 最终结论
 
