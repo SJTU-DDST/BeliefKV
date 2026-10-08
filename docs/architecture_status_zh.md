@@ -1,6 +1,43 @@
 # BeliefKV 当前架构与实现状态
 
-更新日期：2026-10-08。
+更新日期：2026-10-09。
+
+## 最新检查点与恢复协同修复
+
+下一版修改位于独立工作树 `/tmp/beliefkv-policy-20261009`，
+分支 `next/latest-mamba-restore-ready`；原生v9仍使用冻结启动版本，
+主目录runtime/metrics和在用SGLang源码不变。以下是待部署实现，
+不是本轮GPU收益或已提高RETURN预测精度的结论。
+
+Mamba只保留本context最近一次完成请求的可复用安全输入检查点
+引用；旧状态通过原生session引用接口降为普通缓存，不强制删除
+其他context共享、锁定或在途状态。PREPARE/H2D按FULL祖先路径
+补缺失前缀，只在选定检查点携带必要Mamba；组件mask在构建传输、
+分配和提交之前生效。原生需求恢复默认仍携带必需状态。
+同context/epoch/checkpoint的在途预测恢复不重复发射。
+这不是“全局只允许一个Mamba物理slot”，也不是禁用Mamba Host。
+
+工具实际返回或ALL JOIN真正解锁后，已锁定且未过期的恢复租约
+可跨越最多3秒提交空档；真实下一请求提交后总时限仍为ACK后
+最多10秒。预测变化不延长、到期不复活，首次服务和真实NO_TOKEN
+释放。恢复与收尾优先级共享每4次普通准入最多1次提升，覆盖
+有界512候选，普通请求等候10秒后按老化顺序获得执行机会。
+不按root身份无限插队。新增就绪、提交、优先准入与队列耗时遥测。
+排队控制sink中TOOL_END/RETURN/JOIN_SATISFIED/LLM_SUBMIT异步FIFO
+交付，callback不再逐次等控制ACK；session退休RPC仍同步，
+不能将全部工具返回到提交开销宣称已消除。
+
+Host下一轮候选为FULL:Mamba=75:25，总200 GB中Mamba约50 GB，
+按当前64,389,120字节/slot约776份状态。80:20只有约621份，
+对108 root和每轮最多4 child的并行检查点余量更小。
+用实际活跃必要检查点峰值加20%–30%余量复核，不按累计历史
+备份占用率认定最优；暂不调整HBM的0.9比例，不改正在运行的池。
+workflow语义仍决定预取对象和时机，native有效前缀、缺失
+page/extent和必要状态决定物理范围，两种粒度互补。
+
+验证：相关回归539 passed、16 subtests passed；canonical staging
+补丁对固定上游临时index应用校验及隔离源码反向校验均通过。
+尚未部署到GPU，未验证迁移字节减少或端到端吞吐提升。
 
 ## 当前修复与原生策略对照
 

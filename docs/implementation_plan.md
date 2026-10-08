@@ -1,6 +1,48 @@
 # BeliefKV Current Execution Plan
 
-Status date: 2026-10-08.
+Status date: 2026-10-09.
+
+## Staged Latest-State And Restore-Ready Changes
+
+Develop the next revision in `/tmp/beliefkv-policy-20261009`, branch
+`next/latest-mamba-restore-ready`, with a separate patched SGLang worktree.
+Do not deploy it into the active v9 checkout: end-of-run collection rechecks
+runtime/metrics and patch fingerprints. The HTML watcher also depends on
+this isolated worktree until export completes.
+
+Implemented for the next revision:
+- Keep only this context's latest reusable Mamba input-checkpoint session
+  reference. Release older references through native ownership hooks;
+  shared, locked and in-flight physical states remain native-managed.
+- Transfer missing FULL ancestors without historical Mamba. Include state
+  only at the selected safe checkpoint, before allocation and commit.
+  Native demand restore and backup defaults keep their necessary state.
+- Suppress duplicate in-flight restores of the same context/epoch/checkpoint.
+- Bridge actual tool completion or satisfied ALL JOIN to submission with
+  at most 3 s on an unexpired native lock; a matching submitted request
+  retains the ACK+10 s ceiling. No expiry revival or ETA-driven extension.
+- Select restore-ready requests across at most 512 candidates; restore and
+  final-stage promotion share one per four ordinary admissions. Aged
+  requests waiting 10 s retain their turn across causal classes.
+- Make queued TOOL_END/RETURN/JOIN_SATISFIED/LLM_SUBMIT callbacks nonblocking
+  while retaining FIFO delivery and explicit flush. Session retirement
+  RPC remains synchronous. Record ready-to-submit and ACK-to-service phases.
+
+No predictor refit or new GPU performance claim is part of these fixes.
+Do not add canaries, agent guards, artificial evictions or another run.
+After v9 collection and HTML export, integrate the policy commit and restore
+the isolated offline renderer deliberately; do not hot-edit frozen sources.
+Any later policy comparison must use the same revised harness/cache rules.
+
+Recommend Host FULL:Mamba=75:25 as an untested next candidate, not a proved
+optimum or an active change. At 200 GB, 50 GB holds about 776 current-model
+64,389,120-byte states; 80:20 holds about 621. Size against live necessary
+checkpoints plus 20-30% margin, not historical physical-cache high-water.
+Leave Device Mamba/FULL bytes=0.9 unchanged for now.
+
+Verification: 539 related tests and 16 subtests passed. The canonical patch
+applies to the pinned upstream temporary index and reverse-checks against
+the isolated engine. GPU reuse, transfer reduction and throughput are pending.
 
 ## Active Native-Policy Baseline
 
