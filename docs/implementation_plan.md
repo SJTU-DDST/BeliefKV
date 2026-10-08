@@ -46,6 +46,15 @@ Do not automatically append another predictive run or call v8c/v8d a
 controlled speedup. Record native baseline results with realized workload,
 H2D time/bytes, cache reuse and recompute, not just GPU utilization.
 
+Offline HTML export is scheduled separately from the frozen experiment.
+V8c reactive and v8d predictive timelines are in
+`experiments/reports/qwen35_v8_timelines_20261008/`, with embedded gzip data
+and `.json.gz` sidecars. The renderer now consumes native v0.5.20 service,
+transfer and pool telemetry without copying raw traces. The independent
+`beliefkv-native-timeline-v9` tmux job uses `--wait-for-pid 423778` and will
+produce `native_v9_execution_timeline.html` after the experiment driver
+exits, including non-completed workflows rather than hiding them.
+
 V8d read-only work audit found 101 natural final requests among 135 first
 phase crossings (34 were not final). First-crossing median signed/absolute
 work errors were -134.02/172.77 tokens; last pre-EOS snapshots were

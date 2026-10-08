@@ -1,10 +1,12 @@
 from __future__ import annotations
 
 from bisect import bisect_left
+import base64
 import csv
 from dataclasses import asdict, dataclass
 from datetime import datetime
 from html import escape
+import gzip
 import json
 import math
 from pathlib import Path
@@ -53,6 +55,15 @@ def load_execution_timeline(
     end_offset_ms: float | None = None,
 ) -> ExecutionTimeline:
     run_dir = run_dir.resolve()
+    if (run_dir / "server/native_capacity_census.json").exists():
+        from beliefkv.metrics.native_execution_timeline import load_native_execution_timeline
+
+        return load_native_execution_timeline(
+            run_dir,
+            arm=arm,
+            gpu_busy_threshold=gpu_busy_threshold,
+            end_offset_ms=end_offset_ms,
+        )
     audit_path = run_dir / "server/runtime_audit.jsonl"
     transfer_path = run_dir / "server/transfer_telemetry.jsonl"
     runtime_events_path = run_dir / "server/runtime_events.sglang.jsonl"
@@ -218,12 +229,19 @@ def render_execution_timeline(
 ) -> tuple[Path, Path]:
     output_html = output_html.resolve()
     output_html.parent.mkdir(parents=True, exist_ok=True)
-    output_json = output_html.with_suffix(".json")
     payload = timeline.to_dict()
-    output_json.write_text(
-        json.dumps(payload, indent=2, sort_keys=True, allow_nan=False) + "\n",
-        encoding="utf-8",
-    )
+    native = timeline.summary.get("telemetry_format") == "native_v0520"
+    output_json = output_html.with_suffix(".json.gz" if native else ".json")
+    if native:
+        output_json.write_bytes(gzip.compress(
+            json.dumps(payload, separators=(",", ":"), allow_nan=False).encode("utf-8"),
+            mtime=0,
+        ))
+    else:
+        output_json.write_text(
+            json.dumps(payload, indent=2, sort_keys=True, allow_nan=False) + "\n",
+            encoding="utf-8",
+        )
     output_html.write_text(
         _render_html(
             payload,
@@ -665,7 +683,12 @@ def _summarize(
 
 def _render_html(payload: Mapping[str, object], *, title: str) -> str:
     summary = payload["summary"]
+    native = summary.get("telemetry_format") == "native_v0520"
     data = json.dumps(payload, separators=(",", ":"), allow_nan=False).replace("</", "<\\/")
+    encoding = ""
+    if native:
+        data = base64.b64encode(gzip.compress(data.encode("utf-8"), mtime=0)).decode("ascii")
+        encoding = ' data-encoding="gzip-base64"'
     hidden = float(summary["potentially_hidden_transfer_fraction"]) * 100.0
     decode_overlap = float(summary["decode_overlap_transfer_fraction"]) * 100.0
     predictive_directions = summary["predictive_transfers_by_direction"]
@@ -679,13 +702,35 @@ def _render_html(payload: Mapping[str, object], *, title: str) -> str:
         f"{int(predictive_h2d.get('count', 0)):,} / "
         f"{_bytes(int(predictive_h2d.get('bytes', 0)))}"
     )
+    peak_hbm = summary["peak_hbm_ratio"]
+    peak_hbm_text = f"{float(peak_hbm)*100:.2f}%" if peak_hbm is not None else "Unobserved"
+    warning = str(summary.get("diagnostic_note") or "")
+    warning_html = f'<p class="warning">{escape(warning)}</p>' if warning else ""
+    timing_label = "Service intervals" if native else "Inferred decode"
+    timing_note = (
+        "GPU service bars use recorded scheduler/worker intervals, not CUDA kernel time. "
+        "FULL active use comes from /metrics; FULL/Mamba Device occupancy comes from "
+        "observed allocator free lists when available. Missing occupancy is unobserved, not zero. "
+        "Host lines show allocated pool occupancy. PREPARE is a backup ACK, not proof of later consumption."
+        if native else
+        "Decode windows are inferred from SGLang's decode log interval, batch size and reported throughput. "
+        "Prefill is shown as timestamped observations because this trace has no CUDA-event duration."
+    )
+    extra_stats = ""
+    if native:
+        for label, key in (
+            ("PREPARE ACKs", "prepare_ack_count"),
+            ("Completed workflows", "completed_workflows"),
+            ("Incomplete / error", "noncompleted_workflows"),
+        ):
+            extra_stats += f'<div class="stat">{label}<b>{summary.get(key, 0):,}</b></div>'
     return f"""<!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>{escape(title)}</title><style>
 :root{{--ink:#171717;--muted:#62686f;--line:#d9dde1;--panel:#f7f8f8;--decode:#2867b2;--prefill:#9b5f16;--d2h:#16877d;--h2d:#c65f2b;--predict:#744fc6;--restore:#a1374b;}}
 *{{box-sizing:border-box}}body{{margin:0;background:#fff;color:var(--ink);font:13px/1.45 system-ui,sans-serif;letter-spacing:0}}
 header,main{{max-width:1500px;margin:auto;padding:20px 24px}}header{{border-bottom:1px solid var(--line)}}h1{{margin:0;font-size:23px}}h2{{font-size:16px;margin:24px 0 8px}}
-.meta,.note{{color:var(--muted)}}.stats{{display:grid;grid-template-columns:repeat(auto-fit,minmax(155px,1fr));border:1px solid var(--line);margin-top:18px}}
+.meta,.note{{color:var(--muted)}}.warning{{padding:10px 12px;border-left:3px solid #a1374b;background:#fff3f3}}.stats{{display:grid;grid-template-columns:repeat(auto-fit,minmax(155px,1fr));border:1px solid var(--line);margin-top:18px}}
 .stat{{padding:10px 12px;border-right:1px solid var(--line)}}.stat:last-child{{border-right:0}}.stat b{{display:block;font-size:17px;margin-top:3px}}.stat .detail{{display:block;margin-top:2px;color:var(--muted);font-size:11px}}
 .tools{{display:grid;grid-template-columns:auto minmax(160px,1fr) auto minmax(160px,1fr) auto;gap:10px;align-items:center;margin:14px 0}}
 input[type=range]{{width:100%}}canvas{{display:block;width:100%;height:830px;border:1px solid var(--line);background:#fff}}
@@ -696,42 +741,51 @@ input[type=range]{{width:100%}}canvas{{display:block;width:100%;height:830px;bor
 <section class="stats">
 <div class="stat">Elapsed<b>{_duration(float(summary['duration_ms']))}</b></div>
 <div class="stat">Mean GPU util<b>{float(summary['gpu_utilization_mean']):.2f}%</b></div>
-<div class="stat">Physical DMA<b>{int(summary['transfer_count']):,}</b></div>
+<div class="stat">Transfer ACK intervals<b>{int(summary['transfer_count']):,}</b></div>
 <div class="stat">DMA while GPU busy<b>{hidden:.2f}%</b></div>
-<div class="stat">DMA in inferred decode<b>{decode_overlap:.2f}%</b></div>
-<div class="stat">Peak HBM<b>{float(summary['peak_hbm_ratio'])*100:.2f}%</b></div>
-<div class="stat">Predictive commits<b>{int(summary['predictive_commit_count'])}</b></div>
+<div class="stat">ACK overlap: {timing_label.lower()}<b>{decode_overlap:.2f}%</b></div>
+<div class="stat">Peak pool occupancy<b>{peak_hbm_text}</b></div>
+<div class="stat">{'Policy ACKs' if native else 'Predictive commits'}<b>{int(summary['predictive_commit_count'])}</b></div>
 <div class="stat">Predictive D2H<b>{predictive_d2h_text}</b><span class="detail">{escape(_status_summary(predictive_d2h))}</span></div>
 <div class="stat">Predictive H2D<b>{predictive_h2d_text}</b><span class="detail">{escape(_status_summary(predictive_h2d))}</span></div>
+{extra_stats}
 </section>
-<p class="note">DMA bars use measured submit-to-complete telemetry. Native and predictive transfers have separate lanes; predictive bars carry a purple border and non-completed transfers have a red start marker. Hidden-overlap fractions count completed transfers only. Decode windows are inferred from SGLang's decode log interval, batch size and reported throughput. Prefill is shown as timestamped observations because this trace has no CUDA-event duration.</p>
+{warning_html}
+<p class="note">DMA bars use measured submit-to-complete telemetry. Native and predictive transfers have separate lanes; predictive bars carry a purple border and non-completed transfers have a red start marker. Hidden-overlap fractions count completed transfers only. {timing_note}</p>
 <div class="tools"><label for="zoom">Zoom</label><input id="zoom" type="range" min="1" max="80" step="1" value="1"><output id="zoomOut">1x</output><input id="pan" type="range" min="0" max="1000" value="0"><output id="windowOut"></output></div>
-<div class="legend"><span class="key"><i class="swatch" style="--c:var(--decode)"></i>Decode inferred</span><span class="key"><i class="swatch" style="--c:var(--prefill)"></i>Prefill observed</span><span class="key"><i class="swatch" style="--c:var(--d2h)"></i>Native D2H</span><span class="key"><i class="swatch" style="--c:var(--h2d)"></i>Native H2D</span><span class="key"><i class="predictive-swatch" style="--c:var(--d2h)"></i>Predictive D2H</span><span class="key"><i class="predictive-swatch" style="--c:var(--h2d)"></i>Predictive H2D</span><span class="key"><i class="reject-swatch"></i>Non-completed transfer</span><span class="key"><i class="swatch" style="--c:var(--predict)"></i>Predictive planning</span><span class="key"><i class="swatch" style="--c:var(--restore)"></i>Restore/retraction</span></div>
+<div class="legend"><span class="key"><i class="swatch" style="--c:var(--decode)"></i>{timing_label}</span><span class="key"><i class="swatch" style="--c:var(--prefill)"></i>Prefill observed</span><span class="key"><i class="swatch" style="--c:var(--d2h)"></i>Native D2H</span><span class="key"><i class="swatch" style="--c:var(--h2d)"></i>Native H2D</span><span class="key"><i class="predictive-swatch" style="--c:var(--d2h)"></i>PREPARE / predictive D2H</span><span class="key"><i class="predictive-swatch" style="--c:var(--h2d)"></i>Predictive H2D</span><span class="key"><i class="reject-swatch"></i>Non-completed transfer</span><span class="key"><i class="swatch" style="--c:var(--predict)"></i>Predictive planning</span><span class="key"><i class="swatch" style="--c:var(--restore)"></i>Restore/retraction</span></div>
 <canvas id="timeline"></canvas><div id="tooltip" class="tooltip"></div>
 <h2>Interpretation</h2><p class="note">Transfer overlap with non-zero GPU utilization is potentially hideable, not proof of zero interference. The exposed remainder and transfers occurring before HBM-blocked work are the primary pipeline targets.</p>
-</main><script id="timelineData" type="application/json">{data}</script><script>{_timeline_javascript()}</script></body></html>"""
+</main><script id="timelineData" type="application/json"{encoding}>{data}</script><script>{_timeline_javascript()}</script></body></html>"""
 
 
 def _timeline_javascript() -> str:
     return r"""
-const data=JSON.parse(document.getElementById('timelineData').textContent);const canvas=document.getElementById('timeline');const ctx=canvas.getContext('2d');
+async function initializeTimeline(){
+const source=document.getElementById('timelineData');let text=source.textContent;
+if(source.dataset.encoding==='gzip-base64'){const packed=Uint8Array.from(atob(text),c=>c.charCodeAt(0));text=await new Response(new Blob([packed]).stream().pipeThrough(new DecompressionStream('gzip'))).text()}
+const data=JSON.parse(text);const canvas=document.getElementById('timeline');const ctx=canvas.getContext('2d');
 const zoom=document.getElementById('zoom'),pan=document.getElementById('pan'),zoomOut=document.getElementById('zoomOut'),windowOut=document.getElementById('windowOut'),tip=document.getElementById('tooltip');
-const lanes=[['GPU utilization',42,96],['GPU service',112,164],['Native D2H',180,226],['Native H2D',242,288],['Predictive D2H',304,350],['Predictive H2D',366,412],['Planner / lifecycle',428,478],['Tool / JOIN waits',494,564],['HBM pressure',580,650],['Running / waiting',666,752]];let hit=[];
+const native=data.summary.telemetry_format==='native_v0520';
+const lanes=[['GPU utilization',42,96],['GPU service',112,164],['Native D2H',180,226],['Native H2D',242,288],['Predictive D2H',304,350],['Predictive H2D',366,412],['Planner / lifecycle',428,478],['Tool / JOIN waits',494,564],[native?'Device / Host':'HBM pressure',580,650],['Running / waiting',666,752]];let hit=[];
 function size(){const r=canvas.getBoundingClientRect();const ratio=devicePixelRatio||1;canvas.width=Math.max(800,Math.floor(r.width*ratio));canvas.height=Math.floor(r.height*ratio);ctx.setTransform(ratio,0,0,ratio,0,0)}
 function view(){const z=Number(zoom.value),total=data.duration_ms,start=(Number(pan.value)/1000)*Math.max(0,total-total/z);return [start,start+total/z]}
 function x(t,start,end,w){return 116+(t-start)/(end-start)*(w-132)}function line(points,field,start,end,w,y0,y1,max,color){ctx.beginPath();let first=true;for(const p of points){if(p.t_ms<start||p.t_ms>end)continue;const px=x(p.t_ms,start,end,w),py=y1-Math.max(0,Math.min(max,Number(p[field]||0)))/max*(y1-y0);if(first){ctx.moveTo(px,py);first=false}else ctx.lineTo(px,py)}ctx.strokeStyle=color;ctx.lineWidth=1.4;ctx.stroke()}
 function draw(){size();const w=canvas.getBoundingClientRect().width,[start,end]=view();hit=[];ctx.clearRect(0,0,w,830);ctx.font='12px system-ui';ctx.fillStyle='#62686f';for(const [name,y0,y1] of lanes){ctx.fillText(name,8,(y0+y1)/2+4);ctx.fillStyle='#f7f8f8';ctx.fillRect(116,y0,w-132,y1-y0);ctx.strokeStyle='#e2e5e8';ctx.strokeRect(116,y0,w-132,y1-y0);ctx.fillStyle='#62686f'}
 for(let i=0;i<=8;i++){const px=116+i*(w-132)/8;ctx.strokeStyle='#eceeef';ctx.beginPath();ctx.moveTo(px,42);ctx.lineTo(px,752);ctx.stroke();ctx.fillStyle='#62686f';ctx.fillText(fmt(start+(end-start)*i/8),px-18,774)}
 line(data.gpu_samples,'util',start,end,w,42,96,100,'#26734d');
-ctx.fillStyle='#2867b2';for(const q of data.decode_windows){if(q.end_ms<start||q.start_ms>end)continue;const a=x(Math.max(start,q.start_ms),start,end,w),b=x(Math.min(end,q.end_ms),start,end,w);ctx.globalAlpha=.72;ctx.fillRect(a,119,Math.max(1,b-a),38);ctx.globalAlpha=1;hit.push([a,119,Math.max(3,b-a),38,`Decode ${q.running} req | ${q.throughput.toFixed(1)} tok/s | ${q.cuda_graph?'CUDA graph':'eager'}`])}
-ctx.fillStyle='#9b5f16';for(const p of data.service_observations){if(p.phase!=='prefill'||p.t_ms<start||p.t_ms>end)continue;const px=x(p.t_ms,start,end,w),h=Math.min(38,5+Math.log2(1+p.new_tokens)*2);ctx.fillRect(px-1,157-h,2,h);hit.push([px-3,119,6,38,`Prefill ${p.new_tokens} new + ${p.cached_tokens} cached tokens | ${p.new_sequences} seq`])}
+ctx.fillStyle='#2867b2';for(const q of data.decode_windows){if(q.end_ms<start||q.start_ms>end)continue;const a=x(Math.max(start,q.start_ms),start,end,w),b=x(Math.min(end,q.end_ms),start,end,w);ctx.globalAlpha=.72;ctx.fillRect(a,119,Math.max(1,b-a),38);ctx.globalAlpha=1;hit.push([a,119,Math.max(3,b-a),38,native?`Decode scheduler/worker interval | ${q.running} req | ${(q.end_ms-q.start_ms).toFixed(2)} ms | graph mode unrecorded`:`Decode ${q.running} req | ${q.throughput.toFixed(1)} tok/s | ${q.cuda_graph?'CUDA graph':'eager'}`])}
+ctx.fillStyle='#9b5f16';for(const p of data.service_observations){if(p.phase!=='prefill'||p.t_ms<start||p.t_ms>end)continue;const px=x(p.t_ms,start,end,w),h=Math.min(38,5+Math.log2(1+p.new_tokens)*2);if(native&&p.end_ms!=null){const a=x(Math.max(start,p.start_ms),start,end,w),b=x(Math.min(end,p.end_ms),start,end,w);ctx.fillRect(a,119,Math.max(1,b-a),38);hit.push([a,119,Math.max(3,b-a),38,`Prefill scheduler/worker interval | ${p.running} req | ${(p.end_ms-p.start_ms).toFixed(2)} ms`])}else{ctx.fillRect(px-1,157-h,2,h);hit.push([px-3,119,6,38,`Prefill ${p.new_tokens} new + ${p.cached_tokens} cached tokens | ${p.new_sequences} seq`])}}
 for(const t of data.transfers){if(t.end_ms<start||t.start_ms>end)continue;const predictive=Boolean(t.predictive);if(t.direction!=='d2h'&&t.direction!=='h2d')continue;if(!predictive){const y=t.direction==='d2h'?190:252,a=x(Math.max(start,t.start_ms),start,end,w),b=x(Math.min(end,t.end_ms),start,end,w),width=Math.max(1,b-a);ctx.fillStyle=t.direction==='d2h'?'#16877d':'#c65f2b';ctx.globalAlpha=.68;ctx.fillRect(a,y,width,26);ctx.globalAlpha=1;hit.push([a,y,Math.max(3,width),26,`Native ${t.direction.toUpperCase()} ${bytes(t.bytes)} | ${t.status} | ${t.duration_ms.toFixed(2)} ms | GPU-busy overlap ${(t.potentially_hidden_fraction*100).toFixed(1)}% | ${t.kind}`])}else{const y=t.direction==='d2h'?314:376,a=x(Math.max(start,t.start_ms),start,end,w),b=x(Math.min(end,t.end_ms),start,end,w),width=Math.max(2,b-a);ctx.fillStyle=t.direction==='d2h'?'#16877d':'#c65f2b';ctx.globalAlpha=.80;ctx.fillRect(a,y,width,26);ctx.globalAlpha=1;ctx.strokeStyle='#744fc6';ctx.lineWidth=1.5;ctx.strokeRect(a+.5,y+.5,width-1,25);if(t.status!=='completed'){ctx.fillStyle='#c3314b';ctx.fillRect(a-1,y-2,3,30)}hit.push([a-2,y-2,Math.max(5,width+4),30,`Predictive ${t.direction.toUpperCase()} ${bytes(t.bytes)} | ${t.status} | ${t.duration_ms.toFixed(2)} ms | GPU-busy overlap ${(t.potentially_hidden_fraction*100).toFixed(1)}% | ${t.kind} | intent ${t.predictive_intent_id||'unknown'} | context ${t.context_id||'unknown'}@${t.context_epoch}`])}}
 for(const b of data.event_bins){if(b.t_ms<start||b.t_ms>end)continue;const px=x(b.t_ms,start,end,w);if(b.risk||b.intent||b.commit||b.reject){ctx.fillStyle='#744fc6';ctx.fillRect(px,433,Math.max(1,Math.log2(2+(b.risk||0))*2),17)}if(b.restore||b.retraction){ctx.fillStyle='#a1374b';ctx.fillRect(px,457,Math.max(1,Math.log2(2+(b.restore||0)+(b.retraction||0))*2),15)}}
 line(data.external_waits,'active_tools',start,end,w,494,564,Math.max(1,data.summary.peak_active_tools),'#9b5f16');line(data.external_waits,'active_joins',start,end,w,494,564,Math.max(1,data.summary.peak_active_joins),'#744fc6');
-line(data.resources,'hbm_ratio',start,end,w,580,650,1,'#a1374b');line(data.queue_samples,'running',start,end,w,666,752,32,'#2867b2');line(data.queue_samples,'waiting',start,end,w,666,752,Math.max(32,data.summary.mean_waiting*2),'#744fc6');
+if(native){for(const [field,color] of [['full_active_ratio','#62686f'],['full_occupancy_ratio','#a1374b'],['mamba_occupancy_ratio','#2867b2'],['host_full_ratio','#16877d'],['host_mamba_ratio','#c65f2b']])line(data.resources.filter(p=>p[field]!=null),field,start,end,w,580,650,1,color);ctx.fillStyle='#62686f';ctx.font='10px system-ui';ctx.fillText('FULL active: gray | Device FULL: red, Mamba: blue | Host FULL: green, Mamba: orange',118,646);ctx.font='12px system-ui'}else line(data.resources,'hbm_ratio',start,end,w,580,650,1,'#a1374b');
+line(data.queue_samples,'running',start,end,w,666,752,Math.max(1,...data.queue_samples.map(p=>p.running)),'#2867b2');line(data.queue_samples,'waiting',start,end,w,666,752,Math.max(1,...data.queue_samples.map(p=>p.waiting)),'#744fc6');
 zoomOut.value=`${zoom.value}x`;windowOut.value=`${fmt(start)} - ${fmt(end)}`}
 function fmt(ms){const s=Math.max(0,ms/1000),h=Math.floor(s/3600),m=Math.floor((s%3600)/60);return `${h}h${String(m).padStart(2,'0')}m`}function bytes(v){const u=['B','KiB','MiB','GiB'];let n=v,i=0;while(n>=1024&&i<u.length-1){n/=1024;i++}return `${n.toFixed(i?1:0)} ${u[i]}`}
 zoom.addEventListener('input',draw);pan.addEventListener('input',draw);window.addEventListener('resize',draw);canvas.addEventListener('mousemove',e=>{const r=canvas.getBoundingClientRect(),mx=e.clientX-r.left,my=e.clientY-r.top,found=hit.find(h=>mx>=h[0]&&mx<=h[0]+h[2]&&my>=h[1]&&my<=h[1]+h[3]);if(!found){tip.style.display='none';return}tip.textContent=found[4];tip.style.display='block';tip.style.left=`${e.clientX+12}px`;tip.style.top=`${e.clientY+12}px`});canvas.addEventListener('mouseleave',()=>tip.style.display='none');draw();
+}
+initializeTimeline().catch(error=>{const note=document.createElement('p');note.className='warning';note.textContent=`Timeline could not load: ${error.message}`;document.querySelector('main').prepend(note)});
 """
 
 

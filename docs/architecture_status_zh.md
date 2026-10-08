@@ -46,6 +46,24 @@ v8d新增只读forecast核对：135条请求首次跨阶段阈值，其中101条
 EOS后快照的零剩余标签不能代替EOS前精度。这是同轮开发诊断，
 不是独立验证、完整JOIN墙钟误差或已上线新模型。
 
+## 离线 HTML 时间轴
+
+v8c reactive 与 v8d predictive 已通过
+`scripts/render_p6_execution_timeline.py` 导出到
+`experiments/reports/qwen35_v8_timelines_20261008/`，文件分别为
+`v8c_reactive_execution_timeline.html` 和
+`v8d_predictive_execution_timeline.html`。HTML 内嵌压缩数据，可独立
+打开；原始聚合数据另存 `.json.gz`，不复制 raw 遥测。
+新版离线适配直接读取 scheduler/worker 服务区间、控制器传输 ACK、
+client 工具/JOIN 事件及 FULL/Mamba 分池观测；无 Device occupancy
+证据时显示未观测，不能将 FULL active use 当作两池占用率。
+submit-to-ACK 重叠不等于 DMA 被完全隐藏，PREPARE ACK 不等于消费。
+v8c 的物理通道失效已在 HTML 中注明，不作为公平加速基线。
+
+原生 v9 仍运行，独立 tmux `beliefkv-native-timeline-v9` 等待驱动
+PID 423778 退出并刷新遥测后导出 `native_v9_execution_timeline.html`。
+这仅是离线导出任务，不调整实验运行配置、prompt 或预测权重。
+
 ## v8 Predictive 最终结论
 
 v8d于2026-10-07 23:47结束，107 completed/1 incomplete，耗时
