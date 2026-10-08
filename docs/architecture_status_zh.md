@@ -63,6 +63,11 @@ v8c 的物理通道失效已在 HTML 中注明，不作为公平加速基线。
 原生 v9 仍运行，独立 tmux `beliefkv-native-timeline-v9` 等待驱动
 PID 423778 退出并刷新遥测后导出 `native_v9_execution_timeline.html`。
 这仅是离线导出任务，不调整实验运行配置、prompt 或预测权重。
+采集器结束时会重新读取 metrics/runtime 源码指纹，因此新版导出器
+暂存于独立工作树 `/tmp/beliefkv-policy-20261009`，分支
+`next/latest-mamba-restore-ready`；自动导出从该工作树读取主目录日志。
+主实验目录的 metrics/runtime 和 staging 补丁恢复并保持启动版本，
+不因离线绘图或下一版策略开发改变本轮源码指纹。
 
 ## v8 Predictive 最终结论
 
