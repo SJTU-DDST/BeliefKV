@@ -105,6 +105,7 @@ PID 423778 退出并刷新遥测后导出 `native_v9_execution_timeline.html`。
 `next/latest-mamba-restore-ready`；自动导出从该工作树读取主目录日志。
 主实验目录的 metrics/runtime 和 staging 补丁恢复并保持启动版本，
 不因离线绘图或下一版策略开发改变本轮源码指纹。
+不得在自动导出完成前删除该工作树或在活跃主目录替换导出器。
 
 ## v8 Predictive 最终结论
 

@@ -166,7 +166,8 @@ def inspect_session_h2d_opportunity(
             node.full_host_tokens if node.full_device_tokens == 0 else 0
         )
         mamba_slots = int(
-            node.mamba_host_present and not node.mamba_device_present
+            step.include_mamba
+            and node.mamba_host_present and not node.mamba_device_present
         )
     fits = (
         headroom.device_full_free_tokens >= full_tokens
@@ -191,6 +192,7 @@ class ShadowBackupStep:
     leaf_creation_time: int | float
     node_id: int
     creation_time: int | float
+    include_mamba: bool = True
 
 
 @dataclass(frozen=True)
@@ -202,6 +204,45 @@ class PrefetchLoadStep:
     leaf_creation_time: int | float
     node_id: int
     creation_time: int | float
+    include_mamba: bool = True
+
+
+def _checkpoint_paths(
+    anchors: ContextSessionAnchors,
+    nodes: Mapping[int, UnifiedNodeSummary],
+    leaves: Mapping[int, int | float],
+    depth: Mapping[int, int],
+) -> tuple[set[int], set[int]] | None:
+    """Only the deepest reusable state on each current input path is needed."""
+    input_limit = anchors.reusable_input_tokens
+    if input_limit is None:
+        return set(nodes), set(dict(dict(anchors.component_leaves).get(2, ())))
+    if type(input_limit) is not int or input_limit < 0:
+        return None
+    prefix_lengths: dict[int, int] = {}
+    for node_id in sorted(nodes, key=lambda value: (depth[value], value)):
+        node = nodes[node_id]
+        if type(node.key_tokens) is not int or node.key_tokens < 0:
+            return None
+        prefix_lengths[node_id] = prefix_lengths.get(node.parent_id, 0) + node.key_tokens
+    paths: set[int] = set()
+    checkpoints: set[int] = set()
+    for leaf in leaves:
+        current = leaf
+        while current is not None:
+            node = nodes[current]
+            if (
+                node.parent_id is not None
+                and prefix_lengths[current] <= input_limit
+                and (node.mamba_device_present or node.mamba_host_present)
+            ):
+                checkpoints.add(current)
+                while current is not None:
+                    paths.add(current)
+                    current = nodes[current].parent_id
+                break
+            current = node.parent_id
+    return paths, checkpoints
 
 
 def next_prefetch_gpu_step(
@@ -305,39 +346,10 @@ def next_prefetch_gpu_step(
         )
     ):
         return None
-    eligible_paths = paths
-    checkpoint_nodes = paths
-    input_limit = anchors.reusable_input_tokens
-    if input_limit is not None:
-        if type(input_limit) is not int or input_limit < 0:
-            return None
-        prefix_lengths: dict[int, int] = {}
-        for node_id in sorted(paths, key=lambda value: (depth[value], value)):
-            node = nodes[node_id]
-            if type(node.key_tokens) is not int or node.key_tokens < 0:
-                return None
-            prefix_lengths[node_id] = (
-                prefix_lengths.get(node.parent_id, 0) + node.key_tokens
-            )
-        eligible_paths = set()
-        checkpoint_nodes = set()
-        for leaf in full_leaves:
-            current = leaf
-            while current is not None:
-                node = nodes[current]
-                if (
-                    node.parent_id is not None
-                    and prefix_lengths[current] <= input_limit
-                    and (node.mamba_device_present or node.mamba_host_present)
-                ):
-                    checkpoint_nodes.add(current)
-                    while current is not None:
-                        eligible_paths.add(current)
-                        current = nodes[current].parent_id
-                    break
-                current = node.parent_id
-        # FULL beyond the last recoverable Mamba boundary cannot be reused.
-        # Older Mamba states on the path are not needed when a deeper one exists.
+    selected = _checkpoint_paths(anchors, nodes, full_leaves, depth)
+    if selected is None:
+        return None
+    eligible_paths, checkpoint_nodes = selected
     for node_id in sorted(paths, key=lambda value: (depth[value], value)):
         if node_id not in eligible_paths:
             continue
@@ -362,6 +374,7 @@ def next_prefetch_gpu_step(
                 leaf_creation_time=full_leaves[provenance[node_id]],
                 node_id=node_id,
                 creation_time=node.creation_time,
+                include_mamba=node_id in checkpoint_nodes,
             )
     return None
 
@@ -396,7 +409,6 @@ def next_shadow_backup_step(
             provenance.setdefault(current, leaf)
             current = parent_id
     depth: dict[int, int] = {}
-    prefix_lengths: dict[int, int] = {}
     for node_id in paths:
         current = node_id
         length = 0
@@ -404,19 +416,14 @@ def next_shadow_backup_step(
             length += 1
             current = nodes[current].parent_id
         depth[node_id] = length
-    for node_id in sorted(paths, key=lambda value: (depth[value], value)):
-        node = nodes[node_id]
-        if candidate.anchors.reusable_input_tokens is not None:
-            if type(node.key_tokens) is not int or node.key_tokens < 0:
-                return None
-            prefix_lengths[node_id] = prefix_lengths.get(node.parent_id, 0) + node.key_tokens
+    selected = _checkpoint_paths(candidate.anchors, nodes, leaves, depth)
+    if selected is None:
+        return None
+    eligible_paths, checkpoint_nodes = selected
     # Depth from root, so a host copy of a parent settles before its child.
     for node_id in sorted(paths, key=lambda value: (depth[value], value)):
         node = nodes[node_id]
-        if (
-            candidate.anchors.reusable_input_tokens is not None
-            and prefix_lengths[node_id] > candidate.anchors.reusable_input_tokens
-        ):
+        if node_id not in eligible_paths:
             continue
         parent = nodes.get(node.parent_id)
         if (
@@ -429,14 +436,14 @@ def next_shadow_backup_step(
                     parent.pending_write_id is not None
                     or parent.pending_load_id is not None
                     or parent.full_device_tokens > parent.full_host_tokens
-                    or parent.mamba_device_present and not parent.mamba_host_present
                 )
             )
         ):
             continue
         if (
             node.full_device_tokens > node.full_host_tokens
-            or node.mamba_device_present and not node.mamba_host_present
+            or node_id in checkpoint_nodes
+            and node.mamba_device_present and not node.mamba_host_present
         ):
             return ShadowBackupStep(
                 key=candidate.anchors.key,
@@ -444,6 +451,7 @@ def next_shadow_backup_step(
                 leaf_creation_time=leaves[provenance[node_id]],
                 node_id=node_id,
                 creation_time=node.creation_time,
+                include_mamba=node_id in checkpoint_nodes,
             )
     return None
 
@@ -648,6 +656,7 @@ def prefetch_expectation_from_native_op(
     """Freeze a single-node native H2D transfer before enqueue, not ACK credit."""
     if (
         type(step) is not PrefetchLoadStep
+        or type(step.include_mamba) is not bool
         or type(step.key) is not PrefillCandidateKey
         or type(command_id) is not str
         or not command_id
@@ -750,6 +759,8 @@ def prefetch_expectation_from_native_op(
             derived.append((name, pool_name(source), transfer))
     if counts != pool_counts or not any(pool_counts.values()):
         raise PhysicalReceiptError("native prefetch token counts mismatch")
+    if not step.include_mamba and pool_counts.get("mamba", 0):
+        raise PhysicalReceiptError("historical Mamba included in FULL-only prefetch")
 
     pool_bytes = tuple(
         (name, count * size_for(name)) for name, count in sorted(pool_counts.items())
@@ -794,7 +805,9 @@ def shadow_expectation_from_native_op(
 ) -> PhysicalActionExpectation:
     """Freeze exact native D2H accounting before the operation is enqueued."""
     if (
-        type(command_id) is not str
+        type(step) is not ShadowBackupStep
+        or type(step.include_mamba) is not bool
+        or type(command_id) is not str
         or not command_id
         or getattr(operation, "beliefkv_command_id", None) != command_id
         or getattr(operation, "node_ids", None) != [step.node_id]
@@ -828,6 +841,8 @@ def shadow_expectation_from_native_op(
         or num_bytes <= 0
     ):
         raise PhysicalReceiptError("invalid native shadow pool counts")
+    if not step.include_mamba and counts.get("mamba", 0):
+        raise PhysicalReceiptError("historical Mamba included in FULL-only backup")
     sizes = []
     pool_bytes = []
     for pool, count in sorted(counts.items()):

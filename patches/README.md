@@ -1,6 +1,6 @@
 # SGLang Runtime Patches
 
-Updated: 2026-10-07.
+Updated: 2026-10-09.
 
 The current Qwen3.5 / SGLang v0.5.20 integration uses
 `sglang-v0.5.20-beliefkv-staging.patch`, pinned to
@@ -77,3 +77,13 @@ The current staging patch also propagates native transfer submission timestamps,
 merged physical bytes, unacknowledged bytes at submit, and synchronized CUDA
 transfer-stream elapsed time into the cache ACK observer. These measurements
 must not be reported as isolated PCIe DMA latency or instantaneous bus usage.
+
+The next isolated revision adds `beliefkv_include_mamba` to tagged PREPARE
+and prefetch primitives. FULL ancestors omit historical state before transfer
+allocation; the selected current input checkpoint retains necessary Mamba.
+Native demand/backup defaults still include state. Tagged sessions release
+older Mamba session references through native hooks, not forced physical
+deletion of shared, locked or in-flight slots. The corresponding tests are
+`test/srt/test_beliefkv_latest_mamba_state.py` and the existing shadow tests.
+Do not apply this revision to the live native-v9 checkout before end-of-run
+fingerprint capture; it is staged in `next/latest-mamba-restore-ready`.

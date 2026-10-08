@@ -181,6 +181,7 @@ class _PrefetchServiceLease:
     lock_params: object | None = None
     protected_bytes: int = 0
     demand_ready: bool = False
+    reentry_ready_at: float | None = None
 
 
 class NativeAdmissionRuntime:
@@ -281,6 +282,8 @@ class NativeAdmissionRuntime:
         self._prefetch_lock_release_failures: set[str] = set()
         self._prefetch_priority_normal_admissions = 4
         self._prefetch_priority_promoted: str | None = None
+        self._prefetch_priority_native_rank: int | None = None
+        self._visible_since: dict[str, float] = {}
         lead_setting = float(os.environ.get("BELIEFKV_PREFETCH_LEAD_MS", "1000"))
         if not math.isfinite(lead_setting) or not 100 <= lead_setting <= 1000:
             raise ValueError("prefetch lead must be between 100 and 1000 ms")
@@ -1520,7 +1523,9 @@ class NativeAdmissionRuntime:
             return
         node = next(node for node in candidate.nodes if node.node_id == step.node_id)
         full_needed = max(node.full_device_tokens - node.full_host_tokens, 0)
-        mamba_needed = int(node.mamba_device_present and not node.mamba_host_present)
+        mamba_needed = int(
+            step.include_mamba and node.mamba_device_present and not node.mamba_host_present
+        )
         headroom = (
             h2d.headroom if h2d is not None else
             observe_static_full_mamba_headroom(cache)
@@ -2849,6 +2854,7 @@ class NativeAdmissionRuntime:
             node_creation_time=step.creation_time,
             beliefkv_command_id=command_id,
             beliefkv_before_enqueue=before_enqueue,
+            beliefkv_include_mamba=step.include_mamba,
         )
         if not outcome.issued:
             if registered:
@@ -2866,6 +2872,7 @@ class NativeAdmissionRuntime:
                 "command_id": command_id, "source": source,
                 "context_id": step.key.context_id,
                 "context_epoch": step.key.context_epoch,
+                "include_mamba": step.include_mamba,
                 "node_id": step.node_id, "leaf_node_id": step.leaf_node_id,
             })
         return command_id
@@ -3300,6 +3307,17 @@ class NativeAdmissionRuntime:
         if self.enable_confirmed_join_canary and source != "join_ticket":
             return None
         cache = self._native_cache
+        if not isinstance(step, PrefetchLoadStep):
+            self.counts["prefetch_step_stale"] += 1
+            return None
+        if any(
+            pending.key == step.key
+            and pending.node_id == step.node_id
+            and pending.creation_time == step.creation_time
+            for pending, _, _ in self._prefetch_steps.values()
+        ):
+            self.counts["prefetch_duplicate_inflight_suppressed"] += 1
+            return None
         if (
             self.physical_disabled
             or cache is None
@@ -3350,6 +3368,7 @@ class NativeAdmissionRuntime:
             node_creation_time=step.creation_time,
             beliefkv_command_id=command_id,
             beliefkv_before_enqueue=before_enqueue,
+            beliefkv_include_mamba=step.include_mamba,
         )
         if not outcome.issued:
             if registered:
@@ -3375,6 +3394,7 @@ class NativeAdmissionRuntime:
                 "context_epoch": step.key.context_epoch,
                 "node_id": step.node_id, "leaf_node_id": step.leaf_node_id,
                 "node_creation_time": step.creation_time,
+                "include_mamba": step.include_mamba,
                 "reusable_input_tokens": (
                     max(0, tokens[1] - 1) if tokens is not None
                     and tokens[0] == step.key.context_epoch else None
@@ -3509,12 +3529,41 @@ class NativeAdmissionRuntime:
         return None
 
     def _refresh_prefetch_service_leases(self, *, context_id: str | None = None) -> None:
+        if not self._prefetch_service_leases:
+            return
+        now = time.monotonic()
         for command, lease in tuple(self._prefetch_service_leases.items()):
             if context_id is not None and lease.key.context_id != context_id:
                 continue
+            invocation = self.graph.invocations.get(lease.key.invocation_id)
             if (
-                not lease.demand_ready and lease.lock_params is not None
-                and time.monotonic() < lease.expires_at
+                not lease.demand_ready and lease.reentry_ready_at is None
+                and lease.lock_params is not None
+                and now < lease.expires_at
+                and invocation is not None
+                and invocation.state is InvocationState.READY
+                and not invocation.active_tool_calls
+                and not invocation.blocking_child_ids
+            ):
+                # Real completion can precede HTTP submission; do not pin on ETA.
+                lease = replace(
+                    lease, reentry_ready_at=now,
+                    expires_at=min(lease.acknowledged_at + 10., now + 3.),
+                )
+                self._prefetch_service_leases[command] = lease
+                self.counts["prefetch_residency_reentry_ready"] += 1
+                if self._opportunity_writer is not None:
+                    self._opportunity_writer.record({
+                        "event": "prefetch_reentry_ready",
+                        "ts_ms": time.time() * 1000, "command_id": command,
+                        "source": lease.source, "context_id": lease.key.context_id,
+                        "invocation_id": lease.key.invocation_id,
+                        "context_epoch": lease.key.context_epoch,
+                        "submission_grace_ms": (lease.expires_at - now) * 1000.,
+                    })
+            if (
+                not lease.demand_ready
+                and now < lease.expires_at
                 and any(
                     key.context_id == lease.key.context_id
                     and key.invocation_id == lease.key.invocation_id
@@ -3530,10 +3579,25 @@ class NativeAdmissionRuntime:
             ):
                 lease = replace(
                     lease, demand_ready=True,
-                    expires_at=lease.acknowledged_at + 10.,
+                    expires_at=(
+                        lease.acknowledged_at + 10.
+                        if lease.lock_params is not None else lease.expires_at
+                    ),
                 )
                 self._prefetch_service_leases[command] = lease
                 self.counts["prefetch_residency_demand_ready"] += 1
+                if self._opportunity_writer is not None:
+                    self._opportunity_writer.record({
+                        "event": "prefetch_demand_submitted",
+                        "ts_ms": time.time() * 1000, "command_id": command,
+                        "source": lease.source, "context_id": lease.key.context_id,
+                        "ready_to_submit_ms": (
+                            (now - lease.reentry_ready_at) * 1000.
+                            if lease.reentry_ready_at is not None else None
+                        ),
+                        "ack_to_submit_ms": (now - lease.acknowledged_at) * 1000.,
+                        "remaining_lease_ms": (lease.expires_at - now) * 1000.,
+                    })
             reason = self._prefetch_lease_invalid_reason(lease)
             if reason is not None:
                 self._release_prefetch_service_lease(command, reason)
@@ -3561,8 +3625,10 @@ class NativeAdmissionRuntime:
             entries = cache.host_pool_group.entry_map
             protected_bytes = sum(
                 node.full_device_tokens * entries["kv"].host_pool.size_per_token
-                + int(node.mamba_device_present) * entries["mamba"].host_pool.size_per_token
                 for node in observation.nodes
+            ) + sum(
+                int(node.mamba_device_present) * entries["mamba"].host_pool.size_per_token
+                for node in observation.nodes if node.node_id == step.node_id
             )
             if (
                 observation.observable and len(self._prefetch_service_leases) < 4
@@ -3830,6 +3896,7 @@ class NativeAdmissionRuntime:
             if hint.key.context_id != key.context_id or hint.key == key
         }
         self.visible[key.request_id] = key
+        self._visible_since[key.request_id] = time.monotonic()
         if key.session_id is not None and key.session_generation is not None:
             self.context_sessions[key.context_id] = key
         else:
@@ -3868,6 +3935,7 @@ class NativeAdmissionRuntime:
     def retire_terminal_request(self, request_id: str) -> None:
         if request_id in self.visible:
             del self.visible[request_id]
+            self._visible_since.pop(request_id, None)
             self.demand_hints.pop(request_id, None)
             self._forget_session(request_id)
             self.semantic_revision += 1
@@ -3890,6 +3958,7 @@ class NativeAdmissionRuntime:
                 if hint.key.context_id != key.context_id or hint.key == key
             }
             self.visible[key.request_id] = key
+            self._visible_since.setdefault(key.request_id, time.monotonic())
             if key.session_id is not None and key.session_generation is not None:
                 self.context_sessions[key.context_id] = key
             else:
@@ -3898,6 +3967,7 @@ class NativeAdmissionRuntime:
             self.semantic_revision += 1
 
     def _forget_session(self, request_id: str) -> None:
+        self._visible_since.pop(request_id, None)
         for context_id, key in tuple(self.context_sessions.items()):
             if key.request_id == request_id:
                 self._tool_last_queries.pop(key, None)
@@ -4017,37 +4087,65 @@ class NativeAdmissionRuntime:
             ):
                 valid_hints[index] = hint
                 hinted[ranks[index][:2]] += 1
-        ordered = sorted(
-            tagged,
-            key=lambda pair: (
-                *ranks[pair[0]][:2],
-                valid_hints[pair[0]].next_output_tokens
-                if ranks[pair[0]][0] < 5
-                and hinted[ranks[pair[0]][:2]] == members[ranks[pair[0]][:2]]
-                else pair[0],
-                pair[0],
-            ),
-        )
+
+        def waiting_rank(pair: tuple[int, object]) -> tuple:
+            index, request = pair
+            since = self._visible_since.get(getattr(request, "rid", ""), now_ms / 1000.)
+            if now_ms / 1000. - since >= 10.:
+                return (-1, since, index, index)
+            return (
+                *ranks[index][:2],
+                valid_hints[index].next_output_tokens
+                if ranks[index][0] < 5
+                and hinted[ranks[index][:2]] == members[ranks[index][:2]]
+                else index,
+                index,
+            )
+
+        ordered = sorted(tagged, key=waiting_rank)
         self._final_priority_promoted = None
         self._final_priority_native_rank = None
         self._prefetch_priority_promoted = None
-        if self._prefetch_priority_normal_admissions >= 4:
-            for candidate in tuple(ordered[:32]):
+        self._prefetch_priority_native_rank = None
+        priority_candidates = []
+        if self._prefetch_priority_normal_admissions >= 4 and ordered:
+            for candidate in ordered:
                 key = _request_key(candidate[1])
-                if key is not None and any(
-                    lease.key.context_id == key.context_id
+                matches = [
+                    lease for lease in self._prefetch_service_leases.values()
+                    if lease.demand_ready
+                    and key is not None and key.request_id != lease.key.request_id
+                    and lease.key.context_id == key.context_id
                     and lease.key.invocation_id == key.invocation_id
                     and lease.key.root_workflow_id == key.root_workflow_id
                     and lease.key.session_id == key.session_id
                     and lease.key.session_generation == key.session_generation
                     and key.context_epoch in (lease.key.context_epoch, lease.key.context_epoch + 1)
-                    for lease in self._prefetch_service_leases.values()
-                ):
+                ]
+                if matches:
+                    priority_candidates.append((
+                        min(lease.expires_at for lease in matches),
+                        0 if any(lease.source == "join_ticket" for lease in matches) else 1,
+                        candidate,
+                    ))
+            if priority_candidates:
+                candidate = min(priority_candidates, key=lambda item: item[:2])[2]
+                native_rank = ordered.index(candidate)
+                # An aged native head keeps its next turn; speculative restores
+                # cannot perpetually defer an ordinary request's admission.
+                head = _request_key(ordered[0][1])
+                priority_now = time.monotonic()
+                aged_head = head is not None and (
+                    priority_now - self._visible_since.get(head.request_id, priority_now) >= 10.
+                )
+                if native_rank > 0 and not aged_head:
                     ordered.remove(candidate)
                     ordered.insert(0, candidate)
-                    self._prefetch_priority_promoted = key.request_id
+                    self._prefetch_priority_promoted = candidate[1].rid
+                    self._prefetch_priority_native_rank = native_rank
                     self.counts["prefetch_priority_ordered"] += 1
-                    break
+                elif aged_head:
+                    self.counts["prefetch_priority_aged_head_kept"] += 1
         if (
             (
                 self.enable_final_stage_priority
@@ -4057,6 +4155,9 @@ class NativeAdmissionRuntime:
             and self._final_priority_normal_admissions >= 4
             and self._prefetch_priority_normal_admissions >= 4
             and self._prefetch_priority_promoted is None and ordered
+            and time.monotonic() - self._visible_since.get(
+                getattr(ordered[0][1], "rid", ""), time.monotonic(),
+            ) < 10.
         ):
             for stage in self._final_stages.values():
                 if (
@@ -4065,7 +4166,7 @@ class NativeAdmissionRuntime:
                 ):
                     continue
                 candidate = next((
-                    pair for pair in ordered[:32]
+                    pair for pair in ordered
                     if getattr(pair[1], "rid", None) == stage.request_id
                     and self.visible.get(stage.request_id) == _request_key(pair[1])
                 ), None)
@@ -4145,6 +4246,16 @@ class NativeAdmissionRuntime:
                     self._prefetch_priority_normal_admissions = 0
                     if req.rid == self._prefetch_priority_promoted:
                         self.counts["prefetch_priority_admitted"] += 1
+                        if self._opportunity_writer is not None:
+                            self._opportunity_writer.record({
+                                "event": "restore_ready_priority_admitted",
+                                "ts_ms": time.time() * 1000,
+                                "request_id": req.rid,
+                                "tagged_displaced": self._prefetch_priority_native_rank,
+                                "queue_wait_ms": (
+                                    time.monotonic() - self._visible_since.get(req.rid, time.monotonic())
+                                ) * 1000.,
+                            })
                 else:
                     self._prefetch_priority_normal_admissions = min(
                         4, self._prefetch_priority_normal_admissions + 1,
@@ -4260,6 +4371,7 @@ class NativeAdmissionRuntime:
                 context_id = self.visible[req.rid].context_id
                 key = self.visible[req.rid]
                 del self.visible[req.rid]
+                self._visible_since.pop(req.rid, None)
                 self.demand_hints.pop(req.rid, None)
                 session_key = self.context_sessions.get(context_id)
                 if (
@@ -4280,6 +4392,7 @@ class NativeAdmissionRuntime:
         ]
         for rid in removed:
             del self.visible[rid]
+            self._visible_since.pop(rid, None)
             self.demand_hints.pop(rid, None)
             self._forget_session(rid)
             self.semantic_revision += 1

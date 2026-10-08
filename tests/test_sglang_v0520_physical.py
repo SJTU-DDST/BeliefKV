@@ -10,6 +10,7 @@ import pytest
 from beliefkv.runtime.sglang_v0520_admission import PrefillCandidateKey
 from beliefkv.runtime.sglang_v0520_physical import (
     ActionLocalPrefetchCandidate,
+    ActionLocalShadowCandidate,
     ContextSessionAnchors,
     PhysicalActionExpectation,
     PhysicalChildExpectation,
@@ -617,7 +618,7 @@ def test_prefetch_capture_and_select_root_first_full_host_only():
         assert candidate.missing_full_device_tokens == 12
         assert candidate.missing_mamba_device_nodes == 0
         step = next_prefetch_gpu_step(candidate)
-        assert step == PrefetchLoadStep(anchors.key, 12, 5, 11, 4)
+        assert step == PrefetchLoadStep(anchors.key, 12, 5, 11, 4, include_mamba=False)
         assert capture_action_local_shadow(object(), anchors, max_nodes=2,
                                            for_prefetch=True) is None
         parent.full_device_tokens = 4
@@ -699,6 +700,63 @@ def test_input_checkpoint_prefetch_still_restores_full_ancestors_first():
     assert next_prefetch_gpu_step(candidate).node_id == 11
     ancestor.full_device_tokens = 8
     assert next_prefetch_gpu_step(candidate).node_id == 12
+
+
+def test_full_ancestor_restore_does_not_require_its_historical_mamba_slot():
+    anchors = replace(prefetch_anchors(), reusable_input_tokens=12)
+    root = prefetch_node(0, None, 1, key_tokens=0)
+    ancestor = prefetch_node(11, 0, 4, full_host=8, mamba_host=True, key_tokens=8)
+    checkpoint = prefetch_node(
+        12, 11, 5, full_host=4, mamba_host=True, key_tokens=4,
+    )
+    with patch(
+        "beliefkv.runtime.sglang_v0520_physical.observe_unified_node_closure",
+        return_value=NS(observable=True, nodes=(checkpoint, ancestor, root)),
+    ), patch(
+        "beliefkv.runtime.sglang_v0520_physical.observe_static_full_mamba_headroom",
+        return_value=NS(
+            observable=True, device_full_free_tokens=8, device_mamba_free_slots=0,
+        ),
+    ):
+        opportunity = inspect_session_h2d_opportunity(object(), anchors)
+    assert opportunity.step.node_id == 11
+    assert not opportunity.step.include_mamba
+    assert opportunity.required_mamba_slots == 0
+    assert opportunity.fits_current_free_lists
+    ancestor.full_device_tokens = 8
+    candidate = ActionLocalPrefetchCandidate(anchors, (root, ancestor, checkpoint), 4, 1)
+    step = next_prefetch_gpu_step(candidate)
+    assert step.node_id == 12 and step.include_mamba
+
+
+def test_prepare_backs_only_latest_state_and_does_not_wait_for_old_state_backup():
+    anchors = replace(prefetch_anchors(), reusable_input_tokens=12)
+    root = prefetch_node(0, None, 1, key_tokens=0)
+    ancestor = prefetch_node(11, 0, 4, full_gpu=8, mamba_gpu=True, key_tokens=8)
+    checkpoint = prefetch_node(12, 11, 5, full_gpu=4, mamba_gpu=True, key_tokens=4)
+    candidate = ActionLocalShadowCandidate(anchors, (root, ancestor, checkpoint), 12, 2)
+    step = next_shadow_backup_step(candidate)
+    assert step.node_id == 11 and not step.include_mamba
+    ancestor.full_host_tokens = 8
+    step = next_shadow_backup_step(candidate)
+    assert step.node_id == 12 and step.include_mamba
+    checkpoint.full_host_tokens = 4
+    checkpoint.mamba_host_present = True
+    assert next_shadow_backup_step(candidate) is None
+
+
+def test_full_only_receipt_rejects_unselected_mamba_before_enqueue():
+    step, operation, controller = native_prefetch()
+    with pytest.raises(PhysicalReceiptError, match="historical Mamba"):
+        prefetch_expectation_from_native_op(
+            "prefetch-1", replace(step, include_mamba=False), operation, controller,
+        )
+    with pytest.raises(PhysicalReceiptError, match="historical Mamba"):
+        shadow_expectation_from_native_op(
+            "prefetch-1",
+            ShadowBackupStep(step.key, 12, 5, 11, 4, include_mamba=False),
+            operation, controller,
+        )
 
 
 def test_prefetch_without_cpu_kv_or_with_pending_never_selects():

@@ -2476,6 +2476,7 @@ class DeepAgentsRuntimeAdapter(BaseCallbackHandler):
             return
         delivery = None
         async_tool_start = False
+        async_reentry = False
         with self._publication_lock:
             self.trace_sink.emit_batch(events)
             with self._lock:
@@ -2504,6 +2505,15 @@ class DeepAgentsRuntimeAdapter(BaseCallbackHandler):
                         len(control_events) == 1
                         and control_events[0].kind == RuntimeEventKind.TOOL_START
                     )
+                    async_reentry = isinstance(self.control_sink, QueuedRuntimeEventSink) and any(
+                        event.kind in {
+                            RuntimeEventKind.TOOL_END,
+                            RuntimeEventKind.RETURN,
+                            RuntimeEventKind.JOIN_SATISFIED,
+                            RuntimeEventKind.LLM_SUBMIT,
+                        }
+                        for event in control_events
+                    )
                     delivery = submit(
                         control_events,
                         tool_start=async_tool_start,
@@ -2512,7 +2522,7 @@ class DeepAgentsRuntimeAdapter(BaseCallbackHandler):
                     self.control_sink.emit_batch(control_events)
             except Exception as error:
                 self._record_control_delivery_failure(control_events, error)
-        if delivery is not None and not (async_tool_start or async_control):
+        if delivery is not None and not (async_tool_start or async_control or async_reentry):
             try:
                 delivery.wait()
             except Exception as error:

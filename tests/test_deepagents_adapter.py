@@ -326,6 +326,7 @@ def test_child_completion_intent_has_bound_identity_and_no_model_payload() -> No
         assert delta.changed_contexts == frozenset()
         assert delta.completed_invocations == frozenset()
         adapter.complete_runtime_task(task)
+        queued.flush()
         intent = [
             event for event in control.events
             if event.kind == RuntimeEventKind.STRUCTURED_ACTION
@@ -1299,9 +1300,10 @@ def test_child_completion_intent_is_nonblocking_and_precedes_confirmed_return() 
 
         sender = threading.Thread(target=return_child)
         sender.start()
-        assert not completed.wait(timeout=0.05)
+        assert completed.wait(timeout=0.5)
         release_intent.set()
         sender.join(timeout=2.0)
+        queued.flush()
         assert not sender.is_alive()
         assert completed.is_set()
         assert [
@@ -1376,6 +1378,7 @@ def test_child_completion_intent_full_queue_fails_closed_without_waiting() -> No
             {}, [[HumanMessage(content="child")]],
             run_id=model_run, parent_run_id=chain,
         )
+        queued.flush()
         tool_start = adapter._event(RuntimeEventKind.TOOL_START, invocation_id="root")
         adapter._publish((tool_start,), control=True)
         assert stalled.wait(timeout=1.0)
@@ -1447,9 +1450,10 @@ def test_ordinary_tool_start_does_not_wait_for_control_ack() -> None:
 
         sender = threading.Thread(target=publish_end)
         sender.start()
-        assert not completed.wait(timeout=0.05)
+        assert completed.wait(timeout=0.5)
         release_ack.set()
         sender.join(timeout=2.0)
+        queued.flush()
         assert not sender.is_alive()
         assert control.events == [start, end]
         assert not adapter.control_delivery_summary()["degraded"]

@@ -1,6 +1,7 @@
 from pathlib import Path
 from types import SimpleNamespace as NS
 from unittest.mock import Mock, patch
+from dataclasses import replace
 import hashlib
 import json
 import time
@@ -250,7 +251,7 @@ def locked_runtime(*, size=50, receipt_node=1):
         "mamba": NS(host_pool=NS(size_per_token=0)),
     })
     observation = NS(observable=True, nodes=[
-        NS(full_device_tokens=1, mamba_device_present=False),
+        NS(node_id=1, full_device_tokens=1, mamba_device_present=False),
     ])
     step = PrefetchLoadStep(hint.key, 1, 2, 1, 2)
     runtime._prefetch_steps[action.command_id] = (step, "tool_wait", 2.)
@@ -362,6 +363,120 @@ def test_restore_ready_priority_is_bounded_by_four_normal_admissions():
             assert select(runtime, [other, restored]).candidates[0] is other
             runtime.on_prefill_candidate_result(other, admitted=True, result="ok")
         assert select(runtime, [other, restored]).candidates[0] is restored
+
+
+def test_restore_ready_priority_finds_request_beyond_first_32_candidates():
+    runtime, _, _, _, _, _ = locked_runtime()
+    restored = submit_restored_request(runtime)
+    ordinary = [req(f"ordinary-{index}") for index in range(64)]
+    for request in ordinary:
+        runtime.register_visible_request(request)
+    with patch.object(runtime, "_causal_rank", side_effect=lambda req, index, ranks: (0, 0, index)):
+        assert select(runtime, ordinary + [restored]).candidates[0] is restored
+    assert runtime._prefetch_priority_native_rank == 64
+
+
+def test_aged_ordinary_head_keeps_its_turn_even_when_restore_is_ready():
+    runtime, _, _, _, _, _ = locked_runtime()
+    restored = submit_restored_request(runtime)
+    ordinary = req("ordinary")
+    runtime.register_visible_request(ordinary)
+    runtime._visible_since[ordinary.rid] = time.monotonic() - 11.
+    with patch.object(runtime, "_causal_rank", side_effect=lambda req, index, ranks: (0, 0, index)):
+        assert select(runtime, [ordinary, restored]).candidates[0] is ordinary
+    assert runtime.counts["prefetch_priority_aged_head_kept"] == 1
+
+
+def test_aging_applies_across_causal_classes_not_only_the_queue_head():
+    runtime = NativeAdmissionRuntime()
+    new, old = req("new"), req("old")
+    runtime.register_visible_request(new)
+    runtime.register_visible_request(old)
+    runtime._visible_since[old.rid] = time.monotonic() - 11.
+    with patch.object(runtime, "_causal_rank", side_effect=lambda req, index, ranks: (index, 0, index)):
+        assert select(runtime, [new, old]).candidates[0] is old
+
+
+def test_real_tool_completion_bridges_submission_gap_without_extending_on_eta():
+    runtime, _, _, action, _, _ = locked_runtime()
+    initial = runtime._prefetch_service_leases[action.command_id]
+    with patch("beliefkv.runtime.sglang_v0520_runtime.time.monotonic",
+               return_value=initial.acknowledged_at + 1.):
+        runtime.on_events((event(
+            3, RuntimeEventKind.TOOL_END, invocation_id="tool",
+            attributes={"tool_run_id": "long"},
+        ),))
+    ready = runtime._prefetch_service_leases[action.command_id]
+    assert ready.reentry_ready_at == initial.acknowledged_at + 1.
+    assert ready.expires_at == initial.acknowledged_at + 4.
+    assert not ready.demand_ready
+    with patch("beliefkv.runtime.sglang_v0520_runtime.time.monotonic",
+               return_value=initial.acknowledged_at + 3.):
+        runtime._refresh_prefetch_service_leases()
+    assert action.command_id in runtime._prefetch_service_leases
+    with patch("beliefkv.runtime.sglang_v0520_runtime.time.monotonic",
+               return_value=ready.expires_at):
+        runtime._refresh_prefetch_service_leases()
+    assert not runtime._prefetch_service_leases
+
+
+def test_join_grace_starts_only_when_all_children_have_returned():
+    runtime, _, _, action, _, _ = locked_runtime()
+    runtime.graph.invocations["tool"].active_tool_calls.clear()
+    runtime.on_events((
+        event(3, RuntimeEventKind.INVOCATION_CREATE, invocation_id="a",
+              context_id="ctx-a"),
+        event(4, RuntimeEventKind.INVOCATION_CREATE, invocation_id="b",
+              context_id="ctx-b"),
+        event(5, RuntimeEventKind.JOIN_CREATE, join_id="join",
+              member_invocation_ids=("a", "b")),
+        event(6, RuntimeEventKind.JOIN_WAIT, invocation_id="tool", join_id="join"),
+    ))
+    initial = replace(runtime._prefetch_service_leases[action.command_id], source="join_ticket")
+    runtime._prefetch_service_leases[action.command_id] = initial
+    with patch("beliefkv.runtime.sglang_v0520_runtime.time.monotonic",
+               return_value=initial.acknowledged_at + .5):
+        runtime.on_events((event(7, RuntimeEventKind.RETURN, invocation_id="a"),))
+    assert runtime._prefetch_service_leases[action.command_id] == initial
+    with patch("beliefkv.runtime.sglang_v0520_runtime.time.monotonic",
+               return_value=initial.acknowledged_at + 1.):
+        runtime.on_events((event(8, RuntimeEventKind.RETURN, invocation_id="b"),))
+    ready = runtime._prefetch_service_leases[action.command_id]
+    assert ready.reentry_ready_at == initial.acknowledged_at + 1.
+    assert ready.expires_at == initial.acknowledged_at + 4.
+    assert not ready.demand_ready
+
+
+def test_submitted_demand_lease_is_not_shortened_by_ready_observation():
+    runtime, _, _, action, _, _ = locked_runtime()
+    submit_restored_request(runtime)
+    original = runtime._prefetch_service_leases[action.command_id]
+    runtime.graph.invocations["tool"].state = InvocationState.READY
+    runtime._refresh_prefetch_service_leases()
+    assert runtime._prefetch_service_leases[action.command_id] == original
+
+
+def test_expired_restore_lock_is_not_revived_by_late_tool_completion():
+    runtime, _, _, action, _, _ = locked_runtime()
+    lease = runtime._prefetch_service_leases[action.command_id]
+    with patch("beliefkv.runtime.sglang_v0520_runtime.time.monotonic",
+               return_value=lease.expires_at + .1):
+        runtime.on_events((event(
+            3, RuntimeEventKind.TOOL_END, invocation_id="tool",
+            attributes={"tool_run_id": "long"},
+        ),))
+    assert not runtime._prefetch_service_leases
+    assert runtime.counts["prefetch_residency_reentry_ready"] == 0
+
+
+def test_inflight_restore_of_same_checkpoint_is_not_submitted_twice():
+    runtime, hint = tool_runtime()
+    step = PrefetchLoadStep(hint.key, 1, 2, 1, 2)
+    runtime._prefetch_steps["pending"] = (step, "tool_wait", 2.)
+    with patch.object(runtime, "refreshed_prefetch_gpu_step") as recapture:
+        assert runtime.issue_prefetch_gpu_step(step) is None
+    recapture.assert_not_called()
+    assert runtime.counts["prefetch_duplicate_inflight_suppressed"] == 1
 
 
 def test_actual_allocation_pressure_releases_speculative_lock():
