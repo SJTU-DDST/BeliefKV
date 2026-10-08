@@ -1,6 +1,38 @@
 # BeliefKV Current Execution Plan
 
-Status date: 2026-10-07.
+Status date: 2026-10-08.
+
+## V8d Result And Priorities
+
+V8d finished on October 7 at 23:47: 107 completed, one incomplete, no
+physical-lane disable/receipt failure/telemetry loss. It issued 1,094
+predictive H2D commands, all with first-service records, but only 71 FULL
+targets were verified reused (22 JOIN, 49 tool); 168 had native reloads.
+Mamba verification currently requires singleton prefill, so its 14 verified
+commands must not turn all remaining transfers into claimed waste.
+
+Priorities, not implemented changes:
+1. Repair JOIN work/time projection: all 19 pre-EOS estimated-work transfers
+   missed the 0-1 s RETURN window; median advance was 12.968 s. Audit
+   intrinsic remaining tokens and actual service share separately.
+2. Couple restore with admission and bounded residency. First-service lag
+   median is 8.167 s versus a 1.5 s soft policy lease; 724 leases lost native
+   residency before expiry. Avoid blanket longer pins and premature eviction.
+3. Instrument batched Mamba first use and native PREPARE consumption.
+   PREPARE copied 40.047 GB of FULL, but custom pressure demotion stayed zero;
+   this is not proof that native eviction never consumed a backup.
+4. Keep Host churn and block-attribution censoring explicit. Both Host pools
+   filled; 28,103 eviction-index records expired and Mamba hit location is
+   incomplete despite 95.28% aggregate input-token hits.
+5. Keep workflow/model outcomes explicit: 91 single-round, 16 two-round,
+   one four-round workflows and 11 singleton JOIN groups. pytest-6197's
+   root repeated text until length truncation; its children and JOIN completed.
+6. Only after repairs, collect same-version reactive for a valid comparison.
+   Old v8c disabled physical actions; v8d changed shell feedback. The +2.03%
+   observed throughput is not a controlled speedup, and mean JCT rose 11.57%.
+
+No new GPU run or runtime/model change is authorized by this result review.
+The previous launch plan below is historical, not a currently running pair.
 
 ## Latest Execution Update
 

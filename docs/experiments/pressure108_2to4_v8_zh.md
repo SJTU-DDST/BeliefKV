@@ -1,5 +1,52 @@
 # 108-root / 2–4 child 压力与机会诊断
 
+## v8d Predictive 最终复核（2026-10-08）
+
+运行于2026-10-07 23:47结束，GPU已释放，107 completed/1 incomplete。
+总9394.63秒，完成吞吐41.00 workflow/小时，JCT P50/mean
+3727.62/4125.44秒，GPU平均66.07%。物理通道全程有效，无receipt
+failure/遥测丢失/写入错误，不再复现v8c第18次PREPARE后禁用。
+
+预测H2D1094次/65.623 GB，JOIN46次/3.306 GB、tool1048次/62.317 GB；
+原生8596批/2.649 TB。预测占全部H2D 2.42%。全部ACK有首次服务记录，
+FULL复用71次/0.668 GB，JOIN22/46、tool49/1048；其余FULL目标
+未确认原预取节点复用，168个目标有native重载。Mamba确认14次/
+0.901 GB，剩57.178 GB未验证：单请求batch证明局限须先补齐，
+不能把未验证全部称为浪费或把ACK本身称为收益。
+
+JOIN触发分层：
+- estimated_work/EOS前19次，RETURN提前量P50 12.968秒；
+  0次在0–500ms，0次在0–1000ms，FULL复用5、Mamba确认2。
+- observed_no_tool_eos 27次，P50 899ms，9次在0–500ms、
+  12次在0–1000ms，FULL复用17、Mamba确认12。是观测信号，不算
+  概率预测精度提升。
+- 全46次中44次在RETURN前、44次ACK早于完整JOIN；
+  “早于”不能等同于几百毫秒窗口成功。
+- Tool有685/1048次在TOOL_END前1秒，539次在100–1000ms；
+  141次已晚于TOOL_END。其P50提前292ms，但FULL复用仅4.68%。
+
+ACK至首次服务P50 8167ms/P90 18959ms；JOIN P50 10759ms、
+tool P50 8002ms，而租约1500ms且不pin allocator。1060个登记
+租约中724次native驻留丢失、244次预测窗口离开、80次到期、
+12次在首次服务释放。issue→submit P50 2.33ms、P90 4.13ms，
+因此当前主问题不是发射，而是JOIN过早及加载后不能保留到准入。
+例django-11400首次触发估剩24.28token/323ms，570token之后
+继续到793token，约15.56秒才EOS；这说明工作头和服务投影均需核查。
+
+PREPARE11885 ACK/40.047 GB全部FULL，自定义pressure demotion为0，
+prepare_consumption为空；native eviction仍可能消费备份，不能
+据此判断全部无用。Host两池均满，FULL/Mamba驱逐1.084/1.151 TB。
+命中95.28%，旧前缀缺失代理0.152%；FULL已确认重算35882token，
+但28103条索引到期和Mamba归因缺口意味着它不是完整重算上限。
+
+Workload 91一轮/16两轮/1四轮，后续11个单child。pytest-6197
+incomplete来自root重复文本直到finish_reason=length，正文34073
+字符，children均返回且JOIN满足；不是格式门禁或deadline。
+与旧R仅能作描述：完成吞吐+2.03%、mean JCT+11.57%、输出token
++10.08%，加上源码和物理通道差异，不能宣称独立KV吞吐收益。
+后续先修工作投影/准入驻留、补Mamba与PREPARE证据，再同版本对照；
+不继续盲目增并发，不在本次复核中启动GPU实验。
+
 ## 最终 reactive 诊断与后续 predictive
 
 v8c reactive 已在2026-10-07 19:45结束：108 completed、0 error/

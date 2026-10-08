@@ -1,6 +1,52 @@
 # BeliefKV 当前架构与实现状态
 
-更新日期：2026-10-07。
+更新日期：2026-10-08。
+
+## v8 Predictive 最终结论
+
+v8d于2026-10-07 23:47结束，107 completed/1 incomplete，耗时
+9394.63秒，完成吞吐41.00 workflow/小时；JCT P50/mean
+3727.62/4125.44秒，GPU平均66.07%。物理通道全程未禁用，
+receipt failure/遥测丢失/写入错误为0，旧D2H split问题未复现。
+GPU已释放，不自动追加实验。下面“最新诊断与启动”是历史记录。
+
+真正预测H2D为1094次/65.623 GB：JOIN 46次/3.306 GB，工具1048次/
+62.317 GB；原生H2D仍8596批/2.649 TB。所有预测ACK均有首次服务
+记录，但FULL目标复用只有71次（JOIN22、tool49），确认复用
+0.668 GB/所传FULL 7.544 GB。Mamba只确认14次/0.901 GB；
+当前证明要求单请求prefill batch，其余57.178 GB是未验证，
+不能全算浪费。预取占总H2D约2.42%，不能用ACK数量称成功。
+
+核心时机问题：19次estimated_work/EOS前JOIN预取，实际提前量
+P50 12.968秒，0次落在RETURN前1秒。27次observed_no_tool_eos
+P50 0.899秒，9次落在前500ms、12次在前1秒；这不是模型预测成功。
+例如django-11400预测剩24.28token/322.94ms，后续输出计数从570
+增至793，约15.56秒才到EOS；剩余工作和实际服务节奏均需核查。
+Tool有685/1048次在TOOL_END前1秒，但FULL复用仅49/1048。
+
+核心联合管理问题：ACK到首次GPU服务P50 8.167秒（JOIN10.759秒、
+tool8.002秒），而策略租约只有1500ms且不是allocator pin。
+1060个租约中724次native_residency_lost、244次prediction_window_left、
+80次到期、12次在首次服务释放；168个目标又被native H2D恢复。
+issue到submit P50 2.33ms，旧发射延迟已不再是主要问题。
+不能只延长全体租约：须联合恢复预算、准入及有界驻留，并区分
+需求已就绪、预测变化与native LRU。源码检查点见runtime的
+`_prefetch_lease_invalid_reason` / `_register_prefetch_service_lease`。
+
+PREPARE ACK11885次/40.047 GB，全部FULL；自定义parent pressure
+demotion为0，现有prepare_consumption为空。不能据此说全部备份
+无用（native eviction也可消费），但尚无净收益/原生消费归因。
+Host两池均满，FULL/Mamba累计驱逐1.084/1.151 TB；输入token
+命中95.28%，旧输入缺失代理0.152%。FULL确认驱逐后重算35882
+token，但28103条索引到期、Mamba位置未知，不能当完整重算上限。
+
+Workload仍91个仅一轮、16个两轮、1个四轮；后续11个单child组。
+incomplete是pytest-6197 root反复输出同段分析后finish_reason=length，
+不是结构化终态门禁、deadline或child取消；它的JOIN已满足。
+v8c物理通道失效且v8d改变pipefail等反馈，不能将表面吞吐+2.03%
+作为公平加速。相对旧R平均JCT反而+11.57%，输出token+10.08%。
+下一步优先修正JOIN工作/时间投影及恢复后的准入/驻留协同，
+补batched Mamba和native PREPARE消费证据，再补同版本reactive。
 
 ## 最新诊断与启动
 
@@ -26,7 +72,7 @@ pool、session/epoch和重放。忙碌writer改为定时发布状态；
 测试形态不再把管道过滤器/选项参数当作测试标签，shell采用
 bash pipefail反馈上游失败。不新增agent guard或短预算。
 
-当前运行是全新目录
+已结束的运行是全新目录
 `experiments/raw/qwen35_joint_wait_h2d_predictive_108root_2to4_v8d`，
 修复后的108-root单波predictive机制诊断，保留v7头、500 ms/
 250 ms窗口、running48、Host200 GB/NUMA1和0.9池比例。
