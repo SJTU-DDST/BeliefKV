@@ -2478,6 +2478,16 @@ def test_semantic_work_queue_requires_real_parent_host_restore_target():
         assert runtime._semantic_transfer_target_ready("child", 1101.)
 
 
+def test_semantic_rate_does_not_project_short_decode_burst_as_wall_clock_share():
+    runtime = NativeAdmissionRuntime()
+    runtime._semantic_progress["child"] = [
+        (0., 0), (3000., 20), (4500., 30), (5000., 80),
+    ]
+    assert runtime._semantic_rate("child") == pytest.approx(16.)
+    runtime._semantic_progress["single"] = [(1000., 10)]
+    assert runtime._semantic_rate("single") is None
+
+
 def test_final_stage_promotes_only_bound_join_child_with_admission_budget():
     stage_records = []
     runtime = final_stage_runtime(stage_records=stage_records)

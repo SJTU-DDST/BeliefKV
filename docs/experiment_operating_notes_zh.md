@@ -1,8 +1,26 @@
 # BeliefKV 实验注意事项
 
-更新日期：2026-10-07。本文是当前实验的执行约束，不是新增 agent
+更新日期：2026-10-08。本文是当前实验的执行约束，不是新增 agent
 guard、终态门禁或模型动作授权。启动前同时阅读
 `docs/implementation_plan.md`；旧诊断脚本和历史计划不能覆盖当前约定。
+
+## 原生策略基线与有界恢复
+
+用户已要求同workload原生SGLang对照，启用
+`NATIVE_POLICY_BASELINE=1 AB_MODE=off`。关闭BeliefKV admission/
+socket、PREPARE、预测H2D、收尾优先级；保留共用的harness通知、
+session/NUMA及2–4生成兼容补丁与只读遥测。明确报告为原生策略
+基线，不宣称未修改上游SGLang。清除继承的预测artifact与遥测环境，
+客户端预检须实测session=true、BeliefKV admission=false。
+
+新恢复保护不得变成长时间锁住全部冷KV：最多4个租约、1 GiB
+闭包；预测期lead+1秒，真实下一请求提交后才可延长到ACK后最多
+10秒。真实NO_TOKEN优先让出，首次GPU服务释放；解锁必须重放
+原始receipt且只执行一次。失败保留证据并停用物理通道，不报成功。
+批量Mamba复用只在同节点/代次/device对象、请求COW源/目的身份
+和真实forward完成均吻合时计数，不把未知当浪费或无需迁移。
+JOIN采用更保守的已观测速率仍不证明亚秒预测有效；不替换或
+修改旧模型eligibility。GPU实验启动后冻结可执行源码和模型。
 
 ## v8 故障与修复约束
 

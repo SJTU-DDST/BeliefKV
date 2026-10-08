@@ -69,3 +69,25 @@ def test_pressure_scan_rejects_unauthorized_single_wave_above_108(tmp_path: Path
     assert result.returncode == 2
     assert "Usage:" in result.stderr
     assert not run_root.exists()
+
+
+def test_native_policy_baseline_disables_beliefkv_policy() -> None:
+    script = SCRIPT.read_text()
+    assert 'control_flags=(--native-policy-baseline)' in script
+    assert 'telemetry_env=(BELIEFKV_NATIVE_TELEMETRY_DIR="$RUN_ROOT/server")' in script
+    assert 'BELIEFKV_ENABLE_PREPARE_HOST=0 BELIEFKV_ENABLE_TOOL_PREFETCH=0' in script
+    assert 'unset_env=(-u BELIEFKV_NATIVE_TELEMETRY_DIR)' in script
+
+
+def test_native_policy_baseline_rejects_predictive_mix_before_launch(tmp_path: Path) -> None:
+    run_root = tmp_path / "baseline"
+    result = subprocess.run(
+        ["bash", str(SCRIPT)],
+        env={
+            **os.environ, "RUN_ROOT": str(run_root),
+            "NATIVE_POLICY_BASELINE": "1", "AB_MODE": "predictive_h2d",
+        },
+        text=True, capture_output=True, timeout=5,
+    )
+    assert result.returncode == 2
+    assert not run_root.exists()

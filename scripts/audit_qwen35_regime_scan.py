@@ -224,8 +224,10 @@ def summarize(run: Path) -> dict:
         ),
         "verified_first_service_mamba_reuse_count": sum(
             row.get("event") == "beliefkv_prefetch_mamba_forward_completed"
-            and row.get("mamba_reuse")
-            == "verified_single_request_cow_forward_completed"
+            and row.get("mamba_reuse") in (
+                "verified_single_request_cow_forward_completed",
+                "verified_per_request_cow_forward_completed",
+            )
             for row in action_uses
         ),
         "host_peak_fraction": host_peak,

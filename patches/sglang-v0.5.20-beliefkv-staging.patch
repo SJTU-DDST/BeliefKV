@@ -479,7 +479,7 @@ index d3f13eb..ce0e6e6 100644
      # LoRA related
      lora_id: Optional[str] = None  # None means just use the base model
 diff --git a/python/sglang/srt/managers/schedule_batch.py b/python/sglang/srt/managers/schedule_batch.py
-index 7811e44..29c4c5c 100755
+index 7811e44..cd7aea5 100755
 --- a/python/sglang/srt/managers/schedule_batch.py
 +++ b/python/sglang/srt/managers/schedule_batch.py
 @@ -978,6 +978,7 @@ class Req(ReqDllmMixin):
@@ -529,6 +529,19 @@ index 7811e44..29c4c5c 100755
              req.kv.mamba_last_track_seqlen = mamba_track_seqlen_aligned
  
          return _MambaRadixCacheV2TrackEntry(
+@@ -2991,8 +3010,12 @@ class ScheduleBatch(ScheduleBatchDisaggregationDecodeMixin):
+         cow_src_tensors = []
+         cow_dst_tensors = []
+         clear_tensors = []
++        self.beliefkv_mamba_cow_witnesses = []
+         for req in reqs:
+             if req.kv.mamba_cow_src_index is not None:
++                self.beliefkv_mamba_cow_witnesses.append(
++                    (req.rid, req.kv.mamba_cow_src_index, req.kv.mamba_pool_idx)
++                )
+                 cow_src_tensors.append(req.kv.mamba_cow_src_index)
+                 cow_dst_tensors.append(req.kv.mamba_pool_idx.unsqueeze(0))
+                 req.kv.mamba_cow_src_index = None
 diff --git a/python/sglang/srt/managers/scheduler.py b/python/sglang/srt/managers/scheduler.py
 index 743c8af..cce679c 100644
 --- a/python/sglang/srt/managers/scheduler.py

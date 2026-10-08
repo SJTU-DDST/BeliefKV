@@ -1266,10 +1266,14 @@ class NativeReactiveTelemetry:
                 "event": "beliefkv_prefetch_mamba_forward_completed",
                 **candidate,
                 "forward_complete_ts_ms": complete_wall,
-                "mamba_reuse": "verified_single_request_cow_forward_completed",
+                "mamba_reuse": (
+                    "verified_per_request_cow_forward_completed"
+                    if candidate.get("mamba_cow_evidence") == "native_per_request_source_destination_identity"
+                    else "verified_single_request_cow_forward_completed"
+                ),
                 "evidence": (
                     "same_node_and_device_value_at_first_prefill;"
-                    "single_request_mamba_cow_queued_and_forward_completed"
+                    "request_attributed_mamba_cow_queued_and_forward_completed"
                 ),
             })
         if self._cache is not None:
@@ -1516,7 +1520,6 @@ class NativeReactiveTelemetry:
                 dict(action.pool_bytes).get("mamba", 0) > 0
                 and mamba_node_matches
                 and batch is not None
-                and len(batch.reqs) == 1
                 and batch.forward_mode.is_extend()
                 and not getattr(
                     batch.forward_mode, "is_target_verify", lambda: True
@@ -1528,19 +1531,38 @@ class NativeReactiveTelemetry:
                 and getattr(req, "best_match_node", None) == nodes[0][0]
                 and getattr(batch, "mamba_cow_src_indices", None) is not None
                 and getattr(batch, "mamba_cow_dst_indices", None) is not None
-                and len(batch.mamba_cow_src_indices) == 1
-                and len(batch.mamba_cow_dst_indices) == 1
+                and len(batch.mamba_cow_src_indices) > 0
+                and len(batch.mamba_cow_dst_indices) > 0
             ):
-                mamba_forward_candidates.append({
-                    "command_id": command_id,
-                    "context_id": action.context_id,
-                    "context_epoch": action.context_epoch,
-                    "service_context_epoch": context_epoch,
-                    "request_id": str(req.rid),
-                    "node_id": nodes[0][0],
-                    "ack_ts_ms": ack_ts,
-                    "first_service_ts_ms": time.time() * 1000.0,
-                })
+                witnesses = getattr(batch, "beliefkv_mamba_cow_witnesses", None)
+                matched = [
+                    (source, destination) for rid, source, destination in witnesses or ()
+                    if str(rid) == str(req.rid)
+                ]
+                per_request = (
+                    len(matched) == 1 and matched[0][0] is nodes[0][5]
+                    and matched[0][1] is getattr(getattr(req, "kv", None), "mamba_pool_idx", None)
+                )
+                legacy_single = (
+                    witnesses is None and len(batch.reqs) == 1
+                    and len(batch.mamba_cow_src_indices) == 1
+                    and len(batch.mamba_cow_dst_indices) == 1
+                )
+                if per_request or legacy_single:
+                    mamba_forward_candidates.append({
+                        "command_id": command_id,
+                        "context_id": action.context_id,
+                        "context_epoch": action.context_epoch,
+                        "service_context_epoch": context_epoch,
+                        "request_id": str(req.rid),
+                        "node_id": nodes[0][0],
+                        "ack_ts_ms": ack_ts,
+                        "first_service_ts_ms": time.time() * 1000.0,
+                        "mamba_cow_evidence": (
+                            "native_per_request_source_destination_identity"
+                            if per_request else "legacy_single_request"
+                        ),
+                    })
             self._emit("action_use", {
                 "event": "beliefkv_prefetch_first_service",
                 "command_id": command_id,

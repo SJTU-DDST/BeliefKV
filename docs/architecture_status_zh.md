@@ -2,13 +2,44 @@
 
 更新日期：2026-10-08。
 
+## 当前修复与原生策略对照
+
+按用户要求，下一轮采用同一manifest前108个任务、单波到达，
+运行原生SGLang FCFS/HiCache策略。目录为
+`experiments/raw/qwen35_native_policy_108root_2to4_20261008_v9/native`。
+关闭BeliefKV admission、控制socket、PREPARE、预测H2D及收尾优先级；
+保留相同harness、通知、自然语言返回、首轮2–4原生生成约束、
+session/NUMA兼容补丁和只读遥测。这是原生策略基线，
+不是未打补丁的上游wheel，也不是只关闭H2D的BeliefKV reactive。
+running48、Host200 GB/NUMA1、Device Mamba/FULL字节比例0.9、
+Host跟随Device字节比例、context131072、completion8192均不变。
+
+本次代码修复：ACK后取得原生树锁receipt，最多4个租约、1 GiB
+祖先闭包；预测期仍仅lead+1秒。只有同身份的下一请求真实提交后，
+已锁定租约才延长至ACK后最多10秒；首次服务、失效、到期或真实
+NO_TOKEN压力释放。恢复请求与收尾请求共享每4个正常准入后最多
+1次提升的预算，不能靠长期pin或插队全部请求制造收益。
+原生receipt解锁失败保留证据、停止物理动作，且不盲目重试解锁。
+工具ETA变化不再撤销已ACK且仍属于同一等待episode的恢复。
+
+Mamba证明改为native COW源/目的对象与request对应关系，
+在非speculative extend forward完成后确认，支持多请求batch。
+旧14次仅是singleton证明下界，不是实际Mamba复用总数；
+v8d原生遥测另有10149次Mamba Host hit，不能据此关闭状态恢复。
+JOIN时间投影改用500ms/2s/5s已观测墙钟速率中的保守值，避免
+将短decode burst当未来服务份额。尚未重新拟合剩余工作头，
+不声称RETURN精度已改善或亚秒级目标已达到。
+相关CPU回归325 passed/1 skipped，staging补丁反向校验通过。
+启动后冻结源码、prompt及权重；启动健康不等于性能收益。
+
 ## v8 Predictive 最终结论
 
 v8d于2026-10-07 23:47结束，107 completed/1 incomplete，耗时
 9394.63秒，完成吞吐41.00 workflow/小时；JCT P50/mean
 3727.62/4125.44秒，GPU平均66.07%。物理通道全程未禁用，
 receipt failure/遥测丢失/写入错误为0，旧D2H split问题未复现。
-GPU已释放，不自动追加实验。下面“最新诊断与启动”是历史记录。
+GPU在v8d结束后已释放。当前新增实验以本页顶部计划为准；
+下面“最新诊断与启动”是历史记录。
 
 真正预测H2D为1094次/65.623 GB：JOIN 46次/3.306 GB，工具1048次/
 62.317 GB；原生H2D仍8596批/2.649 TB。所有预测ACK均有首次服务
@@ -128,7 +159,7 @@ Qwen3.5-35B-A3B BF16 / SGLang 0.5.20，不再以旧 Qwen3/SGLang
    仍108条全单child，也已停止。v8c首轮原生生成范围2–4，
    不拒绝回复/补造child；后续轮次保持prompt驱动并审计实测。
    v8c在 `c744461` 启动；108个root首轮已全部实际派发双child，
-   不是只修改配置。reactive运行中，结束后按冻结配置启动predictive。
+   不是只修改配置。v8c与v8d均已结束，结论见本页顶部。
 
 ## 2. 当前配置
 

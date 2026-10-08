@@ -208,7 +208,10 @@ def summarize(arm: Path) -> dict | None:
     for row in action_uses:
         if (
             row["event"] != "beliefkv_prefetch_mamba_forward_completed"
-            or row.get("mamba_reuse") != "verified_single_request_cow_forward_completed"
+            or row.get("mamba_reuse") not in (
+                "verified_single_request_cow_forward_completed",
+                "verified_per_request_cow_forward_completed",
+            )
         ):
             continue
         ack = acks.get(row["command_id"])

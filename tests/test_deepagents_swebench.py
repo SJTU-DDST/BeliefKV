@@ -1639,6 +1639,35 @@ def test_native_session_server_preflight_checks_live_flags_and_socket(
         verify_native_session_server(config)
 
 
+def test_native_policy_baseline_uses_sessions_without_control_or_admission(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from beliefkv.experiments import deepagents_swebench
+
+    required = dict(
+        mode="autonomous", base_url="http://localhost:18000/v1",
+        model="model", output_dir=tmp_path,
+        workload_manifest=tmp_path / "workloads.json",
+        docker_image="fixture:latest", native_radix_sessions=True,
+        native_policy_baseline=True,
+    )
+    config = DeepAgentsExperimentConfig(**required)
+    with pytest.raises(ValueError, match="must not deliver"):
+        DeepAgentsExperimentConfig(**required, control_socket=tmp_path / "events.sock")
+    info = {"enable_session_radix_cache": True, "enable_beliefkv_admission": False}
+    monkeypatch.setattr(
+        deepagents_swebench.urllib.request, "urlopen",
+        lambda url, **kwargs: io.BytesIO(json.dumps(info).encode()),
+    )
+    verify_native_session_server(config)
+    info["enable_beliefkv_admission"] = True
+    with pytest.raises(RuntimeError, match="must disable BeliefKV admission"):
+        verify_native_session_server(config)
+    info["enable_session_radix_cache"] = False
+    with pytest.raises(RuntimeError, match="session radix"):
+        verify_native_session_server(config)
+
+
 def test_saturated_root_pool_submits_all_roots_before_any_completion() -> None:
     workloads = tuple(
         SweBenchWorkload(

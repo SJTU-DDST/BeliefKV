@@ -178,6 +178,9 @@ class _PrefetchServiceLease:
     acknowledged_at: float
     expires_at: float
     pool_bytes: tuple[tuple[str, int], ...]
+    lock_params: object | None = None
+    protected_bytes: int = 0
+    demand_ready: bool = False
 
 
 class NativeAdmissionRuntime:
@@ -275,6 +278,9 @@ class NativeAdmissionRuntime:
             str, tuple[PrefetchLoadStep, str, float | None]
         ] = {}
         self._prefetch_service_leases: dict[str, _PrefetchServiceLease] = {}
+        self._prefetch_lock_release_failures: set[str] = set()
+        self._prefetch_priority_normal_admissions = 4
+        self._prefetch_priority_promoted: str | None = None
         lead_setting = float(os.environ.get("BELIEFKV_PREFETCH_LEAD_MS", "1000"))
         if not math.isfinite(lead_setting) or not 100 <= lead_setting <= 1000:
             raise ValueError("prefetch lead must be between 100 and 1000 ms")
@@ -1043,7 +1049,13 @@ class NativeAdmissionRuntime:
         )
         if prior[0] >= end_ms or prior[1] >= end_tokens:
             return None
-        return min(500., max(1., (end_tokens - prior[1]) * 1000 / (end_ms - prior[0])))
+        rates = [(end_tokens - prior[1]) * 1000 / (end_ms - prior[0])]
+        # A short decode burst is not the future wall-clock service share.
+        for window in (2_000., 5_000.):
+            start = next(((ts, tokens) for ts, tokens in progress if ts >= end_ms - window), progress[0])
+            if start[0] < end_ms and start[1] < end_tokens:
+                rates.append((end_tokens - start[1]) * 1000 / (end_ms - start[0]))
+        return min(500., max(1., min(rates)))
 
     def _semantic_transfer_target_ready(self, child_id: str, now_ms: float) -> bool:
         if not self.enable_final_stage_prefetch or self._native_cache is None:
@@ -3398,9 +3410,25 @@ class NativeAdmissionRuntime:
     def _release_prefetch_service_lease(
         self, command_id: str, reason: str, *, request: object | None = None,
     ) -> None:
-        lease = self._prefetch_service_leases.pop(command_id, None)
-        if lease is None:
+        lease = self._prefetch_service_leases.get(command_id)
+        if lease is None or command_id in self._prefetch_lock_release_failures:
             return
+        if lease.lock_params is not None:
+            try:
+                self._native_cache.tree_core.dec_lock_ref(lease.node_id, lease.lock_params)
+            except (AttributeError, AssertionError, KeyError, TypeError, ValueError, RuntimeError):
+                self.physical_disabled = True
+                self._prefetch_lock_release_failures.add(command_id)
+                self.counts["prefetch_native_lock_release_failed"] += 1
+                if self._opportunity_writer is not None:
+                    self._opportunity_writer.record({
+                        "event": "prefetch_native_lock_release_failed",
+                        "ts_ms": time.time() * 1000, "command_id": command_id,
+                        "node_id": lease.node_id, "reason": reason,
+                        "scope": "receipt retained; no unsafe release retry",
+                    })
+                return
+        self._prefetch_service_leases.pop(command_id)
         self.counts[f"prefetch_residency_released:{reason}"] += 1
         if self._opportunity_writer is not None:
             self._opportunity_writer.record({
@@ -3411,7 +3439,9 @@ class NativeAdmissionRuntime:
                 "residency_ms": max(0., time.monotonic() - lease.acknowledged_at) * 1000,
                 "pool_bytes": dict(lease.pool_bytes),
                 "request_id": getattr(request, "rid", None),
-                "scope": "bounded policy priority; not allocator pin or reuse proof",
+                "native_locked": lease.lock_params is not None,
+                "protected_bytes": lease.protected_bytes,
+                "scope": "native lock released; not reuse proof",
             })
 
     def _prefetch_lease_invalid_reason(self, lease: _PrefetchServiceLease) -> str | None:
@@ -3474,15 +3504,36 @@ class NativeAdmissionRuntime:
                 or invocation.updated_ts_ms != lease.wait_revision
             ):
                 return "wait_episode_changed"
-            hint = self._live_tool_hint(key)
-            if hint is not None and not self._tool_prefetch_ready(hint):
-                return "prediction_window_left"
+            # A rolling ETA change does not invalidate an already completed
+            # transfer for the same wait episode. Its bounded lease still ends.
         return None
 
     def _refresh_prefetch_service_leases(self, *, context_id: str | None = None) -> None:
         for command, lease in tuple(self._prefetch_service_leases.items()):
             if context_id is not None and lease.key.context_id != context_id:
                 continue
+            if (
+                not lease.demand_ready and lease.lock_params is not None
+                and time.monotonic() < lease.expires_at
+                and any(
+                    key.context_id == lease.key.context_id
+                    and key.invocation_id == lease.key.invocation_id
+                    and key.root_workflow_id == lease.key.root_workflow_id
+                    and key.session_id == lease.key.session_id
+                    and key.session_generation == lease.key.session_generation
+                    and key.context_epoch in (
+                        lease.key.context_epoch, lease.key.context_epoch + 1,
+                    )
+                    and key.request_id != lease.key.request_id
+                    for key in self.visible.values()
+                )
+            ):
+                lease = replace(
+                    lease, demand_ready=True,
+                    expires_at=lease.acknowledged_at + 10.,
+                )
+                self._prefetch_service_leases[command] = lease
+                self.counts["prefetch_residency_demand_ready"] += 1
             reason = self._prefetch_lease_invalid_reason(lease)
             if reason is not None:
                 self._release_prefetch_service_lease(command, reason)
@@ -3493,6 +3544,8 @@ class NativeAdmissionRuntime:
             return
         step, source, revision = pending
         now = time.monotonic()
+        lock_params, protected_bytes = None, 0
+        cache = self._native_cache
         lease = _PrefetchServiceLease(
             step.key, action.command_id, step.node_id, step.creation_time,
             source, revision, now,
@@ -3502,7 +3555,44 @@ class NativeAdmissionRuntime:
         if reason is not None:
             self.counts[f"prefetch_residency_registration_skipped:{reason}"] += 1
             return
+        try:
+            from beliefkv.runtime.sglang_v0520_observer import observe_unified_node_closure
+            observation = observe_unified_node_closure(cache, step.node_id, max_nodes=64)
+            entries = cache.host_pool_group.entry_map
+            protected_bytes = sum(
+                node.full_device_tokens * entries["kv"].host_pool.size_per_token
+                + int(node.mamba_device_present) * entries["mamba"].host_pool.size_per_token
+                for node in observation.nodes
+            )
+            if (
+                observation.observable and len(self._prefetch_service_leases) < 4
+                and protected_bytes + sum(
+                    lease.protected_bytes for lease in self._prefetch_service_leases.values()
+                ) <= 1024 ** 3
+            ):
+                try:
+                    lock_params = cache.tree_core.inc_lock_ref(step.node_id).to_dec_params()
+                except (AttributeError, AssertionError, KeyError, TypeError, ValueError, RuntimeError):
+                    self.physical_disabled = True
+                    self.counts["prefetch_native_lock_acquire_failed"] += 1
+                    return
+                if getattr(lock_params, "node_id", None) != step.node_id:
+                    self.physical_disabled = True
+                    self.counts["prefetch_native_lock_receipt_invalid"] += 1
+                    self._prefetch_lock_release_failures.add(action.command_id)
+                else:
+                    self.counts["prefetch_native_lock_acquired"] += 1
+            else:
+                protected_bytes = 0
+        except (AttributeError, KeyError, TypeError, ValueError, RuntimeError):
+            protected_bytes = 0
+        lease = replace(lease, lock_params=lock_params, protected_bytes=protected_bytes)
         self._prefetch_service_leases[action.command_id] = lease
+        reason = self._prefetch_lease_invalid_reason(lease)
+        if reason is not None:
+            self._release_prefetch_service_lease(action.command_id, reason)
+            self.counts[f"prefetch_residency_registration_skipped:{reason}"] += 1
+            return
         self.counts["prefetch_residency_registered"] += 1
         if self._opportunity_writer is not None:
             self._opportunity_writer.record({
@@ -3513,7 +3603,9 @@ class NativeAdmissionRuntime:
                 "node_id": step.node_id, "node_creation_time": step.creation_time,
                 "pool_bytes": dict(action.pool_bytes),
                 "lease_ms": (lease.expires_at - now) * 1000,
-                "scope": "bounded policy priority; native allocator remains authoritative",
+                "native_locked": lock_params is not None,
+                "protected_bytes": protected_bytes,
+                "scope": "bounded native receipt lock; max four leases and one GiB closure",
             })
 
     def defer_prefill_for_prefetch(self, req: object) -> bool:
@@ -3938,13 +4030,33 @@ class NativeAdmissionRuntime:
         )
         self._final_priority_promoted = None
         self._final_priority_native_rank = None
+        self._prefetch_priority_promoted = None
+        if self._prefetch_priority_normal_admissions >= 4:
+            for candidate in tuple(ordered[:32]):
+                key = _request_key(candidate[1])
+                if key is not None and any(
+                    lease.key.context_id == key.context_id
+                    and lease.key.invocation_id == key.invocation_id
+                    and lease.key.root_workflow_id == key.root_workflow_id
+                    and lease.key.session_id == key.session_id
+                    and lease.key.session_generation == key.session_generation
+                    and key.context_epoch in (lease.key.context_epoch, lease.key.context_epoch + 1)
+                    for lease in self._prefetch_service_leases.values()
+                ):
+                    ordered.remove(candidate)
+                    ordered.insert(0, candidate)
+                    self._prefetch_priority_promoted = key.request_id
+                    self.counts["prefetch_priority_ordered"] += 1
+                    break
         if (
             (
                 self.enable_final_stage_priority
                 if self.enable_final_stage_priority is not None
                 else self.enable_admission_prefetch or self.enable_final_stage_prefetch
             )
-            and self._final_priority_normal_admissions >= 4 and ordered
+            and self._final_priority_normal_admissions >= 4
+            and self._prefetch_priority_normal_admissions >= 4
+            and self._prefetch_priority_promoted is None and ordered
         ):
             for stage in self._final_stages.values():
                 if (
@@ -4029,7 +4141,17 @@ class NativeAdmissionRuntime:
             self.counts["native_admitted" if admitted else f"native_{result}"] += 1
             if admitted:
                 self.demand_hints.pop(req.rid, None)
-                if req.rid == self._final_priority_promoted:
+                if req.rid in (self._prefetch_priority_promoted, self._final_priority_promoted):
+                    self._prefetch_priority_normal_admissions = 0
+                    if req.rid == self._prefetch_priority_promoted:
+                        self.counts["prefetch_priority_admitted"] += 1
+                else:
+                    self._prefetch_priority_normal_admissions = min(
+                        4, self._prefetch_priority_normal_admissions + 1,
+                    )
+                if req.rid == self._prefetch_priority_promoted:
+                    self._final_priority_normal_admissions = 0
+                elif req.rid == self._final_priority_promoted:
                     self._final_priority_normal_admissions = 0
                     self.counts["final_priority_admitted"] += 1
                     stage = self._final_request_stages.get(req.rid)
@@ -4047,6 +4169,10 @@ class NativeAdmissionRuntime:
                     self._final_priority_normal_admissions = min(
                         4, self._final_priority_normal_admissions + 1
                     )
+            elif result == "NO_TOKEN" and self._prefetch_service_leases:
+                # Urgent real demand may reclaim the oldest speculative lock.
+                oldest = min(self._prefetch_service_leases.values(), key=lambda item: item.acknowledged_at)
+                self._release_prefetch_service_lease(oldest.command_id, "allocation_pressure")
 
     def on_batch_selected(self, batch: object) -> None:
         pass

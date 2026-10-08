@@ -1608,6 +1608,7 @@ class DeepAgentsExperimentConfig:
     docker_image: str
     control_socket: Path | None = None
     native_radix_sessions: bool = False
+    native_policy_baseline: bool = False
     server_audit_path: Path | None = None
     server_event_path: Path | None = None
     server_log_path: Path | None = None
@@ -1657,7 +1658,9 @@ class DeepAgentsExperimentConfig:
     )
 
     def __post_init__(self) -> None:
-        if self.native_radix_sessions and self.control_socket is None:
+        if self.native_policy_baseline and self.control_socket is not None:
+            raise ValueError("native policy baseline must not deliver BeliefKV control events")
+        if self.native_radix_sessions and self.control_socket is None and not self.native_policy_baseline:
             raise ValueError("native radix sessions require a control socket")
         if self.tool_window_shadow_artifact is not None:
             if self.early_tool_wait_shadow:
@@ -4510,6 +4513,10 @@ def verify_native_session_server(config: DeepAgentsExperimentConfig) -> None:
         raise RuntimeError("native session server_info is not an object")
     if not info.get("enable_session_radix_cache"):
         raise RuntimeError("server must enable session radix cache")
+    if config.native_policy_baseline:
+        if info.get("enable_beliefkv_admission"):
+            raise RuntimeError("native policy baseline must disable BeliefKV admission")
+        return
     if not info.get("enable_beliefkv_admission"):
         raise RuntimeError("server must enable BeliefKV admission")
     server_socket = info.get("beliefkv_event_socket_path")

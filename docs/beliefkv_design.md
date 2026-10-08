@@ -1,6 +1,6 @@
 # BeliefKV 当前系统设计
 
-更新日期：2026-10-06
+更新日期：2026-10-08
 
 状态：本文是当前算法与系统边界的权威说明。历史版本保存在
 `docs/archive/snapshots/beliefkv_design_2026-07-14_zh.md`。
@@ -25,9 +25,11 @@ Workflow fairness 只作为有界防饿死和最终 tie-break，不以平均分�
 
 ### 1.1 当前阶段目标：低重算负载中的可行动迁移
 
-最近完成的v5开发验证为84-root单波、running=48、NUMA node 1的
-200 GB Host池，FULL/Mamba分别验收。当前没有新GPU实验；
-最近仅一对reactive/predictive，
+最近完成的v8d开发验证为108-root单波、running=48、NUMA node 1的
+200 GB Host池，FULL/Mamba分别验收。用户要求增加同108任务的
+原生FCFS/HiCache策略基线，关闭BeliefKV调度和预测动作，保留
+共用协议兼容补丁与只读遥测。该基线不是未修改的上游wheel。
+旧v8c物理策略失效，不能与v8d作公平加速对照；
 多轮取平均留到正式实验，固定需求GPU回放不是主线前置条件。
 实际实现和未完成项以 `docs/architecture_status_zh.md` 为准，
 下文旧P5/P6路径的机制描述不代表新版已完成全部JointPlan迁移。
@@ -73,7 +75,13 @@ Host 驱逐到后续 miss/重算的归因，以及服务端和 workflow 的正�
    有界替换冷 KV 属于后续独立扩展，且不得抢占热页。
 
 执行 frontier、native 准入与 KV 余量必须共同决定下一请求的
-恢复时机；联合 handoff（有界选择 victim、D2H 与 H2D 重叠）仍是
+恢复时机。已ACK的恢复可在最多4个目标、1 GiB闭包预算内取得
+native receipt锁，预测期保持短租约；真实下一请求提交后才允许
+延长到ACK后最多10秒，恢复与收尾共享有界准入提升预算。
+真实分配压力、失效、首次服务和到期必须释放，不能以无限pin
+隐藏预测错误或损害其它workflow。JOIN已观测服务速率与剩余工作
+头分开核验，不能把短decode burst当未来服务份额。
+联合 handoff（有界选择 victim、D2H 与 H2D 重叠）仍是
 可选后续扩展，必须单独证明收益超过同步开销和 victim 债务。
 不能将 reactive 队列等待全算作可隐藏的传输时延，也不能因精确
 RETURN/JOIN ETA 误差大而否定由确定性事件和容量余量支持的动作。

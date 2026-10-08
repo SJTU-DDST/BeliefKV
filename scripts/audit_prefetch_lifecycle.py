@@ -64,7 +64,10 @@ def audit(arm: Path) -> dict:
         if row["event"] == "beliefkv_prefetch_first_service":
             uses[row["command_id"]] = row
         elif row["event"] == "beliefkv_prefetch_mamba_forward_completed":
-            if row.get("mamba_reuse") == "verified_single_request_cow_forward_completed":
+            if row.get("mamba_reuse") in (
+                "verified_single_request_cow_forward_completed",
+                "verified_per_request_cow_forward_completed",
+            ):
                 mamba.add(row["command_id"])
     windows = {}
     for name in ("join_transfer_windows.json", "tool_transfer_windows.json"):

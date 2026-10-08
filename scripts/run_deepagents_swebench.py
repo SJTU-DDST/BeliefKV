@@ -46,6 +46,8 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--workload-manifest", type=Path, default=DEFAULT_WORKLOAD)
     parser.add_argument("--docker-image", default=DEFAULT_IMAGE)
     parser.add_argument("--control-socket", type=Path)
+    parser.add_argument("--native-policy-baseline", action="store_true",
+                        help="Use native SGLang policies, with sessions but no BeliefKV control delivery.")
     parser.add_argument(
         "--native-radix-sessions",
         action="store_true",
@@ -287,6 +289,7 @@ def main() -> int:
         docker_image=args.docker_image,
         control_socket=args.control_socket,
         native_radix_sessions=args.native_radix_sessions,
+        native_policy_baseline=args.native_policy_baseline,
         server_audit_path=args.server_audit,
         server_event_path=args.server_events,
         server_log_path=args.server_log,

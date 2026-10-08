@@ -1,6 +1,6 @@
 from pathlib import Path
 from types import SimpleNamespace as NS
-from unittest.mock import patch
+from unittest.mock import Mock, patch
 import hashlib
 import json
 import time
@@ -14,7 +14,7 @@ from beliefkv.runtime.sglang_v0520_prediction import (
 )
 from beliefkv.runtime.sglang_v0520_physical import PrefetchLoadStep, PhysicalActionCompleted
 from beliefkv.runtime.sglang_v0520_runtime import NativeAdmissionRuntime
-from tests.test_sglang_v0520_runtime import req
+from tests.test_sglang_v0520_runtime import req, select
 
 
 def event(seq, kind, **kwargs):
@@ -226,7 +226,7 @@ def test_native_eviction_explicitly_revokes_soft_residency():
     assert runtime.counts["prefetch_residency_released:native_residency_lost"] == 1
 
 
-def test_changed_wait_prediction_explicitly_revokes_residency():
+def test_changed_wait_prediction_does_not_discard_completed_restore():
     runtime, hint, node, action = leased_runtime()
     now = time.monotonic() * 1000
     runtime.tool_wait_hints[hint.key.context_id] = NativeToolWaitHint(
@@ -234,8 +234,141 @@ def test_changed_wait_prediction_explicitly_revokes_residency():
         hint.predictor_sha256, hint.invocation_revision_ts_ms,
     )
     runtime._refresh_prefetch_service_leases()
+    assert action.command_id in runtime._prefetch_service_leases
+    assert runtime.counts["prefetch_residency_released:prediction_window_left"] == 0
+
+
+def locked_runtime(*, size=50, receipt_node=1):
+    runtime, hint, node, action = leased_runtime()
+    runtime._prefetch_service_leases.clear()
+    receipt = NS(node_id=receipt_node)
+    tree = runtime._native_cache.tree_core
+    tree.inc_lock_ref = Mock(return_value=NS(to_dec_params=lambda: receipt))
+    tree.dec_lock_ref = Mock()
+    runtime._native_cache.host_pool_group = NS(entry_map={
+        "kv": NS(host_pool=NS(size_per_token=size)),
+        "mamba": NS(host_pool=NS(size_per_token=0)),
+    })
+    observation = NS(observable=True, nodes=[
+        NS(full_device_tokens=1, mamba_device_present=False),
+    ])
+    step = PrefetchLoadStep(hint.key, 1, 2, 1, 2)
+    runtime._prefetch_steps[action.command_id] = (step, "tool_wait", 2.)
+    with patch(
+        "beliefkv.runtime.sglang_v0520_observer.observe_unified_node_closure",
+        return_value=observation,
+    ):
+        runtime._register_prefetch_service_lease(action)
+    return runtime, hint, node, action, receipt, observation
+
+
+def test_prefetch_lease_releases_exact_native_receipt_once():
+    runtime, hint, node, action, receipt, _ = locked_runtime()
+    tree = runtime._native_cache.tree_core
+    tree.inc_lock_ref.assert_called_once_with(1)
+    assert runtime._prefetch_service_leases[action.command_id].protected_bytes == 50
+    runtime._release_prefetch_service_lease(action.command_id, "first_gpu_service")
+    runtime._release_prefetch_service_lease(action.command_id, "terminal")
+    tree.dec_lock_ref.assert_called_once_with(1, receipt)
+
+
+def test_prefetch_lock_release_failure_retains_receipt_and_does_not_retry():
+    runtime, hint, node, action, receipt, _ = locked_runtime()
+    tree = runtime._native_cache.tree_core
+    tree.dec_lock_ref.side_effect = RuntimeError("release uncertain")
+    runtime._release_prefetch_service_lease(action.command_id, "terminal")
+    runtime._refresh_prefetch_service_leases()
+    tree.dec_lock_ref.assert_called_once_with(1, receipt)
+    assert runtime.physical_disabled
+    assert action.command_id in runtime._prefetch_service_leases
+    assert runtime.counts["prefetch_residency_released:terminal"] == 0
+
+
+def test_unmatched_native_receipt_never_unlocks_another_anchor():
+    runtime, hint, node, action, receipt, _ = locked_runtime(receipt_node=9)
+    assert runtime.physical_disabled
+    assert runtime.counts["prefetch_native_lock_receipt_invalid"] == 1
+    runtime._native_cache.tree_core.dec_lock_ref.assert_not_called()
+
+
+def test_prefetch_lock_budget_rejects_oversized_closure():
+    runtime, hint, node, action, receipt, _ = locked_runtime(size=1024 ** 3 + 1)
+    runtime._native_cache.tree_core.inc_lock_ref.assert_not_called()
+    lease = runtime._prefetch_service_leases[action.command_id]
+    assert lease.lock_params is None
+    assert lease.protected_bytes == 0
+
+
+def test_prefetch_native_lock_budget_is_shared_across_leases():
+    runtime, hint, node, action, receipt, observation = locked_runtime(size=300 * 1024 ** 2)
+    tree = runtime._native_cache.tree_core
+    step = PrefetchLoadStep(hint.key, 1, 2, 1, 2)
+    with patch(
+        "beliefkv.runtime.sglang_v0520_observer.observe_unified_node_closure",
+        return_value=observation,
+    ):
+        for index in range(1, 5):
+            other = PhysicalActionCompleted(
+                f"lease-{index}", "PREFETCH_GPU", hint.key.context_id,
+                hint.key.context_epoch, (1,), (("kv", 20),), 20,
+            )
+            runtime._prefetch_steps[other.command_id] = (step, "tool_wait", 2.)
+            runtime._register_prefetch_service_lease(other)
+    assert tree.inc_lock_ref.call_count == 3
+    assert sum(item.protected_bytes for item in runtime._prefetch_service_leases.values()) <= 1024 ** 3
+
+
+def submit_restored_request(runtime):
+    runtime.on_events((
+        event(3, RuntimeEventKind.TOOL_END, invocation_id="tool",
+              attributes={"tool_run_id": "long"}),
+        event(4, RuntimeEventKind.LLM_SUBMIT, invocation_id="tool",
+              context_id="ctx-tool", context_epoch=1,
+              attributes={"request_id": "resumed"}),
+    ))
+    request = req("tool")
+    request.rid = "resumed"
+    request.beliefkv_metadata["context_epoch"] = 1
+    request.session_id, request.session_generation = "s", 1
+    runtime.register_visible_request(request)
+    return request
+
+
+def test_only_real_submitted_demand_extends_a_locked_lease():
+    runtime, hint, node, action, receipt, _ = locked_runtime()
+    original = runtime._prefetch_service_leases[action.command_id]
+    runtime._refresh_prefetch_service_leases()
+    assert runtime._prefetch_service_leases[action.command_id] == original
+    submit_restored_request(runtime)
+    lease = runtime._prefetch_service_leases[action.command_id]
+    assert lease.demand_ready
+    assert lease.expires_at == lease.acknowledged_at + 10.
+    with patch("beliefkv.runtime.sglang_v0520_runtime.time.monotonic", return_value=lease.expires_at):
+        runtime._refresh_prefetch_service_leases()
     assert not runtime._prefetch_service_leases
-    assert runtime.counts["prefetch_residency_released:prediction_window_left"] == 1
+    runtime._native_cache.tree_core.dec_lock_ref.assert_called_once_with(1, receipt)
+
+
+def test_restore_ready_priority_is_bounded_by_four_normal_admissions():
+    runtime, hint, node, action, receipt, _ = locked_runtime()
+    restored = submit_restored_request(runtime)
+    other = req("other")
+    runtime.register_visible_request(other)
+    with patch.object(runtime, "_causal_rank", side_effect=lambda req, index, ranks: (0, 0, index)):
+        assert select(runtime, [other, restored]).candidates[0] is restored
+        runtime.on_prefill_candidate_result(restored, admitted=True, result="ok")
+        assert runtime.counts["prefetch_priority_admitted"] == 1
+        for _ in range(4):
+            assert select(runtime, [other, restored]).candidates[0] is other
+            runtime.on_prefill_candidate_result(other, admitted=True, result="ok")
+        assert select(runtime, [other, restored]).candidates[0] is restored
+
+
+def test_actual_allocation_pressure_releases_speculative_lock():
+    runtime, hint, node, action, receipt, _ = locked_runtime()
+    runtime.on_prefill_candidate_result(req("other"), admitted=False, result="NO_TOKEN")
+    assert not runtime._prefetch_service_leases
+    runtime._native_cache.tree_core.dec_lock_ref.assert_called_once_with(1, receipt)
 
 
 def test_session_change_revokes_residency_instead_of_blocking_new_agent():

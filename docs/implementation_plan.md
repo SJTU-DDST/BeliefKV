@@ -2,6 +2,42 @@
 
 Status date: 2026-10-08.
 
+## Active Native-Policy Baseline
+
+The user authorizes a native SGLang policy baseline on the same first 108
+manifest tasks, one arrival wave. Launch directory:
+`experiments/raw/qwen35_native_policy_108root_2to4_20261008_v9/native`.
+Disable BeliefKV admission/control socket, PREPARE, predictive H2D and final
+priority. Keep shared harness notifications, natural-language returns,
+first-turn 2-4 generation compatibility, radix sessions and read-only
+telemetry. This is native FCFS/HiCache on the shared compatibility patch,
+not a pristine upstream wheel or BeliefKV reactive with H2D switched off.
+Keep running=48, Host=200 GB on NUMA1, Device Mamba/FULL bytes=0.9 and
+matching Host byte proportions; context=131072/completion=8192, seed=21,
+temperature=0, graph=2048 with accepted 32-step FINALIZE reserve,
+workflow deadline=14400 s.
+
+Implemented before launch:
+- Native receipt locks after H2D ACK, at most four leases and 1 GiB closure.
+  Predictive holding stays lead+1 s. Only a matching, actually submitted
+  next request extends a locked lease to at most 10 s after ACK. First
+  service, invalidation, expiry or actual NO_TOKEN pressure releases it.
+- Restore-ready and final-stage priority share one promotion per four
+  normal admissions. Failed native unlock retains ownership evidence,
+  disables the physical lane and never retries a possibly partial release.
+- Rolling tool ETA drift no longer invalidates an ACKed same-episode load.
+- Request-attributed Mamba source/destination COW witnesses support batched,
+  completed non-speculative extend forwards. Unverified remains unknown.
+- JOIN projection uses observed 500 ms/2 s/5 s wall-clock rates rather than
+  extrapolating one short fast burst. The work head is unchanged; RETURN
+  precision is still unproven and residual fitting remains a separate task.
+
+Verification: 325 passed, one skipped; staging patch reverse-check passed.
+Commit before launch and freeze executable code/model/prompt during the run.
+Do not automatically append another predictive run or call v8c/v8d a
+controlled speedup. Record native baseline results with realized workload,
+H2D time/bytes, cache reuse and recompute, not just GPU utilization.
+
 ## V8d Result And Priorities
 
 V8d finished on October 7 at 23:47: 107 completed, one incomplete, no
@@ -11,7 +47,7 @@ targets were verified reused (22 JOIN, 49 tool); 168 had native reloads.
 Mamba verification currently requires singleton prefill, so its 14 verified
 commands must not turn all remaining transfers into claimed waste.
 
-Priorities, not implemented changes:
+V8d diagnoses and remaining work (new implementation status is above):
 1. Repair JOIN work/time projection: all 19 pre-EOS estimated-work transfers
    missed the 0-1 s RETURN window; median advance was 12.968 s. Audit
    intrinsic remaining tokens and actual service share separately.
@@ -31,8 +67,9 @@ Priorities, not implemented changes:
    Old v8c disabled physical actions; v8d changed shell feedback. The +2.03%
    observed throughput is not a controlled speedup, and mean JCT rose 11.57%.
 
-No new GPU run or runtime/model change is authorized by this result review.
-The previous launch plan below is historical, not a currently running pair.
+The result review itself authorized no new run; the subsequent user request
+authorizes the native-policy baseline above. The previous launch plan below
+is historical, not a currently running pair.
 
 ## Latest Execution Update
 
@@ -57,7 +94,7 @@ remove archived completed workspaces before restart.
 
 The prior v8c execution plan below is historical and must not override this update.
 
-The repaired v8d is running at `0f04f70`. All 108 initial groups have two
+The repaired v8d ran at `0f04f70` and has ended. All 108 initial groups had two
 children, 340 PREPARE operations have completed without disabling the physical
 lane, and the semantic worker is ready. JOIN/tool prefetch flags are on;
 actual H2D/first-use/lead and final throughput remain to be measured.

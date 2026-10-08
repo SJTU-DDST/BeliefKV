@@ -376,6 +376,8 @@ def test_prefetch_diagnostic_separates_input_divergence_from_mamba_boundary(
 @pytest.mark.parametrize("mismatch", [
     None, "other_node", "replaced_state", "no_cow", "multi_request",
     "no_completed_forward", "speculative_verify",
+    "multi_witness", "wrong_request", "wrong_source", "wrong_destination",
+    "duplicate_witness", "empty_witness", "witness_uncompleted",
 ])
 def test_mamba_prefetch_requires_single_request_cow_and_completed_forward(
     tmp_path: Path, mismatch: str | None,
@@ -408,6 +410,7 @@ def test_mamba_prefetch_requires_single_request_cow_and_completed_forward(
         prefix_indices=list(range(10)), cached_tokens_device=10,
         cached_tokens_host=0, mamba_host_hit_length=0,
         extend_input_len=10, sampling_params=SimpleNamespace(max_new_tokens=10),
+        kv=SimpleNamespace(mamba_pool_idx=object()),
         finished=lambda: False,
     )
     if mismatch == "replaced_state":
@@ -418,13 +421,31 @@ def test_mamba_prefetch_requires_single_request_cow_and_completed_forward(
         ), launch_ts=time.monotonic(), forward_iter=1,
         reqs=[request] + (
             [SimpleNamespace(rid="untracked", beliefkv_metadata=None)]
-            if mismatch == "multi_request" else []
+            if mismatch in (
+                "multi_request", "multi_witness", "wrong_request", "wrong_source",
+                "wrong_destination", "duplicate_witness", "empty_witness",
+                "witness_uncompleted",
+            ) else []
         ),
         mamba_cow_src_indices=[] if mismatch == "no_cow" else [3],
         mamba_cow_dst_indices=[] if mismatch == "no_cow" else [7],
     )
+    if mismatch in (
+        "multi_witness", "wrong_request", "wrong_source", "wrong_destination",
+        "duplicate_witness", "empty_witness", "witness_uncompleted",
+    ):
+        witness = (
+            "other" if mismatch == "wrong_request" else request.rid,
+            object() if mismatch == "wrong_source" else mamba_value,
+            object() if mismatch == "wrong_destination" else request.kv.mamba_pool_idx,
+        )
+        batch.beliefkv_mamba_cow_witnesses = (
+            [] if mismatch == "empty_witness" else [witness]
+        )
+        if mismatch == "duplicate_witness":
+            batch.beliefkv_mamba_cow_witnesses.append(witness)
     audit.on_launch(batch)
-    if mismatch != "no_completed_forward":
+    if mismatch not in ("no_completed_forward", "witness_uncompleted"):
         audit.on_completed(batch)
     audit.close()
     use = _read(tmp_path / "service/physical_action_use.jsonl")
@@ -433,13 +454,15 @@ def test_mamba_prefetch_requires_single_request_cow_and_completed_forward(
         row for row in use
         if row["event"] == "beliefkv_prefetch_mamba_forward_completed"
     ]
-    assert len(verified) == (1 if mismatch is None else 0)
+    assert len(verified) == (1 if mismatch in (None, "multi_witness") else 0)
     if verified:
         assert verified[0]["node_id"] == 11
         assert verified[0]["request_id"] == request.rid
         assert verified[0]["service_context_epoch"] == 3
         assert verified[0]["mamba_reuse"] == (
-            "verified_single_request_cow_forward_completed"
+            "verified_per_request_cow_forward_completed"
+            if mismatch == "multi_witness"
+            else "verified_single_request_cow_forward_completed"
         )
 
 

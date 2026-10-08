@@ -17,6 +17,7 @@ SKIP_SERVER_WARMUP="${SKIP_SERVER_WARMUP:-1}"
 CONFIRMED_JOIN_CANARY="${CONFIRMED_JOIN_CANARY:-0}"
 FANOUT_PROFILE="${FANOUT_PROFILE:-native_in_graph_2to4}"
 AB_MODE="${AB_MODE:-off}"
+NATIVE_POLICY_BASELINE="${NATIVE_POLICY_BASELINE:-0}"
 PREPARE_HOST="${PREPARE_HOST:-0}"
 CHILD_FINAL_REPORT_SHADOW="${CHILD_FINAL_REPORT_SHADOW:-1}"
 H2D_SEED_ARTIFACT="${H2D_SEED_ARTIFACT:-$ROOT/experiments/models/native_h2d_ack_seed_20261004.json}"
@@ -58,6 +59,8 @@ if [[ $# -ne 0 || ! "$ROOT_COUNT" =~ ^[1-9][0-9]*$ ]] \
   || [[ "$CONFIRMED_JOIN_CANARY" != "0" && "$CONFIRMED_JOIN_CANARY" != "1" ]] \
   || [[ "$FANOUT_PROFILE" != "native_dynamic_1to4" && "$FANOUT_PROFILE" != "native_in_graph_1to4" && "$FANOUT_PROFILE" != "native_in_graph_2to4" ]] \
   || [[ "$AB_MODE" != "off" && "$AB_MODE" != "reactive" && "$AB_MODE" != "predictive_h2d" ]] \
+  || [[ "$NATIVE_POLICY_BASELINE" != "0" && "$NATIVE_POLICY_BASELINE" != "1" ]] \
+  || { [[ "$NATIVE_POLICY_BASELINE" == "1" ]] && [[ "$AB_MODE" != "off" || "$CONFIRMED_JOIN_CANARY" != "0" ]]; } \
   || [[ "$PREPARE_HOST" != "0" && "$PREPARE_HOST" != "1" ]] \
   || [[ "$CHILD_FINAL_REPORT_SHADOW" != "0" && "$CHILD_FINAL_REPORT_SHADOW" != "1" ]] \
   || [[ "$ENABLE_TOOL_TIMING" != "0" && "$ENABLE_TOOL_TIMING" != "1" ]] \
@@ -85,8 +88,16 @@ mkdir -p "$RUN_ROOT/server" "$RUN_ROOT/opportunities"
 
 server_flags=(
   --mamba-full-memory-ratio 0.9
-  --enable-beliefkv-admission --beliefkv-event-socket-path "$SOCKET"
 )
+control_flags=(--control-socket "$SOCKET")
+telemetry_env=(BELIEFKV_ADMISSION_TELEMETRY_DIR="$RUN_ROOT/server"
+  BELIEFKV_ADMISSION_OPPORTUNITY_DIR="$RUN_ROOT/opportunities")
+if [[ "$NATIVE_POLICY_BASELINE" == "1" ]]; then
+  control_flags=(--native-policy-baseline)
+  telemetry_env=(BELIEFKV_NATIVE_TELEMETRY_DIR="$RUN_ROOT/server")
+else
+  server_flags+=(--enable-beliefkv-admission --beliefkv-event-socket-path "$SOCKET")
+fi
 if [[ "$CONFIRMED_JOIN_CANARY" == "1" ]]; then
   server_flags+=(--beliefkv-confirmed-join-canary)
 fi
@@ -98,9 +109,19 @@ if [[ "$HOST_SPLIT" != auto ]]; then
   host_split_env=(BELIEFKV_FULL_MAMBA_HOST_SPLIT="$HOST_SPLIT")
 fi
 ab_env=()
-unset_env=()
+unset_env=(-u BELIEFKV_NATIVE_TELEMETRY_DIR)
+if [[ "$NATIVE_POLICY_BASELINE" == "1" ]]; then
+  unset_env=(-u BELIEFKV_ADMISSION_TELEMETRY_DIR -u BELIEFKV_ADMISSION_OPPORTUNITY_DIR
+    -u BELIEFKV_SEMANTIC_REPORT_ARTIFACT -u BELIEFKV_TOOL_TIMING_ARTIFACT
+    -u BELIEFKV_COMPLETION_LEAD_ARTIFACT -u BELIEFKV_COMPLETION_LEAD_SHA256
+    -u BELIEFKV_H2D_SEED -u BELIEFKV_H2D_SEED_SHA256
+    -u BELIEFKV_TOOL_TIMING_SHA256 -u BELIEFKV_TRANSFER_SERVICE_SEED
+    -u BELIEFKV_TRANSFER_SERVICE_SEED_SHA256)
+  ab_env=(BELIEFKV_ENABLE_FINAL_STAGE_PREFETCH=0 BELIEFKV_ENABLE_FINAL_STAGE_PRIORITY=0
+    BELIEFKV_ENABLE_PREPARE_HOST=0 BELIEFKV_ENABLE_TOOL_PREFETCH=0)
+fi
 if [[ "$AB_MODE" != "off" ]]; then
-  unset_env=(-u BELIEFKV_SEMANTIC_REPORT_ARTIFACT \
+  unset_env=(-u BELIEFKV_NATIVE_TELEMETRY_DIR -u BELIEFKV_SEMANTIC_REPORT_ARTIFACT \
     -u BELIEFKV_COMPLETION_LEAD_ARTIFACT -u BELIEFKV_COMPLETION_LEAD_SHA256 \
     -u BELIEFKV_H2D_SEED -u BELIEFKV_H2D_SEED_SHA256 \
     -u BELIEFKV_TOOL_TIMING_ARTIFACT -u BELIEFKV_TOOL_TIMING_SHA256 \
@@ -142,8 +163,7 @@ setsid env -u BELIEFKV_FULL_MAMBA_HOST_SPLIT "${unset_env[@]}" \
   HICACHE_WRITE_POLICY="$HICACHE_WRITE_POLICY" \
   ENABLE_SESSION_RADIX_CACHE=1 HOST_NUMA_NODE=1 \
   MEM_FRACTION_STATIC=0.94 MAX_RUNNING_REQUESTS=48 \
-  BELIEFKV_ADMISSION_TELEMETRY_DIR="$RUN_ROOT/server" \
-  BELIEFKV_ADMISSION_OPPORTUNITY_DIR="$RUN_ROOT/opportunities" \
+  "${telemetry_env[@]}" \
   SGLANG_PATCH_FLAVOR="$SGLANG_PATCH_FLAVOR" \
   SGLANG_SOURCE_CHECKOUT="$ROOT/third_party/sglang-v0.5.20" \
   bash "$ROOT/scripts/launch_qwen35_native_v0520.sh" \
@@ -181,7 +201,7 @@ fi
   --concurrency "$ROOT_COUNT" --subagent-fanout-profile "$FANOUT_PROFILE" \
   --workflow-arrival-batch-size "$ARRIVAL_BATCH_SIZE" \
   --workflow-arrival-batch-interval-ms "$ARRIVAL_BATCH_INTERVAL_MS" \
-  --native-radix-sessions --control-socket "$SOCKET" \
+  --native-radix-sessions "${control_flags[@]}" \
   --server-audit "$RUN_ROOT/server/runtime_audit.jsonl" \
   --server-events "$RUN_ROOT/server/runtime_events.sglang.jsonl" \
   --server-log "$RUN_ROOT/server.log" --pool-tokens 1798995 \
