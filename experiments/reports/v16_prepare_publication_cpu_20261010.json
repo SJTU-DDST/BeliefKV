@@ -1,0 +1,612 @@
+{
+  "scope": "same-input CPU fixtures; native enqueue is stubbed, no GPU or throughput claim",
+  "baseline_revision": "8d1db37",
+  "baseline_source_sha256": {
+    "beliefkv/runtime/sglang_v0520_observer.py": "baa4e17cf236bda9ab123d9f99b8568bbafab551e3c9b3d9e57c20ab1af1713a",
+    "beliefkv/runtime/sglang_v0520_physical.py": "8cfbe01b82f37529f61837ca824f17e89535b1fdb24147496381ca538f9680a8",
+    "beliefkv/runtime/sglang_v0520_runtime.py": "11983de3da5aa03eafcd742b6fe25bc25e3632582ef439f5974f5e6760bd6d78"
+  },
+  "fixture": "validated static pools and real observer ancestry; sixteen retained workflow rounds",
+  "optimized_source_sha256": {
+    "beliefkv/runtime/sglang_v0520_observer.py": "baa4e17cf236bda9ab123d9f99b8568bbafab551e3c9b3d9e57c20ab1af1713a",
+    "beliefkv/runtime/sglang_v0520_physical.py": "8cfbe01b82f37529f61837ca824f17e89535b1fdb24147496381ca538f9680a8",
+    "beliefkv/runtime/sglang_v0520_runtime.py": "16c30ca9473b38ce2fd7ce8d1929447b9e2dc6c961144e7de7aced5236dffce6"
+  },
+  "imported_sources": {
+    "beliefkv/runtime/sglang_v0520_observer.py": "/tmp/beliefkv-v12-followup-20261009/beliefkv/runtime/sglang_v0520_observer.py",
+    "beliefkv/runtime/sglang_v0520_physical.py": "/tmp/beliefkv-v12-followup-20261009/beliefkv/runtime/sglang_v0520_physical.py",
+    "beliefkv/runtime/sglang_v0520_runtime.py": "/tmp/beliefkv-v12-followup-20261009/beliefkv/runtime/sglang_v0520_runtime.py"
+  },
+  "benchmark_source_sha256": "1c8926e9bbe8ca5563c480e15c2b06429ae9ca73744c2419624894696584e0f1",
+  "service_seed": {
+    "path": "/home/longhao/experiment/BeliefKV/experiments/models/native_transfer_service_seed_v4.json",
+    "sha256": "da149a32fe8b4ff8ea88387cac5be2c1e9929a0721778768b92b3d11a54a49f5",
+    "sample_count": 156
+  },
+  "handoff_identity": {
+    "creation_time_type": "numpy.float64",
+    "scope": "real closure/restore planner; transfer enqueue stubbed, no DMA or ACK credit",
+    "baseline": {
+      "selected": 1,
+      "issued": 1,
+      "no_step": 0,
+      "submitted_step": [
+        [
+          "ctx-wf-0-root",
+          1,
+          true,
+          "execution_handoff"
+        ]
+      ]
+    },
+    "optimized": {
+      "selected": 1,
+      "issued": 1,
+      "no_step": 0,
+      "submitted_step": [
+        [
+          "ctx-wf-0-root",
+          1,
+          true,
+          "execution_handoff"
+        ]
+      ]
+    }
+  },
+  "cases": [
+    {
+      "workflows": 156,
+      "depth": 24,
+      "all_current_input_backed": true,
+      "host_full_free_tokens": 1000000,
+      "host_only": false,
+      "mamba_anchor_is_full_ancestor": false,
+      "service_history_samples": 156,
+      "live_restore_leases": 0,
+      "iterations": 60,
+      "force_prepare_probes": true,
+      "selection_and_publication_equal": true,
+      "publication_scope": "unprotected node set; active prefetch leases remain ineligible through the live native pressure validator",
+      "costs": {
+        "baseline": {
+          "join_prepare": {
+            "count": 60,
+            "mean_ms": 15.46349185,
+            "p50_ms": 13.176562,
+            "p99_ms": 59.20549,
+            "max_ms": 59.20549
+          },
+          "sampling": {
+            "count": 60,
+            "mean_ms": 3.86464205,
+            "p50_ms": 3.91386,
+            "p99_ms": 9.01155,
+            "max_ms": 9.01155
+          }
+        },
+        "optimized": {
+          "join_prepare": {
+            "count": 60,
+            "mean_ms": 9.886582916666667,
+            "p50_ms": 8.30097,
+            "p99_ms": 50.950578,
+            "max_ms": 50.950578
+          },
+          "sampling": {
+            "count": 60,
+            "mean_ms": 3.8219075333333334,
+            "p50_ms": 3.922194,
+            "p99_ms": 6.80404,
+            "max_ms": 6.80404
+          }
+        }
+      },
+      "observed_reads": {
+        "baseline": {
+          "node_lookup": 431508,
+          "session_snapshot": 1932
+        },
+        "optimized": {
+          "session_snapshot": 1932,
+          "node_lookup": 216228
+        }
+      },
+      "mean_reduction": {
+        "join_prepare": 0.3606500386478577,
+        "sampling": 0.011057820132828744
+      }
+    },
+    {
+      "workflows": 156,
+      "depth": 24,
+      "all_current_input_backed": true,
+      "host_full_free_tokens": 1000000,
+      "host_only": false,
+      "mamba_anchor_is_full_ancestor": false,
+      "service_history_samples": 156,
+      "live_restore_leases": 4,
+      "iterations": 60,
+      "force_prepare_probes": true,
+      "selection_and_publication_equal": true,
+      "publication_scope": "unprotected node set; active prefetch leases remain ineligible through the live native pressure validator",
+      "costs": {
+        "baseline": {
+          "join_prepare": {
+            "count": 60,
+            "mean_ms": 14.966595616666666,
+            "p50_ms": 13.596276,
+            "p99_ms": 55.240692,
+            "max_ms": 55.240692
+          },
+          "sampling": {
+            "count": 60,
+            "mean_ms": 3.8192278833333333,
+            "p50_ms": 3.891184,
+            "p99_ms": 6.972048,
+            "max_ms": 6.972048
+          }
+        },
+        "optimized": {
+          "join_prepare": {
+            "count": 60,
+            "mean_ms": 10.150730633333334,
+            "p50_ms": 8.560441,
+            "p99_ms": 56.937673,
+            "max_ms": 56.937673
+          },
+          "sampling": {
+            "count": 60,
+            "mean_ms": 3.8220653833333333,
+            "p50_ms": 3.92915,
+            "p99_ms": 6.890023,
+            "max_ms": 6.890023
+          }
+        }
+      },
+      "observed_reads": {
+        "baseline": {
+          "node_lookup": 431280,
+          "session_snapshot": 1932
+        },
+        "optimized": {
+          "node_lookup": 216240,
+          "session_snapshot": 1932
+        }
+      },
+      "mean_reduction": {
+        "join_prepare": 0.32177424356748363,
+        "sampling": -0.0007429512159728979
+      }
+    },
+    {
+      "workflows": 156,
+      "depth": 24,
+      "all_current_input_backed": false,
+      "host_full_free_tokens": 1000000,
+      "host_only": false,
+      "mamba_anchor_is_full_ancestor": false,
+      "service_history_samples": 156,
+      "live_restore_leases": 0,
+      "iterations": 60,
+      "force_prepare_probes": true,
+      "selection_and_publication_equal": true,
+      "publication_scope": "unprotected node set; active prefetch leases remain ineligible through the live native pressure validator",
+      "costs": {
+        "baseline": {
+          "join_prepare": {
+            "count": 60,
+            "mean_ms": 2.78867895,
+            "p50_ms": 2.780345,
+            "p99_ms": 3.246964,
+            "max_ms": 3.246964
+          },
+          "sampling": {
+            "count": 60,
+            "mean_ms": 4.50709475,
+            "p50_ms": 3.871521,
+            "p99_ms": 46.299939,
+            "max_ms": 46.299939
+          }
+        },
+        "optimized": {
+          "join_prepare": {
+            "count": 60,
+            "mean_ms": 2.7470632166666666,
+            "p50_ms": 2.751888,
+            "p99_ms": 2.95679,
+            "max_ms": 2.95679
+          },
+          "sampling": {
+            "count": 60,
+            "mean_ms": 3.81846335,
+            "p50_ms": 3.876256,
+            "p99_ms": 8.555397,
+            "max_ms": 8.555397
+          }
+        }
+      },
+      "observed_reads": {
+        "baseline": {
+          "session_snapshot": 1932,
+          "node_lookup": 4952
+        },
+        "optimized": {
+          "session_snapshot": 1932,
+          "node_lookup": 3207
+        }
+      },
+      "mean_reduction": {
+        "join_prepare": 0.014923099460170342,
+        "sampling": 0.15278831224925993
+      }
+    },
+    {
+      "workflows": 156,
+      "depth": 24,
+      "all_current_input_backed": false,
+      "host_full_free_tokens": 0,
+      "host_only": false,
+      "mamba_anchor_is_full_ancestor": false,
+      "service_history_samples": 156,
+      "live_restore_leases": 0,
+      "iterations": 60,
+      "force_prepare_probes": true,
+      "selection_and_publication_equal": true,
+      "publication_scope": "unprotected node set; active prefetch leases remain ineligible through the live native pressure validator",
+      "costs": {
+        "baseline": {
+          "join_prepare": {
+            "count": 60,
+            "mean_ms": 0.7355454,
+            "p50_ms": 0.718568,
+            "p99_ms": 1.276368,
+            "max_ms": 1.276368
+          },
+          "sampling": {
+            "count": 60,
+            "mean_ms": 3.0915908500000002,
+            "p50_ms": 3.060563,
+            "p99_ms": 9.297534,
+            "max_ms": 9.297534
+          }
+        },
+        "optimized": {
+          "join_prepare": {
+            "count": 60,
+            "mean_ms": 0.7239630833333334,
+            "p50_ms": 0.707658,
+            "p99_ms": 1.317098,
+            "max_ms": 1.317098
+          },
+          "sampling": {
+            "count": 60,
+            "mean_ms": 3.0290865,
+            "p50_ms": 3.074505,
+            "p99_ms": 6.877219,
+            "max_ms": 6.877219
+          }
+        }
+      },
+      "observed_reads": {
+        "baseline": {
+          "session_snapshot": 1932,
+          "node_lookup": 1908
+        },
+        "optimized": {
+          "session_snapshot": 1932,
+          "node_lookup": 1908
+        }
+      },
+      "mean_reduction": {
+        "join_prepare": 0.015746569371063446,
+        "sampling": 0.020217536224109378
+      }
+    },
+    {
+      "workflows": 156,
+      "depth": 24,
+      "all_current_input_backed": true,
+      "host_full_free_tokens": 0,
+      "host_only": false,
+      "mamba_anchor_is_full_ancestor": false,
+      "service_history_samples": 156,
+      "live_restore_leases": 0,
+      "iterations": 60,
+      "force_prepare_probes": true,
+      "selection_and_publication_equal": true,
+      "publication_scope": "unprotected node set; active prefetch leases remain ineligible through the live native pressure validator",
+      "costs": {
+        "baseline": {
+          "join_prepare": {
+            "count": 60,
+            "mean_ms": 13.464250833333333,
+            "p50_ms": 11.167426,
+            "p99_ms": 46.814579,
+            "max_ms": 46.814579
+          },
+          "sampling": {
+            "count": 60,
+            "mean_ms": 3.0387315166666666,
+            "p50_ms": 3.106437,
+            "p99_ms": 5.589209,
+            "max_ms": 5.589209
+          }
+        },
+        "optimized": {
+          "join_prepare": {
+            "count": 60,
+            "mean_ms": 7.765752033333333,
+            "p50_ms": 7.166303,
+            "p99_ms": 41.778084,
+            "max_ms": 41.778084
+          },
+          "sampling": {
+            "count": 60,
+            "mean_ms": 3.038775983333333,
+            "p50_ms": 3.108547,
+            "p99_ms": 5.56041,
+            "max_ms": 5.56041
+          }
+        }
+      },
+      "observed_reads": {
+        "baseline": {
+          "node_lookup": 432948,
+          "session_snapshot": 1932
+        },
+        "optimized": {
+          "session_snapshot": 1932,
+          "node_lookup": 217668
+        }
+      },
+      "mean_reduction": {
+        "join_prepare": 0.4232317765420913,
+        "sampling": -1.4633298935029515e-05
+      }
+    },
+    {
+      "workflows": 156,
+      "depth": 24,
+      "all_current_input_backed": true,
+      "host_full_free_tokens": 1000000,
+      "host_only": true,
+      "mamba_anchor_is_full_ancestor": false,
+      "service_history_samples": 156,
+      "live_restore_leases": 0,
+      "iterations": 60,
+      "force_prepare_probes": true,
+      "selection_and_publication_equal": true,
+      "publication_scope": "unprotected node set; active prefetch leases remain ineligible through the live native pressure validator",
+      "costs": {
+        "baseline": {
+          "join_prepare": {
+            "count": 60,
+            "mean_ms": 2.0354066,
+            "p50_ms": 1.970722,
+            "p99_ms": 3.318989,
+            "max_ms": 3.318989
+          },
+          "sampling": {
+            "count": 60,
+            "mean_ms": 2.9668435,
+            "p50_ms": 3.145604,
+            "p99_ms": 5.425563,
+            "max_ms": 5.425563
+          }
+        },
+        "optimized": {
+          "join_prepare": {
+            "count": 60,
+            "mean_ms": 2.01876105,
+            "p50_ms": 1.935909,
+            "p99_ms": 3.253276,
+            "max_ms": 3.253276
+          },
+          "sampling": {
+            "count": 60,
+            "mean_ms": 2.9680294333333332,
+            "p50_ms": 2.926807,
+            "p99_ms": 5.387271,
+            "max_ms": 5.387271
+          }
+        }
+      },
+      "observed_reads": {
+        "baseline": {
+          "session_snapshot": 1932,
+          "node_lookup": 948
+        },
+        "optimized": {
+          "session_snapshot": 1932,
+          "node_lookup": 948
+        }
+      },
+      "mean_reduction": {
+        "join_prepare": 0.00817799745760861,
+        "sampling": -0.00039972898244666766
+      }
+    }
+  ],
+  "terminal_cases": [
+    {
+      "watch_count": 4,
+      "depth": 24,
+      "anchor_count": 1,
+      "iterations": 60,
+      "summaries_per_watch": 24,
+      "unique_summaries_per_watch": 24,
+      "output_equal": true,
+      "ignored_output_fields": [
+        "elapsed_since_terminal_ms",
+        "ts_ms"
+      ],
+      "canonical_output_sha256": "b3f7b9d1197aeb1caee0ad8a98dffbe61719ba952aab9212ca83ad0e20459413",
+      "costs": {
+        "baseline": {
+          "wall": {
+            "count": 60,
+            "mean_ms": 2.1856097666666665,
+            "p50_ms": 2.1231,
+            "p99_ms": 2.620543,
+            "max_ms": 2.620543
+          },
+          "thread_cpu": {
+            "count": 60,
+            "mean_ms": 2.1845304166666666,
+            "p50_ms": 2.122163,
+            "p99_ms": 2.619406,
+            "max_ms": 2.619406
+          }
+        },
+        "optimized": {
+          "wall": {
+            "count": 60,
+            "mean_ms": 2.15442785,
+            "p50_ms": 2.114889,
+            "p99_ms": 2.382998,
+            "max_ms": 2.382998
+          },
+          "thread_cpu": {
+            "count": 60,
+            "mean_ms": 2.1534471166666664,
+            "p50_ms": 2.11392,
+            "p99_ms": 2.381976,
+            "max_ms": 2.381976
+          }
+        }
+      },
+      "observed_reads": {
+        "baseline": {
+          "node_lookup": 480
+        },
+        "optimized": {
+          "node_lookup": 480
+        }
+      },
+      "mean_reduction": {
+        "wall": 0.01426691861567908,
+        "thread_cpu": 0.014228824539522567
+      }
+    },
+    {
+      "watch_count": 4,
+      "depth": 24,
+      "anchor_count": 2,
+      "iterations": 60,
+      "summaries_per_watch": 48,
+      "unique_summaries_per_watch": 25,
+      "output_equal": true,
+      "ignored_output_fields": [
+        "elapsed_since_terminal_ms",
+        "ts_ms"
+      ],
+      "canonical_output_sha256": "f91bad7b4fa871662a6ca04d12c3b84aa4d65e087e10b7ed45055277d564a3dc",
+      "costs": {
+        "baseline": {
+          "wall": {
+            "count": 60,
+            "mean_ms": 2.8894673833333333,
+            "p50_ms": 2.828889,
+            "p99_ms": 4.258362,
+            "max_ms": 4.258362
+          },
+          "thread_cpu": {
+            "count": 60,
+            "mean_ms": 2.8883688333333333,
+            "p50_ms": 2.827903,
+            "p99_ms": 4.25688,
+            "max_ms": 4.25688
+          }
+        },
+        "optimized": {
+          "wall": {
+            "count": 60,
+            "mean_ms": 2.8672899833333334,
+            "p50_ms": 2.812102,
+            "p99_ms": 3.097059,
+            "max_ms": 3.097059
+          },
+          "thread_cpu": {
+            "count": 60,
+            "mean_ms": 2.86627255,
+            "p50_ms": 2.81113,
+            "p99_ms": 3.095663,
+            "max_ms": 3.095663
+          }
+        }
+      },
+      "observed_reads": {
+        "baseline": {
+          "node_lookup": 960
+        },
+        "optimized": {
+          "node_lookup": 960
+        }
+      },
+      "mean_reduction": {
+        "wall": 0.007675255352568078,
+        "thread_cpu": 0.00765009062496802
+      }
+    },
+    {
+      "watch_count": 4,
+      "depth": 24,
+      "anchor_count": 8,
+      "iterations": 60,
+      "summaries_per_watch": 192,
+      "unique_summaries_per_watch": 31,
+      "output_equal": true,
+      "ignored_output_fields": [
+        "elapsed_since_terminal_ms",
+        "ts_ms"
+      ],
+      "canonical_output_sha256": "512726a8c902c17351de6d59a0a009c96a28be64369b3baa505ad3d762bbdd66",
+      "costs": {
+        "baseline": {
+          "wall": {
+            "count": 60,
+            "mean_ms": 6.944321783333334,
+            "p50_ms": 6.938653,
+            "p99_ms": 7.291301,
+            "max_ms": 7.291301
+          },
+          "thread_cpu": {
+            "count": 60,
+            "mean_ms": 6.9428692,
+            "p50_ms": 6.937358,
+            "p99_ms": 7.2633,
+            "max_ms": 7.2633
+          }
+        },
+        "optimized": {
+          "wall": {
+            "count": 60,
+            "mean_ms": 6.93270285,
+            "p50_ms": 6.922119,
+            "p99_ms": 7.170537,
+            "max_ms": 7.170537
+          },
+          "thread_cpu": {
+            "count": 60,
+            "mean_ms": 6.931574066666666,
+            "p50_ms": 6.921297,
+            "p99_ms": 7.169054,
+            "max_ms": 7.169054
+          }
+        }
+      },
+      "observed_reads": {
+        "baseline": {
+          "node_lookup": 3840
+        },
+        "optimized": {
+          "node_lookup": 3840
+        }
+      },
+      "mean_reduction": {
+        "wall": 0.001673155953288319,
+        "thread_cpu": 0.0016268682309805715
+      }
+    }
+  ]
+}

@@ -159,6 +159,19 @@ PREPARE均值慢10.60%，P50快0.79%，180次复核均值快2.81%；
 `experiments/reports/v16_shadow_capture_identity_repeat_cpu_20261010.json`。
 实际锚点频率和GPU收益仍待完整实验验证，v15运行代码不变。
 
+下一版JOIN PREPARE在扫描和原生发起后统一发布一次压力候选；
+仅Mamba压力和无等待parent仍发布。原生PREPARE不回收Host/HBM，
+依赖校验保留，发布读取最新锁/pending状态。同次维护按context
+定位后核对完整key，不合并旧attempt/epoch，也不跨调用缓存存活。
+348项相关检查通过。与`8d1db37`的156-workflow/24节点、每配置
+60次比较使用相同156条真实传输种子，并同等清除探测退避。
+三个已备份且仍在device的配置中，PREPARE均值下降36.07%、
+32.18%、42.32%；其余配置下降0.82%--1.57%。首组节点查询
+431508→216228，动作、发布和完整机会字段相同。未修改的采样
+计时差不作为收益证据，不以此推导GPU吞吐提升。报告：
+`experiments/reports/v16_prepare_publication_cpu_20261010.json`。
+修订仅在隔离工作树；v15双侧及完整后处理继续冻结。
+
 07:35 CST局部语义审计中，7个estimated-work首次触发请求均
 匹配此前已交付forecast，5个提前EOS超过2秒、1个在0--500 ms、
 1个在500--2000 ms。158个自然终态请求末次EOS前快照的剩余

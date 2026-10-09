@@ -510,6 +510,99 @@ def test_pressure_maintenance_groups_contexts_and_still_expires_real_locks():
         assert not runtime._parent_pressure_candidates
 
 
+def test_pressure_maintenance_distinguishes_keys_with_the_same_context():
+    from dataclasses import replace
+
+    runtime = final_stage_runtime()
+    runtime._clear_final_stage("join")
+    key = runtime.context_sessions["ctx-parent"]
+    runtime._parent_pressure_candidates = {
+        1: (replace(key, attempt_id=key.attempt_id + 1), 1),
+        2: (key, 2),
+        3: (replace(key, context_epoch=key.context_epoch + 1), 3),
+        4: (key, 4),
+        5: (replace(key), 5),
+    }
+    try:
+        runtime._prune_parent_pressure_candidates()
+        assert runtime._parent_pressure_candidates == {
+            2: (key, 2), 4: (key, 4), 5: (key, 5),
+        }
+    finally:
+        runtime.close()
+
+
+@pytest.mark.parametrize("case", (
+    "backed", "new_backed", "submitted", "declined", "mamba_only", "no_parents",
+))
+def test_join_prepare_publishes_current_pressure_state_once(case):
+    from beliefkv.control.causal_graph import InvocationState
+
+    class Node(NS):
+        __hash__ = object.__hash__
+
+    runtime = final_stage_runtime()
+    runtime._clear_final_stage("join")
+    runtime.enable_prepare_host = True
+    key = runtime.context_sessions["ctx-parent"]
+    node = Node(
+        id=11, creation_time=4, backuped=True,
+        write_through_pending_id=None, load_back_pending_id=None,
+        component_data={
+            0: NS(value=[1], host_value=[1], lock_ref=0, session_ref=1),
+            2: NS(value=None, host_value=None, lock_ref=0, session_ref=0),
+        },
+    )
+    cache = NS(
+        tree_core=NS(node_by_id=lambda _: node, evictable_device_leaves={node}),
+        ongoing_write_through={},
+        beliefkv_join_pressure_candidates=((99, 99),),
+    )
+    runtime._native_cache = cache
+    if case != "new_backed":
+        runtime._parent_pressure_candidates[11] = (key, 4)
+    if case == "no_parents":
+        runtime.graph.invocations[key.invocation_id].state = InvocationState.READY
+
+    def scan(**kwargs):
+        if case == "new_backed":
+            runtime._parent_pressure_candidates[11] = (key, 4)
+        return (
+            ShadowBackupStep(key, 11, 4, 11, 4)
+            if case in ("submitted", "declined") else None
+        )
+
+    def issue(step, *, source):
+        if case == "submitted":
+            node.write_through_pending_id = 42
+            return "prepare"
+        node.component_data[0].lock_ref = 1
+        return None
+
+    try:
+        with patch(
+            "beliefkv.runtime.sglang_v0520_runtime.observe_static_full_mamba_headroom",
+            return_value=StaticPoolHeadroomObservation(
+                True,
+                device_full_free_tokens=100_000 if case == "mamba_only" else 0,
+                device_mamba_free_slots=0 if case == "mamba_only" else 10,
+                host_full_free_tokens=1000, host_mamba_free_slots=10,
+            ),
+        ), patch.object(runtime, "refreshed_shadow_backup_step", side_effect=scan), \
+            patch.object(runtime, "_prepare_step_rank", return_value=(-1., 1.)), \
+            patch.object(runtime, "issue_shadow_backup_step", side_effect=issue) as submit, \
+            patch.object(runtime, "_publish_parent_pressure_candidates",
+                         wraps=runtime._publish_parent_pressure_candidates) as publish:
+            runtime.dispatch_join_prepare([req("child")])
+            publish.assert_called_once()
+            assert submit.call_count == int(case in ("submitted", "declined"))
+        expected = ((11, 4),) if case in ("backed", "new_backed", "mamba_only") else ()
+        assert cache.beliefkv_join_pressure_candidates == expected
+        assert cache.beliefkv_join_pressure_candidates_by_component[0] == expected
+    finally:
+        runtime.close()
+
+
 def test_prepare_sampling_reuses_h2d_closure_but_later_actions_read_fresh():
     runtime = final_stage_runtime()
     runtime._clear_final_stage("join")

@@ -222,6 +222,21 @@ Current status:
   v16_shadow_capture_identity_cpu_20261010.json and its_repeat_cpu report.
   Both variants clear probe backoff equally and verify imported worktree paths.
   This is CPU evidence only; commit in isolation and retain the V15 freeze.
+- The isolated JOIN PREPARE publishes pressure candidates once after scanning
+  and native issue, retaining publication on Mamba-only and no-parent returns.
+  Native PREPARE cannot reclaim Host/HBM and still validates dependencies;
+  publication reads post-operation locks/pending state. Within-call maintenance
+  indexes by context then checks the complete key, avoiding per-node identity
+  hashes without conflating attempts/epochs or caching liveness across calls.
+  All348 related checks pass. Against8d1db37,156-workflow/24-node fixtures,
+  sixty iterations and the same156 actual transfer seeds preserve actions,
+  pressure publication and complete opportunity fields. Both clear probe
+  backoff equally. The three backed/device-resident PREPARE means change
+  15.463→9.887,14.967→10.151 and13.464→7.766ms, down36.07/32.18/42.32%;
+  other cases improve0.82--1.57%. First-case node lookups fall431508→216228.
+  Unchanged sampling/terminal timing differences are not acceleration evidence.
+  CPU fixtures do not establish live-path frequency or GPU throughput gains.
+  Report:v16_prepare_publication_cpu_20261010.json. Keep the V15 freeze.
 - At07:35 CST the partial causal semantic audit matches seven estimated-work
   first-trigger requests to prior delivered forecasts: five are over2s before
   native EOS, one within0--500ms and one within500--2000ms. Last pre-EOS

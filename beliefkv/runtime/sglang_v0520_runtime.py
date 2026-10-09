@@ -3163,15 +3163,17 @@ class NativeAdmissionRuntime:
             (lease.node_id, lease.creation_time)
             for lease in self._prefetch_service_leases.values()
         }
-        live_keys: dict[PrefillCandidateKey, bool] = {}
+        live_keys: dict[str, tuple[PrefillCandidateKey, bool]] = {}
         retained = {}
         for node_id, (key, created) in self._parent_pressure_candidates.items():
             if (node_id, created) in protected:
                 self.counts["prefetch_residency_pressure_protected"] += 1
                 continue
-            if key not in live_keys:
-                live_keys[key] = self._live_parent_pressure_key(key)
-            if live_keys[key]:
+            cached = live_keys.get(key.context_id)
+            if cached is None or (cached[0] is not key and cached[0] != key):
+                cached = (key, self._live_parent_pressure_key(key))
+                live_keys[key.context_id] = cached
+            if cached[1]:
                 retained[node_id] = (key, created)
         self._parent_pressure_candidates = retained
 
@@ -3413,8 +3415,8 @@ class NativeAdmissionRuntime:
         if not (mamba_pressure or full_pressure):
             return
         self._prune_parent_pressure_candidates()
-        self._publish_parent_pressure_candidates()
         if not full_pressure:
+            self._publish_parent_pressure_candidates()
             self.counts["prepare_mamba_pressure_only"] += 1
             return
         parents = sorted(
@@ -3424,6 +3426,7 @@ class NativeAdmissionRuntime:
             key=lambda key: key.context_id,
         )
         if not parents:
+            self._publish_parent_pressure_candidates()
             return
         candidates = []
         for offset in range(min(len(parents), 8)):
@@ -3462,6 +3465,7 @@ class NativeAdmissionRuntime:
                 step, source="join_prepare", rank=rank, scanned=len(candidates),
             )
             break
+        # Native PREPARE cannot reclaim memory; publish once after its lock changes.
         self._publish_parent_pressure_candidates()
 
     def _live_tool_hint(self, key: PrefillCandidateKey) -> NativeToolWaitHint | None:
