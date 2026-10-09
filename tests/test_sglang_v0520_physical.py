@@ -36,7 +36,7 @@ def test_native_shadow_expectation_uses_exact_operation_before_ack(enum_pool_nam
 
     step = ShadowBackupStep(
         PrefillCandidateKey("r", "w", "i", "c", 3, 0, "s", 4),
-        12, 5, 11, 4,
+        12, 5, 11, 4, include_mamba=True,
     )
     group = NS(entry_map={
         Pool.KV: NS(host_pool=NS(size_per_token=10)),
@@ -411,6 +411,13 @@ def test_shadow_candidate_is_context_local_and_read_only():
         assert capture_action_local_shadow(object(), anchors) is None
         leaf.pending_write_id = None
         leaf.full_host_tokens = 10
+        assert capture_action_local_shadow(object(), anchors) is None
+        diagnostic = capture_action_local_shadow(
+            object(), anchors, include_non_actionable=True,
+        )
+        assert diagnostic.missing_full_host_tokens == 0
+        assert diagnostic.missing_mamba_host_nodes == 1
+        assert next_shadow_backup_step(diagnostic) is None
         leaf.mamba_host_present = True
         assert capture_action_local_shadow(object(), anchors) is None
         backed = capture_action_local_shadow(
@@ -817,7 +824,7 @@ def test_full_ancestor_restore_does_not_require_its_historical_mamba_slot():
     assert step.node_id == 12 and step.include_mamba
 
 
-def test_prepare_backs_only_latest_state_and_does_not_wait_for_old_state_backup():
+def test_prepare_extends_full_prefix_without_copying_any_mamba_state():
     anchors = replace(prefetch_anchors(), reusable_input_tokens=12)
     root = prefetch_node(0, None, 1, key_tokens=0)
     ancestor = prefetch_node(11, 0, 4, full_gpu=8, mamba_gpu=True, key_tokens=8)
@@ -827,10 +834,11 @@ def test_prepare_backs_only_latest_state_and_does_not_wait_for_old_state_backup(
     assert step.node_id == 11 and not step.include_mamba
     ancestor.full_host_tokens = 8
     step = next_shadow_backup_step(candidate)
-    assert step.node_id == 12 and step.include_mamba
+    assert step.node_id == 12 and not step.include_mamba
     checkpoint.full_host_tokens = 4
-    checkpoint.mamba_host_present = True
     assert next_shadow_backup_step(candidate) is None
+    assert not ancestor.mamba_host_present
+    assert not checkpoint.mamba_host_present
 
 
 def test_full_only_receipt_rejects_unselected_mamba_before_enqueue():

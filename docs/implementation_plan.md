@@ -16,6 +16,24 @@ the same objective. The three explicit priorities are:
 - Useful FULL coverage: validate real handoff FULL reuse and replacement of
   demand restoration, alongside throughput, JCT and recomputation.
 
+Additional execution requirements:
+- Speculative PREPARE copies only missing FULL prefix extents. Reuse valid Host
+  copies, including their native redistribution on radix splits; re-copy an
+  extent only after its Host copy is lost. Native already skips backed FULL.
+- Remove Mamba from speculative PREPARE. Native eviction write-back and
+  required-state restoration remain responsible for resumable checkpoints.
+- A later same-node/pool D2H is an association, not proof of overwritten or
+  duplicate bytes. Rename that audit field to later_node_pool_d2h and state the
+  unresolved allocation/split identity limits.
+
+These extend the existing active goal. For legacy merged transfers, subtract
+known child pool receipts before attributing the remaining untagged nodes.
+V10 re-audit finds intervening same-node FULL Host eviction before all 35066
+later D2H associations. This supports reclaim followed by re-backup, not
+overwriting valid Host extents; it cannot establish exact duplicate bytes
+across splits. The legacy residual correction did not change these counts.
+Report: experiments/reports/v10_prepare_full_incrementality_20261009.json.
+
 V11 implementation:
 - Size PREPARE pressure from up to eight next-prefill candidates, the running
   limit and active decode page growth. Cache occupancy alone is not demand.
@@ -31,7 +49,7 @@ V11 implementation:
 
 V10 retrospective: 35713 acknowledged PREPARE operations; 115 have observed
 reload associations (98 native, 29 controlled, overlapping), while 35066
-have later same-node/pool D2H writes. Old logs only support legacy batch-pool
+have later same-node/pool D2H appearances, not verified byte overwrite. Old logs only support legacy batch-pool
 association; do not classify all 35598 without observed reload as waste.
 Report: experiments/reports/v10_prepare_restore_attribution_20261009.json.
 
@@ -48,6 +66,14 @@ v10 native as a cross-revision development reference. Monitor actual runtime
 failures and physical disablement; stop, retain evidence, fix and cold-start
 on an implementation fault. Keep v10 frozen and quantify realized trajectory
 differences. Final claims still require the planned alternating repeated pairs.
+V11 froze 3d750f1 and still permits Mamba PREPARE. The FULL-only change is
+developed in /tmp/beliefkv-full-prepare-20261009 for the next cold-start revision.
+V11 stopped after the scheduler crashed at 2026-10-09 21:34:34 CST:
+handoff passed a sparse eviction tracker to an accumulator that assumed
+preinitialized FULL/Mamba keys. Fix sparse accumulation, preserve live unbacked
+Mamba at actual FULL-leaf eviction, commit and cold-start V12 with the same
+workload, arrival schedule, model and capacity. V11 is partial mechanism
+evidence, not a terminal throughput comparison.
 
 ## Current PREPARE Cost And Handoff Fix
 

@@ -542,8 +542,11 @@ def main() -> None:
             "shared_pressure_parent_parking": bool(args.prepare_host),
             "prepare_policy": (
                 "next_prefill_slots_and_active_decode_page_growth;"
-                "exhausted_probe_backoff_1000ms;host_no_reclaim;real_allocator_pressure"
+                "exhausted_probe_backoff_1000ms;host_no_reclaim;real_allocator_pressure;"
+                "missing_full_prefix_only;reuse_valid_host_extents"
             ),
+            "prepare_pool_scope": "missing_full_prefix",
+            "mamba_backup_policy": "native_actual_eviction_writeback;no_speculative_prepare",
             "pressure_candidate_policy": "separate_FULL_leaf_and_Mamba_state_indexes;native_revalidation",
             "capacity_bypass_policy": (
                 "up_to_8_rejected_unaged_tagged_requests_per_prefill;"

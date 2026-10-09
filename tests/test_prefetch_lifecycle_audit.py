@@ -41,7 +41,7 @@ def test_lifecycle_keeps_expired_but_reused_and_missing_use_distinct(tmp_path):
     assert result["rows"][1]["actual_bytes"] is None
 
 
-def test_prepare_restore_tracks_real_pool_receipts_and_superseding_writer():
+def test_prepare_restore_tracks_real_pool_receipts_and_later_writer():
     prepared = {
         "prepare-full": {"command_id": "prepare-full", "node_id": 10, "ts_ms": 1.},
         "prepare-mamba": {"command_id": "prepare-mamba", "node_id": 10, "ts_ms": 2.},
@@ -75,7 +75,7 @@ def test_prepare_restore_tracks_real_pool_receipts_and_superseding_writer():
     assert full["restores"][0]["matched_node_pools"] == [{"node_id": 10, "pool": "kv"}]
     assert full["restores"][1]["matched_node_pools"] == [{"node_id": 11, "pool": "kv"}]
     assert not mamba["restores"]
-    assert mamba["superseded_node_pools"] == [{"node_id": 10, "pool": "mamba", "ts_ms": 40.}]
+    assert mamba["later_node_pool_d2h"] == [{"node_id": 10, "pool": "mamba", "ts_ms": 40.}]
 
 
 def test_prepare_restore_legacy_merge_never_attributes_other_tagged_child_nodes():
@@ -98,3 +98,50 @@ def test_prepare_restore_legacy_merge_never_attributes_other_tagged_child_nodes(
     assert len(result["restores"]) == 1
     assert result["restores"][0]["submit_ts_ms"] == 12.
     assert result["restores"][0]["node_pool_evidence"] == "legacy_batch_pool_presence"
+
+
+def test_legacy_mamba_residual_does_not_replace_another_nodes_full_writer():
+    prepared = {"prepare": {"command_id": "prepare", "node_id": 10, "ts_ms": 1.}}
+    transfers = [
+        {"direction": "d2h", "complete_ts_ms": 10., "node_ids": [10],
+         "num_tokens_by_pool": {"kv": 8}, "tagged_child_commits": [
+             {"command_id": "prepare", "anchor_node_id": 10,
+              "published_node_ids": [10], "num_tokens_by_pool": {"kv": 8}},
+         ]},
+        {"direction": "d2h", "complete_ts_ms": 20., "node_ids": [10, 20],
+         "num_tokens_by_pool": {"kv": 4, "mamba": 1}, "tagged_child_commits": [
+             {"command_id": "other", "anchor_node_id": 20,
+              "published_node_ids": [20], "num_tokens_by_pool": {"kv": 4}},
+         ]},
+        {"direction": "h2d", "submit_ts_ms": 30., "node_ids": [10],
+         "num_tokens_by_pool": {"kv": 8}},
+    ]
+    result = prepare_restore_attribution(prepared, transfers)[0]
+    assert not result["later_node_pool_d2h"]
+    assert result["restores"][0]["matched_node_pools"] == [{"node_id": 10, "pool": "kv"}]
+
+
+def test_later_d2h_distinguishes_intervening_host_eviction_from_unobserved_loss():
+    prepared = {"prepare": {"command_id": "prepare", "node_id": 10, "ts_ms": 1.}}
+    transfers = [
+        {"direction": "d2h", "complete_ts_ms": 10., "node_ids": [10],
+         "num_tokens_by_pool": {"kv": 8}, "tagged_child_commits": [
+             {"command_id": "prepare", "anchor_node_id": 10,
+              "published_node_ids": [10], "num_tokens_by_pool": {"kv": 8}},
+         ]},
+        {"direction": "d2h", "complete_ts_ms": 20., "node_ids": [10],
+         "num_tokens_by_pool": {"kv": 8}},
+    ]
+    evictions = [
+        {"node_id": 10, "pool": "full", "ts_ms": 9.},
+        {"node_id": 10, "pool": "full", "ts_ms": 15.},
+        {"node_id": 10, "pool": "mamba", "ts_ms": 16.},
+        {"node_id": 20, "pool": "full", "ts_ms": 17.},
+        {"node_id": 10, "pool": "full", "ts_ms": 21.},
+    ]
+    without_evidence = prepare_restore_attribution(prepared, transfers)[0]
+    assert "host_evictions_between_writes" not in without_evidence["later_node_pool_d2h"][0]
+    empty_evidence = prepare_restore_attribution(prepared, transfers, [])[0]
+    assert empty_evidence["later_node_pool_d2h"][0]["host_evictions_between_writes"] == 0
+    with_evidence = prepare_restore_attribution(prepared, transfers, evictions)[0]
+    assert with_evidence["later_node_pool_d2h"][0]["host_evictions_between_writes"] == 1

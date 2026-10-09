@@ -1407,6 +1407,7 @@ class NativeAdmissionRuntime:
                     else self.enable_admission_prefetch or self.enable_final_stage_prefetch
                 ),
                 "prepare_host": self.enable_prepare_host,
+                "prepare_pool_scope": "missing_full_prefix",
                 "resident_first": self.enable_resident_first,
                 "execution_handoff": self.enable_execution_handoff,
                 "overlap_prefetch_supported": self.can_prefetch_during_overlap(),
@@ -3055,7 +3056,10 @@ class NativeAdmissionRuntime:
                 "context_id": step.key.context_id,
                 "context_epoch": step.key.context_epoch,
                 "include_mamba": step.include_mamba,
+                "backup_scope": "missing_full_prefix",
                 "node_id": step.node_id, "leaf_node_id": step.leaf_node_id,
+                "node_creation_time": step.creation_time,
+                "leaf_creation_time": step.leaf_creation_time,
             })
         return command_id
 
@@ -3247,7 +3251,10 @@ class NativeAdmissionRuntime:
                 (len(full.value) * full_unit if full.value is not None else 0)
                 * bool(full_pressure and full.lock_ref == 0 and full.session_ref == 1)
                 + int(state.value is not None) * mamba_unit
-                * bool(mamba_pressure and state.lock_ref == 0 and state.session_ref == 1)
+                * bool(
+                    mamba_pressure and state.lock_ref == 0 and state.session_ref == 1
+                    and (state.host_value is not None or step.include_mamba)
+                )
             )
             service = estimate_native_service(
                 self._native_service_samples, transfer_bytes, direction="d2h",
@@ -3335,6 +3342,9 @@ class NativeAdmissionRuntime:
             return
         self._prune_parent_pressure_candidates()
         self._publish_parent_pressure_candidates()
+        if not full_pressure:
+            self.counts["prepare_mamba_pressure_only"] += 1
+            return
         parents = sorted(
             (key for key in self.context_sessions.values()
              if (parent := self.graph.invocations.get(key.invocation_id)) is not None
@@ -3423,7 +3433,9 @@ class NativeAdmissionRuntime:
         full_pressure, mamba_pressure = self._prepare_pressure(
             waiting_queue, running_batch, headroom,
         )
-        if not (full_pressure or mamba_pressure):
+        if not full_pressure:
+            if mamba_pressure:
+                self.counts["prepare_mamba_pressure_only"] += 1
             return
         hints = sorted(self.tool_wait_hints.values(), key=lambda item: item.key.context_id)
         if not hints:

@@ -16,6 +16,26 @@
 3. 提高有用FULL预取覆盖，验证已修复handoff是否真正替代需求
    恢复，并以实际复用、完成吞吐、JCT及重算量评价收益。
 
+补充的执行约定：PREPARE只提前备份尚未拥有有效Host副本的FULL
+前缀。原生build_backup_spec已跳过备份完成的FULL节点，radix节点
+分裂会拆分并保留已有Host索引；后续新增前缀只复制未备份节点。
+Host副本若已被驱逐则必须重新备份，不能复用已失效的索引。
+投机PREPARE不再携带Mamba；固定前缀的Mamba检查点是版本化快照，
+运行请求的状态继续更新。真正驱逐/恢复所需的状态保存仍由原生
+write-back和恢复依赖处理，不能把关闭提前备份解释为删除恢复状态。
+
+旧审计的superseded_node_pools只表示同节点、同池又出现了D2H，
+不证明字节被覆盖或重复传输；节点分裂、Host重分配及旧合并批次
+的分池身份均不完整。新报告将其改名为later_node_pool_d2h，
+保留“恢复关联不等于forward复用”的口径。三项验收标准属于当前
+active目标。旧合并批次中，未打标签操作的pool数量先扣除已知
+child receipt，避免将其他操作的FULL数量套到Mamba节点上。
+补查v10：35066次后续同node/pool D2H之前，均观察到对应Host FULL
+驱逐。证据支持“备份被回收后补传”，不能解释为覆盖仍有效的
+Host副本，也不能跨radix分裂推导精确重复字节。修正旧合并批次的
+分池归因没有改变本轮计数。补查报告：
+`experiments/reports/v10_prepare_full_incrementality_20261009.json`。
+
 v10 native H2D transfer-stream累计100.235秒，实验窗口10345.487秒。
 它不是全部恢复等待或oracle上界；相比之下，predictive的JOIN
 PREPARE exclusive CPU累计1480.695秒。因此同时检查agent准入、
@@ -42,7 +62,7 @@ PREPARE exclusive CPU累计1480.695秒。因此同时检查agent准入、
 
 补查v10：35713次PREPARE均有ACK，115次关联后续恢复，其中98次
 关联原生H2D、29次关联受控H2D，二者可重叠；35066次的节点/池
-数据又被后续D2H覆盖。旧记录缺少原生逐操作pool receipt，关联
+又出现在后续D2H中，不能称为已证实的覆盖。旧记录缺少原生逐操作pool receipt，关联
 使用legacy_batch_pool_presence，不能将35598次未观察到恢复全部
 定为浪费。结果保存在
 `experiments/reports/v10_prepare_restore_attribution_20261009.json`，
@@ -60,6 +80,13 @@ Host 200 GB FULL:Mamba=80:20、HBM Mamba/FULL=0.9、同一模型、
 预测产物、prompt、seed=21和预算。复用已完成v10 native作为开发
 参考，报告源码/引擎版本和实际轨迹差异。出现实现故障时停止该轮、
 保留证据、修复后冷启动；正式结论仍要求交替顺序的多轮对照。
+v11的冻结版本为3d750f1，其PREPARE仍可能携带Mamba；上述FULL-only
+修订在独立工作树中实现，须在后续冷启动版本中核验。
+v11于2026-10-09 21:34:34因handoff回收计数的KeyError退出：
+局部tracker为空，而原生累加函数假设FULL键已存在。客户端已停止，
+该轮只能用于故障前的机制分析，不能作为完整吞吐对照。
+后续版本修复稀疏计数累加，并在实际FULL叶驱逐前保存仍被session
+引用的未备份Mamba检查点，避免FULL-only PREPARE使必要状态丢失。
 
 ## PREPARE 热点与 Handoff 身份修复
 

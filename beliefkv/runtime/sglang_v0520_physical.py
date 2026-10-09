@@ -201,14 +201,14 @@ def inspect_session_h2d_opportunity(
 
 @dataclass(frozen=True)
 class ShadowBackupStep:
-    """One ancestor-first candidate; native must recheck before D2H."""
+    """One missing FULL prefix extent; native must recheck before D2H."""
 
     key: PrefillCandidateKey
     leaf_node_id: int
     leaf_creation_time: int | float
     node_id: int
     creation_time: int | float
-    include_mamba: bool = True
+    include_mamba: bool = False
 
 
 @dataclass(frozen=True)
@@ -419,8 +419,8 @@ def next_shadow_backup_step(
 ) -> ShadowBackupStep | None:
     """Prefer the first unbacked FULL node on the session closure path.
 
-    A single step permits partial agent-KV shadowing. Native must revalidate
-    the session, ancestry, settled Host parent and capacity at the safe point.
+    Existing Host extents are retained. Mamba snapshots stay with native
+    demand write-back; speculative PREPARE does not copy them.
     """
     nodes = {node.node_id: node for node in candidate.nodes}
     if len(nodes) != len(candidate.nodes):
@@ -448,7 +448,7 @@ def next_shadow_backup_step(
     selected = _checkpoint_paths(candidate.anchors, nodes, leaves, depth)
     if selected is None:
         return None
-    eligible_paths, checkpoint_nodes = selected
+    eligible_paths, _ = selected
     # Depth from root, so a host copy of a parent settles before its child.
     for node_id in sorted(paths, key=lambda value: (depth[value], value)):
         node = nodes[node_id]
@@ -469,18 +469,14 @@ def next_shadow_backup_step(
             )
         ):
             continue
-        if (
-            node.full_device_tokens > node.full_host_tokens
-            or node_id in checkpoint_nodes
-            and node.mamba_device_present and not node.mamba_host_present
-        ):
+        if node.full_device_tokens > node.full_host_tokens:
             return ShadowBackupStep(
                 key=candidate.anchors.key,
                 leaf_node_id=provenance[node_id],
                 leaf_creation_time=leaves[provenance[node_id]],
                 node_id=node_id,
                 creation_time=node.creation_time,
-                include_mamba=node_id in checkpoint_nodes,
+                include_mamba=False,
             )
     return None
 
@@ -572,7 +568,7 @@ def capture_action_local_shadow(
         node.mamba_device_present and not node.mamba_host_present
         for node in nodes.values()
     )
-    if not missing_full and not missing_mamba and not include_non_actionable:
+    if not missing_full and not include_non_actionable:
         return None
     return ActionLocalShadowCandidate(
         anchors=anchors,

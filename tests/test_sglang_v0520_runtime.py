@@ -465,7 +465,7 @@ def test_wait_prepare_probe_requires_native_prerequisites_and_host_space(
     assert prepare["prepare_leaf_node_id"] == 11
     assert prepare["prepare_leaf_creation_time"] == 2.5
     assert prepare["prepare_required_full_tokens"] == 20
-    assert prepare["prepare_required_mamba_slots"] == 1
+    assert prepare["prepare_required_mamba_slots"] == 0
     assert prepare["prepare_reason"] == "insufficient_host_free_lists"
     assert prepare["prepare_fits_current_host_free_lists"] is False
 
@@ -1087,12 +1087,13 @@ def test_native_shadow_transaction_waits_for_matching_ack():
             "kv": NS(host_pool=NS(size_per_token=10)),
             "mamba": NS(host_pool=NS(size_per_token=5)),
         }),
-        _num_tokens_by_pool=lambda _: {"kv": 2, "mamba": 1},
-        _transfer_num_bytes=lambda _: 27,
+        _num_tokens_by_pool=lambda _: {"kv": 2},
+        _transfer_num_bytes=lambda _: 20,
     )
     sent = []
 
     def native_shadow(**kwargs):
+        assert kwargs["beliefkv_include_mamba"] is False
         op = NS(
             beliefkv_command_id=kwargs["beliefkv_command_id"],
             node_ids=[kwargs["node_id"]],
@@ -1118,12 +1119,12 @@ def test_native_shadow_transaction_waits_for_matching_ack():
         assert not runtime.completed_physical_actions
         runtime.on_native_transfer_commit(NS(
             direction="d2h", status="completed", node_ids=(11,),
-            num_tokens_by_pool=(("kv", 2), ("mamba", 1)),
+            num_tokens_by_pool=(("kv", 2),),
             child_commits=(NS(
                 command_id=command_id, anchor_node_id=11,
                 published_node_ids=(11,),
-                num_tokens_by_pool=(("kv", 2), ("mamba", 1)),
-                num_bytes=27,
+                num_tokens_by_pool=(("kv", 2),),
+                num_bytes=20,
             ),),
         ))
         assert runtime.completed_physical_actions[0].command_id == command_id
@@ -2676,6 +2677,27 @@ def test_join_prepare_is_selective_and_invalidates_on_parent_reentry():
     assert runtime._live_parent_pressure_node(11, 4)
     runtime.on_events((event(7, RuntimeEventKind.RETURN, invocation_id="child"),))
     assert not runtime._live_parent_pressure_node(11, 4)
+
+
+@pytest.mark.parametrize("method", ("dispatch_join_prepare", "dispatch_tool_prepare"))
+def test_full_only_prepare_does_not_scan_backups_for_mamba_only_pressure(method):
+    runtime = final_stage_runtime()
+    runtime._clear_final_stage("join")
+    runtime.enable_prepare_host = True
+    runtime.attach_native_cache(NS())
+    with patch(
+        "beliefkv.runtime.sglang_v0520_runtime.observe_static_full_mamba_headroom",
+        return_value=StaticPoolHeadroomObservation(
+            True, device_full_free_tokens=100_000, device_mamba_free_slots=0,
+            host_full_free_tokens=1000, host_mamba_free_slots=0,
+        ),
+    ), patch.object(runtime, "refreshed_shadow_backup_step") as observe, patch.object(
+        runtime, "issue_shadow_backup_step",
+    ) as issue:
+        getattr(runtime, method)([req("child")])
+    observe.assert_not_called()
+    issue.assert_not_called()
+    assert runtime.counts["prepare_mamba_pressure_only"] == 1
 
 
 def test_final_stage_latest_start_requires_serviced_decode_and_h2d_evidence():

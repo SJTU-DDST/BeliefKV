@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import argparse
+from bisect import bisect_right
 from collections import Counter, defaultdict
 import json
 from pathlib import Path
@@ -30,9 +31,17 @@ def distribution(values) -> dict:
     }
 
 
-def prepare_restore_attribution(prepared: dict, transfers: list[dict]) -> list[dict]:
-    """Track the latest committed writer per node/pool, then observed reloads."""
+def prepare_restore_attribution(
+    prepared: dict, transfers: list[dict], host_evictions: list[dict] | None = None,
+) -> list[dict]:
+    """Associate same-node/pool writes and reloads, without claiming byte overwrite."""
     results, latest = {}, {}
+    eviction_times = defaultdict(list)
+    for row in host_evictions or ():
+        pool = "kv" if row["pool"] == "full" else row["pool"]
+        eviction_times[(row["node_id"], pool)].append(row["ts_ms"])
+    for times in eviction_times.values():
+        times.sort()
     events = []
     for transfer in transfers:
         ts = transfer.get(
@@ -44,6 +53,7 @@ def prepare_restore_attribution(prepared: dict, transfers: list[dict]) -> list[d
         exact = transfer.get("node_commits") or []
         commits = exact or transfer.get("tagged_child_commits") or []
         covered = set()
+        accounted = Counter()
         parts = []
         for child in commits:
             nodes = child.get("published_node_ids")
@@ -53,10 +63,16 @@ def prepare_restore_attribution(prepared: dict, transfers: list[dict]) -> list[d
                     continue
                 nodes = [anchor]
             covered.update(nodes)
+            accounted.update(child["num_tokens_by_pool"])
             parts.append((child.get("command_id"), nodes, child["num_tokens_by_pool"]))
         unseen = [node for node in transfer.get("node_ids", []) if node not in covered]
         if unseen:
-            parts.append((None, unseen, transfer.get("num_tokens_by_pool") or {}))
+            residual = {
+                pool: count - accounted[pool]
+                for pool, count in (transfer.get("num_tokens_by_pool") or {}).items()
+                if count > accounted[pool]
+            }
+            parts.append((None, unseen, residual))
         for command, nodes, units in parts:
             pools = [pool for pool, count in units.items() if count > 0]
             if transfer["direction"] == "d2h":
@@ -65,15 +81,20 @@ def prepare_restore_attribution(prepared: dict, transfers: list[dict]) -> list[d
                     results[command] = {
                         **issue, "ack_ts_ms": ts, "published_node_ids": list(nodes),
                         "prepared_pool_units": units, "restores": [],
-                        "superseded_node_pools": [],
+                        "later_node_pool_d2h": [],
                     }
                 for node in nodes:
                     for pool in pools:
                         prior = latest.get((node, pool))
                         if prior is not None and prior != command:
-                            results[prior]["superseded_node_pools"].append({
-                                "node_id": node, "pool": pool, "ts_ms": ts,
-                            })
+                            later = {"node_id": node, "pool": pool, "ts_ms": ts}
+                            if host_evictions is not None:
+                                times = eviction_times[(node, pool)]
+                                later["host_evictions_between_writes"] = (
+                                    bisect_right(times, ts)
+                                    - bisect_right(times, results[prior]["ack_ts_ms"])
+                                )
+                            results[prior]["later_node_pool_d2h"].append(later)
                         latest[node, pool] = command if issue is not None else None
             else:
                 matched = defaultdict(list)
@@ -212,7 +233,11 @@ def audit(arm: Path) -> dict:
     joins = [row for row in results if row["source"] == "join_ticket"]
     tools = [row for row in results if row["source"] == "tool_wait"]
     handoffs = [row for row in results if row["source"] == "execution_handoff"]
-    prepare_restores = prepare_restore_attribution(prepared, transfers)
+    eviction_path = arm / "server/eviction_attribution.jsonl"
+    host_evictions = [
+        row for row in records(eviction_path) if row["event"] == "host_block_evicted"
+    ] if eviction_path.exists() else None
+    prepare_restores = prepare_restore_attribution(prepared, transfers, host_evictions)
     summary = {
         "join_commands": len(joins), "tool_commands": len(tools),
         "handoff_commands": len(handoffs),
@@ -257,8 +282,16 @@ def audit(arm: Path) -> dict:
         "prepare_commands_without_observed_restore": sum(
             not row["restores"] for row in prepare_restores
         ),
-        "prepare_commands_with_superseded_node_pools": sum(
-            bool(row["superseded_node_pools"]) for row in prepare_restores
+        "prepare_commands_with_later_node_pool_d2h": sum(
+            bool(row["later_node_pool_d2h"]) for row in prepare_restores
+        ),
+        "prepare_commands_with_host_eviction_before_later_d2h": (
+            sum(
+                any(
+                    later["host_evictions_between_writes"] > 0
+                    for later in row["later_node_pool_d2h"]
+                ) for row in prepare_restores
+            ) if host_evictions is not None else None
         ),
     }
     return {
@@ -269,6 +302,14 @@ def audit(arm: Path) -> dict:
         "arm": str(arm), "summary": summary, "rows": results,
         "prepare_consumption": consumed,
         "prepare_restore_attribution": prepare_restores,
+        "prepare_attribution_semantics": (
+            "Latest observed D2H writer per node/pool. A later D2H is not proof "
+            "of byte overwrite or duplicate transfer: Host eviction/reallocation, "
+            "node splitting and legacy merged pool attribution are unresolved. "
+            "Intervening same-node/pool Host eviction is reported when available; "
+            "it does not recover an allocation identity across radix splits. "
+            "Observed restoration is not final model-forward reuse."
+        ),
     }
 
 
