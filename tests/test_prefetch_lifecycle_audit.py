@@ -1,6 +1,6 @@
 import json
 
-from scripts.audit_prefetch_lifecycle import audit
+from scripts.audit_prefetch_lifecycle import audit, prepare_restore_attribution
 
 
 def write_rows(path, rows):
@@ -39,3 +39,62 @@ def test_lifecycle_keeps_expired_but_reused_and_missing_use_distinct(tmp_path):
     assert result["rows"][0]["lease_events"][0]["reason"] == "service_window_expired"
     assert result["summary"]["redemoted_before_first_service"] == 0
     assert result["rows"][1]["actual_bytes"] is None
+
+
+def test_prepare_restore_tracks_real_pool_receipts_and_superseding_writer():
+    prepared = {
+        "prepare-full": {"command_id": "prepare-full", "node_id": 10, "ts_ms": 1.},
+        "prepare-mamba": {"command_id": "prepare-mamba", "node_id": 10, "ts_ms": 2.},
+    }
+
+    def receipt(node, pools, command=None, split=None):
+        return {
+            "command_id": command, "anchor_node_id": node,
+            "published_node_ids": split or [node], "num_tokens_by_pool": pools,
+        }
+
+    transfers = [
+        {"direction": "d2h", "complete_ts_ms": 10., "node_ids": [10, 11, 20],
+         "node_commits": [
+             receipt(10, {"kv": 8}, "prepare-full", [10, 11]),
+             receipt(20, {"kv": 4}),
+         ]},
+        {"direction": "d2h", "complete_ts_ms": 20., "node_ids": [10],
+         "node_commits": [receipt(10, {"mamba": 1}, "prepare-mamba")]},
+        {"direction": "h2d", "submit_ts_ms": 30., "node_ids": [10, 20],
+         "node_commits": [receipt(10, {"kv": 4}), receipt(20, {"mamba": 1})]},
+        {"direction": "d2h", "complete_ts_ms": 40., "node_ids": [10],
+         "node_commits": [receipt(10, {"mamba": 1})]},
+        {"direction": "h2d", "submit_ts_ms": 50., "node_ids": [10],
+         "node_commits": [receipt(10, {"mamba": 1})]},
+        {"direction": "h2d", "submit_ts_ms": 60., "node_ids": [11],
+         "node_commits": [receipt(11, {"kv": 4}, "prefetch")]},
+    ]
+    full, mamba = prepare_restore_attribution(prepared, transfers)
+    assert [row["source"] for row in full["restores"]] == ["native_h2d", "controlled_h2d"]
+    assert full["restores"][0]["matched_node_pools"] == [{"node_id": 10, "pool": "kv"}]
+    assert full["restores"][1]["matched_node_pools"] == [{"node_id": 11, "pool": "kv"}]
+    assert not mamba["restores"]
+    assert mamba["superseded_node_pools"] == [{"node_id": 10, "pool": "mamba", "ts_ms": 40.}]
+
+
+def test_prepare_restore_legacy_merge_never_attributes_other_tagged_child_nodes():
+    prepared = {"prepare": {"command_id": "prepare", "node_id": 10, "ts_ms": 1.}}
+    transfers = [
+        {"direction": "d2h", "complete_ts_ms": 10., "node_ids": [10, 20],
+         "num_tokens_by_pool": {"kv": 12}, "tagged_child_commits": [
+             {"command_id": "prepare", "anchor_node_id": 10,
+              "published_node_ids": [10], "num_tokens_by_pool": {"kv": 8}},
+             {"command_id": "other", "anchor_node_id": 20,
+              "published_node_ids": [20], "num_tokens_by_pool": {"kv": 4}},
+         ]},
+        {"direction": "h2d", "submit_ts_ms": 11., "node_ids": [20],
+         "num_tokens_by_pool": {"kv": 4}},
+        {"direction": "h2d", "submit_ts_ms": 12., "node_ids": [10],
+         "num_tokens_by_pool": {"kv": 8}},
+    ]
+    result = prepare_restore_attribution(prepared, transfers)[0]
+    assert result["published_node_ids"] == [10]
+    assert len(result["restores"]) == 1
+    assert result["restores"][0]["submit_ts_ms"] == 12.
+    assert result["restores"][0]["node_pool_evidence"] == "legacy_batch_pool_presence"

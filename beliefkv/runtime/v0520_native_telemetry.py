@@ -1352,6 +1352,16 @@ class NativeReactiveTelemetry:
                 }
                 for child in getattr(event, "child_commits", ())
             ],
+            "node_commits": [
+                {
+                    "command_id": child.command_id,
+                    "anchor_node_id": child.anchor_node_id,
+                    "published_node_ids": list(child.published_node_ids),
+                    "num_tokens_by_pool": dict(child.num_tokens_by_pool),
+                    "num_bytes": child.num_bytes,
+                }
+                for child in getattr(event, "node_commits", ())
+            ],
         })
         if direction in self._transfer_units:
             self._emit("host_pool", {

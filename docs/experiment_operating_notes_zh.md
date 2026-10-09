@@ -4,6 +4,37 @@
 guard、终态门禁或模型动作授权。启动前同时阅读
 `docs/implementation_plan.md`；旧诊断脚本和历史计划不能覆盖当前约定。
 
+## v11 调度与消费归因
+
+当前验收目标包括恢复就绪到服务、PREPARE消费及有用FULL覆盖三项，
+最终看相同任务/到达表/模型/容量下相对native的完成吞吐和JCT；
+H2D stream累计时间、ACK数和备份字节均不能独立证明收益。
+
+PREPARE根据下一批可准入需求与运行请求页增长选择时机。等待队列
+为空时不能只因缓存占满或Mamba free低就持续备份。已无备份步骤/
+Host不足的context观察延后一秒，新epoch立即重查，enqueue保留
+实时验证。FULL与Mamba压力候选须分别筛选；限制前8项之前排除
+不属于FULL可迁出叶节点的祖先，不能因此移除原生锁或Host验证。
+
+未加入batch的NO_TOKEN不是必然意味着后续请求均放不下。只有
+PrefillAdder预算仍为CONTINUE、当前请求尚未老化时，才有限尝试
+后续候选；每轮最多8次。已提交请求和预算耗尽仍结束本轮，保留
+被拒请求的Mamba临时状态清理，不强行绕过真实容量限制。
+
+逐操作pool receipt必须与整个ACK的node、pool数量和字节核对。
+native无BeliefKV command的操作也记录receipt，不能授予动作信用。
+关联PREPARE时使用child的published_node_ids，不能把合并batch的
+全部node分配给每一个command。后续D2H覆盖须按node/pool失效旧
+关联；Host恢复和实际forward复用分别报告。旧v10没有这一完整
+原生receipt，115次恢复关联仅为legacy_batch_pool_presence；
+35598次未观察到恢复不能直接称为浪费。
+
+v11冷启动predictive，复用完成的v10 native作开发参考。固定108+48
+到达表、running48、Host200GB80:20、HBM比例0.9、模型/预测产物、
+prompt及seed21。保留新旧源码、engine patch和实现故障现场；运行
+时发现实现故障先停止并修复，不能因正常自然语言RETURN或工具
+命令失败新增agent终止门禁。性能正式结论沿用多轮交替对照要求。
+
 ## PREPARE 热点修订与节点身份
 
 v10 predictive以 `e985d8c` 完成156个workflow，driver和全部导出已

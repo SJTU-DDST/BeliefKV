@@ -2,6 +2,65 @@
 
 更新日期：2026-10-09。
 
+## 当前目标与 v11 修订
+
+当前目标是在固定workload、模型、容量及到达表下，使predictive
+相对native取得可核实的性能提升。除预测传输外，优先减少调度/
+控制开销，利用agent依赖、恢复就绪与HBM局部性改善实际执行。
+以下三项并入同一目标，不能以动作数量代替验收：
+
+1. 缩短恢复就绪到首次服务的等待，减少首次服务前的原生重复加载；
+   同时检查缺失页、必要Mamba状态与其他workflow的排队代价。
+2. 补齐PREPARE消费归因，区分压力释放、原生/受控H2D、后续D2H
+   覆盖和未观察到恢复；据此减少没有迁移需求的备份。
+3. 提高有用FULL预取覆盖，验证已修复handoff是否真正替代需求
+   恢复，并以实际复用、完成吞吐、JCT及重算量评价收益。
+
+v10 native H2D transfer-stream累计100.235秒，实验窗口10345.487秒。
+它不是全部恢复等待或oracle上界；相比之下，predictive的JOIN
+PREPARE exclusive CPU累计1480.695秒。因此同时检查agent准入、
+批次填充、冷KV回收和控制路径，而不是只扩大预取提前量。
+
+已实现后续修订：
+
+- PREPARE压力按下一批最多8个实际准入候选、running上限及运行
+  请求的页增长计算。没有等待请求、没有运行请求时跳过扫描；
+  没有下一请求时不因Mamba空闲slot低而持续备份。
+- 当前context没有可备份步骤或Host容量不足时，下一次观察延后
+  1000 ms。新epoch/session身份立即重新观察；实际enqueue仍重新
+  校验。它只降低检查频率，不取消child或改变自然语言RETURN。
+- FULL可回收叶节点与Mamba可独立迁出的状态分别发布候选；原生
+  限制前8项之前先按池筛选，避免FULL候选被不可回收祖先遮住。
+  原生分配器仍逐次检查Host副本、引用、锁、代次和在途DMA。
+- 一个请求NO_TOKEN且尚未加入batch时，只有原生预算仍允许更多
+  准入，才尝试后续候选，每轮最多绕过8个未老化的tagged请求；
+  不改容量预算，10秒老化仍有效。记录prefill_capacity_bypassed。
+- 原生合并ACK额外发布经过数量/字节核对的逐操作pool receipt，
+  包含未打BeliefKV标签的操作。原有受控动作ACK授权保持独立。
+  消费报告按同节点、同池的最后D2H关联后续H2D，并分开报告
+  handoff；恢复证据不等同于模型forward的首次复用。
+
+补查v10：35713次PREPARE均有ACK，115次关联后续恢复，其中98次
+关联原生H2D、29次关联受控H2D，二者可重叠；35066次的节点/池
+数据又被后续D2H覆盖。旧记录缺少原生逐操作pool receipt，关联
+使用legacy_batch_pool_presence，不能将35598次未观察到恢复全部
+定为浪费。结果保存在
+`experiments/reports/v10_prepare_restore_attribution_20261009.json`，
+不覆盖v10冻结报告。
+
+CPU对照使用156 workflow、24节点闭包、16轮历史，与2abb957比较：
+已备份无租约/四租约的JOIN PREPARE下降2.67%/11.82%，未备份/
+Host不足下降15.49%/56.58%。未保护的候选集合、备份选择及采样
+目标一致；活跃恢复租约由原生validator排除。报告为
+`experiments/reports/prepare_demand_scan_cpu_156_24_20261009.json`。
+主仓库223项检查及随后引擎/脚本73项检查通过，不代表GPU收益。
+
+下一轮为v11 predictive：108任务t=0、48任务t=3600，running=48、
+Host 200 GB FULL:Mamba=80:20、HBM Mamba/FULL=0.9、同一模型、
+预测产物、prompt、seed=21和预算。复用已完成v10 native作为开发
+参考，报告源码/引擎版本和实际轨迹差异。出现实现故障时停止该轮、
+保留证据、修复后冷启动；正式结论仍要求交替顺序的多轮对照。
+
 ## PREPARE 热点与 Handoff 身份修复
 
 本次修订基于 `e985d8c`，在独立工作树

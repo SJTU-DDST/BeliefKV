@@ -2671,7 +2671,7 @@ def test_join_prepare_is_selective_and_invalidates_on_parent_reentry():
     ), patch.object(runtime, "refreshed_shadow_backup_step", return_value=step), patch.object(
         runtime, "issue_shadow_backup_step", return_value="prepare",
     ) as issue:
-        runtime.dispatch_join_prepare()
+        runtime.dispatch_join_prepare([req("child")])
         issue.assert_called_once_with(step, source="join_prepare")
     assert runtime._live_parent_pressure_node(11, 4)
     runtime.on_events((event(7, RuntimeEventKind.RETURN, invocation_id="child"),))

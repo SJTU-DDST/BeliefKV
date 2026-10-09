@@ -569,7 +569,7 @@ index 7811e44..cd7aea5 100755
                  cow_dst_tensors.append(req.kv.mamba_pool_idx.unsqueeze(0))
                  req.kv.mamba_cow_src_index = None
 diff --git a/python/sglang/srt/managers/scheduler.py b/python/sglang/srt/managers/scheduler.py
-index 743c8af..dd4f8cc 100644
+index 743c8af..4a58321 100644
 --- a/python/sglang/srt/managers/scheduler.py
 +++ b/python/sglang/srt/managers/scheduler.py
 @@ -725,9 +725,147 @@ class Scheduler(
@@ -861,7 +861,7 @@ index 743c8af..dd4f8cc 100644
  
          if self.enable_fpm:
              self._fpm_batch_t0 = time.monotonic()
-@@ -3647,6 +3885,23 @@ class Scheduler(
+@@ -3647,6 +3885,27 @@ class Scheduler(
              if running_batch.is_empty():
                  running_batch.batch_is_full = False
  
@@ -876,8 +876,12 @@ index 743c8af..dd4f8cc 100644
 +        if beliefkv_runtime is not None:
 +            # A finished waiting parent's input is immutable; D2H read locks
 +            # do not require draining unrelated agents' decode work.
-+            beliefkv_runtime.dispatch_join_prepare(self.waiting_queue)
-+            beliefkv_runtime.dispatch_tool_prepare(self.waiting_queue)
++            beliefkv_runtime.dispatch_join_prepare(
++                self.waiting_queue, running_batch=running_batch,
++            )
++            beliefkv_runtime.dispatch_tool_prepare(
++                self.waiting_queue, running_batch=running_batch,
++            )
 +            beliefkv_runtime.dispatch_execution_handoff(
 +                self.waiting_queue, running_batch=running_batch,
 +            )
@@ -885,7 +889,7 @@ index 743c8af..dd4f8cc 100644
          if self.dllm_config is not None:
              new_batch = self.get_new_batch_dllm(running_batch)
          elif self._should_defer_prefill():
-@@ -3705,6 +3960,8 @@ class Scheduler(
+@@ -3705,6 +3964,8 @@ class Scheduler(
              if self.enable_fpm:
                  ret.fpm_start_time = self._fpm_batch_t0
  
@@ -894,7 +898,7 @@ index 743c8af..dd4f8cc 100644
          return NextBatchPlan(batch_to_run=ret, running_batch=running_batch)
  
      def get_num_allocatable_reqs(
-@@ -3754,6 +4011,50 @@ class Scheduler(
+@@ -3754,6 +4015,50 @@ class Scheduler(
  
          return NextBatchPlan(batch_to_run=ret, running_batch=running_batch)
  
@@ -945,16 +949,17 @@ index 743c8af..dd4f8cc 100644
      def _get_new_batch_prefill_raw(
          self,
          prefill_delayer_single_pass: Optional[PrefillDelayerSinglePassExecutor],
-@@ -3871,7 +4172,7 @@ class Scheduler(
+@@ -3871,7 +4176,8 @@ class Scheduler(
              mamba_allocator.alloc_group_begin(len(self.waiting_queue))
          buffer_pipeline = self.tree_cache.buffer_pipeline
          # Get requests from the waiting queue to a new prefill batch
 -        for req in self.waiting_queue:
++        capacity_bypassed = 0
 +        for req in self._beliefkv_prefill_candidates(running_batch, adder):
              if self.enable_lora and not self.can_schedule_lora_req(req, running_loras):
                  continue
  
-@@ -3897,6 +4198,12 @@ class Scheduler(
+@@ -3897,6 +4203,12 @@ class Scheduler(
                  ):
                      break
  
@@ -967,7 +972,7 @@ index 743c8af..dd4f8cc 100644
              if self.enable_hicache_storage:
                  prefetch_done = self.tree_cache.check_prefetch_progress(
                      req.cache_request_handle
-@@ -3932,6 +4239,10 @@ class Scheduler(
+@@ -3932,6 +4244,10 @@ class Scheduler(
                  has_chunked_req=(self.chunked_req is not None),
                  truncation_align_size=self.truncation_align_size,
              )
@@ -978,7 +983,26 @@ index 743c8af..dd4f8cc 100644
  
              if self.enable_lora:
                  running_loras.add(req.lora_id)
-@@ -4254,6 +4565,9 @@ class Scheduler(
+@@ -3963,6 +4279,18 @@ class Scheduler(
+                             req.kv.mamba_pool_idx.unsqueeze(-1)
+                         )
+                         req.kv.mamba_pool_idx = None
++                if (
++                    res == AddReqResult.NO_TOKEN and not added
++                    and self.beliefkv_runtime is not None
++                    and self.beliefkv_runtime.allow_prefill_capacity_bypass(
++                        req,
++                        native_budget_available=adder.budget_state() == AddReqResult.CONTINUE,
++                        bypassed=capacity_bypassed,
++                    )
++                ):
++                    capacity_bypassed += 1
++                    running_batch.batch_is_full = False
++                    continue
+                 break
+ 
+         if mamba_allocator is not None:
+@@ -4254,6 +4582,9 @@ class Scheduler(
          batch.launch_ts = time.monotonic()
          batch.after_idle_gap = self._sched_idled
          self._sched_idled = False
@@ -988,7 +1012,7 @@ index 743c8af..dd4f8cc 100644
  
          # Accumulate the prefill-token counter used by the HRRN scheduling policy. Decode / prebuilt batches contribute 0.
          if batch.extend_num_tokens:
-@@ -4622,6 +4936,10 @@ class Scheduler(
+@@ -4622,6 +4953,10 @@ class Scheduler(
          elif batch.forward_mode.is_idle():
              self.batch_result_processor.process_batch_result_idle(batch, result)
  
@@ -999,7 +1023,7 @@ index 743c8af..dd4f8cc 100644
          self._record_step_counters(batch, result)
  
          self.metrics_reporter.log_batch_result_stats(batch, result)
-@@ -4634,6 +4952,19 @@ class Scheduler(
+@@ -4634,6 +4969,19 @@ class Scheduler(
          self.maybe_send_health_check_signal()
          self.metrics_reporter.update_device_timer()
  
@@ -1019,7 +1043,7 @@ index 743c8af..dd4f8cc 100644
      def _record_step_counters(
          self, batch: ScheduleBatch, result: GenerationBatchResult
      ) -> None:
-@@ -5215,6 +5546,9 @@ class Scheduler(
+@@ -5215,6 +5563,9 @@ class Scheduler(
          }
  
      def abort_request(self, recv_req: AbortReq):
@@ -1029,7 +1053,7 @@ index 743c8af..dd4f8cc 100644
          if (chunked_req := self.chunked_req) is not None:
              if recv_req.abort_all or chunked_req.rid.startswith(recv_req.rid):
                  self._pending_chunked_abort_req = chunked_req
-@@ -5369,6 +5703,25 @@ class Scheduler(
+@@ -5369,6 +5720,25 @@ class Scheduler(
                  else:
                      req.to_finish = FINISH_ABORT()
  
@@ -1055,7 +1079,7 @@ index 743c8af..dd4f8cc 100644
      def _pause_engine(self) -> Tuple[List[Req], int]:
          raise NotImplementedError()
  
-@@ -5642,6 +5995,8 @@ class Scheduler(
+@@ -5642,6 +6012,8 @@ class Scheduler(
  
      def maybe_sleep_on_idle(self):
          if self.idle_sleeper is not None:
@@ -1064,7 +1088,7 @@ index 743c8af..dd4f8cc 100644
              self.idle_sleeper.maybe_sleep()
  
      def handle_freeze_gc(self, recv_req: FreezeGCReq):
-@@ -5652,6 +6007,17 @@ class Scheduler(
+@@ -5652,6 +6024,17 @@ class Scheduler(
  
      def handle_shutdown(self, recv_req: ShutdownReq):
          # Break the event loop; the finally in run_scheduler_process releases resources.
@@ -1677,7 +1701,7 @@ index 6815679..fc9deaa 100644
      def reset(self) -> None:
          """Drop the entire tree and reinitialize empty state."""
 diff --git a/python/sglang/srt/mem_cache/unified_radix_cache.py b/python/sglang/srt/mem_cache/unified_radix_cache.py
-index d417d7d..6b71d1b 100644
+index d417d7d..1a1aa85 100644
 --- a/python/sglang/srt/mem_cache/unified_radix_cache.py
 +++ b/python/sglang/srt/mem_cache/unified_radix_cache.py
 @@ -6,7 +6,7 @@ import threading
@@ -1689,12 +1713,12 @@ index d417d7d..6b71d1b 100644
  
  import torch
  
-@@ -158,6 +158,48 @@ class _OngoingPrefetch(NamedTuple):
+@@ -158,6 +158,49 @@ class _OngoingPrefetch(NamedTuple):
      comp_xfers: dict[ComponentType, list[PoolTransfer]]
  
  
 +class HiCacheChildCommit(NamedTuple):
-+    command_id: str
++    command_id: Optional[str]
 +    anchor_node_id: NodeId
 +    published_node_ids: tuple[NodeId, ...]
 +    num_tokens_by_pool: tuple[tuple[str, int], ...]
@@ -1718,6 +1742,7 @@ index d417d7d..6b71d1b 100644
 +    enqueue_to_submit_ms: Optional[float] = None
 +    transfer_stream_elapsed_ms: Optional[float] = None
 +    unacked_bytes_at_submit: Optional[int] = None
++    node_commits: tuple[HiCacheChildCommit, ...] = ()
 +
 +
 +class PrepareHostShadowResult(NamedTuple):
@@ -1738,7 +1763,7 @@ index d417d7d..6b71d1b 100644
  class UnifiedRadixCache(BasePrefixCache):
      def __init__(
          self,
-@@ -260,7 +302,13 @@ class UnifiedRadixCache(BasePrefixCache):
+@@ -260,7 +303,13 @@ class UnifiedRadixCache(BasePrefixCache):
  
          # HiCache D↔H defaults (overridden by init_hicache)
          self.cache_controller: Optional[HybridCacheController] = None
@@ -1752,7 +1777,7 @@ index d417d7d..6b71d1b 100644
          # Owns the storage backend lifecycle; built by init_hicache.
          self._storage_attachment: Optional[StorageAttachment] = None
          self.linker: Optional[UnifiedCacheLinkerWrapper] = None
-@@ -377,6 +425,7 @@ class UnifiedRadixCache(BasePrefixCache):
+@@ -377,6 +426,7 @@ class UnifiedRadixCache(BasePrefixCache):
  
      def _reset_full(self) -> None:
          """Full reset: destroy entire tree and all state."""
@@ -1760,7 +1785,7 @@ index d417d7d..6b71d1b 100644
          self.tree_core.reset()
          self.session_refs.reset()
  
-@@ -801,6 +850,178 @@ class UnifiedRadixCache(BasePrefixCache):
+@@ -801,6 +851,184 @@ class UnifiedRadixCache(BasePrefixCache):
          self._accumulate_tracker(tracker, result.tracker)
          return result.is_dropped
  
@@ -1822,10 +1847,14 @@ index d417d7d..6b71d1b 100644
 +        ):
 +            return {}
 +        tracker: dict[ComponentType, int] = {}
-+        candidates = [
-+            (node_id, created, "waiting_agent")
-+            for node_id, created in getattr(self, "beliefkv_join_pressure_candidates", ())[:8]
-+        ]
++        fallback = getattr(self, "beliefkv_join_pressure_candidates", ())
++        by_component = getattr(self, "beliefkv_join_pressure_candidates_by_component", {})
++        waiting = {}
++        for ct, target in ((BASE_COMPONENT_TYPE, full_tokens), (ComponentType.MAMBA, mamba_slots)):
++            if self._component_available_size(ct) < target:
++                for identity in by_component.get(int(ct), fallback)[:8]:
++                    waiting.setdefault(identity, None)
++        candidates = [(node_id, created, "waiting_agent") for node_id, created in waiting]
 +        for index, node in enumerate(self.tree_core.evictable_device_leaves):
 +            if index >= 8:
 +                break
@@ -1900,7 +1929,9 @@ index d417d7d..6b71d1b 100644
 +        oldest = lru.get_lru_no_lock()
 +        if oldest is not None and oldest.component_data[component_type].session_ref == 0:
 +            return
-+        for node_id, created in getattr(self, "beliefkv_join_pressure_candidates", ())[:8]:
++        fallback = getattr(self, "beliefkv_join_pressure_candidates", ())
++        by_component = getattr(self, "beliefkv_join_pressure_candidates_by_component", {})
++        for node_id, created in by_component.get(int(component_type), fallback)[:8]:
 +            try:
 +                node = self.tree_core.node_by_id(node_id)
 +            except (KeyError, RuntimeError, ValueError):
@@ -1939,7 +1970,7 @@ index d417d7d..6b71d1b 100644
      def _evict_components(
          self,
          request_by_type: dict[ComponentType, int],
-@@ -851,6 +1072,11 @@ class UnifiedRadixCache(BasePrefixCache):
+@@ -851,6 +1079,11 @@ class UnifiedRadixCache(BasePrefixCache):
              # on a shared pool, released enough bytes to satisfy its allocation.
              if tracker[ct] >= request_cnt or target_reached(ct):
                  continue
@@ -1951,7 +1982,7 @@ index d417d7d..6b71d1b 100644
              self.tree_core.evict_device_start(ct, request_cnt)
              try:
                  while True:
-@@ -892,7 +1118,9 @@ class UnifiedRadixCache(BasePrefixCache):
+@@ -892,7 +1125,9 @@ class UnifiedRadixCache(BasePrefixCache):
              isinstance(self.tree_core, UnifiedTreeCore)
              and self.host_memory_mode == "cache"
              and self.cache_controller is not None
@@ -1962,7 +1993,7 @@ index d417d7d..6b71d1b 100644
          )
  
      def _record_dropped_tokens(self, dropped_tokens: int, reason: str) -> None:
-@@ -955,6 +1183,18 @@ class UnifiedRadixCache(BasePrefixCache):
+@@ -955,6 +1190,18 @@ class UnifiedRadixCache(BasePrefixCache):
              return DecLockRefResult()
          return self.tree_core.dec_host_lock_ref(node_id, params)
  
@@ -1981,7 +2012,7 @@ index d417d7d..6b71d1b 100644
      @rank_consensus(same_params=["req.rid", "is_insert", "kv_len_to_handle"])
      def cache_finished_req(
          self, req: Req, is_insert: bool = True, *, kv_len_to_handle: int, **kwargs
-@@ -1078,7 +1318,7 @@ class UnifiedRadixCache(BasePrefixCache):
+@@ -1078,7 +1325,7 @@ class UnifiedRadixCache(BasePrefixCache):
              self._dec_req_lock(req, skip_swa=req.swa_prefix_lock_released)
  
          if is_insert and result is not None and result.last_device_node is not None:
@@ -1990,7 +2021,7 @@ index d417d7d..6b71d1b 100644
  
          # cleanup
          for comp in self._components_tuple:
-@@ -1309,6 +1549,13 @@ class UnifiedRadixCache(BasePrefixCache):
+@@ -1309,6 +1556,13 @@ class UnifiedRadixCache(BasePrefixCache):
              return 0
          result = self.tree_core.drive_host_eviction(component_type, num_tokens)
          self._free_values(result.device_frees, result.host_frees)
@@ -2004,7 +2035,7 @@ index d417d7d..6b71d1b 100644
          return result.tracker.get(component_type, 0)
  
      # ---- Decode retraction ----
-@@ -1518,8 +1765,160 @@ class UnifiedRadixCache(BasePrefixCache):
+@@ -1518,8 +1772,160 @@ class UnifiedRadixCache(BasePrefixCache):
  
      # ---- HiCache: Backup / LoadBack ----
  
@@ -2166,7 +2197,7 @@ index d417d7d..6b71d1b 100644
      ) -> int:
          """Run a backup action top-down, stopping at the first failed backup."""
          if self.buffer_pipeline is not None:
-@@ -1532,14 +1931,22 @@ class UnifiedRadixCache(BasePrefixCache):
+@@ -1532,14 +1938,22 @@ class UnifiedRadixCache(BasePrefixCache):
              return 0
          written = 0
          for node_id in action.node_ids:
@@ -2191,7 +2222,7 @@ index d417d7d..6b71d1b 100644
              )
              if host_indices is None:
                  return 0
-@@ -1554,6 +1961,312 @@ class UnifiedRadixCache(BasePrefixCache):
+@@ -1554,6 +1968,312 @@ class UnifiedRadixCache(BasePrefixCache):
              written = len(host_indices)
          return written
  
@@ -2504,7 +2535,7 @@ index d417d7d..6b71d1b 100644
      @staticmethod
      def _backup_publish_node_ids(
          node_id: NodeId, comp_xfers: dict[ComponentType, list[PoolTransfer]]
-@@ -1574,18 +2287,74 @@ class UnifiedRadixCache(BasePrefixCache):
+@@ -1574,18 +2294,74 @@ class UnifiedRadixCache(BasePrefixCache):
              CacheTransferPhase.BACKUP_HOST, kv_xfer, comp_xfers
          )
  
@@ -2581,7 +2612,7 @@ index d417d7d..6b71d1b 100644
          )
  
      def _track_write_through_node(
-@@ -1627,10 +2396,10 @@ class UnifiedRadixCache(BasePrefixCache):
+@@ -1627,10 +2403,10 @@ class UnifiedRadixCache(BasePrefixCache):
              updated_node_ids,
          )
  
@@ -2594,7 +2625,7 @@ index d417d7d..6b71d1b 100644
  
          lock_node_id, lock_params, publish_node_ids = self.ongoing_write_through.pop(
              ack_id
-@@ -1643,15 +2412,25 @@ class UnifiedRadixCache(BasePrefixCache):
+@@ -1643,15 +2419,25 @@ class UnifiedRadixCache(BasePrefixCache):
              # suffix; the prefix fragment must be persisted as well.
              for node_id in publish_node_ids:
                  self.write_backup_storage(node_id)
@@ -2621,7 +2652,7 @@ index d417d7d..6b71d1b 100644
              return False
  
          host_anchor_params = self.inc_host_lock_ref(node_id).to_dec_params()
-@@ -1675,6 +2454,10 @@ class UnifiedRadixCache(BasePrefixCache):
+@@ -1675,6 +2461,10 @@ class UnifiedRadixCache(BasePrefixCache):
                  result=result,
                  ancestor_lock_params=ancestor_lock_params,
                  host_anchor_params=host_anchor_params,
@@ -2632,7 +2663,7 @@ index d417d7d..6b71d1b 100644
              )
              return success
          finally:
-@@ -1690,9 +2473,15 @@ class UnifiedRadixCache(BasePrefixCache):
+@@ -1690,9 +2480,15 @@ class UnifiedRadixCache(BasePrefixCache):
          result: IncLockRefResult,
          ancestor_lock_params: DecLockRefParams,
          host_anchor_params: DecLockRefParams,
@@ -2649,7 +2680,7 @@ index d417d7d..6b71d1b 100644
          kv_tokens = len(kv_xfer.host_indices)
          sidecar_xfers = self._build_sidecar_transfers(
              CacheTransferPhase.LOAD_BACK, kv_xfer, comp_xfers
-@@ -1703,7 +2492,8 @@ class UnifiedRadixCache(BasePrefixCache):
+@@ -1703,7 +2499,8 @@ class UnifiedRadixCache(BasePrefixCache):
          # when the Full-KV load is skipped by thresholding. max(1, ...): an
          # entirely empty spec (e.g. foreign-pin rejection) must never report
          # success, even at load_back_threshold <= 0.
@@ -2659,7 +2690,7 @@ index d417d7d..6b71d1b 100644
              mem_quota is not None and kv_tokens + result.delta > mem_quota
          ):
              self.dec_lock_ref(node_id, ancestor_lock_params)
-@@ -1714,6 +2504,10 @@ class UnifiedRadixCache(BasePrefixCache):
+@@ -1714,6 +2511,10 @@ class UnifiedRadixCache(BasePrefixCache):
              self.token_to_kv_pool_allocator, "c128_attn_allocator", None
          )
          if c128_allocator is not None:
@@ -2670,7 +2701,7 @@ index d417d7d..6b71d1b 100644
              c128_num_pages = _c128_transfer_num_pages(
                  comp_xfers.get(ComponentType.C128, ()),
                  c128_allocator.page_size,
-@@ -1727,6 +2521,10 @@ class UnifiedRadixCache(BasePrefixCache):
+@@ -1727,6 +2528,10 @@ class UnifiedRadixCache(BasePrefixCache):
  
          avail = self._component_available_size(ComponentType.FULL)
          if avail < kv_tokens:
@@ -2681,7 +2712,7 @@ index d417d7d..6b71d1b 100644
              needed = kv_tokens - avail
              self.evict_for_alloc(EvictParams(num_tokens=needed))
              if self._component_available_size(ComponentType.FULL) < kv_tokens:
-@@ -1741,6 +2539,9 @@ class UnifiedRadixCache(BasePrefixCache):
+@@ -1741,6 +2546,9 @@ class UnifiedRadixCache(BasePrefixCache):
              host_indices=kv_xfer.host_indices,
              node_id=node_id,
              extra_pools=aux_xfers or None,
@@ -2691,7 +2722,7 @@ index d417d7d..6b71d1b 100644
          )
  
          self.dec_lock_ref(node_id, ancestor_lock_params)
-@@ -3130,10 +3931,24 @@ class UnifiedRadixCache(BasePrefixCache):
+@@ -3130,10 +3938,24 @@ class UnifiedRadixCache(BasePrefixCache):
              while self.ongoing_write_through:
                  for ack in cc.ack_write_queue:
                      ack.finish_event.synchronize()
@@ -2717,7 +2748,7 @@ index d417d7d..6b71d1b 100644
                  cc.ack_write_queue.clear()
                  assert len(self.ongoing_write_through) == 0
              return
-@@ -3154,11 +3969,118 @@ class UnifiedRadixCache(BasePrefixCache):
+@@ -3154,11 +3976,122 @@ class UnifiedRadixCache(BasePrefixCache):
          while finish_count > 0:
              ack = cc.ack_write_queue.pop(0)
              ack.finish_event.synchronize()
@@ -2753,6 +2784,7 @@ index d417d7d..6b71d1b 100644
 +        # Merged ACK pool counts cannot be attributed to a subset of its nodes.
 +        pool_counts = ack.num_tokens_by_pool if full_ack else {}
 +        child_commits = ()
++        node_commits = ()
 +        receipts = getattr(ack, "child_receipts", ())
 +        if receipts and full_ack and committed_by_anchor is not None:
 +            try:
@@ -2793,7 +2825,7 @@ index d417d7d..6b71d1b 100644
 +                    and receipt_counts == (ack.num_tokens_by_pool or {})
 +                    and sum(receipt.num_bytes for receipt in receipts) == ack.num_bytes
 +                ):
-+                    child_commits = tuple(
++                    node_commits = tuple(
 +                        HiCacheChildCommit(
 +                            command_id=receipt.command_id,
 +                            anchor_node_id=receipt.node_id,
@@ -2802,7 +2834,9 @@ index d417d7d..6b71d1b 100644
 +                            num_bytes=receipt.num_bytes,
 +                        )
 +                        for receipt in receipts
-+                        if receipt.command_id is not None
++                    )
++                    child_commits = tuple(
++                        child for child in node_commits if child.command_id is not None
 +                    )
 +            except (AttributeError, TypeError, ValueError):
 +                logger.warning("invalid HiCache child receipts; omitting command credit")
@@ -2819,6 +2853,7 @@ index d417d7d..6b71d1b 100644
 +            status="completed",
 +            enqueue_to_submit_ms=getattr(ack, "enqueue_to_submit_ms", None),
 +            child_commits=child_commits,
++            node_commits=node_commits,
 +            actual_bytes=ack.num_bytes,
 +            submit_ts_ms=ack.submit_ts_ms,
 +            ack_ts_ms=time.time() * 1000.0,
@@ -2837,7 +2872,7 @@ index d417d7d..6b71d1b 100644
      def _log_write_ack_metrics(self, ack: HiCacheAck) -> None:
          """Record D->H backup volume and duration for a completed write ack."""
          if self.metrics_collector is None:
-@@ -3200,6 +4122,8 @@ class UnifiedRadixCache(BasePrefixCache):
+@@ -3200,6 +4133,8 @@ class UnifiedRadixCache(BasePrefixCache):
          while finish_count > 0:
              ack = cc.ack_load_queue.pop(0)
              ack.finish_event.synchronize()
@@ -2846,7 +2881,7 @@ index d417d7d..6b71d1b 100644
              for ack_id in ack.node_ids:
                  if (
                      self.buffer_pipeline is not None
-@@ -3211,6 +4135,8 @@ class UnifiedRadixCache(BasePrefixCache):
+@@ -3211,6 +4146,8 @@ class UnifiedRadixCache(BasePrefixCache):
                  self.dec_host_lock_ref(node, host_lock_params)
                  # Unpin the loaded nodes; host copies stay as reclaimable duplicates.
                  self.tree_core.finish_load_back(node)
@@ -2855,7 +2890,7 @@ index d417d7d..6b71d1b 100644
  
              if self.metrics_collector is not None:
                  for pool, num_tokens in (ack.num_tokens_by_pool or {}).items():
-@@ -3225,6 +4151,13 @@ class UnifiedRadixCache(BasePrefixCache):
+@@ -3225,6 +4162,13 @@ class UnifiedRadixCache(BasePrefixCache):
                      self.metrics_collector.observe_load_back_duration(
                          duration_ms / 1000.0
                      )
@@ -2869,7 +2904,7 @@ index d417d7d..6b71d1b 100644
              finish_count -= 1
  
      # ---- HiCache: Scheduler Entry Points ----
-@@ -3341,9 +4274,31 @@ class UnifiedRadixCache(BasePrefixCache):
+@@ -3341,9 +4285,31 @@ class UnifiedRadixCache(BasePrefixCache):
          if self.linker is not None:
              return self.linker.start_layer_wise_loading()
          if self.cache_controller is not None:
@@ -2987,10 +3022,10 @@ index b219467..6ca04e5 100644
          cache, allocator, _ = build_fixture(self.cfg)
 diff --git a/test/srt/test_beliefkv_execution_handoff.py b/test/srt/test_beliefkv_execution_handoff.py
 new file mode 100644
-index 0000000..7072f76
+index 0000000..4c5df9a
 --- /dev/null
 +++ b/test/srt/test_beliefkv_execution_handoff.py
-@@ -0,0 +1,192 @@
+@@ -0,0 +1,224 @@
 +"""CPU checks for read-only reentry and cold-only capacity exchange."""
 +
 +import ast
@@ -3035,6 +3070,7 @@ index 0000000..7072f76
 +    cache = next(item for item in tree.body if isinstance(item, ast.ClassDef) and item.name == "UnifiedRadixCache")
 +    methods = [item for item in cache.body if isinstance(item, ast.FunctionDef) and item.name in {
 +        "inspect_beliefkv_reentry", "reclaim_beliefkv_handoff_capacity",
++        "_evict_backed_join_parent",
 +    }]
 +    module = ast.Module(body=[
 +        ast.ImportFrom(module="__future__", names=[ast.alias(name="annotations")], level=0),
@@ -3183,6 +3219,37 @@ index 0000000..7072f76
 +    assert cache.reclaim_beliefkv_handoff_capacity(full_tokens=2, mamba_slots=0) == {0: 2}
 +    assert victim.component_data[0].host_value is host
 +    assert cache.beliefkv_handoff_last_victims[0]["scope"] == "unreferenced_cache"
++
++
++@pytest.mark.parametrize("handoff", (False, True))
++def test_pool_index_finds_full_leaf_hidden_behind_eight_interior_nodes(handoff):
++    cache, interior, victim, _ = fixture()
++    cache.is_write_back = True
++    cache.ongoing_write_through = {}
++    cache.beliefkv_join_pressure_candidates = (
++        *((interior.id, interior.creation_time),) * 8,
++        (victim.id, victim.creation_time),
++    )
++    cache.beliefkv_join_pressure_candidates_by_component = {
++        0: ((victim.id, victim.creation_time),),
++        2: ((interior.id, interior.creation_time),),
++    }
++    cache.beliefkv_join_pressure_validator = Mock(return_value=True)
++    cache._component_available_size = Mock(return_value=0)
++    cache.tree_core.lru_lists = {0: NS(get_lru_no_lock=lambda: interior)}
++
++    def demote(node_id, tracker):
++        assert node_id == victim.id
++        tracker[0] = 2
++
++    cache._demote = Mock(side_effect=demote)
++    if handoff:
++        assert cache.reclaim_beliefkv_handoff_capacity(full_tokens=2, mamba_slots=0) == {0: 2}
++    else:
++        tracker = {}
++        cache._evict_backed_join_parent(0, tracker)
++        assert tracker == {0: 2}
++    cache._demote.assert_called_once()
 diff --git a/test/srt/test_beliefkv_host_eviction_observer.py b/test/srt/test_beliefkv_host_eviction_observer.py
 new file mode 100644
 index 0000000..ae52cd2
@@ -4082,7 +4149,7 @@ index 0000000..0f6eaa2
 +    unittest.main()
 diff --git a/test/srt/test_beliefkv_scheduler_hook.py b/test/srt/test_beliefkv_scheduler_hook.py
 new file mode 100644
-index 0000000..c570a14
+index 0000000..dd65055
 --- /dev/null
 +++ b/test/srt/test_beliefkv_scheduler_hook.py
 @@ -0,0 +1,705 @@
@@ -4571,8 +4638,8 @@ index 0000000..c570a14
 +            scheduler_step=lambda **kwargs: None,
 +            dispatch_join_prefetch=lambda: None,
 +            dispatch_tool_prefetch=lambda: None,
-+            dispatch_join_prepare=lambda _: None,
-+            dispatch_tool_prepare=lambda _: None,
++            dispatch_join_prepare=lambda _, **kwargs: None,
++            dispatch_tool_prepare=lambda _, **kwargs: None,
 +            dispatch_execution_handoff=lambda *args, **kwargs: None,
 +            plan_running_batch_retraction=lambda running: None,
 +            on_batch_selected=lambda batch: None,
@@ -4639,8 +4706,8 @@ index 0000000..c570a14
 +            scheduler_step=lambda **kwargs: calls.append("ack"),
 +            dispatch_join_prefetch=lambda: None,
 +            dispatch_tool_prefetch=lambda: None,
-+            dispatch_join_prepare=lambda _: None,
-+            dispatch_tool_prepare=lambda _: None,
++            dispatch_join_prepare=lambda _, **kwargs: None,
++            dispatch_tool_prepare=lambda _, **kwargs: None,
 +            dispatch_execution_handoff=lambda *args, **kwargs: calls.append("handoff"),
 +            plan_running_batch_retraction=lambda _: None,
 +            on_batch_selected=lambda selected: calls.append(("selected", selected)),
@@ -4655,8 +4722,8 @@ index 0000000..c570a14
 +            scheduler_step=lambda **kwargs: calls.append("ack"),
 +            dispatch_join_prefetch=lambda: None,
 +            dispatch_tool_prefetch=lambda: None,
-+            dispatch_join_prepare=lambda _: None,
-+            dispatch_tool_prepare=lambda _: None,
++            dispatch_join_prepare=lambda _, **kwargs: None,
++            dispatch_tool_prepare=lambda _, **kwargs: None,
 +            dispatch_execution_handoff=lambda *args, **kwargs: calls.append("handoff"),
 +            running_batch_retraction_barrier_required=lambda _: True,
 +            on_running_batch_retraction_barrier_drained=lambda _: calls.append("drained"),
@@ -4685,8 +4752,8 @@ index 0000000..c570a14
 +            running_batch_retraction_barrier_required=lambda _: False,
 +            dispatch_join_prefetch=lambda: calls.append("join"),
 +            dispatch_tool_prefetch=lambda: calls.append("tool"),
-+            dispatch_join_prepare=lambda _: None,
-+            dispatch_tool_prepare=lambda _: None,
++            dispatch_join_prepare=lambda _, **kwargs: None,
++            dispatch_tool_prepare=lambda _, **kwargs: None,
 +            dispatch_execution_handoff=lambda *args, **kwargs: None,
 +            on_batch_selected=lambda _: calls.append("selected"),
 +        )
@@ -4707,8 +4774,8 @@ index 0000000..c570a14
 +            running_batch_retraction_barrier_required=lambda _: False,
 +            dispatch_join_prefetch=lambda: calls.append("join"),
 +            dispatch_tool_prefetch=lambda: calls.append("tool"),
-+            dispatch_join_prepare=lambda _: None,
-+            dispatch_tool_prepare=lambda _: None,
++            dispatch_join_prepare=lambda _, **kwargs: None,
++            dispatch_tool_prepare=lambda _, **kwargs: None,
 +            dispatch_execution_handoff=lambda *args, **kwargs: None,
 +            on_batch_selected=lambda _: None,
 +        )
@@ -6632,10 +6699,10 @@ index 0000000..ff7003f
 +    unittest.main()
 diff --git a/test/srt/test_beliefkv_unified_ack.py b/test/srt/test_beliefkv_unified_ack.py
 new file mode 100644
-index 0000000..cf8ddda
+index 0000000..6320bf9
 --- /dev/null
 +++ b/test/srt/test_beliefkv_unified_ack.py
-@@ -0,0 +1,382 @@
+@@ -0,0 +1,387 @@
 +"""CPU-only tests for UnifiedRadixCache's optional post-commit observer."""
 +
 +import ast
@@ -6832,6 +6899,10 @@ index 0000000..cf8ddda
 +        self.assertEqual(child.published_node_ids, (1, 11))
 +        self.assertEqual(child.num_tokens_by_pool, (("kv", 8), ("mamba", 2)))
 +        self.assertEqual(child.num_bytes, 100)
++        self.assertEqual(len(events[0].node_commits), 2)
++        self.assertIsNone(events[0].node_commits[1].command_id)
++        self.assertEqual(events[0].node_commits[1].published_node_ids, (2,))
++        self.assertEqual(events[0].node_commits[1].num_bytes, 40)
 +
 +    def test_mismatched_merged_receipt_never_certifies_command(self):
 +        cache = cache_fixture()
@@ -6857,6 +6928,7 @@ index 0000000..cf8ddda
 +        cache.loading_check(finish_count=1)
 +
 +        self.assertEqual(events[0].child_commits, ())
++        self.assertEqual(events[0].node_commits, ())
 +        self.assertEqual(events[0].status, "completed")
 +
 +    def test_constructor_defaults_observer_to_none(self):

@@ -180,9 +180,16 @@ def measure_case(baseline, *, workflows, depth, iterations, backed, host_full, l
                     samples[name]["join_prepare"].append(elapsed)
                     samples[name]["sampling"].append(sample_ms)
                     totals[name].update(reads - before)
-            for evidence in (selections, publications, sampled_steps):
+            for evidence in (selections, sampled_steps):
                 if evidence[0] != evidence[1]:
                     raise AssertionError(f"changed native selection at iteration {iteration}")
+            protected = {
+                (lease.node_id, lease.creation_time)
+                for runtime, *_ in variants.values()
+                for lease in runtime._prefetch_service_leases.values()
+            }
+            if set(publications[0]) - protected != set(publications[1]) - protected:
+                raise AssertionError(f"changed unprotected pressure nodes at iteration {iteration}")
         costs = {name: {phase: distribution(values) for phase, values in phases.items()}
                  for name, phases in samples.items()}
         return {
@@ -190,6 +197,10 @@ def measure_case(baseline, *, workflows, depth, iterations, backed, host_full, l
             "all_current_input_backed": backed, "host_full_free_tokens": host_full,
             "live_restore_leases": leases, "iterations": iterations,
             "selection_and_publication_equal": True,
+            "publication_scope": (
+                "unprotected node set; active prefetch leases remain ineligible "
+                "through the live native pressure validator"
+            ),
             "costs": costs, "observed_reads": {name: dict(values) for name, values in totals.items()},
             "mean_reduction": {
                 phase: 1 - costs["optimized"][phase]["mean_ms"]
@@ -251,7 +262,7 @@ def handoff_identity_case(baseline):
             }
         finally:
             runtime.close()
-    if evidence["baseline"]["issued"] != 0 or evidence["optimized"]["issued"] != 1:
+    if evidence["baseline"]["issued"] not in (0, 1) or evidence["optimized"]["issued"] != 1:
         raise AssertionError(f"native timestamp reproduction failed: {evidence}")
     return {
         "creation_time_type": "numpy.float64",

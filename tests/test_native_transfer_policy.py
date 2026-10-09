@@ -329,6 +329,95 @@ def test_prepare_sampling_reuses_h2d_closure_but_later_actions_read_fresh():
         capture.assert_called_once()
 
 
+def test_prepare_occupied_cache_without_next_service_demand_does_no_scan():
+    runtime = final_stage_runtime()
+    runtime._clear_final_stage("join")
+    runtime.enable_prepare_host = True
+    runtime.attach_native_cache(NS())
+    with patch(
+        "beliefkv.runtime.sglang_v0520_runtime.observe_static_full_mamba_headroom",
+        return_value=StaticPoolHeadroomObservation(
+            True, device_full_free_tokens=0, device_mamba_free_slots=0,
+        ),
+    ), patch.object(runtime, "refreshed_shadow_backup_step") as scan, \
+        patch.object(runtime, "_prune_parent_pressure_candidates") as maintain:
+        runtime.dispatch_join_prepare([], running_batch=NS(reqs=[]))
+        scan.assert_not_called()
+        maintain.assert_not_called()
+    assert runtime.counts["prepare_no_service_demand"] == 1
+
+
+def test_prepare_pressure_tracks_next_slots_and_active_page_growth():
+    runtime, *_ = locked_runtime()
+    runtime._native_max_running, runtime._native_page_size = 48, 16
+    headroom = StaticPoolHeadroomObservation(
+        True, device_full_free_tokens=65536, device_mamba_free_slots=4,
+    )
+    assert runtime._prepare_pressure([NS()] * 156, NS(reqs=[NS()] * 48), headroom) == (
+        False, False,
+    )
+    growth = StaticPoolHeadroomObservation(
+        True, device_full_free_tokens=767, device_mamba_free_slots=0,
+    )
+    assert runtime._prepare_pressure([], NS(reqs=[NS()] * 48), growth) == (True, False)
+
+
+def test_backed_prepare_rechecks_after_backoff_and_new_epoch_is_immediate():
+    from dataclasses import replace
+    runtime = final_stage_runtime()
+    runtime._clear_final_stage("join")
+    runtime.enable_prepare_host = True
+    runtime.attach_native_cache(NS())
+    with patch(
+        "beliefkv.runtime.sglang_v0520_runtime.observe_static_full_mamba_headroom",
+        return_value=StaticPoolHeadroomObservation(
+            True, device_full_free_tokens=0, device_mamba_free_slots=0,
+        ),
+    ), patch.object(runtime, "refreshed_shadow_backup_step", return_value=None) as scan, \
+        patch("beliefkv.runtime.sglang_v0520_runtime.time.monotonic", return_value=10.) as clock:
+        runtime.dispatch_join_prepare([req("child")])
+        key = runtime.context_sessions["ctx-parent"]
+        assert scan.call_count == 1
+        clock.return_value = 10.1
+        runtime.dispatch_join_prepare([req("child")])
+        assert scan.call_count == 1
+        assert runtime._prepare_probe_due(replace(key, context_epoch=key.context_epoch + 1), 10100.)
+        clock.return_value = 11.1
+        runtime.dispatch_join_prepare([req("child")])
+        assert scan.call_count == 2
+
+
+def test_pressure_publication_indexes_full_leaves_and_mamba_independently():
+    class Node(NS):
+        __hash__ = object.__hash__
+
+    runtime, _ = tool_runtime()
+    nodes = {
+        number: Node(
+            id=number, creation_time=number, backuped=True,
+            write_through_pending_id=None, load_back_pending_id=None,
+            component_data=[
+                NS(value=[1], host_value=[1], lock_ref=0, session_ref=1),
+                NS(value=None, host_value=None, lock_ref=0, session_ref=0),
+                NS(value=[1], host_value=[1], lock_ref=0, session_ref=1),
+            ],
+        )
+        for number in range(1, 12)
+    }
+    runtime._native_cache = NS(
+        tree_core=NS(node_by_id=nodes.__getitem__, evictable_device_leaves={nodes[11]}),
+        ongoing_write_through={},
+    )
+    runtime._parent_pressure_candidates = {
+        number: (None, number) for number in nodes
+    }
+    runtime._publish_parent_pressure_candidates()
+    cache = runtime._native_cache
+    assert cache.beliefkv_join_pressure_candidates[:8] == tuple((n, n) for n in range(1, 9))
+    assert cache.beliefkv_join_pressure_candidates_by_component[0] == ((11, 11),)
+    assert cache.beliefkv_join_pressure_candidates_by_component[2] == tuple((n, n) for n in nodes)
+
+
 def test_tool_latest_start_waits_until_measured_small_transfer_window():
     runtime, hint = tool_runtime()
     runtime._native_cache = NS(cache_controller=NS(mem_pool_host=NS(entry_map={

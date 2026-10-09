@@ -739,6 +739,10 @@ def test_native_transfer_stream_and_submit_ack_are_distinct_evidence(
             published_node_ids=(1,), num_tokens_by_pool=(("kv", 8),),
             num_bytes=8192,
         ),),
+        node_commits=(SimpleNamespace(
+            command_id=None, anchor_node_id=1, published_node_ids=(1,),
+            num_tokens_by_pool=(("kv", 8), ("mamba", 1)), num_bytes=8192,
+        ),),
         actual_bytes=8192,
         submit_ts_ms=1000.0,
         ack_ts_ms=1010.0,
@@ -768,6 +772,10 @@ def test_native_transfer_stream_and_submit_ack_are_distinct_evidence(
         "published_node_ids": [1],
         "num_tokens_by_pool": {"kv": 8},
         "num_bytes": 8192,
+    }]
+    assert transfer["node_commits"] == [{
+        "command_id": None, "anchor_node_id": 1, "published_node_ids": [1],
+        "num_tokens_by_pool": {"kv": 8, "mamba": 1}, "num_bytes": 8192,
     }]
     verified = _read(tmp_path / "server/physical_action_ack.jsonl")
     assert len(verified) == 1

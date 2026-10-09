@@ -30,6 +30,71 @@ def distribution(values) -> dict:
     }
 
 
+def prepare_restore_attribution(prepared: dict, transfers: list[dict]) -> list[dict]:
+    """Track the latest committed writer per node/pool, then observed reloads."""
+    results, latest = {}, {}
+    events = []
+    for transfer in transfers:
+        ts = transfer.get(
+            "complete_ts_ms" if transfer["direction"] == "d2h" else "submit_ts_ms",
+        )
+        if ts is not None:
+            events.append((ts, transfer))
+    for ts, transfer in sorted(events, key=lambda pair: pair[0]):
+        exact = transfer.get("node_commits") or []
+        commits = exact or transfer.get("tagged_child_commits") or []
+        covered = set()
+        parts = []
+        for child in commits:
+            nodes = child.get("published_node_ids")
+            if not nodes:
+                anchor = child.get("anchor_node_id")
+                if anchor is None:
+                    continue
+                nodes = [anchor]
+            covered.update(nodes)
+            parts.append((child.get("command_id"), nodes, child["num_tokens_by_pool"]))
+        unseen = [node for node in transfer.get("node_ids", []) if node not in covered]
+        if unseen:
+            parts.append((None, unseen, transfer.get("num_tokens_by_pool") or {}))
+        for command, nodes, units in parts:
+            pools = [pool for pool, count in units.items() if count > 0]
+            if transfer["direction"] == "d2h":
+                issue = prepared.get(command)
+                if issue is not None:
+                    results[command] = {
+                        **issue, "ack_ts_ms": ts, "published_node_ids": list(nodes),
+                        "prepared_pool_units": units, "restores": [],
+                        "superseded_node_pools": [],
+                    }
+                for node in nodes:
+                    for pool in pools:
+                        prior = latest.get((node, pool))
+                        if prior is not None and prior != command:
+                            results[prior]["superseded_node_pools"].append({
+                                "node_id": node, "pool": pool, "ts_ms": ts,
+                            })
+                        latest[node, pool] = command if issue is not None else None
+            else:
+                matched = defaultdict(list)
+                for node in nodes:
+                    for pool in pools:
+                        prior = latest.get((node, pool))
+                        if prior is not None:
+                            matched[prior].append({"node_id": node, "pool": pool})
+                for prior, matches in matched.items():
+                    results[prior]["restores"].append({
+                        "transfer_command_id": transfer.get("command_id"),
+                        "source": "controlled_h2d" if command is not None else "native_h2d",
+                        "submit_ts_ms": ts, "matched_node_pools": matches,
+                        "node_pool_evidence": (
+                            "reconciled_native_receipt" if exact else "legacy_batch_pool_presence"
+                        ),
+                        "scope": "observed Host-to-device restore; not final forward-use credit",
+                    })
+    return sorted(results.values(), key=lambda row: row["ts_ms"])
+
+
 def audit(arm: Path) -> dict:
     issued, prepared, parks, leases, stages = {}, {}, [], defaultdict(list), {}
     for row in records(arm / "opportunities/admission_opportunities.jsonl"):
@@ -127,11 +192,11 @@ def audit(arm: Path) -> dict:
             "native_reloads_before_first_service": native_reloads,
         })
     prepared_by_node = defaultdict(list)
-    for command, (transfer, _) in tagged.items():
+    for command, (transfer, child) in tagged.items():
         issue = prepared.get(command)
         if issue is None or transfer["direction"] != "d2h":
             continue
-        for node in transfer.get("node_ids", []):
+        for node in child.get("published_node_ids") or [child["anchor_node_id"]]:
             prepared_by_node[(issue["context_id"], issue["context_epoch"], node)].append(
                 (transfer["complete_ts_ms"], command),
             )
@@ -146,11 +211,15 @@ def audit(arm: Path) -> dict:
             consumed.append({**park, "prior_prepare_command": max(before)[1]})
     joins = [row for row in results if row["source"] == "join_ticket"]
     tools = [row for row in results if row["source"] == "tool_wait"]
+    handoffs = [row for row in results if row["source"] == "execution_handoff"]
+    prepare_restores = prepare_restore_attribution(prepared, transfers)
     summary = {
         "join_commands": len(joins), "tool_commands": len(tools),
+        "handoff_commands": len(handoffs),
         "trigger_kinds": dict(Counter(row["trigger_kind"] for row in results)),
         "join_bytes": sum(row["actual_bytes"] or 0 for row in joins),
         "tool_bytes": sum(row["actual_bytes"] or 0 for row in tools),
+        "handoff_bytes": sum(row["actual_bytes"] or 0 for row in handoffs),
         "join_submitted_before_eos": sum(
             row["submit_after_native_eos_ms"] is not None
             and row["submit_after_native_eos_ms"] < 0 for row in joins
@@ -174,6 +243,23 @@ def audit(arm: Path) -> dict:
         "pressure_events": len(parks),
         "pressure_events_with_prior_prepare_ack": len(consumed),
         "unique_prepared_nodes_demoted": len({row["node_id"] for row in consumed}),
+        "prepare_issued_commands": len(prepared),
+        "prepare_acknowledged_commands": len(prepare_restores),
+        "prepare_commands_with_observed_restore": sum(bool(row["restores"]) for row in prepare_restores),
+        "prepare_commands_with_native_restore": sum(
+            any(restore["source"] == "native_h2d" for restore in row["restores"])
+            for row in prepare_restores
+        ),
+        "prepare_commands_with_controlled_restore": sum(
+            any(restore["source"] == "controlled_h2d" for restore in row["restores"])
+            for row in prepare_restores
+        ),
+        "prepare_commands_without_observed_restore": sum(
+            not row["restores"] for row in prepare_restores
+        ),
+        "prepare_commands_with_superseded_node_pools": sum(
+            bool(row["superseded_node_pools"]) for row in prepare_restores
+        ),
     }
     return {
         "scope": (
@@ -182,6 +268,7 @@ def audit(arm: Path) -> dict:
         ),
         "arm": str(arm), "summary": summary, "rows": results,
         "prepare_consumption": consumed,
+        "prepare_restore_attribution": prepare_restores,
     }
 
 

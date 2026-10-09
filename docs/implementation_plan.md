@@ -2,6 +2,53 @@
 
 Status date: 2026-10-09.
 
+## Current Objective And V11
+
+Keep the fixed workload, model, capacity and arrival schedule. Continue until
+predictive has a verifiable performance improvement relative to native.
+Agent scheduling, shared-path CPU cost, predictive H2D and PREPARE belong to
+the same objective. The three explicit priorities are:
+
+- Restore-to-service: shorten ACK-to-first-service and reduce repeated native
+  loads before service, while accounting for missing pages and other workflows.
+- PREPARE consumption: attribute pressure parking, native/controlled reloads,
+  later writes and unobserved restoration, then reduce unnecessary backups.
+- Useful FULL coverage: validate real handoff FULL reuse and replacement of
+  demand restoration, alongside throughput, JCT and recomputation.
+
+V11 implementation:
+- Size PREPARE pressure from up to eight next-prefill candidates, the running
+  limit and active decode page growth. Cache occupancy alone is not demand.
+- Revisit exhausted or Host-full contexts after one second; new identity/epoch
+  is immediately eligible. Native enqueue still revalidates physical state.
+- Publish separate FULL-leaf and Mamba-state reclaim indexes before native's
+  eight-candidate bound. Retain all native ownership and DMA checks.
+- After an unadmitted NO_TOKEN, try up to eight later unaged tagged requests
+  only if PrefillAdder's current budget allows more. Preserve ten-second aging.
+- Persist reconciled per-operation pool receipts for native and controlled
+  transfers. Track the latest node/pool writer and subsequent H2D; restoration
+  is not final model-forward credit. Report execution handoff separately.
+
+V10 retrospective: 35713 acknowledged PREPARE operations; 115 have observed
+reload associations (98 native, 29 controlled, overlapping), while 35066
+have later same-node/pool D2H writes. Old logs only support legacy batch-pool
+association; do not classify all 35598 without observed reload as waste.
+Report: experiments/reports/v10_prepare_restore_attribution_20261009.json.
+
+Against 2abb957, the 156-workflow/24-node CPU benchmark reduces PREPARE by
+2.67%/11.82% for backed/no-lease and four-lease cases, 15.49%/56.58% for
+unbacked/Host-full cases. Selected backups, unprotected candidate sets and
+sampled targets agree. Active restore leases remain excluded by the native
+validator. Main regression: 223 passed; later engine/launcher checks: 73 passed.
+These are CPU and correctness evidence, not GPU throughput evidence.
+
+Run v11 predictive with the same 108+48 arrivals, running48, Host200GB80:20,
+HBM Mamba/FULL0.9, frozen heads, prompt, seed21 and budgets. Reuse the completed
+v10 native as a cross-revision development reference. Monitor actual runtime
+failures and physical disablement; stop, retain evidence, fix and cold-start
+on an implementation fault. Keep v10 frozen and quantify realized trajectory
+differences. Final claims still require the planned alternating repeated pairs.
+
 ## Current PREPARE Cost And Handoff Fix
 
 Implemented in `/tmp/beliefkv-opportunity-20261009`, based on `e985d8c`.

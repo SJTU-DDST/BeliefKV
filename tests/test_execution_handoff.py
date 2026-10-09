@@ -60,6 +60,19 @@ def test_warm_first_does_not_override_causal_parent_message_priority(monkeypatch
     assert select(runtime, [cold, warm, parent]).candidates[0] is parent
 
 
+def test_capacity_bypass_only_when_native_can_try_another_unaged_request(monkeypatch):
+    runtime, (cold, _, _), _ = runtime_with_requests(monkeypatch)
+    assert runtime.allow_prefill_capacity_bypass(cold, native_budget_available=True, bypassed=0)
+    assert not runtime.allow_prefill_capacity_bypass(cold, native_budget_available=False, bypassed=0)
+    assert not runtime.allow_prefill_capacity_bypass(cold, native_budget_available=True, bypassed=8)
+    runtime._visible_since[cold.rid] -= 11.
+    assert not runtime.allow_prefill_capacity_bypass(cold, native_budget_available=True, bypassed=0)
+    runtime._visible_since[cold.rid] += 11.
+    runtime.enable_resident_first = False
+    assert not runtime.allow_prefill_capacity_bypass(cold, native_budget_available=True, bypassed=0)
+    assert runtime.counts["prefill_capacity_bypassed"] == 1
+
+
 def test_handoff_prefetches_without_demand_prediction_and_does_not_block_warm(monkeypatch):
     runtime, (cold, warm, _), _ = runtime_with_requests(monkeypatch)
     records = []

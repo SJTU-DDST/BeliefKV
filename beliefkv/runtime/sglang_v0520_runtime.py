@@ -332,6 +332,7 @@ class NativeAdmissionRuntime:
         self._join_prepare_cursor = 0
         self._join_prepare_next_ms = 0.
         self._join_prepare_commands: dict[_JoinPrefetchIdentity, str] = {}
+        self._prepare_probe_after_ms: dict[PrefillCandidateKey, float] = {}
         self._parent_pressure_candidates: dict[int, tuple[PrefillCandidateKey, int | float]] = {}
         self._final_priority_normal_admissions = 4
         self._final_priority_promoted: str | None = None
@@ -863,6 +864,10 @@ class NativeAdmissionRuntime:
                         key: count for key, count in self._tool_prefetch_budget.items()
                         if key.root_workflow_id != event.workflow_id
                     })
+                    self._prepare_probe_after_ms = {
+                        key: when for key, when in self._prepare_probe_after_ms.items()
+                        if key.root_workflow_id != event.workflow_id
+                    }
                     if self._tool_ticket is not None and self._tool_ticket.key.root_workflow_id == event.workflow_id:
                         self._tool_ticket = None
                     for key in tuple(self._semantic_keys.values()):
@@ -3128,6 +3133,8 @@ class NativeAdmissionRuntime:
     def _publish_parent_pressure_candidates(self) -> None:
         cache = self._native_cache
         candidates = []
+        by_component = {0: [], 2: []}
+        device_leaves = getattr(getattr(cache, "tree_core", None), "evictable_device_leaves", ())
         for node_id, (_, created) in self._parent_pressure_candidates.items():
             try:
                 node = cache.tree_core.node_by_id(node_id)
@@ -3148,7 +3155,30 @@ class NativeAdmissionRuntime:
                 and node.load_back_pending_id is None
             ):
                 candidates.append((node_id, created))
+                if (
+                    node in device_leaves and node.backuped
+                    and full.value is not None and full.host_value is not None
+                    and full.lock_ref == 0 and full.session_ref == 1
+                    and all(
+                        data.lock_ref == 0 and data.session_ref <= 1
+                        and (data.value is None or data.host_value is not None)
+                        for data in (
+                            node.component_data.values()
+                            if isinstance(node.component_data, dict)
+                            else node.component_data
+                        )
+                    )
+                ):
+                    by_component[0].append((node_id, created))
+                if (
+                    state.value is not None and state.host_value is not None
+                    and state.lock_ref == 0 and state.session_ref == 1
+                ):
+                    by_component[2].append((node_id, created))
         cache.beliefkv_join_pressure_candidates = tuple(candidates)
+        cache.beliefkv_join_pressure_candidates_by_component = {
+            component: tuple(items) for component, items in by_component.items()
+        }
 
     @timed_runtime("prepare_backed_registration")
     def _register_backed_pressure_nodes(
@@ -3251,8 +3281,40 @@ class NativeAdmissionRuntime:
                 "transfer_bytes": rank[1], "scanned_candidates": scanned,
             })
 
+    def _prepare_pressure(
+        self, waiting_queue: Sequence[object], running_batch: object, headroom: object,
+    ) -> tuple[bool, bool]:
+        running = len(getattr(running_batch, "reqs", ()))
+        slots = min(len(waiting_queue), 8)
+        if self._native_max_running is not None:
+            slots = min(slots, max(1, self._native_max_running - running))
+        if not slots and not running:
+            self.counts["prepare_no_service_demand"] += 1
+            return False, False
+        # Reserve a next-prefill window and one decode page per active request.
+        # An occupied cache alone is not competing demand, nor free capacity.
+        full_reserve = self._native_page_size * running + 8192 * slots
+        mamba_reserve = 4 * slots
+        return (
+            headroom.device_full_free_tokens < full_reserve,
+            headroom.device_mamba_free_slots < mamba_reserve,
+        )
+
+    def _prepare_probe_due(self, key: PrefillCandidateKey, now_ms: float) -> bool:
+        if len(self._prepare_probe_after_ms) > 512:
+            self._prepare_probe_after_ms = {
+                item: when for item, when in self._prepare_probe_after_ms.items()
+                if when > now_ms and self.context_sessions.get(item.context_id) == item
+            }
+        if now_ms >= self._prepare_probe_after_ms.get(key, 0.):
+            return True
+        self.counts["prepare_probe_backoff"] += 1
+        return False
+
     @timed_runtime("join_prepare")
-    def dispatch_join_prepare(self, waiting_queue: Sequence[object] = ()) -> None:
+    def dispatch_join_prepare(
+        self, waiting_queue: Sequence[object] = (), *, running_batch: object = None,
+    ) -> None:
         """Back up waiting parents under pressure; never evict at this safe point."""
         cache = self._native_cache
         if not self.enable_prepare_host or cache is None or self.physical_disabled:
@@ -3261,23 +3323,18 @@ class NativeAdmissionRuntime:
         if now_ms < self._join_prepare_next_ms:
             return
         self._join_prepare_next_ms = now_ms + 50.
-        self._prune_parent_pressure_candidates()
-        self._publish_parent_pressure_candidates()
         if self.physical_ledger.pending_action_count("PREPARE_HOST"):
             return
         headroom = observe_static_full_mamba_headroom(cache)
         if not headroom.observable:
             return
-        child_waiting = sum(
-            bool((key := _request_key(req)) and (
-                invocation := self.graph.invocations.get(key.invocation_id)
-            ) and invocation.parent_invocation_id is not None)
-            for req in waiting_queue
+        full_pressure, mamba_pressure = self._prepare_pressure(
+            waiting_queue, running_batch, headroom,
         )
-        mamba_pressure = headroom.device_mamba_free_slots < max(32, 4 * child_waiting)
-        full_pressure = headroom.device_full_free_tokens < max(65536, 8192 * child_waiting)
         if not (mamba_pressure or full_pressure):
             return
+        self._prune_parent_pressure_candidates()
+        self._publish_parent_pressure_candidates()
         parents = sorted(
             (key for key in self.context_sessions.values()
              if (parent := self.graph.invocations.get(key.invocation_id)) is not None
@@ -3289,6 +3346,8 @@ class NativeAdmissionRuntime:
         candidates = []
         for offset in range(min(len(parents), 8)):
             key = parents[(self._join_prepare_cursor + offset) % len(parents)]
+            if not self._prepare_probe_due(key, now_ms):
+                continue
             parent = self.graph.invocations[key.invocation_id]
             identity = _JoinPrefetchIdentity.from_parent(parent.join_id, key)
             prior = self._join_prepare_commands.get(identity)
@@ -3298,16 +3357,20 @@ class NativeAdmissionRuntime:
                 context_id=key.context_id, source="join_prepare",
             )
             if step is None:
+                self._prepare_probe_after_ms[key] = now_ms + 1000.
                 continue
             rank = self._prepare_step_rank(
                 step, headroom, full_pressure=full_pressure, mamba_pressure=mamba_pressure,
             )
             if rank is not None:
                 candidates.append((rank, offset, identity, step))
+            else:
+                self._prepare_probe_after_ms[key] = now_ms + 1000.
         self._join_prepare_cursor = (self._join_prepare_cursor + 8) % len(parents)
         for rank, offset, identity, step in sorted(candidates, key=lambda item: item[:2]):
             command = self.issue_shadow_backup_step(step, source="join_prepare")
             if command is None:
+                self._prepare_probe_after_ms[step.key] = now_ms + 250.
                 continue
             self._join_prepare_commands[identity] = command
             self._parent_pressure_candidates[step.node_id] = (step.key, step.creation_time)
@@ -3344,7 +3407,9 @@ class NativeAdmissionRuntime:
         return remaining is not None and remaining >= 2000.
 
     @timed_runtime("tool_prepare")
-    def dispatch_tool_prepare(self, waiting_queue: Sequence[object] = ()) -> None:
+    def dispatch_tool_prepare(
+        self, waiting_queue: Sequence[object] = (), *, running_batch: object = None,
+    ) -> None:
         """Back long external waits; native allocator alone decides demotion."""
         if not self.enable_prepare_host or self.physical_disabled or self._native_cache is None:
             return
@@ -3355,8 +3420,9 @@ class NativeAdmissionRuntime:
         headroom = observe_static_full_mamba_headroom(self._native_cache)
         if not headroom.observable:
             return
-        full_pressure = headroom.device_full_free_tokens < max(65536, 8192 * len(waiting_queue))
-        mamba_pressure = headroom.device_mamba_free_slots < max(32, 4 * len(waiting_queue))
+        full_pressure, mamba_pressure = self._prepare_pressure(
+            waiting_queue, running_batch, headroom,
+        )
         if not (full_pressure or mamba_pressure):
             return
         hints = sorted(self.tool_wait_hints.values(), key=lambda item: item.key.context_id)
@@ -3365,6 +3431,8 @@ class NativeAdmissionRuntime:
         candidates = []
         for offset in range(min(8, len(hints))):
             hint = hints[(self._tool_prepare_cursor + offset) % len(hints)]
+            if not self._prepare_probe_due(hint.key, now_ms):
+                continue
             if not self._long_tool_wait(hint.key):
                 continue
             step = self.refreshed_shadow_backup_step(context_id=hint.key.context_id)
@@ -3375,6 +3443,10 @@ class NativeAdmissionRuntime:
                 )
                 if rank is not None:
                     candidates.append((rank, offset, step))
+                else:
+                    self._prepare_probe_after_ms[hint.key] = now_ms + 1000.
+            else:
+                self._prepare_probe_after_ms[hint.key] = now_ms + 1000.
         self._tool_prepare_cursor = (self._tool_prepare_cursor + 8) % len(hints)
         for rank, offset, step in sorted(candidates, key=lambda item: item[:2]):
             command = self.issue_shadow_backup_step(step)
@@ -3385,6 +3457,7 @@ class NativeAdmissionRuntime:
                     step, source="tool_wait", rank=rank, scanned=len(candidates),
                 )
                 break
+            self._prepare_probe_after_ms[step.key] = now_ms + 250.
         self._publish_parent_pressure_candidates()
 
     def _roll_tool_prefetch(self) -> None:
@@ -5108,6 +5181,18 @@ class NativeAdmissionRuntime:
 
     def on_prefill_selection(self, rejected: tuple[tuple[str, str], ...]) -> None:
         self.counts.update(reason for _, reason in rejected)
+
+    def allow_prefill_capacity_bypass(
+        self, req: object, *, native_budget_available: bool, bypassed: int,
+    ) -> bool:
+        if (
+            not self.enable_resident_first or not native_budget_available
+            or bypassed >= 8 or self._executable_waiting_key(req) is None
+            or time.monotonic() - self._visible_since.get(req.rid, time.monotonic()) >= 10.
+        ):
+            return False
+        self.counts["prefill_capacity_bypassed"] += 1
+        return True
 
     def on_prefill_candidate_result(
         self, req: object, *, admitted: bool, result: str

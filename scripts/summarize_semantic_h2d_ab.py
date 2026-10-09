@@ -540,7 +540,19 @@ def main() -> None:
             "priority_in_both_arms": True,
             "prepare_host_in_both_arms": bool(args.prepare_host),
             "shared_pressure_parent_parking": bool(args.prepare_host),
-            "prepare_policy": "live_wait_join_safe_input;host_no_reclaim;real_allocator_pressure",
+            "prepare_policy": (
+                "next_prefill_slots_and_active_decode_page_growth;"
+                "exhausted_probe_backoff_1000ms;host_no_reclaim;real_allocator_pressure"
+            ),
+            "pressure_candidate_policy": "separate_FULL_leaf_and_Mamba_state_indexes;native_revalidation",
+            "capacity_bypass_policy": (
+                "up_to_8_rejected_unaged_tagged_requests_per_prefill;"
+                "native_budget_must_allow_more;no_capacity_override"
+            ),
+            "prepare_consumption_telemetry": (
+                "reconciled_native_per_operation_pool_receipts;"
+                "latest_node_pool_writer_to_H2D;restore_is_not_forward_use"
+            ),
             "shared_path_profiling": "aggregated CPU inclusive/exclusive scopes; no CUDA synchronization",
             "restore_wait_profiling": (
                 "one in 16 load-consuming prefills; asynchronous CUDA events "
