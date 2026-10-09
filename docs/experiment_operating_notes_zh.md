@@ -103,6 +103,16 @@ controlled_*，跨版本比较必须说明口径。issued source与ACK对应，
 缺失来源不凭动作名补判。混合批次按receipt保持字节/池单位守恒，
 时间仍属整个batch，不能按字节占比拆成动作耗时。JOIN/tool来源
 只说明提前动作意图，实际提前量、首次复用与性能收益另行验证。
+策略对比报告同样读取`h2d_sources`和分段`h2d_source_*`字段，
+旧`transfers.PREFETCH_GPU_h2d`包含需求handoff，不能用于声称
+预测覆盖。分类的batch次数可重叠，字节和池单位必须守恒；
+原生迁移里程碑使用receipt拆分后的native余量。冻结旧报告保留，
+修订复算写入独立报告文件。
+
+v13 django-12273的root最后8192-token响应以length结束，重复
+分析且没有完成声明；两个child正常返回、JOIN满足、deadline
+未触发。保留incomplete及逐请求遥测，不能将模型自然耗尽输出
+预算等同于传输故障，不能为改善完成数新增guard或追改本轮预算。
 生命周期中的ACK到服务、FULL首次复用及确认字节也须按这三种
 来源分开；FULL复用分母只包含携带FULL的命令。缺失旧分池ACK
 字节单列，不按总字节比例补算。节点命令不是独立workflow样本。

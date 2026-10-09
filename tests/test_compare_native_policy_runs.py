@@ -1,8 +1,8 @@
 import pytest
 
 from scripts.compare_native_policy_runs import (
-    interval_milliseconds, last_runtime_state, percentile, phase_statistics, transfer_parts,
-    restore_wait_statistics,
+    h2d_source_parts, interval_milliseconds, last_runtime_state, percentile,
+    phase_statistics, transfer_parts, restore_wait_statistics,
 )
 
 
@@ -37,6 +37,45 @@ def test_split_transfer_rejects_excess_tagged_credit():
         transfer_parts(row, {
             "bad": {"action": "PREFETCH_GPU", "num_bytes": 40960, "pool_bytes": [["kv", 40960]]},
         }, {"kv": 20480})
+
+
+def test_source_parts_keep_handoff_and_unknown_receipts_out_of_predictive_bytes():
+    row = {
+        "actual_bytes": 360, "num_tokens_by_pool": {"kv": 16, "mamba": 2},
+        "tagged_child_commits": [
+            {"command_id": "join", "num_bytes": 30, "num_tokens_by_pool": {"kv": 3}},
+            {"command_id": "tool", "num_bytes": 40, "num_tokens_by_pool": {"kv": 4}},
+            {"command_id": "handoff", "num_bytes": 120, "num_tokens_by_pool": {"kv": 2, "mamba": 1}},
+            {"command_id": "unknown", "num_bytes": 10, "num_tokens_by_pool": {"kv": 1}},
+            {"command_id": "missing_ack", "num_bytes": 40, "num_tokens_by_pool": {"kv": 4}},
+        ],
+    }
+    parts = h2d_source_parts(row, {
+        "join": "join_ticket", "tool": "tool_wait", "handoff": "execution_handoff",
+        "unknown": None,
+    }, {"kv": 10, "mamba": 100})
+    by_category = {part["category"]: part for part in parts}
+    assert by_category["predictive"]["bytes"] == 70
+    assert by_category["predictive"]["pool_bytes"] == {"kv": 70}
+    assert by_category["execution_handoff"]["bytes"] == 120
+    assert by_category["execution_handoff"]["pool_bytes"] == {"kv": 20, "mamba": 100}
+    assert by_category["unknown_controlled"]["bytes"] == 50
+    assert by_category["native"]["pool_units"] == {"kv": 2, "mamba": 1}
+    assert by_category["native"]["pool_bytes"] == {"kv": 20, "mamba": 100}
+    assert sum(part["bytes"] for part in parts) == row["actual_bytes"]
+    assert sum(sum(part["pool_bytes"].values()) for part in parts) == row["actual_bytes"]
+
+
+def test_source_parts_leave_a_native_batch_native():
+    assert h2d_source_parts({
+        "actual_bytes": 120, "num_tokens_by_pool": {"kv": 2, "mamba": 1},
+    }, {}, {"kv": 10, "mamba": 100}) == [
+        {
+            "category": "native", "bytes": 120,
+            "pool_units": {"kv": 2, "mamba": 1},
+            "pool_bytes": {"kv": 20, "mamba": 100},
+        },
+    ]
 
 
 def test_worker_union_clips_and_never_double_counts_overlap():

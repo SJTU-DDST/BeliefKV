@@ -216,6 +216,24 @@ PREPARE checkpoint budget:
   consumption, CPU cost and any lost useful opportunities in the next cold start.
   Keep V13 frozen until its driver exits.
 
+Completed-run comparison source correction:
+- Reuse the existing H2D source audit and preloaded ACK index. Add
+  `h2d_sources` and per-band `h2d_source_*` counters for JOIN/tool anticipation,
+  submitted-demand handoff, unknown controlled payload and native remainder.
+- Preserve legacy action-name `transfers`; its PREFETCH_GPU total is not
+  predictive coverage. Receipt bytes and pool units partition a physical batch,
+  while category batch counts may overlap. Native milestones use the receipt
+  remainder. Do not apportion batch time by byte ratio.
+- 26 related CPU checks pass. Recomputed complete V10 native evidence retains
+  3202.074GB native H2D and zero anticipation/handoff bytes; report:
+  experiments/reports/v10_native_source_comparison_20261010.json.
+- V13 django-12273 is incomplete after root output reaches8192 tokens with
+  finish_reason=length, repeated analysis and no completion declaration.
+  Both children returned and JOIN satisfied; no workflow deadline fired.
+  Preserve the outcome and evidence without adding a new guard.
+- Keep the entire frozen V13 driver unchanged until its exports and cleanup
+  finish. Deploy these follow-up revisions with the prepared engine delta.
+
 ## Current PREPARE Cost And Handoff Fix
 
 Implemented in `/tmp/beliefkv-opportunity-20261009`, based on `e985d8c`.

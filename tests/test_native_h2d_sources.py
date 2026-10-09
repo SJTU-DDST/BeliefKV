@@ -2,7 +2,7 @@ import json
 
 import pytest
 
-from scripts.audit_native_h2d_sources import audit
+from scripts.audit_native_h2d_sources import acknowledged_prefetch_sources, audit
 from scripts.audit_native_memory_opportunity import audit as memory_audit
 
 
@@ -69,6 +69,18 @@ def test_ack_source_fallback_does_not_promote_unidentified_tagged_bytes(tmp_path
     assert result["counts"]["native_bytes"] == 0
     assert result["controlled_commands"] == 2
     assert result["predictive_commands"] == 0
+
+
+def test_preloaded_ack_sources_reuse_records_and_keep_issue_evidence(tmp_path):
+    write_rows(tmp_path / "opportunities/admission_opportunities.jsonl", [
+        {"event": "prefetch_native_issued", "command_id": "join", "source": "join_ticket"},
+        {"event": "prefetch_native_issued", "command_id": "not_acked", "source": "tool_wait"},
+    ])
+    assert acknowledged_prefetch_sources(tmp_path, [
+        {"action": "PREFETCH_GPU", "command_id": "join"},
+        {"action": "PREFETCH_GPU", "command_id": "handoff", "source": "execution_handoff"},
+        {"action": "PREPARE_HOST", "command_id": "prepare", "source": "tool_wait"},
+    ]) == {"join": "join_ticket", "handoff": "execution_handoff"}
 
 
 def test_native_arm_and_unknown_payload_are_not_invented_as_predictive(tmp_path):

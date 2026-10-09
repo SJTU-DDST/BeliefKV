@@ -3,6 +3,7 @@
 
 import argparse
 from collections import Counter
+from collections.abc import Iterable
 import json
 from pathlib import Path
 import sys
@@ -23,10 +24,16 @@ def source_category(source: str | None) -> str:
     return "unknown_controlled"
 
 
-def acknowledged_prefetch_sources(arm: Path) -> dict[str, str | None]:
+def acknowledged_prefetch_sources(
+    arm: Path, acknowledgements: Iterable[dict] | None = None,
+) -> dict[str, str | None]:
+    rows = (
+        records(arm / "server/physical_action_ack.jsonl")
+        if acknowledgements is None else acknowledgements
+    )
     sources = {
         row["command_id"]: row.get("source")
-        for row in records(arm / "server/physical_action_ack.jsonl")
+        for row in rows
         if row.get("action") == "PREFETCH_GPU"
     }
     path = arm / "opportunities/admission_opportunities.jsonl"

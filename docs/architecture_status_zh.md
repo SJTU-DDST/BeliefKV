@@ -232,6 +232,23 @@ PREPARE进一步检查完整缺失前缀的预算。v13局部13435次动作中�
 下一轮分别核验重复节点动作、消费、成本和有效迁移机会。
 该修改仍在独立工作树，v13保持冻结。
 
+完整策略对比报告也使用同一来源拆分。新增`h2d_sources`及时间
+分段的`h2d_source_*`字段，单列JOIN/tool、需求handoff、未确认
+受控来源及原生余量；原有`transfers`保留动作名称口径，不能把
+`PREFETCH_GPU_h2d`合计称为预测迁移。混合batch按receipt守恒
+字节及池单位，分类batch次数可重叠；不按字节比例分摊传输时间。
+ACK索引在同次对比中复用，避免额外遍历ACK日志。26项相关CPU
+检查通过，完整v10 native复算仍为3202.074 GB原生H2D，提前
+预测与handoff均为0。复算报告：
+`experiments/reports/v10_native_source_comparison_20261010.json`。
+
+v13运行中新出现的django-12273 incomplete已定位：两个child均
+正常RETURN、JOIN满足且workflow deadline未触发；root最终
+输出8192 token，以length结束，约29554字符正文仍重复分析同一
+问题，没有完成声明。该项保留incomplete，不通过增加guard或
+重判completed处理，也不据此认定H2D实现故障。django-12262的
+ReadTimeout仍保留为未完全定位的错误，后续流计时用于补齐证据。
+
 ## PREPARE 热点与 Handoff 身份修复
 
 本次修订基于 `e985d8c`，在独立工作树

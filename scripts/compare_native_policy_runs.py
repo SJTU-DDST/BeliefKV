@@ -13,6 +13,9 @@ from pathlib import Path
 from statistics import mean, median
 
 from beliefkv.metrics.execution_timeline import _merge_intervals
+from scripts.audit_native_h2d_sources import (
+    CONTROLLED_CATEGORIES, acknowledged_prefetch_sources, split_h2d_payload,
+)
 
 
 def records(path: Path):
@@ -64,6 +67,21 @@ def transfer_parts(
     if sum(part["bytes"] for part in parts) != int(row["actual_bytes"]):
         raise ValueError("transfer byte accounting is not conserved")
     return parts
+
+
+def h2d_source_parts(row: dict, sources: dict, sizes: dict[str, int]) -> list[dict]:
+    payload, units = split_h2d_payload(row, sources)
+    return [
+        {
+            "category": category, "bytes": amount,
+            "pool_units": dict(units[category]),
+            "pool_bytes": {
+                pool: count * sizes[pool] for pool, count in units[category].items()
+                if pool in sizes
+            },
+        }
+        for category, amount in payload.items() if amount
+    ]
 
 
 def interval_milliseconds(rows: list[dict], start: float, end: float) -> float:
@@ -250,7 +268,12 @@ def compare_run(arm: Path, timeline_path: Path, bin_seconds: int) -> dict:
         row["command_id"]: row
         for row in records(arm / "server/physical_action_ack.jsonl")
     }
+    prefetch_sources = acknowledged_prefetch_sources(arm, acknowledgements.values())
     transfer_totals = defaultdict(Counter)
+    h2d_source_totals = {
+        category: Counter(controller_batches=0, bytes=0)
+        for category in (*CONTROLLED_CATEGORIES, "native")
+    }
     transfer_times = defaultdict(list)
     native_h2d = []
     sizes = {
@@ -258,6 +281,26 @@ def compare_run(arm: Path, timeline_path: Path, bin_seconds: int) -> dict:
         "mamba": status["host_pool_evidence"]["mamba"]["bytes_per_unit"],
     }
     for row in records(arm / "server/transfer_telemetry.jsonl"):
+        if row["direction"] == "h2d":
+            for part in h2d_source_parts(row, prefetch_sources, sizes):
+                category = part["category"]
+                counts = h2d_source_totals[category]
+                counts["controller_batches"] += 1
+                counts["bytes"] += part["bytes"]
+                for pool, units in part["pool_units"].items():
+                    counts[f"{pool}_units"] += units
+                for pool, size in part["pool_bytes"].items():
+                    counts[f"{pool}_bytes"] += size
+                item = bucket(row["submit_ts_ms"])
+                if item is not None:
+                    item[f"h2d_source_{category}_bytes"].append(part["bytes"])
+                    item[f"h2d_source_{category}_count"].append(1)
+                if category == "native":
+                    native_h2d.append({
+                        "start_ms": row["submit_ts_ms"] - anchor_ms,
+                        "bytes": part["bytes"],
+                        "end_ms": row["complete_ts_ms"] - anchor_ms,
+                    })
         for part in transfer_parts(row, acknowledgements, sizes):
             name = f'{part["kind"]}_{row["direction"]}'
             transfer_totals[name]["count"] += 1
@@ -268,12 +311,6 @@ def compare_run(arm: Path, timeline_path: Path, bin_seconds: int) -> dict:
             if item is not None:
                 item[f"{name}_bytes"].append(part["bytes"])
                 item[f"{name}_count"].append(1)
-            if name == "native_h2d":
-                native_h2d.append({
-                    "start_ms": row["submit_ts_ms"] - anchor_ms,
-                    "bytes": part["bytes"],
-                    "end_ms": row["complete_ts_ms"] - anchor_ms,
-                })
         # Time the physical batch once, even if it contains tagged and native pieces.
         transfer_times[f'{row["direction"]}_submit_to_ack_ms'].append(row["submit_to_ack_ms"])
         if row.get("transfer_stream_elapsed_ms") is not None:
@@ -431,6 +468,19 @@ def compare_run(arm: Path, timeline_path: Path, bin_seconds: int) -> dict:
             / reuse["previously_served_common_prefix_tokens"]
         ),
         "transfers": dict(transfer_totals),
+        "h2d_sources": {
+            "schema_version": 2,
+            "categories": {
+                category: dict(counts) for category, counts in h2d_source_totals.items()
+            },
+            "semantics": (
+                "predictive is JOIN/tool anticipation; execution_handoff is submitted "
+                "demand before first service; unknown_controlled is tagged payload "
+                "without a known source; native is the untagged receipt remainder. "
+                "Actual lead and reuse require separate evidence. Bytes and pool "
+                "units partition each batch; mixed-batch category counts can overlap."
+            ),
+        },
         "physical_transfer_times": {
             key: {"sum": sum(values), "p50": percentile(values, .5), "p95": percentile(values, .95)}
             for key, values in transfer_times.items()
@@ -458,6 +508,7 @@ def compare_run(arm: Path, timeline_path: Path, bin_seconds: int) -> dict:
             "Submit-to-ACK and CUDA transfer-stream totals are not exposed critical-path H2D wait.",
             "FULL active-token ratio excludes inactive cached occupancy; native v9 has no device occupancy census.",
             "Mamba transfer bytes use model-specific receipt units, not a per-layer recompute measurement.",
+            "Legacy transfers groups physical action names; PREFETCH_GPU includes demand handoff. Use h2d_sources for predictive coverage.",
             "Per-band output tokens are assigned to request completion, not individual decode steps.",
             "Coalesced same-phase/same-batch intervals yield exact time-weighted per-band batch sizes.",
         ],
@@ -478,7 +529,7 @@ def main() -> None:
     if set(arms) != set(timelines):
         parser.error("each arm requires its corresponding timeline")
     report = {
-        "schema_version": 1, "scope": "retrospective live-run diagnosis, not causal speedup",
+        "schema_version": 2, "scope": "retrospective live-run diagnosis, not causal speedup",
         "runs": {
             name: compare_run(Path(path), Path(timelines[name]), args.bin_seconds)
             for name, path in arms.items()
