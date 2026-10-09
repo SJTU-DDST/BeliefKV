@@ -548,6 +548,71 @@ def test_shadow_candidate_rejects_changed_leaf_and_inconsistent_views():
         assert capture_action_local_shadow(object(), changed_generation) is None
 
 
+def test_capture_reuses_a_mamba_ancestor_and_refreshes_the_next_call():
+    from beliefkv.runtime.sglang_v0520_observer import observe_unified_node_closure
+
+    cache, anchors, nodes = prepare_prefix_fixture()
+    anchors = replace(anchors, component_leaves=(
+        (0, ((3, 4.),)), (2, ((2, 3.),)),
+    ))
+    with patch(
+        "beliefkv.runtime.sglang_v0520_physical.observe_unified_node_closure",
+        wraps=observe_unified_node_closure,
+    ) as observe:
+        candidate = capture_action_local_shadow(
+            cache, anchors, for_prefetch=True, include_non_actionable=True,
+        )
+        assert candidate is not None
+        assert observe.call_count == 1
+        assert {node.node_id for node in candidate.nodes} == {0, 1, 2, 3}
+        assert candidate.missing_full_device_tokens == 0
+
+        nodes[2].component_data[0].value = None
+        nodes[2].component_data[0].host_value = range(2)
+        nodes[2].component_data[2].value = None
+        nodes[2].component_data[2].host_value = (0,)
+        candidate = capture_action_local_shadow(
+            cache, anchors, for_prefetch=True, include_non_actionable=True,
+        )
+        assert observe.call_count == 2
+        assert candidate.missing_full_device_tokens == 2
+        checkpoint = next(node for node in candidate.nodes if node.node_id == 2)
+        assert checkpoint.full_device_tokens == 0
+        assert checkpoint.mamba_host_present and not checkpoint.mamba_device_present
+
+
+def test_capture_rejects_a_changed_mamba_generation_on_the_full_path():
+    from beliefkv.runtime.sglang_v0520_observer import observe_unified_node_closure
+
+    cache, anchors, _ = prepare_prefix_fixture()
+    anchors = replace(anchors, component_leaves=(
+        (0, ((3, 4.),)), (2, ((2, 99.),)),
+    ))
+    with patch(
+        "beliefkv.runtime.sglang_v0520_physical.observe_unified_node_closure",
+        wraps=observe_unified_node_closure,
+    ) as observe:
+        assert capture_action_local_shadow(cache, anchors) is None
+        assert observe.call_count == 1
+
+
+def test_capture_still_reads_a_full_child_after_its_mamba_ancestor():
+    from beliefkv.runtime.sglang_v0520_observer import observe_unified_node_closure
+
+    cache, anchors, _ = prepare_prefix_fixture()
+    anchors = replace(anchors, component_leaves=(
+        (2, ((2, 3.),)), (0, ((3, 4.),)),
+    ))
+    with patch(
+        "beliefkv.runtime.sglang_v0520_physical.observe_unified_node_closure",
+        wraps=observe_unified_node_closure,
+    ) as observe:
+        candidate = capture_action_local_shadow(cache, anchors)
+        assert candidate is not None
+        assert observe.call_count == 2
+        assert {node.node_id for node in candidate.nodes} == {0, 1, 2, 3}
+
+
 def test_partial_host_shadow_selects_parent_before_session_leaf():
     anchors = ContextSessionAnchors(
         PrefillCandidateKey("r", "w", "i", "c", 0, 0, "s", 1),

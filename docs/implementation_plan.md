@@ -206,6 +206,30 @@ Current status:
   raw-byte comparison regresses all six full matching cases and is rejected.
   These synthetic CPU figures do not establish GPU throughput improvement.
   Report:v16_reentry_result_cpu_20261010.json.
+- The isolated physical capture reuses a Mamba anchor already observed on the
+  FULL ancestry during this call. Validate its creation time, refresh physical
+  state on each new call and retain native issue dependency checks. All344
+  related checks pass, including reversed leaf order and state/version changes.
+  Against ed02b21,156-workflow/24-node CPU fixtures with60 iterations preserve
+  selections, pressure publications and every opportunity field except clocks.
+  Mamba-ancestor sampling means fall29.47--30.16%; missing-backup/Host-space
+  PREPARE falls37.10%, Host-only39.98%. Missing-backup/Host-full PREPARE
+  regresses1.12%. The ordinary same-leaf first comparison has one10.60% mean
+  regression despite a0.79% P50 improvement;180 iterations change that case
+  to a2.81% mean reduction. Do not treat either as stable performance evidence.
+  Ordinary sampling repeat means vary from0.30% slower to0.73% faster.
+  Preserve all reports:v16_mamba_ancestor_capture_cpu_20261010.json,
+  v16_shadow_capture_identity_cpu_20261010.json and its_repeat_cpu report.
+  Both variants clear probe backoff equally and verify imported worktree paths.
+  This is CPU evidence only; commit in isolation and retain the V15 freeze.
+- At07:35 CST the partial causal semantic audit matches seven estimated-work
+  first-trigger requests to prior delivered forecasts: five are over2s before
+  native EOS, one within0--500ms and one within500--2000ms. Last pre-EOS
+  signed/absolute work-error P50 for158 natural-final requests is46.80 tokens;
+  trigger signed-error P50 is-72.82 tokens. Early underprediction and late
+  overprediction still coexist. Do not apply a global bias or blanket lease
+  extension; evaluate actual Host-only opportunities after the frozen comparison.
+  Report:v15_semantic_trigger_causal_partial_20261010_0735.json.
 - The final isolated engine package has full patch SHA256
   66aa563627fb8882808e290ff0ccde10535bc7d787a66eba6848baa8bcf203d8.
   Its exact frozen-V15 delta isv16_engine_followup_delta_20261010.patch with

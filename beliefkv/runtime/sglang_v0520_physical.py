@@ -604,6 +604,13 @@ def capture_action_local_shadow(
                 if observed_leaves[node_id] != created:
                     return None
                 continue
+            # A later Mamba anchor may already be on the captured FULL path.
+            captured = nodes.get(node_id)
+            if captured is not None:
+                if captured.creation_time != created:
+                    return None
+                observed_leaves[node_id] = created
+                continue
             observation = observe_unified_node_closure(
                 cache, node_id, max_nodes=max_nodes
             )

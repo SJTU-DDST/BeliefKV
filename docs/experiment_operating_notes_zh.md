@@ -144,6 +144,29 @@ SHA256，不能因editable安装指向主目录而比较了冻结代码。基准
 `experiments/reports/v16_reentry_result_cpu_20261010.json`。
 不把CPU基准变快写成native相对GPU吞吐收益。
 
+下一版物理采样只复用本次闭包中已有的Mamba祖先摘要，校验
+creation_time；新调用重新读驻留，实际issue仍校验原生依赖。
+344项相关检查通过。与`ed02b21`的同输入156-workflow/24节点、
+每配置60次基准中，祖先锚点采样均值下降29.47%--30.16%，
+缺少备份且Host有空间的PREPARE下降37.10%，Host-only下降
+39.98%；缺少备份但Host满池慢1.12%。普通同叶配置一组初次
+PREPARE均值慢10.60%，P50快0.79%，180次复核均值快2.81%；
+保留两次结果，不声称稳定加速。普通采样复核变化为慢0.30%
+至快0.73%。两侧同等清除探测退避，并比对完整机会字段、
+动作及压力候选；实际导入路径已校验。报告：
+`experiments/reports/v16_mamba_ancestor_capture_cpu_20261010.json`、
+`experiments/reports/v16_shadow_capture_identity_cpu_20261010.json`、
+`experiments/reports/v16_shadow_capture_identity_repeat_cpu_20261010.json`。
+实际锚点频率和GPU收益仍待完整实验验证，v15运行代码不变。
+
+07:35 CST局部语义审计中，7个estimated-work首次触发请求均
+匹配此前已交付forecast，5个提前EOS超过2秒、1个在0--500 ms、
+1个在500--2000 ms。158个自然终态请求末次EOS前快照的剩余
+工作有符号/绝对误差P50约46.80 token，而触发时有符号误差
+P50约-72.82 token。继续分别处理提前低估和末端高估；不能
+统一加偏置或延长所有保护租约。报告：
+`experiments/reports/v15_semantic_trigger_causal_partial_20261010_0735.json`。
+
 隔离候选完整patch SHA256为
 `66aa563627fb8882808e290ff0ccde10535bc7d787a66eba6848baa8bcf203d8`。
 精确冻结引擎差量为

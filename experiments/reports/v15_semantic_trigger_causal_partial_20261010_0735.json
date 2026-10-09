@@ -1,0 +1,517 @@
+{
+  "schema_version": 2,
+  "scope": "development diagnostics; not held-out validation or transfer benefit",
+  "audit_started_ts_ms": 1791588780994.2107,
+  "audit_finished_ts_ms": 1791588795350.2234,
+  "collection_complete": false,
+  "partial_snapshot": true,
+  "snapshot_semantics": "fixed byte limit per file; files are not an atomic cross-file snapshot",
+  "aggregation": "one first crossing and one last snapshot per request",
+  "threshold": 0.5816927983520741,
+  "natural_child_created_count": 361,
+  "natural_return_request_count": 346,
+  "forecast_request_count": 1020,
+  "first_crossing_request_count": 212,
+  "first_crossing_natural_final_count": 158,
+  "first_crossing_other_count": 54,
+  "first_crossing_unresolved_count": 0,
+  "work_errors": {
+    "first_threshold_crossing": {
+      "request_count": 158,
+      "median_signed_error_tokens": -89.97407404372106,
+      "median_absolute_error_tokens": 128.28356521621393,
+      "median_actual_remaining_tokens": 526.0,
+      "median_forecast_remaining_tokens": 418.3749642362628,
+      "within_100_actual_remaining_tokens": {
+        "request_count": 2,
+        "median_signed_error_tokens": 17.112082211889415,
+        "median_absolute_error_tokens": 17.112082211889415,
+        "median_actual_remaining_tokens": 40.0,
+        "median_forecast_remaining_tokens": 57.112082211889415
+      }
+    },
+    "last_accepted_snapshot": {
+      "request_count": 158,
+      "median_signed_error_tokens": 52.0624971650702,
+      "median_absolute_error_tokens": 52.0624971650702,
+      "median_actual_remaining_tokens": 2.0,
+      "median_forecast_remaining_tokens": 54.661774070071914,
+      "within_100_actual_remaining_tokens": {
+        "request_count": 158,
+        "median_signed_error_tokens": 52.0624971650702,
+        "median_absolute_error_tokens": 52.0624971650702,
+        "median_actual_remaining_tokens": 2.0,
+        "median_forecast_remaining_tokens": 54.661774070071914
+      }
+    },
+    "last_pre_native_result_snapshot": {
+      "request_count": 158,
+      "median_signed_error_tokens": 46.797129187723186,
+      "median_absolute_error_tokens": 46.797129187723186,
+      "median_actual_remaining_tokens": 8.0,
+      "median_forecast_remaining_tokens": 54.29386646382205,
+      "within_100_actual_remaining_tokens": {
+        "request_count": 158,
+        "median_signed_error_tokens": 46.797129187723186,
+        "median_absolute_error_tokens": 46.797129187723186,
+        "median_actual_remaining_tokens": 8.0,
+        "median_forecast_remaining_tokens": 54.29386646382205
+      }
+    }
+  },
+  "work_error_interpretation": "The last accepted snapshot may arrive after native EOS and observe zero remaining work. Use the separate pre-native-result series to assess work prediction before generation ends; neither series is child RETURN wall-clock accuracy.",
+  "latest_start_count": 73,
+  "latest_start_before_native_result_count": 7,
+  "latest_start_at_or_after_native_result_count": 66,
+  "latest_start_missing_native_result_count": 0,
+  "estimated_work_trigger_diagnostics": {
+    "aggregation": "first estimated-work trigger per child request, not per restored node",
+    "request_count": 7,
+    "missing_native_result_count": 0,
+    "matched_causal_forecast_count": 7,
+    "lead_0_to_500ms_count": 1,
+    "lead_500_to_2000ms_count": 1,
+    "lead_over_2000ms_count": 5,
+    "at_or_after_native_eos_count": 0,
+    "work_error_summary": {
+      "request_count": 7,
+      "median_signed_error_tokens": -72.82158283673661,
+      "median_absolute_error_tokens": 72.82158283673661,
+      "median_actual_remaining_tokens": 75,
+      "median_forecast_remaining_tokens": 2.7023734169981193
+    },
+    "interpretation": "Native EOS and child RETURN are evaluation labels only. Work error at the trigger rate and the remaining rate gap decompose the EOS time error algebraically; the rate gap is not measured GPU queue time. Client RETURN uses the first census wall-minus-monotonic clock offset; missing clocks or labels remain unknown. A future forecast is never matched.",
+    "rows": [
+      {
+        "request_id": "beliefkv:01a12298-2dde-72c1-8a50-86b68d71b5d5",
+        "workflow_id": "deepagents:autonomous:django__django-11119:7ad073658ab1",
+        "first_trigger_ts_ms": 1791581817682.4373,
+        "trigger_count": 1,
+        "natural_return_observed": true,
+        "causal_forecast_matched": true,
+        "forecast_delivery_to_trigger_ms": 198.820556640625,
+        "forecast_observation_age_at_trigger_ms": 328.2389106750488,
+        "observed_output_tokens": 834,
+        "generated_tokens": 847,
+        "advanced_since_forecast_tokens": 13,
+        "forecast_center_tokens": 15.150619052060575,
+        "forecast_upper_tokens": 79.89784557781806,
+        "effective_work_statistic": "center",
+        "projected_remaining_tokens": 2.1506190520605752,
+        "actual_remaining_tokens": 114,
+        "signed_work_error_tokens": -111.84938094793942,
+        "predicted_remaining_ms": 87.41964145351241,
+        "trigger_tokens_per_second": 24.601096690658707,
+        "actual_remaining_tokens_per_second": 21.53924727770307,
+        "lead_to_native_eos_ms": 5292.6640625,
+        "lead_to_child_return_ms": 6378.64208984375,
+        "signed_eos_time_error_ms": -5205.244421046487,
+        "work_error_at_trigger_rate_ms": -4546.520114707318,
+        "actual_work_at_trigger_rate_ms": 4633.939756160829,
+        "remaining_service_rate_gap_ms": 658.7243063391707
+      },
+      {
+        "request_id": "beliefkv:01a1229c-5fd6-77b1-bef3-e66b7b16f622",
+        "workflow_id": "deepagents:autonomous:pydata__xarray-3993:e66bd1ac565f",
+        "first_trigger_ts_ms": 1791582082065.248,
+        "trigger_count": 1,
+        "natural_return_observed": true,
+        "causal_forecast_matched": true,
+        "forecast_delivery_to_trigger_ms": 717.74951171875,
+        "forecast_observation_age_at_trigger_ms": 802.6226110458374,
+        "observed_output_tokens": 576,
+        "generated_tokens": 601,
+        "advanced_since_forecast_tokens": 25,
+        "forecast_center_tokens": 29.10134295171539,
+        "forecast_upper_tokens": 527.5337916224597,
+        "effective_work_statistic": "center",
+        "projected_remaining_tokens": 4.101342951715392,
+        "actual_remaining_tokens": 122,
+        "signed_work_error_tokens": -117.8986570482846,
+        "predicted_remaining_ms": 164.7076320338982,
+        "trigger_tokens_per_second": 24.90074625607696,
+        "actual_remaining_tokens_per_second": 21.816695522777596,
+        "lead_to_native_eos_ms": 5592.047607421875,
+        "lead_to_child_return_ms": 5751.73095703125,
+        "signed_eos_time_error_ms": -5427.339975387977,
+        "work_error_at_trigger_rate_ms": -4734.7439243718145,
+        "actual_work_at_trigger_rate_ms": 4899.451556405713,
+        "remaining_service_rate_gap_ms": 692.5960510161622
+      },
+      {
+        "request_id": "beliefkv:01a1229e-50c6-7aa2-b2b1-6fdcd9da2bb0",
+        "workflow_id": "deepagents:autonomous:psf__requests-2317:5b0e8c907878",
+        "first_trigger_ts_ms": 1791582201120.1763,
+        "trigger_count": 1,
+        "natural_return_observed": true,
+        "causal_forecast_matched": true,
+        "forecast_delivery_to_trigger_ms": 403.448486328125,
+        "forecast_observation_age_at_trigger_ms": 488.6718463897705,
+        "observed_output_tokens": 499,
+        "generated_tokens": 517,
+        "advanced_since_forecast_tokens": 18,
+        "forecast_center_tokens": 19.136475954276165,
+        "forecast_upper_tokens": 186.31007130879613,
+        "effective_work_statistic": "center",
+        "projected_remaining_tokens": 1.1364759542761647,
+        "actual_remaining_tokens": 89,
+        "signed_work_error_tokens": -87.86352404572384,
+        "predicted_remaining_ms": 46.48121496452614,
+        "trigger_tokens_per_second": 24.450220484630368,
+        "actual_remaining_tokens_per_second": 27.91755718923966,
+        "lead_to_native_eos_ms": 3187.9580078125,
+        "lead_to_child_return_ms": 3323.9208984375,
+        "signed_eos_time_error_ms": -3141.4767928479737,
+        "work_error_at_trigger_rate_ms": -3593.567759479128,
+        "actual_work_at_trigger_rate_ms": 3640.0489744436545,
+        "remaining_service_rate_gap_ms": -452.0909666311545
+      },
+      {
+        "request_id": "beliefkv:01a1229f-7b9a-7983-b634-2de61b17d1df",
+        "workflow_id": "deepagents:autonomous:django__django-11451:d2772fe47b46",
+        "first_trigger_ts_ms": 1791582283903.7202,
+        "trigger_count": 1,
+        "natural_return_observed": true,
+        "causal_forecast_matched": true,
+        "forecast_delivery_to_trigger_ms": 285.62158203125,
+        "forecast_observation_age_at_trigger_ms": 357.68642807006836,
+        "observed_output_tokens": 634,
+        "generated_tokens": 646,
+        "advanced_since_forecast_tokens": 12,
+        "forecast_center_tokens": 14.178417163263388,
+        "forecast_upper_tokens": 110.91654079188046,
+        "effective_work_statistic": "center",
+        "projected_remaining_tokens": 2.178417163263388,
+        "actual_remaining_tokens": 75,
+        "signed_work_error_tokens": -72.82158283673661,
+        "predicted_remaining_ms": 92.57970097339208,
+        "trigger_tokens_per_second": 23.530181458346657,
+        "actual_remaining_tokens_per_second": 23.090636611557315,
+        "lead_to_native_eos_ms": 3248.06982421875,
+        "lead_to_child_return_ms": 3295.64501953125,
+        "signed_eos_time_error_ms": -3155.490123245358,
+        "work_error_at_trigger_rate_ms": -3094.816033001957,
+        "actual_work_at_trigger_rate_ms": 3187.3957339753492,
+        "remaining_service_rate_gap_ms": 60.67409024340077
+      },
+      {
+        "request_id": "beliefkv:01a122a7-34ea-76b0-b23f-2b4b17bdcc19",
+        "workflow_id": "deepagents:autonomous:django__django-11532:0dc6c9c614c2",
+        "first_trigger_ts_ms": 1791582791704.2498,
+        "trigger_count": 1,
+        "natural_return_observed": true,
+        "causal_forecast_matched": true,
+        "forecast_delivery_to_trigger_ms": 71.73193359375,
+        "forecast_observation_age_at_trigger_ms": 299.49100399017334,
+        "observed_output_tokens": 650,
+        "generated_tokens": 663,
+        "advanced_since_forecast_tokens": 13,
+        "forecast_center_tokens": 15.70237341699812,
+        "forecast_upper_tokens": 162.219144274194,
+        "effective_work_statistic": "center",
+        "projected_remaining_tokens": 2.7023734169981193,
+        "actual_remaining_tokens": 52,
+        "signed_work_error_tokens": -49.29762658300188,
+        "predicted_remaining_ms": 142.60550267688407,
+        "trigger_tokens_per_second": 18.949993978291037,
+        "actual_remaining_tokens_per_second": 25.934416823861923,
+        "lead_to_native_eos_ms": 2005.0576171875,
+        "lead_to_child_return_ms": 2110.30126953125,
+        "signed_eos_time_error_ms": -1862.452114510616,
+        "work_error_at_trigger_rate_ms": -2601.458693837943,
+        "actual_work_at_trigger_rate_ms": 2744.064196514827,
+        "remaining_service_rate_gap_ms": -739.006579327327
+      },
+      {
+        "request_id": "beliefkv:01a122cc-3fd0-7cf0-883c-d8e46ba24d26",
+        "workflow_id": "deepagents:autonomous:django__django-11433:8d519930d2f1",
+        "first_trigger_ts_ms": 1791585203756.3916,
+        "trigger_count": 1,
+        "natural_return_observed": true,
+        "causal_forecast_matched": true,
+        "forecast_delivery_to_trigger_ms": 248.49658203125,
+        "forecast_observation_age_at_trigger_ms": 401.0057563781738,
+        "observed_output_tokens": 370,
+        "generated_tokens": 379,
+        "advanced_since_forecast_tokens": 9,
+        "forecast_center_tokens": 13.067557905111993,
+        "forecast_upper_tokens": 87.18817243918264,
+        "effective_work_statistic": "center",
+        "projected_remaining_tokens": 4.067557905111993,
+        "actual_remaining_tokens": 9,
+        "signed_work_error_tokens": -4.932442094888007,
+        "predicted_remaining_ms": 202.21846035012214,
+        "trigger_tokens_per_second": 20.11467151945179,
+        "actual_remaining_tokens_per_second": 24.54432146243249,
+        "lead_to_native_eos_ms": 366.68359375,
+        "lead_to_child_return_ms": 755.5634765625,
+        "signed_eos_time_error_ms": -164.46513339987786,
+        "work_error_at_trigger_rate_ms": -245.21613937956255,
+        "actual_work_at_trigger_rate_ms": 447.4345997296847,
+        "remaining_service_rate_gap_ms": -80.75100597968469
+      },
+      {
+        "request_id": "beliefkv:01a122cc-97b2-7e70-9b00-b8ba01ece888",
+        "workflow_id": "deepagents:autonomous:django__django-12276:b82641f81c5b",
+        "first_trigger_ts_ms": 1791585234551.1064,
+        "trigger_count": 1,
+        "natural_return_observed": true,
+        "causal_forecast_matched": true,
+        "forecast_delivery_to_trigger_ms": 116.875732421875,
+        "forecast_observation_age_at_trigger_ms": 186.7907886505127,
+        "observed_output_tokens": 567,
+        "generated_tokens": 575,
+        "advanced_since_forecast_tokens": 8,
+        "forecast_center_tokens": 12.155666997298846,
+        "forecast_upper_tokens": 104.7635730580223,
+        "effective_work_statistic": "center",
+        "projected_remaining_tokens": 4.155666997298846,
+        "actual_remaining_tokens": 6,
+        "signed_work_error_tokens": -1.8443330027011537,
+        "predicted_remaining_ms": 188.65038034352608,
+        "trigger_tokens_per_second": 22.028405083157082,
+        "actual_remaining_tokens_per_second": 9.731234824642959,
+        "lead_to_native_eos_ms": 616.5712890625,
+        "lead_to_child_return_ms": 940.849853515625,
+        "signed_eos_time_error_ms": -427.9209087189739,
+        "work_error_at_trigger_rate_ms": -83.72521731549828,
+        "actual_work_at_trigger_rate_ms": 272.3755976590243,
+        "remaining_service_rate_gap_ms": 344.1956914034757
+      }
+    ]
+  },
+  "sampled_work_update_comparison": {
+    "scope": "Causal replay at forecast delivery only, not continuous scheduler ticks. No physical capacity, target lifetime or transfer check; no new inference. Snapshot center retains the old observation's center rather than treating it as a deterministic endpoint. EOS/RETURN labels never select a trigger. Coverage and premature triggers must both be reported.",
+    "policies": {
+      "progress_countdown": {
+        "100": {
+          "first_trigger_count": 1,
+          "natural_return_observed_count": 1,
+          "missing_native_result_count": 0,
+          "lead_0_to_500ms_count": 0,
+          "lead_over_2000ms_count": 0,
+          "at_or_after_native_eos_count": 0,
+          "median_lead_to_native_eos_ms": 1449.27197265625,
+          "first_trigger_rows": [
+            {
+              "request_id": "beliefkv:01a1229f-7b9a-7983-b634-2de61b17d1df",
+              "ts_ms": 1791582285702.518,
+              "predicted_ms": 70.61702645644733,
+              "lead_to_native_eos_ms": 1449.27197265625,
+              "natural_return_observed": true
+            }
+          ]
+        },
+        "250": {
+          "first_trigger_count": 4,
+          "natural_return_observed_count": 4,
+          "missing_native_result_count": 0,
+          "lead_0_to_500ms_count": 1,
+          "lead_over_2000ms_count": 1,
+          "at_or_after_native_eos_count": 0,
+          "median_lead_to_native_eos_ms": 991.6070556640625,
+          "first_trigger_rows": [
+            {
+              "request_id": "beliefkv:01a1229e-50c6-7aa2-b2b1-6fdcd9da2bb0",
+              "ts_ms": 1791582203774.1921,
+              "predicted_ms": 119.21524974389496,
+              "lead_to_native_eos_ms": 533.942138671875,
+              "natural_return_observed": true
+            },
+            {
+              "request_id": "beliefkv:01a1229f-7b9a-7983-b634-2de61b17d1df",
+              "ts_ms": 1791582285702.518,
+              "predicted_ms": 70.61702645644733,
+              "lead_to_native_eos_ms": 1449.27197265625,
+              "natural_return_observed": true
+            },
+            {
+              "request_id": "beliefkv:01a122c7-9cdb-7c03-bf07-235d1573a322",
+              "ts_ms": 1791584884670.5732,
+              "predicted_ms": 223.52562242392437,
+              "lead_to_native_eos_ms": 3833.12451171875,
+              "natural_return_observed": true
+            },
+            {
+              "request_id": "beliefkv:01a122c7-a006-7f23-ab0d-6d21ded893e5",
+              "ts_ms": 1791584890308.1165,
+              "predicted_ms": 184.85778793340032,
+              "lead_to_native_eos_ms": 277.557373046875,
+              "natural_return_observed": true
+            }
+          ]
+        },
+        "500": {
+          "first_trigger_count": 14,
+          "natural_return_observed_count": 14,
+          "missing_native_result_count": 0,
+          "lead_0_to_500ms_count": 1,
+          "lead_over_2000ms_count": 9,
+          "at_or_after_native_eos_count": 1,
+          "median_lead_to_native_eos_ms": 3510.889892578125,
+          "first_trigger_rows": [
+            {
+              "request_id": "beliefkv:01a1229c-5fd6-77b1-bef3-e66b7b16f622",
+              "ts_ms": 1791582084468.6404,
+              "predicted_ms": 396.94109699284735,
+              "lead_to_native_eos_ms": 3188.6552734375,
+              "natural_return_observed": true
+            },
+            {
+              "request_id": "beliefkv:01a1229e-50c6-7aa2-b2b1-6fdcd9da2bb0",
+              "ts_ms": 1791582202958.6482,
+              "predicted_ms": 413.7457996170886,
+              "lead_to_native_eos_ms": 1349.486083984375,
+              "natural_return_observed": true
+            },
+            {
+              "request_id": "beliefkv:01a1229f-7b9a-7983-b634-2de61b17d1df",
+              "ts_ms": 1791582278296.8464,
+              "predicted_ms": 416.4186039739644,
+              "lead_to_native_eos_ms": 8854.943603515625,
+              "natural_return_observed": true
+            },
+            {
+              "request_id": "beliefkv:01a122a6-11f2-7123-93b9-17a3e606de77",
+              "ts_ms": 1791582706673.241,
+              "predicted_ms": 479.5515644690773,
+              "lead_to_native_eos_ms": -13.57763671875,
+              "natural_return_observed": true
+            },
+            {
+              "request_id": "beliefkv:01a122a7-34ea-76b0-b23f-2b4b17bdcc19",
+              "ts_ms": 1791582783932.747,
+              "predicted_ms": 456.277118854496,
+              "lead_to_native_eos_ms": 9776.560302734375,
+              "natural_return_observed": true
+            },
+            {
+              "request_id": "beliefkv:01a122a7-7dd9-7380-a4a5-394a0ddd2dfb",
+              "ts_ms": 1791582803036.1982,
+              "predicted_ms": 380.3465474754154,
+              "lead_to_native_eos_ms": 9538.871337890625,
+              "natural_return_observed": true
+            },
+            {
+              "request_id": "beliefkv:01a122b4-4b51-7c83-8c24-c8725f244a20",
+              "ts_ms": 1791583625161.4902,
+              "predicted_ms": 438.55369387484893,
+              "lead_to_native_eos_ms": 5500.38916015625,
+              "natural_return_observed": true
+            },
+            {
+              "request_id": "beliefkv:01a122c7-9cdb-7c03-bf07-235d1573a322",
+              "ts_ms": 1791584884670.5732,
+              "predicted_ms": 223.52562242392437,
+              "lead_to_native_eos_ms": 3833.12451171875,
+              "natural_return_observed": true
+            },
+            {
+              "request_id": "beliefkv:01a122c7-a006-7f23-ab0d-6d21ded893e5",
+              "ts_ms": 1791584890308.1165,
+              "predicted_ms": 184.85778793340032,
+              "lead_to_native_eos_ms": 277.557373046875,
+              "natural_return_observed": true
+            },
+            {
+              "request_id": "beliefkv:01a122cc-3fd0-7cf0-883c-d8e46ba24d26",
+              "ts_ms": 1791585203234.2183,
+              "predicted_ms": 451.715949749436,
+              "lead_to_native_eos_ms": 888.85693359375,
+              "natural_return_observed": true
+            },
+            {
+              "request_id": "beliefkv:01a122cc-97b2-7e70-9b00-b8ba01ece888",
+              "ts_ms": 1791585234434.2307,
+              "predicted_ms": 437.0703751401781,
+              "lead_to_native_eos_ms": 733.447021484375,
+              "natural_return_observed": true
+            },
+            {
+              "request_id": "beliefkv:01a122e9-fe29-7a90-ba13-a24c2f177189",
+              "ts_ms": 1791587155602.2886,
+              "predicted_ms": 351.2919811075537,
+              "lead_to_native_eos_ms": 2113.5341796875,
+              "natural_return_observed": true
+            },
+            {
+              "request_id": "beliefkv:01a122f3-933d-7940-8e56-ae495965f4da",
+              "ts_ms": 1791587770868.727,
+              "predicted_ms": 366.11229218482134,
+              "lead_to_native_eos_ms": 5208.0263671875,
+              "natural_return_observed": true
+            },
+            {
+              "request_id": "beliefkv:01a122fe-5ffc-7be0-b87c-dfdc5d2ef5ad",
+              "ts_ms": 1791588474225.2168,
+              "predicted_ms": 252.41923989560786,
+              "lead_to_native_eos_ms": 4493.03125,
+              "natural_return_observed": true
+            }
+          ]
+        }
+      },
+      "snapshot_center": {
+        "100": {
+          "first_trigger_count": 0,
+          "natural_return_observed_count": 0,
+          "missing_native_result_count": 0,
+          "lead_0_to_500ms_count": 0,
+          "lead_over_2000ms_count": 0,
+          "at_or_after_native_eos_count": 0,
+          "median_lead_to_native_eos_ms": null,
+          "first_trigger_rows": []
+        },
+        "250": {
+          "first_trigger_count": 0,
+          "natural_return_observed_count": 0,
+          "missing_native_result_count": 0,
+          "lead_0_to_500ms_count": 0,
+          "lead_over_2000ms_count": 0,
+          "at_or_after_native_eos_count": 0,
+          "median_lead_to_native_eos_ms": null,
+          "first_trigger_rows": []
+        },
+        "500": {
+          "first_trigger_count": 4,
+          "natural_return_observed_count": 4,
+          "missing_native_result_count": 0,
+          "lead_0_to_500ms_count": 0,
+          "lead_over_2000ms_count": 3,
+          "at_or_after_native_eos_count": 0,
+          "median_lead_to_native_eos_ms": 5827.8590087890625,
+          "first_trigger_rows": [
+            {
+              "request_id": "beliefkv:01a1229e-50c6-7aa2-b2b1-6fdcd9da2bb0",
+              "ts_ms": 1791582203774.1921,
+              "predicted_ms": 389.09666107855594,
+              "lead_to_native_eos_ms": 533.942138671875,
+              "natural_return_observed": true
+            },
+            {
+              "request_id": "beliefkv:01a1229f-7b9a-7983-b634-2de61b17d1df",
+              "ts_ms": 1791582278296.8464,
+              "predicted_ms": 416.4186039739644,
+              "lead_to_native_eos_ms": 8854.943603515625,
+              "natural_return_observed": true
+            },
+            {
+              "request_id": "beliefkv:01a122a7-34ea-76b0-b23f-2b4b17bdcc19",
+              "ts_ms": 1791582784757.3271,
+              "predicted_ms": 497.80947194107165,
+              "lead_to_native_eos_ms": 8951.980224609375,
+              "natural_return_observed": true
+            },
+            {
+              "request_id": "beliefkv:01a122f3-933d-7940-8e56-ae495965f4da",
+              "ts_ms": 1791587773275.979,
+              "predicted_ms": 440.42027833379836,
+              "lead_to_native_eos_ms": 2800.7744140625,
+              "natural_return_observed": true
+            }
+          ]
+        }
+      }
+    }
+  }
+}

@@ -214,6 +214,33 @@ namespace、pending DMA、页对齐、64层上限、首个同长度检查点
 `experiments/reports/v16_reentry_result_cpu_20261010.json`。
 这些合成CPU结果不能推导native相对GPU吞吐收益。
 
+下一版物理机会采样复用同一次闭包中已读取的Mamba祖先锚点，
+不再重复遍历该祖先到root的路径；校验creation_time，每次新
+调用仍重新读取实时驻留，实际传输保留原生依赖校验。344项
+相关检查通过，含跨调用驻留变化、锚点版本变化及反向叶顺序。
+与`ed02b21`的同输入156-workflow/24节点、每配置60次CPU比较中，
+动作选择、压力候选及完整机会字段一致；祖先锚点配置的机会
+采样均值下降29.47%--30.16%，缺少备份且Host有空间的PREPARE
+下降37.10%，Host-only配置下降39.98%。Host满池、缺少备份的
+PREPARE慢1.12%，保留该结果。普通同叶配置首次比较有一组
+PREPARE均值慢10.60%，P50却快0.79%；180次复核中该组均值
+快2.81%，不将变化归为确定的加速或退步。普通同叶配置复核的
+采样均值变化为慢0.30%至快0.73%。两侧同等清除探测退避，
+基准固定并校验实际导入路径；这些CPU结果不能证明GPU吞吐收益。
+报告：`experiments/reports/v16_mamba_ancestor_capture_cpu_20261010.json`、
+`experiments/reports/v16_shadow_capture_identity_cpu_20261010.json`、
+`experiments/reports/v16_shadow_capture_identity_repeat_cpu_20261010.json`。
+此修订只在隔离工作树，v15两侧及完整后处理继续冻结。
+
+2026-10-10 07:35 CST的语义局部审计有7个estimated-work首次
+触发请求，均匹配此前已交付的forecast；5个提前EOS超过2秒，
+1个在0--500 ms、1个在500--2000 ms。158个自然终态请求的
+最后EOS前快照有符号/绝对剩余工作误差P50均约46.80 token，
+触发时的有符号误差P50约-72.82 token。提前低估与末端高估
+仍并存，不统一加偏置，也不据此延长全部驻留保护；完整对照
+结束后再针对有Host-only目标的实际机会评价和优化。
+报告：`experiments/reports/v15_semantic_trigger_causal_partial_20261010_0735.json`。
+
 当前隔离候选已打包，完整patch SHA256为
 `66aa563627fb8882808e290ff0ccde10535bc7d787a66eba6848baa8bcf203d8`，
 相对冻结v15引擎的精确差量为

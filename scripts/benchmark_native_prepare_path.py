@@ -16,8 +16,7 @@ from types import ModuleType, SimpleNamespace as NS
 import numpy as np
 
 ROOT = Path(__file__).resolve().parents[1]
-if str(ROOT) not in sys.path:
-    sys.path.insert(0, str(ROOT))
+sys.path[:] = [str(ROOT), *(entry for entry in sys.path if entry != str(ROOT))]
 
 from beliefkv.control.causal_graph import InvocationState
 from beliefkv.runtime.sglang_v0520_admission import PrefillCandidateKey
@@ -50,7 +49,7 @@ def baseline_runtime(revision):
 
 def fixture(
     runtime_class, *, workflows, depth, backed, host_full, leases,
-    host_only=False, service_samples=(),
+    host_only=False, service_samples=(), mamba_ancestor=False,
 ):
     runtime, queue = synthetic_runtime(
         runtime_class, CausalFrontierScheduler, workflows, 16,
@@ -77,8 +76,9 @@ def fixture(
     def snapshot(session, generation, *, max_leaves):
         reads["session_snapshot"] += 1
         leaf = sessions[session]
+        state = leaf.parent if mamba_ancestor else leaf
         return ((0, ((leaf.id, leaf.creation_time),)),
-                (2, ((leaf.id, leaf.creation_time),)))
+                (2, ((state.id, state.creation_time),)))
 
     def node_by_id(node_id):
         reads["node_lookup"] += 1
@@ -99,7 +99,9 @@ def fixture(
             full_extent = range(128) if offset else None
             full_value = None if host_only else full_extent
             full_host = full_extent if backed or offset < depth // 2 else None
-            state_value = (0,) if offset == depth - 1 else None
+            state_value = (
+                (0,) if offset == depth - (2 if mamba_ancestor else 1) else None
+            )
 
             def component(value, host):
                 return ComponentData(
@@ -154,12 +156,12 @@ def fixture(
 
 def measure_case(
     baseline, *, workflows, depth, iterations, backed, host_full, leases,
-    host_only=False, service_samples=(), force_probes=False,
+    host_only=False, service_samples=(), force_probes=False, mamba_ancestor=False,
 ):
     variants = {
         name: fixture(cls, workflows=workflows, depth=depth, backed=backed,
                       host_full=host_full, leases=leases, host_only=host_only,
-                      service_samples=service_samples)
+                      service_samples=service_samples, mamba_ancestor=mamba_ancestor)
         for name, cls in (("baseline", baseline), ("optimized", NativeAdmissionRuntime))
     }
     samples = {name: {"join_prepare": [], "sampling": []} for name in variants}
@@ -188,9 +190,8 @@ def measure_case(
                 runtime._sample_h2d_opportunities(queue, now_ms=time.monotonic() * 1000.)
                 sample_ms = (time.perf_counter_ns() - start) / 1_000_000
                 sampled_steps.append(tuple(
-                    (row["context_id"], row.get("prepare_node_id"),
-                     row.get("prepare_required_full_tokens"),
-                     row.get("prepare_required_mamba_slots"))
+                    {key: value for key, value in row.items()
+                     if key not in ("ts_ms", "monotonic_ms")}
                     for row in observations if row["event"] == "session_h2d_opportunity"
                 ))
                 if iteration >= 5:
@@ -213,6 +214,7 @@ def measure_case(
             "workflows": workflows, "depth": depth,
             "all_current_input_backed": backed, "host_full_free_tokens": host_full,
             "host_only": host_only,
+            "mamba_anchor_is_full_ancestor": mamba_ancestor,
             "service_history_samples": len(service_samples),
             "live_restore_leases": leases, "iterations": iterations,
             "force_prepare_probes": force_probes,
@@ -418,10 +420,23 @@ def main():
         help="Use the same validated native transfer history for both PREPARE variants.",
     )
     parser.add_argument("--output", type=Path, required=True)
+    parser.add_argument("--mamba-ancestor", action="store_true")
     args = parser.parse_args()
     if not 1 <= args.depth <= 64 or not 4 <= args.workflows <= 512 or args.iterations < 1:
         raise ValueError("depth 1..64, workflows 4..512 and positive iterations required")
+    if args.mamba_ancestor and args.depth < 3:
+        raise ValueError("Mamba ancestor fixture requires depth at least three")
     baseline, digests = baseline_runtime(args.baseline_revision)
+    imported_sources = {
+        path: str(Path(sys.modules[f"beliefkv.runtime.sglang_v0520_{name}"].__file__).resolve())
+        for name, path in (
+            ("observer", "beliefkv/runtime/sglang_v0520_observer.py"),
+            ("physical", "beliefkv/runtime/sglang_v0520_physical.py"),
+            ("runtime", "beliefkv/runtime/sglang_v0520_runtime.py"),
+        )
+    }
+    if any(Path(loaded) != ROOT / path for path, loaded in imported_sources.items()):
+        raise RuntimeError(f"benchmark imported a different worktree: {imported_sources}")
     service_seed = None
     service_samples = ()
     if args.service_seed is not None:
@@ -434,7 +449,8 @@ def main():
     cases = [] if args.terminal_only else [
         measure_case(baseline, workflows=args.workflows, depth=args.depth,
                      iterations=args.iterations, service_samples=service_samples,
-                     force_probes=args.force_prepare_probes, **case)
+                     force_probes=args.force_prepare_probes,
+                     mamba_ancestor=args.mamba_ancestor, **case)
         for case in (
             {"backed": True, "host_full": 1_000_000, "leases": 0},
             {"backed": True, "host_full": 1_000_000, "leases": 4},
@@ -453,6 +469,7 @@ def main():
             path: hashlib.sha256((ROOT / path).read_bytes()).hexdigest()
             for path in digests
         },
+        "imported_sources": imported_sources,
         "benchmark_source_sha256": hashlib.sha256(Path(__file__).read_bytes()).hexdigest(),
         "service_seed": service_seed,
         "handoff_identity": None if args.terminal_only else handoff_identity_case(baseline),
@@ -470,6 +487,7 @@ def main():
             key: case[key] for key in (
                 "depth", "all_current_input_backed", "host_full_free_tokens",
                 "host_only", "live_restore_leases", "mean_reduction",
+                "mamba_anchor_is_full_ancestor",
                 "selection_and_publication_equal",
             )
         } for case in cases],
