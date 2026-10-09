@@ -143,6 +143,19 @@ Current status:
   H2D evidence without scanning full history every decode; retain the
   three-sample requirement and separate evidence sources. Phase/work
   artifacts and both live arms remain unchanged.
+- The isolated demand handoff checks current running/native slots before new
+  frontier planning. Skip empty queues and zero-slot ranking/residency scans;
+  existing tickets still process ACKs and remaining extents. Resume ordinary
+  selection when capacity returns. Seventy-four relevant CPU checks pass.
+  Four156-workflow/16-round CPU fixtures preserve selected targets across
+  200 iterations. Zero-slot mean is2.717→0.021ms; empty queue0.0253→0.00327ms.
+  Positive-slot differences are small and not evidence of acceleration.
+  V15 zero-slot frequency and GPU benefit remain unmeasured. Keep this
+  revision isolated until both frozen arms and postprocessing finish.
+  Report:v16_handoff_frontier_cpu_20261010.json. The benchmark pins and
+  verifies the actual imported worktree and records its source SHA256;
+  the initial wrong-worktree result was regenerated. The existing two-call
+  admission benchmark also preserves queue order in50 iterations.
 - V14 collection, outer driver, audits, HTML export and cleanup have all
   finished:154 completed, two incomplete, no errors out of156. Duration is
   10977.317s, completed throughput50.504/hour, output700.235 tokens/s and

@@ -4537,6 +4537,14 @@ class NativeAdmissionRuntime:
             return
         if ticket is None:
             self._execution_handoff_next_ms = now_ms + 50.
+            if not waiting_queue:
+                self.counts["execution_handoff_no_waiting_requests"] += 1
+                return
+            self._observe_native_admission_capacity(running_batch=running_batch, adder=None)
+            frontier_slots = min(16, self._current_residency_budget().request_slots)
+            if frontier_slots < 1:
+                self.counts["execution_handoff_no_frontier_slots"] += 1
+                return
             self._execution_handoff_attempted = {
                 key for key in self._execution_handoff_attempted
                 if self.visible.get(key.request_id) == key
@@ -4545,7 +4553,6 @@ class NativeAdmissionRuntime:
                 waiting_queue, running_batch=running_batch, adder=None,
             )
             by_id = {getattr(req, "rid", None): req for req in waiting_queue}
-            frontier_slots = min(16, self._current_residency_budget().request_slots)
             for key in plan.prioritized[:frontier_slots]:
                 request = by_id[key.request_id]
                 if key in self._execution_handoff_attempted:

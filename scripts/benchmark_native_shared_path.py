@@ -10,8 +10,14 @@ import json
 from pathlib import Path
 from statistics import mean
 import subprocess
+import sys
 import time
 from types import SimpleNamespace as NS
+from unittest.mock import patch
+
+ROOT = Path(__file__).resolve().parents[1]
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
 
 from beliefkv.control.causal_graph import (
     ContextRecord, InvocationRecord, InvocationState, JoinRecord,
@@ -20,11 +26,16 @@ from beliefkv.control.causal_graph import (
 from beliefkv.policy.causal_frontier import CausalFrontierScheduler
 import beliefkv.policy.causal_frontier as frontier_module
 from beliefkv.runtime.hotpath_timing import HotpathTiming
+from beliefkv.runtime.sglang_v0520_observer import StaticPoolHeadroomObservation
 from beliefkv.runtime.sglang_v0520_runtime import NativeAdmissionRuntime
 import beliefkv.runtime.sglang_v0520_runtime as runtime_module
 
 
-ROOT = Path(__file__).resolve().parents[1]
+def runtime_source_path() -> Path:
+    path = Path(runtime_module.__file__).resolve()
+    if path != ROOT / "beliefkv/runtime/sglang_v0520_runtime.py":
+        raise RuntimeError(f"benchmark imported a different worktree: {path}")
+    return path
 
 
 def baseline_classes(revision: str):
@@ -41,7 +52,7 @@ def baseline_classes(revision: str):
                     if isinstance(item, ast.ClassDef) and item.name == "NativeAdmissionRuntime")
     methods = {
         "_causal_rank", "plan_native_prefill", "_local_frontier_features",
-        "_prefill_causal_ranks", "on_batch_completed",
+        "_prefill_causal_ranks", "on_batch_completed", "dispatch_execution_handoff",
     }
     original.name = "BaselineRuntime"
     original.bases = [ast.Name(id="NativeAdmissionRuntime", ctx=ast.Load())]
@@ -173,6 +184,10 @@ def benchmark(*, revision: str, workflows: int, rounds: int, iterations: int,
         return {
             "scope": "synthetic CPU benchmark; not live GPU overhead or an end-to-end speedup",
             "baseline_revision": revision, "baseline_source_sha256": digests,
+            "optimized_runtime_source": str(runtime_source_path()),
+            "optimized_runtime_source_sha256": hashlib.sha256(
+                runtime_source_path().read_bytes(),
+            ).hexdigest(),
             "workflows": workflows, "retained_rounds_per_workflow": rounds,
             "invocations": workflows * (1 + rounds * 3), "joins": workflows * rounds,
             "waiting_requests": workflows, "iterations": iterations,
@@ -193,6 +208,117 @@ def benchmark(*, revision: str, workflows: int, rounds: int, iterations: int,
             runtime.close()
 
 
+def benchmark_handoff_frontier(
+    *, revision: str, workflows: int, rounds: int, iterations: int,
+) -> dict:
+    baseline, frontier, digests = baseline_classes(revision)
+    scenarios = {}
+    headroom = StaticPoolHeadroomObservation(
+        True, device_full_free_tokens=800_000, device_mamba_free_slots=128,
+    )
+    for name, rows, empty_queue in (
+        ("empty_queue", 8, True),
+        ("zero_slots", 0, False),
+        ("one_slot", 1, False),
+        ("eight_slots", 8, False),
+    ):
+        variants = {
+            "baseline": synthetic_runtime(baseline, frontier, workflows, rounds),
+            "optimized": synthetic_runtime(
+                NativeAdmissionRuntime, CausalFrontierScheduler, workflows, rounds,
+            ),
+        }
+        samples = {variant: [] for variant in variants}
+        inspections = {variant: 0 for variant in variants}
+        running_batch = NS(reqs=[NS()] * 40)
+        try:
+            for variant, (runtime, _) in variants.items():
+                def inspect(request, *, variant=variant):
+                    inspections[variant] += 1
+                    return {
+                        "component_leaves": ((0, ((1, 2.),)), (2, ((1, 2.),))),
+                        "reusable_input_tokens": 32, "checkpoint_tokens": 32,
+                        "device_checkpoint_tokens": 0, "missing_full_tokens": 32,
+                        "missing_mamba_slots": 1,
+                    }
+
+                runtime.enable_execution_handoff = True
+                runtime.enable_resident_first = True
+                runtime.attach_native_cache(NS(
+                    inspect_beliefkv_reentry=inspect,
+                    req_to_token_pool=NS(available_size=lambda: rows),
+                    host_pool_group=NS(entry_map={
+                        "kv": NS(host_pool=NS(size_per_token=20480)),
+                        "mamba": NS(host_pool=NS(size_per_token=64389120)),
+                    }),
+                ))
+                runtime._native_max_running = 48
+                runtime._native_prefill_slots = 8
+                runtime._native_page_size = 16
+                runtime._native_input_reserve = 8192
+            with patch.object(
+                runtime_module, "observe_static_full_mamba_headroom", return_value=headroom,
+            ), patch.object(
+                runtime_module, "inspect_session_h2d_opportunity",
+                return_value=NS(step=None, no_step_reason="benchmark_read_only"),
+            ):
+                for iteration in range(iterations + 5):
+                    names = list(variants)
+                    names = names[iteration % 2:] + names[:iteration % 2]
+                    targets = []
+                    for variant in names:
+                        runtime, queue = variants[variant]
+                        runtime.graph._graph_version += 1
+                        runtime._visible_since = {
+                            request.rid: time.monotonic() for request in queue
+                        }
+                        runtime._reentry_observations.clear()
+                        runtime._execution_handoff_attempted.clear()
+                        runtime._execution_handoff_next_ms = 0.
+                        started = time.perf_counter_ns()
+                        runtime.dispatch_execution_handoff(
+                            [] if empty_queue else queue, running_batch=running_batch,
+                        )
+                        elapsed = (time.perf_counter_ns() - started) / 1_000_000
+                        targets.append(tuple(sorted(
+                            key.request_id for key in runtime._execution_handoff_attempted
+                        )))
+                        if iteration >= 5:
+                            samples[variant].append(elapsed)
+                        if runtime._execution_handoff is not None:
+                            raise AssertionError("read-only fixture left a transfer ticket")
+                    if targets[0] != targets[1]:
+                        raise AssertionError(f"{name}: frontier selection changed")
+            costs = {variant: distribution(values) for variant, values in samples.items()}
+            scenarios[name] = {
+                "available_request_rows": rows,
+                "waiting_requests": 0 if empty_queue else workflows,
+                "frontier_selection_equal": True, "costs": costs,
+                "reentry_probe_calls_including_warmup": inspections,
+                "mean_reduction_fraction": (
+                    1 - costs["optimized"]["mean_ms"] / costs["baseline"]["mean_ms"]
+                ),
+            }
+        finally:
+            for runtime, _ in variants.values():
+                runtime.close()
+    return {
+        "scope": (
+            "synthetic CPU handoff frontier benchmark; real causal planning, residency "
+            "budget and reentry cache; mocked read-only tree/physical opportunity; "
+            "no DMA, enqueue, GPU service or end-to-end speedup measurement"
+        ),
+        "baseline_revision": revision, "baseline_source_sha256": digests,
+        "optimized_runtime_source": str(runtime_source_path()),
+        "optimized_runtime_source_sha256": hashlib.sha256(
+            runtime_source_path().read_bytes(),
+        ).hexdigest(),
+        "workflows": workflows, "retained_rounds_per_workflow": rounds,
+        "iterations": iterations, "running_requests": 40, "max_running_requests": 48,
+        "invalidate_caches_each_iteration": True, "scenarios": scenarios,
+    }
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--baseline-revision", default="7055901")
@@ -200,18 +326,29 @@ def main():
     parser.add_argument("--rounds", type=int, default=16)
     parser.add_argument("--iterations", type=int, default=200)
     parser.add_argument("--planning-calls", type=int, choices=(1, 2), default=1)
+    parser.add_argument("--handoff-frontier", action="store_true")
     parser.add_argument("--output", type=Path, required=True)
     args = parser.parse_args()
+    runtime_source_path()
     if min(args.workflows, args.rounds, args.iterations) < 1 or args.workflows > 512:
         raise ValueError("positive sizes and at most 512 queued requests required")
-    report = benchmark(revision=args.baseline_revision, workflows=args.workflows,
-                       rounds=args.rounds, iterations=args.iterations,
-                       planning_calls=args.planning_calls)
+    if args.handoff_frontier:
+        report = benchmark_handoff_frontier(
+            revision=args.baseline_revision, workflows=args.workflows,
+            rounds=args.rounds, iterations=args.iterations,
+        )
+    else:
+        report = benchmark(revision=args.baseline_revision, workflows=args.workflows,
+                           rounds=args.rounds, iterations=args.iterations,
+                           planning_calls=args.planning_calls)
     args.output.parent.mkdir(parents=True, exist_ok=True)
     args.output.write_text(json.dumps(report, indent=2, allow_nan=False) + "\n")
-    print(json.dumps({key: report[key] for key in (
-        "scope", "queue_order_equal", "costs", "admission_mean_reduction_fraction",
-    )}, indent=2))
+    if args.handoff_frontier:
+        print(json.dumps({"scope": report["scope"], "scenarios": report["scenarios"]}, indent=2))
+    else:
+        print(json.dumps({key: report[key] for key in (
+            "scope", "queue_order_equal", "costs", "admission_mean_reduction_fraction",
+        )}, indent=2))
 
 
 if __name__ == "__main__":

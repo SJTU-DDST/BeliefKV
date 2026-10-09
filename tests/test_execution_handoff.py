@@ -115,6 +115,75 @@ def test_handoff_only_restores_within_next_native_admission_slots(monkeypatch, s
     runtime.close()
 
 
+def test_handoff_skips_empty_frontier_work_and_resumes_when_slots_return(monkeypatch):
+    runtime, (cold, warm, _), cache = runtime_with_requests(monkeypatch)
+    step = PrefetchLoadStep(runtime.visible["cold"], 1, 2, 1, 2)
+    batch = NS(reqs=[NS()])
+    with patch.object(runtime, "plan_native_prefill", wraps=runtime.plan_native_prefill) as plan, \
+         patch.object(runtime, "_current_residency_budget", return_value=PrefetchResidencyBudget(
+             0, 1024 ** 3, source="native_next_prefill",
+         )) as budget, patch(
+             "beliefkv.runtime.sglang_v0520_runtime.inspect_session_h2d_opportunity",
+             return_value=NS(step=step, fits_current_free_lists=True),
+         ), patch.object(runtime, "issue_prefetch_gpu_step", return_value="restore") as issue:
+        runtime.dispatch_execution_handoff([cold, warm], running_batch=batch)
+        assert runtime._native_running_batch is batch
+        plan.assert_not_called()
+        cache.inspect_beliefkv_reentry.assert_not_called()
+        issue.assert_not_called()
+        assert not runtime._execution_handoff_attempted
+        assert runtime.counts["execution_handoff_no_frontier_slots"] == 1
+        runtime._execution_handoff_next_ms = 0.
+        budget.return_value = PrefetchResidencyBudget(
+            2, 1024 ** 3, source="native_next_prefill",
+        )
+        runtime.dispatch_execution_handoff([cold, warm], running_batch=batch)
+        plan.assert_called_once()
+        issue.assert_called_once_with(step, source="execution_handoff")
+    runtime.close()
+
+
+def test_handoff_empty_queue_does_not_plan_or_observe_capacity(monkeypatch):
+    runtime, _, cache = runtime_with_requests(monkeypatch)
+    with patch.object(runtime, "plan_native_prefill") as plan, \
+         patch.object(runtime, "_current_residency_budget") as budget:
+        runtime.dispatch_execution_handoff([], running_batch=None)
+    plan.assert_not_called()
+    budget.assert_not_called()
+    cache.inspect_beliefkv_reentry.assert_not_called()
+    assert runtime.counts["execution_handoff_no_waiting_requests"] == 1
+    runtime.close()
+
+
+def test_existing_handoff_processes_ack_and_extents_with_zero_frontier_slots(monkeypatch):
+    runtime, (cold, _, _), _ = runtime_with_requests(monkeypatch)
+    key = runtime.visible["cold"]
+    step = PrefetchLoadStep(key, 1, 2, 1, 2)
+    with patch(
+        "beliefkv.runtime.sglang_v0520_runtime.inspect_session_h2d_opportunity",
+        return_value=NS(step=step, fits_current_free_lists=True),
+    ), patch.object(runtime, "issue_prefetch_gpu_step", return_value="restore"):
+        runtime.dispatch_execution_handoff([cold], running_batch=None)
+    runtime.completed_physical_actions.append(PhysicalActionCompleted(
+        "restore", "PREFETCH_GPU", key.context_id, key.context_epoch,
+        (1,), (("kv", 100),), 100,
+    ))
+    next_step = PrefetchLoadStep(key, 1, 2, 2, 3)
+    with patch.object(runtime, "_current_residency_budget", return_value=PrefetchResidencyBudget(
+        0, 1024 ** 3, source="native_next_prefill",
+    )) as budget, patch.object(runtime, "plan_native_prefill") as plan, patch(
+        "beliefkv.runtime.sglang_v0520_runtime.inspect_session_h2d_opportunity",
+        return_value=NS(step=next_step, fits_current_free_lists=True),
+    ), patch.object(runtime, "issue_prefetch_gpu_step", return_value="next") as issue:
+        runtime.dispatch_execution_handoff([cold], running_batch=None)
+    budget.assert_not_called()
+    plan.assert_not_called()
+    issue.assert_called_once_with(next_step, source="execution_handoff")
+    assert runtime._execution_handoff.issued_nodes == 2
+    assert runtime.counts["execution_handoff_acked"] == 1
+    runtime.close()
+
+
 @pytest.mark.parametrize("source", ["execution_handoff", "tool_wait"])
 def test_demand_handoff_pins_restored_cache_until_service_or_allocation_pressure(
     monkeypatch, source,

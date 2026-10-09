@@ -1,0 +1,173 @@
+{
+  "scope": "synthetic CPU benchmark; not live GPU overhead or an end-to-end speedup",
+  "baseline_revision": "470c93e",
+  "baseline_source_sha256": {
+    "beliefkv/runtime/sglang_v0520_runtime.py": "16fb585111089a874ec13b5df03f1324a39ad93fe10abe5d5b6696323f25e5b4",
+    "beliefkv/policy/causal_frontier.py": "b2e1567cc5a6f50f33329c9b73f21949a6da6061b4560cbc36beb65e7e54acb2"
+  },
+  "optimized_runtime_source": "/tmp/beliefkv-v12-followup-20261009/beliefkv/runtime/sglang_v0520_runtime.py",
+  "optimized_runtime_source_sha256": "4982626c0d2b9f61a1d61cc3de44a46310a032ca655c0493b20476f4e17c86d7",
+  "workflows": 156,
+  "retained_rounds_per_workflow": 16,
+  "invocations": 7644,
+  "joins": 2496,
+  "waiting_requests": 156,
+  "iterations": 50,
+  "planning_calls_per_cycle": 2,
+  "planning_scope": "causal admission calls only; excludes physical handoff inspection and enqueue",
+  "invalidate_caches_each_iteration": true,
+  "queue_order_equal": true,
+  "costs": {
+    "baseline": {
+      "admission": {
+        "count": 50,
+        "mean_ms": 4.64057968,
+        "p50_ms": 4.649689,
+        "p99_ms": 4.755326,
+        "max_ms": 4.755326
+      },
+      "batch_completed": {
+        "count": 50,
+        "mean_ms": 0.03976148,
+        "p50_ms": 0.039643,
+        "p99_ms": 0.042011,
+        "max_ms": 0.042011
+      }
+    },
+    "optimized": {
+      "admission": {
+        "count": 50,
+        "mean_ms": 4.56119152,
+        "p50_ms": 4.560334,
+        "p99_ms": 4.668348,
+        "max_ms": 4.668348
+      },
+      "batch_completed": {
+        "count": 50,
+        "mean_ms": 0.03850498,
+        "p50_ms": 0.038448,
+        "p99_ms": 0.040544,
+        "max_ms": 0.040544
+      }
+    },
+    "optimized_profiled": {
+      "admission": {
+        "count": 50,
+        "mean_ms": 4.65462124,
+        "p50_ms": 4.649793,
+        "p99_ms": 4.778201,
+        "max_ms": 4.778201
+      },
+      "batch_completed": {
+        "count": 50,
+        "mean_ms": 0.041733,
+        "p50_ms": 0.041546,
+        "p99_ms": 0.045331,
+        "max_ms": 0.045331
+      }
+    }
+  },
+  "admission_mean_reduction_fraction": 0.017107379998698713,
+  "profiled_timing": {
+    "schema_version": 1,
+    "enabled": true,
+    "clock": "perf_counter_ns; CPU wall intervals, not GPU kernel time",
+    "scope": "cumulative completed calls; exclusive totals avoid nested double counting",
+    "elapsed_ms": 788.107449,
+    "bucket_upper_ms": [
+      0.01,
+      0.025,
+      0.05,
+      0.1,
+      0.25,
+      0.5,
+      1.0,
+      2.5,
+      5.0,
+      10.0,
+      25.0,
+      50.0,
+      100.0,
+      250.0,
+      1000.0,
+      null
+    ],
+    "phases": {
+      "reentry_inspection": {
+        "count": 1760,
+        "total_ms": 14.052285,
+        "self_ms": 14.052285,
+        "mean_ms": 0.007984252840909091,
+        "max_ms": 0.019729,
+        "histogram": [
+          1619,
+          141,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      "admission_plan": {
+        "count": 110,
+        "total_ms": 252.991178,
+        "self_ms": 238.938893,
+        "mean_ms": 2.2999197999999996,
+        "max_ms": 2.897092,
+        "histogram": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          55,
+          55,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      "batch_completed": {
+        "count": 55,
+        "total_ms": 2.080191,
+        "self_ms": 2.080191,
+        "mean_ms": 0.037821654545454546,
+        "max_ms": 0.042966,
+        "histogram": [
+          0,
+          0,
+          55,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      }
+    }
+  }
+}

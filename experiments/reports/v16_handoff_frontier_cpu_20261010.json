@@ -1,0 +1,122 @@
+{
+  "scope": "synthetic CPU handoff frontier benchmark; real causal planning, residency budget and reentry cache; mocked read-only tree/physical opportunity; no DMA, enqueue, GPU service or end-to-end speedup measurement",
+  "baseline_revision": "470c93e",
+  "baseline_source_sha256": {
+    "beliefkv/runtime/sglang_v0520_runtime.py": "16fb585111089a874ec13b5df03f1324a39ad93fe10abe5d5b6696323f25e5b4",
+    "beliefkv/policy/causal_frontier.py": "b2e1567cc5a6f50f33329c9b73f21949a6da6061b4560cbc36beb65e7e54acb2"
+  },
+  "optimized_runtime_source": "/tmp/beliefkv-v12-followup-20261009/beliefkv/runtime/sglang_v0520_runtime.py",
+  "optimized_runtime_source_sha256": "4982626c0d2b9f61a1d61cc3de44a46310a032ca655c0493b20476f4e17c86d7",
+  "workflows": 156,
+  "retained_rounds_per_workflow": 16,
+  "iterations": 200,
+  "running_requests": 40,
+  "max_running_requests": 48,
+  "invalidate_caches_each_iteration": true,
+  "scenarios": {
+    "empty_queue": {
+      "available_request_rows": 8,
+      "waiting_requests": 0,
+      "frontier_selection_equal": true,
+      "costs": {
+        "baseline": {
+          "count": 200,
+          "mean_ms": 0.02533064,
+          "p50_ms": 0.024114,
+          "p99_ms": 0.078492,
+          "max_ms": 0.089
+        },
+        "optimized": {
+          "count": 200,
+          "mean_ms": 0.0032723599999999998,
+          "p50_ms": 0.002689,
+          "p99_ms": 0.016925,
+          "max_ms": 0.069602
+        }
+      },
+      "reentry_probe_calls_including_warmup": {
+        "baseline": 0,
+        "optimized": 0
+      },
+      "mean_reduction_fraction": 0.8708141602422994
+    },
+    "zero_slots": {
+      "available_request_rows": 0,
+      "waiting_requests": 156,
+      "frontier_selection_equal": true,
+      "costs": {
+        "baseline": {
+          "count": 200,
+          "mean_ms": 2.7170759700000002,
+          "p50_ms": 2.710889,
+          "p99_ms": 3.408965,
+          "max_ms": 3.418317
+        },
+        "optimized": {
+          "count": 200,
+          "mean_ms": 0.021080595,
+          "p50_ms": 0.021008,
+          "p99_ms": 0.029811,
+          "max_ms": 0.033577
+        }
+      },
+      "reentry_probe_calls_including_warmup": {
+        "baseline": 3192,
+        "optimized": 0
+      },
+      "mean_reduction_fraction": 0.9922414407131943
+    },
+    "one_slot": {
+      "available_request_rows": 1,
+      "waiting_requests": 156,
+      "frontier_selection_equal": true,
+      "costs": {
+        "baseline": {
+          "count": 200,
+          "mean_ms": 2.352904975,
+          "p50_ms": 2.321258,
+          "p99_ms": 3.01999,
+          "max_ms": 3.045231
+        },
+        "optimized": {
+          "count": 200,
+          "mean_ms": 2.29393405,
+          "p50_ms": 2.261978,
+          "p99_ms": 2.96157,
+          "max_ms": 3.255174
+        }
+      },
+      "reentry_probe_calls_including_warmup": {
+        "baseline": 3192,
+        "optimized": 3192
+      },
+      "mean_reduction_fraction": 0.025063028735361592
+    },
+    "eight_slots": {
+      "available_request_rows": 8,
+      "waiting_requests": 156,
+      "frontier_selection_equal": true,
+      "costs": {
+        "baseline": {
+          "count": 200,
+          "mean_ms": 2.25481023,
+          "p50_ms": 2.260197,
+          "p99_ms": 2.346098,
+          "max_ms": 2.390304
+        },
+        "optimized": {
+          "count": 200,
+          "mean_ms": 2.245976745,
+          "p50_ms": 2.256473,
+          "p99_ms": 2.382433,
+          "max_ms": 2.421063
+        }
+      },
+      "reentry_probe_calls_including_warmup": {
+        "baseline": 3192,
+        "optimized": 3192
+      },
+      "mean_reduction_fraction": 0.003917617936299633
+    }
+  }
+}
