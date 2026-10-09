@@ -413,6 +413,7 @@ class NativeAdmissionRuntime:
         self._tool_refresh_next_ms = 0.
         self._tool_prepare_next_ms = 0.
         self._tool_prepare_cursor = 0
+        self._tool_prefetch_next_ms = 0.
         self._tool_last_queries: dict[PrefillCandidateKey, tuple[float, float]] = {}
         self._tool_opportunity_cache: dict[PrefillCandidateKey, tuple[float, object]] = {}
         self._active_tool_census_version: int | None = None
@@ -527,6 +528,7 @@ class NativeAdmissionRuntime:
 
     @tool_wait_hint.setter
     def tool_wait_hint(self, hint: NativeToolWaitHint | None) -> None:
+        self._tool_prefetch_next_ms = 0.
         if hint is None:
             self.tool_wait_hints.clear()
         else:
@@ -2564,6 +2566,8 @@ class NativeAdmissionRuntime:
         ):
             self.counts["tool_wait_result_stale"] += 1
             return
+        if self.tool_wait_hints.get(key.context_id) is not hint:
+            self._tool_prefetch_next_ms = 0.
         self.tool_wait_hints[key.context_id] = hint
         self._refresh_prefetch_service_leases(context_id=key.context_id)
         self.counts["tool_wait_accepted"] += 1
@@ -3487,6 +3491,7 @@ class NativeAdmissionRuntime:
                 )
                 self._tool_opportunity_cache.pop(ticket.key, None)
                 self._tool_ticket = None
+                self._tool_prefetch_next_ms = 0.
                 if not completed:
                     self.counts["tool_prefetch_lost_ack"] += 1
                     return
@@ -3506,6 +3511,11 @@ class NativeAdmissionRuntime:
         if self.physical_ledger.pending_count:
             return
         now_ms = time.monotonic() * 1000
+        if now_ms < self._tool_prefetch_next_ms:
+            self.counts["tool_prefetch_scan_deferred"] += 1
+            return
+        self._tool_prefetch_next_ms = now_ms + SEMANTIC_FRAME_INTERVAL_MS
+        self.counts["tool_prefetch_scans"] += 1
         for hint in sorted(
             self.tool_wait_hints.values(),
             key=lambda item: (

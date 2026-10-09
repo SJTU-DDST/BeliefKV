@@ -92,6 +92,16 @@ and separates reconciled operation receipts from legacy batch-pool associations.
 Pure native batches without receipts remain ambiguous; a later node/pool load
 does not establish repeated allocation or duplicate bytes. Keep live V13 frozen.
 
+The follow-up limits tool H2D candidate scans to the existing 100ms observation
+cadence. New accepted forecasts and completed action tickets request an immediate
+rescan; in-flight ACK handling and ticket invalidation remain per iteration.
+Live native validation still precedes enqueue. The original 125 checks and two
+timing/refresh cases pass. In a CPU-only fixture with 156 long tool waits and
+5000 calls at 2ms ticks, candidate checks fall from 780000 to 15600; cumulative
+CPU time falls from 14.136s to 0.297s (97.90%). This does not establish GPU benefit.
+Report: experiments/reports/tool_candidate_scan_cpu_156_20261009.json.
+Commit in the follow-up worktree; deploy only after V13's frozen driver exits.
+
 ## Current PREPARE Cost And Handoff Fix
 
 Implemented in `/tmp/beliefkv-opportunity-20261009`, based on `e985d8c`.

@@ -561,6 +561,60 @@ def test_tool_opportunity_cache_avoids_repeated_native_inspection():
     assert runtime._tool_ticket is None
 
 
+def test_tool_candidate_scan_reaches_start_window_without_decode_tick_rescans():
+    runtime, hint = tool_runtime()
+    runtime.prefetch_lead_ms = 500.
+    runtime.tool_wait_hints[hint.key.context_id] = replace(
+        hint, wait_p50_ms=650., wait_p90_ms=900.,
+    )
+    clock = [hint.issued_monotonic_ms / 1000.]
+    step = PrefetchLoadStep(hint.key, 1, 2, 1, 2)
+    with patch("beliefkv.runtime.sglang_v0520_runtime.time.monotonic",
+               side_effect=lambda: clock[0]), \
+         patch.object(runtime, "inspect_context_h2d_opportunity",
+                      return_value=NS(step=step, fits_current_free_lists=True)), \
+         patch.object(runtime, "_h2d_start_window",
+                      return_value=TransferStartWindow(200., 0., 500.)), \
+         patch.object(runtime, "refreshed_prefetch_gpu_step", return_value=step), \
+         patch.object(runtime, "issue_prefetch_gpu_step", return_value="cmd") as issue:
+        runtime.dispatch_tool_prefetch()
+        clock[0] += .05
+        runtime.dispatch_tool_prefetch()
+        issue.assert_not_called()
+        assert runtime.counts["tool_prefetch_scans"] == 1
+        assert runtime.counts["tool_prefetch_scan_deferred"] == 1
+        clock[0] += .16
+        runtime.dispatch_tool_prefetch()
+        issue.assert_called_once()
+        assert runtime.counts["tool_prefetch_scans"] == 2
+
+
+def test_new_tool_forecast_rechecks_candidate_before_next_scan_deadline():
+    runtime, hint = tool_runtime()
+    runtime.prefetch_lead_ms = 500.
+    runtime._tool_timing_only = True
+    runtime._model_worker = NS(disabled=False)
+    runtime.tool_wait_hints[hint.key.context_id] = replace(
+        hint, wait_p50_ms=1500., wait_p90_ms=2000.,
+    )
+    clock = [hint.issued_monotonic_ms / 1000.]
+    step = PrefetchLoadStep(hint.key, 1, 2, 1, 2)
+    with patch("beliefkv.runtime.sglang_v0520_runtime.time.monotonic",
+               side_effect=lambda: clock[0]), \
+         patch.object(runtime, "inspect_context_h2d_opportunity",
+                      return_value=NS(step=step, fits_current_free_lists=True)), \
+         patch.object(runtime, "_h2d_start_window",
+                      return_value=TransferStartWindow(200., 0., 500.)), \
+         patch.object(runtime, "refreshed_prefetch_gpu_step", return_value=step), \
+         patch.object(runtime, "issue_prefetch_gpu_step", return_value="cmd") as issue:
+        runtime.dispatch_tool_prefetch()
+        clock[0] += .01
+        runtime._accept_tool_wait(hint)
+        runtime.dispatch_tool_prefetch()
+        issue.assert_called_once()
+        assert runtime.counts["tool_prefetch_scans"] == 2
+
+
 def test_tool_ack_does_not_drain_overlap_again_for_already_restored_pages():
     runtime, hint = tool_runtime()
     step = PrefetchLoadStep(hint.key, 1, 2, 1, 2)
