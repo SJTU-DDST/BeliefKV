@@ -4,6 +4,35 @@
 guard、终态门禁或模型动作授权。启动前同时阅读
 `docs/implementation_plan.md`；旧诊断脚本和历史计划不能覆盖当前约定。
 
+## PREPARE 热点修订与节点身份
+
+v10 predictive已用 `e985d8c` 冷启动且仍在收尾，最新优化先在
+`/tmp/beliefkv-opportunity-20261009` 提交；本轮driver结束前不修改
+主仓库或服务源码。旧 `arm_status.txt` 保留失败启动状态，不能据此
+断言当前已停止。未部署的新修复不能计入本轮性能结果。
+
+原生统一树creation_time为 `numpy.float64`。所有传入物理规划/
+原语的锚点路径必须使用现有 `normalize_native_creation_time`
+转换为Python float/int，保留原值，不截断或更换节点代次。
+不要只修session快照而遗漏request reentry：此遗漏使v10的9419次
+handoff选择全部在规划阶段退出，尚无handoff传输。新CPU复现已
+确认旧版0次、新版1次提交；提交替身不代表真实DMA或ACK。
+`resident_or_unavailable` 不能全部算缓存命中；须查看新增的
+`execution_handoff_no_step` 具体原因，区分锚点缺失、不可观察闭包
+及没有可恢复检查点。
+
+每次PREPARE维护集中刷新租约，再按context校验候选。闭包、深度
+及前缀长度的复用限于同次同步检查；采样与真实动作分离，实际
+enqueue仍重新验证节点、session、epoch、在途操作和容量。
+原生驱逐回调保留实时租约检查，过期锁和终态候选照常释放。
+
+CPU对照必须包含实际祖先链、已备份/未备份状态、Host不足与活跃
+租约，不能用只有准入排序的旧基准证明PREPARE减负。新基准
+`scripts/benchmark_native_prepare_path.py` 覆盖156 workflow、16轮
+历史、24/64节点闭包，对比 e985d8c，并核对选择与发布结果。
+报告：`experiments/reports/prepare_path_cpu_156_{24,64}_20261009.json`。
+CPU减负与358项回归通过均不代表预测传输已提高GPU吞吐。
+
 ## 当前迁移策略与实验接续
 
 `perf/opportunity-aware-transfer` 在 `859d138` 上补齐了下一批容量
@@ -27,8 +56,8 @@ enqueue到submit P90和100 ms观察间隔，保持本轮500 ms上限。
 新CPU准入对照+0.13%，只覆盖无活跃传输/锁的合成输入。
 相关回归290 passed/1 skipped；不因通过检查就声称GPU收益。
 
-v10 native已结束，154 completed/2 incomplete；父驱动因HTML
-导出路径错误停止，predictive尚未启动。renderer的 `--run-dir`
+v10 native已结束，154 completed/2 incomplete；父驱动曾因HTML
+导出路径错误停止，predictive当时尚未启动。renderer的 `--run-dir`
 必须指向具体arm目录，不能传pair根目录。native HTML已生成。
 提交并部署最新runtime后，以 `scripts/resume_semantic_h2d_ab.py`
 接续原v10，保留native版本、原始plan与失败日志，仅更新pending

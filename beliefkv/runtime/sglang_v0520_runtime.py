@@ -1614,9 +1614,23 @@ class NativeAdmissionRuntime:
         ):
             row["prepare_reason"] = "native_prepare_prerequisites_disabled"
             return
-        candidate = self.capture_shadow_candidate(
-            cache, context_id=key.context_id, context_epoch=key.context_epoch,
-        )
+        observed = getattr(h2d, "candidate", None)
+        if isinstance(observed, ActionLocalPrefetchCandidate):
+            candidate = ActionLocalShadowCandidate(
+                anchors=observed.anchors, nodes=observed.nodes,
+                missing_full_host_tokens=sum(
+                    max(node.full_device_tokens - node.full_host_tokens, 0)
+                    for node in observed.nodes
+                ),
+                missing_mamba_host_nodes=sum(
+                    node.mamba_device_present and not node.mamba_host_present
+                    for node in observed.nodes
+                ),
+            )
+        else:
+            candidate = self.capture_shadow_candidate(
+                cache, context_id=key.context_id, context_epoch=key.context_epoch,
+            )
         if not isinstance(candidate, ActionLocalShadowCandidate):
             row["prepare_reason"] = "no_observable_shadow_closure"
             return
@@ -2866,6 +2880,7 @@ class NativeAdmissionRuntime:
     def capture_shadow_candidate(
         self, cache: object, *, context_id: str, context_epoch: int,
         for_prefetch: bool = False,
+        include_non_actionable: bool = False,
     ) -> ActionLocalShadowCandidate | ActionLocalPrefetchCandidate | None:
         anchors = self.snapshot_session_anchors(
             cache, context_id=context_id, context_epoch=context_epoch
@@ -2873,7 +2888,8 @@ class NativeAdmissionRuntime:
         if anchors is None:
             return None
         return capture_action_local_shadow(
-            cache, anchors, for_prefetch=for_prefetch
+            cache, anchors, for_prefetch=for_prefetch,
+            include_non_actionable=include_non_actionable,
         )
 
     def inspect_context_h2d_opportunity(
@@ -2930,8 +2946,12 @@ class NativeAdmissionRuntime:
             candidate = self.capture_shadow_candidate(
                 self._native_cache, context_id=key.context_id,
                 context_epoch=key.context_epoch,
+                include_non_actionable=True,
             )
-            return next_shadow_backup_step(candidate) if candidate is not None else None
+            step = next_shadow_backup_step(candidate) if candidate is not None else None
+            if step is None and candidate is not None:
+                self._register_backed_pressure_nodes(key, candidate=candidate)
+            return step
         hint = (self.tool_wait_hints.get(context_id) if context_id is not None
                 else self.tool_wait_hint)
         cache = self._native_cache
@@ -2952,10 +2972,14 @@ class NativeAdmissionRuntime:
             self.shadow_candidate = None
             return None
         candidate = self.capture_shadow_candidate(
-            cache, context_id=key.context_id, context_epoch=key.context_epoch
+            cache, context_id=key.context_id, context_epoch=key.context_epoch,
+            include_non_actionable=True,
         )
         self.shadow_candidate = candidate
-        return next_shadow_backup_step(candidate) if candidate is not None else None
+        step = next_shadow_backup_step(candidate) if candidate is not None else None
+        if step is None and candidate is not None:
+            self._register_backed_pressure_nodes(key, candidate=candidate)
+        return step
 
     def issue_shadow_backup_step(
         self, step: ShadowBackupStep, *, source: str = "tool_wait",
@@ -3026,6 +3050,9 @@ class NativeAdmissionRuntime:
         return command_id
 
     def _live_parent_pressure_node(self, node_id: int, creation_time: int | float) -> bool:
+        record = self._parent_pressure_candidates.get(node_id)
+        if record is None or record[1] != creation_time:
+            return False
         self._refresh_prefetch_service_leases()
         if any(
             lease.node_id == node_id and lease.creation_time == creation_time
@@ -3033,10 +3060,9 @@ class NativeAdmissionRuntime:
         ):
             self.counts["prefetch_residency_pressure_protected"] += 1
             return False
-        record = self._parent_pressure_candidates.get(node_id)
-        if record is None or record[1] != creation_time:
-            return False
-        key = record[0]
+        return self._live_parent_pressure_key(record[0])
+
+    def _live_parent_pressure_key(self, key: PrefillCandidateKey) -> bool:
         parent = self.graph.invocations.get(key.invocation_id)
         return bool(
             self.enable_prepare_host and not self.physical_disabled
@@ -3049,6 +3075,27 @@ class NativeAdmissionRuntime:
             )
             and not self._terminal(key)
         )
+
+    @timed_runtime("prepare_candidate_maintenance")
+    def _prune_parent_pressure_candidates(self) -> None:
+        if not self._parent_pressure_candidates:
+            return
+        self._refresh_prefetch_service_leases()
+        protected = {
+            (lease.node_id, lease.creation_time)
+            for lease in self._prefetch_service_leases.values()
+        }
+        live_keys: dict[PrefillCandidateKey, bool] = {}
+        retained = {}
+        for node_id, (key, created) in self._parent_pressure_candidates.items():
+            if (node_id, created) in protected:
+                self.counts["prefetch_residency_pressure_protected"] += 1
+                continue
+            if key not in live_keys:
+                live_keys[key] = self._live_parent_pressure_key(key)
+            if live_keys[key]:
+                retained[node_id] = (key, created)
+        self._parent_pressure_candidates = retained
 
     def _on_parent_pressure_parked(self, node_id: int, freed: dict[int, int]) -> None:
         for command, lease in tuple(self._prefetch_service_leases.items()):
@@ -3072,6 +3119,7 @@ class NativeAdmissionRuntime:
                 "evidence": "real_allocation_shortfall;unlocked_exclusive_session;host_copy_settled",
             })
 
+    @timed_runtime("prepare_candidate_publication")
     def _publish_parent_pressure_candidates(self) -> None:
         cache = self._native_cache
         candidates = []
@@ -3097,30 +3145,42 @@ class NativeAdmissionRuntime:
                 candidates.append((node_id, created))
         cache.beliefkv_join_pressure_candidates = tuple(candidates)
 
-    def _register_backed_pressure_nodes(self, key: PrefillCandidateKey) -> None:
-        cache = self._native_cache
-        anchors = self.snapshot_session_anchors(
-            cache, context_id=key.context_id, context_epoch=key.context_epoch,
-        )
-        candidate = (
-            capture_action_local_shadow(
-                cache, anchors, for_prefetch=True, include_non_actionable=True,
-            ) if anchors is not None else None
-        )
+    @timed_runtime("prepare_backed_registration")
+    def _register_backed_pressure_nodes(
+        self, key: PrefillCandidateKey,
+        *, candidate: ActionLocalShadowCandidate | ActionLocalPrefetchCandidate | None = None,
+    ) -> None:
+        if candidate is None:
+            cache = self._native_cache
+            anchors = self.snapshot_session_anchors(
+                cache, context_id=key.context_id, context_epoch=key.context_epoch,
+            )
+            candidate = (
+                capture_action_local_shadow(
+                    cache, anchors, for_prefetch=True, include_non_actionable=True,
+                ) if anchors is not None else None
+            )
+        else:
+            anchors = candidate.anchors
         if candidate is None or anchors.reusable_input_tokens is None:
             return
         nodes = {node.node_id: node for node in candidate.nodes}
+        prefix_lengths: dict[int, int] = {}
         for node in candidate.nodes:
             if not (
                 node.full_device_tokens and node.full_host_tokens
                 or node.mamba_device_present and node.mamba_host_present
             ):
                 continue
-            prefix, current = 0, node
-            while current is not None:
-                prefix += current.key_tokens or 0
+            chain, current = [], node
+            while current is not None and current.node_id not in prefix_lengths:
+                chain.append(current)
                 current = nodes.get(current.parent_id)
-            if prefix <= anchors.reusable_input_tokens:
+            prefix = prefix_lengths.get(current.node_id, 0) if current is not None else 0
+            for ancestor in reversed(chain):
+                prefix += ancestor.key_tokens or 0
+                prefix_lengths[ancestor.node_id] = prefix
+            if prefix_lengths[node.node_id] <= anchors.reusable_input_tokens:
                 self._parent_pressure_candidates[node.node_id] = (key, node.creation_time)
 
     def _prepare_step_rank(
@@ -3196,10 +3256,7 @@ class NativeAdmissionRuntime:
         if now_ms < self._join_prepare_next_ms:
             return
         self._join_prepare_next_ms = now_ms + 50.
-        self._parent_pressure_candidates = {
-            node: record for node, record in self._parent_pressure_candidates.items()
-            if self._live_parent_pressure_node(node, record[1])
-        }
+        self._prune_parent_pressure_candidates()
         self._publish_parent_pressure_candidates()
         if self.physical_ledger.pending_action_count("PREPARE_HOST"):
             return
@@ -3236,7 +3293,6 @@ class NativeAdmissionRuntime:
                 context_id=key.context_id, source="join_prepare",
             )
             if step is None:
-                self._register_backed_pressure_nodes(key)
                 continue
             rank = self._prepare_step_rank(
                 step, headroom, full_pressure=full_pressure, mamba_pressure=mamba_pressure,
@@ -3314,8 +3370,6 @@ class NativeAdmissionRuntime:
                 )
                 if rank is not None:
                     candidates.append((rank, offset, step))
-            else:
-                self._register_backed_pressure_nodes(hint.key)
         self._tool_prepare_cursor = (self._tool_prepare_cursor + 8) % len(hints)
         for rank, offset, step in sorted(candidates, key=lambda item: item[:2]):
             command = self.issue_shadow_backup_step(step)
@@ -4206,8 +4260,21 @@ class NativeAdmissionRuntime:
         observation = self._read_request_reentry(req)
         if key is None or observation is None:
             return None
+        try:
+            leaves = tuple(
+                (
+                    component,
+                    tuple(
+                        (node_id, normalize_native_creation_time(created))
+                        for node_id, created in component_leaves
+                    ),
+                )
+                for component, component_leaves in observation["component_leaves"]
+            )
+        except (KeyError, TypeError, ValueError):
+            return None
         return ContextSessionAnchors(
-            key, observation["component_leaves"], time.monotonic(),
+            key, leaves, time.monotonic(),
             reusable_input_tokens=observation["reusable_input_tokens"],
         )
 
@@ -4317,6 +4384,21 @@ class NativeAdmissionRuntime:
             if anchors is not None else None
         )
         if opportunity is None or opportunity.step is None:
+            detail = (
+                "reentry_anchors_unavailable" if opportunity is None
+                else opportunity.no_step_reason or "no_host_backed_step"
+            )
+            self.counts[f"execution_handoff_no_step:{detail}"] += 1
+            if self._opportunity_writer is not None:
+                self._opportunity_writer.record({
+                    "event": "execution_handoff_no_step", "ts_ms": time.time() * 1000.,
+                    "request_id": ticket.key.request_id,
+                    "context_id": ticket.key.context_id,
+                    "reason": detail,
+                    "blocked_detail": (
+                        opportunity.blocked_detail if opportunity is not None else None
+                    ),
+                })
             self._clear_execution_handoff("resident_or_unavailable")
             return
         if opportunity.fits_current_free_lists is not True:

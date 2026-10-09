@@ -9,6 +9,10 @@ from beliefkv.runtime.native_transfer_policy import (
 from beliefkv.runtime.native_transfer_service import NativeServiceEstimate
 from beliefkv.runtime.sglang_v0520_observer import StaticPoolHeadroomObservation
 from beliefkv.runtime.sglang_v0520_physical import PrefetchLoadStep, ShadowBackupStep
+from beliefkv.runtime.sglang_v0520_physical import (
+    ActionLocalPrefetchCandidate, ActionLocalShadowCandidate, ContextSessionAnchors,
+    SessionH2DOpportunity,
+)
 from beliefkv.runtime.native_transfer_service import NativeServiceSample
 from tests.test_tool_predictive_transfers import (
     locked_runtime, submit_restored_request, tool_runtime,
@@ -221,6 +225,108 @@ def test_backed_full_without_mamba_is_available_for_pressure_demotion():
     ):
         runtime._register_backed_pressure_nodes(key)
     assert runtime._parent_pressure_candidates[11] == (key, 4)
+
+
+def test_prepare_reuses_backed_closure_and_does_not_register_after_parent_reentry():
+    runtime = final_stage_runtime()
+    runtime._clear_final_stage("join")
+    key = runtime.context_sessions["ctx-parent"]
+    root = NS(
+        node_id=0, creation_time=1, parent_id=None, key_tokens=0,
+        full_device_tokens=0, full_host_tokens=0,
+        mamba_device_present=False, mamba_host_present=False,
+        pending_write_id=None, pending_load_id=None,
+    )
+    leaf = NS(
+        node_id=11, creation_time=4, parent_id=0, key_tokens=10,
+        full_device_tokens=10, full_host_tokens=10,
+        mamba_device_present=True, mamba_host_present=True,
+        pending_write_id=None, pending_load_id=None,
+    )
+    anchors = ContextSessionAnchors(
+        key, ((0, ((11, 4),)), (2, ((11, 4),))), 1., reusable_input_tokens=100,
+    )
+    candidate = ActionLocalShadowCandidate(anchors, (leaf, root), 0, 0)
+    with patch.object(runtime, "capture_shadow_candidate", return_value=candidate) as capture, \
+        patch.object(runtime, "snapshot_session_anchors") as snapshot:
+        assert runtime.refreshed_shadow_backup_step(
+            context_id=key.context_id, source="join_prepare",
+        ) is None
+        capture.assert_called_once()
+        snapshot.assert_not_called()
+        assert runtime._parent_pressure_candidates[11] == (key, 4)
+        runtime._parent_pressure_candidates.clear()
+        from beliefkv.control.causal_graph import InvocationState
+        runtime.graph.invocations[key.invocation_id].state = InvocationState.READY
+        assert runtime.refreshed_shadow_backup_step(
+            context_id=key.context_id, source="join_prepare",
+        ) is None
+        assert not runtime._parent_pressure_candidates
+        assert capture.call_count == 1
+
+
+def test_pressure_maintenance_groups_contexts_and_still_expires_real_locks():
+    runtime, hint, _, action, _, _ = locked_runtime()
+    runtime._parent_pressure_candidates = {
+        node: (hint.key, 2) for node in range(1, 12)
+    }
+    lease = runtime._prefetch_service_leases[action.command_id]
+    with patch.object(runtime, "_long_tool_wait", return_value=True), \
+        patch.object(runtime, "_refresh_prefetch_service_leases",
+                     wraps=runtime._refresh_prefetch_service_leases) as refresh, \
+        patch.object(runtime, "_live_parent_pressure_key",
+                     wraps=runtime._live_parent_pressure_key) as live:
+        runtime._prune_parent_pressure_candidates()
+        refresh.assert_called_once()
+        live.assert_called_once_with(hint.key)
+        assert 1 not in runtime._parent_pressure_candidates
+        assert len(runtime._parent_pressure_candidates) == 10
+        with patch("beliefkv.runtime.sglang_v0520_runtime.time.monotonic",
+                   return_value=lease.expires_at):
+            runtime._prune_parent_pressure_candidates()
+        assert not runtime._prefetch_service_leases
+        assert runtime.counts["prefetch_residency_released:service_window_expired"] == 1
+        runtime.graph.workflows[hint.key.root_workflow_id].end_ts_ms = 1000.
+        runtime._prune_parent_pressure_candidates()
+        assert not runtime._parent_pressure_candidates
+
+
+def test_prepare_sampling_reuses_h2d_closure_but_later_actions_read_fresh():
+    runtime = final_stage_runtime()
+    runtime._clear_final_stage("join")
+    key = runtime.context_sessions["ctx-parent"]
+    runtime._native_cache = NS(
+        enable_session_radix_cache=True,
+        cache_controller=NS(write_policy="write_back"),
+        tree_core=NS(is_write_back=True),
+    )
+    anchors = ContextSessionAnchors(
+        key, ((0, ((11, 4),)), (2, ((11, 4),))), 1.,
+    )
+    node = NS(
+        node_id=11, full_device_tokens=20, full_host_tokens=0,
+        mamba_device_present=True, mamba_host_present=False,
+    )
+    observed = ActionLocalPrefetchCandidate(anchors, (node,), 0, 0)
+    h2d = SessionH2DOpportunity(
+        anchors, StaticPoolHeadroomObservation(
+            True, host_full_free_tokens=100, host_mamba_free_slots=1,
+        ), None, 0, 0, None, candidate=observed,
+    )
+    step = ShadowBackupStep(key, 11, 4, 11, 4)
+    row = {}
+    with patch.object(runtime, "capture_shadow_candidate", return_value=None) as capture, \
+        patch("beliefkv.runtime.sglang_v0520_runtime.next_shadow_backup_step",
+              return_value=step):
+        runtime._observe_prepare_opportunity(key, row, h2d)
+        capture.assert_not_called()
+        assert row["prepare_required_full_tokens"] == 20
+        assert row["prepare_required_mamba_slots"] == 1
+        assert row["prepare_reason"] == "fits_current_host_free_lists"
+        assert runtime.refreshed_shadow_backup_step(
+            context_id=key.context_id, source="join_prepare",
+        ) is None
+        capture.assert_called_once()
 
 
 def test_tool_latest_start_waits_until_measured_small_transfer_window():

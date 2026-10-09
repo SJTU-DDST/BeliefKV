@@ -1,10 +1,16 @@
 from types import SimpleNamespace as NS
 from unittest.mock import Mock, patch
 
+import numpy as np
+import pytest
+
 from beliefkv.core.events import RuntimeEvent, RuntimeEventKind
 from beliefkv.runtime.sglang_v0520_runtime import NativeAdmissionRuntime
 from beliefkv.runtime.sglang_v0520_physical import (
     PrefetchLoadStep, PhysicalActionCompleted, PhysicalReceiptError,
+)
+from beliefkv.runtime.sglang_v0520_observer import (
+    StaticPoolHeadroomObservation, UnifiedNodeSummary,
 )
 from tests.test_sglang_v0520_runtime import req, select
 
@@ -73,6 +79,63 @@ def test_handoff_prefetches_without_demand_prediction_and_does_not_block_warm(mo
     assert records[0]["event"] == "execution_handoff_selected"
     runtime._execution_handoff.expires_at -= 10.
     assert not runtime.defer_prefill_for_prefetch(cold)
+
+
+@pytest.mark.parametrize("created", [2., np.float64(2.)])
+def test_handoff_uses_native_creation_time_with_real_prefix_planner(monkeypatch, created):
+    runtime, (cold, _, _), cache = runtime_with_requests(monkeypatch)
+    cache.inspect_beliefkv_reentry.side_effect = None
+    cache.inspect_beliefkv_reentry.return_value = {
+        "component_leaves": ((0, ((1, created),)), (2, ((1, created),))),
+        "reusable_input_tokens": 2, "checkpoint_tokens": 2,
+        "device_checkpoint_tokens": 0, "missing_full_tokens": 2,
+        "missing_mamba_slots": 1,
+    }
+
+    def summary(node_id, parent_id, time, *, tokens=0, state=False):
+        return UnifiedNodeSummary(
+            node_id, parent_id, time, 0, tokens, False, state,
+            0, 0, 0, 0, 1, 1, 1, 1, None, None, key_tokens=tokens,
+        )
+
+    closure = NS(
+        observable=True, nodes=(summary(1, 0, 2., tokens=2, state=True),
+                                summary(0, None, 0.)),
+    )
+    with patch(
+        "beliefkv.runtime.sglang_v0520_physical.observe_static_full_mamba_headroom",
+        return_value=StaticPoolHeadroomObservation(
+            True, device_full_free_tokens=100, device_mamba_free_slots=4,
+        ),
+    ), patch(
+        "beliefkv.runtime.sglang_v0520_physical.observe_unified_node_closure",
+        return_value=closure,
+    ), patch.object(runtime, "issue_prefetch_gpu_step", return_value="restore") as issue:
+        runtime.dispatch_execution_handoff([cold], running_batch=NS(reqs=[NS()]))
+    issue.assert_called_once()
+    step = issue.call_args.args[0]
+    assert step.node_id == 1
+    assert type(step.leaf_creation_time) is float
+    assert step.leaf_creation_time == created
+    assert runtime.counts["execution_handoff_issued"] == 1
+    assert runtime.counts["execution_handoff_closed:resident_or_unavailable"] == 0
+
+
+def test_handoff_no_step_reports_specific_physical_rejection(monkeypatch):
+    runtime, (cold, _, _), _ = runtime_with_requests(monkeypatch)
+    records = []
+    runtime._opportunity_writer = NS(record=records.append)
+    with patch(
+        "beliefkv.runtime.sglang_v0520_runtime.inspect_session_h2d_opportunity",
+        return_value=NS(
+            step=None, no_step_reason="closure_unobservable",
+            blocked_detail="input_checkpoint_unavailable",
+        ),
+    ):
+        runtime.dispatch_execution_handoff([cold], running_batch=None)
+    assert runtime.counts["execution_handoff_no_step:closure_unobservable"] == 1
+    rejected = next(row for row in records if row["event"] == "execution_handoff_no_step")
+    assert rejected["blocked_detail"] == "input_checkpoint_unavailable"
 
 
 def test_handoff_capacity_requires_actual_reclaim_and_is_rechecked(monkeypatch):

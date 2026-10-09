@@ -2,6 +2,49 @@
 
 更新日期：2026-10-09。
 
+## PREPARE 热点与 Handoff 身份修复
+
+本次修订基于 `e985d8c`，在独立工作树
+`/tmp/beliefkv-opportunity-20261009` 完成，尚未部署到运行中的v10。
+主仓库、服务端和模型保持本轮冻结版本；本轮结束后再合入。
+
+v10进行中的累计CPU计时显示，JOIN PREPARE exclusive区间为
+1473.178秒，机会采样为337.883秒。handoff选择9419次，实际发出
+0次，全部以 `resident_or_unavailable` 收场。该名称混合了已驻留
+与观察/规划失败，不能解释为9419次都已驻留，也不是GPU时间。
+快照：`experiments/reports/qwen35_v10_predictive_hotpath_partial_20261009.json`。
+
+查明并修复一个可复现的身份类型缺陷：原生统一树的creation_time
+来自 `numpy.float64`，request reentry路径直接传给只接受Python
+float/int的恢复规划器。session快照路径已做转换，该路径遗漏了。
+现在以已有的 `normalize_native_creation_time` 统一转换，保留数值、
+节点代次、session和epoch校验。相同Host-only输入的真实CPU闭包/
+恢复规划对照中，旧版选择1次、提交0次，新版选择1次、提交1次。
+提交使用替身，没有真实DMA/ACK，不能作为复用或吞吐证据。
+新增 `execution_handoff_no_step` 明确记录失败原因和blocked_detail。
+
+PREPARE维护改为每次集中刷新租约，再按context身份校验一次；
+只在单次同步检查中复用结果，不跨scheduler轮缓存驻留状态。
+已备份节点登记复用刚读取的闭包，路径深度与累计前缀计算避免
+逐节点回溯到根。机会采样的D2H/H2D观察共享同一份闭包，真正
+提交动作时仍重新读取并由native验证，不把采样结果当作授权。
+新增候选维护、候选发布和已备份节点登记的exclusive计时。
+
+156 workflow、24节点祖先链、16轮历史、30次CPU测量中，已有
+Host副本且无租约的JOIN PREPARE均值26.305→15.075 ms，下降
+42.69%；四个活跃租约时176.056→12.658 ms，下降92.81%。
+实际备份候选及Host空闲不足样例下降3.74%/4.17%；机会采样下降
+30.07%–35.76%。四种样例的备份选择、压力候选发布与采样目标一致。
+报告：`experiments/reports/prepare_path_cpu_156_24_20261009.json`；
+64节点压力样例中，已备份无租约/四租约的PREPARE下降48.25%/
+93.54%，未备份/Host不足样例下降11.30%/11.41%，采样下降
+36.23%–43.27%；另存 `prepare_path_cpu_156_64_20261009.json`。
+相关CPU回归358 passed。以上不证明GPU吞吐已经超过native。
+
+后续仍须确认修复后的handoff能转成实际FULL复用，减少需求恢复
+暴露等待，并计入ACK到服务、驻留和其他请求延迟。运行中的v10
+是旧冻结版本，不可把这次未部署修复归入它的性能结果。
+
 ## 迁移机会与实际准入协同
 
 基于 `859d138` 的剩余优化已在 `perf/opportunity-aware-transfer`
@@ -44,8 +87,8 @@ EOS/RETURN有符号误差P50为-5.047/-9.094秒；其中心与上界越界
 相关回归290 passed、1 skipped；引擎patch未改。
 
 v10 native已收尾，154 completed/2 incomplete，采集窗口
-10345.487秒。父驱动随后因HTML导出传错arm目录而停止，predictive
-未启动；目录错误已修复，native HTML已生成。新
+10345.487秒。父驱动曾因HTML导出传错arm目录而停止，predictive
+当时未启动；目录错误已修复，native HTML已生成。新
 `scripts/resume_semantic_h2d_ab.py` 保留native源码/补丁、原始计划、
 task与到达表，只更新尚未启动的predictive版本后接续；不重跑native。
 接续前仅清理完整归档的completed workspace，保留未归档改动和
@@ -58,8 +101,9 @@ FULL-only备份仍能完成，`physical_disabled=false`未反映这一故障。
 已停止该次predictive并保留现场，不纳入性能对照。修复D2H函数
 自身的enum/string池名解析，现有CPU样例补上真实Mamba
 `pool_transfers`及Host目标索引，145项相关CPU回归通过。
-提交后冷启动predictive；
-已完成native不重跑，模型与原始workload配置仍保持冻结。
+修复提交 `e985d8c` 后已冷启动predictive，当前仍运行并处于低并发
+收尾段。旧 `arm_status.txt` 是失败启动的残留，不能单独用它判断
+本次运行状态。已完成native不重跑，模型与原始workload配置仍冻结。
 
 ## Handoff 流水恢复与准入减负
 

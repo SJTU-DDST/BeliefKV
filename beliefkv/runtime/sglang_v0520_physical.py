@@ -75,6 +75,9 @@ class SessionH2DOpportunity:
     unbacked_mamba_leaves: int | None = None
     blocked_detail: str | None = None
     steps: tuple[PrefetchLoadStep, ...] = ()
+    candidate: ActionLocalPrefetchCandidate | None = field(
+        default=None, compare=False, repr=False,
+    )
 
 
 def _prefetch_block_detail(candidate: ActionLocalPrefetchCandidate) -> str:
@@ -192,7 +195,7 @@ def inspect_session_h2d_opportunity(
         candidate.missing_full_device_tokens if candidate is not None else None,
         candidate.missing_mamba_device_nodes if candidate is not None else None,
         unbacked_full, unbacked_mamba,
-        blocked_detail, steps,
+        blocked_detail, steps, candidate,
     )
 
 
@@ -427,27 +430,21 @@ def next_shadow_backup_step(
         return None
     paths: set[int] = set()
     provenance: dict[int, int] = {}
+    depth: dict[int, int] = {}
     for leaf in sorted(leaves):
         current = leaf
+        chain: list[int] = []
         seen: set[int] = set()
         while current is not None:
             if current not in nodes or current in seen:
                 return None
             seen.add(current)
-            parent_id = nodes[current].parent_id
-            if parent_id is not None and parent_id not in nodes:
-                return None
-            paths.add(current)
-            provenance.setdefault(current, leaf)
-            current = parent_id
-    depth: dict[int, int] = {}
-    for node_id in paths:
-        current = node_id
-        length = 0
-        while nodes[current].parent_id is not None:
-            length += 1
+            chain.append(current)
             current = nodes[current].parent_id
-        depth[node_id] = length
+        for distance, node_id in enumerate(reversed(chain)):
+            paths.add(node_id)
+            provenance.setdefault(node_id, leaf)
+            depth[node_id] = distance
     selected = _checkpoint_paths(candidate.anchors, nodes, leaves, depth)
     if selected is None:
         return None
@@ -575,7 +572,7 @@ def capture_action_local_shadow(
         node.mamba_device_present and not node.mamba_host_present
         for node in nodes.values()
     )
-    if not missing_full and not missing_mamba:
+    if not missing_full and not missing_mamba and not include_non_actionable:
         return None
     return ActionLocalShadowCandidate(
         anchors=anchors,

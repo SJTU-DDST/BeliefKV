@@ -2,6 +2,46 @@
 
 Status date: 2026-10-09.
 
+## Current PREPARE Cost And Handoff Fix
+
+Implemented in `/tmp/beliefkv-opportunity-20261009`, based on `e985d8c`.
+Do not modify or deploy into the ongoing frozen v10 predictive arm.
+Merge after its collection and driver have finished.
+
+The ongoing v10 snapshot has 1473.178 s exclusive JOIN PREPARE CPU wall
+time and 337.883 s opportunity sampling, plus 9419 selected handoffs and
+zero handoff issues. This is partial evidence, not GPU time or throughput.
+Snapshot: `experiments/reports/qwen35_v10_predictive_hotpath_partial_20261009.json`.
+
+Completed:
+- Normalize native numpy.float64 node timestamps at the request-reentry
+  boundary, as session snapshots already do. Preserve numeric identity
+  and native generation/session checks. A real CPU observer/planner fixture
+  with Host-only input reproduces old selected=1/issued=0 and new 1/1;
+  enqueue is stubbed, so it grants no DMA, ACK or reuse credit.
+- Refresh leases once per pressure-candidate maintenance pass, validate
+  repeated context identities once, and retain live native eviction checks.
+- Reuse a freshly captured closure to register backed nodes and calculate
+  ancestry depths/prefix lengths without repeated node-to-root walks.
+- Reuse the H2D observation's closure for D2H opportunity sampling. Actual
+  actions still refresh physical evidence; no cross-cycle residency cache.
+- Record specific handoff no-step diagnostics and nested maintenance,
+  publication and backed-registration timing.
+
+CPU checks: 358 passed. In 156-workflow/24-node/16-history-round fixtures,
+30 measurements against e985d8c preserve selected backups, published pressure
+nodes and sampled targets. JOIN PREPARE means are 26.305 -> 15.075 ms when
+backed, 176.056 -> 12.658 ms with four live leases. Unbacked/Host-full cases
+reduce 3.74%/4.17%; sampling reduces 30.07%-35.76%. Native enqueue is stubbed.
+At depth 64, backed/no-lease and four-lease PREPARE reduce 48.25%/93.54%;
+unbacked/Host-full reduce 11.30%/11.41%, sampling reduces 36.23%-43.27%.
+Reports: `experiments/reports/prepare_path_cpu_156_{24,64}_20261009.json`.
+
+Next measured checks remain useful FULL reuse, exposed native restoration
+wait, ACK-to-service, repeated demand loads and completed-workflow throughput
+relative to native. Do not claim deployment or GPU benefit from these CPU
+results. The ongoing v10 still uses e985d8c and cannot validate the new fix.
+
 ## Opportunity-Aware Transfer Revision
 
 The remaining runtime optimizations are implemented in
@@ -44,12 +84,12 @@ later trigger accuracy, reuse or speedup. ACK-to-service P50 is 8.167 s;
 Report: `experiments/reports/native_transfer_policy_v8d_20261009.json`.
 
 V10 native is finished: 154 completed/2 incomplete, 10345.487 s window.
-Its parent driver then failed at the HTML export path before predictive started.
-Native HTML is now generated. Commit these optimizations, fast-forward main,
-clean only archived completed workspaces, then run
-`scripts/resume_semantic_h2d_ab.py` on the existing v10 directory. Preserve
-the native revision and original plan; only update the pending predictive
-revision. Do not repeat native or refit models during this frozen collection.
+Its parent driver previously failed at the HTML export path before predictive
+started. Native HTML is now generated; archived completed workspaces were
+cleaned and `scripts/resume_semantic_h2d_ab.py` resumed the existing v10
+directory. The predictive arm is now running on e985d8c after the callback
+fix below. Preserve both frozen arm revisions and the original plan.
+Do not repeat native or refit models during this frozen collection.
 Evaluate throughput/JCT, exposed waits, reuse, repeated loads and residency
 costs. Further remaining-work-head tuning depends on new measured errors;
 subsecond RETURN accuracy and GPU benefit are not yet established.
@@ -61,8 +101,10 @@ while FULL-only backups still completed and `physical_disabled` stayed false.
 Stop and retain that failed start; it is not a performance arm. Use D2H-local
 enum/string pool-name normalization, cover real Mamba `pool_transfers` and
 Host destination identity in the existing CPU fixture; 145 related CPU checks
-passed. Commit and cold-start the pending predictive arm. Do not repeat
-collected native.
+passed. The fixed e985d8c predictive arm has been cold-started and remains
+in collection. Old arm_status.txt entries belong to the failed start;
+inspect current processes and output rather than treating that file as
+the current status. Do not repeat collected native.
 
 ## Pipelined Handoff Revision
 

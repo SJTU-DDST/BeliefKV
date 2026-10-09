@@ -413,6 +413,13 @@ def test_shadow_candidate_is_context_local_and_read_only():
         leaf.full_host_tokens = 10
         leaf.mamba_host_present = True
         assert capture_action_local_shadow(object(), anchors) is None
+        backed = capture_action_local_shadow(
+            object(), anchors, include_non_actionable=True,
+        )
+        assert backed is not None
+        assert backed.missing_full_host_tokens == 0
+        assert backed.missing_mamba_host_nodes == 0
+        assert next_shadow_backup_step(backed) is None
 
 
 def test_shadow_candidate_rejects_changed_leaf_and_inconsistent_views():
