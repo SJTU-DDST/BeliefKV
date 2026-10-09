@@ -21,6 +21,7 @@ from langchain_core.exceptions import ContextOverflowError
 from langchain_core.messages import AIMessage, BaseMessage
 from langchain_core.messages.utils import count_tokens_approximately
 from langchain_openai import ChatOpenAI
+from openai.resources.chat.completions import AsyncCompletions, Completions
 from pydantic import PrivateAttr
 
 from beliefkv.core.events import (
@@ -42,6 +43,10 @@ from beliefkv.runtime.agent_runtime_adapter import RuntimeEventSink
 from beliefkv.runtime.action_frontier import StructuredActionKind
 from beliefkv.runtime.context_lifecycle import ContextCompactionRecord
 from beliefkv.runtime.event_channel import QueuedRuntimeEventSink
+from beliefkv.runtime.openai_stream import (
+    DecodedAsyncChatCompletions,
+    DecodedChatCompletions,
+)
 from beliefkv.runtime.eos_shadow import (
     EOS_LOW_PROB_THRESHOLDS, EOS_PROB_THRESHOLDS, eos_top_logprob,
 )
@@ -2641,6 +2646,10 @@ class BeliefKVChatOpenAI(ChatOpenAI):
         if request_timeout_s is not None and request_timeout_s <= 0:
             raise ValueError("request_timeout_s must be positive")
         super().__init__(**kwargs)
+        if type(self.client) is Completions:
+            self.client = DecodedChatCompletions(self.client)
+        if type(self.async_client) is AsyncCompletions:
+            self.async_client = DecodedAsyncChatCompletions(self.async_client)
         self._beliefkv_adapter = beliefkv_adapter
         self._beliefkv_eos_logprobs = beliefkv_eos_logprobs
         self._activation_deadline = activation_deadline

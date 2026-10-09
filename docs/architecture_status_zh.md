@@ -160,6 +160,23 @@ reactive/predictive/native harness中共用，不构成新的agent guard。
 报告：`experiments/reports/v15_client_payload_cpu_20261010.json`。
 仍未部署到v14；完整driver、审计、HTML及清理退出后才能应用。
 
+流式对象往返的后续优化也已实现：带运行时标识的普通Chat流继续
+使用SDK的SSE解码、错误处理及关闭机制，将已解码数据直接交给
+LangChain，省去每帧构造SDK类型对象后立即model_dump的往返。
+同步/异步路径均生效；response headers、结构化响应、非流式、
+未标识请求及自定义client沿用原资源。没有替换SSE解析器或
+修改最终工具参数，增量工具JSON仍由LangChain原逻辑处理。
+71项相关检查通过，涵盖逐帧/最终结果、usage、finish、工具参数、
+流内错误与提前停止时响应关闭。30次交错合成CPU对照的67/515/
+395帧同步均值为9.419→2.034、70.291→13.497、63.662→18.140 ms；
+异步为9.544→2.168、69.862→16.692、65.006→18.705 ms，
+下降71.2%--80.8%。395帧包含136段工具参数碎片。最终请求JSON
+及输出相同，记录thread CPU与wall clock、安装版本和源码/输出
+SHA256。该基准不含网络、GPU及callback工作，不能证明实际
+JOIN消费积压已消除或端到端吞吐提升；本项仍仅在隔离工作树。
+基准：`scripts/benchmark_child_stream_cpu.py`；
+报告：`experiments/reports/v15_client_stream_cpu_20261010.json`。
+
 最终报告：
 `experiments/reports/v13_h2d_sources_final_20261010.json`、
 `experiments/reports/v13_prefetch_sources_final_20261010.json`、

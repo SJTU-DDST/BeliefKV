@@ -125,6 +125,22 @@ Current status:
   gains are not measured V14 client-delay or GPU throughput improvements.
   Incremental tool JSON and stream-model construction remain separate work.
   Do not deploy to V14; wait for the full driver/export/cleanup to exit.
+- Eliminate the second measured SDK round trip in the isolated worktree:
+  native-tagged ordinary Chat streams pass SDK-decoded data directly to
+  inherited LangChain conversion. Keep the SDK SSE decoder, error handling,
+  context-manager close and final tool semantics; preserve typed resource
+  paths for response headers, structured responses, nonstreaming, untagged
+  requests and custom clients. Synchronous and asynchronous checks compare
+  chunks, final messages, usage, finish metadata, stream errors and early
+  close; the combined stream/payload/adapter suite passes71 checks.
+  Thirty interleaved samples for67/515/395 frames reduce synchronous thread
+  CPU means9.419→2.034/70.291→13.497/63.662→18.140ms and asynchronous
+  means9.544→2.168/69.862→16.692/65.006→18.705ms. The395-frame case
+  includes136 tool-argument fragments. Final request JSON and results match.
+  Preserve wall/thread CPU, installed versions and source/result hashes.
+  These synthetic measurements exclude network, GPU and callback work;
+  they do not establish reduced live JOIN delay or throughput improvement.
+  Incremental tool JSON still uses the inherited parser. Keep live V14 frozen.
 - V13 cleanup removed154 archived workspaces and retained two forensic
   workspaces. Preserve summaries, patches, telemetry, final reports and HTML.
 
@@ -142,6 +158,9 @@ Partial client stacks: v14_client_gil_profile_partial_20261010.txt.
 Next-revision SDK CPU comparison: v15_client_payload_cpu_20261010.json;
 reproduce with scripts/benchmark_child_request_payload_cpu.py using only
 MockTransport, with no GPU or serving call.
+Next-revision stream CPU comparison: v15_client_stream_cpu_20261010.json;
+reproduce with scripts/benchmark_child_stream_cpu.py through the actual SDK
+SSE decoder and inherited LangChain conversion/aggregation.
 The following V11--V13 entries describe the frozen collection history;
 references to keeping live V13 unchanged no longer imply a running process.
 
