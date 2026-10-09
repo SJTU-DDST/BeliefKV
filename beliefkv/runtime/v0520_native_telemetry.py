@@ -57,8 +57,11 @@ class NativeReactiveTelemetry:
         self._active: set[str] = set()
         self._completed: set[str] = set()
         self._pending_prefetch_use: OrderedDict[
-            str, tuple[Any, tuple[tuple[Any, ...], ...], float, dict[int, tuple[array, Any, Any]]]
+            str, tuple[Any, tuple[tuple[Any, ...], ...], float | None, dict[int, tuple[array, Any, Any]]]
         ] = OrderedDict()
+        self._unacked_prefetch_use: dict[str, Any] = {}
+        self._prefetch_use_before_ack: dict[str, list[dict[str, Any]]] = {}
+        self._prefetch_ack_times: OrderedDict[str, float] = OrderedDict()
         self._reported_output_tokens: dict[str, int] = {}
         self._targeted_pair_cursor: dict[str, tuple[int, int, tuple[int, int]]] = {}
         self._targeted_pair_seen: dict[str, set[float]] = {}
@@ -1277,7 +1280,7 @@ class NativeReactiveTelemetry:
             "timing_boundary": "scheduler/worker interval, not CUDA kernel time",
         })
         for candidate in descriptor["mamba_forward_candidates"]:
-            self._emit("action_use", {
+            self._emit_prefetch_use({
                 "event": "beliefkv_prefetch_mamba_forward_completed",
                 **candidate,
                 "forward_complete_ts_ms": complete_wall,
@@ -1381,50 +1384,105 @@ class NativeReactiveTelemetry:
             "num_bytes": action.num_bytes,
             "evidence": "native_child_commit_reconciled_with_live_context",
         })
-        if action.action == "PREFETCH_GPU":
-            nodes = []
-            prefixes = {}
-            tree_core = getattr(self._cache, "tree_core", None)
-            for node_id in action.node_ids:
-                try:
-                    node = tree_core.node_by_id(node_id)
-                    path = self._node_key_path(node)
-                    prefix_len = (
-                        sum(len(key) for key in path) if path is not None else None
-                    )
-                    full_value = node.component_data[0].value
-                    mamba_value = (
-                        node.component_data[2].value
-                        if len(node.component_data) > 2 else None
-                    )
-                    nodes.append((
-                        node_id, node.creation_time, node, prefix_len,
-                        full_value, mamba_value,
-                    ))
-                    if path is not None and prefix_len <= 131072:
-                        token_ids = self._key_path_tokens(path)
-                        if token_ids is not None:
-                            prefixes[node_id] = (
-                                token_ids, getattr(path[-1], "extra_key", None),
-                                getattr(path[-1], "cache_salt", None),
-                            )
-                except (AttributeError, KeyError, TypeError, ValueError):
-                    nodes.append((node_id, None, None, None, None, None))
-            while len(self._pending_prefetch_use) >= 128:
-                old_id, (old_action, _, old_ts, _) = (
-                    self._pending_prefetch_use.popitem(last=False)
-                )
-                self._emit("action_use", {
-                    "event": "beliefkv_prefetch_first_service_censored",
-                    "command_id": old_id,
-                    "context_id": old_action.context_id,
-                    "context_epoch": old_action.context_epoch,
-                    "ack_ts_ms": old_ts,
-                    "reason": "tracking_capacity_exceeded",
-                })
+        if action.action != "PREFETCH_GPU":
+            return
+        ack_ts = time.time() * 1000.
+        self._prefetch_ack_times[action.command_id] = ack_ts
+        while len(self._prefetch_ack_times) > 256:
+            self._prefetch_ack_times.popitem(last=False)
+        provisional = self._unacked_prefetch_use.pop(action.command_id, None)
+        if provisional is None:
+            self._track_prefetch_use(action, ack_ts)
+            return
+        if (
+            provisional.context_id != action.context_id
+            or provisional.context_epoch != action.context_epoch
+            or tuple(provisional.node_ids) != tuple(action.node_ids)
+            or dict(provisional.pool_bytes) != dict(action.pool_bytes)
+            or provisional.num_bytes != action.num_bytes
+        ):
+            self._pending_prefetch_use.pop(action.command_id, None)
+            self._prefetch_use_before_ack.pop(action.command_id, None)
+            self._prefetch_ack_times.pop(action.command_id, None)
+            self._emit("action_use", {
+                "event": "beliefkv_prefetch_first_service_censored",
+                "command_id": action.command_id, "context_id": action.context_id,
+                "context_epoch": action.context_epoch, "ack_ts_ms": ack_ts,
+                "reason": "issuance_and_verified_ack_differ",
+            })
+            return
+        pending = self._pending_prefetch_use.get(action.command_id)
+        if pending is not None:
             self._pending_prefetch_use[action.command_id] = (
-                action, tuple(nodes), time.time() * 1000.0, prefixes,
+                action, pending[1], ack_ts, pending[3],
             )
+        for record in self._prefetch_use_before_ack.pop(action.command_id, ()):
+            self._emit_prefetch_use(record)
+
+    def on_prefetch_issued(self, action: Any) -> None:
+        """Capture native allocation identity now; publish reuse only after ACK."""
+        self._unacked_prefetch_use[action.command_id] = action
+        self._track_prefetch_use(action, None)
+
+    def on_prefetch_discarded(self, command_id: str, reason: str) -> None:
+        action = self._unacked_prefetch_use.pop(command_id, None)
+        if action is None:
+            return
+        self._pending_prefetch_use.pop(command_id, None)
+        self._prefetch_use_before_ack.pop(command_id, None)
+        self._emit("audit", {
+            "event": "unacknowledged_prefetch_use_discarded",
+            "command_id": command_id, "reason": reason,
+        })
+
+    def _emit_prefetch_use(self, record: dict[str, Any]) -> None:
+        command = record["command_id"]
+        if command in self._unacked_prefetch_use:
+            self._prefetch_use_before_ack.setdefault(command, []).append(record)
+            return
+        ack_ts = self._prefetch_ack_times.get(command, record.get("ack_ts_ms"))
+        if ack_ts is None:
+            return
+        self._emit("action_use", {
+            **record, "ack_ts_ms": ack_ts,
+            "first_service_before_ack": bool(
+                ack_ts is not None and record.get("first_service_ts_ms") is not None
+                and record["first_service_ts_ms"] < ack_ts
+            ),
+        })
+
+    def _track_prefetch_use(self, action: Any, ack_ts: float | None) -> None:
+        nodes = []
+        prefixes = {}
+        tree_core = getattr(self._cache, "tree_core", None)
+        for node_id in action.node_ids:
+            try:
+                node = tree_core.node_by_id(node_id)
+                path = self._node_key_path(node)
+                prefix_len = sum(len(key) for key in path) if path is not None else None
+                full_value = node.component_data[0].value
+                mamba_value = node.component_data[2].value if len(node.component_data) > 2 else None
+                nodes.append((
+                    node_id, node.creation_time, node, prefix_len, full_value, mamba_value,
+                ))
+                if path is not None and prefix_len <= 131072:
+                    token_ids = self._key_path_tokens(path)
+                    if token_ids is not None:
+                        prefixes[node_id] = (
+                            token_ids, getattr(path[-1], "extra_key", None),
+                            getattr(path[-1], "cache_salt", None),
+                        )
+            except (AttributeError, KeyError, TypeError, ValueError):
+                nodes.append((node_id, None, None, None, None, None))
+        while len(self._pending_prefetch_use) >= 128:
+            old_id, (old_action, _, old_ts, _) = self._pending_prefetch_use.popitem(last=False)
+            self._emit_prefetch_use({
+                "event": "beliefkv_prefetch_first_service_censored",
+                "command_id": old_id, "context_id": old_action.context_id,
+                "context_epoch": old_action.context_epoch, "ack_ts_ms": old_ts,
+                "reason": "tracking_capacity_exceeded",
+            })
+        self._pending_prefetch_use[action.command_id] = (action, tuple(nodes), ack_ts, prefixes)
 
     def _record_prefetch_first_service(
         self, req: Any, identity: dict[str, Any], batch: Any | None = None,
@@ -1444,7 +1502,7 @@ class NativeReactiveTelemetry:
         ]
         for command_id in expired:
             action, _, ack_ts, _ = self._pending_prefetch_use.pop(command_id)
-            self._emit("action_use", {
+            self._emit_prefetch_use({
                 "event": "beliefkv_prefetch_first_service_censored",
                 "command_id": command_id,
                 "context_id": context_id,
@@ -1583,7 +1641,7 @@ class NativeReactiveTelemetry:
                             if per_request else "legacy_single_request"
                         ),
                     })
-            self._emit("action_use", {
+            self._emit_prefetch_use({
                 "event": "beliefkv_prefetch_first_service",
                 "command_id": command_id,
                 "context_id": action.context_id,
@@ -1849,7 +1907,7 @@ class NativeReactiveTelemetry:
         if counter is not None:
             counter.beliefkv_wait_probe = None
         for command_id, (action, _, ack_ts, _) in self._pending_prefetch_use.items():
-            self._emit("action_use", {
+            self._emit_prefetch_use({
                 "event": "beliefkv_prefetch_first_service_censored",
                 "command_id": command_id,
                 "context_id": action.context_id,
@@ -1858,6 +1916,13 @@ class NativeReactiveTelemetry:
                 "reason": "no_subsequent_service_before_shutdown",
             })
         self._pending_prefetch_use.clear()
+        for command in self._unacked_prefetch_use:
+            self._emit("audit", {
+                "event": "unacknowledged_prefetch_use_discarded",
+                "command_id": command, "reason": "no_verified_ack_before_shutdown",
+            })
+        self._unacked_prefetch_use.clear()
+        self._prefetch_use_before_ack.clear()
         self._closed = True
         self._queue.put(None)
         self._writer.join()

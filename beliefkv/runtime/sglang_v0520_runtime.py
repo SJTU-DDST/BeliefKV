@@ -101,6 +101,7 @@ class _ExecutionHandoffTicket:
     expires_at: float
     command_id: str | None = None
     issued_nodes: int = 0
+    command_ids: tuple[str, ...] = ()
 
 
 CHILD_COMPLETION_INTENT = "beliefkv_child_completion_intent"
@@ -417,6 +418,11 @@ class NativeAdmissionRuntime:
         self._execution_handoff_attempted: set[PrefillCandidateKey] = set()
         self._reentry_observations: dict[PrefillCandidateKey, tuple[float, dict | None]] = {}
         self._residency_scan_cursor = 0
+        self._prefill_causal_cache: tuple | None = None
+        self._prefill_cycle_active = False
+        self.prefetch_issued_callback = None
+        self.prefetch_discarded_callback = None
+        self._prefetch_first_services: dict[str, tuple[float, str]] = {}
         tool_timing_artifact_path = (
             tool_timing_artifact_path or os.environ.get("BELIEFKV_TOOL_TIMING_ARTIFACT")
         )
@@ -534,7 +540,9 @@ class NativeAdmissionRuntime:
     def close(self) -> None:
         for command in tuple(self._prefetch_service_leases):
             self._release_prefetch_service_lease(command, "shutdown")
-        self._prefetch_steps.clear()
+        self._discard_prefetch_tracking("shutdown")
+        self._prefill_causal_cache = None
+        self._prefill_cycle_active = False
         self._discard_join_ticket("shutdown")
         self._final_stages.clear()
         self._final_request_stages.clear()
@@ -551,6 +559,16 @@ class NativeAdmissionRuntime:
         if self.event_server is not None:
             self.event_server.close()
             self.event_server = None
+
+    def _discard_prefetch_tracking(
+        self, reason: str, commands: Sequence[str] | None = None,
+    ) -> None:
+        for command in tuple(self._prefetch_steps) if commands is None else commands:
+            pending = self._prefetch_steps.pop(command, None)
+            self._prefetch_issue_times.pop(command, None)
+            self._prefetch_first_services.pop(command, None)
+            if pending is not None and self.prefetch_discarded_callback is not None:
+                self.prefetch_discarded_callback(command, reason)
 
     def _discard_join_ticket(self, reason: str) -> None:
         ticket = self._join_ticket
@@ -698,7 +716,8 @@ class NativeAdmissionRuntime:
             self._completion_hints.clear()
             for command in tuple(self._prefetch_service_leases):
                 self._release_prefetch_service_lease(command, "causal_mirror_discarded")
-            self._prefetch_steps.clear()
+            self._discard_prefetch_tracking("causal_mirror_discarded")
+            self._prefill_causal_cache = None
             self._final_stages.clear()
             self._final_request_stages.clear()
             self._discard_join_ticket("causal_mirror_discarded")
@@ -1229,6 +1248,8 @@ class NativeAdmissionRuntime:
 
     @timed_runtime("scheduler_maintenance")
     def scheduler_step(self, waiting_queue: Sequence[object] = ()) -> None:
+        self._prefill_cycle_active = True
+        self._prefill_causal_cache = None
         if self.event_server is not None:
             with self._hotpath_timing.measure("control_drain"):
                 self.event_server.drain(max_messages=128)
@@ -1325,8 +1346,7 @@ class NativeAdmissionRuntime:
                 self._scan_offsets["tool_wait"] = (offset + 8) % len(contexts)
         expired = self.physical_ledger.expire()
         self.counts["physical_expired"] += len(expired)
-        for command in expired:
-            self._prefetch_issue_times.pop(command, None)
+        self._discard_prefetch_tracking("physical_expired", expired)
         lease = self._admission_lease
         if lease is not None and lease.command_id is not None and (
             lease.command_id in expired
@@ -3456,9 +3476,29 @@ class NativeAdmissionRuntime:
         if not registered or outcome.node_id != step.node_id:
             self.physical_disabled = True
             raise PhysicalReceiptError("native prefetch issued without a matching reservation")
+        self._record_prefetch_issued(command_id, step, source, issue_wall_ms, outcome)
+        return command_id
+
+    def _record_prefetch_issued(
+        self, command_id: str, step: PrefetchLoadStep, source: str,
+        issue_wall_ms: float, outcome: object,
+    ) -> None:
         self.counts["prefetch_native_issued"] += 1
         self._prefetch_issue_times[command_id] = issue_wall_ms
+        self._reentry_observations.pop(step.key, None)
         self.counts["prefetch_immediate_submit"] += int(getattr(outcome, "load_started", False))
+        if self.prefetch_issued_callback is not None:
+            expected = self.physical_ledger.pending_expectation(command_id)
+            if expected is not None:
+                self.prefetch_issued_callback(PhysicalActionCompleted(
+                    command_id, expected.action, expected.context_id, expected.context_epoch,
+                    tuple(node for child in expected.children for node in child.published_node_ids),
+                    tuple(sorted(
+                        (pool, sum(dict(child.pool_bytes).get(pool, 0) for child in expected.children))
+                        for pool, _ in expected.pool_bytes_per_token
+                    )),
+                    sum(child.num_bytes for child in expected.children), source,
+                ))
         if self._opportunity_writer is not None:
             tokens = self._context_tokens.get(step.key.context_id)
             record = {
@@ -3510,7 +3550,73 @@ class NativeAdmissionRuntime:
                     "pre_boundary_prediction": False,
                 })
             self._opportunity_writer.record(record)
-        return command_id
+
+    @timed_runtime("handoff_enqueue")
+    def _issue_handoff_prefetch_steps(
+        self, ticket: _ExecutionHandoffTicket, steps: tuple[PrefetchLoadStep, ...],
+    ) -> tuple[str, ...]:
+        cache = self._native_cache
+        if self.event_server is not None:
+            self.event_server.drain(max_messages=128)
+        if (
+            not steps or not self._live_execution_handoff(ticket)
+            or self.physical_ledger.pending_action_count("PREFETCH_GPU")
+            or any(step.key != ticket.key for step in steps)
+            or len({(step.leaf_node_id, step.leaf_creation_time) for step in steps}) != 1
+        ):
+            return ()
+        commands = tuple(f"beliefkv-prefetch-{uuid4().hex}" for _ in steps)
+        planned = dict(zip(commands, steps))
+        registered: set[str] = set()
+        issued_at = time.time() * 1000.
+
+        def before_enqueue(operation: object) -> bool:
+            command = getattr(operation, "beliefkv_command_id", None)
+            step = planned.get(command)
+            if step is None or not self._live_execution_handoff(ticket):
+                self.counts["prefetch_causal_invalidated_before_enqueue"] += 1
+                return False
+            try:
+                expected = prefetch_expectation_from_native_op(
+                    command, step, operation, cache.cache_controller,
+                )
+                self.register_physical_action(expected)
+            except (PhysicalReceiptError, AttributeError, TypeError, ValueError):
+                self.counts["prefetch_reservation_rejected"] += 1
+                return False
+            registered.add(command)
+            invocation = self.graph.invocations.get(step.key.invocation_id)
+            self._prefetch_steps[command] = (
+                step, "execution_handoff",
+                invocation.updated_ts_ms if invocation is not None else None,
+            )
+            return True
+
+        outcomes = cache.prefetch_gpu_session_nodes(
+            session_id=ticket.key.session_id,
+            session_generation=ticket.key.session_generation,
+            leaf_node_id=steps[0].leaf_node_id,
+            leaf_creation_time=steps[0].leaf_creation_time,
+            nodes=tuple(
+                (step.node_id, step.creation_time, step.include_mamba, command)
+                for command, step in zip(commands, steps)
+            ),
+            beliefkv_before_enqueue=before_enqueue,
+        )
+        issued = []
+        for command, step, outcome in zip(commands, steps, outcomes):
+            if not outcome.issued or outcome.node_id != step.node_id or command not in registered:
+                self.physical_disabled = True
+                raise PhysicalReceiptError("native handoff burst has no matching reservation")
+            issued.append(command)
+            self._record_prefetch_issued(command, step, "execution_handoff", issued_at, outcome)
+        for command in registered.difference(issued):
+            self.physical_ledger.cancel_unsubmitted(command)
+            self._prefetch_steps.pop(command, None)
+        if issued:
+            self.counts["execution_handoff_bursts"] += 1
+            self.counts["execution_handoff_burst_nodes"] += len(issued)
+        return tuple(issued)
 
     def _release_prefetch_service_lease(
         self, command_id: str, reason: str, *, request: object | None = None,
@@ -3691,6 +3797,17 @@ class NativeAdmissionRuntime:
         pending = self._prefetch_steps.pop(action.command_id, None)
         if action.action != "PREFETCH_GPU" or pending is None:
             return
+        service = self._prefetch_first_services.pop(action.command_id, None)
+        if service is not None:
+            self.counts["prefetch_service_preceded_ledger_ack"] += 1
+            if self._opportunity_writer is not None:
+                self._opportunity_writer.record({
+                    "event": "prefetch_service_before_ledger_ack",
+                    "ts_ms": time.time() * 1000., "command_id": action.command_id,
+                    "request_id": service[1], "first_service_ts_ms": service[0],
+                    "scope": "service observed; reuse requires native identity evidence",
+                })
+            return
         step, source, revision = pending
         self._reentry_observations.pop(step.key, None)
         now = time.monotonic()
@@ -3720,8 +3837,24 @@ class NativeAdmissionRuntime:
                 int(node.mamba_device_present) * entries["mamba"].host_pool.size_per_token
                 for node in observation.nodes if node.node_id == step.node_id
             )
+            already_protected = False
+            if source == "execution_handoff":
+                for existing in self._prefetch_service_leases.values():
+                    if existing.key != step.key or existing.lock_params is None:
+                        continue
+                    current = cache.tree_core.node_by_id(existing.node_id)
+                    for _ in range(64):
+                        if current is None:
+                            break
+                        if current.id == step.node_id and current.creation_time == step.creation_time:
+                            already_protected = True
+                            break
+                        current = current.parent
+                    if already_protected:
+                        break
             if (
-                observation.observable and len(self._prefetch_service_leases) < 4
+                observation.observable and not already_protected
+                and sum(item.lock_params is not None for item in self._prefetch_service_leases.values()) < 4
                 and protected_bytes + sum(
                     lease.protected_bytes for lease in self._prefetch_service_leases.values()
                 ) <= 1024 ** 3
@@ -3815,7 +3948,7 @@ class NativeAdmissionRuntime:
 
     def _request_reentry_anchors(self, req: object) -> ContextSessionAnchors | None:
         key = self._executable_waiting_key(req)
-        observation = self._read_request_reentry(req, refresh=True)
+        observation = self._read_request_reentry(req)
         if key is None or observation is None:
             return None
         return ContextSessionAnchors(
@@ -3858,23 +3991,23 @@ class NativeAdmissionRuntime:
                 self._clear_execution_handoff("expired_or_request_changed")
                 ticket = None
             elif ticket.command_id is not None:
-                if self.physical_ledger.is_pending(ticket.command_id):
+                commands = ticket.command_ids or (ticket.command_id,)
+                if any(self.physical_ledger.is_pending(command) for command in commands):
                     return
-                if not any(
-                    item.command_id == ticket.command_id
-                    for item in self.completed_physical_actions
-                ):
+                completed = {item.command_id for item in self.completed_physical_actions}
+                if not set(commands).issubset(completed):
                     self._clear_execution_handoff("ack_unavailable")
                     return
                 ticket.command_id = None
-                self.counts["execution_handoff_acked"] += 1
+                ticket.command_ids = ()
+                self.counts["execution_handoff_acked"] += len(commands)
         now_ms = time.monotonic() * 1000.
-        if now_ms < self._execution_handoff_next_ms:
+        if ticket is None and now_ms < self._execution_handoff_next_ms:
             return
-        self._execution_handoff_next_ms = now_ms + 50.
         if self.physical_ledger.pending_action_count("PREFETCH_GPU"):
             return
         if ticket is None:
+            self._execution_handoff_next_ms = now_ms + 50.
             self._execution_handoff_attempted = {
                 key for key in self._execution_handoff_attempted
                 if self.visible.get(key.request_id) == key
@@ -3914,8 +4047,18 @@ class NativeAdmissionRuntime:
             self._clear_execution_handoff("node_budget")
             return
         anchors = self._request_reentry_anchors(ticket.request)
+        batched = callable(getattr(self._native_cache, "prefetch_gpu_session_nodes", None))
+        max_steps = min(
+            16 - ticket.issued_nodes,
+            self.physical_ledger.max_pending - self.physical_ledger.pending_count,
+        ) if batched else 1
+        if max_steps < 1:
+            return
         opportunity = (
-            inspect_session_h2d_opportunity(self._native_cache, anchors)
+            inspect_session_h2d_opportunity(
+                self._native_cache, anchors, max_steps=max_steps,
+                fit_current_capacity=batched,
+            )
             if anchors is not None else None
         )
         if opportunity is None or opportunity.step is None:
@@ -3939,21 +4082,32 @@ class NativeAdmissionRuntime:
                             "victims": getattr(self._native_cache, "beliefkv_handoff_last_victims", ()),
                             "evidence": "idle_unlocked_host_ack_settled;actual_h2d_shortfall",
                         })
-                opportunity = inspect_session_h2d_opportunity(self._native_cache, anchors)
+                opportunity = inspect_session_h2d_opportunity(
+                    self._native_cache, anchors, max_steps=max_steps,
+                    fit_current_capacity=batched,
+                )
             if opportunity.fits_current_free_lists is not True:
                 self.counts["execution_handoff_no_cold_capacity"] += 1
                 self._clear_execution_handoff("no_cold_capacity")
                 return
-        command = self.issue_prefetch_gpu_step(opportunity.step, source="execution_handoff")
-        if command is not None:
-            ticket.command_id = command
-            ticket.issued_nodes += 1
-            self.counts["execution_handoff_issued"] += 1
+        commands = (
+            self._issue_handoff_prefetch_steps(ticket, opportunity.steps)
+            if batched else (
+                (command,) if (command := self.issue_prefetch_gpu_step(
+                    opportunity.step, source="execution_handoff",
+                )) is not None else ()
+            )
+        )
+        if commands:
+            ticket.command_id = commands[-1]
+            ticket.command_ids = commands
+            ticket.issued_nodes += len(commands)
+            self.counts["execution_handoff_issued"] += len(commands)
         else:
             self._clear_execution_handoff("native_declined")
 
     def defer_prefill_for_prefetch(self, req: object) -> bool:
-        """Hold at most one submitted request in waiting until bounded native H2D ACK.
+        """Use the native FULL pipeline; defer only unavailable state or legacy loads.
 
         This runs after the native slot test but before prefix match or running
         admission. A failed/expired step falls back to ordinary PrefillAdder.
@@ -3963,17 +4117,36 @@ class NativeAdmissionRuntime:
         key = _request_key(req)
         if key is None:
             return False
-        if self.enable_execution_handoff and any(
-            step.key == key and source == "execution_handoff"
+        pending_commands = tuple(
+            command for command, (step, source, _) in self._prefetch_steps.items()
+            if step.key.context_id == key.context_id
+            and step.key.invocation_id == key.invocation_id
+            and step.key.root_workflow_id == key.root_workflow_id
+            and (step.key.session_id, step.key.session_generation)
+            == (key.session_id, key.session_generation)
+            and key.context_epoch in (step.key.context_epoch, step.key.context_epoch + 1)
             and self.physical_ledger.is_pending(command)
-            for command, (step, source, _) in self._prefetch_steps.items()
-        ):
-            self.counts["execution_handoff_waiting_ack"] += 1
-            return True
+        )
+        if pending_commands:
+            can_admit = getattr(self._native_cache, "beliefkv_prefetch_can_admit", None)
+            if callable(can_admit):
+                ready = can_admit(pending_commands)
+                self.counts[
+                    "prefetch_native_pipeline_admission" if ready
+                    else "prefetch_waiting_state"
+                ] += 1
+                return not ready
+            if self.enable_execution_handoff and any(
+                self._prefetch_steps[command][1] == "execution_handoff"
+                for command in pending_commands
+            ):
+                self.counts["execution_handoff_waiting_state_or_legacy_ack"] += 1
+                return True
         ticket = self._execution_handoff
         if (
             ticket is not None and ticket.key == key
             and self._live_execution_handoff(ticket) and 0 < ticket.issued_nodes < 16
+            and not self.can_prefetch_during_overlap()
         ):
             observation = self._read_request_reentry(req)
             if observation is not None and (
@@ -4116,7 +4289,7 @@ class NativeAdmissionRuntime:
             )
         except PhysicalReceiptError as error:
             self.physical_disabled = True
-            self._prefetch_steps.clear()
+            self._discard_prefetch_tracking("physical_receipt_failure")
             for command in tuple(self._prefetch_service_leases):
                 self._release_prefetch_service_lease(command, "physical_receipt_failure")
             self.counts["physical_receipt_failed"] += 1
@@ -4134,6 +4307,8 @@ class NativeAdmissionRuntime:
             if action.command_id in self._prefetch_steps else action
             for action in completed
         )
+        if any(action.action == "PREFETCH_GPU" for action in completed):
+            self._execution_handoff_next_ms = 0.
         self.completed_physical_actions.extend(completed)
         self._join_prepare_commands = {
             identity: command for identity, command in self._join_prepare_commands.items()
@@ -4164,7 +4339,9 @@ class NativeAdmissionRuntime:
                 actual_bytes, float(ack_ms), getattr(commit, "direction"),
                 pool_shape(full, mamba), getattr(commit, "enqueue_to_submit_ms", None),
             ))
-        for action in completed:
+        # A burst's deepest node locks its FULL ancestry once; registering its
+        # ancestors first would consume the budget without protecting the state.
+        for action in reversed(completed):
             self._register_prefetch_service_lease(action)
             issued = self._prefetch_issue_times.pop(action.command_id, None)
             submitted = getattr(commit, "submit_ts_ms", None)
@@ -4205,6 +4382,7 @@ class NativeAdmissionRuntime:
         else:
             self.context_sessions.pop(key.context_id, None)
         self.semantic_revision += 1
+        self._execution_handoff_next_ms = 0.
         self._refresh_prefetch_service_leases(context_id=key.context_id)
         return True
 
@@ -4306,22 +4484,18 @@ class NativeAdmissionRuntime:
         causal_class, depth = ready_ranks.get(key.invocation_id, (5, 0))
         return (causal_class, depth, index)
 
-    @timed_runtime("admission_plan")
-    def plan_native_prefill(
-        self, native_order: Sequence[object], *, running_batch: object, adder: object
-    ) -> NativePrefillPlan:
-        # Only sort tagged slots; PrefillAdder retains all FULL/MAMBA decisions.
-        # Unknown or stale causal state keeps native order.
-        tagged = []
-        for index, req in enumerate(native_order):
-            if getattr(req, "beliefkv_metadata", None) is None:
-                continue
-            if len(tagged) == 512:
-                break
-            tagged.append((index, req))
-        if len(native_order) > 512:
-            self.counts["candidate_bound"] += 1
-        keys = {index: _request_key(req) for index, req in tagged}
+    def _prefill_causal_ranks(
+        self, tagged: list[tuple[int, object]], keys: dict[int, PrefillCandidateKey | None],
+    ) -> dict[int, tuple[int, int, int]]:
+        signature = (
+            self.semantic_revision, self.graph.graph_version,
+            tuple((index, id(req), keys[index]) for index, req in tagged),
+        )
+        cached = self._prefill_causal_cache
+        if self._prefill_cycle_active and cached is not None and cached[0] == signature:
+            self.counts["admission_causal_cache_hits"] += 1
+            self._submit_local_predictions(tagged, cached[1])
+            return cached[2]
         ready_ranks = {}
         # LLM_SUBMIT marks an invocation RUNNING_LLM before the native waiting
         # request has received its first GPU service. Only inspect bounded
@@ -4354,11 +4528,32 @@ class NativeAdmissionRuntime:
                 continue
             ready_ranks[key.invocation_id] = self.frontier.admission_rank(key.invocation_id)
         self._submit_local_predictions(tagged, ready_ranks)
-        now_ms = time.monotonic() * 1000
         ranks = {
             index: self._causal_rank(keys[index], index, ready_ranks)
             for index, req in tagged
         }
+        if self._prefill_cycle_active:
+            self._prefill_causal_cache = (signature, ready_ranks, ranks)
+        return ranks
+
+    @timed_runtime("admission_plan")
+    def plan_native_prefill(
+        self, native_order: Sequence[object], *, running_batch: object, adder: object
+    ) -> NativePrefillPlan:
+        # Reuse causal classification only; residency, hint expiry and aging
+        # remain live because native allocation may change between the two calls.
+        tagged = []
+        for index, req in enumerate(native_order):
+            if getattr(req, "beliefkv_metadata", None) is None:
+                continue
+            if len(tagged) == 512:
+                break
+            tagged.append((index, req))
+        if len(native_order) > 512:
+            self.counts["candidate_bound"] += 1
+        keys = {index: _request_key(req) for index, req in tagged}
+        ranks = self._prefill_causal_ranks(tagged, keys)
+        now_ms = time.monotonic() * 1000
         valid_hints: dict[int, NativeDemandHint] = {}
         members = Counter((rank[0], rank[1]) for rank in ranks.values())
         hinted = Counter()
@@ -4618,7 +4813,26 @@ class NativeAdmissionRuntime:
 
     @timed_runtime("batch_completed")
     def on_batch_completed(self, batch: object) -> None:
+        pending_by_context: dict[str, list[tuple[str, PrefetchLoadStep]]] = {}
+        for command, (step, _, _) in self._prefetch_steps.items():
+            if command not in self._prefetch_first_services:
+                pending_by_context.setdefault(step.key.context_id, []).append((command, step))
         for req in batch.reqs:
+            if pending_by_context:
+                key = self.visible.get(getattr(req, "rid", None))
+                for command, step in pending_by_context.get(
+                    key.context_id if key is not None else "", (),
+                ):
+                    if (
+                        key is not None and key.invocation_id == step.key.invocation_id
+                        and key.root_workflow_id == step.key.root_workflow_id
+                        and key.context_epoch in (step.key.context_epoch, step.key.context_epoch + 1)
+                        and (key.session_id, key.session_generation)
+                        == (step.key.session_id, step.key.session_generation)
+                    ):
+                        self._prefetch_first_services.setdefault(
+                            command, (time.time() * 1000., req.rid),
+                        )
             if self._prefetch_service_leases and (key := _request_key(req)) is not None:
                 for command, lease in tuple(self._prefetch_service_leases.items()):
                     target = lease.key

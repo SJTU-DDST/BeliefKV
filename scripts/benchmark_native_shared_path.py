@@ -41,7 +41,7 @@ def baseline_classes(revision: str):
                     if isinstance(item, ast.ClassDef) and item.name == "NativeAdmissionRuntime")
     methods = {
         "_causal_rank", "plan_native_prefill", "_local_frontier_features",
-        "on_batch_completed",
+        "_prefill_causal_ranks", "on_batch_completed",
     }
     original.name = "BaselineRuntime"
     original.bases = [ast.Name(id="NativeAdmissionRuntime", ctx=ast.Load())]
@@ -122,7 +122,8 @@ def distribution(samples: list[float]) -> dict:
     }
 
 
-def benchmark(*, revision: str, workflows: int, rounds: int, iterations: int) -> dict:
+def benchmark(*, revision: str, workflows: int, rounds: int, iterations: int,
+              planning_calls: int = 1) -> dict:
     baseline, frontier, digests = baseline_classes(revision)
     variants = {
         "baseline": synthetic_runtime(baseline, frontier, workflows, rounds),
@@ -144,8 +145,17 @@ def benchmark(*, revision: str, workflows: int, rounds: int, iterations: int) ->
                 runtime._visible_since = {
                     request.rid: time.monotonic() for request in queue
                 }
+                runtime._prefill_cycle_active = planning_calls > 1
+                runtime._prefill_causal_cache = None
                 started = time.perf_counter_ns()
-                plan = runtime.plan_native_prefill(queue, running_batch=None, adder=None)
+                cycle_orders = []
+                for call in range(planning_calls):
+                    plan = runtime.plan_native_prefill(
+                        queue, running_batch=None, adder=None if call == 0 else NS(),
+                    )
+                    cycle_orders.append(plan.prioritized)
+                if any(order != cycle_orders[0] for order in cycle_orders[1:]):
+                    raise AssertionError("repeated planning changed the queue order")
                 elapsed = (time.perf_counter_ns() - started) / 1_000_000
                 orders.append(plan.prioritized)
                 if iteration >= 5:
@@ -166,6 +176,10 @@ def benchmark(*, revision: str, workflows: int, rounds: int, iterations: int) ->
             "workflows": workflows, "retained_rounds_per_workflow": rounds,
             "invocations": workflows * (1 + rounds * 3), "joins": workflows * rounds,
             "waiting_requests": workflows, "iterations": iterations,
+            "planning_calls_per_cycle": planning_calls,
+            "planning_scope": (
+                "causal admission calls only; excludes physical handoff inspection and enqueue"
+            ),
             "invalidate_caches_each_iteration": True, "queue_order_equal": True,
             "costs": costs,
             "admission_mean_reduction_fraction": (
@@ -185,12 +199,14 @@ def main():
     parser.add_argument("--workflows", type=int, default=156)
     parser.add_argument("--rounds", type=int, default=16)
     parser.add_argument("--iterations", type=int, default=200)
+    parser.add_argument("--planning-calls", type=int, choices=(1, 2), default=1)
     parser.add_argument("--output", type=Path, required=True)
     args = parser.parse_args()
     if min(args.workflows, args.rounds, args.iterations) < 1 or args.workflows > 512:
         raise ValueError("positive sizes and at most 512 queued requests required")
     report = benchmark(revision=args.baseline_revision, workflows=args.workflows,
-                       rounds=args.rounds, iterations=args.iterations)
+                       rounds=args.rounds, iterations=args.iterations,
+                       planning_calls=args.planning_calls)
     args.output.parent.mkdir(parents=True, exist_ok=True)
     args.output.write_text(json.dumps(report, indent=2, allow_nan=False) + "\n")
     print(json.dumps({key: report[key] for key in (

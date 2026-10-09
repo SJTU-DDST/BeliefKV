@@ -24,7 +24,7 @@ def records(path: Path):
                     yield json.loads(line)
 
 
-def cleanup_workspaces(arm: Path) -> dict:
+def cleanup_workspaces(arm: Path, *, include_clean_planned_children: bool = False) -> dict:
     clients = list(arm.glob("client_*/summary.json")) + list(arm.glob("workloads/summary.json"))
     if len(clients) != 1:
         raise ValueError("cleanup requires one finished workload summary")
@@ -32,23 +32,45 @@ def cleanup_workspaces(arm: Path) -> dict:
     removed, retained = [], []
     for workflow in summary["workflows"]:
         base = clients[0].parent / "workflows" / workflow["instance_id"]
-        workspace = base / "workspace"
-        if not workspace.exists():
+        workspaces = [base / "workspace"]
+        if include_clean_planned_children:
+            workspaces.extend(sorted(base.glob("planned_children/*/workspace")))
+        workspaces = [workspace for workspace in workspaces if workspace.exists()]
+        if not workspaces:
             continue
         if (
             workflow.get("outcome") != "completed"
             or workflow.get("sandbox_cleanup_status") != "completed"
             or not (base / "model.patch").is_file()
             or (workflow.get("artifact_collection") or {}).get("errors")
-            or workspace.is_symlink()
-            or not workspace.resolve().is_relative_to(
-                (clients[0].parent / "workflows").resolve()
-            )
         ):
-            retained.append(str(workspace))
+            retained.extend(str(workspace) for workspace in workspaces)
             continue
-        shutil.rmtree(workspace)
-        removed.append(str(workspace))
+        for workspace in workspaces:
+            if (
+                workspace.is_symlink()
+                or not workspace.resolve().is_relative_to(base.resolve())
+                or not workspace.resolve().is_relative_to(
+                    (clients[0].parent / "workflows").resolve()
+                )
+            ):
+                retained.append(str(workspace))
+                continue
+            if workspace != base / "workspace":
+                # Keep any child edits that were not archived in the root patch.
+                status = subprocess.run(
+                    ["git", "-C", str(workspace), "status", "--porcelain=v1",
+                     "--untracked-files=all"],
+                    capture_output=True, text=True, timeout=30, check=False,
+                )
+                if (
+                    not (base / "child_reports.json").is_file()
+                    or status.returncode != 0 or status.stdout.strip()
+                ):
+                    retained.append(str(workspace))
+                    continue
+            shutil.rmtree(workspace)
+            removed.append(str(workspace))
     return {"removed_workspaces": removed, "retained_workspaces": retained}
 
 
@@ -336,6 +358,7 @@ def main() -> None:
     parser.add_argument("--allow-degraded-runtime", action="store_true",
                         help="Export diagnostics for a disabled physical lane; never a valid A/B comparison.")
     parser.add_argument("--cleanup-arm", type=Path)
+    parser.add_argument("--cleanup-clean-planned-children", action="store_true")
     parser.add_argument("--initialize", action="store_true")
     parser.add_argument("--verify-frozen-plan", action="store_true")
     parser.add_argument("--root-count", type=int, default=36)
@@ -383,7 +406,10 @@ def main() -> None:
                 raise ValueError(f"frozen artifact changed: {path}")
         return
     if args.cleanup_arm:
-        print(json.dumps(cleanup_workspaces(args.cleanup_arm), indent=2))
+        print(json.dumps(cleanup_workspaces(
+            args.cleanup_arm,
+            include_clean_planned_children=args.cleanup_clean_planned_children,
+        ), indent=2))
         return
     if args.run_root is None:
         raise ValueError("--run-root is required")

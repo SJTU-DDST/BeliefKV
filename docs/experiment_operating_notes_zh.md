@@ -4,6 +4,35 @@
 guard、终态门禁或模型动作授权。启动前同时阅读
 `docs/implementation_plan.md`；旧诊断脚本和历史计划不能覆盖当前约定。
 
+## 新恢复路径的验证口径
+
+流水handoff修订位于独立分支 `perf/pipeline-execution-handoff`。
+v10两侧仍使用冻结的 `e5f1f0b`；完成前不得部署新runtime或引擎，
+也不能把新CPU回归结果算作当前GPU实验已验证的优化。
+
+一次H2D burst最多16个node、一次原生submit、每node独立command
+和ACK。多个ACK不等于多次独立DMA，更不等于吞吐收益。FULL-only
+准入使用原生逐层依赖；Mamba在deferred COW前必须等待其自身
+传输finish event，不能仅检查load已提交或复用的layer-ring event。
+空闲容量只够前缀时可以分段恢复；不强制迁出热KV补齐整条路径。
+
+请求可能在软件账本ACK回调前获得服务。首次复用记录只有在真实
+ACK与issue时的allocation身份、context、node、pool字节匹配后
+才可发布；`first_service_before_ack=true`不是负传输时间或协议失败。
+ACK延迟不能让已经服务过的动作再次加驻留锁。暂存证据超时或失效
+须清理，不可把没有验证ACK的首次服务当作预测命中。
+
+因果分类只在同一scheduler轮内共享；驻留、老化与提升预算保持
+实时检查。最多4把实际原生锁和1 GiB，深层FULL锁可覆盖祖先；
+软跟踪记录数量不等于实际锁数量。仍保留普通请求老化与实际容量
+压力下让出保护，不能靠长期pin或无限parent插队提高表面复用。
+
+旧workspace清理可显式加 `--cleanup-clean-planned-children`：
+父workflow必须completed、sandbox清理完成、root patch已归档且
+artifact无错误；planned child还须已有报告且git无修改、无未跟踪
+文件。仅删除workspace，保留trace、report、patch、模型及失败证据。
+有未归档child改动的workspace保留，不以日期早就盲删。
+
 ## 三策略对比与后续到达
 
 最新执行约定：完成共用路径减负后，进行一对native/predictive，

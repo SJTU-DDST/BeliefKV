@@ -3,7 +3,9 @@ from unittest.mock import Mock, patch
 
 from beliefkv.core.events import RuntimeEvent, RuntimeEventKind
 from beliefkv.runtime.sglang_v0520_runtime import NativeAdmissionRuntime
-from beliefkv.runtime.sglang_v0520_physical import PrefetchLoadStep, PhysicalActionCompleted
+from beliefkv.runtime.sglang_v0520_physical import (
+    PrefetchLoadStep, PhysicalActionCompleted, PhysicalReceiptError,
+)
 from tests.test_sglang_v0520_runtime import req, select
 
 
@@ -155,3 +157,174 @@ def test_verified_ack_keeps_logical_handoff_source_for_metrics(monkeypatch):
         completed = runtime.on_native_transfer_commit(NS())
     assert completed[0].source == "execution_handoff"
     assert runtime.completed_physical_actions[-1].source == "execution_handoff"
+
+
+def test_handoff_burst_reserves_each_extent_and_uses_native_pipeline(monkeypatch):
+    runtime, (cold, _, _), cache = runtime_with_requests(monkeypatch)
+    key = runtime.visible["cold"]
+    steps = (
+        PrefetchLoadStep(key, 2, 3, 1, 2, False),
+        PrefetchLoadStep(key, 2, 3, 2, 3, True),
+    )
+    cache.cache_controller = NS(
+        mem_pool_host=NS(entry_map={
+            "kv": NS(host_pool=NS(size_per_token=10)),
+            "mamba": NS(host_pool=NS(size_per_token=20)),
+        }),
+        _num_tokens_by_pool=lambda op: {
+            "kv": len(op.host_indices),
+            **({"mamba": 1} if op.pool_transfers else {}),
+        },
+        _transfer_num_bytes=lambda op: len(op.host_indices) * 10 + (20 if op.pool_transfers else 0),
+    )
+
+    def native_burst(**kwargs):
+        outcomes = []
+        for node, created, include_state, command in kwargs["nodes"]:
+            op = NS(
+                beliefkv_command_id=command, node_ids=[node],
+                host_indices=(1, 2), device_indices=(3, 4),
+                pool_transfers=[NS(
+                    name="mamba", indices_from_pool=None,
+                    host_indices=(10,), device_indices=(11,),
+                )] if include_state else None,
+            )
+            assert kwargs["beliefkv_before_enqueue"](op)
+            outcomes.append(NS(issued=True, node_id=node, load_started=True))
+        return tuple(outcomes)
+
+    cache.prefetch_gpu_session_nodes = Mock(side_effect=native_burst)
+    cache.beliefkv_prefetch_can_admit = Mock(return_value=True)
+    cache.supports_beliefkv_overlap_prefetch = lambda: True
+    notified = []
+    runtime.prefetch_issued_callback = notified.append
+    with patch(
+        "beliefkv.runtime.sglang_v0520_runtime.inspect_session_h2d_opportunity",
+        return_value=NS(step=steps[0], steps=steps, fits_current_free_lists=True),
+    ), patch.object(runtime, "refreshed_prefetch_gpu_step") as expensive_refresh:
+        runtime.dispatch_execution_handoff([cold], running_batch=None)
+    expensive_refresh.assert_not_called()
+    assert runtime.physical_ledger.pending_action_count("PREFETCH_GPU") == 2
+    assert runtime._execution_handoff.issued_nodes == 2
+    assert len(notified) == 2
+    assert [dict(item.pool_bytes).get("mamba", 0) for item in notified] == [0, 20]
+    assert not runtime.defer_prefill_for_prefetch(cold)
+    cache.beliefkv_prefetch_can_admit.return_value = False
+    assert runtime.defer_prefill_for_prefetch(cold)
+    runtime.on_batch_completed(NS(reqs=[cold]))
+    assert len(runtime._prefetch_first_services) == 2
+
+
+def test_join_prefetch_checks_state_before_cow_across_submit_epoch(monkeypatch):
+    runtime, (cold, _, _), cache = runtime_with_requests(monkeypatch)
+    key = runtime.visible["cold"]
+    step = PrefetchLoadStep(key, 1, 2, 1, 2)
+    runtime._prefetch_steps["join"] = (step, "join_ticket", 0.)
+    cache.beliefkv_prefetch_can_admit = Mock(return_value=False)
+    with patch.object(runtime.physical_ledger, "is_pending", return_value=True):
+        cold.beliefkv_metadata["context_epoch"] += 1
+        assert runtime.defer_prefill_for_prefetch(cold)
+        cache.beliefkv_prefetch_can_admit.return_value = True
+        assert not runtime.defer_prefill_for_prefetch(cold)
+        cold.session_generation += 1
+        assert not runtime.defer_prefill_for_prefetch(cold)
+    assert cache.beliefkv_prefetch_can_admit.call_count == 2
+
+
+def test_service_before_software_ack_does_not_acquire_a_late_residency_lock(monkeypatch):
+    runtime, (cold, _, _), _ = runtime_with_requests(monkeypatch)
+    key = runtime.visible["cold"]
+    runtime._prefetch_steps["load"] = (PrefetchLoadStep(key, 1, 2, 1, 2), "execution_handoff", 1.)
+    runtime.on_batch_completed(NS(reqs=[cold]))
+    action = PhysicalActionCompleted(
+        "load", "PREFETCH_GPU", key.context_id, key.context_epoch, (1,), (("kv", 100),), 100,
+    )
+    runtime._register_prefetch_service_lease(action)
+    assert not runtime._prefetch_service_leases
+    assert runtime.counts["prefetch_service_preceded_ledger_ack"] == 1
+    assert not runtime._prefetch_first_services
+
+
+def test_unacknowledged_tracking_is_discarded_on_physical_failure(monkeypatch):
+    runtime, (cold, _, _), _ = runtime_with_requests(monkeypatch)
+    command = "load"
+    runtime._prefetch_steps[command] = (
+        PrefetchLoadStep(runtime.visible["cold"], 1, 2, 1, 2), "execution_handoff", 1.,
+    )
+    runtime._prefetch_issue_times[command] = 1.
+    runtime._prefetch_first_services[command] = (2., cold.rid)
+    runtime.prefetch_discarded_callback = Mock()
+    with patch.object(runtime.physical_ledger, "observe", side_effect=PhysicalReceiptError("invalid")):
+        assert runtime.on_native_transfer_commit(NS()) == ()
+    runtime.prefetch_discarded_callback.assert_called_once_with(command, "physical_receipt_failure")
+    assert not runtime._prefetch_steps
+    assert not runtime._prefetch_issue_times
+    assert not runtime._prefetch_first_services
+
+
+def test_burst_deepest_lock_covers_ancestors_and_releases_once_on_service(monkeypatch):
+    runtime, (cold, _, _), cache = runtime_with_requests(monkeypatch)
+    key = runtime.visible[cold.rid]
+    nodes = {
+        0: NS(id=0, creation_time=0, parent=None),
+    }
+    for node_id in range(1, 7):
+        nodes[node_id] = NS(
+            id=node_id, creation_time=node_id + 1, parent=nodes[node_id - 1],
+            component_data=(NS(value=object()), None, NS(value=object())),
+        )
+    cache.session_refs = NS(_session_generations={key.session_id: key.session_generation})
+    cache.tree_core = NS(
+        node_by_id=nodes.__getitem__,
+        inc_lock_ref=Mock(side_effect=lambda node: NS(
+            to_dec_params=lambda: NS(node_id=node),
+        )),
+        dec_lock_ref=Mock(),
+    )
+    cache.host_pool_group = NS(entry_map={
+        "kv": NS(host_pool=NS(size_per_token=10)),
+        "mamba": NS(host_pool=NS(size_per_token=20)),
+    })
+    actions = []
+    for node_id in range(1, 7):
+        command = f"load-{node_id}"
+        runtime._prefetch_steps[command] = (
+            PrefetchLoadStep(key, 6, 7, node_id, node_id + 1, node_id == 6),
+            "execution_handoff", 1.,
+        )
+        actions.append(PhysicalActionCompleted(
+            command, "PREFETCH_GPU", key.context_id, key.context_epoch,
+            (node_id,), (("kv", 10),), 10, "execution_handoff",
+        ))
+    with patch.object(runtime.physical_ledger, "observe", return_value=tuple(actions)), patch(
+        "beliefkv.runtime.sglang_v0520_observer.observe_unified_node_closure",
+        side_effect=lambda _, node, **kw: NS(observable=True, nodes=tuple(
+            NS(node_id=index, full_device_tokens=1, mamba_device_present=index == 6)
+            for index in range(1, node + 1)
+        )),
+    ):
+        runtime.on_native_transfer_commit(NS())
+    cache.tree_core.inc_lock_ref.assert_called_once_with(6)
+    assert len(runtime._prefetch_service_leases) == 6
+    assert sum(item.protected_bytes for item in runtime._prefetch_service_leases.values()) == 80
+    runtime.on_batch_completed(NS(reqs=[cold]))
+    cache.tree_core.dec_lock_ref.assert_called_once()
+    assert cache.tree_core.dec_lock_ref.call_args.args[0] == 6
+    assert not runtime._prefetch_service_leases
+
+
+def test_handoff_and_admission_share_causal_classification_but_not_residency(monkeypatch):
+    runtime, (cold, warm, _), cache = runtime_with_requests(monkeypatch)
+    runtime._prefill_cycle_active = True
+    with patch.object(runtime.frontier, "admission_rank", wraps=runtime.frontier.admission_rank) as rank:
+        first = runtime.plan_native_prefill([cold, warm], running_batch=None, adder=None)
+        second = runtime.plan_native_prefill([cold, warm], running_batch=None, adder=NS())
+        assert first == second
+        assert rank.call_count == 2
+        assert runtime.counts["admission_causal_cache_hits"] == 1
+        runtime.graph._graph_version += 1
+        runtime.plan_native_prefill([cold, warm], running_batch=None, adder=None)
+        assert rank.call_count == 4
+        runtime.plan_native_prefill([warm, cold], running_batch=None, adder=None)
+        assert rank.call_count == 6
+    assert cache.inspect_beliefkv_reentry.call_count == 2

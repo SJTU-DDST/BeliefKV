@@ -2,6 +2,46 @@
 
 更新日期：2026-10-09。
 
+## Handoff 流水恢复与准入减负
+
+当前优化在独立分支 `perf/pipeline-execution-handoff` 中完成，
+基于 `e5f1f0b`。正在运行的v10 native/predictive仍冻结在原版，
+不在两侧之间换实现。这些改动尚无GPU吞吐收益结论。
+
+旧handoff逐node发出H2D，再等完整软件ACK推进，50 ms检查间隔
+还会继续拖延下一步。新路径一次规划最多16个缺失FULL node，
+按祖先到检查点顺序入队，合并一次原生submit；每node仍有独立
+command、容量账本和ACK。只在当前可复用检查点携带必要Mamba，
+不扩大到历史状态或生成尾段。空闲容量不足时先恢复能放下的
+连续前缀，剩余部分由后续handoff或原生需求恢复处理。
+
+FULL-only恢复可以在原生逐层load fence下进入prefill，不等待
+软件账本ACK。Mamba的deferred COW早于模型逐层等待，必须先确认
+该次传输自身finish event完成；不拿复用的layer-ring event作证明，
+也不CUDA synchronize。缺少原生依赖支持时沿用ACK等待。
+50 ms回退只用于重新选择候选；活跃ticket的真实ACK后立即推进。
+无关原生ACK不重置候选扫描节流，避免传输越多CPU扫描越频繁。
+
+同一scheduler轮内，handoff和正式准入共享因果分类；请求顺序、
+身份、图版本或语义revision变化则失效。驻留、老化、预测有效期
+及提升预算仍实时检查。同次物理观察中FULL/Mamba锚点相同则只
+遍历一次祖先链，提交前仍由native验证代次、祖先、在途操作和容量。
+真实ACK按最深node先注册保护，一把锁覆盖FULL祖先，不为每段
+重复加锁；总预算仍为最多4把实际原生锁和1 GiB。
+
+原生流水可能先服务请求、后交付软件ACK。因此在issue时保存实际
+allocation身份，首次服务证据暂存，验证ACK且身份/字节吻合后才
+发布复用记录，并标记 `first_service_before_ack`。已服务动作不在
+ACK后补锁；超时、因果镜像丢失或物理失败清理暂存证据，不能算命中。
+
+相同CPU输入对照 `e5f1f0b`：156 workflow、16轮保留历史、80次
+测量、每轮连续两次准入规划，平均5.591→5.180 ms，减少7.35%，
+队列顺序一致。它不包含物理handoff入队/观察，也不是GPU加速。
+报告为 `experiments/reports/pipeline_handoff_cpu_156_16_20261009.json`。
+主仓库相关回归319 passed，独立patched engine104 passed及
+16 subtests passed。后续验收仍看完成吞吐/JCT、暴露恢复等待、
+FULL实际复用与重复原生恢复，不能用合并submit次数代替收益。
+
 ## 共用路径减负与新对照
 
 按最新要求，先降低并测清reactive/predictive共用路径成本，再进行
@@ -167,8 +207,9 @@ reactive与predictive共同启用resident-first，只有predictive开启
 预期释放量。D2H/H2D分方向限制在途动作，允许不同节点的备份
 与恢复重叠；实际是否隐藏DMA仍须GPU遥测证明。每次只选一个
 短期beneficiary，规划窗口2秒、最多16个node；ACK后驻留保护
-沿用最多4个租约/1 GiB，队列换入租约最多3秒，首次服务释放。
-等待ACK只跳过对应请求，不停止其他可执行请求；失效和窗口
+沿用最多4把实际原生锁/1 GiB，队列换入租约最多3秒，首次服务释放。
+新路径的FULL走原生逐层依赖，必要Mamba或旧适配器等待完成；
+只跳过尚不能安全准入的对应请求，不停止其他可执行请求；失效和窗口
 耗尽回到原生需求恢复，不持续重新选择同一请求。
 动作source=execution_handoff单独记录，已提交之后的H2D不能
 冒充RETURN/TOOL_END之前的预测命中。验收看FULL实际复用、

@@ -2,6 +2,47 @@
 
 Status date: 2026-10-09.
 
+## Pipelined Handoff Revision
+
+Implemented in the isolated `perf/pipeline-execution-handoff` branch based
+on `e5f1f0b`. Keep the active v10 pair's checkout, engine and models frozen.
+Integrate this revision only after both arms finish; its GPU benefit is pending.
+
+- Plan up to 16 root-first missing FULL extents, enqueue exact independent
+  commands and submit the burst once. Transfer state only at the reusable
+  input checkpoint. Use a fitting prefix when current free capacity is partial.
+- Admit FULL through native layer load fences instead of a software ledger
+  ACK barrier. Pending Mamba must complete its own transfer event before
+  deferred COW. Legacy adapters keep their completion wait.
+- Keep the 50 ms backoff for new-beneficiary selection, advance a live ticket
+  immediately after its ACK, and do not let unrelated native ACKs cause scans.
+- Share causal classification within a scheduler cycle, invalidated by graph,
+  semantic revision and ordered request identities. Recompute residency,
+  aging, promotion budgets and hint expiry. Deduplicate identical component
+  leaf observations within one physical capture; native enqueue revalidates.
+- Register the deepest ACK lock before ancestors, sharing its FULL closure
+  protection. Retain four actual native locks and one GiB in total.
+- Capture native allocation identities at issuance, buffer service observed
+  before software ACK, and publish reuse only after matching verified credit.
+  Do not acquire a late residency lock after service. Discard provisional
+  evidence on expiry, mirror loss or physical failure.
+
+CPU comparison against `e5f1f0b`, 156 synthetic workflows with 16 retained
+rounds and 80 measurements: two consecutive admission plans average
+5.591 -> 5.180 ms, 7.35% lower with identical order. This excludes physical
+inspection/enqueue and is not a GPU throughput result. Evidence:
+`experiments/reports/pipeline_handoff_cpu_156_16_20261009.json`.
+Related repository regression: 319 passed; independent engine: 104 passed
+and 16 subtests. Use the committed canonical staging patch for deployment.
+
+After the frozen pair finishes, evaluate this revision on the same arrival
+table and pool/running configuration against a fresh native arm. Assess
+completed-workflow throughput and JCT together with exposed restoration
+wait, useful FULL reuse, repeated demand loads, recompute and resident byte-time.
+Do not refit the predictor, add canaries or enlarge transfers to count success.
+The next GPU comparison should proceed from the v10 diagnosis; do not
+substitute this CPU result or historical Host-auto runs for that comparison.
+
 ## Shared-Path Cost And Matched Replenishment
 
 The user now authorizes shared-path cost reduction followed by one live
@@ -133,11 +174,13 @@ Added for the next experiment:
 - Reclaim only settled, backed, unlocked idle duplicates during a real load
   shortfall; do not evict running/hot or shared live state. Recheck real free
   capacity after native release, never credit an unfinished D2H.
-- Allow one pending action per direction, so D2H and H2D on independent
-  nodes can overlap. Keep the native allocator/ACK as physical authority.
+- Allow independent pending D2H and one H2D burst within the ledger budget,
+  so directions can overlap on distinct nodes. Keep the native allocator/ACK
+  as physical authority; never credit capacity from an unfinished transfer.
 - Bound each request's handoff planning to 2 s and 16 nodes, with no repeated
-  ticket after expiry. Only the loading request waits; other work continues.
-  ACK leases share the four/one-GiB budget and queued restores hold at most 3 s.
+  ticket after expiry. FULL uses native layer dependencies; unavailable state
+  or legacy completion waits affect only the loading request. Other work continues.
+  ACK locks share the four/one-GiB budget and queued restores hold at most 3 s.
 - Record `execution_handoff` separately from pre-RETURN/pre-TOOL_END loads,
   including selected request, checkpoint, freed victim units, issue and ACK.
 

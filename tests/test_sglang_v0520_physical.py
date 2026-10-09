@@ -20,6 +20,7 @@ from beliefkv.runtime.sglang_v0520_physical import (
     capture_action_local_shadow,
     inspect_session_h2d_opportunity,
     next_prefetch_gpu_step,
+    plan_prefetch_gpu_steps,
     next_shadow_backup_step,
     prefetch_expectation_from_native_op,
     shadow_expectation_from_native_op,
@@ -397,7 +398,7 @@ def test_shadow_candidate_is_context_local_and_read_only():
         assert [node.node_id for node in candidate.nodes] == [0, 11]
         assert candidate.missing_full_host_tokens == 10
         assert candidate.missing_mamba_host_nodes == 1
-        assert observe.call_count == 2
+        assert observe.call_count == 1
         assert capture_action_local_shadow(object(), anchors, max_nodes=1) is None
         leaf.pending_write_id = 11
         assert capture_action_local_shadow(object(), anchors) is None
@@ -427,14 +428,26 @@ def test_shadow_candidate_rejects_changed_leaf_and_inconsistent_views():
     leaf.creation_time = 4
     changed = NS(**vars(leaf))
     changed.full_device_tokens = 2
+    other = NS(**{**vars(leaf), "node_id": 12, "parent_id": 11, "creation_time": 5})
+    distinct_anchors = replace(anchors, component_leaves=(
+        (0, ((11, 4),)), (2, ((12, 5),)),
+    ))
     with patch(
         "beliefkv.runtime.sglang_v0520_physical.observe_unified_node_closure",
         side_effect=(
             NS(observable=True, nodes=(leaf,)),
-            NS(observable=True, nodes=(changed,)),
+            NS(observable=True, nodes=(other, changed)),
         ),
     ):
-        assert capture_action_local_shadow(object(), anchors) is None
+        assert capture_action_local_shadow(object(), distinct_anchors) is None
+    changed_generation = replace(anchors, component_leaves=(
+        (0, ((11, 4),)), (2, ((11, 5),)),
+    ))
+    with patch(
+        "beliefkv.runtime.sglang_v0520_physical.observe_unified_node_closure",
+        return_value=NS(observable=True, nodes=(leaf,)),
+    ):
+        assert capture_action_local_shadow(object(), changed_generation) is None
 
 
 def test_partial_host_shadow_selects_parent_before_session_leaf():
@@ -702,6 +715,65 @@ def test_input_checkpoint_prefetch_still_restores_full_ancestors_first():
     assert next_prefetch_gpu_step(candidate).node_id == 11
     ancestor.full_device_tokens = 8
     assert next_prefetch_gpu_step(candidate).node_id == 12
+
+
+def test_prefetch_burst_plans_full_ancestors_and_only_reusable_state():
+    anchors = replace(prefetch_anchors(), reusable_input_tokens=12)
+    root = prefetch_node(0, None, 1, key_tokens=0)
+    ancestor = prefetch_node(11, 0, 4, full_host=8, mamba_host=True, key_tokens=8)
+    checkpoint = prefetch_node(12, 11, 5, full_host=4, mamba_host=True, key_tokens=4)
+    candidate = ActionLocalPrefetchCandidate(anchors, (root, ancestor, checkpoint), 12, 0)
+    steps = plan_prefetch_gpu_steps(candidate)
+    assert [(step.node_id, step.include_mamba) for step in steps] == [(11, False), (12, True)]
+    assert plan_prefetch_gpu_steps(candidate, max_steps=1) == steps[:1]
+    ancestor.pending_load_id = 11
+    assert plan_prefetch_gpu_steps(candidate) == ()
+
+
+def test_prefetch_burst_capacity_counts_all_extents_and_selected_state():
+    anchors = replace(prefetch_anchors(), reusable_input_tokens=12)
+    nodes = (
+        prefetch_node(12, 11, 5, full_host=4, mamba_host=True, key_tokens=4),
+        prefetch_node(11, 0, 4, full_host=8, mamba_host=True, key_tokens=8),
+        prefetch_node(0, None, 1, key_tokens=0),
+    )
+    with patch(
+        "beliefkv.runtime.sglang_v0520_physical.observe_unified_node_closure",
+        return_value=NS(observable=True, nodes=nodes),
+    ), patch(
+        "beliefkv.runtime.sglang_v0520_physical.observe_static_full_mamba_headroom",
+        return_value=NS(observable=True, device_full_free_tokens=10, device_mamba_free_slots=1),
+    ):
+        opportunity = inspect_session_h2d_opportunity(object(), anchors, max_steps=16)
+    assert len(opportunity.steps) == 2
+    assert opportunity.required_full_tokens == 12
+    assert opportunity.required_mamba_slots == 1
+    assert opportunity.fits_current_free_lists is False
+
+
+def test_prefetch_burst_uses_fitting_prefix_without_a_new_closure_snapshot():
+    anchors = replace(prefetch_anchors(), reusable_input_tokens=12)
+    nodes = (
+        prefetch_node(12, 11, 5, full_host=4, mamba_host=True, key_tokens=4),
+        prefetch_node(11, 0, 4, full_host=8, mamba_host=True, key_tokens=8),
+        prefetch_node(0, None, 1, key_tokens=0),
+    )
+    with patch(
+        "beliefkv.runtime.sglang_v0520_physical.observe_unified_node_closure",
+        return_value=NS(observable=True, nodes=nodes),
+    ) as closure, patch(
+        "beliefkv.runtime.sglang_v0520_physical.observe_static_full_mamba_headroom",
+        return_value=NS(observable=True, device_full_free_tokens=10, device_mamba_free_slots=0),
+    ):
+        opportunity = inspect_session_h2d_opportunity(
+            object(), anchors, max_steps=16, fit_current_capacity=True,
+        )
+    assert len(opportunity.steps) == 1
+    assert opportunity.steps[0].node_id == 11
+    assert opportunity.required_full_tokens == 8
+    assert opportunity.required_mamba_slots == 0
+    assert opportunity.fits_current_free_lists is True
+    closure.assert_called_once()
 
 
 def test_full_ancestor_restore_does_not_require_its_historical_mamba_slot():

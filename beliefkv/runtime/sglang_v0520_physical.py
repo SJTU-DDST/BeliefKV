@@ -74,6 +74,7 @@ class SessionH2DOpportunity:
     unbacked_full_nodes: int | None = None
     unbacked_mamba_leaves: int | None = None
     blocked_detail: str | None = None
+    steps: tuple[PrefetchLoadStep, ...] = ()
 
 
 def _prefetch_block_detail(candidate: ActionLocalPrefetchCandidate) -> str:
@@ -123,12 +124,14 @@ def _prefetch_block_detail(candidate: ActionLocalPrefetchCandidate) -> str:
 
 def inspect_session_h2d_opportunity(
     cache: object, anchors: ContextSessionAnchors,
+    *, max_steps: int = 1, fit_current_capacity: bool = False,
 ) -> SessionH2DOpportunity:
     headroom = observe_static_full_mamba_headroom(cache)
     candidate = capture_action_local_shadow(
         cache, anchors, for_prefetch=True, include_non_actionable=True,
     )
-    step = next_prefetch_gpu_step(candidate) if candidate is not None else None
+    steps = plan_prefetch_gpu_steps(candidate, max_steps=max_steps) if candidate is not None else ()
+    step = steps[0] if steps else None
     no_step_reason = None
     blocked_detail = None
     unbacked_full = unbacked_mamba = None
@@ -158,17 +161,27 @@ def inspect_session_h2d_opportunity(
         else:
             no_step_reason = "already_device_resident"
     full_tokens = mamba_slots = 0
-    if step is not None:
-        node = next(
-            node for node in candidate.nodes if node.node_id == step.node_id
-        )
-        full_tokens = (
-            node.full_host_tokens if node.full_device_tokens == 0 else 0
-        )
-        mamba_slots = int(
-            step.include_mamba
-            and node.mamba_host_present and not node.mamba_device_present
-        )
+    if steps:
+        nodes = {node.node_id: node for node in candidate.nodes}
+        fitting_steps = []
+        for planned in steps:
+            node = nodes[planned.node_id]
+            next_full = full_tokens + (
+                node.full_host_tokens if node.full_device_tokens == 0 else 0
+            )
+            next_mamba = mamba_slots + int(
+                planned.include_mamba
+                and node.mamba_host_present and not node.mamba_device_present
+            )
+            if fit_current_capacity and headroom.observable and fitting_steps and (
+                next_full > headroom.device_full_free_tokens
+                or next_mamba > headroom.device_mamba_free_slots
+            ):
+                steps = tuple(fitting_steps)
+                break
+            full_tokens, mamba_slots = next_full, next_mamba
+            fitting_steps.append(planned)
+        step = steps[0]
     fits = (
         headroom.device_full_free_tokens >= full_tokens
         and headroom.device_mamba_free_slots >= mamba_slots
@@ -179,7 +192,7 @@ def inspect_session_h2d_opportunity(
         candidate.missing_full_device_tokens if candidate is not None else None,
         candidate.missing_mamba_device_nodes if candidate is not None else None,
         unbacked_full, unbacked_mamba,
-        blocked_detail,
+        blocked_detail, steps,
     )
 
 
@@ -248,14 +261,24 @@ def _checkpoint_paths(
 def next_prefetch_gpu_step(
     candidate: ActionLocalPrefetchCandidate,
 ) -> PrefetchLoadStep | None:
+    steps = plan_prefetch_gpu_steps(candidate, max_steps=1)
+    return steps[0] if steps else None
+
+
+def plan_prefetch_gpu_steps(
+    candidate: ActionLocalPrefetchCandidate, *, max_steps: int = 16,
+) -> tuple[PrefetchLoadStep, ...]:
     """Restore FULL ancestors and the reusable input checkpoint root-first.
 
+    Later steps may depend only on earlier steps in this same native burst.
     Native must revalidate session, ancestry, pool capacity and node creation
     before enqueue. Generated output need not survive chat-template round trips.
     """
+    if type(max_steps) is not int or not 1 <= max_steps <= 16:
+        raise ValueError("invalid prefetch burst bound")
     anchors = getattr(candidate, "anchors", None)
     if anchors is None:
-        return None
+        return ()
     if (
         type(anchors.key) is not PrefillCandidateKey
         or type(anchors.key.session_id) is not str
@@ -266,16 +289,16 @@ def next_prefetch_gpu_step(
         or type(getattr(candidate, "nodes", None)) is not tuple
         or len(candidate.nodes) > 256
     ):
-        return None
+        return ()
     try:
         by_component = dict(anchors.component_leaves)
         nodes = {node.node_id: node for node in candidate.nodes}
         full_leaves = dict(by_component[0])
         mamba_leaves = dict(by_component[2])
     except (AttributeError, KeyError, TypeError, ValueError):
-        return None
+        return ()
     if len(by_component) != len(anchors.component_leaves) or set(by_component) != {0, 2}:
-        return None
+        return ()
     if len(nodes) != len(candidate.nodes) or any(
         type(node.node_id) is not int
         or node.node_id < 0
@@ -294,7 +317,7 @@ def next_prefetch_gpu_step(
         or type(node.mamba_host_present) is not bool
         for node in nodes.values()
     ):
-        return None
+        return ()
     if (
         not full_leaves
         or not mamba_leaves
@@ -311,20 +334,20 @@ def next_prefetch_gpu_step(
             for leaf, created in leaves.items()
         )
     ):
-        return None
+        return ()
     paths: set[int] = set()
     provenance: dict[int, int] = {}
     depth: dict[int, int] = {}
     roots: set[int] = set()
     for leaf, created in sorted(full_leaves.items()):
         if leaf not in nodes or nodes[leaf].creation_time != created:
-            return None
+            return ()
         current = leaf
         chain: list[int] = []
         seen: set[int] = set()
         while current is not None:
             if current not in nodes or current in seen or len(chain) >= 256:
-                return None
+                return ()
             seen.add(current)
             chain.append(current)
             current = nodes[current].parent_id
@@ -345,21 +368,26 @@ def next_prefetch_gpu_step(
             for node in nodes.values()
         )
     ):
-        return None
+        return ()
     selected = _checkpoint_paths(anchors, nodes, full_leaves, depth)
     if selected is None:
-        return None
+        return ()
     eligible_paths, checkpoint_nodes = selected
+    steps: list[PrefetchLoadStep] = []
+    restored_full: set[int] = set()
     for node_id in sorted(paths, key=lambda value: (depth[value], value)):
         if node_id not in eligible_paths:
             continue
         node = nodes[node_id]
         parent = nodes.get(node.parent_id)
-        if parent is not None and parent.full_device_tokens <= 0 and not (
-            parent.parent_id is None
-            and parent.full_host_tokens == 0
-            and not parent.mamba_host_present
-            and not parent.mamba_device_present
+        if (
+            parent is not None and parent.full_device_tokens <= 0
+            and parent.node_id not in restored_full and not (
+                parent.parent_id is None
+                and parent.full_host_tokens == 0
+                and not parent.mamba_host_present
+                and not parent.mamba_device_present
+            )
         ):
             continue
         if (
@@ -368,15 +396,19 @@ def next_prefetch_gpu_step(
             and node_id in checkpoint_nodes
             and node.mamba_host_present and not node.mamba_device_present
         ):
-            return PrefetchLoadStep(
+            steps.append(PrefetchLoadStep(
                 key=anchors.key,
                 leaf_node_id=provenance[node_id],
                 leaf_creation_time=full_leaves[provenance[node_id]],
                 node_id=node_id,
                 creation_time=node.creation_time,
                 include_mamba=node_id in checkpoint_nodes,
-            )
-    return None
+            ))
+            if node.full_device_tokens == 0:
+                restored_full.add(node_id)
+            if len(steps) == max_steps:
+                break
+    return tuple(steps)
 
 
 def next_shadow_backup_step(
@@ -479,10 +511,15 @@ def capture_action_local_shadow(
     ):
         return None
     nodes: dict[int, UnifiedNodeSummary] = {}
+    observed_leaves: dict[int, int | float] = {}
     for component_leaves in by_component.values():
         for node_id, created in component_leaves:
             if type(node_id) is not int or node_id < 0:
                 return None
+            if node_id in observed_leaves:
+                if observed_leaves[node_id] != created:
+                    return None
+                continue
             observation = observe_unified_node_closure(
                 cache, node_id, max_nodes=max_nodes
             )
@@ -493,6 +530,7 @@ def capture_action_local_shadow(
                 or observation.nodes[0].creation_time != created
             ):
                 return None
+            observed_leaves[node_id] = created
             for node in observation.nodes:
                 if node.node_id in nodes and nodes[node.node_id] != node:
                     return None
@@ -945,6 +983,10 @@ class PhysicalTransactionLedger:
 
     def is_pending(self, command_id: str) -> bool:
         return command_id in self._pending
+
+    def pending_expectation(self, command_id: str) -> PhysicalActionExpectation | None:
+        pending = self._pending.get(command_id)
+        return pending[0] if pending is not None else None
 
     @property
     def pending_context_ids(self) -> tuple[str, ...]:

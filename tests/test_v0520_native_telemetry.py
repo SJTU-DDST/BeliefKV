@@ -332,6 +332,72 @@ def test_verified_prefetch_records_node_match_at_first_gpu_service(
     assert used[0]["request_id"] == request.rid
 
 
+@pytest.mark.parametrize("acknowledged", (False, True))
+def test_prefetch_service_before_ack_is_credited_only_after_verified_ack(tmp_path, acknowledged):
+    audit = NativeReactiveTelemetry(tmp_path / "early-service")
+    root = SimpleNamespace(id=0, parent=None)
+    node = SimpleNamespace(
+        id=11, creation_time=7, parent=root, key=array("q", range(10)),
+        component_data=(SimpleNamespace(value=object()),),
+    )
+    audit._cache = SimpleNamespace(tree_core=SimpleNamespace(node_by_id=lambda _: node))
+    action = SimpleNamespace(
+        command_id="early", action="PREFETCH_GPU", source="execution_handoff",
+        context_id="ctx", context_epoch=2, node_ids=(11,),
+        pool_bytes=(("kv", 2048),), num_bytes=2048,
+    )
+    audit.on_prefetch_issued(action)
+    request = SimpleNamespace(
+        rid="parent", last_node=11, origin_input_ids=list(range(20)),
+        prefix_indices=list(range(12)), cached_tokens_device=12, cached_tokens_host=0,
+    )
+    audit._record_prefetch_first_service(request, {"context_id": "ctx", "context_epoch": 2})
+    assert len(audit._prefetch_use_before_ack["early"]) == 1
+    if acknowledged:
+        audit.on_verified_action_ack(action)
+    audit.close()
+    used = _read(tmp_path / "early-service/physical_action_use.jsonl")
+    if acknowledged:
+        assert len(used) == 1
+        assert used[0]["full_node_reused"] is True
+        assert used[0]["first_service_before_ack"] is True
+        assert used[0]["ack_ts_ms"] >= used[0]["first_service_ts_ms"]
+    else:
+        assert used == []
+        assert any(
+            item["event"] == "unacknowledged_prefetch_use_discarded"
+            for item in _read(tmp_path / "early-service/runtime_audit.jsonl")
+        )
+
+
+def test_failed_prefetch_discards_provisional_reuse_before_shutdown(tmp_path):
+    audit = NativeReactiveTelemetry(tmp_path / "discarded-service")
+    action = SimpleNamespace(
+        command_id="expired", action="PREFETCH_GPU", source="execution_handoff",
+        context_id="ctx", context_epoch=2, node_ids=(),
+        pool_bytes=(("kv", 2048),), num_bytes=2048,
+    )
+    audit.on_prefetch_issued(action)
+    audit._emit_prefetch_use({
+        "event": "beliefkv_prefetch_first_service", "command_id": action.command_id,
+        "first_service_ts_ms": 1.,
+    })
+    audit.on_prefetch_discarded(action.command_id, "physical_expired")
+    audit._emit_prefetch_use({
+        "event": "beliefkv_prefetch_mamba_forward_completed",
+        "command_id": action.command_id, "ack_ts_ms": None,
+    })
+    assert not audit._unacked_prefetch_use
+    assert not audit._pending_prefetch_use
+    assert not audit._prefetch_use_before_ack
+    audit.close()
+    assert _read(tmp_path / "discarded-service/physical_action_use.jsonl") == []
+    assert any(
+        item.get("reason") == "physical_expired"
+        for item in _read(tmp_path / "discarded-service/runtime_audit.jsonl")
+    )
+
+
 @pytest.mark.parametrize("changed_prefix", [False, True])
 def test_prefetch_diagnostic_separates_input_divergence_from_mamba_boundary(
     tmp_path: Path, changed_prefix: bool,
