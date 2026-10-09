@@ -60,6 +60,22 @@ JOIN不计算未使用的值，容量/回收排序及短工具窗口判断不变
 `experiments/reports/v16_prepare_timing_skip_cpu_20261010.json`；
 本项修订尚未部署到v15。
 
+06:13 CST的v15消费快照：JOIN/tool的FULL传输/确认复用分别为
+0.455/0.319 GB、0.336/0.293 GB，ACK到first-launch P50为1157/
+1026 ms、P90约20.43/14.96秒。需求handoff的24 ms不得用于提前
+预测验收。553次PREPARE ACK中151次关联恢复，324次后续D2H
+均有中间Host驱逐；不能据早期无关联快照断言已消除补传。
+报告为`experiments/reports/v15_prefetch_sources_partial_20261010_0613.json`。
+
+登记保护槽位为0不等于HBM字节不足：本快照129个JOIN/tool动作中，
+37个槽位为0，43个未锁定，41个未锁定动作仍有正字节预算。
+下一版须在before-enqueue处记录有限发起额度，ACK后在实时字节/
+其他context额度约束下延续保护；新预取与原生准入不能使用旧
+额度。未知容量不保留旧扩张额度，租约时长、首次服务释放、超时、
+取消与物理失败清理不变。相关套件198项通过，补齐边界用例后策略
+文件46项通过；修改仅在隔离工作树，v15两侧和产物继续冻结。
+旧轨迹无发起预算，不能把37个案例全部归为已可挽回的命中。
+
 v14的采集、完整driver、审计、HTML与workspace清理现已全部结束：
 154 completed、2 incomplete、0 error。采集10977.317秒，
 完成吞吐50.504 workflow/h，比v13高10.87%，仍比历史v10 native

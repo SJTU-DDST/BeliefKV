@@ -170,6 +170,145 @@ def test_unobservable_capacity_does_not_keep_an_old_expanded_budget():
     assert budget.source == "legacy_capacity_unavailable"
 
 
+def issue_restore_with_budget(runtime, key, budget):
+    cache = runtime._native_cache
+    unit = cache.host_pool_group.entry_map["kv"].host_pool.size_per_token
+    cache.cache_controller = NS(
+        mem_pool_host=cache.host_pool_group,
+        _num_tokens_by_pool=lambda _: {"kv": 1},
+        _transfer_num_bytes=lambda _: unit,
+    )
+
+    def native_load(**kwargs):
+        accepted = kwargs["beliefkv_before_enqueue"](NS(
+            beliefkv_command_id=kwargs["beliefkv_command_id"],
+            node_ids=[1], device_indices=(0,), host_indices=(1,), pool_transfers=[],
+        ))
+        return NS(issued=accepted, node_id=1 if accepted else None)
+
+    cache.prefetch_gpu_session_node = native_load
+    step = PrefetchLoadStep(key, 1, 2, 1, 2)
+    with patch.object(runtime, "refreshed_prefetch_gpu_step", return_value=step), \
+        patch.object(runtime, "_current_residency_budget", return_value=budget):
+        command = runtime.issue_prefetch_gpu_step(step)
+    return command, NS(
+        direction="h2d", status="completed", node_ids=(1,),
+        num_tokens_by_pool=(("kv", 1),),
+        child_commits=(NS(
+            command_id=command, anchor_node_id=1, published_node_ids=(1,),
+            num_tokens_by_pool=(("kv", 1),), num_bytes=unit,
+        ),),
+    )
+
+
+@pytest.mark.parametrize("ack_slots,ack_bytes,source,locked", [
+    (0, 1024, "native_next_prefill", True),
+    (0, 0, "native_next_prefill", False),
+    (0, 1024, "legacy_capacity_unavailable", False),
+    (1, 1024, "native_next_prefill", True),
+])
+def test_issued_restore_keeps_bounded_protection_across_transient_slot_loss(
+    ack_slots, ack_bytes, source, locked,
+):
+    from beliefkv.runtime.native_transfer_policy import PrefetchResidencyBudget
+
+    runtime, hint, _, old_action, _, observation = locked_runtime()
+    runtime._release_prefetch_service_lease(old_action.command_id, "test_reissue")
+    tree = runtime._native_cache.tree_core
+    tree.inc_lock_ref.reset_mock()
+    issued_budget = PrefetchResidencyBudget(1, 1024, source="native_next_prefill")
+    command, commit = issue_restore_with_budget(runtime, hint.key, issued_budget)
+    assert command is not None
+    assert runtime._prefetch_issue_budgets[command] == issued_budget
+    ack_budget = PrefetchResidencyBudget(ack_slots, ack_bytes, source=source)
+    with patch.object(runtime, "_current_residency_budget", return_value=ack_budget), \
+        patch(
+            "beliefkv.runtime.sglang_v0520_observer.observe_unified_node_closure",
+            return_value=observation,
+        ):
+        actions = runtime.on_native_transfer_commit(commit)
+        assert len(actions) == 1
+        if ack_slots == 0:
+            assert not runtime._prefetch_slot_available(hint.key)
+    lease = runtime._prefetch_service_leases[command]
+    assert (lease.lock_params is not None) is locked
+    assert tree.inc_lock_ref.call_count == int(locked)
+    assert runtime.counts["prefetch_issued_slot_protection_preserved"] == int(
+        locked and ack_slots == 0
+    )
+    assert not runtime._prefetch_issue_budgets
+    assert runtime.graph.invocations[hint.key.invocation_id].state.value == "wait_tool"
+    assert lease.expires_at - lease.acknowledged_at == pytest.approx(2.)
+
+
+def test_prefetch_slot_loss_before_enqueue_leaves_no_dma_or_issue_allowance():
+    from beliefkv.runtime.native_transfer_policy import PrefetchResidencyBudget
+
+    runtime, hint, _, old_action, _, _ = locked_runtime()
+    runtime._release_prefetch_service_lease(old_action.command_id, "test_reissue")
+    command, _ = issue_restore_with_budget(
+        runtime, hint.key, PrefetchResidencyBudget(0, 1024, source="native_next_prefill"),
+    )
+    assert command is None
+    assert runtime.physical_ledger.pending_count == 0
+    assert not runtime._prefetch_steps
+    assert not runtime._prefetch_issue_budgets
+    assert runtime.counts["prefetch_slot_lost_before_enqueue"] == 1
+
+
+def test_issued_restore_cannot_take_another_contexts_protection_allowance():
+    from dataclasses import replace
+    from beliefkv.runtime.native_transfer_policy import PrefetchResidencyBudget
+
+    runtime, hint, _, old_action, _, observation = locked_runtime()
+    original = runtime._prefetch_service_leases[old_action.command_id]
+    runtime._release_prefetch_service_lease(old_action.command_id, "test_reissue")
+    budget = PrefetchResidencyBudget(1, 1024, source="native_next_prefill")
+    command, commit = issue_restore_with_budget(runtime, hint.key, budget)
+    runtime._prefetch_service_leases["other"] = replace(
+        original, command_id="other", key=replace(hint.key, context_id="ctx-other"),
+    )
+    with patch.object(
+        runtime, "_current_residency_budget",
+        return_value=PrefetchResidencyBudget(0, 1024, source="native_next_prefill"),
+    ), patch(
+        "beliefkv.runtime.sglang_v0520_observer.observe_unified_node_closure",
+        return_value=observation,
+    ):
+        runtime.on_native_transfer_commit(commit)
+    assert runtime._prefetch_service_leases[command].lock_params is None
+    assert runtime._prefetch_service_leases["other"].lock_params is original.lock_params
+    assert not runtime._prefetch_issue_budgets
+
+
+def test_restore_served_before_ack_does_not_retain_issued_protection_allowance():
+    from beliefkv.runtime.native_transfer_policy import PrefetchResidencyBudget
+
+    runtime, hint, _, old_action, _, _ = locked_runtime()
+    runtime._release_prefetch_service_lease(old_action.command_id, "test_reissue")
+    command, commit = issue_restore_with_budget(
+        runtime, hint.key, PrefetchResidencyBudget(1, 1024, source="native_next_prefill"),
+    )
+    runtime._prefetch_first_services[command] = (123., "resumed")
+    runtime.on_native_transfer_commit(commit)
+    assert not runtime._prefetch_service_leases
+    assert not runtime._prefetch_issue_budgets
+    assert runtime.counts["prefetch_service_preceded_ledger_ack"] == 1
+
+
+def test_discarded_restore_drops_its_issued_protection_allowance():
+    from beliefkv.runtime.native_transfer_policy import PrefetchResidencyBudget
+
+    runtime, hint, _, old_action, _, _ = locked_runtime()
+    runtime._release_prefetch_service_lease(old_action.command_id, "test_reissue")
+    command, _ = issue_restore_with_budget(
+        runtime, hint.key, PrefetchResidencyBudget(1, 1024, source="native_next_prefill"),
+    )
+    runtime._discard_prefetch_tracking("physical_expired", (command,))
+    assert not runtime._prefetch_issue_budgets
+    assert not runtime._prefetch_steps
+
+
 def test_runtime_pressure_releases_speculative_before_ready_restore():
     from dataclasses import replace
     runtime, _, _, action, _, _ = locked_runtime()

@@ -93,6 +93,30 @@ Current status:
   establish stable full-path acceleration or GPU throughput improvement.
   Preserve all cases in v16_prepare_timing_skip_cpu_20261010.json. Commit
   in isolation and leave both live V15 arms unchanged.
+- At06:13 CST, V15 has53 JOIN/76 tool commands. FULL sent/reused is
+  0.455/0.319GB and0.336/0.293GB; ACK-to-first-launch P50 is1157/1026ms,
+  P9020426/14958ms. Demand handoff11391 node commands send/reuse
+  50.244/50.116GB FULL with P5024ms; do not credit it as anticipation.
+  PREPARE has553 ACKs/151 restore associations. All324 later same-node/
+  pool D2H associations have intervening Host eviction. This supersedes the
+  early snapshot's absence of churn observations, not the frozen run.
+  Report:v15_prefetch_sources_partial_20261010_0613.json.
+- Of129 JOIN/tool actions,37 register at zero protection slots,43 obtain no
+  native lock and41 unlocked cases still have positive byte capacity.
+  Release observations include28 residency losses and12 expirations.
+  Of nine estimated-work JOIN commands, eight submit2.0--5.6s before EOS
+  without verified FULL reuse; the one220ms-ahead command is reused.
+  These correlated node actions do not define independent forecast accuracy.
+- The isolated next revision rechecks speculative protection slots at native
+  before-enqueue and records the issued allowance. Completed ACKs may carry
+  that bounded slot allowance across a transient slot reduction, while live
+  bytes and other protected contexts still limit the lock. New issues and
+  actual admission never use old allowances. Preserve lease duration,
+  first-service/expiry/failure cleanup and fallback when capacity is unknown.
+  The relevant suite passes198 checks; after two more boundary cases the
+  policy file passes46. V15 lacks issue-budget evidence, so do not claim
+  all37 zero-slot cases would be recovered. Commit in isolation; evaluate
+  throughput only after both frozen V15 arms and exports finish.
 - V14 collection, outer driver, audits, HTML export and cleanup have all
   finished:154 completed, two incomplete, no errors out of156. Duration is
   10977.317s, completed throughput50.504/hour, output700.235 tokens/s and

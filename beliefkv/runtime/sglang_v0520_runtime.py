@@ -296,6 +296,7 @@ class NativeAdmissionRuntime:
         self._prefetch_steps: dict[
             str, tuple[PrefetchLoadStep, str, float | None]
         ] = {}
+        self._prefetch_issue_budgets: dict[str, PrefetchResidencyBudget] = {}
         self._prefetch_service_leases: dict[str, _PrefetchServiceLease] = {}
         self._prefetch_lock_release_failures: set[str] = set()
         self._prefetch_priority_normal_admissions = 4
@@ -584,6 +585,7 @@ class NativeAdmissionRuntime:
     ) -> None:
         for command in tuple(self._prefetch_steps) if commands is None else commands:
             pending = self._prefetch_steps.pop(command, None)
+            self._prefetch_issue_budgets.pop(command, None)
             self._prefetch_issue_times.pop(command, None)
             self._prefetch_first_services.pop(command, None)
             if pending is not None and self.prefetch_discarded_callback is not None:
@@ -3800,6 +3802,12 @@ class NativeAdmissionRuntime:
             ) != step:
                 self.counts["prefetch_causal_invalidated_before_enqueue"] += 1
                 return False
+            issue_budget = None
+            if source != "execution_handoff":
+                issue_budget = self._current_residency_budget()
+                if not self._prefetch_slot_available(step.key, budget=issue_budget):
+                    self.counts["prefetch_slot_lost_before_enqueue"] += 1
+                    return False
             try:
                 expected = prefetch_expectation_from_native_op(
                     command_id, step, operation, cache.cache_controller
@@ -3814,6 +3822,8 @@ class NativeAdmissionRuntime:
                 step, source,
                 invocation.updated_ts_ms if invocation is not None else None,
             )
+            if issue_budget is not None:
+                self._prefetch_issue_budgets[command_id] = issue_budget
             return True
 
         outcome = cache.prefetch_gpu_session_node(
@@ -3831,6 +3841,7 @@ class NativeAdmissionRuntime:
             if registered:
                 self.physical_ledger.cancel_unsubmitted(command_id)
                 self._prefetch_steps.pop(command_id, None)
+                self._prefetch_issue_budgets.pop(command_id, None)
             self.counts["prefetch_native_declined"] += 1
             return None
         if not registered or outcome.node_id != step.node_id:
@@ -3872,6 +3883,10 @@ class NativeAdmissionRuntime:
                 "node_id": step.node_id, "leaf_node_id": step.leaf_node_id,
                 "node_creation_time": step.creation_time,
                 "include_mamba": step.include_mamba,
+                "residency_issue_budget": (
+                    asdict(self._prefetch_issue_budgets[command_id])
+                    if command_id in self._prefetch_issue_budgets else None
+                ),
                 "reusable_input_tokens": (
                     max(0, tokens[1] - 1) if tokens is not None
                     and tokens[0] == step.key.context_epoch else None
@@ -4155,6 +4170,7 @@ class NativeAdmissionRuntime:
 
     def _register_prefetch_service_lease(self, action: PhysicalActionCompleted) -> None:
         pending = self._prefetch_steps.pop(action.command_id, None)
+        issue_budget = self._prefetch_issue_budgets.pop(action.command_id, None)
         if action.action != "PREFETCH_GPU" or pending is None:
             return
         service = self._prefetch_first_services.pop(action.command_id, None)
@@ -4187,6 +4203,7 @@ class NativeAdmissionRuntime:
             self.counts[f"prefetch_residency_registration_skipped:{reason}"] += 1
             return
         budget = self._residency_budget
+        protection_slots = budget.request_slots
         try:
             from beliefkv.runtime.sglang_v0520_observer import observe_unified_node_closure
             observation = observe_unified_node_closure(cache, step.node_id, max_nodes=64)
@@ -4216,9 +4233,17 @@ class NativeAdmissionRuntime:
             budget = self._current_residency_budget(
                 include_evictable=source == "execution_handoff",
             )
+            protection_slots = budget.request_slots
+            if (
+                issue_budget is not None
+                and issue_budget.source == budget.source == "native_next_prefill"
+            ):
+                # A completed restore uses its issued protection allowance,
+                # while bytes and actual request admission remain live.
+                protection_slots = max(protection_slots, issue_budget.request_slots)
             if (
                 observation.observable and not already_protected
-                and budget.request_slots > 0
+                and protection_slots > 0
                 and (
                     any(
                         item.key == step.key and item.lock_params is not None
@@ -4228,7 +4253,7 @@ class NativeAdmissionRuntime:
                         item.key
                         for item in self._prefetch_service_leases.values()
                         if item.lock_params is not None
-                    }) < budget.request_slots
+                    }) < protection_slots
                 )
                 and protected_bytes + sum(
                     lease.protected_bytes for lease in self._prefetch_service_leases.values()
@@ -4246,6 +4271,8 @@ class NativeAdmissionRuntime:
                     self._prefetch_lock_release_failures.add(action.command_id)
                 else:
                     self.counts["prefetch_native_lock_acquired"] += 1
+                    if protection_slots > budget.request_slots:
+                        self.counts["prefetch_issued_slot_protection_preserved"] += 1
             else:
                 protected_bytes = 0
         except (AttributeError, KeyError, TypeError, ValueError, RuntimeError):
@@ -4270,7 +4297,9 @@ class NativeAdmissionRuntime:
                 "native_locked": lock_params is not None,
                 "protected_bytes": protected_bytes,
                 "budget": asdict(budget),
-                "scope": "native receipt lock bounded by next-prefill slots and schedulable capacity",
+                "residency_issue_budget": asdict(issue_budget) if issue_budget is not None else None,
+                "protection_request_slots": protection_slots,
+                "scope": "bounded restore protection; native admission remains authoritative",
             })
 
     def _observe_native_admission_capacity(
@@ -4351,8 +4380,11 @@ class NativeAdmissionRuntime:
             self._residency_budget = PrefetchResidencyBudget(4, 1024 ** 3)
         return self._residency_budget
 
-    def _prefetch_slot_available(self, key: PrefillCandidateKey) -> bool:
-        budget = self._current_residency_budget()
+    def _prefetch_slot_available(
+        self, key: PrefillCandidateKey, *, budget: PrefetchResidencyBudget | None = None,
+    ) -> bool:
+        if budget is None:
+            budget = self._current_residency_budget()
         locked = [
             lease for lease in self._prefetch_service_leases.values()
             if lease.lock_params is not None
