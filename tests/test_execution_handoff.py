@@ -12,6 +12,7 @@ from beliefkv.runtime.sglang_v0520_physical import (
 from beliefkv.runtime.sglang_v0520_observer import (
     StaticPoolHeadroomObservation, UnifiedNodeSummary,
 )
+from beliefkv.runtime.native_transfer_policy import PrefetchResidencyBudget
 from tests.test_sglang_v0520_runtime import req, select
 
 
@@ -92,6 +93,152 @@ def test_handoff_prefetches_without_demand_prediction_and_does_not_block_warm(mo
     assert records[0]["event"] == "execution_handoff_selected"
     runtime._execution_handoff.expires_at -= 10.
     assert not runtime.defer_prefill_for_prefetch(cold)
+
+
+@pytest.mark.parametrize("slots", [0, 1, 2])
+def test_handoff_only_restores_within_next_native_admission_slots(monkeypatch, slots):
+    runtime, (cold, warm, _), _ = runtime_with_requests(monkeypatch)
+    key = runtime.visible["cold"]
+    step = PrefetchLoadStep(key, 1, 2, 1, 2)
+    with patch.object(runtime, "_current_residency_budget", return_value=PrefetchResidencyBudget(
+        slots, 1024 ** 3, source="native_next_prefill",
+    )), patch(
+        "beliefkv.runtime.sglang_v0520_runtime.inspect_session_h2d_opportunity",
+        return_value=NS(step=step, fits_current_free_lists=True),
+    ), patch.object(runtime, "issue_prefetch_gpu_step", return_value="restore") as issue:
+        runtime.dispatch_execution_handoff([cold, warm], running_batch=NS(reqs=[NS()]))
+    if slots == 2:
+        issue.assert_called_once_with(step, source="execution_handoff")
+    else:
+        issue.assert_not_called()
+        assert runtime._execution_handoff is None
+    runtime.close()
+
+
+@pytest.mark.parametrize("source", ["execution_handoff", "tool_wait"])
+def test_demand_handoff_pins_restored_cache_until_service_or_allocation_pressure(
+    monkeypatch, source,
+):
+    runtime, (cold, _, _), cache = runtime_with_requests(monkeypatch)
+    key = runtime.visible[cold.rid]
+    node = NS(id=1, creation_time=2, component_data={
+        0: NS(value=object()), 2: NS(value=object()),
+    })
+    receipt = NS(node_id=1)
+    cache.tree_core = NS(
+        node_by_id=lambda node_id: node,
+        inc_lock_ref=Mock(return_value=NS(to_dec_params=lambda: receipt)),
+        dec_lock_ref=Mock(),
+    )
+    cache.session_refs = NS(
+        _session_generations={key.session_id: key.session_generation},
+        _closed_session_ids=set(),
+    )
+    cache.req_to_token_pool = NS(
+        available_size=lambda: 8, mamba_pool=NS(size=513),
+    )
+    cache.token_to_kv_pool_allocator = NS(size=1_798_995)
+    cache.host_pool_group = NS(entry_map={
+        "kv": NS(host_pool=NS(size_per_token=20480)),
+        "mamba": NS(host_pool=NS(size_per_token=64389120)),
+    })
+    cache.full_evictable_size = lambda: 500_000
+    cache.mamba_evictable_size = lambda: 10
+    runtime._native_max_running, runtime._native_prefill_slots = 48, 8
+    runtime._native_running_batch = NS(reqs=[NS()] * 48)
+    runtime._native_page_size, runtime._native_input_reserve = 16, 8192
+    observation = NS(observable=True, nodes=(
+        NS(node_id=1, full_device_tokens=20_000, mamba_device_present=True),
+    ))
+    step = PrefetchLoadStep(key, 1, 2, 1, 2)
+    action = PhysicalActionCompleted(
+        "restored", "PREFETCH_GPU", key.context_id, key.context_epoch,
+        (1,), (("kv", 20_000 * 20480), ("mamba", 64389120)),
+        20_000 * 20480 + 64389120,
+    )
+    runtime._prefetch_steps[action.command_id] = (step, source, None)
+    with patch(
+        "beliefkv.runtime.sglang_v0520_runtime.observe_static_full_mamba_headroom",
+        return_value=StaticPoolHeadroomObservation(
+            True, device_full_free_tokens=0, device_mamba_free_slots=0,
+        ),
+    ), patch(
+        "beliefkv.runtime.sglang_v0520_observer.observe_unified_node_closure",
+        return_value=observation,
+    ):
+        runtime._register_prefetch_service_lease(action)
+    lease = runtime._prefetch_service_leases[action.command_id]
+    if source == "execution_handoff":
+        assert lease.lock_params is receipt
+        assert lease.protected_bytes == action.num_bytes
+        cache.tree_core.inc_lock_ref.assert_called_once_with(1)
+        runtime.on_prefill_candidate_result(req("other"), admitted=False, result="NO_TOKEN")
+        assert not runtime._prefetch_service_leases
+        cache.tree_core.dec_lock_ref.assert_called_once_with(1, receipt)
+    else:
+        assert lease.lock_params is None
+        cache.tree_core.inc_lock_ref.assert_not_called()
+    assert not runtime.physical_disabled
+    runtime.close()
+
+
+def test_handoff_extents_share_one_request_slot_and_release_together_on_pressure(monkeypatch):
+    runtime, (cold, _, _), cache = runtime_with_requests(monkeypatch)
+    key = runtime.visible[cold.rid]
+    root = NS(id=0, creation_time=0, parent=None)
+    nodes = {
+        1: NS(id=1, creation_time=2, parent=root),
+        2: NS(id=2, creation_time=3),
+    }
+    nodes[2].parent = nodes[1]
+    for node in nodes.values():
+        node.component_data = {0: NS(value=object()), 2: NS(value=object())}
+    receipts = {node_id: NS(node_id=node_id) for node_id in nodes}
+    cache.tree_core = NS(
+        node_by_id=nodes.__getitem__,
+        inc_lock_ref=Mock(side_effect=lambda node_id: NS(
+            to_dec_params=lambda: receipts[node_id],
+        )),
+        dec_lock_ref=Mock(),
+    )
+    cache.session_refs = NS(
+        _session_generations={key.session_id: key.session_generation},
+        _closed_session_ids=set(),
+    )
+    cache.host_pool_group = NS(entry_map={
+        "kv": NS(host_pool=NS(size_per_token=10)),
+        "mamba": NS(host_pool=NS(size_per_token=20)),
+    })
+    with patch.object(
+        runtime, "_current_residency_budget",
+        return_value=PrefetchResidencyBudget(1, 1024 ** 3, source="native_next_prefill"),
+    ), patch(
+        "beliefkv.runtime.sglang_v0520_observer.observe_unified_node_closure",
+        side_effect=lambda cache, node_id, **kwargs: NS(
+            observable=True, nodes=[
+                NS(node_id=n, full_device_tokens=100, mamba_device_present=True)
+                for n in range(1, node_id + 1)
+            ],
+        ),
+    ):
+        for node_id in nodes:
+            step = PrefetchLoadStep(key, 2, 3, node_id, nodes[node_id].creation_time)
+            action = PhysicalActionCompleted(
+                f"extent-{node_id}", "PREFETCH_GPU", key.context_id, key.context_epoch,
+                (node_id,), (("kv", 1000),), 1000,
+            )
+            runtime._prefetch_steps[action.command_id] = (step, "execution_handoff", None)
+            runtime._register_prefetch_service_lease(action)
+        assert runtime._prefetch_slot_available(key)
+    assert cache.tree_core.inc_lock_ref.call_count == 2
+    assert all(lease.lock_params is not None for lease in runtime._prefetch_service_leases.values())
+    runtime.on_prefill_candidate_result(req("other"), admitted=False, result="NO_TOKEN")
+    assert not runtime._prefetch_service_leases
+    cache.tree_core.dec_lock_ref.assert_any_call(1, receipts[1])
+    cache.tree_core.dec_lock_ref.assert_any_call(2, receipts[2])
+    assert cache.tree_core.dec_lock_ref.call_count == 2
+    assert not runtime.physical_disabled
+    runtime.close()
 
 
 @pytest.mark.parametrize("created", [2., np.float64(2.)])

@@ -121,6 +121,20 @@ receipt时仍标记legacy_batch_pool_presence，不能把关联数当成
 报告：`experiments/reports/tool_candidate_scan_cpu_156_20261009.json`。
 该修改用于后续冷启动，v13保持aa93dde冻结版本。
 
+v13运行中已发现实际恢复后驱逐：同一request/context/epoch的
+3个handoff extent在ACK后76--102ms失去原生驻留，随后原生再次
+恢复该检查点。对应租约均未获得native lock，完整祖先前缀约
+367MB，超过只按free-list计算的保护余量。这不是单纯的复用
+口径问题；纯原生合并批次仍不足以推导精确重复字节。
+后续handoff保护可使用原生free+evictable容量，预留下一批input、
+运行请求页增长及新Mamba slot；只锁已恢复数据，不凭此允许向
+已占用页传输。推测性JOIN/tool恢复仍只使用free-list余量。
+新handoff候选限制在下一批可准入名额，最多16个；同一请求的
+多个extent共享一个名额，字节仍保守按各锁闭包计入。真实NO_TOKEN
+会按request一并释放该handoff的锁，避免只解开重叠路径中的一个
+锁却没有释放可回收容量。首次服务、身份失效及3秒到期照常释放。
+这些修改位于独立工作树，须在v13冻结driver退出后冷启动核验。
+
 ## PREPARE 热点与 Handoff 身份修复
 
 本次修订基于 `e985d8c`，在独立工作树

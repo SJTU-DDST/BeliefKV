@@ -102,6 +102,22 @@ CPU time falls from 14.136s to 0.297s (97.90%). This does not establish GPU bene
 Report: experiments/reports/tool_candidate_scan_cpu_156_20261009.json.
 Commit in the follow-up worktree; deploy only after V13's frozen driver exits.
 
+The live V13 contains a concrete ACK -> native residency loss -> demand reload
+chain: three extents of the same request lose residency 76--102ms after ACK.
+Their leases are unlocked; an approximately 367MB ancestor prefix exceeds the
+free-list-only lock budget. This is actual residency loss, not just proof-v2
+metadata ambiguity. Legacy pure-native batches do not establish exact duplicate
+bytes.
+The follow-up uses native free+evictable capacity only to bound locks on already
+restored demand-handoff data, after retaining input/decode/Mamba reserves.
+Speculative JOIN/tool budgets remain free-list-only, and physical restore still
+requires real free allocations or a successful cold reclaim. New handoffs inspect
+only the next native admission slots (up to 16). Extents of one request share a
+slot; each closure remains conservatively charged. A real NO_TOKEN releases that
+demand request's handoff locks together so overlapping locks do not obstruct
+native fallback. First-service, invalidation and three-second expiry still apply.
+Keep V13 frozen and validate the revision in a later cold-start collection.
+
 ## Current PREPARE Cost And Handoff Fix
 
 Implemented in `/tmp/beliefkv-opportunity-20261009`, based on `e985d8c`.

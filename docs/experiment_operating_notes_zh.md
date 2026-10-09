@@ -48,6 +48,16 @@ H2D stream累计时间、ACK数和备份字节均不能独立证明收益。
 CPU长期等待样例的扫描降幅不能直接外推为GPU吞吐提升。v13代码
 仍冻结aa93dde，后续工作树提交在本轮driver退出后再部署。
 
+需求handoff的驻留保护按原生free+evictable容量计算；真正H2D仍
+要求已分配空闲页或实际冷回收，不能将可驱逐容量当成可直接写入
+的空间。JOIN/tool投机预取仍只用free-list余量。下一批input、
+decode页增长及Mamba slot先预留，同一请求多个extent只占一个
+准入名额；真实NO_TOKEN按request释放handoff锁，不能只释放一个
+重叠路径锁。闭包字节保守计入，3秒到期、失效和首次服务照常释放。
+v13已观察到同一请求ACK后76--102ms真实驻留丢失并随后原生重载；
+不得将这类负证据一概解释为tensor对象变化，也不能以旧合并批次
+的pool关联数推导精确重复字节。
+
 PREPARE根据下一批可准入需求与运行请求页增长选择时机。等待队列
 为空时不能只因缓存占满或Mamba free低就持续备份。已无备份步骤/
 Host不足的context观察延后一秒，新epoch立即重查，enqueue保留

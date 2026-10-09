@@ -4161,6 +4161,7 @@ class NativeAdmissionRuntime:
         if reason is not None:
             self.counts[f"prefetch_residency_registration_skipped:{reason}"] += 1
             return
+        budget = self._residency_budget
         try:
             from beliefkv.runtime.sglang_v0520_observer import observe_unified_node_closure
             observation = observe_unified_node_closure(cache, step.node_id, max_nodes=64)
@@ -4187,13 +4188,23 @@ class NativeAdmissionRuntime:
                         current = current.parent
                     if already_protected:
                         break
-            budget = self._current_residency_budget()
+            budget = self._current_residency_budget(
+                include_evictable=source == "execution_handoff",
+            )
             if (
                 observation.observable and not already_protected
-                and sum(
-                    item.lock_params is not None
-                    for item in self._prefetch_service_leases.values()
-                ) < budget.request_slots
+                and budget.request_slots > 0
+                and (
+                    any(
+                        item.key == step.key and item.lock_params is not None
+                        for item in self._prefetch_service_leases.values()
+                    )
+                    or len({
+                        item.key
+                        for item in self._prefetch_service_leases.values()
+                        if item.lock_params is not None
+                    }) < budget.request_slots
+                )
                 and protected_bytes + sum(
                     lease.protected_bytes for lease in self._prefetch_service_leases.values()
                 ) <= budget.byte_limit
@@ -4233,8 +4244,8 @@ class NativeAdmissionRuntime:
                 "lease_ms": (lease.expires_at - now) * 1000,
                 "native_locked": lock_params is not None,
                 "protected_bytes": protected_bytes,
-                "budget": asdict(self._residency_budget),
-                "scope": "native receipt lock bounded by next-prefill slots and free pool headroom",
+                "budget": asdict(budget),
+                "scope": "native receipt lock bounded by next-prefill slots and schedulable capacity",
             })
 
     def _observe_native_admission_capacity(
@@ -4258,7 +4269,9 @@ class NativeAdmissionRuntime:
             0, int(getattr(adder, "rem_input_tokens", 0)),
         )
 
-    def _current_residency_budget(self) -> PrefetchResidencyBudget:
+    def _current_residency_budget(
+        self, *, include_evictable: bool = False,
+    ) -> PrefetchResidencyBudget:
         if self._native_max_running is None or self._native_prefill_slots is None:
             return self._residency_budget
         cache = self._native_cache
@@ -4276,6 +4289,21 @@ class NativeAdmissionRuntime:
                 self._residency_budget = PrefetchResidencyBudget(4, 1024 ** 3)
                 return self._residency_budget
             running = len(getattr(self._native_running_batch, "reqs", ()))
+            full_evictable, mamba_evictable = 0, 0
+            if include_evictable:
+                # Demand handoff pins existing pages for the next native batch;
+                # it does not allocate these bytes a second time.
+                try:
+                    full_count = cache.full_evictable_size()
+                    mamba_count = cache.mamba_evictable_size()
+                    if (
+                        type(full_count) is int and type(mamba_count) is int
+                        and 0 <= full_count <= cache.token_to_kv_pool_allocator.size
+                        and 0 <= mamba_count <= cache.req_to_token_pool.mamba_pool.size
+                    ):
+                        full_evictable, mamba_evictable = full_count, mamba_count
+                except (AttributeError, KeyError, TypeError, ValueError, RuntimeError):
+                    pass
             self._residency_budget = native_residency_budget(
                 running_requests=running,
                 max_running_requests=self._native_max_running,
@@ -4291,6 +4319,8 @@ class NativeAdmissionRuntime:
                     lease.protected_bytes
                     for lease in self._prefetch_service_leases.values()
                 ),
+                evictable_full_tokens=full_evictable,
+                evictable_mamba_slots=mamba_evictable,
             )
         except (AttributeError, KeyError, TypeError, ValueError, RuntimeError):
             self._residency_budget = PrefetchResidencyBudget(4, 1024 ** 3)
@@ -4303,7 +4333,8 @@ class NativeAdmissionRuntime:
             if lease.lock_params is not None
         ]
         return budget.request_slots > 0 and (
-            any(lease.key == key for lease in locked) or len(locked) < budget.request_slots
+            any(lease.key == key for lease in locked)
+            or len({lease.key for lease in locked}) < budget.request_slots
         )
 
     def _executable_waiting_key(self, req: object) -> PrefillCandidateKey | None:
@@ -4438,7 +4469,8 @@ class NativeAdmissionRuntime:
                 waiting_queue, running_batch=running_batch, adder=None,
             )
             by_id = {getattr(req, "rid", None): req for req in waiting_queue}
-            for key in plan.prioritized[:16]:
+            frontier_slots = min(16, self._current_residency_budget().request_slots)
+            for key in plan.prioritized[:frontier_slots]:
                 request = by_id[key.request_id]
                 if key in self._execution_handoff_attempted:
                     continue
@@ -5273,9 +5305,18 @@ class NativeAdmissionRuntime:
                         2 if lease.demand_ready else 1 if lease.reentry_ready_at is not None else 0,
                         lease.acknowledged_at,
                     ))
-                    self._release_prefetch_service_lease(
-                        victim.command_id, "allocation_pressure",
+                    # All extents of one demand restore share a request slot.
+                    # Releasing only one overlapping path lock may free no pages.
+                    victims = (
+                        [
+                            lease for lease in locked
+                            if lease.source == "execution_handoff" and lease.key == victim.key
+                        ] if victim.source == "execution_handoff" else [victim]
                     )
+                    for lease in victims:
+                        self._release_prefetch_service_lease(
+                            lease.command_id, "allocation_pressure",
+                        )
 
     def on_batch_selected(self, batch: object) -> None:
         pass

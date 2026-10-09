@@ -57,6 +57,62 @@ def test_budget_preserves_running_growth_and_new_prefill_space():
     assert budget.byte_limit == 4096
 
 
+def test_demand_residency_can_pin_existing_cache_without_spending_prefill_reserve():
+    values = capacity(
+        full_free_tokens=10, mamba_free_slots=1,
+        evictable_full_tokens=20_000, evictable_mamba_slots=12,
+    )
+    budget = native_residency_budget(**values)
+    assert budget.request_slots == 8
+    assert budget.byte_limit == (
+        (20_010 - budget.reserve_full_tokens) * values["full_bytes_per_token"]
+        + (13 - budget.reserve_mamba_slots) * values["mamba_bytes_per_slot"]
+    )
+    assert budget.evictable_full_tokens == 20_000
+    assert budget.evictable_mamba_slots == 12
+    assert native_residency_budget(**{
+        **values, "evictable_full_tokens": 0, "evictable_mamba_slots": 0,
+    }).byte_limit == 0
+
+
+@pytest.mark.parametrize("evictable_full", [10_000, -1, 50_000])
+def test_runtime_uses_validated_evictable_capacity_only_for_demand_handoff(evictable_full):
+    from beliefkv.runtime.sglang_v0520_runtime import NativeAdmissionRuntime
+    runtime = NativeAdmissionRuntime()
+    runtime._native_max_running, runtime._native_prefill_slots = 48, 8
+    runtime._native_page_size, runtime._native_input_reserve = 16, 100
+    runtime._native_running_batch = NS(reqs=[NS()] * 46)
+    runtime._native_cache = NS(
+        req_to_token_pool=NS(
+            available_size=lambda: 5, mamba_pool=NS(size=10),
+        ),
+        token_to_kv_pool_allocator=NS(size=40_000),
+        host_pool_group=NS(entry_map={
+            "kv": NS(host_pool=NS(size_per_token=10)),
+            "mamba": NS(host_pool=NS(size_per_token=64)),
+        }),
+        full_evictable_size=lambda: evictable_full,
+        mamba_evictable_size=lambda: 4,
+    )
+    with patch(
+        "beliefkv.runtime.sglang_v0520_runtime.observe_static_full_mamba_headroom",
+        return_value=StaticPoolHeadroomObservation(
+            True, device_full_free_tokens=10, device_mamba_free_slots=0,
+        ),
+    ):
+        assert runtime._current_residency_budget().byte_limit == 0
+        demand = runtime._current_residency_budget(include_evictable=True)
+        assert demand.request_slots == 2
+        if evictable_full == 10_000:
+            assert demand.byte_limit == (10_010 - 868) * 10 + 2 * 64
+            assert demand.evictable_full_tokens == 10_000
+        else:
+            assert demand.byte_limit == 0
+            assert demand.evictable_full_tokens == 0
+        assert runtime._current_residency_budget().evictable_full_tokens == 0
+    runtime.close()
+
+
 def test_start_window_includes_submit_delay_without_scaling_it_by_bytes():
     estimate = NativeServiceEstimate(50., 120., 80., 8, "matched_pool_shape_and_size")
     window = transfer_start_window(
@@ -201,7 +257,7 @@ def test_prepare_rejects_window_too_short_to_copy_then_prefetch():
     runtime, hint = tool_runtime()
     headroom = prepare_cache(runtime)
     runtime._native_service_samples.extend([
-        NativeServiceSample(1100, 300., "d2h", "hybrid", 50.),
+        NativeServiceSample(1000, 300., "d2h", "full", 50.),
     ] * 3)
     step = ShadowBackupStep(hint.key, 11, 4, 11, 4)
     assert runtime._prepare_step_rank(
@@ -321,7 +377,7 @@ def test_prepare_sampling_reuses_h2d_closure_but_later_actions_read_fresh():
         runtime._observe_prepare_opportunity(key, row, h2d)
         capture.assert_not_called()
         assert row["prepare_required_full_tokens"] == 20
-        assert row["prepare_required_mamba_slots"] == 1
+        assert row["prepare_required_mamba_slots"] == 0
         assert row["prepare_reason"] == "fits_current_host_free_lists"
         assert runtime.refreshed_shadow_backup_step(
             context_id=key.context_id, source="join_prepare",

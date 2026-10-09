@@ -40,6 +40,8 @@ class PrefetchResidencyBudget:
     reserve_full_tokens: int = 0
     reserve_mamba_slots: int = 0
     source: str = "legacy_capacity_unavailable"
+    evictable_full_tokens: int = 0
+    evictable_mamba_slots: int = 0
 
 
 def native_residency_budget(
@@ -55,6 +57,8 @@ def native_residency_budget(
     full_bytes_per_token: int,
     mamba_bytes_per_slot: int,
     protected_bytes: int,
+    evictable_full_tokens: int = 0,
+    evictable_mamba_slots: int = 0,
 ) -> PrefetchResidencyBudget:
     # A full decode batch may overlap one frontier restore with its next
     # completion. This allowance never substitutes for native admission.
@@ -67,9 +71,10 @@ def native_residency_budget(
     )
     mamba_reserve = slots
     byte_limit = max(0, protected_bytes) + (
-        max(0, full_free_tokens - full_reserve) * full_bytes_per_token
-        + max(0, mamba_free_slots - mamba_reserve) * mamba_bytes_per_slot
+        max(0, full_free_tokens + evictable_full_tokens - full_reserve) * full_bytes_per_token
+        + max(0, mamba_free_slots + evictable_mamba_slots - mamba_reserve) * mamba_bytes_per_slot
     )
     return PrefetchResidencyBudget(
         slots, byte_limit, full_reserve, mamba_reserve, "native_next_prefill",
+        evictable_full_tokens, evictable_mamba_slots,
     )
