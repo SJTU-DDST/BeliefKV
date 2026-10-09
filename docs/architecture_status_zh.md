@@ -241,6 +241,22 @@ completed、2个incomplete、0个error，6个未结束。物理动作保持启�
 root响应以length结束且未完成任务。尚无已证实的实现故障，不能因
 自然未完成而停止本轮。完整driver及后处理仍在运行。
 
+04:54 CST运行中来源审计：JOIN/tool提前恢复642次/10.901 GB，
+需求handoff14667个节点命令/125.505 GB，原生H2D为3532.278 GB，
+未知受控来源为0。handoff的FULL传输70.517 GB、确认首次复用
+70.128 GB，ACK到服务P50为25 ms；JOIN/tool的FULL分别传输
+0.981/3.610 GB、确认复用0.620/2.639 GB，ACK到服务P50仍为
+4584/2813 ms。需求恢复的消费明显改善，但不能用handoff替代
+提前预测传输的验收。1130次PREPARE ACK中206次关联后续恢复；
+702次后续同node/pool D2H均有中间Host驱逐，应继续减少回收后
+补传，不能称为覆盖有效FULL。上述为运行中快照，不是吞吐结论。
+74个不同child请求的原生EOS到客户端finish P50为1242 ms，
+JOIN到parent提交628 ms，其中关闭HTTP区间重叠406 ms；
+重叠不等于可直接扣除的JCT收益，部署后的共用路径仍需实测。
+报告：`experiments/reports/v14_h2d_sources_partial_20261010_0454.json`、
+`experiments/reports/v14_prefetch_sources_partial_20261010_0454.json`、
+`experiments/reports/v14_join_pipeline_partial_20261010_0454.json`。
+
 下一版代码已提交至隔离分支edbe4dc，包括reentry、闭包观察、SDK
 请求与流式转换、工具碎片解析、异步终态session关闭和终态采样。
 完整SGLang patch的SHA256为

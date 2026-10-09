@@ -125,6 +125,15 @@ child请求的JOIN到提交P50为695ms，关闭HTTP重叠P50为419ms；
 正向upstream及反向候选适配检查通过；部署前比较服务目录，避免
 重复应用已存在的Mamba冷回收辅助逻辑。
 
+04:54 CST审计中handoff的FULL传输/确认首次复用为70.517/70.128 GB，
+ACK到服务P50为25 ms；JOIN/tool等待仍为4584/2813 ms。三类来源
+必须分开。1130次PREPARE ACK中的206次后续恢复只是关联证据；
+702次后续同节点D2H均有Host驱逐，不能称为覆盖有效FULL。74个
+不同child的EOS到客户端finish P50仍为1242 ms，JOIN到提交628 ms，
+关闭HTTP重叠406 ms；部署后需按相同边界检验延迟，不能把区间
+重叠直接计为吞吐收益。三个新快照报告的文件名均带
+`partial_20261010_0454`，最终结果另行生成，不覆盖这些运行记录。
+
 v15用既有`scripts/run_qwen35_semantic_h2d_ab.sh`执行
 `ARM_ORDER="predictive_h2d native"`，两侧均使用最新共用客户端路径
 并分别冷启动。同一156任务、108+48/3600s到达表、模型/预测产物、

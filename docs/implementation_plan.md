@@ -199,6 +199,16 @@ Deployment and next comparison:
   django11087 lacks semantic completion; django11555 ends with two length
   responses and no completion. No implementation fault has been established.
   Keep the whole running driver and its export/cleanup frozen.
+- The04:54 CST source snapshot has642 JOIN/tool commands/10.901GB,
+  14667 demand-handoff node commands/125.505GB and3532.278GB native H2D,
+  with no unknown controlled source. Handoff FULL transfer/reuse is
+  70.517/70.128GB and ACK-to-service P50 is25ms; JOIN/tool still wait
+  4584/2813ms. Do not credit demand handoff as anticipatory prediction.
+  PREPARE has1130 ACKs/206 restoration associations; all702 later same-node/
+  pool D2H associations have intervening Host eviction. Reduce reclaim and
+  re-backup, not valid-copy reuse. Unique-child EOS-to-finish P50 is1242ms,
+  JOIN-to-parent-submit628ms, with406ms overlapping close HTTP. These are
+  running snapshots and overlap evidence, not an isolated JCT/throughput gain.
 - Follow-up code is committed through edbe4dc. Its complete staging patch
   SHA256 is dbde39b7f37977ecacd72dddf78b3da94a56fa6a0879afb1798ae55ab7f1fe63.
   Candidate reverse-check and pristine upstream temporary-index forward-check
