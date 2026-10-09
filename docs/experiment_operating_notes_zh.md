@@ -116,6 +116,24 @@ child请求的JOIN到提交P50为695ms，关闭HTTP重叠P50为419ms；
 `experiments/reports/v15_terminal_sampling_cpu_final_20261010.json`及
 `experiments/reports/v15_terminal_sampling_cpu_depth24_final_20261010.json`。
 
+2026-10-10 04:51 CST：v14已终态150个，148 completed、2 incomplete、
+0 error，仍有6个未结束；physical_disabled=false、语义worker无错误。
+两个自然未完成尚无实现故障证据，不因此中止采集。完整driver、
+审计、HTML与workspace清理结束后，部署隔离分支截至edbe4dc的
+提交。候选完整patch SHA256为
+`dbde39b7f37977ecacd72dddf78b3da94a56fa6a0879afb1798ae55ab7f1fe63`，
+正向upstream及反向候选适配检查通过；部署前比较服务目录，避免
+重复应用已存在的Mamba冷回收辅助逻辑。
+
+v15用既有`scripts/run_qwen35_semantic_h2d_ab.sh`执行
+`ARM_ORDER="predictive_h2d native"`，两侧均使用最新共用客户端路径
+并分别冷启动。同一156任务、108+48/3600s到达表、模型/预测产物、
+容量、prompt、seed21及预算不变，不将旧native当作新版唯一对照。
+模型产物位于主目录未跟踪的`experiments/models`，隔离工作树
+不含这些文件，启动时沿用主目录真实路径。完整driver会生成来源
+审计、HTML及workspace清理记录；不得仅凭客户端summary存在就
+更新服务文件。此对照不替代正式实验的多轮平均。
+
 v13最终审计应读取独立的final报告及来源v2口径。提前JOIN/tool为
 760次/11.824 GB，需求handoff为18008次/158.846 GB；旧动作报告
 的PREFETCH_GPU合计不得用于预测覆盖。ACK到服务须按来源分别

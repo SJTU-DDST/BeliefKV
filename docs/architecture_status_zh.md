@@ -234,6 +234,31 @@ native观察次数一致，单独记录wall/thread CPU和源码哈希。
 `experiments/reports/v15_terminal_sampling_cpu_final_20261010.json`、
 `experiments/reports/v15_terminal_sampling_cpu_depth24_final_20261010.json`。
 
+2026-10-10 04:51 CST运行快照：150个workflow已有终态，其中148个
+completed、2个incomplete、0个error，6个未结束。物理动作保持启用，
+语义worker无错误，PREPARE仍为missing_full_prefix。两个incomplete
+分别为django-11087与django-11555；前者没有语义终态，后者末两次
+root响应以length结束且未完成任务。尚无已证实的实现故障，不能因
+自然未完成而停止本轮。完整driver及后处理仍在运行。
+
+下一版代码已提交至隔离分支edbe4dc，包括reentry、闭包观察、SDK
+请求与流式转换、工具碎片解析、异步终态session关闭和终态采样。
+完整SGLang patch的SHA256为
+`dbde39b7f37977ecacd72dddf78b3da94a56fa6a0879afb1798ae55ab7f1fe63`；
+与候选引擎反向检查及对原始upstream临时index的正向检查均通过。
+部署时须比较完整patch与当前服务目录，不能直接叠加候选引擎的
+全部未提交diff，其中必要Mamba冷回收辅助逻辑可能已在v14存在。
+v14完整driver、审计、HTML与workspace清理退出后，再统一部署。
+
+下一轮v15使用既有双arm驱动，顺序为predictive_h2d、native，
+两侧各冷启动，采用同一最新代码、模型/预测头及156任务108+48到达
+配置。SDK请求/流式/工具解析与终态关闭优化均在native、reactive、
+predictive的共用harness生效，不能只更新predictive后沿用v10 native
+作为收益结论。分别报告JOIN/tool提前恢复、需求handoff、原生H2D，
+核对FULL首次复用、ACK到服务、重复恢复、PREPARE回收后补传、
+重算、吞吐和JCT。同seed不保证同轨迹；本轮仍为开发对照，正式
+实验的多轮平均要求保持不变。
+
 最终报告：
 `experiments/reports/v13_h2d_sources_final_20261010.json`、
 `experiments/reports/v13_prefetch_sources_final_20261010.json`、

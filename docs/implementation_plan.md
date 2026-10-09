@@ -192,6 +192,37 @@ Current status:
 - V13 cleanup removed154 archived workspaces and retained two forensic
   workspaces. Preserve summaries, patches, telemetry, final reports and HTML.
 
+Deployment and next comparison:
+- At2026-10-10 04:51 CST, V14 has150 terminal results:148 completed,
+  two incomplete, no errors, six pending. Physical actions remain enabled,
+  semantic_worker_error is empty and PREPARE remains missing_full_prefix.
+  django11087 lacks semantic completion; django11555 ends with two length
+  responses and no completion. No implementation fault has been established.
+  Keep the whole running driver and its export/cleanup frozen.
+- Follow-up code is committed through edbe4dc. Its complete staging patch
+  SHA256 is dbde39b7f37977ecacd72dddf78b3da94a56fa6a0879afb1798ae55ab7f1fe63.
+  Candidate reverse-check and pristine upstream temporary-index forward-check
+  passed. Compare the complete patch with the live engine before deployment;
+  do not blindly apply the candidate's whole unstaged delta because the live
+  engine already contains some necessary Mamba cold-demotion helpers.
+- After the entire V14 driver, audits, HTML and workspace cleanup exit,
+  deploy the committed package and run V15 with the existing full AB driver
+  in predictive_h2d/native order, fresh server and cache for each arm.
+  Keep156 tasks,108+48 arrivals separated by3600s, running48,
+  Host200GB80:20, HBM ratio0.9, context131072/completion8192,
+  graph2048/reserve32, workflow14400s, fanout native_in_graph_2to4,
+  seed21/temperature0, lead500ms and the same model artifacts.
+- Shared SDK payload, raw-stream, tool-fragment and deferred-session-close
+  improvements apply to native as well as reactive/predictive. A fresh native
+  arm with this same package is required for a native-relative gain claim;
+  V10 native remains historical development evidence.
+- Keep anticipation JOIN/tool, submitted-demand handoff and native H2D
+  separate. Evaluate actual FULL reuse, restore-to-service delay/reloads,
+  PREPARE reclaim/re-backup, recomputation, throughput and JCT. Same seed does
+  not fix model trajectories. Formal paired repetition remains later work.
+  Main's ignored experiments/models contains the actual artifact files;
+  retain those paths rather than using absent isolated-worktree defaults.
+
 Final source/consumption/pipeline reports are in experiments/reports:
 v13_h2d_sources_final_20261010.json,
 v13_prefetch_sources_final_20261010.json,
