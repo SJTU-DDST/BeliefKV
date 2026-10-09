@@ -1,6 +1,6 @@
 # BeliefKV Current Execution Plan
 
-Status date: 2026-10-09.
+Status date: 2026-10-10.
 
 ## Current Objective And V13
 
@@ -156,6 +156,16 @@ The live partial V13 snapshot has JOIN/tool 9.927GB, handoff134.073GB,
 native3486.746GB and 16.466MB unclassified tagged payload. This is not terminal
 throughput evidence. Report: experiments/reports/v13_h2d_sources_partial_20261009_2356.json.
 Keep the frozen collection/report unchanged; apply the audit in the follow-up.
+
+Service-completion telemetry now indexes the current batch by request_id once
+instead of searching the batch separately for every sample. Preserve request
+filtering/reordering and output-token attribution. The CPU fixture compares full
+service records and token maps, using 16/48 requests with and without removals.
+At 48 requests the median interval falls 116.04 -> 43.04us; with removals,
+102.39 -> 33.53us. Fifty-two existing telemetry/timeline/restore-probe checks pass.
+Report: experiments/reports/native_service_lookup_cpu_48_20261010.json.
+The fixture excludes writer, DMA and GPU, and does not establish throughput.
+Deploy only after the frozen V13 driver exits.
 
 ## Current PREPARE Cost And Handoff Fix
 

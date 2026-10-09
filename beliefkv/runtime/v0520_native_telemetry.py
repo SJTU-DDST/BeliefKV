@@ -1221,9 +1221,12 @@ class NativeReactiveTelemetry:
             self._previous_completed_mono or descriptor["launch_mono"],
         )
         self._previous_completed_mono = complete_mono
+        requests_by_id = {}
+        for req in batch.reqs:
+            requests_by_id.setdefault(req.rid, req)
         for sample in descriptor["request_samples"]:
             rid = sample["request_id"]
-            req = next((item for item in batch.reqs if item.rid == rid), None)
+            req = requests_by_id.get(rid)
             if req is None:
                 continue
             if rid in self._completed:
