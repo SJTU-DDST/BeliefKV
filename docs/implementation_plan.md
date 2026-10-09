@@ -179,6 +179,17 @@ FULL-only PREPARE reclaim correction:
   proves candidate/reclaim behavior, not recovered-opportunity count or GPU gain.
 - Keep V13 frozen; deploy with the other follow-up commits after its driver exits.
 
+Restore-ready admission with an aged head:
+- Preserve ordinary age ordering but remove the permanent veto after a head
+  has waited ten seconds. Allow one submitted, demand-ready restore only after
+  four ordinary admissions when an aged head is present.
+- Keep the existing dynamic quota for unaged heads, native capacity checks and
+  actual residency checks. Failed admission does not spend the ordinary quota.
+- Record bounded aged-head bypass attempts and admissions separately.
+- 191 related CPU checks passed, including three consecutive 4:1 admission
+  cycles and rejected admission. Validate service/reload reduction and costs
+  to other workflows in the next cold start; do not claim a GPU improvement yet.
+
 ## Current PREPARE Cost And Handoff Fix
 
 Implemented in `/tmp/beliefkv-opportunity-20261009`, based on `e985d8c`.

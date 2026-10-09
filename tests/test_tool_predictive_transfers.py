@@ -15,7 +15,7 @@ from beliefkv.runtime.sglang_v0520_prediction import (
 )
 from beliefkv.runtime.sglang_v0520_physical import PrefetchLoadStep, PhysicalActionCompleted
 from beliefkv.runtime.sglang_v0520_runtime import NativeAdmissionRuntime
-from beliefkv.runtime.native_transfer_policy import TransferStartWindow
+from beliefkv.runtime.native_transfer_policy import PrefetchResidencyBudget, TransferStartWindow
 from tests.test_sglang_v0520_runtime import req, select
 
 
@@ -377,15 +377,53 @@ def test_restore_ready_priority_finds_request_beyond_first_32_candidates():
     assert runtime._prefetch_priority_native_rank == 64
 
 
-def test_aged_ordinary_head_keeps_its_turn_even_when_restore_is_ready():
+def test_aged_ordinary_head_keeps_its_turn_until_four_normal_admissions():
+    runtime, _, _, _, _, _ = locked_runtime()
+    restored = submit_restored_request(runtime)
+    ordinary = req("ordinary")
+    runtime.register_visible_request(ordinary)
+    runtime._visible_since[ordinary.rid] = time.monotonic() - 11.
+    runtime._prefetch_priority_normal_admissions = 3
+    with patch.object(runtime, "_causal_rank", side_effect=lambda req, index, ranks: (0, 0, index)), \
+         patch.object(runtime, "_current_residency_budget", return_value=PrefetchResidencyBudget(
+             2, 1024, source="native_next_prefill",
+         )):
+        assert select(runtime, [ordinary, restored]).candidates[0] is ordinary
+    assert runtime.counts["prefetch_priority_aged_head_kept"] == 1
+
+
+def test_ready_restore_gets_one_turn_after_four_admissions_even_with_aged_head():
+    runtime, _, _, _, _, _ = locked_runtime()
+    restored = submit_restored_request(runtime)
+    ordinary = req("ordinary")
+    runtime.register_visible_request(ordinary)
+    runtime._visible_since[ordinary.rid] = time.monotonic() - 11.
+    rows = []
+    runtime._opportunity_writer = NS(record=rows.append)
+    with patch.object(runtime, "_causal_rank", side_effect=lambda req, index, ranks: (0, 0, index)):
+        for _ in range(3):
+            assert select(runtime, [ordinary, restored]).candidates[0] is restored
+            runtime.on_prefill_candidate_result(restored, admitted=True, result="ok")
+            for _ in range(4):
+                assert select(runtime, [ordinary, restored]).candidates[0] is ordinary
+                runtime.on_prefill_candidate_result(ordinary, admitted=True, result="ok")
+    assert runtime.counts["prefetch_priority_aged_head_bypass_admitted"] == 3
+    assert [row["aged_head_bounded_bypass"] for row in rows] == [True] * 3
+    assert runtime.counts["native_admitted"] == 15
+
+
+def test_failed_ready_restore_does_not_consume_ordinary_admission_quota():
     runtime, _, _, _, _, _ = locked_runtime()
     restored = submit_restored_request(runtime)
     ordinary = req("ordinary")
     runtime.register_visible_request(ordinary)
     runtime._visible_since[ordinary.rid] = time.monotonic() - 11.
     with patch.object(runtime, "_causal_rank", side_effect=lambda req, index, ranks: (0, 0, index)):
-        assert select(runtime, [ordinary, restored]).candidates[0] is ordinary
-    assert runtime.counts["prefetch_priority_aged_head_kept"] == 1
+        assert select(runtime, [ordinary, restored]).candidates[0] is restored
+        runtime.on_prefill_candidate_result(restored, admitted=False, result="OTHER")
+        assert runtime._prefetch_priority_normal_admissions == 4
+        assert runtime.counts["prefetch_priority_admitted"] == 0
+        assert runtime.counts["prefetch_priority_aged_head_bypass_admitted"] == 0
 
 
 def test_aging_applies_across_causal_classes_not_only_the_queue_head():

@@ -301,6 +301,7 @@ class NativeAdmissionRuntime:
         self._prefetch_priority_normal_admissions = 4
         self._prefetch_priority_promoted: str | None = None
         self._prefetch_priority_native_rank: int | None = None
+        self._prefetch_priority_aged_head_bypassed = False
         self._native_running_batch: object | None = None
         self._native_max_running: int | None = None
         self._native_prefill_slots: int | None = None
@@ -5107,6 +5108,7 @@ class NativeAdmissionRuntime:
         self._final_priority_native_rank = None
         self._prefetch_priority_promoted = None
         self._prefetch_priority_native_rank = None
+        self._prefetch_priority_aged_head_bypassed = False
         priority_candidates = []
         ready_restores = sum(
             lease.demand_ready for lease in self._prefetch_service_leases.values()
@@ -5142,19 +5144,25 @@ class NativeAdmissionRuntime:
             if priority_candidates:
                 candidate = min(priority_candidates, key=lambda item: item[:2])[2]
                 native_rank = ordered.index(candidate)
-                # An aged native head keeps its next turn; speculative restores
-                # cannot perpetually defer an ordinary request's admission.
+                # Aged requests keep four ordinary admissions between restored
+                # requests; an aged head must not disable restore consumption.
                 head = keys[ordered[0][0]]
                 priority_now = time.monotonic()
                 aged_head = head is not None and (
                     priority_now - self._visible_since.get(head.request_id, priority_now) >= 10.
                 )
-                if native_rank > 0 and not aged_head:
+                ordinary_quota_met = self._prefetch_priority_normal_admissions >= (
+                    4 if aged_head else restore_stride
+                )
+                if native_rank > 0 and ordinary_quota_met:
                     ordered.remove(candidate)
                     ordered.insert(0, candidate)
                     self._prefetch_priority_promoted = candidate[1].rid
                     self._prefetch_priority_native_rank = native_rank
+                    self._prefetch_priority_aged_head_bypassed = aged_head
                     self.counts["prefetch_priority_ordered"] += 1
+                    if aged_head:
+                        self.counts["prefetch_priority_aged_head_bounded_bypass"] += 1
                 elif aged_head:
                     self.counts["prefetch_priority_aged_head_kept"] += 1
         if (
@@ -5269,12 +5277,15 @@ class NativeAdmissionRuntime:
                     self._prefetch_priority_normal_admissions = 0
                     if req.rid == self._prefetch_priority_promoted:
                         self.counts["prefetch_priority_admitted"] += 1
+                        if self._prefetch_priority_aged_head_bypassed:
+                            self.counts["prefetch_priority_aged_head_bypass_admitted"] += 1
                         if self._opportunity_writer is not None:
                             self._opportunity_writer.record({
                                 "event": "restore_ready_priority_admitted",
                                 "ts_ms": time.time() * 1000,
                                 "request_id": req.rid,
                                 "tagged_displaced": self._prefetch_priority_native_rank,
+                                "aged_head_bounded_bypass": self._prefetch_priority_aged_head_bypassed,
                                 "queue_wait_ms": (
                                     time.monotonic() - self._visible_since.get(req.rid, time.monotonic())
                                 ) * 1000.,
