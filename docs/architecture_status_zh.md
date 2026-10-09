@@ -207,6 +207,18 @@ v13保持冻结；该修订在driver退出后部署并以同配置冷启动验�
 该改变针对ACK到服务和再次丢失，尚无其GPU吞吐或其他workflow
 延迟代价的实测结论；同样在v13结束后的冷启动中验证。
 
+生命周期审计新增按join_ticket/tool_wait/execution_handoff分组的
+FULL传输、首次复用字节与ACK到服务分布；只统计实际携带FULL的
+命令，分池字节使用已核对physical ACK，缺失旧证据单独报告。
+17项相关审计检查通过。v13局部样本的JOIN/tool/handoff等待P50
+分别为7861.71/3220.14/815.37ms，合并P50为1047.01ms，不能用
+合并值证明JOIN及时消费。JOIN确认FULL复用0.424/传输0.880GB，
+tool为2.695/3.833GB；这些是节点命令与proof v2字节，非独立
+workflow样本或端到端收益。局部报告：
+`experiments/reports/v13_prefetch_sources_partial_20261010_0034.json`。
+同一局部样本12889次后续同节点D2H之前均有Host驱逐，继续支持
+备份回收后补传的解释。冻结driver输出保留，修订报告另行生成。
+
 ## PREPARE 热点与 Handoff 身份修复
 
 本次修订基于 `e985d8c`，在独立工作树

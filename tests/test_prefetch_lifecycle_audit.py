@@ -39,6 +39,65 @@ def test_lifecycle_keeps_expired_but_reused_and_missing_use_distinct(tmp_path):
     assert result["rows"][0]["lease_events"][0]["reason"] == "service_window_expired"
     assert result["summary"]["redemoted_before_first_service"] == 0
     assert result["rows"][1]["actual_bytes"] is None
+    assert result["summary"]["by_source"]["join_ticket"]["full_reused_commands"] == 1
+    assert result["summary"]["by_source"]["join_ticket"]["full_pool_bytes_unknown_commands"] == 1
+    assert result["summary"]["by_source"]["tool_wait"]["acknowledged_commands"] == 0
+
+
+def test_lifecycle_source_full_reuse_does_not_mix_handoff_or_mamba_only(tmp_path):
+    sources = {"join": "join_ticket", "tool": "tool_wait", "handoff": "execution_handoff"}
+    write_rows(tmp_path / "opportunities/admission_opportunities.jsonl", [
+        {"event": "prefetch_native_issued", "command_id": command,
+         "source": source, "workflow_id": "w", "context_id": command,
+         "context_epoch": 1, "node_id": index, "ts_ms": 1.}
+        for index, (command, source) in enumerate(sources.items(), 1)
+    ])
+    write_rows(tmp_path / "server/transfer_telemetry.jsonl", [
+        {"direction": "h2d", "node_ids": [index], "submit_ts_ms": 2.,
+         "complete_ts_ms": 3., "tagged_child_commits": [
+             {"command_id": command, "num_bytes": 640 if command == "tool" else 100,
+              "num_tokens_by_pool": {"mamba": 1} if command == "tool" else {"kv": 5}},
+         ]}
+        for index, command in enumerate(sources, 1)
+    ])
+    write_rows(tmp_path / "server/physical_action_ack.jsonl", [
+        {"command_id": command, "action": "PREFETCH_GPU",
+         "pool_bytes": {"mamba": 640} if command == "tool" else {"kv": 100}}
+        for command in sources
+    ])
+    write_rows(tmp_path / "server/physical_action_use.jsonl", [
+        {"event": "beliefkv_prefetch_first_service", "command_id": command,
+         "ack_ts_ms": 3., "first_service_ts_ms": 4. if command == "join" else 1003.,
+         "full_node_reused": command != "join", "full_reuse_proof_version": 2}
+        for command in sources
+    ])
+    summaries = audit(tmp_path)["summary"]["by_source"]
+    assert summaries["join_ticket"]["full_verified_reused_bytes_known"] == 0
+    assert summaries["join_ticket"]["ack_to_first_service_ms"]["p50"] == 1.
+    assert summaries["tool_wait"]["full_transfer_commands"] == 0
+    assert summaries["tool_wait"]["full_reused_commands"] == 0
+    assert summaries["execution_handoff"]["full_verified_reused_bytes_known"] == 100
+    assert summaries["execution_handoff"]["ack_to_first_service_ms"]["p50"] == 1000.
+
+
+def test_lifecycle_rejects_inconsistent_ack_pool_bytes(tmp_path):
+    import pytest
+
+    write_rows(tmp_path / "opportunities/admission_opportunities.jsonl", [
+        {"event": "prefetch_native_issued", "command_id": "prefetch",
+         "source": "join_ticket", "workflow_id": "w", "context_id": "c",
+         "context_epoch": 1, "node_id": 1, "ts_ms": 1.},
+    ])
+    write_rows(tmp_path / "server/transfer_telemetry.jsonl", [
+        {"direction": "h2d", "node_ids": [1], "submit_ts_ms": 2., "complete_ts_ms": 3.,
+         "tagged_child_commits": [{"command_id": "prefetch", "num_bytes": 100,
+                                  "num_tokens_by_pool": {"kv": 5}}]},
+    ])
+    write_rows(tmp_path / "server/physical_action_ack.jsonl", [
+        {"command_id": "prefetch", "action": "PREFETCH_GPU", "pool_bytes": {"kv": 101}},
+    ])
+    with pytest.raises(ValueError, match="physical ACK pool bytes disagree"):
+        audit(tmp_path)
 
 
 def test_prepare_restore_tracks_real_pool_receipts_and_later_writer():

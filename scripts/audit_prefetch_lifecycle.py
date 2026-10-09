@@ -31,6 +31,37 @@ def distribution(values) -> dict:
     }
 
 
+def source_summary(rows: list[dict]) -> dict:
+    full = [row for row in rows if (row["pool_units"] or {}).get("kv", 0) > 0]
+    known_full = [row for row in full if row["pool_bytes"] is not None]
+    return {
+        "issued_commands": len(rows),
+        "acknowledged_commands": sum(row["actual_bytes"] is not None for row in rows),
+        "actual_bytes": sum(row["actual_bytes"] or 0 for row in rows),
+        "full_transfer_commands": len(full),
+        "full_reused_commands": sum(row["full_first_service_reused"] is True for row in full),
+        "full_not_reused_commands": sum(row["full_first_service_reused"] is False for row in full),
+        "full_use_unknown_commands": sum(row["full_first_service_reused"] is None for row in full),
+        "full_pool_bytes_unknown_commands": len(full) - len(known_full),
+        "full_transferred_bytes_known": sum(row["pool_bytes"].get("kv", 0) for row in known_full),
+        "full_verified_reused_bytes_known": sum(
+            row["pool_bytes"].get("kv", 0) for row in known_full
+            if row["full_first_service_reused"] is True
+        ),
+        "full_reuse_proof_versions": dict(Counter(
+            str(row["full_reuse_proof_version"]) for row in full
+            if row["full_reuse_proof_version"] is not None
+        )),
+        "mamba_forward_verified_commands": sum(row["mamba_forward_verified"] for row in rows),
+        "native_reloaded_prefetched_full_before_first_service": sum(
+            any("kv" in load["prefetched_pool_overlap"]
+                for load in row["native_reloads_before_first_service"])
+            for row in rows
+        ),
+        "ack_to_first_service_ms": distribution(row["ack_to_first_service_ms"] for row in rows),
+    }
+
+
 def transfer_parts(transfer: dict) -> list[dict]:
     """Separate native operations from tagged children in a merged transfer."""
     exact = transfer.get("node_commits") or []
@@ -186,6 +217,12 @@ def audit(arm: Path) -> dict:
                 "verified_per_request_cow_forward_completed",
             ):
                 mamba.add(row["command_id"])
+    ack_path = arm / "server/physical_action_ack.jsonl"
+    pool_bytes = {
+        row["command_id"]: row["pool_bytes"]
+        for row in records(ack_path)
+        if row.get("action") == "PREFETCH_GPU" and row.get("pool_bytes") is not None
+    } if ack_path.exists() else {}
     windows = {}
     for name in ("join_transfer_windows.json", "tool_transfer_windows.json"):
         path = arm / name
@@ -200,6 +237,12 @@ def audit(arm: Path) -> dict:
         window = windows.get(command, {})
         native_eos = eos.get(issue.get("child_request_id"))
         transfer, child = pair if pair else ({}, {})
+        pools = pool_bytes.get(command)
+        if (
+            pools is not None and child.get("num_bytes") is not None
+            and sum(pools.values()) != child["num_bytes"]
+        ):
+            raise ValueError(f"physical ACK pool bytes disagree with transfer receipt: {command}")
         ack = use.get("ack_ts_ms") if use else transfer.get("complete_ts_ms")
         service = use.get("first_service_ts_ms") if use else None
         repeated_parks = [
@@ -237,6 +280,7 @@ def audit(arm: Path) -> dict:
             "context_id": issue["context_id"], "context_epoch": issue["context_epoch"],
             "node_id": issue["node_id"], "actual_bytes": child.get("num_bytes"),
             "pool_units": child.get("num_tokens_by_pool"),
+            "pool_bytes": pools,
             "submit_ts_ms": submit, "ack_ts_ms": ack,
             "issue_to_submit_ms": submit - issue["ts_ms"] if submit is not None else None,
             "enqueue_to_submit_ms": transfer.get("enqueue_to_submit_ms"),
@@ -288,6 +332,13 @@ def audit(arm: Path) -> dict:
     summary = {
         "join_commands": len(joins), "tool_commands": len(tools),
         "handoff_commands": len(handoffs),
+        "by_source": {
+            source: source_summary([row for row in results if row["source"] == source])
+            for source in sorted(
+                {"join_ticket", "tool_wait", "execution_handoff"}
+                | {row["source"] for row in results}
+            )
+        },
         "trigger_kinds": dict(Counter(row["trigger_kind"] for row in results)),
         "join_bytes": sum(row["actual_bytes"] or 0 for row in joins),
         "tool_bytes": sum(row["actual_bytes"] or 0 for row in tools),
@@ -374,6 +425,13 @@ def audit(arm: Path) -> dict:
             "anchor, exposed-stall measurement or counterfactual speedup."
         ),
         "arm": str(arm), "summary": summary, "rows": results,
+        "source_summary_semantics": (
+            "Per-source node commands, not independent requests or workflow events. "
+            "FULL reuse counts include only commands with positive FULL transfer units. "
+            "Pool bytes come from reconciled physical ACKs; missing legacy pool-byte "
+            "evidence is reported, never reconstructed by byte shares. Execution "
+            "handoff is submitted demand, separate from anticipatory JOIN/tool actions."
+        ),
         "native_reload_attribution_semantics": (
             "Node/pool overlap before first service, not proof of repeated physical "
             "allocation or duplicate bytes. Mixed tagged batches retain untagged "

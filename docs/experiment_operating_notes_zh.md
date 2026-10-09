@@ -95,6 +95,9 @@ controlled_*，跨版本比较必须说明口径。issued source与ACK对应，
 缺失来源不凭动作名补判。混合批次按receipt保持字节/池单位守恒，
 时间仍属整个batch，不能按字节占比拆成动作耗时。JOIN/tool来源
 只说明提前动作意图，实际提前量、首次复用与性能收益另行验证。
+生命周期中的ACK到服务、FULL首次复用及确认字节也须按这三种
+来源分开；FULL复用分母只包含携带FULL的命令。缺失旧分池ACK
+字节单列，不按总字节比例补算。节点命令不是独立workflow样本。
 
 服务遥测减少request查找开销时，必须保留overlap批次过滤/重排后
 的同request匹配与token delta计量。CPU样例的微秒差距不等于GPU

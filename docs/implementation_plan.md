@@ -190,6 +190,17 @@ Restore-ready admission with an aged head:
   cycles and rejected admission. Validate service/reload reduction and costs
   to other workflows in the next cold start; do not claim a GPU improvement yet.
 
+Lifecycle source reporting:
+- Separate JOIN/tool anticipation from submitted-demand execution handoff.
+  Count FULL-bearing commands and use reconciled physical ACK pool bytes for
+  FULL transferred/reused bytes. Report absent legacy pool-byte evidence.
+- 17 related audit checks passed. The V13 partial JOIN/tool/handoff
+  ACK-to-service P50 is 7861.71/3220.14/815.37ms; the aggregate1047.01ms
+  masks JOIN waiting. Verified FULL bytes are0.424/0.880GB for JOIN and
+  2.695/3.833GB for tool; these are proof-v2 node-command evidence.
+- Report: experiments/reports/v13_prefetch_sources_partial_20261010_0034.json.
+  Preserve frozen-driver reports and regenerate follow-up versions separately.
+
 ## Current PREPARE Cost And Handoff Fix
 
 Implemented in `/tmp/beliefkv-opportunity-20261009`, based on `e985d8c`.
