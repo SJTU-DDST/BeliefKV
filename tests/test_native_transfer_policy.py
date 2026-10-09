@@ -474,6 +474,42 @@ def test_pressure_publication_indexes_full_leaves_and_mamba_independently():
     assert cache.beliefkv_join_pressure_candidates_by_component[2] == tuple((n, n) for n in nodes)
 
 
+@pytest.mark.parametrize("blocked", ("none", "locked", "shared", "swa_unbacked", "pending"))
+def test_full_only_pressure_candidate_can_save_missing_mamba_at_actual_eviction(blocked):
+    class Node(NS):
+        __hash__ = object.__hash__
+
+    runtime, _ = tool_runtime()
+    node = Node(
+        id=1, creation_time=1, backuped=True,
+        write_through_pending_id=None, load_back_pending_id=None,
+        component_data=[
+            NS(value=[1], host_value=[1], lock_ref=0, session_ref=1),
+            NS(value=None, host_value=None, lock_ref=0, session_ref=0),
+            NS(value=[1], host_value=None, lock_ref=0, session_ref=1),
+        ],
+    )
+    if blocked == "locked":
+        node.component_data[2].lock_ref = 1
+    elif blocked == "shared":
+        node.component_data[2].session_ref = 2
+    elif blocked == "swa_unbacked":
+        node.component_data[1].value = [1]
+    elif blocked == "pending":
+        node.write_through_pending_id = "d2h"
+    runtime._native_cache = NS(
+        tree_core=NS(node_by_id=lambda _: node, evictable_device_leaves={node}),
+        ongoing_write_through={},
+    )
+    runtime._parent_pressure_candidates = {1: (None, 1)}
+    runtime._publish_parent_pressure_candidates()
+    assert runtime._native_cache.beliefkv_join_pressure_candidates_by_component[0] == (
+        ((1, 1),) if blocked == "none" else ()
+    )
+    assert runtime._native_cache.beliefkv_join_pressure_candidates_by_component[2] == ()
+    assert node.component_data[2].host_value is None
+
+
 def test_tool_latest_start_waits_until_measured_small_transfer_window():
     runtime, hint = tool_runtime()
     runtime._native_cache = NS(cache_controller=NS(mem_pool_host=NS(entry_map={

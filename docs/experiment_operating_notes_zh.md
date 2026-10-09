@@ -43,6 +43,13 @@ v11/v12的旧口径记录保留，不能仅凭前缀覆盖就补判分配未变�
 最终看相同任务/到达表/模型/容量下相对native的完成吞吐和JCT；
 H2D stream累计时间、ACK数和备份字节均不能独立证明收益。
 
+FULL-only PREPARE后，FULL冷叶候选允许必要Mamba尚未备份；不能因此
+在候选发布时提前传Mamba。实际容量短缺触发FULL回收时，先保存
+仍被session引用的Mamba，ACK后重新校验节点、FULL副本、锁、引用
+及DMA才释放HBM。保存失败保留有用状态，无引用状态交给原生回收。
+handoff与等待parent回收均遵守这一规则，不能继续依赖已关闭的
+Mamba PREPARE提供副本。该后续修订不修改正在运行的v13代码。
+
 工具H2D候选按现有100ms观察间隔筛选，新hint和动作ACK立即触发
 重查；节流不能延后在途ACK处理、ticket失效或真实enqueue校验。
 CPU长期等待样例的扫描降幅不能直接外推为GPU吞吐提升。v13代码

@@ -3176,11 +3176,14 @@ class NativeAdmissionRuntime:
                     and full.lock_ref == 0 and full.session_ref == 1
                     and all(
                         data.lock_ref == 0 and data.session_ref <= 1
-                        and (data.value is None or data.host_value is not None)
-                        for data in (
-                            node.component_data.values()
+                        and (
+                            data.value is None or data.host_value is not None
+                            or component == 2
+                        )
+                        for component, data in (
+                            node.component_data.items()
                             if isinstance(node.component_data, dict)
-                            else node.component_data
+                            else enumerate(node.component_data)
                         )
                     )
                 ):

@@ -167,6 +167,18 @@ Report: experiments/reports/native_service_lookup_cpu_48_20261010.json.
 The fixture excludes writer, DMA and GPU, and does not establish throughput.
 Deploy only after the frozen V13 driver exits.
 
+FULL-only PREPARE reclaim correction:
+- Publish exclusive, unlocked FULL-backed leaves even if their resident Mamba
+  lacks a Host copy. Other resident components still require valid backups.
+- At actual allocator shortfall, handoff and waiting-parent FULL reclamation
+  save a live unbacked Mamba through native write-back, then recheck identity,
+  FULL Host copy, references, locks and DMA after ACK before demotion.
+- Do not save unreferenced Mamba or restore speculative Mamba PREPARE. Declined
+  state preservation leaves useful data resident and retains native fallback.
+- Runtime checks: 150 passed. Engine checks: 71 passed plus 16 subtests. This
+  proves candidate/reclaim behavior, not recovered-opportunity count or GPU gain.
+- Keep V13 frozen; deploy with the other follow-up commits after its driver exits.
+
 ## Current PREPARE Cost And Handoff Fix
 
 Implemented in `/tmp/beliefkv-opportunity-20261009`, based on `e985d8c`.
