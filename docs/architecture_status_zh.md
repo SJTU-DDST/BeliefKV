@@ -177,6 +177,24 @@ JOIN消费积压已消除或端到端吞吐提升；本项仍仅在隔离工作�
 基准：`scripts/benchmark_child_stream_cpu.py`；
 报告：`experiments/reports/v15_client_stream_cpu_20261010.json`。
 
+增量工具参数的后续优化已完成：单个碎片的非对象前缀不可能通过
+删除末尾字符变成JSON对象，因此直接保留等价的原始工具碎片及
+invalid_tool_calls，省去LangChain反复裁剪和解析。对象前缀、
+非标准字段及最终合并参数仍由继承路径解析；未修改工具执行或
+普通正文语义。89项相关检查通过，包含短前缀组合、长字符串、
+并行工具调用、不同碎片大小和最终结果一致性。
+60次交错的实际SDK SSE合成CPU对照中，8/64/1024字符碎片同步
+均值为9.813→5.803/17.546→3.527/189.548→3.084 ms，异步为
+10.198→6.177/17.021→4.579/189.382→3.258 ms，下降39.4%--98.4%。
+512帧纯正文同步13.330→13.444 ms，异步14.747→13.533 ms；
+首轮30次异步正文均值受60--80 ms离群值影响出现退步，保留该
+报告。复查保留并计入GC，记录其暂停而不修改生产GC设置；
+纯正文异步P50约11.366→11.414 ms。该证据不包含网络、GPU
+或agent callback，不能推导实际吞吐收益。两份报告：
+`experiments/reports/v15_tool_fragment_cpu_20261010.json`、
+`experiments/reports/v15_tool_fragment_cpu_repeat_20261010.json`。
+该修改仍仅位于隔离工作树，不部署到运行中的v14。
+
 最终报告：
 `experiments/reports/v13_h2d_sources_final_20261010.json`、
 `experiments/reports/v13_prefetch_sources_final_20261010.json`、

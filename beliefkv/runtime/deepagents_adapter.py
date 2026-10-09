@@ -18,7 +18,8 @@ from uuid import UUID
 
 from langchain_core.callbacks import BaseCallbackHandler
 from langchain_core.exceptions import ContextOverflowError
-from langchain_core.messages import AIMessage, BaseMessage
+from langchain_core.messages import AIMessage, AIMessageChunk, BaseMessage
+from langchain_core.messages.tool import invalid_tool_call, tool_call_chunk
 from langchain_core.messages.utils import count_tokens_approximately
 from langchain_openai import ChatOpenAI
 from openai.resources.chat.completions import AsyncCompletions, Completions
@@ -150,6 +151,30 @@ def _error_censor_reason(error: BaseException) -> str:
     if "cancel" in name or "cancel" in message or "abort" in message:
         return "cancelled"
     return "backend_error"
+
+
+def _non_object_tool_fragments(calls: Any) -> list[dict[str, Any]] | None:
+    if not isinstance(calls, list) or not calls:
+        return None
+    fragments = []
+    for call in calls:
+        if not isinstance(call, dict) or not isinstance(call.get("function"), dict):
+            return None
+        function = call["function"]
+        args = function.get("arguments")
+        index = call.get("index")
+        # Partial JSON trims only a suffix, so this prefix cannot yield a dict.
+        if (
+            not isinstance(args, str) or not args or args.lstrip().startswith("{")
+            or "index" not in call or (index is not None and type(index) is not int)
+            or (function.get("name") is not None and not isinstance(function["name"], str))
+            or (call.get("id") is not None and not isinstance(call["id"], str))
+        ):
+            return None
+        fragments.append(tool_call_chunk(
+            name=function.get("name"), args=args, id=call.get("id"), index=index,
+        ))
+    return fragments
 
 
 @dataclass(frozen=True)
@@ -2712,6 +2737,43 @@ class BeliefKVChatOpenAI(ChatOpenAI):
             payload["extra_body"] = extra_body
             payload["messages"] = []
         return payload
+
+    def _convert_chunk_to_generation_chunk(
+        self,
+        chunk: dict[str, Any],
+        default_chunk_class: type,
+        base_generation_info: dict[str, Any] | None,
+    ) -> Any:
+        choices = chunk.get("choices") or []
+        delta = choices[0].get("delta") if choices else None
+        calls = delta.get("tool_calls") if isinstance(delta, dict) else None
+        fragments = None
+        if (
+            calls and default_chunk_class is AIMessageChunk
+            and delta.get("role") in (None, "assistant")
+        ):
+            fragments = _non_object_tool_fragments(calls)
+        if fragments is None:
+            return super()._convert_chunk_to_generation_chunk(
+                chunk, default_chunk_class, base_generation_info,
+            )
+        altered = {
+            **chunk, "choices": [
+                {**choices[0], "delta": {**delta, "tool_calls": []}}, *choices[1:],
+            ],
+        }
+        generation = super()._convert_chunk_to_generation_chunk(
+            altered, default_chunk_class, base_generation_info,
+        )
+        if generation is not None:
+            generation.message.tool_call_chunks = fragments
+            generation.message.invalid_tool_calls = [
+                invalid_tool_call(
+                    name=call["name"], args=call["args"], id=call["id"], error=None,
+                )
+                for call in fragments
+            ]
+        return generation
 
     def _generate_with_cache(
         self,

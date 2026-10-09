@@ -34,7 +34,7 @@ def _distribution(values):
     }
 
 
-def _sse(text_frames, tool_frames):
+def _sse(text_frames, tool_frames, *, argument_fragment_chars=6):
     def chunk(delta, finish=None):
         return {
             "id": "fixture", "object": "chat.completion.chunk", "created": 0,
@@ -47,8 +47,10 @@ def _sse(text_frames, tool_frames):
     frames.extend(chunk({"content": f"{index}."}) for index in range(text_frames))
     if tool_frames:
         arguments = json.dumps({"command": "python -m pytest", "note": "check " * tool_frames})
-        for index in range(0, len(arguments), 6):
-            call = {"index": 0, "function": {"arguments": arguments[index:index + 6]}}
+        for index in range(0, len(arguments), argument_fragment_chars):
+            call = {"index": 0, "function": {
+                "arguments": arguments[index:index + argument_fragment_chars],
+            }}
             if index == 0:
                 call.update(id="call-1", type="function")
                 call["function"]["name"] = "execute"

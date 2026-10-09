@@ -73,7 +73,20 @@ deadline元数据及显式extra_body覆盖；未标识请求和Responses
 版本及源码/输出SHA256。报告：
 `experiments/reports/v15_client_stream_cpu_20261010.json`。
 它不包含网络/GPU/callback成本，不能宣称已解决实际JOIN消费延迟；
-增量工具JSON仍待检查。完整driver结束后再部署到下一轮。
+完整driver结束后再部署到下一轮。
+
+增量工具参数优化仅跳过无法形成对象的单帧前缀解析，保留原始
+tool_call_chunks及等价invalid_tool_calls；对象前缀、非标准字段、
+最终合并参数和工具执行沿用原语义。89项相关检查通过。
+60次交错CPU基准中工具路径均值下降39.4%--98.4%，512帧普通正文
+同步13.330→13.444 ms、异步14.747→13.533 ms。保留首轮30次
+异步正文均值退步的报告，不能仅选取有利样本；复查中GC保持
+启用且计入时间，单独记录暂停，不修改生产GC。异步普通正文
+P50约11.366→11.414 ms。报告：
+`experiments/reports/v15_tool_fragment_cpu_20261010.json`及
+`experiments/reports/v15_tool_fragment_cpu_repeat_20261010.json`。
+这些合成CPU结果不能代替GPU吞吐验证，仍须等待v14完整driver、
+审计、HTML和cleanup退出后部署。
 
 v13最终审计应读取独立的final报告及来源v2口径。提前JOIN/tool为
 760次/11.824 GB，需求handoff为18008次/158.846 GB；旧动作报告

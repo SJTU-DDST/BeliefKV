@@ -140,7 +140,21 @@ Current status:
   Preserve wall/thread CPU, installed versions and source/result hashes.
   These synthetic measurements exclude network, GPU and callback work;
   they do not establish reduced live JOIN delay or throughput improvement.
-  Incremental tool JSON still uses the inherited parser. Keep live V14 frozen.
+  Keep live V14 frozen.
+- Optimize non-object tool-argument fragments without changing final parsing.
+  A prefix that cannot become a JSON object by suffix removal retains the
+  same raw tool_call_chunks and invalid_tool_calls without repeated partial
+  parsing. Object prefixes, noncanonical fields and merged arguments keep
+  inherited semantics. The combined tool/stream/payload/adapter suite passes
+  89 checks, including short-prefix combinations and final merge equivalence.
+  Sixty interleaved actual SDK SSE CPU samples reduce tool-case means
+  39.4--98.4%. Pure-text synchronous mean is13.330→13.444ms and asynchronous
+  is14.747→13.533ms; preserve the earlier30-sample report with its asynchronous
+  text regression. GC remains enabled, included and separately measured;
+  pure-text asynchronous P50 is11.366→11.414ms. No production GC change,
+  network/GPU/callback benchmark or measured throughput gain is implied.
+  Commit and preserve both reports; deploy only after the full V14 driver
+  has exited.
 - V13 cleanup removed154 archived workspaces and retained two forensic
   workspaces. Preserve summaries, patches, telemetry, final reports and HTML.
 
@@ -161,6 +175,11 @@ MockTransport, with no GPU or serving call.
 Next-revision stream CPU comparison: v15_client_stream_cpu_20261010.json;
 reproduce with scripts/benchmark_child_stream_cpu.py through the actual SDK
 SSE decoder and inherited LangChain conversion/aggregation.
+Next-revision tool-fragment comparisons:
+v15_tool_fragment_cpu_20261010.json,
+v15_tool_fragment_cpu_repeat_20261010.json.
+Reproduce with scripts/benchmark_tool_fragment_cpu.py, retaining enabled GC,
+equal final request JSON/results and source/version hashes.
 The following V11--V13 entries describe the frozen collection history;
 references to keeping live V13 unchanged no longer imply a running process.
 
