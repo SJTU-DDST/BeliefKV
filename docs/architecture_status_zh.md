@@ -5,14 +5,17 @@
 ## PREPARE 热点与 Handoff 身份修复
 
 本次修订基于 `e985d8c`，在独立工作树
-`/tmp/beliefkv-opportunity-20261009` 完成，尚未部署到运行中的v10。
-主仓库、服务端和模型保持本轮冻结版本；本轮结束后再合入。
+`/tmp/beliefkv-opportunity-20261009` 完成。v10的采集、HTML导出、
+对比和workspace清理均已结束，修订代码用于后续实验。
+v10保持本轮冻结版本 `e985d8c`，不能将新修复计入其性能结果。
 
-v10进行中的累计CPU计时显示，JOIN PREPARE exclusive区间为
-1473.178秒，机会采样为337.883秒。handoff选择9419次，实际发出
+v10最终累计CPU计时显示，JOIN PREPARE exclusive区间为
+1480.695秒，机会采样为338.871秒。handoff选择9419次，实际发出
 0次，全部以 `resident_or_unavailable` 收场。该名称混合了已驻留
 与观察/规划失败，不能解释为9419次都已驻留，也不是GPU时间。
-快照：`experiments/reports/qwen35_v10_predictive_hotpath_partial_20261009.json`。
+最终证据：v10目录的 `comparison.json` 与 `native_policy_comparison.json`。
+早期快照保留在
+`experiments/reports/qwen35_v10_predictive_hotpath_partial_20261009.json`。
 
 查明并修复一个可复现的身份类型缺陷：原生统一树的creation_time
 来自 `numpy.float64`，request reentry路径直接传给只接受Python
@@ -42,8 +45,27 @@ Host副本且无租约的JOIN PREPARE均值26.305→15.075 ms，下降
 相关CPU回归358 passed。以上不证明GPU吞吐已经超过native。
 
 后续仍须确认修复后的handoff能转成实际FULL复用，减少需求恢复
-暴露等待，并计入ACK到服务、驻留和其他请求延迟。运行中的v10
-是旧冻结版本，不可把这次未部署修复归入它的性能结果。
+暴露等待，并计入ACK到服务、驻留和其他请求延迟。
+
+v10 predictive为156 completed，native为154 completed/2 incomplete；
+完成吞吐46.054/53.589 workflow/h，predictive低14.06%，GPU利用率
+63.681%/73.629%。实际输出量只多2.06%，不能仅用轨迹差异解释
+性能差距；单对跨版本live实验仍不能隔离策略因果效果。
+PREPARE_HOST为35713次/144.536 GB，等待agent压力释放60次，
+其中59次可关联此前PREPARE ACK；这只计特定释放路径，不能把
+其余备份全部算作浪费。预测H2D为106次/7.374 GB，其中FULL
+1.321 GB、确认首次复用0.720 GB；ACK到首次服务P50为3.245秒，
+31个目标随后又在首次服务前发生原生加载。新的handoff实际消费、
+PREPARE后续消费、恢复就绪准入和重复恢复仍是优先验证项。
+原生逐层依赖等待抽样均值两侧约0.375/0.377 ms，不代表全部
+恢复等待或oracle上界；单纯增加传输量不足以证明吞吐收益。
+
+服务端在全部workflow完成后收到SIGTERM，随后再次执行终态缓存
+采样，访问已被close设为None的writer而报AttributeError。这是
+退出生命周期缺陷，客户端和父driver均正常结束；保留原始堆栈，
+不将本次数据误报为采集中断。close现在清空终态观察任务，关闭
+writer后跳过采样；CPU回归覆盖close后的scheduler迭代、重复close、
+最终记录与writer drain，相关89项通过。
 
 ## 迁移机会与实际准入协同
 
@@ -101,9 +123,10 @@ FULL-only备份仍能完成，`physical_disabled=false`未反映这一故障。
 已停止该次predictive并保留现场，不纳入性能对照。修复D2H函数
 自身的enum/string池名解析，现有CPU样例补上真实Mamba
 `pool_transfers`及Host目标索引，145项相关CPU回归通过。
-修复提交 `e985d8c` 后已冷启动predictive，当前仍运行并处于低并发
-收尾段。旧 `arm_status.txt` 是失败启动的残留，不能单独用它判断
-本次运行状态。已完成native不重跑，模型与原始workload配置仍冻结。
+修复提交 `e985d8c` 后冷启动的predictive已正常完成，退出状态0。
+旧 `arm_status.txt` 的早期非零项是失败启动残留；本次状态应结合
+summary、最终driver状态和进程判断。已完成native不重跑，模型
+与原始workload配置保持冻结。
 
 ## Handoff 流水恢复与准入减负
 

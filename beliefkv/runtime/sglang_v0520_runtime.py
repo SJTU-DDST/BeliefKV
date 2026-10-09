@@ -560,6 +560,7 @@ class NativeAdmissionRuntime:
         self._discard_join_ticket("shutdown")
         self._final_stages.clear()
         self._final_request_stages.clear()
+        self._terminal_cache_watches.clear()
         if self._opportunity_writer is not None:
             self._record_runtime_state(final=True)
             self._opportunity_writer.close()
@@ -2865,7 +2866,11 @@ class NativeAdmissionRuntime:
 
     @timed_runtime("terminal_sampling")
     def _sample_terminal_cache(self, *, now_ms: float) -> None:
-        if not self._terminal_cache_diagnostics or now_ms < self._terminal_cache_next_ms:
+        if (
+            not self._terminal_cache_diagnostics
+            or self._opportunity_writer is None
+            or now_ms < self._terminal_cache_next_ms
+        ):
             return
         self._terminal_cache_next_ms = now_ms + 1000.
         for scope, watch in list(self._terminal_cache_watches.items())[:4]:

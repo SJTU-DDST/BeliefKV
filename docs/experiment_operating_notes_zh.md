@@ -6,17 +6,18 @@ guard、终态门禁或模型动作授权。启动前同时阅读
 
 ## PREPARE 热点修订与节点身份
 
-v10 predictive已用 `e985d8c` 冷启动且仍在收尾，最新优化先在
-`/tmp/beliefkv-opportunity-20261009` 提交；本轮driver结束前不修改
-主仓库或服务源码。旧 `arm_status.txt` 保留失败启动状态，不能据此
-断言当前已停止。未部署的新修复不能计入本轮性能结果。
+v10 predictive以 `e985d8c` 完成156个workflow，driver和全部导出已
+结束。最新优化在 `/tmp/beliefkv-opportunity-20261009` 验证后用于
+后续实验；不得改写已完成实验的源码指纹或将新修复计入旧性能。
+旧 `arm_status.txt` 保留失败启动状态，本次最终状态为exit=0。
 
 原生统一树creation_time为 `numpy.float64`。所有传入物理规划/
 原语的锚点路径必须使用现有 `normalize_native_creation_time`
 转换为Python float/int，保留原值，不截断或更换节点代次。
-不要只修session快照而遗漏request reentry：此遗漏使v10的9419次
-handoff选择全部在规划阶段退出，尚无handoff传输。新CPU复现已
-确认旧版0次、新版1次提交；提交替身不代表真实DMA或ACK。
+不要只修session快照而遗漏request reentry：v10的9419次handoff
+选择均未实际提交，类型遗漏已在真实Host-only规划中复现。旧版
+通用拒绝原因不能逐次识别是否同一缺陷；新CPU复现确认旧版0次、
+新版1次提交，提交替身不代表真实DMA或ACK。
 `resident_or_unavailable` 不能全部算缓存命中；须查看新增的
 `execution_handoff_no_step` 具体原因，区分锚点缺失、不可观察闭包
 及没有可恢复检查点。
@@ -32,6 +33,19 @@ CPU对照必须包含实际祖先链、已备份/未备份状态、Host不足与
 历史、24/64节点闭包，对比 e985d8c，并核对选择与发布结果。
 报告：`experiments/reports/prepare_path_cpu_156_{24,64}_20261009.json`。
 CPU减负与358项回归通过均不代表预测传输已提高GPU吞吐。
+
+SIGTERM之后scheduler仍可能完成一轮收尾。runtime.close必须清空
+终态缓存观察任务，writer关闭后不得再次采样；最终状态先写入再
+drain，并允许重复close。v10的AttributeError发生在全部workflow
+结束、Remaining requests=0之后，客户端和driver都正常退出。
+保留退出堆栈，不以此认定采集中断，也不删掉完整workflow数据。
+本项相关CPU回归89 passed，覆盖关闭后的scheduler迭代。
+
+v10 predictive完成吞吐低于native14.06%，新修复尚无GPU收益证据。
+PREPARE 144.536 GB与60次特定等待agent压力释放不能一一等同；
+需要补查其他原生消费与未消费备份。预测FULL传输1.321 GB、
+确认复用0.720 GB，ACK到服务P50为3.245秒；后续验收必须计入
+恢复就绪准入、重复需求恢复、Host churn及其他workflow延迟。
 
 ## 当前迁移策略与实验接续
 

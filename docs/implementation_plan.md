@@ -5,13 +5,14 @@ Status date: 2026-10-09.
 ## Current PREPARE Cost And Handoff Fix
 
 Implemented in `/tmp/beliefkv-opportunity-20261009`, based on `e985d8c`.
-Do not modify or deploy into the ongoing frozen v10 predictive arm.
-Merge after its collection and driver have finished.
+V10 collection, exports and its driver have finished. Use the revision for
+subsequent runs; v10 results still describe the frozen e985d8c arm.
 
-The ongoing v10 snapshot has 1473.178 s exclusive JOIN PREPARE CPU wall
-time and 337.883 s opportunity sampling, plus 9419 selected handoffs and
-zero handoff issues. This is partial evidence, not GPU time or throughput.
-Snapshot: `experiments/reports/qwen35_v10_predictive_hotpath_partial_20261009.json`.
+The final v10 state has 1480.695 s exclusive JOIN PREPARE CPU wall time and
+338.871 s opportunity sampling, plus 9419 selected handoffs and zero handoff
+issues. These intervals are not GPU time or throughput. Final evidence is
+the v10 comparison.json/native_policy_comparison.json; retain the earlier
+`experiments/reports/qwen35_v10_predictive_hotpath_partial_20261009.json`.
 
 Completed:
 - Normalize native numpy.float64 node timestamps at the request-reentry
@@ -27,6 +28,11 @@ Completed:
   actions still refresh physical evidence; no cross-cycle residency cache.
 - Record specific handoff no-step diagnostics and nested maintenance,
   publication and backed-registration timing.
+- Clear terminal cache watches during close and stop sampling when the
+  opportunity writer has closed. Cover an additional scheduler iteration,
+  repeated close and drained final evidence in CPU regression (89 passed).
+  V10's shutdown-only AttributeError followed all workflow completions;
+  the client and driver exited normally. Preserve the original exception.
 
 CPU checks: 358 passed. In 156-workflow/24-node/16-history-round fixtures,
 30 measurements against e985d8c preserve selected backups, published pressure
@@ -39,8 +45,22 @@ Reports: `experiments/reports/prepare_path_cpu_156_{24,64}_20261009.json`.
 
 Next measured checks remain useful FULL reuse, exposed native restoration
 wait, ACK-to-service, repeated demand loads and completed-workflow throughput
-relative to native. Do not claim deployment or GPU benefit from these CPU
-results. The ongoing v10 still uses e985d8c and cannot validate the new fix.
+relative to native. Do not claim GPU benefit from these CPU results.
+The finished v10 uses e985d8c and cannot validate the new fix.
+
+V10 final: predictive 156 completed, native 154 completed/2 incomplete.
+Completed throughput is 46.054 vs 53.589 workflows/hour (-14.06%),
+GPU utilization 63.681% vs 73.629%, output volume +2.06%. This is a
+cross-revision single live pair, not isolated policy attribution.
+PREPARE is 35713 operations/144.536 GB but the waiting-agent pressure
+demotion path has only 60 events (59 linked to a prior PREPARE ACK).
+That path is not complete backup-consumption accounting. Predictive H2D
+is 106 operations/7.374 GB, including 1.321 GB FULL and 0.720 GB confirmed
+FULL first-service reuse. ACK-to-service P50 is 3.245 s; 31 targets undergo
+demand loading before first service. Prioritize actual handoff consumption,
+unused-backup accounting, ready-restore admission and repeated restoration.
+Both native layer-dependency wait probes average roughly 0.375/0.377 ms;
+sampled waits cannot be treated as all restoration wait or an oracle bound.
 
 ## Opportunity-Aware Transfer Revision
 
@@ -87,9 +107,9 @@ V10 native is finished: 154 completed/2 incomplete, 10345.487 s window.
 Its parent driver previously failed at the HTML export path before predictive
 started. Native HTML is now generated; archived completed workspaces were
 cleaned and `scripts/resume_semantic_h2d_ab.py` resumed the existing v10
-directory. The predictive arm is now running on e985d8c after the callback
-fix below. Preserve both frozen arm revisions and the original plan.
-Do not repeat native or refit models during this frozen collection.
+directory. The predictive arm finished on e985d8c after the callback fix
+below. Preserve both frozen arm revisions and the original plan.
+Do not repeat native or rewrite the completed collection's model/configuration.
 Evaluate throughput/JCT, exposed waits, reuse, repeated loads and residency
 costs. Further remaining-work-head tuning depends on new measured errors;
 subsecond RETURN accuracy and GPU benefit are not yet established.
@@ -101,8 +121,8 @@ while FULL-only backups still completed and `physical_disabled` stayed false.
 Stop and retain that failed start; it is not a performance arm. Use D2H-local
 enum/string pool-name normalization, cover real Mamba `pool_transfers` and
 Host destination identity in the existing CPU fixture; 145 related CPU checks
-passed. The fixed e985d8c predictive arm has been cold-started and remains
-in collection. Old arm_status.txt entries belong to the failed start;
+passed. The fixed e985d8c predictive arm was cold-started and has completed
+with driver exit code 0. Old arm_status.txt entries belong to the failed start;
 inspect current processes and output rather than treating that file as
 the current status. Do not repeat collected native.
 

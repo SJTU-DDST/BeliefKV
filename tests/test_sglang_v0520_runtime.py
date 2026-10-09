@@ -2233,6 +2233,41 @@ def test_terminal_cache_watch_is_read_only_and_keeps_shared_node_evidence(monkey
     assert "not exclusive dead bytes" in record["semantics"]
 
 
+def test_terminal_cache_sampling_stops_after_shutdown(tmp_path, monkeypatch):
+    monkeypatch.setenv("BELIEFKV_TERMINAL_CACHE_DIAGNOSTICS", "1")
+    runtime = NativeAdmissionRuntime(opportunity_dir=tmp_path)
+    key = PrefillCandidateKey("r", "wf", "child", "ctx", 0, 0, "s", 1)
+    runtime._native_cache = NS(
+        session_refs=NS(
+            snapshot_session_leaf_anchors=lambda *_args, **_kwargs: ((0, ((11, 4),)),),
+        ),
+        tree_core=NS(node_by_id=lambda _node: NS(creation_time=4)),
+    )
+    with patch(
+        "beliefkv.runtime.sglang_v0520_runtime.observe_unified_node_closure",
+        return_value=NS(observable=True, nodes=()),
+    ) as observe:
+        runtime._track_terminal_cache(key)
+        assert runtime._terminal_cache_watches
+        runtime.close()
+        observe.reset_mock()
+        runtime.scheduler_step()
+        runtime.close()
+        observe.assert_not_called()
+    assert not runtime._terminal_cache_watches
+    rows = [
+        json.loads(line)
+        for line in (tmp_path / "admission_opportunities.jsonl").read_text().splitlines()
+    ]
+    assert [row["event"] for row in rows] == [
+        "terminal_context_cache_sample", "admission_runtime_state",
+    ]
+    assert rows[-1]["final"] is True
+    assert json.loads(
+        (tmp_path / "admission_opportunities_status.json").read_text()
+    )["complete"] is True
+
+
 def test_reactive_keeps_final_priority_without_any_predictive_transfer(monkeypatch):
     monkeypatch.setenv("BELIEFKV_ENABLE_FINAL_STAGE_PRIORITY", "1")
     monkeypatch.setenv("BELIEFKV_ENABLE_PREPARE_HOST", "0")
