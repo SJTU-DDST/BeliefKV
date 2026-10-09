@@ -10,6 +10,7 @@ def _write(path, rows):
 
 def _run(
     tmp_path, *, native_epoch=1, client_tool_calls=0, stream_timing=False,
+    close_timing=False, close_epoch=1, close_elapsed=10.,
 ):
     _write(tmp_path / "opportunities/admission_opportunities.jsonl", [
         {"event": "safe_point_census", "ts_ms": 1000., "monotonic_ms": 0.},
@@ -18,7 +19,10 @@ def _run(
          "join_id": "join", "child_invocation_id": "child",
          "child_request_id": "child-final"},
     ])
-    identity = {"invocation_id": "child", "context_id": "child-ctx", "context_epoch": 1}
+    identity = {
+        "workflow_id": "workflow", "invocation_id": "child",
+        "context_id": "child-ctx", "context_epoch": 1,
+    }
     parent = {"invocation_id": "root", "context_id": "parent", "context_epoch": 3}
     _write(tmp_path / "client_1/workflows/task/runtime_events.deepagents.jsonl", [
         {"kind": "llm_result", "ts_ms": 80., **identity,
@@ -58,6 +62,13 @@ def _run(
              "stream_consumed": True},
             {"event": "llm_stream_http_transport", "request_id": "other",
              "last_raw_at_ms": 1., "raw_pull_total_ms": 500.},
+        ])
+    if close_timing:
+        _write(tmp_path / "client_1/workflows/task/sandbox_audit.jsonl", [
+            {"event": "native_session_retire_complete", "workflow_id": "workflow",
+             "context_id": "child-ctx", "context_epoch": close_epoch,
+             "session_id": "beliefkv-child", "close_start_monotonic_ms": 106.,
+             "close_elapsed_ms": close_elapsed, "enqueue_to_close_start_ms": 4.},
         ])
     return audit(tmp_path)
 
@@ -120,3 +131,29 @@ def test_join_audit_legacy_stream_timings_remain_unknown(tmp_path):
     assert row["client_finish_chunk_to_callback_entry_ms"] is None
     assert row["child_http_raw_pull_total_ms"] is None
     assert report["unique_child_http_intervals"]["child_http_raw_pull_total_ms"]["count"] == 0
+
+
+def test_join_audit_reports_http_close_overlap_without_treating_it_as_reclamation(tmp_path):
+    report = _run(tmp_path, close_timing=True)
+    [row] = report["rows"]
+    assert row["child_session_close_elapsed_ms"] == 10.
+    assert row["child_session_close_queue_wait_ms"] == 4.
+    assert row["child_return_to_session_close_start_ms"] == 6.
+    assert row["child_return_to_session_http_complete_ms"] == 16.
+    assert row["session_http_complete_to_parent_submit_ms"] == 9.
+    assert row["session_http_overlap_with_join_to_submit_ms"] == 10.
+    assert "not scheduler reference release" in report["completion_timing_scope"]
+
+
+def test_join_audit_keeps_close_epoch_mismatch_and_legacy_unknown(tmp_path):
+    for options in ({}, {"close_timing": True, "close_epoch": 2}):
+        report = _run(tmp_path, **options)
+        [row] = report["rows"]
+        assert row["child_session_close_elapsed_ms"] is None
+        assert row["session_http_overlap_with_join_to_submit_ms"] is None
+
+
+def test_join_audit_allows_deferred_http_completion_after_parent_submission(tmp_path):
+    [row] = _run(tmp_path, close_timing=True, close_elapsed=30.)["rows"]
+    assert row["session_http_complete_to_parent_submit_ms"] == -11.
+    assert row["session_http_overlap_with_join_to_submit_ms"] == 19.

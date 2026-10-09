@@ -155,6 +155,25 @@ Current status:
   network/GPU/callback benchmark or measured throughput gain is implied.
   Commit and preserve both reports; deploy only after the full V14 driver
   has exited.
+- Remove terminal session HTTP dispatch from the child RETURN critical path.
+  Mark the context terminal immediately and submit close work to an independent
+  shared pool of up to32 workers; do not hold the session lock across HTTP or
+  reuse the workflow executor. Apply the same harness to all three arms.
+  Drain a workflow's pending closes before its audit/backend shutdown, preserve
+  failed identities and retry during cleanup. Keep synchronous compaction.
+  Record enqueue-to-start and HTTP completion separately. Native HTTP200
+  confirms dispatch acceptance, not scheduler reference release or physical
+  reclamation; correct the former "native reference close ACK" wording.
+  At04:03 CST,95 JOIN commands correspond to67 unique child requests.
+  JOIN-to-parent-submit P50 is695ms; child HTTP-close overlap with that
+  interval is419ms and all matched parent submissions follow HTTP completion.
+  The overlap is not a causally isolated JCT saving. EOS-to-finish P50 is
+  1444ms and76/95 node commands submit after EOS, so client consumption
+  still needs live verification after deployment.
+  Session/adapter/harness checks pass225 with one skip; JOIN audit checks
+  pass9. Blocked-close concurrency checks verify parent progress, terminal
+  no-reuse, deduplication, retry identity and full drain before failure reporting.
+  Keep this follow-up revision out of live V14. No GPU gain is established.
 - V13 cleanup removed154 archived workspaces and retained two forensic
   workspaces. Preserve summaries, patches, telemetry, final reports and HTML.
 
@@ -180,6 +199,10 @@ v15_tool_fragment_cpu_20261010.json,
 v15_tool_fragment_cpu_repeat_20261010.json.
 Reproduce with scripts/benchmark_tool_fragment_cpu.py, retaining enabled GC,
 equal final request JSON/results and source/version hashes.
+Partial terminal-close JOIN audit:
+v14_join_pipeline_session_close_partial_20261010.json.
+Reproduce with scripts/audit_join_transfer_windows.py; compare HTTP dispatch
+timing and interval overlap without treating either as scheduler release.
 The following V11--V13 entries describe the frozen collection history;
 references to keeping live V13 unchanged no longer imply a running process.
 

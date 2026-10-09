@@ -5,6 +5,7 @@ import itertools
 import json
 import threading
 import time
+from concurrent.futures import ThreadPoolExecutor
 from types import SimpleNamespace
 from typing import Any, Sequence
 from unittest.mock import patch
@@ -125,6 +126,42 @@ def test_native_session_closes_child_at_return_but_keeps_parent_during_tool() ->
     assert sessions.for_request(root) == parent_session
     adapter.finish(outcome="completed")
     assert closed == [child_session, parent_session]
+
+
+def test_native_child_return_does_not_wait_for_terminal_http_dispatch():
+    started, release = threading.Event(), threading.Event()
+    closed = []
+
+    def close(session_id):
+        closed.append(session_id)
+        started.set()
+        assert release.wait(2)
+
+    with ThreadPoolExecutor(max_workers=2) as executor:
+        sessions = NativeRadixSessionLeases(close, close_executor=executor)
+        root = BeliefKVRequestMetadata(
+            "wf", "root", "ctx", 0, full_prompt_replay_guaranteed=True,
+        )
+        sink = CollectingSink()
+        adapter = DeepAgentsRuntimeAdapter(sink, root, native_radix_sessions=sessions)
+        adapter.start()
+        parent_session = sessions.for_request(root)
+        child_task = adapter.declare_runtime_tasks([("explorer", "Inspect")])[0]
+        child_session = sessions.for_request(BeliefKVRequestMetadata(
+            "wf", child_task.invocation_id, child_task.context_id, 0,
+            full_prompt_replay_guaranteed=True,
+        ))
+        try:
+            adapter.complete_runtime_task(child_task)
+            assert started.wait(1)
+            assert closed == [child_session]
+            assert sessions.for_request(root) == parent_session
+            assert any(event.kind == RuntimeEventKind.RETURN for event in sink.events)
+        finally:
+            release.set()
+        adapter.finish(outcome="completed")
+        sessions.drain()
+        assert set(closed) == {child_session, parent_session}
 
 
 class CollectingSink:

@@ -88,6 +88,21 @@ P50约11.366→11.414 ms。报告：
 这些合成CPU结果不能代替GPU吞吐验证，仍须等待v14完整driver、
 审计、HTML和cleanup退出后部署。
 
+终态session关闭的后续版本使用独立共享线程池，最多32个worker。
+RETURN立即禁止该context复用，关闭RPC在锁外执行；不复用长期
+占用的workflow线程池，不让child future或parent请求等待HTTP。
+workflow收尾必须等待所属关闭任务并保留同身份失败重试，完成
+后才关闭audit；真实compaction仍同步关闭旧session。三种arm
+使用同一harness，manifest记录关闭模式及worker上限。
+HTTP200仅确认原生派发，并没有scheduler引用释放ACK；也不能
+证明物理回收。新审计分别记录排队、HTTP和JOIN到parent提交的
+重叠，保留旧遥测缺失为unknown。04:03 CST快照中67个去重
+child请求的JOIN到提交P50为695ms，关闭HTTP重叠P50为419ms；
+这不是可直接从JCT扣除的收益。225项相关检查通过、1项跳过，
+9项JOIN审计检查通过。后续修订仍等待v14完整driver退出后部署。
+报告：
+`experiments/reports/v14_join_pipeline_session_close_partial_20261010.json`。
+
 v13最终审计应读取独立的final报告及来源v2口径。提前JOIN/tool为
 760次/11.824 GB，需求handoff为18008次/158.846 GB；旧动作报告
 的PREFETCH_GPU合计不得用于预测覆盖。ACK到服务须按来源分别
@@ -517,7 +532,8 @@ v8c首轮使用RepeatFormat范围2–4，模型自主选数和内容，不在
 冻结旧预测头用于新regime诊断，不假定校准有效。
 新增旧输入共同前缀损失代理、完整有界Host归因、终态路径驻留/
 引用观察及session close耗时。共享祖先不当作独占死字节，
-不把close ACK当物理释放，不盲目D2H死child挤占Host。
+不把HTTP关闭完成当scheduler引用释放或物理释放，不盲目D2H
+死child挤占Host。
 
 v6中7个JOIN H2D全部首次复用，但仍在EOS后启动。下一轮先用
 相同因果快照比较工作中心/区间与首次触发，不通过手改eligibility、

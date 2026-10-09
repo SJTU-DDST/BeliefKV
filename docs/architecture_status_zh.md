@@ -195,6 +195,29 @@ invalid_tool_calls，省去LangChain反复裁剪和解析。对象前缀、
 `experiments/reports/v15_tool_fragment_cpu_repeat_20261010.json`。
 该修改仍仅位于隔离工作树，不部署到运行中的v14。
 
+终态session关闭的后续优化已实现：child RETURN立即标记context
+终态并向独立共享线程池提交关闭任务，HTTP不再持有session锁或
+阻塞child future及parent下一请求。实验统一使用最多32个关闭
+worker，不复用workflow执行池；native/reactive/predictive采用
+同一harness路径。workflow收尾等待所属关闭任务，失败保留同一
+session身份并重试，全部任务完成后才关闭audit。真实compaction
+的同步关闭语义保留。新增排队、HTTP开始/完成计时。
+核对SGLang原生实现：/close_session的HTTP200只表示消息派发，
+并不等待scheduler释放引用；旧native reference close ACK表述
+过强。观察到引用释放也不能等同于物理页回收。
+运行中v14的04:03 CST审计包含95个节点命令、67个child请求。
+去重后JOIN到parent提交P50为695 ms，child关闭HTTP与该区间的
+重叠P50为419 ms；所有匹配parent提交均在该child HTTP完成之后。
+这是路径顺序及区间重叠证据，不能将419 ms当作隔离后的JCT收益。
+同快照原生EOS到客户端finish P50为1444 ms，76/95个节点动作
+在原生EOS后提交，客户端消费积压仍须检验。
+225项session/adapter/harness检查通过、1项跳过，另9项JOIN
+审计检查通过。并发检查覆盖阻塞HTTP时parent请求仍可继续、
+终态身份不可重用、去重、同身份失败重试及报错前完整清理。
+本项仍仅在隔离工作树，等待v14完整driver退出后部署；当前没有
+GPU吞吐收益证据。快照报告：
+`experiments/reports/v14_join_pipeline_session_close_partial_20261010.json`。
+
 最终报告：
 `experiments/reports/v13_h2d_sources_final_20261010.json`、
 `experiments/reports/v13_prefetch_sources_final_20261010.json`、

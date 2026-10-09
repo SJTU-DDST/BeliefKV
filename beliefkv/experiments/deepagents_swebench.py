@@ -15,7 +15,7 @@ import urllib.error
 import urllib.request
 import uuid
 from collections import Counter
-from concurrent.futures import ThreadPoolExecutor, as_completed
+from concurrent.futures import Executor, ThreadPoolExecutor, as_completed
 from dataclasses import asdict, dataclass, field, replace
 from datetime import datetime, timezone
 from pathlib import Path
@@ -4227,6 +4227,7 @@ def _run_workflow(
     project_tool_history: ProjectToolHistory | None = None,
     tool_wait_shadow_timer: ToolWaitShadowTimer | None = None,
     tool_window_shadow: Any = None,
+    native_session_close_executor: Executor | None = None,
 ) -> dict[str, Any]:
     workflow_dir = config.output_dir / "workflows" / workload.instance_id
     workflow_dir.mkdir(parents=True, exist_ok=False)
@@ -4303,6 +4304,7 @@ def _run_workflow(
                         key: value for key, value in record.items() if key != "event"
                     }
                 ),
+                close_executor=native_session_close_executor,
             )
             if config.native_radix_sessions else None
         ),
@@ -4403,6 +4405,16 @@ def _run_workflow(
             if error_text is None:
                 error_text = f"{type(finish_error).__name__}: {finish_error}"
                 outcome = "error"
+        if adapter.native_radix_sessions is not None:
+            try:
+                try:
+                    adapter.native_radix_sessions.retire_workflow(workflow_id)
+                finally:
+                    adapter.native_radix_sessions.drain()
+            except Exception as close_error:
+                if error_text is None:
+                    error_text = f"{type(close_error).__name__}: {close_error}"
+                    outcome = "error"
         if project_tool_history is not None:
             project_tool_history.discard_workflow(workflow_id)
         if control_sink is not None:
@@ -4626,6 +4638,13 @@ def run_experiment(config: DeepAgentsExperimentConfig) -> dict[str, Any]:
         "workload_manifest_sha256": bundle.manifest_sha256,
         "instance_ids": [item.instance_id for item in workloads],
         "dynamic_subagent_policy": config.subagent_fanout_profile,
+        "native_session_terminal_close": {
+            "mode": (
+                "shared_deferred_dispatch" if config.native_radix_sessions else "disabled"
+            ),
+            "max_workers": min(32, config.concurrency) if config.native_radix_sessions else 0,
+            "completion_semantics": "HTTP dispatch acceptance; scheduler release unacknowledged",
+        },
         "workflow_arrival_interval_ms": config.workflow_arrival_interval_ms,
         "workflow_arrival_batch_size": config.workflow_arrival_batch_size,
         "workflow_arrival_batch_interval_ms": (
@@ -4687,6 +4706,13 @@ def run_experiment(config: DeepAgentsExperimentConfig) -> dict[str, Any]:
             batch_size=1,
             batch_interval_seconds=config.workflow_arrival_interval_ms / 1000.0,
         )
+    native_session_close_executor = (
+        ThreadPoolExecutor(
+            max_workers=min(32, config.concurrency),
+            thread_name_prefix="native-session-close",
+        )
+        if config.native_radix_sessions else None
+    )
     try:
         def record_result(future: Any, workload: Any) -> None:
             try:
@@ -4708,6 +4734,7 @@ def run_experiment(config: DeepAgentsExperimentConfig) -> dict[str, Any]:
                 run_one=lambda workload: _run_workflow(
                     config, bundle, workload, project_tool_history,
                     tool_wait_shadow_timer, tool_window_shadow,
+                    native_session_close_executor,
                 ),
             ):
                 record_result(future, workload)
@@ -4724,12 +4751,14 @@ def run_experiment(config: DeepAgentsExperimentConfig) -> dict[str, Any]:
                         executor.submit(
                             _run_workflow, config, bundle, workload,
                             project_tool_history, tool_wait_shadow_timer,
-                            tool_window_shadow,
+                            tool_window_shadow, native_session_close_executor,
                         )
                     ] = workload
                 for future in as_completed(futures):
                     record_result(future, futures[future])
     finally:
+        if native_session_close_executor is not None:
+            native_session_close_executor.shutdown(wait=True)
         tool_wait_shadow_timer.close()
         metrics = sglang_monitor.close()
         gpu_monitor.close()

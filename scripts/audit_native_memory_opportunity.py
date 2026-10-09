@@ -98,11 +98,16 @@ def audit(arm: Path) -> dict:
             "mamba_resident_path_node_count": sum(node["mamba_device_present"] for node in resident),
             "unknown_anchors": row["unavailable_anchors"],
         })
-    closes, errors = [], []
+    closes, close_queue, close_envelope, errors = [], [], [], []
+    queued_closes = 0
     for path in arm.glob("client_*/workflows/*/sandbox_audit.jsonl"):
         for row in records(path):
             if row.get("event") == "native_session_retire_complete":
                 closes.append(row["close_elapsed_ms"])
+                close_queue.append(row.get("enqueue_to_close_start_ms"))
+                close_envelope.append(row.get("enqueue_to_http_complete_ms"))
+            elif row.get("event") == "native_session_retire_queued":
+                queued_closes += 1
             elif row.get("event") == "native_session_retire_failed":
                 errors.append({key: row.get(key) for key in ("workflow_id", "context_id", "error_type")})
     group_counts, multi_rounds = Counter(), Counter()
@@ -126,14 +131,24 @@ def audit(arm: Path) -> dict:
         "host_pool_evidence": native.get("host_pool_evidence"),
         "context_prefix_reuse_evidence": native.get("context_prefix_reuse_evidence"),
         "host_eviction_attribution": native.get("host_block_eviction_attribution"),
-        "session_retire": {"close_time": timing(closes), "failures": errors},
+        "session_retire": {
+            "close_time": timing(closes), "failures": errors,
+            "queued_dispatch_count": queued_closes,
+            "enqueue_to_close_start": timing(close_queue),
+            "enqueue_to_http_complete": timing(close_envelope),
+            "semantics": (
+                "HTTP completion acknowledges dispatch acceptance, not scheduler "
+                "reference release or physical reclamation. Timing sums may overlap "
+                "and cannot be subtracted from workflow duration."
+            ),
+        },
         "terminal_cache": {
             "observed_contexts": len(terminal), "unavailable_anchor_events": unknown,
             "latest_context_samples": retained,
             "semantics": (
                 "Per-context leaf ancestry may overlap other contexts and future useful "
                 "shared prefixes. Do not sum as exclusive dead bytes or infer "
-                "reclamation from a session-close ACK."
+                "reclamation from HTTP session-close completion."
             ),
         },
         "actual_join_member_distribution": dict(group_counts),

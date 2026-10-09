@@ -74,6 +74,20 @@ def audit(arm: Path) -> dict:
                 and row.get("request_id") in child_requests
             ):
                 transports[row["request_id"]] = row
+    session_closes = {}
+    for path in arm.glob("client_*/workflows/*/sandbox_audit.jsonl"):
+        for row in records(path):
+            if row.get("event") not in {
+                "native_session_retire_start", "native_session_retire_complete",
+            }:
+                continue
+            key = (
+                row.get("workflow_id"), row.get("context_id"), row.get("context_epoch"),
+            )
+            if any(value is None for value in key):
+                continue
+            if key not in session_closes or row["event"] == "native_session_retire_complete":
+                session_closes[key] = row
     for submits in parent_submits.values():
         submits.sort(key=lambda row: (row["ts_ms"], row.get("sequence", 0)))
     parent_requests = {
@@ -156,6 +170,24 @@ def audit(arm: Path) -> dict:
                 last_raw + offset
                 if identity_matches and last_raw is not None else None
             )
+            close = session_closes.get((
+                client_result.get("workflow_id"), *native_identity[1:],
+            ), {}) if identity_matches else {}
+            close_start = close.get("close_start_monotonic_ms")
+            close_elapsed = (
+                close.get("close_elapsed_ms")
+                if close.get("event") == "native_session_retire_complete" else None
+            )
+            close_start_ts = close_start + offset if close_start is not None else None
+            close_complete_ts = (
+                close_start_ts + close_elapsed
+                if close_start_ts is not None and close_elapsed is not None else None
+            )
+            close_overlap = (
+                max(0., min(parent_ts, close_complete_ts) - max(join_ts, close_start_ts))
+                if None not in (parent_ts, join_ts, close_start_ts, close_complete_ts)
+                else None
+            )
             rows.append({
                 "command_id": command, "context_id": issue["context_id"],
                 "join_id": issue.get("join_id"), "node_id": issue["node_id"],
@@ -176,6 +208,10 @@ def audit(arm: Path) -> dict:
                 "child_client_finish_reason": client_attrs.get("finish_reason"),
                 "child_client_tool_call_count": client_attrs.get("tool_call_count"),
                 "child_client_invalid_tool_call_count": client_attrs.get("invalid_tool_call_count"),
+                "child_session_close_start_ts_ms": close_start_ts,
+                "child_session_http_complete_ts_ms": close_complete_ts,
+                "child_session_close_elapsed_ms": close_elapsed,
+                "child_session_close_queue_wait_ms": close.get("enqueue_to_close_start_ms"),
                 "native_submit_ts_ms": start,
                 "child_return_ts_ms": return_ts, "join_satisfied_ts_ms": join_ts,
                 "parent_next_request_id": parent_id,
@@ -191,6 +227,10 @@ def audit(arm: Path) -> dict:
                 "child_return_to_join_ms": _difference(join_ts, return_ts),
                 "join_to_parent_submit_ms": _difference(parent_ts, join_ts),
                 "parent_submit_to_first_service_ms": _difference(parent_service_ts, parent_ts),
+                "child_return_to_session_close_start_ms": _difference(close_start_ts, return_ts),
+                "child_return_to_session_http_complete_ms": _difference(close_complete_ts, return_ts),
+                "session_http_complete_to_parent_submit_ms": _difference(parent_ts, close_complete_ts),
+                "session_http_overlap_with_join_to_submit_ms": close_overlap,
                 "native_submit_lead_to_child_native_done_ms": _difference(native_done, start),
                 "submit_lead_to_child_return_ms": (
                     return_ts - start if return_ts is not None and start is not None else None
@@ -217,6 +257,10 @@ def audit(arm: Path) -> dict:
         "child_return_to_join_ms",
         "join_to_parent_submit_ms",
         "parent_submit_to_first_service_ms",
+        "child_return_to_session_close_start_ms",
+        "child_return_to_session_http_complete_ms",
+        "session_http_complete_to_parent_submit_ms",
+        "session_http_overlap_with_join_to_submit_ms",
     )
     unique_children = {
         row["child_request_id"]: row for row in rows
@@ -233,6 +277,9 @@ def audit(arm: Path) -> dict:
             "raw pulls include waiting for server data. Neither is a pure network "
             "or function CPU measurement. Missing legacy timings remain unknown. "
             "Parent first service uses the next same-context request after JOIN."
+            " Terminal session HTTP completion confirms dispatch acceptance, not "
+            "scheduler reference release. HTTP/JOIN-to-submit overlap is observed "
+            "interval overlap, not a causally isolated or additive JCT saving."
         ),
         "command_count": len(rows), "child_return_observed_count": len(leads),
         "started_before_child_return_count": sum(x > 0 for x in leads),
