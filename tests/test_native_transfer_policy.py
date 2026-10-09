@@ -253,6 +253,30 @@ def test_prepare_rejects_insufficient_host_space_without_evicting_to_make_backup
     assert runtime.counts["prepare_candidate_no_host_capacity"] == 1
 
 
+def test_prepare_small_ancestor_requires_space_for_missing_checkpoint_prefix():
+    from dataclasses import replace
+
+    runtime, hint = tool_runtime()
+    prepare_cache(runtime)
+    step = ShadowBackupStep(
+        hint.key, 12, 4, 12, 4, missing_full_prefix_tokens=105,
+    )
+    headroom = NS(host_full_free_tokens=100, host_mamba_free_slots=0)
+    assert runtime._prepare_step_rank(
+        step, headroom, full_pressure=True, mamba_pressure=False,
+    ) is None
+    assert runtime.counts["prepare_checkpoint_no_host_capacity"] == 1
+    headroom.host_full_free_tokens = 105
+    assert runtime._prepare_step_rank(
+        step, headroom, full_pressure=True, mamba_pressure=False,
+    ) is not None
+    headroom.host_full_free_tokens = 5
+    remaining = replace(step, missing_full_prefix_tokens=5)
+    assert runtime._prepare_step_rank(
+        remaining, headroom, full_pressure=True, mamba_pressure=False,
+    ) is not None
+
+
 def test_prepare_rejects_window_too_short_to_copy_then_prefetch():
     runtime, hint = tool_runtime()
     headroom = prepare_cache(runtime)

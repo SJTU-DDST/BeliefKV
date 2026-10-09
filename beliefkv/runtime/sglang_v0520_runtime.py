@@ -1657,6 +1657,7 @@ class NativeAdmissionRuntime:
             return
         node = next(node for node in candidate.nodes if node.node_id == step.node_id)
         full_needed = max(node.full_device_tokens - node.full_host_tokens, 0)
+        checkpoint_full_needed = max(full_needed, step.missing_full_prefix_tokens)
         mamba_needed = int(
             step.include_mamba and node.mamba_device_present and not node.mamba_host_present
         )
@@ -1665,7 +1666,7 @@ class NativeAdmissionRuntime:
             observe_static_full_mamba_headroom(cache)
         )
         fits = (
-            headroom.host_full_free_tokens >= full_needed
+            headroom.host_full_free_tokens >= checkpoint_full_needed
             and headroom.host_mamba_free_slots >= mamba_needed
             if headroom.observable else None
         )
@@ -1680,6 +1681,7 @@ class NativeAdmissionRuntime:
             "prepare_leaf_node_id": step.leaf_node_id,
             "prepare_leaf_creation_time": step.leaf_creation_time,
             "prepare_required_full_tokens": full_needed,
+            "prepare_required_checkpoint_full_tokens": checkpoint_full_needed,
             "prepare_required_mamba_slots": mamba_needed,
             "prepare_host_full_free_tokens": headroom.host_full_free_tokens,
             "prepare_host_mamba_free_slots": headroom.host_mamba_free_slots,
@@ -3247,14 +3249,17 @@ class NativeAdmissionRuntime:
             node = cache.tree_core.node_by_id(step.node_id)
             full, state = node.component_data[0], node.component_data[2]
             full_units = len(full.value) if full.value is not None and full.host_value is None else 0
+            checkpoint_full_units = max(full_units, step.missing_full_prefix_tokens)
             mamba_units = int(
                 step.include_mamba and state.value is not None and state.host_value is None
             )
             if (
-                full_units > headroom.host_full_free_tokens
+                checkpoint_full_units > headroom.host_full_free_tokens
                 or mamba_units > headroom.host_mamba_free_slots
             ):
                 self.counts["prepare_candidate_no_host_capacity"] += 1
+                if full_units <= headroom.host_full_free_tokens < checkpoint_full_units:
+                    self.counts["prepare_checkpoint_no_host_capacity"] += 1
                 return None
             entries = cache.host_pool_group.entry_map
             full_unit = entries["kv"].host_pool.size_per_token
@@ -3299,6 +3304,7 @@ class NativeAdmissionRuntime:
                 "event": "prepare_candidate_selected", "ts_ms": time.time() * 1000.,
                 "source": source, "context_id": step.key.context_id,
                 "context_epoch": step.key.context_epoch, "node_id": step.node_id,
+                "missing_full_prefix_tokens": step.missing_full_prefix_tokens,
                 "reclaimable_pressured_bytes": -rank[0],
                 "transfer_bytes": rank[1], "scanned_candidates": scanned,
             })

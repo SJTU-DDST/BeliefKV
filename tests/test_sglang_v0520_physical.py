@@ -832,13 +832,30 @@ def test_prepare_extends_full_prefix_without_copying_any_mamba_state():
     candidate = ActionLocalShadowCandidate(anchors, (root, ancestor, checkpoint), 12, 2)
     step = next_shadow_backup_step(candidate)
     assert step.node_id == 11 and not step.include_mamba
+    assert step.missing_full_prefix_tokens == 12
     ancestor.full_host_tokens = 8
     step = next_shadow_backup_step(candidate)
     assert step.node_id == 12 and not step.include_mamba
+    assert step.missing_full_prefix_tokens == 4
     checkpoint.full_host_tokens = 4
     assert next_shadow_backup_step(candidate) is None
     assert not ancestor.mamba_host_present
     assert not checkpoint.mamba_host_present
+
+
+def test_prepare_prefix_budget_excludes_generation_after_reusable_checkpoint():
+    anchors = replace(prefetch_anchors(), reusable_input_tokens=12)
+    root = prefetch_node(0, None, 1, key_tokens=0)
+    ancestor = prefetch_node(11, 0, 4, full_gpu=8, full_host=8, key_tokens=8)
+    checkpoint = prefetch_node(12, 11, 5, full_gpu=4, mamba_gpu=True, key_tokens=4)
+    generated = prefetch_node(13, 12, 6, full_gpu=2000, mamba_gpu=True, key_tokens=2000)
+    anchors = replace(anchors, component_leaves=((0, ((13, 6),)), (2, ((13, 6),))))
+    candidate = ActionLocalShadowCandidate(
+        anchors, (root, ancestor, checkpoint, generated), 2004, 2,
+    )
+    step = next_shadow_backup_step(candidate)
+    assert step.node_id == 12
+    assert step.missing_full_prefix_tokens == 4
 
 
 def test_full_only_receipt_rejects_unselected_mamba_before_enqueue():

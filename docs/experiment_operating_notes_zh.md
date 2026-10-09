@@ -16,6 +16,14 @@ v11冻结3d750f1，仍允许Mamba PREPARE；FULL-only修订用于后续
 冷启动，不得计入v11的性能解释。
 v10补查的35066次后续同node/pool D2H均有中间Host FULL驱逐，
 应分析备份回收与重复补传，不能称为覆盖有效前缀。
+PREPARE选择须比较Host空闲与可复用检查点路径上的全部缺失FULL，
+不能只因1-token祖先放得下就启动容量无法完成的前缀备份。已有效
+备份部分与检查点后的生成输出不占新增预算；实际仍逐段补缺。
+`prepare_required_checkpoint_full_tokens`记录完整缺失预算，
+`prepare_checkpoint_no_host_capacity`记录单段可放下但检查点不可
+完成的拒绝。该预算不是Host容量预留，不阻止原生write-back回收
+冗余Host FULL，不保证消除所有重复补传。相关修订仅用于v13结束
+后的冷启动版本，须同时报告有效消费和迁移机会是否减少。
 
 v11因空回收tracker的FULL键缺失于2026-10-09 21:34:34退出。
 实现故障不能靠客户端重试继续采集：停止该轮，保留故障前遥测，

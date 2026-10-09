@@ -209,6 +209,8 @@ class ShadowBackupStep:
     node_id: int
     creation_time: int | float
     include_mamba: bool = False
+    # The remaining prefix budget is an observation, not the DMA identity.
+    missing_full_prefix_tokens: int = field(default=0, compare=False)
 
 
 @dataclass(frozen=True)
@@ -477,6 +479,10 @@ def next_shadow_backup_step(
                 node_id=node_id,
                 creation_time=node.creation_time,
                 include_mamba=False,
+                missing_full_prefix_tokens=sum(
+                    max(nodes[current].full_device_tokens - nodes[current].full_host_tokens, 0)
+                    for current in eligible_paths
+                ),
             )
     return None
 

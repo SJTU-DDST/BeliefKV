@@ -201,6 +201,21 @@ Lifecycle source reporting:
 - Report: experiments/reports/v13_prefetch_sources_partial_20261010_0034.json.
   Preserve frozen-driver reports and regenerate follow-up versions separately.
 
+PREPARE checkpoint budget:
+- The partial V13 has 9723/13435 PREPARE commands of at most64 FULL tokens.
+  A shared one-token node has7471 re-backups and no observed restore association.
+  Native write-back prioritizes reclaiming redundant Host FULL copies; these
+  observations do not prove overwrite of a still-valid Host copy.
+- Require free Host space for all currently missing FULL extents on the
+  reusable checkpoint paths, rather than only the next ancestor. Count existing
+  Host copies and generated output after the checkpoint as zero extra budget.
+- Still submit one missing extent through the existing native path. This is a
+  read-only selection budget, not an atomic Host reservation or residency promise.
+  Record required checkpoint tokens and capacity rejections separately.
+- 214 related CPU checks pass. Evaluate fewer repeated node commands, real
+  consumption, CPU cost and any lost useful opportunities in the next cold start.
+  Keep V13 frozen until its driver exits.
+
 ## Current PREPARE Cost And Handoff Fix
 
 Implemented in `/tmp/beliefkv-opportunity-20261009`, based on `e985d8c`.
