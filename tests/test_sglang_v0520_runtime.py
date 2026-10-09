@@ -2351,7 +2351,17 @@ def test_semantic_body_is_read_only_and_uses_only_prior_decode_progress(
     assert submitted[0].key == key
     runtime._poll_semantic_reports(now + 400)
     assert len(submitted) == 1
+    assert "child" not in runtime._semantic_frames
+    assert runtime.counts["semantic_unchanged_frame_skipped"] == 0
+    runtime.on_events((RuntimeEvent(
+        "duplicate-body", now, RuntimeEventKind.STRUCTURED_ACTION, "wf",
+        invocation_id="child", context_id="ctx-child", context_epoch=1,
+        attributes={SEMANTIC_TEXT: True, "request_id": "child",
+                    "content_chars": 128, "content_tail": "Report complete.",
+                    "monotonic_clock_domain": clock_domain},
+    ),))
     assert runtime.counts["semantic_unchanged_frame_skipped"] == 1
+    assert "child" not in runtime._semantic_frames
     runtime.on_events((RuntimeEvent(
         "tool-body", now + 2, RuntimeEventKind.STRUCTURED_ACTION, "wf",
         invocation_id="child", context_id="ctx-child", context_epoch=1,
@@ -2374,6 +2384,113 @@ def test_semantic_body_is_read_only_and_uses_only_prior_decode_progress(
     runtime._clear_semantic_invocation("child")
     assert "child" not in runtime._decoded_tool_requests
     assert "child" not in runtime._semantic_keys
+
+
+def semantic_pending_fixture():
+    from collections import deque
+
+    runtime = final_stage_runtime()
+    child = req("child")
+    child.session_id, child.session_generation = "cs", 1
+    child.beliefkv_metadata["context_epoch"] = 1
+    runtime.on_events((event(
+        7, RuntimeEventKind.LLM_SUBMIT, invocation_id="child",
+        context_id="ctx-child", context_epoch=1,
+        attributes={"request_id": "child"},
+    ),))
+    runtime.register_visible_request(child)
+    now = time.monotonic() * 1000
+    submitted = []
+    runtime._semantic_worker = NS(
+        poll=lambda: (), submit=submitted.append,
+        ready=True, disabled=False, dropped=0, error="", close=lambda: None,
+    )
+    runtime._semantic_progress["child"] = deque(((now - 200, 20),))
+
+    def text(timestamp, chars):
+        runtime.on_events((RuntimeEvent(
+            f"body-{timestamp}", timestamp, RuntimeEventKind.STRUCTURED_ACTION, "wf",
+            invocation_id="child", context_id="ctx-child", context_epoch=1,
+            attributes={SEMANTIC_TEXT: True, "request_id": "child",
+                        "content_chars": chars, "content_tail": "Report complete."},
+        ),))
+
+    return runtime, now, submitted, text
+
+
+def test_semantic_pending_snapshot_coalesces_then_resubmits_at_existing_interval():
+    runtime, now, submitted, text = semantic_pending_fixture()
+    text(now, 128)
+    runtime._poll_semantic_reports(now + 1)
+    text(now + 10, 160)
+    text(now + 20, 192)
+    runtime._poll_semantic_reports(now + 30)
+    assert len(submitted) == 1
+    assert runtime._semantic_frames["child"].ts_ms == now + 20
+    runtime._poll_semantic_reports(now + 400)
+    assert [item.content_chars for item in submitted] == [128, 192]
+    assert submitted[-1].observed_ts_ms == now + 20
+    assert not runtime._semantic_frames
+    assert runtime._semantic_progress["child"]
+    assert runtime._semantic_keys["child"] == submitted[-1].key
+    runtime.close()
+
+
+def test_semantic_pending_snapshot_retries_missing_target_without_new_text():
+    runtime, now, submitted, text = semantic_pending_fixture()
+    text(now, 128)
+    with patch.object(runtime, "_semantic_transfer_target_ready", return_value=False):
+        runtime._poll_semantic_reports(now + 1)
+    assert not submitted
+    assert "child" in runtime._semantic_frames
+    with patch.object(runtime, "_semantic_transfer_target_ready", return_value=True):
+        runtime._poll_semantic_reports(now + 200)
+    assert len(submitted) == 1
+    assert not runtime._semantic_frames
+    runtime.close()
+
+
+def test_semantic_pending_snapshot_retries_missing_service_without_new_text():
+    runtime, now, submitted, text = semantic_pending_fixture()
+    history = runtime._semantic_progress.pop("child")
+    text(now, 128)
+    runtime._poll_semantic_reports(now + 1)
+    assert not submitted
+    assert "child" in runtime._semantic_frames
+    runtime._semantic_progress["child"] = history
+    runtime._poll_semantic_reports(now + 200)
+    assert len(submitted) == 1
+    assert not runtime._semantic_frames
+    runtime.close()
+
+
+def test_semantic_pending_snapshot_expires_without_retaining_queue_capacity():
+    runtime, now, submitted, text = semantic_pending_fixture()
+    text(now, 128)
+    runtime._poll_semantic_reports(now + 1_501)
+    assert not submitted
+    assert not runtime._semantic_frames
+    assert runtime.counts["semantic_pending_frame_expired"] == 1
+    text(now + 1_600, 160)
+    runtime._poll_semantic_reports(now + 1_601)
+    assert len(submitted) == 1
+    runtime.close()
+
+
+def test_semantic_reply_still_creates_final_stage_after_snapshot_submission():
+    runtime, now, submitted, text = semantic_pending_fixture()
+    runtime._clear_final_stage("join")
+    text(now, 128)
+    runtime._poll_semantic_reports(now + 1)
+    assert len(submitted) == 1
+    assert not runtime._semantic_frames
+    reply = SemanticReportReply(submitted[0], .9, 10., 30., 60., 0.)
+    runtime._semantic_worker.poll = lambda: (reply,)
+    runtime._poll_semantic_reports(now + 200)
+    assert runtime._semantic_forecasts["child"] == reply
+    assert runtime._final_stages["join"].request_id == "child"
+    assert runtime._final_stages["join"].semantic_only
+    runtime.close()
 
 
 def test_native_decode_tool_marker_invalidates_forecast_before_client_tool_chunk():

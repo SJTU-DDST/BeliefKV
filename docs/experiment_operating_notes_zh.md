@@ -119,6 +119,21 @@ SHA256，不能因editable安装指向主目录而比较了冻结代码。基准
 `experiments/reports/v16_prepare_prefix_budget_cpu_20261010.json`。
 候选只在隔离工作树提交，v15两侧及完整后处理继续冻结。
 
+下一版语义待处理表在提交worker后移除文本帧，forecast、进度、
+身份与EOS证据继续保留。缺少目标或已有decode服务进度时仍
+重试；新文本按原间隔合并提交，超过原1500 ms有效期的待提交
+帧释放缓冲位。128帧上限针对待提交帧。计数
+`semantic_unchanged_frame_skipped`改为收到的重复已提交快照，
+不能与旧逐tick重复扫描计数直接比较。171项相关检查通过，
+1项因隔离目录缺少固定encoder产物跳过；高分回复仍能建立阶段。
+六种CPU配置、每配置400次的模型输入与接受forecast一致，
+12/48/96已提交帧且无新文本的维护均值下降91.38%/97.78%/
+98.82%，目标重试下降56.73%；持续新文本慢0.30%，空表慢
+3.29%但绝对差仅0.0463微秒。两侧计时包装相同，stub worker
+分数0.25，不以该基准证明高分触发、真实IPC、神经推理或GPU
+收益。报告：`experiments/reports/v16_semantic_pending_cpu_20261010.json`。
+保留模型与阈值；修订只在隔离工作树，v15两侧及后处理继续冻结。
+
 v14的采集、完整driver、审计、HTML与workspace清理现已全部结束：
 154 completed、2 incomplete、0 error。采集10977.317秒，
 完成吞吐50.504 workflow/h，比v13高10.87%，仍比历史v10 native

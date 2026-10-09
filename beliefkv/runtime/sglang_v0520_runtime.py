@@ -1052,6 +1052,9 @@ class NativeAdmissionRuntime:
                 self._ensure_observed_final_stage(key)
         if type(text) is not str or type(chars) is not int or chars < 32:
             return
+        if self._semantic_submitted_frames.get(rid) == (event.ts_ms, chars):
+            self.counts["semantic_unchanged_frame_skipped"] += 1
+            return
         if len(self._semantic_frames) >= 128 and rid not in self._semantic_frames:
             self.counts["semantic_text_capacity"] += 1
             return
@@ -1247,9 +1250,12 @@ class NativeAdmissionRuntime:
             if now_ms - self._semantic_submit_ms.get(rid, 0.) < SEMANTIC_FRAME_INTERVAL_MS:
                 continue
             if now_ms - event.ts_ms > 1_500:
+                self._semantic_frames.pop(rid, None)
+                self.counts["semantic_pending_frame_expired"] += 1
                 continue
             frame = (event.ts_ms, event.attributes["content_chars"])
             if self._semantic_submitted_frames.get(rid) == frame:
+                self._semantic_frames.pop(rid, None)
                 self.counts["semantic_unchanged_frame_skipped"] += 1
                 continue
             if not self._semantic_transfer_target_ready(key.invocation_id, now_ms):
@@ -1283,6 +1289,7 @@ class NativeAdmissionRuntime:
             ))
             self._semantic_submit_ms[rid] = now_ms
             self._semantic_submitted_frames[rid] = frame
+            self._semantic_frames.pop(rid, None)
             self.counts["semantic_input_submitted"] += 1
 
     @timed_runtime("scheduler_maintenance")

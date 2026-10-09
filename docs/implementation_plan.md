@@ -172,6 +172,25 @@ Current status:
   Preserve these regressions and do not infer GPU or end-to-end throughput.
   Report:v16_prepare_prefix_budget_cpu_20261010.json. Commit in isolation;
   both frozen V15 arms and complete postprocessing remain unchanged.
+- The isolated semantic text buffer retains only unsubmitted snapshots.
+  Remove a frame after submission while preserving its forecast, completed
+  decode progress, request identity and EOS evidence. Missing transfer
+  targets or prior service still retry; new text coalesces at the original
+  interval. Release pending frames beyond the existing1500ms validity bound.
+  The128-frame limit now bounds pending text; semantic_unchanged_frame_skipped
+  counts received duplicate submitted snapshots rather than repeated ticks.
+  Keep model, phase threshold and H2D triggering unchanged. Related checks:
+  171 pass, one skipped because the isolated pinned encoder artifact is absent.
+  A high-score reply still creates a final-stage candidate after frame removal.
+  Six CPU configurations/400 iterations preserve submitted model inputs and
+  accepted forecasts. With12/48/96 submitted snapshots and no new text,
+  mean reductions are91.38/97.78/98.82%;48 changes0.10810→0.00240ms.
+  Target-retry mean falls56.73%; fresh text regresses0.30%, and idle regresses
+  3.29% by only0.0463us. Match disabled timing wrappers on both sides.
+  Worker replies score0.25; this benchmark does not validate high-score
+  triggers, neural inference, real IPC or GPU throughput. Preserve all cases:
+  v16_semantic_pending_cpu_20261010.json. Commit only in isolation until
+  both V15 arms and full postprocessing finish.
 - V14 collection, outer driver, audits, HTML export and cleanup have all
   finished:154 completed, two incomplete, no errors out of156. Duration is
   10977.317s, completed throughput50.504/hour, output700.235 tokens/s and

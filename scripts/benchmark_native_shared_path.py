@@ -53,6 +53,7 @@ def baseline_classes(revision: str):
     methods = {
         "_causal_rank", "plan_native_prefill", "_local_frontier_features",
         "_prefill_causal_ranks", "on_batch_completed", "dispatch_execution_handoff",
+        "_capture_semantic_text", "_poll_semantic_reports",
     }
     original.name = "BaselineRuntime"
     original.bases = [ast.Name(id="NativeAdmissionRuntime", ctx=ast.Load())]
