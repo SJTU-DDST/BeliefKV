@@ -6,6 +6,37 @@ guard、终态门禁或模型动作授权。启动前同时阅读
 
 ## 当前执行状态
 
+v14的采集、完整driver、审计、HTML与workspace清理现已全部结束：
+154 completed、2 incomplete、0 error。采集10977.317秒，
+完成吞吐50.504 workflow/h，比v13高10.87%，仍比历史v10 native
+低5.76%。目标继续保持active，不能以handoff复用改善代替吞吐
+验收。已删除154个workspace，保留2个未完成现场，采集后约
+222 GiB可用；客户端exit=1来自154/156满足native JCT口径，
+不是服务端实现故障。最终runtime的physical_disabled=false，
+语义worker无错误。旧运行快照保留为历史记录。
+
+本次用户补充纳入当前 /goal执行要求：FULL PREPARE只补缺失段，
+复用仍有效的Host副本；Host副本被驱逐后才重新备份。投机Mamba
+PREPARE关闭，实际驱逐仍保存恢复所需的检查点状态。v14的703次
+后续同node/pool D2H全部有中间Host驱逐，不称为覆盖有效副本。
+1130次PREPARE ACK中206次关联恢复，仍须减少回收后补传。
+JOIN/tool的ACK到首次服务P50仍为4584/2813ms；handoff为25ms，
+其FULL传输/确认首次复用70.517/70.128GB，不能并入提前预测覆盖。
+
+部署隔离分支的已提交共用路径优化及精确引擎差异后，启动v15
+`predictive_h2d native`，两侧使用同一新代码及预测产物并各自
+冷启动。全过程冻结主目录commit、完整patch和artifact指纹；
+运行中的后续开发使用隔离工作树。直接调用对比脚本的导入路径
+修复已通过实际三轮报告验证。现有CPU/协议检查仍为验证依据，
+本次不重复GPU测试、不增加agent guard。
+最终报告为`experiments/reports/v14_native_policy_comparison_20261010.json`、
+`v14_h2d_sources_final_20261010.json`、
+`v14_prefetch_sources_final_20261010.json`及
+`v14_join_pipeline_final_20261010.json`。
+
+以下带具体时间的v14观察和“等待driver退出”约束是当时的运行
+记录，现已满足部署条件；不能把新版优化追记为v14采集时已生效。
+
 v13采集、外层driver、HTML导出及workspace清理已结束。已合入
 后续498c0ab修订并部署SGLang增量，完整staging patch反向检查通过。
 v14已从50b9179按同一156任务、108+48到达、running48、
@@ -122,8 +153,11 @@ child请求的JOIN到提交P50为695ms，关闭HTTP重叠P50为419ms；
 审计、HTML与workspace清理结束后，部署隔离分支截至edbe4dc的
 提交。候选完整patch SHA256为
 `dbde39b7f37977ecacd72dddf78b3da94a56fa6a0879afb1798ae55ab7f1fe63`，
-正向upstream及反向候选适配检查通过；部署前比较服务目录，避免
-重复应用已存在的Mamba冷回收辅助逻辑。
+正向upstream及反向候选适配检查通过。比较32个patch路径已确认
+当前服务目录的Mamba冷回收辅助逻辑相同；实际差异为两个运行
+文件和两个测试文件，149行新增、1行删除。只应用已生成并通过
+正反向检查的`experiments/reports/v15_engine_delta_20261010.patch`，
+随后核对完整staging patch，避免重复应用旧修复。
 
 04:54 CST审计中handoff的FULL传输/确认首次复用为70.517/70.128 GB，
 ACK到服务P50为25 ms；JOIN/tool等待仍为4584/2813 ms。三类来源

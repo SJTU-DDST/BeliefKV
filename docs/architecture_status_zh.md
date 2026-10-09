@@ -2,7 +2,7 @@
 
 更新日期：2026-10-10。
 
-## 当前目标、v14 运行与后续优化
+## 当前目标、v14 最终结果与 v15 对照
 
 当前目标是在固定workload、模型、容量及到达表下，使predictive
 相对native取得可核实的性能提升。除预测传输外，优先减少调度/
@@ -16,7 +16,8 @@
 3. 提高有用FULL预取覆盖，验证已修复handoff是否真正替代需求
    恢复，并以实际复用、完成吞吐、JCT及重算量评价收益。
 
-补充的执行约定：PREPARE只提前备份尚未拥有有效Host副本的FULL
+当前active /goal继续采用上述方向，并落实以下执行约定：
+PREPARE只提前备份尚未拥有有效Host副本的FULL
 前缀。原生build_backup_spec已跳过备份完成的FULL节点，radix节点
 分裂会拆分并保留已有Host索引；后续新增前缀只复制未备份节点。
 Host副本若已被驱逐则必须重新备份，不能复用已失效的索引。
@@ -36,7 +37,54 @@ Host副本，也不能跨radix分裂推导精确重复字节。修正旧合并�
 分池归因没有改变本轮计数。补查报告：
 `experiments/reports/v10_prepare_full_incrementality_20261009.json`。
 
-当前目标仍未达成。v13的采集、审计、HTML导出和workspace清理
+当前目标仍未达成。v14采集、审计、HTML导出和workspace清理
+已全部结束，156个workflow中154个completed、2个incomplete、
+0个error。采集窗口10977.317秒，完成吞吐50.504 workflow/h，
+输出700.235 token/s，GPU利用率均值65.316%。相较v13，采集
+窗口缩短9.81%、完成吞吐提高10.87%；相较历史v10 native，
+完成吞吐仍低5.76%。这只是开发对照：v10尚未采用本次共用
+客户端优化，不能据此宣称新版predictive已获得相对native收益。
+完整对比确认三轮任务集与物理池容量一致。
+
+v14最终H2D：原生12182批/3532.278 GB；JOIN/tool提前恢复
+642个命令/10.901 GB；需求handoff14667个节点命令、4681批/
+125.505 GB；未知受控来源为0。FULL消费如下：
+
+| 来源 | FULL传输GB | 确认FULL首次复用GB | ACK到首次服务P50 |
+| --- | ---: | ---: | ---: |
+| JOIN | 0.981 | 0.620 | 4584 ms |
+| tool | 3.610 | 2.639 | 2813 ms |
+| demand handoff | 70.517 | 70.128 | 25 ms |
+
+首次服务前后续原生加载关联分别为18、3、19个目标，legacy分池
+证据仍不能证明精确重复字节。1130次PREPARE ACK中206次关联
+后续恢复；703次后续同node/pool D2H均有中间Host驱逐。优化
+对象是备份回收后的重复补传和未消费备份，不是覆盖有效FULL。
+52次压力迁出中48次关联先前PREPARE ACK。
+
+JOIN最终审计105个节点命令对应74个不同child请求；22个命令
+在原生EOS前提交，83个在EOS后提交。去重请求的EOS到客户端
+finish P50为1242 ms、JOIN到parent提交628 ms、提交到首次服务
+467 ms；关闭HTTP与JOIN到提交的重叠P50为406 ms。上述重叠
+不能直接作为JCT节省。下一轮实测SDK请求/流式/工具碎片优化及
+异步终态关闭能否缩短此链路，同时检查提前恢复的驻留和准入。
+最终runtime为final=true、physical_disabled=false、语义worker
+无错误。两个incomplete为django-11087和django-11555：前者无
+语义完成且出现空reasoning重试；后者末两次root响应以length
+结束并持续调查。客户端exit=1由未全部满足native JCT口径引起，
+不构成已证实的实现故障。已删除154个workspace，保留2个现场；
+采集后约222 GiB可用。
+
+最终报告：
+`experiments/reports/v14_native_policy_comparison_20261010.json`、
+`experiments/reports/v14_h2d_sources_final_20261010.json`、
+`experiments/reports/v14_prefetch_sources_final_20261010.json`、
+`experiments/reports/v14_join_pipeline_final_20261010.json`。
+v14 HTML：
+`experiments/raw/qwen35_native_predictive_replenished_108plus48_20261010_v14/timelines/predictive_h2d.html`。
+以下v13结果及带具体采样时间的v14段落是历史记录，不代表仍在运行。
+
+v13的采集、审计、HTML导出和workspace清理
 均已完成，156个workflow中154个completed、1个error、1个incomplete。
 采集窗口12171.006秒，完成吞吐45.551 workflow/h；v10 native为
 10345.487秒、53.589 workflow/h。同任务与容量下，v13窗口长17.65%，
@@ -262,9 +310,16 @@ JOIN到parent提交628 ms，其中关闭HTTP区间重叠406 ms；
 完整SGLang patch的SHA256为
 `dbde39b7f37977ecacd72dddf78b3da94a56fa6a0879afb1798ae55ab7f1fe63`；
 与候选引擎反向检查及对原始upstream临时index的正向检查均通过。
-部署时须比较完整patch与当前服务目录，不能直接叠加候选引擎的
-全部未提交diff，其中必要Mamba冷回收辅助逻辑可能已在v14存在。
-v14完整driver、审计、HTML与workspace清理退出后，再统一部署。
+逐文件比较完整patch涉及的32个路径：当前服务目录已包含Mamba
+冷回收辅助逻辑，实际差异仅为radix_cache、unified_radix_cache及
+两个测试文件，共149行新增、1行删除。已生成
+`experiments/reports/v15_engine_delta_20261010.patch`，对服务目录的
+正向检查和候选目录的反向检查均通过；其SHA256为
+`d1a1720cace4b06557d728f709a638d0644ab3727d19c11576b3581b7ced38a0`。
+部署只应用该精确差异，再核对完整staging patch；不能直接叠加
+候选引擎的全部未提交diff。
+v14完整driver、审计、HTML与workspace清理现已退出，可以统一部署。
+直接调用对比脚本的仓库导入路径已修复，三轮实际对比报告生成成功。
 
 下一轮v15使用既有双arm驱动，顺序为predictive_h2d、native，
 两侧各冷启动，采用同一最新代码、模型/预测头及156任务108+48到达

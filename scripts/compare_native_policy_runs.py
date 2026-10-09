@@ -11,6 +11,11 @@ import gzip
 import json
 from pathlib import Path
 from statistics import mean, median
+import sys
+
+ROOT = Path(__file__).resolve().parents[1]
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
 
 from beliefkv.metrics.execution_timeline import _merge_intervals
 from scripts.audit_native_h2d_sources import (

@@ -2,7 +2,7 @@
 
 Status date: 2026-10-10.
 
-## Current Objective And Running V14
+## Current Objective And V15 Comparison
 
 Keep the fixed workload, model, capacity and arrival schedule. Continue until
 predictive has a verifiable performance improvement relative to native.
@@ -27,7 +27,8 @@ Additional execution requirements:
   duplicate bytes. Rename that audit field to later_node_pool_d2h and state the
   unresolved allocation/split identity limits.
 
-These extend the existing active goal. For legacy merged transfers, subtract
+These are concrete execution requirements of the existing active /goal;
+the native-relative throughput direction is unchanged. For legacy merged transfers, subtract
 known child pool receipts before attributing the remaining untagged nodes.
 V10 re-audit finds intervening same-node FULL Host eviction before all 35066
 later D2H associations. This supports reclaim followed by re-backup, not
@@ -36,6 +37,43 @@ across splits. The legacy residual correction did not change these counts.
 Report: experiments/reports/v10_prepare_full_incrementality_20261009.json.
 
 Current status:
+- V14 collection, outer driver, audits, HTML export and cleanup have all
+  finished:154 completed, two incomplete, no errors out of156. Duration is
+  10977.317s, completed throughput50.504/hour, output700.235 tokens/s and
+  mean GPU utilization65.316%. Completed throughput is10.87% above V13
+  but5.76% below historical V10 native. All three task sets and physical
+  pool capacities match. This remains development evidence, not a same-version
+  native-relative performance gain.
+- Final V14 source audit: native12182 batches/3532.278GB, anticipation
+  JOIN/tool642 commands/10.901GB, demand handoff14667 node commands,
+  4681 batches/125.505GB; unknown controlled source0.
+  JOIN/tool/handoff FULL transfer is0.981/3.610/70.517GB and verified
+  first reuse0.620/2.639/70.128GB; ACK-to-first-service P50 is
+  4584/2813/25ms. Native reload associations18/3/19 retain legacy
+  pool identity limits; they do not establish exact duplicate bytes.
+- Of1130 final PREPARE ACKs,206 have subsequent restoration associations.
+  All703 later same-node/pool D2H associations have intervening Host eviction.
+  Pressure demotion occurs52 times,48 linked to a prior PREPARE ACK.
+  Preserve incrementality and reduce reclaim/re-backup and unconsumed backups.
+- Final JOIN105 node commands correspond to74 child requests;22 commands
+  precede native EOS and83 follow it. Unique-child EOS-to-finish P50 is
+  1242ms, JOIN-to-parent-submit628ms and submit-to-service467ms.
+  Child-close HTTP overlaps JOIN-to-submit by406ms at P50; this is not
+  a causally isolated or additive JCT saving.
+- Final runtime reports final=true, physical_disabled=false and no semantic
+  worker error. django11087 has no semantic completion and empty reasoning
+  retries; django11555 ends with two length responses and unresolved work.
+  Client exit1 reflects native-JCT eligibility for154/156, not an established
+  implementation failure. Cleanup removed154 workspaces and retained two.
+- Deploy the committed follow-up package and exact engine delta, then run
+  fresh V15 predictive/native arms with the same shared harness improvements.
+  Fixing direct comparison-script imports has been validated by the actual
+  completed three-run report. Keep code and artifacts frozen across both arms.
+
+The following V13 results and timestamped V14 development observations are
+historical records. Statements about keeping V14 live unchanged applied during
+its collection; no V14 process or postprocessing remains active.
+
 - V13 collection, driver audits, timeline export and workspace cleanup have
   finished. Outcomes: 154 completed, one error, one incomplete out of 156.
   Duration12171.006s and45.551 completed/hour remain behind V10 native's
@@ -193,30 +231,30 @@ Current status:
   workspaces. Preserve summaries, patches, telemetry, final reports and HTML.
 
 Deployment and next comparison:
-- At2026-10-10 04:51 CST, V14 has150 terminal results:148 completed,
-  two incomplete, no errors, six pending. Physical actions remain enabled,
-  semantic_worker_error is empty and PREPARE remains missing_full_prefix.
-  django11087 lacks semantic completion; django11555 ends with two length
-  responses and no completion. No implementation fault has been established.
-  Keep the whole running driver and its export/cleanup frozen.
-- The04:54 CST source snapshot has642 JOIN/tool commands/10.901GB,
+- V14 is fully finished, including audits, HTML and workspace cleanup;
+  deployment can proceed. Final outcomes and performance are recorded above.
+- The final source audit has642 JOIN/tool commands/10.901GB,
   14667 demand-handoff node commands/125.505GB and3532.278GB native H2D,
   with no unknown controlled source. Handoff FULL transfer/reuse is
   70.517/70.128GB and ACK-to-service P50 is25ms; JOIN/tool still wait
   4584/2813ms. Do not credit demand handoff as anticipatory prediction.
-  PREPARE has1130 ACKs/206 restoration associations; all702 later same-node/
+  PREPARE has1130 ACKs/206 restoration associations; all703 later same-node/
   pool D2H associations have intervening Host eviction. Reduce reclaim and
   re-backup, not valid-copy reuse. Unique-child EOS-to-finish P50 is1242ms,
   JOIN-to-parent-submit628ms, with406ms overlapping close HTTP. These are
-  running snapshots and overlap evidence, not an isolated JCT/throughput gain.
-- Follow-up code is committed through edbe4dc. Its complete staging patch
+  final consumption and overlap evidence, not an isolated JCT/throughput gain.
+- Follow-up performance code is committed through edbe4dc, with subsequent
+  goal and deployment documentation. Its complete staging patch
   SHA256 is dbde39b7f37977ecacd72dddf78b3da94a56fa6a0879afb1798ae55ab7f1fe63.
   Candidate reverse-check and pristine upstream temporary-index forward-check
-  passed. Compare the complete patch with the live engine before deployment;
-  do not blindly apply the candidate's whole unstaged delta because the live
-  engine already contains some necessary Mamba cold-demotion helpers.
-- After the entire V14 driver, audits, HTML and workspace cleanup exit,
-  deploy the committed package and run V15 with the existing full AB driver
+  passed. A file comparison over all32 patched paths confirms that live
+  Mamba cold-demotion helpers already match the candidate. Only radix_cache,
+  unified_radix_cache and two test files differ:149 insertions/one deletion.
+  The generated experiments/reports/v15_engine_delta_20261010.patch passes
+  a live forward-check and candidate reverse-check; SHA256 is
+  d1a1720cace4b06557d728f709a638d0644ab3727d19c11576b3581b7ced38a0.
+  Apply only this exact delta, then verify the complete staging patch.
+- Deploy the committed package and run V15 with the existing full AB driver
   in predictive_h2d/native order, fresh server and cache for each arm.
   Keep156 tasks,108+48 arrivals separated by3600s, running48,
   Host200GB80:20, HBM ratio0.9, context131072/completion8192,
@@ -234,6 +272,11 @@ Deployment and next comparison:
   retain those paths rather than using absent isolated-worktree defaults.
 
 Final source/consumption/pipeline reports are in experiments/reports:
+v14_h2d_sources_final_20261010.json,
+v14_prefetch_sources_final_20261010.json,
+v14_join_pipeline_final_20261010.json.
+Complete three-run comparison: v14_native_policy_comparison_20261010.json.
+Historical V13 source/consumption/pipeline reports:
 v13_h2d_sources_final_20261010.json,
 v13_prefetch_sources_final_20261010.json,
 v13_join_pipeline_final_20261010.json.
