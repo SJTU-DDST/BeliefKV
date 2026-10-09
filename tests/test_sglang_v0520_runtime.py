@@ -2215,22 +2215,35 @@ def test_terminal_cache_watch_is_read_only_and_keeps_shared_node_evidence(monkey
     emitted = []
     runtime._opportunity_writer = NS(record=emitted.append)
     key = PrefillCandidateKey("r", "wf", "child", "ctx", 0, 0, "s", 1)
-    refs = NS(snapshot_session_leaf_anchors=lambda *_args, **_kwargs: ((0, ((11, 4),)),))
-    cache = NS(session_refs=refs, tree_core=NS(node_by_id=lambda _node: NS(creation_time=4)))
+    refs = NS(snapshot_session_leaf_anchors=lambda *_args, **_kwargs: (
+        (0, ((11, 4),)), (2, ((12, 5),)),
+    ))
+    cache = NS(session_refs=refs, tree_core=NS(
+        node_by_id=lambda node: NS(creation_time={11: 4, 12: 5}[node]),
+    ))
     runtime._native_cache = cache
     from beliefkv.runtime.sglang_v0520_observer import UnifiedNodeSummary
     summary = UnifiedNodeSummary(
-        11, None, 4, 10, 10, True, True, 0, 0, 0, 0, 2, 2, 2, 2, None, None,
+        11, 7, 4, 10, 10, True, True, 0, 0, 0, 0, 2, 2, 2, 2, None, None,
     )
+    shared = replace(summary, node_id=7, parent_id=None, creation_time=3)
+    later_shared = replace(shared, full_session_refs=3)
+    leaf = replace(summary, node_id=12, creation_time=5)
     with patch(
         "beliefkv.runtime.sglang_v0520_runtime.observe_unified_node_closure",
-        return_value=NS(observable=True, nodes=(summary,)),
-    ):
+        side_effect=[
+            NS(observable=True, nodes=(summary, shared)),
+            NS(observable=True, nodes=(leaf, later_shared)),
+        ],
+    ) as observe:
         runtime._track_terminal_cache(key)
+    assert observe.call_count == 2
     [record] = emitted
     assert record["event"] == "terminal_context_cache_sample"
     assert record["nodes"][0]["full_session_refs"] == 2
     assert record["nodes"][0]["mamba_device_present"]
+    assert [node["node_id"] for node in record["nodes"]] == [11, 7, 12]
+    assert record["nodes"][1]["full_session_refs"] == 3
     assert "not exclusive dead bytes" in record["semantics"]
 
 

@@ -174,6 +174,21 @@ Current status:
   pass9. Blocked-close concurrency checks verify parent progress, terminal
   no-reuse, deduplication, retry identity and full drain before failure reporting.
   Keep this follow-up revision out of live V14. No GPU gain is established.
+- Deduplicate multi-anchor terminal-cache summaries before dictionary conversion.
+  Keep the original single-anchor serialization path.
+  Keep independent live observations of every anchor, last-observation values,
+  output order and all fields. Do not cache live ancestors across action-local
+  physical checks. Two existing terminal checks pass, including changing shared
+  ancestry. A bounded recent log sample has130 two-anchor and90 one-anchor
+  terminal rows; it is not the full-run distribution. Sixty interleaved CPU
+  iterations at24/64-node depth reduce final two-anchor means32.9/35.1%;
+  eight-anchor synthetic bounds reduce58.3/61.2%. Final single-anchor means
+  are approximately unchanged:24-node0.41% slower,64-node0.19% faster.
+  Retain the intermediate report with a2.55% single-anchor regression; it
+  prompted preservation of the original path. Match output fields/order and
+  native read counts, retain source hashes
+  and wall/thread CPU. Keep this optimization out of live V14; it is no proof
+  of GPU throughput improvement.
 - V13 cleanup removed154 archived workspaces and retained two forensic
   workspaces. Preserve summaries, patches, telemetry, final reports and HTML.
 
@@ -203,6 +218,12 @@ Partial terminal-close JOIN audit:
 v14_join_pipeline_session_close_partial_20261010.json.
 Reproduce with scripts/audit_join_transfer_windows.py; compare HTTP dispatch
 timing and interval overlap without treating either as scheduler release.
+Terminal sampling CPU comparisons:
+v15_terminal_sampling_cpu_final_20261010.json,
+v15_terminal_sampling_cpu_depth24_final_20261010.json.
+Reproduce with `scripts/benchmark_native_prepare_path.py --terminal-only
+--baseline-revision 6b951f5 --depth 24 --iterations 60` (or `--depth 64`).
+CPU evidence must not be counted as end-to-end speedup.
 The following V11--V13 entries describe the frozen collection history;
 references to keeping live V13 unchanged no longer imply a running process.
 

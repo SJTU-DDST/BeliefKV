@@ -218,6 +218,22 @@ session身份并重试，全部任务完成后才关闭audit。真实compaction
 GPU吞吐收益证据。快照报告：
 `experiments/reports/v14_join_pipeline_session_close_partial_20261010.json`。
 
+终态缓存采样的后续优化只改变多锚点序列化顺序：先按node/creation_time
+去重不可变summary，再将唯一节点转为字典；单锚点保持原路径。每个锚点仍独立观察
+实时祖先，保留最后一次观察值和原有输出顺序；不在物理动作或
+跨叶闭包校验中复用旧驻留信息。现有终态采样检查扩展共享祖先
+状态变化场景，2项通过。最近1000条运行日志中的220个终态样本，
+130个有两锚点，90个单锚点，不能据此推断整个实验的分布。
+60次交错CPU基准中，最终24/64节点双锚点均值下降32.9%/35.1%；
+八锚点下降58.3%/61.2%，只是较大的合成边界。最终单锚点约持平，
+24节点慢0.41%，64节点快0.19%。中间版本单锚点复查慢2.55%，
+因此增加原路径分支；中间报告仍保留。输出字段、顺序及
+native观察次数一致，单独记录wall/thread CPU和源码哈希。
+该修改仍在隔离工作树，不计入运行中的v14，也没有GPU吞吐
+收益证据。报告：
+`experiments/reports/v15_terminal_sampling_cpu_final_20261010.json`、
+`experiments/reports/v15_terminal_sampling_cpu_depth24_final_20261010.json`。
+
 最终报告：
 `experiments/reports/v13_h2d_sources_final_20261010.json`、
 `experiments/reports/v13_prefetch_sources_final_20261010.json`、

@@ -278,18 +278,132 @@ def handoff_identity_case(baseline):
     }
 
 
+def terminal_fixture(runtime_class, *, depth, anchor_count):
+    runtime, _, reads, _, observations = fixture(
+        runtime_class, workflows=4, depth=depth, backed=True,
+        host_full=1_000_000, leases=0,
+    )
+    cache = runtime._native_cache
+    original_lookup = cache.tree_core.node_by_id
+    watches, added = [], {}
+    for workflow in range(4):
+        key = runtime.context_sessions[f"ctx-wf-{workflow}-root"]
+        leaf = original_lookup(workflow * depth + depth - 1)
+        anchors = [(leaf.id, leaf.creation_time)]
+        for index in range(1, anchor_count):
+            node_id = 4 * depth + workflow * anchor_count + index
+            node = UnifiedTreeNode(
+                id=node_id, creation_time=node_id + 1., parent=leaf.parent,
+                key=range(128) if depth > 1 else (),
+                component_data={
+                    component: ComponentData(
+                        value=range(128) if component == 0 else (index,),
+                        host_value=range(128) if component == 0 else (index,),
+                        lock_ref=0, host_lock_ref=0, session_ref=1,
+                        session_ids={key.session_id},
+                    )
+                    for component in (0, 2)
+                },
+                write_through_pending_id=None, load_back_pending_id=None,
+            )
+            added[node_id] = node
+            anchors.append((node.id, node.creation_time))
+        watches.append({
+            "key": key, "anchors": anchors,
+            "terminated_ms": time.monotonic() * 1000., "sample_count": 0,
+        })
+
+    def node_by_id(node_id):
+        if node_id in added:
+            reads["node_lookup"] += 1
+            return added[node_id]
+        return original_lookup(node_id)
+
+    cache.tree_core.node_by_id = node_by_id
+    return runtime, watches, reads, observations
+
+
+def terminal_case(baseline, *, depth, anchor_count, iterations):
+    variants = {
+        name: terminal_fixture(cls, depth=depth, anchor_count=anchor_count)
+        for name, cls in (("baseline", baseline), ("optimized", NativeAdmissionRuntime))
+    }
+    samples = {name: {"wall": [], "thread_cpu": []} for name in variants}
+    reads_total = {name: Counter() for name in variants}
+    volatile = {"ts_ms", "elapsed_since_terminal_ms"}
+    canonical = None
+    try:
+        for iteration in range(iterations + 5):
+            names = list(variants)
+            if iteration % 2:
+                names.reverse()
+            outputs = {}
+            for name in names:
+                runtime, watches, reads, observations = variants[name]
+                observations.clear()
+                before = reads.copy()
+                wall_start = time.perf_counter_ns()
+                cpu_start = time.thread_time_ns()
+                for watch in watches:
+                    runtime._record_terminal_cache(watch)
+                cpu_ms = (time.thread_time_ns() - cpu_start) / 1_000_000
+                wall_ms = (time.perf_counter_ns() - wall_start) / 1_000_000
+                outputs[name] = [
+                    {key: value for key, value in row.items() if key not in volatile}
+                    for row in observations
+                ]
+                if len(observations) != len(watches) or any(
+                    len(row["nodes"]) != depth - 1 + anchor_count
+                    or row["unavailable_anchors"] or row["gone_or_replaced_anchors"]
+                    for row in observations
+                ):
+                    raise AssertionError(f"incomplete terminal fixture: {name}")
+                if iteration >= 5:
+                    samples[name]["wall"].append(wall_ms)
+                    samples[name]["thread_cpu"].append(cpu_ms)
+                    reads_total[name].update(reads - before)
+            if outputs["baseline"] != outputs["optimized"]:
+                raise AssertionError(f"changed terminal evidence at iteration {iteration}")
+            canonical = json.dumps(outputs["optimized"], sort_keys=True, separators=(",", ":"))
+        costs = {name: {clock: distribution(values) for clock, values in clocks.items()}
+                 for name, clocks in samples.items()}
+        if reads_total["baseline"] != reads_total["optimized"]:
+            raise AssertionError("changed terminal native-observation reads")
+        return {
+            "watch_count": len(watches), "depth": depth,
+            "anchor_count": anchor_count, "iterations": iterations,
+            "summaries_per_watch": depth * anchor_count,
+            "unique_summaries_per_watch": depth - 1 + anchor_count,
+            "output_equal": True,
+            "ignored_output_fields": sorted(volatile),
+            "canonical_output_sha256": hashlib.sha256(canonical.encode()).hexdigest(),
+            "costs": costs,
+            "observed_reads": {name: dict(value) for name, value in reads_total.items()},
+            "mean_reduction": {
+                clock: 1 - costs["optimized"][clock]["mean_ms"]
+                / costs["baseline"][clock]["mean_ms"]
+                for clock in ("wall", "thread_cpu")
+            },
+        }
+    finally:
+        for runtime, *_ in variants.values():
+            runtime.close()
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--baseline-revision", default="e985d8c")
     parser.add_argument("--workflows", type=int, default=156)
     parser.add_argument("--depth", type=int, default=24)
     parser.add_argument("--iterations", type=int, default=40)
+    parser.add_argument("--terminal-only", action="store_true",
+                        help="Measure read-only terminal samples with overlapping anchors.")
     parser.add_argument("--output", type=Path, required=True)
     args = parser.parse_args()
     if not 1 <= args.depth <= 64 or not 4 <= args.workflows <= 512 or args.iterations < 1:
         raise ValueError("depth 1..64, workflows 4..512 and positive iterations required")
     baseline, digests = baseline_runtime(args.baseline_revision)
-    cases = [
+    cases = [] if args.terminal_only else [
         measure_case(baseline, workflows=args.workflows, depth=args.depth,
                      iterations=args.iterations, **case)
         for case in (
@@ -305,18 +419,36 @@ def main():
         "baseline_revision": args.baseline_revision,
         "baseline_source_sha256": digests,
         "fixture": "validated static pools and real observer ancestry; sixteen retained workflow rounds",
-        "handoff_identity": handoff_identity_case(baseline),
+        "optimized_source_sha256": {
+            path: hashlib.sha256((ROOT / path).read_bytes()).hexdigest()
+            for path in digests
+        },
+        "benchmark_source_sha256": hashlib.sha256(Path(__file__).read_bytes()).hexdigest(),
+        "handoff_identity": None if args.terminal_only else handoff_identity_case(baseline),
         "cases": cases,
+        "terminal_cases": [
+            terminal_case(baseline, depth=args.depth, anchor_count=anchors,
+                          iterations=args.iterations)
+            for anchors in (1, 2, 8)
+        ],
     }
     args.output.parent.mkdir(parents=True, exist_ok=True)
     args.output.write_text(json.dumps(report, indent=2) + "\n")
-    print(json.dumps([{
-        key: case[key] for key in (
-            "depth", "all_current_input_backed", "host_full_free_tokens",
-            "host_only", "live_restore_leases", "mean_reduction",
-            "selection_and_publication_equal",
-        )
-    } for case in cases], indent=2))
+    print(json.dumps({
+        "cases": [{
+            key: case[key] for key in (
+                "depth", "all_current_input_backed", "host_full_free_tokens",
+                "host_only", "live_restore_leases", "mean_reduction",
+                "selection_and_publication_equal",
+            )
+        } for case in cases],
+        "terminal_cases": [{
+            key: case[key] for key in (
+                "depth", "anchor_count", "summaries_per_watch",
+                "unique_summaries_per_watch", "output_equal", "mean_reduction",
+            )
+        } for case in report["terminal_cases"]],
+    }, indent=2))
 
 
 if __name__ == "__main__":

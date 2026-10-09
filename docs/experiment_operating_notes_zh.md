@@ -103,6 +103,19 @@ child请求的JOIN到提交P50为695ms，关闭HTTP重叠P50为419ms；
 报告：
 `experiments/reports/v14_join_pipeline_session_close_partial_20261010.json`。
 
+终态缓存多锚点采样只推迟summary序列化到node/creation_time去重
+之后，单锚点保持原路径。每个锚点仍独立读取实时祖先，保持最后一次观察值、节点顺序
+及全部字段；不得将该优化扩展为物理闭包跨叶缓存。现有2项终态
+检查通过，含共享祖先在两次观察之间变化的情况。24/64节点、
+双锚点的60次交错CPU均值下降32.9%/35.1%，单锚点约持平
+（24节点慢0.41%，64节点快0.19%）；八锚点58.3%/61.2%是
+合成边界，不能当作本轮实际收益。中间版本单锚点退步2.55%的
+报告保留，随后恢复原路径，不得只保存有利样本。
+记录两侧native观察次数、输出一致性及wall/thread CPU，仍仅
+在隔离工作树开发。报告：
+`experiments/reports/v15_terminal_sampling_cpu_final_20261010.json`及
+`experiments/reports/v15_terminal_sampling_cpu_depth24_final_20261010.json`。
+
 v13最终审计应读取独立的final报告及来源v2口径。提前JOIN/tool为
 760次/11.824 GB，需求handoff为18008次/158.846 GB；旧动作报告
 的PREFETCH_GPU合计不得用于预测覆盖。ACK到服务须按来源分别

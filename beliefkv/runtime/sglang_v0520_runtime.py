@@ -2852,6 +2852,7 @@ class NativeAdmissionRuntime:
 
     def _record_terminal_cache(self, watch: dict) -> None:
         key = watch["key"]
+        multiple_anchors = len(watch["anchors"]) > 1
         summaries, unavailable, gone = {}, [], []
         for node_id, created in watch["anchors"]:
             try:
@@ -2864,7 +2865,9 @@ class NativeAdmissionRuntime:
                     unavailable.append({"node_id": node_id, "reason": observation.reason})
                     continue
                 for summary in observation.nodes:
-                    summaries[(summary.node_id, summary.creation_time)] = asdict(summary)
+                    summaries[(summary.node_id, summary.creation_time)] = (
+                        summary if multiple_anchors else asdict(summary)
+                    )
             except (AttributeError, KeyError, TypeError, ValueError):
                 unavailable.append({"node_id": node_id, "reason": "native node unavailable"})
         self._opportunity_writer.record({
@@ -2874,7 +2877,11 @@ class NativeAdmissionRuntime:
             "session_id": key.session_id, "sample_index": watch["sample_count"],
             "elapsed_since_terminal_ms": time.monotonic() * 1000. - watch["terminated_ms"],
             "anchor_node_ids": [node for node, _ in watch["anchors"]],
-            "nodes": list(summaries.values()), "gone_or_replaced_anchors": gone,
+            "nodes": (
+                [asdict(summary) for summary in summaries.values()]
+                if multiple_anchors else list(summaries.values())
+            ),
+            "gone_or_replaced_anchors": gone,
             "unavailable_anchors": unavailable,
             "semantics": (
                 "Read-only terminated-context leaf ancestry; ancestors may be shared "
