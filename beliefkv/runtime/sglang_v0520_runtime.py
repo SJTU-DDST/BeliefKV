@@ -1023,10 +1023,17 @@ class NativeAdmissionRuntime:
             return
         if event.attributes.get("tool_chunk") is True:
             self._clear_semantic_invocation(key.invocation_id)
+            # Keep this request's negative evidence through late body/finish
+            # frames, and let the normal invocation cleanup retire it.
+            self._semantic_keys[rid] = key
+            self._decoded_tool_requests.add(rid)
             for join_id, stage in tuple(self._final_stages.items()):
                 if stage.child_id == key.invocation_id:
                     self._clear_final_stage(join_id)
             self.counts["semantic_tool_chunk_invalidated"] += 1
+            return
+        if rid in self._decoded_tool_requests:
+            self.counts["semantic_text_after_tool_ignored"] += 1
             return
         if self._semantic_worker is None:
             return

@@ -70,6 +70,13 @@ LLM_RESULT可沿既有FIFO异步交付；不得丢失create-before-submit
 `--child-finish-chunk-shadow`与`--stream-http-timing-shadow`定位，
 相应child stream记录也须开启；不追改本轮配置或性能归因。
 
+工具流语义帧只需立即交付首个工具负信号，随后保留正文变化和
+finish观察；纯参数chunk不应反复广播相同正文。工具负证据按
+request保存至正常清理，不能因晚到的正文恢复该请求的RETURN
+候选。该规则只处理预测输入和遥测，不拒绝工具、不取消child。
+后续native/reactive/predictive launcher同启已有HTTP流及
+finish-chunk计时；旧native开发参照的遥测配置差异须如实报告。
+
 PREPARE根据下一批可准入需求与运行请求页增长选择时机。等待队列
 为空时不能只因缓存占满或Mamba free低就持续备份。已无备份步骤/
 Host不足的context观察延后一秒，新epoch立即重查，enqueue保留

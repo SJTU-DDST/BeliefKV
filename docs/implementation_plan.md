@@ -133,6 +133,18 @@ ACK waiting; enable the existing HTTP-stream and finish-chunk diagnostics in
 the next cold-start run to investigate earlier stream-consumption delay.
 Keep the live V13 code frozen.
 
+Coalesce redundant tool-stream semantic frames: send the first tool negative
+immediately, retain changed body observations and the finish chunk, and skip
+pure argument chunks with unchanged body. A live snapshot has 63072 identical
+tool frames among 131187 semantic frames, not a measured GPU cost estimate.
+Retain the tool-negative request identity until its normal cleanup; late body
+frames must not resurrect that request's RETURN prediction. Agent/tool execution
+is unchanged. The next launcher enables existing HTTP-stream and finish-chunk
+timers for both policies, without changing the live V13 configuration.
+The coalescing/runtime/ordered-delivery group passes 155 CPU checks and shell
+syntax validation. The prior result-delivery group passes 65 checks. GPU
+performance remains to be measured after deploying a frozen cold-start revision.
+
 ## Current PREPARE Cost And Handoff Fix
 
 Implemented in `/tmp/beliefkv-opportunity-20261009`, based on `e985d8c`.

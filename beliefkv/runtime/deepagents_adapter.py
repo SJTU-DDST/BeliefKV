@@ -885,6 +885,7 @@ class DeepAgentsRuntimeAdapter(BaseCallbackHandler):
         phase_events: list[tuple[str, int]] = []
         eos_events: list[float] = []
         first_top_hit = False
+        first_tool_chunk = False
         content_observation: dict[str, Any] | None = None
         with self._lock:
             if (
@@ -904,6 +905,9 @@ class DeepAgentsRuntimeAdapter(BaseCallbackHandler):
             if chunk is self._child_stream_last_chunk.get(key):
                 return
             self._child_stream_last_chunk[key] = chunk
+            first_tool_chunk = (
+                tool_seen and key not in self._child_first_tool_chunk_shadow_runs
+            )
             if self._stream_content_shadow is not None:
                 count, tail, next_at, last_emitted = self._stream_content_state.get(
                     key, (0, "", 32, 0)
@@ -933,7 +937,7 @@ class DeepAgentsRuntimeAdapter(BaseCallbackHandler):
                     self._semantic_text_enabled and content and count > last_emitted
                     and when - self._semantic_text_last_ms.get(key, 0.) >= SEMANTIC_FRAME_INTERVAL_MS
                 )
-                if first_content or milestone or boundary or periodic or tool_seen or finish:
+                if first_content or milestone or boundary or periodic or first_tool_chunk or finish:
                     content_observation = {
                         "event": "child_stream_content",
                         "ts_ms": when,
@@ -1066,7 +1070,8 @@ class DeepAgentsRuntimeAdapter(BaseCallbackHandler):
             self._stream_content_shadow.emit(content_observation)
             when = content_observation["ts_ms"]
             if self._semantic_text_enabled and (
-                tool_seen or when - self._semantic_text_last_ms.get(key, 0.) >= SEMANTIC_FRAME_INTERVAL_MS
+                first_tool_chunk or content_observation["finish_reason"]
+                or when - self._semantic_text_last_ms.get(key, 0.) >= SEMANTIC_FRAME_INTERVAL_MS
             ):
                 self._semantic_text_last_ms[key] = when
                 self._publish((self._event(

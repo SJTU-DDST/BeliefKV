@@ -862,6 +862,62 @@ def test_semantic_periodic_frame_does_not_wait_for_punctuation_or_128_chars(monk
     assert rows[-1]["sampling_reason"] == "periodic_content"
 
 
+def test_semantic_tool_chunks_emit_first_negative_and_finish_without_repeats(monkeypatch, tmp_path):
+    monkeypatch.setenv("BELIEFKV_EMIT_SEMANTIC_TEXT", "1")
+    now = [1000.]
+    received = []
+    control = QueuedRuntimeEventSink(SimpleNamespace(
+        emit_batch=lambda events: received.extend(events), close=lambda: None,
+    ))
+    shadow = StreamContentShadow(tmp_path / "tool-chunks.jsonl", capacity=16)
+    adapter = DeepAgentsRuntimeAdapter(
+        CollectingSink(), BeliefKVRequestMetadata("wf", "root", "ctx", 0),
+        control_sink=control, stream_content_shadow=shadow, clock_ms=lambda: now[0],
+    )
+    adapter.start()
+    task = adapter.declare_runtime_tasks([("explorer", "inspect")])[0]
+    chain, run = uuid4(), uuid4()
+    adapter.on_chain_start({}, {}, run_id=chain, metadata=adapter.invocation_scope(task))
+    adapter.on_chat_model_start(
+        {}, [[HumanMessage(content="prompt")]], run_id=run, parent_run_id=chain,
+    )
+    adapter.on_llm_new_token(
+        "I will inspect this.", run_id=run,
+        chunk=SimpleNamespace(
+            message=SimpleNamespace(content="I will inspect this.", tool_call_chunks=[]),
+            generation_info=None,
+        ),
+    )
+    for index in range(100):
+        now[0] = 1001. + index * 10.
+        adapter.on_llm_new_token(
+            "", run_id=run, chunk=SimpleNamespace(
+                message=SimpleNamespace(content="", tool_call_chunks=[{"args": "x"}]),
+                generation_info=None,
+            ),
+        )
+    now[0] += 1.
+    adapter.on_llm_new_token(
+        "", run_id=run, chunk=SimpleNamespace(
+            message=SimpleNamespace(content="", tool_call_chunks=[]),
+            generation_info={"finish_reason": "tool_calls"},
+        ),
+    )
+    control.close()
+    assert shadow.close()["complete"]
+    frames = [row for row in received if row.attributes.get("beliefkv_semantic_child_text")]
+    assert len(frames) == 3
+    assert frames[1].ts_ms == 1001.
+    assert frames[1].attributes["tool_chunk"] is True
+    assert frames[1].attributes["content_tail"] == "I will inspect this."
+    assert frames[-1].ts_ms == now[0]
+    observations = [
+        json.loads(line) for line in shadow.path.read_text().splitlines()
+    ]
+    assert len(observations) == 3
+    assert observations[-1]["finish_reason"] == "tool_calls"
+
+
 def test_child_content_shadow_early_milestones_preserve_identity(tmp_path) -> None:
     shadow = StreamContentShadow(tmp_path / "milestones.jsonl", capacity=16)
     adapter = DeepAgentsRuntimeAdapter(

@@ -2346,6 +2346,21 @@ def test_semantic_body_is_read_only_and_uses_only_prior_decode_progress(
     ),))
     assert "child" not in runtime._semantic_frames
     assert not runtime._final_stages
+    assert runtime._semantic_keys["child"] == key
+    assert "child" in runtime._decoded_tool_requests
+    runtime.on_events((RuntimeEvent(
+        "late-body", now + 3, RuntimeEventKind.STRUCTURED_ACTION, "wf",
+        invocation_id="child", context_id="ctx-child", context_epoch=1,
+        attributes={SEMANTIC_TEXT: True, "request_id": "child",
+                    "content_chars": 160, "content_tail": "Report complete.",
+                    "tool_chunk": False, "monotonic_clock_domain": clock_domain},
+    ),))
+    assert "child" not in runtime._semantic_frames
+    assert not runtime._semantic_key_live(key, now + 3)
+    assert runtime.counts["semantic_text_after_tool_ignored"] == 1
+    runtime._clear_semantic_invocation("child")
+    assert "child" not in runtime._decoded_tool_requests
+    assert "child" not in runtime._semantic_keys
 
 
 def test_native_decode_tool_marker_invalidates_forecast_before_client_tool_chunk():

@@ -224,6 +224,7 @@ setsid "$PYTHON" "$ROOT/scripts/run_deepagents_swebench.py" \
   --sampling-seed "$SAMPLING_SEED" --recursion-limit 2048 \
   --activation-wall-clock-seconds "${ACTIVATION_WALL_CLOCK_SECONDS:-14400}" \
   --stream-completion-shadow --child-stream-content-shadow \
+  --child-finish-chunk-shadow --stream-http-timing-shadow \
   --native-reactive-guard-profile --disable-completion-gate \
   --gate native --output "$RUN_ROOT/client_$ROOT_COUNT" \
   > "$RUN_ROOT/client_$ROOT_COUNT.log" 2>&1 &
