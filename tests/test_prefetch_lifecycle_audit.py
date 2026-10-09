@@ -145,3 +145,74 @@ def test_later_d2h_distinguishes_intervening_host_eviction_from_unobserved_loss(
     assert empty_evidence["later_node_pool_d2h"][0]["host_evictions_between_writes"] == 0
     with_evidence = prepare_restore_attribution(prepared, transfers, evictions)[0]
     assert with_evidence["later_node_pool_d2h"][0]["host_evictions_between_writes"] == 1
+
+
+def test_native_reload_in_a_tagged_batch_keeps_its_pool_and_operation_bytes(tmp_path):
+    write_rows(tmp_path / "opportunities/admission_opportunities.jsonl", [
+        {"event": "prefetch_native_issued", "command_id": "prefetch",
+         "source": "execution_handoff", "workflow_id": "w", "context_id": "c",
+         "context_epoch": 1, "node_id": 10, "ts_ms": 1.},
+    ])
+    native = {"command_id": None, "anchor_node_id": 10, "published_node_ids": [10],
+              "num_tokens_by_pool": {"kv": 5}, "num_bytes": 100}
+    other = {"command_id": "other", "anchor_node_id": 20, "published_node_ids": [20],
+             "num_tokens_by_pool": {"mamba": 1}, "num_bytes": 640}
+    write_rows(tmp_path / "server/transfer_telemetry.jsonl", [
+        {"direction": "h2d", "node_ids": [10], "submit_ts_ms": 2.,
+         "complete_ts_ms": 3., "tagged_child_commits": [
+             {**native, "command_id": "prefetch"},
+         ]},
+        {"direction": "h2d", "node_ids": [10, 20], "submit_ts_ms": 4.,
+         "complete_ts_ms": 5., "actual_bytes": 740, "num_tokens_by_pool": {"kv": 5, "mamba": 1},
+         "tagged_child_commits": [other], "node_commits": [native, other]},
+    ])
+    write_rows(tmp_path / "server/physical_action_use.jsonl", [
+        {"event": "beliefkv_prefetch_first_service", "command_id": "prefetch",
+         "ack_ts_ms": 3., "first_service_ts_ms": 10., "full_node_reused": False,
+         "full_reuse_proof_version": 2},
+    ])
+    result = audit(tmp_path)
+    [reload] = result["rows"][0]["native_reloads_before_first_service"]
+    assert reload["actual_bytes"] == 100
+    assert reload["pool_units"] == {"kv": 5}
+    assert reload["prefetched_pool_overlap"] == ["kv"]
+    assert reload["node_pool_evidence"] == "reconciled_native_receipt"
+    assert result["summary"]["native_reloaded_before_first_service"] == 1
+    assert result["summary"]["native_reloaded_prefetched_full_before_first_service"] == 1
+    assert result["summary"]["native_reloaded_prefetched_mamba_before_first_service"] == 0
+    assert result["summary"]["full_reuse_proof_versions"] == {"2": 1}
+    assert result["summary"]["native_reload_pool_associations_by_evidence"]["kv"] == {
+        "reconciled_native_receipt": 1, "legacy_batch_pool_presence": 0,
+    }
+
+
+def test_mamba_load_does_not_count_as_reloading_a_full_only_prefetch(tmp_path):
+    write_rows(tmp_path / "opportunities/admission_opportunities.jsonl", [
+        {"event": "prefetch_native_issued", "command_id": "prefetch",
+         "source": "tool_wait", "workflow_id": "w", "context_id": "c",
+         "context_epoch": 1, "node_id": 10, "ts_ms": 1.},
+    ])
+    write_rows(tmp_path / "server/transfer_telemetry.jsonl", [
+        {"direction": "h2d", "node_ids": [10], "submit_ts_ms": 2.,
+         "complete_ts_ms": 3., "tagged_child_commits": [
+             {"command_id": "prefetch", "anchor_node_id": 10,
+              "published_node_ids": [10], "num_tokens_by_pool": {"kv": 5}, "num_bytes": 100},
+         ]},
+        {"direction": "h2d", "node_ids": [10], "submit_ts_ms": 4.,
+         "complete_ts_ms": 5., "actual_bytes": 640, "num_tokens_by_pool": {"mamba": 1}},
+    ])
+    write_rows(tmp_path / "server/physical_action_use.jsonl", [
+        {"event": "beliefkv_prefetch_first_service", "command_id": "prefetch",
+         "ack_ts_ms": 3., "first_service_ts_ms": 10., "full_node_reused": True},
+    ])
+    result = audit(tmp_path)
+    [reload] = result["rows"][0]["native_reloads_before_first_service"]
+    assert reload["pool_units"] == {"mamba": 1}
+    assert reload["prefetched_pool_overlap"] == []
+    assert result["summary"]["native_reloaded_before_first_service"] == 1
+    assert result["summary"]["native_reloaded_prefetched_full_before_first_service"] == 0
+    assert result["summary"]["native_reloaded_prefetched_mamba_before_first_service"] == 0
+    assert result["summary"]["full_reuse_proof_versions"] == {"1": 1}
+    assert result["summary"]["native_reload_pool_associations_by_evidence"]["kv"] == {
+        "reconciled_native_receipt": 0, "legacy_batch_pool_presence": 0,
+    }

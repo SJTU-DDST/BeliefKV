@@ -86,6 +86,11 @@ as verified waste or as verified reuse.
 V13 is the next collection. Freeze the corrected telemetry with the existing
 FULL-only PREPARE and scheduling revisions; retain the workload, model,
 prediction artifacts, capacity, prompt and arrival schedule.
+V13 started from aa93dde. The follow-up offline audit retains native operations
+inside mixed tagged batches, reports per-pool overlap and reuse proof versions,
+and separates reconciled operation receipts from legacy batch-pool associations.
+Pure native batches without receipts remain ambiguous; a later node/pool load
+does not establish repeated allocation or duplicate bytes. Keep live V13 frozen.
 
 ## Current PREPARE Cost And Handoff Fix
 

@@ -31,6 +31,43 @@ def distribution(values) -> dict:
     }
 
 
+def transfer_parts(transfer: dict) -> list[dict]:
+    """Separate native operations from tagged children in a merged transfer."""
+    exact = transfer.get("node_commits") or []
+    commits = exact or transfer.get("tagged_child_commits") or []
+    covered, accounted, parts = set(), Counter(), []
+    for child in commits:
+        nodes = child.get("published_node_ids")
+        if not nodes:
+            anchor = child.get("anchor_node_id")
+            if anchor is None:
+                continue
+            nodes = [anchor]
+        covered.update(nodes)
+        accounted.update(child["num_tokens_by_pool"])
+        parts.append({
+            "command_id": child.get("command_id"), "node_ids": nodes,
+            "pool_units": child["num_tokens_by_pool"],
+            "actual_bytes": child.get("num_bytes"),
+            "node_pool_evidence": (
+                "reconciled_native_receipt" if exact else "legacy_batch_pool_presence"
+            ),
+        })
+    unseen = [node for node in transfer.get("node_ids", []) if node not in covered]
+    if unseen:
+        residual = {
+            pool: count - accounted[pool]
+            for pool, count in (transfer.get("num_tokens_by_pool") or {}).items()
+            if count > accounted[pool]
+        }
+        parts.append({
+            "command_id": None, "node_ids": unseen, "pool_units": residual,
+            "actual_bytes": transfer.get("actual_bytes") if not commits else None,
+            "node_pool_evidence": "legacy_batch_pool_presence",
+        })
+    return parts
+
+
 def prepare_restore_attribution(
     prepared: dict, transfers: list[dict], host_evictions: list[dict] | None = None,
 ) -> list[dict]:
@@ -50,30 +87,10 @@ def prepare_restore_attribution(
         if ts is not None:
             events.append((ts, transfer))
     for ts, transfer in sorted(events, key=lambda pair: pair[0]):
-        exact = transfer.get("node_commits") or []
-        commits = exact or transfer.get("tagged_child_commits") or []
-        covered = set()
-        accounted = Counter()
-        parts = []
-        for child in commits:
-            nodes = child.get("published_node_ids")
-            if not nodes:
-                anchor = child.get("anchor_node_id")
-                if anchor is None:
-                    continue
-                nodes = [anchor]
-            covered.update(nodes)
-            accounted.update(child["num_tokens_by_pool"])
-            parts.append((child.get("command_id"), nodes, child["num_tokens_by_pool"]))
-        unseen = [node for node in transfer.get("node_ids", []) if node not in covered]
-        if unseen:
-            residual = {
-                pool: count - accounted[pool]
-                for pool, count in (transfer.get("num_tokens_by_pool") or {}).items()
-                if count > accounted[pool]
-            }
-            parts.append((None, unseen, residual))
-        for command, nodes, units in parts:
+        for part in transfer_parts(transfer):
+            command, nodes, units = (
+                part["command_id"], part["node_ids"], part["pool_units"],
+            )
             pools = [pool for pool, count in units.items() if count > 0]
             if transfer["direction"] == "d2h":
                 issue = prepared.get(command)
@@ -108,9 +125,7 @@ def prepare_restore_attribution(
                         "transfer_command_id": transfer.get("command_id"),
                         "source": "controlled_h2d" if command is not None else "native_h2d",
                         "submit_ts_ms": ts, "matched_node_pools": matches,
-                        "node_pool_evidence": (
-                            "reconciled_native_receipt" if exact else "legacy_batch_pool_presence"
-                        ),
+                        "node_pool_evidence": part["node_pool_evidence"],
                         "scope": "observed Host-to-device restore; not final forward-use credit",
                     })
     return sorted(results.values(), key=lambda row: row["ts_ms"])
@@ -134,6 +149,22 @@ def audit(arm: Path) -> dict:
         elif event in ("prefetch_residency_registered", "prefetch_residency_released"):
             leases[row["command_id"]].append(row)
     transfers = list(records(arm / "server/transfer_telemetry.jsonl"))
+    native_loads = defaultdict(list)
+    for transfer in transfers:
+        ts = transfer.get("submit_ts_ms")
+        if transfer["direction"] != "h2d" or ts is None:
+            continue
+        for part in transfer_parts(transfer):
+            if part["command_id"] is not None or not any(part["pool_units"].values()):
+                continue
+            for node_id in part["node_ids"]:
+                native_loads[node_id].append((ts, transfer, part))
+    for loads in native_loads.values():
+        loads.sort(key=lambda item: item[0])
+    native_load_times = {
+        node_id: [item[0] for item in loads]
+        for node_id, loads in native_loads.items()
+    }
     tagged = {
         child["command_id"]: (row, child)
         for row in transfers for child in row.get("tagged_child_commits") or []
@@ -177,14 +208,27 @@ def audit(arm: Path) -> dict:
             and ack is not None and service is not None
             and ack < row["ts_ms"] < service
         ]
-        native_reloads = [
-            {key: row.get(key) for key in ("submit_ts_ms", "complete_ts_ms", "actual_bytes")}
-            for row in transfers if row["direction"] == "h2d"
-            and not row.get("tagged_child_commits")
-            and issue["node_id"] in row.get("node_ids", [])
-            and ack is not None and service is not None
-            and ack < row["submit_ts_ms"] <= service
-        ]
+        native_reloads = []
+        if ack is not None and service is not None:
+            times = native_load_times.get(issue["node_id"], [])
+            loads = native_loads.get(issue["node_id"], [])
+            prefetched_pools = {
+                pool for pool, count in (child.get("num_tokens_by_pool") or {}).items()
+                if count > 0
+            }
+            for _, row, part in loads[bisect_right(times, ack):bisect_right(times, service)]:
+                native_reloads.append({
+                    "submit_ts_ms": row["submit_ts_ms"],
+                    "complete_ts_ms": row.get("complete_ts_ms"),
+                    "actual_bytes": part["actual_bytes"],
+                    "pool_units": part["pool_units"],
+                    "prefetched_pool_overlap": sorted(
+                        prefetched_pools & {
+                            pool for pool, count in part["pool_units"].items() if count > 0
+                        }
+                    ),
+                    "node_pool_evidence": part["node_pool_evidence"],
+                })
         submit = transfer.get("submit_ts_ms")
         results.append({
             "command_id": command, "source": issue["source"],
@@ -207,6 +251,9 @@ def audit(arm: Path) -> dict:
                 service - ack if service is not None and ack is not None else None
             ),
             "full_first_service_reused": use.get("full_node_reused") if use else None,
+            "full_reuse_proof_version": (
+                use.get("full_reuse_proof_version", 1) if use else None
+            ),
             "mamba_forward_verified": command in mamba,
             "lease_events": leases.get(command, []),
             "pressure_demotions_before_first_service": repeated_parks,
@@ -252,6 +299,10 @@ def audit(arm: Path) -> dict:
         "full_reused": sum(row["full_first_service_reused"] is True for row in results),
         "full_not_reused": sum(row["full_first_service_reused"] is False for row in results),
         "full_use_unknown": sum(row["full_first_service_reused"] is None for row in results),
+        "full_reuse_proof_versions": dict(Counter(
+            str(row["full_reuse_proof_version"]) for row in results
+            if row["full_reuse_proof_version"] is not None
+        )),
         "mamba_forward_verified": len(mamba & issued.keys()),
         "redemoted_before_first_service": sum(
             bool(row["pressure_demotions_before_first_service"]) for row in results
@@ -259,6 +310,29 @@ def audit(arm: Path) -> dict:
         "native_reloaded_before_first_service": sum(
             bool(row["native_reloads_before_first_service"]) for row in results
         ),
+        "native_reloaded_prefetched_full_before_first_service": sum(
+            any("kv" in load["prefetched_pool_overlap"]
+                for load in row["native_reloads_before_first_service"])
+            for row in results
+        ),
+        "native_reloaded_prefetched_mamba_before_first_service": sum(
+            any("mamba" in load["prefetched_pool_overlap"]
+                for load in row["native_reloads_before_first_service"])
+            for row in results
+        ),
+        "native_reload_pool_associations_by_evidence": {
+            pool: {
+                evidence: sum(
+                    any(
+                        pool in load["prefetched_pool_overlap"]
+                        and load["node_pool_evidence"] == evidence
+                        for load in row["native_reloads_before_first_service"]
+                    ) for row in results
+                )
+                for evidence in ("reconciled_native_receipt", "legacy_batch_pool_presence")
+            }
+            for pool in ("kv", "mamba")
+        },
         "issue_to_submit_ms": distribution(row["issue_to_submit_ms"] for row in results),
         "enqueue_to_submit_ms": distribution(row["enqueue_to_submit_ms"] for row in results),
         "submit_to_ack_ms": distribution(row["submit_to_ack_ms"] for row in results),
@@ -300,6 +374,13 @@ def audit(arm: Path) -> dict:
             "anchor, exposed-stall measurement or counterfactual speedup."
         ),
         "arm": str(arm), "summary": summary, "rows": results,
+        "native_reload_attribution_semantics": (
+            "Node/pool overlap before first service, not proof of repeated physical "
+            "allocation or duplicate bytes. Mixed tagged batches retain untagged "
+            "operations. Exact receipts carry per-operation units and bytes; legacy "
+            "batch pool presence remains an ambiguous association. Evidence counts "
+            "may overlap when a command has multiple reloads."
+        ),
         "prepare_consumption": consumed,
         "prepare_restore_attribution": prepare_restores,
         "prepare_attribution_semantics": (
