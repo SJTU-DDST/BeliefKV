@@ -24,6 +24,11 @@ v11因空回收tracker的FULL键缺失于2026-10-09 21:34:34退出。
 FULL叶驱逐前对活跃未备份Mamba检查点的原生保存和ACK依赖。
 采集客户端使用独立进程组，服务端提前退出后立即终止该组；
 不要等待剩余到达批次后继续向失效服务端发送请求。
+中止采集的目录缺少整体summary时，可用
+`summarize_semantic_h2d_ab.py --cleanup-arm <arm> --cleanup-stopped-collection`
+清理已归档workspace：核验记录中的scheduler已退出，并使用各任务
+result和model.patch；不伪造整体summary。尚未归档的workspace保留，
+child目录仍须有child_reports且git工作树干净才能清理。
 
 当前验收目标包括恢复就绪到服务、PREPARE消费及有用FULL覆盖三项，
 最终看相同任务/到达表/模型/容量下相对native的完成吞吐和JCT；

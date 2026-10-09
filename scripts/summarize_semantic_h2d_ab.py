@@ -24,11 +24,31 @@ def records(path: Path):
                     yield json.loads(line)
 
 
-def cleanup_workspaces(arm: Path, *, include_clean_planned_children: bool = False) -> dict:
+def cleanup_workspaces(
+    arm: Path, *, include_clean_planned_children: bool = False,
+    stopped_collection: bool = False,
+) -> dict:
+    if stopped_collection:
+        ready = json.loads((arm / "server/native_telemetry_ready.json").read_text())
+        try:
+            os.kill(int(ready["scheduler_pid"]), 0)
+        except ProcessLookupError:
+            pass
+        else:
+            raise ValueError("stopped cleanup requires the recorded scheduler to have exited")
     clients = list(arm.glob("client_*/summary.json")) + list(arm.glob("workloads/summary.json"))
-    if len(clients) != 1:
+    if len(clients) == 1:
+        summary = json.loads(clients[0].read_text())
+    elif stopped_collection and not clients:
+        clients = list(arm.glob("client_*/manifest.json"))
+        if len(clients) != 1:
+            raise ValueError("stopped cleanup requires one recorded client manifest")
+        results = sorted((clients[0].parent / "workflows").glob("*/result.json"))
+        if not results:
+            raise ValueError("stopped cleanup requires archived workflow results")
+        summary = {"workflows": [json.loads(path.read_text()) for path in results]}
+    else:
         raise ValueError("cleanup requires one finished workload summary")
-    summary = json.loads(clients[0].read_text())
     removed, retained = [], []
     for workflow in summary["workflows"]:
         base = clients[0].parent / "workflows" / workflow["instance_id"]
@@ -39,7 +59,9 @@ def cleanup_workspaces(arm: Path, *, include_clean_planned_children: bool = Fals
         if not workspaces:
             continue
         if (
-            workflow.get("outcome") != "completed"
+            workflow.get("outcome") not in (
+                ("completed", "error", "incomplete") if stopped_collection else ("completed",)
+            )
             or workflow.get("sandbox_cleanup_status") != "completed"
             or not (base / "model.patch").is_file()
             or (workflow.get("artifact_collection") or {}).get("errors")
@@ -71,7 +93,10 @@ def cleanup_workspaces(arm: Path, *, include_clean_planned_children: bool = Fals
                     continue
             shutil.rmtree(workspace)
             removed.append(str(workspace))
-    return {"removed_workspaces": removed, "retained_workspaces": retained}
+    return {
+        "removed_workspaces": removed, "retained_workspaces": retained,
+        "collection_scope": "stopped_archived_results" if stopped_collection else "finished_summary",
+    }
 
 
 def workload_balance(reactive: dict, predictive: dict, *, baseline: str = "reactive") -> dict:
@@ -359,6 +384,7 @@ def main() -> None:
                         help="Export diagnostics for a disabled physical lane; never a valid A/B comparison.")
     parser.add_argument("--cleanup-arm", type=Path)
     parser.add_argument("--cleanup-clean-planned-children", action="store_true")
+    parser.add_argument("--cleanup-stopped-collection", action="store_true")
     parser.add_argument("--initialize", action="store_true")
     parser.add_argument("--verify-frozen-plan", action="store_true")
     parser.add_argument("--root-count", type=int, default=36)
@@ -409,6 +435,7 @@ def main() -> None:
         print(json.dumps(cleanup_workspaces(
             args.cleanup_arm,
             include_clean_planned_children=args.cleanup_clean_planned_children,
+            stopped_collection=args.cleanup_stopped_collection,
         ), indent=2))
         return
     if args.run_root is None:

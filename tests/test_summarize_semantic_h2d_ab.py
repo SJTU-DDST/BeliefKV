@@ -100,6 +100,43 @@ def test_cleanup_only_removes_archived_completed_workspace(tmp_path):
     assert not (base / "workspace").exists()
 
 
+def test_stopped_cleanup_uses_archived_results_without_fabricating_summary(tmp_path, monkeypatch):
+    arm = tmp_path / "predictive_h2d"
+    client, server = fixture(arm)
+    (client / "summary.json").unlink()
+    (client / "manifest.json").write_text("{}")
+    (server / "native_telemetry_ready.json").write_text('{"scheduler_pid": 123}')
+    for task in ("archived", "missing_patch"):
+        base = client / "workflows" / task
+        (base / "workspace").mkdir(parents=True)
+        (base / "workspace/file").write_text("data")
+        (base / "result.json").write_text(json.dumps({
+            "instance_id": task, "outcome": "error",
+            "sandbox_cleanup_status": "completed", "artifact_collection": {"errors": []},
+        }))
+    (client / "workflows/archived/model.patch").write_text("saved diff")
+
+    def exited(pid, sig):
+        raise ProcessLookupError()
+
+    monkeypatch.setattr("scripts.summarize_semantic_h2d_ab.os.kill", exited)
+    result = cleanup_workspaces(arm, stopped_collection=True)
+    assert result["collection_scope"] == "stopped_archived_results"
+    assert result["removed_workspaces"] == [str(client / "workflows/archived/workspace")]
+    assert (client / "workflows/missing_patch/workspace/file").exists()
+    assert (client / "workflows/archived/model.patch").read_text() == "saved diff"
+    assert not (client / "summary.json").exists()
+
+
+def test_stopped_cleanup_refuses_a_live_scheduler(tmp_path, monkeypatch):
+    arm = tmp_path / "predictive_h2d"
+    _, server = fixture(arm)
+    (server / "native_telemetry_ready.json").write_text('{"scheduler_pid": 123}')
+    monkeypatch.setattr("scripts.summarize_semantic_h2d_ab.os.kill", lambda pid, sig: None)
+    with pytest.raises(ValueError, match="scheduler to have exited"):
+        cleanup_workspaces(arm, stopped_collection=True)
+
+
 def test_mamba_reuse_requires_matching_forward_proof_and_is_not_double_counted(tmp_path):
     arm = tmp_path / "predictive_h2d"
     _, server = fixture(arm)
