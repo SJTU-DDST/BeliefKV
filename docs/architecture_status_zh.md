@@ -2,7 +2,7 @@
 
 更新日期：2026-10-10。
 
-## 当前目标与 v14 修订
+## 当前目标、v14 运行与后续优化
 
 当前目标是在固定workload、模型、容量及到达表下，使predictive
 相对native取得可核实的性能提升。除预测传输外，优先减少调度/
@@ -11,8 +11,8 @@
 
 1. 缩短恢复就绪到首次服务的等待，减少首次服务前的原生重复加载；
    同时检查缺失页、必要Mamba状态与其他workflow的排队代价。
-2. 补齐PREPARE消费归因，区分压力释放、原生/受控H2D、后续D2H
-   覆盖和未观察到恢复；据此减少没有迁移需求的备份。
+2. 补齐PREPARE消费归因，区分压力释放、原生/受控H2D、Host驱逐后
+   重新备份和未观察到恢复；据此减少没有迁移需求的备份。
 3. 提高有用FULL预取覆盖，验证已修复handoff是否真正替代需求
    恢复，并以实际复用、完成吞吐、JCT及重算量评价收益。
 
@@ -76,13 +76,36 @@ JOIN最终审计127个节点命令对应83个不同child请求，仅19个命令
 EOS到客户端的差距直接归因于某一解析或网络函数。
 
 后续修订已合入主目录，SGLang增量已部署并通过完整staging patch
-反向适配检查，代码基础为498c0ab。v14待以相同配置冷启动，验证
+反向适配检查。v14已从50b9179冷启动，同一156任务、108+48到达、
+running48、Host200GB80:20、HBM Mamba/FULL0.9及原模型/预测头/
+prompt/seed21均保持冻结，验证
 工具候选100ms节流、FIFO异步LLM_RESULT、工具负证据与帧合并、
 按batch服务索引、恢复驻留保护、有界恢复准入、实际FULL冷回收
 时保存必要Mamba及完整缺失检查点Host预算。投机PREPARE仍仅
-传缺失FULL段；完整路径预算不是Host容量预留。下一轮启用已有
+传缺失FULL段；完整路径预算不是Host容量预留。本轮启用已有
 HTTP/finish-chunk计时，继续以消费、等待、重算和吞吐验收。
 这组修订尚无GPU性能收益证据。
+
+2026-10-10 02:20 CST运行快照：physical_disabled=false，语义worker
+错误为空，PREPARE池范围为missing_full_prefix；已有JOIN/tool及需求
+handoff ACK，不能将后者并入预测H2D覆盖。运行1119.96秒时已埋点
+exclusive Python wall为214.68秒，JOIN PREPARE33.00秒、reentry
+检查29.75秒。该早期快照不是完整实验结果，也不能直接解释GPU空闲。
+本轮driver、导出及清理结束前，不向服务目录部署后续代码。
+
+后续reentry CPU优化在既有隔离工作树开发。原只读检查用match_at
+计算最长公共前缀，却只判断整段节点是否匹配；现用is_prefix_at
+一次比较所需完整段，保留namespace/salt、offset、limit、bigram
+边界与页对齐语义。原生匹配/分裂/分配、FULL/Mamba依赖、DMA及
+session有效性检查均沿用现有逻辑，不缓存物理驻留结果。
+使用实际RadixKey和相同合成radix祖先路径比较完整reentry，两侧
+输出一致；完整匹配4K/32K/96K路径耗时下降47.4%--58.8%，32K
+单叶为102.07→53.66微秒，8叶为711.06→355.06微秒。前缀分歧、
+短请求与页对齐样例同样改善。87项相关CPU检查通过，旧Mamba
+保存测试夹具同步加载其已拆分的辅助方法。这只是CPU及正确性
+证据，不代表GPU吞吐收益；该修订未计入运行中的v14。
+基准脚本：`scripts/benchmark_native_reentry_cpu.py`。
+报告：`experiments/reports/v15_reentry_cpu_benchmark_20261010.json`。
 
 最终报告：
 `experiments/reports/v13_h2d_sources_final_20261010.json`、

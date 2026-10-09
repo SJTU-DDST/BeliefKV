@@ -12,14 +12,18 @@ import pytest
 ROOT = Path(__file__).resolve().parents[1] / "third_party/sglang-v0.5.20/python/sglang/srt"
 
 
-def native_method(file, cls, method, namespace):
+def native_method(file, cls, method, namespace, *, dependencies=()):
     source = ROOT / file
     tree = ast.parse(source.read_text())
     owner = next(node for node in tree.body if isinstance(node, ast.ClassDef) and node.name == cls)
-    body = next(node for node in owner.body if isinstance(node, ast.FunctionDef) and node.name == method)
+    selected = {method, *dependencies}
+    body = [
+        node for node in owner.body
+        if isinstance(node, ast.FunctionDef) and node.name in selected
+    ]
     module = ast.Module(body=[
         ast.ImportFrom(module="__future__", names=[ast.alias(name="annotations")], level=0),
-        ast.ClassDef(name="Native", bases=[], keywords=[], body=[body], decorator_list=[]),
+        ast.ClassDef(name="Native", bases=[], keywords=[], body=body, decorator_list=[]),
     ], type_ignores=[])
     exec(compile(ast.fix_missing_locations(module), str(source), "exec"), namespace)
     return namespace["Native"]()
@@ -62,6 +66,7 @@ def test_only_live_unbacked_interior_pressure_victims_get_preserved(backed, live
         "mem_cache/unified_radix_cache.py", "UnifiedRadixCache",
         "_preserve_mamba_reentry_candidates",
         {"ComponentType": NS(MAMBA=2), "BackupKV": lambda ids: NS(node_ids=ids)},
+        dependencies=("_preserve_mamba_reentry_node",),
     )
     node = NS(
         id=7, component_data=[None, None, NS(

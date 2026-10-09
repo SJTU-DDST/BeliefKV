@@ -1367,6 +1367,39 @@ index 006b52a..83c96cf 100644
          )
      kv_host_pool = build_kv_host_pool(
          kv_pool=kv_pool,
+diff --git a/python/sglang/srt/mem_cache/radix_cache.py b/python/sglang/srt/mem_cache/radix_cache.py
+index e7bee63..8144868 100644
+--- a/python/sglang/srt/mem_cache/radix_cache.py
++++ b/python/sglang/srt/mem_cache/radix_cache.py
+@@ -219,6 +219,28 @@ class RadixKey:
+             return matched_tokens
+         return (matched_tokens // page_size) * page_size
+ 
++    def is_prefix_at(self, other: RadixKey, offset: int, page_size: int = 1) -> bool:
++        """Check a complete segment without computing the longest common prefix."""
++        self._check_compatible(other)
++        if self.is_bigram != other.is_bigram:
++            raise ValueError("RadixKey operations require matching bigram modes")
++        if offset < 0 or offset > len(other):
++            raise IndexError(f"RadixKey offset out of range: {offset}")
++        t0, t1 = self.token_ids, other.token_ids
++        assert type(t0) is type(t1), (type(t0), type(t1))
++        logical_len = len(self)
++        if page_size < 1:
++            return self.match_at(other, offset, page_size) >= logical_len
++        if page_size > 1 and logical_len % page_size:
++            return False
++        if not logical_len:
++            return True
++        raw_len = self._raw_len()
++        if raw_len > other._raw_len() - offset or t0[0] != t1[offset]:
++            return False
++        segment = t0 if raw_len == len(t0) else t0[:raw_len]
++        return segment == t1[offset : offset + raw_len]
++
+     def child_key(self, page_size: int = 1):
+         """Hashable dict-key for the first ``page_size`` logical units, namespaced by ``extra_key``."""
+         return self.child_key_at(offset=0, page_size=page_size)
 diff --git a/python/sglang/srt/mem_cache/unified_cache/components/mamba.py b/python/sglang/srt/mem_cache/unified_cache/components/mamba.py
 index 3c18cee..74fb7ca 100644
 --- a/python/sglang/srt/mem_cache/unified_cache/components/mamba.py
@@ -1701,7 +1734,7 @@ index 6815679..fc9deaa 100644
      def reset(self) -> None:
          """Drop the entire tree and reinitialize empty state."""
 diff --git a/python/sglang/srt/mem_cache/unified_radix_cache.py b/python/sglang/srt/mem_cache/unified_radix_cache.py
-index d417d7d..d9b5050 100644
+index d417d7d..4597d8c 100644
 --- a/python/sglang/srt/mem_cache/unified_radix_cache.py
 +++ b/python/sglang/srt/mem_cache/unified_radix_cache.py
 @@ -6,7 +6,7 @@ import threading
@@ -2315,7 +2348,7 @@ index d417d7d..d9b5050 100644
 +            pending = False
 +            for node in reversed(chain):
 +                try:
-+                    if node.key.match_at(key, prefix, page_size=self.page_size) < len(node.key):
++                    if not node.key.is_prefix_at(key, prefix, page_size=self.page_size):
 +                        break
 +                except (IndexError, TypeError, ValueError):
 +                    break
@@ -3075,10 +3108,10 @@ index b219467..6ca04e5 100644
          cache, allocator, _ = build_fixture(self.cfg)
 diff --git a/test/srt/test_beliefkv_execution_handoff.py b/test/srt/test_beliefkv_execution_handoff.py
 new file mode 100644
-index 0000000..1076804
+index 0000000..c80948c
 --- /dev/null
 +++ b/test/srt/test_beliefkv_execution_handoff.py
-@@ -0,0 +1,426 @@
+@@ -0,0 +1,429 @@
 +"""CPU checks for read-only reentry and cold-only capacity exchange."""
 +
 +import ast
@@ -3116,6 +3149,9 @@ index 0000000..1076804
 +                break
 +            count += 1
 +        return count // page_size * page_size
++
++    def is_prefix_at(self, other, offset, *, page_size):
++        return self.match_at(other, offset, page_size=page_size) >= len(self)
 +
 +
 +def cache_class():
@@ -4402,6 +4438,135 @@ index 0000000..0f6eaa2
 +
 +if __name__ == "__main__":
 +    unittest.main()
+diff --git a/test/srt/test_beliefkv_radix_prefix.py b/test/srt/test_beliefkv_radix_prefix.py
+new file mode 100644
+index 0000000..2e29709
+--- /dev/null
++++ b/test/srt/test_beliefkv_radix_prefix.py
+@@ -0,0 +1,123 @@
++"""CPU equivalence checks for complete-segment matching in reentry inspection."""
++
++import ast
++from array import array
++from pathlib import Path
++import random
++
++import pytest
++
++
++SOURCE = (
++    Path(__file__).resolve().parents[2]
++    / "python/sglang/srt/mem_cache/radix_cache.py"
++)
++
++
++def radix_key_class():
++    tree = ast.parse(SOURCE.read_text())
++    cls = next(
++        item for item in tree.body
++        if isinstance(item, ast.ClassDef) and item.name == "RadixKey"
++    )
++    module = ast.Module(body=[
++        ast.ImportFrom(
++            module="__future__", names=[ast.alias(name="annotations")], level=0,
++        ),
++        cls,
++    ], type_ignores=[])
++    namespace = {"array": array}
++    exec(compile(ast.fix_missing_locations(module), str(SOURCE), "exec"), namespace)
++    return namespace["RadixKey"]
++
++
++RadixKey = radix_key_class()
++
++
++def key(tokens, *, container, **kwargs):
++    return RadixKey(container(tokens), **kwargs)
++
++
++@pytest.mark.parametrize("container", (list, lambda tokens: array("q", tokens)))
++@pytest.mark.parametrize("bigram", (False, True))
++@pytest.mark.parametrize("page_size", (1, 2, 4, 16))
++def test_complete_segment_agrees_with_lcp_for_limits_offsets_and_divergence(
++    container, bigram, page_size,
++):
++    rng = random.Random(73)
++    for _ in range(240):
++        raw = [rng.randrange(20) for _ in range(rng.randrange(36))]
++        offset = rng.randrange(8)
++        right = [99] * offset + raw + [98, 97]
++        if right and rng.randrange(2):
++            right[rng.randrange(len(right))] = 96
++        left_limit = rng.choice((None, 0, 1, len(raw) // 2, len(raw) + 2))
++        right_limit = rng.choice((None, len(right) // 2, len(right) + 2))
++        left = key(raw, container=container, is_bigram=bigram, limit=left_limit)
++        other = key(right, container=container, is_bigram=bigram, limit=right_limit)
++        offset = min(offset, len(other))
++        assert left.is_prefix_at(other, offset, page_size) == (
++            left.match_at(other, offset, page_size) >= len(left)
++        )
++
++
++def test_bigram_segment_requires_its_shared_boundary_token():
++    left = RadixKey([10, 11, 12], is_bigram=True)
++    assert left.is_prefix_at(RadixKey([99, 10, 11, 12, 98], is_bigram=True), 1)
++    assert not left.is_prefix_at(RadixKey([99, 10, 11, 90, 98], is_bigram=True), 1)
++    assert not left.is_prefix_at(RadixKey([99, 10, 11], is_bigram=True), 1)
++    assert not left.is_prefix_at(
++        RadixKey([99, 10, 11, 12, 98], is_bigram=True, limit=3), 1,
++    )
++
++
++def test_empty_logical_bigram_does_not_require_a_raw_boundary_match():
++    left = RadixKey([10], is_bigram=True)
++    other = RadixKey([90], is_bigram=True)
++    assert left.match_at(other, 0) == 0
++    assert left.is_prefix_at(other, 0)
++
++
++def test_page_alignment_applies_to_the_whole_segment():
++    left, other = RadixKey([10, 11, 12]), RadixKey([10, 11, 12, 13])
++    assert left.is_prefix_at(other, 0, 1)
++    assert not left.is_prefix_at(other, 0, 2)
++    assert RadixKey([10, 11]).is_prefix_at(other, 0, 2)
++
++
++@pytest.mark.parametrize("changed", ("namespace", "salt", "bigram", "type"))
++def test_compatibility_errors_are_preserved(changed):
++    left = RadixKey([10, 11], extra_key="agent", cache_salt="salt")
++    other = RadixKey([10, 11, 12], extra_key="agent", cache_salt="salt")
++    if changed == "namespace":
++        other.extra_key = "other"
++    elif changed == "salt":
++        other.cache_salt = "other"
++    elif changed == "bigram":
++        other.is_bigram = True
++    else:
++        other.token_ids = array("q", other.token_ids)
++    exception = AssertionError if changed == "type" else ValueError
++    with pytest.raises(exception):
++        left.match_at(other, 0)
++    with pytest.raises(exception):
++        left.is_prefix_at(other, 0)
++
++
++@pytest.mark.parametrize("offset", (-1, 4))
++def test_invalid_offsets_are_preserved(offset):
++    left, other = RadixKey([10]), RadixKey([10, 11, 12])
++    with pytest.raises(IndexError):
++        left.match_at(other, offset)
++    with pytest.raises(IndexError):
++        left.is_prefix_at(other, offset)
++
++
++def test_nonpositive_pages_keep_the_existing_lcp_behavior():
++    left, other = RadixKey([10, 11]), RadixKey([10, 90])
++    for page_size in (-2, -1):
++        assert left.is_prefix_at(other, 0, page_size) == (
++            left.match_at(other, 0, page_size) >= len(left)
++        )
++    with pytest.raises(ZeroDivisionError):
++        left.is_prefix_at(other, 0, 0)
 diff --git a/test/srt/test_beliefkv_scheduler_hook.py b/test/srt/test_beliefkv_scheduler_hook.py
 new file mode 100644
 index 0000000..dd65055

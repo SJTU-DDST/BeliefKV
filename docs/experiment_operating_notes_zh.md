@@ -8,10 +8,26 @@ guard、终态门禁或模型动作授权。启动前同时阅读
 
 v13采集、外层driver、HTML导出及workspace清理已结束。已合入
 后续498c0ab修订并部署SGLang增量，完整staging patch反向检查通过。
-v14待按同一156任务、108+48到达、running48、Host200GB80:20、
-HBM比例0.9、模型/预测产物/prompt/seed21及预算冷启动。
+v14已从50b9179按同一156任务、108+48到达、running48、
+Host200GB80:20、HBM比例0.9、模型/预测产物/prompt/seed21及预算
+冷启动，HTTP/finish-chunk细分计时已启用。
 本次只部署已验证修订，不重复native开发参考、不增加agent guard。
 后续版本还没有GPU性能收益证据，当前目标继续保持active。
+
+2026-10-10 02:20 CST运行快照中物理动作保持启用，语义worker无
+错误，PREPARE为missing_full_prefix；JOIN/tool和需求handoff均有
+ACK。读取opportunities/admission_opportunities.jsonl中最近的
+admission_runtime_state，不能把该文件任意末行或runtime_audit
+当作状态快照。后续代码继续在隔离工作树修改，完整driver、审计、
+HTML及cleanup结束前不得向运行服务目录部署。
+
+只读reentry完整段匹配的后续CPU优化已验证输出一致。实际RadixKey
+与合成共享祖先路径的完整reentry基准中，4K/32K/96K完整匹配耗时
+下降47.4%--58.8%，87项相关CPU检查通过；原生分配及驻留、DMA、
+Mamba状态依赖照常校验。该优化尚未部署到v14，CPU下降不能用作
+GPU吞吐结论。保存两侧源码SHA256和报告
+`experiments/reports/v15_reentry_cpu_benchmark_20261010.json`，以后
+不能用更新后的服务目录冒充本次冻结基线重新计算旧结果。
 
 v13最终审计应读取独立的final报告及来源v2口径。提前JOIN/tool为
 760次/11.824 GB，需求handoff为18008次/158.846 GB；旧动作报告

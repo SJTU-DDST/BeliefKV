@@ -2,7 +2,7 @@
 
 Status date: 2026-10-10.
 
-## Current Objective And V14
+## Current Objective And Running V14
 
 Keep the fixed workload, model, capacity and arrival schedule. Continue until
 predictive has a verifiable performance improvement relative to native.
@@ -12,7 +12,8 @@ the same objective. The three explicit priorities are:
 - Restore-to-service: shorten ACK-to-first-service and reduce repeated native
   loads before service, while accounting for missing pages and other workflows.
 - PREPARE consumption: attribute pressure parking, native/controlled reloads,
-  later writes and unobserved restoration, then reduce unnecessary backups.
+  Host eviction followed by re-backup and unobserved restoration, then reduce
+  unnecessary backups.
 - Useful FULL coverage: validate real handoff FULL reuse and replacement of
   demand restoration, alongside throughput, JCT and recomputation.
 
@@ -63,11 +64,24 @@ Current status:
 - Follow-up code through498c0ab is merged; the engine delta is applied and
   the full staging patch reverse-check passes. All previous focused checks
   remain the validation basis; the package has no GPU performance evidence yet.
-- Cold-start V14 with the same156 tasks,108+48 arrivals, running48,
-  Host200GB80:20, HBM ratio0.9, frozen heads/prompt/seed21 and budgets.
-  Use the existing full driver and enable the existing HTTP/finish-chunk timers.
+- V14 is running from frozen50b9179 with the same156 tasks,108+48 arrivals,
+  running48, Host200GB80:20, HBM ratio0.9, heads/prompt/seed21 and budgets.
+  The existing full driver enables the existing HTTP/finish-chunk timers.
   Measure real FULL consumption, source-specific restore waits/reloads,
   PREPARE churn, recomputation and native-relative throughput.
+- At2026-10-10 02:20 CST, physical actions remain enabled, the semantic worker
+  has no error and PREPARE is missing_full_prefix. JOIN/tool and demand-handoff
+  ACKs are present. Early instrumented exclusive Python wall is214.68s over
+  1119.96s, with JOIN PREPARE33.00s and reentry29.75s; these are not GPU-idle
+  attribution or terminal performance results.
+- Develop the next reentry optimization in the existing isolated worktree.
+  Whole-node checks use a boolean complete-segment comparison instead of an
+  LCP search, preserving namespace/salt, offset, limits, bigram and page semantics.
+  Native allocation, state dependencies and physical residency validation remain.
+  The actual-RadixKey full-reentry CPU benchmark has equal outputs and47.4--58.8%
+  lower complete-match cost on4K/32K/96K paths. Related CPU checks:87 passed.
+  Keep it out of live V14 until the entire driver/export/cleanup exits.
+  This CPU evidence does not establish a GPU throughput improvement.
 - V13 cleanup removed154 archived workspaces and retained two forensic
   workspaces. Preserve summaries, patches, telemetry, final reports and HTML.
 
@@ -76,6 +90,9 @@ v13_h2d_sources_final_20261010.json,
 v13_prefetch_sources_final_20261010.json,
 v13_join_pipeline_final_20261010.json.
 Complete native comparison: v13_native_policy_comparison_20261010.json.
+Next-revision CPU comparison: v15_reentry_cpu_benchmark_20261010.json;
+reproduce with scripts/benchmark_native_reentry_cpu.py against the frozen live
+engine and the isolated candidate engine.
 The following V11--V13 entries describe the frozen collection history;
 references to keeping live V13 unchanged no longer imply a running process.
 
