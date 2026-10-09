@@ -8,7 +8,9 @@ def _write(path, rows):
     path.write_text("".join(json.dumps(row) + "\n" for row in rows))
 
 
-def _run(tmp_path, *, native_epoch=1, client_tool_calls=0):
+def _run(
+    tmp_path, *, native_epoch=1, client_tool_calls=0, stream_timing=False,
+):
     _write(tmp_path / "opportunities/admission_opportunities.jsonl", [
         {"event": "safe_point_census", "ts_ms": 1000., "monotonic_ms": 0.},
         {"event": "prefetch_native_issued", "source": "join_ticket",
@@ -21,7 +23,11 @@ def _run(tmp_path, *, native_epoch=1, client_tool_calls=0):
     _write(tmp_path / "client_1/workflows/task/runtime_events.deepagents.jsonl", [
         {"kind": "llm_result", "ts_ms": 80., **identity,
          "attributes": {"request_id": "child-final", "finish_reason": "stop",
-                        "tool_call_count": client_tool_calls, "invalid_tool_call_count": 0}},
+                        "tool_call_count": client_tool_calls, "invalid_tool_call_count": 0,
+                        **({
+                            "stream_final_chunk_ts_ms": 65.,
+                            "llm_end_callback_entry_ts_ms": 75.,
+                        } if stream_timing else {})}},
         {"kind": "return", "ts_ms": 100., "invocation_id": "child",
          "attributes": {"source": "deepagents_task", "outcome": "completed"}},
         {"kind": "join_satisfied", "ts_ms": 105., "join_id": "join", "attributes": {}},
@@ -43,6 +49,16 @@ def _run(tmp_path, *, native_epoch=1, client_tool_calls=0):
     _write(tmp_path / "server/physical_action_ack.jsonl", [
         {"action": "PREFETCH_GPU", "command_id": "prefetch", "ts_ms": 1045.},
     ])
+    if stream_timing:
+        _write(tmp_path / "client_1/workflows/task/child_stream_content.jsonl", [
+            {"event": "llm_stream_http_transport", "request_id": "child-final",
+             "last_raw_at_ms": 67., "raw_chunks": 10, "raw_bytes": 100,
+             "raw_pull_total_ms": 15., "raw_pull_max_ms": 4.,
+             "consumer_pause_total_ms": 25., "consumer_pause_max_ms": 8.,
+             "stream_consumed": True},
+            {"event": "llm_stream_http_transport", "request_id": "other",
+             "last_raw_at_ms": 1., "raw_pull_total_ms": 500.},
+        ])
     return audit(tmp_path)
 
 
@@ -73,3 +89,34 @@ def test_join_audit_retains_tool_result_for_false_final_stage_diagnosis(tmp_path
     [row] = _run(tmp_path, client_tool_calls=1)["rows"]
     assert row["child_client_tool_call_count"] == 1
     assert row["child_result_identity_matches"]
+
+
+def test_join_audit_splits_http_consumer_and_callback_intervals(tmp_path):
+    report = _run(tmp_path, stream_timing=True)
+    [row] = report["rows"]
+    assert row["native_done_to_client_finish_chunk_ms"] == 25.
+    assert row["client_finish_chunk_to_callback_entry_ms"] == 10.
+    assert row["callback_entry_to_client_result_ms"] == 5.
+    assert row["native_done_to_last_http_read_ms"] == 27.
+    assert row["last_http_read_to_callback_entry_ms"] == 8.
+    assert row["child_http_stream_consumed"] is True
+    assert row["child_http_consumer_pause_total_ms"] == 25.
+    assert report["unique_child_http_intervals"]["child_http_raw_pull_total_ms"]["p50_ms"] == 15.
+
+
+def test_join_audit_does_not_mix_native_and_mismatched_client_stream_times(tmp_path):
+    report = _run(tmp_path, native_epoch=2, stream_timing=True)
+    [row] = report["rows"]
+    assert row["native_done_to_client_finish_chunk_ms"] is None
+    assert row["native_done_to_last_http_read_ms"] is None
+    assert row["callback_entry_to_client_result_ms"] is None
+    assert row["child_http_raw_pull_total_ms"] == 15.
+
+
+def test_join_audit_legacy_stream_timings_remain_unknown(tmp_path):
+    report = _run(tmp_path)
+    [row] = report["rows"]
+    assert row["native_done_to_client_finish_chunk_ms"] is None
+    assert row["client_finish_chunk_to_callback_entry_ms"] is None
+    assert row["child_http_raw_pull_total_ms"] is None
+    assert report["unique_child_http_intervals"]["child_http_raw_pull_total_ms"]["count"] == 0

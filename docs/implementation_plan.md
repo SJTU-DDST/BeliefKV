@@ -82,6 +82,34 @@ Current status:
   lower complete-match cost on4K/32K/96K paths. Related CPU checks:87 passed.
   Keep it out of live V14 until the entire driver/export/cleanup exits.
   This CPU evidence does not establish a GPU throughput improvement.
+- Reduce closure-observation allocation cost without removing capacity,
+  reference, lock or residency checks. The corrected benchmark loads historical
+  observer/physical/runtime together. Against19650ab,156 workflows,64-node
+  paths and40 interleaved iterations show equal selection/publication/targets,
+  14.4--15.4% lower PREPARE mean in missing-backup/Host-full/Host-only cases
+  and11.2--12.8% lower sampling mean. Fully backed PREPARE is approximately
+  unchanged or3.2% faster; preserve the earlier outlier-sensitive20-iteration
+  report rather than claiming a universal gain. Existing observer/physical144
+  and runtime88 checks passed. Keep this change out of live V14.
+- Extend the existing JOIN audit with native EOS, delivered finish chunk,
+  last raw HTTP read, LLM_END entry, LLM_RESULT, RETURN, JOIN and parent
+  submit/service boundaries. Preserve unknowns for legacy or mismatched
+  identities and report unique child requests separately from extent commands.
+  At02:53 CST the partial snapshot has60 commands/37 child requests;
+  45 commands submit after native EOS. Unique-request EOS-to-finish P50 is
+  2962ms, finish-to-callback94ms, callback-to-result0.112ms,
+  result-to-RETURN103ms, JOIN-to-parent-submit859ms and submit-to-service678ms.
+  Do not count client backlog as successful prediction lead.
+- Prioritize measured HTTP/framework consumer backlog and JOIN-to-submission
+  cost before lengthening speculative residency. One django11400 request
+  consumes the finish chunk10.437s after native EOS; its1500ms lease expires
+  before parent submission and FULL allocation reuse is unconfirmed.
+  HTTP pull and consumer-pause totals cover the entire stream, not only
+  completion-to-RETURN. Current triggers already require the last unfinished
+  child; do not attribute this case to an unverified multi-child trigger.
+  An8s nonblocking GIL profile has204 successful samples and94 failed reads.
+  SDK payload transformation, incremental tool JSON and model construction
+  are candidate CPU work, not proven attribution of the single-request delay.
 - V13 cleanup removed154 archived workspaces and retained two forensic
   workspaces. Preserve summaries, patches, telemetry, final reports and HTML.
 
@@ -93,6 +121,9 @@ Complete native comparison: v13_native_policy_comparison_20261010.json.
 Next-revision CPU comparison: v15_reentry_cpu_benchmark_20261010.json;
 reproduce with scripts/benchmark_native_reentry_cpu.py against the frozen live
 engine and the isolated candidate engine.
+Closure comparison: v15_closure_prepare_cpu_repeat_20261010.json.
+Partial JOIN HTTP audit: v14_join_pipeline_http_partial_20261010.json.
+Partial client stacks: v14_client_gil_profile_partial_20261010.txt.
 The following V11--V13 entries describe the frozen collection history;
 references to keeping live V13 unchanged no longer imply a running process.
 

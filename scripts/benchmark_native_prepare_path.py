@@ -15,6 +15,10 @@ from types import ModuleType, SimpleNamespace as NS
 
 import numpy as np
 
+ROOT = Path(__file__).resolve().parents[1]
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
+
 from beliefkv.control.causal_graph import InvocationState
 from beliefkv.runtime.sglang_v0520_admission import PrefillCandidateKey
 from beliefkv.runtime.sglang_v0520_runtime import NativeAdmissionRuntime
@@ -24,13 +28,9 @@ from tests.test_sglang_v0520_observer import (
     ComponentData, UnifiedTreeCore, UnifiedTreeNode, _static_cache,
 )
 
-
-ROOT = Path(__file__).resolve().parents[1]
-
-
 def baseline_runtime(revision):
     modules, digests = [], {}
-    for name in ("physical", "runtime"):
+    for name in ("observer", "physical", "runtime"):
         path = f"beliefkv/runtime/sglang_v0520_{name}.py"
         source = subprocess.check_output(
             ["git", "show", f"{revision}:{path}"], cwd=ROOT, text=True,
@@ -39,15 +39,15 @@ def baseline_runtime(revision):
         module = ModuleType(f"beliefkv.runtime._prepare_baseline_{name}")
         sys.modules[module.__name__] = module
         exec(compile(source, f"{revision}:{path}", "exec"), vars(module))
+        for dependency in modules:
+            for symbol, value in vars(dependency).items():
+                if not symbol.startswith("__") and symbol in vars(module):
+                    setattr(module, symbol, value)
         modules.append(module)
-    physical, runtime = modules
-    for name, value in vars(physical).items():
-        if name in vars(runtime):
-            setattr(runtime, name, value)
-    return runtime.NativeAdmissionRuntime, digests
+    return modules[-1].NativeAdmissionRuntime, digests
 
 
-def fixture(runtime_class, *, workflows, depth, backed, host_full, leases):
+def fixture(runtime_class, *, workflows, depth, backed, host_full, leases, host_only=False):
     runtime, queue = synthetic_runtime(
         runtime_class, CausalFrontierScheduler, workflows, 16,
     )
@@ -89,8 +89,9 @@ def fixture(runtime_class, *, workflows, depth, backed, host_full, leases):
         parent = None
         for offset in range(depth):
             node_id = workflow * depth + offset
-            full_value = range(128) if offset else None
-            full_host = full_value if backed or offset < depth // 2 else None
+            full_extent = range(128) if offset else None
+            full_value = None if host_only else full_extent
+            full_host = full_extent if backed or offset < depth // 2 else None
             state_value = (0,) if offset == depth - 1 else None
 
             def component(value, host):
@@ -104,12 +105,15 @@ def fixture(runtime_class, *, workflows, depth, backed, host_full, leases):
                 key=range(128) if offset else (),
                 component_data={
                     0: component(full_value, full_host),
-                    2: component(state_value, state_value if backed else None),
+                    2: component(
+                        None if host_only else state_value,
+                        state_value if backed else None,
+                    ),
                 },
                 write_through_pending_id=None, load_back_pending_id=None,
             )
             nodes[node_id] = node
-            if backed and offset:
+            if backed and offset and not host_only:
                 runtime._parent_pressure_candidates[node_id] = (key, node.creation_time)
             parent = node
         sessions[session] = parent
@@ -141,10 +145,12 @@ def fixture(runtime_class, *, workflows, depth, backed, host_full, leases):
     return runtime, queue, reads, actions, observations
 
 
-def measure_case(baseline, *, workflows, depth, iterations, backed, host_full, leases):
+def measure_case(
+    baseline, *, workflows, depth, iterations, backed, host_full, leases, host_only=False,
+):
     variants = {
         name: fixture(cls, workflows=workflows, depth=depth, backed=backed,
-                      host_full=host_full, leases=leases)
+                      host_full=host_full, leases=leases, host_only=host_only)
         for name, cls in (("baseline", baseline), ("optimized", NativeAdmissionRuntime))
     }
     samples = {name: {"join_prepare": [], "sampling": []} for name in variants}
@@ -195,6 +201,7 @@ def measure_case(baseline, *, workflows, depth, iterations, backed, host_full, l
         return {
             "workflows": workflows, "depth": depth,
             "all_current_input_backed": backed, "host_full_free_tokens": host_full,
+            "host_only": host_only,
             "live_restore_leases": leases, "iterations": iterations,
             "selection_and_publication_equal": True,
             "publication_scope": (
@@ -290,6 +297,7 @@ def main():
             {"backed": True, "host_full": 1_000_000, "leases": 4},
             {"backed": False, "host_full": 1_000_000, "leases": 0},
             {"backed": False, "host_full": 0, "leases": 0},
+            {"backed": True, "host_full": 1_000_000, "leases": 0, "host_only": True},
         )
     ]
     report = {
@@ -305,7 +313,8 @@ def main():
     print(json.dumps([{
         key: case[key] for key in (
             "depth", "all_current_input_backed", "host_full_free_tokens",
-            "live_restore_leases", "mean_reduction", "selection_and_publication_equal",
+            "host_only", "live_restore_leases", "mean_reduction",
+            "selection_and_publication_equal",
         )
     } for case in cases], indent=2))
 

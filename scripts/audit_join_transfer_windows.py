@@ -66,6 +66,14 @@ def audit(arm: Path) -> dict:
                     returns[row["invocation_id"]] = row["ts_ms"] + offset
             elif row["kind"] == "join_satisfied":
                 joins[row["join_id"]] = row["ts_ms"] + offset
+    transports = {}
+    for path in arm.glob("client_*/workflows/*/child_stream_content.jsonl"):
+        for row in records(path):
+            if (
+                row.get("event") == "llm_stream_http_transport"
+                and row.get("request_id") in child_requests
+            ):
+                transports[row["request_id"]] = row
     for submits in parent_submits.values():
         submits.sort(key=lambda row: (row["ts_ms"], row.get("sequence", 0)))
     parent_requests = {
@@ -132,6 +140,22 @@ def audit(arm: Path) -> dict:
             parent_ts = parent_submit["ts_ms"] + offset if parent_submit else None
             parent_service_ts = parent_service["ts_ms"] if parent_service else None
             client_attrs = client_result.get("attributes") or {} if client_result else {}
+            finish_chunk = client_attrs.get("stream_final_chunk_ts_ms")
+            callback_entry = client_attrs.get("llm_end_callback_entry_ts_ms")
+            finish_ts = (
+                finish_chunk + offset
+                if identity_matches and finish_chunk is not None else None
+            )
+            callback_ts = (
+                callback_entry + offset
+                if identity_matches and callback_entry is not None else None
+            )
+            transport = transports.get(child_request, {})
+            last_raw = transport.get("last_raw_at_ms")
+            last_raw_ts = (
+                last_raw + offset
+                if identity_matches and last_raw is not None else None
+            )
             rows.append({
                 "command_id": command, "context_id": issue["context_id"],
                 "join_id": issue.get("join_id"), "node_id": issue["node_id"],
@@ -139,6 +163,16 @@ def audit(arm: Path) -> dict:
                 "child_result_identity_matches": identity_matches,
                 "child_native_done_ts_ms": native_done,
                 "child_client_result_ts_ms": client_done,
+                "child_client_finish_chunk_ts_ms": finish_ts,
+                "child_llm_end_callback_entry_ts_ms": callback_ts,
+                "child_http_last_raw_ts_ms": last_raw_ts,
+                "child_http_stream_consumed": transport.get("stream_consumed"),
+                "child_http_raw_chunks": transport.get("raw_chunks"),
+                "child_http_raw_bytes": transport.get("raw_bytes"),
+                "child_http_raw_pull_total_ms": transport.get("raw_pull_total_ms"),
+                "child_http_raw_pull_max_ms": transport.get("raw_pull_max_ms"),
+                "child_http_consumer_pause_total_ms": transport.get("consumer_pause_total_ms"),
+                "child_http_consumer_pause_max_ms": transport.get("consumer_pause_max_ms"),
                 "child_client_finish_reason": client_attrs.get("finish_reason"),
                 "child_client_tool_call_count": client_attrs.get("tool_call_count"),
                 "child_client_invalid_tool_call_count": client_attrs.get("invalid_tool_call_count"),
@@ -148,6 +182,11 @@ def audit(arm: Path) -> dict:
                 "parent_client_submit_ts_ms": parent_ts,
                 "parent_native_first_service_ts_ms": parent_service_ts,
                 "native_done_to_client_result_ms": _difference(client_done, native_done),
+                "native_done_to_client_finish_chunk_ms": _difference(finish_ts, native_done),
+                "client_finish_chunk_to_callback_entry_ms": _difference(callback_ts, finish_ts),
+                "callback_entry_to_client_result_ms": _difference(client_done, callback_ts),
+                "native_done_to_last_http_read_ms": _difference(last_raw_ts, native_done),
+                "last_http_read_to_callback_entry_ms": _difference(callback_ts, last_raw_ts),
                 "client_result_to_child_return_ms": _difference(return_ts, client_done),
                 "child_return_to_join_ms": _difference(join_ts, return_ts),
                 "join_to_parent_submit_ms": _difference(parent_ts, join_ts),
@@ -169,6 +208,11 @@ def audit(arm: Path) -> dict:
              if r["submit_lead_to_child_return_ms"] is not None]
     completion_fields = (
         "native_done_to_client_result_ms",
+        "native_done_to_client_finish_chunk_ms",
+        "client_finish_chunk_to_callback_entry_ms",
+        "callback_entry_to_client_result_ms",
+        "native_done_to_last_http_read_ms",
+        "last_http_read_to_callback_entry_ms",
         "client_result_to_child_return_ms",
         "child_return_to_join_ms",
         "join_to_parent_submit_ms",
@@ -184,7 +228,10 @@ def audit(arm: Path) -> dict:
         "completion_timing_scope": (
             "same native/client child request, invocation/context/epoch identity. "
             "Native completion precedes HTTP consumption, framework callbacks "
-            "and task return; these intervals do not identify a specific CPU cause. "
+            "and task return. Optional HTTP timings split raw reads from consumer "
+            "pauses; pauses include parsing, callbacks and CPU scheduling, while "
+            "raw pulls include waiting for server data. Neither is a pure network "
+            "or function CPU measurement. Missing legacy timings remain unknown. "
             "Parent first service uses the next same-context request after JOIN."
         ),
         "command_count": len(rows), "child_return_observed_count": len(leads),
@@ -207,6 +254,15 @@ def audit(arm: Path) -> dict:
         "unique_child_completion_intervals": {
             field: _latencies(list(unique_children.values()), field)
             for field in completion_fields
+        },
+        "unique_child_http_intervals": {
+            field: _latencies(list(unique_children.values()), field)
+            for field in (
+                "child_http_raw_pull_total_ms",
+                "child_http_raw_pull_max_ms",
+                "child_http_consumer_pause_total_ms",
+                "child_http_consumer_pause_max_ms",
+            )
         },
         "rows": rows,
     }

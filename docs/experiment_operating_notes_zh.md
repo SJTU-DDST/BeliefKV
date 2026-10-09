@@ -29,6 +29,27 @@ GPU吞吐结论。保存两侧源码SHA256和报告
 `experiments/reports/v15_reentry_cpu_benchmark_20261010.json`，以后
 不能用更新后的服务目录冒充本次冻结基线重新计算旧结果。
 
+后续闭包观察优化只减少对象/临时分配，继续校验容量、锁及session
+引用。对19650ab的40次同输入交错基准，缺失备份、Host满池及
+Host-only PREPARE平均耗时下降14.4%--15.4%，机会采样下降
+11.2%--12.8%；已全备份PREPARE约持平或下降3.2%。保留20次
+离群值样本与复查报告，不能用P50改善掩盖均值退步。历史baseline
+须同时加载其observer、physical和runtime，不得混用当前observer。
+144项observer/physical及88项runtime检查通过；这不是GPU收益。
+报告：`experiments/reports/v15_closure_prepare_cpu_repeat_20261010.json`。
+
+JOIN链路审计读取同request的可选finish-chunk、LLM_END入口和HTTP
+计时，历史缺失保持unknown，按child请求去重后再统计。02:53 CST
+快照中EOS到finish-chunk的P50为2962ms，finish到回调94ms，
+回调到LLM_RESULT0.112ms；不能把客户端积压计入成功预测提前量。
+HTTP consumer pause包括解析、回调和线程调度，raw pull还可能
+等待服务端生成；二者是整轮流累计量，不是EOS之后的纯CPU/网络
+区间。诊断脚本扩展不改变运行中的策略或租约。先定位客户端与
+JOIN到提交的开销，再验证有界驻留，不直接延长到十几秒。
+报告：`experiments/reports/v14_join_pipeline_http_partial_20261010.json`。
+客户端GIL采样有204个有效样本、94次失败；SDK类型转换和增量
+工具JSON等栈只用于选择后续检查对象，不能声称已精确归因。
+
 v13最终审计应读取独立的final报告及来源v2口径。提前JOIN/tool为
 760次/11.824 GB，需求handoff为18008次/158.846 GB；旧动作报告
 的PREFETCH_GPU合计不得用于预测覆盖。ACK到服务须按来源分别

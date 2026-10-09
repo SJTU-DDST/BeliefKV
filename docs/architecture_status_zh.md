@@ -107,6 +107,40 @@ session有效性检查均沿用现有逻辑，不缓存物理驻留结果。
 基准脚本：`scripts/benchmark_native_reentry_cpu.py`。
 报告：`experiments/reports/v15_reentry_cpu_benchmark_20261010.json`。
 
+后续闭包观察优化保留所有字段及容量/锁/引用校验，减少每节点的
+临时生成器、tuple和对象字典；没有缓存驻留状态或放宽驱逐条件。
+修正CPU基准的历史依赖加载，使baseline同时使用其observer、
+physical和runtime，避免以当前observer冒充历史版本。对19650ab
+的156-workflow、64节点路径、40次交错比较，缺失备份、Host满池及
+Host-only PREPARE平均耗时下降14.4%--15.4%，机会采样下降
+11.2%--12.8%，选择、发布和采样目标一致。已全备份路径的PREPARE
+约持平或下降3.2%；首轮20次样本受离群值影响，不能宣称所有路径
+都有固定比例收益。144项observer/physical及88项runtime检查通过。
+报告：`experiments/reports/v15_closure_prepare_cpu_repeat_20261010.json`。
+该修改仅在隔离工作树，仍须等v14完整driver结束后部署。
+
+2026-10-10 02:53 CST的新增JOIN链路审计仍是运行中快照：60个
+节点命令对应37个child请求，45个命令在原生EOS之后提交。按请求
+去重，原生EOS到客户端finish-chunk的P50为2962 ms，finish-chunk
+到LLM_END回调入口为94 ms，回调入口到LLM_RESULT仅0.112 ms；
+结果到RETURN为103 ms，JOIN到parent提交859 ms，提交到服务
+678 ms。不可把数秒的客户端消费延迟当作准确预测生成结束的提前量。
+django-11400的一条请求中，EOS到finish-chunk为10437 ms，
+其后回调入口448.5 ms；HTTP累计consumer pause为13638.7 ms，
+raw pull为1253.9 ms。后两项覆盖整轮流，不能相加解释EOS之后
+的耗时，也不能分别等同于纯CPU或网络时间。该parent预取锁在
+1500 ms到期，首次服务没有确认FULL分配复用。
+现有实现已经要求最后一个未完成child；此处未证实多child误触发。
+下一步优先减少客户端积压和JOIN到提交的开销，再验证有界驻留
+与恢复准入，不能仅把投机租约延长到十几秒。
+报告：`experiments/reports/v14_join_pipeline_http_partial_20261010.json`。
+
+本轮客户端8秒非阻塞GIL采样取得204个有效样本，94次采样失败。
+热点栈包括SDK消息类型转换、增量工具参数JSON解析与消息对象
+构造；它不能精确解释上述单请求延迟或推导GPU空闲占比。后续
+优化应核对最终请求/工具语义不变，并保留低开销客户端消费计时。
+采样：`experiments/reports/v14_client_gil_profile_partial_20261010.txt`。
+
 最终报告：
 `experiments/reports/v13_h2d_sources_final_20261010.json`、
 `experiments/reports/v13_prefetch_sources_final_20261010.json`、
