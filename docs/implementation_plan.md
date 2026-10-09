@@ -18,6 +18,9 @@ the same objective. The three explicit priorities are:
   demand restoration, alongside throughput, JCT and recomputation.
 
 Additional execution requirements:
+- Treat missing FULL extents and re-backup after Host eviction separately.
+  Reduce cold-copy reclaim/re-backup control and bandwidth costs within the
+  existing native-relative performance objective.
 - Speculative PREPARE copies only missing FULL prefix extents. Reuse valid Host
   copies, including their native redistribution on radix splits; re-copy an
   extent only after its Host copy is lost. Native already skips backed FULL.
@@ -79,11 +82,12 @@ Current status:
   actual RadixKey give equal outputs and8-leaf4K/32K/96K CPU P50 reductions
   of63.9/80.5/84.9%; single leaves regress0.3--2.9% and first divergence
   goes4.642→4.968us. Preserve regressions and do not infer GPU throughput.
-  Report:v16_shared_reentry_cpu_20261010.json. Full candidate patch SHA256
+  Report:v16_shared_reentry_cpu_20261010.json. Initial candidate patch SHA256
   is32c915af99003b65f4cfa952a24e9716f7a3962cefde5ffe3dffddb6af3f63ca.
   Candidate reverse-check and frozen-live delta forward-check pass.
-  Commit the isolated package promptly; deploy only after both V15 arms and
-  full postprocessing finish.
+  The final package below supersedes this intermediate package. Commit the
+  isolated package promptly; deploy only after both V15 arms and full
+  postprocessing finish.
 - The isolated PREPARE ranker now reads D2H service history only for a live
   tool-wait hint. JOIN candidates skip the unused estimate; capacity, reclaim
   rank and tool short-window rejection are unchanged. Forty-one related
@@ -191,6 +195,25 @@ Current status:
   triggers, neural inference, real IPC or GPU throughput. Preserve all cases:
   v16_semantic_pending_cpu_20261010.json. Commit only in isolation until
   both V15 arms and full postprocessing finish.
+- The isolated reentry probe binds tree/root/node lookup inside one read-only
+  call and assembles the result once after selecting the best checkpoint.
+  Refresh tokens and physical state on every call; retain shared ancestry,
+  namespace, pending DMA, page alignment, the64-node limit, first-tie selection
+  and valid checkpoints before a nonresumable tail. Seventy-six related checks
+  pass. Eleven CPU samples/500 iterations with equal complete-path outputs
+  reduce the six matching cases by1.9--6.7% at P50, first divergence by10.1%,
+  and other divergence/short-request/page cases by1.4--3.1%. The preliminary
+  raw-byte comparison regresses all six full matching cases and is rejected.
+  These synthetic CPU figures do not establish GPU throughput improvement.
+  Report:v16_reentry_result_cpu_20261010.json.
+- The final isolated engine package has full patch SHA256
+  66aa563627fb8882808e290ff0ccde10535bc7d787a66eba6848baa8bcf203d8.
+  Its exact frozen-V15 delta isv16_engine_followup_delta_20261010.patch with
+  SHA256dced5a847a7416c8d8abdfa591914cd743c822c1f41735d0ce852d144f58deeb.
+  Full-candidate reverse, frozen-live delta forward and candidate delta reverse
+  checks pass. Preservev16_engine_followup_manifest_20261010.json alongside
+  the patch and CPU evidence. The candidate includes existing isolated runtime
+  follow-ups and remains undeployed until both V15 arms and full exports finish.
 - V14 collection, outer driver, audits, HTML export and cleanup have all
   finished:154 completed, two incomplete, no errors out of156. Duration is
   10977.317s, completed throughput50.504/hour, output700.235 tokens/s and

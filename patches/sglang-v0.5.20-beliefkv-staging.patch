@@ -1734,7 +1734,7 @@ index 6815679..fc9deaa 100644
      def reset(self) -> None:
          """Drop the entire tree and reinitialize empty state."""
 diff --git a/python/sglang/srt/mem_cache/unified_radix_cache.py b/python/sglang/srt/mem_cache/unified_radix_cache.py
-index d417d7d..f52a59b 100644
+index d417d7d..0cdae7b 100644
 --- a/python/sglang/srt/mem_cache/unified_radix_cache.py
 +++ b/python/sglang/srt/mem_cache/unified_radix_cache.py
 @@ -6,7 +6,7 @@ import threading
@@ -2308,7 +2308,7 @@ index d417d7d..f52a59b 100644
              )
              if host_indices is None:
                  return 0
-@@ -1554,6 +2005,330 @@ class UnifiedRadixCache(BasePrefixCache):
+@@ -1554,6 +2005,340 @@ class UnifiedRadixCache(BasePrefixCache):
              written = len(host_indices)
          return written
  
@@ -2318,8 +2318,10 @@ index d417d7d..f52a59b 100644
 +        anchors = self.session_refs.snapshot_latest_session_leaf_anchors(
 +            session_id, getattr(req, "session_generation", None), max_leaves=8,
 +        )
-+        if anchors is None or self.tree_core.is_eagle:
++        tree = self.tree_core
++        if anchors is None or tree.is_eagle:
 +            return None
++        root, node_by_id = tree.root_node, tree.node_by_id
 +        full_leaves = dict(dict(anchors).get(int(BASE_COMPONENT_TYPE), ()))
 +        ids = getattr(req, "origin_input_ids", ())
 +        key = RadixKey(
@@ -2327,7 +2329,8 @@ index d417d7d..f52a59b 100644
 +            cache_salt=getattr(req, "cache_salt", None),
 +            limit=max(0, len(ids) - 1),
 +        )
-+        best = None
++        best_node = None
++        best_prefix = 0
 +        # Session leaves share ancestors; reuse only this read-only call's state.
 +        prefix_states = {} if len(full_leaves) > 1 else None
 +        for leaf_id, created in full_leaves.items():
@@ -2335,12 +2338,12 @@ index d417d7d..f52a59b 100644
 +            full_device, full_available = True, True
 +            pending, depth = False, 0
 +            try:
-+                leaf = self.tree_core.node_by_id(leaf_id)
++                leaf = node_by_id(leaf_id)
 +                if leaf.creation_time != created:
 +                    continue
 +                chain, current = [], leaf
-+                while current is not self.tree_core.root_node and len(chain) < 64:
-+                    if current is None or self.tree_core.node_by_id(current.id) is not current:
++                while current is not root and len(chain) < 64:
++                    if current is None or node_by_id(current.id) is not current:
 +                        return None
 +                    cached = prefix_states.get(current.id) if prefix_states is not None else None
 +                    if cached is not None:
@@ -2352,7 +2355,7 @@ index d417d7d..f52a59b 100644
 +                    chain.append(current)
 +                    current = current.parent
 +                if depth + len(chain) > 64 or (
-+                    current is not self.tree_core.root_node and not depth
++                    current is not root and not depth
 +                ):
 +                    return None
 +            except (KeyError, RuntimeError, ValueError):
@@ -2381,25 +2384,32 @@ index d417d7d..f52a59b 100644
 +                    if full_device and state.value is not None and not pending:
 +                        device_prefix = prefix
 +                    if full_available and not pending and (
-+                        best is None or prefix > best["checkpoint_tokens"]
++                        best_node is None or prefix > best_prefix
 +                    ):
-+                        best = {
-+                            "component_leaves": (
-+                                (int(BASE_COMPONENT_TYPE), ((leaf.id, leaf.creation_time),)),
-+                                (int(ComponentType.MAMBA), ((node.id, node.creation_time),)),
-+                            ),
-+                            "reusable_input_tokens": prefix,
-+                            "checkpoint_tokens": prefix,
-+                            "device_checkpoint_tokens": device_prefix,
-+                            "missing_full_tokens": missing_full,
-+                            "missing_mamba_slots": int(state.value is None),
-+                        }
++                        best_node = node
++                        best_leaf = leaf
++                        best_prefix = prefix
++                        best_device_prefix = device_prefix
++                        best_missing_full = missing_full
++                        best_missing_mamba = int(state.value is None)
 +                if prefix_states is not None:
 +                    prefix_states[node.id] = (
 +                        prefix, device_prefix, missing_full, full_device,
 +                        full_available, pending, depth,
 +                    )
-+        return best
++        if best_node is None:
++            return None
++        return {
++            "component_leaves": (
++                (int(BASE_COMPONENT_TYPE), ((best_leaf.id, best_leaf.creation_time),)),
++                (int(ComponentType.MAMBA), ((best_node.id, best_node.creation_time),)),
++            ),
++            "reusable_input_tokens": best_prefix,
++            "checkpoint_tokens": best_prefix,
++            "device_checkpoint_tokens": best_device_prefix,
++            "missing_full_tokens": best_missing_full,
++            "missing_mamba_slots": best_missing_mamba,
++        }
 +
 +    def prefetch_gpu_session_node(
 +        self,
@@ -2639,7 +2649,7 @@ index d417d7d..f52a59b 100644
      @staticmethod
      def _backup_publish_node_ids(
          node_id: NodeId, comp_xfers: dict[ComponentType, list[PoolTransfer]]
-@@ -1574,18 +2349,74 @@ class UnifiedRadixCache(BasePrefixCache):
+@@ -1574,18 +2359,74 @@ class UnifiedRadixCache(BasePrefixCache):
              CacheTransferPhase.BACKUP_HOST, kv_xfer, comp_xfers
          )
  
@@ -2716,7 +2726,7 @@ index d417d7d..f52a59b 100644
          )
  
      def _track_write_through_node(
-@@ -1627,10 +2458,10 @@ class UnifiedRadixCache(BasePrefixCache):
+@@ -1627,10 +2468,10 @@ class UnifiedRadixCache(BasePrefixCache):
              updated_node_ids,
          )
  
@@ -2729,7 +2739,7 @@ index d417d7d..f52a59b 100644
  
          lock_node_id, lock_params, publish_node_ids = self.ongoing_write_through.pop(
              ack_id
-@@ -1643,15 +2474,25 @@ class UnifiedRadixCache(BasePrefixCache):
+@@ -1643,15 +2484,25 @@ class UnifiedRadixCache(BasePrefixCache):
              # suffix; the prefix fragment must be persisted as well.
              for node_id in publish_node_ids:
                  self.write_backup_storage(node_id)
@@ -2756,7 +2766,7 @@ index d417d7d..f52a59b 100644
              return False
  
          host_anchor_params = self.inc_host_lock_ref(node_id).to_dec_params()
-@@ -1675,6 +2516,10 @@ class UnifiedRadixCache(BasePrefixCache):
+@@ -1675,6 +2526,10 @@ class UnifiedRadixCache(BasePrefixCache):
                  result=result,
                  ancestor_lock_params=ancestor_lock_params,
                  host_anchor_params=host_anchor_params,
@@ -2767,7 +2777,7 @@ index d417d7d..f52a59b 100644
              )
              return success
          finally:
-@@ -1690,9 +2535,15 @@ class UnifiedRadixCache(BasePrefixCache):
+@@ -1690,9 +2545,15 @@ class UnifiedRadixCache(BasePrefixCache):
          result: IncLockRefResult,
          ancestor_lock_params: DecLockRefParams,
          host_anchor_params: DecLockRefParams,
@@ -2784,7 +2794,7 @@ index d417d7d..f52a59b 100644
          kv_tokens = len(kv_xfer.host_indices)
          sidecar_xfers = self._build_sidecar_transfers(
              CacheTransferPhase.LOAD_BACK, kv_xfer, comp_xfers
-@@ -1703,7 +2554,8 @@ class UnifiedRadixCache(BasePrefixCache):
+@@ -1703,7 +2564,8 @@ class UnifiedRadixCache(BasePrefixCache):
          # when the Full-KV load is skipped by thresholding. max(1, ...): an
          # entirely empty spec (e.g. foreign-pin rejection) must never report
          # success, even at load_back_threshold <= 0.
@@ -2794,7 +2804,7 @@ index d417d7d..f52a59b 100644
              mem_quota is not None and kv_tokens + result.delta > mem_quota
          ):
              self.dec_lock_ref(node_id, ancestor_lock_params)
-@@ -1714,6 +2566,10 @@ class UnifiedRadixCache(BasePrefixCache):
+@@ -1714,6 +2576,10 @@ class UnifiedRadixCache(BasePrefixCache):
              self.token_to_kv_pool_allocator, "c128_attn_allocator", None
          )
          if c128_allocator is not None:
@@ -2805,7 +2815,7 @@ index d417d7d..f52a59b 100644
              c128_num_pages = _c128_transfer_num_pages(
                  comp_xfers.get(ComponentType.C128, ()),
                  c128_allocator.page_size,
-@@ -1727,6 +2583,10 @@ class UnifiedRadixCache(BasePrefixCache):
+@@ -1727,6 +2593,10 @@ class UnifiedRadixCache(BasePrefixCache):
  
          avail = self._component_available_size(ComponentType.FULL)
          if avail < kv_tokens:
@@ -2816,7 +2826,7 @@ index d417d7d..f52a59b 100644
              needed = kv_tokens - avail
              self.evict_for_alloc(EvictParams(num_tokens=needed))
              if self._component_available_size(ComponentType.FULL) < kv_tokens:
-@@ -1741,6 +2601,9 @@ class UnifiedRadixCache(BasePrefixCache):
+@@ -1741,6 +2611,9 @@ class UnifiedRadixCache(BasePrefixCache):
              host_indices=kv_xfer.host_indices,
              node_id=node_id,
              extra_pools=aux_xfers or None,
@@ -2826,7 +2836,7 @@ index d417d7d..f52a59b 100644
          )
  
          self.dec_lock_ref(node_id, ancestor_lock_params)
-@@ -3130,10 +3993,24 @@ class UnifiedRadixCache(BasePrefixCache):
+@@ -3130,10 +4003,24 @@ class UnifiedRadixCache(BasePrefixCache):
              while self.ongoing_write_through:
                  for ack in cc.ack_write_queue:
                      ack.finish_event.synchronize()
@@ -2852,7 +2862,7 @@ index d417d7d..f52a59b 100644
                  cc.ack_write_queue.clear()
                  assert len(self.ongoing_write_through) == 0
              return
-@@ -3154,11 +4031,122 @@ class UnifiedRadixCache(BasePrefixCache):
+@@ -3154,11 +4041,122 @@ class UnifiedRadixCache(BasePrefixCache):
          while finish_count > 0:
              ack = cc.ack_write_queue.pop(0)
              ack.finish_event.synchronize()
@@ -2976,7 +2986,7 @@ index d417d7d..f52a59b 100644
      def _log_write_ack_metrics(self, ack: HiCacheAck) -> None:
          """Record D->H backup volume and duration for a completed write ack."""
          if self.metrics_collector is None:
-@@ -3200,6 +4188,8 @@ class UnifiedRadixCache(BasePrefixCache):
+@@ -3200,6 +4198,8 @@ class UnifiedRadixCache(BasePrefixCache):
          while finish_count > 0:
              ack = cc.ack_load_queue.pop(0)
              ack.finish_event.synchronize()
@@ -2985,7 +2995,7 @@ index d417d7d..f52a59b 100644
              for ack_id in ack.node_ids:
                  if (
                      self.buffer_pipeline is not None
-@@ -3211,6 +4201,8 @@ class UnifiedRadixCache(BasePrefixCache):
+@@ -3211,6 +4211,8 @@ class UnifiedRadixCache(BasePrefixCache):
                  self.dec_host_lock_ref(node, host_lock_params)
                  # Unpin the loaded nodes; host copies stay as reclaimable duplicates.
                  self.tree_core.finish_load_back(node)
@@ -2994,7 +3004,7 @@ index d417d7d..f52a59b 100644
  
              if self.metrics_collector is not None:
                  for pool, num_tokens in (ack.num_tokens_by_pool or {}).items():
-@@ -3225,6 +4217,13 @@ class UnifiedRadixCache(BasePrefixCache):
+@@ -3225,6 +4227,13 @@ class UnifiedRadixCache(BasePrefixCache):
                      self.metrics_collector.observe_load_back_duration(
                          duration_ms / 1000.0
                      )
@@ -3008,7 +3018,7 @@ index d417d7d..f52a59b 100644
              finish_count -= 1
  
      # ---- HiCache: Scheduler Entry Points ----
-@@ -3341,9 +4340,31 @@ class UnifiedRadixCache(BasePrefixCache):
+@@ -3341,9 +4350,31 @@ class UnifiedRadixCache(BasePrefixCache):
          if self.linker is not None:
              return self.linker.start_layer_wise_loading()
          if self.cache_controller is not None:
@@ -3126,10 +3136,10 @@ index b219467..6ca04e5 100644
          cache, allocator, _ = build_fixture(self.cfg)
 diff --git a/test/srt/test_beliefkv_execution_handoff.py b/test/srt/test_beliefkv_execution_handoff.py
 new file mode 100644
-index 0000000..e6a3b62
+index 0000000..46c6b52
 --- /dev/null
 +++ b/test/srt/test_beliefkv_execution_handoff.py
-@@ -0,0 +1,509 @@
+@@ -0,0 +1,539 @@
 +"""CPU checks for read-only reentry and cold-only capacity exchange."""
 +
 +import ast
@@ -3325,6 +3335,36 @@ index 0000000..e6a3b62
 +    assert observation["missing_full_tokens"] == 2
 +    assert observation["missing_mamba_slots"] == 1
 +    assert observation["component_leaves"] == ((0, ((3, 3),)), (2, ((3, 3),)))
++
++
++def test_probe_retains_the_selected_checkpoint_before_a_nonresumable_tail():
++    cache, checkpoint, tail, request = fixture()
++    checkpoint.component_data[0].value = None
++    checkpoint.component_data[2].value = None
++    tail.component_data[0].value = None
++    tail.component_data[2].value = None
++    tail.component_data[2].host_value = None
++    request.origin_input_ids = [10, 11, 12, 13, 99]
++    assert cache.inspect_beliefkv_reentry(request) == {
++        "component_leaves": ((0, ((2, 2),)), (2, ((1, 1),))),
++        "reusable_input_tokens": 2,
++        "checkpoint_tokens": 2,
++        "device_checkpoint_tokens": 0,
++        "missing_full_tokens": 2,
++        "missing_mamba_slots": 1,
++    }
++
++
++def test_probe_preserves_the_first_leaf_when_checkpoints_tie():
++    cache, checkpoint, tail, branch, request = shared_probe_fixture()
++    request.origin_input_ids = [10, 11, 99]
++    observation = cache.inspect_beliefkv_reentry(request)
++    assert observation["component_leaves"] == (
++        (0, ((tail.id, tail.creation_time),)),
++        (2, ((checkpoint.id, checkpoint.creation_time),)),
++    )
++    assert branch.id != tail.id
++    assert observation["checkpoint_tokens"] == 2
 +
 +
 +def test_shared_probe_counts_cached_depth_toward_ancestry_bound():

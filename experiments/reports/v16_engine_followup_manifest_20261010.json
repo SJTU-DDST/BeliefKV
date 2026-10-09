@@ -1,0 +1,25 @@
+{
+  "schema_version": 1,
+  "created_at": "2026-10-10",
+  "engine_base_commit": "94602c9c2b7cbdb8efd5c52802dac6a1c180089e",
+  "frozen_main_commit": "feb5ee01a9f1340a694dcba442c439d08e4bd274",
+  "frozen_engine_full_patch_sha256": "dbde39b7f37977ecacd72dddf78b3da94a56fa6a0879afb1798ae55ab7f1fe63",
+  "candidate_full_patch": "patches/sglang-v0.5.20-beliefkv-staging.patch",
+  "candidate_full_patch_sha256": "66aa563627fb8882808e290ff0ccde10535bc7d787a66eba6848baa8bcf203d8",
+  "exact_delta": "experiments/reports/v16_engine_followup_delta_20261010.patch",
+  "exact_delta_sha256": "dced5a847a7416c8d8abdfa591914cd743c822c1f41735d0ce852d144f58deeb",
+  "changed_engine_paths": [
+    "python/sglang/srt/mem_cache/unified_radix_cache.py",
+    "test/srt/test_beliefkv_execution_handoff.py"
+  ],
+  "validation": {
+    "candidate_full_reverse_check": true,
+    "frozen_live_delta_forward_check": true,
+    "candidate_delta_reverse_check": true,
+    "related_cpu_checks_passed": 76
+  },
+  "cpu_report": "experiments/reports/v16_reentry_result_cpu_20261010.json",
+  "deployed": false,
+  "deploy_after": "both frozen V15 arms and complete postprocessing",
+  "scope": "CPU prefix inspection and existing isolated runtime follow-ups; no verified native-relative throughput claim"
+}

@@ -17,7 +17,9 @@
    恢复，并以实际复用、完成吞吐、JCT及重算量评价收益。
 
 当前active /goal继续采用上述方向，并落实以下执行约定：
-PREPARE只提前备份尚未拥有有效Host副本的FULL
+FULL PREPARE的收益评估须区分增量备份与Host驱逐后补传；减少
+冷副本反复回收/补传的控制和带宽成本属于当前目标。PREPARE只
+提前备份尚未拥有有效Host副本的FULL
 前缀。原生build_backup_spec已跳过备份完成的FULL节点，radix节点
 分裂会拆分并保留已有Host索引；后续新增前缀只复制未备份节点。
 Host副本若已被驱逐则必须重新备份，不能复用已失效的索引。
@@ -88,11 +90,11 @@ namespace、前缀、检查点、pending DMA、节点有效性及64层上限
 首段分歧4.642→4.968微秒。保留这些退步，不推导GPU吞吐收益。
 新审计12项检查通过；两项修订均未部署到v15。
 报告：`experiments/reports/v16_shared_reentry_cpu_20261010.json`。
-下一版完整patch SHA256为
+首次祖先复用包的完整patch SHA256为
 `32c915af99003b65f4cfa952a24e9716f7a3962cefde5ffe3dffddb6af3f63ca`；
 候选反向与冻结引擎增量正向检查通过，增量保存在
-`experiments/reports/v16_engine_delta_20261010.patch`，等待v15完整
-对照结束后再部署。
+`experiments/reports/v16_engine_delta_20261010.patch`。该中间包已由
+下述最终候选包取代，仍须等待v15完整对照结束后再部署。
 
 下一版PREPARE排序仅在存在有效工具等待预测时查询D2H服务历史，
 JOIN候选省去不参与排序或拒绝判断的传输耗时估计。容量、回收收益、
@@ -199,6 +201,28 @@ CPU基准使用相同156条真实传输种子，并在两侧同等清除探测�
 0.25，基准不验证高分触发、神经推理、真实IPC或GPU吞吐。报告：
 `experiments/reports/v16_semantic_pending_cpu_20261010.json`。
 修改只在隔离工作树，v15两侧及完整后处理继续冻结。
+
+下一版reentry检查在同一次只读调用中绑定tree/root/节点查询，
+只保存最优检查点的必要字段，选择结束后才构造返回字典。每次
+调用重新读取token与物理驻留，不新增跨调用缓存；保留共享祖先、
+namespace、pending DMA、页对齐、64层上限、首个同长度检查点
+及非可恢复尾部之前的有效检查点。76项相关检查通过。与改动前
+的同输入完整路径比较，11组、每组500次的六种匹配样例P50 CPU
+耗时下降1.9%--6.7%；首段分歧下降10.1%，其余分歧/短请求/页
+对齐下降1.4%--3.1%。长数组字节比较在先行六种完整匹配样例中
+均变慢，未采用。报告：
+`experiments/reports/v16_reentry_result_cpu_20261010.json`。
+这些合成CPU结果不能推导native相对GPU吞吐收益。
+
+当前隔离候选已打包，完整patch SHA256为
+`66aa563627fb8882808e290ff0ccde10535bc7d787a66eba6848baa8bcf203d8`，
+相对冻结v15引擎的精确差量为
+`experiments/reports/v16_engine_followup_delta_20261010.patch`，SHA256为
+`dced5a847a7416c8d8abdfa591914cd743c822c1f41735d0ce852d144f58deeb`。
+完整候选反向检查、冻结引擎差量正向检查和候选差量反向检查均
+通过。清单为`experiments/reports/v16_engine_followup_manifest_20261010.json`。
+本包包括已有的隔离运行时优化，尚未部署；v15仍使用原冻结
+引擎、运行时和模型产物，双侧及后处理全部完成后再评价并部署。
 
 v14采集、审计、HTML导出和workspace清理
 已全部结束，156个workflow中154个completed、2个incomplete、

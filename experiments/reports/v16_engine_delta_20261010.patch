@@ -1,0 +1,182 @@
+--- a/python/sglang/srt/mem_cache/unified_radix_cache.py
++++ b/python/sglang/srt/mem_cache/unified_radix_cache.py
+@@ -2021,7 +2021,12 @@
+             limit=max(0, len(ids) - 1),
+         )
+         best = None
++        # Session leaves share ancestors; reuse only this read-only call's state.
++        prefix_states = {} if len(full_leaves) > 1 else None
+         for leaf_id, created in full_leaves.items():
++            prefix, device_prefix, missing_full = 0, 0, 0
++            full_device, full_available = True, True
++            pending, depth = False, 0
+             try:
+                 leaf = self.tree_core.node_by_id(leaf_id)
+                 if leaf.creation_time != created:
+@@ -2030,21 +2035,28 @@
+                 while current is not self.tree_core.root_node and len(chain) < 64:
+                     if current is None or self.tree_core.node_by_id(current.id) is not current:
+                         return None
++                    cached = prefix_states.get(current.id) if prefix_states is not None else None
++                    if cached is not None:
++                        (
++                            prefix, device_prefix, missing_full, full_device,
++                            full_available, pending, depth,
++                        ) = cached
++                        break
+                     chain.append(current)
+                     current = current.parent
+-                if current is not self.tree_core.root_node:
++                if depth + len(chain) > 64 or (
++                    current is not self.tree_core.root_node and not depth
++                ):
+                     return None
+             except (KeyError, RuntimeError, ValueError):
+                 return None
+-            prefix, device_prefix, missing_full = 0, 0, 0
+-            full_device, full_available = True, True
+-            pending = False
+             for node in reversed(chain):
+                 try:
+                     if not node.key.is_prefix_at(key, prefix, page_size=self.page_size):
+                         break
+                 except (IndexError, TypeError, ValueError):
+                     break
++                depth += 1
+                 prefix += len(node.key)
+                 full = node.component_data[BASE_COMPONENT_TYPE]
+                 state = node.component_data[ComponentType.MAMBA]
+@@ -2058,22 +2070,28 @@
+                     node.write_through_pending_id is not None
+                     or node.load_back_pending_id is not None
+                 )
+-                if state.value is None and state.host_value is None:
+-                    continue
+-                if full_device and state.value is not None and not pending:
+-                    device_prefix = prefix
+-                if full_available and not pending and (best is None or prefix > best["checkpoint_tokens"]):
+-                    best = {
+-                        "component_leaves": (
+-                            (int(BASE_COMPONENT_TYPE), ((leaf.id, leaf.creation_time),)),
+-                            (int(ComponentType.MAMBA), ((node.id, node.creation_time),)),
+-                        ),
+-                        "reusable_input_tokens": prefix,
+-                        "checkpoint_tokens": prefix,
+-                        "device_checkpoint_tokens": device_prefix,
+-                        "missing_full_tokens": missing_full,
+-                        "missing_mamba_slots": int(state.value is None),
+-                    }
++                if state.value is not None or state.host_value is not None:
++                    if full_device and state.value is not None and not pending:
++                        device_prefix = prefix
++                    if full_available and not pending and (
++                        best is None or prefix > best["checkpoint_tokens"]
++                    ):
++                        best = {
++                            "component_leaves": (
++                                (int(BASE_COMPONENT_TYPE), ((leaf.id, leaf.creation_time),)),
++                                (int(ComponentType.MAMBA), ((node.id, node.creation_time),)),
++                            ),
++                            "reusable_input_tokens": prefix,
++                            "checkpoint_tokens": prefix,
++                            "device_checkpoint_tokens": device_prefix,
++                            "missing_full_tokens": missing_full,
++                            "missing_mamba_slots": int(state.value is None),
++                        }
++                if prefix_states is not None:
++                    prefix_states[node.id] = (
++                        prefix, device_prefix, missing_full, full_device,
++                        full_available, pending, depth,
++                    )
+         return best
+ 
+     def prefetch_gpu_session_node(
+--- a/test/srt/test_beliefkv_execution_handoff.py
++++ b/test/srt/test_beliefkv_execution_handoff.py
+@@ -135,6 +135,86 @@
+     assert cache.inspect_beliefkv_reentry(request) is None
+ 
+ 
++def shared_probe_fixture():
++    cache, checkpoint, tail, request = fixture()
++    branch = Node(
++        id=3, parent=checkpoint, creation_time=3, key=Key([14, 15]),
++        component_data=[data(), data(False, False, 0), data()],
++        write_through_pending_id=None, load_back_pending_id=None,
++        backuped=True,
++    )
++    nodes = {0: cache.tree_core.root_node, 1: checkpoint, 2: tail, 3: branch}
++    cache.tree_core.node_by_id = nodes.__getitem__
++    cache.session_refs.snapshot_latest_session_leaf_anchors.return_value = (
++        (0, ((2, 2), (3, 3))), (2, ((2, 2), (3, 3))),
++    )
++    request.origin_input_ids = [10, 11, 12, 13, 99]
++    return cache, checkpoint, tail, branch, request
++
++
++def test_shared_probe_checks_common_prefix_once_and_refreshes_next_call():
++    cache, checkpoint, tail, _, request = shared_probe_fixture()
++    checkpoint.key.is_prefix_at = Mock(wraps=checkpoint.key.is_prefix_at)
++    observation = cache.inspect_beliefkv_reentry(request)
++    assert checkpoint.key.is_prefix_at.call_count == 1
++    assert observation["checkpoint_tokens"] == 4
++    assert observation["device_checkpoint_tokens"] == 4
++    assert observation["component_leaves"] == ((0, ((2, 2),)), (2, ((2, 2),)))
++    checkpoint.component_data[0].value = None
++    tail.component_data[2].value = None
++    observation = cache.inspect_beliefkv_reentry(request)
++    assert checkpoint.key.is_prefix_at.call_count == 2
++    assert observation["device_checkpoint_tokens"] == 0
++    assert observation["missing_full_tokens"] == 2
++    assert observation["missing_mamba_slots"] == 1
++    checkpoint.component_data[0].host_value = None
++    assert cache.inspect_beliefkv_reentry(request) is None
++
++
++@pytest.mark.parametrize("blocked", ("pending", "namespace", "stale_ancestor"))
++def test_shared_probe_keeps_ancestor_validity_requirements(blocked):
++    cache, checkpoint, tail, _, request = shared_probe_fixture()
++    if blocked == "pending":
++        checkpoint.load_back_pending_id = "native"
++    elif blocked == "namespace":
++        request.cache_salt = "other"
++    else:
++        tail.parent = Node(**vars(checkpoint))
++    assert cache.inspect_beliefkv_reentry(request) is None
++
++
++def test_shared_probe_can_select_a_later_matching_branch():
++    cache, _, _, branch, request = shared_probe_fixture()
++    branch.component_data[0].value = None
++    branch.component_data[2].value = None
++    request.origin_input_ids = [10, 11, 14, 15, 99]
++    observation = cache.inspect_beliefkv_reentry(request)
++    assert observation["checkpoint_tokens"] == 4
++    assert observation["missing_full_tokens"] == 2
++    assert observation["missing_mamba_slots"] == 1
++    assert observation["component_leaves"] == ((0, ((3, 3),)), (2, ((3, 3),)))
++
++
++def test_shared_probe_counts_cached_depth_toward_ancestry_bound():
++    cache, _, _, request = fixture()
++    root = cache.tree_core.root_node
++    nodes, parent = {0: root}, root
++    for node_id in range(1, 66):
++        node = Node(
++            id=node_id, parent=parent, creation_time=node_id,
++            key=Key([node_id]),
++            component_data=[data(), data(False, False, 0), data()],
++            write_through_pending_id=None, load_back_pending_id=None,
++        )
++        nodes[node_id] = parent = node
++    cache.tree_core.node_by_id = nodes.__getitem__
++    cache.session_refs.snapshot_latest_session_leaf_anchors.return_value = (
++        (0, ((64, 64), (65, 65))), (2, ((64, 64), (65, 65))),
++    )
++    request.origin_input_ids = list(range(1, 67))
++    assert cache.inspect_beliefkv_reentry(request) is None
++
++
+ @pytest.mark.parametrize("blocked", ("hot", "locked", "pending", "unbacked", "shared", "enough_capacity"))
+ def test_reclaim_never_evicts_hot_locked_unbacked_shared_or_unneeded_data(blocked):
+     cache, _, victim, _ = fixture()

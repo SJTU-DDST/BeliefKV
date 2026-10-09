@@ -47,9 +47,10 @@ DMA、checkpoint、节点有效性及64层上限继续校验。61项检查通过
 4K/32K/96K路径P50下降63.9%/80.5%/84.9%；单叶慢0.3%--2.9%，
 首段分歧4.642→4.968微秒。保留退步样例，不推导GPU吞吐。
 报告：`experiments/reports/v16_shared_reentry_cpu_20261010.json`。
-候选完整patch SHA256为
+首次祖先复用候选的完整patch SHA256为
 `32c915af99003b65f4cfa952a24e9716f7a3962cefde5ffe3dffddb6af3f63ca`；
-候选反向与冻结服务的精确增量正向检查均通过，尚未部署到v15。
+候选反向与冻结服务的精确增量正向检查均通过。该中间包已被
+下述最终候选取代，尚未部署到v15。
 
 隔离中的PREPARE排序仅在有效工具等待预测存在时估计D2H服务时间；
 JOIN不计算未使用的值，容量/回收排序及短工具窗口判断不变。
@@ -134,6 +135,25 @@ SHA256，不能因editable安装指向主目录而比较了冻结代码。基准
 收益。报告：`experiments/reports/v16_semantic_pending_cpu_20261010.json`。
 保留模型与阈值；修订只在隔离工作树，v15两侧及后处理继续冻结。
 
+下一版reentry只在本次只读调用中绑定tree/root/节点查询，结束
+检查点选择后再组装结果，不新增跨调用token或驻留缓存。76项
+相关检查通过，包含非可恢复尾部之前的检查点和同长度首个叶
+选择。同输入完整检查路径11组、每组500次，六种匹配P50 CPU
+成本下降1.9%--6.7%，首段分歧下降10.1%，其余边界下降1.4%--3.1%。
+先行字节比较在全部六种匹配样例变慢，未采用。保留原始报告：
+`experiments/reports/v16_reentry_result_cpu_20261010.json`。
+不把CPU基准变快写成native相对GPU吞吐收益。
+
+隔离候选完整patch SHA256为
+`66aa563627fb8882808e290ff0ccde10535bc7d787a66eba6848baa8bcf203d8`。
+精确冻结引擎差量为
+`experiments/reports/v16_engine_followup_delta_20261010.patch`，SHA256为
+`dced5a847a7416c8d8abdfa591914cd743c822c1f41735d0ce852d144f58deeb`。
+完整反向、冻结引擎差量正向和候选差量反向检查通过，清单为
+`experiments/reports/v16_engine_followup_manifest_20261010.json`。
+已收集的V15不使用这些后续修订；须等双侧及全部后处理结束，
+再合入运行时提交、部署引擎差量并启动下一轮。
+
 v14的采集、完整driver、审计、HTML与workspace清理现已全部结束：
 154 completed、2 incomplete、0 error。采集10977.317秒，
 完成吞吐50.504 workflow/h，比v13高10.87%，仍比历史v10 native
@@ -147,6 +167,8 @@ v14的采集、完整driver、审计、HTML与workspace清理现已全部结束�
 复用仍有效的Host副本；Host副本被驱逐后才重新备份。投机Mamba
 PREPARE关闭，实际驱逐仍保存恢复所需的检查点状态。v14的703次
 后续同node/pool D2H全部有中间Host驱逐，不称为覆盖有效副本。
+Host回收后补传的次数、字节和CPU成本应单独评价；减少此类
+反复备份属于现有目标，不改变native相对吞吐的最终验收标准。
 1130次PREPARE ACK中206次关联恢复，仍须减少回收后补传。
 JOIN/tool的ACK到首次服务P50仍为4584/2813ms；handoff为25ms，
 其FULL传输/确认首次复用70.517/70.128GB，不能并入提前预测覆盖。
