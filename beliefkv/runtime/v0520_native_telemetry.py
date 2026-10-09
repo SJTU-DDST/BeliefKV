@@ -1571,9 +1571,8 @@ class NativeReactiveTelemetry:
                     or id(original) not in ancestors
                     or original.creation_time != creation_time
                     or full_value is None
-                    or cached_device < prefix_len
-                    or (device_prefix_len is not None
-                        and device_prefix_len < prefix_len)
+                    or device_prefix_len is None
+                    or device_prefix_len < prefix_len
                 ):
                     continue
                 try:
@@ -1586,6 +1585,7 @@ class NativeReactiveTelemetry:
                     continue
             full_verifiable = (
                 last_node is not None
+                and device_prefix_len is not None
                 and all(
                     original is not None and prefix_len is not None
                     and full_value is not None
@@ -1679,6 +1679,8 @@ class NativeReactiveTelemetry:
                 "full_node_reused": (
                     bool(reused_full_nodes) if full_verifiable else None
                 ),
+                "full_reuse_proof_version": 2,
+                "full_reuse_proof": "acknowledged_allocation_in_materialized_service_prefix",
                 "mamba_reuse": "unverified",
                 "evidence": "same_context_first_gpu_launch_and_verified_full_prefix",
             })

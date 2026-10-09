@@ -578,7 +578,9 @@ def test_verified_prefetch_unmatched_or_unserved_is_not_credited(
 
 
 @pytest.mark.parametrize("cached_device,device_prefix,replace_value,expected", [
-    (5, 10, False, False),
+    (0, 10, False, True),
+    (5, 10, False, True),
+    (0, 5, False, False),
     (10, 5, False, False),
     (10, 10, True, False),
     (10, 10, False, True),
@@ -612,8 +614,9 @@ def test_prefetch_ancestry_requires_same_full_value_and_entire_prefix(
         },
         last_node=11, origin_input_ids=list(range(20)), output_ids=[],
         prefix_indices=list(range(device_prefix)),
-        cached_tokens_device=cached_device, cached_tokens_host=0,
-        mamba_host_hit_length=0, extend_input_len=20 - cached_device,
+        cached_tokens_device=cached_device,
+        cached_tokens_host=max(0, device_prefix - cached_device),
+        mamba_host_hit_length=0, extend_input_len=20 - device_prefix,
         sampling_params=SimpleNamespace(max_new_tokens=10),
         finished=lambda: False,
     )
@@ -625,6 +628,7 @@ def test_prefetch_ancestry_requires_same_full_value_and_entire_prefix(
     [use] = _read(tmp_path / "service/physical_action_use.jsonl")
     assert use["matched_node_ids"] == [11]
     assert use["full_node_reused"] is expected
+    assert use["full_reuse_proof_version"] == 2
     assert use["reused_full_node_ids"] == ([11] if expected else [])
 
 

@@ -29,6 +29,11 @@ FULL叶驱逐前对活跃未备份Mamba检查点的原生保存和ACK依赖。
 清理已归档workspace：核验记录中的scheduler已退出，并使用各任务
 result和model.patch；不伪造整体summary。尚未归档的workspace保留，
 child目录仍须有child_reports且git工作树干净才能清理。
+FULL复用proof_version=2核验ACK时的分配身份和实际物化服务前缀；
+cached_tokens_device/host是来源统计，不能单独用作驻留/复用条件。
+v11/v12的旧口径记录保留，不能仅凭前缀覆盖就补判分配未变化，
+也不能将旧口径的未复用数全部称为浪费。v12因该测量问题主动
+停止，v13以修复口径冷启动，workload和容量保持一致。
 
 当前验收目标包括恢复就绪到服务、PREPARE消费及有用FULL覆盖三项，
 最终看相同任务/到达表/模型/容量下相对native的完成吞吐和JCT；

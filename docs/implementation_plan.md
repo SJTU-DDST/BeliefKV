@@ -2,7 +2,7 @@
 
 Status date: 2026-10-09.
 
-## Current Objective And V11
+## Current Objective And V13
 
 Keep the fixed workload, model, capacity and arrival schedule. Continue until
 predictive has a verifiable performance improvement relative to native.
@@ -60,7 +60,7 @@ sampled targets agree. Active restore leases remain excluded by the native
 validator. Main regression: 223 passed; later engine/launcher checks: 73 passed.
 These are CPU and correctness evidence, not GPU throughput evidence.
 
-Run v11 predictive with the same 108+48 arrivals, running48, Host200GB80:20,
+Continue cold-start predictive runs with the same 108+48 arrivals, running48, Host200GB80:20,
 HBM Mamba/FULL0.9, frozen heads, prompt, seed21 and budgets. Reuse the completed
 v10 native as a cross-revision development reference. Monitor actual runtime
 failures and physical disablement; stop, retain evidence, fix and cold-start
@@ -74,6 +74,18 @@ preinitialized FULL/Mamba keys. Fix sparse accumulation, preserve live unbacked
 Mamba at actual FULL-leaf eviction, commit and cold-start V12 with the same
 workload, arrival schedule, model and capacity. V11 is partial mechanism
 evidence, not a terminal throughput comparison.
+V12 stopped at 2026-10-09 22:08 CST to fix FULL reuse attribution.
+Native cached_tokens_device/host account cache origin, while acknowledged
+H2D extents can already belong to the materialized service prefix. Proof v2
+requires the same acknowledged FULL allocation, node generation, ancestry
+and materialized prefix coverage; keep native tier accounting unchanged.
+All 4202 old V11 negative outcomes cover the materialized prefix and service
+ancestry, but allocation identity cannot be fully recovered from those logs.
+Keep the originals, cold-start V13, and do not reinterpret the old counts
+as verified waste or as verified reuse.
+V13 is the next collection. Freeze the corrected telemetry with the existing
+FULL-only PREPARE and scheduling revisions; retain the workload, model,
+prediction artifacts, capacity, prompt and arrival schedule.
 
 ## Current PREPARE Cost And Handoff Fix
 
