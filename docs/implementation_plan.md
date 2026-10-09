@@ -145,6 +145,18 @@ The coalescing/runtime/ordered-delivery group passes 155 CPU checks and shell
 syntax validation. The prior result-delivery group passes 65 checks. GPU
 performance remains to be measured after deploying a frozen cold-start revision.
 
+Use H2D source audit schema v2: predictive_* contains JOIN/tool anticipation
+only; execution_handoff_* is submitted demand restoration; unknown_controlled_*
+holds tagged payload without a known source; native_* is the untagged remainder.
+controlled_* provides the total controlled payload. Match issued command source
+with ACK fallback for older logs. Conserve child-receipt bytes and pool units;
+keep mixed-source batch intervals intact instead of apportioning time by bytes.
+Forty focused CPU checks pass, including downstream memory-budget classification.
+The live partial V13 snapshot has JOIN/tool 9.927GB, handoff134.073GB,
+native3486.746GB and 16.466MB unclassified tagged payload. This is not terminal
+throughput evidence. Report: experiments/reports/v13_h2d_sources_partial_20261009_2356.json.
+Keep the frozen collection/report unchanged; apply the audit in the follow-up.
+
 ## Current PREPARE Cost And Handoff Fix
 
 Implemented in `/tmp/beliefkv-opportunity-20261009`, based on `e985d8c`.

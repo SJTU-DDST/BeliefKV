@@ -14,7 +14,11 @@ ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
-from scripts.audit_native_h2d_sources import audit as source_audit
+from scripts.audit_native_h2d_sources import (
+    acknowledged_prefetch_sources,
+    audit as source_audit,
+    split_h2d_payload,
+)
 from scripts.summarize_semantic_h2d_ab import records
 
 
@@ -40,21 +44,19 @@ def audit(arm: Path) -> dict:
     client = next(arm.glob("client_*/summary.json"))
     duration = json.loads(client.read_text())["duration_seconds"]
     native = json.loads((arm / "server/native_telemetry_status.json").read_text())
-    predictive = {
-        row["command_id"] for row in records(arm / "server/physical_action_ack.jsonl")
-        if row.get("action") == "PREFETCH_GPU"
+    sources = acknowledged_prefetch_sources(arm)
+    transfers = {
+        "native_h2d": [], "predictive_h2d": [], "execution_handoff_h2d": [],
+        "unknown_controlled_h2d": [], "mixed_h2d": [], "d2h": [],
     }
-    transfers = {"native_h2d": [], "predictive_h2d": [], "mixed_h2d": [], "d2h": []}
     for row in records(arm / "server/transfer_telemetry.jsonl"):
         if row["direction"] == "d2h":
             transfers["d2h"].append(row)
         elif row["direction"] == "h2d":
-            size = sum(
-                child["num_bytes"] for child in row.get("tagged_child_commits", [])
-                if child["command_id"] in predictive
-            )
-            name = "native_h2d" if not size else (
-                "predictive_h2d" if size == row["actual_bytes"] else "mixed_h2d"
+            payload, _ = split_h2d_payload(row, sources)
+            present = [category for category, amount in payload.items() if amount > 0]
+            name = f"{present[0]}_h2d" if len(present) == 1 else (
+                "mixed_h2d" if present else "native_h2d"
             )
             transfers[name].append(row)
     budget = {}
@@ -115,7 +117,8 @@ def audit(arm: Path) -> dict:
         "scope": (
             "Observed service budget only, not a whole-system oracle or exposed stall. "
             "Queue-before-enqueue, allocation blocking and per-layer Mamba recomputation "
-            "are not bounded by the H2D timer."
+            "are not bounded by the H2D timer. Mixed-source batch times remain whole-batch "
+            "intervals and are not apportioned to commands by byte share."
         ),
         "duration_seconds": duration, "transfer_source_counts": source_audit(arm),
         "transfer_budget": budget,

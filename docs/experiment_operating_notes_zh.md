@@ -77,6 +77,14 @@ request保存至正常清理，不能因晚到的正文恢复该请求的RETURN
 后续native/reactive/predictive launcher同启已有HTTP流及
 finish-chunk计时；旧native开发参照的遥测配置差异须如实报告。
 
+H2D来源审计v2将JOIN/tool、提交后的execution_handoff、来源未确认
+的tagged传输及native余量分开。旧predictive_*字段曾包含所有
+ACKed PREFETCH_GPU，新字段只包含JOIN/tool；受控合计使用
+controlled_*，跨版本比较必须说明口径。issued source与ACK对应，
+缺失来源不凭动作名补判。混合批次按receipt保持字节/池单位守恒，
+时间仍属整个batch，不能按字节占比拆成动作耗时。JOIN/tool来源
+只说明提前动作意图，实际提前量、首次复用与性能收益另行验证。
+
 PREPARE根据下一批可准入需求与运行请求页增长选择时机。等待队列
 为空时不能只因缓存占满或Mamba free低就持续备份。已无备份步骤/
 Host不足的context观察延后一秒，新epoch立即重查，enqueue保留

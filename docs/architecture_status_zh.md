@@ -163,6 +163,19 @@ RETURN预测，不取消agent或工具。后续launcher在两种策略下同时
 本组155项相关CPU检查及shell语法检查通过；FIFO结果交付组65项
 通过。以上均为后续冷启动修订，尚无这一版本的GPU收益证据。
 
+H2D来源审计升级为schema_version=2：predictive只含join_ticket/
+tool_wait，execution_handoff单列，缺少明确来源的tagged传输列为
+unknown_controlled，未打标签的批次余量列为native。controlled
+保留受控传输合计；不再将提交后的handoff称为提前预测。来源优先
+匹配issued command，旧记录可使用ACK携带的source。每个批次
+按child receipt核对字节及池单位守恒，混合批次时间整体报告，
+不按字节比例推导某一类动作的耗时。40项相关CPU检查通过。
+v13运行中局部报告显示JOIN/tool 9.927 GB、handoff 134.073 GB、
+native 3486.746 GB；采集时仍有16.466 MB tagged数据来源未确认，
+不能补判为预测或原生。该结果不是完整实验或吞吐收益结论。
+报告：`experiments/reports/v13_h2d_sources_partial_20261009_2356.json`。
+脚本修订在独立工作树中提交，当前v13及其冻结报告保持原版本。
+
 ## PREPARE 热点与 Handoff 身份修复
 
 本次修订基于 `e985d8c`，在独立工作树
