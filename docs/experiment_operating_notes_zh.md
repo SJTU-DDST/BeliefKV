@@ -106,6 +106,19 @@ SHA256，不能因editable安装指向主目录而比较了冻结代码。基准
 已补此检查；首次误导入的报告已重新生成，正槽位和原两次准入
 模式仍保留。候选修改不进入冻结中的v15任一侧。
 
+下一版PREPARE可在构建完整闭包前检查缺失FULL前缀的Host预算。
+轻量观察须使用同一安全输入检查点选择逻辑，去重共享祖先、
+排除输出尾部，并每次重读有效Host副本；未知观察不能直接拒绝
+候选。该检查仅省去确定放不下的完整候选构建，实际issue仍执行
+原完整校验。新增`prepare_prefix_budget_rejected_early`计数。
+326项相关检查通过；六种156-workflow/24节点CPU配置的选择/
+发布一致。每配置60次、同样156条真实传输种子、两侧同等清除
+探测退避，缺少备份且Host满池的PREPARE均值下降64.49%；
+已备份且Host满池慢3.02%，缺少备份且Host有空间慢0.79%。
+上述为探测CPU成本，不是GPU吞吐收益。报告：
+`experiments/reports/v16_prepare_prefix_budget_cpu_20261010.json`。
+候选只在隔离工作树提交，v15两侧及完整后处理继续冻结。
+
 v14的采集、完整driver、审计、HTML与workspace清理现已全部结束：
 154 completed、2 incomplete、0 error。采集10977.317秒，
 完成吞吐50.504 workflow/h，比v13高10.87%，仍比历史v10 native

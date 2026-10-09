@@ -154,7 +154,7 @@ def fixture(
 
 def measure_case(
     baseline, *, workflows, depth, iterations, backed, host_full, leases,
-    host_only=False, service_samples=(),
+    host_only=False, service_samples=(), force_probes=False,
 ):
     variants = {
         name: fixture(cls, workflows=workflows, depth=depth, backed=backed,
@@ -174,6 +174,8 @@ def measure_case(
                 runtime, queue, reads, actions, observations = variants[name]
                 runtime._join_prepare_next_ms = 0.
                 runtime._opportunity_next_ms = 0.
+                if force_probes:
+                    runtime._prepare_probe_after_ms.clear()
                 before = reads.copy()
                 actions.clear()
                 observations.clear()
@@ -213,6 +215,7 @@ def measure_case(
             "host_only": host_only,
             "service_history_samples": len(service_samples),
             "live_restore_leases": leases, "iterations": iterations,
+            "force_prepare_probes": force_probes,
             "selection_and_publication_equal": True,
             "publication_scope": (
                 "unprotected node set; active prefetch leases remain ineligible "
@@ -408,6 +411,8 @@ def main():
     parser.add_argument("--iterations", type=int, default=40)
     parser.add_argument("--terminal-only", action="store_true",
                         help="Measure read-only terminal samples with overlapping anchors.")
+    parser.add_argument("--force-prepare-probes", action="store_true",
+                        help="Measure each PREPARE probe instead of its one-second backoff.")
     parser.add_argument(
         "--service-seed", type=Path,
         help="Use the same validated native transfer history for both PREPARE variants.",
@@ -428,12 +433,14 @@ def main():
         }
     cases = [] if args.terminal_only else [
         measure_case(baseline, workflows=args.workflows, depth=args.depth,
-                     iterations=args.iterations, service_samples=service_samples, **case)
+                     iterations=args.iterations, service_samples=service_samples,
+                     force_probes=args.force_prepare_probes, **case)
         for case in (
             {"backed": True, "host_full": 1_000_000, "leases": 0},
             {"backed": True, "host_full": 1_000_000, "leases": 4},
             {"backed": False, "host_full": 1_000_000, "leases": 0},
             {"backed": False, "host_full": 0, "leases": 0},
+            {"backed": True, "host_full": 0, "leases": 0},
             {"backed": True, "host_full": 1_000_000, "leases": 0, "host_only": True},
         )
     ]

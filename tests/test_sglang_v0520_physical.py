@@ -19,6 +19,7 @@ from beliefkv.runtime.sglang_v0520_physical import (
     PrefetchLoadStep,
     capture_action_local_shadow,
     inspect_session_h2d_opportunity,
+    missing_prepare_full_prefix_tokens,
     next_prefetch_gpu_step,
     plan_prefetch_gpu_steps,
     next_shadow_backup_step,
@@ -26,6 +27,82 @@ from beliefkv.runtime.sglang_v0520_physical import (
     shadow_expectation_from_native_op,
     ShadowBackupStep,
 )
+
+
+def prepare_prefix_fixture(*, input_tokens=4, second_leaf=False, backed=False):
+    from tests.test_sglang_v0520_observer import (
+        ComponentData, UnifiedTreeCore, UnifiedTreeNode, _static_cache,
+    )
+
+    cache = _static_cache()
+    nodes = {}
+    for node_id, parent_id, tokens in ((0, None, 0), (1, 0, 2), (2, 1, 2), (3, 2, 4), (4, 1, 2)):
+        full = range(tokens) if tokens else None
+        components = {}
+        for component, value, host in (
+            (0, full, full if backed else range(1) if node_id == 1 else None),
+            (2, (0,) if tokens else None, None),
+        ):
+            components[component] = ComponentData(
+                value=value, host_value=host, lock_ref=0, host_lock_ref=0,
+                session_ref=1, session_ids={"s"},
+            )
+        nodes[node_id] = UnifiedTreeNode(
+            id=node_id, creation_time=node_id + 1.,
+            parent=nodes.get(parent_id), key=range(tokens), component_data=components,
+            write_through_pending_id=None, load_back_pending_id=None,
+        )
+    cache.tree_core = UnifiedTreeCore(node_by_id=nodes.__getitem__)
+    leaves = ((3, 4.), (4, 5.)) if second_leaf else ((3, 4.),)
+    anchors = ContextSessionAnchors(
+        PrefillCandidateKey("r", "w", "i", "c", 0, 0, "s", 1),
+        ((0, leaves), (2, leaves)), 1., reusable_input_tokens=input_tokens,
+    )
+    return cache, anchors, nodes
+
+
+@pytest.mark.parametrize("input_tokens", (0, 2, 3, 4, 8))
+@pytest.mark.parametrize("second_leaf", (False, True))
+@pytest.mark.parametrize("backed", (False, True))
+def test_prepare_prefix_hint_matches_full_planner_and_excludes_output_tail(
+    input_tokens, second_leaf, backed,
+):
+    cache, anchors, _ = prepare_prefix_fixture(
+        input_tokens=input_tokens, second_leaf=second_leaf, backed=backed,
+    )
+    candidate = capture_action_local_shadow(cache, anchors, include_non_actionable=True)
+    step = next_shadow_backup_step(candidate)
+    assert missing_prepare_full_prefix_tokens(cache, anchors) == (
+        step.missing_full_prefix_tokens if step is not None else 0
+    )
+
+
+def test_prepare_prefix_hint_refreshes_after_host_backup_or_eviction():
+    cache, anchors, nodes = prepare_prefix_fixture()
+    assert missing_prepare_full_prefix_tokens(cache, anchors) == 3
+    nodes[1].component_data[0].host_value = range(2)
+    assert missing_prepare_full_prefix_tokens(cache, anchors) == 2
+    nodes[2].component_data[0].host_value = range(2)
+    assert missing_prepare_full_prefix_tokens(cache, anchors) == 0
+    nodes[1].component_data[0].host_value = None
+    assert missing_prepare_full_prefix_tokens(cache, anchors) == 2
+
+
+@pytest.mark.parametrize("change", (
+    lambda anchors, nodes: replace(anchors, reusable_input_tokens=None),
+    lambda anchors, nodes: replace(anchors, reusable_input_tokens=-1),
+    lambda anchors, nodes: replace(anchors, component_leaves=((0, ((3, 5.),)), (2, ((3, 5.),)))),
+    lambda anchors, nodes: (setattr(nodes[1], "parent", nodes[3]), anchors)[1],
+    lambda anchors, nodes: (setattr(nodes[2], "key", None), anchors)[1],
+))
+def test_unobservable_prepare_prefix_hint_retains_full_validation_path(change):
+    cache, anchors, nodes = prepare_prefix_fixture()
+    assert missing_prepare_full_prefix_tokens(cache, change(anchors, nodes)) is None
+
+
+def test_prepare_prefix_hint_respects_ancestry_bound():
+    cache, anchors, _ = prepare_prefix_fixture()
+    assert missing_prepare_full_prefix_tokens(cache, anchors, max_nodes=3) is None
 
 
 @pytest.mark.parametrize("enum_pool_name", (False, True))

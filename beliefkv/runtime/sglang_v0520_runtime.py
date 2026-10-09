@@ -56,6 +56,7 @@ from beliefkv.runtime.sglang_v0520_physical import (
     ShadowBackupStep,
     capture_action_local_shadow,
     inspect_session_h2d_opportunity,
+    missing_prepare_full_prefix_tokens,
     next_prefetch_gpu_step,
     next_shadow_backup_step,
     prefetch_expectation_from_native_op,
@@ -2934,12 +2935,23 @@ class NativeAdmissionRuntime:
         self, cache: object, *, context_id: str, context_epoch: int,
         for_prefetch: bool = False,
         include_non_actionable: bool = False,
+        host_full_free_tokens: int | None = None,
     ) -> ActionLocalShadowCandidate | ActionLocalPrefetchCandidate | None:
         anchors = self.snapshot_session_anchors(
             cache, context_id=context_id, context_epoch=context_epoch
         )
         if anchors is None:
             return None
+        if (
+            not for_prefetch and type(host_full_free_tokens) is int
+            and host_full_free_tokens >= 0
+            and type(anchors.reusable_input_tokens) is int
+            and host_full_free_tokens < anchors.reusable_input_tokens
+        ):
+            needed = missing_prepare_full_prefix_tokens(cache, anchors)
+            if needed is not None and needed > host_full_free_tokens:
+                self.counts["prepare_prefix_budget_rejected_early"] += 1
+                return None
         return capture_action_local_shadow(
             cache, anchors, for_prefetch=for_prefetch,
             include_non_actionable=include_non_actionable,
@@ -2980,7 +2992,8 @@ class NativeAdmissionRuntime:
         )
 
     def refreshed_shadow_backup_step(
-        self, *, context_id: str | None = None, source: str = "tool_wait"
+        self, *, context_id: str | None = None, source: str = "tool_wait",
+        host_full_free_tokens: int | None = None,
     ) -> ShadowBackupStep | None:
         """Recheck a tool wait and its native closure at the action safe point."""
         if not self.enable_prepare_host:
@@ -3000,6 +3013,7 @@ class NativeAdmissionRuntime:
                 self._native_cache, context_id=key.context_id,
                 context_epoch=key.context_epoch,
                 include_non_actionable=True,
+                host_full_free_tokens=host_full_free_tokens,
             )
             step = next_shadow_backup_step(candidate) if candidate is not None else None
             if step is None and candidate is not None:
@@ -3027,6 +3041,7 @@ class NativeAdmissionRuntime:
         candidate = self.capture_shadow_candidate(
             cache, context_id=key.context_id, context_epoch=key.context_epoch,
             include_non_actionable=True,
+            host_full_free_tokens=host_full_free_tokens,
         )
         self.shadow_candidate = candidate
         step = next_shadow_backup_step(candidate) if candidate is not None else None
@@ -3415,6 +3430,7 @@ class NativeAdmissionRuntime:
                 continue
             step = self.refreshed_shadow_backup_step(
                 context_id=key.context_id, source="join_prepare",
+                host_full_free_tokens=headroom.host_full_free_tokens,
             )
             if step is None:
                 self._prepare_probe_after_ms[key] = now_ms + 1000.
@@ -3497,7 +3513,10 @@ class NativeAdmissionRuntime:
                 continue
             if not self._long_tool_wait(hint.key):
                 continue
-            step = self.refreshed_shadow_backup_step(context_id=hint.key.context_id)
+            step = self.refreshed_shadow_backup_step(
+                context_id=hint.key.context_id,
+                host_full_free_tokens=headroom.host_full_free_tokens,
+            )
             if step is not None:
                 rank = self._prepare_step_rank(
                     step, headroom,

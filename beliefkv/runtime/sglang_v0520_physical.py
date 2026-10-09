@@ -38,6 +38,17 @@ class ContextSessionAnchors:
     reusable_input_tokens: int | None = None
 
 
+@dataclass(frozen=True, slots=True)
+class _PreparePrefixNode:
+    node_id: int
+    parent_id: int | None
+    key_tokens: int
+    full_device_tokens: int
+    full_host_tokens: int
+    mamba_device_present: bool
+    mamba_host_present: bool
+
+
 @dataclass(frozen=True)
 class ActionLocalShadowCandidate:
     """Bounded, read-only FULL/MAMBA closure; not an action certificate."""
@@ -227,7 +238,7 @@ class PrefetchLoadStep:
 
 def _checkpoint_paths(
     anchors: ContextSessionAnchors,
-    nodes: Mapping[int, UnifiedNodeSummary],
+    nodes: Mapping[int, UnifiedNodeSummary | _PreparePrefixNode],
     leaves: Mapping[int, int | float],
     depth: Mapping[int, int],
 ) -> tuple[set[int], set[int]] | None:
@@ -261,6 +272,80 @@ def _checkpoint_paths(
                 break
             current = node.parent_id
     return paths, checkpoints
+
+
+def missing_prepare_full_prefix_tokens(
+    cache: object, anchors: ContextSessionAnchors, *, max_nodes: int = 64,
+) -> int | None:
+    """Read a budget rejection hint; viable candidates still need a full closure."""
+    if (
+        type(max_nodes) is not int or not 0 < max_nodes <= 256
+        or type(anchors.reusable_input_tokens) is not int
+        or anchors.reusable_input_tokens < 0
+    ):
+        return None
+    try:
+        components = dict(anchors.component_leaves)
+        if (
+            len(components) != len(anchors.component_leaves)
+            or set(components) != {0, 2}
+            or not components[0] or not components[2]
+            or sum(map(len, components.values())) > 8
+        ):
+            return None
+        leaves = dict(components[0])
+        if len(leaves) != len(components[0]):
+            return None
+        for component_leaves in components.values():
+            for node_id, created in component_leaves:
+                if type(node_id) is not int or node_id < 0:
+                    return None
+                node = cache.tree_core.node_by_id(node_id)
+                if node.id != node_id or normalize_native_creation_time(node.creation_time) != created:
+                    return None
+        nodes: dict[int, _PreparePrefixNode] = {}
+        depth: dict[int, int] = {}
+        for leaf in leaves:
+            current = cache.tree_core.node_by_id(leaf)
+            chain: list[int] = []
+            seen: set[int] = set()
+            while current is not None:
+                node_id = current.id
+                if (
+                    type(node_id) is not int or node_id < 0
+                    or node_id in seen or len(chain) >= max_nodes
+                ):
+                    return None
+                seen.add(node_id)
+                chain.append(node_id)
+                parent = current.parent
+                parent_id = None if parent is None else parent.id
+                if parent_id is not None and (type(parent_id) is not int or parent_id < 0):
+                    return None
+                full, state = current.component_data[0], current.component_data[2]
+                summary = _PreparePrefixNode(
+                    node_id, parent_id, len(current.key),
+                    0 if full.value is None else len(full.value),
+                    0 if full.host_value is None else len(full.host_value),
+                    state.value is not None, state.host_value is not None,
+                )
+                if node_id in nodes and nodes[node_id] != summary:
+                    return None
+                nodes[node_id] = summary
+                if len(nodes) > max_nodes:
+                    return None
+                current = parent
+            for distance, node_id in enumerate(reversed(chain)):
+                depth[node_id] = distance
+        selected = _checkpoint_paths(anchors, nodes, leaves, depth)
+        if selected is None:
+            return None
+        return sum(
+            max(nodes[node_id].full_device_tokens - nodes[node_id].full_host_tokens, 0)
+            for node_id in selected[0]
+        )
+    except (AttributeError, IndexError, KeyError, TypeError, ValueError, RuntimeError):
+        return None
 
 
 def next_prefetch_gpu_step(

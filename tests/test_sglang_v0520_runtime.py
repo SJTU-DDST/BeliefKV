@@ -2728,6 +2728,39 @@ def test_full_only_prepare_does_not_scan_backups_for_mamba_only_pressure(method)
     assert runtime.counts["prepare_mamba_pressure_only"] == 1
 
 
+@pytest.mark.parametrize("needed,host_free,capture_expected", (
+    (100, 99, False), (100, 100, True), (0, 0, True), (None, 0, True),
+))
+def test_prepare_budget_hint_only_skips_definitely_unfittable_closures(
+    needed, host_free, capture_expected,
+):
+    runtime = final_stage_runtime()
+    key = runtime.context_sessions["ctx-parent"]
+    from beliefkv.runtime.sglang_v0520_physical import ContextSessionAnchors
+    anchors = ContextSessionAnchors(
+        key, ((0, ((11, 4),)), (2, ((11, 4),))), 1., reusable_input_tokens=1000,
+    )
+    with patch.object(runtime, "snapshot_session_anchors", return_value=anchors), patch(
+        "beliefkv.runtime.sglang_v0520_runtime.missing_prepare_full_prefix_tokens",
+        return_value=needed,
+    ), patch(
+        "beliefkv.runtime.sglang_v0520_runtime.capture_action_local_shadow",
+    ) as capture:
+        runtime.capture_shadow_candidate(
+            NS(), context_id=key.context_id, context_epoch=key.context_epoch,
+            include_non_actionable=True, host_full_free_tokens=host_free,
+        )
+        assert capture.call_count == int(capture_expected)
+        assert runtime.counts["prepare_prefix_budget_rejected_early"] == int(not capture_expected)
+        capture.reset_mock()
+        runtime.capture_shadow_candidate(
+            NS(), context_id=key.context_id, context_epoch=key.context_epoch,
+            include_non_actionable=True,
+        )
+        capture.assert_called_once()
+    runtime.close()
+
+
 def test_final_stage_latest_start_requires_serviced_decode_and_h2d_evidence():
     runtime = final_stage_runtime()
     child = req("child")

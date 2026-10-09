@@ -156,6 +156,22 @@ Current status:
   verifies the actual imported worktree and records its source SHA256;
   the initial wrong-worktree result was regenerated. The existing two-call
   admission benchmark also preserves queue order in50 iterations.
+- The isolated JOIN/tool PREPARE first reads a lightweight reusable-input
+  prefix budget when Host FULL free space is below the input length. Count
+  only missing FULL on the current safe checkpoint paths, deduplicate shared
+  ancestors and exclude the generated tail. Skip full closure construction
+  only when the observed missing prefix exceeds current free tokens; unknown
+  observations retain full validation. Actual issue still rebuilds and checks
+  the complete closure. Record prepare_prefix_budget_rejected_early; transfer
+  scope and authorization are unchanged. The relevant suite passes326 checks.
+  Six156-workflow/24-node configurations with60 iterations and identical156
+  real transfer samples preserve selection/publication and terminal outputs.
+  Clear probe backoff equally on both sides to measure actual probe costs.
+  Missing-backup/Host-full PREPARE mean falls2.008→0.713ms, or64.49%;
+  backed/Host-full regresses3.02% and missing-backup/Host-free regresses0.79%.
+  Preserve these regressions and do not infer GPU or end-to-end throughput.
+  Report:v16_prepare_prefix_budget_cpu_20261010.json. Commit in isolation;
+  both frozen V15 arms and complete postprocessing remain unchanged.
 - V14 collection, outer driver, audits, HTML export and cleanup have all
   finished:154 completed, two incomplete, no errors out of156. Duration is
   10977.317s, completed throughput50.504/hour, output700.235 tokens/s and
