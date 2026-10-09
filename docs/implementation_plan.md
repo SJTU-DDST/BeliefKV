@@ -84,6 +84,15 @@ Current status:
   Candidate reverse-check and frozen-live delta forward-check pass.
   Commit the isolated package promptly; deploy only after both V15 arms and
   full postprocessing finish.
+- The isolated PREPARE ranker now reads D2H service history only for a live
+  tool-wait hint. JOIN candidates skip the unused estimate; capacity, reclaim
+  rank and tool short-window rejection are unchanged. Forty-one related
+  checks pass. With identical156-sample real service seeds, all five CPU
+  configurations preserve selection/publication. Missing-backup mean falls
+  4.51%, but the fully backed/no-lease case regresses17.58%; this does not
+  establish stable full-path acceleration or GPU throughput improvement.
+  Preserve all cases in v16_prepare_timing_skip_cpu_20261010.json. Commit
+  in isolation and leave both live V15 arms unchanged.
 - V14 collection, outer driver, audits, HTML export and cleanup have all
   finished:154 completed, two incomplete, no errors out of156. Duration is
   10977.317s, completed throughput50.504/hour, output700.235 tokens/s and

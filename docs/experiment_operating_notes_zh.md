@@ -51,6 +51,15 @@ DMA、checkpoint、节点有效性及64层上限继续校验。61项检查通过
 `32c915af99003b65f4cfa952a24e9716f7a3962cefde5ffe3dffddb6af3f63ca`；
 候选反向与冻结服务的精确增量正向检查均通过，尚未部署到v15。
 
+隔离中的PREPARE排序仅在有效工具等待预测存在时估计D2H服务时间；
+JOIN不计算未使用的值，容量/回收排序及短工具窗口判断不变。
+41项相关检查通过。两侧相同156条真实传输种子的CPU比较中，
+5种配置选择/发布一致，但没有稳定全路径加速：缺少备份配置均值
+下降4.51%，已全备份无租约配置慢17.58%。保留退步与原始分位数，
+不据此推导GPU收益。报告为
+`experiments/reports/v16_prepare_timing_skip_cpu_20261010.json`；
+本项修订尚未部署到v15。
+
 v14的采集、完整driver、审计、HTML与workspace清理现已全部结束：
 154 completed、2 incomplete、0 error。采集10977.317秒，
 完成吞吐50.504 workflow/h，比v13高10.87%，仍比历史v10 native

@@ -22,6 +22,7 @@ if str(ROOT) not in sys.path:
 from beliefkv.control.causal_graph import InvocationState
 from beliefkv.runtime.sglang_v0520_admission import PrefillCandidateKey
 from beliefkv.runtime.sglang_v0520_runtime import NativeAdmissionRuntime
+from beliefkv.runtime.native_transfer_service import load_native_service_seed
 from scripts.benchmark_native_shared_path import distribution, synthetic_runtime
 from beliefkv.policy.causal_frontier import CausalFrontierScheduler
 from tests.test_sglang_v0520_observer import (
@@ -47,10 +48,16 @@ def baseline_runtime(revision):
     return modules[-1].NativeAdmissionRuntime, digests
 
 
-def fixture(runtime_class, *, workflows, depth, backed, host_full, leases, host_only=False):
+def fixture(
+    runtime_class, *, workflows, depth, backed, host_full, leases,
+    host_only=False, service_samples=(),
+):
     runtime, queue = synthetic_runtime(
         runtime_class, CausalFrontierScheduler, workflows, 16,
     )
+    if service_samples:
+        runtime._native_service_samples.clear()
+        runtime._native_service_samples.extend(service_samples)
     cache = _static_cache()
     cache.token_to_kv_pool_allocator.size = 2_000_000
     full = cache.token_to_kv_pool_allocator._kvcache.full_kv_pool
@@ -146,11 +153,13 @@ def fixture(runtime_class, *, workflows, depth, backed, host_full, leases, host_
 
 
 def measure_case(
-    baseline, *, workflows, depth, iterations, backed, host_full, leases, host_only=False,
+    baseline, *, workflows, depth, iterations, backed, host_full, leases,
+    host_only=False, service_samples=(),
 ):
     variants = {
         name: fixture(cls, workflows=workflows, depth=depth, backed=backed,
-                      host_full=host_full, leases=leases, host_only=host_only)
+                      host_full=host_full, leases=leases, host_only=host_only,
+                      service_samples=service_samples)
         for name, cls in (("baseline", baseline), ("optimized", NativeAdmissionRuntime))
     }
     samples = {name: {"join_prepare": [], "sampling": []} for name in variants}
@@ -202,6 +211,7 @@ def measure_case(
             "workflows": workflows, "depth": depth,
             "all_current_input_backed": backed, "host_full_free_tokens": host_full,
             "host_only": host_only,
+            "service_history_samples": len(service_samples),
             "live_restore_leases": leases, "iterations": iterations,
             "selection_and_publication_equal": True,
             "publication_scope": (
@@ -398,14 +408,27 @@ def main():
     parser.add_argument("--iterations", type=int, default=40)
     parser.add_argument("--terminal-only", action="store_true",
                         help="Measure read-only terminal samples with overlapping anchors.")
+    parser.add_argument(
+        "--service-seed", type=Path,
+        help="Use the same validated native transfer history for both PREPARE variants.",
+    )
     parser.add_argument("--output", type=Path, required=True)
     args = parser.parse_args()
     if not 1 <= args.depth <= 64 or not 4 <= args.workflows <= 512 or args.iterations < 1:
         raise ValueError("depth 1..64, workflows 4..512 and positive iterations required")
     baseline, digests = baseline_runtime(args.baseline_revision)
+    service_seed = None
+    service_samples = ()
+    if args.service_seed is not None:
+        digest = hashlib.sha256(args.service_seed.read_bytes()).hexdigest()
+        service_samples = load_native_service_seed(str(args.service_seed), digest)
+        service_seed = {
+            "path": str(args.service_seed.resolve()), "sha256": digest,
+            "sample_count": len(service_samples),
+        }
     cases = [] if args.terminal_only else [
         measure_case(baseline, workflows=args.workflows, depth=args.depth,
-                     iterations=args.iterations, **case)
+                     iterations=args.iterations, service_samples=service_samples, **case)
         for case in (
             {"backed": True, "host_full": 1_000_000, "leases": 0},
             {"backed": True, "host_full": 1_000_000, "leases": 4},
@@ -424,6 +447,7 @@ def main():
             for path in digests
         },
         "benchmark_source_sha256": hashlib.sha256(Path(__file__).read_bytes()).hexdigest(),
+        "service_seed": service_seed,
         "handoff_identity": None if args.terminal_only else handoff_identity_case(baseline),
         "cases": cases,
         "terminal_cases": [

@@ -94,6 +94,15 @@ namespace、前缀、检查点、pending DMA、节点有效性及64层上限
 `experiments/reports/v16_engine_delta_20261010.patch`，等待v15完整
 对照结束后再部署。
 
+下一版PREPARE排序仅在存在有效工具等待预测时查询D2H服务历史，
+JOIN候选省去不参与排序或拒绝判断的传输耗时估计。容量、回收收益、
+工具短等待窗口及FULL-only范围不变，41项相关检查通过。CPU基准
+两侧使用相同156条真实传输种子，5种配置的选择/发布均一致；
+缺少备份配置的均值下降4.51%，已全备份无租约配置却慢17.58%，
+因此尚不能宣称稳定的整条PREPARE路径加速或GPU收益。保留全部
+结果：`experiments/reports/v16_prepare_timing_skip_cpu_20261010.json`。
+该修订仅在隔离工作树，v15运行代码不变。
+
 v14采集、审计、HTML导出和workspace清理
 已全部结束，156个workflow中154个completed、2个incomplete、
 0个error。采集窗口10977.317秒，完成吞吐50.504 workflow/h，

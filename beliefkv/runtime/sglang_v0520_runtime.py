@@ -3283,19 +3283,20 @@ class NativeAdmissionRuntime:
                     and (state.host_value is not None or step.include_mamba)
                 )
             )
-            service = estimate_native_service(
-                self._native_service_samples, transfer_bytes, direction="d2h",
-                shape=pool_shape(full_units, mamba_units),
-            )
             hint = self._live_tool_hint(step.key)
-            if hint is not None and service is not None:
-                remaining = hint.remaining_quantile(.1, now_ms=time.monotonic() * 1000.)
-                ready_ms = service.submit_to_ack_p90_ms + (
-                    service.enqueue_to_submit_p90_ms or 0.
+            if hint is not None:
+                service = estimate_native_service(
+                    self._native_service_samples, transfer_bytes, direction="d2h",
+                    shape=pool_shape(full_units, mamba_units),
                 )
-                if remaining is not None and remaining < ready_ms + self.prefetch_lead_ms:
-                    self.counts["prepare_candidate_short_wait_window"] += 1
-                    return None
+                if service is not None:
+                    remaining = hint.remaining_quantile(.1, now_ms=time.monotonic() * 1000.)
+                    ready_ms = service.submit_to_ack_p90_ms + (
+                        service.enqueue_to_submit_p90_ms or 0.
+                    )
+                    if remaining is not None and remaining < ready_ms + self.prefetch_lead_ms:
+                        self.counts["prepare_candidate_short_wait_window"] += 1
+                        return None
             # Ancestor backup can unlock a later exclusive checkpoint; retain
             # it behind candidates that can directly release pressured bytes.
             return (-float(reclaim_bytes), float(transfer_bytes))
