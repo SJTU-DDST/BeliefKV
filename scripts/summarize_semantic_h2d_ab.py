@@ -521,6 +521,8 @@ def main() -> None:
             "native_reactive_guard_profile": True,
             "completion_gate_enabled": False,
             "child_final_report_shadow": os.environ.get("CHILD_FINAL_REPORT_SHADOW", "1") == "1",
+            "child_finish_chunk_shadow": True,
+            "stream_http_timing_shadow": True,
             "fanout_profile": os.environ.get("FANOUT_PROFILE", "native_in_graph_2to4"),
             "in_graph_initial_tool_choice": "task",
             "in_graph_initial_parallel_tool_calls": True,
@@ -570,7 +572,8 @@ def main() -> None:
             "prepare_policy": (
                 "next_prefill_slots_and_active_decode_page_growth;"
                 "exhausted_probe_backoff_1000ms;host_no_reclaim;real_allocator_pressure;"
-                "missing_full_prefix_only;reuse_valid_host_extents"
+                "missing_full_prefix_only;reuse_valid_host_extents;"
+                "budget_all_missing_reusable_checkpoint_full_extents"
             ),
             "prepare_pool_scope": "missing_full_prefix",
             "mamba_backup_policy": "native_actual_eviction_writeback;no_speculative_prepare",
@@ -578,6 +581,11 @@ def main() -> None:
             "capacity_bypass_policy": (
                 "up_to_8_rejected_unaged_tagged_requests_per_prefill;"
                 "native_budget_must_allow_more;no_capacity_override"
+            ),
+            "restore_ready_admission_policy": (
+                "submitted_demand_ready_only;dynamic_unaged_quota;"
+                "aged_head_one_restore_after_four_ordinary_admissions;"
+                "rejected_admission_does_not_spend_quota;native_capacity_checks"
             ),
             "prepare_consumption_telemetry": (
                 "reconciled_native_per_operation_pool_receipts;"

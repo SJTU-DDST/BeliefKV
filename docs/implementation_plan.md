@@ -215,6 +215,8 @@ PREPARE checkpoint budget:
 - 214 related CPU checks pass. Evaluate fewer repeated node commands, real
   consumption, CPU cost and any lost useful opportunities in the next cold start.
   Keep V13 frozen until its driver exits.
+  Subsequent frozen plans record the complete-missing-prefix budget, bounded
+  restore-ready admission and enabled HTTP/finish-chunk timers.
 
 Completed-run comparison source correction:
 - Reuse the existing H2D source audit and preloaded ACK index. Add
