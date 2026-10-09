@@ -588,7 +588,28 @@ def main() -> None:
     missing = [name for name, value in arms.items() if value is None]
     if missing and not args.allow_incomplete:
         raise ValueError(f"missing terminal arms: {missing}")
-    report = {"status": "partial" if missing else "complete", "arms": arms}
+    revisions = plan.get("arm_revisions") or {
+        name: {
+            "code_commit": plan.get("code_commit"),
+            "sglang_patch_sha256": plan.get("sglang_patch_sha256"),
+        } for name in order
+    }
+    report = {
+        "status": "partial" if missing else "complete",
+        "arms": arms,
+        "scope": plan.get("scope"),
+        "arm_revisions": revisions,
+        "same_code_revision": (
+            len({revisions[name].get("code_commit") for name in order}) == 1
+            if all(revisions[name].get("code_commit") for name in order) else None
+        ),
+        "same_engine_patch": (
+            len({revisions[name].get("sglang_patch_sha256") for name in order}) == 1
+            if all(revisions[name].get("sglang_patch_sha256") for name in order) else None
+        ),
+        "revision_transition": plan.get("revision_transition"),
+        "isolated_policy_effect_verified": False,
+    }
     degraded = []
     expected_prepare = plan.get("prepare_host_in_both_arms", False)
     for name, arm in arms.items():

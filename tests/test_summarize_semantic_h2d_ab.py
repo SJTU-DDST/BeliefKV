@@ -197,7 +197,10 @@ def test_native_baseline_labels_are_not_reported_as_reactive():
     assert "reactive" not in report["workflows"][0]
 
 
-def test_completed_native_predictive_pair_reports_correct_baseline(tmp_path, monkeypatch):
+@pytest.mark.parametrize("cross_revision", (False, True))
+def test_completed_native_predictive_pair_reports_correct_baseline(
+    tmp_path, monkeypatch, cross_revision,
+):
     fixture(tmp_path / "native")
     (tmp_path / "native/opportunities/admission_opportunities.jsonl").unlink()
     fixture(tmp_path / "predictive_h2d")
@@ -207,6 +210,13 @@ def test_completed_native_predictive_pair_reports_correct_baseline(tmp_path, mon
             "native": {"prepare_host": False},
             "predictive_h2d": {"prepare_host": False},
         },
+        "arm_revisions": {
+            "native": {"code_commit": "old", "sglang_patch_sha256": "old-patch"},
+            "predictive_h2d": {
+                "code_commit": "new" if cross_revision else "old",
+                "sglang_patch_sha256": "new-patch" if cross_revision else "old-patch",
+            },
+        },
     }))
     monkeypatch.setattr(sys, "argv", ["summarize", "--run-root", str(tmp_path)])
     main()
@@ -215,6 +225,9 @@ def test_completed_native_predictive_pair_reports_correct_baseline(tmp_path, mon
     assert report["baseline"] == "native"
     assert report["paired_mean_jct_seconds"] == {"native": 5., "predictive_h2d": 5.}
     assert report["workload_balance"]["baseline"] == "native"
+    assert report["same_code_revision"] is not cross_revision
+    assert report["same_engine_patch"] is not cross_revision
+    assert not report["isolated_policy_effect_verified"]
 
 
 def test_initialize_accepts_exact_84_roots_and_records_live_fairness_scope(tmp_path, monkeypatch):

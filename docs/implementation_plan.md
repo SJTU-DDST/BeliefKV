@@ -5,8 +5,12 @@ Status date: 2026-10-09.
 ## Pipelined Handoff Revision
 
 Implemented in the isolated `perf/pipeline-execution-handoff` branch based
-on `e5f1f0b`. Keep the active v10 pair's checkout, engine and models frozen.
-Integrate this revision only after both arms finish; its GPU benefit is pending.
+on `e5f1f0b`, implementation commit `e5751e6`. The latest user instruction
+supersedes the same-revision pair freeze: keep native unchanged until its
+wrapper finishes, then deploy the latest committed revision for predictive.
+Do not repeat native. Keep tasks, arrivals, pools and model artifacts fixed.
+Archive the native plan and report per-arm code and engine patch revisions.
+This is a cross-revision development comparison; GPU benefit is pending.
 
 - Plan up to 16 root-first missing FULL extents, enqueue exact independent
   commands and submit the burst once. Transfer state only at the reusable
@@ -35,13 +39,19 @@ inspection/enqueue and is not a GPU throughput result. Evidence:
 Related repository regression: 319 passed; independent engine: 104 passed
 and 16 subtests. Use the committed canonical staging patch for deployment.
 
-After the frozen pair finishes, evaluate this revision on the same arrival
-table and pool/running configuration against a fresh native arm. Assess
+`scripts/resume_predictive_after_native.py` waits for the native wrapper
+to finish while only its parent pair driver is stopped. It verifies the
+original plan, fast-forwards the repository, applies the exact engine delta,
+records both revisions, and resumes the existing driver. It adds no agent
+guard, canary, model authorization or additional experiment.
+
+Evaluate the latest predictive revision against the current native arm. Assess
 completed-workflow throughput and JCT together with exposed restoration
 wait, useful FULL reuse, repeated demand loads, recompute and resident byte-time.
 Do not refit the predictor, add canaries or enlarge transfers to count success.
-The next GPU comparison should proceed from the v10 diagnosis; do not
-substitute this CPU result or historical Host-auto runs for that comparison.
+Dynamic next-batch prefetch budgets, PREPARE candidate refinement and
+opportunity-focused prediction tuning remain pending. Fixed four-lock/one-GiB
+limits still apply. Do not substitute CPU results for the GPU comparison.
 
 ## Shared-Path Cost And Matched Replenishment
 

@@ -5,8 +5,16 @@
 ## Handoff 流水恢复与准入减负
 
 当前优化在独立分支 `perf/pipeline-execution-handoff` 中完成，
-基于 `e5f1f0b`。正在运行的v10 native/predictive仍冻结在原版，
-不在两侧之间换实现。这些改动尚无GPU吞吐收益结论。
+实现提交为 `e5751e6`，基于 `e5f1f0b`。按用户最新要求，
+v10 native维持原版至收尾，随后直接部署最新提交运行predictive，
+不重复native。保留原始 `ab_plan.native_frozen.json`，
+`arm_revisions` 分别记录两侧源码和引擎补丁；workload、到达表、
+模型和pool配置保持一致。这是跨版本开发对照，尚无GPU收益结论。
+
+推荐优化的完成范围：批量恢复、依赖准入和同轮因果分类复用已完成；
+准入预算随下一批容量动态调整尚未实现，仍为4把锁/1 GiB。
+PREPARE对象筛选和迁移机会相关预测精调仍需依据实测推进。
+不将首轮CPU减负或ACK数量等同于完整优化方案已经完成。
 
 旧handoff逐node发出H2D，再等完整软件ACK推进，50 ms检查间隔
 还会继续拖延下一步。新路径一次规划最多16个缺失FULL node，

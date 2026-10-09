@@ -7,8 +7,14 @@ guard、终态门禁或模型动作授权。启动前同时阅读
 ## 新恢复路径的验证口径
 
 流水handoff修订位于独立分支 `perf/pipeline-execution-handoff`。
-v10两侧仍使用冻结的 `e5f1f0b`；完成前不得部署新runtime或引擎，
-也不能把新CPU回归结果算作当前GPU实验已验证的优化。
+用户最新授权v10在native结束后直接用最新优化运行predictive。
+native采集和服务收尾前保持原runtime与引擎；仅暂停父驱动防止
+旧predictive自动启动，native子进程继续运行。收尾后由
+`scripts/resume_predictive_after_native.py` 部署已提交源码和精确
+引擎增量，再恢复原驱动；不停止native、不重复native实验。
+保留原始plan，两侧源码/补丁分别记入 `arm_revisions` 并进入
+对比报告。模型、task、到达表、容量和预算保持一致。
+这是用户指定的跨版本开发对照，不能宣称已隔离全部策略因果收益。
 
 一次H2D burst最多16个node、一次原生submit、每node独立command
 和ACK。多个ACK不等于多次独立DMA，更不等于吞吐收益。FULL-only
@@ -43,7 +49,8 @@ artifact无错误；planned child还须已有报告且git无修改、无未跟�
 不授权canary、额外开发重复或人为缩小缓存以制造压力。
 
 启动前提交源码，冻结模型、canonical引擎补丁、task顺序和到达表；
-两侧间不得热改。driver逐侧核对指纹，独立冷启动，终态后自动
+通常两侧间不得热改；本轮按上述最新授权在native收尾后切换，
+每侧独立冻结并记录版本。driver逐侧核对指纹，独立冷启动，终态后自动
 导出HTML与对比，仅删除有完整归档的completed workspace。
 保留当前running/上下文/工具与workflow预算及宽松guard配置。
 正式统计仍需多轮配对；本次一对只能提供开发证据。
