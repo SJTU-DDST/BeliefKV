@@ -118,6 +118,21 @@ demand request's handoff locks together so overlapping locks do not obstruct
 native fallback. First-service, invalidation and three-second expiry still apply.
 Keep V13 frozen and validate the revision in a later cold-start collection.
 
+Separate native child completion, client LLM_RESULT, RETURN, complete JOIN,
+parent submission and first service. Match the exact request and runtime
+identity; report both command-weighted and unique-child summaries.
+The 76-action live V13 snapshot shows a 4788.94ms median native-to-client
+result delay and 1026.04ms result-to-RETURN delay. These intervals do not
+identify a function-level cause or establish prediction-head error.
+Report: experiments/reports/v13_join_completion_pipeline_partial_20261009_2320.json.
+Deliver LLM_RESULT through the existing ordered asynchronous callback path.
+Keep workflow-end delivery checking and measurement degradation on transport
+failure, including mixed root RETURN/WORKFLOW_END batches that previously
+matched the asynchronous RETURN condition. Record result queue/ACK timings separately. This removes callback
+ACK waiting; enable the existing HTTP-stream and finish-chunk diagnostics in
+the next cold-start run to investigate earlier stream-consumption delay.
+Keep the live V13 code frozen.
+
 ## Current PREPARE Cost And Handoff Fix
 
 Implemented in `/tmp/beliefkv-opportunity-20261009`, based on `e985d8c`.

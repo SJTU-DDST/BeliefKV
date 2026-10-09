@@ -2505,14 +2505,22 @@ class DeepAgentsRuntimeAdapter(BaseCallbackHandler):
                         len(control_events) == 1
                         and control_events[0].kind == RuntimeEventKind.TOOL_START
                     )
-                    async_reentry = isinstance(self.control_sink, QueuedRuntimeEventSink) and any(
-                        event.kind in {
-                            RuntimeEventKind.TOOL_END,
-                            RuntimeEventKind.RETURN,
-                            RuntimeEventKind.JOIN_SATISFIED,
-                            RuntimeEventKind.LLM_SUBMIT,
-                        }
-                        for event in control_events
+                    async_reentry = (
+                        isinstance(self.control_sink, QueuedRuntimeEventSink)
+                        and not any(
+                            event.kind == RuntimeEventKind.WORKFLOW_END
+                            for event in control_events
+                        )
+                        and any(
+                            event.kind in {
+                                RuntimeEventKind.TOOL_END,
+                                RuntimeEventKind.RETURN,
+                                RuntimeEventKind.JOIN_SATISFIED,
+                                RuntimeEventKind.LLM_SUBMIT,
+                                RuntimeEventKind.LLM_RESULT,
+                            }
+                            for event in control_events
+                        )
                     )
                     delivery = submit(
                         control_events,

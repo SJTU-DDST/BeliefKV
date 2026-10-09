@@ -135,6 +135,23 @@ v13运行中已发现实际恢复后驱逐：同一request/context/epoch的
 锁却没有释放可回收容量。首次服务、身份失效及3秒到期照常释放。
 这些修改位于独立工作树，须在v13冻结driver退出后冷启动核验。
 
+JOIN时间审计现已分离同一child请求的原生生成结束、客户端结果
+回调、自然RETURN及parent下一请求提交/首次服务；核对invocation、
+context和epoch，并同时报告动作口径与去重child请求口径。
+v13运行中76次已完成RETURN的动作样本，原生结束到客户端结果
+回调P50为4788.94ms，回调到RETURN为1026.04ms，JOIN到parent
+提交为1234.89ms。不能将这些区间归因于某一个函数，也不能将
+全部提前量解释为剩余工作头的误差。局部报告：
+`experiments/reports/v13_join_completion_pipeline_partial_20261009_2320.json`。
+后续修订将LLM_RESULT加入已有FIFO异步控制交付，callback无需等
+ACK后才发完成hint、执行工具或RETURN；workflow结束仍检查此前
+交付，失败仍标记测量降级。含WORKFLOW_END与root RETURN的混合
+batch明确等待最终交付，避免被RETURN的异步条件误放行。分别
+记录LLM_RESULT排队/ACK分位数。
+它消除一段明确的同步等待，不解决回调入口之前全部HTTP/框架
+消费延迟；下一轮需启用已有HTTP流及finish-chunk计时来定位。
+v13采集保持冻结，不能将尚未运行的修订计入其性能结果。
+
 ## PREPARE 热点与 Handoff 身份修复
 
 本次修订基于 `e985d8c`，在独立工作树

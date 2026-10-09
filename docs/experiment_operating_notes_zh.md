@@ -58,6 +58,18 @@ v13已观察到同一请求ACK后76--102ms真实驻留丢失并随后原生重�
 不得将这类负证据一概解释为tensor对象变化，也不能以旧合并批次
 的pool关联数推导精确重复字节。
 
+JOIN提前量须分离原生生成结束、客户端LLM_RESULT、RETURN、parent
+提交与首次服务。核对同一request/invocation/context/epoch，不把
+另一轮模型请求或提前的工具reentry拼接到当前JOIN。对同一child
+多个extent报告动作口径和去重请求口径，避免重复计为独立样本。
+LLM_RESULT可沿既有FIFO异步交付；不得丢失create-before-submit
+顺序或workflow结束的交付检查；含WORKFLOW_END的混合batch明确
+等待交付，不能因含RETURN而异步放行。失败标记测量，不新增agent guard。
+运行中v13尚无finish-chunk/HTTP流计时，数秒的原生EOS到客户端
+结果差距不能直接归因于网络、解析或回调。下一轮同时启用已有
+`--child-finish-chunk-shadow`与`--stream-http-timing-shadow`定位，
+相应child stream记录也须开启；不追改本轮配置或性能归因。
+
 PREPARE根据下一批可准入需求与运行请求页增长选择时机。等待队列
 为空时不能只因缓存占满或Mamba free低就持续备份。已无备份步骤/
 Host不足的context观察延后一秒，新epoch立即重查，enqueue保留

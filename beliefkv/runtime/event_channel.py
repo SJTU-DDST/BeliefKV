@@ -283,6 +283,7 @@ class _QueuedDelivery:
     submitted_ns: int
     tool_start: bool = False
     reentry: bool = False
+    llm_result: bool = False
     finished: threading.Event = field(default_factory=threading.Event)
     error: Exception | None = None
 
@@ -293,7 +294,7 @@ class _QueuedDelivery:
 
 
 class QueuedRuntimeEventSink:
-    """Deliver ordered control events without blocking tool/reentry callbacks."""
+    """Deliver ordered control events without blocking execution callbacks."""
 
     def __init__(
         self, sink: UnixDatagramRuntimeEventSink, *, max_pending: int = 64
@@ -310,6 +311,8 @@ class QueuedRuntimeEventSink:
         self._tool_ack_ms: list[float] = []
         self._reentry_queue_ms: list[float] = []
         self._reentry_ack_ms: list[float] = []
+        self._llm_result_queue_ms: list[float] = []
+        self._llm_result_ack_ms: list[float] = []
         self._worker = threading.Thread(
             target=self._deliver, name="beliefkv-runtime-events", daemon=True
         )
@@ -321,11 +324,14 @@ class QueuedRuntimeEventSink:
         if not events:
             raise ValueError("event batch must not be empty")
         delivery = _QueuedDelivery(
-            events, time.perf_counter_ns(), tool_start,
-            any(event.kind in {
+            events, time.perf_counter_ns(), tool_start=tool_start,
+            reentry=any(event.kind in {
                 RuntimeEventKind.TOOL_END, RuntimeEventKind.RETURN,
                 RuntimeEventKind.JOIN_SATISFIED, RuntimeEventKind.LLM_SUBMIT,
             } for event in events),
+            llm_result=any(
+                event.kind == RuntimeEventKind.LLM_RESULT for event in events
+            ),
         )
         with self._lock:
             if self._closed:
@@ -379,6 +385,14 @@ class QueuedRuntimeEventSink:
                         self._reentry_ack_ms.append(
                             (finished_ns - started_ns) / 1_000_000.0
                         )
+                if delivery.llm_result:
+                    with self._stats_lock:
+                        self._llm_result_queue_ms.append(
+                            (started_ns - delivery.submitted_ns) / 1_000_000.0
+                        )
+                        self._llm_result_ack_ms.append(
+                            (finished_ns - started_ns) / 1_000_000.0
+                        )
                 delivery.finished.set()
                 self._queue.task_done()
 
@@ -408,6 +422,11 @@ class QueuedRuntimeEventSink:
                 "reentry_queue_p95_ms": percentile(self._reentry_queue_ms, 0.95),
                 "reentry_ack_p50_ms": percentile(self._reentry_ack_ms, 0.50),
                 "reentry_ack_p95_ms": percentile(self._reentry_ack_ms, 0.95),
+                "llm_result_count": len(self._llm_result_ack_ms),
+                "llm_result_queue_p50_ms": percentile(self._llm_result_queue_ms, 0.50),
+                "llm_result_queue_p95_ms": percentile(self._llm_result_queue_ms, 0.95),
+                "llm_result_ack_p50_ms": percentile(self._llm_result_ack_ms, 0.50),
+                "llm_result_ack_p95_ms": percentile(self._llm_result_ack_ms, 0.95),
             }
 
     def close(self) -> None:

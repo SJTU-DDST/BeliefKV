@@ -1241,6 +1241,7 @@ def test_child_completion_intent_rejects_unbound_ambiguous_repeated_and_terminal
             _child_completion_result("ChildCompletion"),
             run_id=terminal_run, parent_run_id=chain,
         )
+        queued.flush()
         assert [
             event.attributes["request_id"] for event in control.events
             if event.kind == RuntimeEventKind.STRUCTURED_ACTION
@@ -1317,6 +1318,80 @@ def test_child_completion_intent_is_nonblocking_and_precedes_confirmed_return() 
         release_intent.set()
         if sender is not None:
             sender.join(timeout=2.0)
+        queued.close()
+
+
+def test_llm_result_ack_does_not_delay_return_or_parent_submit_and_finish_drains() -> None:
+    result_started = threading.Event()
+    release_result = threading.Event()
+
+    class SlowResultSink(CollectingSink):
+        def emit_batch(self, events) -> None:
+            if events[0].kind == RuntimeEventKind.LLM_RESULT:
+                result_started.set()
+                if not release_result.wait(timeout=2.0):
+                    raise TimeoutError("result ACK was not released")
+            super().emit_batch(events)
+
+        def close(self) -> None:
+            pass
+
+    control = SlowResultSink()
+    queued = QueuedRuntimeEventSink(control)
+    adapter = DeepAgentsRuntimeAdapter(
+        CollectingSink(),
+        BeliefKVRequestMetadata("wf", "root", "ctx", 0),
+        control_sink=queued,
+    )
+    finisher = None
+    try:
+        adapter.start()
+        task = adapter.declare_runtime_tasks([("explorer", "Inspect")])[0]
+        chain, child_run = uuid4(), uuid4()
+        adapter.on_chain_start({}, {}, run_id=chain, metadata=adapter.invocation_scope(task))
+        adapter.on_chat_model_start(
+            {}, [[HumanMessage(content="child")]],
+            run_id=child_run, parent_run_id=chain,
+        )
+        began = time.monotonic()
+        adapter.on_llm_end(
+            _child_completion_result("ChildCompletion"),
+            run_id=child_run, parent_run_id=chain,
+        )
+        assert time.monotonic() - began < 0.5
+        assert result_started.wait(timeout=1.0)
+        adapter.complete_runtime_task(task)
+        adapter.on_chat_model_start(
+            {}, [[HumanMessage(content="parent")]], run_id=uuid4(),
+        )
+        finished = threading.Event()
+
+        def finish() -> None:
+            adapter.finish(outcome="completed")
+            finished.set()
+
+        finisher = threading.Thread(target=finish)
+        finisher.start()
+        assert not finished.wait(timeout=0.05)
+        release_result.set()
+        finisher.join(timeout=2.0)
+        assert finished.is_set()
+        kinds = [event.kind for event in control.events]
+        result_index = kinds.index(RuntimeEventKind.LLM_RESULT)
+        assert kinds[result_index:result_index + 3] == [
+            RuntimeEventKind.LLM_RESULT,
+            RuntimeEventKind.STRUCTURED_ACTION,
+            RuntimeEventKind.RETURN,
+        ]
+        assert kinds[-1] == RuntimeEventKind.WORKFLOW_END
+        timing = queued.timing_summary()
+        assert timing["llm_result_count"] == 1
+        assert timing["llm_result_ack_p50_ms"] >= 50.
+        assert not adapter.control_delivery_summary()["degraded"]
+    finally:
+        release_result.set()
+        if finisher is not None:
+            finisher.join(timeout=2.0)
         queued.close()
 
 
