@@ -37,6 +37,53 @@ across splits. The legacy residual correction did not change these counts.
 Report: experiments/reports/v10_prepare_full_incrementality_20261009.json.
 
 Current status:
+- V15 is live from frozen main commit
+  feb5ee01a9f1340a694dcba442c439d08e4bd274 and full engine patch SHA256
+  dbde39b7f37977ecacd72dddf78b3da94a56fa6a0879afb1798ae55ab7f1fe63.
+  The existing driver runs predictive_h2d then native with fresh servers and
+  caches. Keep156 tasks,108+48/3600s arrivals, running48, Host200GB80:20,
+  HBM ratio0.9, context131072/completion8192, graph2048/reserve32,
+  workflow14400s, native_in_graph_2to4, seed21/temperature0 and artifacts
+  unchanged across both arms. Main and engine remain frozen through exports
+  and cleanup; all subsequent development stays in the isolated worktree.
+- At2026-10-10 05:40 CST, the partial V15 H2D source snapshot has native
+  2358 batches/731.314GB, JOIN/tool72 commands/1.384GB, demand handoff
+  4692 node commands/1524 batches/36.050GB and no unknown controlled source.
+  The slightly later consumption snapshot has handoff FULL sent/reused
+  19.283/19.203GB and ACK-to-first-launch P5022.62ms; JOIN0.06738/0.01513GB
+  and17.604s; tool0.22223/0.18760GB and1.244s. PREPARE has316 ACKs and
+  49 restoration associations;54 pressure demotions include51 prior PREPARE
+  associations. Snapshot cutoffs differ. No later same-node/pool D2H is
+  observed yet; do not claim eliminated churn or native-relative throughput.
+- Correct the JOIN audit in isolation before interpreting restore waits.
+  Native LLM_SUBMIT is server arrival, not first GPU service. Schema2 uses
+  the earliest matching gpu_service_sample.service_start_ts_ms with
+  request/workflow/invocation/context/epoch identity and keeps arrival,
+  prefetch first-launch receipt and worker service separate. Missing service
+  remains unknown; worker intervals are not isolated CUDA kernel time.
+  Preserve frozen reports and generate separately named corrected reports.
+  V14 client-submit-to-worker P50/P90 is777.09/11950.68ms; old467ms was
+  submit-to-arrival. At05:50 CST, V15 has27 node commands/18 child requests,
+  unique-child EOS-to-finish P50397.39ms, JOIN-to-submit58.57ms,
+  submit-to-arrival173.05ms, arrival-to-worker492.47ms and submit-to-worker
+  2739.31ms/P90 about17.26s. Percentile components are not additive.
+  A django10914 request changes from1.028s under the old arrival metric to
+  16.059s to worker service, with its lease already expired before submission.
+  Distinguish client backlog, admission and transfer waits before changing
+  residency or priority. Twelve audit checks pass; no live policy is changed.
+- The isolated next-revision reentry probe shares matched ancestor state only
+  inside one read-only invocation. Each new call refreshes physical residency;
+  preserve namespace, pending DMA, checkpoint selection, stale-node validation
+  and the64-node ancestry bound. Avoid a memo dictionary on the single-leaf
+  path. Sixty-one related checks pass. Seven samples of200 iterations with
+  actual RadixKey give equal outputs and8-leaf4K/32K/96K CPU P50 reductions
+  of63.9/80.5/84.9%; single leaves regress0.3--2.9% and first divergence
+  goes4.642→4.968us. Preserve regressions and do not infer GPU throughput.
+  Report:v16_shared_reentry_cpu_20261010.json. Full candidate patch SHA256
+  is32c915af99003b65f4cfa952a24e9716f7a3962cefde5ffe3dffddb6af3f63ca.
+  Candidate reverse-check and frozen-live delta forward-check pass.
+  Commit the isolated package promptly; deploy only after both V15 arms and
+  full postprocessing finish.
 - V14 collection, outer driver, audits, HTML export and cleanup have all
   finished:154 completed, two incomplete, no errors out of156. Duration is
   10977.317s, completed throughput50.504/hour, output700.235 tokens/s and
@@ -57,7 +104,8 @@ Current status:
   Preserve incrementality and reduce reclaim/re-backup and unconsumed backups.
 - Final JOIN105 node commands correspond to74 child requests;22 commands
   precede native EOS and83 follow it. Unique-child EOS-to-finish P50 is
-  1242ms, JOIN-to-parent-submit628ms and submit-to-service467ms.
+  1242ms, JOIN-to-parent-submit628ms and submit-to-native-arrival467ms.
+  Corrected submit-to-worker-service P50 is777ms.
   Child-close HTTP overlaps JOIN-to-submit by406ms at P50; this is not
   a causally isolated or additive JCT saving.
 - Final runtime reports final=true, physical_disabled=false and no semantic
@@ -65,10 +113,10 @@ Current status:
   retries; django11555 ends with two length responses and unresolved work.
   Client exit1 reflects native-JCT eligibility for154/156, not an established
   implementation failure. Cleanup removed154 workspaces and retained two.
-- Deploy the committed follow-up package and exact engine delta, then run
-  fresh V15 predictive/native arms with the same shared harness improvements.
-  Fixing direct comparison-script imports has been validated by the actual
-  completed three-run report. Keep code and artifacts frozen across both arms.
+- The committed follow-up package and exact engine delta are deployed for V15.
+  The fresh same-version native arm follows predictive automatically with
+  the same shared harness improvements. Direct comparison-script imports
+  passed the completed three-run report. Keep both arms frozen.
 
 The following V13 results and timestamped V14 development observations are
 historical records. Statements about keeping V14 live unchanged applied during
@@ -230,7 +278,7 @@ its collection; no V14 process or postprocessing remains active.
 - V13 cleanup removed154 archived workspaces and retained two forensic
   workspaces. Preserve summaries, patches, telemetry, final reports and HTML.
 
-Deployment and next comparison:
+V15 Deployment Record (Completed Before Launch):
 - V14 is fully finished, including audits, HTML and workspace cleanup;
   deployment can proceed. Final outcomes and performance are recorded above.
 - The final source audit has642 JOIN/tool commands/10.901GB,
@@ -253,8 +301,8 @@ Deployment and next comparison:
   The generated experiments/reports/v15_engine_delta_20261010.patch passes
   a live forward-check and candidate reverse-check; SHA256 is
   d1a1720cace4b06557d728f709a638d0644ab3727d19c11576b3581b7ced38a0.
-  Apply only this exact delta, then verify the complete staging patch.
-- Deploy the committed package and run V15 with the existing full AB driver
+  This exact delta is deployed and the complete staging patch verified.
+- The committed package is running V15 with the existing full AB driver
   in predictive_h2d/native order, fresh server and cache for each arm.
   Keep156 tasks,108+48 arrivals separated by3600s, running48,
   Host200GB80:20, HBM ratio0.9, context131072/completion8192,

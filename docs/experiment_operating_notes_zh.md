@@ -6,6 +6,51 @@ guard、终态门禁或模型动作授权。启动前同时阅读
 
 ## 当前执行状态
 
+v15已启动，主目录冻结在`feb5ee01a9f1340a694dcba442c439d08e4bd274`，
+完整引擎patch SHA256为
+`dbde39b7f37977ecacd72dddf78b3da94a56fa6a0879afb1798ae55ab7f1fe63`。
+driver依次执行predictive_h2d、native并各自冷启动；156任务、
+108+48/3600s到达、running48、Host200GB80:20、HBM比例0.9、
+context131072/completion8192、graph2048/reserve32、
+workflow14400s、2--4 child、seed21及产物不变。客户端共用优化
+在两侧生效。代码冻结核验已通过；两侧及审计、HTML、cleanup全部
+结束前，后续修订只在隔离工作树提交，不修改主目录或服务文件。
+
+2026-10-10 05:40 CST快照：原生H2D731.314 GB，JOIN/tool1.384 GB，
+需求handoff36.050 GB。稍后消费快照中handoff FULL传输/确认复用
+19.283/19.203 GB，ACK到首次launch P5022.62 ms；JOIN为
+0.06738/0.01513 GB、17.604秒，tool为0.22223/0.18760 GB、1.244秒。
+316次PREPARE ACK中49次关联恢复；54次压力迁出中51次关联此前
+PREPARE。快照截止时刻不同，handoff不是提前预测，尚无后续D2H
+关联也不等于全程没有Host驱逐后补传。此时无完整吞吐结果。
+
+首次GPU服务必须来自同request/workflow/invocation/context/epoch
+的最早gpu_service_sample.service_start_ts_ms。原生LLM_SUBMIT
+只是请求到达；预取first-launch receipt也应独立保留。采样缺失
+保持unknown，不以到达时间填补；worker区间不等于CUDA kernel
+耗时。JOIN审计已在隔离工作树升级为schema_version=2，12项检查
+通过；冻结旧报告不覆盖，后处理另生成修正版。旧文档把到达称作
+首次服务的字段统一由新报告取代，不能据此估计驻留租约或准入等待。
+v14提交到worker服务P50/P90为777.09/11950.68 ms，原467 ms是
+提交到原生到达。05:50 CST的v15去重child样本中，EOS到finish
+P50397.39 ms、JOIN到提交58.57 ms、提交到worker服务2739.31 ms，
+P90约17.26秒。区间分位数不可相加。先拆分客户端积压、服务端
+准入与传输等待，再修改优先级或驻留，不因测量修正停止有效采集。
+修正版报告：
+`experiments/reports/v14_join_pipeline_first_service_v2_20261010.json`、
+`v15_join_pipeline_first_service_v2_partial_20261010_0550.json`。
+
+隔离中的下一版reentry检查仅复用一次只读调用内匹配祖先状态，
+每次调用重新观察驻留，单叶不创建memo字典；namespace、pending
+DMA、checkpoint、节点有效性及64层上限继续校验。61项检查通过。
+7组、每组200次实际RadixKey的合成CPU基准输出相同，8叶
+4K/32K/96K路径P50下降63.9%/80.5%/84.9%；单叶慢0.3%--2.9%，
+首段分歧4.642→4.968微秒。保留退步样例，不推导GPU吞吐。
+报告：`experiments/reports/v16_shared_reentry_cpu_20261010.json`。
+候选完整patch SHA256为
+`32c915af99003b65f4cfa952a24e9716f7a3962cefde5ffe3dffddb6af3f63ca`；
+候选反向与冻结服务的精确增量正向检查均通过，尚未部署到v15。
+
 v14的采集、完整driver、审计、HTML与workspace清理现已全部结束：
 154 completed、2 incomplete、0 error。采集10977.317秒，
 完成吞吐50.504 workflow/h，比v13高10.87%，仍比历史v10 native
@@ -23,7 +68,7 @@ PREPARE关闭，实际驱逐仍保存恢复所需的检查点状态。v14的703�
 JOIN/tool的ACK到首次服务P50仍为4584/2813ms；handoff为25ms，
 其FULL传输/确认首次复用70.517/70.128GB，不能并入提前预测覆盖。
 
-部署隔离分支的已提交共用路径优化及精确引擎差异后，启动v15
+隔离分支的已提交共用路径优化及精确引擎差异已部署并启动v15
 `predictive_h2d native`，两侧使用同一新代码及预测产物并各自
 冷启动。全过程冻结主目录commit、完整patch和artifact指纹；
 运行中的后续开发使用隔离工作树。直接调用对比脚本的导入路径

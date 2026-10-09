@@ -11,6 +11,7 @@ def _write(path, rows):
 def _run(
     tmp_path, *, native_epoch=1, client_tool_calls=0, stream_timing=False,
     close_timing=False, close_epoch=1, close_elapsed=10.,
+    service_timing=True, service_epoch=3, prefetch_launch=False,
 ):
     _write(tmp_path / "opportunities/admission_opportunities.jsonl", [
         {"event": "safe_point_census", "ts_ms": 1000., "monotonic_ms": 0.},
@@ -23,7 +24,10 @@ def _run(
         "workflow_id": "workflow", "invocation_id": "child",
         "context_id": "child-ctx", "context_epoch": 1,
     }
-    parent = {"invocation_id": "root", "context_id": "parent", "context_epoch": 3}
+    parent = {
+        "workflow_id": "workflow", "invocation_id": "root",
+        "context_id": "parent", "context_epoch": 3,
+    }
     _write(tmp_path / "client_1/workflows/task/runtime_events.deepagents.jsonl", [
         {"kind": "llm_result", "ts_ms": 80., **identity,
          "attributes": {"request_id": "child-final", "finish_reason": "stop",
@@ -53,6 +57,26 @@ def _run(
     _write(tmp_path / "server/physical_action_ack.jsonl", [
         {"action": "PREFETCH_GPU", "command_id": "prefetch", "ts_ms": 1045.},
     ])
+    if service_timing:
+        _write(tmp_path / "server/runtime_audit.jsonl", [
+            {"event": "gpu_service_sample", "service_start_ts_ms": 1220.,
+             "request_samples": [{
+                 **parent, "context_epoch": service_epoch, "request_id": "parent-next",
+             }]},
+            {"event": "gpu_service_sample", "service_start_ts_ms": 1240.,
+             "request_samples": [{**parent, "request_id": "parent-next"}]},
+            {"event": "gpu_service_sample", "service_start_ts_ms": 1200.,
+             "request_samples": [{
+                 **parent, "invocation_id": "other", "request_id": "parent-next",
+             }]},
+        ])
+    if prefetch_launch:
+        _write(tmp_path / "server/physical_action_use.jsonl", [
+            {"event": "beliefkv_prefetch_first_service", "command_id": "prefetch",
+             "request_id": "parent-next", "context_id": "parent",
+             "service_context_epoch": 3, "first_service_ts_ms": 1210.,
+             "full_node_reused": True},
+        ])
     if stream_timing:
         _write(tmp_path / "client_1/workflows/task/child_stream_content.jsonl", [
             {"event": "llm_stream_http_transport", "request_id": "child-final",
@@ -81,7 +105,11 @@ def test_join_audit_separates_native_completion_callback_return_and_parent(tmp_p
     assert row["client_result_to_child_return_ms"] == 20.
     assert row["child_return_to_join_ms"] == 5.
     assert row["join_to_parent_submit_ms"] == 20.
-    assert row["parent_submit_to_first_service_ms"] == 25.
+    assert row["parent_submit_to_native_arrival_ms"] == 25.
+    assert row["parent_native_arrival_to_first_service_ms"] == 70.
+    assert row["parent_submit_to_first_service_ms"] == 95.
+    assert row["parent_native_first_service_ts_ms"] == 1220.
+    assert row["parent_first_service_evidence"] == "same_identity_gpu_service_interval_start"
     assert row["parent_next_request_id"] == "parent-next"
     assert row["native_submit_lead_to_child_native_done_ms"] == 10.
     assert report["completion_intervals"]["native_done_to_client_result_ms"]["count"] == 1
@@ -157,3 +185,24 @@ def test_join_audit_allows_deferred_http_completion_after_parent_submission(tmp_
     [row] = _run(tmp_path, close_timing=True, close_elapsed=30.)["rows"]
     assert row["session_http_complete_to_parent_submit_ms"] == -11.
     assert row["session_http_overlap_with_join_to_submit_ms"] == 19.
+
+
+def test_join_audit_keeps_missing_service_unknown_instead_of_using_arrival(tmp_path):
+    [row] = _run(tmp_path, service_timing=False)["rows"]
+    assert row["parent_native_arrival_ts_ms"] == 1150.
+    assert row["parent_native_first_service_ts_ms"] is None
+    assert row["parent_submit_to_first_service_ms"] is None
+    assert row["parent_native_arrival_to_first_service_ms"] is None
+
+
+def test_join_audit_uses_first_matching_worker_sample_and_keeps_launch_separate(tmp_path):
+    [row] = _run(tmp_path, prefetch_launch=True)["rows"]
+    assert row["parent_prefetch_first_launch_ts_ms"] == 1210.
+    assert row["parent_native_first_service_ts_ms"] == 1220.
+    assert row["parent_submit_to_first_service_ms"] == 95.
+
+
+def test_join_audit_rejects_earlier_service_with_a_different_context_epoch(tmp_path):
+    [row] = _run(tmp_path, service_epoch=4)["rows"]
+    assert row["parent_native_first_service_ts_ms"] == 1240.
+    assert row["parent_native_arrival_to_first_service_ms"] == 90.

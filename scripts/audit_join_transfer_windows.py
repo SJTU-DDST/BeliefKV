@@ -90,9 +90,12 @@ def audit(arm: Path) -> dict:
                 session_closes[key] = row
     for submits in parent_submits.values():
         submits.sort(key=lambda row: (row["ts_ms"], row.get("sequence", 0)))
+    parent_contexts = {issue["context_id"] for issue in issued.values()}
     parent_requests = {
         row["attributes"]["request_id"]
-        for submits in parent_submits.values() for row in submits
+        for context_id, submits in parent_submits.items()
+        if context_id in parent_contexts
+        for row in submits
         if row["attributes"].get("request_id")
     }
     for row in records(arm / "server/runtime_events.sglang.jsonl"):
@@ -101,6 +104,22 @@ def audit(arm: Path) -> dict:
             native_results[request_id] = row
         elif row["kind"] == "llm_submit" and request_id in parent_requests:
             native_submits[request_id] = row
+    native_services = {}
+    for row in records(arm / "server/runtime_audit.jsonl"):
+        start = row.get("service_start_ts_ms")
+        if row.get("event") != "gpu_service_sample" or start is None:
+            continue
+        for sample in row.get("request_samples") or ():
+            request_id = sample.get("request_id")
+            if request_id not in parent_requests:
+                continue
+            identity = (
+                request_id, sample.get("workflow_id"), sample.get("invocation_id"),
+                sample.get("context_id"), sample.get("context_epoch"),
+            )
+            previous = native_services.get(identity)
+            if previous is None or start < previous:
+                native_services[identity] = start
     acks = {
         row["command_id"]: row for row in records(arm / "server/physical_action_ack.jsonl")
         if row["action"] == "PREFETCH_GPU"
@@ -144,15 +163,28 @@ def audit(arm: Path) -> dict:
                 if join_ts is not None and row["ts_ms"] + offset >= join_ts
             ), None)
             parent_id = (parent_submit.get("attributes") or {}).get("request_id") if parent_submit else None
-            parent_service = native_submits.get(parent_id)
-            if parent_service and (
-                parent_service.get("context_id") != issue["context_id"]
-                or parent_service.get("context_epoch") != parent_submit.get("context_epoch")
-                or parent_service.get("invocation_id") != parent_submit.get("invocation_id")
+            parent_arrival = native_submits.get(parent_id)
+            if parent_arrival and (
+                parent_arrival.get("context_id") != issue["context_id"]
+                or parent_arrival.get("context_epoch") != parent_submit.get("context_epoch")
+                or parent_arrival.get("invocation_id") != parent_submit.get("invocation_id")
+                or parent_arrival.get("workflow_id") != parent_submit.get("workflow_id")
             ):
-                parent_service = None
+                parent_arrival = None
             parent_ts = parent_submit["ts_ms"] + offset if parent_submit else None
-            parent_service_ts = parent_service["ts_ms"] if parent_service else None
+            parent_arrival_ts = parent_arrival["ts_ms"] if parent_arrival else None
+            parent_service_ts = native_services.get((
+                parent_id, parent_submit.get("workflow_id"), parent_submit.get("invocation_id"),
+                parent_submit.get("context_id"), parent_submit.get("context_epoch"),
+            )) if parent_submit else None
+            parent_launch_ts = (
+                use.get("first_service_ts_ms")
+                if use is not None and parent_submit is not None
+                and use.get("request_id") == parent_id
+                and use.get("context_id") == parent_submit.get("context_id")
+                and use.get("service_context_epoch") == parent_submit.get("context_epoch")
+                else None
+            )
             client_attrs = client_result.get("attributes") or {} if client_result else {}
             finish_chunk = client_attrs.get("stream_final_chunk_ts_ms")
             callback_entry = client_attrs.get("llm_end_callback_entry_ts_ms")
@@ -216,7 +248,13 @@ def audit(arm: Path) -> dict:
                 "child_return_ts_ms": return_ts, "join_satisfied_ts_ms": join_ts,
                 "parent_next_request_id": parent_id,
                 "parent_client_submit_ts_ms": parent_ts,
+                "parent_native_arrival_ts_ms": parent_arrival_ts,
+                "parent_prefetch_first_launch_ts_ms": parent_launch_ts,
                 "parent_native_first_service_ts_ms": parent_service_ts,
+                "parent_first_service_evidence": (
+                    "same_identity_gpu_service_interval_start"
+                    if parent_service_ts is not None else None
+                ),
                 "native_done_to_client_result_ms": _difference(client_done, native_done),
                 "native_done_to_client_finish_chunk_ms": _difference(finish_ts, native_done),
                 "client_finish_chunk_to_callback_entry_ms": _difference(callback_ts, finish_ts),
@@ -226,6 +264,10 @@ def audit(arm: Path) -> dict:
                 "client_result_to_child_return_ms": _difference(return_ts, client_done),
                 "child_return_to_join_ms": _difference(join_ts, return_ts),
                 "join_to_parent_submit_ms": _difference(parent_ts, join_ts),
+                "parent_submit_to_native_arrival_ms": _difference(parent_arrival_ts, parent_ts),
+                "parent_native_arrival_to_first_service_ms": _difference(
+                    parent_service_ts, parent_arrival_ts,
+                ),
                 "parent_submit_to_first_service_ms": _difference(parent_service_ts, parent_ts),
                 "child_return_to_session_close_start_ms": _difference(close_start_ts, return_ts),
                 "child_return_to_session_http_complete_ms": _difference(close_complete_ts, return_ts),
@@ -256,6 +298,8 @@ def audit(arm: Path) -> dict:
         "client_result_to_child_return_ms",
         "child_return_to_join_ms",
         "join_to_parent_submit_ms",
+        "parent_submit_to_native_arrival_ms",
+        "parent_native_arrival_to_first_service_ms",
         "parent_submit_to_first_service_ms",
         "child_return_to_session_close_start_ms",
         "child_return_to_session_http_complete_ms",
@@ -267,6 +311,7 @@ def audit(arm: Path) -> dict:
         if row["child_request_id"] is not None
     }
     return {
+        "schema_version": 2,
         "scope": "actual controller submission, not unanchored DMA-start or forecast ETA",
         "clock": "paired scheduler wall/monotonic clock; client/server on same host",
         "completion_timing_scope": (
@@ -276,7 +321,12 @@ def audit(arm: Path) -> dict:
             "pauses; pauses include parsing, callbacks and CPU scheduling, while "
             "raw pulls include waiting for server data. Neither is a pure network "
             "or function CPU measurement. Missing legacy timings remain unknown. "
-            "Parent first service uses the next same-context request after JOIN."
+            "Parent first service uses the earliest matching gpu_service_sample "
+            "service_start_ts_ms for the next same-context request after JOIN. "
+            "Native LLM_SUBMIT is request arrival, not first GPU service. Service "
+            "samples use scheduler/worker intervals, not isolated CUDA kernel "
+            "time; missing or unsampled service stays unknown. Prefetch launch "
+            "receipts remain separate from worker service intervals."
             " Terminal session HTTP completion confirms dispatch acceptance, not "
             "scheduler reference release. HTTP/JOIN-to-submit overlap is observed "
             "interval overlap, not a causally isolated or additive JCT saving."

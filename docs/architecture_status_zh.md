@@ -37,7 +37,64 @@ Host副本，也不能跨radix分裂推导精确重复字节。修正旧合并�
 分池归因没有改变本轮计数。补查报告：
 `experiments/reports/v10_prepare_full_incrementality_20261009.json`。
 
-当前目标仍未达成。v14采集、审计、HTML导出和workspace清理
+当前目标仍未达成。v15已从主目录冻结提交
+`feb5ee01a9f1340a694dcba442c439d08e4bd274`启动，完整引擎patch
+SHA256为`dbde39b7f37977ecacd72dddf78b3da94a56fa6a0879afb1798ae55ab7f1fe63`。
+既有driver依次执行predictive_h2d、native，各自冷启动服务与缓存；
+156任务、108+48/3600s到达、running48、Host200GB80:20、
+HBM Mamba/FULL0.9、context131072、completion8192、
+graph2048/reserve32、workflow14400s、2--4 child、seed21及模型
+产物均冻结。共用客户端优化在两侧生效，后续开发仅在隔离工作树，
+两侧及完整后处理结束前不合入或部署新代码。
+
+2026-10-10 05:40 CST的v15来源快照：原生2358批/731.314 GB，
+JOIN/tool72命令/1.384 GB，需求handoff4692节点命令、1524批/
+36.050 GB，未知受控来源为0。稍后消费快照的handoff FULL传输/
+确认复用19.283/19.203 GB，ACK到首次launch P50为22.62 ms；
+JOIN为0.06738/0.01513 GB、17.604秒，tool为0.22223/0.18760 GB、
+1.244秒。316次PREPARE ACK中49次关联恢复，54次压力迁出中51次
+关联先前PREPARE。此时尚无后续同node/pool D2H关联，不能提前
+宣称已消除Host回收后补传；来源与消费快照截止时刻不同，不强行
+对齐计数。handoff不能计为提前预测收益，以上均非完整吞吐结果。
+
+首次服务审计已在隔离工作树修正为schema_version=2：原生
+LLM_SUBMIT是请求到达，不能作为GPU服务开始。现在按request、
+workflow、invocation、context、epoch匹配最早的
+gpu_service_sample.service_start_ts_ms，分别报告原生到达、
+预取first-launch receipt和worker服务区间；缺失服务采样保留
+unknown，不回退到到达时间。worker区间也不是独立CUDA kernel
+耗时。冻结报告保持不变，旧文档将到达称作首次服务的字段由新
+报告取代。v14正确的parent提交到worker服务P50/P90为
+777.09/11950.68 ms，原生到达到worker服务为137.74/11162.52 ms；
+旧467 ms实际是提交到原生到达。
+05:50 CST的v15快照为27节点命令、18个不同child请求：EOS到
+finish P50为397.39 ms，JOIN到parent提交58.57 ms，提交到原生
+到达173.05 ms，原生到达到worker服务492.47 ms，提交到worker
+服务2739.31 ms、P90约17.26秒。各区间分位数不可相加。
+一条django-10914请求旧口径为1.028秒，真实提交到worker服务
+约16.059秒；其租约在提交前到期，FULL未确认复用。继续分别检查
+客户端积压、准入及传输等待，不能仅延长投机驻留。
+修正报告：
+`experiments/reports/v14_join_pipeline_first_service_v2_20261010.json`、
+`experiments/reports/v15_join_pipeline_first_service_v2_partial_20261010_0550.json`。
+
+下一版只读reentry检查复用同一次调用内多session叶的匹配祖先
+状态，每次新调用重新读取实时物理驻留。单叶不创建memo字典，
+namespace、前缀、检查点、pending DMA、节点有效性及64层上限
+均保留。61项相关检查通过，含跨调用驻留变化和共享祖先。
+7组、每组200次实际RadixKey的合成CPU比较输出相同：8叶
+4K/32K/96K路径P50分别89.045→32.115、360.005→70.177、
+931.728→140.567微秒，下降63.9%/80.5%/84.9%；单叶慢0.3%--2.9%，
+首段分歧4.642→4.968微秒。保留这些退步，不推导GPU吞吐收益。
+新审计12项检查通过；两项修订均未部署到v15。
+报告：`experiments/reports/v16_shared_reentry_cpu_20261010.json`。
+下一版完整patch SHA256为
+`32c915af99003b65f4cfa952a24e9716f7a3962cefde5ffe3dffddb6af3f63ca`；
+候选反向与冻结引擎增量正向检查通过，增量保存在
+`experiments/reports/v16_engine_delta_20261010.patch`，等待v15完整
+对照结束后再部署。
+
+v14采集、审计、HTML导出和workspace清理
 已全部结束，156个workflow中154个completed、2个incomplete、
 0个error。采集窗口10977.317秒，完成吞吐50.504 workflow/h，
 输出700.235 token/s，GPU利用率均值65.316%。相较v13，采集
@@ -64,8 +121,9 @@ v14最终H2D：原生12182批/3532.278 GB；JOIN/tool提前恢复
 
 JOIN最终审计105个节点命令对应74个不同child请求；22个命令
 在原生EOS前提交，83个在EOS后提交。去重请求的EOS到客户端
-finish P50为1242 ms、JOIN到parent提交628 ms、提交到首次服务
-467 ms；关闭HTTP与JOIN到提交的重叠P50为406 ms。上述重叠
+finish P50为1242 ms、JOIN到parent提交628 ms、提交到原生到达
+467 ms；新worker口径的提交到首次服务P50为777 ms。关闭HTTP
+与JOIN到提交的重叠P50为406 ms。上述重叠
 不能直接作为JCT节省。下一轮实测SDK请求/流式/工具碎片优化及
 异步终态关闭能否缩短此链路，同时检查提前恢复的驻留和准入。
 最终runtime为final=true、physical_disabled=false、语义worker
