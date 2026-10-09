@@ -50,6 +50,18 @@ JOIN到提交的开销，再验证有界驻留，不直接延长到十几秒。
 客户端GIL采样有204个有效样本、94次失败；SDK类型转换和增量
 工具JSON等栈只用于选择后续检查对象，不能声称已精确归因。
 
+后续SDK消息遍历优化已实现于隔离工作树，对运行时标识的Chat
+Completions使用已转换的wire消息经extra_body合并，最终请求
+JSON必须和继承路径相同。保留tools、sampling、运行时/session/
+deadline元数据及显式extra_body覆盖；未标识请求和Responses
+照常转换。54项既有adapter和7项同步/异步、SSE/非流式等协议
+检查通过。本机SDK/库版本、源码及最终canonical JSON SHA256
+保存在`experiments/reports/v15_client_payload_cpu_20261010.json`。
+合成11/67/259消息的完整请求构造均值分别2.711→0.835、
+13.032→1.284、48.162→2.752ms。不可把CPU改善当作GPU吞吐
+收益或宣称已消除数秒客户端积压；增量工具JSON等热点仍未解决。
+该共用路径只随下一轮冻结版本部署，不修改v14的代码指纹。
+
 v13最终审计应读取独立的final报告及来源v2口径。提前JOIN/tool为
 760次/11.824 GB，需求handoff为18008次/158.846 GB；旧动作报告
 的PREFETCH_GPU合计不得用于预测覆盖。ACK到服务须按来源分别

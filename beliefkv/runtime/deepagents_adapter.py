@@ -2683,6 +2683,27 @@ class BeliefKVChatOpenAI(ChatOpenAI):
                 f"model={self.model_name!r}"
             )
 
+    def _get_request_payload(
+        self,
+        input_: Any,
+        *,
+        stop: list[str] | None = None,
+        **kwargs: Any,
+    ) -> dict[str, Any]:
+        payload = super()._get_request_payload(input_, stop=stop, **kwargs)
+        extra_body = payload.get("extra_body")
+        if "messages" in payload and (
+            isinstance(extra_body, dict)
+            and extra_body.get("beliefkv_metadata") is not None
+        ):
+            # LangChain has already converted messages to the wire schema.
+            # The SDK merges extra_body after its redundant typed traversal.
+            extra_body = dict(extra_body)
+            extra_body.setdefault("messages", payload["messages"])
+            payload["extra_body"] = extra_body
+            payload["messages"] = []
+        return payload
+
     def _generate_with_cache(
         self,
         messages: list[BaseMessage],

@@ -110,6 +110,21 @@ Current status:
   An8s nonblocking GIL profile has204 successful samples and94 failed reads.
   SDK payload transformation, incremental tool JSON and model construction
   are candidate CPU work, not proven attribution of the single-request delay.
+- Implement the SDK payload part in the isolated worktree. For native-tagged
+  Chat Completions, merge already-converted wire messages through extra_body
+  after SDK typed traversal. Keep tools, sampling, runtime/session/deadline
+  metadata, response parsing and explicit extra_body overrides identical.
+  Untagged Chat and Responses keep their inherited paths. The shared harness
+  makes this a common-path optimization, not an extra predictive-only signal.
+  With installed openai2.6.1/langchain-openai1.1.9/httpx0.28.1, actual final
+  JSON requests match through synchronous/asynchronous and streaming/nonstreaming
+  MockTransport. Existing adapter54 and new protocol7 checks passed.
+  Thirty interleaved full request-construction samples show means of
+  2.711→0.835ms for11 messages,13.032→1.284ms for67,48.162→2.752ms
+  for259. Preserve source/body hashes and versions. These synthetic CPU
+  gains are not measured V14 client-delay or GPU throughput improvements.
+  Incremental tool JSON and stream-model construction remain separate work.
+  Do not deploy to V14; wait for the full driver/export/cleanup to exit.
 - V13 cleanup removed154 archived workspaces and retained two forensic
   workspaces. Preserve summaries, patches, telemetry, final reports and HTML.
 
@@ -124,6 +139,9 @@ engine and the isolated candidate engine.
 Closure comparison: v15_closure_prepare_cpu_repeat_20261010.json.
 Partial JOIN HTTP audit: v14_join_pipeline_http_partial_20261010.json.
 Partial client stacks: v14_client_gil_profile_partial_20261010.txt.
+Next-revision SDK CPU comparison: v15_client_payload_cpu_20261010.json;
+reproduce with scripts/benchmark_child_request_payload_cpu.py using only
+MockTransport, with no GPU or serving call.
 The following V11--V13 entries describe the frozen collection history;
 references to keeping live V13 unchanged no longer imply a running process.
 

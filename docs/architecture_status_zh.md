@@ -141,6 +141,25 @@ raw pull为1253.9 ms。后两项覆盖整轮流，不能相加解释EOS之后
 优化应核对最终请求/工具语义不变，并保留低开销客户端消费计时。
 采样：`experiments/reports/v14_client_gil_profile_partial_20261010.txt`。
 
+SDK消息转换热点的第一项后续优化已实现：仅对带BeliefKV运行时
+标识的Chat Completions，将LangChain已转为wire schema的消息经
+extra_body合入最终JSON，避免SDK再次逐层遍历完整历史。工具
+定义、采样参数、元数据和响应解析仍走原路径；原有extra_body
+显式覆盖语义保留，未标识请求与Responses转换不变。该路径在
+reactive/predictive/native harness中共用，不构成新的agent guard。
+本机版本为openai2.6.1、langchain-openai1.1.9、httpx0.28.1。
+实际SDK及MockTransport比较最终请求JSON，同步/异步及SSE/
+非流式均一致；54项既有adapter与7项请求协议检查通过。
+完整请求转换、SDK构造、JSON编码和响应解析CPU基准，30次交错
+样本的平均耗时为：11条消息2.711→0.835 ms，67条13.032→
+1.284 ms，259条48.162→2.752 ms，下降69.2%--94.3%。
+记录源码SHA256、最终canonical JSON SHA256和安装版本；这些
+是合成消息的CPU证据，不能宣称已消除2.96秒消费积压或带来相同
+比例的GPU吞吐改善。增量工具JSON及流式对象构造尚待分别优化。
+基准：`scripts/benchmark_child_request_payload_cpu.py`；
+报告：`experiments/reports/v15_client_payload_cpu_20261010.json`。
+仍未部署到v14；完整driver、审计、HTML及清理退出后才能应用。
+
 最终报告：
 `experiments/reports/v13_h2d_sources_final_20261010.json`、
 `experiments/reports/v13_prefetch_sources_final_20261010.json`、
