@@ -93,6 +93,15 @@ class _AdmissionPrefetchLease:
     issued_nodes: int = 0
 
 
+@dataclass
+class _ExecutionHandoffTicket:
+    key: PrefillCandidateKey
+    request: object
+    expires_at: float
+    command_id: str | None = None
+    issued_nodes: int = 0
+
+
 CHILD_COMPLETION_INTENT = "beliefkv_child_completion_intent"
 WAIT_REFRESH_AGE_MS = 2_000.0
 WAIT_REFRESH_SPACING_MS = 500.0
@@ -316,6 +325,9 @@ class NativeAdmissionRuntime:
         self._join_prefetch_issued: Counter[_JoinPrefetchIdentity] = Counter()
         self.enable_admission_prefetch = enable_admission_prefetch
         self.enable_final_stage_prefetch = enable_final_stage_prefetch
+        self.enable_resident_first = os.environ.get(
+            "BELIEFKV_ENABLE_RESIDENT_FIRST", "1",
+        ) == "1"
         priority_setting = os.environ.get("BELIEFKV_ENABLE_FINAL_STAGE_PRIORITY")
         self.enable_final_stage_priority = (
             None if priority_setting is None else priority_setting == "1"
@@ -390,6 +402,18 @@ class NativeAdmissionRuntime:
         if tool_setting not in ("0", "1"):
             raise ValueError("tool prefetch setting must be 0 or 1")
         self.enable_tool_prefetch = enable_tool_prefetch or tool_setting == "1"
+        self.enable_execution_handoff = os.environ.get(
+            "BELIEFKV_ENABLE_EXECUTION_HANDOFF",
+            "1" if (
+                enable_admission_prefetch or enable_final_stage_prefetch
+                or self.enable_tool_prefetch
+            ) and not enable_confirmed_join_canary else "0",
+        ) == "1"
+        self._execution_handoff: _ExecutionHandoffTicket | None = None
+        self._execution_handoff_next_ms = 0.
+        self._execution_handoff_attempted: set[PrefillCandidateKey] = set()
+        self._reentry_observations: dict[PrefillCandidateKey, tuple[float, dict | None]] = {}
+        self._residency_scan_cursor = 0
         tool_timing_artifact_path = (
             tool_timing_artifact_path or os.environ.get("BELIEFKV_TOOL_TIMING_ARTIFACT")
         )
@@ -1316,6 +1340,12 @@ class NativeAdmissionRuntime:
                     else self.enable_admission_prefetch or self.enable_final_stage_prefetch
                 ),
                 "prepare_host": self.enable_prepare_host,
+                "resident_first": self.enable_resident_first,
+                "execution_handoff": self.enable_execution_handoff,
+                "execution_handoff_request_id": (
+                    self._execution_handoff.key.request_id
+                    if self._execution_handoff is not None else None
+                ),
                 "tool_timing_only": self._tool_timing_only,
                 "tool_predictor_configured": self._model_worker is not None,
                 "tool_predictor_disabled": bool(
@@ -2822,6 +2852,7 @@ class NativeAdmissionRuntime:
         if (
             self.physical_disabled
             or cache is None
+            or self.physical_ledger.pending_action_count("PREPARE_HOST")
             or not isinstance(step, ShadowBackupStep)
             or self.refreshed_shadow_backup_step(
                 context_id=step.key.context_id, source=source,
@@ -2930,13 +2961,18 @@ class NativeAdmissionRuntime:
         for node_id, (_, created) in self._parent_pressure_candidates.items():
             try:
                 node = cache.tree_core.node_by_id(node_id)
+                full = node.component_data[0]
                 state = node.component_data[2]
             except (AttributeError, KeyError, RuntimeError, ValueError):
                 continue
             if (
                 node.creation_time == created
-                and state.value is not None and state.host_value is not None
-                and state.lock_ref == 0 and state.session_ref == 1
+                and (
+                    full.value is not None and full.host_value is not None
+                    and full.lock_ref == 0 and full.session_ref == 1
+                    or state.value is not None and state.host_value is not None
+                    and state.lock_ref == 0 and state.session_ref == 1
+                )
                 and node_id not in getattr(cache, "ongoing_write_through", {})
                 and node.write_through_pending_id is None
                 and node.load_back_pending_id is None
@@ -2958,7 +2994,7 @@ class NativeAdmissionRuntime:
             if self._live_parent_pressure_node(node, record[1])
         }
         self._publish_parent_pressure_candidates()
-        if self.physical_ledger.pending_count:
+        if self.physical_ledger.pending_action_count("PREPARE_HOST"):
             return
         headroom = observe_static_full_mamba_headroom(cache)
         if not headroom.observable:
@@ -3055,7 +3091,7 @@ class NativeAdmissionRuntime:
         if not self.enable_prepare_host or self.physical_disabled or self._native_cache is None:
             return
         now_ms = time.monotonic() * 1000
-        if now_ms < self._tool_prepare_next_ms or self.physical_ledger.pending_count:
+        if now_ms < self._tool_prepare_next_ms or self.physical_ledger.pending_action_count("PREPARE_HOST"):
             return
         self._tool_prepare_next_ms = now_ms + 100.
         headroom = observe_static_full_mamba_headroom(self._native_cache)
@@ -3264,6 +3300,16 @@ class NativeAdmissionRuntime:
                 ticket.phase != "probabilistic"
                 or hint is not None and self._live_join_hint(hint)
             )
+        elif source == "execution_handoff":
+            ticket = self._execution_handoff
+            if ticket is None or not self._live_execution_handoff(ticket):
+                return None
+            anchors = self._request_reentry_anchors(ticket.request)
+            candidate = (
+                capture_action_local_shadow(cache, anchors, for_prefetch=True)
+                if anchors is not None else None
+            )
+            return next_prefetch_gpu_step(candidate) if candidate is not None else None
         else:
             return None
         invocation = self.graph.invocations.get(key.invocation_id)
@@ -3321,6 +3367,7 @@ class NativeAdmissionRuntime:
         if (
             self.physical_disabled
             or cache is None
+            or self.physical_ledger.pending_action_count("PREFETCH_GPU")
             or not isinstance(step, PrefetchLoadStep)
             or self.refreshed_prefetch_gpu_step(
                 source=source,
@@ -3423,6 +3470,14 @@ class NativeAdmissionRuntime:
                         if hint else None
                     ),
                     "timing_policy": "survival_conditioned_cdf_or_unexpired_quantile",
+                })
+            elif source == "execution_handoff":
+                record.update({
+                    "workflow_id": step.key.root_workflow_id,
+                    "request_id": step.key.request_id,
+                    "invocation_id": step.key.invocation_id,
+                    "timing_policy": "submitted_request_before_first_gpu_service",
+                    "pre_boundary_prediction": False,
                 })
             self._opportunity_writer.record(record)
         return command_id
@@ -3607,13 +3662,18 @@ class NativeAdmissionRuntime:
         if action.action != "PREFETCH_GPU" or pending is None:
             return
         step, source, revision = pending
+        self._reentry_observations.pop(step.key, None)
         now = time.monotonic()
         lock_params, protected_bytes = None, 0
         cache = self._native_cache
         lease = _PrefetchServiceLease(
             step.key, action.command_id, step.node_id, step.creation_time,
             source, revision, now,
-            now + (self.prefetch_lead_ms + 1000.) / 1000., action.pool_bytes,
+            now + (
+                3. if source == "execution_handoff"
+                else (self.prefetch_lead_ms + 1000.) / 1000.
+            ), action.pool_bytes,
+            demand_ready=source == "execution_handoff",
         )
         reason = self._prefetch_lease_invalid_reason(lease)
         if reason is not None:
@@ -3674,16 +3734,222 @@ class NativeAdmissionRuntime:
                 "scope": "bounded native receipt lock; max four leases and one GiB closure",
             })
 
+    def _executable_waiting_key(self, req: object) -> PrefillCandidateKey | None:
+        key = _request_key(req)
+        if (
+            key is None or self.visible.get(key.request_id) != key
+            or self.context_sessions.get(key.context_id) != key
+            or key.session_id is None or key.session_generation is None
+            or self._terminal(key)
+        ):
+            return None
+        invocation = self.graph.invocations.get(key.invocation_id)
+        context = self.graph.contexts.get(key.context_id)
+        if (
+            invocation is None or context is None
+            or invocation.state not in (InvocationState.READY, InvocationState.RUNNING_LLM)
+            or invocation.workflow_id != key.root_workflow_id
+            or invocation.context_id != key.context_id
+            or context.workflow_id != key.root_workflow_id
+            or context.epoch != key.context_epoch
+            or invocation.active_tool_calls or invocation.blocking_child_ids
+        ):
+            return None
+        return key
+
+    def _read_request_reentry(self, req: object, *, refresh: bool = False) -> dict | None:
+        key = self._executable_waiting_key(req)
+        cache = self._native_cache
+        if key is None or cache is None:
+            return None
+        now_ms = time.monotonic() * 1000.
+        cached = self._reentry_observations.get(key)
+        if not refresh and cached is not None and cached[0] > now_ms:
+            return cached[1]
+        inspect = getattr(cache, "inspect_beliefkv_reentry", None)
+        if not callable(inspect):
+            return None
+        try:
+            observation = inspect(req)
+        except (AttributeError, IndexError, KeyError, TypeError, ValueError, RuntimeError):
+            observation = None
+            self.counts["reentry_observation_unavailable"] += 1
+        self._reentry_observations[key] = (now_ms + 50., observation)
+        if len(self._reentry_observations) > 512:
+            self._reentry_observations = {
+                item: value for item, value in self._reentry_observations.items()
+                if value[0] > now_ms and self.visible.get(item.request_id) == item
+            }
+        return observation
+
+    def _request_reentry_anchors(self, req: object) -> ContextSessionAnchors | None:
+        key = self._executable_waiting_key(req)
+        observation = self._read_request_reentry(req, refresh=True)
+        if key is None or observation is None:
+            return None
+        return ContextSessionAnchors(
+            key, observation["component_leaves"], time.monotonic(),
+            reusable_input_tokens=observation["reusable_input_tokens"],
+        )
+
+    def _live_execution_handoff(self, ticket: _ExecutionHandoffTicket) -> bool:
+        return bool(
+            self.enable_execution_handoff and not self.physical_disabled
+            and time.monotonic() < ticket.expires_at
+            and self._executable_waiting_key(ticket.request) == ticket.key
+        )
+
+    def _clear_execution_handoff(self, reason: str) -> None:
+        ticket = self._execution_handoff
+        if ticket is None:
+            return
+        self.counts[f"execution_handoff_closed:{reason}"] += 1
+        if self._opportunity_writer is not None:
+            self._opportunity_writer.record({
+                "event": "execution_handoff_closed", "ts_ms": time.time() * 1000.,
+                "request_id": ticket.key.request_id, "context_id": ticket.key.context_id,
+                "reason": reason, "issued_nodes": ticket.issued_nodes,
+            })
+        self._execution_handoff = None
+
+    def dispatch_execution_handoff(
+        self, waiting_queue: Sequence[object], *, running_batch: object,
+    ) -> None:
+        """Restore one imminent queued beneficiary while other GPU work continues."""
+        if not self.enable_execution_handoff or self.physical_disabled or self._native_cache is None:
+            return
+        ticket = self._execution_handoff
+        if ticket is not None:
+            if not self._live_execution_handoff(ticket) or not any(
+                req is ticket.request for req in waiting_queue
+            ):
+                self._clear_execution_handoff("expired_or_request_changed")
+                ticket = None
+            elif ticket.command_id is not None:
+                if self.physical_ledger.is_pending(ticket.command_id):
+                    return
+                if not any(
+                    item.command_id == ticket.command_id
+                    for item in self.completed_physical_actions
+                ):
+                    self._clear_execution_handoff("ack_unavailable")
+                    return
+                ticket.command_id = None
+                self.counts["execution_handoff_acked"] += 1
+        now_ms = time.monotonic() * 1000.
+        if now_ms < self._execution_handoff_next_ms:
+            return
+        self._execution_handoff_next_ms = now_ms + 50.
+        if self.physical_ledger.pending_action_count("PREFETCH_GPU"):
+            return
+        if ticket is None:
+            self._execution_handoff_attempted = {
+                key for key in self._execution_handoff_attempted
+                if self.visible.get(key.request_id) == key
+            }
+            plan = self.plan_native_prefill(
+                waiting_queue, running_batch=running_batch, adder=None,
+            )
+            by_id = {getattr(req, "rid", None): req for req in waiting_queue}
+            for key in plan.prioritized[:16]:
+                request = by_id[key.request_id]
+                if key in self._execution_handoff_attempted:
+                    continue
+                observation = self._read_request_reentry(request)
+                if observation is None or not (
+                    observation["missing_full_tokens"] or observation["missing_mamba_slots"]
+                ):
+                    continue
+                ticket = _ExecutionHandoffTicket(key, request, time.monotonic() + 2.)
+                self._execution_handoff = ticket
+                self._execution_handoff_attempted.add(key)
+                self.counts["execution_handoff_selected"] += 1
+                if self._opportunity_writer is not None:
+                    self._opportunity_writer.record({
+                        "event": "execution_handoff_selected", "ts_ms": time.time() * 1000.,
+                        "request_id": key.request_id, "context_id": key.context_id,
+                        "context_epoch": key.context_epoch,
+                        "session_id": key.session_id, "session_generation": key.session_generation,
+                        "semantic_revision": plan.semantic_revision,
+                        "checkpoint_tokens": observation["checkpoint_tokens"],
+                        "missing_full_tokens": observation["missing_full_tokens"],
+                        "missing_mamba_slots": observation["missing_mamba_slots"],
+                    })
+                break
+        if ticket is None:
+            return
+        if ticket.issued_nodes >= 16:
+            self._clear_execution_handoff("node_budget")
+            return
+        anchors = self._request_reentry_anchors(ticket.request)
+        opportunity = (
+            inspect_session_h2d_opportunity(self._native_cache, anchors)
+            if anchors is not None else None
+        )
+        if opportunity is None or opportunity.step is None:
+            self._clear_execution_handoff("resident_or_unavailable")
+            return
+        if opportunity.fits_current_free_lists is not True:
+            reclaim = getattr(self._native_cache, "reclaim_beliefkv_handoff_capacity", None)
+            if callable(reclaim):
+                self._publish_parent_pressure_candidates()
+                freed = reclaim(
+                    full_tokens=opportunity.required_full_tokens,
+                    mamba_slots=opportunity.required_mamba_slots,
+                )
+                if freed:
+                    self.counts["execution_handoff_cold_reclaimed"] += 1
+                    if self._opportunity_writer is not None:
+                        self._opportunity_writer.record({
+                            "event": "execution_handoff_capacity_reclaimed",
+                            "ts_ms": time.time() * 1000., "request_id": ticket.key.request_id,
+                            "context_id": ticket.key.context_id, "freed_units": freed,
+                            "victims": getattr(self._native_cache, "beliefkv_handoff_last_victims", ()),
+                            "evidence": "idle_unlocked_host_ack_settled;actual_h2d_shortfall",
+                        })
+                opportunity = inspect_session_h2d_opportunity(self._native_cache, anchors)
+            if opportunity.fits_current_free_lists is not True:
+                self.counts["execution_handoff_no_cold_capacity"] += 1
+                self._clear_execution_handoff("no_cold_capacity")
+                return
+        command = self.issue_prefetch_gpu_step(opportunity.step, source="execution_handoff")
+        if command is not None:
+            ticket.command_id = command
+            ticket.issued_nodes += 1
+            self.counts["execution_handoff_issued"] += 1
+        else:
+            self._clear_execution_handoff("native_declined")
+
     def defer_prefill_for_prefetch(self, req: object) -> bool:
         """Hold at most one submitted request in waiting until bounded native H2D ACK.
 
         This runs after the native slot test but before prefix match or running
         admission. A failed/expired step falls back to ordinary PrefillAdder.
         """
-        if not self.enable_admission_prefetch or self.physical_disabled:
+        if self.physical_disabled:
             return False
         key = _request_key(req)
         if key is None:
+            return False
+        if self.enable_execution_handoff and any(
+            step.key == key and source == "execution_handoff"
+            and self.physical_ledger.is_pending(command)
+            for command, (step, source, _) in self._prefetch_steps.items()
+        ):
+            self.counts["execution_handoff_waiting_ack"] += 1
+            return True
+        ticket = self._execution_handoff
+        if (
+            ticket is not None and ticket.key == key
+            and self._live_execution_handoff(ticket) and 0 < ticket.issued_nodes < 16
+        ):
+            observation = self._read_request_reentry(req)
+            if observation is not None and (
+                observation["missing_full_tokens"] or observation["missing_mamba_slots"]
+            ):
+                self.counts["execution_handoff_restoring_prefix"] += 1
+                return True
+        if not self.enable_admission_prefetch:
             return False
         lease = self._admission_lease
         if lease is not None and lease.key != key:
@@ -3831,6 +4097,11 @@ class NativeAdmissionRuntime:
                     "live_context_sessions": live_sessions,
                 })
             return ()
+        completed = tuple(
+            replace(action, source=self._prefetch_steps[action.command_id][1])
+            if action.command_id in self._prefetch_steps else action
+            for action in completed
+        )
         self.completed_physical_actions.extend(completed)
         self._join_prepare_commands = {
             identity: command for identity, command in self._join_prepare_commands.items()
@@ -4033,7 +4304,7 @@ class NativeAdmissionRuntime:
         # LLM_SUBMIT marks an invocation RUNNING_LLM before the native waiting
         # request has received its first GPU service. Only inspect bounded
         # candidates supplied by SGLang's waiting queue here.
-        for _, req in tagged[:8]:
+        for _, req in tagged:
             key = _request_key(req)
             if (
                 key is None
@@ -4103,6 +4374,37 @@ class NativeAdmissionRuntime:
             )
 
         ordered = sorted(tagged, key=waiting_rank)
+        if self.enable_resident_first and ordered:
+            count = len(ordered)
+            scan = ordered[:8] + [
+                ordered[(self._residency_scan_cursor + offset) % count]
+                for offset in range(min(8, count))
+            ]
+            self._residency_scan_cursor = (self._residency_scan_cursor + 8) % count
+            for _, req in scan:
+                self._read_request_reentry(req)
+
+            def residency_rank(pair: tuple[int, object]) -> tuple:
+                rank = waiting_rank(pair)
+                if rank[0] == -1:
+                    return rank[:2] + (0,) + rank[2:]
+                key = _request_key(pair[1])
+                cached = self._reentry_observations.get(key)
+                observation = cached[1] if cached is not None and cached[0] > now_ms else None
+                resident = (
+                    0 if observation is not None
+                    and not observation["missing_full_tokens"]
+                    and not observation["missing_mamba_slots"]
+                    else 1 if observation is not None
+                    and observation["device_checkpoint_tokens"] > 0
+                    else 2
+                )
+                return rank[:2] + (resident,) + rank[2:]
+
+            resident_ordered = sorted(ordered, key=residency_rank)
+            if resident_ordered != ordered:
+                self.counts["resident_first_ordered"] += 1
+            ordered = resident_ordered
         self._final_priority_promoted = None
         self._final_priority_native_rank = None
         self._prefetch_priority_promoted = None
@@ -4114,7 +4416,10 @@ class NativeAdmissionRuntime:
                 matches = [
                     lease for lease in self._prefetch_service_leases.values()
                     if lease.demand_ready
-                    and key is not None and key.request_id != lease.key.request_id
+                    and key is not None and (
+                        key.request_id != lease.key.request_id
+                        or lease.source == "execution_handoff"
+                    )
                     and lease.key.context_id == key.context_id
                     and lease.key.invocation_id == key.invocation_id
                     and lease.key.root_workflow_id == key.root_workflow_id

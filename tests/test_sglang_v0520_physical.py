@@ -210,6 +210,8 @@ def test_native_prefetch_expectation_credits_only_completed_h2d_ack():
     ledger = PhysicalTransactionLedger()
     ledger.register(expectation)
     assert ledger.pending_count == 1
+    assert ledger.pending_action_count("PREFETCH_GPU") == 1
+    assert ledger.pending_action_count("PREPARE_HOST") == 0
     assert ledger.observe(
         ack(nodes=(99,), direction="h2d", kv=0, mamba=0),
         live_context_epochs={"c": 3},

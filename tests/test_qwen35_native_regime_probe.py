@@ -20,7 +20,7 @@ def test_probe_defaults_to_training_only_moderate_pressure_candidate() -> None:
     for setting in (
         'ROOT_COUNT="${ROOT_COUNT:-108}"',
         'HICACHE_SIZE_GB="${HICACHE_SIZE_GB:-200}"',
-        'HOST_SPLIT="${HOST_SPLIT:-auto}"',
+        'HOST_SPLIT="${HOST_SPLIT:-80:20}"',
         'HICACHE_WRITE_POLICY="${HICACHE_WRITE_POLICY:-write_back}"',
         'FANOUT_PROFILE="${FANOUT_PROFILE:-native_in_graph_2to4}"',
     ):
@@ -31,11 +31,31 @@ def test_probe_defaults_to_training_only_moderate_pressure_candidate() -> None:
     assert '--stream-completion-shadow --child-stream-content-shadow' in script
 
 
-def test_future_train_collection_matches_host_split_to_device_pool() -> None:
+def test_future_train_collection_defaults_to_user_selected_host_split() -> None:
     script = TRAIN_SCRIPT.read_text()
-    assert 'FULL_MAMBA_HOST_SPLIT="${FULL_MAMBA_HOST_SPLIT:-auto}"' in script
+    assert 'FULL_MAMBA_HOST_SPLIT="${FULL_MAMBA_HOST_SPLIT:-80:20}"' in script
     assert 'env -u BELIEFKV_FULL_MAMBA_HOST_SPLIT' in script
     assert '.capacity.device_full_bytes / .capacity.device_total_bytes' in script
+
+
+def test_auto_host_split_is_forwarded_explicitly_to_launcher() -> None:
+    for path, variable in ((SCRIPT, "HOST_SPLIT"), (TRAIN_SCRIPT, "FULL_MAMBA_HOST_SPLIT")):
+        assert f'host_split_env=(BELIEFKV_FULL_MAMBA_HOST_SPLIT="${variable}")' in path.read_text()
+    launcher = SCRIPT.with_name("launch_qwen35_native_v0520.sh").read_text()
+    assert 'BELIEFKV_FULL_MAMBA_HOST_SPLIT="${BELIEFKV_FULL_MAMBA_HOST_SPLIT:-80:20}"' in launcher
+    assert 'if [[ "${BELIEFKV_FULL_MAMBA_HOST_SPLIT}" == auto ]]; then' in launcher
+    assert 'unset BELIEFKV_FULL_MAMBA_HOST_SPLIT' in launcher
+
+
+def test_resident_first_is_common_but_execution_handoff_is_predictive_only() -> None:
+    script = SCRIPT.read_text()
+    assert 'BELIEFKV_ENABLE_RESIDENT_FIRST=1' in script
+    assert 'BELIEFKV_ENABLE_EXECUTION_HANDOFF=0' in script
+    assert 'BELIEFKV_ENABLE_EXECUTION_HANDOFF=1' in script
+    pair = SCRIPT.with_name("run_qwen35_semantic_h2d_ab.sh").read_text()
+    assert 'HOST_SPLIT="${HOST_SPLIT:-80:20}"' in pair
+    assert 'HOST_SPLIT="$HOST_SPLIT" HICACHE_SIZE_GB=200' in pair
+    assert '--host-split "$HOST_SPLIT"' in pair
 
 
 def test_confirmed_join_requires_verified_ack_patch_before_start(tmp_path: Path) -> None:

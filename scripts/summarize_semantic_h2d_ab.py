@@ -279,6 +279,27 @@ def summarize(arm: Path) -> dict | None:
         "forecast_observation_age_p50_ms": median(forecast_ages) if forecast_ages else None,
         "predictive_h2d_acks": len(acks),
         "predictive_h2d_ack_bytes": sum(row["num_bytes"] for row in acks.values()),
+        "controlled_h2d_by_source": {
+            source or "unknown": {
+                "acks": sum(row.get("source") == source for row in acks.values()),
+                "bytes": sum(
+                    row["num_bytes"] for row in acks.values()
+                    if row.get("source") == source
+                ),
+                "full_bytes": sum(
+                    dict(row.get("pool_bytes") or {}).get("kv", 0)
+                    for row in acks.values() if row.get("source") == source
+                ),
+                "verified_full_reused_bytes": sum(
+                    dict(acks[use["command_id"]].get("pool_bytes") or {}).get("kv", 0)
+                    for use in uses if use["command_id"] in acks
+                    and acks[use["command_id"]].get("source") == source
+                    and use["full_node_reused"] is True
+                    and set(use["reused_full_node_ids"]) == set(acks[use["command_id"]].get("node_ids") or ())
+                ),
+            }
+            for source in ("join_ticket", "tool_wait", "admission", "execution_handoff", None)
+        },
         "ack_without_first_service_count": len(
             set(acks) - {row["command_id"] for row in uses}
         ),
@@ -317,6 +338,7 @@ def main() -> None:
     parser.add_argument("--activation-wall-clock-seconds", type=float, default=14400.)
     parser.add_argument("--workload-manifest", type=Path)
     parser.add_argument("--prepare-host", type=int, choices=(0, 1), default=0)
+    parser.add_argument("--host-split", default="80:20")
     parser.add_argument("--h2d-seed", type=Path)
     parser.add_argument("--tool-timing-artifact", type=Path)
     parser.add_argument("--enable-tool-timing", type=int, choices=(0, 1), default=0)
@@ -414,7 +436,13 @@ def main() -> None:
             "context_tokens": 131072, "max_completion_tokens": 8192,
             "sampling_seed": args.sampling_seed, "temperature": 0., "host_numa_node": 1,
             "mem_fraction_static": .94,
-            "host_gb": 200, "host_split": "matches_actual_device_pool_bytes",
+            "host_gb": 200, "host_split": args.host_split,
+            "host_split_semantics": (
+                "matches_actual_device_pool_bytes" if args.host_split == "auto"
+                else "explicit_full_mamba_percentages"
+            ),
+            "resident_first_in_both_arms": True,
+            "execution_handoff_predictive_only": True,
             "mamba_full_memory_ratio": .9, "native_write_policy": "write_back",
             "semantic_artifact": str(artifact),
             "semantic_artifact_sha256": hashlib.sha256(artifact.read_bytes()).hexdigest(),

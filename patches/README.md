@@ -78,12 +78,21 @@ merged physical bytes, unacknowledged bytes at submit, and synchronized CUDA
 transfer-stream elapsed time into the cache ACK observer. These measurements
 must not be reported as isolated PCIe DMA latency or instantaneous bus usage.
 
-The next isolated revision adds `beliefkv_include_mamba` to tagged PREPARE
+The integrated revision adds `beliefkv_include_mamba` to tagged PREPARE
 and prefetch primitives. FULL ancestors omit historical state before transfer
 allocation; the selected current input checkpoint retains necessary Mamba.
 Native demand/backup defaults still include state. Tagged sessions release
 older Mamba session references through native hooks, not forced physical
 deletion of shared, locked or in-flight slots. The corresponding tests are
 `test/srt/test_beliefkv_latest_mamba_state.py` and the existing shadow tests.
-Do not apply this revision to the live native-v9 checkout before end-of-run
-fingerprint capture; it is staged in `next/latest-mamba-restore-ready`.
+Native v9 completed fingerprint capture and HTML export before integration;
+the active engine was updated incrementally, preserving its existing patch.
+The scheduler now calls `dispatch_execution_handoff` before batch admission.
+`inspect_beliefkv_reentry` matches the queued request's actual input to session
+checkpoints read-only, without native match/COW/LRU mutations.
+`reclaim_beliefkv_handoff_capacity` frees only settled Host-backed, unlocked
+cold or unreferenced duplicates during an actual upcoming load shortfall.
+Required device capacity is rechecked after release; in-flight D2H is not
+credit. H2D remains scoped to native missing FULL ancestors/current state,
+not an entire agent history. The new CPU tests are
+`test/srt/test_beliefkv_execution_handoff.py`; no new GPU benefit is claimed.

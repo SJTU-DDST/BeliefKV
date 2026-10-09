@@ -521,7 +521,7 @@ def test_verified_native_ack_registers_service_lease_before_ticket_retirement():
     step = PrefetchLoadStep(hint.key, 1, 2, 1, 2)
     runtime._prefetch_steps[action.command_id] = (step, "tool_wait", 2.)
     with patch.object(runtime.physical_ledger, "observe", return_value=(action,)):
-        assert runtime.on_native_transfer_commit(NS()) == (action,)
+        assert runtime.on_native_transfer_commit(NS()) == (replace(action, source="tool_wait"),)
     assert action.command_id in runtime._prefetch_service_leases
     assert action.command_id not in runtime._prefetch_steps
 

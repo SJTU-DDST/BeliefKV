@@ -4,6 +4,7 @@ set -euo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 PYTHON="${PYTHON:-/home/longhao/miniconda3/envs/beliefkv-next/bin/python}"
 ROOT_COUNT="${ROOT_COUNT:-108}"
+HOST_SPLIT="${HOST_SPLIT:-80:20}"
 PORT="${PORT:-18454}"
 RUN_ROOT="${RUN_ROOT:-$ROOT/experiments/raw/qwen35_joint_wait_h2d_ab_${ROOT_COUNT}root_2to4_v8c}"
 ARM_ORDER="${ARM_ORDER:-reactive predictive_h2d}"
@@ -35,6 +36,7 @@ export FANOUT_PROFILE
   --arm-order "$ARM_ORDER" --semantic-artifact "$ARTIFACT" \
   --activation-wall-clock-seconds "$ACTIVATION_WALL_CLOCK_SECONDS" \
   --prepare-host "$PREPARE_HOST" --h2d-seed "$H2D_SEED_ARTIFACT" \
+  --host-split "$HOST_SPLIT" \
   --tool-timing-artifact "$TOOL_TIMING_ARTIFACT" \
   --enable-tool-timing "$ENABLE_TOOL_TIMING" --prefetch-lead-ms "$PREFETCH_LEAD_MS" \
   --transfer-service-seed "$TRANSFER_SERVICE_SEED" \
@@ -54,7 +56,7 @@ for arm in $ARM_ORDER; do
     SEMANTIC_WORK_STATISTIC="$SEMANTIC_WORK_STATISTIC" \
     EOS_PROTOCOL_WINDOW_MS="$EOS_PROTOCOL_WINDOW_MS" \
     FANOUT_PROFILE="$FANOUT_PROFILE" \
-    HOST_SPLIT=auto HICACHE_SIZE_GB=200 HICACHE_WRITE_POLICY=write_back \
+    HOST_SPLIT="$HOST_SPLIT" HICACHE_SIZE_GB=200 HICACHE_WRITE_POLICY=write_back \
     SGLANG_PATCH_FLAVOR=staging CONFIRMED_JOIN_CANARY=0 \
     SEMANTIC_REPORT_ARTIFACT="$ARTIFACT" RUN_ROOT="$RUN_ROOT/$arm" \
     bash "$ROOT/scripts/run_qwen35_native_regime_probe.sh" \

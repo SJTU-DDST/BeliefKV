@@ -4,12 +4,11 @@
 guard、终态门禁或模型动作授权。启动前同时阅读
 `docs/implementation_plan.md`；旧诊断脚本和历史计划不能覆盖当前约定。
 
-## 活跃实验隔离与下一版状态策略
+## 当前池配置与调度协同
 
-原生v9结束采集会重新计算磁盘上的runtime/metrics及canonical patch
-指纹。即使修改只是离线导出器，也不能放进活跃主工作树。
-下一版在 `/tmp/beliefkv-policy-20261009` 独立开发；自动HTML导出
-依赖该目录，导出完成前不删除。不要热更新在用third_party源码。
+原生v9及自动HTML均已结束，108/108完成；其运行期间保持源码
+指纹隔离，导出后才合入独立工作树修复并恢复主目录导出器。
+后续仍不得热更新活跃实验的runtime/metrics或third_party源码。
 
 下一版Mamba只保留本context当前安全输入检查点的session引用，
 不是删除所有历史物理状态。共享、锁定或在途状态按原生引用释放；
@@ -18,8 +17,24 @@ FULL-only祖先传输不携带历史Mamba，需求恢复默认不省略必需状
 真实提交后仍不超过ACK后10秒。过期不复活，不按ETA长期pin。
 恢复与收尾共享准入预算；10秒老化避免普通请求被持续插队。
 异步FIFO控制事件不意味着session退休RPC也已异步。
-Host 75:25只是下一轮候选，活跃池配置不变；比例按必要检查点峰值
-与余量确定，不能用历史Mamba备份的占用峰值直接推导。
+按最新用户要求，后续Host默认FULL:Mamba=80:20，HBM的
+Mamba/FULL=0.9不变。显式auto必须传给launcher，不能靠unset
+落回80:20而错误宣称跟随Device。80:20不是已证明最优；
+启动后读取两池实际census，旧auto/70:30容量校准不能直接复用。
+
+reactive和predictive共同启用resident-first及既有有界收尾优先级；
+只有predictive启用execution handoff，原生策略baseline关闭这些
+调度修改。队列换入依赖实际请求输入匹配，不依赖旧动作头的
+eligibility或净收益标签；只恢复可复用缺失extent和必要检查点。
+先执行同因果层级的HBM就绪请求，不影响老化保护或JOIN恢复提升。
+每次一个候选、2秒规划窗口、最多16个node；首次服务释放ACK锁。
+容量不足只回收Host ACK完成且未锁定的冷副本，不为制造机会
+卸载热KV，也不将D2H在途字节当作已释放HBM。
+不同节点D2H/H2D允许重叠，但须用真实submit/ACK判定隐藏开销。
+source=execution_handoff必须单独统计，不能把已提交后、首次GPU
+服务前的恢复混入RETURN/TOOL_END前的预测精度或提前量指标。
+不能通过扩大传输范围提高“预取占比”；必须同时核对实际FULL
+复用、原生H2D下降、重复加载、重算、其他workflow延迟与端到端吞吐。
 
 ## 原生策略基线与有界恢复
 
@@ -60,7 +75,8 @@ bash pipefail，但不加语义无进展guard或缩短现有预算。
 ## 场景与配置
 
 2026-10-07 用户批准下一轮 **108-root 单波到达、每轮2–4 child**，
-server running=48、Host 200 GB/NUMA node 1及池比例保持不变。
+server running=48、Host 200 GB/NUMA node 1。当时Host跟随Device，
+后续比例以本文顶部80:20约定为准，不回写历史manifest。
 此前64-root配置仅作历史对照；不得自动扩到128或重叠64+64。
 当前pair属于live压力探索，不因固定seed就声明轨迹相同。
 开发阶段当前只做一对108-root；正式阶段再多轮配对取平均和报告

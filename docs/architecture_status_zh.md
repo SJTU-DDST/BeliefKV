@@ -2,12 +2,13 @@
 
 更新日期：2026-10-09。
 
-## 最新检查点与恢复协同修复
+## 当前恢复协同与池配置
 
-下一版修改位于独立工作树 `/tmp/beliefkv-policy-20261009`，
-分支 `next/latest-mamba-restore-ready`；原生v9仍使用冻结启动版本，
-主目录runtime/metrics和在用SGLang源码不变。以下是待部署实现，
-不是本轮GPU收益或已提高RETURN预测精度的结论。
+原生v9已结束，108/108 workflow completed，运行窗口8087.675秒；
+原生HTML导出完成后，独立工作树中的检查点、恢复保护和事件
+交付修复已合入主目录，并以增量方式部署到本机patched SGLang。
+实验运行期间维持了启动源码指纹。以下新策略尚未跑GPU对照，
+不能据此声称吞吐提升或RETURN预测精度改善。
 
 Mamba只保留本context最近一次完成请求的可复用安全输入检查点
 引用；旧状态通过原生session引用接口降为普通缓存，不强制删除
@@ -27,17 +28,40 @@ Mamba只保留本context最近一次完成请求的可复用安全输入检查�
 交付，callback不再逐次等控制ACK；session退休RPC仍同步，
 不能将全部工具返回到提交开销宣称已消除。
 
-Host下一轮候选为FULL:Mamba=75:25，总200 GB中Mamba约50 GB，
-按当前64,389,120字节/slot约776份状态。80:20只有约621份，
-对108 root和每轮最多4 child的并行检查点余量更小。
-用实际活跃必要检查点峰值加20%–30%余量复核，不按累计历史
-备份占用率认定最优；暂不调整HBM的0.9比例，不改正在运行的池。
+按用户指定，后续实验Host默认FULL:Mamba=80:20，不沿用75:25
+建议。200 GB名义预算中约160 GB FULL、40 GB Mamba，当前模型
+每slot约64.39 MB，可容纳约621份状态；实际容量以启动census为准。
+结束child的无用状态引用释放后由原生缓存回收，不能删除其他
+context共享状态。显式Host auto仍沿用Device字节比例；HBM的
+Mamba/FULL=0.9不改。80:20是新实验配置，不是已测出的最优比例。
 workflow语义仍决定预取对象和时机，native有效前缀、缺失
 page/extent和必要状态决定物理范围，两种粒度互补。
 
-验证：相关回归539 passed、16 subtests passed；canonical staging
-补丁对固定上游临时index应用校验及隔离源码反向校验均通过。
-尚未部署到GPU，未验证迁移字节减少或端到端吞吐提升。
+新增调度前execution handoff：在batch选择前按因果优先级挑选
+已经提交、尚未服务的下一请求，读取真实输入与session安全检查点，
+提前恢复缺失FULL祖先和当前必要状态，不依赖旧动作收益预测头。
+同因果层级中完整HBM检查点优先，其次部分HBM命中；未观测
+不能当作命中。JOIN/收尾恢复优先级及10秒老化仍保留。
+reactive与predictive共同启用resident-first，只有predictive开启
+调度前H2D；原生策略基线关闭两者。
+
+容量不足时只回收真实Host ACK已完成、未锁定的冷等待agent副本
+或无引用缓存副本，不迁出正在执行的热KV，不计入在途D2H的
+预期释放量。D2H/H2D分方向限制在途动作，允许不同节点的备份
+与恢复重叠；实际是否隐藏DMA仍须GPU遥测证明。每次只选一个
+短期beneficiary，规划窗口2秒、最多16个node；ACK后驻留保护
+沿用最多4个租约/1 GiB，队列换入租约最多3秒，首次服务释放。
+等待ACK只跳过对应请求，不停止其他可执行请求；失效和窗口
+耗尽回到原生需求恢复，不持续重新选择同一请求。
+动作source=execution_handoff单独记录，已提交之后的H2D不能
+冒充RETURN/TOOL_END之前的预测命中。验收看FULL实际复用、
+重复恢复、原生H2D减少量、排队与吞吐，而不是提前传输字节越多越好。
+
+检查点/恢复保护的先前回归为539 passed、16 subtests passed。
+本次主仓库定向回归346 passed，patched engine回归104 passed、
+16 subtests passed，共450个测试及16个子测试。canonical补丁对
+固定上游应用和当前引擎反向校验通过，真实引擎/runtime导入通过；
+迁移字节减少和端到端吞吐仍未验证。
 
 ## 当前修复与原生策略对照
 
@@ -73,7 +97,8 @@ JOIN时间投影改用500ms/2s/5s已观测墙钟速率中的保守值，避免
 FCFS、priority=false。CUDA graph覆盖batch48；Device FULL/Mamba为
 36.843/33.096 GB，Host为105.358/94.652 GB。初始核查108个workflow
 均已开始，58个已观测首轮派发组全部双child，遥测dropped/failed=0。
-这只是运行中的启动快照，未形成最终吞吐或收益结论。
+以上为启动快照。该轮现已108/108完成，未在本次修改中重新做
+完整性能归因，不把8087.675秒窗口直接当作策略收益证明。
 
 v8d新增只读forecast核对：135条请求首次跨阶段阈值，其中101条
 是child自然RETURN的最终请求，34条不是最终请求。101条最终请求
@@ -97,15 +122,11 @@ client 工具/JOIN 事件及 FULL/Mamba 分池观测；无 Device occupancy
 submit-to-ACK 重叠不等于 DMA 被完全隐藏，PREPARE ACK 不等于消费。
 v8c 的物理通道失效已在 HTML 中注明，不作为公平加速基线。
 
-原生 v9 仍运行，独立 tmux `beliefkv-native-timeline-v9` 等待驱动
-PID 423778 退出并刷新遥测后导出 `native_v9_execution_timeline.html`。
-这仅是离线导出任务，不调整实验运行配置、prompt 或预测权重。
-采集器结束时会重新读取 metrics/runtime 源码指纹，因此新版导出器
-暂存于独立工作树 `/tmp/beliefkv-policy-20261009`，分支
-`next/latest-mamba-restore-ready`；自动导出从该工作树读取主目录日志。
-主实验目录的 metrics/runtime 和 staging 补丁恢复并保持启动版本，
-不因离线绘图或下一版策略开发改变本轮源码指纹。
-不得在自动导出完成前删除该工作树或在活跃主目录替换导出器。
+原生v9的 `native_v9_execution_timeline.html` 已在相同目录生成，
+覆盖108个workflow，并保存同名 `.json.gz` sidecar。冻结采集期间，
+新版导出器及策略在 `/tmp/beliefkv-policy-20261009` 独立开发，
+自动导出从该工作树读取日志，未改运行配置或源指纹。导出完成后
+已恢复主目录离线导出器，不再依赖运行中的导出watcher。
 
 ## v8 Predictive 最终结论
 

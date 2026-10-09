@@ -68,6 +68,25 @@ def test_ack_bytes_are_not_all_counted_as_verified_reuse(tmp_path):
     assert result["cache_evidence"]["prompt_tokens"] == 100
 
 
+def test_queued_handoff_bytes_are_distinct_from_boundary_prediction(tmp_path):
+    arm = tmp_path / "predictive_h2d"
+    _, server = fixture(arm)
+    (server / "physical_action_ack.jsonl").write_text(json.dumps({
+        "command_id": "cmd", "action": "PREFETCH_GPU", "source": "execution_handoff",
+        "node_ids": [1], "num_bytes": 200, "pool_bytes": {"kv": 100, "mamba": 100},
+    }) + "\n")
+    (server / "physical_action_use.jsonl").write_text(json.dumps({
+        "event": "beliefkv_prefetch_first_service", "command_id": "cmd",
+        "full_node_reused": True, "reused_full_node_ids": [1],
+        "ack_ts_ms": 10., "first_service_ts_ms": 20.,
+    }) + "\n")
+    result = summarize(arm)["controlled_h2d_by_source"]
+    assert result["execution_handoff"]["acks"] == 1
+    assert result["execution_handoff"]["bytes"] == 200
+    assert result["execution_handoff"]["verified_full_reused_bytes"] == 100
+    assert result["join_ticket"]["acks"] == result["tool_wait"]["acks"] == 0
+
+
 def test_cleanup_only_removes_archived_completed_workspace(tmp_path):
     arm = tmp_path / "reactive"
     client, _ = fixture(arm)

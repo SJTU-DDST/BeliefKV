@@ -2,13 +2,12 @@
 
 Status date: 2026-10-09.
 
-## Staged Latest-State And Restore-Ready Changes
+## Current Handoff And Host Configuration
 
-Develop the next revision in `/tmp/beliefkv-policy-20261009`, branch
-`next/latest-mamba-restore-ready`, with a separate patched SGLang worktree.
-Do not deploy it into the active v9 checkout: end-of-run collection rechecks
-runtime/metrics and patch fingerprints. The HTML watcher also depends on
-this isolated worktree until export completes.
+Native v9 and its offline HTML export have completed: 108/108 workflows,
+8087.675 s collection window. The isolated latest-state/restore-ready patch
+has now been integrated and incrementally applied to the active checkout.
+The frozen run was not hot-edited; the native HTML renderer is restored.
 
 Implemented for the next revision:
 - Keep only this context's latest reusable Mamba input-checkpoint session
@@ -28,23 +27,42 @@ Implemented for the next revision:
   while retaining FIFO delivery and explicit flush. Session retirement
   RPC remains synchronous. Record ready-to-submit and ACK-to-service phases.
 
+Added for the next experiment:
+- Default Host FULL:Mamba=80:20 in the probe, collection runner and launcher.
+  Explicit `auto` still follows Device proportions. Device bytes=0.9 is unchanged.
+- Resident-first ordering within causal classes, after ordinary aging and
+  before existing bounded restore/final promotions. Both A/B sides share it.
+- Predictive execution handoff before native batch admission. Choose one
+  submitted, executable beneficiary; compare its actual input to live session
+  checkpoints read-only, then load missing FULL extents/current required state.
+  No offline net-benefit action head is required for an observed queued request.
+- Reclaim only settled, backed, unlocked idle duplicates during a real load
+  shortfall; do not evict running/hot or shared live state. Recheck real free
+  capacity after native release, never credit an unfinished D2H.
+- Allow one pending action per direction, so D2H and H2D on independent
+  nodes can overlap. Keep the native allocator/ACK as physical authority.
+- Bound each request's handoff planning to 2 s and 16 nodes, with no repeated
+  ticket after expiry. Only the loading request waits; other work continues.
+  ACK leases share the four/one-GiB budget and queued restores hold at most 3 s.
+- Record `execution_handoff` separately from pre-RETURN/pre-TOOL_END loads,
+  including selected request, checkpoint, freed victim units, issue and ACK.
+
 No predictor refit or new GPU performance claim is part of these fixes.
-Do not add canaries, agent guards, artificial evictions or another run.
-After v9 collection and HTML export, integrate the policy commit and restore
-the isolated offline renderer deliberately; do not hot-edit frozen sources.
-Any later policy comparison must use the same revised harness/cache rules.
+Do not add canaries, agent guards, artificial pressure or another run.
+Future comparisons must share revised harness/cache/resident-first rules.
+Use FULL useful reuse, repeated restores, native demand H2D reduction,
+queue/service timing and throughput rather than maximizing preload bytes.
+Host 80:20 is user-selected, not a proven optimum; size against live necessary
+checkpoints rather than historical backups. At 200 GB it has approximately
+621 current-model state slots. Capture a fresh capacity census for this ratio.
 
-Recommend Host FULL:Mamba=75:25 as an untested next candidate, not a proved
-optimum or an active change. At 200 GB, 50 GB holds about 776 current-model
-64,389,120-byte states; 80:20 holds about 621. Size against live necessary
-checkpoints plus 20-30% margin, not historical physical-cache high-water.
-Leave Device Mamba/FULL bytes=0.9 unchanged for now.
+The earlier checkpoint/restore-ready regression had 539 tests and 16 subtests.
+Current verification: 346 repository tests plus 104 patched-engine tests and
+16 subtests passed. The canonical patch applies to the pinned upstream temporary
+index and reverse-checks against the active engine; real engine/runtime imports
+passed. GPU reuse, transfer reduction and throughput are pending.
 
-Verification: 539 related tests and 16 subtests passed. The canonical patch
-applies to the pinned upstream temporary index and reverse-checks against
-the isolated engine. GPU reuse, transfer reduction and throughput are pending.
-
-## Active Native-Policy Baseline
+## Completed Native-Policy Baseline
 
 The user authorizes a native SGLang policy baseline on the same first 108
 manifest tasks, one arrival wave. Launch directory:
@@ -65,7 +83,9 @@ and native priority=false. Device FULL/Mamba bytes are 36.843/33.096 GB;
 Host bytes are 105.358/94.652 GB; CUDA graphs include batch 48. Initial
 inspection found all 108 workflows started and 58 initial delegation groups,
 all with two children; telemetry dropped/failed records are zero.
-This is startup evidence only, not a completed performance result.
+These are startup observations. Final collection has 108 completed workflows;
+its HTML is available. A new full throughput/recompute attribution is not part
+of this policy change.
 
 Implemented before launch:
 - Native receipt locks after H2D ACK, at most four leases and 1 GiB closure.
@@ -88,18 +108,16 @@ Do not automatically append another predictive run or call v8c/v8d a
 controlled speedup. Record native baseline results with realized workload,
 H2D time/bytes, cache reuse and recompute, not just GPU utilization.
 
-Offline HTML export is scheduled separately from the frozen experiment.
-V8c reactive and v8d predictive timelines are in
+Offline HTML export completed after the frozen experiment.
+V8c reactive, v8d predictive and native v9 timelines are in
 `experiments/reports/qwen35_v8_timelines_20261008/`, with embedded gzip data
 and `.json.gz` sidecars. The renderer now consumes native v0.5.20 service,
 transfer and pool telemetry without copying raw traces. The independent
-`beliefkv-native-timeline-v9` tmux job uses `--wait-for-pid 423778` and will
-produce `native_v9_execution_timeline.html` after the experiment driver
-exits, including non-completed workflows rather than hiding them.
-Because collection rechecks on-disk source fingerprints, the native renderer
-runs from `/tmp/beliefkv-policy-20261009` on branch
-`next/latest-mamba-restore-ready`. Keep the active checkout's metrics/runtime
-and engine staging patch at their launch contents until v9 has exited.
+`beliefkv-native-timeline-v9` job waited for PID 423778, then produced
+`native_v9_execution_timeline.html` including all terminal outcomes.
+It ran from `/tmp/beliefkv-policy-20261009` while collection rechecked
+source fingerprints. The watcher is done; the renderer is now restored
+in the main checkout.
 
 V8d read-only work audit found 101 natural final requests among 135 first
 phase crossings (34 were not final). First-crossing median signed/absolute

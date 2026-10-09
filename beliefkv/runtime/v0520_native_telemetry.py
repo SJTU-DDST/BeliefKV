@@ -1354,6 +1354,7 @@ class NativeReactiveTelemetry:
             "ts_ms": time.time() * 1000.0,
             "command_id": action.command_id,
             "action": action.action,
+            "source": getattr(action, "source", None),
             "context_id": action.context_id,
             "context_epoch": action.context_epoch,
             "node_ids": list(action.node_ids),

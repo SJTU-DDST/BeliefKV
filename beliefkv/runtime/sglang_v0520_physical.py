@@ -890,6 +890,7 @@ class PhysicalActionCompleted:
     node_ids: tuple[int, ...]
     pool_bytes: tuple[tuple[str, int], ...]
     num_bytes: int
+    source: str | None = None
 
 
 class PhysicalTransactionLedger:
@@ -937,6 +938,10 @@ class PhysicalTransactionLedger:
     @property
     def pending_count(self) -> int:
         return len(self._pending)
+
+    def pending_action_count(self, action: str) -> int:
+        """Count a direction without serializing unrelated native transfers."""
+        return sum(expected.action == action for expected, _, _ in self._pending.values())
 
     def is_pending(self, command_id: str) -> bool:
         return command_id in self._pending
