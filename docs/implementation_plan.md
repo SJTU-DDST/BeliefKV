@@ -117,6 +117,32 @@ Current status:
   policy file passes46. V15 lacks issue-budget evidence, so do not claim
   all37 zero-slot cases would be recovered. Commit in isolation; evaluate
   throughput only after both frozen V15 arms and exports finish.
+- The next online semantic audit supports fixed byte snapshots of live files.
+  Keep unfinished requests unresolved rather than counting them as false
+  terminal classifications. Match only previously delivered forecasts and
+  group estimated-work first triggers by child request. Separate forecast
+  age, progressed tokens, intrinsic work error, remaining rate variation,
+  native EOS and client RETURN; the rate decomposition is not GPU queue time.
+  Only incomplete trailing records may be ignored during live collection.
+- The06:30 CST V15 partial audit has five estimated-work requests, all over
+  two seconds before EOS. Projected work is1.14--4.10 tokens versus52--122
+  actual tokens, with299--803ms observation ages. Underestimated work
+  accounts for2.60--4.73s at the trigger rate; the remaining rate gap is
+  -0.74--0.69s. Across102 natural final requests, last pre-EOS point error
+  has P50 signed/absolute46.50 tokens, with actual remaining P50 eight.
+  Do not repair early underprediction and late overprediction using a
+  single bias, a longer lease or a blanket priority increase.
+- Delivery-time replay at500ms gives progress-countdown nine first
+  triggers, one in0--500ms before EOS and six over2s early. Holding the
+  old snapshot center gives three, zero and two respectively. This replay
+  omits continuous scheduler ticks, target lifetime and physical admission;
+  the simple alternative is not deployed. Preserve coverage and early
+  triggers together. Report:v15_semantic_trigger_causal_partial_20261010.json.
+  Next-revision trigger telemetry includes forecast progress/age, advanced
+  tokens, projected remaining work and actual TPS. Short-circuit sufficient
+  H2D evidence without scanning full history every decode; retain the
+  three-sample requirement and separate evidence sources. Phase/work
+  artifacts and both live arms remain unchanged.
 - V14 collection, outer driver, audits, HTML export and cleanup have all
   finished:154 completed, two incomplete, no errors out of156. Duration is
   10977.317s, completed throughput50.504/hour, output700.235 tokens/s and

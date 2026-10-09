@@ -2773,6 +2773,23 @@ def test_final_stage_latest_start_requires_serviced_decode_and_h2d_evidence():
     assert "join" not in runtime._final_stages
 
 
+@pytest.mark.parametrize("ack_count, native_directions, enough_service", [
+    (3, ("d2h",), True),
+    (0, ("d2h", "h2d", "d2h", "h2d", "h2d"), True),
+    (2, ("h2d",), False),
+    (0, ("d2h", "d2h"), False),
+])
+def test_final_stage_service_evidence_preserves_separate_ack_and_native_histories(
+    ack_count, native_directions, enough_service,
+):
+    runtime = final_stage_runtime()
+    runtime._h2d_samples.extend([(105, 200.)] * ack_count)
+    runtime._native_service_samples.extend(NS(direction=value) for value in native_directions)
+    runtime._roll_final_stage()
+    assert runtime.counts["final_stage_no_h2d_service_evidence"] == int(not enough_service)
+    assert runtime._join_ticket is None
+
+
 @pytest.mark.parametrize("statistic, notice, should_issue", [
     ("upper", True, False), ("center", True, True), ("center", False, False),
 ])

@@ -1949,13 +1949,18 @@ class NativeAdmissionRuntime:
             self.enable_final_stage_prefetch or self.enable_admission_prefetch
         ) or self.physical_disabled:
             return
-        service_count = max(
-            len(self._h2d_samples),
-            sum(sample.direction == "h2d" for sample in self._native_service_samples),
-        )
-        if service_count < 3 or self.physical_ledger.pending_count:
-            if service_count < 3:
-                self.counts["final_stage_no_h2d_service_evidence"] += 1
+        enough_service = len(self._h2d_samples) >= 3
+        if not enough_service:
+            native_h2d = 0
+            for sample in self._native_service_samples:
+                native_h2d += sample.direction == "h2d"
+                if native_h2d >= 3:
+                    enough_service = True
+                    break
+        if not enough_service:
+            self.counts["final_stage_no_h2d_service_evidence"] += 1
+            return
+        if self.physical_ledger.pending_count:
             return
         if self._join_ticket is not None and self._live_join_ticket():
             return
@@ -2150,6 +2155,20 @@ class NativeAdmissionRuntime:
                     "forecast_upper_tokens": (
                         forecast.upper_tokens if forecast is not None else None
                     ),
+                    "forecast_observed_output_tokens": (
+                        forecast.observation.observed_output_tokens
+                        if forecast is not None else None
+                    ),
+                    "forecast_observation_age_ms": (
+                        now_ms - forecast.observation.observed_ts_ms
+                        if forecast is not None else None
+                    ),
+                    "advanced_since_forecast_tokens": (
+                        max(0, stage.generated_tokens - forecast.observation.observed_output_tokens)
+                        if forecast is not None else None
+                    ),
+                    "projected_remaining_tokens": remaining,
+                    "tokens_per_second": stage.tokens_per_second,
                     "h2d_ms": window.service_ms,
                     "enqueue_to_submit_p90_ms": window.enqueue_ms,
                     "start_window_ms": window.horizon_ms,
