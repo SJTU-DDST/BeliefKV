@@ -2,7 +2,7 @@ import subprocess
 
 import pytest
 
-from scripts.prepare_deepagents_train_manifest import parse_quota, selected_workloads
+from scripts.prepare_deepagents_train_manifest import frozen_prefix, parse_quota, selected_workloads
 
 
 def test_train_selection_uses_frozen_base_and_excludes_previous_workflows(tmp_path):
@@ -61,3 +61,25 @@ def test_train_selection_uses_frozen_base_and_excludes_previous_workflows(tmp_pa
 def test_train_manifest_rejects_invalid_quotas(values):
     with pytest.raises(ValueError):
         parse_quota(values)
+
+
+def test_frozen_prefix_preserves_order_and_rejects_split_leakage():
+    rows = [
+        {"instance_id": "train-1", "repo": "project/train", "base_commit": "a"},
+        {"instance_id": "test-1", "repo": "project/test", "base_commit": "b"},
+    ]
+    split = {"projects": [
+        {"project": "project/train", "split": "train", "tasks": [
+            {"instance_id": "train-1", "base_commit": "a"},
+        ]},
+        {"project": "project/test", "split": "test_id", "tasks": [
+            {"instance_id": "test-1", "base_commit": "b"},
+        ]},
+    ]}
+    assert frozen_prefix({"workloads": rows}, split, 1) == rows[:1]
+    with pytest.raises(ValueError, match="outside frozen train"):
+        frozen_prefix({"workloads": rows}, split, 2)
+    with pytest.raises(ValueError, match="duplicate"):
+        frozen_prefix({"workloads": [rows[0], rows[0]]}, split, 2)
+    with pytest.raises(ValueError, match="prefix count"):
+        frozen_prefix({"workloads": rows}, split, 3)

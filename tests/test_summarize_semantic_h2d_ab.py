@@ -158,6 +158,65 @@ def test_initialize_records_explicit_long_budget_and_manifest_selection(tmp_path
     assert "no throughput comparison" in plan["scope"]
 
 
+def test_native_pair_freezes_disjoint_108_plus_48_fixed_arrivals(tmp_path, monkeypatch):
+    artifact = tmp_path / "model.json"
+    artifact.write_text("{}")
+    manifest = tmp_path / "workload.json"
+    manifest.write_text(json.dumps({"workloads": [
+        {"instance_id": f"task-{index}"} for index in range(156)
+    ]}))
+    monkeypatch.setattr(sys, "argv", [
+        "summarize", "--run-root", str(tmp_path), "--initialize",
+        "--root-count", "156", "--arm-order", "native predictive_h2d",
+        "--semantic-artifact", str(artifact), "--workload-manifest", str(manifest),
+        "--arrival-batch-size", "108", "--arrival-batch-interval-ms", "3600000",
+        "--prepare-host", "1", "--host-split", "80:20",
+    ])
+    main()
+    plan = json.loads((tmp_path / "ab_plan.json").read_text())
+    assert [row["offset_seconds"] for row in plan["arrival_schedule"]] == [0.] * 108 + [3600.] * 48
+    assert len({row["instance_id"] for row in plan["arrival_schedule"]}) == 156
+    assert not any(plan["policy_configuration"]["native"].values())
+    assert all(plan["policy_configuration"]["predictive_h2d"].values())
+    assert not plan["prepare_host_in_both_arms"]
+    assert plan["host_split"] == "80:20"
+    assert plan["formal_repetition_order"][0] == "native predictive_h2d"
+
+
+def test_native_baseline_labels_are_not_reported_as_reactive():
+    demand = {
+        "llm_request_count": 1, "tool_call_count": 1,
+        "submitted_input_tokens": 1, "completed_request_output_tokens": 1,
+    }
+    assert "relative_changes_predictive_vs_native" in workload_balance(
+        demand, demand, baseline="native"
+    )
+    rows = {"task": {"request_sequence": [], "missing_prompt_fingerprints": 0}}
+    report = paired_trajectory_report(rows, rows, baseline="native")
+    assert "native" in report["workflows"][0]
+    assert "reactive" not in report["workflows"][0]
+
+
+def test_completed_native_predictive_pair_reports_correct_baseline(tmp_path, monkeypatch):
+    fixture(tmp_path / "native")
+    (tmp_path / "native/opportunities/admission_opportunities.jsonl").unlink()
+    fixture(tmp_path / "predictive_h2d")
+    (tmp_path / "ab_plan.json").write_text(json.dumps({
+        "order": ["native", "predictive_h2d"],
+        "policy_configuration": {
+            "native": {"prepare_host": False},
+            "predictive_h2d": {"prepare_host": False},
+        },
+    }))
+    monkeypatch.setattr(sys, "argv", ["summarize", "--run-root", str(tmp_path)])
+    main()
+    report = json.loads((tmp_path / "comparison.json").read_text())
+    assert report["comparison_eligible"]
+    assert report["baseline"] == "native"
+    assert report["paired_mean_jct_seconds"] == {"native": 5., "predictive_h2d": 5.}
+    assert report["workload_balance"]["baseline"] == "native"
+
+
 def test_initialize_accepts_exact_84_roots_and_records_live_fairness_scope(tmp_path, monkeypatch):
     artifact = tmp_path / "model.json"
     artifact.write_text("{}")

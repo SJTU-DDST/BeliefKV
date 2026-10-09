@@ -1,0 +1,169 @@
+{
+  "scope": "synthetic CPU benchmark; not live GPU overhead or an end-to-end speedup",
+  "baseline_revision": "7055901",
+  "baseline_source_sha256": {
+    "beliefkv/runtime/sglang_v0520_runtime.py": "f4349a2144499d4c4183e201b09925333c8eea48ff775fc53aab5aff8ebc460d",
+    "beliefkv/policy/causal_frontier.py": "a0d02320f2d88593282dc5d227be4fb87bacc1d4697add808e4df5604ee36861"
+  },
+  "workflows": 156,
+  "retained_rounds_per_workflow": 16,
+  "invocations": 7644,
+  "joins": 2496,
+  "waiting_requests": 156,
+  "iterations": 80,
+  "invalidate_caches_each_iteration": true,
+  "queue_order_equal": true,
+  "costs": {
+    "baseline": {
+      "admission": {
+        "count": 80,
+        "mean_ms": 120.137397975,
+        "p50_ms": 119.974608,
+        "p99_ms": 122.013929,
+        "max_ms": 122.013929
+      },
+      "batch_completed": {
+        "count": 80,
+        "mean_ms": 0.16197065,
+        "p50_ms": 0.16179,
+        "p99_ms": 0.179423,
+        "max_ms": 0.179423
+      }
+    },
+    "optimized": {
+      "admission": {
+        "count": 80,
+        "mean_ms": 2.5219480625,
+        "p50_ms": 2.090349,
+        "p99_ms": 32.043305,
+        "max_ms": 32.043305
+      },
+      "batch_completed": {
+        "count": 80,
+        "mean_ms": 0.0322188875,
+        "p50_ms": 0.031333,
+        "p99_ms": 0.040286,
+        "max_ms": 0.040286
+      }
+    },
+    "optimized_profiled": {
+      "admission": {
+        "count": 80,
+        "mean_ms": 2.1468331375,
+        "p50_ms": 2.119599,
+        "p99_ms": 2.756227,
+        "max_ms": 2.756227
+      },
+      "batch_completed": {
+        "count": 80,
+        "mean_ms": 0.0340825875,
+        "p50_ms": 0.033791,
+        "p99_ms": 0.040096,
+        "max_ms": 0.040096
+      }
+    }
+  },
+  "admission_mean_reduction_fraction": 0.979007801858462,
+  "profiled_timing": {
+    "schema_version": 1,
+    "enabled": true,
+    "clock": "perf_counter_ns; CPU wall intervals, not GPU kernel time",
+    "scope": "cumulative completed calls; exclusive totals avoid nested double counting",
+    "elapsed_ms": 10666.911795,
+    "bucket_upper_ms": [
+      0.01,
+      0.025,
+      0.05,
+      0.1,
+      0.25,
+      0.5,
+      1.0,
+      2.5,
+      5.0,
+      10.0,
+      25.0,
+      50.0,
+      100.0,
+      250.0,
+      1000.0,
+      null
+    ],
+    "phases": {
+      "reentry_inspection": {
+        "count": 1360,
+        "total_ms": 8.98527,
+        "self_ms": 8.98527,
+        "mean_ms": 0.006606816176470588,
+        "max_ms": 0.01509,
+        "histogram": [
+          1275,
+          85,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      "admission_plan": {
+        "count": 85,
+        "total_ms": 181.828891,
+        "self_ms": 172.843621,
+        "mean_ms": 2.1391634235294115,
+        "max_ms": 2.73746,
+        "histogram": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          82,
+          3,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      "batch_completed": {
+        "count": 85,
+        "total_ms": 2.601767,
+        "self_ms": 2.601767,
+        "mean_ms": 0.030609023529411767,
+        "max_ms": 0.036071,
+        "histogram": [
+          0,
+          0,
+          85,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      }
+    }
+  }
+}

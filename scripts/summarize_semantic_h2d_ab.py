@@ -14,6 +14,7 @@ import shutil
 from statistics import mean, median
 import subprocess
 
+from beliefkv.experiments.arrival_schedule import build_workflow_arrivals
 
 def records(path: Path):
     if path.exists():
@@ -24,7 +25,7 @@ def records(path: Path):
 
 
 def cleanup_workspaces(arm: Path) -> dict:
-    clients = list(arm.glob("client_*/summary.json"))
+    clients = list(arm.glob("client_*/summary.json")) + list(arm.glob("workloads/summary.json"))
     if len(clients) != 1:
         raise ValueError("cleanup requires one finished workload summary")
     summary = json.loads(clients[0].read_text())
@@ -51,7 +52,7 @@ def cleanup_workspaces(arm: Path) -> dict:
     return {"removed_workspaces": removed, "retained_workspaces": retained}
 
 
-def workload_balance(reactive: dict, predictive: dict) -> dict:
+def workload_balance(reactive: dict, predictive: dict, *, baseline: str = "reactive") -> dict:
     """Describe realized work without conditioning the headline JCT on it."""
     quantities = (
         "llm_request_count", "tool_call_count", "submitted_input_tokens",
@@ -61,7 +62,8 @@ def workload_balance(reactive: dict, predictive: dict) -> dict:
         "scope": "realized live demand; not a correction for counterfactual work",
         "same_logical_trajectory_verified": False,
         "matched_seed_guarantees_identical_trajectory": False,
-        "relative_changes_predictive_vs_reactive": {
+        "baseline": baseline,
+        f"relative_changes_predictive_vs_{baseline}": {
             key: predictive[key] / reactive[key] - 1 if reactive[key] else None
             for key in quantities
         },
@@ -132,7 +134,9 @@ def workflow_trajectory_audit(arm: Path) -> dict:
     return values
 
 
-def paired_trajectory_report(reactive: dict, predictive: dict) -> dict:
+def paired_trajectory_report(
+    reactive: dict, predictive: dict, *, baseline: str = "reactive"
+) -> dict:
     rows = []
     for task in sorted(set(reactive) | set(predictive)):
         r, p = reactive.get(task), predictive.get(task)
@@ -147,13 +151,14 @@ def paired_trajectory_report(reactive: dict, predictive: dict) -> dict:
                         divergence = index + 1
                         break
         rows.append({
-            "task": task, "reactive": {k: v for k, v in (r or {}).items() if k != "request_sequence"},
+            "task": task, baseline: {k: v for k, v in (r or {}).items() if k != "request_sequence"},
             "predictive": {k: v for k, v in (p or {}).items() if k != "request_sequence"},
             "observed_request_sequence_equal": same,
             "first_observed_request_divergence_ordinal": divergence,
         })
     return {
         "scope": "all workflows retained; observed order and fingerprints, not token-exact execution proof",
+        "baseline": baseline,
         "workflows": rows,
         "observed_request_sequence_equal_count": sum(row["observed_request_sequence_equal"] is True for row in rows),
         "observed_request_sequence_different_count": sum(row["observed_request_sequence_equal"] is False for row in rows),
@@ -332,8 +337,11 @@ def main() -> None:
                         help="Export diagnostics for a disabled physical lane; never a valid A/B comparison.")
     parser.add_argument("--cleanup-arm", type=Path)
     parser.add_argument("--initialize", action="store_true")
+    parser.add_argument("--verify-frozen-plan", action="store_true")
     parser.add_argument("--root-count", type=int, default=36)
     parser.add_argument("--arm-order", default="reactive predictive_h2d")
+    parser.add_argument("--arrival-batch-size", type=int, default=0)
+    parser.add_argument("--arrival-batch-interval-ms", type=int, default=0)
     parser.add_argument("--semantic-artifact", type=Path)
     parser.add_argument("--activation-wall-clock-seconds", type=float, default=14400.)
     parser.add_argument("--workload-manifest", type=Path)
@@ -349,6 +357,31 @@ def main() -> None:
     parser.add_argument("--sampling-seed", type=int, default=21)
     parser.add_argument("--repetition-id", type=int, default=0)
     args = parser.parse_args()
+    if args.verify_frozen_plan:
+        root = Path(__file__).resolve().parents[1]
+        plan = json.loads((args.run_root / "ab_plan.json").read_text())
+        revision = subprocess.check_output(
+            ["git", "rev-parse", "HEAD"], cwd=root, text=True,
+        ).strip()
+        if revision != plan["code_commit"]:
+            raise ValueError("code commit changed between policy arms")
+        subprocess.run(["git", "diff", "--exit-code", "HEAD", "--"], cwd=root, check=True)
+        paths = [
+            (plan["workload_manifest"], plan["workload_sha256"]),
+            (plan["semantic_artifact"], plan["semantic_artifact_sha256"]),
+            (root / "patches/sglang-v0.5.20-beliefkv-staging.patch", plan["sglang_patch_sha256"]),
+        ]
+        for field, digest in (
+            ("h2d_seed_artifact", "h2d_seed_sha256"),
+            ("tool_timing_artifact", "tool_timing_sha256"),
+            ("transfer_service_seed", "transfer_service_seed_sha256"),
+        ):
+            if plan.get(digest):
+                paths.append((plan[field], plan[digest]))
+        for path, digest in paths:
+            if hashlib.sha256(Path(path).read_bytes()).hexdigest() != digest:
+                raise ValueError(f"frozen artifact changed: {path}")
+        return
     if args.cleanup_arm:
         print(json.dumps(cleanup_workspaces(args.cleanup_arm), indent=2))
         return
@@ -370,6 +403,24 @@ def main() -> None:
         if args.sampling_seed < 0 or args.repetition_id < 0:
             raise ValueError("sampling seed and repetition ID must be nonnegative")
         workloads = available[:args.root_count]
+        if len({row["instance_id"] for row in workloads}) != args.root_count:
+            raise ValueError("duplicate workflows in arrival table")
+        order = args.arm_order.split()
+        if order not in (
+            ["reactive", "predictive_h2d"], ["predictive_h2d", "reactive"],
+            ["native", "predictive_h2d"], ["predictive_h2d", "native"],
+            ["predictive_h2d"],
+        ):
+            raise ValueError("unsupported policy arm order")
+        if (args.arrival_batch_size == 0) != (args.arrival_batch_interval_ms == 0):
+            raise ValueError("arrival batch size and interval must be enabled together")
+        arrivals = build_workflow_arrivals(
+            args.root_count,
+            mode="batched" if args.arrival_batch_size else "simultaneous",
+            batch_size=args.arrival_batch_size or args.root_count,
+            batch_interval_seconds=args.arrival_batch_interval_ms / 1000,
+        )
+        native_pair = "native" in order
         patch = root / "patches/sglang-v0.5.20-beliefkv-staging.patch"
         plan = {
             "prefetch_lead_ms": args.prefetch_lead_ms,
@@ -397,13 +448,21 @@ def main() -> None:
             "trajectory_control": "live_agent_uncontrolled_realized_trajectory",
             "same_seed_is_not_same_trajectory": True,
             "formal_paired_repetition_target": 4,
-            "formal_repetition_order": ["reactive predictive_h2d", "predictive_h2d reactive"],
+            "formal_repetition_order": (
+                ["native predictive_h2d", "predictive_h2d native"] if native_pair
+                else ["reactive predictive_h2d", "predictive_h2d reactive"]
+            ),
             "code_commit": subprocess.check_output(
                 ["git", "rev-parse", "HEAD"], cwd=root, text=True,
             ).strip(),
             "root_count": args.root_count, "server_running": 48,
-            "workflow_arrival_batch_size": 0,
-            "workflow_arrival_batch_interval_ms": 0,
+            "workflow_arrival_batch_size": args.arrival_batch_size,
+            "workflow_arrival_batch_interval_ms": args.arrival_batch_interval_ms,
+            "arrival_schedule": [
+                {"instance_id": row["instance_id"],
+                 "offset_seconds": arrival.scheduled_offset_seconds}
+                for row, arrival in zip(workloads, arrivals)
+            ],
             "activation_wall_clock_seconds": args.activation_wall_clock_seconds,
             "recursion_limit": 2048, "finalization_reserve_steps": 32,
             "native_reactive_guard_profile": True,
@@ -456,8 +515,36 @@ def main() -> None:
             "prepare_host_in_both_arms": bool(args.prepare_host),
             "shared_pressure_parent_parking": bool(args.prepare_host),
             "prepare_policy": "live_wait_join_safe_input;host_no_reclaim;real_allocator_pressure",
-            "order": args.arm_order.split(),
+            "shared_path_profiling": "aggregated CPU inclusive/exclusive scopes; no CUDA synchronization",
+            "restore_wait_profiling": (
+                "one in 16 load-consuming prefills; asynchronous CUDA events "
+                "around per-layer dependencies in both arms; includes event overhead"
+            ),
+            "native_baseline_disables": (
+                ["BeliefKV control channel", "admission ordering", "predictors",
+                 "prepare_host", "resident_first", "final/restore priority", "execution_handoff"]
+                if native_pair else []
+            ),
+            "policy_configuration": {
+                name: {
+                    "control": name != "native",
+                    "resident_first": name != "native",
+                    "final_stage_priority": name != "native",
+                    "prepare_host": bool(args.prepare_host) and name != "native",
+                    "predictive_h2d": name == "predictive_h2d",
+                    "execution_handoff": name == "predictive_h2d",
+                } for name in order
+            },
+            "order": order,
+            "measurement_windows_seconds": [[0, 3600], [3600, 7200], [7200, None]],
+            "headline_metric": "all-arrival completed workflows per collection hour",
         }
+        if native_pair:
+            for key in (
+                "resident_first_in_both_arms", "priority_in_both_arms",
+                "prepare_host_in_both_arms", "tool_prepare_in_both_arms",
+            ):
+                plan[key] = False
         if args.h2d_seed:
             plan["h2d_seed_artifact"] = str(args.h2d_seed.resolve())
             plan["h2d_seed_sha256"] = hashlib.sha256(args.h2d_seed.read_bytes()).hexdigest()
@@ -465,29 +552,37 @@ def main() -> None:
             json.dumps(plan, indent=2) + "\n", encoding="utf-8",
         )
         return
+    plan_path = args.run_root / "ab_plan.json"
+    plan = json.loads(plan_path.read_text()) if plan_path.exists() else {}
+    order = plan.get("order", ["reactive", "predictive_h2d"])
     arms = {
         name: summarize(args.run_root / name)
-        for name in ("reactive", "predictive_h2d")
+        for name in order
     }
     missing = [name for name, value in arms.items() if value is None]
     if missing and not args.allow_incomplete:
         raise ValueError(f"missing terminal arms: {missing}")
     report = {"status": "partial" if missing else "complete", "arms": arms}
     degraded = []
-    plan_path = args.run_root / "ab_plan.json"
-    plan = json.loads(plan_path.read_text()) if plan_path.exists() else {}
     expected_prepare = plan.get("prepare_host_in_both_arms", False)
     for name, arm in arms.items():
         if arm is None:
             continue
         state = arm["runtime_state"]
+        if name == "native":
+            if state or arm["predictive_h2d_acks"]:
+                raise ValueError("native baseline contains BeliefKV control or predictive H2D")
+            continue
         if not state:
             raise ValueError(f"{name}: missing runtime evidence or disabled physical ledger")
         if state["physical_disabled"]:
             if not args.allow_degraded_runtime:
                 raise ValueError(f"{name}: missing runtime evidence or disabled physical ledger")
             degraded.append(name)
-        if state["prepare_host"] != expected_prepare or not state["final_stage_priority"]:
+        arm_prepare = plan.get("policy_configuration", {}).get(name, {}).get(
+            "prepare_host", expected_prepare
+        )
+        if state["prepare_host"] != arm_prepare or not state["final_stage_priority"]:
             raise ValueError(f"{name}: mismatched PREPARE/priority configuration")
         for setting in ("semantic_work_statistic", "eos_protocol_window_ms"):
             if setting in plan and state.get(setting) != plan[setting]:
@@ -502,7 +597,7 @@ def main() -> None:
             raise ValueError(f"{name}: semantic worker unavailable")
         if not expected and arm["predictive_h2d_acks"]:
             raise ValueError("reactive baseline contains predictive H2D")
-    report["comparison_eligible"] = not missing and not degraded
+    report["comparison_eligible"] = len(order) == 2 and not missing and not degraded
     report["degraded_runtime_arms"] = degraded
     if degraded:
         report["status"] = "degraded_diagnostic"
@@ -510,8 +605,10 @@ def main() -> None:
             "Physical actions disabled during an arm; retain native/agent evidence "
             "but do not claim a working shared-residency baseline or predictive speedup."
         )
-    if not missing:
-        r, p = arms.values()
+    if not missing and len(order) == 2:
+        baseline = "native" if "native" in order else "reactive"
+        r, p = arms[baseline], arms["predictive_h2d"]
+        report["baseline"] = baseline
         if r["workflow_ids"] != p["workflow_ids"]:
             raise ValueError("A/B workloads differ")
         if r["native_pool_capacity"] != p["native_pool_capacity"]:
@@ -520,7 +617,7 @@ def main() -> None:
             p["completed_workflows_per_hour"] / r["completed_workflows_per_hour"] - 1
             if r["completed_workflows_per_hour"] else None
         )
-        client_r = next((args.run_root / "reactive").glob("client_*/summary.json"))
+        client_r = next((args.run_root / baseline).glob("client_*/summary.json"))
         client_p = next((args.run_root / "predictive_h2d").glob("client_*/summary.json"))
         durations = [
             {row["instance_id"]: row["duration_seconds"]
@@ -532,12 +629,13 @@ def main() -> None:
         report["paired_completed_workflows"] = len(paired)
         report["paired_mean_jct_seconds"] = {
             name: mean(values[key] for key in paired) if paired else None
-            for name, values in zip(("reactive", "predictive_h2d"), durations)
+            for name, values in zip((baseline, "predictive_h2d"), durations)
         }
-        report["workload_balance"] = workload_balance(r, p)
+        report["workload_balance"] = workload_balance(r, p, baseline=baseline)
         trajectory = paired_trajectory_report(
-            workflow_trajectory_audit(args.run_root / "reactive"),
+            workflow_trajectory_audit(args.run_root / baseline),
             workflow_trajectory_audit(args.run_root / "predictive_h2d"),
+            baseline=baseline,
         )
         trajectory_path = args.run_root / "workflow_trajectory_comparison.json"
         trajectory_path.write_text(json.dumps(trajectory, indent=2) + "\n")

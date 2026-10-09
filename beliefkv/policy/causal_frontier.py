@@ -30,6 +30,8 @@ class CausalFrontierScheduler:
         self.graph = graph
         self._active_descendant_cache_version: int | None = None
         self._active_descendant_cache: dict[str, int] = {}
+        self._join_waiter_cache_version: int | None = None
+        self._join_waiter_cache: dict[str, int] = {}
 
     def candidates(self, workflow_id: str) -> list[FrontierCandidate]:
         active_descendants = self._active_descendant_counts()
@@ -51,6 +53,14 @@ class CausalFrontierScheduler:
             self._active_descendant_counts(),
         )
 
+    def admission_rank(self, invocation_id: str) -> tuple[int, int]:
+        """Queue ordering needs causal class/depth, not a full descendant census."""
+        invocation = self.graph.invocations[invocation_id]
+        _, class_rank, depth = self._classification(
+            invocation, self._join_waiter_count(invocation_id)
+        )
+        return class_rank, -depth
+
     def _candidate(
         self,
         invocation: InvocationRecord,
@@ -58,29 +68,13 @@ class CausalFrontierScheduler:
     ) -> FrontierCandidate:
         active_descendants = active_descendants or {}
         join_waiter_count = self._join_waiter_count(invocation.invocation_id)
-        join_straggler = join_waiter_count > 0
         unblock_depth = self._unblock_depth(invocation)
+        causal_class, class_rank, _ = self._classification(
+            invocation, join_waiter_count, unblock_depth=unblock_depth,
+        )
         known_downstream_count = max(
             0, int(active_descendants.get(invocation.invocation_id, 0))
         )
-        message_ready = invocation.pending_messages > 0
-        background = invocation.execution_mode == ExecutionMode.BACKGROUND
-
-        if join_straggler:
-            causal_class = "join_straggler"
-            class_rank = 0
-        elif unblock_depth > 0:
-            causal_class = "blocking_chain"
-            class_rank = 1
-        elif message_ready:
-            causal_class = "message_ready"
-            class_rank = 2
-        elif background:
-            causal_class = "background"
-            class_rank = 4
-        else:
-            causal_class = "ready"
-            class_rank = 3
 
         return FrontierCandidate(
             invocation_id=invocation.invocation_id,
@@ -100,15 +94,46 @@ class CausalFrontierScheduler:
             ),
         )
 
+    def _classification(
+        self, invocation: InvocationRecord, join_waiter_count: int,
+        *, unblock_depth: int | None = None,
+    ) -> tuple[str, int, int]:
+        if unblock_depth is None:
+            unblock_depth = self._unblock_depth(invocation)
+        message_ready = invocation.pending_messages > 0
+        background = invocation.execution_mode == ExecutionMode.BACKGROUND
+
+        if join_waiter_count > 0:
+            causal_class = "join_straggler"
+            class_rank = 0
+        elif unblock_depth > 0:
+            causal_class = "blocking_chain"
+            class_rank = 1
+        elif message_ready:
+            causal_class = "message_ready"
+            class_rank = 2
+        elif background:
+            causal_class = "background"
+            class_rank = 4
+        else:
+            causal_class = "ready"
+            class_rank = 3
+
+        return causal_class, class_rank, unblock_depth
+
     def _join_waiter_count(self, invocation_id: str) -> int:
-        waiter_count = 0
-        for join in self.graph.joins.values():
-            if join.satisfied or invocation_id not in join.member_invocation_ids:
-                continue
-            remaining = join.member_invocation_ids - join.completed_member_ids
-            if remaining == {invocation_id} and join.waiter_invocation_ids:
-                waiter_count += len(join.waiter_invocation_ids)
-        return waiter_count
+        if self._join_waiter_cache_version != self.graph.graph_version:
+            counts: dict[str, int] = {}
+            for join in self.graph.joins.values():
+                if join.satisfied or not join.waiter_invocation_ids:
+                    continue
+                remaining = join.member_invocation_ids - join.completed_member_ids
+                if len(remaining) == 1:
+                    member = next(iter(remaining))
+                    counts[member] = counts.get(member, 0) + len(join.waiter_invocation_ids)
+            self._join_waiter_cache = counts
+            self._join_waiter_cache_version = self.graph.graph_version
+        return self._join_waiter_cache.get(invocation_id, 0)
 
     def _unblock_depth(self, invocation: InvocationRecord) -> int:
         depth = 0

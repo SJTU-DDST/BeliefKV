@@ -26,6 +26,7 @@ from beliefkv.predictor.completion_lead import (
     load_pinned_completion_lead,
 )
 from beliefkv.runtime.event_channel import RuntimeEventDatagramServer
+from beliefkv.runtime.hotpath_timing import HotpathTiming, timed_runtime
 from beliefkv.runtime.v0520_opportunity_telemetry import NativeOpportunityTelemetry
 from beliefkv.runtime.sglang_v0520_admission import (
     _request_key,
@@ -398,6 +399,8 @@ class NativeAdmissionRuntime:
         self._tool_prepare_next_ms = 0.
         self._tool_last_queries: dict[PrefillCandidateKey, tuple[float, float]] = {}
         self._tool_opportunity_cache: dict[PrefillCandidateKey, tuple[float, object]] = {}
+        self._active_tool_census_version: int | None = None
+        self._active_tool_census: Counter[str | None] = Counter()
         tool_setting = os.environ.get("BELIEFKV_ENABLE_TOOL_PREFETCH", "0")
         if tool_setting not in ("0", "1"):
             raise ValueError("tool prefetch setting must be 0 or 1")
@@ -473,6 +476,10 @@ class NativeAdmissionRuntime:
         self._opportunity_writer = (
             NativeOpportunityTelemetry(opportunity_dir) if opportunity_dir else None
         )
+        self._hotpath_timing = HotpathTiming(enabled=bool(
+            self._opportunity_writer is not None
+            and os.environ.get("BELIEFKV_PROFILE_SHARED_PATH", "1") == "1"
+        ))
         self._opportunity_next_ms = 0.0
         self._opportunity_cursor = 0
         self.event_server = (
@@ -573,6 +580,13 @@ class NativeAdmissionRuntime:
             cache.beliefkv_join_pressure_validator = self._live_parent_pressure_node
             cache.beliefkv_join_pressure_parked = self._on_parent_pressure_parked
 
+    def can_prefetch_during_overlap(self) -> bool:
+        supports = getattr(self._native_cache, "supports_beliefkv_overlap_prefetch", None)
+        return bool(
+            not self.enable_confirmed_join_canary
+            and callable(supports) and supports()
+        )
+
     def predictor_fileno(self) -> int | None:
         if self._semantic_worker is not None:
             return self._semantic_worker.fileno()
@@ -598,6 +612,7 @@ class NativeAdmissionRuntime:
             return 100
         return 1000
 
+    @timed_runtime("event_apply")
     def on_events(self, events: tuple[RuntimeEvent, ...]) -> None:
         # A provisional callback can arrive behind a confirmed RETURN/epoch
         # advance. It is advisory, so a stale one must not discard the RCCG.
@@ -667,7 +682,8 @@ class NativeAdmissionRuntime:
                 raise ValueError("admission prediction has no matching live request")
             hints.append(hint)
         try:
-            self.graph.apply_batch(events, atomic=False)
+            with self._hotpath_timing.measure("graph_apply"):
+                self.graph.apply_batch(events, atomic=False)
         except Exception:
             # A partially applied batch cannot remain a scheduling authority.
             self.graph = RuntimeCausalContextGraph(strict_timestamps=False)
@@ -693,6 +709,8 @@ class NativeAdmissionRuntime:
             self._tool_metadata.clear()
             self._next_wait_refresh_ms = 0.0
             self._scan_offsets = {"tool_wait": 0, "join_wait": 0}
+            self._active_tool_census_version = None
+            self._active_tool_census.clear()
             self.semantic_revision += 1
             self.counts["causal_mirror_discarded"] += 1
             raise
@@ -1106,6 +1124,7 @@ class NativeAdmissionRuntime:
             }
         return ready
 
+    @timed_runtime("semantic_updates")
     def _poll_semantic_reports(self, now_ms: float) -> None:
         worker = self._semantic_worker
         if worker is None:
@@ -1208,9 +1227,11 @@ class NativeAdmissionRuntime:
             self._semantic_submitted_frames[rid] = frame
             self.counts["semantic_input_submitted"] += 1
 
+    @timed_runtime("scheduler_maintenance")
     def scheduler_step(self, waiting_queue: Sequence[object] = ()) -> None:
         if self.event_server is not None:
-            self.event_server.drain(max_messages=128)
+            with self._hotpath_timing.measure("control_drain"):
+                self.event_server.drain(max_messages=128)
         self._refresh_prefetch_service_leases()
         now_ms = time.monotonic() * 1000
         self._poll_semantic_reports(now_ms)
@@ -1342,6 +1363,7 @@ class NativeAdmissionRuntime:
                 "prepare_host": self.enable_prepare_host,
                 "resident_first": self.enable_resident_first,
                 "execution_handoff": self.enable_execution_handoff,
+                "overlap_prefetch_supported": self.can_prefetch_during_overlap(),
                 "execution_handoff_request_id": (
                     self._execution_handoff.key.request_id
                     if self._execution_handoff is not None else None
@@ -1362,6 +1384,7 @@ class NativeAdmissionRuntime:
                 "semantic_worker_error": (
                     self._semantic_worker.error if self._semantic_worker else ""
                 ),
+                "shared_path_timing": self._hotpath_timing.snapshot(),
             })
 
     def _missing_opportunity_detail(
@@ -1412,6 +1435,7 @@ class NativeAdmissionRuntime:
             return "anchor_snapshot_normalization_failed"
         return "invocation_state_changed"
 
+    @timed_runtime("opportunity_sampling")
     def _sample_h2d_opportunities(
         self, waiting_queue: Sequence[object], *, now_ms: float,
     ) -> None:
@@ -2187,6 +2211,7 @@ class NativeAdmissionRuntime:
             and not self._terminal(key)
         )
 
+    @timed_runtime("join_prefetch")
     def dispatch_join_prefetch(self) -> None:
         """One action-local native H2D per safe point, never grant admission."""
         self._roll_final_stage()
@@ -2337,6 +2362,7 @@ class NativeAdmissionRuntime:
         self._tool_last_queries[key] = (invocation.updated_ts_ms, now_ms)
         self.counts["tool_wait_submitted"] += 1
 
+    @timed_runtime("tool_features")
     def _local_frontier_features(
         self, invocation: object, context_epoch: int, *, now_ms: float
     ) -> LocalFrontierFeatures:
@@ -2346,14 +2372,14 @@ class NativeAdmissionRuntime:
             if stored is not None and stored[0] == context_epoch
             else (0, 0, False)
         )
-        active_tools = [
-            item for item in self.graph.invocations.values()
-            if item.state is InvocationState.WAIT_TOOL
-        ]
+        if self._active_tool_census_version != self.graph.graph_version:
+            self._active_tool_census = Counter(
+                item.active_tool_family for item in self.graph.invocations.values()
+                if item.state is InvocationState.WAIT_TOOL
+            )
+            self._active_tool_census_version = self.graph.graph_version
         family = invocation.active_tool_family or "unknown"
-        family_count = sum(
-            item.active_tool_family == family for item in active_tools
-        )
+        family_count = self._active_tool_census[family]
         (backend, command, observed_command, previous_duration,
          previous_status, project_duration, project_support) = (
             self._tool_metadata.get(
@@ -2393,7 +2419,7 @@ class NativeAdmissionRuntime:
                 0.0, now_ms - invocation.active_tool_start_ms
             ) if invocation.active_tool_start_ms is not None else 0.0,
             current_sequence_tokens=prompt + output,
-            active_tool_count=len(active_tools),
+            active_tool_count=sum(self._active_tool_census.values()),
             backend_pressure=(
                 f"active_family:{family_count}"
                 if family != "unknown" else "unknown"
@@ -2733,6 +2759,7 @@ class NativeAdmissionRuntime:
         })
         watch["sample_count"] += 1
 
+    @timed_runtime("terminal_sampling")
     def _sample_terminal_cache(self, *, now_ms: float) -> None:
         if not self._terminal_cache_diagnostics or now_ms < self._terminal_cache_next_ms:
             return
@@ -2980,6 +3007,7 @@ class NativeAdmissionRuntime:
                 candidates.append((node_id, created))
         cache.beliefkv_join_pressure_candidates = tuple(candidates)
 
+    @timed_runtime("join_prepare")
     def dispatch_join_prepare(self, waiting_queue: Sequence[object] = ()) -> None:
         """Back up waiting parents under pressure; never evict at this safe point."""
         cache = self._native_cache
@@ -3086,6 +3114,7 @@ class NativeAdmissionRuntime:
         remaining = hint.remaining_quantile(.1, now_ms=now_ms)
         return remaining is not None and remaining >= 2000.
 
+    @timed_runtime("tool_prepare")
     def dispatch_tool_prepare(self, waiting_queue: Sequence[object] = ()) -> None:
         """Back long external waits; native allocator alone decides demotion."""
         if not self.enable_prepare_host or self.physical_disabled or self._native_cache is None:
@@ -3228,6 +3257,7 @@ class NativeAdmissionRuntime:
         ) or estimate_native_service(self._h2d_samples, size)
         return estimate is not None and estimate.submit_to_ack_p90_ms <= self.prefetch_lead_ms
 
+    @timed_runtime("tool_prefetch")
     def dispatch_tool_prefetch(self) -> None:
         self._roll_tool_prefetch()
         ticket = self._tool_ticket
@@ -3757,6 +3787,7 @@ class NativeAdmissionRuntime:
             return None
         return key
 
+    @timed_runtime("reentry_inspection")
     def _read_request_reentry(self, req: object, *, refresh: bool = False) -> dict | None:
         key = self._executable_waiting_key(req)
         cache = self._native_cache
@@ -3812,6 +3843,7 @@ class NativeAdmissionRuntime:
             })
         self._execution_handoff = None
 
+    @timed_runtime("execution_handoff")
     def dispatch_execution_handoff(
         self, waiting_queue: Sequence[object], *, running_batch: object,
     ) -> None:
@@ -4254,11 +4286,10 @@ class NativeAdmissionRuntime:
 
     def _causal_rank(
         self,
-        req: object,
+        key: PrefillCandidateKey | None,
         index: int,
         ready_ranks: dict[str, tuple[int, int]],
     ) -> tuple[int, int, int]:
-        key = _request_key(req)
         if key is None:
             return (5, 0, index)
         invocation = self.graph.invocations.get(key.invocation_id)
@@ -4275,6 +4306,7 @@ class NativeAdmissionRuntime:
         causal_class, depth = ready_ranks.get(key.invocation_id, (5, 0))
         return (causal_class, depth, index)
 
+    @timed_runtime("admission_plan")
     def plan_native_prefill(
         self, native_order: Sequence[object], *, running_batch: object, adder: object
     ) -> NativePrefillPlan:
@@ -4289,36 +4321,30 @@ class NativeAdmissionRuntime:
             tagged.append((index, req))
         if len(native_order) > 512:
             self.counts["candidate_bound"] += 1
-        workflows = {
-            key.root_workflow_id
-            for _, req in tagged
-            if (key := _request_key(req)) is not None
-            and self.visible.get(key.request_id) == key
-            and key.root_workflow_id in self.graph.workflows
-        }
-        ready_ranks = {
-            item.invocation_id: (item.score[0], -item.unblock_depth)
-            for workflow_id in workflows
-            for item in self.frontier.candidates(workflow_id)
-        }
+        keys = {index: _request_key(req) for index, req in tagged}
+        ready_ranks = {}
         # LLM_SUBMIT marks an invocation RUNNING_LLM before the native waiting
         # request has received its first GPU service. Only inspect bounded
         # candidates supplied by SGLang's waiting queue here.
-        for _, req in tagged:
-            key = _request_key(req)
+        for index, req in tagged:
+            key = keys[index]
             if (
                 key is None
                 or key.invocation_id in ready_ranks
                 or self.visible.get(key.request_id) != key
-                or self.context_sessions.get(key.context_id) != key
                 or self._terminal(key)
+                or key.root_workflow_id not in self.graph.workflows
             ):
                 continue
             invocation = self.graph.invocations.get(key.invocation_id)
             context = self.graph.contexts.get(key.context_id)
             if (
                 invocation is None
-                or invocation.state is not InvocationState.RUNNING_LLM
+                or invocation.state not in (InvocationState.READY, InvocationState.RUNNING_LLM)
+                or (
+                    invocation.state is InvocationState.RUNNING_LLM
+                    and self.context_sessions.get(key.context_id) != key
+                )
                 or invocation.workflow_id != key.root_workflow_id
                 or invocation.context_id != key.context_id
                 or context is None
@@ -4326,21 +4352,18 @@ class NativeAdmissionRuntime:
                 or context.epoch != key.context_epoch
             ):
                 continue
-            candidate = self.frontier.describe_invocation(key.invocation_id)
-            ready_ranks[key.invocation_id] = (
-                candidate.score[0], -candidate.unblock_depth,
-            )
+            ready_ranks[key.invocation_id] = self.frontier.admission_rank(key.invocation_id)
         self._submit_local_predictions(tagged, ready_ranks)
         now_ms = time.monotonic() * 1000
         ranks = {
-            index: self._causal_rank(req, index, ready_ranks)
+            index: self._causal_rank(keys[index], index, ready_ranks)
             for index, req in tagged
         }
         valid_hints: dict[int, NativeDemandHint] = {}
         members = Counter((rank[0], rank[1]) for rank in ranks.values())
         hinted = Counter()
         for index, req in tagged:
-            key = _request_key(req)
+            key = keys[index]
             if key is None:
                 continue
             hint = self.demand_hints.get(key.request_id)
@@ -4388,7 +4411,7 @@ class NativeAdmissionRuntime:
                 rank = waiting_rank(pair)
                 if rank[0] == -1:
                     return rank[:2] + (0,) + rank[2:]
-                key = _request_key(pair[1])
+                key = keys[pair[0]]
                 cached = self._reentry_observations.get(key)
                 observation = cached[1] if cached is not None and cached[0] > now_ms else None
                 resident = (
@@ -4412,7 +4435,7 @@ class NativeAdmissionRuntime:
         priority_candidates = []
         if self._prefetch_priority_normal_admissions >= 4 and ordered:
             for candidate in ordered:
-                key = _request_key(candidate[1])
+                key = keys[candidate[0]]
                 matches = [
                     lease for lease in self._prefetch_service_leases.values()
                     if lease.demand_ready
@@ -4438,7 +4461,7 @@ class NativeAdmissionRuntime:
                 native_rank = ordered.index(candidate)
                 # An aged native head keeps its next turn; speculative restores
                 # cannot perpetually defer an ordinary request's admission.
-                head = _request_key(ordered[0][1])
+                head = keys[ordered[0][0]]
                 priority_now = time.monotonic()
                 aged_head = head is not None and (
                     priority_now - self._visible_since.get(head.request_id, priority_now) >= 10.
@@ -4473,7 +4496,7 @@ class NativeAdmissionRuntime:
                 candidate = next((
                     pair for pair in ordered
                     if getattr(pair[1], "rid", None) == stage.request_id
-                    and self.visible.get(stage.request_id) == _request_key(pair[1])
+                    and self.visible.get(stage.request_id) == keys[pair[0]]
                 ), None)
                 if candidate is None or ordered[0] == candidate:
                     continue
@@ -4486,8 +4509,8 @@ class NativeAdmissionRuntime:
                 break
         return compile_native_prefill_plan(
             [
-                req for _, req in ordered
-                if (key := _request_key(req)) is not None
+                req for index, req in ordered
+                if (key := keys[index]) is not None
                 and self.visible.get(key.request_id) == key
                 and not self._terminal(key)
             ],
@@ -4593,10 +4616,10 @@ class NativeAdmissionRuntime:
     def on_batch_selected(self, batch: object) -> None:
         pass
 
+    @timed_runtime("batch_completed")
     def on_batch_completed(self, batch: object) -> None:
         for req in batch.reqs:
-            key = _request_key(req)
-            if key is not None:
+            if self._prefetch_service_leases and (key := _request_key(req)) is not None:
                 for command, lease in tuple(self._prefetch_service_leases.items()):
                     target = lease.key
                     if (
@@ -4714,6 +4737,10 @@ class NativeAdmissionRuntime:
         self._refresh_prefetch_service_leases()
 
     def running_batch_retraction_barrier_required(self, batch: object) -> bool:
+        if self.can_prefetch_during_overlap():
+            # The native adapter allocates free pages, preserves its load fence,
+            # and carries the H2D consumer event into later prefill batches.
+            return False
         self._roll_tool_prefetch()
         tool = self._tool_ticket
         if (

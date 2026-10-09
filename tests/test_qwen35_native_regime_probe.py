@@ -99,6 +99,15 @@ def test_native_policy_baseline_disables_beliefkv_policy() -> None:
     assert 'unset_env=(-u BELIEFKV_NATIVE_TELEMETRY_DIR)' in script
 
 
+def test_pair_driver_freezes_both_arms_and_exports_timelines_automatically():
+    script = SCRIPT.with_name("run_qwen35_semantic_h2d_ab.sh").read_text()
+    assert '--verify-frozen-plan' in script
+    assert 'NATIVE_POLICY_BASELINE="$baseline"' in script
+    assert 'ARRIVAL_BATCH_SIZE="$ARRIVAL_BATCH_SIZE"' in script
+    assert '--output-html "$RUN_ROOT/timelines/$arm.html"' in script
+    assert 'scripts/compare_native_policy_runs.py' in script
+
+
 def test_native_policy_baseline_rejects_predictive_mix_before_launch(tmp_path: Path) -> None:
     run_root = tmp_path / "baseline"
     result = subprocess.run(

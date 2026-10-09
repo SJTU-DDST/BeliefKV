@@ -6,6 +6,33 @@ guard、终态门禁或模型动作授权。启动前同时阅读
 
 ## 三策略对比与后续到达
 
+最新执行约定：完成共用路径减负后，进行一对native/predictive，
+固定t=0到达108任务、t=3600秒到达48个不同train任务，共156个。
+使用新108+48 manifest，首108与旧实验相同，第二波为Django train，
+两侧均Host80:20；不能对照旧auto v9。第二波项目构成与首波不同，
+需如实分段报告。此约定替代本文历史108单波/不得新增实验的限制，
+不授权canary、额外开发重复或人为缩小缓存以制造压力。
+
+启动前提交源码，冻结模型、canonical引擎补丁、task顺序和到达表；
+两侧间不得热改。driver逐侧核对指纹，独立冷启动，终态后自动
+导出HTML与对比，仅删除有完整归档的completed workspace。
+保留当前running/上下文/工具与workflow预算及宽松guard配置。
+正式统计仍需多轮配对；本次一对只能提供开发证据。
+
+共用路径计时采用低开销累计inclusive/exclusive值，不能将嵌套
+inclusive之和当作全部额外CPU开销。108 workflow/2轮历史的CPU
+准入均值10.722→1.365 ms仅是相同合成输入对照，不是GPU加速。
+GPU原生逐层加载等待计量在两侧都每16个加载prefill抽样一次，
+不CUDA synchronize、不逐调用写盘、跳过graph capture；
+读取完成event后输出，保留未完成/无Python等待样本数。
+event开销包含在等待值内，不把抽样总量当作全程oracle收益。
+native安全load fence存在且不回收热页时可保持decode overlap；
+没有适配能力不得删掉必要的依赖等待。
+
+最终重点为全程完成吞吐与JCT、固定窗口服务效率、FULL实际复用、
+重复原生恢复、ACK到服务、重算与驻留字节时间。累计传输毫秒和
+ACK次数不代表端到端收益；新predictive仍低于native就明确报告。
+
 v8c、v8d、v9是相同108任务和物理容量的live实验，但不是相同实现
 与请求轨迹的严格配对：v8c物理通道失效，v8d改变shell反馈，v9是
 共用兼容补丁上的原生策略。native输出更多请求/输入、输出总量与
@@ -26,7 +53,7 @@ Host池满不等于有用状态工作集仍满；FULL active比例也不是HBM�
 共同旧前缀缺失代理稳定不证明全部重算已被观测，Mamba与过期块级
 归因须继续保留未知状态。
 
-候选108+48为t=0与t=3600秒固定到达，尚未授权启动。扩展到达须
+108+48为t=0与t=3600秒固定到达，现已授权，见本节顶部。扩展到达须
 使用新的隔离train任务和预先冻结的到达表；旧128任务清单仅剩20个
 未使用任务，不能靠重复旧task凑齐。各策略不得按完成数各自补任务。
 预先报告迁移密集窗口和全部完成JCT/吞吐，有限第二波仍有排空尾段。
@@ -109,7 +136,8 @@ server running=48、Host 200 GB/NUMA node 1。当时Host跟随Device，
 后续比例以本文顶部80:20约定为准，不回写历史manifest。
 此前64-root配置仅作历史对照；不得自动扩到128或重叠64+64。
 当前pair属于live压力探索，不因固定seed就声明轨迹相同。
-开发阶段当前只做一对108-root；正式阶段再多轮配对取平均和报告
+历史开发阶段只做一对108-root；最新156-root固定两波见本文顶部。
+正式阶段再多轮配对取平均和报告
 方差。固定需求GPU回放不作为主线或前置要求，见
 `docs/experiments/pressure84_and_fair_comparison_2026-10-05_zh.md`。
 v7已结束，reactive83 completed/1 incomplete、predictive84 completed。

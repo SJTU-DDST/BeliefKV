@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from beliefkv.runtime.clock_evidence import local_monotonic_clock_domain
+from beliefkv.runtime.restore_wait_probe import RestoreWaitProbe
 
 import atexit
 from array import array
@@ -111,6 +112,8 @@ class NativeReactiveTelemetry:
         self._host_snapshot_interval_ms = 1000.0
         self._last_host_snapshot_ms = float("-inf")
         self._cache: object | None = None
+        self._restore_wait_probe = RestoreWaitProbe()
+        self._restore_wait_device: object | None = None
         self._error: str | None = None
         self._closed = False
         self._writer = Thread(target=self._write, name="native-reactive-audit", daemon=True)
@@ -178,6 +181,10 @@ class NativeReactiveTelemetry:
             }, output, indent=2, sort_keys=True)
             output.write("\n")
         self._cache = cache
+        if getattr(getattr(cache, "cache_controller", None), "layer_done_counter", None) is not None:
+            from sglang.srt.utils import get_device_module
+
+            self._restore_wait_device = get_device_module()
         cache.on_hicache_host_eviction = self.on_native_host_eviction
         self._host_block_identity_available = True
 
@@ -832,6 +839,13 @@ class NativeReactiveTelemetry:
         mode = batch.forward_mode
         if not (mode.is_extend() or mode.is_decode()):
             return
+        self._poll_restore_wait()
+        controller = getattr(self._cache, "cache_controller", None)
+        counter = getattr(controller, "layer_done_counter", None)
+        if counter is not None:
+            counter.beliefkv_wait_probe = self._restore_wait_probe.begin(
+                batch, self._restore_wait_device
+            )
         launch = float(batch.launch_ts)
         phase = "prefill" if mode.is_extend() else "decode"
         samples = []
@@ -1193,6 +1207,7 @@ class NativeReactiveTelemetry:
             return {"status": "snapshot_unavailable"}
 
     def on_completed(self, batch: Any) -> None:
+        self._poll_restore_wait()
         descriptor = self._launched.pop(batch.forward_iter, None)
         if descriptor is None:
             return
@@ -1278,6 +1293,10 @@ class NativeReactiveTelemetry:
             })
         if self._cache is not None:
             self.record_host_pool_usage(self._cache)
+
+    def _poll_restore_wait(self) -> None:
+        for record in self._restore_wait_probe.poll():
+            self._emit("audit", record)
 
     def on_native_transfer_commit(self, event: Any) -> None:
         self._transfers += 1
@@ -1815,6 +1834,7 @@ class NativeReactiveTelemetry:
         path = self.directory / "native_telemetry_status.json"
         status["snapshot_ts_ms"] = time.time() * 1000.0
         status["writer_queue_depth"] = self._queue.qsize()
+        status["gpu_restore_wait_probe"] = self._restore_wait_probe.snapshot()
         temporary = path.with_suffix(".json.tmp")
         temporary.write_text(
             json.dumps(status, indent=2, sort_keys=True) + "\n", encoding="utf-8"
@@ -1824,6 +1844,10 @@ class NativeReactiveTelemetry:
     def close(self) -> None:
         if self._closed:
             return
+        self._poll_restore_wait()
+        counter = getattr(getattr(self._cache, "cache_controller", None), "layer_done_counter", None)
+        if counter is not None:
+            counter.beliefkv_wait_probe = None
         for command_id, (action, _, ack_ts, _) in self._pending_prefetch_use.items():
             self._emit("action_use", {
                 "event": "beliefkv_prefetch_first_service_censored",

@@ -2,6 +2,53 @@
 
 Status date: 2026-10-09.
 
+## Shared-Path Cost And Matched Replenishment
+
+The user now authorizes shared-path cost reduction followed by one live
+native/predictive pair on a replenished workload. No canary, replay or
+development repetitions. Preserve natural-language RETURN and current guards.
+
+Implemented:
+- Classify only bounded queued requests, cache JOIN waiter/tool counts per
+  graph version, and skip lease identity parsing when no leases exist.
+- Aggregate inclusive/exclusive Python wall timings without per-call I/O
+  or CUDA synchronization. Keep the timers enabled for the predictive arm.
+- Dispatch native no-reclaim, fenced cache-mode H2D without draining
+  unrelated overlap decode. Legacy adapters retain their safe point.
+- Preserve actual ACK residency locks, restore-ready admission, latest
+  state and missing FULL extents; assess reuse and repeated loads, not
+  speculative byte volume.
+- Sample one in 16 load-consuming prefills in BOTH arms with compute-stream
+  CUDA events around native per-layer dependencies. Read only completed
+  events; skip graph capture and bound outstanding samples. Event overhead
+  remains in measurements; these are batch stalls, not per-request queue
+  delays or an end-to-end oracle bound.
+- Automatically render each completed arm's HTML and a native-policy
+  comparison; use correct native baseline labels and a frozen arrival table.
+
+CPU check against `7055901`: 108 synthetic workflows with two retained
+rounds, 80 iterations, admission mean 10.722 -> 1.365 ms (87.3% less),
+profiled 1.387 ms; identical queue order. The history-heavy 156/16-round
+case is 120.137 -> 2.522 ms. Neither is a GPU performance result.
+Verification: 257 repository tests, 99 patched-engine tests and 16 subtests.
+
+Freeze and collect: 108 roots at t=0 plus 48 disjoint train Django tasks
+at fixed t=3600 s, native first then predictive, fresh server/cache per arm.
+Manifest:
+`configs/migration/qwen35_native_predictive_replenished_108plus48_2026-10-09.json`.
+Keep running48, Host200 GB/80:20, Device Mamba/FULL0.9, context131072,
+completion8192, graph2048/reserve32, workflow14400 s and tool600 s.
+Replenishment is intentionally not IID: report second-wave composition.
+Commit before collection and verify code/artifact fingerprints before
+each arm. Report fixed 0-3600, 3600-7200 and remaining windows plus all
+arrival completion/JCT, demand differences, recompute, useful FULL reuse,
+resident byte-time, repeated restoration and sampled exposed GPU waits.
+Do not substitute historical Host-auto v9 for this matched native run.
+Only remove completed, archived workspaces between arms; retain trace,
+model patches and failure evidence. A failure to beat native is a failure
+of the current policy on this workload, not a migration-count success.
+GPU throughput benefit is pending; this is one development pair.
+
 ## Native Comparison And Arrival Proposal
 
 Retrospective comparison completed with
@@ -38,7 +85,7 @@ falls from 63.213 at 30-40 minutes to 2.732 at 50-60 minutes and 0.539 at
 60-70 minutes. FULL old-prefix loss proxies remain about 0.14%-0.15%;
 this is not a complete FULL/Mamba recompute bound or Device occupancy census.
 
-Proposed, not launched or added to defaults: 108 arrivals at t=0 and 48
+Initially proposed and now authorized above: 108 arrivals at t=0 and 48
 new train tasks at fixed t=3600 s, with 64 as a higher-pressure alternative.
 This can renew the working set but cannot fix ineffective preload, remove
 runtime overhead or guarantee throughput gain; native benefits from renewed
@@ -46,9 +93,8 @@ load too. The new 80:20 Host ratio requires fresh capacity/pressure evidence.
 All policies must share a predeclared task/arrival table and measurement
 windows plus full-drain outcomes, not policy-dependent completion triggers.
 The existing 128-task manifest has only 20 unused tasks after the first 108.
-An authorized wave experiment therefore needs an expanded disjoint train
-manifest and explicit runner support; do not silently duplicate tasks or
-reuse the old 64+64 launcher constraint. No new GPU run is authorized here.
+The expanded disjoint train manifest and explicit runner support are now
+implemented. Do not duplicate tasks or reuse the old 64+64 launcher constraint.
 
 ## Current Handoff And Host Configuration
 
@@ -96,7 +142,8 @@ Added for the next experiment:
   including selected request, checkpoint, freed victim units, issue and ACK.
 
 No predictor refit or new GPU performance claim is part of these fixes.
-Do not add canaries, agent guards, artificial pressure or another run.
+Do not add canaries, agent guards or artificial cache pressure. The single
+matched replenishment pair above supersedes the former no-new-run restriction.
 Future comparisons must share revised harness/cache/resident-first rules.
 Use FULL useful reuse, repeated restores, native demand H2D reduction,
 queue/service timing and throughput rather than maximizing preload bytes.

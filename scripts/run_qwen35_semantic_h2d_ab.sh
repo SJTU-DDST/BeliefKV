@@ -4,6 +4,8 @@ set -euo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 PYTHON="${PYTHON:-/home/longhao/miniconda3/envs/beliefkv-next/bin/python}"
 ROOT_COUNT="${ROOT_COUNT:-108}"
+ARRIVAL_BATCH_SIZE="${ARRIVAL_BATCH_SIZE:-0}"
+ARRIVAL_BATCH_INTERVAL_MS="${ARRIVAL_BATCH_INTERVAL_MS:-0}"
 HOST_SPLIT="${HOST_SPLIT:-80:20}"
 PORT="${PORT:-18454}"
 RUN_ROOT="${RUN_ROOT:-$ROOT/experiments/raw/qwen35_joint_wait_h2d_ab_${ROOT_COUNT}root_2to4_v8c}"
@@ -23,16 +25,19 @@ EOS_PROTOCOL_WINDOW_MS="${EOS_PROTOCOL_WINDOW_MS:-250}"
 FANOUT_PROFILE="${FANOUT_PROFILE:-native_in_graph_2to4}"
 
 if [[ $# -ne 0 || -e "$RUN_ROOT" || ! -f "$ARTIFACT" ]] \
-  || [[ ! "$ROOT_COUNT" =~ ^[1-9][0-9]*$ ]] || (( ROOT_COUNT > 108 )) \
+  || [[ ! "$ROOT_COUNT" =~ ^[1-9][0-9]*$ ]] || (( ROOT_COUNT > 156 )) \
+  || [[ ! "$ARRIVAL_BATCH_SIZE" =~ ^[0-9]+$ || ! "$ARRIVAL_BATCH_INTERVAL_MS" =~ ^[0-9]+$ ]] \
+  || { (( ROOT_COUNT > 108 )) && [[ "$ARRIVAL_BATCH_SIZE" != "108" || "$ARRIVAL_BATCH_INTERVAL_MS" == "0" ]]; } \
   || [[ ! "$SAMPLING_SEED" =~ ^[0-9]+$ || ! "$REPETITION_ID" =~ ^[0-9]+$ ]] \
-  || [[ "$ARM_ORDER" != "predictive_h2d reactive" && "$ARM_ORDER" != "reactive predictive_h2d" && "$ARM_ORDER" != "predictive_h2d" ]]; then
-  printf 'Usage: RUN_ROOT=<new path> ROOT_COUNT=108 FANOUT_PROFILE=native_in_graph_2to4 ARM_ORDER="reactive predictive_h2d"|"predictive_h2d reactive"|predictive_h2d SAMPLING_SEED=21 REPETITION_ID=0 ACTIVATION_WALL_CLOCK_SECONDS=14400 PORT=18454 bash %s\n' "$0" >&2
+  || [[ "$ARM_ORDER" != "predictive_h2d reactive" && "$ARM_ORDER" != "reactive predictive_h2d" && "$ARM_ORDER" != "predictive_h2d" && "$ARM_ORDER" != "native predictive_h2d" && "$ARM_ORDER" != "predictive_h2d native" ]]; then
+  printf 'Usage: RUN_ROOT=<new path> ROOT_COUNT=108|156 ARRIVAL_BATCH_SIZE=0|108 ARRIVAL_BATCH_INTERVAL_MS=0|3600000 FANOUT_PROFILE=native_in_graph_2to4 ARM_ORDER="native predictive_h2d"|"predictive_h2d native"|"reactive predictive_h2d"|"predictive_h2d reactive"|predictive_h2d SAMPLING_SEED=21 REPETITION_ID=0 ACTIVATION_WALL_CLOCK_SECONDS=14400 PORT=18454 bash %s\n' "$0" >&2
   exit 2
 fi
 mkdir -p "$RUN_ROOT"
 export FANOUT_PROFILE
 "$PYTHON" "$ROOT/scripts/summarize_semantic_h2d_ab.py" \
   --run-root "$RUN_ROOT" --initialize --root-count "$ROOT_COUNT" \
+  --arrival-batch-size "$ARRIVAL_BATCH_SIZE" --arrival-batch-interval-ms "$ARRIVAL_BATCH_INTERVAL_MS" \
   --arm-order "$ARM_ORDER" --semantic-artifact "$ARTIFACT" \
   --activation-wall-clock-seconds "$ACTIVATION_WALL_CLOCK_SECONDS" \
   --prepare-host "$PREPARE_HOST" --h2d-seed "$H2D_SEED_ARTIFACT" \
@@ -45,10 +50,18 @@ export FANOUT_PROFILE
   --sampling-seed "$SAMPLING_SEED" --repetition-id "$REPETITION_ID" \
   --workload-manifest "${WORKLOAD_MANIFEST:-$ROOT/configs/migration/qwen35_native_reactive_overlapped_128root_workload_2026-09-23.json}"
 for arm in $ARM_ORDER; do
+  "$PYTHON" "$ROOT/scripts/summarize_semantic_h2d_ab.py" \
+    --run-root "$RUN_ROOT" --verify-frozen-plan
   printf 'Full %s arm: %s roots, fresh server and KV cache\n' "$arm" "$ROOT_COUNT"
+  baseline=0
+  mode="$arm"
+  if [[ "$arm" == "native" ]]; then
+    baseline=1
+    mode=off
+  fi
   set +e
-  AB_MODE="$arm" ROOT_COUNT="$ROOT_COUNT" PORT="$PORT" SAMPLING_SEED="$SAMPLING_SEED" \
-    ARRIVAL_BATCH_SIZE=0 ARRIVAL_BATCH_INTERVAL_MS=0 \
+  NATIVE_POLICY_BASELINE="$baseline" AB_MODE="$mode" ROOT_COUNT="$ROOT_COUNT" PORT="$PORT" SAMPLING_SEED="$SAMPLING_SEED" \
+    ARRIVAL_BATCH_SIZE="$ARRIVAL_BATCH_SIZE" ARRIVAL_BATCH_INTERVAL_MS="$ARRIVAL_BATCH_INTERVAL_MS" \
     ACTIVATION_WALL_CLOCK_SECONDS="$ACTIVATION_WALL_CLOCK_SECONDS" \
     PREPARE_HOST="$PREPARE_HOST" H2D_SEED_ARTIFACT="$H2D_SEED_ARTIFACT" \
     ENABLE_TOOL_TIMING="$ENABLE_TOOL_TIMING" TOOL_TIMING_ARTIFACT="$TOOL_TIMING_ARTIFACT" \
@@ -85,6 +98,9 @@ for arm in $ARM_ORDER; do
     --arm "$RUN_ROOT/$arm" --output "$RUN_ROOT/$arm/prefetch_lifecycle.json"
   "$PYTHON" "$ROOT/scripts/audit_native_memory_opportunity.py" \
     --arm "$RUN_ROOT/$arm" --output "$RUN_ROOT/$arm/memory_opportunity.json"
+  "$PYTHON" "$ROOT/scripts/render_p6_execution_timeline.py" \
+    --run-dir "$RUN_ROOT" --arm "$arm" --output-html "$RUN_ROOT/timelines/$arm.html" \
+    > "$RUN_ROOT/$arm.timeline_export.json"
   "$PYTHON" "$ROOT/scripts/summarize_semantic_h2d_ab.py" \
     --cleanup-arm "$RUN_ROOT/$arm" > "$RUN_ROOT/$arm.workspace_cleanup.json"
 done
@@ -93,4 +109,11 @@ if [[ "$ARM_ORDER" == "predictive_h2d" ]]; then
     --run-root "$RUN_ROOT" --allow-incomplete
 else
   "$PYTHON" "$ROOT/scripts/summarize_semantic_h2d_ab.py" --run-root "$RUN_ROOT"
+  comparison_args=()
+  for arm in $ARM_ORDER; do
+    comparison_args+=(--arm "$arm=$RUN_ROOT/$arm"
+      --timeline "$arm=$RUN_ROOT/timelines/$arm.json.gz")
+  done
+  "$PYTHON" "$ROOT/scripts/compare_native_policy_runs.py" "${comparison_args[@]}" \
+    --output "$RUN_ROOT/native_policy_comparison.json"
 fi

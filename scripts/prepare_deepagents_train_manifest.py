@@ -33,6 +33,25 @@ def parse_quota(values: list[str]) -> dict[str, int]:
     return quotas
 
 
+def frozen_prefix(manifest: dict, split: dict, count: int) -> list[dict]:
+    workloads = manifest["workloads"]
+    if not 0 < count <= len(workloads):
+        raise ValueError("prefix count exceeds existing manifest")
+    train = {
+        task["instance_id"]: (project["project"], task["base_commit"])
+        for project in split["projects"] if project["split"] == "train"
+        for task in project["tasks"]
+    }
+    prefix = workloads[:count]
+    ids = [item["instance_id"] for item in prefix]
+    if len(set(ids)) != count:
+        raise ValueError("duplicate prefix workflow")
+    for item in prefix:
+        if train.get(item["instance_id"]) != (item["repo"], item["base_commit"]):
+            raise ValueError(f"prefix outside frozen train split: {item['instance_id']}")
+    return prefix
+
+
 def selected_workloads(
     split: dict, rows: dict[str, dict], source_root: Path,
     quotas: dict[str, int], excluded: set[str],
@@ -86,6 +105,8 @@ def main() -> None:
     parser.add_argument("--source-root", type=Path, required=True)
     parser.add_argument("--quota", action="append", default=[], required=True)
     parser.add_argument("--exclude-workflows", type=Path, action="append", default=[])
+    parser.add_argument("--prefix-manifest", type=Path)
+    parser.add_argument("--prefix-count", type=int, default=0)
     parser.add_argument("--require-cached-images", action="store_true")
     parser.add_argument("--output", type=Path, required=True)
     args = parser.parse_args()
@@ -100,6 +121,13 @@ def main() -> None:
     rows = {str(row["instance_id"]): row for row in table.to_pylist()}
     excluded = set()
     exclusion_sources = {}
+    prefix, prefix_path = [], None
+    if args.prefix_manifest:
+        prefix_path = args.prefix_manifest.expanduser().resolve()
+        prefix = frozen_prefix(json.loads(prefix_path.read_text()), split, args.prefix_count)
+        excluded.update(item["instance_id"] for item in prefix)
+    elif args.prefix_count:
+        raise ValueError("prefix count requires a prefix manifest")
     for root in args.exclude_workflows:
         root = root.expanduser().resolve()
         paths = sorted(root.glob("*/runtime_events.deepagents.jsonl"))
@@ -107,8 +135,11 @@ def main() -> None:
             raise FileNotFoundError(f"no workflow events to exclude: {root}")
         excluded.update(path.parent.name for path in paths)
         exclusion_sources[str(root)] = len(paths)
-    workloads = selected_workloads(
+    workloads = prefix + selected_workloads(
         split, rows, args.source_root.expanduser().resolve(), quotas, excluded,
+    )
+    verify_workload_source_objects(
+        (Path(item["source_repo"]), item["base_commit"]) for item in workloads
     )
     if args.require_cached_images:
         for image in {item["docker_image"] for item in workloads}:
@@ -130,8 +161,15 @@ def main() -> None:
             source: git_output(Path(source), "rev-parse", "HEAD")
             for source in sorted(sources)
         },
-        "selection_policy": "first unused task per frozen train project order",
+        "selection_policy": (
+            "preserve frozen prefix; append disjoint first unused train tasks"
+            if prefix else "first unused task per frozen train project order"
+        ),
         "project_quotas": quotas,
+        "prefix_manifest": str(prefix_path) if prefix_path else None,
+        "prefix_manifest_sha256": sha256(prefix_path) if prefix_path else None,
+        "prefix_count": len(prefix),
+        "workload_count": len(workloads),
         "excluded_workflow_roots": exclusion_sources,
         "gold_fields_exposed": False,
         "workloads": workloads,

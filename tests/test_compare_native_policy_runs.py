@@ -2,6 +2,7 @@ import pytest
 
 from scripts.compare_native_policy_runs import (
     interval_milliseconds, last_runtime_state, percentile, phase_statistics, transfer_parts,
+    restore_wait_statistics,
 )
 
 
@@ -52,6 +53,18 @@ def test_percentiles_use_all_observations_with_interpolation():
     assert percentile([], .5) is None
     assert percentile([4, 2], .5) == 3
     assert percentile([5], .95) == 5
+
+
+def test_restore_dependency_wait_summary_never_counts_transfer_ack_as_stall():
+    result = restore_wait_statistics([
+        {"event": "gpu_restore_dependency_wait", "gpu_layer_dependency_wait_ms": 3.},
+        {"event": "gpu_restore_dependency_wait", "gpu_layer_dependency_wait_ms": 7.},
+        {"event": "native_hicache_transfer_ack", "submit_to_ack_ms": 1000.},
+    ])
+    assert result["sampled_batches"] == 2
+    assert result["sampled_gpu_wait_sum_ms"] == 10.
+    assert result["p50_ms"] == 5.
+    assert "oracle" in result["semantics"]
 
 
 def test_phase_statistics_preserves_coalesced_batch_counts():

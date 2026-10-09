@@ -2,6 +2,53 @@
 
 更新日期：2026-10-09。
 
+## 共用路径减负与新对照
+
+按最新要求，先降低并测清reactive/predictive共用路径成本，再进行
+同配置native/predictive对照。本次不新增agent guard、canary或开发
+重复实验，不修改模型权重、fanout与自然语言RETURN契约。
+
+准入规划只分类当前最多512个候选，不再每次遍历全部workflow的
+历史invocation及后代。JOIN最后成员/等待者和活跃工具统计按图
+版本缓存；没有恢复租约时，batch完成回调跳过逐请求身份解析。
+相同CPU输入与旧commit `7055901` 的对照保持队列顺序不变：
+108 workflow、2轮保留历史、80次测量时，准入均值10.722→1.365 ms，
+降87.3%；开启profiling为1.387 ms。156 workflow、16轮历史压力样例
+为120.137→2.522 ms。两者都是合成CPU对照，不是实测GPU加速。
+结果保存在 `experiments/reports/native_shared_path_cpu_*.json`。
+
+新增累计inclusive/exclusive Python计时，分别记录控制事件交付、
+图更新、维护、准入、语义更新、PREPARE/H2D、handoff和候选检查；
+每秒随已有状态发布，不逐调用写盘，不同步CUDA。exclusive用于
+避免嵌套重复计费，仍不是CPU周期或全部GPU空闲时间。
+cache-mode、session radix和原生load fence均存在时，预测H2D
+使用不回收Device页的原生异步加载，不再为工具/JOIN预取drain
+无关decode；缺少适配能力时沿用原安全点处理。
+
+对恢复和执行脱节，保留latest Mamba、缺失FULL extent、真实ACK
+锁、有界恢复就绪优先级、提交宽限与execution handoff，重点验证
+首次复用、ACK到服务、再次原生加载及驻留成本，而不扩大恢复范围。
+native/predictive均新增低频只读GPU等待计量：每16个实际消费
+加载依赖的prefill抽样一次，在计算流的原生逐层等待前后记录CUDA
+event，完成后异步读取，跳过CUDA graph捕获。记录包含event成本，
+是抽样batch依赖等待，不是全部H2D耗时、逐请求排队或oracle JCT。
+
+本次已授权冻结的配置为108任务t=0到达，48个不重复train任务
+t=3600秒到达，共156个。manifest保留历史首108任务顺序，新增任务
+来自train Django；第二波项目构成不同须单独报告，不能宣称IID稳态。
+两侧共享到达表、Host200 GB/FULL:Mamba=80:20、HBM Mamba/FULL=0.9、
+running48、context131072/completion8192、graph2048/FINALIZE reserve32、
+workflow14400秒和tool600秒。先native后predictive，独立冷启动，
+固定源码/补丁/模型指纹；没有旧auto对照替代新native。
+native关闭BeliefKV控制与调度，保留相同harness和只读遥测。
+实验结束自动导出HTML、分段对比和全程完成吞吐/JCT；仅清理已有
+完整归档的completed workspace，保留trace、patch和错误证据。
+这是单对开发实验，不是正式多轮统计结论；吞吐未提升须明确报告。
+
+manifest：`configs/migration/qwen35_native_predictive_replenished_108plus48_2026-10-09.json`。
+主仓库定向回归257 passed；实际patched引擎源码回归99 passed、
+16 subtests passed。GPU性能验收待本次对照，不以测试通过代替收益。
+
 ## v8c / v8d / v9 回溯对比
 
 三轮均为同一108任务、单波到达，running=48，Device FULL/Mamba
@@ -62,9 +109,9 @@ FULL active token下降不是完整HBM占用率，Host FULL近满也可能是
 将原生当时62个活跃root补至约110个；64个第二波保留为更高压力候选。
 三侧必须使用同一绝对到达表，不能按各自完成数动态补任务。
 这可能延长迁移密集期，但不修复低复用/控制开销，也不保证收益；
-新Host80:20的压力不能照搬历史auto结果。尚未授权或启动该配置。
-当前128任务manifest仅剩20个未用任务，实施108+48前须扩展隔离的
-train任务清单与到达支持。有限第二波仍有排空尾段，预先约定窗口
+新Host80:20的压力不能照搬历史auto结果。此前提出的108+48现已
+授权并完成独立train manifest及到达支持，见本文顶部。
+有限第二波仍有排空尾段，预先约定窗口
 指标与全部workflow完成指标，不能事后挑选有利区间。
 
 机器可复核结果为

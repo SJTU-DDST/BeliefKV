@@ -89,6 +89,31 @@ class CausalPolicyTest(unittest.TestCase):
         self.assertEqual(selected.causal_class, "join_straggler")
         self.assertEqual(selected.join_waiter_count, 1)
 
+    def test_admission_rank_matches_full_candidate_without_descendant_scan(self):
+        self.h.invocation("wf", "parent", "ctx-parent")
+        self.h.invocation("wf", "a", "ctx-a")
+        self.h.invocation("wf", "b", "ctx-b")
+        self.h.emit(
+            RuntimeEventKind.JOIN_CREATE, "wf", join_id="j",
+            member_invocation_ids=("a", "b"),
+        )
+        self.h.emit(
+            RuntimeEventKind.JOIN_WAIT, "wf",
+            invocation_id="parent", join_id="j",
+        )
+        candidate = self.frontier.describe_invocation("a")
+        self.assertEqual(
+            self.frontier.admission_rank("a"),
+            (candidate.score[0], -candidate.unblock_depth),
+        )
+        self.h.emit(RuntimeEventKind.RETURN, "wf", invocation_id="b")
+        from unittest.mock import patch
+
+        with patch.object(self.frontier, "_active_descendant_counts", side_effect=AssertionError):
+            self.assertEqual(self.frontier.admission_rank("a"), (0, 0))
+        self.h.emit(RuntimeEventKind.RETURN, "wf", invocation_id="a")
+        self.assertEqual(self.frontier.admission_rank("parent"), (3, 0))
+
     def test_blocking_chain_requires_sole_remaining_blocker(self):
         self.h.invocation("wf", "parent", "ctx-parent")
         self.h.invocation("wf", "child", "ctx-child")

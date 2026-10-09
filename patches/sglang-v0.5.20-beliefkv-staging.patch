@@ -233,10 +233,36 @@ index 89cac80..7375315 100644
          self,
          index: int,
 diff --git a/python/sglang/srt/managers/cache_controller.py b/python/sglang/srt/managers/cache_controller.py
-index b9a134e..be61e1a 100644
+index b9a134e..d0dd6eb 100644
 --- a/python/sglang/srt/managers/cache_controller.py
 +++ b/python/sglang/srt/managers/cache_controller.py
-@@ -108,12 +108,15 @@ class CacheOperation:
+@@ -77,6 +77,7 @@ class LayerDoneCounter:
+         self.events = [LayerLoadingEvent(num_layers) for _ in range(self.num_counters)]
+         self.producer_index = -1
+         self.consumer_index = -1
++        self.beliefkv_wait_probe = None
+ 
+     def update_producer(self):
+         self.producer_index = (self.producer_index + 1) % self.num_counters
+@@ -91,11 +92,16 @@ class LayerDoneCounter:
+     def wait_until(self, threshold: int):
+         if self.consumer_index < 0:
+             return
+-        self.events[self.consumer_index].wait(threshold)
++        event = self.events[self.consumer_index]
++        if self.beliefkv_wait_probe is not None:
++            self.beliefkv_wait_probe.wait(event, threshold, self.consumer_index)
++        else:
++            event.wait(threshold)
+ 
+     def reset(self):
+         self.producer_index = -1
+         self.consumer_index = -1
++        self.beliefkv_wait_probe = None
+ 
+ 
+ class CacheOperation:
+@@ -108,12 +114,15 @@ class CacheOperation:
          node_id: int,
          priority: Optional[int] = None,
          pool_transfers: Optional[List[PoolTransfer]] = None,
@@ -252,7 +278,7 @@ index b9a134e..be61e1a 100644
  
          self.id = CacheOperation.counter
          CacheOperation.counter += 1
-@@ -168,12 +171,22 @@ class CacheOperation:
+@@ -168,12 +177,22 @@ class CacheOperation:
              pool_transfers=CacheOperation._merge_pool_transfers(ops),
          )
          merged_op.node_ids = node_ids
@@ -275,7 +301,7 @@ index b9a134e..be61e1a 100644
  class HiCacheAck(NamedTuple):
      start_event: device_module.Event
      finish_event: device_module.Event
-@@ -185,6 +198,11 @@ class HiCacheAck(NamedTuple):
+@@ -185,6 +204,11 @@ class HiCacheAck(NamedTuple):
      # Total bytes moved by the op across all pools, including draft piggyback
      # and sidecar transfers that the per-pool token counts exclude.
      num_bytes: int = 0
@@ -287,7 +313,7 @@ index b9a134e..be61e1a 100644
  
  
  @dataclass
-@@ -795,6 +813,7 @@ class HiCacheController:
+@@ -795,6 +819,7 @@ class HiCacheController:
          device_indices: torch.Tensor,
          priority: Optional[int] = None,
          node_id: int = -1,
@@ -295,7 +321,7 @@ index b9a134e..be61e1a 100644
      ) -> Optional[torch.Tensor]:
          """
          Back up KV caches from device memory to host memory.
-@@ -802,12 +821,33 @@ class HiCacheController:
+@@ -802,12 +827,33 @@ class HiCacheController:
          host_indices = self.mem_pool_host.alloc(len(device_indices))
          if host_indices is None:
              return None
@@ -331,7 +357,7 @@ index b9a134e..be61e1a 100644
      def start_writing(self) -> None:
          if len(self.write_queue) == 0:
              return
-@@ -816,6 +856,11 @@ class HiCacheController:
+@@ -816,6 +862,11 @@ class HiCacheController:
          host_indices, device_indices, pool_transfers = self._move_write_operation(op)
          self.write_queue.clear()
  
@@ -343,7 +369,7 @@ index b9a134e..be61e1a 100644
          completion = self.l2_transfer_engine.submit_device_to_host(
              self._l2_transfers(host_indices, device_indices, pool_transfers)
          )
-@@ -829,6 +874,16 @@ class HiCacheController:
+@@ -829,6 +880,16 @@ class HiCacheController:
                  timing_enabled=completion.timing_enabled,
                  num_tokens_by_pool=self._num_tokens_by_pool(op),
                  num_bytes=self._transfer_num_bytes(op),
@@ -360,7 +386,7 @@ index b9a134e..be61e1a 100644
              )
          )
  
-@@ -843,6 +898,7 @@ class HiCacheController:
+@@ -843,6 +904,7 @@ class HiCacheController:
          host_indices: torch.Tensor,
          priority: Optional[int] = None,
          node_id: int = -1,
@@ -368,7 +394,7 @@ index b9a134e..be61e1a 100644
      ) -> Optional[torch.Tensor]:
          """
          Load KV caches from host memory to device memory.
-@@ -850,9 +906,14 @@ class HiCacheController:
+@@ -850,9 +912,14 @@ class HiCacheController:
          device_indices = self.mem_pool_device_allocator.alloc(len(host_indices))
          if device_indices is None:
              return None
@@ -385,7 +411,7 @@ index b9a134e..be61e1a 100644
          return device_indices
  
      def move_indices(
-@@ -957,6 +1018,11 @@ class HiCacheController:
+@@ -957,6 +1024,11 @@ class HiCacheController:
                  self.load_fence_stream
              )
  
@@ -397,7 +423,7 @@ index b9a134e..be61e1a 100644
          completion = self.l2_transfer_engine.submit_host_to_device(
              self._l2_load_transfers(host_indices, device_indices, pool_transfers),
              start_event=producer_event.start_event,
-@@ -973,6 +1039,16 @@ class HiCacheController:
+@@ -973,6 +1045,16 @@ class HiCacheController:
                  timing_enabled=completion.timing_enabled,
                  num_tokens_by_pool=self._num_tokens_by_pool(op),
                  num_bytes=self._transfer_num_bytes(op),
@@ -543,7 +569,7 @@ index 7811e44..cd7aea5 100755
                  cow_dst_tensors.append(req.kv.mamba_pool_idx.unsqueeze(0))
                  req.kv.mamba_cow_src_index = None
 diff --git a/python/sglang/srt/managers/scheduler.py b/python/sglang/srt/managers/scheduler.py
-index 743c8af..d65aa7d 100644
+index 743c8af..8c32394 100644
 --- a/python/sglang/srt/managers/scheduler.py
 +++ b/python/sglang/srt/managers/scheduler.py
 @@ -725,9 +725,141 @@ class Scheduler(
@@ -829,7 +855,7 @@ index 743c8af..d65aa7d 100644
  
          if self.enable_fpm:
              self._fpm_batch_t0 = time.monotonic()
-@@ -3647,6 +3879,22 @@ class Scheduler(
+@@ -3647,6 +3879,23 @@ class Scheduler(
              if running_batch.is_empty():
                  running_batch.batch_is_full = False
  
@@ -837,6 +863,7 @@ index 743c8af..d65aa7d 100644
 +            return NextBatchPlan(batch_to_run=None, running_batch=running_batch)
 +        if beliefkv_runtime is not None and (
 +            not self.enable_overlap or last_batch is None and not self.result_queue
++            or getattr(beliefkv_runtime, "can_prefetch_during_overlap", lambda: False)()
 +        ):
 +            beliefkv_runtime.dispatch_join_prefetch()
 +            beliefkv_runtime.dispatch_tool_prefetch()
@@ -852,7 +879,7 @@ index 743c8af..d65aa7d 100644
          if self.dllm_config is not None:
              new_batch = self.get_new_batch_dllm(running_batch)
          elif self._should_defer_prefill():
-@@ -3705,6 +3953,8 @@ class Scheduler(
+@@ -3705,6 +3954,8 @@ class Scheduler(
              if self.enable_fpm:
                  ret.fpm_start_time = self._fpm_batch_t0
  
@@ -861,7 +888,7 @@ index 743c8af..d65aa7d 100644
          return NextBatchPlan(batch_to_run=ret, running_batch=running_batch)
  
      def get_num_allocatable_reqs(
-@@ -3754,6 +4004,50 @@ class Scheduler(
+@@ -3754,6 +4005,50 @@ class Scheduler(
  
          return NextBatchPlan(batch_to_run=ret, running_batch=running_batch)
  
@@ -912,7 +939,7 @@ index 743c8af..d65aa7d 100644
      def _get_new_batch_prefill_raw(
          self,
          prefill_delayer_single_pass: Optional[PrefillDelayerSinglePassExecutor],
-@@ -3871,7 +4165,7 @@ class Scheduler(
+@@ -3871,7 +4166,7 @@ class Scheduler(
              mamba_allocator.alloc_group_begin(len(self.waiting_queue))
          buffer_pipeline = self.tree_cache.buffer_pipeline
          # Get requests from the waiting queue to a new prefill batch
@@ -921,7 +948,7 @@ index 743c8af..d65aa7d 100644
              if self.enable_lora and not self.can_schedule_lora_req(req, running_loras):
                  continue
  
-@@ -3897,6 +4191,12 @@ class Scheduler(
+@@ -3897,6 +4192,12 @@ class Scheduler(
                  ):
                      break
  
@@ -934,7 +961,7 @@ index 743c8af..d65aa7d 100644
              if self.enable_hicache_storage:
                  prefetch_done = self.tree_cache.check_prefetch_progress(
                      req.cache_request_handle
-@@ -3932,6 +4232,10 @@ class Scheduler(
+@@ -3932,6 +4233,10 @@ class Scheduler(
                  has_chunked_req=(self.chunked_req is not None),
                  truncation_align_size=self.truncation_align_size,
              )
@@ -945,7 +972,7 @@ index 743c8af..d65aa7d 100644
  
              if self.enable_lora:
                  running_loras.add(req.lora_id)
-@@ -4254,6 +4558,9 @@ class Scheduler(
+@@ -4254,6 +4559,9 @@ class Scheduler(
          batch.launch_ts = time.monotonic()
          batch.after_idle_gap = self._sched_idled
          self._sched_idled = False
@@ -955,7 +982,7 @@ index 743c8af..d65aa7d 100644
  
          # Accumulate the prefill-token counter used by the HRRN scheduling policy. Decode / prebuilt batches contribute 0.
          if batch.extend_num_tokens:
-@@ -4622,6 +4929,10 @@ class Scheduler(
+@@ -4622,6 +4930,10 @@ class Scheduler(
          elif batch.forward_mode.is_idle():
              self.batch_result_processor.process_batch_result_idle(batch, result)
  
@@ -966,7 +993,7 @@ index 743c8af..d65aa7d 100644
          self._record_step_counters(batch, result)
  
          self.metrics_reporter.log_batch_result_stats(batch, result)
-@@ -4634,6 +4945,19 @@ class Scheduler(
+@@ -4634,6 +4946,19 @@ class Scheduler(
          self.maybe_send_health_check_signal()
          self.metrics_reporter.update_device_timer()
  
@@ -986,7 +1013,7 @@ index 743c8af..d65aa7d 100644
      def _record_step_counters(
          self, batch: ScheduleBatch, result: GenerationBatchResult
      ) -> None:
-@@ -5215,6 +5539,9 @@ class Scheduler(
+@@ -5215,6 +5540,9 @@ class Scheduler(
          }
  
      def abort_request(self, recv_req: AbortReq):
@@ -996,7 +1023,7 @@ index 743c8af..d65aa7d 100644
          if (chunked_req := self.chunked_req) is not None:
              if recv_req.abort_all or chunked_req.rid.startswith(recv_req.rid):
                  self._pending_chunked_abort_req = chunked_req
-@@ -5369,6 +5696,25 @@ class Scheduler(
+@@ -5369,6 +5697,25 @@ class Scheduler(
                  else:
                      req.to_finish = FINISH_ABORT()
  
@@ -1022,7 +1049,7 @@ index 743c8af..d65aa7d 100644
      def _pause_engine(self) -> Tuple[List[Req], int]:
          raise NotImplementedError()
  
-@@ -5642,6 +5988,8 @@ class Scheduler(
+@@ -5642,6 +5989,8 @@ class Scheduler(
  
      def maybe_sleep_on_idle(self):
          if self.idle_sleeper is not None:
@@ -1031,7 +1058,7 @@ index 743c8af..d65aa7d 100644
              self.idle_sleeper.maybe_sleep()
  
      def handle_freeze_gc(self, recv_req: FreezeGCReq):
-@@ -5652,6 +6000,17 @@ class Scheduler(
+@@ -5652,6 +6001,17 @@ class Scheduler(
  
      def handle_shutdown(self, recv_req: ShutdownReq):
          # Break the event loop; the finally in run_scheduler_process releases resources.
@@ -1644,7 +1671,7 @@ index 6815679..fc9deaa 100644
      def reset(self) -> None:
          """Drop the entire tree and reinitialize empty state."""
 diff --git a/python/sglang/srt/mem_cache/unified_radix_cache.py b/python/sglang/srt/mem_cache/unified_radix_cache.py
-index d417d7d..89542d5 100644
+index d417d7d..f5766eb 100644
 --- a/python/sglang/srt/mem_cache/unified_radix_cache.py
 +++ b/python/sglang/srt/mem_cache/unified_radix_cache.py
 @@ -6,7 +6,7 @@ import threading
@@ -2743,7 +2770,7 @@ index d417d7d..89542d5 100644
              finish_count -= 1
  
      # ---- HiCache: Scheduler Entry Points ----
-@@ -3341,7 +4181,18 @@ class UnifiedRadixCache(BasePrefixCache):
+@@ -3341,9 +4181,31 @@ class UnifiedRadixCache(BasePrefixCache):
          if self.linker is not None:
              return self.linker.start_layer_wise_loading()
          if self.cache_controller is not None:
@@ -2762,7 +2789,20 @@ index d417d7d..89542d5 100644
 +            return producer
          return 0
  
++    def supports_beliefkv_overlap_prefetch(self) -> bool:
++        """Only the cache-mode no-reclaim adapter has the required load fence."""
++        return bool(
++            self.host_memory_mode == "cache"
++            and self.buffer_pipeline is None
++            and self.linker is None
++            and self.enable_session_radix_cache
++            and self.cache_controller is not None
++            and self.cache_controller.load_fence_stream is not None
++        )
++
      def is_load_back_event_done(self, consumer_index: int) -> bool:
+         """Return True after the local load-back event is complete.
+ 
 diff --git a/python/sglang/srt/session/session_controller.py b/python/sglang/srt/session/session_controller.py
 index c23c965..73ad611 100644
 --- a/python/sglang/srt/session/session_controller.py
@@ -3323,6 +3363,54 @@ index 0000000..44d2402
 +    component, old, latest = session_fixture()
 +    component.retain_latest_session_leaf("s", Node())
 +    assert component._session_leaves["s"] == {old, latest}
+diff --git a/test/srt/test_beliefkv_layer_wait_probe.py b/test/srt/test_beliefkv_layer_wait_probe.py
+new file mode 100644
+index 0000000..6a07ed3
+--- /dev/null
++++ b/test/srt/test_beliefkv_layer_wait_probe.py
+@@ -0,0 +1,42 @@
++"""The optional probe must preserve native load wait semantics."""
++
++import ast
++from pathlib import Path
++from types import SimpleNamespace
++
++
++SOURCE = Path(__file__).resolve().parents[2] / "python/sglang/srt/managers/cache_controller.py"
++
++
++def counter_class():
++    tree = ast.parse(SOURCE.read_text())
++    node = next(item for item in tree.body
++                if isinstance(item, ast.ClassDef) and item.name == "LayerDoneCounter")
++    module = ast.fix_missing_locations(ast.Module(body=[node], type_ignores=[]))
++    namespace = {
++        "LayerLoadingEvent": lambda _: SimpleNamespace(finish_event=SimpleNamespace(query=lambda: True)),
++    }
++    exec(compile(module, str(SOURCE), "exec"), namespace)
++    return namespace["LayerDoneCounter"]
++
++
++def test_optional_probe_preserves_waits_and_reset():
++    counter = counter_class()(2)
++    calls = []
++    counter.events[0].wait = lambda layer: calls.append(("native", layer))
++    counter.wait_until(0)
++    assert calls == []
++    counter.set_consumer(0)
++    counter.wait_until(1)
++    assert calls == [("native", 1)]
++
++    def measured(event, layer, consumer):
++        calls.append(("probe", layer, consumer))
++        event.wait(layer)
++
++    counter.beliefkv_wait_probe = SimpleNamespace(wait=measured)
++    counter.wait_until(0)
++    assert calls[-2:] == [("probe", 0, 0), ("native", 0)]
++    counter.reset()
++    assert counter.beliefkv_wait_probe is None
++    assert counter.consumer_index == -1
 diff --git a/test/srt/test_beliefkv_lifecycle.py b/test/srt/test_beliefkv_lifecycle.py
 new file mode 100644
 index 0000000..88361ff
@@ -3895,10 +3983,10 @@ index 0000000..0f6eaa2
 +    unittest.main()
 diff --git a/test/srt/test_beliefkv_scheduler_hook.py b/test/srt/test_beliefkv_scheduler_hook.py
 new file mode 100644
-index 0000000..3ca4cd2
+index 0000000..c570a14
 --- /dev/null
 +++ b/test/srt/test_beliefkv_scheduler_hook.py
-@@ -0,0 +1,663 @@
+@@ -0,0 +1,705 @@
 +"""BeliefKV scheduler safe-point contract, without model/GPU dependencies."""
 +
 +import ast
@@ -4490,6 +4578,48 @@ index 0000000..3ca4cd2
 +        scheduler.get_next_batch_to_run(batch, None)
 +        self.assertLess(calls.index("drained"), calls.index("selected"))
 +
++    def test_native_fenced_prefetch_dispatches_without_draining_decode(self):
++        scheduler, batch, calls = idle_scheduler(overlap=True)
++        scheduler.beliefkv_runtime = SimpleNamespace(
++            scheduler_step=lambda **kwargs: calls.append("ack"),
++            can_prefetch_during_overlap=lambda: True,
++            running_batch_retraction_barrier_required=lambda _: False,
++            dispatch_join_prefetch=lambda: calls.append("join"),
++            dispatch_tool_prefetch=lambda: calls.append("tool"),
++            dispatch_join_prepare=lambda _: None,
++            dispatch_tool_prepare=lambda _: None,
++            dispatch_execution_handoff=lambda *args, **kwargs: None,
++            on_batch_selected=lambda _: calls.append("selected"),
++        )
++        scheduler.result_queue.append("inflight")
++        last_batch = SimpleNamespace(
++            forward_mode=SimpleNamespace(is_extend=lambda: False)
++        )
++        scheduler.get_next_batch_to_run(batch, last_batch)
++        self.assertEqual(calls, ["abort", "cache", "ack", "join", "tool", "selected"])
++        self.assertEqual(scheduler.result_queue, ["inflight"])
++        self.assertFalse(scheduler._beliefkv_retraction_drain_pending)
++
++    def test_legacy_overlap_adapter_does_not_dispatch_without_a_safe_point(self):
++        scheduler, batch, calls = idle_scheduler(overlap=True)
++        scheduler.beliefkv_runtime = SimpleNamespace(
++            scheduler_step=lambda **kwargs: None,
++            can_prefetch_during_overlap=lambda: False,
++            running_batch_retraction_barrier_required=lambda _: False,
++            dispatch_join_prefetch=lambda: calls.append("join"),
++            dispatch_tool_prefetch=lambda: calls.append("tool"),
++            dispatch_join_prepare=lambda _: None,
++            dispatch_tool_prepare=lambda _: None,
++            dispatch_execution_handoff=lambda *args, **kwargs: None,
++            on_batch_selected=lambda _: None,
++        )
++        scheduler.result_queue.append("inflight")
++        scheduler.get_next_batch_to_run(batch, SimpleNamespace(
++            forward_mode=SimpleNamespace(is_extend=lambda: False),
++        ))
++        self.assertNotIn("join", calls)
++        self.assertNotIn("tool", calls)
++
 +    def test_retraction_plan_is_rejected_before_native_scheduling(self):
 +        scheduler, batch, calls = idle_scheduler()
 +        scheduler.beliefkv_runtime = SimpleNamespace(
@@ -4634,10 +4764,10 @@ index 0000000..388cb28
 +    assert tracker.snapshot_session_leaf_anchors("session", generation) is None
 diff --git a/test/srt/test_beliefkv_shadow_dispatch.py b/test/srt/test_beliefkv_shadow_dispatch.py
 new file mode 100644
-index 0000000..0d4715d
+index 0000000..7832e30
 --- /dev/null
 +++ b/test/srt/test_beliefkv_shadow_dispatch.py
-@@ -0,0 +1,954 @@
+@@ -0,0 +1,973 @@
 +"""CPU-only action-local shadow dispatch tests, without importing the GPU runtime."""
 +
 +import ast
@@ -4692,6 +4822,7 @@ index 0000000..0d4715d
 +    names = {
 +        "prepare_host_shadow",
 +        "prefetch_gpu_session_node",
++        "supports_beliefkv_overlap_prefetch",
 +        "ready_to_load_host_cache",
 +        "_load_back_transfers",
 +        "_execute_and_commit_kv_backup",
@@ -5288,6 +5419,24 @@ index 0000000..0d4715d
 +
 +
 +class TestPrefetchGpuNode(unittest.TestCase):
++    def test_overlap_support_requires_native_cache_mode_and_load_fence(self):
++        cache, *_ = fixture()
++        cache.linker = None
++        cache.cache_controller.load_fence_stream = object()
++        self.assertTrue(cache.supports_beliefkv_overlap_prefetch())
++        for field, value in (
++            ("host_memory_mode", "buffer_only"),
++            ("buffer_pipeline", object()),
++            ("linker", object()),
++            ("enable_session_radix_cache", False),
++        ):
++            old = getattr(cache, field)
++            setattr(cache, field, value)
++            self.assertFalse(cache.supports_beliefkv_overlap_prefetch())
++            setattr(cache, field, old)
++        cache.cache_controller.load_fence_stream = None
++        self.assertFalse(cache.supports_beliefkv_overlap_prefetch())
++
 +    def test_full_only_restore_propagates_mask_to_native_load(self):
 +        cache, _, _, leaf, _, _, args = fixture()
 +        cache.tree_core.build_load_back_spec = Mock(return_value=(

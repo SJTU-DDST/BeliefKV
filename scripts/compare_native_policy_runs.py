@@ -101,6 +101,22 @@ def last_runtime_state(path: Path) -> dict:
     ), {})
 
 
+def restore_wait_statistics(rows) -> dict:
+    values = [
+        row["gpu_layer_dependency_wait_ms"] for row in rows
+        if row.get("event") == "gpu_restore_dependency_wait"
+    ]
+    return {
+        "sampled_batches": len(values), "sampled_gpu_wait_sum_ms": sum(values),
+        "p50_ms": percentile(values, .5), "p95_ms": percentile(values, .95),
+        "mean_ms": mean(values) if values else None,
+        "semantics": (
+            "Sampled CUDA-stream native layer-dependency waits including event "
+            "overhead; not all H2D, not request queue delay or an oracle JCT bound."
+        ),
+    }
+
+
 def compare_run(arm: Path, timeline_path: Path, bin_seconds: int) -> dict:
     clients = list(arm.glob("client_*/summary.json"))
     if len(clients) != 1:
@@ -125,6 +141,14 @@ def compare_run(arm: Path, timeline_path: Path, bin_seconds: int) -> dict:
         index = int((ts_ms - anchor_ms) // (1000 * bin_seconds))
         return bins[index] if 0 <= index < len(bins) else None
 
+    restore_waits = [
+        row for row in records(arm / "server/runtime_audit.jsonl")
+        if row.get("event") == "gpu_restore_dependency_wait"
+    ]
+    for row in restore_waits:
+        item = bucket(row["ts_ms"])
+        if item is not None:
+            item["gpu_restore_dependency_wait_ms"].append(row["gpu_layer_dependency_wait_ms"])
     output_tokens = input_tokens = 0
     request_latencies = []
     request_submits = {}
@@ -300,6 +324,9 @@ def compare_run(arm: Path, timeline_path: Path, bin_seconds: int) -> dict:
             "tool_duration_p50_ms": percentile(item["tool_duration_ms"], .5),
             "tool_duration_p95_ms": percentile(item["tool_duration_ms"], .95),
             "post_tool_to_submit_p50_ms": percentile(item["post_tool_to_submit_ms"], .5),
+            "sampled_restore_wait_batches": len(item["gpu_restore_dependency_wait_ms"]),
+            "sampled_restore_wait_p50_ms": percentile(item["gpu_restore_dependency_wait_ms"], .5),
+            "sampled_restore_wait_p95_ms": percentile(item["gpu_restore_dependency_wait_ms"], .95),
             "old_prefix_missing_proxy_ratio": (
                 sum(item["old_prefix_missing_tokens"]) / sum(item["common_previously_served_tokens"])
                 if sum(item["common_previously_served_tokens"]) else None
@@ -341,6 +368,8 @@ def compare_run(arm: Path, timeline_path: Path, bin_seconds: int) -> dict:
         row["duration_seconds"] for row in summary["workflows"] if row["outcome"] == "completed"
     ]
     reuse = status["context_prefix_reuse_evidence"]["counts"]
+    state = last_runtime_state(arm / "opportunities/admission_opportunities.jsonl")
+    cpu_profile = state.get("shared_path_timing") or {}
     return {
         "run": str(arm.resolve()), "timeline": str(timeline_path.resolve()),
         "time_origin": "first GPU-monitor sample; matches the HTML timeline",
@@ -406,10 +435,21 @@ def compare_run(arm: Path, timeline_path: Path, bin_seconds: int) -> dict:
             key: {"sum": sum(values), "p50": percentile(values, .5), "p95": percentile(values, .95)}
             for key, values in transfer_times.items()
         },
+        "gpu_restore_dependency_wait": {
+            **restore_wait_statistics(restore_waits),
+            "probe_status": status.get("gpu_restore_wait_probe"),
+        },
+        "shared_path_cpu_profile": {
+            **cpu_profile,
+            "instrumented_exclusive_sum_ms": sum(
+                phase["self_ms"] for phase in cpu_profile.get("phases", {}).values()
+            ) if cpu_profile else None,
+            "semantics": "Instrumented Python wall intervals, not CPU cycles or total GPU idle time.",
+        },
         "milestones": milestones, "bands": bands,
         "instance_ids": manifest["instance_ids"],
         "harness_config": manifest["config"],
-        "runtime_state": last_runtime_state(arm / "opportunities/admission_opportunities.jsonl"),
+        "runtime_state": state,
         "diagnostic_note": timeline["summary"]["diagnostic_note"],
         "measurement_notes": [
             "All policies used live generation, not identical realized request traces.",

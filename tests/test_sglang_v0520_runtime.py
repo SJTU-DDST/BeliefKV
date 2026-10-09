@@ -2892,6 +2892,62 @@ def test_native_fallback_and_causal_join_straggler_ranking():
     assert runtime.visible == {"a": runtime.visible["a"], "b": runtime.visible["b"]}
     assert select(runtime, [a, plain, b]).rejected == ()
 
+def test_admission_plans_only_queued_invocations_without_whole_graph_scan():
+    runtime = NativeAdmissionRuntime()
+    a = req("a")
+    runtime.register_visible_request(a)
+    runtime.on_events((
+        event(0, RuntimeEventKind.WORKFLOW_START),
+        event(1, RuntimeEventKind.INVOCATION_CREATE,
+              invocation_id="a", context_id="ctx-a"),
+        event(2, RuntimeEventKind.INVOCATION_CREATE,
+              invocation_id="not-queued", context_id="ctx-other"),
+    ))
+    with (
+        patch.object(runtime.graph, "ready_invocations", side_effect=AssertionError),
+        patch.object(runtime.frontier, "_active_descendant_counts", side_effect=AssertionError),
+        patch.object(runtime.frontier, "admission_rank",
+                     wraps=runtime.frontier.admission_rank) as describe,
+    ):
+        assert select(runtime, [a]).candidates == (a,)
+    assert describe.call_args_list[0].args == ("a",)
+    assert describe.call_count == 1
+
+
+def test_shared_path_timing_is_persisted_without_per_call_rows(tmp_path):
+    runtime = NativeAdmissionRuntime(opportunity_dir=str(tmp_path))
+    runtime.on_events((event(0, RuntimeEventKind.WORKFLOW_START),))
+    runtime.scheduler_step()
+    runtime.close()
+    rows = [json.loads(line) for line in
+            (tmp_path / "admission_opportunities.jsonl").read_text().splitlines()]
+    final = next(row for row in rows if row.get("final"))
+    phases = final["shared_path_timing"]["phases"]
+    assert phases["scheduler_maintenance"]["count"] == 1
+    assert phases["event_apply"]["count"] == 1
+    assert phases["graph_apply"]["count"] == 1
+    assert phases["event_apply"]["total_ms"] >= phases["graph_apply"]["total_ms"]
+    assert not any(row["event"] == "hotpath_call" for row in rows)
+
+
+def test_no_prefetch_lease_skips_per_decode_identity_parsing():
+    runtime = NativeAdmissionRuntime()
+    a = req("a")
+    a.finished = lambda: False
+    with patch("beliefkv.runtime.sglang_v0520_runtime._request_key",
+               side_effect=AssertionError("no active restore or final stage")):
+        runtime.on_batch_completed(NS(reqs=[a]))
+
+def test_native_fenced_prefetch_does_not_request_overlap_drain():
+    runtime = NativeAdmissionRuntime()
+    runtime.attach_native_cache(NS(supports_beliefkv_overlap_prefetch=lambda: True))
+    with patch.object(runtime, "_roll_tool_prefetch", side_effect=AssertionError):
+        assert runtime.running_batch_retraction_barrier_required(NS(reqs=[])) is False
+    assert not runtime.counts["tool_overlap_drain_requested"]
+    assert not runtime.counts["join_overlap_drain_requested"]
+    runtime.enable_confirmed_join_canary = True
+    assert runtime.can_prefetch_during_overlap() is False
+
 
 def test_stale_attempt_and_session_fail_closed_without_blocking_native():
     runtime = NativeAdmissionRuntime()

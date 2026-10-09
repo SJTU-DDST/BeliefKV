@@ -1,0 +1,169 @@
+{
+  "scope": "synthetic CPU benchmark; not live GPU overhead or an end-to-end speedup",
+  "baseline_revision": "7055901",
+  "baseline_source_sha256": {
+    "beliefkv/runtime/sglang_v0520_runtime.py": "f4349a2144499d4c4183e201b09925333c8eea48ff775fc53aab5aff8ebc460d",
+    "beliefkv/policy/causal_frontier.py": "a0d02320f2d88593282dc5d227be4fb87bacc1d4697add808e4df5604ee36861"
+  },
+  "workflows": 108,
+  "retained_rounds_per_workflow": 2,
+  "invocations": 756,
+  "joins": 216,
+  "waiting_requests": 108,
+  "iterations": 80,
+  "invalidate_caches_each_iteration": true,
+  "queue_order_equal": true,
+  "costs": {
+    "baseline": {
+      "admission": {
+        "count": 80,
+        "mean_ms": 10.7224390875,
+        "p50_ms": 10.722316,
+        "p99_ms": 10.901115,
+        "max_ms": 10.901115
+      },
+      "batch_completed": {
+        "count": 80,
+        "mean_ms": 0.1573364,
+        "p50_ms": 0.15752,
+        "p99_ms": 0.163673,
+        "max_ms": 0.163673
+      }
+    },
+    "optimized": {
+      "admission": {
+        "count": 80,
+        "mean_ms": 1.365462675,
+        "p50_ms": 1.370054,
+        "p99_ms": 1.417169,
+        "max_ms": 1.417169
+      },
+      "batch_completed": {
+        "count": 80,
+        "mean_ms": 0.0280604125,
+        "p50_ms": 0.027938,
+        "p99_ms": 0.032836,
+        "max_ms": 0.032836
+      }
+    },
+    "optimized_profiled": {
+      "admission": {
+        "count": 80,
+        "mean_ms": 1.3874264875,
+        "p50_ms": 1.388101,
+        "p99_ms": 1.551777,
+        "max_ms": 1.551777
+      },
+      "batch_completed": {
+        "count": 80,
+        "mean_ms": 0.0299696375,
+        "p50_ms": 0.02988,
+        "p99_ms": 0.033912,
+        "max_ms": 0.033912
+      }
+    }
+  },
+  "admission_mean_reduction_fraction": 0.8726537251592477,
+  "profiled_timing": {
+    "schema_version": 1,
+    "enabled": true,
+    "clock": "perf_counter_ns; CPU wall intervals, not GPU kernel time",
+    "scope": "cumulative completed calls; exclusive totals avoid nested double counting",
+    "elapsed_ms": 1175.640047,
+    "bucket_upper_ms": [
+      0.01,
+      0.025,
+      0.05,
+      0.1,
+      0.25,
+      0.5,
+      1.0,
+      2.5,
+      5.0,
+      10.0,
+      25.0,
+      50.0,
+      100.0,
+      250.0,
+      1000.0,
+      null
+    ],
+    "phases": {
+      "reentry_inspection": {
+        "count": 1360,
+        "total_ms": 8.000386,
+        "self_ms": 8.000386,
+        "mean_ms": 0.005882636764705882,
+        "max_ms": 0.015388,
+        "histogram": [
+          1338,
+          22,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      "admission_plan": {
+        "count": 85,
+        "total_ms": 117.670263,
+        "self_ms": 109.669877,
+        "mean_ms": 1.3843560352941175,
+        "max_ms": 1.547928,
+        "histogram": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          85,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      "batch_completed": {
+        "count": 85,
+        "total_ms": 2.308491,
+        "self_ms": 2.308491,
+        "mean_ms": 0.027158717647058822,
+        "max_ms": 0.030873,
+        "histogram": [
+          0,
+          0,
+          85,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      }
+    }
+  }
+}
