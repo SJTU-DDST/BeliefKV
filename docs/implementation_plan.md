@@ -2,6 +2,58 @@
 
 Status date: 2026-10-09.
 
+## Opportunity-Aware Transfer Revision
+
+The remaining runtime optimizations are implemented in
+`perf/opportunity-aware-transfer`, based on `859d138`. Preserve model weights,
+phase thresholds, harness and prompt. Runtime chooses transfer actions from
+forecast and observed capacity; the offline predictor need not learn net benefit.
+
+Completed:
+- Budget ACK locks from native running count, request-pool rows and next-prefill
+  limits. Reserve decode page growth, input space and new Mamba slots first.
+  A full decode batch allows at most one frontier restore, without overriding
+  native admission. Missing capacity observations retain four locks/one GiB.
+- Promote ready restores after one to four ordinary admissions according to
+  next-batch demand, retaining ten-second aging. On real NO_TOKEN, release an
+  actual speculative lock before a ready restore or the current request's lock.
+- Rotate through at most eight JOIN/tool PREPARE candidates. Rank pressured-pool
+  relief before copied bytes, respect Host free lists and observed D2H timing.
+  Register already backed FULL-only checkpoints for idle duplicate reclamation.
+- Derive latest-start from measured H2D submit-to-ACK P90, enqueue-to-submit P90
+  and 100 ms observation spacing, within the frozen 500 ms lead cap. Pre-EOS JOIN
+  decisions require recent child service; do not extrapolate descheduled progress.
+- When generated work overtakes the predicted center, use a still-live upper
+  bound or wait for a new forecast/EOS. Log actual progress and the effective
+  statistic. Do not interpret endpoint overrun as one remaining token.
+- Fix the timeline renderer's arm path and resume only the unstarted predictive
+  arm, retaining native artifacts and all non-revision frozen configuration.
+
+Evidence: related regression 290 passed/1 skipped. No engine patch change.
+Synthetic 156-workflow/16-round admission comparison with `859d138` is
+3.597 -> 3.602 ms (+0.13%), with identical queue order. This fixture has no
+active physical transfers/locks; it is not whole-path cost or GPU throughput.
+Report: `experiments/reports/opportunity_policy_cpu_156_16_20261009.json`.
+
+Historical v8d has 15 work-based trigger snapshots, RETURN lead P50 9.472 s,
+EOS/RETURN signed error P50 -5.047/-9.094 s. None overtook the center/upper;
+the endpoint-clamp bug is not a demonstrated cause of those early triggers.
+The adaptive policy would wait at 13/15 original snapshots, without proving
+later trigger accuracy, reuse or speedup. ACK-to-service P50 is 8.167 s;
+71 FULL uses are confirmed and historical leases held no actual native locks.
+Report: `experiments/reports/native_transfer_policy_v8d_20261009.json`.
+
+V10 native is finished: 154 completed/2 incomplete, 10345.487 s window.
+Its parent driver then failed at the HTML export path before predictive started.
+Native HTML is now generated. Commit these optimizations, fast-forward main,
+clean only archived completed workspaces, then run
+`scripts/resume_semantic_h2d_ab.py` on the existing v10 directory. Preserve
+the native revision and original plan; only update the pending predictive
+revision. Do not repeat native or refit models during this frozen collection.
+Evaluate throughput/JCT, exposed waits, reuse, repeated loads and residency
+costs. Further remaining-work-head tuning depends on new measured errors;
+subsecond RETURN accuracy and GPU benefit are not yet established.
+
 ## Pipelined Handoff Revision
 
 Implemented in the isolated `perf/pipeline-execution-handoff` branch based
@@ -25,7 +77,8 @@ This is a cross-revision development comparison; GPU benefit is pending.
   aging, promotion budgets and hint expiry. Deduplicate identical component
   leaf observations within one physical capture; native enqueue revalidates.
 - Register the deepest ACK lock before ancestors, sharing its FULL closure
-  protection. Retain four actual native locks and one GiB in total.
+  protection. This revision used four locks/one GiB; the current native-capacity
+  budget is described above.
 - Capture native allocation identities at issuance, buffer service observed
   before software ACK, and publish reuse only after matching verified credit.
   Do not acquire a late residency lock after service. Discard provisional
@@ -49,9 +102,10 @@ Evaluate the latest predictive revision against the current native arm. Assess
 completed-workflow throughput and JCT together with exposed restoration
 wait, useful FULL reuse, repeated demand loads, recompute and resident byte-time.
 Do not refit the predictor, add canaries or enlarge transfers to count success.
-Dynamic next-batch prefetch budgets, PREPARE candidate refinement and
-opportunity-focused prediction tuning remain pending. Fixed four-lock/one-GiB
-limits still apply. Do not substitute CPU results for the GPU comparison.
+Dynamic next-batch budgets, PREPARE candidate refinement and service-aware
+trigger selection are now implemented above. Further remaining-work model
+tuning and GPU benefit remain unverified. Do not substitute CPU results for
+the GPU comparison.
 
 ## Shared-Path Cost And Matched Replenishment
 
@@ -190,7 +244,8 @@ Added for the next experiment:
 - Bound each request's handoff planning to 2 s and 16 nodes, with no repeated
   ticket after expiry. FULL uses native layer dependencies; unavailable state
   or legacy completion waits affect only the loading request. Other work continues.
-  ACK locks share the four/one-GiB budget and queued restores hold at most 3 s.
+  ACK locks now share the capacity budget described above; queued restores
+  hold at most 3 s.
 - Record `execution_handoff` separately from pre-RETURN/pre-TOOL_END loads,
   including selected request, checkpoint, freed victim units, issue and ACK.
 

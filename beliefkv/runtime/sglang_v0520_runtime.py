@@ -81,6 +81,12 @@ from beliefkv.runtime.native_transfer_service import (
     load_native_service_seed,
     pool_shape,
 )
+from beliefkv.runtime.native_transfer_policy import (
+    PrefetchResidencyBudget,
+    TransferStartWindow,
+    native_residency_budget,
+    transfer_start_window,
+)
 
 if TYPE_CHECKING:
     from beliefkv.core.events import RuntimeEvent
@@ -176,6 +182,7 @@ class _ToolPrefetchTicket:
     revision: float
     command_id: str | None = None
     drained: bool = False
+    start_window_ms: float | None = None
 
 
 @dataclass(frozen=True)
@@ -294,6 +301,12 @@ class NativeAdmissionRuntime:
         self._prefetch_priority_normal_admissions = 4
         self._prefetch_priority_promoted: str | None = None
         self._prefetch_priority_native_rank: int | None = None
+        self._native_running_batch: object | None = None
+        self._native_max_running: int | None = None
+        self._native_prefill_slots: int | None = None
+        self._native_page_size = 1
+        self._native_input_reserve = 0
+        self._residency_budget = PrefetchResidencyBudget(4, 1024 ** 3)
         self._visible_since: dict[str, float] = {}
         lead_setting = float(os.environ.get("BELIEFKV_PREFETCH_LEAD_MS", "1000"))
         if not math.isfinite(lead_setting) or not 100 <= lead_setting <= 1000:
@@ -398,6 +411,7 @@ class NativeAdmissionRuntime:
         self._tool_timing_only = False
         self._tool_refresh_next_ms = 0.
         self._tool_prepare_next_ms = 0.
+        self._tool_prepare_cursor = 0
         self._tool_last_queries: dict[PrefillCandidateKey, tuple[float, float]] = {}
         self._tool_opportunity_cache: dict[PrefillCandidateKey, tuple[float, object]] = {}
         self._active_tool_census_version: int | None = None
@@ -1159,6 +1173,7 @@ class NativeAdmissionRuntime:
             self._semantic_forecasts[item.key.request_id] = reply
             self.counts["semantic_result_accepted"] += 1
             if self._opportunity_writer is not None:
+                progress = self._semantic_progress.get(item.key.request_id, ())
                 self._opportunity_writer.record({
                     "event": "semantic_child_forecast", "ts_ms": time.time() * 1000,
                     "request_id": item.key.request_id,
@@ -1172,6 +1187,11 @@ class NativeAdmissionRuntime:
                     "observed_output_tokens": item.observed_output_tokens,
                     "causal_progress_guard_ms": item.causal_progress_guard_ms,
                     "notice_active": item.notice_active,
+                    "current_output_tokens": progress[-1][1] if progress else None,
+                    "last_service_age_ms": (
+                        now_ms - progress[-1][0] if progress else None
+                    ),
+                    "sampled_tokens_per_second": self._semantic_rate(item.key.request_id),
                 })
             if reply.final_score < self._semantic_score_threshold:
                 continue
@@ -1400,6 +1420,15 @@ class NativeAdmissionRuntime:
                 "terminal_cache_diagnostics": self._terminal_cache_diagnostics,
                 "h2d_seed_samples": self._h2d_seed_count,
                 "h2d_service_samples": len(self._h2d_samples),
+                "prefetch_residency_budget": asdict(self._residency_budget),
+                "prefetch_locked_count": sum(
+                    lease.lock_params is not None
+                    for lease in self._prefetch_service_leases.values()
+                ),
+                "prefetch_protected_bytes": sum(
+                    lease.protected_bytes
+                    for lease in self._prefetch_service_leases.values()
+                ),
                 "semantic_worker_configured": self._semantic_worker is not None,
                 "semantic_worker_error": (
                     self._semantic_worker.error if self._semantic_worker else ""
@@ -1910,6 +1939,9 @@ class NativeAdmissionRuntime:
             ):
                 continue
             observed_eos = self._semantic_eos_proofs.get(stage.request_id) is True
+            if not observed_eos and not self._final_stage_service_available(stage):
+                self.counts["semantic_h2d_child_waiting_for_service"] += 1
+                continue
             if not observed_eos and (
                 stage.generated_tokens < 16 or stage.tokens_per_second is None
             ):
@@ -1922,6 +1954,7 @@ class NativeAdmissionRuntime:
                 continue
             forecast = None
             trigger_kind = "estimated_work"
+            effective_work_statistic = self.semantic_work_statistic
             if self._semantic_worker is not None and observed_eos:
                 now_ms = time.monotonic() * 1000
                 ended_ms = self._semantic_finished[stage.request_id][0]
@@ -1963,13 +1996,24 @@ class NativeAdmissionRuntime:
                         forecast.upper_tokens if self.semantic_work_statistic == "upper"
                         else forecast.middle_tokens
                     )
-                    remaining = max(
-                        1., work_tokens
-                        - max(0, generated - forecast.observation.observed_output_tokens),
-                    )
+                    advanced = max(0, generated - forecast.observation.observed_output_tokens)
+                    if work_tokens <= advanced:
+                        self.counts["semantic_work_forecast_overtaken"] += 1
+                        if (
+                            self.semantic_work_statistic == "center"
+                            and forecast.upper_tokens > advanced
+                        ):
+                            work_tokens = forecast.upper_tokens
+                            effective_work_statistic = "upper_after_center_overrun"
+                            self.counts["semantic_work_overrun_uses_live_upper"] += 1
+                        else:
+                            # Passing a predicted endpoint proves an
+                            # underestimate, not that only one token remains.
+                            continue
+                    remaining = max(1., work_tokens - advanced)
                     self.counts[
                         "semantic_pre_eos_uses_work_upper_bound"
-                        if self.semantic_work_statistic == "upper"
+                        if effective_work_statistic != "center"
                         else "semantic_pre_eos_uses_work_center"
                     ] += 1
                 # EOS is known GPU progress, not confirmation that the child RETURNed.
@@ -2029,10 +2073,19 @@ class NativeAdmissionRuntime:
             if estimate is None:
                 self.counts["prefetch_service_size_unsupported"] += 1
                 continue
-            h2d_ms = estimate.submit_to_ack_p90_ms
-            if remaining_ms > self.prefetch_lead_ms:
+            window = transfer_start_window(
+                estimate, max_lead_ms=self.prefetch_lead_ms,
+                observation_spacing_ms=SEMANTIC_FRAME_INTERVAL_MS,
+            )
+            if window is None:
+                self.counts["prefetch_service_exceeds_lead_window"] += 1
+                continue
+            if remaining_ms > window.horizon_ms:
                 if self._semantic_worker is not None:
                     self.counts["semantic_h2d_not_latest_start"] += 1
+                continue
+            if not self._prefetch_slot_available(stage.key):
+                self.counts["semantic_h2d_admission_budget_busy"] += 1
                 continue
             join = self.graph.joins[stage.join_id]
             self._join_ticket = _JoinPrefetchTicket(
@@ -2055,13 +2108,16 @@ class NativeAdmissionRuntime:
                     "remaining_ms": remaining_ms,
                     "trigger_kind": trigger_kind,
                     "work_statistic": self.semantic_work_statistic,
+                    "effective_work_statistic": effective_work_statistic,
                     "forecast_center_tokens": (
                         forecast.middle_tokens if forecast is not None else None
                     ),
                     "forecast_upper_tokens": (
                         forecast.upper_tokens if forecast is not None else None
                     ),
-                    "h2d_ms": h2d_ms,
+                    "h2d_ms": window.service_ms,
+                    "enqueue_to_submit_p90_ms": window.enqueue_ms,
+                    "start_window_ms": window.horizon_ms,
                     "prefetch_lead_ms": self.prefetch_lead_ms,
                     "service_sample_count": estimate.sample_count,
                     "service_support": estimate.support,
@@ -2071,6 +2127,20 @@ class NativeAdmissionRuntime:
                     "child_invocation_id": stage.child_id,
                 })
             break
+
+    def _final_stage_service_available(self, stage: _ChildFinalStage) -> bool:
+        batch = self._native_running_batch
+        if batch is not None and not any(
+            getattr(req, "rid", None) == stage.request_id
+            for req in getattr(batch, "reqs", ())
+        ):
+            return False
+        progress = self._semantic_progress.get(stage.request_id, ())
+        if progress and time.monotonic() * 1000. - progress[-1][0] > max(
+            2 * SEMANTIC_FRAME_INTERVAL_MS, min(250., self.prefetch_lead_ms),
+        ):
+            return False
+        return True
 
     def _live_completion_hint(self, hint: _CompletionReentryHint) -> bool:
         if self.completion_lead is None:
@@ -3027,6 +3097,95 @@ class NativeAdmissionRuntime:
                 candidates.append((node_id, created))
         cache.beliefkv_join_pressure_candidates = tuple(candidates)
 
+    def _register_backed_pressure_nodes(self, key: PrefillCandidateKey) -> None:
+        cache = self._native_cache
+        anchors = self.snapshot_session_anchors(
+            cache, context_id=key.context_id, context_epoch=key.context_epoch,
+        )
+        candidate = (
+            capture_action_local_shadow(
+                cache, anchors, for_prefetch=True, include_non_actionable=True,
+            ) if anchors is not None else None
+        )
+        if candidate is None or anchors.reusable_input_tokens is None:
+            return
+        nodes = {node.node_id: node for node in candidate.nodes}
+        for node in candidate.nodes:
+            if not (
+                node.full_device_tokens and node.full_host_tokens
+                or node.mamba_device_present and node.mamba_host_present
+            ):
+                continue
+            prefix, current = 0, node
+            while current is not None:
+                prefix += current.key_tokens or 0
+                current = nodes.get(current.parent_id)
+            if prefix <= anchors.reusable_input_tokens:
+                self._parent_pressure_candidates[node.node_id] = (key, node.creation_time)
+
+    def _prepare_step_rank(
+        self, step: ShadowBackupStep, headroom: object,
+        *, full_pressure: bool, mamba_pressure: bool,
+    ) -> tuple[float, float] | None:
+        """Rank reclaimable pressured pools; do not make a native reservation."""
+        cache = self._native_cache
+        try:
+            node = cache.tree_core.node_by_id(step.node_id)
+            full, state = node.component_data[0], node.component_data[2]
+            full_units = len(full.value) if full.value is not None and full.host_value is None else 0
+            mamba_units = int(
+                step.include_mamba and state.value is not None and state.host_value is None
+            )
+            if (
+                full_units > headroom.host_full_free_tokens
+                or mamba_units > headroom.host_mamba_free_slots
+            ):
+                self.counts["prepare_candidate_no_host_capacity"] += 1
+                return None
+            entries = cache.host_pool_group.entry_map
+            full_unit = entries["kv"].host_pool.size_per_token
+            mamba_unit = entries["mamba"].host_pool.size_per_token
+            transfer_bytes = full_units * full_unit + mamba_units * mamba_unit
+            if transfer_bytes <= 0:
+                return None
+            reclaim_bytes = (
+                (len(full.value) * full_unit if full.value is not None else 0)
+                * bool(full_pressure and full.lock_ref == 0 and full.session_ref == 1)
+                + int(state.value is not None) * mamba_unit
+                * bool(mamba_pressure and state.lock_ref == 0 and state.session_ref == 1)
+            )
+            service = estimate_native_service(
+                self._native_service_samples, transfer_bytes, direction="d2h",
+                shape=pool_shape(full_units, mamba_units),
+            )
+            hint = self._live_tool_hint(step.key)
+            if hint is not None and service is not None:
+                remaining = hint.remaining_quantile(.1, now_ms=time.monotonic() * 1000.)
+                ready_ms = service.submit_to_ack_p90_ms + (
+                    service.enqueue_to_submit_p90_ms or 0.
+                )
+                if remaining is not None and remaining < ready_ms + self.prefetch_lead_ms:
+                    self.counts["prepare_candidate_short_wait_window"] += 1
+                    return None
+            # Ancestor backup can unlock a later exclusive checkpoint; retain
+            # it behind candidates that can directly release pressured bytes.
+            return (-float(reclaim_bytes), float(transfer_bytes))
+        except (AttributeError, IndexError, KeyError, TypeError, ValueError, RuntimeError):
+            return (0., 0.)
+
+    def _record_prepare_selection(
+        self, step: ShadowBackupStep, *, source: str, rank: tuple[float, float],
+        scanned: int,
+    ) -> None:
+        if self._opportunity_writer is not None:
+            self._opportunity_writer.record({
+                "event": "prepare_candidate_selected", "ts_ms": time.time() * 1000.,
+                "source": source, "context_id": step.key.context_id,
+                "context_epoch": step.key.context_epoch, "node_id": step.node_id,
+                "reclaimable_pressured_bytes": -rank[0],
+                "transfer_bytes": rank[1], "scanned_candidates": scanned,
+            })
+
     @timed_runtime("join_prepare")
     def dispatch_join_prepare(self, waiting_queue: Sequence[object] = ()) -> None:
         """Back up waiting parents under pressure; never evict at this safe point."""
@@ -3053,10 +3212,9 @@ class NativeAdmissionRuntime:
             ) and invocation.parent_invocation_id is not None)
             for req in waiting_queue
         )
-        if (
-            headroom.device_mamba_free_slots >= max(32, 4 * child_waiting)
-            and headroom.device_full_free_tokens >= max(65536, 8192 * child_waiting)
-        ):
+        mamba_pressure = headroom.device_mamba_free_slots < max(32, 4 * child_waiting)
+        full_pressure = headroom.device_full_free_tokens < max(65536, 8192 * child_waiting)
+        if not (mamba_pressure or full_pressure):
             return
         parents = sorted(
             (key for key in self.context_sessions.values()
@@ -3066,6 +3224,7 @@ class NativeAdmissionRuntime:
         )
         if not parents:
             return
+        candidates = []
         for offset in range(min(len(parents), 8)):
             key = parents[(self._join_prepare_cursor + offset) % len(parents)]
             parent = self.graph.invocations[key.invocation_id]
@@ -3077,35 +3236,24 @@ class NativeAdmissionRuntime:
                 context_id=key.context_id, source="join_prepare",
             )
             if step is None:
-                anchors = self.snapshot_session_anchors(
-                    cache, context_id=key.context_id, context_epoch=key.context_epoch,
-                )
-                candidate = (
-                    capture_action_local_shadow(
-                        cache, anchors, for_prefetch=True, include_non_actionable=True,
-                    ) if anchors is not None else None
-                )
-                if candidate is not None and anchors.reusable_input_tokens is not None:
-                    nodes = {node.node_id: node for node in candidate.nodes}
-                    for node in candidate.nodes:
-                        if not (node.mamba_device_present and node.mamba_host_present):
-                            continue
-                        prefix, current = 0, node
-                        while current is not None:
-                            prefix += current.key_tokens or 0
-                            current = nodes.get(current.parent_id)
-                        if prefix <= anchors.reusable_input_tokens:
-                            self._parent_pressure_candidates[node.node_id] = (
-                                key, node.creation_time,
-                            )
+                self._register_backed_pressure_nodes(key)
                 continue
+            rank = self._prepare_step_rank(
+                step, headroom, full_pressure=full_pressure, mamba_pressure=mamba_pressure,
+            )
+            if rank is not None:
+                candidates.append((rank, offset, identity, step))
+        self._join_prepare_cursor = (self._join_prepare_cursor + 8) % len(parents)
+        for rank, offset, identity, step in sorted(candidates, key=lambda item: item[:2]):
             command = self.issue_shadow_backup_step(step, source="join_prepare")
             if command is None:
                 continue
             self._join_prepare_commands[identity] = command
-            self._parent_pressure_candidates[step.node_id] = (key, step.creation_time)
-            self._join_prepare_cursor = (self._join_prepare_cursor + offset + 1) % len(parents)
+            self._parent_pressure_candidates[step.node_id] = (step.key, step.creation_time)
             self.counts["join_prepare_issued"] += 1
+            self._record_prepare_selection(
+                step, source="join_prepare", rank=rank, scanned=len(candidates),
+            )
             break
         self._publish_parent_pressure_candidates()
 
@@ -3144,41 +3292,40 @@ class NativeAdmissionRuntime:
             return
         self._tool_prepare_next_ms = now_ms + 100.
         headroom = observe_static_full_mamba_headroom(self._native_cache)
-        if not headroom.observable or (
-            headroom.device_full_free_tokens >= max(65536, 8192 * len(waiting_queue))
-            and headroom.device_mamba_free_slots >= max(32, 4 * len(waiting_queue))
-        ):
+        if not headroom.observable:
             return
-        for hint in tuple(self.tool_wait_hints.values()):
+        full_pressure = headroom.device_full_free_tokens < max(65536, 8192 * len(waiting_queue))
+        mamba_pressure = headroom.device_mamba_free_slots < max(32, 4 * len(waiting_queue))
+        if not (full_pressure or mamba_pressure):
+            return
+        hints = sorted(self.tool_wait_hints.values(), key=lambda item: item.key.context_id)
+        if not hints:
+            return
+        candidates = []
+        for offset in range(min(8, len(hints))):
+            hint = hints[(self._tool_prepare_cursor + offset) % len(hints)]
             if not self._long_tool_wait(hint.key):
                 continue
             step = self.refreshed_shadow_backup_step(context_id=hint.key.context_id)
             if step is not None:
-                command = self.issue_shadow_backup_step(step)
-                if command is not None:
-                    self._parent_pressure_candidates[step.node_id] = (hint.key, step.creation_time)
-                    self.counts["tool_prepare_issued"] += 1
-                    break
-            anchors = self.snapshot_session_anchors(
-                self._native_cache, context_id=hint.key.context_id,
-                context_epoch=hint.key.context_epoch,
-            )
-            candidate = (
-                capture_action_local_shadow(
-                    self._native_cache, anchors, for_prefetch=True, include_non_actionable=True,
-                ) if anchors is not None else None
-            )
-            if candidate is not None and anchors.reusable_input_tokens is not None:
-                nodes = {node.node_id: node for node in candidate.nodes}
-                for node in candidate.nodes:
-                    if not (node.mamba_device_present and node.mamba_host_present):
-                        continue
-                    prefix, current = 0, node
-                    while current is not None:
-                        prefix += current.key_tokens or 0
-                        current = nodes.get(current.parent_id)
-                    if prefix <= anchors.reusable_input_tokens:
-                        self._parent_pressure_candidates[node.node_id] = (hint.key, node.creation_time)
+                rank = self._prepare_step_rank(
+                    step, headroom,
+                    full_pressure=full_pressure, mamba_pressure=mamba_pressure,
+                )
+                if rank is not None:
+                    candidates.append((rank, offset, step))
+            else:
+                self._register_backed_pressure_nodes(hint.key)
+        self._tool_prepare_cursor = (self._tool_prepare_cursor + 8) % len(hints)
+        for rank, offset, step in sorted(candidates, key=lambda item: item[:2]):
+            command = self.issue_shadow_backup_step(step)
+            if command is not None:
+                self._parent_pressure_candidates[step.node_id] = (step.key, step.creation_time)
+                self.counts["tool_prepare_issued"] += 1
+                self._record_prepare_selection(
+                    step, source="tool_wait", rank=rank, scanned=len(candidates),
+                )
+                break
         self._publish_parent_pressure_candidates()
 
     def _roll_tool_prefetch(self) -> None:
@@ -3205,7 +3352,9 @@ class NativeAdmissionRuntime:
             hint = self._live_tool_hint(ticket.key)
             if (
                 hint is None or hint.invocation_revision_ts_ms != ticket.revision
-                or not self._tool_prefetch_ready(hint)
+                or not self._tool_prefetch_ready(
+                    hint, horizon_ms=ticket.start_window_ms,
+                )
             ):
                 self._tool_ticket = None
             else:
@@ -3230,6 +3379,9 @@ class NativeAdmissionRuntime:
             if not self._tool_prefetch_ready(hint):
                 self.counts["tool_prefetch_not_in_time_window"] += 1
                 continue
+            if not self._prefetch_slot_available(hint.key):
+                self.counts["tool_prefetch_admission_budget_busy"] += 1
+                continue
             cached = self._tool_opportunity_cache.get(hint.key)
             if cached is not None and now_ms < cached[0]:
                 opportunity = cached[1]
@@ -3249,20 +3401,44 @@ class NativeAdmissionRuntime:
             if opportunity.fits_current_free_lists is not True:
                 self.counts["tool_prefetch_no_free_capacity"] += 1
                 continue
-            if not self._tool_service_supported(opportunity):
+            window = self._h2d_start_window(opportunity)
+            if window is None:
                 self.counts["tool_prefetch_service_unsupported"] += 1
                 continue
-            self._tool_ticket = _ToolPrefetchTicket(hint.key, hint.invocation_revision_ts_ms)
+            horizon = window.horizon_ms
+            if not self._tool_prefetch_ready(hint, horizon_ms=horizon):
+                self.counts["tool_prefetch_not_latest_start"] += 1
+                continue
+            self._tool_ticket = _ToolPrefetchTicket(
+                hint.key, hint.invocation_revision_ts_ms, start_window_ms=horizon,
+            )
             self.counts["tool_prefetch_window_entered"] += 1
+            if self._opportunity_writer is not None:
+                self._opportunity_writer.record({
+                    "event": "tool_prefetch_latest_start", "ts_ms": time.time() * 1000.,
+                    "context_id": hint.key.context_id,
+                    "context_epoch": hint.key.context_epoch,
+                    "wait_revision_ts_ms": hint.invocation_revision_ts_ms,
+                    "remaining_p50_ms": hint.remaining_quantile(.5, now_ms=now_ms),
+                    "start_window_ms": horizon,
+                    "h2d_ms": window.service_ms,
+                    "enqueue_to_submit_p90_ms": window.enqueue_ms,
+                })
             break
 
-    def _tool_prefetch_ready(self, hint: NativeToolWaitHint) -> bool:
+    def _tool_prefetch_ready(
+        self, hint: NativeToolWaitHint, *, horizon_ms: float | None = None,
+    ) -> bool:
         now_ms = time.monotonic() * 1000
         # P50 and parking now refer to the same surviving event distribution.
         remaining = hint.remaining_quantile(.5, now_ms=now_ms)
-        return remaining is not None and remaining <= self.prefetch_lead_ms
+        return remaining is not None and remaining <= (
+            self.prefetch_lead_ms if horizon_ms is None else horizon_ms
+        )
 
-    def _tool_service_supported(self, opportunity: SessionH2DOpportunity) -> bool:
+    def _h2d_start_window(
+        self, opportunity: SessionH2DOpportunity,
+    ) -> TransferStartWindow | None:
         try:
             entries = self._native_cache.cache_controller.mem_pool_host.entry_map
             size = (
@@ -3270,12 +3446,15 @@ class NativeAdmissionRuntime:
                 + opportunity.required_mamba_slots * entries["mamba"].host_pool.size_per_token
             )
         except (AttributeError, KeyError, TypeError):
-            return False
+            return None
         estimate = estimate_native_service(
             self._native_service_samples, size,
             shape=pool_shape(opportunity.required_full_tokens, opportunity.required_mamba_slots),
         ) or estimate_native_service(self._h2d_samples, size)
-        return estimate is not None and estimate.submit_to_ack_p90_ms <= self.prefetch_lead_ms
+        return transfer_start_window(
+            estimate, max_lead_ms=self.prefetch_lead_ms,
+            observation_spacing_ms=SEMANTIC_FRAME_INTERVAL_MS,
+        ) if estimate is not None else None
 
     @timed_runtime("tool_prefetch")
     def dispatch_tool_prefetch(self) -> None:
@@ -3286,7 +3465,9 @@ class NativeAdmissionRuntime:
         hint = self._live_tool_hint(ticket.key)
         if (
             hint is None or hint.invocation_revision_ts_ms != ticket.revision
-            or not self._tool_prefetch_ready(hint)
+            or not self._tool_prefetch_ready(
+                hint, horizon_ms=ticket.start_window_ms,
+            )
         ):
             self._tool_ticket = None
             return
@@ -3852,12 +4033,16 @@ class NativeAdmissionRuntime:
                         current = current.parent
                     if already_protected:
                         break
+            budget = self._current_residency_budget()
             if (
                 observation.observable and not already_protected
-                and sum(item.lock_params is not None for item in self._prefetch_service_leases.values()) < 4
+                and sum(
+                    item.lock_params is not None
+                    for item in self._prefetch_service_leases.values()
+                ) < budget.request_slots
                 and protected_bytes + sum(
                     lease.protected_bytes for lease in self._prefetch_service_leases.values()
-                ) <= 1024 ** 3
+                ) <= budget.byte_limit
             ):
                 try:
                     lock_params = cache.tree_core.inc_lock_ref(step.node_id).to_dec_params()
@@ -3894,8 +4079,78 @@ class NativeAdmissionRuntime:
                 "lease_ms": (lease.expires_at - now) * 1000,
                 "native_locked": lock_params is not None,
                 "protected_bytes": protected_bytes,
-                "scope": "bounded native receipt lock; max four leases and one GiB closure",
+                "budget": asdict(self._residency_budget),
+                "scope": "native receipt lock bounded by next-prefill slots and free pool headroom",
             })
+
+    def _observe_native_admission_capacity(
+        self, *, running_batch: object, adder: object,
+    ) -> None:
+        self._native_running_batch = running_batch
+        if adder is None:
+            return
+        maximum = getattr(adder, "max_running_requests", None)
+        if type(maximum) is not int or maximum <= 0:
+            return
+        admitted = len(getattr(adder, "can_run_list", ()))
+        limits = [
+            value - admitted for name in ("max_prefill_bs", "prefill_max_requests")
+            if type(value := getattr(adder, name, None)) is int and value > 0
+        ]
+        self._native_max_running = maximum
+        self._native_prefill_slots = max(0, min(limits, default=maximum))
+        self._native_page_size = max(1, int(getattr(adder, "page_size", 1)))
+        self._native_input_reserve = max(
+            0, int(getattr(adder, "rem_input_tokens", 0)),
+        )
+
+    def _current_residency_budget(self) -> PrefetchResidencyBudget:
+        if self._native_max_running is None or self._native_prefill_slots is None:
+            return self._residency_budget
+        cache = self._native_cache
+        headroom = observe_static_full_mamba_headroom(cache)
+        try:
+            rows = cache.req_to_token_pool.available_size()
+            entries = cache.host_pool_group.entry_map
+            full_unit = entries["kv"].host_pool.size_per_token
+            mamba_unit = entries["mamba"].host_pool.size_per_token
+            if (
+                not headroom.observable or type(rows) is not int or rows < 0
+                or type(full_unit) is not int or full_unit <= 0
+                or type(mamba_unit) is not int or mamba_unit <= 0
+            ):
+                self._residency_budget = PrefetchResidencyBudget(4, 1024 ** 3)
+                return self._residency_budget
+            running = len(getattr(self._native_running_batch, "reqs", ()))
+            self._residency_budget = native_residency_budget(
+                running_requests=running,
+                max_running_requests=self._native_max_running,
+                available_request_rows=rows,
+                prefill_slots=self._native_prefill_slots,
+                page_size=self._native_page_size,
+                input_token_reserve=self._native_input_reserve,
+                full_free_tokens=headroom.device_full_free_tokens,
+                mamba_free_slots=headroom.device_mamba_free_slots,
+                full_bytes_per_token=full_unit,
+                mamba_bytes_per_slot=mamba_unit,
+                protected_bytes=sum(
+                    lease.protected_bytes
+                    for lease in self._prefetch_service_leases.values()
+                ),
+            )
+        except (AttributeError, KeyError, TypeError, ValueError, RuntimeError):
+            self._residency_budget = PrefetchResidencyBudget(4, 1024 ** 3)
+        return self._residency_budget
+
+    def _prefetch_slot_available(self, key: PrefillCandidateKey) -> bool:
+        budget = self._current_residency_budget()
+        locked = [
+            lease for lease in self._prefetch_service_leases.values()
+            if lease.lock_params is not None
+        ]
+        return budget.request_slots > 0 and (
+            any(lease.key == key for lease in locked) or len(locked) < budget.request_slots
+        )
 
     def _executable_waiting_key(self, req: object) -> PrefillCandidateKey | None:
         key = _request_key(req)
@@ -4540,6 +4795,7 @@ class NativeAdmissionRuntime:
     def plan_native_prefill(
         self, native_order: Sequence[object], *, running_batch: object, adder: object
     ) -> NativePrefillPlan:
+        self._observe_native_admission_capacity(running_batch=running_batch, adder=adder)
         # Reuse causal classification only; residency, hint expiry and aging
         # remain live because native allocation may change between the two calls.
         tagged = []
@@ -4628,7 +4884,15 @@ class NativeAdmissionRuntime:
         self._prefetch_priority_promoted = None
         self._prefetch_priority_native_rank = None
         priority_candidates = []
-        if self._prefetch_priority_normal_admissions >= 4 and ordered:
+        ready_restores = sum(
+            lease.demand_ready for lease in self._prefetch_service_leases.values()
+        )
+        budget = self._current_residency_budget() if ready_restores else self._residency_budget
+        slots = budget.request_slots
+        restore_stride = max(1, min(
+            4, math.ceil(max(0, slots - ready_restores) / max(1, ready_restores)),
+        )) if ready_restores and budget.source == "native_next_prefill" else 4
+        if self._prefetch_priority_normal_admissions >= restore_stride and ordered:
             for candidate in ordered:
                 key = keys[candidate[0]]
                 matches = [
@@ -4804,9 +5068,20 @@ class NativeAdmissionRuntime:
                         4, self._final_priority_normal_admissions + 1
                     )
             elif result == "NO_TOKEN" and self._prefetch_service_leases:
-                # Urgent real demand may reclaim the oldest speculative lock.
-                oldest = min(self._prefetch_service_leases.values(), key=lambda item: item.acknowledged_at)
-                self._release_prefetch_service_lease(oldest.command_id, "allocation_pressure")
+                locked = [
+                    lease for lease in self._prefetch_service_leases.values()
+                    if lease.lock_params is not None
+                ]
+                if locked:
+                    key = _request_key(req)
+                    victim = min(locked, key=lambda lease: (
+                        bool(key is not None and lease.key.context_id == key.context_id),
+                        2 if lease.demand_ready else 1 if lease.reentry_ready_at is not None else 0,
+                        lease.acknowledged_at,
+                    ))
+                    self._release_prefetch_service_lease(
+                        victim.command_id, "allocation_pressure",
+                    )
 
     def on_batch_selected(self, batch: object) -> None:
         pass

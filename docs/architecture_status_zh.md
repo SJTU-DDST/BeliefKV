@@ -2,6 +2,55 @@
 
 更新日期：2026-10-09。
 
+## 迁移机会与实际准入协同
+
+基于 `859d138` 的剩余优化已在 `perf/opportunity-aware-transfer`
+实现，模型权重、阶段阈值、harness及prompt保持不变。runtime根据
+实际迁移与准入条件选择动作，不要求离线模型预测净收益。
+
+ACK后驻留锁不再无条件限制为4把/1 GiB：读取native的running、
+请求pool剩余行数和下一批prefill名额，预留运行请求的页增长、
+下一批input及Mamba slot，只将剩余FULL/Mamba空闲字节用于新保护。
+满decode batch最多保留一个frontier恢复候选，不能替代原生准入。
+容量不可观测时回退旧4把/1 GiB。恢复就绪较多时，每1至4次普通
+准入可提升一次恢复请求；10秒老化仍有效。真实NO_TOKEN优先释放
+非当前请求、尚未就绪的实际锁，软跟踪记录不能充当可释放锁。
+
+JOIN/tool PREPARE每次轮转最多8个候选，优先备份能释放受压池
+空间且传输较少的对象；Host空闲不足时不为备份驱逐已有Host副本。
+有实测D2H样本时，过滤剩余工具窗口不足完成备份与恢复的对象。
+已有FULL Host副本、没有Mamba的节点也登记为可回收冷副本。
+传输范围仍为有效缺失FULL前缀与必要的最新Mamba检查点。
+
+JOIN/tool预取启动窗口由实测H2D submit到ACK P90、enqueue到submit
+P90及100 ms观察间隔构成，保持冻结的500 ms提前上限。
+未观测到child近期服务时，不沿用旧生成速率提前占用HBM。
+预测中心已被实际生成超过时改用仍有效的上界；上界也被超过则
+等待新forecast或EOS，不再把越界夹成“仅剩1 token”。
+forecast日志记录实际生成进度、服务间隔和有效统计量。
+
+旧v8d诊断中，15个工作量触发的RETURN提前量P50为9.472秒，
+EOS/RETURN有符号误差P50为-5.047/-9.094秒；其中心与上界越界
+计数均为0，不能将上述边界缺陷解释为这些早触发的根因。
+在相同历史快照中，实测服务窗口会使13/15次继续等待；这不证明
+推迟后的触发精度或GPU收益。1094次预测ACK到首次服务P50为
+8.167秒，FULL确认复用71次，旧记录中1060次租约没有实际native锁。
+报告：`experiments/reports/native_transfer_policy_v8d_20261009.json`。
+
+相同156 workflow/16轮历史CPU输入，基于 `859d138` 的两次准入
+规划均值3.597→3.602 ms，增加0.13%，队列顺序相同；样例没有活跃
+物理传输和驻留锁，不代表PREPARE全路径成本或GPU吞吐。
+报告：`experiments/reports/opportunity_policy_cpu_156_16_20261009.json`。
+相关回归290 passed、1 skipped；引擎patch未改。
+
+v10 native已收尾，154 completed/2 incomplete，采集窗口
+10345.487秒。父驱动随后因HTML导出传错arm目录而停止，predictive
+未启动；目录错误已修复，native HTML已生成。新
+`scripts/resume_semantic_h2d_ab.py` 保留native源码/补丁、原始计划、
+task与到达表，只更新尚未启动的predictive版本后接续；不重跑native。
+接续前仅清理完整归档的completed workspace，保留未归档改动和
+失败证据。此轮仍是跨版本单对开发实验，GPU收益待实测。
+
 ## Handoff 流水恢复与准入减负
 
 当前优化在独立分支 `perf/pipeline-execution-handoff` 中完成，
@@ -12,9 +61,9 @@ v10 native维持原版至收尾，随后直接部署最新提交运行predictive
 模型和pool配置保持一致。这是跨版本开发对照，尚无GPU收益结论。
 
 推荐优化的完成范围：批量恢复、依赖准入和同轮因果分类复用已完成；
-准入预算随下一批容量动态调整尚未实现，仍为4把锁/1 GiB。
-PREPARE对象筛选和迁移机会相关预测精调仍需依据实测推进。
-不将首轮CPU减负或ACK数量等同于完整优化方案已经完成。
+下一批容量预算、PREPARE筛选与服务窗口选择已由本文顶部修订补齐。
+剩余工作预测头尚未重训，预测精度和端到端收益仍需实测验证。
+不将CPU减负或ACK数量等同于完整优化方案已取得GPU收益。
 
 旧handoff逐node发出H2D，再等完整软件ACK推进，50 ms检查间隔
 还会继续拖延下一步。新路径一次规划最多16个缺失FULL node，
@@ -35,7 +84,7 @@ FULL-only恢复可以在原生逐层load fence下进入prefill，不等待
 及提升预算仍实时检查。同次物理观察中FULL/Mamba锚点相同则只
 遍历一次祖先链，提交前仍由native验证代次、祖先、在途操作和容量。
 真实ACK按最深node先注册保护，一把锁覆盖FULL祖先，不为每段
-重复加锁；总预算仍为最多4把实际原生锁和1 GiB。
+重复加锁；该版本采用4把实际原生锁/1 GiB，最新容量预算见本文顶部。
 
 原生流水可能先服务请求、后交付软件ACK。因此在issue时保存实际
 allocation身份，首次服务证据暂存，验证ACK且身份/字节吻合后才
@@ -215,7 +264,8 @@ reactive与predictive共同启用resident-first，只有predictive开启
 预期释放量。D2H/H2D分方向限制在途动作，允许不同节点的备份
 与恢复重叠；实际是否隐藏DMA仍须GPU遥测证明。每次只选一个
 短期beneficiary，规划窗口2秒、最多16个node；ACK后驻留保护
-沿用最多4把实际原生锁/1 GiB，队列换入租约最多3秒，首次服务释放。
+原先采用4把实际原生锁/1 GiB，现按本文顶部的实际准入容量分配；
+队列换入租约最多3秒，首次服务释放。
 新路径的FULL走原生逐层依赖，必要Mamba或旧适配器等待完成；
 只跳过尚不能安全准入的对应请求，不停止其他可执行请求；失效和窗口
 耗尽回到原生需求恢复，不持续重新选择同一请求。

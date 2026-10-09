@@ -15,6 +15,7 @@ from beliefkv.runtime.sglang_v0520_prediction import (
 )
 from beliefkv.runtime.sglang_v0520_physical import PrefetchLoadStep, PhysicalActionCompleted
 from beliefkv.runtime.sglang_v0520_runtime import NativeAdmissionRuntime
+from beliefkv.runtime.native_transfer_policy import TransferStartWindow
 from tests.test_sglang_v0520_runtime import req, select
 
 
@@ -71,7 +72,7 @@ def test_tool_h2d_uses_same_wait_identity_and_does_not_admit_agent():
     step = PrefetchLoadStep(hint.key, 1, 2, 1, 2)
     opportunity = NS(step=step, fits_current_free_lists=True)
     with patch.object(runtime, "inspect_context_h2d_opportunity", return_value=opportunity), \
-         patch.object(runtime, "_tool_service_supported", return_value=True), \
+         patch.object(runtime, "_h2d_start_window", return_value=TransferStartWindow(200., 0., 1000.)), \
          patch.object(runtime, "refreshed_prefetch_gpu_step", return_value=step), \
          patch.object(runtime, "issue_prefetch_gpu_step", return_value="cmd") as issue:
         assert runtime.running_batch_retraction_barrier_required(NS())
@@ -565,7 +566,7 @@ def test_tool_ack_does_not_drain_overlap_again_for_already_restored_pages():
     step = PrefetchLoadStep(hint.key, 1, 2, 1, 2)
     with patch.object(runtime, "inspect_context_h2d_opportunity", return_value=NS(
         step=step, fits_current_free_lists=True,
-    )), patch.object(runtime, "_tool_service_supported", return_value=True), \
+    )), patch.object(runtime, "_h2d_start_window", return_value=TransferStartWindow(200., 0., 1000.)), \
          patch.object(runtime, "refreshed_prefetch_gpu_step", return_value=step), \
          patch.object(runtime, "issue_prefetch_gpu_step", return_value="c1"):
         assert runtime.running_batch_retraction_barrier_required(NS())

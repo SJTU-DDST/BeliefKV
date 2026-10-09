@@ -10,6 +10,7 @@ HOST_SPLIT="${HOST_SPLIT:-80:20}"
 PORT="${PORT:-18454}"
 RUN_ROOT="${RUN_ROOT:-$ROOT/experiments/raw/qwen35_joint_wait_h2d_ab_${ROOT_COUNT}root_2to4_v8c}"
 ARM_ORDER="${ARM_ORDER:-reactive predictive_h2d}"
+RESUME_PENDING="${RESUME_PENDING:-0}"
 SAMPLING_SEED="${SAMPLING_SEED:-21}"
 REPETITION_ID="${REPETITION_ID:-0}"
 ACTIVATION_WALL_CLOCK_SECONDS="${ACTIVATION_WALL_CLOCK_SECONDS:-14400}"
@@ -24,7 +25,10 @@ SEMANTIC_WORK_STATISTIC="${SEMANTIC_WORK_STATISTIC:-center}"
 EOS_PROTOCOL_WINDOW_MS="${EOS_PROTOCOL_WINDOW_MS:-250}"
 FANOUT_PROFILE="${FANOUT_PROFILE:-native_in_graph_2to4}"
 
-if [[ $# -ne 0 || -e "$RUN_ROOT" || ! -f "$ARTIFACT" ]] \
+if [[ $# -ne 0 || ! -f "$ARTIFACT" ]] \
+  || [[ "$RESUME_PENDING" != "0" && "$RESUME_PENDING" != "1" ]] \
+  || { [[ "$RESUME_PENDING" == "0" ]] && [[ -e "$RUN_ROOT" ]]; } \
+  || { [[ "$RESUME_PENDING" == "1" ]] && [[ ! -f "$RUN_ROOT/ab_plan.json" ]]; } \
   || [[ ! "$ROOT_COUNT" =~ ^[1-9][0-9]*$ ]] || (( ROOT_COUNT > 156 )) \
   || [[ ! "$ARRIVAL_BATCH_SIZE" =~ ^[0-9]+$ || ! "$ARRIVAL_BATCH_INTERVAL_MS" =~ ^[0-9]+$ ]] \
   || { (( ROOT_COUNT > 108 )) && [[ "$ARRIVAL_BATCH_SIZE" != "108" || "$ARRIVAL_BATCH_INTERVAL_MS" == "0" ]]; } \
@@ -35,6 +39,7 @@ if [[ $# -ne 0 || -e "$RUN_ROOT" || ! -f "$ARTIFACT" ]] \
 fi
 mkdir -p "$RUN_ROOT"
 export FANOUT_PROFILE
+if [[ "$RESUME_PENDING" == "0" ]]; then
 "$PYTHON" "$ROOT/scripts/summarize_semantic_h2d_ab.py" \
   --run-root "$RUN_ROOT" --initialize --root-count "$ROOT_COUNT" \
   --arrival-batch-size "$ARRIVAL_BATCH_SIZE" --arrival-batch-interval-ms "$ARRIVAL_BATCH_INTERVAL_MS" \
@@ -49,9 +54,19 @@ export FANOUT_PROFILE
   --eos-protocol-window-ms "$EOS_PROTOCOL_WINDOW_MS" \
   --sampling-seed "$SAMPLING_SEED" --repetition-id "$REPETITION_ID" \
   --workload-manifest "${WORKLOAD_MANIFEST:-$ROOT/configs/migration/qwen35_native_reactive_overlapped_128root_workload_2026-09-23.json}"
+fi
 for arm in $ARM_ORDER; do
   "$PYTHON" "$ROOT/scripts/summarize_semantic_h2d_ab.py" \
     --run-root "$RUN_ROOT" --verify-frozen-plan
+  if [[ "$RESUME_PENDING" == "1" && "$arm" == "native" \
+    && -f "$RUN_ROOT/$arm/client_$ROOT_COUNT/summary.json" ]]; then
+    printf 'Reuse collected native arm; continue with pending predictive\n'
+    continue
+  fi
+  if [[ -e "$RUN_ROOT/$arm" ]]; then
+    printf 'Arm directory already exists: %s\n' "$RUN_ROOT/$arm" >&2
+    exit 1
+  fi
   printf 'Full %s arm: %s roots, fresh server and KV cache\n' "$arm" "$ROOT_COUNT"
   baseline=0
   mode="$arm"
@@ -99,7 +114,7 @@ for arm in $ARM_ORDER; do
   "$PYTHON" "$ROOT/scripts/audit_native_memory_opportunity.py" \
     --arm "$RUN_ROOT/$arm" --output "$RUN_ROOT/$arm/memory_opportunity.json"
   "$PYTHON" "$ROOT/scripts/render_p6_execution_timeline.py" \
-    --run-dir "$RUN_ROOT" --arm "$arm" --output-html "$RUN_ROOT/timelines/$arm.html" \
+    --run-dir "$RUN_ROOT/$arm" --arm "$arm" --output-html "$RUN_ROOT/timelines/$arm.html" \
     > "$RUN_ROOT/$arm.timeline_export.json"
   "$PYTHON" "$ROOT/scripts/summarize_semantic_h2d_ab.py" \
     --cleanup-arm "$RUN_ROOT/$arm" > "$RUN_ROOT/$arm.workspace_cleanup.json"

@@ -4,6 +4,37 @@
 guard、终态门禁或模型动作授权。启动前同时阅读
 `docs/implementation_plan.md`；旧诊断脚本和历史计划不能覆盖当前约定。
 
+## 当前迁移策略与实验接续
+
+`perf/opportunity-aware-transfer` 在 `859d138` 上补齐了下一批容量
+预算、PREPARE候选筛选和实测服务窗口，不改模型权重、prompt、
+阶段阈值或agent guard。ACK锁按native的真实准入名额与剩余池
+容量分配，先预留decode增长及下一批input/Mamba；容量不可观测
+才回退4把/1 GiB。满decode batch最多一个frontier候选，原生
+准入仍是最终约束。真实NO_TOKEN释放实际锁，不能靠软记录制造
+“已让出容量”的假象；恢复提升仍保留普通请求轮次和10秒老化。
+
+Host空闲不足时跳过新增PREPARE，不为备份主动淘汰已有Host副本。
+按受压池可回收字节与传输量选择候选，已有Host副本的FULL-only
+冷节点也可回收。最新启动窗口使用H2D submit到ACK P90、
+enqueue到submit P90和100 ms观察间隔，保持本轮500 ms上限。
+只有近期有GPU服务的child才使用pre-EOS工作量投影；这是runtime
+动作选择，不干预agent执行或取消workflow。
+
+已修复预测终点越界后夹成1 token的边界问题，但v8d的15个
+工作量早触发中越界计数为0，不能把它当作已证明的历史根因。
+相同快照中13/15次会继续等待，不证明后续预测精度或吞吐。
+新CPU准入对照+0.13%，只覆盖无活跃传输/锁的合成输入。
+相关回归290 passed/1 skipped；不因通过检查就声称GPU收益。
+
+v10 native已结束，154 completed/2 incomplete；父驱动因HTML
+导出路径错误停止，predictive尚未启动。renderer的 `--run-dir`
+必须指向具体arm目录，不能传pair根目录。native HTML已生成。
+提交并部署最新runtime后，以 `scripts/resume_semantic_h2d_ab.py`
+接续原v10，保留native版本、原始plan与失败日志，仅更新pending
+predictive版本。`RESUME_PENDING=1` 跳过已收集native且不覆盖
+已有arm目录，不初始化新计划、不重跑native。启动后冻结源码。
+
 ## 新恢复路径的验证口径
 
 流水handoff修订位于独立分支 `perf/pipeline-execution-handoff`。
@@ -29,7 +60,8 @@ ACK延迟不能让已经服务过的动作再次加驻留锁。暂存证据超�
 须清理，不可把没有验证ACK的首次服务当作预测命中。
 
 因果分类只在同一scheduler轮内共享；驻留、老化与提升预算保持
-实时检查。最多4把实际原生锁和1 GiB，深层FULL锁可覆盖祖先；
+实时检查。深层FULL锁可覆盖祖先，最新预算依本文顶部的实际
+准入容量决定；4把/1 GiB仅为旧版本和观测不可用时的回退。
 软跟踪记录数量不等于实际锁数量。仍保留普通请求老化与实际容量
 压力下让出保护，不能靠长期pin或无限parent插队提高表面复用。
 
@@ -138,8 +170,8 @@ session/NUMA及2–4生成兼容补丁与只读遥测。明确报告为原生策
 基线，不宣称未修改上游SGLang。清除继承的预测artifact与遥测环境，
 客户端预检须实测session=true、BeliefKV admission=false。
 
-新恢复保护不得变成长时间锁住全部冷KV：最多4个租约、1 GiB
-闭包；预测期lead+1秒，真实下一请求提交后才可延长到ACK后最多
+新恢复保护不得变成长时间锁住全部冷KV：按本文顶部的实际准入
+容量限制锁数和闭包字节；预测期lead+1秒，真实下一请求提交后才可延长到ACK后最多
 10秒。真实NO_TOKEN优先让出，首次GPU服务释放；解锁必须重放
 原始receipt且只执行一次。失败保留证据并停用物理通道，不报成功。
 批量Mamba复用只在同节点/代次/device对象、请求COW源/目的身份
