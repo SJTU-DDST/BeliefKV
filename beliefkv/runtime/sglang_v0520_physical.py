@@ -908,7 +908,7 @@ def shadow_expectation_from_native_op(
                 *(
                     ("mamba", transfer.host_indices)
                     for transfer in getattr(operation, "pool_transfers", ()) or ()
-                    if pool_name(transfer.name) == "mamba"
+                    if getattr(transfer.name, "value", transfer.name) == "mamba"
                     and getattr(transfer, "indices_from_pool", None) is None
                 ),
             ),

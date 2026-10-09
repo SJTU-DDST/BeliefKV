@@ -28,7 +28,8 @@ from beliefkv.runtime.sglang_v0520_physical import (
 )
 
 
-def test_native_shadow_expectation_uses_exact_operation_before_ack():
+@pytest.mark.parametrize("enum_pool_name", (False, True))
+def test_native_shadow_expectation_uses_exact_operation_before_ack(enum_pool_name):
     class Pool(str, Enum):
         KV = "kv"
         MAMBA = "mamba"
@@ -41,8 +42,13 @@ def test_native_shadow_expectation_uses_exact_operation_before_ack():
         Pool.KV: NS(host_pool=NS(size_per_token=10)),
         Pool.MAMBA: NS(host_pool=NS(size_per_token=5)),
     })
+    mamba_host_indices = (7,)
     op = NS(beliefkv_command_id="prepare-1", node_ids=[11],
-            device_indices=(0, 1), host_indices=(2, 3))
+            device_indices=(0, 1), host_indices=(2, 3),
+            pool_transfers=[NS(
+                name=Pool.MAMBA if enum_pool_name else "mamba",
+                host_indices=mamba_host_indices, indices_from_pool=None,
+            )])
     controller = NS(
         mem_pool_host=group,
         _num_tokens_by_pool=lambda operation: {"kv": 2, "mamba": 1},
@@ -56,6 +62,7 @@ def test_native_shadow_expectation_uses_exact_operation_before_ack():
     assert expected.session_generation == 4
     assert expected.children[0].anchor_creation_time == 4
     assert dict(expected.children[0].host_destination_indices)["kv"] is op.host_indices
+    assert dict(expected.children[0].host_destination_indices)["mamba"] is mamba_host_indices
     ledger = PhysicalTransactionLedger()
     ledger.register(expected)
     assert ledger.pending_count == 1

@@ -35,6 +35,15 @@ v10 native已结束，154 completed/2 incomplete；父驱动因HTML
 predictive版本。`RESUME_PENDING=1` 跳过已收集native且不覆盖
 已有arm目录，不初始化新计划、不重跑native。启动后冻结源码。
 
+`04812ec` 首次接续发现Mamba D2H的before-enqueue回调NameError：
+D2H记录函数错误引用H2D函数内的 `pool_name`。该次已停止，失败
+现场保留，不纳入性能结果；修复后重新冷启动predictive，native
+不重跑。启动检查须同时核对真实传输与回调异常日志，不能只看
+`physical_disabled=false` 或FULL-only ACK。CPU传输样例必须含
+真实Mamba `pool_transfers`，并核对enum/string池名与Host目标索引。
+修复后145项相关CPU检查通过。这是修复物理通道缺陷，不增加agent
+guard或额外GPU测试。
+
 ## 新恢复路径的验证口径
 
 流水handoff修订位于独立分支 `perf/pipeline-execution-handoff`。

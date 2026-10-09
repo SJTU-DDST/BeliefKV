@@ -54,6 +54,16 @@ Evaluate throughput/JCT, exposed waits, reuse, repeated loads and residency
 costs. Further remaining-work-head tuning depends on new measured errors;
 subsecond RETURN accuracy and GPU benefit are not yet established.
 
+The first `04812ec` predictive start exposed a Mamba D2H callback failure:
+`shadow_expectation_from_native_op` referenced `pool_name`, scoped inside the
+H2D function. Native rejected these backups and repeatedly logged NameError
+while FULL-only backups still completed and `physical_disabled` stayed false.
+Stop and retain that failed start; it is not a performance arm. Use D2H-local
+enum/string pool-name normalization, cover real Mamba `pool_transfers` and
+Host destination identity in the existing CPU fixture; 145 related CPU checks
+passed. Commit and cold-start the pending predictive arm. Do not repeat
+collected native.
+
 ## Pipelined Handoff Revision
 
 Implemented in the isolated `perf/pipeline-execution-handoff` branch based

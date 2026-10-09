@@ -51,6 +51,16 @@ task与到达表，只更新尚未启动的predictive版本后接续；不重跑
 接续前仅清理完整归档的completed workspace，保留未归档改动和
 失败证据。此轮仍是跨版本单对开发实验，GPU收益待实测。
 
+首次以 `04812ec` 接续时，在真实Mamba PREPARE的before-enqueue
+回调发现 `shadow_expectation_from_native_op` 引用了H2D函数内部
+的 `pool_name`，导致NameError、Mamba备份被拒绝并反复输出异常；
+FULL-only备份仍能完成，`physical_disabled=false`未反映这一故障。
+已停止该次predictive并保留现场，不纳入性能对照。修复D2H函数
+自身的enum/string池名解析，现有CPU样例补上真实Mamba
+`pool_transfers`及Host目标索引，145项相关CPU回归通过。
+提交后冷启动predictive；
+已完成native不重跑，模型与原始workload配置仍保持冻结。
+
 ## Handoff 流水恢复与准入减负
 
 当前优化在独立分支 `perf/pipeline-execution-handoff` 中完成，
