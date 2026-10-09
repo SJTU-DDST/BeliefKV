@@ -34,6 +34,15 @@ MANIFEST="${WORKLOAD_MANIFEST:-$ROOT/configs/migration/qwen35_native_reactive_ov
 BASE_URL="http://127.0.0.1:$PORT"
 SOCKET="/tmp/bkv-regime-${PORT}.sock"
 server_pid=""
+client_pid=""
+
+stop_client() {
+  if [[ -n "$client_pid" ]]; then
+    kill -TERM -- "-$client_pid" 2>/dev/null || true
+    wait "$client_pid" 2>/dev/null || true
+    client_pid=""
+  fi
+}
 
 stop_server() {
   if [[ -n "$server_pid" ]]; then
@@ -42,7 +51,7 @@ stop_server() {
     server_pid=""
   fi
 }
-trap stop_server EXIT
+trap 'stop_client; stop_server' EXIT
 trap 'exit 130' INT
 trap 'exit 143' TERM
 
@@ -200,7 +209,7 @@ client_flags=()
 if [[ "$CHILD_FINAL_REPORT_SHADOW" == "1" ]]; then
   client_flags+=(--child-final-report-shadow)
 fi
-"$PYTHON" "$ROOT/scripts/run_deepagents_swebench.py" \
+setsid "$PYTHON" "$ROOT/scripts/run_deepagents_swebench.py" \
   "${client_flags[@]}" \
   --mode autonomous --base-url "$BASE_URL/v1" --model Qwen3.5-35B-A3B \
   --workload-manifest "$MANIFEST" --max-workflows "$ROOT_COUNT" \
@@ -217,8 +226,20 @@ fi
   --stream-completion-shadow --child-stream-content-shadow \
   --native-reactive-guard-profile --disable-completion-gate \
   --gate native --output "$RUN_ROOT/client_$ROOT_COUNT" \
-  > "$RUN_ROOT/client_$ROOT_COUNT.log" 2>&1
+  > "$RUN_ROOT/client_$ROOT_COUNT.log" 2>&1 &
+client_pid="$!"
+while kill -0 "$client_pid" 2>/dev/null; do
+  if ! kill -0 "$server_pid" 2>/dev/null; then
+    printf 'Native server exited during collection; stop client: %s\n' \
+      "$RUN_ROOT/server.log" >&2
+    kill -TERM -- "-$client_pid" 2>/dev/null || true
+    break
+  fi
+  sleep 2
+done
+wait "$client_pid"
 client_status="$?"
+client_pid=""
 set -e
 stop_server
 printf 'Native regime probe: client exit=%s, artifacts=%s\n' \
