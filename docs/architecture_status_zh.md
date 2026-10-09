@@ -2,7 +2,7 @@
 
 更新日期：2026-10-10。
 
-## 当前目标与 v13 修订
+## 当前目标与 v14 修订
 
 当前目标是在固定workload、模型、容量及到达表下，使predictive
 相对native取得可核实的性能提升。除预测传输外，优先减少调度/
@@ -35,6 +35,65 @@ child receipt，避免将其他操作的FULL数量套到Mamba节点上。
 Host副本，也不能跨radix分裂推导精确重复字节。修正旧合并批次的
 分池归因没有改变本轮计数。补查报告：
 `experiments/reports/v10_prepare_full_incrementality_20261009.json`。
+
+当前目标仍未达成。v13的采集、审计、HTML导出和workspace清理
+均已完成，156个workflow中154个completed、1个error、1个incomplete。
+采集窗口12171.006秒，完成吞吐45.551 workflow/h；v10 native为
+10345.487秒、53.589 workflow/h。同任务与容量下，v13窗口长17.65%，
+完成吞吐低15.00%。两轮是实际生成轨迹，源码与遥测版本亦有差异；
+上述为开发对照，不能作为轨迹相同的因果性能结论。
+完整来源v2对比确认任务集与物理池容量一致。80--90分钟两轮
+running均约47，v13/native的GPU利用率为48.56%/58.53%，输出
+约509/742 token/s，排队均值65.67/44.46。因此差距不限于最后
+一个workflow的长尾。v13累计已埋点exclusive Python wall区间
+1734.347秒，其中JOIN PREPARE398.406秒、机会采样188.376秒、
+reentry检查184.171秒；它们不是GPU空闲或可直接扣除的JCT。
+继续验证批次服务、恢复等待和共用控制成本，不能仅归因于轨迹。
+完整报告：
+`experiments/reports/v13_native_policy_comparison_20261010.json`。
+
+v13最终H2D来源v2审计：原生3839.402 GB，JOIN/tool提前恢复
+760次/11.824 GB，提交后的需求handoff 18008次/158.846 GB，
+未知受控来源为0。旧冻结报告中的18768次PREFETCH_GPU包含
+handoff，不可全部称为预测H2D。分来源FULL消费如下：
+
+| 来源 | FULL传输GB | 确认FULL首次复用GB | ACK到首次服务P50 |
+| --- | ---: | ---: | ---: |
+| JOIN | 0.908 | 0.453 | 7058 ms |
+| tool | 3.833 | 2.695 | 3220 ms |
+| demand handoff | 81.708 | 47.154 | 815 ms |
+
+FULL复用使用proof_version=2。首次服务前后续原生加载关联分别
+为31、8、599个目标；legacy分池关联仍不足以证明精确重复字节。
+16087次PREPARE ACK中180次关联后续恢复，15603次后续同节点/
+同池D2H均有中间Host驱逐。需要减少不被消费的备份与回收后补传，
+不能以“后续覆盖”否定有效FULL副本的增量复用。
+
+JOIN最终审计127个节点命令对应83个不同child请求，仅19个命令
+在原生EOS前提交。去重请求的EOS到客户端结果P50为1534 ms，
+结果到RETURN为425 ms，JOIN到parent提交866 ms，parent提交到
+首次服务861 ms。v13未启用HTTP/finish-chunk细分计时，不能将
+EOS到客户端的差距直接归因于某一解析或网络函数。
+
+后续修订已合入主目录，SGLang增量已部署并通过完整staging patch
+反向适配检查，代码基础为498c0ab。v14待以相同配置冷启动，验证
+工具候选100ms节流、FIFO异步LLM_RESULT、工具负证据与帧合并、
+按batch服务索引、恢复驻留保护、有界恢复准入、实际FULL冷回收
+时保存必要Mamba及完整缺失检查点Host预算。投机PREPARE仍仅
+传缺失FULL段；完整路径预算不是Host容量预留。下一轮启用已有
+HTTP/finish-chunk计时，继续以消费、等待、重算和吞吐验收。
+这组修订尚无GPU性能收益证据。
+
+最终报告：
+`experiments/reports/v13_h2d_sources_final_20261010.json`、
+`experiments/reports/v13_prefetch_sources_final_20261010.json`、
+`experiments/reports/v13_join_pipeline_final_20261010.json`。
+v13 HTML：
+`experiments/raw/qwen35_native_predictive_replenished_108plus48_20261009_v13/timelines/predictive_h2d.html`。
+已删除154个归档workspace，保留2个现场。下文“v13保持冻结”
+属于该次采集期间的修订记录，不能解释为仍在运行。
+
+## v11 至 v13 修订记录
 
 v10 native H2D transfer-stream累计100.235秒，实验窗口10345.487秒。
 它不是全部恢复等待或oracle上界；相比之下，predictive的JOIN

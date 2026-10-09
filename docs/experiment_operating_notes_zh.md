@@ -4,7 +4,28 @@
 guard、终态门禁或模型动作授权。启动前同时阅读
 `docs/implementation_plan.md`；旧诊断脚本和历史计划不能覆盖当前约定。
 
-## v11 调度与消费归因
+## 当前执行状态
+
+v13采集、外层driver、HTML导出及workspace清理已结束。已合入
+后续498c0ab修订并部署SGLang增量，完整staging patch反向检查通过。
+v14待按同一156任务、108+48到达、running48、Host200GB80:20、
+HBM比例0.9、模型/预测产物/prompt/seed21及预算冷启动。
+本次只部署已验证修订，不重复native开发参考、不增加agent guard。
+后续版本还没有GPU性能收益证据，当前目标继续保持active。
+
+v13最终审计应读取独立的final报告及来源v2口径。提前JOIN/tool为
+760次/11.824 GB，需求handoff为18008次/158.846 GB；旧动作报告
+的PREFETCH_GPU合计不得用于预测覆盖。ACK到服务须按来源分别
+报告，不能用handoff的大量样本掩盖JOIN的7.06秒中位等待。
+PREPARE后续同节点D2H有中间Host驱逐时，应记录回收后补传；
+有效FULL副本只补缺失段，投机Mamba PREPARE继续关闭，实际
+驱逐所需的活跃Mamba保存与恢复依赖仍保留。
+
+v13清理已移除154个归档workspace，保留2个现场及所有冻结证据。
+下文v13冻结、待部署等文字属于当时的执行记录。新版本须使用新
+目录与新的源码/patch指纹，不能把后续修订计入v13结果。
+
+## v11 至 v13 调度与消费归因
 
 新增约定：投机PREPARE只传未备份的FULL前缀，不携带Mamba。
 有效Host FULL副本由原生保留并随radix分裂拆分；副本被Host

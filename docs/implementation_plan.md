@@ -2,7 +2,7 @@
 
 Status date: 2026-10-10.
 
-## Current Objective And V13
+## Current Objective And V14
 
 Keep the fixed workload, model, capacity and arrival schedule. Continue until
 predictive has a verifiable performance improvement relative to native.
@@ -33,6 +33,53 @@ later D2H associations. This supports reclaim followed by re-backup, not
 overwriting valid Host extents; it cannot establish exact duplicate bytes
 across splits. The legacy residual correction did not change these counts.
 Report: experiments/reports/v10_prepare_full_incrementality_20261009.json.
+
+Current status:
+- V13 collection, driver audits, timeline export and workspace cleanup have
+  finished. Outcomes: 154 completed, one error, one incomplete out of 156.
+  Duration12171.006s and45.551 completed/hour remain behind V10 native's
+  10345.487s and53.589/hour. The performance objective remains active.
+- Complete source-v2 comparison confirms the same task set and physical pool
+  capacity. In the80--90min band both run about47 requests, but V13/native
+  GPU utilization is48.56/58.53% and output509/742 tokens/s. The deficit is
+  not only the final workflow tail. Instrumented exclusive Python wall totals
+  are1734.347s, including JOIN PREPARE398.406s, opportunity sampling188.376s
+  and reentry inspection184.171s; these are not isolated GPU idle intervals.
+- Source-v2 final H2D: native3839.402GB, JOIN/tool760 commands/11.824GB,
+  demand handoff18008 commands/158.846GB, unknown controlled0. Preserve
+  frozen action-name reports;18768 PREFETCH_GPU commands are not all anticipation.
+- JOIN/tool/handoff FULL bytes sent are0.908/3.833/81.708GB; proof-v2
+  first-use bytes are0.453/2.695/47.154GB; ACK-to-service medians are
+  7058/3220/815ms. Later native-load associations31/8/599 do not establish
+  exact duplicate bytes under legacy pool evidence.
+- Of16087 PREPARE ACKs,180 have observed restoration associations.
+  All15603 later same-node/pool D2H associations have intervening Host eviction.
+  Keep valid FULL copies, budget all missing checkpoint extents and reduce
+  reclaim/re-backup churn. Do not restore speculative Mamba PREPARE.
+- V13 JOIN127 commands correspond to83 child requests; only19 commands
+  precede native EOS. Unique-child EOS-to-client-result P50 is1534ms;
+  result-to-RETURN425ms, JOIN-to-parent-submit866ms, submit-to-service861ms.
+  These boundaries must remain separate from completion-work prediction error.
+- Follow-up code through498c0ab is merged; the engine delta is applied and
+  the full staging patch reverse-check passes. All previous focused checks
+  remain the validation basis; the package has no GPU performance evidence yet.
+- Cold-start V14 with the same156 tasks,108+48 arrivals, running48,
+  Host200GB80:20, HBM ratio0.9, frozen heads/prompt/seed21 and budgets.
+  Use the existing full driver and enable the existing HTTP/finish-chunk timers.
+  Measure real FULL consumption, source-specific restore waits/reloads,
+  PREPARE churn, recomputation and native-relative throughput.
+- V13 cleanup removed154 archived workspaces and retained two forensic
+  workspaces. Preserve summaries, patches, telemetry, final reports and HTML.
+
+Final source/consumption/pipeline reports are in experiments/reports:
+v13_h2d_sources_final_20261010.json,
+v13_prefetch_sources_final_20261010.json,
+v13_join_pipeline_final_20261010.json.
+Complete native comparison: v13_native_policy_comparison_20261010.json.
+The following V11--V13 entries describe the frozen collection history;
+references to keeping live V13 unchanged no longer imply a running process.
+
+## V11 Through V13 Revision History
 
 V11 implementation:
 - Size PREPARE pressure from up to eight next-prefill candidates, the running
