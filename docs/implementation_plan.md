@@ -2,6 +2,54 @@
 
 Status date: 2026-10-09.
 
+## Native Comparison And Arrival Proposal
+
+Retrospective comparison completed with
+`scripts/compare_native_policy_runs.py`; seven aggregation tests passed.
+Report: `experiments/reports/qwen35_v8_v9_policy_comparison_20261009.json`.
+The first 108 tasks and physical pool capacities match across v8c, v8d and v9.
+Historical Host is auto (105.358/94.652 GB), not the new 80:20 setting.
+
+V8c/v8d/v9 completion throughput is 40.185/41.002/48.073 workflows/hour;
+output throughput is 546.680/619.778/713.107 tokens/s. V8d loses 14.71%
+completion throughput to native although output work differs by only 0.96%.
+Its completed mean JCT is only 2.83% worse and P50 is 2.30% better; do not
+claim that every workflow is slower. V8c's physical failure and harness/
+policy changes make these live runs diagnostic, not a controlled speedup.
+
+Measured priorities for the next performance evaluation:
+1. Verify that selective latest-state restoration, actual ACK locks and
+   restore-ready/resident-first admission convert missing FULL extents into
+   first-service reuse and reduce repeated native restores. These fixes
+   have CPU verification but no measured GPU benefit yet.
+2. Separate reentry/control and prefill scheduler/worker costs. V8d/native
+   tool-end to next-submit P50 is 157.991/93.003 ms; prefill intervals total
+   1743.657/1226.401 s. In the 30-40 minute band decode batches are both
+   about 47, yet GPU utilization differs by 8.72 percentage points.
+   Existing timings cannot attribute the difference to one CPU function or
+   distinguish all synchronization/worker costs; do not invent that breakdown.
+3. Evaluate exposed restoration stalls rather than H2D volume alone.
+   Native transfer-stream H2D totals 88.625 s and submit-to-ACK totals
+   731.751 s, both overlapping service and neither an oracle JCT bound.
+
+Native H2D is 98.820% finished by 50 minutes and 99.779% by 60 minutes,
+while 75/62 workflows and 53/40 unfinished JOINs remain. Waiting queue mean
+falls from 63.213 at 30-40 minutes to 2.732 at 50-60 minutes and 0.539 at
+60-70 minutes. FULL old-prefix loss proxies remain about 0.14%-0.15%;
+this is not a complete FULL/Mamba recompute bound or Device occupancy census.
+
+Proposed, not launched or added to defaults: 108 arrivals at t=0 and 48
+new train tasks at fixed t=3600 s, with 64 as a higher-pressure alternative.
+This can renew the working set but cannot fix ineffective preload, remove
+runtime overhead or guarantee throughput gain; native benefits from renewed
+load too. The new 80:20 Host ratio requires fresh capacity/pressure evidence.
+All policies must share a predeclared task/arrival table and measurement
+windows plus full-drain outcomes, not policy-dependent completion triggers.
+The existing 128-task manifest has only 20 unused tasks after the first 108.
+An authorized wave experiment therefore needs an expanded disjoint train
+manifest and explicit runner support; do not silently duplicate tasks or
+reuse the old 64+64 launcher constraint. No new GPU run is authorized here.
+
 ## Current Handoff And Host Configuration
 
 Native v9 and its offline HTML export have completed: 108/108 workflows,
@@ -84,8 +132,8 @@ Host bytes are 105.358/94.652 GB; CUDA graphs include batch 48. Initial
 inspection found all 108 workflows started and 58 initial delegation groups,
 all with two children; telemetry dropped/failed records are zero.
 These are startup observations. Final collection has 108 completed workflows;
-its HTML is available. A new full throughput/recompute attribution is not part
-of this policy change.
+its HTML is available. The retrospective throughput/pressure diagnosis is now
+at the top of this plan; function-level overhead attribution remains pending.
 
 Implemented before launch:
 - Native receipt locks after H2D ACK, at most four leases and 1 GiB closure.
