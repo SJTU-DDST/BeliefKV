@@ -49,7 +49,7 @@ index d1509a7..dcc1f1e 100644
      tool_choice: Union[ToolChoice, Literal["auto", "required", "none"]] = Field(
          default="auto", examples=["none"]
 diff --git a/python/sglang/srt/entrypoints/openai/serving_chat.py b/python/sglang/srt/entrypoints/openai/serving_chat.py
-index 89cac80..7375315 100644
+index 89cac80..a5277b8 100644
 --- a/python/sglang/srt/entrypoints/openai/serving_chat.py
 +++ b/python/sglang/srt/entrypoints/openai/serving_chat.py
 @@ -116,6 +116,63 @@ _MEDIA_CONTENT_PART_TYPES = frozenset({"image_url", "video_url", "audio_url"})
@@ -116,7 +116,45 @@ index 89cac80..7375315 100644
  def normalize_tool_content(role: str, content):
      """Normalize tool message content from OpenAI array format to plain string.
  
-@@ -1158,9 +1215,13 @@ class OpenAIServingChat(OpenAIServingBase):
+@@ -1048,6 +1105,17 @@ class OpenAIServingChat(OpenAIServingBase):
+             f"received unsupported content type '{media_type}'."
+         )
+ 
++    def _reuse_text_prompt_ids(
++        self, image_data, video_data, audio_data, modalities
++    ) -> bool:
++        model_config = self.tokenizer_manager.model_config
++        model_type = getattr(getattr(model_config, "hf_config", None), "model_type", None)
++        return (
++            self.chat_encoding_spec is None
++            and model_type in ("qwen3_5", "qwen3_5_moe")
++            and not any((image_data, video_data, audio_data, modalities))
++        )
++
+     def _engine_prompt(
+         self, processed_messages: MessageProcessingResult, is_multimodal: bool
+     ) -> tuple[str, Any]:
+@@ -1058,6 +1126,9 @@ class OpenAIServingChat(OpenAIServingBase):
+         """
+         if is_multimodal and not chat_encoding.spec_renders_prompt_ids(
+             self.chat_encoding_spec
++        ) and not self._reuse_text_prompt_ids(
++            processed_messages.image_data, processed_messages.video_data,
++            processed_messages.audio_data, processed_messages.modalities,
+         ):
+             return "text", processed_messages.prompt
+         if isinstance(processed_messages.prompt_ids, str):
+@@ -1069,6 +1140,9 @@ class OpenAIServingChat(OpenAIServingBase):
+         request: ChatCompletionRequest,
+         raw_request: Request = None,
+     ) -> tuple[GenerateReqInput, ChatCompletionRequest]:
++        conversion_started_ms = (
++            time.time() * 1000.0 if request.beliefkv_metadata is not None else None
++        )
+ 
+         # Header-based opt-in (same rationale as request_headers.py).
+         if raw_request is not None and not request.return_input_ids_in_sglext:
+@@ -1158,9 +1232,13 @@ class OpenAIServingChat(OpenAIServingBase):
              video_data=processed_messages.video_data,
              audio_data=processed_messages.audio_data,
              sampling_params=sampling_params,
@@ -131,7 +169,7 @@ index 89cac80..7375315 100644
              return_sampling_mask=request.return_sampling_mask,
              stream=request.stream,
              return_text_in_logprobs=True,
-@@ -1176,6 +1237,7 @@ class OpenAIServingChat(OpenAIServingBase):
+@@ -1176,6 +1254,7 @@ class OpenAIServingChat(OpenAIServingBase):
              routed_experts_start_len=request.routed_experts_start_len,
              rid=request.rid,
              session_id=request.session_id,
@@ -139,7 +177,19 @@ index 89cac80..7375315 100644
              extra_key=request.extra_key,
              cache_salt=request.cache_salt,
              require_reasoning=processed_messages.require_reasoning,
-@@ -1256,25 +1318,24 @@ class OpenAIServingChat(OpenAIServingBase):
+@@ -1201,6 +1280,11 @@ class OpenAIServingChat(OpenAIServingBase):
+         ):
+             apply_header_overrides(adapted_request, raw_request.headers)
+ 
++        if conversion_started_ms is not None:
++            adapted_request.beliefkv_ingress_timing_ms = {
++                "chat_conversion_started_ts_ms": conversion_started_ms,
++                "chat_conversion_finished_ts_ms": time.time() * 1000.0,
++            }
+         return adapted_request, request
+ 
+     def _process_messages(
+@@ -1256,25 +1340,24 @@ class OpenAIServingChat(OpenAIServingBase):
          required_parsed_natively = glm_constraint
          if effective_tools and request.tool_choice != "none":
              request.skip_special_tokens = False
@@ -174,7 +224,67 @@ index 89cac80..7375315 100644
                  required_parsed_natively = parser.detector.parses_required_natively()
                  if self.chat_encoding_spec == "kimi_k3":
                      tool_call_stop = parser.detector.eot_token
-@@ -1872,6 +1933,11 @@ class OpenAIServingChat(OpenAIServingBase):
+@@ -1536,6 +1619,9 @@ class OpenAIServingChat(OpenAIServingBase):
+                 if self._tokenizer_auto_adds_specials
+                 else {}
+             )
++            needs_prompt_text = is_multimodal and not self._reuse_text_prompt_ids(
++                image_data, video_data, audio_data, modalities
++            )
+             try:
+                 rendered_prompt, prompt_ids, decoded_prompt = (
+                     self._render_and_encode_chat_template(
+@@ -1544,6 +1630,7 @@ class OpenAIServingChat(OpenAIServingBase):
+                         template_kwargs=extra_template_kwargs,
+                         encode_kwargs=encode_kwargs,
+                         use_cache=is_multimodal,
++                        decode_prompt=needs_prompt_text,
+                     )
+                 )
+             except Exception:
+@@ -1562,6 +1649,7 @@ class OpenAIServingChat(OpenAIServingBase):
+                             template_kwargs=extra_template_kwargs,
+                             encode_kwargs=encode_kwargs,
+                             use_cache=is_multimodal,
++                            decode_prompt=needs_prompt_text,
+                         )
+                     )
+                 except _CHAT_TEMPLATE_CLIENT_ERRORS as template_error:
+@@ -1578,7 +1666,7 @@ class OpenAIServingChat(OpenAIServingBase):
+                 # The cached decode corresponds to prompt_ids before the prefix.
+                 decoded_prompt = None
+ 
+-            if is_multimodal:
++            if needs_prompt_text:
+                 prompt = (
+                     decoded_prompt
+                     if decoded_prompt is not None
+@@ -1608,6 +1696,7 @@ class OpenAIServingChat(OpenAIServingBase):
+         template_kwargs: Dict[str, Any],
+         encode_kwargs: Dict[str, Any],
+         use_cache: bool,
++        decode_prompt: bool = True,
+     ) -> tuple[str, List[int], Optional[str]]:
+         cache_key = None
+         if use_cache:
+@@ -1623,6 +1712,7 @@ class OpenAIServingChat(OpenAIServingBase):
+                         tools,
+                         template_kwargs,
+                         encode_kwargs,
++                        decode_prompt,
+                     ),
+                     option=orjson.OPT_SORT_KEYS,
+                 )
+@@ -1649,7 +1739,7 @@ class OpenAIServingChat(OpenAIServingBase):
+         )
+         decoded_prompt = (
+             self.tokenizer_manager.tokenizer.decode(prompt_ids)
+-            if cache_key is not None
++            if cache_key is not None and decode_prompt
+             else None
+         )
+ 
+@@ -1872,6 +1962,11 @@ class OpenAIServingChat(OpenAIServingBase):
                          choice_logprobs = self._process_streaming_logprobs(
                              content, n_prev_token, total_output_logprobs
                          ).model_dump()
@@ -186,7 +296,7 @@ index 89cac80..7375315 100644
                      n_prev_tokens[index] = total_output_logprobs
  
                  # Track finish_reason for each index
-@@ -2529,6 +2595,45 @@ class OpenAIServingChat(OpenAIServingBase):
+@@ -2529,6 +2624,45 @@ class OpenAIServingChat(OpenAIServingBase):
          token_logprobs = self._process_logprobs_tokens(logprobs, use_token_index=False)
          return ChoiceLogprobs(content=token_logprobs)
  
@@ -441,19 +551,20 @@ index b9a134e..d0dd6eb 100644
          )
          return producer_id
 diff --git a/python/sglang/srt/managers/io_struct.py b/python/sglang/srt/managers/io_struct.py
-index d3f13eb..ce0e6e6 100644
+index d3f13eb..f44aa49 100644
 --- a/python/sglang/srt/managers/io_struct.py
 +++ b/python/sglang/srt/managers/io_struct.py
-@@ -301,6 +301,8 @@ class GenerateReqInput:
+@@ -301,6 +301,9 @@ class GenerateReqInput:
  
      # For background responses (OpenAI responses API)
      background: bool = False
 +    # Optional BeliefKV causal identity, carried without interpretation.
 +    beliefkv_metadata: Optional[Union[List[Dict[str, Any]], Dict[str, Any]]] = None
++    beliefkv_ingress_timing_ms: Optional[Dict[str, float]] = None
      # Require reasoning for the request (hybrid reasoning model only)
      require_reasoning: bool = False
      # Per-request thinking budget. Requires strict thinking so the runtime can
-@@ -568,6 +570,7 @@ class GenerateReqInput:
+@@ -568,6 +571,7 @@ class GenerateReqInput:
          self._normalize_logprob_params(num)
          self._normalize_return_hidden_states(num)
          self._normalize_custom_logit_processor(num)
@@ -461,7 +572,7 @@ index d3f13eb..ce0e6e6 100644
          self._normalize_extra_key(num)
          self._normalize_cache_salt(num)
          self._normalize_bootstrap_params(num)
-@@ -793,6 +796,22 @@ class GenerateReqInput:
+@@ -793,6 +797,22 @@ class GenerateReqInput:
                  "Cannot use list custom_logit_processor with parallel_sample_num > 1"
              )
  
@@ -484,7 +595,7 @@ index d3f13eb..ce0e6e6 100644
      def _normalize_extra_key(self, num):
          """Normalize extra_key for batch processing."""
          if self.extra_key is None:
-@@ -892,6 +911,11 @@ class GenerateReqInput:
+@@ -892,6 +912,12 @@ class GenerateReqInput:
          sub = GenerateReqInput(
              rid=self.rid[i],
              session_id=self.session_id,
@@ -493,10 +604,11 @@ index d3f13eb..ce0e6e6 100644
 +                if isinstance(self.beliefkv_metadata, list)
 +                else self.beliefkv_metadata
 +            ),
++            beliefkv_ingress_timing_ms=self.beliefkv_ingress_timing_ms,
              text=self.text[i] if self.text is not None else None,
              input_ids=self.input_ids[i] if self.input_ids is not None else None,
              input_embeds=(
-@@ -1019,6 +1043,7 @@ class TokenizedGenerateReqInput(BaseReq, kw_only=True):
+@@ -1019,6 +1045,7 @@ class TokenizedGenerateReqInput(BaseReq, kw_only=True):
      # Session info for continual prompting
      session_id: Optional[str] = None
      session_params: Optional[SessionParams] = None
@@ -569,7 +681,7 @@ index 7811e44..cd7aea5 100755
                  cow_dst_tensors.append(req.kv.mamba_pool_idx.unsqueeze(0))
                  req.kv.mamba_cow_src_index = None
 diff --git a/python/sglang/srt/managers/scheduler.py b/python/sglang/srt/managers/scheduler.py
-index 743c8af..4a58321 100644
+index 743c8af..a3d582d 100644
 --- a/python/sglang/srt/managers/scheduler.py
 +++ b/python/sglang/srt/managers/scheduler.py
 @@ -725,9 +725,147 @@ class Scheduler(
@@ -720,7 +832,17 @@ index 743c8af..4a58321 100644
      def init_startup_timing_begin(self) -> None:
          self.scheduler_startup_begin = time.perf_counter()
  
-@@ -2789,6 +2927,7 @@ class Scheduler(
+@@ -2727,6 +2865,9 @@ class Scheduler(
+         *,
+         mm_input_error: Optional[str] = None,
+     ):
++        ingress = getattr(recv_req.time_stats, "beliefkv_ingress_timing_ms", None)
++        if ingress is not None:
++            ingress["scheduler_received_ts_ms"] = time.time() * 1000.0
+         # Route: normal request / session request / session-not-found
+         session_id = (
+             recv_req.session_params.id if recv_req.session_params is not None else None
+@@ -2789,6 +2930,7 @@ class Scheduler(
                  dllm_config=self.dllm_config,
                  time_stats=recv_req.time_stats,
                  multi_item_delimiter_indices=recv_req.multi_item_delimiter_indices,
@@ -728,7 +850,7 @@ index 743c8af..4a58321 100644
              )
              req.tokenizer = self.tokenizer
  
-@@ -3190,6 +3329,33 @@ class Scheduler(
+@@ -3190,6 +3332,33 @@ class Scheduler(
          self._retry_storage_prefetch(req)
          return True
  
@@ -762,7 +884,7 @@ index 743c8af..4a58321 100644
      def _add_request_to_queue(self, req: Req, is_retracted: bool = False):
          if not self._set_or_validate_priority(req):
              return
-@@ -3200,6 +3366,12 @@ class Scheduler(
+@@ -3200,6 +3369,12 @@ class Scheduler(
          if self.disaggregation_mode == DisaggregationMode.NULL:
              if self._abort_on_queued_limit(req):
                  return
@@ -775,7 +897,7 @@ index 743c8af..4a58321 100644
              self._prefetch_kvcache(req)
              self.waiting_queue.append(req)
              req.time_stats.set_wait_queue_entry_time()
-@@ -3281,6 +3453,7 @@ class Scheduler(
+@@ -3281,6 +3456,7 @@ class Scheduler(
                  direction * recv_req.priority < direction * candidate_req.priority
              )
              if abort_existing_req:
@@ -783,7 +905,7 @@ index 743c8af..4a58321 100644
                  self._release_aborted_request(candidate_req)
                  self.waiting_queue.pop(idx)
                  self.beam_coordinator.retire_group(candidate_req)
-@@ -3558,12 +3731,77 @@ class Scheduler(
+@@ -3558,12 +3734,77 @@ class Scheduler(
              if self.enable_hicache_storage:
                  self._process_storage_prefetch_retries()
  
@@ -861,7 +983,7 @@ index 743c8af..4a58321 100644
  
          if self.enable_fpm:
              self._fpm_batch_t0 = time.monotonic()
-@@ -3647,6 +3885,27 @@ class Scheduler(
+@@ -3647,6 +3888,27 @@ class Scheduler(
              if running_batch.is_empty():
                  running_batch.batch_is_full = False
  
@@ -889,7 +1011,7 @@ index 743c8af..4a58321 100644
          if self.dllm_config is not None:
              new_batch = self.get_new_batch_dllm(running_batch)
          elif self._should_defer_prefill():
-@@ -3705,6 +3964,8 @@ class Scheduler(
+@@ -3705,6 +3967,8 @@ class Scheduler(
              if self.enable_fpm:
                  ret.fpm_start_time = self._fpm_batch_t0
  
@@ -898,7 +1020,7 @@ index 743c8af..4a58321 100644
          return NextBatchPlan(batch_to_run=ret, running_batch=running_batch)
  
      def get_num_allocatable_reqs(
-@@ -3754,6 +4015,50 @@ class Scheduler(
+@@ -3754,6 +4018,50 @@ class Scheduler(
  
          return NextBatchPlan(batch_to_run=ret, running_batch=running_batch)
  
@@ -949,7 +1071,7 @@ index 743c8af..4a58321 100644
      def _get_new_batch_prefill_raw(
          self,
          prefill_delayer_single_pass: Optional[PrefillDelayerSinglePassExecutor],
-@@ -3871,7 +4176,8 @@ class Scheduler(
+@@ -3871,7 +4179,8 @@ class Scheduler(
              mamba_allocator.alloc_group_begin(len(self.waiting_queue))
          buffer_pipeline = self.tree_cache.buffer_pipeline
          # Get requests from the waiting queue to a new prefill batch
@@ -959,7 +1081,7 @@ index 743c8af..4a58321 100644
              if self.enable_lora and not self.can_schedule_lora_req(req, running_loras):
                  continue
  
-@@ -3897,6 +4203,12 @@ class Scheduler(
+@@ -3897,6 +4206,12 @@ class Scheduler(
                  ):
                      break
  
@@ -972,7 +1094,7 @@ index 743c8af..4a58321 100644
              if self.enable_hicache_storage:
                  prefetch_done = self.tree_cache.check_prefetch_progress(
                      req.cache_request_handle
-@@ -3932,6 +4244,10 @@ class Scheduler(
+@@ -3932,6 +4247,10 @@ class Scheduler(
                  has_chunked_req=(self.chunked_req is not None),
                  truncation_align_size=self.truncation_align_size,
              )
@@ -983,7 +1105,7 @@ index 743c8af..4a58321 100644
  
              if self.enable_lora:
                  running_loras.add(req.lora_id)
-@@ -3963,6 +4279,18 @@ class Scheduler(
+@@ -3963,6 +4282,18 @@ class Scheduler(
                              req.kv.mamba_pool_idx.unsqueeze(-1)
                          )
                          req.kv.mamba_pool_idx = None
@@ -1002,7 +1124,7 @@ index 743c8af..4a58321 100644
                  break
  
          if mamba_allocator is not None:
-@@ -4254,6 +4582,9 @@ class Scheduler(
+@@ -4254,6 +4585,9 @@ class Scheduler(
          batch.launch_ts = time.monotonic()
          batch.after_idle_gap = self._sched_idled
          self._sched_idled = False
@@ -1012,7 +1134,7 @@ index 743c8af..4a58321 100644
  
          # Accumulate the prefill-token counter used by the HRRN scheduling policy. Decode / prebuilt batches contribute 0.
          if batch.extend_num_tokens:
-@@ -4622,6 +4953,10 @@ class Scheduler(
+@@ -4622,6 +4956,10 @@ class Scheduler(
          elif batch.forward_mode.is_idle():
              self.batch_result_processor.process_batch_result_idle(batch, result)
  
@@ -1023,7 +1145,7 @@ index 743c8af..4a58321 100644
          self._record_step_counters(batch, result)
  
          self.metrics_reporter.log_batch_result_stats(batch, result)
-@@ -4634,6 +4969,19 @@ class Scheduler(
+@@ -4634,6 +4972,19 @@ class Scheduler(
          self.maybe_send_health_check_signal()
          self.metrics_reporter.update_device_timer()
  
@@ -1043,7 +1165,7 @@ index 743c8af..4a58321 100644
      def _record_step_counters(
          self, batch: ScheduleBatch, result: GenerationBatchResult
      ) -> None:
-@@ -5215,6 +5563,9 @@ class Scheduler(
+@@ -5215,6 +5566,9 @@ class Scheduler(
          }
  
      def abort_request(self, recv_req: AbortReq):
@@ -1053,7 +1175,7 @@ index 743c8af..4a58321 100644
          if (chunked_req := self.chunked_req) is not None:
              if recv_req.abort_all or chunked_req.rid.startswith(recv_req.rid):
                  self._pending_chunked_abort_req = chunked_req
-@@ -5369,6 +5720,25 @@ class Scheduler(
+@@ -5369,6 +5723,25 @@ class Scheduler(
                  else:
                      req.to_finish = FINISH_ABORT()
  
@@ -1079,7 +1201,7 @@ index 743c8af..4a58321 100644
      def _pause_engine(self) -> Tuple[List[Req], int]:
          raise NotImplementedError()
  
-@@ -5642,6 +6012,8 @@ class Scheduler(
+@@ -5642,6 +6015,8 @@ class Scheduler(
  
      def maybe_sleep_on_idle(self):
          if self.idle_sleeper is not None:
@@ -1088,7 +1210,7 @@ index 743c8af..4a58321 100644
              self.idle_sleeper.maybe_sleep()
  
      def handle_freeze_gc(self, recv_req: FreezeGCReq):
-@@ -5652,6 +6024,17 @@ class Scheduler(
+@@ -5652,6 +6027,17 @@ class Scheduler(
  
      def handle_shutdown(self, recv_req: ShutdownReq):
          # Break the event loop; the finally in run_scheduler_process releases resources.
@@ -1127,7 +1249,7 @@ index 54099ae..1ca241d 100644
              self.empty_cache_interval > 0
              and real_time() - self.last_empty_time > self.empty_cache_interval
 diff --git a/python/sglang/srt/managers/tokenizer_manager.py b/python/sglang/srt/managers/tokenizer_manager.py
-index 1b63fb6..07ab19d 100644
+index 1b63fb6..385711b 100644
 --- a/python/sglang/srt/managers/tokenizer_manager.py
 +++ b/python/sglang/srt/managers/tokenizer_manager.py
 @@ -1502,6 +1502,7 @@ class TokenizerManager(TokenizerControlMixin, TokenizerManagerScoreMixin):
@@ -1138,6 +1260,26 @@ index 1b63fb6..07ab19d 100644
                  custom_logit_processor=obj.custom_logit_processor,
                  require_reasoning=obj.require_reasoning,
                  return_hidden_states=obj.return_hidden_states,
+@@ -3602,11 +3603,19 @@ class TokenizerManager(TokenizerControlMixin, TokenizerManagerScoreMixin):
+             if rid in self.rid_to_state:
+                 raise ValueError(f"Duplicate request ID detected: {rid}")
+             time_stats = APIServerReqTimeStats(disagg_mode=self.disaggregation_mode)
++            if getattr(sub_obj, "beliefkv_metadata", None) is not None:
++                time_stats.beliefkv_ingress_timing_ms = dict(
++                    getattr(sub_obj, "beliefkv_ingress_timing_ms", None) or {}
++                )
+             state = ReqState([], False, asyncio.Event(), sub_obj, time_stats)
+             self.rid_to_state[rid] = state
+             if self.enable_trace:
+                 time_stats.init_trace_ctx(rid, bootstrap_room, external_trace_header)
+             time_stats.set_created_time(created_time)
++            if time_stats.beliefkv_ingress_timing_ms is not None:
++                time_stats.beliefkv_ingress_timing_ms["api_received_ts_ms"] = (
++                    convert_time_to_realtime(time_stats.created_time) * 1000.0
++                )
+ 
+     def _release_req_states_on_failure(self, rids: Iterable[str]):
+         """Release rid_to_state entries created for a failed handler.
 diff --git a/python/sglang/srt/mem_cache/hybrid_cache/hybrid_cache_controller.py b/python/sglang/srt/mem_cache/hybrid_cache/hybrid_cache_controller.py
 index 17b3774..2e60f8d 100644
 --- a/python/sglang/srt/mem_cache/hybrid_cache/hybrid_cache_controller.py
@@ -3128,6 +3270,57 @@ index d417d7d..1938d8e 100644
      def is_load_back_event_done(self, consumer_index: int) -> bool:
          """Return True after the local load-back event is complete.
  
+diff --git a/python/sglang/srt/observability/req_time_stats.py b/python/sglang/srt/observability/req_time_stats.py
+index 4c17495..634ac87 100644
+--- a/python/sglang/srt/observability/req_time_stats.py
++++ b/python/sglang/srt/observability/req_time_stats.py
+@@ -240,6 +240,7 @@ class ReqTimeStatsBase:
+     )
+     disagg_mode: DisaggregationMode = DisaggregationMode.NULL
+     diff_realtime_monotonic: float = 0.0
++    beliefkv_ingress_timing_ms: Optional[Dict[str, float]] = None
+ 
+     @classmethod
+     def new_from_obj(cls, obj: Optional[ReqTimeStatsBase], *args, **kwargs) -> Self:
+@@ -335,12 +336,15 @@ class ReqTimeStatsBase:
+             if self.trace_ctx.tracing_enable
+             else {"tracing_enable": False}
+         )
+-        return {
++        state = {
+             "disagg_mode": self.disagg_mode.value if self.disagg_mode else None,
+             "enable_metrics": False,
+             "trace_ctx": trace_ctx_state,
+             "diff_realtime_monotonic": global_diff_realtime_monotonic,
+         }
++        if self.beliefkv_ingress_timing_ms is not None:
++            state["beliefkv_ingress_timing_ms"] = dict(self.beliefkv_ingress_timing_ms)
++        return state
+ 
+     def __setstate__(self, state: object):
+         # Reconstruct disagg_mode from string value if needed
+@@ -440,6 +444,10 @@ class APIServerReqTimeStats(ReqTimeStatsBase):
+     def set_tokenize_finish_time(self, ts=None):
+         ts = ts or time.perf_counter()
+         self.tokenize_finish_time = ts
++        if self.beliefkv_ingress_timing_ms is not None:
++            self.beliefkv_ingress_timing_ms["api_tokenized_ts_ms"] = (
++                convert_time_to_realtime(ts) * 1000.0
++            )
+ 
+         # tokenize span was started in set_created_time(); end it here.
+         if self.trace_ctx.tracing_enable:
+@@ -452,6 +460,10 @@ class APIServerReqTimeStats(ReqTimeStatsBase):
+     def set_api_server_dispatch_time(self, ts=None):
+         ts = ts or time.perf_counter()
+         self.api_server_dispatch_time = ts
++        if self.beliefkv_ingress_timing_ms is not None:
++            self.beliefkv_ingress_timing_ms["api_dispatch_started_ts_ms"] = (
++                convert_time_to_realtime(ts) * 1000.0
++            )
+ 
+         if self.trace_ctx.tracing_enable:
+             self.trace_ctx.trace_slice_start(
 diff --git a/python/sglang/srt/session/session_controller.py b/python/sglang/srt/session/session_controller.py
 index c23c965..73ad611 100644
 --- a/python/sglang/srt/session/session_controller.py
@@ -6778,6 +6971,127 @@ index 0000000..6743718
 +
 +if __name__ == "__main__":
 +    unittest.main()
+diff --git a/test/srt/test_beliefkv_text_prompt_ids.py b/test/srt/test_beliefkv_text_prompt_ids.py
+new file mode 100644
+index 0000000..5b6234c
+--- /dev/null
++++ b/test/srt/test_beliefkv_text_prompt_ids.py
+@@ -0,0 +1,115 @@
++from collections import Counter, OrderedDict
++import pickle
++from types import SimpleNamespace
++
++from sglang.test.test_utils import maybe_stub_sgl_kernel
++
++maybe_stub_sgl_kernel()
++
++from sglang.srt.entrypoints.openai.protocol import ChatCompletionRequest, MessageProcessingResult
++from sglang.srt.entrypoints.openai.serving_chat import OpenAIServingChat
++from sglang.srt.observability.req_time_stats import APIServerReqTimeStats, SchedulerReqTimeStats
++
++
++class CountingTokenizer:
++    bos_token_id = None
++    chat_template = "test"
++
++    def __init__(self):
++        self.calls = Counter()
++
++    def apply_chat_template(self, messages, **kwargs):
++        self.calls["render"] += 1
++        return "task history"
++
++    def encode(self, text, **kwargs):
++        self.calls["encode"] += 1
++        return list(text.encode())
++
++    def decode(self, ids):
++        self.calls["decode"] += 1
++        return bytes(ids).decode()
++
++
++def serving_fixture(model_type="qwen3_5_moe"):
++    serving = object.__new__(OpenAIServingChat)
++    tokenizer = CountingTokenizer()
++    serving.chat_encoding_spec = None
++    serving._chat_template_cache = OrderedDict()
++    serving._tokenizer_auto_adds_specials = False
++    serving.tokenizer_manager = SimpleNamespace(
++        tokenizer=tokenizer, model_config=SimpleNamespace(
++            is_multimodal=True, hf_config=SimpleNamespace(model_type=model_type),
++        ),
++    )
++    serving.template_manager = SimpleNamespace(
++        jinja_template_content_format="openai", jinja_template_may_reorder_tool_results=False,
++        reasoning_config=None,
++    )
++    return serving, tokenizer
++
++
++def test_qwen_text_reuses_encoded_prompt_and_retains_cache():
++    serving, tokenizer = serving_fixture()
++    request = ChatCompletionRequest(
++        model="test", messages=[{"role": "user", "content": "inspect foo.py"}],
++    )
++    for _ in range(2):
++        processed = serving._apply_jinja_template(request, None, True)
++        assert serving._engine_prompt(processed, True) == (
++            "input_ids", list(b"task history"),
++        )
++    assert tokenizer.calls == {"render": 1, "encode": 1}
++
++
++def test_qwen_continued_text_report_does_not_decode_prompt():
++    serving, tokenizer = serving_fixture()
++    request = ChatCompletionRequest(
++        model="test", continue_final_message=True, messages=[
++            {"role": "user", "content": "inspect foo.py"},
++            {"role": "assistant", "content": "Conclusion: "},
++        ],
++    )
++    processed = serving._apply_jinja_template(request, None, True)
++    assert serving._engine_prompt(processed, True) == (
++        "input_ids", list(b"task historyConclusion: "),
++    )
++    assert tokenizer.calls["decode"] == 0
++
++
++def test_media_and_other_multimodal_models_keep_text_routing():
++    serving, _ = serving_fixture()
++    for pool in ("image_data", "video_data", "audio_data", "modalities"):
++        media = dict(image_data=None, video_data=None, audio_data=None, modalities=[])
++        media[pool] = ["media"]
++        processed = MessageProcessingResult(
++            prompt="media prompt", prompt_ids=[1], stop=None, **media,
++        )
++        assert serving._engine_prompt(processed, True) == ("text", "media prompt")
++    other, tokenizer = serving_fixture("other_vlm")
++    request = ChatCompletionRequest(
++        model="test", messages=[{"role": "user", "content": "inspect foo.py"}],
++    )
++    processed = other._apply_jinja_template(request, None, True)
++    assert other._engine_prompt(processed, True) == ("text", "task history")
++    assert tokenizer.calls == {"render": 1, "encode": 1, "decode": 1}
++
++
++def test_ingress_epoch_timestamps_survive_native_pickle_and_request_stats_copy():
++    stats = APIServerReqTimeStats(beliefkv_ingress_timing_ms={
++        "chat_conversion_started_ts_ms": 1000.0,
++        "chat_conversion_finished_ts_ms": 1001.0,
++    })
++    stats.set_tokenize_finish_time()
++    stats.set_api_server_dispatch_time()
++    restored = pickle.loads(pickle.dumps(stats))
++    scheduler = SchedulerReqTimeStats.new_from_obj(restored)
++    assert scheduler.beliefkv_ingress_timing_ms == stats.beliefkv_ingress_timing_ms
++    assert scheduler.beliefkv_ingress_timing_ms is not stats.beliefkv_ingress_timing_ms
++    assert set(scheduler.beliefkv_ingress_timing_ms) == {
++        "chat_conversion_started_ts_ms", "chat_conversion_finished_ts_ms",
++        "api_tokenized_ts_ms", "api_dispatch_started_ts_ms",
++    }
++    ordinary = APIServerReqTimeStats()
++    ordinary.set_tokenize_finish_time()
++    assert "beliefkv_ingress_timing_ms" not in ordinary.__getstate__()
 diff --git a/test/srt/test_beliefkv_transfer_receipts.py b/test/srt/test_beliefkv_transfer_receipts.py
 new file mode 100644
 index 0000000..04f9ddd

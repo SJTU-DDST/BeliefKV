@@ -807,6 +807,9 @@ def test_native_request_service_and_ack_are_evidence_not_invented_dma(
         mamba_host_hit_length=2,
         extend_input_len=14,
         sampling_params=SimpleNamespace(max_new_tokens=20),
+        time_stats=SimpleNamespace(beliefkv_ingress_timing_ms={
+            "api_dispatch_started_ts_ms": time.time() * 1000.0,
+        }),
         finished=lambda: False,
     )
     audit.on_enqueue(request)
@@ -845,6 +848,9 @@ def test_native_request_service_and_ack_are_evidence_not_invented_dma(
     assert events[0]["attributes"]["uncached_prompt_tokens"] == 14
     assert events[0]["attributes"]["cached_tokens_host"] == 3
     assert events[0]["attributes"]["mamba_host_hit_slots"] == 2
+    ingress = events[0]["attributes"]["native_ingress_timing_ms"]
+    assert ingress["native_queue_registered_ts_ms"] == events[0]["ts_ms"]
+    assert ingress["api_dispatch_started_ts_ms"] <= ingress["native_queue_registered_ts_ms"]
     assert events[1]["attributes"]["output_tokens"] == 2
     assert events[0]["context_epoch"] == 0
     service = _read(tmp_path / "server/runtime_audit.jsonl")

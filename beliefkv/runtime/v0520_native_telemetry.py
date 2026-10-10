@@ -798,7 +798,13 @@ class NativeReactiveTelemetry:
 
     def on_enqueue(self, req: Any) -> None:
         if self._identity(req) is not None and req.rid not in self._pending:
-            self._pending[req.rid] = time.time() * 1000
+            registered = time.time() * 1000
+            self._pending[req.rid] = registered
+            ingress = getattr(
+                getattr(req, "time_stats", None), "beliefkv_ingress_timing_ms", None
+            )
+            if ingress is not None:
+                ingress["native_queue_registered_ts_ms"] = registered
 
     def _match_path(self, node_id: Any) -> list[list[int | float]] | None:
         tree_core = getattr(self._cache, "tree_core", None)
@@ -926,6 +932,10 @@ class NativeReactiveTelemetry:
                     **identity,
                     "attributes": {
                         "request_id": rid,
+                        "native_ingress_timing_ms": getattr(
+                            getattr(req, "time_stats", None),
+                            "beliefkv_ingress_timing_ms", None,
+                        ),
                         "prompt_tokens": len(req.origin_input_ids),
                         "cached_tokens_device": int(
                             getattr(req, "cached_tokens_device", 0) or 0

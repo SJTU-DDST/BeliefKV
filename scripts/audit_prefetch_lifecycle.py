@@ -403,6 +403,7 @@ def http_transport_waits(
         sent = None
     return {
         "http_transport_attempts_observed": len(attempts),
+        "http_body_sent_ts_ms": sent,
         "client_submit_to_http_request_ms": interval(client_submit, start),
         "http_request_to_body_sent_ms": interval(start, sent),
         "body_sent_to_native_arrival_ms": interval(sent, native_arrival),
@@ -410,6 +411,49 @@ def http_transport_waits(
             start, timing.get("http_response_headers_ts_ms"),
         ),
     }
+
+
+NATIVE_INGRESS_INTERVALS = {
+    "body_sent_to_api_received_ms": (
+        "http_body_sent_ts_ms", "api_received_ts_ms",
+    ),
+    "api_received_to_chat_conversion_ms": (
+        "api_received_ts_ms", "chat_conversion_started_ts_ms",
+    ),
+    "chat_conversion_ms": (
+        "chat_conversion_started_ts_ms", "chat_conversion_finished_ts_ms",
+    ),
+    "chat_conversion_to_tokenized_ms": (
+        "chat_conversion_finished_ts_ms", "api_tokenized_ts_ms",
+    ),
+    "tokenized_to_dispatch_ms": (
+        "api_tokenized_ts_ms", "api_dispatch_started_ts_ms",
+    ),
+    "dispatch_to_scheduler_received_ms": (
+        "api_dispatch_started_ts_ms", "scheduler_received_ts_ms",
+    ),
+    "scheduler_received_to_queue_registered_ms": (
+        "scheduler_received_ts_ms", "native_queue_registered_ts_ms",
+    ),
+}
+
+
+def native_ingress_waits(native: dict | None, *, body_sent_ts_ms=None) -> dict:
+    timing = (native.get("attributes") or {}).get("native_ingress_timing_ms") if native else None
+    if not isinstance(timing, dict):
+        timing = {}
+    else:
+        timing = dict(timing)
+    if timing and body_sent_ts_ms is not None:
+        timing["http_body_sent_ts_ms"] = body_sent_ts_ms
+    intervals = {}
+    for field, (left, right) in NATIVE_INGRESS_INTERVALS.items():
+        start, end = timing.get(left), timing.get(right)
+        intervals[field] = (
+            end - start if type(start) in (int, float) and type(end) in (int, float)
+            and math.isfinite(start) and math.isfinite(end) and start <= end else None
+        )
+    return {"native_ingress_timing_ms": timing or None, **intervals}
 
 
 def full_expiration_evidence(
@@ -702,6 +746,9 @@ def wait_event_attribution(
         expirations = full_expiration_evidence(
             pending, completion, client_submit, native_arrival, service,
         )
+        transport = http_transport_waits(
+            http_attempts.get(rid, []), client_submit, native_arrival,
+        )
         rows.append({
             **{name: group[name] for name in (
                 "source", "workflow_id", "invocation_id", "context_id", "context_epoch", "join_id",
@@ -742,10 +789,8 @@ def wait_event_attribution(
             "client_submit_to_native_arrival_ms": (
                 native["ts_ms"] - request["ts_ms"] if native and request else None
             ),
-            **http_transport_waits(
-                http_attempts.get(rid, []),
-                request["ts_ms"] if request else None, native["ts_ms"] if native else None,
-            ),
+            **transport,
+            **native_ingress_waits(native, body_sent_ts_ms=transport["http_body_sent_ts_ms"]),
             "client_submit_to_first_service_ms": (
                 service - request["ts_ms"] if request and service is not None else None
             ),
@@ -801,6 +846,7 @@ def wait_event_attribution(
                             "http_request_to_body_sent_ms",
                             "body_sent_to_native_arrival_ms",
                             "http_request_to_response_headers_ms",
+                            *NATIVE_INGRESS_INTERVALS,
                         )
                     },
                     "client_submit_to_first_service_ms": distribution(

@@ -2,6 +2,40 @@
 
 更新日期：2026-10-10。
 
+## V18 请求入口修订与启动计划
+
+V17于2026-10-10 16:21:53 CST停止开发采集，已核验旧client/
+server/scheduler退出和GPU释放。38个终态结果均completed；
+其余118个计划任务是运行中断或尚未到达，不计为模型incomplete。
+保留原计划、trace、回执及停止审计，不作完整native对照。
+停止审计确认独立提前且复用FULL为JOIN419.66MB、tool62.38MB，
+合计482.04MB；需求handoff复用47.095GB另列。JOIN最后ACK到
+服务P90为16.73秒，18条FULL锁在完成前到期，仍有明确优化缺口。
+
+隔离修订限定Qwen3.5的纯文本Jinja入口：复用模板已有token IDs，
+保留模板缓存，省去decode及tokenizer再次encode；有image/video/
+audio/modalities的请求仍走原有媒体入口。真实tokenizer的33个
+代表性输入（17--71199 token）与旧入口完全一致，覆盖工具历史、
+文本parts、关闭thinking及继续assistant报告。冷缓存线程CPU
+均值33.136→16.357ms，热缓存15.256→0.951ms；这些是依据终态
+trajectory重构的CPU输入，不是原始HTTP逐请求对照或GPU收益。
+报告：`experiments/reports/v18_chat_prompt_encoding_cpu_20261010.json`。
+
+双方带因果身份的请求共用入口计时，经过原生pickle与request
+stats复制保留转换开始/完成、tokenizer完成、dispatch开始、
+scheduler handler接收和原生队列登记时间。审计按独立JOIN/tool
+事件拆分body sent→API received、转换、tokenizer、dispatch/
+IPC和scheduler登记；缺边界及逆序区间保留未知。dispatch时间
+在序列化/发送前采集，区间不能直接当成纯IPC或隔离tokenizer成本。
+没有逐decode步骤新增计时、没有改变agent终态协议或工具180秒配置。
+
+89项原生入口/身份/会话/恢复/调度/回执检查及79项遥测/生命周期
+审计检查通过。规范引擎patch SHA256为
+`f41f2d118b549a5d7b74fe77b154691f6409cb9804493605a17e8a44ceb31468`。
+冷启动V18仍用156任务、108+48/3600秒、running48、Host200GB80:20、
+HBM0.9、lead500ms和同一预测产物；先predictive，再稳定同版本
+native。当前尚无V18吞吐/JCT收益证据，active目标继续。
+
 ## V17 快速迭代与当前部署
 
 用户已要求收集到可优化问题后及时停止开发采集，部署已提交修订并冷启动；

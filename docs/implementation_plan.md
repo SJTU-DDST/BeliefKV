@@ -2,6 +2,41 @@
 
 Status date: 2026-10-10.
 
+## V18 Text Ingress Revision
+
+Stop V17 for the authorized development iteration at16:21:53 CST,2026-10-10.
+Verify all old client/server/scheduler processes exit and the GPU is released.
+Preserve38 completed terminal results and118 interrupted/not-yet-arrived planned
+tasks as censored evidence; native never started. No completed pair exists.
+The stopped audit verifies419.66MB JOIN and62.38MB tool independently early
+and consumed FULL;47.095GB demand handoff is separate. JOIN last-ACK-to-service
+P90 is16.73s, with18 FULL locks expiring before completion.
+
+Qwen3.5 text-only Jinja inputs reuse encoded prompt IDs, retaining template
+caching and avoiding decode/re-encode. Media inputs and other VLMs retain their
+existing routing. Real-tokenizer/native-method validation covers33 representative
+trajectory histories/special cases,17--71199 tokens, with exact token equality.
+Cold thread CPU mean33.136->16.357ms; warm15.256->0.951ms. This is a CPU
+conversion benchmark, not exact HTTP replay or an end-to-end performance result.
+Retain the source fingerprints and complete rows in
+`experiments/reports/v18_chat_prompt_encoding_cpu_20261010.json`.
+
+Propagate opt-in request ingress timestamps through native pickle/request stats.
+Audit body-sent-to-API, conversion, tokenizer completion, dispatch-to-scheduler
+handler and handler-to-native-registration intervals per independent JOIN/tool
+event. Dispatch is stamped before serialization/send; do not claim pure IPC or
+isolated tokenizer time from these broader intervals. No per-decode work is added.
+89 native checks and79 telemetry/lifecycle checks pass; preserve missing/reversed
+boundaries as unknown. Canonical patch SHA256:
+`f41f2d118b549a5d7b74fe77b154691f6409cb9804493605a17e8a44ceb31468`.
+
+Cold-start V18 predictive first with the established156-task108+48/3600s plan,
+running48, Host200GB80:20, HBM0.9, hard180s tools, lead500ms and unchanged
+semantic artifact. Check ingress waits, lock expiry, native residual recovery,
+first-service reuse and busy-window service. Continue rapid development only
+for actionable improvements; finish a stable same-version native comparison
+before marking the active goal achieved.
+
 ## V17 Rapid Development Iteration
 
 The user now authorizes stopping a development collection after actionable

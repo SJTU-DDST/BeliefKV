@@ -63,6 +63,13 @@ V16b的4/8/16/32-token窗口CPU候选未取得足够首次触发精度，
 请求body发送到原生登记和登记到首次服务各自测量，不能将入口、
 tokenizer、IPC和原生准入都当成H2D耗时或RETURN模型误差。
 
+Qwen3.5纯文本请求复用Jinja模板已经编码的输入token，保留模板
+缓存，避免多模态模型声明造成的decode/再encode；真实媒体
+输入保持原有processor路径。原生与predictive共用此入口优化
+和每请求计时；时间随原生IPC携带，报告body发送、API转换、
+tokenizer完成、dispatch、scheduler接收、队列登记与首次服务，
+不把入口等待并入child剩余工作标签或仅靠扩大驻留锁掩盖。
+
 动作必须有真实迁移需求：PREPARE 的候选需要未来卸载机会，
 H2D 需要有效 Host-backed 缺失前缀及必要当前检查点。按池核对
 Device/Host 余量，不用总体显存占用代替可行动容量，不为制造

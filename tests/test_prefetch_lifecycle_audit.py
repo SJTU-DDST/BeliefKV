@@ -737,3 +737,38 @@ def test_residency_summary_keeps_last_release_and_does_not_infer_initial_lock():
     assert group["native_locked_at_registration"] is None
     assert group["last_observed_release_reason"] == "first_service"
     assert group["full_reused_commands"] == 1
+def test_native_ingress_intervals_preserve_missing_and_reversed_boundaries():
+    from scripts.audit_prefetch_lifecycle import native_ingress_waits
+
+    timing = {
+        "api_received_ts_ms": 1000,
+        "chat_conversion_started_ts_ms": 1001,
+        "chat_conversion_finished_ts_ms": 1011,
+        "api_tokenized_ts_ms": 1013,
+        "api_dispatch_started_ts_ms": 1014,
+        "scheduler_received_ts_ms": 1414,
+        "native_queue_registered_ts_ms": 1420,
+    }
+    result = native_ingress_waits({"attributes": {"native_ingress_timing_ms": timing}})
+    assert result["native_ingress_timing_ms"] == timing
+    assert result["api_received_to_chat_conversion_ms"] == 1
+    assert result["chat_conversion_ms"] == 10
+    assert result["chat_conversion_to_tokenized_ms"] == 2
+    assert result["tokenized_to_dispatch_ms"] == 1
+    assert result["dispatch_to_scheduler_received_ms"] == 400
+    assert result["scheduler_received_to_queue_registered_ms"] == 6
+    transported = native_ingress_waits(
+        {"attributes": {"native_ingress_timing_ms": timing}}, body_sent_ts_ms=995,
+    )
+    assert transported["body_sent_to_api_received_ms"] == 5
+    assert "http_body_sent_ts_ms" not in timing
+    for native in (None, {"attributes": {}}, {"attributes": {"native_ingress_timing_ms": {}}}):
+        assert all(value is None for value in native_ingress_waits(native).values())
+    reversed_result = native_ingress_waits({"attributes": {"native_ingress_timing_ms": {
+        **timing, "api_tokenized_ts_ms": 1009,
+    }}})
+    assert reversed_result["chat_conversion_to_tokenized_ms"] is None
+    invalid = native_ingress_waits({"attributes": {"native_ingress_timing_ms": {
+        "api_dispatch_started_ts_ms": float("nan"), "scheduler_received_ts_ms": 1414,
+    }}})
+    assert invalid["dispatch_to_scheduler_received_ms"] is None
