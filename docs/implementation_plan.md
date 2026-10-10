@@ -45,6 +45,21 @@ across splits. The legacy residual correction did not change these counts.
 Report: experiments/reports/v10_prepare_full_incrementality_20261009.json.
 
 Current status:
+- The isolated admission planner computes waiting ranks once per call and
+  groups demand-ready leases by context for candidate lookup. Keep workflow,
+  invocation, session/generation, epoch and request/source checks after lookup.
+  Skip matching without any ready restore; rebuild the index on each plan.
+  Preserve native reentry reads, aging, bounded restore promotion and expiry/JOIN
+  tie ordering. All260 related checks pass. Against pinned81b824e,300
+  alternating iterations per case with two planning calls have equal plans,
+  cumulative counters and native read counts. Queue156 with0/4/16/48 leases
+  has mean wall3.737->3.488,3.938->3.648,4.133->3.600,4.797->3.758ms,
+  reductions6.66%/7.37%/12.89%/21.65%. Queue8/4 leases regresses1.63%;
+  retain every timing sample and outlier in
+  v16_prefill_restore_order_cpu_20261010.json. This fixture uses real causal
+  state and identity processing with deterministic stub-native residency.
+  It excludes DMA, CUDA and end-to-end throughput. Commit only in isolation;
+  the complete V15 freeze remains required before deployment.
 - The isolated JOIN/tool PREPARE queues at most eight missing FULL extents from
   one safe input path before one controller submission. Existing valid Host
   copies and generation beyond the reusable checkpoint are excluded. Only this
@@ -81,6 +96,8 @@ Current status:
   67.205/67.047GB, which is not anticipation. Forecast age P50 is137.325ms
   and mean inference28.603ms. The fresh native arm is serving; do not assert
   native-relative improvement before the complete frozen pair and exports.
+  At2026-10-10 10:50 CST, native has150/156 completed with no error or
+  incomplete outcomes and live service; main and the real engine are unchanged.
 - The completed predictive input audit uses the exact pinned tokenizer.
   Right truncation at256 MiniLM tokens can drop the newest suffix of the
   1024-character window. Last client windows truncate502/24014 requests and

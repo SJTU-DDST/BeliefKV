@@ -5370,7 +5370,8 @@ class NativeAdmissionRuntime:
                 index,
             )
 
-        ordered = sorted(tagged, key=waiting_rank)
+        waiting_ranks = {pair[0]: waiting_rank(pair) for pair in tagged}
+        ordered = sorted(tagged, key=lambda pair: waiting_ranks[pair[0]])
         if self.enable_resident_first and ordered:
             count = len(ordered)
             scan = ordered[:8] + [
@@ -5383,7 +5384,7 @@ class NativeAdmissionRuntime:
                 self._read_request_reentry(req)
 
             def residency_rank(pair: tuple[int, object]) -> tuple:
-                rank = waiting_rank(pair)
+                rank = waiting_ranks[pair[0]]
                 if rank[0] == -1:
                     return rank[:2] + (0,) + rank[2:]
                 key = keys[pair[0]]
@@ -5417,17 +5418,25 @@ class NativeAdmissionRuntime:
         restore_stride = max(1, min(
             4, math.ceil(max(0, slots - ready_restores) / max(1, ready_restores)),
         )) if ready_restores and budget.source == "native_next_prefill" else 4
-        if self._prefetch_priority_normal_admissions >= restore_stride and ordered:
+        if (
+            ready_restores
+            and self._prefetch_priority_normal_admissions >= restore_stride
+            and ordered
+        ):
+            restores_by_context: dict[str, list[_PrefetchServiceLease]] = {}
+            for lease in self._prefetch_service_leases.values():
+                if lease.demand_ready:
+                    restores_by_context.setdefault(lease.key.context_id, []).append(lease)
             for candidate in ordered:
                 key = keys[candidate[0]]
+                if key is None:
+                    continue
                 matches = [
-                    lease for lease in self._prefetch_service_leases.values()
-                    if lease.demand_ready
-                    and key is not None and (
+                    lease for lease in restores_by_context.get(key.context_id, ())
+                    if (
                         key.request_id != lease.key.request_id
                         or lease.source == "execution_handoff"
                     )
-                    and lease.key.context_id == key.context_id
                     and lease.key.invocation_id == key.invocation_id
                     and lease.key.root_workflow_id == key.root_workflow_id
                     and lease.key.session_id == key.session_id

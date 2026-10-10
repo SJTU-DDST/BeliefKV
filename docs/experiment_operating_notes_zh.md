@@ -34,6 +34,17 @@ v16_engine_followup_manifest_20261010.json。4/8/16 extent提交
 全部计时和离群值保留，不能直接归为GPU或JCT收益。
 主目录及实时服务继续冻结，本项只能在完整V15后处理后部署。
 
+恢复准入的隔离后续修订只在一次规划内复用等待排名和按context
+分组的就绪租约；仍逐项验证workflow、invocation、session/
+generation、epoch和请求/source。没有就绪恢复时跳过匹配扫描，
+下一次规划重建索引；普通老化、恢复优先额度及过期/JOIN排序
+保留。260项相关检查通过。同输入CPU基准固定81b824e，每配置
+300次交替运行、每次规划两遍，输出、计数和原生读取次数一致。
+156候选、0/4/16/48租约平均wall下降6.66%/7.37%/12.89%/
+21.65%；8候选、4租约慢1.63%，全部样本和离群值保留于
+v16_prefill_restore_order_cpu_20261010.json。该夹具的驻留为模拟，
+不含DMA/CUDA/吞吐证据；本项继续只在隔离目录提交。
+
 v15 predictive侧已完成156/156 workflow，无error/incomplete；
 采集10857.481秒，完成吞吐51.725 workflow/h，JCT P503119.630秒，
 GPU利用率均值74.476%，输出795.773 token/s。此处completed
@@ -41,6 +52,8 @@ GPU利用率均值74.476%，输出795.773 token/s。此处completed
 0.893/0.743 GB、0.338/0.293 GB；handoff为67.205/67.047 GB，
 应继续单列为需求恢复。native侧已冷启动正常服务；完整对照和
 导出完成前，主目录、引擎、预测产物及两侧配置继续冻结。
+2026-10-10 10:50 CST核查native为150/156 completed，暂无error/
+incomplete，仍正常服务；观察超时不构成中止或重启理由。
 
 末次客户端语义窗口的审计使用原固定tokenizer，最多256个
 MiniLM token，右侧截断会丢失最新后缀。无工具正常stop轮次

@@ -377,6 +377,78 @@ def test_restore_ready_priority_finds_request_beyond_first_32_candidates():
     assert runtime._prefetch_priority_native_rank == 64
 
 
+@pytest.mark.parametrize(
+    "changes,source,ready,eligible",
+    [
+        ({}, "tool_wait", True, True),
+        ({"context_epoch": 1}, "tool_wait", True, True),
+        ({"context_epoch": 2}, "tool_wait", True, False),
+        ({"context_id": "other-context"}, "tool_wait", True, False),
+        ({"invocation_id": "other-invocation"}, "tool_wait", True, False),
+        ({"root_workflow_id": "other-workflow"}, "tool_wait", True, False),
+        ({"session_id": "other-session"}, "tool_wait", True, False),
+        ({"session_generation": 2}, "tool_wait", True, False),
+        ({"request_id": "resumed"}, "tool_wait", True, False),
+        ({"request_id": "resumed"}, "execution_handoff", True, True),
+        ({}, "tool_wait", False, False),
+    ],
+)
+def test_restore_priority_checks_identity_after_context_index(
+    changes, source, ready, eligible,
+):
+    runtime, _, _, action, _, _ = locked_runtime()
+    restored = submit_restored_request(runtime)
+    ordinary = req("ordinary")
+    runtime.register_visible_request(ordinary)
+    lease = runtime._prefetch_service_leases[action.command_id]
+    runtime._prefetch_service_leases[action.command_id] = replace(
+        lease, key=replace(lease.key, **changes), source=source, demand_ready=ready,
+    )
+    with patch.object(runtime, "_causal_rank", side_effect=lambda key, index, ranks: (0, 0, index)):
+        selection = select(runtime, [ordinary, restored])
+    assert selection.candidates[0] is (restored if eligible else ordinary)
+
+
+def test_restore_priority_rebuilds_context_index_for_next_plan():
+    runtime, _, _, action, _, _ = locked_runtime()
+    restored = submit_restored_request(runtime)
+    ordinary = req("ordinary")
+    runtime.register_visible_request(ordinary)
+    lease = runtime._prefetch_service_leases[action.command_id]
+    with patch.object(runtime, "_causal_rank", side_effect=lambda key, index, ranks: (0, 0, index)):
+        assert select(runtime, [ordinary, restored]).candidates[0] is restored
+        runtime._prefetch_service_leases[action.command_id] = replace(
+            lease, demand_ready=False,
+        )
+        assert select(runtime, [ordinary, restored]).candidates[0] is ordinary
+        runtime._prefetch_service_leases[action.command_id] = lease
+        assert select(runtime, [ordinary, restored]).candidates[0] is restored
+        runtime._prefetch_service_leases.clear()
+        assert select(runtime, [ordinary, restored]).candidates[0] is ordinary
+
+
+def test_restore_priority_preserves_earliest_expiry_and_join_tie_break():
+    runtime, _, _, action, _, _ = locked_runtime()
+    restored = submit_restored_request(runtime)
+    ordinary, other = req("ordinary"), req("other")
+    other.session_id, other.session_generation = "other-session", 1
+    runtime.register_visible_request(ordinary)
+    runtime.register_visible_request(other)
+    lease = runtime._prefetch_service_leases[action.command_id]
+    other_key = runtime.visible[other.rid]
+    runtime._prefetch_service_leases = {
+        "other": replace(lease, key=other_key, command_id="other", source="execution_handoff"),
+        action.command_id: lease,
+        "join": replace(lease, command_id="join", source="join_ticket"),
+    }
+    with patch.object(runtime, "_causal_rank", side_effect=lambda key, index, ranks: (0, 0, index)):
+        assert select(runtime, [ordinary, other, restored]).candidates[0] is restored
+        runtime._prefetch_service_leases["other"] = replace(
+            runtime._prefetch_service_leases["other"], expires_at=lease.expires_at - 1.,
+        )
+        assert select(runtime, [ordinary, other, restored]).candidates[0] is other
+
+
 def test_aged_ordinary_head_keeps_its_turn_until_four_normal_admissions():
     runtime, _, _, _, _, _ = locked_runtime()
     restored = submit_restored_request(runtime)
