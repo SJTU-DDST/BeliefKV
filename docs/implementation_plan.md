@@ -24,9 +24,15 @@ tools and selects epoch22 instead of21. Bind following to the origin request
 epoch, prove the bounded round from its intervening START/END events, and report
 sampled tool IDs outside that round separately. Post-completion observations
 and transfers remain post-completion evidence, never early predictions.
-The66 lifecycle/tool-forecast/transfer-window checks pass. Recompute from
-closed V21 raw evidence, preserve previous reports and treat the earlier
-single/multi classifications as historical until recomputation. This is an
+The66 lifecycle/tool-forecast/transfer-window checks pass. Closed V21 evidence
+has been recomputed:252 tool completion/next-request links change, including
+248 old multi-call labels that are single-call rounds.668 events are first
+observed after tool completion;16 contain sampled IDs outside the bounded
+round. Keep v33_v21_wait_round_attribution_20261011.json and all old audits.
+Verified early-and-reused FULL remains JOIN1.419GB and tool2.530GB. Corrected
+tool residual native FULL is585.285GB of observed demand, not achievable
+prefetch or oracle savings. These corrections are not prediction or performance
+improvements. This is an
 offline evidence correction, absent from the running V21 and frozen V22 policy.
 
 Add independent background-writer CPU evidence in the isolated follow-up.
@@ -48,21 +54,23 @@ actual queue, disk, prefix processing and concurrent scheduler work; it is not
 GPU performance evidence. This instrumentation is registered in the frozen
 87370d3 target; the running V21 retains its original version.
 
-Keep scripts/audit_tool_forecast_windows.py and the compact
-v31_v21_tool_forecast_window_summary_20261011.json. Store detailed per-round
-evidence with the closed V21 predictive output and pin its SHA256 in the summary.
+Keep scripts/audit_tool_forecast_windows.py and the corrected compact
+v33_v21_tool_forecast_epoch_bound_20261011.json. Preserve v31 and the original
+audit as historical evidence. Store detailed per-round evidence with the closed
+V21 predictive output and pin its SHA256 in the summary.
 Reconstruct the recorded NativeToolWaitHint at actual acceptance time, using
 survival-conditioned mass/CDF/quantiles and proven whole-tool-round completion.
-Exclude expired, post-completion and exhausted-support forecasts. Of 11570
-single-call rounds, 11098 have observations in the actual last second. Compute
+Exclude expired, post-completion and exhausted-support forecasts. Of 11818
+single-call rounds, 11104 have observations in the actual last second. Compute
 each round's median absolute error in that interval before aggregating across
-rounds: P50/P90 are 52.46/424.55ms; median signed error is +6.41ms. This is selected,
+rounds: P50/P90 are 52.42/424.42ms; median signed error is +6.42ms. This is selected,
 fixed-trace near-completion evidence, not overall or heldout prediction accuracy.
-Of 10127 single-call rounds entering the predicted 500ms window, 8400 first enter
+Of 10132 single-call rounds entering the predicted 500ms window, 8405 first enter
 within the actual last 500ms and 1727 earlier. Report multi-call rounds separately:
-204 of 266 first entries are more than 500ms early, with 4741.60ms median actual
-lead. Investigate individual-call versus complete-round timing before applying
-any global bias shift.
+of147 real multi-call rounds,94 have a first entry,62 inside the actual last
+500ms and32 earlier. Median/P90 actual lead is236.47/6299.04ms. The old4741.60ms
+median included another model round and cannot justify a blanket seconds-scale
+bias shift. Investigate the remaining real multi-call tails separately.
 
 Recorded positive FULL plans show 381 independent rounds inside both actual and
 predicted runtime start windows, totaling 33.011GB of per-round maximum planned

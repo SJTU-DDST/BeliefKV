@@ -1,0 +1,55 @@
+{
+  "scope": "Closed V21 predictive offline attribution correction; no timing-model, transfer-policy or GPU performance change",
+  "audit_revision": "c233434",
+  "audit_script_sha256": "ad7055c5b4bd228358075fe5bdc5ec1f70520557c973161e9f5268e67c6de248",
+  "original_audit": {
+    "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v21/predictive_h2d/prefetch_lifecycle.json",
+    "sha256": "73839a4c339c95df4efae3555219b5c04074cffc961959cc8ca02f299444756b",
+    "preserved": true
+  },
+  "corrected_audit": {
+    "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v21/predictive_h2d/prefetch_lifecycle_v33_epoch_bound.json",
+    "sha256": "8c67955d2bb7b109084e3821ef62bed93b69266b9683fdb2e600509201eb2260"
+  },
+  "changed_labels": {
+    "join_ticket": {
+      "events": 187,
+      "next_request_changed": 0,
+      "completion_changed": 0
+    },
+    "tool_wait": {
+      "events": 11965,
+      "next_request_changed": 252,
+      "completion_changed": 252,
+      "multi_to_single": 248,
+      "unknown_to_known": 2,
+      "events_first_observed_after_completion": 668,
+      "events_with_tool_ids_outside_request_round": 16
+    }
+  },
+  "unchanged_verified_early_full": {
+    "join_events": 91,
+    "join_bytes": 1418731520,
+    "tool_events": 84,
+    "tool_bytes": 2529935360
+  },
+  "tool_residual_native_full_bytes_known": {
+    "original": 583905198080,
+    "corrected": 585284997120
+  },
+  "checked_case": {
+    "workflow": "pydata__xarray-4687",
+    "invocation_id": "deepagents-invocation:2466e32adedfae1c",
+    "context_epoch": 20,
+    "actual_tool_name": "read_file",
+    "actual_tool_count": 1,
+    "actual_tool_duration_ms": 7.585298538208008,
+    "original_next_request_epoch": 22,
+    "corrected_next_request_epoch": 21,
+    "corrected_next_request_id": "beliefkv:01a126de-d62b-7d50-86b6-0457d5009054",
+    "first_observation_after_completion_ms": 134.81103515625
+  },
+  "corrected_forecast_summary": "experiments/reports/v33_v21_tool_forecast_epoch_bound_20261011.json",
+  "scoped_checks_passed": 66,
+  "semantics": "Bind the whole tool round to its origin and directly following request, even for late observations. Extra sampled tool IDs cannot extend that round. Completed-tool observations and late transfers do not become early predictions. Native residual demand is not achievable prefetch, exclusive capacity or oracle savings. Preserve the live V21 pair and frozen V22 scheduling policy."
+}

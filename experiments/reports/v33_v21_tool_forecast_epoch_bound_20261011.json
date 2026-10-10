@@ -1,0 +1,153 @@
+{
+  "scope": "Fixed-trace diagnostic at forecast acceptance and recorded FULL-plan times. Uses the runtime's surviving residual mass/CDF/quantile logic and proven whole-tool-round completion as evaluation labels only. Single-call rounds are reported separately from sequential/parallel multi-call rounds. Plan samples are selected by the recorded runtime, not continuous coverage. Categories overlap across snapshots of one round. Per-round maximum FULL bytes may share pages and do not establish achievable unique bytes, actual transfers, residence, admission, hidden stalls, heldout accuracy or speedup.",
+  "counts": {
+    "tool_wait_forecast_records": 67576,
+    "wait_prefetch_plan_records": 12636,
+    "plans_without_positive_full_bytes": 10062,
+    "tool_wait_forecast_at_or_after_completion": 650,
+    "wait_prefetch_plan_at_or_after_completion": 578,
+    "records_without_round_label": 11730,
+    "forecasts_without_surviving_timing_support": 549,
+    "positive_full_plans_without_timing": 668
+  },
+  "scheduler_wall_minus_monotonic_ms": 1785829736899.4812,
+  "forecast_timing": {
+    "independent_tool_rounds": 11965,
+    "rounds_with_pre_completion_forecasts": 11273,
+    "rounds_with_last_second_forecasts": 11207,
+    "tool_weighted_last_second_signed_error_ms": {
+      "count": 11207,
+      "p50": 6.501763478592281,
+      "p90": 401.70135189221094,
+      "min": -854.1294164657593,
+      "max": 64425.701449237305
+    },
+    "tool_weighted_last_second_absolute_error_ms": {
+      "count": 11207,
+      "p50": 53.31318759918213,
+      "p90": 427.249650478363,
+      "min": 0.0007562637329101562,
+      "max": 64425.701449237305
+    },
+    "first_500ms_window_lead_ms": {
+      "count": 10226,
+      "p50": 319.3115234375,
+      "p90": 651.1673583984375,
+      "min": 0.0078125,
+      "max": 180028.14526367188
+    },
+    "first_500ms_window_in_actual_0_to_500ms": 8467,
+    "first_500ms_window_more_than_500ms_early": 1759
+  },
+  "single_tool_round_forecast_timing": {
+    "independent_tool_rounds": 11818,
+    "rounds_with_pre_completion_forecasts": 11153,
+    "rounds_with_last_second_forecasts": 11104,
+    "tool_weighted_last_second_signed_error_ms": {
+      "count": 11104,
+      "p50": 6.415998458862305,
+      "p90": 399.5467446608417,
+      "min": -854.1294164657593,
+      "max": 64425.701449237305
+    },
+    "tool_weighted_last_second_absolute_error_ms": {
+      "count": 11104,
+      "p50": 52.415870666503906,
+      "p90": 424.41956737579795,
+      "min": 0.0007562637329101562,
+      "max": 64425.701449237305
+    },
+    "first_500ms_window_lead_ms": {
+      "count": 10132,
+      "p50": 319.6484375,
+      "p90": 638.3248779296874,
+      "min": 0.0078125,
+      "max": 180028.14526367188
+    },
+    "first_500ms_window_in_actual_0_to_500ms": 8405,
+    "first_500ms_window_more_than_500ms_early": 1727
+  },
+  "multi_tool_round_forecast_timing": {
+    "independent_tool_rounds": 147,
+    "rounds_with_pre_completion_forecasts": 120,
+    "rounds_with_last_second_forecasts": 103,
+    "tool_weighted_last_second_signed_error_ms": {
+      "count": 103,
+      "p50": 87.47280073165894,
+      "p90": 814.6455550038863,
+      "min": -464.8687534858094,
+      "max": 5069.379957467179
+    },
+    "tool_weighted_last_second_absolute_error_ms": {
+      "count": 103,
+      "p50": 163.321886470773,
+      "p90": 814.6455550038863,
+      "min": 1.5899736714777646,
+      "max": 5069.379957467179
+    },
+    "first_500ms_window_lead_ms": {
+      "count": 94,
+      "p50": 236.4652099609375,
+      "p90": 6299.0447998046875,
+      "min": 7.102294921875,
+      "max": 35821.574951171875
+    },
+    "first_500ms_window_in_actual_0_to_500ms": 62,
+    "first_500ms_window_more_than_500ms_early": 32
+  },
+  "positive_full_plan_window_categories": {
+    "timely_candidate": {
+      "snapshots": 477,
+      "independent_tool_rounds": 381,
+      "sum_per_round_max_observed_full_bytes": 33010524160
+    },
+    "timely_candidate_with_observed_free_capacity": {
+      "snapshots": 61,
+      "independent_tool_rounds": 61,
+      "sum_per_round_max_observed_full_bytes": 1692119040
+    },
+    "predicted_too_early": {
+      "snapshots": 198,
+      "independent_tool_rounds": 156,
+      "sum_per_round_max_observed_full_bytes": 13156003840
+    },
+    "predicted_too_early_with_observed_free_capacity": {
+      "snapshots": 23,
+      "independent_tool_rounds": 23,
+      "sum_per_round_max_observed_full_bytes": 970833920
+    },
+    "missed_recorded_window": {
+      "snapshots": 150,
+      "independent_tool_rounds": 150,
+      "sum_per_round_max_observed_full_bytes": 13544550400
+    },
+    "missed_recorded_window_with_observed_free_capacity": {
+      "snapshots": 25,
+      "independent_tool_rounds": 25,
+      "sum_per_round_max_observed_full_bytes": 1403944960
+    },
+    "not_yet_due": {
+      "snapshots": 503,
+      "independent_tool_rounds": 472,
+      "sum_per_round_max_observed_full_bytes": 37827358720
+    },
+    "not_yet_due_with_observed_free_capacity": {
+      "snapshots": 80,
+      "independent_tool_rounds": 78,
+      "sum_per_round_max_observed_full_bytes": 2649436160
+    }
+  },
+  "sources": {
+    "lifecycle_audit": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v21/predictive_h2d/prefetch_lifecycle_v33_epoch_bound.json",
+    "lifecycle_audit_sha256": "8c67955d2bb7b109084e3821ef62bed93b69266b9683fdb2e600509201eb2260",
+    "opportunities": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v21/predictive_h2d/opportunities/admission_opportunities.jsonl",
+    "opportunities_sha256": "f4e0f9caab333a64db339789aad3f608b0748b612b8a0ba760e55806e49d2ba4",
+    "opportunities_read_bytes": 1355899531,
+    "audit_script_sha256": "c44aea2fcfe4d3ff4f4ff5af5166f14c114f2ccf26161702312098c6a5adad6c"
+  },
+  "detailed_evidence": {
+    "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v21/predictive_h2d/tool_forecast_windows_v33_epoch_bound.json",
+    "sha256": "43784b14ba87161f1dc3f0b5ee633f475582ed098e1baa07ff6523d74a81a7b5",
+    "tool_round_rows": 11965
+  }
+}
