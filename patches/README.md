@@ -1,6 +1,6 @@
 # SGLang Runtime Patches
 
-Updated: 2026-10-10.
+Updated: 2026-10-11.
 
 The current Qwen3.5 / SGLang v0.5.20 integration uses
 `sglang-v0.5.20-beliefkv-staging.patch`, pinned to
@@ -28,7 +28,10 @@ Hardware and run manifests record both the SHA-256 of this canonical patch and
 the fingerprint of the patched SGLang source tree. Environment capture also
 compares the patched Git tree against this file. A result may be reported only
 when the trees match and there are no additional tracked or untracked SGLang
-source changes.
+source changes outside the canonical patch. Validation uses a scratch copy of
+the Git index, supports linked worktrees and staged or intent-to-add files, and
+includes untracked additions only when the canonical patch declares them.
+The real index remains unchanged; six provenance checks cover these cases.
 
 The current patch covers:
 
@@ -107,3 +110,14 @@ reclamation by the runtime, including already resident ancestors.
 Mamba capacity returns without FULL release or additional D2H. The live V20
 arms retain their frozen engine; deploy this patch between completed paired runs
 and measure GPU reuse, busy-window throughput and paired JCT separately.
+
+Opportunistic handoff reclamation submits missing live Mamba state
+asynchronously with native read locks. Pending copies do not count as reusable
+Host state or reclaimed capacity; native ACK processing unlocks the source
+before a later reclaim attempt. Actual native allocation/eviction keeps its
+synchronous dependencies. 74 scoped CPU checks include real hybrid allocators,
+pending-transfer exclusion and native ACK unlock processing. No GPU benefit is
+claimed from those fixtures. The isolated complete patch passes exact
+expected/actual tree and reverse-application checks, with SHA256
+`98fc5af9c40121d6f7ba1824f1fd5b586d0b141d5b12370a2d9243c1b1b5e8f1`.
+V20 remains on deployed `c58cc891` until its frozen pair is complete.

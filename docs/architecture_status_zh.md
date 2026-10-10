@@ -4,6 +4,21 @@
 
 ## V20 容量交接跟进与忙时对照
 
+隔离版进一步消除机会性容量回收的同步 Mamba 备份等待：
+`reclaim_beliefkv_handoff_capacity` 遇到尚无 Host 副本的活跃
+checkpoint 时，异步提交必要状态备份，保留原生设备读锁，
+本次不把在途副本算作可回收容量。原生 ACK 释放锁后，后续
+恢复规划才能回收设备 FULL/Mamba；真正分配与驱逐仍保持原生
+同步依赖。不能仅删除等待而沿用不加读锁的 write-back 路径。
+
+74 项相关原生 CPU 检查通过；真实 hybrid allocator 验证在途
+页和槽保持占用、ACK 后解锁且后续回收可返回容量。仅传输被
+替换为 CPU 夹具，不包含 GPU 或端到端性能证据。该等待点是
+代码确认的问题，尚不能归因为下述忙时多出的 40.20 秒。
+隔离规范 patch SHA256 为
+`98fc5af9c40121d6f7ba1824f1fd5b586d0b141d5b12370a2d9243c1b1b5e8f1`；
+完整预期/实际 Git tree 与反向应用检查通过，尚未部署到 V20。
+
 终态 child 到 parent 的容量交接已在冻结版 v20 predictive 中
 触发；按真实 spawn 身份重算，371 个 child 累计释放设备
 FULL 119.545 GB、Mamba 125.816 GB。192 个独立 JOIN 的

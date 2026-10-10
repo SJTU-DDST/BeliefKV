@@ -6,6 +6,15 @@ guard、终态门禁或模型动作授权。启动前同时阅读
 
 ## V20 容量交接与忙时统计
 
+机会性回收的后续修订异步备份必要 Mamba，保留设备原生读锁
+到 ACK；在途 FULL/Mamba 不能提前释放，分池空闲量以 allocator
+实际返回为准。真实分配/驱逐依赖仍同步。74 项原生 CPU 检查
+包含实际 hybrid allocator 与 ACK 解锁，不是 GPU 性能验证。
+不能把该调用中的同步等待直接认定为忙时 40.20 秒差值的原因。
+隔离完整 patch 已通过精确树比对和反向应用核验，SHA256 为
+`98fc5af9c40121d6f7ba1824f1fd5b586d0b141d5b12370a2d9243c1b1b5e8f1`；
+保持 V20 冻结版，成对采集结束后再部署下一轮。
+
 当前 native 保持 b019d24/c58cc891 冻结，隔离分支的 sibling 通知
 联动、Mamba 槽回收和控制减负在成对采集结束后部署。终态 child
 释放必须基于真实 RETURN、上下文结束和原生无引用/锁/在途依赖；
@@ -168,7 +177,7 @@ free-list快照；192个JOIN中171个有完整非空规划容量观测，
 收益。184项repo及72项原生CPU检查通过；真实分池allocator
 验证槽位返回、FULL保留及无额外D2H。CPU夹具仅替换GPU测试
 启动辅助模块，部署及吞吐验证须等当前两臂结束；使用隔离
-规范patch93d2b9e3及两侧health后、workload前的同样GC初始化。
+规范patch98fc5af9及两侧health后、workload前的同样GC初始化。
 保留本轮native晚331秒补GC的记录，单列补做后的繁忙窗口。
 
 后续新实验统一先运行predictive_h2d，再运行native；与reactive

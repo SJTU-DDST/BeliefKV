@@ -4,6 +4,21 @@ Status date: 2026-10-11.
 
 ## V20 Capacity Handoff Follow-up and Busy-Window Evidence
 
+Opportunistic capacity reclaim now submits an unbacked live Mamba checkpoint
+asynchronously instead of draining pending write ACKs. Keep native device read
+locks until ACK; do not count pending Host state as freed capacity or demote
+either pool in that call. A later restoration attempt may reclaim after native
+ACK processing. Actual native allocation/eviction retains its synchronous
+dependency. Merely removing the wait from unlocked write-back is unsafe.
+
+74 scoped native CPU checks pass, including real hybrid allocators and native
+write-ACK unlock processing with transport replaced by a fixture. This confirms
+capacity/lock semantics, not GPU throughput or the cause of the 40.20 s busy
+prefill gap. The isolated canonical patch has SHA256
+`98fc5af9c40121d6f7ba1824f1fd5b586d0b141d5b12370a2d9243c1b1b5e8f1`;
+reverse application and exact expected/actual tree verification pass. Deploy
+after the frozen V20 pair, then measure reuse and busy-window/paired JCT results.
+
 Terminal private-suffix retirement and parent restore/admission are implemented.
 The frozen predictive arm contains 371 real spawn children; their cumulative
 device releases are 119.545 GB FULL and 125.816 GB Mamba. Independent JOIN
