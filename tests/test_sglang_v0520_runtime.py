@@ -356,7 +356,7 @@ def test_safe_point_persists_bounded_wait_and_admission_opportunities(tmp_path):
     )
     with patch.object(runtime, "inspect_context_h2d_opportunity",
                       side_effect=lambda *, context_id, context_epoch,
-                      admission_candidate=False:
+                      admission_candidate=False, max_steps=1:
                       opportunity if context_id == "ctx-waiting" else None) as inspect:
         runtime.scheduler_step(waiting_queue=[waiting])
         runtime.scheduler_step(waiting_queue=[waiting])
@@ -1641,7 +1641,10 @@ def test_join_prefetch_three_stages_and_confirmed_parent_ticket():
     runtime._model_worker = None
     runtime.attach_native_cache(object())
     step = PrefetchLoadStep(key, 11, 4, 11, 4)
-    with patch.object(runtime, "capture_shadow_candidate", return_value=object()):
+    with patch.object(runtime, "capture_shadow_candidate", return_value=object()), \
+        patch.object(runtime, "inspect_context_h2d_opportunity", return_value=NS(
+            step=step, fits_current_free_lists=True,
+        )):
         with patch("beliefkv.runtime.sglang_v0520_runtime.next_prefetch_gpu_step",
                    return_value=step):
             issued = []
@@ -1788,12 +1791,18 @@ def test_confirmed_join_canary_is_bounded_without_predictor(tmp_path):
             ) as inspect:
                 runtime.dispatch_join_prefetch()
                 runtime.dispatch_join_prefetch()
-                inspect.assert_called_once_with(
-                    context_id="ctx-parent", context_epoch=0,
+                assert inspect.call_count == 2
+                assert all(
+                    call.kwargs == {
+                        "context_id": "ctx-parent", "context_epoch": 0, "max_steps": 1,
+                    } for call in inspect.call_args_list
                 )
         key = runtime.context_sessions["ctx-parent"]
         step = PrefetchLoadStep(key, 11, 4, 11, 4)
-        with patch.object(runtime, "refreshed_prefetch_gpu_step", return_value=step):
+        with patch.object(runtime, "refreshed_prefetch_gpu_step", return_value=step), \
+            patch.object(runtime, "inspect_context_h2d_opportunity", return_value=NS(
+                step=step, fits_current_free_lists=True,
+            )):
             with patch.object(runtime, "issue_prefetch_gpu_step",
                               return_value="confirmed-h2d") as issue:
                 runtime.dispatch_join_prefetch()
@@ -2192,7 +2201,10 @@ def test_join_probabilistic_prefetch_requires_live_near_term_hint():
     runtime._model_worker = None
     runtime.attach_native_cache(object())
     step = PrefetchLoadStep(key, 11, 4, 11, 4)
-    with patch.object(runtime, "capture_shadow_candidate", return_value=object()):
+    with patch.object(runtime, "capture_shadow_candidate", return_value=object()), \
+        patch.object(runtime, "inspect_context_h2d_opportunity", return_value=NS(
+            step=step, fits_current_free_lists=True,
+        )):
         with patch("beliefkv.runtime.sglang_v0520_runtime.next_prefetch_gpu_step",
                    return_value=step):
             with patch.object(runtime, "issue_prefetch_gpu_step",
@@ -3277,7 +3289,9 @@ def test_join_prefetch_budget_survives_stage_recreation_and_counts_only_issued()
     ), patch.object(
         runtime, "refreshed_prefetch_gpu_step", return_value=observation.step,
     ), patch.object(
-        runtime, "issue_prefetch_gpu_step", side_effect=[None, "cmd-1", "cmd-2"],
+        runtime, "issue_prefetch_gpu_step", side_effect=[
+            None, "cmd-1", "cmd-2", "cmd-3", "cmd-4",
+        ],
     ) as issue:
         stage = runtime._final_stages["join"]
         stage.generated_tokens, stage.tokens_per_second = 120, 80
@@ -3299,12 +3313,12 @@ def test_join_prefetch_budget_survives_stage_recreation_and_counts_only_issued()
             stage.request_id = "child"
             stage.generated_tokens, stage.tokens_per_second = 120, 80
             runtime.dispatch_join_prefetch()
-        assert issue.call_count == 3  # One declined call, two issued calls.
-        assert runtime._issued_join_nodes("join", key) == 2
-        assert stage.issued_nodes == 2
+        assert issue.call_count == 5  # A decline is not issued; no two-node cap.
+        assert runtime._issued_join_nodes("join", key) == 4
+        assert stage.issued_nodes == 4
     assert runtime._issued_join_nodes(
         "join", replace(key, request_id="another-attempt", attempt_id=2),
-    ) == 2
+    ) == 4
     assert runtime._issued_join_nodes("join", replace(key, context_epoch=1)) == 0
     assert runtime._issued_join_nodes("join", replace(key, session_generation=2)) == 0
     runtime._clear_final_stage("join")
@@ -3320,7 +3334,7 @@ def test_join_prefetch_budget_survives_stage_recreation_and_counts_only_issued()
     )
     runtime._poll_semantic_reports(now_ms)
     assert runtime._final_stages["join"].semantic_only
-    assert runtime._final_stages["join"].issued_nodes == 2
+    assert runtime._final_stages["join"].issued_nodes == 4
     runtime.on_events((event(11, RuntimeEventKind.WORKFLOW_END),))
     assert not runtime._join_prefetch_issued
 

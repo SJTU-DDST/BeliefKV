@@ -5,7 +5,8 @@
   "frozen_main_commit": "feb5ee01a9f1340a694dcba442c439d08e4bd274",
   "frozen_engine_full_patch_sha256": "dbde39b7f37977ecacd72dddf78b3da94a56fa6a0879afb1798ae55ab7f1fe63",
   "candidate_full_patch": "patches/sglang-v0.5.20-beliefkv-staging.patch",
-  "candidate_full_patch_sha256": "c6f9183ac7b95b6710d5988fb1d5adf500ebc5a859225c879d5cef41193d18ba",
+  "candidate_full_patch_sha256": "68109d51ceb77f92fcbc2d17b52cfe76717b4ad26c47fd3642923b43ed0ca615",
+  "previous_deployed_full_patch_sha256": "c6f9183ac7b95b6710d5988fb1d5adf500ebc5a859225c879d5cef41193d18ba",
   "exact_delta": "experiments/reports/v16_engine_followup_delta_20261010.patch",
   "exact_delta_sha256": "19a7dbccc51a0b9d9abe8b3998767dbafb8aaf8aaed3ec455e2535ff20a11364",
   "changed_engine_paths": [
@@ -36,5 +37,17 @@
     "gpu_experiment_started": false
   },
   "deploy_after": "both frozen V15 arms and complete postprocessing",
-  "scope": "FULL-only missing-prefix burst, CPU prefix inspection and existing isolated follow-ups; separate per-node receipts, preserved Host copies and partial-success submission; no verified native-relative throughput claim"
+  "wait_prefetch_followup": {
+    "delta": "experiments/reports/v16_wait_prefetch_engine_delta_20261010.patch",
+    "delta_sha256": "4006737855488d77ff5def83919a0b0d39504586d583a2e927d1d4c3da72cec1",
+    "main_parent_commit": "7a6ef46",
+    "canonical_forward_check_against_engine_base": true,
+    "deployed_full_reverse_check": true,
+    "runtime_physical_policy_audit_checks_passed": 404,
+    "native_cpu_checks_passed": 96,
+    "native_subtests_passed": 18,
+    "scope": "exclude the entire target closure from bounded cold reclaim; JOIN/tool safe-input prefix bursts, whole-burst timing and target-counted protection are in the main runtime; independent next-request wait-event attribution",
+    "gpu_performance_verified": false
+  },
+  "scope": "FULL-only PREPARE and JOIN/tool missing-prefix bursts, CPU control-path follow-ups, separate per-node receipts, preserved Host copies, partial-success submission and target-excluding cold reclaim; no verified native-relative throughput claim"
 }

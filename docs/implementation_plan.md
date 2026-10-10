@@ -2,6 +2,48 @@
 
 Status date: 2026-10-10.
 
+## V16 Execution And Acceptance
+
+The existing active goal remains open: improve native-relative busy-window
+service and JCT with useful early FULL restoration and lower control cost.
+Native's repeated-tool tail, total ACKs, and transferred bytes do not establish
+completion. Preserve independent workflows and trajectory limits in reporting.
+
+Implemented JOIN/tool restoration now plans the missing safe input prefix,
+ancestor first, up to 16 extents per burst. Truncate by actual pool capacity,
+next-prefill reserve, residency bytes, and whole-burst H2D start timing.
+Retain separate node reservations/ACKs and partial-success submission. Restore
+only the required checkpoint Mamba state; speculative PREPARE remains FULL-only.
+Reclaim only the existing bounded cold backups, excluding the entire target
+closure. Revalidate causal identity, the physical plan, and live child service
+progress immediately before enqueue.
+
+Acquire a deeper prefix lock before relinquishing ancestor locks; keep all
+node-use receipts. Count residency slots and restore promotion by target,
+not by extent. Allocation pressure releases the whole protection group.
+Deploy with the already committed shared-path rank reuse, per-context restore
+lookup, duplicate scan removal, scalar terminal serialization, and FULL
+PREPARE batching.
+
+Audit independent JOIN/tool wait episodes, not commands: maximum observed FULL
+plan, actual pre-boundary submit with verified next-request FULL reuse,
+pre-boundary ACK with reuse, residual native Host-hit, separately reported demand
+handoff, client submission delay, and request/ACK-to-first-service waits.
+Bounded snapshots are not an oracle denominator. Keep missing evidence unknown;
+do not add Host-hit and handoff bytes without disjoint-allocation proof or sum
+one sampled batch dependency wait across its requests.
+
+Validation: 404 related runtime/physical/policy/audit checks and 96 native CPU
+checks pass. Package and verify the canonical engine patch, commit the changes,
+then freeze one complete predictive_h2d -> cold native pair: 156 tasks,
+108+48 arrivals at 3600 seconds, running48, Host200GB80:20, HBM ratio0.9,
+hard180s tools, and the established model artifacts/remaining parameters.
+Inspect busy-window GPU/output rates, paired JCT, control exclusive wall cost,
+useful early FULL coverage, residual restoration and recomputation. Stop only
+for an actual implementation failure, retaining its evidence before a fix and
+cold restart. No V16 GPU improvement has yet been established. Historical
+freeze/deployment notes below retain their original observation-time meaning.
+
 ## Current Objective And V15 Comparison
 
 Keep the fixed workload, model, capacity and arrival schedule. Continue until

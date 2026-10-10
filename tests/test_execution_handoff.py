@@ -217,7 +217,7 @@ def test_demand_handoff_pins_restored_cache_until_service_or_allocation_pressure
     runtime._native_running_batch = NS(reqs=[NS()] * 48)
     runtime._native_page_size, runtime._native_input_reserve = 16, 8192
     observation = NS(observable=True, nodes=(
-        NS(node_id=1, full_device_tokens=20_000, mamba_device_present=True),
+        NS(node_id=1, creation_time=2, full_device_tokens=20_000, mamba_device_present=True),
     ))
     step = PrefetchLoadStep(key, 1, 2, 1, 2)
     action = PhysicalActionCompleted(
@@ -237,16 +237,12 @@ def test_demand_handoff_pins_restored_cache_until_service_or_allocation_pressure
     ):
         runtime._register_prefetch_service_lease(action)
     lease = runtime._prefetch_service_leases[action.command_id]
-    if source == "execution_handoff":
-        assert lease.lock_params is receipt
-        assert lease.protected_bytes == action.num_bytes
-        cache.tree_core.inc_lock_ref.assert_called_once_with(1)
-        runtime.on_prefill_candidate_result(req("other"), admitted=False, result="NO_TOKEN")
-        assert not runtime._prefetch_service_leases
-        cache.tree_core.dec_lock_ref.assert_called_once_with(1, receipt)
-    else:
-        assert lease.lock_params is None
-        cache.tree_core.inc_lock_ref.assert_not_called()
+    assert lease.lock_params is receipt
+    assert lease.protected_bytes == action.num_bytes
+    cache.tree_core.inc_lock_ref.assert_called_once_with(1)
+    runtime.on_prefill_candidate_result(req("other"), admitted=False, result="NO_TOKEN")
+    assert not runtime._prefetch_service_leases
+    cache.tree_core.dec_lock_ref.assert_called_once_with(1, receipt)
     assert not runtime.physical_disabled
     runtime.close()
 
@@ -285,7 +281,8 @@ def test_handoff_extents_share_one_request_slot_and_release_together_on_pressure
         "beliefkv.runtime.sglang_v0520_observer.observe_unified_node_closure",
         side_effect=lambda cache, node_id, **kwargs: NS(
             observable=True, nodes=[
-                NS(node_id=n, full_device_tokens=100, mamba_device_present=True)
+                NS(node_id=n, creation_time=nodes[n].creation_time,
+                   full_device_tokens=100, mamba_device_present=True)
                 for n in range(1, node_id + 1)
             ],
         ),
@@ -300,7 +297,9 @@ def test_handoff_extents_share_one_request_slot_and_release_together_on_pressure
             runtime._register_prefetch_service_lease(action)
         assert runtime._prefetch_slot_available(key)
     assert cache.tree_core.inc_lock_ref.call_count == 2
-    assert all(lease.lock_params is not None for lease in runtime._prefetch_service_leases.values())
+    assert runtime._prefetch_service_leases["extent-1"].lock_params is None
+    assert runtime._prefetch_service_leases["extent-2"].lock_params is receipts[2]
+    assert runtime._prefetch_service_leases["extent-2"].protected_bytes == 2020
     runtime.on_prefill_candidate_result(req("other"), admitted=False, result="NO_TOKEN")
     assert not runtime._prefetch_service_leases
     cache.tree_core.dec_lock_ref.assert_any_call(1, receipts[1])
@@ -591,7 +590,8 @@ def test_burst_deepest_lock_covers_ancestors_and_releases_once_on_service(monkey
     with patch.object(runtime.physical_ledger, "observe", return_value=tuple(actions)), patch(
         "beliefkv.runtime.sglang_v0520_observer.observe_unified_node_closure",
         side_effect=lambda _, node, **kw: NS(observable=True, nodes=tuple(
-            NS(node_id=index, full_device_tokens=1, mamba_device_present=index == 6)
+                NS(node_id=index, creation_time=nodes[index].creation_time,
+                   full_device_tokens=1, mamba_device_present=index == 6)
             for index in range(1, node + 1)
         )),
     ):

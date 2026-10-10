@@ -583,6 +583,22 @@ def main() -> None:
                 "budget_all_missing_reusable_checkpoint_full_extents"
             ),
             "prepare_pool_scope": "missing_full_prefix",
+            "wait_prefetch_policy": (
+                "safe_next_input_checkpoint_missing_prefix;ancestor_first;"
+                "up_to_16_extents;pool_capacity_and_prefill_reserve;"
+                "residency_byte_budget;whole_burst_start_window;"
+                "cold_reclaim_excludes_target_closure;per_node_ACK"
+            ),
+            "wait_prefetch_residency_policy": (
+                "deepest_prefix_lock_covers_ancestors;"
+                "target_counted_slots_and_restore_priority;group_pressure_release"
+            ),
+            "wait_event_attribution": (
+                "independent_JOIN_or_tool_context_epoch;"
+                "bounded_plan_snapshots;pre_boundary_submit_and_next_request_FULL_reuse;"
+                "native_Host_hit_and_demand_handoff_separate;"
+                "matched_first_service_waits;missing_evidence_unknown"
+            ),
             "mamba_backup_policy": "native_actual_eviction_writeback;no_speculative_prepare",
             "pressure_candidate_policy": "separate_FULL_leaf_and_Mamba_state_indexes;native_revalidation",
             "capacity_bypass_policy": (

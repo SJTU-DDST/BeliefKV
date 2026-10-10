@@ -1,0 +1,56 @@
+diff --git a/python/sglang/srt/mem_cache/unified_radix_cache.py b/python/sglang/srt/mem_cache/unified_radix_cache.py
+index 6b868dd..1938d8e 100644
+--- a/python/sglang/srt/mem_cache/unified_radix_cache.py
++++ b/python/sglang/srt/mem_cache/unified_radix_cache.py
+@@ -948,9 +948,11 @@ class UnifiedRadixCache(BasePrefixCache):
+ 
+     def reclaim_beliefkv_handoff_capacity(
+         self, *, full_tokens: int, mamba_slots: int,
++        exclude_node_ids: tuple[NodeId, ...] = (),
+     ) -> dict[int, int]:
+         """Reclaim only validated idle duplicates for an actual next load."""
+         validate = getattr(self, "beliefkv_join_pressure_validator", None)
++        excluded = set(exclude_node_ids)
+         self.beliefkv_handoff_last_victims = []
+         if (
+             not callable(validate) or not self.is_write_back
+@@ -981,7 +983,7 @@ class UnifiedRadixCache(BasePrefixCache):
+             except (KeyError, RuntimeError, ValueError):
+                 continue
+             if (
+-                node.creation_time != created
++                node_id in excluded or node.creation_time != created
+                 or (scope == "waiting_agent" and not validate(node_id, created))
+                 or (scope == "unreferenced_cache" and any(
+                     data.session_ref != 0 for data in node.component_data
+diff --git a/test/srt/test_beliefkv_execution_handoff.py b/test/srt/test_beliefkv_execution_handoff.py
+index 46c6b52..f2ea837 100644
+--- a/test/srt/test_beliefkv_execution_handoff.py
++++ b/test/srt/test_beliefkv_execution_handoff.py
+@@ -340,6 +340,26 @@ def test_reclaim_can_use_unreferenced_backup_but_never_discards_its_host_copy():
+     assert cache.beliefkv_handoff_last_victims[0]["scope"] == "unreferenced_cache"
+ 
+ 
++@pytest.mark.parametrize("referenced", (False, True))
++def test_reclaim_excludes_restore_target_even_when_it_is_an_eligible_cold_victim(referenced):
++    cache, _, victim, _ = fixture()
++    cache.is_write_back = True
++    cache.ongoing_write_through = {}
++    cache.beliefkv_join_pressure_candidates = ((victim.id, victim.creation_time),)
++    cache.beliefkv_join_pressure_validator = Mock(return_value=True)
++    cache._component_available_size = Mock(return_value=0)
++    for item in victim.component_data:
++        item.session_ref = int(referenced)
++    cache._demote = Mock()
++    cache.tree_core.demote_backed_mamba_state = Mock()
++    assert cache.reclaim_beliefkv_handoff_capacity(
++        full_tokens=2, mamba_slots=1, exclude_node_ids=(victim.id,),
++    ) == {}
++    cache._demote.assert_not_called()
++    cache.tree_core.demote_backed_mamba_state.assert_not_called()
++    assert cache.beliefkv_handoff_last_victims == []
++
++
+ @pytest.mark.parametrize("handoff", (False, True))
+ def test_pool_index_finds_full_leaf_hidden_behind_eight_interior_nodes(handoff):
+     cache, interior, victim, _ = fixture()

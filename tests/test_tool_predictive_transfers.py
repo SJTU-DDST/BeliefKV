@@ -252,7 +252,7 @@ def locked_runtime(*, size=50, receipt_node=1):
         "mamba": NS(host_pool=NS(size_per_token=0)),
     })
     observation = NS(observable=True, nodes=[
-        NS(node_id=1, full_device_tokens=1, mamba_device_present=False),
+        NS(node_id=1, creation_time=2, full_device_tokens=1, mamba_device_present=False),
     ])
     step = PrefetchLoadStep(hint.key, 1, 2, 1, 2)
     runtime._prefetch_steps[action.command_id] = (step, "tool_wait", 2.)
@@ -301,7 +301,7 @@ def test_prefetch_lock_budget_rejects_oversized_closure():
     assert lease.protected_bytes == 0
 
 
-def test_prefetch_native_lock_budget_is_shared_across_leases():
+def test_same_prefetch_node_does_not_duplicate_lock_or_byte_budget():
     runtime, hint, node, action, receipt, observation = locked_runtime(size=300 * 1024 ** 2)
     tree = runtime._native_cache.tree_core
     step = PrefetchLoadStep(hint.key, 1, 2, 1, 2)
@@ -316,8 +316,8 @@ def test_prefetch_native_lock_budget_is_shared_across_leases():
             )
             runtime._prefetch_steps[other.command_id] = (step, "tool_wait", 2.)
             runtime._register_prefetch_service_lease(other)
-    assert tree.inc_lock_ref.call_count == 3
-    assert sum(item.protected_bytes for item in runtime._prefetch_service_leases.values()) <= 1024 ** 3
+    assert tree.inc_lock_ref.call_count == 1
+    assert sum(item.protected_bytes for item in runtime._prefetch_service_leases.values()) == 300 * 1024 ** 2
 
 
 def submit_restored_request(runtime):

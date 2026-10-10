@@ -315,6 +315,10 @@ def test_runtime_pressure_releases_speculative_before_ready_restore():
     ready = replace(
         runtime._prefetch_service_leases[action.command_id],
         command_id="ready", demand_ready=True, acknowledged_at=0.,
+        key=replace(
+            runtime._prefetch_service_leases[action.command_id].key,
+            context_id="ctx-ready", invocation_id="ready", request_id="ready",
+        ),
     )
     runtime._prefetch_service_leases["ready"] = ready
     runtime.on_prefill_candidate_result(req("other"), admitted=False, result="NO_TOKEN")

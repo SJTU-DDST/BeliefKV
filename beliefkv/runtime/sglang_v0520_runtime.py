@@ -151,6 +151,8 @@ class _JoinPrefetchTicket:
     no_step_recorded: bool = False
     drained_for_issued_nodes: int | None = None
     stage_bound: bool = False
+    command_ids: tuple[str, ...] = ()
+    work_endpoint_tokens: float | None = None
 
 
 @dataclass(frozen=True)
@@ -194,6 +196,7 @@ class _ToolPrefetchTicket:
     command_id: str | None = None
     drained: bool = False
     start_window_ms: float | None = None
+    command_ids: tuple[str, ...] = ()
 
 
 @dataclass(frozen=True)
@@ -423,6 +426,7 @@ class NativeAdmissionRuntime:
         self._tool_metadata_by_run: dict[str, dict[str, tuple]] = {}
         self._tool_ticket: _ToolPrefetchTicket | None = None
         self._tool_prefetch_budget: Counter[PrefillCandidateKey] = Counter()
+        self._wait_prefetch_records: OrderedDict[tuple, tuple[float, tuple]] = OrderedDict()
         self._tool_timing_only = False
         self._tool_refresh_next_ms = 0.
         self._tool_prepare_next_ms = 0.
@@ -1595,11 +1599,15 @@ class NativeAdmissionRuntime:
                 "attempt_id": key.attempt_id, "session_id": key.session_id,
                 "session_generation": key.session_generation,
                 "invocation_state": invocation.state.value if invocation else None,
+                "join_id": invocation.join_id if source == "join_wait" and invocation else None,
+                "active_tool_ids": sorted(invocation.active_tool_calls)
+                if source == "tool_wait" and invocation else [],
                 "semantic_revision": self.semantic_revision,
             }
             observation = self.inspect_context_h2d_opportunity(
                 context_id=key.context_id, context_epoch=key.context_epoch,
                 admission_candidate=source == "admission_candidate",
+                max_steps=16 if source in ("tool_wait", "join_wait") else 1,
             )
             if observation is None:
                 row["reason"] = (
@@ -1644,6 +1652,11 @@ class NativeAdmissionRuntime:
                     "leaf_creation_time": step.leaf_creation_time if step else None,
                     "reusable_input_tokens": observation.anchors.reusable_input_tokens,
                     "fits_current_free_lists": observation.fits_current_free_lists,
+                    "planned_nodes": [
+                        {"node_id": item.node_id, "creation_time": item.creation_time,
+                         "include_mamba": item.include_mamba}
+                        for item in observation.steps
+                    ],
                 })
             if source in ("tool_wait", "join_wait") and key.session_id is not None:
                 self._observe_prepare_opportunity(key, row, observation)
@@ -2053,7 +2066,7 @@ class NativeAdmissionRuntime:
         if not enough_service:
             self.counts["final_stage_no_h2d_service_evidence"] += 1
             return
-        if self.physical_ledger.pending_count:
+        if self.physical_ledger.pending_action_count("PREFETCH_GPU"):
             return
         if self._join_ticket is not None and self._live_join_ticket():
             return
@@ -2068,7 +2081,6 @@ class NativeAdmissionRuntime:
                     stage.tokens_per_second = self._semantic_rate(stage.request_id)
             if (
                 not self._live_final_stage(stage) or stage.request_id is None
-                or self._issued_join_nodes(stage.join_id, stage.key) >= 2
             ):
                 continue
             observed_eos = self._semantic_eos_proofs.get(stage.request_id) is True
@@ -2166,17 +2178,14 @@ class NativeAdmissionRuntime:
                 if self._semantic_worker is not None:
                     self.counts["semantic_h2d_too_early"] += 1
                 continue
-            observation = self.inspect_context_h2d_opportunity(
-                context_id=stage.key.context_id,
-                context_epoch=stage.key.context_epoch,
-            )
+            observation = self._wait_prefetch_opportunity(stage.key)
             if observation is None or observation.step is None:
                 if self._semantic_worker is not None:
                     self.counts["semantic_h2d_no_host_target"] += 1
-                continue
-            if observation.fits_current_free_lists is not True:
-                if self._semantic_worker is not None:
-                    self.counts["semantic_h2d_no_free_capacity"] += 1
+                self._record_wait_prefetch_plan(
+                    "join_ticket", stage.key, observation,
+                    reason="no_restore_plan", remaining_ms=remaining_ms,
+                )
                 continue
             cache = self._native_cache
             entries = getattr(
@@ -2205,6 +2214,10 @@ class NativeAdmissionRuntime:
             ) or estimate_native_service(self._h2d_samples, required_bytes)
             if estimate is None:
                 self.counts["prefetch_service_size_unsupported"] += 1
+                self._record_wait_prefetch_plan(
+                    "join_ticket", stage.key, observation,
+                    reason="service_size_unsupported", remaining_ms=remaining_ms,
+                )
                 continue
             window = transfer_start_window(
                 estimate, max_lead_ms=self.prefetch_lead_ms,
@@ -2212,14 +2225,32 @@ class NativeAdmissionRuntime:
             )
             if window is None:
                 self.counts["prefetch_service_exceeds_lead_window"] += 1
+                self._record_wait_prefetch_plan(
+                    "join_ticket", stage.key, observation,
+                    reason="service_exceeds_lead", remaining_ms=remaining_ms,
+                )
                 continue
             if remaining_ms > window.horizon_ms:
                 if self._semantic_worker is not None:
                     self.counts["semantic_h2d_not_latest_start"] += 1
+                self._record_wait_prefetch_plan(
+                    "join_ticket", stage.key, observation,
+                    reason="before_start_window", remaining_ms=remaining_ms, window=window,
+                )
                 continue
-            if not self._prefetch_slot_available(stage.key):
+            if not self._prefetch_slot_available(
+                stage.key, budget=self._current_residency_budget(include_evictable=True),
+            ):
                 self.counts["semantic_h2d_admission_budget_busy"] += 1
+                self._record_wait_prefetch_plan(
+                    "join_ticket", stage.key, observation,
+                    reason="admission_budget_busy", remaining_ms=remaining_ms, window=window,
+                )
                 continue
+            self._record_wait_prefetch_plan(
+                "join_ticket", stage.key, observation,
+                reason="start_window", remaining_ms=remaining_ms, window=window,
+            )
             join = self.graph.joins[stage.join_id]
             self._join_ticket = _JoinPrefetchTicket(
                 stage.key, stage.join_id, join.mode.value,
@@ -2227,6 +2258,7 @@ class NativeAdmissionRuntime:
                 "provisional", min(stage.expires_at, time.monotonic() + 2.0),
                 issued_nodes=self._issued_join_nodes(stage.join_id, stage.key),
                 stage_bound=True,
+                work_endpoint_tokens=stage.generated_tokens + remaining,
             )
             self.counts["final_stage_latest_start"] += 1
             if self._opportunity_writer is not None:
@@ -2450,7 +2482,7 @@ class NativeAdmissionRuntime:
 
     @timed_runtime("join_prefetch")
     def dispatch_join_prefetch(self) -> None:
-        """One action-local native H2D per safe point, never grant admission."""
+        """Restore a bounded reusable prefix burst, without granting admission."""
         self._roll_final_stage()
         ticket = self._join_ticket
         if ticket is None or not self._live_join_ticket():
@@ -2461,23 +2493,27 @@ class NativeAdmissionRuntime:
                 )
             return
         if ticket.command_id is not None:
-            if self.physical_ledger.is_pending(ticket.command_id):
+            commands = ticket.command_ids or (ticket.command_id,)
+            if any(self.physical_ledger.is_pending(command) for command in commands):
                 return
-            if not any(
-                action.command_id == ticket.command_id
-                and action.action == "PREFETCH_GPU"
-                for action in self.completed_physical_actions
-            ):
+            completed = {
+                action.command_id for action in self.completed_physical_actions
+                if action.action == "PREFETCH_GPU"
+            }
+            if not set(commands).issubset(completed):
                 self._discard_join_ticket("action_ack_missing")
                 self.counts["join_prefetch_lost_ack"] += 1
                 return
             ticket.command_id = None
-            self.counts["join_prefetch_acked"] += 1
-        max_nodes = 1 if self.enable_confirmed_join_canary else 2
+            ticket.command_ids = ()
+            self.counts["join_prefetch_acked"] += len(commands)
         ticket.issued_nodes = max(
             ticket.issued_nodes, self._issued_join_nodes(ticket.join_id, ticket.key),
         )
-        if ticket.issued_nodes >= max_nodes or self.physical_ledger.pending_count:
+        if (
+            self.enable_confirmed_join_canary and ticket.issued_nodes >= 1
+            or self.physical_ledger.pending_action_count("PREFETCH_GPU")
+        ):
             return
         if ticket.phase == "probabilistic":
             hint = self.join_wait_hints.get(ticket.join_id)
@@ -2488,7 +2524,19 @@ class NativeAdmissionRuntime:
             )
             if remaining_p10_ms > 1_000:
                 return
-        step = self.refreshed_prefetch_gpu_step(source="join_ticket")
+        observation = self._wait_prefetch_opportunity(ticket.key)
+        if (
+            observation is not None and observation.step is not None
+            and callable(getattr(self._native_cache, "prefetch_gpu_session_nodes", None))
+            and not self._wait_prefetch_timing_valid(ticket.key, observation, "join_ticket")
+        ):
+            self._discard_join_ticket("batch_start_window_changed")
+            return
+        if observation is not None and observation.step is not None:
+            observation = self._reclaim_wait_prefetch_capacity(
+                ticket.key, observation, source="join_ticket",
+            )
+        step = observation.step if observation is not None else None
         if step is None:
             self.counts["join_prefetch_no_cpu_node"] += 1
             if (
@@ -2496,10 +2544,6 @@ class NativeAdmissionRuntime:
                 and not ticket.no_step_recorded
                 and self._opportunity_writer is not None
             ):
-                observation = self.inspect_context_h2d_opportunity(
-                    context_id=ticket.key.context_id,
-                    context_epoch=ticket.key.context_epoch,
-                )
                 no_step_record = {
                     "event": "confirmed_join_no_h2d_step",
                     "ts_ms": time.time() * 1000.0,
@@ -2534,18 +2578,30 @@ class NativeAdmissionRuntime:
                     )
                 self._opportunity_writer.record(no_step_record)
                 ticket.no_step_recorded = True
+            if ticket.issued_nodes:
+                self._discard_join_ticket("prefix_resident_or_unavailable")
             return
-        command = self.issue_prefetch_gpu_step(step, source="join_ticket")
-        if command is not None:
-            ticket.command_id = command
-            ticket.issued_nodes += 1
+        if observation.fits_current_free_lists is not True:
+            self.counts["semantic_h2d_no_free_capacity"] += 1
+            self._record_wait_prefetch_plan(
+                "join_ticket", ticket.key, observation, reason="no_cold_capacity",
+            )
+            return
+        commands = self._issue_wait_prefetch_steps(
+            ticket.key, getattr(observation, "steps", ()) or (step,),
+            source="join_ticket",
+        )
+        if commands:
+            ticket.command_id = commands[-1]
+            ticket.command_ids = commands
+            ticket.issued_nodes += len(commands)
             self._join_prefetch_issued[
                 _JoinPrefetchIdentity.from_parent(ticket.join_id, ticket.key)
             ] = ticket.issued_nodes
             stage = self._final_stages.get(ticket.join_id)
             if stage is not None and ticket.phase == "provisional":
                 stage.issued_nodes = ticket.issued_nodes
-            self.counts[f"join_prefetch_{ticket.phase}_issued"] += 1
+            self.counts[f"join_prefetch_{ticket.phase}_issued"] += len(commands)
 
     def _submit_tool_wait(self, context_id: str) -> None:
         worker = self._model_worker
@@ -3052,6 +3108,8 @@ class NativeAdmissionRuntime:
     def inspect_context_h2d_opportunity(
         self, *, context_id: str, context_epoch: int,
         admission_candidate: bool = False,
+        max_steps: int = 1,
+        fit_current_capacity: bool = False,
     ) -> SessionH2DOpportunity | None:
         """Read action-local session/allocator evidence; never dispatch H2D."""
         cache = self._native_cache
@@ -3079,9 +3137,227 @@ class NativeAdmissionRuntime:
             cache, context_id=context_id, context_epoch=context_epoch
         )
         return (
-            inspect_session_h2d_opportunity(cache, anchors)
+            inspect_session_h2d_opportunity(
+                cache, anchors, max_steps=max_steps,
+                fit_current_capacity=fit_current_capacity,
+            )
             if anchors is not None else None
         )
+
+    def _wait_prefetch_opportunity(
+        self, key: PrefillCandidateKey,
+    ) -> SessionH2DOpportunity | None:
+        batched = callable(getattr(self._native_cache, "prefetch_gpu_session_nodes", None))
+        slots = self.physical_ledger.max_pending - self.physical_ledger.pending_count
+        if slots < 1:
+            return None
+        opportunity = self.inspect_context_h2d_opportunity(
+            context_id=key.context_id, context_epoch=key.context_epoch,
+            max_steps=min(16, slots) if batched else 1,
+        )
+        if opportunity is None or opportunity.step is None:
+            return opportunity
+        candidate = getattr(opportunity, "candidate", None)
+        if candidate is None or not opportunity.headroom.observable:
+            return opportunity
+        budget = self._current_residency_budget(include_evictable=True)
+        headroom = opportunity.headroom
+        full_limit = max(
+            0, headroom.device_full_free_tokens + budget.evictable_full_tokens
+            - budget.reserve_full_tokens,
+        )
+        mamba_limit = max(
+            0, headroom.device_mamba_free_slots + budget.evictable_mamba_slots
+            - budget.reserve_mamba_slots,
+        )
+        entries = self._native_cache.cache_controller.mem_pool_host.entry_map
+        full_unit = entries["kv"].host_pool.size_per_token
+        mamba_unit = entries["mamba"].host_pool.size_per_token
+        byte_limit = max(0, budget.byte_limit - sum(
+            lease.protected_bytes for lease in self._prefetch_service_leases.values()
+        ))
+        nodes = {node.node_id: node for node in candidate.nodes}
+        selected, full, mamba = [], 0, 0
+        leaf = (opportunity.step.leaf_node_id, opportunity.step.leaf_creation_time)
+        for step in opportunity.steps:
+            node = nodes[step.node_id]
+            next_full = full + (
+                node.full_host_tokens if node.full_device_tokens == 0 else 0
+            )
+            next_mamba = mamba + int(
+                step.include_mamba and node.mamba_host_present
+                and not node.mamba_device_present
+            )
+            if (
+                (step.leaf_node_id, step.leaf_creation_time) != leaf
+                or next_full > full_limit or next_mamba > mamba_limit
+                or next_full * full_unit + next_mamba * mamba_unit > byte_limit
+            ):
+                break
+            selected.append(step)
+            full, mamba = next_full, next_mamba
+        if not selected:
+            self.counts["wait_prefetch_capacity_budget"] += 1
+            return replace(
+                opportunity, step=None, steps=(), required_full_tokens=0,
+                required_mamba_slots=0, fits_current_free_lists=None,
+                no_step_reason="prefetch_capacity_budget",
+            )
+        return replace(
+            opportunity, step=selected[0], steps=tuple(selected),
+            required_full_tokens=full, required_mamba_slots=mamba,
+            fits_current_free_lists=(
+                full <= headroom.device_full_free_tokens
+                and mamba <= headroom.device_mamba_free_slots
+            ),
+        )
+
+    def _record_wait_prefetch_plan(
+        self, source: str, key: PrefillCandidateKey,
+        opportunity: SessionH2DOpportunity | None, *,
+        reason: str, remaining_ms: float | None = None,
+        window: TransferStartWindow | None = None,
+    ) -> None:
+        writer = self._opportunity_writer
+        if writer is None:
+            return
+        invocation = self.graph.invocations.get(key.invocation_id)
+        ticket = self._join_ticket
+        join_id = (
+            ticket.join_id if source == "join_ticket" and ticket is not None
+            else getattr(invocation, "join_id", None) if source == "join_ticket"
+            else None
+        )
+        tools = tuple(sorted(getattr(invocation, "active_tool_calls", ())))
+        identity = (source, key.context_id, key.context_epoch, join_id, tools)
+        step = getattr(opportunity, "step", None)
+        steps = getattr(opportunity, "steps", ()) or ((step,) if step else ())
+        full = getattr(opportunity, "required_full_tokens", None)
+        mamba = getattr(opportunity, "required_mamba_slots", None)
+        entries = getattr(
+            getattr(getattr(self._native_cache, "cache_controller", None), "mem_pool_host", None),
+            "entry_map", {},
+        )
+        planned_bytes = {
+            pool: amount * entry.host_pool.size_per_token
+            for pool, amount in (("kv", full), ("mamba", mamba))
+            if type(amount) is int and (entry := entries.get(pool)) is not None
+        }
+        fingerprint = (
+            reason, full, mamba,
+            tuple((item.node_id, item.creation_time, item.include_mamba) for item in steps),
+        )
+        now = time.monotonic()
+        previous = self._wait_prefetch_records.get(identity)
+        if previous is not None and previous[1] == fingerprint and now - previous[0] < .5:
+            return
+        self._wait_prefetch_records[identity] = (now, fingerprint)
+        self._wait_prefetch_records.move_to_end(identity)
+        if len(self._wait_prefetch_records) > 512:
+            self._wait_prefetch_records.popitem(last=False)
+        writer.record({
+            "event": "wait_prefetch_plan", "ts_ms": time.time() * 1000.,
+            "source": source, "workflow_id": key.root_workflow_id,
+            "invocation_id": key.invocation_id, "context_id": key.context_id,
+            "context_epoch": key.context_epoch, "request_id": key.request_id,
+            "session_id": key.session_id, "session_generation": key.session_generation,
+            "join_id": join_id, "active_tool_ids": tools, "reason": reason,
+            "reusable_input_tokens": getattr(
+                getattr(opportunity, "anchors", None), "reusable_input_tokens", None,
+            ),
+            "planned_full_tokens": full, "planned_mamba_slots": mamba,
+            "planned_pool_bytes": planned_bytes,
+            "planned_nodes": [
+                {"node_id": item.node_id, "creation_time": item.creation_time,
+                 "include_mamba": item.include_mamba} for item in steps
+            ],
+            "fits_current_free_lists": getattr(opportunity, "fits_current_free_lists", None),
+            "predicted_remaining_ms": remaining_ms,
+            "start_window_ms": window.horizon_ms if window else None,
+            "h2d_p90_ms": window.service_ms if window else None,
+            "scope": "bounded reusable checkpoint plan; not a reservation or oracle",
+        })
+
+    def _wait_prefetch_timing_valid(
+        self, key: PrefillCandidateKey, opportunity: SessionH2DOpportunity, source: str,
+    ) -> bool:
+        ticket = self._join_ticket if source == "join_ticket" else self._tool_ticket
+        if source == "join_ticket" and ticket is not None and ticket.phase == "confirmed":
+            return True
+        window = self._h2d_start_window(opportunity)
+        remaining = None
+        if window is not None and source == "tool_wait":
+            hint = self._live_tool_hint(key)
+            if hint is not None:
+                remaining = hint.remaining_quantile(.5, now_ms=time.monotonic() * 1000.)
+        elif window is not None and ticket is not None:
+            if ticket.phase == "probabilistic":
+                hint = self.join_wait_hints.get(ticket.join_id)
+                if hint is not None and self._live_join_hint(hint):
+                    remaining = max(
+                        0., hint.wait_p10_ms - (
+                            time.monotonic() * 1000. - hint.issued_monotonic_ms
+                        ),
+                    )
+            elif ticket.stage_bound and (
+                stage := self._final_stages.get(ticket.join_id)
+            ) is not None:
+                rid = stage.request_id
+                if self._semantic_eos_proofs.get(rid) is True:
+                    ended = self._semantic_finished.get(rid)
+                    if ended is not None and 0 <= (
+                        time.monotonic() * 1000. - ended[0]
+                    ) <= self.eos_protocol_window_ms:
+                        remaining = 0.
+                elif self._final_stage_service_available(stage):
+                    progress = self._semantic_progress.get(rid, ())
+                    generated = progress[-1][1] if progress else stage.generated_tokens
+                    rate = self._semantic_rate(rid) if progress else stage.tokens_per_second
+                    endpoint = ticket.work_endpoint_tokens
+                    if endpoint is not None and endpoint > generated and rate is not None and rate > 0:
+                        remaining = (endpoint - generated) * 1000. / rate
+            else:
+                # Legacy completion notification tickets have no work forecast.
+                return True
+        valid = window is not None and remaining is not None and remaining <= window.horizon_ms
+        if not valid:
+            self.counts["wait_prefetch_batch_timing_changed"] += 1
+            self._record_wait_prefetch_plan(
+                source, key, opportunity, reason=(
+                    "service_unsupported" if window is None
+                    else "service_progress_unavailable" if remaining is None
+                    else "before_start_window"
+                ), remaining_ms=remaining, window=window,
+            )
+        return valid
+
+    def _reclaim_wait_prefetch_capacity(
+        self, key: PrefillCandidateKey, opportunity: SessionH2DOpportunity, *,
+        source: str,
+    ) -> SessionH2DOpportunity | None:
+        if opportunity.fits_current_free_lists is True:
+            return opportunity
+        reclaim = getattr(self._native_cache, "reclaim_beliefkv_handoff_capacity", None)
+        candidate = getattr(opportunity, "candidate", None)
+        if not callable(reclaim) or candidate is None:
+            return opportunity
+        self._publish_parent_pressure_candidates()
+        freed = reclaim(
+            full_tokens=opportunity.required_full_tokens,
+            mamba_slots=opportunity.required_mamba_slots,
+            exclude_node_ids=tuple(node.node_id for node in candidate.nodes),
+        )
+        if freed:
+            self.counts[f"{source}_cold_reclaimed"] += 1
+            if self._opportunity_writer is not None:
+                self._opportunity_writer.record({
+                    "event": "wait_prefetch_capacity_reclaimed",
+                    "ts_ms": time.time() * 1000., "source": source,
+                    "workflow_id": key.root_workflow_id, "context_id": key.context_id,
+                    "context_epoch": key.context_epoch, "freed_units": freed,
+                    "victims": getattr(self._native_cache, "beliefkv_handoff_last_victims", ()),
+                })
+        return self._wait_prefetch_opportunity(key)
 
     def refreshed_shadow_backup_step(
         self, *, context_id: str | None = None, source: str = "tool_wait",
@@ -3755,19 +4031,21 @@ class NativeAdmissionRuntime:
         ticket = self._tool_ticket
         if ticket is not None:
             if ticket.command_id is not None:
-                if self.physical_ledger.is_pending(ticket.command_id):
+                commands = ticket.command_ids or (ticket.command_id,)
+                if any(self.physical_ledger.is_pending(command) for command in commands):
                     return
-                completed = any(
-                    action.command_id == ticket.command_id and action.action == "PREFETCH_GPU"
+                completed = {
+                    action.command_id
                     for action in self.completed_physical_actions
-                )
+                    if action.action == "PREFETCH_GPU"
+                }
                 self._tool_opportunity_cache.pop(ticket.key, None)
                 self._tool_ticket = None
                 self._tool_prefetch_next_ms = 0.
-                if not completed:
+                if not set(commands).issubset(completed):
                     self.counts["tool_prefetch_lost_ack"] += 1
                     return
-                self.counts["tool_prefetch_acked"] += 1
+                self.counts["tool_prefetch_acked"] += len(commands)
                 ticket = None
         if ticket is not None:
             hint = self._live_tool_hint(ticket.key)
@@ -3780,7 +4058,7 @@ class NativeAdmissionRuntime:
                 self._tool_ticket = None
             else:
                 return
-        if self.physical_ledger.pending_count:
+        if self.physical_ledger.pending_action_count("PREFETCH_GPU"):
             return
         now_ms = time.monotonic() * 1000
         if now_ms < self._tool_prefetch_next_ms:
@@ -3795,26 +4073,21 @@ class NativeAdmissionRuntime:
                 is not None else math.inf
             ),
         ):
-            if self._live_tool_hint(hint.key) is None or self._tool_prefetch_budget[hint.key] >= 2:
-                continue
-            if any(
-                lease.key == hint.key
-                for lease in self._prefetch_service_leases.values()
-            ):
+            if self._live_tool_hint(hint.key) is None:
                 continue
             if not self._tool_prefetch_ready(hint):
                 self.counts["tool_prefetch_not_in_time_window"] += 1
                 continue
-            if not self._prefetch_slot_available(hint.key):
+            if not self._prefetch_slot_available(
+                hint.key, budget=self._current_residency_budget(include_evictable=True),
+            ):
                 self.counts["tool_prefetch_admission_budget_busy"] += 1
                 continue
             cached = self._tool_opportunity_cache.get(hint.key)
             if cached is not None and now_ms < cached[0]:
                 opportunity = cached[1]
             else:
-                opportunity = self.inspect_context_h2d_opportunity(
-                    context_id=hint.key.context_id, context_epoch=hint.key.context_epoch,
-                )
+                opportunity = self._wait_prefetch_opportunity(hint.key)
                 self._tool_opportunity_cache[hint.key] = (now_ms + 100., opportunity)
                 if len(self._tool_opportunity_cache) > 256:
                     self._tool_opportunity_cache = {
@@ -3823,18 +4096,30 @@ class NativeAdmissionRuntime:
                     }
             if opportunity is None or opportunity.step is None:
                 self.counts["tool_prefetch_no_restore_target"] += 1
-                continue
-            if opportunity.fits_current_free_lists is not True:
-                self.counts["tool_prefetch_no_free_capacity"] += 1
+                self._record_wait_prefetch_plan(
+                    "tool_wait", hint.key, opportunity, reason="no_restore_plan",
+                )
                 continue
             window = self._h2d_start_window(opportunity)
             if window is None:
                 self.counts["tool_prefetch_service_unsupported"] += 1
+                self._record_wait_prefetch_plan(
+                    "tool_wait", hint.key, opportunity, reason="service_unsupported",
+                )
                 continue
             horizon = window.horizon_ms
             if not self._tool_prefetch_ready(hint, horizon_ms=horizon):
                 self.counts["tool_prefetch_not_latest_start"] += 1
+                self._record_wait_prefetch_plan(
+                    "tool_wait", hint.key, opportunity,
+                    reason="before_start_window", window=window,
+                    remaining_ms=hint.remaining_quantile(.5, now_ms=now_ms),
+                )
                 continue
+            self._record_wait_prefetch_plan(
+                "tool_wait", hint.key, opportunity, reason="start_window",
+                window=window, remaining_ms=hint.remaining_quantile(.5, now_ms=now_ms),
+            )
             self._tool_ticket = _ToolPrefetchTicket(
                 hint.key, hint.invocation_revision_ts_ms, start_window_ms=horizon,
             )
@@ -3886,7 +4171,7 @@ class NativeAdmissionRuntime:
     def dispatch_tool_prefetch(self) -> None:
         self._roll_tool_prefetch()
         ticket = self._tool_ticket
-        if ticket is None or self.physical_ledger.pending_count:
+        if ticket is None or self.physical_ledger.pending_action_count("PREFETCH_GPU"):
             return
         hint = self._live_tool_hint(ticket.key)
         if (
@@ -3897,19 +4182,39 @@ class NativeAdmissionRuntime:
         ):
             self._tool_ticket = None
             return
-        if self._tool_prefetch_budget[ticket.key] >= 2:
+        opportunity = self._wait_prefetch_opportunity(ticket.key)
+        if (
+            opportunity is not None and opportunity.step is not None
+            and callable(getattr(self._native_cache, "prefetch_gpu_session_nodes", None))
+            and not self._wait_prefetch_timing_valid(ticket.key, opportunity, "tool_wait")
+        ):
             self._tool_ticket = None
             return
-        step = self.refreshed_prefetch_gpu_step(source="tool_wait", context_id=ticket.key.context_id)
+        if opportunity is not None and opportunity.step is not None:
+            opportunity = self._reclaim_wait_prefetch_capacity(
+                ticket.key, opportunity, source="tool_wait",
+            )
+        step = opportunity.step if opportunity is not None else None
         if step is None:
             self._tool_ticket = None
             return
-        command = self.issue_prefetch_gpu_step(step)
-        if command is not None:
-            ticket.command_id = command
+        if opportunity.fits_current_free_lists is not True:
+            self.counts["tool_prefetch_no_free_capacity"] += 1
+            self._record_wait_prefetch_plan(
+                "tool_wait", ticket.key, opportunity, reason="no_cold_capacity",
+            )
+            self._tool_ticket = None
+            return
+        commands = self._issue_wait_prefetch_steps(
+            ticket.key, getattr(opportunity, "steps", ()) or (step,),
+            source="tool_wait",
+        )
+        if commands:
+            ticket.command_id = commands[-1]
+            ticket.command_ids = commands
             ticket.drained = False
-            self._tool_prefetch_budget[ticket.key] += 1
-            self.counts["tool_prefetch_issued"] += 1
+            self._tool_prefetch_budget[ticket.key] += len(commands)
+            self.counts["tool_prefetch_issued"] += len(commands)
 
     def refreshed_prefetch_gpu_step(
         self, *, source: str = "tool_wait", context_id: str | None = None
@@ -4123,6 +4428,11 @@ class NativeAdmissionRuntime:
                 "recorded_ts_ms": time.time() * 1000,
                 "load_started_immediately": getattr(outcome, "load_started", False),
                 "command_id": command_id, "source": source,
+                "workflow_id": step.key.root_workflow_id,
+                "invocation_id": step.key.invocation_id,
+                "request_id": step.key.request_id,
+                "session_id": step.key.session_id,
+                "session_generation": step.key.session_generation,
                 "context_id": step.key.context_id,
                 "context_epoch": step.key.context_epoch,
                 "node_id": step.node_id, "leaf_node_id": step.leaf_node_id,
@@ -4170,6 +4480,122 @@ class NativeAdmissionRuntime:
                     "pre_boundary_prediction": False,
                 })
             self._opportunity_writer.record(record)
+
+    def _live_wait_prefetch(self, key: PrefillCandidateKey, source: str) -> bool:
+        if self.physical_disabled or self.context_sessions.get(key.context_id) != key:
+            return False
+        if source == "join_ticket":
+            ticket = self._join_ticket
+            return ticket is not None and ticket.key == key and self._live_join_ticket()
+        if source == "tool_wait":
+            hint = self._live_tool_hint(key)
+            ticket = self._tool_ticket
+            return bool(
+                hint is not None and ticket is not None and ticket.key == key
+                and ticket.revision == hint.invocation_revision_ts_ms
+            )
+        return False
+
+    @timed_runtime("wait_prefetch_enqueue")
+    def _issue_wait_prefetch_steps(
+        self, key: PrefillCandidateKey, steps: tuple[PrefetchLoadStep, ...], *,
+        source: str,
+    ) -> tuple[str, ...]:
+        cache = self._native_cache
+        if not callable(getattr(cache, "prefetch_gpu_session_nodes", None)):
+            command = self.issue_prefetch_gpu_step(steps[0], source=source) if steps else None
+            return (command,) if command is not None else ()
+        if self.event_server is not None:
+            self.event_server.drain(max_messages=128)
+        if (
+            not steps or not self._live_wait_prefetch(key, source)
+            or self.physical_ledger.pending_action_count("PREFETCH_GPU")
+            or any(step.key != key for step in steps)
+            or len({(step.leaf_node_id, step.leaf_creation_time) for step in steps}) != 1
+        ):
+            return ()
+        # Capture once after draining causal events. Native rechecks allocation,
+        # ancestry and generation for every node in this same ordered burst.
+        fresh = self._wait_prefetch_opportunity(key)
+        if (
+            fresh is None or fresh.fits_current_free_lists is not True
+            or tuple(fresh.steps[:len(steps)]) != steps
+        ):
+            self.counts["prefetch_burst_plan_changed"] += 1
+            return ()
+        if not self._wait_prefetch_timing_valid(key, fresh, source):
+            return ()
+        issue_budget = self._current_residency_budget(include_evictable=True)
+        if not self._prefetch_slot_available(key, budget=issue_budget):
+            self.counts["prefetch_slot_lost_before_enqueue"] += 1
+            return ()
+        byte_allowance = max(0, issue_budget.byte_limit - sum(
+            lease.protected_bytes for lease in self._prefetch_service_leases.values()
+        ))
+        commands = tuple(f"beliefkv-prefetch-{uuid4().hex}" for _ in steps)
+        planned = dict(zip(commands, steps))
+        registered: set[str] = set()
+        reserved_bytes = 0
+        issued_at = time.time() * 1000.
+
+        def before_enqueue(operation: object) -> bool:
+            nonlocal reserved_bytes
+            command = getattr(operation, "beliefkv_command_id", None)
+            step = planned.get(command)
+            if step is None or not self._live_wait_prefetch(key, source):
+                self.counts["prefetch_causal_invalidated_before_enqueue"] += 1
+                return False
+            try:
+                expected = prefetch_expectation_from_native_op(
+                    command, step, operation, cache.cache_controller,
+                )
+                size = sum(child.num_bytes for child in expected.children)
+                if reserved_bytes + size > byte_allowance:
+                    self.counts["prefetch_burst_byte_budget_lost"] += 1
+                    return False
+                self.register_physical_action(expected)
+            except (PhysicalReceiptError, AttributeError, TypeError, ValueError):
+                self.counts["prefetch_reservation_rejected"] += 1
+                return False
+            reserved_bytes += size
+            registered.add(command)
+            invocation = self.graph.invocations.get(key.invocation_id)
+            self._prefetch_steps[command] = (
+                step, source,
+                invocation.updated_ts_ms if invocation is not None else None,
+            )
+            self._prefetch_issue_budgets[command] = issue_budget
+            return True
+
+        outcomes = cache.prefetch_gpu_session_nodes(
+            session_id=key.session_id, session_generation=key.session_generation,
+            leaf_node_id=steps[0].leaf_node_id,
+            leaf_creation_time=steps[0].leaf_creation_time,
+            nodes=tuple(
+                (step.node_id, step.creation_time, step.include_mamba, command)
+                for command, step in zip(commands, steps)
+            ),
+            beliefkv_before_enqueue=before_enqueue,
+        )
+        issued = []
+        for command, step, outcome in zip(commands, steps, outcomes):
+            if not outcome.issued or outcome.node_id != step.node_id or command not in registered:
+                self.physical_disabled = True
+                raise PhysicalReceiptError("native wait burst has no matching reservation")
+            issued.append(command)
+            self._record_prefetch_issued(command, step, source, issued_at, outcome)
+        for command in registered.difference(issued):
+            self.physical_ledger.cancel_unsubmitted(command)
+            self._prefetch_steps.pop(command, None)
+            self._prefetch_issue_budgets.pop(command, None)
+        if issued:
+            self.counts[f"{source}_bursts"] += 1
+            self.counts[f"{source}_burst_nodes"] += len(issued)
+            self._record_wait_prefetch_plan(
+                source, key, fresh,
+                reason="submitted" if len(issued) == len(steps) else "submitted_partial",
+            )
+        return tuple(issued)
 
     @timed_runtime("handoff_enqueue")
     def _issue_handoff_prefetch_steps(
@@ -4461,22 +4887,33 @@ class NativeAdmissionRuntime:
                 for node in observation.nodes if node.node_id == step.node_id
             )
             already_protected = False
-            if source == "execution_handoff":
-                for existing in self._prefetch_service_leases.values():
-                    if existing.key != step.key or existing.lock_params is None:
-                        continue
-                    current = cache.tree_core.node_by_id(existing.node_id)
-                    for _ in range(64):
-                        if current is None:
-                            break
-                        if current.id == step.node_id and current.creation_time == step.creation_time:
-                            already_protected = True
-                            break
-                        current = current.parent
-                    if already_protected:
+            ancestors = {
+                (node.node_id, node.creation_time) for node in observation.nodes
+            }
+            superseded = []
+            for existing in self._prefetch_service_leases.values():
+                if existing.key != step.key or existing.lock_params is None:
+                    continue
+                if (existing.node_id, existing.creation_time) == (
+                    step.node_id, step.creation_time,
+                ):
+                    already_protected = True
+                    break
+                if (existing.node_id, existing.creation_time) in ancestors:
+                    superseded.append(existing)
+                    continue
+                current = cache.tree_core.node_by_id(existing.node_id)
+                for _ in range(64):
+                    if current is None:
                         break
+                    if current.id == step.node_id and current.creation_time == step.creation_time:
+                        already_protected = True
+                        break
+                    current = current.parent
+                if already_protected:
+                    break
             budget = self._current_residency_budget(
-                include_evictable=source == "execution_handoff",
+                include_evictable=True,
             )
             protection_slots = budget.request_slots
             if (
@@ -4502,7 +4939,7 @@ class NativeAdmissionRuntime:
                 )
                 and protected_bytes + sum(
                     lease.protected_bytes for lease in self._prefetch_service_leases.values()
-                ) <= budget.byte_limit
+                ) - sum(item.protected_bytes for item in superseded) <= budget.byte_limit
             ):
                 try:
                     lock_params = cache.tree_core.inc_lock_ref(step.node_id).to_dec_params()
@@ -4516,6 +4953,29 @@ class NativeAdmissionRuntime:
                     self._prefetch_lock_release_failures.add(action.command_id)
                 else:
                     self.counts["prefetch_native_lock_acquired"] += 1
+                    # Acquire the descendant first, then relinquish ancestor
+                    # locks. Keep every node's receipt and first-use tracking.
+                    for prior in superseded:
+                        try:
+                            cache.tree_core.dec_lock_ref(prior.node_id, prior.lock_params)
+                        except (AttributeError, AssertionError, KeyError, TypeError, ValueError, RuntimeError):
+                            self.physical_disabled = True
+                            self._prefetch_lock_release_failures.add(prior.command_id)
+                            self.counts["prefetch_native_lock_release_failed"] += 1
+                            break
+                        self._prefetch_service_leases[prior.command_id] = replace(
+                            prior, lock_params=None, protected_bytes=0,
+                        )
+                        self.counts["prefetch_prefix_protection_coalesced"] += 1
+                        if self._opportunity_writer is not None:
+                            self._opportunity_writer.record({
+                                "event": "prefetch_prefix_protection_coalesced",
+                                "ts_ms": time.time() * 1000.,
+                                "command_id": prior.command_id,
+                                "protected_by_command_id": action.command_id,
+                                "context_id": step.key.context_id,
+                                "context_epoch": step.key.context_epoch,
+                            })
                     if protection_slots > budget.request_slots:
                         self.counts["prefetch_issued_slot_protection_preserved"] += 1
             else:
@@ -5410,9 +5870,10 @@ class NativeAdmissionRuntime:
         self._prefetch_priority_native_rank = None
         self._prefetch_priority_aged_head_bypassed = False
         priority_candidates = []
-        ready_restores = sum(
-            lease.demand_ready for lease in self._prefetch_service_leases.values()
-        )
+        ready_restores = len({
+            lease.key for lease in self._prefetch_service_leases.values()
+            if lease.demand_ready
+        })
         budget = self._current_residency_budget() if ready_restores else self._residency_budget
         slots = budget.request_slots
         restore_stride = max(1, min(
@@ -5634,14 +6095,12 @@ class NativeAdmissionRuntime:
                         2 if lease.demand_ready else 1 if lease.reentry_ready_at is not None else 0,
                         lease.acknowledged_at,
                     ))
-                    # All extents of one demand restore share a request slot.
-                    # Releasing only one overlapping path lock may free no pages.
-                    victims = (
-                        [
-                            lease for lease in locked
-                            if lease.source == "execution_handoff" and lease.key == victim.key
-                        ] if victim.source == "execution_handoff" else [victim]
-                    )
+                    # Drop the target's entire protection group, including
+                    # receipts covered by its deepest lock.
+                    victims = [
+                        lease for lease in self._prefetch_service_leases.values()
+                        if lease.key == victim.key
+                    ]
                     for lease in victims:
                         self._release_prefetch_service_lease(
                             lease.command_id, "allocation_pressure",
@@ -5798,15 +6257,15 @@ class NativeAdmissionRuntime:
         self._roll_tool_prefetch()
         tool = self._tool_ticket
         if (
-            tool is not None and not tool.drained and not self.physical_ledger.pending_count
+            tool is not None and not tool.drained
+            and not self.physical_ledger.pending_action_count("PREFETCH_GPU")
             and self._live_tool_hint(tool.key) is not None
-            and self._tool_prefetch_budget[tool.key] < 2
         ):
             tool.drained = True
             self.counts["tool_overlap_drain_requested"] += 1
             return True
         # SGLang uses this drain to reach the same safe point needed for a
-        # native JOIN H2D. Request it once per node budget, never per decode tick.
+        # native JOIN H2D. Request it once per burst, never per decode tick.
         if self._semantic_worker is not None:
             # Build the read-only intent before deciding whether overlap must drain.
             # Issuance still waits for SGLang's drained safe point and revalidation.
@@ -5821,8 +6280,8 @@ class NativeAdmissionRuntime:
             )
             or not self._live_join_ticket()
             or ticket.command_id is not None
-            or self.physical_ledger.pending_count
-            or ticket.issued_nodes >= (1 if self.enable_confirmed_join_canary else 2)
+            or self.physical_ledger.pending_action_count("PREFETCH_GPU")
+            or self.enable_confirmed_join_canary and ticket.issued_nodes >= 1
             or ticket.drained_for_issued_nodes == ticket.issued_nodes
         ):
             return False

@@ -1,0 +1,27 @@
+{
+  "schema_version": 1,
+  "date": "2026-10-10",
+  "main_parent_commit": "7a6ef46",
+  "engine_base_commit": "94602c9c2b7cbdb8efd5c52802dac6a1c180089e",
+  "engine_full_patch_sha256": "68109d51ceb77f92fcbc2d17b52cfe76717b4ad26c47fd3642923b43ed0ca615",
+  "validation": {
+    "runtime_physical_policy_audit_checks_passed": 404,
+    "native_cpu_checks_passed": 96,
+    "native_subtests_passed": 18,
+    "canonical_forward_check_against_engine_base": true,
+    "deployed_full_reverse_check": true
+  },
+  "covered_behavior": [
+    "four-extent JOIN and tool prefix restoration in one native batch",
+    "necessary checkpoint Mamba only and per-node ACK pool bytes",
+    "partial-success prefix and cancellation of unsubmitted reservations only",
+    "combined pool capacity, bytes and next-prefill reserve limits",
+    "causal invalidation after control-event drain",
+    "cold reclaim excludes every target-closure node",
+    "whole-prefix transfer window and live child service progress",
+    "deepest-prefix lock coalescing and target-counted admission protection",
+    "independent JOIN/tool event attribution with exact next-request reuse",
+    "residual native Host-hit and demand handoff kept separate"
+  ],
+  "scope": "CPU behavior and package consistency checks; no CUDA, physical transfer timing, JCT or native-relative GPU throughput claim"
+}

@@ -2,7 +2,7 @@ import json
 
 from scripts.audit_prefetch_lifecycle import (
     audit, prepare_host_lifetime_summary, prepare_restore_attribution,
-    prepare_selection_summary, source_summary,
+    prepare_selection_summary, source_summary, wait_event_attribution,
 )
 
 
@@ -25,6 +25,99 @@ def test_prepare_burst_ack_attribution_does_not_multiply_first_extent_estimates(
 def write_rows(path, rows):
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text("".join(json.dumps(row) + "\n" for row in rows))
+
+
+def test_wait_events_deduplicate_node_commands_and_keep_native_residual_demand_separate(tmp_path):
+    join = {
+        "source": "join_ticket", "workflow_id": "w", "context_id": "c",
+        "context_epoch": 1, "join_id": "j", "invocation_id": "parent",
+        "session_id": "s", "session_generation": 1,
+    }
+    observations = [
+        {**join, "event": "wait_prefetch_plan", "ts_ms": 90.,
+         "reason": "start_window", "planned_full_tokens": tokens}
+        for tokens in (8, 8, 6)
+    ]
+    issues = {
+        command: {**join, "event": "prefetch_native_issued", "ts_ms": 91.}
+        for command in ("early-1", "early-2", "late")
+    }
+    actions = [
+        {**join, "command_id": command, "submit_ts_ms": submit, "ack_ts_ms": 95.,
+         "pool_bytes": {"kv": amount}, "full_first_service_reused": True,
+         "first_service_request_id": "next", "first_service_context_epoch": 2}
+        for command, submit, amount in (("early-1", 92., 20), ("early-2", 93., 30), ("late", 105., 50))
+    ] + [{
+        "command_id": "handoff", "source": "execution_handoff", "request_id": "next",
+        "pool_bytes": {"kv": 80},
+    }]
+    write_rows(tmp_path / "client_1/workflows/example/runtime_events.deepagents.jsonl", [
+        {"kind": "join_satisfied", "workflow_id": "w", "join_id": "j", "ts_ms": 20.},
+        {"kind": "llm_submit", "workflow_id": "w", "context_id": "c",
+         "invocation_id": "parent", "context_epoch": 2, "ts_ms": 30.,
+         "attributes": {"request_id": "next"}},
+    ])
+    write_rows(tmp_path / "server/runtime_events.sglang.jsonl", [{
+        "kind": "llm_submit", "workflow_id": "w", "context_id": "c",
+        "invocation_id": "parent", "context_epoch": 2, "ts_ms": 120.,
+        "attributes": {"request_id": "next", "cached_tokens_host": 3},
+    }])
+    write_rows(tmp_path / "server/runtime_audit.jsonl", [{
+        "event": "gpu_service_sample", "service_start_ts_ms": 200.,
+        "request_samples": [{"request_id": "next", "workflow_id": "w",
+                             "context_id": "c", "context_epoch": 2}],
+    }, {
+        "event": "gpu_restore_dependency_wait", "request_ids": ["next", "other"],
+        "gpu_layer_dependency_wait_ms": 5.,
+    }])
+    (tmp_path / "server/native_telemetry_status.json").write_text(json.dumps({
+        "host_pool_evidence": {"full": {"bytes_per_unit": 10}},
+    }))
+    result = wait_event_attribution(tmp_path, observations, issues, actions, 80.)
+    assert result["summary"]["observed_wait_events"] == 1
+    [row] = result["rows"]
+    assert row["max_observed_planned_full_tokens"] == 8
+    assert row["max_observed_planned_full_bytes"] == 80
+    assert row["node_command_count"] == 3
+    assert row["early_started_and_reused_full_bytes"] == 50
+    assert row["remaining_native_full_host_hit_bytes"] == 30
+    assert row["demand_handoff_full_bytes_known"] == 80
+    assert row["completion_to_client_submit_ms"] == 10.
+    assert row["submit_to_first_service_ms"] == 80.
+    assert row["last_ack_to_first_service_ms"] == 105.
+    assert row["sampled_batch_restore_dependency_wait_ms"] == [5.]
+    actions[0]["first_service_request_id"] = "later"
+    actions[1]["first_service_context_epoch"] = 3
+    mismatched = wait_event_attribution(tmp_path, observations, issues, actions, 80.)
+    assert mismatched["rows"][0]["early_started_and_reused_full_bytes"] == 0
+
+
+def test_tool_event_waits_for_all_tools_and_leaves_unknown_evidence_unknown(tmp_path):
+    tool = {
+        "source": "tool_wait", "workflow_id": "w", "context_id": "t",
+        "context_epoch": 2, "invocation_id": "tool", "active_tool_ids": ["short", "long"],
+    }
+    observations = [{
+        **tool, "event": "wait_prefetch_plan", "ts_ms": 90.,
+        "planned_full_tokens": 8, "reason": "start_window",
+    }]
+    issues = {"early": {**tool, "event": "prefetch_native_issued", "ts_ms": 91.}}
+    actions = [{
+        **tool, "command_id": "early", "submit_ts_ms": 110., "ack_ts_ms": None,
+        "pool_bytes": None, "full_first_service_reused": True,
+    }]
+    write_rows(tmp_path / "client_1/workflows/example/runtime_events.deepagents.jsonl", [
+        {"kind": "tool_end", "workflow_id": "w", "invocation_id": "tool",
+         "ts_ms": when, "attributes": {"tool_run_id": identity}}
+        for identity, when in (("short", 100.), ("long", 120.))
+    ])
+    result = wait_event_attribution(tmp_path, observations, issues, actions, 0.)
+    [row] = result["rows"]
+    assert row["completion_ts_ms"] == 120.
+    assert row["early_started_and_reused_full_bytes"] == 0
+    assert row["first_service_ts_ms"] is None
+    assert row["remaining_native_full_host_hit_bytes"] is None
+    assert result["summary"]["by_source"]["tool_wait"]["remaining_native_full_evidence_unknown_events"] == 1
 
 
 def test_lifecycle_keeps_expired_but_reused_and_missing_use_distinct(tmp_path):

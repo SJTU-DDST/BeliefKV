@@ -370,9 +370,269 @@ def prepare_selection_summary(selections: list[dict], prepared: list[dict]) -> d
     }
 
 
+def wait_event_identity(row: dict) -> tuple | None:
+    source = {"join_wait": "join_ticket"}.get(row.get("source"), row.get("source"))
+    if source not in ("join_ticket", "tool_wait"):
+        return None
+    if any(row.get(name) is None for name in ("workflow_id", "context_id", "context_epoch")):
+        return None
+    join = row.get("join_id") if source == "join_ticket" else None
+    if source == "join_ticket" and join is None:
+        return None
+    return source, row["workflow_id"], row["context_id"], row["context_epoch"], join
+
+
+def wait_event_attribution(
+    arm: Path, observations: list[dict], issues: dict, actions: list[dict],
+    clock_offset: float | None,
+) -> dict:
+    """Group repeated plans and node receipts by the actual causal wait episode."""
+    groups = {}
+    missing_identity = 0
+    for observation in [*observations, *issues.values()]:
+        identity = wait_event_identity(observation)
+        if identity is None:
+            missing_identity += observation.get("source") in (
+                "join_wait", "join_ticket", "tool_wait",
+            )
+            continue
+        group = groups.setdefault(identity, {
+            "source": identity[0], "workflow_id": identity[1],
+            "context_id": identity[2], "context_epoch": identity[3], "join_id": identity[4],
+            "invocation_id": observation.get("invocation_id"),
+            "first_observation_ts_ms": observation["ts_ms"],
+            "max_observed_planned_full_tokens": 0, "plan_reasons": Counter(),
+            "max_observed_planned_full_bytes": None,
+            "active_tool_ids": set(), "actions": [], "sessions": set(),
+        })
+        group["first_observation_ts_ms"] = min(
+            group["first_observation_ts_ms"], observation["ts_ms"],
+        )
+        if observation.get("invocation_id") is not None:
+            group["invocation_id"] = observation["invocation_id"]
+        group["active_tool_ids"].update(observation.get("active_tool_ids") or ())
+        group["sessions"].add((observation.get("session_id"), observation.get("session_generation")))
+        tokens = observation.get("planned_full_tokens", observation.get("required_full_tokens"))
+        if type(tokens) is int:
+            group["max_observed_planned_full_tokens"] = max(
+                group["max_observed_planned_full_tokens"], tokens,
+            )
+        planned_bytes = (observation.get("planned_pool_bytes") or {}).get("kv")
+        if type(planned_bytes) is int:
+            group["max_observed_planned_full_bytes"] = max(
+                group["max_observed_planned_full_bytes"] or 0, planned_bytes,
+            )
+        if observation.get("event") != "prefetch_native_issued":
+            group["plan_reasons"][observation.get("reason", "unknown")] += 1
+    for action in actions:
+        identity = wait_event_identity(issues.get(action["command_id"], {}))
+        if identity in groups:
+            groups[identity]["actions"].append(action)
+    ends, joins, submits = {}, {}, defaultdict(list)
+    if clock_offset is not None:
+        for path in arm.glob("client_*/workflows/*/runtime_events.deepagents.jsonl"):
+            for row in records(path):
+                attrs = row.get("attributes") or {}
+                workflow = row.get("workflow_id")
+                when = row["ts_ms"] + clock_offset
+                if row["kind"] == "tool_end":
+                    tool_id = attrs.get("tool_run_id") or attrs.get("tool_call_id")
+                    if tool_id is not None:
+                        ends[workflow, row.get("invocation_id"), tool_id] = when
+                elif row["kind"] == "join_satisfied":
+                    joins[workflow, row["join_id"]] = when
+                elif row["kind"] == "llm_submit" and row.get("context_id"):
+                    submits[workflow, row["context_id"]].append({**row, "ts_ms": when})
+    for rows in submits.values():
+        rows.sort(key=lambda row: row["ts_ms"])
+    targets = set()
+    for group in groups.values():
+        if group["source"] == "join_ticket":
+            completion = joins.get((group["workflow_id"], group["join_id"]))
+        else:
+            tool_times = [
+                ends.get((group["workflow_id"], group["invocation_id"], tool))
+                for tool in group["active_tool_ids"]
+            ]
+            completion = (
+                max(tool_times) if tool_times and all(when is not None for when in tool_times)
+                else None
+            )
+        group["completion_ts_ms"] = completion
+        next_request = next((
+            row for row in submits.get((group["workflow_id"], group["context_id"]), ())
+            if row.get("context_epoch") is not None
+            and row["context_epoch"] > group["context_epoch"]
+            and row.get("invocation_id") == group["invocation_id"]
+            and row["ts_ms"] >= (
+                completion if completion is not None else group["first_observation_ts_ms"]
+            )
+        ), None)
+        group["next_request"] = next_request
+        if next_request is not None:
+            targets.add(next_request["attributes"]["request_id"])
+    native_requests = {
+        row["attributes"]["request_id"]: row
+        for row in records(arm / "server/runtime_events.sglang.jsonl")
+        if row["kind"] == "llm_submit"
+        and row.get("attributes", {}).get("request_id") in targets
+    } if targets else {}
+    services, dependency_waits = {}, defaultdict(list)
+    if targets:
+        for row in records(arm / "server/runtime_audit.jsonl"):
+            if row.get("event") == "gpu_service_sample":
+                start = row.get("service_start_ts_ms")
+                if start is None:
+                    continue
+                for sample in row.get("request_samples") or ():
+                    rid = sample.get("request_id")
+                    if rid in targets:
+                        identity = (
+                            rid, sample.get("workflow_id"), sample.get("context_id"),
+                            sample.get("context_epoch"),
+                        )
+                        services[identity] = min(services.get(identity, start), start)
+            elif row.get("event") == "gpu_restore_dependency_wait":
+                for rid in targets.intersection(row.get("request_ids") or ()):
+                    dependency_waits[rid].append(row["gpu_layer_dependency_wait_ms"])
+    status_path = arm / "server/native_telemetry_status.json"
+    status = json.loads(status_path.read_text()) if status_path.exists() else {}
+    full_unit = (status.get("host_pool_evidence") or {}).get("full", {}).get("bytes_per_unit")
+    handoffs_by_request = defaultdict(list)
+    for action in actions:
+        if action["source"] == "execution_handoff" and action.get("request_id") is not None:
+            handoffs_by_request[action["request_id"]].append(action)
+    rows = []
+    for group in groups.values():
+        pending = group["actions"]
+        completion = group["completion_ts_ms"]
+        request = group["next_request"]
+        rid = request["attributes"]["request_id"] if request else None
+        native = native_requests.get(rid)
+        if native is not None and any(
+            native.get(name) != request.get(name)
+            for name in ("workflow_id", "context_id", "context_epoch", "invocation_id")
+        ):
+            native = None
+        service = services.get((
+            rid, group["workflow_id"], group["context_id"], request.get("context_epoch"),
+        )) if request else None
+        host_tokens = (native.get("attributes") or {}).get("cached_tokens_host") if native else None
+        early_reused = [
+            action for action in pending
+            if action["full_first_service_reused"] is True
+            and rid is not None and action.get("first_service_request_id") == rid
+            and action.get("first_service_context_epoch") == request["context_epoch"]
+            and action["submit_ts_ms"] is not None and completion is not None
+            and action["submit_ts_ms"] < completion and action["pool_bytes"] is not None
+        ]
+        ready_reused = [
+            action for action in early_reused
+            if action["ack_ts_ms"] is not None and action["ack_ts_ms"] <= completion
+        ]
+        handoff = handoffs_by_request.get(rid, ())
+        acks = [action["ack_ts_ms"] for action in pending if action["ack_ts_ms"] is not None]
+        rows.append({
+            **{name: group[name] for name in (
+                "source", "workflow_id", "invocation_id", "context_id", "context_epoch", "join_id",
+                "max_observed_planned_full_tokens", "completion_ts_ms",
+            )},
+            "max_observed_planned_full_bytes": (
+                group["max_observed_planned_full_bytes"]
+                if group["max_observed_planned_full_bytes"] is not None
+                else group["max_observed_planned_full_tokens"] * full_unit
+                if type(full_unit) is int else None
+            ),
+            "observed_plan_reasons": dict(group["plan_reasons"]),
+            "observed_session_bindings": len(group["sessions"] - {(None, None)}),
+            "next_request_id": rid, "first_service_ts_ms": service,
+            "node_command_count": len(pending),
+            "early_started_and_reused_full_bytes": sum(
+                action["pool_bytes"].get("kv", 0) for action in early_reused
+            ),
+            "early_ready_and_reused_full_bytes": sum(
+                action["pool_bytes"].get("kv", 0) for action in ready_reused
+            ),
+            "remaining_native_full_host_hit_tokens": host_tokens,
+            "remaining_native_full_host_hit_bytes": (
+                host_tokens * full_unit if type(host_tokens) is int and type(full_unit) is int
+                else None
+            ),
+            "demand_handoff_full_bytes_known": sum(
+                (action["pool_bytes"] or {}).get("kv", 0) for action in handoff
+            ),
+            "completion_to_client_submit_ms": (
+                request["ts_ms"] - completion if request and completion is not None else None
+            ),
+            "submit_to_first_service_ms": (
+                service - native["ts_ms"] if native and service is not None else None
+            ),
+            "first_ack_to_first_service_ms": service - min(acks)
+            if acks and service is not None else None,
+            "last_ack_to_first_service_ms": service - max(acks)
+            if acks and service is not None else None,
+            "sampled_batch_restore_dependency_wait_ms": dependency_waits.get(rid, []),
+        })
+    return {
+        "summary": {
+            "observed_wait_events": len(rows),
+            "records_without_wait_event_identity": missing_identity,
+            "by_source": {
+                source: {
+                    "observed_events": len(selected := [
+                        row for row in rows if row["source"] == source
+                    ]),
+                    "events_with_observed_full_plan": sum(
+                        row["max_observed_planned_full_tokens"] > 0 for row in selected
+                    ),
+                    "max_snapshot_planned_full_bytes_known": sum(
+                        row["max_observed_planned_full_bytes"] or 0 for row in selected
+                    ),
+                    "planned_full_bytes_unknown_events": sum(
+                        row["max_observed_planned_full_bytes"] is None for row in selected
+                    ),
+                    "events_with_early_reused_full": sum(
+                        row["early_started_and_reused_full_bytes"] > 0 for row in selected
+                    ),
+                    "early_started_and_reused_full_bytes": sum(
+                        row["early_started_and_reused_full_bytes"] for row in selected
+                    ),
+                    "remaining_native_full_host_hit_bytes_known": sum(
+                        row["remaining_native_full_host_hit_bytes"] or 0 for row in selected
+                    ),
+                    "remaining_native_full_evidence_unknown_events": sum(
+                        row["remaining_native_full_host_hit_bytes"] is None for row in selected
+                    ),
+                    "submit_to_first_service_ms": distribution(
+                        row["submit_to_first_service_ms"] for row in selected
+                    ),
+                    "last_ack_to_first_service_ms": distribution(
+                        row["last_ack_to_first_service_ms"] for row in selected
+                    ),
+                }
+                for source in ("join_ticket", "tool_wait")
+            },
+        },
+        "rows": rows,
+        "semantics": (
+            "One causal JOIN or tool wait at a context epoch, not one node command. "
+            "Plans are bounded snapshots, not a continuous or counterfactual opportunity "
+            "denominator; the maximum snapshot is not summed across repeated samples. "
+            "Early FULL requires actual submit before complete JOIN/all-tool END and "
+            "verified reuse by that episode's next request. Native Host-hit counters and exact demand "
+            "handoff receipts are separate remaining-demand evidence; do not add them "
+            "without proving disjoint allocations. Service wait includes admission "
+            "and execution queueing, not isolated H2D delay. Sampled GPU dependency "
+            "wait is a batch observation and must not be summed across its requests. "
+            "Missing identities, clocks, ACK pool bytes or service evidence stay unknown."
+        ),
+    }
+
+
 def audit(arm: Path) -> dict:
     issued, prepared, parks, leases, stages = {}, {}, [], defaultdict(list), {}
     prepare_selections = []
+    wait_observations, clock_offset = [], None
     for row in records(arm / "opportunities/admission_opportunities.jsonl"):
         event = row["event"]
         if event == "prefetch_native_issued":
@@ -390,6 +650,11 @@ def audit(arm: Path) -> dict:
             prepare_selections.append(row)
         elif event in ("prefetch_residency_registered", "prefetch_residency_released"):
             leases[row["command_id"]].append(row)
+        elif event in ("wait_prefetch_plan", "session_h2d_opportunity"):
+            if row.get("source") in ("join_wait", "join_ticket", "tool_wait"):
+                wait_observations.append(row)
+        elif event == "safe_point_census" and clock_offset is None:
+            clock_offset = row["ts_ms"] - row["monotonic_ms"]
     transfers = list(records(arm / "server/transfer_telemetry.jsonl"))
     native_loads = defaultdict(list)
     for transfer in transfers:
@@ -488,6 +753,9 @@ def audit(arm: Path) -> dict:
             "command_id": command, "source": issue["source"],
             "trigger_kind": issue["trigger_kind"],
             "workflow_id": issue["workflow_id"],
+            "invocation_id": issue.get("invocation_id"),
+            "request_id": issue.get("request_id"),
+            "join_id": issue.get("join_id"),
             "context_id": issue["context_id"], "context_epoch": issue["context_epoch"],
             "node_id": issue["node_id"], "actual_bytes": child.get("num_bytes"),
             "pool_units": child.get("num_tokens_by_pool"),
@@ -506,6 +774,8 @@ def audit(arm: Path) -> dict:
                 service - ack if service is not None and ack is not None else None
             ),
             "full_first_service_reused": use.get("full_node_reused") if use else None,
+            "first_service_request_id": use.get("request_id") if use else None,
+            "first_service_context_epoch": use.get("service_context_epoch") if use else None,
             "full_reuse_proof_version": (
                 use.get("full_reuse_proof_version", 1) if use else None
             ),
@@ -540,6 +810,7 @@ def audit(arm: Path) -> dict:
         row for row in records(eviction_path) if row["event"] == "host_block_evicted"
     ] if eviction_path.exists() else None
     prepare_restores = prepare_restore_attribution(prepared, transfers, host_evictions)
+    wait_events = wait_event_attribution(arm, wait_observations, issued, results, clock_offset)
     summary = {
         "join_commands": len(joins), "tool_commands": len(tools),
         "handoff_commands": len(handoffs),
@@ -631,6 +902,7 @@ def audit(arm: Path) -> dict:
         ),
         "prepare_host_lifetime": prepare_host_lifetime_summary(prepare_restores, host_evictions),
         "prepare_selection": prepare_selection_summary(prepare_selections, prepare_restores),
+        "wait_events": wait_events["summary"],
     }
     return {
         "scope": (
@@ -638,6 +910,7 @@ def audit(arm: Path) -> dict:
             "anchor, exposed-stall measurement or counterfactual speedup."
         ),
         "arm": str(arm), "summary": summary, "rows": results,
+        "wait_event_attribution": wait_events,
         "source_summary_semantics": (
             "Per-source node commands, not independent requests or workflow events. "
             "FULL reuse counts include only commands with positive FULL transfer units. "
@@ -683,7 +956,10 @@ def main() -> None:
     if args.summary_only:
         report = {
             key: value for key, value in report.items()
-            if key not in ("rows", "prepare_consumption", "prepare_restore_attribution")
+            if key not in (
+                "rows", "prepare_consumption", "prepare_restore_attribution",
+                "wait_event_attribution",
+            )
         }
     args.output.write_text(json.dumps(report, indent=2, allow_nan=False) + "\n")
     print(json.dumps(report["summary"], indent=2))
