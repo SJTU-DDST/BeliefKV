@@ -3666,6 +3666,9 @@ class NativeAdmissionRuntime:
         cache = self._native_cache
         candidates = []
         by_component = {0: [], 2: []}
+        # Native reclaim/eviction reads only the first eight entries per pool.
+        limit = 8
+        fallback_left = full_left = mamba_left = limit
         device_leaves = getattr(getattr(cache, "tree_core", None), "evictable_device_leaves", ())
         for node_id, (_, created) in self._parent_pressure_candidates.items():
             try:
@@ -3686,9 +3689,12 @@ class NativeAdmissionRuntime:
                 and node.write_through_pending_id is None
                 and node.load_back_pending_id is None
             ):
-                candidates.append((node_id, created))
+                if fallback_left:
+                    candidates.append((node_id, created))
+                    fallback_left -= 1
                 if (
-                    node in device_leaves and node.backuped
+                    full_left
+                    and node in device_leaves and node.backuped
                     and full.value is not None and full.host_value is not None
                     and full.lock_ref == 0 and full.session_ref == 1
                     and all(
@@ -3705,11 +3711,16 @@ class NativeAdmissionRuntime:
                     )
                 ):
                     by_component[0].append((node_id, created))
+                    full_left -= 1
                 if (
-                    state.value is not None and state.host_value is not None
+                    mamba_left
+                    and state.value is not None and state.host_value is not None
                     and state.lock_ref == 0 and state.session_ref == 1
                 ):
                     by_component[2].append((node_id, created))
+                    mamba_left -= 1
+                if not full_left and not mamba_left:
+                    break
         cache.beliefkv_join_pressure_candidates = tuple(candidates)
         cache.beliefkv_join_pressure_candidates_by_component = {
             component: tuple(items) for component, items in by_component.items()

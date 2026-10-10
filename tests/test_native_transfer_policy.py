@@ -919,7 +919,65 @@ def test_pressure_publication_indexes_full_leaves_and_mamba_independently():
     cache = runtime._native_cache
     assert cache.beliefkv_join_pressure_candidates[:8] == tuple((n, n) for n in range(1, 9))
     assert cache.beliefkv_join_pressure_candidates_by_component[0] == ((11, 11),)
-    assert cache.beliefkv_join_pressure_candidates_by_component[2] == tuple((n, n) for n in nodes)
+    assert cache.beliefkv_join_pressure_candidates_by_component[2] == tuple(
+        (n, n) for n in range(1, 9)
+    )
+
+
+@pytest.mark.parametrize("sparse_pool", (None, 0, 2))
+def test_pressure_publication_stops_only_after_both_native_prefixes_are_complete(sparse_pool):
+    class Node(NS):
+        __hash__ = object.__hash__
+
+    runtime, _ = tool_runtime()
+    nodes = {
+        number: Node(
+            id=number, creation_time=number, backuped=True,
+            write_through_pending_id=None, load_back_pending_id=None,
+            component_data=[
+                NS(value=[1], host_value=[1], lock_ref=0, session_ref=1),
+                NS(value=None, host_value=None, lock_ref=0, session_ref=0),
+                NS(value=[1], host_value=[1], lock_ref=0, session_ref=1),
+            ],
+        )
+        for number in range(1, 65)
+    }
+    nodes[1].load_back_pending_id = "pending"
+    nodes[2].creation_time += 1
+    nodes[3].component_data[0].lock_ref = 1
+    nodes[3].component_data[2].lock_ref = 1
+    leaves = set(nodes.values())
+    if sparse_pool == 0:
+        leaves = {nodes[64]}
+    elif sparse_pool == 2:
+        for number, node in nodes.items():
+            if number != 64:
+                node.component_data[2].host_value = None
+    lookup = NS(calls=[])
+
+    def node_by_id(node_id):
+        lookup.calls.append(node_id)
+        return nodes[node_id]
+
+    cache = NS(
+        tree_core=NS(node_by_id=node_by_id, evictable_device_leaves=leaves),
+        ongoing_write_through={},
+    )
+    runtime._native_cache = cache
+    runtime._parent_pressure_candidates = {
+        number: (None, number) for number in nodes
+    }
+    try:
+        runtime._publish_parent_pressure_candidates()
+        first = tuple((n, n) for n in range(4, 12))
+        assert cache.beliefkv_join_pressure_candidates == first
+        assert cache.beliefkv_join_pressure_candidates_by_component == {
+            0: ((64, 64),) if sparse_pool == 0 else first,
+            2: ((64, 64),) if sparse_pool == 2 else first,
+        }
+        assert lookup.calls == list(range(1, 65 if sparse_pool is not None else 12))
+    finally:
+        runtime.close()
 
 
 @pytest.mark.parametrize("blocked", ("none", "locked", "shared", "swa_unbacked", "pending"))

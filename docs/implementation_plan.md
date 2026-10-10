@@ -135,6 +135,21 @@ Preserve this limited evidence in
 Next inspect early prediction/delivery, bounded reclaim opportunities and native
 admission separately; do not uniformly lengthen speculative leases.
 
+Cold-candidate publication preserves the first eight candidates actually read
+by each native pool and the fallback prefix. Stop scanning only after both pool
+prefixes are complete; a sparse pool must not hide a later eligible node.
+Keep live node identity, Host copy, lock/session-reference and pending-transfer
+checks, plus native validation at reclamation.272 related checks pass, with68
+policy checks repeated after fixing the sparse-case loop overhead. In a156
+workflow/32-node CPU fixture, sufficient candidates reduce node lookups from
+4992 to256 per publication and mean thread CPU5.036->0.235ms (95.3%).
+Sparse FULL/Mamba scenarios retain the lookup count and reduce mean thread CPU
+14.5%/19.3%. Native-consumed prefixes and their order agree. Full distributions,
+imported paths and source fingerprints are in
+`experiments/reports/v16_pressure_publication_cpu_20261010.json`.
+This changes neither the native reclaim limit nor the frozen V16b arms, and
+establishes no GPU/throughput improvement.
+
 ## Current Objective And V15 Comparison
 
 Keep the fixed workload, model, capacity and arrival schedule. Continue until

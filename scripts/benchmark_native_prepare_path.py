@@ -186,7 +186,7 @@ def measure_case(
                 runtime.dispatch_join_prepare(queue)
                 elapsed = (time.perf_counter_ns() - start) / 1_000_000
                 selections.append(tuple(actions))
-                publications.append(runtime._native_cache.beliefkv_join_pressure_candidates)
+                publications.append(runtime._native_cache.beliefkv_join_pressure_candidates[:8])
                 start = time.perf_counter_ns()
                 runtime._sample_h2d_opportunities(queue, now_ms=time.monotonic() * 1000.)
                 sample_ms = (time.perf_counter_ns() - start) / 1_000_000
@@ -221,7 +221,8 @@ def measure_case(
             "force_prepare_probes": force_probes,
             "selection_and_publication_equal": True,
             "publication_scope": (
-                "unprotected node set; active prefetch leases remain ineligible "
+                "first eight native-consumed fallback candidates; "
+                "active prefetch leases remain ineligible "
                 "through the live native pressure validator"
             ),
             "costs": costs, "observed_reads": {name: dict(values) for name, values in totals.items()},
@@ -493,6 +494,107 @@ def lease_case(baseline, *, workflows, lease_count, matching, iterations,
             runtime.close()
 
 
+def publication_case(baseline, *, workflows, depth, iterations, sparse_pool):
+    class Node(NS):
+        __hash__ = object.__hash__
+
+    variants = {}
+    for name, cls in (("baseline", baseline), ("optimized", NativeAdmissionRuntime)):
+        runtime = cls()
+        reads = Counter()
+        nodes = {
+            index: Node(
+                id=index, creation_time=index, backuped=True,
+                write_through_pending_id=None, load_back_pending_id=None,
+                component_data=[
+                    NS(value=(0,), host_value=(0,), lock_ref=0, session_ref=1),
+                    NS(value=None, host_value=None, lock_ref=0, session_ref=0),
+                    NS(
+                        value=(0,) if index % depth == depth - 1 else None,
+                        host_value=(0,) if index % depth == depth - 1 else None,
+                        lock_ref=0, session_ref=1,
+                    ),
+                ],
+            )
+            for index in range(workflows * depth)
+        }
+        leaves = {node for index, node in nodes.items() if index % depth == depth - 1}
+        if sparse_pool == 0:
+            leaves = {nodes[workflows * depth - 1]}
+        elif sparse_pool == 2:
+            for index, node in nodes.items():
+                if index != workflows * depth - 1:
+                    node.component_data[2].value = None
+                    node.component_data[2].host_value = None
+
+        def node_by_id(node_id, *, nodes=nodes, reads=reads):
+            reads["node_lookup"] += 1
+            return nodes[node_id]
+
+        runtime._native_cache = NS(
+            tree_core=NS(node_by_id=node_by_id, evictable_device_leaves=leaves),
+            ongoing_write_through={},
+        )
+        runtime._parent_pressure_candidates = {
+            index: (None, index) for index in nodes
+        }
+        variants[name] = (runtime, reads)
+    samples = {name: {"wall": [], "thread_cpu": []} for name in variants}
+    totals = {name: Counter() for name in variants}
+    evidence = None
+    try:
+        for iteration in range(iterations + 5):
+            names = list(variants)
+            if iteration % 2:
+                names.reverse()
+            outputs = {}
+            for name in names:
+                runtime, reads = variants[name]
+                before = reads.copy()
+                wall_start = time.perf_counter_ns()
+                cpu_start = time.thread_time_ns()
+                runtime._publish_parent_pressure_candidates()
+                cpu_ms = (time.thread_time_ns() - cpu_start) / 1_000_000
+                wall_ms = (time.perf_counter_ns() - wall_start) / 1_000_000
+                cache = runtime._native_cache
+                outputs[name] = {
+                    "fallback": cache.beliefkv_join_pressure_candidates[:8],
+                    **{
+                        component: items[:8]
+                        for component, items
+                        in cache.beliefkv_join_pressure_candidates_by_component.items()
+                    },
+                }
+                if iteration >= 5:
+                    samples[name]["wall"].append(wall_ms)
+                    samples[name]["thread_cpu"].append(cpu_ms)
+                    totals[name].update(reads - before)
+            if outputs["baseline"] != outputs["optimized"]:
+                raise AssertionError("changed native per-pool pressure candidate prefix")
+            evidence = repr(outputs["optimized"])
+        costs = {
+            name: {clock: distribution(values) for clock, values in clocks.items()}
+            for name, clocks in samples.items()
+        }
+        return {
+            "workflows": workflows, "nodes_per_workflow": depth,
+            "candidate_nodes": workflows * depth, "sparse_pool": sparse_pool,
+            "iterations": iterations, "native_consumed_prefixes_equal": True,
+            "native_candidate_prefix_sha256": hashlib.sha256(evidence.encode()).hexdigest(),
+            "observed_reads": {name: dict(value) for name, value in totals.items()},
+            "costs": costs,
+            "mean_reduction": {
+                clock: 1 - costs["optimized"][clock]["mean_ms"]
+                / costs["baseline"][clock]["mean_ms"]
+                for clock in ("wall", "thread_cpu")
+            },
+            "scope": "read-only candidate publication; excludes causal pruning and native eviction",
+        }
+    finally:
+        for runtime, _ in variants.values():
+            runtime.close()
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--baseline-revision", default="e985d8c")
@@ -503,6 +605,8 @@ def main():
                         help="Measure read-only terminal samples with overlapping anchors.")
     parser.add_argument("--lease-only", action="store_true",
                         help="Measure consumer matching for one- and sixteen-extent restores.")
+    parser.add_argument("--publication-only", action="store_true",
+                        help="Measure the first eight cold candidates consumed by each native pool.")
     parser.add_argument("--force-prepare-probes", action="store_true",
                         help="Measure each PREPARE probe instead of its one-second backoff.")
     parser.add_argument(
@@ -516,7 +620,8 @@ def main():
         raise ValueError("depth 1..64, workflows 4..512 and positive iterations required")
     if args.mamba_ancestor and args.depth < 3:
         raise ValueError("Mamba ancestor fixture requires depth at least three")
-    if args.terminal_only and args.lease_only:
+    isolated = args.terminal_only or args.lease_only or args.publication_only
+    if sum((args.terminal_only, args.lease_only, args.publication_only)) > 1:
         raise ValueError("choose one isolated benchmark scope")
     baseline, digests = baseline_runtime(args.baseline_revision)
     imported_sources = {
@@ -538,7 +643,7 @@ def main():
             "path": str(args.service_seed.resolve()), "sha256": digest,
             "sample_count": len(service_samples),
         }
-    cases = [] if args.terminal_only or args.lease_only else [
+    cases = [] if isolated else [
         measure_case(baseline, workflows=args.workflows, depth=args.depth,
                      iterations=args.iterations, service_samples=service_samples,
                      force_probes=args.force_prepare_probes,
@@ -565,10 +670,10 @@ def main():
         "benchmark_source_sha256": hashlib.sha256(Path(__file__).read_bytes()).hexdigest(),
         "service_seed": service_seed,
         "handoff_identity": (
-            None if args.terminal_only or args.lease_only else handoff_identity_case(baseline)
+            None if isolated else handoff_identity_case(baseline)
         ),
         "cases": cases,
-        "terminal_cases": [] if args.lease_only else [
+        "terminal_cases": [] if args.lease_only or args.publication_only else [
             terminal_case(baseline, depth=args.depth, anchor_count=anchors,
                           iterations=args.iterations)
             for anchors in (1, 2, 8)
@@ -580,6 +685,13 @@ def main():
             for receipts in (1, 16)
             for matching, ready in ((False, False), (True, False), (True, True))
         ] if args.lease_only else [],
+        "publication_cases": [
+            publication_case(
+                baseline, workflows=args.workflows, depth=args.depth,
+                iterations=args.iterations, sparse_pool=pool,
+            )
+            for pool in (None, 0, 2)
+        ] if args.publication_only else [],
     }
     args.output.parent.mkdir(parents=True, exist_ok=True)
     args.output.write_text(json.dumps(report, indent=2) + "\n")
@@ -599,6 +711,7 @@ def main():
             )
         } for case in report["terminal_cases"]],
         "lease_cases": report["lease_cases"],
+        "publication_cases": report["publication_cases"],
     }, indent=2))
 
 
