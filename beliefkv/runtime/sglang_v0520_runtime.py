@@ -4756,13 +4756,10 @@ class NativeAdmissionRuntime:
         except (AttributeError, KeyError, IndexError, RuntimeError, TypeError, ValueError):
             return "native_residency_unobservable"
         if lease.source == "tool_wait" and invocation.state is InvocationState.WAIT_TOOL:
-            if (
-                context.epoch != key.context_epoch
-                or invocation.updated_ts_ms != lease.wait_revision
-            ):
+            if context.epoch != key.context_epoch:
                 return "wait_episode_changed"
-            # A rolling ETA change does not invalidate an already completed
-            # transfer for the same wait episode. Its bounded lease still ends.
+            # Sequential or parallel tools from one model request change the
+            # revision without changing this immutable checkpoint's consumer.
         return None
 
     def _refresh_prefetch_service_leases(self, *, context_id: str | None = None) -> None:

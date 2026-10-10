@@ -33,15 +33,42 @@ Bounded snapshots are not an oracle denominator. Keep missing evidence unknown;
 do not add Host-hit and handoff bytes without disjoint-allocation proof or sum
 one sampled batch dependency wait across its requests.
 
-Validation: 404 related runtime/physical/policy/audit checks and 96 native CPU
-checks pass. Package and verify the canonical engine patch, commit the changes,
-then freeze one complete predictive_h2d -> cold native pair: 156 tasks,
+V16 ran from frozen commit `1c0a3ea` and was stopped at 13:55 CST on
+2026-10-10 for a confirmed lease fault. Two sequential grep calls from the
+same child request changed invocation revision but not epoch/checkpoint.
+Protection was incorrectly released about14ms after ACK, before the next
+request consumed it. The fix retains protection across same-request tool
+progress; session/generation, epoch, terminal, native residency, expiry and
+capacity still determine validity. The stopped arm is diagnostic evidence,
+not a valid completed performance comparison.
+
+Tool event attribution now requires the original same-epoch request, the
+following request, and all intervening tool START/END records, including
+sequential calls absent from sampled active sets. Missing evidence stays
+unknown. Separate client-submit-to-native-arrival from native-arrival-to-worker
+service; the former includes preparation, transport and serving frontend work.
+In the fault, tool-completion-to-client-submit was60.97ms, client-to-native
+arrival6210.00ms, and arrival-to-worker-service10244.46ms. Do not attribute all
+of this to transfer or hide it by simply extending leases.
+
+Validation: 249 related checks pass;19 audit checks pass after the new wait
+decomposition. The previous revision passed404 runtime/physical/policy/audit
+checks and96 native CPU checks. Archived tracked changes and all untracked
+files, including ignored files, before removing108 stopped workspaces and107
+matching containers; retain V16 traces and physical evidence. Interruptions
+without terminal results are not completed or model-generated incomplete
+outcomes. Restart under a distinct V16b root and freeze the new commit with
+the unchanged canonical engine patch for predictive_h2d -> cold native:
+156 tasks,
 108+48 arrivals at 3600 seconds, running48, Host200GB80:20, HBM ratio0.9,
 hard180s tools, and the established model artifacts/remaining parameters.
 Inspect busy-window GPU/output rates, paired JCT, control exclusive wall cost,
 useful early FULL coverage, residual restoration and recomputation. Stop only
 for an actual implementation failure, retaining its evidence before a fix and
-cold restart. No V16 GPU improvement has yet been established. Historical
+cold restart. The stopped arm verified127.96MB early JOIN/tool FULL reuse;
+15.403GB verified handoff FULL remains demand restoration. No completed V16
+native-relative GPU improvement has been established. Diagnostic:
+`experiments/reports/v16_stopped_diagnostic_20261010.md`. Historical
 freeze/deployment notes below retain their original observation-time meaning.
 
 ## Current Objective And V15 Comparison

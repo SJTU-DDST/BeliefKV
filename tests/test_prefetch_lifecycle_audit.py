@@ -83,6 +83,8 @@ def test_wait_events_deduplicate_node_commands_and_keep_native_residual_demand_s
     assert row["remaining_native_full_host_hit_bytes"] == 30
     assert row["demand_handoff_full_bytes_known"] == 80
     assert row["completion_to_client_submit_ms"] == 10.
+    assert row["client_submit_to_native_arrival_ms"] == 10.
+    assert row["client_submit_to_first_service_ms"] == 90.
     assert row["submit_to_first_service_ms"] == 80.
     assert row["last_ack_to_first_service_ms"] == 105.
     assert row["sampled_batch_restore_dependency_wait_ms"] == [5.]
@@ -117,11 +119,64 @@ def test_tool_event_waits_for_all_tools_and_leaves_unknown_evidence_unknown(tmp_
     ])
     result = wait_event_attribution(tmp_path, observations, issues, actions, 0.)
     [row] = result["rows"]
-    assert row["completion_ts_ms"] == 120.
+    assert row["completion_ts_ms"] is None
+    assert row["observed_tools_completion_ts_ms"] == 120.
+    assert row["completion_evidence"] == "tool_request_round_unproven"
     assert row["early_started_and_reused_full_bytes"] == 0
     assert row["first_service_ts_ms"] is None
+    assert row["client_submit_to_native_arrival_ms"] is None
+    assert row["client_submit_to_first_service_ms"] is None
     assert row["remaining_native_full_host_hit_bytes"] is None
     assert result["summary"]["by_source"]["tool_wait"]["remaining_native_full_evidence_unknown_events"] == 1
+
+
+def test_tool_boundary_includes_sequential_calls_outside_sampled_active_set(tmp_path):
+    tool = {
+        "source": "tool_wait", "workflow_id": "w", "context_id": "t",
+        "context_epoch": 2, "invocation_id": "tool", "active_tool_ids": ["first"],
+    }
+    observations = [{
+        **tool, "event": "wait_prefetch_plan", "ts_ms": 100.,
+        "planned_full_tokens": 8, "reason": "start_window",
+    }]
+    issues = {"early": {**tool, "event": "prefetch_native_issued", "ts_ms": 101.}}
+    actions = [{
+        **tool, "command_id": "early", "submit_ts_ms": 135., "ack_ts_ms": 138.,
+        "pool_bytes": {"kv": 20}, "full_first_service_reused": True,
+        "first_service_request_id": "next", "first_service_context_epoch": 3,
+    }]
+    path = tmp_path / "client_1/workflows/example/runtime_events.deepagents.jsonl"
+    requests = [
+        {"kind": "llm_submit", "workflow_id": "w", "context_id": "t",
+         "invocation_id": "tool", "context_epoch": epoch, "ts_ms": when,
+         "attributes": {"request_id": rid}}
+        for epoch, when, rid in ((2, 90., "origin"), (3, 160., "next"))
+    ]
+    tools = [
+        {"kind": kind, "workflow_id": "w", "invocation_id": "tool",
+         "ts_ms": when, "attributes": {"tool_run_id": identity}}
+        for kind, identity, when in (
+            ("tool_start", "first", 95.), ("tool_end", "first", 110.),
+            ("tool_start", "second", 115.), ("tool_end", "second", 140.),
+            ("tool_start", "later-round", 160.),
+        )
+    ]
+    write_rows(path, requests + tools)
+    result = wait_event_attribution(tmp_path, observations, issues, actions, 0.)
+    [row] = result["rows"]
+    assert row["observed_tool_call_count"] == 2
+    assert row["completion_ts_ms"] == 140.
+    assert row["completion_evidence"] == "whole_tool_request_round"
+    assert row["early_started_and_reused_full_bytes"] == 20
+    assert row["early_ready_and_reused_full_bytes"] == 20
+    assert row["completion_to_client_submit_ms"] == 20.
+    assert result["summary"]["by_source"]["tool_wait"]["completion_boundary_unknown_events"] == 0
+    write_rows(path, [row for row in requests + tools
+                      if (row.get("attributes") or {}).get("tool_run_id") != "second"
+                      or row["kind"] != "tool_end"])
+    incomplete = wait_event_attribution(tmp_path, observations, issues, actions, 0.)
+    assert incomplete["rows"][0]["completion_ts_ms"] is None
+    assert incomplete["rows"][0]["early_started_and_reused_full_bytes"] == 0
 
 
 def test_lifecycle_keeps_expired_but_reused_and_missing_use_distinct(tmp_path):

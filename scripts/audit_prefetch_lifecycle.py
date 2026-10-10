@@ -4,7 +4,7 @@
 from __future__ import annotations
 
 import argparse
-from bisect import bisect_right
+from bisect import bisect_left, bisect_right
 from collections import Counter, defaultdict
 import json
 from pathlib import Path
@@ -429,34 +429,84 @@ def wait_event_attribution(
         if identity in groups:
             groups[identity]["actions"].append(action)
     ends, joins, submits = {}, {}, defaultdict(list)
+    tool_starts = defaultdict(list)
     if clock_offset is not None:
         for path in arm.glob("client_*/workflows/*/runtime_events.deepagents.jsonl"):
             for row in records(path):
                 attrs = row.get("attributes") or {}
                 workflow = row.get("workflow_id")
                 when = row["ts_ms"] + clock_offset
-                if row["kind"] == "tool_end":
+                if row["kind"] in ("tool_start", "tool_end"):
                     tool_id = attrs.get("tool_run_id") or attrs.get("tool_call_id")
                     if tool_id is not None:
-                        ends[workflow, row.get("invocation_id"), tool_id] = when
+                        if row["kind"] == "tool_start":
+                            tool_starts[workflow, row.get("invocation_id")].append((when, tool_id))
+                        else:
+                            ends[workflow, row.get("invocation_id"), tool_id] = when
                 elif row["kind"] == "join_satisfied":
                     joins[workflow, row["join_id"]] = when
                 elif row["kind"] == "llm_submit" and row.get("context_id"):
                     submits[workflow, row["context_id"]].append({**row, "ts_ms": when})
     for rows in submits.values():
         rows.sort(key=lambda row: row["ts_ms"])
+    for starts in tool_starts.values():
+        starts.sort()
+    tool_start_times = {
+        identity: [when for when, _ in starts]
+        for identity, starts in tool_starts.items()
+    }
     targets = set()
     for group in groups.values():
+        requests = submits.get((group["workflow_id"], group["context_id"]), ())
+        following = next((
+            row for row in requests
+            if row.get("context_epoch") is not None
+            and row["context_epoch"] > group["context_epoch"]
+            and row.get("invocation_id") == group["invocation_id"]
+            and row["ts_ms"] >= group["first_observation_ts_ms"]
+        ), None)
+        group["observed_tools_completion_ts_ms"] = None
+        group["completion_evidence"] = None
         if group["source"] == "join_ticket":
             completion = joins.get((group["workflow_id"], group["join_id"]))
+            if completion is not None:
+                group["completion_evidence"] = "join_satisfied"
         else:
+            origin = next((
+                row for row in reversed(requests)
+                if row.get("context_epoch") == group["context_epoch"]
+                and row.get("invocation_id") == group["invocation_id"]
+                and row["ts_ms"] <= group["first_observation_ts_ms"]
+            ), None)
+            if origin is not None:
+                identity = group["workflow_id"], group["invocation_id"]
+                starts = tool_starts.get(identity, ())
+                times = tool_start_times.get(identity, ())
+                left = bisect_left(times, origin["ts_ms"])
+                right = (
+                    bisect_left(times, following["ts_ms"])
+                    if following is not None else len(starts)
+                )
+                group["active_tool_ids"].update(tool for _, tool in starts[left:right])
             tool_times = [
                 ends.get((group["workflow_id"], group["invocation_id"], tool))
                 for tool in group["active_tool_ids"]
             ]
-            completion = (
+            observed_completion = (
                 max(tool_times) if tool_times and all(when is not None for when in tool_times)
                 else None
+            )
+            group["observed_tools_completion_ts_ms"] = observed_completion
+            completion = (
+                observed_completion
+                if origin is not None and following is not None
+                and observed_completion is not None
+                and origin["ts_ms"] <= observed_completion <= following["ts_ms"]
+                else None
+            )
+            group["completion_evidence"] = (
+                "whole_tool_request_round" if completion is not None
+                else "tool_request_round_unproven"
             )
         group["completion_ts_ms"] = completion
         next_request = next((
@@ -536,7 +586,9 @@ def wait_event_attribution(
             **{name: group[name] for name in (
                 "source", "workflow_id", "invocation_id", "context_id", "context_epoch", "join_id",
                 "max_observed_planned_full_tokens", "completion_ts_ms",
+                "completion_evidence", "observed_tools_completion_ts_ms",
             )},
+            "observed_tool_call_count": len(group["active_tool_ids"]),
             "max_observed_planned_full_bytes": (
                 group["max_observed_planned_full_bytes"]
                 if group["max_observed_planned_full_bytes"] is not None
@@ -564,6 +616,12 @@ def wait_event_attribution(
             ),
             "completion_to_client_submit_ms": (
                 request["ts_ms"] - completion if request and completion is not None else None
+            ),
+            "client_submit_to_native_arrival_ms": (
+                native["ts_ms"] - request["ts_ms"] if native and request else None
+            ),
+            "client_submit_to_first_service_ms": (
+                service - request["ts_ms"] if request and service is not None else None
             ),
             "submit_to_first_service_ms": (
                 service - native["ts_ms"] if native and service is not None else None
@@ -595,6 +653,9 @@ def wait_event_attribution(
                     "events_with_early_reused_full": sum(
                         row["early_started_and_reused_full_bytes"] > 0 for row in selected
                     ),
+                    "completion_boundary_unknown_events": sum(
+                        row["completion_ts_ms"] is None for row in selected
+                    ),
                     "early_started_and_reused_full_bytes": sum(
                         row["early_started_and_reused_full_bytes"] for row in selected
                     ),
@@ -603,6 +664,12 @@ def wait_event_attribution(
                     ),
                     "remaining_native_full_evidence_unknown_events": sum(
                         row["remaining_native_full_host_hit_bytes"] is None for row in selected
+                    ),
+                    "client_submit_to_native_arrival_ms": distribution(
+                        row["client_submit_to_native_arrival_ms"] for row in selected
+                    ),
+                    "client_submit_to_first_service_ms": distribution(
+                        row["client_submit_to_first_service_ms"] for row in selected
                     ),
                     "submit_to_first_service_ms": distribution(
                         row["submit_to_first_service_ms"] for row in selected
@@ -620,9 +687,14 @@ def wait_event_attribution(
             "Plans are bounded snapshots, not a continuous or counterfactual opportunity "
             "denominator; the maximum snapshot is not summed across repeated samples. "
             "Early FULL requires actual submit before complete JOIN/all-tool END and "
-            "verified reuse by that episode's next request. Native Host-hit counters and exact demand "
+            "verified reuse by that episode's next request. Tool boundaries require "
+            "the origin and following request plus every intervening tool, including "
+            "sequential calls not active at the sampled plan. Unclosed or unproven "
+            "tool rounds keep their completion boundary unknown. Native Host-hit counters and exact demand "
             "handoff receipts are separate remaining-demand evidence; do not add them "
-            "without proving disjoint allocations. Service wait includes admission "
+            "without proving disjoint allocations. Client-to-native-arrival includes "
+            "request preparation, transport and serving frontend work, not an isolated "
+            "client cost. Native-arrival-to-service wait includes admission "
             "and execution queueing, not isolated H2D delay. Sampled GPU dependency "
             "wait is a batch observation and must not be summed across its requests. "
             "Missing identities, clocks, ACK pool bytes or service evidence stay unknown."

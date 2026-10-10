@@ -326,6 +326,46 @@ def test_runtime_pressure_releases_speculative_before_ready_restore():
     assert "ready" in runtime._prefetch_service_leases
 
 
+def test_same_request_tool_progress_keeps_restore_until_next_request_consumes_it():
+    from beliefkv.core.events import RuntimeEventKind
+    from tests.test_tool_predictive_transfers import event
+
+    runtime, hint, _, action, receipt, _ = locked_runtime()
+    lease = runtime._prefetch_service_leases[action.command_id]
+    invocation = hint.key.invocation_id
+    runtime.on_events((event(
+        3, RuntimeEventKind.TOOL_END, invocation_id=invocation,
+        attributes={"tool_run_id": "long"},
+    ),))
+    runtime.on_events((event(
+        4, RuntimeEventKind.TOOL_START, invocation_id=invocation,
+        attributes={"tool_run_id": "second"},
+    ),))
+    assert runtime.graph.invocations[invocation].updated_ts_ms != lease.wait_revision
+    assert set(runtime.graph.invocations[invocation].active_tool_calls) == {"second"}
+    runtime._refresh_prefetch_service_leases()
+    assert action.command_id in runtime._prefetch_service_leases
+    assert runtime._prefetch_service_leases[action.command_id].lock_params is not None
+    assert runtime.counts["prefetch_residency_released:wait_episode_changed"] == 0
+    runtime.on_events((
+        event(5, RuntimeEventKind.TOOL_END, invocation_id=invocation,
+              attributes={"tool_run_id": "second"}),
+        event(6, RuntimeEventKind.LLM_SUBMIT, invocation_id=invocation,
+              context_id=hint.key.context_id, context_epoch=1,
+              attributes={"request_id": "resumed"}),
+    ))
+    restored = req(invocation)
+    restored.rid = "resumed"
+    restored.beliefkv_metadata["context_epoch"] = 1
+    restored.session_id, restored.session_generation = "s", 1
+    runtime.register_visible_request(restored)
+    assert select(runtime, [restored]).candidates == (restored,)
+    assert runtime._prefetch_service_leases[action.command_id].demand_ready
+    runtime.on_batch_completed(NS(reqs=[restored]))
+    assert not runtime._prefetch_service_leases
+    runtime._native_cache.tree_core.dec_lock_ref.assert_called_once_with(1, receipt)
+
+
 def test_dynamic_restore_priority_still_gives_ordinary_demand_a_turn():
     from beliefkv.runtime.native_transfer_policy import PrefetchResidencyBudget
     runtime, *_ = locked_runtime()
