@@ -268,6 +268,16 @@ Current status:
   and accepted forecasts; timing differences are not GPU or throughput gains.
   Report:v16_notice_input_cpu_20261010.json. Commit in isolation, retain the
   V15 freeze and verify input alignment and consumed FULL after the full pair.
+- Skip PREPARE checkpoint expansion and path sorting when this captured closure
+  has no FULL device extent missing a Host copy. Read current node lengths;
+  keep no cross-cycle residency cache and preserve the missing-prefix/Mamba policy.
+  The related suite passes289 checks. Against9c5a399, six156-workflow/32-node
+  fixtures with180 forced probes preserve selection, publication and sampling.
+  Backed device-resident PREPARE means fall2.50--2.71% and sampling5.64--6.03%;
+  Host-only means fall9.60/6.09%. Unbacked/Host-sufficient PREPARE regresses
+  0.0045%; other small differences and unchanged terminal timings are not
+  acceleration evidence. Preservev16_prepare_backed_step_cpu_20261010.json.
+  This is CPU evidence only; commit in isolation and keep V15 fully frozen.
 - The final isolated engine package has full patch SHA256
   66aa563627fb8882808e290ff0ccde10535bc7d787a66eba6848baa8bcf203d8.
   Its exact frozen-V15 delta isv16_engine_followup_delta_20261010.patch with

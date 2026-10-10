@@ -515,6 +515,10 @@ def next_shadow_backup_step(
     leaves = dict(dict(candidate.anchors.component_leaves).get(0, ()))
     if not leaves or not leaves.keys() <= nodes.keys():
         return None
+    if not any(
+        node.full_device_tokens > node.full_host_tokens for node in nodes.values()
+    ):
+        return None
     paths: set[int] = set()
     provenance: dict[int, int] = {}
     depth: dict[int, int] = {}

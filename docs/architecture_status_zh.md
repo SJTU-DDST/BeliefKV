@@ -285,6 +285,18 @@ context/epoch/request身份。预取阶段到期仍保留已发通知这一
 `experiments/reports/v16_notice_input_cpu_20261010.json`。
 本修订在隔离工作树提交，v15双侧及完整后处理继续冻结。
 
+隔离下一版进一步省去无缺失FULL时的PREPARE检查点展开与路径
+排序。该判断直接读取本次已捕获节点的FULL device/Host长度，
+不使用跨调度轮次驻留缓存，也不改变缺失前缀或Mamba策略。
+289项相关检查通过。以`9c5a399`为基线，156-workflow、32层路径、
+每组180次强制探测的六种CPU配置均保留选择、发布和采样结果；
+已备份device驻留配置的JOIN PREPARE均值下降2.50%--2.71%，
+采样下降5.64%--6.03%，Host-only配置分别下降9.60%/6.09%。
+缺少备份且Host足够的PREPARE均值慢0.0045%，其他小幅波动与
+未修改的terminal计时不作为加速证据。报告：
+`experiments/reports/v16_prepare_backed_step_cpu_20261010.json`。
+这仅是CPU控制成本证据，不能推导GPU吞吐收益；v15继续冻结。
+
 当前隔离候选已打包，完整patch SHA256为
 `66aa563627fb8882808e290ff0ccde10535bc7d787a66eba6848baa8bcf203d8`，
 相对冻结v15引擎的精确差量为
