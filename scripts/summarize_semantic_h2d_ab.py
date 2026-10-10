@@ -388,7 +388,7 @@ def main() -> None:
     parser.add_argument("--initialize", action="store_true")
     parser.add_argument("--verify-frozen-plan", action="store_true")
     parser.add_argument("--root-count", type=int, default=36)
-    parser.add_argument("--arm-order", default="reactive predictive_h2d")
+    parser.add_argument("--arm-order", default="predictive_h2d native")
     parser.add_argument("--arrival-batch-size", type=int, default=0)
     parser.add_argument("--arrival-batch-interval-ms", type=int, default=0)
     parser.add_argument("--semantic-artifact", type=Path)
@@ -502,8 +502,8 @@ def main() -> None:
             "same_seed_is_not_same_trajectory": True,
             "formal_paired_repetition_target": 4,
             "formal_repetition_order": (
-                ["native predictive_h2d", "predictive_h2d native"] if native_pair
-                else ["reactive predictive_h2d", "predictive_h2d reactive"]
+                ["predictive_h2d native"] if native_pair
+                else ["predictive_h2d reactive"]
             ),
             "code_commit": subprocess.check_output(
                 ["git", "rev-parse", "HEAD"], cwd=root, text=True,

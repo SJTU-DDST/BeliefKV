@@ -9,7 +9,7 @@ ARRIVAL_BATCH_INTERVAL_MS="${ARRIVAL_BATCH_INTERVAL_MS:-0}"
 HOST_SPLIT="${HOST_SPLIT:-80:20}"
 PORT="${PORT:-18454}"
 RUN_ROOT="${RUN_ROOT:-$ROOT/experiments/raw/qwen35_joint_wait_h2d_ab_${ROOT_COUNT}root_2to4_v8c}"
-ARM_ORDER="${ARM_ORDER:-reactive predictive_h2d}"
+ARM_ORDER="${ARM_ORDER:-predictive_h2d native}"
 RESUME_PENDING="${RESUME_PENDING:-0}"
 SAMPLING_SEED="${SAMPLING_SEED:-21}"
 REPETITION_ID="${REPETITION_ID:-0}"
@@ -34,7 +34,7 @@ if [[ $# -ne 0 || ! -f "$ARTIFACT" ]] \
   || { (( ROOT_COUNT > 108 )) && [[ "$ARRIVAL_BATCH_SIZE" != "108" || "$ARRIVAL_BATCH_INTERVAL_MS" == "0" ]]; } \
   || [[ ! "$SAMPLING_SEED" =~ ^[0-9]+$ || ! "$REPETITION_ID" =~ ^[0-9]+$ ]] \
   || [[ "$ARM_ORDER" != "predictive_h2d reactive" && "$ARM_ORDER" != "reactive predictive_h2d" && "$ARM_ORDER" != "predictive_h2d" && "$ARM_ORDER" != "native predictive_h2d" && "$ARM_ORDER" != "predictive_h2d native" ]]; then
-  printf 'Usage: RUN_ROOT=<new path> ROOT_COUNT=108|156 ARRIVAL_BATCH_SIZE=0|108 ARRIVAL_BATCH_INTERVAL_MS=0|3600000 FANOUT_PROFILE=native_in_graph_2to4 ARM_ORDER="native predictive_h2d"|"predictive_h2d native"|"reactive predictive_h2d"|"predictive_h2d reactive"|predictive_h2d SAMPLING_SEED=21 REPETITION_ID=0 ACTIVATION_WALL_CLOCK_SECONDS=14400 PORT=18454 bash %s\n' "$0" >&2
+  printf 'Usage: RUN_ROOT=<new path> ROOT_COUNT=108|156 ARRIVAL_BATCH_SIZE=0|108 ARRIVAL_BATCH_INTERVAL_MS=0|3600000 FANOUT_PROFILE=native_in_graph_2to4 ARM_ORDER="predictive_h2d native"|"predictive_h2d reactive"|predictive_h2d SAMPLING_SEED=21 REPETITION_ID=0 ACTIVATION_WALL_CLOCK_SECONDS=14400 PORT=18454 bash %s\n' "$0" >&2
   exit 2
 fi
 mkdir -p "$RUN_ROOT"

@@ -217,7 +217,8 @@ def test_native_pair_freezes_disjoint_108_plus_48_fixed_arrivals(tmp_path, monke
     assert all(plan["policy_configuration"]["predictive_h2d"].values())
     assert not plan["prepare_host_in_both_arms"]
     assert plan["host_split"] == "80:20"
-    assert plan["formal_repetition_order"][0] == "native predictive_h2d"
+    assert plan["order"] == ["native", "predictive_h2d"]
+    assert plan["formal_repetition_order"] == ["predictive_h2d native"]
 
 
 def test_native_baseline_labels_are_not_reported_as_reactive():

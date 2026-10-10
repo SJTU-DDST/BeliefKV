@@ -6,6 +6,14 @@ guard、终态门禁或模型动作授权。启动前同时阅读
 
 ## 当前执行状态
 
+后续新实验统一先运行predictive_h2d，再运行native；与reactive
+对照时同样先predictive。启动脚本和计划生成器默认
+`ARM_ORDER="predictive_h2d native"`，正式重复实验也沿用此顺序，
+报告每轮结果及均值/波动，并保留固定顺序的局限。predictive
+发现实际实现故障时先停止、保留现场、修复并冷启动，随后再进行
+baseline。历史冻结计划及其续跑顺序保留；V15当前native继续运行，
+不因本项约定中断，不新增agent guard或终态门禁。
+
 v15已启动，主目录冻结在`feb5ee01a9f1340a694dcba442c439d08e4bd274`，
 完整引擎patch SHA256为
 `dbde39b7f37977ecacd72dddf78b3da94a56fa6a0879afb1798ae55ab7f1fe63`。
@@ -674,7 +682,8 @@ v11冷启动predictive，复用完成的v10 native作开发参考。固定108+48
 到达表、running48、Host200GB80:20、HBM比例0.9、模型/预测产物、
 prompt及seed21。保留新旧源码、engine patch和实现故障现场；运行
 时发现实现故障先停止并修复，不能因正常自然语言RETURN或工具
-命令失败新增agent终止门禁。性能正式结论沿用多轮交替对照要求。
+命令失败新增agent终止门禁。性能正式结论使用多轮同配置对照，
+新实验统一先predictive，再baseline，并报告固定顺序的局限。
 
 ## PREPARE 热点修订与节点身份
 

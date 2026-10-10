@@ -7,7 +7,12 @@ Status date: 2026-10-10.
 Keep the fixed workload, model, capacity and arrival schedule. Continue until
 predictive has a verifiable performance improvement relative to native.
 Agent scheduling, shared-path CPU cost, predictive H2D and PREPARE belong to
-the same objective. The three explicit priorities are:
+the same objective. New experiments run predictive_h2d first, then native;
+reactive comparisons also run predictive first. The launcher and plan generator
+default to this order, including formal repetitions. On an actual predictive
+implementation fault, stop, retain evidence, fix and cold-start before proceeding
+to the baseline. Preserve historical frozen plans and resume order; do not
+interrupt the current V15 native arm. The three explicit priorities are:
 
 - Restore-to-service: shorten ACK-to-first-service and reduce repeated native
   loads before service, while accounting for missing pages and other workflows.
@@ -766,7 +771,8 @@ HBM Mamba/FULL0.9, frozen heads, prompt, seed21 and budgets. Reuse the completed
 v10 native as a cross-revision development reference. Monitor actual runtime
 failures and physical disablement; stop, retain evidence, fix and cold-start
 on an implementation fault. Keep v10 frozen and quantify realized trajectory
-differences. Final claims still require the planned alternating repeated pairs.
+differences. Final claims still require repeated fixed-configuration pairs,
+with predictive first for new runs and the fixed-order limitation reported.
 V11 froze 3d750f1 and still permits Mamba PREPARE. The FULL-only change is
 developed in /tmp/beliefkv-full-prepare-20261009 for the next cold-start revision.
 V11 stopped after the scheduler crashed at 2026-10-09 21:34:34 CST:
@@ -1645,8 +1651,9 @@ Do not reduce every tool's timeout simply to improve the makespan metric.
 ## 7. Formal Evaluation Later
 
 Run multiple independent live pairs using the same task set and settings;
-alternate arm order, retain all failures/censors and show every pair plus
-mean and variation. The unit for whole-run throughput uncertainty is a run
+run predictive first in each new pair, retain all failures/censors and show
+every pair plus mean and variation. Report the fixed-order limitation.
+The unit for whole-run throughput uncertainty is a run
 or pair, not all workflows sharing that run's GPU.
 Do not require fixed-demand replay, do not discard divergent trajectories,
 and do not divide JCT by realized token counts as a posthoc correction.
