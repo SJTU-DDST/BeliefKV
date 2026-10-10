@@ -34,6 +34,25 @@ while worsening absolute P50. This is selected-trigger development evidence,
 not project-isolated calibration; do not deploy one several-second offset for
 both signals. Retain full stopped candidate-window rows and keep the goal active.
 
+### Live Completion Windows And Request Ingress
+
+The V16b CPU experiment uses6949 causal live forecasts from85 requests and83
+workflows. Hold out17 pydata workflows for new work labels, with47 training and
+19 selector workflows. The existing phase/encoder already saw that project,
+so this is not a completely project-unseen pipeline. No4/8/16/32-token window
+obtains a selector first-trigger precision of0.8 with at least3 triggers.
+Keep all boosters/report for development evidence, but do not deploy them.
+On the17 held-out natural requests, the existing32-token countdown triggers15,
+only1 within the actual token horizon; all-trigger RETURN lead P50 is5975ms.
+The747ms median conditioned on correct triggers conceals early false triggers.
+
+V17's early snapshot puts tool body-sent-to-native-queue-registration P50/P90
+at684/4702ms and registration-to-worker-service at4398/19400ms. This is not an
+isolated tokenizer measurement. Ten locked JOIN FULL receipts expire before
+completion. Prioritize exact token-equality/CPU validation of Qwen3.5 text-only
+redundant encoding and additional ingress boundaries in an isolated engine;
+then cold-start committed changes. Preserve V17's frozen running files.
+
 ## V16 Execution And Acceptance
 
 The existing active goal remains open: improve native-relative busy-window
