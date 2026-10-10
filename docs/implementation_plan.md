@@ -30,6 +30,29 @@ and is not GPU throughput proof. Unaged timing differences are noise rather
 than evidence of savings. This validated revision is now registered in the
 still-waiting V22 coordinator; the current V21 pair remains frozen.
 
+Reduce synchronous first-service prefetch evidence work by retaining the
+matching input prefix only within the current request's recording call.
+Subsequent extent snapshots still compare their shared prefix using native
+array equality and inspect any new or divergent suffix. Shorter prefixes,
+divergent inputs and cache namespaces remain independently reported.
+Actual FULL reuse still requires live node/creation/value identity and the
+materialized request prefix. Remove the256-node ancestor traversal truncation,
+retain cycle detection and verify an earlier ancestor on a valid300-node path.
+This changes evidence collection, not prefetch or admission decisions.
+
+The151 telemetry/lifecycle/terminal-capacity checks pass. Keep
+v29_prefetch_use_shared_prefix_cpu_20261011.json:12 groups of100 alternating CPU
+samples preserve every evidence record and consumed command. For16 extents
+and32768 tokens, complete/divergent-input means change11.619→2.127ms and
+7.611→1.307ms. Single-extent complete-input means1.283→1.287ms do not establish
+a speedup. The finished V21 predictive source has16821 first-service command
+records for4285 requests,3001 with multiple target prefixes. Reported matching
+prefixes total262613488 tokens, including199168503 repeated matching positions
+within the same request. Preserve the source SHA256. These counts are neither
+additional verified reuse bytes nor removable JCT; the fixture excludes writer,
+allocator, DMA and GPU work. Register the validated follow-up only while V22
+still waits, without modifying the frozen V21 pair or its old evidence.
+
 Keep the reproducible scripts/analyze_busy_context_control.py and
 v21_busy_context_control_600_900_20261011.json with source-prefix and boundary-row
 SHA256. The fully observed600–900s window has visible decode context means

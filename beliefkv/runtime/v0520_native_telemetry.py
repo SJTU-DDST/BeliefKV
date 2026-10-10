@@ -1542,7 +1542,7 @@ class NativeReactiveTelemetry:
             last_node = None
         ancestors: set[int] = set()
         node = last_node
-        while node is not None and len(ancestors) < 256:
+        while node is not None:
             if id(node) in ancestors:
                 break
             ancestors.add(id(node))
@@ -1552,15 +1552,28 @@ class NativeReactiveTelemetry:
         device_prefix_len = (
             len(prefix_indices) if prefix_indices is not None else None
         )
+        verified_input_prefix = array("q")
         for command_id in matches:
             action, nodes, ack_ts, prefixes = self._pending_prefetch_use.pop(command_id)
             target_prefixes = []
             for node_id, (token_ids, extra_key, cache_salt) in prefixes.items():
                 common = 0
-                for original_token, input_token in zip(token_ids, req.origin_input_ids):
+                shared = min(len(verified_input_prefix), len(token_ids))
+                # Compare an already verified shared prefix in native array code;
+                # only the unseen suffix needs another Python token walk.
+                if shared and token_ids[:shared] == verified_input_prefix[:shared]:
+                    common = shared
+                original_suffix = token_ids[common:] if common else token_ids
+                input_suffix = (
+                    req.origin_input_ids[common:len(token_ids)]
+                    if common else req.origin_input_ids
+                )
+                for original_token, input_token in zip(original_suffix, input_suffix):
                     if original_token != input_token:
                         break
                     common += 1
+                if (len(matches) > 1 or len(prefixes) > 1) and common > len(verified_input_prefix):
+                    verified_input_prefix = token_ids[:common]
                 target_prefixes.append({
                     "node_id": node_id, "prefix_tokens": len(token_ids),
                     "common_input_prefix_tokens": common,

@@ -439,6 +439,72 @@ def test_prefetch_diagnostic_separates_input_divergence_from_mamba_boundary(
     assert use["native_mamba_branching_seqlen"] == 8
 
 
+def test_prefetch_prefix_evidence_reuse_handles_shorter_and_divergent_targets(tmp_path):
+    audit = NativeReactiveTelemetry(tmp_path / "prefixes")
+    targets = [
+        list(range(8)),
+        list(range(4)),
+        [0, 1, 99, 3, 4],
+        list(range(12)),
+        list(range(5)),
+        list(range(12)),
+    ]
+    for index, target in enumerate(targets):
+        command = f"restore-{index}"
+        action = SimpleNamespace(
+            command_id=command, context_id="ctx", context_epoch=2,
+            node_ids=(index,), pool_bytes=(),
+        )
+        audit._pending_prefetch_use[command] = (
+            action, (), 100., {
+                index: (array("q", target), "other" if index == 5 else "ns", None),
+            },
+        )
+    inputs = list(range(12))
+    inputs[10] = 90
+    audit._record_prefetch_first_service(SimpleNamespace(
+        rid="next", origin_input_ids=inputs, prefix_indices=[],
+        last_node=0, cached_tokens_device=0, extra_key="ns",
+    ), {"context_id": "ctx", "context_epoch": 3})
+    audit.close()
+    records = _read(tmp_path / "prefixes/physical_action_use.jsonl")
+    prefixes = [row["target_prefixes"][0] for row in records]
+    assert [row["common_input_prefix_tokens"] for row in prefixes] == [8, 4, 2, 10, 5, 10]
+    assert [row["complete_input_prefix"] for row in prefixes] == [
+        True, True, False, False, True, False,
+    ]
+    assert [row["same_cache_namespace"] for row in prefixes] == [
+        True, True, True, True, True, False,
+    ]
+
+
+def test_prefetch_reuse_observes_full_ancestor_beyond_256_nodes(tmp_path):
+    audit = NativeReactiveTelemetry(tmp_path / "deep")
+    nodes = {0: SimpleNamespace(id=0, creation_time=0, parent=None)}
+    for index in range(1, 301):
+        nodes[index] = SimpleNamespace(
+            id=index, creation_time=index, parent=nodes[index - 1],
+            key=array("q", (index - 1,)),
+            component_data=(SimpleNamespace(value=object()),),
+        )
+    audit._cache = SimpleNamespace(
+        tree_core=SimpleNamespace(node_by_id=nodes.__getitem__),
+    )
+    audit.on_verified_action_ack(SimpleNamespace(
+        command_id="restore", action="PREFETCH_GPU", context_id="ctx",
+        context_epoch=2, node_ids=(1,), pool_bytes=(("kv", 8),), num_bytes=8,
+    ))
+    audit._record_prefetch_first_service(SimpleNamespace(
+        rid="next", last_node=300, origin_input_ids=list(range(301)),
+        prefix_indices=list(range(300)), cached_tokens_device=300,
+    ), {"context_id": "ctx", "context_epoch": 3})
+    audit.close()
+    [record] = _read(tmp_path / "deep/physical_action_use.jsonl")
+    assert record["matched_node_ids"] == [1]
+    assert record["reused_full_node_ids"] == [1]
+    assert record["full_node_reused"] is True
+
+
 @pytest.mark.parametrize("mismatch", [
     None, "other_node", "replaced_state", "no_cow", "multi_request",
     "no_completed_forward", "speculative_verify",
