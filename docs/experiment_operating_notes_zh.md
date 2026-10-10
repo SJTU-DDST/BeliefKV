@@ -11,18 +11,50 @@ guard、终态门禁或模型动作授权。启动前同时阅读
 `ARM_ORDER="predictive_h2d native"`，正式重复实验也沿用此顺序，
 报告每轮结果及均值/波动，并保留固定顺序的局限。predictive
 发现实际实现故障时先停止、保留现场、修复并冷启动，随后再进行
-baseline。历史冻结计划及其续跑顺序保留；V15当前native继续运行，
-不因本项约定中断，不新增agent guard或终态门禁。
+baseline。历史冻结计划及其续跑顺序保留，不新增agent guard或终态门禁。
+V15两侧及审计、HTML、cleanup已经完成，工作代码冻结现已解除；
+后面的带时间状态记录保留当时口径，不表示V15仍在运行。
 
-v15已启动，主目录冻结在`feb5ee01a9f1340a694dcba442c439d08e4bd274`，
+v15采集时主目录冻结在`feb5ee01a9f1340a694dcba442c439d08e4bd274`，
 完整引擎patch SHA256为
 `dbde39b7f37977ecacd72dddf78b3da94a56fa6a0879afb1798ae55ab7f1fe63`。
 driver依次执行predictive_h2d、native并各自冷启动；156任务、
 108+48/3600s到达、running48、Host200GB80:20、HBM比例0.9、
 context131072/completion8192、graph2048/reserve32、
 workflow14400s、2--4 child、seed21及产物不变。客户端共用优化
-在两侧生效。代码冻结核验已通过；两侧及审计、HTML、cleanup全部
-结束前，后续修订只在隔离工作树提交，不修改主目录或服务文件。
+在两侧生效，工具命令上限为600秒。后续修订只在隔离工作树开发，
+未进入V15任一侧；V15历史配置与数据继续保留。
+
+V15最终两侧均156/156 completed，native/predictive完成时间
+13410.271/10857.481秒、完成吞吐41.878/51.725 workflow/h；
+但predictive平均/P50/P95 JCT分别更高11.42%/16.81%/3.92%。
+600--2400秒decode batch均约47.3，predictive GPU75.900%低于
+native82.328%，输出961.813低于1089.888 token/s。native末条
+pylint-6528的工具重复长尾使总窗口GPU均值和完成吞吐反转，
+不能以全程均值宣称已达成稳定native相对收益。两侧轨迹不同，
+completed不是独立评测的任务正确性。
+
+客户端积压已下降：V14/V15去重JOIN相关74/75个child的原生
+完成到客户端result P50为1375.965/254.628 ms，JOIN到parent
+提交为627.861/25.357 ms。模型权重未变化，V15 87/99个JOIN
+动作发生在原生EOS之后，仅12个estimated-work动作早于EOS；
+不能把交付延迟缩短或0--500 ms动作占比提升叫作语义预测已收敛。
+真实GPU首次服务必须用匹配worker sample，不能用原生请求到达
+替代。详见`experiments/reports/v15_final_analysis_20261010.md`。
+
+后续所有实验单条sandbox命令执行上限固定180秒，包括模型显式
+请求的timeout；启动参数、配置对象、真实执行入口均封顶，并将
+实际上限记录在manifest和sandbox审计。新对照计划固定180秒并
+核对双侧；旧计划没有该字段时仍保留历史值。此约定覆盖此前
+“默认180、显式timeout可延长”的建议。工具执行上限不含同一
+sandbox的排队锁等待，也不改变workflow14400秒或LLM请求600秒。
+不用该配置变化新增重复调用guard。
+
+V15后处理完成后只应用已核验的精确引擎增量；旧完整包与新完整包
+的反向检查均通过，修改文件编译通过。工作代码合入隔离期间的
+已提交修订及180秒上限，部署清单为
+v16_engine_followup_manifest_20261010.json；未启动新GPU实验。
+下文“尚未部署/冻结”是开发时记录，不覆盖本节最新状态。
 
 本轮目标补充不改变native相对收益方向：FULL PREPARE只补缺失
 extent，Host有效副本与radix分裂后仍有效的索引保留；Host驱逐
@@ -77,11 +109,12 @@ predictive还有一条约180秒候选；137也可能来自OOM或其他SIGKILL，
 不能一概认定为超时，也不能把截短命令秒当JCT或吞吐收益。
 报告为v15_tool_timeout_distribution_partial_20261010.json，
 由scripts/audit_tool_timeout_distribution.py生成，逐文件固定读取
-字节长度，跨文件快照非原子。建议下一轮默认命令上限600→180秒，
-需长预算的测试沿用显式timeout参数；120秒余量不足，30/60秒
-会截断已有成功长测试。该建议尚未应用到启动配置，V15两侧保持
-600秒；后续若采用须双侧统一并更新工具时延的删失标签，不新增
-重复调用guard，也不改变workflow14400秒截止时间。
+字节长度，跨文件快照非原子。这是采集期间快照，最终报告为
+v15_tool_timeout_distribution_final_20261010.json：自然结束命令
+native/predictive P50为0.343/0.330秒，P99为6.776/4.132秒，
+最大162.381/115.295秒，均没有超过180秒。最终12/16条124/137
+候选仍须与自然结束标签区分。用户已确定后续硬上限180秒，
+双侧统一并更新工具时延删失标签，V15历史600秒不改写。
 
 末次客户端语义窗口的审计使用原固定tokenizer，最多256个
 MiniLM token，右侧截断会丢失最新后缀。无工具正常stop轮次
@@ -1045,7 +1078,9 @@ workflow deadline 是 root 与全部 descendants 共用的绝对墙钟
 graph limit=2048，允许提前 32 步 FINALIZE，不得回退为 512。
 
 workflow deadline、模型请求timeout和工具命令timeout是三个
-边界。v4的django-16938两次全量测试各达到约600秒、返回137/
+边界。后续工具命令执行上限统一180秒，模型显式请求也不能延长；
+同一sandbox排队锁等待单独记录，不计作命令执行。v4的
+django-16938两次全量测试各达到约600秒、返回137/
 Killed，不能归为GPU等待或把它们当成工具自然完成。检查默认
 工具上限及实际命令、超时反馈，不为了改善makespan而统一缩短
 所有正常长工具。实验期间冻结配置，修复须后续同时用于两侧。

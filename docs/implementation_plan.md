@@ -12,7 +12,10 @@ reactive comparisons also run predictive first. The launcher and plan generator
 default to this order, including formal repetitions. On an actual predictive
 implementation fault, stop, retain evidence, fix and cold-start before proceeding
 to the baseline. Preserve historical frozen plans and resume order; do not
-interrupt the current V15 native arm. The three explicit priorities are:
+modify historical V15 artifacts. Both arms, audits, HTML exports and cleanup
+are now complete, so the working-code freeze is released. Later dated entries
+retain the status at their original observation time. The three explicit
+priorities are:
 
 - Restore-to-service: shorten ACK-to-first-service and reduce repeated native
   loads before service, while accounting for missing pages and other workflows.
@@ -50,18 +53,57 @@ across splits. The legacy residual correction did not change these counts.
 Report: experiments/reports/v10_prepare_full_incrementality_20261009.json.
 
 Current status:
-- A read-only V15 tool-duration audit uses execute_elapsed_ms separately from
+- V15 final: native and predictive both complete156/156 without errors or
+  incomplete outcomes; correctness is not independently graded. Collection
+  durations are13410.271/10857.481s, completed workflow rates41.878/51.725
+  per hour. Predictive makespan improves19.04%, but mean/P50/P95 JCT worsen
+  11.42%/16.81%/3.92%;95/156 paired tasks are slower. Native's repeated155s
+  exit31 commands on pylint-6528 dominate the final tool tail. In600--2400s,
+  similar47.3 decode batches produce native/predictive GPU82.328%/75.900%
+  and1089.888/961.813 output tokens/s. The objective remains unmet.
+  Keep all workflows and the live-trajectory limits; do not isolate a favorable
+  subset or claim a causal KV-policy speedup.
+- Client latency is improved, without changing predictor weights. V14/V15
+  unique JOIN-associated child samples74/75 have native-done-to-client-result
+  P501375.965/254.628ms and JOIN-to-parent-submit627.861/25.357ms.
+  Actual parent arrival-to-service P90 remains11.163/14.512s. The0--500ms
+  RETURN lead count rises23/105->57/99, but87/99 V15 JOIN commands occur
+  after native EOS; only12 use estimated work before EOS. Report client
+  delivery, real pre-EOS prediction and admission waiting separately.
+- Anticipation is176 commands/6.059GB, including1.230GB FULL with1.036GB
+  verified reuse. Demand handoff is15132 node commands/118.265GB; never
+  count it as prediction. Predictive native H2D3.664TB exceeds native3.268TB.
+  Instrumented exclusive Python wall is1283.355s versus113.504s of summed
+  H2D transfer-stream time; neither is an additive critical-path saving.
+  Prioritize the committed control-cost, residency and FULL-burst changes,
+  then check busy-window service and JCT on the next same-version pair.
+  Full analysis:experiments/reports/v15_final_analysis_20261010.md.
+- All future experiments use a hard180s sandbox command execution limit.
+  Normalize both launcher/config values and model-specified timeouts to180s;
+  retain effective/requested values in audit and freeze the value in new
+  comparison plans. This supersedes the earlier explicit-extension advice.
+  Native/reactive/predictive use the same limit; the14400s workflow deadline
+  and600s LLM request timeout remain separate budgets.
+- A read-only final V15 tool-duration audit uses execute_elapsed_ms separately from
   the per-workflow sandbox lock wait. Native/predictive exit-zero maxima are
-  96.902/115.295s, with no naturally completed command above 180s. Recommend
-  a 180s default for the next pair, retaining explicit timeout overrides for
-  long tests; launcher defaults are not changed and both V15 arms retain 600s.
+  96.902/115.295s, with no naturally completed command above180s; both
+  historical V15 arms retain600s.
   Pylint-6528 repeats one command 64 times at median 155s with exit 31, so 180s
-  would not truncate that tail. Keep 27 approximately 600s exit 137 commands as
-  timeout/SIGKILL candidates, not natural completion labels or JCT savings.
-  Report v15_tool_timeout_distribution_partial_20261010.json records the
-  non-atomic snapshot at 12:12 CST; use the reusable duration-audit script.
-  Any later timeout change must match both arms and censoring labels,
+  would not truncate that tail. Keep12/16 timeout/SIGKILL candidates separate
+  from natural completion labels and do not convert their shortened durations
+  directly to JCT savings. Report:
+  v15_tool_timeout_distribution_final_20261010.json.
+  The next pair must use the same180s limit and corresponding censoring labels,
   without adding repeat guards or changing the 14400s workflow deadline.
+- The following isolated-development and dated observations were collected
+  while V15 remained frozen; their "not deployed/live" statements describe
+  that earlier state. V15 driver/server/client processes have exited, both
+  HTMLs are available and312 workspaces were removed with none retained.
+  After that completion, the live engine received only the validated exact
+  follow-up delta. Old/full and candidate/full reverse checks pass, changed
+  Python files compile, and the deployment manifest records the application.
+  The isolated committed follow-ups are integrated with this status update;
+  no new GPU comparison has been started or claimed as verified.
 - The isolated admission planner computes waiting ranks once per call and
   groups demand-ready leases by context for candidate lookup. Keep workflow,
   invocation, session/generation, epoch and request/source checks after lookup.
@@ -96,23 +138,23 @@ Current status:
   This CPU fixture executes native write/commit/
   ACK and receipt merging with CPU tensors and fake completions; it is not
   GPU/JCT evidence. Keep the complete V15 freeze before deploying.
-- V15 is live from frozen main commit
+- V15 was collected from frozen main commit
   feb5ee01a9f1340a694dcba442c439d08e4bd274 and full engine patch SHA256
   dbde39b7f37977ecacd72dddf78b3da94a56fa6a0879afb1798ae55ab7f1fe63.
   The existing driver runs predictive_h2d then native with fresh servers and
   caches. Keep156 tasks,108+48/3600s arrivals, running48, Host200GB80:20,
   HBM ratio0.9, context131072/completion8192, graph2048/reserve32,
   workflow14400s, native_in_graph_2to4, seed21/temperature0 and artifacts
-  unchanged across both arms. Main and engine remain frozen through exports
-  and cleanup; all subsequent development stays in the isolated worktree.
+  unchanged across both arms. Main and engine remained frozen through exports
+  and cleanup; all subsequent development stayed in the isolated worktree.
 - V15 predictive has completed156/156 workflows with no errors or incomplete
   outcomes:10857.481s,51.725 completed workflows/hour, JCT P503119.630s,
   mean GPU utilization74.476% and795.773 output tokens/s. Task correctness
   is not independently graded. JOIN/tool have99/77 ACKs and FULL sent/reused
   0.893/0.743GB and0.338/0.293GB; demand handoff has15132 ACKs and FULL
   67.205/67.047GB, which is not anticipation. Forecast age P50 is137.325ms
-  and mean inference28.603ms. The fresh native arm is serving; do not assert
-  native-relative improvement before the complete frozen pair and exports.
+  and mean inference28.603ms. These are the earlier single-arm observations;
+  the final native comparison and its limitations are recorded above.
   At2026-10-10 10:50 CST, native has150/156 completed with no error or
   incomplete outcomes and live service; main and the real engine are unchanged.
 - The completed predictive input audit uses the exact pinned tokenizer.

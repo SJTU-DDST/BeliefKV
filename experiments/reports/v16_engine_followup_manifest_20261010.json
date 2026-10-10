@@ -24,7 +24,17 @@
     "related_cpu_checks_passed": 345
   },
   "cpu_report": "experiments/reports/v16_prepare_prefix_burst_cpu_20261010.json",
-  "deployed": false,
+  "deployed": true,
+  "deployed_on": "2026-10-10",
+  "deployed_engine_path": "/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20",
+  "deployment_validation": {
+    "v15_arms_and_postprocessing_complete": true,
+    "frozen_engine_full_reverse_check": true,
+    "applied_only_exact_delta": true,
+    "deployed_candidate_full_reverse_check": true,
+    "changed_python_files_compile": true,
+    "gpu_experiment_started": false
+  },
   "deploy_after": "both frozen V15 arms and complete postprocessing",
   "scope": "FULL-only missing-prefix burst, CPU prefix inspection and existing isolated follow-ups; separate per-node receipts, preserved Host copies and partial-success submission; no verified native-relative throughput claim"
 }
