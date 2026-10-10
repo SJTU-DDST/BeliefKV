@@ -15,6 +15,34 @@ aged-order inspection reduction and same-dispatch tool plan reuse.
 Waiting registration is not GPU validation;
 the broad performance objective remains active.
 
+Keep scripts/audit_tool_forecast_windows.py and the compact
+v31_v21_tool_forecast_window_summary_20261011.json. Store detailed per-round
+evidence with the closed V21 predictive output and pin its SHA256 in the summary.
+Reconstruct the recorded NativeToolWaitHint at actual acceptance time, using
+survival-conditioned mass/CDF/quantiles and proven whole-tool-round completion.
+Exclude expired, post-completion and exhausted-support forecasts. Of 11570
+single-call rounds, 11098 have observations in the actual last second. Compute
+each round's median absolute error in that interval before aggregating across
+rounds: P50/P90 are 52.46/424.55ms; median signed error is +6.41ms. This is selected,
+fixed-trace near-completion evidence, not overall or heldout prediction accuracy.
+Of 10127 single-call rounds entering the predicted 500ms window, 8400 first enter
+within the actual last 500ms and 1727 earlier. Report multi-call rounds separately:
+204 of 266 first entries are more than 500ms early, with 4741.60ms median actual
+lead. Investigate individual-call versus complete-round timing before applying
+any global bias shift.
+
+Recorded positive FULL plans show 381 independent rounds inside both actual and
+predicted runtime start windows, totaling 33.011GB of per-round maximum planned
+FULL; only 61 rounds and 1.692GB also report enough current free-list capacity.
+There are 150 rounds in the actual window while the forecast remains outside;
+their capacity-fitting subset is 25 rounds and 1.404GB. These runtime-selected
+plan snapshots can overlap categories and share pages. They are not unique
+achievable bytes, transfer completion, residence, admission or speedup. Validate
+terminal-child release, complete-prefix coverage and actual next-request use;
+track multi-tool timing separately. This offline diagnostic changes neither
+running V21 nor the frozen waiting V22 policy. The 127 scoped audit/tool checks
+pass.
+
 Reduce background prefix-evidence writer work using direct native integer-array
 conversion and exact array comparisons. Keep independent served-input snapshots,
 the original integer-normalization compatibility, session isolation, keyed
