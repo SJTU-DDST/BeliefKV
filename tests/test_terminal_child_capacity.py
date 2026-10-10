@@ -231,6 +231,33 @@ def test_sibling_capacity_can_feed_prefetch_before_the_final_child_returns(famil
     )
 
 
+@pytest.mark.parametrize("release", ("full", "mamba", "host_only", "none"))
+def test_settled_sibling_capacity_refreshes_the_parent_restore_observation(family, release):
+    runtime, _, cache, _ = family
+    device = {"full": {0: 8}, "mamba": {2: 1}}.get(release, {})
+    cache.retire_beliefkv_child_session.side_effect = (
+        reclaimed(retry=((11, 4),)),
+        {**reclaimed(device=device), "freed_host_units": {0: 8} if release == "host_only" else {}},
+    )
+    runtime.enable_final_stage_prefetch = True
+    runtime.on_events((returned(7, "child1"),))
+    key = runtime.context_sessions["ctx-parent"]
+    unrelated = runtime.context_sessions["ctx-ordinary"]
+    now_ms = time.monotonic() * 1000.
+    runtime._semantic_target_cache[unrelated] = (now_ms + 100., False)
+    step = PrefetchLoadStep(key, 11, 4, 11, 4)
+    with patch.object(runtime, "inspect_context_h2d_opportunity", side_effect=(
+        NS(step=None), NS(step=step),
+    )) as inspect:
+        assert not runtime._semantic_transfer_target_ready("child2", now_ms)
+        runtime._retry_terminal_child_reclaims(now_ms=now_ms + 1.)
+        assert runtime._semantic_transfer_target_ready("child2", now_ms + 2.) is bool(device)
+        assert inspect.call_count == (2 if device else 1)
+    assert runtime._semantic_target_cache[unrelated] == (now_ms + 100., False)
+    assert not runtime.graph.joins["join"].satisfied
+    assert not runtime.graph.invocations["child2"].state.terminal
+
+
 def test_sibling_return_preserves_notice_until_the_report_request_is_submitted(family):
     runtime, requests, _, _ = family
     notice = early_report_notice(runtime)

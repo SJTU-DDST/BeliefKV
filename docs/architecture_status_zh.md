@@ -29,6 +29,17 @@ handoff 因 no_cold_capacity 关闭后会一直保留在已尝试集合中；
 431 项终态回收、handoff、运行时、物理传输、tool 与审计检查
 通过；这项修订尚未部署到运行中的冻结 V21。
 
+隔离工作区补齐物理状态变化后的短期观测失效。关联child确实释放
+设备容量时，立即清除该parent的语义目标/工具恢复观测；带命令
+归因且通过原生ledger验证的PREPARE完成后，清除当前相同或下一
+epoch的等待对象观测，并允许相关tool重新扫描。避免Host副本
+就绪或设备容量释放后仍使用100ms旧否定结果；不保证每次能节省
+100ms。未归因原生ACK、无效回执、旧session、仅Host释放或未
+释放容量不触发刷新，其他对象继续使用原有缓存。预取仍经过
+实时页、容量、时间与驻留检查。这项变更只有事件发生时的局部
+字典操作，没有新增逐decode扫描；261项终态/工具/runtime/
+handoff检查通过，尚未进入已冻结登记658f639的V22。
+
 后续检查确认完整前缀规划存在不合理的固定祖先数量限制：
 observer、PREPARE/H2D 规划和原生 session 恢复分别以64或256
 个节点拒绝合法路径。V21 局部采样中，1643个不同的tool等待
@@ -91,17 +102,19 @@ native。登记后的目标checkout不再编辑，文档及回执在隔离工作
 提交。下一轮仍以真实提前FULL复用、恢复消费和繁忙窗口吞吐/JCT
 验收，不能把等待中的登记当作已完成GPU验证。
 
-新阶段审计保存在v25_v21_capacity_handoff_progress_20261011.json，
-带原始审计路径及SHA256。352个真实动态child累计释放设备
-FULL113.907GB/Mamba117.188GB；186个parent首次服务中183个
+完成后的predictive审计更新到v25_v21_capacity_handoff_progress_
+20261011.json，保留最终原始审计路径及SHA256。V21 predictive
+155个completed、1个incomplete，约11375.87秒；同版本冷native
+已开始加载服务。354个真实动态child累计释放设备
+FULL115.495GB/Mamba120.858GB；188个parent首次服务中185个
 可关联到先前child设备释放。最后child的scheduler RETURN观测到
-parent首个观测完成GPU batch的P50/P90为209.57/496.53ms，
-原生入队到该batch为169.05/501.93ms，最大仍约18.906秒。
+parent首个观测完成GPU batch的P50/P90为209.57/493.56ms，
+原生入队到该batch为168.29/500.65ms，最大仍约18.906秒。
 独立完成边界前启动并复用的FULL为JOIN1.419GB（91事件）、
 tool2.530GB（84事件）；99.782GB需求handoff复用另列。
 只有23条JOIN节点动作先于server EOS提交，不能把这些边界前
 动作全部解释为模型尚未结束时的预测。累积释放不等于同时空闲
-或独占交接，完成batch也不是kernel启动时间；这份局部证据仍
+或独占交接，完成batch也不是kernel启动时间；predictive单侧证据仍
 不能证明native相对吞吐提高或等待中的V22修复已在GPU上有效。
 
 隔离工作区进一步复用同一次H2D/PREPARE规划的root-first顺序，

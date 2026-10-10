@@ -13,7 +13,10 @@ from beliefkv.control.causal_graph import InvocationState, RuntimeCausalContextG
 from beliefkv.runtime.sglang_v0520_prediction import (
     NativeToolWaitHint, validate_tool_timing_artifact,
 )
-from beliefkv.runtime.sglang_v0520_physical import PrefetchLoadStep, PhysicalActionCompleted
+from beliefkv.runtime.sglang_v0520_physical import (
+    PrefetchLoadStep, PhysicalActionCompleted,
+    PhysicalActionExpectation, PhysicalChildExpectation,
+)
 from beliefkv.runtime.sglang_v0520_runtime import NativeAdmissionRuntime
 from beliefkv.runtime.native_transfer_policy import PrefetchResidencyBudget, TransferStartWindow
 from tests.test_sglang_v0520_runtime import req, select
@@ -84,6 +87,81 @@ def test_tool_h2d_uses_same_wait_identity_and_does_not_admit_agent():
                                 attributes={"tool_run_id": "long"}),))
         runtime.dispatch_tool_prefetch()
         assert issue.call_count == 1
+
+
+def test_completed_prepare_reopens_a_cached_missing_tool_restore_target():
+    runtime, hint = tool_runtime()
+    step = PrefetchLoadStep(hint.key, 11, 4, 11, 4)
+    expected = PhysicalActionExpectation(
+        "prepare-tool", "PREPARE_HOST", hint.key.context_id, hint.key.context_epoch,
+        (PhysicalChildExpectation(11, (11,), (("kv", 20),), 20),),
+        (("kv", 10),), session_id=hint.key.session_id,
+        session_generation=hint.key.session_generation,
+    )
+    runtime.register_physical_action(expected)
+    unrelated = replace(hint.key, context_id="unrelated")
+    now_ms = time.monotonic() * 1000.
+    runtime._tool_opportunity_cache[unrelated] = (now_ms + 100., None)
+    runtime._semantic_target_cache[hint.key] = (now_ms + 100., False)
+    with patch.object(runtime, "inspect_context_h2d_opportunity", side_effect=(
+        NS(step=None), NS(step=step, fits_current_free_lists=True),
+        NS(step=step, fits_current_free_lists=True),
+    )) as inspect, patch.object(runtime, "_h2d_start_window", return_value=TransferStartWindow(
+        200., 0., 500.,
+    )), patch.object(runtime, "refreshed_prefetch_gpu_step", return_value=step), \
+         patch.object(runtime, "issue_prefetch_gpu_step", return_value="prefetch-tool") as issue:
+        runtime.dispatch_tool_prefetch()
+        assert inspect.call_count == 1
+        issue.assert_not_called()
+        completed = runtime.on_native_transfer_commit(NS(
+            direction="d2h", status="completed", node_ids=(11,),
+            num_tokens_by_pool=(("kv", 2),),
+            child_commits=(NS(
+                command_id="prepare-tool", anchor_node_id=11, published_node_ids=(11,),
+                num_tokens_by_pool=(("kv", 2),), num_bytes=20,
+            ),),
+        ))
+        assert len(completed) == 1
+        assert hint.key not in runtime._semantic_target_cache
+        assert runtime._tool_prefetch_next_ms == 0.
+        runtime.dispatch_tool_prefetch()
+        assert inspect.call_count == 3
+        issue.assert_called_once()
+    assert runtime._tool_opportunity_cache[unrelated] == (now_ms + 100., None)
+    assert runtime.graph.invocations["tool"].state is InvocationState.WAIT_TOOL
+    runtime.close()
+
+
+@pytest.mark.parametrize("receipt", ("native", "invalid", "stale_session"))
+def test_uncredited_prepare_does_not_refresh_cached_wait_observations(receipt):
+    runtime, hint = tool_runtime()
+    now_ms = time.monotonic() * 1000.
+    runtime._semantic_target_cache[hint.key] = (now_ms + 100., False)
+    runtime._tool_opportunity_cache[hint.key] = (now_ms + 100., None)
+    runtime._tool_prefetch_next_ms = now_ms + 100.
+    expected = PhysicalActionExpectation(
+        "prepare-tool", "PREPARE_HOST", hint.key.context_id, hint.key.context_epoch,
+        (PhysicalChildExpectation(11, (11,), (("kv", 20),), 20),),
+        (("kv", 10),), session_id=hint.key.session_id,
+        session_generation=hint.key.session_generation,
+    )
+    if receipt != "native":
+        runtime.register_physical_action(expected)
+    if receipt == "stale_session":
+        runtime.context_sessions[hint.key.context_id] = replace(hint.key, session_generation=2)
+    completed = runtime.on_native_transfer_commit(NS(
+        direction="d2h", status="completed", node_ids=(11,),
+        num_tokens_by_pool=(("kv", 2),),
+        child_commits=() if receipt == "native" else (NS(
+            command_id="prepare-tool", anchor_node_id=11, published_node_ids=(11,),
+            num_tokens_by_pool=(("kv", 2),), num_bytes=21 if receipt == "invalid" else 20,
+        ),),
+    ))
+    assert completed == ()
+    assert runtime._semantic_target_cache[hint.key] == (now_ms + 100., False)
+    assert runtime._tool_opportunity_cache[hint.key] == (now_ms + 100., None)
+    assert runtime._tool_prefetch_next_ms == now_ms + 100.
+    runtime.close()
 
 
 def test_tool_forecast_is_conditioned_on_still_waiting_not_reset_at_reply():

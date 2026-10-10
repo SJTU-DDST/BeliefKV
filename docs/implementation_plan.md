@@ -28,6 +28,17 @@ same workflow/context/JOIN/request and causal time order. Do not infer a miss
 from native_locked=false. The 431 scoped terminal/handoff/runtime/physical/tool/
 lifecycle checks pass. This revision is not part of the running frozen V21.
 
+Invalidate only the affected parent's semantic/tool restore observations after
+linked terminal-child device release. On ledger-validated completed PREPARE,
+invalidate the current matching or next-epoch context observation and rescan its
+active tool wait. This removes stale100ms negative observations after physical
+progress; it does not guarantee a100ms saving or authorize prefetch. Preserve
+unrelated caches and all current page/capacity/time/residency checks. Untagged
+native ACKs, invalid receipts, stale sessions, Host-only release and no-capacity
+retries do not trigger invalidation. There is no new decode-loop scan. The261
+terminal/tool/runtime/handoff checks pass. This isolated revision is not in the
+registered frozen658f639 V22 target; keep its deployment status explicit.
+
 Complete valid checkpoint ancestry must remain observable. The next revision
 removes artificial 64/256-node rejection from action closure, PREPARE/H2D
 planning, native session primitives and reentry inspection. Retain cycle and
@@ -96,15 +107,17 @@ and postprocessing complete, the coordinator deploys exactly the registered
 revision and runs predictive first, then cold native. Waiting registration is
 not completed GPU validation or achievement of the broad performance goal.
 
-Keep v25_v21_capacity_handoff_progress_20261011.json with the source audit
-path and SHA256. Its 352 confirmed dynamic children release cumulative device
-FULL113.907GB and Mamba117.188GB. Of186 observed parent services,183 follow
+Update v25_v21_capacity_handoff_progress_20261011.json with the final predictive
+source audit path and SHA256. V21 predictive completes155 workflows with1
+incomplete in11375.87 seconds; same-version cold native is loading the service.
+Its354 confirmed dynamic children release cumulative device FULL115.495GB and
+Mamba120.858GB. Of188 observed parent services,185 follow
 linked device release. Last child scheduler RETURN observation to first observed
-completed parent batch P50/P90 is209.57/496.53ms; request queue to that batch is
-169.05/501.93ms, with an18.906s maximum. Independent early-and-reused FULL is
+completed parent batch P50/P90 is209.57/493.56ms; request queue to that batch is
+168.29/500.65ms, with an18.906s maximum. Independent early-and-reused FULL is
 1.419GB from91 JOIN events and2.530GB from84 tool events;99.782GB reused demand
 handoff FULL stays separate. Only23 JOIN node commands precede server EOS.
-These are partial lifecycle associations, not simultaneous free capacity,
+These are predictive-arm lifecycle associations, not simultaneous free capacity,
 exclusive page ownership, exact kernel-start times or native-relative savings.
 The queued V22 changes are not deployed in this snapshot.
 

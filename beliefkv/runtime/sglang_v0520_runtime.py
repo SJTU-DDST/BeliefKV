@@ -1279,6 +1279,15 @@ class NativeAdmissionRuntime:
             }
         return ready
 
+    def _invalidate_wait_transfer_observation(self, key: PrefillCandidateKey) -> None:
+        semantic = self._semantic_target_cache.pop(key, None)
+        tool = self._tool_opportunity_cache.pop(key, None)
+        if semantic is not None or tool is not None:
+            self.counts["wait_transfer_observation_invalidated"] += 1
+        hint = self.tool_wait_hints.get(key.context_id)
+        if hint is not None and hint.key == key:
+            self._tool_prefetch_next_ms = 0.
+
     @timed_runtime("semantic_updates")
     def _poll_semantic_reports(self, now_ms: float) -> None:
         worker = self._semantic_worker
@@ -3290,6 +3299,7 @@ class NativeAdmissionRuntime:
             self._reentry_observations.clear()
             self._execution_handoff_next_ms = 0.
             if handoff is not None and handoff.join_id == reclaim.join_id:
+                self._invalidate_wait_transfer_observation(handoff.key)
                 self._rearm_parent_capacity_restore(handoff)
 
     def _rearm_parent_capacity_restore(self, handoff: _ParentCapacityHandoff) -> None:
@@ -6138,6 +6148,12 @@ class NativeAdmissionRuntime:
         # A burst's deepest node locks its FULL ancestry once; registering its
         # ancestors first would consume the budget without protecting the state.
         for action in reversed(completed):
+            if (
+                action.action == "PREPARE_HOST"
+                and (key := self.context_sessions.get(action.context_id)) is not None
+                and key.context_epoch in (action.context_epoch, action.context_epoch + 1)
+            ):
+                self._invalidate_wait_transfer_observation(key)
             self._register_prefetch_service_lease(action)
             issued = self._prefetch_issue_times.pop(action.command_id, None)
             submitted = getattr(commit, "submit_ts_ms", None)

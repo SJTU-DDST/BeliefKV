@@ -1,42 +1,47 @@
 {
-  "scope": "partial running V21 evidence; not a completed native-relative comparison",
-  "source_audit": "/home/longhao/experiment/BeliefKV/experiments/reports/v25_v21_capacity_handoff_refresh_20261011.json",
-  "source_audit_sha256": "7bc0f8b34f33e027cb332386cabdc08c1359fddc18460d90157bfe73acc11941",
+  "scope": "completed V21 predictive evidence; cold native comparison still running",
+  "source_audit": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v21/predictive_h2d/prefetch_lifecycle.json",
+  "source_audit_sha256": "73839a4c339c95df4efae3555219b5c04074cffc961959cc8ca02f299444756b",
   "live_revision": "597688c62aabc9667484aefe315664a447fea9bb",
   "queued_revision": "658f6390126148b1df76d5f4b0ce7c19e1dacd6f",
-  "confirmed_dynamic_children": 352,
+  "predictive_workflow_outcomes": {
+    "completed": 155,
+    "incomplete": 1
+  },
+  "predictive_duration_seconds": 11375.871759811416,
+  "confirmed_dynamic_children": 354,
   "dynamic_child_cumulative_device_release_bytes": {
-    "full": 113907384320,
-    "mamba": 117188198400
+    "full": 115495403520,
+    "mamba": 120858378240
   },
   "dynamic_child_cumulative_host_release_bytes": {
     "full": 50917806080,
     "mamba": 53958082560
   },
-  "parent_first_observed_completed_batches": 186,
-  "parent_services_after_linked_device_release": 183,
+  "parent_first_observed_completed_batches": 188,
+  "parent_services_after_linked_device_release": 185,
   "last_child_return_observation_to_parent_completed_batch_ms": {
-    "count": 186,
+    "count": 188,
     "p50": 209.568603515625,
-    "p90": 496.5311279296875,
+    "p90": 493.55754394531266,
     "max": 18904.607666015625
   },
   "parent_request_queue_to_completed_batch_ms": {
-    "count": 186,
-    "p50": 169.05482998117805,
-    "p90": 501.93176651373506,
+    "count": 188,
+    "p50": 168.2934733107686,
+    "p90": 500.6520840339363,
     "max": 18905.920029617846
   },
   "restore_lookahead_records": 43,
   "parent_services_after_linked_restore_lookahead": 43,
   "independent_early_reused_full": {
     "join": {
-      "observed_wait_events": 186,
+      "observed_wait_events": 187,
       "events_with_early_reused_full": 91,
       "early_started_and_reused_full_bytes": 1418731520
     },
     "tool": {
-      "observed_wait_events": 11810,
+      "observed_wait_events": 11965,
       "events_with_early_reused_full": 84,
       "early_started_and_reused_full_bytes": 2529935360
     }
