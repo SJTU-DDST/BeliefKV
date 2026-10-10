@@ -1,0 +1,404 @@
+{
+  "scope": "pristine workspaces of verified stopped zero-result starts; preserve all other files",
+  "execute": true,
+  "observed_at_unix": 1791657275.0660732,
+  "disk_free_before_bytes": 61527838720,
+  "arms": [
+    {
+      "arm": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261009_v12/predictive_h2d",
+      "recorded_exited_scheduler_pid": 1890758,
+      "status_counts": {
+        "pristine": 65,
+        "dirty_or_unavailable": 43
+      },
+      "removed_workspaces": [
+        "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261009_v12/predictive_h2d/client_156/workflows/django__django-10097/workspace",
+        "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261009_v12/predictive_h2d/client_156/workflows/django__django-10554/workspace",
+        "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261009_v12/predictive_h2d/client_156/workflows/django__django-10880/workspace",
+        "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261009_v12/predictive_h2d/client_156/workflows/django__django-10973/workspace",
+        "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261009_v12/predictive_h2d/client_156/workflows/django__django-11066/workspace",
+        "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261009_v12/predictive_h2d/client_156/workflows/django__django-11087/workspace",
+        "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261009_v12/predictive_h2d/client_156/workflows/django__django-11119/workspace",
+        "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261009_v12/predictive_h2d/client_156/workflows/django__django-11138/workspace",
+        "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261009_v12/predictive_h2d/client_156/workflows/django__django-11141/workspace",
+        "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261009_v12/predictive_h2d/client_156/workflows/django__django-11149/workspace",
+        "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261009_v12/predictive_h2d/client_156/workflows/django__django-11206/workspace",
+        "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261009_v12/predictive_h2d/client_156/workflows/django__django-11211/workspace",
+        "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261009_v12/predictive_h2d/client_156/workflows/django__django-11239/workspace",
+        "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261009_v12/predictive_h2d/client_156/workflows/django__django-11265/workspace",
+        "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261009_v12/predictive_h2d/client_156/workflows/django__django-11276/workspace",
+        "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261009_v12/predictive_h2d/client_156/workflows/django__django-11292/workspace",
+        "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261009_v12/predictive_h2d/client_156/workflows/django__django-11299/workspace",
+        "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261009_v12/predictive_h2d/client_156/workflows/django__django-11400/workspace",
+        "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261009_v12/predictive_h2d/client_156/workflows/django__django-11433/workspace",
+        "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261009_v12/predictive_h2d/client_156/workflows/django__django-11451/workspace",
+        "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261009_v12/predictive_h2d/client_156/workflows/django__django-11477/workspace",
+        "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261009_v12/predictive_h2d/client_156/workflows/django__django-11490/workspace",
+        "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261009_v12/predictive_h2d/client_156/workflows/django__django-11532/workspace",
+        "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261009_v12/predictive_h2d/client_156/workflows/django__django-11734/workspace",
+        "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261009_v12/predictive_h2d/client_156/workflows/django__django-11820/workspace",
+        "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261009_v12/predictive_h2d/client_156/workflows/django__django-12754/workspace",
+        "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261009_v12/predictive_h2d/client_156/workflows/django__django-13023/workspace",
+        "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261009_v12/predictive_h2d/client_156/workflows/django__django-14349/workspace",
+        "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261009_v12/predictive_h2d/client_156/workflows/django__django-14500/workspace",
+        "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261009_v12/predictive_h2d/client_156/workflows/django__django-14631/workspace",
+        "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261009_v12/predictive_h2d/client_156/workflows/django__django-15315/workspace",
+        "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261009_v12/predictive_h2d/client_156/workflows/django__django-16502/workspace",
+        "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261009_v12/predictive_h2d/client_156/workflows/django__django-16877/workspace",
+        "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261009_v12/predictive_h2d/client_156/workflows/django__django-16938/workspace",
+        "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261009_v12/predictive_h2d/client_156/workflows/mwaskom__seaborn-3069/workspace",
+        "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261009_v12/predictive_h2d/client_156/workflows/pallets__flask-5014/workspace",
+        "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261009_v12/predictive_h2d/client_156/workflows/psf__requests-1724/workspace",
+        "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261009_v12/predictive_h2d/client_156/workflows/psf__requests-1766/workspace",
+        "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261009_v12/predictive_h2d/client_156/workflows/psf__requests-5414/workspace",
+        "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261009_v12/predictive_h2d/client_156/workflows/psf__requests-6028/workspace",
+        "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261009_v12/predictive_h2d/client_156/workflows/pydata__xarray-2905/workspace",
+        "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261009_v12/predictive_h2d/client_156/workflows/pydata__xarray-3095/workspace",
+        "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261009_v12/predictive_h2d/client_156/workflows/pydata__xarray-3151/workspace",
+        "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261009_v12/predictive_h2d/client_156/workflows/pydata__xarray-3993/workspace",
+        "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261009_v12/predictive_h2d/client_156/workflows/pydata__xarray-4075/workspace",
+        "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261009_v12/predictive_h2d/client_156/workflows/pydata__xarray-4094/workspace",
+        "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261009_v12/predictive_h2d/client_156/workflows/pydata__xarray-4687/workspace",
+        "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261009_v12/predictive_h2d/client_156/workflows/pydata__xarray-4966/workspace",
+        "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261009_v12/predictive_h2d/client_156/workflows/pydata__xarray-6721/workspace",
+        "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261009_v12/predictive_h2d/client_156/workflows/pydata__xarray-6938/workspace",
+        "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261009_v12/predictive_h2d/client_156/workflows/pydata__xarray-6992/workspace",
+        "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261009_v12/predictive_h2d/client_156/workflows/pydata__xarray-7229/workspace",
+        "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261009_v12/predictive_h2d/client_156/workflows/pydata__xarray-7233/workspace",
+        "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261009_v12/predictive_h2d/client_156/workflows/pydata__xarray-7393/workspace",
+        "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261009_v12/predictive_h2d/client_156/workflows/pylint-dev__pylint-4604/workspace",
+        "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261009_v12/predictive_h2d/client_156/workflows/pylint-dev__pylint-4661/workspace",
+        "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261009_v12/predictive_h2d/client_156/workflows/pylint-dev__pylint-4970/workspace",
+        "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261009_v12/predictive_h2d/client_156/workflows/pylint-dev__pylint-6903/workspace",
+        "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261009_v12/predictive_h2d/client_156/workflows/pylint-dev__pylint-7277/workspace",
+        "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261009_v12/predictive_h2d/client_156/workflows/pytest-dev__pytest-10356/workspace",
+        "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261009_v12/predictive_h2d/client_156/workflows/pytest-dev__pytest-5787/workspace",
+        "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261009_v12/predictive_h2d/client_156/workflows/pytest-dev__pytest-5840/workspace",
+        "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261009_v12/predictive_h2d/client_156/workflows/pytest-dev__pytest-6202/workspace",
+        "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261009_v12/predictive_h2d/client_156/workflows/pytest-dev__pytest-7205/workspace",
+        "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261009_v12/predictive_h2d/client_156/workflows/pytest-dev__pytest-7982/workspace"
+      ],
+      "retained_workspaces": [
+        {
+          "workspace": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261009_v12/predictive_h2d/client_156/workflows/django__django-10914/workspace",
+          "status": "dirty_or_unavailable"
+        },
+        {
+          "workspace": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261009_v12/predictive_h2d/client_156/workflows/django__django-10999/workspace",
+          "status": "dirty_or_unavailable"
+        },
+        {
+          "workspace": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261009_v12/predictive_h2d/client_156/workflows/django__django-11095/workspace",
+          "status": "dirty_or_unavailable"
+        },
+        {
+          "workspace": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261009_v12/predictive_h2d/client_156/workflows/django__django-11099/workspace",
+          "status": "dirty_or_unavailable"
+        },
+        {
+          "workspace": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261009_v12/predictive_h2d/client_156/workflows/django__django-11163/workspace",
+          "status": "dirty_or_unavailable"
+        },
+        {
+          "workspace": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261009_v12/predictive_h2d/client_156/workflows/django__django-11179/workspace",
+          "status": "dirty_or_unavailable"
+        },
+        {
+          "workspace": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261009_v12/predictive_h2d/client_156/workflows/django__django-11333/workspace",
+          "status": "dirty_or_unavailable"
+        },
+        {
+          "workspace": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261009_v12/predictive_h2d/client_156/workflows/django__django-12741/workspace",
+          "status": "dirty_or_unavailable"
+        },
+        {
+          "workspace": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261009_v12/predictive_h2d/client_156/workflows/django__django-13964/workspace",
+          "status": "dirty_or_unavailable"
+        },
+        {
+          "workspace": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261009_v12/predictive_h2d/client_156/workflows/django__django-15103/workspace",
+          "status": "dirty_or_unavailable"
+        },
+        {
+          "workspace": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261009_v12/predictive_h2d/client_156/workflows/django__django-15368/workspace",
+          "status": "dirty_or_unavailable"
+        },
+        {
+          "workspace": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261009_v12/predictive_h2d/client_156/workflows/django__django-16255/workspace",
+          "status": "dirty_or_unavailable"
+        },
+        {
+          "workspace": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261009_v12/predictive_h2d/client_156/workflows/django__django-16667/workspace",
+          "status": "dirty_or_unavailable"
+        },
+        {
+          "workspace": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261009_v12/predictive_h2d/client_156/workflows/mwaskom__seaborn-3187/workspace",
+          "status": "dirty_or_unavailable"
+        },
+        {
+          "workspace": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261009_v12/predictive_h2d/client_156/workflows/psf__requests-1142/workspace",
+          "status": "dirty_or_unavailable"
+        },
+        {
+          "workspace": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261009_v12/predictive_h2d/client_156/workflows/psf__requests-1921/workspace",
+          "status": "dirty_or_unavailable"
+        },
+        {
+          "workspace": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261009_v12/predictive_h2d/client_156/workflows/psf__requests-2317/workspace",
+          "status": "dirty_or_unavailable"
+        },
+        {
+          "workspace": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261009_v12/predictive_h2d/client_156/workflows/psf__requests-2931/workspace",
+          "status": "dirty_or_unavailable"
+        },
+        {
+          "workspace": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261009_v12/predictive_h2d/client_156/workflows/pydata__xarray-3305/workspace",
+          "status": "dirty_or_unavailable"
+        },
+        {
+          "workspace": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261009_v12/predictive_h2d/client_156/workflows/pydata__xarray-3677/workspace",
+          "status": "dirty_or_unavailable"
+        },
+        {
+          "workspace": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261009_v12/predictive_h2d/client_156/workflows/pydata__xarray-4356/workspace",
+          "status": "dirty_or_unavailable"
+        },
+        {
+          "workspace": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261009_v12/predictive_h2d/client_156/workflows/pydata__xarray-4629/workspace",
+          "status": "dirty_or_unavailable"
+        },
+        {
+          "workspace": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261009_v12/predictive_h2d/client_156/workflows/pydata__xarray-6461/workspace",
+          "status": "dirty_or_unavailable"
+        },
+        {
+          "workspace": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261009_v12/predictive_h2d/client_156/workflows/pydata__xarray-6599/workspace",
+          "status": "dirty_or_unavailable"
+        },
+        {
+          "workspace": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261009_v12/predictive_h2d/client_156/workflows/pydata__xarray-6744/workspace",
+          "status": "dirty_or_unavailable"
+        },
+        {
+          "workspace": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261009_v12/predictive_h2d/client_156/workflows/pylint-dev__pylint-4551/workspace",
+          "status": "dirty_or_unavailable"
+        },
+        {
+          "workspace": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261009_v12/predictive_h2d/client_156/workflows/pylint-dev__pylint-6386/workspace",
+          "status": "dirty_or_unavailable"
+        },
+        {
+          "workspace": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261009_v12/predictive_h2d/client_156/workflows/pylint-dev__pylint-6528/workspace",
+          "status": "dirty_or_unavailable"
+        },
+        {
+          "workspace": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261009_v12/predictive_h2d/client_156/workflows/pylint-dev__pylint-7080/workspace",
+          "status": "dirty_or_unavailable"
+        },
+        {
+          "workspace": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261009_v12/predictive_h2d/client_156/workflows/pylint-dev__pylint-8898/workspace",
+          "status": "dirty_or_unavailable"
+        },
+        {
+          "workspace": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261009_v12/predictive_h2d/client_156/workflows/pytest-dev__pytest-10051/workspace",
+          "status": "dirty_or_unavailable"
+        },
+        {
+          "workspace": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261009_v12/predictive_h2d/client_156/workflows/pytest-dev__pytest-10081/workspace",
+          "status": "dirty_or_unavailable"
+        },
+        {
+          "workspace": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261009_v12/predictive_h2d/client_156/workflows/pytest-dev__pytest-5262/workspace",
+          "status": "dirty_or_unavailable"
+        },
+        {
+          "workspace": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261009_v12/predictive_h2d/client_156/workflows/pytest-dev__pytest-5631/workspace",
+          "status": "dirty_or_unavailable"
+        },
+        {
+          "workspace": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261009_v12/predictive_h2d/client_156/workflows/pytest-dev__pytest-5809/workspace",
+          "status": "dirty_or_unavailable"
+        },
+        {
+          "workspace": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261009_v12/predictive_h2d/client_156/workflows/pytest-dev__pytest-6197/workspace",
+          "status": "dirty_or_unavailable"
+        },
+        {
+          "workspace": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261009_v12/predictive_h2d/client_156/workflows/pytest-dev__pytest-7236/workspace",
+          "status": "dirty_or_unavailable"
+        },
+        {
+          "workspace": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261009_v12/predictive_h2d/client_156/workflows/pytest-dev__pytest-7324/workspace",
+          "status": "dirty_or_unavailable"
+        },
+        {
+          "workspace": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261009_v12/predictive_h2d/client_156/workflows/pytest-dev__pytest-7432/workspace",
+          "status": "dirty_or_unavailable"
+        },
+        {
+          "workspace": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261009_v12/predictive_h2d/client_156/workflows/pytest-dev__pytest-7490/workspace",
+          "status": "dirty_or_unavailable"
+        },
+        {
+          "workspace": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261009_v12/predictive_h2d/client_156/workflows/pytest-dev__pytest-7521/workspace",
+          "status": "dirty_or_unavailable"
+        },
+        {
+          "workspace": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261009_v12/predictive_h2d/client_156/workflows/pytest-dev__pytest-7571/workspace",
+          "status": "dirty_or_unavailable"
+        },
+        {
+          "workspace": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261009_v12/predictive_h2d/client_156/workflows/pytest-dev__pytest-8399/workspace",
+          "status": "dirty_or_unavailable"
+        }
+      ],
+      "candidate_count": 108
+    },
+    {
+      "arm": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261009_v10/predictive_h2d_failed_start_04812ec",
+      "recorded_exited_scheduler_pid": 3987324,
+      "status_counts": {
+        "pristine": 100,
+        "dirty_or_unavailable": 8
+      },
+      "removed_workspaces": [
+        "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261009_v10/predictive_h2d_failed_start_04812ec/client_156/workflows/django__django-10097/workspace",
+        "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261009_v10/predictive_h2d_failed_start_04812ec/client_156/workflows/django__django-10554/workspace",
+        "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261009_v10/predictive_h2d_failed_start_04812ec/client_156/workflows/django__django-10880/workspace",
+        "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261009_v10/predictive_h2d_failed_start_04812ec/client_156/workflows/django__django-10914/workspace",
+        "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261009_v10/predictive_h2d_failed_start_04812ec/client_156/workflows/django__django-10973/workspace",
+        "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261009_v10/predictive_h2d_failed_start_04812ec/client_156/workflows/django__django-10999/workspace",
+        "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261009_v10/predictive_h2d_failed_start_04812ec/client_156/workflows/django__django-11066/workspace",
+        "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261009_v10/predictive_h2d_failed_start_04812ec/client_156/workflows/django__django-11087/workspace",
+        "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261009_v10/predictive_h2d_failed_start_04812ec/client_156/workflows/django__django-11095/workspace",
+        "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261009_v10/predictive_h2d_failed_start_04812ec/client_156/workflows/django__django-11099/workspace",
+        "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261009_v10/predictive_h2d_failed_start_04812ec/client_156/workflows/django__django-11119/workspace",
+        "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261009_v10/predictive_h2d_failed_start_04812ec/client_156/workflows/django__django-11138/workspace",
+        "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261009_v10/predictive_h2d_failed_start_04812ec/client_156/workflows/django__django-11141/workspace",
+        "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261009_v10/predictive_h2d_failed_start_04812ec/client_156/workflows/django__django-11149/workspace",
+        "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261009_v10/predictive_h2d_failed_start_04812ec/client_156/workflows/django__django-11163/workspace",
+        "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261009_v10/predictive_h2d_failed_start_04812ec/client_156/workflows/django__django-11206/workspace",
+        "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261009_v10/predictive_h2d_failed_start_04812ec/client_156/workflows/django__django-11211/workspace",
+        "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261009_v10/predictive_h2d_failed_start_04812ec/client_156/workflows/django__django-11239/workspace",
+        "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261009_v10/predictive_h2d_failed_start_04812ec/client_156/workflows/django__django-11265/workspace",
+        "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261009_v10/predictive_h2d_failed_start_04812ec/client_156/workflows/django__django-11276/workspace",
+        "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261009_v10/predictive_h2d_failed_start_04812ec/client_156/workflows/django__django-11292/workspace",
+        "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261009_v10/predictive_h2d_failed_start_04812ec/client_156/workflows/django__django-11299/workspace",
+        "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261009_v10/predictive_h2d_failed_start_04812ec/client_156/workflows/django__django-11333/workspace",
+        "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261009_v10/predictive_h2d_failed_start_04812ec/client_156/workflows/django__django-11400/workspace",
+        "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261009_v10/predictive_h2d_failed_start_04812ec/client_156/workflows/django__django-11433/workspace",
+        "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261009_v10/predictive_h2d_failed_start_04812ec/client_156/workflows/django__django-11451/workspace",
+        "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261009_v10/predictive_h2d_failed_start_04812ec/client_156/workflows/django__django-11477/workspace",
+        "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261009_v10/predictive_h2d_failed_start_04812ec/client_156/workflows/django__django-11490/workspace",
+        "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261009_v10/predictive_h2d_failed_start_04812ec/client_156/workflows/django__django-11532/workspace",
+        "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261009_v10/predictive_h2d_failed_start_04812ec/client_156/workflows/django__django-11734/workspace",
+        "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261009_v10/predictive_h2d_failed_start_04812ec/client_156/workflows/django__django-11820/workspace",
+        "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261009_v10/predictive_h2d_failed_start_04812ec/client_156/workflows/django__django-12741/workspace",
+        "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261009_v10/predictive_h2d_failed_start_04812ec/client_156/workflows/django__django-12754/workspace",
+        "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261009_v10/predictive_h2d_failed_start_04812ec/client_156/workflows/django__django-13023/workspace",
+        "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261009_v10/predictive_h2d_failed_start_04812ec/client_156/workflows/django__django-13964/workspace",
+        "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261009_v10/predictive_h2d_failed_start_04812ec/client_156/workflows/django__django-14349/workspace",
+        "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261009_v10/predictive_h2d_failed_start_04812ec/client_156/workflows/django__django-14500/workspace",
+        "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261009_v10/predictive_h2d_failed_start_04812ec/client_156/workflows/django__django-14631/workspace",
+        "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261009_v10/predictive_h2d_failed_start_04812ec/client_156/workflows/django__django-15103/workspace",
+        "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261009_v10/predictive_h2d_failed_start_04812ec/client_156/workflows/django__django-15368/workspace",
+        "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261009_v10/predictive_h2d_failed_start_04812ec/client_156/workflows/django__django-16255/workspace",
+        "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261009_v10/predictive_h2d_failed_start_04812ec/client_156/workflows/django__django-16502/workspace",
+        "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261009_v10/predictive_h2d_failed_start_04812ec/client_156/workflows/django__django-16667/workspace",
+        "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261009_v10/predictive_h2d_failed_start_04812ec/client_156/workflows/django__django-16877/workspace",
+        "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261009_v10/predictive_h2d_failed_start_04812ec/client_156/workflows/django__django-16938/workspace",
+        "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261009_v10/predictive_h2d_failed_start_04812ec/client_156/workflows/mwaskom__seaborn-3069/workspace",
+        "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261009_v10/predictive_h2d_failed_start_04812ec/client_156/workflows/mwaskom__seaborn-3187/workspace",
+        "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261009_v10/predictive_h2d_failed_start_04812ec/client_156/workflows/pallets__flask-5014/workspace",
+        "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261009_v10/predictive_h2d_failed_start_04812ec/client_156/workflows/psf__requests-1142/workspace",
+        "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261009_v10/predictive_h2d_failed_start_04812ec/client_156/workflows/psf__requests-1724/workspace",
+        "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261009_v10/predictive_h2d_failed_start_04812ec/client_156/workflows/psf__requests-1766/workspace",
+        "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261009_v10/predictive_h2d_failed_start_04812ec/client_156/workflows/psf__requests-1921/workspace",
+        "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261009_v10/predictive_h2d_failed_start_04812ec/client_156/workflows/psf__requests-2317/workspace",
+        "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261009_v10/predictive_h2d_failed_start_04812ec/client_156/workflows/psf__requests-2931/workspace",
+        "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261009_v10/predictive_h2d_failed_start_04812ec/client_156/workflows/psf__requests-5414/workspace",
+        "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261009_v10/predictive_h2d_failed_start_04812ec/client_156/workflows/psf__requests-6028/workspace",
+        "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261009_v10/predictive_h2d_failed_start_04812ec/client_156/workflows/pydata__xarray-2905/workspace",
+        "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261009_v10/predictive_h2d_failed_start_04812ec/client_156/workflows/pydata__xarray-3095/workspace",
+        "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261009_v10/predictive_h2d_failed_start_04812ec/client_156/workflows/pydata__xarray-3151/workspace",
+        "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261009_v10/predictive_h2d_failed_start_04812ec/client_156/workflows/pydata__xarray-3305/workspace",
+        "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261009_v10/predictive_h2d_failed_start_04812ec/client_156/workflows/pydata__xarray-3677/workspace",
+        "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261009_v10/predictive_h2d_failed_start_04812ec/client_156/workflows/pydata__xarray-3993/workspace",
+        "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261009_v10/predictive_h2d_failed_start_04812ec/client_156/workflows/pydata__xarray-4075/workspace",
+        "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261009_v10/predictive_h2d_failed_start_04812ec/client_156/workflows/pydata__xarray-4094/workspace",
+        "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261009_v10/predictive_h2d_failed_start_04812ec/client_156/workflows/pydata__xarray-4629/workspace",
+        "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261009_v10/predictive_h2d_failed_start_04812ec/client_156/workflows/pydata__xarray-4687/workspace",
+        "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261009_v10/predictive_h2d_failed_start_04812ec/client_156/workflows/pydata__xarray-4966/workspace",
+        "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261009_v10/predictive_h2d_failed_start_04812ec/client_156/workflows/pydata__xarray-6461/workspace",
+        "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261009_v10/predictive_h2d_failed_start_04812ec/client_156/workflows/pydata__xarray-6599/workspace",
+        "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261009_v10/predictive_h2d_failed_start_04812ec/client_156/workflows/pydata__xarray-6721/workspace",
+        "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261009_v10/predictive_h2d_failed_start_04812ec/client_156/workflows/pydata__xarray-6744/workspace",
+        "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261009_v10/predictive_h2d_failed_start_04812ec/client_156/workflows/pydata__xarray-6938/workspace",
+        "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261009_v10/predictive_h2d_failed_start_04812ec/client_156/workflows/pydata__xarray-6992/workspace",
+        "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261009_v10/predictive_h2d_failed_start_04812ec/client_156/workflows/pydata__xarray-7229/workspace",
+        "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261009_v10/predictive_h2d_failed_start_04812ec/client_156/workflows/pydata__xarray-7233/workspace",
+        "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261009_v10/predictive_h2d_failed_start_04812ec/client_156/workflows/pydata__xarray-7393/workspace",
+        "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261009_v10/predictive_h2d_failed_start_04812ec/client_156/workflows/pylint-dev__pylint-4551/workspace",
+        "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261009_v10/predictive_h2d_failed_start_04812ec/client_156/workflows/pylint-dev__pylint-4604/workspace",
+        "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261009_v10/predictive_h2d_failed_start_04812ec/client_156/workflows/pylint-dev__pylint-4661/workspace",
+        "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261009_v10/predictive_h2d_failed_start_04812ec/client_156/workflows/pylint-dev__pylint-4970/workspace",
+        "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261009_v10/predictive_h2d_failed_start_04812ec/client_156/workflows/pylint-dev__pylint-6386/workspace",
+        "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261009_v10/predictive_h2d_failed_start_04812ec/client_156/workflows/pylint-dev__pylint-6528/workspace",
+        "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261009_v10/predictive_h2d_failed_start_04812ec/client_156/workflows/pylint-dev__pylint-6903/workspace",
+        "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261009_v10/predictive_h2d_failed_start_04812ec/client_156/workflows/pylint-dev__pylint-7080/workspace",
+        "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261009_v10/predictive_h2d_failed_start_04812ec/client_156/workflows/pylint-dev__pylint-7277/workspace",
+        "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261009_v10/predictive_h2d_failed_start_04812ec/client_156/workflows/pylint-dev__pylint-8898/workspace",
+        "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261009_v10/predictive_h2d_failed_start_04812ec/client_156/workflows/pytest-dev__pytest-10081/workspace",
+        "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261009_v10/predictive_h2d_failed_start_04812ec/client_156/workflows/pytest-dev__pytest-10356/workspace",
+        "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261009_v10/predictive_h2d_failed_start_04812ec/client_156/workflows/pytest-dev__pytest-5262/workspace",
+        "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261009_v10/predictive_h2d_failed_start_04812ec/client_156/workflows/pytest-dev__pytest-5631/workspace",
+        "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261009_v10/predictive_h2d_failed_start_04812ec/client_156/workflows/pytest-dev__pytest-5787/workspace",
+        "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261009_v10/predictive_h2d_failed_start_04812ec/client_156/workflows/pytest-dev__pytest-5809/workspace",
+        "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261009_v10/predictive_h2d_failed_start_04812ec/client_156/workflows/pytest-dev__pytest-5840/workspace",
+        "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261009_v10/predictive_h2d_failed_start_04812ec/client_156/workflows/pytest-dev__pytest-6197/workspace",
+        "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261009_v10/predictive_h2d_failed_start_04812ec/client_156/workflows/pytest-dev__pytest-7205/workspace",
+        "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261009_v10/predictive_h2d_failed_start_04812ec/client_156/workflows/pytest-dev__pytest-7324/workspace",
+        "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261009_v10/predictive_h2d_failed_start_04812ec/client_156/workflows/pytest-dev__pytest-7490/workspace",
+        "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261009_v10/predictive_h2d_failed_start_04812ec/client_156/workflows/pytest-dev__pytest-7521/workspace",
+        "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261009_v10/predictive_h2d_failed_start_04812ec/client_156/workflows/pytest-dev__pytest-7571/workspace",
+        "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261009_v10/predictive_h2d_failed_start_04812ec/client_156/workflows/pytest-dev__pytest-7982/workspace"
+      ],
+      "retained_workspaces": [
+        {
+          "workspace": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261009_v10/predictive_h2d_failed_start_04812ec/client_156/workflows/django__django-11179/workspace",
+          "status": "dirty_or_unavailable"
+        },
+        {
+          "workspace": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261009_v10/predictive_h2d_failed_start_04812ec/client_156/workflows/django__django-15315/workspace",
+          "status": "dirty_or_unavailable"
+        },
+        {
+          "workspace": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261009_v10/predictive_h2d_failed_start_04812ec/client_156/workflows/pydata__xarray-4356/workspace",
+          "status": "dirty_or_unavailable"
+        },
+        {
+          "workspace": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261009_v10/predictive_h2d_failed_start_04812ec/client_156/workflows/pytest-dev__pytest-10051/workspace",
+          "status": "dirty_or_unavailable"
+        },
+        {
+          "workspace": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261009_v10/predictive_h2d_failed_start_04812ec/client_156/workflows/pytest-dev__pytest-6202/workspace",
+          "status": "dirty_or_unavailable"
+        },
+        {
+          "workspace": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261009_v10/predictive_h2d_failed_start_04812ec/client_156/workflows/pytest-dev__pytest-7236/workspace",
+          "status": "dirty_or_unavailable"
+        },
+        {
+          "workspace": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261009_v10/predictive_h2d_failed_start_04812ec/client_156/workflows/pytest-dev__pytest-7432/workspace",
+          "status": "dirty_or_unavailable"
+        },
+        {
+          "workspace": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261009_v10/predictive_h2d_failed_start_04812ec/client_156/workflows/pytest-dev__pytest-8399/workspace",
+          "status": "dirty_or_unavailable"
+        }
+      ],
+      "candidate_count": 108
+    }
+  ],
+  "disk_free_after_bytes": 95368216576
+}

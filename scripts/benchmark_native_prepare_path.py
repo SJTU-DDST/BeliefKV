@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import argparse
+import ast
 from collections import Counter
 from dataclasses import replace
 import hashlib
@@ -28,6 +29,96 @@ from beliefkv.policy.causal_frontier import CausalFrontierScheduler
 from tests.test_sglang_v0520_observer import (
     ComponentData, UnifiedTreeCore, UnifiedTreeNode, _static_cache,
 )
+
+
+def static_counter_case(*, engine: Path, iterations: int) -> dict:
+    """Compare live counters using native tensor-size code and CPU tensors."""
+    import torch
+    from beliefkv.runtime import sglang_v0520_observer as current
+
+    baseline = sys.modules["beliefkv.runtime._prepare_baseline_observer"]
+    source_path = engine / "python/sglang/srt/mem_cache/memory_pool.py"
+    source = source_path.read_text()
+    tree = ast.parse(source)
+    helper = next(node for node in tree.body if isinstance(node, ast.FunctionDef)
+                  and node.name == "get_tensor_size_bytes")
+    pool = next(node for node in tree.body if isinstance(node, ast.ClassDef)
+                and node.name == "MHATokenToKVPool")
+    method = next(node for node in pool.body if isinstance(node, ast.FunctionDef)
+                  and node.name == "get_kv_size_bytes")
+    namespace = {"torch": torch, "np": np}
+    exec(compile(ast.Module(body=[helper, method], type_ignores=[]),
+                 str(source_path), "exec"), namespace)
+    variants, census_reads = {}, Counter(baseline=0, optimized=0)
+    phases = ("headroom", "host_usage")
+    samples = {name: {phase: {"wall": [], "thread_cpu": []} for phase in phases}
+               for name in ("baseline", "optimized")}
+    for name, module in (("baseline", baseline), ("optimized", current)):
+        cache = _static_cache()
+        full = cache.token_to_kv_pool_allocator._kvcache.full_kv_pool
+        full.k_buffer = [torch.empty((2, 4), dtype=torch.bfloat16) for _ in range(10)]
+        full.v_buffer = [torch.empty_like(item) for item in full.k_buffer]
+
+        def census(*, name=name, full=full):
+            census_reads[name] += 1
+            return namespace["get_kv_size_bytes"](full)
+
+        full.get_kv_size_bytes = census
+        state = cache.req_to_token_pool.mamba_pool.mamba_cache
+        state.conv = [torch.empty((30, 2, 4), dtype=torch.bfloat16)]
+        state.temporal = torch.empty((30, 2, 4), dtype=torch.bfloat16)
+        variants[name] = (cache, {
+            "headroom": module.observe_static_full_mamba_headroom,
+            "host_usage": module.observe_static_full_mamba_host_usage,
+        })
+    calls_per_sample = 50
+    for iteration in range(iterations + 5):
+        names = list(variants)
+        if iteration % 2:
+            names.reverse()
+        outputs = {}
+        for name in names:
+            cache, callbacks = variants[name]
+            free = iteration % 13
+            cache.token_to_kv_pool_allocator.available_size = lambda: free
+            cache.host_pool_group.entry_map["kv"].host_pool.available_size = lambda: free
+            outputs[name] = []
+            for phase, callback in callbacks.items():
+                wall_start, cpu_start = time.perf_counter_ns(), time.thread_time_ns()
+                for _ in range(calls_per_sample):
+                    observed = callback(cache)
+                cpu_ms = (time.thread_time_ns() - cpu_start) / 1_000_000 / calls_per_sample
+                wall_ms = (time.perf_counter_ns() - wall_start) / 1_000_000 / calls_per_sample
+                if not observed.observable:
+                    raise AssertionError("valid live-counter fixture was rejected")
+                outputs[name].append(vars(observed))
+                if iteration >= 5:
+                    samples[name][phase]["wall"].append(wall_ms)
+                    samples[name][phase]["thread_cpu"].append(cpu_ms)
+        if outputs["baseline"] != outputs["optimized"]:
+            raise AssertionError("changed live free-list or Host usage observation")
+    costs = {
+        name: {phase: {clock: distribution(values) for clock, values in clocks.items()}
+               for phase, clocks in per_phase.items()}
+        for name, per_phase in samples.items()
+    }
+    return {
+        "scope": "native tensor-size method on tiny CPU tensors; no DMA or GPU throughput measurement",
+        "native_pool_source": str(source_path.resolve()),
+        "native_pool_source_sha256": hashlib.sha256(source.encode()).hexdigest(),
+        "full_tensor_layers": 10, "mamba_tensor_layers": 30,
+        "iterations": iterations, "calls_per_sample": calls_per_sample,
+        "live_free_list_observations_equal": True,
+        "tensor_census_calls_including_warmup": dict(census_reads),
+        "costs": costs,
+        "mean_reduction": {
+            phase: {clock: 1 - costs["optimized"][phase][clock]["mean_ms"]
+                    / costs["baseline"][phase][clock]["mean_ms"]
+                    for clock in ("wall", "thread_cpu")}
+            for phase in phases
+        },
+    }
+
 
 def baseline_runtime(revision):
     modules, digests = [], {}
@@ -692,6 +783,10 @@ def main():
                         help="Measure the first eight cold candidates consumed by each native pool.")
     parser.add_argument("--failed-sampling-only", action="store_true",
                         help="Measure shared failed-closure sampling and its normal-path overhead.")
+    parser.add_argument("--static-counters-only", action="store_true",
+                        help="Measure live free-list counters using native tensor-size code.")
+    parser.add_argument("--engine", type=Path,
+                        default=ROOT / "third_party/sglang-v0.5.20")
     parser.add_argument("--force-prepare-probes", action="store_true",
                         help="Measure each PREPARE probe instead of its one-second backoff.")
     parser.add_argument(
@@ -705,8 +800,12 @@ def main():
         raise ValueError("depth 1..64, workflows 4..512 and positive iterations required")
     if args.mamba_ancestor and args.depth < 3:
         raise ValueError("Mamba ancestor fixture requires depth at least three")
-    isolated = args.terminal_only or args.lease_only or args.publication_only or args.failed_sampling_only
-    if sum((args.terminal_only, args.lease_only, args.publication_only, args.failed_sampling_only)) > 1:
+    isolated = (
+        args.terminal_only or args.lease_only or args.publication_only
+        or args.failed_sampling_only or args.static_counters_only
+    )
+    if sum((args.terminal_only, args.lease_only, args.publication_only,
+            args.failed_sampling_only, args.static_counters_only)) > 1:
         raise ValueError("choose one isolated benchmark scope")
     baseline, digests = baseline_runtime(args.baseline_revision)
     imported_sources = {
@@ -758,7 +857,10 @@ def main():
             None if isolated else handoff_identity_case(baseline)
         ),
         "cases": cases,
-        "terminal_cases": [] if args.lease_only or args.publication_only or args.failed_sampling_only else [
+        "terminal_cases": [] if (
+            args.lease_only or args.publication_only or args.failed_sampling_only
+            or args.static_counters_only
+        ) else [
             terminal_case(baseline, depth=args.depth, anchor_count=anchors,
                           iterations=args.iterations)
             for anchors in (1, 2, 8)
@@ -784,6 +886,9 @@ def main():
             )
             for failure in (None, "ancestry_bound", "pending_write", "pending_load")
         ] if args.failed_sampling_only else [],
+        "static_counter_cases": [
+            static_counter_case(engine=args.engine, iterations=args.iterations)
+        ] if args.static_counters_only else [],
     }
     args.output.parent.mkdir(parents=True, exist_ok=True)
     args.output.write_text(json.dumps(report, indent=2) + "\n")
@@ -805,6 +910,7 @@ def main():
         "lease_cases": report["lease_cases"],
         "publication_cases": report["publication_cases"],
         "failed_sampling_cases": report["failed_sampling_cases"],
+        "static_counter_cases": report["static_counter_cases"],
     }, indent=2))
 
 

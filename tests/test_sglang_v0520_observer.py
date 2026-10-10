@@ -155,35 +155,16 @@ def test_static_headroom_rejects_ambiguous_or_unphysical_free_lists(
     assert result.device_full_free_tokens is None
 
 
-def test_static_host_usage_reports_full_and_mamba_independently(
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    from beliefkv.runtime import sglang_v0520_observer
-
-    full_pool = NS(
-        size_per_token=32,
-        available_size=lambda: 75,
-    )
-    mamba_pool = NS(
-        size_per_token=128,
-        available_size=lambda: 4,
-    )
-    cache = NS(
-        host_pool_group=NS(
-            entry_map={
-                "kv": NS(host_pool=full_pool),
-                "mamba": NS(host_pool=mamba_pool),
-            }
-        )
-    )
-    monkeypatch.setattr(
-        sglang_v0520_observer,
-        "observe_static_full_mamba",
-        lambda _: {
-            "host_full_tokens": 100,
-            "host_mamba_slots": 10,
-        },
-    )
+def test_static_host_usage_reports_full_and_mamba_independently() -> None:
+    cache = _static_cache()
+    full_pool = cache.host_pool_group.entry_map["kv"].host_pool
+    mamba_pool = cache.host_pool_group.entry_map["mamba"].host_pool
+    full_pool.size = 100
+    full_pool.size_per_token = 32
+    full_pool.available_size = lambda: 75
+    mamba_pool.size = 10
+    mamba_pool.size_per_token = 128
+    mamba_pool.available_size = lambda: 4
 
     result = observe_static_full_mamba_host_usage(cache)
 
@@ -194,6 +175,31 @@ def test_static_host_usage_reports_full_and_mamba_independently(
         result.host_mamba_used_slots,
         result.host_mamba_used_bytes,
     ) == (25, 800, 6, 768)
+
+
+def test_static_free_lists_remain_live_without_tensor_byte_census() -> None:
+    cache = _static_cache()
+    full = cache.token_to_kv_pool_allocator._kvcache.full_kv_pool
+    full.get_kv_size_bytes = _never
+    cache.req_to_token_pool.mamba_pool.mamba_cache.conv[0].numel = _never
+
+    headroom = observe_static_full_mamba_headroom(cache)
+    usage = observe_static_full_mamba_host_usage(cache)
+    assert headroom.observable and usage.observable
+    assert headroom.device_full_free_tokens == 10
+    assert usage.host_full_used_tokens == 5
+
+    cache.token_to_kv_pool_allocator.available_size = lambda: 4
+    cache.host_pool_group.entry_map["kv"].host_pool.available_size = lambda: 8
+    headroom = observe_static_full_mamba_headroom(cache)
+    usage = observe_static_full_mamba_host_usage(cache)
+    assert headroom.device_full_free_tokens == 4
+    assert headroom.host_full_free_tokens == 8
+    assert usage.host_full_used_tokens == 17
+
+    cache.host_pool_group.entry_map["mamba"].device_pool = object()
+    assert not observe_static_full_mamba_headroom(cache).observable
+    assert not observe_static_full_mamba_host_usage(cache).observable
 
 
 class ComponentType(IntEnum):

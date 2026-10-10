@@ -63,6 +63,40 @@ reentry_cpu_20261011.json和v22_deep_prefix_reentry_cpu_20261011.json。
 提前FULL复用、parent服务等待、驻留原因和繁忙窗口吞吐。
 四步容量交接已实现，但native相对吞吐目标仍未达成。
 
+进一步降低容量交接的共享控制成本：空闲页/槽和Host用量观察
+现在只读取经过当前池绑定、类型和几何校验的实时free lists，
+不再顺带遍历整套FULL/Mamba张量计算字节数。完整设备容量
+census与动作前节点闭包仍读取实际张量；没有跨迭代缓存空闲
+容量或取消session、引用、DMA与allocator检查。该修订在隔离
+worktree中完成，计划与上述修复一起进入下一轮V22。
+
+原生MHATokenToKVPool计数代码配合10层FULL、30层Mamba的
+小型CPU张量基准，空闲容量/Host用量观察均值从101.5/100.8
+微秒降为6.50/5.58微秒，实时变化的free list结果一致。这是单个计数
+路径的CPU证据，不是恢复全过程或GPU吞吐提升。完整PREPARE、
+采样和终态观察基准的动作、候选发布与观测结果一致；小型
+张量夹具下仍有墙钟长尾，不把其平均时间作为性能结论。
+保存v23_static_pool_counters_cpu_final_20261011.json与完整
+路径基准。最近296项observer、telemetry、runtime和policy
+检查通过；此前267项终态/handoff/physical检查也通过，两组
+存在重叠。
+
+较晚的V21局部审计保存于v21_terminal_capacity_progress_
+summary_20261011.json，保留原审计路径与SHA256。214个真实
+动态child累计释放设备FULL 57.445GB、Mamba 32.388GB；
+内部总结调用的释放量独立统计。102个parent首次服务中99个
+能关联先前设备释放，入队到首个观测完成batch的P50/P90为
+196.80/492.49ms，最大18.906秒。容量释放未独占预留，也不能
+把累计释放量当作同时可用空间。56个独立JOIN、74个tool事件
+确认完成边界前启动并被下一请求复用，FULL分别749.179MB、
+2.228GB；80.025GB需求handoff FULL复用仍单列。
+
+V21与旧V20 native的600–2400秒诊断窗口中，decode输出吞吐
+为942.09/1059.67 token/s、GPU利用率72.84%/82.44%，没有
+改善证据。这是跨版本诊断，不替代V21同版本native对照。
+保持当前pair冻结，以新版本同配置实验确认完整前缀覆盖、
+恢复驻留原因、容量结算重试和计数减负是否改善真实服务。
+
 V21 局部审计保存在 v21_terminal_capacity_live_20261011.json：
 126 个真实 child 累计释放设备 FULL 26.165 GB、Mamba 8.821 GB；
 44 个 parent 的入队到首个观测完成 GPU batch P50/P90 为
@@ -78,6 +112,13 @@ django-13023 的一个 parent 在 handoff 选取后仍等待约17.73秒。
 全部等待。新原因记录用于下一轮确认这一点，未因此放大保护
 预算或锁住所有 parent。V21 及其同版本 native 保持冻结，
 后续修订计划在完整 pair 后由启动器自动部署并验证。
+
+磁盘清理核验两次旧启动的scheduler已退出、无活跃进程引用、
+没有workflow终态产物；只删除165个git无改动workspace，
+保留51个有改动或无法确认状态的目录及所有日志/manifest。
+净可用空间增加33.840GB，清理后约89GiB可用。回执保存在
+stopped_pristine_workspace_cleanup_20261011.json；当前实验
+和数据证据保留。
 
 ## V21 部署与 V20 完整对照
 

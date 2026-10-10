@@ -65,6 +65,43 @@ deploy exactly this revision and patch, run predictive first and cold native
 second, and measure actual early FULL reuse, parent service wait, protection
 reasons and busy-window throughput. The broad performance objective stays active.
 
+Include the isolated live-counter reduction in the next V22 registration.
+Headroom and Host usage now validate current pool ownership and geometry and
+sample live free lists without a device tensor-byte census. Full capacity census
+and action node closure retain their tensor inspection and all session, reference,
+DMA and allocator checks. Do not cache free lists across native allocation.
+
+Keep v23_static_pool_counters_cpu_final_20261011.json. Alternating CPU measurements
+use the native MHATokenToKVPool counter with ten FULL and thirty Mamba tensor
+layers: mean headroom/Host usage cost changes from 101.5/100.8 to 6.50/5.58 microseconds,
+with identical changing live counters. This is a counter-path improvement only,
+not a restoration or GPU throughput result. PREPARE, sampling and terminal
+fixtures preserve selections, publications and observations; retain their wall
+outliers instead of treating noisy fixture means as an end-to-end gain.
+The latest 296 observer/telemetry/runtime/policy checks pass; the earlier 267
+terminal/handoff/physical checks also pass, with overlapping tests.
+
+Preserve v21_terminal_capacity_progress_summary_20261011.json with source audit
+path and SHA256. Its 214 confirmed dynamic children release cumulative device
+FULL57.445GB and Mamba32.388GB; internal summary invocations remain separate.
+Of102 observed parent services,99 follow linked device release. Queue-to-first
+observed completed batch P50/P90 is196.80/492.49ms,max18.906s. This does not prove
+exclusive capacity reservation or a throughput win. Independent early-and-reused
+FULL is749.179MB from56 JOINs and2.228GB from74 tool events;80.025GB reused demand
+handoff FULL remains a separate category.
+
+The600–2400s V21 versus prior V20 native diagnostic window has942.09/1059.67
+decode token/s and72.84%/82.44% GPU utilization. It does not demonstrate progress
+and is not V21's matched baseline. Keep v21_busy_window_vs_v20_native_diagnostic_
+20261011.json, preserve the live V21 pair, then verify all corrections under the
+next identical predictive-first/cold-native pair before making performance claims.
+
+Disk cleanup removed165 pristine workspaces from two verified stopped
+zero-result starts, retained51 dirty/unavailable workspaces and preserved logs
+and manifests. No results or active paths were fabricated or removed. Net free
+space increased33.840GB,leaving approximately89GiB. Keep the exact directory
+receipt in stopped_pristine_workspace_cleanup_20261011.json.
+
 Keep v21_terminal_capacity_live_20261011.json as a partial audit:126 real children
 release cumulative26.165GB device FULL and8.821GB Mamba. Forty-four parent
 requests have240.07/750.15ms P50/P90 queue-to-first-observed-completed-batch time,

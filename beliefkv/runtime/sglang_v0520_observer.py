@@ -208,13 +208,8 @@ def _device_ceiling(pool: object, buffer: object, name: str) -> tuple[int, int]:
     )
 
 
-def observe_static_full_mamba(cache: object) -> dict[str, int | str]:
-    """Read the default, separately allocated FULL and MAMBA device pools.
-
-    Unlike unified-memory, these allocations cannot lend bytes to each other.
-    Only persistent KV/state tensor storage is counted; CUDA scratch and graph
-    buffers consume additional GPU memory outside these pools.
-    """
+def _static_full_mamba_pool_geometry(cache: object) -> dict[str, int | str]:
+    """Validate pool ownership and ceilings without traversing tensor storage."""
     _named(cache, "UnifiedRadixCache")
     if cache.disable is not False or tuple(
         (component.name, component.value) for component in cache.tree_components
@@ -235,23 +230,8 @@ def observe_static_full_mamba(cache: object) -> dict[str, int | str]:
     mamba_slots = _positive(mamba.size, "static MAMBA slots")
     if full.size != full_tokens:
         raise ValueError("static FULL allocator and physical pool disagree")
-    full_k_bytes, full_v_bytes = full.get_kv_size_bytes()
-    device_full_bytes = (
-        _positive(full_k_bytes, "device FULL K bytes")
-        + _positive(full_v_bytes, "device FULL V bytes")
-    )
-    state = mamba.mamba_cache
-    if type(state).__name__ != "State":
+    if type(mamba.mamba_cache).__name__ != "State":
         raise ValueError("unknown static MAMBA state layout")
-
-    def tensor_bytes(tensor: object) -> int:
-        return int(tensor.numel()) * int(tensor.element_size())
-
-    device_mamba_bytes = _positive(
-        sum(tensor_bytes(item) for item in state.conv)
-        + tensor_bytes(state.temporal),
-        "device MAMBA bytes",
-    )
     group = _named(cache.host_pool_group, "HostPoolGroup")
     if cache.cache_controller.mem_pool_host is not group or set(group.entry_map) != {
         "kv", "mamba",
@@ -280,9 +260,6 @@ def observe_static_full_mamba(cache: object) -> dict[str, int | str]:
         "pool_layout": "static_separate_full_mamba",
         "device_full_tokens": full_tokens,
         "device_mamba_slots": mamba_slots,
-        "device_full_bytes": device_full_bytes,
-        "device_mamba_bytes": device_mamba_bytes,
-        "device_total_bytes": device_full_bytes + device_mamba_bytes,
         "host_full_tokens": host_full_tokens,
         "host_mamba_slots": host_mamba_slots,
         "host_full_bytes": host_full_bytes,
@@ -291,12 +268,41 @@ def observe_static_full_mamba(cache: object) -> dict[str, int | str]:
     }
 
 
+def observe_static_full_mamba(cache: object) -> dict[str, int | str]:
+    """Read persistent tensor bytes for the separately allocated device pools.
+
+    These allocations cannot lend bytes to each other. CUDA scratch and graph
+    buffers consume additional GPU memory outside these pools.
+    """
+    capacity = _static_full_mamba_pool_geometry(cache)
+    full = cache.token_to_kv_pool_allocator._kvcache.full_kv_pool
+    full_k_bytes, full_v_bytes = full.get_kv_size_bytes()
+    device_full_bytes = (
+        _positive(full_k_bytes, "device FULL K bytes")
+        + _positive(full_v_bytes, "device FULL V bytes")
+    )
+    state = cache.req_to_token_pool.mamba_pool.mamba_cache
+
+    def tensor_bytes(tensor: object) -> int:
+        return int(tensor.numel()) * int(tensor.element_size())
+
+    device_mamba_bytes = _positive(
+        sum(tensor_bytes(item) for item in state.conv)
+        + tensor_bytes(state.temporal),
+        "device MAMBA bytes",
+    )
+    capacity["device_full_bytes"] = device_full_bytes
+    capacity["device_mamba_bytes"] = device_mamba_bytes
+    capacity["device_total_bytes"] = device_full_bytes + device_mamba_bytes
+    return capacity
+
+
 def observe_static_full_mamba_host_usage(
     cache: object,
 ) -> StaticHostUsageObservation:
     """Read current allocated slots from the separate FULL and MAMBA host pools."""
     try:
-        capacity = observe_static_full_mamba(cache)
+        capacity = _static_full_mamba_pool_geometry(cache)
         group = cache.host_pool_group
         host_full = group.entry_map["kv"].host_pool
         host_mamba = group.entry_map["mamba"].host_pool
@@ -324,14 +330,14 @@ def observe_static_full_mamba_host_usage(
 def observe_static_full_mamba_headroom(
     cache: object,
 ) -> StaticPoolHeadroomObservation:
-    """Sample validated static free lists without touching GPU tensors or LRU.
+    """Sample validated static free lists without a tensor census or LRU access.
 
     A free group or preallocated Mamba batch is an ambiguous in-flight
     reservation. Even a valid snapshot is not a plan certificate: only native
     can atomically recheck page ownership and allocate the target slots.
     """
     try:
-        capacity = observe_static_full_mamba(cache)
+        capacity = _static_full_mamba_pool_geometry(cache)
         full = _named(cache.token_to_kv_pool_allocator, "TokenToKVPoolAllocator")
         mamba = _named(cache.req_to_token_pool.mamba_allocator, "MambaSlotAllocator")
         if (

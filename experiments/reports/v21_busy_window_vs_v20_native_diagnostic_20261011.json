@@ -1,0 +1,223 @@
+{
+  "schema_version": 1,
+  "scope": "observed live busy windows, not a completed pair or causal speedup",
+  "runs": {
+    "predictive_v21": {
+      "run": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v21/predictive_h2d",
+      "time_origin": "first GPU-monitor sample",
+      "time_origin_local": "2026/10/11 01:24:39.471",
+      "windows": [
+        {
+          "start_seconds": 600.0,
+          "end_seconds": 2400.0,
+          "request_completed_output_tokens": 1705875,
+          "decode_output_tokens": 1695760,
+          "submitted_requests": 10982,
+          "submitted_prompt_tokens": 252797951,
+          "submitted_uncached_prompt_tokens": 9265764,
+          "submitted_host_hit_tokens": 132940079,
+          "transfer_batches": {
+            "h2d": {
+              "count": 10047,
+              "bytes": 2435164385280,
+              "submit_to_ack_ms": 663798.8892523572,
+              "stream_measured_count": 10047,
+              "transfer_stream_ms": 70856.00214127079,
+              "kv_units": 62202471,
+              "kv_bytes": 1273906606080,
+              "mamba_units": 18035,
+              "mamba_bytes": 1161257779200
+            },
+            "d2h": {
+              "count": 14736,
+              "bytes": 1018618388480,
+              "submit_to_ack_ms": 73633.06168373674,
+              "stream_measured_count": 14736,
+              "transfer_stream_ms": 65980.17297080904,
+              "kv_units": 6702154,
+              "kv_bytes": 137260113920,
+              "mamba_units": 13688,
+              "mamba_bytes": 881358274560
+            }
+          },
+          "h2d_sources": {
+            "execution_handoff": {
+              "batch_parts": 2585,
+              "bytes": 82342522880,
+              "kv_bytes": 63798456320,
+              "mamba_bytes": 18544066560
+            },
+            "native": {
+              "batch_parts": 7365,
+              "bytes": 2343785594880,
+              "kv_bytes": 1207188848640,
+              "mamba_bytes": 1136596746240
+            },
+            "predictive": {
+              "batch_parts": 97,
+              "bytes": 9036267520,
+              "kv_bytes": 2919301120,
+              "mamba_bytes": 6116966400
+            }
+          },
+          "d2h_actions": {
+            "native": {
+              "batch_parts": 14629,
+              "bytes": 1014475960320,
+              "kv_bytes": 133117685760,
+              "mamba_bytes": 881358274560
+            },
+            "PREPARE_HOST": {
+              "batch_parts": 464,
+              "bytes": 4142428160,
+              "kv_bytes": 4142428160
+            }
+          },
+          "transfer_telemetry_present": true,
+          "pool_bytes_per_unit": {
+            "kv": 20480,
+            "mamba": 64389120
+          },
+          "gpu_restore_dependency_wait": {
+            "sampled_batches": 466,
+            "sampled_gpu_wait_sum_ms": 123.05375939991791,
+            "p50_ms": 0.07870400109095499,
+            "p95_ms": 0.38348000502446666,
+            "mean_ms": 0.2640638613732144,
+            "semantics": "Sampled CUDA-stream native layer-dependency waits including event overhead; not all H2D, not request queue delay or an oracle JCT bound."
+          },
+          "gpu_utilization_mean": 72.84406628851073,
+          "running_mean": 46.88549160671463,
+          "waiting_mean": 71.79256594724221,
+          "service_window_observed_complete": true,
+          "decode_output_tokens_per_second": 942.0888888888888,
+          "request_completed_output_tokens_per_second": 947.7083333333334,
+          "worker_interval_union_seconds": 1799.9957055664063,
+          "decode_batch_count": 35735,
+          "decode_worker_interval_seconds": 1482.6364194335938,
+          "decode_mean_clipped_worker_interval_ms": 41.48975568584284,
+          "decode_time_weighted_batch_size": 47.25424032200515,
+          "prefill_batch_count": 10163,
+          "prefill_worker_interval_seconds": 317.3635510253906,
+          "prefill_mean_clipped_worker_interval_ms": 31.227349308805533,
+          "prefill_time_weighted_batch_size": 1.1901556210213236
+        }
+      ],
+      "measurement_notes": [
+        "Live generation can produce different request traces in each policy.",
+        "No incomplete-run JCT or completed-only workflow comparison is included.",
+        "Decode token deltas belong to their completed worker batch's window.",
+        "LLM output lengths separately belong to the request completion window.",
+        "Worker intervals are scheduler/worker wall intervals, not CUDA kernel durations.",
+        "Input/cache token counts belong to submission, not the actual GPU-service window.",
+        "Transfer payloads and measured batch durations belong to the physical submission window.",
+        "Only completed transfer receipts are included; live pending batches are not credited.",
+        "Physical batch durations are counted once, even when payload sources share a batch.",
+        "JOIN/tool source bytes require separate event-boundary and first-reuse checks to prove anticipation.",
+        "Restore dependency waits are sampled CUDA layer waits, not per-request queue wait or all-batch totals.",
+        "GPU utilization is the mean of monitor samples within each window.",
+        "A trailing unfinished JSONL record is excluded from this read."
+      ]
+    },
+    "native_v20": {
+      "run": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261010_v20/native",
+      "time_origin": "first GPU-monitor sample",
+      "time_origin_local": "2026/10/10 22:31:35.594",
+      "windows": [
+        {
+          "start_seconds": 600.0,
+          "end_seconds": 2400.0,
+          "request_completed_output_tokens": 1909910,
+          "decode_output_tokens": 1907406,
+          "submitted_requests": 11216,
+          "submitted_prompt_tokens": 260201109,
+          "submitted_uncached_prompt_tokens": 10437479,
+          "submitted_host_hit_tokens": 90183519,
+          "transfer_batches": {
+            "d2h": {
+              "count": 39602,
+              "bytes": 1319885598720,
+              "submit_to_ack_ms": 152248.19598160684,
+              "stream_measured_count": 39602,
+              "transfer_stream_ms": 140031.25358364917,
+              "kv_units": 18554571,
+              "kv_bytes": 379997614080,
+              "mamba_units": 14597,
+              "mamba_bytes": 939887984640
+            },
+            "h2d": {
+              "count": 7429,
+              "bytes": 2337396244480,
+              "submit_to_ack_ms": 492613.29812463373,
+              "stream_measured_count": 7429,
+              "transfer_stream_ms": 71338.70683813095,
+              "kv_units": 59362196,
+              "kv_bytes": 1215737774080,
+              "mamba_units": 17420,
+              "mamba_bytes": 1121658470400
+            }
+          },
+          "h2d_sources": {
+            "native": {
+              "batch_parts": 7429,
+              "bytes": 2337396244480,
+              "kv_bytes": 1215737774080,
+              "mamba_bytes": 1121658470400
+            }
+          },
+          "d2h_actions": {
+            "native": {
+              "batch_parts": 39602,
+              "bytes": 1319885598720,
+              "kv_bytes": 379997614080,
+              "mamba_bytes": 939887984640
+            }
+          },
+          "transfer_telemetry_present": true,
+          "pool_bytes_per_unit": {
+            "kv": 20480,
+            "mamba": 64389120
+          },
+          "gpu_restore_dependency_wait": {
+            "sampled_batches": 464,
+            "sampled_gpu_wait_sum_ms": 86.54940875212196,
+            "p50_ms": 0.07926399994175881,
+            "p95_ms": 0.17408160064951483,
+            "mean_ms": 0.18652889817267665,
+            "semantics": "Sampled CUDA-stream native layer-dependency waits including event overhead; not all H2D, not request queue delay or an oracle JCT bound."
+          },
+          "gpu_utilization_mean": 82.43532421310199,
+          "running_mean": 46.91846522781775,
+          "waiting_mean": 63.98141486810552,
+          "service_window_observed_complete": true,
+          "decode_output_tokens_per_second": 1059.67,
+          "request_completed_output_tokens_per_second": 1061.0611111111111,
+          "worker_interval_union_seconds": 1799.9955778808594,
+          "decode_batch_count": 40159,
+          "decode_worker_interval_seconds": 1527.0522536621095,
+          "decode_mean_clipped_worker_interval_ms": 38.02515634508104,
+          "decode_time_weighted_batch_size": 47.30908886581266,
+          "prefill_batch_count": 10752,
+          "prefill_worker_interval_seconds": 272.94770385742186,
+          "prefill_mean_clipped_worker_interval_ms": 25.38576114745367,
+          "prefill_time_weighted_batch_size": 1.1550995906913777
+        }
+      ],
+      "measurement_notes": [
+        "Live generation can produce different request traces in each policy.",
+        "No incomplete-run JCT or completed-only workflow comparison is included.",
+        "Decode token deltas belong to their completed worker batch's window.",
+        "LLM output lengths separately belong to the request completion window.",
+        "Worker intervals are scheduler/worker wall intervals, not CUDA kernel durations.",
+        "Input/cache token counts belong to submission, not the actual GPU-service window.",
+        "Transfer payloads and measured batch durations belong to the physical submission window.",
+        "Only completed transfer receipts are included; live pending batches are not credited.",
+        "Physical batch durations are counted once, even when payload sources share a batch.",
+        "JOIN/tool source bytes require separate event-boundary and first-reuse checks to prove anticipation.",
+        "Restore dependency waits are sampled CUDA layer waits, not per-request queue wait or all-batch totals.",
+        "GPU utilization is the mean of monitor samples within each window.",
+        "A trailing unfinished JSONL record is excluded from this read."
+      ]
+    }
+  }
+}

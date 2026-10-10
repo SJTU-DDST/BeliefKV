@@ -1,0 +1,124 @@
+{
+  "scope": "same-input CPU fixtures; native enqueue is stubbed, no GPU or throughput claim",
+  "baseline_revision": "9a7f0bd",
+  "baseline_source_sha256": {
+    "beliefkv/runtime/sglang_v0520_observer.py": "c8ef48c5e7b6553aefa38b26409bd59c9616a5bac3025f20f54e566e73e44010",
+    "beliefkv/runtime/sglang_v0520_physical.py": "4807dc2e067815434c89e3bf7b08e5ad724fa9f96ad25af31093545317f458e7",
+    "beliefkv/runtime/sglang_v0520_runtime.py": "1e018f375b3821ade5b511b75e601e190e01a0597c26378c684b2f3fdf470653"
+  },
+  "fixture": "validated static pools and real observer ancestry; sixteen retained workflow rounds",
+  "optimized_source_sha256": {
+    "beliefkv/runtime/sglang_v0520_observer.py": "1378b28fccfe9b2e8b05967782637d5c568b93b0daf598efafc5808f99dafd21",
+    "beliefkv/runtime/sglang_v0520_physical.py": "4807dc2e067815434c89e3bf7b08e5ad724fa9f96ad25af31093545317f458e7",
+    "beliefkv/runtime/sglang_v0520_runtime.py": "1e018f375b3821ade5b511b75e601e190e01a0597c26378c684b2f3fdf470653"
+  },
+  "imported_sources": {
+    "beliefkv/runtime/sglang_v0520_observer.py": "/home/longhao/experiment/.worktrees/beliefkv-v23-followup-20261011/beliefkv/runtime/sglang_v0520_observer.py",
+    "beliefkv/runtime/sglang_v0520_physical.py": "/home/longhao/experiment/.worktrees/beliefkv-v23-followup-20261011/beliefkv/runtime/sglang_v0520_physical.py",
+    "beliefkv/runtime/sglang_v0520_runtime.py": "/home/longhao/experiment/.worktrees/beliefkv-v23-followup-20261011/beliefkv/runtime/sglang_v0520_runtime.py"
+  },
+  "benchmark_source_sha256": "b33d32aa8e4fccc97bbeb9ae112542f2cf9831a57196ac40b8506974137f61e8",
+  "service_seed": null,
+  "handoff_identity": null,
+  "cases": [],
+  "terminal_cases": [],
+  "lease_cases": [],
+  "publication_cases": [],
+  "failed_sampling_cases": [],
+  "static_counter_cases": [
+    {
+      "scope": "native tensor-size method on tiny CPU tensors; no DMA or GPU throughput measurement",
+      "native_pool_source": "/tmp/sglang-v22-prefix-20261011/python/sglang/srt/mem_cache/memory_pool.py",
+      "native_pool_source_sha256": "737ac340aee5a1d2a260fdf976c9023c563ca550ca1e2d47a3bbcfb674915577",
+      "full_tensor_layers": 10,
+      "mamba_tensor_layers": 30,
+      "iterations": 100,
+      "calls_per_sample": 50,
+      "live_free_list_observations_equal": true,
+      "tensor_census_calls_including_warmup": {
+        "baseline": 10500,
+        "optimized": 0
+      },
+      "costs": {
+        "baseline": {
+          "headroom": {
+            "wall": {
+              "count": 100,
+              "mean_ms": 0.1014721842,
+              "p50_ms": 0.093966,
+              "p99_ms": 0.12184602,
+              "max_ms": 0.12184602
+            },
+            "thread_cpu": {
+              "count": 100,
+              "mean_ms": 0.10145584120000001,
+              "p50_ms": 0.09395236000000001,
+              "p99_ms": 0.12183124,
+              "max_ms": 0.12183124
+            }
+          },
+          "host_usage": {
+            "wall": {
+              "count": 100,
+              "mean_ms": 0.100828098,
+              "p50_ms": 0.09350618000000001,
+              "p99_ms": 0.12207632,
+              "max_ms": 0.12207632
+            },
+            "thread_cpu": {
+              "count": 100,
+              "mean_ms": 0.1008130346,
+              "p50_ms": 0.09349208,
+              "p99_ms": 0.122057,
+              "max_ms": 0.122057
+            }
+          }
+        },
+        "optimized": {
+          "headroom": {
+            "wall": {
+              "count": 100,
+              "mean_ms": 0.0064985215999999995,
+              "p50_ms": 0.006052419999999999,
+              "p99_ms": 0.0081081,
+              "max_ms": 0.0081081
+            },
+            "thread_cpu": {
+              "count": 100,
+              "mean_ms": 0.0064850656,
+              "p50_ms": 0.00603842,
+              "p99_ms": 0.00809122,
+              "max_ms": 0.00809122
+            }
+          },
+          "host_usage": {
+            "wall": {
+              "count": 100,
+              "mean_ms": 0.0055813696,
+              "p50_ms": 0.00522428,
+              "p99_ms": 0.00686542,
+              "max_ms": 0.00686542
+            },
+            "thread_cpu": {
+              "count": 100,
+              "mean_ms": 0.005569599,
+              "p50_ms": 0.0052149,
+              "p99_ms": 0.0068525999999999995,
+              "max_ms": 0.0068525999999999995
+            }
+          }
+        }
+      },
+      "mean_reduction": {
+        "headroom": {
+          "wall": 0.935957606005686,
+          "thread_cpu": 0.9360799188760756
+        },
+        "host_usage": {
+          "wall": 0.9446447001311082,
+          "thread_cpu": 0.9447531857155305
+        }
+      }
+    }
+  ]
+}
