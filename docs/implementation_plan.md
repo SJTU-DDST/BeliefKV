@@ -224,6 +224,18 @@ the deadline was unexpired and no cancellation/guard intervention occurred.
 Use the next frozen same-version pair to measure actual restoration consumption
 and native-relative busy-window performance; the broad goal remains active.
 
+Keep v21_control_profile_final_20261011.json with the128KiB source-read budget
+and compact final-state hash. Completed V21 predictive has1117.376 seconds of
+instrumented exclusive Python wall time. Control drain, opportunity sampling,
+reentry inspection, JOIN PREPARE and semantic updates account for168.853,
+124.516,107.695,101.487 and86.923 seconds respectively. Maintenance and several
+light paths each run about2.518 million times; call counts alone do not prove
+redundant restoration. These intervals are not CUDA idle or directly removable
+JCT. The queued V22 reductions and sparse channel stages are absent from this
+V21 profile. Validate actual pre-boundary FULL coverage and consumption together
+with same-version native-relative busy-window throughput/JCT. Retain the older
+profile snapshot as historical partial evidence.
+
 Preserve v21_terminal_capacity_progress_summary_20261011.json with source audit
 path and SHA256. Its 214 confirmed dynamic children release cumulative device
 FULL57.445GB and Mamba32.388GB; internal summary invocations remain separate.

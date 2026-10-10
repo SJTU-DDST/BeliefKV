@@ -210,7 +210,7 @@ CPU socket夹具中862字节单事件包的采样平均增量约4.03微秒；
 socket系统调用或GPU。保存v24_control_channel_profile_cpu_
 20261011.json，用下一轮真实分阶段结果定位控制成本。
 
-冻结V21的有界最新计时快照仅读取日志末尾128KiB：运行约
+冻结V21的历史局部计时快照仅读取日志末尾128KiB：运行约
 7287秒时，control_drain/reentry_inspection/opportunity_sampling/
 join_prepare/admission_plan的Python独占墙钟累计分别为
 129.19/106.15/102.44/84.37/65.85秒。这些不是可直接消除的JCT
@@ -219,6 +219,17 @@ join_prepare/admission_plan的Python独占墙钟累计分别为
 django-12125的incomplete发生在未耗尽deadline、没有取消或guard
 干预的情况下；最后两轮输出均为length终止，保留未完成分类。
 这些局部证据没有改变当前pair或下一轮的冻结实验参数。
+
+最终predictive计时保存为v21_control_profile_final_20261011.json，
+仍只读取末尾128KiB并保留最终state的规范JSON哈希。埋点覆盖的
+Python独占墙钟累计1117.376秒；control_drain/opportunity_sampling/
+reentry_inspection/join_prepare/semantic_updates分别为168.853/
+124.516/107.695/101.487/86.923秒。scheduler maintenance及多项
+轻量路径各调用约251.75万次，不能把调用多直接等同于重复恢复。
+独占计时排除嵌套重复，仍不等于CPU利用率、GPU空转或可删去JCT。
+queued V22的池几何减负、完整前缀覆盖、分阶段事件计时及观测刷新
+未计入V21结果。下一轮要同时检验真实提前FULL复用、消费与同版本
+繁忙窗口吞吐，不能从累计CPU时间推导收益。
 
 较晚的V21局部审计保存于v21_terminal_capacity_progress_
 summary_20261011.json，保留原审计路径与SHA256。214个真实
