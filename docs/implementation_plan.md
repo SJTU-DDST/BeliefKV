@@ -71,6 +71,32 @@ native-relative GPU improvement has been established. Diagnostic:
 `experiments/reports/v16_stopped_diagnostic_20261010.md`. Historical
 freeze/deployment notes below retain their original observation-time meaning.
 
+### Isolated Follow-up During V16b
+
+V16b freezes main at `1a09ada` with canonical engine patch SHA256
+`68109d51ceb77f92fcbc2d17b52cfe76717b4ad26c47fd3642923b43ed0ca615`.
+Develop and commit follow-ups only on `perf/v16-control-wait-20261010`;
+deploy after the frozen pair, unless a confirmed fault requires a cold restart.
+The14:33 CST snapshot is healthy; no completed native-relative result exists.
+
+Reuse a persistent result-pipe poller for in-flight native predictor inference.
+Keep failure, timeout, pending coalescing and result-identity semantics. A real
+spawn-process/bounded-queue benchmark checks admission/tool/JOIN replies and
+lifecycle equality. Empty in-flight polling mean thread CPU falls9.11->3.25us
+(64.3%), wall9.80->3.92us. Ready-result CPU91.53->92.48us shows no improvement;
+idle-without-task is effectively unchanged. These are microbenchmark results,
+not measured busy-window GPU or end-to-end savings.
+
+Record successful HTTP request boundaries through existing stream diagnostics:
+hook start, body-send start/complete and response headers. Audit independent
+events as client-submit->hook, hook->body-sent and body-sent->native-arrival.
+The last interval still includes ingress, validation, template/tokenization
+and IPC. Do not fabricate missing transport receipts or combine ambiguous
+attempts. Keep request/SSE content unchanged;56 related checks pass. Report:
+`experiments/reports/v16_native_predictor_poll_cpu_20261010.json`.
+Use the new boundaries in the next frozen pair to identify the actual costly
+request stage before changing frontend or scheduling policy.
+
 ## Current Objective And V15 Comparison
 
 Keep the fixed workload, model, capacity and arrival schedule. Continue until

@@ -7,6 +7,7 @@ import argparse
 from bisect import bisect_left, bisect_right
 from collections import Counter, defaultdict
 import json
+import math
 from pathlib import Path
 import sys
 
@@ -382,6 +383,35 @@ def wait_event_identity(row: dict) -> tuple | None:
     return source, row["workflow_id"], row["context_id"], row["context_epoch"], join
 
 
+def http_transport_waits(
+    attempts: list[dict], client_submit: float | None, native_arrival: float | None,
+) -> dict:
+    def interval(left, right):
+        return (
+            right - left
+            if type(left) in (int, float) and type(right) in (int, float)
+            and math.isfinite(left) and math.isfinite(right) and left <= right
+            else None
+        )
+
+    timing = attempts[0] if len(attempts) == 1 else {}
+    start = timing.get("http_request_start_ts_ms")
+    if interval(client_submit, start) is None or interval(start, native_arrival) is None:
+        start = None
+    sent = timing.get("http_body_sent_ts_ms") if start is not None else None
+    if interval(start, sent) is None or interval(sent, native_arrival) is None:
+        sent = None
+    return {
+        "http_transport_attempts_observed": len(attempts),
+        "client_submit_to_http_request_ms": interval(client_submit, start),
+        "http_request_to_body_sent_ms": interval(start, sent),
+        "body_sent_to_native_arrival_ms": interval(sent, native_arrival),
+        "http_request_to_response_headers_ms": interval(
+            start, timing.get("http_response_headers_ts_ms"),
+        ),
+    }
+
+
 def wait_event_attribution(
     arm: Path, observations: list[dict], issues: dict, actions: list[dict],
     clock_offset: float | None,
@@ -527,6 +557,15 @@ def wait_event_attribution(
         if row["kind"] == "llm_submit"
         and row.get("attributes", {}).get("request_id") in targets
     } if targets else {}
+    http_attempts = defaultdict(list)
+    if targets:
+        for path in arm.glob("client_*/workflows/*/child_stream_content.jsonl"):
+            for row in records(path):
+                if (
+                    row.get("event") == "llm_request_http_transport"
+                    and row.get("request_id") in targets
+                ):
+                    http_attempts[row["request_id"]].append(row)
     services, dependency_waits = {}, defaultdict(list)
     if targets:
         for row in records(arm / "server/runtime_audit.jsonl"):
@@ -620,6 +659,10 @@ def wait_event_attribution(
             "client_submit_to_native_arrival_ms": (
                 native["ts_ms"] - request["ts_ms"] if native and request else None
             ),
+            **http_transport_waits(
+                http_attempts.get(rid, []),
+                request["ts_ms"] if request else None, native["ts_ms"] if native else None,
+            ),
             "client_submit_to_first_service_ms": (
                 service - request["ts_ms"] if request and service is not None else None
             ),
@@ -668,6 +711,15 @@ def wait_event_attribution(
                     "client_submit_to_native_arrival_ms": distribution(
                         row["client_submit_to_native_arrival_ms"] for row in selected
                     ),
+                    **{
+                        field: distribution(row[field] for row in selected)
+                        for field in (
+                            "client_submit_to_http_request_ms",
+                            "http_request_to_body_sent_ms",
+                            "body_sent_to_native_arrival_ms",
+                            "http_request_to_response_headers_ms",
+                        )
+                    },
                     "client_submit_to_first_service_ms": distribution(
                         row["client_submit_to_first_service_ms"] for row in selected
                     ),
@@ -694,7 +746,12 @@ def wait_event_attribution(
             "handoff receipts are separate remaining-demand evidence; do not add them "
             "without proving disjoint allocations. Client-to-native-arrival includes "
             "request preparation, transport and serving frontend work, not an isolated "
-            "client cost. Native-arrival-to-service wait includes admission "
+            "client cost. HTTP hook timestamps separate client preparation from pool/"
+            "transport and the body-sent-to-native-arrival interval, which still "
+            "includes server ingress, validation, template/tokenization and IPC; "
+            "it is not isolated tokenizer time. Ambiguous attempts, missing receipts "
+            "and unordered boundaries keep the corresponding intervals unknown. "
+            "Native-arrival-to-service wait includes admission "
             "and execution queueing, not isolated H2D delay. Sampled GPU dependency "
             "wait is a batch observation and must not be summed across its requests. "
             "Missing identities, clocks, ACK pool bytes or service evidence stay unknown."

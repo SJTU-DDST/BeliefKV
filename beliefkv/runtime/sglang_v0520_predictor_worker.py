@@ -5,6 +5,7 @@ from __future__ import annotations
 import math
 import multiprocessing as mp
 from queue import Empty, Full
+import select
 import time
 
 from beliefkv.predictor.structured_frontier import (
@@ -195,6 +196,8 @@ class NativePredictorWorker:
         context = mp.get_context("spawn")
         self._input_queue = context.Queue(maxsize=1)
         self._output_queue = context.Queue(maxsize=1)
+        self._result_poller = select.poll()
+        self._result_poller.register(self._output_queue._reader, select.POLLIN)
         self._process = context.Process(
             target=_worker_main,
             args=(artifact_path, self._input_queue, self._output_queue),
@@ -331,6 +334,9 @@ class NativePredictorWorker:
             self._fail()
             return ()
         try:
+            # Reuse the readiness probe; an empty Queue.get_nowait builds a selector.
+            if not self._result_poller.poll(0):
+                return ()
             response = self._output_queue.get_nowait()
         except Empty:
             return ()

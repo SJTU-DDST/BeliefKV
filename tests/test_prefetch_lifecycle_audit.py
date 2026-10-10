@@ -1,7 +1,7 @@
 import json
 
 from scripts.audit_prefetch_lifecycle import (
-    audit, prepare_host_lifetime_summary, prepare_restore_attribution,
+    audit, http_transport_waits, prepare_host_lifetime_summary, prepare_restore_attribution,
     prepare_selection_summary, source_summary, wait_event_attribution,
 )
 
@@ -62,6 +62,11 @@ def test_wait_events_deduplicate_node_commands_and_keep_native_residual_demand_s
         "invocation_id": "parent", "context_epoch": 2, "ts_ms": 120.,
         "attributes": {"request_id": "next", "cached_tokens_host": 3},
     }])
+    write_rows(tmp_path / "client_1/workflows/example/child_stream_content.jsonl", [{
+        "event": "llm_request_http_transport", "request_id": "next",
+        "http_request_start_ts_ms": 112., "http_body_sent_ts_ms": 115.,
+        "http_response_headers_ts_ms": 121.,
+    }])
     write_rows(tmp_path / "server/runtime_audit.jsonl", [{
         "event": "gpu_service_sample", "service_start_ts_ms": 200.,
         "request_samples": [{"request_id": "next", "workflow_id": "w",
@@ -84,6 +89,10 @@ def test_wait_events_deduplicate_node_commands_and_keep_native_residual_demand_s
     assert row["demand_handoff_full_bytes_known"] == 80
     assert row["completion_to_client_submit_ms"] == 10.
     assert row["client_submit_to_native_arrival_ms"] == 10.
+    assert row["client_submit_to_http_request_ms"] == 2.
+    assert row["http_request_to_body_sent_ms"] == 3.
+    assert row["body_sent_to_native_arrival_ms"] == 5.
+    assert row["http_request_to_response_headers_ms"] == 9.
     assert row["client_submit_to_first_service_ms"] == 90.
     assert row["submit_to_first_service_ms"] == 80.
     assert row["last_ack_to_first_service_ms"] == 105.
@@ -125,9 +134,30 @@ def test_tool_event_waits_for_all_tools_and_leaves_unknown_evidence_unknown(tmp_
     assert row["early_started_and_reused_full_bytes"] == 0
     assert row["first_service_ts_ms"] is None
     assert row["client_submit_to_native_arrival_ms"] is None
+    assert row["client_submit_to_http_request_ms"] is None
+    assert row["body_sent_to_native_arrival_ms"] is None
     assert row["client_submit_to_first_service_ms"] is None
     assert row["remaining_native_full_host_hit_bytes"] is None
     assert result["summary"]["by_source"]["tool_wait"]["remaining_native_full_evidence_unknown_events"] == 1
+
+
+def test_http_waits_keep_missing_ambiguous_and_unordered_boundaries_unknown():
+    attempt = {
+        "http_request_start_ts_ms": 110., "http_body_sent_ts_ms": 115.,
+        "http_response_headers_ts_ms": 121.,
+    }
+    for attempts in ([], [attempt, attempt]):
+        waits = http_transport_waits(attempts, 100., 120.)
+        assert waits["http_transport_attempts_observed"] == len(attempts)
+        assert all(value is None for name, value in waits.items() if name.endswith("_ms"))
+    for sent in (None, 109., 130., float("nan")):
+        waits = http_transport_waits([{**attempt, "http_body_sent_ts_ms": sent}], 100., 120.)
+        assert waits["client_submit_to_http_request_ms"] == 10.
+        assert waits["http_request_to_body_sent_ms"] is None
+        assert waits["body_sent_to_native_arrival_ms"] is None
+    waits = http_transport_waits([attempt], 111., 120.)
+    assert waits["client_submit_to_http_request_ms"] is None
+    assert waits["http_request_to_response_headers_ms"] is None
 
 
 def test_tool_boundary_includes_sequential_calls_outside_sampled_active_set(tmp_path):

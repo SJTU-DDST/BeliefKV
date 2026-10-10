@@ -1,0 +1,142 @@
+{
+  "scope": "real spawned CPU processes and bounded queues, actual parent worker poll/dispatch and deterministic admission/tool/JOIN replies; excludes model inference, DMA, GPU stalls and end-to-end performance",
+  "baseline_revision": "1a09ada",
+  "baseline_source_sha256": "f9245f44e593ebecec4ec50cdbdc8cab72cd119603d651045c76e8d241ab7b75",
+  "optimized_source": "/home/longhao/experiment/.worktrees/beliefkv-v16-followup-20261010/beliefkv/runtime/sglang_v0520_predictor_worker.py",
+  "optimized_source_sha256": "2b2022e1eaa8fe44eac59f11500ea7c27fc37a4d58bb7d109314e48c619808ea",
+  "benchmark_source_sha256": "5f81a50f73b6d1874a7edc26a5e098b3d41880cb17a7829f4d9fb7f4b28eeb2d",
+  "cases": [
+    {
+      "scenario": "idle_empty",
+      "iterations": 5000,
+      "inputs_replies_and_lifecycle_equal": true,
+      "reply_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+      "costs": {
+        "baseline": {
+          "wall": {
+            "count": 5000,
+            "mean_ms": 0.0041838346,
+            "p50_ms": 0.004446,
+            "p99_ms": 0.005867,
+            "max_ms": 0.012737
+          },
+          "thread_cpu": {
+            "count": 5000,
+            "mean_ms": 0.0034584156,
+            "p50_ms": 0.003646,
+            "p99_ms": 0.004926,
+            "max_ms": 0.011803
+          }
+        },
+        "optimized": {
+          "wall": {
+            "count": 5000,
+            "mean_ms": 0.0041426618,
+            "p50_ms": 0.004434,
+            "p99_ms": 0.005702,
+            "max_ms": 0.026061
+          },
+          "thread_cpu": {
+            "count": 5000,
+            "mean_ms": 0.003416794,
+            "p50_ms": 0.003634,
+            "p99_ms": 0.004746,
+            "max_ms": 0.025072
+          }
+        }
+      },
+      "mean_reduction": {
+        "wall": 0.009840924399831752,
+        "thread_cpu": 0.012034875160752856
+      }
+    },
+    {
+      "scenario": "inflight_empty",
+      "iterations": 5000,
+      "inputs_replies_and_lifecycle_equal": true,
+      "reply_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+      "costs": {
+        "baseline": {
+          "wall": {
+            "count": 5000,
+            "mean_ms": 0.0097992562,
+            "p50_ms": 0.010333,
+            "p99_ms": 0.014264,
+            "max_ms": 0.01994
+          },
+          "thread_cpu": {
+            "count": 5000,
+            "mean_ms": 0.0091135032,
+            "p50_ms": 0.009595,
+            "p99_ms": 0.012879,
+            "max_ms": 0.018625
+          }
+        },
+        "optimized": {
+          "wall": {
+            "count": 5000,
+            "mean_ms": 0.0039191648,
+            "p50_ms": 0.00409,
+            "p99_ms": 0.005021,
+            "max_ms": 0.034745
+          },
+          "thread_cpu": {
+            "count": 5000,
+            "mean_ms": 0.0032540772,
+            "p50_ms": 0.003367,
+            "p99_ms": 0.004164,
+            "max_ms": 0.019993
+          }
+        }
+      },
+      "mean_reduction": {
+        "wall": 0.6000548694706033,
+        "thread_cpu": 0.6429389304433448
+      }
+    },
+    {
+      "scenario": "result_ready",
+      "iterations": 300,
+      "inputs_replies_and_lifecycle_equal": true,
+      "reply_sha256": "98b5f778e635d506b7fbdf49ac00f51fc3871de17f900128b8bcc0364d830ec3",
+      "costs": {
+        "baseline": {
+          "wall": {
+            "count": 300,
+            "mean_ms": 0.09339696,
+            "p50_ms": 0.082133,
+            "p99_ms": 0.1558,
+            "max_ms": 0.234396
+          },
+          "thread_cpu": {
+            "count": 300,
+            "mean_ms": 0.09152540666666667,
+            "p50_ms": 0.080603,
+            "p99_ms": 0.153205,
+            "max_ms": 0.2297
+          }
+        },
+        "optimized": {
+          "wall": {
+            "count": 300,
+            "mean_ms": 0.09434065666666666,
+            "p50_ms": 0.084874,
+            "p99_ms": 0.151944,
+            "max_ms": 0.206278
+          },
+          "thread_cpu": {
+            "count": 300,
+            "mean_ms": 0.09247573,
+            "p50_ms": 0.083055,
+            "p99_ms": 0.149357,
+            "max_ms": 0.20344
+          }
+        }
+      },
+      "mean_reduction": {
+        "wall": -0.010104147572540523,
+        "thread_cpu": -0.010383164281305923
+      }
+    }
+  ]
+}

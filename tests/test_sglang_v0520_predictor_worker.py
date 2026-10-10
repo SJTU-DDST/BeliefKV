@@ -42,11 +42,28 @@ def batch(name: str):
 @pytest.fixture
 def fake_context(monkeypatch):
     class FakeQueue(Queue):
+        def __init__(self, maxsize):
+            super().__init__(maxsize=maxsize)
+            self._notification_reader, self._notification_writer = worker_module.mp.Pipe(
+                duplex=False,
+            )
+            self._reader = self._notification_reader
+
+        def _put(self, item):
+            super()._put(item)
+            self._notification_writer.send_bytes(b"x")
+
+        def _get(self):
+            self._notification_reader.recv_bytes()
+            return super()._get()
+
         def cancel_join_thread(self):
             pass
 
         def close(self):
             self.closed = True
+            self._notification_reader.close()
+            self._notification_writer.close()
 
     class FakeProcess:
         def __init__(self, **kwargs):
@@ -513,7 +530,7 @@ def test_tool_wait_submission_is_bounded_and_closed_worker_rejects(fake_context)
 def test_worker_exposes_output_reader_fd_until_closed_or_failed(fake_context):
     worker = NativePredictorWorker("unused", "a" * 64)
     try:
-        assert worker.fileno() is None
+        assert isinstance(worker.fileno(), int)
         worker._output_queue._reader = NS(fileno=lambda: 42)
         assert worker.fileno() == 42
         worker._output_queue._reader = NS(fileno=lambda: -1)

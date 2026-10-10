@@ -48,6 +48,24 @@ V16停止审计JOIN/tool提前且复用FULL为127.96MB，handoff复用
 诊断为`experiments/reports/v16_stopped_diagnostic_20261010.md`；
 下文旧状态记录不覆盖本节最新执行要求。
 
+### V16b 期间隔离开发
+
+本轮冻结主目录`1a09ada`和规范patch
+`68109d51ceb77f92fcbc2d17b52cfe76717b4ad26c47fd3642923b43ed0ca615`；
+新增优化在`perf/v16-control-wait-20261010`提交，不进入本轮任一侧。
+14:33 CST快照未观察到物理禁用或语义worker错误。性能不佳、
+租约到期或尚未结束的workflow本身不是实现故障，不据此中断。
+
+原生predictor的持久poll仅减少in-flight空结果轮询：真实spawn/
+有界队列基准的线程CPU9.11→3.25微秒，结果就绪时91.53→92.48
+微秒，无改善；输入、输出和生命周期一致。报告保留SHA256和实际
+隔离导入路径，不能换算为GPU吞吐提升。已有56项相关检查通过。
+成功HTTP请求时间使用hook的wall/monotonic映射；body sent不等于
+服务器收到，body sent→原生到达包含前端及IPC，不等于tokenizer
+单函数耗时。多attempt、缺发送回执和逆序边界保持未知。记录和
+审计用于下轮双侧，不能给当前旧trace补造不存在的发送时间。
+报告：`experiments/reports/v16_native_predictor_poll_cpu_20261010.json`。
+
 ## 当前执行状态
 
 后续新实验统一先运行predictive_h2d，再运行native；与reactive

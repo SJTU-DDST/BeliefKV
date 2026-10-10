@@ -2646,10 +2646,26 @@ def _stream_diagnostic_http_clients(
         started = time.monotonic()
         submitted_at_ms = time.time() * 1000
         phases: list[tuple[str, float]] = []
+        timing = {
+            "event": "llm_request_http_transport",
+            "request_id": rid,
+            "request_bytes": len(body),
+            "http_request_start_ts_ms": submitted_at_ms,
+            "http_body_send_start_ts_ms": None,
+            "http_body_sent_ts_ms": None,
+            "http_response_headers_ts_ms": None,
+        }
 
         def trace(name: str, info: dict[str, Any]) -> None:
             elapsed_ms = round((time.monotonic() - started) * 1000, 3)
             phases.append((name, elapsed_ms))
+            field = next((field for suffix, field in (
+                (".send_request_body.started", "http_body_send_start_ts_ms"),
+                (".send_request_body.complete", "http_body_sent_ts_ms"),
+                (".receive_response_headers.complete", "http_response_headers_ts_ms"),
+            ) if name.endswith(suffix)), None)
+            if field is not None:
+                timing[field] = submitted_at_ms + elapsed_ms
             if not name.endswith(".failed"):
                 return
             error = info.get("exception")
@@ -2669,15 +2685,29 @@ def _stream_diagnostic_http_clients(
             except OSError:
                 pass
 
-        return trace, rid
+        return trace, rid, timing
 
     def observe_sync(request: httpx.Request) -> None:
         if request.url.path == "/v1/chat/completions":
-            trace, rid = trace_request(request.read())
+            trace, rid, timing = trace_request(request.read())
             request.extensions["trace"] = trace
             request.extensions["beliefkv_rid"] = rid
+            request.extensions["beliefkv_http_timing"] = timing
+
+    def record_request_timing(response: httpx.Response) -> None:
+        timing = response.request.extensions.get("beliefkv_http_timing")
+        if observe_stream and timing is not None and isinstance(timing["request_id"], str):
+            record_stream({
+                **timing, "status_code": response.status_code,
+                "scope": (
+                    "HTTP hook after request construction; body sent is the transport "
+                    "write boundary, not server receipt or scheduler arrival. Wall "
+                    "timestamps use the hook's wall/monotonic offset."
+                ),
+            })
 
     def observe_sync_response(response: httpx.Response) -> None:
+        record_request_timing(response)
         rid = response.request.extensions.get("beliefkv_rid")
         if (
             observe_stream
@@ -2694,12 +2724,17 @@ def _stream_diagnostic_http_clients(
 
     async def observe_async(request: httpx.Request) -> None:
         if request.url.path == "/v1/chat/completions":
-            sync_trace, _ = trace_request(await request.aread())
+            sync_trace, rid, timing = trace_request(await request.aread())
 
             async def trace(name: str, info: dict[str, Any]) -> None:
                 sync_trace(name, info)
 
             request.extensions["trace"] = trace
+            request.extensions["beliefkv_rid"] = rid
+            request.extensions["beliefkv_http_timing"] = timing
+
+    async def observe_async_response(response: httpx.Response) -> None:
+        record_request_timing(response)
 
     limits = httpx.Limits(max_keepalive_connections=0)
     return (
@@ -2711,7 +2746,9 @@ def _stream_diagnostic_http_clients(
             },
         ),
         httpx.AsyncClient(
-            limits=limits, event_hooks={"request": [observe_async]}
+            limits=limits, event_hooks={
+                "request": [observe_async], "response": [observe_async_response],
+            },
         ),
     )
 

@@ -67,6 +67,30 @@ JOIN/tool仍存在较长恢复后等待，当前无完成的V16 GPU性能对照�
 `experiments/reports/v16_stopped_diagnostic_20261010.md`。下文为V15
 结论和此前开发记录，旧的“未部署/冻结”以记录当时状态理解。
 
+### V16b 冻结期间的隔离优化
+
+V16b主目录冻结于`1a09ada`，规范引擎patch SHA256为
+`68109d51ceb77f92fcbc2d17b52cfe76717b4ad26c47fd3642923b43ed0ca615`。
+后续改动只在`perf/v16-control-wait-20261010`隔离分支提交，未部署到
+本轮任何一侧。14:33 CST的运行快照未出现物理路径禁用或语义worker
+错误；实验未完成，不能报告native相对收益。
+
+原生预测worker复用结果管道的poll监听器，避免推理进行中每次空
+轮询构建selector；保留超时、退出、序列/种类校验及pending合并。
+真实spawn进程和有界队列基准覆盖admission/tool/JOIN结果：
+空结果轮询线程CPU均值9.11→3.25微秒（降低64.3%），墙钟均值
+9.80→3.92微秒；结果已就绪时91.53→92.48微秒，无改善。闲置且
+没有in-flight任务的路径基本不变。输入、输出和生命周期相同。
+这是CPU微基准，不是线上控制成本或GPU吞吐收益。
+
+成功LLM请求新增HTTP hook开始、body发送开始/完成及响应头时间，
+经现有异步诊断writer记录，不写prompt正文。独立事件审计将
+客户端submit→HTTP hook、hook→body sent、body sent→原生到达
+分别列出。body sent只是传输写入完成；最后一段仍含服务入口、
+校验、模板/tokenizer和IPC，不能当作独立tokenizer耗时。缺回执、
+多次尝试和逆序时钟保留未知；56项相关检查通过。基准报告为
+`experiments/reports/v16_native_predictor_poll_cpu_20261010.json`。
+
 ## 当前目标与 v15 最终对照
 
 当前目标是在固定workload、模型、容量及到达表下，使predictive
