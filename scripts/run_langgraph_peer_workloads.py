@@ -24,6 +24,7 @@ from beliefkv.experiments.agentic_peer_backend import (
 )
 from beliefkv.experiments.deepagents_swebench import (
     DEFAULT_SANDBOX_TEST_ENV,
+    SANDBOX_COMMAND_TIMEOUT_LIMIT_S,
     SYMPY_SANDBOX_PREFLIGHT,
     DockerWorkspaceBackend,
     JsonlAudit,
@@ -129,9 +130,9 @@ def _parse_args() -> argparse.Namespace:
     )
     parser.add_argument(
         "--sandbox-command-timeout-seconds",
-        type=int,
-        default=600,
-        help="Per-command timeout inside the offline SWE-bench sandbox.",
+        type=lambda value: min(int(value), SANDBOX_COMMAND_TIMEOUT_LIMIT_S),
+        default=SANDBOX_COMMAND_TIMEOUT_LIMIT_S,
+        help="Per-command timeout inside the offline SWE-bench sandbox, capped at 180.",
     )
     parser.add_argument(
         "--workflow-wall-clock-seconds",

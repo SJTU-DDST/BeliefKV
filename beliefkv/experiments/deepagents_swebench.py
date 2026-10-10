@@ -93,6 +93,7 @@ SERVER_ARTIFACT_FILENAMES = {
 }
 
 DEFAULT_SANDBOX_TEST_ENV = "/opt/miniconda3/envs/testbed"
+SANDBOX_COMMAND_TIMEOUT_LIMIT_S = 180
 DEFAULT_SANDBOX_SUPPORT_DIR = Path(__file__).with_name("sandbox_support")
 SUBAGENT_FANOUT_PROFILES = (
     "natural",
@@ -594,7 +595,7 @@ class DockerWorkspaceBackend(FilesystemBackend, SandboxBackendProtocol):
         audit: JsonlAudit,
         cpus: float = 2.0,
         memory_gib: float = 6.0,
-        default_timeout_s: int = 180,
+        default_timeout_s: int = SANDBOX_COMMAND_TIMEOUT_LIMIT_S,
         max_output_chars: int = 100_000,
         test_env_path: str = DEFAULT_SANDBOX_TEST_ENV,
         preflight_command: str | None = None,
@@ -611,7 +612,7 @@ class DockerWorkspaceBackend(FilesystemBackend, SandboxBackendProtocol):
         self.audit = audit
         self.cpus = cpus
         self.memory_gib = memory_gib
-        self.default_timeout_s = default_timeout_s
+        self.default_timeout_s = min(default_timeout_s, SANDBOX_COMMAND_TIMEOUT_LIMIT_S)
         self.max_output_chars = max_output_chars
         self.test_env_path = test_env_path.rstrip("/")
         self.preflight_command = preflight_command
@@ -912,7 +913,7 @@ class DockerWorkspaceBackend(FilesystemBackend, SandboxBackendProtocol):
         if not self._started or self._closed:
             raise RuntimeError("sandbox is not running")
         timeout_s = timeout if timeout is not None else self.default_timeout_s
-        timeout_s = max(1, min(int(timeout_s), 3600))
+        timeout_s = max(1, min(int(timeout_s), SANDBOX_COMMAND_TIMEOUT_LIMIT_S))
         command_sha256 = hashlib.sha256(command.encode("utf-8")).hexdigest()
         wrapped = (
             f"timeout --signal=KILL {timeout_s}s /bin/bash -o pipefail -c "
@@ -962,6 +963,8 @@ class DockerWorkspaceBackend(FilesystemBackend, SandboxBackendProtocol):
             duration_ms=(completed - started) * 1000.0,
             lock_wait_ms=(acquired - started) * 1000.0,
             execute_elapsed_ms=(completed - acquired) * 1000.0,
+            timeout_seconds=timeout_s,
+            requested_timeout_seconds=timeout,
             exit_code=exit_code,
             output_chars=len(output),
             output_sha256=hashlib.sha256(output.encode("utf-8")).hexdigest(),
@@ -1641,7 +1644,7 @@ class DeepAgentsExperimentConfig:
     stop_after_first_native_join: bool = False
     recursion_limit: int = 2048
     request_timeout_s: float = 600.0
-    sandbox_command_timeout_s: int = 600
+    sandbox_command_timeout_s: int = SANDBOX_COMMAND_TIMEOUT_LIMIT_S
     sandbox_test_env_path: str = DEFAULT_SANDBOX_TEST_ENV
     sandbox_preflight_command: str | None = None
     completion_gate_enabled: bool = True
@@ -1718,6 +1721,10 @@ class DeepAgentsExperimentConfig:
             self.sandbox_command_timeout_s,
         ) <= 0:
             raise ValueError("experiment limits must be positive")
+        object.__setattr__(
+            self, "sandbox_command_timeout_s",
+            min(self.sandbox_command_timeout_s, SANDBOX_COMMAND_TIMEOUT_LIMIT_S),
+        )
         if self.completion_repair_attempts < 0:
             raise ValueError("completion_repair_attempts must be non-negative")
         if (

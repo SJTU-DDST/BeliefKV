@@ -18,6 +18,7 @@ if str(REPOSITORY_ROOT) not in sys.path:
 from beliefkv.experiments.agent_protocol import LoopGuardPolicy
 from beliefkv.experiments.deepagents_swebench import (
     DeepAgentsExperimentConfig,
+    SANDBOX_COMMAND_TIMEOUT_LIMIT_S,
     run_experiment,
     write_json,
 )
@@ -524,7 +525,12 @@ def parse_args() -> argparse.Namespace:
             "from training and JCT."
         ),
     )
-    parser.add_argument("--sandbox-command-timeout", type=int, default=600)
+    parser.add_argument(
+        "--sandbox-command-timeout",
+        type=lambda value: min(int(value), SANDBOX_COMMAND_TIMEOUT_LIMIT_S),
+        default=SANDBOX_COMMAND_TIMEOUT_LIMIT_S,
+        help="Per-command timeout in seconds, capped at 180.",
+    )
     parser.add_argument("--runtime-event-ack-timeout", type=float, default=10.0)
     parser.add_argument("--runtime-event-ack-retries", type=int, default=3)
     parser.add_argument(

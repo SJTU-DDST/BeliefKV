@@ -16,6 +16,7 @@ if str(REPOSITORY_ROOT) not in sys.path:
 
 from beliefkv.experiments.deepagents_swebench import (
     DeepAgentsExperimentConfig,
+    SANDBOX_COMMAND_TIMEOUT_LIMIT_S,
     SUBAGENT_FANOUT_PROFILES,
     SYMPY_SANDBOX_PREFLIGHT,
     run_experiment,
@@ -226,7 +227,12 @@ def parse_args() -> argparse.Namespace:
         help="Allow each workflow to run until its agent returns a terminal result.",
     )
     parser.add_argument("--request-timeout", type=float, default=600.0)
-    parser.add_argument("--sandbox-command-timeout", type=int, default=600)
+    parser.add_argument(
+        "--sandbox-command-timeout",
+        type=lambda value: min(int(value), SANDBOX_COMMAND_TIMEOUT_LIMIT_S),
+        default=SANDBOX_COMMAND_TIMEOUT_LIMIT_S,
+        help="Per-command timeout in seconds, capped at 180.",
+    )
     parser.add_argument(
         "--sandbox-test-env",
         default="/opt/miniconda3/envs/testbed",

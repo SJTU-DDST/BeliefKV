@@ -226,6 +226,11 @@ def summarize(arm: Path) -> dict | None:
     if len(clients) != 1:
         raise ValueError("expected one workload summary")
     summary = json.loads(clients[0].read_text())
+    manifest_path = clients[0].parent / "manifest.json"
+    harness_config = (
+        json.loads(manifest_path.read_text()).get("config", {})
+        if manifest_path.exists() else {}
+    )
     native_path = arm / "server/native_telemetry_status.json"
     native = json.loads(native_path.read_text()) if native_path.exists() else {}
     capacity = json.loads((arm / "server/native_capacity_census.json").read_text())["capacity"]
@@ -305,6 +310,7 @@ def summarize(arm: Path) -> dict | None:
     duration = summary["duration_seconds"]
     return {
         "run": str(arm.resolve()), "duration_seconds": duration,
+        "sandbox_command_timeout_s": harness_config.get("sandbox_command_timeout_s"),
         "workflow_count": summary["workflow_count"], "outcomes": dict(outcomes),
         "completed_workflows_per_hour": summary["completed_workflows"] * 3600 / duration,
         "completed_jct_p50_seconds": median(jct) if jct else None,
@@ -517,6 +523,7 @@ def main() -> None:
                 for row, arrival in zip(workloads, arrivals)
             ],
             "activation_wall_clock_seconds": args.activation_wall_clock_seconds,
+            "sandbox_command_timeout_s": 180,
             "recursion_limit": 2048, "finalization_reserve_steps": 32,
             "native_reactive_guard_profile": True,
             "completion_gate_enabled": False,
@@ -665,6 +672,11 @@ def main() -> None:
     for name, arm in arms.items():
         if arm is None:
             continue
+        if (
+            "sandbox_command_timeout_s" in plan
+            and arm["sandbox_command_timeout_s"] != plan["sandbox_command_timeout_s"]
+        ):
+            raise ValueError(f"{name}: mismatched sandbox command timeout")
         state = arm["runtime_state"]
         if name == "native":
             if state or arm["predictive_h2d_acks"]:

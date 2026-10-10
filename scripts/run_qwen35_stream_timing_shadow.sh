@@ -206,7 +206,7 @@ fi
   --max-completion-tokens 8192 \
   --recursion-limit 2048 \
   --native-reactive-guard-profile \
-  --sandbox-command-timeout "${SANDBOX_COMMAND_TIMEOUT_SECONDS:-600}" \
+  --sandbox-command-timeout "${SANDBOX_COMMAND_TIMEOUT_SECONDS:-180}" \
   --stream-completion-shadow \
   "${content_args[@]}" \
   --activation-wall-clock-seconds "$WORKFLOW_DEADLINE_SECONDS" \

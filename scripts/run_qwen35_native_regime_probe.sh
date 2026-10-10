@@ -222,6 +222,7 @@ setsid "$PYTHON" "$ROOT/scripts/run_deepagents_swebench.py" \
   --server-log "$RUN_ROOT/server.log" --pool-tokens 1798995 \
   --model-context-tokens 131072 --max-completion-tokens 8192 \
   --sampling-seed "$SAMPLING_SEED" --recursion-limit 2048 \
+  --sandbox-command-timeout 180 \
   --activation-wall-clock-seconds "${ACTIVATION_WALL_CLOCK_SECONDS:-14400}" \
   --stream-completion-shadow --child-stream-content-shadow \
   --child-finish-chunk-shadow --stream-http-timing-shadow \
