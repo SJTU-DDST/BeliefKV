@@ -303,8 +303,64 @@ def prepare_host_lifetime_summary(
     }
 
 
+def prepare_selection_summary(selections: list[dict], prepared: list[dict]) -> dict:
+    """Keep candidate potential separate from completed transfers and consumption."""
+    acknowledged = {row["command_id"] for row in prepared}
+    sources = defaultdict(list)
+    for row in selections:
+        sources[row["source"]].append(row)
+    return {
+        "candidate_records": len(selections),
+        "records_without_command_id": sum(
+            row.get("command_id") is None for row in selections
+        ),
+        "by_source": {
+            source: {
+                "candidate_records": len(rows),
+                "acknowledged_command_records": sum(
+                    row.get("command_id") in acknowledged for row in rows
+                ),
+                "direct_reclaim_potential_commands": sum(
+                    row.get("reclaimable_pressured_bytes") is not None
+                    and row["reclaimable_pressured_bytes"] > 0 for row in rows
+                ),
+                "zero_direct_reclaim_potential_commands": sum(
+                    row.get("reclaimable_pressured_bytes") == 0 for row in rows
+                ),
+                "direct_reclaim_potential_unknown_commands": sum(
+                    row.get("reclaimable_pressured_bytes") is None for row in rows
+                ),
+                "selected_transfer_bytes_known": sum(
+                    row["transfer_bytes"] for row in rows
+                    if row.get("transfer_bytes") is not None
+                ),
+                "selected_transfer_bytes_unknown_records": sum(
+                    row.get("transfer_bytes") is None for row in rows
+                ),
+                "zero_direct_reclaim_selected_transfer_bytes_known": sum(
+                    row["transfer_bytes"] for row in rows
+                    if row.get("reclaimable_pressured_bytes") == 0
+                    and row.get("transfer_bytes") is not None
+                ),
+                "missing_full_prefix_tokens": distribution(
+                    row.get("missing_full_prefix_tokens") for row in rows
+                ),
+            }
+            for source, rows in sorted(sources.items())
+        },
+        "scope": (
+            "Candidate selection-time estimates, not reclaimed bytes, DMA bytes or "
+            "forward-use credit. Zero direct reclaim may be a necessary ancestor "
+            "backup before an exclusive checkpoint becomes reclaimable. Match ACKs "
+            "by command ID only; legacy records without it remain unassociated. "
+            "Missing candidate estimates remain unknown."
+        ),
+    }
+
+
 def audit(arm: Path) -> dict:
     issued, prepared, parks, leases, stages = {}, {}, [], defaultdict(list), {}
+    prepare_selections = []
     for row in records(arm / "opportunities/admission_opportunities.jsonl"):
         event = row["event"]
         if event == "prefetch_native_issued":
@@ -318,6 +374,8 @@ def audit(arm: Path) -> dict:
             prepared[row["command_id"]] = row
         elif event == "parent_pressure_demoted":
             parks.append(row)
+        elif event == "prepare_candidate_selected":
+            prepare_selections.append(row)
         elif event in ("prefetch_residency_registered", "prefetch_residency_released"):
             leases[row["command_id"]].append(row)
     transfers = list(records(arm / "server/transfer_telemetry.jsonl"))
@@ -560,6 +618,7 @@ def audit(arm: Path) -> dict:
             ) if host_evictions is not None else None
         ),
         "prepare_host_lifetime": prepare_host_lifetime_summary(prepare_restores, host_evictions),
+        "prepare_selection": prepare_selection_summary(prepare_selections, prepare_restores),
     }
     return {
         "scope": (

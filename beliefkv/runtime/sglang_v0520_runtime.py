@@ -3433,12 +3433,13 @@ class NativeAdmissionRuntime:
             return (0., 0.)
 
     def _record_prepare_selection(
-        self, step: ShadowBackupStep, *, source: str, rank: tuple[float, float],
-        scanned: int,
+        self, step: ShadowBackupStep, *, command_id: str, source: str,
+        rank: tuple[float, float], scanned: int,
     ) -> None:
         if self._opportunity_writer is not None:
             self._opportunity_writer.record({
                 "event": "prepare_candidate_selected", "ts_ms": time.time() * 1000.,
+                "command_id": command_id,
                 "source": source, "context_id": step.key.context_id,
                 "context_epoch": step.key.context_epoch, "node_id": step.node_id,
                 "missing_full_prefix_tokens": step.missing_full_prefix_tokens,
@@ -3546,7 +3547,8 @@ class NativeAdmissionRuntime:
             self._parent_pressure_candidates[step.node_id] = (step.key, step.creation_time)
             self.counts["join_prepare_issued"] += 1
             self._record_prepare_selection(
-                step, source="join_prepare", rank=rank, scanned=len(candidates),
+                step, command_id=command, source="join_prepare",
+                rank=rank, scanned=len(candidates),
             )
             break
         # Native PREPARE cannot reclaim memory; publish once after its lock changes.
@@ -3630,7 +3632,8 @@ class NativeAdmissionRuntime:
                 self._parent_pressure_candidates[step.node_id] = (step.key, step.creation_time)
                 self.counts["tool_prepare_issued"] += 1
                 self._record_prepare_selection(
-                    step, source="tool_wait", rank=rank, scanned=len(candidates),
+                    step, command_id=command, source="tool_wait",
+                    rank=rank, scanned=len(candidates),
                 )
                 break
             self._prepare_probe_after_ms[step.key] = now_ms + 250.

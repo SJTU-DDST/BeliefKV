@@ -1,7 +1,8 @@
 import json
 
 from scripts.audit_prefetch_lifecycle import (
-    audit, prepare_host_lifetime_summary, prepare_restore_attribution, source_summary,
+    audit, prepare_host_lifetime_summary, prepare_restore_attribution,
+    prepare_selection_summary, source_summary,
 )
 
 
@@ -292,6 +293,41 @@ def test_prepare_lifetime_repetition_separates_context_epoch_and_node_generation
     assert summary["repeated_context_epoch_node_creation_groups"] == 1
     assert summary["additional_prepares_on_same_identity"] == 1
     assert summary["max_commands_on_same_identity"] == 2
+
+
+def test_prepare_selection_matches_only_command_identity_and_keeps_legacy_unknown():
+    def selection(command=None, source="join_prepare", reclaim=0, size=20):
+        return {
+            "command_id": command, "source": source,
+            "reclaimable_pressured_bytes": reclaim, "transfer_bytes": size,
+            "missing_full_prefix_tokens": 100,
+        }
+
+    summary = prepare_selection_summary([
+        selection("acked"), selection("unacked", reclaim=40, size=40),
+        selection(), selection("tool", source="tool_wait", reclaim=20),
+    ], [{"command_id": "acked"}, {"command_id": "tool"}])
+    assert summary["candidate_records"] == 4
+    assert summary["records_without_command_id"] == 1
+    join = summary["by_source"]["join_prepare"]
+    assert join["acknowledged_command_records"] == 1
+    assert join["direct_reclaim_potential_commands"] == 1
+    assert join["zero_direct_reclaim_potential_commands"] == 2
+    assert join["selected_transfer_bytes_known"] == 80
+    assert join["selected_transfer_bytes_unknown_records"] == 0
+    assert join["direct_reclaim_potential_unknown_commands"] == 0
+    assert join["zero_direct_reclaim_selected_transfer_bytes_known"] == 40
+    assert join["missing_full_prefix_tokens"]["p50"] == 100
+    tool = summary["by_source"]["tool_wait"]
+    assert tool["acknowledged_command_records"] == 1
+    assert tool["zero_direct_reclaim_potential_commands"] == 0
+    legacy = prepare_selection_summary([{"source": "join_prepare"}], [])
+    legacy_join = legacy["by_source"]["join_prepare"]
+    assert legacy["records_without_command_id"] == 1
+    assert legacy_join["direct_reclaim_potential_unknown_commands"] == 1
+    assert legacy_join["zero_direct_reclaim_potential_commands"] == 0
+    assert legacy_join["selected_transfer_bytes_unknown_records"] == 1
+    assert legacy_join["missing_full_prefix_tokens"] == {"count": 0}
 
 
 def test_native_reload_in_a_tagged_batch_keeps_its_pool_and_operation_bytes(tmp_path):

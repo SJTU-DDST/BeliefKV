@@ -151,6 +151,22 @@ Current status:
   Host leases or preparation cooldowns. Preserve the compact report
   v15_prepare_host_lifetime_final_20261010.json and frozen raw evidence;
   commit this audit in isolation without changing live scheduling.
+- Isolated PREPARE candidate records now include the actual issued command ID.
+  Link candidate estimates to ACK/reclaim/restoration by that ID; never infer
+  legacy command identity from a shared node or nearby timestamp. All123
+  runtime/audit checks pass, and previous summary values remain unchanged.
+  V15 has127 candidate records with direct pressured-byte reclaim potential
+  and719 without it. The latter account for6.457 of8.361GB estimated selected
+  transfer bytes(77.23%). An ancestor backup can be necessary for a later
+  exclusive checkpoint, so zero direct reclaim does not establish waste;
+  these estimates are neither DMA bytes nor actual reclaimed capacity.
+  All846 V15 candidate records lack command IDs, so preserve aggregate
+  observations without retroactive per-command ACK credit. Extend the existing
+  v15_prepare_host_lifetime_final_20261010.json instead of duplicating it.
+  Inspect full-prefix completion and actual consumption before selecting a
+  filtering/batching policy. At2026-10-10 10:07 CST, native has94/156 completed,
+  no error/incomplete outcomes and live scheduler/client processes. Keep V15
+  frozen and deploy this attribution field only in the next comparison.
 - The isolated semantic worker now reuses a nonblocking poll listener to check
   the result pipe before Queue.get_nowait, avoiding selector construction on
   empty polls. Retain per-tick result, process-exit and timeout checks, input
