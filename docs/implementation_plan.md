@@ -135,6 +135,22 @@ Current status:
   in the frozen arm's logs. The CLI --summary-only avoids duplicated event rows.
   Issue-to-ACK protection is already fixed in isolation but V15 lacks the issue
   budget telemetry to prove how many unprotected misses it would recover.
+- The PREPARE lifetime audit now separates restore associations before and
+  after observed Host eviction, without changing latest-writer counts.
+  All14 audit checks pass; every pre-existing summary field is unchanged.
+  All196 V15 restore-associated commands have observations before eviction,
+  totaling697 node/pool associations;650 commands have no observed restore.
+  All846 FULL prepared commands have a subsequent observed eviction, with
+  ACK-to-first-published-node-eviction P50/P9047.935/2378.784s. Stop this
+  interval at the next same-node/pool D2H writer; it is not the lifetime of
+  the entire prefix or proof of allocation continuity. There are86 repeated
+  source/context/epoch/node/creation groups,141 additional prepares and a
+  maximum14 commands per identity; missing identities are excluded. Splits
+  and shared prefixes still prevent exact duplicate-byte or wait-episode
+  claims. Inspect real pressure/reclaim opportunities before adding arbitrary
+  Host leases or preparation cooldowns. Preserve the compact report
+  v15_prepare_host_lifetime_final_20261010.json and frozen raw evidence;
+  commit this audit in isolation without changing live scheduling.
 - The isolated semantic worker now reuses a nonblocking poll listener to check
   the result pipe before Queue.get_nowait, avoiding selector construction on
   empty polls. Retain per-tick result, process-exit and timeout checks, input

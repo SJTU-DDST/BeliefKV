@@ -1,6 +1,8 @@
 import json
 
-from scripts.audit_prefetch_lifecycle import audit, prepare_restore_attribution, source_summary
+from scripts.audit_prefetch_lifecycle import (
+    audit, prepare_host_lifetime_summary, prepare_restore_attribution, source_summary,
+)
 
 
 def write_rows(path, rows):
@@ -210,6 +212,86 @@ def test_later_d2h_distinguishes_intervening_host_eviction_from_unobserved_loss(
     assert empty_evidence["later_node_pool_d2h"][0]["host_evictions_between_writes"] == 0
     with_evidence = prepare_restore_attribution(prepared, transfers, evictions)[0]
     assert with_evidence["later_node_pool_d2h"][0]["host_evictions_between_writes"] == 1
+
+
+def test_prepare_host_lifetime_keeps_restore_before_after_and_missing_evidence_distinct():
+    prepared = {"prepare": {"command_id": "prepare", "node_id": 10, "ts_ms": 1.}}
+    transfers = [
+        {"direction": "d2h", "complete_ts_ms": 10., "node_ids": [10],
+         "num_tokens_by_pool": {"kv": 8}, "tagged_child_commits": [
+             {"command_id": "prepare", "anchor_node_id": 10,
+              "published_node_ids": [10], "num_tokens_by_pool": {"kv": 8}},
+         ]},
+        {"direction": "h2d", "submit_ts_ms": 11., "node_ids": [10],
+         "num_tokens_by_pool": {"kv": 8}},
+        {"direction": "h2d", "submit_ts_ms": 16., "node_ids": [10],
+         "num_tokens_by_pool": {"kv": 8}},
+    ]
+    evictions = [{"node_id": 10, "pool": "full", "ts_ms": 15.}]
+    rows = prepare_restore_attribution(prepared, transfers, evictions)
+    summary = prepare_host_lifetime_summary(rows, evictions)
+    assert summary["command_categories"]["mixed"] == 1
+    assert summary["restore_node_pool_associations"] == {
+        "before_observed_eviction": 1, "after_observed_eviction": 1, "unknown": 0,
+    }
+    assert summary["by_pool"]["kv"]["commands_with_observed_eviction"] == 1
+    assert summary["by_pool"]["kv"]["ack_to_first_observed_eviction_ms"]["p50"] == 5.
+    unknown = prepare_host_lifetime_summary(rows, None)
+    assert unknown["command_categories"]["unknown_eviction_evidence"] == 1
+    assert unknown["restore_node_pool_associations"]["unknown"] == 2
+    assert unknown["by_pool"]["kv"]["commands_with_observed_eviction"] is None
+    missing = prepare_host_lifetime_summary(rows * 2, [])
+    assert missing["prepare_identity_evidence_missing_commands"] == 2
+    assert missing["repeated_context_epoch_node_creation_groups"] == 0
+    empty = prepare_host_lifetime_summary(rows, [])
+    assert empty["command_categories"]["before_observed_eviction_only"] == 1
+    assert empty["by_pool"]["kv"]["commands_with_observed_eviction"] == 0
+
+
+def test_prepare_lifetime_stops_at_next_writer_and_keeps_split_pools_separate():
+    row = {
+        "command_id": "prepare", "node_id": 10, "node_creation_time": 1.,
+        "source": "join_prepare", "context_id": "ctx", "context_epoch": 1,
+        "ack_ts_ms": 10., "prepared_pool_units": {"kv": 8, "mamba": 1},
+        "published_node_ids": [10, 11], "restores": [
+            {"submit_ts_ms": 20., "matched_node_pools": [
+                {"node_id": 10, "pool": "kv"}, {"node_id": 11, "pool": "mamba"},
+            ]},
+        ],
+        "later_node_pool_d2h": [
+            {"node_id": 10, "pool": "kv", "ts_ms": 21.},
+            {"node_id": 11, "pool": "kv", "ts_ms": 22.},
+        ],
+    }
+    evictions = [
+        {"node_id": 10, "pool": "mamba", "ts_ms": 9.},
+        {"node_id": 11, "pool": "mamba", "ts_ms": 15.},
+        {"node_id": 10, "pool": "full", "ts_ms": 23.},
+        {"node_id": 11, "pool": "full", "ts_ms": 24.},
+    ]
+    summary = prepare_host_lifetime_summary([row], evictions)
+    assert summary["command_categories"]["mixed"] == 1
+    assert summary["by_pool"]["kv"]["commands_with_observed_eviction"] == 0
+    assert summary["by_pool"]["mamba"]["commands_with_observed_eviction"] == 1
+    assert summary["by_pool"]["mamba"]["ack_to_first_observed_eviction_ms"]["p50"] == 5.
+
+
+def test_prepare_lifetime_repetition_separates_context_epoch_and_node_generation():
+    def row(context="ctx", epoch=1, created=1.):
+        return {
+            "node_id": 10, "node_creation_time": created,
+            "source": "join_prepare", "context_id": context, "context_epoch": epoch,
+            "ack_ts_ms": 10., "prepared_pool_units": {"kv": 8},
+            "published_node_ids": [10], "restores": [], "later_node_pool_d2h": [],
+        }
+
+    summary = prepare_host_lifetime_summary([
+        row(), row(), row("other"), row(epoch=2), row(created=2.),
+    ], [])
+    assert summary["command_categories"]["no_restore"] == 5
+    assert summary["repeated_context_epoch_node_creation_groups"] == 1
+    assert summary["additional_prepares_on_same_identity"] == 1
+    assert summary["max_commands_on_same_identity"] == 2
 
 
 def test_native_reload_in_a_tagged_batch_keeps_its_pool_and_operation_bytes(tmp_path):

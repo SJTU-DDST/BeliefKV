@@ -200,6 +200,109 @@ def prepare_restore_attribution(
     return sorted(results.values(), key=lambda row: row["ts_ms"])
 
 
+def prepare_host_lifetime_summary(
+    prepared: list[dict], host_evictions: list[dict] | None,
+) -> dict:
+    """Separate observed restore associations before and after Host reclaim."""
+    eviction_times = defaultdict(list)
+    for row in host_evictions or ():
+        pool = "kv" if row["pool"] == "full" else row["pool"]
+        eviction_times[row["node_id"], pool].append(row["ts_ms"])
+    for times in eviction_times.values():
+        times.sort()
+    categories = Counter({
+        "no_restore": 0, "before_observed_eviction_only": 0,
+        "after_observed_eviction_only": 0, "mixed": 0, "unknown_eviction_evidence": 0,
+    })
+    matches = Counter({"before_observed_eviction": 0, "after_observed_eviction": 0, "unknown": 0})
+    lifetimes = defaultdict(list)
+    evicted = Counter()
+    pool_commands = Counter()
+    identities = Counter()
+    missing_identity = 0
+    for row in prepared:
+        ack = row["ack_ts_ms"]
+        before = after = unknown = 0
+        for restore in row["restores"]:
+            for match in restore["matched_node_pools"]:
+                if host_evictions is None:
+                    unknown += 1
+                    continue
+                times = eviction_times[match["node_id"], match["pool"]]
+                reclaimed = (
+                    bisect_right(times, restore["submit_ts_ms"]) - bisect_right(times, ack)
+                )
+                if reclaimed:
+                    after += 1
+                else:
+                    before += 1
+        matches.update({
+            "before_observed_eviction": before, "after_observed_eviction": after,
+            "unknown": unknown,
+        })
+        category = (
+            "unknown_eviction_evidence" if unknown
+            else "mixed" if before and after
+            else "before_observed_eviction_only" if before
+            else "after_observed_eviction_only" if after
+            else "no_restore"
+        )
+        categories[category] += 1
+        for pool, units in row["prepared_pool_units"].items():
+            if units <= 0:
+                continue
+            pool_commands[pool] += 1
+            first_evictions = []
+            for node in row["published_node_ids"]:
+                times = eviction_times[node, pool]
+                position = bisect_right(times, ack)
+                next_write = min(
+                    (later["ts_ms"] for later in row["later_node_pool_d2h"]
+                     if later["node_id"] == node and later["pool"] == pool),
+                    default=float("inf"),
+                )
+                if position < len(times) and times[position] <= next_write:
+                    first_evictions.append(times[position])
+            if first_evictions:
+                evicted[pool] += 1
+                lifetimes[pool].append(min(first_evictions) - ack)
+        if any(row.get(name) is None for name in (
+            "source", "context_id", "context_epoch", "node_creation_time",
+        )):
+            missing_identity += 1
+        else:
+            identities[
+                row["source"], row["context_id"], row["context_epoch"],
+                row["node_id"], row["node_creation_time"],
+            ] += 1
+    return {
+        "host_eviction_evidence_available": host_evictions is not None,
+        "command_categories": dict(categories),
+        "restore_node_pool_associations": dict(matches),
+        "by_pool": {
+            pool: {
+                "prepared_commands": count,
+                "commands_with_observed_eviction": evicted[pool] if host_evictions is not None else None,
+                "ack_to_first_observed_eviction_ms": distribution(lifetimes[pool]),
+            }
+            for pool, count in sorted(pool_commands.items())
+        },
+        "repeated_context_epoch_node_creation_groups": sum(count > 1 for count in identities.values()),
+        "additional_prepares_on_same_identity": sum(count - 1 for count in identities.values()),
+        "max_commands_on_same_identity": max(identities.values(), default=0),
+        "prepare_identity_evidence_missing_commands": missing_identity,
+        "scope": (
+            "Node/pool associations, not allocation continuity or model-forward reuse. "
+            "A restore after observed Host eviction cannot establish consumption of "
+            "the original prepared copy. Eviction latency stops at the next observed "
+            "same-node/pool D2H write; absent eviction records are not zero evictions. "
+            "Reported latencies include only observed evictions, excluding censored "
+            "copies. Repeated context/epoch/node/creation identities are not exact "
+            "duplicate bytes and do not establish the same wait episode across splits."
+        ),
+    }
+
+
 def audit(arm: Path) -> dict:
     issued, prepared, parks, leases, stages = {}, {}, [], defaultdict(list), {}
     for row in records(arm / "opportunities/admission_opportunities.jsonl"):
@@ -456,6 +559,7 @@ def audit(arm: Path) -> dict:
                 ) for row in prepare_restores
             ) if host_evictions is not None else None
         ),
+        "prepare_host_lifetime": prepare_host_lifetime_summary(prepare_restores, host_evictions),
     }
     return {
         "scope": (
@@ -490,6 +594,8 @@ def audit(arm: Path) -> dict:
             "node splitting and legacy merged pool attribution are unresolved. "
             "Intervening same-node/pool Host eviction is reported when available; "
             "it does not recover an allocation identity across radix splits. "
+            "The lifetime summary separates restore associations before/after observed "
+            "Host eviction without changing legacy latest-writer association counts. "
             "Observed restoration is not final model-forward reuse."
         ),
     }
