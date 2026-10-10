@@ -27,9 +27,10 @@ from beliefkv.runtime import sglang_v0520_runtime as runtime_module
 
 
 SOURCE = Path("beliefkv/runtime/sglang_v0520_runtime.py")
+ADMISSION_SOURCE = Path("beliefkv/runtime/sglang_v0520_admission.py")
 
 
-def load_plan(source: str, label: str):
+def load_plan(source: str, label: str, *, admission_source: str | None = None):
     tree = ast.parse(source)
     cls = next(node for node in tree.body if isinstance(node, ast.ClassDef)
                and node.name == "NativeAdmissionRuntime")
@@ -37,6 +38,17 @@ def load_plan(source: str, label: str):
                   and node.name == "plan_native_prefill")
     method.decorator_list = []
     namespace = dict(vars(runtime_module))
+    if admission_source is not None:
+        admission = ast.parse(admission_source)
+        compiler = next(
+            node for node in admission.body
+            if isinstance(node, ast.FunctionDef) and node.name == "compile_native_prefill_plan"
+        )
+        module = ast.Module(body=[
+            ast.ImportFrom(module="__future__", names=[ast.alias(name="annotations")], level=0),
+            compiler,
+        ], type_ignores=[])
+        exec(compile(ast.fix_missing_locations(module), label, "exec"), namespace)
     module = ast.Module(body=[
         ast.ImportFrom(module="__future__", names=[ast.alias(name="annotations")], level=0),
         method,
@@ -161,10 +173,19 @@ def main():
         ["git", "show", f"{args.baseline_commit}:{SOURCE.as_posix()}"],
         cwd=ROOT, check=True, text=True, capture_output=True,
     ).stdout
+    baseline_admission_source = subprocess.run(
+        ["git", "show", f"{args.baseline_commit}:{ADMISSION_SOURCE.as_posix()}"],
+        cwd=ROOT, check=True, text=True, capture_output=True,
+    ).stdout
     optimized_source = (ROOT / SOURCE).read_text()
+    optimized_admission_source = (ROOT / ADMISSION_SOURCE).read_text()
     implementations = {
-        "baseline": load_plan(baseline_source, args.baseline_commit),
-        "optimized": load_plan(optimized_source, str(ROOT / SOURCE)),
+        "baseline": load_plan(
+            baseline_source, args.baseline_commit, admission_source=baseline_admission_source,
+        ),
+        "optimized": load_plan(
+            optimized_source, str(ROOT / SOURCE), admission_source=optimized_admission_source,
+        ),
     }
     cases = [
         {"queue": queue, "leases": leases}
@@ -209,11 +230,18 @@ def main():
         "schema_version": 1, "baseline_commit": args.baseline_commit,
         "baseline_source_sha256": hashlib.sha256(baseline_source.encode()).hexdigest(),
         "optimized_source_sha256": hashlib.sha256(optimized_source.encode()).hexdigest(),
+        "baseline_admission_source_sha256": hashlib.sha256(
+            baseline_admission_source.encode(),
+        ).hexdigest(),
+        "optimized_admission_source_sha256": hashlib.sha256(
+            optimized_admission_source.encode(),
+        ).hexdigest(),
         "imported_source": str(Path(runtime_module.__file__).resolve()),
         "iterations_per_case": args.iterations, "warmup_iterations": 10,
         "planning_calls_per_iteration": 2, "deployed": False, "cases": results,
         "scope": (
             "CPU plan_native_prefill with real causal/request identity handling, "
+            "using each variant's exact plan and compiler source, "
             "mixed restoration sources and deterministic stub-native residency. "
             "Logical time advances past the 50ms observation cache each iteration. "
             "Alternating variants must agree on both plans, cumulative counters, "

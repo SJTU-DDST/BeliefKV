@@ -87,6 +87,8 @@ def compile_native_prefill_plan(
     """Bind a safe-point ordering decision to live request/session identities.
 
     `prioritized` is an already-authorized order from the semantic planner.
+    It can reuse identities already bound in that planning call; selection
+    rechecks the live request/session identity before admitting a request.
     This function does not infer capacity or make admission decisions.
     """
     if type(semantic_revision) is not int or semantic_revision < 0:
@@ -97,8 +99,11 @@ def compile_native_prefill_plan(
         raise ValueError("prefill plan exceeds bound")
     keys: list[PrefillCandidateKey] = []
     seen: set[str] = set()
-    for req in prioritized:
-        key = _request_key(req)
+    for candidate in prioritized:
+        key = (
+            candidate if isinstance(candidate, PrefillCandidateKey)
+            else _request_key(candidate)
+        )
         if key is None:
             raise ValueError("prefill plan contains an invalid tagged identity")
         if key.request_id in seen:

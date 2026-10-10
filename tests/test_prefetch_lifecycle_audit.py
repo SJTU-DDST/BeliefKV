@@ -229,6 +229,77 @@ def test_tool_event_waits_for_all_tools_and_leaves_unknown_evidence_unknown(tmp_
     assert result["summary"]["by_source"]["tool_wait"]["remaining_native_full_evidence_unknown_events"] == 1
 
 
+@pytest.mark.parametrize("pre_return_observed", (False, True))
+def test_join_epoch_advance_keeps_the_actual_first_parent_request(tmp_path, pre_return_observed):
+    join = {
+        "source": "join_ticket", "workflow_id": "w", "context_id": "c",
+        "join_id": "j", "invocation_id": "parent",
+    }
+    observations = [{
+        **join, "event": "wait_prefetch_plan", "context_epoch": 2,
+        "request_id": "after-join", "ts_ms": 125., "reason": "no_restore_plan",
+    }]
+    if pre_return_observed:
+        observations.append({
+            **join, "source": "join_wait", "event": "session_h2d_opportunity",
+            "context_epoch": 1, "ts_ms": 90., "reason": "start_window",
+        })
+    write_rows(tmp_path / "client_1/workflows/example/runtime_events.deepagents.jsonl", [
+        {"kind": "join_satisfied", "workflow_id": "w", "join_id": "j", "ts_ms": 100.},
+        *[
+            {"kind": "llm_submit", "workflow_id": "w", "context_id": "c",
+             "invocation_id": "parent", "context_epoch": epoch, "ts_ms": when,
+             "attributes": {"request_id": rid}}
+            for epoch, when, rid in ((2, 110., "after-join"), (3, 150., "after-tool"))
+        ],
+    ])
+    write_rows(tmp_path / "server/runtime_events.sglang.jsonl", [
+        {"kind": "llm_submit", "workflow_id": "w", "context_id": "c",
+         "invocation_id": "parent", "context_epoch": epoch, "ts_ms": arrival,
+         "attributes": {"request_id": rid, "cached_tokens_host": 0}}
+        for epoch, arrival, rid in ((2, 115., "after-join"), (3, 155., "after-tool"))
+    ])
+    write_rows(tmp_path / "server/runtime_audit.jsonl", [
+        {"event": "gpu_service_sample", "service_start_ts_ms": service,
+         "request_samples": [{"request_id": rid, "workflow_id": "w",
+                             "context_id": "c", "context_epoch": epoch}]}
+        for epoch, service, rid in ((2, 130., "after-join"), (3, 1000., "after-tool"))
+    ])
+    result = wait_event_attribution(tmp_path, observations, {}, [], 0.)
+    assert result["summary"]["observed_wait_events"] == 1
+    [row] = result["rows"]
+    assert row["next_request_id"] == "after-join"
+    assert row["submit_to_first_service_ms"] == 15.
+    assert row["completion_to_client_submit_ms"] == 10.
+
+
+def test_join_epoch_advance_keeps_different_spawn_rounds_separate(tmp_path):
+    observations = [
+        {"source": "join_ticket", "workflow_id": "w", "context_id": "c",
+         "join_id": join, "invocation_id": "parent", "context_epoch": epoch,
+         "ts_ms": when, "event": "wait_prefetch_plan", "reason": "no_restore_plan"}
+        for join, epoch, when in (("first", 0, 90.), ("first", 1, 125.), ("second", 3, 200.))
+    ]
+    write_rows(tmp_path / "client_1/workflows/example/runtime_events.deepagents.jsonl", [
+        {"kind": "join_satisfied", "workflow_id": "w", "join_id": "first", "ts_ms": 100.},
+        {"kind": "llm_submit", "workflow_id": "w", "context_id": "c",
+         "invocation_id": "parent", "context_epoch": 1, "ts_ms": 110.,
+         "attributes": {"request_id": "first-parent"}},
+        {"kind": "llm_submit", "workflow_id": "w", "context_id": "c",
+         "invocation_id": "parent", "context_epoch": 2, "ts_ms": 150.,
+         "attributes": {"request_id": "after-tool"}},
+        {"kind": "join_satisfied", "workflow_id": "w", "join_id": "second", "ts_ms": 210.},
+        {"kind": "llm_submit", "workflow_id": "w", "context_id": "c",
+         "invocation_id": "parent", "context_epoch": 4, "ts_ms": 220.,
+         "attributes": {"request_id": "second-parent"}},
+    ])
+    result = wait_event_attribution(tmp_path, observations, {}, [], 0.)
+    assert result["summary"]["observed_wait_events"] == 2
+    assert {row["join_id"]: row["next_request_id"] for row in result["rows"]} == {
+        "first": "first-parent", "second": "second-parent",
+    }
+
+
 def test_http_waits_keep_missing_ambiguous_and_unordered_boundaries_unknown():
     attempt = {
         "http_request_start_ts_ms": 110., "http_body_sent_ts_ms": 115.,

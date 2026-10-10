@@ -6376,7 +6376,7 @@ class NativeAdmissionRuntime:
                 break
         return compile_native_prefill_plan(
             [
-                req for index, req in ordered
+                key for index, _ in ordered
                 if (key := keys[index]) is not None
                 and self.visible.get(key.request_id) == key
                 and not self._terminal(key)

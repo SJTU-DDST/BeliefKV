@@ -109,9 +109,10 @@ device FULL and61.878GB device Mamba cumulatively, not peak free capacity.
 91 linked parent services include90 with prior actual device release;
 queue-to-completed-batch P50/P90 is214.84/485.33ms,max16.923s.
 All36 restore lookaheads link to observed service, with selection-to-batch
-P50/P90 of136.30/291.75ms,max446.55ms. Across all114 matched JOIN next
-requests,queue-to-service P90 remains12.16s; do not substitute this favorable
-capacity-linked subset for overall latency. Independently early reused FULL
+P50/P90 of136.30/291.75ms,max446.55ms. The older114-row JOIN aggregate
+and its12.16s P90 are invalid: grouping by context epoch repeats JOINs and
+attributes later tool requests to them. See the corrected identity below.
+Independently early reused FULL
 is1.053GB JOIN plus3.154MB tool;69.057GB demand-handoff FULL reuse stays separate.
 
 A subsequent outcome scan has60 completed,1 incomplete and no error.
@@ -120,6 +121,41 @@ two model responses ending with finish_reason=length; the last has36832
 characters of repeated reasoning. No workflow deadline expiry or guard
 intervention occurred. Preserve this model-truncation outcome and continue
 the stable pair; it is not evidence that terminal reclamation failed.
+
+Keep one JOIN episode per workflow/context/JOIN ID across the parent's epoch
+advance. Combine wait and post-resumption plans, then identify the parent's
+first actual request after the complete JOIN regardless of the observation's
+epoch. An unobserved complete JOIN leaves request/service attribution unknown.
+Keep tool episodes at their own context epochs and different spawn JOIN IDs
+separate.3 new cases reproduce old duplicate/wrong-next-request behavior;
+39 lifecycle audit checks pass after the fix. Do not alter raw logs or claim
+runtime acceleration from this measurement correction.
+
+The later corrected v20_join_admission_diagnostics_20261010.json snapshot
+has110 matched independent JOIN requests,all linked to capacity handoff.
+Queue-to-actual-first-service P50/P90 is169.94/456.97ms,max16.838s;
+26 JOINs have observations spanning multiple epochs. django-13023's actual
+post-JOIN request waits221.21ms; the old extra group incorrectly uses the
+subsequent read_file request's19.968s wait. The pytest-7571 tail remains
+real and unresolved. Independently early reused JOIN FULL is1.173GB.
+This snapshot is later than20:11; changes in sample counts are not all
+deduplication. Apply this same corrected offline auditor to both final arms
+after preserving their frozen runtime versions.
+
+Profiling the156-request CPU fixture finds repeated identity parsing at plan
+compilation accounts for about23% of cumulative plan cost. Reuse immutable
+keys already bound within that plan call. Formal native selection must still
+recheck live request,session,generation,epoch and attempt; retain revisions,
+duplicate-ID and candidate-bound checks.196 scoped admission/runtime/capacity/
+audit checks pass. The whole-planning benchmark loads each variant's exact
+planner and compiler source and alternates their order; paired plans,cumulative
+counts,native inspection counts and priority metadata remain identical.
+156-request mean CPU wall intervals decrease17.1%--27.6%;8-request cases
+decrease2.5%--8.8%. Preserve v20_prefill_identity_reuse_cpu_20261010.json;
+it does not measure physical DMA,GPU throughput or paired JCT.
+Commit this runtime follow-up in isolation and deploy between frozen runs.
+The second48-task wave has arrived; the recent outcome scan is84 completed,
+1 incomplete,no error. Continue the live predictive then cold-native pair.
 
 ## V19b Harness Context Retirement Integration
 

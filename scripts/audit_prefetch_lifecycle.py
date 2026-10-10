@@ -484,7 +484,9 @@ def wait_event_identity(row: dict) -> tuple | None:
     join = row.get("join_id") if source == "join_ticket" else None
     if source == "join_ticket" and join is None:
         return None
-    return source, row["workflow_id"], row["context_id"], row["context_epoch"], join
+    # A JOIN keeps its identity when the resumed parent advances its epoch.
+    epoch = None if source == "join_ticket" else row["context_epoch"]
+    return source, row["workflow_id"], row["context_id"], epoch, join
 
 
 def http_transport_waits(
@@ -652,7 +654,8 @@ def wait_event_attribution(
             continue
         group = groups.setdefault(identity, {
             "source": identity[0], "workflow_id": identity[1],
-            "context_id": identity[2], "context_epoch": identity[3], "join_id": identity[4],
+            "context_id": identity[2], "context_epoch": observation["context_epoch"],
+            "join_id": identity[4], "observed_context_epochs": set(),
             "invocation_id": observation.get("invocation_id"),
             "first_observation_ts_ms": observation["ts_ms"],
             "max_observed_planned_full_tokens": None, "plan_reasons": Counter(),
@@ -662,6 +665,8 @@ def wait_event_attribution(
         group["first_observation_ts_ms"] = min(
             group["first_observation_ts_ms"], observation["ts_ms"],
         )
+        group["observed_context_epochs"].add(observation["context_epoch"])
+        group["context_epoch"] = min(group["context_epoch"], observation["context_epoch"])
         if observation.get("invocation_id") is not None:
             group["invocation_id"] = observation["invocation_id"]
         group["active_tool_ids"].update(observation.get("active_tool_ids") or ())
@@ -763,10 +768,15 @@ def wait_event_attribution(
                 else "tool_request_round_unproven"
             )
         group["completion_ts_ms"] = completion
-        next_request = next((
+        next_request = None if (
+            group["source"] == "join_ticket" and completion is None
+        ) else next((
             row for row in submits.get((group["workflow_id"], group["context_id"]), ())
             if row.get("context_epoch") is not None
-            and row["context_epoch"] > group["context_epoch"]
+            and (
+                group["source"] == "join_ticket"
+                or row["context_epoch"] > group["context_epoch"]
+            )
             and row.get("invocation_id") == group["invocation_id"]
             and row["ts_ms"] >= (
                 completion if completion is not None else group["first_observation_ts_ms"]
@@ -859,6 +869,7 @@ def wait_event_attribution(
                 "max_observed_planned_full_tokens", "completion_ts_ms",
                 "completion_evidence", "observed_tools_completion_ts_ms",
             )},
+            "observed_context_epochs": sorted(group["observed_context_epochs"]),
             "observed_tool_call_count": len(group["active_tool_ids"]),
             "max_observed_planned_full_bytes": (
                 group["max_observed_planned_full_bytes"]
@@ -969,7 +980,11 @@ def wait_event_attribution(
         },
         "rows": rows,
         "semantics": (
-            "One causal JOIN or tool wait at a context epoch, not one node command. "
+            "One causal JOIN per workflow/context/JOIN identity across parent epoch "
+            "advances, or one tool wait at a context epoch, not one node command. "
+            "JOIN service belongs to the first parent request after the observed "
+            "complete JOIN, including plans logged after that request is submitted; "
+            "an unobserved JOIN boundary leaves that request association unknown. "
             "Plans are bounded snapshots, not a continuous or counterfactual opportunity "
             "denominator; the maximum snapshot is not summed across repeated samples. "
             "Early FULL requires actual submit before complete JOIN/all-tool END and "

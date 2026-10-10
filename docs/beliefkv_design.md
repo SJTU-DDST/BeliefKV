@@ -148,6 +148,16 @@ Host-only组件和在途H2D仍须满足原生数据依赖。此区分只修正
 副本或授予回收权限。no_restore_plan既可能表示缺乏可用恢复
 计划，也可能表示已驻留；不能单凭该原因推断checkpoint缺失。
 
+一次准入规划内复用已经绑定的不可变请求key，避免在编译
+顺序时再次解析同一身份；正式选择请求仍核验实时session、
+generation、context epoch及attempt，不跨规划调用缓存身份授权。
+
+JOIN评估以workflow/context/JOIN ID定义独立事件，不随parent
+恢复后的context epoch重复计数。完整JOIN后的首次服务只关联
+parent实际提交的第一条请求，即使计划观测晚于该提交；缺少
+完整JOIN边界时不推测关联。后续工具请求及不同spawn轮的JOIN
+分别评价，GPU服务开始观察与完成batch观察也保持各自口径。
+
 主指标为完成吞吐、JCT 和 completion curve；同时报告实际
 工作量、任务正确性、GPU 服务、缓存命中、重算、按来源分池
 传输、驻留字节时间与公平性。CPU wall 区间、传输累计时间或

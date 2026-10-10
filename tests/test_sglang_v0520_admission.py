@@ -179,3 +179,30 @@ def test_compiler_rejects_missing_identity_duplicate_and_oversized_decision() ->
         compile_native_prefill_plan((req, req), semantic_revision=1, max_candidates=1)
     with pytest.raises(ValueError, match="invalid semantic revision"):
         compile_native_prefill_plan((req,), semantic_revision=True)
+
+
+@pytest.mark.parametrize("changed", ("epoch", "attempt", "generation"))
+def test_compiler_reuses_bound_keys_but_selection_rechecks_live_identity(changed) -> None:
+    first, last, native = _req("first"), _req("last"), _req("native", tagged=False)
+    first.session_id, first.session_generation = "agent-1", 4
+    bound = (_key(last), _key(first))
+    plan = compile_native_prefill_plan(bound, semantic_revision=7)
+    assert plan.prioritized == bound
+    assert select_native_prefill_candidates(
+        (first, native, last), plan=plan, current_semantic_revision=7,
+    ).candidates == (last, native, first)
+    if changed == "epoch":
+        first.beliefkv_metadata["context_epoch"] += 1
+    elif changed == "attempt":
+        first.cache_request_handle.attempt_id += 1
+    else:
+        first.session_generation += 1
+    selection = select_native_prefill_candidates(
+        (first, native, last), plan=plan, current_semantic_revision=7,
+    )
+    assert selection.candidates == (native, last)
+    assert selection.rejected == (("first", "identity_changed"),)
+    with pytest.raises(ValueError, match="duplicate request ID"):
+        compile_native_prefill_plan((bound[0], bound[0]), semantic_revision=7)
+    with pytest.raises(ValueError, match="exceeds bound"):
+        compile_native_prefill_plan(bound, semantic_revision=7, max_candidates=1)
