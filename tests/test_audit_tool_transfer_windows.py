@@ -2,7 +2,9 @@ import json
 
 import pytest
 
-from scripts.audit_tool_transfer_windows import audit, history_forecast_audit
+from scripts.audit_tool_transfer_windows import (
+    audit, history_forecast_audit, history_physical_opportunity, history_physical_summary,
+)
 
 
 def write_rows(path, rows):
@@ -65,14 +67,24 @@ def test_history_routing_audit_weights_each_tool_once_and_excludes_open_parallel
     forecasts = [{
         "event": "tool_wait_forecast", "workflow_id": "wf", "invocation_id": "child",
         "context_id": "ctx", "context_epoch": 0, "observed_monotonic_ms": ts,
+        "ts_ms": ts + 1000.,
         "p10_ms": max(1000. - 100. - ts, 0.), "p50_ms": 1000. - ts,
         "p90_ms": 1000. + 100. - ts, "release_cdf": [[1000., .1], [10000., .9]],
     } for ts in (775., 900.)]
-    write_rows(tmp_path / "opportunities/admission_opportunities.jsonl", forecasts)
+    write_rows(tmp_path / "opportunities/admission_opportunities.jsonl", [
+        {"event": "safe_point_census", "ts_ms": 1000., "monotonic_ms": 0.},
+        *forecasts,
+        {"event": "wait_prefetch_plan", "source": "tool_wait",
+         "workflow_id": "wf", "invocation_id": "child", "context_id": "ctx",
+         "context_epoch": 0, "ts_ms": 1950., "active_tool_ids": ["command"],
+         "start_window_ms": 300., "planned_pool_bytes": {"kv": 200},
+         "fits_current_free_lists": True},
+    ])
     result = history_forecast_audit(tmp_path, artifact)
     if parallel_open_tool:
         assert result["matched_independent_tools"] == 0
         assert result["matched_forecasts"] == 0
+        assert result["physical_opportunity_intersection"]["matched_positive_full_plans"]["snapshots"] == 0
     else:
         assert result["matched_independent_tools"] == 1
         assert result["matched_forecasts"] == 2
@@ -81,3 +93,69 @@ def test_history_routing_audit_weights_each_tool_once_and_excludes_open_parallel
         assert result["history_first_windows_in_actual_0_to_500ms"] == 1
         assert result["generic_first_windows_in_actual_0_to_500ms"] == 0
         assert result["rows"][0]["history_support"] == "same_input_completed"
+        physical = result["physical_opportunity_intersection"]
+        assert physical["history_within_recorded_start_window"]["independent_tools"] == 1
+        assert physical["generic_within_recorded_start_window"]["independent_tools"] == 0
+        assert physical["history_within_recorded_start_window"]["with_observed_free_capacity"][
+            "sum_per_tool_max_observed_full_bytes"
+        ] == 200
+
+
+def test_history_opportunity_requires_live_accepted_forecast_and_exact_active_tool():
+    from beliefkv.runtime.sglang_v0520_admission import PrefillCandidateKey
+    from beliefkv.runtime.sglang_v0520_prediction import NativeToolWaitHint
+
+    key = PrefillCandidateKey("r", "wf", "child", "ctx", 0, 0)
+    generic = NativeToolWaitHint(
+        key, 1000., 2000., 3000., 500., 1500., "frozen",
+    )
+    history = NativeToolWaitHint(
+        key, 100., 300., 500., 500., 1500., "frozen",
+        residual_duration_mass=((100., .1), (300., .5), (500., .4)),
+    )
+    snapshot = {
+        "ts_ms": 1750., "active_tool_ids": ["command"], "start_window_ms": 200.,
+        "planned_pool_bytes": {"kv": 100}, "fits_current_free_lists": True,
+    }
+    candidate = {
+        "window": {"tool_id": "command", "workflow_id": "wf", "end_ms": 1100.},
+        "generic": generic, "history": history, "accepted_ts_ms": 1600.,
+    }
+    linked = history_physical_opportunity(snapshot, candidate, 1000.)
+    assert linked["history_within_recorded_start_window"] is True
+    assert linked["generic_within_recorded_start_window"] is False
+    assert linked["actual_lead_to_tool_end_ms"] == 350.
+    assert history_physical_opportunity(
+        snapshot, {**candidate, "accepted_ts_ms": 1800.}, 1000.,
+    ) is None
+    assert history_physical_opportunity(
+        {**snapshot, "ts_ms": 2600.}, candidate, 1000.,
+    ) is None
+    assert history_physical_opportunity(
+        {**snapshot, "active_tool_ids": ["command", "parallel"]}, candidate, 1000.,
+    ) is None
+    after_end = history_physical_opportunity(
+        snapshot, {**candidate, "window": {**candidate["window"], "end_ms": 700.}}, 1000.,
+    )
+    assert after_end["history_within_recorded_start_window"] is True
+    assert after_end["actual_lead_to_tool_end_ms"] == -50.
+
+
+def test_history_physical_summary_keeps_unknown_horizons_and_capacity_separate():
+    row = {
+        "workflow_id": "wf", "invocation_id": "child", "tool_id": "command",
+        "planned_full_bytes": 100, "history_within_500ms": True,
+        "generic_within_500ms": False, "history_within_recorded_start_window": True,
+        "generic_within_recorded_start_window": False, "fits_current_free_lists": True,
+        "actual_lead_to_tool_end_ms": 200.,
+    }
+    result = history_physical_summary([
+        row, {**row, "planned_full_bytes": 150},
+        {**row, "tool_id": "blocked", "fits_current_free_lists": False},
+        {**row, "tool_id": "unknown", "history_within_recorded_start_window": None},
+    ])
+    selected = result["history_within_recorded_start_window"]
+    assert selected["independent_tools"] == 2
+    assert selected["sum_per_tool_max_observed_full_bytes"] == 250
+    assert selected["with_observed_free_capacity"]["independent_tools"] == 1
+    assert result["history_within_500ms"]["with_observed_free_capacity"]["independent_tools"] == 2

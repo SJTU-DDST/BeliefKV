@@ -16,6 +16,81 @@ sys.path.insert(0, str(ROOT))
 from scripts.summarize_semantic_h2d_ab import records
 
 
+def history_physical_opportunity(snapshot: dict, candidate: dict, clock_offset: float) -> dict | None:
+    window, generic, history = (
+        candidate["window"], candidate["generic"], candidate["history"],
+    )
+    now_ms = snapshot["ts_ms"] - clock_offset
+    if (
+        snapshot["ts_ms"] < candidate["accepted_ts_ms"]
+        or not history.live(history.key, now_ms=now_ms)
+        or snapshot.get("active_tool_ids") != [window["tool_id"]]
+    ):
+        return None
+    horizon = snapshot.get("start_window_ms")
+    horizon = horizon if type(horizon) in (int, float) and horizon > 0 else None
+    old = generic.remaining_quantile(.5, now_ms=now_ms)
+    new = history.remaining_quantile(.5, now_ms=now_ms)
+    return {
+        "workflow_id": window["workflow_id"], "invocation_id": history.key.invocation_id,
+        "context_id": history.key.context_id, "context_epoch": history.key.context_epoch,
+        "tool_id": window["tool_id"], "snapshot_ts_ms": snapshot["ts_ms"],
+        "forecast_age_ms": now_ms - history.issued_monotonic_ms,
+        "planned_full_bytes": snapshot["planned_pool_bytes"]["kv"],
+        "fits_current_free_lists": snapshot.get("fits_current_free_lists"),
+        "recorded_reason": snapshot.get("reason"), "recorded_start_window_ms": horizon,
+        "generic_remaining_p50_ms": old, "history_remaining_p50_ms": new,
+        "generic_within_recorded_start_window": (
+            old is not None and old <= horizon if horizon is not None else None
+        ),
+        "history_within_recorded_start_window": (
+            new is not None and new <= horizon if horizon is not None else None
+        ),
+        "generic_within_500ms": old is not None and old <= 500.,
+        "history_within_500ms": new is not None and new <= 500.,
+        "actual_lead_to_tool_end_ms": window["end_ms"] - now_ms,
+    }
+
+
+def history_physical_summary(rows: list[dict]) -> dict:
+    def totals(selected):
+        maxima = {}
+        for row in selected:
+            identity = row["workflow_id"], row["invocation_id"], row["tool_id"]
+            maxima[identity] = max(maxima.get(identity, 0), row["planned_full_bytes"])
+        return {
+            "snapshots": len(selected), "independent_tools": len(maxima),
+            "sum_per_tool_max_observed_full_bytes": sum(maxima.values()),
+        }
+    summary = {"matched_positive_full_plans": totals(rows)}
+    for name in ("generic", "history"):
+        within = [row for row in rows if row[f"{name}_within_500ms"]]
+        latest = [row for row in rows if row[f"{name}_within_recorded_start_window"] is True]
+        for label, selected in (
+            ("within_500ms", within), ("within_recorded_start_window", latest),
+        ):
+            free = [row for row in selected if row["fits_current_free_lists"] is True]
+            summary[f"{name}_{label}"] = {
+                **totals(selected),
+                "with_observed_free_capacity": totals(free),
+                "with_free_capacity_and_actual_0_to_500ms_lead": totals([
+                    row for row in free if 0 < row["actual_lead_to_tool_end_ms"] <= 500.
+                ]),
+            }
+    summary["rows"] = rows
+    summary["scope"] = (
+        "Recorded positive FULL plans intersected with a completed-history forecast "
+        "already accepted for the same workflow/invocation/context/epoch and active tool. "
+        "Expired or not-yet-accepted forecasts are excluded. Predictions are conditioned "
+        "at snapshot time; later TOOL_END is an evaluation label only. Free-list fit is "
+        "an instantaneous observation, not a reservation or admission guarantee. "
+        "Missing recorded latest-start horizons remain unknown; the 500ms comparison "
+        "is a separate permissive timing diagnostic. Per-tool maxima may share pages "
+        "across events and are not achievable unique bytes, transfer receipts or speedup."
+    )
+    return summary
+
+
 def history_forecast_audit(arm: Path, artifact: Path) -> dict:
     from beliefkv.predictor.structured_frontier import _conditioned_completed_duration_prior
     from beliefkv.runtime.sglang_v0520_admission import PrefillCandidateKey
@@ -45,10 +120,27 @@ def history_forecast_audit(arm: Path, artifact: Path) -> dict:
     for values in windows.values():
         values.sort(key=lambda row: row["start_ms"])
     cursor = defaultdict(int)
-    groups = {}
+    groups, accepted_history = {}, {}
+    physical, clock_offset = [], None
     for forecast in records(arm / "opportunities/admission_opportunities.jsonl"):
+        if forecast["event"] == "safe_point_census" and clock_offset is None:
+            clock_offset = forecast["ts_ms"] - forecast["monotonic_ms"]
+        context_scope = (
+            forecast.get("workflow_id"), forecast.get("invocation_id"),
+            forecast.get("context_id"), forecast.get("context_epoch"),
+        )
+        if (
+            forecast["event"] == "wait_prefetch_plan" and forecast.get("source") == "tool_wait"
+            and (forecast.get("planned_pool_bytes") or {}).get("kv", 0) > 0
+        ):
+            candidate = accepted_history.get(context_scope)
+            if candidate is not None and clock_offset is not None:
+                linked = history_physical_opportunity(forecast, candidate, clock_offset)
+                if linked is not None:
+                    physical.append(linked)
         if forecast["event"] != "tool_wait_forecast":
             continue
+        accepted_history.pop(context_scope, None)
         scope = forecast["workflow_id"], forecast["invocation_id"]
         observed = forecast.get("observed_monotonic_ms")
         if not isinstance(observed, (int, float)):
@@ -123,6 +215,11 @@ def history_forecast_audit(arm: Path, artifact: Path) -> dict:
             old, residual_duration_mass=tuple(zip(residual.values, residual.probability_mass)),
             residual_support_detail=detail,
         )
+        if type(forecast.get("ts_ms")) in (int, float):
+            accepted_history[context_scope] = {
+                "window": window, "generic": old, "history": new,
+                "accepted_ts_ms": forecast["ts_ms"],
+            }
         specific = new.remaining_quantile(.5, now_ms=observed)
         identity = (*scope, window["tool_id"])
         group = groups.setdefault(identity, {
@@ -209,6 +306,7 @@ def history_forecast_audit(arm: Path, artifact: Path) -> dict:
         "tools_duration_at_least_1000ms": summary([
             row for row in rows if row["tool_duration_ms"] >= 1000.
         ]),
+        "physical_opportunity_intersection": history_physical_summary(physical),
         "rows": rows,
     }
 
@@ -294,7 +392,11 @@ def main():
                if key not in ("rows", "history_forecast_routing")}
     if "history_forecast_routing" in result:
         summary["history_forecast_routing"] = {
-            key: value for key, value in result["history_forecast_routing"].items() if key != "rows"
+            key: (
+                {field: item for field, item in value.items() if field != "rows"}
+                if key == "physical_opportunity_intersection" else value
+            )
+            for key, value in result["history_forecast_routing"].items() if key != "rows"
         }
     print(json.dumps(summary, indent=2))
 

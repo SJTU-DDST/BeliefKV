@@ -372,6 +372,24 @@ terminal_children和by_invocation_scope；只有确认的动态subagent
 无特殊命名的内部调用和内部回收不产生parent交接。此修订
 在隔离分支提交，当前native继续使用冻结主目录版本。
 
+工具历史路由的物理机会交叉审计保留为
+v20_tool_history_physical_opportunities_20261010_v3.json。完整trace中
+11944个工具、34075条预测匹配已完成历史头；持续至少1秒的
+工具在最后1秒内按事件等权的中位绝对误差为generic295.675ms、
+history125.244ms。此为固定trace的路由诊断，非未见项目校准。
+
+仅用相同workflow/invocation/context/epoch、相同活跃工具、已经
+接受且未过期的预测，关联当时的正FULL物理规划。582个工具
+有可匹配规划，history在154个工具进入记录的整批启动窗口；
+13个当时free-list可直接容纳，11个的实际工具结束提前量在
+0--500ms，逐事件最大FULL规划量合计377.917MB。其余不满足
+直接空闲容量的记录仍可能需要原有冷页回收，不能全判不可用。
+500ms宽松诊断和实际记录的latest-start窗口分别统计，缺少
+窗口的记录不补猜。未来TOOL_END只用于偏差评价，不决定
+是否入窗；5项审计检查通过。规划字节可能跨事件共享页，
+不是可保证的预取量、ACK、复用或吞吐收益；queued历史路由
+与sibling容量释放需在下一轮GPU实验共同验证，当前代码不变。
+
 ## V19b child 上下文结束的集成修正
 
 V19诊断快照已观察到child自然RETURN，但终态回收和parent消费记录

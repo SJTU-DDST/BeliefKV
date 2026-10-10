@@ -395,6 +395,26 @@ internal retirement still releases allocator capacity and does not create a
 JOIN handoff. Eighty focused capacity/lifecycle checks pass. Commit in isolation
 while frozen V20 native continues; deploy between complete paired runs.
 
+Intersect completed-history tool forecasts with actual observed FULL plans.
+Preserve v20_tool_history_physical_opportunities_20261010_v3.json. Full-trace
+routing matches11944 independent tools/34075 forecasts. For tools lasting at
+least1s,the tool-weighted last-second median absolute error is295.675ms generic
+versus125.244ms history; this is a fixed-trace routing diagnostic,not holdout
+calibration. Match only an already accepted,unexpired forecast for the same
+workflow/invocation/context/epoch and exact active tool at the physical snapshot.
+Later TOOL_END evaluates lead without selecting the timing decision.
+
+582 tools have matched positive FULL plans. History enters the recorded
+whole-batch start window for154 tools;13 fit observed free lists directly,
+11 also have actual0--500ms lead,total377.917MB of per-event maximum FULL
+plans. Other records may require existing cold-page reclamation rather than
+being impossible. Report the separate permissive500ms diagnostic; missing
+latest-start horizons stay unknown. Free-list fit is not future admission or
+capacity reservation,and maxima can share pages across events. Five audit
+checks pass. Keep these observed opportunities separate from actual migration,
+reuse or speedup; validate queued history routing with sibling release and
+parent restoration in the next GPU pair,without changing the live native arm.
+
 ## V19b Harness Context Retirement Integration
 
 The V19 diagnostic snapshot contained authoritative child RETURNs but zero
