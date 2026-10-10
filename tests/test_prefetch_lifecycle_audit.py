@@ -71,6 +71,50 @@ def test_wait_plan_details_group_repeated_samples_into_one_wait(tmp_path):
     assert summary["plan_evidence_categories"]["only_zero_full_plan"]["remaining_native_full_evidence_unknown_events"] == 1
 
 
+def test_wait_burst_sizes_partition_events_and_keep_missing_nodes_unknown():
+    base = {
+        "completion_ts_ms": 100.,
+        "early_started_and_reused_full_bytes": 0,
+        "observed_plan_reasons": {},
+    }
+    rows = [
+        {
+            **base, "max_observed_planned_full_tokens": tokens,
+            "max_observed_planned_node_count": nodes,
+            "remaining_native_full_host_hit_bytes": residual,
+        }
+        for tokens, nodes, residual in ((32, 16, 100), (8, 4, 40), (0, 0, 0), (None, None, None))
+    ]
+    result = wait_plan_gap_summary(rows)["restore_burst_size_evidence"]
+    assert sum(group["independent_events"] for group in result.values()) == 4
+    assert result["sixteen_or_more_nodes_observed"]["remaining_native_full_host_hit_bytes_known"] == 100
+    assert result["one_to_fifteen_nodes_observed"]["remaining_native_full_host_hit_bytes_known"] == 40
+    assert result["only_empty_plan_observed"]["remaining_native_full_evidence_unknown_events"] == 0
+    assert result["node_count_unobserved"]["remaining_native_full_evidence_unknown_events"] == 1
+
+
+def test_wait_burst_sizes_use_largest_plan_without_counting_repeated_samples(tmp_path):
+    observation = {
+        "event": "session_h2d_opportunity", "source": "join_wait",
+        "workflow_id": "wf", "context_id": "parent", "context_epoch": 0,
+        "invocation_id": "root", "join_id": "join", "ts_ms": 10.,
+        "required_full_tokens": 32, "reason": "fits_current_free_lists",
+        "planned_nodes": [{"node_id": node} for node in range(16)],
+    }
+    result = wait_event_attribution(tmp_path, [
+        observation, {**observation, "ts_ms": 20.},
+        {**observation, "ts_ms": 30., "planned_nodes": observation["planned_nodes"][:4]},
+        {**observation, "join_id": "legacy", "ts_ms": 40., "planned_nodes": None},
+    ], {}, [], None)
+    rows = {row["join_id"]: row for row in result["rows"]}
+    assert rows["join"]["max_observed_planned_node_count"] == 16
+    assert rows["legacy"]["max_observed_planned_node_count"] is None
+    summary = result["summary"]["by_source"]["join_ticket"]["restore_burst_size_evidence"]
+    assert summary["sixteen_or_more_nodes_observed"]["independent_events"] == 1
+    assert summary["node_count_unobserved"]["independent_events"] == 1
+    assert "one_to_fifteen_nodes_observed" not in summary
+
+
 def test_terminal_capacity_link_keeps_pool_evidence_and_post_service_release_separate():
     child = {
         "workflow_id": "wf", "context_id": "child", "session_id": "s",

@@ -1,0 +1,73 @@
+{
+  "scope": "Partial V21 independent-wait evidence, before predictive completion; no native-relative performance claim",
+  "source_audit": "/home/longhao/experiment/BeliefKV/experiments/reports/v26_v21_burst_size_gap_20261011.json",
+  "source_audit_sha256": "23690b68a7b7b2e808fad413cfa635d5194e81a07886e738c68a4359f91bf1ec",
+  "live_revision": "597688c62aabc9667484aefe315664a447fea9bb",
+  "queued_revision": "658f6390126148b1df76d5f4b0ce7c19e1dacd6f",
+  "by_source": {
+    "join_ticket": {
+      "independent_events": 186,
+      "restore_burst_size_evidence": {
+        "one_to_fifteen_nodes_observed": {
+          "independent_events": 165,
+          "remaining_native_full_host_hit_bytes_known": 446054400,
+          "events_with_early_reused_full": 91
+        },
+        "only_empty_plan_observed": {
+          "independent_events": 21,
+          "remaining_native_full_host_hit_bytes_known": 53288960,
+          "events_with_early_reused_full": 0
+        }
+      }
+    },
+    "tool_wait": {
+      "independent_events": 11927,
+      "restore_burst_size_evidence": {
+        "sixteen_or_more_nodes_observed": {
+          "independent_events": 190,
+          "remaining_native_full_host_hit_bytes_known": 63680430080,
+          "remaining_native_full_evidence_unknown_events": 0,
+          "events_with_early_reused_full": 3
+        },
+        "one_to_fifteen_nodes_observed": {
+          "independent_events": 915,
+          "remaining_native_full_host_hit_bytes_known": 192385699840,
+          "remaining_native_full_evidence_unknown_events": 1,
+          "events_with_early_reused_full": 81
+        },
+        "only_empty_plan_observed": {
+          "independent_events": 10808,
+          "remaining_native_full_host_hit_bytes_known": 327839068160,
+          "remaining_native_full_evidence_unknown_events": 1,
+          "events_with_early_reused_full": 0
+        },
+        "node_count_unobserved": {
+          "independent_events": 14,
+          "remaining_native_full_host_hit_bytes_known": 0,
+          "remaining_native_full_evidence_unknown_events": 0,
+          "events_with_early_reused_full": 0
+        }
+      },
+      "ancestry_bound_rejection": {
+        "independent_events": 4746,
+        "remaining_native_full_host_hit_bytes_known": 298121625600,
+        "remaining_native_full_evidence_unknown_events": 1,
+        "events_with_early_reused_full": 0
+      },
+      "no_cold_capacity": {
+        "independent_events": 464,
+        "remaining_native_full_host_hit_bytes_known": 122589450240,
+        "remaining_native_full_evidence_unknown_events": 0,
+        "events_with_early_reused_full": 6
+      }
+    }
+  },
+  "semantics": [
+    "Burst categories partition independent waits by their largest explicitly observed planned_nodes array. Repeated scans do not count as additional waits.",
+    "Missing planned_nodes stays unknown; an explicit empty array is a zero-node observation.",
+    "JOIN/tool max_steps=16 is a per-burst limit. Further acknowledged bursts are possible; the separate demand-handoff lifetime node budget is not a prediction limit.",
+    "A sixteen-node plan does not prove truncation or that a larger transfer would fit capacity or the early service window.",
+    "Ancestry and capacity rejection groups overlap; associated residual native FULL Host-hit bytes are not exclusive root causes, realizable prefetch opportunities or oracle savings.",
+    "No JOIN event in this partial snapshot observed a sixteen-node plan. Validate the complete-prefix fix already queued in V22 before widening bursts."
+  ]
+}

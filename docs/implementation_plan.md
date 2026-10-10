@@ -138,6 +138,19 @@ oracle speedup. The 53 lifecycle-audit checks pass, including repeated samples,
 unknown demand and overlapping reasons. This revision changes offline attribution
 only; it does not change the scheduling policy or the frozen V21 sources.
 
+Partition independent waits by their largest explicit planned_nodes observation,
+keeping empty arrays separate from absent node evidence. The55 lifecycle-audit
+checks pass. Keep v26_v21_burst_size_evidence_20261011.json with source SHA256.
+Of186 JOINs,165 observe1–15 nodes and21 only empty plans; none observes16 nodes.
+Of11927 tool waits,190 observe16 or more nodes, associating63.680GB residual native
+FULL and only3 events with early FULL reuse. The4746 ancestry-rejected waits
+associate298.122GB and no early reuse. Validate the queued complete-prefix fix
+first. JOIN/tool16-node budgets apply per burst and permit later ACKed bursts;
+the separate demand-handoff lifetime limit must not be described as a prediction
+cap. Burst partitions do not overlap; rejection reasons still do. Neither a
+full-sized burst nor associated residual demand proves a larger early transfer
+would fit or improve performance.
+
 The later partial V21 snapshot has 1.405/2.530 GB independent early-reused JOIN/tool
 FULL; 99.764 GB demand-handoff reuse stays separate. Node-command ACK-to-first-
 service P90 is 1.473/0.922 s, not the earlier 16 s, while maxima remain 24.730/12.354 s.

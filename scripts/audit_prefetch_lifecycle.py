@@ -698,6 +698,7 @@ def full_expiration_summary(rows: list[dict]) -> dict:
 def wait_plan_gap_summary(rows: list[dict]) -> dict:
     """Associate residual native demand with independent waits, not scan counts."""
     categories = defaultdict(list)
+    burst_sizes = defaultdict(list)
     reasons = {
         name: defaultdict(list)
         for name in (
@@ -713,6 +714,14 @@ def wait_plan_gap_summary(rows: list[dict]) -> dict:
             else "full_plan_unobserved"
         )
         categories[category].append(row)
+        count = row.get("max_observed_planned_node_count")
+        burst_category = (
+            "sixteen_or_more_nodes_observed" if count is not None and count >= 16
+            else "one_to_fifteen_nodes_observed" if count is not None and count > 0
+            else "only_empty_plan_observed" if count == 0
+            else "node_count_unobserved"
+        )
+        burst_sizes[burst_category].append(row)
         for field, groups in reasons.items():
             for reason in row.get(field, {}):
                 groups[reason].append(row)
@@ -738,6 +747,9 @@ def wait_plan_gap_summary(rows: list[dict]) -> dict:
         "plan_evidence_categories": {
             category: totals(selected) for category, selected in sorted(categories.items())
         },
+        "restore_burst_size_evidence": {
+            category: totals(selected) for category, selected in sorted(burst_sizes.items())
+        },
         "residual_native_demand_by_observed_planning_evidence": {
             field: {
                 reason: totals(selected) for reason, selected in sorted(groups.items())
@@ -749,7 +761,10 @@ def wait_plan_gap_summary(rows: list[dict]) -> dict:
             "samples. Evidence categories partition waits; reason/detail groups overlap "
             "and must not be summed. Zero or missing plans do not prove zero physical "
             "demand. Residual bytes are next-request native FULL Host hits, not a proven "
-            "pre-boundary opportunity, exclusive rejection cause or oracle speedup."
+            "pre-boundary opportunity, exclusive rejection cause or oracle speedup. "
+            "Burst categories partition waits by the largest explicitly observed plan, "
+            "not lifetime node commands. A sixteen-node plan is not proof of truncation "
+            "or that a larger early transfer would fit capacity or the service window."
         ),
     }
 
@@ -775,6 +790,7 @@ def wait_event_attribution(
             "invocation_id": observation.get("invocation_id"),
             "first_observation_ts_ms": observation["ts_ms"],
             "max_observed_planned_full_tokens": None, "plan_reasons": Counter(),
+            "max_observed_planned_node_count": None,
             "planning_blocked_details": Counter(), "no_live_details": Counter(),
             "max_observed_planned_full_bytes": None,
             "observed_capacity_conditions": Counter(),
@@ -802,6 +818,11 @@ def wait_event_attribution(
         if type(tokens) is int:
             group["max_observed_planned_full_tokens"] = max(
                 group["max_observed_planned_full_tokens"] or 0, tokens,
+            )
+        planned_nodes = observation.get("planned_nodes")
+        if type(planned_nodes) in (list, tuple):
+            group["max_observed_planned_node_count"] = max(
+                group["max_observed_planned_node_count"] or 0, len(planned_nodes),
             )
         planned_bytes = (observation.get("planned_pool_bytes") or {}).get("kv")
         if type(planned_bytes) is int:
@@ -1000,6 +1021,7 @@ def wait_event_attribution(
             **{name: group[name] for name in (
                 "source", "workflow_id", "invocation_id", "context_id", "context_epoch", "join_id",
                 "max_observed_planned_full_tokens", "completion_ts_ms",
+                "max_observed_planned_node_count",
                 "completion_evidence", "observed_tools_completion_ts_ms",
             )},
             "observed_context_epochs": sorted(group["observed_context_epochs"]),
