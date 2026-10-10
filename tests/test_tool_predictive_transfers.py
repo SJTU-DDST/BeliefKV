@@ -274,6 +274,33 @@ def test_prefetch_lease_releases_exact_native_receipt_once():
     tree.dec_lock_ref.assert_called_once_with(1, receipt)
 
 
+def test_unrelated_decode_preserves_restore_lease_without_full_identity_scan():
+    runtime, _, _, action, _, _ = locked_runtime()
+    unrelated = req("other")
+    unrelated.session_id, unrelated.session_generation = "other-session", 1
+    with patch(
+        "beliefkv.runtime.sglang_v0520_runtime._request_key",
+        side_effect=AssertionError("unrelated context requires no lease identity"),
+    ):
+        runtime.on_batch_completed(NS(reqs=[unrelated]))
+    assert action.command_id in runtime._prefetch_service_leases
+    runtime._native_cache.tree_core.dec_lock_ref.assert_not_called()
+
+
+def test_matching_context_still_checks_session_generation_before_unlocking():
+    runtime, _, _, action, receipt, _ = locked_runtime()
+    stale = req("tool")
+    stale.session_id, stale.session_generation = "s", 2
+    runtime.on_batch_completed(NS(reqs=[stale]))
+    assert action.command_id in runtime._prefetch_service_leases
+    runtime._native_cache.tree_core.dec_lock_ref.assert_not_called()
+    current = req("tool")
+    current.session_id, current.session_generation = "s", 1
+    runtime.on_batch_completed(NS(reqs=[current]))
+    assert action.command_id not in runtime._prefetch_service_leases
+    runtime._native_cache.tree_core.dec_lock_ref.assert_called_once_with(1, receipt)
+
+
 def test_prefetch_lock_release_failure_retains_receipt_and_does_not_retry():
     runtime, hint, node, action, receipt, _ = locked_runtime()
     tree = runtime._native_cache.tree_core

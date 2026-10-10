@@ -6527,9 +6527,15 @@ class NativeAdmissionRuntime:
         for command, (step, _, _) in self._prefetch_steps.items():
             if command not in self._prefetch_first_services:
                 pending_by_context.setdefault(step.key.context_id, []).append((command, step))
+        lease_contexts = (
+            {lease.key.context_id for lease in self._prefetch_service_leases.values()}
+            if self._prefetch_service_leases else ()
+        )
         for req in batch.reqs:
             if self._parent_capacity_handoffs:
-                self._observe_parent_handoff_service(req)
+                visible = self.visible.get(getattr(req, "rid", None))
+                if visible is not None and visible.context_id in self._parent_capacity_handoffs:
+                    self._observe_parent_handoff_service(req)
             if pending_by_context:
                 key = self.visible.get(getattr(req, "rid", None))
                 for command, step in pending_by_context.get(
@@ -6545,20 +6551,26 @@ class NativeAdmissionRuntime:
                         self._prefetch_first_services.setdefault(
                             command, (time.time() * 1000., req.rid),
                         )
-            if self._prefetch_service_leases and (key := _request_key(req)) is not None:
-                for command, lease in tuple(self._prefetch_service_leases.items()):
-                    target = lease.key
-                    if (
-                        key.root_workflow_id == target.root_workflow_id
-                        and key.invocation_id == target.invocation_id
-                        and key.context_id == target.context_id
-                        and key.context_epoch in (target.context_epoch, target.context_epoch + 1)
-                        and (key.session_id, key.session_generation)
-                        == (target.session_id, target.session_generation)
-                    ):
-                        self._release_prefetch_service_lease(
-                            command, "first_gpu_service", request=req,
-                        )
+            if lease_contexts and self._prefetch_service_leases:
+                metadata = getattr(req, "beliefkv_metadata", None)
+                context_id = metadata.get("context_id") if isinstance(metadata, dict) else None
+                if (
+                    isinstance(context_id, str) and context_id in lease_contexts
+                    and (key := _request_key(req)) is not None
+                ):
+                    for command, lease in tuple(self._prefetch_service_leases.items()):
+                        target = lease.key
+                        if (
+                            key.root_workflow_id == target.root_workflow_id
+                            and key.invocation_id == target.invocation_id
+                            and key.context_id == target.context_id
+                            and key.context_epoch in (target.context_epoch, target.context_epoch + 1)
+                            and (key.session_id, key.session_generation)
+                            == (target.session_id, target.session_generation)
+                        ):
+                            self._release_prefetch_service_lease(
+                                command, "first_gpu_service", request=req,
+                            )
             if self._semantic_worker is not None:
                 key = self.visible.get(getattr(req, "rid", None))
                 if key is not None:

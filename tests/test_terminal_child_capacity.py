@@ -158,6 +158,22 @@ def test_stale_batch_identity_cannot_consume_the_parent_handoff(family):
     assert runtime.counts["parent_capacity_handoff_first_service"] == 1
 
 
+def test_unrelated_decode_batch_keeps_parent_handoff_without_parsing_each_child(family):
+    runtime, requests, _, _ = family
+    runtime.on_events((returned(7, "child1"),))
+    with patch(
+        "beliefkv.runtime.sglang_v0520_runtime._request_key",
+        side_effect=AssertionError("unrelated child requires no handoff identity"),
+    ):
+        runtime.on_batch_completed(NS(reqs=[requests["child2"], requests["ordinary"]]))
+    assert "ctx-parent" in runtime._parent_capacity_handoffs
+    assert runtime.counts["parent_capacity_handoff_first_service"] == 0
+    runtime.on_events((returned(8, "child2"),))
+    parent = parent_request(runtime, requests["parent"])
+    runtime.on_batch_completed(NS(reqs=[parent]))
+    assert runtime.counts["parent_capacity_handoff_first_service"] == 1
+
+
 def test_return_and_parent_submit_in_one_batch_keep_the_checkpoint_capacity_link(family):
     runtime, requests, _, _ = family
     runtime.on_events((

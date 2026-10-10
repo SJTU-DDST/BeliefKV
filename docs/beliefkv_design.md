@@ -152,6 +152,13 @@ Host-only组件和在途H2D仍须满足原生数据依赖。此区分只修正
 顺序时再次解析同一身份；正式选择请求仍核验实时session、
 generation、context epoch及attempt，不跨规划调用缓存身份授权。
 
+GPU batch完成回调先按context筛选容量交接和恢复租约的可能
+消费者。parent匹配使用本次可见请求已经绑定的context，随后
+仍核验完整实时身份；租约匹配使用当前租约context集合，再
+核验实际请求的session/generation/epoch。无关child decode
+继续正常记录服务和语义进度，相关消费者仍通过原生锁回执
+释放驻留保护，不跨batch缓存一次身份核验作为后续授权。
+
 JOIN评估以workflow/context/JOIN ID定义独立事件，不随parent
 恢复后的context epoch重复计数。完整JOIN后的首次服务只关联
 parent实际提交的第一条请求，即使计划观测晚于该提交；缺少

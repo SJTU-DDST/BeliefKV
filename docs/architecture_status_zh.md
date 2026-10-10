@@ -153,8 +153,35 @@ JOIN长尾及六条完成前到期的FULL驻留仍须优化，不能由这次
 8请求降低2.5%--8.8%。报告为
 v20_prefill_identity_reuse_cpu_20261010.json，不包含DMA/GPU/JCT。
 该优化仍在隔离分支，V20继续冻结运行；第二批48个任务已经
-到达，2026-10-10 20:39 CST终态检查为86 completed、
+到达，2026-10-10 20:58 CST终态检查为105 completed、
 1 incomplete，无error；native臂尚未开始。
+
+V20实时计时还记录130962次batch_completed回调累计47.14秒
+独占CPU墙钟。只要有待交接parent，旧回调就对每个batch内
+请求重新解析完整身份；恢复租约也对无关context重复解析。
+隔离修订先用已绑定visible key筛选parent context、用当前
+租约context筛选可能的消费者，只有相关请求才进入完整实时
+身份核验。epoch/session/generation检查、真实锁回执、终态、
+语义token进度和已有context记录继续由原回调处理。
+
+242项恢复、终态、租约、运行时和准入检查通过。沿用整段
+CPU基准，基线22e3710和新代码的队列顺序、context计数、
+语义key/token历史、扫描位置、工具标记、handoff集合及累计
+计数一致。48请求/16个等待parent/300轮的整段回调平均为
+0.247→0.042ms（降低83.0%）；同时逐步更新语义token时为
+0.355→0.134ms（降低62.1%）。无handoff/租约/语义记录时
+0.0352→0.0356ms，增加约0.4微秒，不能宣称所有路径均变快。
+报告为v20_batch_context_filter_cpu_20261010.json、
+v20_batch_context_filter_semantic_cpu_20261010.json及
+v20_batch_context_filter_empty_cpu_20261010.json；没有DMA、
+GPU吞吐或JCT测量。该修订未部署，不改变当前冻结对照。
+
+工具侧运行计数包含20次进入预取窗口、18次无冷容量退出。
+需求handoff中4306个请求以no_cold_capacity关闭，但其中
+4个关联parent在约100--125ms后即获得首个完成batch，未见
+关闭后再收到关联child释放的案例。因此当前证据不支持把
+这些parent等待解释成永久不重试；本轮没有增加周期性重试
+机制。工具预取早期覆盖与真实JOIN长尾仍是待解决问题。
 
 ## V19b child 上下文结束的集成修正
 

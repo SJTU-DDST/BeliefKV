@@ -168,9 +168,38 @@ counts,native inspection counts and priority metadata remain identical.
 decrease2.5%--8.8%. Preserve v20_prefill_identity_reuse_cpu_20261010.json;
 it does not measure physical DMA,GPU throughput or paired JCT.
 Commit this runtime follow-up in isolation and deploy between frozen runs.
-The second48-task wave has arrived; at2026-10-10 20:39 CST the outcome scan
-is86 completed,1 incomplete,no error. The native arm has not started.
+The second48-task wave has arrived; at2026-10-10 20:58 CST the outcome scan
+is105 completed,1 incomplete,no error. The native arm has not started.
 Continue the live predictive then cold-native pair.
+
+Live profiling records130962 batch_completed calls with47.14s exclusive
+Python wall time. When any parent handoff is active,the old callback parses
+every batch request's full identity; restore leases similarly inspect unrelated
+contexts. Filter parent candidates using their already-bound visible context
+and lease candidates using current lease contexts before full live identity
+checks. Preserve session/generation/epoch validation,exact native lock
+receipts,terminal handling,semantic token progress and context accounting.
+242 scoped restoration,terminal,lease,runtime and admission checks pass.
+
+The whole-callback benchmark compares22e3710 and the isolated revision,
+rotating order and checking queue order,context accounting,semantic keys,
+token histories,scan positions,tool markers,handoff sets and cumulative
+counters.48 requests with16 waiting parents and300 iterations average
+0.247→0.042ms (83.0% reduction); with live semantic-token progress this is
+0.355→0.134ms (62.1%). With no tracked parent/lease/semantic progress,
+0.0352→0.0356ms adds about0.4us; do not claim every path gets faster.
+Preserve v20_batch_context_filter_cpu_20261010.json,
+v20_batch_context_filter_semantic_cpu_20261010.json and
+v20_batch_context_filter_empty_cpu_20261010.json. These contain no DMA,
+GPU throughput or JCT evidence. Commit and deploy between frozen pairs.
+
+Current tool counters include20 window entries and18 cold-capacity exits.
+4306 demand-handoff requests close for no_cold_capacity; only4 link to a
+parent service,and those complete a first batch about100--125ms later.
+No linked child release was observed between these closes and services,
+so do not treat permanent retry suppression as the demonstrated parent-tail
+cause or add periodic retries on that assumption. Early tool coverage and
+the actual long JOIN wait remain unresolved.
 
 ## V19b Harness Context Retirement Integration
 

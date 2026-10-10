@@ -6,6 +6,7 @@ from __future__ import annotations
 import argparse
 import ast
 from collections import Counter
+from dataclasses import replace
 import hashlib
 import json
 from pathlib import Path
@@ -136,7 +137,8 @@ def distribution(samples: list[float]) -> dict:
 
 
 def benchmark(*, revision: str, workflows: int, rounds: int, iterations: int,
-              planning_calls: int = 1, resident_first: bool = False) -> dict:
+              planning_calls: int = 1, resident_first: bool = False,
+              parent_handoffs: int = 0, semantic_progress: bool = False) -> dict:
     baseline, frontier, digests = baseline_classes(revision)
     variants = {
         "baseline": synthetic_runtime(baseline, frontier, workflows, rounds),
@@ -147,6 +149,24 @@ def benchmark(*, revision: str, workflows: int, rounds: int, iterations: int,
     }
     samples = {name: {"admission": [], "batch_completed": []} for name in variants}
     inspection_counts = {name: Counter() for name in variants}
+    for runtime, queue in variants.values():
+        for request in queue[:parent_handoffs]:
+            child = runtime.visible[request.rid]
+            parent_id = runtime.graph.invocations[child.invocation_id].parent_invocation_id
+            parent = runtime.graph.invocations[parent_id]
+            parent_key = replace(
+                child, request_id=f"req-{parent_id}", invocation_id=parent_id,
+                context_id=parent.context_id, session_id=f"session-{parent.context_id}",
+            )
+            runtime._parent_capacity_handoffs[parent.context_id] = (
+                runtime_module._ParentCapacityHandoff(
+                    parent_key, f"{parent_id.removesuffix('-root')}-join-{rounds - 1}", 0.,
+                )
+            )
+        if semantic_progress:
+            runtime._semantic_worker = NS(close=lambda: None)
+            for request in queue[:48]:
+                request.output_ids = []
     if resident_first:
         for name, (runtime, queue) in variants.items():
             positions = {request.rid: index for index, request in enumerate(queue)}
@@ -164,7 +184,7 @@ def benchmark(*, revision: str, workflows: int, rounds: int, iterations: int,
             runtime._native_cache = NS(inspect_beliefkv_reentry=inspect)
     try:
         for iteration in range(iterations + 5):
-            orders = []
+            orders, batch_states = [], []
             # Rotate order, invalidate graph caches each iteration, retain all terminal history.
             names = list(variants)
             names = names[iteration % 3:] + names[:iteration % 3]
@@ -178,6 +198,9 @@ def benchmark(*, revision: str, workflows: int, rounds: int, iterations: int,
                 runtime._prefill_causal_cache = None
                 if resident_first:
                     runtime._reentry_observations.clear()
+                if semantic_progress:
+                    for request in queue[:48]:
+                        request.output_ids.append(200_000)
                 started = time.perf_counter_ns()
                 cycle_orders = []
                 for call in range(planning_calls):
@@ -199,8 +222,22 @@ def benchmark(*, revision: str, workflows: int, rounds: int, iterations: int,
                     samples[name]["batch_completed"].append(
                         (time.perf_counter_ns() - started) / 1_000_000
                     )
+                batch_states.append((
+                    dict(runtime._context_tokens),
+                    dict(runtime._semantic_keys),
+                    {
+                        rid: tuple(tokens for _, tokens in history)
+                        for rid, history in runtime._semantic_progress.items()
+                    },
+                    dict(runtime._decoded_scan_positions),
+                    set(runtime._decoded_tool_requests),
+                    set(runtime._parent_capacity_handoffs),
+                    dict(runtime.counts),
+                ))
             if any(order != orders[0] for order in orders[1:]):
                 raise AssertionError(f"optimization changed the synthetic queue order at {iteration}")
+            if any(state != batch_states[0] for state in batch_states[1:]):
+                raise AssertionError(f"batch completion changed runtime state at {iteration}")
             if resident_first and any(
                 counts != inspection_counts["baseline"]
                 for counts in inspection_counts.values()
@@ -219,6 +256,9 @@ def benchmark(*, revision: str, workflows: int, rounds: int, iterations: int,
             "invocations": workflows * (1 + rounds * 3), "joins": workflows * rounds,
             "waiting_requests": workflows, "iterations": iterations,
             "planning_calls_per_cycle": planning_calls,
+            "parent_handoff_contexts": parent_handoffs,
+            "semantic_progress": semantic_progress,
+            "batch_state_equal": True,
             "planning_scope": (
                 "causal admission calls only; excludes physical handoff inspection and enqueue"
             ),
@@ -236,6 +276,10 @@ def benchmark(*, revision: str, workflows: int, rounds: int, iterations: int,
             "admission_mean_reduction_fraction": (
                 1 - costs["optimized"]["admission"]["mean_ms"]
                 / costs["baseline"]["admission"]["mean_ms"]
+            ),
+            "batch_completed_mean_reduction_fraction": (
+                1 - costs["optimized"]["batch_completed"]["mean_ms"]
+                / costs["baseline"]["batch_completed"]["mean_ms"]
             ),
             "profiled_timing": variants["optimized_profiled"][0]._hotpath_timing.snapshot(),
         }
@@ -365,11 +409,19 @@ def main():
     parser.add_argument("--handoff-frontier", action="store_true")
     parser.add_argument("--resident-first", action="store_true",
                         help="Use mixed residency observations and check identical native reads.")
+    parser.add_argument("--parent-handoffs", type=int, default=0,
+                        help="Waiting parent contexts tracked during unrelated child decode.")
+    parser.add_argument("--semantic-progress", action="store_true",
+                        help="Advance child token progress in each completed-batch callback.")
     parser.add_argument("--output", type=Path, required=True)
     args = parser.parse_args()
     runtime_source_path()
     if min(args.workflows, args.rounds, args.iterations) < 1 or args.workflows > 512:
         raise ValueError("positive sizes and at most 512 queued requests required")
+    if not 0 <= args.parent_handoffs <= args.workflows:
+        raise ValueError("parent handoffs must fit the synthetic workflow count")
+    if args.handoff_frontier and (args.parent_handoffs or args.semantic_progress):
+        raise ValueError("completed-batch tracking options do not apply to handoff frontier")
     if args.handoff_frontier:
         report = benchmark_handoff_frontier(
             revision=args.baseline_revision, workflows=args.workflows,
@@ -379,7 +431,9 @@ def main():
         report = benchmark(revision=args.baseline_revision, workflows=args.workflows,
                            rounds=args.rounds, iterations=args.iterations,
                            planning_calls=args.planning_calls,
-                           resident_first=args.resident_first)
+                           resident_first=args.resident_first,
+                           parent_handoffs=args.parent_handoffs,
+                           semantic_progress=args.semantic_progress)
     args.output.parent.mkdir(parents=True, exist_ok=True)
     args.output.write_text(json.dumps(report, indent=2, allow_nan=False) + "\n")
     if args.handoff_frontier:
@@ -387,6 +441,7 @@ def main():
     else:
         print(json.dumps({key: report[key] for key in (
             "scope", "queue_order_equal", "costs", "admission_mean_reduction_fraction",
+            "batch_state_equal", "batch_completed_mean_reduction_fraction",
         )}, indent=2))
 
 
