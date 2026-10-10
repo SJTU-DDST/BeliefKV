@@ -1761,6 +1761,11 @@ class NativeAdmissionRuntime:
                     for node in observed.nodes
                 ),
             )
+        elif h2d is not None and h2d.no_step_reason == "closure_unobservable":
+            # Both observers use this same closure at the scheduler safe point.
+            row["prepare_reason"] = "no_observable_shadow_closure"
+            row["prepare_blocked_detail"] = h2d.blocked_detail
+            return
         else:
             candidate = self.capture_shadow_candidate(
                 cache, context_id=key.context_id, context_epoch=key.context_epoch,
@@ -3560,7 +3565,7 @@ class NativeAdmissionRuntime:
             if type(amount) is int and (entry := entries.get(pool)) is not None
         }
         fingerprint = (
-            reason, full, mamba,
+            reason, getattr(opportunity, "blocked_detail", None), full, mamba,
             tuple((item.node_id, item.creation_time, item.include_mamba) for item in steps),
         )
         now = time.monotonic()
@@ -3578,6 +3583,7 @@ class NativeAdmissionRuntime:
             "context_epoch": key.context_epoch, "request_id": key.request_id,
             "session_id": key.session_id, "session_generation": key.session_generation,
             "join_id": join_id, "active_tool_ids": tools, "reason": reason,
+            "blocked_detail": getattr(opportunity, "blocked_detail", None),
             "reusable_input_tokens": getattr(
                 getattr(opportunity, "anchors", None), "reusable_input_tokens", None,
             ),

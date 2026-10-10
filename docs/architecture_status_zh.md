@@ -302,6 +302,39 @@ GPU空闲或可直接扣除的JCT。closure_unobservable仍需补齐
 无error；剩余pydata__xarray-6992。native尚未开始，V20继续
 冻结在b019d24/c58cc891，最新隔离优化待两臂完成后部署。
 
+机会观察的后续隔离修改把capture原有失败原因保留到
+closure_unobservable的blocked_detail及wait_prefetch_plan，
+区分祖先深度超限、锚点替换、闭包不一致及在途D2H/H2D。
+不新增拒绝条件或扫描深度。H2D与PREPARE在同一scheduler
+安全点共享已经失败的闭包，PREPARE无需重新查session锚点
+和扫描相同祖先；后续采样重新读取，不缓存失败作为未来授权。
+失败原因变化即使在500ms日志去重窗口内也保留新记录。
+
+489项物理恢复、运行时、终态容量、handoff、批量预取、工具
+及生命周期审计检查通过。相对50aef3d、156个等待parent、
+150轮交替顺序、每轮实际观察16个parent的CPU夹具中，65层
+祖先超限的采样均值13.778→7.102ms，24层在途D2H为
+6.248→3.356ms，在途H2D为6.239→3.349ms；session及
+节点查找均减半。正常24层观察均值4.949→4.899ms，读取
+数量未变，不将约1%的时差当成确定收益。新失败详情以外的
+全部物理机会、PREPARE状态和身份记录逐轮一致，未发起迁移。
+保留v20_failed_closure_sampling_cpu_20261010.json；新增
+--failed-sampling-only可复现这些CPU测量，尚无GPU吞吐证据。
+
+2026-10-10 22:28 CST确认predictive已产生最终summary：
+154 completed、2 incomplete、0 error，旧client及scheduler
+退出；驱动正在收尾审计和导出，随后同版本冷启动native。
+v20_terminal_capacity_snapshot_20261010_2226.json使用修正后
+独立事件口径：1108个终态child、1534次含重试的回收，累计
+实际释放设备FULL456.008GB、Mamba343.645GB；不是峰值
+空间或parent独占额度。192个独立JOIN请求入队到实际首次
+服务P50/P90为143.10/499.16ms，最大16.838秒。54次恢复
+lookahead均关联后续服务，选取到完成batch P50/P90为
+152.75/321.15ms。93个JOIN边界前启动且下一请求复用的
+FULL共1.507GB，tool为3.154MB；76.993GB需求handoff
+复用单列。当前结果来自冻结代码，不归因于未部署的采样优化
+或sibling通知联动，也不证明已超过native。
+
 ## V19b child 上下文结束的集成修正
 
 V19诊断快照已观察到child自然RETURN，但终态回收和parent消费记录

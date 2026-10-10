@@ -12,7 +12,7 @@ from collections import deque
 from dataclasses import dataclass, field
 from math import isfinite
 from time import monotonic
-from typing import Mapping
+from typing import Callable, Mapping
 
 from beliefkv.runtime.sglang_v0520_admission import PrefillCandidateKey
 from beliefkv.runtime.sglang_v0520_observer import (
@@ -141,8 +141,10 @@ def inspect_session_h2d_opportunity(
     *, max_steps: int = 1, fit_current_capacity: bool = False,
 ) -> SessionH2DOpportunity:
     headroom = observe_static_full_mamba_headroom(cache)
+    capture_failures = []
     candidate = capture_action_local_shadow(
         cache, anchors, for_prefetch=True, include_non_actionable=True,
+        on_failure=capture_failures.append,
     )
     steps = plan_prefetch_gpu_steps(candidate, max_steps=max_steps) if candidate is not None else ()
     step = steps[0] if steps else None
@@ -164,6 +166,7 @@ def inspect_session_h2d_opportunity(
     if step is None:
         if candidate is None:
             no_step_reason = "closure_unobservable"
+            blocked_detail = capture_failures[0] if capture_failures else None
         elif anchors.reusable_input_tokens is not None:
             no_step_reason = "no_reusable_input_restore_step"
             blocked_detail = "input_checkpoint_unavailable_or_already_resident"
@@ -598,6 +601,11 @@ def shadow_backup_steps(
     return tuple(steps)
 
 
+def _capture_rejected(reason: str, on_failure: Callable[[str], None] | None) -> None:
+    if on_failure is not None:
+        on_failure(reason)
+
+
 def capture_action_local_shadow(
     cache: object,
     anchors: ContextSessionAnchors,
@@ -605,8 +613,9 @@ def capture_action_local_shadow(
     max_nodes: int = 64,
     for_prefetch: bool = False,
     include_non_actionable: bool = False,
+    on_failure: Callable[[str], None] | None = None,
 ) -> ActionLocalShadowCandidate | ActionLocalPrefetchCandidate | None:
-    """Inspect only one context's session leaves, without issuing native work."""
+    """Inspect one context's leaves, optionally reporting its rejection reason."""
     if type(max_nodes) is not int or not 0 < max_nodes <= 256:
         raise ValueError("invalid shadow closure bound")
     if type(for_prefetch) is not bool or type(include_non_actionable) is not bool:
@@ -619,48 +628,51 @@ def capture_action_local_shadow(
         or not by_component[2]
         or sum(map(len, by_component.values())) > 8
     ):
-        return None
+        return _capture_rejected("invalid_component_leaves", on_failure)
     nodes: dict[int, UnifiedNodeSummary] = {}
     observed_leaves: dict[int, int | float] = {}
     for component_leaves in by_component.values():
         for node_id, created in component_leaves:
             if type(node_id) is not int or node_id < 0:
-                return None
+                return _capture_rejected("invalid_leaf_node_id", on_failure)
             if node_id in observed_leaves:
                 if observed_leaves[node_id] != created:
-                    return None
+                    return _capture_rejected("inconsistent_leaf_creation_time", on_failure)
                 continue
             # A later Mamba anchor may already be on the captured FULL path.
             captured = nodes.get(node_id)
             if captured is not None:
                 if captured.creation_time != created:
-                    return None
+                    return _capture_rejected("replaced_leaf_anchor", on_failure)
                 observed_leaves[node_id] = created
                 continue
             observation = observe_unified_node_closure(
                 cache, node_id, max_nodes=max_nodes
             )
-            if (
-                not observation.observable
-                or not observation.nodes
-                or observation.nodes[0].node_id != node_id
-                or observation.nodes[0].creation_time != created
-            ):
-                return None
+            if not observation.observable:
+                return _capture_rejected(
+                    observation.reason or "node_closure_unobservable", on_failure,
+                )
+            if not observation.nodes:
+                return _capture_rejected("empty_node_closure", on_failure)
+            if observation.nodes[0].node_id != node_id:
+                return _capture_rejected("resolved_leaf_identity_mismatch", on_failure)
+            if observation.nodes[0].creation_time != created:
+                return _capture_rejected("replaced_leaf_anchor", on_failure)
             observed_leaves[node_id] = created
             for node in observation.nodes:
                 if node.node_id in nodes and nodes[node.node_id] != node:
-                    return None
+                    return _capture_rejected("inconsistent_shared_ancestry", on_failure)
                 nodes[node.node_id] = node
                 if len(nodes) > max_nodes:
-                    return None
-    if any(
-        node.parent_id is not None and node.parent_id not in nodes
-        or node.pending_write_id is not None
-        or node.pending_load_id is not None
-        for node in nodes.values()
-    ):
-        return None
+                    return _capture_rejected("combined_node_closure_exceeds_bound", on_failure)
+    for node in nodes.values():
+        if node.parent_id is not None and node.parent_id not in nodes:
+            return _capture_rejected("node_parent_outside_closure", on_failure)
+        if node.pending_write_id is not None:
+            return _capture_rejected("pending_write_transfer", on_failure)
+        if node.pending_load_id is not None:
+            return _capture_rejected("pending_load_transfer", on_failure)
     if for_prefetch:
         missing_full = sum(
             node.full_host_tokens
@@ -673,17 +685,16 @@ def capture_action_local_shadow(
             for node in nodes.values()
         )
         if not missing_full and not missing_mamba and not include_non_actionable:
-            return None
+            return _capture_rejected("no_missing_device_copy", on_failure)
         candidate = ActionLocalPrefetchCandidate(
             anchors=anchors,
             nodes=tuple(sorted(nodes.values(), key=lambda node: node.node_id)),
             missing_full_device_tokens=missing_full,
             missing_mamba_device_nodes=missing_mamba,
         )
-        return (
-            candidate if include_non_actionable
-            or next_prefetch_gpu_step(candidate) is not None else None
-        )
+        if not include_non_actionable and next_prefetch_gpu_step(candidate) is None:
+            return _capture_rejected("no_eligible_prefetch_step", on_failure)
+        return candidate
     missing_full = sum(
         max(node.full_device_tokens - node.full_host_tokens, 0)
         for node in nodes.values()
@@ -693,7 +704,7 @@ def capture_action_local_shadow(
         for node in nodes.values()
     )
     if not missing_full and not include_non_actionable:
-        return None
+        return _capture_rejected("no_missing_full_host_copy", on_failure)
     return ActionLocalShadowCandidate(
         anchors=anchors,
         nodes=tuple(sorted(nodes.values(), key=lambda node: node.node_id)),

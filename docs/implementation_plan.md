@@ -326,6 +326,38 @@ zero errors,with pydata__xarray-6992 unfinished. Native has not started.
 Keep V20 atb019d24/c58cc891 for both arms; all latest isolated changes remain
 queued for the next predictive-first same-version native pair.
 
+Preserve existing capture failure reasons in closure_unobservable.blocked_detail
+and wait_prefetch_plan. Distinguish ancestry bounds,replaced anchors,conflicting
+closures and pending D2H/H2D without adding rejection conditions or enlarging
+the capture bound. At one scheduler safe point,a failed H2D closure is also
+the PREPARE closure failure; reuse it instead of rereading the same session and
+ancestry. Read afresh on later samples. Include changed failure detail in the
+500ms log deduplication fingerprint,without changing transfer authority.
+
+489 scoped physical/runtime/terminal/handoff/batch/tool/lifecycle checks pass.
+Preserve v20_failed_closure_sampling_cpu_20261010.json,baseline50aef3d,
+156 waiting parents,150 alternating iterations,16 observed parents per call.
+Ancestry-bound sampling mean13.778→7.102ms,pending D2H6.248→3.356ms,
+pending H2D6.239→3.349ms; session/node lookups halve. Normal24-layer
+sampling4.949→4.899ms retains the same reads; do not claim its roughly1%
+difference as a stable gain. All physical opportunity,PREPARE and identity
+fields apart from newly added failure detail match every iteration; no native
+transfer is issued. Reproduce with --failed-sampling-only. Commit in isolation,
+retain frozen V20,then validate GPU performance after both arms finish.
+
+At22:28 CST on2026-10-10,predictive has a final summary with154 completed,
+2 incomplete and zero errors; old client and scheduler have exited. Driver
+audits/export are running before the frozen native cold start. The corrected
+v20_terminal_capacity_snapshot_20261010_2226.json has1108 terminal children,
+1534 reclaim records including retries,and cumulative actual device releases
+456.008GB FULL/343.645GB Mamba.192 independent JOIN requests have native
+queue→actual first-service P50/P90143.10/499.16ms,max16.838s. All54 restore
+lookaheads link to service,selection→completed-batch P50/P90152.75/321.15ms.
+93 JOINs have H2D submitted before completion and next-request FULL reuse,total1.507GB;
+tool early reuse is3.154MB,while76.993GB demand handoff stays separate.
+These frozen-code results neither measure queued follow-ups nor establish
+native-relative throughput/JCT improvement. Keep the performance goal active.
+
 ## V19b Harness Context Retirement Integration
 
 The V19 diagnostic snapshot contained authoritative child RETURNs but zero

@@ -485,6 +485,34 @@ def test_write_back_prepare_probe_rejects_non_write_back_tree():
         runtime.close()
 
 
+def test_prepare_probe_reuses_current_h2d_closure_failure_without_caching_it():
+    runtime = NativeAdmissionRuntime()
+    runtime.attach_native_cache(NS(
+        enable_session_radix_cache=True,
+        cache_controller=NS(write_policy="write_back"),
+        tree_core=NS(is_write_back=True),
+    ))
+    key = PrefillCandidateKey("r", "wf", "child", "ctx", 0, 0, "s", 1)
+    failed = SessionH2DOpportunity(
+        ContextSessionAnchors(key, (), 1.),
+        StaticPoolHeadroomObservation(False), None, 0, 0, None,
+        no_step_reason="closure_unobservable",
+        blocked_detail="node ancestry exceeds bound",
+    )
+    try:
+        with patch.object(runtime, "capture_shadow_candidate", return_value=None) as capture:
+            row = {}
+            runtime._observe_prepare_opportunity(key, row, failed)
+            assert row["prepare_reason"] == "no_observable_shadow_closure"
+            assert row["prepare_blocked_detail"] == "node ancestry exceeds bound"
+            capture.assert_not_called()
+            runtime._observe_prepare_opportunity(key, {}, None)
+            capture.assert_called_once()
+        assert runtime.physical_ledger.pending_count == 0
+    finally:
+        runtime.close()
+
+
 def test_safe_point_records_missing_session_and_bounded_queue_scan(tmp_path):
     runtime = NativeAdmissionRuntime(opportunity_dir=str(tmp_path))
     no_session = req("unbound")

@@ -757,6 +757,58 @@ def test_h2d_observer_separates_resident_unbacked_and_blocked_closures():
         assert blocked.host_backed_full_missing_device_tokens == 8
 
 
+@pytest.mark.parametrize("failure,detail", (
+    ("ancestry_bound", "node ancestry exceeds bound"),
+    ("changed_anchor", "replaced_leaf_anchor"),
+    ("pending_write", "pending_write_transfer"),
+    ("pending_load", "pending_load_transfer"),
+))
+def test_h2d_opportunity_preserves_capture_failure_without_rewalking(failure, detail):
+    from beliefkv.runtime.sglang_v0520_observer import observe_unified_node_closure
+
+    cache, anchors, nodes = prepare_prefix_fixture(backed=True)
+    if failure == "ancestry_bound":
+        for number in range(4, 65):
+            nodes[number] = type(nodes[3])(**{
+                **vars(nodes[3]), "id": number, "creation_time": number + 1.,
+                "parent": nodes[number - 1],
+            })
+        anchors = replace(anchors, component_leaves=(
+            (0, ((64, 65.),)), (2, ((64, 65.),)),
+        ))
+    elif failure == "changed_anchor":
+        nodes[3].creation_time += 1
+    elif failure == "pending_write":
+        nodes[3].write_through_pending_id = 1
+    else:
+        nodes[3].load_back_pending_id = 1
+    with patch(
+        "beliefkv.runtime.sglang_v0520_physical.observe_unified_node_closure",
+        wraps=observe_unified_node_closure,
+    ) as observe:
+        result = inspect_session_h2d_opportunity(cache, anchors)
+    assert observe.call_count == 1
+    assert result.no_step_reason == "closure_unobservable"
+    assert result.blocked_detail == detail
+    assert result.step is None and not result.steps
+    assert result.candidate is None and result.fits_current_free_lists is None
+    assert result.host_backed_full_missing_device_tokens is None
+
+
+def test_capture_failure_callback_does_not_change_successful_candidate():
+    cache, anchors, _ = prepare_prefix_fixture(backed=True)
+    failures = []
+    original = capture_action_local_shadow(
+        cache, anchors, for_prefetch=True, include_non_actionable=True,
+    )
+    observed = capture_action_local_shadow(
+        cache, anchors, for_prefetch=True, include_non_actionable=True,
+        on_failure=failures.append,
+    )
+    assert original is not None and original == observed
+    assert failures == []
+
+
 def test_h2d_observer_reports_mamba_leaf_outside_full_session_path():
     anchors = prefetch_anchors(full_leaf=12, mamba_leaf=13)
     root = prefetch_node(0, None, 1)

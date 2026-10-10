@@ -601,6 +601,83 @@ def publication_case(baseline, *, workflows, depth, iterations, sparse_pool):
             runtime.close()
 
 
+def failed_sampling_case(baseline, *, workflows, depth, iterations, failure):
+    closure_depth = 65 if failure == "ancestry_bound" else depth
+    variants = {
+        name: fixture(cls, workflows=workflows, depth=closure_depth, backed=True,
+                      host_full=1_000_000, leases=0)
+        for name, cls in (("baseline", baseline), ("optimized", NativeAdmissionRuntime))
+    }
+    for runtime, *_ in variants.values():
+        if failure in ("pending_write", "pending_load"):
+            for key in runtime.context_sessions.values():
+                if runtime.graph.invocations[key.invocation_id].state is not InvocationState.WAIT_JOIN:
+                    continue
+                anchors = runtime.snapshot_session_anchors(
+                    runtime._native_cache, context_id=key.context_id, context_epoch=0,
+                )
+                leaf = runtime._native_cache.tree_core.node_by_id(anchors.component_leaves[0][1][0][0])
+                setattr(leaf, "write_through_pending_id" if failure == "pending_write"
+                        else "load_back_pending_id", 1)
+    samples = {name: {"wall": [], "thread_cpu": []} for name in variants}
+    totals = {name: Counter() for name in variants}
+    details = Counter()
+    try:
+        for iteration in range(iterations + 5):
+            names = list(variants)
+            if iteration % 2:
+                names.reverse()
+            evidence = {}
+            for name in names:
+                runtime, queue, reads, actions, observations = variants[name]
+                runtime._opportunity_next_ms = 0.
+                observations.clear()
+                before = reads.copy()
+                wall_start, cpu_start = time.perf_counter_ns(), time.thread_time_ns()
+                runtime._sample_h2d_opportunities([], now_ms=time.monotonic() * 1000.)
+                cpu_ms = (time.thread_time_ns() - cpu_start) / 1_000_000
+                wall_ms = (time.perf_counter_ns() - wall_start) / 1_000_000
+                rows = [row for row in observations if row["event"] == "session_h2d_opportunity"]
+                if len(rows) != min(16, workflows) or any(row["source"] != "join_wait" for row in rows):
+                    raise AssertionError("fixture did not observe its bound waiting parents")
+                evidence[name] = tuple({
+                    key: value for key, value in row.items()
+                    if key not in ("ts_ms", "monotonic_ms", "prepare_blocked_detail")
+                    and not (key == "blocked_detail" and row["reason"] == "closure_unobservable")
+                } for row in rows)
+                if actions or runtime.physical_ledger.pending_count:
+                    raise AssertionError("read-only sampling issued native work")
+                if iteration >= 5:
+                    samples[name]["wall"].append(wall_ms)
+                    samples[name]["thread_cpu"].append(cpu_ms)
+                    totals[name].update(reads - before)
+                    if name == "optimized":
+                        details.update(row["blocked_detail"] or "none" for row in rows)
+            if evidence["baseline"] != evidence["optimized"]:
+                raise AssertionError("changed physical opportunity or PREPARE observation")
+        costs = {
+            name: {clock: distribution(values) for clock, values in clocks.items()}
+            for name, clocks in samples.items()
+        }
+        return {
+            "workflows": workflows, "closure_depth": closure_depth,
+            "failure": failure, "iterations": iterations,
+            "physical_observations_equal": True,
+            "new_capture_failure_details": dict(details),
+            "observed_reads": {name: dict(value) for name, value in totals.items()},
+            "costs": costs,
+            "mean_reduction": {
+                clock: 1 - costs["optimized"][clock]["mean_ms"]
+                / costs["baseline"][clock]["mean_ms"]
+                for clock in ("wall", "thread_cpu")
+            },
+            "scope": "read-only opportunity sampling; comparison excludes added failure detail",
+        }
+    finally:
+        for runtime, *_ in variants.values():
+            runtime.close()
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--baseline-revision", default="e985d8c")
@@ -613,6 +690,8 @@ def main():
                         help="Measure consumer matching for one- and sixteen-extent restores.")
     parser.add_argument("--publication-only", action="store_true",
                         help="Measure the first eight cold candidates consumed by each native pool.")
+    parser.add_argument("--failed-sampling-only", action="store_true",
+                        help="Measure shared failed-closure sampling and its normal-path overhead.")
     parser.add_argument("--force-prepare-probes", action="store_true",
                         help="Measure each PREPARE probe instead of its one-second backoff.")
     parser.add_argument(
@@ -626,8 +705,8 @@ def main():
         raise ValueError("depth 1..64, workflows 4..512 and positive iterations required")
     if args.mamba_ancestor and args.depth < 3:
         raise ValueError("Mamba ancestor fixture requires depth at least three")
-    isolated = args.terminal_only or args.lease_only or args.publication_only
-    if sum((args.terminal_only, args.lease_only, args.publication_only)) > 1:
+    isolated = args.terminal_only or args.lease_only or args.publication_only or args.failed_sampling_only
+    if sum((args.terminal_only, args.lease_only, args.publication_only, args.failed_sampling_only)) > 1:
         raise ValueError("choose one isolated benchmark scope")
     baseline, digests = baseline_runtime(args.baseline_revision)
     imported_sources = {
@@ -679,7 +758,7 @@ def main():
             None if isolated else handoff_identity_case(baseline)
         ),
         "cases": cases,
-        "terminal_cases": [] if args.lease_only or args.publication_only else [
+        "terminal_cases": [] if args.lease_only or args.publication_only or args.failed_sampling_only else [
             terminal_case(baseline, depth=args.depth, anchor_count=anchors,
                           iterations=args.iterations)
             for anchors in (1, 2, 8)
@@ -698,6 +777,13 @@ def main():
             )
             for pool in (None, 0, 2)
         ] if args.publication_only else [],
+        "failed_sampling_cases": [
+            failed_sampling_case(
+                baseline, workflows=args.workflows, depth=args.depth,
+                iterations=args.iterations, failure=failure,
+            )
+            for failure in (None, "ancestry_bound", "pending_write", "pending_load")
+        ] if args.failed_sampling_only else [],
     }
     args.output.parent.mkdir(parents=True, exist_ok=True)
     args.output.write_text(json.dumps(report, indent=2) + "\n")
@@ -718,6 +804,7 @@ def main():
         } for case in report["terminal_cases"]],
         "lease_cases": report["lease_cases"],
         "publication_cases": report["publication_cases"],
+        "failed_sampling_cases": report["failed_sampling_cases"],
     }, indent=2))
 
 

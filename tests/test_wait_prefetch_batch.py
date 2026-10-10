@@ -142,6 +142,30 @@ def test_wait_plan_crops_by_total_capacity_and_bytes_while_preserving_prefill_re
     assert inspect.call_args.kwargs["max_steps"] == 16
 
 
+def test_wait_plan_records_changed_capture_failure_inside_sampling_interval():
+    runtime, key, opportunity, _, _ = batch_fixture("join_ticket")
+    records = []
+    runtime._opportunity_writer = NS(record=records.append, close=lambda: None)
+    failed = replace(
+        opportunity, step=None, steps=(), candidate=None,
+        blocked_detail="node ancestry exceeds bound",
+    )
+    try:
+        with patch("beliefkv.runtime.sglang_v0520_runtime.time.monotonic", return_value=10.):
+            runtime._record_wait_prefetch_plan("join_ticket", key, failed, reason="closure_unobservable")
+            runtime._record_wait_prefetch_plan("join_ticket", key, failed, reason="closure_unobservable")
+            runtime._record_wait_prefetch_plan(
+                "join_ticket", key, replace(failed, blocked_detail="pending_load_transfer"),
+                reason="closure_unobservable",
+            )
+        assert [row["blocked_detail"] for row in records] == [
+            "node ancestry exceeds bound", "pending_load_transfer",
+        ]
+        assert runtime.physical_ledger.pending_count == 0
+    finally:
+        runtime.close()
+
+
 def test_wait_batch_rechecks_causal_state_after_draining_events():
     runtime, key, opportunity, cache, _ = batch_fixture("join_ticket")
     runtime.event_server = NS(drain=Mock(side_effect=lambda **kwargs: runtime.on_events((
