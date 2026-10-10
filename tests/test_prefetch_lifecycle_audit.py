@@ -6,12 +6,14 @@ from scripts.audit_prefetch_lifecycle import (
     audit, full_expiration_evidence, http_transport_waits,
     prepare_host_lifetime_summary, prepare_restore_attribution,
     prepare_selection_summary, source_summary, terminal_capacity_summary, wait_event_attribution,
+    terminal_invocation_scopes,
 )
 
 
 def test_terminal_capacity_link_keeps_pool_evidence_and_post_service_release_separate():
     child = {
         "workflow_id": "wf", "context_id": "child", "session_id": "s",
+        "invocation_scope": "dynamic_subagent",
         "session_generation": 1, "parent_context_id": "parent", "join_id": "join",
         "ts_ms": 20., "freed_device_units": {"0": 4, "2": 1},
         "freed_host_units": {"0": 2}, "bytes_per_unit": {"0": 10},
@@ -37,6 +39,56 @@ def test_terminal_capacity_link_keeps_pool_evidence_and_post_service_release_sep
     assert result["last_child_return_to_first_service_ms"]["p50"] == 20.
     assert result["parent_services_with_prior_device_release"] == 1
     assert result["terminal_children"] == 1
+    assert result["terminal_contexts"] == 1
+
+
+def test_terminal_capacity_uses_explicit_scope_not_invocation_id_spelling(tmp_path):
+    write_rows(tmp_path / "client_1/workflows/task/runtime_events.deepagents.jsonl", [
+        {"kind": "invocation_create", "workflow_id": "wf", "invocation_id": invocation,
+         "relation_type": relation, "attributes": attrs}
+        for invocation, relation, attrs in (
+            ("child:context-summary:literal-name", "spawn", {}),
+            ("helper", "call", {"runtime_internal": True}),
+        )
+    ])
+    base = {
+        "workflow_id": "wf", "session_generation": 1, "parent_context_id": "parent",
+        "join_id": "join", "ts_ms": 20., "freed_host_units": {"0": 2},
+        "bytes_per_unit": {"0": 10, "2": 100},
+    }
+    reclaims = [
+        {**base, "invocation_id": invocation, "context_id": invocation,
+         "session_id": invocation, "freed_device_units": {"0": tokens, "2": 1}}
+        for invocation, tokens in (
+            ("child:context-summary:literal-name", 4), ("helper", 100), ("unrecorded", 200),
+        )
+    ]
+    services = [{
+        "workflow_id": "wf", "context_id": "parent", "join_id": "join",
+        "request_id": "next", "ts_ms": 30.,
+    }]
+    result = terminal_capacity_summary(
+        reclaims, services, invocation_scopes=terminal_invocation_scopes(tmp_path),
+    )
+    assert result["terminal_contexts"] == 3
+    assert result["terminal_children"] == 1
+    assert result["freed_device_bytes_known"] == {"0": 3040, "2": 300}
+    assert result["by_invocation_scope"]["runtime_internal"]["terminal_contexts"] == 1
+    assert result["by_invocation_scope"]["unknown"]["freed_device_units"] == {"0": 200, "2": 1}
+    assert result["rows"][0]["freed_device_units_before_service"] == {"0": 4, "2": 1}
+
+
+def test_terminal_capacity_accepts_runtime_scope_without_client_metadata():
+    base = {
+        "workflow_id": "wf", "context_id": "c", "session_id": "s", "session_generation": 1,
+        "freed_device_units": {"0": 4}, "freed_host_units": {}, "bytes_per_unit": {"0": 10},
+        "invocation_scope": "runtime_internal",
+    }
+    result = terminal_capacity_summary([base, {**base, "retry": True}], [])
+    assert result["terminal_children"] == 0
+    assert result["terminal_contexts"] == 1
+    assert result["by_invocation_scope"]["runtime_internal"]["reclaim_records"] == 2
+    assert result["freed_device_bytes_known"] == {"0": 80}
 
 
 def test_terminal_capacity_missing_or_reversed_return_time_stays_unknown():

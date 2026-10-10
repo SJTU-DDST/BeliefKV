@@ -49,7 +49,7 @@ root workspace，保留trace、补丁及中断workspace。V20在冻结
 工具180秒、lead500ms和原预测产物，先predictive再同版本冷
 native。运行中的主目录、引擎和预测产物继续冻结。
 
-已保存prefetch_lifecycle_early_snapshot.json：78个终态child、
+已保存prefetch_lifecycle_early_snapshot.json：78个终态上下文（含内部总结请求）、
 79次含重试的回收累计释放设备FULL14.797GB、Mamba8.306GB。
 23个有终态容量关联的parent，入队到首个完成batch的P50/P90
 为198.53/441.96ms，最大16.923秒。7个真实restore lookahead
@@ -96,7 +96,7 @@ patch反向应用检查通过，SHA256为
 
 2026-10-10 20:11 CST容量快照保存在
 prefetch_lifecycle_capacity_snapshot_20261010_2011.json：388个
-终态child、589次含重试的回收记录，累计实际释放设备FULL
+终态上下文（含内部总结请求）、589次含重试的回收记录，累计实际释放设备FULL
 124.303GB、Mamba61.878GB，这不是峰值空闲容量。91个容量关联
 parent中90个在首次观测服务前有真实设备释放，入队到首个完成
 batch P50/P90为214.84/485.33ms，最大16.923秒。36个恢复提前
@@ -131,7 +131,7 @@ v20_join_admission_diagnostics_20261010.json的修正快照覆盖110个
 20:11快照更晚，不能把采样数量变化全部归因于统计修复。
 
 后续容量快照prefetch_lifecycle_capacity_snapshot_20261010_2040.json
-覆盖568个终态child、837次含重试的回收，累计释放设备FULL
+覆盖568个终态上下文（含内部总结请求）、837次含重试的回收，累计释放设备FULL
 202.940GB、Mamba120.987GB；这不是峰值容量或parent独占额度。
 118个parent观测到首个完成GPU batch，其中117个此前关联真实
 设备释放；39次恢复lookahead均关联后续服务，选取到完成batch
@@ -196,7 +196,7 @@ final_stage_resumed_after_sibling_return计数及阶段记录字段。
 此次修订仍在隔离分支，当前V20及随后native继续同版本冻结。
 
 保存v20_terminal_capacity_snapshot_20261010_2115.json的后续
-采集中审计：869个终态child、1241次含重试的回收，累计实际
+采集中审计：869个终态上下文（含内部总结请求）、1241次含重试的回收，累计实际
 释放设备FULL338.281GB、Mamba200.830GB。170个parent完成batch
 观察中169个关联此前设备释放；54次恢复lookahead均关联服务，
 选取到完成batch P50/P90为152.75/321.15ms。168个独立JOIN
@@ -325,7 +325,7 @@ closure_unobservable的blocked_detail及wait_prefetch_plan，
 154 completed、2 incomplete、0 error，旧client及scheduler
 退出；驱动正在收尾审计和导出，随后同版本冷启动native。
 v20_terminal_capacity_snapshot_20261010_2226.json使用修正后
-独立事件口径：1108个终态child、1534次含重试的回收，累计
+独立事件口径：1108个终态上下文（含内部总结请求）、1534次含重试的回收，累计
 实际释放设备FULL456.008GB、Mamba343.645GB；不是峰值
 空间或parent独占额度。192个独立JOIN请求入队到实际首次
 服务P50/P90为143.10/499.16ms，最大16.838秒。54次恢复
@@ -352,6 +352,25 @@ scheduler/detokenizer的独立GC状态ACK。隔离launcher已将
 相同初始化移至health成功之后、启动workflow client之前，
 两臂都执行；保存gc_freeze_initialization.txt，不改GPU服务策略。
 已用实际端点200及bash语法检查验证，下一轮再检验完整对照。
+
+终态对象分类的后续审计纠正了此前把所有非root调用都称为child
+的问题。保留原报告，新增v20_terminal_capacity_scope_20261010_v2.json；
+按客户端invocation_create的runtime_internal和relation_type分类，
+不用ID命名推断身份。本轮1108个回收上下文包含371个真实spawn
+subagent及737个内部上下文总结请求；371与workload摘要一致，
+无未知类别。真实child的797次含重试回收累计释放设备FULL
+119.545GB、Mamba125.816GB，Host FULL48.573GB、Mamba50.739GB；
+内部总结分别释放设备FULL336.464GB、Mamba217.828GB。历史快照
+的456.008GB/343.645GB是所有终态上下文总量，不能全部归为
+child到JOIN parent的交接，也不是峰值容量或节省时延。
+
+回收日志新增invocation_scope，审计分别报告terminal_contexts、
+terminal_children和by_invocation_scope；只有确认的动态subagent
+释放关联JOIN parent。内部总结的合法终态回收继续执行，不新增
+迁移门槛或改变调度；缺元数据的历史对象保持unknown。80项
+终态容量和生命周期检查通过，包括带有总结字样的真实spawn、
+无特殊命名的内部调用和内部回收不产生parent交接。此修订
+在隔离分支提交，当前native继续使用冻结主目录版本。
 
 ## V19b child 上下文结束的集成修正
 

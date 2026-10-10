@@ -18,7 +18,7 @@ from typing import TYPE_CHECKING
 from uuid import uuid4
 
 from beliefkv.control.causal_graph import InvocationState, RuntimeCausalContextGraph
-from beliefkv.core.events import RuntimeEventKind
+from beliefkv.core.events import RelationType, RuntimeEventKind
 from beliefkv.policy.causal_frontier import CausalFrontierScheduler
 from beliefkv.predictor.composer import observed_boundary_action
 from beliefkv.predictor.completion_lead import (
@@ -238,6 +238,7 @@ class _TerminalChildReclaim:
     returned_ts_ms: float
     observed_return_wall_ts_ms: float
     retry_anchors: tuple = ()
+    invocation_scope: str = "unknown"
 
 
 class NativeAdmissionRuntime:
@@ -3205,6 +3206,12 @@ class NativeAdmissionRuntime:
             break
         reclaim = _TerminalChildReclaim(
             key, parent_context, join_id, event.ts_ms, observed_return_wall_ts_ms,
+            invocation_scope=(
+                "runtime_internal" if event.attributes.get("runtime_internal") is True
+                else "dynamic_subagent"
+                if child.relation_type is RelationType.SPAWN or join_id is not None
+                else "other"
+            ),
         )
         self._apply_terminal_child_reclaim(reclaim, retry=False)
 
@@ -3247,6 +3254,7 @@ class NativeAdmissionRuntime:
             self._opportunity_writer.record({
                 "event": "terminal_child_cache_reclaimed", "ts_ms": time.time() * 1000.,
                 "workflow_id": key.root_workflow_id, "invocation_id": key.invocation_id,
+                "invocation_scope": reclaim.invocation_scope,
                 "context_id": key.context_id, "context_epoch": key.context_epoch,
                 "session_id": key.session_id, "session_generation": key.session_generation,
                 "parent_context_id": reclaim.parent_context_id, "join_id": reclaim.join_id,

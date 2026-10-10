@@ -129,6 +129,14 @@ Deep Agents 的 persistent 标记用于任务内部多轮执行；完成回调
 invocation 时保留；原始客户端事件时间与 scheduler 交付观察
 墙钟分别记录，容量交接时延用同一墙钟计算。
 
+终态回收对象按明确的调用身份区分：动态spawn subagent、内部
+上下文总结调用及缺失身份的unknown分别记录分池释放量。
+runtime_internal总结请求仍可正常释放无用缓存，但不将其回收
+算作JOIN child到parent的交接。日志保留invocation_scope；
+历史审计优先读取invocation_create元数据，不通过ID命名推断。
+所有终态上下文的累计释放、真实child释放和parent服务关联
+分别报告，不能把累计字节当成独占容量、预取复用或时延收益。
+
 实际释放容量进入原生 allocator，可供既有预取与需求恢复使用。
 JOIN 解锁 parent 的缺失 checkpoint 恢复只在近期可准入候选内
 有界优先；JOIN 满足、下一请求已提交且必要数据驻留后，再与

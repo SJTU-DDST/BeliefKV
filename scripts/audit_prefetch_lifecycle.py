@@ -102,15 +102,25 @@ def source_summary(rows: list[dict]) -> dict:
     }
 
 
-def terminal_capacity_summary(
-    reclaims: list[dict], services: list[dict], lookaheads: Sequence[dict] = (),
-) -> dict:
+def terminal_invocation_scopes(arm: Path) -> dict:
+    scopes = {}
+    for path in arm.glob("client_*/workflows/*/runtime_events.deepagents.jsonl"):
+        for row in records(path):
+            if row["kind"] != "invocation_create":
+                continue
+            scope = (
+                "runtime_internal"
+                if (row.get("attributes") or {}).get("runtime_internal") is True
+                else "dynamic_subagent" if row.get("relation_type") == "spawn" else "other"
+            )
+            scopes[row["workflow_id"], row["invocation_id"]] = scope
+    return scopes
+
+
+def terminal_release_totals(reclaims: list[dict]) -> dict:
     device, host, device_bytes, host_bytes = Counter(), Counter(), Counter(), Counter()
     device_unknown, host_unknown = Counter(), Counter()
-    linked = defaultdict(list)
     for row in reclaims:
-        identity = (row["workflow_id"], row.get("parent_context_id"), row.get("join_id"))
-        linked[identity].append(row)
         for target, target_bytes, unknown, field in (
             (device, device_bytes, device_unknown, "freed_device_units"),
             (host, host_bytes, host_unknown, "freed_host_units"),
@@ -125,6 +135,38 @@ def terminal_capacity_summary(
                     target_bytes[component] += units * size
                 else:
                     unknown[component] += units
+    return {
+        "reclaim_records": len(reclaims),
+        "terminal_contexts": len({
+            (row["workflow_id"], row["context_id"], row["session_id"], row["session_generation"])
+            for row in reclaims if not row.get("retry")
+        }),
+        "freed_device_units": dict(device), "freed_host_units": dict(host),
+        "freed_device_bytes_known": dict(device_bytes),
+        "freed_host_bytes_known": dict(host_bytes),
+        "freed_device_units_with_unknown_byte_size": dict(device_unknown),
+        "freed_host_units_with_unknown_byte_size": dict(host_unknown),
+    }
+
+
+def terminal_capacity_summary(
+    reclaims: list[dict], services: list[dict], lookaheads: Sequence[dict] = (),
+    *, invocation_scopes: dict | None = None,
+) -> dict:
+    by_scope, linked = defaultdict(list), defaultdict(list)
+    scopes = invocation_scopes or {}
+    for row in reclaims:
+        scope = scopes.get(
+            (row["workflow_id"], row.get("invocation_id")),
+            row.get("invocation_scope", "unknown"),
+        )
+        by_scope[scope].append(row)
+        if scope == "dynamic_subagent":
+            identity = (row["workflow_id"], row.get("parent_context_id"), row.get("join_id"))
+            linked[identity].append(row)
+    scope_totals = {
+        scope: terminal_release_totals(rows) for scope, rows in sorted(by_scope.items())
+    }
     linked_services = []
     lookahead_by_request = defaultdict(list)
     for row in lookaheads:
@@ -165,16 +207,9 @@ def terminal_capacity_summary(
             ),
         })
     return {
-        "reclaim_records": len(reclaims),
-        "terminal_children": len({
-            (row["workflow_id"], row["context_id"], row["session_id"], row["session_generation"])
-            for row in reclaims if not row.get("retry")
-        }),
-        "freed_device_units": dict(device), "freed_host_units": dict(host),
-        "freed_device_bytes_known": dict(device_bytes),
-        "freed_host_bytes_known": dict(host_bytes),
-        "freed_device_units_with_unknown_byte_size": dict(device_unknown),
-        "freed_host_units_with_unknown_byte_size": dict(host_unknown),
+        **terminal_release_totals(reclaims),
+        "terminal_children": scope_totals.get("dynamic_subagent", {}).get("terminal_contexts", 0),
+        "by_invocation_scope": scope_totals,
         "parent_first_services": len(services),
         "parent_services_with_prior_device_release": sum(
             any(row["freed_device_units_before_service"].values()) for row in linked_services
@@ -200,7 +235,11 @@ def terminal_capacity_summary(
             "and service observation use scheduler wall time, not client event time; "
             "not exclusive slot ownership, predictive H2D reuse, avoided D2H bytes, "
             "or a native-relative latency saving. Restore lookahead is selection "
-            "evidence, not submission/ACK evidence. Missing pool byte sizes stay unknown."
+            "evidence, not submission/ACK evidence. Aggregate releases include internal "
+            "calls; scope breakdown and terminal_children use explicit invocation-create "
+            "metadata or recorded runtime scope, never ID spelling. Only confirmed "
+            "dynamic subagents link to JOIN parent services; absent metadata stays unknown. "
+            "Missing pool byte sizes stay unknown."
         ),
     }
 
@@ -1298,6 +1337,7 @@ def audit(arm: Path) -> dict:
         "wait_events": wait_events["summary"],
         "terminal_capacity_handoff": terminal_capacity_summary(
             terminal_reclaims, parent_handoff_services, parent_handoff_lookaheads,
+            invocation_scopes=terminal_invocation_scopes(arm),
         ),
     }
     return {

@@ -29,7 +29,7 @@ patch and predictor artifacts are unchanged.
 V19b stop requested19:07:25 CST,2026-10-10; old processes,GPU and port18454
 were verified released at19:11:58. Preserve80 completed outcomes and76
 interrupted tasks; all156 arrived. No native arm started, so no completed
-performance pair exists. Final stopped evidence includes540 terminal children,
+performance pair exists. Final stopped evidence includes540 terminal contexts,
 804 reclamation records including retries,190.834GB device FULL and97.614GB
 device Mamba released.112 linked parent services have queue-wait P50/P90
 191.50ms/13.990s. Independently early reused FULL is1.234GB JOIN plus
@@ -50,7 +50,7 @@ Predictive precedes cold native on that same revision. Keep156 tasks,108+48
 at3600s,running48,Host200GB80:20,HBM0.9,180s tools and500ms lead.
 Keep the deployed c58cc891 engine patch and predictors unchanged between arms.
 
-Preserve prefetch_lifecycle_early_snapshot.json. It contains78 terminal children,
+Preserve prefetch_lifecycle_early_snapshot.json. It contains78 terminal contexts,
 79 reclamation records including retries,14.797GB device FULL and8.306GB device
 Mamba released.23 linked parents have queue-wait P50/P90 of198.53/441.96ms,
 with16.923s maximum.7 restore lookaheads all link to observed service: selection
@@ -104,7 +104,7 @@ live V20 b019d24/c58cc891 pair before deploying these follow-ups.
 
 Preserve the20:11 CST,2026-10-10 partial capacity snapshot as
 prefetch_lifecycle_capacity_snapshot_20261010_2011.json.388 terminal
-children and589 reclamation records including retries release124.303GB
+contexts and589 reclamation records including retries release124.303GB
 device FULL and61.878GB device Mamba cumulatively, not peak free capacity.
 91 linked parent services include90 with prior actual device release;
 queue-to-completed-batch P50/P90 is214.84/485.33ms,max16.923s.
@@ -143,7 +143,7 @@ deduplication. Apply this same corrected offline auditor to both final arms
 after preserving their frozen runtime versions.
 
 The subsequent prefetch_lifecycle_capacity_snapshot_20261010_2040.json
-contains568 terminal children and837 reclamation records including retries.
+contains568 terminal contexts and837 reclamation records including retries.
 Actual cumulative device release is202.940GB FULL and120.987GB Mamba,
 not peak capacity or a parent reservation.118 parents have completed-batch
 service observations;117 link to prior actual device release. All39 restore
@@ -214,7 +214,7 @@ The mocked transfer proves dispatch ordering,not physical DMA or performance.
 Commit promptly in isolation; deploy after the frozen V20 predictive/native pair.
 
 Preserve experiments/reports/v20_terminal_capacity_snapshot_20261010_2115.json.
-This later partial audit has869 terminal children,1241 reclaim records including
+This later partial audit has869 terminal contexts,1241 reclaim records including
 retries,and338.281GB FULL/200.830GB Mamba actual cumulative device release.
 169 of170 parent completed-batch observations link to earlier device release;
 all54 lookaheads link to service,with152.75/321.15ms selection-to-completed-batch
@@ -348,7 +348,7 @@ retain frozen V20,then validate GPU performance after both arms finish.
 At22:28 CST on2026-10-10,predictive has a final summary with154 completed,
 2 incomplete and zero errors; old client and scheduler have exited. Driver
 audits/export are running before the frozen native cold start. The corrected
-v20_terminal_capacity_snapshot_20261010_2226.json has1108 terminal children,
+v20_terminal_capacity_snapshot_20261010_2226.json has1108 terminal contexts,
 1534 reclaim records including retries,and cumulative actual device releases
 456.008GB FULL/343.645GB Mamba.192 independent JOIN requests have native
 queue→actual first-service P50/P90143.10/499.16ms,max16.838s. All54 restore
@@ -376,6 +376,24 @@ after health succeeds and before launching either workload client,saving
 gc_freeze_initialization.txt. Actual endpoint200 and bash syntax validate this
 setup change; do not change the active pair's code. Validate the next pair with
 both arms initialized before workload submission.
+
+Correct terminal-reclamation scope without changing valid reclamation behavior.
+Earlier counts include internal context-summarization calls. Retain original
+reports and add v20_terminal_capacity_scope_20261010_v2.json. Explicit client
+invocation_create metadata confirms371 spawn subagents and737 runtime_internal
+calls among1108 terminal contexts,with no unknown identities. Actual cumulative
+subagent release is119.545GB device FULL/125.816GB device Mamba and48.573GB
+Host FULL/50.739GB Host Mamba. Internal calls account for336.464GB device
+FULL/217.828GB device Mamba; aggregate456.008GB/343.645GB must not be
+called child-to-parent handoff or peak free capacity.
+
+Publish invocation_scope in reclamation records. Audit terminal_contexts,
+confirmed terminal_children and per-scope release totals separately. Link only
+confirmed dynamic subagents to JOIN parent service; preserve unknown scope when
+creation metadata is absent and never infer scope from ID spelling. Legitimate
+internal retirement still releases allocator capacity and does not create a
+JOIN handoff. Eighty focused capacity/lifecycle checks pass. Commit in isolation
+while frozen V20 native continues; deploy between complete paired runs.
 
 ## V19b Harness Context Retirement Integration
 

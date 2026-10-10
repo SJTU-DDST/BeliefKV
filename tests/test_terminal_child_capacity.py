@@ -6,7 +6,7 @@ from unittest.mock import Mock, patch
 
 import pytest
 
-from beliefkv.core.events import RuntimeEventKind
+from beliefkv.core.events import RelationType, RuntimeEventKind
 from beliefkv.runtime.native_transfer_policy import PrefetchResidencyBudget
 from beliefkv.runtime.sglang_v0520_physical import PrefetchLoadStep
 from beliefkv.runtime.sglang_v0520_runtime import NativeAdmissionRuntime, _PrefetchServiceLease
@@ -87,6 +87,7 @@ def test_sibling_return_releases_capacity_without_admitting_waiting_parent(famil
     assert runtime._live_parent_capacity_handoff(runtime.visible["parent"]) is None
     assert runtime._parent_handoff_priority_promoted is None
     assert records[0]["parent_context_id"] == "ctx-parent"
+    assert records[0]["invocation_scope"] == "dynamic_subagent"
     assert records[0]["child_return_event_ts_ms"] == 7.
     assert records[0]["child_return_observed_wall_ts_ms"] <= records[0]["ts_ms"]
     assert "ctx-child1" not in runtime.context_sessions
@@ -103,6 +104,29 @@ def test_batched_tool_end_does_not_consume_return_session_before_reclaim(family)
     ))
     cache.retire_beliefkv_child_session.assert_called_once()
     assert runtime._parent_capacity_handoffs["ctx-parent"].last_return_ts_ms > 9.
+
+
+def test_internal_summary_keeps_reclamation_without_claiming_parent_handoff(family):
+    runtime, _, cache, records = family
+    summary = req("summary")
+    summary.session_id, summary.session_generation = "s-summary", 1
+    runtime.register_visible_request(summary)
+    runtime.on_events((event(
+        7, RuntimeEventKind.INVOCATION_CREATE, invocation_id="summary",
+        context_id="ctx-summary", parent_invocation_id="child1",
+        relation_type=RelationType.CALL, attributes={"runtime_internal": True},
+    ),))
+    runtime.on_events((event(
+        8, RuntimeEventKind.RETURN, invocation_id="summary", context_id="ctx-summary",
+        attributes={"runtime_internal": True},
+    ),))
+    cache.retire_beliefkv_child_session.assert_called_once_with(
+        session_id="s-summary", session_generation=1,
+    )
+    assert records[0]["invocation_scope"] == "runtime_internal"
+    assert records[0]["join_id"] is None
+    assert runtime._parent_capacity_handoffs == {}
+    assert not runtime.graph.joins["join"].satisfied
 
 
 def test_last_child_final_notice_reuses_parent_plan_after_sibling_release(family):
