@@ -412,6 +412,82 @@ def http_transport_waits(
     }
 
 
+def full_expiration_evidence(
+    actions: list[dict], completion: float | None, client_submit: float | None,
+    native_arrival: float | None, service: float | None,
+) -> list[dict]:
+    """Locate observed FULL lock release in the request chain without inferring a miss."""
+    result = []
+    for action in actions:
+        amount = (action.get("pool_bytes") or {}).get("kv")
+        if type(amount) is not int or amount <= 0:
+            continue
+        events = action.get("lease_events") or ()
+        registered = next(
+            (event for event in events if event["event"] == "prefetch_residency_registered"),
+            {},
+        )
+        released = next(
+            (event for event in reversed(events)
+             if event["event"] == "prefetch_residency_released"), {},
+        )
+        if (
+            registered.get("native_locked") is not True
+            or released.get("reason") != "service_window_expired"
+        ):
+            continue
+        when = released.get("ts_ms")
+        ack = action.get("ack_ts_ms")
+        boundaries = (completion, client_submit, native_arrival, service)
+        known = [value for value in boundaries if value is not None]
+        ordered = (
+            type(when) in (int, float) and math.isfinite(when)
+            and type(ack) in (int, float) and math.isfinite(ack) and ack <= when
+            and all(type(value) in (int, float) and math.isfinite(value) for value in known)
+            and all(left <= right for left, right in zip(known, known[1:]))
+        )
+        stage = "unknown"
+        if ordered and completion is not None:
+            if when < completion:
+                stage = "before_completion"
+            elif client_submit is not None:
+                if when < client_submit:
+                    stage = "awaiting_client_submit"
+                elif native_arrival is not None:
+                    if when < native_arrival:
+                        stage = "awaiting_native_arrival"
+                    elif service is not None:
+                        stage = "awaiting_service" if when < service else "after_first_service"
+        result.append({
+            "command_id": action["command_id"], "full_bytes": amount,
+            "release_ts_ms": when, "release_stage": stage,
+            "full_first_service_reused": action.get("full_first_service_reused"),
+            "reentry_ready_observed": any(
+                event["event"] == "prefetch_reentry_ready" for event in events
+            ),
+            "client_submit_observed_by_runtime": any(
+                event["event"] == "prefetch_client_submitted" for event in events
+            ),
+            "native_demand_observed_by_runtime": any(
+                event["event"] == "prefetch_demand_submitted" for event in events
+            ),
+        })
+    return result
+
+
+def full_expiration_summary(rows: list[dict]) -> dict:
+    counts, amounts = Counter(), Counter()
+    for row in rows:
+        for evidence in row["full_residency_expirations"]:
+            stage = evidence["release_stage"]
+            counts[stage] += 1
+            amounts[stage] += evidence["full_bytes"]
+    return {
+        "full_expiration_commands_by_stage": dict(counts),
+        "full_expiration_bytes_by_stage": dict(amounts),
+    }
+
+
 def wait_event_attribution(
     arm: Path, observations: list[dict], issues: dict, actions: list[dict],
     clock_offset: float | None,
@@ -621,6 +697,11 @@ def wait_event_attribution(
         ]
         handoff = handoffs_by_request.get(rid, ())
         acks = [action["ack_ts_ms"] for action in pending if action["ack_ts_ms"] is not None]
+        client_submit = request["ts_ms"] if request else None
+        native_arrival = native["ts_ms"] if native else None
+        expirations = full_expiration_evidence(
+            pending, completion, client_submit, native_arrival, service,
+        )
         rows.append({
             **{name: group[name] for name in (
                 "source", "workflow_id", "invocation_id", "context_id", "context_epoch", "join_id",
@@ -638,6 +719,8 @@ def wait_event_attribution(
             "observed_plan_reasons": dict(group["plan_reasons"]),
             "observed_session_bindings": len(group["sessions"] - {(None, None)}),
             "next_request_id": rid, "first_service_ts_ms": service,
+            "client_submit_ts_ms": client_submit, "native_arrival_ts_ms": native_arrival,
+            "full_residency_expirations": expirations,
             "node_command_count": len(pending),
             "early_started_and_reused_full_bytes": sum(
                 action["pool_bytes"].get("kv", 0) for action in early_reused
@@ -729,6 +812,7 @@ def wait_event_attribution(
                     "last_ack_to_first_service_ms": distribution(
                         row["last_ack_to_first_service_ms"] for row in selected
                     ),
+                    **full_expiration_summary(selected),
                 }
                 for source in ("join_ticket", "tool_wait")
             },
@@ -754,6 +838,10 @@ def wait_event_attribution(
             "Native-arrival-to-service wait includes admission "
             "and execution queueing, not isolated H2D delay. Sampled GPU dependency "
             "wait is a batch observation and must not be summed across its requests. "
+            "FULL expiration stages locate observed locked-receipt releases relative "
+            "to the causal boundary, client submit, native arrival and first service. "
+            "They do not prove a reuse miss or an isolated cause; reuse evidence is "
+            "reported separately. Missing or unordered boundaries remain unknown. "
             "Missing identities, clocks, ACK pool bytes or service evidence stay unknown."
         ),
     }
@@ -778,7 +866,10 @@ def audit(arm: Path) -> dict:
             parks.append(row)
         elif event == "prepare_candidate_selected":
             prepare_selections.append(row)
-        elif event in ("prefetch_residency_registered", "prefetch_residency_released"):
+        elif event in (
+            "prefetch_residency_registered", "prefetch_residency_released",
+            "prefetch_reentry_ready", "prefetch_client_submitted", "prefetch_demand_submitted",
+        ):
             leases[row["command_id"]].append(row)
         elif event in ("wait_prefetch_plan", "session_h2d_opportunity"):
             if row.get("source") in ("join_wait", "join_ticket", "tool_wait"):

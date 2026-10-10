@@ -111,6 +111,30 @@ Outputs and lease identity/validity agree. Report:
 Native enqueue is stubbed; this is not GPU, DMA or throughput evidence.
 Keep this change isolated from both frozen V16b arms.
 
+Distinguish an observed next-epoch external client LLM_SUBMIT from native request
+visibility. For an existing valid, unexpired native lock, keep protection only
+within the established ACK+10s maximum and record `prefetch_client_submitted`.
+Do not create a visible request or grant admission; native demand readiness
+still requires an actual request and exact session/generation matching.
+Internal summaries, old requests, pending tools and invalid/expired/unlocked
+restores do not extend protection. A later READY observation must not shorten
+this already submitted protection.385 related runtime/physical/tool/policy/
+audit checks pass. Keep this change isolated; GPU benefit is unverified.
+
+The lifecycle audit previously omitted intermediate reentry-ready/submission
+records; retain them and locate locked FULL receipt expiry along complete
+event->client submit->native arrival->first service. Missing/unordered evidence
+remains unknown; expiry is not a reuse miss. An incomplete V16b snapshot verifies
+437.84MB JOIN and296.45MB tool early FULL reuse. Of16 locked FULL expirations,
+14 precede completion,1 lies before client submit and1 before native arrival.
+The last tool case completes152ms and submits209ms after ACK, reaches native
+visibility at4.64s, but releases its original lock at3.24s. This does not explain
+all missed opportunities, and ACK+10s does not guarantee timely later admission.
+Preserve this limited evidence in
+`experiments/reports/v16b_prefetch_lifecycle_snapshot_20261010.json`.
+Next inspect early prediction/delivery, bounded reclaim opportunities and native
+admission separately; do not uniformly lengthen speculative leases.
+
 ## Current Objective And V15 Comparison
 
 Keep the fixed workload, model, capacity and arrival schedule. Continue until

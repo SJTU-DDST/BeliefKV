@@ -214,6 +214,7 @@ class _PrefetchServiceLease:
     protected_bytes: int = 0
     demand_ready: bool = False
     reentry_ready_at: float | None = None
+    client_submitted_at: float | None = None
 
 
 class NativeAdmissionRuntime:
@@ -942,6 +943,7 @@ class NativeAdmissionRuntime:
                     self._clear_semantic_invocation(event.invocation_id)
                     self._bind_child_report_notice(event)
                     self._bind_final_request(event)
+                    self._observe_prefetch_client_submit(event)
                 elif event.kind is RuntimeEventKind.TOOL_START:
                     self._child_report_notices.pop(event.invocation_id, None)
                     self._semantic_tool_counts[event.invocation_id] += 1
@@ -4762,6 +4764,50 @@ class NativeAdmissionRuntime:
             # revision without changing this immutable checkpoint's consumer.
         return None
 
+    def _observe_prefetch_client_submit(self, event: RuntimeEvent) -> None:
+        if not self._prefetch_service_leases or event.attributes.get("runtime_internal"):
+            return
+        rid = event.attributes.get("request_id")
+        if type(rid) is not str or not rid:
+            return
+        invocation = self.graph.invocations.get(event.invocation_id)
+        if (
+            invocation is None or invocation.state is not InvocationState.RUNNING_LLM
+            or invocation.active_tool_calls or invocation.blocking_child_ids
+        ):
+            return
+        now = time.monotonic()
+        for command, lease in tuple(self._prefetch_service_leases.items()):
+            key = lease.key
+            if (
+                lease.demand_ready or lease.client_submitted_at is not None
+                or lease.lock_params is None or now >= lease.expires_at
+                or event.workflow_id != key.root_workflow_id
+                or event.invocation_id != key.invocation_id
+                or event.context_id != key.context_id
+                or event.context_epoch != key.context_epoch + 1
+                or rid == key.request_id
+                or self._prefetch_lease_invalid_reason(lease) is not None
+            ):
+                continue
+            # Client submission precedes native visibility and is not admission.
+            self._prefetch_service_leases[command] = replace(
+                lease, client_submitted_at=now, expires_at=lease.acknowledged_at + 10.,
+            )
+            self.counts["prefetch_residency_client_submitted"] += 1
+            if self._opportunity_writer is not None:
+                self._opportunity_writer.record({
+                    "event": "prefetch_client_submitted",
+                    "ts_ms": time.time() * 1000., "command_id": command,
+                    "source": lease.source, "context_id": key.context_id,
+                    "context_epoch": key.context_epoch,
+                    "request_id": rid, "ack_to_client_submit_ms": (
+                        now - lease.acknowledged_at
+                    ) * 1000.,
+                    "remaining_lease_ms": (lease.acknowledged_at + 10. - now) * 1000.,
+                    "scope": "existing locked restore retained; no native request or admission",
+                })
+
     def _refresh_prefetch_service_leases(self, *, context_id: str | None = None) -> None:
         if not self._prefetch_service_leases:
             return
@@ -4774,6 +4820,7 @@ class NativeAdmissionRuntime:
             invocation = self.graph.invocations.get(lease.key.invocation_id)
             if (
                 not lease.demand_ready and lease.reentry_ready_at is None
+                and lease.client_submitted_at is None
                 and lease.lock_params is not None
                 and now < lease.expires_at
                 and invocation is not None

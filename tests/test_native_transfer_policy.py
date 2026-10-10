@@ -3,6 +3,7 @@ from unittest.mock import patch
 
 import pytest
 
+from beliefkv.control.causal_graph import InvocationState
 from beliefkv.runtime.native_transfer_policy import (
     native_residency_budget, transfer_start_window,
 )
@@ -364,6 +365,124 @@ def test_same_request_tool_progress_keeps_restore_until_next_request_consumes_it
     runtime.on_batch_completed(NS(reqs=[restored]))
     assert not runtime._prefetch_service_leases
     runtime._native_cache.tree_core.dec_lock_ref.assert_called_once_with(1, receipt)
+
+
+@pytest.mark.parametrize("combined", [False, True])
+def test_client_submit_retains_locked_prefix_until_native_arrival_without_admission(combined):
+    from beliefkv.core.events import RuntimeEventKind
+    from tests.test_tool_predictive_transfers import event
+
+    runtime, hint, _, action, receipt, _ = locked_runtime()
+    initial = runtime._prefetch_service_leases[action.command_id]
+    rows = []
+    runtime._opportunity_writer = NS(record=rows.append)
+    events = (
+        event(3, RuntimeEventKind.TOOL_END, invocation_id=hint.key.invocation_id,
+              attributes={"tool_run_id": "long"}),
+        event(4, RuntimeEventKind.LLM_SUBMIT, invocation_id=hint.key.invocation_id,
+              context_id=hint.key.context_id, context_epoch=1,
+              attributes={"request_id": "resumed"}),
+    )
+    with patch("beliefkv.runtime.sglang_v0520_runtime.time.monotonic",
+               return_value=initial.acknowledged_at + .2):
+        for batch in (events,) if combined else ((events[0],), (events[1],)):
+            runtime.on_events(batch)
+    submitted = runtime._prefetch_service_leases[action.command_id]
+    assert submitted.client_submitted_at == initial.acknowledged_at + .2
+    assert submitted.expires_at == initial.acknowledged_at + 10.
+    assert not submitted.demand_ready
+    assert "resumed" not in runtime.visible
+    assert runtime.counts["native_admitted"] == 0
+    assert runtime.counts["prefetch_residency_client_submitted"] == 1
+    assert next(row for row in rows if row["event"] == "prefetch_client_submitted")[
+        "request_id"
+    ] == "resumed"
+    runtime.graph.invocations[hint.key.invocation_id].state = InvocationState.READY
+    with patch("beliefkv.runtime.sglang_v0520_runtime.time.monotonic",
+               return_value=initial.acknowledged_at + 4.6):
+        runtime._refresh_prefetch_service_leases()
+        restored = req(hint.key.invocation_id)
+        restored.rid = "resumed"
+        restored.beliefkv_metadata["context_epoch"] = 1
+        restored.session_id, restored.session_generation = "s", 1
+        runtime.register_visible_request(restored)
+    assert runtime._prefetch_service_leases[action.command_id].demand_ready
+    assert runtime._prefetch_service_leases[action.command_id].expires_at == (
+        initial.acknowledged_at + 10.
+    )
+    runtime.on_batch_completed(NS(reqs=[restored]))
+    assert not runtime._prefetch_service_leases
+    runtime._native_cache.tree_core.dec_lock_ref.assert_called_once_with(1, receipt)
+
+
+@pytest.mark.parametrize("epoch,attributes,locked", [
+    (0, {"request_id": "resumed"}, True),
+    (1, {"request_id": ""}, True),
+    (1, {"request_id": "tool"}, True),
+    (1, {"request_id": "resumed", "runtime_internal": True}, True),
+    (1, {"request_id": "resumed"}, False),
+])
+def test_client_submit_needs_next_external_request_and_existing_native_lock(
+    epoch, attributes, locked,
+):
+    from dataclasses import replace
+    from beliefkv.core.events import RuntimeEventKind
+    from tests.test_tool_predictive_transfers import event
+
+    runtime, hint, _, action, *_ = locked_runtime()
+    initial = runtime._prefetch_service_leases[action.command_id]
+    if not locked:
+        initial = replace(initial, lock_params=None, protected_bytes=0)
+        runtime._prefetch_service_leases[action.command_id] = initial
+    # The original request ID is a fixture detail; use the actual lease identity.
+    if attributes.get("request_id") == "tool":
+        attributes = {**attributes, "request_id": hint.key.request_id}
+    runtime.on_events((
+        event(3, RuntimeEventKind.TOOL_END, invocation_id=hint.key.invocation_id,
+              attributes={"tool_run_id": "long"}),
+        event(4, RuntimeEventKind.LLM_SUBMIT, invocation_id=hint.key.invocation_id,
+              context_id=hint.key.context_id, context_epoch=epoch, attributes=attributes),
+    ))
+    lease = runtime._prefetch_service_leases[action.command_id]
+    assert lease.expires_at == initial.expires_at
+    assert lease.client_submitted_at is None
+    assert not lease.demand_ready
+    assert runtime.counts["prefetch_residency_client_submitted"] == 0
+    runtime.close()
+
+
+@pytest.mark.parametrize("invalid", ["expired", "session_changed", "another_tool_pending"])
+def test_client_submit_does_not_revive_or_authorize_an_invalid_restore(invalid):
+    from beliefkv.core.events import RuntimeEventKind
+    from tests.test_tool_predictive_transfers import event
+
+    runtime, hint, _, action, *_ = locked_runtime()
+    lease = runtime._prefetch_service_leases[action.command_id]
+    when = lease.expires_at + .1 if invalid == "expired" else lease.acknowledged_at + .2
+    if invalid == "session_changed":
+        runtime._native_cache.session_refs._session_generations["s"] = 2
+    events = [
+        event(3, RuntimeEventKind.TOOL_END, invocation_id=hint.key.invocation_id,
+              attributes={"tool_run_id": "long"}),
+    ]
+    if invalid == "another_tool_pending":
+        events.append(event(
+            4, RuntimeEventKind.TOOL_START, invocation_id=hint.key.invocation_id,
+            attributes={"tool_run_id": "second"},
+        ))
+    events.append(event(
+        5, RuntimeEventKind.LLM_SUBMIT, invocation_id=hint.key.invocation_id,
+        context_id=hint.key.context_id, context_epoch=1,
+        attributes={"request_id": "resumed"},
+    ))
+    with patch("beliefkv.runtime.sglang_v0520_runtime.time.monotonic", return_value=when):
+        runtime.on_events(tuple(events))
+    assert runtime.counts["prefetch_residency_client_submitted"] == 0
+    if invalid == "another_tool_pending":
+        assert runtime._prefetch_service_leases[action.command_id].expires_at == lease.expires_at
+    else:
+        assert not runtime._prefetch_service_leases
+    runtime.close()
 
 
 def test_burst_consumers_include_all_visible_requests_with_exact_session_identity():

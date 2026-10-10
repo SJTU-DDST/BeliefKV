@@ -1,7 +1,10 @@
 import json
 
+import pytest
+
 from scripts.audit_prefetch_lifecycle import (
-    audit, http_transport_waits, prepare_host_lifetime_summary, prepare_restore_attribution,
+    audit, full_expiration_evidence, http_transport_waits,
+    prepare_host_lifetime_summary, prepare_restore_attribution,
     prepare_selection_summary, source_summary, wait_event_attribution,
 )
 
@@ -51,6 +54,11 @@ def test_wait_events_deduplicate_node_commands_and_keep_native_residual_demand_s
         "command_id": "handoff", "source": "execution_handoff", "request_id": "next",
         "pool_bytes": {"kv": 80},
     }]
+    actions[0]["lease_events"] = [
+        {"event": "prefetch_residency_registered", "native_locked": True, "ts_ms": 95.},
+        {"event": "prefetch_residency_released", "reason": "service_window_expired",
+         "ts_ms": 116.},
+    ]
     write_rows(tmp_path / "client_1/workflows/example/runtime_events.deepagents.jsonl", [
         {"kind": "join_satisfied", "workflow_id": "w", "join_id": "j", "ts_ms": 20.},
         {"kind": "llm_submit", "workflow_id": "w", "context_id": "c",
@@ -97,6 +105,14 @@ def test_wait_events_deduplicate_node_commands_and_keep_native_residual_demand_s
     assert row["submit_to_first_service_ms"] == 80.
     assert row["last_ack_to_first_service_ms"] == 105.
     assert row["sampled_batch_restore_dependency_wait_ms"] == [5.]
+    assert row["client_submit_ts_ms"] == 110.
+    assert row["native_arrival_ts_ms"] == 120.
+    [expiration] = row["full_residency_expirations"]
+    assert expiration["release_stage"] == "awaiting_native_arrival"
+    assert expiration["full_first_service_reused"] is True
+    assert result["summary"]["by_source"]["join_ticket"]["full_expiration_bytes_by_stage"] == {
+        "awaiting_native_arrival": 20,
+    }
     actions[0]["first_service_request_id"] = "later"
     actions[1]["first_service_context_epoch"] = 3
     mismatched = wait_event_attribution(tmp_path, observations, issues, actions, 80.)
@@ -160,6 +176,53 @@ def test_http_waits_keep_missing_ambiguous_and_unordered_boundaries_unknown():
     assert waits["http_request_to_response_headers_ms"] is None
 
 
+@pytest.mark.parametrize("released,stage", [
+    (10., "before_completion"), (25., "awaiting_client_submit"),
+    (35., "awaiting_native_arrival"), (45., "awaiting_service"),
+    (55., "after_first_service"),
+])
+def test_full_expiration_stage_preserves_reuse_and_intermediate_runtime_evidence(released, stage):
+    action = {
+        "command_id": "full", "pool_bytes": {"kv": 20, "mamba": 640},
+        "ack_ts_ms": 5., "full_first_service_reused": True,
+        "lease_events": [
+            {"event": "prefetch_residency_registered", "native_locked": True},
+            {"event": "prefetch_reentry_ready"},
+            {"event": "prefetch_client_submitted"},
+            {"event": "prefetch_demand_submitted"},
+            {"event": "prefetch_residency_released",
+             "reason": "service_window_expired", "ts_ms": released},
+        ],
+    }
+    [evidence] = full_expiration_evidence([action], 20., 30., 40., 50.)
+    assert evidence["release_stage"] == stage
+    assert evidence["full_bytes"] == 20
+    assert evidence["full_first_service_reused"] is True
+    assert evidence["reentry_ready_observed"]
+    assert evidence["client_submit_observed_by_runtime"]
+    assert evidence["native_demand_observed_by_runtime"]
+    action["pool_bytes"] = {"mamba": 640}
+    assert full_expiration_evidence([action], 20., 30., 40., 50.) == []
+
+
+@pytest.mark.parametrize("ack,boundaries", [
+    (None, (20., 30., 40., 50.)), (45., (20., 30., 40., 50.)),
+    (5., (None, 30., 40., 50.)), (5., (20., 30., None, 50.)),
+    (5., (20., 15., 40., 50.)), (5., (20., 30., float("nan"), 50.)),
+])
+def test_full_expiration_unknown_boundaries_do_not_invent_a_wait_stage(ack, boundaries):
+    action = {
+        "command_id": "full", "pool_bytes": {"kv": 20}, "ack_ts_ms": ack,
+        "lease_events": [
+            {"event": "prefetch_residency_registered", "native_locked": True},
+            {"event": "prefetch_residency_released",
+             "reason": "service_window_expired", "ts_ms": 35.},
+        ],
+    }
+    [evidence] = full_expiration_evidence([action], *boundaries)
+    assert evidence["release_stage"] == "unknown"
+
+
 def test_tool_boundary_includes_sequential_calls_outside_sampled_active_set(tmp_path):
     tool = {
         "source": "tool_wait", "workflow_id": "w", "context_id": "t",
@@ -217,6 +280,9 @@ def test_lifecycle_keeps_expired_but_reused_and_missing_use_distinct(tmp_path):
         {"event": "prefetch_native_issued", "command_id": "prefetch2",
          "source": "tool_wait", "workflow_id": "w", "context_id": "other",
          "context_epoch": 2, "node_id": 20, "ts_ms": 400.},
+        {"event": "prefetch_reentry_ready", "command_id": "prefetch1", "ts_ms": 112.},
+        {"event": "prefetch_client_submitted", "command_id": "prefetch1", "ts_ms": 114.},
+        {"event": "prefetch_demand_submitted", "command_id": "prefetch1", "ts_ms": 116.},
         {"event": "prefetch_residency_released", "command_id": "prefetch1",
          "reason": "service_window_expired", "ts_ms": 120.},
     ])
@@ -237,7 +303,11 @@ def test_lifecycle_keeps_expired_but_reused_and_missing_use_distinct(tmp_path):
     assert result["summary"]["join_submitted_before_eos"] == 1
     assert result["summary"]["full_reused"] == 1
     assert result["summary"]["full_use_unknown"] == 1
-    assert result["rows"][0]["lease_events"][0]["reason"] == "service_window_expired"
+    assert result["rows"][0]["lease_events"][-1]["reason"] == "service_window_expired"
+    assert [row["event"] for row in result["rows"][0]["lease_events"]] == [
+        "prefetch_reentry_ready", "prefetch_client_submitted",
+        "prefetch_demand_submitted", "prefetch_residency_released",
+    ]
     assert result["summary"]["redemoted_before_first_service"] == 0
     assert result["rows"][1]["actual_bytes"] is None
     assert result["summary"]["by_source"]["join_ticket"]["full_reused_commands"] == 1
