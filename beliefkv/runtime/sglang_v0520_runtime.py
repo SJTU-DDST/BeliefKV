@@ -3132,7 +3132,9 @@ class NativeAdmissionRuntime:
         while len(self._terminal_cache_watches) > 512:
             self._terminal_cache_watches.popitem(last=False)
             self.counts["terminal_cache_watch_capacity_expired"] += 1
-        self._record_terminal_cache(watch)
+        if not self._record_terminal_cache(watch):
+            self._terminal_cache_watches.pop(scope, None)
+            self.counts["terminal_cache_watch_anchors_gone"] += 1
 
     def _retire_terminal_child(self, key: PrefillCandidateKey, event: RuntimeEvent) -> None:
         child = self.graph.invocations.get(key.invocation_id)
@@ -3322,13 +3324,17 @@ class NativeAdmissionRuntime:
                 ),
             })
 
-    def _record_terminal_cache(self, watch: dict) -> None:
+    def _record_terminal_cache(self, watch: dict) -> bool:
         key = watch["key"]
         multiple_anchors = len(watch["anchors"]) > 1
         summaries, unavailable, gone = {}, [], []
         for node_id, created in watch["anchors"]:
             try:
-                node = self._native_cache.tree_core.node_by_id(node_id)
+                try:
+                    node = self._native_cache.tree_core.node_by_id(node_id)
+                except KeyError:
+                    gone.append(node_id)
+                    continue
                 if node is None or normalize_native_creation_time(node.creation_time) != created:
                     gone.append(node_id)
                     continue
@@ -3362,6 +3368,11 @@ class NativeAdmissionRuntime:
             ),
         })
         watch["sample_count"] += 1
+        if gone:
+            watch["anchors"] = [
+                anchor for anchor in watch["anchors"] if anchor[0] not in gone
+            ]
+        return bool(watch["anchors"])
 
     @timed_runtime("terminal_sampling")
     def _sample_terminal_cache(self, *, now_ms: float) -> None:
@@ -3378,8 +3389,11 @@ class NativeAdmissionRuntime:
                 self._terminal_cache_watches.pop(scope, None)
                 self.counts["terminal_cache_watch_time_expired"] += 1
                 continue
-            self._record_terminal_cache(watch)
-            self._terminal_cache_watches.move_to_end(scope)
+            if self._record_terminal_cache(watch):
+                self._terminal_cache_watches.move_to_end(scope)
+            else:
+                self._terminal_cache_watches.pop(scope, None)
+                self.counts["terminal_cache_watch_anchors_gone"] += 1
 
     def capture_shadow_candidate(
         self, cache: object, *, context_id: str, context_epoch: int,

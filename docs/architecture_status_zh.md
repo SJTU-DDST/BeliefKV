@@ -240,6 +240,34 @@ GPU收益；短命令占总体样本多数，不能将这些计数称为预取�
 native保持冻结，待两臂结束后再部署和检验实际早期FULL复用、
 繁忙时吞吐、配对JCT及其他请求代价。
 
+终态只读采样的隔离跟进修正旧锚点的生命周期：原生Python
+node_by_id直接查_node_arena，已删除节点会抛出KeyError，
+原采样把它记成暂时不可观测并持续轮询到60秒到期。现在只将
+节点直接查找的KeyError、None及creation_time替换记为旧锚点
+消失，先保留该次gone_or_replaced_anchors记录，再移出后续
+采样；所有锚点消失时关闭watch并计数。祖先观察的KeyError、
+深度不可观测及其他未知仍保留观察，不据此推断空间已经释放。
+该修正不发起D2H、DROP或修改物理引用。五个回归在旧路径
+复现持续轮询，修复后437项相关运行时/恢复/预测/审计检查通过。
+V20正在运行的代码不变，该跟进仍待对照完成后部署。
+
+2026-10-10 21:47 CST采集中终态为147 completed、2 incomplete，
+无error。新增incomplete为django-13112：两个child自然返回、
+JOIN满足，root最后输出finish_reason=length、21676字符，
+报告反复列举测试结果；deadline未过期，guard干预为0。
+保存截断终态，不把该记录计入正常完成吞吐或配对完整JCT。
+
+pytest-7571的真实16.838秒parent等待进一步核对：从该请求
+原生登记到实际首个服务，记录446个GPU服务区间，其中339个
+decode累计13.264秒、batch为45--48；107个prefill累计3.574秒、
+batch为1--3。这些是scheduler/worker区间而非CUDA kernel时间，
+说明等待期间GPU仍在服务其他请求，不能把整段称为复制阻塞
+或空闲。13秒后该parent才进入admission_candidate物理检查，
+当时440个Host-backed缺失FULL token、仅1356个device free
+token，较早checkpoint已有8558 FULL/8512 Mamba branching
+token的原生命中。未记录各次未准入的逐请求理由，仍不能唯一
+归因于slot、容量或依赖，也不据此扩大恢复预算或抢占热请求。
+
 ## V19b child 上下文结束的集成修正
 
 V19诊断快照已观察到child自然RETURN，但终态回收和parent消费记录

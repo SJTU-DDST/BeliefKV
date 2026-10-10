@@ -259,6 +259,36 @@ the queued changes between pairs and validate predictive-first/native on the
 same version. Continue checking actual capacity,early FULL reuse,busy-window
 throughput,paired JCT and costs to other requests.
 
+Stop read-only terminal diagnostics when their exact anchors are known gone.
+Python node_by_id reads _node_arena and raises KeyError for a deleted node;
+the old observation route treated this as temporary unavailability and polled
+until its60s expiry. Record direct lookup KeyError,None or changed creation time
+as gone/replaced,retain the last evidence record,and prune only those anchors.
+Close the watch when none remain. Ancestry observer KeyError,bounded-depth
+failures and other unknowns retain observation; an absent anchor is not proof
+of allocator capacity release. This change issues no D2H or DROP. Five focused
+regressions fail on the former behavior;437 scoped runtime/physical/prediction/
+terminal/audit checks pass after the fix. Commit and deploy between frozen pairs.
+
+At21:47 CST on2026-10-10,the collecting arm has147 completed,2 incomplete,
+zero errors. The additional incomplete is django-13112:both children return
+naturally,JOIN is satisfied,and the root ends with finish_reason=length and
+21676 output characters while repeating its report. Deadline expiry and guard
+interventions are zero. Preserve the truncated terminal and exclude it from
+normal completion throughput/complete paired JCT.
+
+The real pytest-7571 parent tail spans446 observed GPU service intervals
+between native registration and first service:339 decode intervals total
+13.264s with45--48 requests,and107 prefill intervals total3.574s with1--3.
+These are scheduler/worker intervals,not CUDA kernel times. Other requests
+are served throughout; do not label all16.838s as copying or GPU idleness.
+Its first admission-candidate physical inspection is about13s after registration,
+with440 Host-backed missing FULL tokens and1356 device-free tokens. Native
+submit observes8558 FULL/8512 Mamba branching hit tokens. Per-request rejection
+reasons are absent,so slot,capacity and dependency causes are not uniquely
+identified. Retain this gap without enlarging budgets or preempting hot requests
+on speculative attribution.
+
 ## V19b Harness Context Retirement Integration
 
 The V19 diagnostic snapshot contained authoritative child RETURNs but zero

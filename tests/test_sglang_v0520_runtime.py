@@ -8,7 +8,7 @@ import socket
 import time
 from dataclasses import replace
 from types import SimpleNamespace as NS
-from unittest.mock import patch
+from unittest.mock import Mock, patch
 
 import pytest
 
@@ -2474,6 +2474,81 @@ def test_terminal_cache_sampling_stops_after_shutdown(tmp_path, monkeypatch):
     assert json.loads(
         (tmp_path / "admission_opportunities_status.json").read_text()
     )["complete"] is True
+
+
+@pytest.mark.parametrize("lookup", ("missing", "none", "replaced"))
+def test_terminal_cache_stops_sampling_deleted_or_replaced_anchors(monkeypatch, lookup):
+    monkeypatch.setenv("BELIEFKV_TERMINAL_CACHE_DIAGNOSTICS", "1")
+    runtime = NativeAdmissionRuntime()
+    emitted = []
+    runtime._opportunity_writer = NS(record=emitted.append)
+    key = PrefillCandidateKey("r", "wf", "child", "ctx", 0, 0, "s", 1)
+    node_by_id = Mock(return_value=NS(creation_time=4))
+    runtime._native_cache = NS(
+        session_refs=NS(
+            snapshot_session_leaf_anchors=lambda *_args, **_kwargs: ((0, ((11, 4),)),),
+        ),
+        tree_core=NS(node_by_id=node_by_id),
+    )
+    with patch(
+        "beliefkv.runtime.sglang_v0520_runtime.observe_unified_node_closure",
+        return_value=NS(observable=True, nodes=()),
+    ) as observe:
+        runtime._track_terminal_cache(key)
+        assert runtime._terminal_cache_watches
+        if lookup == "missing":
+            node_by_id.side_effect = KeyError(11)
+        else:
+            node_by_id.return_value = None if lookup == "none" else NS(creation_time=5)
+        runtime._sample_terminal_cache(now_ms=time.monotonic() * 1000.)
+        assert not runtime._terminal_cache_watches
+        assert runtime.counts["terminal_cache_watch_anchors_gone"] == 1
+        assert emitted[-1]["gone_or_replaced_anchors"] == [11]
+        assert emitted[-1]["unavailable_anchors"] == []
+        assert observe.call_count == 1
+        node_by_id.reset_mock()
+        runtime._sample_terminal_cache(now_ms=time.monotonic() * 1000. + 2000.)
+        node_by_id.assert_not_called()
+    runtime._opportunity_writer = None
+    runtime.close()
+
+
+@pytest.mark.parametrize("unavailable", ("ancestry", "observer_key_error"))
+def test_terminal_cache_prunes_only_proven_gone_anchors(monkeypatch, unavailable):
+    monkeypatch.setenv("BELIEFKV_TERMINAL_CACHE_DIAGNOSTICS", "1")
+    runtime = NativeAdmissionRuntime()
+    emitted = []
+    runtime._opportunity_writer = NS(record=emitted.append)
+    key = PrefillCandidateKey("r", "wf", "child", "ctx", 0, 0, "s", 1)
+    node_by_id = Mock(side_effect=lambda node: NS(creation_time={12: 5}[node]))
+    runtime._native_cache = NS(
+        session_refs=NS(
+            snapshot_session_leaf_anchors=lambda *_args, **_kwargs: (
+                (0, ((11, 4), (12, 5))), (2, ((12, 5),)),
+            ),
+        ),
+        tree_core=NS(node_by_id=node_by_id),
+    )
+    with patch(
+        "beliefkv.runtime.sglang_v0520_runtime.observe_unified_node_closure",
+        **(
+            {"side_effect": KeyError("ancestor")}
+            if unavailable == "observer_key_error"
+            else {"return_value": NS(observable=False, reason="node ancestry exceeds bound")}
+        ),
+    ):
+        runtime._track_terminal_cache(key)
+        watch = runtime._terminal_cache_watches["wf", "ctx"]
+        assert watch["anchors"] == [(12, 5)]
+        assert emitted[-1]["gone_or_replaced_anchors"] == [11]
+        assert emitted[-1]["unavailable_anchors"][0]["node_id"] == 12
+        node_by_id.reset_mock()
+        runtime._sample_terminal_cache(now_ms=time.monotonic() * 1000.)
+        node_by_id.assert_called_once_with(12)
+        assert runtime._terminal_cache_watches
+        assert runtime.counts["terminal_cache_watch_anchors_gone"] == 0
+    runtime._opportunity_writer = None
+    runtime.close()
 
 
 def test_reactive_keeps_final_priority_without_any_predictive_transfer(monkeypatch):
