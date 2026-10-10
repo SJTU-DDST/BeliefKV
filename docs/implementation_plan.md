@@ -13,6 +13,37 @@ same-version native. The target includes same-dispatch tool-plan reuse and the
 matched busy-window evidence. Waiting registration is not GPU validation; the
 broad performance objective remains active.
 
+The isolated follow-up skips resident-order reentry inspection for requests
+already in the ten-second arrival-order aging class. Their residency cannot
+change the sorting rank. Selected execution handoff and parent restoration
+still inspect the actual checkpoint; younger resident-first ordering and
+restore-consumption priority retain their existing behavior. The270 scoped
+handoff/runtime/terminal/tool checks pass. Keep
+v28_aged_residency_inspection_cpu_20261011.json:17 fixture groups,100 alternating
+samples plus10 warmups preserve both plans, policy counters and promotion
+identity. All omitted native inspections belong to already-aged requests.
+For fully aged48/156-request queues, two-plan wall means change from
+1.110/2.504 to0.689/1.965ms;48-request native reads change2344→0.
+This uses a deterministic native-inspector stub, includes warmups in read counts,
+and is not GPU throughput proof. Unaged timing differences are noise rather
+than evidence of savings. Register the validated revision only while V22
+remains waiting, preserving the current V21 pair.
+
+Keep the reproducible scripts/analyze_busy_context_control.py and
+v21_busy_context_control_600_900_20261011.json with source-prefix and boundary-row
+SHA256. The fully observed600–900s window has visible decode context means
+21840.58/23703.38 tokens for predictive/native. Longer average contexts do not
+explain the predictive gap. Within the22528-token mean-context bin, batch48
+worker means are23.015/21.983ms and batch47 means87.449/74.284ms; batch47 in the
+20480-token bin has101.013/68.980ms. These cohorts are diagnostic rather than
+identical-demand causal evidence. The300.253s predictive control snapshot delta
+contains60.398s instrumented exclusive Python wall time, including reentry11.090s,
+JOIN PREPARE7.681s, control drain6.210s and admission planning6.064s. Investigate
+admission/recovery work when slots open before attributing the gap to kernels.
+These sums cannot be removed directly from JCT; not all reentry cost is avoidable.
+This script counts5642/7363 batches completed within the half-open window;
+the earlier5643/7364 counts include clipped intersecting intervals.
+
 ## Child-to-Parent Capacity and Complete-Prefix Recovery
 
 The four-step path is deployed in V21: plan the parent's safe checkpoint during

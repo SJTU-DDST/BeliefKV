@@ -6418,8 +6418,11 @@ class NativeAdmissionRuntime:
                 if (position := (self._residency_scan_cursor + offset) % count) >= 8
             ]
             self._residency_scan_cursor = (self._residency_scan_cursor + 8) % count
-            for _, req in scan:
-                self._read_request_reentry(req)
+            for index, req in scan:
+                # Aging uses arrival order; a selected handoff reads its own
+                # checkpoint when restoration is actually needed.
+                if waiting_ranks[index][0] != -1:
+                    self._read_request_reentry(req)
 
             def residency_rank(pair: tuple[int, object]) -> tuple:
                 rank = waiting_ranks[pair[0]]

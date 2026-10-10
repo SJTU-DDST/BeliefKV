@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import argparse
 import ast
+from collections import Counter
 from dataclasses import replace
 import hashlib
 import json
@@ -88,10 +89,11 @@ def fixture(plan, case, clock):
     runtime.on_events(tuple(events))
     for index, request in enumerate(requests):
         runtime.graph.invocations[request.rid].pending_messages = int(index % 13 == 0)
-    cache = NS(read_count=0)
+    cache = NS(read_count=0, read_requests=[])
 
     def inspect(request):
         cache.read_count += 1
+        cache.read_requests.append(request.rid)
         index = int(request.rid.rsplit("-", 1)[1])
         resident = (index + int(clock[0] * 20)) % 3 == 0
         return {
@@ -122,7 +124,7 @@ def fixture(plan, case, clock):
 
 def run_pair(variants, *, iteration, clock, case):
     clock[0] = 1000. + iteration * .051
-    results, costs = {}, {}
+    results, costs, inspections = {}, {}, {}
     names = list(variants)
     if iteration % 2:
         names.reverse()
@@ -130,8 +132,11 @@ def run_pair(variants, *, iteration, clock, case):
         runtime, requests, cache = variants[name]
         runtime._prefill_causal_cache = None
         runtime._visible_since = {request.rid: clock[0] for request in requests}
-        if case.get("aged_head"):
-            runtime._visible_since[requests[0].rid] -= 11.
+        aged_count = case.get("aged_count", int(case.get("aged_head", False)))
+        aged_requests = {request.rid for request in requests[:aged_count]}
+        for rid in aged_requests:
+            runtime._visible_since[rid] -= 11.
+        cache.read_requests.clear()
         runtime._prefetch_priority_normal_admissions = case.get("quota", 4)
         started_wall, started_cpu = time.perf_counter_ns(), time.thread_time_ns()
         plans = tuple(runtime.plan_native_prefill(
@@ -142,12 +147,18 @@ def run_pair(variants, *, iteration, clock, case):
             "thread_cpu_ms": (time.thread_time_ns() - started_cpu) / 1e6,
         }
         results[name] = (
-            plans, dict(runtime.counts), cache.read_count,
+            plans, dict(runtime.counts),
             runtime._prefetch_priority_promoted,
             runtime._prefetch_priority_native_rank,
             runtime._prefetch_priority_aged_head_bypassed,
         )
+        inspections[name] = Counter(cache.read_requests)
     assert results["baseline"] == results["optimized"], (case, iteration)
+    assert not inspections["optimized"] - inspections["baseline"], (case, iteration)
+    skipped = inspections["baseline"] - inspections["optimized"]
+    assert set(skipped) <= aged_requests, (case, iteration, skipped)
+    if not aged_requests:
+        assert inspections["baseline"] == inspections["optimized"], (case, iteration)
     return costs
 
 
@@ -193,6 +204,9 @@ def main():
     ] + [
         {"queue": 156, "leases": 48},
         {"queue": 156, "leases": 16, "aged_head": True, "quota": 3},
+    ] + [
+        {"queue": queue, "leases": 4, "aged_count": aged_count}
+        for queue in (8, 48, 156) for aged_count in (queue // 2, queue)
     ]
     clean_environment = {
         name: value for name, value in os.environ.items()
@@ -221,13 +235,16 @@ def main():
             }
             results.append({
                 **case, "ordering_and_counts_equal": True,
-                "native_inspection_count": variants["baseline"][2].read_count,
+                "only_aged_inspections_skipped": True,
+                "native_inspection_counts": {
+                    name: variant[2].read_count for name, variant in variants.items()
+                },
                 "measurements": measurements,
             })
             for runtime, _, _ in variants.values():
                 runtime.close()
     report = {
-        "schema_version": 1, "baseline_commit": args.baseline_commit,
+        "schema_version": 2, "baseline_commit": args.baseline_commit,
         "baseline_source_sha256": hashlib.sha256(baseline_source.encode()).hexdigest(),
         "optimized_source_sha256": hashlib.sha256(optimized_source.encode()).hexdigest(),
         "baseline_admission_source_sha256": hashlib.sha256(
@@ -244,8 +261,10 @@ def main():
             "using each variant's exact plan and compiler source, "
             "mixed restoration sources and deterministic stub-native residency. "
             "Logical time advances past the 50ms observation cache each iteration. "
-            "Alternating variants must agree on both plans, cumulative counters, "
-            "native read counts and promotion metadata. No real allocator, "
+            "Alternating variants must agree on both plans, cumulative policy "
+            "counters and promotion metadata. Inspection traces must retain "
+            "all unaged reads; only already-aged arrival-order requests may "
+            "skip residency reads. Counts include warmup iterations. No real allocator, "
             "DMA, CUDA or end-to-end throughput is measured."
         ),
     }
@@ -255,8 +274,10 @@ def main():
         before = result["measurements"]["baseline"]["wall_ms"]["mean"]
         after = result["measurements"]["optimized"]["wall_ms"]["mean"]
         print(f"queue={result['queue']} leases={result['leases']} "
+              f"aged={result.get('aged_count', int(result.get('aged_head', False)))} "
               f"quota={result.get('quota', 4)}: {before:.6f} -> {after:.6f} ms "
-              f"({100 * (1 - after / before):.2f}% lower)")
+              f"({100 * (1 - after / before):.2f}% lower), "
+              f"inspections={result['native_inspection_counts']}")
 
 
 if __name__ == "__main__":

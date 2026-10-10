@@ -1,0 +1,450 @@
+{
+  "scope": "Complete observed window; not identical-demand causality or completed-pair JCT",
+  "code_commit": "597688c62aabc9667484aefe315664a447fea9bb",
+  "patch_sha256": "98fc5af9c40121d6f7ba1824f1fd5b586d0b141d5b12370a2d9243c1b1b5e8f1",
+  "start_seconds": 600.0,
+  "end_seconds": 900.0,
+  "arms": {
+    "predictive_h2d": {
+      "source": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v21/predictive_h2d/server/runtime_audit.jsonl",
+      "read_prefix_bytes": 350703894,
+      "read_prefix_sha256": "461e64dfbd2609d0fa9cdf5fa1f189dc4db593dd1b83406542a404b31a6ac82d",
+      "decode_batches": 5642,
+      "observed_request_steps": 268888,
+      "sequence_tokens_per_request_mean": 21840.581160185655,
+      "sequence_tokens_per_request_median": 21629.0,
+      "sequence_tokens_per_batch_sum_mean": 1040884.4712867778,
+      "worker_decode_duration_mean_ms": 44.188763725101545,
+      "worker_decode_duration_median_ms": 22.29053946211934,
+      "time_weighted_mean_request_sequence_tokens": 21785.21832413715,
+      "cohorts": {
+        "43/18432": {
+          "batches": 1,
+          "mean_ms": 127.52529140561819,
+          "median_ms": 127.52529140561819
+        },
+        "44/18432": {
+          "batches": 2,
+          "mean_ms": 121.41574686393142,
+          "median_ms": 121.41574686393142
+        },
+        "44/20480": {
+          "batches": 2,
+          "mean_ms": 153.73354172334075,
+          "median_ms": 153.73354172334075
+        },
+        "45/18432": {
+          "batches": 8,
+          "mean_ms": 110.74913712218404,
+          "median_ms": 109.36967097222805
+        },
+        "45/20480": {
+          "batches": 27,
+          "mean_ms": 152.32871193438768,
+          "median_ms": 120.99470850080252
+        },
+        "45/22528": {
+          "batches": 11,
+          "mean_ms": 119.17474848980254,
+          "median_ms": 119.31532807648182
+        },
+        "46/18432": {
+          "batches": 57,
+          "mean_ms": 120.5004665085621,
+          "median_ms": 106.70733265578747
+        },
+        "46/20480": {
+          "batches": 137,
+          "mean_ms": 124.78146981447935,
+          "median_ms": 108.74284338206053
+        },
+        "46/22528": {
+          "batches": 78,
+          "mean_ms": 116.670311965908,
+          "median_ms": 108.15123887732625
+        },
+        "46/24576": {
+          "batches": 2,
+          "mean_ms": 102.17966791242361,
+          "median_ms": 102.17966791242361
+        },
+        "47/18432": {
+          "batches": 236,
+          "mean_ms": 89.93846715538432,
+          "median_ms": 81.75247721374035
+        },
+        "47/20480": {
+          "batches": 621,
+          "mean_ms": 101.01283280757794,
+          "median_ms": 89.73611332476139
+        },
+        "47/22528": {
+          "batches": 344,
+          "mean_ms": 87.44918522262556,
+          "median_ms": 82.49012939631939
+        },
+        "47/24576": {
+          "batches": 20,
+          "mean_ms": 74.45789994671941,
+          "median_ms": 72.26298283785582
+        },
+        "48/18432": {
+          "batches": 739,
+          "mean_ms": 21.771288498308564,
+          "median_ms": 20.845959894359112
+        },
+        "48/20480": {
+          "batches": 2070,
+          "mean_ms": 23.112727963964,
+          "median_ms": 21.408975590020418
+        },
+        "48/22528": {
+          "batches": 1236,
+          "mean_ms": 23.01547342600922,
+          "median_ms": 22.18354307115078
+        },
+        "48/24576": {
+          "batches": 51,
+          "mean_ms": 22.579990455186834,
+          "median_ms": 22.602555342018604
+        }
+      },
+      "monitor_window": {
+        "source": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v21/predictive_h2d/client_156/gpu_samples.csv",
+        "first_row": {
+          "timestamp": "2026/10/11 01:24:39.471",
+          "memory_used_mib": " 136596",
+          "memory_free_mib": " 6563",
+          "gpu_utilization_percent": " 0",
+          "memory_utilization_percent": " 0",
+          "power_watts": " 103.50"
+        },
+        "origin_ts_ms": 1791653079471.0,
+        "begin_ts_ms": 1791653679471.0,
+        "end_ts_ms": 1791653979471.0,
+        "observed_through_ts_ms": 1791653979481.0,
+        "timezone": "Asia/Shanghai"
+      },
+      "control_profile": {
+        "source": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v21/predictive_h2d/opportunities/admission_opportunities.jsonl",
+        "read_prefix_bytes": 167229005,
+        "read_prefix_sha256": "a18e42516b720996e1ce4e5e6d69cb0630cbcfc3e4033cf9b67e4b6ec3d9d851",
+        "boundary_state_ts_ms": [
+          1791653678465.408,
+          1791653978718.9
+        ],
+        "raw_boundary_line_sha256": [
+          "e32794286d69628e5a4cda6a69199b58054d263c6d4b40bc3182c56042b0cd35",
+          "f783b6253064825cddc4426acefc1da0f53517f8c4093052e36b1dc9be5053b3"
+        ],
+        "observed_duration_ms": 300253.4919433594,
+        "summed_python_self_ms": 60398.01502900001,
+        "phases": {
+          "reentry_inspection": {
+            "count": 51162,
+            "self_ms": 11090.242219000002,
+            "total_ms": 11090.242219000002
+          },
+          "join_prepare": {
+            "count": 7272,
+            "self_ms": 7680.763241000001,
+            "total_ms": 10164.860497000001
+          },
+          "control_drain": {
+            "count": 7272,
+            "self_ms": 6210.480045999999,
+            "total_ms": 8477.150651
+          },
+          "admission_plan": {
+            "count": 3071,
+            "self_ms": 6063.8210579999995,
+            "total_ms": 16943.122812999998
+          },
+          "opportunity_sampling": {
+            "count": 7272,
+            "self_ms": 4347.803016,
+            "total_ms": 4347.803016
+          },
+          "execution_handoff": {
+            "count": 7272,
+            "self_ms": 4084.2938790000007,
+            "total_ms": 17775.205909
+          },
+          "handoff_enqueue": {
+            "count": 899,
+            "self_ms": 3494.6447529999996,
+            "total_ms": 3759.9253930000004
+          },
+          "semantic_updates": {
+            "count": 7272,
+            "self_ms": 2708.74197,
+            "total_ms": 2708.74197
+          },
+          "join_prefetch": {
+            "count": 7272,
+            "self_ms": 2207.1825550000003,
+            "total_ms": 2252.521308
+          },
+          "event_apply": {
+            "count": 17838,
+            "self_ms": 2088.2283340000004,
+            "total_ms": 2569.6521999999995
+          },
+          "prepare_candidate_maintenance": {
+            "count": 3145,
+            "self_ms": 1587.076733,
+            "total_ms": 1587.076733
+          },
+          "scheduler_maintenance": {
+            "count": 7272,
+            "self_ms": 1497.698856000001,
+            "total_ms": 18299.678429
+          },
+          "batch_completed": {
+            "count": 7272,
+            "self_ms": 1465.277192,
+            "total_ms": 1465.277192
+          },
+          "tool_prepare": {
+            "count": 7272,
+            "self_ms": 1441.2720990000003,
+            "total_ms": 1666.4409500000002
+          },
+          "tool_prefetch": {
+            "count": 7272,
+            "self_ms": 1226.5176149999998,
+            "total_ms": 1363.584457
+          },
+          "terminal_sampling": {
+            "count": 7272,
+            "self_ms": 1188.6519680000001,
+            "total_ms": 1188.6519680000001
+          },
+          "prepare_candidate_publication": {
+            "count": 5700,
+            "self_ms": 1024.277626,
+            "total_ms": 1024.277626
+          },
+          "prepare_backed_registration": {
+            "count": 16907,
+            "self_ms": 284.14935199999996,
+            "total_ms": 284.14935199999996
+          },
+          "terminal_child_reclaim": {
+            "count": 38,
+            "self_ms": 197.94238400000003,
+            "total_ms": 197.94238400000003
+          },
+          "graph_apply": {
+            "count": 7686,
+            "self_ms": 193.40349199999997,
+            "total_ms": 193.40349199999997
+          },
+          "tool_features": {
+            "count": 2685,
+            "self_ms": 170.037598,
+            "total_ms": 170.037598
+          },
+          "wait_prefetch_enqueue": {
+            "count": 20,
+            "self_ms": 145.50904300000002,
+            "total_ms": 156.251042
+          }
+        }
+      }
+    },
+    "native": {
+      "source": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v21/native/server/runtime_audit.jsonl",
+      "read_prefix_bytes": 433378540,
+      "read_prefix_sha256": "09ab75ef2a66d5f0b9920a950829ab8ababdf16cbb279312eb16a9ab684a7b10",
+      "decode_batches": 7363,
+      "observed_request_steps": 351316,
+      "sequence_tokens_per_request_mean": 23703.380936251124,
+      "sequence_tokens_per_request_median": 23955.0,
+      "sequence_tokens_per_batch_sum_mean": 1130976.093575988,
+      "worker_decode_duration_mean_ms": 35.51002230222509,
+      "worker_decode_duration_median_ms": 22.74736948311329,
+      "time_weighted_mean_request_sequence_tokens": 23707.79565267516,
+      "cohorts": {
+        "44/20480": {
+          "batches": 1,
+          "mean_ms": 132.90978781878948,
+          "median_ms": 132.90978781878948
+        },
+        "45/20480": {
+          "batches": 3,
+          "mean_ms": 118.18180388460557,
+          "median_ms": 114.68824557960033
+        },
+        "45/22528": {
+          "batches": 23,
+          "mean_ms": 111.24345295779084,
+          "median_ms": 106.02573491632938
+        },
+        "45/24576": {
+          "batches": 5,
+          "mean_ms": 96.27558551728725,
+          "median_ms": 89.01324775069952
+        },
+        "46/20480": {
+          "batches": 30,
+          "mean_ms": 90.43294585620363,
+          "median_ms": 84.7123465500772
+        },
+        "46/22528": {
+          "batches": 165,
+          "mean_ms": 93.57913841465206,
+          "median_ms": 89.34851363301277
+        },
+        "46/24576": {
+          "batches": 45,
+          "mean_ms": 93.65487009700801,
+          "median_ms": 94.00675259530544
+        },
+        "46/26624": {
+          "batches": 1,
+          "mean_ms": 59.51545387506485,
+          "median_ms": 59.51545387506485
+        },
+        "47/20480": {
+          "batches": 161,
+          "mean_ms": 68.9799390004381,
+          "median_ms": 66.15255773067474
+        },
+        "47/22528": {
+          "batches": 1126,
+          "mean_ms": 74.28423453661651,
+          "median_ms": 71.38209044933319
+        },
+        "47/24576": {
+          "batches": 242,
+          "mean_ms": 75.04033977319756,
+          "median_ms": 72.20358354970813
+        },
+        "48/20480": {
+          "batches": 597,
+          "mean_ms": 21.378035858348387,
+          "median_ms": 21.714594215154648
+        },
+        "48/22528": {
+          "batches": 3913,
+          "mean_ms": 21.98325193168416,
+          "median_ms": 22.31131400913
+        },
+        "48/24576": {
+          "batches": 1043,
+          "mean_ms": 22.65206780748965,
+          "median_ms": 23.06242473423481
+        },
+        "48/26624": {
+          "batches": 8,
+          "mean_ms": 23.311426513828337,
+          "median_ms": 24.02618108317256
+        }
+      },
+      "monitor_window": {
+        "source": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v21/native/client_156/gpu_samples.csv",
+        "first_row": {
+          "timestamp": "2026/10/11 04:42:46.089",
+          "memory_used_mib": " 136596",
+          "memory_free_mib": " 6563",
+          "gpu_utilization_percent": " 0",
+          "memory_utilization_percent": " 0",
+          "power_watts": " 104.65"
+        },
+        "origin_ts_ms": 1791664966089.0,
+        "begin_ts_ms": 1791665566089.0,
+        "end_ts_ms": 1791665866089.0,
+        "observed_through_ts_ms": 1791665866251.0,
+        "timezone": "Asia/Shanghai"
+      }
+    }
+  },
+  "semantics": [
+    "Context is input plus generated tokens visible before each decode batch.",
+    "Only batches completed in the half-open window are counted; intervals are not clipped.",
+    "Cohorts match batch size and a 2048-token bin of batch-mean context, not exact demand.",
+    "Worker intervals include scheduler processing and are not CUDA kernel timings.",
+    "Control counters use preceding snapshots; exclusive Python wall time is not removable JCT."
+  ],
+  "matched_cohorts": {
+    "46/22528": {
+      "predictive": {
+        "batches": 78,
+        "mean_ms": 116.670311965908,
+        "median_ms": 108.15123887732625
+      },
+      "native": {
+        "batches": 165,
+        "mean_ms": 93.57913841465206,
+        "median_ms": 89.34851363301277
+      },
+      "predictive_mean_ratio": 1.246755569055768
+    },
+    "47/20480": {
+      "predictive": {
+        "batches": 621,
+        "mean_ms": 101.01283280757794,
+        "median_ms": 89.73611332476139
+      },
+      "native": {
+        "batches": 161,
+        "mean_ms": 68.9799390004381,
+        "median_ms": 66.15255773067474
+      },
+      "predictive_mean_ratio": 1.4643798511758093
+    },
+    "47/22528": {
+      "predictive": {
+        "batches": 344,
+        "mean_ms": 87.44918522262556,
+        "median_ms": 82.49012939631939
+      },
+      "native": {
+        "batches": 1126,
+        "mean_ms": 74.28423453661651,
+        "median_ms": 71.38209044933319
+      },
+      "predictive_mean_ratio": 1.1772240202531767
+    },
+    "48/20480": {
+      "predictive": {
+        "batches": 2070,
+        "mean_ms": 23.112727963964,
+        "median_ms": 21.408975590020418
+      },
+      "native": {
+        "batches": 597,
+        "mean_ms": 21.378035858348387,
+        "median_ms": 21.714594215154648
+      },
+      "predictive_mean_ratio": 1.0811436615182866
+    },
+    "48/22528": {
+      "predictive": {
+        "batches": 1236,
+        "mean_ms": 23.01547342600922,
+        "median_ms": 22.18354307115078
+      },
+      "native": {
+        "batches": 3913,
+        "mean_ms": 21.98325193168416,
+        "median_ms": 22.31131400913
+      },
+      "predictive_mean_ratio": 1.046954904466947
+    },
+    "48/24576": {
+      "predictive": {
+        "batches": 51,
+        "mean_ms": 22.579990455186834,
+        "median_ms": 22.602555342018604
+      },
+      "native": {
+        "batches": 1043,
+        "mean_ms": 22.65206780748965,
+        "median_ms": 23.06242473423481
+      },
+      "predictive_mean_ratio": 0.9968180674313987
+    }
+  }
+}

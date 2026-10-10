@@ -62,6 +62,42 @@ def test_warm_first_does_not_override_causal_parent_message_priority(monkeypatch
     assert select(runtime, [cold, warm, parent]).candidates[0] is parent
 
 
+def test_aged_arrival_order_needs_no_residency_inspection(monkeypatch):
+    runtime, requests, cache = runtime_with_requests(monkeypatch)
+    for request in requests:
+        runtime._visible_since[request.rid] -= 11.
+    assert select(runtime, requests).candidates == tuple(requests)
+    cache.inspect_beliefkv_reentry.assert_not_called()
+    runtime.close()
+
+
+def test_aged_head_skips_inspection_but_younger_requests_keep_warm_first(monkeypatch):
+    runtime, (cold, warm, parent), cache = runtime_with_requests(monkeypatch)
+    runtime._visible_since[cold.rid] -= 11.
+    assert select(runtime, [cold, parent, warm]).candidates == (cold, warm, parent)
+    assert [call.args[0].rid for call in cache.inspect_beliefkv_reentry.call_args_list] == [
+        parent.rid, warm.rid,
+    ]
+    runtime.close()
+
+
+def test_selected_aged_handoff_still_reads_its_live_checkpoint(monkeypatch):
+    runtime, requests, cache = runtime_with_requests(monkeypatch)
+    for request in requests:
+        runtime._visible_since[request.rid] -= 11.
+    cold = requests[0]
+    step = PrefetchLoadStep(runtime.visible[cold.rid], 1, 2, 1, 2)
+    with patch(
+        "beliefkv.runtime.sglang_v0520_runtime.inspect_session_h2d_opportunity",
+        return_value=NS(step=step, fits_current_free_lists=True),
+    ), patch.object(runtime, "issue_prefetch_gpu_step", return_value="load") as issue:
+        runtime.dispatch_execution_handoff(requests, running_batch=None)
+    cache.inspect_beliefkv_reentry.assert_called_once_with(cold)
+    issue.assert_called_once_with(step, source="execution_handoff")
+    assert runtime._execution_handoff.key == runtime.visible[cold.rid]
+    runtime.close()
+
+
 def test_capacity_bypass_only_when_native_can_try_another_unaged_request(monkeypatch):
     runtime, (cold, _, _), _ = runtime_with_requests(monkeypatch)
     assert runtime.allow_prefill_capacity_bypass(cold, native_budget_available=True, bypassed=0)
