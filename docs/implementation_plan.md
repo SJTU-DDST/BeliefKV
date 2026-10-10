@@ -59,8 +59,10 @@ This early linked subset is not all JOINs or a native-relative latency saving.
 Independently early reused FULL is101.888MB JOIN plus3.154MB tool;20.198GB
 reused demand-handoff FULL stays separate. The pytest-7571 parent with16.923s
 queue wait has no restore selection and a no_restore_plan observation near the
-completion boundary. Continue inspecting safe checkpoints and native capacity/
-admission; terminal reclaim alone does not prove a resumable checkpoint.
+completion boundary. That reason can also mean already resident; it does not
+establish an absent checkpoint. Native submit telemetry reports8558 FULL-hit
+tokens and8512 Mamba branching tokens. Continue inspecting native capacity,
+admission and data dependencies; terminal reclaim alone does not explain this tail.
 
 The isolated follow-up compares long, same-format int64 token segments directly
 without copying slices. Hold the GIL during memcmp so Python buffers cannot resize.
@@ -79,6 +81,45 @@ The new isolated canonical patch passes reverse-application checking and has SHA
 Commit this follow-up now and deploy after preserving V20's same-version pair
 or a concrete stopped-run failure. Validate actual reuse and busy-window/paired
 JCT performance before closing the full active goal.
+
+The isolated follow-up now separates GPU source readiness from outbound backup
+completion in inspect_beliefkv_reentry. Propagate pending_load independently
+through each ancestor and the per-call shared-prefix cache. A fully resident
+FULL chain and device Mamba checkpoint remain readable during D2H; inbound H2D
+and unsettled Host-only data still require native completion. Keep all input,
+session,reference,allocator and eviction semantics. Before this fix,3 of5
+new cases reproduce the false negative and2 correctly reject unsettled Host
+copies; after it,132 scoped native checks pass. This code-level defect is not
+yet established as the cause of the pytest-7571 outlier.
+
+The whole-inspection CPU benchmark including both queued changes reports
+19.9%--27.0% lower matching cost for32K--98K and1/8 leaves, with4K
+within about1.4%. Preserve v20_followup_reentry_d2h_ready_cpu_20261010.json;
+this remains synthetic CPU evidence. The canonical isolated patch passes
+reverse-application checking and has SHA256
+`ec65735303567fa11d00eeb85b9cd0257965a414df55766eacebb7250fbf313e`.
+Compared with deployed sources,only radix_cache.py,unified_radix_cache.py and
+their two corresponding test files differ. Commit promptly, but preserve the
+live V20 b019d24/c58cc891 pair before deploying these follow-ups.
+
+Preserve the20:11 CST,2026-10-10 partial capacity snapshot as
+prefetch_lifecycle_capacity_snapshot_20261010_2011.json.388 terminal
+children and589 reclamation records including retries release124.303GB
+device FULL and61.878GB device Mamba cumulatively, not peak free capacity.
+91 linked parent services include90 with prior actual device release;
+queue-to-completed-batch P50/P90 is214.84/485.33ms,max16.923s.
+All36 restore lookaheads link to observed service, with selection-to-batch
+P50/P90 of136.30/291.75ms,max446.55ms. Across all114 matched JOIN next
+requests,queue-to-service P90 remains12.16s; do not substitute this favorable
+capacity-linked subset for overall latency. Independently early reused FULL
+is1.053GB JOIN plus3.154MB tool;69.057GB demand-handoff FULL reuse stays separate.
+
+A subsequent outcome scan has60 completed,1 incomplete and no error.
+django-11087 has two natural child RETURNs,a satisfied JOIN,and root's last
+two model responses ending with finish_reason=length; the last has36832
+characters of repeated reasoning. No workflow deadline expiry or guard
+intervention occurred. Preserve this model-truncation outcome and continue
+the stable pair; it is not evidence that terminal reclamation failed.
 
 ## V19b Harness Context Retirement Integration
 

@@ -59,7 +59,9 @@ native。运行中的主目录、引擎和预测产物继续冻结。
 独立完成边界前启动并复用的FULL为JOIN101.888MB、tool3.154MB；
 20.198GB已复用需求handoff继续单列。pytest-7571的16.923秒
 parent尾部在完成边界附近记录no_restore_plan，没有restore
-lookahead。仍需拆解安全checkpoint、原生准入和容量等待。
+lookahead。no_restore_plan也可能表示目标已驻留，不能据此
+断言checkpoint不存在。原生提交记录有8558个FULL命中token、
+8512个Mamba branching token；仍需拆解准入、容量和数据依赖。
 
 后续隔离优化将至少2048个token的同格式int64完整前缀比较
 改为不复制数组的memcmp，保留GIL避免Python数组在比较时
@@ -74,6 +76,41 @@ v20_followup_reentry_cpu_20261010.json；它未测DMA或GPU吞吐。
 `67fcbe012a9d3adbd1b5d6cca1510f55ad36b844aae402d968518c3999547617`。
 反向应用检查通过；此优化尚未部署，V20仍使用c58cc891。
 active吞吐/JCT目标仍未达标。
+
+隔离分支进一步修正D2H与GPU可读性的混淆：只读reentry检查
+原先把在途D2H和H2D都当成GPU未就绪，使已完整驻留的FULL
+前缀和Mamba checkpoint在备份期间失去恢复就绪判定。现在独立
+传播pending_load；D2H不阻断已驻留源数据的读取，H2D及尚未
+完成的Host-only副本继续等待原生依赖。祖先、共享叶缓存、实际
+输入、session身份与锁/回收权限保持原语义。修复前5个新增检查
+有3个复现失败、2个正确拒绝未完成Host副本；修复后132项相关
+原生检查通过。该误判尚不能解释pytest-7571的16.923秒长尾。
+
+包含此修正的整次inspection CPU基准对32K--98K、1/8叶匹配
+中位耗时降低19.9%--27.0%，4K变化在约1.4%以内；
+报告为v20_followup_reentry_d2h_ready_cpu_20261010.json。新隔离
+patch反向应用检查通过，SHA256为
+`ec65735303567fa11d00eeb85b9cd0257965a414df55766eacebb7250fbf313e`。
+相对部署版仅radix_cache.py、unified_radix_cache.py及两份对应
+原生测试变化；该修正未部署，V20两臂继续冻结在b019d24/c58cc891。
+
+2026-10-10 20:11 CST容量快照保存在
+prefetch_lifecycle_capacity_snapshot_20261010_2011.json：388个
+终态child、589次含重试的回收记录，累计实际释放设备FULL
+124.303GB、Mamba61.878GB，这不是峰值空闲容量。91个容量关联
+parent中90个在首次观测服务前有真实设备释放，入队到首个完成
+batch P50/P90为214.84/485.33ms，最大16.923秒。36个恢复提前
+选取全部关联到后续服务，选取到batch P50/P90为136.30/291.75ms、
+最大446.55ms。全部114个已匹配下一请求的JOIN事件入队到服务
+P90仍为12.16秒，不能用容量关联子集替代总体等待评价。
+独立边界前启动且复用的FULL为JOIN1.053GB、tool3.154MB；
+69.057GB需求handoff复用继续单列。
+
+随后工作流终态检查为60 completed、1 incomplete，无error。
+incomplete为django-11087：两个child自然RETURN、JOIN满足，
+root最后两次输出finish_reason=length，末次正文36832字符且
+重复推理；workflow deadline未超时，guard干预为0。保存该
+模型终态截断，不把它解释为终态容量回收故障；当前采集继续。
 
 ## V19b child 上下文结束的集成修正
 
