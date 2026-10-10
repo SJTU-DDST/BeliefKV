@@ -1,0 +1,353 @@
+{
+  "scope": "Synthetic CPU whole-path reentry validation; old code rejects depth>64. Costs compare rejected and fully supported observations, not equal work or GPU throughput.",
+  "results": [
+    {
+      "tokens": 8320,
+      "depth": 65,
+      "leaves": 1,
+      "page_size": 1,
+      "observation": {
+        "baseline": null,
+        "optimized": {
+          "component_leaves": [
+            [
+              0,
+              [
+                [
+                  65,
+                  65.0
+                ]
+              ]
+            ],
+            [
+              2,
+              [
+                [
+                  65,
+                  65.0
+                ]
+              ]
+            ]
+          ],
+          "reusable_input_tokens": 8320,
+          "checkpoint_tokens": 8320,
+          "device_checkpoint_tokens": 4096,
+          "missing_full_tokens": 4224,
+          "missing_mamba_slots": 1
+        }
+      },
+      "costs": {
+        "baseline": {
+          "p50_cpu_us": 10.02481,
+          "sample_means_cpu_us": [
+            10.92249,
+            9.99616,
+            10.17179,
+            10.02481,
+            9.89109
+          ]
+        },
+        "optimized": {
+          "p50_cpu_us": 110.94813,
+          "sample_means_cpu_us": [
+            110.71388,
+            111.55048,
+            110.5924,
+            111.5085,
+            110.94813
+          ]
+        }
+      }
+    },
+    {
+      "tokens": 8320,
+      "depth": 65,
+      "leaves": 8,
+      "page_size": 1,
+      "observation": {
+        "baseline": null,
+        "optimized": {
+          "component_leaves": [
+            [
+              0,
+              [
+                [
+                  65,
+                  65.0
+                ]
+              ]
+            ],
+            [
+              2,
+              [
+                [
+                  65,
+                  65.0
+                ]
+              ]
+            ]
+          ],
+          "reusable_input_tokens": 8320,
+          "checkpoint_tokens": 8320,
+          "device_checkpoint_tokens": 4096,
+          "missing_full_tokens": 4224,
+          "missing_mamba_slots": 1
+        }
+      },
+      "costs": {
+        "baseline": {
+          "p50_cpu_us": 12.10767,
+          "sample_means_cpu_us": [
+            12.10767,
+            12.80527,
+            11.96122,
+            11.96845,
+            12.26573
+          ]
+        },
+        "optimized": {
+          "p50_cpu_us": 131.17358,
+          "sample_means_cpu_us": [
+            131.17791,
+            131.02498,
+            131.15489,
+            132.39692,
+            131.17358
+          ]
+        }
+      }
+    },
+    {
+      "tokens": 16384,
+      "depth": 128,
+      "leaves": 1,
+      "page_size": 1,
+      "observation": {
+        "baseline": null,
+        "optimized": {
+          "component_leaves": [
+            [
+              0,
+              [
+                [
+                  128,
+                  128.0
+                ]
+              ]
+            ],
+            [
+              2,
+              [
+                [
+                  128,
+                  128.0
+                ]
+              ]
+            ]
+          ],
+          "reusable_input_tokens": 16384,
+          "checkpoint_tokens": 16384,
+          "device_checkpoint_tokens": 8192,
+          "missing_full_tokens": 8192,
+          "missing_mamba_slots": 1
+        }
+      },
+      "costs": {
+        "baseline": {
+          "p50_cpu_us": 10.09192,
+          "sample_means_cpu_us": [
+            10.42192,
+            10.02578,
+            9.86081,
+            10.09192,
+            10.12
+          ]
+        },
+        "optimized": {
+          "p50_cpu_us": 213.38309,
+          "sample_means_cpu_us": [
+            213.38309,
+            212.10297,
+            213.32865,
+            215.43621,
+            214.04009
+          ]
+        }
+      }
+    },
+    {
+      "tokens": 16384,
+      "depth": 128,
+      "leaves": 8,
+      "page_size": 1,
+      "observation": {
+        "baseline": null,
+        "optimized": {
+          "component_leaves": [
+            [
+              0,
+              [
+                [
+                  128,
+                  128.0
+                ]
+              ]
+            ],
+            [
+              2,
+              [
+                [
+                  128,
+                  128.0
+                ]
+              ]
+            ]
+          ],
+          "reusable_input_tokens": 16384,
+          "checkpoint_tokens": 16384,
+          "device_checkpoint_tokens": 8192,
+          "missing_full_tokens": 8192,
+          "missing_mamba_slots": 1
+        }
+      },
+      "costs": {
+        "baseline": {
+          "p50_cpu_us": 12.22185,
+          "sample_means_cpu_us": [
+            12.6683,
+            12.6006,
+            12.08847,
+            12.15763,
+            12.22185
+          ]
+        },
+        "optimized": {
+          "p50_cpu_us": 243.44695,
+          "sample_means_cpu_us": [
+            244.1488,
+            243.35073,
+            243.57277,
+            243.44695,
+            242.66297
+          ]
+        }
+      }
+    },
+    {
+      "tokens": 38400,
+      "depth": 300,
+      "leaves": 1,
+      "page_size": 1,
+      "observation": {
+        "baseline": null,
+        "optimized": {
+          "component_leaves": [
+            [
+              0,
+              [
+                [
+                  300,
+                  300.0
+                ]
+              ]
+            ],
+            [
+              2,
+              [
+                [
+                  300,
+                  300.0
+                ]
+              ]
+            ]
+          ],
+          "reusable_input_tokens": 38400,
+          "checkpoint_tokens": 38400,
+          "device_checkpoint_tokens": 18944,
+          "missing_full_tokens": 19200,
+          "missing_mamba_slots": 1
+        }
+      },
+      "costs": {
+        "baseline": {
+          "p50_cpu_us": 10.20929,
+          "sample_means_cpu_us": [
+            10.50351,
+            10.17138,
+            10.20929,
+            10.11112,
+            10.37846
+          ]
+        },
+        "optimized": {
+          "p50_cpu_us": 494.56588,
+          "sample_means_cpu_us": [
+            494.56588,
+            498.16247,
+            494.42848,
+            493.73021,
+            502.74636
+          ]
+        }
+      }
+    },
+    {
+      "tokens": 38400,
+      "depth": 300,
+      "leaves": 8,
+      "page_size": 1,
+      "observation": {
+        "baseline": null,
+        "optimized": {
+          "component_leaves": [
+            [
+              0,
+              [
+                [
+                  300,
+                  300.0
+                ]
+              ]
+            ],
+            [
+              2,
+              [
+                [
+                  300,
+                  300.0
+                ]
+              ]
+            ]
+          ],
+          "reusable_input_tokens": 38400,
+          "checkpoint_tokens": 38400,
+          "device_checkpoint_tokens": 18944,
+          "missing_full_tokens": 19200,
+          "missing_mamba_slots": 1
+        }
+      },
+      "costs": {
+        "baseline": {
+          "p50_cpu_us": 12.18587,
+          "sample_means_cpu_us": [
+            12.40137,
+            12.37497,
+            12.15696,
+            12.06139,
+            12.18587
+          ]
+        },
+        "optimized": {
+          "p50_cpu_us": 615.39658,
+          "sample_means_cpu_us": [
+            547.21882,
+            546.41463,
+            615.39658,
+            703.54502,
+            706.81902
+          ]
+        }
+      }
+    }
+  ]
+}

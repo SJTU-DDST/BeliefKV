@@ -534,7 +534,7 @@ def observe_unified_full_mamba_usage(cache: object) -> UnifiedUsageObservation:
 
 
 def observe_unified_node_closure(
-    cache: object, node_id: int, *, max_nodes: int = 64
+    cache: object, node_id: int, *, max_nodes: int | None = None
 ) -> UnifiedNodeClosureObservation:
     """Capture one FULL/MAMBA tree path for either validated device-pool layout.
 
@@ -558,7 +558,7 @@ def observe_unified_node_closure(
     try:
         if type(node_id) is not int or node_id < 0:
             raise ValueError("invalid node ID")
-        if type(max_nodes) is not int or max_nodes <= 0:
+        if max_nodes is not None and (type(max_nodes) is not int or max_nodes <= 0):
             raise ValueError("invalid closure bound")
         tree = _named(cache.tree_core, "UnifiedTreeCore")
         node = tree.node_by_id(node_id)
@@ -570,7 +570,7 @@ def observe_unified_node_closure(
                 raise ValueError("invalid or cyclic node ancestry")
             if not summaries and node.id != node_id:
                 raise ValueError("resolved node ID mismatch")
-            if len(summaries) >= max_nodes:
+            if max_nodes is not None and len(summaries) >= max_nodes:
                 raise ValueError("node ancestry exceeds bound")
             visited.add(node.id)
             parent = node.parent
@@ -610,8 +610,8 @@ def observe_unified_node_closure(
             for item in (full, mamba):
                 ids = item.session_ids
                 if ids is not None:
-                    if type(ids) is not set or not 0 < len(ids) <= 64:
-                        raise ValueError("session leaf identities exceed local bound")
+                    if type(ids) is not set or not ids:
+                        raise ValueError("invalid session leaf identities")
                     if any(
                         type(session_id) is not str or not session_id
                         for session_id in ids

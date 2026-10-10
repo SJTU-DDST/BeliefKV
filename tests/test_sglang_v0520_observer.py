@@ -691,6 +691,21 @@ def test_node_closure_rejects_cycle_excess_depth_and_absent_id() -> None:
     assert not observe_unified_node_closure(cache, 2).observable
 
 
+@pytest.mark.parametrize("depth", (65, 300))
+def test_node_closure_observes_complete_valid_deep_prefix(depth) -> None:
+    cache = _static_cache()
+    nodes = {0: _node(0)}
+    for node_id in range(1, depth + 1):
+        nodes[node_id] = _node(node_id, nodes[node_id - 1], host=[node_id])
+    cache.tree_core = UnifiedTreeCore(node_by_id=nodes.__getitem__)
+    result = observe_unified_node_closure(cache, depth)
+    assert result.observable
+    assert [node.node_id for node in result.nodes] == list(range(depth, -1, -1))
+    assert not observe_unified_node_closure(cache, depth, max_nodes=64).observable
+    nodes[1].parent = nodes[depth]
+    assert not observe_unified_node_closure(cache, depth).observable
+
+
 def test_node_closure_fails_closed_on_unphysical_lengths() -> None:
     cache = _cache()
     oversized = _node(9, device=range(193))
@@ -723,7 +738,7 @@ def test_node_closure_rejects_invalid_identity_or_pending(field, value) -> None:
 
 @pytest.mark.parametrize(
     "session_ref,session_ids",
-    [(-1, None), (True, None), (0, set()), (0, {"", "valid"}), (0, {str(i) for i in range(65)})],
+    [(-1, None), (True, None), (0, set()), (0, {"", "valid"}), (0, ["valid"])],
 )
 def test_node_closure_rejects_unknown_session_reference(session_ref, session_ids) -> None:
     cache = _cache()
@@ -732,6 +747,17 @@ def test_node_closure_rejects_unknown_session_reference(session_ref, session_ids
     node.component_data[0].session_ids = session_ids
     cache.tree_core = UnifiedTreeCore(node_by_id=lambda node_id: node)
     assert not observe_unified_node_closure(cache, 5).observable
+
+
+def test_node_closure_accepts_leaf_shared_by_more_than_64_sessions() -> None:
+    cache = _static_cache()
+    node = _node(5)
+    node.component_data[0].session_ref = 156
+    node.component_data[0].session_ids = {f"session-{i}" for i in range(156)}
+    cache.tree_core = UnifiedTreeCore(node_by_id=lambda _: node)
+    result = observe_unified_node_closure(cache, 5)
+    assert result.observable
+    assert result.nodes[0].full_session_leaf_count == 156
 
 
 def test_node_closure_fails_closed_on_unimplemented_tree_lookup() -> None:

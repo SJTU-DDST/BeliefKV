@@ -1996,7 +1996,7 @@ index 6815679..edd6918 100644
      def demote(self, node_id: NodeId) -> DemoteResult:
          """Demote a backed-up node: drop its device value after a successful backup."""
 diff --git a/python/sglang/srt/mem_cache/unified_radix_cache.py b/python/sglang/srt/mem_cache/unified_radix_cache.py
-index d417d7d..49a1829 100644
+index d417d7d..8a0d4e2 100644
 --- a/python/sglang/srt/mem_cache/unified_radix_cache.py
 +++ b/python/sglang/srt/mem_cache/unified_radix_cache.py
 @@ -6,7 +6,7 @@ import threading
@@ -2589,12 +2589,14 @@ index d417d7d..49a1829 100644
 +        ):
 +            return declined
 +
-+        # Follow only the supplied leaf's ancestry; cap even pathological paths.
++        # Validate the full owned path; transfer bursts have a separate budget.
 +        cur = leaf
 +        found = False
-+        for _ in range(64):
-+            if cur is self.tree_core.root_node:
-+                break
++        visited = set()
++        while cur is not self.tree_core.root_node:
++            if cur.id in visited:
++                return declined
++            visited.add(cur.id)
 +            try:
 +                if self.tree_core.node_by_id(cur.id) is not cur:
 +                    return declined
@@ -2617,8 +2619,6 @@ index d417d7d..49a1829 100644
 +            cur = cur.parent
 +            if cur is None:
 +                return declined
-+        else:
-+            return declined
 +        if cur is not self.tree_core.root_node or not found:
 +            return declined
 +
@@ -2786,28 +2786,29 @@ index d417d7d..49a1829 100644
 +        for leaf_id, created in full_leaves.items():
 +            prefix, device_prefix, missing_full = 0, 0, 0
 +            full_device, full_available = True, True
-+            pending, pending_load, depth = False, False, 0
++            pending, pending_load = False, False
 +            try:
 +                leaf = node_by_id(leaf_id)
 +                if leaf.creation_time != created:
 +                    continue
 +                chain, current = [], leaf
-+                while current is not root and len(chain) < 64:
-+                    if current is None or node_by_id(current.id) is not current:
++                visited = set()
++                while current is not root:
++                    if (
++                        current is None or current.id in visited
++                        or node_by_id(current.id) is not current
++                    ):
 +                        return None
++                    visited.add(current.id)
 +                    cached = prefix_states.get(current.id) if prefix_states is not None else None
 +                    if cached is not None:
 +                        (
 +                            prefix, device_prefix, missing_full, full_device,
-+                            full_available, pending, pending_load, depth,
++                            full_available, pending, pending_load,
 +                        ) = cached
 +                        break
 +                    chain.append(current)
 +                    current = current.parent
-+                if depth + len(chain) > 64 or (
-+                    current is not root and not depth
-+                ):
-+                    return None
 +            except (KeyError, RuntimeError, ValueError):
 +                return None
 +            for node in reversed(chain):
@@ -2816,7 +2817,6 @@ index d417d7d..49a1829 100644
 +                        break
 +                except (IndexError, TypeError, ValueError):
 +                    break
-+                depth += 1
 +                prefix += len(node.key)
 +                full = node.component_data[BASE_COMPONENT_TYPE]
 +                state = node.component_data[ComponentType.MAMBA]
@@ -2850,7 +2850,7 @@ index d417d7d..49a1829 100644
 +                if prefix_states is not None:
 +                    prefix_states[node.id] = (
 +                        prefix, device_prefix, missing_full, full_device,
-+                        full_available, pending, pending_load, depth,
++                        full_available, pending, pending_load,
 +                    )
 +        if best_node is None:
 +            return None
@@ -2941,9 +2941,11 @@ index d417d7d..49a1829 100644
 +            return declined
 +        current = leaf
 +        found = False
-+        for _ in range(64):
-+            if current is self.tree_core.root_node:
-+                break
++        visited = set()
++        while current is not self.tree_core.root_node:
++            if current.id in visited:
++                return declined
++            visited.add(current.id)
 +            try:
 +                live_node = self.tree_core.node_by_id(current.id)
 +            except (KeyError, RuntimeError, ValueError):
@@ -2962,8 +2964,6 @@ index d417d7d..49a1829 100644
 +            current = current.parent
 +            if current is None:
 +                return declined
-+        else:
-+            return declined
 +        if current is not self.tree_core.root_node or not found:
 +            return declined
 +        parent = node.parent
@@ -3645,10 +3645,10 @@ index b219467..6ca04e5 100644
          cache, allocator, _ = build_fixture(self.cfg)
 diff --git a/test/srt/test_beliefkv_execution_handoff.py b/test/srt/test_beliefkv_execution_handoff.py
 new file mode 100644
-index 0000000..01102c9
+index 0000000..379279b
 --- /dev/null
 +++ b/test/srt/test_beliefkv_execution_handoff.py
-@@ -0,0 +1,685 @@
+@@ -0,0 +1,704 @@
 +"""CPU checks for read-only reentry and cold-only capacity exchange."""
 +
 +import ast
@@ -3917,23 +3917,42 @@ index 0000000..01102c9
 +    assert observation["checkpoint_tokens"] == 2
 +
 +
-+def test_shared_probe_counts_cached_depth_toward_ancestry_bound():
++@pytest.mark.parametrize("depth", (65, 300))
++def test_shared_probe_matches_complete_deep_prefix_and_rejects_cycle(depth):
 +    cache, _, _, request = fixture()
 +    root = cache.tree_core.root_node
 +    nodes, parent = {0: root}, root
-+    for node_id in range(1, 66):
++    for node_id in range(1, depth + 1):
 +        node = Node(
 +            id=node_id, parent=parent, creation_time=node_id,
 +            key=Key([node_id]),
-+            component_data=[data(), data(False, False, 0), data()],
++            component_data=[NS(**{**vars(data()), "value": [node_id], "host_value": [node_id]}),
++                            data(False, False, 0), data()],
 +            write_through_pending_id=None, load_back_pending_id=None,
 +        )
 +        nodes[node_id] = parent = node
 +    cache.tree_core.node_by_id = nodes.__getitem__
 +    cache.session_refs.snapshot_latest_session_leaf_anchors.return_value = (
-+        (0, ((64, 64), (65, 65))), (2, ((64, 64), (65, 65))),
++        (0, ((depth - 1, depth - 1), (depth, depth))),
++        (2, ((depth - 1, depth - 1), (depth, depth))),
 +    )
-+    request.origin_input_ids = list(range(1, 67))
++    request.origin_input_ids = list(range(1, depth + 2))
++    observation = cache.inspect_beliefkv_reentry(request)
++    assert observation["checkpoint_tokens"] == depth
++    assert observation["device_checkpoint_tokens"] == depth
++    assert observation["component_leaves"] == (
++        (0, ((depth, depth),)), (2, ((depth, depth),)),
++    )
++    nodes[depth].component_data[0].value = None
++    nodes[depth].component_data[2].value = None
++    observation = cache.inspect_beliefkv_reentry(request)
++    assert observation["checkpoint_tokens"] == depth
++    assert observation["device_checkpoint_tokens"] == depth - 1
++    assert observation["missing_full_tokens"] == 1
++    assert observation["missing_mamba_slots"] == 1
++    request.origin_input_ids = list(range(1, depth))
++    assert cache.inspect_beliefkv_reentry(request)["checkpoint_tokens"] == depth - 2
++    nodes[1].parent = nodes[depth]
 +    assert cache.inspect_beliefkv_reentry(request) is None
 +
 +
@@ -6191,10 +6210,10 @@ index 0000000..f8adad2
 +    assert tracker.snapshot_released_session_leaf_anchors("session", generation) is None
 diff --git a/test/srt/test_beliefkv_shadow_dispatch.py b/test/srt/test_beliefkv_shadow_dispatch.py
 new file mode 100644
-index 0000000..6743718
+index 0000000..548c17f
 --- /dev/null
 +++ b/test/srt/test_beliefkv_shadow_dispatch.py
-@@ -0,0 +1,1189 @@
+@@ -0,0 +1,1237 @@
 +"""CPU-only action-local shadow dispatch tests, without importing the GPU runtime."""
 +
 +import ast
@@ -6924,7 +6943,7 @@ index 0000000..6743718
 +        self.assertEqual(ops, [])
 +        cache.evict_host.assert_not_called()
 +
-+    def test_fixed_ancestry_budget(self):
++    def test_complete_deep_ancestry_can_prepare_without_bulk_transfer(self):
 +        cache, root, parent, leaf, _, ops, args = fixture()
 +        prev = leaf
 +        nodes = {n.id: n for n in (root, parent, leaf)}
@@ -6934,12 +6953,60 @@ index 0000000..6743718
 +            prev = ancestor
 +            nodes[i] = ancestor
 +        cache.tree_core.node_by_id.side_effect = nodes.__getitem__
++        self.assertTrue(cache.prepare_host_shadow(**args).issued)
++        self.assertEqual([(nid, tag) for nid, tag, _ in ops], [(leaf.id, "cmd-2")])
++        self.assertEqual(cache.cache_controller.write.call_count, 1)
++        self.assertIsNotNone(leaf.component_data[ComponentType.FULL].value)
++        self.assertIsNotNone(parent.component_data[ComponentType.FULL].value)
++
++    def test_cyclic_ancestry_declines_without_transfer(self):
++        cache, _, parent, leaf, _, ops, args = fixture()
++        parent.parent = leaf
 +        self.assertFalse(cache.prepare_host_shadow(**args).issued)
-+        self.assertEqual(cache.tree_core.node_by_id.call_count, 66)
 +        self.assertEqual(ops, [])
 +
 +
 +class TestPrefetchGpuNode(unittest.TestCase):
++    def test_deep_ancestry_restores_only_target_and_rejects_cycles(self):
++        cache, root, parent, leaf, _, _, args = fixture()
++        nodes = {n.id: n for n in (root, parent, leaf)}
++        previous = root
++        for node_id in range(3, 300):
++            previous = nodes[node_id] = node(
++                node_id, previous, host=torch.arange(1), device=torch.arange(1),
++            )
++        parent.parent = previous
++        cache.tree_core.node_by_id.side_effect = nodes.__getitem__
++        cache.tree_core.build_load_back_spec = Mock(return_value=(
++            SimpleNamespace(host_indices=torch.arange(2), nodes_to_load=[leaf.id]), {},
++        ))
++        leaf.component_data[ComponentType.FULL].value = None
++        leaf.component_data[ComponentType.FULL].host_value = torch.arange(2)
++        controller = cache.cache_controller
++        controller.load_queue = []
++        controller.start_loading = Mock(return_value=1)
++
++        def load_back(node_id, **kwargs):
++            cache.ongoing_load_back[node_id] = object()
++            controller.load_queue.append(SimpleNamespace(beliefkv_command_id="cmd-2"))
++            return True
++
++        cache.load_back = Mock(side_effect=load_back)
++        result = cache.prefetch_gpu_session_node(
++            **args, beliefkv_before_enqueue=lambda op: True,
++        )
++        self.assertTrue(result.issued)
++        self.assertTrue(result.load_started)
++        cache.load_back.assert_called_once()
++        cache.ongoing_load_back.clear()
++        controller.load_queue.clear()
++        cache.load_back.reset_mock()
++        nodes[3].parent = leaf
++        self.assertFalse(cache.prefetch_gpu_session_node(
++            **args, beliefkv_before_enqueue=lambda op: True,
++        ).issued)
++        cache.load_back.assert_not_called()
++
 +    def test_ancestor_burst_submits_once_without_waiting_for_each_ack(self):
 +        cache, _, parent, leaf, _, _, args = fixture()
 +        controller = cache.cache_controller

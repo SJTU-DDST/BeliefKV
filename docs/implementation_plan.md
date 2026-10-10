@@ -2,7 +2,7 @@
 
 Status date: 2026-10-11.
 
-## Child-to-Parent Capacity Follow-Up
+## Child-to-Parent Capacity and Complete-Prefix Recovery
 
 The four-step path is deployed in V21: plan the parent's safe checkpoint during
 child finalization, retire only settled unreferenced private suffixes after real
@@ -27,6 +27,43 @@ reuse by those reasons; link rearmed requests to observed parent service using t
 same workflow/context/JOIN/request and causal time order. Do not infer a miss
 from native_locked=false. The 431 scoped terminal/handoff/runtime/physical/tool/
 lifecycle checks pass. This revision is not part of the running frozen V21.
+
+Complete valid checkpoint ancestry must remain observable. The next revision
+removes artificial 64/256-node rejection from action closure, PREPARE/H2D
+planning, native session primitives and reentry inspection. Retain cycle and
+live identity checks, session ownership, native locks, DMA dependencies and
+the single-call shared-prefix memo. Restore at most 16 extents per burst under
+the existing byte/capacity/time budgets. The terminal-reclaim max_nodes is a
+retryable operation allowance, and explicit 64-node terminal diagnostic sampling
+is read-only; neither should become an eligibility cap. Accept valid shared
+leaves with more than 64 sessions while retaining malformed identity checks.
+
+Keep v21_prefix_bound_rejections_live_20261011.json as partial observed evidence.
+There are 1643 different tool-wait context/epoch/JOIN identities with a rejected
+plan and 4792 distinct affected requests with 10938–48936 prompt tokens, below
+the 131072 context limit. Of 18574 records, 9846 are terminal-only diagnostics;
+the remainder still contains repeated sampling. Do not treat these as independent
+realizable prefetch opportunities or a measured speedup.
+
+494 BeliefKV checks and 186 native CPU checks plus 18 subtests pass, covering
+65/300-node paths, safe-input clipping, necessary state only, 16-step bursts,
+cycles/stale identities, real allocator release and shared-prefix preservation.
+Forward-tree and reverse-apply validation gives canonical patch SHA256
+`03033a9e9d28fe217f9085752fd4db4618cda0430312238dd0e130579557aa83`
+and exact expected/actual engine tree
+`63d91509bee139b2d6a2285eb44b193a67a9e008`.
+Keep v22_complete_prefix_reentry_cpu_20261011.json and
+v22_deep_prefix_reentry_cpu_20261011.json. Short-path median costs change by
+about -0.7 to +4.9 microseconds; newly supported complete 65/128/300-node
+observations take 111–615 microseconds. Old fast rejection and new complete
+inspection perform different work and must not be reported as a speedup.
+
+Schedule this committed revision together with the capacity-settlement retry in
+V22, replacing only the still-waiting launch registration while preserving its
+superseded state. Keep the live V21 pair frozen. After its complete artifacts,
+deploy exactly this revision and patch, run predictive first and cold native
+second, and measure actual early FULL reuse, parent service wait, protection
+reasons and busy-window throughput. The broad performance objective stays active.
 
 Keep v21_terminal_capacity_live_20261011.json as a partial audit:126 real children
 release cumulative26.165GB device FULL and8.821GB Mamba. Forty-four parent

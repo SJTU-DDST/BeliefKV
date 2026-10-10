@@ -2,7 +2,7 @@
 
 更新日期：2026-10-11。
 
-## 终态 child 容量交接的后续修订
+## 终态 child 容量交接与完整前缀恢复
 
 四步联动已在 V21 中部署：child 收尾时规划 parent 的安全
 checkpoint；真实 RETURN 后回收无引用、无共享依赖且传输已结算
@@ -28,6 +28,40 @@ handoff 因 no_cold_capacity 关闭后会一直保留在已尝试集合中；
 服务，不能把 native_locked=false 全部视作失去保护或浪费。
 431 项终态回收、handoff、运行时、物理传输、tool 与审计检查
 通过；这项修订尚未部署到运行中的冻结 V21。
+
+后续检查确认完整前缀规划存在不合理的固定祖先数量限制：
+observer、PREPARE/H2D 规划和原生 session 恢复分别以64或256
+个节点拒绝合法路径。V21 局部采样中，1643个不同的tool等待
+context/epoch/JOIN身份出现该拒绝；包括准入采样在内，4792个
+不同request的prompt长度为10938–48936 token，远未达到
+131072上下文上限。18574条相关记录中9846条仅来自终态诊断，
+其余也包含重复采样；这些数量不是可实现预取机会或收益。
+证据保存在 v21_prefix_bound_rejections_live_20261011.json。
+
+新修订对物理动作检查完整祖先路径，保留环路、节点创建身份、
+session、原生锁与在途DMA检查；同一次原生reentry调用继续
+复用共享前缀状态。单次传输仍至多16个extent，字节/容量/时间
+预算不变。终态私有页回收的max_nodes仍是可重试操作额度，
+只读终态诊断的64节点采样预算也保留，两者不限制合法恢复。
+超过64个session共享的合法叶节点不再因数量被拒绝，仍不允许
+错误类型、空身份或空session集合。
+
+494项BeliefKV检查和186项原生CPU检查（另18项subtest）通过，
+包括65/300节点路径、安全输入checkpoint裁剪、仅恢复必要
+Mamba、16步传输额度、真实allocator回收与共享页保留。
+规范patch正向建树/反向应用核验通过，SHA256为
+`03033a9e9d28fe217f9085752fd4db4618cda0430312238dd0e130579557aa83`，
+预期和实际引擎tree同为`63d91509bee139b2d6a2285eb44b193a67a9e008`。
+原生CPU基准短路径开销变化约-0.7至+4.9微秒；新增支持的
+65/128/300节点完整观察约111–615微秒，不能把旧版快速拒绝
+与完整观察的耗时比较当成性能改进。保留v22_complete_prefix_
+reentry_cpu_20261011.json和v22_deep_prefix_reentry_cpu_20261011.json。
+
+该修订与容量结算后的parent恢复重试进入V22待启动版本，
+仍按V21完整pair结束后自动部署，先predictive后同版本冷native。
+不改运行中V21的源码/patch；下一轮重点检查深前缀的实际
+提前FULL复用、parent服务等待、驻留原因和繁忙窗口吞吐。
+四步容量交接已实现，但native相对吞吐目标仍未达成。
 
 V21 局部审计保存在 v21_terminal_capacity_live_20261011.json：
 126 个真实 child 累计释放设备 FULL 26.165 GB、Mamba 8.821 GB；

@@ -1,0 +1,175 @@
+{
+  "scope": "V21 running predictive partial observation; repeated/sampled rejection records are not proven realizable prefetch opportunities or speedup.",
+  "generated_at_utc": "2026-10-10T18:20:40.909840+00:00",
+  "run_root": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v21",
+  "input_snapshot_bytes": {
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v21/predictive_h2d/opportunities/admission_opportunities.jsonl": 513435470,
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v21/predictive_h2d/server/runtime_events.sglang.jsonl": 66306047
+  },
+  "last_observed_wall_ts_ms": 1791656434538.1902,
+  "bound_failure_records": 18574,
+  "distinct_request_ids": 4792,
+  "groups": [
+    {
+      "event": "execution_handoff_no_step",
+      "source": null,
+      "records": 83,
+      "distinct_context_epoch_join_identities": 77
+    },
+    {
+      "event": "session_h2d_opportunity",
+      "source": "admission_candidate",
+      "records": 6405,
+      "distinct_context_epoch_join_identities": 3913
+    },
+    {
+      "event": "session_h2d_opportunity",
+      "source": "tool_wait",
+      "records": 566,
+      "distinct_context_epoch_join_identities": 371
+    },
+    {
+      "event": "terminal_context_cache_sample",
+      "source": null,
+      "records": 9846,
+      "distinct_context_epoch_join_identities": 6146
+    },
+    {
+      "event": "wait_prefetch_plan",
+      "source": "tool_wait",
+      "records": 1674,
+      "distinct_context_epoch_join_identities": 1643
+    }
+  ],
+  "affected_requests_with_prompt_tokens": 4792,
+  "affected_prompt_tokens": {
+    "min": 10938,
+    "p50": 27250.5,
+    "p90": 33370.9,
+    "max": 48936
+  },
+  "model_context_limit_tokens": 131072,
+  "diagnostic_only_limit_retained": "terminal_context_cache_sample explicitly observes at most64 ancestry nodes; it is not a physical action eligibility gate.",
+  "examples": [
+    {
+      "ts_ms": 1791653771007.64,
+      "event": "session_h2d_opportunity",
+      "source": "admission_candidate",
+      "workflow_id": "deepagents:autonomous:django__django-11138:3234f8cb87ef",
+      "context_id": "deepagents-context:1650cb5f70f10b6f",
+      "context_epoch": 33,
+      "request_id": "beliefkv:01a126e2-dc76-79d0-847f-63b6b3cfecdf",
+      "blocked_detail": "node ancestry exceeds bound"
+    },
+    {
+      "ts_ms": 1791653780552.8074,
+      "event": "session_h2d_opportunity",
+      "source": "admission_candidate",
+      "workflow_id": "deepagents:autonomous:django__django-11138:3234f8cb87ef",
+      "context_id": "deepagents-context:1650cb5f70f10b6f",
+      "context_epoch": 33,
+      "request_id": "beliefkv:01a126e2-dc76-79d0-847f-63b6b3cfecdf",
+      "blocked_detail": "node ancestry exceeds bound"
+    },
+    {
+      "ts_ms": 1791653783146.034,
+      "event": "execution_handoff_no_step",
+      "source": null,
+      "workflow_id": null,
+      "context_id": "deepagents-context:1650cb5f70f10b6f",
+      "context_epoch": null,
+      "request_id": "beliefkv:01a126e2-dc76-79d0-847f-63b6b3cfecdf",
+      "blocked_detail": "node ancestry exceeds bound"
+    },
+    {
+      "ts_ms": 1791653807727.918,
+      "event": "session_h2d_opportunity",
+      "source": "admission_candidate",
+      "workflow_id": "deepagents:autonomous:django__django-11138:3234f8cb87ef",
+      "context_id": "deepagents-context:1650cb5f70f10b6f",
+      "context_epoch": 34,
+      "request_id": "beliefkv:01a126e3-3e8f-70a0-a6a9-fc03315c7bb8",
+      "blocked_detail": "node ancestry exceeds bound"
+    },
+    {
+      "ts_ms": 1791653812845.0554,
+      "event": "session_h2d_opportunity",
+      "source": "admission_candidate",
+      "workflow_id": "deepagents:autonomous:django__django-11138:3234f8cb87ef",
+      "context_id": "deepagents-context:1650cb5f70f10b6f",
+      "context_epoch": 35,
+      "request_id": "beliefkv:01a126e3-8fbf-7643-a72c-bb73cddaa071",
+      "blocked_detail": "node ancestry exceeds bound"
+    },
+    {
+      "ts_ms": 1791653822238.0034,
+      "event": "session_h2d_opportunity",
+      "source": "admission_candidate",
+      "workflow_id": "deepagents:autonomous:django__django-11138:3234f8cb87ef",
+      "context_id": "deepagents-context:1650cb5f70f10b6f",
+      "context_epoch": 35,
+      "request_id": "beliefkv:01a126e3-8fbf-7643-a72c-bb73cddaa071",
+      "blocked_detail": "node ancestry exceeds bound"
+    },
+    {
+      "ts_ms": 1791653823252.8604,
+      "event": "session_h2d_opportunity",
+      "source": "admission_candidate",
+      "workflow_id": "deepagents:autonomous:pylint-dev__pylint-7080:6a2c45052f84",
+      "context_id": "deepagents-context:6dfc8fd029f615ef",
+      "context_epoch": 35,
+      "request_id": "beliefkv:01a126e3-a89f-73f2-8b77-3b0f7d651e84",
+      "blocked_detail": "node ancestry exceeds bound"
+    },
+    {
+      "ts_ms": 1791653831711.5088,
+      "event": "wait_prefetch_plan",
+      "source": "tool_wait",
+      "workflow_id": "deepagents:autonomous:psf__requests-5414:a1327c8dd67d",
+      "context_id": "deepagents-context:01eb1822e341b33a",
+      "context_epoch": 37,
+      "request_id": "beliefkv:01a126e3-8da4-7630-88c6-739e883c51f7",
+      "blocked_detail": "node ancestry exceeds bound"
+    },
+    {
+      "ts_ms": 1791653836665.6133,
+      "event": "session_h2d_opportunity",
+      "source": "admission_candidate",
+      "workflow_id": "deepagents:autonomous:django__django-11138:3234f8cb87ef",
+      "context_id": "deepagents-context:1650cb5f70f10b6f",
+      "context_epoch": 36,
+      "request_id": "beliefkv:01a126e3-db7a-73c0-ad7c-f0a0a10db81e",
+      "blocked_detail": "node ancestry exceeds bound"
+    },
+    {
+      "ts_ms": 1791653837547.7913,
+      "event": "wait_prefetch_plan",
+      "source": "tool_wait",
+      "workflow_id": "deepagents:autonomous:django__django-10880:daee8fcbdad8",
+      "context_id": "deepagents-context:c0dd67416493d33e",
+      "context_epoch": 32,
+      "request_id": "beliefkv:01a126e3-b509-70b0-b32e-f82e9c604644",
+      "blocked_detail": "node ancestry exceeds bound"
+    },
+    {
+      "ts_ms": 1791653837676.9768,
+      "event": "session_h2d_opportunity",
+      "source": "admission_candidate",
+      "workflow_id": "deepagents:autonomous:pylint-dev__pylint-4661:52eff856c28a",
+      "context_id": "deepagents-context:d769555e8d238d14",
+      "context_epoch": 40,
+      "request_id": "beliefkv:01a126e3-e8af-7281-8e07-7e6666437b05",
+      "blocked_detail": "node ancestry exceeds bound"
+    },
+    {
+      "ts_ms": 1791653845906.9346,
+      "event": "session_h2d_opportunity",
+      "source": "admission_candidate",
+      "workflow_id": "deepagents:autonomous:psf__requests-5414:a1327c8dd67d",
+      "context_id": "deepagents-context:01eb1822e341b33a",
+      "context_epoch": 38,
+      "request_id": "beliefkv:01a126e3-e47c-7710-b604-8be63b522649",
+      "blocked_detail": "node ancestry exceeds bound"
+    }
+  ]
+}

@@ -758,7 +758,7 @@ def test_h2d_observer_separates_resident_unbacked_and_blocked_closures():
 
 
 @pytest.mark.parametrize("failure,detail", (
-    ("ancestry_bound", "node ancestry exceeds bound"),
+    ("ancestry_cycle", "invalid or cyclic node ancestry"),
     ("changed_anchor", "replaced_leaf_anchor"),
     ("pending_write", "pending_write_transfer"),
     ("pending_load", "pending_load_transfer"),
@@ -767,15 +767,8 @@ def test_h2d_opportunity_preserves_capture_failure_without_rewalking(failure, de
     from beliefkv.runtime.sglang_v0520_observer import observe_unified_node_closure
 
     cache, anchors, nodes = prepare_prefix_fixture(backed=True)
-    if failure == "ancestry_bound":
-        for number in range(4, 65):
-            nodes[number] = type(nodes[3])(**{
-                **vars(nodes[3]), "id": number, "creation_time": number + 1.,
-                "parent": nodes[number - 1],
-            })
-        anchors = replace(anchors, component_leaves=(
-            (0, ((64, 65.),)), (2, ((64, 65.),)),
-        ))
+    if failure == "ancestry_cycle":
+        nodes[1].parent = nodes[3]
     elif failure == "changed_anchor":
         nodes[3].creation_time += 1
     elif failure == "pending_write":
@@ -793,6 +786,68 @@ def test_h2d_opportunity_preserves_capture_failure_without_rewalking(failure, de
     assert result.step is None and not result.steps
     assert result.candidate is None and result.fits_current_free_lists is None
     assert result.host_backed_full_missing_device_tokens is None
+
+
+@pytest.mark.parametrize("depth", (65, 300))
+@pytest.mark.parametrize("backed", (False, True))
+def test_deep_prefix_planning_clips_output_and_preserves_transfer_budget(depth, backed):
+    from tests.test_sglang_v0520_observer import _node
+
+    cache, anchors, _ = prepare_prefix_fixture()
+    checkpoint = depth - 4
+    nodes = {0: _node(0)}
+    for node_id in range(1, depth + 1):
+        node = _node(
+            node_id, nodes[node_id - 1],
+            device=() if backed else [node_id],
+            host=[node_id] if backed else (),
+        )
+        node.key = (node_id,)
+        node.component_data[2].value = (0,) if not backed and node_id == checkpoint else None
+        node.component_data[2].host_value = (0,) if backed and node_id == checkpoint else None
+        nodes[node_id] = node
+    nodes[0].key = ()
+    cache.tree_core.node_by_id = nodes.__getitem__
+    anchors = replace(
+        anchors, reusable_input_tokens=checkpoint,
+        component_leaves=(
+            (0, ((depth, nodes[depth].creation_time),)),
+            (2, ((checkpoint, nodes[checkpoint].creation_time),)),
+        ),
+    )
+    failures = []
+    candidate = capture_action_local_shadow(
+        cache, anchors, for_prefetch=backed,
+        include_non_actionable=True, on_failure=failures.append,
+    )
+    assert candidate is not None and len(candidate.nodes) == depth + 1
+    assert failures == []
+    assert capture_action_local_shadow(cache, anchors, max_nodes=64) is None
+    if backed:
+        steps = plan_prefetch_gpu_steps(candidate)
+        assert [step.node_id for step in steps] == list(range(1, 17))
+        assert all(not step.include_mamba for step in steps)
+        for node_id in range(1, checkpoint):
+            nodes[node_id].component_data[0].value = [node_id]
+        refreshed = capture_action_local_shadow(cache, anchors, for_prefetch=True)
+        assert [(step.node_id, step.include_mamba) for step in plan_prefetch_gpu_steps(refreshed)] == [
+            (checkpoint, True),
+        ]
+        opportunity = inspect_session_h2d_opportunity(cache, anchors)
+        assert opportunity.required_full_tokens == opportunity.required_mamba_slots == 1
+    else:
+        assert missing_prepare_full_prefix_tokens(cache, anchors) == checkpoint
+        assert missing_prepare_full_prefix_tokens(cache, anchors, max_nodes=64) is None
+        steps = shadow_backup_steps(candidate, max_steps=16)
+        assert [step.node_id for step in steps] == list(range(1, 17))
+        assert steps[0].missing_full_prefix_tokens == checkpoint
+        assert all(not step.include_mamba for step in steps)
+    nodes[1].parent = nodes[depth]
+    assert capture_action_local_shadow(cache, anchors, for_prefetch=backed) is None
+    assert missing_prepare_full_prefix_tokens(cache, anchors) is None
+    nodes[1].parent = nodes[0]
+    nodes[depth].creation_time += 1
+    assert capture_action_local_shadow(cache, anchors, for_prefetch=backed) is None
 
 
 def test_capture_failure_callback_does_not_change_successful_candidate():

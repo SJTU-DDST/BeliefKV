@@ -107,7 +107,7 @@ def _prefetch_block_detail(candidate: ActionLocalPrefetchCandidate) -> str:
         current = leaf_id
         visited: set[int] = set()
         while current is not None:
-            if current not in nodes or current in visited or len(visited) >= 256:
+            if current not in nodes or current in visited:
                 return "invalid_full_ancestry"
             visited.add(current)
             full_paths.add(current)
@@ -278,11 +278,11 @@ def _checkpoint_paths(
 
 
 def missing_prepare_full_prefix_tokens(
-    cache: object, anchors: ContextSessionAnchors, *, max_nodes: int = 64,
+    cache: object, anchors: ContextSessionAnchors, *, max_nodes: int | None = None,
 ) -> int | None:
     """Read a budget rejection hint; viable candidates still need a full closure."""
     if (
-        type(max_nodes) is not int or not 0 < max_nodes <= 256
+        (max_nodes is not None and (type(max_nodes) is not int or max_nodes <= 0))
         or type(anchors.reusable_input_tokens) is not int
         or anchors.reusable_input_tokens < 0
     ):
@@ -316,7 +316,8 @@ def missing_prepare_full_prefix_tokens(
                 node_id = current.id
                 if (
                     type(node_id) is not int or node_id < 0
-                    or node_id in seen or len(chain) >= max_nodes
+                    or node_id in seen
+                    or (max_nodes is not None and len(chain) >= max_nodes)
                 ):
                     return None
                 seen.add(node_id)
@@ -335,7 +336,7 @@ def missing_prepare_full_prefix_tokens(
                 if node_id in nodes and nodes[node_id] != summary:
                     return None
                 nodes[node_id] = summary
-                if len(nodes) > max_nodes:
+                if max_nodes is not None and len(nodes) > max_nodes:
                     return None
                 current = parent
             for distance, node_id in enumerate(reversed(chain)):
@@ -380,7 +381,6 @@ def plan_prefetch_gpu_steps(
         or anchors.key.session_generation < 0
         or type(anchors.component_leaves) is not tuple
         or type(getattr(candidate, "nodes", None)) is not tuple
-        or len(candidate.nodes) > 256
     ):
         return ()
     try:
@@ -439,7 +439,7 @@ def plan_prefetch_gpu_steps(
         chain: list[int] = []
         seen: set[int] = set()
         while current is not None:
-            if current not in nodes or current in seen or len(chain) >= 256:
+            if current not in nodes or current in seen:
                 return ()
             seen.add(current)
             chain.append(current)
@@ -610,13 +610,13 @@ def capture_action_local_shadow(
     cache: object,
     anchors: ContextSessionAnchors,
     *,
-    max_nodes: int = 64,
+    max_nodes: int | None = None,
     for_prefetch: bool = False,
     include_non_actionable: bool = False,
     on_failure: Callable[[str], None] | None = None,
 ) -> ActionLocalShadowCandidate | ActionLocalPrefetchCandidate | None:
     """Inspect one context's leaves, optionally reporting its rejection reason."""
-    if type(max_nodes) is not int or not 0 < max_nodes <= 256:
+    if max_nodes is not None and (type(max_nodes) is not int or max_nodes <= 0):
         raise ValueError("invalid shadow closure bound")
     if type(for_prefetch) is not bool or type(include_non_actionable) is not bool:
         raise ValueError("invalid prefetch capture mode")
@@ -664,7 +664,7 @@ def capture_action_local_shadow(
                 if node.node_id in nodes and nodes[node.node_id] != node:
                     return _capture_rejected("inconsistent_shared_ancestry", on_failure)
                 nodes[node.node_id] = node
-                if len(nodes) > max_nodes:
+                if max_nodes is not None and len(nodes) > max_nodes:
                     return _capture_rejected("combined_node_closure_exceeds_bound", on_failure)
     for node in nodes.values():
         if node.parent_id is not None and node.parent_id not in nodes:

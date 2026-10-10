@@ -5331,7 +5331,7 @@ class NativeAdmissionRuntime:
         protected_by_command_id = None
         try:
             from beliefkv.runtime.sglang_v0520_observer import observe_unified_node_closure
-            observation = observe_unified_node_closure(cache, step.node_id, max_nodes=64)
+            observation = observe_unified_node_closure(cache, step.node_id)
             entries = cache.host_pool_group.entry_map
             protected_bytes = sum(
                 node.full_device_tokens * entries["kv"].host_pool.size_per_token
@@ -5358,9 +5358,9 @@ class NativeAdmissionRuntime:
                     superseded.append(existing)
                     continue
                 current = cache.tree_core.node_by_id(existing.node_id)
-                for _ in range(64):
-                    if current is None:
-                        break
+                visited = set()
+                while current is not None and current.id not in visited:
+                    visited.add(current.id)
                     if current.id == step.node_id and current.creation_time == step.creation_time:
                         already_protected = True
                         protected_by_command_id = existing.command_id
