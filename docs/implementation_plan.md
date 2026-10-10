@@ -142,6 +142,20 @@ This snapshot is later than20:11; changes in sample counts are not all
 deduplication. Apply this same corrected offline auditor to both final arms
 after preserving their frozen runtime versions.
 
+The subsequent prefetch_lifecycle_capacity_snapshot_20261010_2040.json
+contains568 terminal children and837 reclamation records including retries.
+Actual cumulative device release is202.940GB FULL and120.987GB Mamba,
+not peak capacity or a parent reservation.118 parents have completed-batch
+service observations;117 link to prior actual device release. All39 restore
+lookaheads link to subsequent service,selection-to-completed-batch P50/P90
+136.97/286.34ms. Corrected independent JOIN queue-to-actual-service P50/P90
+is169.11/457.87ms,max16.838s. Early started and next-request-reused FULL
+is1.210GB JOIN plus3.154MB tool;71.236GB reused demand-handoff FULL remains
+separate. Preserve low early-tool coverage,the real JOIN tail and six FULL
+leases expired before completion as unresolved risks; these observations
+do not establish native-relative throughput improvement. Native telemetry
+failed/dropped records remain zero.
+
 Profiling the156-request CPU fixture finds repeated identity parsing at plan
 compilation accounts for about23% of cumulative plan cost. Reuse immutable
 keys already bound within that plan call. Formal native selection must still
@@ -154,8 +168,9 @@ counts,native inspection counts and priority metadata remain identical.
 decrease2.5%--8.8%. Preserve v20_prefill_identity_reuse_cpu_20261010.json;
 it does not measure physical DMA,GPU throughput or paired JCT.
 Commit this runtime follow-up in isolation and deploy between frozen runs.
-The second48-task wave has arrived; the recent outcome scan is84 completed,
-1 incomplete,no error. Continue the live predictive then cold-native pair.
+The second48-task wave has arrived; at2026-10-10 20:39 CST the outcome scan
+is86 completed,1 incomplete,no error. The native arm has not started.
+Continue the live predictive then cold-native pair.
 
 ## V19b Harness Context Retirement Integration
 

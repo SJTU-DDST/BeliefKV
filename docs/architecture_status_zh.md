@@ -130,6 +130,18 @@ v20_join_admission_diagnostics_20261010.json的修正快照覆盖110个
 独立边界前启动且复用的JOIN FULL为1.173GB。此快照比上述
 20:11快照更晚，不能把采样数量变化全部归因于统计修复。
 
+后续容量快照prefetch_lifecycle_capacity_snapshot_20261010_2040.json
+覆盖568个终态child、837次含重试的回收，累计释放设备FULL
+202.940GB、Mamba120.987GB；这不是峰值容量或parent独占额度。
+118个parent观测到首个完成GPU batch，其中117个此前关联真实
+设备释放；39次恢复lookahead均关联后续服务，选取到完成batch
+P50/P90为136.97/286.34ms。按独立JOIN及实际服务开始重算，
+118个请求入队等待P50/P90为169.11/457.87ms，最大16.838秒。
+JOIN边界前启动且由下一请求复用的FULL为1.210GB，tool为
+3.154MB；71.236GB需求handoff复用继续单列。tool早期覆盖低、
+JOIN长尾及六条完成前到期的FULL驻留仍须优化，不能由这次
+容量交接关联声称已超过native。原生遥测failed/dropped均为0。
+
 准入规划CPU剖析进一步发现同一次调用先解析队列身份，编译
 计划时又重复解析；156请求/200次规划的profile中，后者累计
 约占23%。现在复用本次已绑定的不可变key，正式选择仍重新
@@ -141,7 +153,8 @@ v20_join_admission_diagnostics_20261010.json的修正快照覆盖110个
 8请求降低2.5%--8.8%。报告为
 v20_prefill_identity_reuse_cpu_20261010.json，不包含DMA/GPU/JCT。
 该优化仍在隔离分支，V20继续冻结运行；第二批48个任务已经
-到达，最近终态检查为84 completed、1 incomplete，无error。
+到达，2026-10-10 20:39 CST终态检查为86 completed、
+1 incomplete，无error；native臂尚未开始。
 
 ## V19b child 上下文结束的集成修正
 
