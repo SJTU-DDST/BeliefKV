@@ -252,7 +252,7 @@ def test_pending_native_dependency_retries_without_losing_sibling_accounting(fam
 
 
 @pytest.mark.parametrize("ordinary_admissions,slots", ((3, 2), (4, 1), (4, 2)))
-def test_capacity_handoff_restore_prefers_parent_only_within_imminent_frontier(
+def test_capacity_handoff_restores_one_unlocked_parent_after_ordinary_quota(
     family, ordinary_admissions, slots,
 ):
     runtime, requests, cache, _ = family
@@ -265,7 +265,7 @@ def test_capacity_handoff_restore_prefers_parent_only_within_imminent_frontier(
         "reusable_input_tokens": 4, "component_leaves": ((0, ((11, 1),)),),
     }
     runtime._prefetch_priority_normal_admissions = ordinary_admissions
-    prefer_parent = ordinary_admissions == 4 and slots == 2
+    prefer_parent = ordinary_admissions == 4
     expected = parent if prefer_parent else requests["ordinary"]
     step = PrefetchLoadStep(runtime.visible[expected.rid], 11, 1, 4, 0)
     with patch.object(runtime, "_current_residency_budget", return_value=PrefetchResidencyBudget(
@@ -279,6 +279,75 @@ def test_capacity_handoff_restore_prefers_parent_only_within_imminent_frontier(
         )
     assert runtime._execution_handoff.key.request_id == expected.rid
     assert runtime.counts["parent_capacity_handoff_restore_selected"] == int(prefer_parent)
+    assert runtime.counts["parent_capacity_handoff_restore_lookahead"] == int(
+        prefer_parent and slots == 1
+    )
+
+
+@pytest.mark.parametrize("unavailable", ("no_slot", "no_capacity", "no_checkpoint", "waiting_join"))
+def test_parent_restore_lookahead_keeps_ordinary_service_when_unavailable(family, unavailable):
+    runtime, requests, cache, _ = family
+    runtime.enable_execution_handoff = True
+    runtime.on_events((returned(7, "child1"),))
+    if unavailable != "waiting_join":
+        runtime.on_events((returned(8, "child2"),))
+    parent = parent_request(runtime, requests["parent"])
+    cache.inspect_beliefkv_reentry.return_value = {
+        "missing_full_tokens": 4, "missing_mamba_slots": 0,
+        "device_checkpoint_tokens": 0, "checkpoint_tokens": 4,
+        "reusable_input_tokens": 4, "component_leaves": ((0, ((11, 1),)),),
+    }
+    if unavailable == "no_checkpoint":
+        cache.inspect_beliefkv_reentry.side_effect = (
+            lambda request: None if request is parent
+            else cache.inspect_beliefkv_reentry.return_value
+        )
+    runtime._prefetch_priority_normal_admissions = 4
+    ordinary = requests["ordinary"]
+
+    def opportunity(_, anchors, **kwargs):
+        return NS(
+            step=PrefetchLoadStep(anchors.key, 11, 1, 4, 0),
+            fits_current_free_lists=(
+                anchors.key.request_id != parent.rid or unavailable != "no_capacity"
+            ),
+        )
+
+    with patch.object(runtime, "_current_residency_budget", return_value=PrefetchResidencyBudget(
+        0 if unavailable == "no_slot" else 1, 1024 ** 3, source="native_next_prefill",
+    )), patch(
+        "beliefkv.runtime.sglang_v0520_runtime.inspect_session_h2d_opportunity",
+        side_effect=opportunity,
+    ), patch.object(runtime, "issue_prefetch_gpu_step", return_value="restore") as issue:
+        runtime.dispatch_execution_handoff(
+            [ordinary, parent], running_batch=NS(reqs=[NS()]),
+        )
+    if unavailable == "no_slot":
+        issue.assert_not_called()
+        assert runtime._execution_handoff is None
+    else:
+        assert runtime._execution_handoff.key.request_id == ordinary.rid
+        assert issue.call_args.args[0].key.request_id == ordinary.rid
+    assert runtime.counts["parent_capacity_handoff_restore_lookahead"] == 0
+
+
+def test_full_transfer_ledger_does_not_consume_parent_restore_attempt(family):
+    runtime, requests, _, _ = family
+    runtime.enable_execution_handoff = True
+    runtime.on_events((returned(7, "child1"), returned(8, "child2")))
+    parent = parent_request(runtime, requests["parent"])
+    runtime._prefetch_priority_normal_admissions = 4
+    ledger = NS(pending_action_count=lambda _: 0, pending_count=32, max_pending=32)
+    with patch.object(runtime, "physical_ledger", ledger), \
+         patch.object(runtime, "plan_native_prefill") as plan, \
+         patch.object(runtime, "issue_prefetch_gpu_step") as issue:
+        runtime.dispatch_execution_handoff(
+            [requests["ordinary"], parent], running_batch=NS(reqs=[NS()]),
+        )
+    plan.assert_not_called()
+    issue.assert_not_called()
+    assert runtime._execution_handoff is None
+    assert runtime._execution_handoff_attempted == set()
 
 
 @pytest.mark.parametrize("persistent", ("invocation", "context"))

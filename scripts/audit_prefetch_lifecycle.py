@@ -6,6 +6,7 @@ from __future__ import annotations
 import argparse
 from bisect import bisect_left, bisect_right
 from collections import Counter, defaultdict
+from collections.abc import Sequence
 import json
 import math
 from pathlib import Path
@@ -101,7 +102,9 @@ def source_summary(rows: list[dict]) -> dict:
     }
 
 
-def terminal_capacity_summary(reclaims: list[dict], services: list[dict]) -> dict:
+def terminal_capacity_summary(
+    reclaims: list[dict], services: list[dict], lookaheads: Sequence[dict] = (),
+) -> dict:
     device, host, device_bytes, host_bytes = Counter(), Counter(), Counter(), Counter()
     device_unknown, host_unknown = Counter(), Counter()
     linked = defaultdict(list)
@@ -123,6 +126,11 @@ def terminal_capacity_summary(reclaims: list[dict], services: list[dict]) -> dic
                 else:
                     unknown[component] += units
     linked_services = []
+    lookahead_by_request = defaultdict(list)
+    for row in lookaheads:
+        lookahead_by_request[
+            row["workflow_id"], row["context_id"], row["join_id"], row["request_id"]
+        ].append(row)
     for service in services:
         rows = linked.get((
             service["workflow_id"], service["context_id"], service["join_id"],
@@ -132,6 +140,14 @@ def terminal_capacity_summary(reclaims: list[dict], services: list[dict]) -> dic
         for row in before:
             freed.update({str(ct): units for ct, units in row["freed_device_units"].items()})
         last_return = service.get("last_observed_child_return_ts_ms")
+        selections = [
+            row for row in lookahead_by_request.get((
+                service["workflow_id"], service["context_id"],
+                service["join_id"], service["request_id"],
+            ), ())
+            if row["ts_ms"] <= service["ts_ms"]
+        ]
+        selection = min(selections, key=lambda row: row["ts_ms"]) if selections else None
         linked_services.append({
             "workflow_id": service["workflow_id"], "context_id": service["context_id"],
             "join_id": service["join_id"], "request_id": service["request_id"],
@@ -141,6 +157,12 @@ def terminal_capacity_summary(reclaims: list[dict], services: list[dict]) -> dic
                 if last_return is not None and service["ts_ms"] >= last_return else None
             ),
             "request_wait_ms": service.get("request_wait_ms"),
+            "restore_lookahead_to_first_service_ms": (
+                service["ts_ms"] - selection["ts_ms"] if selection is not None else None
+            ),
+            "queue_wait_before_restore_lookahead_ms": (
+                selection.get("queue_wait_ms") if selection is not None else None
+            ),
         })
     return {
         "reclaim_records": len(reclaims),
@@ -161,13 +183,24 @@ def terminal_capacity_summary(reclaims: list[dict], services: list[dict]) -> dic
             row["last_child_return_to_first_service_ms"] for row in linked_services
         ),
         "request_wait_ms": distribution(row["request_wait_ms"] for row in linked_services),
+        "restore_lookahead_records": len(lookaheads),
+        "parent_services_with_prior_restore_lookahead": sum(
+            row["restore_lookahead_to_first_service_ms"] is not None for row in linked_services
+        ),
+        "restore_lookahead_to_first_service_ms": distribution(
+            row["restore_lookahead_to_first_service_ms"] for row in linked_services
+        ),
+        "queue_wait_before_restore_lookahead_ms": distribution(
+            row["queue_wait_before_restore_lookahead_ms"] for row in linked_services
+        ),
         "rows": linked_services,
         "semantics": (
             "Actual terminal-suffix allocator release, linked to the first observed "
             "completed parent GPU batch, not kernel start; RETURN delivery observation "
             "and service observation use scheduler wall time, not client event time; "
             "not exclusive slot ownership, predictive H2D reuse, avoided D2H bytes, "
-            "or a native-relative latency saving. Missing pool byte sizes stay unknown."
+            "or a native-relative latency saving. Restore lookahead is selection "
+            "evidence, not submission/ACK evidence. Missing pool byte sizes stay unknown."
         ),
     }
 
@@ -967,7 +1000,7 @@ def wait_event_attribution(
 def audit(arm: Path) -> dict:
     issued, prepared, parks, leases, stages = {}, {}, [], defaultdict(list), {}
     prepare_selections = []
-    terminal_reclaims, parent_handoff_services = [], []
+    terminal_reclaims, parent_handoff_services, parent_handoff_lookaheads = [], [], []
     wait_observations, clock_offset = [], None
     for row in records(arm / "opportunities/admission_opportunities.jsonl"):
         event = row["event"]
@@ -988,6 +1021,8 @@ def audit(arm: Path) -> dict:
             terminal_reclaims.append(row)
         elif event == "parent_capacity_handoff_first_service":
             parent_handoff_services.append(row)
+        elif event == "parent_capacity_handoff_restore_lookahead":
+            parent_handoff_lookaheads.append(row)
         elif event in (
             "prefetch_residency_registered", "prefetch_residency_released",
             "prefetch_reentry_ready", "prefetch_client_submitted", "prefetch_demand_submitted",
@@ -1247,7 +1282,7 @@ def audit(arm: Path) -> dict:
         "prepare_selection": prepare_selection_summary(prepare_selections, prepare_restores),
         "wait_events": wait_events["summary"],
         "terminal_capacity_handoff": terminal_capacity_summary(
-            terminal_reclaims, parent_handoff_services,
+            terminal_reclaims, parent_handoff_services, parent_handoff_lookaheads,
         ),
     }
     return {

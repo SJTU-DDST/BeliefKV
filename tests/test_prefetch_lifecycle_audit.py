@@ -51,6 +51,36 @@ def test_terminal_capacity_missing_or_reversed_return_time_stays_unknown():
     assert result["parent_services_with_prior_device_release"] == 0
 
 
+def test_parent_restore_lookahead_matches_the_request_and_join_before_service():
+    service = {
+        "workflow_id": "wf", "context_id": "parent", "join_id": "join",
+        "request_id": "next", "ts_ms": 30.,
+    }
+    selection = {**service, "ts_ms": 20., "queue_wait_ms": 5.}
+    result = terminal_capacity_summary([], [service], [
+        selection, {**selection, "ts_ms": 25.},
+        {**selection, "ts_ms": 10., "request_id": "other"},
+        {**selection, "ts_ms": 10., "join_id": "other"},
+        {**selection, "ts_ms": 40.},
+    ])
+    assert result["restore_lookahead_records"] == 5
+    assert result["parent_services_with_prior_restore_lookahead"] == 1
+    assert result["restore_lookahead_to_first_service_ms"]["p50"] == 10.
+    assert result["queue_wait_before_restore_lookahead_ms"]["p50"] == 5.
+    assert result["parent_services_with_prior_device_release"] == 0
+
+
+def test_parent_restore_lookahead_after_service_is_not_attributed():
+    service = {
+        "workflow_id": "wf", "context_id": "parent", "join_id": "join",
+        "request_id": "next", "ts_ms": 30.,
+    }
+    result = terminal_capacity_summary([], [service], [{**service, "ts_ms": 40.}])
+    assert result["parent_services_with_prior_restore_lookahead"] == 0
+    assert result["restore_lookahead_to_first_service_ms"] == {"count": 0}
+    assert result["queue_wait_before_restore_lookahead_ms"] == {"count": 0}
+
+
 def test_prepare_burst_ack_attribution_does_not_multiply_first_extent_estimates():
     result = prepare_selection_summary([{
         "source": "join_prepare", "command_id": "first",

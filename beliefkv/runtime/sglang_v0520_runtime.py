@@ -5529,6 +5529,8 @@ class NativeAdmissionRuntime:
             return
         if self.physical_ledger.pending_action_count("PREFETCH_GPU"):
             return
+        if self.physical_ledger.pending_count >= self.physical_ledger.max_pending:
+            return
         if ticket is None:
             self._execution_handoff_next_ms = now_ms + 50.
             if not waiting_queue:
@@ -5553,6 +5555,66 @@ class NativeAdmissionRuntime:
                     imminent,
                     key=lambda key: self._live_parent_capacity_handoff(key) is None,
                 )
+                # A Host-only parent otherwise waits for aging before reaching
+                # this frontier. Restore one unlocked parent into the next
+                # available slot; native dependencies still govern admission.
+                checked = 0
+                lookahead = (
+                    () if any(self._live_parent_capacity_handoff(key) for key in imminent)
+                    else plan.prioritized
+                )
+                for key in lookahead:
+                    if (
+                        key in imminent or key in self._execution_handoff_attempted
+                        or key.context_id not in self._parent_capacity_handoffs
+                        or self._live_parent_capacity_handoff(key) is None
+                    ):
+                        continue
+                    checked += 1
+                    request = by_id[key.request_id]
+                    anchors = self._request_reentry_anchors(request)
+                    batched = callable(getattr(self._native_cache, "prefetch_gpu_session_nodes", None))
+                    opportunity = (
+                        inspect_session_h2d_opportunity(
+                            self._native_cache, anchors,
+                            max_steps=min(
+                                16, self.physical_ledger.max_pending
+                                - self.physical_ledger.pending_count,
+                            ) if batched else 1,
+                            fit_current_capacity=batched,
+                        )
+                        if anchors is not None else None
+                    )
+                    if (
+                        opportunity is not None and opportunity.step is not None
+                        and opportunity.fits_current_free_lists is True
+                    ):
+                        imminent = [key, *imminent[:frontier_slots - 1]]
+                        self.counts["parent_capacity_handoff_restore_lookahead"] += 1
+                        if self._opportunity_writer is not None:
+                            self._opportunity_writer.record({
+                                "event": "parent_capacity_handoff_restore_lookahead",
+                                "ts_ms": time.time() * 1000.,
+                                "workflow_id": key.root_workflow_id,
+                                "invocation_id": key.invocation_id,
+                                "request_id": key.request_id, "context_id": key.context_id,
+                                "context_epoch": key.context_epoch,
+                                "join_id": self._parent_capacity_handoffs[key.context_id].join_id,
+                                "frontier_slots": frontier_slots,
+                                "queue_wait_ms": (
+                                    time.monotonic() - self._visible_since.get(
+                                        key.request_id, time.monotonic(),
+                                    )
+                                ) * 1000.,
+                                "semantics": (
+                                    "One submitted JOIN-unlocked parent restore after "
+                                    "ordinary quota, fitting current free lists; "
+                                    "native data dependencies still govern admission."
+                                ),
+                            })
+                        break
+                    if checked == 8:
+                        break
             for key in imminent:
                 request = by_id[key.request_id]
                 if key in self._execution_handoff_attempted:
