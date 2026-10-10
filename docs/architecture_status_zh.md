@@ -19,6 +19,14 @@ checkpoint 时，异步提交必要状态备份，保留原生设备读锁，
 `98fc5af9c40121d6f7ba1824f1fd5b586d0b141d5b12370a2d9243c1b1b5e8f1`；
 完整预期/实际 Git tree 与反向应用检查通过，尚未部署到 V20。
 
+`launch_semantic_h2d_after_pair.py` 支持在完整 pair 后自动部署
+已提交的隔离修订，再启动独立 V21：等待原 driver/server/
+scheduler 的同一进程身份退出、两侧 summary/HTML/cleanup 和
+最终对照完成，核验冻结计划后 fast-forward 与精确引擎增量。
+复用原 workload、到达流和模型配置，先 predictive、后同版本
+冷 native；状态文件记录目标提交与新目录，不改写 V20 计划。
+尚未完成的 native 不触发部署，后续源码变化也不会偷偷进入排队轮。
+
 终态 child 到 parent 的容量交接已在冻结版 v20 predictive 中
 触发；按真实 spawn 身份重算，371 个 child 累计释放设备
 FULL 119.545 GB、Mamba 125.816 GB。192 个独立 JOIN 的

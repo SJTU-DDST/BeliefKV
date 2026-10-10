@@ -19,6 +19,15 @@ prefill gap. The isolated canonical patch has SHA256
 reverse application and exact expected/actual tree verification pass. Deploy
 after the frozen V20 pair, then measure reuse and busy-window/paired JCT results.
 
+Use launch_semantic_h2d_after_pair.py to queue the committed follow-up in a
+separate V21 directory. Wait for the original driver/server/scheduler identities
+to exit and for both summaries, timeline exports, cleanup and final comparison.
+Verify the old frozen plan before fast-forwarding main and applying the exact
+old-to-new engine delta. Preserve the workload, arrival flow, artifacts and
+settings, but start a fresh predictive-first/cold-native pair. Record the
+scheduled revision and environment in a separate launch state; do not rewrite
+V20 or use its native arm as the new revision's matched baseline.
+
 Terminal private-suffix retirement and parent restore/admission are implemented.
 The frozen predictive arm contains 371 real spawn children; their cumulative
 device releases are 119.545 GB FULL and 125.816 GB Mamba. Independent JOIN

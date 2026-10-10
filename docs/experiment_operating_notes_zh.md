@@ -15,6 +15,14 @@ guard、终态门禁或模型动作授权。启动前同时阅读
 `98fc5af9c40121d6f7ba1824f1fd5b586d0b141d5b12370a2d9243c1b1b5e8f1`；
 保持 V20 冻结版，成对采集结束后再部署下一轮。
 
+续跑使用 `scripts/launch_semantic_h2d_after_pair.py`：登记已提交
+且干净的目标 checkout、独立 V21 目录及旧进程身份。只有原
+driver/server/scheduler 均退出、两侧完整 summary 和后处理
+完成才部署；目标提交和旧冻结计划变化时记录失败，不混用结果。
+新 pair 沿用原任务和产物，先 predictive 再同版本冷 native，
+两侧在 health 成功后、提交 workload 前完成相同 GC 初始化。
+旧 native 不能充当新修订的 matched baseline。
+
 当前 native 保持 b019d24/c58cc891 冻结，隔离分支的 sibling 通知
 联动、Mamba 槽回收和控制减负在成对采集结束后部署。终态 child
 释放必须基于真实 RETURN、上下文结束和原生无引用/锁/在途依赖；
