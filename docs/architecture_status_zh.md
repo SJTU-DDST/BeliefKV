@@ -2,6 +2,52 @@
 
 更新日期：2026-10-10。
 
+## V20 已解锁 parent 的恢复候选修订
+
+V19b 的实际终态回收已工作，但 Host-backed parent 仍需等原准入
+队列老化后才进入 handoff。诊断快照中的19个原生FULL Host-hit
+parent均等待超过1秒，等待中位数11.52秒；一个parent入队后
+等待19.18秒，直到恢复被选中后才在103.79ms内观测到完成batch。
+这说明恢复选取太晚，不能将全部等待归因于传输或RETURN预测。
+
+修订1375285在四次普通准入额度满足且存在下一批准入slot时，
+若原恢复候选中没有已解锁parent，就从已提交、身份仍有效且
+JOIN满足的parent中有界检查最多8个。只有安全checkpoint的
+实际恢复extent适配当前free lists时，才将其中1个纳入下一批
+恢复候选；没有容量、checkpoint或slot时继续原候选服务。
+原生页/状态/DMA依赖、恢复后驻留及有界准入仍有效，不等待
+这个parent而空置可用GPU服务，也不独占child原来的页号。
+全满的传输ledger不消耗一次恢复尝试。
+
+增加parent_capacity_handoff_restore_lookahead记录，并按相同
+workflow/context/JOIN/request关联其选取到首个完成GPU batch
+的间隔与选取前排队。选取记录不等于submit或ACK，RETURN后
+handoff继续与JOIN/tool边界前的预测恢复分开。328项相关恢复、
+调度、容量、普通请求额度与审计检查通过；原生patch保持不变。
+
+V19b于2026-10-10 19:07:25 CST请求停采，19:11:58已核验旧
+client/server/scheduler退出、GPU及18454端口释放。80个终态
+均completed；156个任务均已到达，其余76个按运行截断保存，
+不记作模型incomplete。native未启动，不构成完整性能对照。
+最终审计有540个child终态、804次含重试的回收记录，累计释放
+190.834GB设备FULL和97.614GB设备Mamba；112个parent的
+入队到首个完成batch P50/P90为191.50ms/13.990秒。
+独立边界前启动且复用的FULL为JOIN1.234GB、tool0.238GB，
+共1.472GB；71.884GB需求handoff复用单列。329次PREPARE中
+133次有后续恢复关联，该关联不等同最终forward消费。
+
+4个工作量触发的完整JOIN仍提前约4.15秒；前2个拟合的常数
+修正约4.94秒，在后2个事件中仅1个进入500ms误差范围，样本
+不足且不能作为在线偏移。95个已观测无工具EOS触发的RETURN
+端点误差中位数58.56ms、97.89%在500ms内；这是协议终态线索
+的选中事件评价，不是内容模型整体预测精度或数秒提前量。
+
+保留停止记录与三份stopped审计，清理已经完成且归档的80个
+root workspace，保留trace、补丁及中断workspace。下一轮V20
+仍用156任务、108+48/3600秒、running48、Host200GB80:20、
+HBM0.9、工具180秒、lead500ms和原预测产物，先predictive再
+同版本冷native。active吞吐/JCT目标仍未达标。
+
 ## V19b child 上下文结束的集成修正
 
 V19诊断快照已观察到child自然RETURN，但终态回收和parent消费记录

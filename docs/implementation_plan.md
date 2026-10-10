@@ -2,6 +2,54 @@
 
 Status date: 2026-10-10.
 
+## V20 JOIN-Unlocked Parent Restore Selection
+
+V19b terminal reclamation works, but Host-backed parents can wait for the
+original residency/admission queue to age before handoff starts. In a diagnostic
+snapshot,19 native FULL Host-hit parents all waited over1s, with11.52s
+median queue wait. One waited19.18s before first observed service, but only
+103.79ms from restoration selection to that service observation.
+
+Revision1375285 considers one submitted JOIN-unlocked parent for the next
+available restoration slot after four ordinary admissions. Keep a parent already
+in that frontier; otherwise inspect at most eight linked parents and select only
+a safe request checkpoint whose restoration extents fit the current free lists.
+Unavailable slots, checkpoint or capacity preserve ordinary service. Native
+page/state/DMA dependencies, bounded leases, normal admission quota and batch
+filling remain authoritative. A full transfer ledger must not consume the
+one-shot restore attempt.
+
+Audit parent_capacity_handoff_restore_lookahead against the same workflow,
+context,JOIN and request's first observed completed GPU batch. Report selection
+to service and queue wait before selection, without treating selection as
+submission/ACK or counting this post-RETURN demand work as early predictive H2D.
+328 scoped runtime/restoration/capacity/admission/audit checks pass. The engine
+patch and predictor artifacts are unchanged.
+
+V19b stop requested19:07:25 CST,2026-10-10; old processes,GPU and port18454
+were verified released at19:11:58. Preserve80 completed outcomes and76
+interrupted tasks; all156 arrived. No native arm started, so no completed
+performance pair exists. Final stopped evidence includes540 terminal children,
+804 reclamation records including retries,190.834GB device FULL and97.614GB
+device Mamba released.112 linked parent services have queue-wait P50/P90
+191.50ms/13.990s. Independently early reused FULL is1.234GB JOIN plus
+0.238GB tool;71.884GB demand-handoff FULL reuse remains separate.
+329 PREPARE commands include133 later-restore associations, not forward proof.
+
+Keep the4 early estimated-work triggers and their bias as failures. A constant
+correction fitted on2 events leaves only1 of2 later events within500ms, so
+do not change the runtime offset or frozen artifact from that sample.95 selected
+observed-no-tool-EOS triggers have58.56ms median RETURN endpoint error and
+97.89% within500ms; these are protocol-cue events, not overall semantic
+forecast accuracy or a multi-second predictive window.
+
+Retain the stop record, three stopped audits, traces and patches; clean the80
+archived completed root workspaces, keeping interrupted workspaces. Cold-start
+V20 predictive first, then native on the same frozen revision. Keep156 tasks,
+108+48 at3600s,running48,Host200GB80:20,HBM0.9,180s tools and500ms lead.
+Validate the new parent-selection records, actual reuse and busy-window/paired
+JCT performance before closing the active goal.
+
 ## V19b Harness Context Retirement Integration
 
 The V19 diagnostic snapshot contained authoritative child RETURNs but zero

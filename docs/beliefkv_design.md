@@ -78,6 +78,16 @@ Device/Host 余量，不用总体显存占用代替可行动容量，不为制�
 预取保护及准入提升有界，并计入新输入、decode 增长和状态
 预留、普通请求老化及其他 workflow 尾延迟。
 
+真实 child RETURN 后，结束上下文的无引用私有后缀可直接交还
+原生 allocator，无须额外 D2H。已提交且 JOIN 满足的 parent
+可在四次普通准入额度后使用下一批恢复 slot：原候选中没有
+该类 parent 时，有界检查最多八个关联 parent，选取至多一个
+安全 checkpoint、实际恢复 extent 适配当前 free lists 的对象。
+数据依赖和首次消费前驻留仍由原生核验，其他可服务请求继续
+填充 batch。这个返回后选取与需求恢复不计为预测 H2D；较早
+sibling 的真实释放供最终 child 返回前预取使用时，仍按独立
+完成边界、实际 submit/ACK 和 FULL 复用证明计算预测覆盖。
+
 已提交请求的 execution handoff 按实际输入规划需求恢复；
 child/tool 返回前的预测 H2D 单独计数。前者已有物理 ACK 与
 FULL 首次复用证据，不能计作提前预测收益。完整 JointPlan、
