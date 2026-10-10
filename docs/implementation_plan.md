@@ -68,8 +68,10 @@ reasons and busy-window throughput. The broad performance objective stays active
 Include the isolated live-counter reduction in the next V22 registration.
 Headroom and Host usage now validate current pool ownership and geometry and
 sample live free lists without a device tensor-byte census. Full capacity census
-and action node closure retain their tensor inspection and all session, reference,
-DMA and allocator checks. Do not cache free lists across native allocation.
+retains its tensor inspection. Action node closure now uses the same validated
+current pool geometry rather than an irrelevant whole-pool tensor census.
+Keep live node lengths, full ancestry, session ownership, reference/lock and DMA
+checks unchanged. Do not cache free lists across native allocation.
 
 Keep v23_static_pool_counters_cpu_final_20261011.json. Alternating CPU measurements
 use the native MHATokenToKVPool counter with ten FULL and thirty Mamba tensor
@@ -80,6 +82,35 @@ fixtures preserve selections, publications and observations; retain their wall
 outliers instead of treating noisy fixture means as an end-to-end gain.
 The latest 296 observer/telemetry/runtime/policy checks pass; the earlier 267
 terminal/handoff/physical checks also pass, with overlapping tests.
+
+Include the final closure reduction and sparse control profiling in V22's
+still-waiting registration, preserving the old registration and receipt.
+Keep v24_checkpoint_observation_cpu_final_20261011.json: against f57527f,
+100 alternating CPU samples with 50 calls per phase preserve changing live
+counters and identical four-extent H2D and FULL-only PREPARE plans.
+Mean closure/H2D/PREPARE planning costs change from150.07/223.84/193.93
+to40.31/103.96/76.42 microseconds, with15750→0 tensor census calls.
+Headroom and Host-usage differences are noise. This is not GPU throughput proof.
+
+Sample control socket receive every64 attempts and JSON/Event decoding,
+ACK encoding/send every64 received packets through the existing timing collector.
+Preserve wire schema, event order, rejection and cached duplicate ACK bytes.
+Publish control_timing_sample_every; do not extrapolate sampled totals into
+full-run CPU time or JCT. Keep v24_control_channel_profile_cpu_20261011.json:
+single-event862-byte CPU fixture packets add about4.03 microseconds on average;
+32-event25746-byte packet differences are noise. The fixture excludes real
+socket syscalls and GPU. The337 observer/physical/terminal/handoff/native-transfer
+checks and132 channel/timing/runtime checks pass, with overlapping tests.
+
+Preserve v21_control_profile_snapshot_20261011.json, extracted with a128KiB
+tail budget. At7287 seconds the exclusive Python wall totals for control_drain,
+reentry_inspection, opportunity_sampling, join_prepare and admission_plan are
+129.19/106.15/102.44/84.37/65.85 seconds. These are not removable JCT or CUDA
+idle. At this partial observation136 workflows completed,1 was incomplete and19
+had no result. Preserve django-12125's length-truncated incomplete result;
+the deadline was unexpired and no cancellation/guard intervention occurred.
+Use the next frozen same-version pair to measure actual restoration consumption
+and native-relative busy-window performance; the broad goal remains active.
 
 Preserve v21_terminal_capacity_progress_summary_20261011.json with source audit
 path and SHA256. Its 214 confirmed dynamic children release cumulative device

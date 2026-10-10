@@ -1,0 +1,237 @@
+{
+  "scope": "same-input CPU fixtures; native enqueue is stubbed, no GPU or throughput claim",
+  "baseline_revision": "f57527f",
+  "baseline_source_sha256": {
+    "beliefkv/runtime/sglang_v0520_observer.py": "1378b28fccfe9b2e8b05967782637d5c568b93b0daf598efafc5808f99dafd21",
+    "beliefkv/runtime/sglang_v0520_physical.py": "4807dc2e067815434c89e3bf7b08e5ad724fa9f96ad25af31093545317f458e7",
+    "beliefkv/runtime/sglang_v0520_runtime.py": "1e018f375b3821ade5b511b75e601e190e01a0597c26378c684b2f3fdf470653"
+  },
+  "fixture": "validated static pools and real observer ancestry; sixteen retained workflow rounds",
+  "optimized_source_sha256": {
+    "beliefkv/runtime/sglang_v0520_observer.py": "8af6a62eaa0b3dc5d162c0f21683990da4574c6c3141e1744146578d9b2bc16b",
+    "beliefkv/runtime/sglang_v0520_physical.py": "4807dc2e067815434c89e3bf7b08e5ad724fa9f96ad25af31093545317f458e7",
+    "beliefkv/runtime/sglang_v0520_runtime.py": "bffddb3e19a7dfc578654efff8f2b334ca96ad899ecb0334ac042bd1b3349a95"
+  },
+  "imported_sources": {
+    "beliefkv/runtime/sglang_v0520_observer.py": "/home/longhao/experiment/.worktrees/beliefkv-v24-followup-20261011/beliefkv/runtime/sglang_v0520_observer.py",
+    "beliefkv/runtime/sglang_v0520_physical.py": "/home/longhao/experiment/.worktrees/beliefkv-v24-followup-20261011/beliefkv/runtime/sglang_v0520_physical.py",
+    "beliefkv/runtime/sglang_v0520_runtime.py": "/home/longhao/experiment/.worktrees/beliefkv-v24-followup-20261011/beliefkv/runtime/sglang_v0520_runtime.py"
+  },
+  "benchmark_source_sha256": "60091d6bad942d635fa5f68d14288f11dc52375686ea9da5edba9cfe5df02af2",
+  "service_seed": null,
+  "handoff_identity": null,
+  "cases": [],
+  "terminal_cases": [],
+  "lease_cases": [],
+  "publication_cases": [],
+  "failed_sampling_cases": [],
+  "static_counter_cases": [
+    {
+      "scope": "native size code and real four-extent checkpoint planner on CPU fixtures; no DMA or GPU throughput",
+      "native_pool_source": "/tmp/sglang-v22-prefix-20261011/python/sglang/srt/mem_cache/memory_pool.py",
+      "native_pool_source_sha256": "737ac340aee5a1d2a260fdf976c9023c563ca550ca1e2d47a3bbcfb674915577",
+      "full_tensor_layers": 10,
+      "mamba_tensor_layers": 30,
+      "iterations": 100,
+      "calls_per_sample": 50,
+      "live_free_list_observations_equal": true,
+      "node_closure_and_four_extent_restore_plan_equal": true,
+      "four_extent_full_only_prepare_plan_equal": true,
+      "ignored_output_fields": [
+        "closure.captured_monotonic_s"
+      ],
+      "tensor_census_calls_including_warmup": {
+        "baseline": 15750,
+        "optimized": 0
+      },
+      "costs": {
+        "baseline": {
+          "headroom": {
+            "wall": {
+              "count": 100,
+              "mean_ms": 0.0070817924,
+              "p50_ms": 0.00757988,
+              "p99_ms": 0.00848556,
+              "max_ms": 0.00848556
+            },
+            "thread_cpu": {
+              "count": 100,
+              "mean_ms": 0.0070634004,
+              "p50_ms": 0.00755914,
+              "p99_ms": 0.00846848,
+              "max_ms": 0.00846848
+            }
+          },
+          "host_usage": {
+            "wall": {
+              "count": 100,
+              "mean_ms": 0.0064180554,
+              "p50_ms": 0.00681946,
+              "p99_ms": 0.00826012,
+              "max_ms": 0.00826012
+            },
+            "thread_cpu": {
+              "count": 100,
+              "mean_ms": 0.0064024776,
+              "p50_ms": 0.00679848,
+              "p99_ms": 0.00823016,
+              "max_ms": 0.00823016
+            }
+          },
+          "closure": {
+            "wall": {
+              "count": 100,
+              "mean_ms": 0.1500718384,
+              "p50_ms": 0.16130368,
+              "p99_ms": 0.20171548,
+              "max_ms": 0.20171548
+            },
+            "thread_cpu": {
+              "count": 100,
+              "mean_ms": 0.1500499476,
+              "p50_ms": 0.16128438,
+              "p99_ms": 0.20168512,
+              "max_ms": 0.20168512
+            }
+          },
+          "session_h2d": {
+            "wall": {
+              "count": 100,
+              "mean_ms": 0.2238401174,
+              "p50_ms": 0.23931661999999998,
+              "p99_ms": 0.45158006,
+              "max_ms": 0.45158006
+            },
+            "thread_cpu": {
+              "count": 100,
+              "mean_ms": 0.2238190368,
+              "p50_ms": 0.23929583999999998,
+              "p99_ms": 0.45154386,
+              "max_ms": 0.45154386
+            }
+          },
+          "prepare_plan": {
+            "wall": {
+              "count": 100,
+              "mean_ms": 0.1939305186,
+              "p50_ms": 0.20937487999999999,
+              "p99_ms": 0.21383446,
+              "max_ms": 0.21383446
+            },
+            "thread_cpu": {
+              "count": 100,
+              "mean_ms": 0.193905789,
+              "p50_ms": 0.20935559999999998,
+              "p99_ms": 0.21381360000000002,
+              "max_ms": 0.21381360000000002
+            }
+          }
+        },
+        "optimized": {
+          "headroom": {
+            "wall": {
+              "count": 100,
+              "mean_ms": 0.0070845392,
+              "p50_ms": 0.0075707000000000005,
+              "p99_ms": 0.00825174,
+              "max_ms": 0.00825174
+            },
+            "thread_cpu": {
+              "count": 100,
+              "mean_ms": 0.0070656986,
+              "p50_ms": 0.00754824,
+              "p99_ms": 0.008229,
+              "max_ms": 0.008229
+            }
+          },
+          "host_usage": {
+            "wall": {
+              "count": 100,
+              "mean_ms": 0.006463267,
+              "p50_ms": 0.0068857400000000004,
+              "p99_ms": 0.007386859999999999,
+              "max_ms": 0.007386859999999999
+            },
+            "thread_cpu": {
+              "count": 100,
+              "mean_ms": 0.006447727,
+              "p50_ms": 0.00686988,
+              "p99_ms": 0.00736758,
+              "max_ms": 0.00736758
+            }
+          },
+          "closure": {
+            "wall": {
+              "count": 100,
+              "mean_ms": 0.0403067608,
+              "p50_ms": 0.04332594,
+              "p99_ms": 0.04505378,
+              "max_ms": 0.04505378
+            },
+            "thread_cpu": {
+              "count": 100,
+              "mean_ms": 0.0402894784,
+              "p50_ms": 0.04331019999999999,
+              "p99_ms": 0.04503598,
+              "max_ms": 0.04503598
+            }
+          },
+          "session_h2d": {
+            "wall": {
+              "count": 100,
+              "mean_ms": 0.1039617936,
+              "p50_ms": 0.11240886,
+              "p99_ms": 0.11427678000000001,
+              "max_ms": 0.11427678000000001
+            },
+            "thread_cpu": {
+              "count": 100,
+              "mean_ms": 0.103941257,
+              "p50_ms": 0.11238722,
+              "p99_ms": 0.11425606,
+              "max_ms": 0.11425606
+            }
+          },
+          "prepare_plan": {
+            "wall": {
+              "count": 100,
+              "mean_ms": 0.0764210674,
+              "p50_ms": 0.08242316000000001,
+              "p99_ms": 0.08499058,
+              "max_ms": 0.08499058
+            },
+            "thread_cpu": {
+              "count": 100,
+              "mean_ms": 0.0763979094,
+              "p50_ms": 0.0823984,
+              "p99_ms": 0.08496606,
+              "max_ms": 0.08496606
+            }
+          }
+        }
+      },
+      "mean_reduction": {
+        "headroom": {
+          "wall": -0.0003878679075652869,
+          "thread_cpu": -0.0003253673683853986
+        },
+        "host_usage": {
+          "wall": -0.007044439036783645,
+          "thread_cpu": -0.007067482750740206
+        },
+        "closure": {
+          "wall": 0.7314168918716997,
+          "thread_cpu": 0.7314928859062128
+        },
+        "session_h2d": {
+          "wall": 0.5355533458096731,
+          "thread_cpu": 0.5356013568547356
+        },
+        "prepare_plan": {
+          "wall": 0.6059358374757629,
+          "thread_cpu": 0.6060050099896708
+        }
+      }
+    }
+  ]
+}

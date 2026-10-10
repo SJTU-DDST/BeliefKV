@@ -25,7 +25,10 @@ from beliefkv.predictor.completion_lead import (
     CompletionLead,
     load_pinned_completion_lead,
 )
-from beliefkv.runtime.event_channel import RuntimeEventDatagramServer
+from beliefkv.runtime.event_channel import (
+    CONTROL_TIMING_SAMPLE_EVERY,
+    RuntimeEventDatagramServer,
+)
 from beliefkv.runtime.hotpath_timing import HotpathTiming, timed_runtime
 from beliefkv.runtime.v0520_opportunity_telemetry import NativeOpportunityTelemetry
 from beliefkv.runtime.sglang_v0520_admission import (
@@ -553,7 +556,9 @@ class NativeAdmissionRuntime:
         self._opportunity_next_ms = 0.0
         self._opportunity_cursor = 0
         self.event_server = (
-            RuntimeEventDatagramServer(event_socket_path, self.on_events)
+            RuntimeEventDatagramServer(
+                event_socket_path, self.on_events, timing=self._hotpath_timing,
+            )
             if event_socket_path
             else None
         )
@@ -1565,6 +1570,11 @@ class NativeAdmissionRuntime:
                     self._semantic_worker.error if self._semantic_worker else ""
                 ),
                 "shared_path_timing": self._hotpath_timing.snapshot(),
+                "control_timing_sample_every": (
+                    CONTROL_TIMING_SAMPLE_EVERY
+                    if self.event_server is not None and self._hotpath_timing.enabled
+                    else None
+                ),
             })
 
     def _missing_opportunity_detail(

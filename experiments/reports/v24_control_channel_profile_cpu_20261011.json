@@ -1,0 +1,449 @@
+{
+  "scope": "receiver codec and drain on CPU socket fixtures; no real socket syscall, GPU or throughput claim",
+  "baseline_revision": "f57527f",
+  "baseline_source_sha256": "282c96c2479b0fe2aa25f52bcbdf57d01e71e143de7b30dc9157ae8b9821b958",
+  "updated_source_sha256": "b1820da2977b7b840daee46a127ce65f3126bb8b7bf841342c060b0b16c43971",
+  "benchmark_source_sha256": "4e7e79660f1a7f8ce87aec05678210faa0bdc2f48198695a3ba08a0fbff2a609",
+  "cases": [
+    {
+      "events_per_packet": 1,
+      "text_chars_per_event": 256,
+      "max_packet_bytes": 862,
+      "packets_per_sample": 64,
+      "samples": 60,
+      "delivery_ack_bytes_and_order_equal": true,
+      "costs_per_packet": {
+        "baseline": {
+          "wall": {
+            "count": 60,
+            "mean_ms": 0.02590019140625,
+            "p50_ms": 0.025752953125,
+            "p99_ms": 0.027486578125,
+            "max_ms": 0.027486578125
+          },
+          "thread_cpu": {
+            "count": 60,
+            "mean_ms": 0.02587830859375,
+            "p50_ms": 0.02572921875,
+            "p99_ms": 0.02746403125,
+            "max_ms": 0.02746403125
+          }
+        },
+        "updated_without_profile": {
+          "wall": {
+            "count": 60,
+            "mean_ms": 0.025863805729166668,
+            "p50_ms": 0.02580725,
+            "p99_ms": 0.02670203125,
+            "max_ms": 0.02670203125
+          },
+          "thread_cpu": {
+            "count": 60,
+            "mean_ms": 0.02584221484375,
+            "p50_ms": 0.025787734375,
+            "p99_ms": 0.026682296875,
+            "max_ms": 0.026682296875
+          }
+        },
+        "updated_with_profile": {
+          "wall": {
+            "count": 60,
+            "mean_ms": 0.029930001302083332,
+            "p50_ms": 0.02715396875,
+            "p99_ms": 0.193620046875,
+            "max_ms": 0.193620046875
+          },
+          "thread_cpu": {
+            "count": 60,
+            "mean_ms": 0.029906454427083333,
+            "p50_ms": 0.027132421875,
+            "p99_ms": 0.19358440625,
+            "max_ms": 0.19358440625
+          }
+        }
+      },
+      "sparse_profile": {
+        "schema_version": 1,
+        "enabled": true,
+        "clock": "perf_counter_ns; CPU wall intervals, not GPU kernel time",
+        "scope": "cumulative completed calls; exclusive totals avoid nested double counting",
+        "elapsed_ms": 443.888403,
+        "bucket_upper_ms": [
+          0.01,
+          0.025,
+          0.05,
+          0.1,
+          0.25,
+          0.5,
+          1.0,
+          2.5,
+          5.0,
+          10.0,
+          25.0,
+          50.0,
+          100.0,
+          250.0,
+          1000.0,
+          null
+        ],
+        "phases": {
+          "control_socket_receive_sample": {
+            "count": 67,
+            "total_ms": 0.089274,
+            "self_ms": 0.089274,
+            "mean_ms": 0.00133244776119403,
+            "max_ms": 0.004283,
+            "histogram": [
+              67,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0
+            ]
+          },
+          "control_json_decode_sample": {
+            "count": 65,
+            "total_ms": 0.811491,
+            "self_ms": 0.811491,
+            "mean_ms": 0.012484476923076923,
+            "max_ms": 0.018445,
+            "histogram": [
+              0,
+              65,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0
+            ]
+          },
+          "control_event_decode_sample": {
+            "count": 65,
+            "total_ms": 0.997106,
+            "self_ms": 0.997106,
+            "mean_ms": 0.015340092307692309,
+            "max_ms": 0.023089,
+            "histogram": [
+              0,
+              65,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0
+            ]
+          },
+          "control_ack_encode_sample": {
+            "count": 65,
+            "total_ms": 0.545958,
+            "self_ms": 0.545958,
+            "mean_ms": 0.008399353846153847,
+            "max_ms": 0.012295,
+            "histogram": [
+              63,
+              2,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0
+            ]
+          },
+          "control_socket_send_sample": {
+            "count": 65,
+            "total_ms": 0.060605,
+            "self_ms": 0.060605,
+            "mean_ms": 0.0009323846153846153,
+            "max_ms": 0.001215,
+            "histogram": [
+              65,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0
+            ]
+          }
+        }
+      },
+      "mean_overhead_us": {
+        "updated_without_profile": {
+          "wall": -0.036385677083330265,
+          "thread_cpu": -0.036093750000000535
+        },
+        "updated_with_profile": {
+          "wall": 4.029809895833333,
+          "thread_cpu": 4.028145833333333
+        }
+      }
+    },
+    {
+      "events_per_packet": 32,
+      "text_chars_per_event": 256,
+      "max_packet_bytes": 25746,
+      "packets_per_sample": 64,
+      "samples": 60,
+      "delivery_ack_bytes_and_order_equal": true,
+      "costs_per_packet": {
+        "baseline": {
+          "wall": {
+            "count": 60,
+            "mean_ms": 0.36811796536458335,
+            "p50_ms": 0.327562796875,
+            "p99_ms": 0.6675664375,
+            "max_ms": 0.6675664375
+          },
+          "thread_cpu": {
+            "count": 60,
+            "mean_ms": 0.36807989765625,
+            "p50_ms": 0.32753646875,
+            "p99_ms": 0.66751096875,
+            "max_ms": 0.66751096875
+          }
+        },
+        "updated_without_profile": {
+          "wall": {
+            "count": 60,
+            "mean_ms": 0.3691469716145833,
+            "p50_ms": 0.331037796875,
+            "p99_ms": 0.554256828125,
+            "max_ms": 0.554256828125
+          },
+          "thread_cpu": {
+            "count": 60,
+            "mean_ms": 0.369098490625,
+            "p50_ms": 0.331015421875,
+            "p99_ms": 0.554221875,
+            "max_ms": 0.554221875
+          }
+        },
+        "updated_with_profile": {
+          "wall": {
+            "count": 60,
+            "mean_ms": 0.36747033671875,
+            "p50_ms": 0.3320685,
+            "p99_ms": 0.562384140625,
+            "max_ms": 0.562384140625
+          },
+          "thread_cpu": {
+            "count": 60,
+            "mean_ms": 0.3674194359375,
+            "p50_ms": 0.33204078125,
+            "p99_ms": 0.5623504375,
+            "max_ms": 0.5623504375
+          }
+        }
+      },
+      "sparse_profile": {
+        "schema_version": 1,
+        "enabled": true,
+        "clock": "perf_counter_ns; CPU wall intervals, not GPU kernel time",
+        "scope": "cumulative completed calls; exclusive totals avoid nested double counting",
+        "elapsed_ms": 5641.091277,
+        "bucket_upper_ms": [
+          0.01,
+          0.025,
+          0.05,
+          0.1,
+          0.25,
+          0.5,
+          1.0,
+          2.5,
+          5.0,
+          10.0,
+          25.0,
+          50.0,
+          100.0,
+          250.0,
+          1000.0,
+          null
+        ],
+        "phases": {
+          "control_socket_receive_sample": {
+            "count": 67,
+            "total_ms": 0.106567,
+            "self_ms": 0.106567,
+            "mean_ms": 0.00159055223880597,
+            "max_ms": 0.006059,
+            "histogram": [
+              67,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0
+            ]
+          },
+          "control_json_decode_sample": {
+            "count": 65,
+            "total_ms": 7.203565,
+            "self_ms": 7.203565,
+            "mean_ms": 0.11082407692307693,
+            "max_ms": 0.187406,
+            "histogram": [
+              0,
+              0,
+              0,
+              31,
+              34,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0
+            ]
+          },
+          "control_event_decode_sample": {
+            "count": 65,
+            "total_ms": 17.679269,
+            "self_ms": 17.679269,
+            "mean_ms": 0.27198875384615384,
+            "max_ms": 0.33932,
+            "histogram": [
+              0,
+              0,
+              0,
+              0,
+              34,
+              31,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0
+            ]
+          },
+          "control_ack_encode_sample": {
+            "count": 65,
+            "total_ms": 0.777383,
+            "self_ms": 0.777383,
+            "mean_ms": 0.011959738461538461,
+            "max_ms": 0.023011,
+            "histogram": [
+              18,
+              47,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0
+            ]
+          },
+          "control_socket_send_sample": {
+            "count": 65,
+            "total_ms": 0.065385,
+            "self_ms": 0.065385,
+            "mean_ms": 0.001005923076923077,
+            "max_ms": 0.001293,
+            "histogram": [
+              65,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0
+            ]
+          }
+        }
+      },
+      "mean_overhead_us": {
+        "updated_without_profile": {
+          "wall": 1.0290062499999642,
+          "thread_cpu": 1.0185929687500095
+        },
+        "updated_with_profile": {
+          "wall": -0.6476286458333425,
+          "thread_cpu": -0.660461718750005
+        }
+      }
+    }
+  ]
+}

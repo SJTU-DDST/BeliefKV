@@ -550,7 +550,7 @@ def observe_unified_node_closure(
     capacity = observe_unified_full_mamba(cache)
     if not capacity.observable:
         try:
-            static = observe_static_full_mamba(cache)
+            static = _static_full_mamba_pool_geometry(cache)
         except (AttributeError, KeyError, NotImplementedError, RuntimeError, TypeError, ValueError) as exc:
             return UnifiedNodeClosureObservation(
                 observable=False,

@@ -6,7 +6,7 @@ from __future__ import annotations
 import argparse
 import ast
 from collections import Counter
-from dataclasses import replace
+from dataclasses import asdict, replace
 import hashlib
 import json
 from pathlib import Path
@@ -27,16 +27,18 @@ from beliefkv.runtime.native_transfer_service import load_native_service_seed
 from scripts.benchmark_native_shared_path import distribution, synthetic_runtime
 from beliefkv.policy.causal_frontier import CausalFrontierScheduler
 from tests.test_sglang_v0520_observer import (
-    ComponentData, UnifiedTreeCore, UnifiedTreeNode, _static_cache,
+    ComponentData, UnifiedTreeCore, UnifiedTreeNode, _node, _static_cache,
 )
 
 
 def static_counter_case(*, engine: Path, iterations: int) -> dict:
-    """Compare live counters using native tensor-size code and CPU tensors."""
+    """Compare live counters and recovery observation with native size code."""
     import torch
     from beliefkv.runtime import sglang_v0520_observer as current
 
     baseline = sys.modules["beliefkv.runtime._prepare_baseline_observer"]
+    baseline_physical = sys.modules["beliefkv.runtime._prepare_baseline_physical"]
+    from beliefkv.runtime import sglang_v0520_physical as current_physical
     source_path = engine / "python/sglang/srt/mem_cache/memory_pool.py"
     source = source_path.read_text()
     tree = ast.parse(source)
@@ -50,7 +52,7 @@ def static_counter_case(*, engine: Path, iterations: int) -> dict:
     exec(compile(ast.Module(body=[helper, method], type_ignores=[]),
                  str(source_path), "exec"), namespace)
     variants, census_reads = {}, Counter(baseline=0, optimized=0)
-    phases = ("headroom", "host_usage")
+    phases = ("headroom", "host_usage", "closure", "session_h2d", "prepare_plan")
     samples = {name: {phase: {"wall": [], "thread_cpu": []} for phase in phases}
                for name in ("baseline", "optimized")}
     for name, module in (("baseline", baseline), ("optimized", current)):
@@ -67,9 +69,47 @@ def static_counter_case(*, engine: Path, iterations: int) -> dict:
         state = cache.req_to_token_pool.mamba_pool.mamba_cache
         state.conv = [torch.empty((30, 2, 4), dtype=torch.bfloat16)]
         state.temporal = torch.empty((30, 2, 4), dtype=torch.bfloat16)
+        nodes = {0: _node(0)}
+        nodes[0].key = ()
+        for offset in range(1, 5):
+            nodes[offset] = _node(
+                offset, nodes[offset - 1], host=[offset], mamba_host=offset == 4,
+            )
+            nodes[offset].key = (offset,)
+        cache.tree_core = UnifiedTreeCore(node_by_id=nodes.__getitem__)
+        physical = baseline_physical if name == "baseline" else current_physical
+        anchors = physical.ContextSessionAnchors(
+            key=PrefillCandidateKey("req", "wf", "parent", "ctx", 0, 0, "session", 1),
+            component_leaves=((0, ((4, 14),)), (2, ((4, 14),))),
+            captured_monotonic_s=1.0, reusable_input_tokens=4,
+        )
+        prepare_cache = _static_cache()
+        prepare_full = prepare_cache.token_to_kv_pool_allocator._kvcache.full_kv_pool
+        prepare_full.get_kv_size_bytes = census
+        prepare_nodes = {0: _node(0)}
+        prepare_nodes[0].key = ()
+        for offset in range(1, 5):
+            prepare_nodes[offset] = _node(
+                offset, prepare_nodes[offset - 1], device=[offset],
+            )
+            prepare_nodes[offset].key = (offset,)
+            if offset != 4:
+                prepare_nodes[offset].component_data[2].value = None
+        prepare_cache.tree_core = UnifiedTreeCore(node_by_id=prepare_nodes.__getitem__)
+
+        def prepare_plan(_cache, *, cache=prepare_cache, physical=physical, anchors=anchors):
+            candidate = physical.capture_action_local_shadow(cache, anchors)
+            if candidate is None:
+                raise AssertionError("viable FULL-only PREPARE fixture was rejected")
+            return physical.shadow_backup_steps(candidate, max_steps=4)
+
         variants[name] = (cache, {
             "headroom": module.observe_static_full_mamba_headroom,
             "host_usage": module.observe_static_full_mamba_host_usage,
+            "closure": lambda cache, module=module: module.observe_unified_node_closure(cache, 4),
+            "session_h2d": lambda cache, physical=physical, anchors=anchors:
+                physical.inspect_session_h2d_opportunity(cache, anchors, max_steps=4),
+            "prepare_plan": prepare_plan,
         })
     calls_per_sample = 50
     for iteration in range(iterations + 5):
@@ -89,26 +129,41 @@ def static_counter_case(*, engine: Path, iterations: int) -> dict:
                     observed = callback(cache)
                 cpu_ms = (time.thread_time_ns() - cpu_start) / 1_000_000 / calls_per_sample
                 wall_ms = (time.perf_counter_ns() - wall_start) / 1_000_000 / calls_per_sample
-                if not observed.observable:
+                if phase == "session_h2d":
+                    if len(observed.steps) != 4 or observed.required_full_tokens != 4:
+                        raise AssertionError("full checkpoint restore plan changed")
+                elif phase == "prepare_plan":
+                    if len(observed) != 4 or any(step.include_mamba for step in observed):
+                        raise AssertionError("four-extent FULL-only PREPARE plan changed")
+                elif not observed.observable:
                     raise AssertionError("valid live-counter fixture was rejected")
-                outputs[name].append(vars(observed))
+                record = (
+                    [asdict(step) for step in observed] if phase == "prepare_plan"
+                    else asdict(observed)
+                )
+                if isinstance(record, dict):
+                    record.pop("captured_monotonic_s", None)
+                outputs[name].append(record)
                 if iteration >= 5:
                     samples[name][phase]["wall"].append(wall_ms)
                     samples[name][phase]["thread_cpu"].append(cpu_ms)
         if outputs["baseline"] != outputs["optimized"]:
-            raise AssertionError("changed live free-list or Host usage observation")
+            raise AssertionError("changed live counters, node closure or checkpoint restore plan")
     costs = {
         name: {phase: {clock: distribution(values) for clock, values in clocks.items()}
                for phase, clocks in per_phase.items()}
         for name, per_phase in samples.items()
     }
     return {
-        "scope": "native tensor-size method on tiny CPU tensors; no DMA or GPU throughput measurement",
+        "scope": "native size code and real four-extent checkpoint planner on CPU fixtures; no DMA or GPU throughput",
         "native_pool_source": str(source_path.resolve()),
         "native_pool_source_sha256": hashlib.sha256(source.encode()).hexdigest(),
         "full_tensor_layers": 10, "mamba_tensor_layers": 30,
         "iterations": iterations, "calls_per_sample": calls_per_sample,
         "live_free_list_observations_equal": True,
+        "node_closure_and_four_extent_restore_plan_equal": True,
+        "four_extent_full_only_prepare_plan_equal": True,
+        "ignored_output_fields": ["closure.captured_monotonic_s"],
         "tensor_census_calls_including_warmup": dict(census_reads),
         "costs": costs,
         "mean_reduction": {

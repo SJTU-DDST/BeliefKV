@@ -14,12 +14,14 @@ from queue import Full, Queue
 from typing import Callable
 
 from beliefkv.core.events import RuntimeEvent, RuntimeEventKind
+from beliefkv.runtime.hotpath_timing import HotpathTiming
 
 
 SCHEMA_VERSION = 1
 MAX_EVENTS_PER_MESSAGE = 64
 MAX_DATAGRAM_BYTES = 60_000
 MAX_UNIX_PATH_BYTES = 103
+CONTROL_TIMING_SAMPLE_EVERY = 64
 
 
 def _validate_socket_path(path: Path) -> None:
@@ -80,6 +82,7 @@ class RuntimeEventDatagramServer:
         handler: Callable[[tuple[RuntimeEvent, ...]], object],
         *,
         ack_cache_size: int = 1024,
+        timing: HotpathTiming | None = None,
     ) -> None:
         if ack_cache_size <= 0:
             raise ValueError("ack_cache_size must be positive")
@@ -90,6 +93,9 @@ class RuntimeEventDatagramServer:
             raise FileExistsError(f"runtime event socket already exists: {self.path}")
         self.handler = handler
         self.ack_cache_size = ack_cache_size
+        self._timing = timing
+        self._receive_polls = 0
+        self._received_messages = 0
         self._acks: OrderedDict[str, bytes] = OrderedDict()
         self._socket = socket.socket(socket.AF_UNIX, socket.SOCK_DGRAM)
         self._socket.bind(str(self.path))
@@ -100,16 +106,37 @@ class RuntimeEventDatagramServer:
         if max_messages <= 0:
             raise ValueError("max_messages must be positive")
         deliveries: list[RuntimeEventDelivery] = []
+        timing = self._timing
         for _ in range(max_messages):
+            receive_frame = None
+            if timing is not None and timing.enabled:
+                if self._receive_polls % CONTROL_TIMING_SAMPLE_EVERY == 0:
+                    receive_frame = timing.begin("control_socket_receive_sample")
+                self._receive_polls += 1
             try:
-                payload, reply_to = self._socket.recvfrom(MAX_DATAGRAM_BYTES)
+                try:
+                    payload, reply_to = self._socket.recvfrom(MAX_DATAGRAM_BYTES)
+                finally:
+                    if receive_frame is not None:
+                        timing.finish(receive_frame)
             except BlockingIOError:
                 break
-            delivery, ack = self._handle(payload)
+            profiled = False
+            if timing is not None and timing.enabled:
+                profiled = self._received_messages % CONTROL_TIMING_SAMPLE_EVERY == 0
+                self._received_messages += 1
+            delivery, ack = self._handle(payload, profiled=profiled)
             deliveries.append(delivery)
             if reply_to:
                 try:
-                    self._socket.sendto(ack, reply_to)
+                    send_frame = (
+                        timing.begin("control_socket_send_sample") if profiled else None
+                    )
+                    try:
+                        self._socket.sendto(ack, reply_to)
+                    finally:
+                        if send_frame is not None:
+                            timing.finish(send_frame)
                 except OSError:
                     pass
         return tuple(deliveries)
@@ -119,10 +146,18 @@ class RuntimeEventDatagramServer:
 
         return self._socket.fileno()
 
-    def _handle(self, payload: bytes) -> tuple[RuntimeEventDelivery, bytes]:
+    def _handle(
+        self, payload: bytes, *, profiled: bool = False,
+    ) -> tuple[RuntimeEventDelivery, bytes]:
         message_id = "unknown"
+        timing = self._timing
         try:
-            raw = json.loads(payload)
+            decode_frame = timing.begin("control_json_decode_sample") if profiled else None
+            try:
+                raw = json.loads(payload)
+            finally:
+                if decode_frame is not None:
+                    timing.finish(decode_frame)
             if not isinstance(raw, dict):
                 raise ValueError("event message must be an object")
             if raw.get("schema_version") != SCHEMA_VERSION:
@@ -149,7 +184,12 @@ class RuntimeEventDatagramServer:
                 raise ValueError("events must be a non-empty list")
             if len(raw_events) > MAX_EVENTS_PER_MESSAGE:
                 raise ValueError("event batch exceeds channel limit")
-            events = tuple(RuntimeEvent.from_dict(item) for item in raw_events)
+            event_frame = timing.begin("control_event_decode_sample") if profiled else None
+            try:
+                events = tuple(RuntimeEvent.from_dict(item) for item in raw_events)
+            finally:
+                if event_frame is not None:
+                    timing.finish(event_frame)
             self.handler(events)
             delivery = RuntimeEventDelivery(message_id, len(events), True)
         except Exception as error:
@@ -159,16 +199,19 @@ class RuntimeEventDatagramServer:
                 accepted=False,
                 error=f"{type(error).__name__}: {error}",
             )
-        ack = json.dumps(
-            {
-                "schema_version": SCHEMA_VERSION,
-                "message_id": delivery.message_id,
-                "status": "accepted" if delivery.accepted else "rejected",
-                "event_count": delivery.event_count,
-                "error": delivery.error,
-            },
-            sort_keys=True,
-        ).encode("utf-8")
+        ack_payload = {
+            "schema_version": SCHEMA_VERSION,
+            "message_id": delivery.message_id,
+            "status": "accepted" if delivery.accepted else "rejected",
+            "event_count": delivery.event_count,
+            "error": delivery.error,
+        }
+        ack_frame = timing.begin("control_ack_encode_sample") if profiled else None
+        try:
+            ack = json.dumps(ack_payload, sort_keys=True).encode("utf-8")
+        finally:
+            if ack_frame is not None:
+                timing.finish(ack_frame)
         if message_id != "unknown":
             self._acks[message_id] = ack
             self._acks.move_to_end(message_id)

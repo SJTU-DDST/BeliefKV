@@ -673,16 +673,34 @@ def test_static_action_closure_rejects_capacity_and_tree_backend_mismatch() -> N
     assert not observe_unified_node_closure(cache, 5).observable
 
 
-def test_static_action_closure_fails_closed_on_allocator_census_exception() -> None:
+def test_static_action_closure_reads_live_geometry_without_tensor_byte_census() -> None:
     cache = _static_cache()
+    root = _node(0)
+    leaf = _node(5, root, host=[1])
+    cache.tree_core = UnifiedTreeCore(
+        node_by_id={0: root, 5: leaf}.__getitem__,
+    )
 
     def fail_pool_read() -> None:
         raise RuntimeError("pool not ready")
 
     cache.token_to_kv_pool_allocator._kvcache.full_kv_pool.get_kv_size_bytes = fail_pool_read
     result = observe_unified_node_closure(cache, 5)
+    assert result.observable
+    assert result.nodes[0].full_host_tokens == 1
+    with pytest.raises(RuntimeError, match="pool not ready"):
+        observe_static_full_mamba(cache)
+
+    leaf.component_data[0].host_value = range(26)
+    result = observe_unified_node_closure(cache, 5)
     assert not result.observable
-    assert "pool not ready" in result.reason
+    assert "FULL host length" in result.reason
+
+    leaf.component_data[0].host_value = [1]
+    cache.token_to_kv_pool_allocator._kvcache.full_kv_pool.size = 11
+    result = observe_unified_node_closure(cache, 5)
+    assert not result.observable
+    assert "allocator and physical pool disagree" in result.reason
 
 
 def test_node_closure_rejects_cycle_excess_depth_and_absent_id() -> None:

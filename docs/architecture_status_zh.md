@@ -65,10 +65,12 @@ reentry_cpu_20261011.json和v22_deep_prefix_reentry_cpu_20261011.json。
 
 进一步降低容量交接的共享控制成本：空闲页/槽和Host用量观察
 现在只读取经过当前池绑定、类型和几何校验的实时free lists，
-不再顺带遍历整套FULL/Mamba张量计算字节数。完整设备容量
-census与动作前节点闭包仍读取实际张量；没有跨迭代缓存空闲
-容量或取消session、引用、DMA与allocator检查。该修订在隔离
-worktree中完成，计划与上述修复一起进入下一轮V22。
+不再顺带遍历整套FULL/Mamba张量计算字节数。后续修订也已将
+动作前节点闭包改为读取同一套经过校验的池几何，而不再做整池
+张量字节census；仍检查实际节点的FULL长度、祖先、锁、共享
+引用及在途传输。公开完整设备容量census继续读取实际张量。
+没有跨迭代缓存空闲容量或取消session、引用、DMA与allocator
+检查。这些修订在隔离worktree中完成，计划一起进入下一轮V22。
 
 原生MHATokenToKVPool计数代码配合10层FULL、30层Mamba的
 小型CPU张量基准，空闲容量/Host用量观察均值从101.5/100.8
@@ -80,6 +82,36 @@ worktree中完成，计划与上述修复一起进入下一轮V22。
 路径基准。最近296项observer、telemetry、runtime和policy
 检查通过；此前267项终态/handoff/physical检查也通过，两组
 存在重叠。
+
+最新闭包修订以f57527f为对照，在相同四extent安全checkpoint上
+交替执行100轮CPU基准，每轮每阶段50次。节点闭包、缺失FULL
+恢复和FULL-only PREPARE规划均值分别从150.07/223.84/193.93
+微秒降至40.31/103.96/76.42微秒，结果完全一致；这些路径的
+整池张量census调用从15750次降至0。空闲列表观察的约0.7%
+差异属于噪声。证据为v24_checkpoint_observation_cpu_final_
+20261011.json；这是规划CPU成本变化，不是GPU传输或吞吐收益。
+
+事件通道新增每64次接收尝试/已接收消息一次的分阶段计时，
+分别观察socket接收、JSON解析、RuntimeEvent构造、ACK编码
+及发送。沿用现有计时器和聚合发布，不逐事件写日志；重复消息
+仍使用相同ACK缓存，事件顺序、拒绝行为和ACK字节不变。
+该采样比例发布为control_timing_sample_every，样本累计时间
+不能直接冒充全量时间。337项observer/physical/终态/handoff/
+原生传输检查及132项事件通道/计时/runtime检查通过，两组有重叠。
+CPU socket夹具中862字节单事件包的采样平均增量约4.03微秒；
+25746字节32事件包的-0.65微秒差异属于噪声。该夹具不包含真实
+socket系统调用或GPU。保存v24_control_channel_profile_cpu_
+20261011.json，用下一轮真实分阶段结果定位控制成本。
+
+冻结V21的有界最新计时快照仅读取日志末尾128KiB：运行约
+7287秒时，control_drain/reentry_inspection/opportunity_sampling/
+join_prepare/admission_plan的Python独占墙钟累计分别为
+129.19/106.15/102.44/84.37/65.85秒。这些不是可直接消除的JCT
+或CUDA耗时，证据为v21_control_profile_snapshot_20261011.json。
+当时136个workflow completed、1个incomplete、19个尚无终态。
+django-12125的incomplete发生在未耗尽deadline、没有取消或guard
+干预的情况下；最后两轮输出均为length终止，保留未完成分类。
+这些局部证据没有改变当前pair或下一轮的冻结实验参数。
 
 较晚的V21局部审计保存于v21_terminal_capacity_progress_
 summary_20261011.json，保留原审计路径与SHA256。214个真实

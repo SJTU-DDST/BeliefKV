@@ -15,6 +15,7 @@ from beliefkv.runtime.event_channel import (
     RuntimeEventDatagramServer,
     UnixDatagramRuntimeEventSink,
 )
+from beliefkv.runtime.hotpath_timing import HotpathTiming
 
 
 def event(event_id, kind, *, ts_ms, **kwargs):
@@ -28,6 +29,64 @@ def event(event_id, kind, *, ts_ms, **kwargs):
 
 
 class RuntimeEventChannelTest(unittest.TestCase):
+    def test_sparse_control_timing_preserves_delivery_rejection_and_duplicate_ack(self):
+        timing = HotpathTiming()
+        controller = BeliefKVController()
+        packets = [
+            json.dumps({
+                "schema_version": 1,
+                "message_id": f"packet-{index}",
+                "events": [RuntimeEvent(
+                    event_id=f"start-{index}", workflow_id=f"wf-{index}",
+                    kind=RuntimeEventKind.WORKFLOW_START, ts_ms=float(index),
+                ).to_dict()],
+            }).encode()
+            for index in range(128)
+        ]
+        packets.extend((b"{malformed", packets[0]))
+
+        class SocketFixture:
+            def __init__(self):
+                self.packets = iter(packets)
+                self.acks = []
+
+            def recvfrom(self, _limit):
+                try:
+                    return next(self.packets), "client"
+                except StopIteration:
+                    raise BlockingIOError from None
+
+            def sendto(self, ack, _reply_to):
+                self.acks.append(ack)
+
+            def close(self):
+                pass
+
+        with tempfile.TemporaryDirectory() as temporary:
+            with RuntimeEventDatagramServer(
+                Path(temporary) / "server.sock", controller.process_runtime_events,
+                timing=timing,
+            ) as server:
+                server._socket.close()
+                server._socket = SocketFixture()
+                with timing.measure("control_outer"):
+                    deliveries = server.drain()
+                self.assertEqual(len(controller.graph.workflows), 128)
+                self.assertFalse(deliveries[-2].accepted)
+                self.assertTrue(deliveries[-1].duplicate)
+                self.assertEqual(server._socket.acks[-1], server._socket.acks[0])
+                self.assertEqual(
+                    json.loads(server._socket.acks[-2])["status"], "rejected",
+                )
+        phases = timing.snapshot()["phases"]
+        for phase in (
+            "control_socket_receive_sample", "control_json_decode_sample",
+            "control_ack_encode_sample", "control_socket_send_sample",
+        ):
+            self.assertEqual(phases[phase]["count"], 3)
+        self.assertEqual(phases["control_event_decode_sample"]["count"], 2)
+        self.assertEqual(timing._stack, [])
+
     def test_tool_start_delivery_does_not_block_tool_but_tool_end_waits_for_ack(self):
         started = threading.Event()
         release = threading.Event()
